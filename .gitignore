@@ -1,0 +1,10 @@
+node_modules
+dist
+out
+.DS_Store
+.eslintcache
+*.log*
+src/renderer/dist
+src/renderer/node_modules
+**/obj
+**/bin
