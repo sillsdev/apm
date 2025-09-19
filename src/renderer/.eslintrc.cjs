@@ -28,8 +28,10 @@ module.exports = {
   rules: {
     '@typescript-eslint/consistent-type-imports': 'error',
     '@typescript-eslint/consistent-type-exports': 'error',
+    '@typescript-eslint/no-explicit-any': 'off',
+    '@typescript-eslint/explicit-function-return-type': 'off',
     'no-only-tests/no-only-tests': 'error',
-    '@typescript-eslint/no-unused-vars': ['error', {argsIgnorePattern: '^_'}],
+    '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
     complexity: ['warn', 15],
     'linebreak-style': ['error', 'unix'],
     quotes: ['error', 'single'],
@@ -37,5 +39,9 @@ module.exports = {
     'import/default': 'off',
     '@typescript-eslint/no-require-imports': 'off',
     'cypress/unsafe-to-chain-command': 'off',
+    'jsdoc/require-returns': 'off',
+    'jsdoc/require-returns-type': 'off',
+    'no-unused-vars': 'off',
+    'no-case-declarations': 'off',
   },
-}
+};

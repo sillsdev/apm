@@ -1,4 +1,4 @@
-import type {JestConfigWithTsJest} from 'ts-jest'
+import type { JestConfigWithTsJest } from 'ts-jest';
 
 export const config: JestConfigWithTsJest = {
   clearMocks: true,
@@ -7,10 +7,10 @@ export const config: JestConfigWithTsJest = {
   moduleDirectories: ['node_modules', 'src'],
   modulePathIgnorePatterns: ['dist'],
   transform: {
-    '^.+\\.(ts|tsx)$': ['ts-jest', {tsconfig: 'tsconfig.jest.json'}],
+    '^.+\\.(ts|tsx)$': ['ts-jest', { tsconfig: 'tsconfig.jest.json' }],
   },
   testMatch: ['**/*.pacttest.ts'], // Pact test file match
   testEnvironment: 'node',
-}
+};
 
-export default config
+export default config;

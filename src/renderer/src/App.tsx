@@ -1,10 +1,10 @@
-import {ThemeProvider, createTheme} from '@mui/material'
-import DataChanges from './hoc/DataChanges'
-import {UnsavedProvider} from './context/UnsavedContext'
-import SnackBarProvider from './hoc/SnackBar'
-import {HotKeyProvider} from './context/HotKeyContext'
-import routes from './routes/NavRoutes'
-export const HeadHeight = 64
+import { ThemeProvider, createTheme } from '@mui/material';
+import DataChanges from './hoc/DataChanges';
+import { UnsavedProvider } from './context/UnsavedContext';
+import SnackBarProvider from './hoc/SnackBar';
+import { HotKeyProvider } from './context/HotKeyContext';
+import routes from './routes/NavRoutes';
+export const HeadHeight = 64;
 
 const theme = createTheme({
   palette: {
@@ -20,7 +20,7 @@ const theme = createTheme({
       textTransform: 'capitalize',
     },
   },
-})
+});
 
 function App(): JSX.Element {
   return (
@@ -33,7 +33,7 @@ function App(): JSX.Element {
         </SnackBarProvider>
       </DataChanges>
     </UnsavedProvider>
-  )
+  );
 }
 
-export default App
+export default App;

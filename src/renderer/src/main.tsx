@@ -1,9 +1,9 @@
-import React from 'react'
-import {createRoot} from 'react-dom/client'
-import './index.css'
+import React from 'react';
+import { createRoot } from 'react-dom/client';
+import '../src/index.css';
 
-import {coordinator, memory} from './schema'
-import Bugsnag from '@bugsnag/js'
+import { coordinator, memory } from '../src/schema';
+import Bugsnag from '@bugsnag/js';
 import {
   logError,
   Severity,
@@ -11,46 +11,47 @@ import {
   getFingerprintArray,
   LocalKey,
   Online,
-} from './utils'
-import {isElectron, OrbitNetworkErrorRetries} from './api-variable'
-import {GlobalProvider} from './context/GlobalContext'
-import bugsnagClient from 'auth/bugsnagClient'
-import {Root} from 'auth/Root'
-import {restoreBackup} from 'crud/restoreBackup'
+} from '../src/utils';
+import { isElectron, OrbitNetworkErrorRetries } from '../api-variable';
+import { GlobalProvider } from '../src/context/GlobalContext';
+import bugsnagClient from '../src/auth/bugsnagClient';
+import { Root } from '../src/auth/Root';
+import { restoreBackup } from '../src/crud/restoreBackup';
 
-const ipc = (window as unknown as {electron?: {home?: () => Promise<string>}})
-  ?.electron
+const ipc = (
+  window as unknown as { electron?: { home?: () => Promise<string> } }
+)?.electron;
 
-Online(true, result => {
+Online(true, (result) => {
   if (!result || !Bugsnag.isStarted()) {
-    localStorage.setItem(LocalKey.connected, 'false')
+    localStorage.setItem(LocalKey.connected, 'false');
   } else {
-    localStorage.setItem(LocalKey.connected, 'true')
-    Bugsnag.startSession()
+    localStorage.setItem(LocalKey.connected, 'true');
+    Bugsnag.startSession();
   }
-})
+});
 
 if (isElectron) {
-  console.log(`Running in Electron: Filesystem access is enabled.`)
+  console.log(`Running in Electron: Filesystem access is enabled.`);
 } else {
-  console.log('Running on the Web, Filesystem access disabled.')
+  console.log('Running on the Web, Filesystem access disabled.');
 }
 
 // localStorage home used by dataPath to avoid Promise
 if (ipc?.home) {
   ipc.home().then((folder: string) => {
-    localStorage.setItem(LocalKey.home, folder)
-  })
+    localStorage.setItem(LocalKey.home, folder);
+  });
 }
 
-const promises = []
-promises.push(getFingerprintArray())
+const promises = [];
+promises.push(getFingerprintArray());
 if (isElectron) {
-  console.log('restoring backup in electron in index')
-  promises.push(restoreBackup(coordinator)) //.then(() => console.log('pull done'));
+  console.log('restoring backup in electron in index');
+  promises.push(restoreBackup(coordinator)); //.then(() => console.log('pull done'));
 }
 Promise.all(promises)
-  .then(promResults => {
+  .then((promResults) => {
     const state = {
       home: false,
       organization: '',
@@ -85,17 +86,17 @@ Promise.all(promises)
       latestVersion: '',
       releaseDate: '',
       progress: 0,
-    }
+    };
 
-    const root = createRoot(document.getElementById('root') as HTMLElement)
+    const root = createRoot(document.getElementById('root') as HTMLElement);
     root.render(
       <React.StrictMode>
         <GlobalProvider init={state}>
           <Root />
         </GlobalProvider>
-      </React.StrictMode>,
-    )
+      </React.StrictMode>
+    );
   })
-  .catch(err => {
-    logError(Severity.error, bugsnagClient, infoMsg(err, 'Fingerprint failed'))
-  })
+  .catch((err) => {
+    logError(Severity.error, bugsnagClient, infoMsg(err, 'Fingerprint failed'));
+  });

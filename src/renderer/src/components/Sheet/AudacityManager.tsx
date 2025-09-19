@@ -1,0 +1,441 @@
+import React from 'react';
+import { useGetGlobal, useGlobal } from '../../context/useGlobal';
+import { DateTime } from 'luxon';
+import { shallowEqual, useSelector } from 'react-redux';
+import {
+  IAudacityManagerStrings,
+  ISharedStrings,
+  IState,
+  MediaFileD,
+} from '../../model';
+import {
+  Button,
+  Dialog,
+  DialogTitle,
+  DialogActions,
+  FormControl,
+  TextField,
+  Typography,
+  styled,
+  Grid,
+  GridProps,
+  Box,
+  BoxProps,
+  Stack,
+  IconButton,
+} from '@mui/material';
+import HelpIcon from '@mui/icons-material/Help';
+import {
+  useAudacityProjUpdate,
+  useAudacityProjRead,
+  useAudacityProjDelete,
+  useAudProjName,
+  usePassageRec,
+  passageDescText,
+  useFetchUrlNow,
+  remoteId,
+} from '../../crud';
+import { useSnackBar } from '../../hoc/SnackBar';
+import { debounce } from 'lodash';
+import { RecordIdentity, RecordKeyMap } from '@orbit/records';
+import {
+  launchAudacity,
+  loadBlob,
+  audPrefsName,
+  setAudacityPref,
+  execFolder,
+} from '../../utils';
+import { tryDownload } from '../../utils/tryDownload';
+import { extensions, mimes } from '../../components/Sheet';
+import SpeakerName from '../SpeakerName';
+import { audacityManagerSelector, sharedSelector } from '../../selector';
+import { GrowingSpacer } from '../StepEditor';
+import { ContextHelp } from '../ContextHelp';
+
+const ipc = window?.electron;
+import path from 'path-browserify';
+
+const StyledGrid = styled(Grid)<GridProps>(() => ({
+  minWidth: '800px',
+  '& .MuiAutocomplete-root': {
+    paddingBottom: '20px',
+    width: 'unset',
+  },
+}));
+
+const ActionRow = styled(Box)<BoxProps>(({ theme }) => ({
+  display: 'flex',
+  flexDirection: 'column',
+  padding: theme.spacing(2),
+  marginLeft: theme.spacing(1),
+  '& .MuiButton-root': {
+    marginBottom: theme.spacing(2),
+  },
+}));
+
+export interface IProps {
+  item: number;
+  passageId: RecordIdentity;
+  mediaId: string;
+  open: boolean;
+  onClose: () => void;
+  onImport: (i: number, list: File[]) => void;
+  speaker?: string;
+  onSpeaker?: (speaker: string) => void;
+}
+
+function AudacityManager(props: IProps) {
+  const { passageId, mediaId, onClose, open } = props;
+  const { item, onImport } = props;
+  const { speaker, onSpeaker } = props;
+  const allBookData = useSelector((state: IState) => state.books.bookData);
+  const getPassage = usePassageRec();
+  const [passageRef, setPassageRef] = React.useState('');
+  const [hasRights, setHasRight] = React.useState(!onSpeaker);
+  const audUpdate = useAudacityProjUpdate();
+  const audRead = useAudacityProjRead();
+  const audDelete = useAudacityProjDelete();
+  const [reporter] = useGlobal('errorReporter');
+  const [exists, setExists] = React.useState(false);
+  const [name, setName] = React.useState('');
+  const [topic, setTopic] = React.useState<string>();
+  const nameRef = React.useRef('');
+  const [memory] = useGlobal('memory');
+  const getGlobal = useGetGlobal();
+  const { showMessage } = useSnackBar();
+  const getProjName = useAudProjName();
+  const t: IAudacityManagerStrings = useSelector(
+    audacityManagerSelector,
+    shallowEqual
+  );
+  const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
+  const fetchUrl = useFetchUrlNow();
+  const handleClose = () => {
+    onClose();
+  };
+
+  const handleAudacityName = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setName(e.target.value);
+  };
+
+  const handleBrowse = () => {
+    ipc?.audacityOpen().then((fullName: string[]) => {
+      if (fullName && fullName.length > 0) {
+        setAudacityPref(fullName[0]);
+        // setAudacityPref creates the folders needed for audacity export
+        setName(fullName[0]);
+      }
+    });
+  };
+
+  const getMediaUrl = (mediaId: string) => {
+    let mediaUrl = '';
+    if (mediaId !== '') {
+      const mediaRec = memory.cache.query((q) =>
+        q.findRecord({ type: 'mediafile', id: mediaId })
+      ) as MediaFileD;
+      mediaUrl = mediaRec?.attributes?.audioUrl || '';
+    }
+    return mediaUrl;
+  };
+
+  const getMediaUpdated = (mediaId: string) => {
+    let mediaUpdated = '';
+    if (mediaId !== '') {
+      const mediaRec = memory.cache.query((q) =>
+        q.findRecord({ type: 'mediafile', id: mediaId })
+      ) as MediaFileD;
+      mediaUpdated = mediaRec?.attributes?.dateUpdated || '';
+      if (!mediaUpdated.toLowerCase().endsWith('z')) {
+        mediaUpdated += 'Z';
+      }
+    }
+    return mediaUpdated;
+  };
+
+  const handleCreate = async () => {
+    const prefsName = await audPrefsName();
+    if (!prefsName) {
+      showMessage(t.installError);
+      return;
+    }
+
+    let mediaName = '';
+    if ((mediaId || '') !== '') {
+      const remId =
+        remoteId('mediafile', mediaId, memory?.keyMap as RecordKeyMap) ?? '';
+      if (remId !== '' && !getGlobal('offline')) {
+        mediaName =
+          (await fetchUrl({
+            id: remId,
+            cancelled: () => false,
+          })) ?? '';
+        if (mediaName === ts.expiredToken) {
+          showMessage(ts.expiredToken);
+          return;
+        }
+      } else {
+        const mediaRelativePath = getMediaUrl(mediaId);
+        // The next line adds the local path to the relative file name.
+        mediaName = await tryDownload(mediaRelativePath, false);
+      }
+      if (mediaName.startsWith('http')) {
+        showMessage(t.checkDownload);
+        return;
+      }
+    }
+    if ((passageId.id || '') !== '') {
+      const fullName = await getProjName(passageId);
+      const beforeContent = await setAudacityPref(fullName);
+      // setAudacityPref creates the folders needed for the copy below
+      if (!(await ipc?.exists(fullName))) {
+        if (mediaName) {
+          const ext = mediaName.split('.').pop() || 'mp3';
+          const mp3FullName = fullName
+            .replace('aup3', 'io')
+            .replace('.aup3', `.${ext}`);
+          if (!(await ipc?.exists(mp3FullName))) {
+            showMessage(t.loadingAudio);
+            await ipc?.copyFile(mediaName, mp3FullName);
+            const updated = new Date(getMediaUpdated(mediaId)).getTime() / 1000;
+            await ipc?.times(mp3FullName, updated, updated);
+          }
+        }
+        await ipc?.copyFile(
+          path.join(await execFolder(), 'resources', 'new.aup3'),
+          fullName
+        );
+      }
+      setExists(true);
+      setName(fullName);
+      if (beforeContent && (await ipc?.isProcessRunning('audacity'))) {
+        showMessage(t.closeAudacity);
+        return;
+      }
+
+      launchAudacity(fullName, reporter);
+    }
+  };
+
+  const handleOpen = async () => {
+    if (getGlobal('changed')) {
+      showMessage(t.saveFirst);
+      return;
+    }
+    const prefsName = await audPrefsName();
+    if (!prefsName) {
+      showMessage(t.installError);
+      return;
+    }
+    const beforeContent = await setAudacityPref(name);
+    if (beforeContent && (await ipc?.isProcessRunning('audacity'))) {
+      showMessage(t.closeAudacity);
+      return;
+    }
+
+    launchAudacity(name, reporter);
+  };
+
+  const handleRights = (hasRights: boolean) => setHasRight(hasRights);
+  const handleSpeaker = (speaker: string) => {
+    onSpeaker && onSpeaker(speaker);
+  };
+
+  const handleImport = async () => {
+    if (name.indexOf('.aup3') === -1) {
+      showMessage(t.badProjName);
+      return;
+    }
+    const lname = name.replace(/\\/g, path.sep);
+    const nameOnly = lname.replace('.aup3', '').split(path.sep).pop();
+    const nmLen = nameOnly?.length;
+    const audioFolder = path.dirname(lname.replace('aup3', 'io'));
+    const result = (await ipc?.readDir(audioFolder)) as string[];
+    let mp3FullName = '';
+    let mime = '';
+    let lastTime = 0;
+    for (const audioName of result) {
+      const ext = audioName.split('.').pop() || '';
+      const extIdx = extensions.indexOf(ext);
+      const fullName = path.join(audioFolder, audioName);
+      const stat = JSON.parse(await ipc?.stat(fullName));
+      if (
+        DateTime.fromMillis(stat.mtime).toMillis() >
+          DateTime.fromMillis(lastTime).toMillis() &&
+        extensions.indexOf(ext) >= 0 &&
+        nameOnly === audioName.slice(0, nmLen)
+      ) {
+        lastTime = stat.mtime;
+        mp3FullName = fullName;
+        mime = mimes[extIdx];
+      }
+    }
+    if (!mp3FullName) {
+      showMessage(t.missingImport.replace('{0}', audioFolder));
+      return;
+    }
+    // YYYY-MM-DDTHH:MM:SS (= 19 characters)
+    if (
+      (DateTime.fromMillis(lastTime).toISO() as string).slice(0, 19) <=
+      getMediaUpdated(mediaId).slice(0, 19)
+    ) {
+      showMessage(t.exportFirst);
+      return;
+    }
+    const mp3Name = mp3FullName.split(path.sep).pop();
+    if (!mp3Name) {
+      showMessage(t.badProjPath);
+      return;
+    }
+
+    const prefsName = await audPrefsName();
+    if (!prefsName) {
+      showMessage(t.installError);
+      return;
+    }
+
+    loadBlob(mp3FullName, (url, b) => {
+      if (b) {
+        onImport(item, [new File([b], mp3Name as string, { type: mime })]);
+        onClose();
+      } else showMessage(url);
+    });
+  };
+
+  const handleUnlink = () => {
+    audDelete(passageId.id);
+    setName('');
+  };
+
+  const nameUpdate = debounce(() => {
+    if (passageId?.id) audUpdate(passageId.id, name);
+  }, 100);
+
+  React.useEffect(() => {
+    if (speaker) handleRights(true);
+  }, [speaker]);
+
+  React.useEffect(() => {
+    if (passageId?.id) {
+      const audRec = audRead(passageId.id);
+      const newName = audRec?.attributes?.audacityName;
+      if (newName) {
+        if (newName !== name) setName(newName);
+        nameRef.current = newName;
+      } else {
+        setName('');
+        nameRef.current = '';
+      }
+      const passRec = getPassage(passageId.id);
+      setPassageRef(passageDescText(passRec, allBookData));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [passageId?.id]);
+
+  React.useEffect(() => {
+    (async () => {
+      if (name) {
+        setExists(await ipc?.exists(name));
+        nameUpdate();
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [name]);
+
+  const handleHelp = () => {
+    setTopic('#t=User_Interface/Dialog_boxes/Audacity_Manager_dialog_box.htm');
+  };
+
+  const handleReset = () => {
+    setTopic(undefined);
+  };
+
+  return (
+    <Dialog
+      onClose={handleClose}
+      aria-labelledby="manager-title"
+      open={open}
+      maxWidth="md"
+      disableEnforceFocus
+    >
+      <DialogTitle id="manager-title">
+        <Stack direction="row">
+          {`${t.title} - ${passageRef}`}
+          <GrowingSpacer />
+          <IconButton color="primary" onClick={handleHelp}>
+            <HelpIcon />
+          </IconButton>
+        </Stack>
+      </DialogTitle>
+      <StyledGrid container>
+        {exists && name !== '' ? (
+          <Grid container justifyContent="center">
+            <Grid size={{ xs: 8 }}>
+              <FormControl>
+                <TextField
+                  id="audacity-project"
+                  autoFocus
+                  required
+                  label={t.audacityProject}
+                  sx={{ m: 2, minWidth: '500px' }}
+                  value={name}
+                  onChange={handleAudacityName}
+                  helperText={exists || name === '' ? null : t.missingProject}
+                />
+              </FormControl>
+            </Grid>
+            <Grid size={{ xs: 4 }}>
+              <ActionRow>
+                <Button onClick={handleOpen} variant="outlined">
+                  {t.open}
+                </Button>
+                <SpeakerName
+                  name={speaker || ''}
+                  onRights={handleRights}
+                  onChange={handleSpeaker}
+                />
+                <Button
+                  onClick={handleImport}
+                  variant="outlined"
+                  disabled={!hasRights}
+                >
+                  {t.import}
+                </Button>
+                <Button onClick={handleUnlink} variant="outlined">
+                  {t.unlink}
+                </Button>
+                {/* <Button onClick={handleDelete}>Delete</Button> */}
+              </ActionRow>
+            </Grid>
+          </Grid>
+        ) : (
+          <Grid container justifyContent="center">
+            <Grid size={{ xs: 9 }}>
+              <FormControl sx={{ m: 2 }}>
+                <Typography>{t.tip}</Typography>
+              </FormControl>
+            </Grid>
+            <Grid size={{ xs: 3 }}>
+              <ActionRow>
+                <Button onClick={handleCreate} variant="outlined">
+                  {t.create}
+                </Button>
+                <Button onClick={handleBrowse} variant="outlined">
+                  {t.browse}
+                </Button>
+              </ActionRow>
+            </Grid>
+          </Grid>
+        )}
+        <ContextHelp topic={topic} reset={handleReset} />
+      </StyledGrid>
+      <DialogActions>
+        <Button onClick={handleClose} variant="contained" color="primary">
+          {t.close}
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
+
+export default AudacityManager;

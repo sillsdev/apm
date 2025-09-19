@@ -1,0 +1,10 @@
+export default [
+  ['AT', '屬性 Attributes'],
+  ['BE', '生物 Beings'],
+  ['FA', '動物 Animals'],
+  ['FL', '植物 Plants'],
+  ['MI', '其他 Miscellaneous'],
+  ['PN', '名字 Names'],
+  ['RE', '物件 Objects'],
+  ['RI', '習俗／儀式 Rituals'],
+];

@@ -1,4 +1,5 @@
-const cyDataSession = require('cypress-data-session/src/plugin')
+// @ts-ignore this is a e2e testing plugin
+import cyDataSession from 'cypress-data-session/src/plugin';
 
 /**
  * The collection of plugins to use with Cypress
@@ -7,10 +8,10 @@ const cyDataSession = require('cypress-data-session/src/plugin')
  */
 export default function plugins(
   on: Cypress.PluginEvents,
-  config: Cypress.PluginConfigOptions,
+  config: Cypress.PluginConfigOptions
 ) {
   return {
     // add plugins here
     ...cyDataSession(on, config),
-  }
+  };
 }

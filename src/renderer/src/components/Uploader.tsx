@@ -1,0 +1,477 @@
+import React, { useRef, useContext, useEffect, useState } from 'react';
+import { useGetGlobal, useGlobal } from '../context/useGlobal';
+import * as actions from '../store';
+import {
+  IState,
+  IMediaTabStrings,
+  ISharedStrings,
+  MediaFileAttributes,
+  MediaFileD,
+} from '../model';
+import MediaUpload, { FaithbridgeType, SIZELIMIT } from './MediaUpload';
+import {
+  findRecord,
+  pullTableList,
+  related,
+  remoteIdNum,
+  useArtifactType,
+  useOfflnMediafileCreate,
+  VernacularTag,
+} from '../crud';
+import { TokenContext } from '../context/TokenProvider';
+import Memory from '@orbit/memory';
+import JSONAPISource from '@orbit/jsonapi';
+import PassageRecordDlg from './PassageRecordDlg';
+import { restoreScroll } from '../utils';
+import { shallowEqual, useSelector } from 'react-redux';
+import { NextUploadProps } from '../store';
+import { useDispatch } from 'react-redux';
+import { mediaTabSelector, sharedSelector } from '../selector';
+import { passageDefaultSuffix } from '../utils/passageDefaultFilename';
+import { IndexedDBSource } from '@orbit/indexeddb';
+import path from 'path-browserify';
+import { RecordKeyMap } from '@orbit/records';
+import { AlertSeverity } from '../hoc/SnackBar';
+import { getContentType } from '../utils/contentType';
+import { OrbitNetworkErrorRetries } from '../../api-variable';
+import { UploadType } from './UploadType';
+
+interface IProps {
+  noBusy?: boolean | undefined;
+  recordAudio: boolean;
+  allowWave?: boolean | undefined;
+  defaultFilename?: string | undefined;
+  isOpen: boolean;
+  onOpen: (visible: boolean) => void;
+  showMessage: (msg: string | JSX.Element, alert?: AlertSeverity) => void;
+  finish?: ((planId: string, mediaRemoteIds?: string[]) => void) | undefined; // logic when upload complete
+  metaData?: JSX.Element | undefined; // component embeded in dialog
+  ready?: (() => boolean) | undefined; // if false control is disabled
+  // createProject?: (name: string) => Promise<string>;
+  cancelled: React.MutableRefObject<boolean>;
+  cancelReset?: (() => void) | undefined; // reset the cancelled state
+  multiple?: boolean | undefined;
+  mediaId?: string | undefined;
+  importList?: File[] | undefined;
+  artifactState?: { id?: string | null } | undefined;
+  passageId?: string | undefined;
+  sourceMediaId?: string | undefined;
+  sourceSegments?: string | undefined;
+  performedBy?: string | undefined;
+  eafUrl?: string | undefined;
+  onSpeakerChange?: ((performedBy: string) => void) | undefined;
+  topic?: string | undefined;
+  uploadType?: UploadType | undefined;
+  inValue?: string | undefined; // used when adding Aquifer markdown
+  team?: string | undefined; // used when adding a card to check speakers
+  onNonAudio?: ((nonAudio: boolean) => void) | undefined;
+}
+
+export const Uploader = (props: IProps) => {
+  const {
+    noBusy,
+    mediaId,
+    recordAudio,
+    allowWave,
+    defaultFilename,
+    isOpen,
+    onOpen,
+    showMessage,
+    cancelled,
+    cancelReset,
+    multiple,
+    importList,
+    artifactState,
+    passageId,
+    sourceMediaId,
+    sourceSegments,
+    performedBy,
+    eafUrl,
+    onSpeakerChange,
+    topic,
+    uploadType,
+    inValue,
+    team,
+    onNonAudio,
+    finish,
+  } = props;
+  const { metaData, ready } = props;
+  const t: IMediaTabStrings = useSelector(mediaTabSelector, shallowEqual);
+  const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
+  const uploadError = useSelector((state: IState) => state.upload.errmsg);
+  const dispatch = useDispatch();
+  const uploadFiles = (files: File[]) =>
+    dispatch(actions.uploadFiles(files) as any);
+  const nextUpload = (props: NextUploadProps) =>
+    dispatch(actions.nextUpload(props) as any);
+  const uploadComplete = () => dispatch(actions.uploadComplete() as any);
+  const [coordinator] = useGlobal('coordinator');
+  const memory = coordinator?.getSource('memory') as Memory;
+  const remote = coordinator?.getSource('remote') as JSONAPISource;
+  const backup = coordinator?.getSource('backup') as IndexedDBSource;
+  const [errorReporter] = useGlobal('errorReporter');
+  const [, setOrbitRetries] = useGlobal('orbitRetries'); //verified this is not used in a function 2/18/25
+  const [, setBusy] = useGlobal('importexportBusy');
+  const [plan] = useGlobal('plan'); //verified this is not used in a function 2/18/25
+  const [user] = useGlobal('user');
+  const planIdRef = useRef<string>(plan);
+  const successCount = useRef<number>(0);
+  const fileList = useRef<File[]>();
+  const ctx = useContext(TokenContext).state;
+  const mediaIdRef = useRef<string[]>([]);
+  const artifactTypeRef = useRef<string>('');
+  const { createMedia } = useOfflnMediafileCreate();
+  const [, setComplete] = useGlobal('progress');
+  const [errMsgs] = useState<string[]>([]);
+  const { localizedArtifactTypeFromId } = useArtifactType();
+  const getGlobal = useGetGlobal();
+
+  const handleSpeakerChange = (speaker: string) => {
+    onSpeakerChange && onSpeakerChange(speaker);
+  };
+
+  useEffect(() => {
+    if (isOpen) {
+      mediaIdRef.current = [];
+      successCount.current = 0;
+      clearErrors();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
+
+  const afterUploadCb = async (mediaId: string | undefined) => {
+    if (mediaId) {
+      successCount.current = 1;
+      mediaIdRef.current = [mediaId];
+    } else successCount.current = 0;
+    finishMessage();
+  };
+  const clearErrors = () => {
+    let err = errMsgs.pop();
+    while (err) err = errMsgs.pop();
+  };
+
+  const finishMessage = () => {
+    //wait for any error messages to show up
+    setTimeout(() => {
+      errMsgs.forEach((err, ix) => {
+        setTimeout(() => showMessage(err, AlertSeverity.Error), ix ? 2000 : 0);
+      });
+      //empty it instead of redefining it, which doesn't work between calls;
+      clearErrors();
+      //wait to show the final message if there are errors
+      setTimeout(() => {
+        if (fileList.current) {
+          showMessage(
+            t.uploadComplete
+              .replace('{0}', successCount.current.toString())
+              .replace('{1}', fileList.current.length.toString())
+          );
+        }
+      }, errMsgs.length * 2000);
+      uploadComplete();
+      setComplete(0);
+      setBusy(false);
+      cancelled.current = successCount.current <= 0;
+      finish && finish(planIdRef.current, mediaIdRef.current);
+    }, 1000);
+  };
+
+  const getArtifactTypeId = () =>
+    artifactState?.id
+      ? remoteIdNum(
+          'artifacttype',
+          artifactState.id,
+          memory?.keyMap as RecordKeyMap
+        ) || artifactState.id
+      : artifactState?.id || '';
+  const getPassageId = () =>
+    remoteIdNum('passage', passageId || '', memory?.keyMap as RecordKeyMap) ||
+    passageId;
+  const getSourceMediaId = () =>
+    remoteIdNum(
+      'mediafile',
+      sourceMediaId || '',
+      memory?.keyMap as RecordKeyMap
+    ) || sourceMediaId;
+  const getUserId = () =>
+    remoteIdNum('user', user || '', memory?.keyMap as RecordKeyMap) || user;
+
+  const getLatestVersion = () => {
+    let num = 1;
+    const psgId = passageId || '';
+    if (psgId && !artifactState?.id) {
+      const mediaFiles = (
+        memory.cache.query((q) => q.findRecords('mediafile')) as MediaFileD[]
+      )
+        .filter(
+          (m) =>
+            related(m, 'passage') === psgId &&
+            related(m, 'artifactType') === null
+        )
+        .filter((m) => m?.attributes?.versionNumber !== undefined)
+        .sort(
+          (i, j) => j.attributes.versionNumber - i.attributes.versionNumber
+        );
+      if (mediaFiles.length > 0) {
+        //vernacular
+        num = (mediaFiles[0] as MediaFileD).attributes.versionNumber + 1;
+      }
+    }
+    return num;
+  };
+  const itemComplete = async (n: number, success: boolean, data?: any) => {
+    if (success) successCount.current += 1;
+    else setOrbitRetries(OrbitNetworkErrorRetries - 1); //notify of possible network issue
+    const uploadList = fileList.current;
+    if (!uploadList) return; // This should never happen
+    if (data?.stringId) mediaIdRef.current.push(data?.stringId);
+    else if (success && data) {
+      // offlineOnly
+      const psgId = passageId || '';
+      const num = getLatestVersion();
+      const newMediaRec = await createMedia(
+        data,
+        num,
+        (uploadList[n] as File).size,
+        psgId,
+        artifactState?.id || artifactTypeRef.current,
+        sourceMediaId || '',
+        user
+      );
+      mediaIdRef.current.push(newMediaRec.id);
+    }
+
+    setComplete(Math.min((n * 100) / uploadList.length, 100));
+    const next = n + 1;
+    if (next < uploadList.length && !cancelled.current) {
+      doUpload(next);
+    } else if (!getGlobal('offline') && mediaIdRef.current?.length > 0) {
+      pullTableList(
+        'mediafile',
+        mediaIdRef.current,
+        memory,
+        remote,
+        backup,
+        errorReporter
+      ).then(() => {
+        finishMessage();
+        onOpen(false); //do this just for uploader
+      });
+    } else {
+      finishMessage();
+      onOpen(false); //do this just for uploader
+    }
+  };
+
+  const getPlanId = () =>
+    remoteIdNum('plan', planIdRef.current, memory?.keyMap as RecordKeyMap) ||
+    planIdRef.current;
+
+  const doUpload = (currentlyLoading: number) => {
+    const uploadList = fileList.current;
+    if (!uploadList) return; // This should never happen
+    let transcription = '';
+    let file = (uploadList[currentlyLoading] as File).name;
+    if ((uploadList[currentlyLoading] as File).type === FaithbridgeType) {
+      const parts = (uploadList[currentlyLoading] as File).name.split('||');
+      file = parts[0] as string;
+      transcription = parts[1] as string;
+    }
+    const mediaFile = {
+      planId: getPlanId() as string,
+      versionNumber: 1,
+      originalFile: file,
+      contentType: getContentType(
+        uploadList[currentlyLoading]?.type,
+        (uploadList[currentlyLoading] as File).name
+      ),
+      artifactTypeId: getArtifactTypeId() as string,
+      passageId: getPassageId() as string,
+      userId: getUserId() as string,
+      recordedbyUserId: getUserId() as string,
+      sourceMediaId: getSourceMediaId() as string,
+      sourceSegments: sourceSegments ?? '{}',
+      performedBy: performedBy ?? null,
+      topic: topic ?? '',
+      eafUrl:
+        eafUrl ??
+        (!artifactState?.id
+          ? ts.mediaAttached
+          : localizedArtifactTypeFromId(artifactState?.id)), //put psc message here
+      transcription,
+    } as MediaFileAttributes & {
+      planId: string;
+      artifactTypeId: string;
+      passageId: string;
+      userId: string;
+      recordedbyUserId: string;
+      sourceMediaId: string;
+    };
+    nextUpload({
+      record: mediaFile,
+      files: uploadList,
+      n: currentlyLoading,
+      token: ctx.accessToken || '',
+      offline: getGlobal('offline'),
+      errorReporter,
+      uploadType: uploadType ?? UploadType.Media,
+      cb: itemComplete,
+    });
+  };
+  const preUpload = async (files: File[]) => {
+    //   let name =
+    //     uploadType === UploadType.IntellectualProperty
+    //       ? 'Project'
+    //       : files[0]?.name.split('.')[0];
+    //    if (createProject) planIdRef.current = await createProject(name);
+    const suffix = passageDefaultSuffix(
+      planIdRef.current,
+      memory,
+      getGlobal('offline')
+    );
+
+    while (
+      files.findIndex(
+        (f) => !path.basename(f.name, path.extname(f.name)).endsWith(suffix)
+      ) > -1
+    ) {
+      const ix = files.findIndex(
+        (f) => !path.basename(f.name, path.extname(f.name)).endsWith(suffix)
+      );
+      const cFile = files[ix] as File;
+      files.splice(
+        ix,
+        1,
+        new File(
+          [cFile],
+          path.basename(cFile.name, path.extname(cFile.name)) +
+            suffix +
+            path.extname(cFile.name),
+          { type: cFile?.type }
+        )
+      );
+    }
+  };
+
+  const uploadMedia = async (files: File[]) => {
+    successCount.current = 0;
+    if (!files || files.length === 0) {
+      showMessage(t.selectFiles);
+      return;
+    }
+    if (!noBusy) setBusy(true);
+    if (
+      uploadType &&
+      ![
+        UploadType.Link,
+        UploadType.MarkDown,
+        UploadType.FaithbridgeLink,
+      ].includes(uploadType)
+    ) {
+      preUpload(files);
+      uploadFiles(files);
+    }
+    fileList.current = files;
+    mediaIdRef.current = new Array<string>();
+    artifactTypeRef.current = artifactState?.id || '';
+    doUpload(0);
+  };
+
+  const uploadCancel = () => {
+    onOpen(false);
+    if (cancelled) cancelled.current = true;
+    cancelReset?.();
+    restoreScroll();
+  };
+
+  useEffect(() => {
+    if (uploadError && uploadError !== '') {
+      let msg = uploadError;
+      if (uploadError.indexOf('unsupported') > 0)
+        msg = t.unsupported.replace(
+          '{0}',
+          uploadError.substring(0, uploadError.indexOf(':unsupported'))
+        );
+      else if (uploadError.indexOf('toobig') > 0) {
+        msg = t.toobig
+          .replace(
+            '{0}',
+            uploadError.substring(0, uploadError.indexOf(':toobig'))
+          )
+          .replace(
+            '{1}',
+            uploadError.substring(
+              uploadError.indexOf('toobig:') + 'toobig:'.length
+            )
+          )
+          .replace('{2}', SIZELIMIT(uploadType ?? UploadType.Media).toString());
+      }
+      errMsgs.push(msg);
+      setBusy(false);
+    }
+    /* eslint-disable-next-line react-hooks/exhaustive-deps */
+  }, [uploadError]);
+
+  useEffect(() => {
+    if (importList) {
+      uploadMedia(importList);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [importList]);
+
+  useEffect(() => {
+    if (passageId) {
+      const psg = findRecord(memory, 'passage', passageId);
+      const section = findRecord(memory, 'section', related(psg, 'section'));
+      planIdRef.current = related(section, 'plan');
+    } else if (plan !== '') planIdRef.current = plan;
+  }, [plan, passageId, memory]);
+
+  return (
+    <>
+      {recordAudio && ready && !importList && (
+        <PassageRecordDlg
+          artifactId={artifactState?.id ?? VernacularTag}
+          passageId={passageId}
+          visible={isOpen}
+          onVisible={onOpen}
+          mediaId={mediaId ?? ''}
+          afterUploadCb={afterUploadCb}
+          onCancel={uploadCancel}
+          metaData={metaData}
+          ready={ready}
+          defaultFilename={defaultFilename}
+          allowWave={allowWave}
+          speaker={performedBy}
+          onSpeaker={handleSpeakerChange}
+          team={team}
+        />
+      )}
+      {!recordAudio && !importList && (
+        <MediaUpload
+          visible={isOpen}
+          onVisible={onOpen}
+          uploadType={uploadType || UploadType.Media}
+          multiple={multiple}
+          uploadMethod={uploadMedia}
+          cancelMethod={uploadCancel}
+          metaData={metaData}
+          ready={ready}
+          speaker={performedBy}
+          onSpeaker={
+            !artifactState?.id &&
+            (uploadType || UploadType.Media) === UploadType.Media
+              ? handleSpeakerChange
+              : undefined
+          }
+          inValue={inValue}
+          team={team}
+          onNonAudio={onNonAudio}
+        />
+      )}
+    </>
+  );
+};
+
+export default Uploader;

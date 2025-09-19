@@ -1,15 +1,16 @@
 // Type definitions for the API exposed in preload.js via contextBridge.exposeInMainWorld
 // This file mirrors the functions added to `window.electron` in src/preload/preload.js
+import { User } from '@auth0/auth0-react';
 
 declare module '@electron-toolkit/preload' {
   export interface ElectronAPI {
     appData: () => Promise<string | undefined>
-    audacityOpen: () => Promise<unknown>
+    audacityOpen: () => Promise<string[]>
     availSpellLangs: () => Promise<string[]>
     customList: () => Promise<unknown>
     customRemove: (value: string) => Promise<unknown>
     getPath: (token: string) => Promise<string>
-    getProfile: () => Promise<unknown>
+    getProfile: () => Promise<User | undefined>
     getSpellLangs: () => Promise<string[]>
     getToken: () => Promise<string | null>
     home: () => Promise<string>
@@ -22,7 +23,7 @@ declare module '@electron-toolkit/preload' {
     exitApp: () => Promise<unknown>
     relaunchApp: () => Promise<unknown>
     closeApp: () => Promise<unknown>
-    importOpen: () => Promise<unknown>
+    importOpen: () => Promise<string[] | undefined>
     execPath: () => Promise<string>
     md5File: (filePath: string) => Promise<string>
     isWindows: () => Promise<boolean>
@@ -44,29 +45,29 @@ declare module '@electron-toolkit/preload' {
     openPath: (url: string) => Promise<string>
     exec: (cmd: string, args?: string[], opts?: unknown) => Promise<unknown>
     exeCmd: (cmd: string, opts?: unknown) => Promise<unknown>
-    zipOpen: (fullPath: string) => Promise<unknown>
-    zipGetEntries: (zip: unknown) => Promise<unknown>
-    zipReadText: (zip: unknown, name: string) => Promise<string>
-    zipAddFile: (zip: unknown, name: string, data: unknown, comment?: string) => Promise<unknown>
-    zipAddJson: (zip: unknown, name: string, data: unknown, comment?: string) => Promise<unknown>
-    zipAddZip: (zip: unknown, name: string, addZip: unknown, comment?: string) => Promise<unknown>
-    zipAddLocal: (zip: unknown, full: string, folder?: string, base?: string) => Promise<unknown>
-    zipToBuffer: (zip: unknown) => Promise<Uint8Array>
-    zipWrite: (zip: unknown, where: string) => Promise<unknown>
-    zipExtract: (zip: unknown, folder: string, replace?: boolean) => Promise<unknown>
-    zipClose: (zip: unknown) => Promise<unknown>
-    zipStreamExtract: (zip: unknown, folder: string) => Promise<unknown>
-    zipStreamOpen: (zip: unknown, fullPath: string) => Promise<unknown>
-    zipStreamEntries: (zip: unknown) => Promise<unknown>
-    zipStreamEntry: (zip: unknown, name: string) => Promise<unknown>
-    zipStreamEntryData: (zip: unknown, name: string) => Promise<Uint8Array>
-    zipStreamEntryText: (zip: unknown, name: string) => Promise<string>
-    zipStreamClose: (zip: unknown) => Promise<unknown>
-    writeBuffer: (filePath: string, blob: ArrayBuffer | Uint8Array) => Promise<unknown>
-    downloadFile: (url: string, localFile: string) => Promise<unknown>
-    downloadLaunch: (url: string, localFile: string) => Promise<unknown>
-    downloadStat: (token: string) => Promise<unknown>
-    downloadClose: (token: string) => Promise<unknown>
+    zipOpen: (fullPath?: string) => Promise<string>
+    zipGetEntries: (zip: string) => Promise<string>
+    zipReadText: (zip: string, name: string) => Promise<string>
+    zipAddFile: (zip: string, name: string, data: string, comment?: string) => Promise<boolean>
+    zipAddJson: (zip: string, name: string, data: string, comment?: string) => Promise<boolean>
+    zipAddZip: (zip: string, name: string, addZip: string, comment?: string) => Promise<boolean>
+    zipAddLocal: (zip: string, full: string, folder?: string, base?: string) => Promise<boolean>
+    zipToBuffer: (zip: string) => Promise<Uint8Array>
+    zipWrite: (zip: string, where: string) => Promise<boolean>
+    zipExtract: (zip: string, folder: string, replace?: boolean) => Promise<boolean>
+    zipClose: (zip: string) => Promise<void>
+    zipStreamExtract: (zip: string, folder: string) => Promise<boolean>
+    zipStreamOpen: (fullPath: string) => Promise<string>
+    zipStreamEntries: (zip: string) => Promise<string>
+    zipStreamEntry: (zip: string, name: string) => Promise<string>
+    zipStreamEntryData: (zip: string, name: string) => Promise<Uint8Array>
+    zipStreamEntryText: (zip: string, name: string) => Promise<string>
+    zipStreamClose: (zip: string) => Promise<void>
+    writeBuffer: (filePath: string, blob: ArrayBuffer | Uint8Array) => Promise<boolean>
+    downloadFile: (url: string, localFile: string) => Promise<string>
+    downloadLaunch: (url: string, localFile: string) => Promise<string>
+    downloadStat: (token: string) => Promise<string>
+    downloadClose: (token: string) => Promise<void>
     normalize: (input: string, output?: string) => Promise<unknown>
   }
 }

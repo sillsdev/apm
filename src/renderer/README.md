@@ -26,7 +26,7 @@ npm run test # run unit tests with jest
 
 ## CI
 
-```
+```bash
 build  -->  Cypress e2e test
        -->  Cypress component test
        -->  Typecheck

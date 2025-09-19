@@ -35,7 +35,7 @@
     "@fortawesome/free-solid-svg-icons": "^7.0.1",
     "@fortawesome/react-fontawesome": "^3.0.2",
     "@hello-pangea/dnd": "^18.0.1",
-    "@mui/icons-material": "^7.3.2",
+    "@mui/icons-material": "^6.5.0",
     "@mui/material": "^7.3.2",
     "@mui/x-data-grid": "^8.11.0",
     "@mui/x-tree-view": "^8.11.0",
@@ -57,6 +57,7 @@
     "browser-image-compression": "^2.0.2",
     "electron-updater": "^6.3.9",
     "fingerprintjs2": "^2.1.4",
+    "jwt-decode": "^4.0.0",
     "lodash": "^4.17.21",
     "luxon": "^3.7.1",
     "mui-language-picker": "^2.5.2",
@@ -67,12 +68,14 @@
     "react-draggable": "^4.5.0",
     "react-file-drop": "^3.1.6",
     "react-icons": "^5.5.0",
+    "react-lifecycles-compat": "^3.0.4",
     "react-localization": "^1.0.19",
     "react-markdown": "^10.1.0",
     "react-redux": "^9.2.0",
     "react-router-dom": "^7.8.2",
     "react-select": "^5.10.2",
     "react-string-replace": "^1.1.1",
+    "react-style-proptype": "^3.2.2",
     "redux": "^5.0.1",
     "redux-thunk": "^3.1.0",
     "remark-gfm": "^4.0.1",
@@ -80,6 +83,45 @@
     "url-parse": "^1.5.10",
     "wavesurfer.js": "^5.2.0",
     "xpath": "^0.0.34"
+  },
+  "prettier": {
+    "trailingComma": "es5",
+    "singleQuote": true,
+    "overrides": [
+      {
+        "files": [
+          ".prettierrc",
+          ".eslintrc"
+        ],
+        "options": {
+          "parser": "json"
+        }
+      }
+    ]
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ],
+    "exclude": [
+      "node_modules",
+      "dist",
+      "build",
+      "out"
+    ]
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
   },
   "devDependencies": {
     "@bahmutov/cy-api": "^2.2.6",
@@ -95,6 +137,7 @@
     "@testing-library/user-event": "14.6.1",
     "@types/fingerprintjs2": "^2.0.0",
     "@types/jest": "29.5.14",
+    "@types/jwt-decode": "^2.2.1",
     "@types/lodash": "^4.17.7",
     "@types/luxon": "^3.7.1",
     "@types/node": "22.15.31",
@@ -132,6 +175,75 @@
     "ts-node": "10.9.2",
     "typescript": "5.8.3",
     "vite": "^6.0.0"
+  },
+  "author": {
+    "name": "SIL Global",
+    "email": "info@sil.org",
+    "url": "http://sil.org"
+  },
+  "build": {
+    "appId": "sil.lsdev.audio-project-manager",
+    "productName": "Audio Project Manager",
+    "copyright": "Copyright © 2020-2025 ${author}",
+    "win": {
+      "icon": "public/icon.png"
+    },
+    "linux": {
+      "icon": "debian/audio-project-manager.png",
+      "desktop": "debian/audio-project-manager.desktop",
+      "target": [
+        "deb"
+      ]
+    },
+    "mac": {
+      "category": "public.app-category.utilities",
+      "icon": "public/icon.png",
+      "hardenedRuntime": true,
+      "entitlements": "env-config/entitlements.mac.plist",
+      "entitlementsInherit": "env-config/entitlements.mac.plist",
+      "gatekeeperAssess": false,
+      "extendInfo": {
+        "NSMicrophoneUsageDescription": "Please give us access to your microphone"
+      }
+    },
+    "dmg": {
+      "sign": false
+    },
+    "afterSign": "env-config/notarize.js",
+    "directories": {
+      "buildResources": "assets"
+    },
+    "extraFiles": [
+      {
+        "from": "public",
+        "to": ".",
+        "filter": "normalizer.js"
+      },
+      {
+        "from": "public/localization",
+        "to": "localization",
+        "filter": "*.json"
+      },
+      {
+        "from": "help",
+        "to": "help",
+        "filter": "*.chm"
+      },
+      {
+        "from": "help",
+        "to": "help",
+        "filter": "*.xlsx"
+      },
+      {
+        "from": "src/script",
+        "to": "resources",
+        "filter": [
+          "resetData.*",
+          "*.py",
+          "*.aup3"
+        ]
+      }
+    ]
   },
   "husky": {
     "hooks": {

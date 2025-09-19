@@ -1,4 +1,4 @@
-import type {JestConfigWithTsJest} from 'ts-jest'
+import type { JestConfigWithTsJest } from 'ts-jest';
 
 export const config: JestConfigWithTsJest = {
   clearMocks: true,
@@ -18,7 +18,7 @@ export const config: JestConfigWithTsJest = {
     'clover',
     'json',
     'lcov',
-    ['text', {skipFull: true}],
+    ['text', { skipFull: true }],
     'json-summary',
   ],
   coverageThreshold: {
@@ -32,7 +32,7 @@ export const config: JestConfigWithTsJest = {
   moduleDirectories: ['node_modules', 'src'],
   modulePathIgnorePatterns: ['dist'],
   transform: {
-    '^.+\\.(ts|tsx)$': ['ts-jest', {tsconfig: 'tsconfig.jest.json'}],
+    '^.+\\.(ts|tsx)$': ['ts-jest', { tsconfig: 'tsconfig.jest.json' }],
   },
   testMatch: ['**/*.test.ts*'],
   testEnvironment: 'jsdom',
@@ -42,6 +42,6 @@ export const config: JestConfigWithTsJest = {
     '\\.(css|less|scss|sass)$': 'identity-obj-proxy', // Mock CSS files
     '\\.(jpg|jpeg|png|gif|webp|svg)$': '<rootDir>/__mocks__/fileMock.ts', // Mock image files
   },
-}
+};
 
-export default config
+export default config;

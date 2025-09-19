@@ -1,11 +1,11 @@
-import Bugsnag from '@bugsnag/js'
-import BugsnagReact from '@bugsnag/plugin-react'
-import {API_CONFIG} from '../api-variable'
-import packageJson from '../../package.json'
+import Bugsnag from '@bugsnag/js';
+import BugsnagReact from '@bugsnag/plugin-react';
+import { API_CONFIG } from '../../api-variable';
+import packageJson from '../../package.json';
 
-const prodOrQa = API_CONFIG.snagId !== ''
+const prodOrQa = API_CONFIG.snagId !== '';
 
-const prod = API_CONFIG.host.indexOf('api.') !== -1
+const prod = API_CONFIG.host.indexOf('api.') !== -1;
 
 export const bugsnagClient = prodOrQa
   ? Bugsnag.start({
@@ -20,6 +20,6 @@ export const bugsnagClient = prodOrQa
         sessions: API_CONFIG.sessions,
       },
     })
-  : undefined
+  : undefined;
 
-export default bugsnagClient
+export default bugsnagClient;

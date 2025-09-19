@@ -1,0 +1,185 @@
+import React, { useState, useEffect } from 'react';
+import { useGlobal } from '../context/useGlobal';
+import {
+  MediaFile,
+  ITranscriptionShowStrings,
+  ProjectD,
+  OrgWorkflowStep,
+  ISharedStrings,
+} from '../model';
+import {
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+  IconButton,
+} from '@mui/material';
+import { StyledTextField } from '../control/WebFontStyles';
+import { FaCopy } from 'react-icons/fa';
+import type { IconBaseProps } from 'react-icons';
+import { useSnackBar } from '../hoc/SnackBar';
+import { getMediaProjRec } from '../crud/media';
+import { FontData, getFontData, getArtTypeFontData } from '../crud/fontChoice';
+import { useTranscription } from '../crud/useTranscription';
+import { related } from '../crud/related';
+import { findRecord } from '../crud/tryFindRecord';
+import { ArtifactTypeSlug } from '../crud/artifactTypeSlug';
+import { useSelector, shallowEqual } from 'react-redux';
+import { sharedSelector, transcriptionShowSelector } from '../selector';
+import { useOrbitData } from '../hoc/useOrbitData';
+import { fontSpace } from './fontSpace';
+
+const Copy = FaCopy as unknown as React.FC<IconBaseProps>;
+
+interface IProps {
+  id: string;
+  isMediaId?: boolean;
+  visible: boolean;
+  closeMethod?: () => void;
+  exportId?: string | null;
+  version?: number;
+}
+
+function TranscriptionShow(props: IProps) {
+  const { id, isMediaId, visible, closeMethod, exportId, version } = props;
+  const workflowSteps = useOrbitData<OrgWorkflowStep[]>('orgworkflowstep');
+  const [memory] = useGlobal('memory');
+  const [org] = useGlobal('organization');
+  const [projectId] = useGlobal('project'); //will be constant here
+  const [open, setOpen] = useState(visible);
+  const { showMessage } = useSnackBar();
+  const [transcription, setTranscription] = useState('');
+  const [lang, setLang] = useState('');
+  const [family, setFamily] = useState('');
+  const [url, setUrl] = useState('');
+  const [size, setSize] = useState('');
+  const [dir, setDir] = useState<'ltr' | 'rtl'>('ltr');
+  const [lineHeight, setLineHeight] = useState('1.5');
+  const getTranscription = useTranscription(true, undefined, version);
+  const t: ITranscriptionShowStrings = useSelector(
+    transcriptionShowSelector,
+    shallowEqual
+  );
+  const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
+
+  const handleClose = () => {
+    if (closeMethod) {
+      closeMethod();
+    }
+    setOpen(false);
+  };
+
+  const handleCopy = (text: string) => () => {
+    navigator.clipboard.writeText(text).catch(() => {
+      showMessage(ts.cantCopy);
+    });
+  };
+
+  useEffect(() => {
+    setOpen(visible);
+  }, [visible]);
+
+  const setFontValues = (data: FontData) => {
+    setLang(data.langTag);
+    setFamily(data?.fontConfig?.custom?.families[0] || '');
+    setUrl(data?.fontConfig?.custom?.urls[0] || '');
+    setSize(data.fontSize);
+    const space = new Map<string, number>(fontSpace as [string, number][]);
+    const dataSize = data.fontSize || 'medium';
+    const sizeValue = space.get(dataSize) as number;
+    setLineHeight(sizeValue ? `${sizeValue * 1.6}px` : '1.5px');
+    setDir(data.fontDir as 'ltr' | 'rtl');
+  };
+
+  useEffect(() => {
+    if (id) {
+      const mediaRec = isMediaId
+        ? (memory?.cache.query((q) =>
+            q.findRecord({ type: 'mediafile', id })
+          ) as unknown as MediaFile)
+        : null;
+      setTranscription(
+        getTranscription(related(mediaRec, 'passage') || id, exportId)
+      );
+      if (!exportId || exportId === ArtifactTypeSlug.Vernacular) {
+        const projRec =
+          getMediaProjRec(mediaRec, memory) ||
+          (findRecord(memory, 'project', projectId) as ProjectD);
+        if (projRec)
+          getFontData(projRec, exportId).then((data) => {
+            setFontValues(data);
+          });
+      } else {
+        const orgSteps = workflowSteps
+          .filter((s) => related(s, 'organization') === org)
+          .sort(
+            (a, b) => a.attributes?.sequencenum - b.attributes?.sequencenum
+          );
+        const data = getArtTypeFontData(memory, exportId, orgSteps);
+        setFontValues(data);
+      }
+    }
+    /* eslint-disable-next-line react-hooks/exhaustive-deps */
+  }, [id, isMediaId, exportId]);
+
+  return (
+    <div>
+      <Dialog
+        open={open}
+        onClose={handleClose}
+        aria-labelledby="transShowDlg"
+        disableEnforceFocus
+      >
+        <DialogTitle id="transShowDlg">{t.transcription}</DialogTitle>
+        <DialogContent>
+          <DialogContentText>{t.transcriptionDisplay}</DialogContentText>
+          <StyledTextField
+            autoFocus
+            margin="dense"
+            variant="filled"
+            multiline
+            id="transcription"
+            label={t.transcription}
+            value={transcription}
+            family={family}
+            url={url}
+            inputProps={{
+              style: {
+                fontFamily: family || 'charissil',
+                direction: dir || 'ltr',
+                fontSize: size || 'large',
+                lineHeight: lineHeight || '1.5',
+              },
+              readOnly: true,
+            }}
+            fullWidth
+            lang={lang || 'en'}
+            spellCheck={false}
+          />
+        </DialogContent>
+        <DialogActions
+          sx={{ display: 'flex', justifyContent: 'space-between' }}
+        >
+          {transcription === '' && <>{'\u00A0'}</>}
+          {transcription !== '' && (
+            <IconButton id="transCopy" onClick={handleCopy(transcription)}>
+              <Copy />
+            </IconButton>
+          )}
+          <Button
+            id="transClose"
+            onClick={handleClose}
+            variant="contained"
+            color="primary"
+          >
+            {t.close}
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </div>
+  );
+}
+
+export default TranscriptionShow;

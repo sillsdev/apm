@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import {MountOptions, MountReturn} from 'cypress/react'
+import { MountOptions, MountReturn } from 'cypress/react';
 
-export {}
+export {};
 declare global {
   namespace Cypress {
     interface Chainable {
@@ -10,7 +10,7 @@ declare global {
        * cy.getByCy('search-toggle') // where the selector is [data-cy="search-toggle"]
        * ```
        */
-      getByCy(qaSelector: string, args?: any): Chainable<JQuery<HTMLElement>>
+      getByCy(qaSelector: string, args?: any): Chainable<JQuery<HTMLElement>>;
 
       /** Yields elements with data-cy attribute that partially matches a specified selector.
        * ```
@@ -19,8 +19,8 @@ declare global {
        */
       getByCyLike(
         qaSelector: string,
-        args?: any,
-      ): Chainable<JQuery<HTMLElement>>
+        args?: any
+      ): Chainable<JQuery<HTMLElement>>;
 
       /** Mounts a React node
        * @param component React Node to mount
@@ -28,8 +28,8 @@ declare global {
        */
       mount(
         component: React.ReactNode,
-        options?: MountOptions,
-      ): Cypress.Chainable<MountReturn>
+        options?: MountOptions
+      ): Cypress.Chainable<MountReturn>;
     }
   }
 }

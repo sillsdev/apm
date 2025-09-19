@@ -2,9 +2,9 @@
 // cy.task('log', 'e2e sanity passed')
 
 const log = (x: string) => {
-  console.log(x)
+  console.log(x);
 
-  return null
-}
+  return null;
+};
 
-export default log
+export default log;

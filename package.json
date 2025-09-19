@@ -3,8 +3,6 @@
   "version": "1.0.0",
   "description": "An Electron application with React and TypeScript",
   "main": "./out/main/index.js",
-  "author": "example.com",
-  "homepage": "https://electron-vite.org",
   "scripts": {
     "format": "prettier --write .",
     "lint": "eslint --cache .",
@@ -24,11 +22,6 @@
     "@auth0/auth0-react": "^2.4.0",
     "@bugsnag/js": "^8.4.0",
     "@bugsnag/plugin-react": "^8.4.0",
-    "@devexpress/dx-react-chart": "^4.0.11",
-    "@devexpress/dx-react-chart-material-ui": "^4.0.11",
-    "@devexpress/dx-react-core": "^4.0.11",
-    "@devexpress/dx-react-grid": "^4.0.11",
-    "@devexpress/dx-react-grid-material-ui": "^4.0.11",
     "@electron-toolkit/preload": "^3.0.1",
     "@electron-toolkit/utils": "^4.0.0",
     "@emotion/react": "^11.14.0",
@@ -39,7 +32,7 @@
     "@fortawesome/free-solid-svg-icons": "^7.0.1",
     "@fortawesome/react-fontawesome": "^3.0.2",
     "@hello-pangea/dnd": "^18.0.1",
-    "@mui/icons-material": "^7.3.2",
+    "@mui/icons-material": "^6.5.0",
     "@mui/material": "^7.3.2",
     "@mui/x-data-grid": "^8.11.0",
     "@mui/x-tree-view": "^8.11.0",
@@ -80,6 +73,45 @@
     "wavesurfer.js": "^5.2.0",
     "xpath": "^0.0.34"
   },
+    "prettier": {
+    "trailingComma": "es5",
+    "singleQuote": true,
+    "overrides": [
+      {
+        "files": [
+          ".prettierrc",
+          ".eslintrc"
+        ],
+        "options": {
+          "parser": "json"
+        }
+      }
+    ]
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ],
+    "exclude": [
+      "node_modules",
+      "dist",
+      "build",
+      "out"
+    ]
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
   "peerDependencies": {
     "react": "^17.0.0 || ^18.0.0 || ^19.0.0",
     "react-dom": "^17.0.0 || ^18.0.0 || ^19.0.0"
@@ -109,6 +141,75 @@
     "react-dom": "^19.1.0",
     "typescript": "^5.8.3",
     "vite": "^6.2.6"
+  },
+  "author": {
+    "name": "SIL Global",
+    "email": "info@sil.org",
+    "url": "http://sil.org"
+  },
+  "build": {
+    "appId": "sil.lsdev.audio-project-manager",
+    "productName": "Audio Project Manager",
+    "copyright": "Copyright © 2020-2025 ${author}",
+    "win": {
+      "icon": "public/icon.png"
+    },
+    "linux": {
+      "icon": "debian/audio-project-manager.png",
+      "desktop": "debian/audio-project-manager.desktop",
+      "target": [
+        "deb"
+      ]
+    },
+    "mac": {
+      "category": "public.app-category.utilities",
+      "icon": "public/icon.png",
+      "hardenedRuntime": true,
+      "entitlements": "env-config/entitlements.mac.plist",
+      "entitlementsInherit": "env-config/entitlements.mac.plist",
+      "gatekeeperAssess": false,
+      "extendInfo": {
+        "NSMicrophoneUsageDescription": "Please give us access to your microphone"
+      }
+    },
+    "dmg": {
+      "sign": false
+    },
+    "afterSign": "env-config/notarize.js",
+    "directories": {
+      "buildResources": "assets"
+    },
+    "extraFiles": [
+      {
+        "from": "public",
+        "to": ".",
+        "filter": "normalizer.js"
+      },
+      {
+        "from": "public/localization",
+        "to": "localization",
+        "filter": "*.json"
+      },
+      {
+        "from": "help",
+        "to": "help",
+        "filter": "*.chm"
+      },
+      {
+        "from": "help",
+        "to": "help",
+        "filter": "*.xlsx"
+      },
+      {
+        "from": "src/script",
+        "to": "resources",
+        "filter": [
+          "resetData.*",
+          "*.py",
+          "*.aup3"
+        ]
+      }
+    ]
   },
   "volta": {
     "node": "22.19.0"

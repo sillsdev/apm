@@ -1,0 +1,16 @@
+export enum ToolSlug {
+  Resource = 'resource',
+  Record = 'record',
+  KeyTerm = 'keyterm',
+  TeamCheck = 'teamCheck',
+  Discuss = 'discuss',
+  Verses = 'verses',
+  Transcribe = 'transcribe',
+  PhraseBackTranslate = 'phraseBackTranslate',
+  WholeBackTranslate = 'wholeBackTranslate',
+  ConsultantCheck = 'consultantCheck',
+  Paratext = 'paratext',
+  Community = 'community',
+  Export = 'export',
+  Done = 'done',
+}

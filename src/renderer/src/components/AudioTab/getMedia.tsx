@@ -1,0 +1,66 @@
+import { MediaFile, Passage, Section, BookName } from '../../model';
+import { mediaFileName, PublishLevelEnum, related } from '../../crud';
+import { IRow } from '.';
+import { GetReference } from './GetReference';
+import { getSection } from './getSection';
+import { formatTime } from '../../control/formatTime';
+import { passageTypeFromRef } from '../../control/passageTypeFromRef';
+
+export interface IGetMedia {
+  planName: string;
+  passages: Passage[];
+  sections: Section[];
+  playItem: string;
+  allBookData: BookName[];
+  sectionMap: Map<number, string>;
+  isPassageDate: boolean;
+}
+
+export const mediaRow = (f: MediaFile, data: IGetMedia) => {
+  const { planName, passages, sections, playItem, allBookData, sectionMap } =
+    data;
+
+  const showId = related(f, 'passage');
+  const passage = showId ? passages.filter((p) => p.id === showId) : [];
+  const sectionId = related(passage[0], 'section');
+  const section = sections.filter((s) => s.id === sectionId);
+  const passdt = passage[0]?.attributes?.dateUpdated || '';
+  const meddt = f?.attributes?.dateUpdated || '';
+  const lastdt = meddt > passdt ? meddt : passdt;
+  const updateddt = showId && data.isPassageDate ? lastdt : meddt;
+
+  return {
+    planid: related(f, 'plan'),
+    passId: showId,
+    planName,
+    id: f.id,
+    playIcon: playItem,
+    fileName: mediaFileName(f),
+    sectionId: sectionId,
+    sectionDesc: getSection(section, sectionMap),
+    reference: (
+      <GetReference passage={passage} bookData={allBookData} flat={false} />
+    ),
+    duration: formatTime(f?.attributes?.duration ?? 0),
+    size:
+      Math.round(((f?.attributes?.filesize ?? 0) / 1024 / 1024) * 10) / 10.0,
+    version: f?.attributes?.versionNumber?.toString() ?? '',
+    date: updateddt,
+    readyToShare: f?.attributes?.readyToShare ?? false,
+    publishTo: f?.attributes?.publishTo ?? PublishLevelEnum.None,
+    passageType: passageTypeFromRef(passage[0]?.attributes?.reference ?? ''),
+    user: related(f, 'recordedbyUser'),
+  } as IRow;
+};
+
+export const getMedia = (media: MediaFile[], data: IGetMedia) => {
+  const rowData = new Array<IRow>();
+
+  let index = 0;
+  media.forEach((f) => {
+    rowData.push({ ...mediaRow(f, data), index });
+    index += 1;
+  });
+
+  return rowData;
+};

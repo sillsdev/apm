@@ -1,0 +1,280 @@
+import { IState } from '../model';
+import localStrings from './localize';
+
+export const accessSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'access' });
+
+export const activitySelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'activityState' });
+
+export const alertSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'alert' });
+
+export const artifactCategorySelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'artifactCategory' });
+
+export const artifactTypeSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'artifactType' });
+
+export const assignmentSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'assignmentTable' });
+
+export const assignSectionSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'assignSection' });
+
+export const audacityManagerSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'audacityManager' });
+
+export const audioDownloadSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'audioDownload' });
+
+export const audioPlayerSegmentSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'wsAudioPlayerSegment' });
+
+export const audioPlayerZoomSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'wsAudioPlayerZoom' });
+
+export const cardsSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'cards' });
+
+export const categorySelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'category' });
+
+export const commentCardSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'commentCard' });
+
+export const commentEditorSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'commentEditor' });
+
+export const communitySelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'community' });
+
+export const consultantSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'consultantCheck' });
+
+export const controlSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'control' });
+
+export const deleteExpandSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'deleteExpansion' });
+
+export const discussSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'discuss' });
+
+export const discussionCardSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'discussionCard' });
+
+export const discussionListSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'discussionList' });
+
+export const discussionMenuSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'discussionMenu' });
+
+export const emailUnverifiedSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'emailUnverified' });
+
+export const faithbridgeSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'faithbridge' });
+
+export const filterMenuSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'filterMenu' });
+
+export const findResourceSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'findResource' });
+
+export const gridSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'grid' });
+
+export const groupTabsSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'groupTabs' });
+
+export const hotKeySelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'hotKey' });
+
+export const importSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'import' });
+
+export const integrationSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'integration' });
+
+export const inviteSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'invite' });
+
+export const invitationTableSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'invitationTable' });
+
+export const keyTermsSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'keyTerms' });
+
+export const mediaActionsSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'mediaActions' });
+export const mediaTitleSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'mediaTitle' });
+
+export const mediaUploadSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'mediaUpload' });
+
+export const mediaTabSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'mediaTab' });
+
+export const mainSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'main' });
+
+export const newProjectSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'newProject' });
+
+export const passageChooserSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'passageChooser' });
+
+export const passageDetailArtifactsSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'passageDetailArtifacts' });
+
+export const passageDetailStepCompleteSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'passageDetailStepComplete' });
+
+export const passageRecordSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'passageRecord' });
+
+export const peerSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'peer' });
+
+export const peerCheckSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'peerCheck' });
+
+export const permissionsSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'permission' });
+
+export const pickerSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'languagePicker' });
+
+export const passageTypeSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'passageType' });
+
+export const planTabsSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'planTabs' });
+
+export const planSheetSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'planSheet' });
+
+export const planActionsSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'planActions' });
+
+export const playerSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'wsAudioPlayer' });
+
+export const profileSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'profile' });
+
+export const projectDownloadSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'projectDownload' });
+
+export const publishLevelSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'publishLevel' });
+
+export const publishToSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'publishTo' });
+
+export const resourceSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'passageDetailArtifacts' });
+
+export const scriptureTableSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'scriptureTable' });
+
+export const selectRecordingSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'selectRecording' });
+
+export const sharedResourceSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'resource' });
+
+export const projButtonsSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'projButtons' });
+
+export const scriptureTableFilterMenuSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'scriptureTableFilter' });
+
+export const selectArtifactCategory = (state: IState) =>
+  localStrings(state as IState, { layout: 'selectArtifactCategory' });
+
+export const sharedSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'shared' });
+
+export const sharedResSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'sharedResource' });
+
+export const sortMenuSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'sortMenu' });
+
+export const spellingSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'spelling' });
+
+export const stepEditorSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'stepEditor' });
+
+export const taskItemSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'taskItem' });
+
+export const templateSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'template' });
+
+export const teamCheckRefSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'teamCheckReference' });
+
+export const toDoTableSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'toDoTable' });
+
+export const toolSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'tool' });
+
+export const transcribeAddNoteSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'transcribeAddNote' });
+
+export const transcriberSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'transcriber' });
+
+export const transcribeRejectSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'transcribeReject' });
+
+export const transcriptionShowSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'transcriptionShow' });
+
+export const transcriptionTabSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'transcriptionTab' });
+
+export const userTableSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'usertable' });
+
+export const treeChartSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'treeChart' });
+
+export const viewModeSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'viewMode' });
+
+export const uploadProgressSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'uploadProgress' });
+
+export const userListModeSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'userListMode' });
+
+export const usertableSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'usertable' });
+
+export const verseSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'verse' });
+
+export const voiceSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'voice' });
+
+export const vProjectSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'vProject' });
+
+export const welcomeSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'welcome' });
+
+export const workflowStepsSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'workflowSteps' });
+
+export const wsAudioPlayerSegmentSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'wsAudioPlayerSegment' });
+
+export const wsAudioPlayerSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'wsAudioPlayer' });

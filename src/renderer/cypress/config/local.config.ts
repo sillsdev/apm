@@ -1,12 +1,13 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
-import {defineConfig} from 'cypress'
-import {baseConfig} from './base.config'
-import path from 'node:path'
-import merge from 'lodash/merge'
+import { defineConfig } from 'cypress';
+import { baseConfig } from './base.config';
+import path from 'node:path';
+import merge from 'lodash/merge';
+import dotenv from 'dotenv';
 
-require('dotenv').config({
+dotenv.config({
   path: path.resolve(__dirname, '../../.env'),
-})
+});
 
 const config = {
   e2e: {
@@ -23,6 +24,6 @@ const config = {
       bundler: 'vite',
     },
   },
-}
+};
 
-export default defineConfig(merge({}, baseConfig, config))
+export default defineConfig(merge({}, baseConfig, config));

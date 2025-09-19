@@ -6,23 +6,27 @@ import {
   VProject,
   ExportType,
   UserD,
-} from './model'
+} from './model';
 import Coordinator, {
   RequestStrategy,
   SyncStrategy,
   LogLevel,
   EventLoggingStrategy,
-} from '@orbit/coordinator'
-import Bugsnag from '@bugsnag/js'
-import IndexedDBSource from '@orbit/indexeddb'
-import IndexedDBBucket from '@orbit/indexeddb-bucket'
-import JSONAPISource from '@orbit/jsonapi'
-import {RecordOperation, RecordTransform} from '@orbit/records'
-import {NetworkError} from '@orbit/jsonapi'
-import {Bucket, Exception} from '@orbit/core'
-import Memory from '@orbit/memory'
-import {ITokenContext} from './context/TokenProvider'
-import {API_CONFIG, isElectron, OrbitNetworkErrorRetries} from './api-variable'
+} from '@orbit/coordinator';
+import Bugsnag from '@bugsnag/js';
+import IndexedDBSource from '@orbit/indexeddb';
+import IndexedDBBucket from '@orbit/indexeddb-bucket';
+import JSONAPISource from '@orbit/jsonapi';
+import { RecordOperation, RecordTransform } from '@orbit/records';
+import { NetworkError } from '@orbit/jsonapi';
+import { Bucket, Exception } from '@orbit/core';
+import Memory from '@orbit/memory';
+import { ITokenContext } from './context/TokenProvider';
+import {
+  API_CONFIG,
+  isElectron,
+  OrbitNetworkErrorRetries,
+} from '../api-variable';
 import {
   logError,
   infoMsg,
@@ -30,50 +34,50 @@ import {
   LocalKey,
   orbitErr,
   orbitRetry,
-} from './utils'
-import {electronExport} from './store/importexport/electronExport'
-import {restoreBackup} from './crud/restoreBackup'
-import {AlertSeverity} from './hoc/SnackBar'
-import {updateBackTranslationType} from './crud/updateBackTranslationType'
-import {updateConsultantWorkflowStep} from './crud/updateConsultantWorkflowStep'
-import {serializersSettings} from './serializers/serializersFor'
-import {requestedSchema} from './schema'
-type StategyError = (...args: unknown[]) => unknown
+} from './utils';
+import { electronExport } from './store/importexport/electronExport';
+import { restoreBackup } from './crud/restoreBackup';
+import { AlertSeverity } from './hoc/SnackBar';
+import { updateBackTranslationType } from './crud/updateBackTranslationType';
+import { updateConsultantWorkflowStep } from './crud/updateConsultantWorkflowStep';
+import { serializersSettings } from './serializers/serializersFor';
+import { requestedSchema } from './schema';
+type StategyError = (...args: unknown[]) => unknown;
 
 interface PullStratErrProps {
-  tokenCtx: ITokenContext
-  orbitError: (ex: IApiError) => void
-  setOrbitRetries: (r: number) => void
-  showMessage: (msg: string | JSX.Element, alert?: AlertSeverity) => void
-  memory: Memory
-  remote: JSONAPISource
-  orbitRetries: number
-  errorReporter: typeof Bugsnag | undefined
+  tokenCtx: ITokenContext;
+  orbitError: (ex: IApiError) => void;
+  setOrbitRetries: (r: number) => void;
+  showMessage: (msg: string | JSX.Element, alert?: AlertSeverity) => void;
+  memory: Memory;
+  remote: JSONAPISource;
+  orbitRetries: number;
+  errorReporter: typeof Bugsnag | undefined;
 }
 interface QueryStratErrProps {
-  tokenCtx: ITokenContext
-  orbitError: (ex: IApiError) => void
-  remote: JSONAPISource
-  setOrbitRetries: (r: number) => void
+  tokenCtx: ITokenContext;
+  orbitError: (ex: IApiError) => void;
+  remote: JSONAPISource;
+  setOrbitRetries: (r: number) => void;
 }
 const networkError = (ex: unknown): boolean =>
   ex instanceof NetworkError ||
   (ex instanceof Error &&
-    (ex.message === 'Failed to fetch' || ex.message === 'Network Error'))
+    (ex.message === 'Failed to fetch' || ex.message === 'Network Error'));
 
 const queryError =
-  ({tokenCtx, orbitError, remote, setOrbitRetries}: QueryStratErrProps) =>
+  ({ tokenCtx, orbitError, remote, setOrbitRetries }: QueryStratErrProps) =>
   (transform: RecordTransform, ex: unknown) => {
-    console.log('***** api query fail', transform, ex)
+    console.log('***** api query fail', transform, ex);
     if (ex instanceof Exception && (ex as IApiError).response?.status === 401) {
-      tokenCtx?.state.logout()
+      tokenCtx?.state.logout();
     } else if (networkError(ex)) {
-      orbitError(ex as IApiError)
+      orbitError(ex as IApiError);
       //signal to datachanges that we've had a network error
-      setOrbitRetries(OrbitNetworkErrorRetries - 1)
+      setOrbitRetries(OrbitNetworkErrorRetries - 1);
     }
-    return remote.requestQueue.retry
-  }
+    return remote.requestQueue.retry;
+  };
 
 const updateError =
   ({
@@ -86,17 +90,17 @@ const updateError =
     orbitRetries,
   }: PullStratErrProps) =>
   (transform: RecordTransform, ex: unknown) => {
-    console.log('***** api update fail', transform, ex)
+    console.log('***** api update fail', transform, ex);
     if (ex instanceof Exception && (ex as IApiError).response?.status === 401) {
-      tokenCtx?.state.logout()
+      tokenCtx?.state.logout();
     } else if (networkError(ex)) {
       if (orbitRetries > 0) {
-        setOrbitRetries(orbitRetries - 1)
+        setOrbitRetries(orbitRetries - 1);
         // When network errors are encountered, try again in 3s
-        orbitError(orbitRetry(null, 'NetworkError - will try again soon'))
+        orbitError(orbitRetry(null, 'NetworkError - will try again soon'));
         setTimeout(() => {
-          remote.requestQueue.retry()
-        }, 3000)
+          remote.requestQueue.retry();
+        }, 3000);
       } else {
         //ran out of retries -- bucket will retry later
       }
@@ -104,33 +108,33 @@ const updateError =
       // When non-network errors occur, notify the user and
       // reset state.
       const data = (
-        ex as {data: {errors: Array<{meta: {stackTrace: string[]}}>}}
-      ).data
+        ex as { data: { errors: Array<{ meta: { stackTrace: string[] } }> } }
+      ).data;
       const detail =
         data?.errors && Array.isArray(data.errors) && data.errors.length > 0
           ? data.errors[0]?.meta && data.errors[0]?.meta?.stackTrace?.[0]
-          : undefined
+          : undefined;
 
       if (detail?.includes('Entity has been deleted')) {
-        console.log('***attempt to update deleted record')
-        showMessage(detail)
+        console.log('***attempt to update deleted record');
+        showMessage(detail);
       } else {
-        const response = (ex as {response: {url: string}}).response
-        const url: string = response?.url ?? ''
-        const myOp = transform.operations
+        const response = (ex as { response: { url: string } }).response;
+        const url: string = response?.url ?? '';
+        const myOp = transform.operations;
         const firstOp = Array.isArray(myOp)
           ? (myOp[0] as RecordOperation)
-          : myOp
+          : myOp;
         const label =
           (transform?.options?.label ||
             firstOp.op + (url ? ` in ` + url.split('/').pop() + `: ` : '')) +
-          (detail ?? '')
+          (detail ?? '');
         orbitError(
           orbitErr(
             ex as IApiError | Error | null,
-            `Unable to complete "${label}"`,
-          ),
-        )
+            `Unable to complete "${label}"`
+          )
+        );
       }
 
       // Roll back memory to position before transform
@@ -139,17 +143,17 @@ const updateError =
         //orbitError(
         //  orbitInfo(null, 'Rolling back - transform:' + transform.id)
         //);
-        memory.rollback(transform.id, -1)
+        memory.rollback(transform.id, -1);
       }
 
-      return remote.requestQueue.skip()
+      return remote.requestQueue.skip();
     }
-  }
+  };
 
 interface SourcesReturn {
-  syncBuffer: Buffer | undefined
-  syncFile: string
-  goRemote: boolean
+  syncBuffer: Buffer | undefined;
+  syncFile: string;
+  goRemote: boolean;
 }
 
 export const Sources = async (
@@ -166,20 +170,20 @@ export const Sources = async (
   getOfflineProject: (plan: Plan | VProject | string) => OfflineProject,
   offlineSetup: () => Promise<void>,
   showMessage: (msg: string | JSX.Element, alert?: AlertSeverity) => void,
-  forceDataChanges: () => Promise<void>,
+  forceDataChanges: () => Promise<void>
 ): Promise<SourcesReturn> => {
-  const memory = coordinator?.getSource('memory') as Memory
-  const backup = coordinator?.getSource('backup') as IndexedDBSource
-  const tokData = tokenCtx.state.profile || {sub: ''}
-  const userToken = localStorage.getItem(LocalKey.authId)
+  const memory = coordinator?.getSource('memory') as Memory;
+  const backup = coordinator?.getSource('backup') as IndexedDBSource;
+  const tokData = tokenCtx.state.profile || { sub: '' };
+  const userToken = localStorage.getItem(LocalKey.authId);
   if (tokData.sub !== '') {
-    localStorage.setItem(LocalKey.authId, tokData.sub || '')
+    localStorage.setItem(LocalKey.authId, tokData.sub || '');
   }
 
   const bucket = new IndexedDBBucket({
     namespace:
       'transcriber-' + (tokData.sub || '').replace(/\|/g, '-') + '-bucket',
-  }) as Bucket
+  }) as Bucket;
 
   //set up strategies
   // Update indexedDb when memory updated
@@ -190,15 +194,15 @@ export const Sources = async (
         source: 'memory',
         target: 'backup',
         blocking: true,
-      }),
-    )
+      })
+    );
   if (!coordinator.strategyNames.includes('logging'))
-    coordinator.addStrategy(new EventLoggingStrategy({name: 'logging'}))
+    coordinator.addStrategy(new EventLoggingStrategy({ name: 'logging' }));
 
-  let remote: JSONAPISource = {} as JSONAPISource
-  let datachangeremote: JSONAPISource = {} as JSONAPISource
+  let remote: JSONAPISource = {} as JSONAPISource;
+  let datachangeremote: JSONAPISource = {} as JSONAPISource;
 
-  const offline = !tokenCtx.state.accessToken
+  const offline = !tokenCtx.state.accessToken;
 
   if (!offline) {
     remote = coordinator.sourceNames.includes('remote')
@@ -221,9 +225,9 @@ export const Sources = async (
           defaultTransformOptions: {
             useRemoteId: true,
           },
-        })
+        });
     if (!coordinator.sourceNames.includes('remote')) {
-      coordinator.addSource(remote)
+      coordinator.addSource(remote);
     }
 
     // Trap error querying data (token expired or offline)
@@ -241,8 +245,8 @@ export const Sources = async (
             setOrbitRetries,
           }) as unknown as StategyError,
           blocking: true,
-        }),
-      )
+        })
+      );
     if (!coordinator.strategyNames.includes('remote-update-fail'))
       coordinator.addStrategy(
         new RequestStrategy({
@@ -261,8 +265,8 @@ export const Sources = async (
             errorReporter,
           }) as unknown as StategyError,
           blocking: true,
-        }),
-      )
+        })
+      );
     // Query the remote server whenever the memory is queried
     if (!coordinator.strategyNames.includes('remote-request'))
       coordinator.addStrategy(
@@ -276,8 +280,8 @@ export const Sources = async (
           action: 'query',
 
           blocking: false,
-        }),
-      )
+        })
+      );
 
     // Trap error updating data (token expired or offline)
     // See: https://github.com/orbitjs/todomvc-ember-orbit
@@ -295,8 +299,8 @@ export const Sources = async (
           action: 'update',
 
           blocking: false,
-        }),
-      )
+        })
+      );
 
     // Sync all changes received from the remote server to the memory
     if (!coordinator.strategyNames.includes('remote-sync'))
@@ -308,8 +312,8 @@ export const Sources = async (
           target: 'memory',
 
           blocking: true,
-        }),
-      )
+        })
+      );
 
     datachangeremote = coordinator.sourceNames.includes('datachanges')
       ? (coordinator?.getSource('datachanges') as JSONAPISource)
@@ -336,40 +340,40 @@ export const Sources = async (
           defaultTransformOptions: {
             useRemoteId: true,
           },
-        })
+        });
     if (!coordinator.sourceNames.includes('datachanges')) {
-      coordinator.addSource(datachangeremote)
+      coordinator.addSource(datachangeremote);
     }
   } //!offline
   let goRemote =
     !offline &&
-    (userToken !== tokData.sub || localStorage.getItem('inviteId') !== null)
+    (userToken !== tokData.sub || localStorage.getItem('inviteId') !== null);
   if (!goRemote) {
-    console.log('using backup')
+    console.log('using backup');
     if (!isElectron) {
       //already did this if electron...
-      setProjectsLoaded(await restoreBackup(coordinator))
-      const recs = memory?.cache.query(q => q.findRecords('role')) as Role[]
+      setProjectsLoaded(await restoreBackup(coordinator));
+      const recs = memory?.cache.query((q) => q.findRecords('role')) as Role[];
       if (recs.length === 0) {
         //orbitError(orbitInfo(null, 'Indexed DB corrupt or missing.'));
-        goRemote = true
+        goRemote = true;
       }
     }
     //get v4 data
     if (requestedSchema > 3) {
       if (offline) {
-        await offlineSetup()
+        await offlineSetup();
       }
     }
   }
 
   if (!coordinator.activated)
-    await coordinator.activate({logLevel: LogLevel.Warnings})
+    await coordinator.activate({ logLevel: LogLevel.Warnings });
 
-  console.log('Coordinator will log warnings')
+  console.log('Coordinator will log warnings');
 
-  let syncBuffer: Buffer | undefined = undefined
-  let syncFile = ''
+  let syncBuffer: Buffer | undefined = undefined;
+  let syncFile = '';
   if (!offline && isElectron) {
     const fr = await electronExport(
       ExportType.ITFSYNC,
@@ -380,69 +384,69 @@ export const Sources = async (
       0,
       '',
       '',
-      getOfflineProject,
+      getOfflineProject
     ).catch((err: Error) => {
       console.log(
         'ITFSYNC export failed: ',
         err.message,
         err.name,
         err.cause,
-        err.stack,
-      )
+        err.stack
+      );
       logError(
         Severity.error,
         errorReporter,
-        infoMsg(err, 'ITFSYNC export failed: '),
-      )
-      throw err
-    })
+        infoMsg(err, 'ITFSYNC export failed: ')
+      );
+      throw err;
+    });
     if (fr && fr.changes > 0) {
-      syncBuffer = fr.buffer
-      syncFile = fr.message
+      syncBuffer = fr.buffer;
+      syncFile = fr.message;
     }
   }
   /* set the user from the token - must be done after the backup is loaded and after changes to offline are recorded */
   if (!offline) {
-    console.log(`Activating remote for user: ${tokData.sub}`)
-    await remote.activated
-    console.log(`Activated remote for user: ${tokData.sub}`)
-    let uRecs = (await remote.query(q =>
-      q.findRecords('user').filter({attribute: 'auth0Id', value: tokData.sub}),
-    )) as UserD[]
-    console.log(`has user rec: ${tokData.sub}`)
-    if (!Array.isArray(uRecs)) uRecs = [uRecs]
-    const user = uRecs[0] as UserD
+    console.log(`Activating remote for user: ${tokData.sub}`);
+    await remote.activated;
+    console.log(`Activated remote for user: ${tokData.sub}`);
+    let uRecs = (await remote.query((q) =>
+      q.findRecords('user').filter({ attribute: 'auth0Id', value: tokData.sub })
+    )) as UserD[];
+    console.log(`has user rec: ${tokData.sub}`);
+    if (!Array.isArray(uRecs)) uRecs = [uRecs];
+    const user = uRecs[0] as UserD;
     if (
       new Date().getTime() - new Date(user.attributes.dateUpdated).getTime() <=
       60000
     ) {
-      console.log(`Forcing data changes`)
-      await forceDataChanges()
-      console.log(`Forcing complete`)
+      console.log(`Forcing data changes`);
+      await forceDataChanges();
+      console.log(`Forcing complete`);
     }
-    const locale = user?.attributes?.locale || 'en'
-    setLang(locale)
-    localStorage.setItem(LocalKey.userId, user.id)
-    localStorage.setItem(LocalKey.onlineUserId, user.id)
+    const locale = user?.attributes?.locale || 'en';
+    setLang(locale);
+    localStorage.setItem(LocalKey.userId, user.id);
+    localStorage.setItem(LocalKey.onlineUserId, user.id);
     if (errorReporter && localStorage.getItem(LocalKey.connected) !== 'false')
-      Bugsnag.setUser(user.keys?.remoteId ?? user.id)
+      Bugsnag.setUser(user.keys?.remoteId ?? user.id);
   }
-  const user = localStorage.getItem(LocalKey.userId) as string
-  setUser(user)
+  const user = localStorage.getItem(LocalKey.userId) as string;
+  setUser(user);
   if (requestedSchema > 4) {
-    console.log(`Updating translation type`)
+    console.log(`Updating translation type`);
     await updateBackTranslationType(
       memory,
       tokenCtx.state.accessToken || '',
       user,
       errorReporter,
-      offlineSetup,
-    )
+      offlineSetup
+    );
   }
   if (requestedSchema > 5) {
-    const token = tokenCtx.state.accessToken || null
-    console.log(`Updating consultant workflow step`)
-    await updateConsultantWorkflowStep(token, memory, user)
+    const token = tokenCtx.state.accessToken || null;
+    console.log(`Updating consultant workflow step`);
+    await updateConsultantWorkflowStep(token, memory, user);
   }
-  return {syncBuffer, syncFile, goRemote}
-}
+  return { syncBuffer, syncFile, goRemote };
+};

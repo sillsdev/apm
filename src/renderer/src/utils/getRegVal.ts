@@ -1,0 +1,35 @@
+import { IExeca } from '../model';
+const ipc = window?.electron;
+
+const lnRe = /([A-Za-z0-9_\\(\\)]+)[^A-Za-z0-9_]+([A-Z_]+)[^A-Za-z0-9_]+(.*)?/;
+
+export const getRegVal = async (
+  key: string,
+  name: string
+): Promise<string | undefined> => {
+  let val: (string | undefined)[] = [];
+  try {
+    const { stdout } = JSON.parse(
+      (await ipc?.exec('reg', ['query', key])) as string
+    ) as IExeca;
+    val =
+      typeof stdout === 'string'
+        ? stdout
+            .split('\n')
+            .map((ln) => {
+              const match = lnRe.exec(ln);
+              return match && match[1] === name
+                ? match[3]
+                : match && name === '' && match[1] === '(Default)'
+                  ? match[3]
+                  : undefined;
+            })
+            .filter((r) => r)
+        : [];
+  } catch (err: unknown) {
+    if ((err as { code?: string })?.code !== 'ENOENT') {
+      throw err;
+    }
+  }
+  return val.length > 0 ? val[0] : '';
+};

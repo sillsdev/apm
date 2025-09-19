@@ -1,0 +1,130 @@
+import React, { ReactNode } from 'react';
+import { shallowEqual, useSelector } from 'react-redux';
+import { IControlStrings } from '../model';
+import {
+  FormLabel,
+  FormControlLabel,
+  RadioGroup,
+  Radio,
+  TextField,
+  Box,
+} from '@mui/material';
+import { controlSelector } from '../selector';
+
+export interface IDecorations {
+  [key: string]: JSX.Element;
+}
+
+interface IProps {
+  label: ReactNode;
+  defaultValue?: string;
+  options: string[];
+  onChange: (option: string) => void;
+  addOption?: (option: string) => boolean;
+  otherLabel?: string;
+  decorations?: IDecorations;
+  required?: boolean;
+  pt?: number;
+}
+
+const OptionCtrl = (props: IProps) => {
+  const {
+    label,
+    defaultValue,
+    options,
+    onChange,
+    addOption,
+    decorations,
+    required,
+    otherLabel,
+    pt,
+  } = props;
+  const [other, setOther] = React.useState<string | null>('');
+  const tc: IControlStrings = useSelector(controlSelector, shallowEqual);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!addOther()) onChange(e.target.value);
+  };
+
+  const handleOther = (e: React.ChangeEvent<HTMLInputElement>) => {
+    e.persist();
+    setOther(e.target.value);
+  };
+
+  const addOther = () => {
+    const newTag = other || '';
+    if (
+      newTag !== '' &&
+      !options.includes(newTag) &&
+      addOption &&
+      addOption(newTag)
+    ) {
+      onChange(newTag);
+      setOther('');
+      return true;
+    }
+    return false;
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    const key = e.key?.toLowerCase();
+    if (key === 'enter' || key === 'tab') {
+      addOther();
+    }
+  };
+
+  return (
+    <Box sx={{ pt: pt ?? 4 }}>
+      <FormLabel required={required} sx={{ color: 'secondary.main' }}>
+        {label}
+      </FormLabel>
+      <RadioGroup
+        value={other !== '' ? other : defaultValue || ''}
+        onChange={handleChange}
+        sx={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap' }}
+      >
+        {options.map((k) => {
+          return (
+            <FormControlLabel
+              key={k}
+              value={k}
+              control={<Radio />}
+              label={
+                <Box sx={{ display: 'flex' }}>
+                  {Object.prototype.hasOwnProperty.call(tc, k)
+                    ? tc.getString(k)
+                    : k}
+                  {'\u00A0 '}
+                  {decorations &&
+                    Object.prototype.hasOwnProperty.call(decorations, k) &&
+                    decorations[k]}
+                </Box>
+              }
+            />
+          );
+        })}
+        {addOption && (
+          <FormControlLabel
+            key="99"
+            control={<Radio />}
+            disabled={other === ''}
+            label={
+              <TextField
+                id="other-option"
+                margin="dense"
+                sx={{ mb: 2 }}
+                label={otherLabel}
+                value={other}
+                onChange={handleOther}
+                onKeyDown={handleKeyDown}
+                onBlur={addOther}
+              />
+            }
+          />
+        )}
+      </RadioGroup>
+    </Box>
+  );
+};
+
+export const Options = OptionCtrl;

@@ -1,0 +1,2185 @@
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useContext,
+  useMemo,
+  ReactNode,
+} from 'react';
+import { useGetGlobal, useGlobal } from '../../context/useGlobal';
+import { shallowEqual, useDispatch, useSelector } from 'react-redux';
+import { useParams } from 'react-router-dom';
+
+import {
+  IState,
+  Section,
+  IPlanSheetStrings,
+  IScriptureTableStrings,
+  ISharedStrings,
+  MediaFileD,
+  PlanD,
+  ISheet,
+  IwsKind,
+  IMediaShare,
+  WorkflowStep,
+  OrgWorkflowStep,
+  IWorkflowStepsStrings,
+  GroupMembership,
+  Discussion,
+  IResourceStrings,
+  SheetLevel,
+  GraphicD,
+  SectionD,
+  PassageD,
+  OrgWorkflowStepD,
+  ProjectD,
+  SharedResourceD,
+  AltBkSeq,
+  BookSeq,
+} from '../../model';
+import * as actions from '../../store';
+import Memory from '@orbit/memory';
+import JSONAPISource from '@orbit/jsonapi';
+import { Badge, Box, Link } from '@mui/material';
+import { useSnackBar } from '../../hoc/SnackBar';
+import PlanSheet, { ICell, ICellChange } from './PlanSheet';
+import {
+  remoteIdNum,
+  related,
+  useOrganizedBy,
+  usePlan,
+  useFilteredSteps,
+  VernacularTag,
+  useDiscussionCount,
+  getTool,
+  ToolSlug,
+  remoteId,
+  remoteIdGuid,
+  findRecord,
+  useGraphicUpdate,
+  useGraphicFind,
+  useSharedResRead,
+  PublishDestinationEnum,
+  usePublishDestination,
+} from '../../crud';
+import {
+  lookupBook,
+  waitForIt,
+  useCheckOnline,
+  currentDateTime,
+  hasAudacity,
+  useDataChanges,
+  useWaitForRemoteQueue,
+} from '../../utils';
+import {
+  isSectionRow,
+  isPassageRow,
+  shtColumnHeads,
+  shtResequence,
+  wfResequencePassages,
+  useWfLocalSave,
+  useWfOnlineSave,
+  useWfPaste,
+  shtNumChanges,
+  getSheet,
+  workSheet,
+  isSectionFiltered,
+  isPassageFiltered,
+  nextNum,
+  getMinSection,
+} from '.';
+import { debounce } from 'lodash';
+import AudacityManager from './AudacityManager';
+import AssignSection from '../AssignSection';
+import StickyRedirect from '../StickyRedirect';
+import Uploader from '../Uploader';
+import { useMediaAttach } from '../../crud/useMediaAttach';
+import { UpdateRecord } from '../../model/baseModel';
+import { PlanContext } from '../../context/PlanContext';
+import stringReplace from 'react-string-replace';
+import BigDialog from '../../hoc/BigDialog';
+import VersionDlg from '../AudioTab/VersionDlg';
+import ResourceTabs from '../ResourceEdit/ResourceTabs';
+import { passageDefaultFilename } from '../../utils/passageDefaultFilename';
+import { UnsavedContext } from '../../context/UnsavedContext';
+import { ISTFilterState } from './filterMenu';
+import {
+  projDefBook,
+  projDefFilterParam,
+  projDefFirstMovement,
+  useProjectDefaults,
+} from '../../crud/useProjectDefaults';
+import {
+  planSheetSelector,
+  scriptureTableSelector,
+  sharedResourceSelector,
+  sharedSelector,
+  workflowStepsSelector,
+} from '../../selector';
+import { PassageTypeEnum } from '../../model/passageType';
+import { passageTypeFromRef } from '../../control/passageTypeFromRef';
+import { isPublishingTitle } from '../../control/passageTypeFromRef';
+import { UploadType } from '../UploadType';
+import { useGraphicCreate } from '../../crud/useGraphicCreate';
+import {
+  ApmDim,
+  CompressedImages,
+  GraphicUploader,
+  IGraphicInfo,
+  Rights,
+} from '../GraphicUploader';
+import Confirm from '../AlertDialog';
+import { getDefaultName } from './getDefaultName';
+import GraphicRights from '../GraphicRights';
+import { useOrbitData } from '../../hoc/useOrbitData';
+import { RecordIdentity, RecordKeyMap } from '@orbit/records';
+import { getLastVerse } from '../../business/localParatext/getLastVerse';
+import { OrganizationSchemeStepD } from '../../model/organizationSchemeStep';
+import { usePeerGroups } from '../Peers/usePeerGroups';
+import bookSortJson from '../../assets/akuosort.json';
+import { Audacity } from '../../assets/brands';
+
+const SaveWait = 500;
+
+interface IProps {
+  colNames: string[];
+}
+
+interface AudacityInfo {
+  ws: ISheet;
+  index: number;
+}
+
+export function ScriptureTable(props: IProps) {
+  const { colNames } = props;
+  const passages = useOrbitData<PassageD[]>('passage');
+  const sections = useOrbitData<SectionD[]>('section');
+  const sharedresources = useOrbitData<SharedResourceD[]>('sharedresource');
+  const plans = useOrbitData<PlanD[]>('plan');
+  const projects = useOrbitData<ProjectD[]>('project');
+  const mediafiles = useOrbitData<MediaFileD[]>('mediafile');
+  const discussions = useOrbitData<Discussion[]>('discussion');
+  const groupmemberships = useOrbitData<GroupMembership[]>('groupmembership');
+  const graphics = useOrbitData<GraphicD[]>('graphic');
+  const workflowSteps = useOrbitData<WorkflowStep[]>('workflowstep');
+  const orgWorkflowSteps = useOrbitData<OrgWorkflowStep[]>('orgworkflowstep');
+  const organizationSchemeSteps = useOrbitData<OrganizationSchemeStepD[]>(
+    'organizationschemestep'
+  );
+  const t: IScriptureTableStrings = useSelector(
+    scriptureTableSelector,
+    shallowEqual
+  );
+  const wfStr: IWorkflowStepsStrings = useSelector(
+    workflowStepsSelector,
+    shallowEqual
+  );
+  const s: IPlanSheetStrings = useSelector(planSheetSelector, shallowEqual);
+  const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
+  const lang = useSelector((state: IState) => state.strings.lang);
+  const bookSuggestions = useSelector(
+    (state: IState) => state.books.suggestions
+  );
+  const bookMap = useSelector((state: IState) => state.books.map);
+  const allBookData = useSelector((state: IState) => state.books.bookData);
+  const dispatch = useDispatch();
+  const waitForRemoteQueue = useWaitForRemoteQueue();
+  const fetchBooks = (lang: string) =>
+    dispatch(actions.fetchBooks(lang) as any);
+  const { prjId } = useParams();
+  const [width, setWidth] = useState(window.innerWidth);
+  const [organization] = useGlobal('organization');
+  const [project] = useGlobal('project'); //will be constant here
+  const [plan] = useGlobal('plan'); //will be constant here
+  const [coordinator] = useGlobal('coordinator');
+  const [offline] = useGlobal('offline'); //verified this is not used in a function 2/18/25
+  const [developer] = useGlobal('developer');
+  const memory = coordinator?.getSource('memory') as Memory;
+  const remote = coordinator?.getSource('remote') as JSONAPISource;
+  const [user] = useGlobal('user');
+  const [offlineOnly] = useGlobal('offlineOnly'); //will be constant here
+  const [, setBusy] = useGlobal('importexportBusy');
+  const myChangedRef = useRef(false);
+  const savingRef = useRef(false);
+  const updateRef = useRef(false);
+  const doForceDataChanges = useRef(false);
+  const { showMessage } = useSnackBar();
+  const getGlobal = useGetGlobal();
+  const ctx = React.useContext(PlanContext);
+  const {
+    flat,
+    scripture,
+    shared,
+    hidePublishing,
+    publishingOn,
+    setSectionArr,
+    setCanAddPublishing,
+    togglePublishing,
+    canPublish,
+  } = ctx.state;
+  const { getOrganizedBy } = useOrganizedBy();
+  const [organizedBy] = useState<string>(getOrganizedBy(true));
+  const [saveColAdd, setSaveColAdd] = useState<number[]>();
+  const [columns, setColumns] = useState<ICell[]>([
+    { value: organizedBy, readOnly: true, width: 80 },
+    { value: t.title, readOnly: true, width: 280 },
+    { value: t.passage, readOnly: true, width: 80 },
+    { value: t.reference, readOnly: true, width: 180 },
+    { value: t.description, readOnly: true, width: 280 },
+  ]);
+  const [sheet, setSheetx] = useState<ISheet[]>([]);
+  const sheetRef = useRef<ISheet[]>([]);
+  const [, setComplete] = useGlobal('progress');
+  const [confirmPublishingVisible, setConfirmPublishingVisible] =
+    useState(false);
+  const [view, setView] = useState('');
+  const [audacityItem, setAudacityItem] = useState<AudacityInfo>();
+  const [lastSaved, setLastSaved] = useState<string>();
+  const toolId = 'scriptureTable';
+  const {
+    saveRequested,
+    clearRequested,
+    clearCompleted,
+    startSave,
+    saveCompleted,
+    waitForSave,
+    toolChanged,
+    toolsChanged,
+    isChanged,
+    anySaving,
+  } = useContext(UnsavedContext).state;
+  const forceDataChanges = useDataChanges();
+  const [assignSectionVisible, setAssignSectionVisible] = useState(false);
+  const [assignSections, setAssignSections] = useState<number[]>([]);
+  const [uploadVisible, setUploadVisible] = useState(false);
+  const [uploadGraphicVisible, setUploadGraphicVisible] = useState(false);
+  const [recordAudio, setRecordAudio] = useState(true);
+  const [importList, setImportList] = useState<File[]>();
+  const cancelled = useRef(false);
+  const uploadItem = useRef<ISheet>();
+  const [editRow, setEditRow] = useState<ISheet>();
+  const [versionRow, setVersionRow] = useState<ISheet>();
+  const [isNote, setIsNote] = useState(false);
+  const [defaultFilename, setDefaultFilename] = useState('');
+  const [uploadType, setUploadType] = useState<UploadType>();
+  const [curGraphicRights, setCurGraphicRights] = useState('');
+  const [graphicFullsizeUrl, setGraphicFullsizeUrl] = useState('');
+  const graphicCreate = useGraphicCreate();
+  const graphicUpdate = useGraphicUpdate();
+  const graphicFind = useGraphicFind();
+  const { getPlan } = usePlan();
+  const localSave = useWfLocalSave({ setComplete });
+  const onlineSave = useWfOnlineSave({ setComplete });
+  const [detachPassage] = useMediaAttach();
+  const checkOnline = useCheckOnline('ScriptureTable');
+  const [speaker, setSpeaker] = useState('');
+  const getStepsBusy = useRef(false);
+  const [orgSteps, setOrgSteps] = useState<OrgWorkflowStepD[]>([]);
+  const { myGroups } = usePeerGroups();
+  const {
+    getProjectDefault,
+    setProjectDefault,
+    canSetProjectDefault,
+    getLocalDefault,
+    setLocalDefault,
+  } = useProjectDefaults();
+  const { getSharedResource } = useSharedResRead();
+  const getFilteredSteps = useFilteredSteps();
+  const getDiscussionCount = useDiscussionCount({
+    mediafiles,
+    discussions,
+    groupmemberships,
+  });
+  const { getPublishTo, publishStatus } = usePublishDestination();
+  const [defaultFilterState, setDefaultFilterState] = useState<ISTFilterState>({
+    minStep: '', //orgworkflow step to show this step or after
+    maxStep: '', //orgworkflow step to show this step or before
+    hideDone: false,
+    minSection: 1,
+    maxSection: -1,
+    assignedToMe: false,
+    disabled: false,
+    canHideDone: true,
+  });
+  const resStr: IResourceStrings = useSelector(
+    sharedResourceSelector,
+    shallowEqual
+  );
+  const [firstMovement, setFirstMovement] = useState(1);
+  const [projFirstMovement, setProjFirstMovement] = useState(1);
+  const [filterState, setFilterState] =
+    useState<ISTFilterState>(defaultFilterState);
+  const secNumCol = React.useMemo(() => {
+    return colNames.indexOf('sectionSeq');
+  }, [colNames]);
+
+  const firstBook = useMemo(
+    () =>
+      scripture
+        ? (sheet.find((b) => !b.deleted && (b.book ?? '') !== '')?.book ?? '')
+        : getProjectDefault(projDefBook),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [scripture, sheet]
+  );
+
+  const publishingTitle = (passageType: PassageTypeEnum) =>
+    passageType + ' ' + firstBook;
+
+  const getFilter = (fs: ISTFilterState) => {
+    const filter = (getLocalDefault(projDefFilterParam) ??
+      getProjectDefault(projDefFilterParam) ??
+      fs) as ISTFilterState;
+
+    if (filter.minStep && !isNaN(Number(filter.minStep)))
+      filter.minStep = remoteIdGuid(
+        'orgworkflowstep',
+        filter.minStep,
+        memory?.keyMap as RecordKeyMap
+      ) as string;
+    if (filter.maxStep && !isNaN(Number(filter.maxStep)))
+      filter.maxStep = remoteIdGuid(
+        'orgworkflowstep',
+        filter.maxStep,
+        memory?.keyMap as RecordKeyMap
+      ) as string;
+    return filter;
+  };
+
+  interface LocalStrings {
+    [key: string]: ReactNode;
+  }
+  const local: LocalStrings = {
+    sectionSeq: organizedBy,
+    title: t.title,
+    passageSeq: t.passage,
+    book: t.book,
+    reference: t.reference,
+    comment: t.description,
+    action: t.extras,
+  };
+  const onFilterChange = (
+    filter: ISTFilterState | undefined | null,
+    projDefault: boolean
+  ) => {
+    if (filter === null) filter = defaultFilterState;
+    setLocalDefault(projDefFilterParam, filter);
+    if (projDefault) {
+      let def;
+      if (filter) {
+        def = { ...filter };
+        //convert steps to remote id
+        if (filter.minStep)
+          def.minStep = remoteId(
+            'orgworkflowstep',
+            filter.minStep,
+            memory?.keyMap as RecordKeyMap
+          ) as string;
+        if (filter.maxStep)
+          def.maxStep = remoteId(
+            'orgworkflowstep',
+            filter.maxStep,
+            memory?.keyMap as RecordKeyMap
+          ) as string;
+      }
+      setProjectDefault(projDefFilterParam, def);
+    }
+    if (filter) setFilterState(() => filter as ISTFilterState);
+    else setFilterState(getFilter(defaultFilterState));
+  };
+  const setSheet = (ws: ISheet[]) => {
+    sheetRef.current = ws;
+    setSheetx(ws);
+    const anyPublishing = !getGlobal('offline')
+      ? ws.some((s) => isPublishingTitle(s.reference ?? '', flat))
+      : false;
+    if (publishingOn !== anyPublishing) setCanAddPublishing(anyPublishing);
+  };
+  const passNumCol = React.useMemo(() => {
+    return colNames.indexOf('passageSeq');
+  }, [colNames]);
+
+  const findBook = (val: string) =>
+    lookupBook({ book: val, allBookData, bookMap });
+
+  const paste = useWfPaste({
+    secNumCol,
+    passNumCol,
+    scripture,
+    flat,
+    shared,
+    colNames,
+    findBook,
+    t,
+  });
+
+  const setChanged = (value: boolean) => {
+    myChangedRef.current = value;
+    toolChanged(toolId, value);
+  };
+
+  const setUpdate = (value: boolean) => (updateRef.current = value);
+
+  const handleResequence = () => {
+    if (savingRef.current || updateRef.current) {
+      showMessage(t.saving);
+      return;
+    }
+    if (updateRef.current) return;
+    setUpdate(true);
+    const ws = shtResequence(sheetRef.current);
+    if (ws !== sheet) {
+      setSheet(ws);
+      setSectionArr([]);
+      setChanged(true);
+    }
+    setUpdate(false);
+  };
+
+  const insertAt = (arr: Array<any>, item: any, index?: number) => {
+    if (index === undefined) {
+      return [...arr.concat([item])];
+    } else {
+      const newArr = arr.map((v, i) =>
+        i < index ? v : i === index ? item : arr[i - 1]
+      );
+      return [...newArr.concat([arr.pop()])];
+    }
+  };
+
+  const updateRowAt = (arr: Array<any>, item: any, index: number) => {
+    const newArr = arr.map((v, i) =>
+      i < index ? v : i === index ? item : arr[i]
+    );
+    return newArr;
+  };
+
+  const NoSkip = false;
+  const findSection = (
+    myWorkflow: ISheet[],
+    sectionIndex: number,
+    before: boolean,
+    skipPublishing: boolean
+  ) => {
+    while (
+      sectionIndex >= 0 &&
+      sectionIndex < myWorkflow.length &&
+      ((myWorkflow[sectionIndex] as ISheet).deleted || skipPublishing
+        ? (myWorkflow[sectionIndex] as ISheet).level !== SheetLevel.Section
+        : !isSectionRow(myWorkflow[sectionIndex] as ISheet))
+    ) {
+      sectionIndex = sectionIndex + (before ? -1 : 1);
+    }
+    if (sectionIndex < 0 || sectionIndex === myWorkflow.length) return -1;
+    return sectionIndex;
+  };
+
+  const swapRows = (myWorkflow: ISheet[], i: number, j: number) => {
+    const passageRow = { ...myWorkflow[i] };
+    const swapRow = { ...myWorkflow[j] };
+    return updateRowAt(updateRowAt(myWorkflow, passageRow, j), swapRow, i);
+  };
+
+  const movePassageTo = (myWorkflow: ISheet[], i: number, before: boolean) => {
+    const mySectionIndex = findSection(myWorkflow, i, true, NoSkip);
+    myWorkflow = swapRows(myWorkflow, i, before ? i - 1 : i + 1);
+    return wfResequencePassages(myWorkflow, mySectionIndex, flat);
+  };
+  const moveSectionTo = (myWorkflow: ISheet[], i: number, before: boolean) => {
+    const swapSectionIndex = findSection(
+      myWorkflow,
+      before ? i - 1 : i + 1,
+      before,
+      NoSkip
+    );
+
+    const firstIndex = before ? swapSectionIndex : i;
+    const secondIndex = before ? i : swapSectionIndex;
+    let firstNum = (myWorkflow[firstIndex] as ISheet).sectionSeq;
+    let secondNum = (myWorkflow[secondIndex] as ISheet).sectionSeq;
+
+    const firstIsMovement =
+      (myWorkflow[firstIndex] as ISheet).passageType ===
+      PassageTypeEnum.MOVEMENT;
+    const secondIsMovement =
+      (myWorkflow[secondIndex] as ISheet).passageType ===
+      PassageTypeEnum.MOVEMENT;
+    if (firstIsMovement !== secondIsMovement) {
+      if (firstIsMovement) {
+        secondNum = nextNum(
+          (myWorkflow[secondIndex] as ISheet).sectionSeq,
+          PassageTypeEnum.MOVEMENT
+        );
+        firstNum = (myWorkflow[secondIndex] as ISheet).sectionSeq;
+      } else {
+        firstNum = nextNum(
+          firstIndex > 0
+            ? (myWorkflow[firstIndex - 1] as ISheet).sectionSeq
+            : 0,
+          PassageTypeEnum.MOVEMENT
+        );
+        secondNum = (myWorkflow[firstIndex] as ISheet).sectionSeq;
+      }
+    }
+    (myWorkflow[firstIndex] as ISheet).sectionSeq = secondNum;
+    (myWorkflow[firstIndex] as ISheet).sectionUpdated = currentDateTime();
+    for (
+      let ix = firstIndex + 1;
+      ix < myWorkflow.length &&
+      (myWorkflow[ix] as ISheet).sectionSeq === firstNum;
+      ix++
+    ) {
+      (myWorkflow[ix] as ISheet).sectionSeq = secondNum;
+      (myWorkflow[ix] as ISheet).passageUpdated = currentDateTime();
+    }
+    (myWorkflow[secondIndex] as ISheet).sectionSeq = firstNum;
+    (myWorkflow[secondIndex] as ISheet).sectionUpdated = currentDateTime();
+    for (
+      let ix = secondIndex + 1;
+      ix < myWorkflow.length &&
+      (myWorkflow[ix] as ISheet).sectionSeq === secondNum;
+      ix++
+    ) {
+      (myWorkflow[ix] as ISheet).sectionSeq = firstNum;
+      (myWorkflow[ix] as ISheet).passageUpdated = currentDateTime();
+    }
+
+    const sorted = [...myWorkflow].sort((a, b) => a.sectionSeq - b.sectionSeq);
+    return sorted;
+  };
+  const isPassageOrNote = (ws: ISheet[], i: number) =>
+    [PassageTypeEnum.PASSAGE, PassageTypeEnum.NOTE].includes(
+      (ws[i] as ISheet).passageType
+    );
+
+  const updatePassageRef = (id: string, val: string, sr: SharedResourceD) => {
+    const index = sheet.findIndex((s) => s?.passage?.id === id);
+    if (index < 0) return;
+    const passageRow = { ...sheet[index] };
+    if (passageRow.reference === val && passageRow.sharedResource?.id === sr.id)
+      return;
+    if (updateRef.current) return;
+    setUpdate(true);
+    passageRow.reference = val;
+    passageRow.passageUpdated = currentDateTime();
+    passageRow.sharedResource = sr;
+    setSheet(updateRowAt(sheet, passageRow, index));
+    setUpdate(false);
+    setChanged(true);
+  };
+
+  const updatePassageSeq = (ws: ISheet[], i: number, val: number) => {
+    const passageRow = { ...ws[i] };
+    passageRow.sectionSeq = val;
+    passageRow.passageUpdated = currentDateTime();
+    return updateRowAt(ws, passageRow, i);
+  };
+
+  const movePassageToNextSection = (
+    myWorkflow: ISheet[],
+    i: number,
+    before: boolean
+  ) => {
+    // don't set update flag as it is set in parent.
+    const skipPublishing =
+      (myWorkflow[i] as ISheet).passageType === PassageTypeEnum.PASSAGE;
+    const originalSectionIndex = findSection(
+      myWorkflow,
+      i,
+      before,
+      skipPublishing
+    );
+    const newSectionIndex = findSection(
+      myWorkflow,
+      before ? originalSectionIndex - 1 : i,
+      before,
+      skipPublishing
+    );
+    if (newSectionIndex < 0) return;
+    const newSeqVal = (myWorkflow[newSectionIndex] as ISheet).sectionSeq;
+    myWorkflow = updatePassageSeq(myWorkflow, i, newSeqVal);
+    let endRowIndex = newSectionIndex;
+
+    if (before) {
+      // find row following last row in target section
+      while (
+        ++endRowIndex < myWorkflow.length &&
+        !isSectionRow(myWorkflow[endRowIndex] as ISheet)
+      ) {
+        // intentionally empty
+      }
+      while (i > endRowIndex) {
+        myWorkflow = swapRows(myWorkflow, i, i - 1);
+        i--;
+      }
+      myWorkflow = wfResequencePassages(
+        wfResequencePassages(myWorkflow, originalSectionIndex + 1, flat),
+        newSectionIndex,
+        flat
+      );
+    } else {
+      while (
+        endRowIndex < myWorkflow.length - 2 &&
+        ((myWorkflow[endRowIndex] as ISheet).deleted ||
+          !isPassageOrNote(myWorkflow, endRowIndex + 1))
+      )
+        endRowIndex++;
+      while (i < endRowIndex) {
+        myWorkflow = swapRows(myWorkflow, i, i + 1);
+        i++;
+      }
+      myWorkflow = wfResequencePassages(
+        wfResequencePassages(myWorkflow, originalSectionIndex, flat),
+        newSectionIndex - 1,
+        flat
+      );
+    }
+
+    setSheet(myWorkflow);
+    setChanged(true);
+  };
+
+  const addPassageTo = (
+    level: SheetLevel,
+    myWorkflow: ISheet[],
+    ptype: PassageTypeEnum | undefined,
+    i?: number,
+    before?: boolean,
+    title?: string,
+    reference?: string
+  ) => {
+    let lastRow = myWorkflow.length - 1;
+    while (lastRow >= 0 && (myWorkflow[lastRow] as ISheet).deleted)
+      lastRow -= 1;
+    let index = i === undefined && lastRow >= 0 ? lastRow : i || 0;
+    const newRow = {
+      ...myWorkflow[index],
+      level: flat && level ? level : SheetLevel.Passage,
+      kind: flat ? IwsKind.SectionPassage : IwsKind.Passage,
+      book: scripture ? firstBook : '',
+      reference: reference ?? ptype ?? '',
+      mediaId: undefined,
+      comment: title ?? '',
+      passageUpdated: currentDateTime(),
+      passage: undefined,
+      passageType: ptype ?? PassageTypeEnum.PASSAGE,
+      mediaShared: shared ? IMediaShare.None : IMediaShare.NotPublic,
+      deleted: false,
+      filtered: false,
+    } as ISheet;
+
+    if (flat && isSectionRow(myWorkflow[index] as ISheet)) {
+      //no passage on this row yet
+      myWorkflow = wfResequencePassages(
+        updateRowAt(myWorkflow, newRow, index),
+        index,
+        flat
+      );
+      return myWorkflow;
+    } else {
+      myWorkflow = insertAt(
+        myWorkflow,
+        newRow,
+        index < lastRow ? index + 1 : undefined
+      );
+      /* how could this have ever been true? We've checked flat and section row above
+      if (
+        before &&
+        isSectionRow(myWorkflow[index]) &&
+        isPassageRow(myWorkflow[index])
+      ) {
+        //move passage data from section row to new empty row
+        xmovePassageDown(myWorkflow, index);
+      } */
+      while (index >= 0 && !isSectionRow(myWorkflow[index] as ISheet))
+        index -= 1;
+      return wfResequencePassages(myWorkflow, index, flat);
+    }
+  };
+
+  const getUndelIndex = (sheet: ISheet[], ix: number | undefined) => {
+    // find the undeleted index...
+    if (ix !== undefined) return getByIndex(sheet, ix).i;
+    return ix;
+  };
+  const nextSecSequence = (
+    ws: ISheet[],
+    i?: number,
+    flattype?: PassageTypeEnum
+  ) => {
+    const sequenceNums = ws.map((row, j) =>
+      !i || j < i ? (!row.deleted && row.sectionSeq) || 0 : 0
+    ) as number[];
+    return nextNum(Math.max(...sequenceNums, 0), flattype);
+  };
+  const newSection = (
+    level: SheetLevel,
+    ws: ISheet[],
+    i?: number,
+    type?: PassageTypeEnum
+  ) => {
+    const newRow = {
+      level,
+      kind: flat ? IwsKind.SectionPassage : IwsKind.Section,
+      sectionSeq: nextSecSequence(ws, i, type),
+      passageSeq: 0,
+      reference: '',
+      published: [] as PublishDestinationEnum[],
+      book: scripture ? firstBook : '',
+    } as ISheet;
+    return newRow;
+  };
+  const addSection = (
+    level: SheetLevel,
+    ix?: number,
+    ptype?: PassageTypeEnum
+  ) => {
+    if (savingRef.current) {
+      showMessage(t.saving);
+      return;
+    }
+    if (updateRef.current) return;
+    setUpdate(true);
+    const i = getUndelIndex(sheetRef.current, ix);
+    let newRow = newSection(level, sheetRef.current, i);
+    if (ptype === PassageTypeEnum.MOVEMENT) {
+      newRow = { ...newRow, reference: publishingTitle(ptype) };
+    }
+    let newData = insertAt(sheetRef.current, newRow, i);
+    //if added in the middle...resequence
+    if (i !== undefined) newData = shtResequence(newData);
+    if (ptype === PassageTypeEnum.MOVEMENT) {
+      setSheet(newData);
+    } else {
+      setSheet(addPassageTo(level, newData, ptype, i));
+    }
+    setUpdate(false);
+    setChanged(true);
+  };
+
+  const addPassage = (
+    ptype?: PassageTypeEnum,
+    ix?: number,
+    before?: boolean
+  ) => {
+    if (savingRef.current || updateRef.current) {
+      showMessage(t.saving);
+      return;
+    }
+    setUpdate(true);
+    const i = getUndelIndex(sheetRef.current, ix);
+    setSheet(
+      addPassageTo(SheetLevel.Passage, sheetRef.current, ptype, i, before)
+    );
+    setUpdate(false);
+    setChanged(true);
+  };
+  const movePassage = (ix: number, before: boolean, nextSection: boolean) => {
+    if (savingRef.current || updateRef.current) {
+      showMessage(t.saving);
+      return;
+    }
+    if (flat) return;
+    setUpdate(true);
+    const i = getUndelIndex(sheetRef.current, ix);
+    if (i !== undefined) {
+      if (nextSection) movePassageToNextSection(sheetRef.current, i, before);
+      else setSheet(movePassageTo(sheetRef.current, i, before));
+      setChanged(true);
+    }
+    setUpdate(false);
+  };
+
+  const doMoveSection = (ix: number, before: boolean) => {
+    if (savingRef.current || updateRef.current) {
+      showMessage(t.saving);
+      return;
+    }
+    setUpdate(true);
+    setSectionArr([]);
+    const i = getUndelIndex(sheetRef.current, ix);
+    if (i !== undefined) {
+      setSheet(moveSectionTo(sheetRef.current, i, before));
+      setChanged(true);
+    }
+    setUpdate(false);
+  };
+
+  const moveSection = (ix: number, before: boolean) => {
+    if (savingRef.current) {
+      showMessage(t.saving);
+      return;
+    }
+    doMoveSection(ix, before);
+  };
+
+  const getByIndex = (ws: ISheet[], index: number) => {
+    let n = 0;
+    let i = 0;
+    while (i < ws.length) {
+      if (!(ws[i] as ISheet).deleted && !(ws[i] as ISheet).filtered) {
+        if (n === index) break;
+        n += 1;
+      }
+      i += 1;
+    }
+    return { ws: i < ws.length ? ws[i] : undefined, i };
+  };
+
+  const doDetachMedia = async (ws: ISheet | undefined) => {
+    if (!ws) return false;
+    if (ws.passage) {
+      const attached = mediafiles.filter(
+        (m) => related(m, 'passage') === ws.passage?.id
+      ) as MediaFileD[];
+      if (detachPassage) {
+        for (let ix = 0; ix < attached.length; ix++) {
+          await detachPassage(
+            ws.passage?.id || '',
+            related(ws.passage, 'section'),
+            plan,
+            (attached[ix] as MediaFileD).id
+          );
+        }
+      }
+    }
+    return true;
+  };
+
+  const markDelete = async (index: number) => {
+    if (savingRef.current || updateRef.current) {
+      showMessage(t.saving);
+      return;
+    }
+    setUpdate(true);
+    const { ws, i } = getByIndex(sheetRef.current, index);
+    const removeItem: number[] = [];
+
+    const doDelete = (sht: ISheet[], j: number, isSec?: boolean) => {
+      if (
+        (isSec && (sht[j] as ISheet).sectionId) ||
+        (!isSec && (sht[j] as ISheet).passage)
+      ) {
+        sht[j] = { ...sht[j], deleted: true } as ISheet;
+      } else {
+        removeItem.push(j);
+      }
+    };
+
+    if (ws) {
+      const newsht = [...sheetRef.current];
+      if (isSectionRow(ws)) {
+        let j = i;
+        let isSec = true;
+        while (j < newsht.length) {
+          doDelete(newsht, j, isSec);
+          j += 1;
+          isSec = false;
+          if (j === newsht.length) break;
+          if (isSectionRow(newsht[j] as ISheet)) break;
+        }
+      } else doDelete(newsht, i);
+      const myWork: ISheet[] = [];
+      newsht.forEach((ws, i) => {
+        if (!removeItem.includes(i)) myWork.push(ws);
+      });
+      setSheet([...shtResequence(myWork)]);
+      setChanged(true);
+    }
+    setUpdate(false);
+  };
+
+  const handleDelete = async (what: string, where: number[]) => {
+    if (what === 'Delete') {
+      await waitForIt(
+        'saving before delete',
+        () => {
+          return !savingRef.current;
+        },
+        () => false,
+        1500
+      );
+      await markDelete(where[0] ?? 0);
+      return true;
+    }
+    return false;
+  };
+
+  const getScheme = (where: number[]) => {
+    const { ws } = getByIndex(sheetRef.current, where[0] ?? 0);
+    return ws?.scheme?.id;
+  };
+
+  const getSectionsWhere = (where: number[]) => {
+    const selected = Array<SectionD>();
+    where.forEach((c) => {
+      const { ws } = getByIndex(sheetRef.current, c);
+      const one = sections.find((s) => s.id === ws?.sectionId?.id);
+      if (one) selected.push(one);
+    });
+    return selected;
+  };
+
+  const handleTablePaste = (rows: string[][]) => {
+    if (savingRef.current || updateRef.current) {
+      showMessage(t.saving);
+      return Array<Array<string>>();
+    }
+    if (offline && !offlineOnly) {
+      showMessage(ts.NoSaveOffline);
+      return Array<Array<string>>();
+    }
+    setUpdate(true);
+    const { valid, addedWorkflow } = paste(rows);
+    if (valid) {
+      setSheet(sheetRef.current.concat(addedWorkflow));
+      setChanged(true);
+      setUpdate(false);
+      return Array<Array<string>>();
+    }
+    setUpdate(false);
+    return rows;
+  };
+
+  const isValidNumber = (value: string): boolean => {
+    return /^-?[0-9.]+$/.test(value);
+  };
+
+  interface MyWorkflow extends ISheet {
+    [key: string]: any;
+  }
+  const updateData = (changes: ICellChange[]) => {
+    waitForIt(
+      'finish save or update',
+      () => !savingRef.current && !updateRef.current,
+      () => false,
+      50
+    ).then(() => {
+      setUpdate(true);
+      const newsht = [...sheetRef.current];
+      changes.forEach((c) => {
+        const { ws, i } = getByIndex(newsht, c.row);
+        const myWf = ws as MyWorkflow | undefined;
+        const name = colNames[c.col];
+        const isNumberCol = c.col === secNumCol || c.col === passNumCol;
+
+        if (isNumberCol && !isValidNumber(c.value || '')) {
+          showMessage(s.nonNumber);
+        } else if (myWf && myWf[name as keyof MyWorkflow] !== c.value) {
+          const isSection = c.col < 2;
+          const sectionUpdated = isSection
+            ? currentDateTime()
+            : ws?.sectionUpdated;
+          const passageUpdated = isSection
+            ? ws?.passageUpdated
+            : currentDateTime();
+          const value = name === 'book' ? findBook(c.value as string) : c.value;
+          const passageType =
+            name === 'reference'
+              ? passageTypeFromRef(c.value as string, flat)
+              : ws?.passageType;
+
+          newsht[i] = {
+            ...ws,
+            [name as keyof MyWorkflow]: isNumberCol
+              ? parseInt(value ?? '')
+              : value,
+            sectionUpdated,
+            passageUpdated,
+            passageType,
+          } as ISheet;
+        }
+      });
+      if (changes.length > 0) {
+        setSheet(newsht);
+        setChanged(true);
+      }
+      setUpdate(false);
+    });
+  };
+
+  const updateTitleMedia = async (index: number, mediaId: string) => {
+    if (savingRef.current || updateRef.current) {
+      showMessage(t.saving);
+      return;
+    }
+    setUpdate(true);
+    const newsht = [...sheetRef.current];
+    const { ws, i } = getByIndex(newsht, index);
+    if (ws) {
+      if (isSectionRow(ws)) {
+        const sectionUpdated = currentDateTime();
+        newsht[i] = {
+          ...ws,
+          titleMediaId: mediaId
+            ? { type: 'mediafile', id: mediaId }
+            : undefined,
+          sectionUpdated,
+        } as ISheet;
+        setSheet(newsht);
+        setChanged(true);
+      }
+      // Used for recording chapter numbers (CHNUM)
+      if (isPassageRow(ws)) {
+        const passageUpdated = currentDateTime();
+        newsht[i] = {
+          ...ws,
+          mediaId: mediaId ? { type: 'mediafile', id: mediaId } : undefined,
+          passageUpdated,
+        } as ISheet;
+        setSheet(newsht);
+        setChanged(true);
+      }
+    }
+    setUpdate(false);
+    setTimeout(() => startSave(), 1000);
+  };
+
+  const saveIfChanged = (cb: () => void) => {
+    if (myChangedRef.current) {
+      startSave();
+      waitForSave(cb, SaveWait);
+    } else cb();
+  };
+  const waitForPassageId = (i: number, cb: () => void) => {
+    waitForIt(
+      'passageId to be set',
+      () => {
+        return getByIndex(sheetRef.current, i).ws?.passage !== undefined;
+      },
+      () => false,
+      SaveWait
+    ).then(() => cb());
+  };
+
+  const handlePassageDetail = (i: number) => {
+    saveIfChanged(async () => {
+      waitForPassageId(i, () => {
+        const { ws } = getByIndex(sheetRef.current, i);
+        const id = ws?.passage?.id || '';
+        const passageRemoteId =
+          remoteIdNum('passage', id, memory?.keyMap as RecordKeyMap) || id;
+        setView(`/detail/${prjId}/${passageRemoteId}`);
+      });
+    });
+  };
+
+  const handleAudacity = async (index: number) => {
+    if (!(await hasAudacity())) {
+      showMessage(
+        <span>
+          {stringReplace(t.installAudacity, '{Audacity}', () => (
+            <Link
+              href="https://www.audacityteam.org/download/"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {Audacity}
+            </Link>
+          ))}
+        </span>
+      );
+      return;
+    }
+    saveIfChanged(() => {
+      waitForPassageId(index, () => {
+        const { ws } = getByIndex(sheetRef.current, index);
+        setAudacityItem({ ws: ws as ISheet, index });
+      });
+    });
+  };
+
+  const handleAudacityClose = () => {
+    setAudacityItem(undefined);
+  };
+
+  const handleAssign = (where: number[]) => () => {
+    saveIfChanged(() => {
+      setAssignSections(where);
+      setAssignSectionVisible(true);
+    });
+  };
+
+  const handleAssignClose = () => () => setAssignSectionVisible(false);
+
+  const showUpload = (i: number, record: boolean, list?: File[]) => {
+    waitForPassageId(i, () => {
+      const { ws } = getByIndex(sheetRef.current, i);
+      uploadItem.current = ws;
+      if (ws?.passage) {
+        setDefaultFilename(
+          passageDefaultFilename(
+            ws?.passage,
+            plan,
+            memory,
+            VernacularTag,
+            getGlobal('offline')
+          )
+        );
+      }
+      setRecordAudio(record);
+      setImportList(list);
+      setUploadVisible(true);
+    });
+  };
+
+  const handleUploadVisible = (v: boolean) => {
+    setUploadVisible(v);
+  };
+
+  const handleUpload = (i: number) => () => {
+    saveIfChanged(() => {
+      showUpload(i, false);
+    });
+  };
+
+  const handleEdit = (i: number) => () => {
+    saveIfChanged(() => {
+      waitForPassageId(i, () => {
+        const { ws } = getByIndex(sheetRef.current, i);
+        setEditRow(ws);
+        setIsNote(ws?.passageType === PassageTypeEnum.NOTE);
+      });
+    });
+  };
+
+  const handleVersions = (i: number) => () => {
+    saveIfChanged(() => {
+      waitForPassageId(i, () => {
+        const { ws } = getByIndex(sheetRef.current, i);
+        setVersionRow(ws);
+        setIsNote(ws?.passageType === PassageTypeEnum.NOTE);
+      });
+    });
+  };
+
+  const graphicsClosed = (v: boolean) => {
+    setUploadType(v ? UploadType.Graphic : undefined);
+    setUploadGraphicVisible(v);
+  };
+
+  const handleGraphic = (i: number) => {
+    saveIfChanged(() => {
+      setUploadType(UploadType.Graphic);
+      const { ws } = getByIndex(sheetRef.current, i);
+      const defaultName = getDefaultName(ws, 'graphic', memory, plan);
+      setDefaultFilename(defaultName);
+      uploadItem.current = ws;
+      setGraphicFullsizeUrl(ws?.graphicFullSizeUrl ?? '');
+      setCurGraphicRights(ws?.graphicRights ?? '');
+    });
+  };
+  useEffect(() => {
+    setUploadGraphicVisible(uploadType === UploadType.Graphic);
+  }, [uploadType]);
+
+  const handleRightsChange = (graphicRights: string) => {
+    const ws = uploadItem.current;
+    if (ws) uploadItem.current = { ...ws, graphicRights };
+    setCurGraphicRights(graphicRights);
+  };
+
+  const afterConvert = async (images: CompressedImages[]) => {
+    const ws = uploadItem.current;
+    const resourceType = ws?.kind === IwsKind.Section ? 'section' : 'passage';
+    const secRec: Section | undefined =
+      ws?.kind === IwsKind.Section
+        ? (findRecord(memory, 'section', ws?.sectionId?.id ?? '') as Section)
+        : undefined;
+    const resourceId =
+      ws?.kind === IwsKind.Section
+        ? parseInt(secRec?.keys?.remoteId ?? '0')
+        : parseInt(ws?.passage?.keys?.remoteId ?? '0');
+    const graphicRec = graphics.find(
+      (g) =>
+        g.attributes.resourceType === resourceType &&
+        g.attributes.resourceId === resourceId
+    );
+    const curData = JSON.parse(
+      graphicRec?.attributes?.info || '{}'
+    ) as IGraphicInfo;
+    if (curData[Rights] !== ws?.graphicRights || images.length > 0) {
+      showMessage(ts.saving);
+      const infoData: IGraphicInfo = {
+        ...curData,
+        [Rights]: ws?.graphicRights,
+      };
+      images.forEach((image) => {
+        infoData[image.dimension.toString()] = image;
+      });
+      const info = JSON.stringify(infoData);
+      if (graphicRec) {
+        await graphicUpdate({
+          ...graphicRec,
+          attributes: { ...graphicRec.attributes, info },
+        });
+      } else if (images.length > 0) {
+        await graphicCreate({ resourceType, resourceId, info });
+      }
+    }
+    if (images.length > 0) showMessage(ts.uploadSuccess);
+    setUploadType(undefined);
+  };
+
+  const handleUploadGraphicVisible = (v: boolean) => {
+    if (!v && Boolean(uploadType)) {
+      afterConvert([]).then(() => {
+        graphicsClosed(false);
+      });
+    } else {
+      graphicsClosed(v);
+    }
+  };
+
+  const handleAudacityImport = (i: number, list: File[]) => {
+    saveIfChanged(() => {
+      showUpload(i, false, list);
+    });
+  };
+
+  const handleRecord = (i: number) => {
+    saveIfChanged(() => {
+      showUpload(i, true);
+    });
+  };
+
+  const handleEditClose = () => {
+    setEditRow(undefined);
+  };
+
+  const handleVerHistClose = () => {
+    setVersionRow(undefined);
+  };
+
+  const handleNameChange = (name: string) => {
+    setSpeaker(name);
+  };
+
+  const updateLastModified = async () => {
+    const planRec = getPlan(plan) as PlanD;
+    if (planRec !== null) {
+      //do this even if the wait above failed
+      //don't use sections here, it hasn't been updated yet
+      const plansections = memory.cache.query((qb) =>
+        qb.findRecords('section')
+      ) as Section[];
+      planRec.attributes.sectionCount = plansections.filter(
+        (s) => related(s, 'plan') === plan
+      ).length;
+      await memory.update((t) => UpdateRecord(t, planRec, user));
+    }
+  };
+
+  const getLastModified = (plan: string) => {
+    if (plan) {
+      const planRec = getPlan(plan) as PlanD;
+      if (planRec !== null) setLastSaved(planRec.attributes.dateUpdated);
+      else setLastSaved('');
+    }
+  };
+
+  // keep track of screen width
+  const setDimensions = () => {
+    setWidth(window.innerWidth);
+  };
+
+  useEffect(() => {
+    setDimensions();
+    const handleResize = debounce(() => {
+      setDimensions();
+    }, 100);
+
+    window.addEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); //do this once to get the default;
+
+  useEffect(() => {
+    setFilterState(getFilter(defaultFilterState));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [project, defaultFilterState]);
+  useEffect(() => {
+    const fm = getProjectDefault(projDefFirstMovement) as number;
+    setFirstMovement(fm ?? 1);
+    setProjFirstMovement(fm ?? 1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [project]);
+
+  useEffect(() => {
+    if (!getStepsBusy.current) {
+      getStepsBusy.current = true;
+      getFilteredSteps((orgSteps) => {
+        getStepsBusy.current = false;
+        const newOrgSteps = orgSteps.sort(
+          (i, j) => i.attributes.sequencenum - j.attributes.sequencenum
+        );
+        setOrgSteps(newOrgSteps);
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [workflowSteps, orgWorkflowSteps, organization]);
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const minSection = useMemo(() => getMinSection(sheetRef.current), [sheet]);
+
+  useEffect(() => {
+    if (minSection !== defaultFilterState.minSection) {
+      setDefaultFilterState((fs) => ({ ...fs, minSection }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [minSection]);
+
+  const doneStepId = useMemo(() => {
+    if (getStepsBusy.current) return 'notready';
+    const tmp = orgSteps.find(
+      (s) => getTool(s.attributes?.tool) === ToolSlug.Done
+    );
+
+    if (defaultFilterState.canHideDone !== Boolean(tmp))
+      setDefaultFilterState((fs) => ({
+        ...fs,
+        canHideDone: Boolean(tmp),
+      }));
+    return tmp?.id ?? 'noDoneStep';
+  }, [defaultFilterState, orgSteps]);
+
+  // Save locally or online in batches
+  useEffect(() => {
+    let prevSave = '';
+    const handleSave = async () => {
+      const numChanges = shtNumChanges(sheetRef.current, prevSave);
+      if (firstMovement !== projFirstMovement)
+        setProjectDefault(projDefFirstMovement, firstMovement);
+      if (numChanges === 0) return;
+      for (const ws of sheetRef.current) {
+        if (ws.deleted) await doDetachMedia(ws);
+      }
+      setComplete(10);
+      const saveFn = async (sheet: ISheet[]) => {
+        if (!offlineOnly && numChanges > 10) {
+          return await onlineSave(sheet, prevSave);
+        } else {
+          await localSave(sheet, sections, passages, prevSave);
+          return false;
+        }
+      };
+      if (numChanges > 50) setBusy(true);
+      let change = false;
+      let start = 0;
+      const newsht = [...sheetRef.current];
+      if (!offlineOnly) {
+        let end = 200;
+        for (; start + 200 < newsht.length; start += end) {
+          setComplete(Math.floor((90 * start) / numChanges) + 10);
+          end = 200;
+          while (!isSectionRow(newsht[start + end] as ISheet) && end > 0)
+            end -= 1;
+          if (end === 0) {
+            //find the end
+            end = 200;
+            while (
+              end < newsht.length &&
+              !isSectionRow(newsht[start + end] as ISheet)
+            )
+              end++;
+          }
+          change = (await saveFn(newsht.slice(start, start + end))) || change;
+        }
+      }
+      change = (await saveFn(newsht.slice(start))) || change;
+      //update plan section count and lastmodified
+      await updateLastModified();
+      //not sure we need to do this because its going to be requeried next
+      if (change) setSheet(newsht);
+      setBusy(false);
+    };
+    const setSaving = (value: boolean) => (savingRef.current = value);
+    const doneSaving = () => {
+      setSaving(false);
+      setLastSaved(currentDateTime()); //force refresh the sheet
+      saveCompleted(toolId);
+      setComplete(100);
+      setUpdate(false);
+    };
+    const save = () => {
+      if (!savingRef.current && !updateRef.current) {
+        setSaving(true);
+        setUpdate(true);
+        setChanged(false);
+        prevSave = lastSaved || '';
+        showMessage(t.saving);
+        handleSave().then(() => {
+          if (doForceDataChanges.current) {
+            waitForRemoteQueue(t.publishingWarning).then(() => {
+              forceDataChanges().then(() => doneSaving());
+            });
+            doForceDataChanges.current = false;
+          } else {
+            doneSaving();
+          }
+        });
+      }
+    };
+    myChangedRef.current = isChanged(toolId);
+    if (saveRequested(toolId)) {
+      //wait a beat for the save to register
+      setTimeout(() => {
+        waitForIt(
+          'saving sheet recordings',
+          () => !anySaving(toolId) && !updateRef.current,
+          () => false,
+          10000
+        ).finally(() => {
+          if (offlineOnly) {
+            save();
+          } else {
+            checkOnline((online) => {
+              if (!online) {
+                saveCompleted(toolId, ts.NoSaveOffline);
+                showMessage(ts.NoSaveOffline);
+                setSaving(false);
+                setUpdate(false);
+              } else {
+                save();
+              }
+            });
+          }
+        });
+      }, 100);
+    } else if (clearRequested(toolId)) {
+      clearCompleted(toolId);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [toolsChanged]);
+
+  // load data when tables change (and initally)
+  useEffect(() => {
+    if (scripture && allBookData.length === 0) fetchBooks(lang);
+    if (
+      !savingRef.current &&
+      !myChangedRef.current &&
+      plan &&
+      !updateRef.current
+    ) {
+      setUpdate(true);
+      const newWorkflow = getSheet({
+        plan,
+        sections,
+        passages,
+        organizationSchemeSteps,
+        flat,
+        projectShared: shared,
+        memory,
+        orgWorkflowSteps: orgSteps,
+        wfStr,
+        filterState,
+        minSection,
+        hasPublishing: publishingOn,
+        hidePublishing,
+        doneStepId,
+        getDiscussionCount,
+        graphicFind,
+        getPublishTo,
+        publishStatus,
+        getSharedResource,
+        user,
+        myGroups,
+        isDeveloper: developer === 'true',
+      });
+      setSheet(newWorkflow);
+
+      getLastModified(plan);
+      setUpdate(false);
+    }
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    organizationSchemeSteps,
+    plan,
+    sections,
+    passages,
+    mediafiles,
+    graphics,
+    sharedresources,
+    flat,
+    shared,
+    orgSteps,
+    lastSaved,
+    hidePublishing,
+  ]);
+
+  // Reset column widths based on sheet content
+  useEffect(() => {
+    const curNames = [...colNames.concat(['action'])];
+
+    const minWidth = {
+      sectionSeq: 60,
+      title: 100,
+      passageSeq: 60,
+      book: 170,
+      reference: 120,
+      comment: 100,
+      action: 50,
+    };
+    const { colHead, colAdd } = shtColumnHeads(
+      sheet,
+      width,
+      curNames,
+      local,
+      minWidth
+    );
+    let change = saveColAdd === undefined;
+    saveColAdd?.forEach((n, i) => {
+      change = change || n !== colAdd[i];
+    });
+    curNames.forEach((n, i) => {
+      if (Object.hasOwn(local, n))
+        change = change || local[n] !== (columns[i] as ICell).value;
+    });
+    if (change) {
+      setColumns([...colHead]);
+      setSaveColAdd([...colAdd]);
+    }
+    /* eslint-disable-next-line react-hooks/exhaustive-deps */
+  }, [sheet, width, colNames, flat]);
+
+  useEffect(() => {
+    const newWork: ISheet[] = [];
+    let changed = false;
+    let sectionfiltered = false;
+    let filtered = false;
+
+    if (!updateRef.current) {
+      setUpdate(true);
+      let sectionIndex = -1;
+      let sectionScheme: RecordIdentity | undefined;
+      let hasOnePassage = false;
+      sheetRef.current.forEach((s, index) => {
+        if (isSectionRow(s)) {
+          if (sectionIndex >= 0) {
+            if (!hasOnePassage && filterState.assignedToMe && !flat) {
+              (newWork[sectionIndex] as ISheet).filtered = true;
+            }
+          }
+          sectionIndex = index;
+          sectionScheme = s.scheme;
+          hasOnePassage = false;
+          sectionfiltered = isSectionFiltered(
+            filterState,
+            minSection,
+            s.sectionSeq,
+            hidePublishing,
+            s.reference || ''
+          );
+          if (
+            !sectionfiltered &&
+            hidePublishing &&
+            s.kind === IwsKind.Section &&
+            s.level !== SheetLevel.Section
+          ) {
+            let allMyPassagesArePublishing = true;
+            for (
+              let ix = index + 1;
+              ix < sheetRef.current.length &&
+              isPassageRow(sheetRef.current[ix] as ISheet) &&
+              allMyPassagesArePublishing;
+              ix++
+            ) {
+              if (
+                !isPublishingTitle(
+                  (sheetRef.current[ix] as ISheet).reference,
+                  flat
+                )
+              ) {
+                allMyPassagesArePublishing = false;
+              }
+            }
+            sectionfiltered = allMyPassagesArePublishing;
+          }
+        }
+        if (isPassageRow(s)) {
+          filtered =
+            sectionfiltered ||
+            isPassageFiltered(
+              s,
+              filterState,
+              minSection,
+              hidePublishing,
+              orgSteps,
+              doneStepId,
+              sectionScheme,
+              s.assign,
+              user,
+              myGroups
+            );
+        } else filtered = sectionfiltered;
+        hasOnePassage ||= s.kind === IwsKind.Passage && filtered === false;
+        if (filtered !== s.filtered) changed = true;
+        newWork.push({
+          ...s,
+          filtered,
+        });
+      });
+      if (sectionIndex >= 0) {
+        if (!hasOnePassage && filterState.assignedToMe) {
+          (newWork[sectionIndex] as ISheet).filtered = true;
+        }
+      }
+
+      if (changed) {
+        setSheet(newWork);
+      }
+      setUpdate(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orgSteps, filterState, doneStepId, hidePublishing, flat]);
+
+  const bookSortMap = new Map<string, string>(
+    bookSortJson as [string, string][]
+  );
+
+  const updateBook = (seq: number, book: string) => {
+    const idx = sheet.findIndex((s) => s.sectionSeq === seq && !s.deleted);
+    if (idx !== -1) {
+      const newsht = [...sheetRef.current];
+      const parse = sheet[idx]?.reference?.split(' ');
+      const reference = `${parse?.[0]} ${book}`;
+      newsht[idx] = { ...sheet[idx], reference } as ISheet;
+      setSheet(newsht);
+    }
+  };
+
+  useEffect(() => {
+    if (firstBook && scripture) {
+      const bookSrt = getProjectDefault(projDefBook);
+      const firstSort = bookSortMap.get(firstBook as string) ?? '000';
+      if (!bookSrt || bookSrt !== firstSort) {
+        setProjectDefault(projDefBook, firstSort);
+        updateBook(AltBkSeq, firstBook as string);
+        updateBook(BookSeq, firstBook as string);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [firstBook, scripture]);
+
+  const setSectionPublish = async (
+    index: number,
+    destinations: PublishDestinationEnum[]
+  ) => {
+    await waitForRemoteQueue(t.publishingWarning);
+    if (savingRef.current || updateRef.current) {
+      showMessage(t.saving);
+      return;
+    }
+    setUpdate(true);
+    const { ws } = getByIndex(sheetRef.current, index);
+    if (ws) {
+      const newsht = [...sheetRef.current];
+      newsht[index] = {
+        ...ws,
+        published: destinations,
+        sectionUpdated: currentDateTime(),
+      };
+      //if this is a movement...publish all the sections below it
+      if (
+        ws.published !== destinations &&
+        destinations.includes(PublishDestinationEnum.PropagateSection) &&
+        ws.level === SheetLevel.Movement
+      ) {
+        let i = index + 1;
+        while (i < newsht.length) {
+          if ((newsht[i] as ISheet).level === SheetLevel.Movement) break;
+          if (
+            isSectionRow(newsht[i] as ISheet) &&
+            (newsht[i] as ISheet).published !== destinations
+          ) {
+            newsht[i] = {
+              ...newsht[i],
+              published: destinations,
+              sectionUpdated: currentDateTime(),
+            } as ISheet;
+          }
+          i++;
+        }
+      }
+      setSheet(newsht);
+      setChanged(true);
+      doForceDataChanges.current = true;
+    }
+    setUpdate(false);
+  };
+
+  const onPublishing = async (update: boolean) => {
+    if (!firstBook) {
+      showMessage(scripture ? t.setupScriptureBook : t.setupGeneralBook);
+      return;
+    }
+    if (update) await doPublish();
+    else if (!hidePublishing)
+      togglePublishing(); //turn it off
+    //if we're going to show now and we don't already have some rows...ask
+    else if (!publishingOn) setConfirmPublishingVisible(true);
+    else togglePublishing(); //turn it on - no update
+  };
+  const onPublishingReject = () => {
+    setConfirmPublishingVisible(false);
+  };
+  const onPublishingConfirm = async () => {
+    setConfirmPublishingVisible(false);
+    await doPublish();
+    togglePublishing();
+  };
+
+  const hasBookTitle = async (bookType: PassageTypeEnum) => {
+    if (
+      sheetRef.current.findIndex(
+        (s) => !s.deleted && s.passageType === bookType
+      ) < 0
+    ) {
+      //see if we have this book anywhere in the team
+      //ask remote about this if we have a remote
+      const teamprojects = projects
+        .filter((p) => related(p, 'organization') === organization)
+        .map((p) => p.id);
+      const teamplans = plans
+        .filter((p) => teamprojects.includes(related(p, 'project')))
+        .map((p) => p.id);
+      let foundIt = Boolean(
+        sections.find(
+          (s) =>
+            s.attributes?.state === publishingTitle(bookType) &&
+            teamplans.includes(related(s, 'plan'))
+        )
+      );
+      if (!foundIt && remote) {
+        const bts = (await remote.query((qb) =>
+          qb
+            .findRecords('section')
+            .filter({ attribute: 'state', value: publishingTitle(bookType) })
+        )) as SectionD[];
+        foundIt = Boolean(
+          bts.find((s) => teamplans.includes(related(s, 'plan')))
+        );
+      }
+      return foundIt;
+    }
+    return true;
+  };
+
+  const alternateName = (name: string) => t.alternateName.replace('{0}', name);
+
+  const chapterNumberTitle = (chapter: number) =>
+    t.chapter.replace('{0}', chapter.toString());
+
+  const AddBook = (newsht: ISheet[], passageType: PassageTypeEnum) => {
+    const sequencenum =
+      passageType === PassageTypeEnum.BOOK ? BookSeq : AltBkSeq;
+    const baseName = scripture
+      ? firstBook
+        ? (bookMap[firstBook as string] ?? '')
+        : ''
+      : (firstBook as string);
+
+    if (baseName) {
+      const title =
+        passageType === PassageTypeEnum.BOOK
+          ? baseName
+          : alternateName(baseName as string);
+      const newRow = {
+        level: SheetLevel.Book,
+        kind: IwsKind.Section,
+        sectionSeq: sequencenum,
+        passageSeq: 0,
+        reference: publishingTitle(passageType),
+        title,
+        passageType: passageType,
+      } as ISheet;
+      return newsht.concat([newRow]);
+    }
+    return newsht;
+  };
+
+  const isKind = (
+    row: number,
+    kind: PassageTypeEnum,
+    ws: ISheet[] = sheetRef.current
+  ) => {
+    return row >= 0 && row < ws.length
+      ? (ws[row] as ISheet).passageType === kind &&
+          (ws[row] as ISheet).deleted === false
+      : false;
+  };
+
+  const chapterNumberReference = (chapter: number) =>
+    PassageTypeEnum.CHAPTERNUMBER + ' ' + chapter.toString();
+
+  const addChapterNumber = (newsht: ISheet[], chapter: number) => {
+    if (chapter > 0) {
+      const title = chapterNumberTitle(chapter);
+      return addPassageTo(
+        SheetLevel.Section,
+        newsht,
+        PassageTypeEnum.CHAPTERNUMBER,
+        undefined,
+        undefined,
+        title,
+        chapterNumberReference(chapter)
+      );
+    }
+    return newsht;
+  };
+
+  const doPublish = async () => {
+    let currentChapter = 0;
+
+    const startChapter = (s: ISheet) => {
+      const startchap = s.passage?.attributes?.startChapter ?? 0;
+      const endchap = s.passage?.attributes?.endChapter ?? 0;
+      if (startchap > 0 && startchap !== endchap) {
+        const lastverse = getLastVerse(s.book ?? '', startchap) ?? 0;
+        if (lastverse > 0) {
+          const startverse = s.passage?.attributes.startVerse ?? 0;
+          const endverse = s.passage?.attributes.endVerse ?? 0;
+          if (endverse > lastverse - startverse + 1) {
+            return endchap;
+          }
+        }
+      }
+      return startchap;
+    };
+
+    const chapterChanged = (s: ISheet) =>
+      s.passageType === PassageTypeEnum.PASSAGE &&
+      s.book === firstBook &&
+      startChapter(s) > 0 &&
+      startChapter(s) !== currentChapter;
+
+    const haveChapterNumber = (
+      sht: ISheet[],
+      nextchap: number,
+      startcheck: number,
+      endcheck: number
+    ) => {
+      let gotit = false;
+
+      while (startcheck++ < endcheck) {
+        if (
+          isKind(startcheck, PassageTypeEnum.CHAPTERNUMBER) &&
+          (sht[startcheck] as ISheet).reference ===
+            chapterNumberReference(nextchap)
+        ) {
+          gotit = true;
+        }
+      }
+      return gotit;
+    };
+    let newworkflow: ISheet[] = [];
+    if (savingRef.current || updateRef.current) {
+      showMessage(t.saving);
+      return;
+    }
+    setUpdate(true);
+    if (!(await hasBookTitle(PassageTypeEnum.BOOK)))
+      newworkflow = AddBook(newworkflow, PassageTypeEnum.BOOK);
+
+    if (!(await hasBookTitle(PassageTypeEnum.ALTBOOK)))
+      newworkflow = AddBook(newworkflow, PassageTypeEnum.ALTBOOK);
+    let nextpsg = 0;
+    const sht = sheetRef.current;
+    sht.forEach((s, index) => {
+      //if flat the title has to come before the section
+      //otherwise we want it as the first passage in the section
+      if (isSectionRow(s)) {
+        nextpsg = 0;
+
+        //copy the section
+        //we won't change sequence numbers on hierarchical
+        newworkflow = newworkflow.concat([{ ...s }]);
+        //do I need a chapter number?
+        const vernpsg = sht.findIndex(
+          (r) =>
+            !r.deleted &&
+            r.passageType === PassageTypeEnum.PASSAGE &&
+            r.sectionSeq === s.sectionSeq &&
+            r.passageSeq > 0
+        );
+
+        if (vernpsg > 0 && chapterChanged(sht[vernpsg] as ISheet)) {
+          const nextchap = startChapter(sht[vernpsg] as ISheet);
+          if (!haveChapterNumber(sht, nextchap, index, vernpsg)) {
+            newworkflow = addChapterNumber(newworkflow, nextchap);
+            nextpsg += 0.01;
+          }
+          currentChapter = nextchap;
+        }
+      } //just a passage
+      else {
+        //do I need a chapter number?
+        let prevrow = index - 1;
+        while ((sht[prevrow] as ISheet).deleted) prevrow--;
+        if (
+          !isSectionRow(sht[prevrow] as ISheet) &&
+          !s.deleted &&
+          chapterChanged(s)
+        ) {
+          if (!haveChapterNumber(sht, startChapter(s), index - 2, index)) {
+            newworkflow = addChapterNumber(newworkflow, startChapter(s));
+            nextpsg += 0.01;
+          }
+          currentChapter = startChapter(s);
+        }
+        nextpsg = nextNum(nextpsg, s.passageType);
+        newworkflow = newworkflow.concat([
+          {
+            ...s,
+            passageSeq: nextpsg,
+            passageUpdated:
+              s.passageSeq !== nextpsg ? currentDateTime() : s.passageUpdated,
+          },
+        ]);
+      }
+    });
+    setSheet(newworkflow);
+    setChanged(true);
+    setUpdate(false);
+  };
+
+  const rowinfo = useMemo(() => {
+    const totalSections = new Set(
+      sheet
+        .filter(
+          (s) =>
+            !s.deleted &&
+            ((publishingOn && !hidePublishing) ||
+              (s.sectionSeq > 0 && Math.trunc(s.sectionSeq) === s.sectionSeq))
+        )
+        .map((s) => s.sectionSeq)
+    ).size;
+    const specialSections =
+      !publishingOn || hidePublishing
+        ? 0
+        : new Set(
+            sheet
+              .filter(
+                (s) =>
+                  s.sectionSeq < 0 || Math.trunc(s.sectionSeq) !== s.sectionSeq
+              )
+              .map((s) => s.sectionSeq)
+          ).size;
+    const filtered = sheet.filter((s) => !s.deleted && !s.filtered);
+    const showingSections = new Set(filtered.map((s) => s.sectionSeq)).size;
+    if (showingSections < totalSections) {
+      local.sectionSeq = (
+        <Badge
+          badgeContent=" "
+          variant="dot"
+          color="secondary"
+          anchorOrigin={{
+            vertical: 'top',
+            horizontal: 'right',
+          }}
+        >
+          {organizedBy +
+            ' (' +
+            (showingSections - specialSections) +
+            '/' +
+            (totalSections - specialSections) +
+            ')'}
+        </Badge>
+      );
+    }
+    return filtered;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sheet, width, colNames, flat, publishingOn, organizedBy]);
+
+  const rowdata = useMemo(
+    () => workSheet(rowinfo, colNames, sheet),
+    [rowinfo, colNames, sheet]
+  );
+
+  if (view !== '') return <StickyRedirect to={view} />;
+
+  const afterUpload = async () => {
+    uploadItem.current = undefined;
+    if (!cancelled.current) setUploadVisible(false);
+    if (importList) {
+      setImportList(undefined);
+    }
+  };
+  const isReady = () => true;
+
+  const handleLookupBook = (book: string) =>
+    lookupBook({ book, allBookData, bookMap });
+
+  const onFirstMovement = (newFM: number) => {
+    if (newFM !== firstMovement) {
+      setFirstMovement(newFM);
+      setSectionArr([]);
+      setChanged(true);
+    }
+  };
+  const onFiles = (files: File[]) => {
+    if (files.length > 0) {
+      setGraphicFullsizeUrl(URL.createObjectURL(files[0] as File));
+    } else setGraphicFullsizeUrl('');
+  };
+  return (
+    <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+      <PlanSheet
+        {...props}
+        columns={columns}
+        colSlugs={colNames}
+        rowData={rowdata}
+        rowInfo={rowinfo}
+        bookMap={bookMap}
+        bookSuggestions={bookSuggestions}
+        firstMovement={firstMovement}
+        action={handleDelete}
+        addSection={addSection}
+        addPassage={addPassage}
+        movePassage={movePassage}
+        moveSection={moveSection}
+        updateData={updateData}
+        updateTitleMedia={updateTitleMedia}
+        paste={handleTablePaste}
+        lookupBook={handleLookupBook}
+        resequence={handleResequence}
+        inlinePassages={flat}
+        onAudacity={handleAudacity}
+        onPassageDetail={handlePassageDetail}
+        onAssign={handleAssign}
+        onUpload={handleUpload}
+        onRecord={handleRecord}
+        onEdit={handleEdit}
+        onHistory={handleVersions}
+        onGraphic={handleGraphic}
+        onFilterChange={onFilterChange}
+        onFirstMovement={onFirstMovement}
+        filterState={filterState}
+        minimumSection={minSection}
+        maximumSection={sheet[sheet.length - 1]?.sectionSeq ?? 0}
+        orgSteps={orgSteps}
+        canSetDefault={canSetProjectDefault}
+        toolId={toolId}
+        onPublishing={onPublishing}
+        setSectionPublish={setSectionPublish}
+      />
+      {assignSectionVisible && (
+        <AssignSection
+          scheme={getScheme(assignSections) as string}
+          sections={getSectionsWhere(assignSections)}
+          visible={assignSectionVisible}
+          closeMethod={handleAssignClose()}
+        />
+      )}
+      <Uploader
+        recordAudio={recordAudio}
+        allowWave={true}
+        defaultFilename={defaultFilename}
+        mediaId={uploadItem.current?.mediaId?.id || ''}
+        importList={importList as File[]}
+        isOpen={uploadVisible}
+        onOpen={handleUploadVisible}
+        showMessage={showMessage}
+        multiple={false}
+        finish={afterUpload}
+        cancelled={cancelled}
+        passageId={
+          related(uploadItem.current?.sharedResource, 'passage') ??
+          uploadItem.current?.passage?.id
+        }
+        uploadType={uploadType as UploadType}
+        performedBy={speaker}
+        onSpeakerChange={handleNameChange}
+        ready={isReady}
+      />
+      <GraphicUploader
+        dimension={[1024, 512, ApmDim]}
+        defaultFilename={defaultFilename}
+        isOpen={uploadGraphicVisible}
+        onOpen={handleUploadGraphicVisible}
+        showMessage={showMessage}
+        hasRights={Boolean(curGraphicRights)}
+        finish={afterConvert}
+        cancelled={cancelled}
+        uploadType={uploadType as UploadType}
+        onFiles={onFiles}
+        metadata={
+          <>
+            <GraphicRights
+              value={curGraphicRights}
+              onChange={handleRightsChange}
+            />
+            {graphicFullsizeUrl && (
+              <img src={graphicFullsizeUrl} alt="new" width={400} />
+            )}
+          </>
+        }
+      />
+      {audacityItem?.ws?.passage && (
+        <AudacityManager
+          item={audacityItem?.index}
+          open={Boolean(audacityItem)}
+          onClose={handleAudacityClose}
+          passageId={
+            {
+              type: 'passage',
+              id:
+                related(audacityItem?.ws?.sharedResource, 'passage') ??
+                audacityItem?.ws?.passage?.id,
+            } as RecordIdentity
+          }
+          mediaId={audacityItem?.ws?.mediaId?.id || ''}
+          onImport={handleAudacityImport}
+          speaker={speaker}
+          onSpeaker={handleNameChange}
+        />
+      )}
+      <BigDialog
+        title={ts.versionHistory}
+        isOpen={versionRow !== undefined}
+        onOpen={handleVerHistClose}
+      >
+        <VersionDlg
+          passId={versionRow?.passage?.id || ''}
+          canSetDestination={!offline && canPublish}
+          hasPublishing={publishingOn}
+        />
+      </BigDialog>
+      <BigDialog
+        title={
+          isNote
+            ? resStr.noteDetails
+            : shared
+              ? resStr.resourceEdit
+              : ts.versionHistory
+        }
+        isOpen={editRow !== undefined}
+        onOpen={handleEditClose}
+      >
+        {shared || isNote ? (
+          <ResourceTabs
+            passId={editRow?.passage?.id || ''}
+            ws={editRow}
+            onOpen={handleEditClose}
+            onUpdRef={updatePassageRef}
+            hasPublishing={publishingOn}
+          />
+        ) : (
+          <></>
+        )}
+      </BigDialog>
+      {confirmPublishingVisible && (
+        <Confirm
+          title={t.confirmPublish}
+          text={t.publishingWarning}
+          yesResponse={onPublishingConfirm}
+          noResponse={onPublishingReject}
+        />
+      )}
+    </Box>
+  );
+}
+
+export default ScriptureTable;

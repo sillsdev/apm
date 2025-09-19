@@ -10,24 +10,24 @@
  * https://stackoverflow.com/questions/71285827/cypress-e2e-before-hook-not-working-on-retries
  */
 export const retryableBefore = (fn: () => void) => {
-  let shouldRun = true
+  let shouldRun = true;
 
   // we use beforeEach as cypress will run this on retry attempt
   // we just abort early if we detected that it's already run
   beforeEach(() => {
-    if (!shouldRun) return
-    shouldRun = false
-    fn()
-  })
+    if (!shouldRun) return;
+    shouldRun = false;
+    fn();
+  });
 
   // When a test fails we flip the `shouldRun` flag back to true
   // so when cypress retries and runs the `beforeEach()` before
   // the test that failed, we'll run the `fn()` logic once more.
-  Cypress.on('test:after:run', result => {
+  Cypress.on('test:after:run', (result) => {
     if (result.state === 'failed') {
       if (result.currentRetry < result.retries) {
-        shouldRun = true
+        shouldRun = true;
       }
     }
-  })
-}
+  });
+};

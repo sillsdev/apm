@@ -1,0 +1,107 @@
+import React, { useState, useContext } from 'react';
+import { useAuth0 } from '@auth0/auth0-react';
+import { shallowEqual, useSelector } from 'react-redux';
+import { IEmailUnverifiedStrings } from '../model';
+import { Typography, Grid, styled, Box, BoxProps } from '@mui/material';
+import { API_CONFIG, isElectron } from '../../api-variable';
+import Axios from 'axios';
+import { TokenContext } from '../context/TokenProvider';
+import { ActionRow, PriButton } from '../control';
+import { emailUnverifiedSelector } from '../selector';
+import { useMounted, useMyNavigate } from '../utils';
+import { doLogout, goOnline } from './accessActions';
+
+const FullScreen = styled(Box)<BoxProps>(() => ({
+  display: 'flex',
+  flexDirection: 'column',
+  justifyContent: 'center',
+  width: '100%',
+  height: `calc(100vh - 120px)`,
+}));
+
+export const EmailUnverified = () => {
+  const isMounted = useMounted('unverfied');
+  const navigate = useMyNavigate();
+  const { getAccessTokenSilently, user } = useAuth0();
+  const { accessToken, setAuthSession } = useContext(TokenContext).state;
+  const [view, setView] = useState('');
+  const [message, setMessage] = useState('');
+  const t: IEmailUnverifiedStrings = useSelector(
+    emailUnverifiedSelector,
+    shallowEqual
+  );
+
+  const handleResend = () => {
+    const url = API_CONFIG.host + '/api/auth/resend';
+    Axios.get(url, {
+      headers: {
+        Authorization: 'Bearer ' + accessToken,
+      },
+    })
+      .then(() => setMessage('resent'))
+      .catch((err) => {
+        setMessage('resend err' + err.toString());
+      });
+  };
+
+  const handleLogout = () => {
+    doLogout();
+    setView('Logout');
+  };
+
+  const handleVerified = async () => {
+    if (!isElectron) {
+      handleLogout();
+    } else {
+      goOnline();
+    }
+  };
+  React.useEffect(() => {
+    if (user?.email_verified) {
+      (async () => {
+        const token = await getAccessTokenSilently();
+        if (!isMounted()) return;
+        setAuthSession(user, token);
+        setView('Loading');
+      })();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
+
+  if (/Logout/i.test(view)) navigate('/logout');
+  if (/Loading/i.test(view)) navigate('/loading');
+
+  return (
+    <FullScreen>
+      <Typography align="center" variant="h6">
+        {t.emailUnverified}
+        <br></br>
+        {t.verify}
+      </Typography>
+      <Typography align="center" variant="h6" sx={{ mb: 4 }}>
+        {message}
+      </Typography>
+      <Grid
+        container
+        direction="column"
+        justifyContent="space-around"
+        alignItems="center"
+        spacing={0}
+      >
+        <ActionRow>
+          <PriButton id="emailResent" onClick={handleResend}>
+            {t.resend}
+          </PriButton>
+          <PriButton id="emailVerified" onClick={handleVerified}>
+            {t.verified}
+          </PriButton>
+          <PriButton id="emailLogout" onClick={handleLogout}>
+            {t.logout}
+          </PriButton>
+        </ActionRow>
+      </Grid>
+    </FullScreen>
+  );
+};
+
+export default EmailUnverified;
