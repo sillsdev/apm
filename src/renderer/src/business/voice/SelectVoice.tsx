@@ -45,7 +45,7 @@ export default function SelectVoice({
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
 
   React.useEffect(() => {
-    const curVoice = getOrgDefault(orgDefaultVoices)?.fullName;
+    const curVoice = (getOrgDefault(orgDefaultVoices) as IVoicePerm)?.fullName;
     if (curVoice) {
       setVoice(curVoice);
     }

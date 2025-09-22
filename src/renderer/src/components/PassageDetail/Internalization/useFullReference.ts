@@ -1,4 +1,10 @@
-import { Section, Passage, IState, BookName } from '../../../model';
+import {
+  Section,
+  Passage,
+  IState,
+  BookName,
+  SectionArray,
+} from '../../../model';
 import { passageDescText } from '../../../crud/passage';
 import { sectionNumber } from '../../../crud/section';
 import { useSelector } from 'react-redux';
@@ -29,7 +35,7 @@ export const useFullReference = (inBookData?: BookName[]) => {
   const bookData = useSelector((state: IState) => state.books.bookData);
   const { getProjectDefault } = useProjectDefaults();
   const sectionMap = new Map<number, string>(
-    getProjectDefault(projDefSectionMap) ?? []
+    (getProjectDefault(projDefSectionMap) ?? []) as SectionArray
   );
 
   return (info: IInfo) =>

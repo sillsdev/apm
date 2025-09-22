@@ -58,7 +58,9 @@ export function BurritoWrapper() {
   React.useEffect(() => {
     if (teamId) {
       if (teamId) {
-        const curContents = getOrgDefault(burritoWrapper, teamId);
+        const curContents = getOrgDefault(burritoWrapper, teamId) as
+          | BurritoWrapperType
+          | undefined;
         if (curContents) {
           setMetaData(curContents);
         } else if (users && teams && teamBibles && bibles) {

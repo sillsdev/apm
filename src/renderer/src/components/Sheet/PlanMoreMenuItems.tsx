@@ -53,9 +53,7 @@ interface IProps {
   ts: ISharedStrings;
   ty: IPassageTypeStrings;
 }
-export const PlanMoreMenuItems: FC<
-  IProps & React.RefAttributes<HTMLUListElement>
-> = memo(
+export const PlanMoreMenuItems = memo(
   forwardRef((props: IProps, ref: React.Ref<HTMLUListElement>) => {
     const {
       open,

@@ -1,6 +1,6 @@
 import Memory from '@orbit/memory';
 import { related } from '../../crud/related';
-import { Passage, Section } from '../../model';
+import { Passage, Section, SectionArray } from '../../model';
 import {
   domVnum,
   firstVerse,

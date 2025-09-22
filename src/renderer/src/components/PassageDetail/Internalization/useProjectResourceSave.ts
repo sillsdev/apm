@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { useGlobal } from '../../../context/useGlobal';
 import {
   MediaFile,
+  MediaFileAttributes,
   MediaFileD,
   SectionResource,
   SectionResourceD,
@@ -175,15 +176,15 @@ export const useProjectResourceSave = () => {
       }
       if (!topic) topic = fullReference(i);
       const newMedia = {
-        type: 'mediafile',
+        type: 'mediaFile',
         attributes: {
           ...media.attributes,
           segments,
           topic: topic,
-        },
+        } as MediaFileAttributes,
         relationships: { ...media.relationships },
       } as MediaFile;
-      ops.push(...AddRecord(t, newMedia, user, memory));
+      ops.push(...AddRecord(t, newMedia as MediaFileD, user, memory));
       ops.push(
         ...UpdateRelatedRecord(
           t,

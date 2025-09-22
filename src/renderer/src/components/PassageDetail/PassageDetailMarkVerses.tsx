@@ -114,7 +114,7 @@ export interface MarkVersesProps {
   width: number;
 }
 
-export function PassageDetailMarkVerses() {
+export function PassageDetailMarkVerses({ width }: MarkVersesProps) {
   const {
     mediafileId,
     section,

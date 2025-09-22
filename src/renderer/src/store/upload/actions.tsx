@@ -21,7 +21,8 @@ import {
 } from '../../utils';
 import { DateTime } from 'luxon';
 import _ from 'lodash';
-import { UploadType, SIZELIMIT } from '../../components/MediaUpload';
+import { SIZELIMIT } from '../../components/MediaUpload';
+import { UploadType } from '../../components/UploadType';
 import path from 'path-browserify';
 import bugsnagClient from 'auth/bugsnagClient';
 import { Dispatch } from 'redux';
@@ -51,7 +52,7 @@ export const writeFileLocal = async (
   remoteName?: string
 ): Promise<string> => {
   const local = { localname: '' };
-  const filePath = (file as File)?.path || '';
+  const filePath = (file as any)?.path || '';
   await dataPath(
     remoteName ? remoteName : `http://${filePath}`,
     PathType.MEDIA,

@@ -1,4 +1,4 @@
-import { TextareaAutosize as BaseTextareaAutosize } from '@mui/base/TextareaAutosize';
+import { TextareaAutosize as BaseTextareaAutosize } from '@mui/material';
 import { styled } from '@mui/system';
 
 export default function UnstyledTextareaIntroduction() {

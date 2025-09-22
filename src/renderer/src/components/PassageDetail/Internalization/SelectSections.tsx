@@ -13,6 +13,7 @@ import {
   BookName,
   IPassageDetailArtifactsStrings,
   ISharedStrings,
+  SectionArray,
 } from '../../../model';
 import {
   Box,
@@ -114,7 +115,7 @@ export function SelectSections(props: IProps) {
   const [checks, setChecks] = useState<Array<string | number>>([]);
   const { getProjectDefault } = useProjectDefaults();
   const sectionMap = new Map<number, string>(
-    getProjectDefault(projDefSectionMap) ?? []
+    (getProjectDefault(projDefSectionMap) ?? []) as SectionArray
   );
   const setDimensions = () => {
     setHeightStyle({

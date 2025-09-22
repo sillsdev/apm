@@ -5,7 +5,7 @@ import MenuItem from '@mui/material/MenuItem';
 import SettingsIcon from '@mui/icons-material/Settings';
 import { IconButton, Tooltip } from '@mui/material';
 import { localeLanguages } from './useKeyTerms';
-import { langName } from '../../../utils';
+import { langName, UiLoc } from '../../../utils';
 import { shallowEqual, useSelector } from 'react-redux';
 import { keyTermsSelector } from '../../../selector';
 import { IKeyTermsStrings } from '../../../model';
@@ -62,7 +62,7 @@ export default function KeyTermSetting({ curCode, onChange }: IProps) {
             onClick={handleChange(option)}
             sx={{ backgroundColor: option === curCode ? 'lightgrey' : 'white' }}
           >
-            {langName(locale, option.split('-')[0].toLowerCase()) +
+            {langName(locale as UiLoc, option.split('-')[0].toLowerCase()) +
               ` [${option}]`}
           </MenuItem>
         ))}

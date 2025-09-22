@@ -48,7 +48,7 @@ const GroupTabs = (props: IProps) => {
       </AppBar>
       {((tab || 0) === 0 || tab > last) && <UserTable />}
       {tab === 1 && <Peer />}
-      {tab === last && <InvitationTable {...props} />}
+      {tab === last && <InvitationTable />}
     </TabBox>
   );
 };

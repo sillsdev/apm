@@ -11,7 +11,8 @@ import { mainSelector } from '../selector';
 export const useLoadProjectData = () => {
   const t: IMainStrings = useSelector(mainSelector, shallowEqual);
   const dispatch = useDispatch();
-  const doOrbitError = (ex: IApiError) => dispatch(actions.doOrbitError(ex));
+  const doOrbitError = (ex: IApiError) =>
+    dispatch(actions.doOrbitError(ex) as any);
   const [coordinator] = useGlobal('coordinator');
   const [offlineOnly] = useGlobal('offlineOnly'); //will be constant here
   const [, setBusy] = useGlobal('importexportBusy');

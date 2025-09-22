@@ -40,7 +40,7 @@
       "devexpress for chart and grid controls|devexpress|https://devexpress.github.io/devextreme-reactive",
       "electron for Desktop app|electron|https://www.electronjs.org/",
       "Material-UI for interface|Material-UI|https://material-ui.com",
-      "moment for dates|moment|https://momentjs.com",
+      "luxon for dates|luxon|https://moment.github.io/luxon/",
       "Newtonsoft.Json for Json in .net|Newtonsoft.Json|https://www.newtonsoft.com/json",
       "orbit ORM by Cerebris Corporation for data management|orbit|https://orbitjs.com/",
       "react for framework|react|https://reactjs.com",

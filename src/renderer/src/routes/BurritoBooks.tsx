@@ -39,7 +39,8 @@ export function BurritoBooks() {
   const allBookData = useSelector((state: IState) => state.books.bookData);
   const booksLoaded = useSelector((state: IState) => state.books.loaded);
   const dispatch = useDispatch();
-  const fetchBooks = (lang: string) => dispatch(actions.fetchBooks(lang));
+  const fetchBooks = (lang: string) =>
+    dispatch(actions.fetchBooks(lang) as any);
   const { getOrgDefault, setOrgDefault } = useOrgDefaults();
 
   const handleSave = () => {
@@ -71,11 +72,11 @@ export function BurritoBooks() {
         setTeamProjs(
           projects.filter((p) => related(p, 'organization') === teamId)
         );
-        const curProjects = getOrgDefault(burritoProjects, teamId);
+        const curProjects = getOrgDefault(burritoProjects, teamId) as string[];
         if (curProjects) {
           setChecked(curProjects);
         }
-        const curBibles = getOrgDefault(burritoProjects, teamId);
+        const curBibles = getOrgDefault(burritoProjects, teamId) as string[];
         if (curBibles) {
           setBooks(curBibles);
         }

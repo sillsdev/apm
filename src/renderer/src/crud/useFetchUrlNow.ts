@@ -23,18 +23,19 @@ export const useFetchUrlNow = () => {
   const fetchUrl = async (props: IFetchNowProps): Promise<string> => {
     const { id, cancelled, noDownload } = props;
     try {
-      const strings = await axiosGet(
+      const strings = (await axiosGet(
         `mediafiles/${id}/fileurl`,
         undefined,
         accessToken
-      );
+      )) as { data: { attributes: { 'audio-url': string } } };
       const attr: any = strings.data.attributes;
       if (!attr || cancelled()) return '';
       const audioUrl = attr['audio-url'] as string;
       if (isElectron && !noDownload) {
         return await tryDownload(audioUrl, true);
       } else return audioUrl;
-    } catch (error: unknown) {
+    } catch (errorResult: unknown) {
+      const error = errorResult as { errStatus: number } & AxiosError;
       if (error.errStatus === 401) return ts.expiredToken;
       const err = error as AxiosError;
       if (err.status === 401) return ts.expiredToken;

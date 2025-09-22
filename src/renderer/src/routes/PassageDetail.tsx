@@ -209,7 +209,7 @@ const PassageDetailGrids = ({ minWidth, onMinWidth }: PGProps) => {
       }}
     >
       <Grid container direction="row" sx={rowProps}>
-        <Grid container direction="row" sx={rowProps}>
+        <Grid container direction="row" sx={{ ...rowProps, flexGrow: 1 }}>
           <Grid sx={rowProps} size={{ xs: 6 }}>
             <PassageDetailSectionPassage />
           </Grid>

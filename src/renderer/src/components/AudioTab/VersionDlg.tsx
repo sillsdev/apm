@@ -9,6 +9,7 @@ import {
   BookName,
   IState,
   ProjectD,
+  SectionArray,
 } from '../../model';
 import {
   findRecord,
@@ -38,7 +39,7 @@ interface IProps {
 }
 export const VersionDlg = (props: IProps) => {
   const { passId, canSetDestination, hasPublishing } = props;
-  const mediaFiles = useOrbitData<MediaFile[]>('mediafile');
+  const mediaFiles = useOrbitData<MediaFileD[]>('mediafile');
   const sections = useOrbitData<Section[]>('section');
   const passages = useOrbitData<Passage[]>('passage');
 
@@ -84,7 +85,9 @@ export const VersionDlg = (props: IProps) => {
     let projSectionArr: undefined | SectionArray = [];
     if (projRec) {
       setShared(projRec?.attributes?.isPublic || false);
-      projSectionArr = getProjectDefault(projDefSectionMap, projRec);
+      projSectionArr = getProjectDefault(projDefSectionMap, projRec) as
+        | SectionArray
+        | undefined;
     }
     setSectionArr(projSectionArr || []);
     setSectionMap(new Map(projSectionArr || []));

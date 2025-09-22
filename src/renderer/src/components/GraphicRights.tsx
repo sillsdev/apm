@@ -59,8 +59,14 @@ export function GraphicRights(props: IProps) {
     graphics
       .filter((g) => related(g, 'organization') === org)
       .forEach((graphic) => {
-        const json = JSONParse(graphic.attributes.info);
-        const rightsHolder = json[Rights] ?? null;
+        const json = JSONParse(graphic.attributes.info) as Record<
+          string,
+          string
+        >;
+        const rightsHolder =
+          typeof json === 'object' && json !== null
+            ? (json[Rights] ?? null)
+            : null;
         if (rightsHolder) {
           options.add(rightsHolder);
         }

@@ -99,7 +99,7 @@ export const useBurritoAudo = (teamId: string) => {
             (a, b) => b.attributes.versionNumber - a.attributes.versionNumber
           );
         const versions = parseInt(
-          getOrgDefault('burritoVersions', teamId) || '1'
+          (getOrgDefault('burritoVersions', teamId) || '1') as string
         );
         for (let i = 0; i < versions; i++) {
           if (i >= vernMedia.length) break;

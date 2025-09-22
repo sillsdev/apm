@@ -5,8 +5,8 @@ import { related } from './related';
 import {
   PassageStateChange,
   ActivityStates,
-  MediaFile,
   Passage,
+  MediaFileD,
 } from '../model';
 import {
   AddRecord,
@@ -108,7 +108,7 @@ export const UpdateMediaStateOps = (
     ops.push(
       t.replaceAttribute(mediaRecId, 'transcriptionstate', state).toOperation()
     );
-  const mediaRec = findRecord(memory, 'mediafile', mediaFile) as MediaFile;
+  const mediaRec = findRecord(memory, 'mediafile', mediaFile) as MediaFileD;
   const isVernacular = !related(mediaRec, 'artifacttype');
   ops.push(...UpdateLastModifiedBy(t, mediaRecId, userId));
   AddPassageStateChangeToOps(

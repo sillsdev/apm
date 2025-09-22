@@ -3,7 +3,7 @@ import { useGlobal, useGetGlobal } from '../context/useGlobal';
 import { isElectron } from '../../api-variable';
 import { remoteIdGuid, remoteId } from '../crud';
 import { dataPath, PathType } from '../utils/dataPath';
-import { ISharedStrings, MediaFile } from '../model';
+import { ISharedStrings, MediaFileD } from '../model';
 import { infoMsg, logError, Severity } from '../utils';
 import { useFetchUrlNow } from './useFetchUrlNow';
 import { RecordKeyMap } from '@orbit/records';
@@ -128,7 +128,7 @@ export const useFetchMediaUrl = (reporter?: any) => {
               type: 'mediafile',
               id: state.id,
             })
-          ) as MediaFile;
+          ) as MediaFileD;
           if (mediarec && mediarec.attributes) {
             if (cancelled()) return;
             const local = { localname: '' };

@@ -1,7 +1,7 @@
 import React from 'react';
 import {
   List,
-  ListItem,
+  ListItemButton,
   ListItemIcon,
   ListItemText,
   Checkbox,
@@ -52,11 +52,10 @@ export const SpellLanguagePicker = (props: IProps) => {
         const labelId = `checkbox-list-label-${value}`;
 
         return (
-          <ListItem
+          <ListItemButton
             key={value}
             role={undefined}
             dense
-            button
             onClick={handleToggle(value)}
           >
             <ListItemIcon>
@@ -65,14 +64,14 @@ export const SpellLanguagePicker = (props: IProps) => {
                 checked={checked.indexOf(value) !== -1}
                 tabIndex={-1}
                 disableRipple
-                inputProps={{ 'aria-labelledby': labelId }}
+                slotProps={{ input: { 'aria-labelledby': labelId } }}
               />
             </ListItemIcon>
             <ListItemText
               id={labelId}
               primary={`${getName(value)} (${value})`}
             />
-          </ListItem>
+          </ListItemButton>
         );
       })}
     </List>

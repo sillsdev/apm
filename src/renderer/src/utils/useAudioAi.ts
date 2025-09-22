@@ -13,6 +13,7 @@ import { uploadFile } from '../store/upload/actions';
 import { useContext, useRef } from 'react';
 import { TokenContext } from '../context/TokenProvider';
 import { loadBlobAsync } from './loadBlob';
+import { MediaFileAttributes } from '../model/mediaFile';
 
 interface fileTask {
   taskId: string;
@@ -195,13 +196,18 @@ export const useAudioAi = (): AudioAIResult => {
     cb: (file: File | Error) => void
   ): Promise<void> => {
     if (getGlobal('offline') || !token) return;
-    const response = await axiosGet(
+    const result = await axiosGet(
       `S3Files/put/AI/${file.name}/wav`,
       undefined,
       token
     );
+    const response = result as string;
     uploadFile(
-      { id: 0, audioUrl: response, contentType: 'audio/wav' },
+      {
+        id: 0,
+        audioUrl: response,
+        contentType: 'audio/wav',
+      } as MediaFileAttributes & { id: number },
       file,
       reporter
     ).then((status) => {

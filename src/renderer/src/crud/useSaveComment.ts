@@ -2,7 +2,7 @@ import { RecordOperation, RecordTransformBuilder } from '@orbit/records';
 import { useDispatch } from 'react-redux';
 import { useGlobal } from '../context/useGlobal';
 import { findRecord, PermissionName, remoteIdGuid, usePermissions } from '.';
-import { MediaFile, IApiError, CommentD } from '../model';
+import { MediaFile, IApiError, CommentD, MediaFileD } from '../model';
 import {
   AddRecord,
   UpdateRecord,
@@ -18,7 +18,8 @@ export const useSaveComment = () => {
   const [memory] = useGlobal('memory');
   const [user] = useGlobal('user');
   const dispatch = useDispatch();
-  const doOrbitError = (ex: IApiError) => dispatch(actions.doOrbitError(ex));
+  const doOrbitError = (ex: IApiError) =>
+    dispatch(actions.doOrbitError(ex) as any);
   const { hasPermission, addAccess, addNeedsApproval, approve } =
     usePermissions();
   return async (
@@ -34,7 +35,7 @@ export const useSaveComment = () => {
       const id =
         remoteIdGuid('mediafile', mediaRemId, memory?.keyMap as RecordKeyMap) ||
         mediaRemId;
-      mediafile = findRecord(memory, 'mediafile', id) as MediaFile;
+      mediafile = findRecord(memory, 'mediafile', id) as MediaFileD;
     }
     interface IIndexable {
       [key: string]: any;
@@ -100,7 +101,8 @@ export const useSaveComment = () => {
     try {
       await memory.update(ops);
       return true;
-    } catch (err: unknown) {
+    } catch (errResult: unknown) {
+      const err = errResult as Error;
       doOrbitError(orbitErr(err, 'attach comment media'));
       return false;
     }

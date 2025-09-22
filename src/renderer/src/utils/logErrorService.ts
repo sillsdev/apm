@@ -1,4 +1,5 @@
 import { join } from 'path-browserify';
+// @ts-ignore
 import { Stats } from 'fs-extra';
 import { LocalKey, createFolder } from '.';
 import { DateTime } from 'luxon';

@@ -1,5 +1,9 @@
 import { useGlobal } from '../context/useGlobal';
-import { RecordIdentity, RecordTransformBuilder } from '@orbit/records';
+import {
+  RecordIdentity,
+  RecordTransformBuilder,
+  UninitializedRecord,
+} from '@orbit/records';
 import { Resource, MediaFile, MediaFileD } from '../model';
 import { AddRecord, ReplaceRelatedRecord } from '../model/baseModel';
 import { ArtifactTypeSlug, useArtifactType } from '.';
@@ -14,7 +18,7 @@ export const useMediaResCreate = (passage: RecordIdentity, stepId: string) => {
   return async (res: Resource, artifactCategoryId?: string) => {
     const attr = res.attributes;
     const mediaRec = {
-      type: 'mediafile',
+      type: 'mediaFile',
       attributes: {
         versionNumber: attr.versionNumber,
         eafUrl: null,
@@ -34,7 +38,7 @@ export const useMediaResCreate = (passage: RecordIdentity, stepId: string) => {
     } as any as MediaFile;
     const t = new RecordTransformBuilder();
     const ops = [
-      ...AddRecord(t, mediaRec, user, memory),
+      ...AddRecord(t, mediaRec as unknown as UninitializedRecord, user, memory),
       ...ReplaceRelatedRecord(
         t,
         mediaRec as RecordIdentity,

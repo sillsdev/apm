@@ -80,15 +80,19 @@ export function useMediaRecorder(
     if (allowRecord)
       if (!mediaStreamRef.current && !streamRequested.current) {
         streamRequested.current = true;
-        getMediaStream().then((stream) => {
-          if (stream && stream.id && stream.active) {
-            mediaStreamRef.current = stream;
-          } else {
-            const err = 'no media stream ' + stream?.toString();
-            logError(Severity.error, reporter, err);
-            showMessage(err);
-          }
-        });
+        try {
+          getMediaStream().then((stream) => {
+            if (stream && stream.id && stream.active) {
+              mediaStreamRef.current = stream;
+            } else {
+              const err = 'no media stream ' + stream?.toString();
+              logError(Severity.error, reporter, err);
+              showMessage(err);
+            }
+          });
+        } catch (e) {
+          handleError(e as Error);
+        }
       }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allowRecord, getMediaStream]);

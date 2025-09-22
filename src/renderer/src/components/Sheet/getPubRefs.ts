@@ -1,4 +1,4 @@
-import { AltBkSeq, ISheet, SheetLevel } from '../../model';
+import { AltBkSeq, ISheet, SectionArray, SheetLevel } from '../../model';
 import { SectionSeqCol } from './PlanSheet';
 
 interface IPubRefs {

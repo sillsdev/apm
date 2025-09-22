@@ -109,7 +109,8 @@ export const useFetchMediaBlob = () => {
             dispatch({ type: BlobStatus.FETCHED, payload: { url, blob } });
           }
         });
-      } catch (error: unknown) {
+      } catch (errorResult: unknown) {
+        const error = errorResult as Error;
         dispatch({ type: BlobStatus.ERROR, payload: error.message });
       }
     } else if (state.blobStat === BlobStatus.RESET) {

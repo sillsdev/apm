@@ -27,7 +27,7 @@ export const useProjectExport = (props: IProps) => {
   const t: ITranscriptionTabStrings = useSelector(transcriptionTabSelector);
   const dispatch = useDispatch();
   const exportProject = (props: actions.ExPrjProps) =>
-    dispatch(actions.exportProject(props));
+    dispatch(actions.exportProject(props) as any);
   const [memory] = useGlobal('memory');
   const [coordinator] = useGlobal('coordinator');
   const backup = coordinator?.getSource('backup') as IndexedDBSource;

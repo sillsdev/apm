@@ -15,7 +15,7 @@ import {
   replaceText,
 } from './usxNodeChange';
 import { isSection } from './usxNodeType';
-import { Passage } from '../../model';
+import { Passage, SectionArray } from '../../model';
 import { crossChapterRefs } from './crossChapterRefs';
 
 const passageVerses = (p: Passage) =>

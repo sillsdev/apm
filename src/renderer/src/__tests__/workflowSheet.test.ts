@@ -36,6 +36,9 @@ test('section only', () => {
       passageSeq: 1,
       deleted: false,
       mediaShared: IMediaShare.NotPublic,
+      passageType: PassageTypeEnum.PASSAGE,
+      filtered: false,
+      published: [] as PublishDestinationEnum[],
     } as ISheet,
   ];
   expect(workSheet(sheet, flatCols, [])).toEqual([[1, 'Intro', '', '', '']]);
@@ -56,8 +59,6 @@ test('section with passage', () => {
       sectionUpdated: '2021-09-15',
       passage: { type: 'passage', id: 'pa1' } as PassageD,
       passageUpdated: '2021-09-15',
-      transcriber: undefined,
-      editor: undefined,
       deleted: false,
       mediaShared: IMediaShare.NotPublic,
       passageType: PassageTypeEnum.PASSAGE,
@@ -95,7 +96,7 @@ test('two sections with passages', () => {
       reference: '1:1-4',
       comment: 'salutation',
       passageUpdated: '2021-09-15',
-      passageId: { type: 'passage', id: 'pa1' },
+      passage: { type: 'passage', id: 'pa1' },
       deleted: false,
       mediaShared: IMediaShare.NotPublic,
     },

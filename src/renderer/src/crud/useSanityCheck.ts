@@ -1,16 +1,16 @@
 import { useContext } from 'react';
-import { useGlobal, useGetGlobal } from '../context/useGlobal';
 import { findRecord, related, staticFiles, updateableFiles } from '.';
 import Memory from '@orbit/memory';
 import { DateTime } from 'luxon';
 import { BaseModel } from '../model/baseModel';
 import { JSONAPISource } from '@orbit/jsonapi';
 import { logError, Severity } from '../utils';
-import { VwChecksum, ProjectD } from '../model';
+import { VwChecksum, PlanD, ProjectD } from '../model';
 import * as actions from '../store';
 import { TokenContext } from '../context/TokenProvider';
 import { API_CONFIG } from '../../api-variable';
 import { processDataChanges } from '../hoc/processDataChanges';
+import { useGetGlobal, useGlobal } from '../context/useGlobal';
 
 export const useSanityCheck = (setLanguage: typeof actions.setLanguage) => {
   const [coordinator] = useGlobal('coordinator');
@@ -21,11 +21,7 @@ export const useSanityCheck = (setLanguage: typeof actions.setLanguage) => {
   const getGlobal = useGetGlobal();
 
   const stringToDateNum = (val: string) =>
-    val
-      ? DateTime.fromISO(val.endsWith('Z') ? val : val + 'Z', {
-          zone: 'utc',
-        }).toMillis()
-      : 0;
+    val ? DateTime.fromISO(val.endsWith('Z') ? val : val + 'Z').toMillis() : 0;
 
   return async (projectId: string) => {
     const doForceTableChanges = async (props: {
@@ -52,7 +48,7 @@ export const useSanityCheck = (setLanguage: typeof actions.setLanguage) => {
           user: '',
           errorReporter,
           setLanguage,
-          setDataChangeCount: () => {},
+          setDataChangeCount: (value: number) => {},
           fetchUrl: undefined,
           cb,
         });
@@ -65,8 +61,8 @@ export const useSanityCheck = (setLanguage: typeof actions.setLanguage) => {
       name: string,
       beforeThis?: number
     ) => {
-      let sum = 0;
-      const sorted = beforeThis ? rows.sort((i, j) => i.num - j.num) : rows;
+      var sum = 0;
+      var sorted = beforeThis ? rows.sort((i, j) => i.num - j.num) : rows;
       sorted.forEach((mf) => {
         if (mf) {
           if (beforeThis && mf.num > beforeThis) return sum;
@@ -78,9 +74,9 @@ export const useSanityCheck = (setLanguage: typeof actions.setLanguage) => {
     };
 
     const compareChecksum = async (remoteRows: VwChecksum[], name: string) => {
-      const rows = removeDups(getTableRows(name) as BaseModel[]);
-      const cs = getChecksum(rows, name);
-      const remoteCs =
+      var rows = removeDups(getTableRows(name) as BaseModel[]);
+      var cs = getChecksum(rows, name);
+      var remoteCs =
         remoteRows.filter((t) => t.attributes.name === name)[0]?.attributes
           .checksum ?? 0;
       if (cs !== remoteCs) {
@@ -96,25 +92,19 @@ export const useSanityCheck = (setLanguage: typeof actions.setLanguage) => {
     };
 
     const getTableRows = (table: string) => {
-      const org = related(project, 'organization');
-      const planId = related(project, 'plan');
+      var org = related(project, 'organization');
 
-      if (!planId) console.warn('planId', planId);
       const mediafileRows = () =>
-        planId
-          ? (
-              memory?.cache.query((q) =>
-                q.findRecords('mediafile').filter({
-                  relation: 'plan',
-                  record: { type: 'plan', id: planId },
-                })
-              ) as BaseModel[]
-            ).filter(
-              (x) => Boolean(x?.keys?.remoteId) && Boolean(x.relationships)
-            )
-          : [];
+        (
+          memory?.cache.query((q) =>
+            q.findRecords('mediafile').filter({
+              relation: 'plan',
+              record: { type: 'plan', id: plan.id },
+            })
+          ) as BaseModel[]
+        ).filter((x) => Boolean(x?.keys?.remoteId) && Boolean(x.relationships));
       const discussionRows = () => {
-        const mediafiles = mediafileRows().map((m) => m.id);
+        var mediafiles = mediafileRows().map((m) => m.id);
         return (
           memory?.cache.query((q) => q.findRecords('discussion')) as BaseModel[]
         ).filter(
@@ -134,21 +124,18 @@ export const useSanityCheck = (setLanguage: typeof actions.setLanguage) => {
           ) as BaseModel[]
         ).filter((x) => Boolean(x?.keys?.remoteId));
 
-      if (!planId) console.warn('planId', planId);
       const sectionRows = () =>
-        planId
-          ? (
-              memory?.cache.query((q) =>
-                q.findRecords('section').filter({
-                  relation: 'plan',
-                  record: { type: 'plan', id: planId },
-                })
-              ) as BaseModel[]
-            ).filter((x) => Boolean(x?.keys?.remoteId))
-          : [];
+        (
+          memory?.cache.query((q) =>
+            q.findRecords('section').filter({
+              relation: 'plan',
+              record: { type: 'plan', id: plan.id },
+            })
+          ) as BaseModel[]
+        ).filter((x) => Boolean(x?.keys?.remoteId));
 
       const passageRows = () => {
-        const sections = sectionRows().map((s) => s.id);
+        var sections = sectionRows().map((s) => s.id);
         return (
           memory?.cache.query((q) => q.findRecords('passage')) as BaseModel[]
         ).filter(
@@ -158,7 +145,7 @@ export const useSanityCheck = (setLanguage: typeof actions.setLanguage) => {
       };
 
       const sectionResourceRows = () => {
-        const sections = sectionRows().map((s) => s.id);
+        var sections = sectionRows().map((s) => s.id);
         return (
           memory?.cache.query((q) =>
             q.findRecords('sectionresource')
@@ -169,7 +156,7 @@ export const useSanityCheck = (setLanguage: typeof actions.setLanguage) => {
         );
       };
       const sharedResourceRows = () => {
-        const psgs = passageRows().map((p) => p.id);
+        var psgs = passageRows().map((p) => p.id);
         return (
           memory?.cache.query((q) =>
             q.findRecords('sharedresource')
@@ -189,7 +176,7 @@ export const useSanityCheck = (setLanguage: typeof actions.setLanguage) => {
       const organizationmembershipRows = () =>
         filterByOrg('organizationmembership');
       const orgSchemeStepRows = () => {
-        const schemes = filterByOrg('organizationscheme');
+        var schemes = filterByOrg('organizationscheme');
         return (
           memory?.cache.query((q) =>
             q.findRecords('organizationschemestep')
@@ -216,7 +203,7 @@ export const useSanityCheck = (setLanguage: typeof actions.setLanguage) => {
             (x) => Boolean(x?.keys?.remoteId) && Boolean(x.relationships)
           );
         case 'artifactcategory':
-          const acs = (
+          var acs = (
             memory?.cache.query((q) =>
               q.findRecords('artifactcategory')
             ) as BaseModel[]
@@ -229,7 +216,7 @@ export const useSanityCheck = (setLanguage: typeof actions.setLanguage) => {
               related(ac, 'organization') === null
           );
         case 'comment':
-          const discussions = discussionRows().map((d) => d.id);
+          var discussions = discussionRows().map((d) => d.id);
           return (
             memory?.cache.query((q) => q.findRecords('comment')) as BaseModel[]
           ).filter(
@@ -242,7 +229,7 @@ export const useSanityCheck = (setLanguage: typeof actions.setLanguage) => {
         case 'graphic':
           return filterByOrg('graphic');
         case 'groupmembership':
-          const groups = groupRows().map((g) => g.id);
+          var groups = groupRows().map((g) => g.id);
           return (
             memory?.cache.query((q) =>
               q.findRecords('groupmembership')
@@ -275,7 +262,7 @@ export const useSanityCheck = (setLanguage: typeof actions.setLanguage) => {
         case 'passage':
           return passageRows();
         case 'passagestatechange':
-          const passages = passageRows().map((p) => p.id);
+          var passages = passageRows().map((p) => p.id);
           return (
             memory?.cache.query((q) =>
               q.findRecords('passagestatechange')
@@ -286,7 +273,7 @@ export const useSanityCheck = (setLanguage: typeof actions.setLanguage) => {
               undefined
           );
         case 'plan':
-          return [findRecord(memory, 'plan', planId)];
+          return [plan];
         case 'project':
           return [project];
         case 'projectintegration':
@@ -301,7 +288,7 @@ export const useSanityCheck = (setLanguage: typeof actions.setLanguage) => {
         case 'sectionresource':
           return sectionResourceRows();
         case 'sectionresourceuser':
-          const resources = sectionResourceRows().map((sr) => sr.id);
+          var resources = sectionResourceRows().map((sr) => sr.id);
           return (
             memory?.cache.query((q) =>
               q.findRecords('sectionresourceuser')
@@ -314,7 +301,7 @@ export const useSanityCheck = (setLanguage: typeof actions.setLanguage) => {
         case 'sharedresource':
           return sharedResourceRows();
         case 'sharedresourcereference':
-          const sharedresources = sharedResourceRows().map((sr) => sr.id);
+          var sharedresources = sharedResourceRows().map((sr) => sr.id);
           return (
             memory?.cache.query((q) =>
               q.findRecords('sharedresourcereference')
@@ -326,7 +313,7 @@ export const useSanityCheck = (setLanguage: typeof actions.setLanguage) => {
               ) !== undefined
           );
         case 'user':
-          const uids = organizationmembershipRows().map(
+          var uids = organizationmembershipRows().map(
             (om) => related(om, 'user') as string
           );
           return (
@@ -340,8 +327,8 @@ export const useSanityCheck = (setLanguage: typeof actions.setLanguage) => {
     };
     const removeDups = (rows: BaseModel[]) => {
       rows = rows.filter((r) => Boolean(r?.relationships));
-      const uniqueids = new Set(rows.map((mf) => mf.keys?.remoteId || '0'));
-      const unique = new Array<{ id: string; num: number }>();
+      var uniqueids = new Set(rows.map((mf) => mf.keys?.remoteId || '0'));
+      var unique = new Array<{ id: string; num: number }>();
       uniqueids.forEach((id) =>
         unique.push({
           id,
@@ -361,21 +348,21 @@ export const useSanityCheck = (setLanguage: typeof actions.setLanguage) => {
       remoteCS: number
     ) => {
       const tryagain = async () => {
-        const rows = removeDups(getTableRows(table) as BaseModel[]);
-        const cs = getChecksum(rows, table);
+        var rows = removeDups(getTableRows(table) as BaseModel[]);
+        var cs = getChecksum(rows, table);
         if (cs !== remoteCS) {
           //get the whole thing
           await refreshTable(table, 0, remoteCS);
         }
       };
 
-      const now = DateTime.now().toMillis();
-      let since = now - 1000 * 60 * 60 * 24 * 365 * 4; //365*4 days
+      var now = DateTime.now().toMillis();
+      var since = now - 1000 * 60 * 60 * 24 * 365 * 4; //365*4 days
       if (numrows > 500) {
         //try to avoid bringing down the whole table
         since = now - 1000 * 60 * 60 * 24 * 14; //14 days
       }
-      const dtSince = DateTime.fromMillis(since).toUTC().toISO() as string;
+      var dtSince = DateTime.fromMillis(since).toISO() || '';
       try {
         await doForceTableChanges({
           project: remoteProjectId,
@@ -384,29 +371,35 @@ export const useSanityCheck = (setLanguage: typeof actions.setLanguage) => {
           errorReporter,
         });
         if (numrows > 500) await tryagain(); //second time we call in with 0
-      } catch (errResult: unknown) {
-        const err = errResult as Error;
+      } catch (err: any) {
         logError(Severity.error, errorReporter, err.message);
       }
     };
 
-    const project = findRecord(memory, 'project', projectId) as ProjectD;
-    const remoteProjectId = project?.keys?.remoteId ?? '';
+    var project = findRecord(memory, 'project', projectId) as ProjectD;
+    var remoteProjectId = project?.keys?.remoteId ?? '';
     if (!getGlobal('offline') && project?.keys?.remoteId) {
-      const tables = staticFiles
+      var tables = staticFiles
         .concat(updateableFiles)
         .sort((i, j) => (i.sort <= j.sort ? -1 : 1))
         .map((f) => f.table);
+      var plans = memory?.cache.query((q) =>
+        q.findRecords('plan').filter({
+          relation: 'project',
+          record: { type: 'project', id: projectId },
+        })
+      ) as PlanD[];
+      var plan = plans[0];
 
       await remote.activated;
-      const checksums = (await remote.query((q) =>
+      var checksums = (await remote.query((q) =>
         q
           .findRecords('vwchecksum')
           .filter({ attribute: 'project-id', value: project.keys?.remoteId })
       )) as VwChecksum[];
       //we have to do these one by one because if mediafiles isn't right, discussions won't be right etc.
-      for (let ix = 0; ix < tables.length; ix++) {
-        await compareChecksum(checksums, tables[ix] as string);
+      for (var ix = 0; ix < tables.length; ix++) {
+        await compareChecksum(checksums, tables[ix]);
       }
     }
   };

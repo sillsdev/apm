@@ -46,14 +46,14 @@ export const TranscribeStepSettings = ({ toolSettings, onChange }: IProps) => {
   const [memory] = useGlobal('memory');
 
   const handleSelect = (artifactTypeId: string | null) => {
-    const json = JSONParse(toolSettings);
+    const json = JSONParse(toolSettings) as Record<string, string>;
     onChange(JSON.stringify({ ...json, artifactTypeId: artifactTypeId }));
   };
 
   const handleLanguageChange = (val: ILanguage) => {
     if (lgState?.bcp47 !== val?.bcp47 || lgState?.font !== val?.font) {
       setLgState((state) => ({ ...state, ...val, changed: true }));
-      const json = JSONParse(toolSettings);
+      const json = JSONParse(toolSettings) as Record<string, string>;
       onChange(
         JSON.stringify({
           ...json,

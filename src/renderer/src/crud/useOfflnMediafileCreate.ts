@@ -1,6 +1,10 @@
-import { RecordOperation, RecordTransformBuilder } from '@orbit/records';
+import {
+  RecordOperation,
+  RecordTransformBuilder,
+  UninitializedRecord,
+} from '@orbit/records';
 import { useGlobal } from '../context/useGlobal';
-import { MediaFile, MediaFileD } from '../model';
+import { MediaFile, MediaFileD, MediaFileAttributes } from '../model';
 import { AddRecord, ReplaceRelatedRecord } from '../model/baseModel';
 import path from 'path-browserify';
 import { getContentType } from '../utils/contentType';
@@ -10,7 +14,7 @@ export const useOfflnMediafileCreate = () => {
   const [plan] = useGlobal('plan'); //will be constant here
   const [user] = useGlobal('user');
   const createMedia = async (
-    data: any, //from upload
+    data: MediaFileAttributes & { planId: string }, //from upload
     version: number,
     size: number,
     passageId: string,
@@ -19,7 +23,7 @@ export const useOfflnMediafileCreate = () => {
     recordedbyUserId: string
   ) => {
     const newMediaRec: MediaFile = {
-      type: 'mediafile',
+      type: 'mediaFile',
       attributes: {
         versionNumber: version,
         eafUrl: data.eafUrl || '',
@@ -59,7 +63,14 @@ export const useOfflnMediafileCreate = () => {
     }
     const t = new RecordTransformBuilder();
     const ops: RecordOperation[] = [];
-    ops.push(...AddRecord(t, newMediaRec, user, memory));
+    ops.push(
+      ...AddRecord(
+        t,
+        newMediaRec as unknown as UninitializedRecord,
+        user,
+        memory
+      )
+    );
     ops.push(
       ...ReplaceRelatedRecord(
         t,

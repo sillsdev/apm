@@ -1,5 +1,5 @@
 import { Box, BoxProps, Chip, styled } from '@mui/material';
-import { MediaFile } from '../model';
+import { MediaFile, MediaFileD } from '../model';
 import { findRecord, related } from '../crud';
 import { dateOrTime, prettySegment } from '../utils';
 import { useGlobal } from '../context/useGlobal';
@@ -75,7 +75,7 @@ export const ItemDescription = ({
   let version = '';
   const relatedMedia = related(mediafile, 'sourceMedia');
   if (relatedMedia) {
-    const s = findRecord(memory, 'mediafile', relatedMedia) as MediaFile;
+    const s = findRecord(memory, 'mediafile', relatedMedia) as MediaFileD;
     version = s.attributes?.versionNumber?.toString();
   }
   return (

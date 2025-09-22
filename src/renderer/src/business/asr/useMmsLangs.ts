@@ -12,7 +12,8 @@ export const useMmsLangs = () => {
   React.useEffect(() => {
     if ((token ?? '') !== '')
       axiosGet('aero/transcription/languages', undefined, token).then(
-        (response: MmsLang[]) => {
+        (result) => {
+          const response = result as MmsLang[];
           // const response = MmsLangList;
           response.forEach((lang: MmsLang) => {
             if (lang.is_mms_asr) {

@@ -56,7 +56,8 @@ export const useCreateBurrito = (teamId: string) => {
   const allBookData = useSelector((state: IState) => state.books.bookData);
   const booksLoaded = useSelector((state: IState) => state.books.loaded);
   const dispatch = useDispatch();
-  const fetchBooks = (lang: string) => dispatch(actions.fetchBooks(lang));
+  const fetchBooks = (lang: string) =>
+    dispatch(actions.fetchBooks(lang) as any);
   const { getPublishingData } = useBible();
   const [languages, setLanguages] = React.useState<string[]>([]);
   const [bkSecIds, setBkSecIds] = React.useState<[string, string[]][]>([]);
@@ -80,7 +81,7 @@ export const useCreateBurrito = (teamId: string) => {
   }, [teamBibles, bibles, teamId]);
 
   const books: string[] = React.useMemo(
-    () => getOrgDefault(burritoBooks, teamId) || [],
+    () => (getOrgDefault(burritoBooks, teamId) || []) as string[],
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [teamId]
   );
@@ -122,7 +123,7 @@ export const useCreateBurrito = (teamId: string) => {
               revision,
               timestamp: new Date().toISOString(),
             },
-          },
+          } as Record<string, { revision: string; timestamp: string }>,
         },
         name: {
           en:
@@ -160,7 +161,8 @@ export const useCreateBurrito = (teamId: string) => {
   };
 
   const getSections = () => {
-    const projIds: string[] = getOrgDefault(burritoProjects, teamId) || [];
+    const projIds: string[] = (getOrgDefault(burritoProjects, teamId) ||
+      []) as string[];
     const langs: Set<string> = new Set();
     const sectIds: Map<string, string[]> = new Map();
     projects
@@ -253,9 +255,11 @@ export const useCreateBurrito = (teamId: string) => {
       await ipc?.createFolder(path.dirname(wrapperPath));
       await ipc?.write(wrapperPath, JSON.stringify(wrapper, null, 2));
     }
-    const content: string[] = getOrgDefault(burritoContents, teamId) || [];
+    const content = getOrgDefault(burritoContents, teamId) as
+      | string[]
+      | undefined;
     getSections();
-    for (const part of content) {
+    for (const part of content || []) {
       await createPart(part);
     }
   };

@@ -17,6 +17,7 @@ import {
   Discussion,
   OrgWorkflowStep,
   IApiError,
+  MediaFileD,
 } from '../../model';
 import { API_CONFIG } from '../../../api-variable';
 import {
@@ -55,7 +56,7 @@ import {
   ArtifactTypeSlug,
   VernacularTag,
 } from '../../crud';
-import { Moment } from 'moment';
+import { DateTime } from 'luxon';
 import { logError, orbitInfo, Severity } from '../../utils';
 import Coordinator from '@orbit/coordinator';
 import { axiosPost } from '../../utils/axios';
@@ -92,7 +93,7 @@ export interface ExPrjProps {
   writingmsg: string;
   localizedArtifact: string;
   getOfflineProject: (plan: Plan | VProject | string) => OfflineProject;
-  importedDate?: Moment;
+  importedDate?: DateTime;
   target?: string;
   orgWorkflowSteps?: OrgWorkflowStep[];
   isCancelled?: () => boolean;
@@ -228,7 +229,8 @@ export const exportProject =
           token
         )
           // eslint-disable-next-line no-loop-func
-          .then((response) => {
+          .then((result) => {
+            const response = result as { data: FileResponse };
             const fr = response.data as FileResponse;
             start = Number(fr.id);
             switch (start) {
@@ -438,6 +440,7 @@ export const copyProject =
     completemsg,
   }: CopyProjectProps) =>
   async (dispatch: any) => {
+    let newproject = '';
     dispatch({
       payload: pendingmsg.replace('{0}', 'same ' + sameorg.toString()),
       type: COPY_PENDING,
@@ -455,7 +458,7 @@ export const copyProject =
       start = response.data.id;
       returnstatus = response.data.status;
       const status = response.data.message;
-      const newproject = response.data.fileURL;
+      newproject = response.data.fileURL as string;
       dispatch({
         payload: pendingmsg.replace('{0}', status),
         type: COPY_PENDING,
@@ -478,12 +481,14 @@ export const copyProject =
       });
     }
     //clean it up
-    url = `${API_CONFIG.host}/api/offlineData/project/copyp/${newproject}`;
-    await Axios.put(url, null, {
-      headers: {
-        Authorization: 'Bearer ' + token,
-      },
-    });
+    if (newproject) {
+      url = `${API_CONFIG.host}/api/offlineData/project/copyp/${newproject}`;
+      await Axios.put(url, null, {
+        headers: {
+          Authorization: 'Bearer ' + token,
+        },
+      });
+    }
   };
 export const copyComplete = () => (dispatch: any) => {
   dispatch({
@@ -833,7 +838,7 @@ export const importProjectToElectron =
         .map((p) => p.id);
 
       const media = (
-        memory.cache.query((q) => q.findRecords('mediafile')) as MediaFile[]
+        memory.cache.query((q) => q.findRecords('mediafile')) as MediaFileD[]
       ).filter(
         (m) => planids.includes(related(m, 'plan')) && related(m, 'passage')
       );
@@ -968,7 +973,8 @@ export const importProjectToElectron =
           payload: { status: completemsg, msg: '' },
           type: IMPORT_SUCCESS,
         });
-      } catch (err: unknown) {
+      } catch (errResult: unknown) {
+        const err = errResult as { message: string };
         dispatch({
           payload: errorStatus(undefined, err.message),
           type: IMPORT_ERROR,

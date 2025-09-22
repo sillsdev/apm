@@ -3,7 +3,6 @@ import { isElectron } from '../../api-variable';
 import { logFile, LocalKey } from '../utils';
 import ErrorBoundary from '../hoc/ErrorBoundary';
 import App from '../App';
-import { memory } from '../schema';
 import { ErrorFallback } from '../components/ErrorFallback';
 import Bugsnag from '@bugsnag/js';
 import { API_CONFIG } from '../../api-variable';
@@ -30,12 +29,12 @@ const ErrorManagedApp: React.FC = () => {
 
   return bugsnagClient && SnagBoundary ? (
     <SnagBoundary FallbackComponent={ErrorFallback}>
-      <ErrorBoundary errorReporter={bugsnagClient} memory={memory}>
+      <ErrorBoundary errorReporter={bugsnagClient}>
         <App />
       </ErrorBoundary>
     </SnagBoundary>
   ) : (
-    <ErrorBoundary errorReporter={electronLog} memory={memory}>
+    <ErrorBoundary errorReporter={electronLog}>
       <App />
     </ErrorBoundary>
   );

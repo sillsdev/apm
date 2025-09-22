@@ -21,7 +21,8 @@ export const pullTableList = async (
     for (const id of ids) {
       await waitForLocalId(table, id, memory?.keyMap as RecordKeyMap);
     }
-  } catch (err: unknown) {
+  } catch (errResult: unknown) {
+    const err = errResult as Error;
     logError(Severity.error, errorReporter, err.message);
   }
 };

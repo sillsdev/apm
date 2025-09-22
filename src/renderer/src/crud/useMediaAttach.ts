@@ -39,7 +39,7 @@ export const useMediaAttach = () => {
     const tb = new RecordTransformBuilder();
     const ops: RecordOperation[] = [];
     const mediaRI = { type: 'mediafile', id: mediaId };
-    const mediaRec = findRecord(memory, 'mediafile', mediaId) as MediaFile;
+    const mediaRec = findRecord(memory, 'mediafile', mediaId) as MediaFileD;
     if (!mediaRec) return;
     const isVernacular = IsVernacularMedia(mediaRec);
     if (related(mediaRec, 'passage') !== passage) {
@@ -82,7 +82,7 @@ export const useMediaAttach = () => {
     );
 
     await memory.update(ops).catch((err: Error) => {
-      dispatch(doOrbitError(orbitErr(err, 'attach passage')));
+      dispatch(doOrbitError(orbitErr(err, 'attach passage')) as any);
     });
   };
 
@@ -98,7 +98,7 @@ export const useMediaAttach = () => {
     const mediaRecId = { type: 'mediafile', id: mediaId };
     const mediaRec = memory?.cache.query((q) =>
       q.findRecord(mediaRecId)
-    ) as MediaFile;
+    ) as MediaFileD;
 
     AddPassageStateChangeToOps(
       tb,
@@ -119,7 +119,7 @@ export const useMediaAttach = () => {
     UpdateRelatedPassageOps(section, plan, user, tb, ops);
 
     await memory.update(ops).catch((err: Error) => {
-      dispatch(doOrbitError(orbitErr(err, 'detach passage')));
+      dispatch(doOrbitError(orbitErr(err, 'detach passage')) as any);
     });
   };
 

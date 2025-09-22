@@ -146,11 +146,8 @@ export const useBible = () => {
     return getParam(label, bible.attributes?.publishingData);
   };
   const setPublishingData = (label: string, value: any, bible: Bible) => {
-    bible.attributes.publishingData = setParam(
-      label,
-      value,
-      bible.attributes.publishingData
-    );
+    bible.attributes.publishingData =
+      setParam(label, value, bible.attributes.publishingData) || '';
   };
   return {
     getBible,

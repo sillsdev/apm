@@ -288,7 +288,7 @@ export default function KeyTermTable({
                       {commentPlayId &&
                         mediaId === commentPlayId &&
                         t.mediaId === mediaId && (
-                          <GridContainerCol item id="keyTermPlayer">
+                          <GridContainerCol id="keyTermPlayer">
                             <MediaPlayer
                               srcMediaId={
                                 mediaId === commentPlayId ? commentPlayId : ''

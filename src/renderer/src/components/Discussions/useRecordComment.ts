@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useGlobal } from '../../context/useGlobal';
 import { findRecord, related } from '../../crud';
-import { MediaFile } from '../../model';
+import { MediaFileD } from '../../model';
 
 import { cleanFileName } from '../../utils';
 
@@ -14,7 +14,7 @@ export const useRecordComment = ({ mediafileId, commentNumber }: IProps) => {
   const [memory] = useGlobal('memory');
 
   const passageId = useMemo(() => {
-    const vernRec = findRecord(memory, 'mediafile', mediafileId) as MediaFile;
+    const vernRec = findRecord(memory, 'mediafile', mediafileId) as MediaFileD;
     return related(vernRec, 'passage') as string;
   }, [mediafileId, memory]);
 

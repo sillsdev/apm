@@ -152,7 +152,7 @@ export function UserTable() {
   const handleAddExisting = (userId: string) => () => {
     setAddOpen(false);
     const userRec = users.find((u) => u?.id === userId);
-    if (userRec) addToOrgAndGroup(userRec[0], false);
+    if (userRec) addToOrgAndGroup(userRec, false);
   };
 
   const handleDelete = (value: string) => () => {

@@ -786,8 +786,7 @@ export const BurritoScreen = () => {
                   )}
                 </Grid>
                 <Grid
-                  item
-                  md={3}
+                  size={{ md: 3 }}
                   sx={{ display: 'flex', justifyContent: 'flex-end' }}
                 >
                   {chapterProgress + bookProgress !== 0 && (

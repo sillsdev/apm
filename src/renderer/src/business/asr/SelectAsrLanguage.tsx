@@ -98,8 +98,8 @@ export default function SelectAsrLanguage({
       dialect: asr?.dialect,
       selectRoman: asr?.selectRoman ?? false,
     };
-    setAsrState({ ...defaultAsr });
-    setAsrStateIn({ ...defaultAsr });
+    setAsrState({ ...defaultAsr } as IAsrState);
+    setAsrStateIn({ ...defaultAsr } as IAsrState);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

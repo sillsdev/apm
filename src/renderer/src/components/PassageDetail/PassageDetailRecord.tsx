@@ -1,5 +1,5 @@
 import { shallowEqual, useSelector } from 'react-redux';
-import { ISharedStrings, MediaFile } from '../../model';
+import { ISharedStrings, MediaFile, MediaFileD } from '../../model';
 import { Typography, Box, Stack } from '@mui/material';
 import { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -39,7 +39,7 @@ const SaveWait = 500;
 
 export function PassageDetailRecord(props: IProps) {
   const { ready } = props;
-  const mediafiles = useOrbitData<MediaFile[]>('mediafile');
+  const mediafiles = useOrbitData<MediaFileD[]>('mediafile');
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
   const {
     startSave,

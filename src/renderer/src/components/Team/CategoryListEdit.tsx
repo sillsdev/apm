@@ -19,7 +19,7 @@ import {
   Discussion,
   ICategoryStrings,
   ISharedStrings,
-  MediaFile,
+  MediaFileD,
   SharedResource,
 } from '../../model';
 import { useSelector, shallowEqual } from 'react-redux';
@@ -58,7 +58,7 @@ export default function CategoryListEdit({ type, teamId, onClose }: IProps) {
   const [mediaplan, setMediaplan] = useState('');
   const { getBibleMediaPlan } = useBibleMedia();
   const [recording, setRecording] = useState('');
-  const media = useOrbitData('mediafile') as MediaFile[];
+  const media = useOrbitData('mediafile') as MediaFileD[];
   const discussions = useOrbitData('discussion') as Discussion[];
   const sharedResources = useOrbitData('sharedresource') as SharedResource[];
   const {

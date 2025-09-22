@@ -2,17 +2,13 @@ import { useRef, useEffect } from 'react';
 
 export function useUserMedia(requestedMedia: MediaStreamConstraints) {
   const mediaStreamRef = useRef<MediaStream | undefined>(undefined);
-  async function getStream() {
+  async function getStream(): Promise<MediaStream> {
     if (mediaStreamRef.current) return mediaStreamRef.current;
-    else
-      try {
-        const stream =
-          await navigator.mediaDevices.getUserMedia(requestedMedia);
-        mediaStreamRef.current = stream;
-        return stream;
-      } catch (err: unknown) {
-        return err;
-      }
+    else {
+      const stream = await navigator.mediaDevices.getUserMedia(requestedMedia);
+      mediaStreamRef.current = stream;
+      return stream;
+    }
   }
 
   useEffect(() => {

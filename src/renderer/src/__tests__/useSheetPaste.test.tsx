@@ -1,4 +1,4 @@
-import { renderHook } from '@testing-library/react-hooks';
+import { renderHook } from '@testing-library/react';
 import {
   IScriptureTableStrings,
   IwsKind,
@@ -9,36 +9,25 @@ import {
 import { useWfPaste } from '../components/Sheet/useSheetPaste';
 import { act } from 'react-dom/test-utils';
 import { PublishDestinationEnum } from '../crud';
-import { AlertSeverity } from '../hoc/SnackBar';
 
 interface IPasteResult {
   valid: boolean;
   addedWorkflow: ISheet[];
 }
 
-const mockSnackMessage = 'Snack Message';
-const mockSnackAlert: AlertSeverity | undefined = undefined;
+// Mock useSnackBar
+jest.mock('../hoc/SnackBar', () => ({
+  useSnackBar: () => ({
+    showMessage: jest.fn(),
+    showAlert: jest.fn(),
+  }),
+}));
 
-// see https://jestjs.io/docs/mock-functions#mocking-modules
-jest.mock('../crud/useOrganizedBy', () => {
-  const originalModule = jest.requireActual('../crud/useOrganizedBy');
-
-  return {
-    __esModule: true,
-    ...originalModule,
-    useOrganizedBy: () => ({
-      ...originalModule.memory,
-      getOrganizedBy: () => 'Section',
-    }),
-  };
-});
-jest.mock('../context/GlobalContext', () => ({
-  useGlobal: (arg: string) =>
-    arg === 'snackMessage'
-      ? [mockSnackMessage, jest.fn()]
-      : arg === 'snackAlert'
-        ? [mockSnackAlert, jest.fn()]
-        : [{}, jest.fn()],
+// Mock useOrganizedBy
+jest.mock('../crud/useOrganizedBy', () => ({
+  useOrganizedBy: () => ({
+    getOrganizedBy: () => 'Section',
+  }),
 }));
 
 const secDef = {
@@ -183,10 +172,10 @@ test('paste hieararchical', () => {
       passNumCol: colNames.indexOf('passageSeq'),
       scripture: true,
       flat: false,
+      shared: false,
       colNames,
       findBook,
       t,
-      shared: false,
     })
   );
   let hookResult: IPasteResult | undefined;

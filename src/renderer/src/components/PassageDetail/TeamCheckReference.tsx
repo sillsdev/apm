@@ -88,7 +88,7 @@ export function TeamCheckReference() {
       <Grid size={{ xs: 10 }} sx={{ m: 2, p: 2 }}>
         <SelectMyResource onChange={handleResource} inResource={resource} />
       </Grid>
-      <StyledGrid item xs={10}>
+      <StyledGrid size={{ xs: 10 }}>
         <LimitedMediaPlayer
           srcMediaId={playItem}
           requestPlay={itemPlaying}

@@ -12,6 +12,7 @@ import {
   OrgKeytermTarget,
   IApiError,
   OrgKeytermTargetD,
+  MediaFileD,
 } from '../model';
 import {
   AddRecord,
@@ -39,14 +40,15 @@ export const useKeyTermSave = ({ cb }: IProps) => {
   const [user] = useGlobal('user');
   const [org] = useGlobal('organization');
   const dispatch = useDispatch();
-  const doOrbitError = (ex: IApiError) => dispatch(actions.doOrbitError(ex));
+  const doOrbitError = (ex: IApiError) =>
+    dispatch(actions.doOrbitError(ex) as any);
   return ({ termTargetId, term, termIndex, target, mediaRemId }: ISaveTerm) => {
     let mediaRec: MediaFile | undefined = undefined;
     if (mediaRemId) {
       const id =
         remoteIdGuid('mediafile', mediaRemId, memory?.keyMap as RecordKeyMap) ||
         mediaRemId;
-      mediaRec = findRecord(memory, 'mediafile', id) as MediaFile;
+      mediaRec = findRecord(memory, 'mediafile', id) as MediaFileD;
     }
 
     const t = new RecordTransformBuilder();

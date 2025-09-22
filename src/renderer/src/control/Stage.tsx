@@ -1,5 +1,5 @@
 import { CSSProperties } from 'react';
-import { IconButton, Tooltip } from '@mui/material';
+import { Box, IconButton, Tooltip } from '@mui/material';
 import PrevIcon from '@mui/icons-material/NavigateBefore';
 import NextIcon from '@mui/icons-material/NavigateNext';
 
@@ -57,53 +57,55 @@ export const Stage = ({
       disabled={label === ''}
       color="secondary"
       onClick={handleMove(id === 'next')}
-      style={{ minWidth: '20px' }}
+      sx={{ minWidth: '20px', pb: 1, pt: 0 }}
     >
       {label === '' ? <></> : id === 'prev' ? <PrevIcon /> : <NextIcon />}
     </IconButton>
   ) : (
-    <Tooltip title={tip || ''}>
-      <svg
-        width={wid || 300}
-        height={wid ? (50 * wid) / 300 : 50}
-        viewBox="0.0 0.0 300.0 50.0"
-        fill="none"
-        stroke="none"
-        strokeLinecap="square"
-        strokeMiterlimit="10"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <g
-          onClick={handleClick}
-          style={{ cursor: select ? 'pointer' : 'default' }}
+    <Box sx={{ mb: 0.5 }}>
+      <Tooltip title={tip || ''}>
+        <svg
+          width={wid || 300}
+          height={wid ? (50 * wid) / 300 : 50}
+          viewBox="0.0 0.0 300.0 50.0"
+          fill="none"
+          stroke="none"
+          strokeLinecap="square"
+          strokeMiterlimit="10"
+          xmlns="http://www.w3.org/2000/svg"
         >
-          <path
-            fill="#eeeeee"
-            d="M 0,0 H 276 L 299,24.7 276,49.5 H 0 L 23,24.7 Z"
-            fillRule="evenodd"
-            style={lineProps}
-          />
-          <path
-            fill={color || '#ffffff'}
-            stroke="#595959"
-            strokeWidth="1.1"
-            strokeLinejoin="round"
-            strokeLinecap="butt"
-            d="M 0,0 H 276 L 299,24.7 276,49.5 H 0 L 23,24.7 Z"
-            fillRule="evenodd"
-          />
-          <text
-            style={textProps(textColor)}
-            x="85.3"
-            y="25.6"
-            transform="matrix(1.3,0,0,2.2,34.5,-21.3)"
+          <g
+            onClick={handleClick}
+            style={{ cursor: select ? 'pointer' : 'default' }}
           >
-            <tspan x="85.3" y="25.6">
-              {`${done ? '\u2714 ' : ''}${shortLabel}`}
-            </tspan>
-          </text>
-        </g>
-      </svg>
-    </Tooltip>
+            <path
+              fill="#eeeeee"
+              d="M 0,0 H 276 L 299,24.7 276,49.5 H 0 L 23,24.7 Z"
+              fillRule="evenodd"
+              style={lineProps}
+            />
+            <path
+              fill={color || '#ffffff'}
+              stroke="#595959"
+              strokeWidth="1.1"
+              strokeLinejoin="round"
+              strokeLinecap="butt"
+              d="M 0,0 H 276 L 299,24.7 276,49.5 H 0 L 23,24.7 Z"
+              fillRule="evenodd"
+            />
+            <text
+              style={textProps(textColor)}
+              x="85.3"
+              y="25.6"
+              transform="matrix(1.3,0,0,2.2,34.5,-21.3)"
+            >
+              <tspan x="85.3" y="25.6">
+                {`${done ? '\u2714 ' : ''}${shortLabel}`}
+              </tspan>
+            </text>
+          </g>
+        </svg>
+      </Tooltip>
+    </Box>
   );
 };

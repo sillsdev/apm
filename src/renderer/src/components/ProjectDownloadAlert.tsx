@@ -10,6 +10,7 @@ import {
   SectionD,
   PassageD,
   ISharedStrings,
+  SectionArray,
 } from '../model';
 import ProjectDownload from './ProjectDownload';
 import { dataPath, LocalKey, PathType } from '../utils';
@@ -118,16 +119,18 @@ export const ProjectDownloadAlert = (props: IProps) => {
 
   const getFilterState = (proj?: ProjectD): ISTFilterState =>
     proj
-      ? (getLocalDefault(projDefFilterParam, proj.id) ??
-        getProjectDefault(projDefFilterParam, proj) ??
-        {})
+      ? ((getLocalDefault(projDefFilterParam, proj.id) ??
+          getProjectDefault(projDefFilterParam, proj) ??
+          {}) as ISTFilterState)
       : ({} as ISTFilterState);
 
   const getSectionArr = (project: string) => {
     const projRec = findRecord(memory, 'project', project) as ProjectD;
     let projSectionArr: undefined | SectionArray = [];
     if (projRec) {
-      projSectionArr = getProjectDefault(projDefSectionMap, projRec);
+      projSectionArr = getProjectDefault(projDefSectionMap, projRec) as
+        | SectionArray
+        | undefined;
     }
     return projSectionArr ?? [];
   };
@@ -442,8 +445,7 @@ export const ProjectDownloadAlert = (props: IProps) => {
               </Accordion>
               <Grid container sx={{ pt: 2 }}>
                 <Grid
-                  item
-                  md={6}
+                  size={{ md: 6 }}
                   sx={{ display: 'flex', justifyContent: 'center' }}
                 >
                   <FormControl>
