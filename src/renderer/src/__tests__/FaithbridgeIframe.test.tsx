@@ -11,6 +11,36 @@ import { generateUUID } from '../utils';
 import { logError } from '../utils';
 import { axiosGet } from '../utils/axios';
 
+// Mock api-variable to avoid import.meta issues in Jest
+jest.mock('../../api-variable', () => ({
+  isElectron: false,
+  API_CONFIG: {
+    host: 'http://localhost:3000',
+    help: 'http://localhost:3000/help',
+    snagId: 'test-snag-id',
+    offline: false,
+    chmHelp: '',
+    community: '',
+    openNotes: '',
+    resources: '',
+    openContent: '',
+    course: '',
+    videoTraining: '',
+    walkThru: '',
+    akuo: '',
+    endpoint: '',
+    siteTitle: 'Test Site',
+    flatSample: '',
+    hierarchicalSample: '',
+    genFlatSample: '',
+    genHierarchicalSample: '',
+    googleSamples: '',
+    sizeLimit: '20',
+    sessions: '',
+    notify: '',
+  },
+}));
+
 let mockUser: string | null = 'user-123';
 const mockMemory = {
   keyMap: {

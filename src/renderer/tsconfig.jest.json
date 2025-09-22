@@ -2,7 +2,12 @@
   "extends": "./tsconfig.json",
   "exclude": ["**/cypress.d.ts", "**/cypress", "**/*.cy.ts*"],
   "compilerOptions": {
-    "types": ["@types/jest"]
+    "types": ["@types/jest", "@testing-library/jest-dom", "node"],
+    "module": "commonjs",
+    "target": "es2020",
+    "moduleResolution": "node",
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true
   },
   "include": ["**/*.test.ts*", "**/*.pacttest.ts*", "**/*.d.ts"]
 }

@@ -1,8 +1,15 @@
-import { ISheet, IwsKind, PassageD, SheetLevel } from '../model';
+import {
+  ISheet,
+  IwsKind,
+  PassageD,
+  PassageTypeEnum,
+  SheetLevel,
+} from '../model';
 import {
   isSectionRow,
   isPassageRow,
 } from '../components/Sheet/isSectionPassage';
+import { PublishDestinationEnum } from '../crud/usePublishDestination';
 
 test('return true for section row if valid hierarchy section', () => {
   const workflowItem: ISheet = {
@@ -12,10 +19,11 @@ test('return true for section row if valid hierarchy section', () => {
     title: 'Intro',
     sectionId: { type: 'section', id: 's1' },
     sectionUpdated: '2021-09-15',
-    transcriber: undefined,
-    editor: undefined,
     passageSeq: 1,
     deleted: false,
+    passageType: PassageTypeEnum.PASSAGE,
+    filtered: false,
+    published: [] as PublishDestinationEnum[],
   };
   expect(isSectionRow(workflowItem)).toBeTruthy();
 });
@@ -34,9 +42,10 @@ test('return true for section row if valid flat section', () => {
     sectionUpdated: '2021-09-15',
     passage: { type: 'passage', id: 'pa1' } as PassageD,
     passageUpdated: '2021-09-15',
-    transcriber: undefined,
-    editor: undefined,
     deleted: false,
+    passageType: PassageTypeEnum.PASSAGE,
+    filtered: false,
+    published: [] as PublishDestinationEnum[],
   };
   expect(isSectionRow(workflowItem)).toBeTruthy();
 });
@@ -69,6 +78,9 @@ test('return false for passage row if valid hierarchy section', () => {
     editor: undefined,
     passageSeq: 1,
     deleted: false,
+    passageType: PassageTypeEnum.PASSAGE,
+    filtered: false,
+    published: [] as PublishDestinationEnum[],
   } as ISheet;
   expect(isPassageRow(workflowItem)).toBeFalsy();
 });
@@ -85,11 +97,11 @@ test('return true for passage row if valid flat passage', () => {
     comment: 'salutation',
     sectionId: { type: 'section', id: 's1' },
     sectionUpdated: '2021-09-15',
-    passageId: { type: 'passage', id: 'pa1' },
     passageUpdated: '2021-09-15',
-    transcriber: undefined,
-    editor: undefined,
     deleted: false,
+    passageType: PassageTypeEnum.PASSAGE,
+    filtered: false,
+    published: [] as PublishDestinationEnum[],
   };
   expect(isPassageRow(workflowItem)).toBeTruthy();
 });
@@ -104,8 +116,10 @@ test('return true for passage row if hierarchy passage', () => {
     reference: '1:1-4',
     comment: 'salutation',
     passageUpdated: '2021-09-15',
-    passageId: { type: 'passage', id: 'pa1' },
     deleted: false,
+    passageType: PassageTypeEnum.PASSAGE,
+    filtered: false,
+    published: [] as PublishDestinationEnum[],
   };
   expect(isPassageRow(workflowItem)).toBeTruthy();
 });
