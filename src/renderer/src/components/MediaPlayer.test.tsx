@@ -88,8 +88,62 @@ jest.mock('react-redux', () => ({
   shallowEqual: jest.fn(),
 }));
 
-jest.mock('../context/GlobalContext', () => ({
-  useGlobal: () => [jest.fn()],
+// Mock GlobalContext to provide proper context structure
+jest.mock('../context/useGlobal', () => ({
+  useGlobal: (key: string) => {
+    const mockValues: Record<string, any> = {
+      errorReporter: jest.fn(),
+      memory: {
+        cache: { query: jest.fn(() => []) },
+        update: jest.fn(),
+      },
+      user: 'test-user',
+      organization: 'test-org',
+      project: 'test-project',
+      plan: 'test-plan',
+      offline: false,
+    };
+    return [mockValues[key] || jest.fn(), jest.fn()];
+  },
+}));
+
+// Mock api-variable to avoid import.meta issues in Jest
+jest.mock('../../api-variable', () => ({
+  API_CONFIG: {
+    help: '',
+    host: 'http://localhost:3000',
+    snagId: '',
+    offline: false,
+    chmHelp: '',
+    community: '',
+    openNotes: '',
+    resources: '',
+    openContent: '',
+    course: '',
+    videoTraining: '',
+    walkThru: '',
+    akuo: '',
+    endpoint: '',
+    title: 'Audio Project Manager',
+    flatSample: '',
+    hierarchicalSample: '',
+    genFlatSample: '',
+    genHierarchicalSample: '',
+    googleSamples: '',
+    sizeLimit: '20',
+    sessions: 'https://sessions.bugsnag.com',
+    notify: 'https://notify.bugsnag.com',
+  },
+  isElectron: false,
+}));
+
+// Mock schema to avoid import.meta issues in Jest
+jest.mock('../schema', () => ({
+  memory: {
+    cache: { query: jest.fn(() => []) },
+    update: jest.fn(),
+  },
+  requestedSchema: 100,
 }));
 
 jest.mock('../utils', () => {

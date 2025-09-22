@@ -6,9 +6,7 @@ import { cleanup, render, waitFor } from '@testing-library/react';
 import ProfileDialog, { ProfileDialogProps } from './ProfileDialog';
 import { UnsavedProvider } from '../context/UnsavedContext';
 import { UserD } from '../model';
-import { memory } from '../schema';
-
-const mockMemory = memory;
+// Use the mocked memory from the schema mock
 const mockOffline = false;
 const mockOrgId = 'org1';
 const mockUserId = 'user1';
@@ -16,6 +14,49 @@ const mocklang = 'en';
 const mockOfflineOnly = false;
 const mockDeveloper = false;
 const mockUser: UserD[] = [];
+
+// Mock api-variable to avoid import.meta issues in Jest
+jest.mock('../../api-variable', () => ({
+  API_CONFIG: {
+    help: '',
+    host: 'http://localhost:3000',
+    snagId: '',
+    offline: false,
+    chmHelp: '',
+    community: '',
+    openNotes: '',
+    resources: '',
+    openContent: '',
+    course: '',
+    videoTraining: '',
+    walkThru: '',
+    akuo: '',
+    endpoint: '',
+    title: 'Audio Project Manager',
+    flatSample: '',
+    hierarchicalSample: '',
+    genFlatSample: '',
+    genHierarchicalSample: '',
+    googleSamples: '',
+    sizeLimit: '20',
+    sessions: 'https://sessions.bugsnag.com',
+    notify: 'https://notify.bugsnag.com',
+  },
+  isElectron: false,
+}));
+
+// Mock schema to avoid import.meta issues in Jest
+const mockSchemaMemory = {
+  cache: {
+    query: jest.fn(() => []),
+  },
+  update: jest.fn(),
+};
+
+jest.mock('../schema', () => ({
+  memory: mockSchemaMemory,
+  requestedSchema: 100,
+}));
 
 jest.mock('../utils/logErrorService', () => jest.fn());
 jest.mock('../utils/useWaitForRemoteQueue', () => ({
@@ -65,7 +106,7 @@ jest.mock('./ExtendableDeleteExpansion', () => {
 jest.mock('./AltActionBar', () => {
   const MockedAltActionBar = () => <div>AltActionBar</div>;
   MockedAltActionBar.displayName = 'AltActionBar';
-  return MockedAltActionBar;
+  return { AltActionBar: MockedAltActionBar };
 });
 jest.mock('../hoc/useOrbitData', () => ({
   useOrbitData: (recType: string) => (recType === 'user' ? mockUser : []),
@@ -101,10 +142,10 @@ jest.mock('react-redux', () => ({
   useDispatch: () => jest.fn(),
   shallowEqual: jest.fn(),
 }));
-jest.mock('../context/GlobalContext', () => ({
+jest.mock('../context/useGlobal', () => ({
   useGlobal: (arg: string) =>
     arg === 'memory'
-      ? [mockMemory, jest.fn()]
+      ? [mockSchemaMemory, jest.fn()]
       : arg === 'offline'
         ? [mockOffline, jest.fn()]
         : arg === 'organization'

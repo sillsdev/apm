@@ -109,8 +109,6 @@ test('section and passages count separately in flat', () => {
       sectionUpdated: '2021-09-15',
       passage: { type: 'passage', id: 'pa1' } as PassageD,
       passageUpdated: '2021-09-15',
-      transcriber: undefined,
-      editor: undefined,
       deleted: false,
       mediaShared: IMediaShare.NotPublic,
     },
