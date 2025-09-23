@@ -1,17 +1,19 @@
 import Memory from '@orbit/memory';
 import { MediaFileD, Passage, PassageD } from '../../model';
-import { localSync } from './localSync';
 
-let mockDoChapter: any;
-jest.mock('./doChapter', () => {
-  const retValue = {
-    doChapter: jest.fn(),
-  };
-  mockDoChapter = retValue;
-  return retValue;
-});
+// Mock doChapter before importing localSync
+jest.mock('./doChapter', () => ({
+  doChapter: jest.fn(),
+}));
+
+import { localSync } from './localSync';
+import { doChapter } from './doChapter';
 
 describe('localSync', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
   it('return successful (empty string) even if no data', async () => {
     // Arrange
     const params = {
@@ -27,7 +29,7 @@ describe('localSync', () => {
       artifactId: 'artifactId',
       getTranscription: jest.fn(),
     };
-    const mockDoChapterSpy = jest.spyOn(mockDoChapter, 'doChapter');
+    const mockDoChapterSpy = jest.mocked(doChapter);
     // Act
     const result = await localSync(params);
     // Assert
@@ -60,7 +62,7 @@ describe('localSync', () => {
             artifactType: { data: { id: 'artifactId' } },
           },
           id: 'm1',
-          type: 'mediafile',
+          type: 'mediaFile',
         } as MediaFileD,
       ],
       passages: [passage],
@@ -72,7 +74,7 @@ describe('localSync', () => {
       artifactId: 'artifactId',
       getTranscription: jest.fn(),
     };
-    const mockDoChapterSpy = jest.spyOn(mockDoChapter, 'doChapter');
+    const mockDoChapterSpy = jest.mocked(doChapter);
     const mockGetTranscriptionSpy = jest
       .spyOn(params, 'getTranscription')
       .mockImplementation(() => 'My transcription');
@@ -125,7 +127,7 @@ describe('localSync', () => {
             artifactType: { data: { id: 'artifactId' } },
           },
           id: 'm1',
-          type: 'mediafile',
+          type: 'mediaFile',
         } as MediaFileD,
       ],
       passages: [passage],
@@ -137,7 +139,7 @@ describe('localSync', () => {
       artifactId: 'artifactId',
       getTranscription: jest.fn(),
     };
-    const mockDoChapterSpy = jest.spyOn(mockDoChapter, 'doChapter');
+    const mockDoChapterSpy = jest.mocked(doChapter);
     const mockGetTranscriptionSpy = jest
       .spyOn(params, 'getTranscription')
       .mockImplementation(() => 'My transcription');
@@ -190,7 +192,7 @@ describe('localSync', () => {
             artifactType: { data: { id: 'artifactId' } },
           },
           id: 'm1',
-          type: 'mediafile',
+          type: 'mediaFile',
         } as MediaFileD,
       ],
       passages: [passage],
@@ -202,7 +204,7 @@ describe('localSync', () => {
       artifactId: 'artifactId',
       getTranscription: jest.fn(),
     };
-    const mockDoChapterSpy = jest.spyOn(mockDoChapter, 'doChapter');
+    const mockDoChapterSpy = jest.mocked(doChapter);
     const mockGetTranscriptionSpy = jest
       .spyOn(params, 'getTranscription')
       .mockImplementation(() => 'My transcription');

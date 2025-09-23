@@ -1,36 +1,31 @@
 import { Passage } from '../../model';
-import { getLocalParatextText } from './getLocalParatextText';
 import { DOMParser } from '@xmldom/xmldom';
+
 const parser = new DOMParser();
 
-let mockParatextPaths: any;
-jest.mock('./paratextPaths', () => {
-  const retValue = {
-    paratextPaths: jest.fn(),
-  };
-  mockParatextPaths = retValue;
-  return retValue;
-});
+// Mock all dependencies before importing getLocalParatextText
+jest.mock('./paratextPaths', () => ({
+  paratextPaths: jest.fn(),
+}));
 
-let mockReadChapter: any;
-jest.mock('./readChapter', () => {
-  const retValue = {
-    readChapter: jest.fn(),
-  };
-  mockReadChapter = retValue;
-  return retValue;
-});
+jest.mock('./readChapter', () => ({
+  readChapter: jest.fn(),
+}));
 
-let mockGetParatextVerses: any;
-jest.mock('./usxNodeContent', () => {
-  const retValue = {
-    getPassageVerses: jest.fn(),
-  };
-  mockGetParatextVerses = retValue;
-  return retValue;
-});
+jest.mock('./usxNodeContent', () => ({
+  getPassageVerses: jest.fn(),
+}));
+
+// Import the mocked functions and the function under test
+import { getLocalParatextText } from './getLocalParatextText';
+import { paratextPaths } from './paratextPaths';
+import { readChapter } from './readChapter';
+import { getPassageVerses } from './usxNodeContent';
 
 describe('getLocalParatextText', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
   it('should return the text of a passage from a local Paratext project', async () => {
     // Arrange
     const pass = {
@@ -40,10 +35,10 @@ describe('getLocalParatextText', () => {
       },
     } as Passage;
     const ptProjName = 'MyParatextProject';
-    const mockReachChapterSpy = jest.spyOn(mockReadChapter, 'readChapter');
-    const mockParatextPathsSpy = jest.spyOn(mockParatextPaths, 'paratextPaths');
+    const mockReachChapterSpy = jest.mocked(readChapter);
+    const mockParatextPathsSpy = jest.mocked(paratextPaths);
     const mockGetPassageVersesSpy = jest
-      .spyOn(mockGetParatextVerses, 'getPassageVerses')
+      .mocked(getPassageVerses)
       .mockImplementation(() => 'My transcription');
     // Act
     const result = await getLocalParatextText(pass, ptProjName);
@@ -64,29 +59,43 @@ describe('getLocalParatextText', () => {
     } as Passage;
     const ptProjName = 'MyParatextProject';
     const mockParatextPathsSpy = jest
-      .spyOn(mockParatextPaths, 'paratextPaths')
+      .mocked(paratextPaths)
       .mockImplementation((arg) => {
         if (arg === 'LUK-1') {
-          return { chapterFile: 'LUK-1.usx' };
+          return Promise.resolve({
+            chapterFile: 'LUK-1.usx',
+            book: 'LUK',
+            chapter: '1',
+            program: jest.fn().mockResolvedValue({ stdout: '' }),
+          });
         } else {
-          return { chapterFile: 'LUK-2.usx' };
+          return Promise.resolve({
+            chapterFile: 'LUK-2.usx',
+            book: 'LUK',
+            chapter: '2',
+            program: jest.fn().mockResolvedValue({ stdout: '' }),
+          });
         }
       });
     const mockReachChapterSpy = jest
-      .spyOn(mockReadChapter, 'readChapter')
+      .mocked(readChapter)
       .mockImplementation((paths) => {
         if ((paths as any).chapterFile === 'LUK-1.usx') {
-          return parser.parseFromString(
-            `<usx><verse number="67-80" style="v"/>V67-80</usx>`
-          ) as Document;
+          return Promise.resolve(
+            parser.parseFromString(
+              `<usx><verse number="67-80" style="v"/>V67-80</usx>`
+            ) as Document
+          );
         } else {
-          return parser.parseFromString(
-            `<usx><verse number="1-5" style="v"/>V1-5</usx>`
-          ) as Document;
+          return Promise.resolve(
+            parser.parseFromString(
+              `<usx><verse number="1-5" style="v"/>V1-5</usx>`
+            ) as Document
+          );
         }
       });
     const mockGetPassageVersesSpy = jest
-      .spyOn(mockGetParatextVerses, 'getPassageVerses')
+      .mocked(getPassageVerses)
       .mockImplementation((doc) => {
         const verses = (doc as any).getElementsByTagName('verse') as Element[];
         const verseTexts = Array.from(verses).map(

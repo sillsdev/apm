@@ -1,20 +1,24 @@
-import { paratextPaths } from './paratextPaths';
+// Mock the dependency before importing paratextPaths
+jest.mock('../../utils/paratextPath', () => ({
+  getReadWriteProg: jest.fn(),
+}));
 
-let mockGetReadWriteProg: any;
-jest.mock('../../utils/paratextPath', () => {
-  const retValue = {
-    getReadWriteProg: jest.fn(),
-  };
-  mockGetReadWriteProg = retValue;
-  return retValue;
-});
+// Import the mocked function and the function under test
+import { paratextPaths } from './paratextPaths';
+import { getReadWriteProg } from '../../utils/paratextPath';
 
 describe('ParatextPaths', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
   it('should return the correct path for the book and chapter', async () => {
     // Arrange
     const mockGetReadWriteProgSpy = jest
-      .spyOn(mockGetReadWriteProg, 'getReadWriteProg')
-      .mockImplementation(() => Promise.resolve('ptProg'));
+      .mocked(getReadWriteProg)
+      .mockResolvedValue(
+        jest.fn().mockResolvedValue({ stdout: '', stderr: '', code: 0 })
+      );
     // Act
     const result = await paratextPaths('MAT-1');
     // Assert
@@ -24,7 +28,7 @@ describe('ParatextPaths', () => {
       chapterFile: '/tmp/MAT-1.usx',
       book: 'MAT',
       chapter: '1',
-      program: 'ptProg',
+      program: expect.any(Function),
     });
   });
 });

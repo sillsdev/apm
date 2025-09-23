@@ -1,47 +1,27 @@
-import { doChapter } from './doChapter';
 import Memory from '@orbit/memory';
 import { PassageD } from '../../model';
 import { DOMParser } from '@xmldom/xmldom';
-const domParser = new DOMParser();
 
+const domParser = new DOMParser();
 const mockChapDom = domParser.parseFromString('<usx></usx>');
 const mockMemory = { update: jest.fn() } as unknown as Memory;
 
-let mockParatextPaths: any;
-jest.mock('./paratextPaths', () => {
-  const retValue = {
-    paratextPaths: jest.fn(),
-  };
-  mockParatextPaths = retValue;
-  return retValue;
-});
+// Mock all dependencies before importing doChapter
+jest.mock('./paratextPaths', () => ({
+  paratextPaths: jest.fn(),
+}));
 
-let mockReadChapter: any;
-jest.mock('./readChapter', () => {
-  const retValue = {
-    readChapter: jest.fn(),
-  };
-  mockReadChapter = retValue;
-  return retValue;
-});
+jest.mock('./readChapter', () => ({
+  readChapter: jest.fn(),
+}));
 
-let mockPostPass: any;
-jest.mock('./postPass', () => {
-  const retValue = {
-    postPass: jest.fn(),
-  };
-  mockPostPass = retValue;
-  return retValue;
-});
+jest.mock('./postPass', () => ({
+  postPass: jest.fn(),
+}));
 
-let mockWriteChapger: any;
-jest.mock('./writeChapter', () => {
-  const retValue = {
-    writeChapter: jest.fn(),
-  };
-  mockWriteChapger = retValue;
-  return retValue;
-});
+jest.mock('./writeChapter', () => ({
+  writeChapter: jest.fn(),
+}));
 
 jest.mock('@orbit/memory', () => ({
   __esModule: true,
@@ -55,7 +35,17 @@ jest.mock('../../crud/updatePassageState', () => {
   };
 });
 
+// Import the mocked functions
+import { doChapter } from './doChapter';
+import { paratextPaths } from './paratextPaths';
+import { readChapter } from './readChapter';
+import { postPass } from './postPass';
+import { writeChapter } from './writeChapter';
+
 describe('doChapter', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
   it('should post the passage for each chapter referenced', async () => {
     const params = {
       chap: 'MAT-1',
@@ -82,21 +72,19 @@ describe('doChapter', () => {
       sectionArr: undefined,
     };
 
-    const mockParatextPathsSpy = jest
-      .spyOn(mockParatextPaths, 'paratextPaths')
-      .mockImplementation(() => ({
-        chapterFile: 'chapterFile',
-        book: 'MAT',
-        chapter: '1',
-        program: 'ptProg',
-      }));
+    const mockParatextPathsSpy = jest.mocked(paratextPaths).mockResolvedValue({
+      chapterFile: 'chapterFile',
+      book: 'MAT',
+      chapter: '1',
+      program: jest.fn().mockResolvedValue({ stdout: '' }),
+    });
     const readChapterSpy = jest
-      .spyOn(mockReadChapter, 'readChapter')
-      .mockImplementation(() => mockChapDom);
-    const postPassSpy = jest.spyOn(mockPostPass, 'postPass');
+      .mocked(readChapter)
+      .mockResolvedValue(mockChapDom);
+    const postPassSpy = jest.mocked(postPass);
     const writeChapterSpy = jest
-      .spyOn(mockWriteChapger, 'writeChapter')
-      .mockImplementation(() => ({ stdout: '' }));
+      .mocked(writeChapter)
+      .mockResolvedValue({ stdout: '' });
 
     await doChapter(params);
 
