@@ -3,9 +3,19 @@ import React from 'react';
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { UnsavedProvider } from '../../context/UnsavedContext';
+import { AlertSeverity } from '../../hoc/SnackBar';
+import { RoleNames } from '../../model/roleNames';
+import Coordinator from '@orbit/coordinator';
+
+// Mock the useGlobal hook
+jest.mock('../../context/useGlobal', () => ({
+  useGlobal: jest.fn(),
+  useGetGlobal: jest.fn(),
+}));
 import PassageDetailMarkVerses, {
   MarkVersesProps,
 } from './PassageDetailMarkVerses';
+import { useGlobal, useGetGlobal } from '../../context/useGlobal';
 import {
   PassageD,
   OrgWorkflowStepD,
@@ -14,7 +24,7 @@ import {
 } from '../../model';
 import { memory } from '../../schema';
 import { DetailPlayerProps } from './PassageDetailPlayer';
-import { act } from 'react-dom/test-utils';
+import { act } from 'react';
 // import { IRow } from '../../context/PassageDetailContext';
 // import { HotKeyProvider } from '../../context/HotKeyContext';
 
@@ -149,13 +159,95 @@ jest.mock('react-redux', () => ({
   shallowEqual: jest.fn(),
 }));
 
+const mockCoordinator = new Coordinator();
+const mockErrorReporter = {
+  notify: jest.fn(),
+  _notify: jest.fn(),
+  leaveBreadcrumb: jest.fn(),
+  addOnError: jest.fn(),
+  removeOnError: jest.fn(),
+  addOnSession: jest.fn(),
+  removeOnSession: jest.fn(),
+  startSession: jest.fn(),
+  pauseSession: jest.fn(),
+  resumeSession: jest.fn(),
+  stopSession: jest.fn(),
+  getContext: jest.fn(),
+  setContext: jest.fn(),
+  addContext: jest.fn(),
+  clearContext: jest.fn(),
+  setUser: jest.fn(),
+  clearUser: jest.fn(),
+  addMetadata: jest.fn(),
+  clearMetadata: jest.fn(),
+  addFeatureFlag: jest.fn(),
+  clearFeatureFlag: jest.fn(),
+  addFeatureFlags: jest.fn(),
+  clearFeatureFlags: jest.fn(),
+  getSession: jest.fn(),
+  _logger: {
+    debug: jest.fn(),
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+  },
+} as any;
+
+const mockGlobalState = {
+  coordinator: mockCoordinator,
+  errorReporter: mockErrorReporter,
+  fingerprint: 'test-fingerprint',
+  memory: mockMemory,
+  lang: 'en',
+  latestVersion: '1.0.0',
+  loadComplete: true,
+  offlineOnly: false,
+  organization: 'test-org',
+  releaseDate: '2024-01-01',
+  user: 'test-user',
+  alertOpen: false,
+  autoOpenAddMedia: false,
+  changed: false,
+  connected: true,
+  dataChangeCount: 0,
+  developer: null,
+  enableOffsite: false,
+  home: false,
+  importexportBusy: false,
+  orbitRetries: 0,
+  orgRole: undefined as RoleNames | undefined,
+  plan: '',
+  progress: 0,
+  project: '',
+  projectsLoaded: [],
+  projType: '',
+  remoteBusy: false,
+  saveResult: undefined as string | undefined,
+  snackAlert: undefined as AlertSeverity | undefined,
+  snackMessage: <></>,
+  offline: false,
+};
+
+// Set up the mock to return the global state
+(useGlobal as jest.Mock).mockImplementation((key: string) => {
+  if (key === 'memory') return [mockMemory, jest.fn()];
+  if (key === 'lang') return ['en', jest.fn()];
+  if (key === 'user') return ['test-user', jest.fn()];
+  if (key === 'organization') return ['test-org', jest.fn()];
+  if (key === 'snackMessage') return [<></>, jest.fn()];
+  if (key === 'snackAlert') return [undefined, jest.fn()];
+  return [undefined, jest.fn()];
+});
+
+(useGetGlobal as jest.Mock).mockImplementation((key: string) => {
+  return mockGlobalState[key as keyof typeof mockGlobalState];
+});
+
 const runTest = (props: MarkVersesProps) =>
   render(
-    // <HotKeyProvider>
     <UnsavedProvider>
       <PassageDetailMarkVerses {...props} />
     </UnsavedProvider>
-    // </HotKeyProvider>
   );
 
 afterEach(() => {

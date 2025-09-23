@@ -1,11 +1,10 @@
 import { renderHook } from '@testing-library/react';
 import { useStepPermissions } from './useStepPermission';
 import * as FindRecord from '../crud/tryFindRecord';
-import { memory } from '../schema';
 import { GroupD, OrganizationD, OrgWorkflowStepD, SectionD } from '../model';
 import OrganizationSchemeStep from '../model/organizationSchemeStep';
 
-const mockOrgId = 'org-id';
+const mockOrgId = 'test-org';
 const SchemeId = 'scheme-id';
 const StepId = 'step-id';
 const SectionId = 'section-id';
@@ -13,7 +12,6 @@ const SchemeStepId = 'scheme-step-id';
 const mockUserId = 'user-id';
 const GroupId = 'group-id';
 
-const mockMemory = memory;
 let mockUserIsAdmin = true;
 const mockGetOrgDefault = jest.fn();
 let mockOrganizations = [] as OrganizationD[];
@@ -21,22 +19,23 @@ let mockSteps = [] as OrgWorkflowStepD[];
 let mockSchemeSteps = [] as OrganizationSchemeStep[];
 let mockGroups = [] as GroupD[];
 
+// Mock schema to avoid import.meta issues in Jest
+const mockMemory = {
+  cache: {
+    query: jest.fn(() => []),
+  },
+  update: jest.fn(),
+};
+
+jest.mock('../schema', () => ({
+  memory: mockMemory,
+  requestedSchema: 100,
+}));
+
 jest.mock('../components/Peers/usePeerGroups', () => ({
   usePeerGroups: () => ({
     myGroups: mockGroups,
   }),
-}));
-jest.mock('../context/GlobalContext', () => ({
-  useGlobal: (arg: string) =>
-    arg === 'organization'
-      ? [mockOrgId, jest.fn()]
-      : arg === 'user'
-        ? [mockUserId, jest.fn()]
-        : arg === 'memory'
-          ? [mockMemory, jest.fn()]
-          : [{}, jest.fn()],
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  useGetGlobal: () => (arg: string) => false, // remoteBusy & importexportBusy
 }));
 jest.mock('../crud/useRole', () => ({
   useRole: () => ({
@@ -58,6 +57,28 @@ jest.mock('../hoc/useOrbitData', () => ({
         : recType === 'organizationschemestep'
           ? mockSchemeSteps
           : [],
+}));
+
+// Mock GlobalContext to avoid context errors
+jest.mock('../context/useGlobal', () => ({
+  useGlobal: jest.fn((key: string) => {
+    const mockValues: Record<string, any> = {
+      memory: mockMemory,
+      user: mockUserId,
+      organization: mockOrgId,
+    };
+    return [mockValues[key], jest.fn()];
+  }),
+  useGetGlobal: jest.fn(() =>
+    jest.fn((key: string) => {
+      const mockValues: Record<string, any> = {
+        memory: mockMemory,
+        user: mockUserId,
+        organization: mockOrgId,
+      };
+      return mockValues[key];
+    })
+  ),
 }));
 
 const defaultGroups = [
@@ -114,6 +135,24 @@ const defaultSchemeSteps = [
         data: {
           id: SchemeId,
           type: 'organizationscheme',
+        },
+      },
+      orgWorkflowStep: {
+        data: {
+          id: StepId,
+          type: 'orgworkflowstep',
+        },
+      },
+      user: {
+        data: {
+          id: mockUserId,
+          type: 'user',
+        },
+      },
+      group: {
+        data: {
+          id: GroupId,
+          type: 'group',
         },
       },
     },

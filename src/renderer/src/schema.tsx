@@ -539,7 +539,7 @@ const schemaDefinition: RecordSchemaSettings = {
   version: 1,
 };
 export const requestedSchema = parseInt(
-  import.meta.env.VITE_SCHEMAVERSION || '100'
+  process.env.VITE_SCHEMAVERSION || '100'
 );
 
 /* you can set your REACT_APP_SCHEMAVERSION to a version if you want to go back

@@ -41,14 +41,25 @@ jest.mock('../../api-variable', () => ({
   },
 }));
 
-let mockUser: string | null = 'user-123';
+// Mock schema to avoid import.meta issues in Jest
 const mockMemory = {
+  cache: {
+    query: jest.fn(() => []),
+  },
+  update: jest.fn(),
   keyMap: {
     user: {
       'user-123': 'remote-user-123',
     },
   },
 };
+
+jest.mock('../schema', () => ({
+  memory: mockMemory,
+  requestedSchema: 100,
+}));
+
+let mockUser: string | null = 'user-123';
 let mockHasPermission = true;
 let mockRef = 'MAT 1:1-5';
 
@@ -87,22 +98,39 @@ jest.mock('../assets/brands', () => ({
   FaithBridge: 'FaithBridge',
 }));
 
-// Mock the GlobalProvider to avoid complex dependencies
+// Mock GlobalContext to avoid context errors
+jest.mock('../context/useGlobal', () => ({
+  useGlobal: jest.fn((key: string) => {
+    const mockValues: Record<string, any> = {
+      memory: mockMemory,
+      user: mockUser,
+      offline: false,
+      connected: true,
+      offlineOnly: false,
+      errorReporter: {
+        notify: jest.fn(),
+      },
+    };
+    return [mockValues[key], jest.fn()];
+  }),
+  useGetGlobal: jest.fn(() =>
+    jest.fn((key: string) => {
+      const mockValues: Record<string, any> = {
+        memory: mockMemory,
+        user: mockUser,
+        offline: false,
+      };
+      return mockValues[key];
+    })
+  ),
+}));
+
+// Mock GlobalContext
 jest.mock('../context/GlobalContext', () => ({
-  useGlobal: (arg: string) =>
-    arg === 'user'
-      ? [mockUser, jest.fn()]
-      : arg === 'memory'
-        ? [mockMemory, jest.fn()]
-        : arg === 'offline'
-          ? [false, jest.fn()]
-          : arg === 'connected'
-            ? [true, jest.fn()]
-            : arg === 'offlineOnly'
-              ? [false, jest.fn()]
-              : arg === 'errorReporter'
-                ? [undefined, jest.fn()]
-                : [{}, jest.fn()],
+  GlobalContext: React.createContext({
+    globalState: {},
+    setGlobalState: jest.fn(),
+  }),
 }));
 
 jest.mock('react-redux', () => ({
@@ -455,7 +483,7 @@ describe('FaithbridgeIframe', () => {
       // After 5 errors, logError should be called
       expect(mockLogError).toHaveBeenCalledWith(
         1,
-        undefined,
+        { notify: expect.any(Function) },
         'HTTP 500: Internal Server Error (attempt 5)'
       );
     });

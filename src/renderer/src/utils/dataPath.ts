@@ -18,7 +18,7 @@ export const dataPath = async (
   local_out?: { localname: string }
 ): Promise<string> => {
   const homeDir = localStorage.getItem('home') ?? '';
-  if (isElectron && import.meta.env.VITE_OFFLINEDATA) {
+  if (isElectron && process.env.VITE_OFFLINEDATA) {
     let localName = '';
     switch (type) {
       case PathType.AVATARS:
@@ -27,7 +27,7 @@ export const dataPath = async (
       case PathType.BURRITO:
         localName = path.join(
           homeDir,
-          import.meta.env.VITE_OFFLINEDATA,
+          process.env.VITE_OFFLINEDATA,
           type,
           local_out?.localname || path.basename(relPath || '')
         );
@@ -41,7 +41,7 @@ export const dataPath = async (
           : path.basename(relPath);
         localName = path.join(
           homeDir,
-          import.meta.env.VITE_OFFLINEDATA,
+          process.env.VITE_OFFLINEDATA,
           type,
           decodeURIComponent(fileName)
         );
@@ -51,7 +51,7 @@ export const dataPath = async (
       case PathType.ZIP:
         localName = path.join(
           homeDir,
-          import.meta.env.VITE_OFFLINEDATA,
+          process.env.VITE_OFFLINEDATA,
           local_out?.localname || path.basename(relPath || '')
         );
         break;
@@ -65,7 +65,7 @@ export const dataPath = async (
         parse(relPath).pathname?.split('?')[0]?.split('/').pop() || '';
       localName = path.join(
         homeDir,
-        import.meta.env.VITE_OFFLINEDATA,
+        process.env.VITE_OFFLINEDATA,
         type,
         decodeURIComponent(fileName)
       );
@@ -75,8 +75,8 @@ export const dataPath = async (
   }
   return relPath?.startsWith('http')
     ? relPath
-    : import.meta.env.VITE_OFFLINEDATA
-      ? path.join(homeDir, import.meta.env.VITE_OFFLINEDATA, relPath || '')
+    : process.env.VITE_OFFLINEDATA
+      ? path.join(homeDir, process.env.VITE_OFFLINEDATA, relPath || '')
       : '';
 };
 

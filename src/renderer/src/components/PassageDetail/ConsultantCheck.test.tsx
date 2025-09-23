@@ -18,10 +18,47 @@ let mockCompare: string[] = [];
 let mockPassageStepComplete: string | null = null;
 const mockUpdateRecord = jest.fn();
 
-jest.mock('../../context/GlobalContext', () => ({
-  useGlobal: () => [null, jest.fn()], // memory
-  useGetGlobal: () => () => false, // remoteBusy
+// Mock schema to avoid import.meta issues in Jest
+const mockMemory = {
+  cache: {
+    query: jest.fn(() => []),
+  },
+  update: jest.fn(),
+};
+
+jest.mock('../../schema', () => ({
+  memory: mockMemory,
+  requestedSchema: 100,
 }));
+
+// Mock GlobalContext to avoid context errors
+jest.mock('../../context/useGlobal', () => ({
+  useGlobal: jest.fn((key: string) => {
+    const mockValues: Record<string, any> = {
+      memory: mockMemory,
+      remoteBusy: false,
+    };
+    return [mockValues[key], jest.fn()];
+  }),
+  useGetGlobal: jest.fn(() =>
+    jest.fn((key: string) => {
+      const mockValues: Record<string, any> = {
+        memory: mockMemory,
+        remoteBusy: false,
+      };
+      return mockValues[key];
+    })
+  ),
+}));
+
+// Mock GlobalContext
+jest.mock('../../context/GlobalContext', () => ({
+  GlobalContext: React.createContext({
+    globalState: {},
+    setGlobalState: jest.fn(),
+  }),
+}));
+
 jest.mock('../../utils/useStepPermission', () => ({
   useStepPermissions: () => ({
     canDoSectionStep: jest.fn(() => true),
