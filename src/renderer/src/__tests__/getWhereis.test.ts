@@ -4,7 +4,7 @@ import { getWhereis } from '../utils/getWhereis';
 
 let res: string | undefined = '';
 
-const scall = async (cmd: string, arg: string[]) => {
+const scall = async (cmd: string, args?: string[], opts?: unknown) => {
   return new Promise(function (resolve, reject) {
     resolve({
       stdout: res,

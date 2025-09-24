@@ -63,7 +63,8 @@ interface IProps {
   oneTryOnly?: boolean | undefined;
   allowWave?: boolean | undefined;
   showFilename?: boolean | undefined;
-  size?: number | undefined;
+  height?: number;
+  width: number;
   doReset?: boolean | undefined;
   setDoReset?: ((r: boolean) => void) | undefined;
   showLoad?: boolean | undefined;
@@ -72,6 +73,8 @@ interface IProps {
   autoStart?: boolean | undefined;
   trackState?: ((mediaState: IMediaState) => void) | undefined;
   noNewVoice?: boolean | undefined;
+  allowNoNoise?: boolean;
+  allowZoom?: boolean;
 }
 
 function MediaRecord(props: IProps) {
@@ -102,13 +105,16 @@ function MediaRecord(props: IProps) {
     autoStart,
     doReset,
     setDoReset,
-    size,
+    height,
     metaData,
     showLoad,
     preload,
     onLoaded,
     trackState,
     noNewVoice,
+    allowNoNoise,
+    allowZoom,
+    width,
   } = props;
   const t: IPassageRecordStrings = useSelector(passageRecordSelector);
   const convert_status = useSelector(
@@ -470,7 +476,7 @@ function MediaRecord(props: IProps) {
   const segments = '{}';
 
   return (
-    <Paper id="mediaRecord">
+    <Paper id="mediaRecord" sx={{ width: width }}>
       {showLoad &&
         mediaId &&
         mediaState.status === MediaSt.FETCHED &&
@@ -482,11 +488,11 @@ function MediaRecord(props: IProps) {
         )}
       <WSAudioPlayer
         allowRecord={allowRecord !== false}
-        allowSilence={allowWave}
-        allowZoom={true}
+        allowZoom={allowZoom}
         allowDeltaVoice={allowDeltaVoice}
         oneTryOnly={oneTryOnly}
-        size={size || 300}
+        width={width - 20}
+        height={height || 300}
         blob={originalBlob}
         onBlobReady={onBlobReady}
         setChanged={setFilechanged}
@@ -498,6 +504,7 @@ function MediaRecord(props: IProps) {
         segments={segments}
         reload={gotTheBlob}
         noNewVoice={noNewVoice}
+        allowNoNoise={allowNoNoise}
       />
       {warning && (
         <Typography sx={{ m: 2, color: 'warning.dark' }} id="warning">

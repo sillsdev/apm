@@ -1,7 +1,8 @@
 import path from 'path-browserify';
 import parse from 'url-parse';
-import { isElectron } from '../../api-variable';
+import { isElectron, API_CONFIG } from '../../api-variable';
 const ipc = window?.electron;
+const { offlineData } = API_CONFIG;
 
 export enum PathType {
   AVATARS = 'avatars',
@@ -18,7 +19,7 @@ export const dataPath = async (
   local_out?: { localname: string }
 ): Promise<string> => {
   const homeDir = localStorage.getItem('home') ?? '';
-  if (isElectron && process.env.VITE_OFFLINEDATA) {
+  if (isElectron && offlineData) {
     let localName = '';
     switch (type) {
       case PathType.AVATARS:
@@ -27,7 +28,7 @@ export const dataPath = async (
       case PathType.BURRITO:
         localName = path.join(
           homeDir,
-          process.env.VITE_OFFLINEDATA,
+          offlineData,
           type,
           local_out?.localname || path.basename(relPath || '')
         );
@@ -41,7 +42,7 @@ export const dataPath = async (
           : path.basename(relPath);
         localName = path.join(
           homeDir,
-          process.env.VITE_OFFLINEDATA,
+          offlineData,
           type,
           decodeURIComponent(fileName)
         );
@@ -51,7 +52,7 @@ export const dataPath = async (
       case PathType.ZIP:
         localName = path.join(
           homeDir,
-          process.env.VITE_OFFLINEDATA,
+          offlineData,
           local_out?.localname || path.basename(relPath || '')
         );
         break;
@@ -65,7 +66,7 @@ export const dataPath = async (
         parse(relPath).pathname?.split('?')[0]?.split('/').pop() || '';
       localName = path.join(
         homeDir,
-        process.env.VITE_OFFLINEDATA,
+        offlineData,
         type,
         decodeURIComponent(fileName)
       );
@@ -75,8 +76,8 @@ export const dataPath = async (
   }
   return relPath?.startsWith('http')
     ? relPath
-    : process.env.VITE_OFFLINEDATA
-      ? path.join(homeDir, process.env.VITE_OFFLINEDATA, relPath || '')
+    : offlineData
+      ? path.join(homeDir, offlineData, relPath || '')
       : '';
 };
 

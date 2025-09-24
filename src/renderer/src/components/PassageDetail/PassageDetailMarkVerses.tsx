@@ -587,10 +587,12 @@ export function PassageDetailMarkVerses({ width }: MarkVersesProps) {
   return Boolean(mediafileId) && passType !== PassageTypeEnum.NOTE ? (
     <Box>
       <PassageDetailPlayer
+        width={width}
         data-testid="player"
         allowSegment={NamedRegions.Verse}
         onSegment={handleSegment}
         suggestedSegments={pastedSegments}
+        allowZoomAndSpeed={true}
       />
       <StyledPaper style={heightStyle}>
         <StyledTable id="verse-sheet" data-testid="verse-sheet">

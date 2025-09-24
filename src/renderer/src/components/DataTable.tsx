@@ -58,7 +58,6 @@ function DataTable(props: IProps) {
     select,
     sorting,
   } = props;
-  const [selected, setSelected] = React.useState<(string | number)[]>([]);
   const [rowSelectionModel, setRowSelectionModel] =
     React.useState<GridRowSelectionModel>({
       type: 'include',
@@ -82,7 +81,6 @@ function DataTable(props: IProps) {
       const newSelection = checks.map((c) =>
         typeof c === 'string' ? parseInt(c) : c
       );
-      setSelected(newSelection);
       setRowSelectionModel({
         type: 'include',
         ids: new Set(newSelection),
@@ -92,7 +90,6 @@ function DataTable(props: IProps) {
 
   const handleSelection = (selection: (number | string)[]) => {
     if (selection.length === 1 && selection[0] === -1) return;
-    setSelected(selection);
     const numSelection =
       selection.length === 0
         ? []

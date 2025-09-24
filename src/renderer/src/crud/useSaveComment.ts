@@ -2,7 +2,7 @@ import { RecordOperation, RecordTransformBuilder } from '@orbit/records';
 import { useDispatch } from 'react-redux';
 import { useGlobal } from '../context/useGlobal';
 import { findRecord, PermissionName, remoteIdGuid, usePermissions } from '.';
-import { MediaFile, IApiError, CommentD, MediaFileD } from '../model';
+import { IApiError, CommentD, MediaFileD } from '../model';
 import {
   AddRecord,
   UpdateRecord,

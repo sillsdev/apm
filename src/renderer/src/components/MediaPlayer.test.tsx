@@ -3,7 +3,7 @@ import React from 'react';
 // See: https://www.w3schools.com/TAGS/ref_av_dom.asp
 import { cleanup, render, waitFor } from '@testing-library/react';
 import { MediaPlayer } from './MediaPlayer';
-import { act } from 'react-dom/test-utils';
+import { act } from 'react';
 
 enum MediaSt {
   'IDLE',

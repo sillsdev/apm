@@ -67,7 +67,6 @@ const PassageDetailGrids = ({ minWidth, onMinWidth }: PGProps) => {
   const [width, setWidth] = useState(window.innerWidth);
   const [height, setHeight] = useState(window.innerHeight);
   const widthRef = React.useRef(window.innerWidth);
-  //const [myPlayerSize, setMyPlayerSize] = useState(INIT_PLAYER_HEIGHT);
 
   const [topFilter, setTopFilter] = useState(false);
   const [memory] = useGlobal('memory');
@@ -88,15 +87,14 @@ const PassageDetailGrids = ({ minWidth, onMinWidth }: PGProps) => {
   const [horizSize, setHorizSize] = useState(window.innerWidth - 450);
   const discussionSizeRef = React.useRef(discussionSize);
   const t = useSelector(toolSelector, shallowEqual) as IToolStrings;
+  const [paneWidth, setPaneWidth] = useState(0);
 
   useEffect(() => {
     discussionSizeRef.current = discussionSize;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [discussionSize]);
-
-  useEffect(() => {
     widthRef.current = width;
-  }, [width]);
+    setPaneWidth(widthRef.current - discussionSize.width - 16);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [discussionSize, width]);
 
   const artifactId = useMemo(() => {
     if (settings) {
@@ -137,6 +135,7 @@ const PassageDetailGrids = ({ minWidth, onMinWidth }: PGProps) => {
     const newWidth = Math.max(window.innerWidth, minWidthRef.current);
     setWidth(newWidth);
     setHeight(window.innerHeight);
+
     let newDiscWidth = discussionSizeRef.current.width;
     if (newDiscWidth > newWidth - minWidthRef.current + 450) newDiscWidth = 450;
     const newDiscHeight = window.innerHeight - 275;
@@ -258,7 +257,7 @@ const PassageDetailGrids = ({ minWidth, onMinWidth }: PGProps) => {
           >
             <Wrapper>
               <SplitPane
-                defaultSize={widthRef.current - discussionSize.width - 16}
+                defaultSize={paneWidth}
                 style={{ position: 'static' }}
                 split="vertical"
                 size={horizSize}
@@ -271,32 +270,32 @@ const PassageDetailGrids = ({ minWidth, onMinWidth }: PGProps) => {
                   tool !== ToolSlug.ConsultantCheck ? (
                     <SplitPane
                       defaultSize={playerSize}
-                      minSize={INIT_PLAYERPANE_HEIGHT + 48} // 48 for chooser
+                      minSize={INIT_PLAYERPANE_HEIGHT + 48 + 10} // 48 for chooser, 10 for margin
                       maxSize={height - 280}
                       style={{ position: 'static' }}
                       split="horizontal"
                       onChange={handleHorzSplitSize}
                     >
                       <Pane>
-                        <PassageDetailChooser
-                          width={widthRef.current - discussionSize.width - 16}
-                        />
+                        <PassageDetailChooser width={paneWidth} />
                         {(tool !== ToolSlug.KeyTerm || mediafileId) && (
-                          <PassageDetailPlayer chooserReduce={chooserSize} />
+                          <PassageDetailPlayer
+                            width={paneWidth}
+                            chooserReduce={chooserSize}
+                            allowZoomAndSpeed={true}
+                          />
                         )}
                       </Pane>
                       <Pane>
                         {tool === ToolSlug.TeamCheck && <TeamCheckReference />}
                         {tool === ToolSlug.KeyTerm && (
                           <Suspense fallback={<Busy />}>
-                            <KeyTerms
-                              width={width - discussionSize.width - 16}
-                            />
+                            <KeyTerms width={paneWidth} />
                           </Suspense>
                         )}
                         {tool === ToolSlug.Discuss && (
                           <PassageDetailDiscuss
-                            width={width - discussionSize.width - 16}
+                            width={paneWidth}
                             currentStep={currentstep}
                           />
                         )}
@@ -304,30 +303,22 @@ const PassageDetailGrids = ({ minWidth, onMinWidth }: PGProps) => {
                     </SplitPane>
                   ) : (
                     <Grid sx={descProps} size={{ xs: 12 }}>
-                      <PassageDetailChooser
-                        width={width - discussionSize.width - 16}
-                      />
+                      <PassageDetailChooser width={paneWidth} />
                       {tool === ToolSlug.Verses && (
-                        <PassageDetailMarkVerses
-                          width={width - discussionSize.width - 16}
-                        />
+                        <PassageDetailMarkVerses width={paneWidth} />
                       )}
                       {tool === ToolSlug.Transcribe && (
                         <PassageDetailTranscribe
-                          width={width - discussionSize.width - 16}
+                          width={paneWidth}
                           artifactTypeId={artifactId}
                           onFilter={handleFilter}
                         />
                       )}
                       {tool === ToolSlug.Record && (
-                        <PassageDetailRecord
-                          width={width - discussionSize.width - 16}
-                        />
+                        <PassageDetailRecord width={paneWidth} />
                       )}
                       {tool === ToolSlug.ConsultantCheck && (
-                        <ConsultantCheck
-                          width={width - discussionSize.width - 16}
-                        />
+                        <ConsultantCheck width={paneWidth} />
                       )}
                     </Grid>
                   )}

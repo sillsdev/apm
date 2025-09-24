@@ -196,7 +196,7 @@ export function Welcome(props: IProps) {
         localStorage.setItem('inviteId', params.inviteId);
       }
     }
-    dispatch(setLanguage(localeDefault(isDeveloper === 'true')) as any);
+    dispatch(setLanguage(localeDefault(isDeveloper)) as any);
     dispatch(fetchLocalization() as any);
     checkOnline(() => {});
     const choice = localStorage.getItem(LocalKey.offlineAdmin);
@@ -267,7 +267,7 @@ export function Welcome(props: IProps) {
         email: '',
         phone: '',
         timezone: DateTime.local().zoneName,
-        locale: localeDefault(isDeveloper === 'true'),
+        locale: localeDefault(isDeveloper),
         isLocked: false,
         uilanguagebcp47: '',
         digestPreference: 0,

@@ -1,10 +1,5 @@
 import { useGlobal } from '../context/useGlobal';
-import {
-  ISharedStrings,
-  ActivityStates,
-  MediaFile,
-  MediaFileD,
-} from '../model';
+import { ISharedStrings, ActivityStates, MediaFileD } from '../model';
 import { orbitErr } from '../utils';
 import * as actions from '../store';
 import {

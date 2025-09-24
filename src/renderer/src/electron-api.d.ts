@@ -7,7 +7,7 @@ declare module '@electron-toolkit/preload' {
     appData: () => Promise<string | undefined>;
     audacityOpen: () => Promise<string[]>;
     availSpellLangs: () => Promise<string[]>;
-    customList: () => Promise<unknown>;
+    customList: () => Promise<string[]>;
     customRemove: (value: string) => Promise<unknown>;
     getPath: (token: string) => Promise<string>;
     getProfile: () => Promise<User | undefined>;
@@ -17,7 +17,7 @@ declare module '@electron-toolkit/preload' {
     login: (hasUsed: boolean, email?: string) => Promise<unknown>;
     logout: () => Promise<unknown>;
     refreshToken: () => Promise<unknown>;
-    setAddToDict: (value: boolean) => Promise<unknown>;
+    setAddToDict: (value: string) => Promise<void>;
     setSpellLangs: (codes: string[]) => Promise<unknown>;
     temp: () => Promise<string>;
     exitApp: () => Promise<unknown>;

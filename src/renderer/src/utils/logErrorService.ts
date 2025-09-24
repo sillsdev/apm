@@ -1,5 +1,5 @@
 import { join } from 'path-browserify';
-// @ts-ignore
+// @ts-ignore we need this for electron which has this dependency
 import { Stats } from 'fs-extra';
 import { LocalKey, createFolder } from '.';
 import { DateTime } from 'luxon';

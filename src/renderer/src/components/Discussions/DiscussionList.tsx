@@ -40,7 +40,7 @@ import { useDiscussionOrg, useOrgDefaults } from '../../crud';
 import FilterMenu, { IFilterState } from './FilterMenu';
 import { FilterResolved as Resolved } from './FilterResolved';
 import Confirm from '../AlertDialog';
-import { onlyUnique, prettySegment, waitForIt } from '../../utils';
+import { prettySegment, waitForIt } from '../../utils';
 import { UnsavedContext } from '../../context/UnsavedContext';
 import SortMenu, { ISortState } from './SortMenu';
 import { discussionListSelector } from '../../selector';
@@ -81,7 +81,8 @@ export function DiscussionList() {
     []
   );
   const [collapsed, setCollapsed] = useState(false);
-  const [adding, setAdding] = useState(false);
+  const [adding, setAddingx] = useState(false);
+  const addingRef = useRef(false);
   const [categoryOpen, setCategoryOpen] = useState(false);
   const ctx = useContext(PassageDetailContext);
   const {
@@ -93,6 +94,7 @@ export function DiscussionList() {
     playerMediafile,
     setDiscussionMarkers,
   } = ctx.state;
+  const currentSegmentRef = useRef(currentSegment);
   const discussionSizeRef = useRef(discussionSize);
   const { toolsChanged, isChanged, startSave, startClear, clearCompleted } =
     useContext(UnsavedContext).state;
@@ -100,6 +102,9 @@ export function DiscussionList() {
     discussionListSelector,
     shallowEqual
   );
+  useEffect(() => {
+    currentSegmentRef.current = currentSegment;
+  }, [currentSegment]);
   const mediafileId = useMemo(() => {
     return playerMediafile?.id ?? '';
   }, [playerMediafile]);
@@ -155,6 +160,11 @@ export function DiscussionList() {
     );
     return mygroups.map((g) => related(g, 'group'));
   }, [groupMemberships, userId]);
+
+  const setAdding = (adding: boolean) => {
+    addingRef.current = adding;
+    setAddingx(adding);
+  };
 
   useEffect(() => {
     discussionSizeRef.current = discussionSize;
@@ -264,15 +274,15 @@ export function DiscussionList() {
     }
   };
   const resetDiscussionList = () => {
-    if (adding) {
+    if (addingRef.current) {
       const whole = prettySegment({
         start: 0,
         end: playerMediafile?.attributes?.duration || 0,
       });
       const lastDot = whole.lastIndexOf('.');
       const topic =
-        currentSegment.slice(0, lastDot) !== whole.slice(0, lastDot)
-          ? (currentSegment ?? '')
+        currentSegmentRef.current.slice(0, lastDot) !== whole.slice(0, lastDot)
+          ? (currentSegmentRef.current ?? '')
           : '';
       setDisplayDiscussions([
         {
@@ -331,6 +341,7 @@ export function DiscussionList() {
   }, [highlightedRef]);
 
   useEffect(() => {
+    if (adding) return;
     const markers = displayDiscussions
       .filter(
         (d) =>
@@ -338,17 +349,17 @@ export function DiscussionList() {
           DiscussionRegion(d) &&
           related(d, 'mediafile') === mediafileId
       )
-      .map((d) => DiscussionRegion(d)?.start || 0)
-      .filter(onlyUnique)
-      .map((t) => {
+      .map((d) => DiscussionRegion(d))
+      .map((r) => {
         return {
-          time: t,
+          time: r?.start || 0,
           color: theme.palette.secondary.light,
+          label: `${r?.start}`, //`${r?.start}-${r?.end}`,
         };
       });
     setDiscussionMarkers(markers);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [displayDiscussions, mediafileId]);
+  }, [displayDiscussions, mediafileId, adding]);
 
   useEffect(() => {
     setAdding(false);
@@ -401,14 +412,14 @@ export function DiscussionList() {
 
   const handleSaveFirstConfirmed = () => {
     const myIds = displayDiscussions.map((d) => d.id);
-    if (adding) myIds.push(NewDiscussionToolId);
+    if (addingRef.current) myIds.push(NewDiscussionToolId);
     myIds.forEach((id) => startSave(id));
     waitSaveOrClear();
   };
 
   const handleSaveFirstRefused = () => {
     const myIds = displayDiscussions.map((d) => d.id);
-    if (adding) myIds.push(NewDiscussionToolId);
+    if (addingRef.current) myIds.push(NewDiscussionToolId);
     myIds.forEach((id) => startClear(id));
     waitSaveOrClear();
   };

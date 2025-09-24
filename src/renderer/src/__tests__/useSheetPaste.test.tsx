@@ -7,7 +7,7 @@ import {
   IMediaShare,
 } from '../model';
 import { useWfPaste } from '../components/Sheet/useSheetPaste';
-import { act } from 'react-dom/test-utils';
+import { act } from 'react';
 import { PublishDestinationEnum } from '../crud';
 
 interface IPasteResult {

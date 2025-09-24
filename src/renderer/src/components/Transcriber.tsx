@@ -1180,6 +1180,7 @@ export function Transcriber(props: IProps) {
                       )}
                     <Grid id="transcriberplayer">
                       <PassageDetailPlayer
+                        width={props.defaultWidth}
                         position={defaultPosition}
                         allowAutoSegment={true}
                         saveSegments={

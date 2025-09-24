@@ -199,7 +199,7 @@ const defMedia = {
 const runTest = (props: any) =>
   render(
     <UnsavedProvider>
-      <ProjectResourceConfigure {...props} />
+      <ProjectResourceConfigure {...props} width={800} />
     </UnsavedProvider>
   );
 

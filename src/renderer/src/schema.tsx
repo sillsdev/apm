@@ -8,13 +8,14 @@ import {
 import { MemorySource } from '@orbit/memory';
 import IndexedDBSource from '@orbit/indexeddb';
 import Coordinator from '@orbit/coordinator';
-import { isElectron } from '../api-variable';
+import { isElectron, API_CONFIG } from '../api-variable';
 import { LocalKey } from './utils/localUserKey';
 import { getFingerprint } from './utils/getFingerprint';
 import { waitForIt } from './utils/waitForIt';
 import { offlineProjectCreate } from './crud/offlineProjectCreate';
 import { related } from './crud/related';
 import { MediaFileD, OrganizationD, PassageD, ProjectD, UserD } from './model';
+const { schemaVersion } = API_CONFIG;
 
 const schemaDefinition: RecordSchemaSettings = {
   models: {
@@ -538,9 +539,7 @@ const schemaDefinition: RecordSchemaSettings = {
   },
   version: 1,
 };
-export const requestedSchema = parseInt(
-  process.env.VITE_SCHEMAVERSION || '100'
-);
+export const requestedSchema = parseInt(schemaVersion);
 
 /* you can set your REACT_APP_SCHEMAVERSION to a version if you want to go back
    for testing purposes */

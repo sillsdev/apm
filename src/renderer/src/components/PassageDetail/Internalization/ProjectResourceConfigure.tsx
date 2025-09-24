@@ -106,6 +106,7 @@ interface ICellChange {
 }
 
 interface IProps {
+  width: number;
   media: MediaFileD | undefined;
   items: RecordIdentity[];
   onOpen?: (open: boolean) => void;
@@ -113,7 +114,7 @@ interface IProps {
 }
 
 export const ProjectResourceConfigure = (props: IProps) => {
-  const { media, items, onOpen } = props;
+  const { width, media, items, onOpen } = props;
   const mediafiles = useOrbitData<MediaFileD[]>('mediafile');
   const sectionResources = useOrbitData<SectionResource[]>('sectionresource');
   const [memory] = useGlobal('memory');
@@ -543,6 +544,7 @@ export const ProjectResourceConfigure = (props: IProps) => {
   return (
     <Box>
       <PassageDetailPlayer
+        width={width}
         allowSegment={NamedRegions.ProjectResource}
         onSegment={handleSegment}
         suggestedSegments={pastedSegments}
