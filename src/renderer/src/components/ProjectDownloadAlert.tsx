@@ -168,8 +168,8 @@ export const ProjectDownloadAlert = (props: IProps) => {
     const needyProject = new Set<string>();
     const fileNames = new Set<string>();
     limits.clear();
-    const newMissingIds = [];
-    const newFilteredIds = [];
+    const newMissingIds: string[] = [];
+    const newFilteredIds: string[] = [];
     let missingSize = 0;
     for (const m of mediaInfo) {
       if (

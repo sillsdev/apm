@@ -5,7 +5,8 @@ import ListItemSecondaryAction from '@mui/material/ListItemSecondaryAction';
 import ListItemText from '@mui/material/ListItemText';
 import IconButton from '@mui/material/IconButton';
 import DeleteIcon from '@mui/icons-material/DeleteOutline';
-const ipc = window?.electron;
+import { MainAPI } from '@model/main-api';
+const ipc = window?.api as MainAPI;
 
 export function SpellCustomList() {
   const [list, setList] = React.useState<string[]>([]);

@@ -75,7 +75,7 @@ export default function AsrProgress({
       NamedRegions.TRTask,
       mediaRec?.attributes?.segments || '{}'
     );
-    const segs = JSON.parse(regionstr ?? {});
+    const segs = JSON.parse(regionstr ?? '{}');
     const tsks: VerseTask[] = [];
     if (Array.isArray(segs?.regions)) {
       (segs?.regions as Array<any>).forEach((region) => {

@@ -1,7 +1,8 @@
 import { IExecResult } from '../model';
 import { fileJson, getRegVal } from '../utils';
 import path from 'path-browserify';
-const ipc = window?.electron;
+import { MainAPI } from '@model/main-api';
+const ipc = window?.api as MainAPI;
 
 type ParatextSettings = { _attributes: { name: string }; _text: string };
 

@@ -86,7 +86,9 @@ export const usePlayerLogic = (props: PlayerLogicProps) => {
 
   const setSegmentToWhole = () => {
     if (allowSegment && setCurrentSegment && durationRef.current) {
-      const segs = JSONParse(segmentsRef.current) as IRegions | undefined;
+      const segs = JSONParse(segmentsRef.current) as unknown as
+        | IRegions
+        | undefined;
       //might be "[]"
       if ((segs?.regions?.length ?? 0) < 3) {
         setCurrentSegment({ start: 0, end: durationRef.current }, -1);

@@ -14,7 +14,7 @@ import {
   CommentD,
   DiscussionD,
   ICommentCardStrings,
-  MediaFile,
+  MediaFileD,
   UserD,
 } from '../../model';
 import Confirm from '../AlertDialog';
@@ -253,7 +253,7 @@ export const CommentCard = (props: IProps) => {
   const media = useMemo(() => {
     if (!mediaId || mediaId === '') return null;
     const mediaRec = findRecord(memory, 'mediafile', mediaId) as
-      | MediaFile
+      | MediaFileD
       | undefined;
     if (mediaRec) {
       if (IsVernacularMedia(mediaRec)) {

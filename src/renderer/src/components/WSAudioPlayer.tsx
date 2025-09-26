@@ -72,7 +72,7 @@ import { useVoiceUrl } from '../crud/useVoiceUrl';
 import SelectVoice from '../business/voice/SelectVoice';
 import { isElectron } from '../../api-variable';
 import WSAudioPlayerRate from './WSAudioPlayerRate';
-import { IVoicePerm } from 'business/voice/PersonalizeVoicePermission';
+import { IVoicePerm } from '../business/voice/PersonalizeVoicePermission';
 import BigDialogBp from '../hoc/BigDialogBp';
 const ipc = (window as any)?.electron;
 
@@ -648,6 +648,7 @@ function WSAudioPlayer(props: IProps) {
     if (onPlayStatus && isPlaying !== undefined && nowplaying !== isPlaying) {
       onPlayStatus(nowplaying);
     }
+    return undefined;
   };
 
   useEffect(() => {

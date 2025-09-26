@@ -3,7 +3,8 @@ import { SectionD, PlanD, PassageD } from '../model';
 import { RecordIdentity, InitializedRecord } from '@orbit/records';
 import { related, usePlan } from '.';
 import { toCamel, pad2, cleanFileName } from '../utils';
-const ipc = window?.electron;
+import { MainAPI } from '@model/main-api';
+const ipc = window?.api as MainAPI;
 import path from 'path-browserify';
 
 const planSlug = (rec: PlanD | null) => {

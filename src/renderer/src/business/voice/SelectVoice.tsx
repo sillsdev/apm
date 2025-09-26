@@ -68,6 +68,7 @@ export default function SelectVoice({
         return mediaRec.attributes.transcription;
       }
     }
+    return undefined;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [voice, org]);
 

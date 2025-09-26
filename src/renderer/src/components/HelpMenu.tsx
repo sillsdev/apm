@@ -40,7 +40,8 @@ import {
   UbsResources,
 } from '../assets/brands';
 import TwIcon from '../control/twIcon';
-const ipc = window?.electron;
+import { MainAPI } from '@model/main-api';
+const ipc = window?.api as MainAPI;
 
 const logosAppUri = 'https://app.logos.com/';
 const twInstallUri = 'https://www.sil.org/resources/publications/tw';

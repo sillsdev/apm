@@ -65,7 +65,8 @@ import { mainSelector, sharedSelector, viewModeSelector } from '../../selector';
 import { useHome } from '../../utils/useHome';
 import { useOrbitData } from '../../hoc/useOrbitData';
 import packageJson from '../../../package.json';
-const ipc = window?.electron;
+import { MainAPI } from '@model/main-api';
+const ipc = window?.api as MainAPI;
 
 const twoIcon = { minWidth: `calc(${48 * 2}px)` } as React.CSSProperties;
 const threeIcon = { minWidth: `calc(${48 * 3}px)` } as React.CSSProperties;
@@ -350,6 +351,7 @@ export const AppHead = (props: IProps) => {
     if (localStorage.getItem(localUserKey(LocalKey.url)) === '/team') {
       localStorage.setItem(localUserKey(LocalKey.url), '/');
     }
+    return undefined;
   };
 
   useEffect(() => {

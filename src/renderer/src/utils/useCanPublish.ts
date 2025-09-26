@@ -9,7 +9,7 @@ import { useOrbitData } from '../hoc/useOrbitData';
 import { UpdateRecord } from '../model/baseModel';
 import { addPt } from './addPt';
 import { useProjectPermissions } from './useProjectPermissions';
-import bugsnagClient from 'auth/bugsnagClient';
+import bugsnagClient from '../auth/bugsnagClient';
 import { ThunkDispatch } from 'redux-thunk';
 
 interface UserCanPublishResult {

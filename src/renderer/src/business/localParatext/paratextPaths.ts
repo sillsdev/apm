@@ -1,6 +1,7 @@
 import { getReadWriteProg } from '../../utils/paratextPath';
 import path from 'path-browserify';
-const ipc = window?.electron;
+import { MainAPI } from '@model/main-api';
+const ipc = window?.api as MainAPI;
 
 export const paratextPaths = async (chap: string) => {
   const ptProg = await getReadWriteProg();

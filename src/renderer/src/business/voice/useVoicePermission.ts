@@ -21,7 +21,7 @@ export const useVoicePermission = ({
   const t: IVoiceStrings = useSelector(voiceSelector, shallowEqual);
 
   React.useEffect(() => {
-    const cats = [];
+    const cats: string[] = [];
 
     const teamName = team?.attributes?.name.startsWith('>')
       ? t.myProjects

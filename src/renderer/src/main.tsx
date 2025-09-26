@@ -17,10 +17,9 @@ import { GlobalProvider } from '../src/context/GlobalContext';
 import bugsnagClient from '../src/auth/bugsnagClient';
 import { Root } from '../src/auth/Root';
 import { restoreBackup } from '../src/crud/restoreBackup';
+import { MainAPI } from '@model/main-api';
 
-const ipc = (
-  window as unknown as { electron?: { home?: () => Promise<string> } }
-)?.electron;
+const ipc = window?.api as MainAPI;
 
 Online(true, (result) => {
   if (!result || !Bugsnag.isStarted()) {

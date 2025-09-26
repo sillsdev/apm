@@ -64,7 +64,8 @@ import {
   AlignmentRecord,
 } from '../burrito/data/alignmentBuilder';
 import packageJson from '../../package.json';
-const ipc = window?.electron;
+import { MainAPI } from '@model/main-api';
+const ipc = window?.api as MainAPI;
 const version = packageJson.version;
 
 interface Ingredients {

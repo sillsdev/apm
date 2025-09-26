@@ -7,7 +7,8 @@ import { writeChapter } from './writeChapter';
 import { RecordOperation, RecordTransformBuilder } from '@orbit/records';
 import { ActivityStates, SectionArray } from '../../model';
 import { UpdateMediaStateOps } from '../../crud/updatePassageState';
-const ipc = window?.electron;
+import { MainAPI } from '@model/main-api';
+const ipc = window?.api as MainAPI;
 
 interface IDoChapter {
   chap: string;

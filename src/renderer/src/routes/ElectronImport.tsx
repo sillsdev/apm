@@ -24,7 +24,8 @@ import IndexedDBSource from '@orbit/indexeddb';
 import { TokenContext } from '../context/TokenProvider';
 import { ImportProjectToElectronProps } from '../store';
 import { RecordKeyMap } from '@orbit/records';
-const ipc = window?.electron;
+import { MainAPI } from '@model/main-api';
+const ipc = window?.api as MainAPI;
 
 export interface IImportData {
   fileName: string;

@@ -7,7 +7,8 @@ import {
   Checkbox,
 } from '@mui/material';
 import { useLocLangName } from '../utils/useLocLangName';
-const ipc = window?.electron;
+import { MainAPI } from '@model/main-api';
+const ipc = window?.api as MainAPI;
 
 interface IProps {
   onSetCodes?: (codes: string[]) => void;

@@ -144,6 +144,7 @@ export function useMediaRecorder(
         return recorder;
       }
     }
+    return undefined;
   }
 
   function startRecording(timeSlice?: number) {

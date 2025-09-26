@@ -247,6 +247,7 @@ export const useArtifactCategory = (teamId?: string) => {
       await memory.update(ops);
       return artifactCategory.id;
     }
+    return undefined;
   };
   const updateArtifactCategory = async (category: IArtifactCategory) => {
     const rec = findRecord(

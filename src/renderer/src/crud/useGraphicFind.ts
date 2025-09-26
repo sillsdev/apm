@@ -16,7 +16,7 @@ export const useGraphicFind = () => {
         g.attributes.resourceType === recId?.type &&
         g.attributes.resourceId === parseInt(recId?.keys?.remoteId ?? '0')
     );
-    let color = undefined;
+    let color: string | undefined = undefined;
     if (ref) {
       let catText = ref.split('|')[1];
       catText = catText ? fromLocalizedArtifactCategory(catText) : undefined;

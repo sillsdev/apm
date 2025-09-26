@@ -1,7 +1,8 @@
 import React from 'react';
 import MarkDown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-const ipc = window?.electron;
+import { MainAPI } from '@model/main-api';
+const ipc = window?.api as MainAPI;
 
 interface MarkDownProps {
   value: string;

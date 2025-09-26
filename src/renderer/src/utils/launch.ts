@@ -1,5 +1,6 @@
 import path from 'path-browserify';
-const ipc = window?.electron;
+import { MainAPI } from '@model/main-api';
+const ipc = window?.api as MainAPI;
 
 export const launch = async (
   target: string,

@@ -1,4 +1,5 @@
-const ipc = window?.electron;
+import { MainAPI } from '@model/main-api';
+const ipc = window?.api as MainAPI;
 
 export const fileJson = async (
   settings: string

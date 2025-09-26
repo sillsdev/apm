@@ -1,7 +1,8 @@
 import path from 'path-browserify';
 import parse from 'url-parse';
 import { isElectron, API_CONFIG } from '../../api-variable';
-const ipc = window?.electron;
+import { MainAPI } from '@model/main-api';
+const ipc = window?.api as MainAPI;
 const { offlineData } = API_CONFIG;
 
 export enum PathType {

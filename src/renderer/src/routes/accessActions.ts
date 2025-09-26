@@ -1,6 +1,7 @@
 import { LocalKey, forceLogin } from '../utils';
 
-const ipc = window?.electron;
+import { MainAPI } from '@model/main-api';
+const ipc = window?.api as MainAPI;
 
 export const goOnline = (email?: string) => {
   const lastTime = localStorage.getItem('electron-lastTime');

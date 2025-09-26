@@ -10,7 +10,8 @@ import { useUpdateOrbitToken } from '../crud';
 import { LocalKey, logError, Severity, useInterval } from '../utils';
 import { isElectron } from '../../api-variable';
 import { useProjectDefaults } from '../crud/useProjectDefaults';
-const ipc = window?.electron;
+import { MainAPI } from '@model/main-api';
+const ipc = window?.api as MainAPI;
 
 const Expires = 0; // Set to 7110 to test 1:30 token
 

@@ -1,6 +1,6 @@
 import { useGlobal } from '../context/useGlobal';
 import { Bible, BibleD, OrganizationBibleD } from '../model';
-import { RecordTransformBuilder } from '@orbit/records';
+import { RecordOperation, RecordTransformBuilder } from '@orbit/records';
 import {
   AddRecord,
   ReplaceRelatedRecord,
@@ -108,7 +108,7 @@ export const useBible = () => {
     ownerOrganization: string
   ) => {
     const t = new RecordTransformBuilder();
-    const ops = [];
+    const ops: RecordOperation[] = [];
     ops.push(...AddRecord(t, bible, user, memory));
     updaterelationships(
       ops,

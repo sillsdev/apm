@@ -9,7 +9,8 @@ import { LightTooltip } from '../control';
 import { relaunchApp, exitApp } from '../utils';
 import { useSelector } from 'react-redux';
 import { spellingSelector } from '../selector';
-const ipc = window?.electron;
+import { MainAPI } from '@model/main-api';
+const ipc = window?.api as MainAPI;
 
 export const Spelling = () => {
   const t: ISpellingStrings = useSelector(spellingSelector);

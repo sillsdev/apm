@@ -1,5 +1,6 @@
 import { getRegVal } from '.';
-const ipc = window?.electron;
+import { MainAPI } from '@model/main-api';
+const ipc = window?.api as MainAPI;
 
 export const getAudacityExe = async (): Promise<string | undefined> => {
   let audacityExe: string | undefined = 'audacity';

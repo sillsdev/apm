@@ -323,7 +323,7 @@ export const ProjectResourceConfigure = (props: IProps) => {
   const handleCopy = () => {
     const config: string[] = [];
     dataRef.current
-      .filter((v, i) => i > 0)
+      .filter((_v, i) => i > 0)
       .forEach((row) => {
         const rLimit = row[ColName.Limits] as ICell;
         const rRef = row[ColName.Ref] as ICell;
@@ -349,7 +349,7 @@ export const ProjectResourceConfigure = (props: IProps) => {
     const duration = media?.attributes.duration || 0;
     const psgIndexes = items.map((r) => r?.type === 'passage');
     const segBoundaries = newData
-      .filter((r, i) => i > 0 && psgIndexes[i - 1])
+      .filter((_r, i) => i > 0 && psgIndexes[i - 1])
       .map((s) => (s[ColName.Limits] as ICell).value); //should be like "0.0-34.9"
     let regs = segBoundaries
       .map((b: string) => {

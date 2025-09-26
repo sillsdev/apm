@@ -29,7 +29,8 @@ import IndexedDBSource from '@orbit/indexeddb';
 import { useSelector } from 'react-redux';
 import { sharedSelector, transcriptionTabSelector } from '../selector';
 import { useDispatch } from 'react-redux';
-const ipc = window?.electron;
+import { MainAPI } from '@model/main-api';
+const ipc = window?.api as MainAPI;
 
 enum Steps {
   Prepare,

@@ -1,5 +1,6 @@
 import { XMLSerializer } from '@xmldom/xmldom';
-const ipc = window?.electron;
+import { MainAPI } from '@model/main-api';
+const ipc = window?.api as MainAPI;
 const xmlSerializer = new XMLSerializer();
 
 export const writeChapter = async (

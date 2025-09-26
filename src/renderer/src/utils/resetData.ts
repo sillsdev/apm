@@ -1,7 +1,8 @@
 import { isElectron } from '../../api-variable';
 import { execFolder, launch } from '.';
 import path from 'path-browserify';
-const ipc = window?.electron;
+import { MainAPI } from '@model/main-api';
+const ipc = window?.api as MainAPI;
 
 export const resetData = async (): Promise<void> => {
   if (isElectron) {

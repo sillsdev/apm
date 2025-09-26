@@ -20,7 +20,8 @@ import { passageTypeFromRef } from '../control/passageTypeFromRef';
 import { PassageTypeEnum } from '../model/passageType';
 import { pad3 } from '../utils/pad3';
 
-const ipc = window?.electron;
+import { MainAPI } from '@model/main-api';
+const ipc = window?.api as MainAPI;
 
 interface Props {
   metadata: Burrito;

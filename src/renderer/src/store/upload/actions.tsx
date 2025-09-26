@@ -24,10 +24,11 @@ import _ from 'lodash';
 import { SIZELIMIT } from '../../components/MediaUpload';
 import { UploadType } from '../../components/UploadType';
 import path from 'path-browserify';
-import bugsnagClient from 'auth/bugsnagClient';
+import bugsnagClient from '../../auth/bugsnagClient';
 import { Dispatch } from 'redux';
-import { MediaFileAttributes } from 'model';
-const ipc = window?.electron;
+import { MediaFileAttributes } from '../../model';
+import { MainAPI } from '../../model/main-api';
+const ipc = window?.api as MainAPI;
 
 export const uploadFiles = (files: File[]) => (dispatch: Dispatch) => {
   dispatch({

@@ -30,7 +30,7 @@ export const useSaveComment = () => {
     approved: boolean | undefined,
     permissions?: string
   ) => {
-    let mediafile = undefined;
+    let mediafile: MediaFileD | undefined = undefined;
     if (mediaRemId) {
       const id =
         remoteIdGuid('mediafile', mediaRemId, memory?.keyMap as RecordKeyMap) ||
@@ -83,14 +83,14 @@ export const useSaveComment = () => {
         ...ReplaceRelatedRecord(t, commentRec, 'creatorUser', 'user', user)
       );
     }
-    if (mediafile) {
+    if (mediafile?.id) {
       ops.push(
         ...UpdateRelatedRecord(
           t,
           commentRec,
           'mediafile',
           'mediafile',
-          mediafile.id,
+          mediafile?.id,
           user
         )
       );

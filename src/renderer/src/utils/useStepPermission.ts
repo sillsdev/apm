@@ -51,8 +51,8 @@ export const useStepPermissions = (): StepPermissionResult => {
         related(s, 'orgWorkflowStep') === stepId
     );
     if (!assigned) return true;
-    const assignedgroup = related(assigned as OrgWorkflowStepD, 'group');
-    const assigneduser = related(assigned as OrgWorkflowStepD, 'user');
+    const assignedgroup = related(assigned, 'group') as string | undefined;
+    const assigneduser = related(assigned, 'user') as string | undefined;
     return (
       ((Boolean(assignedgroup) &&
         myGroups.findIndex((g) => g.id === assignedgroup) > -1) ||

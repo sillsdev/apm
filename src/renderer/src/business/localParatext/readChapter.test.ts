@@ -28,7 +28,7 @@ describe('readChapter', () => {
       read: jest.fn().mockResolvedValue('usx'),
     };
 
-    windowSpy.mockImplementation(() => ({ electron: mockElectron }));
+    windowSpy.mockImplementation(() => ({ api: mockElectron }));
 
     const { readChapter } = await import('./readChapter');
 

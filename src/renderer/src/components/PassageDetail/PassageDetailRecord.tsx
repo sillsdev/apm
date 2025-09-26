@@ -1,5 +1,5 @@
 import { shallowEqual, useSelector } from 'react-redux';
-import { ISharedStrings, MediaFile, MediaFileD } from '../../model';
+import { ISharedStrings, MediaFileD } from '../../model';
 import { Typography, Box, Stack } from '@mui/material';
 import { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -121,7 +121,7 @@ export function PassageDetailRecord(props: IProps) {
 
   useEffect(() => {
     const mediaRec = findRecord(memory, 'mediafile', mediafileId) as
-      | MediaFile
+      | MediaFileD
       | undefined;
     const performer = mediaRec?.attributes?.performedBy;
     if (performer) {

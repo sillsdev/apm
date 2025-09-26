@@ -86,7 +86,7 @@ import {
 import { usePassageNavigate } from '../components/PassageDetail/usePassageNavigate';
 import { useProjectPermissions } from '../utils/useProjectPermissions';
 import { PlayInPlayer } from './PlayInPlayer';
-import { SectionArray } from 'model/SectionArray';
+import { SectionArray } from '@model/SectionArray';
 
 export interface IRow {
   id: string;

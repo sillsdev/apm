@@ -2,8 +2,9 @@ import { IExeca } from '../model';
 import { getAudacityExe, logError, Severity, infoMsg, execFolder } from '.';
 import path from 'path-browserify';
 import process from 'process';
-import bugsnagClient from 'auth/bugsnagClient';
-const ipc = window?.electron;
+import bugsnagClient from '../auth/bugsnagClient';
+import { MainAPI } from '../model/main-api';
+const ipc = window?.api as MainAPI;
 
 export const launchAudacity = async (
   proj: string,

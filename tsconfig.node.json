@@ -1,6 +1,6 @@
 {
   "extends": "@electron-toolkit/tsconfig/tsconfig.node.json",
-  "include": ["electron.vite.config.*", "src/main/**/*", "src/preload/**/*", "src/renderer/src/model/IdToken.ts"],
+  "include": ["electron.vite.config.*", "src/main/**/*", "src/preload/**/*", "src/renderer/src/model/IdToken.ts", "src/renderer/src/model/main-api.ts"],
   "compilerOptions": {
     "composite": true,
     "types": ["electron-vite/node"]

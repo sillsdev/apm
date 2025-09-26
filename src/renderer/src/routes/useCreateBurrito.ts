@@ -38,7 +38,8 @@ import { useBurritoAudo } from './useBurritoAudo';
 import packageJson from '../../package.json';
 const version = packageJson.version;
 const productName = packageJson.build.productName;
-const ipc = window?.electron;
+import { MainAPI } from '@model/main-api';
+const ipc = window?.api as MainAPI;
 
 export const useCreateBurrito = (teamId: string) => {
   const [memory] = useGlobal('memory');

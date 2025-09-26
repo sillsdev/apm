@@ -5,8 +5,9 @@ import { LocalKey, createFolder } from '.';
 import { DateTime } from 'luxon';
 import Bugsnag from '@bugsnag/js';
 import { AxiosError } from 'axios';
-import bugsnagClient from 'auth/bugsnagClient';
-const ipc = window?.electron;
+import bugsnagClient from '../auth/bugsnagClient';
+import { MainAPI } from '../model/main-api';
+const ipc = window?.api as MainAPI;
 
 export enum Severity {
   info = 0,

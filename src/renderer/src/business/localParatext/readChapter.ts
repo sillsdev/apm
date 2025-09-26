@@ -1,6 +1,7 @@
 import { DOMParser } from '@xmldom/xmldom';
 import { IExecResult } from '../../model';
-const ipc = window?.electron;
+import { MainAPI } from '@model/main-api';
+const ipc = window?.api as MainAPI;
 const domParser = new DOMParser();
 
 export const readChapter = async (

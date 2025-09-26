@@ -1,9 +1,6 @@
 import path from 'path-browserify';
-interface ElectronIPC {
-  createFolder: (folder: string) => Promise<void>;
-}
-
-const ipc = (window as { electron?: ElectronIPC })?.electron;
+import { MainAPI } from '../model/main-api';
+const ipc = window?.api as MainAPI;
 
 export const createFolder = async (folder: string): Promise<void> => {
   // Create folder if it doesn't exist

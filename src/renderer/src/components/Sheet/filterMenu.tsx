@@ -155,7 +155,7 @@ export function FilterMenu(props: IProps) {
     filterChange(what, parseInt(e.target.value));
   };
   const getKeyValue = (value: string) => {
-    let key = undefined;
+    let key: number | undefined = undefined;
     for (const [k, v] of Array.from(sectionMap.entries())) {
       if (v === value) {
         key = k;

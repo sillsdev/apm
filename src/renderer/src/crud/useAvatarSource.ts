@@ -5,7 +5,8 @@ import { remoteId } from '../crud';
 import { isElectron } from '../../api-variable';
 import { RecordIdentity, RecordKeyMap } from '@orbit/records';
 import { useGlobal } from '../context/useGlobal';
-const ipc = window?.electron;
+import { MainAPI } from '@model/main-api';
+const ipc = window?.api as MainAPI;
 
 export const useAvatarSource = (name: string, rec: RecordIdentity) => {
   const [source, setSource] = useState('');

@@ -43,7 +43,8 @@ import { ListMode } from '../control/ListMode';
 import { accessSelector } from '../selector';
 import { useOrbitData } from '../hoc/useOrbitData';
 import { useDispatch } from 'react-redux';
-const ipc = window?.electron;
+import { MainAPI } from '@model/main-api';
+const ipc = window?.api as MainAPI;
 
 const SectionHead = styled(Typography)<TypographyProps>(({ theme }) => ({
   fontSize: '14pt',

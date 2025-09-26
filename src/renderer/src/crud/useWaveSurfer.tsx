@@ -469,8 +469,8 @@ export function useWaveSurfer(
       regionData.set(originalData.subarray(startFrame, endFrame));
     }
     let channels = regionBuffer.numberOfChannels;
-    let data_left = regionBuffer.getChannelData(0);
-    let data_right = null;
+    let data_left: Float32Array | null = regionBuffer.getChannelData(0);
+    let data_right: Float32Array | null = null;
     if (channels === 2) {
       data_right = regionBuffer.getChannelData(1);
       if (!data_left && data_right) {
@@ -519,7 +519,7 @@ export function useWaveSurfer(
     const originalBuffer = blobAudioRef.current;
     if (originalBuffer && originalBuffer.length > 1) {
       const len = originalBuffer.length;
-      let uberSegment = undefined;
+      let uberSegment: AudioBuffer | undefined = undefined;
 
       uberSegment = audioContext().createBuffer(
         originalBuffer.numberOfChannels,

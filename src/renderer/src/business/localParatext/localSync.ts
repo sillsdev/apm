@@ -56,7 +56,7 @@ export const localSync = async ({
   probablyready.forEach((pr) => {
     const passageId = related(pr, 'passage');
     const prVer = pr.attributes?.versionNumber;
-    let newer = [];
+    let newer: MediaFileD[] = [];
     if (!artifactId) {
       // only check version on vernacular
       newer = mediafiles.filter(

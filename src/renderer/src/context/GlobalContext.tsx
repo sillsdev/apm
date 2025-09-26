@@ -3,7 +3,7 @@ import Coordinator from '@orbit/coordinator';
 import Memory from '@orbit/memory';
 import { AlertSeverity } from '../hoc/SnackBar';
 import { RoleNames } from '../model';
-import bugsnagClient from 'auth/bugsnagClient';
+import bugsnagClient from '../auth/bugsnagClient';
 
 // see: https://upmostly.com/tutorials/how-to-use-the-usecontext-hook-in-react
 

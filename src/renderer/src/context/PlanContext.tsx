@@ -21,8 +21,7 @@ import { useSelector } from 'react-redux';
 import { projButtonsSelector } from '../selector';
 import { LocalKey, localUserKey } from '../utils';
 import { useProjectPermissions } from '../utils/useProjectPermissions';
-import { SectionArray } from 'model/SectionArray';
-import { InitializedRecord, UninitializedRecord } from '@orbit/records';
+import { SectionArray } from '../model/SectionArray';
 export interface IRowData {}
 
 const initState = {

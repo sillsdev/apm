@@ -3,7 +3,8 @@ import { useGlobal } from '../context/useGlobal';
 import { isElectron, API_CONFIG } from '../../api-variable';
 import { launch, launchCmd, execFolder } from '../utils';
 import path from 'path-browserify';
-const ipc = window?.electron;
+import { MainAPI } from '@model/main-api';
+const ipc = window?.api as MainAPI;
 
 const indexName = '/index.htm';
 

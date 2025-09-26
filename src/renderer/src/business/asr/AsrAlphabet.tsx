@@ -73,7 +73,7 @@ export const AsrAlphabet = ({ state, setState, mmsLangs }: IAsrAlphabet) => {
       init.current = false;
       return;
     }
-    let dialect = undefined;
+    let dialect: string | undefined = undefined;
     const langTag = getLangTag(language?.bcp47 ?? 'und');
     let mmsIso = langTag?.iso639_3 ?? 'und';
     if (langTag?.tag === 'zh-CN') mmsIso = 'cmn';

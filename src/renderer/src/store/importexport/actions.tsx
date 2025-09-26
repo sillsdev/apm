@@ -69,7 +69,8 @@ import {
   RecordTransformBuilder,
 } from '@orbit/records';
 import { requestedSchema } from '../../schema';
-const ipc = window?.electron;
+import { MainAPI } from '@model/main-api';
+const ipc = window?.api as MainAPI;
 
 export const exportComplete = () => (dispatch: any) => {
   dispatch({

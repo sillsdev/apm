@@ -57,7 +57,8 @@ import {
 import IndexedDBSource from '@orbit/indexeddb';
 import { BaseModel, BaseModelD } from '../../model/baseModel';
 import { backupToMemory } from '../../crud/syncToMemory';
-const ipc = window?.electron;
+import { MainAPI } from '@model/main-api';
+const ipc = window?.api as MainAPI;
 
 export async function electronExport(
   exportType: ExportType,

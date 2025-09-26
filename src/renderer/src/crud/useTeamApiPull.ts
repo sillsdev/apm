@@ -14,6 +14,7 @@ export const useTeamApiPull = () => {
         memory,
         remote,
       });
+    return undefined;
   };
   return teamRead;
 };

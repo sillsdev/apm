@@ -46,8 +46,8 @@ export const useComputeRef = () => {
     if (endIndex === -1) {
       endIndex = sortedSections.length;
     }
-    let startChapter = undefined;
-    let startVerse = undefined;
+    let startChapter: number | undefined = undefined;
+    let startVerse: number | undefined = undefined;
     for (let i = startIndex; i < endIndex; i++) {
       const secPass = passages.filter(
         (p) =>
@@ -61,8 +61,8 @@ export const useComputeRef = () => {
         break;
       }
     }
-    let endChapter = undefined;
-    let endVerse = undefined;
+    let endChapter: number | undefined = undefined;
+    let endVerse: number | undefined = undefined;
     for (let i = endIndex - 1; i >= startIndex; i--) {
       const secPass = passages
         .filter(

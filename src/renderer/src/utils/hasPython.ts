@@ -1,6 +1,7 @@
 import { getRegVal } from '.';
 import { getWhereis } from './getWhereis';
-const ipc = window?.electron;
+import { MainAPI } from '@model/main-api';
+const ipc = window?.api as MainAPI;
 
 const key = 'HKCR\\Python.CompiledFile\\shell\\open\\command';
 export const hasPython = async (): Promise<boolean> => {

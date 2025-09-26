@@ -8,7 +8,7 @@ import { profileSelector } from '../selector';
 import { getParatextDataPath } from './paratextPath';
 import { addPt } from './addPt';
 import { ThunkDispatch } from 'redux-thunk';
-import bugsnagClient from 'auth/bugsnagClient';
+import bugsnagClient from '../auth/bugsnagClient';
 
 const DefPtData = 'C:\\My Paratext 9 Projects'; // Default Paratext data path if it can't be found
 

@@ -504,6 +504,7 @@ export function PassageDetailArtifacts() {
     const level = section.attributes?.level;
     if (level === SheetLevel.Book) return 'BOOK';
     if (level === SheetLevel.Movement) return 'MOVE';
+    return undefined;
   };
 
   const sectDesc = useMemo(
@@ -621,7 +622,7 @@ export function PassageDetailArtifacts() {
     const results: number[] = [];
     sectionResources.forEach((sr) => {
       const rec = findRecord(memory, 'mediafile', related(sr, 'mediafile')) as
-        | MediaFile
+        | MediaFileD
         | undefined;
       if (rowData.find((r) => r.id === rec?.id)) {
         const passageId = rec?.attributes.resourcePassageId;

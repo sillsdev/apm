@@ -1,12 +1,8 @@
 import { ArtifactTypeD, OrgWorkflowStep, Project } from '../model';
-// import { dataPath, PathType } from '../utils/dataPath';
-// import { isElectron } from '../api-variable';
 import { getFamily, getRtl } from 'mui-language-picker';
 import Memory from '@orbit/memory';
 import { findRecord } from './tryFindRecord';
 import { LocalKey } from '../utils';
-
-// const ipc = window?.electron;
 
 export interface IFontConfig {
   custom: {

@@ -6,13 +6,19 @@
     "src/renderer/src/**/*.tsx",
     "src/preload/*.d.ts"
   ],
-  "exclude": ["**/*.cy.tsx", "**/*.test.tsx"],
+  "exclude": ["**/*.cy.tsx", "**/*.test.tsx", "**/*.cy.ts", "**/*.test.ts"],
   "compilerOptions": {
     "composite": true,
     "jsx": "react-jsx",
     "baseUrl": ".",
     "paths": {
-      "@renderer/*": ["src/renderer/src/*"]
+      "@renderer/*": ["src/renderer/src/*"],
+      "@model/*": ["src/renderer/src/model/*"],
     },
+    "noUnusedParameters": false /* Raise an error when a function parameter isn't read. */,
+    "exactOptionalPropertyTypes": false /* Interpret optional property types as written, rather than adding 'undefined'. */,
+    "noUncheckedIndexedAccess": false /* Add 'undefined' to a type when accessed using an index. */,
+    "noImplicitReturns": false /* Don't require all code paths to return a value. */,
+    "strictNullChecks": false /* allow the program to imply the type */,
   },
 }

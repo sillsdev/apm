@@ -52,7 +52,8 @@ import { audacityManagerSelector, sharedSelector } from '../../selector';
 import { GrowingSpacer } from '../StepEditor';
 import { ContextHelp } from '../ContextHelp';
 
-const ipc = window?.electron;
+import { MainAPI } from '@model/main-api';
+const ipc = window?.api as MainAPI;
 import path from 'path-browserify';
 
 const StyledGrid = styled(Grid)<GridProps>(() => ({

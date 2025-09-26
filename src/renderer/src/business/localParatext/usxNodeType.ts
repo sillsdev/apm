@@ -29,4 +29,5 @@ export const isAfterSection = (v: Node) => {
   if (!prevSib) return undefined;
   if (isText(prevSib as Node) && isSection(prevSib?.previousSibling as Element))
     return prevSib?.previousSibling as Element;
+  return undefined;
 };

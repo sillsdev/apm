@@ -5,7 +5,7 @@ import { useOfflnProjRead } from '../crud';
 import * as actions from '../store';
 import { useGetGlobal, useGlobal } from '../context/useGlobal';
 import { ThunkDispatch } from 'redux-thunk';
-import { IState, LocalizationMsgs } from 'model';
+import { IState, LocalizationMsgs } from '../model';
 import { doDataChanges } from '../hoc/doDataChanges';
 
 export const useDataChanges = () => {

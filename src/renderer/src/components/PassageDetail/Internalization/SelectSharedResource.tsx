@@ -68,10 +68,12 @@ export const SelectSharedResource = (props: IProps) => {
     if (!selecting.current) {
       selecting.current = true;
       onSelect &&
-        onSelect(resources.filter((r, i) => checks.includes(i))).finally(() => {
-          selecting.current = false;
-          onOpen && onOpen(false);
-        });
+        onSelect(resources.filter((_r, i) => checks.includes(i))).finally(
+          () => {
+            selecting.current = false;
+            onOpen && onOpen(false);
+          }
+        );
     }
   };
 

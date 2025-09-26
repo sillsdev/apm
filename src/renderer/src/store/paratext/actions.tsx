@@ -43,9 +43,10 @@ import MemorySource from '@orbit/memory';
 import { passageTypeFromRef } from '../../control/passageTypeFromRef';
 import { PassageTypeEnum } from '../../model/passageType';
 import { Paratext } from '../../assets/brands';
-import bugsnagClient from 'auth/bugsnagClient';
+import bugsnagClient from '../../auth/bugsnagClient';
 import { Dispatch } from 'redux';
-const ipc = window?.electron;
+import { MainAPI } from '../../model/main-api';
+const ipc = window?.api as MainAPI;
 
 export const resetUserName = () => (dispatch: Dispatch) => {
   dispatch({

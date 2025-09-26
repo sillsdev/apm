@@ -164,6 +164,7 @@ export function ResourceTabs({ passId, ws, onOpen, onUpdRef }: IProps) {
         mediaId: related(sharedResRec, 'titleMediafile'),
       } as IResourceDialog;
     }
+    return undefined;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sharedResources, passId, isNote, sharedResRec]);
 

@@ -107,36 +107,6 @@ jest.mock('../context/useGlobal', () => ({
   },
 }));
 
-// Mock api-variable to avoid import.meta issues in Jest
-jest.mock('../../api-variable', () => ({
-  API_CONFIG: {
-    help: '',
-    host: 'http://localhost:3000',
-    snagId: '',
-    offline: false,
-    chmHelp: '',
-    community: '',
-    openNotes: '',
-    resources: '',
-    openContent: '',
-    course: '',
-    videoTraining: '',
-    walkThru: '',
-    akuo: '',
-    endpoint: '',
-    title: 'Audio Project Manager',
-    flatSample: '',
-    hierarchicalSample: '',
-    genFlatSample: '',
-    genHierarchicalSample: '',
-    googleSamples: '',
-    sizeLimit: '20',
-    sessions: 'https://sessions.bugsnag.com',
-    notify: 'https://notify.bugsnag.com',
-  },
-  isElectron: false,
-}));
-
 // Mock schema to avoid import.meta issues in Jest
 jest.mock('../schema', () => ({
   memory: {
