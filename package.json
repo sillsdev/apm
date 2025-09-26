@@ -4,6 +4,8 @@
   "description": "An Electron application with React and TypeScript",
   "main": "./out/main/index.js",
   "scripts": {
+    "clean": "rimraf dist out src/renderer/dist src/renderer/coverage",
+    "stamp": "node env-config/writeDate.js",
     "format": "prettier --write .",
     "lint": "eslint --cache .",
     "typecheck:node": "tsc --noEmit -p tsconfig.node.json --composite false",
@@ -153,8 +155,10 @@
     "prettier": "^3.5.3",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
+    "rimraf": "^6.0.1",
     "typescript": "^5.8.3",
-    "vite": "^6.2.6"
+    "vite": "^6.2.6",
+    "write": "^2.0.0"
   },
   "author": {
     "name": "SIL Global",
