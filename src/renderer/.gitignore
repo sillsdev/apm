@@ -1,25 +1,53 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-dist
+
+*.log
+
 # dependencies
 /node_modules
+/.pnp
+.pnp.js
+# *-lock.json
+yarn.lock
 
 # testing
 /coverage
 
 # production
 /build
+localization/obj
+localization/bin
+localization/packages
+localization/SILTranscriberTranslations.zip
+localization/az/*
+localization/hi/*
+localization/nl/*
+localization/tl/*
+localization/tpi/*
 
 # misc
+.eslintcache
 .DS_Store
 .env
+.env.local
+.env.*.local
+.auth0*
+auth0-variables.json
+localization/.vscode
+localization/.vs
+buildDate.json
+/public/fonts
+/public/electronExtensions.js
+env-config/env-files*.zip
 
 npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
-# Cypress
-**/videos
-**/screenshots
-**/downloads
-**/cypress.env.json
+# vim
+*.sw*
 
-# Pact
-pacts
+build/
+dist/
+node_modules/
+aws-exports.js
+awsconfiguration.json

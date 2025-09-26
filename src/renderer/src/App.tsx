@@ -1,33 +1,39 @@
-import {useState} from 'react'
-import viteLogo from './assets/vite.svg'
-import reactLogo from './assets/react.svg'
-import './App.css'
+import {ThemeProvider, createTheme} from '@mui/material'
+import DataChanges from './hoc/DataChanges'
+import {UnsavedProvider} from './context/UnsavedContext'
+import SnackBarProvider from './hoc/SnackBar'
+import {HotKeyProvider} from './context/HotKeyContext'
+import routes from './routes/NavRoutes'
+export const HeadHeight = 64
 
-export default function App(): JSX.Element {
-  const [count, setCount] = useState(0)
+const theme = createTheme({
+  palette: {
+    primary: {
+      main: '#135CB9', //Original: 135CB9, Better color: 1D9F90
+    },
+    secondary: {
+      main: '#00A7E1', //Original: 00A7E1, Better color: 25CBB8
+    },
+  },
+  typography: {
+    button: {
+      textTransform: 'capitalize',
+    },
+  },
+})
 
+function App(): JSX.Element {
   return (
-    <div className="App">
-      <div>
-        <a href="https://vitejs.dev" target="_blank" rel="noopener noreferrer">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://reactjs.org" target="_blank" rel="noopener noreferrer">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button data-cy="count" onClick={() => setCount(count => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </div>
+    <UnsavedProvider>
+      <DataChanges>
+        <SnackBarProvider>
+          <HotKeyProvider>
+            <ThemeProvider theme={theme}>{routes}</ThemeProvider>
+          </HotKeyProvider>
+        </SnackBarProvider>
+      </DataChanges>
+    </UnsavedProvider>
   )
 }
+
+export default App

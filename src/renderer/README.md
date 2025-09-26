@@ -1,10 +1,12 @@
 # apm-vite-web
 
-This folder builds the web version which is basically the renderer folder of the electron desktop app.
+This folder builds the web version which is basically the renderer folder of the
+electron desktop app.
 
 Huskey is used to typecheck and run tests on each commit.
 
-Based on [Vite React with typescript, Cypress (e2e & ct) and Jest testing.](https://github.com/muratkeremozcan/react-cypress-ts-vite-template)
+Based on
+[Vite React with typescript, Cypress (e2e & ct) and Jest testing.](https://github.com/muratkeremozcan/react-cypress-ts-vite-template)
 
 ```bash
 # parallel unit, typecheck, lint, format and build
