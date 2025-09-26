@@ -1,6 +1,6 @@
 {
   "name": "apm-vite-desk",
-  "version": "1.0.0",
+  "version": "4.4.0-alpha.1",
   "description": "An Electron application with React and TypeScript",
   "main": "./out/main/index.js",
   "scripts": {
@@ -195,27 +195,22 @@
     },
     "extraFiles": [
       {
-        "from": "./src/main",
-        "to": ".",
-        "filter": "normalizer.js"
-      },
-      {
-        "from": "./localization",
+        "from": "./src/renderer/public/localization",
         "to": "localization",
         "filter": "*.json"
       },
       {
-        "from": "./help",
+        "from": "./src/renderer/public/help",
         "to": "help",
         "filter": "*.chm"
       },
       {
-        "from": "./help",
+        "from": "./src/renderer/public/help",
         "to": "help",
         "filter": "*.xlsx"
       },
       {
-        "from": "./src/renderer/src/script",
+        "from": "./src/renderer/public/script",
         "to": "resources",
         "filter": [
           "resetData.*",

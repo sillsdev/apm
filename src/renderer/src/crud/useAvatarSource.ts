@@ -26,7 +26,7 @@ export const useAvatarSource = (name: string, rec: RecordIdentity) => {
           const url = (await ipc?.isWindows())
             ? new URL(src).toString().slice(8)
             : src;
-          src = `transcribe-safe://${url}`;
+          src = `file://${url}`;
         } else src = '';
       }
       setSource(src);

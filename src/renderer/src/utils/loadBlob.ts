@@ -44,7 +44,7 @@ export const loadBlobAsync = async (url: string): Promise<Blob | undefined> => {
         return await r.blob();
       } else {
         const source = await ipc?.read(
-          decodeURIComponent(url.replace(`transcribe-safe://`, ``))
+          decodeURIComponent(url.replace(`file://`, ``))
         );
         return new Blob([new Uint8Array(source as Uint8Array)], {
           type: urlType(url),

@@ -218,27 +218,22 @@
     },
     "extraFiles": [
       {
-        "from": "public",
-        "to": ".",
-        "filter": "normalizer.js"
-      },
-      {
         "from": "public/localization",
         "to": "localization",
         "filter": "*.json"
       },
       {
-        "from": "help",
+        "from": "public/help",
         "to": "help",
         "filter": "*.chm"
       },
       {
-        "from": "help",
+        "from": "public/help",
         "to": "help",
         "filter": "*.xlsx"
       },
       {
-        "from": "src/script",
+        "from": "public/script",
         "to": "resources",
         "filter": [
           "resetData.*",

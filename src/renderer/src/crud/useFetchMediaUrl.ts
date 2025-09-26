@@ -87,7 +87,7 @@ export const useFetchMediaUrl = (reporter?: any) => {
     if (!path.startsWith('http')) {
       const start = (await ipc?.isWindows()) ? 8 : 7;
       const url = new URL(`file://${path}`).toString().slice(start);
-      return `transcribe-safe://${url}`;
+      return `file://${url}`;
     }
     return path;
   };

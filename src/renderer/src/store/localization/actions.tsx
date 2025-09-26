@@ -6,6 +6,7 @@ import { Dispatch } from 'redux';
 const { stringsName } = exportStrings;
 
 export const fetchLocalization = () => (dispatch: Dispatch) => {
+  // Axios.get('http://./localization/' + stringsName).then((strings) => {
   Axios.get(appPath() + '/localization/' + stringsName).then((strings) => {
     dispatch({
       payload: strings,

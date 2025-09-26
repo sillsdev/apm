@@ -4,6 +4,7 @@ import { electronApp, optimizer, is } from '@electron-toolkit/utils';
 import icon from '../../resources/icon.png?asset';
 import { appMenu } from './app-menu';
 import { ipcMethods } from './ipcMethods.js';
+import { checkMicrophonePermission } from './checkMicrophonePermission';
 
 const localString = { addToDict: 'Add to dictionary' };
 
@@ -98,6 +99,8 @@ app.whenReady().then(() => {
   ipcMain.handle('setAddToDict', async (_event, str) => {
     localString.addToDict = str;
   });
+
+  checkMicrophonePermission();
 
   createWindow();
 
