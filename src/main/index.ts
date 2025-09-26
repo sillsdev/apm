@@ -9,6 +9,8 @@ import { checkMicrophonePermission } from './checkMicrophonePermission';
 const localString = { addToDict: 'Add to dictionary' };
 
 export function createWindow(): void {
+  const existingWindows = BrowserWindow.getAllWindows();
+
   // Create the browser window.
   const mainWindow = new BrowserWindow({
     width: 1220,
@@ -23,6 +25,11 @@ export function createWindow(): void {
       sandbox: false,
     },
   });
+
+  // close pre-existing windows
+  for (const w of existingWindows) {
+    w.close();
+  }
 
   appMenu();
 

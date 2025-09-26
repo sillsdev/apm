@@ -3,13 +3,12 @@ import { LocalKey, forceLogin } from '../utils';
 import { MainAPI } from '@model/main-api';
 const ipc = window?.api as MainAPI;
 
-export const goOnline = (email?: string) => {
+export const goOnline = async (email?: string) => {
   const lastTime = localStorage.getItem('electron-lastTime');
   localStorage.removeItem(LocalKey.authId);
   localStorage.setItem(LocalKey.loggedIn, 'true');
   const hasUsed = lastTime !== null;
-  ipc?.login(hasUsed, email);
-  ipc?.closeApp();
+  await ipc?.login(hasUsed, email); // login to new app windows
 };
 
 export const doLogout = async () => {

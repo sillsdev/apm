@@ -43,6 +43,7 @@ import { ListMode } from '../control/ListMode';
 import { accessSelector } from '../selector';
 import { useOrbitData } from '../hoc/useOrbitData';
 import { useDispatch } from 'react-redux';
+import { goOnline, doLogout, switchUser } from './accessActions';
 import { MainAPI } from '@model/main-api';
 const ipc = window?.api as MainAPI;
 
@@ -86,7 +87,6 @@ const CurrentUser = ({ curUser, action, goOnline, show }: ICurrentUser) => {
   );
 };
 
-import { goOnline, doLogout, switchUser } from './accessActions';
 export function Access() {
   const t: IAccessStrings = useSelector(accessSelector, shallowEqual);
   const users = useOrbitData<UserD[]>('user');
@@ -148,10 +148,12 @@ export function Access() {
     setImportOpen(true);
   };
 
-  const handleGoOnlineConfirmed = () => {
+  const handleGoOnlineConfirmed = async () => {
     if (isElectron) {
       if (!goOnlineConfirmation?.shiftKey) {
-        const email = curUser?.attributes?.auth0Id.startsWith('auth0|')
+        const email = /^(auth0|google-oauth2)\|/.test(
+          curUser?.attributes?.auth0Id ?? ''
+        )
           ? curUser?.attributes?.email?.toLowerCase()
           : undefined;
         goOnline(email);

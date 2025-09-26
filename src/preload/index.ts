@@ -23,6 +23,7 @@ const api = {
     await ipcRenderer.invoke('setAddToDict', value),
   setSpellLangs: async (codes) =>
     await ipcRenderer.invoke('setSpellLangs', codes),
+  log: async (...args) => await ipcRenderer.invoke('log', ...args),
   temp: async () => await ipcRenderer.invoke('temp'),
   exitApp: async () => await ipcRenderer.invoke('exitApp'),
   relaunchApp: async () => await ipcRenderer.invoke('relaunchApp'),

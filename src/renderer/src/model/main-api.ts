@@ -18,6 +18,7 @@ export interface MainAPI {
   refreshToken: () => Promise<unknown>;
   setAddToDict: (value: string) => Promise<void>;
   setSpellLangs: (codes: string[]) => Promise<unknown>;
+  log: (...args: any[]) => Promise<void>;
   temp: () => Promise<string>;
   exitApp: () => Promise<unknown>;
   relaunchApp: () => Promise<unknown>;

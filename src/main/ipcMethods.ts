@@ -67,6 +67,10 @@ export function ipcMethods(): void {
     });
   });
 
+  ipcMain.handle('log', async (_event, ...args) => {
+    console.log(...args);
+  });
+
   ipcMain.handle('temp', async () => {
     return app.getPath('temp').replace(/\\/g, '/');
   });

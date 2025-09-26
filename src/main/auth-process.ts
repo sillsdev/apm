@@ -15,6 +15,8 @@ let win: BrowserWindow | null = null;
 export function createAuthWindow(hasUsed: boolean, email: string) {
   destroyAuthWin();
 
+  const existingWindows = BrowserWindow.getAllWindows();
+
   win = new BrowserWindow({
     width: 1000,
     height: 780,
@@ -25,6 +27,11 @@ export function createAuthWindow(hasUsed: boolean, email: string) {
       sandbox: false,
     },
   });
+
+  // close pre-existing windows
+  for (const w of existingWindows) {
+    w.close();
+  }
 
   function workOffline() {
     createWindow();
