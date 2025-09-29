@@ -22,14 +22,16 @@ function indexTemplate(argEnv) {
   fs.readFile(`env-config/index.html`, 'utf8', (err, data) => {
     if (err) throw err;
     data = replaceVariables('VITE_SITE_TITLE', data);
+    data = replaceVariables('VITE_HOST', data);
+    data = replaceVariables('VITE_DOMAIN', data);
+    data = replaceVariables('VITE_SESSIONS', data);
+    data = replaceVariables('VITE_NOTIFY', data);
+    data = replaceVariables('VITE_FILES', data);
     if (argEnv !== 'prod') {
       data = replaceVariables('VITE_CALLBACK', data);
     } else {
       data = data.replace(/%VITE_CALLBACK% /g, '');
     }
-    data = replaceVariables('VITE_HOST', data);
-    data = replaceVariables('VITE_BUGSNAG', data);
-    data = data.replace(/%CHANNEL%/g, argEnv);
     fs.writeFile(`src/renderer/index.html`, data, (err) => {
       if (err) throw err;
       console.log(
