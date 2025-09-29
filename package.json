@@ -18,7 +18,10 @@
     "build:unpack": "npm run build && electron-builder --dir",
     "build:win": "npm run build && electron-builder --win",
     "build:mac": "electron-vite build && electron-builder --mac",
-    "build:linux": "electron-vite build && electron-builder --linux"
+    "build:linux": "electron-vite build && electron-builder --linux",
+    "devs": "node env-config/changeEnv.cjs dev",
+    "qas": "node env-config/changeEnv.cjs qa",
+    "prods": "node env-config/changeEnv.cjs prod"
   },
   "dependencies": {
     "@auth0/auth0-react": "^2.4.0",
