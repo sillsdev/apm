@@ -54,3 +54,13 @@ fs.copyFile(
     );
   }
 );
+fs.copyFile(
+  `env-config/.auth0-variables.${argEnv}.json`,
+  `src/renderer/src/auth/auth0-variables.json`,
+  (err) => {
+    if (err) throw err;
+    console.log(
+      `env-config/.auth0-variables.${argEnv}.json was copied to src/auth/auth0-variables.json`
+    );
+  }
+);
