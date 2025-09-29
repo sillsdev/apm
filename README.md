@@ -13,13 +13,22 @@ Desktop builds based on [electron-vite](https://electron-vite.org)
 ### Install
 
 ```bash
-$ npm install
+$ npm install --legacy-peer-deps
+$ npm run stamp
+```
+
+Select a channel using ONE of these three commands (you'll need the appropriate secrets files in env-config).
+
+```bash
+$ npm run devs
+$ npm run qas
+$ npm run prods
 ```
 
 ### Development
 
 ```bash
-$ npm run dev
+$ npm start
 ```
 
 ### lint - static check

@@ -3,11 +3,11 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Apm Vite</title>
+        <title>%VITE_SITE_TITLE%</title>
         <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP -->
         <meta
             http-equiv="Content-Security-Policy"
-            content="connect-src 'self' blob: data: http://localhost:3000 https://api-dev.audioprojectmanager.org https://transcriber-dev.auth0.com/oauth/token https://sil-transcriber-userfiles-dev.s3.amazonaws.com"
+            content="connect-src 'self' blob: data: %VITE_CALLBACK% %VITE_HOST% https://transcriber-dev.auth0.com/oauth/token https://sil-transcriber-userfiles-%CHANNEL%.s3.amazonaws.com"
         />
     </head>
 

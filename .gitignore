@@ -12,6 +12,7 @@ localization/.vscode
 localization/.vs
 buildDate.json
 env-config/env-files*.zip
+src/renderer/index.html
 *.log*
 src/renderer/dist
 src/renderer/node_modules
