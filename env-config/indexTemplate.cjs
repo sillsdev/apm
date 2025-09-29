@@ -11,7 +11,7 @@ function replaceVariables(name, data) {
   console.log(`processing ${name}`);
   var pat1 = new RegExp(`^${name}=`, 'g');
   var matching = variables.find((v) => pat1.test(v));
-  var value = matching.slice(name.length + 1);
+  var value = matching?.slice(name.length + 1) ?? '';
   console.log(`found ${value}`);
   var pattern = new RegExp(`%${name}%`, 'g');
   return data.replace(pattern, value);
@@ -28,6 +28,7 @@ function indexTemplate(argEnv) {
       data = data.replace(/%VITE_CALLBACK% /g, '');
     }
     data = replaceVariables('VITE_HOST', data);
+    data = replaceVariables('VITE_BUGSNAG', data);
     data = data.replace(/%CHANNEL%/g, argEnv);
     fs.writeFile(`src/renderer/index.html`, data, (err) => {
       if (err) throw err;
