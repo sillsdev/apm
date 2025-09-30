@@ -94,7 +94,7 @@ export const UpdateRelatedPassageOps = (
   ops.push(...UpdateLastModifiedBy(t, { type: 'plan', id: plan }, userId));
 };
 export const UpdateMediaStateOps = (
-  mediaFile: string,
+  mediafile: string,
   passage: string,
   state: string,
   userId: string,
@@ -103,12 +103,12 @@ export const UpdateMediaStateOps = (
   memory: Memory,
   comment: string
 ): RecordOperation[] => {
-  const mediaRecId = { type: 'mediafile', id: mediaFile };
+  const mediaRecId = { type: 'mediafile', id: mediafile };
   if (state)
     ops.push(
       t.replaceAttribute(mediaRecId, 'transcriptionstate', state).toOperation()
     );
-  const mediaRec = findRecord(memory, 'mediafile', mediaFile) as MediaFileD;
+  const mediaRec = findRecord(memory, 'mediafile', mediafile) as MediaFileD;
   const isVernacular = !related(mediaRec, 'artifacttype');
   ops.push(...UpdateLastModifiedBy(t, mediaRecId, userId));
   AddPassageStateChangeToOps(

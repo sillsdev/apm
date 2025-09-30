@@ -155,7 +155,7 @@ export const useMediaUpload = ({
     uploadFiles(files);
     fileList.current = files;
 
-    const mediaFile = {
+    const mediafile = {
       planId: getPlanId(),
       versionNumber: 1,
       originalFile: (files[0] as File).name,
@@ -180,7 +180,7 @@ export const useMediaUpload = ({
       sourceMediaId: string;
     };
     nextUpload({
-      record: mediaFile,
+      record: mediafile,
       files,
       n: 0,
       token: accessToken || '',

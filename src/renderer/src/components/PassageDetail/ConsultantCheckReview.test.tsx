@@ -4,7 +4,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import ConsultantCheckReview from './ConsultantCheckReview';
 import { ArtifactTypeSlug } from '../../crud/artifactTypeSlug';
 import { IRow } from '../../context/PassageDetailContext';
-import { MediaFile } from '../../model/mediaFile';
+import { MediaFile } from '../../model/mediafile';
 interface ArtifactStatusProps {
   recordType: ArtifactTypeSlug;
   currentVersion: number;

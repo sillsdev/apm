@@ -34,7 +34,7 @@ export interface MediaFileAttributes {
 
 export interface MediaFile extends BaseModel {
   attributes: MediaFileAttributes;
-  type: 'mediaFile';
+  type: 'mediafile';
   relationships?: {
     passage: RecordRelationship;
     resourcePassage: RecordRelationship;

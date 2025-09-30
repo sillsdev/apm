@@ -23,7 +23,7 @@ export const useOfflnMediafileCreate = () => {
     recordedbyUserId: string
   ) => {
     const newMediaRec: MediaFile = {
-      type: 'mediaFile',
+      type: 'mediafile',
       attributes: {
         versionNumber: version,
         eafUrl: data.eafUrl || '',

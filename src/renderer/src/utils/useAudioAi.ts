@@ -13,7 +13,7 @@ import { uploadFile } from '../store/upload/actions';
 import { useContext, useRef } from 'react';
 import { TokenContext } from '../context/TokenProvider';
 import { loadBlobAsync } from './loadBlob';
-import { MediaFileAttributes } from '../model/mediaFile';
+import { MediaFileAttributes } from '../model/mediafile';
 
 interface fileTask {
   taskId: string;
