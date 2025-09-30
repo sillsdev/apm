@@ -89,6 +89,15 @@ export function MediaPlayer(props: IProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [srcMediaId]);
 
+  // Cleanup blob URLs when component unmounts or media changes
+  useEffect(() => {
+    return () => {
+      if (mediaState.url && mediaState.url.startsWith('blob:')) {
+        URL.revokeObjectURL(mediaState.url);
+      }
+    };
+  }, [mediaState.url]);
+
   useEffect(() => {
     if (mediaState.id !== srcMediaId && mediaState.remoteId !== srcMediaId)
       return;

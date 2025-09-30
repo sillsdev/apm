@@ -4,7 +4,7 @@ import { isElectron } from '../../api-variable';
 import { remoteIdGuid, remoteId } from '../crud';
 import { dataPath, PathType } from '../utils/dataPath';
 import { ISharedStrings, MediaFileD } from '../model';
-import { infoMsg, logError, Severity } from '../utils';
+import { infoMsg, loadBlobAsync, logError, Severity } from '../utils';
 import { useFetchUrlNow } from './useFetchUrlNow';
 import { RecordKeyMap } from '@orbit/records';
 import { shallowEqual, useSelector } from 'react-redux';
@@ -85,6 +85,10 @@ export const useFetchMediaUrl = (reporter?: any) => {
   const fetchUrl = useFetchUrlNow();
   const safeURL = async (path: string) => {
     if (!path.startsWith('http')) {
+      const blob = await loadBlobAsync(path);
+      if (blob) {
+        return URL.createObjectURL(blob);
+      }
       const start = (await ipc?.isWindows()) ? 8 : 7;
       const url = new URL(`file://${path}`).toString().slice(start);
       return `file://${url}`;
