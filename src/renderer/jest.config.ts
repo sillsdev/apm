@@ -4,9 +4,9 @@ export const config: JestConfigWithTsJest = {
   clearMocks: true,
   testTimeout: 10000,
   // Run tests serially (one at a time) for better CI debugging
-  maxWorkers: 1,
+  // maxWorkers: 1,
   // Show verbose output to see which test is running
-  verbose: process.env.CI ? true : false,
+  // verbose: process.env.CI ? true : false,
   collectCoverageFrom: [
     'src/**/*.ts',
     '!src/**/*.pacttest.ts', // Exclude pacttest files
