@@ -278,7 +278,7 @@ export const Uploader = (props: IProps) => {
       file = parts[0] as string;
       transcription = parts[1] as string;
     }
-    const mediaFile = {
+    const mediafile = {
       planId: getPlanId() as string,
       versionNumber: 1,
       originalFile: file,
@@ -309,7 +309,7 @@ export const Uploader = (props: IProps) => {
       sourceMediaId: string;
     };
     nextUpload({
-      record: mediaFile,
+      record: mediafile,
       files: uploadList,
       n: currentlyLoading,
       token: ctx.accessToken || '',

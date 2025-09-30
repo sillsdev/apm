@@ -18,7 +18,7 @@ export const useMediaResCreate = (passage: RecordIdentity, stepId: string) => {
   return async (res: Resource, artifactCategoryId?: string) => {
     const attr = res.attributes;
     const mediaRec = {
-      type: 'mediaFile',
+      type: 'mediafile',
       attributes: {
         versionNumber: attr.versionNumber,
         eafUrl: null,

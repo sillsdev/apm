@@ -176,7 +176,7 @@ export const useProjectResourceSave = () => {
       }
       if (!topic) topic = fullReference(i);
       const newMedia = {
-        type: 'mediaFile',
+        type: 'mediafile',
         attributes: {
           ...media.attributes,
           segments,

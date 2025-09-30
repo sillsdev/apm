@@ -910,7 +910,7 @@ export function Transcriber(props: IProps) {
         ...UpdateRecord(
           tb,
           {
-            type: 'mediaFile',
+            type: 'mediafile',
             id: mediaRef.current.id,
             attributes: {
               ...mediaRef.current?.attributes,
