@@ -1,4 +1,4 @@
-# apm-vite
+# Audio Project Manager
 
 An application for desktop and web with electron-vite and vite using React and TypeScript. This repository contains a simple monorepo using npm. The src/renderer folder builds using vite to create a web app. The root builds using electron-vite and builds a desktop app for Windows, Linux or a Mac such that src/renderer is the UI for the desktop app.
 
