@@ -5,7 +5,8 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>%VITE_SITE_TITLE%</title>
         <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP -->
-        <meta http-equiv="Content-Security-Policy" content="connect-src *" />
+        <meta http-equiv="Content-Security-Policy" content="connect-src 'self' blob: http: https: ws: wss:;">
+
         <!-- This is not a complete list since we allow Faithbridge and even allow user links in mark down-->
         <!-- 'self' blob: data: %VITE_CALLBACK% %VITE_SESSIONS% %VITE_NOTIFY% %VITE_HOST% https://%VITE_DOMAIN%/oauth/token %VITE_FILES% -->
     </head>
