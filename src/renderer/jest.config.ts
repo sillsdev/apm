@@ -3,6 +3,10 @@ import type { JestConfigWithTsJest } from 'ts-jest';
 export const config: JestConfigWithTsJest = {
   clearMocks: true,
   testTimeout: 10000,
+  // Run tests serially (one at a time) for better CI debugging
+  maxWorkers: 1,
+  // Show verbose output to see which test is running
+  verbose: process.env.CI ? true : false,
   collectCoverageFrom: [
     'src/**/*.ts',
     '!src/**/*.pacttest.ts', // Exclude pacttest files
@@ -31,6 +35,11 @@ export const config: JestConfigWithTsJest = {
   },
   moduleDirectories: ['node_modules', 'src'],
   modulePathIgnorePatterns: ['dist'],
+  // Skip LimitedMediaPlayer test in CI environments
+  // testPathIgnorePatterns: process.env.CI
+  //  ? ['**/LimitedMediaPlayer.test.tsx']
+  //  : [],
+  testPathIgnorePatterns: [],
   transform: {
     '^.+\\.(ts|tsx)$': ['ts-jest', { tsconfig: 'tsconfig.jest.json' }],
   },
