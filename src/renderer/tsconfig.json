@@ -11,14 +11,7 @@
     "./cypress.config.ts",
     "api-variable.tsx"
   ],
-  "exclude": [
-    "node_modules",
-    "coverage",
-    "dist",
-    "**/*.*test.ts*",
-    "**/*.js",
-    "**/*.jsx"
-  ],
+  "exclude": ["node_modules", "coverage", "dist", "**/*.*test.ts*"],
   "compilerOptions": {
     /* Visit https://aka.ms/tsconfig to read more about this file */
     /* Projects */
