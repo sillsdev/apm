@@ -3,6 +3,7 @@
   "version": "4.4.0-alpha.1",
   "description": "An Electron application with React and TypeScript",
   "main": "./out/main/index.js",
+  "homepage": "./out",
   "scripts": {
     "clean": "rimraf dist out src/renderer/dist src/renderer/coverage",
     "stamp": "node env-config/writeDate.cjs",
