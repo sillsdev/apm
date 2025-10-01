@@ -798,7 +798,11 @@ export function PassageDetailArtifacts() {
   return (
     <>
       <Stack sx={{ width: '100%' }} direction="row" spacing={1}>
-        <Grid container sx={{ display: 'flex', alignItems: 'center' }}>
+        <Grid
+          container
+          size={12}
+          sx={{ display: 'flex', alignItems: 'center' }}
+        >
           {isScripture && (
             <Grid>
               <AltButton onClick={() => handleFindVisible(true)}>
@@ -821,7 +825,7 @@ export function PassageDetailArtifacts() {
             </>
           )}
           {playItem !== '' && (
-            <Grid sx={{ flexGrow: 1 }}>
+            <Grid sx={{ width: '50%' }}>
               <MediaContainer>
                 <LimitedMediaPlayer
                   srcMediaId={playItem}
