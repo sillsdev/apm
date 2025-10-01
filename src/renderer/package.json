@@ -93,6 +93,7 @@
   "prettier": {
     "trailingComma": "es5",
     "singleQuote": true,
+    "endOfLine": "lf",
     "overrides": [
       {
         "files": [

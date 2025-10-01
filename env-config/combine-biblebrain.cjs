@@ -1,30 +1,30 @@
-const writeFile = require("write");
+const writeFile = require('write');
 
 async function combine() {
   const arg1Name =
-    process.argv.length > 2 ? process.argv[2] : "biblebrain_2024-08-22";
+    process.argv.length > 2 ? process.argv[2] : 'biblebrain_2024-08-22';
   const arg2Name =
     process.argv.length > 2
       ? process.argv[2]
-      : "biblebrain-timing-filesets_2024-09-05";
+      : 'biblebrain-timing-filesets_2024-09-05';
 
   const mod1 = await import(`./${arg1Name}.js`);
-  const opts = new Map(mod1.default.map((e) => [e["bible_id"], e]));
+  const opts = new Map(mod1.default.map((e) => [e['bible_id'], e]));
   const mod2 = await import(`./${arg2Name}.js`);
-  const tims = new Set(mod2.default.map((e) => e["fileset_id"]));
+  const tims = new Set(mod2.default.map((e) => e['fileset_id']));
 
   // create map of language iso to bible ids
   let lang = new Map();
   opts.forEach((v, k) => {
-    const key = v["iso"].toLowerCase();
-    const bible_id = v["bible_id"];
+    const key = v['iso'].toLowerCase();
+    const bible_id = v['bible_id'];
     const cur = lang.get(key)?.ids;
     lang.set(key, cur ? { ids: [...cur, bible_id] } : { ids: [bible_id] });
   });
 
   // add timing fields to opts
   opts.forEach((v, k) => {
-    opts.set(k, { ...v, ot_timing: "false", nt_timing: "false" });
+    opts.set(k, { ...v, ot_timing: 'false', nt_timing: 'false' });
   });
 
   const iso_with_timings = new Set();
@@ -45,9 +45,9 @@ async function combine() {
       return;
     }
     const opt = opts.get(bible_id);
-    iso_with_timings.add(`${opt["lang_name"]} [${iso}]`);
+    iso_with_timings.add(`${opt['lang_name']} [${iso}]`);
     const key = `${e.slice(6, 7).toLowerCase()}t_timing`;
-    opts.set(bible_id, { ...opt, [key]: "true" });
+    opts.set(bible_id, { ...opt, [key]: 'true' });
   });
 
   // report iso with timing
@@ -57,7 +57,7 @@ async function combine() {
     .forEach((e) => console.log(e));
 
   // report missing ids
-  console.log("\nMissing ids (ids marked with T have timings):");
+  console.log('\nMissing ids (ids marked with T have timings):');
   Array.from(lang)
     .sort((a, b) => (a[0] <= b[0] ? -1 : 1))
     .forEach((i) => {
@@ -65,8 +65,8 @@ async function combine() {
       if (v.missing) {
         console.log(
           `iso ${k} Missing: ${v?.missing}, ids: ${v?.ids?.map((e) =>
-            opts.get(e)?.ot_timing === "true" ||
-            opts.get(e)?.nt_timing === "true"
+            opts.get(e)?.ot_timing === 'true' ||
+            opts.get(e)?.nt_timing === 'true'
               ? `${e}(T)`
               : e
           )}`

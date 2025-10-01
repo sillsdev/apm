@@ -1,13 +1,13 @@
 function csvToJson(csv) {
   const lines = csv.split(/\r?\n/);
   const result = [];
-  const headers = lines[0].split(",");
+  const headers = lines[0].split(',');
 
   for (let i = 1; i < lines.length; i++) {
     const obj = {};
     let currentLine = lines[i];
     let insideQuotes = false;
-    let value = "";
+    let value = '';
     let values = [];
 
     for (let char of currentLine) {
@@ -15,9 +15,9 @@ function csvToJson(csv) {
         insideQuotes = true;
       } else if (char === '"' && insideQuotes) {
         insideQuotes = false;
-      } else if (char === "," && !insideQuotes) {
+      } else if (char === ',' && !insideQuotes) {
         values.push(value);
-        value = "";
+        value = '';
       } else {
         value += char;
       }
@@ -42,13 +42,13 @@ function csvToJson(csv) {
 
 // console.log(csvToJson(csvData));
 
-const readFileSync = require("fs").readFileSync;
-const writeFile = require("write");
+const readFileSync = require('fs').readFileSync;
+const writeFile = require('write');
 
 var argName =
-  process.argv.length > 2 ? process.argv[2] : "biblebrain_2024-08-22";
+  process.argv.length > 2 ? process.argv[2] : 'biblebrain_2024-08-22';
 
-const data = readFileSync(__dirname + `/../src/assets/${argName}.csv`, "utf8");
+const data = readFileSync(__dirname + `/../src/assets/${argName}.csv`, 'utf8');
 
 const json = csvToJson(data);
 

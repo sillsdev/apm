@@ -34,8 +34,8 @@ async function makeInfo(path) {
             isWin & !is32
               ? '11 (or 10)'
               : isWin & is32
-              ? '7'
-              : ext.toUpperCase(),
+                ? '7'
+                : ext.toUpperCase(),
           architecture: isWin & is32 ? 'x86_32' : 'x86_64',
           stability: 'stable',
           nature: 'ver2',

@@ -74,7 +74,8 @@ import { isElectron } from '../../api-variable';
 import WSAudioPlayerRate from './WSAudioPlayerRate';
 import { IVoicePerm } from '../business/voice/PersonalizeVoicePermission';
 import BigDialogBp from '../hoc/BigDialogBp';
-const ipc = (window as any)?.electron;
+import { MainAPI } from '@model/main-api';
+const ipc = window?.api as MainAPI;
 
 const HandScissors = FaHandScissors as unknown as React.FC<IconBaseProps>;
 const DotCircle = FaDotCircle as unknown as React.FC<IconBaseProps>;
@@ -919,8 +920,10 @@ function WSAudioPlayer(props: IProps) {
         if (absMax < 255) throw new Exception(t.tooQuiet);
         await ipc?.writeBuffer(fileBeg, arrayBuffer);
         await ipc?.normalize(fileBeg, fileEnd);
-        const result = await ipc?.read(fileEnd);
-        const regionblob = new Blob([result], { type: blob.type });
+        const result = (await ipc?.read(fileEnd)) as Uint8Array;
+        const regionblob = new Blob([new Uint8Array(result)], {
+          type: blob.type,
+        });
         const newblob = await wsRegionReplace(regionblob);
         if (newblob) reload(newblob);
         setChanged && setChanged(true);
