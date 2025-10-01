@@ -391,13 +391,12 @@ export function ipcMethods(): void {
       input = input.replace(/\//g, '\\');
       output = output.replace(/\//g, '\\');
     }
-    const localMod = await import('./normalizer.js');
+    const { normalize } = await import('./normalizer');
     try {
       // see: https://github.com/peterforgacs/ffmpeg-normalize/blob/master/src/normalizer.ts
       // see: https://www.electronjs.org/docs/latest/tutorial/asar-archives#executing-binaries-inside-asar-archive
-      // we modified the code from ffmpeg-normalize to make it work with electronjs
-      // we replaced child_process.exec with child_process.execFile
-      await localMod.normalize({
+      // we modified the code from ffmpeg-normalize to our style requirements
+      await normalize({
         input,
         output,
         loudness: {

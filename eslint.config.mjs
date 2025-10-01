@@ -16,7 +16,6 @@ export default tseslint.config(
       '**/*.d.ts',
       '**/*.cjs',
       '**/notarize.js',
-      '**/normalizer.js',
     ],
   },
   tseslint.configs.recommended,
