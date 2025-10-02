@@ -154,7 +154,8 @@ const titleProps = {
   flexDirection: 'row',
   justifyContent: 'space-between',
   flexGrow: 1,
-  flexWrap: 'unset',
+  flexShrink: 0,
+  width: '100%',
 } as SxProps;
 const titleCtrlProps = { display: 'flex', flexDirection: 'row' } as SxProps;
 const cardFlowProps = {
@@ -994,8 +995,8 @@ export const DiscussionCard = (props: IProps) => {
                 </Box>
               </EditContainer>
             ) : (
-              <Grid container sx={titleProps}>
-                <Grid sx={topicItemProps}>
+              <Box sx={titleProps}>
+                <Box sx={topicItemProps}>
                   {myRegion &&
                     related(discussion, 'mediafile') === mediafileId && (
                       <IconButton
@@ -1027,8 +1028,8 @@ export const DiscussionCard = (props: IProps) => {
                   >
                     {discussion.attributes?.subject}
                   </Typography>
-                </Grid>
-                <Grid sx={titleCtrlProps}>
+                </Box>
+                <Box sx={titleCtrlProps}>
                   {!isPersonal && assignedGroup && (
                     <LightTooltip title={t.changeAssignment}>
                       <IconButton
@@ -1077,8 +1078,8 @@ export const DiscussionCard = (props: IProps) => {
                     canResolve={canResolve}
                     canEdit={canResolve || !isPersonal} //can only assign
                   />
-                </Grid>
-              </Grid>
+                </Box>
+              </Box>
             )}
 
             <Box
