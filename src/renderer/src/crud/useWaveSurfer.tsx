@@ -4,7 +4,6 @@ import { useWavesurfer } from '@wavesurfer/react';
 import Timeline from 'wavesurfer.js/dist/plugins/timeline';
 import ZoomPlugin from 'wavesurfer.js/dist/plugins/zoom';
 import RegionsPlugin from 'wavesurfer.js/dist/plugins/regions';
-import toWav from 'audiobuffer-to-wav';
 
 import { logError, Severity } from '../utils/logErrorService';
 
@@ -21,7 +20,6 @@ import WaveSurfer from 'wavesurfer.js';
 import { NamedRegions } from '../utils';
 
 const noop = () => {};
-const noop1 = () => {};
 
 export interface IMarker {
   time: number;
@@ -33,13 +31,13 @@ export function useWaveSurfer(
   allowSegment: NamedRegions | undefined, //just used for debug logging
   container: any,
   onReady: () => void = noop,
-  onProgress: (progress: number) => void = noop1,
-  onRegion: (count: number, newRegion: boolean) => void = noop1,
-  onCanUndo: (canUndo: boolean) => void = noop1,
+  onProgress: (progress: number) => void = noop,
+  onRegion: (count: number, newRegion: boolean) => void = noop,
+  onCanUndo: (canUndo: boolean) => void = noop,
   onPlayStatus: (playing: boolean) => void = noop,
   onInteraction: () => void = noop,
   onZoom: undefined | ((px: number) => void),
-  onMarkerClick: (time: number) => void = noop1,
+  onMarkerClick: (time: number) => void = noop,
   height: number,
   singleRegionOnly: boolean = false,
   currentSegmentIndex?: number | undefined,
@@ -64,11 +62,12 @@ export function useWaveSurfer(
 
   const audioContextRef = useRef<AudioContext>();
   const fillpxRef = useRef(0);
-  const [playerUrl, setPlayerUrl] = useState<string>('');
+  const [playerUrl, setPlayerUrl] = useState<string | undefined>();
   const [actualPxPerSec, setActualPxPerSec] = useState(0);
   const blobRef = useRef<Blob>();
   const blobAudioRef = useRef<AudioBuffer>();
   const positionRef = useRef(-1);
+  const loadingRef = useRef(false);
   const [recording, setRecordingx] = useState(false);
   const recordingRef = useRef(false);
   const plugins = useMemo(
@@ -115,11 +114,11 @@ export function useWaveSurfer(
     const roundToFiveDecimals = (n: number) => Math.round(n * 100000) / 100000;
     const setProgress = (value: number) => {
       progressRef.current = value;
-      onRegionProgress();
       onProgress(value);
     };
-
-    setProgress(roundToFiveDecimals(currentTime));
+    if (!loadingRef.current || currentTime > 0) {
+      setProgress(roundToFiveDecimals(currentTime));
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentTime]);
 
@@ -161,8 +160,6 @@ export function useWaveSurfer(
     wsLoopRegion,
     justPlayRegion,
     resetPlayingRegion,
-    onRegionSeek,
-    onRegionProgress,
     onRegionGoTo,
     currentRegion,
     wsSetRegionColor,
@@ -235,8 +232,11 @@ export function useWaveSurfer(
       isReadyRef.current = true;
       //recording also sends ready
       if (loadRequests.current > 0) loadRequests.current--;
+
       if (!loadRequests.current) {
-        setDuration(wavesurferRef.current?.getDuration() || 0);
+        setDuration(
+          wavesurferRef.current?.getDuration() ?? durationRef.current
+        );
         if (!regionsLoadedRef.current) {
           //we need to call this even if undefined to setup regions variables
           regionsLoadedRef.current = loadRegions(
@@ -268,21 +268,18 @@ export function useWaveSurfer(
         Regions?.unAll();
       });
 
-      wavesurfer.on('seeking', function () {
-        onRegionSeek();
-      });
       wavesurfer.on('finish', function () {
         setPlaying(false);
       });
-      wavesurfer.on('interaction', function () {
+      wavesurfer.on('interaction', function (/*newTime: number*/) {
         onInteraction();
       });
-      wavesurfer.on('click', () => {
+      wavesurfer.on('click', (/*relativeX: number, relativeY: number*/) => {
         if (singleRegionOnly) {
           wsRemoveCurrentRegion();
         }
       });
-      wavesurfer.on('dblclick', () => {
+      wavesurfer.on('dblclick', (/*relativeX: number, relativeY: number*/) => {
         if (!singleRegionOnly) {
           wsAddRegion();
         }
@@ -309,6 +306,7 @@ export function useWaveSurfer(
     // Removes events, elements and disconnects Web Audio nodes on component unmount
     return () => {
       blobToLoad.current = undefined;
+
       if (wavesurferRef.current) {
         const ws = wavesurferRef.current;
         if (isPlayingRef.current) ws.stop();
@@ -341,9 +339,8 @@ export function useWaveSurfer(
     onCanUndo(!preventUndo);
     clearRegions();
     wsGoto(0);
+
     loadBlob();
-    setDuration(0);
-    onReady();
   };
 
   const wsIsPlaying = () => playingRef.current;
@@ -364,6 +361,7 @@ export function useWaveSurfer(
       wavesurferRef.current?.setPlaybackRate(rate);
     }
   };
+
   const wsZoom = debounce((zoom: number) => {
     if (isReadyRef.current) wavesurferRef.current?.zoom(zoom);
   }, 10);
@@ -371,22 +369,37 @@ export function useWaveSurfer(
   const loadBlob = async (blob?: Blob, position: number = 0) => {
     positionRef.current = position;
     if (!blob) {
-      setPlayerUrl('');
+      setPlayerUrl(playerUrl === '' ? undefined : '');
       blobAudioRef.current = undefined;
       blobRef.current = undefined;
       setDuration(0);
       return;
     }
-    const blobUrl = URL.createObjectURL(blob);
-    setPlayerUrl(blobUrl);
-    blobRef.current = blob;
-    blobAudioRef.current = await decodeAudioData(
-      audioContext(),
-      await blob.arrayBuffer()
-    );
-    setDuration(
-      blobAudioRef.current?.length / blobAudioRef.current?.sampleRate || 0
-    );
+    try {
+      loadingRef.current = true;
+      blobAudioRef.current = await audioContext().decodeAudioData(
+        await blob.arrayBuffer()
+      );
+      if (blob.type === '')
+        //from recorder?
+        blobRef.current = await audioBufferToWavBlob(blobAudioRef.current);
+      else blobRef.current = blob;
+
+      setDuration(
+        blobAudioRef.current?.duration ||
+          blobAudioRef.current?.length / blobAudioRef.current?.sampleRate ||
+          0
+      );
+
+      //setPlayerUrl(blobUrl); //this is slow
+      await wavesurferRef.current?.loadBlob(blob); // -- this says it is no longer supported but it works
+    } catch (error) {
+      console.error('Error loading blob:', error);
+
+      throw error;
+    } finally {
+      loadingRef.current = false;
+    }
   };
   const wsLoad = (blob?: Blob, regions: string = '') => {
     setDuration(0);
@@ -401,11 +414,11 @@ export function useWaveSurfer(
         blobToLoad.current = blob;
         loadRequests.current = 2; //if there was another, we'll bypass it
       } else {
-        loadBlob(blob).then(() => console.log('loaded'));
+        loadBlob(blob);
         loadRequests.current = 1;
       }
     } else if (blobToLoad.current) {
-      loadBlob(blobToLoad.current).then(() => console.log('loaded initial'));
+      loadBlob(blobToLoad.current);
       blobToLoad.current = undefined;
     } else {
       loadRequests.current--;
@@ -444,47 +457,26 @@ export function useWaveSurfer(
 
     const originalBuffer = blobAudioRef.current;
     if (!originalBuffer) return wsBlob();
-
+    const { numberOfChannels, sampleRate } = originalBuffer;
     // Calculate the number of frames for the region
-    const startFrame = Math.floor(start * originalBuffer.sampleRate);
-    const endFrame = Math.floor(end * originalBuffer.sampleRate);
+    const startFrame = Math.floor(start * sampleRate);
+    const endFrame = Math.floor(end * sampleRate);
     const frameCount = endFrame - startFrame;
 
     // Create a new buffer for the region
     const regionBuffer = audioContext().createBuffer(
-      originalBuffer.numberOfChannels,
+      numberOfChannels,
       frameCount,
-      originalBuffer.sampleRate
+      sampleRate
     );
 
     // Copy the audio data for the region
-    for (
-      let channel = 0;
-      channel < originalBuffer.numberOfChannels;
-      channel++
-    ) {
+    for (let channel = 0; channel < numberOfChannels; channel++) {
       const originalData = originalBuffer.getChannelData(channel);
       const regionData = regionBuffer.getChannelData(channel);
       regionData.set(originalData.subarray(startFrame, endFrame));
     }
-    let channels = regionBuffer.numberOfChannels;
-    let data_left: Float32Array | null = regionBuffer.getChannelData(0);
-    let data_right: Float32Array | null = null;
-    if (channels === 2) {
-      data_right = regionBuffer.getChannelData(1);
-      if (!data_left && data_right) {
-        data_left = data_right;
-        data_right = null;
-        channels = 1;
-      }
-    }
-    // Convert the region buffer to a Blob
-    const wavblob = await convertToWav(data_left, data_right, {
-      isFloat: true, // floating point or 16-bit integer (WebAudio API decodes to Float32Array) ???
-      numChannels: channels,
-      sampleRate: originalBuffer.sampleRate,
-    });
-    return wavblob;
+    return await audioBufferToWavBlob(regionBuffer);
   };
 
   const wsSkip = (amt: number) => {
@@ -504,14 +496,30 @@ export function useWaveSurfer(
   /**
    * Encodes an AudioBuffer to a WAV Blob.
    */
-  function audioBufferToWavBlob(buffer: AudioBuffer): Blob {
-    // Get ArrayBuffer from AudioBuffer
-    const wavArrayBuffer = toWav(buffer) as ArrayBuffer;
-    // Create a Blob with type 'audio/wav'
-    return new Blob([wavArrayBuffer], { type: 'audio/wav' });
+
+  async function audioBufferToWavBlob(buffer: AudioBuffer): Promise<Blob> {
+    // Use Web Audio API to decode any supported audio format
+    const decodedAudioBuffer = buffer;
+
+    // Extract PCM data from the decoded audio buffer
+    const channels: Float32Array[] = [];
+    for (let i = 0; i < decodedAudioBuffer.numberOfChannels; i++) {
+      channels.push(decodedAudioBuffer.getChannelData(i));
+    }
+
+    // Convert to WAV using the existing wav.ts utility
+    const leftChannel = channels[0];
+    const rightChannel = channels.length > 1 ? channels[1] : null;
+
+    return convertToWav(leftChannel, rightChannel, {
+      isFloat: true,
+      numChannels: channels.length,
+      sampleRate: decodedAudioBuffer.sampleRate,
+    });
   }
+
   async function loadDecoded(audioBuffer: any, position: number) {
-    loadBlob(audioBufferToWavBlob(audioBuffer), position);
+    loadBlob(await audioBufferToWavBlob(audioBuffer), position);
   }
   const copyOriginal = () => {
     if (!wavesurferRef.current) return undefined;
@@ -534,6 +542,7 @@ export function useWaveSurfer(
       return uberSegment;
     } else return undefined;
   };
+
   const insertBlob = async (
     blob: Blob,
     startposition: number,
@@ -591,6 +600,7 @@ export function useWaveSurfer(
     blob: Blob,
     position: number,
     overwriteToPosition: number | undefined
+    /*mimeType?: string*/
   ) => {
     if (!wavesurferRef.current) throw new Error('wavesurfer closed'); //closed while we were working on the blob
     if (blob.size === 0) return position;
@@ -650,37 +660,30 @@ export function useWaveSurfer(
     if (!originalBuffer) return null;
     setUndoBuffer(copyOriginal());
     onCanUndo(true);
-    const new_len = ((len / 1) * originalBuffer.sampleRate) >> 0;
-    const new_offset = ((start / 1) * originalBuffer.sampleRate) >> 0;
-    const emptySegment = audioContext().createBuffer(
-      originalBuffer.numberOfChannels,
-      new_len,
-      originalBuffer.sampleRate
+    const { numberOfChannels, sampleRate, duration } = originalBuffer;
+    const startSample = Math.floor(start * sampleRate);
+    const endSample = Math.floor(end * sampleRate);
+    const totalSamples = Math.floor(duration * sampleRate);
+    const newLength = totalSamples - (endSample - startSample);
+
+    const newAudioBuffer = audioContext().createBuffer(
+      numberOfChannels,
+      newLength,
+      sampleRate
     );
-    let uberSegment = null;
-    uberSegment = audioContext().createBuffer(
-      originalBuffer.numberOfChannels,
-      originalBuffer.length - new_len,
-      originalBuffer.sampleRate
-    );
-
-    for (let ix = 0; ix < originalBuffer.numberOfChannels; ++ix) {
-      const chan_data = originalBuffer.getChannelData(ix);
-      const segment_chan_data = emptySegment.getChannelData(ix);
-      const uber_chan_data = uberSegment.getChannelData(ix);
-      //save what's there
-      segment_chan_data.set(chan_data.slice(new_offset, new_offset + new_len));
-
-      uber_chan_data.set(chan_data.slice(0, new_offset));
-
-      uber_chan_data.set(chan_data.slice(new_offset + new_len), new_offset);
+    for (let ix = 0; ix < numberOfChannels; ++ix) {
+      const oldData = originalBuffer.getChannelData(ix);
+      const newData = newAudioBuffer.getChannelData(ix);
+      // Copy samples before startTime
+      newData.set(oldData.subarray(0, startSample));
+      // Copy samples after endTime
+      newData.set(oldData.subarray(endSample), startSample);
     }
 
     let tmp = start - 0.03;
     if (tmp < 0) tmp = 0;
-    await loadDecoded(uberSegment, tmp);
+    await loadDecoded(newAudioBuffer, tmp);
     onRegion(0, true);
-    return emptySegment;
   };
 
   // Helper function to decode audio data
@@ -704,14 +707,14 @@ export function useWaveSurfer(
     const start = trimTo(currentRegion().start, 3);
     const end = trimTo(currentRegion().end, 3);
     const len = end - start;
-    if (!len) {
+    if (!len || !blobRef.current) {
       wsLoad(blob);
       return blob;
     }
 
     const originalBuffer = blobAudioRef.current;
     if (!originalBuffer) return await wsBlob();
-
+    const { numberOfChannels, sampleRate, length } = originalBuffer;
     // Load the new Blob and replace the region
     const newBuffer = await decodeAudioData(
       audioContext(),
@@ -719,27 +722,18 @@ export function useWaveSurfer(
     );
 
     // Create a new buffer with the combined audio data
-    const newLength =
-      originalBuffer.length -
-      (end - start) * originalBuffer.sampleRate +
-      newBuffer.length;
+    const newLength = length - (end - start) * sampleRate + newBuffer.length;
     const combinedBuffer = audioContext().createBuffer(
-      originalBuffer.numberOfChannels,
+      numberOfChannels,
       newLength,
-      originalBuffer.sampleRate
+      sampleRate
     );
     // Copy the original audio data up to the start of the region
-    for (
-      let channel = 0;
-      channel < originalBuffer.numberOfChannels;
-      channel++
-    ) {
+    for (let channel = 0; channel < numberOfChannels; channel++) {
       const originalData = originalBuffer.getChannelData(channel);
       const combinedData = combinedBuffer.getChannelData(channel);
 
-      combinedData.set(
-        originalData.subarray(0, start * originalBuffer.sampleRate)
-      );
+      combinedData.set(originalData.subarray(0, start * sampleRate));
 
       // Copy the new audio data
       if (channel < newBuffer.numberOfChannels)
@@ -755,11 +749,11 @@ export function useWaveSurfer(
 
       // Copy the original audio data after the end of the region
       combinedData.set(
-        originalData.subarray(end * originalBuffer.sampleRate),
-        start * originalBuffer.sampleRate + newBuffer.length
+        originalData.subarray(end * sampleRate),
+        start * sampleRate + newBuffer.length
       );
     }
-    const position = (start + newBuffer.length) / originalBuffer.sampleRate;
+    const position = (start + newBuffer.length) / sampleRate;
     // Load the new buffer into Wavesurfer
     await loadDecoded(combinedBuffer, position);
     return await wsBlob();

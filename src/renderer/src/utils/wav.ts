@@ -97,7 +97,10 @@ const interleave = (
 // Returns Uint8Array of WAV bytes
 function getWavBytes(buffer: ArrayBuffer, options: WaveOptions): Uint8Array {
   const TypeCtor = options.isFloat ? Float32Array : Uint16Array;
-  options.numFrames = buffer.byteLength / TypeCtor.BYTES_PER_ELEMENT;
+  // For interleaved data, numFrames should be the number of samples per channel
+  // Total samples = numFrames * numChannels
+  const totalSamples = buffer.byteLength / TypeCtor.BYTES_PER_ELEMENT;
+  options.numFrames = totalSamples / options.numChannels;
   const headerBytes = getWavHeader(options);
   const wavBytes = new Uint8Array(headerBytes.length + buffer.byteLength);
   wavBytes.set(headerBytes, 0);

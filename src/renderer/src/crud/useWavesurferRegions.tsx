@@ -939,12 +939,6 @@ export function useWaveSurferRegions(
     return false;
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
-  function onRegionProgress() {}
-
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
-  function onRegionSeek() {}
-
   function onRegionGoTo(position: number) {
     setCurrentRegion(findRegion(position, true));
   }
@@ -973,8 +967,6 @@ export function useWaveSurferRegions(
     loadRegions,
     justPlayRegion,
     resetPlayingRegion,
-    onRegionSeek,
-    onRegionProgress,
     onRegionGoTo,
     currentRegion,
     wsSetRegionColor,

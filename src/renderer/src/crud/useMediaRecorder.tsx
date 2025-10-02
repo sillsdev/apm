@@ -58,6 +58,7 @@ export function useMediaRecorder(
         });
       }
     }
+    //console.log('mimes', mimes);
     setAcceptedMimes(mimes);
     return () => {
       mediaStreamRef.current?.getTracks().forEach((track) => {
@@ -133,9 +134,10 @@ export function useMediaRecorder(
     onError(e?.error || 'Recorder error');
   }
 
-  function startRecorder() {
+  function startRecorder(mimeType?: string) {
     if (mediaStreamRef.current) {
-      const recorder = new MediaRecorder(mediaStreamRef.current);
+      const options = mimeType ? { mimeType } : undefined;
+      const recorder = new MediaRecorder(mediaStreamRef.current, options);
       if (recorder) {
         recorder.addEventListener('dataavailable', handleDataAvailable);
         recorder.addEventListener('error', handleError);
@@ -147,8 +149,8 @@ export function useMediaRecorder(
     return undefined;
   }
 
-  function startRecording(timeSlice?: number) {
-    const recorder = mediaRecorderRef.current || startRecorder();
+  function startRecording(timeSlice?: number, mimeType?: string) {
+    const recorder = mediaRecorderRef.current || startRecorder(mimeType);
     setPlayerUrl('');
     mediaChunks.current = [];
     if (recorder) {
@@ -182,7 +184,10 @@ export function useMediaRecorder(
     }
   }
   return {
-    startRecording: allowRecord ? startRecording : () => false,
+    startRecording: allowRecord
+      ? (timeSlice?: number, mimeType?: string) =>
+          startRecording(timeSlice, mimeType)
+      : () => false,
     stopRecording: allowRecord ? stopRecording : noop,
     pauseRecording: allowRecord ? pauseRecording : noop,
     resumeRecording: allowRecord ? resumeRecording : noop,
