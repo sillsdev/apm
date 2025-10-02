@@ -414,7 +414,7 @@ export const Uploader = (props: IProps) => {
   }, [uploadError]);
 
   useEffect(() => {
-    if (importList) {
+    if (importList && importList.length > 0) {
       uploadMedia(importList);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
