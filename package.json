@@ -162,6 +162,7 @@
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.19",
     "prettier": "^3.5.3",
+    "puppeteer": "^24.23.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "rimraf": "^6.0.1",
