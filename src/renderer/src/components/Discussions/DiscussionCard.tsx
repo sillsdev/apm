@@ -242,7 +242,8 @@ export const DiscussionCard = (props: IProps) => {
   const [confirmAction, setConfirmAction] = useState('');
   const changeRef = useRef(false);
   const [myChanged, setMyChanged] = useState(false);
-  const savingRef = useRef(false);
+  const segSavingRef = useRef(false);
+  const cardSavingRef = useRef(false);
   const [showMove, setShowMove] = useState(false);
   const [moveTo, setMoveTo] = useState<string>();
   const waitForRemoteQueue = useWaitForRemoteQueue();
@@ -526,8 +527,8 @@ export const DiscussionCard = (props: IProps) => {
     refreshList();
   };
   const handleSetSegment = async () => {
-    if (savingRef.current) return;
-    savingRef.current = true;
+    if (segSavingRef.current) return;
+    segSavingRef.current = true;
     const ops: RecordOperation[] = [];
     const ops2: RecordOperation[] = [];
     const t = new RecordTransformBuilder();
@@ -582,7 +583,7 @@ export const DiscussionCard = (props: IProps) => {
     );
     await memory.update(ops);
     if (ops2.length > 0) await memory.update(ops2);
-    savingRef.current = false;
+    segSavingRef.current = false;
     setTimeout(() => {
       const start = parseFloat(currentSegment.split('-')[0] || '0');
       if (!isNaN(start)) handleHighlightDiscussion(start);
@@ -776,6 +777,8 @@ export const DiscussionCard = (props: IProps) => {
 
   const handleSave = async () => {
     //if there is an audio comment, start the upload
+    if (cardSavingRef.current) return;
+    cardSavingRef.current = true;
     if (canSaveRecording && !commentMediaId.current) {
       startSave(NewCommentToolId);
       //we'll do the rest in afterUpload
@@ -785,9 +788,12 @@ export const DiscussionCard = (props: IProps) => {
     }
     setMoveTo(undefined);
     await saveMyComment();
+    cardSavingRef.current = false;
   };
 
   const handleCancel = () => {
+    if (cardSavingRef.current) return;
+    cardSavingRef.current = true;
     commentText.current = '';
     commentMediaId.current = '';
     onAddComplete && onAddComplete('');
@@ -795,6 +801,7 @@ export const DiscussionCard = (props: IProps) => {
     setChanged(false);
     setMoveTo(undefined);
     clearCompleted(myToolId);
+    cardSavingRef.current = false;
   };
 
   const version = useMemo(() => {
@@ -805,12 +812,12 @@ export const DiscussionCard = (props: IProps) => {
   }, [discussion, mediafiles]);
 
   useEffect(() => {
-    if (saveRequested(myToolId) && !savingRef.current) {
+    if (saveRequested(myToolId) && !segSavingRef.current) {
       myCommentIds.forEach((id) => startSave(id));
-      savingRef.current = true;
+      segSavingRef.current = true;
       handleSave().then(() => {
         waitForRemoteQueue('discussion save').then(() => {
-          savingRef.current = false;
+          segSavingRef.current = false;
         });
       });
     } else if (clearRequested(myToolId)) {
@@ -967,6 +974,8 @@ export const DiscussionCard = (props: IProps) => {
                     onClick={handleSave}
                     sx={lightButton}
                     disabled={
+                      cardSavingRef.current ||
+                      segSavingRef.current ||
                       !mediafileId ||
                       editSubject === '' ||
                       !(canSaveRecording || myComments.length > 0 || comment)
@@ -978,6 +987,7 @@ export const DiscussionCard = (props: IProps) => {
                     id={`cancel-${discussion.id}`}
                     onClick={handleCancel}
                     sx={lightButton}
+                    disabled={cardSavingRef.current || segSavingRef.current}
                   >
                     {ts.cancel}
                   </Button>
