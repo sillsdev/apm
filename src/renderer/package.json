@@ -59,7 +59,6 @@
     "array-move": "^4.0.0",
     "audio-recorder-polyfill": "^0.4.1",
     "axios": "^1.11.0",
-    "audiobuffer-to-wav": "^1.0.0",
     "browser-image-compression": "^2.0.2",
     "electron-updater": "^6.3.9",
     "fingerprintjs2": "^2.1.4",
@@ -87,6 +86,7 @@
     "remark-gfm": "^4.0.1",
     "styled-components": "^6.1.19",
     "url-parse": "^1.5.10",
+    "vorbis-encoder-js": "^1.0.2",
     "wavesurfer.js": "^7.10.1",
     "xpath": "^0.0.34"
   },
@@ -142,7 +142,6 @@
     "@testing-library/jest-dom": "5.17.0",
     "@testing-library/react": "15.0.7",
     "@testing-library/user-event": "14.6.1",
-    "@types/audiobuffer-to-wav": "^1.0.4",
     "@types/fingerprintjs2": "^2.0.0",
     "@types/jest": "29.5.14",
     "@types/jwt-decode": "^2.2.1",

@@ -411,7 +411,19 @@ function WSAudioPlayer(props: IProps) {
       wsPause(); //stop if playing
       recordStartPosition.current = wsPosition();
       wsStartRecord();
-      setRecording(startRecording(500));
+      let mimeType = 'audio/webm';
+      if (acceptedMimes.length > 0) {
+        // Check if WAV is supported first
+        const wavMime = acceptedMimes.find(
+          (mime) => mime.mimeType === 'audio/wav'
+        );
+        if (wavMime) {
+          mimeType = wavMime.mimeType;
+        } else {
+          mimeType = acceptedMimes[0].mimeType;
+        }
+      }
+      setRecording(startRecording(500, mimeType));
 
       insertingRef.current = durationRef.current > 0;
       recordOverwritePosition.current = insertingRef.current

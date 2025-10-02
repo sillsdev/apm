@@ -41,6 +41,7 @@ export const loadBlobAsync = async (url: string): Promise<Blob | undefined> => {
     try {
       if (url.startsWith('http')) {
         const r = await fetch(url);
+        if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
         return await r.blob();
       } else {
         const source = await ipc?.read(
