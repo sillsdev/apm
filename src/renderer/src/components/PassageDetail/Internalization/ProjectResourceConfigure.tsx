@@ -86,11 +86,6 @@ const StyledTable = styled('div')(({ theme }) => ({
   },
 }));
 
-interface Segs {
-  start: number;
-  end: number;
-}
-
 interface ICell {
   value: any;
   readOnly?: boolean;
@@ -244,19 +239,17 @@ export const ProjectResourceConfigure = (props: IProps) => {
         for (const i of infoRef.current) {
           if (canceling.current) break;
           ix += 1;
-          let row = d[ix] as ICell[];
-          while ((row[ColName.Ref] as ICell).value === '' && ix < d.length) {
+          let row = d[ix];
+          while (row[ColName.Ref].value === '' && ix < d.length) {
             ix += 1;
-            row = d[ix] as ICell[];
+            row = d[ix];
           }
-          const limitValue = (row[ColName.Limits] as ICell).value;
-          const refValue = (row[ColName.Ref] as ICell).value;
+          const limitValue = row[ColName.Limits].value;
+          const refValue = row[ColName.Ref].value;
           const topic = `${
             media.attributes.topic ? media.attributes.topic + ' -' : ''
           }${
-            (row[ColName.Desc] as ICell).value
-              ? (row[ColName.Desc] as ICell).value
-              : refValue
+            row[ColName.Desc].value ? row[ColName.Desc].value : refValue
           } ${suffix}`;
           if (limitValue && refValue) {
             await projectResourceSave({
@@ -323,13 +316,13 @@ export const ProjectResourceConfigure = (props: IProps) => {
   const handleCopy = () => {
     const config: string[] = [];
     dataRef.current
-      .filter((_v, i) => i > 0)
+      .filter((v, i) => i > 0)
       .forEach((row) => {
-        const rLimit = row[ColName.Limits] as ICell;
-        const rRef = row[ColName.Ref] as ICell;
-        const rDesc = row[ColName.Desc] as ICell;
-        const rConf = rLimit.value + '\t' + rRef.value + '\t' + rDesc.value;
-        config.push(rConf);
+        config.push(
+          `${row[ColName.Limits].value}\t${row[ColName.Ref].value}\t${
+            row[ColName.Desc].value
+          }`
+        );
       });
 
     const content = config.join('\n');
@@ -349,19 +342,19 @@ export const ProjectResourceConfigure = (props: IProps) => {
     const duration = media?.attributes.duration || 0;
     const psgIndexes = items.map((r) => r?.type === 'passage');
     const segBoundaries = newData
-      .filter((_r, i) => i > 0 && psgIndexes[i - 1])
-      .map((s) => (s[ColName.Limits] as ICell).value); //should be like "0.0-34.9"
+      .filter((r, i) => i > 0 && psgIndexes[i - 1])
+      .map((s) => s[ColName.Limits].value); //should be like "0.0-34.9"
     let regs = segBoundaries
       .map((b: string) => {
         const boundaries = b.split('-');
         if (
           boundaries.length > 1 &&
-          !isNaN(parseFloat(boundaries[0] ?? '0')) &&
-          !isNaN(parseFloat(boundaries[1] ?? '0'))
+          !isNaN(parseFloat(boundaries[0])) &&
+          !isNaN(parseFloat(boundaries[1]))
         )
           return {
-            start: parseFloat(boundaries[0] ?? '0'),
-            end: parseFloat(boundaries[1] ?? '0'),
+            start: parseFloat(boundaries[0]),
+            end: parseFloat(boundaries[1]),
           };
         return { start: 0, end: 0 };
       })
@@ -381,8 +374,8 @@ export const ProjectResourceConfigure = (props: IProps) => {
         r.end = media?.attributes.duration;
         updated++;
       }
-      if (i > 0 && r.start !== (regs[i - 1] as Segs).end) {
-        r.start = (regs[i - 1] as Segs).end;
+      if (i > 0 && r.start !== regs[i - 1].end) {
+        r.start = regs[i - 1].end;
         updated++;
       }
     });
@@ -396,16 +389,16 @@ export const ProjectResourceConfigure = (props: IProps) => {
       showMessage(tt.noData.replace('{0}', t.clipboard));
       return [];
     }
-    const rawWidth = (rawData[0] as string[]).length;
+    const rawWidth = rawData[0].length;
     if (![2, 3].includes(rawWidth)) {
       showMessage(t.pasteFormat);
       return [];
     }
     let isCol0Ref = false;
     if (rawWidth === 2) {
-      const col0 = (rawData[0] as string[])[0] as string;
+      const col0 = rawData[0][0];
       for (const row of data) {
-        if ((row[ColName.Ref] as ICell).value.trim() === col0) {
+        if (row[ColName.Ref].value.trim() === col0) {
           isCol0Ref = true;
           break;
         }
@@ -413,21 +406,18 @@ export const ProjectResourceConfigure = (props: IProps) => {
     }
     const refMap = new Map<string, string[]>();
     rawData.forEach((row) => {
-      refMap.set(isCol0Ref ? (row[0] as string) : (row[1] as string), row);
+      refMap.set(isCol0Ref ? row[0] : row[1], row);
     });
     let changed = false;
     const newData = data.map((row, i) => {
       if (i === 0) return row;
-      const rowRef = row[ColName.Ref] as ICell;
-      const ref = rowRef.value.trim();
+      const ref = row[ColName.Ref].value.trim();
       const raw = refMap.get(ref);
       if (!raw) return row;
       changed = true;
       if (rawWidth === 3) return rowCells(raw);
-      const limits = row[ColName.Limits] as ICell;
-      if (isCol0Ref) return rowCells([limits.value].concat(raw));
-      const desc = row[ColName.Desc] as ICell;
-      return rowCells(raw.concat([desc.value]));
+      if (isCol0Ref) return rowCells([row[ColName.Limits].value].concat(raw));
+      return rowCells(raw.concat([row[ColName.Desc].value]));
     });
     if (!changed) {
       showMessage(t.pasteNoChange);
@@ -448,8 +438,7 @@ export const ProjectResourceConfigure = (props: IProps) => {
   const handleCellsChanged = (changes: Array<ICellChange>) => {
     const newData = dataRef.current.map((r) => r);
     changes.forEach((c) => {
-      const cell = (newData[c.row] as ICell[])[c.col] as ICell;
-      cell.value = c.value;
+      newData[c.row][c.col].value = c.value;
     });
     setData(newData);
   };
@@ -468,7 +457,7 @@ export const ProjectResourceConfigure = (props: IProps) => {
 
     let change = false;
     const newData = new Array<ICell[]>();
-    newData.push(dataRef.current[0] as ICell[]);
+    newData.push(dataRef.current[0]);
     const dlen = dataRef.current.length;
     const ilen = infoRef.current.length;
     let ix = 0;
@@ -476,33 +465,28 @@ export const ProjectResourceConfigure = (props: IProps) => {
     const secI = new Map<number, number>();
     regions.forEach((r) => {
       const v = prettySegment(r);
-      const curInfo = infoRef.current[ix] as IInfo;
-      while (ix < ilen && curInfo.passage === undefined) {
-        secI.set(curInfo.secNum, ix + 1);
+      while (ix < ilen && infoRef.current[ix].passage === undefined) {
+        secI.set(infoRef.current[ix].secNum, ix + 1);
         ix += 1;
-        newData.push(dataRef.current[ix] as ICell[]);
+        newData.push(dataRef.current[ix]);
       }
       if (ix < ilen) {
         const [vStart, vEnd] = v.split('-').map((n) => parseFloat(n));
-        const secNum = curInfo.secNum;
+        const secNum = infoRef.current[ix].secNum;
         if (regs.has(secNum)) {
           regs.set(secNum, {
-            start: Math.min(
-              vStart as number,
-              regs.get(secNum)?.start as number
-            ),
-            end: Math.max(vEnd as number, regs.get(secNum)?.end as number),
+            start: Math.min(vStart, regs.get(secNum)?.start as number),
+            end: Math.max(vEnd, regs.get(secNum)?.end as number),
           });
         } else {
-          regs.set(secNum, { start: vStart as number, end: vEnd as number });
+          regs.set(secNum, { start: vStart, end: vEnd });
         }
       }
       const dx = ix + 1; // account for header
       if (dx < dlen) {
-        const row = (dataRef.current[dx] as ICell[]).map((v) => v);
-        const limits = row[ColName.Limits] as ICell;
-        if (limits.value !== v) {
-          limits.value = v;
+        const row = dataRef.current[dx].map((v) => v);
+        if (row[ColName.Limits].value !== v) {
+          row[ColName.Limits].value = v;
           change = true;
         }
         newData.push(row);
@@ -515,15 +499,15 @@ export const ProjectResourceConfigure = (props: IProps) => {
     });
     secI.forEach((v, k) => {
       if (regs.has(k)) {
-        const limits = (newData[v] as ICell[])[ColName.Limits] as ICell;
-        limits.value = prettySegment(regs.get(k) as IRegion);
+        newData[v][ColName.Limits].value = prettySegment(
+          regs.get(k) as IRegion
+        );
       }
     });
     for (let i = newData.length; i < dataRef.current.length; i += 1) {
-      const row = (dataRef.current[i] as ICell[]).map((r) => r);
-      const limits = row[ColName.Limits] as ICell;
-      if (limits.value !== '') {
-        limits.value = '';
+      const row = dataRef.current[i].map((r) => r);
+      if (row[ColName.Limits].value !== '') {
+        row[ColName.Limits].value = '';
         change = true;
       }
       newData.push(row);
