@@ -246,6 +246,7 @@ export function PassageDetailRecord(props: IProps) {
         onRecording={handleRecording}
         defaultFilename={defaultFilename}
         allowRecord={hasRights && canDoVernacular(related(passage, 'section'))}
+        allowZoom={true}
         allowWave={true}
         showFilename={true}
         showLoad={false}

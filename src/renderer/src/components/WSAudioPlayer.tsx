@@ -1046,7 +1046,7 @@ function WSAudioPlayer(props: IProps) {
                   <Grid>
                     <WSAudioPlayerZoom
                       // startBig={allowRecord || false}
-                      ready={ready && !recording}
+                      ready={ready && !recording && !waitingForAI}
                       fillPx={recording ? 100 : wsFillPx()}
                       curPx={pxPerSec}
                       onZoom={wsZoom}
