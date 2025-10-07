@@ -1,5 +1,5 @@
 import React from 'react';
-import MediaActions from './MediaActions';
+import PlayCell from './PlayCell';
 import { PassageTypeEnum } from '../../model/passageType';
 
 export interface IRow {
@@ -21,5 +21,5 @@ export interface IRow {
   publishTo: string;
   passageType: PassageTypeEnum;
   user: string;
-  actions: typeof MediaActions;
+  actions: typeof PlayCell;
 }
