@@ -4,8 +4,6 @@ import {
   ISharedStrings,
   IState,
 } from '../model';
-import DataTable from './DataTable';
-import { Sorting } from '@devexpress/dx-react-grid';
 import { ActionRow, AltButton, GrowingSpacer, PriButton } from '../control';
 import { shallowEqual, useSelector } from 'react-redux';
 import { passageDetailArtifactsSelector, sharedSelector } from '../selector';
@@ -23,12 +21,18 @@ import {
   Typography,
   styled,
 } from '@mui/material';
+import {
+  DataGrid,
+  type GridRowSelectionModel,
+  type GridColDef,
+} from '@mui/x-data-grid';
 import BookSelect, { OptionType } from './BookSelect';
 import { useGlobal } from '../context/useGlobal';
 import { usePlanType } from '../crud';
 import usePassageDetailContext from '../context/usePassageDetailContext';
 import { ResourceTypeEnum } from './PassageDetail/Internalization/ResourceTypeEnum';
 import { RefLevel } from './RefLevel';
+import { GridSortItem } from '@mui/x-data-grid/models/gridSortModel';
 
 interface RefOption {
   value: RefLevel;
@@ -88,6 +92,10 @@ export const PassageDataTable = (props: IProps) => {
   } = props;
   const [refLevel, setRefLevel] = useState<RefLevel>(RefLevel.Verse);
   const [checks, setChecks] = useState<number[]>([]);
+  const [selectedRows, setSelectedRows] = useState<GridRowSelectionModel>({
+    type: 'include',
+    ids: new Set(),
+  });
   const [termsCheck, setTermsCheck] = useState<number[]>([]);
   const [curTermsCheck, setCurTermsCheck] = useState<number>();
   const [bookOpt, setBookOpt] = useState<OptionType>();
@@ -103,44 +111,68 @@ export const PassageDataTable = (props: IProps) => {
     shallowEqual
   );
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
-  const columnDefs = !isNote
+  const columns: GridColDef<IRRow>[] = !isNote
     ? [
-        { name: 'language', title: t.language },
-        { name: 'category', title: t.category },
-        { name: 'title', title: t.title },
-        { name: 'description', title: t.description },
-        { name: 'version', title: t.version },
-        { name: 'keywords', title: t.keywords },
-        { name: 'terms', title: t.termsOfUse },
-        { name: 'source', title: t.source },
+        { field: 'language', headerName: t.language, width: 150 },
+        { field: 'category', headerName: t.category, width: 150 },
+        {
+          field: 'title',
+          headerName: t.title,
+          width: 200,
+          cellClassName: 'warp-text',
+        },
+        {
+          field: 'description',
+          headerName: t.description,
+          width: 200,
+          cellClassName: 'warp-text',
+        },
+        { field: 'version', headerName: t.version, width: 100 },
+        {
+          field: 'keywords',
+          headerName: t.keywords,
+          width: 200,
+          cellClassName: 'warp-text',
+        },
+        { field: 'terms', headerName: t.termsOfUse, width: 100 },
+        {
+          field: 'source',
+          headerName: t.source,
+          width: 200,
+          cellClassName: 'warp-text',
+        },
       ]
     : [
-        { name: 'category', title: t.category },
-        { name: 'title', title: t.title },
-        { name: 'description', title: t.description },
-        { name: 'keywords', title: t.keywords },
-        { name: 'source', title: t.source },
+        { field: 'category', headerName: t.category, width: 150 },
+        {
+          field: 'title',
+          headerName: t.title,
+          width: 200,
+          cellClassName: 'warp-text',
+        },
+        {
+          field: 'description',
+          headerName: t.description,
+          width: 200,
+          cellClassName: 'warp-text',
+        },
+        {
+          field: 'keywords',
+          headerName: t.keywords,
+          width: 200,
+          cellClassName: 'warp-text',
+        },
+        {
+          field: 'source',
+          headerName: t.source,
+          width: 200,
+          cellClassName: 'warp-text',
+        },
       ];
-  const columnWidths = [
-    { columnName: 'language', width: 150 },
-    { columnName: 'category', width: 150 },
-    { columnName: 'title', width: 200 },
-    { columnName: 'description', width: 200 },
-    { columnName: 'version', width: 100 },
-    { columnName: 'keywords', width: 200 },
-    { columnName: 'terms', width: 100 },
-    { columnName: 'source', width: 200 },
-  ];
-  const columnFormatting = [
-    { columnName: 'title', wordWrapEnabled: true },
-    { columnName: 'description', wordWrapEnabled: true },
-    { columnName: 'keywords', wordWrapEnabled: true },
-    { columnName: 'source', wordWrapEnabled: true },
-  ];
-  const sorting: Sorting[] = [
-    { columnName: 'language', direction: 'asc' },
-    { columnName: 'category', direction: 'asc' },
-    { columnName: 'title', direction: 'asc' },
+  const sortModel: GridSortItem[] = [
+    { field: 'language', sort: 'asc' },
+    { field: 'category', sort: 'asc' },
+    { field: 'title', sort: 'asc' },
   ];
   const referenceLevel: RefOption[] = [
     {
@@ -174,8 +206,17 @@ export const PassageDataTable = (props: IProps) => {
 
   useEffect(() => {
     const val = value ?? -1;
-    if (val >= 0 && val < data.length && checks.findIndex((r) => r === val) < 0)
+    if (
+      val >= 0 &&
+      val < data.length &&
+      checks.findIndex((r) => r === val) < 0
+    ) {
       setChecks([val]);
+      setSelectedRows({
+        type: 'include',
+        ids: new Set([val]),
+      });
+    }
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value, data]); //don't add checks
@@ -194,7 +235,8 @@ export const PassageDataTable = (props: IProps) => {
 
   const numSort = (i: number, j: number) => i - j;
 
-  const handleCheck = (chks: Array<number>) => {
+  const handleRowSelectionChange = (newRows: GridRowSelectionModel) => {
+    let chks = Array.from(newRows.ids).map((id) => parseInt(id as string));
     //if we're a note, we want single select so if there are more than one, we take the last one
     if (isNote && chks.length > 1) chks = [chks[chks.length - 1] ?? 0];
     const curLen = checks.length;
@@ -212,7 +254,14 @@ export const PassageDataTable = (props: IProps) => {
         }
       }
       if (noTermsList.length > 0) {
-        setChecks((isNote ? [] : checks).concat(noTermsList).sort(numSort));
+        const newChecks = (isNote ? [] : checks)
+          .concat(noTermsList)
+          .sort(numSort);
+        setChecks(newChecks);
+        setSelectedRows({
+          type: 'include',
+          ids: new Set(newChecks),
+        });
       }
       if (termsList.length > 0) {
         setTermsCheck(termsList);
@@ -220,6 +269,10 @@ export const PassageDataTable = (props: IProps) => {
       }
     } else if (curLen > newLen) {
       setChecks(chks);
+      setSelectedRows({
+        type: 'include',
+        ids: new Set(chks),
+      });
     }
   };
 
@@ -240,8 +293,14 @@ export const PassageDataTable = (props: IProps) => {
 
   const handleTermsAccept = () => {
     //note is single select so we can just replace the check
-    if (curTermsCheck !== undefined)
-      setChecks((isNote ? [] : checks).concat([curTermsCheck]));
+    if (curTermsCheck !== undefined) {
+      const newChecks = (isNote ? [] : checks).concat([curTermsCheck]);
+      setChecks(newChecks);
+      setSelectedRows({
+        type: 'include',
+        ids: new Set(newChecks),
+      });
+    }
     handleTermsReject();
   };
 
@@ -315,9 +374,11 @@ export const PassageDataTable = (props: IProps) => {
                   variant="outlined"
                   value={findRef}
                   onChange={handleFindRefChange}
-                  inputProps={{
-                    sx: { py: 1 },
-                    placeholder: passage?.attributes.reference ?? t.reference,
+                  slotProps={{
+                    input: {
+                      sx: { py: 1 },
+                      placeholder: passage?.attributes.reference ?? t.reference,
+                    },
                   }}
                   sx={{ width: '400px' }}
                 />
@@ -341,16 +402,22 @@ export const PassageDataTable = (props: IProps) => {
           )}
         </Stack>
       )}
-      <DataTable
-        columns={columnDefs}
-        columnWidths={columnWidths}
-        columnFormatting={columnFormatting}
-        sorting={sorting}
-        rows={data}
-        select={handleCheck}
-        checks={checks}
-        shaping={true}
-        expandedGroups={[]} // shuts off toolbar row
+      <DataGrid
+        columns={columns}
+        rows={data.map((r, i) => ({ ...r, id: i }))}
+        initialState={{
+          sorting: { sortModel },
+        }}
+        checkboxSelection
+        disableRowSelectionOnClick
+        rowSelectionModel={selectedRows}
+        onRowSelectionModelChange={handleRowSelectionChange}
+        sx={{
+          '& .wrap-text': {
+            whiteSpace: 'break-spaces',
+            lineHeight: '1.2',
+          },
+        }}
       />
       <ActionRow>
         <AltButton id="res-select-cancel" onClick={handleCancel}>
