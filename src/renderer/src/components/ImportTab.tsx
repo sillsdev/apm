@@ -48,7 +48,6 @@ import {
   useOrganizedBy,
   SetUserLanguage,
 } from '../crud';
-import ShapingTable from './ShapingTable';
 import { isElectron } from '../../api-variable';
 import { HeadHeight } from '../App';
 import {
@@ -70,6 +69,12 @@ import {
   ImportSyncFromElectronProps,
 } from '../store';
 import { RecordIdentity, RecordKeyMap } from '@orbit/records';
+import {
+  DataGrid,
+  type GridColDef,
+  type GridColumnVisibilityModel,
+  type GridSortModel,
+} from '@mui/x-data-grid';
 
 const headerProps = {
   display: 'flex',
@@ -94,6 +99,19 @@ const ProgressBar = styled(AppBar)<AppBarProps>(({ theme }) => ({
   zIndex: 100,
   width: '100%',
 }));
+
+interface IRow {
+  plan: string;
+  section: string;
+  passage: React.ReactNode;
+  other: string;
+  old: string;
+  imported: string;
+}
+
+const initialColumnVisibilityModel: GridColumnVisibilityModel = {
+  other: false,
+};
 
 interface IProps {
   project?: string;
@@ -124,14 +142,6 @@ export function ImportTab(props: IProps) {
     dispatch(actions.importProjectFromElectron(props) as any);
   const importSyncFromElectron = (props: ImportSyncFromElectronProps) =>
     dispatch(actions.importSyncFromElectron(props) as any);
-  interface IRow {
-    plan: string;
-    section: string;
-    passage: React.ReactNode;
-    other: string;
-    old: string;
-    imported: string;
-  }
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [, setBusy] = useGlobal('importexportBusy');
   const importingRef = useRef(false);
@@ -149,7 +159,6 @@ export function ImportTab(props: IProps) {
   const [fileName, setFileName] = useState<string>('');
   const [importProject, setImportProject] = useState<string>('');
   const [uploadVisible, setUploadVisible] = useState(false);
-  const [hiddenColumnNames, setHiddenColumnNames] = useState<string[]>([]);
   const { getOrganizedBy } = useOrganizedBy();
   const forceDataChanges = useDataChanges();
   const { handleElectronImport, getElectronImportData } = useElectronImport();
@@ -186,26 +195,32 @@ export function ImportTab(props: IProps) {
         showMessage(t.copyfail);
       });
   };
-  const columnDefs = [
-    { name: 'plan', title: t.plan },
-    { name: 'section', title: getOrganizedBy(true) },
-    { name: 'passage', title: t.passage },
-    { name: 'other', title: t.other },
-    { name: 'old', title: t.old },
-    { name: 'imported', title: t.imported },
+  const columns: GridColDef<IRow>[] = [
+    { field: 'plan', headerName: t.plan, width: 200 },
+    { field: 'section', headerName: getOrganizedBy(true), width: 100 },
+    { field: 'passage', headerName: t.passage, width: 100 },
+    { field: 'other', headerName: t.other, width: 100 },
+    {
+      field: 'old',
+      headerName: t.old,
+      width: 220,
+      align: 'left',
+      cellClassName: 'word-wrap',
+    },
+    {
+      field: 'imported',
+      headerName: t.imported,
+      width: 220,
+      align: 'left',
+      cellClassName: 'word-wrap',
+    },
   ];
-  const columnWidths = [
-    { columnName: 'plan', width: 200 },
-    { columnName: 'section', width: 100 },
-    { columnName: 'passage', width: 100 },
-    { columnName: 'other', width: 100 },
-    { columnName: 'old', width: 220 },
-    { columnName: 'imported', width: 220 },
+  const sortModel: GridSortModel = [
+    { field: 'plan', sort: 'asc' },
+    { field: 'section', sort: 'asc' },
   ];
-  const columnFormatting = [
-    { columnName: 'old', aligh: 'left', wordWrapEnabled: true },
-    { columnName: 'imported', aligh: 'left', wordWrapEnabled: true },
-  ];
+  const [columnVisibilityModel, setColumnVisibilityModel] =
+    useState<GridColumnVisibilityModel>({ ...initialColumnVisibilityModel });
 
   useEffect(() => {
     const electronImport = async () => {
@@ -652,8 +667,9 @@ export function ImportTab(props: IProps) {
       });
     }
 
-    if (data.findIndex((r) => r.other !== '') > -1) setHiddenColumnNames([]);
-    else setHiddenColumnNames(['other']);
+    if (data.findIndex((r) => r.other !== '') > -1)
+      setColumnVisibilityModel({});
+    else setColumnVisibilityModel({ ...initialColumnVisibilityModel });
     return data;
   };
 
@@ -751,16 +767,13 @@ export function ImportTab(props: IProps) {
             </ActionRow>
           )}
           {changeData.length > 0 && (
-            <ShapingTable
-              columns={columnDefs}
-              columnWidths={columnWidths}
-              sorting={[
-                { columnName: 'plan', direction: 'asc' },
-                { columnName: 'section', direction: 'asc' },
-              ]}
-              rows={changeData}
-              hiddenColumnNames={hiddenColumnNames}
-              columnFormatting={columnFormatting}
+            <DataGrid
+              columns={columns}
+              rows={changeData.map((r, i) => ({ ...r, id: i }))}
+              initialState={{
+                sorting: { sortModel },
+                columns: { columnVisibilityModel },
+              }}
             />
           )}
           {!importStatus || (

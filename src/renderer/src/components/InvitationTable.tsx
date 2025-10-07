@@ -27,7 +27,11 @@ import { useSelector } from 'react-redux';
 import { invitationTableSelector, sharedSelector } from '../selector';
 import { useOrbitData } from '../hoc/useOrbitData';
 import { RecordIdentity } from '@orbit/records';
-import { DataGrid, GridColDef, GridRowSelectionModel } from '@mui/x-data-grid';
+import {
+  DataGrid,
+  type GridColDef,
+  type GridRowSelectionModel,
+} from '@mui/x-data-grid';
 
 interface IRow {
   email: string;
