@@ -543,31 +543,24 @@ export function useWaveSurfer(
     } else return undefined;
   };
 
-  const insertBlob = async (
-    blob: Blob,
+  const insertAudioData = async (
+    newBuffer: AudioBuffer,
     startposition: number,
     endposition: number | undefined
   ) => {
     if (!wavesurferRef.current) return 0;
-    const newBuffer = await decodeAudioData(
-      audioContext(),
-      await blob.arrayBuffer()
-    );
 
-    if (endposition === undefined || !blobAudioRef.current) {
-      const position = newBuffer ? newBuffer.length / newBuffer.sampleRate : 0;
-      loadBlob(blob, position);
-      return position;
-    }
     const originalBuffer = blobAudioRef.current;
+    if (endposition === undefined || !originalBuffer) {
+      await loadDecoded(newBuffer, startposition);
+      return newBuffer.length / newBuffer.sampleRate;
+    }
 
-    if (!originalBuffer) return 0;
     const start_offset = (startposition * originalBuffer.sampleRate) >> 0;
     const after_offset = (endposition * originalBuffer.sampleRate) >> 0;
     let after_len = originalBuffer.length - after_offset;
     if (after_len < 0) after_len = 0;
     const new_len = start_offset + newBuffer.length + after_len;
-
     let uberSegment = null;
     uberSegment = audioContext().createBuffer(
       originalBuffer.numberOfChannels,
@@ -589,23 +582,25 @@ export function useWaveSurfer(
           start_offset + newBuffer.length
         );
     }
-    const position =
-      (start_offset + newBuffer.length) / originalBuffer.sampleRate;
+    const position = (start_offset + newBuffer.length) / newBuffer.sampleRate;
     await loadDecoded(uberSegment, position);
 
     return position;
   };
 
   const wsInsertAudio = async (
-    blob: Blob,
+    blob: Blob | undefined,
+    buffer: AudioBuffer | undefined,
     position: number,
     overwriteToPosition: number | undefined
-    /*mimeType?: string*/
   ) => {
     if (!wavesurferRef.current) throw new Error('wavesurfer closed'); //closed while we were working on the blob
-    if (blob.size === 0) return position;
+    if (blob && !buffer) {
+      buffer = await decodeAudioData(audioContext(), await blob.arrayBuffer());
+    }
+    if (buffer?.length === 0) return position;
     try {
-      return await insertBlob(blob, position, overwriteToPosition);
+      return await insertAudioData(buffer!, position, overwriteToPosition);
     } catch (error: any) {
       logError(Severity.error, errorReporter, error);
       throw error;

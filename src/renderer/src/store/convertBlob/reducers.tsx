@@ -1,3 +1,4 @@
+import { DEFAULT_COMPRESSED_MIME } from '../../components/MediaRecord';
 import {
   ConvertBlobMsgs,
   CONVERT_BLOB_FAILED,
@@ -11,7 +12,7 @@ import {
 export const convertBlobCleanState = {
   guid: '',
   blob: {},
-  mimeType: 'audio/ogg;codecs=opus',
+  mimeType: DEFAULT_COMPRESSED_MIME,
   statusmsg: '',
   errmsg: '',
   complete: false,

@@ -26,6 +26,7 @@ import {
   MediaSt,
   useFetchMediaUrl,
   useMediaUpload,
+  convertToWebM,
 } from '../crud';
 import { useSnackBar } from '../hoc/SnackBar';
 import { UnsavedContext } from '../context/UnsavedContext';
@@ -76,6 +77,7 @@ interface IProps {
   allowNoNoise?: boolean;
   allowZoom?: boolean;
 }
+export const DEFAULT_COMPRESSED_MIME = 'audio/ogg;codecs=opus';
 
 function MediaRecord(props: IProps) {
   const {
@@ -142,7 +144,7 @@ function MediaRecord(props: IProps) {
   const filechangedRef = useRef(false);
   const [recording, setRecording] = useState(false);
   const [blobReady, setBlobReady] = useState(true);
-  const [mimeType, setMimeType] = useState('audio/ogg;codecs=opus');
+  const [mimeType, setMimeType] = useState(DEFAULT_COMPRESSED_MIME);
   const [compression, setCompression] = useState(20);
   const [warning, setWarning] = useState('');
   const [tooBig, setTooBig] = useState(false);
@@ -326,13 +328,21 @@ function MediaRecord(props: IProps) {
           saveRef.current = true;
           if (mimeType !== 'audio/wav') {
             setConverting(true);
-            guidRef.current = generateUUID();
-            waitForIt(
-              'previous convert',
-              () => convert_guid === '',
-              () => false,
-              300
-            ).then(() => convertBlob(audioBlob, mimeType, guidRef.current));
+            if (mimeType === 'audio/ogg;codecs=opus') {
+              guidRef.current = generateUUID();
+              waitForIt(
+                'previous convert',
+                () => convert_guid === '',
+                () => false,
+                300
+              ).then(() => convertBlob(audioBlob, mimeType, guidRef.current));
+            } else {
+              convertToWebM(audioBlob).then((convert_blob) =>
+                doUpload(convert_blob).then(() => {
+                  convertComplete();
+                })
+              );
+            }
           } else {
             doUpload(audioBlob).then(() => {
               onReady && onReady();
@@ -379,7 +389,7 @@ function MediaRecord(props: IProps) {
   }, [doReset]);
 
   const reset = () => {
-    setMimeType('audio/ogg;codecs=opus');
+    setMimeType(DEFAULT_COMPRESSED_MIME);
     setCompression(20);
     setUserHasSetName(false);
     setFilechanged(false);
@@ -392,7 +402,7 @@ function MediaRecord(props: IProps) {
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
     if (event.currentTarget.checked) {
-      setMimeType('audio/ogg;codecs=opus');
+      setMimeType(DEFAULT_COMPRESSED_MIME);
       setCompression(20);
     } else {
       setMimeType('audio/wav');

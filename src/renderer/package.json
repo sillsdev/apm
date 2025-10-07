@@ -86,7 +86,6 @@
     "remark-gfm": "^4.0.1",
     "styled-components": "^6.1.19",
     "url-parse": "^1.5.10",
-    "vorbis-encoder-js": "^1.0.2",
     "wavesurfer.js": "^7.10.1",
     "xpath": "^0.0.34"
   },

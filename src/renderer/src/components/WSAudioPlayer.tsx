@@ -27,7 +27,7 @@ import { ISharedStrings, IWsAudioPlayerStrings } from '../model';
 import { FaHandScissors, FaDotCircle, FaStopCircle } from 'react-icons/fa';
 import type { IconBaseProps } from 'react-icons/lib';
 
-import { MimeInfo, useMediaRecorder } from '../crud/useMediaRecorder';
+import { useWavRecorder } from '../crud/useWavRecorder';
 import { IMarker, useWaveSurfer } from '../crud/useWaveSurfer';
 import { Duration } from '../control/Duration';
 import { GrowingSpacer } from '../control/GrowingSpacer';
@@ -124,7 +124,6 @@ interface IProps {
   autoStart?: boolean;
   setBusy?: (busy: boolean) => void;
   setMimeType?: (type: string) => void;
-  setAcceptedMimes?: (types: MimeInfo[]) => void;
   onPlayStatus?: (playing: boolean) => void;
   onProgress?: (progress: number) => void;
   onSegmentChange?: (segments: string) => void;
@@ -185,7 +184,6 @@ function WSAudioPlayer(props: IProps) {
     autoStart,
     setBusy,
     setMimeType,
-    setAcceptedMimes,
     onProgress,
     onSegmentChange,
     onSegmentParamChange,
@@ -344,7 +342,7 @@ function WSAudioPlayer(props: IProps) {
   );
 
   //because we have to call hooks consistently, call this even if we aren't going to record
-  const { startRecording, stopRecording, acceptedMimes } = useMediaRecorder(
+  const { startRecording, stopRecording } = useWavRecorder(
     allowRecord,
     onRecordStart,
     onRecordStop,
@@ -411,19 +409,9 @@ function WSAudioPlayer(props: IProps) {
       wsPause(); //stop if playing
       recordStartPosition.current = wsPosition();
       wsStartRecord();
-      let mimeType = 'audio/webm';
-      if (acceptedMimes.length > 0) {
-        // Check if WAV is supported first
-        const wavMime = acceptedMimes.find(
-          (mime) => mime.mimeType === 'audio/wav'
-        );
-        if (wavMime) {
-          mimeType = wavMime.mimeType;
-        } else {
-          mimeType = acceptedMimes[0].mimeType;
-        }
-      }
-      setRecording(startRecording(500, mimeType));
+      startRecording(500).then((value) => {
+        setRecording(value);
+      });
 
       insertingRef.current = durationRef.current > 0;
       recordOverwritePosition.current = insertingRef.current
@@ -434,7 +422,6 @@ function WSAudioPlayer(props: IProps) {
       stopRecording();
       wsStopRecord();
       setRecording(false);
-      //TODO will this be after the wsready? if yes then do this...setPxPerSec(wsFillPx())
       if (oneTryOnly) setOneShotUsed(true);
     }
     return true;
@@ -630,10 +617,6 @@ function WSAudioPlayer(props: IProps) {
   }, [blob, doReset]); //passed in by user
 
   useEffect(() => {
-    if (setAcceptedMimes) setAcceptedMimes(acceptedMimes);
-  }, [acceptedMimes, setAcceptedMimes]);
-
-  useEffect(() => {
     wsSetPlaybackRate(playbackRate);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [playbackRate]);
@@ -676,6 +659,7 @@ function WSAudioPlayer(props: IProps) {
   async function onRecordStop(blob: Blob) {
     await wsInsertAudio(
       blob,
+      undefined,
       recordStartPosition.current,
       recordOverwritePosition.current
     );
@@ -696,10 +680,11 @@ function WSAudioPlayer(props: IProps) {
     }
   }
 
-  async function onRecordDataAvailable(e: any, blob: Blob) {
-    if (blob.size > 0) {
+  async function onRecordDataAvailable(buffer: AudioBuffer) {
+    if (buffer.length > 0) {
       const newPos = await wsInsertAudio(
-        blob,
+        undefined,
+        buffer,
         recordStartPosition.current,
         recordOverwritePosition.current
       );
