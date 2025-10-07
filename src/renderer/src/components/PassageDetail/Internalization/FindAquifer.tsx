@@ -23,11 +23,9 @@ import {
   useRole,
   useSecResCreate,
 } from '../../../crud';
-import DataTable from '../../DataTable';
 import { shallowEqual, useSelector } from 'react-redux';
 import { findResourceSelector, gridSelector } from '../../../selector';
 import { IFindResourceStrings, IGridStrings } from '../../../model';
-import { Sorting } from '@devexpress/dx-react-grid';
 import { LightTooltip, PriButton } from '../../StepEditor';
 import { OptionProps } from './FindTabs';
 import Markdown from 'react-markdown';
@@ -49,6 +47,13 @@ import { useSnackBar } from '../../../hoc/SnackBar';
 import { AxiosError } from 'axios';
 import { passageTypeFromRef } from '../../../control/passageTypeFromRef';
 import { PassageTypeEnum } from '../../../model/passageType';
+import {
+  DataGrid,
+  type GridRenderCellParams,
+  type GridColDef,
+  type GridRowSelectionModel,
+} from '@mui/x-data-grid';
+import { GridSortItem } from '@mui/x-data-grid/models/gridSortModel';
 
 // Regex to match passage references in the form "chapter:verse-chapter:verse"
 const PASSAGE_REF_REGEX = /(\d+):(\d+)-(\d+)?:?(\d+)?/g;
@@ -172,48 +177,44 @@ export default function FindAquifer({ onClose }: IProps) {
   const [errorReporter] = useGlobal('errorReporter');
   const { curNoteRef } = useNotes();
 
-  const columnDefs = [
-    { name: 'name', title: t.name },
-    { name: 'mediaType', title: t.mediaType },
-    { name: 'group', title: t.group },
-    { name: 'source', title: t.source },
+  const columns: GridColDef<DataRow>[] = [
     {
-      name: 'preview',
-      title: t.preview,
-      renderCell: (params: any) => (
+      field: 'name',
+      headerName: t.name,
+      width: 200,
+      cellClassName: 'wrap-text',
+    },
+    { field: 'mediaType', headerName: t.mediaType, width: 100 },
+    {
+      field: 'group',
+      headerName: t.group,
+      width: 120,
+      cellClassName: 'wrap-text',
+    },
+    {
+      field: 'source',
+      headerName: t.source,
+      width: 200,
+      cellClassName: 'wrap-text',
+    },
+    {
+      field: 'preview',
+      headerName: t.preview,
+      width: 100,
+      filterable: false,
+      sortable: false,
+      renderCell: (params: GridRenderCellParams<DataRow>) => (
         <IconButton onClick={(e) => handlePreviewClick(e, params.row)}>
           <PreviewIcon />
         </IconButton>
       ),
     },
   ];
-  const columnWidths = [
-    { columnName: 'name', width: 200 },
-    { columnName: 'mediaType', width: 100 },
-    { columnName: 'group', width: 120 },
-    { columnName: 'source', width: 200 },
-    { columnName: 'preview', width: 100 },
-  ];
-  const filteringEnabled = [
-    { columnName: 'name', filteringEnabled: true },
-    { columnName: 'mediaType', filteringEnabled: true },
-    { columnName: 'group', filteringEnabled: true },
-    { columnName: 'source', filteringEnabled: true },
-    { columnName: 'preview', filteringEnabled: false },
-  ];
-  const sortingEnabled = [
-    { columnName: 'name', sortingEnabled: true },
-    { columnName: 'mediaType', sortingEnabled: true },
-    { columnName: 'group', sortingEnabled: true },
-    { columnName: 'source', sortingEnabled: true },
-    { columnName: 'preview', sortingEnabled: false },
-  ];
-  const columnFormatting = [
-    { columnName: 'name', wordWrapEnabled: true },
-    { columnName: 'group', wordWrapEnabled: true },
-    { columnName: 'source', wordWrapEnabled: true },
-  ];
-  const sorting: Sorting[] = [{ columnName: 'name', direction: 'asc' }];
+  const [selectedRows, setSelectedRows] = useState<GridRowSelectionModel>({
+    type: 'include',
+    ids: new Set(),
+  });
+  const sortModel: GridSortItem[] = [{ field: 'name', sort: 'asc' }];
 
   const setAdding = (adding: boolean) => {
     setAddingx(adding);
@@ -328,8 +329,12 @@ export default function FindAquifer({ onClose }: IProps) {
     }
   }, [previewItem, token]);
 
-  const handleCheck = (chks: Array<number>) => {
+  const handleRowSelectionChange = (newRows: GridRowSelectionModel) => {
+    const chks = Array.from(newRows.ids)
+      .map((id) => parseInt(id as string))
+      .sort();
     setChecks(chks);
+    setSelectedRows(newRows);
   };
 
   const handleAdd = () => {
@@ -537,18 +542,16 @@ export default function FindAquifer({ onClose }: IProps) {
           </Stack>
         )}
         {data.length > 0 ? (
-          <DataTable
-            columns={columnDefs}
-            columnWidths={columnWidths}
-            columnFormatting={columnFormatting}
-            filteringEnabled={filteringEnabled}
-            sortingEnabled={sortingEnabled}
-            sorting={sorting}
+          <DataGrid
+            columns={columns}
             rows={data}
-            select={handleCheck}
-            checks={checks}
-            shaping={true}
-            expandedGroups={[]} // shuts off toolbar row
+            initialState={{
+              sorting: { sortModel },
+            }}
+            checkboxSelection
+            disableRowSelectionOnClick
+            onRowSelectionModelChange={handleRowSelectionChange}
+            rowSelectionModel={selectedRows}
           />
         ) : (
           <Grid
