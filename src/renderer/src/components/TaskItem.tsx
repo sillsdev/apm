@@ -74,7 +74,7 @@ export function TaskItem(props: IProps) {
           disableTypography
           primary={
             <div>
-              <Box sx={rowProp}>
+              <Box sx={{ ...rowProp, height: '20px' }}>
                 <Typography>
                   <PassageReference
                     passage={passage}
@@ -97,7 +97,7 @@ export function TaskItem(props: IProps) {
             </div>
           }
           secondary={
-            <Box sx={rowProp}>
+            <Box sx={{ ...rowProp, height: '20px' }}>
               <TaskFlag
                 ta={activityStateStr}
                 state={
