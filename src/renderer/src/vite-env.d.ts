@@ -1,9 +1,6 @@
 /// <reference types="vite/client" />
 import 'redux-thunk/extend-redux';
 
-// Import our custom DevExpress type declarations
-/// <reference path="./types/devexpress.d.ts" />
-
 declare module '*.svg' {
   const content: string;
   export default content;
