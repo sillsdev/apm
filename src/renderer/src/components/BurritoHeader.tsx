@@ -1,4 +1,4 @@
-import { Box, Grid, Typography } from '@mui/material';
+import { Box, Stack, Typography } from '@mui/material';
 import AppHead from './App/AppHead';
 import { TeamProvider } from '../context/TeamContext';
 import { AltButton } from '../control/AltButton';
@@ -29,30 +29,32 @@ export function BurritoHeader({
       <AppHead />
       <TeamProvider>
         <Box id="BurritoScreen" sx={{ display: 'flex', paddingTop: '80px' }}>
-          <Grid container alignItems="center">
-            <AltButton onClick={() => setView('/team')}>Teams</AltButton>
-            {onSave && (
-              <AltButton onClick={() => setView(`/burrito/${teamId}`)}>
-                Back
-              </AltButton>
-            )}
-            <GrowingSpacer />
-            <Typography variant="h4" component="h1" sx={{ flexGrow: 1 }}>
-              {`Scripture Burrito ${burritoType ? `- ${burritoType}` : ''}`}
-            </Typography>
-            <GrowingSpacer />
-            <Grid container spacing={5} justifyContent={'center'} sx={{ p: 5 }}>
+          <Stack direction="column" sx={{ width: '100%' }}>
+            <Stack direction="row">
+              <AltButton onClick={() => setView('/team')}>Teams</AltButton>
+              {onSave && (
+                <AltButton onClick={() => setView(`/burrito/${teamId}`)}>
+                  Back
+                </AltButton>
+              )}
+              <GrowingSpacer />
+              <Typography variant="h4" component="h1" sx={{ flexGrow: 1 }}>
+                {`Scripture Burrito ${burritoType ? `- ${burritoType}` : ''}`}
+              </Typography>
+              <GrowingSpacer />
+            </Stack>
+            <Stack spacing={5} sx={{ p: 5, margin: 'auto' }}>
               {children}
-            </Grid>
+            </Stack>
             {onSave && (
-              <Grid container justifyContent={'center'} sx={{ pt: 2 }}>
+              <Stack justifyContent={'center'} sx={{ pt: 2, margin: 'auto' }}>
                 {action}
                 <PriButton onClick={onSave} disabled={saveDisabled}>
                   Save
                 </PriButton>
-              </Grid>
+              </Stack>
             )}
-          </Grid>
+          </Stack>
         </Box>
       </TeamProvider>
     </Box>

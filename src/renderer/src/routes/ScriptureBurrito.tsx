@@ -1,10 +1,10 @@
 import {
   Avatar,
-  Grid,
   List,
   ListItemAvatar,
   ListItemButton,
   ListItemText,
+  Stack,
 } from '@mui/material';
 import React from 'react';
 import StickyRedirect from '../components/StickyRedirect';
@@ -54,7 +54,7 @@ export function ScriptureBurrito() {
 
   return (
     <BurritoHeader setView={setView} teamId={teamId}>
-      <Grid container direction="column" spacing={2} alignItems="center">
+      <Stack direction="column" spacing={2} alignItems="center">
         <List sx={{ pt: 3 }}>
           {setup.map((item, index) => (
             <ListItemButton key={index} onClick={handleClick}>
@@ -65,12 +65,10 @@ export function ScriptureBurrito() {
             </ListItemButton>
           ))}
         </List>
-        <Grid>
-          <PriButton onClick={() => createBurrito()} disabled={!ready()}>
-            Create Burrito
-          </PriButton>
-        </Grid>
-      </Grid>
+        <PriButton onClick={() => createBurrito()} disabled={!ready()}>
+          Create Burrito
+        </PriButton>
+      </Stack>
     </BurritoHeader>
   );
 }
