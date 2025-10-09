@@ -4,8 +4,8 @@ import { refMatch } from '../../utils/refMatch';
 import { IPRow } from './IPRow';
 import { isAttached } from './isAttached';
 import { pad } from './pad';
-import { GetReference } from './GetReference';
 import { getSection } from './getSection';
+import { passageRefText } from '../../crud/passage';
 
 enum StatusL {
   No = 'N',
@@ -29,12 +29,10 @@ export const passageRow = (
   const endIdx = refMat && refMat.length > 4 && refMat[4] ? 4 : 3;
 
   return {
-    id: passage.id,
+    passageId: passage.id,
     sectionId: section.id,
     sectionDesc: getSection([section]),
-    reference: (
-      <GetReference passage={[passage]} bookData={allBookData} flat={false} />
-    ),
+    reference: passageRefText(passage, allBookData),
     attached: isAttached(passage, media) ? StatusL.Yes : StatusL.No,
     sort: `${pad(section.attributes.sequencenum)}.${pad(
       passage.attributes.sequencenum
