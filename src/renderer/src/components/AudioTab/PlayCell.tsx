@@ -1,10 +1,15 @@
-import { IMediaActionsStrings } from '../../model';
+import { type GridRenderCellParams } from '@mui/x-data-grid';
+import { RecordKeyMap } from '@orbit/records';
 import { IconButton, Box, SxProps } from '@mui/material';
 import PlayIcon from '@mui/icons-material/PlayArrowOutlined';
 import { FaPaperclip, FaUnlink } from 'react-icons/fa';
 import type { IconBaseProps } from 'react-icons/lib';
 import PauseIcon from '@mui/icons-material/Pause';
 import { shallowEqual, useSelector } from 'react-redux';
+import { IMediaActionsStrings } from '../../model';
+import { IRow } from '.';
+import { useGlobal } from '../../context/useGlobal';
+import { remoteId } from '../../crud/remoteId';
 import { isElectron } from '../../../api-variable';
 import { mediaActionsSelector } from '../../selector';
 
@@ -14,27 +19,30 @@ const Unlink = FaUnlink as unknown as React.FC<IconBaseProps>;
 const actionProps = { color: 'primary.light' } as SxProps;
 
 interface IProps {
-  rowIndex: number;
-  mediaId: string;
-  online: boolean;
+  canCreate: boolean;
+  onAttach?: (checks: number[], attach: boolean) => void;
   readonly: boolean;
-  isPlaying: boolean;
-  attached: boolean;
-  onAttach?: (where: number[], attach: boolean) => void;
-  onPlayStatus: (mediaId: string) => void;
+  handleSelect: (id: string) => void;
+  playItem: string;
+  mediaPlaying: boolean;
 }
 
-export function MediaActions(props: IProps) {
+export default function PlayCell(params: GridRenderCellParams<IRow> & IProps) {
+  const [memory] = useGlobal('memory');
   const {
-    rowIndex,
-    mediaId,
-    online,
-    readonly,
+    canCreate,
     onAttach,
-    onPlayStatus,
-    isPlaying,
-    attached,
-  } = props;
+    readonly: readonlyParams,
+    handleSelect: onPlayStatus,
+    playItem,
+    mediaPlaying,
+  } = params;
+  const readonly = onAttach ? readonlyParams : true;
+  const attached = Boolean(params.row.passId);
+  const isPlaying = playItem === params.row.id && mediaPlaying;
+  const mediaId =
+    remoteId('mediafile', params.row.id, memory?.keyMap as RecordKeyMap) ||
+    params.row.id;
   const t: IMediaActionsStrings = useSelector(
     mediaActionsSelector,
     shallowEqual
@@ -45,7 +53,7 @@ export function MediaActions(props: IProps) {
   };
 
   const handleAttach = () => {
-    onAttach && onAttach([rowIndex], !attached);
+    onAttach && onAttach([params.row.index], !attached);
   };
 
   return (
@@ -64,7 +72,7 @@ export function MediaActions(props: IProps) {
           )}
         </IconButton>
       )}
-      {(isElectron || online) && (
+      {(isElectron || canCreate) && (
         <IconButton
           id="audActPlayStop"
           sx={actionProps}
@@ -78,4 +86,3 @@ export function MediaActions(props: IProps) {
     </Box>
   );
 }
-export default MediaActions;

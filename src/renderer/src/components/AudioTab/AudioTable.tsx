@@ -1,5 +1,5 @@
 /* eslint-disable react/default-props-match-prop-types */
-import React, { memo, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useGlobal } from '../../context/useGlobal';
 import { shallowEqual, useSelector } from 'react-redux';
 import {
@@ -11,19 +11,14 @@ import {
   SectionArray,
 } from '../../model';
 import { Button, IconButton } from '@mui/material';
-import { Table } from '@devexpress/dx-react-grid-material-ui';
 import BigDialog from '../../hoc/BigDialog';
 import VersionDlg from './VersionDlg';
-import ShapingTable from '../ShapingTable';
 import TranscriptionShow from '../TranscriptionShow';
 import MediaPlayer from '../MediaPlayer';
-import MediaActions from './MediaActions';
-import MediaActions2 from './MediaActions2';
 import Confirm from '../AlertDialog';
 import {
   findRecord,
   PublishDestinationEnum,
-  remoteId,
   useBible,
   useOrganizedBy,
   usePublishDestination,
@@ -35,13 +30,19 @@ import {
   useDataChanges,
   useWaitForRemoteQueue,
 } from '../../utils';
+import PlayCell from './PlayCell';
+import DetachCell from './DetachCell';
 import { IRow } from '.';
-import { Sorting } from '@devexpress/dx-react-grid';
 import { UpdateRecord } from '../../model/baseModel';
 import { mediaTabSelector, sharedSelector } from '../../selector';
-import { RecordKeyMap } from '@orbit/records';
 import UserAvatar from '../UserAvatar';
 import ConfirmPublishDialog from '../ConfirmPublishDialog';
+import {
+  DataGrid,
+  GridColumnVisibilityModel,
+  GridSortModel,
+  type GridColDef,
+} from '@mui/x-data-grid';
 
 interface IProps {
   data: IRow[];
@@ -65,7 +66,6 @@ export const AudioTable = (props: IProps) => {
     shared,
     canSetDestination,
     hasPublishing,
-    sectionArr,
   } = props;
   const t: IMediaTabStrings = useSelector(mediaTabSelector, shallowEqual);
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
@@ -85,91 +85,6 @@ export const AudioTable = (props: IProps) => {
   const [publishItem, setPublishItem] = useState(-1);
   const [hasBible, setHasBible] = useState(false);
   const { getOrgBible } = useBible();
-  const columnDefs =
-    shared || hasPublishing
-      ? [
-          { name: 'planName', title: t.planName },
-          { name: 'actions', title: '\u00A0' },
-          { name: 'version', title: t.version },
-          { name: 'publishTo', title: t.published },
-          { name: 'fileName', title: t.fileName },
-          { name: 'sectionDesc', title: organizedBy },
-          { name: 'reference', title: t.reference },
-          { name: 'user', title: t.user },
-          { name: 'duration', title: t.duration },
-          { name: 'size', title: t.size },
-          { name: 'date', title: t.date },
-          { name: 'detach', title: '\u00A0' },
-        ]
-      : [
-          { name: 'planName', title: t.planName },
-          { name: 'actions', title: '\u00A0' },
-          { name: 'version', title: t.version },
-          { name: 'fileName', title: t.fileName },
-          { name: 'sectionDesc', title: organizedBy },
-          { name: 'reference', title: t.reference },
-          { name: 'user', title: t.user },
-          { name: 'duration', title: t.duration },
-          { name: 'size', title: t.size },
-          { name: 'date', title: t.date },
-          { name: 'detach', title: '\u00A0' },
-        ];
-  const columnWidths =
-    shared || sectionArr.length > 0
-      ? [
-          { columnName: 'planName', width: 150 },
-          { columnName: 'actions', width: onAttach ? 120 : 60 },
-          { columnName: 'version', width: 30 },
-          { columnName: 'publishTo', width: 100 },
-          { columnName: 'fileName', width: 220 },
-          { columnName: 'sectionDesc', width: 150 },
-          { columnName: 'reference', width: 150 },
-          { columnName: 'user', width: 30 },
-          { columnName: 'duration', width: 50 },
-          { columnName: 'size', width: 50 },
-          { columnName: 'date', width: 80 },
-          { columnName: 'detach', width: 50 },
-        ]
-      : [
-          { columnName: 'planName', width: 150 },
-          { columnName: 'actions', width: onAttach ? 120 : 60 },
-          { columnName: 'version', width: 30 },
-          { columnName: 'fileName', width: 220 },
-          { columnName: 'sectionDesc', width: 150 },
-          { columnName: 'reference', width: 150 },
-          { columnName: 'user', width: 30 },
-          { columnName: 'duration', width: 50 },
-          { columnName: 'size', width: 50 },
-          { columnName: 'date', width: 80 },
-          { columnName: 'detach', width: 50 },
-        ];
-
-  const columnFormatting = [
-    { columnName: 'actions', aligh: 'center', wordWrapEnabled: false },
-    { columnName: 'sectionDesc', aligh: 'left', wordWrapEnabled: true },
-  ];
-  const sorting = [
-    { columnName: 'planName', direction: 'asc' },
-    {
-      columnName: onAttach ? 'fileName' : 'version',
-      direction: onAttach ? 'asc' : 'desc',
-    },
-    { columnName: 'date', direction: 'desc' },
-  ] as Sorting[];
-  const columnSorting = [
-    { columnName: 'duration', compare: numCompare },
-    { columnName: 'size', compare: numCompare },
-    { columnName: 'version', compare: numCompare },
-    { columnName: 'date', compare: dateCompare },
-  ];
-  const sortingEnabled = [
-    { columnName: 'actions', sortingEnabled: false },
-    { columnName: 'detach', sortingEnabled: false },
-  ];
-  const numCols = ['duration', 'size', 'version'];
-  const mSummaryItems = [{ columnName: 'fileName', type: 'count' }];
-  const [pageSizes] = useState<number[]>([]);
-  const [hiddenColumnNames] = useState<string[]>(['planName']);
   const [verHist, setVerHist] = useState('');
   const [verValue, setVerValue] = useState<number>();
   const { getPublishTo, setPublishTo, isPublished, publishStatus } =
@@ -277,146 +192,273 @@ export const AudioTable = (props: IProps) => {
     setMediaPlaying(false);
   };
 
-  interface ICell {
-    value: string;
-    style?: React.CSSProperties;
-    mediaId?: string;
-    selected?: boolean;
-    onToggle?: () => void;
-    row: IRow;
-    column: any;
-    tableRow: any;
-    tableColumn: any;
-    children?: Array<any>;
-  }
+  const getUser = (id: string) => {
+    return findRecord(memory, 'user', id) as UserD;
+  };
+
+  const nameCount = useMemo(() => data.length, [data]);
+
   const canCreate = useMemo(
     () => !offline || offlineOnly,
     [offline, offlineOnly]
   );
 
-  const PlayCell = ({ value, style, row, ...restProps }: ICell) => (
-    <Table.Cell value={value} row={row} style={{ ...style }} {...restProps}>
-      <MediaActions
-        rowIndex={row.index}
-        mediaId={row.id}
-        online={canCreate}
-        readonly={onAttach ? readonly : true}
-        attached={Boolean(row.passId)}
-        onAttach={onAttach}
-        onPlayStatus={handleSelect}
-        isPlaying={playItem === row.id && mediaPlaying}
-      />
-    </Table.Cell>
+  const columns: GridColDef<IRow>[] = useMemo(
+    () =>
+      shared || hasPublishing
+        ? [
+            { field: 'planName', headerName: t.planName, width: 150 },
+            {
+              field: 'actions',
+              headerName: '\u00A0',
+              align: 'center',
+              width: onAttach ? 75 : 60,
+              sortable: false,
+              filterable: false,
+              renderCell: (params) => (
+                <PlayCell
+                  {...params}
+                  canCreate={canCreate}
+                  onAttach={onAttach}
+                  readonly={readonly}
+                  handleSelect={handleSelect}
+                  playItem={playItem}
+                  mediaPlaying={mediaPlaying}
+                />
+              ),
+            },
+            {
+              field: 'version',
+              headerName: t.version,
+              width: 55,
+              align: 'right',
+              sortComparator: numCompare,
+              renderCell: (params) => (
+                <Button
+                  color="primary"
+                  onClick={handleVerHistOpen(params.row.passId)}
+                >
+                  {params.value}
+                </Button>
+              ),
+            },
+            {
+              field: 'publishTo',
+              headerName: t.published,
+              width: 100,
+              renderCell: (params) => (
+                <IconButton
+                  onClick={handleChangeReadyToShare(params.row.index)}
+                  disabled={
+                    (params.row.passId || '') === '' || !canSetDestination
+                  }
+                >
+                  {publishStatus(
+                    getPublishTo(params.value, hasPublishing, shared, true)
+                  )}
+                </IconButton>
+              ),
+            },
+            {
+              field: 'fileName',
+              headerName: `${t.fileName} (${nameCount})`,
+              width: 205,
+            },
+            {
+              field: 'sectionDesc',
+              headerName: organizedBy,
+              align: 'left',
+              cellClassName: 'word-wrap',
+              width: 170,
+            },
+            {
+              field: 'reference',
+              headerName: t.reference,
+              width: 150,
+              renderCell: (params) => (
+                <Button
+                  color="primary"
+                  onClick={handleShowTranscription(params.row.id)}
+                >
+                  {params.value}
+                </Button>
+              ),
+            },
+            {
+              field: 'user',
+              headerName: t.user,
+              width: 55,
+              renderCell: (params) => (
+                <UserAvatar userRec={getUser(params.value)} />
+              ),
+            },
+            {
+              field: 'duration',
+              headerName: t.duration,
+              width: 65,
+              align: 'right',
+              sortComparator: numCompare,
+            },
+            {
+              field: 'size',
+              headerName: t.size,
+              width: 67,
+              align: 'right',
+              sortComparator: numCompare,
+            },
+            {
+              field: 'date',
+              headerName: t.date,
+              width: 85,
+              sortComparator: dateCompare,
+              renderCell: (params) => dateOrTime(params.value, lang),
+            },
+            {
+              field: 'detach',
+              headerName: '\u00A0',
+              width: 83,
+              sortable: false,
+              renderCell: (params) => (
+                <DetachCell
+                  {...params}
+                  canCreate={canCreate}
+                  readonly={readonly}
+                  handleConfirmAction={handleConfirmAction}
+                />
+              ),
+            },
+          ]
+        : [
+            { field: 'planName', headerName: t.planName, width: 150 },
+            {
+              field: 'actions',
+              headerName: '\u00A0',
+              align: 'center',
+              width: onAttach ? 75 : 60,
+              sortable: false,
+              filterable: false,
+              renderCell: (params) => (
+                <PlayCell
+                  {...params}
+                  canCreate={canCreate}
+                  onAttach={onAttach}
+                  readonly={readonly}
+                  handleSelect={handleSelect}
+                  playItem={playItem}
+                  mediaPlaying={mediaPlaying}
+                />
+              ),
+            },
+            {
+              field: 'version',
+              headerName: t.version,
+              width: 55,
+              align: 'right',
+              sortComparator: numCompare,
+              renderCell: (params) => (
+                <Button
+                  color="primary"
+                  onClick={handleVerHistOpen(params.row.passId)}
+                >
+                  {params.value}
+                </Button>
+              ),
+            },
+            {
+              field: 'fileName',
+              headerName: `${t.fileName} (${nameCount})`,
+              width: 205,
+            },
+            {
+              field: 'sectionDesc',
+              headerName: organizedBy,
+              align: 'left',
+              cellClassName: 'word-wrap',
+              width: 170,
+            },
+            {
+              field: 'reference',
+              headerName: t.reference,
+              width: 150,
+              renderCell: (params) => (
+                <Button
+                  color="primary"
+                  onClick={handleShowTranscription(params.row.id)}
+                >
+                  {params.value}
+                </Button>
+              ),
+            },
+            {
+              field: 'user',
+              headerName: t.user,
+              width: 55,
+              renderCell: (params) => (
+                <UserAvatar userRec={getUser(params.value)} />
+              ),
+            },
+            {
+              field: 'duration',
+              headerName: t.duration,
+              width: 65,
+              align: 'right',
+              sortComparator: numCompare,
+            },
+            {
+              field: 'size',
+              headerName: t.size,
+              width: 67,
+              align: 'right',
+              sortComparator: numCompare,
+            },
+            {
+              field: 'date',
+              headerName: t.date,
+              width: 85,
+              sortComparator: dateCompare,
+              renderCell: (params) => dateOrTime(params.value, lang),
+            },
+            {
+              field: 'detach',
+              headerName: '\u00A0',
+              width: 83,
+              sortable: false,
+              renderCell: (params) => (
+                <DetachCell
+                  {...params}
+                  canCreate={canCreate}
+                  readonly={readonly}
+                  handleConfirmAction={handleConfirmAction}
+                />
+              ),
+            },
+          ],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [organizedBy, shared, hasPublishing, onAttach, nameCount]
   );
 
-  const DetachCell = ({ mediaId, ...props }: ICell) => {
-    const { row } = props;
-    return (
-      <Table.Cell {...props}>
-        <MediaActions2
-          rowIndex={row.index}
-          mediaId={mediaId || ''}
-          online={canCreate}
-          readonly={readonly}
-          canDelete={!readonly && !row.readyToShare}
-          onDelete={handleConfirmAction}
-        />
-      </Table.Cell>
-    );
-  };
-
-  const VersionCell = ({ value, row, ...restProps }: ICell) => (
-    <Table.Cell value row={row} {...restProps}>
-      <Button color="primary" onClick={handleVerHistOpen(row.passId)}>
-        {value}
-      </Button>
-    </Table.Cell>
+  const sortModel: GridSortModel = useMemo(
+    () => [
+      { field: 'planName', sort: 'asc' },
+      {
+        field: onAttach ? 'fileName' : 'version',
+        sort: onAttach ? 'asc' : 'desc',
+      },
+      { field: 'date', sort: 'desc' },
+    ],
+    [onAttach]
   );
-
-  const ReferenceCell = ({ row, value, ...props }: ICell) => (
-    <Table.Cell value row={row} {...props}>
-      <Button color="primary" onClick={handleShowTranscription(row.id)}>
-        {value}
-      </Button>
-    </Table.Cell>
-  );
-
-  const DateCell = ({ row, value, ...props }: ICell) => (
-    <Table.Cell value row={row} {...props}>
-      {dateOrTime(value, lang)}
-    </Table.Cell>
-  );
-  const ReadyToShareCell = ({ row, value, ...props }: ICell) => (
-    <Table.Cell value row={row} {...props}>
-      <IconButton
-        onClick={handleChangeReadyToShare(row.index)}
-        disabled={(row.passId || '') === '' || !canSetDestination}
-      >
-        {publishStatus(getPublishTo(value, hasPublishing, shared, true))}
-      </IconButton>
-    </Table.Cell>
-  );
-  const getUser = (id: string) => {
-    return findRecord(memory, 'user', id) as UserD;
-  };
-  const MemoAvatar = memo(({ value }: { value: string }) => (
-    <UserAvatar userRec={getUser(value)} />
-  ));
-  MemoAvatar.displayName = 'MemoAvatar';
-  const UserCell = ({ row, value, ...props }: ICell) => (
-    <Table.Cell value row={row} {...props}>
-      <MemoAvatar value={value} />
-    </Table.Cell>
-  );
-  const Cell = (props: ICell) => {
-    const { column, row } = props;
-    if (column.name === 'actions') {
-      const mediaId =
-        remoteId('mediafile', row.id, memory?.keyMap as RecordKeyMap) || row.id;
-      return <PlayCell {...props} mediaId={mediaId} />;
-    }
-    if (column.name === 'detach') {
-      const mediaId =
-        remoteId('mediafile', row.id, memory?.keyMap as RecordKeyMap) || row.id;
-      return <DetachCell {...props} mediaId={mediaId} />;
-    }
-    if (column.name === 'version' && onAttach) {
-      return <VersionCell {...props} />;
-    }
-    if (column.name === 'reference') {
-      return <ReferenceCell {...props} />;
-    }
-    if (column.name === 'date') {
-      return <DateCell {...props} />;
-    }
-    if (column.name === 'publishTo') {
-      return <ReadyToShareCell {...props} />;
-    }
-    if (column.name === 'user') {
-      return <UserCell {...props} />;
-    }
-    return <Table.Cell {...props} />;
-  };
+  const columnVisibilityModel: GridColumnVisibilityModel = { planName: false };
 
   return (
     <div>
-      <ShapingTable
-        columns={columnDefs}
-        columnWidths={columnWidths}
-        columnFormatting={columnFormatting}
-        columnSorting={columnSorting}
-        sortingEnabled={sortingEnabled}
-        pageSizes={pageSizes}
-        // filteringEnabled={filteringEnabled}
-        dataCell={Cell}
-        sorting={sorting}
-        numCols={numCols}
+      <DataGrid
+        columns={columns}
         rows={data}
-        // shaping={attachVisible || filter}
-        hiddenColumnNames={hiddenColumnNames}
-        expandedGroups={[]}
-        bandHeader={undefined}
-        summaryItems={mSummaryItems}
+        initialState={{
+          sorting: { sortModel },
+          columns: { columnVisibilityModel },
+        }}
       />
       {verHist && (
         <BigDialog

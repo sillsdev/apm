@@ -10,7 +10,6 @@ import { shallowEqual } from 'react-redux';
 import {
   IState,
   PassageD,
-  Section,
   User,
   IAssignmentTableStrings,
   IActivityStateStrings,
@@ -25,7 +24,6 @@ import DropDownIcon from '@mui/icons-material/ArrowDropDown';
 import { AltButton, iconMargin } from '../control';
 import { useSnackBar } from '../hoc/SnackBar';
 import Confirm from './AlertDialog';
-import TreeGrid from './TreeGrid';
 import AssignSection from './AssignSection';
 import {
   related,
@@ -50,6 +48,15 @@ import {
 } from '../selector';
 import { GetReference } from './AudioTab/GetReference';
 import { OrganizationSchemeD } from '../model/organizationScheme';
+import {
+  GridColumnVisibilityModel,
+  GridRenderCellParams,
+  type GridColDef,
+  type GridRowSelectionModel,
+  type GridSortModel,
+} from '@mui/x-data-grid';
+import { TreeDataGrid } from './TreeDataGrid';
+import { pad2 } from '../utils/pad2';
 
 const AssignmentDiv = styled('div')(() => ({
   display: 'flex',
@@ -59,17 +66,14 @@ const AssignmentDiv = styled('div')(() => ({
 }));
 
 interface IRow {
-  id: string;
+  id: number;
+  recId: string;
   name: React.ReactNode;
   scheme: React.ReactNode;
   passages: string;
   parentId: string;
   sort: string;
 }
-const getChildRows = (row: any, rootRows: any[]) => {
-  const childRows = rootRows.filter((r) => r.parentId === (row ? row.id : ''));
-  return childRows.length ? childRows : null;
-};
 
 export function AssignmentTable() {
   const t: IAssignmentTableStrings = useSelector(
@@ -83,7 +87,7 @@ export function AssignmentTable() {
   );
   const allBookData = useSelector((state: IState) => state.books.bookData);
   const passages = useOrbitData<PassageD[]>('passage');
-  const sections = useOrbitData<Section[]>('section');
+  const sections = useOrbitData<SectionD[]>('section');
   const mediafiles = useOrbitData<MediaFileD[]>('mediafile');
   const users = useOrbitData<User[]>('user');
   const roles = useOrbitData<Role[]>('role');
@@ -96,7 +100,13 @@ export function AssignmentTable() {
   const ctx = useContext(PlanContext);
   const { flat, sectionArr } = ctx.state;
   const [data, setData] = useState(Array<IRow>());
+  const [openSections, setOpenSections] = useState<string[]>([]);
   const [check, setCheck] = useState(Array<number>());
+  const [selectedRows, setSelectedRows] = useState<GridRowSelectionModel>({
+    type: 'include',
+    ids: new Set(),
+  });
+
   const [assignMenu, setAssignMenu] = useState<HTMLButtonElement>();
   const sectionMap = new Map<number, string>(sectionArr);
   const [selectedSections, setSelectedSections] = useState<SectionD[]>([]);
@@ -111,34 +121,6 @@ export function AssignmentTable() {
     () => Boolean(getOrgDefault(orgDefaultPermissions)),
     [getOrgDefault]
   );
-  const columnDefs = useMemo(
-    () =>
-      !flat
-        ? [
-            { name: 'name', title: organizedBy },
-            { name: 'passages', title: ts.passages },
-            { name: 'scheme', title: isPermission ? ts.scheme : ts.scheme2 },
-          ]
-        : [
-            { name: 'name', title: organizedBy },
-            { name: 'scheme', title: isPermission ? ts.scheme : ts.scheme2 },
-          ],
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [flat, organizedBy, ts.passages, t.sectionstate, isPermission]
-  );
-  const [assignSectionVisible, setAssignSectionVisible] = useState<string>();
-  const columnWidths = useMemo(
-    () => [
-      { columnName: 'name', width: 300 },
-      { columnName: 'passages', width: flat ? 1 : 100 },
-      { columnName: 'scheme', width: 200 },
-    ],
-    [flat]
-  );
-  const { userIsAdmin } = useRole();
-  const orgSchemes = useMemo(() => {
-    return schemes?.filter((s) => related(s, 'organization') === org);
-  }, [schemes, org]);
 
   const handleView = (schemeId: string) => () => {
     setAssignMenu(undefined);
@@ -146,7 +128,9 @@ export function AssignmentTable() {
     setReadOnly(true);
   };
 
-  const getSchemeName = (section: Section) => {
+  const getSchemeName = (params: GridRenderCellParams) => {
+    const sectionId = params.row.scheme as string;
+    const section = sections.find((s) => s.id === sectionId);
     const schemeId = related(section, 'organizationScheme');
     const scheme = schemes.find((s) => s.id === schemeId);
     return (
@@ -155,10 +139,82 @@ export function AssignmentTable() {
       </Button>
     );
   };
+  const getNameCell = (params: GridRenderCellParams) => {
+    if (params.row.parentId === '') return params.row.name;
+    const passage = passages.find((p) => p.id === params.row.recId) as PassageD;
+    const sr = getSharedResource(passage);
+    return (
+      <GetReference
+        passage={[passage]}
+        bookData={allBookData}
+        flat={false}
+        sr={sr}
+      />
+    );
+  };
+
+  const columns: GridColDef[] = useMemo(
+    () => {
+      const newColumns: GridColDef[] = !flat
+        ? [
+            {
+              field: 'name',
+              headerName: organizedBy,
+              width: 300,
+              cellClassName: 'word-wrap',
+              renderCell: getNameCell,
+            },
+            {
+              field: 'passages',
+              headerName: ts.passages,
+              width: 100,
+              align: 'right',
+            },
+            {
+              field: 'scheme',
+              headerName: isPermission ? ts.scheme : ts.scheme2,
+              width: 200,
+              renderCell: getSchemeName,
+            },
+            {
+              field: 'sort',
+              width: 10,
+            },
+          ]
+        : [
+            {
+              field: 'name',
+              headerName: organizedBy,
+              width: 300,
+              cellClassName: 'word-wrap',
+              renderCell: getNameCell,
+            },
+            {
+              field: 'scheme',
+              headerName: isPermission ? ts.scheme : ts.scheme2,
+              width: 200,
+              renderCell: getSchemeName,
+            },
+            {
+              field: 'sort',
+              width: 10,
+            },
+          ];
+      return [...newColumns];
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [flat, organizedBy, ts.passages, t.sectionstate, isPermission]
+  );
+  const [assignSectionVisible, setAssignSectionVisible] = useState<string>();
+  const { userIsAdmin } = useRole();
+  const orgSchemes = useMemo(() => {
+    return schemes?.filter((s) => related(s, 'organization') === org);
+  }, [schemes, org]);
 
   const getAssignments = () => {
     let sectionRow: IRow;
     const rowData: IRow[] = [];
+    let id = 0;
     const plansections = sections
       .filter(
         (s) =>
@@ -169,36 +225,34 @@ export function AssignmentTable() {
       .sort(sectionCompare);
 
     plansections.forEach(function (section) {
+      const sort = (section.attributes?.sequencenum || 0).toFixed(2).toString();
       sectionRow = {
-        id: section.id as string,
+        id: id++,
+        recId: section.id as string,
         name: sectionDescription(section, sectionMap),
-        scheme: getSchemeName(section),
+        scheme: section.id,
         passages: '0', //string so we can have blank, alternatively we could format in the tree to not show on passage rows
         parentId: '',
-        sort: (section.attributes?.sequencenum || 0).toFixed(2).toString(),
+        sort,
       };
       rowData.push(sectionRow);
       const sectionps = passages
         .filter((p) => related(p, 'section') === section.id)
         .sort(passageCompare);
       sectionRow.passages = sectionps.length.toString();
-      sectionps.forEach(function (passage: PassageD) {
-        const sr = getSharedResource(passage);
-        rowData.push({
-          id: passage.id,
-          name: (
-            <GetReference
-              passage={[passage]}
-              bookData={allBookData}
-              flat={false}
-              sr={sr}
-            />
-          ),
-          scheme: '',
-          passages: '',
-          parentId: section.id,
-        } as IRow);
-      });
+      if (openSections.includes(section.id)) {
+        sectionps.forEach(function (passage: PassageD) {
+          rowData.push({
+            id: id++,
+            recId: passage.id,
+            name: passage.id,
+            scheme: '',
+            passages: '',
+            parentId: section.id,
+            sort: `${sort}.${pad2(passage.attributes.sequencenum)}`,
+          } as IRow);
+        });
+      }
     });
     return rowData as Array<IRow>;
   };
@@ -243,7 +297,7 @@ export function AssignmentTable() {
     }
   };
 
-  const RemoveOneAssignment = async (s: Section) => {
+  const RemoveOneAssignment = async (s: SectionD) => {
     await memory.update((t) => [
       ...UpdateLastModifiedBy(t, s as RecordIdentity, user),
       ...ReplaceRelatedRecord(
@@ -283,6 +337,7 @@ export function AssignmentTable() {
       await RemoveOneAssignment(selectedSections[i] as SectionD);
     setCheck([]);
     setSelectedSections([]);
+    setSelectedRows({ type: 'include', ids: new Set() });
     setRefresh(refresh + 1);
   };
   const handleRemoveAssignmentsRefused = () => setConfirmAction('');
@@ -292,11 +347,16 @@ export function AssignmentTable() {
     if (!cancel) {
       setCheck([]);
       setSelectedSections([]);
+      setSelectedRows({ type: 'include', ids: new Set() });
     }
   };
 
-  const handleCheck = (checks: Array<number>) => {
+  const handleRowSelectionChange = (newSelection: GridRowSelectionModel) => {
+    const checks = Array.from(newSelection.ids).map((id) =>
+      parseInt(id as string)
+    );
     setCheck(checks);
+    setSelectedRows(newSelection);
   };
 
   const sortSchemes = (a: OrganizationSchemeD, b: OrganizationSchemeD) =>
@@ -315,6 +375,7 @@ export function AssignmentTable() {
     activityState,
     allBookData,
     refresh,
+    openSections,
   ]);
 
   useEffect(() => {
@@ -322,7 +383,7 @@ export function AssignmentTable() {
     let one: any;
     check.forEach((c) => {
       one = sections.find(function (s) {
-        return c < data.length ? s.id === (data[c] as IRow).id : undefined;
+        return c < data.length ? s.id === (data[c] as IRow).recId : undefined;
       });
       if (one !== undefined) selected.push(one);
     });
@@ -330,6 +391,9 @@ export function AssignmentTable() {
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [check, sections]);
+
+  const sortModel: GridSortModel = [{ field: 'sort', sort: 'asc' }];
+  const columnVisibilityModel: GridColumnVisibilityModel = { sort: false };
 
   return (
     <AssignmentDiv id="AssignmentTable">
@@ -361,25 +425,20 @@ export function AssignmentTable() {
           </TabActions>
         </TabAppBar>
         <PaddedBox>
-          <TreeGrid
-            columns={columnDefs}
-            columnWidths={columnWidths}
+          <TreeDataGrid
+            columns={columns}
             rows={data}
-            getChildRows={getChildRows}
-            pageSizes={[]}
-            tableColumnExtensions={[
-              { columnName: 'passages', align: 'right' },
-              { columnName: 'name', wordWrapEnabled: true },
-            ]}
-            groupingStateColumnExtensions={[
-              { columnName: 'name', groupingEnabled: false },
-              { columnName: 'passages', groupingEnabled: false },
-            ]}
-            sorting={[{ columnName: 'sort', direction: 'asc' }]}
-            treeColumn={'name'}
-            checks={check}
-            select={userIsAdmin ? handleCheck : undefined}
-            canSelectRow={(row) => row?.parentId === ''}
+            checkboxSelection
+            disableRowSelectionOnClick
+            rowSelectionModel={selectedRows}
+            onRowSelectionModelChange={handleRowSelectionChange}
+            recIdName="recId"
+            expanded={setOpenSections}
+            initialState={{
+              sorting: { sortModel },
+              columns: { columnVisibilityModel },
+            }}
+            sx={{ '& .word-wrap': { wordWrap: 'break-spaces' } }}
           />
         </PaddedBox>
       </div>

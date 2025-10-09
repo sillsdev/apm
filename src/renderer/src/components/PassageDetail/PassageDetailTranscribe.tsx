@@ -1,4 +1,4 @@
-import { useContext, useMemo, useState } from 'react';
+import { useContext, useMemo } from 'react';
 import {
   ActivityStates,
   ISharedStrings,
@@ -22,20 +22,6 @@ import { UnsavedContext } from '../../context/UnsavedContext';
 import { useStepPermissions } from '../../utils/useStepPermission';
 import { useGlobal } from '../../context/useGlobal';
 
-interface TableContainerProps extends BoxProps {
-  topFilter?: boolean;
-}
-const TableContainer = styled(Box, {
-  shouldForwardProp: (prop) => prop !== 'topFilter',
-})<TableContainerProps>(({ topFilter }) => ({
-  ...(topFilter && {
-    zIndex: 2,
-    // position: 'absolute',
-    // left: 0,
-    backgroundColor: 'white',
-  }),
-}));
-
 const TranscriberContainer = styled(Box)<BoxProps>(() => ({
   zIndex: 1,
   position: 'absolute',
@@ -48,11 +34,7 @@ interface IProps {
   onFilter?: (filtered: boolean) => void;
 }
 
-export function PassageDetailTranscribe({
-  width,
-  artifactTypeId,
-  onFilter,
-}: IProps) {
+export function PassageDetailTranscribe({ width, artifactTypeId }: IProps) {
   const {
     mediafileId,
     section,
@@ -70,7 +52,6 @@ export function PassageDetailTranscribe({
   const { canDoSectionStep } = useStepPermissions();
   const hasPermission = canDoSectionStep(currentstep, section);
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
-  const [topFilter, setTopFilter] = useState(false);
   const { localizedArtifactTypeFromId } = useArtifactType();
   const [memory] = useGlobal('memory');
 
@@ -205,11 +186,6 @@ export function PassageDetailTranscribe({
     setState((s) => ({ ...s, playerMediafile }));
   };
 
-  const handleTopFilter = (top: boolean) => {
-    setTopFilter(top);
-    onFilter && onFilter(top);
-  };
-
   const media = useMemo(
     () => findRecord(memory, 'mediafile', mediafileId) as MediaFileD,
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -234,21 +210,19 @@ export function PassageDetailTranscribe({
       <Grid container direction="column">
         {artifactTypeId && (
           <Box sx={{ display: 'flex', flexDirection: 'row' }}>
-            <TableContainer topFilter={topFilter}>
-              <TaskTable onFilter={handleTopFilter} isDetail={true} />
-            </TableContainer>
-            {!topFilter && (
-              <TranscriberContainer>
-                <Transcriber
-                  defaultWidth={width - TaskTableWidth}
-                  stepSettings={stepSettings as string}
-                  hasPermission={hasPermission}
-                  onReject={handleReject}
-                  onReopen={handleReopen}
-                  onReloadPlayer={handleReloadPlayer}
-                />
-              </TranscriberContainer>
-            )}
+            <Box>
+              <TaskTable />
+            </Box>
+            <TranscriberContainer>
+              <Transcriber
+                defaultWidth={width - TaskTableWidth}
+                stepSettings={stepSettings as string}
+                hasPermission={hasPermission}
+                onReject={handleReject}
+                onReopen={handleReopen}
+                onReloadPlayer={handleReloadPlayer}
+              />
+            </TranscriberContainer>
           </Box>
         )}
         {artifactTypeId == null && (

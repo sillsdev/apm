@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useGlobal } from '../context/useGlobal';
-import { localizeRole, LocalKey, localUserKey, restoreScroll } from '../utils';
-import { shallowEqual } from 'react-redux';
+import { shallowEqual, useSelector } from 'react-redux';
+import { DataGrid, type GridColDef } from '@mui/x-data-grid';
 import {
   User,
   RoleD,
@@ -11,14 +10,12 @@ import {
   RoleNames,
   UserD,
 } from '../model';
-import { IconButton, Box } from '@mui/material';
+import Box from '@mui/material/Box';
 import AddIcon from '@mui/icons-material/Add';
-import DeleteIcon from '@mui/icons-material/Delete';
-import EditIcon from '@mui/icons-material/Edit';
-import { Table } from '@devexpress/dx-react-grid-material-ui';
+import { useGlobal } from '../context/useGlobal';
+import { localizeRole, LocalKey, localUserKey, restoreScroll } from '../utils';
 import Invite from './Invite';
 import Confirm from './AlertDialog';
-import ShapingTable from './ShapingTable';
 import UserAdd from './UserAdd';
 import {
   related,
@@ -29,22 +26,20 @@ import {
   useRole,
 } from '../crud';
 import { GrowingSpacer, PriButton, ActionRow, iconMargin } from '../control';
-import { useSelector } from 'react-redux';
 import { sharedSelector, usertableSelector } from '../selector';
-import { RecordIdentity } from '@orbit/records';
 import { useOrbitData } from '../hoc/useOrbitData';
 import ProfileDialog from './ProfileDialog';
+import UserActionCell from './UserActionCell';
 
-interface IRow {
+export interface IRow {
   type: string;
   name: string;
   email: string;
   locale: string;
-  // phone: string;
   timezone: string;
   role: string;
   action: string;
-  id: RecordIdentity;
+  id: string;
 }
 
 const getUser = (om: OrganizationMembership, users: User[]) => {
@@ -74,29 +69,6 @@ export function UserTable() {
   const [data, setData] = useState(Array<IRow>());
   const { userIsAdmin } = useRole();
   const [profileOpen, setProfileOpen] = React.useState(false);
-  const columnDefs = [
-    { name: 'name', title: t.name },
-    { name: 'email', title: t.email },
-    { name: 'locale', title: t.locale },
-    // { name: 'phone', title: t.phone },
-    { name: 'timezone', title: t.timezone },
-    { name: 'role', title: ts.teamrole },
-    {
-      name: 'action',
-      title: userIsAdmin ? t.action : '\u00A0',
-    },
-  ];
-  const columnWidths = [
-    { columnName: 'name', width: 200 },
-    { columnName: 'email', width: 200 },
-    { columnName: 'locale', width: 100 },
-    // { columnName: 'phone', width: 100 },
-    { columnName: 'timezone', width: 100 },
-    { columnName: 'role', width: 100 },
-    { columnName: 'action', width: 150 },
-  ];
-  const sortingEnabled = [{ columnName: 'action', sortingEnabled: false }];
-  const filteringEnabled = [{ columnName: 'action', filteringEnabled: false }];
   const [deleteItem, setDeleteItem] = useState('');
   const [dialogVisible, setDialogVisible] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
@@ -169,8 +141,6 @@ export function UserTable() {
     setDeleteItem('');
   };
 
-  const isCurrentUser = (userId: string) => userId === user;
-
   useEffect(() => {
     const getMedia = () => {
       const members = organizationMemberships
@@ -200,7 +170,7 @@ export function UserTable() {
                 ts
               ),
               action: firstUser.id,
-              id: { type: 'user', id: firstUser.id },
+              id: firstUser.id,
             } as IRow);
           }
         }
@@ -211,45 +181,6 @@ export function UserTable() {
     /* eslint-disable-next-line react-hooks/exhaustive-deps */
   }, [organization, users, roles, organizationMemberships]);
 
-  interface ICell {
-    value: string;
-    style?: React.CSSProperties;
-    row: IRow;
-    column: any;
-    tableRow: any;
-    tableColumn: any;
-  }
-
-  const ActionCell = ({ value, style, ...restProps }: ICell) => (
-    <Table.Cell {...restProps} style={{ ...style }} value>
-      <>
-        <IconButton
-          id={'edit-' + value}
-          key={'edit-' + value}
-          aria-label={'edit-' + value}
-          color="default"
-          onClick={handleEdit(value)}
-          disabled={isCurrentUser(value)}
-        >
-          <EditIcon />
-        </IconButton>
-        <IconButton
-          id={'del-' + value}
-          key={'del-' + value}
-          aria-label={'del-' + value}
-          color="default"
-          onClick={handleDelete(value)}
-          disabled={
-            userIsAdmin
-              ? admins.length === 1 && isCurrentUser(value)
-              : !isCurrentUser(value)
-          }
-        >
-          <DeleteIcon />
-        </IconButton>
-      </>
-    </Table.Cell>
-  );
   const admins = useMemo(
     () => data.filter((d) => d.role === RoleNames.Admin),
     [data]
@@ -259,21 +190,28 @@ export function UserTable() {
     [userIsAdmin, offline, offlineOnly]
   );
 
-  const canEditOrcanDeleteSelf = useMemo(
-    () => (value: string) =>
-      (userIsAdmin || isCurrentUser(value)) && (!offline || offlineOnly),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [offline, offlineOnly, userIsAdmin]
-  );
-
-  const Cell = (props: any) => {
-    const { column } = props;
-    if (column.name === 'action') {
-      if (canEditOrcanDeleteSelf(props.value)) return <ActionCell {...props} />;
-      else return <></>;
-    }
-    return <Table.Cell {...props} />;
-  };
+  const columns: GridColDef<IRow>[] = [
+    { field: 'name', headerName: t.name, width: 200 },
+    { field: 'email', headerName: t.email, width: 200 },
+    { field: 'locale', headerName: t.locale, width: 100 },
+    { field: 'timezone', headerName: t.timezone, width: 100 },
+    { field: 'role', headerName: ts.teamrole, width: 100 },
+    {
+      field: 'action',
+      headerName: userIsAdmin ? t.action : '\u00A0',
+      width: 150,
+      sortable: false,
+      filterable: false,
+      renderCell: (params) => (
+        <UserActionCell
+          {...params}
+          handleEdit={handleEdit}
+          handleDelete={handleDelete}
+          admins={admins}
+        />
+      ),
+    },
+  ];
 
   return (
     <Box sx={{ display: 'flex' }}>
@@ -305,14 +243,7 @@ export function UserTable() {
           )}
           <GrowingSpacer />
         </ActionRow>
-        <ShapingTable
-          columns={columnDefs}
-          columnWidths={columnWidths}
-          sortingEnabled={sortingEnabled}
-          filteringEnabled={filteringEnabled}
-          dataCell={Cell}
-          rows={data}
-        />
+        <DataGrid columns={columns} rows={data} />
       </div>
       <Invite
         visible={dialogVisible}

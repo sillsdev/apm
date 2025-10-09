@@ -7,14 +7,12 @@ import {
   IInvitationTableStrings,
   ISharedStrings,
 } from '../model';
-import { Menu, MenuItem, Typography, Box } from '@mui/material';
+import { Menu, MenuItem, Box } from '@mui/material';
 import DropDownIcon from '@mui/icons-material/ArrowDropDown';
 import AddIcon from '@mui/icons-material/Add';
-import { Table } from '@devexpress/dx-react-grid-material-ui';
 import Invite from './Invite';
 import { useSnackBar } from '../hoc/SnackBar';
 import Confirm from './AlertDialog';
-import ShapingTable from './ShapingTable';
 import { related, useRole } from '../crud';
 import { localizeRole } from '../utils';
 
@@ -29,6 +27,11 @@ import { useSelector } from 'react-redux';
 import { invitationTableSelector, sharedSelector } from '../selector';
 import { useOrbitData } from '../hoc/useOrbitData';
 import { RecordIdentity } from '@orbit/records';
+import {
+  DataGrid,
+  type GridColDef,
+  type GridRowSelectionModel,
+} from '@mui/x-data-grid';
 
 interface IRow {
   email: string;
@@ -36,21 +39,6 @@ interface IRow {
   accepted: string;
   id: RecordIdentity;
 }
-
-const NoDataCell = ({ value, style, ...restProps }: any) => {
-  const t: IInvitationTableStrings = useSelector(
-    invitationTableSelector,
-    shallowEqual
-  );
-
-  return (
-    <Table.Cell {...restProps} style={{ ...style }} value={value}>
-      <Typography variant="h6" align="center">
-        {t.noData}
-      </Typography>
-    </Table.Cell>
-  );
-};
 
 const getInvites = (
   organization: string,
@@ -89,16 +77,15 @@ export function InvitationTable() {
   const [data, setData] = useState(Array<IRow>());
   const [actionMenuItem, setActionMenuItem] = useState(null);
   const [check, setCheck] = useState(Array<number>());
+  const [selectedRows, setSelectedRows] = useState<GridRowSelectionModel>({
+    type: 'include',
+    ids: new Set(),
+  });
   const [confirmAction, setConfirmAction] = useState('');
-  const columnDefs = [
-    { name: 'email', title: t.email },
-    { name: 'orgRole', title: t.role },
-    { name: 'accepted', title: t.accepted },
-  ];
-  const columnWidths = [
-    { columnName: 'email', width: 200 },
-    { columnName: 'orgRole', width: 200 },
-    { columnName: 'accepted', width: 120 },
+  const columns: GridColDef[] = [
+    { field: 'email', headerName: t.email, width: 200 },
+    { field: 'orgRole', headerName: t.role, width: 200 },
+    { field: 'accepted', headerName: t.accepted, width: 120 },
   ];
   const [dialogVisible, setDialogVisible] = useState(false);
   const [dialogData, setDialogData] = useState<Invitation | null>(null);
@@ -117,8 +104,12 @@ export function InvitationTable() {
     setDialogVisible(false);
   };
 
-  const handleCheck = (checks: Array<number>) => {
+  const handleRowSelectionChange = (newSelection: GridRowSelectionModel) => {
+    const checks = Array.from(newSelection.ids).map((id) =>
+      parseInt(id as string)
+    );
     setCheck(checks);
+    setSelectedRows(newSelection);
   };
   const handleMenu = (e: any) => setActionMenuItem(e.currentTarget);
   const handleConfirmAction = (what: string) => () => {
@@ -196,12 +187,12 @@ export function InvitationTable() {
           )}
           <GrowingSpacer />
         </ActionRow>
-        <ShapingTable
-          columns={columnDefs}
-          columnWidths={columnWidths}
-          noDataCell={NoDataCell}
-          rows={data}
-          select={handleCheck}
+        <DataGrid
+          columns={columns}
+          rows={data.map((row, i) => ({ ...row, id: i }))}
+          rowSelectionModel={selectedRows}
+          onRowSelectionModelChange={handleRowSelectionChange}
+          localeText={{ noRowsLabel: t.noData }}
         />
       </div>
       <Invite

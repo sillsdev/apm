@@ -11,6 +11,24 @@ import { generateUUID } from '../utils';
 import { logError } from '../utils';
 import { axiosGet } from '../utils/axios';
 
+// Mock @auth0/auth0-react
+jest.mock('@auth0/auth0-react', () => ({
+  useAuth0: jest.fn(() => ({
+    getAccessTokenSilently: jest.fn(() => Promise.resolve('mock-token')),
+    loginWithRedirect: jest.fn(() => Promise.resolve()),
+    user: {
+      email: 'test@example.com',
+      email_verified: true,
+      sub: 'auth0|123',
+    },
+    isLoading: false,
+    isAuthenticated: false,
+    error: undefined,
+  })),
+  User: {},
+  RedirectLoginOptions: {},
+}));
+
 // Mock schema to avoid import.meta issues in Jest
 const mockMemory = {
   cache: {

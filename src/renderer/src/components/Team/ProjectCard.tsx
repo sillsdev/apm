@@ -35,7 +35,6 @@ import ProjectMenu from './ProjectMenu';
 import BigDialog from '../../hoc/BigDialog';
 import IntegrationTab from '../Integration';
 import ExportTab from '../TranscriptionTab';
-import Visualize from '../Visualize';
 import Confirm from '../AlertDialog';
 import { ProjectDialog } from './ProjectDialog';
 import {
@@ -155,7 +154,7 @@ export const ProjectCard = (props: IProps) => {
   const [openProject, setOpenProject] = useState(false);
   const [openIntegration, setOpenIntegration] = useState(false);
   const [openExport, setOpenExport] = useState(false);
-  const [openReports, setOpenReports] = useState(false);
+  // const [openReports, setOpenReports] = useState(false);
   const [openCategory, setOpenCategory] = useState(false);
   const [deleteItem, setDeleteItem] = useState<VProjectD>();
   const [open, setOpen] = useState('');
@@ -215,9 +214,9 @@ export const ProjectCard = (props: IProps) => {
         case 'export':
           setOpenExport(true);
           break;
-        case 'reports':
-          setOpenReports(true);
-          break;
+        // case 'reports':
+        //   setOpenReports(true);
+        //   break;
         case 'offlineAvail':
           offlineAvailToggle(related(project, 'project'));
           break;
@@ -517,13 +516,13 @@ export const ProjectCard = (props: IProps) => {
           }
         />
       </BigDialog>
-      <BigDialog
+      {/* <BigDialog
         title={tpb.reportsTitle.replace('{0}', getPlanName(project.id))}
         isOpen={openReports}
         onOpen={setOpenReports}
       >
         <Visualize selectedPlan={project.id} />
-      </BigDialog>
+      </BigDialog> */}
       <BigDialog
         title={
           !personalProjects.includes(project)

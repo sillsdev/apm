@@ -14,7 +14,7 @@ import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import ParatextLogo from '../../control/ParatextLogo';
 import ImportIcon from '@mui/icons-material/CloudUpload';
 import ExportIcon from '@mui/icons-material/CloudDownload';
-import ReportIcon from '@mui/icons-material/Assessment';
+// import ReportIcon from '@mui/icons-material/Assessment';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import FilterIcon from '@mui/icons-material/FilterList';
@@ -146,14 +146,14 @@ export function ProjectMenu(props: IProps) {
             <ListItemText primary={t.offlineAvail} />
           </StyledMenuItem>
         )}
-        {!justFilter && (
+        {/* {!justFilter && (
           <StyledMenuItem id="projMenuRep" onClick={handle('reports')}>
             <ListItemIcon>
               <ReportIcon />
             </ListItemIcon>
             <ListItemText primary={tpb.reports} />
           </StyledMenuItem>
-        )}
+        )} */}
         {!justFilter &&
           pathname &&
           projType.toLowerCase() === 'scripture' &&

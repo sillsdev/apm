@@ -1,13 +1,17 @@
-import React, { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { IMediaTabStrings } from '../../model';
-import { Table } from '@devexpress/dx-react-grid-material-ui';
 import { FormControlLabel, Switch } from '@mui/material';
-import ShapingTable from '../ShapingTable';
 import { useOrganizedBy } from '../../crud';
-import { IRow, IPRow } from '.';
-import { Sorting } from '@devexpress/dx-react-grid';
+import { IPRow } from '.';
 import { useSelector } from 'react-redux';
 import { mediaTabSelector } from '../../selector';
+import {
+  DataGrid,
+  type GridFilterModel,
+  type GridColDef,
+  type GridSortModel,
+  type GridRowSelectionModel,
+} from '@mui/x-data-grid';
 
 interface IProps {
   data: IPRow[];
@@ -26,56 +30,61 @@ export const PassageChooser = (props: IProps) => {
   const { doAttach, setVisible, setUploadMedia, mediaRow } = props;
   const { getOrganizedBy } = useOrganizedBy();
   const [organizedBy] = useState(getOrganizedBy(true));
+  const [refTot, setRefTot] = useState(0);
   const [pcheck, setCheck] = useState(-1);
-  const columnDefs = [
-    { name: 'sectionDesc', title: organizedBy },
-    { name: 'reference', title: t.reference },
-    { name: 'attached', title: t.associated },
-    { name: 'sort', title: '\u00A0' },
-  ];
-  const columnWidths = [
-    { columnName: 'sectionDesc', width: 150 },
-    { columnName: 'reference', width: 150 },
-  ];
-  const columnFormatting = [
-    { columnName: 'sectionDesc', aligh: 'left', wordWrapEnabled: true },
-    { columnName: 'reference', aligh: 'left', wordWrapEnabled: true },
-  ];
-  const sorting: Sorting[] = [{ columnName: 'sort', direction: 'asc' }];
-  const hiddenColumnNames = ['sort', 'attached'];
-  const summaryItems = [{ columnName: 'reference', type: 'count' }];
-  const [attachedFilter, setAttachedFilter] = useState({
-    columnName: 'attached',
-    operation: 'equal',
+  const [selectedRows, setSelectedRows] = useState<GridRowSelectionModel>({
+    type: 'include',
+    ids: new Set(),
+  });
+
+  const columns: GridColDef<IPRow>[] = useMemo(
+    () => [
+      {
+        field: 'sectionDesc',
+        headerName: organizedBy,
+        width: 150,
+        align: 'left',
+        cellClassName: 'word-wrap',
+      },
+      {
+        field: 'reference',
+        headerName: `${t.reference} (${refTot})`,
+        width: 150,
+        align: 'left',
+        cellClassName: 'word-wrap',
+        type: 'singleSelect',
+      },
+      {
+        field: 'attached',
+        headerName: t.associated,
+        width: 100,
+        align: 'left',
+      },
+      { field: 'sort', headerName: '\u00A0', width: 100, align: 'left' },
+    ],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [organizedBy, refTot]
+  );
+
+  const sortModel: GridSortModel = [{ field: 'sort', sort: 'asc' }];
+  const [attachedFilter, setAttachedFilter] = useState<
+    GridFilterModel['items'][number]
+  >({
+    field: 'attached',
+    operator: '=',
     value: 'N',
   });
 
   const handleAttachedFilterChange = (e: any) => {
     setAttachedFilter({
-      columnName: 'attached',
-      operation: 'equal',
+      field: 'attached',
+      operator: '=',
       value: e.target.checked ? 'Y' : 'N',
     });
   };
 
-  interface ICell {
-    value: string;
-    style?: React.CSSProperties;
-    mediaId?: string;
-    selected?: boolean;
-    onToggle?: () => void;
-    row: IRow;
-    column: any;
-    tableRow: any;
-    tableColumn: any;
-    children?: Array<any>;
-  }
-
-  const Cell = (props: ICell) => {
-    return <Table.Cell {...props} />;
-  };
-
-  const handleCheck = (checks: Array<number>) => {
+  const handleRowSelectionChange = (newSelection: GridRowSelectionModel) => {
+    const checks = Array.from(newSelection.ids).map((id) => Number(id));
     let mRow = row;
     if (uploadMedia) {
       mRow = mediaRow(uploadMedia);
@@ -86,8 +95,16 @@ export const PassageChooser = (props: IProps) => {
       setVisible(false);
       return;
     }
-    setCheck(checks[0] === pcheck ? checks[1] : checks[0]);
+    const newIds = checks[0] === pcheck ? checks[1] : checks[0];
+    setCheck(newIds);
+    setSelectedRows(newSelection);
   };
+
+  useEffect(() => {
+    const refs = data.map((r) => r.reference);
+    const uniqueRefs = new Set(refs);
+    setRefTot(uniqueRefs.size);
+  }, [data]);
 
   return (
     <div>
@@ -102,20 +119,19 @@ export const PassageChooser = (props: IProps) => {
         }
         label={t.alreadyAssociated}
       />
-      <ShapingTable
-        columns={columnDefs}
-        columnWidths={columnWidths}
-        columnFormatting={columnFormatting}
-        filters={[attachedFilter]}
-        dataCell={Cell}
-        sorting={sorting}
+      <DataGrid
+        columns={columns}
         rows={data}
-        select={handleCheck}
-        checks={pcheck >= 0 ? [pcheck] : []}
-        shaping={true}
-        hiddenColumnNames={hiddenColumnNames}
-        expandedGroups={[]} // shuts off toolbar row
-        summaryItems={summaryItems}
+        initialState={{
+          sorting: { sortModel },
+          filter: { filterModel: { items: [attachedFilter] } },
+          columns: { columnVisibilityModel: { sort: false, attached: false } },
+        }}
+        checkboxSelection
+        disableRowSelectionOnClick
+        onRowSelectionModelChange={handleRowSelectionChange}
+        rowSelectionModel={selectedRows}
+        sx={{ '& .wrap-text': { whiteSpace: 'break-spaces' } }}
       />
     </div>
   );

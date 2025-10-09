@@ -1,6 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useGlobal } from '../../../context/useGlobal';
-import { Column, TableColumnWidthInfo } from '@devexpress/dx-react-grid';
 import { useSelector, shallowEqual } from 'react-redux';
 import { passageDetailArtifactsSelector } from '../../../selector';
 import {
@@ -24,7 +23,6 @@ import {
   styled,
   Typography,
 } from '@mui/material';
-import TreeGrid from '../../TreeGrid';
 import {
   related,
   sectionNumber,
@@ -46,6 +44,12 @@ import {
   projDefSectionMap,
   useProjectDefaults,
 } from '../../../crud/useProjectDefaults';
+import {
+  GridColDef,
+  GridRowSelectionModel,
+  GridSortModel,
+} from '@mui/x-data-grid';
+import { TreeDataGrid } from '../../../components/TreeDataGrid';
 
 const StyledPaper = styled(Paper)<PaperProps>(({ theme }) => ({
   backgroundColor: theme.palette.background.default,
@@ -58,16 +62,12 @@ const StyledPaper = styled(Paper)<PaperProps>(({ theme }) => ({
 }));
 
 interface IRow {
-  id: string;
+  id: number;
+  recId: string;
   name: string;
   passages: string;
   parentId: string;
 }
-
-const getChildRows = (row: any, rootRows: any[]) => {
-  const childRows = rootRows.filter((r) => r.parentId === (row ? row.id : ''));
-  return childRows.length ? childRows : null;
-};
 
 /* build the section name = sequence + name */
 const getSection = (
@@ -99,6 +99,7 @@ export function SelectSections(props: IProps) {
   const [memory] = useGlobal('memory');
   const [plan] = useGlobal('plan'); //will be constant here
   const [data, setData] = useState(Array<IRow>());
+  const [openSections, setOpenSections] = useState<string[]>([]);
   const [heightStyle, setHeightStyle] = useState({
     maxHeight: `${window.innerHeight - 250}px`,
   });
@@ -110,9 +111,12 @@ export function SelectSections(props: IProps) {
   );
   const [buttonText, setButtonText] = useState(ta.projectResourceConfigure);
   const allBookData = useSelector((state: IState) => state.books.bookData);
-  const [columnDefs, setColumnDefs] = useState<Column[]>([]);
-  const [columnWidths, setColumnWidths] = useState<TableColumnWidthInfo[]>([]);
+  const [columns, setColumns] = useState<GridColDef[]>([]);
   const [checks, setChecks] = useState<Array<string | number>>([]);
+  const [selectedRows, setSelectedRows] = useState<GridRowSelectionModel>({
+    type: 'include',
+    ids: new Set(),
+  });
   const { getProjectDefault } = useProjectDefaults();
   const sectionMap = new Map<number, string>(
     (getProjectDefault(projDefSectionMap) ?? []) as SectionArray
@@ -153,25 +157,23 @@ export function SelectSections(props: IProps) {
   }, [plan]);
 
   useEffect(() => {
+    const newColumns: GridColDef[] = [
+      {
+        field: 'name',
+        headerName: getOrganizedBy(true),
+        width: 300,
+        cellClassName: 'word-wrap',
+      },
+    ];
     if (!isFlat) {
-      setColumnDefs(
-        [
-          { name: 'name', title: getOrganizedBy(true) },
-          { name: 'passages', title: ts.passages },
-        ].map((r) => r)
-      );
-      setColumnWidths(
-        [
-          { columnName: 'name', width: 300 },
-          { columnName: 'passages', width: 120 },
-        ].map((r) => r)
-      );
-    } else {
-      setColumnDefs(
-        [{ name: 'name', title: getOrganizedBy(true) }].map((r) => r)
-      );
-      setColumnWidths([{ columnName: 'name', width: 300 }].map((r) => r));
+      newColumns.push({
+        field: 'passages',
+        headerName: ts.passages,
+        width: 120,
+        align: 'right',
+      });
     }
+    setColumns([...newColumns]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isFlat]);
 
@@ -181,6 +183,7 @@ export function SelectSections(props: IProps) {
     bookData: BookName[]
   ) => {
     const rowData: IRow[] = [];
+    let id = 1;
     sections
       .filter((s) => related(s, 'plan') === planRec?.id && s.attributes)
       .sort(sectionCompare)
@@ -196,22 +199,26 @@ export function SelectSections(props: IProps) {
         const passageCount = sectionpassages.length;
         if (!isFlat && passageCount > 1)
           rowData.push({
-            id: section.id,
+            id: id++,
+            recId: section.id,
             name: getSection(section, sectionpassages, sectionMap, bookData),
             passages: passageCount.toString(),
             parentId: '',
           });
-        sectionpassages.forEach((passage: Passage) => {
-          rowData.push({
-            id: passage.id,
-            name: `${sectionNumber(section, sectionMap)}.${getReference(
-              passage,
-              bookData
-            )}`,
-            passages: '',
-            parentId: isFlat || passageCount === 1 ? '' : section.id,
-          } as IRow);
-        });
+        if (openSections.includes(section.id)) {
+          sectionpassages.forEach((passage: Passage) => {
+            rowData.push({
+              id: id++,
+              recId: passage.id,
+              name: `${sectionNumber(section, sectionMap)}.${getReference(
+                passage,
+                bookData
+              )}`,
+              passages: '',
+              parentId: isFlat || passageCount === 1 ? '' : section.id,
+            } as IRow);
+          });
+        }
       });
 
     return rowData as Array<IRow>;
@@ -220,9 +227,10 @@ export function SelectSections(props: IProps) {
   useEffect(() => {
     setData(getSections(passages, sections, allBookData));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [plan, passages, sections, allBookData]);
+  }, [plan, passages, sections, allBookData, openSections]);
 
-  const handleSelect = (chks: Array<string | number>) => {
+  const handleRowSelectionChange = (newSelection: GridRowSelectionModel) => {
+    const chks = Array.from(newSelection.ids);
     if (!eqSet(new Set(chks), new Set(checks))) {
       for (const c of chks) {
         let n = parseInt(c as string);
@@ -234,6 +242,7 @@ export function SelectSections(props: IProps) {
       }
       setChecks(chks);
     }
+    setSelectedRows({ ...newSelection, ids: new Set(chks) });
   };
 
   const handleSelected = () => {
@@ -246,35 +255,29 @@ export function SelectSections(props: IProps) {
             data[n].parentId === '' && !isFlat && parseInt(data[n].passages) > 1
               ? 'section'
               : 'passage',
-          id: data[n].id,
+          id: data[n].recId,
         };
       }) as RecordIdentity[];
     onSelect && onSelect(results);
   };
 
+  const sortModel: GridSortModel = [{ field: 'name', sort: 'asc' }];
+
   return (
     <Box id="SelectSections" sx={{ pt: 2, maxHeight: '70%' }}>
       <Typography variant="h6">{title}</Typography>
       <StyledPaper id="PassageList" style={heightStyle}>
-        <TreeGrid
-          columns={columnDefs}
-          columnWidths={columnWidths}
+        <TreeDataGrid
+          columns={columns}
           rows={data}
-          getChildRows={getChildRows}
-          pageSizes={[]}
-          tableColumnExtensions={[
-            { columnName: 'passages', align: 'right' },
-            { columnName: 'name', wordWrapEnabled: true },
-          ]}
-          groupingStateColumnExtensions={[
-            { columnName: 'name', groupingEnabled: false },
-            { columnName: 'passages', groupingEnabled: false },
-          ]}
-          sorting={[{ columnName: 'name', direction: 'asc' }]}
-          treeColumn={'name'}
-          showSelection={true}
-          select={handleSelect}
-          checks={checks}
+          checkboxSelection
+          disableRowSelectionOnClick
+          rowSelectionModel={selectedRows}
+          onRowSelectionModelChange={handleRowSelectionChange}
+          recIdName="recId"
+          expanded={setOpenSections}
+          initialState={{ sorting: { sortModel } }}
+          sx={{ '& .word-wrap': { wordWrap: 'break-spaces' } }}
         />
       </StyledPaper>
       <div>
