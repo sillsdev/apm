@@ -73,7 +73,7 @@ import { getSection } from './AudioTab/getSection';
 import { WhichExportDlg } from './WhichExportDlg';
 import { useParams } from 'react-router-dom';
 import {
-  DataGrid,
+  GridRowId,
   type GridColDef,
   type GridColumnVisibilityModel,
   type GridSortModel,
@@ -82,6 +82,7 @@ import { ExportActionCell } from './ExportActionCell';
 import { TranscriptionViewCell } from './TranscriptionViewCell';
 import Box from '@mui/material/Box';
 import Alert from '@mui/material/Alert';
+import { TreeDataGrid } from './TreeDataGrid';
 
 interface IRow {
   id: number;
@@ -148,6 +149,7 @@ export function TranscriptionTab(props: IProps) {
   const { showMessage, showTitledMessage } = useSnackBar();
   const [openExport, setOpenExport] = useState(false);
   const [data, setData] = useState(Array<IRow>());
+  const [openSections, setOpenSections] = useState<string[]>([]);
   const [alertOpen, setAlertOpen] = useState(false);
   const [passageId, setPassageId] = useState('');
   const eafAnchor = React.useRef<HTMLAnchorElement>(null);
@@ -456,7 +458,8 @@ export function TranscriptionTab(props: IProps) {
     sections: Array<SectionD>,
     users: Array<User>,
     activityState: IActivityStateStrings,
-    bookData: BookName[]
+    bookData: BookName[],
+    openSections: GridRowId[]
   ) => {
     const rowData: IRow[] = [];
     let id = 1;
@@ -487,33 +490,35 @@ export function TranscriptionTab(props: IProps) {
                   .toString(),
               }) - 1;
             id += 1;
-            sectionpassages.forEach((passage: Passage) => {
-              const state = activityState.getString(getPassageState(passage));
-              if (!isPublishingTitle(passage?.attributes?.reference, flat)) {
-                psgCount++;
-                const sr = getSharedResource(passage as PassageD);
-                rowData.push({
-                  id,
-                  recId: passage.id,
-                  name: (
-                    <PassageReference
-                      passage={passage}
-                      bookData={bookData}
-                      flat={flat}
-                      sharedResource={sr}
-                      fontSize={'0.8rem'}
-                    />
-                  ),
-                  state: state,
-                  planName: planRec.attributes.name,
-                  passages: '',
-                  updated: dateOrTime(passage.attributes.dateUpdated, lang),
-                  action: passage.id,
-                  parentId: section.id,
-                } as IRow);
-                id += 1;
-              }
-            });
+            if (openSections.includes(section.id)) {
+              sectionpassages.forEach((passage: Passage) => {
+                const state = activityState.getString(getPassageState(passage));
+                if (!isPublishingTitle(passage?.attributes?.reference, flat)) {
+                  psgCount++;
+                  const sr = getSharedResource(passage as PassageD);
+                  rowData.push({
+                    id,
+                    recId: passage.id,
+                    name: (
+                      <PassageReference
+                        passage={passage}
+                        bookData={bookData}
+                        flat={flat}
+                        sharedResource={sr}
+                        fontSize={'0.8rem'}
+                      />
+                    ),
+                    state: state,
+                    planName: planRec.attributes.name,
+                    passages: '',
+                    updated: dateOrTime(passage.attributes.dateUpdated, lang),
+                    action: passage.id,
+                    parentId: section.id,
+                  } as IRow);
+                  id += 1;
+                }
+              });
+            }
             (rowData[sectionIndex] as IRow).passages = psgCount.toString();
           }
         });
@@ -529,7 +534,8 @@ export function TranscriptionTab(props: IProps) {
       sections,
       users,
       activityState,
-      allBookData
+      allBookData,
+      openSections
     );
     console.log(newData);
     setData(newData);
@@ -543,6 +549,7 @@ export function TranscriptionTab(props: IProps) {
     roles,
     activityState,
     allBookData,
+    openSections,
   ]);
 
   const columns: GridColDef<IRow>[] = [
@@ -648,22 +655,18 @@ export function TranscriptionTab(props: IProps) {
             {t.offlineData}
           </Alert>
         )}
-        <PaddedBox>
-          <DataGrid
+        <PaddedBox sx={{ pl: 2 }}>
+          <TreeDataGrid
             columns={columns}
             rows={data}
+            recIdName="recId"
+            expanded={setOpenSections}
             initialState={{
               sorting: { sortModel },
               columns: { columnVisibilityModel },
             }}
             sx={{ '& .word-wrap': { wordWrap: 'break-spaces' } }}
           />
-          {/* <TreeGrid
-            getChildRows={getChildRows}
-            treeColumn={'name'}
-            showSelection={false}
-            checks={[]}
-          /> */}
         </PaddedBox>
       </div>
 
