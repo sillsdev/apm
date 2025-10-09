@@ -143,6 +143,7 @@
     "@types/ffmpeg-static": "^3.0.3",
     "@types/ffprobe-static": "^2.0.3",
     "@types/fingerprintjs2": "^2.0.0",
+    "@types/jest": "^30.0.0",
     "@types/lodash": "^4.17.20",
     "@types/node": "^22.14.1",
     "@types/react": "^19.1.1",

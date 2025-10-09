@@ -39,6 +39,8 @@ import packageJson from '../../package.json';
 const version = packageJson.version;
 const productName = packageJson.build.productName;
 import { MainAPI } from '@model/main-api';
+import { useBurritoAlign } from './useBurritoAlign';
+import { useBurritoText } from './useBurritoText';
 const ipc = window?.api as MainAPI;
 
 export const useCreateBurrito = (teamId: string) => {
@@ -63,6 +65,8 @@ export const useCreateBurrito = (teamId: string) => {
   const [languages, setLanguages] = React.useState<string[]>([]);
   const [bkSecIds, setBkSecIds] = React.useState<[string, string[]][]>([]);
   const burritoAudio = useBurritoAudo(teamId);
+  const burritoAlign = useBurritoAlign(teamId);
+  const burritoText = useBurritoText(teamId);
 
   const bookData = (book: string) => allBookData.find((b) => b.code === book);
 
@@ -217,7 +221,7 @@ export const useCreateBurrito = (teamId: string) => {
     );
     const preLen = metaName.indexOf('metadata.json');
     await ipc?.createFolder(path.dirname(metaName));
-    const metaData = getMetadata();
+    let metaData = getMetadata();
 
     await ipc?.write(metaName, JSON.stringify(metaData, null, 2));
     const codeNum = new Map(CodeNum as [string, number][]);
@@ -234,7 +238,26 @@ export const useCreateBurrito = (teamId: string) => {
         .filter((s) => bookSectIds.includes(s.id))
         .sort(sectionSort);
       if (part === BurritoType.Audio) {
-        burritoAudio({
+        metaData = await burritoAudio({
+          metadata: metaData,
+          bible: bible as BibleD,
+          book,
+          bookPath,
+          preLen,
+          sections: bookSecs,
+        });
+      }
+      if (part === BurritoType.Text) {
+        metaData = await burritoText({
+          metadata: metaData,
+          book,
+          bookPath,
+          preLen,
+          sections: bookSecs,
+        });
+      }
+      if (part === BurritoType.Timing) {
+        metaData = await burritoAlign({
           metadata: metaData,
           bible: bible as BibleD,
           book,
@@ -244,6 +267,7 @@ export const useCreateBurrito = (teamId: string) => {
         });
       }
     }
+    await ipc?.write(metaName, JSON.stringify(metaData, null, 2));
   };
 
   return async () => {

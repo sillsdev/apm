@@ -1,7 +1,6 @@
 import path from 'path-browserify';
 import {
   Burrito,
-  BurritoFormats,
   BurritoIngredients,
   BurritoScopes,
 } from '../burrito/data/burritoBuilder';
@@ -21,6 +20,14 @@ import { PassageTypeEnum } from '../model/passageType';
 import { pad3 } from '../utils/pad3';
 
 import { MainAPI } from '@model/main-api';
+import {
+  AlignmentBuilder,
+  AlignmentGroup,
+  AlignmentRecord,
+} from '../burrito/data/alignmentBuilder';
+import { getSegments, NamedRegions } from '../utils/namedSegments';
+import { IRegion } from '../crud/useWavesurferRegions';
+import { timeFmt } from '../utils/timeFmt';
 const ipc = window?.api as MainAPI;
 
 interface Props {
@@ -32,7 +39,7 @@ interface Props {
   sections: SectionD[];
 }
 
-export const useBurritoAudo = (teamId: string) => {
+export const useBurritoAlign = (teamId: string) => {
   const mediafiles = useOrbitData<MediaFileD[]>('mediafile');
   const passages = useOrbitData<PassageD[]>('passage');
   const { getOrgDefault } = useOrgDefaults();
@@ -54,8 +61,9 @@ export const useBurritoAudo = (teamId: string) => {
     const chapters = new Set<string>();
 
     let chapter = 0;
-    // let chapterTag = 0;
     let chapterPath = '';
+    const alignPath = path.join(bookPath, 'alignment.json');
+    const alignmentGroups: AlignmentGroup[] = [];
 
     for (const section of sections) {
       // get the passages files for the plan sorted by sequence number
@@ -83,7 +91,6 @@ export const useBurritoAudo = (teamId: string) => {
           chapter = startChapter;
           chapters.add(chapter.toString());
           chapterPath = path.join(bookPath, pad3(chapter));
-          await ipc?.createFolder(chapterPath);
         }
         if (passageType !== PassageTypeEnum.PASSAGE) continue;
 
@@ -133,18 +140,48 @@ export const useBurritoAudo = (teamId: string) => {
           }${path.extname(attr.originalFile)}`;
           const destPath = path.join(chapterPath, destName);
           const docid = destPath.substring(preLen);
-          await ipc?.copyFile(mediaName, destPath);
 
-          // add the media file to the metadata file
-          ingredients[docid] = {
-            checksum: { md5: await ipc?.md5File(destPath) },
-            mimeType: attr.contentType,
-            size: attr.filesize,
-            scope: { [book]: [p.attributes.reference] },
-          };
+          // get the verses for the timing file
+          const alignmentRecords: AlignmentRecord[] = [];
+          const regionstr = getSegments(
+            NamedRegions.Verse,
+            attr?.segments || '{}'
+          );
+          const segs = JSON.parse(regionstr ?? '{}')?.regions as
+            | IRegion[]
+            | undefined;
+          segs?.forEach((s) => {
+            alignmentRecords.push({
+              references: [
+                [`${timeFmt(s.start)} --> ${timeFmt(s.end)}`],
+                [`${book} ${s.label}`],
+              ],
+            } as AlignmentRecord);
+          });
+          alignmentGroups.push({
+            documents: [
+              { scheme: 'vtt-timecode', docid },
+              { scheme: 'u23003' },
+            ],
+            records: alignmentRecords,
+          });
         }
       }
     }
+    const alignment = new AlignmentBuilder()
+      .withGroups(alignmentGroups)
+      .build();
+    const content = JSON.stringify(alignment, null, 2);
+    await ipc?.write(alignPath, content);
+    // add the alignment file to the metadata file
+    const docid = alignPath.substring(preLen);
+    ingredients[docid] = {
+      checksum: { md5: await ipc?.md5File(alignPath) },
+      mimeType: 'application/json',
+      size: content.length,
+      scope: { [book]: Array.from(chapters).sort() },
+      role: ['timing'],
+    };
     const curScopes = scopes.get(book) || [];
     scopes.set(book, [...curScopes, ...Array.from(chapters).sort()]);
     const newScopes: BurritoScopes = {};
@@ -155,18 +192,8 @@ export const useBurritoAudo = (teamId: string) => {
       metadata.type.flavorType.currentScope = newScopes;
     }
     metadata.ingredients = ingredients;
-
-    // add the formats to the metadata file
-    const formats: BurritoFormats = {};
-    let formatn = 0;
-    Array.from(compressions).forEach((c) => {
-      formats[`format${++formatn}`] = {
-        compression: c,
-        trackConfiguration: 'mono',
-      };
-    });
-    if (metadata.type?.flavorType?.flavor) {
-      metadata.type.flavorType.flavor.formats = formats;
+    if (metadata.type?.flavorType?.flavor?.name) {
+      metadata.type.flavorType.flavor.name = 'timing';
     }
     return metadata;
   };

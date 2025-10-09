@@ -112,6 +112,7 @@ interface BurritoIngredient {
   scope?: {
     [key: string]: string[];
   };
+  role?: string[];
 }
 
 export interface BurritoIngredients {

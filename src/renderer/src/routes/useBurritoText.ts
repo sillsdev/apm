@@ -1,63 +1,53 @@
 import path from 'path-browserify';
 import {
   Burrito,
-  BurritoFormats,
   BurritoIngredients,
   BurritoScopes,
 } from '../burrito/data/burritoBuilder';
 import related from '../crud/related';
 import { VernacularTag } from '../crud/useArtifactType';
-import { useFetchUrlNow } from '../crud/useFetchUrlNow';
 import { useOrgDefaults } from '../crud/useOrgDefaults';
-import { useSnackBar } from '../hoc/SnackBar';
 import { useOrbitData } from '../hoc/useOrbitData';
-import { BibleD, MediaFileD, PassageD, SectionD } from '../model';
-import dataPath, { PathType } from '../utils/dataPath';
-import { removeExtension } from '../utils/removeExtension';
-import cleanFileName from '../utils/cleanFileName';
+import { MediaFileD, PassageD, SectionD } from '../model';
 import { parseRef } from '../crud/passage';
 import { passageTypeFromRef } from '../control/passageTypeFromRef';
 import { PassageTypeEnum } from '../model/passageType';
-import { pad3 } from '../utils/pad3';
 
 import { MainAPI } from '@model/main-api';
+import { sectionDescription } from '../crud/section';
 const ipc = window?.api as MainAPI;
 
 interface Props {
   metadata: Burrito;
-  bible: BibleD;
   book: string;
   bookPath: string;
   preLen: number;
   sections: SectionD[];
 }
 
-export const useBurritoAudo = (teamId: string) => {
+export const useBurritoText = (teamId: string) => {
   const mediafiles = useOrbitData<MediaFileD[]>('mediafile');
   const passages = useOrbitData<PassageD[]>('passage');
   const { getOrgDefault } = useOrgDefaults();
-  const fetchUrl = useFetchUrlNow();
-  const { showMessage } = useSnackBar();
 
-  return async ({
-    metadata,
-    bible,
-    book,
-    bookPath,
-    preLen,
-    sections,
-  }: Props) => {
+  return async ({ metadata, book, bookPath, preLen, sections }: Props) => {
     // setup data structures to capture metadata from content
     const scopes: Map<string, string[]> = new Map(); // book scopes
-    const compressions = new Set<string>();
     const ingredients: BurritoIngredients = {};
     const chapters = new Set<string>();
+    const textNameMap = new Map<number, string>();
+    const textMap = new Map<number, string[]>();
 
     let chapter = 0;
-    // let chapterTag = 0;
-    let chapterPath = '';
+    let bookStart = '';
+    let chapterStart = '';
+    const versions = parseInt(
+      (getOrgDefault('burritoVersions', teamId) || '1') as string
+    );
 
     for (const section of sections) {
+      let sectionStart = `\\s ${sectionDescription(section).trim()}\n`;
+
       // get the passages files for the plan sorted by sequence number
       const planMedia = mediafiles.filter(
         (m) => related(section, 'plan') === related(m, 'plan')
@@ -81,9 +71,9 @@ export const useBurritoAudo = (teamId: string) => {
         // new chapter number create a new chapter folder and usfm chapter header if necessary
         if (startChapter && startChapter !== chapter) {
           chapter = startChapter;
+          if (chapter === 1) bookStart = `\\id ${book}`;
+          chapterStart = `\\c ${chapter.toString()}`;
           chapters.add(chapter.toString());
-          chapterPath = path.join(bookPath, pad3(chapter));
-          await ipc?.createFolder(chapterPath);
         }
         if (passageType !== PassageTypeEnum.PASSAGE) continue;
 
@@ -100,50 +90,55 @@ export const useBurritoAudo = (teamId: string) => {
           .sort(
             (a, b) => b.attributes.versionNumber - a.attributes.versionNumber
           );
-        const versions = parseInt(
-          (getOrgDefault('burritoVersions', teamId) || '1') as string
-        );
         for (let i = 0; i < versions; i++) {
           if (i >= vernMedia.length) break;
           const attr = vernMedia[i].attributes;
 
-          // get the "compression" for the metadata file
-          const ext = removeExtension(attr.originalFile).ext?.toLowerCase();
-          compressions.add(ext);
-
-          // download the media file if necessary
-          const mediaUrl = attr.audioUrl;
-          const local = { localname: '' };
-          await dataPath(mediaUrl, PathType.MEDIA, local);
-          const mediaName = local.localname;
-          if (!(await ipc?.exists(mediaName))) {
-            const id = vernMedia[i].keys?.remoteId || vernMedia[i].id;
-            await fetchUrl({ id, cancelled: () => false });
-            if (!(await ipc?.exists(mediaName))) {
-              showMessage(`Failed to download ${mediaUrl}`);
-              continue;
-            }
+          // initialize name and text maps
+          if (!textNameMap.has(i)) {
+            textNameMap.set(i, `${book}v${i + 1}.usfm`);
+          }
+          if (!textMap.has(i)) {
+            const initialText = new Array<string>();
+            if (bookStart) initialText.push(bookStart);
+            if (sectionStart) initialText.push(sectionStart);
+            if (chapterStart) initialText.push(chapterStart);
+            textMap.set(i, initialText);
+            chapterStart = '';
+            sectionStart = '';
+            bookStart = '';
           }
 
-          // create the destination file name and copy the media file
-          const destName = `${
-            bible?.attributes?.bibleId || teamId || ''
-          }-${book}-${cleanFileName(p.attributes.reference)}v${
-            attr.versionNumber
-          }${path.extname(attr.originalFile)}`;
-          const destPath = path.join(chapterPath, destName);
-          const docid = destPath.substring(preLen);
-          await ipc?.copyFile(mediaName, destPath);
-
-          // add the media file to the metadata file
-          ingredients[docid] = {
-            checksum: { md5: await ipc?.md5File(destPath) },
-            mimeType: attr.contentType,
-            size: attr.filesize,
-            scope: { [book]: [p.attributes.reference] },
-          };
+          // get the transcription for the usfm file
+          if (attr?.transcription) {
+            const text = textMap.get(i);
+            if (text) {
+              let verseRange = attr.transcription;
+              if (!/\\v/.test(verseRange)) {
+                verseRange = `\\v ${p.attributes.reference} ${attr.transcription}`;
+              }
+              text.push(verseRange);
+              textMap.set(i, text);
+            }
+          }
         }
       }
+    }
+    for (let i = 0; i < versions; i++) {
+      const name = textNameMap.get(i);
+      if (!name) continue;
+      const textPath = path.join(bookPath, name);
+      const text = textMap.get(i);
+      const content = text?.join('\n') as string;
+      await ipc?.write(textPath, content);
+      // add the alignment file to the metadata file
+      const docid = textPath.substring(preLen);
+      ingredients[docid] = {
+        checksum: { md5: await ipc?.md5File(textPath) },
+        mimeType: 'application/json',
+        size: content.length,
+        scope: { [book]: Array.from(chapters).sort() },
+      };
     }
     const curScopes = scopes.get(book) || [];
     scopes.set(book, [...curScopes, ...Array.from(chapters).sort()]);
@@ -155,18 +150,8 @@ export const useBurritoAudo = (teamId: string) => {
       metadata.type.flavorType.currentScope = newScopes;
     }
     metadata.ingredients = ingredients;
-
-    // add the formats to the metadata file
-    const formats: BurritoFormats = {};
-    let formatn = 0;
-    Array.from(compressions).forEach((c) => {
-      formats[`format${++formatn}`] = {
-        compression: c,
-        trackConfiguration: 'mono',
-      };
-    });
-    if (metadata.type?.flavorType?.flavor) {
-      metadata.type.flavorType.flavor.formats = formats;
+    if (metadata.type?.flavorType?.flavor?.name) {
+      metadata.type.flavorType.flavor.name = 'textTranslation';
     }
     return metadata;
   };
