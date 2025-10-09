@@ -49,11 +49,14 @@ import {
 import { GetReference } from './AudioTab/GetReference';
 import { OrganizationSchemeD } from '../model/organizationScheme';
 import {
+  GridColumnVisibilityModel,
+  GridRenderCellParams,
   type GridColDef,
   type GridRowSelectionModel,
   type GridSortModel,
 } from '@mui/x-data-grid';
 import { TreeDataGrid } from './TreeDataGrid';
+import { pad2 } from '../utils/pad2';
 
 const AssignmentDiv = styled('div')(() => ({
   display: 'flex',
@@ -118,6 +121,38 @@ export function AssignmentTable() {
     () => Boolean(getOrgDefault(orgDefaultPermissions)),
     [getOrgDefault]
   );
+
+  const handleView = (schemeId: string) => () => {
+    setAssignMenu(undefined);
+    setAssignSectionVisible(schemeId);
+    setReadOnly(true);
+  };
+
+  const getSchemeName = (params: GridRenderCellParams) => {
+    const sectionId = params.row.scheme as string;
+    const section = sections.find((s) => s.id === sectionId);
+    const schemeId = related(section, 'organizationScheme');
+    const scheme = schemes.find((s) => s.id === schemeId);
+    return (
+      <Button onClick={handleView(schemeId)}>
+        {scheme?.attributes?.name ?? ''}
+      </Button>
+    );
+  };
+  const getNameCell = (params: GridRenderCellParams) => {
+    if (params.row.parentId === '') return params.row.name;
+    const passage = passages.find((p) => p.id === params.row.recId) as PassageD;
+    const sr = getSharedResource(passage);
+    return (
+      <GetReference
+        passage={[passage]}
+        bookData={allBookData}
+        flat={false}
+        sr={sr}
+      />
+    );
+  };
+
   const columns: GridColDef[] = useMemo(
     () => {
       const newColumns: GridColDef[] = !flat
@@ -127,6 +162,7 @@ export function AssignmentTable() {
               headerName: organizedBy,
               width: 300,
               cellClassName: 'word-wrap',
+              renderCell: getNameCell,
             },
             {
               field: 'passages',
@@ -138,6 +174,11 @@ export function AssignmentTable() {
               field: 'scheme',
               headerName: isPermission ? ts.scheme : ts.scheme2,
               width: 200,
+              renderCell: getSchemeName,
+            },
+            {
+              field: 'sort',
+              width: 10,
             },
           ]
         : [
@@ -146,11 +187,17 @@ export function AssignmentTable() {
               headerName: organizedBy,
               width: 300,
               cellClassName: 'word-wrap',
+              renderCell: getNameCell,
             },
             {
               field: 'scheme',
               headerName: isPermission ? ts.scheme : ts.scheme2,
               width: 200,
+              renderCell: getSchemeName,
+            },
+            {
+              field: 'sort',
+              width: 10,
             },
           ];
       return [...newColumns];
@@ -163,22 +210,6 @@ export function AssignmentTable() {
   const orgSchemes = useMemo(() => {
     return schemes?.filter((s) => related(s, 'organization') === org);
   }, [schemes, org]);
-
-  const handleView = (schemeId: string) => () => {
-    setAssignMenu(undefined);
-    setAssignSectionVisible(schemeId);
-    setReadOnly(true);
-  };
-
-  const getSchemeName = (section: SectionD) => {
-    const schemeId = related(section, 'organizationScheme');
-    const scheme = schemes.find((s) => s.id === schemeId);
-    return (
-      <Button onClick={handleView(schemeId)}>
-        {scheme?.attributes?.name ?? ''}
-      </Button>
-    );
-  };
 
   const getAssignments = () => {
     let sectionRow: IRow;
@@ -194,37 +225,31 @@ export function AssignmentTable() {
       .sort(sectionCompare);
 
     plansections.forEach(function (section) {
+      const sort = (section.attributes?.sequencenum || 0).toFixed(2).toString();
       sectionRow = {
         id: id++,
         recId: section.id as string,
         name: sectionDescription(section, sectionMap),
-        scheme: getSchemeName(section),
+        scheme: section.id,
         passages: '0', //string so we can have blank, alternatively we could format in the tree to not show on passage rows
         parentId: '',
-        sort: (section.attributes?.sequencenum || 0).toFixed(2).toString(),
+        sort,
       };
       rowData.push(sectionRow);
+      const sectionps = passages
+        .filter((p) => related(p, 'section') === section.id)
+        .sort(passageCompare);
+      sectionRow.passages = sectionps.length.toString();
       if (openSections.includes(section.id)) {
-        const sectionps = passages
-          .filter((p) => related(p, 'section') === section.id)
-          .sort(passageCompare);
-        sectionRow.passages = sectionps.length.toString();
         sectionps.forEach(function (passage: PassageD) {
-          const sr = getSharedResource(passage);
           rowData.push({
             id: id++,
             recId: passage.id,
-            name: (
-              <GetReference
-                passage={[passage]}
-                bookData={allBookData}
-                flat={false}
-                sr={sr}
-              />
-            ),
+            name: passage.id,
             scheme: '',
             passages: '',
             parentId: section.id,
+            sort: `${sort}.${pad2(passage.attributes.sequencenum)}`,
           } as IRow);
         });
       }
@@ -367,7 +392,8 @@ export function AssignmentTable() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [check, sections]);
 
-  const sortModel: GridSortModel = [{ field: 'name', sort: 'asc' }];
+  const sortModel: GridSortModel = [{ field: 'sort', sort: 'asc' }];
+  const columnVisibilityModel: GridColumnVisibilityModel = { sort: false };
 
   return (
     <AssignmentDiv id="AssignmentTable">
@@ -408,7 +434,10 @@ export function AssignmentTable() {
             onRowSelectionModelChange={handleRowSelectionChange}
             recIdName="recId"
             expanded={setOpenSections}
-            initialState={{ sorting: { sortModel } }}
+            initialState={{
+              sorting: { sortModel },
+              columns: { columnVisibilityModel },
+            }}
             sx={{ '& .word-wrap': { wordWrap: 'break-spaces' } }}
           />
         </PaddedBox>
