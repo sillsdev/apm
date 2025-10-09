@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
-import { IMediaTabStrings } from '../../model';
+import { useMemo, useState } from 'react';
+import { IMediaTabStrings, IState, PassageD } from '../../model';
 import { FormControlLabel, Switch } from '@mui/material';
-import { useOrganizedBy } from '../../crud';
-import { IPRow } from '.';
+import { findRecord, useOrganizedBy } from '../../crud';
+import { GetReference, IPRow } from '.';
 import { useSelector } from 'react-redux';
 import { mediaTabSelector } from '../../selector';
 import {
@@ -11,7 +11,9 @@ import {
   type GridColDef,
   type GridSortModel,
   type GridRowSelectionModel,
+  GridRenderCellParams,
 } from '@mui/x-data-grid';
+import { useGlobal } from '../../context/useGlobal';
 
 interface IProps {
   data: IPRow[];
@@ -26,16 +28,28 @@ interface IProps {
 
 export const PassageChooser = (props: IProps) => {
   const { data, row, visible, uploadMedia } = props;
+  const [memory] = useGlobal('memory');
+  const allBookData = useSelector((state: IState) => state.books.bookData);
   const t: IMediaTabStrings = useSelector(mediaTabSelector);
   const { doAttach, setVisible, setUploadMedia, mediaRow } = props;
   const { getOrganizedBy } = useOrganizedBy();
   const [organizedBy] = useState(getOrganizedBy(true));
-  const [refTot, setRefTot] = useState(0);
   const [pcheck, setCheck] = useState(-1);
   const [selectedRows, setSelectedRows] = useState<GridRowSelectionModel>({
     type: 'include',
     ids: new Set(),
   });
+
+  const refCell = (params: GridRenderCellParams<IPRow>) => {
+    const passage = findRecord(
+      memory,
+      'passage',
+      params.row.passageId
+    ) as PassageD;
+    return (
+      <GetReference passage={[passage]} bookData={allBookData} flat={false} />
+    );
+  };
 
   const columns: GridColDef<IPRow>[] = useMemo(
     () => [
@@ -48,11 +62,12 @@ export const PassageChooser = (props: IProps) => {
       },
       {
         field: 'reference',
-        headerName: `${t.reference} (${refTot})`,
+        headerName: t.reference,
         width: 150,
         align: 'left',
         cellClassName: 'word-wrap',
         type: 'singleSelect',
+        renderCell: refCell,
       },
       {
         field: 'attached',
@@ -63,7 +78,7 @@ export const PassageChooser = (props: IProps) => {
       { field: 'sort', headerName: '\u00A0', width: 100, align: 'left' },
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [organizedBy, refTot]
+    [organizedBy]
   );
 
   const sortModel: GridSortModel = [{ field: 'sort', sort: 'asc' }];
@@ -71,20 +86,22 @@ export const PassageChooser = (props: IProps) => {
     GridFilterModel['items'][number]
   >({
     field: 'attached',
-    operator: '=',
+    operator: 'contains',
     value: 'N',
   });
 
   const handleAttachedFilterChange = (e: any) => {
     setAttachedFilter({
       field: 'attached',
-      operator: '=',
+      operator: 'contains',
       value: e.target.checked ? 'Y' : 'N',
     });
   };
 
   const handleRowSelectionChange = (newSelection: GridRowSelectionModel) => {
-    const checks = Array.from(newSelection.ids).map((id) => Number(id));
+    const checks = Array.from(newSelection.ids).map((id) =>
+      parseInt(id as string)
+    );
     let mRow = row;
     if (uploadMedia) {
       mRow = mediaRow(uploadMedia);
@@ -99,12 +116,6 @@ export const PassageChooser = (props: IProps) => {
     setCheck(newIds);
     setSelectedRows(newSelection);
   };
-
-  useEffect(() => {
-    const refs = data.map((r) => r.reference);
-    const uniqueRefs = new Set(refs);
-    setRefTot(uniqueRefs.size);
-  }, [data]);
 
   return (
     <div>
@@ -121,10 +132,10 @@ export const PassageChooser = (props: IProps) => {
       />
       <DataGrid
         columns={columns}
-        rows={data}
+        rows={data.map((r, id) => ({ ...r, id }))}
+        filterModel={{ items: [attachedFilter] }}
         initialState={{
           sorting: { sortModel },
-          filter: { filterModel: { items: [attachedFilter] } },
           columns: { columnVisibilityModel: { sort: false, attached: false } },
         }}
         checkboxSelection

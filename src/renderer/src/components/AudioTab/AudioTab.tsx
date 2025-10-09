@@ -127,7 +127,12 @@ export function AudioTab() {
     showMessage(t.saving);
     const handleRow = async (mediaId: string) => {
       const pRow = map[mediaId];
-      await attachPassage(pdata[pRow].id, pdata[pRow].sectionId, plan, mediaId);
+      await attachPassage(
+        pdata[pRow].passageId,
+        pdata[pRow].sectionId,
+        plan,
+        mediaId
+      );
     };
     const total = Object.keys(map).length;
     let n = 0;

@@ -1,7 +1,7 @@
 import React from 'react';
 
 export interface IPRow {
-  id: string;
+  passageId: string;
   sectionId: string;
   sectionDesc: string;
   reference: React.ReactNode;

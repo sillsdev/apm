@@ -1,5 +1,4 @@
 import { PassageD, SectionD } from '../../model';
-import { GetReference } from './GetReference';
 import { passageRow } from './getPassages';
 
 const defPassage = {
@@ -34,12 +33,10 @@ describe('src/components/AudioTab/getPassages.test.tsx', () => {
 
     // console.log(Array.from(result.sectionDesc).map((c) => c.codePointAt(0)));
     expect(result).toEqual({
-      id: '1',
+      passageId: '1',
       sectionId: '1',
       sectionDesc: '  1\xa0\xa0Creation',
-      reference: (
-        <GetReference bookData={[]} flat={false} passage={[defPassage]} />
-      ),
+      reference: 'Gen 1:1',
       attached: 'N',
       sort: '100.100',
       book: 'Gen',
@@ -66,12 +63,10 @@ describe('src/components/AudioTab/getPassages.test.tsx', () => {
     const result = passageRow(passage, defSection, defData);
 
     expect(result).toEqual({
-      id: '1',
+      passageId: '1',
       sectionId: '1',
       sectionDesc: '  1\xa0\xa0Creation',
-      reference: (
-        <GetReference bookData={[]} flat={false} passage={[passage]} />
-      ),
+      reference: 'Gen 1:1-3',
       attached: 'N',
       sort: '100.100',
       book: 'Gen',
@@ -89,12 +84,10 @@ describe('src/components/AudioTab/getPassages.test.tsx', () => {
     const result = passageRow(passage, defSection, defData);
 
     expect(result).toEqual({
-      id: '1',
+      passageId: '1',
       sectionId: '1',
       sectionDesc: '  1\xa0\xa0Creation',
-      reference: (
-        <GetReference bookData={[]} flat={false} passage={[passage]} />
-      ),
+      reference: 'Gen 1:1b-3a',
       attached: 'N',
       sort: '100.100',
       book: 'Gen',
@@ -112,12 +105,10 @@ describe('src/components/AudioTab/getPassages.test.tsx', () => {
     const result = passageRow(passage, defSection, defData);
 
     expect(result).toEqual({
-      id: '1',
+      passageId: '1',
       sectionId: '1',
       sectionDesc: '  1\xa0\xa0Creation',
-      reference: (
-        <GetReference bookData={[]} flat={false} passage={[passage]} />
-      ),
+      reference: 'Gen 1:26-2:3',
       attached: 'N',
       sort: '100.100',
       book: 'Gen',
