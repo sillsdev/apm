@@ -13,7 +13,7 @@ Desktop builds based on [electron-vite](https://electron-vite.org)
 ### Install
 
 ```bash
-$ npm install --legacy-peer-deps
+$ npm install
 $ npm run stamp
 ```
 
