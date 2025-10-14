@@ -170,9 +170,7 @@ const initState = {
     return false;
   },
   discussionSize: { width: 450, height: 900 },
-  playerSize: 280,
   setDiscussionSize: (_size: { width: number; height: number }) => {},
-  setPlayerSize: (_size: number) => {},
   chooserSize: 48,
   setChooserSize: (_size: number) => {},
   defaultFilename: '',
@@ -202,6 +200,8 @@ const initState = {
   sectionArr: [] as SectionArray,
   toggleDone: (_id: string) => {},
   canPublish: false,
+  discussOpen: false,
+  setDiscussOpen: (_discussOpen: boolean) => {},
 };
 
 export type ICtxState = typeof initState;
@@ -370,15 +370,15 @@ const PassageDetailProvider = (props: IProps) => {
     });
   };
 
-  const setPlayerSize = (playerSize: number) => {
-    setState((state: ICtxState) => {
-      return { ...state, playerSize };
-    });
-  };
-
   const setChooserSize = (chooserSize: number) => {
     setState((state: ICtxState) => {
       return { ...state, chooserSize };
+    });
+  };
+
+  const setDiscussOpen = (discussOpen: boolean) => {
+    setState((state: ICtxState) => {
+      return { ...state, discussOpen };
     });
   };
 
@@ -1112,7 +1112,6 @@ const PassageDetailProvider = (props: IProps) => {
           setCurrentStep,
           setFirstStepIndex,
           setDiscussionSize,
-          setPlayerSize,
           setChooserSize,
           setPlaying,
           setItemPlaying,
@@ -1141,6 +1140,7 @@ const PassageDetailProvider = (props: IProps) => {
           setDiscussionMarkers,
           handleHighlightDiscussion,
           forceRefresh,
+          setDiscussOpen,
           sectionArr: (getProjectDefault(projDefSectionMap) ??
             []) as SectionArray,
         },

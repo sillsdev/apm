@@ -45,6 +45,7 @@ import { UnsavedContext } from '../../context/UnsavedContext';
 import SortMenu, { ISortState } from './SortMenu';
 import { discussionListSelector } from '../../selector';
 import { useOrbitData } from '../../hoc/useOrbitData';
+import CloseIcon from '@mui/icons-material/Close';
 
 const StyledPaper = styled(Paper)<PaperProps>(({ theme }) => ({
   backgroundColor: theme.palette.secondary.light,
@@ -66,7 +67,11 @@ const actionButtonProps = { color: 'primary.light' } as SxProps;
 export const NewDiscussionToolId = 'newDiscussion';
 export const NewCommentToolId = NewDiscussionToolId + 'comment';
 
-export function DiscussionList() {
+interface DiscussionListProps {
+  onClose?: () => void;
+}
+
+export function DiscussionList({ onClose }: DiscussionListProps) {
   const discussions = useOrbitData<DiscussionD[]>('discussion');
   const mediafiles = useOrbitData<MediaFileD[]>('mediafile');
   const users = useOrbitData<User[]>('user');
@@ -111,7 +116,7 @@ export function DiscussionList() {
 
   const [rootWidthStyle, setRootWidthStyle] = useState({
     width: `${discussionSizeRef.current?.width - 64}px`, //leave room for scroll bar
-    maxHeight: `${discussionSizeRef.current?.height}px`,
+    maxHeight: `${discussionSizeRef.current?.height - 120}px`,
   });
   const { userIsAdmin } = useRole();
   const defaultFilterState: IFilterState = {
@@ -170,7 +175,7 @@ export function DiscussionList() {
     discussionSizeRef.current = discussionSize;
     setRootWidthStyle({
       width: `${discussionSizeRef.current?.width - 64}px`, // space for scroll bar
-      maxHeight: `${discussionSizeRef.current?.height}px`,
+      maxHeight: `${discussionSizeRef.current?.height - 120}px`,
     });
   }, [discussionSize]);
 
@@ -533,6 +538,13 @@ export function DiscussionList() {
               onClick={handleToggleCollapse}
             >
               {collapsed ? <ShowIcon /> : <HideIcon />}
+            </IconButton>
+            <IconButton
+              id="closeDiscussion"
+              sx={actionButtonProps}
+              onClick={onClose}
+            >
+              <CloseIcon />
             </IconButton>
           </div>
         </Box>
