@@ -26,9 +26,13 @@ export class WavRecorder {
 
     try {
       // Load the audio worklet processor
-      await this.audioContext.audioWorklet.addModule(
-        '/worker/audio-recorder-processor.js'
-      );
+      // Use relative path that works in both dev and Electron
+      const workletPath = new URL(
+        '/worker/audio-recorder-processor.js',
+        window.location.href
+      ).href;
+
+      await this.audioContext.audioWorklet.addModule(workletPath);
 
       // Create the worklet node
       this.workletNode = new AudioWorkletNode(
