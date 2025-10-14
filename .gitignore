@@ -10,6 +10,9 @@ out
 auth0-variables.json
 localization/.vscode
 localization/.vs
+localization/packages
+localization/*.lnk
+localization/*.zip
 buildDate.json
 env-config/env-files*.zip
 src/renderer/index.html
