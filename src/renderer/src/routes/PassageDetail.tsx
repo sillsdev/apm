@@ -61,23 +61,20 @@ interface PGProps {
 }
 
 const PassageDetailGrids = ({ minWidth, onMinWidth }: PGProps) => {
-  const INIT_PLAYERPANE_HEIGHT = 200 + 48; // 48 for possible passage chooser
   const [plan] = useGlobal('plan'); //will be constant here
   const [width, setWidth] = useState(window.innerWidth);
   const widthRef = React.useRef(window.innerWidth);
 
-  const [discussOpen, setDiscussOpen] = useState(false);
   const [memory] = useGlobal('memory');
   const ctx = useContext(PassageDetailContext);
   const {
     currentstep,
     discussionSize,
     setDiscussionSize,
-    chooserSize,
-    setPlayerSize,
     orgWorkflowSteps,
     mediafileId,
     sectionArr,
+    discussOpen,
   } = ctx.state;
   const minWidthRef = React.useRef(800);
   const { tool, settings } = useStepTool(currentstep);
@@ -132,7 +129,6 @@ const PassageDetailGrids = ({ minWidth, onMinWidth }: PGProps) => {
         width: newDiscWidth, //should we be smarter here?
         height: newDiscHeight,
       });
-    setPlayerSize(INIT_PLAYERPANE_HEIGHT);
   };
 
   useEffect(() => {
@@ -234,7 +230,7 @@ const PassageDetailGrids = ({ minWidth, onMinWidth }: PGProps) => {
             key={currentstep}
             sx={{ p: 0, margin: 'auto', width: `calc(100% - 32px)` }}
           >
-            <Stack direction="row">
+            <Stack direction="row" spacing={1}>
               {tool !== ToolSlug.Transcribe &&
               tool !== ToolSlug.Verses &&
               tool !== ToolSlug.Record &&
@@ -243,15 +239,14 @@ const PassageDetailGrids = ({ minWidth, onMinWidth }: PGProps) => {
                   <PassageDetailChooser width={paneWidth} />
                   {(tool !== ToolSlug.KeyTerm || mediafileId) && (
                     <PassageDetailPlayer
-                      width={paneWidth - 50}
-                      chooserReduce={chooserSize}
+                      width={paneWidth - 40}
                       allowZoomAndSpeed={true}
                     />
                   )}
                   {tool === ToolSlug.TeamCheck && <TeamCheckReference />}
                   {tool === ToolSlug.KeyTerm && (
                     <Suspense fallback={<Busy />}>
-                      <KeyTerms width={paneWidth - 40} />
+                      <KeyTerms width={paneWidth} />
                     </Suspense>
                   )}
                   {tool === ToolSlug.Discuss && (
@@ -275,7 +270,7 @@ const PassageDetailGrids = ({ minWidth, onMinWidth }: PGProps) => {
                   )}
                   {tool === ToolSlug.Transcribe && (
                     <PassageDetailTranscribe
-                      width={paneWidth}
+                      width={paneWidth - 16}
                       artifactTypeId={artifactId}
                     />
                   )}
@@ -287,7 +282,7 @@ const PassageDetailGrids = ({ minWidth, onMinWidth }: PGProps) => {
                   )}
                 </Grid>
               )}
-              <DiscussionPanel onPanel={setDiscussOpen} />
+              <DiscussionPanel />
             </Stack>
           </Paper>
         )}

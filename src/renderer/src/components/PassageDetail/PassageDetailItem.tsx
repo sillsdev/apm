@@ -114,12 +114,12 @@ export function PassageDetailItem(props: IProps) {
     setPlayItem,
     itemPlaying,
     setItemPlaying,
-    chooserSize,
     handleItemTogglePlay,
     handleItemPlayEnd,
     setRecording,
     currentstep,
     section,
+    discussOpen,
   } = usePassageDetailContext();
   const { toolChanged, startSave, saveCompleted, saveRequested } =
     useContext(UnsavedContext).state;
@@ -138,17 +138,18 @@ export function PassageDetailItem(props: IProps) {
   const [segParams, setSegParams] = useState<IRegionParams>(btDefaultSegParams);
   const toolId = 'RecordArtifactTool';
   const [paneWidth, setPaneWidth] = useState(0);
-  const [discussOpen, setDiscussOpen] = useState(false);
 
   const rowProp = useMemo(
-    () => ({ display: 'flex', width: discussOpen ? paneWidth : width - 40 }),
+    () => ({ display: 'flex', width: paneWidth - 40 }),
     [discussOpen, paneWidth, width]
   );
 
   useEffect(() => {
-    setPaneWidth(width - discussionSize.width - 16);
+    let newPaneWidth = width - 16;
+    if (discussOpen) newPaneWidth -= discussionSize.width;
+    setPaneWidth(newPaneWidth);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [discussionSize, width]);
+  }, [discussionSize, width, discussOpen]);
 
   const setUploadVisible = (value: boolean) => {
     if (value) {
@@ -357,11 +358,11 @@ export function PassageDetailItem(props: IProps) {
       <Paper sx={paperProps}>
         <div>
           {currentVersion !== 0 ? (
-            <Stack direction="row">
+            <Stack direction="row" spacing={1}>
               <Box>
-                <PassageDetailChooser width={discussOpen ? paneWidth : width} />
+                <PassageDetailChooser width={paneWidth} />
                 <PassageDetailPlayer
-                  width={discussOpen ? paneWidth : width - 40}
+                  width={paneWidth - 40}
                   allowSegment={segments}
                   allowAutoSegment={segments !== undefined}
                   saveSegments={
@@ -376,7 +377,6 @@ export function PassageDetailItem(props: IProps) {
                   onSegmentParamChange={
                     editStep ? onSegmentParamChange : undefined
                   }
-                  chooserReduce={chooserSize}
                 />
                 <Box>
                   <Box sx={rowProp}>
@@ -385,7 +385,7 @@ export function PassageDetailItem(props: IProps) {
                       currentVersion={currentVersion}
                       rowData={rowData}
                       segments={segString}
-                      width={discussOpen ? paneWidth : width}
+                      width={paneWidth}
                     />
                   </Box>
                   <Box sx={rowProp}>
@@ -468,7 +468,7 @@ export function PassageDetailItem(props: IProps) {
                     doReset={resetMedia}
                     setDoReset={setResetMedia}
                     height={200}
-                    width={discussOpen ? paneWidth : width - 40}
+                    width={paneWidth - 40}
                     onRecording={onRecordingOrPlaying}
                     onPlayStatus={onRecordingOrPlaying}
                     oneTryOnly={oneTryOnly}
@@ -533,7 +533,7 @@ export function PassageDetailItem(props: IProps) {
                   </Box>
                 </Box>
               </Box>
-              <DiscussionPanel onPanel={setDiscussOpen} />
+              <DiscussionPanel />
             </Stack>
           ) : (
             <Paper sx={paperProps}>

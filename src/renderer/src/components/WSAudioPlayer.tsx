@@ -1231,9 +1231,11 @@ function WSAudioPlayer(props: IProps) {
                 </Grid>
               )}
             </Grid>
-            <div id="wsAudioWaveform" ref={waveformRef} />
+            <Box sx={{ width: width - 40 }}>
+              <div id="wsAudioWaveform" ref={waveformRef} />
+            </Box>
             {justPlayButton || (
-              <Grid container sx={toolbarProp}>
+              <Grid container sx={{ ...toolbarProp, width: width - 40 }}>
                 <Grid>
                   {allowAutoSegment && (
                     <LightTooltip
@@ -1243,7 +1245,7 @@ function WSAudioPlayer(props: IProps) {
                       <span>
                         <ToggleButton
                           id="wsAudioLoop"
-                          sx={{ mx: 1 }}
+                          sx={{ mx: 1, p: 0.5 }}
                           value="loop"
                           selected={looping}
                           onChange={handleToggleLoop}
@@ -1422,7 +1424,7 @@ function WSAudioPlayer(props: IProps) {
                     {metaData}
                   </>
                 )}
-                <Grid sx={{ flexGrow: 1 }}>{'\u00A0'}</Grid>
+                <GrowingSpacer />
                 {!onSaveProgress && <>{metaData}</>}
               </Grid>
             )}

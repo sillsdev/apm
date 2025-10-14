@@ -1,5 +1,5 @@
 import { useGlobal } from '../../context/useGlobal';
-import { Badge, Button, IconButton, Typography } from '@mui/material';
+import { Badge, Box, Button, IconButton, Typography } from '@mui/material';
 import { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { UnsavedContext } from '../../context/UnsavedContext';
 import {
@@ -52,6 +52,8 @@ import { useLocLangName } from '../../utils/useLocLangName';
 import { SaveSegments } from './SaveSegments';
 import { AsrTarget } from '../../business/asr/AsrTarget';
 
+export const PLAYER_HEIGHT = 120 + 80;
+
 export interface DetailPlayerProps {
   allowSegment?: NamedRegions | undefined;
   saveSegments?: SaveSegments | undefined;
@@ -71,12 +73,12 @@ export interface DetailPlayerProps {
   onTranscription?: (transcription: string) => void;
   allowZoomAndSpeed?: boolean;
   position?: number;
-  chooserReduce?: number;
   width: number;
   parentToolId?: string;
   role?: string;
   hasTranscription?: boolean;
   contentVerses?: string[];
+  metaData?: React.ReactNode;
 }
 
 export function PassageDetailPlayer(props: DetailPlayerProps) {
@@ -97,12 +99,12 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
     onTranscription,
     allowZoomAndSpeed,
     position,
-    chooserReduce,
     width,
     parentToolId,
     role,
     hasTranscription,
     contentVerses,
+    metaData,
   } = props;
 
   const [memory] = useGlobal('memory');
@@ -136,7 +138,6 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
     playing,
     setPlaying,
     currentstep,
-    playerSize,
     currentSegmentIndex,
     setCurrentSegment,
     discussionMarkers,
@@ -403,11 +404,11 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
   };
 
   return (
-    <div id="detailplayer">
+    <Box id="detailplayer" sx={{ width: width }}>
       <WSAudioPlayer
         id="audioPlayer"
         allowRecord={false}
-        height={playerSize - (chooserReduce ?? 0)}
+        height={PLAYER_HEIGHT}
         width={width}
         blob={audioBlob}
         initialposition={initialposition}
@@ -493,6 +494,7 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
             ) : (
               <></>
             )}
+            {metaData}
           </>
         }
       />
@@ -540,7 +542,7 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
           />
         </BigDialog>
       )}
-    </div>
+    </Box>
   );
 }
 

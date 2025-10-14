@@ -65,7 +65,6 @@ import {
 } from '../utils';
 import { isElectron } from '../../api-variable';
 import { TokenContext } from '../context/TokenProvider';
-// import { debounce } from 'lodash';
 import { AllDone } from './AllDone';
 import { LastEdit } from '../control';
 import { UpdateRecord, UpdateRelatedRecord } from '../model/baseModel';
@@ -81,7 +80,9 @@ import { activitySelector, vProjectSelector } from '../selector';
 import { shallowEqual, useSelector } from 'react-redux';
 import usePassageDetailContext from '../context/usePassageDetailContext';
 import { IRegionParams } from '../crud/useWavesurferRegions';
-import PassageDetailPlayer from './PassageDetail/PassageDetailPlayer';
+import PassageDetailPlayer, {
+  PLAYER_HEIGHT,
+} from './PassageDetail/PassageDetailPlayer';
 import { PlayInPlayer } from '../context/PlayInPlayer';
 import Settings from '@mui/icons-material/Settings';
 import { EditorSettings } from './Team/ProjectDialog';
@@ -106,7 +107,6 @@ import { SaveSegments } from './PassageDetail/SaveSegments';
 //import useRenderingTrace from '../utils/useRenderingTrace';
 
 const HISTORY_KEY = 'F7,CTRL+7';
-const INIT_PLAYER_HEIGHT = 180;
 
 interface IProps {
   defaultWidth: number;
@@ -130,6 +130,7 @@ export function Transcriber(props: IProps) {
     stepSettings,
     hasChecking,
     hasPermission,
+    defaultWidth,
     setComplete,
     onReopen,
     onReject,
@@ -266,8 +267,6 @@ export function Transcriber(props: IProps) {
   const {
     loading,
     playing,
-    playerSize,
-    setPlayerSize,
     chooserSize,
     pdBusy,
     playerMediafile,
@@ -275,7 +274,7 @@ export function Transcriber(props: IProps) {
     discussionSize,
   } = usePassageDetailContext();
   const [boxHeight, setBoxHeight] = useState(
-    discussionSize.height - (playerSize + 200)
+    discussionSize.height - (PLAYER_HEIGHT + 220) - chooserSize - 90
   );
   const [style, setStyle] = useState({
     cursor: 'default',
@@ -405,7 +404,6 @@ export function Transcriber(props: IProps) {
       if (intfind > -1)
         setParatextIntegration((integrations[intfind] as InitializedRecord).id);
     };
-    if (playerSize < INIT_PLAYER_HEIGHT) setPlayerSize(INIT_PLAYER_HEIGHT);
     getParatextIntegration();
 
     keys.forEach((k) => subscribe(k.key, k.cb));
@@ -460,11 +458,11 @@ export function Transcriber(props: IProps) {
   }, [toolsChanged]);
 
   useEffect(() => {
-    let newBoxHeight = discussionSize.height - playerSize - chooserSize;
-    if (paratextProject) newBoxHeight -= 90;
+    let newBoxHeight = discussionSize.height - PLAYER_HEIGHT - chooserSize - 50;
+    if (defaultWidth < 700) newBoxHeight -= 40;
     if (newBoxHeight !== boxHeight) setBoxHeight(newBoxHeight);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [discussionSize, playerSize, paratextProject]);
+  }, [discussionSize, chooserSize, defaultWidth]);
 
   //user changes selected...tell the task table
   useEffect(() => {
@@ -1048,7 +1046,7 @@ export function Transcriber(props: IProps) {
     }, 1000 * 30);
   };
 
-  const paperStyle = { width: props.defaultWidth - 36 };
+  const paperStyle = { width: defaultWidth - 16 };
 
   const onInteraction = () => {
     focusOnTranscription();
@@ -1140,30 +1138,6 @@ export function Transcriber(props: IProps) {
               direction="row"
               sx={{ alignItems: 'center', whiteSpace: 'nowrap' }}
             >
-              {role === 'transcriber' &&
-                hasParatextName &&
-                paratextProject &&
-                !noParatext &&
-                !passage?.attributes?.reference.startsWith(
-                  PassageTypeEnum.NOTE
-                ) && (
-                  <Grid>
-                    <LightTooltip title={addPt(t.pullParatextTip)}>
-                      <span>
-                        <IconButton
-                          id="transcriber.pullParatext"
-                          onClick={handlePullParatext}
-                          disabled={!transSelected}
-                        >
-                          <>
-                            <PullIcon />
-                            <Typography>{Paratext}</Typography>
-                          </>
-                        </IconButton>
-                      </span>
-                    </LightTooltip>
-                  </Grid>
-                )}
               <Grid id="transcriberplayer">
                 <PassageDetailPlayer
                   width={props.defaultWidth}
@@ -1196,6 +1170,34 @@ export function Transcriber(props: IProps) {
                     verseLabels.length <= contentVerses.length
                   }
                   contentVerses={contentVerses}
+                  metaData={
+                    role === 'transcriber' &&
+                    hasParatextName &&
+                    paratextProject &&
+                    !noParatext &&
+                    !passage?.attributes?.reference.startsWith(
+                      PassageTypeEnum.NOTE
+                    ) ? (
+                      <Grid>
+                        <LightTooltip title={addPt(t.pullParatextTip)}>
+                          <span>
+                            <IconButton
+                              id="transcriber.pullParatext"
+                              onClick={handlePullParatext}
+                              disabled={!transSelected}
+                            >
+                              <>
+                                <PullIcon />
+                                <Typography>{Paratext}</Typography>
+                              </>
+                            </IconButton>
+                          </span>
+                        </LightTooltip>
+                      </Grid>
+                    ) : (
+                      <></>
+                    )
+                  }
                 />
               </Grid>
             </Grid>
