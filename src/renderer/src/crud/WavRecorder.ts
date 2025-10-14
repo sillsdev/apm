@@ -25,14 +25,79 @@ export class WavRecorder {
     if (this.workletLoaded) return;
 
     try {
-      // Load the audio worklet processor
-      // Use relative path that works in both dev and Electron
-      const workletPath = new URL(
-        '/worker/audio-recorder-processor.js',
-        window.location.href
-      ).href;
+      // Inline the worklet code to work in Electron
+      const workletCode = `
+        class AudioRecorderProcessor extends AudioWorkletProcessor {
+          constructor() {
+            super();
+            this.isRecording = false;
+            this.audioData = [];
 
-      await this.audioContext.audioWorklet.addModule(workletPath);
+            // Set up message handler
+            this.port.onmessage = (event) => {
+              const { type, data } = event.data;
+              console.log('worklet received message:', type);
+
+              switch (type) {
+                case 'startRecording':
+                  this.isRecording = true;
+                  this.audioData = [];
+                  console.log('worklet: started recording');
+                  break;
+
+                case 'stopRecording':
+                  this.isRecording = false;
+                  console.log('worklet: stopped recording, data chunks:', this.audioData.length);
+                  // Send all collected audio data
+                  this.port.postMessage({
+                    type: 'recordingComplete',
+                    data: this.audioData,
+                  });
+                  this.audioData = [];
+                  break;
+              }
+            };
+          }
+
+          static get parameterDescriptors() {
+            return [];
+          }
+
+          process(inputs, outputs, parameters) {
+            const input = inputs[0];
+
+            if (input.length > 0 && this.isRecording) {
+              // Get the first channel (mono recording)
+              const inputChannel = input[0];
+
+              // Copy the audio data to our buffer
+              const audioChunk = new Float32Array(inputChannel.length);
+              audioChunk.set(inputChannel);
+
+              this.audioData.push(audioChunk);
+
+              // Send the audio data to the main thread (optional - for real-time feedback)
+              this.port.postMessage({
+                type: 'audioData',
+                data: audioChunk,
+              });
+            }
+
+            return true; // Keep the processor alive
+          }
+        }
+
+        registerProcessor('audio-recorder-processor', AudioRecorderProcessor);
+      `;
+
+      // Create a blob URL from the worklet code
+      const blob = new Blob([workletCode], { type: 'application/javascript' });
+      const workletUrl = URL.createObjectURL(blob);
+
+      await this.audioContext.audioWorklet.addModule(workletUrl);
+
+      // Clean up the blob URL after loading
+      URL.revokeObjectURL(workletUrl);
 
       // Create the worklet node
       this.workletNode = new AudioWorkletNode(
