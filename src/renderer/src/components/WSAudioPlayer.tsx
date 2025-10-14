@@ -657,15 +657,15 @@ function WSAudioPlayer(props: IProps) {
   }
 
   async function onRecordStop(blob: Blob) {
-    await wsInsertAudio(
+    const newPos = await wsInsertAudio(
       blob,
       undefined,
       recordStartPosition.current,
       recordOverwritePosition.current
     );
+    initialPosRef.current = newPos;
     recordOverwritePosition.current = undefined;
     setProcessingRecording(false);
-    setReady(true);
     handleChanged();
   }
 
@@ -689,9 +689,7 @@ function WSAudioPlayer(props: IProps) {
         recordOverwritePosition.current
       );
       if (insertingRef.current) recordOverwritePosition.current = newPos;
-      /* it's not actually loaded yet
-      setDuration(wsDuration());
-      wsGoto(newPos || wsDuration());*/
+      initialPosRef.current = newPos;
     }
   }
 
