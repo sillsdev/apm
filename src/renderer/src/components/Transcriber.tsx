@@ -9,7 +9,6 @@ import React, {
 } from 'react';
 import { useGetGlobal, useGlobal } from '../context/useGlobal';
 import { useParams } from 'react-router-dom';
-import { SplitWrapper as Wrapper, SplitPane, Pane } from '../control/Panes';
 import Confirm from './AlertDialog';
 import {
   MediaFile,
@@ -26,7 +25,7 @@ import {
   SectionD,
   MediaFileD,
 } from '../model';
-import { Grid, Paper, Typography, IconButton } from '@mui/material';
+import { Grid, Paper, Typography, IconButton, Box, Stack } from '@mui/material';
 import { StyledTextAreaAudosize } from '../control/WebFontStyles';
 import useTodo from '../context/useTodo';
 import PullIcon from '@mui/icons-material/GetAppOutlined';
@@ -66,7 +65,7 @@ import {
 } from '../utils';
 import { isElectron } from '../../api-variable';
 import { TokenContext } from '../context/TokenProvider';
-import { debounce } from 'lodash';
+// import { debounce } from 'lodash';
 import { AllDone } from './AllDone';
 import { LastEdit } from '../control';
 import { UpdateRecord, UpdateRelatedRecord } from '../model/baseModel';
@@ -461,10 +460,11 @@ export function Transcriber(props: IProps) {
   }, [toolsChanged]);
 
   useEffect(() => {
-    const newBoxHeight = discussionSize.height - playerSize - chooserSize;
+    let newBoxHeight = discussionSize.height - playerSize - chooserSize;
+    if (paratextProject) newBoxHeight -= 90;
     if (newBoxHeight !== boxHeight) setBoxHeight(newBoxHeight);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [discussionSize, playerSize]);
+  }, [discussionSize, playerSize, paratextProject]);
 
   //user changes selected...tell the task table
   useEffect(() => {
@@ -1094,10 +1094,6 @@ export function Transcriber(props: IProps) {
     addText(timeStamp);
   };
 
-  const handleSplitSize = debounce((e: any) => {
-    setPlayerSize(e);
-  }, 50);
-
   useEffect(() => {
     setArtifactTypeSlug(
       slug
@@ -1139,119 +1135,110 @@ export function Transcriber(props: IProps) {
           <AllDone />
         ) : (
           <Grid container direction="column" style={style}>
-            <Wrapper>
-              <SplitPane
-                defaultSize={playerSize}
-                minSize={INIT_PLAYER_HEIGHT}
-                maxSize={discussionSize.height - 280 - chooserSize}
-                style={{ position: 'static' }}
-                split="horizontal"
-                onChange={handleSplitSize}
-              >
-                <Pane>
-                  <Grid
-                    container
-                    direction="row"
-                    sx={{ alignItems: 'center', whiteSpace: 'nowrap' }}
-                  >
-                    {role === 'transcriber' &&
-                      hasParatextName &&
-                      paratextProject &&
-                      !noParatext &&
-                      !passage?.attributes?.reference.startsWith(
-                        PassageTypeEnum.NOTE
-                      ) && (
-                        <Grid>
-                          <LightTooltip title={addPt(t.pullParatextTip)}>
-                            <span>
-                              <IconButton
-                                id="transcriber.pullParatext"
-                                onClick={handlePullParatext}
-                                disabled={!transSelected}
-                              >
-                                <>
-                                  <PullIcon />
-                                  <Typography>{Paratext}</Typography>
-                                </>
-                              </IconButton>
-                            </span>
-                          </LightTooltip>
-                        </Grid>
-                      )}
-                    <Grid id="transcriberplayer">
-                      <PassageDetailPlayer
-                        width={props.defaultWidth}
-                        position={defaultPosition}
-                        allowAutoSegment={true}
-                        saveSegments={
-                          allowSegment
-                            ? SaveSegments.saveButNoButton
-                            : undefined
-                        }
-                        defaultSegParams={segParams}
-                        canSetDefaultParams={canSetOrgDefault}
-                        allowSegment={allowSegment}
-                        allowZoomAndSpeed={true}
-                        onProgress={onProgress}
-                        suggestedSegments={suggestedSegs}
-                        verses={verseSegs.current}
-                        onStartRegion={handleStartRegion}
-                        onSegment={onSegmentChange}
-                        onSegmentParamChange={onSegmentParamChange}
-                        onInteraction={onInteraction}
-                        onTranscription={handleAutoTranscribe}
-                        parentToolId={toolId}
-                        onSaveProgress={
-                          !transSelected || role === 'view'
-                            ? undefined
-                            : onSaveProgress
-                        }
-                        role={role}
-                        hasTranscription={
-                          textValue !== '' &&
-                          verseLabels.length <= contentVerses.length
-                        }
-                        contentVerses={contentVerses}
-                      />
-                    </Grid>
+            <Grid
+              container
+              direction="row"
+              sx={{ alignItems: 'center', whiteSpace: 'nowrap' }}
+            >
+              {role === 'transcriber' &&
+                hasParatextName &&
+                paratextProject &&
+                !noParatext &&
+                !passage?.attributes?.reference.startsWith(
+                  PassageTypeEnum.NOTE
+                ) && (
+                  <Grid>
+                    <LightTooltip title={addPt(t.pullParatextTip)}>
+                      <span>
+                        <IconButton
+                          id="transcriber.pullParatext"
+                          onClick={handlePullParatext}
+                          disabled={!transSelected}
+                        >
+                          <>
+                            <PullIcon />
+                            <Typography>{Paratext}</Typography>
+                          </>
+                        </IconButton>
+                      </span>
+                    </LightTooltip>
                   </Grid>
-                </Pane>
-                <Pane>
-                  <Grid size={{ xs: 12 }} container>
-                    <Grid
-                      ref={transcriptionRef}
-                      size={{ xs: showHistory ? 6 : 12 }}
-                      container
-                      direction="column"
-                    >
-                      <StyledTextAreaAudosize
-                        autoFocus
-                        id="transcriber.text"
-                        value={textValue}
-                        readOnly={!transSelected || role === 'view'}
-                        family={projData?.fontConfig?.custom?.families[0] ?? ''}
-                        url={projData?.fontConfig?.custom?.urls[0] ?? ''}
-                        overrides={textAreaStyle}
-                        onChange={handleChange}
-                        lang={projData?.langTag || 'en'}
-                        spellCheck={projData?.spellCheck}
-                      />
-                    </Grid>
-                    {showHistory && (
-                      <Grid size={{ xs: 6 }} container direction="column">
-                        <PassageHistory
-                          passageId={passage?.id || ''}
-                          boxHeight={boxHeight - 16}
-                        />
-                      </Grid>
-                    )}
-                  </Grid>
-                </Pane>
-              </SplitPane>
-            </Wrapper>
+                )}
+              <Grid id="transcriberplayer">
+                <PassageDetailPlayer
+                  width={props.defaultWidth}
+                  position={defaultPosition}
+                  allowAutoSegment={true}
+                  saveSegments={
+                    allowSegment ? SaveSegments.saveButNoButton : undefined
+                  }
+                  defaultSegParams={segParams}
+                  canSetDefaultParams={canSetOrgDefault}
+                  allowSegment={allowSegment}
+                  allowZoomAndSpeed={true}
+                  onProgress={onProgress}
+                  suggestedSegments={suggestedSegs}
+                  verses={verseSegs.current}
+                  onStartRegion={handleStartRegion}
+                  onSegment={onSegmentChange}
+                  onSegmentParamChange={onSegmentParamChange}
+                  onInteraction={onInteraction}
+                  onTranscription={handleAutoTranscribe}
+                  parentToolId={toolId}
+                  onSaveProgress={
+                    !transSelected || role === 'view'
+                      ? undefined
+                      : onSaveProgress
+                  }
+                  role={role}
+                  hasTranscription={
+                    textValue !== '' &&
+                    verseLabels.length <= contentVerses.length
+                  }
+                  contentVerses={contentVerses}
+                />
+              </Grid>
+            </Grid>
 
-            <Grid container direction="row" sx={{ pt: '12px' }}>
-              <Grid sx={{ display: 'flex', alignItems: 'center' }}>
+            <Grid size={{ xs: 12 }} container>
+              <Grid
+                ref={transcriptionRef}
+                size={{ xs: showHistory ? 6 : 12 }}
+                container
+                direction="column"
+              >
+                <StyledTextAreaAudosize
+                  autoFocus
+                  id="transcriber.text"
+                  value={textValue}
+                  readOnly={!transSelected || role === 'view'}
+                  family={projData?.fontConfig?.custom?.families[0] ?? ''}
+                  url={projData?.fontConfig?.custom?.urls[0] ?? ''}
+                  overrides={textAreaStyle}
+                  onChange={handleChange}
+                  lang={projData?.langTag || 'en'}
+                  spellCheck={projData?.spellCheck}
+                />
+              </Grid>
+              {showHistory && (
+                <Grid size={{ xs: 6 }} container direction="column">
+                  <PassageHistory
+                    passageId={passage?.id || ''}
+                    boxHeight={boxHeight - 16}
+                  />
+                </Grid>
+              )}
+            </Grid>
+
+            <Stack
+              direction="row"
+              sx={{
+                pt: '12px',
+                width: '100%',
+                justifyContent: 'space-between',
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
                 <TaskFlag
                   ta={ta}
                   state={mediafile?.attributes?.transcriptionstate || ''}
@@ -1262,77 +1249,71 @@ export function Transcriber(props: IProps) {
                   </IconButton>
                 </LightTooltip>
                 {isElectron && <Spelling />}
-              </Grid>
-              <Grid>
-                <Grid container justifyContent="flex-end">
-                  <div>
-                    <LastEdit
-                      when={lastSaved}
-                      cb={handleShowHistory}
-                      t={sharedStr}
-                    />
-                    {role !== 'view' ? (
-                      <>
+              </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <LastEdit
+                  when={lastSaved}
+                  cb={handleShowHistory}
+                  t={sharedStr}
+                />
+                {role !== 'view' ? (
+                  <>
+                    <AltButton
+                      id="transcriber.reject"
+                      onClick={handleReject}
+                      disabled={!transSelected || playing}
+                    >
+                      {t.reject}
+                    </AltButton>
+                    <LightTooltip
+                      title={transcribing ? t.saveTip : t.saveReviewTip}
+                    >
+                      <span>
                         <AltButton
-                          id="transcriber.reject"
-                          onClick={handleReject}
+                          id="transcriber.save"
+                          variant={changed ? 'contained' : 'outlined'}
+                          onClick={handleSaveButton}
                           disabled={!transSelected || playing}
                         >
-                          {t.reject}
+                          {t.save}
                         </AltButton>
-                        <LightTooltip
-                          title={transcribing ? t.saveTip : t.saveReviewTip}
+                      </span>
+                    </LightTooltip>
+                    <LightTooltip
+                      title={
+                        transcribing
+                          ? t.submitTranscriptionTip
+                          : t.submitReviewTip
+                      }
+                    >
+                      <span>
+                        <PriButton
+                          id="transcriber.submit"
+                          onClick={handleSubmit}
+                          disabled={!transSelected || playing}
                         >
-                          <span>
-                            <AltButton
-                              id="transcriber.save"
-                              variant={changed ? 'contained' : 'outlined'}
-                              onClick={handleSaveButton}
-                              disabled={!transSelected || playing}
-                            >
-                              {t.save}
-                            </AltButton>
-                          </span>
-                        </LightTooltip>
-                        <LightTooltip
-                          title={
-                            transcribing
-                              ? t.submitTranscriptionTip
-                              : t.submitReviewTip
-                          }
-                        >
-                          <span>
-                            <PriButton
-                              id="transcriber.submit"
-                              onClick={handleSubmit}
-                              disabled={!transSelected || playing}
-                            >
-                              {t.submit}
-                            </PriButton>
-                          </span>
-                        </LightTooltip>
-                      </>
-                    ) : (
-                      <AltButton
-                        id="transcriber.reopen"
-                        onClick={handleReopen}
-                        disabled={
-                          !transSelected ||
-                          !Object.prototype.hasOwnProperty.call(
-                            previous,
-                            state
-                          ) ||
-                          playing ||
-                          !hasPermission
-                        }
-                      >
-                        {t.reopen}
-                      </AltButton>
-                    )}
-                  </div>
-                </Grid>
-              </Grid>
-            </Grid>
+                          {t.submit}
+                        </PriButton>
+                      </span>
+                    </LightTooltip>
+                  </>
+                ) : (
+                  <AltButton
+                    id="transcriber.reopen"
+                    onClick={handleReopen}
+                    disabled={
+                      !transSelected ||
+                      !Object.prototype.hasOwnProperty.call(previous, state) ||
+                      playing ||
+                      !hasPermission
+                    }
+                  >
+                    {t.reopen}
+                  </AltButton>
+                )}
+                <Box sx={{ width: '45px' }}>{'\u00A0'}</Box>
+              </Box>
+            </Stack>
           </Grid>
         )}
         <TranscribeReject

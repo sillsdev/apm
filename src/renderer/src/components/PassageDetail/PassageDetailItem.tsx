@@ -2,9 +2,7 @@ import { shallowEqual } from 'react-redux';
 import { ICommunityStrings, ISharedStrings, MediaFileD } from '../../model';
 import {
   Button,
-  debounce,
   FormControlLabel,
-  Grid,
   IconButton,
   Paper,
   Radio,
@@ -14,6 +12,7 @@ import {
   Box,
   SxProps,
   styled,
+  Stack,
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { useContext, useEffect, useMemo, useRef, useState } from 'react';
@@ -30,10 +29,8 @@ import usePassageDetailContext from '../../context/usePassageDetailContext';
 import Memory from '@orbit/memory';
 import { AlertSeverity, useSnackBar } from '../../hoc/SnackBar';
 import { getSegments, NamedRegions } from '../../utils/namedSegments';
-import { SplitWrapper as Wrapper, SplitPane, Pane } from '../../control/Panes';
 import PassageDetailPlayer from './PassageDetailPlayer';
 import { SaveSegments } from './SaveSegments';
-import DiscussionList from '../Discussions/DiscussionList';
 import MediaPlayer from '../MediaPlayer';
 import MediaRecord from '../MediaRecord';
 import SelectRecording from './SelectRecording';
@@ -51,6 +48,7 @@ import ArtifactStatus from '../ArtifactStatus';
 import { useOrbitData } from '../../hoc/useOrbitData';
 import { useStepPermissions } from '../../utils/useStepPermission';
 import { btDefaultSegParams } from './btDefaultSegParams';
+import DiscussionPanel from '../../components/Discussions/DiscussionPanel';
 
 const PlayerRow = styled('div')(() => ({
   width: '100%',
@@ -61,8 +59,7 @@ const PlayerRow = styled('div')(() => ({
   display: 'flex',
 }));
 
-const paperProps = { p: 2, m: 'auto', width: `calc(100% - 32px)` } as SxProps;
-const rowProp = { display: 'flex' };
+const paperProps = { p: 2, m: 'auto', width: `calc(100% - 40px)` } as SxProps;
 const buttonProp = { mx: 1 } as SxProps;
 const ctlProps = { m: 1, pb: 2 } as SxProps;
 const statusProps = {
@@ -108,9 +105,6 @@ export function PassageDetailItem(props: IProps) {
     sharedResource,
     playerMediafile,
     discussionSize,
-    setDiscussionSize,
-    playerSize,
-    setPlayerSize,
     rowData,
     currentSegment,
     currentSegmentIndex,
@@ -144,6 +138,13 @@ export function PassageDetailItem(props: IProps) {
   const [segParams, setSegParams] = useState<IRegionParams>(btDefaultSegParams);
   const toolId = 'RecordArtifactTool';
   const [paneWidth, setPaneWidth] = useState(0);
+  const [discussOpen, setDiscussOpen] = useState(false);
+
+  const rowProp = useMemo(
+    () => ({ display: 'flex', width: discussOpen ? paneWidth : width - 40 }),
+    [discussOpen, paneWidth, width]
+  );
+
   useEffect(() => {
     setPaneWidth(width - discussionSize.width - 16);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -167,14 +168,6 @@ export function PassageDetailItem(props: IProps) {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [organization]);
-
-  const handleSplitSize = debounce((e: number) => {
-    setDiscussionSize({ width: width - e, height: discussionSize.height });
-  }, 50);
-
-  const handleHorizonalSplitSize = debounce((e: number) => {
-    setPlayerSize(e + 20);
-  }, 50);
 
   useEffect(() => {
     if (!slugs.find((s) => s === recordType))
@@ -364,225 +357,190 @@ export function PassageDetailItem(props: IProps) {
       <Paper sx={paperProps}>
         <div>
           {currentVersion !== 0 ? (
-            <Wrapper>
-              <SplitPane
-                defaultSize={width - discussionSize.width + 24}
-                style={{ position: 'static' }}
-                split="vertical"
-                onChange={handleSplitSize}
-              >
-                <Pane>
-                  <SplitPane
-                    split="horizontal"
-                    defaultSize={playerSize}
-                    minSize={150}
-                    style={{ position: 'static' }}
-                    onChange={handleHorizonalSplitSize}
-                  >
-                    <Pane>
-                      <PassageDetailChooser width={paneWidth} />
-                      <PassageDetailPlayer
-                        width={paneWidth}
-                        allowSegment={segments}
-                        allowAutoSegment={segments !== undefined}
-                        saveSegments={
-                          segments !== undefined && editStep
-                            ? SaveSegments.showSaveButton
-                            : undefined
-                        }
-                        defaultSegParams={segParams}
-                        suggestedSegments={segString}
-                        verses={verses}
-                        canSetDefaultParams={editStep && canSetOrgDefault}
-                        onSegmentParamChange={
-                          editStep ? onSegmentParamChange : undefined
-                        }
-                        chooserReduce={chooserSize}
+            <Stack direction="row">
+              <Box>
+                <PassageDetailChooser width={discussOpen ? paneWidth : width} />
+                <PassageDetailPlayer
+                  width={discussOpen ? paneWidth : width - 40}
+                  allowSegment={segments}
+                  allowAutoSegment={segments !== undefined}
+                  saveSegments={
+                    segments !== undefined && editStep
+                      ? SaveSegments.showSaveButton
+                      : undefined
+                  }
+                  defaultSegParams={segParams}
+                  suggestedSegments={segString}
+                  verses={verses}
+                  canSetDefaultParams={editStep && canSetOrgDefault}
+                  onSegmentParamChange={
+                    editStep ? onSegmentParamChange : undefined
+                  }
+                  chooserReduce={chooserSize}
+                />
+                <Box>
+                  <Box sx={rowProp}>
+                    <ArtifactStatus
+                      recordType={recordType}
+                      currentVersion={currentVersion}
+                      rowData={rowData}
+                      segments={segString}
+                      width={discussOpen ? paneWidth : width}
+                    />
+                  </Box>
+                  <Box sx={rowProp}>
+                    <Button
+                      sx={buttonProp}
+                      id="pdRecordUpload"
+                      onClick={handleUpload}
+                      title={ts.uploadMediaSingular}
+                    >
+                      <AddIcon />
+                      {ts.uploadMediaSingular}
+                    </Button>
+                    <GrowingSpacer />
+                    {currentSegment && (
+                      <TextField
+                        sx={ctlProps}
+                        id="segment"
+                        value={currentSegment}
+                        size={'small'}
+                        label={t.segment}
                       />
-                    </Pane>
-
-                    <Pane>
-                      <Paper
+                    )}
+                  </Box>
+                  <Box sx={rowProp}>
+                    <Typography sx={statusProps}>{t.record}</Typography>
+                    {slugs.length > 1 && (
+                      <RadioGroup
+                        row={true}
+                        id="filetype"
+                        aria-label="filetype"
+                        name="filetype"
+                        value={recordType}
+                        onChange={handleChangeType}
+                      >
+                        {slugs.map((s) => (
+                          <FormControlLabel
+                            key={s}
+                            id={s}
+                            value={s}
+                            control={<Radio />}
+                            label={localizedArtifactType(s)}
+                          />
+                        ))}
+                      </RadioGroup>
+                    )}
+                    <GrowingSpacer />
+                    {showTopic && (
+                      <TextField
+                        sx={ctlProps}
+                        id="itemtopic"
+                        label={t.topic}
+                        value={topic}
+                        fullWidth={true}
+                        onChange={handleChangeTopic}
+                      />
+                    )}
+                    <TextField
+                      sx={ctlProps}
+                      id="speaker"
+                      label={t.speaker}
+                      value={speaker}
+                      onChange={handleChangeSpeaker}
+                      fullWidth={true}
+                    />
+                  </Box>
+                  <MediaRecord
+                    toolId={toolId}
+                    passageId={related(sharedResource, 'passage') ?? passage.id}
+                    sourceSegments={JSON.stringify(getCurrentSegment())}
+                    sourceMediaId={mediafileId}
+                    artifactId={recordTypeId}
+                    performedBy={speaker}
+                    topic={topic}
+                    afterUploadCb={afterUploadCb}
+                    defaultFilename={defaultFilename}
+                    allowWave={false}
+                    showFilename={false}
+                    setCanSave={handleSetCanSave}
+                    setStatusText={setStatusText}
+                    doReset={resetMedia}
+                    setDoReset={setResetMedia}
+                    height={200}
+                    width={discussOpen ? paneWidth : width - 40}
+                    onRecording={onRecordingOrPlaying}
+                    onPlayStatus={onRecordingOrPlaying}
+                    oneTryOnly={oneTryOnly}
+                    noNewVoice={true}
+                    allowDeltaVoice={true}
+                    allowNoNoise={true}
+                  />
+                  <Box sx={rowProp}>
+                    <Typography variant="caption" sx={statusProps}>
+                      {statusText}
+                    </Typography>
+                    <GrowingSpacer />
+                    <PriButton
+                      id="rec-save"
+                      sx={buttonProp}
+                      onClick={handleSave}
+                      disabled={!canSave}
+                    >
+                      {ts.save}
+                    </PriButton>
+                  </Box>
+                </Box>
+                <Box>
+                  <Box sx={rowProp}>
+                    <Box>
+                      <Box
+                        id="playselect"
                         sx={{
-                          ...paperProps,
-                          display: editStep ? 'block' : 'none',
+                          display: 'flex',
+                          flexDirection: 'row',
+                          pr: 4,
+                          pb: 1,
                         }}
                       >
-                        <Box sx={rowProp}>
-                          <ArtifactStatus
-                            recordType={recordType}
-                            currentVersion={currentVersion}
-                            rowData={rowData}
-                            segments={segString}
-                            width={width - discussionSize.width - 16}
-                          />
-                        </Box>
-                        <Box sx={rowProp}>
-                          <Button
-                            sx={buttonProp}
-                            id="pdRecordUpload"
-                            onClick={handleUpload}
-                            title={ts.uploadMediaSingular}
-                          >
-                            <AddIcon />
-                            {ts.uploadMediaSingular}
-                          </Button>
-                          <GrowingSpacer />
-                          {currentSegment && (
-                            <TextField
-                              sx={ctlProps}
-                              id="segment"
-                              value={currentSegment}
-                              size={'small'}
-                              label={t.segment}
-                            />
-                          )}
-                        </Box>
-                        <Box sx={rowProp}>
-                          <Typography sx={statusProps}>{t.record}</Typography>
-                          {slugs.length > 1 && (
-                            <RadioGroup
-                              row={true}
-                              id="filetype"
-                              aria-label="filetype"
-                              name="filetype"
-                              value={recordType}
-                              onChange={handleChangeType}
-                            >
-                              {slugs.map((s) => (
-                                <FormControlLabel
-                                  key={s}
-                                  id={s}
-                                  value={s}
-                                  control={<Radio />}
-                                  label={localizedArtifactType(s)}
-                                />
-                              ))}
-                            </RadioGroup>
-                          )}
-                          <GrowingSpacer />
-                          {showTopic && (
-                            <TextField
-                              sx={ctlProps}
-                              id="itemtopic"
-                              label={t.topic}
-                              value={topic}
-                              fullWidth={true}
-                              onChange={handleChangeTopic}
-                            />
-                          )}
-                          <TextField
-                            sx={ctlProps}
-                            id="speaker"
-                            label={t.speaker}
-                            value={speaker}
-                            onChange={handleChangeSpeaker}
-                            fullWidth={true}
-                          />
-                        </Box>
-                        <MediaRecord
-                          toolId={toolId}
-                          passageId={
-                            related(sharedResource, 'passage') ?? passage.id
-                          }
-                          sourceSegments={JSON.stringify(getCurrentSegment())}
-                          sourceMediaId={mediafileId}
-                          artifactId={recordTypeId}
-                          performedBy={speaker}
-                          topic={topic}
-                          afterUploadCb={afterUploadCb}
-                          defaultFilename={defaultFilename}
-                          allowWave={false}
-                          showFilename={false}
-                          setCanSave={handleSetCanSave}
-                          setStatusText={setStatusText}
-                          doReset={resetMedia}
-                          setDoReset={setResetMedia}
-                          height={200}
-                          width={paneWidth}
-                          onRecording={onRecordingOrPlaying}
-                          onPlayStatus={onRecordingOrPlaying}
-                          oneTryOnly={oneTryOnly}
-                          noNewVoice={true}
-                          allowDeltaVoice={true}
-                          allowNoNoise={true}
+                        <SelectRecording
+                          onChange={handleSelect}
+                          tags={slugs}
+                          latestVernacular={currentVersion}
                         />
-                        <Box sx={rowProp}>
-                          <Typography variant="caption" sx={statusProps}>
-                            {statusText}
-                          </Typography>
-                          <GrowingSpacer />
-                          <PriButton
-                            id="rec-save"
-                            sx={buttonProp}
-                            onClick={handleSave}
-                            disabled={!canSave}
-                          >
-                            {ts.save}
-                          </PriButton>
-                        </Box>
-                      </Paper>
-                      <Paper sx={paperProps}>
-                        <Box sx={rowProp}>
-                          <Paper sx={paperProps}>
-                            <Box
-                              id="playselect"
-                              sx={{
-                                display: 'flex',
-                                flexDirection: 'row',
-                                pr: 4,
-                                pb: 1,
-                              }}
+                      </Box>
+                      <PlayerRow id="rowplayer">
+                        <MediaPlayer
+                          srcMediaId={playItem}
+                          requestPlay={itemPlaying}
+                          onEnded={handleItemPlayEnd}
+                          onCancel={handleCancel}
+                          onTogglePlay={handleItemTogglePlay}
+                          controls={true}
+                        />
+                        {playItem && userIsAdmin && (
+                          <LightTooltip title={t.deleteItem}>
+                            <IconButton
+                              id="delete-recording"
+                              onClick={handleDelete(playItem)}
                             >
-                              <SelectRecording
-                                onChange={handleSelect}
-                                tags={slugs}
-                                latestVernacular={currentVersion}
-                              />
-                            </Box>
-                            <PlayerRow id="rowplayer">
-                              <MediaPlayer
-                                srcMediaId={playItem}
-                                requestPlay={itemPlaying}
-                                onEnded={handleItemPlayEnd}
-                                onCancel={handleCancel}
-                                onTogglePlay={handleItemTogglePlay}
-                                controls={true}
-                              />
-                              {playItem && userIsAdmin && (
-                                <LightTooltip title={t.deleteItem}>
-                                  <IconButton
-                                    id="delete-recording"
-                                    onClick={handleDelete(playItem)}
-                                  >
-                                    <DeleteIcon />
-                                  </IconButton>
-                                </LightTooltip>
-                              )}
-                            </PlayerRow>
-                          </Paper>
-                        </Box>
-                      </Paper>
-                    </Pane>
-                  </SplitPane>
-                </Pane>
-                <Pane>
-                  <Grid size={{ xs: 12 }} container>
-                    <Grid container direction="column">
-                      <DiscussionList />
-                    </Grid>
-                  </Grid>
-                </Pane>
-              </SplitPane>
-            </Wrapper>
+                              <DeleteIcon />
+                            </IconButton>
+                          </LightTooltip>
+                        )}
+                      </PlayerRow>
+                    </Box>
+                  </Box>
+                </Box>
+              </Box>
+              <DiscussionPanel onPanel={setDiscussOpen} />
+            </Stack>
           ) : (
-            <Pane>
-              <Paper sx={paperProps}>
-                <Typography variant="h2" align="center">
-                  {ts.noAudio}
-                </Typography>
-              </Paper>
-            </Pane>
+            <Paper sx={paperProps}>
+              <Typography variant="h2" align="center">
+                {ts.noAudio}
+              </Typography>
+            </Paper>
           )}
           {confirm && (
             <Confirm
