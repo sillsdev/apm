@@ -37,7 +37,6 @@ export const ExportActionCell = (params: GridRenderCellParams & IProps) => {
         .filter({ relation: 'passage', record: passRec })
     ) as MediaFileD[];
     const latest = plan ? getMediaInPlans([plan], media, null, true) : [];
-    console.log(plan, media, latest);
     const latestMedia = latest?.[0] as MediaFileD | undefined;
     const mediaId = latestMedia?.id as string;
     const transcription = latestMedia?.attributes?.transcription?.trim();
@@ -62,7 +61,5 @@ export const ExportActionCell = (params: GridRenderCellParams & IProps) => {
         </Box>
       );
   }
-  return (
-    <Box sx={{ display: 'flex', alignItems: 'center' }}>{params.value}</Box>
-  );
+  return <Box />;
 };
