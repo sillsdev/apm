@@ -158,6 +158,8 @@ export function TranscriptionTab(props: IProps) {
   const exportAnchor = React.useRef<HTMLAnchorElement>(null);
   const [exportUrl, setExportUrl] = useState<string | undefined>();
   const [exportName, setExportName] = useState('');
+  const [columnVisibilityModel, setColumnVisibilityModel] =
+    useState<GridColumnVisibilityModel>({});
   const sectionMap = new Map<number, string>(sectionArr);
   const [project] = useGlobal('project'); //will be constant here
   const [user] = useGlobal('user');
@@ -198,10 +200,12 @@ export function TranscriptionTab(props: IProps) {
     [projectPlan]
   );
 
-  const columnVisibilityModel: GridColumnVisibilityModel = useMemo(
-    () => ({ planName: Boolean(planColumn), passages: flat }),
-    [flat, planColumn]
-  );
+  useEffect(() => {
+    setColumnVisibilityModel({
+      planName: Boolean(planColumn),
+      passages: !flat,
+    });
+  }, [flat, planColumn]);
 
   const translateError = (err: IAxiosStatus): string => {
     if (err.errStatus === 401) return ts.expiredToken;
@@ -537,7 +541,6 @@ export function TranscriptionTab(props: IProps) {
       allBookData,
       openSections
     );
-    console.log(newData);
     setData(newData);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
@@ -661,9 +664,10 @@ export function TranscriptionTab(props: IProps) {
             rows={data}
             recIdName="recId"
             expanded={setOpenSections}
+            columnVisibilityModel={columnVisibilityModel}
+            onColumnVisibilityModelChange={setColumnVisibilityModel}
             initialState={{
               sorting: { sortModel },
-              columns: { columnVisibilityModel },
             }}
             sx={{ '& .word-wrap': { wordWrap: 'break-spaces' } }}
           />
