@@ -1,5 +1,4 @@
 import { type GridRenderCellParams } from '@mui/x-data-grid';
-import { RecordKeyMap } from '@orbit/records';
 import { IconButton, Box, SxProps } from '@mui/material';
 import PlayIcon from '@mui/icons-material/PlayArrowOutlined';
 import { FaPaperclip, FaUnlink } from 'react-icons/fa';
@@ -8,8 +7,6 @@ import PauseIcon from '@mui/icons-material/Pause';
 import { shallowEqual, useSelector } from 'react-redux';
 import { IMediaActionsStrings } from '../../model';
 import { IRow } from '.';
-import { useGlobal } from '../../context/useGlobal';
-import { remoteId } from '../../crud/remoteId';
 import { isElectron } from '../../../api-variable';
 import { mediaActionsSelector } from '../../selector';
 
@@ -28,7 +25,6 @@ interface IProps {
 }
 
 export default function PlayCell(params: GridRenderCellParams<IRow> & IProps) {
-  const [memory] = useGlobal('memory');
   const {
     canCreate,
     onAttach,
@@ -40,16 +36,13 @@ export default function PlayCell(params: GridRenderCellParams<IRow> & IProps) {
   const readonly = onAttach ? readonlyParams : true;
   const attached = Boolean(params.row.passId);
   const isPlaying = playItem === params.row.id && mediaPlaying;
-  const mediaId =
-    remoteId('mediafile', params.row.id, memory?.keyMap as RecordKeyMap) ||
-    params.row.id;
   const t: IMediaActionsStrings = useSelector(
     mediaActionsSelector,
     shallowEqual
   );
 
   const handlePlayStatus = () => {
-    onPlayStatus(mediaId);
+    onPlayStatus(params.row.id);
   };
 
   const handleAttach = () => {
@@ -77,7 +70,7 @@ export default function PlayCell(params: GridRenderCellParams<IRow> & IProps) {
           id="audActPlayStop"
           sx={actionProps}
           title={isPlaying ? t.pause : t.play}
-          disabled={(mediaId || '') === ''}
+          disabled={(params.row.id || '') === ''}
           onClick={handlePlayStatus}
         >
           {isPlaying ? <PauseIcon /> : <PlayIcon />}
