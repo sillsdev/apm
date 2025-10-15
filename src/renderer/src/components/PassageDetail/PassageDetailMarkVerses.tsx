@@ -304,20 +304,6 @@ export function PassageDetailMarkVerses({ width }: MarkVersesProps) {
     if (!savingRef.current) {
       savingRef.current = true;
       if (media) {
-        if (numSegments !== 0) {
-          let regions = getSortedRegions(segmentsRef.current);
-          regions = regions.map((r, i) =>
-            i + 1 < dataRef.current.length
-              ? {
-                  ...r,
-                  label: (
-                    (dataRef.current[i + 1] as ICell[])[ColName.Ref] as ICell
-                  ).value,
-                }
-              : { ...r, label: '' }
-          );
-          segmentsRef.current = JSON.stringify({ regions });
-        }
         // update all three segment types: verse, transcription, backtranslation
         let segments = updateSegments(
           NamedRegions.Transcription,
@@ -389,6 +375,7 @@ export function PassageDetailMarkVerses({ width }: MarkVersesProps) {
     newData.push(dataRef.current[0] as ICell[]); // copy title row
 
     const dLen = dataRef.current.length;
+    let reset = false;
     regions.forEach((r, i) => {
       if (i + 1 >= dLen) {
         newData.push(rowCells([formLim(r), r.label ?? '']));
@@ -404,13 +391,19 @@ export function PassageDetailMarkVerses({ width }: MarkVersesProps) {
           change = true;
         }
         const ref = row[ColName.Ref] as ICell;
-        if (r?.label !== undefined && ref.value !== r.label) {
-          if (!refsSoFar.includes(r.label)) {
-            ref.value = r.label;
-            if (!refMatch(r.label)) ref.className = 'ref Err';
-            change = true;
+        if (ref.value !== r.label) {
+          change = true;
+          if (r?.label) {
+            if (!refsSoFar.includes(r.label)) {
+              ref.value = r.label;
+              if (!refMatch(r.label)) ref.className = 'ref Err';
+            } else {
+              init = false; // force a toolChanged
+            }
           } else {
-            init = false; // force a toolChanged
+            //no label on the region so set it
+            r.label = ref.value;
+            reset = true;
           }
         }
         newData.push(row);
@@ -427,7 +420,14 @@ export function PassageDetailMarkVerses({ width }: MarkVersesProps) {
 
     if (change) {
       setData(newData);
-      setPastedSegments('');
+      if (reset) {
+        const segments = JSON.stringify({ regions });
+        // Add slight delay before setting pasted segments
+        setTimeout(() => {
+          console.log('setPastedSegments', segments);
+          setPastedSegments(segments);
+        }, 50);
+      }
       if (!init && !isChanged(verseToolId)) toolChanged(verseToolId);
     }
   };

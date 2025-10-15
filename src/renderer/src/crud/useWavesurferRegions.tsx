@@ -587,7 +587,10 @@ export function useWaveSurferRegions(
     });
   };
 
-  function clearRegions(recreateMarkers: boolean = true) {
+  function clearRegions(
+    recreateMarkers: boolean = true,
+    quietly: boolean = false
+  ) {
     if (!wsRef.current || !numRegions() || loadingRef.current) return;
     loadingRef.current = true;
     const markers = wsGetMarkers();
@@ -607,7 +610,7 @@ export function useWaveSurferRegions(
     currentRegionRef.current = undefined;
     loopingRegionRef.current = undefined;
     loadingRef.current = false;
-    onRegion(0, true);
+    if (!quietly) onRegion(0, true);
     return savedMarkers;
   }
   function loadRegions(
@@ -617,7 +620,7 @@ export function useWaveSurferRegions(
   ) {
     if (!newRegions) peaksRef.current = undefined; //because I know this is a new wave
     if (!wsRef.current) return false;
-    const savedMarkers = clearRegions(false);
+    const savedMarkers = clearRegions(false, true);
     loadingRef.current = true;
     paramsRef.current = regions?.params;
 
@@ -632,7 +635,6 @@ export function useWaveSurferRegions(
     )
       .filter((r: any) => r.start !== undefined && r.end - r.start > 0.03)
       .sort((a: any, b: any) => a.start - b.start);
-
     regarray.forEach(function (region: any) {
       region.start = roundToFiveDecimals(region.start);
       region.end = roundToFiveDecimals(region.end);
