@@ -55,6 +55,7 @@ import { ContextHelp } from '../ContextHelp';
 import { MainAPI } from '@model/main-api';
 const ipc = window?.api as MainAPI;
 import path from 'path-browserify';
+import { IStat } from '@model/stat';
 
 const StyledGrid = styled(Grid)<GridProps>(() => ({
   minWidth: '800px',
@@ -259,14 +260,14 @@ function AudacityManager(props: IProps) {
       const ext = audioName.split('.').pop() || '';
       const extIdx = extensions.indexOf(ext);
       const fullName = path.join(audioFolder, audioName);
-      const stat = JSON.parse(await ipc?.stat(fullName));
+      const stat = JSON.parse(await ipc?.stat(fullName)) as IStat;
       if (
-        DateTime.fromMillis(stat.mtime).toMillis() >
+        DateTime.fromMillis(stat.mtimeMs).toMillis() >
           DateTime.fromMillis(lastTime).toMillis() &&
         extensions.indexOf(ext) >= 0 &&
         nameOnly === audioName.slice(0, nmLen)
       ) {
-        lastTime = stat.mtime;
+        lastTime = stat.mtimeMs;
         mp3FullName = fullName;
         mime = mimes[extIdx];
       }
