@@ -161,6 +161,7 @@ export const AudioTable = (props: IProps) => {
 
   const handleSelect = (id: string) => {
     if (id === playItem) {
+      if (mediaPlaying) setPlayItem('');
       setMediaPlaying(!mediaPlaying);
     } else {
       setPlayItem(id);
