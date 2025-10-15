@@ -430,7 +430,7 @@ export const Uploader = (props: IProps) => {
 
   return (
     <>
-      {recordAudio && ready && !importList && (
+      {recordAudio && ready && (!importList || importList.length === 0) && (
         <PassageRecordDlg
           artifactId={artifactState?.id ?? VernacularTag}
           passageId={passageId}
@@ -448,7 +448,7 @@ export const Uploader = (props: IProps) => {
           team={team}
         />
       )}
-      {!recordAudio && !importList && (
+      {!recordAudio && (!importList || importList.length === 0) && (
         <MediaUpload
           visible={isOpen}
           onVisible={onOpen}
