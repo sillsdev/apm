@@ -323,14 +323,14 @@
             <context-group>
                <context context-type="sourcefile">AlertDialog.tsx</context>
             </context-group>
-         </trans-unit>   
+         </trans-unit>
          <trans-unit id="artifactType.airesource">
             <source>AI Generated</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">AlertDialog.tsx</context>
             </context-group>
-         </trans-unit>                  
+         </trans-unit>
          <trans-unit id="artifactType.backtranslation">
             <source>Phrase Back Translation</source>
             <target/>
@@ -365,7 +365,7 @@
             <context-group>
                <context context-type="sourcefile">AlertDialog.tsx</context>
             </context-group>
-         </trans-unit>         
+         </trans-unit>
       	<trans-unit id="artifactType.projectresource">
       		<source>General Resource</source>
       		<target/>
@@ -1908,7 +1908,7 @@
             </context-group>
          </trans-unit>
          <trans-unit id="discussionList.close">
-            <source>Close Discussion panel</source>
+            <source>Hide Discussion pane</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">discussionList.tsx</context>
@@ -1936,7 +1936,7 @@
             </context-group>
          </trans-unit>
          <trans-unit id="discussionList.open">
-            <source>Open discussion panel</source>
+            <source>Show Discussion pane</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">discussionList.tsx</context>
@@ -6352,7 +6352,7 @@
             <context-group>
                <context context-type="sourcefile">Community.tsx</context>
             </context-group>
-         </trans-unit>         
+         </trans-unit>
          <trans-unit id="planSheet.confirmPublishSection">
             <source>If you choose to publish, the {0} and the latest version of all passages and notes (except linked notes) in this {0} will be marked as published. If you have previously published and now choose not to publish, the passages and notes will be marked as not published.</source>
             <target/>
@@ -6366,7 +6366,7 @@
             <context-group>
                <context context-type="sourcefile">Community.tsx</context>
             </context-group>
-         </trans-unit>         
+         </trans-unit>
          <trans-unit id="planSheet.filtered">
             <source>Disable filter to add rows.</source>
             <target/>
@@ -9104,7 +9104,7 @@
             <context-group>
                <context context-type="sourcefile">ProjectDownload.tsx</context>
             </context-group>
-         </trans-unit>         
+         </trans-unit>
          <trans-unit id="transcriptionTab.downloading">
             <source>Creation complete. Downloading {0}</source>
             <target/>
@@ -10043,14 +10043,14 @@
             <context-group>
                <context context-type="sourcefile">LastEdit.tsx</context>
             </context-group>
-         </trans-unit>           
+         </trans-unit>
          <trans-unit id="vProject.permissionPublish">
             <source>Can Publish</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">LastEdit.tsx</context>
             </context-group>
-         </trans-unit>                    
+         </trans-unit>
          <trans-unit id="vProject.preview">
             <source>Preview</source>
             <target/>

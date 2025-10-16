@@ -1638,7 +1638,7 @@
       </unit>
       <unit id="discussionList.close">
          <segment>
-            <source>Close Discussion panel</source>
+            <source>Hide Discussion pane</source>
             <target/>
          </segment>
       </unit>
@@ -1662,7 +1662,7 @@
       </unit>
       <unit id="discussionList.open">
          <segment>
-            <source>Open discussion panel</source>
+            <source>Show Discussion pane</source>
             <target/>
          </segment>
       </unit>
