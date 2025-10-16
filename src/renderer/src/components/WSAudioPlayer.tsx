@@ -578,16 +578,16 @@ function WSAudioPlayer(props: IProps) {
     if (segments !== segmentsRef.current) {
       segmentsRef.current = segments;
       if (ready && segmentsRef.current !== wsGetRegions()) {
-        loadRegions();
+        loadRegions(false);
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [segments, ready]);
 
-  const loadRegions = () => {
+  const loadRegions = (setPosition: boolean = true) => {
     wsLoadRegions(segmentsRef.current, loopingRef.current);
     const region = parseRegions(segmentsRef.current);
-    if (region.regions.length) {
+    if (setPosition && region.regions.length) {
       const start = region.regions[0].start;
       wsGoto(start);
     }

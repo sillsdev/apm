@@ -141,6 +141,7 @@ export function PassageDetailMarkVerses({ width }: MarkVersesProps) {
   const dataRef = useRef<ICell[][]>([]);
   const segmentsRef = useRef('{}');
   const passageRefs = useRef<string[]>([]);
+  const resettingSegmentsRef = useRef(false);
   const { canDoSectionStep } = useStepPermissions();
   const hasPermission = canDoSectionStep(currentstep, section);
   const { localizedArtifactType } = useArtifactType();
@@ -291,7 +292,7 @@ export function PassageDetailMarkVerses({ width }: MarkVersesProps) {
     const refs = getRefs(passage.attributes.reference, passage.attributes.book);
     setupData(refs);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [passage, engVrs, currentSegment]);
+  }, [passage, engVrs]);
 
   const handleComplete = (complete: boolean) => {
     waitForSave(undefined, 200).finally(async () => {
@@ -356,7 +357,21 @@ export function PassageDetailMarkVerses({ width }: MarkVersesProps) {
 
   const formLim = ({ start, end }: IRegion) => `${d1(start)}-${d1(end)}`;
 
+  const resetSegments = (regions: IRegion[]) => {
+    const segments = JSON.stringify({ regions });
+    // Add slight delay before setting pasted segments
+    setTimeout(() => {
+      resettingSegmentsRef.current = true;
+      setPastedSegments(segments);
+    }, 40);
+  };
+
   const handleSegment = (segments: string, init: boolean) => {
+    segmentsRef.current = segments;
+    if (resettingSegmentsRef.current) {
+      resettingSegmentsRef.current = false;
+      return;
+    }
     if (!hasPermission && !init) {
       toolChanged(verseToolId, false);
       return;
@@ -364,7 +379,6 @@ export function PassageDetailMarkVerses({ width }: MarkVersesProps) {
     const regions = getSortedRegions(segments);
     let change = numSegments !== regions.length;
     setNumSegments(regions.length);
-    segmentsRef.current = segments;
 
     if (dataRef.current.length === 0) return;
 
@@ -378,7 +392,8 @@ export function PassageDetailMarkVerses({ width }: MarkVersesProps) {
     let reset = false;
     regions.forEach((r, i) => {
       if (i + 1 >= dLen) {
-        newData.push(rowCells([formLim(r), r.label ?? '']));
+        r.label = '';
+        newData.push(rowCells([formLim(r), '']));
         change = true;
       } else {
         const refsSoFar = collectRefs(newData);
@@ -391,21 +406,16 @@ export function PassageDetailMarkVerses({ width }: MarkVersesProps) {
           change = true;
         }
         const ref = row[ColName.Ref] as ICell;
-        if (ref.value !== r.label) {
+        if (ref.value !== r.label && !refsSoFar.includes(ref.value)) {
           change = true;
+
           if (r?.label) {
-            if (!refsSoFar.includes(r.label)) {
-              ref.value = r.label;
-              if (!refMatch(r.label)) ref.className = 'ref Err';
-            } else {
-              init = false; // force a toolChanged
-            }
-          } else {
-            //no label on the region so set it
-            r.label = ref.value;
-            reset = true;
+            init = false; // force a toolChanged
           }
+          r.label = ref.value;
+          reset = true;
         }
+
         newData.push(row);
       }
     });
@@ -421,19 +431,30 @@ export function PassageDetailMarkVerses({ width }: MarkVersesProps) {
     if (change) {
       setData(newData);
       if (reset) {
-        const segments = JSON.stringify({ regions });
-        // Add slight delay before setting pasted segments
-        setTimeout(() => {
-          console.log('setPastedSegments', segments);
-          setPastedSegments(segments);
-        }, 50);
+        resetSegments(regions);
       }
       if (!init && !isChanged(verseToolId)) toolChanged(verseToolId);
     }
   };
 
   const handleValueRenderer = (cell: ICell) => cell.value;
-
+  const setSegments = () => {
+    //make an iRegions array from the dataRef.current
+    const regions: IRegion[] = [];
+    dataRef.current.forEach((r, i) => {
+      if (i > 0) {
+        const limits = r[ColName.Limits].value.split('-');
+        if (limits.length === 2) {
+          regions.push({
+            start: parseFloat(limits[0]),
+            end: parseFloat(limits[1]),
+            label: r[ColName.Ref].value,
+          });
+        }
+      }
+    });
+    resetSegments(regions);
+  };
   const handleCellsChanged = (changes: Array<ICellChange>) => {
     const newData = dataRef.current.map((r) => r);
     let changed = false;
@@ -455,6 +476,7 @@ export function PassageDetailMarkVerses({ width }: MarkVersesProps) {
     });
     if (changed) {
       setData(newData);
+      setSegments();
       toolChanged(verseToolId);
     }
   };
