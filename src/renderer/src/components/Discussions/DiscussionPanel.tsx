@@ -66,7 +66,7 @@ export default function DiscussionPanel() {
             </Fab>
           </Badge>
         ) : (
-          <Fab size="small" onClick={() => setDiscussOpen(true)}>
+          <Fab size="small" onClick={() => setDiscussOpen(true)} title={t.open}>
             <DiscussIcon />
           </Fab>
         )}
