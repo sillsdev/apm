@@ -342,9 +342,11 @@ export interface IDiscussionListStrings
   extends Localize.LocalizedStringsMethods {
   add: string;
   categoryList: string;
+  close: string;
   collapse: string;
   discussionFilter: string;
   filterStatus: string;
+  open: string;
   saveFirst: string;
   title: string;
 }
