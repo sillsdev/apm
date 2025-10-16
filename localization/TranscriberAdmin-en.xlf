@@ -1636,6 +1636,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="discussionList.close">
+         <segment>
+            <source>Close Discussion panel</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="discussionList.collapse">
          <segment>
             <source>Show/Hide All Comments</source>
@@ -1651,6 +1657,12 @@
       <unit id="discussionList.filterStatus">
          <segment>
             <source>{0} / {1} discussions</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="discussionList.open">
+         <segment>
+            <source>Open discussion panel</source>
             <target/>
          </segment>
       </unit>

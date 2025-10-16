@@ -170,7 +170,11 @@ export interface GetSheetProps {
   hasPublishing: boolean;
   hidePublishing: boolean;
   doneStepId: string;
-  getDiscussionCount: (passageId: string, stepId: string) => number;
+  getDiscussionCount: (
+    passageId: string,
+    stepId?: string,
+    assumeAssigned?: boolean
+  ) => number;
   graphicFind: (
     rec: InitializedRecord,
     ref?: string
@@ -373,7 +377,7 @@ export const getSheet = ({
               schemeStep.relationships?.group?.data) as RecordIdentity;
           }
           item.discussionCount = item.passage.id
-            ? getDiscussionCount(item.passage.id, item.stepId)
+            ? getDiscussionCount(item.passage.id)
             : 0;
         }
         item.deleted = false;

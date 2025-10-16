@@ -1907,6 +1907,13 @@
                <context context-type="sourcefile">discussionList.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="discussionList.close">
+            <source>Close Discussion panel</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">discussionList.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="discussionList.collapse">
             <source>Show/Hide All Comments</source>
             <target/>
@@ -1928,7 +1935,13 @@
                <context context-type="sourcefile">discussionList.tsx</context>
             </context-group>
          </trans-unit>
-
+         <trans-unit id="discussionList.open">
+            <source>Open discussion panel</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">discussionList.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="discussionList.saveFirst">
             <source>Save changed discussions and comments first?</source>
             <target/>

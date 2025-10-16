@@ -23,7 +23,7 @@ export const useDiscussionCount = ({
     return mygroups?.map((g) => related(g, 'group'));
   }, [groupmemberships, userId]);
 
-  return (passageId: string) => {
+  return (passageId: string, stepId?: string, assumeAssigned = false) => {
     const currentPassage = (d: Discussion) => {
       const mediaId = related(d, 'mediafile');
       const mediaRec = mediafiles.find((m) => m.id === mediaId);
@@ -31,8 +31,10 @@ export const useDiscussionCount = ({
     };
     return discussions.filter(
       (d) =>
-        (related(d, 'user') === userId ||
+        (assumeAssigned ||
+          related(d, 'user') === userId ||
           projGroups?.includes(related(d, 'group'))) &&
+        (stepId ? related(d, 'orgWorkflowStep') === stepId : true) &&
         !d.attributes?.resolved &&
         currentPassage(d)
     ).length;

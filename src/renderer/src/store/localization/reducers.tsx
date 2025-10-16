@@ -374,9 +374,11 @@ const initialState = {
     en: {
       add: 'Add Discussion',
       categoryList: 'Category List',
+      close: 'Close Discussion panel',
       collapse: 'Show/Hide All Comments',
       discussionFilter: 'Discussion Filter',
       filterStatus: '{0} / {1} discussions',
+      open: 'Open discussion panel',
       saveFirst: 'Save changed discussions and comments first?',
       title: 'Discussions',
     },
@@ -2049,7 +2051,7 @@ const initialState = {
       segmentSettings: 'Auto Segment Parameters',
       silenceLength: 'Minimum Length of Silence (100ths second)',
       silenceThreshold: 'Silence Threshold (1000th dB)',
-      splitSegment: 'Add/Remove Boundary [Double Click/{0}]',
+      splitSegment: 'Add Boundary [Double Click/{0}]',
       teamDefault: 'Save as team default',
     },
   }),
@@ -2064,229 +2066,175 @@ const initialState = {
 
 const localizationReducer = function (
   state = initialState,
-  action: { type: string; payload: { data: keyof ILocalizedStrings } }
+  action: any
 ): ILocalizedStrings {
   switch (action.type) {
     case FETCH_LOCALIZATION:
       return {
         ...state,
         loaded: true,
-        access: new LocalizedStrings((action.payload.data as any).access),
-        activityState: new LocalizedStrings(
-          (action.payload.data as any).activityState
-        ),
-        alert: new LocalizedStrings((action.payload.data as any).alert),
+        access: new LocalizedStrings(action.payload.data.access),
+        activityState: new LocalizedStrings(action.payload.data.activityState),
+        alert: new LocalizedStrings(action.payload.data.alert),
         artifactCategory: new LocalizedStrings(
-          (action.payload.data as any).artifactCategory
+          action.payload.data.artifactCategory
         ),
-        artifactType: new LocalizedStrings(
-          (action.payload.data as any).artifactType
-        ),
+        artifactType: new LocalizedStrings(action.payload.data.artifactType),
         assignmentTable: new LocalizedStrings(
-          (action.payload.data as any).assignmentTable
+          action.payload.data.assignmentTable
         ),
-        assignSection: new LocalizedStrings(
-          (action.payload.data as any).assignSection
-        ),
+        assignSection: new LocalizedStrings(action.payload.data.assignSection),
         audacityManager: new LocalizedStrings(
-          (action.payload.data as any).audacityManager
+          action.payload.data.audacityManager
         ),
-        audioDownload: new LocalizedStrings(
-          (action.payload.data as any).audioDownload
-        ),
-        cards: new LocalizedStrings((action.payload.data as any).cards),
-        category: new LocalizedStrings((action.payload.data as any).category),
-        commentCard: new LocalizedStrings(
-          (action.payload.data as any).commentCard
-        ),
-        commentEditor: new LocalizedStrings(
-          (action.payload.data as any).commentEditor
-        ),
-        community: new LocalizedStrings((action.payload.data as any).community),
+        audioDownload: new LocalizedStrings(action.payload.data.audioDownload),
+        cards: new LocalizedStrings(action.payload.data.cards),
+        category: new LocalizedStrings(action.payload.data.category),
+        commentCard: new LocalizedStrings(action.payload.data.commentCard),
+        commentEditor: new LocalizedStrings(action.payload.data.commentEditor),
+        community: new LocalizedStrings(action.payload.data.community),
         consultantCheck: new LocalizedStrings(
-          (action.payload.data as any).consultantCheck
+          action.payload.data.consultantCheck
         ),
-        control: new LocalizedStrings((action.payload.data as any).control),
+        control: new LocalizedStrings(action.payload.data.control),
         deleteExpansion: new LocalizedStrings(
-          (action.payload.data as any).deleteExpansion
+          action.payload.data.deleteExpansion
         ),
-        discuss: new LocalizedStrings((action.payload.data as any).discuss),
+        discuss: new LocalizedStrings(action.payload.data.discuss),
         discussionCard: new LocalizedStrings(
-          (action.payload.data as any).discussionCard
+          action.payload.data.discussionCard
         ),
         discussionList: new LocalizedStrings(
-          (action.payload.data as any).discussionList
+          action.payload.data.discussionList
         ),
         discussionMenu: new LocalizedStrings(
-          (action.payload.data as any).discussionMenu
+          action.payload.data.discussionMenu
         ),
         electronImport: new LocalizedStrings(
-          (action.payload.data as any).electronImport
+          action.payload.data.electronImport
         ),
         emailUnverified: new LocalizedStrings(
-          (action.payload.data as any).emailUnverified
+          action.payload.data.emailUnverified
         ),
-        faithbridge: new LocalizedStrings(
-          (action.payload.data as any).faithbridge
-        ),
-        filterMenu: new LocalizedStrings(
-          (action.payload.data as any).filterMenu
-        ),
-        findResource: new LocalizedStrings(
-          (action.payload.data as any).findResource
-        ),
-        grid: new LocalizedStrings((action.payload.data as any).grid),
-        groupTabs: new LocalizedStrings((action.payload.data as any).groupTabs),
-        hotKey: new LocalizedStrings((action.payload.data as any).hotKey),
-        import: new LocalizedStrings((action.payload.data as any).import),
-        integration: new LocalizedStrings(
-          (action.payload.data as any).integration
-        ),
+        faithbridge: new LocalizedStrings(action.payload.data.faithbridge),
+        filterMenu: new LocalizedStrings(action.payload.data.filterMenu),
+        findResource: new LocalizedStrings(action.payload.data.findResource),
+        grid: new LocalizedStrings(action.payload.data.grid),
+        groupTabs: new LocalizedStrings(action.payload.data.groupTabs),
+        hotKey: new LocalizedStrings(action.payload.data.hotKey),
+        import: new LocalizedStrings(action.payload.data.import),
+        integration: new LocalizedStrings(action.payload.data.integration),
         invitationTable: new LocalizedStrings(
-          (action.payload.data as any).invitationTable
+          action.payload.data.invitationTable
         ),
-        invite: new LocalizedStrings((action.payload.data as any).invite),
-        keyTerms: new LocalizedStrings((action.payload.data as any).keyTerms),
+        invite: new LocalizedStrings(action.payload.data.invite),
+        keyTerms: new LocalizedStrings(action.payload.data.keyTerms),
         languagePicker: new LocalizedStrings(
-          (action.payload.data as any).languagePicker
+          action.payload.data.languagePicker
         ),
-        main: new LocalizedStrings((action.payload.data as any).main),
-        mediaActions: new LocalizedStrings(
-          (action.payload.data as any).mediaActions
-        ),
-        mediaTab: new LocalizedStrings((action.payload.data as any).mediaTab),
-        mediaTitle: new LocalizedStrings(
-          (action.payload.data as any).mediaTitle
-        ),
-        mediaUpload: new LocalizedStrings(
-          (action.payload.data as any).mediaUpload
-        ),
-        newProject: new LocalizedStrings(
-          (action.payload.data as any).newProject
-        ),
+        main: new LocalizedStrings(action.payload.data.main),
+        mediaActions: new LocalizedStrings(action.payload.data.mediaActions),
+        mediaTab: new LocalizedStrings(action.payload.data.mediaTab),
+        mediaTitle: new LocalizedStrings(action.payload.data.mediaTitle),
+        mediaUpload: new LocalizedStrings(action.payload.data.mediaUpload),
+        newProject: new LocalizedStrings(action.payload.data.newProject),
         passageChooser: new LocalizedStrings(
-          (action.payload.data as any).passageChooser
+          action.payload.data.passageChooser
         ),
         passageDetailArtifacts: new LocalizedStrings(
-          (action.payload.data as any).passageDetailArtifacts
+          action.payload.data.passageDetailArtifacts
         ),
         passageDetailStepComplete: new LocalizedStrings(
-          (action.payload.data as any).passageDetailStepComplete
+          action.payload.data.passageDetailStepComplete
         ),
         passageDetailToolbar: new LocalizedStrings(
-          (action.payload.data as any).passageDetailToolbar
+          action.payload.data.passageDetailToolbar
         ),
-        passageMedia: new LocalizedStrings(
-          (action.payload.data as any).passageMedia
-        ),
-        passageRecord: new LocalizedStrings(
-          (action.payload.data as any).passageRecord
-        ),
-        passageType: new LocalizedStrings(
-          (action.payload.data as any).passageType
-        ),
-        peer: new LocalizedStrings((action.payload.data as any).peer),
-        peerCheck: new LocalizedStrings((action.payload.data as any).peerCheck),
-        permission: new LocalizedStrings(
-          (action.payload.data as any).permission
-        ),
-        picker: new LocalizedStrings((action.payload.data as any).picker),
-        planActions: new LocalizedStrings(
-          (action.payload.data as any).planActions
-        ),
-        planSheet: new LocalizedStrings((action.payload.data as any).planSheet),
-        planTabs: new LocalizedStrings((action.payload.data as any).planTabs),
-        profile: new LocalizedStrings((action.payload.data as any).profile),
-        projButtons: new LocalizedStrings(
-          (action.payload.data as any).projButtons
-        ),
+        passageMedia: new LocalizedStrings(action.payload.data.passageMedia),
+        passageRecord: new LocalizedStrings(action.payload.data.passageRecord),
+        passageType: new LocalizedStrings(action.payload.data.passageType),
+        peer: new LocalizedStrings(action.payload.data.peer),
+        peerCheck: new LocalizedStrings(action.payload.data.peerCheck),
+        permission: new LocalizedStrings(action.payload.data.permission),
+        picker: new LocalizedStrings(action.payload.data.picker),
+        planActions: new LocalizedStrings(action.payload.data.planActions),
+        planSheet: new LocalizedStrings(action.payload.data.planSheet),
+        planTabs: new LocalizedStrings(action.payload.data.planTabs),
+        profile: new LocalizedStrings(action.payload.data.profile),
+        projButtons: new LocalizedStrings(action.payload.data.projButtons),
         projectDownload: new LocalizedStrings(
-          (action.payload.data as any).projectDownload
+          action.payload.data.projectDownload
         ),
-        publishLevel: new LocalizedStrings(
-          (action.payload.data as any).publishLevel
-        ),
-        publishTo: new LocalizedStrings((action.payload.data as any).publishTo),
-        resource: new LocalizedStrings((action.payload.data as any).resource),
+        publishLevel: new LocalizedStrings(action.payload.data.publishLevel),
+        publishTo: new LocalizedStrings(action.payload.data.publishTo),
+        resource: new LocalizedStrings(action.payload.data.resource),
         scriptureTable: new LocalizedStrings(
-          (action.payload.data as any).scriptureTable
+          action.payload.data.scriptureTable
         ),
         scriptureTableFilter: new LocalizedStrings(
-          (action.payload.data as any).scriptureTableFilter
+          action.payload.data.scriptureTableFilter
         ),
         sectionResources: new LocalizedStrings(
-          (action.payload.data as any).sectionResources
+          action.payload.data.sectionResources
         ),
         selectArtifactCategory: new LocalizedStrings(
-          (action.payload.data as any).selectArtifactCategory
+          action.payload.data.selectArtifactCategory
         ),
         selectArtifactType: new LocalizedStrings(
-          (action.payload.data as any).selectArtifactType
+          action.payload.data.selectArtifactType
         ),
         selectRecording: new LocalizedStrings(
-          (action.payload.data as any).selectRecording
+          action.payload.data.selectRecording
         ),
-        shared: new LocalizedStrings((action.payload.data as any).shared),
-        sortMenu: new LocalizedStrings((action.payload.data as any).sortMenu),
-        spelling: new LocalizedStrings((action.payload.data as any).spelling),
-        stepEditor: new LocalizedStrings(
-          (action.payload.data as any).stepEditor
-        ),
-        taskItem: new LocalizedStrings((action.payload.data as any).taskItem),
+        shared: new LocalizedStrings(action.payload.data.shared),
+        sortMenu: new LocalizedStrings(action.payload.data.sortMenu),
+        spelling: new LocalizedStrings(action.payload.data.spelling),
+        stepEditor: new LocalizedStrings(action.payload.data.stepEditor),
+        taskItem: new LocalizedStrings(action.payload.data.taskItem),
         teamCheckReference: new LocalizedStrings(
-          (action.payload.data as any).teamCheckReference
+          action.payload.data.teamCheckReference
         ),
-        template: new LocalizedStrings((action.payload.data as any).template),
-        toDoTable: new LocalizedStrings((action.payload.data as any).toDoTable),
-        tool: new LocalizedStrings((action.payload.data as any).tool),
-        transcribe: new LocalizedStrings(
-          (action.payload.data as any).transcribe
-        ),
+        template: new LocalizedStrings(action.payload.data.template),
+        toDoTable: new LocalizedStrings(action.payload.data.toDoTable),
+        tool: new LocalizedStrings(action.payload.data.tool),
+        transcribe: new LocalizedStrings(action.payload.data.transcribe),
         transcribeAddNote: new LocalizedStrings(
-          (action.payload.data as any).transcribeAddNote
+          action.payload.data.transcribeAddNote
         ),
-        transcriber: new LocalizedStrings(
-          (action.payload.data as any).transcriber
-        ),
+        transcriber: new LocalizedStrings(action.payload.data.transcriber),
         transcribeReject: new LocalizedStrings(
-          (action.payload.data as any).transcribeReject
+          action.payload.data.transcribeReject
         ),
         transcriptionShow: new LocalizedStrings(
-          (action.payload.data as any).transcriptionShow
+          action.payload.data.transcriptionShow
         ),
         transcriptionTab: new LocalizedStrings(
-          (action.payload.data as any).transcriptionTab
+          action.payload.data.transcriptionTab
         ),
-        treeChart: new LocalizedStrings((action.payload.data as any).treeChart),
+        treeChart: new LocalizedStrings(action.payload.data.treeChart),
         uploadProgress: new LocalizedStrings(
-          (action.payload.data as any).uploadProgress
+          action.payload.data.uploadProgress
         ),
-        userListMode: new LocalizedStrings(
-          (action.payload.data as any).userListMode
-        ),
-        usertable: new LocalizedStrings((action.payload.data as any).usertable),
-        verse: new LocalizedStrings((action.payload.data as any).verse),
-        viewMode: new LocalizedStrings((action.payload.data as any).viewMode),
-        voice: new LocalizedStrings((action.payload.data as any).voice),
-        vProject: new LocalizedStrings((action.payload.data as any).vProject),
-        welcome: new LocalizedStrings((action.payload.data as any).welcome),
-        workflowSteps: new LocalizedStrings(
-          (action.payload.data as any).workflowSteps
-        ),
-        wsAudioPlayer: new LocalizedStrings(
-          (action.payload.data as any).wsAudioPlayer
-        ),
+        userListMode: new LocalizedStrings(action.payload.data.userListMode),
+        usertable: new LocalizedStrings(action.payload.data.usertable),
+        verse: new LocalizedStrings(action.payload.data.verse),
+        viewMode: new LocalizedStrings(action.payload.data.viewMode),
+        voice: new LocalizedStrings(action.payload.data.voice),
+        vProject: new LocalizedStrings(action.payload.data.vProject),
+        welcome: new LocalizedStrings(action.payload.data.welcome),
+        workflowSteps: new LocalizedStrings(action.payload.data.workflowSteps),
+        wsAudioPlayer: new LocalizedStrings(action.payload.data.wsAudioPlayer),
         wsAudioPlayerSegment: new LocalizedStrings(
-          (action.payload.data as any).wsAudioPlayerSegment
+          action.payload.data.wsAudioPlayerSegment
         ),
         wsAudioPlayerZoom: new LocalizedStrings(
-          (action.payload.data as any).wsAudioPlayerZoom
+          action.payload.data.wsAudioPlayerZoom
         ),
       };
     case SET_LANGUAGE:
       return {
         ...state,
-        lang: action.payload as any,
+        lang: action.payload,
       };
     default:
       return state;

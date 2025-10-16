@@ -542,6 +542,7 @@ export function DiscussionList({ onClose }: DiscussionListProps) {
             <IconButton
               id="closeDiscussion"
               sx={actionButtonProps}
+              title={t.close}
               onClick={onClose}
             >
               <CloseIcon />

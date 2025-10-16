@@ -250,8 +250,8 @@
       "transcribing": "எழுத்து வடிவம் நடைபெறுகிறது"
     },
     "ar": {
-      "approved": "Ready to Sync",
-      "done": "Done",
+      "approved": "جاهز للمزامنة",
+      "done": "تم",
       "incomplete": "Incomplete",
       "needsNewRecording": "Recording Needed",
       "needsNewTranscription": "Correction Needed",
@@ -848,7 +848,7 @@
       "filter": "வடிகட்டி",
       "removeSec": "வேலையை அகற்று",
       "removeSec2": "Remove Assignments",
-      "role": "பயனாளர் பாத்திரம்",
+      "role": "பங்கு",
       "sectionstate": "நிலை",
       "selectRowsToAssign": "வரிசை(களை) ஒதுக்கி கொடுக்கப்பதற்காக தேர்ந்தெடுக்கவும்.",
       "selectRowsToRemove": "வரிசை(களை) நீக்குவதற்காக தேர்ந்தெடுக்கவும்.",
@@ -1042,7 +1042,7 @@
       "modifySections": "{0} {1} are selelected but modifying the permissions will change all {2} {3} with this permission scheme",
       "noAssignment": "Unassigned",
       "noRestriction": "No Restriction",
-      "role": "பயனாளர் பாத்திரம்",
+      "role": "பங்கு",
       "schemeName": "Permission Scheme Name",
       "schemeName2": "Assignment Scheme Name",
       "title": "Configure Permission Scheme",
@@ -3401,9 +3401,11 @@
     "en": {
       "add": "Add Discussion",
       "categoryList": "Category List",
+      "close": "Close Discussion panel",
       "collapse": "Show/Hide All Comments",
       "discussionFilter": "Discussion Filter",
       "filterStatus": "{0} / {1} discussions",
+      "open": "Open discussion panel",
       "saveFirst": "Save changed discussions and comments first?",
       "title": "Discussions"
     },
@@ -3729,7 +3731,7 @@
       "neverExported": "Data ini di proyek audio {name0} belum pernah diekspor ke berkas itf untuk mempertahankan perubahan.",
       "newerVersion": "Berkas ini telah diekspor dengan versi program yang lebih baru. Anda harus mengunduh versi terbaru sebelum mengimpor! Kalau tidak, beberapa data mungkin tidak diimpor dengan benar.",
       "project": "Proyek Audio",
-      "projectImported": "Proyek Audio {name0} pernah diimpor dengan berkas yang lebih baru: {date1}\n            ",
+      "projectImported": "Proyek Audio {name0} pernah diimpor dengan berkas yang lebih baru: {date1} ",
       "ptfError": "Bukan berkas Portable Transcriber File yang sah",
       "userWontSeeProject": "Anda tidak menjadi anggota tim proyek audio ini. Proyek audio ini tidak akan dapat diakses setelah diimpor."
     },
@@ -5746,7 +5748,7 @@
       "no": "இல்லை",
       "noProject": "You are not a member of a {lang0} {0} Project.",
       "notPermitted": "You're not permitted to sync to Paratext",
-      "offline": "Offline",
+      "offline": "அக சேமிப்பிடம்",
       "onestory": "ஒன் ஸ்டோரி",
       "paratextLocal": "{0} Local",
       "projectError": "Audio Project Query error:",
@@ -6023,11 +6025,11 @@
     },
     "ta": {
       "accepted": "ஏற்கப்பட்டது",
-      "action": "நடவடிக்கை",
+      "action": "செயல்",
       "delete": "நீக்கு",
       "email": "மின்னஞ்சல்",
       "filter": "வடிகட்டி",
-      "invite": "அழை",
+      "invite": "அழைக்கவும்",
       "noData": "அழைப்பிதழ்கள் இல்லை",
       "role": "Team Role",
       "selectRows": "{0}. க்கு வரிசை(களை) த் தேர்ந்தெடுக்கவும்.",
@@ -6215,7 +6217,7 @@
       "questions": "Questions? Contact",
       "resend": "Resend",
       "role": "Team Role",
-      "save": "சேமி",
+      "save": "சேமிக்கவும்",
       "selectTeamRole": "Select team role.",
       "send": "Send"
     },
@@ -6909,7 +6911,7 @@
       "noFonts": "No recommended font",
       "phonetic": "Phonetic",
       "script": "எழுத்து",
-      "select": "சேமி",
+      "select": "சேமிக்கவும்",
       "selectLanguage": "மொழி விவரங்களை தேர்வுசெய்க",
       "subtags": "துணை குறிச்சொற்கள்"
     },
@@ -8024,7 +8026,7 @@
       "viewAssociations": "Visualizar Associações"
     },
     "ta": {
-      "action": "நடவடிக்கை",
+      "action": "செயல்",
       "actions": "Actions",
       "all": "All",
       "alreadyAssociated": "Show Passages Already Associated",
@@ -8313,7 +8315,7 @@
       "mediaAssociations": "Связи аудио",
       "noMatch": "Подборка завершена: {0} новых связей",
       "none": "Нет",
-      "noPassageAttached": "{0} не содержит прикрепленного отрывка ",
+      "noPassageAttached": "{0} не содержит прикрепленного отрывка\n",
       "passageAttached": "Отрывок уже прикреплен",
       "planName": "План",
       "proposed": "Предложенные",
@@ -10541,7 +10543,7 @@
       "consultantInTraining": "Consultor Em Treinamento",
       "consultantInTrainingTip": "Os comentários dos CETs só estarão visíveis para os Mentores até que um mentor aprove o comentário.",
       "mentor": "Mentor",
-      "mentorTip": "Os comentários do mentor só estarão visíveis para os CETs. Os mentores podem aprovar os comentários dos CETs para torná-los visíveis para o restante da equipe.",
+      "mentorTip": "Os comentários do mentor só estarão visíveis para os CETs.  Os mentores podem aprovar os comentários dos CETs para torná-los visíveis para o restante da equipe.",
       "nspTip": "Grupo geral de pares sem permissões especiais. Use para atribuir discussões a grupos de equipes."
     },
     "ta": {
@@ -11149,7 +11151,7 @@
       "versions": "Versões"
     },
     "ta": {
-      "action": "நடவடிக்கை",
+      "action": "செயல்",
       "addNote": "Add Note",
       "addPassage": "பத்தியைச் சேர்க்கவும்",
       "addPublishing": "Update Publishing Rows",
@@ -15002,7 +15004,7 @@
       "yes": "Sim"
     },
     "ta": {
-      "action": "நடவடிக்கை",
+      "action": "செயல்",
       "assigned": "ஒதுக்கி கொடுக்கப்பட்டது",
       "description": "விளக்கம்",
       "editor": "மறு ஆய்வு செய்க",
@@ -15018,7 +15020,7 @@
       "tasks": "Tasks",
       "title": "தலைப்பு",
       "topic": "Topic",
-      "transcriber": "Transcribe",
+      "transcriber": "எழுத்துவடிவமாக்கு",
       "yes": "ஆம்"
     },
     "ar": {
@@ -15533,7 +15535,7 @@
       "reject": "நிராகரி",
       "reopen": "Reopen",
       "reviewing": "Started to review",
-      "save": "சேமி",
+      "save": "சேமிக்கவும்",
       "saveReviewTip": "Save transcript, position and segments",
       "saveTip": "Save changes and comment",
       "saving": "Saving...",
@@ -19159,7 +19161,7 @@
       "segmentSettings": "Auto Segment Parameters",
       "silenceLength": "Minimum Length of Silence (100ths second)",
       "silenceThreshold": "Silence Threshold (1000th dB)",
-      "splitSegment": "Add Boundary [Double Click/{0}]",
+      "splitSegment": "Add/Remove Boundary [Double Click/{0}]",
       "teamDefault": "Save as team default"
     },
     "ar": {
@@ -19174,7 +19176,7 @@
       "segmentSettings": "Auto Segment Parameters",
       "silenceLength": "Minimum Length of Silence (100ths second)",
       "silenceThreshold": "Silence Threshold (1000th dB)",
-      "splitSegment": "Add Boundary [Double Click/{0}]",
+      "splitSegment": "Add/Remove Boundary [Double Click/{0}]",
       "teamDefault": "Save as team default"
     },
     "es": {
@@ -19204,7 +19206,7 @@
       "segmentSettings": "Auto Segment Parameters",
       "silenceLength": "Minimum Length of Silence (100ths second)",
       "silenceThreshold": "Silence Threshold (1000th dB)",
-      "splitSegment": "Add Boundary [Double Click/{0}]",
+      "splitSegment": "Add/Remove Boundary [Double Click/{0}]",
       "teamDefault": "Save as team default"
     },
     "id": {
@@ -19264,7 +19266,7 @@
       "segmentSettings": "Auto Segment Parameters",
       "silenceLength": "Minimum Length of Silence (100ths second)",
       "silenceThreshold": "Silence Threshold (1000th dB)",
-      "splitSegment": "Add Boundary [Double Click/{0}]",
+      "splitSegment": "Add/Remove Boundary [Double Click/{0}]",
       "teamDefault": "Save as team default"
     }
   },
