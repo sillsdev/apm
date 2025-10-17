@@ -395,8 +395,7 @@ test('should add limits to the table', async () => {
   expect(tbody.children[6].children[0].textContent).toBe('24.0-28.0');
   expect(tbody.children[6].children[1].textContent).toBe('');
 });
-//I'm not sure what this is testing in real life -- how will this happen?
-/*
+
 test('should add limits with label to the table', async () => {
   // Arrange
 
@@ -420,7 +419,7 @@ test('should add limits with label to the table', async () => {
   expect(firstLimit.textContent).toBe('0.0-5.0');
   expect(tbody.children[1].children[1].textContent).toBe('1:1-2');
 });
-*/
+
 test('should not add refs included already in bridges or labels', async () => {
   // Arrange
 
@@ -442,7 +441,7 @@ test('should not add refs included already in bridges or labels', async () => {
   // Assert
   expect(tbody.children[5].children[1].textContent).toBe('');
 });
-/* TODO: Fix this test or the code
+
 test('should not add rows including refs already in table', async () => {
   // Arrange
 
@@ -464,4 +463,3 @@ test('should not add rows including refs already in table', async () => {
   // Assert
   expect(tbody.children.length).toBe(4); // 3 limits (with 3 verse refs) + 1 header
 });
-*/
