@@ -396,7 +396,6 @@ export function PassageDetailMarkVerses({ width }: MarkVersesProps) {
         newData.push(rowCells([formLim(r), '']));
         change = true;
       } else {
-        const refsSoFar = collectRefs(newData);
         const row = dataRef.current[i + 1] as ICell[];
         if ((row[ColName.Limits] as ICell).value !== formLim(r)) {
           const value = formLim(r);
@@ -406,16 +405,21 @@ export function PassageDetailMarkVerses({ width }: MarkVersesProps) {
           change = true;
         }
         const ref = row[ColName.Ref] as ICell;
-        if (ref.value !== r.label && !refsSoFar.includes(ref.value)) {
-          change = true;
-
-          if (r?.label) {
-            init = false; // force a toolChanged
+        if (ref.value !== r.label) {
+          const refsSoFar = collectRefs(newData);
+          if (r?.label && init) {
+            //use the saved values
+            if (!refsSoFar.includes(r.label)) {
+              ref.value = r.label;
+              if (!refMatch(r.label)) ref.className = 'ref Err';
+            }
+          } else {
+            //set the label on the region
+            r.label = ref.value;
+            reset = true;
           }
-          r.label = ref.value;
-          reset = true;
+          change = true;
         }
-
         newData.push(row);
       }
     });
