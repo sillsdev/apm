@@ -15,6 +15,7 @@ import { useOfflnProjRead } from '../crud/useOfflnProjRead';
 import { DateTime } from 'luxon';
 import { shallowEqual, useSelector } from 'react-redux';
 import { transcriptionTabSelector } from '../selector';
+import { useGlobal } from '../context/useGlobal';
 
 interface IWhichExportProps {
   project: Plan | VProject | string;
@@ -32,6 +33,7 @@ export const WhichExportDlg = ({
   const [openDatePicker, setOpenDatePicker] = useState(false);
   const [sinceDate, setSinceDate] = useState<string>('');
   const [snapshotDate, setSnapshotDate] = useState<DateTime | undefined>();
+  const [offlineOnly] = useGlobal('offlineOnly');
   const getOfflineProject = useOfflnProjRead();
   const t: ITranscriptionTabStrings = useSelector(
     transcriptionTabSelector,
@@ -100,9 +102,11 @@ export const WhichExportDlg = ({
         <Button id="expPtf" onClick={doPTF} color="primary">
           {t.exportPTFtype}
         </Button>
-        <Button id="expItf" onClick={doITF} color="primary">
-          {t.exportITFtype}
-        </Button>
+        {!offlineOnly && (
+          <Button id="expItf" onClick={doITF} color="primary">
+            {t.exportITFtype}
+          </Button>
+        )}
         {openDatePicker && (
           <TextField
             id="datesince"
