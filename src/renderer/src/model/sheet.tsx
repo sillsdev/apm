@@ -11,9 +11,9 @@ export enum IwsKind {
   SubTask,
 }
 export enum IMediaShare {
+  None,
   Latest,
   OldVersionOnly,
-  None,
   NotPublic,
 }
 export enum SheetLevel {
