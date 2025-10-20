@@ -203,7 +203,7 @@ export function AssignmentTable() {
       return [...newColumns];
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [flat, organizedBy, ts.passages, t.sectionstate, isPermission]
+    [flat, organizedBy, ts.passages, t.sectionstate, isPermission, data]
   );
   const [assignSectionVisible, setAssignSectionVisible] = useState<string>();
   const { userIsAdmin } = useRole();
@@ -286,8 +286,7 @@ export function AssignmentTable() {
       let work = false;
       check.forEach((i) => {
         const row = data[i] as IRow;
-        // since scheme is a button, we need to check if it has children
-        if ((row.scheme as any)?.props?.children) work = true;
+        if (row.scheme) work = true;
       });
       if (!work) {
         showMessage(t.selectRowsToRemove);
@@ -376,6 +375,7 @@ export function AssignmentTable() {
     allBookData,
     refresh,
     openSections,
+    schemes,
   ]);
 
   useEffect(() => {
