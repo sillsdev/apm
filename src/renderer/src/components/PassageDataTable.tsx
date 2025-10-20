@@ -237,6 +237,9 @@ export const PassageDataTable = (props: IProps) => {
 
   const handleRowSelectionChange = (newRows: GridRowSelectionModel) => {
     let chks = Array.from(newRows.ids).map((id) => parseInt(id as string));
+    if (newRows.type === 'exclude' && newRows.ids.size === 0) {
+      chks = data.map((_r, i) => i as number);
+    }
     //if we're a note, we want single select so if there are more than one, we take the last one
     if (isNote && chks.length > 1) chks = [chks[chks.length - 1] ?? 0];
     const curLen = checks.length;
