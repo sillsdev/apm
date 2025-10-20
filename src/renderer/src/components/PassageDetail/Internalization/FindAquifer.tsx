@@ -1,7 +1,6 @@
 import {
   Autocomplete,
   Grid,
-  Icon,
   IconButton,
   InputAdornment,
   OutlinedInput,
@@ -54,6 +53,8 @@ import {
   type GridRowSelectionModel,
 } from '@mui/x-data-grid';
 import { GridSortItem } from '@mui/x-data-grid/models/gridSortModel';
+import ArrowLeftIcon from '@mui/icons-material/ArrowBack';
+import ArrowRightIcon from '@mui/icons-material/ArrowForward';
 
 // Regex to match passage references in the form "chapter:verse-chapter:verse"
 const PASSAGE_REF_REGEX = /(\d+):(\d+)-(\d+)?:?(\d+)?/g;
@@ -517,7 +518,7 @@ export default function FindAquifer({ onClose }: IProps) {
                 onClick={() => setOffset(offset - limit)}
                 title={t.previous}
               >
-                <Icon>arrow_left</Icon>
+                <ArrowLeftIcon />
               </IconButton>
             ) : (
               <></>
@@ -534,7 +535,7 @@ export default function FindAquifer({ onClose }: IProps) {
                 onClick={() => setOffset(offset + limit)}
                 title={t.next}
               >
-                <Icon>arrow_right</Icon>
+                <ArrowRightIcon />
               </IconButton>
             ) : (
               <></>
