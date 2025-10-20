@@ -351,6 +351,12 @@ export function AssignmentTable() {
   };
 
   const handleRowSelectionChange = (newSelection: GridRowSelectionModel) => {
+    if (newSelection.type === 'exclude' && newSelection.ids.size === 0) {
+      const newSelectionIds = data.map((_r, i) => i as number);
+      setCheck(newSelectionIds);
+      setSelectedRows({ type: 'include', ids: new Set(newSelectionIds) });
+      return;
+    }
     const checks = Array.from(newSelection.ids).map((id) =>
       parseInt(id as string)
     );
