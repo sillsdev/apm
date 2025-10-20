@@ -522,6 +522,8 @@ export function TranscriptionTab(props: IProps) {
                   id += 1;
                 }
               });
+            } else {
+              psgCount = sectionpassages.length;
             }
             (rowData[sectionIndex] as IRow).passages = psgCount.toString();
           }
@@ -666,6 +668,7 @@ export function TranscriptionTab(props: IProps) {
             expanded={setOpenSections}
             columnVisibilityModel={columnVisibilityModel}
             onColumnVisibilityModelChange={setColumnVisibilityModel}
+            disableColumnSorting={false}
             initialState={{
               sorting: { sortModel },
             }}
