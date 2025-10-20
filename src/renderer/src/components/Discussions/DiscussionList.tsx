@@ -544,6 +544,7 @@ export function DiscussionList({ onClose }: DiscussionListProps) {
               sx={actionButtonProps}
               title={t.close}
               onClick={onClose}
+              disabled={anyChangedRef.current || adding}
             >
               <CloseIcon />
             </IconButton>
