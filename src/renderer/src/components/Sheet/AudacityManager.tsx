@@ -371,7 +371,7 @@ function AudacityManager(props: IProps) {
       </DialogTitle>
       <StyledGrid container>
         {exists && name !== '' ? (
-          <Grid container justifyContent="center">
+          <Grid container justifyContent="center" size={{ xs: 12 }}>
             <Grid size={{ xs: 8 }}>
               <FormControl>
                 <TextField
