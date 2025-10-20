@@ -435,7 +435,7 @@ export const AudioTable = (props: IProps) => {
             },
           ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [organizedBy, shared, hasPublishing, onAttach, nameCount]
+    [organizedBy, shared, hasPublishing, onAttach, nameCount, mediaPlaying]
   );
 
   const sortModel: GridSortModel = useMemo(
