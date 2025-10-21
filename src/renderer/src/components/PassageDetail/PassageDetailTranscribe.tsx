@@ -12,7 +12,7 @@ import Transcriber from '../../components/Transcriber';
 import usePassageDetailContext from '../../context/usePassageDetailContext';
 import { sharedSelector } from '../../selector';
 import { shallowEqual, useSelector } from 'react-redux';
-import TaskTable, { TaskTableWidth } from '../TaskTable';
+import TaskList, { TaskTableWidth } from '../TaskList';
 import { getStepComplete, ToolSlug } from '../../crud';
 import { findRecord } from '../../crud/tryFindRecord';
 import { JSONParse } from '../../utils';
@@ -211,7 +211,7 @@ export function PassageDetailTranscribe({ width, artifactTypeId }: IProps) {
         {artifactTypeId && (
           <Box sx={{ display: 'flex', flexDirection: 'row' }}>
             <Box>
-              <TaskTable />
+              <TaskList />
             </Box>
             <TranscriberContainer>
               <Transcriber

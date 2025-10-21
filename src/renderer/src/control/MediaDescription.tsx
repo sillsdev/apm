@@ -33,18 +33,21 @@ const PerformedBy = ({ mediafile }: { mediafile?: MediaFile }) => {
   );
 };
 
-const Segments = ({
-  mediafile,
-  version,
-}: {
-  mediafile?: MediaFile;
-  version: string;
-}) => {
+export const Segments = ({ mediafile }: { mediafile?: MediaFile }) => {
+  const [memory] = useGlobal('memory');
+
+  let version = '';
+  const relatedMedia = related(mediafile, 'sourceMedia');
+  if (relatedMedia) {
+    const s = findRecord(memory, 'mediafile', relatedMedia) as MediaFileD;
+    version = s.attributes?.versionNumber?.toString();
+  }
+
   return (
     <span>
-      {version && <Chip label={version} size="small" />}
-      {'\u00A0'}
       {prettySegment(mediafile?.attributes?.sourceSegments || '')}
+      {'\u00A0'}
+      {version && <Chip label={version} size="small" />}
       {'\u00A0'}
     </span>
   );
@@ -69,19 +72,12 @@ export const ItemDescription = ({
   mediafile?: MediaFile;
   col?: boolean;
 }) => {
-  const [memory] = useGlobal('memory');
   const [locale] = useGlobal('lang');
 
-  let version = '';
-  const relatedMedia = related(mediafile, 'sourceMedia');
-  if (relatedMedia) {
-    const s = findRecord(memory, 'mediafile', relatedMedia) as MediaFileD;
-    version = s.attributes?.versionNumber?.toString();
-  }
   return (
     <StyledBox col={col} className="item-desc">
       <PerformedBy mediafile={mediafile} />
-      <Segments mediafile={mediafile} version={version} />
+      <Segments mediafile={mediafile} />
       <Created mediafile={mediafile} lang={locale} />
     </StyledBox>
   );
