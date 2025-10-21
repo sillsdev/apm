@@ -7,12 +7,12 @@ import {
   IMediaTabStrings,
   MediaFileD,
   UserD,
-  ISharedStrings,
+  // ISharedStrings,
   SectionArray,
 } from '../../model';
 import { Button, IconButton } from '@mui/material';
-import BigDialog from '../../hoc/BigDialog';
-import VersionDlg from './VersionDlg';
+// import BigDialog from '../../hoc/BigDialog';
+// import VersionDlg from './VersionDlg';
 import TranscriptionShow from '../TranscriptionShow';
 import MediaPlayer from '../MediaPlayer';
 import Confirm from '../AlertDialog';
@@ -34,7 +34,7 @@ import PlayCell from './PlayCell';
 import DetachCell from './DetachCell';
 import { IRow } from '.';
 import { UpdateRecord } from '../../model/baseModel';
-import { mediaTabSelector, sharedSelector } from '../../selector';
+import { mediaTabSelector } from '../../selector';
 import UserAvatar from '../UserAvatar';
 import ConfirmPublishDialog from '../ConfirmPublishDialog';
 import {
@@ -68,7 +68,7 @@ export const AudioTable = (props: IProps) => {
     hasPublishing,
   } = props;
   const t: IMediaTabStrings = useSelector(mediaTabSelector, shallowEqual);
-  const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
+  // const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
   const lang = useSelector((state: IState) => state.strings.lang);
   const [offline] = useGlobal('offline'); //verified this is not used in a function 2/18/25
   const [memory] = useGlobal('memory');
@@ -85,7 +85,7 @@ export const AudioTable = (props: IProps) => {
   const [publishItem, setPublishItem] = useState(-1);
   const [hasBible, setHasBible] = useState(false);
   const { getOrgBible } = useBible();
-  const [verHist, setVerHist] = useState('');
+  // const [verHist, setVerHist] = useState('');
   const [verValue, setVerValue] = useState<number>();
   const { getPublishTo, setPublishTo, isPublished, publishStatus } =
     usePublishDestination();
@@ -181,12 +181,12 @@ export const AudioTable = (props: IProps) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [playItem]);
 
-  const handleVerHistOpen = (passId: string) => () => {
-    setVerHist(passId);
-  };
-  const handleVerHistClose = () => {
-    setVerHist('');
-  };
+  // // const handleVerHistOpen = (passId: string) => () => {
+  // //   setVerHist(passId);
+  // // };
+  // const handleVerHistClose = () => {
+  //   setVerHist('');
+  // };
 
   const playEnded = () => {
     setPlayItem('');
@@ -234,14 +234,14 @@ export const AudioTable = (props: IProps) => {
               width: 55,
               align: 'right',
               sortComparator: numCompare,
-              renderCell: (params) => (
-                <Button
-                  color="primary"
-                  onClick={handleVerHistOpen(params.row.passId)}
-                >
-                  {params.value}
-                </Button>
-              ),
+              // renderCell: (params) => (
+              //   <Button
+              //     color="primary"
+              //     onClick={handleVerHistOpen(params.row.passId)}
+              //   >
+              //     {params.value}
+              //   </Button>
+              // ),
             },
             {
               field: 'publishTo',
@@ -356,14 +356,14 @@ export const AudioTable = (props: IProps) => {
               width: 55,
               align: 'right',
               sortComparator: numCompare,
-              renderCell: (params) => (
-                <Button
-                  color="primary"
-                  onClick={handleVerHistOpen(params.row.passId)}
-                >
-                  {params.value}
-                </Button>
-              ),
+              // renderCell: (params) => (
+              //   <Button
+              //     color="primary"
+              //     onClick={handleVerHistOpen(params.row.passId)}
+              //   >
+              //     {params.value}
+              //   </Button>
+              // ),
             },
             {
               field: 'fileName',
@@ -461,7 +461,7 @@ export const AudioTable = (props: IProps) => {
           columns: { columnVisibilityModel },
         }}
       />
-      {verHist && (
+      {/* {verHist && (
         <BigDialog
           title={ts.versionHistory}
           isOpen={Boolean(verHist)}
@@ -473,7 +473,7 @@ export const AudioTable = (props: IProps) => {
             hasPublishing={hasPublishing}
           />
         </BigDialog>
-      )}
+      )} */}
       {publishItem !== -1 && (
         <ConfirmPublishDialog
           title={t.publish}
