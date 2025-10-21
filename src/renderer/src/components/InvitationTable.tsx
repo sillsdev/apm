@@ -105,9 +105,12 @@ export function InvitationTable() {
   };
 
   const handleRowSelectionChange = (newSelection: GridRowSelectionModel) => {
-    const checks = Array.from(newSelection.ids).map((id) =>
+    let checks = Array.from(newSelection.ids).map((id) =>
       parseInt(id as string)
     );
+    if (newSelection.type === 'exclude' && newSelection.ids.size === 0) {
+      checks = data.map((_r, i) => i);
+    }
     setCheck(checks);
     setSelectedRows(newSelection);
   };
@@ -190,6 +193,7 @@ export function InvitationTable() {
         <DataGrid
           columns={columns}
           rows={data.map((row, i) => ({ ...row, id: i }))}
+          checkboxSelection
           rowSelectionModel={selectedRows}
           onRowSelectionModelChange={handleRowSelectionChange}
           localeText={{ noRowsLabel: t.noData }}
