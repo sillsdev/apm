@@ -96,10 +96,14 @@ export function DiscussionList({ onClose }: DiscussionListProps) {
     discussionSize,
     passage,
     currentSegment,
+    currentSegmentIndex,
     playerMediafile,
     setDiscussionMarkers,
   } = ctx.state;
-  const currentSegmentRef = useRef(currentSegment);
+  const getCurrentSegment = () => {
+    return (currentSegmentIndex >= 0 ? currentSegment : undefined) ?? '';
+  };
+  const currentSegmentRef = useRef(getCurrentSegment());
   const discussionSizeRef = useRef(discussionSize);
   const { toolsChanged, isChanged, startSave, startClear, clearCompleted } =
     useContext(UnsavedContext).state;
@@ -108,8 +112,10 @@ export function DiscussionList({ onClose }: DiscussionListProps) {
     shallowEqual
   );
   useEffect(() => {
-    currentSegmentRef.current = currentSegment;
+    currentSegmentRef.current = getCurrentSegment();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentSegment]);
+
   const mediafileId = useMemo(() => {
     return playerMediafile?.id ?? '';
   }, [playerMediafile]);
