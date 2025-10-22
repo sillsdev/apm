@@ -9,7 +9,6 @@ import {
   CardContent,
   CardProps,
   Chip,
-  Grid,
   IconButton,
   IconButtonProps,
   styled,
@@ -162,6 +161,8 @@ const cardFlowProps = {
   px: 2,
   bgColor: 'background.paper',
   display: 'flex',
+  width: '100%',
+  flexGrow: 1,
   flexDirection: 'column',
 } as SxProps;
 const lightButton = { color: 'background.paper' } as SxProps;
@@ -1119,7 +1120,7 @@ export const DiscussionCard = (props: IProps) => {
               )}
             </Box>
             {showComments && !onAddComplete && (
-              <Grid container sx={cardFlowProps}>
+              <Box sx={cardFlowProps}>
                 {myComments.map((i, j) => (
                   <CommentCard
                     key={i.id}
@@ -1136,7 +1137,7 @@ export const DiscussionCard = (props: IProps) => {
                     commentNumber={myComments.length}
                   />
                 )}
-              </Grid>
+              </Box>
             )}
           </CardContent>
         </StyledCard>
