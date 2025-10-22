@@ -331,9 +331,12 @@ export default function FindAquifer({ onClose }: IProps) {
   }, [previewItem, token]);
 
   const handleRowSelectionChange = (newRows: GridRowSelectionModel) => {
-    const chks = Array.from(newRows.ids)
+    let chks = Array.from(newRows.ids)
       .map((id) => parseInt(id as string))
       .sort();
+    if (newRows.type === 'exclude' && newRows.ids.size === 0) {
+      chks = data.map((_r, i) => i as number);
+    }
     setChecks(chks);
     setSelectedRows(newRows);
   };
