@@ -1,9 +1,9 @@
 import {
+  Box,
+  BoxProps,
   Checkbox,
   FormControlLabel,
   FormLabel,
-  Grid,
-  GridProps,
   IconButton,
   styled,
   TextField,
@@ -43,9 +43,10 @@ import { useSelector } from 'react-redux';
 import { commentCardSelector } from '../../selector';
 import { useOrbitData } from '../../hoc/useOrbitData';
 
-const StyledWrapper = styled('div')(() => ({
+const StyledWrapper = styled(Box)<BoxProps>(() => ({
   display: 'flex',
   flexGrow: 1,
+  width: '100%',
   '&:hover button': {
     color: 'primary',
   },
@@ -54,26 +55,35 @@ const StyledWrapper = styled('div')(() => ({
   },
 }));
 
-const GridContainerSpread = styled(Grid)<GridProps>(() => ({
+const BoxSpread = styled(Box)<BoxProps>(() => ({
   display: 'flex',
+  width: '100%',
+  flexGrow: 1,
   justifyContent: 'space-between',
 }));
-const GridContainerRow = styled(Grid)<GridProps>(() => ({
+const BoxRow = styled(Box)<BoxProps>(() => ({
   display: 'flex',
   flexDirection: 'row',
   flexGrow: 1,
+  width: '100%',
 }));
-const GridContainerBorderedRow = styled(Grid)<GridProps>(() => ({
+const BoxBorderRow = styled(Box)<BoxProps>(() => ({
   display: 'flex',
   flexDirection: 'row',
+  width: '100%',
+  flexGrow: 1,
   borderTop: '1px solid #dfdfdf',
 }));
-const GridContainerCol = styled(Grid)<GridProps>(({ theme }) => ({
+const BoxCol = styled(Box)<BoxProps>(({ theme }) => ({
   display: 'flex',
+  width: '100%',
+  flexGrow: 1,
   flexDirection: 'column',
   justifyContent: 'center',
   color: theme.palette.primary.dark,
   '& audio': {
+    width: '100%',
+    flexGrow: 1,
     marginTop: theme.spacing(1),
     height: '40px',
   },
@@ -280,14 +290,14 @@ export const CommentCard = (props: IProps) => {
 
   return (
     <StyledWrapper>
-      <GridContainerBorderedRow container>
-        <GridContainerSpread container>
-          <GridContainerRow>
-            <Grid id="user" sx={{ margin: 1 }}>
+      <BoxBorderRow>
+        <BoxSpread>
+          <BoxRow>
+            <Box id="user" sx={{ margin: 1 }}>
               <UserAvatar {...props} userRec={author} />
-            </Grid>
+            </Box>
             {commentPlayId && mediaId === commentPlayId ? (
-              <GridContainerCol container id="commentplayer">
+              <BoxCol id="commentplayer">
                 <MediaPlayer
                   srcMediaId={mediaId === commentPlayId ? commentPlayId : ''}
                   requestPlay={commentPlaying}
@@ -296,7 +306,7 @@ export const CommentCard = (props: IProps) => {
                   onTogglePlay={handleCommentTogglePlay}
                   controls={mediaId === commentPlayId}
                 />
-              </GridContainerCol>
+              </BoxCol>
             ) : (
               <>
                 {media && (!oldVernVer || oldVernVer === 0) && (
@@ -304,15 +314,15 @@ export const CommentCard = (props: IProps) => {
                     <PlayIcon />
                   </IconButton>
                 )}
-                <GridContainerCol container>
-                  <Grid id="author">{author?.attributes?.name}</Grid>
-                  <Grid id="datecreated">
+                <BoxCol>
+                  <Box id="author">{author?.attributes?.name}</Box>
+                  <Box id="datecreated">
                     {dateOrTime(comment.attributes.dateUpdated, lang)}
-                  </Grid>
-                </GridContainerCol>
+                  </Box>
+                </BoxCol>
               </>
             )}
-          </GridContainerRow>
+          </BoxRow>
           {approvalStatus !== undefined &&
             (hasPermission(PermissionName.Mentor) ? (
               <FormControlLabel
@@ -339,16 +349,16 @@ export const CommentCard = (props: IProps) => {
               )
             ))}
           {mediaId !== commentPlayId && author?.id === user && !oldVernVer && (
-            <Grid>
+            <Box>
               <DiscussionMenu
                 action={handleCommentAction}
                 canResolve={true}
                 canEdit={true}
               />
-            </Grid>
+            </Box>
           )}
-        </GridContainerSpread>
-        <Grid size={{ xs: 12 }}>
+        </BoxSpread>
+        <Box>
           {editing ? (
             <CommentEditor
               toolId={comment.id}
@@ -381,8 +391,8 @@ export const CommentCard = (props: IProps) => {
               </>
             )
           )}
-        </Grid>
-      </GridContainerBorderedRow>
+        </Box>
+      </BoxBorderRow>
 
       {confirmAction === '' || (
         <Confirm
