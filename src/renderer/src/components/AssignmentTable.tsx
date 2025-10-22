@@ -283,15 +283,20 @@ export function AssignmentTable() {
     if (check.length === 0) {
       showMessage(t.selectRowsToRemove);
     } else {
-      let work = false;
+      let count = 0;
       check.forEach((i) => {
         const row = data[i] as IRow;
-        if (row.scheme) work = true;
+        const sectId = row.scheme as string;
+        if (!sectId) return;
+        const section = sections.find((s) => s.id === sectId);
+        if (!section) return;
+        const schemeId = related(section, 'organizationScheme');
+        if (schemeId) count++;
       });
-      if (!work) {
+      if (count === 0) {
         showMessage(t.selectRowsToRemove);
       } else {
-        setConfirmAction(t.removeSec + '? (' + check.length + ')');
+        setConfirmAction(t.removeSec + '? (' + count + ')');
       }
     }
   };
