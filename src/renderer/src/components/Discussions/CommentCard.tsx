@@ -291,106 +291,113 @@ export const CommentCard = (props: IProps) => {
   return (
     <StyledWrapper>
       <BoxBorderRow>
-        <BoxSpread>
-          <BoxRow>
-            <Box id="user" sx={{ margin: 1 }}>
-              <UserAvatar {...props} userRec={author} />
-            </Box>
-            {commentPlayId && mediaId === commentPlayId ? (
-              <BoxCol id="commentplayer">
-                <MediaPlayer
-                  srcMediaId={mediaId === commentPlayId ? commentPlayId : ''}
-                  requestPlay={commentPlaying}
-                  onEnded={handleCommentPlayEnd}
-                  onCancel={handleCommentPlayEnd}
-                  onTogglePlay={handleCommentTogglePlay}
-                  controls={mediaId === commentPlayId}
-                />
-              </BoxCol>
-            ) : (
-              <>
-                {media && (!oldVernVer || oldVernVer === 0) && (
-                  <IconButton id="playcomment" onClick={handlePlayComment}>
-                    <PlayIcon />
-                  </IconButton>
-                )}
-                <BoxCol>
-                  <Box id="author">{author?.attributes?.name}</Box>
-                  <Box id="datecreated">
-                    {dateOrTime(comment.attributes.dateUpdated, lang)}
-                  </Box>
-                </BoxCol>
-              </>
-            )}
-          </BoxRow>
-          {approvalStatus !== undefined &&
-            (hasPermission(PermissionName.Mentor) ? (
-              <FormControlLabel
-                sx={
-                  approved
-                    ? { color: 'secondary.light' }
-                    : { color: 'warning.dark' }
-                }
-                control={
-                  <Checkbox
-                    id="checkbox-approved"
-                    checked={approved}
-                    onChange={handleApprovedChange}
+        <Box id="user" sx={{ margin: 1 }}>
+          <UserAvatar {...props} userRec={author} />
+        </Box>
+        <Box width="100%" flexGrow={1} display="flex" flexDirection="column">
+          <BoxSpread>
+            <BoxRow>
+              {commentPlayId && mediaId === commentPlayId ? (
+                <BoxCol id="commentplayer">
+                  <MediaPlayer
+                    srcMediaId={mediaId === commentPlayId ? commentPlayId : ''}
+                    requestPlay={commentPlaying}
+                    onEnded={handleCommentPlayEnd}
+                    onCancel={handleCommentPlayEnd}
+                    onTogglePlay={handleCommentTogglePlay}
+                    controls={mediaId === commentPlayId}
                   />
-                }
-                label={approved ? t.approved : t.approve}
-                labelPlacement="top"
+                </BoxCol>
+              ) : (
+                <>
+                  {media && (!oldVernVer || oldVernVer === 0) && (
+                    <IconButton id="playcomment" onClick={handlePlayComment}>
+                      <PlayIcon />
+                    </IconButton>
+                  )}
+                  <BoxCol>
+                    <Box id="author">{author?.attributes?.name}</Box>
+                    <Box id="datecreated">
+                      {dateOrTime(comment.attributes.dateUpdated, lang)}
+                    </Box>
+                  </BoxCol>
+                </>
+              )}
+            </BoxRow>
+            {approvalStatus !== undefined &&
+              (hasPermission(PermissionName.Mentor) ? (
+                <FormControlLabel
+                  sx={
+                    approved
+                      ? { color: 'secondary.light' }
+                      : { color: 'warning.dark' }
+                  }
+                  control={
+                    <Checkbox
+                      id="checkbox-approved"
+                      checked={approved}
+                      onChange={handleApprovedChange}
+                    />
+                  }
+                  label={approved ? t.approved : t.approve}
+                  labelPlacement="top"
+                />
+              ) : (
+                !approved && (
+                  <FormLabel id="unapproved" color="secondary">
+                    {t.unapproved}
+                  </FormLabel>
+                )
+              ))}
+            {mediaId !== commentPlayId &&
+              author?.id === user &&
+              !oldVernVer && (
+                <Box>
+                  <DiscussionMenu
+                    action={handleCommentAction}
+                    canResolve={true}
+                    canEdit={true}
+                  />
+                </Box>
+              )}
+          </BoxSpread>
+          <Box>
+            {editing ? (
+              <CommentEditor
+                toolId={comment.id}
+                passageId={passageId}
+                refresh={0}
+                comment={comment.attributes?.commentText}
+                onCancel={handleCancelEdit}
+                onOk={handleSaveEdit}
+                setCanSaveRecording={setCanSaveRecording}
+                onTextChange={handleTextChange}
+                fileName={fileName(
+                  discussion.attributes.subject,
+                  discussion.id
+                )}
+                afterUploadCb={afterUploadCb}
               />
             ) : (
-              !approved && (
-                <FormLabel id="unapproved" color="secondary">
-                  {t.unapproved}
-                </FormLabel>
+              text && (
+                <>
+                  <OldVernVersion
+                    id={comment.id}
+                    oldVernVer={oldVernVer}
+                    mediaId={mediaId}
+                    text={text}
+                  />
+                  <StyledText
+                    id="outlined-textarea"
+                    value={text}
+                    multiline
+                    fullWidth
+                    variant="standard"
+                  />
+                </>
               )
-            ))}
-          {mediaId !== commentPlayId && author?.id === user && !oldVernVer && (
-            <Box>
-              <DiscussionMenu
-                action={handleCommentAction}
-                canResolve={true}
-                canEdit={true}
-              />
-            </Box>
-          )}
-        </BoxSpread>
-        <Box>
-          {editing ? (
-            <CommentEditor
-              toolId={comment.id}
-              passageId={passageId}
-              refresh={0}
-              comment={comment.attributes?.commentText}
-              onCancel={handleCancelEdit}
-              onOk={handleSaveEdit}
-              setCanSaveRecording={setCanSaveRecording}
-              onTextChange={handleTextChange}
-              fileName={fileName(discussion.attributes.subject, discussion.id)}
-              afterUploadCb={afterUploadCb}
-            />
-          ) : (
-            text && (
-              <>
-                <OldVernVersion
-                  id={comment.id}
-                  oldVernVer={oldVernVer}
-                  mediaId={mediaId}
-                  text={text}
-                />
-                <StyledText
-                  id="outlined-textarea"
-                  value={text}
-                  multiline
-                  fullWidth
-                  variant="standard"
-                />
-              </>
-            )
-          )}
+            )}
+          </Box>
         </Box>
       </BoxBorderRow>
 

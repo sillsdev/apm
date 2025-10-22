@@ -330,6 +330,9 @@ export const DiscussionCard = (props: IProps) => {
     onAddComplete && onAddComplete(discussion.id);
     setEditing(false);
     setChanged(false);
+    // reset card saving as comment saving is last thing and there are two ways to get here
+    // handleSave and afterUploadCb,
+    cardSavingRef.current = false;
   };
 
   const { passageId, fileName } = useRecordComment({
@@ -896,11 +899,13 @@ export const DiscussionCard = (props: IProps) => {
     setAssigned(related(discussion, 'group'), related(discussion, 'user'));
     setChangeAssignment(!changeAssignment as boolean);
   };
+
   const handleTextChange = (newText: string) => {
     commentText.current = newText;
     setComment(newText);
     setChanged(true);
   };
+
   return (
     <DiscussionCardRoot>
       <>
