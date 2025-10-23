@@ -318,7 +318,7 @@ export function LimitedMediaPlayer(props: IProps) {
           }
           deleteIcon={
             <>
-              {duration && (limits.end ?? 0) < duration && (
+              {!noRestart && duration && (limits.end ?? 0) < duration + 0.1 && (
                 <StyledTip title={limits.end ? t.afterResource : t.toEnd}>
                   <IconButton
                     data-testid="skip-next"
