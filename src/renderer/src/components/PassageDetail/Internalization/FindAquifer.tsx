@@ -335,7 +335,7 @@ export default function FindAquifer({ onClose }: IProps) {
       .map((id) => parseInt(id as string))
       .sort();
     if (newRows.type === 'exclude' && newRows.ids.size === 0) {
-      chks = data.map((_r, i) => i as number);
+      chks = data.map((r) => r.id);
     }
     setChecks(chks);
     setSelectedRows(newRows);
