@@ -3,6 +3,7 @@ import { IPeerCheckStrings, ISharedStrings } from '../model';
 import { peerCheckSelector, sharedSelector } from '../selector';
 import { shallowEqual, useSelector } from 'react-redux';
 import {
+  Box,
   Chip,
   ChipProps,
   IconButton,
@@ -10,6 +11,7 @@ import {
   Stack,
   SxProps,
   TooltipProps,
+  Typography,
   styled,
 } from '@mui/material';
 import { LightTooltip } from '../control/LightTooltip';
@@ -62,6 +64,8 @@ interface IProps {
   limits: IMediaLimits;
   onLoaded?: () => void;
   sx?: SxProps;
+  noRestart?: boolean;
+  noSkipBack?: boolean;
 }
 
 export function LimitedMediaPlayer(props: IProps) {
@@ -75,6 +79,8 @@ export function LimitedMediaPlayer(props: IProps) {
     controls,
     limits,
     sx,
+    noRestart,
+    noSkipBack,
   } = props;
   const [value, setValue] = useState(0);
   const [ready, setReady] = useState(false);
@@ -240,24 +246,28 @@ export function LimitedMediaPlayer(props: IProps) {
         <StyledChip
           icon={
             <>
-              <StyledTip title={t.resourceStart}>
-                <IconButton
-                  data-testid="segment-start"
-                  sx={{ alignSelf: 'center' }}
-                  onClick={handleSegmentStart}
-                >
-                  <SkipPrevious fontSize="small" />
-                </IconButton>
-              </StyledTip>
-              <StyledTip title={t.back3Seconds}>
-                <IconButton
-                  data-testid="skip-back"
-                  sx={{ alignSelf: 'center' }}
-                  onClick={handleSkipBack}
-                >
-                  <ReplayIcon fontSize="small" />
-                </IconButton>
-              </StyledTip>
+              {!noRestart && (
+                <StyledTip title={t.resourceStart}>
+                  <IconButton
+                    data-testid="segment-start"
+                    sx={{ alignSelf: 'center' }}
+                    onClick={handleSegmentStart}
+                  >
+                    <SkipPrevious fontSize="small" />
+                  </IconButton>
+                </StyledTip>
+              )}
+              {!noSkipBack && (
+                <StyledTip title={t.back3Seconds}>
+                  <IconButton
+                    data-testid="skip-back"
+                    sx={{ alignSelf: 'center' }}
+                    onClick={handleSkipBack}
+                  >
+                    <ReplayIcon fontSize="small" />
+                  </IconButton>
+                </StyledTip>
+              )}
               <IconButton
                 data-testid="play-pause"
                 sx={{ alignSelf: 'center', color: 'text.primary' }}
@@ -269,23 +279,41 @@ export function LimitedMediaPlayer(props: IProps) {
                   <PlayArrow fontSize="small" />
                 )}
               </IconButton>
-              <Duration seconds={(currentTime ?? 0) - (limits.start ?? 0)} />
-              {' / '}
-              <Duration
-                seconds={(limits.end || duration) - (limits.start ?? 0)}
-              />
             </>
           }
           label={
             <Stack direction="row" sx={{ px: 1 }}>
-              <Slider
-                value={value}
-                onChange={handleSliderChange}
-                size="small"
-                sx={{ color: 'text.secondary' }}
-                min={0}
-                max={Math.ceil((limits.end || duration) - (limits.start ?? 0))}
-              />
+              <Stack direction="column" sx={{ width: '100%' }}>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'flex-end',
+                    gap: 1,
+                  }}
+                >
+                  <Typography sx={{ fontSize: '0.7rem', lineHeight: 1 }}>
+                    <Duration
+                      seconds={(currentTime ?? 0) - (limits.start ?? 0)}
+                    />
+                    {' / '}
+                    <Duration
+                      seconds={(limits.end || duration) - (limits.start ?? 0)}
+                    />
+                  </Typography>
+                </Box>
+                <Slider
+                  value={value}
+                  onChange={handleSliderChange}
+                  size="small"
+                  sx={{ color: 'text.secondary', py: 0.5 }}
+                  min={0}
+                  max={Math.ceil(
+                    (limits.end || duration) - (limits.start ?? 0)
+                  )}
+                />
+              </Stack>
             </Stack>
           }
           deleteIcon={
