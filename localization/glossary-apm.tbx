@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-model href="https://raw.githubusercontent.com/LTAC-Global/TBX-Basic_dialect/master/DCA/TBXcoreStructV03_TBX-Basic_integrated.rng" type="application/xml" schematypens="http://relaxng.org/ns/structure/1.0"?>
+<?xml-model href="https://raw.githubusercontent.com/LTAC-Global/TBX-Basic_dialect/master/DCA/TBX-Basic_DCA.sch" type="application/xml" schematypens="http://purl.oclc.org/dsdl/schematron"?>
+<tbx type="TBX-Basic" style="dca" xml:lang="en" xmlns="urn:iso:std:iso:30042:ed-2">
+    <tbxHeader>
+        <fileDesc>
+            <sourceDesc>
+                <p>Crowdin glossary download</p>
+            </sourceDesc>
+        </fileDesc>
+    </tbxHeader>
+    <text>
+        <body>
+            <conceptEntry id="77">
+                <descrip type="translatable">yes</descrip>
+                <langSec xml:lang="en">
+                    <termSec>
+                        <term id="1671">offline</term>
+                        <termNote type="partOfSpeech">adverb</termNote>
+                    </termSec>
+                </langSec>
+                <langSec xml:lang="az">
+                    <termSec>
+                        <term id="1673">xətdən kənar </term>
+                    </termSec>
+                </langSec>
+            </conceptEntry>
+            <conceptEntry id="79">
+                <descrip type="translatable">yes</descrip>
+                <langSec xml:lang="en">
+                    <termSec>
+                        <term id="1675">Bible</term>
+                    </termSec>
+                </langSec>
+                <langSec xml:lang="az">
+                    <termSec>
+                        <term id="1677">Müqəddəs Kitab</term>
+                    </termSec>
+                </langSec>
+            </conceptEntry>
+        </body>
+    </text>
+</tbx>

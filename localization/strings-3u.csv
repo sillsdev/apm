@@ -1,0 +1,808 @@
+tag	en	fr	pt	es	id	ru	zh
+workflowSteps.none	(None)	(Aucun)	(Nenhum)	(Ninguno)	(Tidak ada)	(Нет)	(无)
+main.about	About	À propos de	Sobre	Acerca de	Tentang	О программе	关于
+passageDetailArtifacts.accept	Accept	Accepter	Aceitar	Aceptar	Terima	Принять	接受
+invitationTable.accepted	Accepted	Acceptée	Aceito	Aceptado	Diterima	Принято	已接受
+main.course	Access Accredited Course	Accéder à un cours accrédité	Acessar o curso credenciado	Acceder al curso acreditado	Buka Kursus Terakreditasi	Доступ к аккредитованным курсам	访问认证课程
+main.logos	Access Logos Resources	Accès Ressources Logos	Acessar recursos de logotipos	Acceder a Recursos Logos	Buka Sumber Logos	Доступ к ресурсам Logos	访问徽标资源
+main.openContent	Access Open Content	Accéder au contenu ouvert	Acessar conteúdo aberto	Acceso a contenido abierto	Buka Konten Akses Terbuka	Доступ к открытому контенту	访问开放内容
+main.videos	Access Training Videos	Accéder aux vidéos de formation	Acessar vídeos de treinamento	Acceder a los vídeos de formación	Buka Video Latihan	Доступ к учебным видеоматериалам	访问培训视频
+main.walkThru	Access Walk Through	Accès à la visite guidée	Passeio pelo Access	Acceder al recorrido	Buka Video Pengenalan APM	Доступ к просмотру	Access 演示
+usertable.action	Action	Action	Ação	Acción	Tindakan	Действие	行动
+mediaTab.actions	Actions	Actions	Ações	Acciones	Tindakan	Действия	行动
+artifactType.activity	Activity	Activité	Atividade	Actividad	Aktivitas	Деятельность	活动
+profile.add	Add	Ajouter	Adicionar	Añadir	Tambahkan	Добавить	添加
+passageDetailArtifacts.activity	Add Activity	Ajouter une activité	Adicionar Atividade	Añadir actividad	Tambahkan Aktifitas	Добавить активность	添加活动
+assignmentTable.addScheme2	Add Assignment Scheme	Ajouter un plan d'affectation	Adicionar Esquema de Atribuição	Añadir esquema de asignación	Tambah Skema Tugas	Добавить схему назначений	添加作业方案
+discussionList.add	Add Discussion	Ajouter une discussion	Adicionar Discussão	Añadir discusión	Tambahkan Diskusi	Добавить обсуждение	添加讨论
+usertable.addMember	Add Member	Ajouter utilisateur	Adicionar Membro	Añadir miembro	Tambahkan Anggota	Добавить участника	添加成员
+selectArtifactCategory.addNewCategory	Add New Category	Ajouter une nouvelle catégorie	Adicionar Nova Categoria	Añadir nueva categoría	Tambahkan Kategori Baru	Добавить новую категорию	添加新范畴
+usertable.addNewUser	Add New Member	Ajouter un nouveau membre	Adicionar Novo Utilizador	Añadir nuevo miembro	Tambahkan Anggota Baru	Добавить нового пользователя	添加新成员
+selectArtifactType.addNewType	Add New Type	Ajouter un nouveau type	Adicionar Novo Tipo	Añadir nuevo tipo	Tambahkan Jenis Baru	Добавить новый тип	添加新类型
+planActions.addNote	Add Note	Ajouter une note	Adicionar nota	Añadir Nota	Tambahkan Catatan	Добавить заметку	添加注释
+planSheet.addPassage	Add Passage	Ajouter un passage	Adicionar Passagem	Añadir pasaje	Tambahkan Bagian	Добавить отрывок	添加片段
+assignmentTable.addScheme	Add Permission Scheme	Ajouter un schéma d'autorisation	Adicionar esquema de permissões	Añadir esquema de permisos	Tambah Skema Perizinan	Добавить схему разрешений	添加权限方案
+cards.addTeam	Add Team	Ajouter une équipe	Adicionar Equipe	Añadir Equipo	Tambahkan Tim	Добавить команду	添加团队
+spelling.addToDict	Add to dictionary	Ajouter au dictionnaire	Adicionar ao dicionário	Añadir al diccionario	Tambahkan ke kamus	Добавить в словарь	添加至词典
+keyTerms.addTargetWord	Add Translation	Ajouter une traduction	Adicionar Tradução	Añadir traducción	Tambahkan Terjemahan	Добавить перевод	添加译文
+workflowSteps.addingStep	Adding Workflow Step:	Ajout d'une étape de workflow :	Adição de etapa de fluxo de trabalho:	Añadir paso de flujo de trabajo:	Sedang Menambahkan Lankah Alur Kerja:	Добавление шага рабочего процесса:	添加工作流步骤：
+transcribeReject.comment	Additional Comment	Commentaire supplémentaire	Comentário Adicional	Comentario adicional	Catatan Tambahan	Дополнительный комментарий	额外注释
+profile.additionalSettings	Additional Settings	Paramètres supplémentaires	Definições adicionais	Ajustes adicionales	Pengaturan Tambahan	Дополнительные настройки	附加设置
+main.admin	Admin	Admin	Administrador	Admin	Admin	Администратор	管理
+deleteExpansion.advanced	Advanced	Avancé	Avançado	Avanzado	Advanced	Расширенные	高级
+voice.age	Age	Âge	Idade	Edad	Usia	Возраст	年龄
+shared.ai	AI	AI	IA	AI	AI	AI	人工智能
+artifactType.airesource	AI Generated	Généré par l'IA	Gerada por IA	Generado por IA	Dihasilkan oleh AI	Сгенерированный ИИ	AI 生成
+findResource.queryBuilder	AI Query Builder	Constructeur de requêtes pour l'IA	Criador de consultas de IA	Generador de consultas AI	Pembuat Kueri AI	Конструктор запросов AI	人工智能查询生成器
+transcriber.aiAsrFailed	AI transcription failed	Échec de la transcription par l'IA	Falha na transcrição de IA	Fallo en la transcripción AI	Transkripsi AI gagal	Не удалось выполнить транскрипцию AI	人工智能转录失败
+grid.all	All	Tout	Todos	Todo	Semua	Все	全部
+keyTerms.all	All	Tous	Todos	Todos	Semua	Все	全部
+mediaTab.all	All	Toutes	Todos	Todos	Semua	Все	全部
+filterMenu.all	All	Toutes	Todos	Todos los	Semua	Все	全部
+filterMenu.allSteps	All Steps	Toutes les étapes	Todas as Etapas	Todos los Pasos	Semua Langkah	Все шаги	全部步骤
+voice.allTeams	All Teams	Toutes les équipes	Todas as equipes	Todos los equipos	Semua Tim	Все команды	所有团队
+invite.alreadyInvited	Already invited!	Déjà invité !	Já convidado!	Ya he sido invitado	Sudah diundang!	Уже приглашен!	邀请过了
+hotKey.altKey	Alt	Alt	Alt	Alt	Alt	Alt	转换
+projectDownload.amount	Amount to download	Quantité à télécharger	Quantidade para download	Cantidad a descargar	Jumlah yang akan diunduh	Сумма для загрузки	下载量
+voice.stJoin	and	et	e	y	dan	и	并且
+main.apiError	API Error:	Erreur API:	Erro de API:	Error de la API:	Kesalahan API:	Ошибка API:	API 错误：
+scriptureTableFilter.apply	Apply	Appliquer	Aplicar	Aplicar	Terapkan	Применить	应用
+commentCard.approve	Approve	Approuver	Aprovar	Aprobar	Setuju	Одобрить	批准
+commentCard.approved	Approved	Approuvé	Aprovado	Aprobado	Disetujui	Одобрено	已批准
+keyTerms.aramaic	Aramaic	Araméen	Aramaico	Arameo	Bahasa Aram	Арамейский	阿拉米文
+alert.areYouSure	Are you sure?	Êtes-vous certain(e) ?	Você tem certeza?	¿Está seguro?	Apakah Anda yakin?	Вы уверены?	您确定吗？
+selectArtifactType.artifactType	Artifact Type	Type d'artefact	Tipo de Artefato	Tipo de artefacto	Jenis Sumber	Тип дополнительного материала	学习工具类型
+discussionCard.assign	Assign	Attribuer	Atribuir	Asignar	Tugaskan	Назначить	指定
+planActions.assign	Assign	Affecter	Atribuir	Asignar	Tugaskan	Назначить	分配
+planSheet.assigned	Assigned	Assigné	Atribuído	Asignado	Ditugaskan	Назначено	已分配
+toDoTable.assigned	Assigned	Affecté à	Atribuído	Asignado	Ditugaskan	Назначено	已分配
+sortMenu.assignment	Assigned To	Affecté à	Atribuída a	Asignado a	Ditugaskan Kepada	Назначено	已分配到
+peer.assignment	assignment	affectation	atribuição	asignación	tugas	задание	任务
+shared.scheme2	Assignment Scheme	Schéma d'affectation	Esquema de atribuição	Esquema de asignación	Skema Tugas	Схема назначений	分配方案
+assignSection.schemeName2	Assignment Scheme Name	Nom du plan d'affectation	Nome do esquema de atribuição	Nombre del esquema de asignación	Nama Skema Tugas	Имя схемы назначения	分配方案名称
+assignmentTable.title	Assignments	Affectations	Atribuições	Asignaciones	Tugas	Задачи	作业
+mediaActions.attach	Associate	Associé	Associar	Asociar	Hubungkan	Связать	关联
+mediaTab.associated	Associated	Associé	Associado	Asociado	Terhubung	Связанные	关联的
+planTabs.associations	Associations	Associations 	Associações	Asociaciones	Hubungan	Ассоциации	关联
+keyTerms.attribute	Attribute	Attribut	Atributo	Atributo	Sifat	Атрибут	属性
+audacityManager.installError	Audacity install error	Erreur d'installation d'Audacity	Erro ao instalar o Audacity	Error de instalación de Audacity	Kesalahan pemasangan Audacity	Ошибка установки Audacity	胆敢 安装错误
+audacityManager.title	Audacity Manager	Gestionnaire d'Audacity	Gerenciador do Audacity	Administrador de Audacity	Pengelola Audacity	Менеджер Audacity	胆敢 管理器
+audacityManager.audacityProject	Audacity Project	Projet Audacity	Projeto Audacity	Proyecto Audacity	Proyek Audacity	Проект Audacity	胆敢方案
+main.media	Audio	Audio	Áudio	Audio	Audio	Аудио	音频
+mediaTab.mediaAssociations	Audio Associations	Associations audio	Associações de Áudio	Asociaciones de audio	Hubungan audio	Связи аудио	音频关联
+shared.mediaAttached	Audio Attached	Audio attachés	Áudio Anexado	Audio Adherido	Berkas Audio Terlampir	Аудио прикреплено	已附加音频
+shared.mediaDetached	Audio Detached	Médias Désassocier	Áudio Desanexado	Audio Separado	Berkas Audio Terlepas	Аудио отключено	已附加音频
+cards.normalize	Audio Normalize	Normalisation audio	Audio Normalize	Normalizar audio	Normalisasi Audio	Нормализация звука	音频标准化
+category.note	Audio Note	Note audio	Nota de áudio	Nota de audio	Catatan Audio	Аудиозаметка	音频笔记
+category.notes	audio note(s)	note(s) audio	nota(s) de áudio	nota(s) de audio	catatan audio	аудиозаметка(и)	音频笔记(s)
+newProject.audioProduct	Audio Product	Produit audio	Produto de Áudio	Producto de audio	Produk Audio	Аудио продукт	音频产品
+main.project	Audio Project	Project audio	Projeto de Áudio	Proyecto de audio	Proyek Audio	Аудио проект	音频方案
+cards.projectCreated	Audio Project Created	Création d'un projet audio	Projeto de Áudio Criado	Proyecto de audio creado	Buat Proyek Audio	Аудио проект создан	音频项目已创建
+vProject.projectName	Audio Project Name	Nom du projet	Nome do Projeto de Áudio	Nombre del proyecto de audio	Nama Proyek Audio	Название аудио проекта	音频项目的名称
+viewMode.audioProject	Audio Project Setup	Configuration du projet audio	Configuração de Projeto de Áudio	Configuración del proyecto de audio	Pengaturan Proyek Audio	Настройка аудио проекта	音频项目已创建
+vProject.type	Audio Project Type	Type de projet audio	Tipo do Projeto de Áudio	Tipo de proyecto de audio	Jenis Proyek Audio	Тип аудио проекта	音频项目的类型
+invite.allUsersProjects	Audio Projects	Projets audio	Projetos de Áudio	Proyectos de audio	Proyek Audio	Аудио проекты	音频方案
+passageDetailArtifacts.audioScripture	Audio Scripture	Écriture audio	Áudio Escritura	Audio Escritura	Rekaman Alkitab	Аудио Писание	音频经文
+cards.mediaUploaded	Audio Uploaded	Audio téléchargé	Áudio Enviado	Audio cargado	Audio Diunggah	Аудио загружено	音频已上传
+mediaTab.autoMatch	Auto Match	Correspondance Automatique	Correspondência Automática	Coincidencia automática	Pasangkan Secara Otomatis	Автоматическая Подборка	自动匹配
+template.autoMatchTemplate	Auto Match Template	Modèle de correspondance automatique	Modelo de correspondência automática	Plantilla Auto Match	Cocokkan Tempate Secara Otomatis	Шаблон автосоответствия	自动匹配模板
+wsAudioPlayerSegment.segmentSettings	Auto Segment Parameters	Paramètres de segment automatique	Parâmetros do Segmento Automático	Parámetros del segmento automático	Pengaturan Pembagian Secara Otomatis	Параметры авто сегмента	自动片段参数
+cards.recognizeSpeech	Auto Transcription	Transcription automatique	Transcrição automática	Transcripción automática	Transkripsi Otomatis	Автотранскрипция	自动转录
+cards.recognizeSpeechSettings	Auto Transcription Settings	Paramètres de transcription automatique	Definições de transcrição automática	Configuración de la transcripción automática	Pengaturan Transkripsi Otomatis	Настройки автотранскрипции	自动转录设置
+wsAudioPlayer.recognizeSpeechSettings	Auto Transcription Settings	Paramètres de transcription automatique	Definições de transcrição automática	Configuración de la transcripción automática	Pengaturan Transkripsi Otomatis	Настройки автотранскрипции	自动转录设置
+mediaTab.availablePassages	Available Passages	Passages disponibles	Passagens Disponíveis	Pasajes disponibles	Bagian yang Tersedia	Доступные отрывки	可用的片段
+grid.avg	Avg	l' avarie	Média	Avg	Rata-rata	Средн.	平均：
+access.back	Back	Précédent	Voltar	Atrás	Kembali	Назад	后去
+workflowSteps.backTranslation	Back Translate	Traduire en arrière	Criar uma Retrotradução	Volver Traducir	Buat Terjemahan Balik	Обратный перевод	回译
+vProject.backtranslation	Back Translation	Traduction inverse	Retrotradução	Retroceder Traducción	Terjemahan Balik	Обратный перевод	回译
+vProject.basic	Basic	Basique	Básico	Básico	Sederhana	Основные	基本
+transcriber.beginRecognize	Begin Auto Transcription	Commencer la transcription automatique	Iniciar transcrição automática	Iniciar la transcripción automática	Mulai Transkripsi Secara Otomatis	Начать автоматическую транскрипцию	开始自动转录
+voice.convert	Begin Conversion	Commencer la conversion	Iniciar conversão	Iniciar conversión	Mulai Konversi	Начать преобразование	开始转换
+wsAudioPlayer.beginVoiceConvert	Beginning voice conversion...	Début de la conversion de la voix...	A iniciar a conversão de voz...	Comenzando conversión de voz...	Memulai konversi suara...	Начинаем преобразование голоса...	开始语音转换...
+keyTerms.being	Being	Être	Sendo	Ser	Makhluk	Быть	有生命的
+newProject.keyFactors	Best option if...	La meilleure option si...	Melhor opção se...	La mejor opción si...	Pilihan terbaik kalau...	Лучший вариант, если...	最佳选项，如果...
+cards.bibleid	Bible Id	Identité biblique	Id da Bíblia	Id Biblia	ID Alkitab	Библейский ид	圣经 ID
+artifactCategory.biblestory	Bible Story	Histoire biblique	História Bíblica	Historia bíblica	Cerita Alkitab	Библейская история	圣经故事
+scriptureTable.book	Book	Livre	Livro	Libro	Kitab	Книга	书
+artifactCategory.bookintro	Book Introduction	Introduction au livre	Introdução de Livro	Introducción al libro	Pengantar Kitab	Введение	书介绍
+template.bookname	Book name	Nom du livre	Nome do livro	Nombre del libro	Nama kitab	Название книги	书名
+findResource.bibleProjectLang	Book Overviews	Aperçus de livres	Visões gerais de livros	Resumen de libros	Ringkasan Kitab	Аннотации к книгам	书籍概述
+audacityManager.browse	Browse	Parcourir	Procurar	Examinar	Jelajahi	Обзор	浏览
+newProject.uploadAudio	Bulk Upload	Téléchargement en masse	Upload a granel	Carga masiva	Unggah file jumlah besar	Массовая загрузка	批量上传
+main.loadingTable	Busy...please wait.	Occupé...veuillez patienter.	Ocupado... Por favor, aguarde.	Ocupado... por favor espere.	Sibuk...mohon tunggu.	Занято...пожалуйста, подождите.	忙...请稍候。
+resource.byWord	By Word	Par mot	Por palavra	Por palabra	Menurut Kata	По слову	按单词
+vProject.permissionEditSheet	Can Edit Spreadsheet	Peut éditer la feuille de calcul	Pode editar a folha de cálculo	Puede editar la hoja de cálculo	Dapat Mengedit Spreadsheet	Может редактировать электронную таблицу	可以编辑电子表格
+vProject.permissionPublish	Can Publish	Peut publier	Pode publicar	Puede publicar	Dapat Menerbitkan	Может публиковать	可以发布
+profile.cancel	Cancel	Annuler	Cancelar	Cancelar	Batal	Отмена	取消
+mediaTitle.cancel	Cancel Recording	Annuler l'enregistrement	Cancelar gravação	Cancelar grabación	Batalkan Perekaman	Отмена записи	取消录音
+keyTerms.cancel	Cancel Translation	Annuler la traduction	Cancelar tradução	Cancelar traducción	Batalkan Terjemahan	Отменить перевод	取消翻译
+passageDetailArtifacts.canceling	Canceling resource creation	Annulation de la création de ressources	Cancelando criação de recursos	Cancelar la creación de recursos	Membatalkan pembuatan sumber	Отменить создание ресурса	取消资源创建
+verse.canceling	Canceling verse markup	Annulation du balisage du couplet	Cancelamento da marcação de versos	Cancelación del marcado de versos	Membatalkan markup ayat	Отмена разметки стиха	取消诗句标记
+uploadProgress.canceling	Canceling...	Annulation...	Cancelando...	Cancelando...	Sedan membatalkan...	Отмена...	取消中...
+passageDetailArtifacts.category	Category	Catégorie	Categoria	Categoría	Kategori	Категория	范畴
+selectArtifactCategory.duplicateCategory	Category already exists.	La catégorie existe déjà.	Categoria já existe.	La categoría ya existe.	Kategori itu sudah ada.	Категория уже существует.	范畴已存在。
+discussionList.categoryList	Category List	Liste des catégories	Lista de Categorias	Lista de categorías	Daftar Kategori	Список категорий	范畴目录
+picker.change	Change	Changement	Alterar	Cambiar	Ubah	Изменить	更改
+discussionCard.changeAssignment	Change Assignment	Modifier l'affectation	Mudança de Atribuição	Cambiar la asignación	Ubah Tugas	Изменить назначение	改变任务
+picker.changeName	Change Name	Changement de nom	Alterar nome	Cambiar nombre	Ganti Nama	Изменение Имя	更改名称
+transcriptionTab.changed	Changed	Modifié	Alterado	Cambiado	Sudah berubah	Изменено	已经改变
+transcriptionTab.exportSince	Changes since date	Modifications depuis la date	Alterações desde a data	Cambios desde la fecha	Perubahan sejak tanggal	Изменения с даты	自日期以来的变化
+findResource.chapter	Chapter	Chapitre	Capítulo	Capítulo	Pasal	Глава	章节
+category.chapternumber	Chapter Number	Numéro de chapitre	Número do capítulo	Número de capítulo	Nomor Pasal	Номер главы	章号
+languagePicker.selectLanguage	Choose Language Details	Choisir les détails de la langue	Escolher Detalhes do Idioma	Elegir detalles de la lengua	Pilih Rincian Bahasa	Детальная информация о языке	选择语言详细信息
+picker.selectLanguage	Choose Language Details	Choisir les détails de la langue	Selecionar detalhes do idioma	Elija Detalles del idioma	Pilih Rincian Bahasa	Выбор сведений о языке	选择语言详细信息
+mediaTab.choosePassage	Choose Passage	Choisir le passage	Selecionar Passagem	Elegir pasaje	Pilih Bagian	Выберите отрывок	选择片段
+passageDetailArtifacts.projectResourceConfigure	Chunk into Resources	Découpage en ressources	Parte num Recurso	Chunk into Resources	Bagikan menjadi Sumber	Фрагмент в ресурс	分裂到资源
+main.clear	Clear	Effacer	Limpar	Borrar	Hapus	Очистить	清除
+main.clearCache	Clear cache	Vider le cache	Limpar cache	Borrar caché	Bersihkan cache	Очистить кэш	清除缓存
+findResource.clearQuery	Clear query	Effacer la requête	Limpar consulta	Borrar consulta	Hapus kueri	Очистить запрос	清除查询
+wsAudioPlayerSegment.removeAll	Clear Segments	Effacer les segments	Limpar Segmentos	Borrar segmentos	Bersihkan Segmen	Очистить сегменты	清除片段
+findResource.clipboard	clipboard	presse-papiers	área de transferência	portapapeles	papan klip	буфер обмена	剪贴板
+wsAudioPlayerSegment.close	Close	Proche	Fechar	Cerrar	Tutup	Закрыть	关闭
+cards.closeNoSave	Close without Saving?	Fermer sans sauvegarder ?	Fechar sem guardar?	¿Cerrar sin guardar?	Tutup tanpa menyimpan?	Закрыть без сохранения?	关闭而不保存？
+mediaTab.cloudSync	Cloud Sync	Cloud Sync	Sincronização na Nuvem	Sincronización en la nube	Kirim/Terima internet	Облачная синхронизация	云端 同步
+picker.codeExplained	Code Explained	Explication du code	Código explicado	Explicación del código	Penjelasan kode bahasa	Объяснение кода	代码解释
+commentEditor.comment	Comment	Remarque	Comentário	Comentario	Catatan	Комментарий	注释
+transcriber.comment	Comment	Commentaire 	Comentário	Comentario	Catatan	Комментарий	注释
+tool.community	Community Test	Test communautaire	Teste da Comunidade	Prueba comunitaria	Pemeriksaan Masyarakat	Тест сообщества	社区测试
+workflowSteps.communityTest1	Community Test 1	Test communautaire 1	Teste da Comunidade 1	Prueba comunitaria 1	Pemeriksaan Masyarakat 1	Тест 1 сообщества	社区测试一
+workflowSteps.communityTest2	Community Test 2	Test communautaire 2	Teste da Comunidade 2	Prueba comunitaria 2	Pemeriksaan Masyarakat 2	Тест 2 сообщества	社区测试二
+artifactCategory.retelling	Community Test Retell	Test de la communauté Répétition	Recontagem de teste comunitário	Prueba comunitaria Retell	Cerita Ulang Masyarakat	Тест сообщества Пересказ	社区测试重试
+artifactType.retell	Community Test Retell	Test communautaire Retell	Recontagem de teste comunitário	Prueba comunitaria Volver a contar	Cerita Ulang Masyarakat	Тест сообщества Пересказ	社区测试重试
+tool.teamCheck	Compare	Comparez	Compare	Comparar	Bandingkan	Сравнить	比较
+workflowSteps.teamCheck	Compare	Comparer	Comparar	Comparar	Bandingkan	Сравнить	比较
+profile.completeProfile	Complete User Profile	Remplir le profil du utilisateur	Completar Perfil do Usuário	Perfil de usuario completo	Lengkapi Profil Pengguna	Заполнить профиль пользователя	完整用户资料
+passageDetailArtifacts.completed	Completed	Complété	Concluído	Completado	Selesai	Завершено	已完成
+transcriber.done	Completed	Terminé	Concluído	Completado	Selesai	Завершён	已完成
+passageRecord.compressed	Compressed	Compressé	Compactado	Comprimido	Dipadatkan	Сжатый	压缩的
+vProject.configure	Configure	Configurer	Configurar	Configurar	Konfigurasi	Настроить	设置
+assignSection.title2	Configure Assignment Scheme	Configurer le schéma d'affectation	Configurar esquema de atribuição	Configurar esquema de asignación	Atur Skema Tugas	Настроить схему назначений	配置分配方案
+assignmentTable.assignSec2	Configure Assignments	Configurer les affectations	Configurar Atribuições	Configurar asignaciones	Atur Tugas	Настройка назначений	配置作业
+passageDetailArtifacts.configure	Configure General	Configuration générale	Configuração Geral	Configurar el general	Konfigurasi Umum	Общие параметры	设置普通
+assignSection.title	Configure Permission Scheme	Configurer le schéma des autorisations	Configurar esquema de permissões	Configurar esquema de permisos	Atur Skema Perizinan	Настроить схему разрешений	配置权限方案
+assignmentTable.assignSec	Configure Permissions	Configurer les autorisations	Configurar permissões	Configurar permisos	Atur Perizinan	Настройка разрешений	配置权限
+mediaTab.confirmChange	Confirm Change	Confirmer le changement	Confirmar alteração	Confirmar cambio	Konfirmasi Perubahan	Подтвердить изменение	确认更改
+assignSection.confirmDelete	Confirm Delete	Confirmer Supprimer	Confirmar Eliminar	Confirmar Borrar	Konfirmasi Penghapusan	Подтвердить удаление	确认删除
+assignSection.confirmModify	Confirm Modify	Confirmer Modifier	Confirmar Modificar	Confirmar Modificar	Konfirmasi Pengeditan	Подтвердить Изменить	确认修改
+alert.confirmation	Confirmation	Confirmation	Confirmação	Confirmación	Konfirmasi	Подтверждение	确认
+transcriber.congratulation	Congratulations	Félicitations	Parabéns	Enhorabuena	Selamat	Поздравления	恭喜您！
+access.title	Connection Mode	Mode de connexion	Modo de Conexão	Modo de conexión	Mode Koneksi	Режим соединения	连接模式
+shared.consultant	Consultant	Consultant	Consultor	Consultor	Konsultan	Консультант	顾问
+tool.consultantCheck	Consultant Check	Vérification du consultant	Verificação do consultor	Comprobación del consultor	Pemeriksaan Konsultan	Проверка консультанта	顾问检查
+workflowSteps.consultantCheck	Consultant Check	Contrôle du consultant	Verificação do Consultor	Comprobación del consultor	Pemeriksaan Konsultan	Проверка консультанта	顾问检查
+permission.consultantInTraining	Consultant In Training	Consultante en formation	Consultor Em Treinamento	Consultor en formación	Konsultan Sedang Dilatih	Консультант по обучению	培训中的顾问
+grid.contains	Contains	Contient	Contém	Contiene	Mengandung	Содержит	包含
+main.continue	Continue	Continuer	Continuar	Continuar	Lanjut	Продолжить	继续
+alert.delete	Continue with Delete?	Continuer avec la suppression?	Continuar com Delete?	Continúe con ¿Borrar?	Lanjutkan dengan hapus?	Продолжить с Удалением?	继续删除？
+import.continue	Continue?	Continuer?	Continuar?	¿Continuar?	Lanjut?	Продолжить?	是否继续？
+treeChart.contributions	Contributions toward	Contributions vers	Contribuições para	Contribuciones hacia	Kontribusi untuk	Участие в работе	捐款给
+cards.convertVoice	Convert Voice	Convertir la voix	Converter voz	Convertir Voz	Konversi Suara	Преобразование голоса	转换语音
+cards.convertVoiceSettings	Convert Voice Settings	Paramètres de conversion de la voix	Converter configurações de voz	Convertir Ajustes de Voz	Pengaturan Konversi Suara	Настройки преобразования голоса	转换语音设置
+import.copyfail	Copy Failed	La copie a échoué	Falha ao Copiar	Copia fallida	Gagal Menyalin	Ошибка копирования	复制失败
+import.copy	Copy Report	Copier le rapport	Copiar Relatório	Copiar informe	Salin Laporan	Копировать отчет	复制报表
+shared.clipboardCopy	Copy to clipboard	Copier dans le presse-papiers	Copiar para a área de transferência	Copiar al portapapeles	Salin ke papan klip	Скопировать в буфер обмена	复制到剪贴板
+transcriptionTab.copyTranscriptions	Copy Transcriptions	Copie des transcriptions	Copiar Transcrições	Copiar transcripciones	Salin Transkripsi	Скопировать транскрипции	复制听写本
+cards.copyright	Copyright	Copyright	Direitos de autor	Copyright	Hak cipta	Авторское право	版权
+transcribeReject.needsCorrection	Correction Needed	Nécessite des corrections	Correção Necessária	Se necesita corrección	Diperlukan Koreksi	Нужна коррекция	需要校正
+activityState.needsNewTranscription	Correction Needed	Correction requise	Correção Necessária	Se necesita corregir	Diperlukan Koreksi	Нужна коррекция	需要校正
+grid.count	Count	Dénombrer	Contagem	Cuenta	Jumlah	Количество	总数
+audacityManager.create	Create	Créer	Criar	Crear	Membuat	Создать	创建
+findResource.createResource	Create AI Resource	Créer une ressource AI	Criar recurso de IA	Crear Recurso AI	Buat Sumber AI	Создать ресурс ИИ	创建人工智能资源
+findResource.createItems	Create Items	Créer des éléments	Criar itens	Crear artículos	Buat Item Baru	Создать предметы	创建项目
+passageDetailArtifacts.createResources	Create Resources	Créer des ressources	Criar Recursos	Crear recursos	Buat sumber	Создать ресурс	创建资源
+selectRecording.created	Created	Créé	Criado	Creado	Dibuat	Создано	创建的
+transcriber.noMedia	Created task	Tâche créée	Tarefa criada	Tarea creada	Tugas yang telah dibuat	Созданная задача	创建的任务
+hotKey.ctrlKey	Ctrl	Ctrl	Ctrl	Ctrl	Ctrl	Ctrl	控制
+access.currentUser	Current User	Utilisateur Actuel	Usuário Atual	Usuario Actual	Pengguna Aktif	Текущий пользователь	当前用户
+spelling.custom	Custom	Personnalisé	Personalizar	Personalizar	Khusus	Пользовательский	定制
+deleteExpansion.dangerZone	Danger Zone	Zone de danger	Zona de Perigo	Zona de peligro	Zona Bahaya	Опасная зона	危险区
+mediaTab.date	Date	Date	Data	Fecha	Tanggal	Дата	日期
+profile.defaultLocale	Default locale set.	Paramètres régionaux par défaut.	Localidade padrão definida.	Configuración regional por defecto.	Lokasi default sudah ditetapkan.	Установленная по умолчанию локаль.	设置默认区域
+profile.defaultTimezone	Default timezone set.	Fuseau horaire par défaut.	Fuso horário padrão definido.	Zona horaria por defecto.	Zona waktu default sudah ditetapkan.	Установить часовой пояс по умолчанию.	默认时区设置。
+cards.process	Default Workflow	Flux de travail par défaut	Fluxo de Trabalho Padrão	Flujo de trabajo por defecto	Alur Kerja Default	Рабочий процесс по умолчанию	默认工作流
+keyTerms.definition	Definition	Définition	Definição	Definición	Makna	Определение	定义
+assignmentTable.delete	Delete	Supprimer	Excluir	Eliminar	Hapus	Удалить	删除
+wsAudioPlayer.deleteRecording	Delete Entire Recording	Supprimer l'intégralité de l'enregistrement	Excluir Toda a Gravação	Borrar toda la grabación	Hapus Rekaman Secara Keseluruhan	Удалить всю запись	删除整个录音
+community.deleteItem	Delete Item	Supprimer l'élément	Excluir Item	Borrar elemento	Hapus Item	Удалить элемент	删除此项目
+wsAudioPlayer.deleteRegion	Delete Region	Supprimer la région	Excluir Região	Borrar región	Hapus Bagian	Удалить регион	删除段
+passageDetailArtifacts.deleteConfirm	Delete Resource?	Supprimer la ressource ?	Excluir Recurso?	¿Borrar recurso?	Hapus sumber?	Удалить ресурс?	删除资源吗？
+cards.deleteTeam	Delete Team	Supprimer l’équipe	Excluir Equipe	Eliminar equipo	Hapus Tim	Удалить команду	移除团队
+commentCard.confirmDelete	Delete this comment?	Supprimer ce remarque ?	Excluir este comentário?	¿Borrar este comentario?	Hapus catatan ini?	Удалить этот комментарий?	确认要删除该留言吗？
+profile.deleteUser	Delete User	Supprimer un utilisateur	Excluir Usuário	Borrar usuario	Hapus Pengguna	Удалить пользователя	删除用户
+cards.description	Description	Description de la Bible	Descrição da Bíblia	Descripción	Keterangan	Описание	说明
+passageDetailArtifacts.description	Description	Description	Descrição	Descripción	Keterangan	Описание	描述
+mediaTab.detach	Detach	Détacher	Desanexar	Borrar	Lepaskan	Отсоединить	分离
+languagePicker.details	Details	Détails	Detalhes	Detalles	Rincian	Подробности	细节
+main.developer	Developer mode	Mode développeur	Modo de desenvolvedor	Modo desarrollador	Mode pengembang	Режим разработчика	开发人员模式
+spelling.dictionaries	Dictionaries	Dictionaries	Dicionários	Diccionarios	Kamus	Словари	字典
+mediaActions.detach	Disassociate	Désassocier	Desassociar	Desasociar	Hapus hubungan	Отвязать	取消关联
+profile.discardChanges	Discard unsaved Changes?	Annuler les modifications non sauvegardées ?	Descartar Alterações não salvas?	¿Descartar los cambios no guardados?	Buang perubahan yang tidak disimpan?	Отбросить несохраненные изменения?	要放弃未保存的改动吗？
+tool.discuss	Discuss	Discuter de	Discutir	Discutir	Bahas	Обсудить	讨论
+category.discussion	Discussion	Discussion	Discussão	Debate	Diskusi	Обсуждение	讨论
+discussionList.discussionFilter	Discussion Filter	Filtre de discussion	Filtro de Discussão	Filtro de discusión	Filter Diskusi	Фильтр обсуждений	讨论筛选器
+category.discussions	discussion(s)	discussion(s)	discussão(ões)	discusión(es)	diskusi	обсуждение(и)	讨论
+discussionList.title	Discussions	Discussions	Discussões	Discusiones	Diskusi	Обсуждения	讨论
+community.later	Do later	A faire plus tard	Fazer mais tarde	Hacer más tarde	Lakukan nanti	Сделать позже	一会再做
+grid.notcontains	Does not contain	Ne contient pas	Não contém	No contiene	Tidak mengandung	Не содержит	不包含
+grid.notEqual	Does not equal	N'est pas égal	Não é igual	No es igual a	Tidak sama dengan	Не равно	不等于
+keyTerms.domain	Domain	Domaine	Domínio	Dominio	Bidang	Домен	语义域
+activityState.done	Done	Terminé	Concluído	Completado	Selesai	Готово	完成
+tool.done	Done	Fini	Concluído	Hecho	Selesai	Готово	完成
+hotKey.downArrow	Down Arrow	Flèche vers le bas	Seta para baixo	Flecha abajo	Panah Bawah	Стрелка вниз	下箭头
+mediaActions.download	Download	Télécharger	Baixar	Descargar	Unduh	Загрузить	下载
+audioDownload.downloadMedia	Download Audio	Télécharger l'audio	Baixar Áudio	Descargar audio	Unduh Audio	Скачать аудио	音频下载
+transcriptionTab.downloadProject	Download Audio Project	Télécharger le projet audio	Baixar Projeto de Áudio	Descargar proyecto de audio	Unduh Proyek Audio	Скачать аудио проект	下载音频项目
+projectDownload.downloadLater	Download Later	Télécharger plus tard	Baixar Depois	Descargar más tarde	Unduh Nanti	Скачать позже	后来下载
+projectDownload.confirm	Download Now	Télécharger maintenant	Transferir agora	Descargar ahora	Unduh Sekarang	Скачать сейчас	立即下载
+transcriptionTab.download	Download Vernacular Audio	Télécharger Vernacular Audio	Descarregar Áudio Vernacular	Descargar audio vernáculo	Unduh Audio Bahasa Daerah	Скачать аудиозапись	下载垂直音频
+projectDownload.download	Download?	Télécharger ?	Baixar?	¿Descargar?	Unduh?	Загрузить?	下载吗？
+mediaActions.drag	Drag to reorder	Faites glisser pour réorganiser	Arrastar para organizar	Arrastrar para reordenar	Seret untuk menyusun ulang	Перетащите для изменения порядка	拖动以重新排序
+category.duplicate	Duplicate Category	Catégorie de duplicata	Categoria duplicada	Categoría Duplicado	Kategori Duplikat	Категория дубликатов	重复类别
+mediaTab.duration	Duration	Durée de la visite	Duração	Duración	Durasi	Продолжительность	持续时间
+toDoTable.length	Duration	Durée	Duração	Duración	Durasi	Продолжительность	持续时间
+discussionMenu.edit	Edit	Modifier	Editar	Editar	Sunting	Редактировать	编辑
+vProject.edit	Edit	Éditer	Editar	Editar	Sunting	Редактировать	编辑
+invite.editInvite	Edit Invite	Modifier l'invitation	Editar Convite	Editar invitación	Sunting Undangan	Изменить приглашение	编辑邀请
+profile.editMember	Edit Member Profile	Modifier le profil du membre	Editar perfil de membro	Editar perfil de miembro	Edit Profil Anggota	Редактировать профиль участника	编辑会员资料
+peer.editPeerGroup	Edit Peer Group	Modifier le group de pairs	Editar Grupo de Colegas	Editar Grupo de Pares	Ubah Kelompok Rekan	Редактировать группу пользователей	编辑管理员群组
+profile.edit	Edit Profile	Modifier le profil	Editar perfil	Editar Perfil	Edit Profil	Редактировать профиль	编辑简介
+passageDetailArtifacts.editResource	Edit Resource	Changer de ressource	Editar Recurso	Editar recurso	Sunting Sumber	Изменить ресурс	编辑资源
+cards.editCategory	Edit Team Categories	cards.editCategory Modifier les catégories de l'équipe	Editar categorias da equipe	Editar Categorías de Equipo	Sunting Kategori Tim	Редактирование категорий команды	编辑团队范畴
+projButtons.categoryTitle	Edit Team Categories	Modifier les catégories d'équipe	Editar categorias da equipe	Editar Categorías de Equipo	Sunting Kategori Tim	Редактировать категории команды	编辑团队范畴
+shared.editor	Editor	Éditeur	Editor	Editor	Penyunting	Редактор	编辑者
+vProject.editorSettings	Editor Settings	Editor Settings	Configurações do Editor	Configuración del editor	Pengaturan Editor	Настройки редактора	编辑器设置
+transcriptionTab.elan	ELAN	ELAN	ELAN	ELAN	ELAN	ELAN	ELAN
+cards.creatorEmail	Email	Courriel	E-mail	Correo electrónico	Email	Электронная почта	电子邮件
+usertable.email	Email	e-mail	E-mail	Correo electrónico	Email	Электронная почта	电子邮件
+profile.syncFrequencyEnable	Enable Data Sync:	Activer la synchronisation des données	Ativar a sincronização de dados:	Habilitar sincronización de datos:	Aktifkan Sinkronisasi Data:	Включить синхронизацию данных:	启用数据同步：
+hotKey.endKey	End	Fin	Fim	Finalizar	End	End	结束
+template.end	Ending verse number	Numéro du verset de fin	Número do versículo final	Número del versículo final	Nomor ayat terakhir	Номер последнего стиха	最后节的号
+grid.endsWith	Ends with	Se termine par	Termina com	Termina con	Berakhir dengan	Заканчивается на	结束于
+mediaUpload.markdownTitle	Enter Text	Saisir le texte	Inserir texto	Introducir Texto	Ketik Teks	Введите текст	输入文本
+grid.equal	Equals	Équivaut à	Igual	Es igual a	Sama dengan	Равно	等于
+faithbridge.error	Error: 	Erreur : 	Erro: 	Error: 	Error: 	Ошибка:	错误： 
+keyTerms.exclude	Exclude	Exclure	Excluir	Excluir	Kecualikan	Исключить	排除
+voice.excludeName	Exclude my name.	Exclure mon nom.	Exclua meu nome.	Excluir mi nombre.	Kecualikan nama saya.	Исключите мое имя.	排除我的姓名。
+voice.excludedLanguages	Excluded languages	Langues exclues	Idiomas excluídos	Idiomas excluidos	Bahasa yang dikecualikan	Исключенные языки	排除的语言
+main.exit	Exit	Sortie	Sair	Salir de	Keluar	Выход	退出
+cards.experimentalFeatures	Experimental Features	Fonctionnalités expérimentales	Caraterísticas experimentais	Características experimentales	Fitur Percobaan	Экспериментальные функции	实验功能
+cards.bibleIdExplain	Explain Bible Id	Expliquer l'identifiant de la Bible	Explicar a identificação da Bíblia	Explicar Id. de la Biblia	Jelaskan ID Alkitab	Объясните идентификатор Библии	解释圣经编号
+main.export	Export	Exporter	Exportar	Exportar	Ekspor	Экспорт	导出
+workflowSteps.export	Export	Export	Exportar	Exportar	Ekspor	Экспорт	导出
+transcriptionTab.audioExport	Export Audio Files	Exporter les fichiers audio	Exportar Arquivos de Áudio	Exportar archivos de audio	Ekspor Berkas Audio	Экспорт аудиофайлов	导出音频文件
+transcriptionTab.exportProject	Export Audio Project	Exporter une projet audio	Exportar Projeto de Áudio	Exportar proyecto de audio	Ekspor Proyek Audio	Импортировать аудио проект	导入音频项目
+transcriptionTab.error	Export Error	Erreur d'exportation	Erro de Exportação	Error en la exportación	Kesalahan Saat Mengekspor	Ошибка экспорта	导出错误
+transcriptionTab.exportSinceGo	Export from date	Exporter à partir de la date	Exportar a partir da data	Exportar desde fecha	Ekspor mulai dari tanggal	Экспорт с даты	导出日期
+scriptureTable.extras	Extras	Extras	Extras	Extras	Lain-lain	Дополнения	附加
+import.family	Family Name	Nom	Nome de Família	Apellido(s)	Nama Keluarga	Фамилия	姓
+profile.family	Family Name	Nom de famille	Nome de Família	Nombre de la familia	Nama Keluarga	Фамилия	姓
+keyTerms.fauna	Fauna	Faune	Fauna	Fauna	Hewan	Фауна	动物群
+mediaTab.fileAttached	File already attached	Fichier déjà joint	Arquivo já anexado	Archivo ya adjuntado	Berkas sudah terlampir	Файл уже прикреплен	文件已经附加了
+mediaTab.fileName	File Name	Nom du fichier	Nome do Arquivo	Nombre del archivo	Nama Berkas	Название файла	文件名
+selectRecording.filename	File Name	Nom du fichier	Nome do Arquivo	Nombre del archivo	Nama Berkas	Название файла	文件名
+template.fileTemplate	File Name Template	File Name Template	Modelo do Nome do Arquivo	Nombre del archivo Plantilla	Templat Nama Berkas	Шаблон имени файла	文件名模板：
+passageRecord.fileType	File Type	Type de fichier	Tipo de Arquivo	Tipo de archivo	Jenis Berkas	Тип файла	文件类型
+assignmentTable.filter	Filter	Filtrer	Filtro	Filtrar	Filter	Фильтр	筛选
+invitationTable.filter	Filter	Filtre	Filtro	Filtrar	Filter	Фильтр	筛选
+filterMenu.filter	Filter Discussions	Discussions sur les filtres	Filtrar Discussões	Filtrar discusiones	Filter Diskusi	Фильтровать обсуждения	筛选讨论
+grid.filterPlaceholder	Filter...	Filtre...	Filtrar...	Filtro...	Filter...	Фильтр...	筛选...
+projectDownload.filteredFiles	Filtered Files	Fichiers filtrés	Ficheiros filtrados	Archivos filtrados	Berkas yang Difilter	Отфильтрованные файлы	筛选文件
+projectDownload.filtered	Filtered MB	MB filtrés	MB filtrados	MB filtrados	MB Difilter	Отфильтрованные МБ	已过滤 MB
+workflowSteps.finalReview	Final Audio Review	Révision audio finale	Revisão final de áudio	Revisión final de audio	Pemeriksaan Akhir Audio	Окончательная аудиорецензия	最终音频复习
+workflowSteps.finalReviewText	Final Text Review	Révision finale du texte	Revisão Final de Texto	Revisión final del texto	Pemeriksaan Akhir Tulisan	Окончательная проверка текста	最终文本复习
+passageDetailArtifacts.find	Find	Rechercher	Localizar	Buscar	Cari	Найти	查找
+resource.findNote	Find existing note	Rechercher une note existante	Procurar nota existente	Buscar nota existente	Cari catatan yang sudah ada	Найти существующую заметку	查找现有注释
+findResource.findResource	Find Resource	Trouver une ressource	Localizar recurso	Buscar recurso	Cari Sumber	Найти ресурс	查找资源
+findResource.findOther	Find: Other	Rechercher : Autre	Localizar: Outros	Buscar: Otros	Cari: Lain-lain	Найти: Другие	查找： 其他
+community.finished	finished	terminé	concluído	terminado	selesai	завершенный	完成
+workflowSteps.consultantCheck1	First Consultant Check	Vérification du premier consultant	Verificação do primeiro consultor	Primer Consultor	Pemeriksaan Konsultan Pertama	Проверка первого консультанта	第一顾问检查
+wsAudioPlayerZoom.fitToWidth	Fit to Width	Ajuster à la largeur	Ajustar à Largura	Ajustar a la anchura	Sesuaikan lebar	По ширине	适合宽度
+vProject.flat	Flat	Plate	Plano	Plano	Datar	Обычный	平面
+keyTerms.flora	Flora	Flore	Flora	Flora	Tumbuhan	Флора	植物群
+languagePicker.font	Font	Police	Fonte	Fuente	Font	Шрифт	字体
+vProject.fontSize	Font Size	Taille de la police	Tamanho da Fonte	Tamaño de la fuente	Ukuran Teks	Размер шрифта	字体大小
+import.fontsize	Font Size	Font Size	Tamanho da Fonte	Tamaño de la letra	Ukuran Teks	Размер шрифта	字体大小
+filterMenu.forYou	For You	Pour vous	Para Você	Para usted	Untuk Anda	Для вас	您的任务
+profile.syncFrequencyLabel	Frequency:	Fréquence :	Frequência:	Frecuencia:	Frekuensi:	Частота:	频率：
+passageType.ALTBK	Friendly Book	Livre amical	Livro amigável	Libro amistoso	Kitab Ramah	Дружественная книга	友好图书
+profile.name	Full Name	Nom complet	Nome Completo	Nombre completo	Nama lengkap	Полное имя	姓名
+voice.gender	Gender	Genre	Gênero	Género	Jenis Kelamin	Пол	性别
+control.other	General	Générale	Geral	General	Umum	Основное	通用
+category.general	General Note	Note générale	Nota geral	Nota general	Catatan Umum	Общее примечание	通用笔记
+artifactType.projectresource	General Resource	Ressource générale	Recurso Geral	Recurso general	Sumber Umum	Общие ресурсы	通用资源
+passageDetailArtifacts.generalResources	General Resources	Ressources générales	Recursos Gerais	Recursos generales	Sumber Umum	Общие ресурсы	通用资源
+welcome.title	Getting Started	Démarrage	Primeiros passos	Cómo empezar	Memulai	Начало работы	开始使用
+import.given	Given Name	Prénom	Nome Próprio	Nombre	Nama Depan	Имя	名字
+profile.given	Given Name	Prénom	Nome Próprio	Nombre	Nama Depan	Имя	名字
+keyTerms.gloss	Gloss	Glossaire	Gloss	Glosa	Arti Singkat	Глосса	释义
+main.goOffline	Go Offline	Passer hors ligne	Ficar off-line	Desconectar	Bekerja Tanpa Koneksi Internet	Перейти в автономный режим	离线
+main.goOnline	Go Online	Aller en ligne	Ir para online	Conectarse	Bekerja Secara Online	Перейти в режим онлайн	转到在线
+viewMode.gotowork	Go to Work	Aller au travail	Ir trabalhar	Ir a Trabajo	Buka Tugas	идти на работу	去到工作
+artifactCategory.grammar	Grammar	Grammaire	Gramática	Gramática	Tata Bahasa	Грамматика	语法
+artifactCategory.graphic	Graphic	Graphique	Gráfico	Gráfico	Gambar	Графика	图形
+mediaTab.graphicRightsTitle	Graphics Rights holder	Détenteur des droits graphiques	Gráficos Titular dos direitos	Titular de los derechos gráficos	Pemilik Hak Cipta Gambar	Графика Правообладатель	图形 权利持有人
+grid.greaterThan	Greater than	Plus grand que	Maior que	Mayor que	Lebih besar dari	Больше, чем	大于
+keyTerms.greek	Greek	Grec	Grego	Griego	Bahasa Yunani	Греческий	希腊语
+findResource.group	Group	Groupe	Agrupar	Grupo	Kelompok	Группа	组
+groupTabs.groups	Groups	Groupes	Grupos	Grupos	Kelompok	Группы	组
+keyTerms.hebrew	Hebrew	Hébreu	Hebraico	Hebreo	Bahasa Ibrani	Иврит	希伯来语
+main.helpCenter	Help Center	Centre d'Aide	Central de Ajuda	Centro de ayuda	Pusat Bantuan	Справочный центр	帮助中心
+keyTerms.hide	Hide	Cacher	Esconder	Ocultar	Sembunyikan	Скрыть	隐藏
+scriptureTableFilter.hideDone	Hide Done rows	"Masquez les étapes ""Terminé""."	Ocultar etapas 'Concluídas'.	Ocultar filas hechas	Sembunyikan baris yang selesai	Скрыть шаги «Готово».	隐藏完成行
+planSheet.hidePublishing	Hide Publishing Information	Masquer les informations de publication	Ocultar informação de publicação	Ocultar información de publicación	Sembunyikan Informasi Penerbitan	Скрыть информацию о публикации	隐藏出版信息
+scriptureTableFilter.hidePublishing	Hide Publishing Rows	Masquer les rangées de publication	Ocultar linhas de publicação	Ocultar filas de publicación	Sembunyikan Baris Penerbitan	Скрыть строки публикации	隐藏发布行
+vProject.hierarchical	Hierarchical	Hiérarchique	Hierárquico	Jerárquico	Hierarkis	Иерархический	分级显示
+hotKey.homeKey	Home	Accueil	Página inicial	Inicio	Halaman utama	Home	主页
+viewMode.home	Home	Accueil	Início	Inicio	Halaman Utama	Домой	主页
+findResource.image	image	image	imagem	imagen	gambar	изображение	图像
+audacityManager.import	Import	Importer	Importar	Importar	Impor	Импорт	输入
+main.import	Import	Importation	Importar	Importar	Impor	Импорт	导入
+projButtons.import	Import	Importer	Importar	Importar	Impor	Импорт	导入
+projButtons.importExport	Import / Export	Importation / Exportation	Importar / Exportar	Importar / Exportar	Impor / Ekspor	Импорт / Экспорт	导入和导出
+shared.importMediaSingular	Import Audio	Importer des audio	Importar Áudio	Importar audio	Impor Audio	Импортировать аудио	导入音频
+access.importSnapshot	Import Audio Project	Importer un projet audio	Importar Projeto de Áudio	Importar Proyecto de Audio	Impor Proyek Audio	Импортировать аудио проект	导入音频项目
+cards.import	Import Audio Project	Importer un projet audio	Importar Projeto de Áudio	Importar proyecto de audio	Impor Proyek Audio	Импортировать аудио проект	导入音频项目
+electronImport.importProject	Import Audio Project	Importer un projet audio	Importar Projeto de Áudio	Importar proyecto de audio	Impor Proyek Audio	Импортировать аудио проект	导入音频项目
+import.importProject	Import Audio Project	Importer un projet audio	Importar Projeto de Áudio	Importar proyecto de audio	Impor Proyek Audio	Импорт проекта	导入音频项目
+welcome.import	Import Audio Project	Importer le projet audio	Importar Projeto de Áudio	Importar proyecto de audio	Impor Proyek Audio	Импортировать аудио проект	导入音频项目
+import.importComplete	Import Complete	Importation terminée	Importação Completa	Importación completa	Selesai Diimpor	Импорт завершен	导入完毕
+electronImport.importComplete	Import Complete	Importation terminée	Importação Completa	Importación completada	Selesai Diimpor	Импорт завершен	导入已完成
+import.error	Import Error	Erreur d'importation	Erro de Importação	Error de importación	Kesalahan Impor	Ошибка Импорта	导入错误
+import.importPending	Import In Progress...	Importation en cours ...	Importação em Progresso...	Importación en curso...	Sedang Impor...	Идет импорт...	导入进行中...
+import.imported	Imported Value	Valeur importée	Valor Importado	Valor importado	Nilai Impor	Импортированное значение	导入的值
+stepEditor.inProgress	In progress...	En cours...	Em Progresso...	En progreso...	Dalam proses...	В процессе...	正在进行中...
+activityState.incomplete	Incomplete	Incomplet	Incompleto	Incompleto	Belum Selesai	Не завершён	不完全
+transcriber.incomplete	Incomplete transcription	Transcription incomplète	Transcrição incompleta	Transcripción incompleta	Transkripsi belum lengkap	Незавершенная транскрипция	转录不完整
+transcriptionTab.exportITFtype	Incremental Changes (itf)	Modifications incrémentielles (itf)	Alterações Incrementais (itf)	Cambios incrementales (itf)	Perubahan Bertahap (itf)	Постепенные изменения (itf)	增量变化(itf)
+keyTerms.index	Index	Index	Índice	Índice	Indeks	Указатель	索引
+welcome.quickGiven	Initial	Initial	Inicial	Inicial	Awal	Исходный	初始
+welcome.quickName	Initial User	Utilisateur initial	Usuário Inicial	Usuario inicial	Pengguna Awal	Исходный пользователь	初始用户
+wsAudioPlayer.insertoverwrite	Insert/Overwrite	Insérer/écraser	Inserir/Substituir	Insertar/sobreescribir	Sisipkan/Timpa	Вставить/переписать	插入/刷入
+main.integrations	Integrations	Intégrations	Integrações	Integraciones	Sambungan	Интеграция	集成
+artifactType.intellectualproperty	Intellectual Property	Propriété intellectuelle	Propriedade intelectual	Propiedad intelectual	Hak Cipta	Интеллектуальная собственность	知识产权
+tool.resource	Internalize	Intérioriser	Internalizar	Internalizar	Internalisasi	Подстрочник	内化
+workflowSteps.internalize	Internalize	Internalisation	Internalizar	Internalizar	Internalisasi	Подстрочник	内化
+cards.notesLabel	Introductory Notes Title	Notes d'introduction Titre	Notas introdutórias Título	Notas introductorias Título	Judul Catatan Pengantar	Вводные заметки Название	介绍性说明 标题
+category.introPara	Introductory Paragraph	Paragraphe d'introduction	Parágrafo introdutório	Párrafo Introductorio	Paragraf Pengantar	Вводный абзац	介绍性段落
+invite.invalidEmail	Invalid email address	Adresse électronique invalide	E-mail inválido	Dirección de correo electrónico no válida	Alamat e-mail tidak berlaku	Неверный адрес электронной почты	电子邮件地址无效
+groupTabs.invitations	Invitations	Invitations	Convites	Invitaciones	Undangan	Приглашения	邀请
+invitationTable.invite	Invite	Inviter	Convidar	Invitar	Undang	Приглашение	邀请
+invite.addInvite	Invite Person	Inviter une personne	Convidar pessoa	Invitar a una persona	Undang Orang	Пригласить человека	邀请别人
+invite.join	Join	Rejoindre	Juntar-se	Únase a	Bergabung	Присоединиться	加入
+peerCheck.toEnd	Jump to end	Aller à la fin	Ir para o final	Saltar al final	Lompat ke akhir	Перейти к концу	跳转至结束
+welcome.keyFactor	Key Factor(s)	Facteur clé	Fator(es)-Chave	Factor(es) clave	Faktor Kunci	Ключевой фактор(ы)	关键因素
+artifactType.keyterm	Key Term	Terme clé	Termo-chave	Término clave	Istilah Alkitab	Ключевой термин	关键术语
+passageDetailArtifacts.keywords	Keywords	Mots clés	Palavras-chave	Palabras clave	Kata kunci	Ключевые слова	关键词
+resource.keywords	Keywords	Mots clés	Palavras-chave	Palabras clave	Kata kunci	Ключевые слова	关键词
+findResource.language	Language	Langue	Idioma	Idioma	Bahasa	Язык	语言
+template.language	Language BCP47 code	Langue Code BCP47	Código de idioma BCP47	Idioma Código BCP47	Kode bahasa BCP47	Код языка BCP47	语言BCP47 代码
+sortMenu.lastUpdated	Last Updated	Dernière mise à jour	Última Atualização	Última actualización	Pembaruan Terakhir	Последнее обновление	最新更新
+transcriptionTab.latestAudio	Latest Audio	Dernier audio	Último Áudio	Último audio	Berkas Audio Terakhir	Последнее аудио	最新音频
+filterMenu.latestVersion	Latest Version	Dernière version	Versão Mais Recente	Última versión	Versi Terbaru	Последняя версия	最新版本
+mediaTab.latestVersion	Latest Version	Dernière version	Versão mais recente	Última versión	Versi Terbaru	Последняя версия	最新版本
+findResource.launch	Launch	Lancer	Lançamento	Lanzamiento	Jalankan	Запуск	启动
+shared.launchAudacity	Launch Audacity	Lancer Audacity	Iniciar Audacity	Iniciar Audacity	Buka Audacity	Запустить Audacity	启动 胆敢
+vProject.layout	Layout	Mise en page	Layout	Diseño	Tata Letak	Шаблон	布局
+hotKey.leftArrow	Left Arrow	Flèche gauche	Seta para a Esquerda	Flecha izquierda	Panah Kiri	Стрелка влево	左箭头
+grid.lessThan	Less than	Moins que	Menor que	Menor que	Kurang dari	Менее чем	少于
+keyTerms.link	Link	Lien	Link	Enlace	Link	Ссылка	链接
+passageDetailArtifacts.linkResource	Link (URI)	Lien (URI)	Link (URI)	Enlace (URI)	Link (URI)	Ссылка (URI)	链接（URI）
+mediaUpload.linkTitle	Link Resource	Lien de la ressource	Recurso de link	Enlazar recurso	Sambungkan Sumber	Ссылка на ресурс	链接资源
+passageDetailArtifacts.sharedResource	Link Shared	Lien partagé	Link compartilhado	Enlace compartido	Link Dikirim	Общая ссылка	共享链接
+passageRecord.loadlatest	Load Latest Audio	Charger le dernier fichier audio	Carregar Último Áudio	Cargar audio más reciente	Muat Audio Terbaru	Загрузить последнее аудио	家在最新的音频
+scriptureTable.loadingTable	Loading data	Chargement des données	Carregando dados	Carga de datos	Memuat data	Загрузка данных	正在加载数据
+faithbridge.loading	Loading result...	Chargement du résultat...	A carregar resultado...	Cargando resultado...	Memuat hasil...	Загрузка результата...	正在加载结果...
+community.loading	Loading:	Chargement :	Carregando:	Cargar:	Memuat:	Загрузка:	正在加载中
+shared.loading	Loading...	Chargement...	Carregando...	Carga...	Memuat...	Загружается...	加载中...
+passageRecord.loading	Loading...	Chargement...	Carregando...	Cargando...	Sedang memuat...	Загрузка...	加载中...
+usertable.locale	Locale	paramètres régionaux	Localidade	Localidad	Wilayah	Локация	地区
+profile.locked	Locked	Verrouillé	Bloqueado	Bloqueado	Terkunci	Заблокировано	锁住
+access.logIn	Log In	Se connecter	Fazer login	Iniciar Sesión	Masuk	Войти	登录
+main.logout	Log Out	Déconnexion	Sair	Cerrar sesión	Keluar	Выйти	登出
+profile.logout	Logout	Déconnexion	Sair	Cierre de sesión	Keluar	Выйти	登出
+wsAudioPlayer.loopoff	Loop Off	Boucle désactivée	Loop Desativado	Bucle desactivado	Berhenti putar berulang-ulang	Повтор выкл.	循环关闭
+wsAudioPlayer.loopon	Loop On	Boucle sur	Loop Ativado	Bucle activado	Putar berulang-ulang	Повтор вкл.	循环开启
+consultantCheck.checked	Mark Checked	consultantCheck.checked Marque Coché	Marcar como verificado	Marcar Comprobado	Tandai Sebagai Sudah Diperiksa	Отметить Отмечено	标记已勾选
+tool.verses	Mark Verses	Versets de la marque	Marcar Versos	Marcar Versos	Tandai Ayat	Марк Стихов	标记诗句
+workflowSteps.markVerses	Mark Verses	Marquer les versets	Marcar versos	Marcar versos	Tandai Ayat	Отметить стихи	标记诗句
+grid.max	Max	Max	Máximo	Máx.	Maks	Максимум	最多
+scriptureTableFilter.maximum	Maximum	Maximum	Maksimum	Máximo	Maksimal	Максимальный	最大
+findResource.meaning	meaning	sens	Significado	Significado	arti	Значение	意义
+findResource.mediaType	Media	Médias	Mídia	Medios de comunicación	Media	СМИ	媒体
+invite.member	Member	Membre	Membro	Miembro	Anggota	Участник	成员
+assignSection.users	Members	Membres	Membros	Miembros	Anggota	Участники	成员
+permission.mentor	Mentor	Mentor	Mentor	Mentor	Mentor	Наставник	导师
+grid.min	Min	Min	Mínimo	Mínimo	Min	Минимум	最小
+scriptureTableFilter.minimum	Minimum	Minimale	Minimum	Mínimo	Mulai dari	Минимум	最少
+keyTerms.misc	Miscellaneous	Divers	Diversos	Varios	Lain-lain	Разное	其他界面选项
+projectDownload.missingFiles	Missing Files	Fichiers manquants	Ficheiros em falta	Archivos perdidos	Berkas Tidak Ditemukan	Отсутствующие файлы	缺失文件
+projectDownload.missing	Missing MB	MB manquant	MB em falta	MB faltantes	MB Tidak Ditemukan	Отсутствующие МБ	缺失 MB
+discussionMenu.move	Move	Déplacer	Mover	Mover	Pindahkan	Переместить	移动
+planSheet.moveDown	Move down	Descendre	Deslocar para baixo	Desplazarse hacia abajo	Pindahkan ke bawah	Переместить вниз	下移
+planSheet.moveUp	Move up	Avancer	Mover para cima	Avanzar	Pindahkan ke atas	Движение вверх	上移
+findResource.movement	movement	mouvement	movimento	movimiento	gerakan	движение	运动
+passageDetailArtifacts.movementResource	Movement	Mouvement	Movimento	Movimiento	Gerakan	Движение	运动
+vProject.movements	Movements	Mouvements	Movimentos	Movimientos	Gerakan	Движения	移动
+main.myAccount	My Account	Mon compte	Minha Conta	Mi cuenta	Akun Saya	Мой аккаунт	我的账户
+voice.myProjects	my personal projects	mes projets personnels	meus projetos pessoais	mis proyectos personales	proyek pribadi saya	мои личные проекты	我的个人项目
+passageRecord.defaultFilename	MyRecording	MonAudio	MyRecording	MiGrabación	RekamanSaya	Моя запись	我的录制
+usertable.name	Name	Nom	Nome	Nombre	Nama	Имя	名称
+vProject.nameInUse	Name in use	Nom utilisé	Nome em uso	Nombre en uso	Nama yang sedang digunakan	Используемое имя	正在使用的名称
+cards.biblename	Name of Bible	Nom de la Bible	Nome da Bíblia	Nombre de la Biblia	Nama Alkitab	Название Библии	圣经名称
+selectArtifactType.newArtifactType	New Artifact Type	Nouveau type d'artefact	Novo Tipo de Artefato	Nuevo tipo de artefacto	Jenis Sumber Baru	Новый тип дополнительного материала	新学习工具类型
+cards.newProject	New Audio Project	Nouveau projet audio	Novo Projeto de Áudio	Nuevo proyecto de audio	Proyek Audio Baru	Новый аудио проект	音频方案
+selectArtifactCategory.newArtifactCategory	New Category	Nouvelle catégorie	Nova Categoria	Nueva categoría	Kategori Baru	Новая Категория	新范畴
+faithbridge.newChat	New Chat	Nouvelle discussion	Novo Chat	Nuevo chat	Obrolan Baru	Новый чат	新聊天
+picker.newName	New Language Name	Nouveau nom de langue	Novo nome do idioma	Nuevo nombre de idioma	Nama Bahasa Baru	Новое название языка	新语言名称
+peer.newPeerGroup	New Peer Group	Nouveau groupe de pairs	Novo Grupo de Colegas	Nuevo grupo paritario	Kelompok Rekan Baru	Новая группа пользователей	新管理员组
+vProject.newTag	New Tag	Nouvelle étiquette	Nova etiqueta	Nueva etiqueta	Markah Baru	Новый тег	新标签
+profile.next	Next	Suivant	Próximo	Siguiente	Berikutnya	Следующий	下一个
+findResource.next	Next page	Page suivante	Página seguinte	Página siguiente	Halaman selanjutnya	Следующая страница	下一页
+cards.workflowProgressionPassage	Next Passage	Passage suivant	Passagem seguinte	Pasaje siguiente	Bagian Berikutnya	Следующий отрывок	下一段经文
+cards.workflowProgressionStep	Next Step	Étape suivante	Próxima etapa	Paso siguiente	Langkah Berikutnya	Следующий шаг	下一步
+stepEditor.nextStep	Next Step	Étape suivante	Próximo Passo	Paso siguiente	Langkah Berikutnya	Следующий шаг	下一步
+toDoTable.no	No	Non	Não	No	Tidak	Нет	不是
+shared.noAudio	No Audio Available!	Pas d'audio disponible !	Nenhum Áudio Disponível!	No hay audio disponible.	Belum Ada Rekaman!	Аудио недоступно!	没有可用的音频！
+grid.noColumns	No columns visible	Aucune colonne visible	Nenhuma coluna visível	No hay columnas visibles	Tidak ada kolom yang terlihat	Столбцы не видны	没有可见的列
+grid.noData	No data	Pas de données	Sem dados	No hay datos	Tidak ada data	Нет данных	没有数据
+faithbridge.noInfo	No information found	Aucune information trouvée	Nenhuma informação encontrada	No se ha encontrado información	Tidak ada informasi yang ditemukan	Информация не найдена	未找到信息
+invitationTable.noData	No invitations	Pas d'invitations	Nenhum convite	No hay invitaciones	Tidak ada undangan	Нет приглашений	没有邀请
+consultantCheck.noMedia	No Media Available	Pas de média disponible	Nenhuma mídia disponível	No hay medios disponibles	Belum Ada Media	Нет носителя	没有可用的音频！
+languagePicker.noFonts	No recommended font	Pas de polices recommandées	Nenhum tipo de letra recomendado	Fuentes no recomendadas	Tidak ada font yang direkomendasikan	Нет рекомендуемых шрифтов	没有推荐字体
+picker.noFonts	No recommended fonts	Pas de polices recommandées	Nenhuma fonte recomendada	Fuentes no recomendadas	Tidak ada font yang direkomendasikan	Нет рекомендуемых шрифтов	不推荐字体
+activityState.noMedia	No Recording	Pas d’enregistrement	Nenhuma Gravação	No existe grabación	Tidak Ada Rekaman	Нет записей	没有录音
+assignSection.noRestriction	No Restriction	Aucune restriction	Sem restrições	Sin Restricción	Tidak Ada Batas	Без ограничений	无限制
+peer.noSpecialPermission	No special permission	Pas d'autorisation spéciale	Sem permissão especial	Sin permiso especial	Tidak ada izin khusus	Без специального разрешения	没有特殊权限
+consultantCheck.noTranscription	No Transcription Available	Pas de transcription disponible	Não há transcrição disponível	No hay transcripción disponible	Belum Ada Transkripsi	Транскрипция недоступна	没有可用听写本
+transcriber.noAsrTranscription	No transcription!	Pas de transcription !	Não há transcrição!	No hay transcripción	Tidak ada transkripsi!	Нет транскрипции!	无转录！
+shared.noiseRemovalFailed	Noise Removal Failed	Échec de l'élimination du bruit	Falha na remoção de ruído	Eliminación de ruido fallida	Gagal menghilangkan kebisingan	Устранение шума не удалось	噪音消除失败
+mediaTab.none	None	Aucun	Nenhum	Ninguna	Tidak satupun	Нет	无
+community.none	none	aucun	nenhum	ninguno	tidak ada	нет	无
+control.normal	Normal	control.normal Normal	Normal	Normal	Biasa	Нормальный	正常
+wsAudioPlayer.normalize	Normalize	Normaliser	Normalize	Normalizar	Normalisasi	Нормализация	标准化
+voice.stNotGiven	not given	ne sont pas indiquées	não informado	no indicado	tidak diberikan	не указан	不提供
+passageDetailArtifacts.noteResource	Note	Note	Nota	Nota	Catatan	Нота	注意事项
+passageType.NOTE	Note	Remarque	Observação	Nota	Catatan	Примечание	备注
+planActions.noteDetails	Note Details	Détails de la note	Detalhes da nota	Detalles de la nota	Rincian Catatan	Детали заметки	笔记详细信息
+passageDetailArtifacts.notes	Notes	Notes	Notas	Notas	Catatan	Примечания	注释
+shared.observer	Observer	Observateur	Observador	Observador	Pengamat	Наблюдатель	观察员
+cards.offline	Offline	Hors ligne	Offline	Fuera de línea	Offline	Офлайн	离线
+cards.offlineAvail	Offline Available	Disponible hors ligne	Disponível Offline	Disponible sin conexión	Tersedia Tanpa Koneksi Internet	Доступные офлайн	离线可用
+access.offlineUsers	Offline Users	Utilisateurs hors ligne	Usuários Offline	Usuarios sin conexión	Pengguna Offline	Пользователи в автономном режиме	离线用户
+stepEditor.oneHidden	One step hidden	Une étape cachée	Uma etapa oculta	Un paso oculto	Satu langkah tersembunyi	Один шаг скрыт	隐藏一个步骤了
+integration.onestory	One Story	Une Histoire	Uma História	Una historia	One Story	Одна история	一个故事
+discussionCard.onlyAdmin	Only Admins	Seulement les administrateurs	Apenas administradores	Sólo administradores	Hanya Admin	Только администраторы	仅限管理员
+main.oops	Oops!	Oups !	Ops!	¡Ups!	Aduh!	Упс!	哎呀
+audacityManager.open	Open	Ouvrir	Abrir	Abrir	Buka	Открыть	打开
+transcribe.openTranscriber	Open Transcriber	Transcripteur ouvert	Abrir o Transcriber	Abrir transcriptor	Buka Transcriber	Открыть транскриптор	打开听写本
+discussionCard.or	or	ou	ou	o	atau	или	或者
+cards.draft	Oral Drafting	Ébauche orale	Rascunho Oral	Redacción oral	Perekaman naskah awal	Устный черновик	口头起稿
+findResource.oralVersion	oral-version	version orale	versão oral	versión oral	versi-lisan	устный перевод	口译
+vProject.other	Other	Autre	Outro	Otros	Lain	Другое	其他
+access.availableUsers	Other Users	Autres utilisateurs	Outros usuários	Otros usuarios	Pengguna Lain	Другие пользователи	其他用户
+resource.overview	Overview	Vue d'ensemble	Visão geral	Visión general	Tinjauan	Обзор	概要
+findResource.passage	Passage	Passage	Passagem	Pasaje	Bagian	Пассаж	段落
+mediaTab.passageAttached	Passage already attached	Passage déjà attaché	Passagem já anexada	Pasaje ya adjuntado	Bagian sudah terlampir	Отрывок уже прикреплен	片段已经附加了
+planActions.passageDetail	Passage Detail	Détail du passage	Detalhe da Passagem	Detalle del pasaje	Detail Bagian	Детали отрывка	段的详细
+passageDetailToolbar.add	Passage Detail Toolbar	Barre d'outils pour le détail des passages	Barra de ferramentas de Detalhe da Passagem	Barra de herramientas de detalles del pasaje	Toolbar Detail Bagian	Работа с отрывком	片段详细工具栏
+shared.passages	Passages	Passages	Passagens	Pasajes	Bagian	Прохождения	段落
+cards.passagesCreated	Passages Created	Passages créés	Passagens Criadas	Pasajes creados	Buat Bagian	Отрывки созданы	己创建的片段
+passageChooser.passages	Passages:	Passages : 	Passagens:	Pasajes:	Bagian:	Стихи:	片段
+planSheet.tablePaste	Paste Spreadsheet	Coller le tableur	Colar Planilha	Pegar la hoja de cálculo	Tempel Lembar Kerja	Вставить электронную таблицу	粘贴电子表格
+planSheet.pasting	Pasting	Coller	Colar	Pegando	Sedang tempel	Вставка	粘贴中
+wsAudioPlayer.pauseRecord	Pause	Pause	Pausar	Pausa	Jeda	Пауза	暂停
+mediaActions.pause	Pause	Arrêter	Pausar	Poner en pausa	Jeda	Пауза	暂停
+peer.peerGroup	Peer Group	Groupe de pairs	Grupo de Colegas	Grupo de pares	Kelompok Rekan	Группа пользователей	管理员组
+peer.name	Peer Group Name	Nom du groupe de pairs	Nome do Grupo de Colegas	Nombre del grupo de pares	Nama Kelompok Rekan	Имя одноранговой группы	管理员组名称
+groupTabs.peerGroups	Peer Groups	Groupes de pairs	Grupos de Colegas	Grupos de compañeros	Kelompok Rekan	Группы пользователей	管理员组
+workflowSteps.peerReview	Peer Review	Contrôle des pairs	Revisão dos Colegas	Revisión por pares	Pemeriksaan oleh Rekan	Рецензент	管理员评论
+shared.peerreviewer	Peer Reviewer	Pair examinateur	Revisor dos Colegas	Revisor de pares	Rekan Pemeriksa	Рецензент	管理评论者
+vProject.pericopes	Pericope/Pericopes	Péricope/Péricopes	Pericope/Pericopes	Perícopa/Perícopa	Perikop	Перикоп/Перикопы	段
+peer.permission	permission	autorisation	permissão	permiso	izin	разрешение	权限
+shared.scheme	Permission Scheme	Schéma d'autorisation	Esquema de permissões	Esquema de permisos	Skema Perizinan	Схема разрешений	权限方案
+assignSection.schemeName	Permission Scheme Name	Nom du régime d'autorisation	Nome do esquema de permissões	Nombre del esquema de permisos	Nama Skema Perizinan	Имя схемы разрешения	权限方案名称
+vProject.permissionSettings	Permissions	Permissions	Permissões	Permisos	Perizinan	Разрешения	权限
+cards.personalProjects	Personal Audio Projects	Projets audio personnels	Projetos de Áudio Pessoais	Proyectos de audio personales	Proyek Audio Pribadi	Личные аудио проекты	个人音频项目
+cards.personalSettings	Personal Settings	Paramètres personnels	Configurações pessoais	Ajustes personales	Pengaturan Pribadi	Персональные настройки	个人设置
+voice.personalize	Personalize	Personnaliser	Personalizar	Personalizar	Personalisasi	Персонализация	个性化
+voice.personalizeTitle	Personalize Voice Permission	Permission de personnaliser la voix	Personalizar permissão de voz	Personalizar Permiso de voz	Personalisasi Izin Penggunaan Suara	Персонализировать голос Разрешение	个性化语音许可
+import.phone	Phone	Téléphone	Telefone	Teléfono	Telepon	Телефон	手机号码
+languagePicker.phonetic	Phonetic	Phonétique	Fonética	Fonética	Fonetiki	Фонетика	语音学
+workflowSteps.phraseBackTranslation	Phrase Back Translate	Traduction du dos par phrase	Retrotradução de Frases	Frase de vuelta Traducir	Terjemahan Balik Frasa	Обратный перевод фраз	词语回译
+tool.phraseBackTranslate	Phrase Back Translate	Phrase Retour Traduire	Tradução de Frase Traseiro	Traducir frase de vuelta	Terjemahan Balik Hentian Singkat	Обратный перевод фразы	词语回译
+artifactType.backtranslation	Phrase Back Translation	Retraduction de la phrase	Tradução reversa de frase	Traducción de frases hacia atrás	Terjemahan Balik Hentian Singkat	Обратный перевод фразы	词语回译
+stepEditor.backtranslation	Phrase BT	Phrase BT	Frase BT	Frase BT	TerBal Hentian Singkat	Фраза BT	词语回译
+workflowSteps.pBTTranscribe	Phrase BT Transcribe	Phrase Retour Traduire Transcription	Traduzir Frase Voltar Transcrição	Frase BT Transcribir	Ketik TerBal Hentian Singkat	Обратный перевод фразы Транскрибировать	词语回译听写
+mediaTab.planName	Plan	Programme	Plano	Plano	Rencana	План	方案
+mediaActions.play	Play	Jouer	Reproduzir	Jugar a	Putar	Воспроизвести	播放
+mediaTitle.playPause	Play / Pause	Lecture / Pause	Reproduzir / Pausa	Reproducir / Pausa	Putar / Jeda	Воспроизведение / Пауза	播放/暂停
+commentCard.playOrStop	Play / Stop	Lecture / Arrêt	Reproduzir / Parar	Reproducir / Parar	Putar / Stop	Воспроизвести / Остановить	播放/停止
+peerCheck.afterResource	Play following context	peerCheck.afterResource Lecture du contexte suivant	Reproduzir o seguinte contexto	Reproduce el siguiente contexto	Putar konteks berikutnya	Воспроизведение следующего контекста	播放跟随环境
+peerCheck.resourceStart	Play from start	Lecture depuis le début	Reproduzir desde o início	Reproducir desde el principio	Putar dar awal	Играть с начала	从头开始播放
+selectRecording.playItem	Play Item	Elément de lecture	Reproduzir Item	Elemento de reproducción	Putarkan Rekaman	Воспроизвести	播放项目
+discussionCard.playOrStop	Play or Stop	Lecture ou arrêt	Reproduzir ou Parar	Reproducir o parar	Putar atau Stop	Проиграть или остановить	播放/停止
+community.playTest	Play Test	Jouer le test	Executar Teste	Jugar a la prueba	Putarkan Berkas Cobaan	Тест аудио	播放测试
+keyTerms.play	Play Translation	Lire la traduction	Tradução de jogos	Traducción de reproducciones	Putarkan Terjemahan	Воспроизвести перевод	播放译文
+planActions.playpause	Play/Pause	Jouer/Arrêter	Reproduzir/Pausar	Reproducir/Pausa	Putar/Jeda	Воспроизведение/Пауза	播放/暂停
+profile.locale	Preferred Language	Langue préférée	Idioma Preferido	Idioma preferido	Bahasa Pilihan	Предпочитаемый язык	首选语言
+workflowSteps.preliminaryApproval	Preliminary Approval	Approbation préliminaire	Aprovação Preliminar	Aprobación preliminar	Persetujuan Awal	Предварительное утверждение	初步批准
+vProject.preview	Preview	Aperçu	Pré-visualizar	Vista previa	Tampilan	Предварительный просмотр	预览
+findResource.previous	Previous page	Page précédente	Página anterior	Página anterior	Halaman sebelumnya	Предыдущая страница	上一页
+import.old	Previous Value	Valeur précédente	Valor Anterior	Valor anterior	Nilai Sebelumnya	Предыдущее значение	上一个值
+commentCard.previousVersion	Previous Version	Version précédente	Versão Anterior	Versión anterior	Versi Sebelumnya	Предыдущая версия	之前的版本
+main.privacy	Privacy Policy	Politique de confidentialité	Política de Privacidade	Política de privacidad	Kebijakan Privasi	Политика приватности	隐私政策
+uploadProgress.progressTitle	Progress	Progrès	Progresso	Progreso	Kemajuan	Прогресс	进程
+projectDownload.project	Project	Projet	Projeto	Proyecto	Proyek	Проект	项目
+projectDownload.projectDetails	Project Details	Détails du projet	Detalhes do projeto	Detalles del proyecto	Rincian Proyek	Сведения о проекте	项目详情
+passageDetailArtifacts.projectResourceSheet	Project Resource Sheet	Fiche de ressources du projet	Ficha de Recursos do Projeto	Hoja de recursos del proyecto	Lembar Sumber Proyek	Таблица ресурсов проекта	项目资源表
+cards.notesProject	Project with Notes	Projet avec notes	Projeto com notas	Proyecto con Notas	Proyek dengan Catatan	Проект с заметками	带笔记的项目
+projectDownload.projects	Projects	Projets	Projetos	Proyectos	Proyek	Проекты	项目
+mediaTab.proposed	Proposed	Proposé	Proposta	Propuesta	Diusulkan	Предложенные	建议的
+community.provideRights	Provide Rights	Fournir des droits	Proporcionar Direitos	Proporcionar derechos	Sediakan Hak Cipta	Предоставить права	提供权利
+planSheet.published	Publish	Publier	Publicar	Publicar	Terbitkan	Опубликовать	发布
+mediaTab.publish	Publish Media	Publier un média	Publicar mídia	Publicar Medios	Terbitkan Media	Опубликовать медиа	发布媒体
+mediaTab.published	Published	Publié	Publicado	Publicado	Sudah diterbitkan	Опубликовано	已出版
+cards.publishing	Publishing	Publication	Publicar	Publicación	Penerbitan	Публикация	发布
+stepEditor.qanda	Q and A	Questions et réponses	Q e A	Q y A	Tanya Jawab	Вопросы и ответы	问题喝答案
+findResource.query	Query	Interroger	Consultar	Consulta	Tanyakan	Запрос	查询
+integration.countPending	Querying count...	Requête de nombre ...	Consultando contagem...	Consulta de recuento...	Sedang menanyakan jumlah...	Запросы...	查询数量...
+integration.usernamePending	Querying username...	Requête le nom d'utilisateur...	Consultando nome de usuário...	Consultando el nombre de usuario...	Menanyakan nama pengguna...	Запрос имени пользователя...	正在查询用户名...
+findResource.querying	Querying...	Interroger...	Consultando...	Consulta...	Sedang mencari...	Запрос...	查询...
+artifactCategory.qanda	Question and Answer	Questions et réponses	Perguntas e respostas	Preguntas y respuestas	Tanya Jawab	Вопрос и ответ	问题与答案
+invite.questions	Questions? Contact	Des questions? Contact	Dúvidas? Entre em contato	¿Preguntas? Póngase en contacto con	Pertanyaan? Hubungi	Вопросы? Свяжитесь с нами	有问题？联系我们
+newProject.general	Quick Start	Démarrage rapide	Início rápido	Inicio rápido	Mulai Cepat	Быстрый старт	快速开始
+planSheet.resequence	Re-sequence	Remettre en séquence	Re-sequência	Re-secuenciar	Urutkan kembali	Повторная последовательность	重序列
+mediaTab.readyToShare	Ready to Share	Prêt à partager	Pronto para Compartilhar	Listo para compartir	Siap untuk Dibagikan	Готовы поделиться	已准备好分享
+activityState.approved	Ready to Sync	Prêt à synchroniser	Pronto para Sincronizar	Listo para sincronizar	Siap untuk Kirim/Terima	Готово к синхронизации	准备同步
+activityState.transcribeReady	Ready to Transcribe	Prêt à transcrire	Pronto para Transcrever	Listo para transcribir	Siap Diketik	Готов к транскрипции	准备听写
+keyTerms.realia	Realia	Realia	Realia	Realia	Benda	Реалии	真实事
+mediaTitle.record	Record	Enregistrer	Registar	Grabar	Rekam	Запись	记录
+tool.record	Record	Enregistrement	Gravar	Grabar	Rekam	Запись	录音
+commentEditor.record	Record Comment	Enregistrer le commentaire	Gravar Comentário	Grabar comentario	Rekam Catatan	Записать комментарий	录音注释
+mediaTitle.recordOrUpload	Record or Upload	Enregistrer ou télécharger	Gravar ou carregar	Grabar o cargar	Rekam atau Unggah	Записать или загрузить	录制或上传
+keyTerms.record	Record Translation	Enregistrer la traduction	Tradução de Registros	Grabar traducción	Rekam Terjemahan	Перевод записей	录音翻译
+passageRecord.title	Record/Edit Audio	Créer / modifier l'audio	Gravar/Editar Áudio	Grabar/editar audio	Rekam/Sunting Audio	Запись/Редактирование аудио	录音/编辑音频
+planActions.recordAudio	Record/Edit Audio	Créer/Éditer de l'audio	Gravar/Editar Áudio	Grabar/Editar audio	Rekam/Sunting Audio	Запись/Редактирование аудио	录音/编辑音频
+keyTerms.recording	Recording in progress.	Enregistrement en cours.	Gravação em andamento.	Grabación en curso.	Sedang merekam.	Идет запись.	录制进行中
+shared.recordingInProgress	Recording in progress...	Enregistrement en cours...	Gravação em progresso...	Grabación en curso...	Perekaman sedang berlangsung...	Идёт запись...	正在录音中……
+activityState.needsNewRecording	Recording Needed	Enregistrement requis	Gravação Necessária	Se necesita grabar	Diperlukan Rekaman	Запись нужен	需要录音
+transcribeReject.needsAudio	Recording Needed	Besoin d'un nouveau enregistrement	Gravação Necessária	Se necesita una grabación	Diperlukan Rekaman	Необходима запись	需要录音
+mediaTitle.recording	Recording...	Enregistrement...	Gravação...	Grabando...	Sedang Merekam...	Запись...	记录...
+cards.reduceNoise	Reduce Noise	Réduire le bruit	Reduzir ruído	Reducir ruido	Kurangi Kebisingan	Уменьшить шум	降低噪音
+mediaTab.reference	Reference	Référence	Referência	Referencia	Acuan	Ссылка	章节
+resource.references	References	Références	Referências	Referencias	Acuan	Ссылки	参照
+transcriber.reject	Reject	Rejeter	Rejeitar	Rechazar	Tolak	Отклонить	拒绝
+transcribeReject.rejectReason	Reject Reason	Raison du rejet	Motivo da Rejeição	Motivo de rechazo	Tolak Alasan	Причина отклонения	拒绝原因
+transcriber.needsNewRecording	Rejected recording	Enregistrement rejeté	Gravação rejeitada	Grabación rechazada	Rekaman yang ditolak	Отклоненная запись	拒绝的录音
+transcriber.needsNewTranscription	Rejected transcription	Transcription refusée	Transcrição rejeitada	Transcripción rechazada	Transkripsi yang ditolak	Отклоненная транскрипция	拒绝的听写本
+transcribeReject.rejectTitle	Rejection	Rejet	Rejeição	Rechazo	Penolakan	Отклонение	拒绝
+peer.remove	Remove	Supprimer	Remover	Eliminar	Hapus	Удалить	删除
+assignmentTable.removeSec2	Remove Assignments	Supprimer les affectations	Remover atribuições	Eliminar asignaciones	Hapus Tugas	Удалить назначения	删除作业
+assignmentTable.removeSec	Remove Permissions	Supprimer les autorisations	Remover permissões	Eliminar permisos	Hapus Izin	Удалить разрешения	删除权限
+discussionMenu.reopen	Reopen	Rouvrir la	Reabrir	Reabrir	Buka kembali	Открыть снова	重新打开
+transcriber.reopen	Reopen	Réouvrir	Reabrir	Reabrir	Buka kembali	Переоткрыть	重新打开
+main.reportIssue	Report an Issue	Signaler un problème	Relatar um Problema	Informar de un problema	Laporkan Masalah	Сообщить о проблеме	报告问题
+main.reports	Reports	Rapports	Relatórios	Informes	Laporan	Отчёты	报告
+projButtons.reports	Reports	Rapports	Relatórios	Informes	Laporan	Отчёты	报告
+faithbridge.audioResources	Request Audio	Demander de l'audio	Pedir áudio	Request Audio	Minta Audio	Запрос аудио	请求音频
+welcome.setupFactor	Requires Internet connection	Nécessite une connexion Internet	Requer conexão com a Internet	Requiere conexión a Internet	Memerlukan konensi Internet	Требуется подключение к Интернету	需要互联网连接
+passageDetailArtifacts.research	Research	Recherche	Pesquisa	Investigación	Penelitian	Исследование	研究
+invite.resend	Resend	Renvoyer	Reenviar	Vuelva a enviar	Kirim ulang	Отправить еще раз	重新发送
+findResource.reset	Reset	Réinitialiser	Redefinir	Restablecer	Reset	Сброс	重置
+scriptureTableFilter.reset	Reset	Réinitialiser	Repor	Restablecer	Reset	Сбросить	重置
+discussionCard.resolved	Resolve	Résolvez	Resolver	Resolver	Selesaikan	Завершить	解决
+discussionMenu.resolve	Resolve	Résoudre la	Resolver	Resolver	Selesaikan	Завершить	解决
+filterMenu.resolved	Resolved	Résolu	Resolvido	Resuelto	Selesai	Решено	已解决
+passageDetailArtifacts.resource	Resource	Ressources	Recurso	Recurso	Sumber	Ресурс	资源
+teamCheckReference.resource	Resource	Ressource	Recurso	Recurso	Sumber	Ресурс	资源
+planActions.resourceEdit	Resource Edit	Modifier la ressource	Editar recurso	Editar recurso	Sunting Sumber	Редактировать ресурс	资源编辑
+resource.resourceEdit	Resource Edit	Édition de la ressource	Recurso Editar	Recurso Editar	Sunting Sumber	Редактирование ресурса	资源编辑
+category.resources	resource(s)	ressource(s)	recurso(s)	recurso(s)	sumber	ресурс(ы)	资源
+planActions.resources	Resources	Ressources	Recursos	Recursos	Sumber	Ресурсы	资源
+passageDetailArtifacts.tip1a	Resources for:	Les ressources pour :	Recursos para:	Recursos para:	Sumber untuk:	Ресурсы для:	资源：
+spelling.restartApp	Restart	Redémarrer	Reiniciar	Reiniciar	Buka Ulang	Перезапустить	重新开始
+wsAudioPlayer.resume	Resume	Reprendre	Reiniciar	Reanudar	Lanjutkan	Возобновить	恢复
+stepEditor.retell	Retell	Répéter	Recontar	Volver a contar	Cerita Ulang	Пересказ	复述
+workflowSteps.retellBackTranslation	Retell Back Translation	Retell Back Traduction	Repetir a tradução	Retell Back Traducción	Terjemahan Balik Cerita Ulang	Пересказ Обратный перевод	复述听写
+workflowSteps.retellBTTranscribe	Retell BT Transcribe	Relecture BT Transcription	Retell BT Transcrever	Retell BT Transcribir	Ketik Terjemahan Cerita Ulang	Пересказ BT Транскрипция	复述回译听写
+activityState.review	Review	Révision	Revisar	Revisar	Periksa	Проверка	复习
+toDoTable.editor	Review	Controler	Revisar	Revisar	Periksa Ulang	Проверка	复习
+consultantCheck.furtherReview	Review More	Lire la suite	Revisar mais	Revisar más	Periksa Lagi	Отзыв Подробнее	查看更多
+workflowSteps.review	Review Transcription	Transcription de l'examen	Revisão da transcrição	Revisar la transcripción	Tinjau hasil ketik	Обзорная транскрипция	复习听写
+activityState.reviewing	Reviewing	Révision	Revisando	Revisando	Sedang periksa	Проверяет	复习中
+hotKey.rightArrow	Right Arrow	Flèche droite	Seta para a Direita	Flecha derecha	Panah Kanan	Стрелка вправо	右箭头
+vProject.rightToLeft	Right-to-Left	De droite à gauche	Direita-para-esquerda	De derecha a izquierda	Kanan ke Kiri	Справа-налево	从右到左
+community.rights	Rights	Droits	Direitos	Derechos	Hak Cipta	Права	权利
+keyTerms.ritual	Ritual	Rituel	Ritual	Ritual	Upacara	Ритуал	仪式
+assignSection.role	Role	Rôle	Função	Rol	Peran	Роль	角色
+main.orgRole	Role:	Rôle:	Função:	Papel:	Peran:	Роль:	角色：
+groupTabs.roles	Roles	Rôles	Funções	Roles	Peran	Роли	角色
+grid.rowsPerPage	Rows per Page	Lignes par page	Linhas por Página	Filas por página	Baris per Halaman	Строк на странице	每页行数
+main.googleSamples	Sample Google spreadsheets	Exemple de feuilles de calcul Google	Exemplo de planilhas do Google	Ejemplo de hojas de cálculo de Google	Contoh spreadsheet Google	Образцы электронных таблиц Google	谷歌电子表格示例
+transcriber.save	Save	Sauvegarde	Salvar	Guardar	Simpan	Сохранить	保存
+vProject.save	Save	Sauvegarder	Salvar	Guardar	Simpan	Сохранить	保存
+audacityManager.saveFirst	Save before editing	Sauvegarder avant de modifier	Salvar antes de editar	Guardar antes de editar	Simpan sebelum mengedit	Сохранить перед редактированием	编辑前保存
+mediaTitle.save	Save Recording	Sauvegarder l'enregistrement	Salvar gravação	Guardar grabación	Simpan Rekaman	Сохранить запись	保存录音
+wsAudioPlayer.saveSegments	Save Segments	Sauvegarder les segments	Salvar Segmentos	Guardar segmentos	Simpan segmen	Сохранить сегменты	保存段
+keyTerms.save	Save Translation	Sauvegarder la traduction	Salvar Tradução	Guardar traducción	Simpan Terjemahan	Сохранить перевод	保存翻译
+verse.saveVerseMarkup	Save Verse Markup	Sauvegarder le balisage des versets	Salvar marcação de versículo	Guardar marcado de versículos	Simpan Markup Ayat	Сохранить разметку стиха	保存诗句标记
+stepEditor.saving	Saving ...	Sauvegarde ...	Salvando ...	Guardando ...	Menyimpan...	Сохранение ...	保存中...
+mediaTab.savingComplete	Saving complete.	Sauvegarde complète.	Gravação concluída.	Guardado completo.	Penyimpanan selesai.	Сохранено!	保存成功
+transcriber.saving	Saving...	Sauvegarder...	Salvando...	Guardar...	Menyimpan...	Сохранение...	保存中...
+vProject.scenes	Scene/Scenes	Scène/Scènes	Cena/Cenas	Escena/Escenas	Adegan	Сцена/Сцены	场景
+findResource.scope	Scope	Champ d'application	Escopo	Ámbito	Jangkauan	Область	范围
+voice.scope	Scope of use	Champ d'application	Escopo de uso	Ámbito de uso	Lingkup penggunaan	Сфера использования	使用范围
+picker.script	Script	Script	Script	Guión	Skrip	Сценарий	脚本
+transcriber.scriptOrDialect	Script or Dialect	Script ou dialecte	Escrita ou dialeto	Escritura o dialecto	Skrip atau Logat Bahasa	Скрипт или диалект	脚本或方言
+artifactCategory.scripture	Scripture	Écritures	Referência Bíblica	Escrituras	Alkitab	Писание	经文
+transcriptionTab.scriptureBurrito	Scripture Burrito	Écriture Burrito	Scripture Burrito	Burrito de las Escrituras	Gulungan Alkitab	Писание Burrito	圣经卷饼
+workflowSteps.consultantCheck2	Second Consultant Check	Vérification du second consultant	Verificação do segundo consultor	Segundo Consultor	Pemeriksaan Konsultan Kedua	Проверка второго консультанта	第二顾问检查
+wsAudioPlayer.seconds	seconds	seconds	segundos	segundos	detik	секунды	秒
+findResource.section	section	section	seção	sección	bagian	раздел	节的脚本
+vProject.sections	Section/Sections	Section/sections	Seção/Seções	Sección/Secciones	Bagian	Раздел/разделы	段
+tool.segment	Segment	Segment	Segmento	Segmentar	Segmen	Сегмент	段
+community.segment	Segment	Segmenter	Segmento	Segmento	Segmen	Сегмент	段
+shared.select	Select	Sélectionnez	Selecionar	Seleccione	Pilih	Выбрать	选择
+passageDetailArtifacts.selectBook	Select Book	Sélectionner le livre	Seleccionar livro	Seleccionar Libro	Pilih Kitab	Выбрать книгу	选择书籍
+resource.bookSelect	Select Book	Sélectionner un livre	Seleccionar livro	Seleccionar libro	Pilih Kitab	Выбрать книгу	选择书籍
+planSheet.bookSelect	Select Book...	Choisir un livre...	Selecionar Livro...	Seleccionar Libro...	Pilih Kitab...	Выберите книгу...	选择书籍
+selectRecording.selectRecording	Select Item	Sélectionner l'élément	Selecionar item	Seleccionar elemento	Pilih Item	Выберите элемент	选择项目
+invite.selectTeamRole	Select team role.	Choisir le rôle dans l'équipe.	Selecionar função da equipe.	Seleccione el rol del equipo.	Pilih peran dalam tim.	Выберите роль в команде	选择团队角色。
+usertable.selectUser	Select User	Sélectionnez l'utilisateur	Selecionar Usuário	Seleccionar usuario	Pilih Pengguna	Выбрать пользователя	选择用户
+wsAudioPlayer.selectVoice	Select Voice	Sélectionner la voix	Selecionar voz	Seleccionar voz	Pilih Suara	Выбрать голос	选择语音
+invite.send	Send	Envoyer	Enviar	Enviar	Kirim	Отправить	发送
+main.sessionExpiring	Session Expiring	Session expirée	Sessão Expirando	Expiración de la sesión	Sesi Berakhir	Истекает сессия	会话正在结束
+keyTerms.settingLanguage	Set Language	Définir la langue	Definir idioma	Establecer idioma	Tentukan Bahasa	Установить язык	设置语言
+discussionMenu.setSegment	Set Segment	Segment fixe	Configurar Segmento	Establecer segmento	Tetapkan Segmen	Установить сегмент	设置段
+vProject.sets	Set/Sets	Ensemble/Ensembles	Conjunto/Conjuntos	Conjunto/Sets	Kumpulan	Набор/Наборы	组
+main.settings	Settings	Paramètres	Configurações	Configuración	Pengaturan	Настройки	设置
+artifactType.sharedresource	Shared Resource	Ressource partagée	Recurso Compartilhado	Recurso compartido	Sumber Bersama	Общий ресурс	共享资源
+vProject.sharedResources	Shared Resources	Ressources partagées	Recursos Compartilhados	Recursos compartidos	Sumber Bersama	Общие ресурсы	共享的资源
+hotKey.shiftKey	Shift	Équipe	Deslocar	Mayúsculas	Shift	Shift	切换
+stepEditor.show	Show	Afficher	Exibir	Mostrar	Tampilkan	Показать	显示
+stepEditor.showAll	Show all	Afficher tout	Exibir tudo	Mostrar todo	Tampilkan semua	Показать все	全部显示
+mediaUpload.launchLink	Show Link Content	Afficher le contenu du lien	Mostrar conteúdo do link	Mostrar contenido de enlace	Tampilkan Konten Link	Показать содержимое ссылки	显示链接内容
+planSheet.showPublishing	Show Publishing Information	Afficher les informations de publication	Mostrar informações de publicação	Mostrar Información de Publicación	Tunjukkan Informasi Penerbitan	Показать информацию о публикации	显示发布信息
+discussionList.collapse	Show/Hide All Comments	Afficher/masquer tous les commentaires	Exibir/Ocultar Todos os Comentários	Mostrar/Ocultar todos los comentarios	Tampilkan/Sembunyikan Semua Catatan	Показать/скрыть комментарии	显示/隐藏注释
+discussionCard.collapse	Show/Hide Comments	Afficher/masquer les commentaires	Exibir/Ocultar Comentários	Mostrar/Ocultar Comentarios	Tampilkan/Sembunyikan Catatan	Показать/скрыть комментарии	显示/隐藏注释
+usertable.showHideFilter	Show/Hide filter rows	Afficher/masquer les lignes de filtre	Exibir/Ocultar linhas de filtro	Mostrar/Ocultar filas del filtro	Tampilkan/Sembunyikan baris filter	Показать/скрыть строки фильтра	显示/隐藏筛选器表单
+wsAudioPlayer.silence	Silence	Silence	Silenciar	Silencio	Diam	Тишина	静音
+mediaTab.size	Size (MB)	Taille (MO)	Tamanho (MB)	Tamaño (MB)	Ukuran (MB)	Размер (МБ)	大小 (MB)
+keyTerms.sortShow	Sort and Show	Trier et montrer	Classificar e Mostrar	Ordenar y mostrar	Urutkan dan Tunjukkan	Сортировать и показывать	排序和显示
+sortMenu.sortMenu	Sort Discussions	Trier les discussions	Organizar as Discussões	Ordenar las discusiones	Urutkan Diskusi	Сортировать обсуждения	筛选讨论
+cards.sortProjects	Sort Projects	Trier les projets	Sort Projects	Ordenar proyectos	Urutkan Proyek	Сортировка проектов	排序项目
+passageDetailArtifacts.source	Source	Source	Fonte	Fuente	Sumber	Источник	来源
+selectRecording.sourceSegment	Source Segment	Segment source	Segmento de Origem	Segmento de origen	Segmen Sumber	Сегмент источника	源段
+selectRecording.sourceVersion	Source Version	Version de la source	Versão de Origem	Versión de la fuente	Versi Sumber	Версия источника	源版本
+hotKey.spaceKey	Space	Espace	Espaço	Espacio	Spasi	Пробел	空格
+selectRecording.speaker	Speaker	Intervenant	Viva-voz	Orador	Pembicara	Динамик	语者
+peer.permissions	Special permission	Autorisation spéciale	Permissão especial	Permiso especial	Izin khusus	Специальное разрешение	特殊权限
+vProject.spellCheck	Spell Check	Vérification des sorts	Verificação Ortográfica	Revisión ortográfica	Pemeriksa Ejaan	Проверка орфографии	拼字检查（英文）
+spelling.spellingLangs	Spell Checking Languages	Langues de vérification de l'orthographe	Idiomas para Verificação Ortográfica	Idiomas de corrección ortográfica	Bahasa Pemeriksaan Ejaan	Язык для проверки орфографии	拼写检查语言
+projButtons.sheet	Spreadsheet	Feuille de calcul	Planilha	Hoja de cálculo	Spreadsheet	Электронная таблица	电子表格
+passageDetailArtifacts.startStop	Start - Stop	Début - Fin	Iniciar - Parar	Inicio - Fin	Awal - Akhir	Запустить/остановить	开始/停止
+verse.startStop	Start --> Stop	Démarrer --> Arrêter	Iniciar --> Parar	Iniciar --> Detener	Mulai --> Stop	Начать --> Остановить	开始 --> 停止
+planSheet.firstMovement	Start At	Commencer à	Iniciar em	Comenzar en	Mulai Dari	Начать с	开始于
+newProject.startRecording	Start Recording	Démarrer l'enregistrement	Iniciar Gravação	Inicio de la grabación	Mulai Merekam	Начать запись	开始录音
+transcriber.reviewing	Started to review	A commencé à examiner	Começou a revisar	Empezar a revisar	Sudah mulai periksa	Начата проверка	开始复习
+transcriber.transcribing	Started to transcribe	A commencé à transcrire	Começou a transcrever	Comenzó a transcribir	Sudah mulai menuliskan	Начато транскрибирование	开始听写
+template.beginning	Starting verse number	Numéro du verset de départ	Número do versículo inicial	Número de versículo inicial	Nomor ayat pertama	Начальный номер стиха	先节的号
+grid.startsWith	Starts with	Commence avec	Começa com	Comienza con	Dimulai dengan	Начинается с	起头为
+transcriptionTab.sectionstate	State	État	Estado	Estado	Keadaan	Cтатус	状态
+treeChart.status	Status of	Statut de	Status de	Estado de	Keadaan	Статус	状态
+planSheet.step	Step	Étape	Etapa	Paso	Langkah	Шаг	步
+passageDetailStepComplete.title	Step Complete	Étape complète	Etapa Completa	Paso Completo	Langkah Selesai	Шаг завершен	步骤已完成
+passageDetailStepComplete.incomplete	Step Incomplete	Étape Incomplète	Etapa Incompleta	Paso Incompleto	Langkah Belum Selesai	Шаг незавершен	步骤无完成
+wsAudioPlayer.aiGiveUp	Stop Waiting...	N'attendez plus...	Pare de esperar...	Deja de esperar...	Berhenti Menunggu...	Хватит ждать...	停止等待...
+vProject.stories	Story/Stories	l' histoire/Histoires	História/Histórias	Historia/Historias	Cerita	История/Истории	故事
+cards.OBS	Storying	Récit	Armazenando	Storying	Penceritaan	Истории	故事
+keyTerms.strong	Strong	Fort	Forte	Fuerte	Kuat	Сильный	重号码
+workflowSteps.finalRecording	Studio Record	Enregistrement du studio	Registo de estúdio	Grabación en estudio	Rekaman Studio	Студийная запись	工作室录音
+transcriber.submit	Submit	Soumettre	Enviar	Enviar	Serahkan	Отправить	发送
+transcriber.submitReviewTip	Submit as complete	Soumettre comme complet	Enviar como completo	Enviar como completo	Serahkan sebagai sudah lengkap	Отправить как завершенное	完成提交
+transcriber.submitTranscriptionTip	Submit for review	Soumettre pour examen	Enviar para revisão	Enviar para revisión	Kirimkan untuk diperiksa	Отправить на проверку	发送以供复核
+picker.subtags	Subtags	Sous-tags	Subtags	Subetiquetas	Subtag	Подтеги	副标签
+languagePicker.subtags	Subtags	Sous-étiquettes	Subtags	Subtags	Subtag	Теги второго уровня	子标签
+passageDetailArtifacts.suffix	Suffix	passageDetailArtifacts.suffix Suffixe	Sufixo	Sufijo	Akhiran	Суффикс	后缀
+grid.sum	Sum	Somme	Soma	Suma	Jumlah	Сумма	总和
+findResource.summary	summary	résumé	resumo	resumen	kesimpulan	резюме	摘要
+main.switchUser	Switch User	Changer d'utilisateur	Trocar de usuário	Cambiar de usuario	Ubah Pengguna	Переключить пользователя	切换用户
+integration.sync	Sync	Synchroniser	Sincronizar	Sincronizar	Kirim/Terima	Синхронизация	同步
+integration.syncComplete	Sync Complete!	Synchronisation terminée!	Sincronização Concluída!	Sincronización completa	Kirim/Terima Selesai!	Синхронизация завершена!	同步完成
+integration.syncError	Sync error:	Erreur de synchronisation:	Erro de sincronização:	Error de sincronización:	Kesalahan kirim/terima:	Ошибка синхронизации:	同步出错
+activityState.synced	Synced	Synchronisé	Sincronizado	Sincronizado	Kirim/Terima telah selesai	Синхронизировано	已同步
+import.importSync	Syncing changes	Synchronisation des modifications	Sincronizar alterações	Sincronizar cambios	Sedang kirim/terima perubahan	Синхронизация изменений	同步更改
+import.importSyncUp	Syncing offline changes	Synchronisation des modifications hors ligne	Sincronizar alterações offline	Sincronizar cambios sin conexión	Sedang kirim/terima perubahan offline	Синхронизация изменений в автономном режиме	同步离线更改
+import.importSyncDown	Syncing online changes	Synchronisation des modifications en ligne	Sincronizar alterações online	Sincronizando cambios online	Sedang kirim/terima perubahan online	Синхронизация онлайн-изменений	同步在线更改
+integration.syncPending	Syncing...	Synchronisation en cours...	Sincronizando...	Sincronización...	Sedang kirim/terima...	Синхронизация...	同步中...
+category.builtIn	System Categories	category.builtIn Catégories du système	Categorias do sistema	Categorías del Sistema	Kategori Sistem	Системные категории	系统类别
+vProject.tags	Tags	Étiquettes	Tags	Etiquetas	Tag	Теги	标签
+main.tasks	Tasks	Tâches	Tarefas	Tareas	Tugas	Задачи	任务
+main.team	Team	Équipe	Equipe	Equipo	Tim	Команда	团队
+projectDownload.team	Team	L'équipe	Equipe	Equipo	Tim	Команда	团队
+shared.user	Team Member	Membre de l'équipe	Membro da equipa	Miembro del equipo	Anggota Tim	Член команды	團隊成員
+cards.teamName	Team Name	Nom de l'équipe	Nome da Equipe	Nombre del equipo	Nama Tim	Название команды	团队名称
+profile.role	Team Role	Rôle de l'équipe	Função de Equipe	Rol de equipo	Peran Dalam Tim	Роль в команде	团队角色
+invitationTable.role	Team Role	Rôle d'équipe	Função de Equipe	Rol del equipo	Peran dalam tim	Роль в команде	团队角色
+invite.role	Team Role	Rôle dans l'équipe	Função de Equipe	Rol del equipo	Peran dalam tim	Роль в команде	团队角色
+cards.teamSettings	Team Settings	Paramètres de l'équipe	Configurações da Equipe	Configuración del equipo	Pengaturan Tim	Настройки команды	团队设置
+template.templateCodes	Template Codes	Modèle de code	Códigos de Modelo	Códigos de la plantilla	Kode templat	Коды шаблонов	模板代码
+keyTerms.termDetail	Term Details	Terme Détails	Detalhes do Termo	Detalles del término	Rincian Istilah	Детали термина	词详细
+workflowSteps.teamReview	Term Review	Révision du terme	Revisão do termo	Revisión de términos	Pemeriksaan Kata Kunci	Проверка термина	复习词语
+tool.keyterm	Term Verify	Vérification du terme	Termo Verificar	Término Verificar	Verifikasi Tim	Проверка термина	验证词语
+main.terms	Terms of Use	Conditions d'utilisation	Termos de Uso	Condiciones de uso	Ketentuan Penggunaan	Условия использования 	使用条款
+artifactType.testing	Testing	Essais	Testando	Prueba	Pengujian	Тестирование	测试中
+vProject.testing	Testing	Essai	Teste	Pruebas	Pengujian	Тестирование	测试中
+faithbridge.text	text	texte	texto	texto	teks	текст	文本
+newProject.textProduct	Text Product	Produit texte	Produto de Texto	Producto de texto	Produk Tertulis	Текстовый продукт	文本产品
+passageDetailArtifacts.textResource	Text Resource	Texte Ressource	Recurso de texto compartilhado	Recurso de texto	Sumber Tertulis	Текстовый ресурс	文本资源
+main.thanks	Thanks to	Merci à	Agradecimentos	Gracias a	Terima kasih Kepada	Спасибо	谢谢：
+voice.stThisTeam	this team	cette équipe	esta equipe	este equipo	tim ini	эта команда	本团队
+voice.thisTeam	This Team	Cette équipe	Esta equipe	Este equipo	Tim Ini	Эта команда	本团队
+import.timezone	Time zone	Fuseau horaire	Fuso horário	Zona horaria	Zona waktu	Часовой пояс	时区
+usertable.timezone	Timezone	Fuseau horaire	Fuso horário	Zona horaria	Zona Waktu	Часовой пояс	时区
+artifactCategory.title	Title	Titre	Título	Título	Judul	Название	标题
+stepEditor.tool	Tool	Outil	Ferramenta	Herramienta	Alat	Инструмент	工具
+community.topic	Topic	Sujet	Tópico	Tema	Topik	Тема	主题
+projectDownload.total	Total MB	Total MB	Total de MB	MB totales	MB Total	Всего МБ	总 MB
+vProject.training	Training	Formation	Treinamento	Formación	Pelatihan	Обучение	培训
+activityState.transcribe	Transcribe	Transcription	Transcrever	Transcribir	Ketik	Транскрибировать	转写
+tool.transcribe	Transcribe	Transcrire	Transcrever	Transcribir	Ketik	Транскрибировать	听写
+activityState.transcribed	Transcribed	Transcrit	Transcrito	Transcrito	Sudah Diketik	Транскрибировано	已转录
+shared.transcriber	Transcriber	Transcripteur	Transcritor	Transcriptor	Pengetik	Транскриптор	听写员
+activityState.transcribing	Transcribing	Transcrire	Transcrevendo	Transcribiendo	Sedang Ditulis	Трансрибировает	听写中
+transcriptionShow.transcription	Transcription	Transcription	Transcrição	Transcripción	Transkripsi	Транскрипция	听写本
+transcriber.transcriptionExists	Transcription already exists	La transcription existe déjà	A transcrição já existe	La transcripción ya existe	Sudah ada transkripsi	Транскрипция уже существует	转录内容已经存在
+planTabs.transcriptions	Transcriptions	Transcriptions	Transcrições	Transcripciones	Transkripsi	Транскрипции	听写
+keyTerms.translation	Translation	Traduction	Tradução	Traducción	Terjemahan	Перевод	译文
+artifactCategory.translationresource	Translation Resource	Ressource de traduction	Recurso de Tradução	Recursos para traduccion	Sumber Penerjemahan	Ресурсы для перевода	翻译资源
+shared.translator	Translator	Traducteur	Tradutor	Traductor	Penerjemah	Переводчик	翻译者
+keyTerms.transliteration	Transliteration	Translittération	Transliteração	Transliteración	Transliterasi	Транслитерация	音译
+selectRecording.artifactType	Type	Type	Tipo	Tipo	Jenis	Тип	类型
+commentCard.unapproved	Unapproved	Non approuvé	Não aprovado	No aprobado	Tidak disetujui	Не одобрено	未批准
+import.unassigned	unassigned	Non attribué	não atribuido	sin asignar	belum ditugaskan	не назначено	未分配
+findResource.unavailable	unavailable	indisponible	indisponível	no disponible	tidak tersedia	недоступно	不可用
+artifactCategory.uncategorized	Uncategorized	Non catégorisé	Sem Categoria	Sin categoría	Tidak Dikategorikan	Без категории	未分类
+passageRecord.uncompressed	Uncompressed	Non compressé	Descompactado	Sin comprimir	Tidak dipadatkan	Без сжатия	未压缩
+wsAudioPlayer.undoTip	Undo	Annuler	Desfazer	Deshacer	Urungkan	Отменить	撤销
+audacityManager.unlink	Unlink	Détacher	Desvincular	Desenlazar	Hapus sambungan	Отвязать	取消连接
+community.unsaved	Unsaved	Non sauvegardé	Não salvo	No guardado	Belum Tersimpan	Не сохранено	未保存
+workflowSteps.unsaved	Unsaved content	Contenu non sauvegardé	Conteúdo não salvo	Contenido no guardado	Hasil yang belum disimpan	Несохраненный контент	未保存的内容
+main.UnsavedData	Unsaved Data	Données non enregistrées	Dados Não Salvos	Datos no guardados	Data yang Belum Tersimpan	Несохраненные данные	未保存的数据
+keyTerms.unsaved	Unsaved.	Non sauvé.	Não guardado.	Sin guardar.	Belum Tersimpan.	Несохраненный.	未保存
+planSheet.addPublishing	Update Publishing Rows	Mise à jour des lignes de publication	Atualizar linhas de publicação	Actualizar filas de publicación	Perbarui Baris Penerbitan	Обновление строк публикации	更新发布行
+transcriptionTab.updated	Updated	Mise à jour	Atualizado	Actualizado	Diperbarui	Обновлено	已更新
+mediaUpload.upload	Upload	Télécharger	Carregar	Subir	Unggah	Загрузить	上传
+mediaUpload.title	Upload Audio	Télécharger des fichiers audio	Carregar Áudio	Subir audio	Unggah Audio	Загрузить аудио	上传音频
+mediaTitle.uploadFailed	Upload Failed!	Échec du téléchargement !	Falha no carregamento!	¡Carga fallida!	Pengunggahan Gagal!	Загрузка не удалась!	上传失败！
+mediaUpload.graphicTitle	Upload Graphic	Télécharger le graphique	Carregar gráfico	Subir gráfico	Unggah Gambar	Загрузить графику	上传图片
+cards.uploadProgress	Upload Progress	Progression du téléchargement	Progresso do Envio	Subir el progreso	Kemajuan Unggahan	Идет загрузка	上传进度
+mediaUpload.resourceTitle	Upload Resources	Télécharger les ressources	Carregar Recursos	Cargar recursos	Unggah Sumber	Загрузить ресурсы	上传资源
+shared.uploadRights	Upload Rights File	Télécharger le fichier des droits	Upload de ficheiros de direitos	Cargar archivo de derechos	Unggah File Hak Cipta	Загрузить файл с правами	上传权利文件
+shared.uploadSuccess	Upload Successful	Téléchargement réussi	Carregamento bem sucedido	Carga correcta	Pengunggahan Berhasil	Загрузка успешна	上传成功
+passageDetailArtifacts.upload	Uploads	Téléchargements	Uploads	Cargas	Unggahan	Загрузка	上传
+mediaTab.user	User	Utilisateur	Utilizador	Usuario	Pengguna	Пользователь	用户
+profile.userProfile	User profile	Profil du utilisateur	Perfil do usuário	Perfil de usuario	Profil pengguna	Профиль пользователя	用户资料
+integration.usernameError	Username error:	Erreur de nom d'utilisateur:	Erro de nome de usuário:	Error de nombre de usuario:	Kesalahan nama pengguna:	Ошибка имени пользователя:	用户名错误：
+artifactType.vernacular	Vernacular	Vernaculaire	Vernáculo	Vernáculo	Bahasa Daerah	Местный язык	土语
+discussionCard.version	Version	Version	Versão	Versión	Versi	Версия	版本
+mediaTab.versionHistory	Version History	Historique des versions	Histórico de Versão	Historial de la versión	Sejarah Versi	История версий	版本历史
+planActions.versions	Versions	Versions	Versões	Versiones	Versi	Версии	版本
+faithbridge.video	video	vidéo	video	vídeo	video	видео	视频
+mediaActions.view	View	Voir	Visualizar	Ver	Lihat	Вид	观看
+mediaTab.viewAssociations	View Associations	Voir les associations	Visualizar Associações	Ver Asociaciones	Lihat Hubungan	Просмотр ассоциаций	看见关系
+main.helpSpreadsheet	View spreadsheet convention	Voir la convention du tableur	Visualizar convenção de planilha	Ver la convención de la hoja de cálculo	Lihat sisten lembar kerja	Просмотреть соглашение электронной таблицы	查看电子表格协议
+transcriptionTab.exportType	Which export type?	Quel type d'exportation?	Qual tipo de exportação?	¿Qué tipo de exportación?	Jenis ekspor yang mana?	Какой тип экспорта?	哪种导出类型？
+tool.wholeBackTranslate	Whole Back Translate	Traduire en arrière	Voltar Traduzir	Traducir en su totalidad	Terjemahan Balik Utuh	Полный обратный перевод	所有回译
+artifactType.wholebacktranslation	Whole Back Translation	Toute la retraduction	Tradução Inteira	Traducción inversa completa	Terjemahan Balik Utuh	Перевод всей спины	所有回译
+stepEditor.wholebacktranslation	Whole BT	BT completBT complet	BT completo	BT completo	TerBal Utuh	Целый BT	所有回译
+workflowSteps.wBTTranscribe	Whole BT Transcribe	Traduire en entier Transcription	Traduzir todo Transcrição	Transcribir BT completo	Ketik TerBal Utuh	Обратный перевод целиком Транскрибировать	所有回译听写
+keyTerms.word	Word	Mot	Palavra	Palabra	Kata	Слово	词
+viewMode.work	Work	Travailler	Trabalhar	Trabajo	Kerja	Работа	工作
+welcome.alone	Work Alone	Travailler seul	Trabalhar Sozinho	Trabajo en solitario	Bekerja Sendiri	Работа в одиночку	独自工作
+userListMode.workOffline	Work Offline	Travailler hors ligne	Trabalhar Offline	Trabajar sin conexión	Bekerja Tanpa Koneksi Internet	Работать офлайн	离线工作
+welcome.online	Work Online	Travail en ligne	Trabalhar Online	Trabajar en línea	Bekerja Secara Online	Работать онлайн	在线工作。
+cards.workflowProgression	Workflow Progression	Progression du flux de travail	Progressão do fluxo de trabalho	Progresión del flujo de trabajo	Kemajuan Alur Kerja	Прогрессия рабочего процесса	工作流程进展
+scriptureTableFilter.step	Workflow Step	Étape du flux de travail	Langkah alur kerja	Paso del flujo de trabajo	Langkah Alur Kerja	Шаг рабочего процесса	工作流步骤
+alert.yes	Yes	Oui	Sim	Sí	Ya	Да	是的
+voice.your	your	votre	seu	su	Anda	ваш	您的
