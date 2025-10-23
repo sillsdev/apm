@@ -36,12 +36,12 @@ import { PassageDetailContext } from '../../context/PassageDetailContext';
 import { PlayInPlayer } from '../../context/PlayInPlayer';
 import { useSaveComment } from '../../crud/useSaveComment';
 import { UnsavedContext } from '../../context/UnsavedContext';
-import MediaPlayer from '../MediaPlayer';
 import { OldVernVersion } from '../../control/OldVernVersion';
 import { useArtifactType } from '../../crud';
 import { useSelector } from 'react-redux';
 import { commentCardSelector } from '../../selector';
 import { useOrbitData } from '../../hoc/useOrbitData';
+import LimitedMediaPlayer from '../LimitedMediaPlayer';
 
 const StyledWrapper = styled(Box)<BoxProps>(() => ({
   display: 'flex',
@@ -291,39 +291,24 @@ export const CommentCard = (props: IProps) => {
   return (
     <StyledWrapper>
       <BoxBorderRow>
-        <Box id="user" sx={{ margin: 1 }}>
-          <UserAvatar {...props} userRec={author} />
-        </Box>
         <Box width="100%" flexGrow={1} display="flex" flexDirection="column">
           <BoxSpread>
-            <BoxRow>
-              {commentPlayId && mediaId === commentPlayId ? (
-                <BoxCol id="commentplayer">
-                  <MediaPlayer
-                    srcMediaId={mediaId === commentPlayId ? commentPlayId : ''}
-                    requestPlay={commentPlaying}
-                    onEnded={handleCommentPlayEnd}
-                    onCancel={handleCommentPlayEnd}
-                    onTogglePlay={handleCommentTogglePlay}
-                    controls={mediaId === commentPlayId}
-                  />
-                </BoxCol>
-              ) : (
-                <>
-                  {media && (!oldVernVer || oldVernVer === 0) && (
-                    <IconButton id="playcomment" onClick={handlePlayComment}>
-                      <PlayIcon />
-                    </IconButton>
-                  )}
-                  <BoxCol>
-                    <Box id="author">{author?.attributes?.name}</Box>
-                    <Box id="datecreated">
-                      {dateOrTime(comment.attributes.dateUpdated, lang)}
-                    </Box>
-                  </BoxCol>
-                </>
-              )}
-            </BoxRow>
+            <Box
+              id="user"
+              sx={{
+                margin: 1,
+                display: 'flex',
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 1,
+              }}
+            >
+              <UserAvatar {...props} userRec={author} small={true} />
+              <Box id="author">{author?.attributes?.name}</Box>
+              <Box id="datecreated">
+                {dateOrTime(comment.attributes.dateUpdated, lang)}
+              </Box>
+            </Box>
             {approvalStatus !== undefined &&
               (hasPermission(PermissionName.Mentor) ? (
                 <FormControlLabel
@@ -361,6 +346,30 @@ export const CommentCard = (props: IProps) => {
                 </Box>
               )}
           </BoxSpread>
+          <BoxRow>
+            {commentPlayId && mediaId === commentPlayId ? (
+              <BoxCol id="commentplayer">
+                <LimitedMediaPlayer
+                  srcMediaId={mediaId === commentPlayId ? commentPlayId : ''}
+                  requestPlay={commentPlaying}
+                  onEnded={handleCommentPlayEnd}
+                  onTogglePlay={handleCommentTogglePlay}
+                  controls={mediaId === commentPlayId}
+                  limits={{ start: 0, end: media?.attributes?.duration }}
+                  noRestart={true}
+                  noSkipBack={true}
+                />
+              </BoxCol>
+            ) : (
+              <>
+                {media && (!oldVernVer || oldVernVer === 0) && (
+                  <IconButton id="playcomment" onClick={handlePlayComment}>
+                    <PlayIcon />
+                  </IconButton>
+                )}
+              </>
+            )}
+          </BoxRow>
           <Box>
             {editing ? (
               <CommentEditor
