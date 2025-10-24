@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useGetGlobal, useGlobal } from '../../context/useGlobal';
 import { useLocation, useParams } from 'react-router-dom';
 import {
@@ -19,10 +19,10 @@ import {
   Box,
   Button,
 } from '@mui/material';
-import HomeIcon from '@mui/icons-material/Home';
 import SystemUpdateIcon from '@mui/icons-material/SystemUpdateAlt';
 import TableViewIcon from '@mui/icons-material/TableView';
 import ExitToAppIcon from '@mui/icons-material/ExitToApp';
+import SettingsIcon from '@mui/icons-material/Settings';
 import { API_CONFIG, isElectron } from '../../../api-variable';
 import { TokenContext } from '../../context/TokenProvider';
 import { UnsavedContext } from '../../context/UnsavedContext';
@@ -52,24 +52,25 @@ import {
   usePlan,
   useVProjectRead,
 } from '../../crud';
+import { ApmLogo } from '../../control/ApmLogo';
 import Busy from '../Busy';
 import CloudOffIcon from '@mui/icons-material/CloudOff';
 import CloudOnIcon from '@mui/icons-material/Cloud';
 import ProjectDownloadAlert from '../ProjectDownloadAlert';
+import TeamDialog from '../Team/TeamDialog';
+import { DialogMode } from '../../model';
 import { axiosPost } from '../../utils/axios';
 import { DateTime } from 'luxon';
 import { useSnackBar, AlertSeverity } from '../../hoc/SnackBar';
 import PolicyDialog from '../PolicyDialog';
-import JSONAPISource from '@orbit/jsonapi';
 import { mainSelector, sharedSelector, viewModeSelector } from '../../selector';
 import { useHome } from '../../utils/useHome';
+import { isHomeRoute } from '../../utils/routePaths';
 import { useOrbitData } from '../../hoc/useOrbitData';
 import packageJson from '../../../package.json';
 import { MainAPI } from '@model/main-api';
+import { TeamContext } from '../../context/TeamContext';
 const ipc = window?.api as MainAPI;
-
-const twoIcon = { minWidth: `calc(${48 * 2}px)` } as React.CSSProperties;
-const threeIcon = { minWidth: `calc(${48 * 3}px)` } as React.CSSProperties;
 
 interface INameProps {
   switchTo: boolean;
@@ -82,29 +83,16 @@ const ProjectName = ({ switchTo }: INameProps) => {
   const [plan] = useGlobal('plan'); //verified this is not used in a function 2/18/25
   const { prjId } = useParams();
   const navigate = useMyNavigate();
-  const { goHome } = useHome();
   const t: IViewModeStrings = useSelector(viewModeSelector, shallowEqual);
-
-  const handleHome = () => {
-    localStorage.removeItem(LocalKey.plan);
-    localStorage.removeItem('mode');
-    goHome();
-  };
 
   const handleAudioProject = () => {
     navigate(`/plan/${prjId}/0`);
   };
 
   const checkSavedAndGoAP = () => checkSavedFn(() => handleAudioProject());
-  const checkSavedAndGoHome = () => checkSavedFn(() => handleHome());
 
   return (
     <>
-      <Tooltip title={t.home}>
-        <IconButton id="home" onClick={checkSavedAndGoHome}>
-          <HomeIcon />
-        </IconButton>
-      </Tooltip>
       {plan && switchTo && (
         <Tooltip title={t.audioProject}>
           <IconButton id="project" onClick={checkSavedAndGoAP}>
@@ -140,17 +128,14 @@ export const AppHead = (props: IProps) => {
   const [orgRole] = useGlobal('orgRole'); //verified this is not used in a function 2/18/25
   const [connected, setConnected] = useGlobal('connected'); //verified this is not used in a function 2/18/25
   const [errorReporter] = useGlobal('errorReporter');
-  const [coordinator] = useGlobal('coordinator');
   const [user] = useGlobal('user');
   const [, setProject] = useGlobal('project');
   const [plan, setPlan] = useGlobal('plan'); //verified this is not used in a function 2/18/25
-  const remote = coordinator?.getSource('remote') as JSONAPISource;
   const [isOffline] = useGlobal('offline'); //verified this is not used in a function 2/18/25
   const [isOfflineOnly] = useGlobal('offlineOnly'); //verified this is not used in a function 2/18/25
   const tokenCtx = useContext(TokenContext);
   const ctx = useContext(UnsavedContext);
   const { checkSavedFn, startSave, toolsChanged, anySaving } = ctx.state;
-  const [cssVars, setCssVars] = useState<React.CSSProperties>(twoIcon);
   const [view, setView] = useState('');
   const [busy] = useGlobal('remoteBusy'); //verified this is not used in a function 2/18/25
   const [dataChangeCount] = useGlobal('dataChangeCount'); //verified this is not used in a function 2/18/25
@@ -183,6 +168,48 @@ export const AppHead = (props: IProps) => {
   const saving = useMemo(() => anySaving(), [toolsChanged]);
   const { showMessage } = useSnackBar();
   const tv: IViewModeStrings = useSelector(viewModeSelector, shallowEqual);
+  // Team context (may be undefined on routes not wrapped by TeamProvider)
+  // TeamContext may be absent (AppHead used outside TeamProvider on some routes)
+  const rawTeamCtx = useContext(TeamContext as any);
+  const teamCtx = (rawTeamCtx as { state?: any } | undefined)?.state
+    ? (rawTeamCtx as { state?: any })
+    : undefined;
+  const { teamId } = useParams();
+
+  const teamDisplayName = useMemo(() => {
+    if (!teamCtx?.state || !teamId) return undefined;
+    const { personalTeam, cardStrings, teams } = teamCtx.state;
+    if (teamId === personalTeam) return cardStrings?.personalProjects;
+    const teamRec = (teams || []).find((o: any) => o.id === teamId);
+    return teamRec?.attributes?.name;
+  }, [teamCtx, teamId]);
+
+  // Team settings dialog state and current team reference (only relevant when listing projects)
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const currentTeam = useMemo(() => {
+    if (!teamCtx?.state || !teamId) return undefined;
+    const { personalTeam, cardStrings, teams } = teamCtx.state;
+    if (teamId === personalTeam)
+      return {
+        id: personalTeam,
+        type: 'organization',
+        attributes: { name: cardStrings?.personalProjects || 'Personal' },
+      } as any;
+    return (teams || []).find((o: any) => o.id === teamId);
+  }, [teamCtx, teamId]);
+  const isPersonalTeam = useMemo(
+    () => !!teamCtx?.state && teamId === teamCtx.state.personalTeam,
+    [teamCtx, teamId]
+  );
+
+  // Determine if we are on the projects listing screen: rely on home flag instead of plan (plan may be preloaded by menu actions)
+  const isProjectsListing = useMemo(
+    () => home && /^\/projects\//.test(pathname),
+    [home, pathname]
+  );
+  // Show team name even if orgRole not yet established (Option B)
+  const showTeamListingHeader = isProjectsListing && Boolean(teamDisplayName);
+  const showProjectHeader = !showTeamListingHeader && !home && orgRole;
 
   const handleUserMenuAction = (
     what: string,
@@ -233,7 +260,7 @@ export const AppHead = (props: IProps) => {
   };
 
   const handleMenu = (what: string) => {
-    if (/\/team/i.test(pathname)) {
+    if (isHomeRoute(pathname)) {
       setProject('');
       setPlan('');
     }
@@ -439,15 +466,6 @@ export const AppHead = (props: IProps) => {
   }, [updates, version, lang]);
 
   useEffect(() => {
-    setCssVars(
-      latestVersion !== '' && latestVersion !== version && isElectron
-        ? threeIcon
-        : twoIcon
-    );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [remote, latestVersion]);
-
-  useEffect(() => {
     logError(Severity.info, errorReporter, pathname);
     setUpdateTipOpen(pathname === '/');
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -463,6 +481,15 @@ export const AppHead = (props: IProps) => {
   const handleUpdateOpen = () => setUpdateTipOpen(true);
   const handleUpdateClose = () => setUpdateTipOpen(pathname === '/');
   const handleTermsClose = () => setShowTerms('');
+
+  const { goHome } = useHome();
+  const handleHome = () => {
+    // localStorage.removeItem(LocalKey.plan);
+    localStorage.removeItem('mode');
+    goHome();
+  };
+
+  const checkSavedAndGoHome = () => checkSavedFn(() => handleHome());
 
   if (view === 'Error') navigate('/error');
   if (view === 'Logout') setTimeout(() => navigate('/logout'), 500);
@@ -485,7 +512,50 @@ export const AppHead = (props: IProps) => {
           <LinearProgress id="busy" variant="indeterminate" />
         )}
         <Toolbar>
-          {!home && orgRole && (
+          <Tooltip title={t.home}>
+            <IconButton
+              id="home"
+              onClick={checkSavedAndGoHome}
+              sx={{
+                p: 0,
+                width: 40,
+                height: 40,
+                mr: 2, // preserve spacing to the right of the logo
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <ApmLogo sx={{ width: 40, height: 40 }} />
+            </IconButton>
+          </Tooltip>
+          {showTeamListingHeader && (
+            <>
+              <Typography
+                variant="h6"
+                noWrap
+                sx={{ display: 'flex', alignItems: 'center' }}
+              >
+                {teamDisplayName}
+                {currentTeam && (
+                  <IconButton
+                    size="small"
+                    aria-label="team settings"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSettingsOpen(true);
+                    }}
+                    sx={{ ml: 1 }}
+                    data-testid="team-header-settings"
+                  >
+                    <SettingsIcon fontSize="small" color="action" />
+                  </IconButton>
+                )}
+              </Typography>
+              <GrowingSpacer />
+            </>
+          )}
+          {showProjectHeader && (
             <>
               <ProjectName switchTo={switchTo ?? false} />
               <GrowingSpacer />
@@ -495,7 +565,6 @@ export const AppHead = (props: IProps) => {
               <GrowingSpacer />
             </>
           )}
-          {home && <span style={cssVars}>{'\u00A0'}</span>}
           <GrowingSpacer />
           {(pathname === '/' || pathname.startsWith('/access')) && (
             <>
@@ -583,6 +652,25 @@ export const AppHead = (props: IProps) => {
           content={showTerms}
           onClose={handleTermsClose}
         />
+        {settingsOpen && currentTeam && (
+          <TeamDialog
+            mode={DialogMode.edit}
+            isOpen={settingsOpen}
+            onOpen={(open) => setSettingsOpen(open)}
+            onCommit={(v) => {
+              teamCtx?.state?.teamUpdate(v.team as any);
+              setSettingsOpen(false);
+            }}
+            values={{ team: currentTeam } as any}
+            disabled={teamCtx?.state?.isDeleting}
+            {...(!isPersonalTeam && {
+              onDelete: (org: any) => {
+                teamCtx?.state?.teamDelete(org);
+                setSettingsOpen(false);
+              },
+            })}
+          />
+        )}
       </>
     </AppBar>
   );

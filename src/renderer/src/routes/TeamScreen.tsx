@@ -1,4 +1,5 @@
 import { useState, useEffect, useContext, useRef } from 'react';
+import { homeRoute } from '../utils/routePaths';
 import { useLocation } from 'react-router-dom';
 import { useGlobal } from '../context/useGlobal';
 import { LocalKey, localUserKey, useHome } from '../utils';
@@ -59,7 +60,7 @@ export const TeamScreen = () => {
         if (loc !== localStorage.getItem(localUserKey(LocalKey.url))) {
           setView(loc);
         } else {
-          localStorage.setItem(localUserKey(LocalKey.url), '/team');
+          localStorage.setItem(localUserKey(LocalKey.url), homeRoute());
           resetProject();
         }
       }
