@@ -108,8 +108,11 @@ export function InvitationTable() {
     let checks = Array.from(newSelection.ids).map((id) =>
       parseInt(id as string)
     );
-    if (newSelection.type === 'exclude' && newSelection.ids.size === 0) {
-      checks = data.map((_r, i) => i);
+    if (newSelection.type === 'exclude') {
+      checks = [];
+      data.forEach((_r, i) => {
+        if (!newSelection.ids.has(i)) checks.push(i);
+      });
     }
     setCheck(checks);
     setSelectedRows(newSelection);
@@ -181,7 +184,7 @@ export function InvitationTable() {
               >
                 <MenuItem
                   id="inviteDelete"
-                  onClick={handleConfirmAction('Delete')}
+                  onClick={handleConfirmAction(t.delete)}
                 >
                   {t.delete}
                 </MenuItem>

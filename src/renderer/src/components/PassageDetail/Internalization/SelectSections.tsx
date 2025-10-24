@@ -230,7 +230,13 @@ export function SelectSections(props: IProps) {
   }, [plan, passages, sections, allBookData, openSections]);
 
   const handleRowSelectionChange = (newSelection: GridRowSelectionModel) => {
-    const chks = Array.from(newSelection.ids);
+    let chks = Array.from(newSelection.ids);
+    if (newSelection.type === 'exclude') {
+      chks = [];
+      data.forEach((_r, i) => {
+        if (!newSelection.ids.has(i)) chks.push(i);
+      });
+    }
     if (!eqSet(new Set(chks), new Set(checks))) {
       for (const c of chks) {
         let n = parseInt(c as string);

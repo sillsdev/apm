@@ -99,9 +99,15 @@ export const PassageChooser = (props: IProps) => {
   };
 
   const handleRowSelectionChange = (newSelection: GridRowSelectionModel) => {
-    const checks = Array.from(newSelection.ids).map((id) =>
+    let checks = Array.from(newSelection.ids).map((id) =>
       parseInt(id as string)
     );
+    if (newSelection.type === 'exclude') {
+      checks = [];
+      data.forEach((_r, i) => {
+        if (!newSelection.ids.has(i)) checks.push(i);
+      });
+    }
     let mRow = row;
     if (uploadMedia) {
       mRow = mediaRow(uploadMedia);
