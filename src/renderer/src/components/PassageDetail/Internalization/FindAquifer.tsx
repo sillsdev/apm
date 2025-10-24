@@ -334,8 +334,11 @@ export default function FindAquifer({ onClose }: IProps) {
     let chks = Array.from(newRows.ids)
       .map((id) => parseInt(id as string))
       .sort();
-    if (newRows.type === 'exclude' && newRows.ids.size === 0) {
-      chks = data.map((r) => r.id);
+    if (newRows.type === 'exclude') {
+      chks = [];
+      data.forEach((r, i) => {
+        if (!newRows.ids.has(i)) chks.push(r.id);
+      });
     }
     setChecks(chks);
     setSelectedRows(newRows);
