@@ -5,6 +5,8 @@ import {
   FormControlLabel,
   FormLabel,
   IconButton,
+  Slider,
+  Stack,
   styled,
   TextField,
   TextFieldProps,
@@ -74,13 +76,16 @@ const BoxBorderRow = styled(Box)<BoxProps>(() => ({
   flexGrow: 1,
   borderTop: '1px solid #dfdfdf',
 }));
-const BoxCol = styled(Box)<BoxProps>(({ theme }) => ({
+const MediaCol = styled(Box)<BoxProps>(({ theme }) => ({
   display: 'flex',
   width: '100%',
   flexGrow: 1,
   flexDirection: 'column',
   justifyContent: 'center',
   color: theme.palette.primary.dark,
+  '& .MuiChip-filled': {
+    backgroundColor: 'transparent',
+  },
   '& audio': {
     width: '100%',
     flexGrow: 1,
@@ -348,7 +353,7 @@ export const CommentCard = (props: IProps) => {
           </BoxSpread>
           <BoxRow>
             {commentPlayId && mediaId === commentPlayId ? (
-              <BoxCol id="commentplayer">
+              <MediaCol id="commentplayer">
                 <LimitedMediaPlayer
                   srcMediaId={mediaId === commentPlayId ? commentPlayId : ''}
                   requestPlay={commentPlaying}
@@ -358,16 +363,36 @@ export const CommentCard = (props: IProps) => {
                   limits={{ start: 0, end: media?.attributes?.duration }}
                   noRestart={true}
                   noSkipBack={true}
+                  noClose={true}
                 />
-              </BoxCol>
+              </MediaCol>
             ) : (
-              <>
-                {media && (!oldVernVer || oldVernVer === 0) && (
-                  <IconButton id="playcomment" onClick={handlePlayComment}>
-                    <PlayIcon />
+              media &&
+              (!oldVernVer || oldVernVer === 0) && (
+                <Stack
+                  direction="row"
+                  sx={{
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: '100%',
+                  }}
+                >
+                  <IconButton
+                    id="playcomment"
+                    onClick={handlePlayComment}
+                    sx={{ py: 0, pr: 0 }}
+                  >
+                    <PlayIcon fontSize="small" sx={{ color: 'text.primary' }} />
                   </IconButton>
-                )}
-              </>
+                  <Stack direction="row" sx={{ width: '100%', pr: 2, pl: 1 }}>
+                    <Slider
+                      sx={{ color: 'text.secondary' }}
+                      size="small"
+                      onClick={handlePlayComment}
+                    />
+                  </Stack>
+                </Stack>
+              )
             )}
           </BoxRow>
           <Box>
