@@ -270,20 +270,30 @@ export function LimitedMediaPlayer(props: IProps) {
               )}
               <IconButton
                 data-testid="play-pause"
-                sx={{ alignSelf: 'center', color: 'text.primary' }}
+                sx={{
+                  alignSelf: 'center',
+                  color: 'text.primary',
+                  m: '0!important',
+                  pb: '0!important',
+                  pt: '7px!important',
+                  pr: '0!important',
+                }}
                 onClick={handlePlayPause}
               >
                 {playing ? (
-                  <Pause fontSize="small" />
+                  <Pause fontSize="small" sx={{ color: 'text.secondary' }} />
                 ) : (
-                  <PlayArrow fontSize="small" />
+                  <PlayArrow
+                    fontSize="small"
+                    sx={{ color: 'text.secondary' }}
+                  />
                 )}
               </IconButton>
             </>
           }
           label={
-            <Stack direction="row" sx={{ px: 1 }}>
-              <Stack direction="column" sx={{ width: '100%' }}>
+            <Stack direction="row" sx={{ pr: 1, pl: 0 }}>
+              <Stack direction="column" sx={{ width: '100%', pl: 0 }}>
                 <Box
                   sx={{
                     display: 'flex',
