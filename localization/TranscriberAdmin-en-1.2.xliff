@@ -800,6 +800,13 @@
                <context context-type="sourcefile">addCard.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="cards.addNewTeam">
+            <source>Add New Team...</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">addCard.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="cards.addTeam">
             <source>Add Team</source>
             <target/>
@@ -1047,7 +1054,7 @@
             </context-group>
          </trans-unit>
          <trans-unit id="cards.newProject">
-            <source>New Audio Project</source>
+            <source>Add New Project...</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">addCard.tsx</context>
@@ -1216,6 +1223,13 @@
          </trans-unit>
          <trans-unit id="cards.sortProjects">
             <source>Sort Projects</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">ProjectMenu.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="cards.switchTeams">
+            <source>Switch Teams</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">ProjectMenu.tsx</context>
@@ -4159,6 +4173,13 @@
             <target/>
             <context-group>
                <context context-type="sourcefile">HelpMenu.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="main.home">
+            <source>Home</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">ViewMode.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="main.import">
@@ -9570,13 +9591,6 @@
          </trans-unit>
          <trans-unit id="viewMode.audioProject">
             <source>Audio Project Setup</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">ViewMode.tsx</context>
-            </context-group>
-         </trans-unit>
-         <trans-unit id="viewMode.home">
-            <source>Home</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">ViewMode.tsx</context>

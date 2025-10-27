@@ -688,6 +688,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="cards.addNewTeam">
+         <segment>
+            <source>Add New Team...</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="cards.addTeam">
          <segment>
             <source>Add Team</source>
@@ -900,7 +906,7 @@
       </unit>
       <unit id="cards.newProject">
          <segment>
-            <source>New Audio Project</source>
+            <source>Add New Project...</source>
             <target/>
          </segment>
       </unit>
@@ -1045,6 +1051,12 @@
       <unit id="cards.sortProjects">
          <segment>
             <source>Sort Projects</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="cards.switchTeams">
+         <segment>
+            <source>Switch Teams</source>
             <target/>
          </segment>
       </unit>
@@ -3565,6 +3577,12 @@
       <unit id="main.hierarchicalSample">
          <segment>
             <source>Scripture hierarchical sample spreadsheet</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="main.home">
+         <segment>
+            <source>Home</source>
             <target/>
          </segment>
       </unit>
@@ -8203,12 +8221,6 @@
       <unit id="viewMode.audioProject">
          <segment>
             <source>Audio Project Setup</source>
-            <target/>
-         </segment>
-      </unit>
-      <unit id="viewMode.home">
-         <segment>
-            <source>Home</source>
             <target/>
          </segment>
       </unit>

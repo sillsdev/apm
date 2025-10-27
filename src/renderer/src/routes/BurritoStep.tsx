@@ -1,4 +1,5 @@
 import { Box, Grid, Typography } from '@mui/material';
+import { homeRoute } from '../utils/routePaths';
 import { useLocation, useParams } from 'react-router-dom';
 import AppHead from '../components/App/AppHead';
 import { TeamProvider } from '../context/TeamContext';
@@ -22,7 +23,7 @@ export function BurritoStep() {
       <TeamProvider>
         <Box id="BurritoScreen" sx={{ display: 'flex', paddingTop: '80px' }}>
           <Grid container alignItems="center">
-            <AltButton onClick={() => setView('/team')}>Teams</AltButton>
+            <AltButton onClick={() => setView(homeRoute())}>Teams</AltButton>
             <AltButton onClick={() => setView(`/burrito/${teamId}`)}>
               Back
             </AltButton>
