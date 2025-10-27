@@ -7,7 +7,7 @@ import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Paper from '@mui/material/Paper';
-import { Box, Grid, GridProps, IconButton } from '@mui/material';
+import { Box, Grid, IconButton } from '@mui/material';
 import { elemOffset, generateUUID } from '../../../utils';
 import { useSelector, shallowEqual } from 'react-redux';
 import { IKeyTermsStrings, ISharedStrings } from '../../../model';
@@ -19,10 +19,10 @@ import { UnsavedContext } from '../../../context/UnsavedContext';
 import { PassageDetailContext } from '../../../context/PassageDetailContext';
 import { PlayInPlayer } from '../../../context/PlayInPlayer';
 import Confirm from '../../AlertDialog';
-import MediaPlayer from '../../MediaPlayer';
 import AddIcon from '@mui/icons-material/Add';
 import { useCallback, useContext } from 'react';
 import { useStepPermissions } from '../../../utils/useStepPermission';
+import AudioProgressButton from '../../AudioProgressButton';
 
 const StyledTableCell = styled(TableCell)(({ theme }) => ({
   [`&.${tableCellClasses.head}`]: {
@@ -46,16 +46,6 @@ const StyledTableRow = styled(TableRow)(({ theme }) => ({
   // hide last border
   '&:last-child td, &:last-child th': {
     border: 0,
-  },
-}));
-
-const GridContainerCol = styled(Grid)<GridProps>(({ theme }) => ({
-  display: 'flex',
-  flexDirection: 'row',
-  color: theme.palette.primary.dark,
-  width: 'inherit',
-  '& audio': {
-    height: '32px',
   },
 }));
 
@@ -268,11 +258,19 @@ export default function KeyTermTable({
                     >
                       <KeyTermChip
                         label={t.label}
-                        playerOpen={Boolean(
+                        player={
                           commentPlayId &&
-                            mediaId === commentPlayId &&
-                            t.mediaId === mediaId
-                        )}
+                          mediaId === commentPlayId &&
+                          t.mediaId === mediaId ? (
+                            <AudioProgressButton
+                              srcMediaId={mediaId}
+                              requestPlay={commentPlaying}
+                              onEnded={handlePlayEnd}
+                              onCancel={handlePlayEnd}
+                              onTogglePlay={handleTogglePlay}
+                            />
+                          ) : undefined
+                        }
                         onPlay={
                           t.mediaId ? handleChipPlay(t.mediaId) : undefined
                         }
@@ -285,23 +283,6 @@ export default function KeyTermTable({
                             : undefined
                         }
                       />
-                      {commentPlayId &&
-                        mediaId === commentPlayId &&
-                        t.mediaId === mediaId && (
-                          <GridContainerCol id="keyTermPlayer">
-                            <MediaPlayer
-                              srcMediaId={
-                                mediaId === commentPlayId ? commentPlayId : ''
-                              }
-                              requestPlay={commentPlaying}
-                              onEnded={handlePlayEnd}
-                              onCancel={handlePlayEnd}
-                              onTogglePlay={handleTogglePlay}
-                              controls={mediaId === commentPlayId}
-                              sx={{ mb: 1 }}
-                            />
-                          </GridContainerCol>
-                        )}
                     </Box>
                   ))}
                   {row.target.length > 0 &&
