@@ -605,7 +605,7 @@ function WSAudioPlayer(props: IProps) {
     setHasRegion(0);
     if (blob) {
       if (setBusy) setBusy(true); //turned off on ready
-      wsLoad(blob, undefined);
+      wsLoad(blob, 0);
     } else {
       if (setBusy) setBusy(false);
       wsClear(true);
@@ -693,9 +693,10 @@ function WSAudioPlayer(props: IProps) {
     }
   }
 
-  function onWSReady() {
-    setReady(true);
+  function onWSReady(loadingAnother: boolean) {
     setDuration(wsDuration());
+    if (loadingAnother) return;
+    setReady(true);
     if (!recordingRef.current) setPxPerSec(wsFillPx());
     if (segmentsRef.current) loadRegions();
 

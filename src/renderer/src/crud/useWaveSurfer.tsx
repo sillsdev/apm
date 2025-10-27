@@ -30,7 +30,7 @@ export interface IMarker {
 export function useWaveSurfer(
   allowSegment: NamedRegions | undefined, //just used for debug logging
   container: any,
-  onReady: () => void = noop,
+  onReady: (loadingAnother: boolean) => void = noop,
   onProgress: (progress: number) => void = noop,
   onRegion: (count: number, newRegion: boolean) => void = noop,
   onCanUndo: (canUndo: boolean) => void = noop,
@@ -49,6 +49,7 @@ export function useWaveSurfer(
   const progressRef = useRef(0);
   const [Regions, setRegions] = useState<RegionsPlugin>();
   const blobToLoad = useRef<Blob>();
+  const positionToLoad = useRef<number | undefined>(undefined);
   const loadRequests = useRef(0);
   const playingRef = useRef(false);
 
@@ -66,10 +67,10 @@ export function useWaveSurfer(
   const [actualPxPerSec, setActualPxPerSec] = useState(0);
   const blobRef = useRef<Blob>();
   const blobAudioRef = useRef<AudioBuffer>();
-  const positionRef = useRef(-1);
+  const positionRef = useRef<number | undefined>(undefined);
   const loadingRef = useRef(false);
-  const [recording, setRecordingx] = useState(false);
   const recordingRef = useRef(false);
+  const currentBlobUrlRef = useRef<string | undefined>();
   const plugins = useMemo(
     () => {
       const regionsPlugin = RegionsPlugin.create();
@@ -92,9 +93,9 @@ export function useWaveSurfer(
   //put these all in refs to be used in functions
   const { wavesurfer, isPlaying, currentTime, isReady } = useWavesurfer({
     container: container, //containerRef as React.RefObject<HTMLDivElement>,
-    progressColor: '#96c1c1',
-    waveColor: '#9fc5e8',
-    cursorColor: '#1b0707',
+    progressColor: '#96c1c1', //bluegray
+    waveColor: '#9fc5e8', //kinda blue purple
+    cursorColor: '#1b0707', //mostly black
     url: playerUrl,
     height: height,
     normalize: true,
@@ -232,11 +233,17 @@ export function useWaveSurfer(
       isReadyRef.current = true;
       //recording also sends ready
       if (loadRequests.current > 0) loadRequests.current--;
+      //do these even if we're going to load another to show progress
+      setDuration(wavesurferRef.current?.getDuration() ?? durationRef.current);
+      if (positionRef.current !== undefined && positionRef.current >= 0) {
+        wsGoto(positionRef.current);
+      } else {
+        wsGoto(durationRef.current);
+      }
+
+      loadingRef.current = false;
 
       if (!loadRequests.current) {
-        setDuration(
-          wavesurferRef.current?.getDuration() ?? durationRef.current
-        );
         if (!regionsLoadedRef.current) {
           //we need to call this even if undefined to setup regions variables
           regionsLoadedRef.current = loadRegions(
@@ -246,13 +253,12 @@ export function useWaveSurfer(
         }
         setupZoom();
         if (playingRef.current) setPlaying(true);
-        if (positionRef.current >= 0) wsGoto(positionRef.current);
-        else wsGoto(durationRef.current);
-        onReady();
       } else {
         //requesting load of blob that came in while this one was loading
         wsLoad();
       }
+      //do this too even if we're going to go load another
+      onReady(loadRequests.current > 0);
     };
 
     wavesurferRef.current = wavesurfer;
@@ -315,6 +321,21 @@ export function useWaveSurfer(
         ws.destroy();
         wavesurferRef.current = null;
       }
+
+      // Clean up AudioContext
+      if (audioContextRef.current) {
+        audioContextRef.current.close();
+        audioContextRef.current = undefined;
+      }
+
+      // Clear audio buffer references
+      blobAudioRef.current = undefined;
+      setUndoBuffer(undefined);
+
+      // Clear blob references and revoke blob URLs
+      revokeCurrentBlobUrl();
+      blobRef.current = undefined;
+      setPlayerUrl(undefined);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -366,8 +387,20 @@ export function useWaveSurfer(
     if (isReadyRef.current) wavesurferRef.current?.zoom(zoom);
   }, 10);
 
-  const loadBlob = async (blob?: Blob, position: number = 0) => {
+  // Helper function to revoke current blob URL
+  const revokeCurrentBlobUrl = () => {
+    if (currentBlobUrlRef.current) {
+      URL.revokeObjectURL(currentBlobUrlRef.current);
+      currentBlobUrlRef.current = undefined;
+    }
+  };
+
+  const loadBlob = async (blob?: Blob, position?: number) => {
     positionRef.current = position;
+
+    // Revoke previous blob URL if it exists
+    revokeCurrentBlobUrl();
+
     if (!blob) {
       setPlayerUrl(playerUrl === '' ? undefined : '');
       blobAudioRef.current = undefined;
@@ -390,20 +423,23 @@ export function useWaveSurfer(
           blobAudioRef.current?.length / blobAudioRef.current?.sampleRate ||
           0
       );
+      //await wavesurferRef.current?.loadBlob(blob); // -- this says it is no longer supported but it works
 
+      // Create blob URL for wavesurfer
+      const blobUrl = URL.createObjectURL(blob);
+      currentBlobUrlRef.current = blobUrl;
       //setPlayerUrl(blobUrl); //this is slow
-      await wavesurferRef.current?.loadBlob(blob); // -- this says it is no longer supported but it works
+      await wavesurferRef.current?.load(blobUrl); //this works and is the approved way
     } catch (error) {
       console.error('Error loading blob:', error);
-
-      throw error;
-    } finally {
       loadingRef.current = false;
+      // Revoke the blob URL if loading failed
+      revokeCurrentBlobUrl();
+      throw error;
     }
   };
-  const wsLoad = (blob?: Blob, regions: string = '') => {
-    setDuration(0);
-    if (regions) inputRegionsRef.current = parseRegions(regions);
+
+  const wsLoad = (blob?: Blob, position?: number) => {
     regionsLoadedRef.current = false;
     if (!wavesurferRef.current) {
       blobToLoad.current = blob;
@@ -412,13 +448,14 @@ export function useWaveSurfer(
       if (loadRequests.current) {
         //queue this
         blobToLoad.current = blob;
+        positionToLoad.current = position;
         loadRequests.current = 2; //if there was another, we'll bypass it
       } else {
-        loadBlob(blob);
+        loadBlob(blob, position);
         loadRequests.current = 1;
       }
     } else if (blobToLoad.current) {
-      loadBlob(blobToLoad.current);
+      loadBlob(blobToLoad.current, positionToLoad.current);
       blobToLoad.current = undefined;
     } else {
       loadRequests.current--;
@@ -518,8 +555,8 @@ export function useWaveSurfer(
     });
   }
 
-  async function loadDecoded(audioBuffer: any, position: number) {
-    loadBlob(await audioBufferToWavBlob(audioBuffer), position);
+  async function loadDecoded(audioBuffer: AudioBuffer, position?: number) {
+    wsLoad(await audioBufferToWavBlob(audioBuffer), position);
   }
   const copyOriginal = () => {
     if (!wavesurferRef.current) return undefined;
@@ -552,7 +589,7 @@ export function useWaveSurfer(
 
     const originalBuffer = blobAudioRef.current;
     if (endposition === undefined || !originalBuffer) {
-      await loadDecoded(newBuffer, startposition);
+      await loadDecoded(newBuffer);
       return newBuffer.length / newBuffer.sampleRate;
     }
 
@@ -606,20 +643,8 @@ export function useWaveSurfer(
       throw error;
     }
   };
-  useEffect(() => {
-    const getWaveColor = () => {
-      if (recording) return '#eea810';
-      if (isPlayingRef.current) return '#44ff44';
-      return '#A8DBA8';
-    };
-    if (wavesurfer)
-      wavesurfer.setOptions({
-        waveColor: getWaveColor(),
-      });
-  }, [recording, isPlaying, wavesurfer]);
 
   const setRecording = (value: boolean) => {
-    setRecordingx(value);
     recordingRef.current = value;
   };
   const wsStartRecord = () => {
