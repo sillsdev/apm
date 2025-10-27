@@ -1,19 +1,19 @@
 import { Chip, IconButton, Tooltip } from '@mui/material';
-import PlayIcon from '@mui/icons-material/PlayArrow';
 import { shallowEqual, useSelector } from 'react-redux';
 import { keyTermsSelector } from '../../../selector';
 import { IKeyTermsStrings } from '../../../model';
+import PlayIcon from '@mui/icons-material/PlayArrow';
 
 interface IProps {
   label: string;
-  playerOpen?: boolean;
+  player?: React.ReactNode;
   onPlay?: () => void;
   onClick?: () => void;
   onDelete?: () => void;
 }
 export const KeyTermChip = ({
   label,
-  playerOpen,
+  player,
   onPlay,
   onClick,
   onDelete,
@@ -23,13 +23,17 @@ export const KeyTermChip = ({
   return (
     <Chip
       icon={
-        onPlay && !playerOpen ? (
-          <Tooltip title={t.play}>
+        <Tooltip title={t.play}>
+          {!onPlay ? (
+            <></>
+          ) : !player ? (
             <IconButton onClick={onPlay}>
               <PlayIcon fontSize="small" />
             </IconButton>
-          </Tooltip>
-        ) : undefined
+          ) : (
+            (player as React.ReactElement)
+          )}
+        </Tooltip>
       }
       label={label}
       onClick={onClick}
