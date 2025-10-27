@@ -5,6 +5,7 @@ import React, {
   useMemo,
   Suspense,
 } from 'react';
+import { homeRoute } from '../utils/routePaths';
 import { useGlobal } from '../context/useGlobal';
 import { useLocation, useParams } from 'react-router-dom';
 import { Grid, debounce, Paper, Box, SxProps, Stack } from '@mui/material';
@@ -348,7 +349,7 @@ export const PassageDetail = () => {
       const tmp = setProjectType(projectId);
       if (!tmp) {
         // If user is set but we don't have this project, go to the team screen
-        setView('/team');
+        setView(homeRoute());
       }
     }
     /* eslint-disable-next-line react-hooks/exhaustive-deps */
