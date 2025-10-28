@@ -21,7 +21,7 @@ import { privacyContent } from './privacyContent';
 import { default as Detail } from './PassageDetail';
 import { default as Auth } from '../hoc/PrivateRoute';
 import { isElectron } from '../../api-variable';
-import { TEAMS } from '../utils/routePaths';
+import { MOBILETEAM } from '../utils/routePaths';
 import { ErrorPage } from '../components/ErrorPage';
 import { ScriptureBurrito } from './ScriptureBurrito';
 import { BurritoStep } from './BurritoStep';
@@ -56,7 +56,8 @@ const routes = createRoutesFromElements([
       path="/createProfile"
       element={<Auth el={<CreateProfile />} />}
     />
-    <Route key="teams" path={TEAMS} element={<Auth el={<Teams />} />} />
+    <Route key="teams" path={MOBILETEAM} element={<Auth el={<Teams />} />} />
+    <Route key="team" path="/team" element={<Auth el={<Team />} />} />
     <Route
       key="burrito-books"
       path="/burrito/:teamId/books"
