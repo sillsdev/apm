@@ -8,7 +8,7 @@ import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Paper from '@mui/material/Paper';
 import { Box, Grid, IconButton } from '@mui/material';
-import { elemOffset, generateUUID } from '../../../utils';
+import { elemOffset, generateUUID, logError, Severity } from '../../../utils';
 import { useSelector, shallowEqual } from 'react-redux';
 import { IKeyTermsStrings, ISharedStrings } from '../../../model';
 import { keyTermsSelector, sharedSelector } from '../../../selector';
@@ -22,7 +22,9 @@ import Confirm from '../../AlertDialog';
 import AddIcon from '@mui/icons-material/Add';
 import { useCallback, useContext } from 'react';
 import { useStepPermissions } from '../../../utils/useStepPermission';
-import AudioProgressButton from '../../AudioProgressButton';
+import { LoadAndPlay } from '../../../components/LoadAndPLay';
+import AudioProgressButton from '../../../components/AudioProgressButton';
+import { useGlobal } from '../../../context/useGlobal';
 
 const StyledTableCell = styled(TableCell)(({ theme }) => ({
   [`&.${tableCellClasses.head}`]: {
@@ -88,6 +90,7 @@ export default function KeyTermTable({
   const [adding, setAdding] = React.useState<number[]>([]);
   const { saveCompleted } = React.useContext(UnsavedContext).state;
   const { canDoSectionStep } = useStepPermissions();
+  const [reporter] = useGlobal('errorReporter');
   const {
     setSelected,
     commentPlaying,
@@ -142,6 +145,10 @@ export default function KeyTermTable({
   };
 
   const handleChipPlay = (mediaId: string) => () => {
+    if (!mediaId) {
+      logError(Severity.error, reporter, `missing term`);
+      return;
+    }
     setMediaId(mediaId);
     if (mediaId === commentPlayId) {
       setCommentPlaying(!commentPlaying);
@@ -258,15 +265,15 @@ export default function KeyTermTable({
                     >
                       <KeyTermChip
                         label={t.label}
-                        player={
+                        Player={
                           commentPlayId &&
                           mediaId === commentPlayId &&
                           t.mediaId === mediaId ? (
-                            <AudioProgressButton
+                            <LoadAndPlay
+                              Component={AudioProgressButton}
                               srcMediaId={mediaId}
                               requestPlay={commentPlaying}
                               onEnded={handlePlayEnd}
-                              onCancel={handlePlayEnd}
                               onTogglePlay={handleTogglePlay}
                             />
                           ) : undefined

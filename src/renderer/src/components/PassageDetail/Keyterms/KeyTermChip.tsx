@@ -6,14 +6,14 @@ import PlayIcon from '@mui/icons-material/PlayArrow';
 
 interface IProps {
   label: string;
-  player?: React.ReactNode;
+  Player?: React.ReactElement;
   onPlay?: () => void;
   onClick?: () => void;
   onDelete?: () => void;
 }
 export const KeyTermChip = ({
   label,
-  player,
+  Player,
   onPlay,
   onClick,
   onDelete,
@@ -26,12 +26,12 @@ export const KeyTermChip = ({
         <Tooltip title={t.play}>
           {!onPlay ? (
             <></>
-          ) : !player ? (
+          ) : !Player ? (
             <IconButton onClick={onPlay}>
               <PlayIcon fontSize="small" />
             </IconButton>
           ) : (
-            (player as React.ReactElement)
+            Player
           )}
         </Tooltip>
       }
