@@ -275,16 +275,19 @@ function WSAudioPlayer(props: IProps) {
     setPxPerSecx(px);
   };
 
-  const onZoom = useCallback(
-    (px: number) => {
-      if (!allowZoom) return;
-      px = Math.round(px * 10) / 10;
-      if (px !== pxPerSecRef.current) {
-        setPxPerSec(px);
-      }
-    },
+  const onZoom = useMemo(
+    () =>
+      allowZoom
+        ? (px: number) => {
+            px = Math.round(px * 10) / 10;
+            if (px !== pxPerSecRef.current) {
+              setPxPerSec(px);
+            }
+          }
+        : undefined,
     [allowZoom]
   );
+
   const singleRegionOnly = useMemo(() => {
     return allowRecord || !allowSegment;
   }, [allowRecord, allowSegment]);
@@ -396,7 +399,7 @@ function WSAudioPlayer(props: IProps) {
     onWSCanUndo,
     onWSPlayStatus,
     onInteraction,
-    allowZoom ? onZoom : undefined,
+    onZoom,
     onMarkerClick,
     calculatedHeight,
     singleRegionOnly,

@@ -673,7 +673,6 @@ export function useWaveSurferRegions(
       region.end = roundToFiveDecimals(region.end);
       region.color = randomColor(0.1);
       region.drag = false;
-      region.loop = loop;
       region.content = region.label;
       const r = Regions?.addRegion(region);
       region.id = r?.id;
@@ -717,7 +716,6 @@ export function useWaveSurferRegions(
       end: ret.end,
       drag: false,
       color: randomColor(0.1),
-      loop: r?.loop ?? false,
     };
     const sortedIds: string[] = getSortedIds(); //need to get sorted ids before adding the new region
     const newRegion = Regions?.addRegion(region);
@@ -735,7 +733,6 @@ export function useWaveSurferRegions(
         end: split,
         drag: false,
         color: randomColor(0.1),
-        loop: false,
       };
       const firstRegion = Regions?.addRegion(region);
       newSorted.push(firstRegion?.id ?? 'fr');
@@ -743,7 +740,7 @@ export function useWaveSurferRegions(
     }
     setPrevNext(newSorted);
 
-    if (r && r.loop && ret.newEnd < ret.end)
+    if (r && loopingRef.current && ret.newEnd < ret.end)
       //&& playing
       goto(ret.start + 0.01);
     onRegion(numRegions(), true);
@@ -963,7 +960,7 @@ export function useWaveSurferRegions(
   function justPlayRegion(progress: number) {
     if (
       currentRegion() &&
-      !currentRegion().loop &&
+      !loopingRef.current &&
       roundToTenths(currentRegion().start) <= roundToTenths(progress) && //account for discussion topic rounding
       currentRegion().end > progress + 0.01
     ) {
