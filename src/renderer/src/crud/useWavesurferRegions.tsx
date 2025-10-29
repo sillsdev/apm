@@ -88,6 +88,9 @@ export function useWaveSurferRegions(
   const lastDoubleClickTimeRef = useRef<number>(0);
   const currentRegionOriginalColorRef = useRef<string>(''); // Store the original color of the current region
 
+  // Store finish handler reference for cleanup
+  const finishHandlerRef = useRef<(() => void) | undefined>();
+
   const CLICK_DEBOUNCE_MS = 100; // Minimum time between clicks
   const CURRENT_REGION_COLOR = (theme.palette as any).custom.currentRegion; // Green color for current region
   const NEXT_BORDER_COLOR = 'red';
@@ -199,10 +202,24 @@ export function useWaveSurferRegions(
     if (!isInRegion(reg, ws?.getCurrentTime() ?? progress())) goto(r.start);
     playRegion(reg);
   };
+  // Cleanup function to remove all event listeners
+  const cleanupEventListeners = () => {
+    // Remove all Regions event listeners
+    if (Regions) {
+      Regions.unAll();
+    }
+    // Remove finish handler from Wavesurfer instance
+    if (finishHandlerRef.current && wsRef.current) {
+      wsRef.current.un('finish', finishHandlerRef.current);
+      finishHandlerRef.current = undefined;
+    }
+  };
+
   useEffect(() => {
     clearClickProcessingStates();
+
     return () => {
-      if (Regions) Regions.unAll();
+      cleanupEventListeners();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -213,6 +230,9 @@ export function useWaveSurferRegions(
 
   const setupRegions = (ws: WaveSurfer) => {
     if (ws && Regions) {
+      // Clean up existing listeners before setting up new ones
+      cleanupEventListeners();
+
       wsRef.current = ws;
       if (singleRegionRef.current) {
         Regions.enableDragSelection({
@@ -340,6 +360,18 @@ export function useWaveSurferRegions(
       Regions.on('region-double-clicked', function (r: Region) {
         handleRegionDoubleClick(r);
       });
+
+      const finishHandler = function () {
+        if (
+          loopingRef.current &&
+          currentRegion() === loopingRegionRef.current &&
+          isPlaying()
+        ) {
+          currentRegion()?.play();
+        }
+      };
+      finishHandlerRef.current = finishHandler;
+      ws.on('finish', finishHandler);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   };
@@ -414,6 +446,7 @@ export function useWaveSurferRegions(
   const mergeVerses = (autosegs: IRegion[]): IRegion[] => {
     if (!verses) return autosegs;
     const versesegs = parseRegions(verses)?.regions;
+
     if (!versesegs || !versesegs.length) return autosegs;
     if (!autosegs || autosegs.length === 0) return versesegs;
     const minLen: number = paramsRef.current?.segLenThreshold || 0.5;
@@ -900,7 +933,7 @@ export function useWaveSurferRegions(
     });
   };
 
-  const wsLoopRegion = (loop: boolean) => {
+  const regLoopRegion = (loop: boolean) => {
     loopingRef.current = loop;
     return loop;
   };
@@ -964,7 +997,7 @@ export function useWaveSurferRegions(
     wsAddMarker,
     wsClearMarkers,
     wsPlayRegion,
-    wsLoopRegion,
+    regLoopRegion,
     clearRegions,
     loadRegions,
     justPlayRegion,
