@@ -118,18 +118,18 @@ export function useWaveSurfer(
     isPlayingRef.current = isPlaying;
   }, [isPlaying]);
 
+  // Debounce the progress callback to prevent excessive re-renders
+  const debouncedProgressCallback = debounce((value: number) => {
+    onProgress(value);
+  }, 200);
+
+  const setProgress = (value: number) => {
+    progressRef.current = value;
+    debouncedProgressCallback(value);
+  };
+
   useEffect(() => {
     const roundToFiveDecimals = (n: number) => Math.round(n * 100000) / 100000;
-
-    // Debounce the progress callback to prevent excessive re-renders
-    const debouncedProgressCallback = debounce((value: number) => {
-      onProgress(value);
-    }, 200); // 200ms debounce
-
-    const setProgress = (value: number) => {
-      progressRef.current = value;
-      debouncedProgressCallback(value);
-    };
 
     if (
       !loadingRef.current ||
@@ -219,7 +219,6 @@ export function useWaveSurfer(
           if (!playingRegion) {
             //default play (which will loop region if looping is on)
             resetPlayingRegion();
-            //can use isPlayingRef.current here instead?
             if (!wavesurferRef.current?.isPlaying())
               wavesurferRef.current?.play();
           }
