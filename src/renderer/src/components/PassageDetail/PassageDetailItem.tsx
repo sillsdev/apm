@@ -493,7 +493,7 @@ export function PassageDetailItem(props: IProps) {
                 </Box>
                 <Box>
                   <Box sx={rowProp}>
-                    <Box>
+                    <Box sx={{ width: '100%' }}>
                       <Box
                         id="playselect"
                         sx={{
@@ -528,6 +528,7 @@ export function PassageDetailItem(props: IProps) {
                             </IconButton>
                           </LightTooltip>
                         )}
+                        <Box sx={{ width: '40px' }} />
                       </PlayerRow>
                     </Box>
                   </Box>
