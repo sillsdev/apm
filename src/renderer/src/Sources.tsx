@@ -163,7 +163,7 @@ export const Sources = async (
   errorReporter: typeof Bugsnag | undefined,
   orbitRetries: number,
   setUser: (id: string) => void,
-  setProjectsLoaded: (valud: string[]) => void,
+  setProjectsLoaded: (value: string[]) => void,
   orbitError: (ex: IApiError) => void,
   setOrbitRetries: (r: number) => void,
   setLang: (locale: string) => void,

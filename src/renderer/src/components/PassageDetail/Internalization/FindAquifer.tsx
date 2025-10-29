@@ -336,8 +336,8 @@ export default function FindAquifer({ onClose }: IProps) {
       .sort();
     if (newRows.type === 'exclude') {
       chks = [];
-      data.forEach((r, i) => {
-        if (!newRows.ids.has(i)) chks.push(r.id);
+      data.forEach((r) => {
+        if (!newRows.ids.has(r.id)) chks.push(r.id);
       });
     }
     setChecks(chks);
