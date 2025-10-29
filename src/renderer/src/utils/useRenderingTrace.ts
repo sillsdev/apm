@@ -35,7 +35,6 @@ function useRenderingTrace<
       }
       return acc;
     }, {});
-
     if (Object.keys(changedProps).length > 0) {
       // eslint-disable-next-line no-console
       console[level](`[${componentName}] Changed props:`, changedProps);

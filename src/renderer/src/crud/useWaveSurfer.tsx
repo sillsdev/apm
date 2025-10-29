@@ -52,7 +52,7 @@ export function useWaveSurfer(
   const positionToLoad = useRef<number | undefined>(undefined);
   const loadRequests = useRef(0);
   const playingRef = useRef(false);
-
+  const loopingRef = useRef(false);
   const durationRef = useRef(0);
   const isReadyRef = useRef(false);
   const wavesurferRef = useRef<WaveSurfer | null>(null);
@@ -71,55 +71,73 @@ export function useWaveSurfer(
   const loadingRef = useRef(false);
   const recordingRef = useRef(false);
   const currentBlobUrlRef = useRef<string | undefined>();
-  const plugins = useMemo(
-    () => {
-      const regionsPlugin = RegionsPlugin.create();
-      setRegions(regionsPlugin);
 
-      const zoomPlugin = onZoom
-        ? ZoomPlugin.create({
-            scale: 0.5,
-            maxZoom: maxZoom,
-          })
-        : undefined;
-      if (zoomPlugin)
-        return [Timeline.create({}), zoomPlugin, regionsPlugin].filter(Boolean);
-      return [Timeline.create({}), regionsPlugin].filter(Boolean);
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    []
+  // Create plugins outside of useMemo to ensure they're stable
+  const regionsPlugin = useMemo(() => {
+    const plugin = RegionsPlugin.create();
+    setRegions(plugin);
+    return plugin;
+  }, []);
+
+  const timelinePlugin = useMemo(() => Timeline.create({}), []);
+
+  const zoomPlugin = useMemo(() => {
+    if (!onZoom) return undefined;
+    return ZoomPlugin.create({
+      scale: 0.5,
+      maxZoom: maxZoom,
+    });
+  }, [onZoom]);
+
+  const plugins = useMemo(() => {
+    if (zoomPlugin) return [timelinePlugin, regionsPlugin, zoomPlugin];
+    else return [timelinePlugin, regionsPlugin];
+  }, [timelinePlugin, regionsPlugin, zoomPlugin]);
+
+  // Create a stable configuration object
+  const wavesurferConfig = useMemo(
+    () => ({
+      container: container,
+      progressColor: '#96c1c1', //bluegray
+      waveColor: '#9fc5e8', //kinda blue purple
+      cursorColor: '#1b0707', //mostly black
+      url: playerUrl,
+      height: height,
+      normalize: true,
+      plugins: plugins,
+      fillParent: true,
+    }),
+    [container, height, plugins, playerUrl]
   );
 
   //put these all in refs to be used in functions
-  const { wavesurfer, isPlaying, currentTime, isReady } = useWavesurfer({
-    container: container, //containerRef as React.RefObject<HTMLDivElement>,
-    progressColor: '#96c1c1', //bluegray
-    waveColor: '#9fc5e8', //kinda blue purple
-    cursorColor: '#1b0707', //mostly black
-    url: playerUrl,
-    height: height,
-    normalize: true,
-    plugins: plugins,
-    fillParent: true, // This ensures the waveform fills the container
-  });
+  const { wavesurfer, isPlaying, currentTime } =
+    useWavesurfer(wavesurferConfig);
 
   useEffect(() => {
     isPlayingRef.current = isPlaying;
   }, [isPlaying]);
 
-  useEffect(() => {
-    isReadyRef.current = isReady;
-  }, [isReady]);
+  // Debounce the progress callback to prevent excessive re-renders
+  const debouncedProgressCallback = debounce((value: number) => {
+    onProgress(value);
+  }, 200);
+
+  const setProgress = (value: number) => {
+    progressRef.current = value;
+    debouncedProgressCallback(value);
+  };
 
   useEffect(() => {
     const roundToFiveDecimals = (n: number) => Math.round(n * 100000) / 100000;
-    const setProgress = (value: number) => {
-      progressRef.current = value;
-      onProgress(value);
-    };
-    if (!loadingRef.current || currentTime > 0) {
+
+    if (
+      !loadingRef.current ||
+      (currentTime > 0 && progressRef.current !== currentTime)
+    ) {
       setProgress(roundToFiveDecimals(currentTime));
     }
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentTime]);
 
@@ -145,7 +163,11 @@ export function useWaveSurfer(
 
   const progress = () => progressRef.current;
   const setPlaying = (value: boolean) => setPlayingx(value, singleRegionOnly);
-
+  const wsIsPlaying = () => playingRef.current;
+  const wsLoopRegion = (loop: boolean) => {
+    loopingRef.current = loop;
+    return regLoopRegion(loop);
+  };
   const {
     setupRegions,
     wsAutoSegment,
@@ -158,7 +180,7 @@ export function useWaveSurfer(
     wsGetRegions,
     wsAddMarkers,
     wsPlayRegion,
-    wsLoopRegion,
+    regLoopRegion,
     justPlayRegion,
     resetPlayingRegion,
     onRegionGoTo,
@@ -175,7 +197,7 @@ export function useWaveSurfer(
     isNear,
     wsGoto,
     progress,
-    () => isPlayingRef.current,
+    wsIsPlaying,
     setPlaying,
     onCurrentRegion,
     onStartRegion,
@@ -275,7 +297,7 @@ export function useWaveSurfer(
       });
 
       wavesurfer.on('finish', function () {
-        setPlaying(false);
+        if (playingRef.current && !loopingRef.current) setPlaying(false);
       });
       wavesurfer.on('interaction', function (/*newTime: number*/) {
         onInteraction();
@@ -336,8 +358,10 @@ export function useWaveSurfer(
       revokeCurrentBlobUrl();
       blobRef.current = undefined;
       setPlayerUrl(undefined);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
+      // Cleanup debounced function on unmount
+      debouncedProgressCallback.cancel();
+    }; // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const setDuration = (value: number) => {
@@ -363,8 +387,6 @@ export function useWaveSurfer(
 
     loadBlob();
   };
-
-  const wsIsPlaying = () => playingRef.current;
 
   const wsTogglePlay = () => {
     setPlaying(!playingRef.current);
@@ -402,6 +424,7 @@ export function useWaveSurfer(
     revokeCurrentBlobUrl();
 
     if (!blob) {
+      //this is the only way I found to clear the wavesurfer. Toggle the url to "the other empty" to trigger a reload
       setPlayerUrl(playerUrl === '' ? undefined : '');
       blobAudioRef.current = undefined;
       blobRef.current = undefined;
