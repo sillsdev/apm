@@ -1,6 +1,14 @@
 import { useRef, useState, useEffect } from 'react';
-import { IPeerCheckStrings, ISharedStrings } from '../model';
-import { peerCheckSelector, sharedSelector } from '../selector';
+import {
+  IMediaTitleStrings,
+  IPeerCheckStrings,
+  ISharedStrings,
+} from '../model';
+import {
+  mediaTitleSelector,
+  peerCheckSelector,
+  sharedSelector,
+} from '../selector';
 import { shallowEqual, useSelector } from 'react-redux';
 import {
   Box,
@@ -95,6 +103,7 @@ export function LimitedMediaPlayer(props: IProps) {
   const [startPos, setStartPos] = useState(0);
   const t: IPeerCheckStrings = useSelector(peerCheckSelector, shallowEqual);
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
+  const tm: IMediaTitleStrings = useSelector(mediaTitleSelector, shallowEqual);
 
   const setDuration = (value: number) => {
     setDurationx(value);
@@ -268,27 +277,29 @@ export function LimitedMediaPlayer(props: IProps) {
                   </IconButton>
                 </StyledTip>
               )}
-              <IconButton
-                data-testid="play-pause"
-                sx={{
-                  alignSelf: 'center',
-                  color: 'text.primary',
-                  m: '0!important',
-                  pb: '0!important',
-                  pt: '7px!important',
-                  pr: '0!important',
-                }}
-                onClick={handlePlayPause}
-              >
-                {playing ? (
-                  <Pause fontSize="small" sx={{ color: 'text.secondary' }} />
-                ) : (
-                  <PlayArrow
-                    fontSize="small"
-                    sx={{ color: 'text.secondary' }}
-                  />
-                )}
-              </IconButton>
+              <StyledTip title={tm.playPause}>
+                <IconButton
+                  data-testid="play-pause"
+                  sx={{
+                    alignSelf: 'center',
+                    color: 'text.primary',
+                    m: '0!important',
+                    pb: '0!important',
+                    pt: '7px!important',
+                    pr: '0!important',
+                  }}
+                  onClick={handlePlayPause}
+                >
+                  {playing ? (
+                    <Pause fontSize="small" sx={{ color: 'text.secondary' }} />
+                  ) : (
+                    <PlayArrow
+                      fontSize="small"
+                      sx={{ color: 'text.secondary' }}
+                    />
+                  )}
+                </IconButton>
+              </StyledTip>
             </>
           }
           label={
