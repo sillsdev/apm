@@ -2,6 +2,7 @@
 import React from 'react';
 // See: https://www.w3schools.com/TAGS/ref_av_dom.asp
 import { cleanup, render, waitFor, screen } from '@testing-library/react';
+import '@testing-library/jest-dom';
 import { LimitedMediaPlayer } from './LimitedMediaPlayer';
 import { act } from 'react';
 import userEvent from '@testing-library/user-event';
@@ -384,7 +385,8 @@ describe('<LimitedMediaPlayer />', () => {
     expect(screen.getByTestId('skip-next')).toBeInTheDocument();
   });
 
-  it('should set currentTime to start if segment-start clicked', async () => {
+  // We removed the segement-start button in the current LimitedMediaPlayer component.
+  it.skip('should set currentTime to start if segment-start clicked', async () => {
     const user = userEvent.setup();
     mockBlobState = { ...blobFetched };
 
