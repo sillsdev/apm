@@ -138,10 +138,6 @@ export function useWaveSurfer(
       setProgress(roundToFiveDecimals(currentTime));
     }
 
-    // Cleanup debounced function on unmount
-    return () => {
-      debouncedProgressCallback.cancel();
-    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentTime]);
 
@@ -362,8 +358,10 @@ export function useWaveSurfer(
       revokeCurrentBlobUrl();
       blobRef.current = undefined;
       setPlayerUrl(undefined);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
+      // Cleanup debounced function on unmount
+      debouncedProgressCallback.cancel();
+    }; // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const setDuration = (value: number) => {
