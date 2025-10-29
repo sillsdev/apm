@@ -1,6 +1,6 @@
 
 #!/bin/bash
-# makeDeb.sh -- Creates release pacakges of SIL Trancriber
+# makeDeb.sh -- Creates release packages of SIL Transcriber
 #               First optional parameter is a version number e.g. 2.0.8.4
 #
 # Author: Greg Trihus <greg_trihus@sil.org>
