@@ -10,7 +10,14 @@ import {
   SxProps,
   Badge,
 } from '@mui/material';
-import { useState, useEffect, useRef, useContext, useMemo } from 'react';
+import {
+  useState,
+  useEffect,
+  useRef,
+  useContext,
+  useMemo,
+  useCallback,
+} from 'react';
 import SkipPreviousIcon from '@mui/icons-material/SkipPrevious';
 import SkipNextIcon from '@mui/icons-material/SkipNext';
 import ForwardIcon from '@mui/icons-material/Refresh';
@@ -202,6 +209,7 @@ function WSAudioPlayer(props: IProps) {
     noNewVoice,
     allowNoNoise,
   } = props;
+
   const waveformRef = useRef<HTMLDivElement | null>(null);
   const [offline] = useGlobal('offline'); //verified this is not used in a function 2/18/25
   const [org] = useGlobal('organization');
@@ -229,6 +237,7 @@ function WSAudioPlayer(props: IProps) {
   const readyRef = useRef(false);
   const [ready, setReadyx] = useState(false);
   const [progress, setProgress] = useState(0);
+  const progressRef = useRef(0);
   const durationRef = useRef(0);
   const initialPosRef = useRef(initialposition);
   const segmentsRef = useRef('{}'); //do not set to segments
@@ -266,29 +275,85 @@ function WSAudioPlayer(props: IProps) {
     setPxPerSecx(px);
   };
 
-  const onZoom = allowZoom
-    ? (px: number) => {
-        px = Math.round(px * 10) / 10;
-        if (px !== pxPerSecRef.current) {
-          setPxPerSec(px);
-        }
+  const onZoom = useCallback(
+    (px: number) => {
+      if (!allowZoom) return;
+      px = Math.round(px * 10) / 10;
+      if (px !== pxPerSecRef.current) {
+        setPxPerSec(px);
       }
-    : undefined;
+    },
+    [allowZoom]
+  );
   const singleRegionOnly = useMemo(() => {
     return allowRecord || !allowSegment;
   }, [allowRecord, allowSegment]);
 
-  const myOnCurrentSegment = (currentSegment: IRegion | undefined) => {
-    //
-    //if (singleRegionOnly && currentSegment) {
-    //console.log('singleRegionOnly');
-    //play it??
-    //wsPlayRegion(currentSegment);
-    //onPlayStatus && onPlayStatus(true);
-    //}
-    currentSegmentRef.current = currentSegment;
-    onCurrentSegment && onCurrentSegment(currentSegment);
-  };
+  const calculatedHeight = useMemo(() => height - 120, [height]);
+
+  const voiceConvertTip = useMemo(
+    () =>
+      (t.convertVoice + '\u00A0\u00A0').replace(
+        '{0}',
+        voice ? `\u2039 ${voice} \u203A` : ''
+      ),
+    [t.convertVoice, voice]
+  );
+
+  // Memoize tooltip titles to prevent infinite re-renders
+  const recordTooltipTitle = useMemo(() => {
+    const baseTitle = recording
+      ? oneTryOnly
+        ? t.stopTip
+        : t.pauseTip
+      : t.record;
+    return baseTitle.replace('{0}', RECORD_KEY);
+  }, [recording, oneTryOnly, t.stopTip, t.pauseTip, t.record]);
+
+  const playTooltipTitle = useMemo(() => {
+    const baseTitle = playing
+      ? oneTryOnly
+        ? t.stopTip
+        : t.pauseTip
+      : t.playTip;
+    return baseTitle.replace(
+      '{0}',
+      localizeHotKey(justPlayButton ? ALT_PLAY_PAUSE_KEY : PLAY_PAUSE_KEY)
+    );
+  }, [
+    playing,
+    oneTryOnly,
+    t.stopTip,
+    t.pauseTip,
+    t.playTip,
+    localizeHotKey,
+    justPlayButton,
+  ]);
+
+  const noiseRemovalTooltipTitle = useMemo(
+    () => <Badge badgeContent={ts.ai}>{t.reduceNoise}</Badge>,
+    [ts.ai, t.reduceNoise]
+  );
+
+  const voiceChangeTooltipTitle = useMemo(
+    () => <Badge badgeContent={ts.ai}>{voiceConvertTip}</Badge>,
+    [ts.ai, voiceConvertTip]
+  );
+
+  const myOnCurrentSegment = useCallback(
+    (currentSegment: IRegion | undefined) => {
+      //
+      //if (singleRegionOnly && currentSegment) {
+      //console.log('singleRegionOnly');
+      //play it??
+      //wsPlayRegion(currentSegment);
+      //onPlayStatus && onPlayStatus(true);
+      //}
+      currentSegmentRef.current = currentSegment;
+      onCurrentSegment && onCurrentSegment(currentSegment);
+    },
+    [onCurrentSegment]
+  );
 
   const {
     wsLoad,
@@ -331,9 +396,9 @@ function WSAudioPlayer(props: IProps) {
     onWSCanUndo,
     onWSPlayStatus,
     onInteraction,
-    onZoom,
+    allowZoom ? onZoom : undefined,
     onMarkerClick,
-    height - 120,
+    calculatedHeight,
     singleRegionOnly,
     currentSegmentIndex,
     myOnCurrentSegment,
@@ -706,8 +771,11 @@ function WSAudioPlayer(props: IProps) {
   }
 
   function onWSProgress(progress: number) {
-    setProgress(progress);
-    if (onProgress) onProgress(progress);
+    if (progressRef.current !== progress) {
+      progressRef.current = progress;
+      setProgress(progress);
+      if (onProgress) onProgress(progress);
+    }
   }
   function onWSRegion(count: number, newRegion: boolean) {
     setHasRegion(count);
@@ -937,16 +1005,6 @@ function WSAudioPlayer(props: IProps) {
 
   const onSplit = () => {};
 
-  const voiceConvertTip = useMemo(
-    () =>
-      (t.convertVoice + '\u00A0\u00A0').replace(
-        '{0}',
-        voice ? `\u2039 ${voice} \u203A` : ''
-      ),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [voice]
-  );
-
   return (
     <Box>
       <Paper sx={{ p: 1, mb: 1, width: { width } }}>
@@ -967,12 +1025,7 @@ function WSAudioPlayer(props: IProps) {
                     <Grid>
                       <LightTooltip
                         id="wsAudioRecordTip"
-                        title={(recording
-                          ? oneTryOnly
-                            ? t.stopTip
-                            : t.pauseTip
-                          : t.record
-                        ).replace('{0}', RECORD_KEY)}
+                        title={recordTooltipTitle}
                       >
                         <span>
                           <IconButton
@@ -990,20 +1043,7 @@ function WSAudioPlayer(props: IProps) {
                     </Grid>
                   )}
                   <Grid>
-                    <LightTooltip
-                      id="wsAudioPlayTip"
-                      title={(playing
-                        ? oneTryOnly
-                          ? t.stopTip
-                          : t.pauseTip
-                        : t.playTip
-                      ).replace(
-                        '{0}',
-                        localizeHotKey(
-                          justPlayButton ? ALT_PLAY_PAUSE_KEY : PLAY_PAUSE_KEY
-                        )
-                      )}
-                    >
+                    <LightTooltip id="wsAudioPlayTip" title={playTooltipTitle}>
                       <span>
                         <IconButton
                           id="wsAudioPlay"
@@ -1044,9 +1084,7 @@ function WSAudioPlayer(props: IProps) {
                   {allowNoNoise && features?.noNoise && !offline && (
                     <LightTooltip
                       id="noiseRemovalTip"
-                      title={
-                        <Badge badgeContent={ts.ai}>{t.reduceNoise}</Badge>
-                      }
+                      title={noiseRemovalTooltipTitle}
                     >
                       <span>
                         <IconButton
@@ -1079,9 +1117,7 @@ function WSAudioPlayer(props: IProps) {
                     !offline && (
                       <LightTooltip
                         id="voiceChangeTip"
-                        title={
-                          <Badge badgeContent={ts.ai}>{voiceConvertTip}</Badge>
-                        }
+                        title={voiceChangeTooltipTitle}
                       >
                         <span>
                           <VcButton
