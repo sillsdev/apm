@@ -1,5 +1,5 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-import React, { useEffect, useState, useContext, useRef } from 'react';
+import React, { useEffect, useState, useContext, useRef, useMemo } from 'react';
 import { TokenContext } from '../context/TokenProvider';
 import { errorStatus, IAxiosStatus } from '../store/AxiosStatus';
 import {
@@ -251,7 +251,10 @@ export function ImportTab(props: IProps) {
   const setImporting = (importing: boolean) => {
     importingRef.current = importing;
     setBusy(importing);
-    if (!importing) setImportTitle(t.importComplete);
+    if (!importing) {
+      importComplete();
+      setImportTitle(t.importComplete);
+    }
   };
   const handleActionConfirmed = () => {
     setImporting(true);
@@ -691,7 +694,6 @@ export function ImportTab(props: IProps) {
         }
         setImporting(false);
         setImportTitle(msg);
-        importComplete();
       } else {
         if (importStatus.complete) {
           //import completed ok but might have message
@@ -700,7 +702,6 @@ export function ImportTab(props: IProps) {
           setImportTitle(
             chdata.length > 0 ? t.onlineChangeReport : t.importSyncDown
           );
-          importComplete();
           if (remote) forceDataChanges().then(() => setImporting(false));
           else {
             SetUserLanguage(memory, user, setLanguage);
@@ -724,6 +725,17 @@ export function ImportTab(props: IProps) {
     onOpen && onOpen(false);
   };
   const isString = (what: any) => typeof what === 'string';
+  console.log('importStatus.errMsg', importStatus?.errMsg);
+  const statusMsg = useMemo(() => {
+    if (!importStatus || importStatus.statusMsg === 'Import Complete')
+      return '';
+    return (
+      importStatus?.statusMsg +
+      (importStatus?.errMsg && importStatus?.errMsg !== '[]'
+        ? ': ' + importStatus?.errMsg
+        : '')
+    );
+  }, [importStatus]);
 
   return (
     <StyledDialog
@@ -748,10 +760,7 @@ export function ImportTab(props: IProps) {
           </Typography>
           <br />
           <Typography variant="body1" sx={headerProps}>
-            {importStatus
-              ? importStatus.statusMsg +
-                (importStatus.errMsg !== '' ? ': ' + importStatus.errMsg : '')
-              : ''}
+            {statusMsg}
           </Typography>
           {changeData.length > 0 && (
             <ActionRow>

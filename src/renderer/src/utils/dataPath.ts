@@ -36,7 +36,7 @@ export const dataPath = async (
         break;
       case PathType.MEDIA: {
         const parsedUrl = parse(relPath);
-        const fileName = relPath.startsWith('http')
+        const fileName = relPath?.startsWith('http')
           ? parsedUrl.pathname
             ? parsedUrl.pathname.split('?')[0]?.split('/').pop() || ''
             : ''
