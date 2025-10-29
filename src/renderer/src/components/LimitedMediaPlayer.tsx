@@ -194,6 +194,13 @@ export function LimitedMediaPlayer(props: IProps) {
     const time = Math.round(progress * 1000) / 1000;
     if (stop.current !== 0 && time >= stop.current) {
       ended();
+    } else if (
+      // We use a tolerance of 0.1 seconds to avoid floating point precision issues.
+      // The progress seems to set time to end at the beginning so we test two values.
+      durationRef.current - time < 0.1 &&
+      durationRef.current - valueTracker.current < 0.1
+    ) {
+      ended();
     }
     const current = Math.ceil(progress - (limits.start ?? 0));
     if (valueTracker.current !== current && playingRef.current) {
@@ -205,7 +212,7 @@ export function LimitedMediaPlayer(props: IProps) {
 
   const durationChange = (duration: number) => {
     //this is called multiple times for some files
-    if (!durationRef.current && duration) {
+    if (durationRef.current === 0 && duration) {
       if (limits.end) {
         setPosition(limits.start);
         if (limits.end > duration - 0.5) stop.current = 0;
