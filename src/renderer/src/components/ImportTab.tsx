@@ -1,5 +1,5 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-import React, { useEffect, useState, useContext, useRef, useMemo } from 'react';
+import React, { useEffect, useState, useContext, useRef } from 'react';
 import { TokenContext } from '../context/TokenProvider';
 import { errorStatus, IAxiosStatus } from '../store/AxiosStatus';
 import {
@@ -725,17 +725,14 @@ export function ImportTab(props: IProps) {
     onOpen && onOpen(false);
   };
   const isString = (what: any) => typeof what === 'string';
-  console.log('importStatus.errMsg', importStatus?.errMsg);
-  const statusMsg = useMemo(() => {
-    if (!importStatus || importStatus.statusMsg === 'Import Complete')
-      return '';
+
+  const statusMsg = (status: IAxiosStatus | undefined) => {
+    if (!status || status.statusMsg === 'Import Complete') return '';
     return (
-      importStatus?.statusMsg +
-      (importStatus?.errMsg && importStatus?.errMsg !== '[]'
-        ? ': ' + importStatus?.errMsg
-        : '')
+      status?.statusMsg +
+      (status?.errMsg && status?.errMsg !== '[]' ? ': ' + status?.errMsg : '')
     );
-  }, [importStatus]);
+  };
 
   return (
     <StyledDialog
@@ -760,7 +757,7 @@ export function ImportTab(props: IProps) {
           </Typography>
           <br />
           <Typography variant="body1" sx={headerProps}>
-            {statusMsg}
+            {statusMsg(importStatus)}
           </Typography>
           {changeData.length > 0 && (
             <ActionRow>
