@@ -48,7 +48,7 @@ import {
 import { RecordIdentity, RecordTransformBuilder } from '@orbit/records';
 import { useOrbitData } from '../../../hoc/useOrbitData';
 
-const NotTable = 408;
+const NotTable = 420;
 
 const wizToolId = 'ProjResWizard';
 
@@ -59,6 +59,8 @@ const StyledPaper = styled(Paper)<PaperProps>(({ theme }) => ({
     borderRadius: '8px',
   },
   overflow: 'auto',
+  display: 'flex',
+  flexDirection: 'column',
 }));
 
 const StyledTable = styled('div')(({ theme }) => ({
@@ -175,7 +177,6 @@ export const ProjectResourceConfigure = (props: IProps) => {
     return () => {
       window.removeEventListener('resize', handleResize);
     };
-    /* eslint-disable-next-line react-hooks/exhaustive-deps */
   }, []);
 
   const rowCells = (row: string[], first = false) =>
