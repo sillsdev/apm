@@ -30,7 +30,7 @@ export interface IMarker {
 export function useWaveSurfer(
   allowSegment: NamedRegions | undefined, //just used for debug logging
   container: any,
-  onReady: (loadingAnother: boolean) => void = noop,
+  onReady: (duration: number, loadingAnother: boolean) => void,
   onProgress: (progress: number) => void = noop,
   onRegion: (count: number, newRegion: boolean) => void = noop,
   onCanUndo: (canUndo: boolean) => void = noop,
@@ -157,7 +157,7 @@ export function useWaveSurfer(
       wavesurferRef.current?.pause();
     }
     if (progress() !== position) {
-      wavesurferRef.current?.setTime(position); //seekAndCenter not avail?
+      wavesurferRef.current?.setTime(position);
     }
   };
 
@@ -280,7 +280,7 @@ export function useWaveSurfer(
         wsLoad();
       }
       //do this too even if we're going to go load another
-      onReady(loadRequests.current > 0);
+      onReady(durationRef.current, loadRequests.current > 0);
     };
 
     wavesurferRef.current = wavesurfer;
@@ -461,17 +461,19 @@ export function useWaveSurfer(
       throw error;
     }
   };
-
+  const queueLoad = (blob?: Blob, position?: number) => {
+    blobToLoad.current = blob;
+    positionToLoad.current = position;
+  };
   const wsLoad = (blob?: Blob, position?: number) => {
     regionsLoadedRef.current = false;
     if (!wavesurferRef.current) {
-      blobToLoad.current = blob;
+      queueLoad(blob, position);
       loadRequests.current = 1;
     } else if (blob) {
       if (loadRequests.current) {
         //queue this
-        blobToLoad.current = blob;
-        positionToLoad.current = position;
+        queueLoad(blob, position);
         loadRequests.current = 2; //if there was another, we'll bypass it
       } else {
         loadBlob(blob, position);
