@@ -4,6 +4,7 @@ import {
   useContext,
   useMemo,
   MouseEventHandler,
+  useRef,
 } from 'react';
 import { useGlobal } from '../context/useGlobal';
 import { shallowEqual } from 'react-redux';
@@ -19,7 +20,7 @@ import {
   SectionD,
 } from '../model';
 import { RecordIdentity } from '@orbit/records';
-import { Button, Menu, MenuItem, styled } from '@mui/material';
+import { Button, debounce, Menu, MenuItem, styled } from '@mui/material';
 import DropDownIcon from '@mui/icons-material/ArrowDropDown';
 import { AltButton, iconMargin } from '../control';
 import { useSnackBar } from '../hoc/SnackBar';
@@ -117,6 +118,9 @@ export function AssignmentTable() {
   const [refresh, setRefresh] = useState(0);
   const { getSharedResource } = useSharedResRead();
   const { getOrgDefault } = useOrgDefaults();
+  const boxRef = useRef<HTMLDivElement>(null);
+  const [addWidth, setAddWidth] = useState(0);
+
   const isPermission = useMemo(
     () => Boolean(getOrgDefault(orgDefaultPermissions)),
     [getOrgDefault]
@@ -153,6 +157,20 @@ export function AssignmentTable() {
     );
   };
 
+  const passagesCol: GridColDef = {
+    field: 'passages',
+    headerName: ts.passages,
+    width: 100,
+    align: 'right',
+  };
+
+  const sortCol: GridColDef = {
+    field: 'sort',
+    width: 10,
+  };
+
+  const MinNameWidth = 300;
+
   const columns: GridColDef[] = useMemo(
     () => {
       const newColumns: GridColDef[] = !flat
@@ -160,32 +178,24 @@ export function AssignmentTable() {
             {
               field: 'name',
               headerName: organizedBy,
-              width: 300,
+              width: MinNameWidth + addWidth,
               cellClassName: 'word-wrap',
               renderCell: getNameCell,
             },
-            {
-              field: 'passages',
-              headerName: ts.passages,
-              width: 100,
-              align: 'right',
-            },
+            passagesCol,
             {
               field: 'scheme',
               headerName: isPermission ? ts.scheme : ts.scheme2,
               width: 200,
               renderCell: getSchemeName,
             },
-            {
-              field: 'sort',
-              width: 10,
-            },
+            sortCol,
           ]
         : [
             {
               field: 'name',
               headerName: organizedBy,
-              width: 300,
+              width: MinNameWidth + addWidth,
               cellClassName: 'word-wrap',
               renderCell: getNameCell,
             },
@@ -195,21 +205,63 @@ export function AssignmentTable() {
               width: 200,
               renderCell: getSchemeName,
             },
-            {
-              field: 'sort',
-              width: 10,
-            },
+            sortCol,
           ];
       return [...newColumns];
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [flat, organizedBy, ts.passages, t.sectionstate, isPermission, data]
+    [
+      flat,
+      organizedBy,
+      ts.passages,
+      t.sectionstate,
+      isPermission,
+      data,
+      addWidth,
+    ]
   );
   const [assignSectionVisible, setAssignSectionVisible] = useState<string>();
   const { userIsAdmin } = useRole();
   const orgSchemes = useMemo(() => {
     return schemes?.filter((s) => related(s, 'organization') === org);
   }, [schemes, org]);
+
+  const totalWidth = useMemo(
+    () =>
+      columns.reduce(
+        (sum, col) =>
+          col.field === 'name' ? sum + MinNameWidth : sum + (col.width ?? 0),
+        0
+      ),
+    [columns]
+  );
+
+  const ExtraWidth = 150;
+
+  // keep track of screen width
+  const setDimensions = () => {
+    const boxWidth = boxRef.current?.clientWidth ?? 0;
+    setAddWidth(boxWidth > totalWidth ? boxWidth - totalWidth - ExtraWidth : 0);
+  };
+
+  useEffect(() => {
+    setDimensions();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [totalWidth]);
+
+  useEffect(() => {
+    setDimensions();
+    const handleResize = debounce(() => {
+      setDimensions();
+    }, 100);
+
+    window.addEventListener('resize', handleResize);
+    return () => {
+      handleResize.clear();
+      window.removeEventListener('resize', handleResize);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); //do this once to get the default;
 
   const getAssignments = () => {
     let sectionRow: IRow;
@@ -410,7 +462,7 @@ export function AssignmentTable() {
   const columnVisibilityModel: GridColumnVisibilityModel = { sort: false };
 
   return (
-    <AssignmentDiv id="AssignmentTable">
+    <AssignmentDiv ref={boxRef} id="AssignmentTable">
       <div>
         <TabAppBar position="fixed" color="default">
           <TabActions>
