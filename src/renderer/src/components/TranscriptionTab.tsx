@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useContext } from 'react';
+import React, { useState, useEffect, useMemo, useContext, useRef } from 'react';
 import { useGetGlobal, useGlobal } from '../context/useGlobal';
 import * as actions from '../store';
 import {
@@ -83,6 +83,7 @@ import { TranscriptionViewCell } from './TranscriptionViewCell';
 import Box from '@mui/material/Box';
 import Alert from '@mui/material/Alert';
 import { TreeDataGrid } from './TreeDataGrid';
+import { debounce } from '@mui/material';
 
 interface IRow {
   id: number;
@@ -166,6 +167,9 @@ export function TranscriptionTab(props: IProps) {
   const { getOrganizedBy } = useOrganizedBy();
   const getOfflineProject = useOfflnProjRead();
   const [enableOffsite, setEnableOffsite] = useGlobal('enableOffsite');
+  const boxRef = useRef<HTMLDivElement>(null);
+  const [addWidth, setAddWidth] = useState(0);
+
   const { getTypeId, localizedArtifactType } = useArtifactType();
   const { getSharedResource } = useSharedResRead();
   const [artifactTypes] = useState<ArtifactTypeSlug[]>([
@@ -557,36 +561,88 @@ export function TranscriptionTab(props: IProps) {
     openSections,
   ]);
 
-  const columns: GridColDef<IRow>[] = [
-    {
-      field: 'name',
-      headerName: getOrganizedBy(true),
-      width: 300,
-      cellClassName: 'word-wrap',
-      renderCell: (params) => (
-        <TranscriptionViewCell {...params} handleSelect={handleSelect} />
-      ),
-    },
-    { field: 'state', headerName: t.sectionstate, width: 150 },
-    { field: 'planName', headerName: t.plan, width: 150 },
-    { field: 'passages', headerName: ts.passages, width: 120, align: 'right' },
-    {
-      field: 'action',
-      headerName: '\u00A0',
-      width: 150,
-      renderCell: (params) => (
-        <ExportActionCell {...params} handleEaf={handleEaf} />
-      ),
-    },
-    { field: 'updated', headerName: t.updated, width: 200 },
-  ];
+  const MinNameWidth = 300;
+
+  const columns: GridColDef<IRow>[] = useMemo(
+    () => [
+      {
+        field: 'name',
+        headerName: getOrganizedBy(true),
+        width: MinNameWidth + addWidth,
+        cellClassName: 'word-wrap',
+        renderCell: (params) => (
+          <TranscriptionViewCell {...params} handleSelect={handleSelect} />
+        ),
+      },
+      { field: 'state', headerName: t.sectionstate, width: 150 },
+      { field: 'planName', headerName: t.plan, width: 150 },
+      {
+        field: 'passages',
+        headerName: ts.passages,
+        width: 100,
+        align: 'right',
+      },
+      { field: 'updated', headerName: t.updated, align: 'right', width: 100 },
+      {
+        field: 'action',
+        headerName: '\u00A0',
+        width: 150,
+        renderCell: (params) => (
+          <ExportActionCell {...params} handleEaf={handleEaf} />
+        ),
+      },
+    ],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [getOrganizedBy, addWidth]
+  );
+
+  const totalWidth = useMemo(
+    () =>
+      columns.reduce((sum, col) => {
+        return col.field === 'name'
+          ? sum + MinNameWidth
+          : columnVisibilityModel[`${col.field}`] === false
+            ? sum
+            : sum + (col.width ?? 0);
+      }, 0),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [columns]
+  );
+
+  const ExtraWidth = 150;
+
+  // keep track of screen width
+  const setDimensions = () => {
+    const boxWidth = boxRef.current?.clientWidth ?? 0;
+    setAddWidth(boxWidth > totalWidth ? boxWidth - totalWidth - ExtraWidth : 0);
+  };
+
+  useEffect(() => {
+    setDimensions();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [totalWidth]);
+
+  useEffect(() => {
+    setDimensions();
+    const handleResize = debounce(() => {
+      setDimensions();
+    }, 100);
+
+    window.addEventListener('resize', handleResize);
+    return () => {
+      handleResize.clear();
+      window.removeEventListener('resize', handleResize);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); //do this once to get the default;
+
   const sortModel: GridSortModel = [
     { field: 'planName', sort: 'asc' },
     { field: 'sort', sort: 'asc' },
   ];
 
   return (
-    <Box id="TranscriptionTab" sx={{ display: 'flex' }}>
+    <Box ref={boxRef} id="TranscriptionTab" sx={{ display: 'flex' }}>
       <div>
         <TabAppBar
           position="fixed"

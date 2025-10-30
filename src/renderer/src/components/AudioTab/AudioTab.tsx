@@ -336,7 +336,7 @@ export function AudioTab() {
 
   return (
     <Box sx={{ display: 'flex' }}>
-      <div>
+      <Box width="100%">
         <TabAppBar position="fixed" color="default">
           <TabActions>
             {canEditSheet && (
@@ -419,7 +419,7 @@ export function AudioTab() {
             )}
           </Box>
         </PaddedBox>
-      </div>
+      </Box>
       <Uploader
         recordAudio={false}
         isOpen={uploadVisible}

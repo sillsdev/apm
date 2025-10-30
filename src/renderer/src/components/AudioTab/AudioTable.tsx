@@ -1,5 +1,5 @@
 /* eslint-disable react/default-props-match-prop-types */
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useGlobal } from '../../context/useGlobal';
 import { shallowEqual, useSelector } from 'react-redux';
 import {
@@ -10,7 +10,7 @@ import {
   // ISharedStrings,
   SectionArray,
 } from '../../model';
-import { Button, IconButton } from '@mui/material';
+import { Box, Button, debounce, IconButton } from '@mui/material';
 // import BigDialog from '../../hoc/BigDialog';
 // import VersionDlg from './VersionDlg';
 import TranscriptionShow from '../TranscriptionShow';
@@ -91,6 +91,8 @@ export const AudioTable = (props: IProps) => {
     usePublishDestination();
   const forceDataChanges = useDataChanges();
   const waitForRemoteQueue = useWaitForRemoteQueue();
+  const boxRef = useRef<HTMLDivElement>(null);
+  const [addWidth, setAddWidth] = useState(0);
 
   const handleShowTranscription = (id: string) => () => {
     const row = data.find((r) => r.id === id);
@@ -167,6 +169,7 @@ export const AudioTable = (props: IProps) => {
       setPlayItem(id);
     }
   };
+
   useEffect(() => {
     if (org) {
       const bible = getOrgBible(org);
@@ -204,11 +207,78 @@ export const AudioTable = (props: IProps) => {
     [offline, offlineOnly]
   );
 
+  const planCol: GridColDef<IRow> = {
+    field: 'planName',
+    headerName: t.planName,
+    width: 150,
+  };
+
+  const versionCol: GridColDef<IRow> = {
+    field: 'version',
+    headerName: t.version,
+    width: 70,
+    align: 'right',
+    sortComparator: numCompare,
+    // renderCell: (params) => (
+    //   <Button
+    //     color="primary"
+    //     onClick={handleVerHistOpen(params.row.passId)}
+    //   >
+    //     {params.value}
+    //   </Button>
+    // ),
+  };
+
+  const durationCol: GridColDef<IRow> = {
+    field: 'duration',
+    headerName: t.duration,
+    width: 80,
+    align: 'right',
+    sortComparator: numCompare,
+  };
+
+  const dateCol: GridColDef<IRow> = {
+    field: 'date',
+    headerName: t.date,
+    align: 'right',
+    width: 100,
+    sortComparator: dateCompare,
+    renderCell: (params) => dateOrTime(params.value, lang),
+  };
+
+  const sizeCol: GridColDef<IRow> = {
+    field: 'size',
+    headerName: t.size,
+    width: 80,
+    align: 'right',
+    sortComparator: numCompare,
+  };
+
+  const userCol: GridColDef<IRow> = {
+    field: 'user',
+    headerName: t.user,
+    width: 70,
+    renderCell: (params) => <UserAvatar userRec={getUser(params.value)} />,
+  };
+
+  const refCol: GridColDef<IRow> = {
+    field: 'reference',
+    headerName: t.reference,
+    width: 150,
+    renderCell: (params) => (
+      <Button color="primary" onClick={handleShowTranscription(params.row.id)}>
+        {params.value}
+      </Button>
+    ),
+  };
+
+  const MinSectionWidth = 170;
+
   const columns: GridColDef<IRow>[] = useMemo(
     () =>
       shared || hasPublishing
         ? [
-            { field: 'planName', headerName: t.planName, width: 150 },
+            planCol,
             {
               field: 'actions',
               headerName: '\u00A0',
@@ -228,21 +298,7 @@ export const AudioTable = (props: IProps) => {
                 />
               ),
             },
-            {
-              field: 'version',
-              headerName: t.version,
-              width: 55,
-              align: 'right',
-              sortComparator: numCompare,
-              // renderCell: (params) => (
-              //   <Button
-              //     color="primary"
-              //     onClick={handleVerHistOpen(params.row.passId)}
-              //   >
-              //     {params.value}
-              //   </Button>
-              // ),
-            },
+            versionCol,
             {
               field: 'publishTo',
               headerName: t.published,
@@ -270,50 +326,13 @@ export const AudioTable = (props: IProps) => {
               headerName: organizedBy,
               align: 'left',
               cellClassName: 'word-wrap',
-              width: 170,
+              width: MinSectionWidth + addWidth,
             },
-            {
-              field: 'reference',
-              headerName: t.reference,
-              width: 150,
-              renderCell: (params) => (
-                <Button
-                  color="primary"
-                  onClick={handleShowTranscription(params.row.id)}
-                >
-                  {params.value}
-                </Button>
-              ),
-            },
-            {
-              field: 'user',
-              headerName: t.user,
-              width: 55,
-              renderCell: (params) => (
-                <UserAvatar userRec={getUser(params.value)} />
-              ),
-            },
-            {
-              field: 'duration',
-              headerName: t.duration,
-              width: 65,
-              align: 'right',
-              sortComparator: numCompare,
-            },
-            {
-              field: 'size',
-              headerName: t.size,
-              width: 67,
-              align: 'right',
-              sortComparator: numCompare,
-            },
-            {
-              field: 'date',
-              headerName: t.date,
-              width: 85,
-              sortComparator: dateCompare,
-              renderCell: (params) => dateOrTime(params.value, lang),
-            },
+            refCol,
+            userCol,
+            durationCol,
+            sizeCol,
+            dateCol,
             {
               field: 'detach',
               headerName: '\u00A0',
@@ -330,7 +349,7 @@ export const AudioTable = (props: IProps) => {
             },
           ]
         : [
-            { field: 'planName', headerName: t.planName, width: 150 },
+            planCol,
             {
               field: 'actions',
               headerName: '\u00A0',
@@ -350,21 +369,7 @@ export const AudioTable = (props: IProps) => {
                 />
               ),
             },
-            {
-              field: 'version',
-              headerName: t.version,
-              width: 55,
-              align: 'right',
-              sortComparator: numCompare,
-              // renderCell: (params) => (
-              //   <Button
-              //     color="primary"
-              //     onClick={handleVerHistOpen(params.row.passId)}
-              //   >
-              //     {params.value}
-              //   </Button>
-              // ),
-            },
+            versionCol,
             {
               field: 'fileName',
               headerName: `${t.fileName} (${nameCount})`,
@@ -375,50 +380,13 @@ export const AudioTable = (props: IProps) => {
               headerName: organizedBy,
               align: 'left',
               cellClassName: 'word-wrap',
-              width: 170,
+              width: MinSectionWidth + addWidth,
             },
-            {
-              field: 'reference',
-              headerName: t.reference,
-              width: 150,
-              renderCell: (params) => (
-                <Button
-                  color="primary"
-                  onClick={handleShowTranscription(params.row.id)}
-                >
-                  {params.value}
-                </Button>
-              ),
-            },
-            {
-              field: 'user',
-              headerName: t.user,
-              width: 55,
-              renderCell: (params) => (
-                <UserAvatar userRec={getUser(params.value)} />
-              ),
-            },
-            {
-              field: 'duration',
-              headerName: t.duration,
-              width: 65,
-              align: 'right',
-              sortComparator: numCompare,
-            },
-            {
-              field: 'size',
-              headerName: t.size,
-              width: 67,
-              align: 'right',
-              sortComparator: numCompare,
-            },
-            {
-              field: 'date',
-              headerName: t.date,
-              width: 85,
-              sortComparator: dateCompare,
-              renderCell: (params) => dateOrTime(params.value, lang),
-            },
+            refCol,
+            userCol,
+            durationCol,
+            sizeCol,
+            dateCol,
             {
               field: 'detach',
               headerName: '\u00A0',
@@ -435,8 +403,55 @@ export const AudioTable = (props: IProps) => {
             },
           ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [organizedBy, shared, hasPublishing, onAttach, nameCount, mediaPlaying]
+    [
+      organizedBy,
+      shared,
+      hasPublishing,
+      onAttach,
+      nameCount,
+      mediaPlaying,
+      addWidth,
+    ]
   );
+
+  const totalWidth = useMemo(
+    () =>
+      columns.reduce(
+        (sum, col) =>
+          col.field === 'sectionDesc'
+            ? sum + MinSectionWidth
+            : sum + (col.width ?? 0),
+        0
+      ),
+    [columns]
+  );
+
+  const ExtraWidth = 0;
+
+  // keep track of screen width
+  const setDimensions = () => {
+    const boxWidth = boxRef.current?.clientWidth ?? 0;
+    setAddWidth(boxWidth > totalWidth ? boxWidth - totalWidth - ExtraWidth : 0);
+  };
+
+  useEffect(() => {
+    setDimensions();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [totalWidth]);
+
+  useEffect(() => {
+    setDimensions();
+    const handleResize = debounce(() => {
+      setDimensions();
+    }, 100);
+
+    window.addEventListener('resize', handleResize);
+    return () => {
+      handleResize.clear();
+      window.removeEventListener('resize', handleResize);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); //do this once to get the default;
 
   const sortModel: GridSortModel = useMemo(
     () => [
@@ -452,7 +467,7 @@ export const AudioTable = (props: IProps) => {
   const columnVisibilityModel: GridColumnVisibilityModel = { planName: false };
 
   return (
-    <div>
+    <Box ref={boxRef} sx={{ width: '100%' }}>
       <DataGrid
         columns={columns}
         rows={data}
@@ -516,7 +531,7 @@ export const AudioTable = (props: IProps) => {
         requestPlay={mediaPlaying}
         onEnded={playEnded}
       />
-    </div>
+    </Box>
   );
 };
 
