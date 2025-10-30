@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useGlobal } from '../../../context/useGlobal';
 import { useSelector, shallowEqual } from 'react-redux';
 import { passageDetailArtifactsSelector } from '../../../selector';
@@ -46,6 +46,7 @@ import {
 } from '../../../crud/useProjectDefaults';
 import {
   GridColDef,
+  GridColumnVisibilityModel,
   GridRowSelectionModel,
   GridSortModel,
 } from '@mui/x-data-grid';
@@ -101,7 +102,7 @@ export function SelectSections(props: IProps) {
   const [data, setData] = useState(Array<IRow>());
   const [openSections, setOpenSections] = useState<string[]>([]);
   const [heightStyle, setHeightStyle] = useState({
-    maxHeight: `${window.innerHeight - 250}px`,
+    maxHeight: `${window.innerHeight - 200}px`,
   });
   const { getOrganizedBy } = useOrganizedBy();
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
@@ -123,10 +124,13 @@ export function SelectSections(props: IProps) {
   );
   const setDimensions = () => {
     setHeightStyle({
-      maxHeight: `${window.innerHeight - 250}px`,
+      maxHeight: `${window.innerHeight - 200}px`,
     });
   };
   const planType = usePlanType();
+  const columnVisibilityModel: GridColumnVisibilityModel = { expand: false };
+  const boxRef = useRef<HTMLDivElement>(null);
+  const [tableHeight, setTableHeight] = useState<number>(300);
 
   useEffect(() => {
     setButtonText(visual ? ta.createResources : ta.projectResourceConfigure);
@@ -142,7 +146,6 @@ export function SelectSections(props: IProps) {
     return () => {
       window.removeEventListener('resize', handleResize);
     };
-    /* eslint-disable-next-line react-hooks/exhaustive-deps */
   }, []);
 
   const planRec = useMemo(
@@ -197,28 +200,27 @@ export function SelectSections(props: IProps) {
           )
           .sort(passageCompare);
         const passageCount = sectionpassages.length;
-        if (!isFlat && passageCount > 1)
+        // Show all sections regardless of passage count (including empty sections)
+        // This ensures users can see and select all sections in their plan
+        rowData.push({
+          id: id++,
+          recId: section.id,
+          name: getSection(section, sectionpassages, sectionMap, bookData),
+          passages: passageCount.toString(),
+          parentId: '',
+        });
+        sectionpassages.forEach((passage: Passage) => {
           rowData.push({
             id: id++,
-            recId: section.id,
-            name: getSection(section, sectionpassages, sectionMap, bookData),
-            passages: passageCount.toString(),
-            parentId: '',
-          });
-        if (openSections.includes(section.id)) {
-          sectionpassages.forEach((passage: Passage) => {
-            rowData.push({
-              id: id++,
-              recId: passage.id,
-              name: `${sectionNumber(section, sectionMap)}.${getReference(
-                passage,
-                bookData
-              )}`,
-              passages: '',
-              parentId: isFlat || passageCount === 1 ? '' : section.id,
-            } as IRow);
-          });
-        }
+            recId: passage.id,
+            name: `\u00A0\u00A0\u00A0${sectionNumber(section, sectionMap)}.${getReference(
+              passage,
+              bookData
+            )}`,
+            passages: '',
+            parentId: isFlat || passageCount === 1 ? '' : section.id,
+          } as IRow);
+        });
       });
 
     return rowData as Array<IRow>;
@@ -226,11 +228,18 @@ export function SelectSections(props: IProps) {
 
   useEffect(() => {
     setData(getSections(passages, sections, allBookData));
+    if (boxRef.current) {
+      const height =
+        boxRef.current.parentNode?.parentNode?.parentElement?.clientHeight;
+      setTableHeight((height ?? 300) - 250);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [plan, passages, sections, allBookData, openSections]);
 
   const handleRowSelectionChange = (newSelection: GridRowSelectionModel) => {
-    let chks = Array.from(newSelection.ids);
+    let chks = Array.from(newSelection.ids).map(
+      (c) => parseInt(c as string) - 1
+    );
     if (newSelection.type === 'exclude') {
       chks = [];
       data.forEach((_r, i) => {
@@ -239,8 +248,8 @@ export function SelectSections(props: IProps) {
     }
     if (!eqSet(new Set(chks), new Set(checks))) {
       for (const c of chks) {
-        let n = parseInt(c as string);
-        if (data[n].parentId === '' && !checks.includes(n)) {
+        let n = c;
+        if (data[n]?.parentId === '' && !checks.includes(n)) {
           while (++n < data.length && data[n].parentId !== '') {
             if (!chks.includes(n)) chks.push(n);
           }
@@ -248,7 +257,11 @@ export function SelectSections(props: IProps) {
       }
       setChecks(chks);
     }
-    setSelectedRows({ ...newSelection, ids: new Set(chks) });
+    setSelectedRows({
+      ...newSelection,
+      type: 'include',
+      ids: new Set(chks.map((c) => c + 1)),
+    });
   };
 
   const handleSelected = () => {
@@ -270,9 +283,17 @@ export function SelectSections(props: IProps) {
   const sortModel: GridSortModel = [{ field: 'name', sort: 'asc' }];
 
   return (
-    <Box id="SelectSections" sx={{ pt: 2, maxHeight: '70%' }}>
+    <Box
+      id="SelectSections"
+      ref={boxRef}
+      sx={{ pt: 2, display: 'flex', flexDirection: 'column', height: '100%' }}
+    >
       <Typography variant="h6">{title}</Typography>
-      <StyledPaper id="PassageList" style={heightStyle}>
+      <StyledPaper
+        id="PassageList"
+        style={heightStyle}
+        sx={{ flex: 1, minHeight: 0 }}
+      >
         <TreeDataGrid
           columns={columns}
           rows={data}
@@ -282,8 +303,14 @@ export function SelectSections(props: IProps) {
           onRowSelectionModelChange={handleRowSelectionChange}
           recIdName="recId"
           expanded={setOpenSections}
-          initialState={{ sorting: { sortModel } }}
-          sx={{ '& .word-wrap': { wordWrap: 'break-spaces' } }}
+          initialState={{
+            sorting: { sortModel },
+            columns: { columnVisibilityModel },
+          }}
+          sx={{
+            '& .word-wrap': { wordWrap: 'break-spaces' },
+            maxHeight: tableHeight,
+          }}
         />
       </StyledPaper>
       <div>
