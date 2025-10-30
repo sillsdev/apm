@@ -251,7 +251,10 @@ export function ImportTab(props: IProps) {
   const setImporting = (importing: boolean) => {
     importingRef.current = importing;
     setBusy(importing);
-    if (!importing) setImportTitle(t.importComplete);
+    if (!importing) {
+      importComplete();
+      setImportTitle(t.importComplete);
+    }
   };
   const handleActionConfirmed = () => {
     setImporting(true);
@@ -691,7 +694,6 @@ export function ImportTab(props: IProps) {
         }
         setImporting(false);
         setImportTitle(msg);
-        importComplete();
       } else {
         if (importStatus.complete) {
           //import completed ok but might have message
@@ -700,7 +702,6 @@ export function ImportTab(props: IProps) {
           setImportTitle(
             chdata.length > 0 ? t.onlineChangeReport : t.importSyncDown
           );
-          importComplete();
           if (remote) forceDataChanges().then(() => setImporting(false));
           else {
             SetUserLanguage(memory, user, setLanguage);
@@ -725,6 +726,14 @@ export function ImportTab(props: IProps) {
   };
   const isString = (what: any) => typeof what === 'string';
 
+  const statusMsg = (status: IAxiosStatus | undefined) => {
+    if (!status || status.statusMsg === 'Import Complete') return '';
+    return (
+      status?.statusMsg +
+      (status?.errMsg && status?.errMsg !== '[]' ? ': ' + status?.errMsg : '')
+    );
+  };
+
   return (
     <StyledDialog
       open={isOpen}
@@ -748,10 +757,7 @@ export function ImportTab(props: IProps) {
           </Typography>
           <br />
           <Typography variant="body1" sx={headerProps}>
-            {importStatus
-              ? importStatus.statusMsg +
-                (importStatus.errMsg !== '' ? ': ' + importStatus.errMsg : '')
-              : ''}
+            {statusMsg(importStatus)}
           </Typography>
           {changeData.length > 0 && (
             <ActionRow>
