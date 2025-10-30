@@ -1,11 +1,11 @@
 import { useRef, useState, useEffect } from 'react';
 import {
-  IMediaTitleStrings,
+  IMediaActionsStrings,
   IPeerCheckStrings,
   ISharedStrings,
 } from '../model';
 import {
-  mediaTitleSelector,
+  mediaActionsSelector,
   peerCheckSelector,
   sharedSelector,
 } from '../selector';
@@ -103,7 +103,10 @@ export function LimitedMediaPlayer(props: IProps) {
   const [startPos, setStartPos] = useState(0);
   const t: IPeerCheckStrings = useSelector(peerCheckSelector, shallowEqual);
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
-  const tm: IMediaTitleStrings = useSelector(mediaTitleSelector, shallowEqual);
+  const tm: IMediaActionsStrings = useSelector(
+    mediaActionsSelector,
+    shallowEqual
+  );
 
   const setDuration = (value: number) => {
     setDurationx(value);
@@ -284,7 +287,7 @@ export function LimitedMediaPlayer(props: IProps) {
                   </IconButton>
                 </StyledTip>
               )}
-              <StyledTip title={tm.playPause}>
+              <StyledTip title={playing ? tm.pause : tm.play}>
                 <IconButton
                   data-testid="play-pause"
                   sx={{

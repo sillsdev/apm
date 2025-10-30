@@ -10,6 +10,7 @@ import {
   styled,
   TextField,
   TextFieldProps,
+  Tooltip,
 } from '@mui/material';
 import { shallowEqual } from 'react-redux';
 import {
@@ -17,6 +18,7 @@ import {
   DiscussionD,
   ICommentCardStrings,
   MediaFileD,
+  IMediaActionsStrings,
   UserD,
 } from '../../model';
 import Confirm from '../AlertDialog';
@@ -41,7 +43,7 @@ import { UnsavedContext } from '../../context/UnsavedContext';
 import { OldVernVersion } from '../../control/OldVernVersion';
 import { useArtifactType } from '../../crud';
 import { useSelector } from 'react-redux';
-import { commentCardSelector } from '../../selector';
+import { commentCardSelector, mediaActionsSelector } from '../../selector';
 import { useOrbitData } from '../../hoc/useOrbitData';
 import LimitedMediaPlayer from '../LimitedMediaPlayer';
 
@@ -147,6 +149,10 @@ export const CommentCard = (props: IProps) => {
     approvedRef.current = value;
   };
   const { getMentorAuthor, hasPermission } = usePermissions();
+  const tm: IMediaActionsStrings = useSelector(
+    mediaActionsSelector,
+    shallowEqual
+  );
 
   const CommentAuthor = (comment: CommentD) =>
     getMentorAuthor(comment.attributes.visible) ??
@@ -377,13 +383,18 @@ export const CommentCard = (props: IProps) => {
                     width: '100%',
                   }}
                 >
-                  <IconButton
-                    id="playcomment"
-                    onClick={handlePlayComment}
-                    sx={{ py: 0, pr: 0 }}
-                  >
-                    <PlayIcon fontSize="small" sx={{ color: 'text.primary' }} />
-                  </IconButton>
+                  <Tooltip title={tm.play}>
+                    <IconButton
+                      id="playcomment"
+                      onClick={handlePlayComment}
+                      sx={{ p: 0 }}
+                    >
+                      <PlayIcon
+                        fontSize="small"
+                        sx={{ color: 'text.primary' }}
+                      />
+                    </IconButton>
+                  </Tooltip>
                   <Stack direction="row" sx={{ width: '100%', pr: 2, pl: 1 }}>
                     <Slider
                       sx={{ color: 'text.secondary' }}
