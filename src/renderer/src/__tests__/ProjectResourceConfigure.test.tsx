@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import ProjectResourceConfigure from '../components/PassageDetail/Internalization/ProjectResourceConfigure';

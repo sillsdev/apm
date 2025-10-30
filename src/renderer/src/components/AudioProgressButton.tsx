@@ -91,6 +91,7 @@ export default function AudioProgressButton(props: AudioProgressButtonProps) {
     return () => {
       clearInterval(progressInterval.current);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleAudioEnded = () => {
