@@ -236,7 +236,7 @@ function WSAudioPlayer(props: IProps) {
   const [processMsg, setProcessMsg] = useState<string | undefined>(undefined);
   const readyRef = useRef(false);
   const [ready, setReadyx] = useState(false);
-  const [progress, setProgress] = useState(0);
+  const [progress, setProgressx] = useState(0);
   const progressRef = useRef(0);
   const durationRef = useRef(0);
   const initialPosRef = useRef(initialposition);
@@ -268,6 +268,11 @@ function WSAudioPlayer(props: IProps) {
   const pxPerSecRef = useRef(maxZoom);
   const insertingRef = useRef(false);
   const currentSegmentRef = useRef<IRegion | undefined>(undefined);
+  // Recording timer refs for local progress/duration while recording
+  const recElapsedRef = useRef<number>(0);
+  const recTimerRef = useRef<NodeJS.Timeout | undefined>(undefined);
+  const recBaseProgressRef = useRef<number>(0);
+  const recBaseDurationRef = useRef<number>(0);
 
   const setPxPerSec = (px: number) => {
     if (recordingRef.current) return;
@@ -417,6 +422,7 @@ function WSAudioPlayer(props: IProps) {
     onRecordError,
     onRecordDataAvailable
   );
+
   const setProcessingRecording = (value: boolean) => {
     setProcessingRecordingx(value);
     processRecordRef.current = value;
@@ -499,6 +505,27 @@ function WSAudioPlayer(props: IProps) {
     recordingRef.current = value;
     setRecordingx(value);
     if (onRecording) onRecording(value);
+
+    if (value) {
+      // start timer
+      recElapsedRef.current = 0;
+      // capture base values at start
+      recBaseProgressRef.current = progressRef.current;
+      recBaseDurationRef.current = durationRef.current;
+      if (recTimerRef.current) clearInterval(recTimerRef.current);
+      recTimerRef.current = setInterval(() => {
+        if (!recordingRef.current) return;
+        recElapsedRef.current++;
+        setDuration(recBaseDurationRef.current + recElapsedRef.current);
+        setProgress(recBaseProgressRef.current + recElapsedRef.current);
+      }, 1000);
+    } else {
+      // stop timer
+      if (recTimerRef.current) {
+        clearInterval(recTimerRef.current);
+        recTimerRef.current = undefined;
+      }
+    }
   };
 
   const handleClearRegions = () => {
@@ -566,6 +593,10 @@ function WSAudioPlayer(props: IProps) {
       simplePlayerKeys.forEach((k) => unsubscribe(k.key));
       recordKeys.forEach((k) => unsubscribe(k.key));
       segmentKeys.forEach((k) => unsubscribe(k.key));
+      if (recTimerRef.current) {
+        clearInterval(recTimerRef.current);
+        recTimerRef.current = undefined;
+      }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -761,8 +792,10 @@ function WSAudioPlayer(props: IProps) {
     }
   }
 
-  function onWSReady(loadingAnother: boolean) {
-    setDuration(wsDuration());
+  function onWSReady(duration: number, loadingAnother: boolean) {
+    // Ignore WS-driven progress while recording; we drive from timer
+    if (recordingRef.current) return;
+    setDuration(duration);
     if (loadingAnother) return;
     setReady(true);
     if (!recordingRef.current) setPxPerSec(wsFillPx());
@@ -774,10 +807,10 @@ function WSAudioPlayer(props: IProps) {
   }
 
   function onWSProgress(progress: number) {
+    // Ignore WS-driven progress while recording; we drive from timer
+    if (recordingRef.current) return;
     if (progressRef.current !== progress) {
-      progressRef.current = progress;
       setProgress(progress);
-      if (onProgress) onProgress(progress);
     }
   }
   function onWSRegion(count: number, newRegion: boolean) {
@@ -811,6 +844,13 @@ function WSAudioPlayer(props: IProps) {
     setDurationx(value);
     if (onDuration) onDuration(value);
   };
+
+  const setProgress = (value: number) => {
+    progressRef.current = value;
+    setProgressx(value);
+    if (onProgress) onProgress(value);
+  };
+
   const setReady = (value: boolean) => {
     setReadyx(value);
     readyRef.current = value;
