@@ -7,7 +7,9 @@ import * as path from 'path';
 import * as fs from 'fs';
 
 const localProbe = ffprobePath.replace('app.asar', 'app.asar.unpacked');
-const localFfmpeg = ffmpegPath?.replace('app.asar', 'app.asar.unpacked');
+const localFfmpeg = ffmpegPath
+  ? ffmpegPath.replace('app.asar', 'app.asar.unpacked')
+  : 'ffmpeg'; // fallback to system ffmpeg if ffmpegPath is undefined
 
 interface ChildProcessSuccessMessage {
   stdout: string;
