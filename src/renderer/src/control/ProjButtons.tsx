@@ -75,6 +75,7 @@ export const ProjButtons = (props: IProps) => {
   };
 
   const handleIntegrations = () => {
+    setActionMenuItem(null);
     setOpenIntegration(true);
   };
 
