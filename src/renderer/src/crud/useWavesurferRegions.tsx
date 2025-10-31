@@ -182,6 +182,7 @@ export function useWaveSurferRegions(
       }
       loopingRegionRef.current = r;
       currentRegionRef.current = r;
+
       onCurrentRegion &&
         onCurrentRegion(r ? { start: r.start, end: r.end } : undefined);
     }
@@ -295,6 +296,7 @@ export function useWaveSurferRegions(
       });
       //was region-update-end
       Regions.on('region-updated', function (r: Region) {
+        onCurrentRegion && onCurrentRegion({ start: r.start, end: r.end });
         if (singleRegionRef.current) {
           if (!loadingRef.current) {
             waitForIt(
