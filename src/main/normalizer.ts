@@ -589,7 +589,8 @@ class Parser {
       return 0;
     }
 
-    // Look for [STREAM] opening tags (opening tags always appear first in valid output, so their count is less likely to be affected by malformed or truncated output)
+    // Look for [STREAM] opening tags.
+    // Opening tags always appear first in valid output, so their count is less likely to be affected by malformed or truncated output.
     const openingMatches = stdout.match(/\[STREAM\]/g);
     const closingMatches = stdout.match(/\[\/STREAM\]/g);
 
