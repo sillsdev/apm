@@ -604,11 +604,7 @@ class Parser {
     );
 
     // Use opening tags count, or fall back to closing tags
-    const count = openingMatches
-      ? openingMatches.length
-      : closingMatches
-        ? closingMatches.length
-        : 0;
+    const count = openingMatches?.length ?? closingMatches?.length ?? 0;
 
     return count;
   }
