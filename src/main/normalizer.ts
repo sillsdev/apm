@@ -6,6 +6,11 @@ import * as child from 'child_process';
 import * as path from 'path';
 import * as fs from 'fs';
 
+const localProbe = ffprobePath?.replace('app.asar', 'app.asar.unpacked');
+const localFfmpeg = ffmpegPath
+  ? ffmpegPath.replace('app.asar', 'app.asar.unpacked')
+  : 'ffmpeg'; // fallback to system ffmpeg if ffmpegPath is undefined
+
 interface ChildProcessSuccessMessage {
   stdout: string;
   stderr: string;
@@ -174,7 +179,7 @@ class LoudnessFactory {
 
 class CommandFactory {
   static measure({ input, loudness }) {
-    let command = `${ffmpegPath} -hide_banner `;
+    let command = `${localFfmpeg} -hide_banner `;
     command += `-i "${input}" `;
     command += `-af loudnorm=`;
     command += `I=${loudness.input_i}:`;
@@ -191,7 +196,7 @@ class CommandFactory {
   }
 
   static change({ input, output, loudness, measured }) {
-    let command = `${ffmpegPath} -hide_banner `;
+    let command = `${localFfmpeg} -hide_banner `;
     command += `-i "${input}" `;
     command += `-af loudnorm=`;
     command += `I=${loudness.input_i}:`;
@@ -220,7 +225,7 @@ class CommandFactory {
   }
 
   static getDuration(input: any) {
-    const command = `${ffmpegPath} -hide_banner -i "${input}" -f null -`;
+    const command = `${localFfmpeg} -hide_banner -i "${input}" -f null -`;
     return new Command({
       text: command,
       processAfter: ({ stderr }: ChildProcessFailMessage) => {
@@ -230,7 +235,7 @@ class CommandFactory {
   }
 
   static addPadding(input: any, output: any) {
-    const command = `${ffmpegPath} -hide_banner -i "${input}" -af apad,atrim=0:3 -y "${output}"`;
+    const command = `${localFfmpeg} -hide_banner -i "${input}" -af apad,atrim=0:3 -y "${output}"`;
     return new Command({
       text: command,
       processAfter: () => {},
@@ -243,7 +248,7 @@ class CommandFactory {
     duration: any,
     temporaryFile: string
   ) {
-    const command = `${ffmpegPath} -hide_banner -i "${input}" -af apad,atrim=0:${duration} -y "${output}"`;
+    const command = `${localFfmpeg} -hide_banner -i "${input}" -af apad,atrim=0:${duration} -y "${output}"`;
     return new Command({
       text: command,
       processAfter: () => {
@@ -321,20 +326,26 @@ class Normalizer {
     return new Promise((resolve) => {
       try {
         const command = new Command({
-          text: `${ffprobePath} -i "${input}" -show_streams -select_streams a -loglevel error`,
+          text: `${localProbe} -i "${input}" -show_streams -select_streams a -loglevel error`,
         });
         command.execute({
           success: ({ stdout }: ChildProcessSuccessMessage) => {
+            logger.log('ffprobe stdout:', stdout);
+            logger.log('ffprobe stdout length:', stdout ? stdout.length : 0);
             const numberOfAudioStreams = Parser.getNumberOfAudioStreams(stdout);
+            logger.log(
+              'Number of audio streams detected:',
+              numberOfAudioStreams
+            );
             return resolve(numberOfAudioStreams > 0);
           },
           fail: ({ stderr }: ChildProcessFailMessage) => {
-            logger.error(stderr);
+            logger.error('ffprobe failed with stderr:', stderr);
             return resolve(false);
           },
         });
       } catch (error) {
-        logger.error(error);
+        logger.error('ffprobe exception:', error);
         return resolve(false);
       }
     });
@@ -573,8 +584,29 @@ class Parser {
    * @returns {number} number of audio streams
    */
   static getNumberOfAudioStreams(stdout: string): number {
-    const matches = stdout.match(/\/STREAM/g);
-    return matches ? matches.length : 0;
+    if (!stdout || stdout.trim().length === 0) {
+      logger.log('getNumberOfAudioStreams: stdout is empty or null');
+      return 0;
+    }
+
+    // Look for [STREAM] opening tags.
+    // Opening tags always appear first in valid output, so their count is less likely to be affected by malformed or truncated output.
+    const openingMatches = stdout.match(/\[STREAM\]/g);
+    const closingMatches = stdout.match(/\[\/STREAM\]/g);
+
+    logger.log(
+      'Opening [STREAM] tags found:',
+      openingMatches ? openingMatches.length : 0
+    );
+    logger.log(
+      'Closing [/STREAM] tags found:',
+      closingMatches ? closingMatches.length : 0
+    );
+
+    // Use opening tags count, or fall back to closing tags
+    const count = openingMatches?.length ?? closingMatches?.length ?? 0;
+
+    return count;
   }
 }
 
