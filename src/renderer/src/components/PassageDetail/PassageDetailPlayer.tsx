@@ -43,7 +43,7 @@ import AsrProgress from '../../business/asr/AsrProgress';
 import { useGetAsrSettings } from '../../crud/useGetAsrSettings';
 import { LightTooltip } from '../StepEditor';
 import { useOrbitData } from '../../hoc/useOrbitData';
-import { pullTableList } from '../../crud';
+import { pullTableList, ToolSlug, useStepTool } from '../../crud';
 import IndexedDBSource from '@orbit/indexeddb';
 import JSONAPISource from '@orbit/jsonapi';
 import { useCheckOnline } from '../../utils/useCheckOnline';
@@ -172,6 +172,7 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
   const checkOnline = useCheckOnline(t.recognizeSpeech);
   const { showMessage } = useSnackBar();
   const [getName] = useLocLangName();
+  const { tool } = useStepTool(currentstep);
 
   const { onPlayStatus, onCurrentSegment, setSegmentToWhole } = usePlayerLogic({
     allowSegment,
@@ -441,7 +442,8 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
         onDuration={onDuration}
         metaData={
           <>
-            {playerMediafile?.attributes?.transcription ? (
+            {playerMediafile?.attributes?.transcription &&
+            tool !== ToolSlug.Transcribe ? (
               <IconButton
                 id="show-transcription"
                 onClick={handleShowTranscription}
