@@ -370,9 +370,13 @@ export function TranscriptionTab(props: IProps) {
   const handleEaf = (passageId: string) => () => {
     const mediaRec = getVernacularMediaRec(passageId, memory);
     if (!mediaRec) return;
-    const eafCode = btoa(getMediaEaf(mediaRec, memory));
+    const eafXml = getMediaEaf(mediaRec, memory);
+    // Convert Unicode string to base64 safely
+    const encoder = new TextEncoder();
+    const data = encoder.encode(eafXml);
+    const base64 = btoa(String.fromCharCode(...Array.from(data)));
     const name = getMediaName(mediaRec, memory);
-    setDataUrl('data:text/xml;base64,' + eafCode);
+    setDataUrl('data:text/xml;base64,' + base64);
     setDataName(name + '.eaf');
   };
 
