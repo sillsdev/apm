@@ -78,6 +78,7 @@ export default function CategoryEdit({
   const [graphicRights, setGraphicRights] = useState('');
   const [graphicUri, setGraphicUri] = useState('');
   const [graphicFullsizeUrl, setGraphicFullsizeUrl] = useState('');
+  const [fullSizeImageSrc, setFullSizeImageSrc] = useState(graphicFullsizeUrl);
   const graphics = useOrbitData<GraphicD[]>('graphic');
   const [uploadGraphicVisible, setUploadGraphicVisible] = useState(false);
   const cancelled = useRef(false);
@@ -118,12 +119,8 @@ export default function CategoryEdit({
 
     // Reset graphicFullsizeUrl to match graphicRec when dialog opens or closes
     // it may have been reset in onFiles and then cancelled.
-    if (graphicRec) {
-      const gr = apmGraphic(graphicRec);
-      setGraphicFullsizeUrl(gr?.url ?? '');
-    } else {
-      setGraphicFullsizeUrl('');
-    }
+    const gr = graphicRec ? apmGraphic(graphicRec) : undefined;
+    setGraphicFullsizeUrl(gr?.url ?? '');
   };
 
   const handleRightsChange = (value: string) => {
@@ -158,6 +155,16 @@ export default function CategoryEdit({
       setGraphicFullsizeUrl(gr?.url ?? '');
     }
   }, [graphicRec]);
+
+  useEffect(() => {
+    if (graphicFullsizeUrl) {
+      setFullSizeImageSrc(
+        `${graphicFullsizeUrl}${graphicFullsizeUrl.includes('?') ? '&' : '?'}t=${Date.now()}`
+      );
+    } else {
+      setFullSizeImageSrc('');
+    }
+  }, [graphicFullsizeUrl]);
 
   const afterConvert = async (images: CompressedImages[]) => {
     if (images.length === 0) return;
@@ -279,13 +286,8 @@ export default function CategoryEdit({
                     teamId={teamId}
                     onChange={handleRightsChange}
                   />
-                  {graphicFullsizeUrl && (
-                    <img
-                      key={graphicFullsizeUrl}
-                      src={`${graphicFullsizeUrl}${graphicFullsizeUrl.includes('?') ? '&' : '?'}t=${Date.now()}`}
-                      alt="new"
-                      width={400}
-                    />
+                  {fullSizeImageSrc && (
+                    <img src={fullSizeImageSrc} alt="new" width={400} />
                   )}
                 </>
               }
