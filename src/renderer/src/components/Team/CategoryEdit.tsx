@@ -115,7 +115,9 @@ export default function CategoryEdit({
     } else {
       setUploadGraphicVisible(visible);
     }
+
     // Reset graphicFullsizeUrl to match graphicRec when dialog opens or closes
+    // it may have been reset in onFiles and then cancelled.
     if (graphicRec) {
       const gr = apmGraphic(graphicRec);
       setGraphicFullsizeUrl(gr?.url ?? '');
@@ -158,7 +160,7 @@ export default function CategoryEdit({
   }, [graphicRec]);
 
   const afterConvert = async (images: CompressedImages[]) => {
-    if (images.length == 0) return;
+    if (images.length === 0) return;
 
     const curData = JSON.parse(
       graphicRec?.attributes?.info || '{}'
@@ -198,6 +200,7 @@ export default function CategoryEdit({
   };
   const onFiles = (files: File[]) => {
     if (files.length > 0) {
+      //reset the image shown in the GraphicUploader
       setGraphicFullsizeUrl(URL.createObjectURL(files[0] as File));
     } else setGraphicFullsizeUrl('');
   };
