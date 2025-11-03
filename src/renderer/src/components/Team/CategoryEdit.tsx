@@ -106,14 +106,21 @@ export default function CategoryEdit({
     category.titleMediaId = value;
     onChanged(category);
   };
-  const handleUploadGraphicVisible = (v: boolean) => {
-    if (!v && !cancelled.current) {
+  const handleUploadGraphicVisible = (visible: boolean) => {
+    if (!visible && !cancelled.current) {
       afterConvert([]).then(() => {
         setUploadGraphicVisible(false);
         showMessage(ts.saving);
       });
     } else {
-      setUploadGraphicVisible(v);
+      setUploadGraphicVisible(visible);
+    }
+    // Reset graphicFullsizeUrl to match graphicRec when dialog opens or closes
+    if (graphicRec) {
+      const gr = apmGraphic(graphicRec);
+      setGraphicFullsizeUrl(gr?.url ?? '');
+    } else {
+      setGraphicFullsizeUrl('');
     }
   };
 
@@ -151,10 +158,13 @@ export default function CategoryEdit({
   }, [graphicRec]);
 
   const afterConvert = async (images: CompressedImages[]) => {
+    if (images.length == 0) return;
+
     const curData = JSON.parse(
       graphicRec?.attributes?.info || '{}'
     ) as IGraphicInfo;
     const infoData: IGraphicInfo = { ...curData, [Rights]: graphicRights };
+
     images.forEach((image) => {
       infoData[image.dimension.toString()] = image;
     });
@@ -175,7 +185,7 @@ export default function CategoryEdit({
         })
       );
     }
-    if (images.length > 0) showMessage(ts.uploadSuccess);
+    showMessage(ts.uploadSuccess);
   };
   const handleColor = (color: ColorResult) => {
     category.color = color.hex;
@@ -184,7 +194,7 @@ export default function CategoryEdit({
   };
   const handleUpload = () => {
     cancelled.current = false;
-    setUploadGraphicVisible(true);
+    handleUploadGraphicVisible(true);
   };
   const onFiles = (files: File[]) => {
     if (files.length > 0) {
@@ -247,31 +257,37 @@ export default function CategoryEdit({
                 <GraphicsIcon />
               </IconButton>
             ))}
-
-          <GraphicUploader
-            dimension={[1024, 512, ApmDim]}
-            defaultFilename={defaultMediaName(resourceId.toString())}
-            isOpen={uploadGraphicVisible}
-            onOpen={handleUploadGraphicVisible}
-            showMessage={showMessage}
-            hasRights={Boolean(graphicRights)}
-            finish={afterConvert}
-            cancelled={cancelled}
-            uploadType={UploadType.Graphic}
-            onFiles={onFiles}
-            metadata={
-              <>
-                <GraphicRights
-                  value={graphicRights ?? ''}
-                  teamId={teamId}
-                  onChange={handleRightsChange}
-                />
-                {graphicFullsizeUrl && (
-                  <img src={graphicFullsizeUrl} alt="new" width={400} />
-                )}
-              </>
-            }
-          />
+          {uploadGraphicVisible && (
+            <GraphicUploader
+              dimension={[1024, 512, ApmDim]}
+              defaultFilename={defaultMediaName(resourceId.toString())}
+              isOpen={uploadGraphicVisible}
+              onOpen={handleUploadGraphicVisible}
+              showMessage={showMessage}
+              hasRights={Boolean(graphicRights)}
+              finish={afterConvert}
+              cancelled={cancelled}
+              uploadType={UploadType.Graphic}
+              onFiles={onFiles}
+              metadata={
+                <>
+                  <GraphicRights
+                    value={graphicRights ?? ''}
+                    teamId={teamId}
+                    onChange={handleRightsChange}
+                  />
+                  {graphicFullsizeUrl && (
+                    <img
+                      key={graphicFullsizeUrl}
+                      src={`${graphicFullsizeUrl}${graphicFullsizeUrl.includes('?') ? '&' : '?'}t=${Date.now()}`}
+                      alt="new"
+                      width={400}
+                    />
+                  )}
+                </>
+              }
+            />
+          )}
         </>
       )}
     </RowDiv>
