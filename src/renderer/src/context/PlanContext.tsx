@@ -44,6 +44,8 @@ const initState = {
   setCanAddPublishing: (_canAddPublishing: boolean) => {},
   tab: 0,
   setTab: (_tab: number) => {},
+  playingMediaId: '', // Track the currently playing media ID
+  setPlayingMediaId: (_mediaId: string) => {},
 };
 
 export type ICtxState = typeof initState;
@@ -86,6 +88,10 @@ const PlanProvider = (props: IProps) => {
 
   const setTab = (tab: number) => {
     setState((state) => ({ ...state, tab }));
+  };
+
+  const setPlayingMediaId = (mediaId: string) => {
+    setState((state) => ({ ...state, playingMediaId: mediaId }));
   };
 
   const getSectionMap = () => {
@@ -169,6 +175,7 @@ const PlanProvider = (props: IProps) => {
           togglePublishing,
           setCanAddPublishing,
           setTab,
+          setPlayingMediaId,
         },
         setState,
       }}
