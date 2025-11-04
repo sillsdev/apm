@@ -9,7 +9,7 @@ import { DialogMode, VProject } from '../model';
 import { ProjectDialog } from '../components/Team/ProjectDialog';
 import { useMyNavigate } from '../utils/useMyNavigate';
 import { TEAMS } from '../utils/routePaths';
-import { useJsonParams } from '../utils';
+import { LocalKey, useJsonParams } from '../utils';
 import { projDefBook, projDefStory } from '../crud/useProjectDefaults';
 import { useGlobal } from '../context/useGlobal';
 import { remoteId } from '../crud';
@@ -139,7 +139,7 @@ const ProjectsScreenInner: React.FC = () => {
       remoteId('plan', plan, (memory as any)?.keyMap) || plan;
     // Only navigate if not already on this plan route
     if (!pathname.startsWith(`/plan/${remotePlanId}/`)) {
-      localStorage.setItem('selected-plan', plan); // persist only when committing navigation
+      localStorage.setItem(LocalKey.plan, plan); // persist only when committing navigation
       navigate(`/plan/${remotePlanId}/0`);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -213,7 +213,7 @@ const ProjectsScreenInner: React.FC = () => {
               bgcolor: theme.palette.common.white,
             })}
           >
-            {'Switch Teams'}
+            {t.switchTeams || 'Switch Teams'}
           </Button>
         </Stack>
       </Box>

@@ -39,7 +39,7 @@ export const TeamScreen = () => {
 
   useEffect(() => {
     if (loaded.current) {
-      let selectedPlan = localStorage.getItem('selected-plan');
+      let selectedPlan = localStorage.getItem(LocalKey.plan);
       let selectedProject = project;
       if (selectedPlan) {
         if (!selectedProject) {
