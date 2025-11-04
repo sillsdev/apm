@@ -7774,6 +7774,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="transcriptionTab.confirm">
+         <segment>
+            <source>Are you sure you want to cancel the download?</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="transcriptionTab.copyTip">
          <segment>
             <source>Copy transcriptions to Clipboard</source>

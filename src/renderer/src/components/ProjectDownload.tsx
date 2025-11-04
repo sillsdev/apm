@@ -12,6 +12,7 @@ import {
 import { IAxiosStatus } from '../store/AxiosStatus';
 import { useSnackBar } from '../hoc/SnackBar';
 import Progress from '../control/UploadProgress';
+import Confirm from './AlertDialog';
 import {
   findRecord,
   offlineProjectUpdateFilesDownloaded,
@@ -76,6 +77,7 @@ export const ProjectDownload = (props: IProps) => {
   const [exportName, setExportName] = React.useState('');
   const [exportUrl, setExportUrl] = React.useState('');
   const [offlineUpdates] = React.useState<RecordOperation[]>([]);
+  const [showCancelConfirm, setShowCancelConfirm] = React.useState(false);
   const backup = coordinator?.getSource('backup') as IndexedDBSource;
   const getGlobal = useGetGlobal();
   const translateError = (err: IAxiosStatus): string => {
@@ -90,9 +92,19 @@ export const ProjectDownload = (props: IProps) => {
       finish();
       return;
     }
+    // Show confirmation dialog before cancelling
+    setShowCancelConfirm(true);
+  };
+
+  const handleCancelConfirmed = () => {
+    setShowCancelConfirm(false);
     cancelRef.current = true;
     setBusy(false);
     finish(true);
+  };
+
+  const handleCancelAborted = () => {
+    setShowCancelConfirm(false);
   };
 
   React.useEffect(() => {
@@ -255,6 +267,13 @@ export const ProjectDownload = (props: IProps) => {
         action={progressAction}
         allowCancel={true}
       />
+      {showCancelConfirm && (
+        <Confirm
+          text={t.confirm || 'Are you sure you want to cancel the download?'}
+          yesResponse={handleCancelConfirmed}
+          noResponse={handleCancelAborted}
+        />
+      )}
     </div>
   );
 };

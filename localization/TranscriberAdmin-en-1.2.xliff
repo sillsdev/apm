@@ -9070,6 +9070,13 @@
                <context context-type="sourcefile">ExportTab.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="transcriptionTab.confirm">
+            <source>Are you sure you want to cancel the download?</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">TranscriptionTab.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="transcriptionTab.copyTip">
             <source>Copy transcriptions to Clipboard</source>
             <target/>
