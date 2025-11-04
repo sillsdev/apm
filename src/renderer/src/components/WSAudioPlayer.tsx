@@ -794,7 +794,17 @@ function WSAudioPlayer(props: IProps) {
 
   function onWSReady(duration: number, loadingAnother: boolean) {
     // Ignore WS-driven progress while recording; we drive from timer
-    if (recordingRef.current) return;
+    if (recordingRef.current) {
+      if (
+        Math.round(duration - recBaseDurationRef.current) >
+        recElapsedRef.current
+      ) {
+        recElapsedRef.current = Math.round(
+          duration - recBaseDurationRef.current
+        );
+      }
+      return;
+    }
     setDuration(duration);
     if (loadingAnother) return;
     setReady(true);
