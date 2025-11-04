@@ -96,6 +96,7 @@ export function ResourceRefs({ res, mode, onOpen }: ResourceRefsProps) {
       const rowsSaved = addRefs.length + updRecs.length + delRecs.length;
       showMessage(t.rowsSaved.replace('{0}', rowsSaved.toString()));
     }
+    onOpen();
   };
   const handleCancel = () => onOpen();
 
