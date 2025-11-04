@@ -158,9 +158,14 @@ export default function CategoryEdit({
 
   useEffect(() => {
     if (graphicFullsizeUrl) {
-      setFullSizeImageSrc(
-        `${graphicFullsizeUrl}${graphicFullsizeUrl.includes('?') ? '&' : '?'}t=${Date.now()}`
-      );
+      // Don't add cache-busting parameter for blob URLs (from File objects)
+      if (graphicFullsizeUrl.startsWith('blob:')) {
+        setFullSizeImageSrc(graphicFullsizeUrl);
+      } else {
+        setFullSizeImageSrc(
+          `${graphicFullsizeUrl}${graphicFullsizeUrl.includes('?') ? '&' : '?'}t=${Date.now()}`
+        );
+      }
     } else {
       setFullSizeImageSrc('');
     }
