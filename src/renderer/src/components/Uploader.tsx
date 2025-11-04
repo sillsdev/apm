@@ -144,6 +144,8 @@ export const Uploader = (props: IProps) => {
       successCount.current = 1;
       mediaIdRef.current = [mediaId];
     } else successCount.current = 0;
+    //force finishMessage to show a message
+    fileList.current = [new File([], 'test.txt')];
     finishMessage();
   };
   const clearErrors = () => {
@@ -152,6 +154,7 @@ export const Uploader = (props: IProps) => {
   };
 
   const finishMessage = () => {
+    console.log('finishMessage', successCount.current);
     //wait for any error messages to show up
     setTimeout(() => {
       errMsgs.forEach((err, ix) => {
@@ -160,6 +163,7 @@ export const Uploader = (props: IProps) => {
       //empty it instead of redefining it, which doesn't work between calls;
       clearErrors();
       //wait to show the final message if there are errors
+
       setTimeout(() => {
         if (fileList.current) {
           showMessage(
