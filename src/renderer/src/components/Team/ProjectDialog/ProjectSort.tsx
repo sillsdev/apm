@@ -36,6 +36,7 @@ export function ProjectSort({ teamId, onClose }: IProps) {
   const [sortKey, setSortKey] = React.useState<SortArr>([]);
   const defSort = React.useRef<SortArr>();
   const cancel = React.useRef(true);
+  const [changed, setChanged] = React.useState(false);
   const [memory] = useGlobal('memory');
   const [projRecs, setProjRecs] = React.useState<ProjectD[]>([]);
   const mounted = React.useRef(false);
@@ -72,6 +73,7 @@ export function ProjectSort({ teamId, onClose }: IProps) {
     }
     updateSortKey(sortMap);
     setProjRecs((prev) => arrayMove(prev, oldIndex, newIndex));
+    setChanged(true);
   };
 
   const handleSave = () => {
@@ -79,6 +81,7 @@ export function ProjectSort({ teamId, onClose }: IProps) {
     cancel.current = false;
     updateGeneralBooks(sortKey).finally(() => {
       setBusy(false);
+      setChanged(false);
       onClose?.();
     });
   };
@@ -86,6 +89,7 @@ export function ProjectSort({ teamId, onClose }: IProps) {
   const resetSort = () => {
     cancel.current = false;
     setOrgDefault(orgDefaultProjSort, undefined, teamId ?? personalTeam);
+    setChanged(false);
     onClose?.();
   };
 
@@ -108,6 +112,7 @@ export function ProjectSort({ teamId, onClose }: IProps) {
       }
       updateSortKey(sortMap);
       setProjRecs(projRecs);
+      setChanged(false);
       mounted.current = true;
     }
 
@@ -129,7 +134,11 @@ export function ProjectSort({ teamId, onClose }: IProps) {
         <IconButton sx={{ alignSelf: 'flex-end' }} onClick={resetSort}>
           <ResetIcon />
         </IconButton>
-        <PriButton onClick={handleSave} sx={{ alignSelf: 'flex-end' }}>
+        <PriButton
+          onClick={handleSave}
+          sx={{ alignSelf: 'flex-end' }}
+          disabled={!changed}
+        >
           {ts.save}
         </PriButton>
       </Stack>
