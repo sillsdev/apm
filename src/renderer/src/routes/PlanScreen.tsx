@@ -50,7 +50,7 @@ export const PlanScreen = () => {
     <Box sx={{ width: '100%' }}>
       <AppHead switchTo={false} />
       <PlanProvider>
-        <Box id="PlanScreen" sx={{ display: 'flex', paddingTop: '80px' }}>
+        <Box id="PlanScreen" sx={{ display: 'flex', paddingTop: '7.5rem' }}>
           <PlanTabs checkSaved={checkSavedFn} />
         </Box>
       </PlanProvider>
