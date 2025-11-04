@@ -150,7 +150,15 @@ export function GraphicRights(props: IProps) {
         id="graphic-rights"
         options={rightsHolderOptions}
         getOptionLabel={getOptionLabel}
-        renderOption={(props, option) => <li {...props}>{option.title}</li>}
+        renderOption={(props, option) => {
+          // eslint-disable-next-line react/prop-types
+          const { key, ...otherProps } = props;
+          return (
+            <li key={key} {...otherProps}>
+              {option.title}
+            </li>
+          );
+        }}
         sx={{ width: 500, p: 1 }}
         freeSolo
         renderInput={(params) => (
