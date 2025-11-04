@@ -18,22 +18,25 @@ const makeMap = (books: BookName[]) => {
   return result;
 };
 
+const excludedBooks = ['FRT'];
+
 const BookReducers = function (
   state = bookCleanState,
   action: BookNameMsgs | LocalizationMsgs
 ): IBookNameData {
   switch (action?.type) {
     case FETCH_BOOKS:
+      const filteredBooks = action.payload.data.filter(
+        (b: BookName) => !excludedBooks.includes(b.code) && b.short !== ''
+      );
       return {
         ...state,
         loaded: true,
-        suggestions: action.payload.data
-          .filter((b: BookName) => b.short !== '')
-          .map((b: BookName) => {
-            return { value: b.code, label: b.short };
-          }),
-        map: makeMap(action.payload.data),
-        bookData: action.payload.data,
+        suggestions: filteredBooks.map((b: BookName) => {
+          return { value: b.code, label: b.short };
+        }),
+        map: makeMap(filteredBooks),
+        bookData: filteredBooks,
       };
     case SET_LANGUAGE:
       return {
