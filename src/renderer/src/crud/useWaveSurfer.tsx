@@ -679,6 +679,7 @@ export function useWaveSurfer(
   const wsStopRecord = () => {
     onCanUndo(true);
     setRecording(false);
+    isReadyRef.current = false;
   };
 
   const wsUndo = async () => {
