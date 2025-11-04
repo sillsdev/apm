@@ -1,4 +1,5 @@
 import React from 'react';
+import { homeRoute } from '../utils/routePaths';
 import { useGlobal } from '../context/useGlobal';
 import { useParams, useLocation } from 'react-router-dom';
 import { Box } from '@mui/material';
@@ -27,7 +28,7 @@ export const PlanScreen = () => {
     if (projType === '') setProjectType(projectId);
     if (user && !projType) {
       // If user is set but we don't have this project, go to the team screen
-      setView('/team');
+      setView(homeRoute());
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -38,8 +39,8 @@ export const PlanScreen = () => {
   }, [prjId]);
 
   React.useEffect(() => {
-    if (project === '' && organization !== '' && view !== '/team')
-      setView('/team');
+    if (project === '' && organization !== '' && view !== homeRoute())
+      setView(homeRoute());
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [project, organization]);
 
