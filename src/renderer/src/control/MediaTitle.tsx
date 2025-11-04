@@ -332,7 +332,7 @@ export default function MediaTitle(props: IProps) {
     if (playingMediaId !== mediaId && playing) {
       setPlaying(false);
     }
-  }, [playingMediaId, mediaId, playing]);
+  }, [playingMediaId, mediaId]);
 
   useEffect(() => {
     if (startRecord)
