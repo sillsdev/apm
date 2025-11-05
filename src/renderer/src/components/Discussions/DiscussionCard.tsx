@@ -308,7 +308,7 @@ export const DiscussionCard = (props: IProps) => {
   const afterUploadCb = async (mediaId: string | undefined) => {
     commentMediaId.current = mediaId;
     if (!mediaId) {
-      saveCompleted(NewCommentToolId, ts.NoSaveOffline);
+      saveCompleted(NewCommentToolId, ts.NoSaveWoMedia);
     } else {
       await saveDiscussion();
       await saveMyComment();

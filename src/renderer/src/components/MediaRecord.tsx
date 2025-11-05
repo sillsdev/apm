@@ -188,9 +188,9 @@ function MediaRecord(props: IProps) {
     setUploading(false);
     if (filechangedRef.current && mediaId) setFilechanged(false);
     if (!mediaId) {
-      showMessage(ts.NoSaveOffline);
-      setStatusText(ts.NoSaveOffline);
-      saveCompleted(toolId, ts.NoSaveOffline);
+      showMessage(ts.NoSaveWoMedia);
+      setStatusText(ts.NoSaveWoMedia);
+      saveCompleted(toolId, ts.NoSaveWoMedia);
     } else {
       setStatusText('');
       saveCompleted(toolId);

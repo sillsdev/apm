@@ -40,7 +40,7 @@ export const ReplyCard = (props: IProps) => {
   };
   const resetAfterError = () => {
     savingRef.current = false;
-    saveCompleted(myToolId, ts.NoSaveOffline);
+    saveCompleted(myToolId, ts.NoSaveWoMedia);
   };
   const commentText = useRef('');
   const saveComment = useSaveComment();
