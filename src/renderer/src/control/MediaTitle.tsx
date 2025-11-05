@@ -40,6 +40,7 @@ import { ILanguage } from './Language';
 import { UnsavedContext } from '../context/UnsavedContext';
 import TitleTabs from '../components/TitleTabs';
 import BigDialog from '../hoc/BigDialog';
+import { PlanContext } from '../context/PlanContext';
 
 interface IStartProps {
   titlekey: string;
@@ -192,6 +193,7 @@ export default function MediaTitle(props: IProps) {
     clearCompleted,
     // isChanged,
   } = useContext(UnsavedContext).state;
+  const { playingMediaId, setPlayingMediaId } = useContext(PlanContext).state;
 
   useEffect(() => setHelperText(helper ?? ''), [helper]);
 
@@ -249,7 +251,10 @@ export default function MediaTitle(props: IProps) {
     if (!playing && mediaId && srcMediaId !== mediaId) {
       setSrcMediaId(mediaId);
     }
-    setPlaying(!playing);
+    const newPlaying = !playing;
+    setPlaying(newPlaying);
+    // Update the global playing media ID so other players can stop
+    setPlayingMediaId(newPlaying ? mediaId : '');
   };
   const handleRecord = (e: any) => {
     e.stopPropagation();
@@ -322,6 +327,13 @@ export default function MediaTitle(props: IProps) {
     toolChanged(recToolId, false);
   };
 
+  // Stop playing when another media starts playing elsewhere (e.g., in action column)
+  useEffect(() => {
+    if (playingMediaId !== mediaId && playing) {
+      setPlaying(false);
+    }
+  }, [playingMediaId, mediaId]);
+
   useEffect(() => {
     if (startRecord)
       waitForIt(
@@ -346,6 +358,10 @@ export default function MediaTitle(props: IProps) {
 
   const playEnded = () => {
     setPlaying(false);
+    // Clear the global playing media ID when playback ends
+    if (playingMediaId === mediaId) {
+      setPlayingMediaId('');
+    }
   };
 
   const TitleText = useMemo(

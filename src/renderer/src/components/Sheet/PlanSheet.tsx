@@ -268,6 +268,8 @@ export function PlanSheet(props: IProps) {
     sectionArr,
     shared,
     canPublish,
+    playingMediaId,
+    setPlayingMediaId,
   } = ctx.state;
 
   const [memory] = useGlobal('memory');
@@ -559,11 +561,24 @@ export function PlanSheet(props: IProps) {
 
   const onPlayStatus = (mediaId: string) => {
     if (mediaId === srcMediaId) {
-      setMediaPlaying(!mediaPlaying);
+      // Toggle play/pause for the current media
+      const newPlaying = !mediaPlaying;
+      setMediaPlaying(newPlaying);
+      setPlayingMediaId(newPlaying ? mediaId : '');
     } else {
+      // Switch to a new media
       setSrcMediaId(mediaId);
+      setMediaPlaying(true);
+      setPlayingMediaId(mediaId);
     }
   };
+
+  // Stop playing when another media starts playing elsewhere (e.g., in title column)
+  useEffect(() => {
+    if (playingMediaId !== srcMediaId && mediaPlaying) {
+      setMediaPlaying(false);
+    }
+  }, [playingMediaId, srcMediaId, mediaPlaying]);
 
   const handleAudacity = (i: number) => () => {
     onAudacity && onAudacity(i);
@@ -906,6 +921,10 @@ export function PlanSheet(props: IProps) {
 
   const playEnded = () => {
     setMediaPlaying(false);
+    // Clear the global playing media ID when playback ends
+    if (playingMediaId === srcMediaId) {
+      setPlayingMediaId('');
+    }
   };
   const currentRowSectionSeqNum = useMemo(() => {
     if (currentRowRef.current < 1) return undefined;
