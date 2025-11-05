@@ -187,7 +187,7 @@ const ScrollableTabsButtonAuto = (props: IProps) => {
           />
         </Tabs>
       </AppBar>
-      <Box sx={{ pt: `${TabHeight}px` }}>
+      <Box>
         {tab === PlanTabEnum.sectionPassage && (
           <ScriptureTable {...props} colNames={colNames} />
         )}
