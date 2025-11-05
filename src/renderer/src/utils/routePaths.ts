@@ -13,12 +13,10 @@ export const isMobileWidth = (): boolean => {
   return window.innerWidth < MOBILE_BREAKPOINT;
 };
 
-export const DESKTEAM = '/team';
 export const MOBILETEAM = '/teams';
 
-// Returns /teams for mobile, /team for tablet/desktop
 export const getTeamsRoute = (): string => {
-  return isMobileWidth() ? MOBILETEAM : DESKTEAM;
+  return MOBILETEAM;
 };
 
 const buildHomeRoute = (teamId?: string | null) =>
@@ -46,14 +44,6 @@ const deriveTeamIdFromPlan = (): string | null => {
 export const homeRoute = () => buildHomeRoute(deriveTeamIdFromPlan());
 
 export const isHomeRoute = (path: string | undefined) =>
-  !!path &&
-  (/^\/projects\/[^/]+$/i.test(path) ||
-    path === MOBILETEAM ||
-    path === DESKTEAM);
+  !!path && (/^\/projects\/[^/]+$/i.test(path) || path === MOBILETEAM);
 
-// Predicate usable for regex-like checks (exact match, optional trailing slash)
-// export const homeRouteMatch = (path: string | undefined) =>
-//   !!path &&
-//   (/^\/projects\/[^/]+\/?$/i.test(path) || /^\/teams\/?$/i.test(path));
-
-export const HOME_ROUTES = [MOBILETEAM, DESKTEAM];
+export const HOME_ROUTES = [MOBILETEAM];

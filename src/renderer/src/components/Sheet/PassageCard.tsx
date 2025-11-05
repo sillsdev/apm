@@ -1,5 +1,5 @@
 import { ISheet } from '../../model';
-import { Button, Card, CardContent, Typography } from '@mui/material';
+import { Box, Button, Card, CardContent, Typography } from '@mui/material';
 import {
   ArrowForwardIos,
   Person,
@@ -35,10 +35,10 @@ export function PassageCard(props: IProps) {
               variant="text"
               sx={{
                 minWidth: 0,
-                p: 0,
                 ml: 1,
-                width: 48,
-                height: 48,
+                mt: '-.25rem',
+                width: 40,
+                height: 40,
                 backgroundColor: 'transparent',
                 '&:hover': {
                   backgroundColor: '#f0f0f0',
@@ -60,34 +60,23 @@ export function PassageCard(props: IProps) {
               )}
             </Button>
           ) : (
-            <Button
-              variant="text"
+            <Box
               sx={{
-                minWidth: 0,
-                p: 0,
+                display: 'inline-flex',
                 ml: 1,
-                width: 48,
-                height: 48,
-                backgroundColor: 'transparent',
-                '&:hover': {
-                  backgroundColor: '#f0f0f0',
-                },
+                mt: '-.25rem',
+                width: 40,
+                height: 40,
                 borderRadius: '50%',
+                verticalAlign: 'middle',
               }}
-              onClick={undefined}
-            >
-              <PlayCircleOutline
-                sx={{ verticalAlign: 'middle' }}
-                fontSize="large"
-                color="disabled"
-              />
-            </Button>
+            />
           )}
         </Typography>
-        <Typography variant="body2" color="grey" sx={{ mt: 1 }}>
+        <Typography variant="body2" color="grey">
           {cardInfo.comment || '\u00A0'}
         </Typography>
-        <Typography sx={{ margin: '1rem 0' }}>
+        <Typography sx={{ margin: '1.5rem 0 .5rem 0' }}>
           <Person sx={{ verticalAlign: 'middle', mb: '.5rem' }} />
           {assignedGroup}
         </Typography>

@@ -51,13 +51,17 @@ export function PlanView(props: IProps) {
         display: 'flex',
         flexDirection: 'column',
         gap: '1rem',
-        padding: '1.5rem',
+        padding: '1rem',
       }}
     >
       {rowInfo.map((row, i) => {
         if (row.kind === 0) {
           return (
-            <Typography key={row.sectionId?.id} variant="h4">
+            <Typography
+              key={row.sectionId?.id}
+              variant="h4"
+              sx={{ mt: '1.5rem' }}
+            >
               Section {row.sectionSeq}
             </Typography>
           );
