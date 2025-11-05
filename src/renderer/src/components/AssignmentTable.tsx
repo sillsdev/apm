@@ -102,7 +102,7 @@ export function AssignmentTable() {
   const { flat, sectionArr } = ctx.state;
   const [data, setData] = useState(Array<IRow>());
   const [openSections, setOpenSections] = useState<string[]>([]);
-  const [check, setCheck] = useState(Array<number>());
+  const [check, setCheck] = useState(Array<string>());
   const [selectedRows, setSelectedRows] = useState<GridRowSelectionModel>({
     type: 'include',
     ids: new Set(),
@@ -336,8 +336,9 @@ export function AssignmentTable() {
       showMessage(t.selectRowsToRemove);
     } else {
       let count = 0;
-      check.forEach((i) => {
-        const row = data[i] as IRow;
+      check.forEach((recId) => {
+        const row = data.find((r) => r.recId === recId);
+        if (!row) return;
         const sectId = row.scheme as string;
         if (!sectId) return;
         const section = sections.find((s) => s.id === sectId);
@@ -410,16 +411,23 @@ export function AssignmentTable() {
   const handleRowSelectionChange = (newSelection: GridRowSelectionModel) => {
     if (newSelection.type === 'exclude') {
       const newSelectionIds = Array<number>();
-      data.forEach((_r, i) => {
-        if (!newSelection.ids.has(i)) newSelectionIds.push(i);
+      const newSelectionRecIds = Array<string>();
+      data.forEach((r, i) => {
+        if (!newSelection.ids.has(i)) {
+          newSelectionIds.push(i);
+          newSelectionRecIds.push(r.recId);
+        }
       });
-      setCheck(newSelectionIds);
+      setCheck(newSelectionRecIds);
       setSelectedRows({ type: 'include', ids: new Set(newSelectionIds) });
       return;
     }
-    const checks = Array.from(newSelection.ids).map((id) =>
-      parseInt(id as string)
-    );
+    const checks = Array.from(newSelection.ids)
+      .map((id) => {
+        const index = parseInt(id as string);
+        return data[index]?.recId;
+      })
+      .filter((recId) => recId !== undefined) as string[];
     setCheck(checks);
     setSelectedRows(newSelection);
   };
@@ -428,7 +436,14 @@ export function AssignmentTable() {
     a.attributes?.name.localeCompare(b.attributes?.name);
 
   useEffect(() => {
-    setData(getAssignments());
+    const newData = getAssignments();
+    if (selectedRows.ids.size > 0) {
+      const newSelectedRows = check
+        .map((recId) => newData.findIndex((r) => r.recId === recId))
+        .filter((index) => index !== -1);
+      setSelectedRows({ type: 'include', ids: new Set(newSelectedRows) });
+    }
+    setData(newData);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     plan,
@@ -446,12 +461,9 @@ export function AssignmentTable() {
 
   useEffect(() => {
     const selected = Array<SectionD>();
-    let one: any;
-    check.forEach((c) => {
-      one = sections.find(function (s) {
-        return c < data.length ? s.id === (data[c] as IRow).recId : undefined;
-      });
-      if (one !== undefined) selected.push(one);
+    check.forEach((recId) => {
+      const section = sections.find((s) => s.id === recId);
+      if (section !== undefined) selected.push(section);
     });
     setSelectedSections(selected);
 
