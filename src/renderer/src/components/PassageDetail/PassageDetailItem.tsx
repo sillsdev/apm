@@ -276,8 +276,8 @@ export function PassageDetailItem(props: IProps) {
         setUploadVisible(false);
       }
     } else {
-      saveCompleted(toolId, ts.NoSaveOffline);
-      showMessage(ts.NoSaveOffline);
+      saveCompleted(toolId, ts.NoSaveWoMedia);
+      showMessage(ts.NoSaveWoMedia);
     }
   };
 

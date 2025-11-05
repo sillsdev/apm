@@ -149,7 +149,7 @@ export function PassageDetailRecord(props: IProps) {
   const afterUploadCb = async (mediaId: string | undefined) => {
     if (mediaId) {
       setStatusText('');
-    } else setStatusText(ts.NoSaveOffline);
+    } else setStatusText(ts.NoSaveWoMedia);
   };
   const afterUpload = async (planId: string, mediaRemoteIds?: string[]) => {
     const mediaId =

@@ -242,8 +242,8 @@ export function ProvideRights(props: IProps) {
       setStatusText('');
       saveCompleted(toolId);
     } else {
-      setStatusText(ts.NoSaveOffline);
-      saveCompleted(toolId, ts.NoSaveOffline);
+      setStatusText(ts.NoSaveWoMedia);
+      saveCompleted(toolId, ts.NoSaveWoMedia);
     }
     setSaving(false);
   };

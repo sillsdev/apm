@@ -6808,6 +6808,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="shared.NoSaveWoMedia">
+         <segment>
+            <source>No media has been saved to the cloud.</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="shared.notSupported">
          <segment>
             <source>This feature is not supported yet.</source>
