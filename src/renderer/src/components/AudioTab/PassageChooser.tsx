@@ -105,7 +105,7 @@ export const PassageChooser = (props: IProps) => {
       columns.reduce(
         (sum, col) =>
           !columnVisibilityModel[col.field]
-            ? 0
+            ? sum
             : ['sectionDesc', 'reference'].includes(col.field)
               ? sum + MinNameWidth
               : sum + (col.width ?? 0),
