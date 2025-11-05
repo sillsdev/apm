@@ -154,7 +154,6 @@ const ProjectsScreenInner: React.FC = () => {
           paddingTop: '80px',
           px: 2,
           pb: 8,
-          maxWidth: { xs: 520, md: 'unset' },
           mx: 'auto',
           display: 'flex',
           flexDirection: 'column',
