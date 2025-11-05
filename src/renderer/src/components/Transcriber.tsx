@@ -274,7 +274,7 @@ export function Transcriber(props: IProps) {
     discussionSize,
   } = usePassageDetailContext();
   const [boxHeight, setBoxHeight] = useState(
-    discussionSize.height - (PLAYER_HEIGHT + 220) - chooserSize - 90
+    discussionSize.height - (PLAYER_HEIGHT + 220) - chooserSize - 100
   );
   const [style, setStyle] = useState({
     cursor: 'default',
@@ -458,9 +458,7 @@ export function Transcriber(props: IProps) {
   }, [toolsChanged]);
 
   useEffect(() => {
-    // subtract 50 to be in screen and another 50 for discussion icon
-    let newBoxHeight =
-      discussionSize.height - PLAYER_HEIGHT - chooserSize - 100;
+    let newBoxHeight = discussionSize.height - PLAYER_HEIGHT - chooserSize - 40;
     if (defaultWidth < 700) newBoxHeight -= 40;
     if (newBoxHeight !== boxHeight) setBoxHeight(newBoxHeight);
     // eslint-disable-next-line react-hooks/exhaustive-deps
