@@ -134,6 +134,8 @@ function MediaRecord(props: IProps) {
   const WARNINGLIMIT = 1;
   const [reporter] = useGlobal('errorReporter');
   const { fetchMediaUrl, mediaState } = useFetchMediaUrl(reporter);
+  const mediaStateRef = useRef(mediaState);
+
   const [name, setName] = useState(t.defaultFilename);
   const [userHasSetName, setUserHasSetName] = useState(false);
   const [filetype, setFiletype] = useState('');
@@ -224,6 +226,7 @@ function MediaRecord(props: IProps) {
   }, [mediaId]);
 
   useEffect(() => {
+    mediaStateRef.current = mediaState;
     trackState && trackState(mediaState);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mediaState]);
@@ -427,53 +430,68 @@ function MediaRecord(props: IProps) {
     onLoaded && onLoaded();
   };
 
-  const handleLoadAudio = () => {
+  const getGoodUrl = async () => {
+    //if it's ready...force a new one!
+    const forceNewUrl =
+      mediaStateRef.current.id === mediaId &&
+      mediaStateRef.current.status === MediaSt.FETCHED &&
+      mediaStateRef.current.url?.startsWith('http');
+
+    // If mediaState.id doesn't match mediaId, fetch the URL
+    if (forceNewUrl) {
+      //force it to go get another (unexpired) s3 url
+      //force requery for new media url
+      fetchMediaUrl({ id: '' });
+      await waitForIt(
+        'requery url',
+        () => mediaStateRef.current.id === '',
+        () => false,
+        500
+      );
+    }
+
+    // If mediaState.id doesn't match mediaId, fetch the URL
+    if (mediaStateRef.current.id !== mediaId) {
+      fetchMediaUrl({ id: mediaId ?? '' });
+    }
+    // Wait for mediaState to be fetched before continuing
+    await waitForIt(
+      'fetch media url',
+      () =>
+        mediaStateRef.current.status === MediaSt.FETCHED &&
+        mediaStateRef.current.id === mediaId,
+
+      () => mediaStateRef.current.status === MediaSt.ERROR,
+      500
+    );
+    if (
+      mediaStateRef.current.status === MediaSt.FETCHED &&
+      mediaStateRef.current.url
+    )
+      return mediaStateRef.current.url;
+    return '';
+  };
+  const handleLoadAudio = async () => {
     showMessage(t.loading);
     if (loading) return;
     setLoading(true);
     reset();
-    loadBlob(mediaState.url, (urlorError, b) => {
-      if (b) {
-        gotTheBlob(b);
-      } else {
-        if (urlorError.includes('403')) {
-          //force it to go get another (unexpired) s3 url
-          //force requery for new media url
-          fetchMediaUrl({ id: '' });
-          waitForIt(
-            'requery url',
-            () => mediaState.id === '',
-            () => false,
-            500
-          ).then(() => {
-            fetchMediaUrl({ id: mediaId ?? '' });
-            waitForIt(
-              'requery url',
-              () => mediaState.id === mediaId,
-              () => false,
-              500
-            ).then(() => {
-              loadBlob(mediaState.url, (urlorError, b) => {
-                if (b) {
-                  gotTheBlob(b);
-                } else {
-                  blobError(urlorError as string);
-                }
-              });
-            });
-          });
+    const url = await getGoodUrl();
+
+    if (url) {
+      loadBlob(url, (urlorError, b) => {
+        if (b) {
+          gotTheBlob(b);
         } else {
           blobError(urlorError as string);
         }
-      }
-    });
+      });
+    } else {
+      blobError(mediaStateRef.current.error || 'Failed to fetch media URL');
+    }
+
     if (defaultFilename) setName(defaultFilename);
     else setName(t.defaultFilename);
-
-    if (!mediaId) {
-      setDoReset && setDoReset(true);
-      return;
-    }
   };
 
   useEffect(() => {
