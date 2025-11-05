@@ -1,4 +1,8 @@
+import { findRecord, related } from '../crud';
 import { memory } from '../schema';
+import { LocalKey } from './localUserKey';
+import { PlanD } from '@model/plan';
+import { ProjectD } from '@model/project';
 
 // Fallback static home route (teams directory) used when no contextual team is known
 export const TEAMS = '/teams';
@@ -6,26 +10,19 @@ export const TEAMS = '/teams';
 export const buildHomeRoute = (teamId?: string | null) =>
   teamId ? `/projects/${teamId}` : TEAMS;
 
-const SELECTED_PLAN_KEY = 'selected-plan';
-
 // Attempt to derive the organization (team) id from the selected plan.
 const deriveTeamIdFromPlan = (): string | null => {
-  const stored = localStorage.getItem(SELECTED_PLAN_KEY);
+  const stored = localStorage.getItem(LocalKey.plan);
   if (!stored) return null; // nothing selected
-  const keyMap: any = (memory as any)?.keyMap;
-  // Always try remoteId -> id mapping first (cheap); fall back to stored value
-  const internalId = keyMap?.idFromKey?.('plan', 'remoteId', stored) || stored;
   try {
-    const planRec: any = memory?.cache?.query((q) =>
-      q.findRecord({ type: 'plan', id: internalId })
-    );
+    const planRec = findRecord(memory, 'plan', stored) as PlanD | undefined;
     if (!planRec) return null;
-    const projectId = planRec.relationships?.project?.data?.id;
+    const projectId = related(planRec, 'project') as string;
     if (!projectId) return null;
-    const projectRec: any = memory?.cache?.query((q) =>
-      q.findRecord({ type: 'project', id: projectId })
-    );
-    const orgId = projectRec?.relationships?.organization?.data?.id || null;
+    const projectRec = findRecord(memory, 'project', projectId) as
+      | ProjectD
+      | undefined;
+    const orgId = related(projectRec, 'organization') || null;
     return orgId || null;
   } catch {
     return null;

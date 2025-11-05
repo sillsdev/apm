@@ -158,6 +158,7 @@ const initialState = {
 	"cards": new LocalizedStrings({
 		"en": {
 			"add": "Add",
+			"addNewTeam": "Add New Team...",
 			"addTeam": "Add Team",
 			"bibleid": "Bible Id",
 			"bibleidexists": "Bible Id already exists. Please contact support if you need to work on this Bible.",
@@ -218,6 +219,7 @@ const initialState = {
 			"sectionStatus": "{0} {1}",
 			"settings": "Settings",
 			"sortProjects": "Sort Projects",
+			"switchTeams": "Switch Teams",
 			"notesHelper": "Shared explanations, rationales, footnotes, etc.",
 			"notesProject": "Project with Notes",
 			"projectPermissions": "Permissions may be set for projects of this team.",

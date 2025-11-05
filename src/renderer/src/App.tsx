@@ -11,9 +11,10 @@ const theme = createTheme({
     common: {
       white: '#ffffff',
     },
-    background: {
-      default: '#303030ff',
-    },
+    // adding this background color change the plan sheet row background color to dark gray
+    // background: {
+    //   default: '#303030ff',
+    // },
     primary: {
       main: '#135CB9', //Original: 135CB9, Better color: 1D9F90
     },

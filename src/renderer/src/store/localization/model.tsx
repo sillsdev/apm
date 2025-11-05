@@ -143,6 +143,7 @@ export interface IAudioDownloadStrings extends Localize.LocalizedStringsMethods 
 
 export interface ICardsStrings extends Localize.LocalizedStringsMethods {
     "add": string;
+    "addNewTeam": string;
     "addTeam": string;
     "bibleid": string;
     "bibleidexists": string;
@@ -203,6 +204,7 @@ export interface ICardsStrings extends Localize.LocalizedStringsMethods {
     "sectionStatus": string;
     "settings": string;
     "sortProjects": string;
+    "switchTeams": string;
     "notesHelper": string;
     "notesProject": string;
     "projectPermissions": string;
