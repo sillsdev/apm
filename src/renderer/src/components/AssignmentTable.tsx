@@ -438,10 +438,9 @@ export function AssignmentTable() {
   useEffect(() => {
     const newData = getAssignments();
     if (selectedRows.ids.size > 0) {
-      const newSelectedRows = check.map((recId) => {
-        const index = newData.findIndex((r) => r.recId === recId);
-        return index;
-      });
+      const newSelectedRows = check
+        .map((recId) => newData.findIndex((r) => r.recId === recId))
+        .filter((index) => index !== -1);
       setSelectedRows({ type: 'include', ids: new Set(newSelectedRows) });
     }
     setData(newData);
