@@ -12,6 +12,7 @@ import {
 import { IAxiosStatus } from '../store/AxiosStatus';
 import { useSnackBar } from '../hoc/SnackBar';
 import Progress from '../control/UploadProgress';
+import Confirm from './AlertDialog';
 import {
   findRecord,
   offlineProjectUpdateFilesDownloaded,
@@ -76,6 +77,7 @@ export const ProjectDownload = (props: IProps) => {
   const [exportName, setExportName] = React.useState('');
   const [exportUrl, setExportUrl] = React.useState('');
   const [offlineUpdates] = React.useState<RecordOperation[]>([]);
+  const [showCancelConfirm, setShowCancelConfirm] = React.useState(false);
   const backup = coordinator?.getSource('backup') as IndexedDBSource;
   const getGlobal = useGetGlobal();
   const translateError = (err: IAxiosStatus): string => {
@@ -90,9 +92,19 @@ export const ProjectDownload = (props: IProps) => {
       finish();
       return;
     }
+    // Show confirmation dialog before cancelling
+    setShowCancelConfirm(true);
+  };
+
+  const handleCancelConfirmed = () => {
+    setShowCancelConfirm(false);
     cancelRef.current = true;
     setBusy(false);
     finish(true);
+  };
+
+  const handleCancelAborted = () => {
+    setShowCancelConfirm(false);
   };
 
   React.useEffect(() => {
@@ -255,6 +267,18 @@ export const ProjectDownload = (props: IProps) => {
         action={progressAction}
         allowCancel={true}
       />
+      {showCancelConfirm && (
+        <>
+          {process.env.NODE_ENV === 'development' && !t.confirm && (
+            console.warn('Missing localization for t.confirm in ProjectDownload')
+          )}
+          <Confirm
+            text={t.confirm}
+            yesResponse={handleCancelConfirmed}
+            noResponse={handleCancelAborted}
+          />
+        </>
+      )}
     </div>
   );
 };
