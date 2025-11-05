@@ -2,6 +2,7 @@ export * from './appPath';
 export * from './camel2Title';
 export * from './cleanFileName';
 export * from './currentDateTime';
+export * from './dataGridLocale';
 export * from './dataPath';
 export * from './exitElectronApp';
 export * from './fileJson';
