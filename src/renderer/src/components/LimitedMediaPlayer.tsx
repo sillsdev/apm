@@ -239,8 +239,7 @@ export function LimitedMediaPlayer(props: IProps) {
     const newPos = Math.max(currentTime - 3, 0);
     setPosition(newPos);
     const start = limits.start ?? 0;
-    const duration = (limits.end || durationRef.current) - start;
-    const slider = Math.round(((newPos - start) * 100) / duration);
+    const slider = Math.round(newPos - start);
     setValue(slider);
   };
 
