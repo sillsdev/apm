@@ -8,26 +8,40 @@ import TeamDialog from '../components/Team/TeamDialog';
 import { DialogMode, VProject } from '../model';
 import { ProjectDialog } from '../components/Team/ProjectDialog';
 import { useMyNavigate } from '../utils/useMyNavigate';
-import { getTeamsRoute } from '../utils/routePaths';
+import { getTeamsRoute, isMobileWidth } from '../utils/routePaths';
 import { LocalKey, useJsonParams } from '../utils';
 import { projDefBook, projDefStory } from '../crud/useProjectDefaults';
-import { useGlobal } from '../context/useGlobal';
+import { useGlobal, useGetGlobal } from '../context/useGlobal';
 import { remoteId } from '../crud';
 import { UnsavedContext } from '../context/UnsavedContext';
+import BigDialog from '../hoc/BigDialog';
+import { StepEditor } from '../components/StepEditor';
+import { useRole, defaultWorkflow } from '../crud';
 
 const ProjectsScreenInner: React.FC = () => {
   const navigate = useMyNavigate();
   const { teamId } = useParams();
   const ctx = React.useContext(TeamContext);
-  const { teamProjects, personalProjects, personalTeam, cardStrings, teams } =
-    ctx.state;
+  const {
+    teamProjects,
+    personalProjects,
+    personalTeam,
+    cardStrings,
+    teams,
+    isAdmin,
+  } = ctx.state;
   const t = cardStrings;
   const { pathname } = useLocation();
   const [plan] = useGlobal('plan');
   const [memory] = useGlobal('memory');
   const [home, setHome] = useGlobal('home');
   const unsavedCtx = React.useContext(UnsavedContext);
-  const { startClear } = unsavedCtx.state;
+  const { startClear, startSave, waitForSave } = unsavedCtx.state;
+  const getGlobal = useGetGlobal();
+  const [offline] = useGlobal('offline');
+  const [offlineOnly] = useGlobal('offlineOnly');
+  const [busy] = useGlobal('remoteBusy');
+  const { userIsOrgAdmin } = useRole();
 
   const isPersonal = teamId === personalTeam;
   const projects = React.useMemo(
@@ -51,6 +65,16 @@ const ProjectsScreenInner: React.FC = () => {
   // New project dialog state
   const [addOpen, setAddOpen] = React.useState(false);
   const handleAddProject = () => setAddOpen(true);
+
+  // Edit workflow dialog state
+  const [showWorkflow, setShowWorkflow] = React.useState(false);
+  const handleWorkflowOpen = (isOpen: boolean) => {
+    if (getGlobal('changed')) {
+      startSave();
+      waitForSave(() => setShowWorkflow(isOpen), 500);
+    } else setShowWorkflow(isOpen);
+  };
+  const handleEditWorkflow = () => setShowWorkflow(true);
 
   // duplicate name check for add dialog
   const nameInUse = React.useCallback(
@@ -145,6 +169,15 @@ const ProjectsScreenInner: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [plan, pathname, home]);
 
+  // Admin gating (matches TeamItem logic): only show when viewing a team (not personal)
+  const canModifyWorkflow = React.useMemo(() => {
+    if (!thisTeam || isPersonal) return false;
+    return (
+      ((!offline && isAdmin(thisTeam)) || offlineOnly) &&
+      userIsOrgAdmin(thisTeam.id)
+    );
+  }, [thisTeam, isPersonal, offline, offlineOnly, isAdmin, userIsOrgAdmin]);
+
   return (
     <Box sx={{ width: '100%' }}>
       <AppHead />
@@ -203,6 +236,20 @@ const ProjectsScreenInner: React.FC = () => {
           >
             {t.newProject || 'Add New Project...'}
           </Button>
+          {canModifyWorkflow && !isMobileWidth() && (
+            <Button
+              id="ProjectActEditWorkflow"
+              variant="outlined"
+              onClick={handleEditWorkflow}
+              disabled={busy}
+              sx={(theme) => ({
+                minWidth: 160,
+                bgcolor: theme.palette.common.white,
+              })}
+            >
+              {t.editWorkflow.replace('{0}', '')}
+            </Button>
+          )}
           <Button
             id="ProjectActSwitch"
             variant="outlined"
@@ -219,6 +266,17 @@ const ProjectsScreenInner: React.FC = () => {
           </Button>
         </Stack>
       </Box>
+      <BigDialog
+        title={t.editWorkflow.replace(
+          '{0}',
+          `- ${thisTeam?.attributes?.name || ''}`
+        )}
+        isOpen={showWorkflow}
+        onOpen={handleWorkflowOpen}
+      >
+        {/* Use defaultWorkflow, same as TeamItem */}
+        <StepEditor process={defaultWorkflow} org={thisTeam?.id} />
+      </BigDialog>
       {settingsOpen && thisTeam && (
         <TeamDialog
           mode={DialogMode.edit}
