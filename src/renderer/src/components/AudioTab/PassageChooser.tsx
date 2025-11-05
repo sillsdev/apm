@@ -114,12 +114,10 @@ export const PassageChooser = (props: IProps) => {
     [columns, columnVisibilityModel]
   );
 
-  const ExtraWidth = 0;
-
   // keep track of screen width
   const setDimensions = () => {
     const boxWidth = boxRef.current?.clientWidth ?? 0;
-    setAddWidth(boxWidth > totalWidth ? boxWidth - totalWidth - ExtraWidth : 0);
+    setAddWidth(boxWidth > totalWidth ? boxWidth - totalWidth : 0);
   };
 
   useEffect(() => {
