@@ -701,6 +701,7 @@ export interface IMainStrings extends Localize.LocalizedStringsMethods {
     "helpCenter": string;
     "helpSpreadsheet": string;
     "hierarchicalSample": string;
+    "home": string;
     "import": string;
     "integrations": string;
     "inviteError": string;
@@ -1632,7 +1633,6 @@ export interface IVerseStrings extends Localize.LocalizedStringsMethods {
 
 export interface IViewModeStrings extends Localize.LocalizedStringsMethods {
     "audioProject": string;
-    "home": string;
     "work": string;
     "gotowork": string;
 };

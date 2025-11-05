@@ -193,7 +193,7 @@ const initialState = {
 			"mediaUploaded": "Audio Uploaded",
 			"members": "Members ({0})",
 			"nameInUse": "Name in use",
-			"newProject": "New Audio Project",
+			"newProject": "Add New Project...",
 			"normalize": "Audio Normalize",
 			"notesLabel": "Introductory Notes Title",
 			"OBS": "Storying",
@@ -742,6 +742,7 @@ const initialState = {
 			"helpCenter": "Help Center",
 			"helpSpreadsheet": "View spreadsheet convention",
 			"hierarchicalSample": "Scripture hierarchical sample spreadsheet",
+			"home": "Home",
 			"import": "Import",
 			"integrations": "Integrations",
 			"inviteError": "Invitation not accepted.  You must login with the email that the invitation was sent to.",
@@ -1725,7 +1726,6 @@ const initialState = {
 	"viewMode": new LocalizedStrings({
 		"en": {
 			"audioProject": "Audio Project Setup",
-			"home": "Home",
 			"work": "Work",
 			"gotowork": "Go to Work",
 		}

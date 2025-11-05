@@ -9,6 +9,7 @@ import Logout from './Logout';
 import Loading from './Loading';
 import CreateProfile from './CreateProfile';
 import { default as Team } from './TeamScreen';
+import { default as Teams } from './TeamsScreen';
 import { default as Plan } from './PlanScreen';
 import Buggy from './Buggy';
 import EmailUnverified from './EmailUnverified';
@@ -20,12 +21,14 @@ import { privacyContent } from './privacyContent';
 import { default as Detail } from './PassageDetail';
 import { default as Auth } from '../hoc/PrivateRoute';
 import { isElectron } from '../../api-variable';
+import { TEAMS } from '../utils/routePaths';
 import { ErrorPage } from '../components/ErrorPage';
 import { ScriptureBurrito } from './ScriptureBurrito';
 import { BurritoStep } from './BurritoStep';
 import { BurritoBooks } from './BurritoBooks';
 import { BurritoContents } from './BurritoContents';
 import { BurritoWrapper } from './BurritoWrapper';
+import { ProjectsScreen } from './ProjectsScreen';
 
 const routes = createRoutesFromElements([
   <Route key="error" errorElement={<ErrorPage />}>
@@ -53,7 +56,7 @@ const routes = createRoutesFromElements([
       path="/createProfile"
       element={<Auth el={<CreateProfile />} />}
     />
-    <Route key="team" path="/team" element={<Auth el={<Team />} />} />
+    <Route key="teams" path={TEAMS} element={<Auth el={<Teams />} />} />
     <Route
       key="burrito-books"
       path="/burrito/:teamId/books"
@@ -78,6 +81,11 @@ const routes = createRoutesFromElements([
       key="burrito-main"
       path="/burrito/:teamId"
       element={<Auth el={<ScriptureBurrito />} />}
+    />
+    <Route
+      key="projects"
+      path="/projects/:teamId"
+      element={<Auth el={<ProjectsScreen />} />}
     />
     <Route
       key="plan"
