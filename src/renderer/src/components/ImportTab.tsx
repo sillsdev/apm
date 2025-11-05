@@ -254,6 +254,9 @@ export function ImportTab(props: IProps) {
     if (!importing) {
       importComplete();
       setImportTitle(t.importComplete);
+      if (changeData.length === 0) {
+        onOpen(false);
+      }
     }
   };
   const handleActionConfirmed = () => {
@@ -722,7 +725,7 @@ export function ImportTab(props: IProps) {
       showMessage(t.importPending);
       return;
     }
-    onOpen && onOpen(false);
+    onOpen(false);
   };
   const isString = (what: any) => typeof what === 'string';
 
