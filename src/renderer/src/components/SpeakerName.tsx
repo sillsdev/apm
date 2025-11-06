@@ -99,6 +99,7 @@ export function SpeakerName({
     if (newValue === null) {
       nameReset();
     } else if (typeof newValue === 'string') {
+      valueRef.current = newValue;
       setValue({
         name: newValue,
       });
@@ -108,6 +109,7 @@ export function SpeakerName({
       } else handleRights();
     } else if (newValue && newValue.inputValue) {
       // Create a new value from the user input
+      valueRef.current = newValue.inputValue;
       setValue({
         name: newValue.inputValue,
       });
@@ -118,6 +120,7 @@ export function SpeakerName({
     } else {
       setValue(newValue);
       if (newValue) {
+        valueRef.current = newValue.name;
         onChange && onChange(newValue?.name || '');
         onRights && onRights(true);
       }
