@@ -786,8 +786,8 @@ export function ImportTab(props: IProps) {
             <DataGrid
               columns={columns}
               rows={sortedRows}
+              disableColumnSorting
               initialState={{
-                sorting: { sortModel },
                 columns: { columnVisibilityModel },
               }}
             />

@@ -474,12 +474,12 @@ export const AudioTable = (props: IProps) => {
 
   const columnVisibilityModel: GridColumnVisibilityModel = { planName: false };
 
-  console.log('sortedData', sortedData, sortModel);
   return (
     <Box ref={boxRef} sx={{ width: '100%' }}>
       <DataGrid
         columns={columns}
         rows={sortedData}
+        disableColumnSorting
         initialState={{
           columns: { columnVisibilityModel },
         }}
