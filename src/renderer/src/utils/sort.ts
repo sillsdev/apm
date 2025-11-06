@@ -42,7 +42,6 @@ export const doSort =
   (a: Record<string, any>, b: Record<string, any>) => {
     if (sortModel.length === 0) return 0;
     for (const sort of sortModel) {
-      console.log('sort', sort);
       const field = sort.field;
       const direction = sort.sort === 'asc' ? 1 : -1;
       let result = 0;
