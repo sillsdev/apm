@@ -20,7 +20,12 @@ import {
   Typography,
 } from '@mui/material';
 import WSAudioPlayer from './WSAudioPlayer';
-import { generateUUID, loadBlob, waitForIt, cleanFileName } from '../utils';
+import {
+  generateUUID,
+  loadBlobAsync,
+  waitForIt,
+  cleanFileName,
+} from '../utils';
 import {
   IMediaState,
   MediaSt,
@@ -135,6 +140,7 @@ function MediaRecord(props: IProps) {
   const [reporter] = useGlobal('errorReporter');
   const { fetchMediaUrl, mediaState } = useFetchMediaUrl(reporter);
   const mediaStateRef = useRef(mediaState);
+  const mediaStateFetchedTimeRef = useRef<number>(0);
 
   const [name, setName] = useState(t.defaultFilename);
   const [userHasSetName, setUserHasSetName] = useState(false);
@@ -227,6 +233,10 @@ function MediaRecord(props: IProps) {
 
   useEffect(() => {
     mediaStateRef.current = mediaState;
+    // Track when mediaState is fetched
+    if (mediaState.status === MediaSt.FETCHED) {
+      mediaStateFetchedTimeRef.current = Date.now();
+    }
     trackState && trackState(mediaState);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mediaState]);
@@ -431,15 +441,18 @@ function MediaRecord(props: IProps) {
   };
 
   const getGoodUrl = async () => {
-    //if it's ready...force a new one!
+    const TWENTY_MINUTES = 20 * 60 * 1000; // 20 minutes in milliseconds
+    const timeSinceFetched = Date.now() - mediaStateFetchedTimeRef.current;
+
+    //if it's ready...force a new one if > 20 minutes old!
     const forceNewUrl =
       mediaStateRef.current.id === mediaId &&
       mediaStateRef.current.status === MediaSt.FETCHED &&
-      mediaStateRef.current.url?.startsWith('http');
+      mediaStateRef.current.url?.startsWith('http') &&
+      timeSinceFetched > TWENTY_MINUTES;
 
-    // If mediaState.id doesn't match mediaId, fetch the URL
+    //force it to go get another (unexpired) s3 url
     if (forceNewUrl) {
-      //force it to go get another (unexpired) s3 url
       //force requery for new media url
       fetchMediaUrl({ id: '' });
       await waitForIt(
@@ -479,13 +492,15 @@ function MediaRecord(props: IProps) {
     const url = await getGoodUrl();
 
     if (url) {
-      loadBlob(url, (urlorError, b) => {
-        if (b) {
-          gotTheBlob(b);
-        } else {
-          blobError(urlorError as string);
-        }
-      });
+      try {
+        const blob = await loadBlobAsync(url);
+        if (blob) gotTheBlob(blob);
+        else blobError('Failed to load blob');
+      } catch (error) {
+        blobError(
+          error instanceof Error ? error.message : 'Failed to load blob'
+        );
+      }
     } else {
       blobError(mediaStateRef.current.error || 'Failed to fetch media URL');
     }
