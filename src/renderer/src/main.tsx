@@ -85,6 +85,7 @@ Promise.all(promises)
       latestVersion: '',
       releaseDate: '',
       progress: 0,
+      playingMediaId: '',
     };
 
     const root = createRoot(document.getElementById('root') as HTMLElement);

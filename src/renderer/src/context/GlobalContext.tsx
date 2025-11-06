@@ -36,6 +36,7 @@ export interface GlobalState {
   orbitRetries: number; //verified
   orgRole: RoleNames | undefined; //verified //useRole, useTeamCreate, useHome
   plan: string; //verified
+  playingMediaId: string; //verified //MediaTitle - track currently playing media to coordinate playback
   progress: number; //verified
   project: string; //verified //AppHead, useUrlContext, Loading, TeamScreen
   projectsLoaded: string[]; //verified

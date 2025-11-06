@@ -40,7 +40,7 @@ import { ILanguage } from './Language';
 import { UnsavedContext } from '../context/UnsavedContext';
 import TitleTabs from '../components/TitleTabs';
 import BigDialog from '../hoc/BigDialog';
-import { PlanContext } from '../context/PlanContext';
+import { useGlobal } from '../context/useGlobal';
 
 interface IStartProps {
   titlekey: string;
@@ -193,7 +193,9 @@ export default function MediaTitle(props: IProps) {
     clearCompleted,
     // isChanged,
   } = useContext(UnsavedContext).state;
-  const { playingMediaId, setPlayingMediaId } = useContext(PlanContext).state;
+
+  // Track playing media globally to coordinate playback (only one plays at a time)
+  const [playingMediaId, setPlayingMediaId] = useGlobal('playingMediaId');
 
   useEffect(() => setHelperText(helper ?? ''), [helper]);
 
