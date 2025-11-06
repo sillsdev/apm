@@ -142,8 +142,9 @@ export const AudioTable = (props: IProps) => {
     setPublishItem(-1);
   };
 
-  const handleChangeReadyToShare = (i: number) => () => {
-    setPublishItem(i);
+  const handleChangeReadyToShare = (i: string) => () => {
+    const index = sortedData.findIndex((r) => r.id === i);
+    setPublishItem(index);
   };
 
   const handleCloseTranscription = () => {
@@ -324,7 +325,7 @@ export const AudioTable = (props: IProps) => {
               width: 100,
               renderCell: (params) => (
                 <IconButton
-                  onClick={handleChangeReadyToShare(params.row.index)}
+                  onClick={handleChangeReadyToShare(params.row.id)}
                   disabled={
                     (params.row.passId || '') === '' || !canSetDestination
                   }
