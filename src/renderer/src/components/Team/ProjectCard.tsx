@@ -69,9 +69,6 @@ import { IProjectDialog } from './ProjectDialog/projectDialogTypes';
 const PencilSquare = BsPencilSquare as unknown as React.FC<IconBaseProps>;
 
 const ProjectCardRoot = styled('div')(() => ({
-  display: 'flex',
-  width: '100%',
-  justifyContent: 'center',
   '& button': {
     color: 'white',
   },
@@ -84,7 +81,6 @@ const StyledCard = styled(Card)<CardProps>(({ theme }) => ({
   minWidth: 320,
   width: '100%',
   maxWidth: 500,
-  margin: `${theme.spacing(1)} auto`,
   backgroundColor: theme.palette.primary.light,
   cursor: 'pointer',
 }));

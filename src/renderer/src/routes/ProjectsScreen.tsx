@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Stack, Typography, Button, Grid } from '@mui/material';
+import { Box, Stack, Typography, Button, IconButton } from '@mui/material';
 import AppHead from '../components/App/AppHead';
 import { TeamProvider, TeamContext, TeamIdType } from '../context/TeamContext';
 import { useParams, useLocation } from 'react-router-dom';
@@ -17,6 +17,8 @@ import { UnsavedContext } from '../context/UnsavedContext';
 import BigDialog from '../hoc/BigDialog';
 import { StepEditor } from '../components/StepEditor';
 import { useRole, defaultWorkflow } from '../crud';
+import SortIcon from '@mui/icons-material/Sort';
+import { ProjectSort } from '../components/Team/ProjectDialog/ProjectSort';
 
 const ProjectsScreenInner: React.FC = () => {
   const navigate = useMyNavigate();
@@ -68,6 +70,7 @@ const ProjectsScreenInner: React.FC = () => {
 
   // Edit workflow dialog state
   const [showWorkflow, setShowWorkflow] = React.useState(false);
+  const [sortVisible, setSortVisible] = React.useState(false);
   const handleWorkflowOpen = (isOpen: boolean) => {
     if (getGlobal('changed')) {
       startSave();
@@ -178,6 +181,11 @@ const ProjectsScreenInner: React.FC = () => {
     );
   }, [thisTeam, isPersonal, offline, offlineOnly, isAdmin, userIsOrgAdmin]);
 
+  const canSortPersonal = !offline || offlineOnly;
+
+  const showSortButton =
+    projects.length > 1 && (isPersonal ? canSortPersonal : canModifyWorkflow);
+
   return (
     <Box sx={{ width: '100%' }}>
       <AppHead />
@@ -185,16 +193,38 @@ const ProjectsScreenInner: React.FC = () => {
         id="ProjectsScreen"
         sx={{
           paddingTop: '80px',
+          pb: 4,
           px: 2,
-          pb: 8,
           mx: 'auto',
           display: 'flex',
           flexDirection: 'column',
           gap: 2,
           minHeight: '100vh',
+          maxWidth: '500px',
         }}
       >
-        <Grid container spacing={1}>
+        {showSortButton && (
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'flex-end',
+              mx: -1,
+              pr: 1,
+              width: '100%',
+            }}
+          >
+            <IconButton
+              id="ProjectActSort"
+              aria-label={t.sortProjects || 'Sort projects'}
+              title={t.sortProjects || 'Sort projects'}
+              onClick={() => setSortVisible(true)}
+              size="small"
+            >
+              <SortIcon />
+            </IconButton>
+          </Box>
+        )}
+        <Stack direction="column" spacing={1} width={'100%'}>
           {projects.map((p) => (
             <ProjectCard key={p.id} project={p} />
           ))}
@@ -204,7 +234,7 @@ const ProjectsScreenInner: React.FC = () => {
               {'No projects yet.'}
             </Typography>
           )}
-        </Grid>
+        </Stack>
         {/* spacer to ensure content isn't hidden behind floating actions */}
         <Box sx={{ height: 120 }} />
       </Box>
@@ -276,6 +306,16 @@ const ProjectsScreenInner: React.FC = () => {
       >
         {/* Use defaultWorkflow, same as TeamItem */}
         <StepEditor process={defaultWorkflow} org={thisTeam?.id} />
+      </BigDialog>
+      <BigDialog
+        title={t.sortProjects}
+        isOpen={sortVisible}
+        onOpen={() => setSortVisible(false)}
+      >
+        <ProjectSort
+          teamId={isPersonal ? undefined : thisTeam?.id}
+          onClose={() => setSortVisible(false)}
+        />
       </BigDialog>
       {settingsOpen && thisTeam && (
         <TeamDialog
