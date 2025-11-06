@@ -5,7 +5,12 @@ export function numCompare(a: number, b: number): number {
   return a - b;
 }
 export function strNumCompare(a: string, b: string): number {
-  return parseInt(a) - parseInt(b);
+  const numA = parseInt(a, 10);
+  const numB = parseInt(b, 10);
+  if (isNaN(numA) && isNaN(numB)) return 0;
+  if (isNaN(numA)) return 1;
+  if (isNaN(numB)) return -1;
+  return numA - numB;
 }
 export function strCompare(a: string, b: string): number {
   return a < b ? -1 : a > b ? 1 : 0;
