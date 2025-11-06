@@ -444,7 +444,7 @@ function MediaRecord(props: IProps) {
     const TWENTY_MINUTES = 20 * 60 * 1000; // 20 minutes in milliseconds
     const timeSinceFetched = Date.now() - mediaStateFetchedTimeRef.current;
 
-    //if it's ready...force a new one if > 20 minutes old!
+    // If it's ready, force a new one if older than 20 minutes.
     const forceNewUrl =
       mediaStateRef.current.id === mediaId &&
       mediaStateRef.current.status === MediaSt.FETCHED &&
