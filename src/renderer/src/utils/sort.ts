@@ -1,8 +1,33 @@
+import { GridSortModel } from '@mui/x-data-grid';
 import { DateTime } from 'luxon';
 
 export function numCompare(a: number, b: number): number {
   return a - b;
 }
+export function strNumCompare(a: string, b: string): number {
+  return parseInt(a) - parseInt(b);
+}
+export function strCompare(a: string, b: string): number {
+  return a < b ? -1 : a > b ? 1 : 0;
+}
+export const doSort =
+  (sortModel: GridSortModel) =>
+  (a: Record<string, any>, b: Record<string, any>) => {
+    if (sortModel.length === 0) return 0;
+    for (const sort of sortModel) {
+      const field = sort.field;
+      const direction = sort.sort === 'asc' ? 1 : -1;
+      let result = 0;
+      if (field === 'version') {
+        result = strNumCompare(a.version, b.version) * direction;
+      } else {
+        result = strCompare(a.fileName, b.fileName) * direction;
+      }
+      if (result !== 0) return result;
+    }
+    return 0;
+  };
+
 // Attempt to parse using several common formats (replacement for prior moment fallback including 'LT').
 function parseFlexible(value: string): DateTime {
   let dt = DateTime.fromISO(value);

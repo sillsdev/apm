@@ -29,6 +29,8 @@ import {
   dateOrTime,
   useDataChanges,
   useWaitForRemoteQueue,
+  strNumCompare,
+  doSort,
 } from '../../utils';
 import PlayCell from './PlayCell';
 import DetachCell from './DetachCell';
@@ -93,6 +95,18 @@ export const AudioTable = (props: IProps) => {
   const waitForRemoteQueue = useWaitForRemoteQueue();
   const boxRef = useRef<HTMLDivElement>(null);
   const [addWidth, setAddWidth] = useState(0);
+  const [sortModel, setSortModel] = useState<GridSortModel>([]);
+  useEffect(() => {
+    setSortModel(
+      onAttach
+        ? [
+            { field: 'planName', sort: 'asc' },
+            { field: 'fileName', sort: 'asc' },
+            { field: 'date', sort: 'desc' },
+          ]
+        : [{ field: 'version', sort: 'desc' }]
+    );
+  }, [onAttach]);
 
   const handleShowTranscription = (id: string) => () => {
     const row = data.find((r) => r.id === id);
@@ -218,7 +232,7 @@ export const AudioTable = (props: IProps) => {
     headerName: t.version,
     width: 70,
     align: 'right',
-    sortComparator: numCompare,
+    sortComparator: strNumCompare, // data has strings but they contain numbers
     // renderCell: (params) => (
     //   <Button
     //     color="primary"
@@ -234,7 +248,7 @@ export const AudioTable = (props: IProps) => {
     headerName: t.duration,
     width: 80,
     align: 'right',
-    sortComparator: numCompare,
+    // sortComparator: numCompare, // duration is already formatted as HH:MM:SS
   };
 
   const dateCol: GridColDef<IRow> = {
@@ -453,26 +467,14 @@ export const AudioTable = (props: IProps) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); //do this once to get the default;
 
-  const sortModel: GridSortModel = useMemo(
-    () => [
-      { field: 'planName', sort: 'asc' },
-      {
-        field: onAttach ? 'fileName' : 'version',
-        sort: onAttach ? 'asc' : 'desc',
-      },
-      { field: 'date', sort: 'desc' },
-    ],
-    [onAttach]
-  );
   const columnVisibilityModel: GridColumnVisibilityModel = { planName: false };
 
   return (
     <Box ref={boxRef} sx={{ width: '100%' }}>
       <DataGrid
         columns={columns}
-        rows={data}
+        rows={data.sort(doSort(sortModel))}
         initialState={{
-          sorting: { sortModel },
           columns: { columnVisibilityModel },
         }}
       />

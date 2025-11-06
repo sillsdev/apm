@@ -58,6 +58,7 @@ import {
   axiosError,
   tryParseJSON,
   useDataChanges,
+  doSort,
 } from '../utils';
 import { ActionRow, AltButton } from '../control';
 import { useSelector } from 'react-redux';
@@ -778,7 +779,9 @@ export function ImportTab(props: IProps) {
           {changeData.length > 0 && (
             <DataGrid
               columns={columns}
-              rows={changeData.map((r, i) => ({ ...r, id: i }))}
+              rows={changeData
+                .map((r, i) => ({ ...r, id: i }))
+                .sort(doSort(sortModel))}
               initialState={{
                 sorting: { sortModel },
                 columns: { columnVisibilityModel },
