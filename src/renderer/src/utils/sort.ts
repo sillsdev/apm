@@ -45,6 +45,8 @@ export const doSort =
       const field = sort.field;
       const direction = sort.sort === 'asc' ? 1 : -1;
       let result = 0;
+      if (a[field] === undefined || b[field] === undefined) continue;
+      if (a[field] === null || b[field] === null) continue;
       if (field === 'version') {
         result = strNumCompare(a[field], b[field]) * direction;
       } else if (field === 'date') {
