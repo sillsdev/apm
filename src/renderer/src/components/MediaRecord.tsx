@@ -453,7 +453,7 @@ function MediaRecord(props: IProps) {
 
     // Force it to go get another (unexpired) S3 URL
     if (forceNewUrl) {
-      //force requery for new media url
+      // Force requery for new media URL.
       fetchMediaUrl({ id: '' });
       await waitForIt(
         'requery url',
