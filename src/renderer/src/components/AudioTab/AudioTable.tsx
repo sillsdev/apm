@@ -29,6 +29,8 @@ import {
   dateOrTime,
   useDataChanges,
   useWaitForRemoteQueue,
+  strNumCompare,
+  doSort,
 } from '../../utils';
 import PlayCell from './PlayCell';
 import DetachCell from './DetachCell';
@@ -57,7 +59,7 @@ interface IProps {
   onAttach?: (checks: number[], attach: boolean) => void;
 }
 export const AudioTable = (props: IProps) => {
-  const { data, setRefresh } = props;
+  const { data: initialData, setRefresh } = props;
   const {
     playItem,
     setPlayItem,
@@ -93,9 +95,26 @@ export const AudioTable = (props: IProps) => {
   const waitForRemoteQueue = useWaitForRemoteQueue();
   const boxRef = useRef<HTMLDivElement>(null);
   const [addWidth, setAddWidth] = useState(0);
+  const [sortModel, setSortModel] = useState<GridSortModel>([]);
+  useEffect(() => {
+    setSortModel(
+      onAttach
+        ? [
+            { field: 'planName', sort: 'asc' },
+            { field: 'fileName', sort: 'asc' },
+            { field: 'date', sort: 'desc' },
+          ]
+        : [{ field: 'version', sort: 'desc' }]
+    );
+  }, [onAttach]);
+
+  const sortedData = useMemo(
+    () => [...initialData].sort(doSort(sortModel)),
+    [initialData, sortModel]
+  );
 
   const handleShowTranscription = (id: string) => () => {
-    const row = data.find((r) => r.id === id);
+    const row = sortedData.find((r) => r.id === id);
     const rowVer = row?.version;
     if (rowVer) setVerValue(parseInt(rowVer));
     setShowId(id);
@@ -116,15 +135,16 @@ export const AudioTable = (props: IProps) => {
   };
 
   const publishConfirm = async (destinations: PublishDestinationEnum[]) => {
-    await updateMediaRec(data[publishItem].id, destinations);
+    await updateMediaRec(sortedData[publishItem].id, destinations);
     setPublishItem(-1);
   };
   const publishRefused = () => {
     setPublishItem(-1);
   };
 
-  const handleChangeReadyToShare = (i: number) => () => {
-    setPublishItem(i);
+  const handleChangeReadyToShare = (i: string) => () => {
+    const index = sortedData.findIndex((r) => r.id === i);
+    setPublishItem(index);
   };
 
   const handleCloseTranscription = () => {
@@ -140,7 +160,7 @@ export const AudioTable = (props: IProps) => {
     await memory.update((t) =>
       t.removeRecord({
         type: 'mediafile',
-        id: data[i].id,
+        id: sortedData[i].id,
       })
     );
     setBusy(false); // forces refresh of plan tabs
@@ -200,7 +220,7 @@ export const AudioTable = (props: IProps) => {
     return findRecord(memory, 'user', id) as UserD;
   };
 
-  const nameCount = useMemo(() => data.length, [data]);
+  const nameCount = useMemo(() => sortedData.length, [sortedData]);
 
   const canCreate = useMemo(
     () => !offline || offlineOnly,
@@ -218,7 +238,7 @@ export const AudioTable = (props: IProps) => {
     headerName: t.version,
     width: 70,
     align: 'right',
-    sortComparator: numCompare,
+    sortComparator: strNumCompare, // data has strings but they contain numbers
     // renderCell: (params) => (
     //   <Button
     //     color="primary"
@@ -234,7 +254,7 @@ export const AudioTable = (props: IProps) => {
     headerName: t.duration,
     width: 80,
     align: 'right',
-    sortComparator: numCompare,
+    // sortComparator: numCompare, // duration is already formatted as HH:MM:SS
   };
 
   const dateCol: GridColDef<IRow> = {
@@ -305,7 +325,7 @@ export const AudioTable = (props: IProps) => {
               width: 100,
               renderCell: (params) => (
                 <IconButton
-                  onClick={handleChangeReadyToShare(params.row.index)}
+                  onClick={handleChangeReadyToShare(params.row.id)}
                   disabled={
                     (params.row.passId || '') === '' || !canSetDestination
                   }
@@ -453,26 +473,15 @@ export const AudioTable = (props: IProps) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); //do this once to get the default;
 
-  const sortModel: GridSortModel = useMemo(
-    () => [
-      { field: 'planName', sort: 'asc' },
-      {
-        field: onAttach ? 'fileName' : 'version',
-        sort: onAttach ? 'asc' : 'desc',
-      },
-      { field: 'date', sort: 'desc' },
-    ],
-    [onAttach]
-  );
   const columnVisibilityModel: GridColumnVisibilityModel = { planName: false };
 
   return (
     <Box ref={boxRef} sx={{ width: '100%' }}>
       <DataGrid
         columns={columns}
-        rows={data}
+        rows={sortedData}
+        disableColumnSorting
         initialState={{
-          sorting: { sortModel },
           columns: { columnVisibilityModel },
         }}
       />
@@ -498,7 +507,7 @@ export const AudioTable = (props: IProps) => {
           yesResponse={publishConfirm}
           noResponse={publishRefused}
           current={getPublishTo(
-            data[publishItem].publishTo,
+            sortedData[publishItem].publishTo,
             hasPublishing,
             shared,
             true
@@ -507,7 +516,7 @@ export const AudioTable = (props: IProps) => {
           hasPublishing={hasPublishing}
           hasBible={hasBible}
           noDefaults={true}
-          passageType={data[publishItem]?.passageType}
+          passageType={sortedData[publishItem]?.passageType}
         />
       )}
       {showId !== '' && (
@@ -521,7 +530,7 @@ export const AudioTable = (props: IProps) => {
       )}
       {confirmAction === '' || (
         <Confirm
-          text={t.deleteConfirm.replace('{0}', data[deleteItem].fileName)}
+          text={t.deleteConfirm.replace('{0}', sortedData[deleteItem].fileName)}
           yesResponse={handleActionConfirmed}
           noResponse={handleActionRefused}
         />

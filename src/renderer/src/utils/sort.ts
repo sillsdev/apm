@@ -1,8 +1,21 @@
+import { GridSortModel } from '@mui/x-data-grid';
 import { DateTime } from 'luxon';
 
 export function numCompare(a: number, b: number): number {
   return a - b;
 }
+export function strNumCompare(a: string, b: string): number {
+  const numA = parseInt(a, 10);
+  const numB = parseInt(b, 10);
+  if (isNaN(numA) && isNaN(numB)) return 0;
+  if (isNaN(numA)) return 1;
+  if (isNaN(numB)) return -1;
+  return numA - numB;
+}
+export function strCompare(a: string, b: string): number {
+  return a < b ? -1 : a > b ? 1 : 0;
+}
+
 // Attempt to parse using several common formats (replacement for prior moment fallback including 'LT').
 function parseFlexible(value: string): DateTime {
   let dt = DateTime.fromISO(value);
@@ -23,3 +36,25 @@ export function dateCompare(a: string, b: string): number {
   if (aIso < bIso) return -1;
   return 0;
 }
+
+export const doSort =
+  (sortModel: GridSortModel) =>
+  (a: Record<string, any>, b: Record<string, any>) => {
+    if (sortModel.length === 0) return 0;
+    for (const sort of sortModel) {
+      const field = sort.field;
+      const direction = sort.sort === 'asc' ? 1 : -1;
+      let result = 0;
+      if (a[field] === undefined || b[field] === undefined) continue;
+      if (a[field] === null || b[field] === null) continue;
+      if (field === 'version') {
+        result = strNumCompare(a[field], b[field]) * direction;
+      } else if (field === 'date') {
+        result = dateCompare(a[field], b[field]) * direction;
+      } else {
+        result = strCompare(a[field], b[field]) * direction;
+      }
+      if (result !== 0) return result;
+    }
+    return 0;
+  };
