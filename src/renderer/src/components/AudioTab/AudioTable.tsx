@@ -59,7 +59,7 @@ interface IProps {
   onAttach?: (checks: number[], attach: boolean) => void;
 }
 export const AudioTable = (props: IProps) => {
-  const { data, setRefresh } = props;
+  const { data: initialData, setRefresh } = props;
   const {
     playItem,
     setPlayItem,
@@ -108,8 +108,13 @@ export const AudioTable = (props: IProps) => {
     );
   }, [onAttach]);
 
+  const sortedData = useMemo(
+    () => [...initialData].sort(doSort(sortModel)),
+    [initialData, sortModel]
+  );
+
   const handleShowTranscription = (id: string) => () => {
-    const row = data.find((r) => r.id === id);
+    const row = sortedData.find((r) => r.id === id);
     const rowVer = row?.version;
     if (rowVer) setVerValue(parseInt(rowVer));
     setShowId(id);
@@ -130,7 +135,7 @@ export const AudioTable = (props: IProps) => {
   };
 
   const publishConfirm = async (destinations: PublishDestinationEnum[]) => {
-    await updateMediaRec(data[publishItem].id, destinations);
+    await updateMediaRec(sortedData[publishItem].id, destinations);
     setPublishItem(-1);
   };
   const publishRefused = () => {
@@ -154,7 +159,7 @@ export const AudioTable = (props: IProps) => {
     await memory.update((t) =>
       t.removeRecord({
         type: 'mediafile',
-        id: data[i].id,
+        id: sortedData[i].id,
       })
     );
     setBusy(false); // forces refresh of plan tabs
@@ -214,7 +219,7 @@ export const AudioTable = (props: IProps) => {
     return findRecord(memory, 'user', id) as UserD;
   };
 
-  const nameCount = useMemo(() => data.length, [data]);
+  const nameCount = useMemo(() => sortedData.length, [sortedData]);
 
   const canCreate = useMemo(
     () => !offline || offlineOnly,
@@ -469,11 +474,12 @@ export const AudioTable = (props: IProps) => {
 
   const columnVisibilityModel: GridColumnVisibilityModel = { planName: false };
 
+  console.log('sortedData', sortedData, sortModel);
   return (
     <Box ref={boxRef} sx={{ width: '100%' }}>
       <DataGrid
         columns={columns}
-        rows={data.sort(doSort(sortModel))}
+        rows={sortedData}
         initialState={{
           columns: { columnVisibilityModel },
         }}
@@ -500,7 +506,7 @@ export const AudioTable = (props: IProps) => {
           yesResponse={publishConfirm}
           noResponse={publishRefused}
           current={getPublishTo(
-            data[publishItem].publishTo,
+            sortedData[publishItem].publishTo,
             hasPublishing,
             shared,
             true
@@ -509,7 +515,7 @@ export const AudioTable = (props: IProps) => {
           hasPublishing={hasPublishing}
           hasBible={hasBible}
           noDefaults={true}
-          passageType={data[publishItem]?.passageType}
+          passageType={sortedData[publishItem]?.passageType}
         />
       )}
       {showId !== '' && (
@@ -523,7 +529,7 @@ export const AudioTable = (props: IProps) => {
       )}
       {confirmAction === '' || (
         <Confirm
-          text={t.deleteConfirm.replace('{0}', data[deleteItem].fileName)}
+          text={t.deleteConfirm.replace('{0}', sortedData[deleteItem].fileName)}
           yesResponse={handleActionConfirmed}
           noResponse={handleActionRefused}
         />

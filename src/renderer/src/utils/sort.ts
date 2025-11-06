@@ -15,23 +15,6 @@ export function strNumCompare(a: string, b: string): number {
 export function strCompare(a: string, b: string): number {
   return a < b ? -1 : a > b ? 1 : 0;
 }
-export const doSort =
-  (sortModel: GridSortModel) =>
-  (a: Record<string, any>, b: Record<string, any>) => {
-    if (sortModel.length === 0) return 0;
-    for (const sort of sortModel) {
-      const field = sort.field;
-      const direction = sort.sort === 'asc' ? 1 : -1;
-      let result = 0;
-      if (field === 'version') {
-        result = strNumCompare(a.version, b.version) * direction;
-      } else {
-        result = strCompare(a.fileName, b.fileName) * direction;
-      }
-      if (result !== 0) return result;
-    }
-    return 0;
-  };
 
 // Attempt to parse using several common formats (replacement for prior moment fallback including 'LT').
 function parseFlexible(value: string): DateTime {
@@ -53,3 +36,24 @@ export function dateCompare(a: string, b: string): number {
   if (aIso < bIso) return -1;
   return 0;
 }
+
+export const doSort =
+  (sortModel: GridSortModel) =>
+  (a: Record<string, any>, b: Record<string, any>) => {
+    if (sortModel.length === 0) return 0;
+    for (const sort of sortModel) {
+      console.log('sort', sort);
+      const field = sort.field;
+      const direction = sort.sort === 'asc' ? 1 : -1;
+      let result = 0;
+      if (field === 'version') {
+        result = strNumCompare(a[field], b[field]) * direction;
+      } else if (field === 'date') {
+        result = dateCompare(a[field], b[field]) * direction;
+      } else {
+        result = strCompare(a[field], b[field]) * direction;
+      }
+      if (result !== 0) return result;
+    }
+    return 0;
+  };

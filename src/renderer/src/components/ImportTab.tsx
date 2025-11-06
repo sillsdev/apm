@@ -1,5 +1,5 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-import React, { useEffect, useState, useContext, useRef } from 'react';
+import React, { useEffect, useState, useContext, useRef, useMemo } from 'react';
 import { TokenContext } from '../context/TokenProvider';
 import { errorStatus, IAxiosStatus } from '../store/AxiosStatus';
 import {
@@ -222,6 +222,12 @@ export function ImportTab(props: IProps) {
   ];
   const [columnVisibilityModel, setColumnVisibilityModel] =
     useState<GridColumnVisibilityModel>({ ...initialColumnVisibilityModel });
+
+  const sortedRows = useMemo(() => {
+    return [...changeData]
+      .map((r, i) => ({ ...r, id: i }))
+      .sort(doSort(sortModel));
+  }, [changeData, sortModel]);
 
   useEffect(() => {
     const electronImport = async () => {
@@ -779,9 +785,7 @@ export function ImportTab(props: IProps) {
           {changeData.length > 0 && (
             <DataGrid
               columns={columns}
-              rows={changeData
-                .map((r, i) => ({ ...r, id: i }))
-                .sort(doSort(sortModel))}
+              rows={sortedRows}
               initialState={{
                 sorting: { sortModel },
                 columns: { columnVisibilityModel },
