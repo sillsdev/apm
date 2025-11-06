@@ -451,7 +451,7 @@ function MediaRecord(props: IProps) {
       mediaStateRef.current.url?.startsWith('http') &&
       timeSinceFetched > TWENTY_MINUTES;
 
-    //force it to go get another (unexpired) s3 url
+    // Force it to go get another (unexpired) S3 URL
     if (forceNewUrl) {
       //force requery for new media url
       fetchMediaUrl({ id: '' });
