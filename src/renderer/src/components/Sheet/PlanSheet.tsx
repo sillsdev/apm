@@ -268,12 +268,11 @@ export function PlanSheet(props: IProps) {
     sectionArr,
     shared,
     canPublish,
-    playingMediaId,
-    setPlayingMediaId,
   } = ctx.state;
 
   const [memory] = useGlobal('memory');
   const [errorReporter] = useGlobal('errorReporter');
+  const [playingMediaId, setPlayingMediaId] = useGlobal('playingMediaId');
   const { showMessage } = useSnackBar();
   const [position, setPosition] = useState<{
     mouseX: null | number;
