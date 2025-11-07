@@ -791,6 +791,7 @@ function WSAudioPlayer(props: IProps) {
 
   useEffect(() => {
     setDuration(0);
+    setProgress(0);
     setHasRegion(0);
     if (blob) {
       if (setBusy) setBusy(true); //turned off on ready
@@ -968,6 +969,7 @@ function WSAudioPlayer(props: IProps) {
       setPlaying(false);
       wsClear();
       setDuration(0);
+      setProgress(0);
       setChanged && setChanged(false);
       onBlobReady && onBlobReady(undefined);
       setBlobReady && setBlobReady(false);
