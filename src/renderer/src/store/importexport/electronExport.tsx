@@ -274,7 +274,7 @@ export async function electronExport(
             const name = path.basename(newname, path.extname(newname)) + '.eaf';
             await ipc?.zipAddFile(zip, mediapath + name, eafCode, 'EAF');
           }
-        } else console.log('No audioUrl for mediafile', mf.id);
+        }
       }
     };
 
