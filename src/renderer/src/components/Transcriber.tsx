@@ -472,9 +472,15 @@ export function Transcriber(props: IProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [playerMediafile]);
 
+  const hasRow =
+    transSelected && rowData.some((r) => r.mediafile.id === transSelected);
   //if task table has changed selected...tell the world
   useEffect(() => {
-    if (transSelected !== undefined && transSelected !== playerMediafile?.id)
+    if (
+      hasRow &&
+      transSelected !== undefined &&
+      transSelected !== playerMediafile?.id
+    )
       setSelected(transSelected, PlayInPlayer.yes);
     if (!transSelected)
       showTranscription({
@@ -483,7 +489,7 @@ export function Transcriber(props: IProps) {
       });
     else if (!saving.current) showTranscription(getTranscription());
     /* eslint-disable-next-line react-hooks/exhaustive-deps */
-  }, [transSelected]);
+  }, [hasRow, transSelected]);
 
   useEffect(() => {
     if (mediaRef.current?.id !== mediafile?.id) {
