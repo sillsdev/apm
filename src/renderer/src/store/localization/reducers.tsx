@@ -2007,7 +2007,7 @@ const initialState = {
       insertoverwrite: 'Insert/Overwrite',
       loopoff: 'Loop Off',
       loopon: 'Loop On',
-      microphone: 'microphone',
+      microphone: 'Select microphone',
       nextRegion: 'Next Segment [{0}]',
       noiseremovalFailed:
         'Noise removal failed (More than likely, the server is unavailable).',

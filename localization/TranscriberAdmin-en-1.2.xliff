@@ -10675,7 +10675,7 @@
             </context-group>
          </trans-unit>
         <trans-unit id="wsAudioPlayer.microphone">
-            <source>microphone</source>
+            <source>Select microphone</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">passageRecord.tsx</context>

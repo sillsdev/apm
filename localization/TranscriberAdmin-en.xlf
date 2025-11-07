@@ -9150,7 +9150,7 @@
       </unit>
       <unit id="wsAudioPlayer.microphone">
          <segment>
-            <source>microphone</source>
+            <source>Select microphone</source>
             <target/>
          </segment>
       </unit>

@@ -268,15 +268,8 @@ function WSAudioPlayer(props: IProps) {
   const [audioInputDevices, setAudioInputDevices] = useState<MediaDeviceInfo[]>(
     []
   );
-  const [selectedMicrophoneId, setSelectedMicrophoneId] = useState<string>(
-    () => {
-      try {
-        return localStorage.getItem(localUserKey(LocalKey.microphoneId)) ?? '';
-      } catch {
-        return '';
-      }
-    }
-  );
+  const [selectedMicrophoneId, setSelectedMicrophoneId] = useState('');
+
   const [micMenuAnchorEl, setMicMenuAnchorEl] = useState<null | HTMLElement>(
     null
   );
@@ -683,7 +676,9 @@ function WSAudioPlayer(props: IProps) {
 
   useEffect(() => {
     return () => {
-      // eslint-disable-next-line react-hooks/exhaustive-deps
+      setSelectedMicrophoneId(
+        localStorage.getItem(localUserKey(LocalKey.microphoneId)) ?? ''
+      );
       playerKeys.forEach((k) => unsubscribe(k.key));
       simplePlayerKeys.forEach((k) => unsubscribe(k.key));
       recordKeys.forEach((k) => unsubscribe(k.key));
@@ -1370,10 +1365,7 @@ function WSAudioPlayer(props: IProps) {
                   )}
                   <GrowingSpacer />
                   <Grid>
-                    <LightTooltip
-                      id="wsAudioMicTip"
-                      title={`${ts.select} ${t.microphone}`}
-                    >
+                    <LightTooltip id="wsAudioMicTip" title={t.microphone}>
                       <span>
                         <IconButton id="wsAudioMic" onClick={handleMicMenuOpen}>
                           <MicIcon
