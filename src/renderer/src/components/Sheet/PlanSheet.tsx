@@ -370,7 +370,7 @@ export function PlanSheet(props: IProps) {
 
   const handleWarningClick: MouseEventHandler<HTMLDivElement> = (event) => {
     event.preventDefault();
-    if (!warningRow) return;
+    if (warningRow === undefined) return;
     setCurrentRow(warningRow);
     sheetScroll();
   };
