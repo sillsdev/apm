@@ -141,7 +141,7 @@ export function PassageDetailItem(props: IProps) {
 
   const rowProp = useMemo(
     () => ({ display: 'flex', width: paneWidth - 40 }),
-    [discussOpen, paneWidth, width]
+    [paneWidth]
   );
 
   useEffect(() => {

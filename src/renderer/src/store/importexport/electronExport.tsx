@@ -257,22 +257,23 @@ export async function electronExport(
       let newname = '';
       for (let mx = 0; mx < recs.length; mx++) {
         const mf = recs[mx] as MediaFileD;
-        if (!mf.attributes) return;
-        const mp = await dataPath(mf.attributes.audioUrl, PathType.MEDIA);
-        const { fullPath } = await scriptureFullPath(mf, {
-          memory,
-          scripturePackage,
-          projRec,
-        } as IExportScripturePath);
-        if (rename) newname = mediapath + nameFromTemplate(mf, memory, false);
-        else newname = fullPath || mediapath + path.basename(mp);
-        await AddStreamEntry(mp, newname);
-        if (sendProgress && mx % 50 === 0)
-          sendProgress(Math.round((mx * 100) / recs.length));
-        if (expType === ExportType.ELAN) {
-          const eafCode = getMediaEaf(mf, memory);
-          const name = path.basename(newname, path.extname(newname)) + '.eaf';
-          await ipc?.zipAddFile(zip, mediapath + name, eafCode, 'EAF');
+        if (mf.attributes?.audioUrl) {
+          const mp = await dataPath(mf.attributes.audioUrl, PathType.MEDIA);
+          const { fullPath } = await scriptureFullPath(mf, {
+            memory,
+            scripturePackage,
+            projRec,
+          } as IExportScripturePath);
+          if (rename) newname = mediapath + nameFromTemplate(mf, memory, false);
+          else newname = fullPath || mediapath + path.basename(mp);
+          await AddStreamEntry(mp, newname);
+          if (sendProgress && mx % 50 === 0)
+            sendProgress(Math.round((mx * 100) / recs.length));
+          if (expType === ExportType.ELAN) {
+            const eafCode = getMediaEaf(mf, memory);
+            const name = path.basename(newname, path.extname(newname)) + '.eaf';
+            await ipc?.zipAddFile(zip, mediapath + name, eafCode, 'EAF');
+          }
         }
       }
     };
