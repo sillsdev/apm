@@ -126,6 +126,8 @@ interface IProps {
   switchTo?: boolean;
 }
 
+type DownloadAlertReason = 'cloud';
+
 export const AppHead = (props: IProps) => {
   const { resetRequests, switchTo } = props;
   const orbitStatus = useSelector((state: IState) => state.orbit.status);
@@ -169,6 +171,7 @@ export const AppHead = (props: IProps) => {
   const [latestRelease, setLatestRelease] = useGlobal('releaseDate'); //verified this is not used in a function 2/18/25
   const [complete] = useGlobal('progress'); //verified this is not used in a function 2/18/25
   const [downloadAlert, setDownloadAlert] = useState(false);
+  const downloadAlertReason = useRef<DownloadAlertReason | null>(null);
   const [updateTipOpen, setUpdateTipOpen] = useState(false);
   const [showTerms, setShowTerms] = useState('');
   const waitForRemoteQueue = useWaitForRemoteQueue();
@@ -205,7 +208,9 @@ export const AppHead = (props: IProps) => {
         waitForRemoteQueue('logout on electron...').then(() => {
           waitForDataChangesQueue('logout on electron').then(() => {
             if (getGlobal('offline')) downDone();
-            else setDownloadAlert(true);
+            else if (downloadAlertReason.current === 'cloud' && !isOffline)
+              setDownloadAlert(true);
+            else downDone();
           });
         });
       });
@@ -232,7 +237,11 @@ export const AppHead = (props: IProps) => {
     }
   };
 
-  const handleMenu = (what: string) => {
+  const handleMenu = (
+    what: string,
+    reason: DownloadAlertReason | null = null
+  ) => {
+    downloadAlertReason.current = reason;
     if (/\/team/i.test(pathname)) {
       setProject('');
       setPlan('');
@@ -261,7 +270,7 @@ export const AppHead = (props: IProps) => {
         : 'online-local'
     );
     localStorage.setItem(LocalKey.plan, getGlobal('plan'));
-    handleMenu('Logout');
+    handleMenu('Logout', !isOffline ? 'cloud' : null);
   };
 
   const handleSetOnline = (cb?: () => void) => {
@@ -319,6 +328,7 @@ export const AppHead = (props: IProps) => {
     if (doingDone.current) return;
     doingDone.current = true;
     setDownloadAlert(false);
+    downloadAlertReason.current = null;
     if (cancel && !doExit) {
       const userId = localStorage.getItem(LocalKey.onlineUserId);
       if (userId) localStorage.setItem(LocalKey.userId, userId);
@@ -343,7 +353,7 @@ export const AppHead = (props: IProps) => {
       setDoExit(true);
       setExitAlert(true);
     }
-    if (!getGlobal('enableOffsite')) {
+    if (getGlobal('changed') && !getGlobal('enableOffsite')) {
       e.preventDefault();
       e.returnValue = '';
       return true;
@@ -379,7 +389,9 @@ export const AppHead = (props: IProps) => {
     if (exitAlert)
       if (!isChanged) {
         if (isMounted()) {
-          setDownloadAlert(true);
+          if (downloadAlertReason.current === 'cloud' && !isOffline)
+            setDownloadAlert(true);
+          else downDone();
         }
       } else startSave();
     // eslint-disable-next-line react-hooks/exhaustive-deps
