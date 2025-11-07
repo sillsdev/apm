@@ -471,7 +471,7 @@ const TranscriberProvider = (props: IProps) => {
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [planMedia, refreshed, pasId, medId]);
+  }, [planMedia, refreshed, pasId, medId, planRec]);
 
   const actor: { [key: string]: string } = {
     [ActivityStates.TranscribeReady]: 'transcriber',
