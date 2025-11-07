@@ -77,7 +77,7 @@ export function TaskList() {
     <Box id="TaskList" ref={formRef} style={style} data-list={'true'}>
       <List>
         {rowData
-          .filter((r) => r.mediafile.attributes?.duration)
+          .filter((r) => Boolean(r.passage?.id))
           .map((r) => (
             <ListItem
               key={r.mediafile.id}
