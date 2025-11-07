@@ -9,6 +9,8 @@ import {
   Box,
   SxProps,
   Badge,
+  Menu,
+  MenuItem,
 } from '@mui/material';
 import {
   useState,
@@ -17,6 +19,7 @@ import {
   useContext,
   useMemo,
   useCallback,
+  MouseEvent,
 } from 'react';
 import SkipPreviousIcon from '@mui/icons-material/SkipPrevious';
 import SkipNextIcon from '@mui/icons-material/SkipNext';
@@ -29,6 +32,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import TimerIcon from '@mui/icons-material/AccessTime';
 import NextSegmentIcon from '@mui/icons-material/ArrowRightAlt';
 import UndoIcon from '@mui/icons-material/Undo';
+import MicIcon from '@mui/icons-material/Mic';
 import NormalizeIcon from '../control/NormalizeIcon';
 import { ISharedStrings, IWsAudioPlayerStrings } from '../model';
 import { FaHandScissors, FaDotCircle, FaStopCircle } from 'react-icons/fa';
@@ -48,6 +52,8 @@ import {
   PathType,
   Severity,
   useCheckOnline,
+  LocalKey,
+  localUserKey,
 } from '../utils';
 import {
   IRegion,
@@ -259,6 +265,22 @@ function WSAudioPlayer(props: IProps) {
   const autostartTimer = useRef<NodeJS.Timeout>();
   const onSaveProgressRef = useRef<(progress: number) => void | undefined>();
   const [oneShotUsed, setOneShotUsed] = useState(false);
+  const [audioInputDevices, setAudioInputDevices] = useState<MediaDeviceInfo[]>(
+    []
+  );
+  const [selectedMicrophoneId, setSelectedMicrophoneId] = useState<string>(
+    () => {
+      try {
+        return localStorage.getItem(localUserKey(LocalKey.microphoneId)) ?? '';
+      } catch {
+        return '';
+      }
+    }
+  );
+  const [micMenuAnchorEl, setMicMenuAnchorEl] = useState<null | HTMLElement>(
+    null
+  );
+  const micMenuOpen = Boolean(micMenuAnchorEl);
   const cancelAIRef = useRef(false);
   const { requestAudioAi } = useAudioAi();
   const checkOnline = useCheckOnline(t.reduceNoise);
@@ -278,6 +300,78 @@ function WSAudioPlayer(props: IProps) {
     if (recordingRef.current) return;
     pxPerSecRef.current = px;
     setPxPerSecx(px);
+  };
+
+  useEffect(() => {
+    if (!navigator?.mediaDevices?.enumerateDevices) return;
+
+    let active = true;
+
+    const updateDevices = async () => {
+      try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        if (!active) return;
+        const inputs = devices.filter((device) => device.kind === 'audioinput');
+        setAudioInputDevices(inputs);
+        setSelectedMicrophoneId((current) => {
+          if (current && inputs.some((device) => device.deviceId === current)) {
+            return current;
+          }
+          return inputs[0]?.deviceId ?? '';
+        });
+      } catch {
+        if (active) {
+          setAudioInputDevices([]);
+          setSelectedMicrophoneId('');
+        }
+      }
+    };
+
+    updateDevices();
+
+    const handleDeviceChange = () => {
+      updateDevices();
+    };
+
+    navigator.mediaDevices.addEventListener?.(
+      'devicechange',
+      handleDeviceChange
+    );
+
+    return () => {
+      active = false;
+      navigator.mediaDevices.removeEventListener?.(
+        'devicechange',
+        handleDeviceChange
+      );
+    };
+  }, []);
+
+  useEffect(() => {
+    try {
+      const storageKey = localUserKey(LocalKey.microphoneId);
+      if (selectedMicrophoneId) {
+        localStorage.setItem(storageKey, selectedMicrophoneId);
+      } else {
+        localStorage.removeItem(storageKey);
+      }
+    } catch {
+      // ignore storage errors
+    }
+  }, [selectedMicrophoneId]);
+
+  const handleMicMenuOpen = (event: MouseEvent<HTMLElement>) => {
+    if (audioInputDevices.length === 0) return;
+    setMicMenuAnchorEl(event.currentTarget);
+  };
+
+  const handleMicMenuClose = () => {
+    setMicMenuAnchorEl(null);
+  };
+
+  const handleMicSelect = (deviceId: string) => {
+    setSelectedMicrophoneId(deviceId);
+    handleMicMenuClose();
   };
 
   const onZoom = useMemo(
@@ -420,7 +514,8 @@ function WSAudioPlayer(props: IProps) {
     onRecordStart,
     onRecordStop,
     onRecordError,
-    onRecordDataAvailable
+    onRecordDataAvailable,
+    selectedMicrophoneId || undefined
   );
 
   const setProcessingRecording = (value: boolean) => {
@@ -1091,7 +1186,7 @@ function WSAudioPlayer(props: IProps) {
                       </LightTooltip>
                     </Grid>
                   )}
-                  <Grid>
+                  <Grid sx={{ ml: 1 }}>
                     <LightTooltip id="wsAudioPlayTip" title={playTooltipTitle}>
                       <span>
                         <IconButton
@@ -1274,6 +1369,46 @@ function WSAudioPlayer(props: IProps) {
                     </LightTooltip>
                   )}
                   <GrowingSpacer />
+                  <Grid>
+                    <LightTooltip
+                      id="wsAudioMicTip"
+                      title={`${ts.select} ${t.microphone}`}
+                    >
+                      <span>
+                        <IconButton id="wsAudioMic" onClick={handleMicMenuOpen}>
+                          <MicIcon
+                            sx={{
+                              color:
+                                audioInputDevices.length === 0
+                                  ? 'text.disabled'
+                                  : 'inherit',
+                            }}
+                          />
+                        </IconButton>
+                      </span>
+                    </LightTooltip>
+                    <Menu
+                      anchorEl={micMenuAnchorEl}
+                      open={micMenuOpen}
+                      onClose={handleMicMenuClose}
+                      anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+                      transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+                    >
+                      {audioInputDevices.length === 0 ? (
+                        <MenuItem disabled>{ts.noAudio}</MenuItem>
+                      ) : (
+                        audioInputDevices.map((device, index) => (
+                          <MenuItem
+                            key={device.deviceId || `input-${index}`}
+                            selected={selectedMicrophoneId === device.deviceId}
+                            onClick={() => handleMicSelect(device.deviceId)}
+                          >
+                            {device.label || `Input ${index + 1}`}
+                          </MenuItem>
+                        ))
+                      )}
+                    </Menu>
+                  </Grid>
                 </>
               )}
               {allowSegment && (

@@ -141,7 +141,6 @@ function MediaRecord(props: IProps) {
   const { fetchMediaUrl, mediaState } = useFetchMediaUrl(reporter);
   const mediaStateRef = useRef(mediaState);
   const mediaStateFetchedTimeRef = useRef<number>(0);
-
   const [name, setName] = useState(t.defaultFilename);
   const [userHasSetName, setUserHasSetName] = useState(false);
   const [filetype, setFiletype] = useState('');
@@ -223,7 +222,6 @@ function MediaRecord(props: IProps) {
     setUploading(false);
     saveRef.current = false;
     setAudioBlob(undefined);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -439,18 +437,16 @@ function MediaRecord(props: IProps) {
     setLoading(false);
     onLoaded && onLoaded();
   };
-
   const getGoodUrl = async () => {
     const TWENTY_MINUTES = 20 * 60 * 1000; // 20 minutes in milliseconds
-    const timeSinceFetched = Date.now() - mediaStateFetchedTimeRef.current;
-
+    const lastFetchedAt = mediaStateFetchedTimeRef.current;
+    const timeSinceFetched = lastFetchedAt > 0 ? Date.now() - lastFetchedAt : 0;
     // If it's ready, force a new one if older than 20 minutes.
     const forceNewUrl =
       mediaStateRef.current.id === mediaId &&
       mediaStateRef.current.status === MediaSt.FETCHED &&
       mediaStateRef.current.url?.startsWith('http') &&
       timeSinceFetched > TWENTY_MINUTES;
-
     // Force it to go get another (unexpired) S3 URL
     if (forceNewUrl) {
       // Force requery for new media URL.
@@ -473,7 +469,6 @@ function MediaRecord(props: IProps) {
       () =>
         mediaStateRef.current.status === MediaSt.FETCHED &&
         mediaStateRef.current.id === mediaId,
-
       () => mediaStateRef.current.status === MediaSt.ERROR,
       500
     );
@@ -486,9 +481,10 @@ function MediaRecord(props: IProps) {
   };
   const handleLoadAudio = async () => {
     showMessage(t.loading);
-    if (loading) return;
+    if (loading || !mediaId) return;
     setLoading(true);
     reset();
+
     const url = await getGoodUrl();
 
     if (url) {
@@ -517,18 +513,19 @@ function MediaRecord(props: IProps) {
   }, [preload]);
 
   const segments = '{}';
-
+  const showLoadButton =
+    showLoad &&
+    mediaId &&
+    mediaState.status === MediaSt.FETCHED &&
+    mediaState.id === mediaId;
   return (
     <Paper id="mediaRecord" sx={{ width: width }}>
-      {showLoad &&
-        mediaId &&
-        mediaState.status === MediaSt.FETCHED &&
-        mediaState.id === mediaId && (
-          <Button id="rec-load" variant="outlined" onClick={handleLoadAudio}>
-            <AudioFileIcon />
-            {t.loadlatest}
-          </Button>
-        )}
+      {showLoadButton && (
+        <Button id="rec-load" variant="outlined" onClick={handleLoadAudio}>
+          <AudioFileIcon />
+          {t.loadlatest}
+        </Button>
+      )}
       <WSAudioPlayer
         allowRecord={allowRecord !== false}
         allowZoom={allowZoom}
