@@ -158,8 +158,10 @@ const WarningDiv = styled('div')(({ theme }) => ({
   backgroundColor: theme.palette.warning.main,
   display: 'flex',
   justifyContent: 'space-around',
+  alignItems: 'center',
   padding: theme.spacing(1),
   marginBottom: theme.spacing(1),
+  cursor: 'pointer',
 }));
 
 const initialPosition = {
@@ -308,6 +310,7 @@ export function PlanSheet(props: IProps) {
   const [srcMediaId, setSrcMediaId] = useState('');
   const [mediaPlaying, setMediaPlaying] = useState(false);
   const [warning, setWarning] = useState<string>();
+  const [warningRow, setWarningRow] = useState<number | undefined>();
   const [toRow, setToRow] = useState(0);
   const t: IPlanSheetStrings = useSelector(planSheetSelector, shallowEqual);
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
@@ -363,6 +366,13 @@ export function PlanSheet(props: IProps) {
 
   const handleSave = () => {
     startSave();
+  };
+
+  const handleWarningClick: MouseEventHandler<HTMLDivElement> = (event) => {
+    event.preventDefault();
+    if (!warningRow) return;
+    setCurrentRow(warningRow);
+    sheetScroll();
   };
 
   const publishConfirm = async (destinations: PublishDestinationEnum[]) => {
@@ -846,16 +856,26 @@ export function PlanSheet(props: IProps) {
 
   const warningTest = (bookCol: number, refCol: number) => {
     let refErr = false;
+    let firstErrRow: number | undefined;
     if (refCol > 0) {
       rowData.forEach((row, rowIndex) => {
         if (isPassageType(rowIndex)) {
-          if (refErrTest(row[refCol])) refErr = true;
-          if (!row[bookCol]) refErr = true; //book is required
+          const hasRefErr = refErrTest(row[refCol]);
+          const missingBook = !row[bookCol]; // book is required
+          if (hasRefErr || missingBook) {
+            if (firstErrRow === undefined) firstErrRow = rowIndex + 1;
+            refErr = true;
+          }
         }
       });
     }
-    if (refErr && !warning) setWarning(t.refErr);
-    else if (!refErr && warning) setWarning(undefined);
+    if (refErr) {
+      if (!warning) setWarning(t.refErr);
+      setWarningRow(firstErrRow);
+    } else {
+      if (warning) setWarning(undefined);
+      setWarningRow(undefined);
+    }
   };
 
   const handlePublishToggle: MouseEventHandler<HTMLButtonElement> = () => {
@@ -1119,7 +1139,11 @@ export function PlanSheet(props: IProps) {
           </TabActions>
         </TabAppBar>
         <ContentDiv id="PlanSheet" ref={sheetRef}>
-          {warning && <WarningDiv>{warning}</WarningDiv>}
+          {warning && (
+            <WarningDiv onClick={handleWarningClick} role="button" tabIndex={0}>
+              {warning}
+            </WarningDiv>
+          )}
           <DataSheet
             data={curData(data)}
             valueRenderer={handleValueRender}
