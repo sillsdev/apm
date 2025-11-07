@@ -1140,7 +1140,17 @@ export function PlanSheet(props: IProps) {
         </TabAppBar>
         <ContentDiv id="PlanSheet" ref={sheetRef}>
           {warning && (
-            <WarningDiv onClick={handleWarningClick} role="button" tabIndex={0}>
+            <WarningDiv
+              onClick={handleWarningClick}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  handleWarningClick(e);
+                }
+              }}
+              role="button"
+              tabIndex={0}
+            >
               {warning}
             </WarningDiv>
           )}
