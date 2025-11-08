@@ -7,6 +7,7 @@ import {
   MouseEventHandler,
   ReactElement,
   useCallback,
+  KeyboardEventHandler,
 } from 'react';
 import { useGetGlobal, useGlobal } from '../../context/useGlobal';
 import {
@@ -368,11 +369,22 @@ export function PlanSheet(props: IProps) {
     startSave();
   };
 
-  const handleWarningClick: MouseEventHandler<HTMLDivElement> = (event) => {
-    event.preventDefault();
+  const warningEvent = () => {
     if (warningRow === undefined) return;
     setCurrentRow(warningRow);
     sheetScroll();
+  };
+
+  const handleWarningClick: MouseEventHandler<HTMLDivElement> = (event) => {
+    event.preventDefault();
+    warningEvent();
+  };
+
+  const handleWarningKeyDown: KeyboardEventHandler<HTMLDivElement> = (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      warningEvent();
+    }
   };
 
   const publishConfirm = async (destinations: PublishDestinationEnum[]) => {
@@ -1142,12 +1154,7 @@ export function PlanSheet(props: IProps) {
           {warning && (
             <WarningDiv
               onClick={handleWarningClick}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  handleWarningClick(e);
-                }
-              }}
+              onKeyDown={handleWarningKeyDown}
               role="button"
               tabIndex={0}
             >
