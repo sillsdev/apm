@@ -1,6 +1,6 @@
 {
   "name": "apm-vite-desk",
-  "version": "4.4.0-alpha.1",
+  "version": "4.4.0-alpha.2",
   "description": "An Electron application with React and TypeScript",
   "main": "./out/main/index.js",
   "homepage": "./out",
