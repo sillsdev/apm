@@ -201,15 +201,17 @@ export function LimitedMediaPlayer(props: IProps) {
       // We use a tolerance of 0.1 seconds to avoid floating point precision issues.
       // The progress seems to set time to end at the beginning so we test two values.
       durationRef.current - time < 0.1 &&
-      durationRef.current - valueTracker.current < 0.1
+      durationRef.current - valueTracker.current < 0.1 &&
+      valueTracker.current !== 0
     ) {
       ended();
-    }
-    const current = Math.ceil(progress - (limits.start ?? 0));
-    if (valueTracker.current !== current && playingRef.current) {
-      valueTracker.current = current;
-      setValue(current);
-      setCurrentTime(time);
+    } else {
+      const current = Math.ceil(progress - (limits.start ?? 0));
+      if (playingRef.current && valueTracker.current !== current) {
+        valueTracker.current = current;
+        setValue(current);
+        setCurrentTime(time);
+      }
     }
   };
 
