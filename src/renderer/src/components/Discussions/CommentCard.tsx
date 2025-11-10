@@ -372,38 +372,34 @@ export const CommentCard = (props: IProps) => {
                   noClose={true}
                 />
               </MediaCol>
-            ) : (
-              media &&
-              (!oldVernVer || oldVernVer === 0) && (
-                <Stack
-                  direction="row"
-                  sx={{
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    width: '100%',
-                  }}
-                >
-                  <Tooltip title={tm.play}>
-                    <IconButton
-                      id="playcomment"
-                      onClick={handlePlayComment}
-                      sx={{ p: 0 }}
-                    >
-                      <PlayIcon
-                        fontSize="small"
-                        sx={{ color: 'text.primary' }}
-                      />
-                    </IconButton>
-                  </Tooltip>
-                  <Stack direction="row" sx={{ width: '100%', pr: 2, pl: 1 }}>
-                    <Slider
-                      sx={{ color: 'text.secondary' }}
-                      size="small"
-                      onClick={handlePlayComment}
-                    />
-                  </Stack>
+            ) : media && (!oldVernVer || oldVernVer === 0) ? (
+              <Stack
+                direction="row"
+                sx={{
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '100%',
+                }}
+              >
+                <Tooltip title={tm.play}>
+                  <IconButton
+                    id="playcomment"
+                    onClick={handlePlayComment}
+                    sx={{ p: 0 }}
+                  >
+                    <PlayIcon fontSize="small" sx={{ color: 'text.primary' }} />
+                  </IconButton>
+                </Tooltip>
+                <Stack direction="row" sx={{ width: '100%', pr: 2, pl: 1 }}>
+                  <Slider
+                    sx={{ color: 'text.secondary' }}
+                    size="small"
+                    onClick={handlePlayComment}
+                  />
                 </Stack>
-              )
+              </Stack>
+            ) : (
+              <></>
             )}
           </BoxRow>
           <Box>
@@ -423,24 +419,24 @@ export const CommentCard = (props: IProps) => {
                 )}
                 afterUploadCb={afterUploadCb}
               />
+            ) : text ? (
+              <>
+                <OldVernVersion
+                  id={comment.id}
+                  oldVernVer={oldVernVer}
+                  mediaId={mediaId}
+                  text={text}
+                />
+                <StyledText
+                  id="outlined-textarea"
+                  value={text}
+                  multiline
+                  fullWidth
+                  variant="standard"
+                />
+              </>
             ) : (
-              text && (
-                <>
-                  <OldVernVersion
-                    id={comment.id}
-                    oldVernVer={oldVernVer}
-                    mediaId={mediaId}
-                    text={text}
-                  />
-                  <StyledText
-                    id="outlined-textarea"
-                    value={text}
-                    multiline
-                    fullWidth
-                    variant="standard"
-                  />
-                </>
-              )
+              <></>
             )}
           </Box>
         </Box>
