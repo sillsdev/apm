@@ -207,7 +207,7 @@ export function LimitedMediaPlayer(props: IProps) {
       ended();
     } else {
       const current = Math.ceil(progress - (limits.start ?? 0));
-      if (valueTracker.current !== current) {
+      if (playingRef.current && valueTracker.current !== current) {
         valueTracker.current = current;
         setValue(current);
         setCurrentTime(time);
