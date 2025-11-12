@@ -32,7 +32,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import TimerIcon from '@mui/icons-material/AccessTime';
 import NextSegmentIcon from '@mui/icons-material/ArrowRightAlt';
 import UndoIcon from '@mui/icons-material/Undo';
-import MicIcon from '@mui/icons-material/Mic';
+import MicIcon from '@mui/icons-material/SettingsVoice';
 import NormalizeIcon from '../control/NormalizeIcon';
 import { ISharedStrings, IWsAudioPlayerStrings } from '../model';
 import { FaHandScissors, FaDotCircle, FaStopCircle } from 'react-icons/fa';
