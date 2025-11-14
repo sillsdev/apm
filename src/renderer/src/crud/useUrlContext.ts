@@ -15,12 +15,15 @@ export const useUrlContext = () => {
   const getGlobal = useGetGlobal();
 
   return (planRemId: string) => {
-    let planId =
-      remoteIdGuid('plan', planRemId, memory?.keyMap as RecordKeyMap) ||
-      planRemId;
-    if (planId && planId !== getGlobal('plan')) setPlan(planId);
-    else planId = getGlobal('plan');
-    const planRec = getPlan(planId);
+    let planRec = getPlan(planRemId);
+    if (!planRec) {
+      let planId =
+        remoteIdGuid('plan', planRemId, memory?.keyMap as RecordKeyMap) ||
+        planRemId;
+      if (planId && planId !== getGlobal('plan')) setPlan(planId);
+      else planId = getGlobal('plan');
+      planRec = getPlan(planId);
+    }
 
     if (planRec) {
       const projectId = related(planRec, 'project');

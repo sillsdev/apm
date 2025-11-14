@@ -22,3 +22,4 @@ src/renderer/node_modules
 **/obj
 **/bin
 migration-data
+tmp-burrito
