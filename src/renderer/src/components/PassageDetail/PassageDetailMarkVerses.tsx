@@ -289,8 +289,13 @@ export function PassageDetailMarkVerses({ width }: MarkVersesProps) {
   );
 
   useEffect(() => {
-    const refs = getRefs(passage.attributes.reference, passage.attributes.book);
-    setupData(refs);
+    if (passage?.attributes?.reference) {
+      const refs = getRefs(
+        passage.attributes.reference,
+        passage.attributes.book
+      );
+      setupData(refs);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [passage, engVrs]);
 
