@@ -95,8 +95,7 @@ export function ProjectAdvanced(props: IProjectDialogState) {
 
   useEffect(() => {
     setPermissions(
-      ((getOrgDefault(orgDefaultPermissions, org) as string) ?? org) !==
-        personalTeam
+      Boolean(getOrgDefault(orgDefaultPermissions, org)) && org !== personalTeam
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [org]);
