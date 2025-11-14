@@ -65,7 +65,8 @@ import { useSnackBar, AlertSeverity } from '../../hoc/SnackBar';
 import PolicyDialog from '../PolicyDialog';
 import { mainSelector, sharedSelector, viewModeSelector } from '../../selector';
 import { useHome } from '../../utils/useHome';
-import { isHomeRoute } from '../../utils/routePaths';
+import { DESKTEAM, isHomeRoute } from '../../utils/routePaths';
+// import { isMobileWidth } from '../../utils/routePaths';
 import { useOrbitData } from '../../hoc/useOrbitData';
 import packageJson from '../../../package.json';
 import { MainAPI } from '@model/main-api';
@@ -385,7 +386,7 @@ export const AppHead = (props: IProps) => {
       e.returnValue = '';
       return true;
     }
-    if (localStorage.getItem(localUserKey(LocalKey.url)) === '/team') {
+    if (localStorage.getItem(localUserKey(LocalKey.url)) === DESKTEAM) {
       localStorage.setItem(localUserKey(LocalKey.url), '/');
     }
     return undefined;
@@ -496,7 +497,9 @@ export const AppHead = (props: IProps) => {
 
   const { goHome } = useHome();
   const handleHome = () => {
-    // localStorage.removeItem(LocalKey.plan);
+    // if (!isMobileWidth() && /^\/plan\/.*/.test(pathname)) {
+    //   localStorage.removeItem(LocalKey.plan);
+    // }
     localStorage.removeItem('mode');
     goHome();
   };
