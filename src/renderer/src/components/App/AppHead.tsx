@@ -65,12 +65,16 @@ import { useSnackBar, AlertSeverity } from '../../hoc/SnackBar';
 import PolicyDialog from '../PolicyDialog';
 import { mainSelector, sharedSelector, viewModeSelector } from '../../selector';
 import { useHome } from '../../utils/useHome';
-import { DESKTEAM, isHomeRoute } from '../../utils/routePaths';
-// import { isMobileWidth } from '../../utils/routePaths';
+import { isHomeRoute } from '../../utils/routePaths';
 import { useOrbitData } from '../../hoc/useOrbitData';
 import packageJson from '../../../package.json';
 import { MainAPI } from '@model/main-api';
 import { TeamContext } from '../../context/TeamContext';
+import GroupIcon from '@mui/icons-material/Group';
+import BigDialog from '../../hoc/BigDialog';
+import { BigDialogBp } from '../../hoc/BigDialogBp';
+import GroupTabs from '../GroupTabs';
+import { useRole } from '../../crud';
 const ipc = window?.api as MainAPI;
 
 interface INameProps {
@@ -205,6 +209,17 @@ export const AppHead = (props: IProps) => {
     () => !!teamCtx?.state && teamId === teamCtx.state.personalTeam,
     [teamCtx, teamId]
   );
+
+  // Team members dialog state & role/org preparation
+  const [membersOpen, setMembersOpen] = useState(false);
+  const [, setOrganization] = useGlobal('organization');
+  const { setMyOrgRole } = useRole();
+  const openMembers = () => {
+    if (!currentTeam) return;
+    setOrganization(currentTeam.id);
+    setMyOrgRole(currentTeam.id);
+    setMembersOpen(true);
+  };
 
   // Determine if we are on the projects listing screen: rely on home flag instead of plan (plan may be preloaded by menu actions)
   const isProjectsListing = useMemo(
@@ -386,7 +401,7 @@ export const AppHead = (props: IProps) => {
       e.returnValue = '';
       return true;
     }
-    if (localStorage.getItem(localUserKey(LocalKey.url)) === DESKTEAM) {
+    if (localStorage.getItem(localUserKey(LocalKey.url)) === '/team') {
       localStorage.setItem(localUserKey(LocalKey.url), '/');
     }
     return undefined;
@@ -497,9 +512,7 @@ export const AppHead = (props: IProps) => {
 
   const { goHome } = useHome();
   const handleHome = () => {
-    // if (!isMobileWidth() && /^\/plan\/.*/.test(pathname)) {
-    //   localStorage.removeItem(LocalKey.plan);
-    // }
+    // localStorage.removeItem(LocalKey.plan);
     localStorage.removeItem('mode');
     goHome();
   };
@@ -553,18 +566,32 @@ export const AppHead = (props: IProps) => {
               >
                 {teamDisplayName}
                 {currentTeam && (
-                  <IconButton
-                    size="small"
-                    aria-label="team settings"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSettingsOpen(true);
-                    }}
-                    sx={{ ml: 1 }}
-                    data-testid="team-header-settings"
-                  >
-                    <SettingsIcon fontSize="small" color="action" />
-                  </IconButton>
+                  <>
+                    <IconButton
+                      size="small"
+                      aria-label="team settings"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSettingsOpen(true);
+                      }}
+                      sx={{ ml: 1 }}
+                      data-testid="team-header-settings"
+                    >
+                      <SettingsIcon fontSize="small" color="action" />
+                    </IconButton>
+                    <IconButton
+                      size="small"
+                      aria-label="team members"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openMembers();
+                      }}
+                      sx={{ ml: 0.5 }}
+                      data-testid="team-header-members"
+                    >
+                      <GroupIcon fontSize="small" color="action" />
+                    </IconButton>
+                  </>
                 )}
               </Typography>
               <GrowingSpacer />
@@ -685,6 +712,19 @@ export const AppHead = (props: IProps) => {
               },
             })}
           />
+        )}
+        {membersOpen && currentTeam && (
+          <BigDialog
+            title={teamCtx?.state?.cardStrings?.members.replace(
+              '{0}',
+              currentTeam?.attributes?.name || ''
+            )}
+            isOpen={membersOpen}
+            onOpen={setMembersOpen}
+            bp={BigDialogBp.md}
+          >
+            <GroupTabs />
+          </BigDialog>
         )}
       </>
     </AppBar>
