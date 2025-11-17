@@ -481,6 +481,7 @@ export const AudioTable = (props: IProps) => {
         columns={columns}
         rows={sortedData}
         disableColumnSorting
+        disableRowSelectionOnClick
         initialState={{
           columns: { columnVisibilityModel },
         }}

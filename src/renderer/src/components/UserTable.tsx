@@ -243,7 +243,7 @@ export function UserTable() {
           )}
           <GrowingSpacer />
         </ActionRow>
-        <DataGrid columns={columns} rows={data} />
+        <DataGrid columns={columns} rows={data} disableRowSelectionOnClick />
       </div>
       <Invite
         visible={dialogVisible}
