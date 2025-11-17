@@ -39,7 +39,6 @@ import packageJson from '../../package.json';
 const version = packageJson.version;
 const productName = packageJson.build.productName;
 import { MainAPI } from '@model/main-api';
-import { useBurritoAlign } from './useBurritoAlign';
 import { useBurritoText } from './useBurritoText';
 const ipc = window?.api as MainAPI;
 
@@ -65,7 +64,6 @@ export const useCreateBurrito = (teamId: string) => {
   const [languages, setLanguages] = React.useState<string[]>([]);
   const [bkSecIds, setBkSecIds] = React.useState<[string, string[]][]>([]);
   const burritoAudio = useBurritoAudo(teamId);
-  const burritoAlign = useBurritoAlign(teamId);
   const burritoText = useBurritoText(teamId);
 
   const bookData = (book: string) => allBookData.find((b) => b.code === book);
@@ -256,16 +254,6 @@ export const useCreateBurrito = (teamId: string) => {
           sections: bookSecs,
         });
       }
-      if (part === BurritoType.Timing) {
-        metaData = await burritoAlign({
-          metadata: metaData,
-          bible: bible as BibleD,
-          book,
-          bookPath,
-          preLen,
-          sections: bookSecs,
-        });
-      }
     }
     await ipc?.write(metaName, JSON.stringify(metaData, null, 2));
   };
@@ -283,8 +271,11 @@ export const useCreateBurrito = (teamId: string) => {
     const content = getOrgDefault(burritoContents, teamId) as
       | string[]
       | undefined;
+    const filteredContent = content?.filter(
+      (part) => part !== BurritoType.Timing
+    );
     getSections();
-    for (const part of content || []) {
+    for (const part of filteredContent || []) {
       await createPart(part);
     }
   };

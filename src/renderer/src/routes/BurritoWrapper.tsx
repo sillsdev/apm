@@ -78,8 +78,11 @@ export function BurritoWrapper() {
             const curContents = getOrgDefault(burritoContents, teamId) as
               | string[]
               | undefined;
+            const filteredContents = curContents?.filter(
+              (c: string) => c.toLocaleLowerCase() !== 'timing'
+            );
             const burritos =
-              curContents?.map(
+              filteredContents?.map(
                 (c: string) =>
                   ({
                     id: `${abbreviation}-${c}`,

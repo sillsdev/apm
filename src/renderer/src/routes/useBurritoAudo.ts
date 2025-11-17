@@ -1,5 +1,10 @@
 import path from 'path-browserify';
 import {
+  AlignmentBuilder,
+  AlignmentGroup,
+  AlignmentRecord,
+} from '../burrito/data/alignmentBuilder';
+import {
   Burrito,
   BurritoFormats,
   BurritoIngredients,
@@ -19,6 +24,9 @@ import { parseRef } from '../crud/passage';
 import { passageTypeFromRef } from '../control/passageTypeFromRef';
 import { PassageTypeEnum } from '../model/passageType';
 import { pad3 } from '../utils/pad3';
+import { getSegments, NamedRegions } from '../utils/namedSegments';
+import { IRegion } from '../crud/useWavesurferRegions';
+import { timeFmt } from '../utils/timeFmt';
 
 import { MainAPI } from '@model/main-api';
 const ipc = window?.api as MainAPI;
@@ -52,6 +60,8 @@ export const useBurritoAudo = (teamId: string) => {
     const compressions = new Set<string>();
     const ingredients: BurritoIngredients = {};
     const chapters = new Set<string>();
+    const alignmentGroups: AlignmentGroup[] = [];
+    const alignPath = path.join(bookPath, 'alignment.json');
 
     let chapter = 0;
     // let chapterTag = 0;
@@ -135,6 +145,32 @@ export const useBurritoAudo = (teamId: string) => {
           const docid = destPath.substring(preLen);
           await ipc?.copyFile(mediaName, destPath);
 
+          const alignmentRecords: AlignmentRecord[] = [];
+          const regionstr = getSegments(
+            NamedRegions.Verse,
+            attr?.segments || '{}'
+          );
+          const segs = JSON.parse(regionstr ?? '{}')?.regions as
+            | IRegion[]
+            | undefined;
+          segs?.forEach((s) => {
+            alignmentRecords.push({
+              references: [
+                [`${timeFmt(s.start)} --> ${timeFmt(s.end)}`],
+                [`${book} ${s.label}`],
+              ],
+            } as AlignmentRecord);
+          });
+          if (alignmentRecords.length) {
+            alignmentGroups.push({
+              documents: [
+                { scheme: 'vtt-timecode', docid },
+                { scheme: 'u23003' },
+              ],
+              records: alignmentRecords,
+            });
+          }
+
           // add the media file to the metadata file
           ingredients[docid] = {
             checksum: { md5: await ipc?.md5File(destPath) },
@@ -145,6 +181,19 @@ export const useBurritoAudo = (teamId: string) => {
         }
       }
     }
+    const alignment = new AlignmentBuilder()
+      .withGroups(alignmentGroups)
+      .build();
+    const alignmentContent = JSON.stringify(alignment, null, 2);
+    await ipc?.write(alignPath, alignmentContent);
+    const alignmentDocId = alignPath.substring(preLen);
+    ingredients[alignmentDocId] = {
+      checksum: { md5: await ipc?.md5File(alignPath) },
+      mimeType: 'application/json',
+      size: alignmentContent.length,
+      scope: { [book]: Array.from(chapters).sort() },
+      role: ['timing'],
+    };
     const curScopes = scopes.get(book) || [];
     scopes.set(book, [...curScopes, ...Array.from(chapters).sort()]);
     const newScopes: BurritoScopes = {};
