@@ -206,7 +206,11 @@ export function SpeakerName({
         id="speaker-name"
         options={speakers}
         getOptionLabel={getOptionLabel}
-        renderOption={(props, option) => <li {...props}>{option.name}</li>}
+        renderOption={(props, option) => (
+          <li {...props} key={option.name}>
+            {option.name}
+          </li>
+        )}
         sx={{ width: 300, marginTop: '5px' }}
         freeSolo
         renderInput={(params) => {
