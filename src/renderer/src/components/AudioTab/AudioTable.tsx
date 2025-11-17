@@ -477,16 +477,17 @@ export const AudioTable = (props: IProps) => {
 
   return (
     <Box ref={boxRef} sx={{ width: '100%' }}>
-      <DataGrid
-        columns={columns}
-        rows={sortedData}
-        disableColumnSorting
-        disableRowSelectionOnClick
-        initialState={{
-          columns: { columnVisibilityModel },
-        }}
-      />
-      {/* {verHist && (
+      <>
+        <DataGrid
+          columns={columns}
+          rows={sortedData}
+          disableColumnSorting
+          disableRowSelectionOnClick
+          initialState={{
+            columns: { columnVisibilityModel },
+          }}
+        />
+        {/* {verHist && (
         <BigDialog
           title={ts.versionHistory}
           isOpen={Boolean(verHist)}
@@ -499,48 +500,52 @@ export const AudioTable = (props: IProps) => {
           />
         </BigDialog>
       )} */}
-      {publishItem !== -1 && (
-        <ConfirmPublishDialog
-          title={t.publish}
-          propagateLabel={''}
-          description={''}
-          noPropagateDescription={''}
-          yesResponse={publishConfirm}
-          noResponse={publishRefused}
-          current={getPublishTo(
-            sortedData[publishItem].publishTo,
-            hasPublishing,
-            shared,
-            true
-          )}
-          sharedProject={shared}
-          hasPublishing={hasPublishing}
-          hasBible={hasBible}
-          noDefaults={true}
-          passageType={sortedData[publishItem]?.passageType}
+        {publishItem !== -1 && (
+          <ConfirmPublishDialog
+            title={t.publish}
+            propagateLabel={''}
+            description={''}
+            noPropagateDescription={''}
+            yesResponse={publishConfirm}
+            noResponse={publishRefused}
+            current={getPublishTo(
+              sortedData[publishItem].publishTo,
+              hasPublishing,
+              shared,
+              true
+            )}
+            sharedProject={shared}
+            hasPublishing={hasPublishing}
+            hasBible={hasBible}
+            noDefaults={true}
+            passageType={sortedData[publishItem]?.passageType}
+          />
+        )}
+        {showId !== '' && (
+          <TranscriptionShow
+            id={showId}
+            isMediaId={true}
+            visible={showId !== ''}
+            closeMethod={handleCloseTranscription}
+            version={verValue}
+          />
+        )}
+        {confirmAction === '' || (
+          <Confirm
+            text={t.deleteConfirm.replace(
+              '{0}',
+              sortedData[deleteItem].fileName
+            )}
+            yesResponse={handleActionConfirmed}
+            noResponse={handleActionRefused}
+          />
+        )}
+        <MediaPlayer
+          srcMediaId={playItem}
+          requestPlay={mediaPlaying}
+          onEnded={playEnded}
         />
-      )}
-      {showId !== '' && (
-        <TranscriptionShow
-          id={showId}
-          isMediaId={true}
-          visible={showId !== ''}
-          closeMethod={handleCloseTranscription}
-          version={verValue}
-        />
-      )}
-      {confirmAction === '' || (
-        <Confirm
-          text={t.deleteConfirm.replace('{0}', sortedData[deleteItem].fileName)}
-          yesResponse={handleActionConfirmed}
-          noResponse={handleActionRefused}
-        />
-      )}
-      <MediaPlayer
-        srcMediaId={playItem}
-        requestPlay={mediaPlaying}
-        onEnded={playEnded}
-      />
+      </>
     </Box>
   );
 };

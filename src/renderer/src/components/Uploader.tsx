@@ -35,6 +35,7 @@ import { AlertSeverity } from '../hoc/SnackBar';
 import { getContentType } from '../utils/contentType';
 import { OrbitNetworkErrorRetries } from '../../api-variable';
 import { UploadType } from './UploadType';
+import { Box } from '@mui/material';
 
 interface IProps {
   noBusy?: boolean | undefined;
@@ -433,7 +434,7 @@ export const Uploader = (props: IProps) => {
   }, [plan, passageId, memory]);
 
   return (
-    <>
+    <Box sx={{ width: '100%' }}>
       {recordAudio && ready && (!importList || importList.length === 0) && (
         <PassageRecordDlg
           artifactId={artifactState?.id ?? VernacularTag}
@@ -474,7 +475,7 @@ export const Uploader = (props: IProps) => {
           onNonAudio={onNonAudio}
         />
       )}
-    </>
+    </Box>
   );
 };
 
