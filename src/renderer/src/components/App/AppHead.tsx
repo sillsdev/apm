@@ -353,7 +353,9 @@ export const AppHead = (props: IProps) => {
       setDoExit(true);
       setExitAlert(true);
     }
-    if (getGlobal('changed') && !getGlobal('enableOffsite')) {
+    const queueLength = remote?.requestQueue.length ?? 0;
+    const busy = queueLength > 0 || getGlobal('remoteBusy');
+    if ((getGlobal('changed') || busy) && !getGlobal('enableOffsite')) {
       e.preventDefault();
       e.returnValue = '';
       return true;
