@@ -399,7 +399,7 @@ export function PassageDetailItem(props: IProps) {
                       {ts.uploadMediaSingular}
                     </Button>
                     <GrowingSpacer />
-                    {currentSegment && (
+                    {currentSegment && segString !== '{}' && (
                       <TextField
                         sx={ctlProps}
                         id="segment"
