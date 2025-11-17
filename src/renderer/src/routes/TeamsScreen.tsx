@@ -28,6 +28,7 @@ import { TeamProvider } from '../context/TeamContext';
 import { TeamContext } from '../context/TeamContext';
 import { validateEmail } from '../utils/validateEmail';
 import { axiosPost } from '../utils/axios';
+import Confirm from '../components/AlertDialog';
 
 interface IPersonalSectionProps {
   onOpenSettings: () => void;
@@ -373,6 +374,7 @@ const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({
   const { teamUpdate, teamDelete, personalTeam, isDeleting } = ctx.state;
   const [open, setOpen] = React.useState(false);
   const [teamId, setTeamId] = React.useState<string | undefined>();
+  const [pendingDelete, setPendingDelete] = React.useState<any>();
 
   const selectedTeam = React.useMemo(() => {
     if (!teamId) return undefined;
@@ -396,14 +398,26 @@ const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({
     setTeamId(personalTeam);
     setOpen(true);
   };
-  const handleClose = () => setOpen(false);
+  const handleClose = () => {
+    setPendingDelete(undefined);
+    setOpen(false);
+  };
   const handleCommit = (value: ITeamDialog) => {
     teamUpdate(value.team as any);
     handleClose();
   };
-  const handleDelete = (org: any) => {
-    teamDelete(org);
-    handleClose();
+  const handleDeleteRequest = (org: any) => {
+    setPendingDelete(org);
+  };
+  const handleDeleteConfirmed = async () => {
+    if (pendingDelete) {
+      await teamDelete(pendingDelete);
+      setPendingDelete(undefined);
+      handleClose();
+    }
+  };
+  const handleDeleteRefused = () => {
+    setPendingDelete(undefined);
   };
   const isPersonal = teamId === personalTeam;
 
@@ -419,7 +433,14 @@ const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({
           onCommit={(v) => handleCommit(v)}
           values={{ team: selectedTeam } as any}
           disabled={isDeleting}
-          {...(!isPersonal && { onDelete: (org: any) => handleDelete(org) })}
+          {...(!isPersonal ? { onDelete: handleDeleteRequest } : {})}
+        />
+      )}
+      {pendingDelete && (
+        <Confirm
+          text={''}
+          yesResponse={handleDeleteConfirmed}
+          noResponse={handleDeleteRefused}
         />
       )}
       {children}
