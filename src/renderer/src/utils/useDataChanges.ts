@@ -15,6 +15,7 @@ export const useDataChanges = () => {
   const [errorReporter] = useGlobal('errorReporter');
   const [fingerprint] = useGlobal('fingerprint');
   const [coordinator] = useGlobal('coordinator');
+  const remote = coordinator?.getSource('remote') as JSONAPISource;
   const getOfflineProject = useOfflnProjRead();
   const [user] = useGlobal('user');
   const [, setOrbitRetries] = useGlobal('orbitRetries');
@@ -29,10 +30,7 @@ export const useDataChanges = () => {
   const getGlobal = useGetGlobal();
 
   return async (notPastTime?: string) => {
-    await orbitReset(
-      coordinator?.getSource('remote') as JSONAPISource,
-      setOrbitRetries
-    );
+    await orbitReset(remote, setOrbitRetries);
     await doDataChanges(
       accessToken || '',
       coordinator,

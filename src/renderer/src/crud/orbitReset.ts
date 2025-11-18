@@ -5,5 +5,10 @@ export const orbitReset = async (
   setOrbitRetries: (retries: number) => void
 ) => {
   setOrbitRetries(OrbitNetworkErrorRetries);
-  if (remote?.requestQueue?.retry) await remote.requestQueue.retry();
+  try {
+    if (remote?.requestQueue) await remote.requestQueue.retry();
+  } catch {
+    // console.error('orbitReset error', error);
+    // do nothing
+  }
 };
