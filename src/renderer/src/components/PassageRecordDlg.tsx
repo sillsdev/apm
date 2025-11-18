@@ -77,6 +77,7 @@ function PassageRecordDlg(props: IProps) {
   const [canSave, setCanSave] = useState(false);
   const [canCancel, setCanCancel] = useState(false);
   const [hasRights, setHasRights] = useState(false);
+  const [recording, setRecording] = useState(false);
   const [dialogWidth, setDialogWidth] = useState<number>(0);
   const dialogRef = useRef<HTMLDivElement>(null);
   const { startSave } = useContext(UnsavedContext).state;
@@ -127,10 +128,17 @@ function PassageRecordDlg(props: IProps) {
     startSave(myToolId);
   };
   const handleCancel = () => {
+    if (recording) {
+      return; // Prevent closing while recording
+    }
     if (onCancel) {
       onCancel();
     }
     if (!busy) close();
+  };
+
+  const onRecording = (isRecording: boolean) => {
+    setRecording(isRecording);
   };
 
   return (
@@ -171,12 +179,17 @@ function PassageRecordDlg(props: IProps) {
           allowZoom={true}
           allowNoNoise={true}
           allowDeltaVoice={true}
+          onRecording={onRecording}
         />
         {metaData}
       </DialogContent>
       <DialogActions>
         <StatusMessage variant="caption">{statusText}</StatusMessage>
-        <AltButton id="rec-cancel" onClick={handleCancel} disabled={!canCancel}>
+        <AltButton
+          id="rec-cancel"
+          onClick={handleCancel}
+          disabled={!canCancel || recording}
+        >
           {t.cancel}
         </AltButton>
         <PriButton
