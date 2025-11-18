@@ -630,9 +630,6 @@ function WSAudioPlayer(props: IProps) {
   };
 
   useEffect(() => {
-    setSelectedMicrophoneId(
-      localStorage.getItem(localUserKey(LocalKey.microphoneId)) ?? ''
-    );
     if (!navigator?.mediaDevices?.enumerateDevices) return;
 
     let active = true;
