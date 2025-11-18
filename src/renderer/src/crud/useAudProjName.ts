@@ -11,7 +11,7 @@ const planSlug = (rec: PlanD | null) => {
   const name = rec?.attributes?.name || '';
   return (
     rec?.attributes?.slug ||
-    toCamel(cleanFileName(name.replace(' ', '_'))).slice(0, 6) +
+    toCamel(cleanFileName(name.replaceAll(' ', '_'))).slice(0, 6) +
       rec?.id.slice(0, 4)
   );
 };
