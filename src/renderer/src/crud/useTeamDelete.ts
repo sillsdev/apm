@@ -13,8 +13,12 @@ import {
 import { RecordOperation, RecordTransformBuilder } from '@orbit/records';
 import { related, findRecord } from '.';
 import { useProjectDelete } from './useProjectDelete';
+import IndexedDBSource from '@orbit/indexeddb';
+
 export const useTeamDelete = () => {
   const [memory] = useGlobal('memory');
+  const [coordinator] = useGlobal('coordinator');
+  const backup = coordinator?.getSource('backup') as IndexedDBSource;
   const [offlineOnly] = useGlobal('offlineOnly'); //will be constant here
   const projectDelete = useProjectDelete();
 
@@ -41,7 +45,7 @@ export const useTeamDelete = () => {
       memory?.cache.query((q) =>
         q.findRecords('organizationmembership')
       ) as OrganizationMembershipD[]
-    ).filter((om) => teamgrpIds.includes(related(om, 'organization')));
+    ).filter((g) => related(g, 'organization') === teamid);
     /* remove the memberships first so that refreshing happens before projects and teams disappear and causes problems */
     let ops: RecordOperation[] = [];
     const t: RecordTransformBuilder = new RecordTransformBuilder();
@@ -113,7 +117,8 @@ export const useTeamDelete = () => {
     ops.push(
       t.removeRecord({ type: 'organization', id: teamid }).toOperation()
     );
-
-    await memory.update(ops);
+    //only do this locally - we'll clean up the server later
+    await memory.sync(() => ops);
+    await backup.sync(() => ops);
   };
 };

@@ -12,9 +12,12 @@ import {
 } from '../model';
 import { useOfflnProjDelete } from './useOfflnProjDelete';
 import { related } from '.';
+import IndexedDBSource from '@orbit/indexeddb';
 
 export const useProjectDelete = () => {
+  const [coordinator] = useGlobal('coordinator');
   const [memory] = useGlobal('memory');
+  const backup = coordinator?.getSource('backup') as IndexedDBSource;
   const [offlineOnly] = useGlobal('offlineOnly'); //will be constant here
   const offlineDelete = useOfflnProjDelete();
   const [, setProjectsLoaded] = useGlobal('projectsLoaded');
@@ -151,12 +154,20 @@ export const useProjectDelete = () => {
             .toOperation()
         )
       );
+      ops.push(
+        t.removeRecord({ type: 'plan', id: planid }).toOperation(),
+        t.removeRecord({ type: 'project', id: projectid }).toOperation()
+      );
+      await memory.update(ops);
+    } else {
+      ops.push(
+        t.removeRecord({ type: 'plan', id: planid }).toOperation(),
+        t.removeRecord({ type: 'project', id: projectid }).toOperation()
+      );
+      //only do this locally - we'll clean up the server later
+      await memory.sync(() => ops);
+      await backup.sync(() => ops);
     }
-    ops.push(
-      t.removeRecord({ type: 'plan', id: planid }).toOperation(),
-      t.removeRecord({ type: 'project', id: projectid }).toOperation()
-    );
-    await memory.update(ops);
 
     setProjectsLoaded(
       getGlobal('projectsLoaded').filter((p) => p !== projectid)
