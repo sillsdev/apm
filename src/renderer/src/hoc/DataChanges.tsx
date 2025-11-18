@@ -69,7 +69,7 @@ export function DataChanges(props: PropsWithChildren) {
   }, [users, user]);
 
   useEffect(() => {
-    const defaultBusyDelay = 1000;
+    const defaultBusyDelay = 1000 * 5; //5 seconds
     const defaultDataDelay = 1000 * (userDataDelay * 60);
 
     setFirstRun(dataDelay === null);
@@ -87,7 +87,7 @@ export function DataChanges(props: PropsWithChildren) {
     // the busy delay is increased by 10 times if we aren't connected yet
     // but should be because we have authenticated.
     setBusyDelay(
-      remote && authenticated() ? defaultBusyDelay * (connected ? 1 : 10) : null
+      remote && authenticated() ? defaultBusyDelay * (connected ? 1 : 2) : null
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [remote, ctx, loadComplete, connected, firstRun, userDataDelay]);
