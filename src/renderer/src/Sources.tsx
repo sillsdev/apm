@@ -42,6 +42,7 @@ import { updateBackTranslationType } from './crud/updateBackTranslationType';
 import { updateConsultantWorkflowStep } from './crud/updateConsultantWorkflowStep';
 import { serializersSettings } from './serializers/serializersFor';
 import { requestedSchema } from './schema';
+import { orbitReset } from './crud/orbitReset';
 type StategyError = (...args: unknown[]) => unknown;
 
 interface PullStratErrProps {
@@ -416,6 +417,19 @@ export const Sources = async (
     console.log(`has user rec: ${tokData.sub}`);
     if (!Array.isArray(uRecs)) uRecs = [uRecs];
     const user = uRecs[0] as UserD;
+    const locale = user?.attributes?.locale || 'en';
+    setLang(locale);
+    localStorage.setItem(LocalKey.userId, user.id);
+    localStorage.setItem(LocalKey.onlineUserId, user.id);
+    if (errorReporter && localStorage.getItem(LocalKey.connected) !== 'false')
+      Bugsnag.setUser(user.keys?.remoteId ?? user.id);
+    if (remote.requestQueue?.length > 0) {
+      console.log(
+        'Remote request queue is not empty',
+        remote.requestQueue?.length
+      );
+      await orbitReset(remote, setOrbitRetries);
+    }
     if (
       new Date().getTime() - new Date(user.attributes.dateUpdated).getTime() <=
       60000
@@ -424,12 +438,6 @@ export const Sources = async (
       await forceDataChanges();
       console.log(`Forcing complete`);
     }
-    const locale = user?.attributes?.locale || 'en';
-    setLang(locale);
-    localStorage.setItem(LocalKey.userId, user.id);
-    localStorage.setItem(LocalKey.onlineUserId, user.id);
-    if (errorReporter && localStorage.getItem(LocalKey.connected) !== 'false')
-      Bugsnag.setUser(user.keys?.remoteId ?? user.id);
   }
   const user = localStorage.getItem(LocalKey.userId) as string;
   setUser(user);

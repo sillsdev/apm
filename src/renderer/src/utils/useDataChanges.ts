@@ -7,6 +7,8 @@ import { useGetGlobal, useGlobal } from '../context/useGlobal';
 import { ThunkDispatch } from 'redux-thunk';
 import { IState, LocalizationMsgs } from '../model';
 import { doDataChanges } from '../hoc/doDataChanges';
+import { orbitReset } from '../crud/orbitReset';
+import JSONAPISource from '@orbit/jsonapi';
 
 export const useDataChanges = () => {
   const { accessToken } = useContext(TokenContext).state;
@@ -15,6 +17,7 @@ export const useDataChanges = () => {
   const [coordinator] = useGlobal('coordinator');
   const getOfflineProject = useOfflnProjRead();
   const [user] = useGlobal('user');
+  const [, setOrbitRetries] = useGlobal('orbitRetries');
   const dispatch = useDispatch() as ThunkDispatch<
     IState,
     void,
@@ -26,6 +29,10 @@ export const useDataChanges = () => {
   const getGlobal = useGetGlobal();
 
   return async (notPastTime?: string) => {
+    await orbitReset(
+      coordinator?.getSource('remote') as JSONAPISource,
+      setOrbitRetries
+    );
     await doDataChanges(
       accessToken || '',
       coordinator,
