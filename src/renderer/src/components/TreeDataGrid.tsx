@@ -63,5 +63,5 @@ export function TreeDataGrid(props: DataGridProps & IParams) {
     },
   ];
   if (props.columns) columns.push(...props.columns);
-  return <DataGrid {...props} columns={columns} />;
+  return <DataGrid {...props} columns={columns} disableRowSelectionOnClick />;
 }

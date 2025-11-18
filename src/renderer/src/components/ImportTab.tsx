@@ -787,6 +787,7 @@ export function ImportTab(props: IProps) {
               columns={columns}
               rows={sortedRows}
               disableColumnSorting
+              disableRowSelectionOnClick
               initialState={{
                 columns: { columnVisibilityModel },
               }}
