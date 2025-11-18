@@ -345,8 +345,6 @@ function WSAudioPlayer(props: IProps) {
       const storageKey = localUserKey(LocalKey.microphoneId);
       if (selectedMicrophoneId) {
         localStorage.setItem(storageKey, selectedMicrophoneId);
-      } else {
-        localStorage.removeItem(storageKey);
       }
     } catch {
       // ignore storage errors
@@ -675,10 +673,10 @@ function WSAudioPlayer(props: IProps) {
   };
 
   useEffect(() => {
+    setSelectedMicrophoneId(
+      localStorage.getItem(localUserKey(LocalKey.microphoneId)) ?? ''
+    );
     return () => {
-      setSelectedMicrophoneId(
-        localStorage.getItem(localUserKey(LocalKey.microphoneId)) ?? ''
-      );
       playerKeys.forEach((k) => unsubscribe(k.key));
       simplePlayerKeys.forEach((k) => unsubscribe(k.key));
       recordKeys.forEach((k) => unsubscribe(k.key));
