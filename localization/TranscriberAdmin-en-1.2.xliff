@@ -800,6 +800,13 @@
                <context context-type="sourcefile">addCard.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="cards.addNewTeam">
+            <source>Add New Team...</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">addCard.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="cards.addTeam">
             <source>Add Team</source>
             <target/>
@@ -1216,6 +1223,13 @@
          </trans-unit>
          <trans-unit id="cards.sortProjects">
             <source>Sort Projects</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">ProjectMenu.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="cards.switchTeams">
+            <source>Switch Teams</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">ProjectMenu.tsx</context>

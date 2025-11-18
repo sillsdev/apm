@@ -9,7 +9,6 @@ import {
   TextField,
   IconButton,
 } from '@mui/material';
-import Axios from 'axios';
 import { DialogMode } from '../model';
 import TeamDialog, { ITeamDialog } from '../components/Team/TeamDialog';
 import { useGlobal } from '../context/useGlobal';
@@ -19,7 +18,7 @@ import { useSnackBar } from '../hoc/SnackBar';
 import BigDialog from '../hoc/BigDialog';
 import { BigDialogBp } from '../hoc/BigDialogBp';
 import ImportTab from '../components/ImportTab';
-import { API_CONFIG, isElectron } from '../../api-variable';
+import { isElectron } from '../../api-variable';
 import AddIcon from '@mui/icons-material/Add';
 import SettingsIcon from '@mui/icons-material/Settings';
 import AppHead from '../components/App/AppHead';
@@ -27,6 +26,8 @@ import { useTheme, alpha } from '@mui/material/styles';
 import { useMyNavigate } from '../utils/useMyNavigate';
 import { TeamProvider } from '../context/TeamContext';
 import { TeamContext } from '../context/TeamContext';
+import { validateEmail } from '../utils/validateEmail';
+import { axiosPost } from '../utils/axios';
 
 interface IPersonalSectionProps {
   onOpenSettings: () => void;
@@ -213,9 +214,6 @@ const FloatingActions = () => {
     });
   };
 
-  const validateEmail = (val: string) =>
-    /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/.test(val);
-
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.toLowerCase();
     setEmail(value);
@@ -226,15 +224,10 @@ const FloatingActions = () => {
     if (!validEmail) return;
     setValidEmail(false);
     setContentStatus(ts.saving);
-    Axios.post(
-      `${API_CONFIG.host}/api/users/sharedcreator/${encodeURIComponent(email)}/true`,
+    axiosPost(
+      'users/sharedcreator/${encodeURIComponent(email)}/true',
       null,
-      {
-        headers: {
-          'Content-Type': 'application/vnd.api+json',
-          Authorization: 'Bearer ' + tokenctx.accessToken,
-        },
-      }
+      tokenctx.accessToken || undefined
     )
       .then(() => {
         showMessage(t.creatorOK);
@@ -274,7 +267,7 @@ const FloatingActions = () => {
               bgcolor: theme.palette.common.white,
             })}
           >
-            Add New Team...
+            {t.addNewTeam || 'Add New Team...'}
           </Button>
           {offline && (
             <Button
