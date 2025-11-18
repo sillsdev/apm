@@ -268,7 +268,9 @@ function WSAudioPlayer(props: IProps) {
   const [audioInputDevices, setAudioInputDevices] = useState<MediaDeviceInfo[]>(
     []
   );
-  const [selectedMicrophoneId, setSelectedMicrophoneId] = useState('');
+  const [selectedMicrophoneId, setSelectedMicrophoneId] = useState(
+    localStorage.getItem(localUserKey(LocalKey.microphoneId)) ?? ''
+  );
 
   const [micMenuAnchorEl, setMicMenuAnchorEl] = useState<null | HTMLElement>(
     null
@@ -294,51 +296,6 @@ function WSAudioPlayer(props: IProps) {
     pxPerSecRef.current = px;
     setPxPerSecx(px);
   };
-
-  useEffect(() => {
-    if (!navigator?.mediaDevices?.enumerateDevices) return;
-
-    let active = true;
-
-    const updateDevices = async () => {
-      try {
-        const devices = await navigator.mediaDevices.enumerateDevices();
-        if (!active) return;
-        const inputs = devices.filter((device) => device.kind === 'audioinput');
-        setAudioInputDevices(inputs);
-        setSelectedMicrophoneId((current) => {
-          if (current && inputs.some((device) => device.deviceId === current)) {
-            return current;
-          }
-          return inputs[0]?.deviceId ?? '';
-        });
-      } catch {
-        if (active) {
-          setAudioInputDevices([]);
-          setSelectedMicrophoneId('');
-        }
-      }
-    };
-
-    updateDevices();
-
-    const handleDeviceChange = () => {
-      updateDevices();
-    };
-
-    navigator.mediaDevices.addEventListener?.(
-      'devicechange',
-      handleDeviceChange
-    );
-
-    return () => {
-      active = false;
-      navigator.mediaDevices.removeEventListener?.(
-        'devicechange',
-        handleDeviceChange
-      );
-    };
-  }, []);
 
   useEffect(() => {
     try {
@@ -676,7 +633,47 @@ function WSAudioPlayer(props: IProps) {
     setSelectedMicrophoneId(
       localStorage.getItem(localUserKey(LocalKey.microphoneId)) ?? ''
     );
+    if (!navigator?.mediaDevices?.enumerateDevices) return;
+
+    let active = true;
+
+    const updateDevices = async () => {
+      try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        if (!active) return;
+        const inputs = devices.filter((device) => device.kind === 'audioinput');
+        setAudioInputDevices(inputs);
+        setSelectedMicrophoneId((current) => {
+          if (current && inputs.some((device) => device.deviceId === current)) {
+            return current;
+          }
+          return inputs[0]?.deviceId ?? '';
+        });
+      } catch {
+        if (active) {
+          setAudioInputDevices([]);
+          setSelectedMicrophoneId('');
+        }
+      }
+    };
+
+    updateDevices();
+
+    const handleDeviceChange = () => {
+      updateDevices();
+    };
+
+    navigator.mediaDevices.addEventListener?.(
+      'devicechange',
+      handleDeviceChange
+    );
+
     return () => {
+      active = false;
+      navigator.mediaDevices.removeEventListener?.(
+        'devicechange',
+        handleDeviceChange
+      );
       playerKeys.forEach((k) => unsubscribe(k.key));
       simplePlayerKeys.forEach((k) => unsubscribe(k.key));
       recordKeys.forEach((k) => unsubscribe(k.key));
@@ -686,6 +683,7 @@ function WSAudioPlayer(props: IProps) {
         recTimerRef.current = undefined;
       }
     };
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
