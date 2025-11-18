@@ -49,7 +49,7 @@ import {
 } from '../../crud';
 import { localizeProjectTag } from '../../utils/localizeProjectTag';
 import OfflineIcon from '@mui/icons-material/OfflinePin';
-import { LocalKey, useHome, useJsonParams } from '../../utils';
+import { useHome, useJsonParams } from '../../utils';
 import { copyComplete, CopyProjectProps } from '../../store';
 import { TokenContext } from '../../context/TokenProvider';
 import { useSnackBar } from '../../hoc/SnackBar';
@@ -68,34 +68,25 @@ import { IProjectDialog } from './ProjectDialog/projectDialogTypes';
 
 const PencilSquare = BsPencilSquare as unknown as React.FC<IconBaseProps>;
 
-const ProjectCardRoot = styled('div')(({ theme }) => ({
+const ProjectCardRoot = styled('div')(() => ({
   display: 'flex',
-  [theme.breakpoints.down('md')]: {
-    width: '100%',
-    justifyContent: 'center',
-  },
+  width: '100%',
+  justifyContent: 'center',
   '& button': {
     color: 'white',
-  },
-  '& .MuiTypography-root': {
-    cursor: 'default ',
   },
   '& .MuiCardContent-root': {
     maxWidth: '480px',
   },
-  cursor: 'pointer',
 }));
 
 const StyledCard = styled(Card)<CardProps>(({ theme }) => ({
-  minWidth: 275,
-  margin: theme.spacing(1),
-  [theme.breakpoints.down('md')]: {
-    minWidth: 320,
-    width: '100%',
-    maxWidth: 500,
-    margin: `${theme.spacing(1)} auto`,
-  },
+  minWidth: 320,
+  width: '100%',
+  maxWidth: 500,
+  margin: `${theme.spacing(1)} auto`,
   backgroundColor: theme.palette.primary.light,
+  cursor: 'pointer',
 }));
 
 const StyledCardContent = styled(CardContent)<CardContentProps>(
@@ -178,7 +169,6 @@ export const ProjectCard = (props: IProps) => {
   const sections = useOrbitData<Section[]>('section');
   const getGlobal = useGetGlobal();
   const handleSelect = (project: VProjectD) => () => {
-    localStorage.setItem(LocalKey.plan, project.id);
     loadProject(project);
     leaveHome();
   };
