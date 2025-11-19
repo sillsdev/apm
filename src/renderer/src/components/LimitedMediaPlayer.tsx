@@ -25,7 +25,6 @@ import {
 import { LightTooltip } from '../control/LightTooltip';
 import ReplayIcon from '@mui/icons-material/Replay';
 import SkipPrevious from '@mui/icons-material/SkipPrevious';
-import SkipNext from '@mui/icons-material/SkipNext';
 import Pause from '@mui/icons-material/Pause';
 import PlayArrow from '@mui/icons-material/PlayArrow';
 import { Duration } from '../control/Duration';
@@ -245,12 +244,6 @@ export function LimitedMediaPlayer(props: IProps) {
     setValue(slider);
   };
 
-  const handleSkipNext = () => {
-    setPosition(limits.end || durationRef.current);
-    stop.current = 0;
-    setValue(durationRef.current ?? 100);
-  };
-
   const handleSliderChange = (e: Event, value: number | number[]) => {
     const curValue = Array.isArray(value) ? value[0] : value;
     const start = limits.start ?? 0;
@@ -349,32 +342,20 @@ export function LimitedMediaPlayer(props: IProps) {
             </Stack>
           }
           deleteIcon={
-            <>
-              {!noRestart && duration && (limits.end ?? 0) < duration + 0.1 && (
-                <StyledTip title={limits.end ? t.afterResource : t.toEnd}>
-                  <IconButton
-                    data-testid="skip-next"
-                    sx={{ alignSelf: 'center' }}
-                    onClick={handleSkipNext}
-                  >
-                    <SkipNext fontSize="small" />
-                  </IconButton>
-                </StyledTip>
-              )}
-              {!noClose && (
-                <StyledTip title={ts.close}>
-                  <IconButton
-                    data-testid="close"
-                    sx={{ alignSelf: 'center' }}
-                    onClick={ended}
-                  >
-                    <CloseIcon fontSize="small" />
-                  </IconButton>
-                </StyledTip>
-              )}
-            </>
+            !noClose ? (
+              <StyledTip title={ts.close}>
+                <IconButton
+                  data-testid="close"
+                  sx={{ alignSelf: 'center' }}
+                  onClick={ended}
+                >
+                  <CloseIcon fontSize="small" />
+                </IconButton>
+              </StyledTip>
+            ) : (
+              <></>
+            )
           }
-          onDelete={handleSkipNext}
           sx={{ ...sx, width: '100%' }}
         />
       )}
