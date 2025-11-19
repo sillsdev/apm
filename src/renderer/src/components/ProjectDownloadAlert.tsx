@@ -108,7 +108,7 @@ export const ProjectDownloadAlert = (props: IProps) => {
   const { getOrganizedBy } = useOrganizedBy();
   const [organizedBy, setOrganizedBy] = React.useState('');
   const [organizedByPl, setOrganizedByPl] = React.useState('');
-  const [downAmt, setDownAmt] = React.useState('project');
+  const [downAmt, setDownAmt] = React.useState('missing');
   const projectPlans = useProjectPlans();
   const fetchUrl = useFetchUrlNow();
 
