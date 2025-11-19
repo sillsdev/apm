@@ -23,6 +23,7 @@ export const PassageDetailStepComplete = () => {
     psgCompleted,
     section,
     passage,
+    recording,
   } = usePassageDetailContext();
   const { canDoSectionStep, canAlwaysDoStep } = useStepPermissions();
   const { pathname } = useLocation();
@@ -78,7 +79,7 @@ export const PassageDetailStepComplete = () => {
         sx={{ color: 'primary.light' }}
         title={t.title}
         onClick={handleToggleComplete}
-        disabled={!hasPermission || view !== ''}
+        disabled={!hasPermission || view !== '' || recording}
       >
         {complete ? (
           <CompleteIcon id="step-yes" />
