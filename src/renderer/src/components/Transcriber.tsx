@@ -1052,7 +1052,10 @@ export function Transcriber(props: IProps) {
     }, 1000 * 30);
   };
 
-  const paperStyle = { width: defaultWidth - 16 };
+  const paperStyle = useMemo(
+    () => ({ width: defaultWidth - 20 }),
+    [defaultWidth]
+  );
 
   const onInteraction = () => {
     focusOnTranscription();
