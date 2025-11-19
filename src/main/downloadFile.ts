@@ -100,7 +100,7 @@ export const downloadFile = (
       out.on('finish', () => {
         let err = error;
         if (key) {
-          err = downloadMap.get(key).error;
+          err = downloadMap.get(key)?.error;
         }
         if (err) {
           fs.unlink(localPath).catch(() => {
