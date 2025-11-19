@@ -4,7 +4,6 @@ import AppHead from '../components/App/AppHead';
 import { TeamProvider, TeamContext, TeamIdType } from '../context/TeamContext';
 import { useParams, useLocation } from 'react-router-dom';
 import { ProjectCard } from '../components/Team/ProjectCard';
-import TeamDialog from '../components/Team/TeamDialog';
 import { DialogMode, VProject } from '../model';
 import { ProjectDialog } from '../components/Team/ProjectDialog';
 import { useMyNavigate } from '../utils/useMyNavigate';
@@ -58,9 +57,6 @@ const ProjectsScreenInner: React.FC = () => {
       } as any;
     return teams.find((o) => o.id === teamId);
   }, [isPersonal, teamId, teams, t.personalProjects, personalTeam]);
-
-  // Settings dialog control
-  const [settingsOpen, setSettingsOpen] = React.useState(false);
 
   // New project dialog state
   const [addOpen, setAddOpen] = React.useState(false);
@@ -277,15 +273,6 @@ const ProjectsScreenInner: React.FC = () => {
         {/* Use defaultWorkflow, same as TeamItem */}
         <StepEditor process={defaultWorkflow} org={thisTeam?.id} />
       </BigDialog>
-      {settingsOpen && thisTeam && (
-        <TeamDialog
-          mode={DialogMode.edit}
-          isOpen={settingsOpen}
-          onOpen={(open) => setSettingsOpen(open)}
-          values={{ team: thisTeam } as any}
-          onCommit={() => setSettingsOpen(false)}
-        />
-      )}
       {addOpen && (
         <ProjectDialog
           mode={DialogMode.add}

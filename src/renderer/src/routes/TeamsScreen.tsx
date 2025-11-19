@@ -1,4 +1,5 @@
 import React from 'react';
+import { RecordIdentity } from '@orbit/records';
 import {
   Box,
   Card,
@@ -28,7 +29,6 @@ import { TeamProvider } from '../context/TeamContext';
 import { TeamContext } from '../context/TeamContext';
 import { validateEmail } from '../utils/validateEmail';
 import { axiosPost } from '../utils/axios';
-import Confirm from '../components/AlertDialog';
 
 interface IPersonalSectionProps {
   onOpenSettings: () => void;
@@ -374,7 +374,6 @@ const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({
   const { teamUpdate, teamDelete, personalTeam, isDeleting } = ctx.state;
   const [open, setOpen] = React.useState(false);
   const [teamId, setTeamId] = React.useState<string | undefined>();
-  const [pendingDelete, setPendingDelete] = React.useState<any>();
 
   const selectedTeam = React.useMemo(() => {
     if (!teamId) return undefined;
@@ -399,25 +398,15 @@ const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({
     setOpen(true);
   };
   const handleClose = () => {
-    setPendingDelete(undefined);
     setOpen(false);
   };
   const handleCommit = (value: ITeamDialog) => {
     teamUpdate(value.team as any);
     handleClose();
   };
-  const handleDeleteRequest = (org: any) => {
-    setPendingDelete(org);
-  };
-  const handleDeleteConfirmed = async () => {
-    if (pendingDelete) {
-      await teamDelete(pendingDelete);
-      setPendingDelete(undefined);
-      handleClose();
-    }
-  };
-  const handleDeleteRefused = () => {
-    setPendingDelete(undefined);
+  const handleDelete = async (team: RecordIdentity) => {
+    await teamDelete(team);
+    handleClose();
   };
   const isPersonal = teamId === personalTeam;
 
@@ -433,14 +422,7 @@ const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({
           onCommit={(v) => handleCommit(v)}
           values={{ team: selectedTeam } as any}
           disabled={isDeleting}
-          {...(!isPersonal ? { onDelete: handleDeleteRequest } : {})}
-        />
-      )}
-      {pendingDelete && (
-        <Confirm
-          text={''}
-          yesResponse={handleDeleteConfirmed}
-          noResponse={handleDeleteRefused}
+          {...(!isPersonal ? { onDelete: handleDelete } : {})}
         />
       )}
       {children}
