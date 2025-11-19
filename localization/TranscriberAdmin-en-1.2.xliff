@@ -7117,7 +7117,7 @@
             </context-group>
          </trans-unit>
          <trans-unit id="projectDownload.missingFileList">
-            <source>Show missing files list</source>
+            <source>Show missing file list</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">ProjectDownloadAlert.tsx</context>
