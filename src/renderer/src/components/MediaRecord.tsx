@@ -290,7 +290,7 @@ function MediaRecord(props: IProps) {
       await uploadMedia(files);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [name, filetype, mimeType]
+    [name, filetype, mimeType, uploadMedia]
   );
 
   useEffect(() => {

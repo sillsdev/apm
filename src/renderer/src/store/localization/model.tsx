@@ -276,6 +276,7 @@ export interface ICommunityStrings extends Localize.LocalizedStringsMethods {
   segment: string;
   segmentsChanged: string;
   segmentsComplete: string;
+  selectSegments: string;
   speaker: string;
   topic: string;
   transcribe: string;

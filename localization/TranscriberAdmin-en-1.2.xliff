@@ -1599,6 +1599,13 @@
                <context context-type="sourcefile">Community.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="community.selectSegments">
+            <source>Select Segments</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">SpeakerName.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="community.speaker">
             <source>Speaker</source>
             <target/>

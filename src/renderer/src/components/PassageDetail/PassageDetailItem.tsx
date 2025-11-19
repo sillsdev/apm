@@ -136,7 +136,7 @@ export function PassageDetailItem(props: IProps) {
   const { canDoSectionStep } = useStepPermissions();
   const { getOrgDefault, setOrgDefault, canSetOrgDefault } = useOrgDefaults();
   const [segParams, setSegParams] = useState<IRegionParams>(btDefaultSegParams);
-  const toolId = 'RecordArtifactTool';
+  const toolId = 'RecordBackTranslationTool';
   const [paneWidth, setPaneWidth] = useState(0);
 
   const rowProp = useMemo(
@@ -260,11 +260,6 @@ export function PassageDetailItem(props: IProps) {
     }
   };
 
-  //from recorder
-  const afterUploadCb = async (mediaId: string | undefined) => {
-    afterUpload('', mediaId ? [mediaId] : undefined);
-  };
-
   const afterUpload = async (planId: string, mediaRemoteIds?: string[]) => {
     if (mediaRemoteIds && mediaRemoteIds[0]) {
       setStatusText('');
@@ -279,6 +274,11 @@ export function PassageDetailItem(props: IProps) {
       saveCompleted(toolId, ts.NoSaveWoMedia);
       showMessage(ts.NoSaveWoMedia);
     }
+  };
+
+  //from recorder
+  const afterUploadCb = async (mediaId: string | undefined) => {
+    afterUpload('', mediaId ? [mediaId] : undefined);
   };
 
   const handleCancel = () => {
@@ -377,6 +377,17 @@ export function PassageDetailItem(props: IProps) {
                   onSegmentParamChange={
                     editStep ? onSegmentParamChange : undefined
                   }
+                  metaData={
+                    recordType === ArtifactTypeSlug.PhraseBackTranslation &&
+                    segString === '{}' ? (
+                      <Typography
+                        variant="h6"
+                        sx={{ color: 'primary.main', px: 1 }}
+                      >
+                        {t.selectSegments}
+                      </Typography>
+                    ) : undefined
+                  }
                 />
                 <Box>
                   <Box sx={rowProp}>
@@ -399,15 +410,17 @@ export function PassageDetailItem(props: IProps) {
                       {ts.uploadMediaSingular}
                     </Button>
                     <GrowingSpacer />
-                    {currentSegment && segString !== '{}' && (
-                      <TextField
-                        sx={ctlProps}
-                        id="segment"
-                        value={currentSegment}
-                        size={'small'}
-                        label={t.segment}
-                      />
-                    )}
+                    {currentSegment &&
+                      segString !== '{}' &&
+                      ArtifactTypeSlug.PhraseBackTranslation === recordType && (
+                        <TextField
+                          sx={ctlProps}
+                          id="segment"
+                          value={currentSegment}
+                          size={'small'}
+                          label={t.segment}
+                        />
+                      )}
                   </Box>
                   <Box sx={rowProp}>
                     <Typography sx={statusProps}>{t.record}</Typography>
@@ -454,7 +467,11 @@ export function PassageDetailItem(props: IProps) {
                   <MediaRecord
                     toolId={toolId}
                     passageId={related(sharedResource, 'passage') ?? passage.id}
-                    sourceSegments={JSON.stringify(getCurrentSegment())}
+                    sourceSegments={
+                      ArtifactTypeSlug.PhraseBackTranslation === recordType
+                        ? JSON.stringify(getCurrentSegment())
+                        : '{}'
+                    }
                     sourceMediaId={mediafileId}
                     artifactId={recordTypeId}
                     performedBy={speaker}
@@ -485,7 +502,12 @@ export function PassageDetailItem(props: IProps) {
                       id="rec-save"
                       sx={buttonProp}
                       onClick={handleSave}
-                      disabled={!canSave}
+                      disabled={
+                        !canSave ||
+                        (ArtifactTypeSlug.PhraseBackTranslation ===
+                          recordType &&
+                          (segString || '{}') === '{}')
+                      }
                     >
                       {ts.save}
                     </PriButton>
