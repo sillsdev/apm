@@ -76,7 +76,9 @@ export const downloadFile = (
           received_bytes += chunk.length;
           if (key) {
             const status = downloadMap.get(key);
-            downloadMap.set(key, { ...status, received: received_bytes });
+            if (status) {
+              downloadMap.set(key, { ...status, received: received_bytes });
+            }
           }
         });
 
