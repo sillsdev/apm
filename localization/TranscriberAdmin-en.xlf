@@ -6100,6 +6100,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="projectDownload.missingFileList">
+         <segment>
+            <source>Show missing file list</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="projectDownload.projects">
          <segment>
             <source>Projects</source>

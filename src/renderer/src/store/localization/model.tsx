@@ -1211,6 +1211,7 @@ export interface IProjectDownloadStrings
   min: string;
   missing: string;
   missingFiles: string;
+  missingFileList: string;
   projects: string;
   project: string;
   projectDetails: string;
