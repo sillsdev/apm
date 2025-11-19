@@ -547,7 +547,7 @@ export const ProjectDownloadAlert = (props: IProps) => {
         <Box>
           <DialogContent>
             {missingIds.length === 0 ? (
-              <Typography>No missing files.</Typography> //never happen because if none we won't be here
+              <Typography>No missing files.</Typography> // This will never happen because the button is disabled when there are no missing files.
             ) : (
               <List>
                 {missingIds.map((id) => {
