@@ -239,6 +239,7 @@ export const ProjectResourceConfigure = (props: IProps) => {
         const total = infoRef.current.length;
         for (const i of infoRef.current) {
           if (canceling.current) break;
+          if (i?.section?.id === undefined) continue;
           ix += 1;
           let row = d[ix];
           while (row[ColName.Ref].value === '' && ix < d.length) {
