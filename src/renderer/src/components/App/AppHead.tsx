@@ -65,7 +65,7 @@ import { useSnackBar, AlertSeverity } from '../../hoc/SnackBar';
 import PolicyDialog from '../PolicyDialog';
 import { mainSelector, sharedSelector, viewModeSelector } from '../../selector';
 import { useHome } from '../../utils/useHome';
-import { isHomeRoute } from '../../utils/routePaths';
+import { getTeamsRoute, isHomeRoute } from '../../utils/routePaths';
 import { useOrbitData } from '../../hoc/useOrbitData';
 import packageJson from '../../../package.json';
 import { MainAPI } from '@model/main-api';
@@ -396,7 +396,7 @@ export const AppHead = (props: IProps) => {
       setDoExit(true);
       setExitAlert(true);
     }
-    const queueLength = remote?.requestQueue.length ?? 0;
+    const queueLength = 0;
     const busy = queueLength > 0 || getGlobal('remoteBusy');
     if ((getGlobal('changed') || busy) && !getGlobal('enableOffsite')) {
       e.preventDefault();
@@ -711,6 +711,7 @@ export const AppHead = (props: IProps) => {
               onDelete: (org: any) => {
                 teamCtx?.state?.teamDelete(org);
                 setSettingsOpen(false);
+                navigate(getTeamsRoute());
               },
             })}
           />
