@@ -45,6 +45,7 @@ export function ProjectDialog(props: IProps) {
   initState.organizedBy = 'section';
   initState.vProjectStrings = t;
   const [state, setState] = React.useState({ ...initState });
+  const [originalState, setOriginalState] = React.useState({ ...initState });
   const { name, type, bcp47 } = state;
   const [basicTab, setBasicTab] = useState(true);
   const addingRef = React.useRef(false);
@@ -60,6 +61,7 @@ export function ProjectDialog(props: IProps) {
 
   useEffect(() => {
     setState(!values ? { ...initState } : { ...values });
+    setOriginalState(!values ? { ...initState } : { ...values });
     if (isOpen) addingRef.current = false;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [values, isOpen]);
@@ -187,7 +189,8 @@ export function ProjectDialog(props: IProps) {
           (nameInUse && nameInUse(name)) ||
           name === '' ||
           bcp47 === 'und' ||
-          type === ''
+          type === '' ||
+          shallowEqual(state, originalState)
         }
         primaryKey={'add'}
         primaryAria={t.add}
