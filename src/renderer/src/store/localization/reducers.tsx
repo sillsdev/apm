@@ -304,6 +304,7 @@ const initialState = {
       segmentsChanged:
         'Changing segments will invalidate some recordings since they are linked to the segment start and end.',
       segmentsComplete: 'Version {0}: Segments complete ({2}): {1}',
+      selectSegments: 'Select Segments',
       speaker: 'Speaker',
       topic: 'Topic',
       transcribe: 'Transcribe',
