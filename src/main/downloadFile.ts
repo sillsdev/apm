@@ -56,11 +56,7 @@ export const downloadFile = (
           out.destroy();
           if (key) {
             const status = downloadMap.get(key);
-            if (status) {
-              downloadMap.set(key, { ...status, error });
-            } else {
-              downloadMap.set(key, { error });
-            }
+            downloadMap.set(key, status? { ...status, error }: { error })
           }
           reject(error);
           return;
@@ -80,9 +76,9 @@ export const downloadFile = (
           received_bytes += chunk.length;
           if (key) {
             const status = downloadMap.get(key);
-            if (status) {
-              downloadMap.set(key, { ...status, received: received_bytes });
-            }
+            downloadMap.set(key, status
+              ? { ...status, received: received_bytes }
+              :  { received: received_bytes });
           }
         });
 
@@ -98,7 +94,7 @@ export const downloadFile = (
         out.destroy();
         if (key) {
           const status = downloadMap.get(key);
-          downloadMap.set(key, { ...status, error });
+          downloadMap.set(key, status? { ...status, error }: { error });
         }
         reject(error);
       });
@@ -123,7 +119,7 @@ export const downloadFile = (
         req.destroy();
         if (key) {
           const status = downloadMap.get(key);
-          downloadMap.set(key, { ...status, error });
+          downloadMap.set(key, status? { ...status, error }: { error });
         }
         reject(error);
       });
