@@ -96,7 +96,6 @@ export * from './useSharedResUpdate';
 export * from './useSharedResDelete';
 export * from './useUpdateRecord';
 export * from './PassageReference';
-export * from './PassageDescription';
 export * from './nextPasId';
 export * from './useGraphicCreate';
 export * from './useGraphicUpdate';
