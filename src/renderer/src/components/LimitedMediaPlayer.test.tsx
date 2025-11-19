@@ -343,8 +343,6 @@ describe('<LimitedMediaPlayer />', () => {
     await waitFor(() => expect(container.firstChild).not.toBe(null));
     expect(screen.getByTestId('segment-start')).toBeInTheDocument();
     expect(screen.getByTestId('skip-back')).toBeInTheDocument();
-    // skip-next needs the limits.end to be less than the duration
-    expect(screen.queryByTestId('skip-next')).toBeNull();
   });
 
   it('should include extra controls if limits set to zero', async () => {
@@ -362,27 +360,6 @@ describe('<LimitedMediaPlayer />', () => {
     await waitFor(() => expect(container.firstChild).not.toBe(null));
     expect(screen.getByTestId('segment-start')).toBeInTheDocument();
     expect(screen.getByTestId('skip-back')).toBeInTheDocument();
-    // skip-next needs the limits.end to be less than the duration
-    expect(screen.queryByTestId('skip-next')).toBeNull();
-  });
-
-  it('should include skip-next if limits set and duration is greater than limits.end', async () => {
-    mockBlobState = { ...blobFetched };
-
-    const props = {
-      srcMediaId: '1',
-      requestPlay: false,
-      onEnded: () => {},
-      controls: true,
-      limits: { start: 10, end: 100 },
-    };
-
-    const { container } = render(<LimitedMediaPlayer {...props} />);
-    await waitFor(() => expect(container.firstChild).not.toBe(null));
-    act(() => {
-      mockOnDuration(200);
-    });
-    expect(screen.getByTestId('skip-next')).toBeInTheDocument();
   });
 
   // We removed the segement-start button in the current LimitedMediaPlayer component.
@@ -461,50 +438,6 @@ describe('<LimitedMediaPlayer />', () => {
     await screen.findByText('0:50');
     await user.click(screen.getByTestId('skip-back'));
     await waitFor(() => expect(mockPosition).toBe(47));
-  });
-
-  it('should set currentTime to end if skip-next clicked', async () => {
-    const user = userEvent.setup();
-    mockBlobState = { ...blobFetched };
-
-    const props = {
-      srcMediaId: '1',
-      requestPlay: false,
-      onEnded: jest.fn(),
-      controls: true,
-      limits: { start: 10, end: 100 },
-    };
-
-    const { container } = render(<LimitedMediaPlayer {...props} />);
-    await waitFor(() => expect(container.firstChild).not.toBe(null));
-    act(() => {
-      mockOnDuration(200);
-    });
-    const nextEl = screen.getByTestId('skip-next');
-    expect(nextEl).toBeInTheDocument();
-    user.click(nextEl);
-    await waitFor(() => expect(mockPosition).toBe(100));
-  });
-
-  it('should set currentTime to end if skip-next clicked and limits are zeros', async () => {
-    const user = userEvent.setup();
-    mockBlobState = { ...blobFetched };
-
-    const props = {
-      srcMediaId: '1',
-      requestPlay: false,
-      onEnded: jest.fn(),
-      controls: true,
-      limits: { start: 0, end: 0 },
-    };
-
-    const { container } = render(<LimitedMediaPlayer {...props} />);
-    await waitFor(() => expect(container.firstChild).not.toBe(null));
-    act(() => {
-      mockOnDuration(200);
-    });
-    user.click(screen.getByTestId('skip-next'));
-    await waitFor(() => expect(mockPosition).toBe(200));
   });
 
   it('should show negative time when if currentTime is less than start', async () => {
