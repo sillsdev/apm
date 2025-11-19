@@ -56,7 +56,11 @@ export const downloadFile = (
           out.destroy();
           if (key) {
             const status = downloadMap.get(key);
-            downloadMap.set(key, { ...status, error });
+            if (status) {
+              downloadMap.set(key, { ...status, error });
+            } else {
+              downloadMap.set(key, { error });
+            }
           }
           reject(error);
           return;
