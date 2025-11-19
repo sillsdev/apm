@@ -24,12 +24,15 @@ import {
   ArtifactTypeSlug,
   useFetchUrlNow,
   IPlanMedia,
+  remoteIdGuid,
 } from '../crud';
+import { mediaFileName } from '../crud/media';
 import { isElectron } from '../../api-variable';
 import { useOrbitData } from '../hoc/useOrbitData';
 import { projectDownloadSelector, sharedSelector } from '../selector';
 import { useGlobal } from '../context/useGlobal';
 import FilterIcon from '@mui/icons-material/FilterList';
+import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import BigDialog from '../hoc/BigDialog';
 import { BigDialogBp } from '../hoc/BigDialogBp';
 import {
@@ -43,10 +46,15 @@ import {
   FormControlLabel,
   FormLabel,
   Grid,
+  IconButton,
   LinearProgress,
+  List,
+  ListItem,
+  ListItemText,
   Radio,
   RadioGroup,
   Stack,
+  Tooltip,
   Typography,
 } from '@mui/material';
 import { AltButton, PriButton } from '../control';
@@ -61,6 +69,7 @@ import {
 import { ISTFilterState } from './Sheet/filterMenu';
 import stringReplace from 'react-string-replace';
 import { MarkDownType, UriLinkType } from './MediaUpload';
+import { RecordKeyMap } from '@orbit/records';
 
 interface PlanProject {
   [planId: string]: string;
@@ -109,6 +118,7 @@ export const ProjectDownloadAlert = (props: IProps) => {
   const [organizedBy, setOrganizedBy] = React.useState('');
   const [organizedByPl, setOrganizedByPl] = React.useState('');
   const [downAmt, setDownAmt] = React.useState('missing');
+  const [showMissingFiles, setShowMissingFiles] = React.useState(false);
   const projectPlans = useProjectPlans();
   const fetchUrl = useFetchUrlNow();
 
@@ -465,12 +475,24 @@ export const ProjectDownloadAlert = (props: IProps) => {
                         label={t.filteredFiles}
                         disabled={!hasSectionFilter}
                       />
-                      <FormControlLabel
-                        value="missing"
-                        control={<Radio />}
-                        label={t.missingFiles}
-                        disabled={sizeMb <= 0}
-                      />
+                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        <FormControlLabel
+                          value="missing"
+                          control={<Radio />}
+                          label={t.missingFiles}
+                          disabled={sizeMb <= 0}
+                        />
+                        <Tooltip title={t.missingFileList}>
+                          <IconButton
+                            size="small"
+                            onClick={() => setShowMissingFiles(true)}
+                            disabled={sizeMb <= 0 || missingIds.length === 0}
+                            sx={{ ml: 0.5, p: 0.5 }}
+                          >
+                            <HelpOutlineIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      </Box>
                       <FormControlLabel
                         value="project"
                         control={<Radio />}
@@ -516,6 +538,45 @@ export const ProjectDownloadAlert = (props: IProps) => {
         </BigDialog>
       )}
       <ProjectDownload open={downloadOpen} projectIds={needyIds} finish={cb} />
+      <BigDialog
+        title={t.missingFiles}
+        isOpen={showMissingFiles}
+        onOpen={() => setShowMissingFiles(false)}
+        bp={BigDialogBp.md}
+      >
+        <Box>
+          <DialogContent>
+            {missingIds.length === 0 ? (
+              <Typography>No missing files.</Typography> //never happen because if none we won't be here
+            ) : (
+              <List>
+                {missingIds.map((id) => {
+                  const localid =
+                    remoteIdGuid(
+                      'mediafile',
+                      id,
+                      memory?.keyMap as RecordKeyMap
+                    ) || id;
+                  const mediaFile = findRecord(memory, 'mediafile', localid) as
+                    | MediaFileD
+                    | undefined;
+                  const fileName = mediaFileName(mediaFile) || id;
+                  return (
+                    <ListItem key={id}>
+                      <ListItemText primary={fileName} />
+                    </ListItem>
+                  );
+                })}
+              </List>
+            )}
+          </DialogContent>
+          <DialogActions>
+            <PriButton onClick={() => setShowMissingFiles(false)}>
+              {ts.close || 'Close'}
+            </PriButton>
+          </DialogActions>
+        </Box>
+      </BigDialog>
     </div>
   );
 };

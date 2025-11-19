@@ -1323,6 +1323,7 @@ const initialState = {
       min: 'Min {0}',
       missing: 'Missing MB',
       missingFiles: 'Missing Files',
+      missingFileList: 'Show missing file list',
       projects: 'Projects',
       project: 'Project',
       projectDetails: 'Project Details',

@@ -7116,6 +7116,13 @@
                <context context-type="sourcefile">ProjectDownloadAlert.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="projectDownload.missingFileList">
+            <source>Show missing files list</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">ProjectDownloadAlert.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="projectDownload.projects">
             <source>Projects</source>
             <target/>

@@ -32,7 +32,7 @@ export const useFetchUrlNow = () => {
       if (!attr || cancelled()) return '';
       const audioUrl = attr['audio-url'] as string;
       if (isElectron && !noDownload) {
-        return await tryDownload(audioUrl, true);
+        return await tryDownload(audioUrl);
       } else return audioUrl;
     } catch (errorResult: unknown) {
       const error = errorResult as { errStatus: number } & AxiosError;
