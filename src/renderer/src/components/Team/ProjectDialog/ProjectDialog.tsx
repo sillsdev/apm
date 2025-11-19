@@ -190,7 +190,7 @@ export function ProjectDialog(props: IProps) {
           name === '' ||
           bcp47 === 'und' ||
           type === '' ||
-          shallowEqual(state, originalState)
+          (mode !== Mode.add && shallowEqual(state, originalState))
         }
         primaryKey={'add'}
         primaryAria={t.add}
