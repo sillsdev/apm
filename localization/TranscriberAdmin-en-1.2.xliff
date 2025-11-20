@@ -1047,7 +1047,7 @@
             </context-group>
          </trans-unit>
          <trans-unit id="cards.newProject">
-            <source>New Audio Project</source>
+            <source>Add New Project...</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">addCard.tsx</context>
@@ -4166,6 +4166,13 @@
             <target/>
             <context-group>
                <context context-type="sourcefile">HelpMenu.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="main.home">
+            <source>Home</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">ViewMode.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="main.import">
@@ -9598,13 +9605,6 @@
          </trans-unit>
          <trans-unit id="viewMode.audioProject">
             <source>Audio Project Setup</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">ViewMode.tsx</context>
-            </context-group>
-         </trans-unit>
-         <trans-unit id="viewMode.home">
-            <source>Home</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">ViewMode.tsx</context>

@@ -51,6 +51,7 @@ import ImportTab from '../components/ImportTab';
 import { jwtDecode } from 'jwt-decode';
 import { ApmSplash } from '../components/ApmSplash';
 import { AltButton, PriButton } from '../control';
+import { homeRoute } from '../utils/routePaths';
 import { RecordKeyMap } from '@orbit/records';
 import { useSelector } from 'react-redux';
 import { mainSelector } from '../selector';
@@ -316,13 +317,13 @@ export function Loading() {
                 fromUrl = `/plan/${m[1]}/0`;
               }
               loadDone(projectId, planId || '');
-              navigate(fromUrl || '/team');
+              navigate(fromUrl || homeRoute());
             });
           }
         }
       }
     }
-    if (!waitToNavigate) navigate(fromUrl || '/team');
+    if (!waitToNavigate) navigate(fromUrl || homeRoute());
   };
 
   useEffect(() => {

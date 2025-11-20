@@ -205,7 +205,7 @@ const initialState = {
       mediaUploaded: 'Audio Uploaded',
       members: 'Members ({0})',
       nameInUse: 'Name in use',
-      newProject: 'New Audio Project',
+      newProject: 'Add New Project...',
       normalize: 'Audio Normalize',
       notesLabel: 'Introductory Notes Title',
       OBS: 'Storying',
@@ -304,7 +304,6 @@ const initialState = {
       segmentsChanged:
         'Changing segments will invalidate some recordings since they are linked to the segment start and end.',
       segmentsComplete: 'Version {0}: Segments complete ({2}): {1}',
-      selectSegments: 'Select Segments',
       speaker: 'Speaker',
       topic: 'Topic',
       transcribe: 'Transcribe',
@@ -776,6 +775,7 @@ const initialState = {
       helpCenter: 'Help Center',
       helpSpreadsheet: 'View spreadsheet convention',
       hierarchicalSample: 'Scripture hierarchical sample spreadsheet',
+      home: 'Home',
       import: 'Import',
       integrations: 'Integrations',
       inviteError:
@@ -1323,7 +1323,6 @@ const initialState = {
       min: 'Min {0}',
       missing: 'Missing MB',
       missingFiles: 'Missing Files',
-      missingFileList: 'Show missing file list',
       projects: 'Projects',
       project: 'Project',
       projectDetails: 'Project Details',
@@ -1821,7 +1820,6 @@ const initialState = {
   viewMode: new LocalizedStrings({
     en: {
       audioProject: 'Audio Project Setup',
-      home: 'Home',
       work: 'Work',
       gotowork: 'Go to Work',
     },

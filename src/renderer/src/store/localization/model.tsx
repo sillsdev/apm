@@ -276,7 +276,6 @@ export interface ICommunityStrings extends Localize.LocalizedStringsMethods {
   segment: string;
   segmentsChanged: string;
   segmentsComplete: string;
-  selectSegments: string;
   speaker: string;
   topic: string;
   transcribe: string;
@@ -718,6 +717,7 @@ export interface IMainStrings extends Localize.LocalizedStringsMethods {
   helpCenter: string;
   helpSpreadsheet: string;
   hierarchicalSample: string;
+  home: string;
   import: string;
   integrations: string;
   inviteError: string;
@@ -1211,7 +1211,6 @@ export interface IProjectDownloadStrings
   min: string;
   missing: string;
   missingFiles: string;
-  missingFileList: string;
   projects: string;
   project: string;
   projectDetails: string;
@@ -1668,7 +1667,6 @@ export interface IVerseStrings extends Localize.LocalizedStringsMethods {
 
 export interface IViewModeStrings extends Localize.LocalizedStringsMethods {
   audioProject: string;
-  home: string;
   work: string;
   gotowork: string;
 }

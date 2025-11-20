@@ -17,6 +17,7 @@ import AppHead from '../components/App/AppHead';
 import { TeamProvider } from '../context/TeamContext';
 import StickyRedirect from '../components/StickyRedirect';
 import { AltButton, GrowingSpacer, PriButton } from '../control';
+import { homeRoute } from '../utils/routePaths';
 import {
   BibleD,
   IState,
@@ -689,7 +690,7 @@ export const BurritoScreen = () => {
       <TeamProvider>
         <Box id="BurritoScreen" sx={{ display: 'flex', paddingTop: '80px' }}>
           <Grid container alignItems="center">
-            <AltButton onClick={() => setView('/team')}>Teams</AltButton>
+            <AltButton onClick={() => setView(homeRoute())}>Teams</AltButton>
             <GrowingSpacer />
             <Typography>{`${curTeam?.attributes?.name} Burrito Screen`}</Typography>
             <GrowingSpacer />
