@@ -23,6 +23,7 @@ This single command will:
 - ✅ Scrape the OneStory website for language list
 - ✅ Download all available audio files
 - ✅ Convert to PTF format for APM import
+- ✅ Generate Scripture Burrito `metadata.json` files for each language
 
 **⏱️ Estimated time**: 30-60 minutes depending on number of audio files
 
@@ -59,6 +60,14 @@ migration-data/
 │   │   └── 2_story_title.mp3
 │   └── Language_2/
 │       └── ...
+├── audio/                  # Downloaded audio files
+│   ├── Language_1/
+│   │   ├── 1_story_title.mp3
+│   │   ├── 2_story_title.mp3
+│   │   └── metadata.json   # Scripture Burrito metadata
+│   └── Language_2/
+│       ├── ...
+│       └── metadata.json
 └── ptf-files/              # Ready to import
     ├── Language_1.ptf
     └── Language_2.ptf
