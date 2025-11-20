@@ -1,6 +1,6 @@
 {
   "name": "audio-project-manager",
-  "version": "4.4.0-alpha.2",
+  "version": "4.4.0",
   "description": "An Electron application with React and TypeScript",
   "main": "./out/main/index.js",
   "homepage": "./out",

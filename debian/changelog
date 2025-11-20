@@ -1,3 +1,106 @@
+audio - project - manager(4.4.0)  experimental; urgency = high
+
+ * TT-2460 Add ability to see and select microphone
+ * TT-2562 remove ITF export for offline only
+ * TT-5239 TT-6726 always get new url when loading latest (#87)
+ * TT-5709 Implement global media playback state management
+ * TT-6715 Add state management for sort changes in ProjectSort component
+ * TT-6722 sheet warning click (#98)
+ * TT-6897 improve exit alert (#97)
+ * TT-6727 Add confirmation dialog for download cancellation.
+ * TT-6731 ensure onOpen is called after saving resource references
+ * TT-6743 Filter out excluded books from suggestions and book data in BookReducers
+ * TT-6744 ensure action menu is closed before opening integrations (#65)
+ * TT-6745 display correct count for scheme remove
+ * TT-6753 verse references saved correctly in mark verses (#19)
+ * TT-6761 disable zoom while AI (#9)
+ * TT-6762 disable add after clicking
+ * TT-6763 leave space in pane (#2037)
+ * TT-6765 allow zoom on record step
+ * TT-6767 fix timer lapses, reset ready to false when recording stops (#75)
+ * TT-6767 Queue Long Recordings.
+ * TT-6767 reduce recorder blinking, load blob faster (#5)
+ * TT-6767 move current position to end when recording (#17)
+ * TT-6769 set height and width without slider (#14)
+ * TT-6772 no select files message on community test or pbt
+ * TT-6775 remove content security since it has to be incomplete
+ * TT-6777 Refactor General Resource Configure
+ * TT-6779 make player 50% of width
+ * TT-6767 fake the time and duration while recording
+ * TT-6780 upgrade normalization to use typescript
+ * TT-6781 fix discussion title formatting
+ * TT-6784 export all projects error (possible fix)
+ * TT-6786 use wav recorder (#10)
+ * TT-6787 comment player size
+ * TT-6787 have text below recorder if both comments
+ * TT-6788 No Audacity control overlap
+ * TT-6789 Audacity Import fix time (#22)
+ * TT-6794 green for publish
+ * TT-6795 fix upload and attach (#13)
+ * TT-6798 Simplify task list
+ * TT-6799 open permission scheme
+ * TT-6799 select all assign
+ * TT-6800 Fix: safely encode EAF XML to base64 in TranscriptionTab component
+ * TT-6801 Invitation selection
+ * TT-6802 no passage column on flat (#21)
+ * TT-6804 play/pause on Audio tab
+ * TT-6805 show upload dialog (#20)
+ * TT-6806 electro wav recorder
+ * TT-6807 enable add after save
+ * TT-6833 success message after record (#73)
+ * TT-6837 Find Aquifer arrows
+ * TT-6838 no version click
+ * TT-6839 allow link all
+ * TT-6840 add assignments
+ * TT-6841 use full page with new tables
+ * TT-6842 Ensure the fullsize image matchs the smaller version (#68)
+ * TT-6843 dont close partial discussion
+ * TT-6847 play-pause on version
+ * TT-6851 use passage count for closed transcription tab sections
+ * TT-6852 don't restart audio when adding region boundry
+ * TT-6853 if init, use the labels and segments from saved regions
+ * TT-6853 keep ref data and region labels in sync
+ * TT-6855 change discussion tool tips
+ * TT-6858 Add new translation for `No media has been saved to the cloud.`
+ * TT-6859 compute start/end for segment resize
+ * TT-6861 Refactor TaskList filtering
+ * TT-6863 enable add on aquifer select all
+ * TT-6865 segment in topic for selected segments
+ * TT-6866 always show player
+ * TT-6866 jump to end button
+ * TT-6866 make comment player bigger
+ * TT-6867 use id when selecting aquifer
+ * TT-6869 circular key term player
+ * TT-6870 select-all and unselect
+ * TT-6871 Fix media player end condition and
+ * TT-6872 aquifer select all exclude
+ * TT-6888-9 change to pause with tool tip
+ * TT-6889 play/pause tip
+ * TT-6893 discussion icon size
+ * TT-6894 Refactor slider calculation in Limited
+ * TT-6895 after normalization and after delete all reset progress to 0 (#96)
+ * TT-6898 Passage Chooser Layout
+ * TT-6899 assignment selection with open and close
+ * TT-6900 data grid localization
+ * TT-6903 sort by desc version (#91)
+ * TT-6908 retain speaker chosen (#90)
+ * TT-6904 close dialog if no import conflicts to report
+ * TT-6905-6 make playingMediaId a global so it can be accessed everywhere (#89)
+ * TT-6907 only try to add audio from mediafiles with audio (#94)
+ * Don't enable close on import sync until datachanges is done
+ * fix looping of last region.
+ * fix mac build
+ * fix ogg conversion
+ * Implement global media playback state management
+ * integrate wavesurfer 7
+ * Refactors the section selection UI to improve layout handling and display logic.
+ * Replace all Data grid replacement (#11)
+ * reset image source only when fullsizegraphic changes
+ * save and show verse start
+ * track time fetched and refetch after 20 minutes
+
+-- Greg Trihus <greg_trihus@sil.org>  Thu, 20 Nov 2025 17:30:00 - 0500
+
 audio - project - manager(4.3.2.0)  experimental; urgency = high
 
  * TT-6716 Check and fix Scripture book on sort
