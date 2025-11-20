@@ -1,0 +1,26 @@
+{"data": [{
+    "type": "groupmemberships",
+    "attributes": {
+        "date-created": "2025-11-11T20:01:24.619Z",
+        "date-updated": "2025-11-11T20:01:24.619Z"
+    },
+    "relationships": {
+        "lastModifiedByUser": {"data": {
+            "type": "user",
+            "id": "5b1295fe-04e4-40b2-a2db-1f0d259f43db"
+        }},
+        "user": {"data": {
+            "type": "user",
+            "id": "5b1295fe-04e4-40b2-a2db-1f0d259f43db"
+        }},
+        "group": {"data": {
+            "type": "group",
+            "id": "dee186b5-3e55-4d0a-854f-f7ae8cf86cd1"
+        }},
+        "role": {"data": {
+            "type": "role",
+            "id": "e4283577-f08e-4396-aae8-bba3122c52ff"
+        }}
+    },
+    "id": "03d6fee1-e19c-4d8e-b5d3-8d191576195b"
+}]}

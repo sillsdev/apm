@@ -13,6 +13,8 @@ const puppeteer = require('puppeteer');
 const fs = require('fs').promises;
 const path = require('path');
 
+const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
 const ONESTORY_URL = 'https://www.onestory-media.org/';
 const OUTPUT_DIR = './migration-data';
 
@@ -110,7 +112,7 @@ async function scrapeOneStory() {
         });
 
         // Wait a bit for any dynamic content
-        await langPage.waitForTimeout(2000);
+        await delay(2000);
 
         // Look for audio players or download links
         const pageInfo = await langPage.evaluate(() => {
@@ -148,7 +150,7 @@ async function scrapeOneStory() {
         await langPage.close();
 
         // Be respectful - add delay between requests
-        await page.waitForTimeout(1000);
+        await delay(1000);
 
       } catch (error) {
         console.error(`  Error processing ${lang.name}: ${error.message}`);

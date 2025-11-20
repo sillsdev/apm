@@ -21,7 +21,7 @@
   "dependencies": {
     "adm-zip": "^0.5.16",
     "luxon": "^3.7.1",
+    "mui-language-picker": "^2.5.2",
     "puppeteer": "^24.0.0"
   }
 }
-
