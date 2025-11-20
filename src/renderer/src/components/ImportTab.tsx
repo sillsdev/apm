@@ -1,5 +1,5 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-import React, { useEffect, useState, useContext, useRef, useMemo } from 'react';
+import { useEffect, useState, useContext, useRef, useMemo } from 'react';
 import { TokenContext } from '../context/TokenProvider';
 import { errorStatus, IAxiosStatus } from '../store/AxiosStatus';
 import {
@@ -43,10 +43,10 @@ import { useElectronImport } from '../routes/ElectronImport';
 import { useGlobal } from '../context/useGlobal';
 import {
   remoteIdNum,
-  PassageDescription,
   remoteIdGuid,
   useOrganizedBy,
   SetUserLanguage,
+  passageDescText,
 } from '../crud';
 import { isElectron } from '../../api-variable';
 import { HeadHeight } from '../App';
@@ -104,7 +104,7 @@ const ProgressBar = styled(AppBar)<AppBarProps>(({ theme }) => ({
 interface IRow {
   plan: string;
   section: string;
-  passage: React.ReactNode;
+  passage: string;
   other: string;
   old: string;
   imported: string;
@@ -154,7 +154,8 @@ export function ImportTab(props: IProps) {
   const [isOffline] = useGlobal('offline'); //verified this is not used in a function 2/18/25
   const token = useContext(TokenContext).state.accessToken;
   const { showMessage } = useSnackBar();
-  const [changeData, setChangeData] = useState(Array<IRow>());
+  const [changeData, setChangeDatax] = useState(Array<IRow>());
+  const changeDataRef = useRef(changeData);
   const [importTitle, setImportTitle] = useState('');
   const [confirmAction, setConfirmAction] = useState<string | JSX.Element>('');
   const [fileName, setFileName] = useState<string>('');
@@ -229,6 +230,10 @@ export function ImportTab(props: IProps) {
       .sort(doSort(sortModel));
   }, [changeData, sortModel]);
 
+  const setChangeData = (data: IRow[]) => {
+    changeDataRef.current = data;
+    setChangeDatax(data);
+  };
   useEffect(() => {
     const electronImport = async () => {
       const importData = await getElectronImportData(project || '');
@@ -261,8 +266,8 @@ export function ImportTab(props: IProps) {
     if (!importing) {
       importComplete();
       setImportTitle(t.importComplete);
-      if (changeData.length === 0) {
-        onOpen(false);
+      if (changeDataRef.current.length === 0) {
+        handleClose();
       }
     }
   };
@@ -395,7 +400,7 @@ export function ImportTab(props: IProps) {
       changeReport = tryParseJSON(changeReport) as unknown as IChanges[];
     if (Array.isArray(changeReport)) {
       changeReport.forEach((c: IChanges) => {
-        let passage;
+        let passage: Passage | undefined;
         let section: Section | undefined;
         let old = '';
         let imported = '';
@@ -666,13 +671,7 @@ export function ImportTab(props: IProps) {
             section: section
               ? section.attributes.sequencenum + ' ' + section.attributes.name
               : '',
-            passage: passage
-              ? PassageDescription({
-                  passage,
-                  bookData: allBookData,
-                  flat: false,
-                }) //flat here?
-              : '',
+            passage: passage ? passageDescText(passage, allBookData) : '',
             other: other,
             old: old,
             imported: imported,
