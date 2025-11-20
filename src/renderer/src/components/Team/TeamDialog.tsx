@@ -99,7 +99,6 @@ export function TeamDialog(props: IProps) {
   const recordingRef = useRef(false);
   const [recording, setRecordingx] = useState(false);
   const [confirm, setConfirm] = React.useState(false);
-  const [deleteConfirm, setDeleteConfirm] = React.useState(false);
   const [deleteTarget, setDeleteTarget] = React.useState<
     RecordIdentity | undefined
   >();
@@ -124,7 +123,6 @@ export function TeamDialog(props: IProps) {
     setProcess(undefined);
     setSaving(false);
     setConfirm(false);
-    setDeleteConfirm(false);
     setDeleteTarget(undefined);
     setBibleId('');
     setBibleIdError('');
@@ -301,17 +299,14 @@ export function TeamDialog(props: IProps) {
     if (savingRef.current) return;
     if (!onDelete || !values?.team) return;
     setDeleteTarget({ id: values.team.id, type: values.team.type });
-    setDeleteConfirm(true);
   };
 
   const handleDeleteCancel = () => {
-    setDeleteConfirm(false);
     setDeleteTarget(undefined);
   };
 
   const handleDeleteConfirmed = async () => {
     if (!onDelete || !deleteTarget) {
-      setDeleteConfirm(false);
       setDeleteTarget(undefined);
       return;
     }
@@ -534,7 +529,7 @@ export function TeamDialog(props: IProps) {
             yesResponse={reset}
           />
         )}
-        {deleteConfirm && (
+        {deleteTarget && (
           <Confirm
             text={''}
             no={t.cancel}
