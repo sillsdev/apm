@@ -1,18 +1,13 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
 /**
- * OneStory to APM PTF Transformer
+ * Scripture Burrito to APM PTF Transformer
  *
- * This script transforms the scraped OneStory data into APM's PTF format.
+ * This script loads Scripture Burrito zip packages from the
+ * `migration-data/burrito` directory, extracts their audio content,
+ * and produces PTF files compatible with Audio Project Manager.
  *
- * PTF Format Structure:
- * - ZIP file containing:
- *   - SILTranscriber (export timestamp)
- *   - Version (schema version)
- *   - data/*.json (database tables in JSON API format)
- *   - media/*.mp3 (audio files)
- *
- * Usage: node 03-transform-to-ptf.js
+ * Usage: node 05-burrito-to-ptf.js
  */
 
 const fs = require('fs').promises;
@@ -20,33 +15,29 @@ const path = require('path');
 const AdmZip = require('adm-zip');
 const { DateTime } = require('luxon');
 const { getLangTag, getRtl } = require('mui-language-picker');
+
 const SAMPLE_ARTIFACT_CATEGORIES = require('./APM_PTF_Sample/data/C_artifactcategorys.json');
 const SAMPLE_ARTIFACT_TYPES = require('./APM_PTF_Sample/data/C_artifacttypes.json');
 const SAMPLE_PASSAGE_TYPES = require('./APM_PTF_Sample/data/B_passagetypes.json');
 const SAMPLE_ORG_WORKFLOW_STEPS = require('./APM_PTF_Sample/data/C_orgworkflowsteps.json');
 const SAMPLE_WORKFLOW_STEPS = require('./APM_PTF_Sample/data/B_workflowsteps.json');
-const CODE3_2 = './CODE3-2.txt';
 
-const METADATA_FILE = './migration-data/audio-metadata.json';
-const LANGUAGES_FILE = './migration-data/languages.json';
+const BURRITO_DIR = './migration-data/burrito';
 const OUTPUT_DIR = './migration-data/ptf-files';
 
 // APM Schema Version
 const SCHEMA_VERSION = 10;
 
-// Generate unique IDs
+// UUID and ID helpers ---------------------------------------------------------
 function generateUUID() {
-  // Public Domain/MIT
-  let d = new Date().getTime(); //Timestamp
-  let d2 = (performance && performance.now && performance.now() * 1000) || 0; //Time in microseconds since page-load or 0 if unsupported
+  let d = new Date().getTime();
+  let d2 = (performance && performance.now && performance.now() * 1000) || 0;
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
-    let r = Math.random() * 16; //random number between 0 and 16
+    let r = Math.random() * 16;
     if (d > 0) {
-      //Use timestamp until depleted
       r = (d + r) % 16 | 0;
       d = Math.floor(d / 16);
     } else {
-      //Use microseconds since page-load if supported
       r = (d2 + r) % 16 | 0;
       d2 = Math.floor(d2 / 16);
     }
@@ -121,77 +112,234 @@ function toUtcIso(value, fallback) {
   return candidate.isValid ? candidate.toUTC().toISO() : fallback;
 }
 
-async function transformToPTF() {
-  console.log('Starting transformation to PTF format...');
+// Helpers ---------------------------------------------------------------------
+function getLocalizedString(obj, preferredLocale) {
+  if (!obj || typeof obj !== 'object') {
+    return undefined;
+  }
+  if (preferredLocale && obj[preferredLocale]) {
+    return obj[preferredLocale];
+  }
+  if (obj.en) {
+    return obj.en;
+  }
+  const locales = Object.keys(obj);
+  if (locales.length > 0) {
+    return obj[locales[0]];
+  }
+  return undefined;
+}
 
-  // Read metadata
-  const metadataRaw = await fs.readFile(METADATA_FILE, 'utf-8');
-  const audioMetadata = JSON.parse(metadataRaw);
+function sanitizeFilename(value, fallback) {
+  const base = (value ?? fallback ?? 'output')
+    .toString()
+    .trim()
+    .replace(/[^a-z0-9]+/gi, '_')
+    .replace(/^_+|_+$/g, '');
+  return base.length > 0 ? base : 'output';
+}
 
-  const languagesRaw = await fs.readFile(LANGUAGES_FILE, 'utf-8');
-  const languages = JSON.parse(languagesRaw);
-
-  const code3_2Raw = await fs.readFile(CODE3_2, 'utf-8');
-  const code3_2Parsed = code3_2Raw
-    .split(/[\r\n]+/)
-    .map((line) => line.split('\t'));
-  const code3_2 = new Map(code3_2Parsed);
-
-  console.log(
-    `Processing ${languages.length} languages with ${audioMetadata.length} audio files...`
+function buildBookName(bookCode, localizedNames, preferredLocale) {
+  if (!bookCode) {
+    return undefined;
+  }
+  const key = `book-${bookCode.toLowerCase()}`;
+  const record = localizedNames?.[key];
+  if (!record) {
+    return undefined;
+  }
+  return (
+    getLocalizedString(record.short, preferredLocale) ??
+    getLocalizedString(record.long, preferredLocale)
   );
+}
 
-  // Create output directory
-  await fs.mkdir(OUTPUT_DIR, { recursive: true });
+function buildAudioReference(ingredient, localizedNames, preferredLocale) {
+  const scope = ingredient?.scope ?? {};
+  const [bookCode, chapters] = Object.entries(scope)[0] ?? [null, []];
+  const chapterList = Array.isArray(chapters) ? chapters : [];
+  const bookName = buildBookName(bookCode, localizedNames, preferredLocale);
+  const referenceParts = [];
+  const titleParts = [];
 
-  // Group audio by language
-  const audioByLanguage = {};
-  audioMetadata.forEach((audio) => {
-    if (!audioByLanguage[audio.language]) {
-      audioByLanguage[audio.language] = [];
+  if (bookCode) {
+    referenceParts.push(bookCode);
+  }
+  if (chapterList.length > 0) {
+    referenceParts.push(chapterList.join(', '));
+  }
+
+  if (bookName) {
+    titleParts.push(bookName);
+  } else if (bookCode) {
+    titleParts.push(bookCode);
+  }
+  if (chapterList.length > 0) {
+    titleParts.push(chapterList.join(', '));
+  }
+
+  return {
+    bookCode,
+    chapters: chapterList,
+    reference: referenceParts.join(' ').trim() || ingredient?._reference || '',
+    title: titleParts.join(' ').trim() || ingredient?._title || '',
+  };
+}
+
+function orderAudioEntries(entries) {
+  return entries.sort((a, b) => {
+    if (a.reference.bookCode !== b.reference.bookCode) {
+      return (a.reference.bookCode ?? '').localeCompare(
+        b.reference.bookCode ?? ''
+      );
     }
-    audioByLanguage[audio.language].push(audio);
+    const aChapter = a.reference.chapters[0] ?? '';
+    const bChapter = b.reference.chapters[0] ?? '';
+    if (aChapter !== bChapter) {
+      return aChapter.localeCompare(bChapter, undefined, {
+        numeric: true,
+      });
+    }
+    return a.filename.localeCompare(b.filename);
   });
+}
 
-  // Create a PTF file for each language
+// Main transformation ---------------------------------------------------------
+async function transformBurritoToPTF() {
+  console.log('Starting Scripture Burrito to PTF transformation...');
+
+  const now = DateTime.utc().toISO();
+
+  await fs.mkdir(OUTPUT_DIR, { recursive: true });
+  const dirEntries = await fs.readdir(BURRITO_DIR, { withFileTypes: true });
+
+  const zipFiles = dirEntries
+    .filter(
+      (entry) => entry.isFile() && entry.name.toLowerCase().endsWith('.zip')
+    )
+    .map((entry) => entry.name);
+
+  if (zipFiles.length === 0) {
+    console.warn('No Scripture Burrito zip archives found.');
+    return;
+  }
+
   let ptfCount = 0;
 
-  for (const lang of languages) {
-    const langAudio = audioByLanguage[lang.name] || [];
-    const code = lang.url.split('/').pop() ?? 'en';
-    const bcp47 = code3_2.get(code) ?? code;
-    const langTag = getLangTag(bcp47);
-    const langName = lang.name.split(' ')[0] ?? 'English';
-    const fontFamily = langTag?.defaultFont ?? 'charissil';
-    const rtl = getRtl(bcp47);
+  for (const zipFile of zipFiles) {
+    const zipPath = path.join(BURRITO_DIR, zipFile);
+    console.log(`\nProcessing ${zipFile}...`);
 
-    if (langAudio.length === 0) {
-      console.log(`Skipping ${lang.name} (no audio files)`);
+    let burritoZip;
+    try {
+      burritoZip = new AdmZip(zipPath);
+    } catch (err) {
+      console.error(`  Unable to open ${zipFile}: ${err.message}`);
       continue;
     }
 
-    console.log(
-      `language bcp47: ${bcp47}, language name: ${langName}, font family: ${fontFamily}, rtl: ${rtl}`
+    const entries = burritoZip.getEntries();
+    const metadataEntry = entries.find(
+      (entry) =>
+        !entry.isDirectory &&
+        entry.entryName.toLowerCase().endsWith('metadata.json')
     );
 
-    console.log(
-      `\nCreating PTF for ${lang.name} (${langAudio.length} files)...`
+    if (!metadataEntry) {
+      console.warn(`  Skipping ${zipFile} (metadata.json not found)`);
+      continue;
+    }
+
+    let metadata;
+    try {
+      metadata = JSON.parse(metadataEntry.getData().toString('utf-8'));
+    } catch (err) {
+      console.error(
+        `  Failed to parse metadata.json in ${zipFile}: ${err.message}`
+      );
+      continue;
+    }
+
+    const languageInfo = metadata.languages?.[0] ?? {};
+    const defaultLocale = metadata.meta?.defaultLocale ?? 'en';
+    const languageTag = languageInfo.tag ?? 'und';
+    const langName =
+      getLocalizedString(languageInfo.name, defaultLocale) ??
+      languageTag ??
+      'Unknown Language';
+    const langTag = getLangTag(languageTag);
+    const fontFamily = langTag?.defaultFont ?? 'charissil';
+    const rtl = getRtl(languageTag);
+
+    const projectName =
+      getLocalizedString(metadata.identification?.name, defaultLocale) ??
+      `${langName} Audio`;
+    const projectDescription =
+      getLocalizedString(metadata.identification?.description, defaultLocale) ??
+      `Audio content generated from Scripture Burrito ${zipFile}`;
+    const planName = `${projectName} Audio`;
+    const abbreviation = sanitizeFilename(
+      getLocalizedString(metadata.identification?.abbreviation, defaultLocale),
+      projectName
     );
 
-    const zip = new AdmZip();
-    const now = DateTime.utc().toISO();
+    const audioIngredients = Object.entries(metadata.ingredients ?? {}).filter(
+      ([, ingredient]) => ingredient?.mimeType?.startsWith('audio/')
+    );
 
-    // Add version markers and offline flag
-    zip.addFile('SILTranscriber', Buffer.from(now));
-    zip.addFile('Version', Buffer.from(SCHEMA_VERSION.toString()));
-    zip.addFile('Offline', Buffer.alloc(0));
+    if (audioIngredients.length === 0) {
+      console.warn(`  Skipping ${zipFile} (no audio ingredients found)`);
+      continue;
+    }
 
-    // -- A_users -------------------------------------------------------------
+    const localizedNames = metadata.localizedNames ?? {};
+    const audioEntries = [];
+
+    for (const [key, ingredient] of audioIngredients) {
+      const zipEntry = entries.find((entry) => entry.entryName.endsWith(key));
+      if (!zipEntry) {
+        console.warn(
+          `  Audio file ${key} referenced in metadata was not found in zip`
+        );
+        continue;
+      }
+
+      const reference = buildAudioReference(
+        ingredient,
+        localizedNames,
+        defaultLocale
+      );
+
+      audioEntries.push({
+        key,
+        ingredient,
+        zipEntry,
+        filename: path.basename(key),
+        reference,
+      });
+    }
+
+    if (audioEntries.length === 0) {
+      console.warn(`  Skipping ${zipFile} (no usable audio entries found)`);
+      continue;
+    }
+
+    orderAudioEntries(audioEntries);
+
+    const exportTimestamp = toUtcIso(metadata.meta?.dateCreated, now);
+
+    const ptfZip = new AdmZip();
+    const createdAt = DateTime.utc().toISO();
+
+    ptfZip.addFile('SILTranscriber', Buffer.from(createdAt));
+    ptfZip.addFile('Version', Buffer.from(SCHEMA_VERSION.toString()));
+    ptfZip.addFile('Offline', Buffer.alloc(0));
+
     const user = createJsonApiRecord(
       'users',
       {
-        name: 'OneStory Import',
-        'given-name': 'OneStory',
+        name: 'Scripture Burrito Import',
+        'given-name': 'Scripture Burrito',
         'family-name': 'Import',
         email: '',
         phone: '',
@@ -201,8 +349,8 @@ async function transformToPTF() {
         uilanguagebcp47: '',
         'digest-preference': 0,
         'news-preference': false,
-        dateCreated: now,
-        dateUpdated: now,
+        dateCreated: createdAt,
+        dateUpdated: createdAt,
       },
       {
         lastModifiedByUser: createRelationship('user', null),
@@ -214,7 +362,6 @@ async function transformToPTF() {
       }
     );
 
-    // -- B_integrations ------------------------------------------------------
     const integrations = [
       'paratext',
       'paratextbacktranslation',
@@ -225,15 +372,14 @@ async function transformToPTF() {
       })
     );
 
-    // -- B_organizations -----------------------------------------------------
     const organization = createJsonApiRecord(
       'organizations',
       {
-        name: 'OneStory Partnership',
-        slug: 'onestory',
-        'default-params': `{"langProps":{"bcp47":"${bcp47}","languageName":"${langName}","font":"${fontFamily}","rtl":"${rtl}","spellCheck":false}}`,
-        dateCreated: now,
-        dateUpdated: now,
+        name: 'Scripture Burrito Imports',
+        slug: sanitizeFilename(projectName, 'burrito'),
+        'default-params': `{"langProps":{"bcp47":"${languageTag}","languageName":"${langName}","font":"${fontFamily}","rtl":"${rtl}","spellCheck":false}}`,
+        dateCreated: createdAt,
+        dateUpdated: createdAt,
       },
       {
         lastModifiedByUser: createRelationship('user', user),
@@ -242,27 +388,25 @@ async function transformToPTF() {
       }
     );
 
-    // -- B_passagetypes ------------------------------------------------------
     const passageTypes = SAMPLE_PASSAGE_TYPES.data.map((passageType) =>
       createJsonApiRecord('passagetypes', { ...passageType.attributes })
     );
 
-    // -- B_plantypes ---------------------------------------------------
     const planTypes = ['Scripture', 'Other'].map((name) =>
       createJsonApiRecord(
         'plantypes',
         {
           name,
-          dateCreated: now,
-          dateUpdated: now,
+          dateCreated: createdAt,
+          dateUpdated: createdAt,
         },
         {
           plans: createRelationship('plan', []),
         }
       )
     );
-    const otherPlanType = planTypes.find(
-      (planType) => planType.attributes.name === 'Other'
+    const scripturePlanTYpe = planTypes.find(
+      (planType) => planType.attributes.name === 'Scripture'
     );
 
     const projectTypes = ['Generic', 'Scripture'].map((name) =>
@@ -270,22 +414,21 @@ async function transformToPTF() {
         'projecttypes',
         {
           name,
-          dateCreated: now,
-          dateUpdated: now,
+          dateCreated: createdAt,
+          dateUpdated: createdAt,
         },
         { projects: createRelationship('project', []) }
       )
     );
-    const genericProjectType = projectTypes.find(
-      (projectType) => projectType.attributes.name === 'Generic'
+    const scriptureProjectType = projectTypes.find(
+      (projectType) => projectType.attributes.name === 'Scripture'
     );
 
-    // -- B_roles -------------------------------------------------------------
     const roles = ['Admin', 'Member'].map((roleName) =>
       createJsonApiRecord('roles', {
         'role-name': roleName,
-        dateCreated: now,
-        dateUpdated: now,
+        dateCreated: createdAt,
+        dateUpdated: createdAt,
       })
     );
     const adminRole =
@@ -293,7 +436,6 @@ async function transformToPTF() {
         (roleResource) => roleResource.attributes['role-name'] === 'Admin'
       ) ?? roles[0];
 
-    // -- C_artifactcategorys -------------------------------------------------
     const artifactCategories = SAMPLE_ARTIFACT_CATEGORIES.data.map(
       (artifactCategory) =>
         createJsonApiRecord('artifactcategories', {
@@ -301,7 +443,6 @@ async function transformToPTF() {
         })
     );
 
-    // -- B_activitystates ----------------------------------------------------
     const activityStates = [
       'NoWork',
       'Transcribe',
@@ -312,12 +453,11 @@ async function transformToPTF() {
       createJsonApiRecord('activitystates', {
         state,
         sequencenum: idx + 1,
-        dateCreated: now,
-        dateUpdated: now,
+        dateCreated: createdAt,
+        dateUpdated: createdAt,
       })
     );
 
-    // -- C_artifacttypes -----------------------------------------------------
     const artifactTypes = SAMPLE_ARTIFACT_TYPES.data.map((artifactType) =>
       createJsonApiRecord('artifacttypes', {
         ...artifactType.attributes,
@@ -338,6 +478,7 @@ async function transformToPTF() {
 
       return targetArtifactType.id;
     };
+
     const backtranslationArtifactType =
       findArtifactTypeByTypename('backtranslation');
     const wholebacktranslationArtifactType = findArtifactTypeByTypename(
@@ -358,7 +499,6 @@ async function transformToPTF() {
       return null;
     };
 
-    // -- B_workflowsteps -----------------------------------------------------
     const workflowSteps = SAMPLE_WORKFLOW_STEPS.data.map((step) => {
       const attributes = { ...step.attributes };
       if (attributes.tool) {
@@ -384,15 +524,14 @@ async function transformToPTF() {
       return createJsonApiRecord('workflowsteps', attributes);
     });
 
-    // -- C_groups ------------------------------------------------------------
     const group = createJsonApiRecord(
       'groups',
       {
         name: `All users of >${user.attributes.name} Personal<`,
         abbreviation: 'all-users',
         allUsers: true,
-        dateCreated: now,
-        dateUpdated: now,
+        dateCreated: createdAt,
+        dateUpdated: createdAt,
       },
       {
         lastModifiedByUser: createRelationship('user', user),
@@ -405,12 +544,11 @@ async function transformToPTF() {
       relationshipIdentifier('group', group)
     );
 
-    // -- C_organizationmemberships ------------------------------------------
     const organizationMembership = createJsonApiRecord(
       'organizationmemberships',
       {
-        dateCreated: now,
-        dateUpdated: now,
+        dateCreated: createdAt,
+        dateUpdated: createdAt,
       },
       {
         user: createRelationship('user', user),
@@ -422,12 +560,11 @@ async function transformToPTF() {
       relationshipIdentifier('organizationmembership', organizationMembership)
     );
 
-    // -- C_orgworkflowsteps --------------------------------------------------
     const orgWorkflowSteps = SAMPLE_ORG_WORKFLOW_STEPS.data.map((step) => {
       const attributes = {
         ...step.attributes,
-        dateCreated: now,
-        dateUpdated: now,
+        dateCreated: createdAt,
+        dateUpdated: createdAt,
       };
       if (attributes.tool) {
         try {
@@ -449,12 +586,11 @@ async function transformToPTF() {
       });
     });
 
-    // -- D_groupmemberships --------------------------------------------------
     const groupMembership = createJsonApiRecord(
       'groupmemberships',
       {
-        dateCreated: now,
-        dateUpdated: now,
+        dateCreated: createdAt,
+        dateUpdated: createdAt,
       },
       {
         user: createRelationship('user', user),
@@ -468,26 +604,25 @@ async function transformToPTF() {
       relationshipIdentifier('groupmembership', groupMembership)
     );
 
-    // -- D_projects ----------------------------------------------------------
     const project = createJsonApiRecord(
       'projects',
       {
-        name: lang.name,
-        description: `OneStory Bible stories in ${lang.name}`,
-        language: bcp47,
+        name: projectName,
+        description: projectDescription,
+        language: languageTag,
         languageName: langName,
         isPublic: false,
-        rtl: rtl,
+        rtl,
         spellCheck: false,
         defaultFont: fontFamily,
         defaultFontSize: 'large',
-        defaultParams: `{"book":"010","story":true,"sectionMap":[]}`,
+        defaultParams: `{"book":"","story":true,"sectionMap":[]}`,
         allowClaim: false,
-        dateCreated: now,
-        dateUpdated: now,
+        dateCreated: createdAt,
+        dateUpdated: createdAt,
       },
       {
-        projecttype: createRelationship('projecttype', genericProjectType),
+        projecttype: createRelationship('projecttype', scriptureProjectType),
         owner: createRelationship('user', user),
         organization: createRelationship('organization', organization),
         group: createRelationship('group', group),
@@ -497,24 +632,23 @@ async function transformToPTF() {
     group.relationships.projects.data.push(
       relationshipIdentifier('project', project)
     );
-    genericProjectType.relationships.projects.data.push(
+    scriptureProjectType.relationships.projects.data.push(
       relationshipIdentifier('project', project)
     );
 
-    // -- E_plans ------------------------------------------------------------
     const plan = createJsonApiRecord(
       'plans',
       {
-        name: `${lang.name} Stories`,
-        slug: `${lang.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-stories`,
+        name: planName,
+        slug: sanitizeFilename(planName, 'audio-plan'),
         flat: false,
         sectionCount: 1,
-        dateCreated: now,
-        dateUpdated: now,
+        dateCreated: createdAt,
+        dateUpdated: createdAt,
       },
       {
         project: createRelationship('project', project),
-        plantype: createRelationship('plantype', otherPlanType),
+        plantype: createRelationship('plantype', scripturePlanTYpe),
         owner: createRelationship('user', user),
         sections: createRelationship('section', []),
         mediafiles: createRelationship('mediafile', []),
@@ -529,18 +663,17 @@ async function transformToPTF() {
       }
     });
 
-    // -- F_sections ---------------------------------------------------------
     const section = createJsonApiRecord(
       'sections',
       {
         sequencenum: 1,
-        name: 'Bible Stories',
+        name: 'Audio Content',
         state: '',
         level: 3,
         published: false,
         publishTo: '{}',
-        dateCreated: now,
-        dateUpdated: now,
+        dateCreated: createdAt,
+        dateUpdated: createdAt,
       },
       {
         plan: createRelationship('plan', plan),
@@ -551,24 +684,27 @@ async function transformToPTF() {
       relationshipIdentifier('section', section)
     );
 
-    // -- G_passages ---------------------------------------------------------
     const passages = [];
-    // -- H_mediafiles -------------------------------------------------------
     const mediafiles = [];
 
-    for (let i = 0; i < langAudio.length; i++) {
-      const audio = langAudio[i];
+    audioEntries.forEach((audioEntry, index) => {
+      const audioBuffer = audioEntry.zipEntry.getData();
+      const audioFilename = audioEntry.filename;
+      const downloadTimestamp = toUtcIso(exportTimestamp, createdAt);
+      const referenceTitle = audioEntry.reference.title || `Audio ${index + 1}`;
+      const referenceLabel =
+        audioEntry.reference.reference || `Audio ${index + 1}`;
 
       const passage = createJsonApiRecord(
         'passages',
         {
-          sequencenum: i + 1,
-          book: '', // no book for generic project
-          reference: `Story ${i + 1}`,
-          title: audio.title,
+          sequencenum: index + 1,
+          book: audioEntry.reference.bookCode ?? '',
+          reference: referenceLabel,
+          title: referenceTitle,
           state: 'noMedia',
-          dateCreated: now,
-          dateUpdated: now,
+          dateCreated: createdAt,
+          dateUpdated: createdAt,
           'start-chapter': 0,
           'end-chapter': 0,
           'start-verse': 0,
@@ -586,9 +722,6 @@ async function transformToPTF() {
         relationshipIdentifier('passage', passage)
       );
 
-      const audioFilename = path.basename(audio.filepath);
-      const downloadedAt = toUtcIso(audio.downloadedAt, now);
-
       const mediafile = createJsonApiRecord(
         'mediafiles',
         {
@@ -597,16 +730,16 @@ async function transformToPTF() {
           'eaf-url': '',
           'audio-url': `media/${audioFilename}`,
           s3file: '',
-          duration: null, // Will be calculated on import
-          'content-type': 'audio/mpeg',
+          duration: null,
+          'content-type': audioEntry.ingredient.mimeType ?? 'audio/mpeg',
           'audio-quality': '',
           'text-quality': '',
           transcription: '',
           originalFile: audioFilename,
-          filesize: audio.filesize,
+          filesize: audioEntry.ingredient.size ?? audioBuffer.length,
           position: 0,
           segments: '{}',
-          languagebcp47: '',
+          languagebcp47: languageTag,
           link: false,
           'ready-to-share': false,
           'publish-to': '{}',
@@ -614,12 +747,12 @@ async function transformToPTF() {
           'source-segments': '{}',
           'source-media-offline-id': '',
           transcriptionstate: '',
-          topic: '',
+          topic: referenceTitle,
           'last-modified-by': -1,
           'resource-passage-id': -1,
           'offline-id': '',
-          dateCreated: downloadedAt,
-          dateUpdated: downloadedAt,
+          dateCreated: downloadTimestamp,
+          dateUpdated: downloadTimestamp,
         },
         {
           lastModifiedByUser: createRelationship('user', user),
@@ -637,15 +770,9 @@ async function transformToPTF() {
         relationshipIdentifier('mediafile', mediafile)
       );
 
-      try {
-        const audioData = await fs.readFile(audio.filepath);
-        zip.addFile(`media/${audioFilename}`, audioData);
-      } catch (err) {
-        console.error(`  Error adding ${audioFilename}: ${err.message}`);
-      }
-    }
+      ptfZip.addFile(`media/${audioFilename}`, audioBuffer);
+    });
 
-    // Write all JSON files to zip
     const dataFiles = {
       A_users: { data: [user] },
       B_integrations: { data: integrations },
@@ -670,29 +797,34 @@ async function transformToPTF() {
     };
 
     for (const [filename, content] of Object.entries(dataFiles)) {
-      zip.addFile(
+      ptfZip.addFile(
         `data/${filename}.json`,
         Buffer.from(JSON.stringify(content, null, 2))
       );
     }
 
-    // Write PTF file
-    const ptfFilename = `${lang.name.replace(/[^a-z0-9]/gi, '_')}.ptf`;
+    const ptfBaseName = sanitizeFilename(
+      `${abbreviation || langName}-burrito`,
+      path.basename(zipFile, path.extname(zipFile))
+    );
+    const ptfFilename = `${ptfBaseName}.ptf`;
     const ptfPath = path.join(OUTPUT_DIR, ptfFilename);
 
-    await fs.writeFile(ptfPath, zip.toBuffer());
-
+    await fs.writeFile(ptfPath, ptfZip.toBuffer());
     console.log(`  Created: ${ptfFilename}`);
     ptfCount++;
   }
 
   console.log('\n=== TRANSFORMATION COMPLETE ===');
-  console.log(`Created ${ptfCount} PTF files in ${OUTPUT_DIR}/`);
+  console.log(`Created ${ptfCount} PTF file(s) in ${OUTPUT_DIR}/`);
   console.log('\nNext step: Import the PTF files into Audio Project Manager');
   console.log('  1. Open Audio Project Manager');
   console.log('  2. Go to File > Import Project');
   console.log('  3. Select a .ptf file from the output directory');
-  console.log('  4. Repeat for each language you want to import');
+  console.log('  4. Repeat for each PTF you want to import');
 }
 
-transformToPTF().catch(console.error);
+transformBurritoToPTF().catch((err) => {
+  console.error('Failed to transform Scripture Burrito to PTF:', err);
+  process.exitCode = 1;
+});
