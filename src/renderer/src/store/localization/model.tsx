@@ -148,6 +148,7 @@ export interface IAudioDownloadStrings
 }
 
 export interface ICardsStrings extends Localize.LocalizedStringsMethods {
+<<<<<<< HEAD
   add: string;
   addTeam: string;
   bibleid: string;
@@ -222,6 +223,84 @@ export interface ICardsStrings extends Localize.LocalizedStringsMethods {
   workflowProgressionStep: string;
   yes: string;
 }
+=======
+    "add": string;
+    "addNewTeam": string;
+    "addTeam": string;
+    "bibleid": string;
+    "bibleidexists": string;
+    "bibleidformat": string;
+    "bibleidiso": string;
+    "bibleIdExplain": string;
+    "biblename": string;
+    "cancel": string;
+    "closeNoSave": string;
+    "convertPrompt": string;
+    "convertVoice": string;
+    "convertVoiceSettings": string;
+    "copyComplete": string;
+    "copyNew": string;
+    "copyright": string;
+    "copySame": string;
+    "copyStatus": string;
+    "creatorAdd": string;
+    "creatorEmail": string;
+    "creatorOK": string;
+    "delete": string;
+    "deleteTeam": string;
+    "description": string;
+    "draft": string;
+    "editCategory": string;
+    "editPersonalCategory": string;
+    "editWorkflow": string;
+    "experimentalFeatures": string;
+    "explainPublishing": string;
+    "explainTeamDelete": string;
+    "import": string;
+    "language": string;
+    "mediaUploaded": string;
+    "members": string;
+    "nameInUse": string;
+    "newProject": string;
+    "normalize": string;
+    "notesLabel": string;
+    "OBS": string;
+    "OBT": string;
+    "OBTs": string;
+    "OBTr": string;
+    "OBTo": string;
+    "offline": string;
+    "offlineAvail": string;
+    "passagesCreated": string;
+    "personalProjects": string;
+    "personalSettings": string;
+    "process": string;
+    "projectCreated": string;
+    "projectRequired": string;
+    "recognizePrompt": string;
+    "recognizeSpeech": string;
+    "recognizeSpeechSettings": string;
+    "reduceNoise": string;
+    "publishing": string;
+    "save": string;
+    "sectionStatus": string;
+    "settings": string;
+    "sortProjects": string;
+    "switchTeams": string;
+    "notesHelper": string;
+    "notesProject": string;
+    "projectPermissions": string;
+    "sync": string;
+    "teamName": string;
+    "teamSettings": string;
+    "transcriber": string;
+    "uploadProgress": string;
+    "workflowProgression": string;
+    "workflowProgressionPassage": string;
+    "workflowProgressionStep": string;
+    "yes": string;
+};
+>>>>>>> 89f4e1c (TT-6860 update GPT5 logic)
 
 export interface ICategoryStrings extends Localize.LocalizedStringsMethods {
   builtIn: string;
