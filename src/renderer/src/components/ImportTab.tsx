@@ -260,13 +260,13 @@ export function ImportTab(props: IProps) {
     } else setUploadVisible(true);
   }, []);
 
-  const setImporting = (importing: boolean) => {
+  const setImporting = (importing: boolean, errMsg?: string) => {
     importingRef.current = importing;
     setBusy(importing);
     if (!importing) {
       importComplete();
-      setImportTitle(t.importComplete);
-      if (changeDataRef.current.length === 0) {
+      setImportTitle(errMsg || t.importComplete);
+      if (!errMsg && changeDataRef.current.length === 0) {
         handleClose();
       }
     }
@@ -701,8 +701,7 @@ export function ImportTab(props: IProps) {
         } else {
           msg = translateError(importStatus);
         }
-        setImporting(false);
-        setImportTitle(msg);
+        setImporting(false, msg);
       } else {
         if (importStatus.complete) {
           //import completed ok but might have message
