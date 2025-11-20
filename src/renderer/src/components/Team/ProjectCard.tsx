@@ -49,7 +49,7 @@ import {
 } from '../../crud';
 import { localizeProjectTag } from '../../utils/localizeProjectTag';
 import OfflineIcon from '@mui/icons-material/OfflinePin';
-import { useHome, useJsonParams } from '../../utils';
+import { LocalKey, useHome, useJsonParams } from '../../utils';
 import { copyComplete, CopyProjectProps } from '../../store';
 import { TokenContext } from '../../context/TokenProvider';
 import { useSnackBar } from '../../hoc/SnackBar';
@@ -68,10 +68,12 @@ import { IProjectDialog } from './ProjectDialog/projectDialogTypes';
 
 const PencilSquare = BsPencilSquare as unknown as React.FC<IconBaseProps>;
 
-const ProjectCardRoot = styled('div')(() => ({
+const ProjectCardRoot = styled('div')(({ theme }) => ({
   display: 'flex',
-  width: '100%',
-  justifyContent: 'center',
+  [theme.breakpoints.down('md')]: {
+    width: '100%',
+    justifyContent: 'center',
+  },
   '& button': {
     color: 'white',
   },
@@ -85,10 +87,14 @@ const ProjectCardRoot = styled('div')(() => ({
 }));
 
 const StyledCard = styled(Card)<CardProps>(({ theme }) => ({
-  minWidth: 320,
-  width: '100%',
-  maxWidth: 500,
-  margin: `${theme.spacing(1)} auto`,
+  minWidth: 275,
+  margin: theme.spacing(1),
+  [theme.breakpoints.down('md')]: {
+    minWidth: 320,
+    width: '100%',
+    maxWidth: 500,
+    margin: `${theme.spacing(1)} auto`,
+  },
   backgroundColor: theme.palette.primary.light,
 }));
 
@@ -172,6 +178,7 @@ export const ProjectCard = (props: IProps) => {
   const sections = useOrbitData<Section[]>('section');
   const getGlobal = useGetGlobal();
   const handleSelect = (project: VProjectD) => () => {
+    localStorage.setItem(LocalKey.plan, project.id);
     loadProject(project);
     leaveHome();
   };

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Stack, Typography, Button } from '@mui/material';
+import { Box, Stack, Typography, Button, Grid } from '@mui/material';
 import AppHead from '../components/App/AppHead';
 import { TeamProvider, TeamContext, TeamIdType } from '../context/TeamContext';
 import { useParams, useLocation } from 'react-router-dom';
@@ -8,7 +8,7 @@ import TeamDialog from '../components/Team/TeamDialog';
 import { DialogMode, VProject } from '../model';
 import { ProjectDialog } from '../components/Team/ProjectDialog';
 import { useMyNavigate } from '../utils/useMyNavigate';
-import { TEAMS } from '../utils/routePaths';
+import { getTeamsRoute } from '../utils/routePaths';
 import { LocalKey, useJsonParams } from '../utils';
 import { projDefBook, projDefStory } from '../crud/useProjectDefaults';
 import { useGlobal } from '../context/useGlobal';
@@ -154,7 +154,7 @@ const ProjectsScreenInner: React.FC = () => {
           paddingTop: '80px',
           px: 2,
           pb: 8,
-          maxWidth: 520,
+          maxWidth: { xs: 520, md: 'unset' },
           mx: 'auto',
           display: 'flex',
           flexDirection: 'column',
@@ -162,7 +162,7 @@ const ProjectsScreenInner: React.FC = () => {
           minHeight: '100vh',
         }}
       >
-        <Stack spacing={1}>
+        <Grid container spacing={1}>
           {projects.map((p) => (
             <ProjectCard key={p.id} project={p} />
           ))}
@@ -172,7 +172,7 @@ const ProjectsScreenInner: React.FC = () => {
               {'No projects yet.'}
             </Typography>
           )}
-        </Stack>
+        </Grid>
         {/* spacer to ensure content isn't hidden behind floating actions */}
         <Box sx={{ height: 120 }} />
       </Box>
@@ -207,7 +207,10 @@ const ProjectsScreenInner: React.FC = () => {
           <Button
             id="ProjectActSwitch"
             variant="outlined"
-            onClick={() => navigate(TEAMS)}
+            onClick={() => {
+              localStorage.removeItem(LocalKey.plan);
+              navigate(getTeamsRoute());
+            }}
             sx={(theme) => ({
               minWidth: 120,
               bgcolor: theme.palette.common.white,
