@@ -33,10 +33,9 @@ export const useProjectDelete = () => {
     if (!plans.length) return;
 
     const planid = plans[0];
-    let ops: RecordOperation[] = [];
+    const ops: RecordOperation[] = [];
     const t = new RecordTransformBuilder();
 
-    ops = [];
     if (offlineOnly) {
       const mediafiles = (
         memory?.cache.query((q) =>
