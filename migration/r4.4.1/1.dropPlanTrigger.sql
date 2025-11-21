@@ -1,0 +1,1 @@
+DROP TRIGGER archivetrigger ON plans
