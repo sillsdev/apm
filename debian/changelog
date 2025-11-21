@@ -1,3 +1,9 @@
+audio - project - manager(4.4.1.0)  experimental; urgency = high
+
+ * TT-6938 deleting teams and projects
+
+-- Greg Trihus <greg_trihus@sil.org>  Mon, 21 Nov 2025 21:41:00 - 0600
+
 audio - project - manager(4.4.0)  experimental; urgency = high
 
  * TT-2460 Add ability to see and select microphone
