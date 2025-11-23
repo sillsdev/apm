@@ -26,7 +26,7 @@ export function PassageCard(props: IProps) {
     : 'Unassigned';
 
   return (
-    <Card sx={{ border: '2px solid black' }}>
+    <Card elevation={3}>
       <CardContent>
         <Typography variant="h6">
           {fullBookName} {cardInfo.passage?.attributes.reference}

@@ -178,7 +178,8 @@ export const AppHead = (props: IProps) => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const saving = useMemo(() => anySaving(), [toolsChanged]);
   const { showMessage } = useSnackBar();
-  const tv: IViewModeStrings = useSelector(viewModeSelector, shallowEqual);
+  // const tv: IViewModeStrings = useSelector(viewModeSelector, shallowEqual);
+
   // Team context (may be undefined on routes not wrapped by TeamProvider)
   // TeamContext may be absent (AppHead used outside TeamProvider on some routes)
   // Helper hook to safely get TeamContext if available
@@ -532,11 +533,7 @@ export const AppHead = (props: IProps) => {
   if (view === 'Terms') navigate('/terms');
   if (view === 'Privacy') navigate('/privacy');
   return (
-    <AppBar
-      position="fixed"
-      sx={{ width: '100%', display: 'flex' }}
-      color="inherit"
-    >
+    <AppBar position="fixed" sx={{ width: '100%' }} color="inherit">
       <>
         {complete === 0 || complete === 100 || (
           <Box sx={{ width: '100%' }}>
@@ -561,7 +558,7 @@ export const AppHead = (props: IProps) => {
                 justifyContent: 'center',
               }}
             >
-              <ApmLogo sx={{ width: 40, height: 40 }} />
+              <ApmLogo sx={{ width: 48, height: 48 }} />
             </IconButton>
           </Tooltip>
           {showTeamListingHeader && (
@@ -608,9 +605,9 @@ export const AppHead = (props: IProps) => {
             <>
               <ProjectName switchTo={switchTo ?? false} />
               <GrowingSpacer />
-              <Typography variant="h6">
+              {/* <Typography variant="h6">
                 {switchTo ? tv.work : tv.audioProject}
-              </Typography>
+              </Typography> */}
               <GrowingSpacer />
             </>
           )}

@@ -62,7 +62,7 @@ export interface IFillProps {
   anyRecording: boolean;
 }
 
-interface IProps {
+export interface IProps {
   columns: ICell[];
   colSlugs: string[];
   rowData: IRow[];
