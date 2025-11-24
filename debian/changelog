@@ -1,3 +1,9 @@
+audio - project - manager(4.4.2.0)  experimental; urgency = high
+
+ * updated localization
+
+ -- Greg Trihus <greg_trihus@sil.org>  Mon, 24 Nov 2025 17:49:00 - 0500
+
 audio - project - manager(4.4.1.0)  experimental; urgency = high
 
  * TT-6938 deleting teams and projects
