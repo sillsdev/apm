@@ -226,7 +226,7 @@ const FloatingActions = () => {
     setValidEmail(false);
     setContentStatus(ts.saving);
     axiosPost(
-      'users/sharedcreator/${encodeURIComponent(email)}/true',
+      `users/sharedcreator/${encodeURIComponent(email)}/true`,
       null,
       tokenctx.accessToken || undefined
     )
