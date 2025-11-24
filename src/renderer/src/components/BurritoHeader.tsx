@@ -1,8 +1,10 @@
+import React from 'react';
 import { Box, Stack, Typography } from '@mui/material';
 import AppHead from './App/AppHead';
 import { TeamProvider } from '../context/TeamContext';
 import { AltButton } from '../control/AltButton';
 import { GrowingSpacer } from '../control/GrowingSpacer';
+import { homeRoute } from '../utils/routePaths';
 import { PriButton } from '../control/PriButton';
 
 interface BurritoHeaderProps {
@@ -31,7 +33,7 @@ export function BurritoHeader({
         <Box id="BurritoScreen" sx={{ display: 'flex', paddingTop: '80px' }}>
           <Stack direction="column" sx={{ width: '100%' }}>
             <Stack direction="row">
-              <AltButton onClick={() => setView('/team')}>Teams</AltButton>
+              <AltButton onClick={() => setView(homeRoute())}>Teams</AltButton>
               {onSave && (
                 <AltButton onClick={() => setView(`/burrito/${teamId}`)}>
                   Back
