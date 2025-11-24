@@ -6,11 +6,11 @@
 	<!-- After it runs, reformat with CTRL-SHIFT-P but then you have to combine lines that shouldn't have been split -->
 	<!-- Find: \n\s+([^\<\s]) and Replace: a space and $1. -->
 	<xsl:variable name="cng"
-		select="document('file:/C:/Users/gtrih/git/transcriber/localization/string-with-id.xml')"/>
+		select="document('file:/C:/Users/gtrih/git/apm-vite/localization/string-with-id.xml')"/>
 	<xsl:variable name="eng"
-		select="document('file:/C:/Users/gtrih/git/transcriber/localization/TranscriberAdmin-en.xlf')"/>
+		select="document('file:/C:/Users/gtrih/git/apm-vite/localization/TranscriberAdmin-en.xlf')"/>
 	<xsl:variable name="crowd"
-		select="document('file:/C:/Users/gtrih/git/transcriber/localization/TranscriberAdmin-xx-1.2.xliff')"/>
+		select="document('file:/C:/Users/gtrih/git/apm-vite/localization/TranscriberAdmin-xx-1.2.xliff')"/>
 	
 	<xsl:template match="/">
 		<xsl:apply-templates select="node() |@*"/>
