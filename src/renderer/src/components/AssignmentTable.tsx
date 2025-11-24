@@ -512,6 +512,7 @@ export function AssignmentTable() {
             onRowSelectionModelChange={handleRowSelectionChange}
             recIdName="recId"
             expanded={setOpenSections}
+            disableColumnSorting
             initialState={{
               sorting: { sortModel },
               columns: { columnVisibilityModel },

@@ -728,7 +728,7 @@ export function TranscriptionTab(props: IProps) {
             expanded={setOpenSections}
             columnVisibilityModel={columnVisibilityModel}
             onColumnVisibilityModelChange={setColumnVisibilityModel}
-            disableColumnSorting={false}
+            disableColumnSorting
             initialState={{
               sorting: { sortModel },
             }}
