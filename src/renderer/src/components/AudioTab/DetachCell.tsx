@@ -14,7 +14,7 @@ import { mediaActionsSelector } from '../../selector';
 interface IProps {
   canCreate: boolean;
   readonly: boolean;
-  handleConfirmAction: (i: number) => void;
+  handleConfirmAction: (i: string) => void;
 }
 
 export default function DetachCell(
@@ -22,7 +22,6 @@ export default function DetachCell(
 ) {
   const [memory] = useGlobal('memory');
   const { canCreate, readonly, handleConfirmAction: onDelete } = params;
-  const rowIndex = params.row.index;
   const canDelete = !readonly && !params.row.readyToShare;
   const mediaId =
     remoteId('mediafile', params.row.id, memory?.keyMap as RecordKeyMap) ||
@@ -33,7 +32,7 @@ export default function DetachCell(
   );
 
   const handleDelete = () => {
-    onDelete(rowIndex);
+    onDelete(params.row.id);
   };
 
   return (
