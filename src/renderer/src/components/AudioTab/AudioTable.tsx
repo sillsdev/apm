@@ -142,8 +142,8 @@ export const AudioTable = (props: IProps) => {
     setPublishItem(-1);
   };
 
-  const handleChangeReadyToShare = (i: string) => () => {
-    const index = sortedData.findIndex((r) => r.id === i);
+  const handleChangeReadyToShare = (id: string) => () => {
+    const index = sortedData.findIndex((r) => r.id === id);
     setPublishItem(index);
   };
 
@@ -151,8 +151,9 @@ export const AudioTable = (props: IProps) => {
     setShowId('');
   };
 
-  const handleConfirmAction = (i: number) => {
-    setDeleteItem(i);
+  const handleConfirmAction = (id: string) => {
+    const index = sortedData.findIndex((r) => r.id === id);
+    setDeleteItem(index);
     setConfirmAction('Delete');
   };
 
