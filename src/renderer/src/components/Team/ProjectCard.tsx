@@ -70,22 +70,23 @@ const PencilSquare = BsPencilSquare as unknown as React.FC<IconBaseProps>;
 
 const ProjectCardRoot = styled('div')(() => ({
   display: 'flex',
-  '&:hover button': {
+  // width: '100%',
+  justifyContent: 'center',
+  '& button': {
     color: 'white',
   },
-  '& .MuiTypography-root': {
-    cursor: 'default ',
-  },
   '& .MuiCardContent-root': {
-    maxWidth: '243px',
+    maxWidth: '480px',
   },
-  cursor: 'pointer',
 }));
 
 const StyledCard = styled(Card)<CardProps>(({ theme }) => ({
-  minWidth: 275,
-  margin: theme.spacing(1),
+  minWidth: 320,
+  width: '100%',
+  maxWidth: 500,
+  margin: `${theme.spacing(1)}`,
   backgroundColor: theme.palette.primary.light,
+  cursor: 'pointer',
 }));
 
 const StyledCardContent = styled(CardContent)<CardContentProps>(

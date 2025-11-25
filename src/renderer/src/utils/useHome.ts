@@ -1,5 +1,6 @@
 import { To, useNavigate } from 'react-router-dom';
 import { useGetGlobal, useGlobal } from '../context/useGlobal';
+import { homeRoute, MOBILETEAM } from './routePaths';
 
 interface HomeResult {
   goHome: () => void;
@@ -27,14 +28,18 @@ export const useHome = (): HomeResult => {
     resetProject();
     if (!getGlobal('home')) setHome(true);
     setTimeout(() => {
-      navigate('/team');
+      navigate(homeRoute());
     }, 100);
   };
   const leaveHome = (): void => {
     if (getGlobal('home')) setHome(false);
   };
   const checkHome = (to: To): void => {
-    const gohome = !to || to === '/' || to === '/team';
+    const gohome =
+      !to ||
+      to === '/' ||
+      to === MOBILETEAM ||
+      /^\/projects\//.test(String(to));
     if (getGlobal('home') !== gohome) setHome(gohome);
   };
 
