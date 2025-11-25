@@ -1,3 +1,31 @@
+/**
+ * Attempts to derive the organization (team) ID from the currently selected plan.
+ *
+ * This function follows a chain of relationships: Plan -> Project -> Organization
+ * by reading from localStorage and querying the in-memory Orbit store.
+ *
+ * @returns The organization ID if successfully derived, or `null` in the following cases:
+ *   - No plan is stored in localStorage under the `LocalKey.plan` key
+ *   - The stored plan ID doesn't exist in the memory store
+ *   - The plan record has no associated project
+ *   - The project record doesn't exist in the memory store
+ *   - The project record has no associated organization
+ *   - Any error occurs during the lookup process (JSON parsing, store queries, etc.)
+ *
+ * @remarks
+ * This function uses a defensive error handling strategy where all exceptions are
+ * silently caught and converted to `null`. This prevents the application from
+ * crashing due to corrupted localStorage data, schema mismatches, or store
+ * inconsistencies, but may hide legitimate errors. The trade-off prioritizes
+ * application stability over error visibility.
+ *
+ * Expected data flow:
+ * 1. Read plan ID from localStorage
+ * 2. Find plan record in memory store
+ * 3. Extract related project ID from plan
+ * 4. Find project record in memory store
+ * 5. Extract related organization ID from project
+ */
 import { findRecord, related } from '../crud';
 import { memory } from '../schema';
 import { LocalKey } from './localUserKey';
