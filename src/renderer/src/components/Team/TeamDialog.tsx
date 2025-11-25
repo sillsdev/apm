@@ -63,7 +63,7 @@ export interface ITeamDialog {
   resetProjectPermissions: boolean;
 }
 interface IProps extends IDialog<ITeamDialog> {
-  onDelete?: (team: RecordIdentity) => void;
+  onDelete?: (team: RecordIdentity) => Promise<void> | void;
   disabled?: boolean;
 }
 export function TeamDialog(props: IProps) {
@@ -99,6 +99,9 @@ export function TeamDialog(props: IProps) {
   const recordingRef = useRef(false);
   const [recording, setRecordingx] = useState(false);
   const [confirm, setConfirm] = React.useState(false);
+  const [deleteTarget, setDeleteTarget] = React.useState<
+    RecordIdentity | undefined
+  >();
   const [features, setFeatures] = useState<IFeatures>({});
   const { anySaving, toolsChanged, startSave, clearRequested } =
     useContext(UnsavedContext).state;
@@ -120,6 +123,7 @@ export function TeamDialog(props: IProps) {
     setProcess(undefined);
     setSaving(false);
     setConfirm(false);
+    setDeleteTarget(undefined);
     setBibleId('');
     setBibleIdError('');
     setBible(undefined);
@@ -293,10 +297,26 @@ export function TeamDialog(props: IProps) {
 
   const handleDelete = () => {
     if (savingRef.current) return;
+    if (!onDelete || !values?.team) return;
+    setDeleteTarget({ id: values.team.id, type: values.team.type });
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteTarget(undefined);
+  };
+
+  const handleDeleteConfirmed = async () => {
+    if (!onDelete || !deleteTarget) {
+      setDeleteTarget(undefined);
+      return;
+    }
     setSaving(true);
-    const team = { ...values?.team } as RecordIdentity;
-    onDelete && onDelete(team);
-    setSaving(false);
+    try {
+      await Promise.resolve(onDelete(deleteTarget));
+      reset();
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleProcess = (e: any) => {
@@ -507,6 +527,16 @@ export function TeamDialog(props: IProps) {
             noResponse={dontDoIt}
             yes={t.yes}
             yesResponse={reset}
+          />
+        )}
+        {deleteTarget && (
+          <Confirm
+            text={''}
+            no={t.cancel}
+            yes={t.deleteTeam}
+            yesResponse={handleDeleteConfirmed}
+            noResponse={handleDeleteCancel}
+            isDelete
           />
         )}
       </Dialog>

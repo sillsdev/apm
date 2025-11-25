@@ -66,7 +66,7 @@ import PolicyDialog from '../PolicyDialog';
 import JSONAPISource from '@orbit/jsonapi';
 import { mainSelector, sharedSelector, viewModeSelector } from '../../selector';
 import { useHome } from '../../utils/useHome';
-import { isHomeRoute } from '../../utils/routePaths';
+import { getTeamsRoute, isHomeRoute } from '../../utils/routePaths';
 import { useOrbitData } from '../../hoc/useOrbitData';
 import packageJson from '../../../package.json';
 import { MainAPI } from '@model/main-api';
@@ -714,6 +714,7 @@ export const AppHead = (props: IProps) => {
               onDelete: (org: any) => {
                 teamCtx?.state?.teamDelete(org);
                 setSettingsOpen(false);
+                navigate(getTeamsRoute());
               },
             })}
           />
