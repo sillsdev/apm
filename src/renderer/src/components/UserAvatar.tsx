@@ -33,7 +33,7 @@ export function UserAvatar(props: IProps) {
   const source = useAvatarSource(curUser.attributes?.familyName || '', curUser);
 
   return source ? (
-    <Avatar id="srcuser" alt={curUser.attributes?.name || ''} src={source} />
+    <Avatar id="srcuser" alt={curUser.attributes?.name || ''} src={source} sx={avatarSize(small)} />
   ) : curUser.attributes && curUser.attributes.name !== '' ? (
     <Avatar id="abbruser" sx={avatarSize(small)}>
       {makeAbbr(curUser.attributes.name)}
