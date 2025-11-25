@@ -24,9 +24,72 @@ const SAMPLE_WORKFLOW_STEPS = require('./APM_PTF_Sample/data/B_workflowsteps.jso
 
 const BURRITO_DIR = './migration-data/burrito';
 const OUTPUT_DIR = './migration-data/ptf-files';
+const VERSE_CATALOG_PATH = path.join(__dirname, 'eng.vrs');
 
 // APM Schema Version
 const SCHEMA_VERSION = 10;
+
+let chapterVerseMap = {};
+
+async function loadChapterVerseMap() {
+  try {
+    const raw = await fs.readFile(VERSE_CATALOG_PATH, 'utf-8');
+    return raw.split(/\r?\n/).reduce((acc, line) => {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith('#')) {
+        return acc;
+      }
+      const [bookCode, ...chapterEntries] = trimmed.split(/\s+/);
+      if (!bookCode || chapterEntries.length === 0) {
+        return acc;
+      }
+      const normalizedBook = bookCode.toUpperCase();
+      acc[normalizedBook] = acc[normalizedBook] ?? {};
+      chapterEntries.forEach((entry) => {
+        const [chapterStr, verseStr] = entry.split(':');
+        const chapterNum = parseInt(chapterStr, 10);
+        const verseNum = parseInt(verseStr, 10);
+        if (
+          Number.isFinite(chapterNum) &&
+          chapterNum > 0 &&
+          Number.isFinite(verseNum) &&
+          verseNum > 0
+        ) {
+          acc[normalizedBook][chapterNum] = verseNum;
+        }
+      });
+      return acc;
+    }, {});
+  } catch (err) {
+    console.warn(
+      `Unable to load eng.vrs verse data: ${err?.message ?? err ?? 'Unknown error'}`
+    );
+    return {};
+  }
+}
+
+function formatChapterReference(bookCode, chapterValue) {
+  if (!chapterValue && chapterValue !== 0) {
+    return '';
+  }
+  const text = chapterValue.toString().trim();
+  if (!text || !bookCode || text.includes(':')) {
+    return text;
+  }
+  if (!/^\d+$/.test(text)) {
+    return text;
+  }
+
+  const chapterNum = parseInt(text, 10);
+  const normalizedBook = bookCode.toUpperCase();
+  const endingVerse = chapterVerseMap?.[normalizedBook]?.[chapterNum];
+
+  if (!Number.isFinite(endingVerse)) {
+    return text;
+  }
+
+  return `${chapterNum}:1-${endingVerse}`;
+}
 
 // UUID and ID helpers ---------------------------------------------------------
 function generateUUID() {
@@ -159,14 +222,21 @@ function buildAudioReference(ingredient, localizedNames, preferredLocale) {
   const [bookCode, chapters] = Object.entries(scope)[0] ?? [null, []];
   const chapterList = Array.isArray(chapters) ? chapters : [];
   const bookName = buildBookName(bookCode, localizedNames, preferredLocale);
+  const formattedChapters = chapterList
+    .map((chapter) => formatChapterReference(bookCode, chapter))
+    .filter((chapter) => typeof chapter === 'string' && chapter.trim());
+  const chapterDisplay =
+    formattedChapters.length > 0
+      ? formattedChapters.join(', ')
+      : chapterList.join(', ');
   const referenceParts = [];
   const titleParts = [];
 
-  if (bookCode) {
-    referenceParts.push(bookCode);
-  }
-  if (chapterList.length > 0) {
-    referenceParts.push(chapterList.join(', '));
+  // if (bookCode) {
+  //   referenceParts.push(bookCode);
+  // }
+  if (chapterDisplay) {
+    referenceParts.push(chapterDisplay);
   }
 
   if (bookName) {
@@ -174,8 +244,8 @@ function buildAudioReference(ingredient, localizedNames, preferredLocale) {
   } else if (bookCode) {
     titleParts.push(bookCode);
   }
-  if (chapterList.length > 0) {
-    titleParts.push(chapterList.join(', '));
+  if (chapterDisplay) {
+    titleParts.push(chapterDisplay);
   }
 
   return {
@@ -204,10 +274,566 @@ function orderAudioEntries(entries) {
   });
 }
 
+function normalizePathKey(value) {
+  if (!value) {
+    return '';
+  }
+  return value
+    .toString()
+    .replace(/\\/g, '/')
+    .replace(/^\.\/+/, '');
+}
+
+function toSeconds(timestamp) {
+  if (timestamp === null || timestamp === undefined) {
+    return null;
+  }
+  if (typeof timestamp === 'number') {
+    return Number.isFinite(timestamp) ? timestamp : null;
+  }
+  const value = timestamp.toString().trim();
+  if (!value) {
+    return null;
+  }
+  const numeric = Number(value);
+  if (!Number.isNaN(numeric)) {
+    return numeric;
+  }
+  const parts = value.split(':');
+  if (parts.length < 2) {
+    return null;
+  }
+  const secondsPart = parts.pop();
+  const minutesPart = parts.pop();
+  const hoursPart = parts.pop() ?? '0';
+  const seconds = parseFloat(secondsPart ?? '0');
+  const minutes = parseInt(minutesPart ?? '0', 10);
+  const hours = parseInt(hoursPart ?? '0', 10);
+  if ([seconds, minutes, hours].some((part) => Number.isNaN(part))) {
+    return null;
+  }
+  return hours * 3600 + minutes * 60 + seconds;
+}
+
+function parseTimecodeRange(value) {
+  if (!value && value !== 0) {
+    return null;
+  }
+  const candidate = Array.isArray(value) ? value[0] : value;
+  if (candidate === undefined || candidate === null) {
+    return null;
+  }
+
+  if (typeof candidate === 'string') {
+    const [startRaw, endRaw] = candidate.split(/\s*-->\s*/);
+    if (!startRaw || !endRaw) {
+      return null;
+    }
+    const start = toSeconds(startRaw);
+    const end = toSeconds(endRaw);
+    if (start === null || end === null || end <= start) {
+      return null;
+    }
+    return { start, end };
+  }
+
+  if (typeof candidate === 'object') {
+    const startValue =
+      candidate.start ?? candidate.begin ?? candidate.from ?? candidate[0];
+    const endValue =
+      candidate.end ??
+      candidate.stop ??
+      candidate.finish ??
+      candidate.to ??
+      candidate[1];
+    const start = toSeconds(startValue);
+    const end = toSeconds(endValue);
+    if (start === null || end === null || end <= start) {
+      return null;
+    }
+    return { start, end };
+  }
+
+  return null;
+}
+
+function extractReferenceText(record, preferredKeys, skipKey) {
+  const candidates =
+    preferredKeys.length > 0 ? preferredKeys : Object.keys(record);
+  for (const key of candidates) {
+    if (!key || key === skipKey) {
+      continue;
+    }
+    const value = record[key];
+    if (value === undefined || value === null) {
+      continue;
+    }
+    const candidate = Array.isArray(value)
+      ? value.find((item) => typeof item === 'string' && item.trim())
+      : value;
+    if (typeof candidate === 'string' && candidate.trim()) {
+      return candidate.trim();
+    }
+  }
+  return '';
+}
+
+function buildRegionLabel(referenceText, fallbackIndex) {
+  if (referenceText) {
+    const tokens = referenceText.trim().split(/\s+/);
+    const candidate = tokens[tokens.length - 1];
+    if (candidate) {
+      return candidate;
+    }
+  }
+  return fallbackIndex.toString();
+}
+
+function buildNamedSegmentsPayload(regions) {
+  const normalizedRegions = regions
+    .filter(
+      (region) =>
+        region &&
+        Number.isFinite(region.start) &&
+        Number.isFinite(region.end) &&
+        region.end > region.start
+    )
+    .map((region) => ({
+      start: Number(region.start.toFixed(5)),
+      end: Number(region.end.toFixed(5)),
+      label: region.label ?? '',
+    }));
+
+  if (normalizedRegions.length === 0) {
+    return null;
+  }
+
+  const regionInfo = JSON.stringify({ regions: normalizedRegions });
+  return JSON.stringify([
+    { name: 'Verse', regionInfo },
+    { name: 'Transcription', regionInfo },
+    { name: 'BT', regionInfo },
+    { name: 'TRTask', regionInfo: '' },
+  ]);
+}
+
+function buildUsfmEntryMap(entries, ingredients) {
+  const map = new Map();
+  if (!Array.isArray(entries) || !ingredients) {
+    return map;
+  }
+
+  Object.entries(ingredients).forEach(([entryName, ingredient]) => {
+    if (!ingredient || ingredient.mimeType !== 'text/usfm') {
+      return;
+    }
+    const scope = ingredient.scope ?? {};
+    const zipEntry = entries.find((entry) =>
+      normalizePathKey(entry.entryName).endsWith(normalizePathKey(entryName))
+    );
+    if (!zipEntry) {
+      return;
+    }
+    Object.keys(scope).forEach((bookCode) => {
+      if (!bookCode) {
+        return;
+      }
+      const normalizedBook = bookCode.toUpperCase();
+      if (!map.has(normalizedBook)) {
+        map.set(normalizedBook, {
+          entryName,
+          zipEntry,
+        });
+      }
+    });
+  });
+
+  return map;
+}
+
+function createUsfmTextResolver(usfmEntryMap) {
+  const cache = new Map();
+  return function getUsfmText(bookCode) {
+    if (!bookCode) {
+      return null;
+    }
+    const normalizedBook = bookCode.toUpperCase();
+    const record = usfmEntryMap.get(normalizedBook);
+    if (!record) {
+      return null;
+    }
+    if (!cache.has(record.entryName)) {
+      cache.set(
+        record.entryName,
+        record.zipEntry.getData().toString('utf-8').replace(/\r\n?/g, '\n')
+      );
+    }
+    return cache.get(record.entryName);
+  };
+}
+
+function resolveTranscriptionFromScope(scope, getUsfmText) {
+  if (!scope || typeof scope !== 'object' || !getUsfmText) {
+    return '';
+  }
+
+  const segments = [];
+  for (const [bookCode, ranges] of Object.entries(scope)) {
+    const usfmText = getUsfmText(bookCode);
+    if (!usfmText) {
+      continue;
+    }
+    const normalizedRanges =
+      Array.isArray(ranges) && ranges.length > 0 ? ranges : [null];
+    normalizedRanges.forEach((rangeToken) => {
+      const parsedToken = parseScopeToken(rangeToken);
+      if (!parsedToken) {
+        return;
+      }
+
+      if (parsedToken.chapterRange) {
+        for (
+          let chapter = parsedToken.chapterRange.start;
+          chapter <= parsedToken.chapterRange.end;
+          chapter++
+        ) {
+          const chapterContent = extractChapterText(usfmText, chapter);
+          const cleaned = cleanTranscriptionText(chapterContent);
+          if (cleaned) {
+            segments.push(cleaned);
+          }
+        }
+        return;
+      }
+
+      const chapterContent = extractChapterText(usfmText, parsedToken.chapter);
+      if (!chapterContent) {
+        return;
+      }
+
+      if (!parsedToken.startVerse) {
+        const cleaned = cleanTranscriptionText(chapterContent);
+        if (cleaned) {
+          segments.push(cleaned);
+        }
+        return;
+      }
+
+      const verseContent = extractVerseRange(
+        chapterContent,
+        parsedToken.startVerse,
+        parsedToken.endVerse
+      );
+      const cleaned = cleanTranscriptionText(verseContent);
+      if (cleaned) {
+        segments.push(cleaned);
+      }
+    });
+  }
+
+  return segments.join('\n\n').replace(/\s+\n/g, '\n').trim();
+}
+
+function parseScopeToken(token) {
+  if (token === null || token === undefined) {
+    return null;
+  }
+
+  if (typeof token === 'object') {
+    const chapter = parseInt(token.chapter ?? token.c ?? '', 10);
+    if (!Number.isFinite(chapter)) {
+      return null;
+    }
+    const startVerse = parseInt(token.startVerse ?? token.v ?? '', 10);
+    const endVerse = parseInt(token.endVerse ?? token.end ?? '', 10);
+    const normalizedStartVerse = Number.isFinite(startVerse)
+      ? startVerse
+      : null;
+    const normalizedEndVerse = Number.isFinite(endVerse)
+      ? endVerse
+      : normalizedStartVerse;
+    return {
+      chapter,
+      startVerse: normalizedStartVerse,
+      endVerse: normalizedEndVerse,
+    };
+  }
+
+  const text = token.toString().trim();
+  if (!text) {
+    return null;
+  }
+
+  const [chapterPart, versePart] = text.split(':');
+  if (!chapterPart) {
+    return null;
+  }
+
+  if (!versePart && chapterPart.includes('-')) {
+    const [startChapterStr, endChapterStr] = chapterPart.split('-');
+    const startChapter = parseInt(startChapterStr, 10);
+    const endChapter = parseInt(endChapterStr, 10);
+    if (Number.isFinite(startChapter)) {
+      return {
+        chapterRange: {
+          start: startChapter,
+          end: Number.isFinite(endChapter) ? endChapter : startChapter,
+        },
+      };
+    }
+    return null;
+  }
+
+  const chapter = parseInt(chapterPart, 10);
+  if (!Number.isFinite(chapter)) {
+    return null;
+  }
+
+  if (!versePart) {
+    return {
+      chapter,
+      startVerse: null,
+      endVerse: null,
+    };
+  }
+
+  const [startVersePart, endVersePart] = versePart.split('-');
+  const startVerse = parseInt(startVersePart, 10);
+  const endVerse = parseInt(endVersePart, 10);
+
+  if (!Number.isFinite(startVerse)) {
+    return {
+      chapter,
+      startVerse: null,
+      endVerse: null,
+    };
+  }
+
+  return {
+    chapter,
+    startVerse,
+    endVerse: Number.isFinite(endVerse) ? endVerse : startVerse,
+  };
+}
+
+function extractChapterText(usfmText, chapterNumber) {
+  if (!usfmText || !Number.isFinite(chapterNumber)) {
+    return '';
+  }
+
+  const text = usfmText;
+  const chapterPattern = new RegExp(
+    `(?:^|\\n)\\\\c\\s+${chapterNumber}\\b`,
+    'g'
+  );
+  const match = chapterPattern.exec(text);
+  if (!match) {
+    return '';
+  }
+
+  const startIndex = match.index + match[0].length;
+  const nextChapterPattern = /\n\\c\s+\d+\b/g;
+  nextChapterPattern.lastIndex = startIndex;
+  const nextMatch = nextChapterPattern.exec(text);
+  const endIndex = nextMatch ? nextMatch.index : text.length;
+
+  return text.slice(startIndex, endIndex).trim();
+}
+
+function extractVerseRange(chapterContent, startVerse, endVerse) {
+  if (!chapterContent || !Number.isFinite(startVerse)) {
+    return '';
+  }
+
+  const limit = Number.isFinite(endVerse) ? endVerse : startVerse;
+  const versePattern =
+    /\\v\s+([\d]+[a-z]?)[^\S\r\n]?([\s\S]*?)(?=\\v\s+[\d]+[a-z]?|$)/gi;
+  let result = '';
+  let match;
+  while ((match = versePattern.exec(chapterContent)) !== null) {
+    const verseNumber = parseInt(match[1], 10);
+    if (!Number.isFinite(verseNumber)) {
+      continue;
+    }
+    if (verseNumber < startVerse) {
+      continue;
+    }
+    if (verseNumber > limit) {
+      break;
+    }
+    result += match[0];
+  }
+
+  return result.trim() || chapterContent.trim();
+}
+
+function cleanTranscriptionText(input) {
+  if (!input) {
+    return '';
+  }
+
+  let text = input
+    .replace(/\\f\s+.*?\\f\*/gis, ' ')
+    .replace(/\\x\s+.*?\\x\*/gis, ' ')
+    .replace(/\\[a-z0-9]+\*/gi, ' ')
+    .replace(/\\c\s+\d+[^\n]*\n?/gi, ' ')
+    .replace(/\\v\s+(\d+)/gi, '$1 ')
+    .replace(/\\[a-z0-9]+\s*/gi, ' ');
+
+  return text.replace(/\s+/g, ' ').trim();
+}
+
+function extractSegmentsFromAlignment(alignmentJson) {
+  const result = {};
+  if (!alignmentJson || typeof alignmentJson !== 'object') {
+    return result;
+  }
+
+  const records = Array.isArray(alignmentJson.records)
+    ? alignmentJson.records
+    : [];
+  if (records.length === 0) {
+    return result;
+  }
+
+  const documents = alignmentJson.documents ?? {};
+  const documentEntries = Object.entries(documents).filter(
+    ([, doc]) => doc && typeof (doc.docid ?? doc.docId) === 'string'
+  );
+  if (documentEntries.length === 0) {
+    return result;
+  }
+
+  const referenceKeys = Object.entries(documents)
+    .filter(([, doc]) => !doc || (doc.docid ?? doc.docId) === undefined)
+    .map(([key]) => key);
+
+  for (const [docKey, docInfo] of documentEntries) {
+    const docId = docInfo.docid ?? docInfo.docId;
+    if (!docId) {
+      continue;
+    }
+
+    const regions = [];
+    records.forEach((record, index) => {
+      if (!record || typeof record !== 'object') {
+        return;
+      }
+      const timeRange = parseTimecodeRange(record[docKey]);
+      if (!timeRange) {
+        return;
+      }
+      const referenceText = extractReferenceText(record, referenceKeys, docKey);
+      regions.push({
+        start: timeRange.start,
+        end: timeRange.end,
+        label: buildRegionLabel(referenceText, index),
+      });
+    });
+
+    const segmentsPayload = buildNamedSegmentsPayload(regions);
+    if (segmentsPayload) {
+      result[docId] = segmentsPayload;
+    }
+  }
+
+  return result;
+}
+
+function addSegmentVariants(target, docId, payload) {
+  if (!docId || !payload) {
+    return;
+  }
+  const normalized = normalizePathKey(docId);
+  const baseName = path.basename(normalized);
+  const variants = new Set([
+    normalized,
+    docId,
+    baseName,
+    `media/${baseName}`,
+    baseName ? `./${baseName}` : '',
+  ]);
+
+  variants.forEach((variant) => {
+    const key = normalizePathKey(variant);
+    if (key && !target[key]) {
+      target[key] = payload;
+    }
+  });
+}
+
+function buildTimingSegmentMap(zipEntries, ingredients) {
+  const timingSegments = {};
+  const allEntries = zipEntries ?? [];
+
+  for (const [key, ingredient] of Object.entries(ingredients ?? {})) {
+    if ((ingredient?.role ?? '').toLowerCase() !== 'timing') {
+      continue;
+    }
+
+    const entry =
+      allEntries.find((zipEntry) => zipEntry.entryName === key) ||
+      allEntries.find((zipEntry) => zipEntry.entryName.endsWith(key));
+
+    if (!entry) {
+      console.warn(
+        `  Timing file ${key} referenced in metadata was not found in zip`
+      );
+      continue;
+    }
+
+    let alignmentJson;
+    try {
+      alignmentJson = JSON.parse(entry.getData().toString('utf-8'));
+    } catch (err) {
+      console.warn(
+        `  Failed to parse alignment file ${key}: ${err.message ?? err}`
+      );
+      continue;
+    }
+
+    const segmentsByDoc = extractSegmentsFromAlignment(alignmentJson);
+    Object.entries(segmentsByDoc).forEach(([docId, payload]) => {
+      addSegmentVariants(timingSegments, docId, payload);
+    });
+  }
+
+  return timingSegments;
+}
+
+function resolveSegmentsForAudio(timingSegments, audioEntry) {
+  if (!timingSegments || !audioEntry) {
+    return '{}';
+  }
+
+  const filename = audioEntry.filename ?? '';
+  const normalizedKey = normalizePathKey(audioEntry.key);
+  const baseName = path.basename(filename || normalizedKey || '');
+
+  const candidates = [
+    normalizedKey,
+    filename,
+    baseName,
+    `media/${baseName}`,
+    normalizePathKey(`media/${filename}`),
+  ]
+    .filter(Boolean)
+    .map((candidate) => normalizePathKey(candidate));
+
+  for (const candidate of candidates) {
+    if (candidate && timingSegments[candidate]) {
+      return timingSegments[candidate];
+    }
+  }
+
+  return '{}';
+}
+
 // Main transformation ---------------------------------------------------------
 async function transformBurritoToPTF() {
   console.log('Starting Scripture Burrito to PTF transformation...');
 
+  chapterVerseMap = await loadChapterVerseMap();
   const now = DateTime.utc().toISO();
 
   await fs.mkdir(OUTPUT_DIR, { recursive: true });
@@ -260,6 +886,9 @@ async function transformBurritoToPTF() {
       continue;
     }
 
+    const usfmEntryMap = buildUsfmEntryMap(entries, metadata.ingredients ?? {});
+    const getUsfmText = createUsfmTextResolver(usfmEntryMap);
+
     const languageInfo = metadata.languages?.[0] ?? {};
     const defaultLocale = metadata.meta?.defaultLocale ?? 'en';
     const languageTag = languageInfo.tag ?? 'und';
@@ -293,6 +922,10 @@ async function transformBurritoToPTF() {
     }
 
     const localizedNames = metadata.localizedNames ?? {};
+    const timingSegments = buildTimingSegmentMap(
+      entries,
+      metadata.ingredients ?? {}
+    );
     const audioEntries = [];
 
     for (const [key, ingredient] of audioIngredients) {
@@ -722,6 +1355,11 @@ async function transformBurritoToPTF() {
         relationshipIdentifier('passage', passage)
       );
 
+      const transcription = resolveTranscriptionFromScope(
+        audioEntry.ingredient.scope,
+        getUsfmText
+      );
+
       const mediafile = createJsonApiRecord(
         'mediafiles',
         {
@@ -734,11 +1372,11 @@ async function transformBurritoToPTF() {
           'content-type': audioEntry.ingredient.mimeType ?? 'audio/mpeg',
           'audio-quality': '',
           'text-quality': '',
-          transcription: '',
+          transcription: transcription ?? '',
           originalFile: audioFilename,
           filesize: audioEntry.ingredient.size ?? audioBuffer.length,
           position: 0,
-          segments: '{}',
+          segments: resolveSegmentsForAudio(timingSegments, audioEntry),
           languagebcp47: languageTag,
           link: false,
           'ready-to-share': false,
