@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/explicit-function-return-type */
+/* eslint-disable @typescript-eslint/no-require-imports */
 /**
  * OneStory Website Scraper
  *
@@ -13,7 +15,7 @@ const puppeteer = require('puppeteer');
 const fs = require('fs').promises;
 const path = require('path');
 
-const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const ONESTORY_URL = 'https://www.onestory-media.org/';
 const OUTPUT_DIR = './migration-data';
@@ -24,7 +26,7 @@ async function scrapeOneStory() {
   // Launch browser
   const browser = await puppeteer.launch({
     headless: 'new',
-    args: ['--no-sandbox', '--disable-setuid-sandbox']
+    args: ['--no-sandbox', '--disable-setuid-sandbox'],
   });
 
   try {
@@ -32,7 +34,10 @@ async function scrapeOneStory() {
 
     // Navigate to OneStory website
     console.log(`Navigating to ${ONESTORY_URL}...`);
-    await page.goto(ONESTORY_URL, { waitUntil: 'networkidle2', timeout: 60000 });
+    await page.goto(ONESTORY_URL, {
+      waitUntil: 'networkidle2',
+      timeout: 60000,
+    });
 
     // Extract language list and links
     console.log('Extracting language list...');
@@ -40,14 +45,14 @@ async function scrapeOneStory() {
       const languageElements = document.querySelectorAll('ul li');
       const langs = [];
 
-      languageElements.forEach(el => {
+      languageElements.forEach((el) => {
         const text = el.textContent.trim();
         const link = el.querySelector('a');
 
         if (text && text.length > 0) {
           langs.push({
             name: text,
-            url: link ? link.href : null
+            url: link ? link.href : null,
           });
         }
       });
@@ -89,14 +94,17 @@ async function scrapeOneStory() {
         await langPage.setRequestInterception(true);
         const audioRequests = [];
 
-        langPage.on('request', request => {
+        langPage.on('request', (request) => {
           const url = request.url();
           const resourceType = request.resourceType();
 
-          if (resourceType === 'media' || url.match(/\.(mp3|wav|m4a|ogg|aac)(\?|$)/i)) {
+          if (
+            resourceType === 'media' ||
+            url.match(/\.(mp3|wav|m4a|ogg|aac)(\?|$)/i)
+          ) {
             audioRequests.push({
               url: url,
-              type: resourceType
+              type: resourceType,
             });
           }
 
@@ -104,12 +112,14 @@ async function scrapeOneStory() {
         });
 
         // Navigate to language page
-        await langPage.goto(lang.url, {
-          waitUntil: 'networkidle2',
-          timeout: 30000
-        }).catch(err => {
-          console.log(`  Could not load page: ${err.message}`);
-        });
+        await langPage
+          .goto(lang.url, {
+            waitUntil: 'networkidle2',
+            timeout: 30000,
+          })
+          .catch((err) => {
+            console.log(`  Could not load page: ${err.message}`);
+          });
 
         // Wait a bit for any dynamic content
         await delay(2000);
@@ -117,24 +127,26 @@ async function scrapeOneStory() {
         // Look for audio players or download links
         const pageInfo = await langPage.evaluate(() => {
           const audioElements = document.querySelectorAll('audio');
-          const audioTags = Array.from(audioElements).map(a => ({
+          const audioTags = Array.from(audioElements).map((a) => ({
             src: a.src,
-            sources: Array.from(a.querySelectorAll('source')).map(s => s.src)
+            sources: Array.from(a.querySelectorAll('source')).map((s) => s.src),
           }));
 
-          const links = Array.from(document.querySelectorAll('a')).filter(a => {
-            const href = a.href.toLowerCase();
-            return href.match(/\.(mp3|wav|m4a|ogg|aac)(\?|$)/i);
-          }).map(a => ({
-            text: a.textContent.trim(),
-            href: a.href
-          }));
+          const links = Array.from(document.querySelectorAll('a'))
+            .filter((a) => {
+              const href = a.href.toLowerCase();
+              return href.match(/\.(mp3|wav|m4a|ogg|aac)(\?|$)/i);
+            })
+            .map((a) => ({
+              text: a.textContent.trim(),
+              href: a.href,
+            }));
 
           return {
             audioTags,
             downloadLinks: links,
             pageTitle: document.title,
-            pageUrl: window.location.href
+            pageUrl: window.location.href,
           };
         });
 
@@ -142,16 +154,17 @@ async function scrapeOneStory() {
           language: lang.name,
           url: lang.url,
           audioRequests,
-          pageInfo
+          pageInfo,
         });
 
-        console.log(`  Found ${audioRequests.length} audio requests, ${pageInfo.audioTags.length} audio tags, ${pageInfo.downloadLinks.length} download links`);
+        console.log(
+          `  Found ${audioRequests.length} audio requests, ${pageInfo.audioTags.length} audio tags, ${pageInfo.downloadLinks.length} download links`
+        );
 
         await langPage.close();
 
         // Be respectful - add delay between requests
         await delay(1000);
-
       } catch (error) {
         console.error(`  Error processing ${lang.name}: ${error.message}`);
       }
@@ -163,7 +176,9 @@ async function scrapeOneStory() {
       JSON.stringify(audioDiscovery, null, 2)
     );
 
-    console.log(`\nSaved audio discovery to ${OUTPUT_DIR}/audio-discovery.json`);
+    console.log(
+      `\nSaved audio discovery to ${OUTPUT_DIR}/audio-discovery.json`
+    );
 
     // Generate summary report
     const summary = {
@@ -171,13 +186,19 @@ async function scrapeOneStory() {
       totalLanguages: languages.length,
       sampleSize: audioDiscovery.length,
       findings: {
-        languagesWithUrls: languages.filter(l => l.url).length,
-        audioDiscovery: audioDiscovery.map(d => ({
+        languagesWithUrls: languages.filter((l) => l.url).length,
+        audioDiscovery: audioDiscovery.map((d) => ({
           language: d.language,
-          hasAudio: d.audioRequests.length > 0 || d.pageInfo.audioTags.length > 0 || d.pageInfo.downloadLinks.length > 0,
-          audioCount: d.audioRequests.length + d.pageInfo.audioTags.length + d.pageInfo.downloadLinks.length
-        }))
-      }
+          hasAudio:
+            d.audioRequests.length > 0 ||
+            d.pageInfo.audioTags.length > 0 ||
+            d.pageInfo.downloadLinks.length > 0,
+          audioCount:
+            d.audioRequests.length +
+            d.pageInfo.audioTags.length +
+            d.pageInfo.downloadLinks.length,
+        })),
+      },
     };
 
     await fs.writeFile(
@@ -190,10 +211,13 @@ async function scrapeOneStory() {
     console.log(`Sample checked: ${summary.sampleSize}`);
     console.log('\nNext steps:');
     console.log('1. Review the files in ./migration-data/');
-    console.log('2. Check audio-discovery.json to understand the audio file structure');
-    console.log('3. Update the scraper if needed to fully download all audio files');
+    console.log(
+      '2. Check audio-discovery.json to understand the audio file structure'
+    );
+    console.log(
+      '3. Update the scraper if needed to fully download all audio files'
+    );
     console.log('4. Run 02-download-audio.js to download all audio files');
-
   } catch (error) {
     console.error('Error during scraping:', error);
     throw error;
@@ -204,4 +228,3 @@ async function scrapeOneStory() {
 
 // Run the scraper
 scrapeOneStory().catch(console.error);
-

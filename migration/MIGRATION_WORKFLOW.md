@@ -70,6 +70,16 @@
                              │
                              ▼
               ┌─────────────────────────────┐
+              │  STEP 4: AUDIO BURRITOS     │
+              │ (04-generate-audio-burrito) │
+              │                              │
+              │  • Generate metadata.json    │
+              │  • List audio ingredients    │
+              │  • Include checksums/roles   │
+              └──────────────┬───────────────┘
+                             │
+                             ▼
+              ┌─────────────────────────────┐
               │   IMPORT INTO APM           │
               │  (Manual via APM UI)        │
               │                              │
@@ -145,9 +155,10 @@ Language_Name.ptf (ZIP Archive)
 | Scraping | 5-10 min | Website speed |
 | Downloading | 30-120 min | File count, bandwidth |
 | Transformation | 2-5 min | File count |
+| Burrito Metadata | 2-4 min | Downloaded audio + metadata |
 | Import (per language) | 1-3 min | File size |
 
-**Total**: ~1-2 hours for complete migration of all languages
+**Total**: ~1-2 hours for complete migration of all languages (plus a few extra minutes for metadata generation)
 
 ## Resource Requirements
 

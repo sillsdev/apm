@@ -8,7 +8,8 @@
     "scrape": "node 01-scrape-onestory.js",
     "download": "node 02-download-audio.js",
     "transform": "node 03-transform-to-ptf.js",
-    "migrate": "npm run scrape && npm run download && npm run transform",
+    "burrito": "node 04-generate-audio-burrito.js",
+    "migrate": "npm run scrape && npm run download && npm run transform && npm run burrito",
     "start": "npm run verify && npm run migrate"
   },
   "keywords": [

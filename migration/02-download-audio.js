@@ -313,7 +313,7 @@ async function downloadAudioFiles() {
   const audioMetadata = [];
   let totalDownloaded = 0;
 
-  const MaxLanguages = 2;
+  const MaxLanguages = 120;
 
   try {
     for (let i = 0; i < Math.min(languages.length, MaxLanguages); i++) {

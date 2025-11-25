@@ -4,11 +4,12 @@ This directory contains scripts to migrate data from the OneStory website (https
 
 ## Overview
 
-The migration process consists of three main phases:
+The migration process consists of four main phases:
 
 1. **Scraping**: Extract language list and discover audio file locations
 2. **Downloading**: Download all audio files with metadata
 3. **Transformation**: Convert to APM's PTF format
+4. **Burrito Metadata**: Generate Scripture Burrito-compliant `metadata.json` files for each language
 
 ## Prerequisites
 
@@ -33,7 +34,7 @@ npm install
 npm run migrate
 ```
 
-This will run all three phases sequentially.
+This will run all four phases sequentially.
 
 ### Option 2: Run Steps Individually
 
@@ -86,9 +87,23 @@ This will:
 **Output**:
 - `migration-data/ptf-files/` - PTF files ready for import into APM
 
+#### Step 4: Generate Scripture Burrito Metadata
+
+```bash
+npm run burrito
+```
+
+This will:
+- Read the audio metadata and local language folders
+- Create a Scripture Burrito compliant `metadata.json` in each `migration-data/audio/<Language>/` directory
+- Include audio file checksums and ingredient listings for each folder
+
+**Output**:
+- `migration-data/audio/<Language>/metadata.json` - Scripture Burrito metadata for each language's audio set
+
 ## Importing into Audio Project Manager
 
-Once the PTF files are created:
+Once the PTF files are created (and optional Scripture Burrito metadata generated):
 
 1. Open **Audio Project Manager**
 2. Go to **File > Import Project**
