@@ -80,7 +80,9 @@ export function UserMenu(props: IProps) {
     if (user) {
       const stored = localStorage.getItem(localUserKey(LocalKey.mobileView));
       const storedValue = stored === 'true';
-      setMobileView(storedValue);
+      if (storedValue !== mobileView) {
+        setMobileView(storedValue);
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
