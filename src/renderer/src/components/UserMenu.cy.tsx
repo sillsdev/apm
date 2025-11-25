@@ -134,19 +134,10 @@ describe('UserMenu', () => {
     ...overrides,
   });
 
-  beforeEach(() => {
-    // Create a new stub for each test
-    mockAction = cy.stub();
-
-    // Clear localStorage and set up test user
-    cy.window().then((win) => {
-      win.localStorage.clear();
-      win.localStorage.setItem(LocalKey.userId, 'test-user-id');
-    });
-  });
-
-  it('should render the user menu button', () => {
-    const initialState = createInitialState();
+  // Helper function to mount UserMenu with all required providers
+  const mountUserMenu = (
+    initialState: ReturnType<typeof createInitialState>
+  ) => {
     cy.mount(
       <MemoryRouter>
         <Provider store={mockStore}>
@@ -160,25 +151,15 @@ describe('UserMenu', () => {
         </Provider>
       </MemoryRouter>
     );
+  };
 
+  it('should render the user menu button', () => {
+    mountUserMenu(createInitialState());
     cy.get('#userMenu').should('be.visible');
   });
 
   it('should open menu when button is clicked', () => {
-    const initialState = createInitialState();
-    cy.mount(
-      <MemoryRouter>
-        <Provider store={mockStore}>
-          <GlobalProvider init={initialState}>
-            <DataProvider dataStore={mockMemory}>
-              <UnsavedProvider>
-                <UserMenu action={mockAction} />
-              </UnsavedProvider>
-            </DataProvider>
-          </GlobalProvider>
-        </Provider>
-      </MemoryRouter>
-    );
+    mountUserMenu(createInitialState());
 
     cy.get('#userMenu').click();
     cy.get('#custom-user-menu').should('be.visible');
@@ -187,19 +168,7 @@ describe('UserMenu', () => {
 
   it('should display mobile view menu item with unchecked checkbox when mobileView is false', () => {
     const initialState = createInitialState({ mobileView: false });
-    cy.mount(
-      <MemoryRouter>
-        <Provider store={mockStore}>
-          <GlobalProvider init={initialState}>
-            <DataProvider dataStore={mockMemory}>
-              <UnsavedProvider>
-                <UserMenu action={mockAction} />
-              </UnsavedProvider>
-            </DataProvider>
-          </GlobalProvider>
-        </Provider>
-      </MemoryRouter>
-    );
+    mountUserMenu(initialState);
 
     cy.get('#userMenu').click();
     cy.get('#mobileView').should('be.visible');
@@ -220,19 +189,7 @@ describe('UserMenu', () => {
       mobileView: true,
       user: 'test-user-id',
     });
-    cy.mount(
-      <MemoryRouter>
-        <Provider store={mockStore}>
-          <GlobalProvider init={initialState}>
-            <DataProvider dataStore={mockMemory}>
-              <UnsavedProvider>
-                <UserMenu action={mockAction} />
-              </UnsavedProvider>
-            </DataProvider>
-          </GlobalProvider>
-        </Provider>
-      </MemoryRouter>
-    );
+    mountUserMenu(initialState);
 
     // Wait for the sync effect to complete
     cy.wait(100);
@@ -256,19 +213,7 @@ describe('UserMenu', () => {
       mobileView: false,
       user: 'test-user-id',
     });
-    cy.mount(
-      <MemoryRouter>
-        <Provider store={mockStore}>
-          <GlobalProvider init={initialState}>
-            <DataProvider dataStore={mockMemory}>
-              <UnsavedProvider>
-                <UserMenu action={mockAction} />
-              </UnsavedProvider>
-            </DataProvider>
-          </GlobalProvider>
-        </Provider>
-      </MemoryRouter>
-    );
+    mountUserMenu(initialState);
 
     // Wait for the sync effect to complete
     cy.wait(100);
@@ -299,19 +244,7 @@ describe('UserMenu', () => {
 
   it('should persist mobileView to localStorage when toggled', () => {
     const initialState = createInitialState({ mobileView: false });
-    cy.mount(
-      <MemoryRouter>
-        <Provider store={mockStore}>
-          <GlobalProvider init={initialState}>
-            <DataProvider dataStore={mockMemory}>
-              <UnsavedProvider>
-                <UserMenu action={mockAction} />
-              </UnsavedProvider>
-            </DataProvider>
-          </GlobalProvider>
-        </Provider>
-      </MemoryRouter>
-    );
+    mountUserMenu(initialState);
 
     cy.get('#userMenu').click();
     cy.get('#mobileView').click();
@@ -334,19 +267,7 @@ describe('UserMenu', () => {
       mobileView: false,
       user: 'test-user-id',
     });
-    cy.mount(
-      <MemoryRouter>
-        <Provider store={mockStore}>
-          <GlobalProvider init={initialState}>
-            <DataProvider dataStore={mockMemory}>
-              <UnsavedProvider>
-                <UserMenu action={mockAction} />
-              </UnsavedProvider>
-            </DataProvider>
-          </GlobalProvider>
-        </Provider>
-      </MemoryRouter>
-    );
+    mountUserMenu(initialState);
 
     // Wait for sync effect to run
     cy.wait(100);
@@ -359,19 +280,7 @@ describe('UserMenu', () => {
 
   it('should display myAccount menu item', () => {
     const initialState = createInitialState();
-    cy.mount(
-      <MemoryRouter>
-        <Provider store={mockStore}>
-          <GlobalProvider init={initialState}>
-            <DataProvider dataStore={mockMemory}>
-              <UnsavedProvider>
-                <UserMenu action={mockAction} />
-              </UnsavedProvider>
-            </DataProvider>
-          </GlobalProvider>
-        </Provider>
-      </MemoryRouter>
-    );
+    mountUserMenu(initialState);
 
     cy.get('#userMenu').click();
     cy.get('#myAccount').should('be.visible');
@@ -380,19 +289,7 @@ describe('UserMenu', () => {
 
   it('should display logout menu item', () => {
     const initialState = createInitialState();
-    cy.mount(
-      <MemoryRouter>
-        <Provider store={mockStore}>
-          <GlobalProvider init={initialState}>
-            <DataProvider dataStore={mockMemory}>
-              <UnsavedProvider>
-                <UserMenu action={mockAction} />
-              </UnsavedProvider>
-            </DataProvider>
-          </GlobalProvider>
-        </Provider>
-      </MemoryRouter>
-    );
+    mountUserMenu(initialState);
 
     cy.get('#userMenu').click();
     cy.get('#logout').should('be.visible');
@@ -401,19 +298,7 @@ describe('UserMenu', () => {
 
   it('should call action when logout is clicked', () => {
     const initialState = createInitialState();
-    cy.mount(
-      <MemoryRouter>
-        <Provider store={mockStore}>
-          <GlobalProvider init={initialState}>
-            <DataProvider dataStore={mockMemory}>
-              <UnsavedProvider>
-                <UserMenu action={mockAction} />
-              </UnsavedProvider>
-            </DataProvider>
-          </GlobalProvider>
-        </Provider>
-      </MemoryRouter>
-    );
+    mountUserMenu(initialState);
 
     cy.get('#userMenu').click();
     cy.get('#logout').click();
@@ -422,19 +307,7 @@ describe('UserMenu', () => {
 
   it('should display privacy and terms menu items', () => {
     const initialState = createInitialState();
-    cy.mount(
-      <MemoryRouter>
-        <Provider store={mockStore}>
-          <GlobalProvider init={initialState}>
-            <DataProvider dataStore={mockMemory}>
-              <UnsavedProvider>
-                <UserMenu action={mockAction} />
-              </UnsavedProvider>
-            </DataProvider>
-          </GlobalProvider>
-        </Provider>
-      </MemoryRouter>
-    );
+    mountUserMenu(initialState);
 
     cy.get('#userMenu').click();
     cy.get('#privacy').should('be.visible');
@@ -445,19 +318,7 @@ describe('UserMenu', () => {
 
   it('should close menu when privacy is clicked', () => {
     const initialState = createInitialState();
-    cy.mount(
-      <MemoryRouter>
-        <Provider store={mockStore}>
-          <GlobalProvider init={initialState}>
-            <DataProvider dataStore={mockMemory}>
-              <UnsavedProvider>
-                <UserMenu action={mockAction} />
-              </UnsavedProvider>
-            </DataProvider>
-          </GlobalProvider>
-        </Provider>
-      </MemoryRouter>
-    );
+    mountUserMenu(initialState);
 
     cy.get('#userMenu').click();
     cy.get('#privacy').click();
@@ -469,19 +330,7 @@ describe('UserMenu', () => {
 
   it('should close menu when terms is clicked', () => {
     const initialState = createInitialState();
-    cy.mount(
-      <MemoryRouter>
-        <Provider store={mockStore}>
-          <GlobalProvider init={initialState}>
-            <DataProvider dataStore={mockMemory}>
-              <UnsavedProvider>
-                <UserMenu action={mockAction} />
-              </UnsavedProvider>
-            </DataProvider>
-          </GlobalProvider>
-        </Provider>
-      </MemoryRouter>
-    );
+    mountUserMenu(initialState);
 
     cy.get('#userMenu').click();
     cy.get('#terms').click();
