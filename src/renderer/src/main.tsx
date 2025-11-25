@@ -86,6 +86,7 @@ Promise.all(promises)
       releaseDate: '',
       progress: 0,
       playingMediaId: '',
+      mobileView: false,
     };
 
     const root = createRoot(document.getElementById('root') as HTMLElement);

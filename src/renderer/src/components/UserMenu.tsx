@@ -9,6 +9,7 @@ import {
   Divider,
   styled,
   MenuItemProps,
+  Checkbox,
 } from '@mui/material';
 import ExitIcon from '@mui/icons-material/ExitToApp';
 import AccountIcon from '@mui/icons-material/AccountCircle';
@@ -16,7 +17,7 @@ import ClearIcon from '@mui/icons-material/Clear';
 import { StyledMenu, StyledMenuItem } from '../control/StyledMenu';
 import UserAvatar from './UserAvatar';
 import { isElectron } from '../../api-variable';
-import { localizeRole, restoreScroll } from '../utils';
+import { localizeRole, restoreScroll, LocalKey, localUserKey } from '../utils';
 import { useOrbitData } from '../hoc/useOrbitData';
 import { shallowEqual, useSelector } from 'react-redux';
 import { mainSelector, sharedSelector } from '../selector';
@@ -46,6 +47,7 @@ export function UserMenu(props: IProps) {
   const [orgRole] = useGlobal('orgRole'); //verified this is not used in a function 2/18/25
   const [developer] = useGlobal('developer');
   const [user] = useGlobal('user');
+  const [mobileView, setMobileView] = useGlobal('mobileView');
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const [shift, setShift] = React.useState(false);
   const [userRec, setUserRec] = React.useState<UserD | undefined>(undefined);
@@ -73,9 +75,28 @@ export function UserMenu(props: IProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, users, userRec]);
 
+  // Sync mobileView from localStorage once user is available (after authentication)
+  useEffect(() => {
+    if (user) {
+      const stored = localStorage.getItem(localUserKey(LocalKey.mobileView));
+      const storedValue = stored === 'true';
+      if (storedValue !== mobileView) {
+        setMobileView(storedValue);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
+
   const handleAction = (what: string) => () => {
     setAnchorEl(null);
     if (action) action(what);
+  };
+
+  const handleMobileViewToggle = () => {
+    const newValue = !mobileView;
+    setMobileView(newValue);
+    localStorage.setItem(localUserKey(LocalKey.mobileView), String(newValue));
+    setAnchorEl(null);
   };
 
   return (
@@ -113,6 +134,12 @@ export function UserMenu(props: IProps) {
             <AccountIcon fontSize="small" />
           </ListItemIcon>
           <ListItemText primary={t.myAccount} />
+        </StyledMenuItem>
+        <StyledMenuItem id="mobileView" onClick={handleMobileViewToggle}>
+          <ListItemIcon>
+            <Checkbox checked={mobileView} size="small" sx={{ padding: 0 }} />
+          </ListItemIcon>
+          <ListItemText primary={t.mobileView} />
         </StyledMenuItem>
         {shift && !isElectron && (
           <StyledMenuItem id="clearCache" onClick={handleAction('Clear')}>

@@ -4224,6 +4224,13 @@
                <context context-type="sourcefile">drawer.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="main.mobileView">
+            <source>Mobile View</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">drawer.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="main.myAccount">
             <source>My Account</source>
             <target/>

@@ -726,6 +726,7 @@ export interface IMainStrings extends Localize.LocalizedStringsMethods {
   logout: string;
   logos: string;
   media: string;
+  mobileView: string;
   myAccount: string;
   NoLoadOffline: string;
   oops: string;

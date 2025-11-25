@@ -3622,6 +3622,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="main.mobileView">
+         <segment>
+            <source>Mobile View</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="main.myAccount">
          <segment>
             <source>My Account</source>
