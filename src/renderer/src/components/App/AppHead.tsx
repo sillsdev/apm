@@ -181,10 +181,12 @@ export const AppHead = (props: IProps) => {
   const tv: IViewModeStrings = useSelector(viewModeSelector, shallowEqual);
   // Team context (may be undefined on routes not wrapped by TeamProvider)
   // TeamContext may be absent (AppHead used outside TeamProvider on some routes)
-  const rawTeamCtx = useContext(TeamContext as any);
-  const teamCtx = (rawTeamCtx as { state?: any } | undefined)?.state
-    ? (rawTeamCtx as { state?: any })
-    : undefined;
+  // Helper hook to safely get TeamContext if available
+  function useOptionalTeamContext() {
+    const ctx = useContext(TeamContext as any);
+    return ctx && typeof ctx === 'object' && 'state' in ctx ? ctx : undefined;
+  }
+  const teamCtx = useOptionalTeamContext();
   const { teamId } = useParams();
 
   const teamDisplayName = useMemo(() => {
