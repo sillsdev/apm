@@ -8,7 +8,7 @@ import { useSelector, shallowEqual } from 'react-redux';
 import { IState } from './model';
 import { getDataGridLocale } from './utils/dataGridLocale';
 import { useMemo } from 'react';
-export const HeadHeight = 64;
+export const HeadHeight = 56;
 
 function App(): JSX.Element {
   const lang = useSelector((state: IState) => state.strings.lang, shallowEqual);

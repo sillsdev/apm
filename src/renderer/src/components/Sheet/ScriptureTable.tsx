@@ -41,10 +41,8 @@ import * as actions from '../../store';
 import Memory from '@orbit/memory';
 import JSONAPISource from '@orbit/jsonapi';
 import { Badge, Box, Link } from '@mui/material';
-import useMediaQuery from '@mui/material/useMediaQuery';
 import { useSnackBar } from '../../hoc/SnackBar';
 import PlanSheet, { ICell, ICellChange } from './PlanSheet';
-import { PlanView } from './PlanView';
 import {
   remoteIdNum,
   related,
@@ -314,8 +312,6 @@ export function ScriptureTable(props: IProps) {
   const secNumCol = React.useMemo(() => {
     return colNames.indexOf('sectionSeq');
   }, [colNames]);
-
-  const isMobile = useMediaQuery('(max-width:600px)');
 
   const firstBook = useMemo(
     () =>
@@ -1471,6 +1467,7 @@ export function ScriptureTable(props: IProps) {
         plan,
         sections,
         passages,
+        passagesD: passages,
         organizationSchemeSteps,
         flat,
         projectShared: shared,
@@ -2030,49 +2027,45 @@ export function ScriptureTable(props: IProps) {
   };
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-      {isMobile ? (
-        <PlanView rowInfo={rowinfo} bookMap={bookMap} />
-      ) : (
-        <PlanSheet
-          {...props}
-          columns={columns}
-          colSlugs={colNames}
-          rowData={rowdata}
-          rowInfo={rowinfo}
-          bookMap={bookMap}
-          bookSuggestions={bookSuggestions}
-          firstMovement={firstMovement}
-          action={handleDelete}
-          addSection={addSection}
-          addPassage={addPassage}
-          movePassage={movePassage}
-          moveSection={moveSection}
-          updateData={updateData}
-          updateTitleMedia={updateTitleMedia}
-          paste={handleTablePaste}
-          lookupBook={handleLookupBook}
-          resequence={handleResequence}
-          inlinePassages={flat}
-          onAudacity={handleAudacity}
-          onPassageDetail={handlePassageDetail}
-          onAssign={handleAssign}
-          onUpload={handleUpload}
-          onRecord={handleRecord}
-          onEdit={handleEdit}
-          onHistory={handleVersions}
-          onGraphic={handleGraphic}
-          onFilterChange={onFilterChange}
-          onFirstMovement={onFirstMovement}
-          filterState={filterState}
-          minimumSection={minSection}
-          maximumSection={sheet[sheet.length - 1]?.sectionSeq ?? 0}
-          orgSteps={orgSteps}
-          canSetDefault={canSetProjectDefault}
-          toolId={toolId}
-          onPublishing={onPublishing}
-          setSectionPublish={setSectionPublish}
-        />
-      )}
+      <PlanSheet
+        {...props}
+        columns={columns}
+        colSlugs={colNames}
+        rowData={rowdata}
+        rowInfo={rowinfo}
+        bookMap={bookMap}
+        bookSuggestions={bookSuggestions}
+        firstMovement={firstMovement}
+        action={handleDelete}
+        addSection={addSection}
+        addPassage={addPassage}
+        movePassage={movePassage}
+        moveSection={moveSection}
+        updateData={updateData}
+        updateTitleMedia={updateTitleMedia}
+        paste={handleTablePaste}
+        lookupBook={handleLookupBook}
+        resequence={handleResequence}
+        inlinePassages={flat}
+        onAudacity={handleAudacity}
+        onPassageDetail={handlePassageDetail}
+        onAssign={handleAssign}
+        onUpload={handleUpload}
+        onRecord={handleRecord}
+        onEdit={handleEdit}
+        onHistory={handleVersions}
+        onGraphic={handleGraphic}
+        onFilterChange={onFilterChange}
+        onFirstMovement={onFirstMovement}
+        filterState={filterState}
+        minimumSection={minSection}
+        maximumSection={sheet[sheet.length - 1]?.sectionSeq ?? 0}
+        orgSteps={orgSteps}
+        canSetDefault={canSetProjectDefault}
+        toolId={toolId}
+        onPublishing={onPublishing}
+        setSectionPublish={setSectionPublish}
+      />
       {assignSectionVisible && (
         <AssignSection
           scheme={getScheme(assignSections) as string}

@@ -85,6 +85,7 @@ export function UserMenu(props: IProps) {
         aria-controls="custom-user-menu"
         aria-haspopup="true"
         onClick={handleClick}
+        size="small"
       >
         <UserAvatar userRec={userRec} />
       </Button>
