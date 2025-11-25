@@ -785,6 +785,7 @@ const initialState = {
       logout: 'Log Out',
       logos: 'Access Logos Resources',
       media: 'Audio',
+      mobileView: 'Mobile View',
       myAccount: 'My Account',
       NoLoadOffline: 'Unable to load audio project data offline.',
       oops: 'Oops!',

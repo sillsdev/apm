@@ -46,6 +46,7 @@ export interface GlobalState {
   snackAlert: AlertSeverity | undefined; //verified //SnackBar
   snackMessage: JSX.Element; //verified //SnackBar
   offline: boolean;
+  mobileView: boolean; //verified //UserMenu - toggle mobile view
 }
 
 export type GlobalKey = keyof GlobalState;

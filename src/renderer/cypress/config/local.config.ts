@@ -22,6 +22,12 @@ const config = {
     devServer: {
       framework: 'react',
       bundler: 'vite',
+      viteConfig: {
+        define: {
+          'process.env.NODE_ENV': JSON.stringify('test'),
+          'process.env.FA_VERSION': JSON.stringify('test-version'),
+        },
+      },
     },
   },
 };

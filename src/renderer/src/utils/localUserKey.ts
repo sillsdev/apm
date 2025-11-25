@@ -31,6 +31,7 @@ export enum LocalKey {
   mode = 'mode', // last mode (online-cloud or online-local)
   fontData = 'fontData', // last font data
   microphoneId = 'microphone-id', // preferred recording input
+  mobileView = 'mobileView', // toggle mobile view
 }
 
 export const localUserKey = (id: LocalKey): string => {
