@@ -39,6 +39,7 @@ const createMockMemory = (orgData?: OrganizationD): Memory => {
             // Return undefined for other record types (user, role, etc.)
             return undefined;
           },
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
           findRecords: (_type: string) => {
             // Return empty array for all findRecords queries
             // This is used by useRole for roles, organizationmembership, etc.
@@ -395,14 +396,8 @@ describe('OrgHead', () => {
   });
 
   it('should use mobile width styling when isMobileWidth returns true', () => {
-    // Mock isMobileWidth to return true
-    cy.window().then((win) => {
-      Object.defineProperty(win, 'innerWidth', {
-        writable: true,
-        configurable: true,
-        value: 400,
-      });
-    });
+    // Set viewport to mobile size (below 'sm' breakpoint which is 600px)
+    cy.viewport(400, 800);
 
     const orgId = 'test-org-id';
     const orgName = 'Test Organization';
@@ -412,5 +407,27 @@ describe('OrgHead', () => {
 
     // The component should render (mobile width affects maxWidth CSS)
     cy.contains(orgName).should('be.visible');
+    // Verify the Typography has mobile width constraint (maxWidth: 170px on mobile)
+    cy.contains(orgName)
+      .should('have.css', 'max-width')
+      .and('match', /170px|10.625rem/);
+  });
+
+  it('should use desktop width styling when not on mobile device', () => {
+    // Set viewport to desktop size (above 'sm' breakpoint)
+    cy.viewport(1024, 768);
+
+    const orgId = 'test-org-id';
+    const orgName = 'Test Organization';
+    const orgData = createMockOrganization(orgId, orgName);
+
+    mountOrgHead(createInitialState(), ['/team'], orgId, orgData);
+
+    // The component should render
+    cy.contains(orgName).should('be.visible');
+    // Verify the Typography has desktop width constraint (maxWidth: 800px on desktop)
+    cy.contains(orgName)
+      .should('have.css', 'max-width')
+      .and('match', /800px|50rem/);
   });
 });

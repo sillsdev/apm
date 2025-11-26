@@ -368,15 +368,66 @@ describe('AppHead', () => {
     cy.contains('Audio Project Manager').should('be.visible');
   });
 
-  it('should render OrgHead in mobile view', () => {
+  it('should render OrgHead in mobile view when mobileView is true', () => {
     mountAppHead(createInitialState({ mobileView: true }), ['/team']);
 
     cy.wait(500);
-    // Use flexible selector like the passing test
-    cy.get('body').within(() => {
-      cy.get('[role="banner"], nav, header', { timeout: 5000 }).should('exist');
-    });
     // In mobile view, OrgHead should be rendered
+    // OrgHead contains organization name or product name
+    cy.get('header', { timeout: 5000 }).should('exist');
+    // Verify mobile layout: should have ApmLogo button
+    cy.get('header button').first().should('be.visible');
+    // Verify UserMenu is rendered with small prop in mobile view
+    cy.get('#userMenu').should('be.visible');
+  });
+
+  it('should render mobile version when on mobile device (isMobileWidth)', () => {
+    // Set viewport to mobile size (below 'sm' breakpoint which is 600px)
+    cy.viewport(400, 800);
+
+    mountAppHead(createInitialState(), ['/team']);
+
+    cy.wait(500);
+    // Should render mobile version with OrgHead
+    cy.get('header', { timeout: 5000 }).should('exist');
+    // Mobile version should have ApmLogo button
+    cy.get('header button').first().should('be.visible');
+    // UserMenu should be visible in mobile view
+    cy.get('#userMenu').should('be.visible');
+  });
+
+  it('should render desktop version when not mobile and mobileView is false', () => {
+    // Ensure desktop viewport
+    cy.viewport(1024, 768);
+
+    mountAppHead(createInitialState({ mobileView: false }), ['/']);
+
+    cy.wait(500);
+    // Desktop version should render
+    cy.get('header', { timeout: 5000 }).should('exist');
+    // Desktop version should show product name on home route
+    cy.contains('Audio Project Manager').should('be.visible');
+  });
+
+  it('should not show desktop ProjectName component in mobile view', () => {
+    // Set viewport to mobile size
+    cy.viewport(400, 800);
+
+    mountAppHead(
+      createInitialState({
+        home: false,
+        orgRole: 'Admin',
+        plan: 'test-plan-id',
+      }),
+      ['/plan/test-project/test-plan'],
+      { switchTo: true }
+    );
+
+    cy.wait(500);
+    // Desktop ProjectName component (with home button) should not be visible in mobile view
+    cy.get('#home').should('not.exist');
+    // Mobile version should show OrgHead instead
+    cy.get('header', { timeout: 5000 }).should('exist');
   });
 
   it('should render home button when not on home and has orgRole', () => {

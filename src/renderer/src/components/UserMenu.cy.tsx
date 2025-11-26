@@ -278,6 +278,21 @@ describe('UserMenu', () => {
     });
   });
 
+  it('should not display mobile view menu item when on mobile device', () => {
+    // Set viewport to mobile size (below 'sm' breakpoint which is 600px)
+    cy.viewport(400, 800);
+
+    const initialState = createInitialState({ mobileView: false });
+    mountUserMenu(initialState);
+
+    cy.get('#userMenu').click();
+    // Mobile view option should not be visible on mobile devices
+    cy.get('#mobileView').should('not.exist');
+    // But other menu items should still be visible
+    cy.contains('My Account').should('be.visible');
+    cy.contains('Logout').should('be.visible');
+  });
+
   it('should display myAccount menu item', () => {
     const initialState = createInitialState();
     mountUserMenu(initialState);

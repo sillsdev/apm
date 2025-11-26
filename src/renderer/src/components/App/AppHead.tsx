@@ -18,6 +18,8 @@ import {
   Tooltip,
   Box,
   Button,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
 import HomeIcon from '@mui/icons-material/Home';
 import SystemUpdateIcon from '@mui/icons-material/SystemUpdateAlt';
@@ -138,6 +140,8 @@ export const AppHead = (props: IProps) => {
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
   const { pathname } = useLocation();
   const navigate = useMyNavigate();
+  const theme = useTheme();
+  const isMobileWidth = useMediaQuery(theme.breakpoints.down('sm'));
   const offlineProjects = useOrbitData<OfflineProject[]>('offlineproject');
   const [hasOfflineProjects, setHasOfflineProjects] = useState(false);
   const [home] = useGlobal('home'); //verified this is not used in a function 2/18/25
@@ -486,7 +490,7 @@ export const AppHead = (props: IProps) => {
   if (view === 'Access') setTimeout(() => navigate('/'), 200);
   if (view === 'Terms') navigate('/terms');
   if (view === 'Privacy') navigate('/privacy');
-  return !mobileView ? (
+  return !mobileView && !isMobileWidth ? (
     <AppBar
       position="fixed"
       sx={{ width: '100%', display: 'flex' }}
