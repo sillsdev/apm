@@ -25,7 +25,9 @@ export const useCommitTeamSettings = () => {
           values.team.id
         );
 
-    teamUpdate(values.team);
+    if (typeof teamUpdate === 'function') {
+      teamUpdate(values.team);
+    }
     if (values.resetProjectPermissions)
       await resetProjectPermissions(values.team.id);
     cb && (await cb(values.team.id));
