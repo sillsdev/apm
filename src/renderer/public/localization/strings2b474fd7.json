@@ -1439,6 +1439,8 @@
   "cards": {
     "en": {
       "add": "Add",
+      "addNewProject": "Add New Project...",
+      "addNewTeam": "Add New Team...",
       "addTeam": "Add Team",
       "bibleid": "Bible Id",
       "bibleidexists": "Bible Id already exists. Please contact support if you need to work on this Bible.",
@@ -1475,6 +1477,7 @@
       "members": "Members ({0})",
       "nameInUse": "Name in use",
       "newProject": "New Audio Project",
+      "noProjects": "No projects yet.",
       "normalize": "Audio Normalize",
       "notesLabel": "Introductory Notes Title",
       "OBS": "Storying",
@@ -1499,6 +1502,7 @@
       "sectionStatus": "{0} {1}",
       "settings": "Settings",
       "sortProjects": "Sort Projects",
+      "switchTeams": "Switch Teams",
       "notesHelper": "Shared explanations, rationales, footnotes, etc.",
       "notesProject": "Project with Notes",
       "projectPermissions": "Permissions may be set for projects of this team.",

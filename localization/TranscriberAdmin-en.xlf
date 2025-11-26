@@ -688,6 +688,18 @@
             <target/>
          </segment>
       </unit>
+      <unit id="cards.addNewProject">
+         <segment>
+            <source>Add New Project...</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="cards.addNewTeam">
+         <segment>
+            <source>Add New Team...</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="cards.addTeam">
          <segment>
             <source>Add Team</source>
@@ -904,6 +916,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="cards.noProjects">
+         <segment>
+            <source>No projects yet.</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="cards.normalize">
          <segment>
             <source>Audio Normalize</source>
@@ -1045,6 +1063,12 @@
       <unit id="cards.sortProjects">
          <segment>
             <source>Sort Projects</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="cards.switchTeams">
+         <segment>
+            <source>Switch Teams</source>
             <target/>
          </segment>
       </unit>

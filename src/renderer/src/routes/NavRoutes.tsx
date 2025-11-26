@@ -26,6 +26,7 @@ import { BurritoStep } from './BurritoStep';
 import { BurritoBooks } from './BurritoBooks';
 import { BurritoContents } from './BurritoContents';
 import { BurritoWrapper } from './BurritoWrapper';
+import SwitchTeams from './SwitchTeams';
 
 const routes = createRoutesFromElements([
   <Route key="error" errorElement={<ErrorPage />}>
@@ -83,6 +84,11 @@ const routes = createRoutesFromElements([
       key="plan"
       path="/plan/:prjId/:tabNm"
       element={<Auth el={<Plan />} />}
+    />
+    <Route
+      key="switch-teams"
+      path="/switch-teams"
+      element={<Auth el={<SwitchTeams />} />}
     />
     <Route
       key="work-detail"

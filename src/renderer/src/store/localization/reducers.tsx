@@ -165,6 +165,8 @@ const initialState = {
   cards: new LocalizedStrings({
     en: {
       add: 'Add',
+      addNewProject: 'Add New Project...',
+      addNewTeam: 'Add New Team...',
       addTeam: 'Add Team',
       bibleid: 'Bible Id',
       bibleidexists:
@@ -206,6 +208,7 @@ const initialState = {
       members: 'Members ({0})',
       nameInUse: 'Name in use',
       newProject: 'New Audio Project',
+      noProjects: 'No projects yet.',
       normalize: 'Audio Normalize',
       notesLabel: 'Introductory Notes Title',
       OBS: 'Storying',
@@ -231,6 +234,7 @@ const initialState = {
       sectionStatus: '{0} {1}',
       settings: 'Settings',
       sortProjects: 'Sort Projects',
+      switchTeams: 'Switch Teams',
       notesHelper: 'Shared explanations, rationales, footnotes, etc.',
       notesProject: 'Project with Notes',
       projectPermissions: 'Permissions may be set for projects of this team.',
