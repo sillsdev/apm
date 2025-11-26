@@ -39,10 +39,9 @@ const createMockMemory = (orgData?: OrganizationD): Memory => {
             // Return undefined for other record types (user, role, etc.)
             return undefined;
           },
-          findRecords: (type: string) => {
+          findRecords: (_type: string) => {
             // Return empty array for all findRecords queries
             // This is used by useRole for roles, organizationmembership, etc.
-            void type; // Acknowledge parameter for type signature compatibility
             return [];
           },
         };
