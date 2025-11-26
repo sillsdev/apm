@@ -41,21 +41,6 @@ import { mount } from 'cypress/react';
 
 Cypress.Commands.add('mount', mount);
 
-// Handle uncaught exceptions that might occur during module loading
-// This is particularly important for components that have circular dependencies
-Cypress.on('uncaught:exception', (err) => {
-  // Ignore errors related to lexical declaration initialization
-  // These often occur due to circular dependencies during module loading
-  if (
-    err.message.includes("can't access lexical declaration") ||
-    err.message.includes('before initialization')
-  ) {
-    return false; // Prevent Cypress from failing the test
-  }
-  // Let other errors fail the test
-  return true;
-});
-
 // Set up import.meta.env for Vite environment variables
 try {
   if (typeof import.meta !== 'undefined') {

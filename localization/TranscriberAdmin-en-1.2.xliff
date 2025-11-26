@@ -1144,6 +1144,13 @@
                <context context-type="sourcefile">AddCard.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="cards.personal">
+            <source>Personal</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">addCard.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="cards.personalProjects">
             <source>Personal Audio Projects</source>
             <target/>
@@ -1275,6 +1282,13 @@
             <target/>
             <context-group>
                <context context-type="sourcefile">ProjectButtons.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="cards.teams">
+            <source>Teams</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">addCard.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="cards.teamName">

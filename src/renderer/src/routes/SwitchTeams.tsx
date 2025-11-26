@@ -31,75 +31,109 @@ import { validateEmail } from '../utils/validateEmail';
 import { axiosPost } from '../utils/axios';
 import { LocalKey, localUserKey } from '../utils';
 
+interface ISettingsButtonProps {
+  label: string;
+  onOpenSettings: () => void;
+}
+
+const SettingsButton = ({ label, onOpenSettings }: ISettingsButtonProps) => {
+  const theme = useTheme();
+  const bgColor = theme.palette.primary.light;
+  const contrastColor = theme.palette.getContrastText(bgColor);
+
+  return (
+    <IconButton
+      size="small"
+      aria-label={label + ' settings'}
+      onClick={(e) => {
+        e.stopPropagation();
+        onOpenSettings();
+      }}
+      sx={(theme) => ({
+        color: theme.palette.primary.light,
+        transition: 'background-color .2s, color .2s',
+        '&:hover': {
+          color: contrastColor,
+          backgroundColor: alpha(theme.palette.common.white, 0.25),
+        },
+        '&:focus-visible': {
+          color: contrastColor,
+          backgroundColor: alpha(theme.palette.common.white, 0.4),
+        },
+      })}
+      data-testid={label + '-settings'}
+    >
+      <SettingsIcon fontSize="small" />
+    </IconButton>
+  );
+};
+
+interface ITeamCardProps {
+  label: string;
+  teamId: string;
+  name: string;
+  onOpenSettings: () => void;
+}
+const TeamCard = ({ label, teamId, name, onOpenSettings }: ITeamCardProps) => {
+  const theme = useTheme();
+  const bgColor = theme.palette.primary.light;
+  const contrastColor = theme.palette.getContrastText(bgColor);
+  const navigate = useMyNavigate();
+  return (
+    <Card
+      sx={{ bgcolor: bgColor, color: contrastColor, p: 0 }}
+      elevation={1}
+      data-testid={label + '-row'}
+      onClick={() => {
+        localStorage.setItem(localUserKey(LocalKey.team), teamId);
+        navigate('/team');
+      }}
+      style={{ cursor: 'pointer' }}
+    >
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          minHeight: 56,
+          px: 2,
+        }}
+      >
+        <Typography
+          sx={{
+            flexGrow: 1,
+            display: 'flex',
+            alignItems: 'center',
+            color: 'inherit',
+            fontWeight: 500,
+            lineHeight: 1.2,
+          }}
+        >
+          {name}
+        </Typography>
+        <SettingsButton label={label} onOpenSettings={onOpenSettings} />
+      </Box>
+    </Card>
+  );
+};
+
 interface IPersonalSectionProps {
   onOpenSettings: () => void;
 }
 const PersonalSection = ({ onOpenSettings }: IPersonalSectionProps) => {
   const ctx = React.useContext(TeamContext);
-  const { personalProjects, cardStrings, personalTeam } = ctx.state;
-  const theme = useTheme();
-  const bgColor = theme.palette.primary.light;
-  const contrastColor = theme.palette.getContrastText(bgColor);
-  const navigate = useMyNavigate();
-  if (personalProjects.length === 0) return null;
+  const { cardStrings, personalTeam } = ctx.state;
+
   return (
     <Stack spacing={1} data-testid="personal-section">
-      <Typography variant="h6">Personal</Typography>
-      <Card
-        sx={{ bgcolor: bgColor, color: contrastColor, p: 0 }}
-        elevation={1}
-        data-testid="personal-row"
-        onClick={() => {
-          localStorage.setItem(localUserKey(LocalKey.team), personalTeam);
-          navigate('/team');
-        }}
-        style={{ cursor: 'pointer' }}
-      >
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            minHeight: 56,
-            px: 2,
-          }}
-        >
-          <Typography
-            sx={{
-              flexGrow: 1,
-              display: 'flex',
-              alignItems: 'center',
-              color: 'inherit',
-              fontWeight: 500,
-              lineHeight: 1.2,
-            }}
-          >
-            {cardStrings?.personalProjects || 'Personal Audio Projects'}
-          </Typography>
-          <IconButton
-            size="small"
-            aria-label="personal settings"
-            onClick={(e) => {
-              e.stopPropagation();
-              onOpenSettings();
-            }}
-            sx={(theme) => ({
-              color: theme.palette.primary.light,
-              transition: 'background-color .2s, color .2s',
-              '&:hover': {
-                color: contrastColor,
-                backgroundColor: alpha(theme.palette.common.white, 0.25),
-              },
-              '&:focus-visible': {
-                color: contrastColor,
-                backgroundColor: alpha(theme.palette.common.white, 0.0),
-              },
-            })}
-            data-testid="personal-settings"
-          >
-            <SettingsIcon fontSize="small" />
-          </IconButton>
-        </Box>
-      </Card>
+      <Typography variant="h6">
+        {cardStrings?.personal || 'Personal'}
+      </Typography>
+      <TeamCard
+        label="personal"
+        teamId={personalTeam}
+        name={cardStrings?.personalProjects || 'Personal Audio Projects'}
+        onOpenSettings={onOpenSettings}
+      />
     </Stack>
   );
 };
@@ -109,74 +143,20 @@ interface ITeamsSectionProps {
 }
 const TeamsSection = ({ onOpenSettings }: ITeamsSectionProps) => {
   const ctx = React.useContext(TeamContext);
-  const { teams } = ctx.state;
-  const theme = useTheme();
-  const bgColor = theme.palette.primary.light;
-  const contrastColor = theme.palette.getContrastText(bgColor);
-  const navigate = useMyNavigate();
+  const { teams, cardStrings } = ctx.state;
 
-  const handleTeamClick = (teamId: string) => {
-    localStorage.setItem(localUserKey(LocalKey.team), teamId);
-    navigate(`/team`);
-  };
   return (
     <Stack spacing={1} data-testid="teams-section">
-      <Typography variant="h6">Teams</Typography>
+      <Typography variant="h6">{cardStrings?.teams || 'Teams'}</Typography>
       <Stack spacing={1}>
         {teams.map((t) => (
-          <Card
+          <TeamCard
             key={t.id}
-            sx={{ bgcolor: bgColor, color: contrastColor, p: 0 }}
-            elevation={1}
-            data-testid={`team-${t.id}`}
-            onClick={() => handleTeamClick(t.id)}
-            style={{ cursor: 'pointer' }}
-          >
-            <Box
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                minHeight: 56,
-                px: 2,
-              }}
-            >
-              <Typography
-                sx={{
-                  flexGrow: 1,
-                  display: 'flex',
-                  alignItems: 'center',
-                  color: 'inherit',
-                  fontWeight: 500,
-                  lineHeight: 1.2,
-                }}
-              >
-                {t.attributes?.name || 'Unnamed Team'}
-              </Typography>
-              <IconButton
-                size="small"
-                aria-label="team settings"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onOpenSettings(t.id);
-                }}
-                sx={(theme) => ({
-                  color: theme.palette.primary.light,
-                  transition: 'background-color .2s, color .2s',
-                  '&:hover': {
-                    color: contrastColor,
-                    backgroundColor: alpha(theme.palette.common.white, 0.25),
-                  },
-                  '&:focus-visible': {
-                    color: contrastColor,
-                    backgroundColor: alpha(theme.palette.common.white, 0.0),
-                  },
-                })}
-                data-testid={`team-settings-${t.id}`}
-              >
-                <SettingsIcon fontSize="small" />
-              </IconButton>
-            </Box>
-          </Card>
+            label="team"
+            teamId={t.id}
+            name={t.attributes?.name || 'Unnamed Team'}
+            onOpenSettings={() => onOpenSettings(t.id)}
+          />
         ))}
       </Stack>
     </Stack>
@@ -193,6 +173,7 @@ const FloatingActions = () => {
   const { userIsSharedContentAdmin } = useRole();
   const tokenctx = React.useContext(TokenContext).state;
   const { showMessage } = useSnackBar();
+  const navigate = useMyNavigate();
 
   // Dialog states
   const [openAdd, setOpenAdd] = React.useState(false);
@@ -314,7 +295,7 @@ const FloatingActions = () => {
             <Button
               id="Error"
               variant="outlined"
-              onClick={() => (window.location.hash = '#/error')}
+              onClick={() => navigate('/error')}
               sx={(theme) => ({
                 minWidth: 80,
                 bgcolor: theme.palette.common.white,
@@ -354,7 +335,6 @@ const FloatingActions = () => {
               margin="normal"
               required
               variant="filled"
-              sx={{ width: '280px' }}
               fullWidth
             />
           }
