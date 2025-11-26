@@ -3,6 +3,7 @@ export enum BigDialogBp {
   'md',
   'lg',
   'xl',
+  'mobile',
 }
 
 export default BigDialogBp;

@@ -1,6 +1,7 @@
 import { isElectron } from '../../api-variable';
 
 export enum LocalKey {
+  team = 'team', // last team selected
   time = 'lastTime', //datachanges last done
   url = 'fromUrl', //last place specific user was so we can go back there
   deeplink = 'deeplink', //specific path was requested in browser url - we may not know the user.  Do NOT use LocalUserKey with deeplink

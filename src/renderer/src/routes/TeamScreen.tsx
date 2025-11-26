@@ -73,20 +73,22 @@ export const TeamScreen = () => {
 
   return (
     <Box sx={{ width: '100%' }}>
-      <AppHead />
       <TeamProvider>
-        <Grid
-          container
-          id="TeamScreen"
-          sx={{ display: 'flex', paddingTop: '80px' }}
-        >
-          <Grid size={{ xs: 6, md: 3, lg: 2 }}>
-            <TeamActions />
+        <>
+          <AppHead />
+          <Grid
+            container
+            id="TeamScreen"
+            sx={{ display: 'flex', paddingTop: '80px' }}
+          >
+            <Grid size={{ xs: 6, md: 3, lg: 2 }}>
+              <TeamActions />
+            </Grid>
+            <Grid size={{ xs: 12, md: 9, lg: 10 }}>
+              <TeamProjects />
+            </Grid>
           </Grid>
-          <Grid size={{ xs: 12, md: 9, lg: 10 }}>
-            <TeamProjects />
-          </Grid>
-        </Grid>
+        </>
       </TeamProvider>
     </Box>
   );

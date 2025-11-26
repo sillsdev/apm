@@ -36,45 +36,53 @@ export const StyledDialog = styled(Dialog, {
     paddingBottom: 0,
   },
   '& #bigClose': { alignSelf: 'flex-start' },
-  ...(bp === BigDialogBp.sm
+  ...(bp === BigDialogBp.mobile
     ? {
         '& .MuiDialog-paper': {
           maxWidth: '90%',
-          minWidth: '600px',
+          minWidth: '300px',
           minHeight: '50%',
         },
       }
-    : bp === BigDialogBp.md
+    : bp === BigDialogBp.sm
       ? {
           '& .MuiDialog-paper': {
             maxWidth: '90%',
-            minHeight: '80%',
-            minWidth: '960px',
+            minWidth: '600px',
+            minHeight: '50%',
           },
         }
-      : bp === BigDialogBp.lg
+      : bp === BigDialogBp.md
         ? {
             '& .MuiDialog-paper': {
               maxWidth: '90%',
               minHeight: '80%',
-              minWidth: '1280px',
+              minWidth: '960px',
             },
           }
-        : bp === BigDialogBp.xl
+        : bp === BigDialogBp.lg
           ? {
               '& .MuiDialog-paper': {
                 maxWidth: '90%',
                 minHeight: '80%',
-                minWidth: '1920px',
+                minWidth: '1280px',
               },
             }
-          : {
-              '& .MuiDialog-paper': {
-                maxWidth: '90%',
-                minWidth: '600px',
-                minHeight: '80%',
-              },
-            }),
+          : bp === BigDialogBp.xl
+            ? {
+                '& .MuiDialog-paper': {
+                  maxWidth: '90%',
+                  minHeight: '80%',
+                  minWidth: '1920px',
+                },
+              }
+            : {
+                '& .MuiDialog-paper': {
+                  maxWidth: '90%',
+                  minWidth: '600px',
+                  minHeight: '80%',
+                },
+              }),
 }));
 // eslint-enable-block
 

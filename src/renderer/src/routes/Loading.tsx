@@ -251,6 +251,7 @@ export function Loading() {
       setProject(projectId);
       const orgId = related(projRec, 'organization') as string;
       setOrganization(orgId);
+      localStorage.setItem(localUserKey(LocalKey.team), orgId);
       setMyOrgRole(orgId);
       setProjectType(projectId);
       setPlan(planId);
