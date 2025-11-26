@@ -49,7 +49,10 @@ const PersonalSection = ({ onOpenSettings }: IPersonalSectionProps) => {
         sx={{ bgcolor: bgColor, color: contrastColor, p: 0 }}
         elevation={1}
         data-testid="personal-row"
-        onClick={() => navigate(`/projects/${personalTeam}`)}
+        onClick={() => {
+          localStorage.setItem(localUserKey(LocalKey.team), personalTeam);
+          navigate('/team');
+        }}
         style={{ cursor: 'pointer' }}
       >
         <Box
