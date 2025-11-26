@@ -10,6 +10,8 @@ import {
   styled,
   MenuItemProps,
   Checkbox,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
 import ExitIcon from '@mui/icons-material/ExitToApp';
 import AccountIcon from '@mui/icons-material/AccountCircle';
@@ -53,6 +55,8 @@ export function UserMenu(props: IProps) {
   const [shift, setShift] = React.useState(false);
   const [userRec, setUserRec] = React.useState<UserD | undefined>(undefined);
   const [profileOpen, setProfileOpen] = React.useState(false);
+  const theme = useTheme();
+  const isMobileWidth = useMediaQuery(theme.breakpoints.down('sm'));
   const t: IMainStrings = useSelector(mainSelector, shallowEqual);
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
 
@@ -137,12 +141,14 @@ export function UserMenu(props: IProps) {
           </ListItemIcon>
           <ListItemText primary={t.myAccount} />
         </StyledMenuItem>
-        <StyledMenuItem id="mobileView" onClick={handleMobileViewToggle}>
-          <ListItemIcon>
-            <Checkbox checked={mobileView} size="small" sx={{ padding: 0 }} />
-          </ListItemIcon>
-          <ListItemText primary={t.mobileView} />
-        </StyledMenuItem>
+        {!isMobileWidth && (
+          <StyledMenuItem id="mobileView" onClick={handleMobileViewToggle}>
+            <ListItemIcon>
+              <Checkbox checked={mobileView} size="small" sx={{ padding: 0 }} />
+            </ListItemIcon>
+            <ListItemText primary={t.mobileView} />
+          </StyledMenuItem>
+        )}
         {shift && !isElectron && (
           <StyledMenuItem id="clearCache" onClick={handleAction('Clear')}>
             <ListItemIcon>
