@@ -66,6 +66,8 @@ import { useHome } from '../../utils/useHome';
 import { useOrbitData } from '../../hoc/useOrbitData';
 import packageJson from '../../../package.json';
 import { MainAPI } from '@model/main-api';
+import { ApmLogo } from '../../control/ApmLogo';
+import { OrgHead } from './OrgHead';
 const ipc = window?.api as MainAPI;
 
 const twoIcon = { minWidth: `calc(${48 * 2}px)` } as React.CSSProperties;
@@ -181,6 +183,7 @@ export const AppHead = (props: IProps) => {
   const offlineAvailToggle = useOfflineAvailToggle();
   const { getPlan } = usePlan();
   const vProject = useVProjectRead();
+  const [mobileView] = useGlobal('mobileView');
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const saving = useMemo(() => anySaving(), [toolsChanged]);
@@ -483,7 +486,7 @@ export const AppHead = (props: IProps) => {
   if (view === 'Access') setTimeout(() => navigate('/'), 200);
   if (view === 'Terms') navigate('/terms');
   if (view === 'Privacy') navigate('/privacy');
-  return (
+  return !mobileView ? (
     <AppBar
       position="fixed"
       sx={{ width: '100%', display: 'flex' }}
@@ -592,6 +595,43 @@ export const AppHead = (props: IProps) => {
         </Toolbar>
         {!importexportBusy || <Busy />}
         {downloadAlert && <ProjectDownloadAlert cb={downDone} />}
+        <PolicyDialog
+          isOpen={Boolean(showTerms)}
+          content={showTerms}
+          onClose={handleTermsClose}
+        />
+      </>
+    </AppBar>
+  ) : (
+    <AppBar
+      position="fixed"
+      sx={{ width: '100%', display: 'flex' }}
+      color="inherit"
+    >
+      <>
+        <Toolbar>
+          <IconButton onClick={() => navigate('/team')}>
+            <ApmLogo sx={{ width: '24px', height: '24px' }} />
+          </IconButton>
+          <OrgHead />
+          <GrowingSpacer />
+          <HelpMenu
+            online={!isOffline}
+            sx={updateTipOpen && isElectron ? { top: '40px' } : {}}
+          />
+          {pathname !== '/' && !pathname.startsWith('/access') && (
+            <UserMenu action={handleUserMenu} small={true} />
+          )}
+        </Toolbar>
+        {complete === 0 || complete === 100 || (
+          <Box sx={{ width: '100%' }}>
+            <LinearProgress id="prog" variant="determinate" value={complete} />
+          </Box>
+        )}
+        {(!busy && !saving && !dataChangeCount) || complete !== 0 || (
+          <LinearProgress id="busy" variant="indeterminate" />
+        )}
+        {!importexportBusy || <Busy />}
         <PolicyDialog
           isOpen={Boolean(showTerms)}
           content={showTerms}

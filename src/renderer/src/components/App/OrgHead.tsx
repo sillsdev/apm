@@ -1,0 +1,139 @@
+import { useContext, useMemo, useState } from 'react';
+import { LocalKey, localUserKey } from '../../utils/localUserKey';
+import { useGlobal } from '../../context/useGlobal';
+import {
+  IconButton,
+  Stack,
+  Typography,
+  useMediaQuery,
+  useTheme,
+} from '@mui/material';
+import SettingsIcon from '@mui/icons-material/Settings';
+import UsersIcon from '@mui/icons-material/People';
+import { findRecord } from '../../crud/tryFindRecord';
+import { API_CONFIG } from '../../../api-variable';
+import { OrganizationD } from '@model/organization';
+import TeamDialog, { ITeamDialog } from '../Team/TeamDialog';
+import { DialogMode } from '../../model';
+import { useCommitTeamSettings } from '../../crud/useCommitTeamSettings';
+import { RecordIdentity } from '@orbit/records';
+import Confirm from '../AlertDialog';
+import { TeamContext } from '../../context/TeamContext';
+import { useLocation } from 'react-router-dom';
+import BigDialog from '../../hoc/BigDialog';
+import { BigDialogBp } from '../../hoc/BigDialogBp';
+import GroupTabs from '../GroupTabs';
+import { useRole } from '../../crud/useRole';
+
+export const OrgHead = () => {
+  const [user] = useGlobal('user');
+  const [memory] = useGlobal('memory');
+  const [editOpen, setEditOpen] = useState(false);
+  const [deleteItem, setDeleteItem] = useState<RecordIdentity>();
+  const [openMember, setOpenMember] = useState(false);
+  const theme = useTheme();
+  const isMobileWidth = useMediaQuery(theme.breakpoints.down('sm'));
+  const commitTeamSettings = useCommitTeamSettings();
+  const { pathname } = useLocation();
+  const isTeamScreen = pathname.includes('/team');
+  const ctx = useContext(TeamContext);
+  const { teamDelete } = ctx?.state ?? {};
+  const { setMyOrgRole } = useRole();
+
+  const orgId = useMemo(
+    () => localStorage.getItem(localUserKey(LocalKey.team)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [user]
+  );
+  const orgRec = useMemo(() => {
+    if (!orgId) return undefined;
+    return findRecord(memory, 'organization', orgId) as OrganizationD;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orgId]);
+
+  const handleSettings = () => {
+    setEditOpen(true);
+  };
+
+  const handleCommitSettings = async (
+    values: ITeamDialog,
+    cb?: (id: string) => Promise<void>
+  ) => {
+    commitTeamSettings(values, cb);
+    setEditOpen(false);
+  };
+
+  const handleDeleteTeam = (team: RecordIdentity) => {
+    setDeleteItem(team);
+  };
+
+  const handleDeleteConfirmed = async () => {
+    deleteItem && (await teamDelete(deleteItem));
+    setEditOpen(false);
+  };
+
+  const handleDeleteRefused = () => setDeleteItem(undefined);
+
+  const handleMembers = (team: OrganizationD) => () => {
+    setMyOrgRole(team.id);
+    setOpenMember(true);
+  };
+
+  return (
+    <Stack direction="row">
+      <Typography
+        variant="h6"
+        sx={{
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+          maxWidth: isMobileWidth ? '170px' : '800px',
+          alignItems: 'center',
+          display: 'flex',
+        }}
+      >
+        {orgRec?.attributes.name || API_CONFIG.productName}
+      </Typography>
+      {isTeamScreen && (
+        <>
+          <IconButton onClick={handleSettings}>
+            <SettingsIcon />
+          </IconButton>
+          {orgRec && (
+            <IconButton onClick={handleMembers(orgRec)}>
+              <UsersIcon />
+            </IconButton>
+          )}
+        </>
+      )}
+      {editOpen && orgRec && (
+        <TeamDialog
+          mode={DialogMode.edit}
+          values={{ team: orgRec } as ITeamDialog}
+          isOpen={editOpen}
+          onOpen={setEditOpen}
+          onCommit={handleCommitSettings}
+          onDelete={handleDeleteTeam}
+        />
+      )}
+      {deleteItem && (
+        <Confirm
+          text={''}
+          yesResponse={handleDeleteConfirmed}
+          noResponse={handleDeleteRefused}
+        />
+      )}
+      <BigDialog
+        title={ctx?.state?.cardStrings?.members?.replace(
+          '{0}',
+          orgRec?.attributes?.name || ''
+        )}
+        isOpen={openMember}
+        onOpen={setOpenMember}
+        bp={isMobileWidth ? BigDialogBp.mobile : BigDialogBp.md}
+      >
+        <GroupTabs />
+      </BigDialog>
+    </Stack>
+  );
+};

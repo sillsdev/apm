@@ -9,7 +9,12 @@ import {
   GroupMembershipD,
   GroupD,
 } from '../model';
-import { useCheckOnline, cleanFileName } from '../utils';
+import {
+  useCheckOnline,
+  cleanFileName,
+  localUserKey,
+  LocalKey,
+} from '../utils';
 import {
   offlineError,
   useArtifactCategory,
@@ -143,6 +148,7 @@ export const useTeamCreate = () => {
     // the next line prevents shutting off busy until all workflow steps are created
     if (!offlineOnly) await teamApiPull(orgRec.id as string); // Update slug value
     setOrganization(orgRec.id as string);
+    localStorage.setItem(localUserKey(LocalKey.team), orgRec.id as string);
     setOrgRole(RoleNames.Admin);
     setDefaultProj(orgRec.id as string, memory, (pid: string) => {
       setProject(pid);

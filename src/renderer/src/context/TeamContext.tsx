@@ -68,7 +68,14 @@ import {
   vProjectSelector,
 } from '../selector';
 import { useDispatch } from 'react-redux';
-import { logError, pad2, Severity, useHome } from '../utils';
+import {
+  LocalKey,
+  localUserKey,
+  logError,
+  pad2,
+  Severity,
+  useHome,
+} from '../utils';
 import {
   RecordIdentity,
   RecordKeyMap,
@@ -140,7 +147,7 @@ const initState = {
   setImportOpen: (val: boolean) => {},
   importProject: undefined as any,
   doImport: (p: VProject | undefined = undefined) => {},
-  resetProjectPermissions: (team: string) => {},
+  resetProjectPermissions: async (team: string) => {},
   generalBook: (team?: string) => '000',
   updateGeneralBooks: async (arr: SortArr) => {},
   checkScriptureBooks: (projects: VProjectD[]) => {},
@@ -251,6 +258,7 @@ const TeamProvider = (props: IProps) => {
     const vproj = plan?.type === 'plan' ? vProject(plan) : plan;
     const orgId = related(vproj, 'organization');
     setOrganization(orgId);
+    localStorage.setItem(localUserKey(LocalKey.team), orgId);
     setMyOrgRole(orgId);
     setProject(projectId);
     setProjectType(projectId);
