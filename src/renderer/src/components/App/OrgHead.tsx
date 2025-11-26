@@ -68,7 +68,7 @@ export const OrgHead = () => {
   };
 
   const handleDeleteConfirmed = async () => {
-    deleteItem && (await teamDelete(deleteItem));
+    deleteItem && teamDelete && (await teamDelete(deleteItem));
     setEditOpen(false);
   };
 
