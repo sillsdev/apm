@@ -66,7 +66,7 @@ export const TeamItem = (props: IProps) => {
     values: ITeamDialog,
     cb?: (id: string) => Promise<void>
   ) => {
-    commitTeamSettings(values, cb);
+    await commitTeamSettings(values, cb);
     setEditOpen(false);
   };
 
