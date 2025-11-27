@@ -800,6 +800,20 @@
                <context context-type="sourcefile">addCard.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="cards.addNewProject">
+            <source>Add New Project...</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">addCard.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="cards.addNewTeam">
+            <source>Add New Team...</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">addCard.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="cards.addTeam">
             <source>Add Team</source>
             <target/>
@@ -1053,6 +1067,13 @@
                <context context-type="sourcefile">addCard.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="cards.noProjects">
+            <source>No projects yet.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">addCard.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="cards.normalize">
             <source>Audio Normalize</source>
             <target/>
@@ -1121,6 +1142,13 @@
             <target/>
             <context-group>
                <context context-type="sourcefile">AddCard.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="cards.personal">
+            <source>Personal</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">addCard.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="cards.personalProjects">
@@ -1221,6 +1249,13 @@
                <context context-type="sourcefile">ProjectMenu.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="cards.switchTeams">
+            <source>Switch Teams</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">ProjectMenu.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="cards.notesHelper">
             <source>Shared explanations, rationales, footnotes, etc.</source>
             <target/>
@@ -1247,6 +1282,13 @@
             <target/>
             <context-group>
                <context context-type="sourcefile">ProjectButtons.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="cards.teams">
+            <source>Teams</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">addCard.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="cards.teamName">

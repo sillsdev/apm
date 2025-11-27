@@ -2,7 +2,7 @@ import { useState, useEffect, useContext, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useGlobal } from '../context/useGlobal';
 import { LocalKey, localUserKey, useHome } from '../utils';
-import { Box, Grid } from '@mui/material';
+import { Box, Grid, useMediaQuery, useTheme } from '@mui/material';
 import AppHead from '../components/App/AppHead';
 import { TeamProvider } from '../context/TeamContext';
 import { TeamProjects } from '../components/Team';
@@ -12,6 +12,7 @@ import TeamActions from '../components/Team/TeamActions';
 import { UnsavedContext } from '../context/UnsavedContext';
 import { RecordKeyMap } from '@orbit/records';
 import { PlanD } from '../model';
+import ProjectsScreen from './ProjectsScreen';
 
 export const TeamScreen = () => {
   const { pathname } = useLocation();
@@ -21,9 +22,12 @@ export const TeamScreen = () => {
   const [memory] = useGlobal('memory');
   const [plan] = useGlobal('plan'); //verified this is not used in a function 2/18/25
   const [home, setHome] = useGlobal('home'); //verified this is not used in a function 2/18/25
+  const [mobileView] = useGlobal('mobileView');
   const [view, setView] = useState('');
   const { startClear } = useContext(UnsavedContext).state;
   const { resetProject } = useHome();
+  const theme = useTheme();
+  const isMobileWidth = useMediaQuery(theme.breakpoints.down('sm'));
   const loaded = useRef(false);
 
   useEffect(() => {
@@ -71,7 +75,7 @@ export const TeamScreen = () => {
     return <StickyRedirect to={view} />;
   }
 
-  return (
+  return !mobileView && !isMobileWidth ? (
     <Box sx={{ width: '100%' }}>
       <TeamProvider>
         <>
@@ -91,6 +95,8 @@ export const TeamScreen = () => {
         </>
       </TeamProvider>
     </Box>
+  ) : (
+    <ProjectsScreen />
   );
 };
 

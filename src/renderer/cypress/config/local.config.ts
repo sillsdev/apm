@@ -27,6 +27,20 @@ const config = {
           'process.env.NODE_ENV': JSON.stringify('test'),
           'process.env.FA_VERSION': JSON.stringify('test-version'),
         },
+        resolve: {
+          alias: {
+            // Break circular dependency: NavRoutes imports SwitchTeams, but we're testing SwitchTeams
+            // Mock NavRoutes to prevent the circular dependency during component tests
+            '../routes/NavRoutes': path.resolve(
+              __dirname,
+              '../../src/routes/__mocks__/NavRoutes.tsx'
+            ),
+            './routes/NavRoutes': path.resolve(
+              __dirname,
+              '../../src/routes/__mocks__/NavRoutes.tsx'
+            ),
+          },
+        },
       },
     },
   },
