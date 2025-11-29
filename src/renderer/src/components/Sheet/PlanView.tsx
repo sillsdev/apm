@@ -121,6 +121,8 @@ export function PlanView(props: IProps) {
               isPlaying={mediaId === srcMediaId && mediaPlaying}
             />
           );
+        } else {
+          return null;
         }
       })}
     </Box>

@@ -1248,6 +1248,14 @@ const initialState = {
       transcriptions: 'Transcriptions',
     },
   }),
+  passageCard: new LocalizedStrings({
+    en: {
+      unassigned: 'Unassigned',
+      record: 'Record',
+      transcribe: 'Transcribe',
+      review: 'Review',
+    },
+  }),
   profile: new LocalizedStrings({
     en: {
       add: 'Add',

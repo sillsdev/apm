@@ -1,4 +1,6 @@
 import { ISheet } from '../../model';
+import { useSelector } from 'react-redux';
+import { passageCardSelector } from '../../selector';
 import { Box, Button, Card, CardContent, Typography } from '@mui/material';
 import {
   ArrowForwardIos,
@@ -19,11 +21,13 @@ export function PassageCard(props: IProps) {
   const { cardInfo, getBookName, handleViewStep, onPlayStatus, isPlaying } =
     props;
 
+  const t = useSelector(passageCardSelector);
+
   const fullBookName = getBookName(cardInfo.book);
 
   const assignedGroup = cardInfo.assign
     ? String(cardInfo.assign)
-    : 'Unassigned';
+    : t.unassigned;
 
   return (
     <Card elevation={3}>
@@ -40,9 +44,9 @@ export function PassageCard(props: IProps) {
                 width: 40,
                 height: 40,
                 backgroundColor: 'transparent',
-                '&:hover': {
-                  backgroundColor: '#f0f0f0',
-                },
+                '&:hover': (theme) => ({
+                  backgroundColor: theme.palette.action.hover,
+                }),
                 borderRadius: '50%',
               }}
               onClick={onPlayStatus}

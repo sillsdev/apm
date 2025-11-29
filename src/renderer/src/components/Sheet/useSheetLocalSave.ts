@@ -64,7 +64,7 @@ export const useWfLocalSave = (props: IProps) => {
             const secRec: SectionD = {
               ...curSec,
               attributes: {
-                ...curSec.attributes,
+                ...curSec?.attributes,
                 sequencenum: item.sectionSeq,
                 name: item.title || '',
                 level: item.level,

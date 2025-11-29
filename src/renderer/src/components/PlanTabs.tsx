@@ -238,7 +238,7 @@ const ScrollableTabsButtonAuto = (props: IProps) => {
   const fetchBooks = (lang: string) =>
     dispatch(actions.fetchBooks(lang) as any);
   const { prjId, tabNm } = useParams();
-  const [width, setWidth] = useState(window.innerWidth);
+  const [width] = useState(window.innerWidth);
   const [organization] = useGlobal('organization');
   const [team] = useGlobal('organization');
   const [project] = useGlobal('project'); //will be constant here
@@ -283,7 +283,7 @@ const ScrollableTabsButtonAuto = (props: IProps) => {
   const [, setComplete] = useGlobal('progress');
   const [confirmPublishingVisible, setConfirmPublishingVisible] =
     useState(false);
-  const [view, setView] = useState('');
+  const [view] = useState('');
   const [lastSaved, setLastSaved] = useState<string>();
   const toolId = 'scriptureTable';
   const {
@@ -354,17 +354,17 @@ const ScrollableTabsButtonAuto = (props: IProps) => {
     passages
   );
   const { canAddPublishing } = useCanPublish();
-  const [data, setData] = useState(Array<Array<ICell>>());
+  const [data] = useState(Array<Array<ICell>>());
   const suggestionRef = useRef<Array<OptionType>>();
   const saveTimer = useRef<NodeJS.Timeout>();
   const preventSaveRef = useRef<boolean>(false);
   const currentRowRef = useRef<number>(-1);
-  const [currentRow, setCurrentRowx] = useState(-1);
+  const [, setCurrentRowx] = useState(-1);
   const [srcMediaId, setSrcMediaId] = useState('');
   const [mediaPlaying, setMediaPlaying] = useState(false);
-  const [warning, setWarning] = useState<string>();
+  const [warning] = useState<string>();
   const [toRow, setToRow] = useState(0);
-  const [changed, setChangedx] = useState(false); //for button enabling
+  const [changed] = useState(false); //for button enabling
   const [confirmPublish, setConfirmPublish] = useState(false);
   const [publishSectionIndex, setPublishSectionIndex] = useState<number | null>(
     null
@@ -372,7 +372,7 @@ const ScrollableTabsButtonAuto = (props: IProps) => {
   const changedRef = useRef(false); //for autosave
   const [saving, setSaving] = useState(false);
   const rowsPerPage = useRef(20);
-  const [scrollCount, setScrollCount] = useState(0);
+  const [scrollCount] = useState(0);
   const [curTop, setCurTop] = useState(0);
   const [org] = useGlobal('organization');
   const [hasBible, setHasBible] = useState(false);

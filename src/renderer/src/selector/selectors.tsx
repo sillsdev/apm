@@ -123,6 +123,9 @@ export const mainSelector = (state: IState) =>
 export const newProjectSelector = (state: IState) =>
   localStrings(state as IState, { layout: 'newProject' });
 
+export const passageCardSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'passageCard' });
+
 export const passageChooserSelector = (state: IState) =>
   localStrings(state as IState, { layout: 'passageChooser' });
 
