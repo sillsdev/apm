@@ -40,20 +40,28 @@ export function dateCompare(a: string, b: string): number {
 /**
  * Normalizes a reference string by zero-padding all numeric parts for proper string sorting
  * Examples:
- *   "Lk 1:1-4" -> "Lk 001:001-004"
- *   Non-numeric references are returned as-is
- * @param ref - Reference string in format "[Book] [Chapter]:[StartVerse]-[EndVerse]" or "[Book] [Chapter]:[StartVerse]-[EndChapter]:[EndVerse]"
+ *   normalizeReference("Lk", "1:1-4") -> "Lk 001:001-004"
+ *   normalizeReference("Lk", "1:14-2:20") -> "Lk 001:014-002:020"
+ *   normalizeReference("Lk", "1:1") -> "Lk 001:001"
+ *   Non-numeric references are returned as-is with book prepended
+ * @param book - Book abbreviation (e.g., "Lk", "Mt")
+ * @param ref - Reference string in format "[Chapter]:[StartVerse]-[EndVerse]" or "[Chapter]:[StartVerse]-[EndChapter]:[EndVerse]"
  * @returns Normalized reference string with zero-padded numbers
  */
-export function normalizeReference(ref: string): string {
-  if (!ref || typeof ref !== 'string') return ref;
+export function normalizeReference(book: string, ref: string): string {
+  if (!ref || typeof ref !== 'string') {
+    return book ? `${book} ${ref}` : ref;
+  }
 
-  // Match pattern: [Book] [Chapter]:[StartVerse]-[EndVerse or EndChapter:EndVerse]
-  // Examples: "Lk 1:1-4", "Lk 1:14-2:20", "Mt 5:10-12", "Gen 1:1"
-  const match = ref.match(/^([A-Za-z]+)\s+(\d+):(\d+)(?:-(\d+)(?::(\d+))?)?$/);
-  if (!match) return ref; // Return as-is if it doesn't match the pattern
+  // Match pattern: [Chapter]:[StartVerse]-[EndVerse or EndChapter:EndVerse]
+  // Examples: "1:1-4", "1:14-2:20", "5:10-12", "1:1"
+  const match = ref.match(/^(\d+):(\d+)(?:-(\d+)(?::(\d+))?)?$/);
+  if (!match) {
+    // Return as-is if it doesn't match the pattern (non-numeric references)
+    return book ? `${book} ${ref}` : ref;
+  }
 
-  const [, book, chapterStr, startVerseStr, endVerseOrChapterStr, endVerseStr] =
+  const [, chapterStr, startVerseStr, endVerseOrChapterStr, endVerseStr] =
     match;
 
   // Pad chapter and start verse to 3 digits
@@ -62,16 +70,16 @@ export function normalizeReference(ref: string): string {
 
   // Handle end verse
   if (endVerseStr) {
-    // Cross-chapter reference: "Lk 1:14-2:20"
+    // Cross-chapter reference: "1:14-2:20"
     const endChapter = endVerseOrChapterStr.padStart(3, '0');
     const endVerse = endVerseStr.padStart(3, '0');
     return `${book} ${chapter}:${startVerse}-${endChapter}:${endVerse}`;
   } else if (endVerseOrChapterStr) {
-    // Simple verse range: "Lk 1:1-4"
+    // Simple verse range: "1:1-4"
     const endVerse = endVerseOrChapterStr.padStart(3, '0');
     return `${book} ${chapter}:${startVerse}-${endVerse}`;
   } else {
-    // Single verse: "Lk 1:1"
+    // Single verse: "1:1"
     return `${book} ${chapter}:${startVerse}`;
   }
 }

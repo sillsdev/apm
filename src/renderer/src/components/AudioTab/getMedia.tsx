@@ -34,11 +34,8 @@ export const mediaRow = (f: MediaFile, data: IGetMedia) => {
   const passageRef = passage[0]?.attributes?.reference ?? '';
   // Build referenceString matching PassageReference logic: include book name for numeric references
   // Then normalize with zero-padding for proper string sorting
-  let referenceString = passageRef;
   const book = passage[0] ? passageBook(passage[0], allBookData) : '';
-  referenceString = normalizeReference(
-    book ? `${book} ${passageRef}` : passageRef
-  );
+  const referenceString = normalizeReference(book || '', passageRef);
 
   return {
     planid: related(f, 'plan'),
