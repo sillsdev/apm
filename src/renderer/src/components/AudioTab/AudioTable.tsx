@@ -95,14 +95,16 @@ export const AudioTable = (props: IProps) => {
   const waitForRemoteQueue = useWaitForRemoteQueue();
   const boxRef = useRef<HTMLDivElement>(null);
   const [addWidth, setAddWidth] = useState(0);
+  //we are mixing manual and automatic sorting to provide multi column sort as the initial data but the user can manually sort by one column.
   const [sortedData, setSortedData] = useState<IRow[]>([]);
   const [sortModel, setSortModel] = useState<GridSortModel>([]);
   useEffect(() => {
     const sm = onAttach
       ? [
           { field: 'planName', sort: 'asc' },
-          { field: 'sectionDesc', sort: 'asc' },
+          { field: 'sectionDesc', sort: 'asc' }, //for attached files
           { field: 'reference', sort: 'asc' },
+          { field: 'fileName', sort: 'asc' }, //for unattached files
           { field: 'date', sort: 'desc' },
         ]
       : [{ field: 'version', sort: 'desc' }];
