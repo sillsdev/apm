@@ -2,7 +2,7 @@ import { MediaFile, Passage, Section, BookName } from '../../model';
 import { mediaFileName, PublishLevelEnum, related } from '../../crud';
 import { passageBook } from '../../crud/passage';
 import { normalizeReference } from '../../utils/sort';
-import { IRow } from '.';
+import { IRow, pad } from '.';
 import { GetReference } from './GetReference';
 import { getSection } from './getSection';
 import { formatTime } from '../../control/formatTime';
@@ -35,8 +35,7 @@ export const mediaRow = (f: MediaFile, data: IGetMedia) => {
   // Build referenceString matching PassageReference logic: include book name for numeric references
   // Then normalize with zero-padding for proper string sorting
   const book = passage[0] ? passageBook(passage[0], allBookData) : '';
-  const referenceString = normalizeReference(book || '', passageRef);
-
+  const referenceString = `${pad(passage[0]?.attributes?.sequencenum ?? 0)} ${normalizeReference(book || '', passageRef)}`;
   return {
     planid: related(f, 'plan'),
     passId: showId,
@@ -49,7 +48,7 @@ export const mediaRow = (f: MediaFile, data: IGetMedia) => {
     reference: (
       <GetReference passage={passage} bookData={allBookData} flat={false} />
     ),
-    referenceString, // String version for sorting (includes book name)
+    referenceString, // String version for sorting (includes sequence number)
     duration: formatTime(f?.attributes?.duration ?? 0),
     size:
       Math.round(((f?.attributes?.filesize ?? 0) / 1024 / 1024) * 10) / 10.0,

@@ -99,7 +99,7 @@ export const AudioTable = (props: IProps) => {
   const [sortedData, setSortedData] = useState<IRow[]>([]);
   const [sortModel, setSortModel] = useState<GridSortModel>([]);
   useEffect(() => {
-    const sm = onAttach
+    const sm: GridSortModel = onAttach
       ? [
           { field: 'planName', sort: 'asc' },
           { field: 'sectionDesc', sort: 'asc' }, //for attached files
@@ -108,9 +108,9 @@ export const AudioTable = (props: IProps) => {
           { field: 'date', sort: 'desc' },
         ]
       : [{ field: 'version', sort: 'desc' }];
-    setSortModel(sm as GridSortModel);
+    setSortModel(sm);
     //don't resort when sortModel changes. Just give them the sorted data at the start.
-    setSortedData([...initialData].sort(doSort(sm as GridSortModel)));
+    setSortedData([...initialData].sort(doSort(sm)));
   }, [initialData, onAttach]);
 
   const handleShowTranscription = (id: string) => () => {
@@ -295,7 +295,7 @@ export const AudioTable = (props: IProps) => {
         {params.value}
       </Button>
     ),
-    sortable: true,
+    sortable: false,
   };
 
   const MinSectionWidth = 170;
