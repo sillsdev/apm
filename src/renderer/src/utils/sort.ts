@@ -91,12 +91,10 @@ export const doSort =
       const field = sort.field;
       const direction = sort.sort === 'asc' ? 1 : -1;
       let result = 0;
-      if (a[field] === undefined || b[field] === undefined) continue;
-      if (a[field] === null || b[field] === null) continue;
       if (field === 'version') {
-        result = strNumCompare(a[field], b[field]) * direction;
+        result = strNumCompare(a[field] ?? '0', b[field] ?? '0') * direction;
       } else if (field === 'date') {
-        result = dateCompare(a[field], b[field]) * direction;
+        result = dateCompare(a[field] ?? '', b[field] ?? '') * direction;
       } else if (field === 'passage' || field === 'reference') {
         // Use referenceString for sorting since reference is a React node
         // referenceString is already normalized with zero-padding, so simple string compare works
@@ -106,7 +104,7 @@ export const doSort =
           field === 'reference' ? (b.referenceString ?? '') : (b[field] ?? '');
         result = strCompare(aRef, bRef) * direction;
       } else {
-        result = strCompare(a[field], b[field]) * direction;
+        result = strCompare(a[field] ?? '', b[field] ?? '') * direction;
       }
       if (result !== 0) return result;
     }
