@@ -95,23 +95,23 @@ export const AudioTable = (props: IProps) => {
   const waitForRemoteQueue = useWaitForRemoteQueue();
   const boxRef = useRef<HTMLDivElement>(null);
   const [addWidth, setAddWidth] = useState(0);
+  //we are mixing manual and automatic sorting to provide multi column sort as the initial data but the user can manually sort by one column.
+  const [sortedData, setSortedData] = useState<IRow[]>([]);
   const [sortModel, setSortModel] = useState<GridSortModel>([]);
   useEffect(() => {
-    setSortModel(
-      onAttach
-        ? [
-            { field: 'planName', sort: 'asc' },
-            { field: 'fileName', sort: 'asc' },
-            { field: 'date', sort: 'desc' },
-          ]
-        : [{ field: 'version', sort: 'desc' }]
-    );
-  }, [onAttach]);
-
-  const sortedData = useMemo(
-    () => [...initialData].sort(doSort(sortModel)),
-    [initialData, sortModel]
-  );
+    const sm = onAttach
+      ? [
+          { field: 'planName', sort: 'asc' },
+          { field: 'sectionDesc', sort: 'asc' }, //for attached files
+          { field: 'reference', sort: 'asc' },
+          { field: 'fileName', sort: 'asc' }, //for unattached files
+          { field: 'date', sort: 'desc' },
+        ]
+      : [{ field: 'version', sort: 'desc' }];
+    setSortModel(sm as GridSortModel);
+    //don't resort when sortModel changes. Just give them the sorted data at the start.
+    setSortedData([...initialData].sort(doSort(sm as GridSortModel)));
+  }, [initialData, onAttach]);
 
   const handleShowTranscription = (id: string) => () => {
     const row = sortedData.find((r) => r.id === id);
@@ -256,6 +256,7 @@ export const AudioTable = (props: IProps) => {
     width: 80,
     align: 'right',
     // sortComparator: numCompare, // duration is already formatted as HH:MM:SS
+    sortable: true,
   };
 
   const dateCol: GridColDef<IRow> = {
@@ -264,6 +265,7 @@ export const AudioTable = (props: IProps) => {
     align: 'right',
     width: 100,
     sortComparator: dateCompare,
+    sortable: true,
     renderCell: (params) => dateOrTime(params.value, lang),
   };
 
@@ -272,6 +274,7 @@ export const AudioTable = (props: IProps) => {
     headerName: t.size,
     width: 80,
     align: 'right',
+    sortable: true,
     sortComparator: numCompare,
   };
 
@@ -280,6 +283,7 @@ export const AudioTable = (props: IProps) => {
     headerName: t.user,
     width: 70,
     renderCell: (params) => <UserAvatar userRec={getUser(params.value)} />,
+    sortable: true,
   };
 
   const refCol: GridColDef<IRow> = {
@@ -291,6 +295,7 @@ export const AudioTable = (props: IProps) => {
         {params.value}
       </Button>
     ),
+    sortable: true,
   };
 
   const MinSectionWidth = 170;
@@ -341,6 +346,7 @@ export const AudioTable = (props: IProps) => {
               field: 'fileName',
               headerName: `${t.fileName} (${nameCount})`,
               width: 205,
+              sortable: true,
             },
             {
               field: 'sectionDesc',
@@ -348,6 +354,7 @@ export const AudioTable = (props: IProps) => {
               align: 'left',
               cellClassName: 'word-wrap',
               width: MinSectionWidth + addWidth,
+              sortable: true,
             },
             refCol,
             userCol,
@@ -482,7 +489,8 @@ export const AudioTable = (props: IProps) => {
         <DataGrid
           columns={columns}
           rows={sortedData}
-          disableColumnSorting
+          sortModel={sortModel}
+          onSortModelChange={setSortModel}
           disableRowSelectionOnClick
           initialState={{
             columns: { columnVisibilityModel },

@@ -13,6 +13,7 @@ export interface IRow {
   sectionId: string;
   sectionDesc: string;
   reference: React.ReactNode;
+  referenceString: string; // String version of reference for sorting
   duration: string;
   size: number;
   version: string;
