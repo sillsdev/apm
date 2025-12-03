@@ -183,7 +183,7 @@ export const AppHead = (props: IProps) => {
   // TeamContext may be absent (AppHead used outside TeamProvider on some routes)
   // Helper hook to safely get TeamContext if available
   function useOptionalTeamContext() {
-    const ctx = useContext(TeamContext as any);
+    const ctx = useContext(TeamContext);
     return ctx && typeof ctx === 'object' && 'state' in ctx ? ctx : undefined;
   }
   const teamCtx = useOptionalTeamContext();
@@ -723,10 +723,12 @@ export const AppHead = (props: IProps) => {
         )}
         {membersOpen && currentTeam && (
           <BigDialog
-            title={teamCtx?.state?.cardStrings?.members.replace(
-              '{0}',
-              currentTeam?.attributes?.name || ''
-            )}
+            title={
+              teamCtx?.state?.cardStrings?.members.replace(
+                '{0}',
+                currentTeam?.attributes?.name || ''
+              ) || ''
+            }
             isOpen={membersOpen}
             onOpen={setMembersOpen}
             bp={BigDialogBp.md}
