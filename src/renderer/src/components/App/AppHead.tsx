@@ -218,7 +218,7 @@ export const AppHead = (props: IProps) => {
   // Team members dialog state & role/org preparation
   const [membersOpen, setMembersOpen] = useState(false);
   const [, setOrganization] = useGlobal('organization');
-  const { setMyOrgRole } = useRole();
+  const { setMyOrgRole, userIsOrgAdmin } = useRole();
   const openMembers = () => {
     if (!currentTeam) return;
     setOrganization(currentTeam.id);
@@ -526,6 +526,20 @@ export const AppHead = (props: IProps) => {
 
   const checkSavedAndGoHome = () => checkSavedFn(() => handleHome());
 
+  const teamState = teamCtx?.state;
+  const canModifyWorkflow = useMemo(() => {
+    if (!teamState || !currentTeam || isPersonalTeam) return false;
+    const isOrgAdmin = userIsOrgAdmin ? userIsOrgAdmin(currentTeam.id) : false;
+    return ((!isOffline || isOfflineOnly) && isOrgAdmin) === true;
+  }, [
+    teamState,
+    currentTeam,
+    isPersonalTeam,
+    isOffline,
+    isOfflineOnly,
+    userIsOrgAdmin,
+  ]);
+
   if (view === 'Error') navigate('/error');
   if (view === 'Logout') setTimeout(() => navigate('/logout'), 500);
   if (view === 'Access') setTimeout(() => navigate('/'), 200);
@@ -574,18 +588,20 @@ export const AppHead = (props: IProps) => {
                 {teamDisplayName}
                 {currentTeam && (
                   <>
-                    <IconButton
-                      size="small"
-                      aria-label="team settings"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSettingsOpen(true);
-                      }}
-                      sx={{ ml: 1 }}
-                      data-testid="team-header-settings"
-                    >
-                      <SettingsIcon fontSize="small" color="action" />
-                    </IconButton>
+                    {canModifyWorkflow && (
+                      <IconButton
+                        size="small"
+                        aria-label="team settings"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSettingsOpen(true);
+                        }}
+                        sx={{ ml: 1 }}
+                        data-testid="team-header-settings"
+                      >
+                        <SettingsIcon fontSize="small" color="action" />
+                      </IconButton>
+                    )}
                     <IconButton
                       size="small"
                       aria-label="team members"

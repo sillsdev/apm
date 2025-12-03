@@ -21,14 +21,8 @@ const ProjectsScreenInner: React.FC = () => {
   const navigate = useMyNavigate();
   const { teamId } = useParams();
   const ctx = React.useContext(TeamContext);
-  const {
-    teamProjects,
-    personalProjects,
-    personalTeam,
-    cardStrings,
-    teams,
-    isAdmin,
-  } = ctx.state;
+  const { teamProjects, personalProjects, personalTeam, cardStrings, teams } =
+    ctx.state;
   const t = cardStrings;
   const { pathname } = useLocation();
   const [plan] = useGlobal('plan');
@@ -168,11 +162,8 @@ const ProjectsScreenInner: React.FC = () => {
   // Admin gating (matches TeamItem logic): only show when viewing a team (not personal)
   const canModifyWorkflow = React.useMemo(() => {
     if (!thisTeam || isPersonal) return false;
-    return (
-      ((!offline && isAdmin(thisTeam)) || offlineOnly) &&
-      userIsOrgAdmin(thisTeam.id)
-    );
-  }, [thisTeam, isPersonal, offline, offlineOnly, isAdmin, userIsOrgAdmin]);
+    return (!offline || offlineOnly) && userIsOrgAdmin(thisTeam.id);
+  }, [thisTeam, isPersonal, offline, offlineOnly, userIsOrgAdmin]);
 
   return (
     <Box sx={{ width: '100%' }}>
@@ -220,18 +211,20 @@ const ProjectsScreenInner: React.FC = () => {
           spacing={2}
           sx={{ pointerEvents: 'auto', alignItems: 'center' }}
         >
-          <Button
-            id="ProjectActAdd"
-            data-testid="add-project-button"
-            variant="outlined"
-            onClick={handleAddProject}
-            sx={(theme) => ({
-              minWidth: 160,
-              bgcolor: theme.palette.common.white,
-            })}
-          >
-            {t.newProject || 'Add New Project...'}
-          </Button>
+          {canModifyWorkflow && (
+            <Button
+              id="ProjectActAdd"
+              data-testid="add-project-button"
+              variant="outlined"
+              onClick={handleAddProject}
+              sx={(theme) => ({
+                minWidth: 160,
+                bgcolor: theme.palette.common.white,
+              })}
+            >
+              {t.newProject || 'Add New Project...'}
+            </Button>
+          )}
           {canModifyWorkflow && !isMobileWidth() && (
             <Button
               id="ProjectActEditWorkflow"
