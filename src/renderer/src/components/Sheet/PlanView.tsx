@@ -48,8 +48,6 @@ export function PlanView(props: IProps) {
 
   if (view !== '') return <StickyRedirect to={view} />;
 
-  let bookCount = 0;
-
   return (
     <Box
       sx={{
@@ -61,12 +59,6 @@ export function PlanView(props: IProps) {
     >
       {rowInfo.map((row, i) => {
         if (row.kind === 0) {
-          const isBook = row.passageType === 'BOOK';
-          let indent = false;
-          if (isBook) {
-            bookCount++;
-            indent = bookCount === 2;
-          }
           return (
             <Box
               key={row.sectionId?.id}
@@ -83,11 +75,15 @@ export function PlanView(props: IProps) {
                   reference={row.reference}
                   sectionSeq={row.sectionSeq}
                   organizedBy="B"
-                  style={indent ? { marginLeft: '2rem' } : undefined}
+                  style={
+                    row.passageType === 'ALTBK'
+                      ? { marginLeft: '2rem' }
+                      : undefined
+                  }
                   onClick={() => handleGraphic(i)}
                 />
               )}
-              {isBook ? (
+              {row.passageType === 'BOOK' || row.passageType === 'ALTBK' ? (
                 <Typography key={row.sectionId?.id} variant="h4">
                   {row.title}
                 </Typography>
@@ -109,7 +105,7 @@ export function PlanView(props: IProps) {
               ) : null}
             </Box>
           );
-        } else if (row.kind === 1) {
+        } else if (row.kind === 1 && Number.isInteger(row.passageSeq)) {
           const mediaId = row.mediaId?.id;
           return (
             <PassageCard

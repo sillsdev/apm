@@ -1740,22 +1740,30 @@ const ScrollableTabsButtonAuto = (props: IProps) => {
                 ))}
               </NativeSelect>
             </FormControl>
-            <LightTooltip
-              sx={{ backgroundColor: 'transparent' }}
-              title={
-                !publishingOn || hidePublishing
-                  ? s.showPublishing
-                  : s.hidePublishing
-              }
-            >
-              <IconButton onClick={handlePublishToggle}>
-                {!publishingOn || hidePublishing ? (
-                  <PublishOnIcon sx={{ color: 'primary.light' }} />
-                ) : (
-                  <PublishOffIcon sx={{ color: 'primary.light' }} />
-                )}
-              </IconButton>
-            </LightTooltip>
+            {rowInfo.length !== 0 ? (
+              <LightTooltip
+                sx={{ backgroundColor: 'transparent' }}
+                title={
+                  !publishingOn || hidePublishing
+                    ? s.showPublishing
+                    : s.hidePublishing
+                }
+              >
+                <IconButton onClick={handlePublishToggle}>
+                  {!publishingOn || hidePublishing ? (
+                    <PublishOnIcon sx={{ color: 'primary.light' }} />
+                  ) : (
+                    <PublishOffIcon sx={{ color: 'primary.light' }} />
+                  )}
+                </IconButton>
+              </LightTooltip>
+            ) : (
+              <Box sx={{ width: 40, height: 40, visibility: 'hidden' }}>
+                <IconButton>
+                  <PublishOnIcon />
+                </IconButton>
+              </Box>
+            )}
             <FilterMenu
               canSetDefault={canSetProjectDefault}
               state={filterState}
