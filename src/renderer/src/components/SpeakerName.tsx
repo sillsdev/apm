@@ -3,13 +3,19 @@ import { useGlobal } from '../context/useGlobal';
 import { ICommunityStrings, MediaFileD } from '../model';
 import TextField from '@mui/material/TextField';
 import Autocomplete, { createFilterOptions } from '@mui/material/Autocomplete';
+import SupportAgentIcon from '@mui/icons-material/SupportAgent';
+import Button from '@mui/material/Button';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
 import IntellectualProperty from '../model/intellectualProperty';
 import BigDialog from '../hoc/BigDialog';
 import ProvideRights from './ProvideRights';
 import { communitySelector } from '../selector';
 import { shallowEqual, useSelector } from 'react-redux';
 import { ArtifactTypeSlug, findRecord, related } from '../crud';
-import { Typography } from '@mui/material';
+import { Typography, Stack } from '@mui/material';
 import { useOrbitData } from '../hoc/useOrbitData';
 import { useSnackBar } from '../hoc/SnackBar';
 
@@ -44,6 +50,7 @@ export function SpeakerName({
   const valueRef = React.useRef<string>('');
   const [speakers, setSpeakers] = React.useState<NameOptionType[]>([]);
   const [showDialog, setShowDialog] = React.useState(false);
+  const [showSelectDialog, setShowSelectDialog] = React.useState(false);
   const [organization] = useGlobal('organization');
   const { showMessage } = useSnackBar();
   const [memory] = useGlobal('memory');
@@ -176,63 +183,107 @@ export function SpeakerName({
     if (value?.name !== newName) setValue({ name: newName });
   }, [name, value?.name]);
 
+  const handleOpenSelectDialog = () => {
+    setShowSelectDialog(true);
+  };
+
+  const handleCloseSelectDialog = () => {
+    setShowSelectDialog(false);
+  };
+
+  const handleSelectAndClose = (newValue: string | NameOptionType | null) => {
+    handleChoice(newValue);
+    setShowSelectDialog(false);
+  };
+
+  const buttonText = name?.trim() !== '' ? name : t.selectSpeaker + '...';
+
   return (
     <>
-      <Autocomplete
-        value={value}
-        onChange={(event, newValue) => handleChoice(newValue)}
-        onClose={handleLeave}
-        {...(disabled !== undefined && { disabled })}
-        filterOptions={(options, params) => {
-          const filtered = filter(options, params);
+      <Button
+        variant={name?.trim() !== '' ? 'outlined' : 'contained'}
+        onClick={handleOpenSelectDialog}
+        disabled={disabled}
+        sx={{ minWidth: 200, justifyContent: 'flex-start' }}
+      >
+        <Stack direction="row" spacing={1} alignItems="center">
+          <SupportAgentIcon />
+          <span>{buttonText}</span>
+        </Stack>
+      </Button>
+      <Dialog
+        open={showSelectDialog}
+        onClose={handleCloseSelectDialog}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>
+          <Stack direction="row" spacing={1} alignItems="center">
+            <SupportAgentIcon />
+            <span>{t.selectSpeaker}</span>
+          </Stack>
+        </DialogTitle>
+        <DialogContent>
+          <Autocomplete
+            value={value}
+            onChange={(event, newValue) => handleSelectAndClose(newValue)}
+            onClose={handleLeave}
+            filterOptions={(options, params) => {
+              const filtered = filter(options, params);
 
-          const { inputValue } = params;
-          // Suggest the creation of a new value
-          const isExisting = options.some(
-            (option) => inputValue === option.name
-          );
-          if (inputValue !== '' && !isExisting) {
-            filtered.push({
-              inputValue,
-              name: t.addSpeaker.replace('{0}', inputValue),
-            });
-          }
+              const { inputValue } = params;
+              // Suggest the creation of a new value
+              const isExisting = options.some(
+                (option) => inputValue === option.name
+              );
+              if (inputValue !== '' && !isExisting) {
+                filtered.push({
+                  inputValue,
+                  name: t.addSpeaker.replace('{0}', inputValue),
+                });
+              }
 
-          return filtered;
-        }}
-        selectOnFocus
-        clearOnBlur
-        handleHomeEndKeys
-        id="speaker-name"
-        options={speakers}
-        getOptionLabel={getOptionLabel}
-        renderOption={(props, option) => (
-          <li {...props} key={option.name}>
-            {option.name}
-          </li>
-        )}
-        sx={{ width: 300, marginTop: '5px' }}
-        freeSolo
-        renderInput={(params) => {
-          const { size, InputLabelProps, ...restParams } = params;
-          const { className, ...restInputLabelProps } = InputLabelProps || {};
-          return (
-            <TextField
-              required
-              {...restParams}
-              {...(size && { size })}
-              slotProps={{
-                inputLabel: {
-                  ...restInputLabelProps,
-                  ...(className && { className }),
-                },
-              }}
-              label={t.speaker}
-              onChange={handleNameChange}
-            />
-          );
-        }}
-      />
+              return filtered;
+            }}
+            selectOnFocus
+            clearOnBlur
+            handleHomeEndKeys
+            id="speaker-name"
+            options={speakers}
+            getOptionLabel={getOptionLabel}
+            renderOption={(props, option) => (
+              <li {...props} key={option.name}>
+                {option.name}
+              </li>
+            )}
+            sx={{ width: '100%', marginTop: '5px' }}
+            freeSolo
+            renderInput={(params) => {
+              const { size, InputLabelProps, ...restParams } = params;
+              const { className, ...restInputLabelProps } =
+                InputLabelProps || {};
+              return (
+                <TextField
+                  required
+                  {...restParams}
+                  {...(size && { size })}
+                  slotProps={{
+                    inputLabel: {
+                      ...restInputLabelProps,
+                      ...(className && { className }),
+                    },
+                  }}
+                  label={t.speaker}
+                  onChange={handleNameChange}
+                />
+              );
+            }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseSelectDialog}>Cancel</Button>
+        </DialogActions>
+      </Dialog>
       <BigDialog
         title={t.provideRights}
         isOpen={showDialog}
