@@ -42,8 +42,9 @@ export function DataChanges(props: PropsWithChildren) {
   const [user] = useGlobal('user');
   const [fingerprint] = useGlobal('fingerprint');
   const [errorReporter] = useGlobal('errorReporter');
-  const ctx = useContext(TokenContext).state;
-  const { authenticated } = ctx;
+  const tokenContext = useContext(TokenContext);
+  const ctx = tokenContext?.state;
+  const authenticated = ctx?.authenticated || (() => false);
   const [busyDelay, setBusyDelay] = useState<number | null>(null);
   const [dataDelay, setDataDelay] = useState<number | null>(null);
   const [firstRun, setFirstRun] = useState(true);
@@ -122,7 +123,7 @@ export function DataChanges(props: PropsWithChildren) {
       const check = firstRun;
       setFirstRun(false);
       await doDataChanges(
-        ctx.accessToken || '',
+        ctx?.accessToken || '',
         coordinator,
         fingerprint,
         getGlobal('projectsLoaded'),
