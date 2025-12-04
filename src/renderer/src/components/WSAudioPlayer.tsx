@@ -11,6 +11,7 @@ import {
   Badge,
   Menu,
   MenuItem,
+  Button,
 } from '@mui/material';
 import {
   useState,
@@ -33,9 +34,15 @@ import TimerIcon from '@mui/icons-material/AccessTime';
 import NextSegmentIcon from '@mui/icons-material/ArrowRightAlt';
 import UndoIcon from '@mui/icons-material/Undo';
 import MicIcon from '@mui/icons-material/SettingsVoice';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
 import NormalizeIcon from '../control/NormalizeIcon';
 import { ISharedStrings, IWsAudioPlayerStrings } from '../model';
-import { FaHandScissors, FaDotCircle, FaStopCircle } from 'react-icons/fa';
+import {
+  FaHandScissors,
+  FaDotCircle,
+  FaStopCircle,
+  FaPauseCircle,
+} from 'react-icons/fa';
 import type { IconBaseProps } from 'react-icons/lib';
 
 import { useWavRecorder } from '../crud/useWavRecorder';
@@ -55,6 +62,7 @@ import {
   LocalKey,
   localUserKey,
 } from '../utils';
+import { isMobileWidth } from '../utils/isMobileWidth';
 import {
   IRegion,
   IRegionParams,
@@ -91,7 +99,8 @@ import { MainAPI } from '@model/main-api';
 const ipc = window?.api as MainAPI;
 
 const HandScissors = FaHandScissors as unknown as React.FC<IconBaseProps>;
-const DotCircle = FaDotCircle as unknown as React.FC<IconBaseProps>;
+const RecordCircle = FaDotCircle as unknown as React.FC<IconBaseProps>;
+const PauseCircle = FaPauseCircle as unknown as React.FC<IconBaseProps>;
 const StopCircle = FaStopCircle as unknown as React.FC<IconBaseProps>;
 
 const VertDivider = (prop: DividerProps) => (
@@ -114,6 +123,7 @@ interface IProps {
   allowRecord?: boolean;
   allowZoom?: boolean;
   allowSegment?: NamedRegions | undefined;
+  allowGoTo?: boolean;
   allowAutoSegment?: boolean;
   allowSpeed?: boolean;
   allowDeltaVoice?: boolean;
@@ -175,6 +185,7 @@ function WSAudioPlayer(props: IProps) {
     allowRecord,
     allowZoom,
     allowSegment,
+    allowGoTo,
     allowAutoSegment,
     allowSpeed,
     allowDeltaVoice,
@@ -276,7 +287,26 @@ function WSAudioPlayer(props: IProps) {
     null
   );
   const micMenuOpen = Boolean(micMenuAnchorEl);
+  const [moreMenuAnchorEl, setMoreMenuAnchorEl] = useState<null | HTMLElement>(
+    null
+  );
+  const moreMenuOpen = Boolean(moreMenuAnchorEl);
+  const [isMobileView, setIsMobileView] = useState(isMobileWidth());
   const cancelAIRef = useRef(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobileView(isMobileWidth());
+    };
+
+    window.addEventListener('resize', handleResize);
+    // Check on mount in case the initial state was wrong
+    handleResize();
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
   const { requestAudioAi } = useAudioAi();
   const checkOnline = useCheckOnline(t.reduceNoise);
   const { subscribe, unsubscribe, localizeHotKey } =
@@ -320,6 +350,14 @@ function WSAudioPlayer(props: IProps) {
   const handleMicSelect = (deviceId: string) => {
     setSelectedMicrophoneId(deviceId);
     handleMicMenuClose();
+  };
+
+  const handleMoreMenuOpen = (event: MouseEvent<HTMLElement>) => {
+    setMoreMenuAnchorEl(event.currentTarget);
+  };
+
+  const handleMoreMenuClose = () => {
+    setMoreMenuAnchorEl(null);
   };
 
   const onZoom = useMemo(
@@ -1137,6 +1175,149 @@ function WSAudioPlayer(props: IProps) {
     }
   };
 
+  const isControlDisabled = useMemo(
+    () => !ready || playing || recording || duration === 0 || waitingForAI,
+    [ready, playing, recording, duration, waitingForAI]
+  );
+
+  const noiseRemovalControl = useCallback(() => {
+    if (!allowNoNoise || !features?.noNoise || offline) return null;
+
+    const handleClick = (e?: React.MouseEvent) => {
+      if (e) e.stopPropagation();
+      handleNoiseRemoval();
+      isMobileView && handleMoreMenuClose?.();
+    };
+
+    return (
+      <LightTooltip id={`noiseRemovalTip`} title={noiseRemovalTooltipTitle}>
+        <IconButton
+          id={`noiseRemoval`}
+          onClick={handleClick}
+          disabled={isControlDisabled}
+          size={isMobileView ? 'small' : 'medium'}
+        >
+          <NoChickenIcon
+            sx={{ width: '20pt', height: '20pt' }}
+            disabled={isControlDisabled}
+          />
+        </IconButton>
+      </LightTooltip>
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    isMobileView,
+    allowNoNoise,
+    features?.noNoise,
+    offline,
+    isControlDisabled,
+    noiseRemovalTooltipTitle,
+  ]);
+
+  const voiceChangeControl = useCallback(
+    () => {
+      if (!features?.deltaVoice || allowDeltaVoice === false || offline)
+        return null;
+
+      const handleClick = () => {
+        handleVoiceChange();
+        handleMoreMenuClose();
+      };
+
+      return (
+        <LightTooltip id={`voiceChangeTip`} title={voiceChangeTooltipTitle}>
+          <span
+            onClick={(e) => {
+              e.stopPropagation();
+            }}
+          >
+            <VcButton
+              id={`voiceChange`}
+              onClick={handleClick}
+              onSettings={handleVoiceSettings}
+              disabled={isControlDisabled}
+              allowSettings={duration === 0}
+            >
+              <VoiceConversionLogo
+                sx={{
+                  width: '18pt',
+                  height: '18pt',
+                }}
+                disabled={isControlDisabled}
+              />
+            </VcButton>
+          </span>
+        </LightTooltip>
+      );
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [
+      features?.deltaVoice,
+      allowDeltaVoice,
+      offline,
+      isControlDisabled,
+      voiceChangeTooltipTitle,
+      duration,
+    ]
+  );
+
+  const normalizeControl = useCallback(
+    () => {
+      if (!features?.normalize || !isElectron) return null;
+
+      const handleClick = (e?: React.MouseEvent) => {
+        if (e) e.stopPropagation();
+        handleNormal();
+        handleMoreMenuClose();
+      };
+
+      return (
+        <LightTooltip id={`normalizeTip`} title={t.normalize}>
+          <IconButton
+            id={`normalize`}
+            onClick={handleClick}
+            disabled={isControlDisabled}
+            size={isMobileView ? 'small' : 'medium'}
+          >
+            <NormalizeIcon
+              width={'20pt'}
+              height={'20pt'}
+              disabled={isControlDisabled}
+            />
+          </IconButton>
+        </LightTooltip>
+      );
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [features?.normalize, isControlDisabled]
+  );
+
+  const microphoneControl = useCallback(() => {
+    const handleClick = (e: React.MouseEvent<HTMLElement>) => {
+      e.stopPropagation();
+      handleMicMenuOpen(e);
+      handleMoreMenuClose();
+    };
+
+    return (
+      <LightTooltip id={`wsAudioMicTip`} title={t.microphone}>
+        <IconButton
+          id={`wsAudioMic`}
+          onClick={handleClick}
+          size={isMobileView ? 'small' : 'medium'}
+        >
+          <MicIcon
+            sx={{
+              color:
+                audioInputDevices.length === 0 ? 'text.disabled' : 'inherit',
+            }}
+          />
+        </IconButton>
+      </LightTooltip>
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [audioInputDevices.length, isMobileView]);
+
   const onSplit = () => {};
 
   return (
@@ -1155,27 +1336,6 @@ function WSAudioPlayer(props: IProps) {
             <Grid container sx={toolbarProp}>
               {allowRecord && (
                 <>
-                  {!oneShotUsed && (
-                    <Grid>
-                      <LightTooltip
-                        id="wsAudioRecordTip"
-                        title={recordTooltipTitle}
-                      >
-                        <span>
-                          <IconButton
-                            id="wsAudioRecord"
-                            sx={{ color: 'red' }}
-                            onClick={handleRecorder}
-                            disabled={
-                              playing || processingRecording || waitingForAI
-                            }
-                          >
-                            {recording ? <StopCircle /> : <DotCircle />}
-                          </IconButton>
-                        </span>
-                      </LightTooltip>
-                    </Grid>
-                  )}
                   <Grid sx={{ ml: 1 }}>
                     <LightTooltip id="wsAudioPlayTip" title={playTooltipTitle}>
                       <span>
@@ -1199,7 +1359,7 @@ function WSAudioPlayer(props: IProps) {
                 </Typography>
               </Grid>
               <VertDivider id="wsAudioDiv2" />
-              {allowZoom && (
+              {allowZoom && !isMobileView && (
                 <>
                   <Grid>
                     <WSAudioPlayerZoom
@@ -1213,106 +1373,15 @@ function WSAudioPlayer(props: IProps) {
                   <VertDivider id="wsAudioDiv3" />
                 </>
               )}
+              {allowRecord && !isMobileView && (
+                <>
+                  {noiseRemovalControl()}
+                  {voiceChangeControl()}
+                  {normalizeControl()}
+                </>
+              )}
               {allowRecord && (
                 <>
-                  {allowNoNoise && features?.noNoise && !offline && (
-                    <LightTooltip
-                      id="noiseRemovalTip"
-                      title={noiseRemovalTooltipTitle}
-                    >
-                      <span>
-                        <IconButton
-                          id="noiseRemoval"
-                          onClick={handleNoiseRemoval}
-                          disabled={
-                            !ready ||
-                            playing ||
-                            recording ||
-                            duration === 0 ||
-                            waitingForAI
-                          }
-                        >
-                          <NoChickenIcon
-                            sx={{ width: '20pt', height: '20pt' }}
-                            disabled={
-                              !ready ||
-                              playing ||
-                              recording ||
-                              duration === 0 ||
-                              waitingForAI
-                            }
-                          />
-                        </IconButton>
-                      </span>
-                    </LightTooltip>
-                  )}
-                  {features?.deltaVoice &&
-                    allowDeltaVoice !== false &&
-                    !offline && (
-                      <LightTooltip
-                        id="voiceChangeTip"
-                        title={voiceChangeTooltipTitle}
-                      >
-                        <span>
-                          <VcButton
-                            id="voiceChange"
-                            onClick={handleVoiceChange}
-                            onSettings={handleVoiceSettings}
-                            disabled={
-                              !ready ||
-                              playing ||
-                              recording ||
-                              duration === 0 ||
-                              waitingForAI
-                            }
-                            allowSettings={duration === 0}
-                          >
-                            <VoiceConversionLogo
-                              sx={{
-                                width: '18pt',
-                                height: '18pt',
-                              }}
-                              disabled={
-                                !ready ||
-                                playing ||
-                                recording ||
-                                duration === 0 ||
-                                waitingForAI
-                              }
-                            />
-                          </VcButton>
-                        </span>
-                      </LightTooltip>
-                    )}
-                  {features?.normalize && isElectron && (
-                    <LightTooltip title={t.normalize}>
-                      <span>
-                        <IconButton
-                          id="normalize"
-                          onClick={handleNormal}
-                          disabled={
-                            !ready ||
-                            playing ||
-                            recording ||
-                            duration === 0 ||
-                            waitingForAI
-                          }
-                        >
-                          <NormalizeIcon
-                            width={'20pt'}
-                            height={'20pt'}
-                            disabled={
-                              !ready ||
-                              playing ||
-                              recording ||
-                              duration === 0 ||
-                              waitingForAI
-                            }
-                          />
-                        </IconButton>
-                      </span>
-                    </LightTooltip>
-                  )}
                   {hasRegion !== 0 && !oneShotUsed && (
                     <LightTooltip
                       id="wsAudioDeleteRegionTip"
@@ -1359,43 +1428,132 @@ function WSAudioPlayer(props: IProps) {
                     </LightTooltip>
                   )}
                   <GrowingSpacer />
-                  <Grid>
-                    <LightTooltip id="wsAudioMicTip" title={t.microphone}>
-                      <span>
-                        <IconButton id="wsAudioMic" onClick={handleMicMenuOpen}>
-                          <MicIcon
-                            sx={{
-                              color:
-                                audioInputDevices.length === 0
-                                  ? 'text.disabled'
-                                  : 'inherit',
-                            }}
-                          />
-                        </IconButton>
-                      </span>
-                    </LightTooltip>
-                    <Menu
-                      anchorEl={micMenuAnchorEl}
-                      open={micMenuOpen}
-                      onClose={handleMicMenuClose}
-                      anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-                      transformOrigin={{ vertical: 'top', horizontal: 'left' }}
-                    >
-                      {audioInputDevices.length === 0 ? (
-                        <MenuItem disabled>{ts.noAudio}</MenuItem>
-                      ) : (
-                        audioInputDevices.map((device, index) => (
-                          <MenuItem
-                            key={device.deviceId || `input-${index}`}
-                            selected={selectedMicrophoneId === device.deviceId}
-                            onClick={() => handleMicSelect(device.deviceId)}
+                  {!isMobileView && (
+                    <Grid>
+                      {microphoneControl()}
+                      <Menu
+                        anchorEl={micMenuAnchorEl}
+                        open={micMenuOpen}
+                        onClose={handleMicMenuClose}
+                        anchorOrigin={{
+                          vertical: 'bottom',
+                          horizontal: 'left',
+                        }}
+                        transformOrigin={{
+                          vertical: 'top',
+                          horizontal: 'left',
+                        }}
+                      >
+                        {audioInputDevices.length === 0 ? (
+                          <MenuItem disabled>{ts.noAudio}</MenuItem>
+                        ) : (
+                          audioInputDevices.map((device, index) => (
+                            <MenuItem
+                              key={device.deviceId || `input-${index}`}
+                              selected={
+                                selectedMicrophoneId === device.deviceId
+                              }
+                              onClick={() => handleMicSelect(device.deviceId)}
+                            >
+                              {device.label || `Input ${index + 1}`}
+                            </MenuItem>
+                          ))
+                        )}
+                      </Menu>
+                    </Grid>
+                  )}
+                  {isMobileView && (
+                    <Grid>
+                      <LightTooltip id="wsAudioMoreTip" title="More options">
+                        <span>
+                          <IconButton
+                            id="wsAudioMore"
+                            onClick={handleMoreMenuOpen}
                           >
-                            {device.label || `Input ${index + 1}`}
+                            <MoreVertIcon />
+                          </IconButton>
+                        </span>
+                      </LightTooltip>
+                      <Menu
+                        anchorEl={moreMenuAnchorEl}
+                        open={moreMenuOpen}
+                        onClose={handleMoreMenuClose}
+                        anchorOrigin={{
+                          vertical: 'bottom',
+                          horizontal: 'right',
+                        }}
+                        transformOrigin={{
+                          vertical: 'top',
+                          horizontal: 'right',
+                        }}
+                      >
+                        {allowZoom && (
+                          <MenuItem
+                            onClick={handleMoreMenuClose}
+                            sx={{ pointerEvents: 'none' }}
+                          >
+                            <WSAudioPlayerZoom
+                              ready={ready && !recording && !waitingForAI}
+                              fillPx={recording ? 100 : wsFillPx()}
+                              curPx={pxPerSec}
+                              onZoom={wsZoom}
+                            />
                           </MenuItem>
-                        ))
-                      )}
-                    </Menu>
-                  </Grid>
+                        )}
+                        {allowRecord && (
+                          <>
+                            {noiseRemovalControl() && (
+                              <MenuItem onClick={handleMoreMenuClose}>
+                                {noiseRemovalControl()}
+                              </MenuItem>
+                            )}
+                            {voiceChangeControl() && (
+                              <MenuItem onClick={handleMoreMenuClose}>
+                                {voiceChangeControl()}
+                              </MenuItem>
+                            )}
+                            {normalizeControl() && (
+                              <MenuItem onClick={handleMoreMenuClose}>
+                                {normalizeControl()}
+                              </MenuItem>
+                            )}
+                            <MenuItem onClick={handleMoreMenuClose}>
+                              {microphoneControl()}
+                            </MenuItem>
+                          </>
+                        )}
+                      </Menu>
+                      <Menu
+                        anchorEl={micMenuAnchorEl}
+                        open={micMenuOpen}
+                        onClose={handleMicMenuClose}
+                        anchorOrigin={{
+                          vertical: 'bottom',
+                          horizontal: 'left',
+                        }}
+                        transformOrigin={{
+                          vertical: 'top',
+                          horizontal: 'left',
+                        }}
+                      >
+                        {audioInputDevices.length === 0 ? (
+                          <MenuItem disabled>{ts.noAudio}</MenuItem>
+                        ) : (
+                          audioInputDevices.map((device, index) => (
+                            <MenuItem
+                              key={device.deviceId || `input-${index}`}
+                              selected={
+                                selectedMicrophoneId === device.deviceId
+                              }
+                              onClick={() => handleMicSelect(device.deviceId)}
+                            >
+                              {device.label || `Input ${index + 1}`}
+                            </MenuItem>
+                          ))
+                        )}
+                      </Menu>
+                    </Grid>
+                  )}
                 </>
               )}
               {allowSegment && (
@@ -1505,97 +1663,104 @@ function WSAudioPlayer(props: IProps) {
                     </>
                   )}
                 </Grid>
-                <VertDivider id="wsAudioDiv5" />
-                <Grid>
+                {allowGoTo && (
                   <>
-                    <LightTooltip
-                      id="wsAudioHomeTip"
-                      title={t.beginningTip.replace(
-                        '{0}',
-                        localizeHotKey(HOME_KEY)
-                      )}
-                    >
-                      <span>
-                        <IconButton
-                          id="wsAudioHome"
-                          onClick={handleGotoEv(0)}
-                          disabled={!ready || recording}
+                    <VertDivider id="wsAudioDiv5" />
+                    <Grid>
+                      <>
+                        <LightTooltip
+                          id="wsAudioHomeTip"
+                          title={t.beginningTip.replace(
+                            '{0}',
+                            localizeHotKey(HOME_KEY)
+                          )}
                         >
-                          <SkipPreviousIcon />
-                        </IconButton>
-                      </span>
-                    </LightTooltip>
-                    <LightTooltip
-                      id="wsAudioBackTip"
-                      title={t.backTip
-                        .replace('{jump}', jump.toString())
-                        .replace('{1}', t.seconds)
-                        .replace('{0}', localizeHotKey(BACK_KEY))}
-                    >
-                      <span>
-                        <IconButton
-                          id="wsAudioBack"
-                          onClick={handleJumpEv(-1 * jump)}
-                          disabled={!ready || recording}
+                          <span>
+                            <IconButton
+                              id="wsAudioHome"
+                              onClick={handleGotoEv(0)}
+                              disabled={!ready || recording}
+                            >
+                              <SkipPreviousIcon />
+                            </IconButton>
+                          </span>
+                        </LightTooltip>
+                        <LightTooltip
+                          id="wsAudioBackTip"
+                          title={t.backTip
+                            .replace('{jump}', jump.toString())
+                            .replace('{1}', t.seconds)
+                            .replace('{0}', localizeHotKey(BACK_KEY))}
                         >
-                          <ReplayIcon />
-                        </IconButton>
-                      </span>
-                    </LightTooltip>
+                          <span>
+                            <IconButton
+                              id="wsAudioBack"
+                              onClick={handleJumpEv(-1 * jump)}
+                              disabled={!ready || recording}
+                            >
+                              <ReplayIcon />
+                            </IconButton>
+                          </span>
+                        </LightTooltip>
 
-                    <LightTooltip
-                      id="wsAudioPlayTip"
-                      title={(playing
-                        ? oneTryOnly
-                          ? t.stopTip
-                          : t.pauseTip
-                        : t.playTip
-                      ).replace('{0}', localizeHotKey(PLAY_PAUSE_KEY))}
-                    >
-                      <span>
-                        <IconButton
-                          id="wsAudioPlay"
-                          onClick={togglePlayStatus}
-                          disabled={duration === 0 || recording}
+                        <LightTooltip
+                          id="wsAudioPlayTip"
+                          title={(playing
+                            ? oneTryOnly
+                              ? t.stopTip
+                              : t.pauseTip
+                            : t.playTip
+                          ).replace('{0}', localizeHotKey(PLAY_PAUSE_KEY))}
                         >
-                          <>{playing ? <PauseIcon /> : <PlayIcon />}</>
-                        </IconButton>
-                      </span>
-                    </LightTooltip>
-                    <LightTooltip
-                      id="wsAudioForwardTip"
-                      title={t.aheadTip
-                        .replace('{jump}', jump.toString())
-                        .replace('{1}', t.seconds)
-                        .replace('{0}', localizeHotKey(AHEAD_KEY))}
-                    >
-                      <span>
-                        <IconButton
-                          id="wsAudioForward"
-                          onClick={handleJumpEv(jump)}
-                          disabled={!ready || recording}
+                          <span>
+                            <IconButton
+                              id="wsAudioPlay"
+                              onClick={togglePlayStatus}
+                              disabled={duration === 0 || recording}
+                            >
+                              <>{playing ? <PauseIcon /> : <PlayIcon />}</>
+                            </IconButton>
+                          </span>
+                        </LightTooltip>
+                        <LightTooltip
+                          id="wsAudioForwardTip"
+                          title={t.aheadTip
+                            .replace('{jump}', jump.toString())
+                            .replace('{1}', t.seconds)
+                            .replace('{0}', localizeHotKey(AHEAD_KEY))}
                         >
-                          <ForwardIcon />{' '}
-                        </IconButton>
-                      </span>
-                    </LightTooltip>
+                          <span>
+                            <IconButton
+                              id="wsAudioForward"
+                              onClick={handleJumpEv(jump)}
+                              disabled={!ready || recording}
+                            >
+                              <ForwardIcon />{' '}
+                            </IconButton>
+                          </span>
+                        </LightTooltip>
 
-                    <LightTooltip
-                      id="wsAudioEndTip"
-                      title={t.endTip.replace('{0}', localizeHotKey(END_KEY))}
-                    >
-                      <span>
-                        <IconButton
-                          id="wsAudioEnd"
-                          onClick={handleGoToEnd}
-                          disabled={!ready || recording}
+                        <LightTooltip
+                          id="wsAudioEndTip"
+                          title={t.endTip.replace(
+                            '{0}',
+                            localizeHotKey(END_KEY)
+                          )}
                         >
-                          <SkipNextIcon />{' '}
-                        </IconButton>
-                      </span>
-                    </LightTooltip>
+                          <span>
+                            <IconButton
+                              id="wsAudioEnd"
+                              onClick={handleGoToEnd}
+                              disabled={!ready || recording}
+                            >
+                              <SkipNextIcon />{' '}
+                            </IconButton>
+                          </span>
+                        </LightTooltip>
+                      </>
+                    </Grid>
                   </>
-                </Grid>
+                )}
                 {allowSpeed && (
                   <>
                     <VertDivider id="wsAudioDiv6" />
@@ -1635,6 +1800,48 @@ function WSAudioPlayer(props: IProps) {
                 <GrowingSpacer />
                 {!onSaveProgress && <>{metaData}</>}
               </Grid>
+            )}
+            {allowRecord && !oneShotUsed && (
+              <Box
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  width: '100%',
+                  py: 2,
+                }}
+              >
+                <LightTooltip id="wsAudioRecordTip" title={recordTooltipTitle}>
+                  <Button
+                    id="wsAudioRecord"
+                    variant="contained"
+                    onClick={handleRecorder}
+                    disabled={playing || processingRecording || waitingForAI}
+                    size="large"
+                    sx={{
+                      minWidth: 80,
+                      height: 56,
+                      fontSize: '1.2rem',
+                      px: 2,
+                      color: 'error.main',
+                      '& svg': {
+                        fontSize: '3rem',
+                        color: 'error.main',
+                      },
+                    }}
+                  >
+                    {recording ? (
+                      oneTryOnly ? (
+                        <StopCircle />
+                      ) : (
+                        <PauseCircle />
+                      )
+                    ) : (
+                      <RecordCircle />
+                    )}
+                  </Button>
+                </LightTooltip>
+              </Box>
             )}
             {confirmAction === '' || (
               <Confirm

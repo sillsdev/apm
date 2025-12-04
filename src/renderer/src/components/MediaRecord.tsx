@@ -26,6 +26,7 @@ import {
   waitForIt,
   cleanFileName,
 } from '../utils';
+import { isMobileWidth } from '../utils/isMobileWidth';
 import {
   IMediaState,
   MediaSt,
@@ -173,6 +174,20 @@ function MediaRecord(props: IProps) {
   );
   const sizeLimit = SIZELIMIT(UploadType.Media);
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
+  const [isMobileView, setIsMobileView] = useState(isMobileWidth());
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobileView(isMobileWidth());
+    };
+
+    window.addEventListener('resize', handleResize);
+    handleResize();
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
 
   const mimes = useMemo(
     () => [
@@ -552,7 +567,7 @@ function MediaRecord(props: IProps) {
         </Typography>
       )}
       <Stack direction="row" sx={{ alignItems: 'center' }}>
-        {showFilename && (
+        {showFilename && !isMobileView && (
           <TextField
             sx={controlProps}
             id="filename"
@@ -566,7 +581,7 @@ function MediaRecord(props: IProps) {
         <Typography sx={{ mr: 3 }} id="size">
           {`${((audioBlob?.size ?? 0) / 1000000 / compression).toFixed(2)}MB`}
         </Typography>
-        {allowWave && (
+        {allowWave && !isMobileView && (
           <FormControlLabel
             control={
               <Checkbox

@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { useGlobal } from '../context/useGlobal';
-import { ICommunityStrings, MediaFileD } from '../model';
+import { ICommunityStrings, ISharedStrings, MediaFileD } from '../model';
 import TextField from '@mui/material/TextField';
 import Autocomplete, { createFilterOptions } from '@mui/material/Autocomplete';
 import SupportAgentIcon from '@mui/icons-material/SupportAgent';
@@ -12,7 +12,7 @@ import DialogActions from '@mui/material/DialogActions';
 import IntellectualProperty from '../model/intellectualProperty';
 import BigDialog from '../hoc/BigDialog';
 import ProvideRights from './ProvideRights';
-import { communitySelector } from '../selector';
+import { communitySelector, sharedSelector } from '../selector';
 import { shallowEqual, useSelector } from 'react-redux';
 import { ArtifactTypeSlug, findRecord, related } from '../crud';
 import { Typography, Stack } from '@mui/material';
@@ -55,6 +55,7 @@ export function SpeakerName({
   const { showMessage } = useSnackBar();
   const [memory] = useGlobal('memory');
   const t: ICommunityStrings = useSelector(communitySelector, shallowEqual);
+  const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
 
   const handleRights = () => {
     onRights && onRights(false);
@@ -281,7 +282,7 @@ export function SpeakerName({
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCloseSelectDialog}>{t.cancel}</Button>
+          <Button onClick={handleCloseSelectDialog}>{ts.cancel}</Button>
         </DialogActions>
       </Dialog>
       <BigDialog
