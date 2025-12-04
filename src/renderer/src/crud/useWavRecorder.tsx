@@ -99,7 +99,8 @@ export function useWavRecorder(
     }
 
     previousDeviceIdRef.current = deviceId;
-  }, [allowRecord, deviceId, getMediaStream, reporter, showMessage]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allowRecord, deviceId, reporter]);
 
   function handleError(e: any) {
     const message =
