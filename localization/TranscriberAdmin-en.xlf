@@ -1414,6 +1414,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="community.selectSpeaker">
+         <segment>
+            <source>Select Speaker</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="community.speaker">
          <segment>
             <source>Speaker</source>
