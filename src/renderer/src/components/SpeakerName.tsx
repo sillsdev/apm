@@ -281,7 +281,7 @@ export function SpeakerName({
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCloseSelectDialog}>Cancel</Button>
+          <Button onClick={handleCloseSelectDialog}>{t.cancel}</Button>
         </DialogActions>
       </Dialog>
       <BigDialog
