@@ -103,68 +103,90 @@ interface ITeamsSectionProps {
 }
 const TeamsSection = ({ onOpenSettings }: ITeamsSectionProps) => {
   const ctx = React.useContext(TeamContext);
-  const { teams } = ctx.state;
+  const { teams, personalTeam } = ctx.state;
   const theme = useTheme();
   const bgColor = theme.palette.primary.light;
   const contrastColor = theme.palette.getContrastText(bgColor);
   const navigate = useMyNavigate();
+  const [offline] = useGlobal('offline');
+  const [offlineOnly] = useGlobal('offlineOnly');
+  const { userIsOrgAdmin } = useRole();
+
+  const canModifyWorkflow = React.useCallback(
+    (teamId: string) => {
+      if (!teamId || teamId === personalTeam) return false;
+      const team = teams.find((o) => o.id === teamId);
+      if (!team) return false;
+      return (!offline || offlineOnly) && userIsOrgAdmin(team.id);
+    },
+    [teams, personalTeam, offline, offlineOnly, userIsOrgAdmin]
+  );
+
   return (
     <Stack spacing={1} data-testid="teams-section">
       <Typography variant="h6">Teams</Typography>
       <Stack spacing={1}>
-        {teams.map((t) => (
-          <Card
-            key={t.id}
-            sx={{ bgcolor: bgColor, color: contrastColor, p: 0 }}
-            elevation={1}
-            data-testid={`team-${t.id}`}
-            onClick={() => navigate(`/projects/${t.id}`)}
-            style={{ cursor: 'pointer' }}
-          >
-            <Box
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                minHeight: 56,
-                px: 2,
-              }}
+        {teams.map((t) => {
+          const showSettings = canModifyWorkflow(t.id);
+          return (
+            <Card
+              key={t.id}
+              sx={{ bgcolor: bgColor, color: contrastColor, p: 0 }}
+              elevation={1}
+              data-testid={`team-${t.id}`}
+              onClick={() => navigate(`/projects/${t.id}`)}
+              style={{ cursor: 'pointer' }}
             >
-              <Typography
+              <Box
                 sx={{
-                  flexGrow: 1,
                   display: 'flex',
                   alignItems: 'center',
-                  color: 'inherit',
-                  fontWeight: 500,
-                  lineHeight: 1.2,
+                  minHeight: 56,
+                  px: 2,
                 }}
               >
-                {t.attributes?.name || 'Unnamed Team'}
-              </Typography>
-              <IconButton
-                size="small"
-                aria-label="team settings"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onOpenSettings(t.id);
-                }}
-                sx={(theme) => ({
-                  color: theme.palette.common.white,
-                  transition: 'background-color .2s, color .2s',
-                  '&:hover': {
-                    backgroundColor: alpha(theme.palette.common.white, 0.25),
-                  },
-                  '&:focus-visible': {
-                    backgroundColor: alpha(theme.palette.common.white, 0.0),
-                  },
-                })}
-                data-testid={`team-settings-${t.id}`}
-              >
-                <SettingsIcon fontSize="small" />
-              </IconButton>
-            </Box>
-          </Card>
-        ))}
+                <Typography
+                  sx={{
+                    flexGrow: 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    color: 'inherit',
+                    fontWeight: 500,
+                    lineHeight: 1.2,
+                  }}
+                >
+                  {t.attributes?.name || 'Unnamed Team'}
+                </Typography>
+                {showSettings && (
+                  <IconButton
+                    size="small"
+                    aria-label="team settings"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onOpenSettings(t.id);
+                    }}
+                    sx={(theme) => ({
+                      color: theme.palette.common.white,
+                      transition: 'background-color .2s, color .2s',
+                      '&:hover': {
+                        backgroundColor: alpha(
+                          theme.palette.common.white,
+                          0.25
+                        ),
+                      },
+                      '&:focus-visible': {
+                        backgroundColor: alpha(theme.palette.common.white, 0.0),
+                      },
+                    })}
+                    data-testid={`team-settings-${t.id}`}
+                  >
+                    <SettingsIcon fontSize="small" />
+                  </IconButton>
+                )}
+              </Box>
+            </Card>
+          );
+        })}
       </Stack>
     </Stack>
   );
