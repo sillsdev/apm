@@ -2,13 +2,20 @@
   "extends": "./tsconfig.json",
   "exclude": ["**/cypress.d.ts", "**/cypress", "**/*.cy.ts*"],
   "compilerOptions": {
-    "types": ["@types/jest", "@testing-library/jest-dom", "node"],
+    "types": [
+      "@types/jest",
+      "@testing-library/jest-dom",
+      "@types/react",
+      "node"
+    ],
     "module": "commonjs",
     "target": "es2020",
     "moduleResolution": "node",
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
-    "strict": false
+    "strict": false,
+    "jsx": "react-jsx",
+    "lib": ["DOM", "DOM.Iterable", "ESNext"]
   },
-  "include": ["**/*.test.ts*", "**/*.pacttest.ts*", "**/*.d.ts"]
+  "include": ["src/**/*.ts*", "**/*.test.ts*", "**/*.pacttest.ts*", "**/*.d.ts"]
 }

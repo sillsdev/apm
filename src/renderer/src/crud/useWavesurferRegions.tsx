@@ -74,22 +74,22 @@ export function useWaveSurferRegions(
   const theme = useTheme();
   const wsRef = useRef<WaveSurfer | null>(ws);
   const singleRegionRef = useRef(singleRegionOnly);
-  const currentRegionRef = useRef<any>();
-  const loopingRegionRef = useRef<any>();
+  const currentRegionRef = useRef<any>(undefined);
+  const loopingRegionRef = useRef<any>(undefined);
   const loopingRef = useRef(false);
   const updatingRef = useRef(false);
   const resizingRef = useRef(false);
   const loadingRef = useRef(false);
-  const playRegionRef = useRef<Region | undefined>();
-  const paramsRef = useRef<IRegionParams>();
-  const peaksRef = useRef<Array<number> | undefined>();
+  const playRegionRef = useRef<Region | undefined>(undefined);
+  const paramsRef = useRef<IRegionParams | undefined>(undefined);
+  const peaksRef = useRef<Array<number> | undefined>(undefined);
   const lastClickTimeRef = useRef<number>(0);
   const lastClickedRegionRef = useRef<string>(''); //for both clicks and double clicks
   const lastDoubleClickTimeRef = useRef<number>(0);
   const currentRegionOriginalColorRef = useRef<string>(''); // Store the original color of the current region
 
   // Store finish handler reference for cleanup
-  const finishHandlerRef = useRef<(() => void) | undefined>();
+  const finishHandlerRef = useRef<(() => void) | undefined>(undefined);
 
   const CLICK_DEBOUNCE_MS = 100; // Minimum time between clicks
   const CURRENT_REGION_COLOR = (theme.palette as any).custom.currentRegion; // Green color for current region
