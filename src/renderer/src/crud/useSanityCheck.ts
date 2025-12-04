@@ -16,7 +16,8 @@ export const useSanityCheck = (setLanguage: typeof actions.setLanguage) => {
   const [coordinator] = useGlobal('coordinator');
   const memory = coordinator?.getSource('memory') as Memory;
   const remote = coordinator?.getSource('datachanges') as JSONAPISource;
-  const token = useContext(TokenContext).state.accessToken;
+  const tokenContext = useContext(TokenContext);
+  const token = tokenContext?.state?.accessToken || '';
   const [errorReporter] = useGlobal('errorReporter');
   const getGlobal = useGetGlobal();
 
@@ -379,7 +380,7 @@ export const useSanityCheck = (setLanguage: typeof actions.setLanguage) => {
     const project = findRecord(memory, 'project', projectId) as ProjectD;
     let plan: PlanD;
     const remoteProjectId = project?.keys?.remoteId ?? '';
-    if (!getGlobal('offline') && project?.keys?.remoteId) {
+    if (token && !getGlobal('offline') && project?.keys?.remoteId) {
       const tables = staticFiles
         .concat(updateableFiles)
         .sort((i, j) => (i.sort <= j.sort ? -1 : 1))

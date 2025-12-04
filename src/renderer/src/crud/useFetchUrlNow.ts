@@ -17,7 +17,8 @@ export interface IFetchNowProps {
   noDownload?: boolean;
 }
 export const useFetchUrlNow = () => {
-  const { accessToken } = useContext(TokenContext).state;
+  const tokenContext = useContext(TokenContext);
+  const accessToken = tokenContext?.state?.accessToken;
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
 
   const fetchUrl = async (props: IFetchNowProps): Promise<string> => {
