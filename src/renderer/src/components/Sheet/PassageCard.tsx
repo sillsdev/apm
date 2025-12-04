@@ -97,7 +97,7 @@ export function PassageCard(props: IProps) {
               fontWeight: 'bold',
             }}
           >
-            {cardInfo.step}
+            {cardInfo.step || '\u00A0'}
           </span>
           <ArrowForwardIos
             sx={{

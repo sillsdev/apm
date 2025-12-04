@@ -157,10 +157,8 @@ export const isPassageFiltered = (
 
 export interface GetSheetProps {
   plan: string;
-  sections?: SectionD[];
-  sectionsD?: SectionD[];
-  passages?: PassageD[];
-  passagesD: PassageD[];
+  sections: SectionD[];
+  passages: PassageD[];
   organizationSchemeSteps: OrganizationSchemeStepD[];
   flat: boolean;
   projectShared: boolean;
@@ -203,9 +201,7 @@ export interface GetSheetProps {
 export const getSheet = ({
   plan,
   sections,
-  sectionsD,
   passages,
-  passagesD,
   organizationSchemeSteps,
   flat,
   projectShared,
@@ -229,14 +225,8 @@ export const getSheet = ({
 }: GetSheetProps) => {
   const myWork = current || Array<ISheet>();
   const plansections = sections
-    ? sections
-        .filter((s) => related(s, 'plan') === plan)
-        .sort((i, j) => i.attributes?.sequencenum - j.attributes?.sequencenum)
-    : sectionsD
-      ? sectionsD
-          .filter((s) => related(s, 'plan') === plan)
-          .sort((i, j) => i.attributes?.sequencenum - j.attributes?.sequencenum)
-      : [];
+    .filter((s) => related(s, 'plan') === plan)
+    .sort((i, j) => i.attributes?.sequencenum - j.attributes?.sequencenum);
   let sectionfiltered = false;
   let schemeId: string | undefined = undefined;
   plansections.forEach((section) => {
@@ -305,14 +295,8 @@ export const getSheet = ({
       item = { ...initItem };
     }
     const sectionPassages = passages
-      ? passages
-          .filter((p) => related(p, 'section') === section.id)
-          .sort((i, j) => i.attributes?.sequencenum - j.attributes?.sequencenum)
-      : passagesD
-          .filter((p) => related(p, 'section') === section.id)
-          .sort(
-            (i, j) => i.attributes?.sequencenum - j.attributes?.sequencenum
-          );
+      .filter((p) => related(p, 'section') === section.id)
+      .sort((i, j) => i.attributes?.sequencenum - j.attributes?.sequencenum);
     sectionPassages.forEach((passage) => {
       const passAttr = passage.attributes;
       if (passAttr) {

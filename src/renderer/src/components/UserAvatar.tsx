@@ -9,10 +9,11 @@ import { useOrbitData } from '../hoc/useOrbitData';
 interface IProps {
   userRec?: UserD;
   small?: boolean;
+  medium?: boolean;
 }
 
 export function UserAvatar(props: IProps) {
-  const { userRec, small } = props;
+  const { userRec, small, medium } = props;
   const users = useOrbitData<UserD[]>('user');
   const [user] = useGlobal('user');
 
@@ -33,7 +34,12 @@ export function UserAvatar(props: IProps) {
   const source = useAvatarSource(curUser.attributes?.familyName || '', curUser);
 
   return source ? (
-    <Avatar id="srcuser" alt={curUser.attributes?.name || ''} src={source} />
+    <Avatar
+      id="srcuser"
+      alt={curUser.attributes?.name || ''}
+      src={source}
+      sx={medium ? avatarSize(small, medium) : avatarSize(small)}
+    />
   ) : curUser.attributes && curUser.attributes.name !== '' ? (
     <Avatar id="abbruser" sx={avatarSize(small)}>
       {makeAbbr(curUser.attributes.name)}

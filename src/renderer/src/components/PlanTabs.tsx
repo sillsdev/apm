@@ -938,8 +938,8 @@ const ScrollableTabsButtonAuto = (props: IProps) => {
       setUpdate(true);
       const newWorkflow = getSheet({
         plan,
-        sectionsD,
-        passagesD,
+        sections: sectionsD,
+        passages: passagesD,
         organizationSchemeSteps,
         flat,
         projectShared: shared,

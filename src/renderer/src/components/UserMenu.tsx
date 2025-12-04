@@ -87,7 +87,7 @@ export function UserMenu(props: IProps) {
         onClick={handleClick}
         size="small"
       >
-        <UserAvatar userRec={userRec} />
+        <UserAvatar userRec={userRec} medium />
       </Button>
       <StyledMenu
         id="custom-user-menu"

@@ -1467,7 +1467,6 @@ export function ScriptureTable(props: IProps) {
         plan,
         sections,
         passages,
-        passagesD: passages,
         organizationSchemeSteps,
         flat,
         projectShared: shared,
