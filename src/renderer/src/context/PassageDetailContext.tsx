@@ -262,7 +262,9 @@ const PassageDetailProvider = (props: IProps) => {
   });
   const [blobState, fetchBlob] = useFetchMediaBlob();
   const fetching = useRef('');
-  const segmentsCb = useRef<(segments: string) => void>(undefined);
+  const segmentsCb = useRef<((segments: string) => void) | undefined>(
+    undefined
+  );
   const getFilteredSteps = useFilteredSteps();
   const { localizedArtifactType, getTypeId } = useArtifactType();
   const { localizedArtifactCategory } = useArtifactCategory();

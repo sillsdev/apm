@@ -276,8 +276,9 @@ function WSAudioPlayer(props: IProps) {
     cursor: busy || loading ? 'progress' : 'default',
   });
   const autostartTimer = useRef<NodeJS.Timeout | undefined>(undefined);
-  const onSaveProgressRef =
-    useRef<(progress: number) => void | undefined>(undefined);
+  const onSaveProgressRef = useRef<((progress: number) => void) | undefined>(
+    undefined
+  );
   const [oneShotUsed, setOneShotUsed] = useState(false);
   const [audioInputDevices, setAudioInputDevices] = useState<MediaDeviceInfo[]>(
     []
