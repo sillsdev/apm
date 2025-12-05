@@ -66,8 +66,8 @@ export const Language = (props: IProps) => {
   });
   const t: IVProjectStrings = useSelector(vProjectSelector, shallowEqual);
   const lt: IPickerStrings = useSelector(pickerSelector, shallowEqual);
-  const stateRef = React.useRef<ILanguage>();
-  const langEl = React.useRef<any>();
+  const stateRef = React.useRef<ILanguage | undefined>(undefined);
+  const langEl = React.useRef<any>(undefined);
 
   const handleBcp47 = (bcp47: string) => {
     setState((state) => ({ ...state, bcp47 }));

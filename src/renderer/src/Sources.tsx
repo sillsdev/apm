@@ -49,7 +49,7 @@ interface PullStratErrProps {
   tokenCtx: ITokenContext;
   orbitError: (ex: IApiError) => void;
   setOrbitRetries: (r: number) => void;
-  showMessage: (msg: string | JSX.Element, alert?: AlertSeverity) => void;
+  showMessage: (msg: string | React.JSX.Element, alert?: AlertSeverity) => void;
   memory: Memory;
   remote: JSONAPISource;
   orbitRetries: number;
@@ -170,7 +170,7 @@ export const Sources = async (
   setLang: (locale: string) => void,
   getOfflineProject: (plan: Plan | VProject | string) => OfflineProject,
   offlineSetup: () => Promise<void>,
-  showMessage: (msg: string | JSX.Element, alert?: AlertSeverity) => void,
+  showMessage: (msg: string | React.JSX.Element, alert?: AlertSeverity) => void,
   forceDataChanges: () => Promise<void>
 ): Promise<SourcesReturn> => {
   const memory = coordinator?.getSource('memory') as Memory;

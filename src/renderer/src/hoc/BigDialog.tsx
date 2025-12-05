@@ -89,7 +89,7 @@ export const StyledDialog = styled(Dialog, {
 interface IProps {
   title: string;
   description?: ReactElement | undefined;
-  children: JSX.Element;
+  children: React.JSX.Element;
   isOpen: boolean;
   onOpen: (isOpen: boolean) => void;
   onCancel?: (() => void) | undefined;

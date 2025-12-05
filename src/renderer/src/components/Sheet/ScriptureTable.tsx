@@ -256,7 +256,7 @@ export function ScriptureTable(props: IProps) {
   const [recordAudio, setRecordAudio] = useState(true);
   const [importList, setImportList] = useState<File[]>();
   const cancelled = useRef(false);
-  const uploadItem = useRef<ISheet>();
+  const uploadItem = useRef<ISheet | undefined>(undefined);
   const [editRow, setEditRow] = useState<ISheet>();
   const [versionRow, setVersionRow] = useState<ISheet>();
   const [isNote, setIsNote] = useState(false);

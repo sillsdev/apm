@@ -66,7 +66,7 @@ Promise.all(promises)
       remoteBusy: true, //prevent datachanges until after login
       dataChangeCount: 0,
       saveResult: undefined,
-      snackMessage: (<></>) as JSX.Element,
+      snackMessage: (<></>) as React.JSX.Element,
       snackAlert: undefined,
       changed: false,
       projectsLoaded: promResults.length > 1 ? (promResults[1] ?? []) : [],

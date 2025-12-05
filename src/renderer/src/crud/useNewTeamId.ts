@@ -8,7 +8,7 @@ import { RecordKeyMap } from '@orbit/records';
 
 export const useNewTeamId = () => {
   const [memory] = useGlobal('memory');
-  const teamRef = React.useRef<string>();
+  const teamRef = React.useRef<string | undefined>(undefined);
   const orbitTeamCreate = useTeamCreate();
   const getGlobal = useGetGlobal();
 

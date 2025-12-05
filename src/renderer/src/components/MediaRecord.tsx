@@ -59,7 +59,7 @@ interface IProps {
   onRecording?: ((r: boolean) => void) | undefined;
   onPlayStatus?: ((p: boolean) => void) | undefined;
   mediaId?: string | undefined;
-  metaData?: JSX.Element | undefined;
+  metaData?: React.JSX.Element | undefined;
   defaultFilename?: string | undefined;
   allowDeltaVoice?: boolean | undefined;
   setCanSave: (canSave: boolean) => void;

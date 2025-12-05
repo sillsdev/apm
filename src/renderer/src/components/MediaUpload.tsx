@@ -36,7 +36,7 @@ interface IProps {
   multiple?: boolean | undefined;
   cancelMethod?: (() => void) | undefined;
   cancelLabel?: string | undefined;
-  metaData?: JSX.Element | undefined;
+  metaData?: React.JSX.Element | undefined;
   ready?: (() => boolean) | undefined;
   speaker?: string | undefined;
   onSpeaker?: ((speaker: string) => void) | undefined;

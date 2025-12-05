@@ -1,3 +1,4 @@
+/// <reference types="cypress" />
 import React from 'react';
 import ProjectsScreen from './ProjectsScreen';
 import { GlobalProvider } from '../context/GlobalContext';

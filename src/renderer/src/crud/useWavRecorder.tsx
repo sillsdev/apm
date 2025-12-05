@@ -28,7 +28,7 @@ export function useWavRecorder(
   onDataAvailable: (buffer: AudioBuffer) => Promise<void>,
   deviceId?: string
 ) {
-  const wavRecorderRef = useRef<WavRecorder>();
+  const wavRecorderRef = useRef<WavRecorder | undefined>(undefined);
   const isRecordingRef = useRef(false);
   const captureOptions = useMemo(
     () => createCaptureOptions(deviceId),
@@ -36,8 +36,8 @@ export function useWavRecorder(
   );
   const getMediaStream = useUserMedia(captureOptions);
   const mediaStreamRef = useRef<MediaStream | undefined>(undefined);
-  const previousDeviceIdRef = useRef<string | undefined>();
-  const recorderStreamIdRef = useRef<string | undefined>();
+  const previousDeviceIdRef = useRef<string | undefined>(undefined);
+  const recorderStreamIdRef = useRef<string | undefined>(undefined);
   const [reporter] = useGlobal('errorReporter');
   const { showMessage } = useSnackBar();
 

@@ -30,9 +30,9 @@ export function TaskList() {
     overflowY: 'auto',
     cursor: 'default',
   });
-  const formRef = useRef<any>();
-  const selectedRef = useRef<any>();
-  const notSelectedRef = useRef<any>();
+  const formRef = useRef<any>(undefined);
+  const selectedRef = useRef<any>(undefined);
+  const notSelectedRef = useRef<any>(undefined);
   const busyRef = useRef(false);
 
   const handleSelect = (select: string) => () => {

@@ -43,7 +43,7 @@ export const useAudioAi = (): AudioAIResult => {
   const [errorReporter] = useGlobal('errorReporter');
   const fileList: fileTask[] = [];
   const returnAsS3List: fileTask[] = [];
-  const taskTimer = useRef<NodeJS.Timeout>();
+  const taskTimer = useRef<NodeJS.Timeout | undefined>(undefined);
   const token = useContext(TokenContext).state.accessToken;
   const getGlobal = useGetGlobal();
   const cancelled = new Error('canceled');

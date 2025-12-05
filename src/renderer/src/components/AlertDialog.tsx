@@ -28,7 +28,7 @@ const StyledDialogActions = styled(DialogActions, {
 interface IProps {
   title?: string;
   text: string;
-  jsx?: JSX.Element;
+  jsx?: React.JSX.Element;
   no?: string;
   yes?: string;
   noResponse: () => void;

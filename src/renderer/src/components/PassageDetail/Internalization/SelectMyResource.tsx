@@ -20,7 +20,7 @@ export const SelectMyResource = (props: IProps) => {
   const [resource, setResource] = useState('');
   const { scriptureTypeCategory } = useArtifactCategory();
   const [myWidth, setMyWidth] = useState(0);
-  const controlRef = useRef<any>();
+  const controlRef = useRef<any>(undefined);
   const t: ITeamCheckReferenceStrings = useSelector(
     teamCheckRefSelector,
     shallowEqual

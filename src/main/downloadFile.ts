@@ -1,4 +1,4 @@
-import fs from 'fs-extra';
+import * as fs from 'fs-extra';
 import https from 'https';
 import http from 'http';
 import { URL } from 'url';

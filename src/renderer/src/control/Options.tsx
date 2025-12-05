@@ -12,7 +12,7 @@ import {
 import { controlSelector } from '../selector';
 
 export interface IDecorations {
-  [key: string]: JSX.Element;
+  [key: string]: React.JSX.Element;
 }
 
 interface IProps {

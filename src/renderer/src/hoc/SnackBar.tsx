@@ -21,7 +21,7 @@ const Alert = (props: AlertProps) => {
 // moved to ./useSnackBar
 
 interface IProps {
-  children: JSX.Element;
+  children: React.JSX.Element;
 }
 const BarBox = styled(Box)<BoxProps>(() => ({
   '& .MuiPaper-root': {
@@ -30,7 +30,7 @@ const BarBox = styled(Box)<BoxProps>(() => ({
 }));
 
 interface ISBProps {
-  message: JSX.Element;
+  message: React.JSX.Element;
 }
 
 function SimpleSnackbar(props: ISBProps) {

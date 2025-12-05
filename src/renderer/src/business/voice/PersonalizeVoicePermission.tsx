@@ -32,7 +32,7 @@ const StyledTextField = styled(TextField)<TextFieldProps>(() => ({
 }));
 
 interface IDecorations {
-  [key: string]: JSX.Element;
+  [key: string]: React.JSX.Element;
 }
 
 export interface IVoicePerm {
@@ -61,7 +61,7 @@ export default function PersonalizeVoicePermission(props: IProps) {
   const [minorMsg, setMinorMsg] = React.useState('');
   const [genderMsg, setGenderMsg] = React.useState('');
   const [decorations, setDecorations] = React.useState<IDecorations>({});
-  const langEl = React.useRef<any>();
+  const langEl = React.useRef<any>(undefined);
   const t: IVoiceStrings = useSelector(voiceSelector, shallowEqual);
   const localOptions = voicePermOpts.map((option) => t.getString(option));
   const [hideLang, setHideLang] = React.useState(false);

@@ -7,9 +7,9 @@ const myPt = (s: string): string => addPt(s, '{Pt}');
 const translateParatextReferenceError = (
   errMsg: string,
   t: ISharedStrings
-): JSX.Element => {
+): React.JSX.Element => {
   const errs = errMsg.split('||');
-  const localizedErr: JSX.Element[] = [];
+  const localizedErr: React.JSX.Element[] = [];
   errs.forEach((referr) => {
     const parts = referr.split('|');
     const sect = parts[1] as string;
@@ -50,7 +50,7 @@ const translateParatextReferenceError = (
 export const translateParatextError = (
   err: IAxiosStatus,
   t: ISharedStrings
-): string | JSX.Element => {
+): string | React.JSX.Element => {
   if (err.errStatus === 401) return t.expiredToken;
   if (err.errStatus === 400) return myPt(t.invalidParatextLogin);
   if (err.errStatus === 500) {
@@ -70,7 +70,7 @@ export const translateParatextError = (
 export const translateParatextErr = (
   errMsg: string,
   t: ISharedStrings
-): string | JSX.Element => {
+): string | React.JSX.Element => {
   if (errMsg.includes('ReferenceError')) {
     return translateParatextReferenceError(errMsg, t);
   }

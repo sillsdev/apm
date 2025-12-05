@@ -48,7 +48,7 @@ export function useWaveSurfer(
   const [errorReporter] = useGlobal('errorReporter');
   const progressRef = useRef(0);
   const [Regions, setRegions] = useState<RegionsPlugin>();
-  const blobToLoad = useRef<Blob>();
+  const blobToLoad = useRef<Blob | undefined>(undefined);
   const positionToLoad = useRef<number | undefined>(undefined);
   const loadRequests = useRef(0);
   const playingRef = useRef(false);
@@ -58,19 +58,19 @@ export function useWaveSurfer(
   const wavesurferRef = useRef<WaveSurfer | null>(null);
   const isPlayingRef = useRef(false);
   const [undoBuffer, setUndoBuffer] = useState<AudioBuffer | undefined>();
-  const inputRegionsRef = useRef<IRegions>();
+  const inputRegionsRef = useRef<IRegions | undefined>(undefined);
   const regionsLoadedRef = useRef(false);
 
-  const audioContextRef = useRef<AudioContext>();
+  const audioContextRef = useRef<AudioContext | undefined>(undefined);
   const fillpxRef = useRef(0);
   const [playerUrl, setPlayerUrl] = useState<string | undefined>();
   const [actualPxPerSec, setActualPxPerSec] = useState(0);
-  const blobRef = useRef<Blob>();
-  const blobAudioRef = useRef<AudioBuffer>();
+  const blobRef = useRef<Blob | undefined>(undefined);
+  const blobAudioRef = useRef<AudioBuffer | undefined>(undefined);
   const positionRef = useRef<number | undefined>(undefined);
   const loadingRef = useRef(false);
   const recordingRef = useRef(false);
-  const currentBlobUrlRef = useRef<string | undefined>();
+  const currentBlobUrlRef = useRef<string | undefined>(undefined);
 
   // Create plugins outside of useMemo to ensure they're stable
   const regionsPlugin = useMemo(() => {

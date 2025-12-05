@@ -61,7 +61,7 @@ export interface IFetchOrbitData {
   setLang: (locale: string) => void;
   getOfflineProject: (plan: Plan | VProject | string) => OfflineProject;
   offlineSetup: () => Promise<void>;
-  showMessage: (msg: string | JSX.Element, alert?: AlertSeverity) => void;
+  showMessage: (msg: string | React.JSX.Element, alert?: AlertSeverity) => void;
   forceDataChanges: () => Promise<void>;
 }
 

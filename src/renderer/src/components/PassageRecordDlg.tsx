@@ -44,7 +44,7 @@ interface IProps {
   artifactId: string | null;
   afterUploadCb: (mediaId: string | undefined) => Promise<void>;
   passageId: string | undefined;
-  metaData?: JSX.Element | undefined;
+  metaData?: React.JSX.Element | undefined;
   defaultFilename?: string | undefined;
   ready?: (() => boolean) | undefined;
   allowWave?: boolean | undefined;
@@ -79,7 +79,7 @@ function PassageRecordDlg(props: IProps) {
   const [hasRights, setHasRights] = useState(false);
   const [recording, setRecording] = useState(false);
   const [dialogWidth, setDialogWidth] = useState<number>(0);
-  const dialogRef = useRef<HTMLDivElement>(null);
+  const dialogRef = useRef<HTMLDivElement | null>(null);
   const { startSave } = useContext(UnsavedContext).state;
   const t: IPassageRecordStrings = useSelector(
     passageRecordSelector,

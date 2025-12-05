@@ -272,10 +272,10 @@ export const DiscussionCard = (props: IProps) => {
   const [editCard, setEditCard] = useState(false);
   const { localizedArtifactCategory } = useArtifactCategory();
   const { localizedWorkStepFromId } = useOrgWorkflowSteps();
-  const cardRef = useRef<any>();
+  const cardRef = useRef<any>(undefined);
   const commentText = useRef('');
   const [comment, setComment] = useState('');
-  const commentMediaId = useRef<string | undefined>();
+  const commentMediaId = useRef<string | undefined>(undefined);
   const [canSaveRecording, setCanSaveRecording] = useState(false);
   const { userIsAdmin } = useRole();
 

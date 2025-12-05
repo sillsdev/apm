@@ -56,13 +56,13 @@ const UnsavedProvider = (props: PropsWithChildren) => {
   const t: IMainStrings = useSelector(mainSelector);
   const [, setBusy] = useGlobal('remoteBusy');
   const [alertOpen, setAlertOpen] = useGlobal('alertOpen'); //global because planSheet checks it //verified this is not used in a function 2/18/25
-  const saveConfirm = React.useRef<() => any>();
+  const saveConfirm = React.useRef<(() => any) | undefined>(undefined);
   const { showMessage } = useSnackBar();
   const [state, setState] = useState({
     ...initState,
     t,
   });
-  const saveErr = useRef<string>();
+  const saveErr = useRef<string | undefined>(undefined);
   const [saveResult, setSaveResult] = useGlobal('saveResult'); //verified this is not used in a function 2/18/25
   const [, setChangedx] = useGlobal('changed');
   const changedRef = useRef(false);
