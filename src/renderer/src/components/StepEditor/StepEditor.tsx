@@ -83,7 +83,7 @@ export const StepEditor = ({ process, org }: IProps) => {
   const { localizedTool } = useTools();
   const { localizedArtifactTypeFromId, slugFromId } = useArtifactType();
   const [toolSettingsRow, setToolSettingsRow] = useState(-1);
-  const toolRef = useRef<number>();
+  const toolRef = useRef<number | undefined>(undefined);
   const focusIndex = useRef<number>(0);
   const settingsTools = [
     ToolSlug.Transcribe,
