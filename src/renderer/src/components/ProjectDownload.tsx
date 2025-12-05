@@ -269,9 +269,14 @@ export const ProjectDownload = (props: IProps) => {
       />
       {showCancelConfirm && (
         <>
-          {process.env.NODE_ENV === 'development' && !t.confirm && (
-            console.warn('Missing localization for t.confirm in ProjectDownload')
-          )}
+          {process.env.NODE_ENV === 'development' &&
+            !t.confirm &&
+            (() => {
+              console.warn(
+                'Missing localization for t.confirm in ProjectDownload'
+              );
+              return null;
+            })()}
           <Confirm
             text={t.confirm}
             yesResponse={handleCancelConfirmed}

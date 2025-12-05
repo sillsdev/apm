@@ -1,0 +1,62 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "TypeCheck: All Files",
+      "type": "shell",
+      "command": "npm run typecheck:all",
+      "group": {
+        "kind": "test",
+        "isDefault": false
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": false,
+        "clear": true
+      },
+      "problemMatcher": "$tsc",
+      "runOptions": {
+        "runOn": "default"
+      }
+    },
+    {
+      "label": "TypeCheck: Renderer Only",
+      "type": "shell",
+      "command": "cd src/renderer && npm run typecheck:renderer",
+      "group": {
+        "kind": "test",
+        "isDefault": false
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": false,
+        "clear": true
+      },
+      "problemMatcher": "$tsc",
+      "runOptions": {
+        "runOn": "default"
+      }
+    },
+    {
+      "label": "TypeCheck: Node Only",
+      "type": "shell",
+      "command": "npm run typecheck:node",
+      "group": {
+        "kind": "test",
+        "isDefault": false
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": false,
+        "clear": true
+      },
+      "problemMatcher": "$tsc",
+      "runOptions": {
+        "runOn": "default"
+      }
+    }
+  ]
+}
