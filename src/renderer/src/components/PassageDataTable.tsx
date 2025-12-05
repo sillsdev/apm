@@ -25,14 +25,16 @@ import {
   DataGrid,
   type GridRowSelectionModel,
   type GridColDef,
+  type GridSortModel,
 } from '@mui/x-data-grid';
+
+type GridSortItem = GridSortModel[number];
 import BookSelect, { OptionType } from './BookSelect';
 import { useGlobal } from '../context/useGlobal';
 import { usePlanType } from '../crud';
 import usePassageDetailContext from '../context/usePassageDetailContext';
 import { ResourceTypeEnum } from './PassageDetail/Internalization/ResourceTypeEnum';
 import { RefLevel } from './RefLevel';
-import { GridSortItem } from '@mui/x-data-grid/models/gridSortModel';
 
 interface RefOption {
   value: RefLevel;

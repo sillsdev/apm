@@ -33,5 +33,24 @@
   },
   "[markdown]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true,
+  "typescript.preferences.includePackageJsonAutoImports": "on",
+  "typescript.tsserver.watchOptions": {
+    "watchFile": "useFsEvents",
+    "watchDirectory": "useFsEvents",
+    "fallbackPolling": "dynamicPriority",
+    "synchronousWatchDirectory": true,
+    "excludeDirectories": ["**/node_modules", "**/dist", "**/coverage"]
+  },
+  "typescript.validate.enable": true,
+  "typescript.check.npmIsInstalled": false,
+  "typescript.preferences.quoteStyle": "single",
+  "typescript.suggest.autoImports": true,
+  "typescript.updateImportsOnFileMove.enabled": "always",
+  "typescript.tsconfig": {
+    "src/renderer/src/**/*.cy.tsx": "./src/renderer/tsconfig.cypress.json",
+    "src/renderer/src/**/*.cy.ts": "./src/renderer/tsconfig.cypress.json"
   }
 }

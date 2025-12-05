@@ -51,8 +51,10 @@ import {
   type GridRenderCellParams,
   type GridColDef,
   type GridRowSelectionModel,
+  type GridSortModel,
 } from '@mui/x-data-grid';
-import { GridSortItem } from '@mui/x-data-grid/models/gridSortModel';
+
+type GridSortItem = GridSortModel[number];
 import ArrowLeftIcon from '@mui/icons-material/ArrowBack';
 import ArrowRightIcon from '@mui/icons-material/ArrowForward';
 
