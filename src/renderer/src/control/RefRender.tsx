@@ -27,7 +27,7 @@ import { passageTypeFromRef } from './passageTypeFromRef';
 interface AtProps {
   value: any;
   type: PassageTypeEnum;
-  Icon: JSX.Element;
+  Icon: React.JSX.Element;
   fontSize?: string;
 }
 
@@ -68,7 +68,7 @@ ArgType.displayName = 'ArgType';
  * @returns The corresponding icon component based on the passage type.
  */
 interface IPtMap {
-  [key: string]: JSX.Element;
+  [key: string]: React.JSX.Element;
 }
 const passageTypeMap: IPtMap = {
   [PassageTypeEnum.MOVEMENT]: MovementIcon,

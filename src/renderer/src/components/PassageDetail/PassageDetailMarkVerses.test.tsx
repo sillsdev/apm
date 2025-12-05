@@ -38,7 +38,7 @@ interface IRow {
   artifactType: string;
   artifactCategory: string;
   done: boolean;
-  editAction: JSX.Element | null;
+  editAction: React.JSX.Element | null;
   resource: SectionResourceD | null;
   passageId: string;
   isVernacular: boolean;

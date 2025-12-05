@@ -30,12 +30,12 @@ interface IProps {
   dimension: number[];
   isOpen: boolean;
   onOpen: (visible: boolean) => void;
-  showMessage: (msg: string | JSX.Element) => void;
+  showMessage: (msg: string | React.JSX.Element) => void;
   hasRights?: boolean; // required for upload
   finish?: (images: CompressedImages[]) => void; // when conversion complete
   cancelled: React.MutableRefObject<boolean>;
   uploadType?: UploadType;
-  metadata?: JSX.Element;
+  metadata?: React.JSX.Element;
   onFiles?: (files: File[]) => void;
 }
 

@@ -70,7 +70,7 @@ export function PassageHistory(props: IProps) {
   useEffect(() => {
     const historyItem = (
       psc: PassageStateChangeD,
-      comment: JSX.Element | string,
+      comment: React.JSX.Element | string,
       type: string,
       editable: boolean
     ) => {
@@ -147,7 +147,7 @@ export function PassageHistory(props: IProps) {
       );
     };
     const historyList = () => {
-      const results: Array<JSX.Element> = [];
+      const results: Array<React.JSX.Element> = [];
       let curState: ActivityStates = ActivityStates.Done;
       let curComment = '';
       curStateChanges.forEach((psc) => {

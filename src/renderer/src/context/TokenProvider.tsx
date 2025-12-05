@@ -37,7 +37,7 @@ export interface ITokenContext {
 const TokenContext = React.createContext({} as ITokenContext);
 
 interface IProps {
-  children: JSX.Element;
+  children: React.JSX.Element;
 }
 
 function TokenProvider(props: IProps) {

@@ -100,7 +100,7 @@ export default function FindBibleBrain({
     shallowEqual
   );
   const { getLanguages, getBibles } = useBibleBrain();
-  const IntervalIdRef = useRef<NodeJS.Timeout>();
+  const IntervalIdRef = useRef<NodeJS.Timeout | undefined>(undefined);
   const { showMessage } = useSnackBar();
   const [errorReporter] = useGlobal('errorReporter');
 

@@ -48,7 +48,7 @@ export function HiddenPlayer(props: HiddenPlayerProps) {
   const [defaultSegments, setDefaultSegments] = useState('{}');
   const segmentsRef = useRef('');
   const playingRef = useRef(playing);
-  const mediafileRef = useRef<MediaFile>();
+  const mediafileRef = useRef<MediaFile | undefined>(undefined);
   const durationRef = useRef(0);
 
   const { onPlayStatus, onCurrentSegment } = usePlayerLogic({

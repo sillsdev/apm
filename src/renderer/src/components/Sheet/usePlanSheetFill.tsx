@@ -47,7 +47,7 @@ import {
   passageTypeFromRef,
 } from '../../control/passageTypeFromRef';
 
-type ICellEditor = (props: any) => JSX.Element;
+type ICellEditor = (props: any) => React.JSX.Element;
 type IRow = (string | number)[];
 
 const pointer = { cursor: 'pointer' };

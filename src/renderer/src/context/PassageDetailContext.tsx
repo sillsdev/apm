@@ -98,7 +98,7 @@ export interface IRow {
   artifactType: string;
   artifactCategory: string;
   done: boolean;
-  editAction: JSX.Element | null;
+  editAction: React.JSX.Element | null;
   resource: SectionResourceD | null;
   passageId: string;
   isVernacular: boolean;
@@ -262,22 +262,22 @@ const PassageDetailProvider = (props: IProps) => {
   });
   const [blobState, fetchBlob] = useFetchMediaBlob();
   const fetching = useRef('');
-  const segmentsCb = useRef<(segments: string) => void>();
+  const segmentsCb = useRef<(segments: string) => void>(undefined);
   const getFilteredSteps = useFilteredSteps();
   const { localizedArtifactType, getTypeId } = useArtifactType();
   const { localizedArtifactCategory } = useArtifactCategory();
   const { localizedWorkStep } = useOrgWorkflowSteps();
   const getStepsBusy = useRef<boolean>(false);
-  const mediaStart = useRef<number | undefined>();
-  const mediaEnd = useRef<number | undefined>();
-  const mediaPosition = useRef<number | undefined>();
-  const currentSegmentRef = useRef<IRegion | undefined>();
+  const mediaStart = useRef<number | undefined>(undefined);
+  const mediaEnd = useRef<number | undefined>(undefined);
+  const mediaPosition = useRef<number | undefined>(undefined);
+  const currentSegmentRef = useRef<IRegion | undefined>(undefined);
   const { startSave, startClear, waitForSave } =
     useContext(UnsavedContext).state;
-  const highlightRef = useRef<number>();
+  const highlightRef = useRef<number | undefined>(undefined);
   const refreshRef = useRef<number>(0);
   const settingSegmentRef = useRef(false);
-  const inPlayerRef = useRef<string>();
+  const inPlayerRef = useRef<string | undefined>(undefined);
   const { getOrgDefault } = useOrgDefaults();
   const getGlobal = useGetGlobal();
   const { canPublish } = useProjectPermissions();

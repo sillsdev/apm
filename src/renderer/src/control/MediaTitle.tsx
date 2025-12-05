@@ -177,7 +177,7 @@ export default function MediaTitle(props: IProps) {
   const [recording, setRecording] = useState(false);
   const [playing, setPlaying] = useState(false);
   const [srcMediaId, setSrcMediaId] = useState('');
-  const langEl = useRef<any>();
+  const langEl = useRef<any>(undefined);
   const t: IMediaTitleStrings = useSelector(mediaTitleSelector, shallowEqual);
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
   const saving = useRef(false);

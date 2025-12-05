@@ -26,7 +26,7 @@ import {
   MediaFileD,
 } from '../model';
 import { Grid, Paper, Typography, IconButton, Box, Stack } from '@mui/material';
-import { StyledTextAreaAudosize } from '../control/WebFontStyles';
+import { StyledTextAreaAutosize } from '../control/WebFontStyles';
 import useTodo from '../context/useTodo';
 import PullIcon from '@mui/icons-material/GetAppOutlined';
 import { AltButton, GrowingDiv, LightTooltip, PriButton } from '../control';
@@ -217,11 +217,11 @@ export function Transcriber(props: IProps) {
   const [assigned, setAssigned] = useState('');
   const [projData, setProjData] = useState<FontData>();
   const [suggestedSegs, setSuggestedSegs] = useState<string>();
-  const verseSegs = useRef<string>();
+  const verseSegs = useRef<string | undefined>(undefined);
   const [verseLabels, setVerseLabels] = useState<string[]>([]);
   const [contentVerses, setContentVerses] = useState<string[]>([]);
   const playedSecsRef = useRef<number>(0);
-  const segmentsRef = useRef<string>();
+  const segmentsRef = useRef<string | undefined>(undefined);
   const stateRef = useRef<string>(state);
   const [transcribing] = useState(
     state === ActivityStates.Transcribing ||
@@ -247,7 +247,7 @@ export function Transcriber(props: IProps) {
   const [noParatext, setNoParatext] = useState(false);
   const [paratextProject, setParatextProject] = React.useState('');
   const [paratextIntegration, setParatextIntegration] = React.useState('');
-  const transcriptionIn = React.useRef<string>();
+  const transcriptionIn = React.useRef<string | undefined>(undefined);
   const saving = React.useRef(false);
   const {
     toolsChanged,
@@ -259,9 +259,9 @@ export function Transcriber(props: IProps) {
   const [changed, setChanged] = useState(false);
   const [confirm, setConfirm] = useState<ITrans>();
   const transcriptionRef = React.useRef<any>(null);
-  const playingRef = useRef<boolean>();
-  const mediaRef = useRef<MediaFile>();
-  const autosaveTimer = React.useRef<NodeJS.Timeout>();
+  const playingRef = useRef<boolean | undefined>(undefined);
+  const mediaRef = useRef<MediaFile | undefined>(undefined);
+  const autosaveTimer = React.useRef<NodeJS.Timeout | undefined>(undefined);
   const { subscribe, unsubscribe } = useContext(HotKeyContext).state;
   const t = transcriberStr;
   const {
@@ -1218,7 +1218,7 @@ export function Transcriber(props: IProps) {
                 container
                 direction="column"
               >
-                <StyledTextAreaAudosize
+                <StyledTextAreaAutosize
                   autoFocus
                   id="transcriber.text"
                   value={textValue}

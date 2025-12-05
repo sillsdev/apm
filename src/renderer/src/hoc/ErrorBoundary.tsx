@@ -15,7 +15,7 @@ interface IStateProps {
 
 interface IProps extends IStateProps {
   errorReporter: any;
-  children: JSX.Element;
+  children: React.JSX.Element;
 }
 
 const initState = {

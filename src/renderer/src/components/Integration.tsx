@@ -252,7 +252,7 @@ export function IntegrationPanel(props: IProps) {
   const { accessToken } = useContext(TokenContext).state;
   const forceDataChanges = useDataChanges();
   const [count, setCount] = useState(-1);
-  const [countMsg, setCountMsg] = useState<string | JSX.Element>();
+  const [countMsg, setCountMsg] = useState<string | React.JSX.Element>();
 
   const [paratextIntegration, setParatextIntegration] = useState('');
   const [coordinator] = useGlobal('coordinator');
@@ -301,7 +301,7 @@ export function IntegrationPanel(props: IProps) {
     setProjectDefault(projDefExportNumbers, JSON.stringify(checked));
   };
 
-  const TranslateSyncError = (err: IAxiosStatus): JSX.Element => {
+  const TranslateSyncError = (err: IAxiosStatus): React.JSX.Element => {
     return <span>{translateParatextError(err, ts)}</span>;
   };
 

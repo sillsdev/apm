@@ -155,7 +155,7 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
   const segmentsRef = useRef('');
   const playingRef = useRef(playing);
   const savingRef = useRef(false);
-  const mediafileRef = useRef<MediaFile>();
+  const mediafileRef = useRef<MediaFile | undefined>(undefined);
   const durationRef = useRef(0);
   const { getOrgDefault } = useOrgDefaults();
   const [org] = useGlobal('organization');

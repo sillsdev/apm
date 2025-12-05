@@ -160,7 +160,7 @@ export function DiscussionList({ onClose }: DiscussionListProps) {
     sort = 'sort',
     changePassage = 'leave passage',
   }
-  const formRef = useRef<any>();
+  const formRef = useRef<any>(undefined);
   const [highlightedRef, setHighlightedRef] = useState<any>();
   const [highlightNew, setHighlightNew] = useState('');
   const { getOrgDefault, setOrgDefault } = useOrgDefaults();

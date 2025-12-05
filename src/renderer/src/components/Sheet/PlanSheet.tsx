@@ -286,8 +286,8 @@ export function PlanSheet(props: IProps) {
   const [data, setData] = useState(Array<Array<ICell>>());
   const [check, setCheck] = useState(Array<number>());
   const [confirmAction, setConfirmAction] = useState('');
-  const suggestionRef = useRef<Array<OptionType>>();
-  const saveTimer = useRef<NodeJS.Timeout>();
+  const suggestionRef = useRef<Array<OptionType> | undefined>(undefined);
+  const saveTimer = useRef<NodeJS.Timeout | undefined>(undefined);
   const [offline] = useGlobal('offline'); //verified this is not used in a function 2/18/25
   const [offlineOnly] = useGlobal('offlineOnly');
   const [pasting, setPasting] = useState(false);
@@ -298,7 +298,7 @@ export function PlanSheet(props: IProps) {
   const startRowRef = useRef<number>(-1);
   const [currentRow, setCurrentRowx] = useState(-1);
   const [active, setActive] = useState(-1); // used for action menu to display
-  const sheetRef = useRef<any>();
+  const sheetRef = useRef<any>(undefined);
   const {
     startSave,
     toolsChanged,

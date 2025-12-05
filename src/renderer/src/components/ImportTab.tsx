@@ -157,7 +157,9 @@ export function ImportTab(props: IProps) {
   const [changeData, setChangeDatax] = useState(Array<IRow>());
   const changeDataRef = useRef(changeData);
   const [importTitle, setImportTitle] = useState('');
-  const [confirmAction, setConfirmAction] = useState<string | JSX.Element>('');
+  const [confirmAction, setConfirmAction] = useState<
+    string | React.JSX.Element
+  >('');
   const [fileName, setFileName] = useState<string>('');
   const [importProject, setImportProject] = useState<string>('');
   const [uploadVisible, setUploadVisible] = useState(false);
@@ -809,7 +811,7 @@ export function ImportTab(props: IProps) {
                 isString(confirmAction) ? (
                   <span></span>
                 ) : (
-                  (confirmAction as JSX.Element)
+                  (confirmAction as React.JSX.Element)
                 )
               }
               text={

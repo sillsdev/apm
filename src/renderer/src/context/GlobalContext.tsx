@@ -44,7 +44,7 @@ export interface GlobalState {
   remoteBusy: boolean; //verified //datachanges, unsavedcontext, teamactions,consultantcheck, audiotable
   saveResult: string | undefined; //verified //PassageDetailContext, UnsavedContext
   snackAlert: AlertSeverity | undefined; //verified //SnackBar
-  snackMessage: JSX.Element; //verified //SnackBar
+  snackMessage: React.JSX.Element; //verified //SnackBar
   offline: boolean;
   mobileView: boolean; //verified //UserMenu - toggle mobile view
 }

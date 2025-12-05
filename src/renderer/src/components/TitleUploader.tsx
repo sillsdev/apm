@@ -14,7 +14,7 @@ interface IProps {
   cancelled: React.MutableRefObject<boolean>;
   uploadType?: UploadType;
   uploadMethod: (files: File[]) => Promise<void>;
-  metadata?: JSX.Element;
+  metadata?: React.JSX.Element;
   onSave?: () => void;
   onFiles?: (files: File[]) => void;
 }

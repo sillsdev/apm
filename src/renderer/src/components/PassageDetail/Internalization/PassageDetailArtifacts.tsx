@@ -170,16 +170,16 @@ export function PassageDetailArtifacts() {
   const [uploadType, setUploadType] = useState<UploadType>(UploadType.Resource);
   const [initDescription, setInitDescription] = useState<string>('');
   const [recordAudio, setRecordAudio] = useState<boolean>(false);
-  const mediaRef = useRef<MediaFileD>();
-  const textRef = useRef<string>();
-  const catIdRef = useRef<string>();
+  const mediaRef = useRef<MediaFileD | undefined>(undefined);
+  const textRef = useRef<string | undefined>(undefined);
+  const catIdRef = useRef<string | undefined>(undefined);
   const descriptionRef = useRef<string>('');
 
   const resourceTypeRef = useRef<ResourceTypeEnum>(
     ResourceTypeEnum.sectionResource
   );
   const projIdentRef = useRef<RecordIdentity[]>([]);
-  const projMediaRef = useRef<MediaFileD>();
+  const projMediaRef = useRef<MediaFileD | undefined>(undefined);
   const [allResources, setAllResources] = useState(false);
   const { showMessage } = useSnackBar();
   const [confirm, setConfirm] = useState('');

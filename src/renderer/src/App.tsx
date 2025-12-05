@@ -10,7 +10,7 @@ import { getDataGridLocale } from './utils/dataGridLocale';
 import { useMemo } from 'react';
 export const HeadHeight = 64;
 
-function App(): JSX.Element {
+function App(): React.JSX.Element {
   const lang = useSelector((state: IState) => state.strings.lang, shallowEqual);
 
   const theme = useMemo(

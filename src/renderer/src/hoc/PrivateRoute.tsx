@@ -5,7 +5,7 @@ import { TokenContext } from '../context/TokenProvider';
 import { LocalKey, localUserKey, useMyNavigate } from '../utils';
 
 interface IProps {
-  el: JSX.Element;
+  el: React.JSX.Element;
 }
 
 export function PrivateRoute({ el }: IProps) {

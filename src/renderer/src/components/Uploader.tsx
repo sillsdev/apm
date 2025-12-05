@@ -44,9 +44,9 @@ interface IProps {
   defaultFilename?: string | undefined;
   isOpen: boolean;
   onOpen: (visible: boolean) => void;
-  showMessage: (msg: string | JSX.Element, alert?: AlertSeverity) => void;
+  showMessage: (msg: string | React.JSX.Element, alert?: AlertSeverity) => void;
   finish?: ((planId: string, mediaRemoteIds?: string[]) => void) | undefined; // logic when upload complete
-  metaData?: JSX.Element | undefined; // component embeded in dialog
+  metaData?: React.JSX.Element | undefined; // component embeded in dialog
   ready?: (() => boolean) | undefined; // if false control is disabled
   // createProject?: (name: string) => Promise<string>;
   cancelled: React.MutableRefObject<boolean>;
@@ -117,7 +117,7 @@ export const Uploader = (props: IProps) => {
   const [user] = useGlobal('user');
   const planIdRef = useRef<string>(plan);
   const successCount = useRef<number>(0);
-  const fileList = useRef<File[]>();
+  const fileList = useRef<File[] | undefined>(undefined);
   const ctx = useContext(TokenContext).state;
   const mediaIdRef = useRef<string[]>([]);
   const artifactTypeRef = useRef<string>('');

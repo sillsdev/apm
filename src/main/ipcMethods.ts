@@ -2,13 +2,13 @@ import { app, ipcMain, session, dialog, BrowserWindow, shell } from 'electron';
 import { createWindow } from './index';
 import { createAuthWindow, createLogoutWindow } from './auth-process.js';
 import { refreshTokens, getProfile, getAccessToken } from './auth-service.js';
-import fs from 'fs-extra';
+import * as fs from 'fs-extra';
 import StreamZip from 'node-stream-zip';
 import AdmZip from 'adm-zip';
 import { downloadFile, downloadStatus, downloadClose } from './downloadFile.js';
 import { generateUUID } from './generateUUID.js';
 import convert from 'xml-js';
-import ChildProcess from 'child_process';
+import { exec } from 'child_process';
 // execa is an ESM module so we included source to make it work
 import { execa } from 'execa';
 import md5File from 'md5-file';
@@ -59,7 +59,7 @@ export function ipcMethods(): void {
     const cmd = platformMap.get(process.platform);
     return new Promise((resolve, reject) => {
       if (!cmd) reject(new Error('Command not found'));
-      ChildProcess.exec(cmd as string, (err, stdout) => {
+      exec(cmd as string, (err, stdout) => {
         if (err) reject(err);
 
         resolve(stdout.toLowerCase().indexOf(name.toLowerCase()) > -1);

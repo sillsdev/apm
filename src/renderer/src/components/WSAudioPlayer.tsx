@@ -135,7 +135,7 @@ interface IProps {
   verses?: string;
   currentSegmentIndex?: number;
   markers?: IMarker[];
-  metaData?: JSX.Element;
+  metaData?: React.JSX.Element;
   isPlaying?: boolean;
   regionOnly?: boolean;
   request?: Date;
@@ -235,7 +235,9 @@ function WSAudioPlayer(props: IProps) {
   const [voice, setVoice] = useState('');
   const voiceUrl = useVoiceUrl();
   const { getOrgDefault } = useOrgDefaults();
-  const [confirmAction, setConfirmAction] = useState<string | JSX.Element>('');
+  const [confirmAction, setConfirmAction] = useState<
+    string | React.JSX.Element
+  >('');
   const [jump] = useState(2);
   const playbackRef = useRef(1);
   const [playbackRate, setPlaybackRatex] = useState(1);
@@ -273,8 +275,9 @@ function WSAudioPlayer(props: IProps) {
   const [style, setStyle] = useState({
     cursor: busy || loading ? 'progress' : 'default',
   });
-  const autostartTimer = useRef<NodeJS.Timeout>();
-  const onSaveProgressRef = useRef<(progress: number) => void | undefined>();
+  const autostartTimer = useRef<NodeJS.Timeout | undefined>(undefined);
+  const onSaveProgressRef =
+    useRef<(progress: number) => void | undefined>(undefined);
   const [oneShotUsed, setOneShotUsed] = useState(false);
   const [audioInputDevices, setAudioInputDevices] = useState<MediaDeviceInfo[]>(
     []

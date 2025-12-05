@@ -63,7 +63,7 @@ export default function AsrProgress({
   const [taskId, setTaskIdx] = React.useState('');
   const taskIdRef = React.useRef('');
   const [tasks, setTasks] = React.useState<VerseTask[]>();
-  const taskTimer = React.useRef<NodeJS.Timeout>();
+  const taskTimer = React.useRef<NodeJS.Timeout | undefined>(undefined);
   const timerDelay = 5000; //5 seconds
   const t: ITranscriberStrings = useSelector(transcriberSelector, shallowEqual);
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);

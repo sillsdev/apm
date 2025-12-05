@@ -77,7 +77,7 @@ const initState = {
 };
 
 interface ModalProps {
-  message: JSX.Element | string;
+  message: React.JSX.Element | string;
   details?: string;
   state: typeof initState;
   resetState: () => void;
@@ -93,7 +93,7 @@ export const ModalMessage = (props: ModalProps) => {
   const resetOrbitError = () => dispatch(actions.resetOrbitError());
   const [coordinator] = useGlobal('coordinator');
   const remote = coordinator?.getSource('remote') as JSONAPISource;
-  const logoutRef = useRef<any>();
+  const logoutRef = useRef<any>(undefined);
   const logoutResets = useLogoutResets();
 
   const resetRequests = async () => {
@@ -170,7 +170,7 @@ export const ErrorPage = () => {
   const t: IMainStrings = useSelector(mainSelector, shallowEqual);
   const error = useRouteError() as any as Error;
   const ctx = useContext(TokenContext).state;
-  const logoutRef = useRef<any>();
+  const logoutRef = useRef<any>(undefined);
   const logoutResets = useLogoutResets();
   const [view, setView] = useState('');
   const navigate = useMyNavigate();

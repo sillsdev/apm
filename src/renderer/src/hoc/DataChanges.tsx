@@ -171,6 +171,6 @@ export function DataChanges(props: PropsWithChildren) {
   useInterval(updateData, (dataDelay ?? 0) <= 0 ? null : dataDelay);
   useInterval(backupElectron, defaultBackupDelay);
   // render the children component.
-  return children as JSX.Element;
+  return children as React.JSX.Element;
 }
 export default DataChanges;

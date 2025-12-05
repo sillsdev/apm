@@ -31,7 +31,7 @@ export interface IImportData {
   fileName: string;
   projectName: string;
   valid: boolean;
-  warnMsg: string | JSX.Element;
+  warnMsg: string | React.JSX.Element;
   errMsg: string;
   exportDate: string;
 }
@@ -53,7 +53,7 @@ export const useElectronImport = () => {
   const { showTitledMessage } = useSnackBar();
   const getOfflineProject = useOfflnProjRead();
   const AddProjectLoaded = useProjectsLoaded();
-  const zipRef = useRef<string>();
+  const zipRef = useRef<string | undefined>(undefined);
   const t = useSelector(stringSelector, shallowEqual) as IElectronImportStrings;
   const backup = coordinator?.getSource('backup') as IndexedDBSource;
   const { getTypeId } = useArtifactType();
