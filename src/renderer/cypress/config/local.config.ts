@@ -17,7 +17,6 @@ const config = {
     baseUrl: 'http://localhost:3000', // can set to ${process.env.PORT} later
   },
   component: {
-    experimentalJustInTimeCompile: true,
     specPattern: 'src/**/*.cy.{js,jsx,ts,tsx}',
     devServer: {
       framework: 'react',

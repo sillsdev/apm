@@ -51,5 +51,10 @@ module.exports = {
     'jsdoc/require-returns-type': 'off',
     'no-unused-vars': 'off',
     'no-case-declarations': 'off',
+    'react-hooks/set-state-in-effect': 'off',
+    'react-hooks/immutability': 'off',
+    'react-hooks/static-components': 'off',
+    'react-hooks/refs': 'off',
+    'react-hooks/globals': 'off',
   },
 };
