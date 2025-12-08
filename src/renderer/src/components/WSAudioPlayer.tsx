@@ -1338,24 +1338,21 @@ function WSAudioPlayer(props: IProps) {
         >
           <>
             <Grid container sx={toolbarProp}>
-              {allowRecord && (
-                <>
-                  <Grid sx={{ ml: 1 }}>
-                    <LightTooltip id="wsAudioPlayTip" title={playTooltipTitle}>
-                      <span>
-                        <IconButton
-                          id="wsAudioPlay"
-                          onClick={togglePlayStatus}
-                          disabled={duration === 0 || recording || waitingForAI}
-                        >
-                          <>{playing ? <PauseIcon /> : <PlayIcon />}</>
-                        </IconButton>
-                      </span>
-                    </LightTooltip>
-                  </Grid>
-                  <VertDivider id="wsAudioDiv1" />
-                </>
-              )}
+              <Grid sx={{ ml: 1 }}>
+                <LightTooltip id="wsAudioPlayTip" title={playTooltipTitle}>
+                  <span>
+                    <IconButton
+                      id="wsAudioPlay"
+                      onClick={togglePlayStatus}
+                      disabled={duration === 0 || recording || waitingForAI}
+                    >
+                      <>{playing ? <PauseIcon /> : <PlayIcon />}</>
+                    </IconButton>
+                  </span>
+                </LightTooltip>
+              </Grid>
+              <VertDivider id="wsAudioDiv1" />
+
               <Grid>
                 <Typography sx={{ m: '5px' }}>
                   <Duration id="wsAudioPosition" seconds={progress} /> {' / '}
