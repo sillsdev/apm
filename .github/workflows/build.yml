@@ -24,5 +24,34 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Create fake auth0 credentials
+        run: |
+          cat > env-config/.auth0-variables.dev.json << 'EOF'
+          {
+            "apiIdentifier": "(auth0 api audience)",
+            "auth0Domain": "(url of auth0 domain)",
+            "desktopId": "(auth0 desktop extension -- native client id)",
+            "webClientId": "(auth0 spa client id)"
+          }
+          EOF
+
+      - name: Create fake environment files
+        run: |
+          cat > env-config/.env.dev.local << 'EOF'
+          VITE__MODE=electron
+          VITE__CHM_HELP=help/Audio_Project_Manager_Help.chm
+          VITE__OFFLINEDATA=transcriber
+          BROWSER=none
+          EOF
+          cat > env-config/.env.dev.development.local << 'EOF'
+          VITE__MODE=electron
+          VITE__CHM_HELP=help/Audio_Project_Manager_Help.chm
+          VITE__OFFLINEDATA=transcriber
+          BROWSER=none
+          EOF
+
+      - name: Copy environment files
+        run: npm run devs
+
       - name: Run build
         run: npm run build
