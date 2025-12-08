@@ -11,10 +11,6 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
-    env:
-      PUPPETEER_SKIP_DOWNLOAD: 'true'
-      CYPRESS_INSTALL_BINARY: '0'
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
