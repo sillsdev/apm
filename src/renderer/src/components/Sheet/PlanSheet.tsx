@@ -215,11 +215,9 @@ interface IProps {
   lookupBook: (book: string) => string;
   resequence: () => void;
   inlinePassages: boolean;
-  onAudacity?: (i: number) => void;
   onPassageDetail: (i: number) => void;
   onAssign: (where: number[]) => () => void;
   onUpload: (i: number) => () => void;
-  onRecord: (i: number) => void;
   onEdit: (i: number) => () => void;
   onHistory: (i: number) => () => void;
   onGraphic: (i: number) => void;
@@ -255,7 +253,6 @@ export function PlanSheet(props: IProps) {
     paste,
     resequence,
     inlinePassages,
-    onAudacity,
     onPassageDetail,
     onFilterChange,
     onPublishing,
@@ -601,10 +598,6 @@ export function PlanSheet(props: IProps) {
     }
   }, [playingMediaId, srcMediaId, mediaPlaying]);
 
-  const handleAudacity = (i: number) => () => {
-    onAudacity && onAudacity(i);
-  };
-
   const onRecording = (recording: boolean) => {
     onSetPreventSave(recording);
     setAnyRecording(recording);
@@ -734,7 +727,6 @@ export function PlanSheet(props: IProps) {
     publishingOn,
     firstMovement,
     filtered,
-    onAudacity: handleAudacity,
     onDelete: handleConfirmDelete,
     cellsChanged: updateData,
     titleMediaChanged: updateTitleMedia,

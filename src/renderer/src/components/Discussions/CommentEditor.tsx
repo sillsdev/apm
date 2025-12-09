@@ -205,7 +205,6 @@ export const CommentEditor = (props: IProps) => {
           afterUploadCb={afterUploadCb}
           defaultFilename={fileName}
           allowWave={false}
-          showFilename={false}
           setCanSave={handleSetCanSave}
           setStatusText={setStatusText}
           height={200}

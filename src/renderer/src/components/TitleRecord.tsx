@@ -64,7 +64,6 @@ export default function TitleRecord(props: IProps) {
         onRecording={onMyRecording}
         defaultFilename={defaultFilename}
         allowWave={false}
-        showFilename={false}
         setCanSave={handleSetCanSave}
         setStatusText={setStatusText}
         afterUploadCb={afterUploadCb}

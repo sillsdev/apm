@@ -311,7 +311,6 @@ export function ProvideRights(props: IProps) {
           passageId={undefined}
           performedBy={speaker}
           allowWave={false}
-          showFilename={false}
           allowDeltaVoice={false}
           allowNoNoise={false}
           setCanSave={handleSetCanSave}

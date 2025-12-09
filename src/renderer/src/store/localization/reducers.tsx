@@ -1381,6 +1381,22 @@ const initialState = {
       versions: 'Versions',
     },
   }),
+  recordStepSettings: new LocalizedStrings({
+    en: {
+      custom: 'Custom',
+      fileNameTemplate: 'File Name Template',
+      general: 'General',
+      notes: 'Notes',
+      saveAsWav: 'Save as wav (uncompressed) file.',
+      saveAsWavHelper:
+        'These files are large and we suggest you only select this for the final recording.',
+      scripture: 'Scripture',
+      useBookChapterPassage: 'Book Chapter Passage',
+      useReference: 'Passage Reference',
+      useSectionNumberAndPassageNumber: '{0} number and Passage number',
+      useTitle: 'Title',
+    },
+  }),
   scriptureTable: new LocalizedStrings({
     en: {
       alternateName: '{0} Alternate Name',
@@ -1601,9 +1617,11 @@ const initialState = {
       fileTemplate: 'File Name Template',
       language: 'Language BCP47 code',
       passage: 'Passage number(within {0})',
+      reference: 'Passage reference)',
       renderExportTemplate:
         'The {SECT} template works for files exported from {0}.',
       templateCodes: 'Template Codes',
+      title: 'Title',
     },
   }),
   toDoTable: new LocalizedStrings({
@@ -2181,6 +2199,9 @@ const localizationReducer = function (
         publishLevel: new LocalizedStrings(action.payload.data.publishLevel),
         publishTo: new LocalizedStrings(action.payload.data.publishTo),
         resource: new LocalizedStrings(action.payload.data.resource),
+        recordStepSettings: new LocalizedStrings(
+          action.payload.data.recordStepSettings
+        ),
         scriptureTable: new LocalizedStrings(
           action.payload.data.scriptureTable
         ),

@@ -9,24 +9,9 @@ import React, {
 import { useGlobal } from '../context/useGlobal';
 import { IState, IPassageRecordStrings, ISharedStrings } from '../model';
 import * as actions from '../store';
-import {
-  Stack,
-  Button,
-  Checkbox,
-  FormControlLabel,
-  Paper,
-  SxProps,
-  TextField,
-  Typography,
-} from '@mui/material';
+import { Stack, Button, Paper, Typography } from '@mui/material';
 import WSAudioPlayer from './WSAudioPlayer';
-import {
-  generateUUID,
-  loadBlobAsync,
-  waitForIt,
-  cleanFileName,
-} from '../utils';
-import { isMobileWidth } from '../utils/isMobileWidth';
+import { generateUUID, loadBlobAsync, waitForIt } from '../utils';
 import {
   IMediaState,
   MediaSt,
@@ -37,12 +22,14 @@ import {
 import { useSnackBar } from '../hoc/SnackBar';
 import { UnsavedContext } from '../context/UnsavedContext';
 import { SIZELIMIT } from './MediaUpload';
+import usePassageDetailContext from '../context/usePassageDetailContext';
+import { useStepTool } from '../crud/useStepTool';
+import { JSONParse } from '../utils';
 import { UploadType } from './UploadType';
 import AudioFileIcon from '@mui/icons-material/AudioFileOutlined';
 import { shallowEqual, useSelector } from 'react-redux';
 import { passageRecordSelector, sharedSelector } from '../selector';
 import { useDispatch } from 'react-redux';
-const controlProps = { m: 1 } as SxProps;
 
 interface IProps {
   toolId: string;
@@ -60,7 +47,7 @@ interface IProps {
   onPlayStatus?: ((p: boolean) => void) | undefined;
   mediaId?: string | undefined;
   metaData?: React.JSX.Element | undefined;
-  defaultFilename?: string | undefined;
+  defaultFilename: string;
   allowDeltaVoice?: boolean | undefined;
   setCanSave: (canSave: boolean) => void;
   setCanCancel?: ((canCancel: boolean) => void) | undefined;
@@ -69,7 +56,6 @@ interface IProps {
   allowRecord?: boolean | undefined;
   oneTryOnly?: boolean | undefined;
   allowWave?: boolean | undefined;
-  showFilename?: boolean | undefined;
   height?: number;
   width: number;
   doReset?: boolean | undefined;
@@ -109,7 +95,6 @@ function MediaRecord(props: IProps) {
     allowRecord,
     oneTryOnly,
     allowWave,
-    showFilename,
     autoStart,
     doReset,
     setDoReset,
@@ -124,6 +109,8 @@ function MediaRecord(props: IProps) {
     allowZoom,
     width,
   } = props;
+  const context = usePassageDetailContext();
+  const { settings: toolSettings } = useStepTool(context?.currentstep || '');
   const t: IPassageRecordStrings = useSelector(passageRecordSelector);
   const convert_status = useSelector(
     (state: IState) => state.convertBlob.statusmsg
@@ -142,8 +129,6 @@ function MediaRecord(props: IProps) {
   const { fetchMediaUrl, mediaState } = useFetchMediaUrl(reporter);
   const mediaStateRef = useRef(mediaState);
   const mediaStateFetchedTimeRef = useRef<number>(0);
-  const [name, setName] = useState(t.defaultFilename);
-  const [userHasSetName, setUserHasSetName] = useState(false);
   const [filetype, setFiletype] = useState('');
   const [originalBlob, setOriginalBlob] = useState<Blob>();
   const [audioBlob, setAudioBlob] = useState<Blob>();
@@ -152,8 +137,26 @@ function MediaRecord(props: IProps) {
   const filechangedRef = useRef(false);
   const [recording, setRecording] = useState(false);
   const [blobReady, setBlobReady] = useState(true);
-  const [mimeType, setMimeType] = useState(DEFAULT_COMPRESSED_MIME);
-  const [compression, setCompression] = useState(20);
+  // Determine MIME type from tool settings
+  const getMimeTypeFromSettings = useCallback(() => {
+    if (allowWave && toolSettings) {
+      try {
+        const settings = JSONParse(toolSettings) as { saveAsWav?: boolean };
+        if (settings.saveAsWav) {
+          return 'audio/wav';
+        }
+      } catch {
+        // If parsing fails, use default
+      }
+    }
+    return DEFAULT_COMPRESSED_MIME;
+  }, [toolSettings, allowWave]);
+
+  const initialMimeType = getMimeTypeFromSettings();
+  const [mimeType, setMimeType] = useState(initialMimeType);
+  const [compression, setCompression] = useState(
+    initialMimeType === 'audio/wav' ? 1 : 20
+  );
   const [warning, setWarning] = useState('');
   const [tooBig, setTooBig] = useState(false);
   const { showMessage } = useSnackBar();
@@ -174,20 +177,6 @@ function MediaRecord(props: IProps) {
   );
   const sizeLimit = SIZELIMIT(UploadType.Media);
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
-  const [isMobileView, setIsMobileView] = useState(isMobileWidth());
-
-  useEffect(() => {
-    const handleResize = () => {
-      setIsMobileView(isMobileWidth());
-    };
-
-    window.addEventListener('resize', handleResize);
-    handleResize();
-
-    return () => {
-      window.removeEventListener('resize', handleResize);
-    };
-  }, []);
 
   const mimes = useMemo(
     () => [
@@ -206,6 +195,13 @@ function MediaRecord(props: IProps) {
     filechangedRef.current = value;
   };
 
+  const getCompressedStatusMessage = useCallback(() => {
+    if (allowWave) {
+      return mimeType !== 'audio/wav' ? t.compressed : t.uncompressed;
+    }
+    return '';
+  }, [allowWave, mimeType, t.compressed, t.uncompressed]);
+
   const myAfterUploadCb = async (mediaId: string) => {
     setUploading(false);
     if (filechangedRef.current && mediaId) setFilechanged(false);
@@ -214,7 +210,8 @@ function MediaRecord(props: IProps) {
       setStatusText(ts.NoSaveWoMedia);
       saveCompleted(toolId, ts.NoSaveWoMedia);
     } else {
-      setStatusText('');
+      // Restore compressed status message if applicable
+      setStatusText(getCompressedStatusMessage());
       saveCompleted(toolId);
     }
     afterUploadCb(mediaId);
@@ -254,23 +251,33 @@ function MediaRecord(props: IProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mediaState]);
 
+  // Update MIME type when tool settings change
+  useEffect(() => {
+    const newMimeType = getMimeTypeFromSettings();
+    setMimeType(newMimeType);
+    setCompression(newMimeType === 'audio/wav' ? 1 : 20);
+    // Show status message if allowWave is true but using compressed format
+    // Only update if not currently showing a temporary status (saving, compressing, etc.)
+    if (!uploading && !converting && !saveRef.current) {
+      setStatusText(getCompressedStatusMessage());
+    }
+  }, [
+    getMimeTypeFromSettings,
+    setStatusText,
+    uploading,
+    converting,
+    getCompressedStatusMessage,
+  ]);
+
   useEffect(() => {
     setExtension(mimeType);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mimeType, extensions, mimes]);
 
   useEffect(() => {
-    if (!userHasSetName) {
-      if (defaultFilename) setName(defaultFilename);
-      else setName(t.defaultFilename);
-    }
-  }, [userHasSetName, defaultFilename, t.defaultFilename]);
-
-  useEffect(() => {
     setCanSave(
       blobReady &&
         !tooBig &&
-        name !== '' &&
         filechanged &&
         !converting &&
         !uploading &&
@@ -281,7 +288,6 @@ function MediaRecord(props: IProps) {
   }, [
     blobReady,
     tooBig,
-    name,
     filechanged,
     converting,
     uploading,
@@ -298,14 +304,14 @@ function MediaRecord(props: IProps) {
       setUploading(true);
       setStatusText(t.saving);
       const files = [
-        new File([blob], name + '.' + filetype, {
+        new File([blob], defaultFilename + '.' + filetype, {
           type: mimeType,
         }),
       ];
       await uploadMedia(files);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [name, filetype, mimeType, uploadMedia]
+    [defaultFilename, filetype, mimeType, uploadMedia]
   );
 
   useEffect(() => {
@@ -415,32 +421,12 @@ function MediaRecord(props: IProps) {
   }, [doReset]);
 
   const reset = () => {
-    setMimeType(DEFAULT_COMPRESSED_MIME);
-    setCompression(20);
-    setUserHasSetName(false);
     setFilechanged(false);
     setOriginalBlob(undefined);
     setAudioBlob(undefined);
     clearCompleted(toolId);
   };
 
-  const handleCompressChanged = (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    if (event.currentTarget.checked) {
-      setMimeType(DEFAULT_COMPRESSED_MIME);
-      setCompression(20);
-    } else {
-      setMimeType('audio/wav');
-      setCompression(1);
-    }
-  };
-
-  const handleChangeFileName = (e: any) => {
-    e.persist();
-    setName(cleanFileName(e.target.value));
-    setUserHasSetName(true);
-  };
   const gotTheBlob = (b: Blob) => {
     setOriginalBlob(b);
     setLoading(false);
@@ -515,9 +501,6 @@ function MediaRecord(props: IProps) {
     } else {
       blobError(mediaStateRef.current.error || 'Failed to fetch media URL');
     }
-
-    if (defaultFilename) setName(defaultFilename);
-    else setName(t.defaultFilename);
   };
 
   useEffect(() => {
@@ -566,33 +549,13 @@ function MediaRecord(props: IProps) {
           {warning}
         </Typography>
       )}
-      <Stack direction="row" sx={{ alignItems: 'center' }}>
-        {showFilename && !isMobileView && (
-          <TextField
-            sx={controlProps}
-            id="filename"
-            label={t.fileName}
-            value={name}
-            onChange={handleChangeFileName}
-            required={true}
-            fullWidth={true}
-          />
-        )}
+      <Stack
+        direction="row"
+        sx={{ alignItems: 'center', justifyContent: 'flex-end' }}
+      >
         <Typography sx={{ mr: 3 }} id="size">
           {`${((audioBlob?.size ?? 0) / 1000000 / compression).toFixed(2)}MB`}
         </Typography>
-        {allowWave && !isMobileView && (
-          <FormControlLabel
-            control={
-              <Checkbox
-                defaultChecked
-                size="small"
-                onChange={handleCompressChanged}
-              />
-            }
-            label={t.compressed}
-          />
-        )}
         {metaData}
       </Stack>
     </Paper>

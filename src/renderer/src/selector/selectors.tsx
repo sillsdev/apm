@@ -201,6 +201,9 @@ export const sharedSelector = (state: IState) =>
 export const sharedResSelector = (state: IState) =>
   localStrings(state as IState, { layout: 'sharedResource' });
 
+export const recordStepSettingsSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'recordStepSettings' });
+
 export const sortMenuSelector = (state: IState) =>
   localStrings(state as IState, { layout: 'sortMenu' });
 

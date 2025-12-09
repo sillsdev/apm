@@ -34,6 +34,7 @@ import { stepEditorSelector, workflowStepsSelector } from '../../selector';
 import { RecordKeyMap } from '@orbit/records';
 import { VertListDnd } from '../../hoc/VertListDnd';
 import { DiscussStepSettings } from './DiscussStepSettings';
+import { RecordStepSettings } from './RecordStepSettings';
 
 export interface IStepRow {
   id: string;
@@ -89,6 +90,7 @@ export const StepEditor = ({ process, org }: IProps) => {
     ToolSlug.Transcribe,
     ToolSlug.Paratext,
     ToolSlug.Discuss,
+    ToolSlug.Record,
   ];
   const mxSeq = useMemo(() => {
     let max = 0;
@@ -507,6 +509,20 @@ export const StepEditor = ({ process, org }: IProps) => {
           bp={BigDialogBp.sm}
         >
           <DiscussStepSettings
+            toolSettings={(rows[toolSettingsRow] as IStepRow).settings}
+            onChange={handleSettingsChange}
+            onClose={() => setToolSettingsOpen(false)}
+          />
+        </BigDialog>
+      )}
+      {toolSettingsRow > -1 && (
+        <BigDialog
+          title={localizedTool((rows[toolSettingsRow] as IStepRow).tool)}
+          isOpen={(rows[toolSettingsRow] as IStepRow).tool === ToolSlug.Record}
+          onOpen={setToolSettingsOpen}
+          bp={BigDialogBp.sm}
+        >
+          <RecordStepSettings
             toolSettings={(rows[toolSettingsRow] as IStepRow).settings}
             onChange={handleSettingsChange}
             onClose={() => setToolSettingsOpen(false)}
