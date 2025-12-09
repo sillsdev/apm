@@ -133,7 +133,6 @@ export function FilterMenu(props: IProps) {
   };
   useEffect(() => {
     if (!changed) setLocalState({ ...props.state });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [props.state, changed]);
 
   const filterChange = (what: string, value: any) => {
