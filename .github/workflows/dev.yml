@@ -135,10 +135,12 @@ jobs:
           NODE_ENV: test
 
       - name: Run unit tests
+        if: always()
         working-directory: src/renderer
         run: npm run test:ci
 
       - name: Build
+        if: always()
         working-directory: src/renderer
         run: npm run build
 
