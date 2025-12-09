@@ -111,7 +111,6 @@ jobs:
 
       - name: Create index.html
         run: |
-          cd src/renderer
           echo "VITE_SITE_TITLE=${{ env.NAME }}" > .indexVar.json
           echo "VITE_CALLBACK=${{ env.CALLBACK }}" >> .indexVar.json
           echo "VITE_HOST=${{ env.HOST }}" >> .indexVar.json
