@@ -1,0 +1,151 @@
+name: Dev Build
+
+on:
+  push:
+    branches:
+      - develop
+      - main
+  pull_request:
+    branches:
+      - develop
+      - main
+  workflow_dispatch:
+
+env:
+  # Build version pattern (using GitHub run number instead of build counter)
+  BUILD_VERSION: '4.4.3.${{ github.run_number }}'
+
+  # Environment variables from TeamCity params
+  COMMUNITY: 'https://community.scripture.software.sil.org/c/transcriber'
+  NODE_OPTIONS: '--max_old_space_size=4500'
+  WALK_THRU: 'https://youtu.be/a_a3IJO0O7M'
+  FLAT: 'https://software.sil.org/downloads/r/siltranscriber/Luke4-5-flat.xlsx'
+  NODE_SKIP_PLATFORM_CHECK: '1'
+  OPEN_NOTES: 'https://opentn.bible/'
+  GEN_HIERARCHICAL: 'https://software.sil.org/downloads/r/siltranscriber/general-hierarchical.xlsx'
+  HOST: 'https://api-dev.audioprojectmanager.org'
+  HIERARCHICAL: 'https://software.sil.org/downloads/r/siltranscriber/Luke1-hierarchical.xlsx'
+  RESOURCES: 'https://translation.bible/tools-resources/'
+  FILES: 'https://sil-transcriber-userfiles-dev.s3.amazonaws.com'
+  GOOGLE_SAMPLES: 'https://drive.google.com/drive/folders/1iEVTX9k4K-DTAl4_vxQAugft-X7UUchl?usp=sharing'
+  CALLBACK: 'https://app-dev.audioprojectmanager.org'
+  GEN_FLAT: 'https://software.sil.org/downloads/r/siltranscriber/general-flat.xlsx'
+  OPEN_CONTENT: 'https://www.unfoldingword.org/for-translators/content'
+  VIDEOS: 'https://youtube.com/@audioprojectmanager'
+  DOMAIN: 'transcriber-dev.auth0.com'
+  SIZELIMIT: '30'
+  AKUO: 'https://akuobible.org'
+  COURSE: 'https://www.diu.edu/course/al5308/'
+  NAME: 'Audio Project Manager Dev'
+  AWS_DEFAULT_REGION: 'us-east-1'
+  HELP: 'http://help-qa.audioprojectmanager.org.s3-website-us-east-1.amazonaws.com'
+  API_ID: 'https://transcriber_api'
+  APP: 'https://app-dev.audioprojectmanager.org'
+
+  # Secrets (must be set in GitHub repository secrets)
+  CLIENT_ID: ${{ secrets.CLIENT_ID }}
+  SNAG_ID: ${{ secrets.SNAG_ID }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Volta
+        uses: volta-cli/action@v4
+
+      - name: Install Node.js 22
+        run: |
+          volta install node@22
+          node --version
+
+      - name: Clean up memory (kill any existing node processes)
+        run: |
+          pkill -f node || true
+
+      - name: Install dependencies
+        working-directory: src/renderer
+        run: npm ci
+
+      - name: Stamp build with date and time
+        run: npm run stamp
+
+      - name: Make Environment (.env.local)
+        working-directory: src/renderer
+        run: |
+          echo "VITE_DOMAIN=${{ env.DOMAIN }}" > .env.local
+          echo "VITE_CLIENTID=${{ env.CLIENT_ID }}" >> .env.local
+          echo "VITE_ENDPOINT=${{ env.APP }}" >> .env.local
+          echo "VITE_CALLBACK=${{ env.CALLBACK }}" >> .env.local
+          echo "VITE_HOST=${{ env.HOST }}" >> .env.local
+          echo "VITE_HELP=${{ env.HELP }}" >> .env.local
+          echo "VITE_COMMUNITY=${{ env.COMMUNITY }}" >> .env.local
+          echo "VITE_OPENNOTES=${{ env.OPEN_NOTES }}" >> .env.local
+          echo "VITE_RESOURCES=${{ env.RESOURCES }}" >> .env.local
+          echo "VITE_OPENCONTENT=${{ env.OPEN_CONTENT }}" >> .env.local
+          echo "VITE_COURSE=${{ env.COURSE }}" >> .env.local
+          echo "VITE_VIDEO_TRAINING=${{ env.VIDEOS }}" >> .env.local
+          echo "VITE_WALK_THRU=${{ env.WALK_THRU }}" >> .env.local
+          echo "VITE_AKUO=${{ env.AKUO }}" >> .env.local
+          echo "VITE_FLAT=${{ env.FLAT }}" >> .env.local
+          echo "VITE_HIERARCHICAL=${{ env.HIERARCHICAL }}" >> .env.local
+          echo "VITE_GEN_FLAT=${{ env.GEN_FLAT }}" >> .env.local
+          echo "VITE_GEN_HIERARCHICAL=${{ env.GEN_HIERARCHICAL }}" >> .env.local
+          echo "VITE_GOOGLE_SAMPLES=${{ env.GOOGLE_SAMPLES }}" >> .env.local
+          echo "VITE_SNAGID=${{ env.SNAG_ID }}" >> .env.local
+          echo "VITE_SIZELIMIT=${{ env.SIZELIMIT }}" >> .env.local
+          echo "VITE_SITE_TITLE=${{ env.NAME }}" >> .env.local
+
+      - name: Create auth0-variables.json
+        working-directory: src/renderer
+        run: |
+          echo '{"apiIdentifier":"${{ env.API_ID }}","auth0Domain":"${{ env.DOMAIN }}","webClientId":"${{ env.CLIENT_ID }}"}' > src/auth/auth0-variables.json
+
+      - name: Create index.html
+        run: |
+          cd src/renderer
+          echo "VITE_SITE_TITLE=${{ env.NAME }}" > .indexVar.json
+          echo "VITE_CALLBACK=${{ env.CALLBACK }}" >> .indexVar.json
+          echo "VITE_HOST=${{ env.HOST }}" >> .indexVar.json
+          echo "VITE_DOMAIN=${{ env.DOMAIN }}" >> .indexVar.json
+          echo "VITE_FILES=${{ env.FILES }}" >> .indexVar.json
+          node ../../env-config/indexTemplate.cjs qa .indexVar.json
+
+      - name: Clean
+        run: npm run clean
+
+      - name: Run unit tests
+        working-directory: src/renderer
+        run: |
+          npm run cy:run-ct-fast
+          npm run test:ci
+
+      - name: Validate source
+        working-directory: src/renderer
+        run: npm run validate
+
+      - name: Build
+        working-directory: src/renderer
+        run: npm run build
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_DEFAULT_REGION }}
+
+      - name: Deploy to S3
+        working-directory: src/renderer
+        run: |
+          aws s3 sync ./dist s3://app-dev.audioprojectmanager.org
+
+      - name: Clean up processes
+        if: always()
+        run: |
+          pkill -f node || true
