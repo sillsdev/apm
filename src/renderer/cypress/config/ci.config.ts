@@ -17,7 +17,7 @@ const config = {
   component: {
     specPattern: 'src/**/*.cy.{js,jsx,ts,tsx}',
     devServer: {
-      delay: 1000,
+      delay: 5000,
       framework: 'react',
       bundler: 'vite',
       viteConfig: {
