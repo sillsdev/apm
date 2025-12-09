@@ -25,7 +25,12 @@ const config = {
         server: {
           fs: {
             strict: false,
-            allow: [workspaceRoot, path.resolve(__dirname, '../..'), '..', process.cwd()],
+            allow: [
+              workspaceRoot,
+              path.resolve(__dirname, '../..'),
+              '..',
+              process.cwd(),
+            ],
           },
         },
         define: {
@@ -52,4 +57,3 @@ const config = {
 };
 
 export default defineConfig(merge({}, baseConfig, config));
-
