@@ -186,10 +186,22 @@
     },
     "linux": {
       "icon": "debian/audio-project-manager.png",
-      "desktop": "debian/audio-project-manager.desktop",
-      "target": [
-        "deb"
-      ]
+      "desktop": {
+        "entry": {
+          "Type": "Application",
+          "Encoding": "UTF-8",
+          "Name": "Audio Project Manager",
+          "Name[fr]": "Audio Project Manager",
+          "Comment": "Flexible audio-text orality solution",
+          "Comment[fr]": "Solution flexible d'oralité audio-textuelle",
+          "Exec": "/usr/bin/audio-project-manager",
+          "Icon": "audio-project-manager",
+          "Categories": "GTK;GNOME;Education;Utility;",
+          "Keywords": "audio;obt;transcribe;ai",
+          "Terminal": "false"
+        }
+      },
+      "target": "deb"
     },
     "mac": {
       "category": "public.app-category.utilities",
