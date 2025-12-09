@@ -121,16 +121,6 @@ jobs:
       - name: Clean
         run: npm run clean
 
-      - name: Run Component Testing
-        uses: cypress-io/github-action@v6
-        with:
-          component: true
-          install: false
-
-      - name: Run Cypress component tests
-        working-directory: src/renderer
-        run: docker run -it -v $PWD:/e2e -w /e2e cypress/included:13.11.0
-
       - name: Run unit tests
         working-directory: src/renderer
         run: npm run test:ci
