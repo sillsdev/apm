@@ -125,6 +125,7 @@ jobs:
         uses: cypress-io/github-action@v6
         with:
           working-directory: src/renderer
+          install: false
           component: true
           config-file: cypress/config/ci.config.ts
           browser: chrome
