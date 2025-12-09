@@ -117,7 +117,7 @@ jobs:
           echo "VITE_HOST=${{ env.HOST }}" >> .indexVar.json
           echo "VITE_DOMAIN=${{ env.DOMAIN }}" >> .indexVar.json
           echo "VITE_FILES=${{ env.FILES }}" >> .indexVar.json
-          node ../../env-config/indexTemplate.cjs qa .indexVar.json
+          node ../../env-config/indexTemplate.cjs dev .indexVar.json
 
       - name: Clean
         run: npm run clean
