@@ -13014,6 +13014,151 @@
       "versions": "Versions"
     }
   },
+  "recordStepSettings": {
+    "en": {
+      "custom": "Custom",
+      "fileNameTemplate": "File Name Template",
+      "general": "General",
+      "notes": "Notes",
+      "saveAsWav": "Save as wav (uncompressed) file.",
+      "saveAsWavHelper": "These files are large and we suggest you only select this for the final recording.",
+      "scripture": "Scripture",
+      "useBookChapterPassage": "Book Chapter Passage",
+      "useReference": "Passage Reference",
+      "useSectionNumberAndPassageNumber": "{0} number and Passage number",
+      "useTitle": "Title"
+    },
+    "fr": {
+      "custom": "Custom",
+      "fileNameTemplate": "File Name Template",
+      "general": "General",
+      "notes": "Notes",
+      "saveAsWav": "Save as wav (uncompressed) file.",
+      "saveAsWavHelper": "These files are large and we suggest you only select this for the final recording.",
+      "scripture": "Scripture",
+      "useBookChapterPassage": "Book Chapter Passage",
+      "useReference": "Passage Reference",
+      "useSectionNumberAndPassageNumber": "{0} number and Passage number",
+      "useTitle": "Title"
+    },
+    "pt": {
+      "custom": "Custom",
+      "fileNameTemplate": "File Name Template",
+      "general": "General",
+      "notes": "Notes",
+      "saveAsWav": "Save as wav (uncompressed) file.",
+      "saveAsWavHelper": "These files are large and we suggest you only select this for the final recording.",
+      "scripture": "Scripture",
+      "useBookChapterPassage": "Book Chapter Passage",
+      "useReference": "Passage Reference",
+      "useSectionNumberAndPassageNumber": "{0} number and Passage number",
+      "useTitle": "Title"
+    },
+    "ta": {
+      "custom": "Custom",
+      "fileNameTemplate": "File Name Template",
+      "general": "General",
+      "notes": "Notes",
+      "saveAsWav": "Save as wav (uncompressed) file.",
+      "saveAsWavHelper": "These files are large and we suggest you only select this for the final recording.",
+      "scripture": "Scripture",
+      "useBookChapterPassage": "Book Chapter Passage",
+      "useReference": "Passage Reference",
+      "useSectionNumberAndPassageNumber": "{0} number and Passage number",
+      "useTitle": "Title"
+    },
+    "ar": {
+      "custom": "Custom",
+      "fileNameTemplate": "File Name Template",
+      "general": "General",
+      "notes": "Notes",
+      "saveAsWav": "Save as wav (uncompressed) file.",
+      "saveAsWavHelper": "These files are large and we suggest you only select this for the final recording.",
+      "scripture": "Scripture",
+      "useBookChapterPassage": "Book Chapter Passage",
+      "useReference": "Passage Reference",
+      "useSectionNumberAndPassageNumber": "{0} number and Passage number",
+      "useTitle": "Title"
+    },
+    "es": {
+      "custom": "Custom",
+      "fileNameTemplate": "File Name Template",
+      "general": "General",
+      "notes": "Notes",
+      "saveAsWav": "Save as wav (uncompressed) file.",
+      "saveAsWavHelper": "These files are large and we suggest you only select this for the final recording.",
+      "scripture": "Scripture",
+      "useBookChapterPassage": "Book Chapter Passage",
+      "useReference": "Passage Reference",
+      "useSectionNumberAndPassageNumber": "{0} number and Passage number",
+      "useTitle": "Title"
+    },
+    "ha": {
+      "custom": "Custom",
+      "fileNameTemplate": "File Name Template",
+      "general": "General",
+      "notes": "Notes",
+      "saveAsWav": "Save as wav (uncompressed) file.",
+      "saveAsWavHelper": "These files are large and we suggest you only select this for the final recording.",
+      "scripture": "Scripture",
+      "useBookChapterPassage": "Book Chapter Passage",
+      "useReference": "Passage Reference",
+      "useSectionNumberAndPassageNumber": "{0} number and Passage number",
+      "useTitle": "Title"
+    },
+    "id": {
+      "custom": "Custom",
+      "fileNameTemplate": "File Name Template",
+      "general": "General",
+      "notes": "Notes",
+      "saveAsWav": "Save as wav (uncompressed) file.",
+      "saveAsWavHelper": "These files are large and we suggest you only select this for the final recording.",
+      "scripture": "Scripture",
+      "useBookChapterPassage": "Book Chapter Passage",
+      "useReference": "Passage Reference",
+      "useSectionNumberAndPassageNumber": "{0} number and Passage number",
+      "useTitle": "Title"
+    },
+    "ru": {
+      "custom": "Custom",
+      "fileNameTemplate": "File Name Template",
+      "general": "General",
+      "notes": "Notes",
+      "saveAsWav": "Save as wav (uncompressed) file.",
+      "saveAsWavHelper": "These files are large and we suggest you only select this for the final recording.",
+      "scripture": "Scripture",
+      "useBookChapterPassage": "Book Chapter Passage",
+      "useReference": "Passage Reference",
+      "useSectionNumberAndPassageNumber": "{0} number and Passage number",
+      "useTitle": "Title"
+    },
+    "zh": {
+      "custom": "Custom",
+      "fileNameTemplate": "File Name Template",
+      "general": "General",
+      "notes": "Notes",
+      "saveAsWav": "Save as wav (uncompressed) file.",
+      "saveAsWavHelper": "These files are large and we suggest you only select this for the final recording.",
+      "scripture": "Scripture",
+      "useBookChapterPassage": "Book Chapter Passage",
+      "useReference": "Passage Reference",
+      "useSectionNumberAndPassageNumber": "{0} number and Passage number",
+      "useTitle": "Title"
+    },
+    "sw": {
+      "custom": "Custom",
+      "fileNameTemplate": "File Name Template",
+      "general": "General",
+      "notes": "Notes",
+      "saveAsWav": "Save as wav (uncompressed) file.",
+      "saveAsWavHelper": "These files are large and we suggest you only select this for the final recording.",
+      "scripture": "Scripture",
+      "useBookChapterPassage": "Book Chapter Passage",
+      "useReference": "Passage Reference",
+      "useSectionNumberAndPassageNumber": "{0} number and Passage number",
+      "useTitle": "Title"
+    }
+  },
   "scriptureTable": {
     "en": {
       "alternateName": "{0} Alternate Name",
@@ -14939,8 +15084,10 @@
       "fileTemplate": "File Name Template",
       "language": "Language BCP47 code",
       "passage": "Passage number(within {0})",
+      "reference": "Passage reference",
       "renderExportTemplate": "The {SECT} template works for files exported from {0}.",
-      "templateCodes": "Template Codes"
+      "templateCodes": "Template Codes",
+      "title": "Title"
     },
     "fr": {
       "apply": "Appliquer",
@@ -14953,8 +15100,10 @@
       "fileTemplate": "File Name Template",
       "language": "Langue Code BCP47",
       "passage": "Numéro de passage (dans {0})",
+      "reference": "Passage reference",
       "renderExportTemplate": "Le modèle {SECT} fonctionne pour les fichiers exportés à partir de {0}.",
-      "templateCodes": "Modèle de code"
+      "templateCodes": "Modèle de code",
+      "title": "Title"
     },
     "pt": {
       "apply": "Aplicar",
@@ -14967,8 +15116,10 @@
       "fileTemplate": "Modelo do Nome do Arquivo",
       "language": "Código de idioma BCP47",
       "passage": "Número de passagem (em {0})",
+      "reference": "Passage reference",
       "renderExportTemplate": "O modelo {SECT} funciona para arquivos exportados de {0}.",
-      "templateCodes": "Códigos de Modelo"
+      "templateCodes": "Códigos de Modelo",
+      "title": "Title"
     },
     "ta": {
       "apply": "Apply",
@@ -14981,8 +15132,10 @@
       "fileTemplate": "File Name Template",
       "language": "Language BCP47 code",
       "passage": "Passage number(within {0})",
+      "reference": "Passage reference",
       "renderExportTemplate": "The {SECT} template works for files exported from {0}.",
-      "templateCodes": "Template Codes"
+      "templateCodes": "Template Codes",
+      "title": "Title"
     },
     "ar": {
       "apply": "Apply",
@@ -14995,8 +15148,10 @@
       "fileTemplate": "File Name Template",
       "language": "Language BCP47 code",
       "passage": "Passage number(within {0})",
+      "reference": "Passage reference",
       "renderExportTemplate": "The {SECT} template works for files exported from {0}.",
-      "templateCodes": "Template Codes"
+      "templateCodes": "Template Codes",
+      "title": "Title"
     },
     "es": {
       "apply": "Aplicar",
@@ -15009,8 +15164,10 @@
       "fileTemplate": "Nombre del archivo Plantilla",
       "language": "Idioma Código BCP47",
       "passage": "Número de pasaje (dentro de {0})",
+      "reference": "Passage reference",
       "renderExportTemplate": "La plantilla {SECT} funciona para archivos exportados de {0}.",
-      "templateCodes": "Códigos de la plantilla"
+      "templateCodes": "Códigos de la plantilla",
+      "title": "Title"
     },
     "ha": {
       "apply": "Apply",
@@ -15023,8 +15180,10 @@
       "fileTemplate": "File Name Template",
       "language": "Language BCP47 code",
       "passage": "Passage number(within {0})",
+      "reference": "Passage reference",
       "renderExportTemplate": "The {SECT} template works for files exported from {0}.",
-      "templateCodes": "Template Codes"
+      "templateCodes": "Template Codes",
+      "title": "Title"
     },
     "id": {
       "apply": "Terapkan",
@@ -15037,8 +15196,10 @@
       "fileTemplate": "Templat Nama Berkas",
       "language": "Kode bahasa BCP47",
       "passage": "Nomor bagian (terkandung di dalam {0})",
+      "reference": "Passage reference",
       "renderExportTemplate": "Template {SECT} dapat digunakan dengan file yang diekspor dari {0}.",
-      "templateCodes": "Kode templat"
+      "templateCodes": "Kode templat",
+      "title": "Title"
     },
     "ru": {
       "apply": "Применить",
@@ -15051,8 +15212,10 @@
       "fileTemplate": "Шаблон имени файла",
       "language": "Код языка BCP47",
       "passage": "Номер отрывка (в {0})",
+      "reference": "Passage reference",
       "renderExportTemplate": "Шаблон {SECT} работает для файлов, экспортированных из {0}.",
-      "templateCodes": "Коды шаблонов"
+      "templateCodes": "Коды шаблонов",
+      "title": "Title"
     },
     "zh": {
       "apply": "应用",
@@ -15065,8 +15228,10 @@
       "fileTemplate": "文件名模板：",
       "language": "语言BCP47 代码",
       "passage": "片段号码( {0} 之内)",
+      "reference": "Passage reference",
       "renderExportTemplate": "{SECT} 模板适用于从 {0} 导出的文件。",
-      "templateCodes": "模板代码"
+      "templateCodes": "模板代码",
+      "title": "Title"
     },
     "sw": {
       "apply": "Apply",
@@ -15079,8 +15244,10 @@
       "fileTemplate": "File Name Template",
       "language": "Language BCP47 code",
       "passage": "Passage number(within {0})",
+      "reference": "Passage reference",
       "renderExportTemplate": "The {SECT} template works for files exported from {0}.",
-      "templateCodes": "Template Codes"
+      "templateCodes": "Template Codes",
+      "title": "Title"
     }
   },
   "toDoTable": {

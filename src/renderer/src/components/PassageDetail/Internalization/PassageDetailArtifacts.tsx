@@ -38,6 +38,7 @@ import {
   ArtifactCategoryType,
   mediaFileName,
   usePlanType,
+  usePlan,
 } from '../../../crud';
 import BigDialog from '../../../hoc/BigDialog';
 import { BigDialogBp } from '../../../hoc/BigDialogBp';
@@ -192,6 +193,7 @@ export function PassageDetailArtifacts() {
   const { removeKey } = storedCompareKey(passage, section);
   const [plan] = useGlobal('plan'); //will be constant here
   const planType = usePlanType();
+  const { getPlan } = usePlan();
   const t: IPassageDetailArtifactsStrings = useSelector(
     passageDetailArtifactsSelector,
     shallowEqual
@@ -203,6 +205,11 @@ export function PassageDetailArtifacts() {
   const getGlobal = useGetGlobal();
   const handleLink = useHandleLink({ passage, setLink });
   const { passageRef } = usePassageRef();
+
+  const planRec = plan ? getPlan(plan) : null;
+  const filename = planRec?.attributes?.slug
+    ? `${planRec.attributes.slug}resource`
+    : 'resource';
 
   const resourceType = useMemo(() => {
     const resourceType = artifactTypes.find(
@@ -885,6 +892,7 @@ export function PassageDetailArtifacts() {
         onSpeakerChange={(value) => setPerformedBy(value)}
         inValue={markdownValue}
         eafUrl={aiGenerated ? AIGenerated : ''}
+        defaultFilename={filename}
         metaData={
           <ResourceData
             uploadType={uploadType}

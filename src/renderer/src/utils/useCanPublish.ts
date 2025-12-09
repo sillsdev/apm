@@ -22,7 +22,8 @@ export const useUserCanPublish = (): UserCanPublishResult => {
   const askingRef = useRef(false);
   const [isOffline] = useGlobal('offline'); //verified this is not used in a function 2/18/25
   const [memory] = useGlobal('memory');
-  const { accessToken } = useContext(TokenContext).state;
+  const tokenContext = useContext(TokenContext);
+  const { accessToken } = tokenContext?.state ?? { accessToken: null };
   const [errorReporter] = useGlobal('errorReporter');
   const [user] = useGlobal('user');
 

@@ -40,7 +40,6 @@ import { Box } from '@mui/material';
 interface IProps {
   noBusy?: boolean | undefined;
   recordAudio: boolean;
-  allowWave?: boolean | undefined;
   defaultFilename?: string | undefined;
   isOpen: boolean;
   onOpen: (visible: boolean) => void;
@@ -49,7 +48,7 @@ interface IProps {
   metaData?: React.JSX.Element | undefined; // component embeded in dialog
   ready?: (() => boolean) | undefined; // if false control is disabled
   // createProject?: (name: string) => Promise<string>;
-  cancelled: React.MutableRefObject<boolean>;
+  cancelled: React.RefObject<boolean>;
   cancelReset?: (() => void) | undefined; // reset the cancelled state
   multiple?: boolean | undefined;
   mediaId?: string | undefined;
@@ -73,7 +72,6 @@ export const Uploader = (props: IProps) => {
     noBusy,
     mediaId,
     recordAudio,
-    allowWave,
     defaultFilename,
     isOpen,
     onOpen,
@@ -97,6 +95,7 @@ export const Uploader = (props: IProps) => {
     finish,
   } = props;
   const { metaData, ready } = props;
+  const [isDeveloper] = useGlobal('developer');
   const t: IMediaTabStrings = useSelector(mediaTabSelector, shallowEqual);
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
   const uploadError = useSelector((state: IState) => state.upload.errmsg);
@@ -433,6 +432,8 @@ export const Uploader = (props: IProps) => {
     } else if (plan !== '') planIdRef.current = plan;
   }, [plan, passageId, memory]);
 
+  if (recordAudio && !defaultFilename && isDeveloper)
+    throw new Error('defaultFilename is required');
   return (
     <Box sx={{ width: '100%' }}>
       {recordAudio && ready && (!importList || importList.length === 0) && (
@@ -446,8 +447,8 @@ export const Uploader = (props: IProps) => {
           onCancel={uploadCancel}
           metaData={metaData}
           ready={ready}
-          defaultFilename={defaultFilename}
-          allowWave={allowWave}
+          defaultFilename={defaultFilename ?? 'resource'}
+          allowWave={false}
           speaker={performedBy}
           onSpeaker={handleSpeakerChange}
           team={team}

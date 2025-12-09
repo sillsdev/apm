@@ -1265,6 +1265,21 @@ export interface IResourceStrings extends Localize.LocalizedStringsMethods {
   versions: string;
 }
 
+export interface IRecordStepSettingsStrings
+  extends Localize.LocalizedStringsMethods {
+  custom: string;
+  fileNameTemplate: string;
+  general: string;
+  notes: string;
+  saveAsWav: string;
+  saveAsWavHelper: string;
+  scripture: string;
+  useBookChapterPassage: string;
+  useReference: string;
+  useSectionNumberAndPassageNumber: string;
+  useTitle: string;
+}
+
 export interface IScriptureTableStrings
   extends Localize.LocalizedStringsMethods {
   alternateName: string;
@@ -1467,8 +1482,10 @@ export interface ITemplateStrings extends Localize.LocalizedStringsMethods {
   fileTemplate: string;
   language: string;
   passage: string;
+  reference: string;
   renderExportTemplate: string;
   templateCodes: string;
+  title: string;
 }
 
 export interface IToDoTableStrings extends Localize.LocalizedStringsMethods {
@@ -1966,6 +1983,7 @@ export interface ILocalizedStrings {
   publishLevel: IPublishLevelStrings;
   publishTo: IPublishToStrings;
   resource: IResourceStrings;
+  recordStepSettings: IRecordStepSettingsStrings;
   scriptureTable: IScriptureTableStrings;
   scriptureTableFilter: IScriptureTableFilterStrings;
   sectionResources: ISectionResourcesStrings;

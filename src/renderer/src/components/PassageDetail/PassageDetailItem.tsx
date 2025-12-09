@@ -479,7 +479,6 @@ export function PassageDetailItem(props: IProps) {
                     afterUploadCb={afterUploadCb}
                     defaultFilename={defaultFilename}
                     allowWave={false}
-                    showFilename={false}
                     setCanSave={handleSetCanSave}
                     setStatusText={setStatusText}
                     doReset={resetMedia}

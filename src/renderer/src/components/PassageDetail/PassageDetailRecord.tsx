@@ -1,5 +1,5 @@
 import { shallowEqual, useSelector } from 'react-redux';
-import { ISharedStrings, MediaFileD } from '../../model';
+import { ISharedStrings, IState, MediaFileD } from '../../model';
 import { Typography, Box, Stack } from '@mui/material';
 import { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -8,11 +8,13 @@ import {
   MediaSt,
   related,
   useFetchMediaUrl,
+  useSharedResRead,
   VernacularTag,
 } from '../../crud';
 import { useGlobal } from '../../context/useGlobal';
 import usePassageDetailContext from '../../context/usePassageDetailContext';
 import { passageDefaultFilename } from '../../utils/passageDefaultFilename';
+import { useStepTool } from '../../crud/useStepTool';
 import Memory from '@orbit/memory';
 import { useSnackBar } from '../../hoc/SnackBar';
 import MediaRecord from '../MediaRecord';
@@ -60,10 +62,17 @@ export function PassageDetailRecord(props: IProps) {
   const [coordinator] = useGlobal('coordinator');
   const [offline] = useGlobal('offline'); //verified this is not used in a function 2/18/25
   const memory = coordinator?.getSource('memory') as Memory;
-  const { passage, sharedResource, mediafileId, chooserSize, setRecording } =
-    usePassageDetailContext();
+  const {
+    passage,
+    sharedResource,
+    mediafileId,
+    chooserSize,
+    setRecording,
+    currentstep,
+  } = usePassageDetailContext();
   const { showMessage } = useSnackBar();
   const toolId = 'RecordTool';
+  const { settings: toolSettings } = useStepTool(currentstep);
   const onSaving = () => {
     setBigBusy(true);
   };
@@ -82,7 +91,8 @@ export function PassageDetailRecord(props: IProps) {
   const [speaker, setSpeaker] = useState('');
   const [hasRights, setHasRight] = useState(false);
   const { canDoVernacular } = useStepPermissions();
-
+  const allBookData = useSelector((state: IState) => state.books.bookData);
+  const { getSharedResource } = useSharedResRead();
   const setUploadVisible = (value: boolean) => {
     if (value) {
       cancelled.current = false;
@@ -114,10 +124,30 @@ export function PassageDetailRecord(props: IProps) {
   }, [mediafileId, passage]);
 
   useEffect(() => {
+    const sr = getSharedResource(passage);
     setDefaultFileName(
-      passageDefaultFilename(passage, plan, memory, VernacularTag, offline)
+      passageDefaultFilename(
+        passage,
+        plan,
+        memory,
+        VernacularTag,
+        offline,
+        '',
+        toolSettings,
+        allBookData,
+        sr?.attributes.title
+      )
     );
-  }, [memory, passage, mediafiles, plan, offline]);
+  }, [
+    memory,
+    passage,
+    mediafiles,
+    plan,
+    offline,
+    toolSettings,
+    allBookData,
+    getSharedResource,
+  ]);
 
   useEffect(() => {
     const mediaRec = findRecord(memory, 'mediafile', mediafileId) as
@@ -248,7 +278,6 @@ export function PassageDetailRecord(props: IProps) {
         allowRecord={hasRights && canDoVernacular(related(passage, 'section'))}
         allowZoom={true}
         allowWave={true}
-        showFilename={true}
         showLoad={false}
         preload={preload}
         trackState={handleTrackRecorder}

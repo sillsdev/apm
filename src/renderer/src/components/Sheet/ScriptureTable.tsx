@@ -40,7 +40,7 @@ import {
 import * as actions from '../../store';
 import Memory from '@orbit/memory';
 import JSONAPISource from '@orbit/jsonapi';
-import { Badge, Box, Link } from '@mui/material';
+import { Badge, Box } from '@mui/material';
 import { useSnackBar } from '../../hoc/SnackBar';
 import PlanSheet, { ICell, ICellChange } from './PlanSheet';
 import {
@@ -67,7 +67,6 @@ import {
   waitForIt,
   useCheckOnline,
   currentDateTime,
-  hasAudacity,
   useDataChanges,
   useWaitForRemoteQueue,
 } from '../../utils';
@@ -89,14 +88,12 @@ import {
   getMinSection,
 } from '.';
 import { debounce } from 'lodash';
-import AudacityManager from './AudacityManager';
 import AssignSection from '../AssignSection';
 import StickyRedirect from '../StickyRedirect';
 import Uploader from '../Uploader';
 import { useMediaAttach } from '../../crud/useMediaAttach';
 import { UpdateRecord } from '../../model/baseModel';
 import { PlanContext } from '../../context/PlanContext';
-import stringReplace from 'react-string-replace';
 import BigDialog from '../../hoc/BigDialog';
 import VersionDlg from '../AudioTab/VersionDlg';
 import ResourceTabs from '../ResourceEdit/ResourceTabs';
@@ -137,17 +134,11 @@ import { getLastVerse } from '../../business/localParatext/getLastVerse';
 import { OrganizationSchemeStepD } from '../../model/organizationSchemeStep';
 import { usePeerGroups } from '../Peers/usePeerGroups';
 import bookSortJson from '../../assets/akuosort.json';
-import { Audacity } from '../../assets/brands';
 
 const SaveWait = 500;
 
 interface IProps {
   colNames: string[];
-}
-
-interface AudacityInfo {
-  ws: ISheet;
-  index: number;
 }
 
 export function ScriptureTable(props: IProps) {
@@ -233,7 +224,6 @@ export function ScriptureTable(props: IProps) {
   const [confirmPublishingVisible, setConfirmPublishingVisible] =
     useState(false);
   const [view, setView] = useState('');
-  const [audacityItem, setAudacityItem] = useState<AudacityInfo>();
   const [lastSaved, setLastSaved] = useState<string>();
   const toolId = 'scriptureTable';
   const {
@@ -253,7 +243,6 @@ export function ScriptureTable(props: IProps) {
   const [assignSections, setAssignSections] = useState<number[]>([]);
   const [uploadVisible, setUploadVisible] = useState(false);
   const [uploadGraphicVisible, setUploadGraphicVisible] = useState(false);
-  const [recordAudio, setRecordAudio] = useState(true);
   const [importList, setImportList] = useState<File[]>();
   const cancelled = useRef(false);
   const uploadItem = useRef<ISheet | undefined>(undefined);
@@ -1063,35 +1052,6 @@ export function ScriptureTable(props: IProps) {
     });
   };
 
-  const handleAudacity = async (index: number) => {
-    if (!(await hasAudacity())) {
-      showMessage(
-        <span>
-          {stringReplace(t.installAudacity, '{Audacity}', () => (
-            <Link
-              href="https://www.audacityteam.org/download/"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              {Audacity}
-            </Link>
-          ))}
-        </span>
-      );
-      return;
-    }
-    saveIfChanged(() => {
-      waitForPassageId(index, () => {
-        const { ws } = getByIndex(sheetRef.current, index);
-        setAudacityItem({ ws: ws as ISheet, index });
-      });
-    });
-  };
-
-  const handleAudacityClose = () => {
-    setAudacityItem(undefined);
-  };
-
   const handleAssign = (where: number[]) => () => {
     saveIfChanged(() => {
       setAssignSections(where);
@@ -1101,7 +1061,7 @@ export function ScriptureTable(props: IProps) {
 
   const handleAssignClose = () => () => setAssignSectionVisible(false);
 
-  const showUpload = (i: number, record: boolean, list?: File[]) => {
+  const showUpload = (i: number) => {
     waitForPassageId(i, () => {
       const { ws } = getByIndex(sheetRef.current, i);
       uploadItem.current = ws;
@@ -1116,8 +1076,7 @@ export function ScriptureTable(props: IProps) {
           )
         );
       }
-      setRecordAudio(record);
-      setImportList(list);
+      setImportList(undefined);
       setUploadVisible(true);
     });
   };
@@ -1128,7 +1087,7 @@ export function ScriptureTable(props: IProps) {
 
   const handleUpload = (i: number) => () => {
     saveIfChanged(() => {
-      showUpload(i, false);
+      showUpload(i);
     });
   };
 
@@ -1228,18 +1187,6 @@ export function ScriptureTable(props: IProps) {
     } else {
       graphicsClosed(v);
     }
-  };
-
-  const handleAudacityImport = (i: number, list: File[]) => {
-    saveIfChanged(() => {
-      showUpload(i, false, list);
-    });
-  };
-
-  const handleRecord = (i: number) => {
-    saveIfChanged(() => {
-      showUpload(i, true);
-    });
   };
 
   const handleEditClose = () => {
@@ -2046,11 +1993,9 @@ export function ScriptureTable(props: IProps) {
         lookupBook={handleLookupBook}
         resequence={handleResequence}
         inlinePassages={flat}
-        onAudacity={handleAudacity}
         onPassageDetail={handlePassageDetail}
         onAssign={handleAssign}
         onUpload={handleUpload}
-        onRecord={handleRecord}
         onEdit={handleEdit}
         onHistory={handleVersions}
         onGraphic={handleGraphic}
@@ -2074,8 +2019,7 @@ export function ScriptureTable(props: IProps) {
         />
       )}
       <Uploader
-        recordAudio={recordAudio}
-        allowWave={true}
+        recordAudio={false}
         defaultFilename={defaultFilename}
         mediaId={uploadItem.current?.mediaId?.id || ''}
         importList={importList as File[]}
@@ -2117,25 +2061,6 @@ export function ScriptureTable(props: IProps) {
           </>
         }
       />
-      {audacityItem?.ws?.passage && (
-        <AudacityManager
-          item={audacityItem?.index}
-          open={Boolean(audacityItem)}
-          onClose={handleAudacityClose}
-          passageId={
-            {
-              type: 'passage',
-              id:
-                related(audacityItem?.ws?.sharedResource, 'passage') ??
-                audacityItem?.ws?.passage?.id,
-            } as RecordIdentity
-          }
-          mediaId={audacityItem?.ws?.mediaId?.id || ''}
-          onImport={handleAudacityImport}
-          speaker={speaker}
-          onSpeaker={handleNameChange}
-        />
-      )}
       <BigDialog
         title={ts.versionHistory}
         isOpen={versionRow !== undefined}

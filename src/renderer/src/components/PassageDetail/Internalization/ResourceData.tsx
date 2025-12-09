@@ -1,8 +1,8 @@
 import {
-  Box,
   FormControl,
   FormControlLabel,
   FormLabel,
+  Grid,
   Radio,
   RadioGroup,
   Stack,
@@ -107,24 +107,28 @@ export function ResourceData(props: IProps) {
       {mediaContentType(media) === MarkDownType && (
         <MarkDownEdit inValue={text} onValue={handleTextChange} />
       )}
-      <Box sx={{ pt: 1 }}>
-        <TextField
-          id="filename"
-          label={ts.description}
-          value={description || ''}
-          onChange={handleChangeDescription}
-          required={false}
-          fullWidth={true}
-        />
-      </Box>
-      <SelectArtifactCategory
-        allowNew={catAllowNew}
-        initCategory={initCategory || ''}
-        onCategoryChange={onCategoryChange}
-        required={catRequired}
-        scripture={ArtCatScr.highlight}
-        type={ArtifactCategoryType.Resource}
-      />
+      <Grid container spacing={2} sx={{ pt: 1 }}>
+        <Grid size={{ xs: 12, sm: 6 }}>
+          <TextField
+            id="description"
+            label={ts.description}
+            value={description || ''}
+            onChange={handleChangeDescription}
+            required={false}
+            fullWidth={true}
+          />
+        </Grid>
+        <Grid size={{ xs: 12, sm: 6 }}>
+          <SelectArtifactCategory
+            allowNew={catAllowNew}
+            initCategory={initCategory || ''}
+            onCategoryChange={onCategoryChange}
+            required={catRequired}
+            scripture={ArtCatScr.highlight}
+            type={ArtifactCategoryType.Resource}
+          />
+        </Grid>
+      </Grid>
       {onPassResChange && (
         <FormControl>
           <FormLabel id="resourcekind">{t.tip1a}</FormLabel>

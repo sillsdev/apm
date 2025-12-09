@@ -79,8 +79,6 @@ interface IProps {
   onHistory: (rowIndex: number) => () => void;
   onSetPreventSave: (val: boolean) => void;
   onDelete: (rowIndex: number) => () => void;
-  onAudacity: (rowIndex: number) => () => void;
-  onRecord: (rowIndex: number) => void;
   onUpload: (rowIndex: number) => () => void;
   onGraphic: (rowIndex: number) => void;
   onAssign: (where: number[]) => () => void;
@@ -111,8 +109,6 @@ interface IProps {
  * @param {Function} props.onHistory - A callback function for handling history.
  * @param {Function} props.onSetPreventSave - A callback function for setting prevent save.
  * @param {Function} props.onDelete - A callback function for handling delete.
- * @param {Function} props.onAudacity - A callback function for launching audacity.
- * @param {Function} props.onRecord - A callback function for handling record.
  * @param {Function} props.onUpload - A callback function for handling upload.
  * @param {Function} props.onGraphic - A callback function for handling adding a graphic.
  * @param {Function} props.onAssign - A callback function for handling assign.
@@ -141,8 +137,6 @@ export const usePlanSheetFill = ({
   onHistory,
   onSetPreventSave,
   onDelete,
-  onAudacity,
-  onRecord,
   onUpload,
   onGraphic,
   onAssign,
@@ -802,8 +796,6 @@ export const usePlanSheetFill = ({
               readonly={check.length > 0}
               onDelete={onDelete}
               onPlayStatus={onPlayStatus}
-              onAudacity={onAudacity}
-              onRecord={onRecord}
               onUpload={onUpload}
               onAssign={onAssign}
               onFirstMovement={onFirstMovement}

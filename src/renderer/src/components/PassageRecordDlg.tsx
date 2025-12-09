@@ -45,7 +45,7 @@ interface IProps {
   afterUploadCb: (mediaId: string | undefined) => Promise<void>;
   passageId: string | undefined;
   metaData?: React.JSX.Element | undefined;
-  defaultFilename?: string | undefined;
+  defaultFilename: string;
   ready?: (() => boolean) | undefined;
   allowWave?: boolean | undefined;
   speaker?: string | undefined;
@@ -170,7 +170,6 @@ function PassageRecordDlg(props: IProps) {
           defaultFilename={defaultFilename}
           allowRecord={hasRights}
           allowWave={allowWave}
-          showFilename={allowWave}
           showLoad={true}
           setCanSave={setCanSave}
           setCanCancel={setCanCancel}

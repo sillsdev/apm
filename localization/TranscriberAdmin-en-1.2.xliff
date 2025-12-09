@@ -7417,6 +7417,83 @@
       			<context context-type="sourcefile">ResourceOverview.tsx</context>
       		</context-group>
       	</trans-unit>
+         <trans-unit id="recordStepSettings.custom">
+            <source>Custom</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">RecordStepSettings.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="recordStepSettings.fileNameTemplate">
+            <source>File Name Template</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">RecordStepSettings.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="recordStepSettings.general">
+            <source>General</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">RecordStepSettings.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="recordStepSettings.notes">
+            <source>Notes</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">RecordStepSettings.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="recordStepSettings.saveAsWav">
+            <source>Save as wav (uncompressed) file.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">RecordStepSettings.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="recordStepSettings.saveAsWavHelper">
+            <source>These files are large and we suggest you only select this for the final recording.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">RecordStepSettings.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="recordStepSettings.scripture">
+            <source>Scripture</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">RecordStepSettings.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="recordStepSettings.useBookChapterPassage">
+            <source>Book Chapter Passage</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">RecordStepSettings.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="recordStepSettings.useReference">
+            <source>Passage Reference</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">RecordStepSettings.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="recordStepSettings.useSectionNumberAndPassageNumber">
+            <source>{0} number and Passage number</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">RecordStepSettings.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="recordStepSettings.useTitle">
+            <source>Title</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">RecordStepSettings.tsx</context>
+            </context-group>
+         </trans-unit>
       	<trans-unit id="scriptureTable.alternateName">
       		<source>{0} Alternate Name</source>
       		<target/>
@@ -8524,6 +8601,13 @@
                <context context-type="sourcefile">template.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="template.reference">
+            <source>Passage reference</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">template.tsx</context>
+            </context-group>
+         </trans-unit>
       	<trans-unit id="template.renderExportTemplate">
       		<source>The {SECT} template works for files exported from {0}.</source>
       		<target/>
@@ -8533,6 +8617,13 @@
       	</trans-unit>
          <trans-unit id="template.templateCodes">
             <source>Template Codes</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">template.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="template.title">
+            <source>Title</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">template.tsx</context>

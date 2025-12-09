@@ -301,7 +301,6 @@ export default function TargetWordAdd(props: IProps) {
           artifactId={keyTermId}
           defaultFilename={fileName}
           allowWave={false}
-          showFilename={false}
           setCanSave={handleSetCanSave}
           setStatusText={setStatusText}
           height={200}
