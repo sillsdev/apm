@@ -52,9 +52,8 @@ module.exports = {
     'no-unused-vars': 'off',
     'no-case-declarations': 'off',
     'react-hooks/set-state-in-effect': 'off',
-    'react-hooks/immutability': 'off',
-    'react-hooks/static-components': 'off',
-    'react-hooks/refs': 'off',
+    // 'react-hooks/immutability': 'off',  // we want this error to be shown and escaped each time we use it
+    // 'react-hooks/refs': 'off', // we want this error to be shown and escaped each time we use it
     'react-hooks/globals': 'off',
   },
 };

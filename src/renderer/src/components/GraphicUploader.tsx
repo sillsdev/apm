@@ -134,6 +134,7 @@ export function GraphicUploader(props: IProps) {
 
   const uploadCancel = () => {
     onOpen(false);
+    // eslint-disable-next-line react-hooks/immutability
     if (cancelled) cancelled.current = true;
     restoreScroll();
   };

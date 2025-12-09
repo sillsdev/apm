@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/immutability */
 import { useState } from 'react';
 import { IState, OptionType, IToolStrings } from '../model';
 import localStrings from '../selector/localize';

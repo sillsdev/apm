@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/immutability */
 import { useGlobal } from '../context/useGlobal';
 import JSONAPISource from '@orbit/jsonapi';
 

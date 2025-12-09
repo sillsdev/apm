@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/immutability */
 import { useState } from 'react';
 import { useGlobal } from '../context/useGlobal';
 import {

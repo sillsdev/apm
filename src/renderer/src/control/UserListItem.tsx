@@ -22,15 +22,12 @@ interface IProps {
   onSelect?: (user: string) => void;
   show?: ListEnum;
 }
-export const UserListItem = (props: IProps) => {
-  const { u, onSelect, show } = props;
+
+const ItemContent = (props: IProps) => {
+  const { u, show } = props;
   const list = useOfflineList();
 
-  const handleSelect = (user: string) => () => {
-    onSelect && onSelect(user);
-  };
-
-  const ItemContent = () => (
+  return (
     <StyledButton variant="outlined">
       <ListItemIcon>
         <UserAvatar {...props} userRec={u} />
@@ -41,14 +38,22 @@ export const UserListItem = (props: IProps) => {
       />
     </StyledButton>
   );
+};
+
+export const UserListItem = (props: IProps) => {
+  const { u, onSelect } = props;
+
+  const handleSelect = (user: string) => () => {
+    onSelect && onSelect(user);
+  };
 
   return onSelect ? (
     <ListItemButton id={`user-${u.id}`} key={u.id} onClick={handleSelect(u.id)}>
-      <ItemContent />
+      <ItemContent {...props} />
     </ListItemButton>
   ) : (
     <ListItem id={`user-${u.id}`} key={u.id}>
-      <ItemContent />
+      <ItemContent {...props} />
     </ListItem>
   );
 };
