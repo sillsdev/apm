@@ -123,15 +123,7 @@ jobs:
 
       - name: Run Cypress component tests
         working-directory: src/renderer
-        run: |
-          # Start Cypress in background to let it start the Vite dev server
-          npm run cy:run-ct-ci &
-          CYPRESS_PID=$!
-          # Give Cypress a moment to start the server, then wait for it to be ready
-          sleep 5
-          npx wait-on http://localhost:5173 -t 60000 -i 500 || true
-          # Wait for Cypress process to complete
-          wait $CYPRESS_PID
+        run: npm run cy:run-ct-ci
 
       - name: Run unit tests
         working-directory: src/renderer
