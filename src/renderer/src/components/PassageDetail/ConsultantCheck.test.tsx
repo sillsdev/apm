@@ -249,8 +249,8 @@ describe('ConsultantCheck', () => {
     render(<ConsultantCheck width={500} />);
     fireEvent.click(screen.getByTestId('pri-button'));
     expect(screen.getByText('Vernacular')).toHaveClass('Mui-selected');
-    await waitFor(() => expect(mockSetStepComplete).toBeCalledTimes(1));
-    expect(mockSetStepComplete).toBeCalledWith('record', true);
+    await waitFor(() => expect(mockSetStepComplete).toHaveBeenCalledTimes(1));
+    expect(mockSetStepComplete).toHaveBeenCalledWith('record', true);
   });
 
   it('should update passage record and include completed when Pri Button is clicked', async () => {
@@ -263,9 +263,9 @@ describe('ConsultantCheck', () => {
     mockCurrentStep = 'record';
     render(<ConsultantCheck width={500} />);
     fireEvent.click(screen.getByTestId('pri-button'));
-    await waitFor(() => expect(mockSetStepComplete).toBeCalledTimes(1));
-    expect(mockSetStepComplete).toBeCalledWith('record', true);
-    expect(mockUpdateRecord).toBeCalledTimes(1);
+    await waitFor(() => expect(mockSetStepComplete).toHaveBeenCalledTimes(1));
+    expect(mockSetStepComplete).toHaveBeenCalledWith('record', true);
+    expect(mockUpdateRecord).toHaveBeenCalledTimes(1);
     const stepCompleteJson =
       mockUpdateRecord['mock'].calls[0][0]?.attributes?.stepComplete;
     const result = JSON.parse(stepCompleteJson);
@@ -283,9 +283,9 @@ describe('ConsultantCheck', () => {
     mockPassageStepComplete = `{"completed":["record"]}`;
     render(<ConsultantCheck width={500} />);
     fireEvent.click(screen.getByTestId('pri-button'));
-    await waitFor(() => expect(mockSetStepComplete).toBeCalledTimes(1));
-    expect(mockSetStepComplete).toBeCalledWith('record', true);
-    expect(mockUpdateRecord).toBeCalledTimes(1);
+    await waitFor(() => expect(mockSetStepComplete).toHaveBeenCalledTimes(1));
+    expect(mockSetStepComplete).toHaveBeenCalledWith('record', true);
+    expect(mockUpdateRecord).toHaveBeenCalledTimes(1);
     const stepCompleteJson =
       mockUpdateRecord['mock'].calls[0][0]?.attributes?.stepComplete;
     const result = JSON.parse(stepCompleteJson);

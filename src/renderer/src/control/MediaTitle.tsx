@@ -334,6 +334,7 @@ export default function MediaTitle(props: IProps) {
     if (playingMediaId !== mediaId && playing) {
       setPlaying(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [playingMediaId, mediaId]);
 
   useEffect(() => {
