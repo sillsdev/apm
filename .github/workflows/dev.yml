@@ -121,6 +121,18 @@ jobs:
       - name: Clean
         run: npm run clean
 
+      - name: Run Cypress component tests
+        uses: cypress-io/github-action@v6
+        with:
+          working-directory: src/renderer
+          component: true
+          config-file: cypress/config/ci.config.ts
+          browser: chrome
+          record: false
+          config: video=false,screenshotOnRunFailure=true
+        env:
+          NODE_ENV: test
+
       - name: Run unit tests
         working-directory: src/renderer
         run: npm run test:ci
