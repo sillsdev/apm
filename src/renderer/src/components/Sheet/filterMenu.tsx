@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/refs */
 import React, { useRef, useState, useEffect, useContext } from 'react';
 import {
   IScriptureTableFilterStrings,
