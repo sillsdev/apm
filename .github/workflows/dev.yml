@@ -124,7 +124,7 @@ jobs:
       - name: Run unit tests
         working-directory: src/renderer
         run: |
-          npm run cy:run-ct-fast
+          npm run cy:run-ct-ci
           npm run test:ci
 
       - name: Validate source

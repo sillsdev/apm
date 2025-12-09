@@ -18,6 +18,7 @@
     "cy:open-ct": "cypress open --component --browser firefox --config-file cypress/config/local.config.ts",
     "cy:run-ct": "cypress run --component --config-file cypress/config/local.config.ts",
     "cy:run-ct-fast": "npm run cy:run-ct --config video=false screenshot=false cypress/config/local.config.ts",
+    "cy:run-ct-ci": "cypress run --component --config-file cypress/config/ci.config.ts --config video=false screenshot=false",
     "devs": "cd ../.. && node env-config/changeEnv.cjs dev && cd src/renderer",
     "qas": "cd ../.. && node env-config/changeEnv.cjs qa && cd src/renderer",
     "prods": "cd ../.. && node env-config/changeEnv.cjs prod && cd src/renderer"
