@@ -4,6 +4,9 @@ import { baseConfig } from './base.config';
 import path from 'node:path';
 import merge from 'lodash/merge';
 
+// Get the workspace root (two levels up from this config file)
+const workspaceRoot = path.resolve(__dirname, '../../..');
+
 const config = {
   e2e: {
     env: {
@@ -14,12 +17,15 @@ const config = {
   component: {
     specPattern: 'src/**/*.cy.{js,jsx,ts,tsx}',
     devServer: {
+      delay: 1000,
       framework: 'react',
       bundler: 'vite',
       viteConfig: {
+        base: './',
         server: {
           fs: {
-            allow: ['..'],
+            strict: false,
+            allow: [workspaceRoot, path.resolve(__dirname, '../..'), '..', process.cwd()],
           },
         },
         define: {
