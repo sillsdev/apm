@@ -8602,7 +8602,7 @@
             </context-group>
          </trans-unit>
          <trans-unit id="template.reference">
-            <source>Passage reference)</source>
+            <source>Passage reference</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">template.tsx</context>

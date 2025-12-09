@@ -15084,7 +15084,7 @@
       "fileTemplate": "File Name Template",
       "language": "Language BCP47 code",
       "passage": "Passage number(within {0})",
-      "reference": "Passage reference)",
+      "reference": "Passage reference",
       "renderExportTemplate": "The {SECT} template works for files exported from {0}.",
       "templateCodes": "Template Codes",
       "title": "Title"
@@ -15100,7 +15100,7 @@
       "fileTemplate": "File Name Template",
       "language": "Langue Code BCP47",
       "passage": "Numéro de passage (dans {0})",
-      "reference": "Passage reference)",
+      "reference": "Passage reference",
       "renderExportTemplate": "Le modèle {SECT} fonctionne pour les fichiers exportés à partir de {0}.",
       "templateCodes": "Modèle de code",
       "title": "Title"
@@ -15116,7 +15116,7 @@
       "fileTemplate": "Modelo do Nome do Arquivo",
       "language": "Código de idioma BCP47",
       "passage": "Número de passagem (em {0})",
-      "reference": "Passage reference)",
+      "reference": "Passage reference",
       "renderExportTemplate": "O modelo {SECT} funciona para arquivos exportados de {0}.",
       "templateCodes": "Códigos de Modelo",
       "title": "Title"
@@ -15132,7 +15132,7 @@
       "fileTemplate": "File Name Template",
       "language": "Language BCP47 code",
       "passage": "Passage number(within {0})",
-      "reference": "Passage reference)",
+      "reference": "Passage reference",
       "renderExportTemplate": "The {SECT} template works for files exported from {0}.",
       "templateCodes": "Template Codes",
       "title": "Title"
@@ -15148,7 +15148,7 @@
       "fileTemplate": "File Name Template",
       "language": "Language BCP47 code",
       "passage": "Passage number(within {0})",
-      "reference": "Passage reference)",
+      "reference": "Passage reference",
       "renderExportTemplate": "The {SECT} template works for files exported from {0}.",
       "templateCodes": "Template Codes",
       "title": "Title"
@@ -15164,7 +15164,7 @@
       "fileTemplate": "Nombre del archivo Plantilla",
       "language": "Idioma Código BCP47",
       "passage": "Número de pasaje (dentro de {0})",
-      "reference": "Passage reference)",
+      "reference": "Passage reference",
       "renderExportTemplate": "La plantilla {SECT} funciona para archivos exportados de {0}.",
       "templateCodes": "Códigos de la plantilla",
       "title": "Title"
@@ -15180,7 +15180,7 @@
       "fileTemplate": "File Name Template",
       "language": "Language BCP47 code",
       "passage": "Passage number(within {0})",
-      "reference": "Passage reference)",
+      "reference": "Passage reference",
       "renderExportTemplate": "The {SECT} template works for files exported from {0}.",
       "templateCodes": "Template Codes",
       "title": "Title"
@@ -15196,7 +15196,7 @@
       "fileTemplate": "Templat Nama Berkas",
       "language": "Kode bahasa BCP47",
       "passage": "Nomor bagian (terkandung di dalam {0})",
-      "reference": "Passage reference)",
+      "reference": "Passage reference",
       "renderExportTemplate": "Template {SECT} dapat digunakan dengan file yang diekspor dari {0}.",
       "templateCodes": "Kode templat",
       "title": "Title"
@@ -15212,7 +15212,7 @@
       "fileTemplate": "Шаблон имени файла",
       "language": "Код языка BCP47",
       "passage": "Номер отрывка (в {0})",
-      "reference": "Passage reference)",
+      "reference": "Passage reference",
       "renderExportTemplate": "Шаблон {SECT} работает для файлов, экспортированных из {0}.",
       "templateCodes": "Коды шаблонов",
       "title": "Title"
@@ -15228,7 +15228,7 @@
       "fileTemplate": "文件名模板：",
       "language": "语言BCP47 代码",
       "passage": "片段号码( {0} 之内)",
-      "reference": "Passage reference)",
+      "reference": "Passage reference",
       "renderExportTemplate": "{SECT} 模板适用于从 {0} 导出的文件。",
       "templateCodes": "模板代码",
       "title": "Title"
@@ -15244,7 +15244,7 @@
       "fileTemplate": "File Name Template",
       "language": "Language BCP47 code",
       "passage": "Passage number(within {0})",
-      "reference": "Passage reference)",
+      "reference": "Passage reference",
       "renderExportTemplate": "The {SECT} template works for files exported from {0}.",
       "templateCodes": "Template Codes",
       "title": "Title"

@@ -150,7 +150,7 @@ export const passageDefaultFilename = (
     } else if (isScripture) {
       template =
         settings?.scriptureFilenameTemplate ?? BOOK_CHAPTER_PASSAGE_TEMPLATE;
-      if (template == BOOK_CHAPTER_PASSAGE_TEMPLATE)
+      if (template === BOOK_CHAPTER_PASSAGE_TEMPLATE)
         tmp = bookChapterPassage(passage);
     } else {
       template = settings?.generalFilenameTemplate ?? REFERENCE_TEMPLATE;
