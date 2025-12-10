@@ -52,7 +52,7 @@ interface IProps {
   onSpeaker?: ((speaker: string) => void) | undefined;
   team?: string | undefined;
 }
-
+//This is only used now for recording a new resource
 function PassageRecordDlg(props: IProps) {
   const {
     visible,
@@ -170,7 +170,6 @@ function PassageRecordDlg(props: IProps) {
           defaultFilename={defaultFilename}
           allowRecord={hasRights}
           allowWave={allowWave}
-          showLoad={true}
           setCanSave={setCanSave}
           setCanCancel={setCanCancel}
           setStatusText={setStatusText}

@@ -112,7 +112,6 @@ export function PassageDetailRecord(props: IProps) {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [toolsChanged]);
-
   useEffect(() => {
     if (!mediafileId) {
       fetchMediaUrl({ id: mediafileId });
@@ -162,12 +161,16 @@ export function PassageDetailRecord(props: IProps) {
   }, [mediafileId, mediafiles]);
 
   useEffect(() => {
-    setHasExistingVersion(
+    const hasExisting =
       Boolean(mediafileId) &&
-        recorderState?.status === MediaSt.FETCHED &&
-        recorderState?.id === mediafileId
-    );
-  }, [mediafileId, recorderState]);
+      recorderState?.status === MediaSt.FETCHED &&
+      recorderState?.id === mediafileId;
+    if (hasExisting && !hasExistingVersion) {
+      handleReload();
+    }
+    setHasExistingVersion(hasExisting);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasExistingVersion, mediafileId, recorderState]);
 
   const passageId = useMemo(
     () => related(sharedResource, 'passage') ?? passage.id,
@@ -245,7 +248,6 @@ export function PassageDetailRecord(props: IProps) {
     <Stack sx={{ width: props.width }}>
       <RecordButtons
         onVersions={hasExistingVersion ? handleVersions : undefined}
-        onReload={hasExistingVersion ? handleReload : undefined}
         onUpload={
           canDoVernacular(related(passage, 'section'))
             ? handleUpload
@@ -270,6 +272,7 @@ export function PassageDetailRecord(props: IProps) {
         artifactId={VernacularTag}
         passageId={passageId}
         afterUploadCb={afterUploadCb}
+        performedBy={speaker}
         mediaId={mediafileId}
         onSaving={onSaving}
         onReady={onReady}
@@ -278,7 +281,6 @@ export function PassageDetailRecord(props: IProps) {
         allowRecord={hasRights && canDoVernacular(related(passage, 'section'))}
         allowZoom={true}
         allowWave={true}
-        showLoad={false}
         preload={preload}
         trackState={handleTrackRecorder}
         setCanSave={setCanSave}

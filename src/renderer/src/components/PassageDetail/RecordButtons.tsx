@@ -1,11 +1,10 @@
 import { ButtonGroup, ButtonGroupProps, styled } from '@mui/material';
 import AddIcon from '@mui/icons-material/LibraryAddOutlined';
 import VersionsIcon from '@mui/icons-material/List';
-import AudioFileIcon from '@mui/icons-material/AudioFileOutlined';
 import { AltButton, AudacityLogo } from '../../control';
 import { shallowEqual, useSelector } from 'react-redux';
-import { passageRecordSelector, sharedSelector } from '../../selector';
-import { IPassageRecordStrings, ISharedStrings } from '../../model';
+import { sharedSelector } from '../../selector';
+import { ISharedStrings } from '../../model';
 
 const StyledButtonGroup = styled(ButtonGroup)<ButtonGroupProps>(() => ({
   '& button': {
@@ -15,22 +14,12 @@ const StyledButtonGroup = styled(ButtonGroup)<ButtonGroupProps>(() => ({
 
 interface IProps {
   onVersions?: () => void;
-  onReload?: () => void;
   onUpload?: () => void;
   onAudacity?: () => void;
 }
 
-export const RecordButtons = ({
-  onVersions,
-  onUpload,
-  onReload,
-  onAudacity,
-}: IProps) => {
+export const RecordButtons = ({ onVersions, onUpload, onAudacity }: IProps) => {
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
-  const t: IPassageRecordStrings = useSelector(
-    passageRecordSelector,
-    shallowEqual
-  );
 
   const IconSize = { width: '14px', height: '14px' };
 
@@ -44,15 +33,6 @@ export const RecordButtons = ({
           startIcon={<VersionsIcon sx={IconSize} />}
         >
           {ts.versionHistory}
-        </AltButton>
-      )}
-      {onReload && (
-        <AltButton
-          id="pdRecordReload"
-          onClick={onReload}
-          startIcon={<AudioFileIcon sx={IconSize} />}
-        >
-          {t.loadlatest}
         </AltButton>
       )}
       <AltButton
