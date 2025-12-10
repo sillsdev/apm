@@ -7,6 +7,10 @@ export default defineConfig({
     port: 3000,
     host: true,
   },
+  optimizeDeps: {
+    // Removed force: true to allow Vite to cache optimizations
+    // This prevents re-optimization during test runs
+  },
   plugins: [react()],
   build: {
     rollupOptions: {
