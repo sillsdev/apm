@@ -186,6 +186,7 @@
     },
     "linux": {
       "icon": "debian/audio-project-manager.png",
+      "executableName": "audio-project-manager",
       "desktop": {
         "entry": {
           "Type": "Application",
