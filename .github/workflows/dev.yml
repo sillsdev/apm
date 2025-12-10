@@ -125,6 +125,10 @@ jobs:
         working-directory: src/renderer
         run: npm run test:ci
 
+      - name: Run Cypress component tests
+        working-directory: src/renderer
+        run: npm run cy:run-ct-fast
+
       - name: Build
         working-directory: src/renderer
         run: npm run build
