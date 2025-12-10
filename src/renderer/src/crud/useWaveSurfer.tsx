@@ -80,7 +80,6 @@ export function useWaveSurfer(
   }, []);
 
   const timelinePlugin = useMemo(() => Timeline.create({}), []);
-
   const zoomPlugin = useMemo(() => {
     if (!onZoom) return undefined;
     return ZoomPlugin.create({
@@ -190,7 +189,6 @@ export function useWaveSurfer(
   } = useWaveSurferRegions(
     singleRegionOnly,
     currentSegmentIndex ?? -1,
-    Regions,
     wavesurferRef.current,
     onRegion,
     wsDuration,
@@ -253,6 +251,7 @@ export function useWaveSurfer(
   useEffect(() => {
     const handleReady = () => {
       isReadyRef.current = true;
+      setupRegions(wavesurferRef.current as WaveSurfer);
       //recording also sends ready
       if (loadRequests.current > 0) loadRequests.current--;
       //do these even if we're going to load another to show progress
@@ -286,8 +285,6 @@ export function useWaveSurfer(
     wavesurferRef.current = wavesurfer;
     regionsLoadedRef.current = false;
     if (wavesurfer) {
-      //the regions useEffect isn't called when the wavesurfer is recreated so call it explicitly
-      setupRegions(wavesurfer);
       wavesurfer.on('ready', handleReady);
       wavesurfer.on('destroy', function () {
         //this is received way more times than expected

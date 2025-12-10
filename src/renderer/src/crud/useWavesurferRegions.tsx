@@ -57,7 +57,6 @@ export const parseRegions = (regionstr: string) => {
 export function useWaveSurferRegions(
   singleRegionOnly: boolean,
   defaultRegionIndex: number,
-  Regions: RegionsPlugin | undefined,
   ws: WaveSurfer | null,
   onRegion: (count: number, newRegion: boolean) => void,
   duration: () => number,
@@ -73,6 +72,7 @@ export function useWaveSurferRegions(
 ) {
   const theme = useTheme();
   const wsRef = useRef<WaveSurfer | null>(ws);
+  const regionsRef = useRef<RegionsPlugin | undefined>(undefined);
   const singleRegionRef = useRef(singleRegionOnly);
   const currentRegionRef = useRef<any>(undefined);
   const loopingRegionRef = useRef<any>(undefined);
@@ -95,11 +95,16 @@ export function useWaveSurferRegions(
   const CURRENT_REGION_COLOR = (theme.palette as any).custom.currentRegion; // Green color for current region
   const NEXT_BORDER_COLOR = 'red';
 
+  const Regions = () => regionsRef.current;
   const regions = () =>
-    Regions?.getRegions().filter((r) => r.start !== r.end) ?? ([] as Region[]);
-  const region = (id: string) => regions().find((x) => x.id === id);
+    Regions()
+      ?.getRegions()
+      .filter((reg) => reg.start !== reg.end) ?? ([] as Region[]);
   const markers = () =>
-    Regions?.getRegions().filter((r) => r.start === r.end) ?? ([] as Region[]);
+    Regions()
+      ?.getRegions()
+      .filter((reg) => reg.start === reg.end) ?? ([] as Region[]);
+  const region = (id: string) => regions().find((x) => x.id === id);
   const numRegions = () => regions().length;
   const currentRegion = () => {
     return currentRegionRef.current;
@@ -110,9 +115,13 @@ export function useWaveSurferRegions(
     singleRegionRef.current = singleRegionOnly;
   }, [singleRegionOnly]);
 
+  // Helper to get current time - only called from event handlers, not during render
+  const getCurrentTime = () => Date.now();
+
   // handle region clicks with deduplication
+  // This is an event handler, not a render function, so Date.now() is safe here
   const handleRegionClick = (r: Region) => {
-    const currentTime = Date.now();
+    const currentTime = getCurrentTime();
     const timeSinceLastClick = currentTime - lastClickTimeRef.current;
     const isSameRegion = lastClickedRegionRef.current === r.id;
 
@@ -132,8 +141,9 @@ export function useWaveSurferRegions(
   };
 
   // handle region double-clicks with deduplication
+  // This is an event handler, not a render function, so Date.now() is safe here
   const handleRegionDoubleClick = (r: Region) => {
-    const currentTime = Date.now();
+    const currentTime = getCurrentTime();
     const timeSinceLastDoubleClick =
       currentTime - lastDoubleClickTimeRef.current;
     const isSameRegion = lastClickedRegionRef.current === r.id;
@@ -206,9 +216,7 @@ export function useWaveSurferRegions(
   // Cleanup function to remove all event listeners
   const cleanupEventListeners = () => {
     // Remove all Regions event listeners
-    if (Regions) {
-      Regions.unAll();
-    }
+    Regions()?.unAll();
     // Remove finish handler from Wavesurfer instance
     if (finishHandlerRef.current && wsRef.current) {
       wsRef.current.un('finish', finishHandlerRef.current);
@@ -230,17 +238,18 @@ export function useWaveSurferRegions(
   }, [ws]);
 
   const setupRegions = (ws: WaveSurfer) => {
-    if (ws && Regions) {
+    const regionsPlugin = ws
+      .getActivePlugins()
+      .find((p) => p instanceof RegionsPlugin) as RegionsPlugin | undefined;
+    if (regionsPlugin) {
+      regionsRef.current = regionsPlugin;
+    }
+    if (ws && regionsPlugin) {
       // Clean up existing listeners before setting up new ones
       cleanupEventListeners();
 
       wsRef.current = ws;
-      if (singleRegionRef.current) {
-        Regions.enableDragSelection({
-          color: 'rgba(255, 0, 0, 0.1)',
-        });
-      }
-      Regions.on('region-created', function (r: Region) {
+      regionsPlugin.on('region-created', function (r: Region) {
         if (isMarker(r)) return;
         r.drag = singleRegionRef.current;
 
@@ -268,7 +277,7 @@ export function useWaveSurferRegions(
             .catch((reason) => console.log(reason));
         }
       });
-      Regions.on('region-removed', function (r: Region) {
+      regionsPlugin.on('region-removed', function (r: Region) {
         const ra = r as any;
         if (ra.attributes?.prevRegion)
           ra.attributes.prevRegion.attributes.nextRegion =
@@ -291,11 +300,11 @@ export function useWaveSurferRegions(
         }
       });
       //was region-updated
-      Regions.on('region-update', function (r: Region) {
+      regionsPlugin.on('region-update', function (r: Region) {
         resizingRef.current = r.resize;
       });
       //was region-update-end
-      Regions.on('region-updated', function (r: Region) {
+      regionsPlugin.on('region-updated', function (r: Region) {
         onCurrentRegion && onCurrentRegion({ start: r.start, end: r.end });
         if (singleRegionRef.current) {
           if (!loadingRef.current) {
@@ -337,13 +346,13 @@ export function useWaveSurferRegions(
       // ws.on('region-play', function (r: any) {
       //   console.log('region-play', r.start, r.loop);
       // });
-      Regions.on('region-in', function (r: Region) {
+      regionsPlugin.on('region-in', function (r: Region) {
         if (isMarker(r)) return;
         //TODO!! need to check for user interaction vs looping
         //this comes before the region-out
         if (!loopingRef.current) setCurrentRegion(r);
       });
-      Regions.on('region-out', function (r: Region) {
+      regionsPlugin.on('region-out', function (r: Region) {
         if (isMarker(r)) return;
         //help it in case it forgot -- unless the user clicked out
         //here is where we could add a pause possibly
@@ -356,10 +365,12 @@ export function useWaveSurferRegions(
           setPlaying(false);
         }
       });
-      Regions.on('region-clicked', function (r: Region) {
+      regionsPlugin.on('region-clicked', function (r: Region) {
+        //do NOT stop propagation here or progress doesn't update
         handleRegionClick(r);
       });
-      Regions.on('region-double-clicked', function (r: Region) {
+      regionsPlugin.on('region-double-clicked', function (r: Region, e: Event) {
+        e.stopPropagation(); // prevent triggering a dblclick on the waveform
         handleRegionDoubleClick(r);
       });
 
@@ -374,8 +385,15 @@ export function useWaveSurferRegions(
       };
       finishHandlerRef.current = finishHandler;
       ws.on('finish', finishHandler);
+
+      // Enable drag selection AFTER all event listeners are set up
+      // This ensures the internal listeners set up by enableDragSelection aren't removed
+      if (singleRegionRef.current) {
+        regionsPlugin.enableDragSelection({
+          color: 'rgba(255, 0, 0, 0.1)',
+        });
+      }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   };
 
   const isInRegion = (r: Region, value: number) => {
@@ -636,7 +654,7 @@ export function useWaveSurferRegions(
         color: m.color,
       });
     });
-    Regions?.clearRegions();
+    Regions()?.clearRegions();
     if (recreateMarkers) {
       savedMarkers.forEach((m, i) => {
         wsAddMarker(m, i);
@@ -676,7 +694,7 @@ export function useWaveSurferRegions(
       region.color = randomColor(0.1);
       region.drag = false;
       region.content = region.label;
-      const r = Regions?.addRegion(region);
+      const r = Regions()?.addRegion(region);
       region.id = r?.id;
     });
     console.log('loadRegions', regarray.length, numRegions());
@@ -720,7 +738,8 @@ export function useWaveSurferRegions(
       color: randomColor(0.1),
     };
     const sortedIds: string[] = getSortedIds(); //need to get sorted ids before adding the new region
-    const newRegion = Regions?.addRegion(region);
+    const newRegion = Regions()?.addRegion(region);
+
     let newSorted: string[] = [];
     if (r) {
       const curIndex = sortedIds.findIndex((s) => s === r.id);
@@ -736,7 +755,7 @@ export function useWaveSurferRegions(
         drag: false,
         color: randomColor(0.1),
       };
-      const firstRegion = Regions?.addRegion(region);
+      const firstRegion = Regions()?.addRegion(region);
       newSorted.push(firstRegion?.id ?? 'fr');
       newSorted.push(newRegion?.id ?? 'nr');
     }
@@ -854,7 +873,7 @@ export function useWaveSurferRegions(
   };
 
   const wsGetRegions = () => {
-    if (!wsRef.current || !Regions) return '{}';
+    if (!wsRef.current || !Regions()) return '{}';
 
     const sortedRegions = getSortedIds().map(function (id) {
       const r = region(id);
@@ -887,8 +906,9 @@ export function useWaveSurferRegions(
       : `1px solid ${theme.palette.secondary.light}`;
   };
   const wsAddMarker = (m: IMarker, index: number) => {
-    if (!wsRef.current || !Regions) return;
-    const region = Regions.addRegion({
+    if (!wsRef.current || !Regions()) return;
+
+    const region = Regions()?.addRegion({
       id: 'marker' + index.toString(),
       start: m.time,
       end: m.time,
@@ -924,7 +944,7 @@ export function useWaveSurferRegions(
   };
 
   const wsClearMarkers = () => {
-    if (!wsRef.current || !Regions) return;
+    if (!wsRef.current || !Regions()) return;
     const markers = wsGetMarkers();
 
     markers.forEach((m) => {
