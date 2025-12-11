@@ -170,7 +170,7 @@ export function PassageDetailRecord(props: IProps) {
     }
     setHasExistingVersion(hasExisting);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasExistingVersion, mediafileId, recorderState]);
+  }, [mediafileId, recorderState]);
 
   const passageId = useMemo(
     () => related(sharedResource, 'passage') ?? passage.id,
