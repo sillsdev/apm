@@ -429,21 +429,6 @@ const useSettingsHandlers = () => {
   return ctx;
 };
 
-export const SwitchTeams: React.FC = () => {
-  return (
-    <Box sx={{ width: '100%' }}>
-      <TeamProvider>
-        <>
-          <AppHead />
-          <SettingsProvider>
-            <MainTeamsLayout />
-          </SettingsProvider>
-        </>
-      </TeamProvider>
-    </Box>
-  );
-};
-
 const MainTeamsLayout: React.FC = () => {
   const { openSettingsForTeam, openSettingsForPersonal } =
     useSettingsHandlers();
@@ -467,6 +452,21 @@ const MainTeamsLayout: React.FC = () => {
       </Box>
       <FloatingActions />
     </>
+  );
+};
+
+export const SwitchTeams: React.FC = () => {
+  return (
+    <Box sx={{ width: '100%' }}>
+      <TeamProvider>
+        <>
+          <AppHead />
+          <SettingsProvider>
+            <MainTeamsLayout />
+          </SettingsProvider>
+        </>
+      </TeamProvider>
+    </Box>
   );
 };
 

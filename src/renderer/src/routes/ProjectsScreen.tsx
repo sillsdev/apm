@@ -165,6 +165,11 @@ const ProjectsScreenInner: React.FC = () => {
     setAddOpen(false);
   };
 
+  const handleSwitchTeams = () => {
+    localStorage.removeItem(LocalKey.plan);
+    navigate('/switch-teams');
+  };
+
   React.useEffect(() => {
     startClear();
     setHome(true);
@@ -271,10 +276,7 @@ const ProjectsScreenInner: React.FC = () => {
           <Button
             id="ProjectActSwitch"
             variant="outlined"
-            onClick={() => {
-              localStorage.removeItem(LocalKey.plan);
-              navigate('/switch-teams');
-            }}
+            onClick={handleSwitchTeams}
             sx={(theme) => ({
               minWidth: 120,
               bgcolor: theme.palette.common.white,
