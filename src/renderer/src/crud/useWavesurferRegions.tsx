@@ -375,7 +375,6 @@ export function useWaveSurferRegions(
       finishHandlerRef.current = finishHandler;
       ws.on('finish', finishHandler);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   };
 
   const isInRegion = (r: Region, value: number) => {

@@ -1,8 +1,7 @@
 {
   "compilerOptions": {
     "target": "esnext",
-    "lib": ["esnext", "dom"],
-    "types": ["cypress", "node", "@testing-library/cypress"]
+    "lib": ["esnext", "dom"]
   },
   "include": ["**/*.ts*", "../cypress.d.ts", "../api-variable.tsx"],
   "extends": "../tsconfig.json"
