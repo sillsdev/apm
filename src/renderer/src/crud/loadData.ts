@@ -374,7 +374,6 @@ export async function LoadData(
     do {
       const stat = statInit();
       const transform: OrgData[] = (await remote.query(
-        // eslint-disable-next-line no-loop-func
         (q) =>
           q.findRecords('orgdata').filter(
             {
@@ -474,7 +473,6 @@ export async function LoadProjectData(
     do {
       const stat = statInit();
       const transform: ProjData[] = (await remote.query(
-        // eslint-disable-next-line no-loop-func
         (q) =>
           q.findRecords('projdata').filter(
             {

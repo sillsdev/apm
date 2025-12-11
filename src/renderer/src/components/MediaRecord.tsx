@@ -9,7 +9,7 @@ import React, {
 import { useGlobal } from '../context/useGlobal';
 import { IState, IPassageRecordStrings, ISharedStrings } from '../model';
 import * as actions from '../store';
-import { Stack, Button, Paper, Typography } from '@mui/material';
+import { Stack, Paper, Typography } from '@mui/material';
 import WSAudioPlayer from './WSAudioPlayer';
 import { generateUUID, loadBlobAsync, waitForIt } from '../utils';
 import {
@@ -26,7 +26,6 @@ import usePassageDetailContext from '../context/usePassageDetailContext';
 import { useStepTool } from '../crud/useStepTool';
 import { JSONParse } from '../utils';
 import { UploadType } from './UploadType';
-import AudioFileIcon from '@mui/icons-material/AudioFileOutlined';
 import { shallowEqual, useSelector } from 'react-redux';
 import { passageRecordSelector, sharedSelector } from '../selector';
 import { useDispatch } from 'react-redux';
@@ -60,7 +59,6 @@ interface IProps {
   width: number;
   doReset?: boolean | undefined;
   setDoReset?: ((r: boolean) => void) | undefined;
-  showLoad?: boolean | undefined;
   preload?: number | undefined;
   onLoaded?: (() => void) | undefined;
   autoStart?: boolean | undefined;
@@ -100,7 +98,6 @@ function MediaRecord(props: IProps) {
     setDoReset,
     height,
     metaData,
-    showLoad,
     preload,
     onLoaded,
     trackState,
@@ -511,19 +508,9 @@ function MediaRecord(props: IProps) {
   }, [preload]);
 
   const segments = '{}';
-  const showLoadButton =
-    showLoad &&
-    mediaId &&
-    mediaState.status === MediaSt.FETCHED &&
-    mediaState.id === mediaId;
+
   return (
     <Paper id="mediaRecord" sx={{ width: width }}>
-      {showLoadButton && (
-        <Button id="rec-load" variant="outlined" onClick={handleLoadAudio}>
-          <AudioFileIcon />
-          {t.loadlatest}
-        </Button>
-      )}
       <WSAudioPlayer
         allowRecord={allowRecord !== false}
         allowZoom={allowZoom}
