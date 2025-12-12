@@ -37,6 +37,7 @@ export const OrgHead = () => {
   const { pathname } = useLocation();
   const isTeamScreen = pathname.includes('/team');
   const isSwitchTeamsScreen = pathname.includes('/switch-teams');
+  const { userIsOrgAdmin } = useRole();
   const ctx = useContext(TeamContext);
   const { teamDelete } = ctx?.state ?? {};
   const { setMyOrgRole } = useRole();
@@ -51,6 +52,11 @@ export const OrgHead = () => {
     return organizations.find((o) => o.id === orgId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orgId, organizations]);
+
+  const isAdmin = useMemo(
+    () => userIsOrgAdmin(orgId ?? ''),
+    [orgId, userIsOrgAdmin]
+  );
 
   const handleSettings = () => {
     setEditOpen(true);
@@ -99,9 +105,11 @@ export const OrgHead = () => {
       </Typography>
       {isTeamScreen && (
         <>
-          <IconButton onClick={handleSettings}>
-            <SettingsIcon />
-          </IconButton>
+          {isAdmin && (
+            <IconButton onClick={handleSettings}>
+              <SettingsIcon />
+            </IconButton>
+          )}
           {orgRec && (
             <IconButton onClick={handleMembers(orgRec)}>
               <UsersIcon />
