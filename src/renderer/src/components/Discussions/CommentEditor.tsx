@@ -131,7 +131,6 @@ export const CommentEditor = (props: IProps) => {
         doRecordRef.current = true;
         setStartRecord(false);
       }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [startRecord, playing, itemPlaying, commentPlaying]);
 
   const handleSetCanSave = (valid: boolean) => {
@@ -196,27 +195,100 @@ export const CommentEditor = (props: IProps) => {
         label={t.comment}
         focused
       />
-      {doRecordRef.current && (
-        <MediaRecord
-          toolId={toolId}
-          passageId={passageId}
-          artifactId={commentId}
-          onRecording={onRecording}
-          afterUploadCb={afterUploadCb}
-          defaultFilename={fileName}
-          allowWave={false}
-          setCanSave={handleSetCanSave}
-          setStatusText={setStatusText}
-          height={200}
-          width={250}
-          autoStart={true}
-          allowDeltaVoice={false}
-          allowNoNoise={false}
-          allowZoom={false}
-        />
-      )}
-      <RowDiv>
-        {!doRecordRef.current ? (
+      {doRecordRef.current ? (
+        <>
+          <RowDiv
+            style={{
+              alignItems: 'flex-start',
+              justifyContent: 'flex-start',
+              gap: '8px',
+            }}
+          >
+            <MediaRecord
+              toolId={toolId}
+              passageId={passageId}
+              artifactId={commentId}
+              onRecording={onRecording}
+              afterUploadCb={afterUploadCb}
+              defaultFilename={fileName}
+              allowWave={false}
+              setCanSave={handleSetCanSave}
+              setStatusText={setStatusText}
+              height={200}
+              width={250}
+              autoStart={true}
+              allowDeltaVoice={false}
+              allowNoNoise={false}
+              allowZoom={false}
+              keepItSmall={true}
+              oneTryOnly={false}
+            />
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'flex-start',
+                gap: '4px',
+                flexShrink: 0,
+              }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '1px',
+                }}
+              >
+                {onOk &&
+                  (!cancelOnlyIfChanged ||
+                    doRecordRef.current ||
+                    myChanged) && (
+                    <Tooltip title={ts.cancel}>
+                      <span>
+                        <Button
+                          id="cancel"
+                          onClick={handleCancel}
+                          sx={{
+                            color: 'background.paper',
+                            minWidth: 'auto',
+                            padding: '2px 4px',
+                          }}
+                          disabled={recording}
+                        >
+                          <CancelIcon />
+                        </Button>
+                      </span>
+                    </Tooltip>
+                  )}
+                {onOk && (
+                  <Tooltip title={ts.save}>
+                    <span>
+                      <Button
+                        id="ok"
+                        onClick={handleOk}
+                        sx={{
+                          color: 'background.paper',
+                          minWidth: 'auto',
+                          padding: '2px 4px',
+                        }}
+                        disabled={
+                          (!canSave && !curText.length) ||
+                          !myChanged ||
+                          recording
+                        }
+                      >
+                        <SendIcon />
+                      </Button>
+                    </span>
+                  </Tooltip>
+                )}
+              </div>
+              <StatusMessage variant="caption">{statusText}</StatusMessage>
+            </div>
+          </RowDiv>
+        </>
+      ) : (
+        <RowDiv>
           <Tooltip title={commentRecording ? t.recordUnavailable : t.record}>
             <span>
               <Button
@@ -228,44 +300,42 @@ export const CommentEditor = (props: IProps) => {
               </Button>
             </span>
           </Tooltip>
-        ) : (
-          <div>{'\u00A0'}</div>
-        )}
-        <div>
-          <StatusMessage variant="caption">{statusText}</StatusMessage>
-          {onOk &&
-            (!cancelOnlyIfChanged || doRecordRef.current || myChanged) && (
-              <Tooltip title={ts.cancel}>
+          <div>
+            <StatusMessage variant="caption">{statusText}</StatusMessage>
+            {onOk &&
+              (!cancelOnlyIfChanged || doRecordRef.current || myChanged) && (
+                <Tooltip title={ts.cancel}>
+                  <span>
+                    <Button
+                      id="cancel"
+                      onClick={handleCancel}
+                      sx={{ color: 'background.paper' }}
+                      disabled={recording}
+                    >
+                      <CancelIcon />
+                    </Button>
+                  </span>
+                </Tooltip>
+              )}
+            {onOk && (
+              <Tooltip title={ts.save}>
                 <span>
                   <Button
-                    id="cancel"
-                    onClick={handleCancel}
+                    id="ok"
+                    onClick={handleOk}
                     sx={{ color: 'background.paper' }}
-                    disabled={recording}
+                    disabled={
+                      (!canSave && !curText.length) || !myChanged || recording
+                    }
                   >
-                    <CancelIcon />
+                    <SendIcon />
                   </Button>
                 </span>
               </Tooltip>
             )}
-          {onOk && (
-            <Tooltip title={ts.save}>
-              <span>
-                <Button
-                  id="ok"
-                  onClick={handleOk}
-                  sx={{ color: 'background.paper' }}
-                  disabled={
-                    (!canSave && !curText.length) || !myChanged || recording
-                  }
-                >
-                  <SendIcon />
-                </Button>
-              </span>
-            </Tooltip>
-          )}
-        </div>
-      </RowDiv>
+          </div>
+        </RowDiv>
+      )}
     </ColumnDiv>
   );
 };

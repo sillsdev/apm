@@ -24,6 +24,7 @@ export * from './PaddedBox';
 export * from './TabActions';
 export * from './PriButton';
 export * from './AltButton';
+export * from './RecordButton';
 export * from './ActionRow';
 export * from './iconMargin';
 export * from './iconSize';
