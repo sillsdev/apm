@@ -10,7 +10,6 @@ import {
 } from '@mui/material';
 import SettingsIcon from '@mui/icons-material/Settings';
 import UsersIcon from '@mui/icons-material/People';
-import { findRecord } from '../../crud/tryFindRecord';
 import { API_CONFIG } from '../../../api-variable';
 import { OrganizationD } from '@model/organization';
 import TeamDialog, { ITeamDialog } from '../Team/TeamDialog';
@@ -24,10 +23,11 @@ import BigDialog from '../../hoc/BigDialog';
 import { BigDialogBp } from '../../hoc/BigDialogBp';
 import GroupTabs from '../GroupTabs';
 import { useRole } from '../../crud/useRole';
+import { useOrbitData } from '../../hoc/useOrbitData';
 
 export const OrgHead = () => {
   const [user] = useGlobal('user');
-  const [memory] = useGlobal('memory');
+  const organizations = useOrbitData<OrganizationD[]>('organization');
   const [editOpen, setEditOpen] = useState(false);
   const [deleteItem, setDeleteItem] = useState<RecordIdentity>();
   const [openMember, setOpenMember] = useState(false);
@@ -47,9 +47,9 @@ export const OrgHead = () => {
   );
   const orgRec = useMemo(() => {
     if (!orgId) return undefined;
-    return findRecord(memory, 'organization', orgId) as OrganizationD;
+    return organizations.find((o) => o.id === orgId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [orgId]);
+  }, [orgId, organizations]);
 
   const handleSettings = () => {
     setEditOpen(true);
