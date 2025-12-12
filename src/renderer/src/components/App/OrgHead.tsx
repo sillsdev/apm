@@ -37,10 +37,9 @@ export const OrgHead = () => {
   const { pathname } = useLocation();
   const isTeamScreen = pathname.includes('/team');
   const isSwitchTeamsScreen = pathname.includes('/switch-teams');
-  const { userIsOrgAdmin } = useRole();
+  const { userIsOrgAdmin, setMyOrgRole } = useRole();
   const ctx = useContext(TeamContext);
   const { teamDelete } = ctx?.state ?? {};
-  const { setMyOrgRole } = useRole();
 
   const orgId = useMemo(
     () => localStorage.getItem(localUserKey(LocalKey.team)),
