@@ -442,4 +442,19 @@ describe('OrgHead', () => {
       .should('have.css', 'max-width')
       .and('match', /800px|50rem/);
   });
+
+  it('should display product name instead of organization name when on switch-teams route', () => {
+    const orgId = 'test-org-id';
+    const orgName = 'Test Organization';
+    const orgData = createMockOrganization(orgId, orgName);
+
+    // Mount on switch-teams route with organization data
+    mountOrgHead(createInitialState(), ['/switch-teams'], orgId, orgData);
+
+    // Should display product name (from API_CONFIG), not the organization name
+    // The product name defaults to "Audio Project Manager" or "Audio Project Manager Desktop"
+    cy.contains('Audio Project Manager').should('be.visible');
+    // Should NOT display the organization name
+    cy.contains(orgName).should('not.exist');
+  });
 });
