@@ -16,40 +16,52 @@ import { TeamContext } from '../../context/TeamContext';
 import { TokenContext } from '../../context/TokenProvider';
 import { OrganizationD } from '@model/organization';
 
-// Create a mock liveQuery object with subscribe and query methods
-const createMockLiveQuery = () => ({
-  subscribe: () => () => {}, // Returns unsubscribe function
-  query: () => [],
-});
-
 // Mock memory with query function that can return organization data
 // The findRecord function uses: memory.cache.query((q) => q.findRecord({ type, id }))
 // The findRecords function uses: memory.cache.query((q) => q.findRecords(type))
 const createMockMemory = (orgData?: OrganizationD): Memory => {
+  // Store organizations in an array for findRecords queries
+  const organizations = orgData ? [orgData] : [];
+
+  // Create a mock query builder with both findRecord and findRecords
+  const createMockQueryBuilder = () => ({
+    findRecord: ({ type, id }: { type: string; id: string }) => {
+      // Return the organization data if it matches
+      if (type === 'organization' && id === orgData?.id && orgData) {
+        return orgData;
+      }
+      // Return undefined for other record types (user, role, etc.)
+      return undefined;
+    },
+    findRecords: (type: string) => {
+      // Return organizations array when querying for 'organization' type
+      // This is used by useOrbitData('organization')
+      if (type === 'organization') {
+        return organizations;
+      }
+      // Return empty array for other types (roles, organizationmembership, etc.)
+      // This is used by useRole for roles, organizationmembership, etc.
+      return [];
+    },
+  });
+
   return {
     cache: {
       query: (queryFn: (q: any) => any) => {
-        // Create a mock query builder with both findRecord and findRecords
-        const mockQueryBuilder = {
-          findRecord: ({ type, id }: { type: string; id: string }) => {
-            // Return the organization data if it matches
-            if (type === 'organization' && id === orgData?.id && orgData) {
-              return orgData;
-            }
-            // Return undefined for other record types (user, role, etc.)
-            return undefined;
-          },
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          findRecords: (_type: string) => {
-            // Return empty array for all findRecords queries
-            // This is used by useRole for roles, organizationmembership, etc.
-            return [];
+        // Execute the query function with our mock builder
+        return queryFn(createMockQueryBuilder());
+      },
+      liveQuery: (queryFn: (q: any) => any) => {
+        // liveQuery captures the query function and returns an object with subscribe and query methods
+        // When query() is called, it executes the captured query function
+        return {
+          subscribe: () => () => {}, // Returns unsubscribe function
+          query: () => {
+            // Execute the query function that was passed to liveQuery
+            return queryFn(createMockQueryBuilder());
           },
         };
-        // Execute the query function with our mock builder
-        return queryFn(mockQueryBuilder);
       },
-      liveQuery: createMockLiveQuery,
     },
     update: () => {},
   } as unknown as Memory;
