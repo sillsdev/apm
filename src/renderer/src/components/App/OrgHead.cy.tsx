@@ -19,9 +19,58 @@ import { OrganizationD } from '@model/organization';
 // Mock memory with query function that can return organization data
 // The findRecord function uses: memory.cache.query((q) => q.findRecord({ type, id }))
 // The findRecords function uses: memory.cache.query((q) => q.findRecords(type))
-const createMockMemory = (orgData?: OrganizationD): Memory => {
+const createMockMemory = (
+  orgData?: OrganizationD,
+  isAdmin: boolean = false,
+  userId: string = 'test-user-id'
+): Memory => {
   // Store organizations in an array for findRecords queries
   const organizations = orgData ? [orgData] : [];
+
+  // Create role records
+  const adminRoleId = 'admin-role-id';
+  const memberRoleId = 'member-role-id';
+  const roles = [
+    {
+      id: adminRoleId,
+      type: 'role',
+      attributes: {
+        roleName: 'Admin',
+        orgRole: true,
+      },
+      keys: { remoteId: 'admin-role-remote-id' },
+    },
+    {
+      id: memberRoleId,
+      type: 'role',
+      attributes: {
+        roleName: 'Member',
+        orgRole: true,
+      },
+      keys: { remoteId: 'member-role-remote-id' },
+    },
+  ];
+
+  // Create organization membership record if orgData exists
+  const orgMemberships = orgData
+    ? [
+        {
+          id: 'org-membership-id',
+          type: 'organizationmembership',
+          relationships: {
+            user: { data: { type: 'user', id: userId } },
+            organization: { data: { type: 'organization', id: orgData.id } },
+            role: {
+              data: {
+                type: 'role',
+                id: isAdmin ? adminRoleId : memberRoleId,
+              },
+            },
+          },
+          keys: { remoteId: 'org-membership-remote-id' },
+        },
+      ]
+    : [];
 
   // Create a mock query builder with both findRecord and findRecords
   const createMockQueryBuilder = () => ({
@@ -30,7 +79,12 @@ const createMockMemory = (orgData?: OrganizationD): Memory => {
       if (type === 'organization' && id === orgData?.id && orgData) {
         return orgData;
       }
-      // Return undefined for other record types (user, role, etc.)
+      // Return role records
+      if (type === 'role') {
+        const role = roles.find((r) => r.id === id);
+        if (role) return role;
+      }
+      // Return undefined for other record types (user, etc.)
       return undefined;
     },
     findRecords: (type: string) => {
@@ -39,8 +93,15 @@ const createMockMemory = (orgData?: OrganizationD): Memory => {
       if (type === 'organization') {
         return organizations;
       }
-      // Return empty array for other types (roles, organizationmembership, etc.)
-      // This is used by useRole for roles, organizationmembership, etc.
+      // Return roles array when querying for 'role' type
+      if (type === 'role') {
+        return roles;
+      }
+      // Return organization memberships when querying for 'organizationmembership' type
+      if (type === 'organizationmembership') {
+        return orgMemberships;
+      }
+      // Return empty array for other types
       return [];
     },
   });
@@ -180,7 +241,8 @@ describe('OrgHead', () => {
     initialState: ReturnType<typeof createInitialState>,
     initialEntries: string[] = ['/team'],
     orgId?: string,
-    orgData?: OrganizationD
+    orgData?: OrganizationD,
+    isAdmin: boolean = false
   ) => {
     // Set organization ID in localStorage if provided
     if (orgId) {
@@ -189,8 +251,10 @@ describe('OrgHead', () => {
       });
     }
 
-    // Create memory with org data if provided
-    const memory = orgData ? createMockMemory(orgData) : createMockMemory();
+    // Create memory with org data and admin status if provided
+    const memory = orgData
+      ? createMockMemory(orgData, isAdmin, initialState.user)
+      : createMockMemory(undefined, false, initialState.user);
 
     // Create stubs for TeamContext methods
     const mockTeamUpdate = cy.stub().as('teamUpdate');
@@ -316,19 +380,32 @@ describe('OrgHead', () => {
     cy.get('h6, [variant="h6"]').should('be.visible');
   });
 
-  it('should show settings and members buttons when on team screen', () => {
+  it('should show settings and members buttons when on team screen and user is admin', () => {
     const orgId = 'test-org-id';
     const orgName = 'Test Organization';
     const orgData = createMockOrganization(orgId, orgName);
 
-    mountOrgHead(createInitialState(), ['/team'], orgId, orgData);
+    mountOrgHead(createInitialState(), ['/team'], orgId, orgData, true);
 
-    // Check for settings and members icon buttons
+    // Check for settings and members icon buttons (both should be visible for admin)
     // MUI IconButtons contain SVG icons as children
     cy.get('button').should('have.length.at.least', 2);
     // Verify that buttons contain SVG elements (icon buttons should have SVG children)
     cy.get('button').should('be.visible');
     cy.get('button svg').should('have.length.at.least', 2);
+  });
+
+  it('should show only members button (not settings) when on team screen and user is not admin', () => {
+    const orgId = 'test-org-id';
+    const orgName = 'Test Organization';
+    const orgData = createMockOrganization(orgId, orgName);
+
+    mountOrgHead(createInitialState(), ['/team'], orgId, orgData, false);
+
+    // Should only have members button, not settings button
+    cy.get('button').should('have.length', 1);
+    cy.get('button').should('be.visible');
+    cy.get('button svg').should('have.length', 1);
   });
 
   it('should not show settings and members buttons when not on team screen', () => {
@@ -343,30 +420,30 @@ describe('OrgHead', () => {
     cy.get('button').should('not.exist');
   });
 
-  it('should open TeamDialog when settings button is clicked', () => {
+  it('should open TeamDialog when settings button is clicked (admin only)', () => {
     const orgId = 'test-org-id';
     const orgName = 'Test Organization';
     const orgData = createMockOrganization(orgId, orgName);
 
-    mountOrgHead(createInitialState(), ['/team'], orgId, orgData);
+    mountOrgHead(createInitialState(), ['/team'], orgId, orgData, true);
 
     // Find and click the first button (settings button)
-    // The settings button is the first IconButton rendered
+    // The settings button is the first IconButton rendered (only visible for admin)
     cy.get('button').first().click();
 
     // TeamDialog should be open (check for a dialog or form element)
     cy.get('[role="dialog"]').should('be.visible');
   });
 
-  it('should open members dialog when members button is clicked', () => {
+  it('should open members dialog when members button is clicked (admin)', () => {
     const orgId = 'test-org-id';
     const orgName = 'Test Organization';
     const orgData = createMockOrganization(orgId, orgName);
 
-    mountOrgHead(createInitialState(), ['/team'], orgId, orgData);
+    mountOrgHead(createInitialState(), ['/team'], orgId, orgData, true);
 
     // Find and click the second button (members button)
-    // The members button is the second IconButton rendered
+    // The members button is the second IconButton rendered (when admin)
     cy.get('button').eq(1).click();
 
     // BigDialog should be open with members title
@@ -374,14 +451,29 @@ describe('OrgHead', () => {
     cy.get('[role="dialog"]').should('be.visible');
   });
 
-  it('should close TeamDialog when editOpen is set to false', () => {
+  it('should open members dialog when members button is clicked (non-admin)', () => {
     const orgId = 'test-org-id';
     const orgName = 'Test Organization';
     const orgData = createMockOrganization(orgId, orgName);
 
-    mountOrgHead(createInitialState(), ['/team'], orgId, orgData);
+    mountOrgHead(createInitialState(), ['/team'], orgId, orgData, false);
 
-    // Open the dialog
+    // Find and click the button (members button - only button for non-admin)
+    cy.get('button').first().click();
+
+    // BigDialog should be open with members title
+    cy.contains('Members of Test Organization').should('be.visible');
+    cy.get('[role="dialog"]').should('be.visible');
+  });
+
+  it('should close TeamDialog when editOpen is set to false (admin only)', () => {
+    const orgId = 'test-org-id';
+    const orgName = 'Test Organization';
+    const orgData = createMockOrganization(orgId, orgName);
+
+    mountOrgHead(createInitialState(), ['/team'], orgId, orgData, true);
+
+    // Open the dialog (settings button is first for admin)
     cy.get('button').first().click();
 
     cy.get('[role="dialog"]').should('be.visible');
