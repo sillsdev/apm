@@ -36,6 +36,7 @@ export const OrgHead = () => {
   const commitTeamSettings = useCommitTeamSettings();
   const { pathname } = useLocation();
   const isTeamScreen = pathname.includes('/team');
+  const isSwitchTeamsScreen = pathname.includes('/switch-teams');
   const ctx = useContext(TeamContext);
   const { teamDelete } = ctx?.state ?? {};
   const { setMyOrgRole } = useRole();
@@ -92,7 +93,9 @@ export const OrgHead = () => {
           display: 'flex',
         }}
       >
-        {orgRec?.attributes.name || API_CONFIG.productName}
+        {isSwitchTeamsScreen
+          ? API_CONFIG.productName
+          : orgRec?.attributes.name || API_CONFIG.productName}
       </Typography>
       {isTeamScreen && (
         <>
