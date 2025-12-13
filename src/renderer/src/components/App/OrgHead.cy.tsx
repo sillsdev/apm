@@ -549,4 +549,51 @@ describe('OrgHead', () => {
     // Should NOT display the organization name
     cy.contains(orgName).should('not.exist');
   });
+
+  it('should not display organization name that starts with > or ends with <', () => {
+    const orgId = 'test-org-id';
+    // Test with name that starts with >
+    const orgNameWithPrefix = '>Test Organization';
+    const orgDataWithPrefix = createMockOrganization(orgId, orgNameWithPrefix);
+
+    mountOrgHead(createInitialState(), ['/team'], orgId, orgDataWithPrefix);
+
+    // The displayed name should not start with >
+    cy.get('h6, [variant="h6"]')
+      .should('be.visible')
+      .then(($el) => {
+        const displayedText = $el.text();
+        expect(displayedText.startsWith('>')).to.be.false;
+        expect(displayedText).to.equal('Test Organization');
+      });
+
+    // Test with name that ends with <
+    const orgNameWithSuffix = 'Test Organization<';
+    const orgDataWithSuffix = createMockOrganization(orgId, orgNameWithSuffix);
+
+    mountOrgHead(createInitialState(), ['/team'], orgId, orgDataWithSuffix);
+
+    // The displayed name should not end with <
+    cy.get('h6, [variant="h6"]')
+      .should('be.visible')
+      .then(($el) => {
+        const displayedText = $el.text();
+        expect(displayedText.endsWith('<')).to.be.false;
+        expect(displayedText).to.equal('Test Organization');
+      });
+    const orgNameWithBoth = '>Test Organization<';
+    const orgDataWithBoth = createMockOrganization(orgId, orgNameWithBoth);
+
+    mountOrgHead(createInitialState(), ['/team'], orgId, orgDataWithBoth);
+
+    // The displayed name should not start with > or end with <
+    cy.get('h6, [variant="h6"]')
+      .should('be.visible')
+      .then(($el) => {
+        const displayedText = $el.text();
+        expect(displayedText.startsWith('>')).to.be.false;
+        expect(displayedText.endsWith('<')).to.be.false;
+        expect(displayedText).to.equal('Test Organization');
+      });
+  });
 });

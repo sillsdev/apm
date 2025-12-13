@@ -85,6 +85,18 @@ export const OrgHead = () => {
     setOpenMember(true);
   };
 
+  const cleanOrgName = (orgRec: OrganizationD | undefined) => {
+    let name = orgRec?.attributes.name;
+    if (!name) return '';
+    if (name.startsWith('>')) {
+      name = name.slice(1);
+    }
+    if (name.endsWith('<')) {
+      name = name.slice(0, -1);
+    }
+    return name;
+  };
+
   return (
     <Stack direction="row">
       <Typography
@@ -100,7 +112,7 @@ export const OrgHead = () => {
       >
         {isSwitchTeamsScreen
           ? API_CONFIG.productName
-          : orgRec?.attributes.name || API_CONFIG.productName}
+          : cleanOrgName(orgRec) || API_CONFIG.productName}
       </Typography>
       {isTeamScreen && (
         <>
