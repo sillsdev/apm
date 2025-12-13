@@ -32,18 +32,21 @@ export const RecordButton = ({
       }
     }
   };
+  const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!disabled) {
+      onClick();
+    }
+  };
   const redColor = '#d32f2f';
 
   return (
     <LightTooltip id="wsAudioRecordTip" title={tooltipTitle}>
       <Box
-        onClick={onClick}
+        onClick={handleClick}
         role="button"
         tabIndex={0}
         onKeyDown={handleKeyDown}
-        style={{
-          backgroundColor: redColor,
-        }}
         sx={(theme) => {
           return {
             px: isSmall ? 1 : undefined,
