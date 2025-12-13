@@ -550,7 +550,7 @@ describe('OrgHead', () => {
     cy.contains(orgName).should('not.exist');
   });
 
-  it('should not display organization name that starts with > or ends with <', () => {
+  it('should remove leading > and trailing < characters from organization names', () => {
     const orgId = 'test-org-id';
     // Test with name that starts with >
     const orgNameWithPrefix = '>Test Organization';
