@@ -39,6 +39,7 @@ interface IProps {
   sourceSegments?: string | undefined;
   performedBy?: string | undefined;
   topic?: string | undefined;
+  keepItSmall?: boolean | undefined;
   afterUploadCb: (mediaId: string | undefined) => Promise<void>;
   onReady?: (() => void) | undefined;
   onSaving?: (() => void) | undefined;
@@ -105,6 +106,7 @@ function MediaRecord(props: IProps) {
     allowNoNoise,
     allowZoom,
     width,
+    keepItSmall,
   } = props;
   const context = usePassageDetailContext();
   const { settings: toolSettings } = useStepTool(context?.currentstep || '');
@@ -530,6 +532,7 @@ function MediaRecord(props: IProps) {
         reload={gotTheBlob}
         noNewVoice={noNewVoice}
         allowNoNoise={allowNoNoise}
+        keepItSmall={keepItSmall}
       />
       {warning && (
         <Typography sx={{ m: 2, color: 'warning.dark' }} id="warning">
