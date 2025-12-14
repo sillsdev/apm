@@ -39,13 +39,18 @@ export const OrgHead = () => {
   const isSwitchTeamsScreen = pathname.includes('/switch-teams');
   const { userIsOrgAdmin, setMyOrgRole } = useRole();
   const ctx = useContext(TeamContext);
-  const { teamDelete } = ctx?.state ?? {};
+  const { teamDelete, personalTeam } = ctx?.state ?? {};
 
   const orgId = useMemo(
     () => localStorage.getItem(localUserKey(LocalKey.team)),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [user]
   );
+
+  const isPersonalTeam = useMemo(() => {
+    return personalTeam === orgId;
+  }, [personalTeam, orgId]);
+
   const orgRec = useMemo(() => {
     if (!orgId) return undefined;
     return organizations.find((o) => o.id === orgId);
@@ -121,7 +126,7 @@ export const OrgHead = () => {
               <SettingsIcon />
             </IconButton>
           )}
-          {orgRec && (
+          {orgRec && !isPersonalTeam && (
             <IconButton onClick={handleMembers(orgRec)}>
               <UsersIcon />
             </IconButton>
