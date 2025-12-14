@@ -242,7 +242,8 @@ describe('OrgHead', () => {
     initialEntries: string[] = ['/team'],
     orgId?: string,
     orgData?: OrganizationD,
-    isAdmin: boolean = false
+    isAdmin: boolean = false,
+    personalTeam?: string
   ) => {
     // Set organization ID in localStorage if provided
     if (orgId) {
@@ -297,7 +298,7 @@ describe('OrgHead', () => {
         planTypes: [],
         isDeleting: false,
         teams: [],
-        personalTeam: '',
+        personalTeam: personalTeam ?? '',
         personalProjects: [],
         teamProjects: () => [],
         teamMembers: () => 0,
@@ -595,5 +596,41 @@ describe('OrgHead', () => {
         expect(displayedText.endsWith('<')).to.be.false;
         expect(displayedText).to.equal('Test Organization');
       });
+  });
+
+  it('should not show members button for personal projects', () => {
+    const orgId = 'test-org-id';
+    const orgName = 'Personal Project';
+    const orgData = createMockOrganization(orgId, orgName);
+
+    // Set personalTeam to match orgId to make it a personal project
+    mountOrgHead(createInitialState(), ['/team'], orgId, orgData, false, orgId);
+
+    // Members button should not be shown for personal projects
+    // Even though orgRec exists and we're on team screen, isPersonal should prevent the button
+    cy.contains(orgName).should('be.visible');
+    cy.get('button').should('not.exist');
+  });
+
+  it('should show members button for non-personal projects', () => {
+    const orgId = 'test-org-id';
+    const orgName = 'Team Organization';
+    const orgData = createMockOrganization(orgId, orgName);
+    const differentPersonalTeam = 'different-personal-team-id';
+
+    // Set personalTeam to a different ID so this is NOT a personal project
+    mountOrgHead(
+      createInitialState(),
+      ['/team'],
+      orgId,
+      orgData,
+      false,
+      differentPersonalTeam
+    );
+
+    // Members button should be shown for non-personal projects
+    cy.contains(orgName).should('be.visible');
+    cy.get('button').should('have.length', 1);
+    cy.get('button svg').should('have.length', 1);
   });
 });
