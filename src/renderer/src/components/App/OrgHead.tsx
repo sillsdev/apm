@@ -47,7 +47,7 @@ export const OrgHead = () => {
     [user]
   );
 
-  const isPersonalTeam = useMemo(() => {
+  const isPersonal = useMemo(() => {
     return personalTeam === orgId;
   }, [personalTeam, orgId]);
 
@@ -126,7 +126,7 @@ export const OrgHead = () => {
               <SettingsIcon />
             </IconButton>
           )}
-          {orgRec && !isPersonalTeam && (
+          {orgRec && !isPersonal && (
             <IconButton onClick={handleMembers(orgRec)}>
               <UsersIcon />
             </IconButton>
