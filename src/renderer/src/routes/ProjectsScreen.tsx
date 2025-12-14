@@ -192,7 +192,6 @@ const ProjectsScreenInner: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [plan, pathname, home]);
 
-  // Admin gating (matches TeamItem logic): only show when viewing a team (not personal)
   const canModifyWorkflow = React.useMemo(() => {
     if (!thisTeam) return false;
     return (
