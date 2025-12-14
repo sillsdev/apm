@@ -194,12 +194,12 @@ const ProjectsScreenInner: React.FC = () => {
 
   // Admin gating (matches TeamItem logic): only show when viewing a team (not personal)
   const canModifyWorkflow = React.useMemo(() => {
-    if (!thisTeam || isPersonal) return false;
+    if (!thisTeam) return false;
     return (
       ((!offline && isAdmin(thisTeam)) || offlineOnly) &&
       userIsOrgAdmin(thisTeam.id)
     );
-  }, [thisTeam, isPersonal, offline, offlineOnly, isAdmin, userIsOrgAdmin]);
+  }, [thisTeam, offline, offlineOnly, isAdmin, userIsOrgAdmin]);
 
   return (
     <Box sx={{ width: '100%' }}>
