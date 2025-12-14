@@ -49,7 +49,6 @@ export const OrgHead = () => {
   const orgRec = useMemo(() => {
     if (!orgId) return undefined;
     return organizations.find((o) => o.id === orgId);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orgId, organizations]);
 
   const isAdmin = useMemo(
