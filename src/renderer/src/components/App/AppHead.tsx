@@ -370,7 +370,8 @@ export const AppHead = (props: IProps) => {
           <HeadStatus
             handleMenu={handleMenu}
             onVersion={setVersion}
-            OnLatestVersion={setLatestVersion}
+            onLatestVersion={setLatestVersion}
+            onUpdateTipOpen={setUpdateTipOpen}
           />
           <HelpMenu
             online={!isOffline}
@@ -406,7 +407,8 @@ export const AppHead = (props: IProps) => {
             <HeadStatus
               handleMenu={handleMenu}
               onVersion={setVersion}
-              OnLatestVersion={setLatestVersion}
+              onLatestVersion={setLatestVersion}
+              onUpdateTipOpen={setUpdateTipOpen}
             />
           )}
           <HelpMenu

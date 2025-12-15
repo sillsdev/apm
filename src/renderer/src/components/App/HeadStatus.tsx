@@ -34,10 +34,11 @@ interface IProps {
   handleMenu: (what: string, reason: DownloadAlertReason | null) => void;
   onVersion: (version: string) => void;
   onLatestVersion: (version: string) => void;
+  onUpdateTipOpen: (open: boolean) => void;
 }
 
 export const HeadStatus = (props: IProps) => {
-  const { handleMenu, onVersion, onLatestVersion } = props;
+  const { handleMenu, onVersion, onLatestVersion, onUpdateTipOpen } = props;
   const { pathname } = useLocation();
   const orbitStatus = useSelector((state: IState) => state.orbit.status);
   const [connected, setConnected] = useGlobal('connected'); //verified this is not used in a function 2/18/25
@@ -92,13 +93,6 @@ export const HeadStatus = (props: IProps) => {
       cb && cb();
     });
   };
-
-  useEffect(() => {
-    setHasOfflineProjects(
-      offlineProjects.some((p) => p?.attributes?.offlineAvailable)
-    );
-    /* eslint-disable-next-line react-hooks/exhaustive-deps */
-  }, []);
 
   useEffect(() => {
     const value = offlineProjects.some((p) => p?.attributes?.offlineAvailable);
@@ -165,7 +159,7 @@ export const HeadStatus = (props: IProps) => {
             .setLocale(lang)
             .toLocaleString(DateTime.DATE_SHORT);
           setLatestVersion(lv);
-          OnLatestVersion(lv);
+          onLatestVersion(lv);
           setLatestRelease(lr);
           if (isElectron && lv?.split(' ')[0] !== version)
             showMessage(
@@ -198,8 +192,15 @@ export const HeadStatus = (props: IProps) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname]);
 
-  const handleUpdateOpen = () => setUpdateTipOpen(true);
-  const handleUpdateClose = () => setUpdateTipOpen(pathname === '/');
+  const handleUpdateOpen = () => {
+    setUpdateTipOpen(true);
+    onUpdateTipOpen(true);
+  };
+  const handleUpdateClose = () => {
+    const isOpen = pathname === '/';
+    setUpdateTipOpen(isOpen);
+    onUpdateTipOpen(isOpen);
+  };
 
   return (
     <>
