@@ -194,7 +194,6 @@ export const HeadStatus = (props: IProps) => {
   }, [updates, version, lang]);
 
   useEffect(() => {
-    logError(Severity.info, errorReporter, pathname);
     setUpdateTipOpen(pathname === '/');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname]);
