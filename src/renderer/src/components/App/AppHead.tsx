@@ -15,6 +15,7 @@ import {
   useMediaQuery,
 } from '@mui/material';
 import HomeIcon from '@mui/icons-material/Home';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import TableViewIcon from '@mui/icons-material/TableView';
 import { API_CONFIG, isElectron } from '../../../api-variable';
 import { TokenContext } from '../../context/TokenProvider';
@@ -153,6 +154,16 @@ export const AppHead = (props: IProps) => {
   const saving = useMemo(() => anySaving(), [toolsChanged]);
   const { showMessage } = useSnackBar();
   const tv: IViewModeStrings = useSelector(viewModeSelector, shallowEqual);
+
+  const isDetail = useMemo(() => pathname.startsWith('/detail'), [pathname]);
+  const planUrl = useMemo(() => {
+    const fromUrl = localStorage.getItem(localUserKey(LocalKey.url));
+    if (!fromUrl) return null;
+    const m = /^\/[workplandetail]+\/([0-9a-f-]+)\/?([0-9a-f-]*)/.exec(fromUrl);
+    if (!m) return null;
+    return `/plan/${m[1]}/0`;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]);
 
   const handleUserMenuAction = (
     what: string,
@@ -398,9 +409,15 @@ export const AppHead = (props: IProps) => {
     >
       <>
         <Toolbar>
-          <IconButton onClick={() => navigate('/team')}>
-            <ApmLogo sx={{ width: '24px', height: '24px' }} />
-          </IconButton>
+          {!isDetail ? (
+            <IconButton onClick={() => navigate('/team')}>
+              <ApmLogo sx={{ width: '24px', height: '24px' }} />
+            </IconButton>
+          ) : (
+            <IconButton onClick={() => navigate(planUrl || '/team')}>
+              <ArrowBackIcon sx={{ width: '24px', height: '24px' }} />
+            </IconButton>
+          )}
           <OrgHead />
           <GrowingSpacer />
           {!isMobileWidth && (
