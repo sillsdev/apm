@@ -33,11 +33,11 @@ const ipc = window?.api as MainAPI;
 interface IProps {
   handleMenu: (what: string, reason: DownloadAlertReason | null) => void;
   onVersion: (version: string) => void;
-  OnLatestVersion: (version: string) => void;
+  onLatestVersion: (version: string) => void;
 }
 
 export const HeadStatus = (props: IProps) => {
-  const { handleMenu, onVersion, OnLatestVersion } = props;
+  const { handleMenu, onVersion, onLatestVersion } = props;
   const { pathname } = useLocation();
   const orbitStatus = useSelector((state: IState) => state.orbit.status);
   const [connected, setConnected] = useGlobal('connected'); //verified this is not used in a function 2/18/25
