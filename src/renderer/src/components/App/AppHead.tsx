@@ -1,13 +1,7 @@
 import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useGetGlobal, useGlobal } from '../../context/useGlobal';
 import { useLocation, useParams } from 'react-router-dom';
-import {
-  IState,
-  IMainStrings,
-  IViewModeStrings,
-  ISharedStrings,
-  OfflineProject,
-} from '../../model';
+import { IState, IViewModeStrings } from '../../model';
 import { shallowEqual, useSelector } from 'react-redux';
 import {
   AppBar,
@@ -17,14 +11,11 @@ import {
   LinearProgress,
   Tooltip,
   Box,
-  Button,
   useTheme,
   useMediaQuery,
 } from '@mui/material';
 import HomeIcon from '@mui/icons-material/Home';
-import SystemUpdateIcon from '@mui/icons-material/SystemUpdateAlt';
 import TableViewIcon from '@mui/icons-material/TableView';
-import ExitToAppIcon from '@mui/icons-material/ExitToApp';
 import { API_CONFIG, isElectron } from '../../../api-variable';
 import { TokenContext } from '../../context/TokenProvider';
 import { UnsavedContext } from '../../context/UnsavedContext';
@@ -40,37 +31,22 @@ import {
   useMounted,
   logError,
   Severity,
-  infoMsg,
   exitApp,
   useMyNavigate,
   useWaitForRemoteQueue,
-  Online,
 } from '../../utils';
 import { withBucket } from '../../hoc/withBucket';
-import {
-  useLoadProjectData,
-  useOfflineAvailToggle,
-  useOfflnProjRead,
-  usePlan,
-  useVProjectRead,
-} from '../../crud';
+import { usePlan } from '../../crud';
 import Busy from '../Busy';
-import CloudOffIcon from '@mui/icons-material/CloudOff';
-import CloudOnIcon from '@mui/icons-material/Cloud';
 import ProjectDownloadAlert from '../ProjectDownloadAlert';
-import { axiosPost } from '../../utils/axios';
-import { DateTime } from 'luxon';
-import { useSnackBar, AlertSeverity } from '../../hoc/SnackBar';
+import { useSnackBar } from '../../hoc/SnackBar';
 import PolicyDialog from '../PolicyDialog';
 import JSONAPISource from '@orbit/jsonapi';
-import { mainSelector, sharedSelector, viewModeSelector } from '../../selector';
+import { viewModeSelector } from '../../selector';
 import { useHome } from '../../utils/useHome';
-import { useOrbitData } from '../../hoc/useOrbitData';
-import packageJson from '../../../package.json';
-import { MainAPI } from '@model/main-api';
 import { ApmLogo } from '../../control/ApmLogo';
 import { OrgHead } from './OrgHead';
-const ipc = window?.api as MainAPI;
+import { HeadStatus } from './HeadStatus';
 
 const twoIcon = { minWidth: `calc(${48 * 2}px)` } as React.CSSProperties;
 const threeIcon = { minWidth: `calc(${48 * 3}px)` } as React.CSSProperties;
@@ -130,31 +106,25 @@ interface IProps {
   switchTo?: boolean;
 }
 
-type DownloadAlertReason = 'cloud';
+export type DownloadAlertReason = 'cloud';
 
 export const AppHead = (props: IProps) => {
   const { resetRequests, switchTo } = props;
   const orbitStatus = useSelector((state: IState) => state.orbit.status);
   const orbitErrorMsg = useSelector((state: IState) => state.orbit.message);
-  const t: IMainStrings = useSelector(mainSelector, shallowEqual);
-  const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
   const { pathname } = useLocation();
   const navigate = useMyNavigate();
   const theme = useTheme();
   const isMobileWidth = useMediaQuery(theme.breakpoints.down('sm'));
-  const offlineProjects = useOrbitData<OfflineProject[]>('offlineproject');
-  const [hasOfflineProjects, setHasOfflineProjects] = useState(false);
   const [home] = useGlobal('home'); //verified this is not used in a function 2/18/25
   const [orgRole] = useGlobal('orgRole'); //verified this is not used in a function 2/18/25
-  const [connected, setConnected] = useGlobal('connected'); //verified this is not used in a function 2/18/25
   const [errorReporter] = useGlobal('errorReporter');
   const [coordinator] = useGlobal('coordinator');
   const [user] = useGlobal('user');
   const [, setProject] = useGlobal('project');
-  const [plan, setPlan] = useGlobal('plan'); //verified this is not used in a function 2/18/25
+  const [, setPlan] = useGlobal('plan'); //verified this is not used in a function 2/18/25
   const remote = coordinator?.getSource('remote') as JSONAPISource;
   const [isOffline] = useGlobal('offline'); //verified this is not used in a function 2/18/25
-  const [isOfflineOnly] = useGlobal('offlineOnly'); //verified this is not used in a function 2/18/25
   const tokenCtx = useContext(TokenContext);
   const ctx = useContext(UnsavedContext);
   const { checkSavedFn, startSave, toolsChanged, anySaving } = ctx.state;
@@ -164,17 +134,12 @@ export const AppHead = (props: IProps) => {
   const [dataChangeCount] = useGlobal('dataChangeCount'); //verified this is not used in a function 2/18/25
   const [importexportBusy] = useGlobal('importexportBusy'); //verified this is not used in a function 2/18/25
   const [isChanged] = useGlobal('changed'); //verified this is only used in a useEffect
-  const [lang] = useGlobal('lang');
   const getGlobal = useGetGlobal();
   const [doExit, setDoExit] = useState(false);
   const [exitAlert, setExitAlert] = useState(false);
   const isMounted = useMounted('apphead');
   const [version, setVersion] = useState('');
-  const [updates] = useState(
-    (localStorage.getItem('updates') || 'true') === 'true'
-  );
-  const [latestVersion, setLatestVersion] = useGlobal('latestVersion'); //verified this is not used in a function 2/18/25
-  const [latestRelease, setLatestRelease] = useGlobal('releaseDate'); //verified this is not used in a function 2/18/25
+  const [latestVersion, setLatestVersion] = useState('');
   const [complete] = useGlobal('progress'); //verified this is not used in a function 2/18/25
   const [downloadAlert, setDownloadAlert] = useState(false);
   const downloadAlertReason = useRef<DownloadAlertReason | null>(null);
@@ -182,11 +147,6 @@ export const AppHead = (props: IProps) => {
   const [showTerms, setShowTerms] = useState('');
   const waitForRemoteQueue = useWaitForRemoteQueue();
   const waitForDataChangesQueue = useWaitForRemoteQueue('datachanges');
-  const offlineProjectRead = useOfflnProjRead();
-  const LoadData = useLoadProjectData();
-  const offlineAvailToggle = useOfflineAvailToggle();
-  const { getPlan } = usePlan();
-  const vProject = useVProjectRead();
   const [mobileView] = useGlobal('mobileView');
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -267,61 +227,6 @@ export const AppHead = (props: IProps) => {
     handleMenu(what);
   };
 
-  const cloudAction = () => {
-    localStorage.setItem(
-      'mode',
-      getGlobal('offline') ||
-        orbitStatus !== undefined ||
-        !getGlobal('connected')
-        ? 'online-cloud'
-        : 'online-local'
-    );
-    localStorage.setItem(LocalKey.plan, getGlobal('plan'));
-    handleMenu('Logout', !isOffline ? 'cloud' : null);
-  };
-
-  const handleSetOnline = (cb?: () => void) => {
-    Online(true, (isConnected) => {
-      if (getGlobal('connected') !== isConnected) {
-        localStorage.setItem(LocalKey.connected, isConnected.toString());
-        setConnected(isConnected);
-      }
-      if (!isConnected) {
-        showMessage(ts.mustBeOnline);
-        return;
-      }
-      cb && cb();
-    });
-  };
-
-  useEffect(() => {
-    const value = offlineProjects.some((p) => p?.attributes?.offlineAvailable);
-    if (value !== hasOfflineProjects) setHasOfflineProjects(value);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [offlineProjects]);
-
-  const handleCloud = () => {
-    handleSetOnline(() => {
-      const planRec = getGlobal('plan')
-        ? getPlan(getGlobal('plan'))
-        : undefined;
-      if (!planRec) {
-        if (hasOfflineProjects) cloudAction();
-        return;
-      }
-      const offlineProject = offlineProjectRead(vProject(planRec));
-      if (offlineProject?.attributes?.offlineAvailable) {
-        cloudAction();
-      } else {
-        LoadData(getGlobal('project'), () => {
-          offlineAvailToggle(getGlobal('project')).then(() => {
-            cloudAction();
-          });
-        });
-      }
-    });
-  };
-
   useEffect(() => {
     if (tokenCtx.state.expiresAt === -1) {
       handleMenu('Logout');
@@ -343,14 +248,6 @@ export const AppHead = (props: IProps) => {
     }
     if (localStorage.getItem(LocalKey.userId)) exitApp();
     else setView('Logout');
-  };
-
-  const handleDownloadClick = () => {
-    if (ipc)
-      ipc?.openExternal(
-        'https://software.sil.org/audioprojectmanager/download/'
-      );
-    // remote?.getCurrentWindow().close();
   };
 
   const handleUnload = (e: any) => {
@@ -385,9 +282,6 @@ export const AppHead = (props: IProps) => {
         setView('Access');
       }
     }
-    setHasOfflineProjects(
-      offlineProjects.some((p) => p?.attributes?.offlineAvailable)
-    );
     return () => {
       window.removeEventListener('beforeunload', handleUnload);
     };
@@ -405,59 +299,6 @@ export const AppHead = (props: IProps) => {
       } else startSave();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [exitAlert, isChanged]);
-
-  useEffect(() => {
-    isMounted() && setVersion(packageJson.version);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isMounted]);
-
-  useEffect(() => {
-    if (
-      latestVersion === '' &&
-      version !== '' &&
-      updates &&
-      localStorage.getItem(LocalKey.connected) !== 'false'
-    ) {
-      const bodyFormData = new FormData();
-      bodyFormData.append('env', navigator.userAgent);
-      axiosPost('userversions/2/' + version, bodyFormData)
-        .then((result) => {
-          const response = result as {
-            data: { desktopVersion: string; dateUpdated: string };
-          };
-          const lv = response?.data['desktopVersion'];
-          let lr = response?.data['dateUpdated'];
-          if (!lr.endsWith('Z')) lr += 'Z';
-          lr = DateTime.fromISO(lr)
-            .setLocale(lang)
-            .toLocaleString(DateTime.DATE_SHORT);
-          setLatestVersion(lv);
-          setLatestRelease(lr);
-          if (isElectron && lv?.split(' ')[0] !== version)
-            showMessage(
-              <span>
-                {t.updateAvailable.replace('{0}', lv).replace('{1}', lr)}
-                <IconButton
-                  id="systemUpdate"
-                  onClick={handleDownloadClick}
-                  component="span"
-                >
-                  <SystemUpdateIcon color="primary" />
-                </IconButton>
-              </span>,
-              AlertSeverity.Warning
-            );
-        })
-        .catch((err) => {
-          logError(
-            Severity.error,
-            errorReporter,
-            infoMsg(err, 'userversions failed ' + navigator.userAgent)
-          );
-        });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [updates, version, lang]);
 
   useEffect(() => {
     setCssVars(
@@ -481,8 +322,6 @@ export const AppHead = (props: IProps) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orbitStatus, orbitErrorMsg]);
 
-  const handleUpdateOpen = () => setUpdateTipOpen(true);
-  const handleUpdateClose = () => setUpdateTipOpen(pathname === '/');
   const handleTermsClose = () => setShowTerms('');
 
   if (view === 'Error') navigate('/error');
@@ -490,6 +329,7 @@ export const AppHead = (props: IProps) => {
   if (view === 'Access') setTimeout(() => navigate('/'), 200);
   if (view === 'Terms') navigate('/terms');
   if (view === 'Privacy') navigate('/privacy');
+
   return !mobileView && !isMobileWidth ? (
     <AppBar
       position="fixed"
@@ -527,68 +367,12 @@ export const AppHead = (props: IProps) => {
             </>
           )}
           {'\u00A0'}
-          {orbitStatus !== undefined || !connected ? (
-            <IconButton onClick={() => handleSetOnline()}>
-              <CloudOffIcon color="action" />
-            </IconButton>
-          ) : (
-            isElectron &&
-            !isOfflineOnly &&
-            localStorage.getItem(LocalKey.userId) &&
-            (plan || hasOfflineProjects) && (
-              <Button
-                onClick={handleCloud}
-                startIcon={
-                  isOffline ? (
-                    <CloudOffIcon color="action" />
-                  ) : (
-                    <CloudOnIcon color="secondary" />
-                  )
-                }
-              >
-                {isOffline ? t.goOnline : t.goOffline}
-              </Button>
-            )
-          )}
-          {latestVersion !== '' &&
-            isElectron &&
-            latestVersion?.split(' ')[0] !== version && (
-              <Tooltip
-                arrow
-                placement="bottom-end"
-                open={updateTipOpen}
-                onOpen={handleUpdateOpen}
-                onClose={handleUpdateClose}
-                title={t.updateAvailable
-                  .replace('{0}', latestVersion)
-                  .replace('{1}', latestRelease)}
-              >
-                <IconButton id="systemUpdate" onClick={handleDownloadClick}>
-                  <SystemUpdateIcon color="primary" />
-                </IconButton>
-              </Tooltip>
-            )}
-          {latestVersion !== '' &&
-            !isElectron &&
-            latestVersion.split(' ')[0] !== version &&
-            latestVersion?.split(' ').length > 1 && (
-              <Tooltip
-                arrow
-                open={updateTipOpen}
-                onOpen={handleUpdateOpen}
-                onClose={handleUpdateClose}
-                title={t.updateAvailable
-                  .replace('{0}', latestVersion)
-                  .replace('{1}', latestRelease)}
-              >
-                <IconButton
-                  id="systemUpdate"
-                  href="https://www.audioprojectmanager.org"
-                >
-                  <ExitToAppIcon color="primary" />
-                </IconButton>
-              </Tooltip>
-            )}
+          <HeadStatus
+            handleMenu={handleMenu}
+            onVersion={setVersion}
+            onLatestVersion={setLatestVersion}
+            onUpdateTipOpen={setUpdateTipOpen}
+          />
           <HelpMenu
             online={!isOffline}
             sx={updateTipOpen && isElectron ? { top: '40px' } : {}}
@@ -619,6 +403,14 @@ export const AppHead = (props: IProps) => {
           </IconButton>
           <OrgHead />
           <GrowingSpacer />
+          {!isMobileWidth && (
+            <HeadStatus
+              handleMenu={handleMenu}
+              onVersion={setVersion}
+              onLatestVersion={setLatestVersion}
+              onUpdateTipOpen={setUpdateTipOpen}
+            />
+          )}
           <HelpMenu
             online={!isOffline}
             sx={updateTipOpen && isElectron ? { top: '40px' } : {}}
