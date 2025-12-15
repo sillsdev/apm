@@ -159,7 +159,7 @@ export const AppHead = (props: IProps) => {
   const planUrl = useMemo(() => {
     const fromUrl = localStorage.getItem(localUserKey(LocalKey.url));
     if (!fromUrl) return null;
-    const m = /^\/[workplandetail]+\/([0-9a-f-]+)\/?([0-9a-f-]*)/.exec(fromUrl);
+    const m = /^\/(work|plan|detail)\/([0-9a-f-]+)\/?([0-9a-f-]*)/.exec(fromUrl);
     if (!m) return null;
     return `/plan/${m[1]}/0`;
     // eslint-disable-next-line react-hooks/exhaustive-deps
