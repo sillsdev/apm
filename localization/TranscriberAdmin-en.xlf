@@ -4984,6 +4984,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="passageRecord.compressError">
+         <segment>
+            <source>Compression failed.  Saving uncompressed.</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="passageRecord.defaultFilename">
          <segment>
             <source>MyRecording</source>

@@ -1075,6 +1075,7 @@ const initialState = {
       cancel: 'Cancel',
       compressed: 'Compressed',
       compressing: 'Compressing...{0}%',
+      compressError: 'Compression failed.  Saving uncompressed.',
       defaultFilename: 'MyRecording',
       fileName: 'Name',
       fileType: 'File Type',

@@ -433,10 +433,8 @@ export function useWaveSurfer(
       blobAudioRef.current = await audioContext().decodeAudioData(
         await blob.arrayBuffer()
       );
-      if (blob.type === '')
-        //from recorder?
-        blobRef.current = await audioBufferToWavBlob(blobAudioRef.current);
-      else blobRef.current = blob;
+
+      blobRef.current = blob;
 
       setDuration(
         blobAudioRef.current?.duration ||
@@ -654,9 +652,12 @@ export function useWaveSurfer(
     overwriteToPosition: number | undefined
   ) => {
     if (!wavesurferRef.current) throw new Error('wavesurfer closed'); //closed while we were working on the blob
+
+    // If we have a blob (from recording), decode it to AudioBuffer
     if (blob && !buffer) {
       buffer = await decodeAudioData(audioContext(), await blob.arrayBuffer());
     }
+
     if (buffer?.length === 0) return position;
     try {
       return await insertAudioData(buffer!, position, overwriteToPosition);

@@ -5814,6 +5814,13 @@
                <context context-type="sourcefile">passageRecord.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="passageRecord.compressError">
+            <source>Compression failed.  Saving uncompressed.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">passageRecord.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="passageRecord.defaultFilename">
             <source>MyRecording</source>
             <target/>

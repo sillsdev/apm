@@ -7,17 +7,16 @@ import React, {
   useContext,
 } from 'react';
 import { useGlobal } from '../context/useGlobal';
-import { IState, IPassageRecordStrings, ISharedStrings } from '../model';
-import * as actions from '../store';
+import { IPassageRecordStrings, ISharedStrings } from '../model';
 import { Stack, Paper, Typography } from '@mui/material';
 import WSAudioPlayer from './WSAudioPlayer';
-import { generateUUID, loadBlobAsync, waitForIt } from '../utils';
+import { loadBlobAsync, waitForIt } from '../utils';
 import {
   IMediaState,
   MediaSt,
   useFetchMediaUrl,
   useMediaUpload,
-  convertToWebM,
+  convertToFormat,
 } from '../crud';
 import { useSnackBar } from '../hoc/SnackBar';
 import { UnsavedContext } from '../context/UnsavedContext';
@@ -28,7 +27,6 @@ import { JSONParse } from '../utils';
 import { UploadType } from './UploadType';
 import { shallowEqual, useSelector } from 'react-redux';
 import { passageRecordSelector, sharedSelector } from '../selector';
-import { useDispatch } from 'react-redux';
 
 interface IProps {
   toolId: string;
@@ -111,18 +109,6 @@ function MediaRecord(props: IProps) {
   const context = usePassageDetailContext();
   const { settings: toolSettings } = useStepTool(context?.currentstep || '');
   const t: IPassageRecordStrings = useSelector(passageRecordSelector);
-  const convert_status = useSelector(
-    (state: IState) => state.convertBlob.statusmsg
-  );
-  const convert_complete = useSelector(
-    (state: IState) => state.convertBlob.complete
-  );
-  const convert_blob = useSelector((state: IState) => state.convertBlob.blob);
-  const convert_guid = useSelector((state: IState) => state.convertBlob.guid);
-  const dispatch = useDispatch();
-  const convertBlob = (audioBlob: Blob, mimeType: string, guid: string) =>
-    dispatch(actions.convertBlob(audioBlob, mimeType, guid) as any);
-  const resetConvertBlob = () => dispatch(actions.resetConvertBlob() as any);
   const WARNINGLIMIT = 1;
   const [reporter] = useGlobal('errorReporter');
   const { fetchMediaUrl, mediaState } = useFetchMediaUrl(reporter);
@@ -169,7 +155,6 @@ function MediaRecord(props: IProps) {
     clearCompleted,
   } = useContext(UnsavedContext).state;
   const saveRef = useRef(false);
-  const guidRef = useRef('');
   const extensions = useMemo(
     () => ['mp3', 'mp3', 'webm', 'mka', 'm4a', 'wav', 'ogg'],
     []
@@ -299,7 +284,7 @@ function MediaRecord(props: IProps) {
   }, [converting, uploading, setCanCancel]);
 
   const doUpload = useCallback(
-    async (blob: Blob) => {
+    async (blob: Blob, mimeType: string, filetype: string) => {
       setUploading(true);
       setStatusText(t.saving);
       const files = [
@@ -309,36 +294,10 @@ function MediaRecord(props: IProps) {
       ];
       await uploadMedia(files);
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [defaultFilename, filetype, mimeType, uploadMedia]
+    [setStatusText, t.saving, defaultFilename, uploadMedia]
   );
 
-  useEffect(() => {
-    //was it me who asked for this?
-    if (convert_guid === guidRef.current) {
-      if (convert_status) {
-        const progress = parseInt(convert_status);
-        if (isNaN(progress)) {
-          showMessage(convert_status);
-        } else {
-          setStatusText(t.compressing.replace('{0}', progress.toString()));
-        }
-      }
-      if (convert_complete) {
-        if (convert_blob)
-          doUpload(convert_blob).then(() => {
-            convertComplete();
-          });
-        else {
-          convertComplete();
-        }
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [convert_status, convert_complete, convert_blob]);
-
   const convertComplete = () => {
-    resetConvertBlob();
     setConverting(false);
     if (onReady) onReady();
   };
@@ -358,24 +317,28 @@ function MediaRecord(props: IProps) {
           onSaving && onSaving();
           saveRef.current = true;
           if (mimeType !== 'audio/wav') {
+            // Convert to target format
+            setStatusText(t.compressing);
             setConverting(true);
-            if (mimeType === 'audio/ogg;codecs=opus') {
-              guidRef.current = generateUUID();
-              waitForIt(
-                'previous convert',
-                () => convert_guid === '',
-                () => false,
-                300
-              ).then(() => convertBlob(audioBlob, mimeType, guidRef.current));
-            } else {
-              convertToWebM(audioBlob).then((convert_blob) =>
-                doUpload(convert_blob).then(() => {
+            convertToFormat(audioBlob, mimeType)
+              .then((convert_blob) =>
+                doUpload(convert_blob, mimeType, filetype).then(() => {
                   convertComplete();
                 })
-              );
-            }
+              )
+              .catch((error) => {
+                // If conversion fails, show error and save as WAV instead
+                const errorMessage =
+                  t.compressError +
+                  (error instanceof Error ? ': ' + error.message : '');
+                showMessage(errorMessage);
+                setConverting(false);
+                doUpload(audioBlob, 'audio/wav', 'wav').then(() => {
+                  onReady && onReady();
+                });
+              });
           } else {
-            doUpload(audioBlob).then(() => {
+            doUpload(audioBlob, mimeType, filetype).then(() => {
               onReady && onReady();
             });
           }
@@ -394,7 +357,7 @@ function MediaRecord(props: IProps) {
     }
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [audioBlob, toolsChanged, mimeType, convert_guid, toolId]);
+  }, [audioBlob, toolsChanged, mimeType, toolId]);
 
   const setExtension = (mimeType: string) => {
     if (mimeType) {

@@ -991,6 +991,7 @@ export interface IPassageRecordStrings
   cancel: string;
   compressed: string;
   compressing: string;
+  compressError: string;
   defaultFilename: string;
   fileName: string;
   fileType: string;

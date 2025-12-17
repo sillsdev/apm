@@ -146,7 +146,6 @@ const mockStore = createStore(
     }),
     importexport: () => ({}),
     auth: () => ({}),
-    convertBlob: () => ({}),
     profile: () => ({}),
   })
 );

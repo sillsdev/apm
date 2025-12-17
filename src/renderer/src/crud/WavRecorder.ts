@@ -8,14 +8,11 @@ export class WavRecorder {
   private audioData: Float32Array[] = [];
   private isRecording = false;
   private workletLoaded = false;
-  private onDataAvailable: (buffer: AudioBuffer) => void;
+  private onDataAvailable: (blob: Blob) => void;
   private dataAvailableTimer: ReturnType<typeof setInterval> | null = null;
   private timeSlice: number = 1000; // Default 1 second
 
-  constructor(
-    stream: MediaStream,
-    onDataAvailable: (buffer: AudioBuffer) => void
-  ) {
+  constructor(stream: MediaStream, onDataAvailable: (blob: Blob) => void) {
     this.audioContext = new AudioContext();
     this.mediaStreamSource = this.audioContext.createMediaStreamSource(stream);
     this.onDataAvailable = onDataAvailable;
@@ -164,11 +161,32 @@ export class WavRecorder {
       clearInterval(this.dataAvailableTimer);
     }
 
-    this.dataAvailableTimer = setInterval(() => {
+    this.dataAvailableTimer = setInterval(async () => {
       if (this.isRecording && this.audioData.length > 0) {
-        this.onDataAvailable(this.createAudioBuffer());
+        // Convert AudioBuffer to WAV blob before calling onDataAvailable
+        this.onDataAvailable(await this.convertAudioDataToWav());
       }
     }, this.timeSlice);
+  }
+
+  private async audioBufferToWavBlob(buffer: AudioBuffer): Promise<Blob> {
+    const sampleRate = buffer.sampleRate;
+    const channels = buffer.numberOfChannels;
+
+    if (buffer.length === 0) {
+      // Create empty WAV if no data
+      return new Blob([], { type: 'audio/wav' });
+    }
+
+    const leftChannel = buffer.getChannelData(0);
+    const rightChannel = channels > 1 ? buffer.getChannelData(1) : null;
+
+    // Convert to WAV
+    return convertToWav(leftChannel, rightChannel, {
+      isFloat: true,
+      numChannels: channels,
+      sampleRate: sampleRate,
+    });
   }
 
   private stopDataAvailableTimer(): void {
@@ -208,23 +226,7 @@ export class WavRecorder {
   convertAudioDataToWav = async (): Promise<Blob> => {
     // Convert audio data to WAV (for final stop result)
     const audioBuffer = this.createAudioBuffer();
-    const sampleRate = audioBuffer.sampleRate;
-    const channels = audioBuffer.numberOfChannels;
-
-    if (audioBuffer.length === 0) {
-      // Create empty WAV if no data
-      return new Blob([], { type: 'audio/wav' });
-    }
-
-    const leftChannel = audioBuffer.getChannelData(0);
-    const rightChannel = channels > 1 ? audioBuffer.getChannelData(1) : null;
-
-    // Convert to WAV
-    return convertToWav(leftChannel, rightChannel, {
-      isFloat: true,
-      numChannels: channels,
-      sampleRate: sampleRate,
-    });
+    return this.audioBufferToWavBlob(audioBuffer);
   };
 
   async stop(): Promise<Blob> {
