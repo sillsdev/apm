@@ -48,7 +48,6 @@ export class AudioMediaRecorder {
       this.mediaRecorder.ondataavailable = (event) => {
         if (event.data && event.data.size > 0) {
           this.recordedChunks.push(event.data);
-          console.log('Added chunk, total chunks:', this.recordedChunks.length);
           // Combine all accumulated chunks into a single blob (complete recording so far)
           const accumulatedBlob = new Blob(this.recordedChunks);
           // Pass complete accumulated blob to onDataAvailable - wavesurfer will decode it
@@ -98,13 +97,6 @@ export class AudioMediaRecorder {
         try {
           // Wait a bit to ensure all chunks are collected
           await new Promise((r) => setTimeout(r, 100));
-
-          console.log(
-            'MediaRecorder onstop - chunks:',
-            this.recordedChunks.length,
-            'total size:',
-            this.recordedChunks.reduce((sum, chunk) => sum + chunk.size, 0)
-          );
 
           // Combine all recorded chunks
           if (this.recordedChunks.length === 0) {
