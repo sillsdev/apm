@@ -247,4 +247,22 @@ export class WavRecorder {
     await new Promise((resolve) => setTimeout(resolve, 100));
     return this.convertAudioDataToWav();
   }
+
+  /**
+   * Clean up resources and close the AudioContext.
+   * Should be called when the WavRecorder is being destroyed.
+   */
+  cleanup(): void {
+    // Disconnect media stream source
+    if (this.mediaStreamSource) {
+      this.mediaStreamSource.disconnect();
+    }
+
+    // Close audio context
+    if (this.audioContext && this.audioContext.state !== 'closed') {
+      this.audioContext.close().catch((error) => {
+        console.error('Error closing audio context:', error);
+      });
+    }
+  }
 }

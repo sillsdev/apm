@@ -330,7 +330,7 @@ function MediaRecord(props: IProps) {
                 // If conversion fails, show error and save as WAV instead
                 const errorMessage =
                   t.compressError +
-                  (error instanceof Error ? ': ' + error.message : '');
+                  (error instanceof Error ? '    ' + error.message : '');
                 showMessage(errorMessage);
                 setConverting(false);
                 doUpload(audioBlob, 'audio/wav', 'wav').then(() => {

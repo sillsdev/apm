@@ -146,4 +146,17 @@ export class AudioMediaRecorder {
       }
     });
   }
+
+  /**
+   * Clean up resources and close the AudioContext.
+   * Should be called when the AudioMediaRecorder is being destroyed.
+   */
+  cleanup(): void {
+    // Close audio context
+    if (this.audioContext && this.audioContext.state !== 'closed') {
+      this.audioContext.close().catch((error) => {
+        console.error('Error closing audio context:', error);
+      });
+    }
+  }
 }

@@ -6942,7 +6942,7 @@
       </unit>
       <unit id="shared.NoSaveWoMedia">
          <segment>
-            <source>No media has been saved to the cloud.</source>
+            <source>No media has been saved to the cloud. Please check your internet connection and try again.</source>
             <target/>
          </segment>
       </unit>

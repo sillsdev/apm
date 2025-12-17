@@ -36,7 +36,10 @@ function isAudioWorkletAvailable(): boolean {
     }
     // Try to create an AudioContext to verify
     const context = new AudioContext();
-    return typeof context.audioWorklet !== 'undefined';
+    const isSupported = typeof context.audioWorklet !== 'undefined';
+    // Close the context to avoid leaking audio resources
+    void context.close();
+    return isSupported;
   } catch {
     return false;
   }
@@ -70,12 +73,15 @@ export function useWavRecorder(
         track.stop();
       });
       if (recorderRef.current) {
-        recorderRef.current
+        const recorder = recorderRef.current;
+        recorder
           .stop()
           .then(() => {
+            recorder.cleanup();
             recorderRef.current = undefined;
           })
           .catch(() => {
+            recorder.cleanup();
             recorderRef.current = undefined;
           });
       }
