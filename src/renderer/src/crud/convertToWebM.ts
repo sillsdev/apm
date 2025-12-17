@@ -140,25 +140,43 @@ async function convertToOggWithWorker(
 
 /**
  * Converts any audio Blob to a target format using MediaRecorder API or worker-based conversion.
- * mp4 doesn't work, so either use ogg or webm
+ * Currently only OGG and WebM are supported output formats.
  * @param audioBlob - The input audio Blob (WAV, MP3, MP4, etc.)
- * @param targetMimeType - The target MIME type (e.g., 'audio/mp4', 'audio/webm;codecs=opus', 'audio/ogg;codecs=opus')
- * @returns Promise<Blob> - The resulting Blob in the target format
+ * @param targetMimeType - The target MIME type. Supported values:
+ *   - 'audio/webm'
+ *   - 'audio/webm;codecs=opus'
+ *   - 'audio/ogg'
+ *   - 'audio/ogg;codecs=opus'
+ * @returns Promise<Blob> - The resulting Blob in the requested target format
+ * @throws Error if the targetMimeType is not a supported OGG or WebM MIME type.
  */
 export async function convertToFormat(
   audioBlob: Blob,
   targetMimeType: string
 ): Promise<Blob> {
-  // For OGG format, check if MediaRecorder supports it
-  // If not, use worker-based conversion which works across all browsers
+  // Normalize the target MIME type to avoid subtle mismatches
+  const normalizedMimeType = targetMimeType.trim().toLowerCase();
+
+  // For OGG formats, always use worker-based conversion to ensure the output matches the request.
   if (
-    (targetMimeType === 'audio/ogg;codecs=opus' ||
-      targetMimeType === 'audio/ogg') &&
-    !MediaRecorder.isTypeSupported(targetMimeType) &&
-    !MediaRecorder.isTypeSupported('audio/ogg')
+    normalizedMimeType === 'audio/ogg;codecs=opus' ||
+    normalizedMimeType === 'audio/ogg'
   ) {
-    // Use worker-based conversion for OGG when MediaRecorder doesn't support it
-    return convertToOggWithWorker(audioBlob, targetMimeType);
+    return convertToOggWithWorker(audioBlob, normalizedMimeType);
   }
-  return convertToWebM(audioBlob);
+
+  // For WebM formats, use the MediaRecorder-based WebM conversion.
+  if (
+    normalizedMimeType === 'audio/webm;codecs=opus' ||
+    normalizedMimeType === 'audio/webm'
+  ) {
+    return convertToWebM(audioBlob);
+  }
+
+  // Any other MIME type is not supported by this helper.
+  throw new Error(
+    `Unsupported target MIME type: ${targetMimeType}. ` +
+      `Supported types are 'audio/webm', 'audio/webm;codecs=opus', ` +
+      `'audio/ogg', and 'audio/ogg;codecs=opus'.`
+  );
 }
