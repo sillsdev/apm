@@ -7,7 +7,7 @@ import { axiosGet } from '../../utils/axios';
 const mmsLangs = new Map<string, MmsLang[]>();
 
 export const useMmsLangs = () => {
-  const token = React.useContext(TokenContext).state.accessToken ?? '';
+  const token = React.useContext(TokenContext)?.state?.accessToken ?? '';
 
   React.useEffect(() => {
     if ((token ?? '') !== '')

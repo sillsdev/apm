@@ -316,7 +316,7 @@ export const ProjectDownloadAlert = (props: IProps) => {
   };
 
   React.useEffect(() => {
-    if (isElectron && tokenCtx.state.accessToken && !downloadingRef.current) {
+    if (isElectron && tokenCtx?.state?.accessToken && !downloadingRef.current) {
       getNeedyRemoteIds().then((projRemIds) => {
         if (sizeRef.current === 0) {
           handleClose(false)();

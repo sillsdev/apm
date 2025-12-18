@@ -249,7 +249,7 @@ export function IntegrationPanel(props: IProps) {
   const [offline] = useGlobal('offline'); //verified this is not used in a function 2/18/25
   const [offlineOnly] = useGlobal('offlineOnly'); //will be constant here
   const [local, setLocal] = useState(offline || offlineOnly);
-  const { accessToken } = useContext(TokenContext).state;
+  const accessToken = useContext(TokenContext)?.state?.accessToken ?? null;
   const forceDataChanges = useDataChanges();
   const [count, setCount] = useState(-1);
   const [countMsg, setCountMsg] = useState<string | React.JSX.Element>();

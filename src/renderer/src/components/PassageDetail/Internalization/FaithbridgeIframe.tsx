@@ -60,7 +60,7 @@ export const FaithbridgeIframe = ({
   const { showMessage } = useSnackBar();
   const { passageRef } = usePassageRef();
   const onlineTimer = React.useRef<NodeJS.Timeout | null>(null);
-  const token = useContext(TokenContext).state.accessToken ?? '';
+  const token = useContext(TokenContext)?.state?.accessToken ?? '';
 
   const getNewChat = () => {
     const newChatId = generateUUID();

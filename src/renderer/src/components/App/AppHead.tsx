@@ -127,6 +127,7 @@ export const AppHead = (props: IProps) => {
   const remote = coordinator?.getSource('remote') as JSONAPISource;
   const [isOffline] = useGlobal('offline'); //verified this is not used in a function 2/18/25
   const tokenCtx = useContext(TokenContext);
+  const tokenState = tokenCtx?.state ?? { expiresAt: null };
   const ctx = useContext(UnsavedContext);
   const { checkSavedFn, startSave, toolsChanged, anySaving } = ctx.state;
   const [cssVars, setCssVars] = useState<React.CSSProperties>(twoIcon);
@@ -159,7 +160,9 @@ export const AppHead = (props: IProps) => {
   const planUrl = useMemo(() => {
     const fromUrl = localStorage.getItem(localUserKey(LocalKey.url));
     if (!fromUrl) return null;
-    const m = /^\/(work|plan|detail)\/([0-9a-f-]+)\/?([0-9a-f-]*)/.exec(fromUrl);
+    const m = /^\/(work|plan|detail)\/([0-9a-f-]+)\/?([0-9a-f-]*)/.exec(
+      fromUrl
+    );
     if (!m) return null;
     return `/plan/${m[1]}/0`;
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -239,11 +242,11 @@ export const AppHead = (props: IProps) => {
   };
 
   useEffect(() => {
-    if (tokenCtx.state.expiresAt === -1) {
+    if (tokenState.expiresAt === -1) {
       handleMenu('Logout');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tokenCtx.state]);
+  }, [tokenState]);
 
   const doingDone = useRef(false);
 

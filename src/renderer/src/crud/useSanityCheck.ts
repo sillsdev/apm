@@ -16,8 +16,7 @@ export const useSanityCheck = (setLanguage: typeof actions.setLanguage) => {
   const [coordinator] = useGlobal('coordinator');
   const memory = coordinator?.getSource('memory') as Memory;
   const remote = coordinator?.getSource('datachanges') as JSONAPISource;
-  const tokenContext = useContext(TokenContext);
-  const token = tokenContext?.state?.accessToken || '';
+  const token = useContext(TokenContext)?.state?.accessToken || '';
   const [errorReporter] = useGlobal('errorReporter');
   const getGlobal = useGetGlobal();
 

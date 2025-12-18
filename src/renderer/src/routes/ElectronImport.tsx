@@ -44,7 +44,7 @@ const stringSelector = (state: IState) =>
 
 export const useElectronImport = () => {
   const [coordinator] = useGlobal('coordinator');
-  const token = useContext(TokenContext).state.accessToken;
+  const token = useContext(TokenContext)?.state?.accessToken ?? null;
   const [errorReporter] = useGlobal('errorReporter');
   const offlineSetup = useOfflineSetup();
   const [user] = useGlobal('user');

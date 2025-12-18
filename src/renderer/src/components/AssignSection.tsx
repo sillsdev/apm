@@ -99,7 +99,7 @@ function AssignSection(props: IProps) {
     () => Boolean(getOrgDefault(orgDefaultPermissions)),
     [getOrgDefault]
   );
-  const token = useContext(TokenContext).state.accessToken ?? '';
+  const token = useContext(TokenContext)?.state?.accessToken ?? '';
 
   const orgSteps = useMemo(() => {
     return allOrgSteps?.filter(
