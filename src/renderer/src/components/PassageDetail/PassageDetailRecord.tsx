@@ -245,7 +245,7 @@ export function PassageDetailRecord(props: IProps) {
   };
 
   return (
-    <Stack sx={{ width: props.width }}>
+    <Stack sx={{ width: props.width, maxWidth: props.width, minWidth: 0 }}>
       <RecordButtons
         onVersions={hasExistingVersion ? handleVersions : undefined}
         onUpload={

@@ -1,4 +1,3 @@
-/* eslint-disable react/default-props-match-prop-types */
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useGlobal } from '../../context/useGlobal';
 import { shallowEqual, useSelector } from 'react-redux';
@@ -202,7 +201,6 @@ export const AudioTable = (props: IProps) => {
   useEffect(() => {
     //if I set playing when I set the mediaId, it plays a bit of the old
     if (playItem) setMediaPlaying(true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [playItem]);
 
   // // const handleVerHistOpen = (passId: string) => () => {

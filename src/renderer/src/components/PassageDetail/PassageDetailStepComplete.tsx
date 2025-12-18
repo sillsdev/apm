@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useGlobal } from '../../context/useGlobal';
-import { IconButton } from '@mui/material';
+import { IconButton, Box, Typography } from '@mui/material';
 import CompleteIcon from '@mui/icons-material/CheckBoxOutlined';
 import NotCompleteIcon from '@mui/icons-material/CheckBoxOutlineBlank';
 import ChecklistIcon from '@mui/icons-material/Checklist';
@@ -72,8 +72,20 @@ export const PassageDetailStepComplete = () => {
   }, [pathname]);
 
   return (
-    <div>
-      {t.title}
+    <Box
+      sx={{ display: 'flex', alignItems: 'center', minWidth: 0, flexShrink: 1 }}
+    >
+      <Typography
+        sx={{
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          flexShrink: 1,
+          minWidth: 0,
+        }}
+      >
+        {t.title}
+      </Typography>
       <IconButton
         id="complete"
         sx={{ color: 'primary.light' }}
@@ -96,7 +108,7 @@ export const PassageDetailStepComplete = () => {
       >
         <ChecklistIcon id="step-next" />
       </IconButton>
-    </div>
+    </Box>
   );
 };
 export default PassageDetailStepComplete;

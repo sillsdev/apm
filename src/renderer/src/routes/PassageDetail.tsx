@@ -55,12 +55,7 @@ const KeyTerms = React.lazy(
 const descProps = { overflow: 'hidden', textOverflow: 'ellipsis' } as SxProps;
 const rowProps = { alignItems: 'center', whiteSpace: 'nowrap' } as SxProps;
 
-interface PGProps {
-  minWidth: number;
-  onMinWidth: (width: number) => void;
-}
-
-const PassageDetailGrids = ({ minWidth, onMinWidth }: PGProps) => {
+const PassageDetailGrids = () => {
   const [plan] = useGlobal('plan'); //will be constant here
   const [width, setWidth] = useState(window.innerWidth);
   const widthRef = React.useRef(window.innerWidth);
@@ -76,19 +71,43 @@ const PassageDetailGrids = ({ minWidth, onMinWidth }: PGProps) => {
     sectionArr,
     discussOpen,
   } = ctx.state;
-  const minWidthRef = React.useRef(800);
+
   const { tool, settings } = useStepTool(currentstep);
   const discussionSizeRef = React.useRef(discussionSize);
   const t = useSelector(toolSelector, shallowEqual) as IToolStrings;
   const [paneWidth, setPaneWidth] = useState(0);
+  const hasVerticalScrollbarRef = React.useRef(false);
+
+  // Detect vertical scrollbar - use ref to avoid re-renders
+  useEffect(() => {
+    const checkScrollbar = () => {
+      // Check if document body has vertical scrollbar
+      const hasScrollbar =
+        document.documentElement.scrollHeight >
+        document.documentElement.clientHeight;
+      hasVerticalScrollbarRef.current = hasScrollbar;
+    };
+
+    checkScrollbar();
+    const handleResize = debounce(() => {
+      checkScrollbar();
+    }, 200);
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
 
   useEffect(() => {
     discussionSizeRef.current = discussionSize;
     widthRef.current = width;
     let newPaneWidth = widthRef.current;
-    if (discussOpen) newPaneWidth -= discussionSize.width;
+    if (discussOpen) {
+      newPaneWidth -= discussionSize.width;
+    }
+    newPaneWidth = Math.max(0, newPaneWidth);
     setPaneWidth(newPaneWidth);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [discussionSize, width, discussOpen]);
 
   const artifactId = useMemo(() => {
@@ -115,11 +134,12 @@ const PassageDetailGrids = ({ minWidth, onMinWidth }: PGProps) => {
   ]);
 
   const setDimensions = () => {
-    const newWidth = Math.max(window.innerWidth, minWidthRef.current);
+    // Always use actual window width - let components adapt to available space
+    const newWidth = window.innerWidth;
     setWidth(newWidth);
 
     let newDiscWidth = discussionSizeRef.current.width;
-    if (newDiscWidth > newWidth - minWidthRef.current + 450) newDiscWidth = 450;
+    if (newDiscWidth > newWidth + 450) newDiscWidth = 450;
     const newDiscHeight = window.innerHeight - 170;
     if (
       discussionSizeRef.current.height !== newDiscHeight ||
@@ -130,25 +150,6 @@ const PassageDetailGrids = ({ minWidth, onMinWidth }: PGProps) => {
         height: newDiscHeight,
       });
   };
-
-  useEffect(() => {
-    if (tool === ToolSlug.Record) {
-      onMinWidth(880);
-    } else if (tool === ToolSlug.Transcribe && artifactId) {
-      onMinWidth(1175);
-    } else if (
-      tool === ToolSlug.Transcribe ||
-      tool === ToolSlug.Community ||
-      tool === ToolSlug.PhraseBackTranslate
-    ) {
-      onMinWidth(1050);
-    } else if (tool === ToolSlug.KeyTerm) {
-      onMinWidth(955);
-    } else {
-      onMinWidth(800);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tool]);
 
   useEffect(() => {
     setDimensions();
@@ -162,12 +163,6 @@ const PassageDetailGrids = ({ minWidth, onMinWidth }: PGProps) => {
     /* eslint-disable-next-line react-hooks/exhaustive-deps */
   }, []);
 
-  useEffect(() => {
-    minWidthRef.current = minWidth;
-    setDimensions();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [minWidth]);
-
   const plans = useMemo(() => {
     const plans = memory.cache.query((q) => q.findRecords('plan')) as Plan[];
     return plans.filter((p) => p.id === plan);
@@ -180,22 +175,58 @@ const PassageDetailGrids = ({ minWidth, onMinWidth }: PGProps) => {
         display: 'flex',
         flexDirection: 'row',
         paddingTop: `${HeadHeight}px`,
+        width: '100%',
+        maxWidth: '100%',
+        minWidth: 0,
+        overflow: 'hidden',
       }}
     >
-      <Grid container direction="row" sx={rowProps}>
-        <Grid container direction="row" sx={{ ...rowProps, flexGrow: 1 }}>
-          <Grid sx={rowProps} size={{ xs: 6 }}>
+      <Grid
+        container
+        direction="row"
+        sx={{ ...rowProps, minWidth: 0, flexWrap: 'wrap' }}
+      >
+        <Grid
+          container
+          direction="row"
+          sx={{
+            alignItems: 'center',
+            flexGrow: 1,
+            minWidth: 0,
+            flexWrap: 'wrap',
+            gap: 1,
+          }}
+        >
+          <Grid
+            sx={{ ...rowProps, minWidth: 0, flexShrink: 1 }}
+            size={{ xs: 'auto' }}
+          >
             <PassageDetailSectionPassage />
           </Grid>
-          <Grid id="tool" sx={rowProps} size={{ xs: 3 }}>
+          <Grid
+            id="tool"
+            sx={{
+              alignItems: 'center',
+              minWidth: 0,
+              flexShrink: 1,
+              whiteSpace: 'nowrap',
+            }}
+            size={{ xs: 'auto' }}
+          >
             {tool && Object.prototype.hasOwnProperty.call(t, tool)
               ? addPt(t.getString(tool))
               : tool}
           </Grid>
           <Grid
             id="stepcomplete"
-            sx={{ display: 'flex', justifyContent: 'flex-end' }}
-            size={{ xs: 3 }}
+            sx={{
+              display: 'flex',
+              justifyContent: 'flex-end',
+              minWidth: 0,
+              flexShrink: 0,
+              ml: 'auto',
+            }}
+            size={{ xs: 'auto' }}
           >
             <PassageDetailStepComplete />
           </Grid>
@@ -204,9 +235,13 @@ const PassageDetailGrids = ({ minWidth, onMinWidth }: PGProps) => {
           <WorkflowSteps />
         </Grid>
         {tool === ToolSlug.Resource && (
-          <Grid container direction="row" sx={rowProps}>
-            <Grid size={{ xs: 12 }}>
-              <Grid container>
+          <Grid
+            container
+            direction="row"
+            sx={{ ...rowProps, minWidth: 0, flexWrap: 'wrap' }}
+          >
+            <Grid size={{ xs: 12 }} sx={{ minWidth: 0 }}>
+              <Grid container sx={{ minWidth: 0 }}>
                 <PassageDetailChooser width={width - 24} sx={{ pl: 2 }} />
                 <PassageDetailArtifacts />
               </Grid>
@@ -214,7 +249,7 @@ const PassageDetailGrids = ({ minWidth, onMinWidth }: PGProps) => {
           </Grid>
         )}
         {tool === ToolSlug.Paratext && (
-          <Stack>
+          <Stack sx={{ width: '100%', minWidth: 0 }}>
             <PassageDetailChooser width={width - 24} sx={{ pl: 2 }} />
             <PassageDetailParatextIntegration />
           </Stack>
@@ -235,11 +270,14 @@ const PassageDetailGrids = ({ minWidth, onMinWidth }: PGProps) => {
               tool !== ToolSlug.Verses &&
               tool !== ToolSlug.Record &&
               tool !== ToolSlug.ConsultantCheck ? (
-                <Stack direction="column">
+                <Stack
+                  direction="column"
+                  sx={{ width: '100%', minWidth: 0, maxWidth: paneWidth }}
+                >
                   <PassageDetailChooser width={paneWidth} />
                   {(tool !== ToolSlug.KeyTerm || mediafileId) && (
                     <PassageDetailPlayer
-                      width={paneWidth - 40}
+                      width={Math.max(0, paneWidth - 40)}
                       allowZoomAndSpeed={true}
                     />
                   )}
@@ -261,6 +299,8 @@ const PassageDetailGrids = ({ minWidth, onMinWidth }: PGProps) => {
                   sx={{
                     ...descProps,
                     width: paneWidth,
+                    maxWidth: paneWidth,
+                    minWidth: 0,
                   }}
                   size={{ xs: 12 }}
                 >
@@ -270,12 +310,17 @@ const PassageDetailGrids = ({ minWidth, onMinWidth }: PGProps) => {
                   )}
                   {tool === ToolSlug.Transcribe && (
                     <PassageDetailTranscribe
-                      width={paneWidth - 16}
+                      width={Math.max(
+                        0,
+                        paneWidth -
+                          16 -
+                          (hasVerticalScrollbarRef.current ? 20 : 0)
+                      )}
                       artifactTypeId={artifactId}
                     />
                   )}
                   {tool === ToolSlug.Record && (
-                    <PassageDetailRecord width={paneWidth - 40} />
+                    <PassageDetailRecord width={Math.max(0, paneWidth - 40)} />
                   )}
                   {tool === ToolSlug.ConsultantCheck && (
                     <ConsultantCheck width={paneWidth} />
@@ -289,8 +334,13 @@ const PassageDetailGrids = ({ minWidth, onMinWidth }: PGProps) => {
         {(tool === ToolSlug.Community ||
           tool === ToolSlug.PhraseBackTranslate ||
           tool === ToolSlug.WholeBackTranslate) && (
-          <Grid key={currentstep} container direction="row" sx={rowProps}>
-            <Grid size={{ xs: 12 }}>
+          <Grid
+            key={currentstep}
+            container
+            direction="row"
+            sx={{ ...rowProps, minWidth: 0, flexWrap: 'wrap' }}
+          >
+            <Grid size={{ xs: 12 }} sx={{ minWidth: 0 }}>
               <PassageDetailItem
                 width={width}
                 slugs={
@@ -312,8 +362,8 @@ const PassageDetailGrids = ({ minWidth, onMinWidth }: PGProps) => {
         )}
 
         {(tool === ToolSlug.Export || tool === ToolSlug.Done) && (
-          <Grid container>
-            <Grid size={{ xs: 12 }}>
+          <Grid container sx={{ minWidth: 0 }}>
+            <Grid size={{ xs: 12 }} sx={{ minWidth: 0 }}>
               <PassageDetailChooser width={width - 16} />
               {tool === ToolSlug.Export && (
                 <TranscriptionTab
@@ -339,7 +389,6 @@ export const PassageDetail = () => {
   const [view, setView] = useState('');
   const [projType] = useGlobal('projType'); //verified this is not used in a function 2/18/25
   const [user] = useGlobal('user');
-  const [minWidth, setMinWidth] = useState(800);
   const { setProjectType } = useProjectType();
 
   useEffect(() => {
@@ -354,17 +403,22 @@ export const PassageDetail = () => {
     /* eslint-disable-next-line react-hooks/exhaustive-deps */
   }, []);
 
-  const handleMinWidth = (width: number) => {
-    setMinWidth(width);
-  };
-
   if (view !== '' && view !== pathname) return <StickyRedirect to={view} />;
 
   return (
-    <Box sx={{ flexGrow: 1, minWidth: `${minWidth}px`, minHeight: '536px' }}>
+    <Box
+      sx={{
+        flexGrow: 1,
+        minWidth: 0,
+        minHeight: '536px',
+        width: '100%',
+        maxWidth: '100%',
+        overflow: 'hidden',
+      }}
+    >
       <AppHead switchTo={true} />
       <PassageDetailProvider>
-        <PassageDetailGrids minWidth={minWidth} onMinWidth={handleMinWidth} />
+        <PassageDetailGrids />
       </PassageDetailProvider>
     </Box>
   );

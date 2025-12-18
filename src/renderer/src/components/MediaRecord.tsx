@@ -475,7 +475,7 @@ function MediaRecord(props: IProps) {
   const segments = '{}';
 
   return (
-    <Paper id="mediaRecord" sx={{ width: width }}>
+    <Paper id="mediaRecord" sx={{ width: width, maxWidth: width, minWidth: 0 }}>
       <WSAudioPlayer
         allowRecord={allowRecord !== false}
         allowZoom={allowZoom}

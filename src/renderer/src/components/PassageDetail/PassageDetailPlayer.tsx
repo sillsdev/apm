@@ -254,7 +254,6 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
         mediaRec?.attributes?.segments || '{}'
       ) !== '{}'
     );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [playerMediafile, mediarecs]);
 
   const onDuration = (duration: number) => {
