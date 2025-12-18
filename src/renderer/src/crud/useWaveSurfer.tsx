@@ -403,7 +403,8 @@ export function useWaveSurfer(
   };
 
   const wsZoom = debounce((zoom: number) => {
-    if (isReadyRef.current) wavesurferRef.current?.zoom(zoom);
+    if (isReadyRef.current && !recordingRef.current)
+      wavesurferRef.current?.zoom(zoom);
   }, 10);
 
   // Helper function to revoke current blob URL
