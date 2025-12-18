@@ -439,6 +439,7 @@ export const AudioTable = (props: IProps) => {
       nameCount,
       mediaPlaying,
       addWidth,
+      playItem,
     ]
   );
 
