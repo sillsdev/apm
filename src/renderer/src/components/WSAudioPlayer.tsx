@@ -1842,7 +1842,7 @@ function WSAudioPlayer(props: IProps) {
                       justifyContent: 'center',
                       alignItems: 'center',
                       width: '100%',
-                      py: 2,
+                      py: 1,
                     }}
                   >
                     <RecordButton

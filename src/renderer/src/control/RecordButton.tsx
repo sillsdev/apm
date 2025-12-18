@@ -52,8 +52,8 @@ export const RecordButton = ({
           return {
             px: isSmall ? 1 : undefined,
             py: isSmall ? 1 : undefined,
-            minWidth: isSmall ? 48 : 80,
-            height: isSmall ? 35 : 80,
+            minWidth: isSmall ? 48 : 60,
+            height: isSmall ? 35 : 60,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -68,7 +68,7 @@ export const RecordButton = ({
             outline: 'none',
             opacity: disabled ? 0.7 : 1,
             '& svg': {
-              fontSize: isSmall ? '1.5rem' : '2rem',
+              fontSize: isSmall ? '1.5rem' : '1.75rem',
               color: 'white',
               fill: 'white',
             },
@@ -85,7 +85,7 @@ export const RecordButton = ({
             <PauseIcon />
           )
         ) : (
-          <WhiteCircle style={{ fontSize: isSmall ? '1.2rem' : '1.6rem' }} />
+          <WhiteCircle style={{ fontSize: isSmall ? '1.2rem' : '1.4rem' }} />
         )}
       </Box>
     </LightTooltip>
