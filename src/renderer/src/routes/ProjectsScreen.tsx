@@ -24,7 +24,7 @@ import { remoteId } from '../crud';
 import { UnsavedContext } from '../context/UnsavedContext';
 import BigDialog from '../hoc/BigDialog';
 import { StepEditor } from '../components/StepEditor';
-import { useRole, defaultWorkflow } from '../crud';
+import { defaultWorkflow } from '../crud';
 
 interface ProjectBoxProps extends BoxProps {
   isMobile?: boolean;
@@ -41,14 +41,8 @@ const ProjectsScreenInner: React.FC = () => {
   const navigate = useMyNavigate();
   const teamId = localStorage.getItem(localUserKey(LocalKey.team));
   const ctx = React.useContext(TeamContext);
-  const {
-    teamProjects,
-    personalProjects,
-    personalTeam,
-    cardStrings,
-    teams,
-    isAdmin,
-  } = ctx.state;
+  const { teamProjects, personalProjects, personalTeam, cardStrings, teams } =
+    ctx.state;
   const t = cardStrings;
   const { pathname } = useLocation();
   const [plan] = useGlobal('plan');
@@ -57,10 +51,6 @@ const ProjectsScreenInner: React.FC = () => {
   const unsavedCtx = React.useContext(UnsavedContext);
   const { startClear, startSave, waitForSave } = unsavedCtx.state;
   const getGlobal = useGetGlobal();
-  const [offline] = useGlobal('offline');
-  const [offlineOnly] = useGlobal('offlineOnly');
-  const [busy] = useGlobal('remoteBusy');
-  const { userIsOrgAdmin } = useRole();
   const theme = useTheme();
   const isMobileWidth = useMediaQuery(theme.breakpoints.down('sm'));
 
@@ -92,7 +82,6 @@ const ProjectsScreenInner: React.FC = () => {
       waitForSave(() => setShowWorkflow(isOpen), 500);
     } else setShowWorkflow(isOpen);
   };
-  const handleEditWorkflow = () => setShowWorkflow(true);
 
   // duplicate name check for add dialog
   const nameInUse = React.useCallback(
@@ -192,14 +181,6 @@ const ProjectsScreenInner: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [plan, pathname, home]);
 
-  const canModifyWorkflow = React.useMemo(() => {
-    if (!thisTeam) return false;
-    return (
-      ((!offline && isAdmin(thisTeam)) || offlineOnly) &&
-      userIsOrgAdmin(thisTeam.id)
-    );
-  }, [thisTeam, offline, offlineOnly, isAdmin, userIsOrgAdmin]);
-
   return (
     <Box sx={{ width: '100%' }}>
       <AppHead />
@@ -258,20 +239,6 @@ const ProjectsScreenInner: React.FC = () => {
           >
             {t.addNewProject || 'Add New Project...'}
           </Button>
-          {canModifyWorkflow && !isMobileWidth && (
-            <Button
-              id="ProjectActEditWorkflow"
-              variant="outlined"
-              onClick={handleEditWorkflow}
-              disabled={busy}
-              sx={(theme) => ({
-                minWidth: 160,
-                bgcolor: theme.palette.common.white,
-              })}
-            >
-              {t.editWorkflow.replace('{0}', '')}
-            </Button>
-          )}
           <Button
             id="ProjectActSwitch"
             variant="outlined"
