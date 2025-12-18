@@ -116,13 +116,16 @@ function WSSegmentParameters(props: IProps) {
     if (onOpen) onOpen(false);
   };
 
+  const paperRef = useRef<HTMLDivElement>(null);
+
   function PaperComponent(props: any) {
     return (
       <Draggable
+        nodeRef={paperRef}
         handle="#draggable-dialog-title"
         cancel={'[class*="MuiDialogContent-root"]'}
       >
-        <Paper {...props} />
+        <Paper ref={paperRef} {...props} />
       </Draggable>
     );
   }
