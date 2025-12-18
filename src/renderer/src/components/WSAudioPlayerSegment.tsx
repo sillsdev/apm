@@ -76,7 +76,6 @@ function WSAudioPlayerSegment(props: IProps) {
     keys.forEach((k) => subscribe(k.key, k.cb));
 
     return () => {
-      // eslint-disable-next-line react-hooks/exhaustive-deps
       keys.forEach((k) => unsubscribe(k.key));
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps

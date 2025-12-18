@@ -148,7 +148,6 @@ export function PassageDetailItem(props: IProps) {
     let newPaneWidth = width - 16;
     if (discussOpen) newPaneWidth -= discussionSize.width;
     setPaneWidth(newPaneWidth);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [discussionSize, width, discussOpen]);
 
   const setUploadVisible = (value: boolean) => {

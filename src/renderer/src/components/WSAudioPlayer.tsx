@@ -1320,7 +1320,7 @@ function WSAudioPlayer(props: IProps) {
 
   return (
     <Box>
-      <Paper sx={{ p: 1, mb: 1, width: { width } }}>
+      <Paper sx={{ p: 1, mb: 1, width: width, maxWidth: width }}>
         <Box
           sx={{
             display: 'flex',
@@ -1601,9 +1601,12 @@ function WSAudioPlayer(props: IProps) {
                   flexDirection: 'row',
                   alignItems: 'stretch',
                   gap: 1,
+                  width: '100%',
+                  maxWidth: '100%',
+                  minWidth: 0,
                 }}
               >
-                <Box sx={{ flex: 1 }}>
+                <Box sx={{ flex: 1, minWidth: 0 }}>
                   <div id="wsAudioWaveform" ref={waveformRef} />
                 </Box>
 
@@ -1618,11 +1621,21 @@ function WSAudioPlayer(props: IProps) {
               </Box>
             ) : (
               <>
-                <Box sx={{ width: width - 40 }}>
+                <Box
+                  sx={{ width: width - 40, maxWidth: width - 40, minWidth: 0 }}
+                >
                   <div id="wsAudioWaveform" ref={waveformRef} />
                 </Box>
                 {justPlayButton || (
-                  <Grid container sx={{ ...toolbarProp, width: width - 40 }}>
+                  <Grid
+                    container
+                    sx={{
+                      ...toolbarProp,
+                      width: width - 40,
+                      maxWidth: width - 40,
+                      minWidth: 0,
+                    }}
+                  >
                     <Grid>
                       {allowAutoSegment && (
                         <LightTooltip

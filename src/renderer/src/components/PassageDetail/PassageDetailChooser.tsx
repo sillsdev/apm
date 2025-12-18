@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useGlobal } from '../../context/useGlobal';
 import { IPassageChooserStrings, PassageD } from '../../model';
-import { Typography, Tabs, Tab, SxProps } from '@mui/material';
+import { Typography, Tabs, Tab, SxProps, Box } from '@mui/material';
 import usePassageDetailContext from '../../context/usePassageDetailContext';
 import {
   related,
@@ -131,22 +131,52 @@ export const PassageDetailChooser = ({ width, sx }: IProps) => {
   }, [view]);
 
   return passageCount > 1 ? (
-    <StyledBox width={width} sx={{ ...sx, alignItems: 'center' }}>
-      <Typography sx={{ pr: 2 }}>{t.passages}</Typography>
-      <Tabs
-        value={value || 0}
-        onChange={handleChange}
-        variant="scrollable"
-        scrollButtons
-        allowScrollButtonsMobile
-        aria-label="scrollable passage tabs"
+    <StyledBox
+      width={Math.max(0, width - 48)} //leave space for scroll buttons
+      sx={{
+        ...sx,
+        alignItems: 'center',
+        gap: 0,
+      }}
+    >
+      <Typography sx={{ pr: 1, flexShrink: 0, whiteSpace: 'nowrap' }}>
+        {t.passages}
+      </Typography>
+      <Box
+        sx={{
+          flex: '1 1 auto',
+          minWidth: 0,
+          position: 'relative',
+        }}
       >
-        {marks.current
-          .sort((i, j) => i.value - j.value)
-          .map((m) => (
-            <Tab key={m.value} label={m.label} />
-          ))}
-      </Tabs>
+        <Tabs
+          value={value || 0}
+          onChange={handleChange}
+          variant="scrollable"
+          scrollButtons="auto"
+          allowScrollButtonsMobile
+          aria-label="scrollable passage tabs"
+          sx={{
+            minWidth: 0,
+            width: '100%',
+            position: 'relative',
+            '& .MuiTabs-flexContainer': {
+              flexWrap: 'nowrap',
+            },
+            '& .MuiTabs-scrollButtons': {
+              '&.Mui-disabled': {
+                display: 'none',
+              },
+            },
+          }}
+        >
+          {marks.current
+            .sort((i, j) => i.value - j.value)
+            .map((m) => (
+              <Tab key={m.value} label={m.label} />
+            ))}
+        </Tabs>
+      </Box>
     </StyledBox>
   ) : (
     <></>
