@@ -58,7 +58,7 @@ export default function AsrProgress({
   const [working, setWorking] = React.useState(false);
   const { getAsrSettings } = useGetAsrSettings();
   const [memory] = useGlobal('memory');
-  const token = React.useContext(TokenContext).state.accessToken ?? '';
+  const token = React.useContext(TokenContext)?.state?.accessToken ?? '';
   const { showMessage } = useSnackBar();
   const [taskId, setTaskIdx] = React.useState('');
   const taskIdRef = React.useRef('');

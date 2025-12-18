@@ -94,7 +94,7 @@ export default function FindBibleBrain({
   const planType = usePlanType();
   const [progress, setProgress] = useState(0);
   const [count, setCount] = useState(0);
-  const token = useContext(TokenContext).state.accessToken ?? '';
+  const token = useContext(TokenContext)?.state?.accessToken ?? '';
   const t: IFindResourceStrings = useSelector(
     findResourceSelector,
     shallowEqual

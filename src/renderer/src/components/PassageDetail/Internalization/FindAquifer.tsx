@@ -166,7 +166,7 @@ export default function FindAquifer({ onClose }: IProps) {
     shallowEqual
   );
   const tg: IGridStrings = useSelector(gridSelector, shallowEqual);
-  const token = useContext(TokenContext).state.accessToken ?? '';
+  const token = useContext(TokenContext)?.state?.accessToken ?? '';
   const [limit] = useState(100); // TODO: always loads max of 100 results?
   const [offset, setOffset] = useState(0);
   const forceDataChanges = useDataChanges();

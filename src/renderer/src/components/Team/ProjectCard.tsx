@@ -137,7 +137,7 @@ export const ProjectCard = (props: IProps) => {
     (state: IState) => state.importexport.importexportStatus
   );
   const [copying, setCopying] = useState(false);
-  const { accessToken } = useContext(TokenContext).state;
+  const accessToken = useContext(TokenContext)?.state?.accessToken ?? null;
   const [errorReporter] = useGlobal('errorReporter');
   const [memory] = useGlobal('memory');
   const { showMessage } = useSnackBar();

@@ -12,8 +12,7 @@ export function PrivateRoute({ el }: IProps) {
   const [offline] = useGlobal('offline'); //verified this is not used in a function 2/18/25
   const { pathname } = useLocation();
   const navigate = useMyNavigate();
-  const tokenContext = useContext(TokenContext);
-  const authenticated = tokenContext?.state?.authenticated;
+  const authenticated = useContext(TokenContext)?.state?.authenticated;
 
   if (!pathname?.endsWith('null') && pathname !== '/loading')
     localStorage.setItem(localUserKey(LocalKey.url), pathname);

@@ -152,7 +152,7 @@ export function ImportTab(props: IProps) {
   const [errorReporter] = useGlobal('errorReporter');
   const [user] = useGlobal('user');
   const [isOffline] = useGlobal('offline'); //verified this is not used in a function 2/18/25
-  const token = useContext(TokenContext).state.accessToken;
+  const token = useContext(TokenContext)?.state?.accessToken ?? null;
   const { showMessage } = useSnackBar();
   const [changeData, setChangeDatax] = useState(Array<IRow>());
   const changeDataRef = useRef(changeData);

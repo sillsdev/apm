@@ -146,7 +146,7 @@ export function TranscriptionTab(props: IProps) {
   const [offline] = useGlobal('offline'); //verified this is not used in a function 2/18/25
   const [errorReporter] = useGlobal('errorReporter');
   const [lang] = useGlobal('lang');
-  const token = useContext(TokenContext).state.accessToken;
+  const token = useContext(TokenContext)?.state?.accessToken ?? null;
   const { showMessage, showTitledMessage } = useSnackBar();
   const [openExport, setOpenExport] = useState(false);
   const [data, setData] = useState(Array<IRow>());

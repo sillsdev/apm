@@ -175,7 +175,11 @@ export const Sources = async (
 ): Promise<SourcesReturn> => {
   const memory = coordinator?.getSource('memory') as Memory;
   const backup = coordinator?.getSource('backup') as IndexedDBSource;
-  const tokData = tokenCtx.state.profile || { sub: '' };
+  const tokenState = tokenCtx?.state ?? {
+    accessToken: null,
+    profile: undefined,
+  };
+  const tokData = tokenState.profile || { sub: '' };
   const userToken = localStorage.getItem(LocalKey.authId);
   if (tokData.sub !== '') {
     localStorage.setItem(LocalKey.authId, tokData.sub || '');
@@ -203,7 +207,7 @@ export const Sources = async (
   let remote: JSONAPISource = {} as JSONAPISource;
   let datachangeremote: JSONAPISource = {} as JSONAPISource;
 
-  const offline = !tokenCtx.state.accessToken;
+  const offline = !tokenState.accessToken;
 
   if (!offline) {
     remote = coordinator.sourceNames.includes('remote')
@@ -218,7 +222,7 @@ export const Sources = async (
           serializerSettingsFor: serializersSettings(),
           defaultFetchSettings: {
             headers: {
-              Authorization: 'Bearer ' + tokenCtx.state.accessToken,
+              Authorization: 'Bearer ' + (tokenState.accessToken || ''),
               'X-FP': fingerprint,
             },
             timeout: 100000,
@@ -333,7 +337,7 @@ export const Sources = async (
           serializerSettingsFor: serializersSettings(),
           defaultFetchSettings: {
             headers: {
-              Authorization: 'Bearer ' + tokenCtx.state.accessToken,
+              Authorization: 'Bearer ' + (tokenState.accessToken || ''),
               'X-FP': fingerprint,
             },
             timeout: 100000,
@@ -445,14 +449,14 @@ export const Sources = async (
     console.log(`Updating translation type`);
     await updateBackTranslationType(
       memory,
-      tokenCtx.state.accessToken || '',
+      tokenState.accessToken || '',
       user,
       errorReporter,
       offlineSetup
     );
   }
   if (requestedSchema > 5) {
-    const token = tokenCtx.state.accessToken || null;
+    const token = tokenState.accessToken || null;
     console.log(`Updating consultant workflow step`);
     await updateConsultantWorkflowStep(token, memory, user);
   }
