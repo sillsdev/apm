@@ -4984,6 +4984,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="passageRecord.compressError">
+         <segment>
+            <source>Compression failed.  Saving uncompressed.</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="passageRecord.defaultFilename">
          <segment>
             <source>MyRecording</source>
@@ -6936,7 +6942,7 @@
       </unit>
       <unit id="shared.NoSaveWoMedia">
          <segment>
-            <source>No media has been saved to the cloud.</source>
+            <source>No media has been saved to the cloud. Please check your internet connection and try again.</source>
             <target/>
          </segment>
       </unit>

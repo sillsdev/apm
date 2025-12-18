@@ -94,7 +94,6 @@ const mockStore = createStore(
     paratext: () => ({}),
     importexport: () => ({}),
     auth: () => ({}),
-    convertBlob: () => ({}),
   }),
   applyMiddleware(thunk)
 );

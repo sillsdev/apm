@@ -5814,6 +5814,13 @@
                <context context-type="sourcefile">passageRecord.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="passageRecord.compressError">
+            <source>Compression failed.  Saving uncompressed.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">passageRecord.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="passageRecord.defaultFilename">
             <source>MyRecording</source>
             <target/>
@@ -8090,7 +8097,7 @@
             </context-group>
          </trans-unit>
          <trans-unit id="shared.NoSaveWoMedia">
-            <source>No media has been saved to the cloud.</source>
+            <source>No media has been saved to the cloud. Please check your internet connection and try again.</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">Access.tsx</context>

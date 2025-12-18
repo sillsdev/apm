@@ -899,11 +899,11 @@ function WSAudioPlayer(props: IProps) {
     }
   }
 
-  async function onRecordDataAvailable(buffer: AudioBuffer) {
-    if (buffer.length > 0) {
+  async function onRecordDataAvailable(blob: Blob) {
+    if (blob.size > 0) {
       const newPos = await wsInsertAudio(
+        blob,
         undefined,
-        buffer,
         recordStartPosition.current,
         recordOverwritePosition.current
       );

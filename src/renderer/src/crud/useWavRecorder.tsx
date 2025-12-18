@@ -4,12 +4,15 @@ import { useUserMedia } from './useUserMedia';
 import { useSnackBar } from '../hoc/SnackBar';
 import { logError, Severity } from '../utils';
 import { WavRecorder } from './WavRecorder';
+import { AudioMediaRecorder } from './AudioMediaRecorder';
 
 const createCaptureOptions = (deviceId?: string): MediaStreamConstraints => ({
   audio: {
     autoGainControl: false,
     echoCancellation: true,
     noiseSuppression: true,
+    sampleRate: 48000, // Request high sample rate
+    channelCount: 1, // Mono recording
     ...(deviceId ? { deviceId } : {}),
   },
   video: false,
@@ -20,15 +23,38 @@ export interface MimeInfo {
   mimeType: string;
   extension: string;
 }
+
+// Type for recorder that can be either WavRecorder or AudioMediaRecorder
+type Recorder = WavRecorder | AudioMediaRecorder;
+
+// Check if AudioWorklet is available (not available on iOS Safari)
+function isAudioWorkletAvailable(): boolean {
+  try {
+    // Check if AudioWorklet is supported
+    if (typeof AudioWorklet === 'undefined') {
+      return false;
+    }
+    // Try to create an AudioContext to verify
+    const context = new AudioContext();
+    const isSupported = typeof context.audioWorklet !== 'undefined';
+    // Close the context to avoid leaking audio resources
+    void context.close();
+    return isSupported;
+  } catch {
+    return false;
+  }
+}
+
 export function useWavRecorder(
   allowRecord: boolean = true,
   onStart: () => void = noop,
   onStop: (blob: Blob) => void = noop,
   onError: (e: any) => void = noop,
-  onDataAvailable: (buffer: AudioBuffer) => Promise<void>,
+  onDataAvailable: (blob: Blob) => Promise<void>,
   deviceId?: string
 ) {
-  const wavRecorderRef = useRef<WavRecorder | undefined>(undefined);
+  const recorderRef = useRef<Recorder | undefined>(undefined);
+  const useFallbackRef = useRef<boolean | null>(null); // null = not checked yet
   const isRecordingRef = useRef(false);
   const captureOptions = useMemo(
     () => createCaptureOptions(deviceId),
@@ -46,18 +72,20 @@ export function useWavRecorder(
       mediaStreamRef.current?.getTracks().forEach((track) => {
         track.stop();
       });
-      if (wavRecorderRef.current) {
-        wavRecorderRef.current
+      if (recorderRef.current) {
+        const recorder = recorderRef.current;
+        recorder
           .stop()
           .then(() => {
-            wavRecorderRef.current = undefined;
+            recorder.cleanup();
+            recorderRef.current = undefined;
           })
           .catch(() => {
-            wavRecorderRef.current = undefined;
+            recorder.cleanup();
+            recorderRef.current = undefined;
           });
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -94,7 +122,7 @@ export function useWavRecorder(
     }
 
     if (deviceChanged && !isRecordingRef.current) {
-      wavRecorderRef.current = undefined;
+      recorderRef.current = undefined;
       recorderStreamIdRef.current = undefined;
     }
 
@@ -120,24 +148,54 @@ export function useWavRecorder(
     }
     if (mediaStreamRef.current) {
       try {
-        const recorder = new WavRecorder(
-          mediaStreamRef.current,
-          onDataAvailable
-        );
+        // Check AudioWorklet availability (cache the result)
+        if (useFallbackRef.current === null) {
+          useFallbackRef.current = !isAudioWorkletAvailable();
+        }
+        let recorder: Recorder;
+
+        if (useFallbackRef.current) {
+          recorder = new AudioMediaRecorder(
+            mediaStreamRef.current,
+            onDataAvailable
+          );
+        } else {
+          // Use WavRecorder with AudioWorklet (when we need WAV format)
+          recorder = new WavRecorder(mediaStreamRef.current, onDataAvailable);
+        }
+
         await recorder.initializeWorklet();
-        wavRecorderRef.current = recorder;
+        recorderRef.current = recorder;
         recorderStreamIdRef.current = mediaStreamRef.current.id;
         return recorder;
       } catch (error) {
-        handleError(error);
-        return undefined;
+        // If WavRecorder fails, try fallback
+        if (!useFallbackRef.current) {
+          try {
+            useFallbackRef.current = true;
+            const fallbackRecorder = new AudioMediaRecorder(
+              mediaStreamRef.current,
+              onDataAvailable
+            );
+            await fallbackRecorder.initializeWorklet();
+            recorderRef.current = fallbackRecorder;
+            recorderStreamIdRef.current = mediaStreamRef.current.id;
+            return fallbackRecorder;
+          } catch (fallbackError) {
+            handleError(fallbackError);
+            return undefined;
+          }
+        } else {
+          handleError(error);
+          return undefined;
+        }
       }
     }
     return undefined;
   }
 
   async function startRecording(timeSlice?: number) {
-    let recorder = wavRecorderRef.current;
+    let recorder = recorderRef.current;
     if (
       !recorder ||
       recorderStreamIdRef.current !== mediaStreamRef.current?.id
@@ -155,20 +213,20 @@ export function useWavRecorder(
         return false;
       }
     } else {
-      onError({ error: 'No WAV recorder available' });
+      onError({ error: 'No recorder available' });
       return false;
     }
   }
 
   function stopRecording() {
-    if (isRecordingRef.current && wavRecorderRef.current) {
-      wavRecorderRef.current
+    if (isRecordingRef.current && recorderRef.current) {
+      recorderRef.current
         .stop()
-        .then((wavBlob) => {
+        .then((blob: Blob) => {
           isRecordingRef.current = false;
-          onStop(wavBlob);
+          onStop(blob);
         })
-        .catch((error) => {
+        .catch((error: any) => {
           handleError(error);
         });
     } else {

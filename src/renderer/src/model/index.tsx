@@ -35,7 +35,6 @@ export * from '../store/upload/types';
 export * from '../store/paratext/types';
 export * from '../store/importexport/types';
 export * from '../store/auth/types';
-export * from '../store/convertBlob/types';
 export * from './dialogMode';
 export * from './Dialog';
 export * from './optionType';

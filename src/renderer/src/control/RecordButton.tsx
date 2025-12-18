@@ -47,16 +47,17 @@ export const RecordButton = ({
         role="button"
         tabIndex={0}
         onKeyDown={handleKeyDown}
+        style={{ backgroundColor: redColor }}
         sx={(theme) => {
           return {
             px: isSmall ? 1 : undefined,
             py: isSmall ? 1 : undefined,
             minWidth: isSmall ? 48 : 80,
-            height: isSmall ? 48 : 80,
+            height: isSmall ? 35 : 80,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            backgroundColor: redColor,
+            backgroundColor: `${redColor} !important`,
             color: 'white',
             border: 'none',
             borderRadius: isSmall ? theme.shape.borderRadius : '50%',
@@ -69,6 +70,10 @@ export const RecordButton = ({
             '& svg': {
               fontSize: isSmall ? '1.5rem' : '2rem',
               color: 'white',
+              fill: 'white',
+            },
+            '&.MuiBox-root': {
+              backgroundColor: `${redColor} !important`,
             },
           };
         }}
@@ -80,7 +85,7 @@ export const RecordButton = ({
             <PauseIcon />
           )
         ) : (
-          <WhiteCircle />
+          <WhiteCircle style={{ fontSize: isSmall ? '1.2rem' : '1.6rem' }} />
         )}
       </Box>
     </LightTooltip>

@@ -1075,6 +1075,7 @@ const initialState = {
       cancel: 'Cancel',
       compressed: 'Compressed',
       compressing: 'Compressing...{0}%',
+      compressError: 'Compression failed.  Saving uncompressed.',
       defaultFilename: 'MyRecording',
       fileName: 'Name',
       fileType: 'File Type',
@@ -1517,7 +1518,8 @@ const initialState = {
       noiseRemoval: 'Reduce Noise',
       noiseRemovalFailed: 'Noise Removal Failed',
       NoSaveOffline: 'Unable to save while offline.',
-      NoSaveWoMedia: 'No media has been saved to the cloud.',
+      NoSaveWoMedia:
+        'No media has been saved to the cloud. Please check your internet connection and try again.',
       notSupported: 'This feature is not supported yet.',
       observer: 'Observer',
       paratextchapterSpan:
