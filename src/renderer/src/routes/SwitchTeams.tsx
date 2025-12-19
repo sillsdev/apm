@@ -52,7 +52,7 @@ const SettingsButton = ({ label, onOpenSettings }: ISettingsButtonProps) => {
         onOpenSettings();
       }}
       sx={(theme) => ({
-        color: !isMobile ? theme.palette.primary.light : 'inherit',
+        color: isMobile ? 'inherit' : theme.palette.primary.light,
         transition: 'background-color .2s, color .2s',
         '&:hover': {
           color: contrastColor,
