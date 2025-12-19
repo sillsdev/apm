@@ -41,7 +41,7 @@ const SettingsButton = ({ label, onOpenSettings }: ISettingsButtonProps) => {
   const theme = useTheme();
   const bgColor = theme.palette.primary.light;
   const contrastColor = theme.palette.getContrastText(bgColor);
-  const isMobile = useMediaQuery('(max-width:600px)');
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   return (
     <IconButton
