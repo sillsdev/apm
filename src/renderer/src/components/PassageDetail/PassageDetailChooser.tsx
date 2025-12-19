@@ -129,10 +129,10 @@ export const PassageDetailChooser = ({ width, sx }: IProps) => {
     passageNavigate(view);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view]);
-
+  const SCROLL_BUTTONS_WIDTH = 48;
   return passageCount > 1 ? (
     <StyledBox
-      width={Math.max(0, width - 48)} //leave space for scroll buttons
+      width={Math.max(0, width - SCROLL_BUTTONS_WIDTH)} //leave space for scroll buttons
       sx={{
         ...sx,
         alignItems: 'center',

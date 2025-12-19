@@ -76,16 +76,41 @@ const PassageDetailGrids = () => {
   const discussionSizeRef = React.useRef(discussionSize);
   const t = useSelector(toolSelector, shallowEqual) as IToolStrings;
   const [paneWidth, setPaneWidth] = useState(0);
-  const hasVerticalScrollbarRef = React.useRef(false);
 
-  // Detect vertical scrollbar - use ref to avoid re-renders
+  const scrollbarWidthRef = React.useRef(0);
+
+  // Calculate scrollbar width dynamically
+  const getScrollbarWidth = () => {
+    // Create a temporary div to measure scrollbar width
+    const outer = document.createElement('div');
+    outer.style.visibility = 'hidden';
+    outer.style.overflow = 'scroll';
+    // @ts-ignore - msOverflowStyle is a Microsoft-specific property for old IE
+    outer.style.msOverflowStyle = 'scrollbar';
+    document.body.appendChild(outer);
+
+    const inner = document.createElement('div');
+    outer.appendChild(inner);
+
+    const scrollbarWidth = outer.offsetWidth - inner.offsetWidth;
+
+    outer.parentNode?.removeChild(outer);
+    return scrollbarWidth;
+  };
+
+  // Detect vertical scrollbar and calculate its width
   useEffect(() => {
+    // Pre-calculate scrollbar width once (it's constant per browser/OS)
+    const cachedScrollbarWidth = getScrollbarWidth();
+
     const checkScrollbar = () => {
       // Check if document body has vertical scrollbar
       const hasScrollbar =
         document.documentElement.scrollHeight >
         document.documentElement.clientHeight;
-      hasVerticalScrollbarRef.current = hasScrollbar;
+
+      // Use cached scrollbar width only if scrollbar exists
+      scrollbarWidthRef.current = hasScrollbar ? cachedScrollbarWidth : 0;
     };
 
     checkScrollbar();
@@ -168,7 +193,7 @@ const PassageDetailGrids = () => {
     return plans.filter((p) => p.id === plan);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [plan]);
-
+  const MAGIC_NUMBER_THAT_MAKES_IT_FIT = 16;
   return (
     <Box
       sx={{
@@ -313,8 +338,8 @@ const PassageDetailGrids = () => {
                       width={Math.max(
                         0,
                         paneWidth -
-                          16 -
-                          (hasVerticalScrollbarRef.current ? 20 : 0)
+                          MAGIC_NUMBER_THAT_MAKES_IT_FIT -
+                          scrollbarWidthRef.current
                       )}
                       artifactTypeId={artifactId}
                     />

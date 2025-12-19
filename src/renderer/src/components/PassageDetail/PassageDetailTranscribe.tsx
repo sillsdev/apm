@@ -201,7 +201,7 @@ export function PassageDetailTranscribe({ width, artifactTypeId }: IProps) {
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rowData]);
-
+  const MAGIC_NUMBER_THAT_MAKES_IT_FIT = 20;
   return Boolean(mediafileId) && hasBtRecordings ? (
     <TranscriberProvider
       artifactTypeId={artifactTypeId}
@@ -227,7 +227,9 @@ export function PassageDetailTranscribe({ width, artifactTypeId }: IProps) {
             </Box>
             <TranscriberContainer>
               <Transcriber
-                defaultWidth={width - TaskTableWidth - 20}
+                defaultWidth={
+                  width - TaskTableWidth - MAGIC_NUMBER_THAT_MAKES_IT_FIT
+                }
                 stepSettings={stepSettings as string}
                 hasPermission={hasPermission}
                 onReject={handleReject}
@@ -247,7 +249,7 @@ export function PassageDetailTranscribe({ width, artifactTypeId }: IProps) {
             }}
           >
             <Transcriber
-              defaultWidth={Math.max(0, width - 16)}
+              defaultWidth={Math.max(0, width - MAGIC_NUMBER_THAT_MAKES_IT_FIT)}
               hasChecking={hasChecking}
               setComplete={handleComplete}
               hasPermission={hasPermission}
