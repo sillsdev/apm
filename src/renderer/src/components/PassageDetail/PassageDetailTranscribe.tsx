@@ -201,21 +201,35 @@ export function PassageDetailTranscribe({ width, artifactTypeId }: IProps) {
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rowData]);
-
+  const MAGIC_NUMBER_THAT_MAKES_IT_FIT = 20;
   return Boolean(mediafileId) && hasBtRecordings ? (
     <TranscriberProvider
       artifactTypeId={artifactTypeId}
       curRole={curRole as string}
     >
-      <Grid container direction="column">
+      <Grid
+        container
+        direction="column"
+        sx={{ width: '100%', maxWidth: '100%', minWidth: 0 }}
+      >
         {artifactTypeId && (
-          <Box sx={{ display: 'flex', flexDirection: 'row' }}>
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: 'row',
+              width: '100%',
+              maxWidth: '100%',
+              minWidth: 0,
+            }}
+          >
             <Box>
               <TaskList />
             </Box>
             <TranscriberContainer>
               <Transcriber
-                defaultWidth={width - TaskTableWidth}
+                defaultWidth={
+                  width - TaskTableWidth - MAGIC_NUMBER_THAT_MAKES_IT_FIT
+                }
                 stepSettings={stepSettings as string}
                 hasPermission={hasPermission}
                 onReject={handleReject}
@@ -226,15 +240,24 @@ export function PassageDetailTranscribe({ width, artifactTypeId }: IProps) {
           </Box>
         )}
         {artifactTypeId == null && (
-          <Transcriber
-            defaultWidth={width}
-            hasChecking={hasChecking}
-            setComplete={handleComplete}
-            hasPermission={hasPermission}
-            onReject={handleReject}
-            onReopen={handleReopen}
-            onReloadPlayer={handleReloadPlayer}
-          />
+          <Box
+            sx={{
+              width: '100%',
+              maxWidth: width,
+              minWidth: 0,
+              overflow: 'hidden',
+            }}
+          >
+            <Transcriber
+              defaultWidth={Math.max(0, width - MAGIC_NUMBER_THAT_MAKES_IT_FIT)}
+              hasChecking={hasChecking}
+              setComplete={handleComplete}
+              hasPermission={hasPermission}
+              onReject={handleReject}
+              onReopen={handleReopen}
+              onReloadPlayer={handleReloadPlayer}
+            />
+          </Box>
         )}
       </Grid>
     </TranscriberProvider>
