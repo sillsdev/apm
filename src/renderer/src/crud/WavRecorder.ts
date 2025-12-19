@@ -1,25 +1,22 @@
 import { convertToWav } from '../utils/wav';
+import { APMRecorder } from './useWavRecorder';
 
 // Web Audio API-based WAV recorder using AudioWorklet
-export class WavRecorder {
-  private audioContext: AudioContext;
-  private mediaStreamSource: MediaStreamAudioSourceNode;
-  private workletNode: AudioWorkletNode | null = null;
-  private audioData: Float32Array[] = [];
-  private isRecording = false;
-  private workletLoaded = false;
-  private onDataAvailable: (blob: Blob) => void;
-  private dataAvailableTimer: ReturnType<typeof setInterval> | null = null;
-  private timeSlice: number = 1000; // Default 1 second
+export function createWavRecorder(
+  stream: MediaStream,
+  onDataAvailable: (blob: Blob) => void
+): APMRecorder {
+  const audioContext = new AudioContext();
+  const mediaStreamSource = audioContext.createMediaStreamSource(stream);
+  let workletNode: AudioWorkletNode | null = null;
+  let audioData: Float32Array[] = [];
+  let isRecording = false;
+  let workletLoaded = false;
+  let dataAvailableTimer: ReturnType<typeof setInterval> | null = null;
+  let timeSlice: number = 1000; // Default 1 second
 
-  constructor(stream: MediaStream, onDataAvailable: (blob: Blob) => void) {
-    this.audioContext = new AudioContext();
-    this.mediaStreamSource = this.audioContext.createMediaStreamSource(stream);
-    this.onDataAvailable = onDataAvailable;
-  }
-
-  async initializeWorklet(): Promise<void> {
-    if (this.workletLoaded) return;
+  async function initializeWorklet(): Promise<void> {
+    if (workletLoaded) return;
 
     try {
       // Inline the worklet code to work in Electron
@@ -91,85 +88,85 @@ export class WavRecorder {
       const blob = new Blob([workletCode], { type: 'application/javascript' });
       const workletUrl = URL.createObjectURL(blob);
 
-      await this.audioContext.audioWorklet.addModule(workletUrl);
+      await audioContext.audioWorklet.addModule(workletUrl);
 
       // Clean up the blob URL after loading
       URL.revokeObjectURL(workletUrl);
 
       // Create the worklet node
-      this.workletNode = new AudioWorkletNode(
-        this.audioContext,
+      workletNode = new AudioWorkletNode(
+        audioContext,
         'audio-recorder-processor'
       );
 
       // Handle messages from the worklet
-      this.workletNode.port.onmessage = (event) => {
+      workletNode.port.onmessage = (event) => {
         const { type, data } = event.data;
         switch (type) {
           case 'audioData':
-            if (this.isRecording) {
-              this.audioData.push(data);
+            if (isRecording) {
+              audioData.push(data);
             }
             break;
 
           case 'recordingComplete':
             // All audio data has been collected
-            this.audioData = data;
+            audioData = data;
             break;
         }
       };
 
-      this.workletLoaded = true;
+      workletLoaded = true;
     } catch (error) {
       console.error('Failed to initialize audio worklet:', error);
       throw error;
     }
   }
 
-  async start(timeSlice?: number): Promise<void> {
-    if (!this.workletLoaded) {
-      await this.initializeWorklet();
+  async function start(timeSliceParam?: number): Promise<void> {
+    if (!workletLoaded) {
+      await initializeWorklet();
     }
 
     // Ensure audio context is running
-    if (this.audioContext.state === 'suspended') {
+    if (audioContext.state === 'suspended') {
       console.log('resuming audio context...');
-      await this.audioContext.resume();
+      await audioContext.resume();
     }
 
     // Set timeSlice if provided
-    if (timeSlice && timeSlice > 0) {
-      this.timeSlice = timeSlice;
+    if (timeSliceParam && timeSliceParam > 0) {
+      timeSlice = timeSliceParam;
     }
 
-    this.isRecording = true;
-    this.audioData = [];
+    isRecording = true;
+    audioData = [];
 
     // Send start message to worklet
-    this.workletNode?.port.postMessage({ type: 'startRecording' });
+    workletNode?.port.postMessage({ type: 'startRecording' });
 
     // Connect the audio graph
-    this.mediaStreamSource.connect(this.workletNode!);
-    this.workletNode!.connect(this.audioContext.destination);
+    mediaStreamSource.connect(workletNode!);
+    workletNode!.connect(audioContext.destination);
 
     // Start the data available timer
-    this.startDataAvailableTimer();
+    startDataAvailableTimer();
   }
 
-  private startDataAvailableTimer(): void {
-    if (this.dataAvailableTimer) {
-      clearInterval(this.dataAvailableTimer);
+  function startDataAvailableTimer(): void {
+    if (dataAvailableTimer) {
+      clearInterval(dataAvailableTimer);
     }
 
-    this.dataAvailableTimer = setInterval(async () => {
-      if (this.isRecording && this.audioData.length > 0) {
+    dataAvailableTimer = setInterval(async () => {
+      if (isRecording && audioData.length > 0) {
         // Convert AudioBuffer to WAV blob before calling onDataAvailable
-        this.onDataAvailable(await this.convertAudioDataToWav());
+        onDataAvailable(await convertAudioDataToWav());
       }
-    }, this.timeSlice);
+    }, timeSlice);
   }
 
-  private async audioBufferToWavBlob(buffer: AudioBuffer): Promise<Blob> {
+  async function audioBufferToWavBlob(buffer: AudioBuffer): Promise<Blob> {
     const sampleRate = buffer.sampleRate;
     const channels = buffer.numberOfChannels;
 
@@ -189,33 +186,29 @@ export class WavRecorder {
     });
   }
 
-  private stopDataAvailableTimer(): void {
-    if (this.dataAvailableTimer) {
-      clearInterval(this.dataAvailableTimer);
-      this.dataAvailableTimer = null;
+  function stopDataAvailableTimer(): void {
+    if (dataAvailableTimer) {
+      clearInterval(dataAvailableTimer);
+      dataAvailableTimer = null;
     }
   }
 
-  private createAudioBuffer(): AudioBuffer {
-    const sampleRate = this.audioContext.sampleRate;
+  function createAudioBuffer(): AudioBuffer {
+    const sampleRate = audioContext.sampleRate;
     const channels = 1;
 
-    if (this.audioData.length === 0) {
+    if (audioData.length === 0) {
       // Create empty AudioBuffer if no data
-      return this.audioContext.createBuffer(channels, 0, sampleRate);
+      return audioContext.createBuffer(channels, 0, sampleRate);
     }
 
-    const length = this.audioData.reduce((sum, chunk) => sum + chunk.length, 0);
-    const audioBuffer = this.audioContext.createBuffer(
-      channels,
-      length,
-      sampleRate
-    );
+    const length = audioData.reduce((sum, chunk) => sum + chunk.length, 0);
+    const audioBuffer = audioContext.createBuffer(channels, length, sampleRate);
 
     // Combine all audio chunks into the AudioBuffer
     const combinedData = audioBuffer.getChannelData(0);
     let offset = 0;
-    for (const chunk of this.audioData) {
+    for (const chunk of audioData) {
       combinedData.set(chunk, offset);
       offset += chunk.length;
     }
@@ -223,46 +216,53 @@ export class WavRecorder {
     return audioBuffer;
   }
 
-  convertAudioDataToWav = async (): Promise<Blob> => {
+  async function convertAudioDataToWav(): Promise<Blob> {
     // Convert audio data to WAV (for final stop result)
-    const audioBuffer = this.createAudioBuffer();
-    return this.audioBufferToWavBlob(audioBuffer);
-  };
+    const audioBuffer = createAudioBuffer();
+    return audioBufferToWavBlob(audioBuffer);
+  }
 
-  async stop(): Promise<Blob> {
-    this.isRecording = false;
+  async function stop(): Promise<Blob> {
+    isRecording = false;
 
     // Stop the data available timer
-    this.stopDataAvailableTimer();
+    stopDataAvailableTimer();
 
     // Disconnect the worklet
-    if (this.workletNode) {
-      this.workletNode.disconnect();
+    if (workletNode) {
+      workletNode.disconnect();
     }
 
     // Send stop message to worklet
-    this.workletNode?.port.postMessage({ type: 'stopRecording' });
+    workletNode?.port.postMessage({ type: 'stopRecording' });
 
     // Wait a bit for the worklet to process the stop message
     await new Promise((resolve) => setTimeout(resolve, 100));
-    return this.convertAudioDataToWav();
+    return convertAudioDataToWav();
   }
 
   /**
    * Clean up resources and close the AudioContext.
    * Should be called when the WavRecorder is being destroyed.
    */
-  cleanup(): void {
+  function cleanup(): void {
     // Disconnect media stream source
-    if (this.mediaStreamSource) {
-      this.mediaStreamSource.disconnect();
+    if (mediaStreamSource) {
+      mediaStreamSource.disconnect();
     }
 
     // Close audio context
-    if (this.audioContext && this.audioContext.state !== 'closed') {
-      this.audioContext.close().catch((error) => {
+    if (audioContext && audioContext.state !== 'closed') {
+      audioContext.close().catch((error) => {
         console.error('Error closing audio context:', error);
       });
     }
   }
+
+  return {
+    initializeWorklet,
+    start,
+    stop,
+    cleanup,
+  };
 }

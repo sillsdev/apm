@@ -990,6 +990,7 @@ function WSAudioPlayer(props: IProps) {
       setBlobReady && setBlobReady(newblob !== undefined);
       if (setMimeType && newblob?.type) setMimeType(newblob?.type);
       setDuration(wsDuration());
+      setProgress(wsPosition());
     });
   };
   const handleActionConfirmed = () => {

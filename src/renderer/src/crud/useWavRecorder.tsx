@@ -3,8 +3,8 @@ import { useEffect, useMemo, useRef } from 'react';
 import { useUserMedia } from './useUserMedia';
 import { useSnackBar } from '../hoc/SnackBar';
 import { logError, Severity } from '../utils';
-import { WavRecorder } from './WavRecorder';
-import { AudioMediaRecorder } from './AudioMediaRecorder';
+import { createWavRecorder } from './WavRecorder';
+import { createAudioMediaRecorder } from './AudioMediaRecorder';
 
 const createCaptureOptions = (deviceId?: string): MediaStreamConstraints => ({
   audio: {
@@ -25,7 +25,12 @@ export interface MimeInfo {
 }
 
 // Type for recorder that can be either WavRecorder or AudioMediaRecorder
-type Recorder = WavRecorder | AudioMediaRecorder;
+export interface APMRecorder {
+  initializeWorklet(): Promise<void>;
+  start(timeSlice?: number): Promise<void>;
+  stop(): Promise<Blob>;
+  cleanup(): void;
+}
 
 // Check if AudioWorklet is available (not available on iOS Safari)
 function isAudioWorkletAvailable(): boolean {
@@ -53,7 +58,7 @@ export function useWavRecorder(
   onDataAvailable: (blob: Blob) => Promise<void>,
   deviceId?: string
 ) {
-  const recorderRef = useRef<Recorder | undefined>(undefined);
+  const recorderRef = useRef<APMRecorder | undefined>(undefined);
   const useFallbackRef = useRef<boolean | null>(null); // null = not checked yet
   const isRecordingRef = useRef(false);
   const captureOptions = useMemo(
@@ -152,16 +157,16 @@ export function useWavRecorder(
         if (useFallbackRef.current === null) {
           useFallbackRef.current = !isAudioWorkletAvailable();
         }
-        let recorder: Recorder;
+        let recorder: APMRecorder;
 
         if (useFallbackRef.current) {
-          recorder = new AudioMediaRecorder(
+          recorder = createAudioMediaRecorder(
             mediaStreamRef.current,
             onDataAvailable
           );
         } else {
           // Use WavRecorder with AudioWorklet (when we need WAV format)
-          recorder = new WavRecorder(mediaStreamRef.current, onDataAvailable);
+          recorder = createWavRecorder(mediaStreamRef.current, onDataAvailable);
         }
 
         await recorder.initializeWorklet();
@@ -173,7 +178,7 @@ export function useWavRecorder(
         if (!useFallbackRef.current) {
           try {
             useFallbackRef.current = true;
-            const fallbackRecorder = new AudioMediaRecorder(
+            const fallbackRecorder = createAudioMediaRecorder(
               mediaStreamRef.current,
               onDataAvailable
             );

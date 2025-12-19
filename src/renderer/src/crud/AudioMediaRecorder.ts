@@ -1,162 +1,163 @@
 // AudioMediaRecorder - Wrapper around browser MediaRecorder API
 // Used for devices without AudioWorklet support (e.g., iOS Safari)
 // or when recording directly to compressed formats
-export class AudioMediaRecorder {
-  private mediaRecorder: MediaRecorder | null = null;
-  private mediaStream: MediaStream;
-  private audioContext: AudioContext;
-  private onDataAvailable: (blob: Blob) => void;
-  private timeSlice: number = 1000; // Default 1 second
-  private isRecording = false;
-  private recordedChunks: Blob[] = [];
 
-  constructor(stream: MediaStream, onDataAvailable: (blob: Blob) => void) {
-    this.mediaStream = stream;
-    this.audioContext = new AudioContext();
-    this.onDataAvailable = onDataAvailable;
-  }
+import { APMRecorder } from './useWavRecorder';
 
-  async initializeWorklet(): Promise<void> {
-    // No-op for AudioMediaRecorder - it doesn't need initialization
-    // This method exists to match WavRecorder interface
-    return Promise.resolve();
-  }
+export function createAudioMediaRecorder(
+  stream: MediaStream,
+  onDataAvailable: (blob: Blob) => void
+): APMRecorder {
+  let mediaRecorder: MediaRecorder | null = null;
+  const mediaStream = stream;
+  const audioContext = new AudioContext();
+  let timeSlice: number = 1000; // Default 1 second
+  let isRecording = false;
+  let recordedChunks: Blob[] = [];
 
-  async start(timeSlice?: number): Promise<void> {
-    if (this.isRecording) {
-      return;
-    }
+  return {
+    async initializeWorklet(): Promise<void> {
+      // No-op for AudioMediaRecorder - it doesn't need initialization
+      // This method exists to match WavRecorder interface
+      return Promise.resolve();
+    },
 
-    // Ensure audio context is running
-    if (this.audioContext.state === 'suspended') {
-      await this.audioContext.resume();
-    }
-
-    // Set timeSlice if provided
-    if (timeSlice && timeSlice > 0) {
-      this.timeSlice = timeSlice;
-    }
-
-    this.isRecording = true;
-    this.recordedChunks = [];
-
-    try {
-      this.mediaRecorder = new MediaRecorder(this.mediaStream);
-
-      // Collect chunks as they become available (for final output)
-      // Combine all accumulated chunks and pass to onDataAvailable callback - let wavesurfer decode
-      this.mediaRecorder.ondataavailable = (event) => {
-        if (event.data && event.data.size > 0) {
-          this.recordedChunks.push(event.data);
-          // Combine all accumulated chunks into a single blob (complete recording so far)
-          const accumulatedBlob = new Blob(this.recordedChunks);
-          // Pass complete accumulated blob to onDataAvailable - wavesurfer will decode it
-          this.onDataAvailable(accumulatedBlob);
-        }
-      };
-
-      this.mediaRecorder.onerror = (event) => {
-        console.error('Browser MediaRecorder error:', event);
-      };
-
-      // Start recording with timeslice for periodic data availability
-      this.mediaRecorder.start(this.timeSlice);
-    } catch (error) {
-      this.isRecording = false;
-      throw error;
-    }
-  }
-
-  async stop(): Promise<Blob> {
-    if (!this.isRecording || !this.mediaRecorder) {
-      // Return empty blob
-      return new Blob([]);
-    }
-
-    this.isRecording = false;
-
-    return new Promise((resolve, reject) => {
-      if (!this.mediaRecorder) {
-        reject(new Error('AudioMediaRecorder not initialized'));
+    async start(timeSliceParam?: number): Promise<void> {
+      if (isRecording) {
         return;
       }
 
-      // Request any remaining data before stopping
-      if (this.mediaRecorder.state === 'recording') {
-        this.mediaRecorder.requestData();
+      // Ensure audio context is running
+      if (audioContext.state === 'suspended') {
+        await audioContext.resume();
       }
 
-      let stopTimeout: ReturnType<typeof setTimeout> | null = null;
-
-      this.mediaRecorder.onstop = async () => {
-        if (stopTimeout) {
-          clearTimeout(stopTimeout);
-          stopTimeout = null;
-        }
-
-        try {
-          // Wait a bit to ensure all chunks are collected
-          await new Promise((r) => setTimeout(r, 100));
-
-          // Combine all recorded chunks
-          if (this.recordedChunks.length === 0) {
-            console.error(
-              'No chunks recorded - MediaRecorder state was:',
-              this.mediaRecorder?.state
-            );
-            reject(new Error('No audio data recorded'));
-            return;
-          }
-
-          // Combine all recorded chunks
-          const finalBlob = new Blob(this.recordedChunks);
-          // Verify the blob has data
-          if (finalBlob.size === 0) {
-            console.error(
-              'Blob is empty! Chunks:',
-              this.recordedChunks.map((c) => c.size)
-            );
-            reject(new Error('Recorded audio blob is empty'));
-            return;
-          }
-
-          resolve(finalBlob);
-        } catch (error) {
-          reject(error);
-        }
-      };
-
-      this.mediaRecorder.onerror = (event) => {
-        if (stopTimeout) {
-          clearTimeout(stopTimeout);
-        }
-        reject(new Error(`Browser MediaRecorder error: ${event}`));
-      };
-
-      // Stop the recorder
-      if (this.mediaRecorder.state !== 'inactive') {
-        this.mediaRecorder.stop();
-        // Set a timeout in case onstop doesn't fire
-        stopTimeout = setTimeout(() => {
-          reject(new Error('MediaRecorder stop timeout'));
-        }, 5000);
-      } else {
-        // Already stopped, resolve with empty blob
-        resolve(new Blob([]));
+      // Set timeSlice if provided
+      if (timeSliceParam && timeSliceParam > 0) {
+        timeSlice = timeSliceParam;
       }
-    });
-  }
 
-  /**
-   * Clean up resources and close the AudioContext.
-   * Should be called when the AudioMediaRecorder is being destroyed.
-   */
-  cleanup(): void {
-    // Close audio context
-    if (this.audioContext && this.audioContext.state !== 'closed') {
-      this.audioContext.close().catch((error) => {
-        console.error('Error closing audio context:', error);
+      isRecording = true;
+      recordedChunks = [];
+
+      try {
+        mediaRecorder = new MediaRecorder(mediaStream);
+
+        // Collect chunks as they become available (for final output)
+        // Combine all accumulated chunks and pass to onDataAvailable callback - let wavesurfer decode
+        mediaRecorder.ondataavailable = (event) => {
+          if (event.data && event.data.size > 0) {
+            recordedChunks.push(event.data);
+            // Combine all accumulated chunks into a single blob (complete recording so far)
+            const accumulatedBlob = new Blob(recordedChunks);
+            // Pass complete accumulated blob to onDataAvailable - wavesurfer will decode it
+            onDataAvailable(accumulatedBlob);
+          }
+        };
+
+        mediaRecorder.onerror = (event) => {
+          console.error('Browser MediaRecorder error:', event);
+        };
+
+        // Start recording with timeslice for periodic data availability
+        mediaRecorder.start(timeSlice);
+      } catch (error) {
+        isRecording = false;
+        throw error;
+      }
+    },
+
+    async stop(): Promise<Blob> {
+      if (!isRecording || !mediaRecorder) {
+        // Return empty blob
+        return new Blob([]);
+      }
+
+      isRecording = false;
+
+      return new Promise((resolve, reject) => {
+        if (!mediaRecorder) {
+          reject(new Error('AudioMediaRecorder not initialized'));
+          return;
+        }
+
+        // Request any remaining data before stopping
+        if (mediaRecorder.state === 'recording') {
+          mediaRecorder.requestData();
+        }
+
+        let stopTimeout: ReturnType<typeof setTimeout> | null = null;
+
+        mediaRecorder.onstop = async () => {
+          if (stopTimeout) {
+            clearTimeout(stopTimeout);
+            stopTimeout = null;
+          }
+
+          try {
+            // Wait a bit to ensure all chunks are collected
+            await new Promise((r) => setTimeout(r, 100));
+
+            // Combine all recorded chunks
+            if (recordedChunks.length === 0) {
+              console.error(
+                'No chunks recorded - MediaRecorder state was:',
+                mediaRecorder?.state
+              );
+              reject(new Error('No audio data recorded'));
+              return;
+            }
+
+            // Combine all recorded chunks
+            const finalBlob = new Blob(recordedChunks);
+            // Verify the blob has data
+            if (finalBlob.size === 0) {
+              console.error(
+                'Blob is empty! Chunks:',
+                recordedChunks.map((c) => c.size)
+              );
+              reject(new Error('Recorded audio blob is empty'));
+              return;
+            }
+
+            resolve(finalBlob);
+          } catch (error) {
+            reject(error);
+          }
+        };
+
+        mediaRecorder.onerror = (event) => {
+          if (stopTimeout) {
+            clearTimeout(stopTimeout);
+          }
+          reject(new Error(`Browser MediaRecorder error: ${event}`));
+        };
+
+        // Stop the recorder
+        if (mediaRecorder.state !== 'inactive') {
+          mediaRecorder.stop();
+          // Set a timeout in case onstop doesn't fire
+          stopTimeout = setTimeout(() => {
+            reject(new Error('MediaRecorder stop timeout'));
+          }, 5000);
+        } else {
+          // Already stopped, resolve with empty blob
+          resolve(new Blob([]));
+        }
       });
-    }
-  }
+    },
+
+    /**
+     * Clean up resources and close the AudioContext.
+     * Should be called when the AudioMediaRecorder is being destroyed.
+     */
+    cleanup(): void {
+      // Close audio context
+      if (audioContext && audioContext.state !== 'closed') {
+        audioContext.close().catch((error) => {
+          console.error('Error closing audio context:', error);
+        });
+      }
+    },
+  };
 }
