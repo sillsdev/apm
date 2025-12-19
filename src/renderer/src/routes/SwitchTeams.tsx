@@ -9,6 +9,7 @@ import {
   FormControlLabel,
   TextField,
   IconButton,
+  useMediaQuery,
 } from '@mui/material';
 import { DialogMode } from '../model';
 import TeamDialog, { ITeamDialog } from '../components/Team/TeamDialog';
@@ -40,6 +41,7 @@ const SettingsButton = ({ label, onOpenSettings }: ISettingsButtonProps) => {
   const theme = useTheme();
   const bgColor = theme.palette.primary.light;
   const contrastColor = theme.palette.getContrastText(bgColor);
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   return (
     <IconButton
@@ -50,7 +52,7 @@ const SettingsButton = ({ label, onOpenSettings }: ISettingsButtonProps) => {
         onOpenSettings();
       }}
       sx={(theme) => ({
-        color: theme.palette.primary.light,
+        color: isMobile ? 'inherit' : theme.palette.primary.light,
         transition: 'background-color .2s, color .2s',
         '&:hover': {
           color: contrastColor,
