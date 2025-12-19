@@ -139,7 +139,7 @@ const PassageDetailGrids = () => {
     setWidth(newWidth);
 
     let newDiscWidth = discussionSizeRef.current.width;
-    if (newDiscWidth > newWidth + 450) newDiscWidth = 450;
+    if (newDiscWidth > 450) newDiscWidth = 450;
     const newDiscHeight = window.innerHeight - 170;
     if (
       discussionSizeRef.current.height !== newDiscHeight ||
