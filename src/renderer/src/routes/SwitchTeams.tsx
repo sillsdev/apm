@@ -81,6 +81,14 @@ const TeamCard = ({ label, teamId, name, onOpenSettings }: ITeamCardProps) => {
   const bgColor = theme.palette.primary.light;
   const contrastColor = theme.palette.getContrastText(bgColor);
   const navigate = useMyNavigate();
+  const ctx = React.useContext(TeamContext);
+  const { isAdmin, teams, personalTeam } = ctx.state;
+  const teamRec = teams.find((t) => t.id === teamId);
+  // For personal team, always show settings button (user owns it)
+  // For other teams, show settings button only if user is admin
+  const isPersonalTeam = teamId === personalTeam;
+  const showSettings = isPersonalTeam || (teamRec && isAdmin(teamRec));
+
   return (
     <Card
       sx={{ bgcolor: bgColor, color: contrastColor, p: 0 }}
@@ -112,7 +120,9 @@ const TeamCard = ({ label, teamId, name, onOpenSettings }: ITeamCardProps) => {
         >
           {name}
         </Typography>
-        <SettingsButton label={label} onOpenSettings={onOpenSettings} />
+        {showSettings && (
+          <SettingsButton label={label} onOpenSettings={onOpenSettings} />
+        )}
       </Box>
     </Card>
   );
