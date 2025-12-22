@@ -427,9 +427,13 @@ describe('OrgHead', () => {
 
     mountOrgHead(createInitialState(), ['/team'], orgId, orgData, true);
 
-    // Find and click the first button (settings button)
+    // Find and click the first button (settings button) to open the menu
     // The settings button is the first IconButton rendered (only visible for admin)
     cy.get('button').first().click();
+
+    // Wait for the menu to be visible, then click "Team Settings" menu item
+    cy.get('[role="menu"]').should('be.visible');
+    cy.contains('Team Settings').click();
 
     // TeamDialog should be open (check for a dialog or form element)
     cy.get('[role="dialog"]').should('be.visible');
@@ -476,6 +480,11 @@ describe('OrgHead', () => {
     // Open the dialog (settings button is first for admin)
     cy.get('button').first().click();
 
+    // Wait for the menu to be visible, then click "Team Settings" menu item
+    cy.get('[role="menu"]').should('be.visible');
+    cy.contains('Team Settings').click();
+
+    // Verify dialog is open
     cy.get('[role="dialog"]').should('be.visible');
 
     // Close the dialog by clicking the cancel button (identified by id)
