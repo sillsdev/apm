@@ -133,3 +133,141 @@ jobs:
         if: always()
         run: |
           pkill -f node || true
+
+  cypress-tests:
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Volta
+        uses: volta-cli/action@v4
+
+      - name: Install Node.js 22
+        run: |
+          volta install node@22
+          node --version
+
+      - name: Clean up memory (kill any existing node processes)
+        run: |
+          pkill -f node || true
+
+      # - name: Install root dependencies
+      #   run: npm ci
+
+      - name: Install renderer dependencies
+        working-directory: src/renderer
+        run: npm ci
+
+      - name: Make Environment (.env.local)
+        working-directory: src/renderer
+        run: |
+          echo "VITE_DOMAIN=${{ env.DOMAIN }}" > .env.local
+          echo "VITE_CLIENTID=${{ env.CLIENT_ID }}" >> .env.local
+          echo "VITE_ENDPOINT=${{ env.APP }}" >> .env.local
+          echo "VITE_CALLBACK=${{ env.CALLBACK }}" >> .env.local
+          echo "VITE_HOST=${{ env.HOST }}" >> .env.local
+          echo "VITE_HELP=${{ env.HELP }}" >> .env.local
+          echo "VITE_COMMUNITY=${{ env.COMMUNITY }}" >> .env.local
+          echo "VITE_OPENNOTES=${{ env.OPEN_NOTES }}" >> .env.local
+          echo "VITE_RESOURCES=${{ env.RESOURCES }}" >> .env.local
+          echo "VITE_OPENCONTENT=${{ env.OPEN_CONTENT }}" >> .env.local
+          echo "VITE_COURSE=${{ env.COURSE }}" >> .env.local
+          echo "VITE_VIDEO_TRAINING=${{ env.VIDEOS }}" >> .env.local
+          echo "VITE_WALK_THRU=${{ env.WALK_THRU }}" >> .env.local
+          echo "VITE_AKUO=${{ env.AKUO }}" >> .env.local
+          echo "VITE_FLAT=${{ env.FLAT }}" >> .env.local
+          echo "VITE_HIERARCHICAL=${{ env.HIERARCHICAL }}" >> .env.local
+          echo "VITE_GEN_FLAT=${{ env.GEN_FLAT }}" >> .env.local
+          echo "VITE_GEN_HIERARCHICAL=${{ env.GEN_HIERARCHICAL }}" >> .env.local
+          echo "VITE_GOOGLE_SAMPLES=${{ env.GOOGLE_SAMPLES }}" >> .env.local
+          echo "VITE_SNAGID=${{ env.SNAG_ID }}" >> .env.local
+          echo "VITE_SIZELIMIT=${{ env.SIZELIMIT }}" >> .env.local
+          echo "VITE_SITE_TITLE=${{ env.NAME }}" >> .env.local
+
+      - name: Create auth0-variables.json
+        working-directory: src/renderer
+        run: |
+          echo '{"apiIdentifier":"${{ env.API_ID }}","auth0Domain":"${{ env.DOMAIN }}","webClientId":"${{ env.CLIENT_ID }}"}' > src/auth/auth0-variables.json
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Install docker-compose
+        run: |
+          sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+          sudo chmod +x /usr/local/bin/docker-compose
+          docker-compose --version
+
+      - name: Clean up disk space before tests
+        run: |
+          # Clean up system packages
+          sudo apt-get clean || true
+          sudo rm -rf /var/lib/apt/lists/* || true
+
+          # Clean up Docker aggressively
+          docker system prune -af --volumes || true
+          docker builder prune -af || true
+
+          # Remove cache directories to free up space
+          rm -rf node_modules/.cache || true
+          rm -rf src/renderer/node_modules/.cache || true
+
+      - name: Check disk space
+        run: |
+          df -h
+          docker system df
+
+      - name: Build and run Cypress tests in Docker
+        working-directory: src/renderer
+        env:
+          DOCKER_BUILDKIT: 1
+          COMPOSE_DOCKER_CLI_BUILD: 1
+        run: npm run cy:docker:build
+
+      - name: Clean up Docker containers
+        if: always()
+        working-directory: src/renderer
+        run: npm run cy:docker:down
+
+      - name: Clean up Docker system after tests
+        if: always()
+        run: |
+          docker system prune -af --volumes || true
+          docker builder prune -af || true
+
+      - name: Upload Cypress screenshots on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cypress-screenshots-${{ github.run_number }}
+          path: src/renderer/cypress/screenshots
+          retention-days: 7
+          if-no-files-found: ignore
+
+      - name: Upload Cypress videos on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cypress-videos-${{ github.run_number }}
+          path: src/renderer/cypress/videos
+          retention-days: 7
+          if-no-files-found: ignore
+
+      - name: Upload Cypress test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cypress-results-${{ github.run_number }}
+          path: |
+            src/renderer/cypress/reports
+            src/renderer/cypress/results
+          retention-days: 30
+          if-no-files-found: ignore
+
+      - name: Clean up processes
+        if: always()
+        run: |
+          pkill -f node || true
