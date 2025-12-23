@@ -15,7 +15,7 @@ import UsersIcon from '@mui/icons-material/People';
 import { API_CONFIG } from '../../../api-variable';
 import { OrganizationD } from '@model/organization';
 import TeamDialog, { ITeamDialog } from '../Team/TeamDialog';
-import { DialogMode } from '../../model';
+import { DialogMode, ProjectD } from '../../model';
 import { useCommitTeamSettings } from '../../crud/useCommitTeamSettings';
 import { RecordIdentity } from '@orbit/records';
 import Confirm from '../AlertDialog';
@@ -33,6 +33,7 @@ import { ProjectSort } from '../Team/ProjectDialog/ProjectSort';
 export const OrgHead = () => {
   const [user] = useGlobal('user');
   const organizations = useOrbitData<OrganizationD[]>('organization');
+  const projects = useOrbitData<ProjectD[]>('project');
   const [editOpen, setEditOpen] = useState(false);
   const [deleteItem, setDeleteItem] = useState<RecordIdentity>();
   const [openMember, setOpenMember] = useState(false);
@@ -51,6 +52,7 @@ export const OrgHead = () => {
   const ctx = useContext(TeamContext);
   const { teamDelete, personalTeam, teamProjects, cardStrings } =
     ctx?.state ?? {};
+  const [project] = useGlobal('project');
   const [offlineOnly] = useGlobal('offlineOnly');
   const [isOffline] = useGlobal('offline');
 
@@ -59,6 +61,11 @@ export const OrgHead = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [user]
   );
+
+  const projectRec = useMemo(() => {
+    if (!project) return undefined;
+    return projects.find((p) => p.id === project);
+  }, [project, projects]);
 
   const isPersonal = useMemo(() => {
     return personalTeam === orgId;
@@ -160,7 +167,9 @@ export const OrgHead = () => {
       >
         {isSwitchTeamsScreen
           ? API_CONFIG.productName
-          : cleanOrgName(orgRec) || API_CONFIG.productName}
+          : isTeamScreen
+            ? cleanOrgName(orgRec) || API_CONFIG.productName
+            : projectRec?.attributes.name || API_CONFIG.productName}
       </Typography>
       {isTeamScreen && (
         <>

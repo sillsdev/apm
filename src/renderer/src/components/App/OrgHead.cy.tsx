@@ -15,6 +15,7 @@ import { UnsavedProvider } from '../../context/UnsavedContext';
 import { TeamContext } from '../../context/TeamContext';
 import { TokenContext } from '../../context/TokenProvider';
 import { OrganizationD } from '@model/organization';
+import { ProjectD } from '../../model';
 
 // Mock memory with query function that can return organization data
 // The findRecord function uses: memory.cache.query((q) => q.findRecord({ type, id }))
@@ -22,10 +23,13 @@ import { OrganizationD } from '@model/organization';
 const createMockMemory = (
   orgData?: OrganizationD,
   isAdmin: boolean = false,
-  userId: string = 'test-user-id'
+  userId: string = 'test-user-id',
+  projectData?: ProjectD[]
 ): Memory => {
   // Store organizations in an array for findRecords queries
   const organizations = orgData ? [orgData] : [];
+  // Store projects in an array for findRecords queries
+  const projects = projectData || [];
 
   // Create role records
   const adminRoleId = 'admin-role-id';
@@ -79,6 +83,11 @@ const createMockMemory = (
       if (type === 'organization' && id === orgData?.id && orgData) {
         return orgData;
       }
+      // Return project data if it matches
+      if (type === 'project') {
+        const project = projects.find((p) => p.id === id);
+        if (project) return project;
+      }
       // Return role records
       if (type === 'role') {
         const role = roles.find((r) => r.id === id);
@@ -92,6 +101,11 @@ const createMockMemory = (
       // This is used by useOrbitData('organization')
       if (type === 'organization') {
         return organizations;
+      }
+      // Return projects array when querying for 'project' type
+      // This is used by useOrbitData('project')
+      if (type === 'project') {
+        return projects;
       }
       // Return roles array when querying for 'role' type
       if (type === 'role') {
@@ -197,43 +211,82 @@ describe('OrgHead', () => {
       relationships: {},
     }) as OrganizationD;
 
-  const createInitialState = (overrides = {}, orgData?: OrganizationD) => ({
-    coordinator: mockCoordinator,
-    errorReporter: bugsnagClient,
-    fingerprint: 'test-fingerprint',
-    memory: createMockMemory(orgData),
-    lang: 'en',
-    latestVersion: '',
-    loadComplete: false,
-    offlineOnly: false,
-    organization: '',
-    releaseDate: '',
-    user: 'test-user-id',
-    alertOpen: false,
-    autoOpenAddMedia: false,
-    changed: false,
-    connected: true,
-    dataChangeCount: 0,
-    developer: false,
-    enableOffsite: false,
-    home: false,
-    importexportBusy: false,
-    orbitRetries: 0,
-    orgRole: undefined,
-    plan: '',
-    playingMediaId: '',
-    progress: 0,
-    project: '',
-    projectsLoaded: [],
-    projType: '',
-    remoteBusy: false,
-    saveResult: undefined,
-    snackAlert: undefined,
-    snackMessage: (<></>) as React.JSX.Element,
-    offline: false,
-    mobileView: false,
-    ...overrides,
-  });
+  const createMockProject = (id: string, name: string): ProjectD =>
+    ({
+      id,
+      type: 'project',
+      attributes: {
+        name,
+        slug: name.toLowerCase().replace(/\s+/g, '-'),
+        description: null,
+        uilanguagebcp47: null,
+        language: 'und',
+        languageName: null,
+        defaultFont: null,
+        defaultFontSize: null,
+        rtl: false,
+        spellCheck: false,
+        allowClaim: false,
+        isPublic: false,
+        dateCreated: new Date().toISOString(),
+        dateUpdated: new Date().toISOString(),
+        dateArchived: '',
+        lastModifiedBy: 0,
+        defaultParams: '{}',
+      },
+      relationships: {},
+    }) as ProjectD;
+
+  const createInitialState = (
+    overrides = {},
+    orgData?: OrganizationD,
+    projectData?: ProjectD[]
+  ) => {
+    // Create memory with orgData and projectData if provided
+    const memory = createMockMemory(
+      orgData,
+      false,
+      'test-user-id',
+      projectData
+    );
+    return {
+      coordinator: mockCoordinator,
+      errorReporter: bugsnagClient,
+      fingerprint: 'test-fingerprint',
+      memory,
+      lang: 'en',
+      latestVersion: '',
+      loadComplete: false,
+      offlineOnly: false,
+      organization: '',
+      releaseDate: '',
+      user: 'test-user-id',
+      alertOpen: false,
+      autoOpenAddMedia: false,
+      changed: false,
+      connected: true,
+      dataChangeCount: 0,
+      developer: false,
+      enableOffsite: false,
+      home: false,
+      importexportBusy: false,
+      orbitRetries: 0,
+      orgRole: undefined,
+      plan: '',
+      playingMediaId: '',
+      progress: 0,
+      project: '',
+      projectsLoaded: [],
+      projType: '',
+      remoteBusy: false,
+      saveResult: undefined,
+      snackAlert: undefined,
+      snackMessage: (<></>) as React.JSX.Element,
+      offline: false,
+      mobileView: false,
+      ...overrides,
+    };
+  };
 
   // Helper function to mount OrgHead with all required providers
   const mountOrgHead = (
@@ -242,7 +295,8 @@ describe('OrgHead', () => {
     orgId?: string,
     orgData?: OrganizationD,
     isAdmin: boolean = false,
-    personalTeam?: string
+    personalTeam?: string,
+    projectData?: ProjectD[]
   ) => {
     // Set organization ID in localStorage if provided
     if (orgId) {
@@ -251,10 +305,13 @@ describe('OrgHead', () => {
       });
     }
 
-    // Create memory with org data and admin status if provided
-    const memory = orgData
-      ? createMockMemory(orgData, isAdmin, initialState.user)
-      : createMockMemory(undefined, false, initialState.user);
+    // Create memory with org data, admin status, and project data if provided
+    // If orgData or projectData is provided to mountOrgHead, create new memory with those
+    // Otherwise use memory from initialState
+    const memoryToUse =
+      orgData !== undefined || projectData !== undefined
+        ? createMockMemory(orgData, isAdmin, initialState.user, projectData)
+        : initialState.memory;
 
     // Create stubs for TeamContext methods
     const mockTeamUpdate = cy.stub().as('teamUpdate');
@@ -335,14 +392,14 @@ describe('OrgHead', () => {
     // Create state with memory
     const stateWithMemory = {
       ...initialState,
-      memory,
+      memory: memoryToUse,
     };
 
     cy.mount(
       <MemoryRouter initialEntries={initialEntries}>
         <Provider store={mockStore}>
           <GlobalProvider init={stateWithMemory}>
-            <DataProvider dataStore={memory}>
+            <DataProvider dataStore={memoryToUse}>
               <UnsavedProvider>
                 <TokenContext.Provider value={mockTokenContextValue as any}>
                   <TeamContext.Provider value={mockTeamContextValue as any}>
@@ -369,15 +426,24 @@ describe('OrgHead', () => {
 
   it('should render product name fallback when organization does not exist', () => {
     mountOrgHead(createInitialState(), ['/team']);
-    // The component should render - it will show product name from API_CONFIG
-    // Note: The actual product name depends on API_CONFIG, which should be available
-    cy.get('h6, [variant="h6"]').should('be.visible');
+    // When on team screen and orgRec is undefined, cleanOrgName returns empty string
+    // So the Typography will render but may be empty. Check that the element exists.
+    cy.get('h6, [variant="h6"]').should('exist');
+    // The text will be empty when orgRec doesn't exist on team screen
+    cy.get('h6, [variant="h6"]')
+      .contains('Audio Project Manager')
+      .should('be.visible');
   });
 
   it('should render product name fallback when orgId is not set', () => {
     mountOrgHead(createInitialState(), ['/team'], undefined);
-    // The component should render - it will show product name from API_CONFIG
-    cy.get('h6, [variant="h6"]').should('be.visible');
+    // When on team screen and orgId is not set, orgRec will be undefined
+    // So cleanOrgName returns empty string. Check that the element exists.
+    cy.get('h6, [variant="h6"]').should('exist');
+    // The text will be empty when orgId is not set on team screen
+    cy.get('h6, [variant="h6"]')
+      .contains('Audio Project Manager')
+      .should('be.visible');
   });
 
   it('should show settings and members buttons when on team screen and user is admin', () => {
@@ -412,11 +478,27 @@ describe('OrgHead', () => {
     const orgId = 'test-org-id';
     const orgName = 'Test Organization';
     const orgData = createMockOrganization(orgId, orgName);
+    const projectId = 'test-project-id';
+    const projectName = 'Test Project';
+    const projectData = createMockProject(projectId, projectName);
 
-    mountOrgHead(createInitialState(), ['/project'], orgId, orgData);
+    // When not on team/switch-teams screen, it shows project name if project is set,
+    // otherwise product name. In this test we set the project, so it should show the project name.
+    mountOrgHead(
+      createInitialState({ project: projectId }, orgData, [projectData]),
+      ['/project'],
+      orgId,
+      orgData,
+      false,
+      undefined,
+      [projectData]
+    );
 
-    // Should only render the Typography, no buttons
-    cy.contains(orgName).should('be.visible');
+    // Should display project name (not organization name) when not on team screen
+    cy.contains(projectName).should('be.visible');
+    // Should NOT show organization name
+    cy.contains(orgName).should('not.exist');
+    // Should not have buttons
     cy.get('button').should('not.exist');
   });
 
@@ -640,5 +722,119 @@ describe('OrgHead', () => {
     cy.contains(orgName).should('be.visible');
     cy.get('button').should('have.length', 1);
     cy.get('button svg').should('have.length', 1);
+  });
+
+  it('should display project name when not on team or switch-teams screen and project is set', () => {
+    const projectId = 'test-project-id';
+    const projectName = 'Test Project';
+    const projectData = createMockProject(projectId, projectName);
+
+    // Mount on a route that is not /team or /switch-teams (e.g., /plan)
+    mountOrgHead(
+      createInitialState({ project: projectId }, undefined, [projectData]),
+      ['/plan/123/0'],
+      undefined,
+      undefined,
+      false,
+      undefined,
+      [projectData]
+    );
+
+    // Should display the project name
+    cy.contains(projectName).should('be.visible');
+  });
+
+  it('should display project name from projects table using global project id', () => {
+    const projectId1 = 'test-project-id-1';
+    const projectName1 = 'First Project';
+    const projectId2 = 'test-project-id-2';
+    const projectName2 = 'Second Project';
+    const projectData = [
+      createMockProject(projectId1, projectName1),
+      createMockProject(projectId2, projectName2),
+    ];
+
+    // Set global project to the second project
+    mountOrgHead(
+      createInitialState({ project: projectId2 }, undefined, projectData),
+      ['/plan/456/0'],
+      undefined,
+      undefined,
+      false,
+      undefined,
+      projectData
+    );
+
+    // Should display the second project name (matching the global project id)
+    cy.contains(projectName2).should('be.visible');
+    // Should NOT display the first project name
+    cy.contains(projectName1).should('not.exist');
+  });
+
+  it('should display product name fallback when project is not found in projects table', () => {
+    const projectId = 'non-existent-project-id';
+    const projectName = 'Existing Project';
+    const projectData = [createMockProject('other-project-id', projectName)];
+
+    // Set global project to an id that doesn't exist in the projects array
+    mountOrgHead(
+      createInitialState({ project: projectId }, undefined, projectData),
+      ['/plan/789/0'],
+      undefined,
+      undefined,
+      false,
+      undefined,
+      projectData
+    );
+
+    // Should display product name fallback since project is not found
+    cy.contains('Audio Project Manager').should('be.visible');
+    // Should NOT display the existing project name
+    cy.contains(projectName).should('not.exist');
+  });
+
+  it('should display product name fallback when project global is not set', () => {
+    const projectName = 'Some Project';
+    const projectData = [createMockProject('some-project-id', projectName)];
+
+    // Don't set the project global
+    mountOrgHead(
+      createInitialState({ project: '' }, undefined, projectData),
+      ['/plan/999/0'],
+      undefined,
+      undefined,
+      false,
+      undefined,
+      projectData
+    );
+
+    // Should display product name fallback since project is not set
+    cy.contains('Audio Project Manager').should('be.visible');
+    // Should NOT display the project name
+    cy.contains(projectName).should('not.exist');
+  });
+
+  it('should display project name on routes other than team and switch-teams', () => {
+    const projectId = 'test-project-id';
+    const projectName = 'My Project';
+    const projectData = createMockProject(projectId, projectName);
+
+    // Test various routes that are not /team or /switch-teams
+    const routes = ['/plan/123/0', '/projects', '/some-other-route'];
+
+    routes.forEach((route) => {
+      mountOrgHead(
+        createInitialState({ project: projectId }, undefined, [projectData]),
+        [route],
+        undefined,
+        undefined,
+        false,
+        undefined,
+        [projectData]
+      );
+
+      // Should display the project name
+      cy.contains(projectName).should('be.visible');
+    });
   });
 });
