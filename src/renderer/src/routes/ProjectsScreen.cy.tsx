@@ -262,15 +262,89 @@ describe('ProjectsScreen', () => {
     );
   };
 
+  // Helper function to create a standard test team
+  const createTestTeam = (teamId = 'test-team-id', teamName = 'Test Team') => ({
+    id: teamId,
+    type: 'organization',
+    attributes: { name: teamName },
+  });
+
+  // Helper function to set up localStorage with teamId
+  const setupTeamInLocalStorage = (teamId: string, planId?: string) => {
+    cy.window().then((win) => {
+      win.localStorage.setItem(localUserKey(LocalKey.team), teamId);
+      if (planId) {
+        win.localStorage.setItem(LocalKey.plan, planId);
+      }
+    });
+  };
+
+  // Helper function to mount ProjectsScreen with standard team setup
+  const mountWithTeam = (
+    teamId = 'test-team-id',
+    options: {
+      isAdmin?: (team: any) => boolean;
+      personalTeam?: string;
+      initialState?: ReturnType<typeof createInitialState>;
+      initialEntries?: string[];
+    } = {}
+  ) => {
+    const {
+      isAdmin = () => false,
+      personalTeam = 'personal-team-id',
+      initialState = createInitialState(),
+      initialEntries = ['/projects'],
+    } = options;
+
+    const mockTeam = createTestTeam(teamId);
+    setupTeamInLocalStorage(teamId);
+
+    mountProjectsScreen(initialState, initialEntries, {
+      isAdmin,
+      personalTeam,
+      teams: [mockTeam],
+    });
+  };
+
+  // Helper function to mount ProjectsScreen without teamId (for testing missing teamId scenario)
+  const mountWithoutTeam = (
+    options: {
+      planId?: string;
+      personalTeam?: string;
+      initialState?: ReturnType<typeof createInitialState>;
+      initialEntries?: string[];
+    } = {}
+  ) => {
+    const {
+      planId,
+      personalTeam = 'personal-team-id',
+      initialState = createInitialState(),
+      initialEntries = ['/projects'],
+    } = options;
+
+    cy.window().then((win) => {
+      win.localStorage.removeItem(localUserKey(LocalKey.team));
+      if (planId) {
+        win.localStorage.setItem(LocalKey.plan, planId);
+      }
+    });
+
+    mountProjectsScreen(initialState, initialEntries, {
+      isAdmin: () => false,
+      personalTeam,
+      teams: [],
+    });
+  };
+
   it('should render ProjectsScreen', () => {
-    mountProjectsScreen(createInitialState());
+    mountWithTeam();
 
     cy.get('#ProjectsScreen').should('exist');
     cy.get('header').should('exist'); // AppHead should render
   });
 
   it('should display "No projects yet." when there are no projects', () => {
-    mountProjectsScreen(createInitialState(), ['/projects']);
+    mountWithTeam();
 
     // TeamProvider will query memory for projects, which will be empty
     // So we should see the "No projects yet." message
@@ -279,20 +353,8 @@ describe('ProjectsScreen', () => {
 
   it('should show "Add New Project..." button when isAdmin returns true', () => {
     const teamId = 'test-team-id';
-    const mockTeam = {
-      id: teamId,
-      type: 'organization',
-      attributes: { name: 'Test Team' },
-    };
-
-    cy.window().then((win) => {
-      win.localStorage.setItem(localUserKey(LocalKey.team), teamId);
-    });
-
-    mountProjectsScreen(createInitialState(), ['/projects'], {
+    mountWithTeam(teamId, {
       isAdmin: (team: any) => team?.id === teamId,
-      personalTeam: 'personal-team-id',
-      teams: [mockTeam],
     });
 
     cy.get('#ProjectActAdd').should('be.visible');
@@ -301,20 +363,8 @@ describe('ProjectsScreen', () => {
 
   it('should open ProjectDialog when "Add New Project..." button is clicked', () => {
     const teamId = 'test-team-id';
-    const mockTeam = {
-      id: teamId,
-      type: 'organization',
-      attributes: { name: 'Test Team' },
-    };
-
-    cy.window().then((win) => {
-      win.localStorage.setItem(localUserKey(LocalKey.team), teamId);
-    });
-
-    mountProjectsScreen(createInitialState(), ['/projects'], {
+    mountWithTeam(teamId, {
       isAdmin: (team: any) => team?.id === teamId,
-      personalTeam: 'personal-team-id',
-      teams: [mockTeam],
     });
 
     cy.get('#ProjectActAdd').click();
@@ -324,35 +374,20 @@ describe('ProjectsScreen', () => {
   });
 
   it('should not show "Add New Project..." button when isAdmin returns false', () => {
-    const teamId = 'test-team-id';
-    const mockTeam = {
-      id: teamId,
-      type: 'organization',
-      attributes: { name: 'Test Team' },
-    };
-
-    cy.window().then((win) => {
-      win.localStorage.setItem(localUserKey(LocalKey.team), teamId);
-    });
-
-    mountProjectsScreen(createInitialState(), ['/projects'], {
-      isAdmin: () => false, // Not admin
-      personalTeam: 'personal-team-id',
-      teams: [mockTeam],
-    });
+    mountWithTeam();
 
     cy.get('#ProjectActAdd').should('not.exist');
   });
 
   it('should show "Switch Teams" button', () => {
-    mountProjectsScreen(createInitialState());
+    mountWithTeam();
 
     cy.get('#ProjectActSwitch').should('be.visible');
     cy.contains('Switch Teams').should('be.visible');
   });
 
   it('should navigate to switch-teams when "Switch Teams" button is clicked', () => {
-    mountProjectsScreen(createInitialState(), ['/projects']);
+    mountWithTeam();
 
     cy.get('#ProjectActSwitch').click();
 
@@ -365,16 +400,14 @@ describe('ProjectsScreen', () => {
   });
 
   it('should not show "Edit Workflow" button when not admin', () => {
-    mountProjectsScreen(createInitialState(), ['/projects']);
+    mountWithTeam();
 
     // Edit Workflow button should not exist for non-admin users
     cy.get('#ProjectActEditWorkflow').should('not.exist');
   });
 
   it('should not show "Edit Workflow" button when viewing personal projects', () => {
-    cy.window().then((win) => {
-      win.localStorage.setItem(localUserKey(LocalKey.team), 'personal-team-id');
-    });
+    setupTeamInLocalStorage('personal-team-id');
 
     mountProjectsScreen(createInitialState(), ['/projects']);
 
@@ -385,7 +418,7 @@ describe('ProjectsScreen', () => {
   it('should not show "Edit Workflow" button on mobile devices', () => {
     cy.viewport(400, 800); // Mobile viewport
 
-    mountProjectsScreen(createInitialState(), ['/projects']);
+    mountWithTeam();
 
     // Edit Workflow button should not be visible on mobile
     cy.get('#ProjectActEditWorkflow').should('not.exist');
@@ -394,18 +427,77 @@ describe('ProjectsScreen', () => {
   it('should apply mobile styling when on mobile device', () => {
     cy.viewport(400, 800); // Mobile viewport
 
-    mountProjectsScreen(createInitialState());
+    mountWithTeam();
 
     cy.get('#ProjectsScreen').should('exist');
     // Mobile styling is applied via isMobile prop
   });
 
   it('should set home to true on mount', () => {
-    mountProjectsScreen(createInitialState({ home: false }));
+    mountWithTeam('test-team-id', {
+      initialState: createInitialState({ home: false }),
+    });
 
     // The component sets home to true in useEffect
     // We can verify this by checking that navigation doesn't happen immediately
     cy.wait(100);
     cy.get('#ProjectsScreen').should('exist');
+  });
+
+  it('should navigate to /switch-teams when teamId is undefined', () => {
+    mountWithoutTeam({ planId: 'test-plan-id' });
+
+    // Wait for the navigation effect to occur
+    // The component calls handleSwitchTeams() in useEffect when teamId is undefined,
+    // which removes the plan from localStorage and navigates to /switch-teams
+    cy.wait(200).then(() => {
+      // Verify that navigation occurred by checking side effects of handleSwitchTeams
+      // handleSwitchTeams removes LocalKey.plan before navigating to /switch-teams
+      cy.window().then((win) => {
+        // The plan should be removed (side effect of handleSwitchTeams, proving it was called)
+        // This confirms that navigation to /switch-teams was triggered
+        expect(win.localStorage.getItem(LocalKey.plan)).to.be.null;
+        // Verify teamId is still undefined
+        expect(win.localStorage.getItem(localUserKey(LocalKey.team))).to.be
+          .null;
+      });
+    });
+
+    // The component should not render its content when teamId is missing
+    // (it returns null early)
+    cy.get('#ProjectsScreen').should('not.exist');
+  });
+
+  it('should not navigate to /switch-teams when teamId is defined', () => {
+    const teamId = 'test-team-id';
+
+    // Set teamId and plan to verify handleSwitchTeams is not called
+    setupTeamInLocalStorage(teamId, 'test-plan-id');
+
+    const mockTeam = createTestTeam(teamId);
+
+    // Mount with teamId defined - this should NOT trigger navigation
+    // The component has: if (!teamId) handleSwitchTeams();
+    // Since teamId is defined, handleSwitchTeams should not be called
+    mountProjectsScreen(createInitialState(), ['/projects'], {
+      isAdmin: () => false,
+      personalTeam: 'personal-team-id',
+      teams: [mockTeam],
+    });
+
+    // Wait a bit to ensure navigation doesn't happen
+    cy.wait(200);
+
+    // Verify ProjectsScreen renders (navigation did not happen)
+    cy.get('#ProjectsScreen').should('exist');
+
+    // Verify that handleSwitchTeams was NOT called by checking localStorage
+    cy.window().then((win) => {
+      expect(win.localStorage.getItem(localUserKey(LocalKey.team))).to.equal(
+        teamId
+      );
+      // Plan should still be set (handleSwitchTeams was not called, so no navigation occurred)
+      expect(win.localStorage.getItem(LocalKey.plan)).to.equal('test-plan-id');
+    });
   });
 });
