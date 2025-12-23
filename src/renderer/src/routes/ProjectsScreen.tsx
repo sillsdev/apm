@@ -37,12 +37,18 @@ const ProjectsBox = styled(Box)<ProjectBoxProps>(({ theme, isMobile }) => ({
   }),
 }));
 
-const ProjectsScreenInner: React.FC = () => {
+export const ProjectsScreenInner: React.FC = () => {
   const navigate = useMyNavigate();
   const teamId = localStorage.getItem(localUserKey(LocalKey.team));
   const ctx = React.useContext(TeamContext);
-  const { teamProjects, personalProjects, personalTeam, cardStrings, teams } =
-    ctx.state;
+  const {
+    teamProjects,
+    personalProjects,
+    personalTeam,
+    cardStrings,
+    teams,
+    isAdmin,
+  } = ctx.state;
   const t = cardStrings;
   const { pathname } = useLocation();
   const [plan] = useGlobal('plan');
@@ -181,6 +187,10 @@ const ProjectsScreenInner: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [plan, pathname, home]);
 
+  const showAddButton = React.useMemo(() => {
+    return thisTeam && isAdmin(thisTeam);
+  }, [thisTeam, isAdmin]);
+
   return (
     <Box sx={{ width: '100%' }}>
       <AppHead />
@@ -227,18 +237,20 @@ const ProjectsScreenInner: React.FC = () => {
           spacing={2}
           sx={{ pointerEvents: 'auto', alignItems: 'center' }}
         >
-          <Button
-            id="ProjectActAdd"
-            data-testid="add-project-button"
-            variant="outlined"
-            onClick={handleAddProject}
-            sx={(theme) => ({
-              minWidth: 160,
-              bgcolor: theme.palette.common.white,
-            })}
-          >
-            {t.addNewProject || 'Add New Project...'}
-          </Button>
+          {showAddButton && (
+            <Button
+              id="ProjectActAdd"
+              data-testid="add-project-button"
+              variant="outlined"
+              onClick={handleAddProject}
+              sx={(theme) => ({
+                minWidth: 160,
+                bgcolor: theme.palette.common.white,
+              })}
+            >
+              {t.addNewProject || 'Add New Project...'}
+            </Button>
+          )}
           <Button
             id="ProjectActSwitch"
             variant="outlined"

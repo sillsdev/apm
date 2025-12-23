@@ -1,6 +1,6 @@
 /// <reference types="cypress" />
 import React from 'react';
-import ProjectsScreen from './ProjectsScreen';
+import ProjectsScreen, { ProjectsScreenInner } from './ProjectsScreen';
 import { GlobalProvider } from '../context/GlobalContext';
 import { Provider } from 'react-redux';
 import {
@@ -19,6 +19,7 @@ import localizationReducer from '../store/localization/reducers';
 import DataProvider from '../hoc/DataProvider';
 import { UnsavedProvider } from '../context/UnsavedContext';
 import { TokenContext } from '../context/TokenProvider';
+import { TeamContext } from '../context/TeamContext';
 
 // Create a mock liveQuery object with subscribe and query methods
 const createMockLiveQuery = () => ({
@@ -147,9 +148,21 @@ describe('ProjectsScreen', () => {
   // Helper function to mount ProjectsScreen with all required providers
   const mountProjectsScreen = (
     initialState: ReturnType<typeof createInitialState>,
-    initialEntries: string[] = ['/projects']
+    initialEntries: string[] = ['/projects'],
+    options?: {
+      isAdmin?: (team: any) => boolean;
+      personalTeam?: string;
+      teams?: any[];
+    }
   ) => {
     const memory = createMockMemory();
+
+    // Default options
+    const {
+      isAdmin = () => false,
+      personalTeam = 'personal-team-id',
+      teams = [],
+    } = options || {};
 
     // Create mock TokenContext value
     const mockTokenContextValue = {
@@ -166,10 +179,71 @@ describe('ProjectsScreen', () => {
       setState: cy.stub(),
     };
 
+    // Create mock TeamContext value
+    const mockTeamContextValue = {
+      state: {
+        lang: 'en',
+        ts: {} as any,
+        resetOrbitError: cy.stub(),
+        bookSuggestions: [],
+        bookMap: {} as any,
+        allBookData: [],
+        planTypes: [],
+        isDeleting: false,
+        teams: teams,
+        personalTeam: personalTeam,
+        personalProjects: [],
+        teamProjects: () => [],
+        teamMembers: () => 0,
+        loadProject: () => {},
+        setProjectParams: () => ['', ''],
+        projectType: () => '',
+        projectSections: () => '',
+        projectDescription: () => '',
+        projectLanguage: () => '',
+        projectCreate: async () => '',
+        projectUpdate: () => {},
+        projectDelete: () => {},
+        teamCreate: () => {},
+        teamUpdate: () => {},
+        teamDelete: async () => {},
+        isAdmin: isAdmin,
+        isProjectAdmin: () => false,
+        flatAdd: async () => {},
+        cardStrings: mockCardStrings,
+        sharedStrings: {} as any,
+        vProjectStrings: {} as any,
+        pickerStrings: {} as any,
+        projButtonStrings: {} as any,
+        newProjectStrings: {} as any,
+        importOpen: false,
+        setImportOpen: () => {},
+        importProject: undefined,
+        doImport: () => {},
+        resetProjectPermissions: async () => {},
+        generalBook: () => '000',
+        updateGeneralBooks: async () => {},
+        checkScriptureBooks: () => {},
+        tab: 0,
+        setTab: () => {},
+      },
+      setState: cy.stub(),
+    };
+
     const stateWithMemory = {
       ...initialState,
       memory,
     };
+
+    // If options are provided, use ProjectsScreenInner with mock TeamContext
+    // Otherwise, use ProjectsScreen with real TeamProvider
+    const screenElement = options ? (
+      <TeamContext.Provider value={mockTeamContextValue as any}>
+        <ProjectsScreenInner />
+      </TeamContext.Provider>
+    ) : (
+      <ProjectsScreen />
+    );
 
     cy.mount(
       <MemoryRouter initialEntries={initialEntries}>
@@ -178,7 +252,7 @@ describe('ProjectsScreen', () => {
             <DataProvider dataStore={memory}>
               <UnsavedProvider>
                 <TokenContext.Provider value={mockTokenContextValue as any}>
-                  <ProjectsScreen />
+                  {screenElement}
                 </TokenContext.Provider>
               </UnsavedProvider>
             </DataProvider>
@@ -203,20 +277,71 @@ describe('ProjectsScreen', () => {
     cy.contains('No projects yet.').should('be.visible');
   });
 
-  it('should show "Add New Project..." button', () => {
-    mountProjectsScreen(createInitialState());
+  it('should show "Add New Project..." button when isAdmin returns true', () => {
+    const teamId = 'test-team-id';
+    const mockTeam = {
+      id: teamId,
+      type: 'organization',
+      attributes: { name: 'Test Team' },
+    };
+
+    cy.window().then((win) => {
+      win.localStorage.setItem(localUserKey(LocalKey.team), teamId);
+    });
+
+    mountProjectsScreen(createInitialState(), ['/projects'], {
+      isAdmin: (team: any) => team?.id === teamId,
+      personalTeam: 'personal-team-id',
+      teams: [mockTeam],
+    });
 
     cy.get('#ProjectActAdd').should('be.visible');
     cy.contains('Add New Project...').should('be.visible');
   });
 
   it('should open ProjectDialog when "Add New Project..." button is clicked', () => {
-    mountProjectsScreen(createInitialState());
+    const teamId = 'test-team-id';
+    const mockTeam = {
+      id: teamId,
+      type: 'organization',
+      attributes: { name: 'Test Team' },
+    };
+
+    cy.window().then((win) => {
+      win.localStorage.setItem(localUserKey(LocalKey.team), teamId);
+    });
+
+    mountProjectsScreen(createInitialState(), ['/projects'], {
+      isAdmin: (team: any) => team?.id === teamId,
+      personalTeam: 'personal-team-id',
+      teams: [mockTeam],
+    });
 
     cy.get('#ProjectActAdd').click();
 
     // ProjectDialog should open (check for dialog role or form elements)
     cy.get('[role="dialog"]').should('be.visible');
+  });
+
+  it('should not show "Add New Project..." button when isAdmin returns false', () => {
+    const teamId = 'test-team-id';
+    const mockTeam = {
+      id: teamId,
+      type: 'organization',
+      attributes: { name: 'Test Team' },
+    };
+
+    cy.window().then((win) => {
+      win.localStorage.setItem(localUserKey(LocalKey.team), teamId);
+    });
+
+    mountProjectsScreen(createInitialState(), ['/projects'], {
+      isAdmin: () => false, // Not admin
+      personalTeam: 'personal-team-id',
+      teams: [mockTeam],
+    });
+
+    cy.get('#ProjectActAdd').should('not.exist');
   });
 
   it('should show "Switch Teams" button', () => {

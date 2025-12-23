@@ -286,6 +286,7 @@ const TeamProvider = (props: IProps) => {
   };
 
   const isAdmin = (org: OrganizationD) => {
+    if (isPersonalTeam(org.id, organizations)) return true;
     const role = getMyOrgRole(org.id);
     return role === RoleNames.Admin;
   };
