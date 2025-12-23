@@ -60,6 +60,26 @@ export const ProjectsScreenInner: React.FC = () => {
   const theme = useTheme();
   const isMobileWidth = useMediaQuery(theme.breakpoints.down('sm'));
 
+  const handleSwitchTeams = React.useCallback(() => {
+    localStorage.removeItem(LocalKey.plan);
+    navigate('/switch-teams');
+  }, [navigate]);
+
+  // Handle missing teamId with useEffect to prevent infinite render loops
+  React.useEffect(() => {
+    if (!teamId) {
+      handleSwitchTeams();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [handleSwitchTeams]);
+
+  React.useEffect(() => {
+    startClear();
+    setHome(true);
+    // we intentionally do not reset project/plan here; selection will set them
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const isPersonal = teamId === personalTeam;
   const projects = React.useMemo(
     () => (isPersonal ? personalProjects : teamId ? teamProjects(teamId) : []),
@@ -160,18 +180,6 @@ export const ProjectsScreenInner: React.FC = () => {
     setAddOpen(false);
   };
 
-  const handleSwitchTeams = () => {
-    localStorage.removeItem(LocalKey.plan);
-    navigate('/switch-teams');
-  };
-
-  React.useEffect(() => {
-    startClear();
-    setHome(true);
-    // we intentionally do not reset project/plan here; selection will set them
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   // Navigate to plan page only after user explicitly leaves home (card click triggers leaveHome)
   React.useEffect(() => {
     if (!plan) return; // no selection yet
@@ -190,6 +198,11 @@ export const ProjectsScreenInner: React.FC = () => {
   const showAddButton = React.useMemo(() => {
     return thisTeam && isAdmin(thisTeam);
   }, [thisTeam, isAdmin]);
+
+  // Early return when teamId is missing to prevent errors in derived values
+  if (!teamId) {
+    return null; // or a loading state
+  }
 
   return (
     <Box sx={{ width: '100%' }}>
