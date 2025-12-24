@@ -110,15 +110,13 @@ export function PlanView(props: IProps) {
                 />
               )}
               {row.passageType === PassageTypeEnum.BOOK ? (
-                <Typography key={row.sectionId?.id} variant="h5">
-                  {row.title}
-                </Typography>
+                <Typography variant="h5">{row.title}</Typography>
               ) : row.passageType === PassageTypeEnum.ALTBOOK ? (
-                <Typography key={row.sectionId?.id} variant="h5" sx={{ pl: 2 }}>
+                <Typography variant="h5" sx={{ pl: 2 }}>
                   {row.title}
                 </Typography>
               ) : (
-                <Typography key={row.sectionId?.id} variant="h5">
+                <Typography variant="h5">
                   {sectionDescription(
                     getSectionRec(row.sectionId?.id || '') as SectionD,
                     sectionMap
@@ -166,6 +164,8 @@ export function PlanView(props: IProps) {
               isPlaying={mediaId === srcMediaId}
             />
           );
+        } else {
+          return null;
         }
       })}
     </Grid>

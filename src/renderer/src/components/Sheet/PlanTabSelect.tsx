@@ -9,7 +9,9 @@ import { useOrganizedBy } from '../../crud/useOrganizedBy';
 import { PlanContext } from '../../context/PlanContext';
 
 export const PlanTabSelect = () => {
-  const [actionMenuItem, setActionMenuItem] = useState(null);
+  const [actionMenuItem, setActionMenuItem] = useState<null | HTMLElement>(
+    null
+  );
   const t: IPlanTabsStrings = useSelector(planTabsSelector, shallowEqual);
   const { getOrganizedBy } = useOrganizedBy();
   const organizedBy = getOrganizedBy(false);
