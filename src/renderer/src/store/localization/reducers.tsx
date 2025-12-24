@@ -1238,6 +1238,7 @@ const initialState = {
       step: 'Step',
       tablePaste: 'Paste Spreadsheet',
       changepublish: 'Update {0} {1} published status.',
+      unknownBook: 'Unknown Book',
       useCtrlV: 'Select a column head and use CTRL-V to append table rows.',
       versions: 'Versions',
     },
