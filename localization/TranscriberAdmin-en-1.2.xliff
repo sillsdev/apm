@@ -6654,6 +6654,13 @@
                <context context-type="sourcefile">PlanSheet.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="planSheet.unknownBook">
+            <source>Unknown Book</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">PlanSheet.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="planSheet.useCtrlV">
             <source>Select a column head and use CTRL-V to append table rows.</source>
             <target/>

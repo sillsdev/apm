@@ -5,6 +5,7 @@ import React, {
   useContext,
   useMemo,
   ReactNode,
+  MouseEventHandler,
 } from 'react';
 import { useGetGlobal, useGlobal } from '../../context/useGlobal';
 import { shallowEqual, useDispatch, useSelector } from 'react-redux';
@@ -40,7 +41,7 @@ import {
 import * as actions from '../../store';
 import Memory from '@orbit/memory';
 import JSONAPISource from '@orbit/jsonapi';
-import { Badge, Box } from '@mui/material';
+import { Badge, Box, useMediaQuery, useTheme } from '@mui/material';
 import { useSnackBar } from '../../hoc/SnackBar';
 import PlanSheet, { ICell, ICellChange } from './PlanSheet';
 import {
@@ -69,6 +70,7 @@ import {
   currentDateTime,
   useDataChanges,
   useWaitForRemoteQueue,
+  useCanPublish,
 } from '../../utils';
 import {
   isSectionRow,
@@ -134,6 +136,9 @@ import { getLastVerse } from '../../business/localParatext/getLastVerse';
 import { OrganizationSchemeStepD } from '../../model/organizationSchemeStep';
 import { usePeerGroups } from '../Peers/usePeerGroups';
 import bookSortJson from '../../assets/akuosort.json';
+import { PlanView } from './PlanView';
+import { addPt } from '../../utils/addPt';
+import { PlanBar } from './PlanBar';
 
 const SaveWait = 500;
 
@@ -179,6 +184,9 @@ export function ScriptureTable(props: IProps) {
     dispatch(actions.fetchBooks(lang) as any);
   const { prjId } = useParams();
   const [width, setWidth] = useState(window.innerWidth);
+  const theme = useTheme();
+  const mobileWidth = useMediaQuery(theme.breakpoints.down('sm'));
+  const [mobileView] = useGlobal('mobileView');
   const [organization] = useGlobal('organization');
   const [project] = useGlobal('project'); //will be constant here
   const [plan] = useGlobal('plan'); //will be constant here
@@ -253,6 +261,7 @@ export function ScriptureTable(props: IProps) {
   const [uploadType, setUploadType] = useState<UploadType>();
   const [curGraphicRights, setCurGraphicRights] = useState('');
   const [graphicFullsizeUrl, setGraphicFullsizeUrl] = useState('');
+  const [warningVisible, setWarningVisible] = useState<boolean>(false);
   const graphicCreate = useGraphicCreate();
   const graphicUpdate = useGraphicUpdate();
   const graphicFind = useGraphicFind();
@@ -301,6 +310,7 @@ export function ScriptureTable(props: IProps) {
   const secNumCol = React.useMemo(() => {
     return colNames.indexOf('sectionSeq');
   }, [colNames]);
+  const { canAddPublishing } = useCanPublish();
 
   const firstBook = useMemo(
     () =>
@@ -310,6 +320,34 @@ export function ScriptureTable(props: IProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [scripture, sheet]
   );
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const minSection = useMemo(() => getMinSection(sheetRef.current), [sheet]);
+
+  useEffect(() => {
+    if (minSection !== defaultFilterState.minSection) {
+      setDefaultFilterState((fs) => ({ ...fs, minSection }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [minSection]);
+
+  const maximumSection = useMemo(
+    () => sheet[sheet.length - 1]?.sectionSeq ?? 0,
+    [sheet]
+  );
+
+  const filtered = useMemo(() => {
+    return (
+      !filterState.disabled &&
+      (filterState.minStep !== '' ||
+        filterState.maxStep !== '' ||
+        filterState.hideDone ||
+        filterState.minSection > minSection ||
+        (filterState.maxSection > -1 && filterState.maxSection < minSection) ||
+        filterState.assignedToMe)
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filterState, minSection, maximumSection]);
 
   const publishingTitle = (passageType: PassageTypeEnum) =>
     passageType + ' ' + firstBook;
@@ -1267,16 +1305,6 @@ export function ScriptureTable(props: IProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [workflowSteps, orgWorkflowSteps, organization]);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const minSection = useMemo(() => getMinSection(sheetRef.current), [sheet]);
-
-  useEffect(() => {
-    if (minSection !== defaultFilterState.minSection) {
-      setDefaultFilterState((fs) => ({ ...fs, minSection }));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [minSection]);
-
   const doneStepId = useMemo(() => {
     if (getStepsBusy.current) return 'notready';
     const tmp = orgSteps.find(
@@ -1971,45 +1999,92 @@ export function ScriptureTable(props: IProps) {
       setGraphicFullsizeUrl(URL.createObjectURL(files[0] as File));
     } else setGraphicFullsizeUrl('');
   };
+
+  const handlePublishToggle: MouseEventHandler<HTMLButtonElement> = () => {
+    if (!canAddPublishing && !publishingOn) {
+      showMessage(addPt(s.paratextRequired));
+      return;
+    }
+    if (filtered && !publishingOn) {
+      showMessage(s.removeFilter);
+      return;
+    }
+    if (warningVisible) {
+      showMessage(s.refErr);
+      return;
+    }
+    onPublishing(false);
+  };
+
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-      <PlanSheet
-        {...props}
-        columns={columns}
-        colSlugs={colNames}
-        rowData={rowdata}
-        rowInfo={rowinfo}
-        bookMap={bookMap}
-        bookSuggestions={bookSuggestions}
-        firstMovement={firstMovement}
-        action={handleDelete}
-        addSection={addSection}
-        addPassage={addPassage}
-        movePassage={movePassage}
-        moveSection={moveSection}
-        updateData={updateData}
-        updateTitleMedia={updateTitleMedia}
-        paste={handleTablePaste}
-        lookupBook={handleLookupBook}
-        resequence={handleResequence}
-        inlinePassages={flat}
-        onPassageDetail={handlePassageDetail}
-        onAssign={handleAssign}
-        onUpload={handleUpload}
-        onEdit={handleEdit}
-        onHistory={handleVersions}
-        onGraphic={handleGraphic}
-        onFilterChange={onFilterChange}
-        onFirstMovement={onFirstMovement}
-        filterState={filterState}
-        minimumSection={minSection}
-        maximumSection={sheet[sheet.length - 1]?.sectionSeq ?? 0}
-        orgSteps={orgSteps}
-        canSetDefault={canSetProjectDefault}
-        toolId={toolId}
-        onPublishing={onPublishing}
-        setSectionPublish={setSectionPublish}
-      />
+      {mobileView || mobileWidth ? (
+        <>
+          <PlanBar
+            publishingOn={publishingOn}
+            hidePublishing={hidePublishing}
+            handlePublishToggle={handlePublishToggle}
+            data={rowdata}
+            canSetDefault={canSetProjectDefault}
+            filterState={filterState}
+            onFilterChange={onFilterChange}
+            orgSteps={orgSteps}
+            minimumSection={minSection}
+            maximumSection={sheet[sheet.length - 1]?.sectionSeq ?? 0}
+            filtered={filtered}
+            rowInfo={rowinfo}
+          />
+          <PlanView
+            rowInfo={rowinfo}
+            bookMap={bookMap}
+            publishingView={publishingOn && !hidePublishing}
+            handleOpenPublishDialog={(i: number) =>
+              setSectionPublish(i, [PublishDestinationEnum.AkuoPublic])
+            }
+            handleGraphic={handleGraphic}
+          />
+        </>
+      ) : (
+        <PlanSheet
+          {...props}
+          columns={columns}
+          colSlugs={colNames}
+          rowData={rowdata}
+          rowInfo={rowinfo}
+          bookMap={bookMap}
+          bookSuggestions={bookSuggestions}
+          firstMovement={firstMovement}
+          action={handleDelete}
+          addSection={addSection}
+          addPassage={addPassage}
+          movePassage={movePassage}
+          moveSection={moveSection}
+          updateData={updateData}
+          updateTitleMedia={updateTitleMedia}
+          paste={handleTablePaste}
+          lookupBook={handleLookupBook}
+          resequence={handleResequence}
+          inlinePassages={flat}
+          onPassageDetail={handlePassageDetail}
+          onAssign={handleAssign}
+          onUpload={handleUpload}
+          onEdit={handleEdit}
+          onHistory={handleVersions}
+          onGraphic={handleGraphic}
+          onFilterChange={onFilterChange}
+          onFirstMovement={onFirstMovement}
+          filterState={filterState}
+          minimumSection={minSection}
+          maximumSection={maximumSection}
+          orgSteps={orgSteps}
+          canSetDefault={canSetProjectDefault}
+          toolId={toolId}
+          onPublishing={onPublishing}
+          setSectionPublish={setSectionPublish}
+          handlePublishToggle={handlePublishToggle}
+          onWarning={setWarningVisible}
+        />
+      )}
       {assignSectionVisible && (
         <AssignSection
           scheme={getScheme(assignSections) as string}

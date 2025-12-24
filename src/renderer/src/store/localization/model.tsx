@@ -1132,6 +1132,7 @@ export interface IPlanSheetStrings extends Localize.LocalizedStringsMethods {
   step: string;
   tablePaste: string;
   changepublish: string;
+  unknownBook: string;
   useCtrlV: string;
   versions: string;
 }

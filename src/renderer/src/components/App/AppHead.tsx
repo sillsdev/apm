@@ -164,7 +164,7 @@ export const AppHead = (props: IProps) => {
       fromUrl
     );
     if (!m) return null;
-    return `/plan/${m[1]}/0`;
+    return `/plan/${m[2]}/0`;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname]);
 
@@ -413,7 +413,7 @@ export const AppHead = (props: IProps) => {
       <>
         <Toolbar>
           {!isDetail ? (
-            <IconButton onClick={() => navigate('/team')}>
+            <IconButton onClick={() => navigate('/team')} sx={{ p: 0 }}>
               <ApmLogo sx={{ width: '24px', height: '24px' }} />
             </IconButton>
           ) : (

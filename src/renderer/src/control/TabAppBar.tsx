@@ -7,10 +7,11 @@ export const ActionHeight = 38;
 // see: https://mui.com/material-ui/customization/how-to-customize/
 export interface TabAppBarProps extends AppBarProps {
   highBar?: boolean;
+  mobileBar?: boolean;
 }
 export const TabAppBar = styled(AppBar, {
-  shouldForwardProp: (prop) => prop !== 'highBar',
-})<TabAppBarProps>(({ highBar }) => ({
+  shouldForwardProp: (prop) => prop !== 'highBar' && prop !== 'mobileBar',
+})<TabAppBarProps>(({ highBar, mobileBar }) => ({
   top: `calc(${TabHeight}px + ${HeadHeight}px)`,
   height: `${ActionHeight}px`,
   left: 0,
@@ -20,5 +21,8 @@ export const TabAppBar = styled(AppBar, {
     top: 'auto',
     position: 'unset',
     width: '95%',
+  }),
+  ...(mobileBar && {
+    position: 'unset',
   }),
 }));

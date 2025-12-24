@@ -45,7 +45,6 @@ import {
   LocalKey,
   rememberCurrentPassage,
   positiveWholeOnly,
-  useCanPublish,
   logError,
   Severity,
   useCheckOnline,
@@ -78,7 +77,6 @@ import { usePlanSheetFill } from './usePlanSheetFill';
 import { useShowIcon } from './useShowIcon';
 import { RecordKeyMap } from '@orbit/records';
 import ConfirmPublishDialog from '../ConfirmPublishDialog';
-import { addPt } from '../../utils/addPt';
 import { Akuo } from '../../assets/brands';
 import { useOrbitData } from '../../hoc/useOrbitData';
 
@@ -226,6 +224,8 @@ interface IProps {
     isDefault: boolean
   ) => void;
   onFirstMovement: (newFM: number) => void;
+  handlePublishToggle: MouseEventHandler<HTMLButtonElement>;
+  onWarning: (visible: boolean) => void;
 }
 
 export function PlanSheet(props: IProps) {
@@ -258,6 +258,8 @@ export function PlanSheet(props: IProps) {
     onPublishing,
     setSectionPublish,
     onFirstMovement,
+    handlePublishToggle,
+    onWarning,
   } = props;
   const ctx = useContext(PlanContext);
   const {
@@ -335,7 +337,7 @@ export function PlanSheet(props: IProps) {
   const changedRef = useRef(false); //for autosave
   const [saving, setSaving] = useState(false);
   const refErrTest = useRefErrTest();
-  const { canAddPublishing } = useCanPublish();
+
   const rowsPerPage = useRef(20);
   const [scrollCount, setScrollCount] = useState(0);
   const [curTop, setCurTop] = useState(0);
@@ -874,28 +876,18 @@ export function PlanSheet(props: IProps) {
       });
     }
     if (refErr) {
-      if (!warning) setWarning(t.refErr);
+      if (!warning) {
+        setWarning(t.refErr);
+        onWarning(true);
+      }
       setWarningRow(firstErrRow);
     } else {
-      if (warning) setWarning(undefined);
+      if (warning) {
+        setWarning(undefined);
+        onWarning(false);
+      }
       setWarningRow(undefined);
     }
-  };
-
-  const handlePublishToggle: MouseEventHandler<HTMLButtonElement> = () => {
-    if (!canAddPublishing && !publishingOn) {
-      showMessage(addPt(t.paratextRequired));
-      return;
-    }
-    if (filtered && !publishingOn) {
-      showMessage(t.removeFilter);
-      return;
-    }
-    if (warning) {
-      showMessage(t.refErr);
-      return;
-    }
-    onPublishing(false);
   };
 
   useEffect(() => {
