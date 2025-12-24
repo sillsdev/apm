@@ -343,7 +343,7 @@ export function ScriptureTable(props: IProps) {
         filterState.maxStep !== '' ||
         filterState.hideDone ||
         filterState.minSection > minSection ||
-        (filterState.maxSection > -1 && filterState.maxSection < minSection) ||
+        (filterState.maxSection > -1 && filterState.maxSection < maximumSection) ||
         filterState.assignedToMe)
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
