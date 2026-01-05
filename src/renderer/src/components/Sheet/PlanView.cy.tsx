@@ -185,24 +185,6 @@ describe('PlanView', () => {
     } as ISheet;
   };
 
-  const createMockSectionRecord = (
-    id: string,
-    name: string = 'Test Section'
-  ): SectionD => {
-    return {
-      id,
-      type: 'section',
-      attributes: {
-        name,
-        sequencenum: 1,
-        dateCreated: '',
-        dateUpdated: '',
-        lastModifiedBy: 0,
-      },
-      relationships: {},
-    } as SectionD;
-  };
-
   const createMockPassage = (overrides: Partial<ISheet> = {}): ISheet => {
     return {
       level: SheetLevel.Passage,
