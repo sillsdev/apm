@@ -14,7 +14,7 @@ import localizationReducer from '../../store/localization/reducers';
 // Mock dependencies
 // Create a mock liveQuery object with subscribe and query methods
 const createMockLiveQuery = () => ({
-  subscribe: () => () => {}, // Returns unsubscribe function
+  subscribe: () => () => {}, // Returns an unsubscribe function
   query: () => [],
 });
 
