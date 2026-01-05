@@ -22,9 +22,12 @@ export const PlanTabSelect = () => {
     [flat, organizedBy, t]
   );
   const [options, setOptions] = useState<string[]>([]);
-  const handleChange = (i: number) => () => setTab(i);
   const handleMenu = (e: any) => setActionMenuItem(e.currentTarget);
   const handleClose = () => setActionMenuItem(null);
+  const handleChange = (i: number) => () => {
+    setTab(i);
+    handleClose();
+  };
 
   useEffect(() => {
     setOptions([defaultItem, t.media, t.assignments, t.transcriptions]);

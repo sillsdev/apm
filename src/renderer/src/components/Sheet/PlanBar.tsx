@@ -49,7 +49,7 @@ export const PlanBar = (props: IProps) => {
   } = props;
   const ctx = useContext(PlanContext);
   const { flat } = ctx.state;
-  const offline = useGlobal('offline');
+  const [offline] = useGlobal('offline');
   const t: IPlanSheetStrings = useSelector(planSheetSelector, shallowEqual);
 
   return (
