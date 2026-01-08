@@ -594,18 +594,28 @@ describe('OrgHead', () => {
     // Set viewport to mobile size (below 'sm' breakpoint which is 600px)
     cy.viewport(400, 800);
 
-    const orgId = 'test-org-id';
-    const orgName = 'Test Organization';
-    const orgData = createMockOrganization(orgId, orgName);
+    // Mock window.innerWidth to ensure it matches the viewport when component renders
+    // The component calculates maxWidth as window.innerWidth - 5 * 50
+    cy.window().then((win) => {
+      Object.defineProperty(win, 'innerWidth', {
+        get: () => 400,
+        configurable: true,
+      });
 
-    mountOrgHead(createInitialState(), ['/team'], orgId, orgData);
+      const orgId = 'test-org-id';
+      const orgName = 'Test Organization';
+      const orgData = createMockOrganization(orgId, orgName);
+
+      mountOrgHead(createInitialState(), ['/team'], orgId, orgData);
+    });
 
     // The component should render (mobile width affects maxWidth CSS)
-    cy.contains(orgName).should('be.visible');
-    // Verify the Typography has mobile width constraint (maxWidth: 170px on mobile)
-    cy.contains(orgName)
+    cy.contains('Test Organization').should('be.visible');
+    // Verify the Typography has mobile width constraint
+    // maxWidth = window.innerWidth - 5 * 50 = 400 - 250 = 150px
+    cy.contains('Test Organization')
       .should('have.css', 'max-width')
-      .and('match', /170px|10.625rem/);
+      .and('match', /150px|9.375rem/);
   });
 
   it('should use desktop width styling when not on mobile device', () => {
