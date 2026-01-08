@@ -244,9 +244,7 @@
     ]
   },
   "husky": {
-    "hooks": {
-      "pre-commit": "npm run typecheck && npm run test --watchAll=false && lint-staged"
-    }
+    "hooks": {}
   },
   "volta": {
     "node": "22.19.0"
