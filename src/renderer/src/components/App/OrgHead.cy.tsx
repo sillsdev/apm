@@ -338,6 +338,14 @@ describe('OrgHead', () => {
 
     // Create mock TeamContext value with all needed properties
     // Must match ICtxState interface from TeamContext
+    // Set up teamProjects to return projectData if provided and orgId matches
+    const teamProjectsFn = (teamId: string) => {
+      if (projectData && projectData.length > 0 && orgId && teamId === orgId) {
+        return projectData;
+      }
+      return [];
+    };
+
     const mockTeamContextValue = {
       state: {
         teamDelete: mockTeamDelete,
@@ -356,7 +364,7 @@ describe('OrgHead', () => {
         teams: [],
         personalTeam: personalTeam ?? '',
         personalProjects: [],
-        teamProjects: () => [],
+        teamProjects: teamProjectsFn,
         teamMembers: () => 0,
         loadProject: () => {},
         setProjectParams: () => ['', ''],
@@ -447,6 +455,8 @@ describe('OrgHead', () => {
   });
 
   it('should show settings and members buttons when on team screen and user is admin', () => {
+    // Set desktop viewport to ensure settings button is visible
+    cy.viewport(1024, 768);
     const orgId = 'test-org-id';
     const orgName = 'Test Organization';
     const orgData = createMockOrganization(orgId, orgName);
@@ -503,6 +513,8 @@ describe('OrgHead', () => {
   });
 
   it('should open TeamDialog when settings button is clicked (admin only)', () => {
+    // Set desktop viewport to ensure menu items are visible
+    cy.viewport(1024, 768);
     const orgId = 'test-org-id';
     const orgName = 'Test Organization';
     const orgData = createMockOrganization(orgId, orgName);
@@ -553,6 +565,8 @@ describe('OrgHead', () => {
   });
 
   it('should close TeamDialog when editOpen is set to false (admin only)', () => {
+    // Set desktop viewport to ensure menu items are visible
+    cy.viewport(1024, 768);
     const orgId = 'test-org-id';
     const orgName = 'Test Organization';
     const orgData = createMockOrganization(orgId, orgName);
@@ -846,5 +860,110 @@ describe('OrgHead', () => {
       // Should display the project name
       cy.contains(projectName).should('be.visible');
     });
+  });
+
+  it('should show first two menu items on desktop width', () => {
+    // Set desktop viewport (above 'sm' breakpoint)
+    cy.viewport(1024, 768);
+    const orgId = 'test-org-id';
+    const orgName = 'Test Organization';
+    const orgData = createMockOrganization(orgId, orgName);
+
+    mountOrgHead(createInitialState(), ['/team'], orgId, orgData, true);
+
+    // Open the settings menu
+    cy.get('button').first().click();
+    cy.get('[role="menu"]').should('be.visible');
+
+    // First two menu items should be visible on desktop
+    cy.contains('Team Settings').should('be.visible');
+    // Edit Workflow may or may not be visible depending on canModify
+    cy.get('body').then(($body) => {
+      if ($body.find('[role="menuitem"]').length > 1) {
+        // If Edit Workflow is visible, it should be the second item
+        cy.get('[role="menuitem"]').eq(1).should('be.visible');
+      }
+    });
+  });
+
+  it('should not show first two menu items on mobile width', () => {
+    // Set mobile viewport (below 'sm' breakpoint which is 600px)
+    cy.viewport(375, 667);
+    const orgId = 'test-org-id';
+    const orgName = 'Test Organization';
+    const orgData = createMockOrganization(orgId, orgName);
+    // Create multiple projects to make showSort true
+    const project1 = createMockProject('project-1', 'Project 1');
+    const project2 = createMockProject('project-2', 'Project 2');
+    const projectData = [project1, project2];
+
+    mountOrgHead(
+      createInitialState({ offlineOnly: true }, orgData, projectData),
+      ['/team'],
+      orgId,
+      orgData,
+      true,
+      undefined,
+      projectData
+    );
+
+    // Settings button should exist because showSort is true
+    cy.get('button').first().click();
+    cy.get('[role="menu"]').should('be.visible');
+
+    // First two menu items should NOT be visible on mobile
+    cy.contains('Team Settings').should('not.exist');
+    cy.contains('Edit Workflow').should('not.exist');
+
+    // Sort Projects (third item) should be visible since showSort is true
+    cy.contains('Sort Projects').should('be.visible');
+  });
+
+  it('should not show settings button on mobile width when showSort is false', () => {
+    // Set mobile viewport (below 'sm' breakpoint which is 600px)
+    cy.viewport(375, 667);
+    const orgId = 'test-org-id';
+    const orgName = 'Test Organization';
+    const orgData = createMockOrganization(orgId, orgName);
+
+    mountOrgHead(createInitialState(), ['/team'], orgId, orgData, true);
+
+    // Settings button should NOT exist because isMobileWidth is true and showSort is false
+    // (no projects means hasMoreThanOneProject is false, so showSort is false)
+    cy.get('button').should('have.length', 1); // Only members button should exist
+    cy.get('button svg').should('have.length', 1); // Only one icon (members)
+  });
+
+  it('should show settings button on mobile width when showSort is true', () => {
+    // Set mobile viewport (below 'sm' breakpoint which is 600px)
+    cy.viewport(375, 667);
+    const orgId = 'test-org-id';
+    const orgName = 'Test Organization';
+    const orgData = createMockOrganization(orgId, orgName);
+    // Create multiple projects to make showSort true
+    const project1 = createMockProject('project-1', 'Project 1');
+    const project2 = createMockProject('project-2', 'Project 2');
+    const projectData = [project1, project2];
+
+    mountOrgHead(
+      createInitialState({ offlineOnly: true }, orgData, projectData),
+      ['/team'],
+      orgId,
+      orgData,
+      true,
+      undefined,
+      projectData
+    );
+
+    // Settings button should exist because showSort is true
+    cy.get('button').should('have.length.at.least', 2); // Settings and members buttons
+    cy.get('button svg').should('have.length.at.least', 2); // At least two icons
+
+    // Open the settings menu
+    cy.get('button').first().click();
+    cy.get('[role="menu"]').should('be.visible');
+
+    // Sort Projects should be visible
+    cy.contains('Sort Projects').should('be.visible');
   });
 });

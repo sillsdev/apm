@@ -84,6 +84,7 @@ const TeamCard = ({ label, teamId, name, onOpenSettings }: ITeamCardProps) => {
   const ctx = React.useContext(TeamContext);
   const { isAdmin, teams, personalTeam } = ctx.state;
   const teamRec = teams.find((t) => t.id === teamId);
+  const mobileWidth = useMediaQuery(theme.breakpoints.down('sm'));
   // For personal team, always show settings button (user owns it)
   // For other teams, show settings button only if user is admin
   const isPersonalTeam = teamId === personalTeam;
@@ -120,7 +121,7 @@ const TeamCard = ({ label, teamId, name, onOpenSettings }: ITeamCardProps) => {
         >
           {name}
         </Typography>
-        {showSettings && (
+        {showSettings && !mobileWidth && (
           <SettingsButton label={label} onOpenSettings={onOpenSettings} />
         )}
       </Box>
