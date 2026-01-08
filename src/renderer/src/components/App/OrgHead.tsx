@@ -1,4 +1,4 @@
-import { useContext, useMemo, useState } from 'react';
+import { useContext, useEffect, useMemo, useState } from 'react';
 import { LocalKey, localUserKey } from '../../utils/localUserKey';
 import { useGlobal } from '../../context/useGlobal';
 import {
@@ -29,6 +29,9 @@ import { defaultWorkflow } from '../../crud';
 import { useRole } from '../../crud/useRole';
 import { useOrbitData } from '../../hoc/useOrbitData';
 import { ProjectSort } from '../Team/ProjectDialog/ProjectSort';
+import { debounce } from 'lodash';
+
+const MOBILE_HEADER_COMPONENTS_WIDTH = 5 * 50; // 5 buttons of 50px each
 
 export const OrgHead = () => {
   const [user] = useGlobal('user');
@@ -55,6 +58,25 @@ export const OrgHead = () => {
   const [project] = useGlobal('project');
   const [offlineOnly] = useGlobal('offlineOnly');
   const [isOffline] = useGlobal('offline');
+  const [width, setWidth] = useState(window.innerWidth);
+
+  // keep track of screen width
+  const setDimensions = () => {
+    setWidth(window.innerWidth);
+  };
+
+  useEffect(() => {
+    setDimensions();
+    const handleResize = debounce(() => {
+      setDimensions();
+    }, 100);
+
+    window.addEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); //do this once to get the default;
 
   const orgId = useMemo(
     () => localStorage.getItem(localUserKey(LocalKey.team)),
@@ -159,7 +181,9 @@ export const OrgHead = () => {
           overflow: 'hidden',
           textOverflow: 'ellipsis',
           whiteSpace: 'nowrap',
-          maxWidth: isMobileWidth ? '170px' : '800px',
+          maxWidth: isMobileWidth
+            ? width - MOBILE_HEADER_COMPONENTS_WIDTH
+            : '800px',
           alignItems: 'center',
           display: 'flex',
           mx: 1,
