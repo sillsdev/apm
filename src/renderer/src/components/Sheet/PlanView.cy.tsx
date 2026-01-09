@@ -5,6 +5,7 @@ import { Provider } from 'react-redux';
 import { legacy_createStore as createStore, combineReducers } from 'redux';
 import DataProvider from '../../hoc/DataProvider';
 import { PlanContext } from '../../context/PlanContext';
+import { TeamContext } from '../../context/TeamContext';
 import Coordinator from '@orbit/coordinator';
 import Memory from '@orbit/memory';
 import bugsnagClient from '../../auth/bugsnagClient';
@@ -238,25 +239,79 @@ describe('PlanView', () => {
     planContextOverrides = {},
     globalStateOverrides = {},
     initialEntries: string[] = ['/project/test-prj'],
-    sections: SectionD[] = []
+    sections: SectionD[] = [],
+    personalTeam: string = 'personal-team-id'
   ) => {
     const initialState = createInitialState(globalStateOverrides);
     const planContextState = createMockPlanContextState(planContextOverrides);
     const memory = createMockMemory(sections);
+
+    // Create mock TeamContext value
+    const mockTeamContextValue = {
+      state: {
+        lang: 'en',
+        ts: {} as any,
+        resetOrbitError: cy.stub(),
+        bookSuggestions: [],
+        bookMap: {} as any,
+        allBookData: [],
+        planTypes: [],
+        isDeleting: false,
+        teams: [],
+        personalTeam: personalTeam,
+        personalProjects: [],
+        teamProjects: () => [],
+        teamMembers: () => 0,
+        loadProject: () => {},
+        setProjectParams: () => ['', ''],
+        projectType: () => '',
+        projectSections: () => '',
+        projectDescription: () => '',
+        projectLanguage: () => '',
+        projectCreate: async () => '',
+        projectUpdate: () => {},
+        projectDelete: () => {},
+        teamCreate: () => {},
+        teamUpdate: () => {},
+        teamDelete: async () => {},
+        isAdmin: () => false,
+        isProjectAdmin: () => false,
+        flatAdd: async () => {},
+        cardStrings: {} as any,
+        sharedStrings: {} as any,
+        vProjectStrings: {} as any,
+        pickerStrings: {} as any,
+        projButtonStrings: {} as any,
+        newProjectStrings: {} as any,
+        importOpen: false,
+        setImportOpen: () => {},
+        importProject: undefined,
+        doImport: () => {},
+        resetProjectPermissions: async () => {},
+        generalBook: () => '000',
+        updateGeneralBooks: async () => {},
+        checkScriptureBooks: () => {},
+        tab: 0,
+        setTab: () => {},
+      },
+      setState: cy.stub(),
+    };
 
     cy.mount(
       <MemoryRouter initialEntries={initialEntries}>
         <Provider store={mockStore}>
           <GlobalProvider init={{ ...initialState, memory }}>
             <DataProvider dataStore={memory}>
-              <PlanContext.Provider
-                value={{
-                  state: planContextState as any,
-                  setState: cy.stub(),
-                }}
-              >
-                <PlanView {...props} />
-              </PlanContext.Provider>
+              <TeamContext.Provider value={mockTeamContextValue as any}>
+                <PlanContext.Provider
+                  value={{
+                    state: planContextState as any,
+                    setState: cy.stub(),
+                  }}
+                >
+                  <PlanView {...props} />
+                </PlanContext.Provider>
+              </TeamContext.Provider>
             </DataProvider>
           </GlobalProvider>
         </Provider>
@@ -466,6 +521,39 @@ describe('PlanView', () => {
     cy.get('div[class*="MuiCard-root"]', { timeout: 5000 }).should(
       'be.visible'
     );
+  });
+
+  it('should not show assign section in PassageCard for personal projects', () => {
+    const passage = createMockPassage({
+      assign: createMockRecordIdentity('user-1', 'user'),
+    });
+    const rowInfo: ISheet[] = [passage];
+    const bookMap = createMockBookNameMap();
+    const personalTeamId = 'personal-team-id';
+
+    mountPlanView(
+      {
+        rowInfo,
+        bookMap,
+        publishingView: false,
+        handleOpenPublishDialog: mockHandleOpenPublishDialog,
+        handleGraphic: mockHandleGraphic,
+      },
+      {},
+      { organization: personalTeamId },
+      ['/project/test-prj'],
+      [],
+      personalTeamId
+    );
+
+    cy.wait(100);
+    cy.get('div[class*="MuiCard-root"]', { timeout: 5000 }).should(
+      'be.visible'
+    );
+    // Should not show "Unassigned" text
+    cy.contains('Unassigned').should('not.exist');
+    // Should not show Person icon
+    cy.get('svg[data-testid="PersonIcon"]').should('not.exist');
   });
 
   it('should render multiple items in rowInfo', () => {

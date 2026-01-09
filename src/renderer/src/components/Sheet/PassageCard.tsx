@@ -26,13 +26,20 @@ interface IProps {
   handleViewStep: () => void;
   onPlayStatus?: () => void;
   isPlaying: boolean;
+  isPersonal?: boolean;
 }
 
 export function PassageCard(props: IProps) {
   const theme = useTheme();
   const mobileWidth = useMediaQuery(theme.breakpoints.down('sm'));
-  const { cardInfo, getBookName, handleViewStep, onPlayStatus, isPlaying } =
-    props;
+  const {
+    cardInfo,
+    getBookName,
+    handleViewStep,
+    onPlayStatus,
+    isPlaying,
+    isPersonal,
+  } = props;
 
   const fullBookName = getBookName(cardInfo.book);
 
@@ -100,22 +107,24 @@ export function PassageCard(props: IProps) {
         <Typography variant="body2" color="grey">
           {comment || '\u00A0'}
         </Typography>
-        <Box sx={{ margin: '1.5rem 0 .5rem 0' }}>
-          {cardInfo.assign ? (
-            <TaskAvatar assigned={cardInfo?.assign || null} />
-          ) : (
-            <Box
-              sx={{
-                display: 'flex',
-                flexDirection: 'row',
-                alignItems: 'center',
-              }}
-            >
-              <Person sx={{ verticalAlign: 'middle', mb: '.5rem' }} />
-              {'Unassigned'}
-            </Box>
-          )}
-        </Box>
+        {!isPersonal && (
+          <Box sx={{ margin: '1.5rem 0 .5rem 0' }}>
+            {cardInfo.assign ? (
+              <TaskAvatar assigned={cardInfo?.assign || null} />
+            ) : (
+              <Box
+                sx={{
+                  display: 'flex',
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                }}
+              >
+                <Person sx={{ verticalAlign: 'middle', mb: '.5rem' }} />
+                {'Unassigned'}
+              </Box>
+            )}
+          </Box>
+        )}
         <Button
           variant="contained"
           sx={{ width: '100%', position: 'relative', px: 1 }}

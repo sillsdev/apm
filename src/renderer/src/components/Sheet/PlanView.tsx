@@ -18,6 +18,7 @@ import { findRecord } from '../../crud';
 import { useGlobal } from '../../context/useGlobal';
 import { sectionDescription } from '../../crud';
 import { PlanContext } from '../../context/PlanContext';
+import { TeamContext } from '../../context/TeamContext';
 import { planSheetSelector } from '../../selector';
 
 interface IProps {
@@ -38,12 +39,16 @@ export function PlanView(props: IProps) {
   } = props;
   const { prjId } = useParams();
   const [memory] = useGlobal('memory');
+  const [organization] = useGlobal('organization');
   const ctx = useContext(PlanContext);
+  const teamCtx = useContext(TeamContext);
   const { sectionArr } = ctx.state;
+  const { personalTeam } = teamCtx.state;
   const [srcMediaId, setSrcMediaId] = useState<string | undefined>(undefined);
   const [view, setView] = useState('');
   const sectionMap = useMemo(() => new Map(sectionArr), [sectionArr]);
   const t: IPlanSheetStrings = useSelector(planSheetSelector, shallowEqual);
+  const isPersonal = organization === personalTeam;
 
   const onPlayStatus = (mediaId: string) => {
     setSrcMediaId(mediaId);
@@ -53,6 +58,10 @@ export function PlanView(props: IProps) {
     findRecord(memory, 'section', id) as SectionD | undefined;
 
   const getBookName = (bookAbbreviation: string | undefined): string => {
+    // For general projects (non-scripture), return empty string
+    if (!ctx.state.scripture) {
+      return '';
+    }
     return bookAbbreviation && bookMap
       ? bookMap[bookAbbreviation]
       : bookAbbreviation || t.unknownBook;
@@ -162,6 +171,7 @@ export function PlanView(props: IProps) {
               handleViewStep={() => handleViewStep(i)}
               onPlayStatus={mediaId ? () => onPlayStatus(mediaId) : undefined}
               isPlaying={mediaId === srcMediaId}
+              isPersonal={isPersonal}
             />
           );
         } else {

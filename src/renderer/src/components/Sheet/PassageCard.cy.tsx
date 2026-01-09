@@ -113,6 +113,7 @@ describe('PassageCard', () => {
       handleViewStep: () => void;
       onPlayStatus?: () => void;
       isPlaying: boolean;
+      isPersonal?: boolean;
     }
   ) => {
     const initialState = createInitialState();
@@ -126,6 +127,7 @@ describe('PassageCard', () => {
               handleViewStep={props.handleViewStep}
               onPlayStatus={props.onPlayStatus}
               isPlaying={props.isPlaying}
+              isPersonal={props.isPersonal}
             />
           </DataProvider>
         </GlobalProvider>
@@ -238,6 +240,88 @@ describe('PassageCard', () => {
     // Should show "Matthew 5:3" format
     cy.contains('Matthew').should('be.visible');
     cy.contains('5:3').should('be.visible');
+  });
+
+  it('should not display book name for general projects', () => {
+    const cardInfo = createMockSheet({
+      passageType: PassageTypeEnum.PASSAGE,
+      book: 'MAT',
+      passage: {
+        id: 'passage-1',
+        type: 'passage',
+        attributes: {
+          sequencenum: 1,
+          book: 'MAT',
+          reference: '5:3',
+          state: '',
+          hold: false,
+          title: '',
+          lastComment: '',
+          stepComplete: '{}',
+          dateCreated: '',
+          dateUpdated: '',
+          lastModifiedBy: 0,
+        },
+      },
+    });
+    // For general projects, getBookName returns empty string
+    mockGetBookName.returns('');
+
+    mountPassageCard(cardInfo, {
+      getBookName: mockGetBookName,
+      handleViewStep: mockHandleViewStep,
+      isPlaying: false,
+    });
+
+    // Should show only reference, not book name
+    cy.contains('5:3').should('be.visible');
+    // Should not show book name (Matthew)
+    cy.contains('Matthew').should('not.exist');
+    // Should not show Genesis (default mock value)
+    cy.contains('Genesis').should('not.exist');
+  });
+
+  it('should render card with reference only for general projects', () => {
+    const cardInfo = createMockSheet({
+      book: 'GEN',
+      reference: '1:1',
+      passage: {
+        id: 'passage-1',
+        type: 'passage',
+        attributes: {
+          sequencenum: 1,
+          book: 'GEN',
+          reference: '1:1',
+          state: '',
+          hold: false,
+          title: '',
+          lastComment: '',
+          stepComplete: '{}',
+          dateCreated: '',
+          dateUpdated: '',
+          lastModifiedBy: 0,
+        },
+      },
+    });
+    // For general projects, getBookName returns empty string
+    mockGetBookName.returns('');
+
+    mountPassageCard(cardInfo, {
+      getBookName: mockGetBookName,
+      handleViewStep: mockHandleViewStep,
+      isPlaying: false,
+    });
+
+    // Should render the card
+    cy.get('div[class*="MuiCard-root"]').should('be.visible');
+    // Should show reference only, not book name
+    cy.contains('1:1').should('be.visible');
+    // Should not show book name
+    cy.contains('Genesis').should('not.exist');
+    // Should show comment
+    cy.contains('Test comment').should('be.visible');
+    // Should show step button
+    cy.contains('Step 1').should('be.visible');
   });
 
   it('should use noteTitle from sharedResource when available', () => {
@@ -398,6 +482,7 @@ describe('PassageCard', () => {
       getBookName: mockGetBookName,
       handleViewStep: mockHandleViewStep,
       isPlaying: false,
+      isPersonal: false,
     });
 
     // TaskAvatar should be rendered (it may render UserAvatar or group avatar)
@@ -414,12 +499,51 @@ describe('PassageCard', () => {
       getBookName: mockGetBookName,
       handleViewStep: mockHandleViewStep,
       isPlaying: false,
+      isPersonal: false,
     });
 
     // Should show "Unassigned" text
     cy.contains('Unassigned').should('be.visible');
     // Should show Person icon
     cy.get('svg[data-testid="PersonIcon"]').should('exist');
+  });
+
+  it('should not show assign section for personal projects when assign exists', () => {
+    const cardInfo = createMockSheet({
+      assign: createMockRecordIdentity('user-1', 'user'),
+    });
+
+    mountPassageCard(cardInfo, {
+      getBookName: mockGetBookName,
+      handleViewStep: mockHandleViewStep,
+      isPlaying: false,
+      isPersonal: true,
+    });
+
+    // Should not show TaskAvatar
+    cy.contains('Unassigned').should('not.exist');
+    // Should not show Person icon
+    cy.get('svg[data-testid="PersonIcon"]').should('not.exist');
+    // Assign section should not be visible
+    cy.get('div[class*="MuiBox-root"]').should('not.contain', 'Unassigned');
+  });
+
+  it('should not show assign section for personal projects when assign does not exist', () => {
+    const cardInfo = createMockSheet({
+      assign: undefined,
+    });
+
+    mountPassageCard(cardInfo, {
+      getBookName: mockGetBookName,
+      handleViewStep: mockHandleViewStep,
+      isPlaying: false,
+      isPersonal: true,
+    });
+
+    // Should not show "Unassigned" text
+    cy.contains('Unassigned').should('not.exist');
+    // Should not show Person icon
+    cy.get('svg[data-testid="PersonIcon"]').should('not.exist');
   });
 
   it('should call handleViewStep when step button is clicked', () => {
