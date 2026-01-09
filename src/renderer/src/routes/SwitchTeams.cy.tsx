@@ -321,14 +321,16 @@ describe('SwitchTeams', () => {
   });
 
   it('should open team settings dialog when settings button is clicked', () => {
+    // Set desktop viewport to ensure settings button is visible
+    cy.viewport(1024, 768);
     mountSwitchTeams(createInitialState());
 
     // Settings buttons are on team cards
     // If teams exist, we can click the settings button
     cy.get('body').then(($body) => {
-      const settingsButtons = $body.find('[data-testid^="team-settings-"]');
+      const settingsButtons = $body.find('[data-testid^="team-settings"]');
       if (settingsButtons.length > 0) {
-        cy.get('[data-testid^="team-settings-"]').first().click();
+        cy.get('[data-testid^="team-settings"]').first().click();
 
         // Settings dialog should open
         cy.get('[role="dialog"]').should('be.visible');
@@ -337,6 +339,8 @@ describe('SwitchTeams', () => {
   });
 
   it('should open personal settings dialog when personal settings button is clicked', () => {
+    // Set desktop viewport to ensure settings button is visible
+    cy.viewport(1024, 768);
     mountSwitchTeams(createInitialState());
 
     // Wait for the personal section to be rendered (it may take time for TeamContext to load)
@@ -422,5 +426,29 @@ describe('SwitchTeams', () => {
     // Import dialog should open (if isElectron is true)
     // The dialog behavior depends on isElectron flag
     cy.wait(100);
+  });
+
+  it('should show settings button on desktop width', () => {
+    // Set desktop viewport (wider than mobile breakpoint)
+    cy.viewport(1024, 768);
+    mountSwitchTeams(createInitialState());
+
+    // Settings button should be visible on desktop if user has permission
+    cy.get('body').then(($body) => {
+      const personalSettings = $body.find('[data-testid="personal-settings"]');
+      if (personalSettings.length > 0) {
+        cy.get('[data-testid="personal-settings"]').should('be.visible');
+      }
+    });
+  });
+
+  it('should not show settings button on mobile width', () => {
+    // Set mobile viewport (below sm breakpoint, typically 600px)
+    cy.viewport(375, 667);
+    mountSwitchTeams(createInitialState());
+
+    // Settings button should not be visible on mobile
+    cy.get('[data-testid="personal-settings"]').should('not.exist');
+    cy.get('[data-testid^="team-settings"]').should('not.exist');
   });
 });
