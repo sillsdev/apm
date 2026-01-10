@@ -33,10 +33,20 @@ const mockCoordinator = {
 // Create a mock reducer for Redux store
 const mockStringsReducer = () => {
   const initialState = localizationReducer(undefined, { type: '@@INIT' });
+
+  // Create a simple mock LocalizedStrings-like object for cards
+  const mockCardsStrings = {
+    ...initialState.cards,
+    unassigned: 'Unassigned',
+    setLanguage: () => {}, // Mock the setLanguage method
+    getString: (key: string) => mockCardsStrings[key] || key,
+  };
+
   return {
     ...initialState,
     loaded: true,
     lang: 'en',
+    cards: mockCardsStrings,
   };
 };
 

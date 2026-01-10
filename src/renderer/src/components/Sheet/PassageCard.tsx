@@ -19,7 +19,7 @@ import { passageTypeFromRef } from '../../control/passageTypeFromRef';
 import { RefRender } from '../../control/RefRender';
 import { LoadAndPlay } from '../LoadAndPLay';
 import AudioProgressButton from '../AudioProgressButton';
-import { cardsSelector } from 'selector';
+import { cardsSelector } from '../../selector';
 import { shallowEqual, useSelector } from 'react-redux';
 
 interface IProps {
