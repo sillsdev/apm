@@ -1312,6 +1312,13 @@
                <context context-type="sourcefile">TeamDialog.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="cards.unassigned">
+            <source>Unassigned</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">AddCard.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="cards.uploadProgress">
             <source>Upload Progress</source>
             <target/>
