@@ -35,11 +35,11 @@ const mockStringsReducer = () => {
   const initialState = localizationReducer(undefined, { type: '@@INIT' });
 
   // Create a simple mock LocalizedStrings-like object for cards
-  const mockCardsStrings = {
+  const mockCardsStrings: any = {
     ...initialState.cards,
     unassigned: 'Unassigned',
     setLanguage: () => {}, // Mock the setLanguage method
-    getString: (key: string) => mockCardsStrings[key] || key,
+    getString: (key: string): string => (mockCardsStrings as any)[key] || key,
   };
 
   return {
