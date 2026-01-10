@@ -1126,6 +1126,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="cards.unassigned">
+         <segment>
+            <source>Unassigned</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="cards.uploadProgress">
          <segment>
             <source>Upload Progress</source>

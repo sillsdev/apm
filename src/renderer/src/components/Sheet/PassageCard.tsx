@@ -1,4 +1,4 @@
-import { ISheet, PassageTypeEnum } from '../../model';
+import { ICardsStrings, ISheet, PassageTypeEnum } from '../../model';
 import {
   Box,
   Button,
@@ -19,6 +19,8 @@ import { passageTypeFromRef } from '../../control/passageTypeFromRef';
 import { RefRender } from '../../control/RefRender';
 import { LoadAndPlay } from '../LoadAndPLay';
 import AudioProgressButton from '../AudioProgressButton';
+import { cardsSelector } from 'selector';
+import { shallowEqual, useSelector } from 'react-redux';
 
 interface IProps {
   cardInfo: ISheet;
@@ -40,6 +42,7 @@ export function PassageCard(props: IProps) {
     isPlaying,
     isPersonal,
   } = props;
+  const t: ICardsStrings = useSelector(cardsSelector, shallowEqual);
 
   const fullBookName = getBookName(cardInfo.book);
 
@@ -120,7 +123,7 @@ export function PassageCard(props: IProps) {
                 }}
               >
                 <Person sx={{ verticalAlign: 'middle', mb: '.5rem' }} />
-                {'Unassigned'}
+                {t.unassigned || 'Unassigned'}
               </Box>
             )}
           </Box>
