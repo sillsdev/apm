@@ -101,6 +101,54 @@ describe('PlanView', () => {
     mockHandleGraphic = cy.stub().as('handleGraphic');
   });
 
+  // Helper function to mount PlanView with optional TeamContext configuration
+  const mountPlanViewWithoutTeamContext = (
+    props: {
+      rowInfo: ISheet[];
+      bookMap: Record<string, string>;
+      publishingView: boolean;
+      handleOpenPublishDialog: (index: number) => void;
+      handleGraphic: (index: number) => void;
+    },
+    teamContextConfig: 'omitted' | 'undefined' = 'omitted'
+  ) => {
+    const initialState = createInitialState();
+    const planContextState = createMockPlanContextState();
+    const memory = createMockMemory();
+
+    const planContextProvider = (
+      <PlanContext.Provider
+        value={{
+          state: planContextState as any,
+          setState: cy.stub(),
+        }}
+      >
+        <PlanView {...props} />
+      </PlanContext.Provider>
+    );
+
+    const content =
+      teamContextConfig === 'omitted' ? (
+        planContextProvider
+      ) : (
+        <TeamContext.Provider
+          value={{ state: undefined, setState: cy.stub() } as any}
+        >
+          {planContextProvider}
+        </TeamContext.Provider>
+      );
+
+    cy.mount(
+      <MemoryRouter initialEntries={['/plan/test-prj/0']}>
+        <Provider store={mockStore}>
+          <GlobalProvider init={{ ...initialState, memory }}>
+            <DataProvider dataStore={memory}>{content}</DataProvider>
+          </GlobalProvider>
+        </Provider>
+      </MemoryRouter>
+    );
+  };
+
   const createInitialState = (overrides = {}) => ({
     coordinator: mockCoordinator,
     errorReporter: bugsnagClient,
@@ -658,5 +706,57 @@ describe('PlanView', () => {
     cy.get('div[class*="MuiAvatar-root"]')
       .eq(1)
       .should('have.css', 'margin-left');
+  });
+
+  it('should handle undefined TeamContext gracefully', () => {
+    const section = createMockSection({
+      passageType: PassageTypeEnum.PASSAGE,
+      title: 'Test Section',
+    });
+    const rowInfo: ISheet[] = [section];
+    const bookMap = createMockBookNameMap();
+
+    mountPlanViewWithoutTeamContext(
+      {
+        rowInfo,
+        bookMap,
+        publishingView: false,
+        handleOpenPublishDialog: mockHandleOpenPublishDialog,
+        handleGraphic: mockHandleGraphic,
+      },
+      'omitted'
+    );
+
+    cy.wait(100);
+    // Should render without error even when TeamContext is not provided
+    cy.get('div[class*="MuiGrid-container"]', { timeout: 5000 }).should(
+      'exist'
+    );
+  });
+
+  it('should handle TeamContext with undefined state gracefully', () => {
+    const section = createMockSection({
+      passageType: PassageTypeEnum.PASSAGE,
+      title: 'Test Section',
+    });
+    const rowInfo: ISheet[] = [section];
+    const bookMap = createMockBookNameMap();
+
+    mountPlanViewWithoutTeamContext(
+      {
+        rowInfo,
+        bookMap,
+        publishingView: false,
+        handleOpenPublishDialog: mockHandleOpenPublishDialog,
+        handleGraphic: mockHandleGraphic,
+      },
+      'undefined'
+    );
+
+    cy.wait(100);
+    // Should render without error even when TeamContext.state is undefined
+    cy.get('div[class*="MuiGrid-container"]', { timeout: 5000 }).should(
+      'exist'
+    );
   });
 });
