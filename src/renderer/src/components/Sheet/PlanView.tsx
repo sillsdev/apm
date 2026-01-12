@@ -43,7 +43,7 @@ export function PlanView(props: IProps) {
   const ctx = useContext(PlanContext);
   const teamCtx = useContext(TeamContext);
   const { sectionArr } = ctx.state;
-  const { personalTeam } = teamCtx.state;
+  const personalTeam = teamCtx?.state?.personalTeam;
   const [srcMediaId, setSrcMediaId] = useState<string | undefined>(undefined);
   const [view, setView] = useState('');
   const sectionMap = useMemo(() => new Map(sectionArr), [sectionArr]);
