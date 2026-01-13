@@ -191,7 +191,7 @@ export function ProjectMenu(props: IProps) {
               />
             </StyledMenuItem>
           )}
-        {!justFilter && isAdmin && !isMobileWidth && !inProject && (
+        {!isMobileWidth && !justFilter && isAdmin && !inProject && (
           <StyledMenuItem id="projMenuImp" onClick={handle('import')}>
             <ListItemIcon>
               <ImportIcon />
