@@ -5,7 +5,6 @@ import { Provider } from 'react-redux';
 import { legacy_createStore as createStore, combineReducers } from 'redux';
 import DataProvider from '../../hoc/DataProvider';
 import { PlanContext } from '../../context/PlanContext';
-import { TeamContext } from '../../context/TeamContext';
 import Coordinator from '@orbit/coordinator';
 import Memory from '@orbit/memory';
 import bugsnagClient from '../../auth/bugsnagClient';
@@ -22,13 +21,19 @@ import {
 import { RecordIdentity } from '@orbit/records';
 
 // Mock dependencies
-const createMockLiveQuery = () => ({
-  subscribe: () => () => {},
-  query: () => [],
+const createMockLiveQuery = (data: any[] = []) => ({
+  subscribe: (callback: (update: any) => void) => {
+    // Return an unsubscribe function
+    return () => {};
+  },
+  query: () => data,
 });
 
-// Create mock memory that can return section records
-const createMockMemory = (sections: SectionD[] = []): Memory => {
+// Create mock memory that can return section and organization records
+const createMockMemory = (
+  sections: SectionD[] = [],
+  organizations: any[] = []
+): Memory => {
   return {
     cache: {
       query: (queryFn: (q: any) => any) => {
@@ -37,18 +42,39 @@ const createMockMemory = (sections: SectionD[] = []): Memory => {
             if (type === 'section') {
               return sections.find((s) => s.id === id);
             }
+            if (type === 'organization') {
+              return organizations.find((org) => org.id === id);
+            }
             return undefined;
           },
           findRecords: (type: string) => {
             if (type === 'section') {
               return sections;
             }
+            if (type === 'organization') {
+              return organizations;
+            }
             return [];
           },
         };
         return queryFn(mockQueryBuilder);
       },
-      liveQuery: createMockLiveQuery,
+      liveQuery: (queryFn: (q: any) => any) => {
+        const mockQueryBuilder = {
+          findRecords: (type: string) => {
+            if (type === 'section') {
+              return sections;
+            }
+            if (type === 'organization') {
+              return organizations;
+            }
+            return [];
+          },
+        };
+        const result = queryFn(mockQueryBuilder);
+        return createMockLiveQuery(result);
+      },
+      patch: () => {}, // Add a simple patch method
     },
     update: () => {},
   } as unknown as Memory;
@@ -100,54 +126,6 @@ describe('PlanView', () => {
     mockHandleOpenPublishDialog = cy.stub().as('handleOpenPublishDialog');
     mockHandleGraphic = cy.stub().as('handleGraphic');
   });
-
-  // Helper function to mount PlanView with optional TeamContext configuration
-  const mountPlanViewWithoutTeamContext = (
-    props: {
-      rowInfo: ISheet[];
-      bookMap: Record<string, string>;
-      publishingView: boolean;
-      handleOpenPublishDialog: (index: number) => void;
-      handleGraphic: (index: number) => void;
-    },
-    teamContextConfig: 'omitted' | 'undefined' = 'omitted'
-  ) => {
-    const initialState = createInitialState();
-    const planContextState = createMockPlanContextState();
-    const memory = createMockMemory();
-
-    const planContextProvider = (
-      <PlanContext.Provider
-        value={{
-          state: planContextState as any,
-          setState: cy.stub(),
-        }}
-      >
-        <PlanView {...props} />
-      </PlanContext.Provider>
-    );
-
-    const content =
-      teamContextConfig === 'omitted' ? (
-        planContextProvider
-      ) : (
-        <TeamContext.Provider
-          value={{ state: undefined, setState: cy.stub() } as any}
-        >
-          {planContextProvider}
-        </TeamContext.Provider>
-      );
-
-    cy.mount(
-      <MemoryRouter initialEntries={['/plan/test-prj/0']}>
-        <Provider store={mockStore}>
-          <GlobalProvider init={{ ...initialState, memory }}>
-            <DataProvider dataStore={memory}>{content}</DataProvider>
-          </GlobalProvider>
-        </Provider>
-      </MemoryRouter>
-    );
-  };
 
   const createInitialState = (overrides = {}) => ({
     coordinator: mockCoordinator,
@@ -288,61 +266,54 @@ describe('PlanView', () => {
     globalStateOverrides = {},
     initialEntries: string[] = ['/project/test-prj'],
     sections: SectionD[] = [],
-    personalTeam: string = 'personal-team-id'
+    organizationName: string = 'Test Organization'
   ) => {
     const initialState = createInitialState(globalStateOverrides);
     const planContextState = createMockPlanContextState(planContextOverrides);
-    const memory = createMockMemory(sections);
 
-    // Create mock TeamContext value
-    const mockTeamContextValue = {
-      state: {
-        lang: 'en',
-        ts: {} as any,
-        resetOrbitError: cy.stub(),
-        bookSuggestions: [],
-        bookMap: {} as any,
-        allBookData: [],
-        planTypes: [],
-        isDeleting: false,
-        teams: [],
-        personalTeam: personalTeam,
-        personalProjects: [],
-        teamProjects: () => [],
-        teamMembers: () => 0,
-        loadProject: () => {},
-        setProjectParams: () => ['', ''],
-        projectType: () => '',
-        projectSections: () => '',
-        projectDescription: () => '',
-        projectLanguage: () => '',
-        projectCreate: async () => '',
-        projectUpdate: () => {},
-        projectDelete: () => {},
-        teamCreate: () => {},
-        teamUpdate: () => {},
-        teamDelete: async () => {},
-        isAdmin: () => false,
-        isProjectAdmin: () => false,
-        flatAdd: async () => {},
-        cardStrings: {} as any,
-        sharedStrings: {} as any,
-        vProjectStrings: {} as any,
-        pickerStrings: {} as any,
-        projButtonStrings: {} as any,
-        newProjectStrings: {} as any,
-        importOpen: false,
-        setImportOpen: () => {},
-        importProject: undefined,
-        doImport: () => {},
-        resetProjectPermissions: async () => {},
-        generalBook: () => '000',
-        updateGeneralBooks: async () => {},
-        checkScriptureBooks: () => {},
-        tab: 0,
-        setTab: () => {},
+    // Create mock organizations for orbit data
+    const mockOrganizations = [
+      {
+        id: 'org-1',
+        type: 'organization',
+        attributes: {
+          name: organizationName,
+          websiteUrl: '',
+          logoUrl: '',
+          publicByDefault: false,
+          allUsersPolicy: '',
+          dateCreated: '',
+          dateUpdated: '',
+          lastModifiedBy: 0,
+        },
       },
-      setState: cy.stub(),
+    ];
+
+    const memory = createMockMemory(sections, mockOrganizations);
+
+    // Mock the cache to return organizations
+    memory.cache.query = (queryFn: (q: any) => any) => {
+      const mockQueryBuilder = {
+        findRecord: ({ type, id }: { type: string; id: string }) => {
+          if (type === 'section') {
+            return sections.find((s) => s.id === id);
+          }
+          if (type === 'organization') {
+            return mockOrganizations.find((org) => org.id === id);
+          }
+          return undefined;
+        },
+        findRecords: (type: string) => {
+          if (type === 'section') {
+            return sections;
+          }
+          if (type === 'organization') {
+            return mockOrganizations;
+          }
+          return [];
+        },
+      };
+      return queryFn(mockQueryBuilder);
     };
 
     cy.mount(
@@ -350,16 +321,14 @@ describe('PlanView', () => {
         <Provider store={mockStore}>
           <GlobalProvider init={{ ...initialState, memory }}>
             <DataProvider dataStore={memory}>
-              <TeamContext.Provider value={mockTeamContextValue as any}>
-                <PlanContext.Provider
-                  value={{
-                    state: planContextState as any,
-                    setState: cy.stub(),
-                  }}
-                >
-                  <PlanView {...props} />
-                </PlanContext.Provider>
-              </TeamContext.Provider>
+              <PlanContext.Provider
+                value={{
+                  state: planContextState as any,
+                  setState: cy.stub(),
+                }}
+              >
+                <PlanView {...props} />
+              </PlanContext.Provider>
             </DataProvider>
           </GlobalProvider>
         </Provider>
@@ -577,7 +546,7 @@ describe('PlanView', () => {
     });
     const rowInfo: ISheet[] = [passage];
     const bookMap = createMockBookNameMap();
-    const personalTeamId = 'personal-team-id';
+    const personalOrgName = '>My Personal<';
 
     mountPlanView(
       {
@@ -588,10 +557,10 @@ describe('PlanView', () => {
         handleGraphic: mockHandleGraphic,
       },
       {},
-      { organization: personalTeamId },
+      { organization: 'org-1' }, // Use the mock org ID
       ['/project/test-prj'],
       [],
-      personalTeamId
+      personalOrgName // This creates an organization with name 'Personal'
     );
 
     cy.wait(100);
@@ -706,57 +675,5 @@ describe('PlanView', () => {
     cy.get('div[class*="MuiAvatar-root"]')
       .eq(1)
       .should('have.css', 'margin-left');
-  });
-
-  it('should handle undefined TeamContext gracefully', () => {
-    const section = createMockSection({
-      passageType: PassageTypeEnum.PASSAGE,
-      title: 'Test Section',
-    });
-    const rowInfo: ISheet[] = [section];
-    const bookMap = createMockBookNameMap();
-
-    mountPlanViewWithoutTeamContext(
-      {
-        rowInfo,
-        bookMap,
-        publishingView: false,
-        handleOpenPublishDialog: mockHandleOpenPublishDialog,
-        handleGraphic: mockHandleGraphic,
-      },
-      'omitted'
-    );
-
-    cy.wait(100);
-    // Should render without error even when TeamContext is not provided
-    cy.get('div[class*="MuiGrid-container"]', { timeout: 5000 }).should(
-      'exist'
-    );
-  });
-
-  it('should handle TeamContext with undefined state gracefully', () => {
-    const section = createMockSection({
-      passageType: PassageTypeEnum.PASSAGE,
-      title: 'Test Section',
-    });
-    const rowInfo: ISheet[] = [section];
-    const bookMap = createMockBookNameMap();
-
-    mountPlanViewWithoutTeamContext(
-      {
-        rowInfo,
-        bookMap,
-        publishingView: false,
-        handleOpenPublishDialog: mockHandleOpenPublishDialog,
-        handleGraphic: mockHandleGraphic,
-      },
-      'undefined'
-    );
-
-    cy.wait(100);
-    // Should render without error even when TeamContext.state is undefined
-    cy.get('div[class*="MuiGrid-container"]', { timeout: 5000 }).should(
-      'exist'
-    );
   });
 });

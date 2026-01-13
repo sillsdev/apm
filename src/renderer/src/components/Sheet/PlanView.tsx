@@ -6,6 +6,7 @@ import {
   SectionD,
   PassageTypeEnum,
   IPlanSheetStrings,
+  OrganizationD,
 } from '../../model';
 import { Button, Box, Typography, Grid } from '@mui/material';
 import PublishOnIcon from '@mui/icons-material/PublicOutlined';
@@ -14,12 +15,12 @@ import StickyRedirect from '../StickyRedirect';
 import { useParams } from 'react-router-dom';
 import { GraphicAvatar } from './GraphicAvatar';
 import { GrowingSpacer } from '../../control';
-import { findRecord } from '../../crud';
+import { findRecord, isPersonalTeam } from '../../crud';
 import { useGlobal } from '../../context/useGlobal';
 import { sectionDescription } from '../../crud';
 import { PlanContext } from '../../context/PlanContext';
-import { TeamContext } from '../../context/TeamContext';
 import { planSheetSelector } from '../../selector';
+import { useOrbitData } from '../../hoc/useOrbitData';
 
 interface IProps {
   rowInfo: ISheet[];
@@ -39,16 +40,18 @@ export function PlanView(props: IProps) {
   } = props;
   const { prjId } = useParams();
   const [memory] = useGlobal('memory');
-  const [organization] = useGlobal('organization');
   const ctx = useContext(PlanContext);
-  const teamCtx = useContext(TeamContext);
   const { sectionArr } = ctx.state;
-  const personalTeam = teamCtx?.state?.personalTeam;
   const [srcMediaId, setSrcMediaId] = useState<string | undefined>(undefined);
   const [view, setView] = useState('');
+  const teams = useOrbitData<OrganizationD[]>('organization');
   const sectionMap = useMemo(() => new Map(sectionArr), [sectionArr]);
   const t: IPlanSheetStrings = useSelector(planSheetSelector, shallowEqual);
-  const isPersonal = organization === personalTeam;
+  const [teamId] = useGlobal('organization');
+  const isPersonal = useMemo(
+    () => isPersonalTeam(teamId, teams),
+    [teamId, teams]
+  );
 
   const onPlayStatus = (mediaId: string) => {
     setSrcMediaId(mediaId);
