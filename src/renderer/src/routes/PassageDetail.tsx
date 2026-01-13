@@ -235,6 +235,7 @@ const PassageDetailGrids = () => {
               minWidth: 0,
               flexShrink: 1,
               whiteSpace: 'nowrap',
+              ml: 'auto',
             }}
             size={{ xs: 'auto' }}
           >
