@@ -1,26 +1,22 @@
 import { ICardsStrings, ISheet, PassageTypeEnum } from '../../model';
 import {
+  Avatar,
   Box,
   Button,
   Card,
   CardContent,
-  IconButton,
   Typography,
   useMediaQuery,
   useTheme,
 } from '@mui/material';
-import {
-  ArrowForwardIos,
-  Person,
-  PlayCircleOutline,
-} from '@mui/icons-material';
+import { ArrowForwardIos, Person } from '@mui/icons-material';
 import TaskAvatar from '../../components/TaskAvatar';
 import { passageTypeFromRef } from '../../control/passageTypeFromRef';
 import { RefRender } from '../../control/RefRender';
-import { LoadAndPlay } from '../LoadAndPLay';
-import AudioProgressButton from '../AudioProgressButton';
+import { PlayButton } from '../PlayButton';
 import { cardsSelector } from '../../selector';
 import { shallowEqual, useSelector } from 'react-redux';
+import { stringAvatar } from '../../utils';
 
 interface IProps {
   cardInfo: ISheet;
@@ -66,6 +62,40 @@ export function PassageCard(props: IProps) {
     }
   };
 
+  const getGraphicValue = () => {
+    if (
+      psgType !== PassageTypeEnum.NOTE &&
+      psgType !== PassageTypeEnum.CHAPTERNUMBER
+    ) {
+      return null;
+    }
+
+    const borderColor = cardInfo?.color;
+    const border = borderColor ? { border: '2px solid', borderColor } : {};
+    const pointer = { cursor: 'pointer' };
+
+    if (cardInfo.graphicUri) {
+      return (
+        <Avatar
+          sx={{ ...pointer, ...border, mr: 1 }}
+          src={cardInfo.graphicUri}
+          variant="rounded"
+        />
+      );
+    }
+
+    return (
+      <Avatar
+        {...stringAvatar(ref || cardInfo.reference || 'Note', {
+          // ...pointer,  # Disable untile we add ability to edit graphics here.
+          ...border,
+          mr: 1,
+        })}
+        variant="rounded"
+      />
+    );
+  };
+
   return (
     <Card
       elevation={3}
@@ -73,87 +103,91 @@ export function PassageCard(props: IProps) {
     >
       <CardContent>
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          {getGraphicValue()}
           <Typography variant="h6">
             {psgType === PassageTypeEnum.PASSAGE ? (
               `${fullBookName} ${ref}`
             ) : ref ? (
-              <RefRender value={ref} pt={psgType} fontSize={'0.8rem'} />
+              <>
+                <RefRender value={ref} pt={psgType} fontSize={'0.8rem'} />
+                {psgType === PassageTypeEnum.CHAPTERNUMBER && comment
+                  ? ` ${comment}`
+                  : null}
+              </>
             ) : null}
           </Typography>
-          {cardInfo.mediaId?.id && isPlaying ? (
-            <LoadAndPlay
-              Component={AudioProgressButton}
-              srcMediaId={cardInfo.mediaId?.id}
-              requestPlay={isPlaying}
-              onEnded={handlePlayEnd}
-              onTogglePlay={onPlayStatus}
-              sx={{ width: 40, height: 40 }}
-            />
-          ) : cardInfo.mediaId?.id ? (
-            <IconButton onClick={onPlayStatus}>
-              <PlayCircleOutline fontSize="large" color="primary" />
-            </IconButton>
-          ) : (
-            <Box
-              sx={{
-                display: 'inline-flex',
-                ml: 1,
-                mt: '-.25rem',
-                width: 40,
-                height: 40,
-                borderRadius: '50%',
-                verticalAlign: 'middle',
-              }}
-            />
-          )}
+          <PlayButton
+            mediaId={cardInfo.mediaId?.id}
+            isPlaying={isPlaying && psgType !== PassageTypeEnum.CHAPTERNUMBER}
+            onPlayStatus={onPlayStatus}
+            onPlayEnd={handlePlayEnd}
+          />
         </Box>
-        <Typography variant="body2" color="grey">
-          {comment || '\u00A0'}
-        </Typography>
-        {!isPersonal && (
-          <Box sx={{ margin: '1.5rem 0 .5rem 0' }}>
-            {cardInfo.assign ? (
-              <TaskAvatar assigned={cardInfo?.assign || null} />
-            ) : (
-              <Box
-                sx={{
-                  display: 'flex',
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                }}
-              >
-                <Person sx={{ verticalAlign: 'middle', mb: '.5rem' }} />
-                {t.unassigned || 'Unassigned'}
+        {psgType !== PassageTypeEnum.CHAPTERNUMBER ? (
+          <>
+            <Typography variant="body2" color="grey">
+              {comment || '\u00A0'}
+            </Typography>
+            {!isPersonal && (
+              <Box sx={{ margin: '1.5rem 0 .5rem 0' }}>
+                {cardInfo.assign ? (
+                  <TaskAvatar assigned={cardInfo?.assign || null} />
+                ) : (
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                    }}
+                  >
+                    <Person sx={{ verticalAlign: 'middle', mb: '.5rem' }} />
+                    {t.unassigned || 'Unassigned'}
+                  </Box>
+                )}
               </Box>
             )}
-          </Box>
-        )}
-        <Button
-          variant="contained"
-          sx={{ width: '100%', position: 'relative', px: 1 }}
-          onClick={handleViewStep}
-        >
-          <span
-            style={{
-              display: 'block',
-              textAlign: 'center',
-              width: '100%',
-              fontWeight: 'bold',
+            <Button
+              variant="contained"
+              sx={{ width: '100%', position: 'relative', px: 1 }}
+              onClick={handleViewStep}
+            >
+              <span
+                style={{
+                  display: 'block',
+                  textAlign: 'center',
+                  width: '100%',
+                  fontWeight: 'bold',
+                }}
+              >
+                {cardInfo.step}
+              </span>
+              <ArrowForwardIos
+                sx={{
+                  position: 'absolute',
+                  right: 8,
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  pointerEvents: 'none',
+                  fontSize: 'medium',
+                }}
+              />
+            </Button>
+          </>
+        ) : (
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'space-around',
             }}
           >
-            {cardInfo.step}
-          </span>
-          <ArrowForwardIos
-            sx={{
-              position: 'absolute',
-              right: 8,
-              top: '50%',
-              transform: 'translateY(-50%)',
-              pointerEvents: 'none',
-              fontSize: 'medium',
-            }}
-          />
-        </Button>
+            <PlayButton
+              mediaId={cardInfo.mediaId?.id}
+              isPlaying={isPlaying && psgType === PassageTypeEnum.CHAPTERNUMBER}
+              onPlayStatus={onPlayStatus}
+              onPlayEnd={handlePlayEnd}
+            />
+          </Box>
+        )}
       </CardContent>
     </Card>
   );

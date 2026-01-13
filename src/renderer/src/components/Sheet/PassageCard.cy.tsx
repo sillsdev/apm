@@ -159,6 +159,8 @@ describe('PassageCard', () => {
       filtered: false,
       published: [],
       step: 'Step 1',
+      color: undefined,
+      graphicUri: undefined,
       passage: {
         id: 'passage-1',
         type: 'passage',
@@ -803,5 +805,579 @@ describe('PassageCard', () => {
     // When isPlaying is false, handlePlayEnd won't call onPlayStatus
     // This is tested implicitly through the component logic
     cy.get('div[class*="MuiCard-root"]').should('be.visible');
+  });
+
+  // Tests for CHAPTERNUMBER passage type
+  describe('CHAPTERNUMBER passage type', () => {
+    it('should render correctly when passageType is CHAPTERNUMBER', () => {
+      const cardInfo = createMockSheet({
+        passageType: PassageTypeEnum.CHAPTERNUMBER,
+        reference: '1',
+        comment: 'Chapter Introduction',
+        passage: {
+          id: 'passage-1',
+          type: 'passage',
+          attributes: {
+            sequencenum: 1,
+            book: 'GEN',
+            reference: 'CHNUM|1',
+            state: '',
+            hold: false,
+            title: '',
+            lastComment: '',
+            stepComplete: '{}',
+            dateCreated: '',
+            dateUpdated: '',
+            lastModifiedBy: 0,
+          },
+        },
+      });
+
+      mountPassageCard(cardInfo, {
+        getBookName: mockGetBookName,
+        handleViewStep: mockHandleViewStep,
+        isPlaying: false,
+      });
+
+      // Should show the reference with RefRender and comment
+      cy.get('h6[class*="MuiTypography-h6"]').should('be.visible');
+      cy.contains('Chapter Introduction').should('be.visible');
+    });
+
+    it('should not show comment section for CHAPTERNUMBER type', () => {
+      const cardInfo = createMockSheet({
+        passageType: PassageTypeEnum.CHAPTERNUMBER,
+        reference: '1',
+        comment: 'Chapter Introduction',
+        passage: {
+          id: 'passage-1',
+          type: 'passage',
+          attributes: {
+            sequencenum: 1,
+            book: 'GEN',
+            reference: 'CHNUM|1',
+            state: '',
+            hold: false,
+            title: '',
+            lastComment: '',
+            stepComplete: '{}',
+            dateCreated: '',
+            dateUpdated: '',
+            lastModifiedBy: 0,
+          },
+        },
+      });
+
+      mountPassageCard(cardInfo, {
+        getBookName: mockGetBookName,
+        handleViewStep: mockHandleViewStep,
+        isPlaying: false,
+      });
+
+      // Should not show separate comment section below title
+      cy.get('p[class*="MuiTypography-body2"]').should('not.exist');
+    });
+
+    it('should not show assign section for CHAPTERNUMBER type', () => {
+      const cardInfo = createMockSheet({
+        passageType: PassageTypeEnum.CHAPTERNUMBER,
+        reference: '1',
+        assign: createMockRecordIdentity('user-1', 'user'),
+        passage: {
+          id: 'passage-1',
+          type: 'passage',
+          attributes: {
+            sequencenum: 1,
+            book: 'GEN',
+            reference: 'CHNUM|1',
+            state: '',
+            hold: false,
+            title: '',
+            lastComment: '',
+            stepComplete: '{}',
+            dateCreated: '',
+            dateUpdated: '',
+            lastModifiedBy: 0,
+          },
+        },
+      });
+
+      mountPassageCard(cardInfo, {
+        getBookName: mockGetBookName,
+        handleViewStep: mockHandleViewStep,
+        isPlaying: false,
+        isPersonal: false,
+      });
+
+      // Should not show TaskAvatar or Unassigned text
+      cy.contains('Unassigned').should('not.exist');
+      cy.get('svg[data-testid="PersonIcon"]').should('not.exist');
+    });
+
+    it('should not show step button for CHAPTERNUMBER type', () => {
+      const cardInfo = createMockSheet({
+        passageType: PassageTypeEnum.CHAPTERNUMBER,
+        reference: '1',
+        step: 'Record',
+        passage: {
+          id: 'passage-1',
+          type: 'passage',
+          attributes: {
+            sequencenum: 1,
+            book: 'GEN',
+            reference: 'CHNUM|1',
+            state: '',
+            hold: false,
+            title: '',
+            lastComment: '',
+            stepComplete: '{}',
+            dateCreated: '',
+            dateUpdated: '',
+            lastModifiedBy: 0,
+          },
+        },
+      });
+
+      mountPassageCard(cardInfo, {
+        getBookName: mockGetBookName,
+        handleViewStep: mockHandleViewStep,
+        isPlaying: false,
+      });
+
+      // Should not show step button
+      cy.contains('button', 'Record').should('not.exist');
+      cy.get('svg[data-testid="ArrowForwardIosIcon"]').should('not.exist');
+    });
+
+    it('should show play button when mediaId exists for CHAPTERNUMBER type', () => {
+      const cardInfo = createMockSheet({
+        passageType: PassageTypeEnum.CHAPTERNUMBER,
+        reference: '1',
+        mediaId: createMockRecordIdentity('media-1', 'mediafile'),
+        passage: {
+          id: 'passage-1',
+          type: 'passage',
+          attributes: {
+            sequencenum: 1,
+            book: 'GEN',
+            reference: 'CHNUM|1',
+            state: '',
+            hold: false,
+            title: '',
+            lastComment: '',
+            stepComplete: '{}',
+            dateCreated: '',
+            dateUpdated: '',
+            lastModifiedBy: 0,
+          },
+        },
+      });
+
+      mountPassageCard(cardInfo, {
+        getBookName: mockGetBookName,
+        handleViewStep: mockHandleViewStep,
+        onPlayStatus: mockOnPlayStatus,
+        isPlaying: false,
+      });
+
+      // Should show play icon button in the centered box
+      cy.get('button[class*="MuiIconButton-root"]').should('be.visible');
+      cy.get('svg[data-testid="PlayCircleOutlineIcon"]').should('exist');
+    });
+
+    it('should show AudioProgressButton when playing for CHAPTERNUMBER type', () => {
+      const cardInfo = createMockSheet({
+        passageType: PassageTypeEnum.CHAPTERNUMBER,
+        reference: '1',
+        mediaId: createMockRecordIdentity('media-1', 'mediafile'),
+        passage: {
+          id: 'passage-1',
+          type: 'passage',
+          attributes: {
+            sequencenum: 1,
+            book: 'GEN',
+            reference: 'CHNUM|1',
+            state: '',
+            hold: false,
+            title: '',
+            lastComment: '',
+            stepComplete: '{}',
+            dateCreated: '',
+            dateUpdated: '',
+            lastModifiedBy: 0,
+          },
+        },
+      });
+
+      mountPassageCard(cardInfo, {
+        getBookName: mockGetBookName,
+        handleViewStep: mockHandleViewStep,
+        onPlayStatus: mockOnPlayStatus,
+        isPlaying: true,
+      });
+
+      // Should show LoadAndPlay component (AudioProgressButton) in centered box
+      // The play IconButton should not be visible when isPlaying is true
+      cy.get('svg[data-testid="PlayCircleOutlineIcon"]').should('not.exist');
+      cy.get('div[class*="MuiCard-root"]').should('be.visible');
+    });
+
+    it('should show comment after reference when comment is defined for CHAPTERNUMBER type', () => {
+      const cardInfo = createMockSheet({
+        passageType: PassageTypeEnum.CHAPTERNUMBER,
+        reference: '1',
+        comment: 'Chapter Introduction',
+        passage: {
+          id: 'passage-1',
+          type: 'passage',
+          attributes: {
+            sequencenum: 1,
+            book: 'GEN',
+            reference: 'CHNUM|1',
+            state: '',
+            hold: false,
+            title: '',
+            lastComment: '',
+            stepComplete: '{}',
+            dateCreated: '',
+            dateUpdated: '',
+            lastModifiedBy: 0,
+          },
+        },
+      });
+
+      mountPassageCard(cardInfo, {
+        getBookName: mockGetBookName,
+        handleViewStep: mockHandleViewStep,
+        isPlaying: false,
+      });
+
+      // Should show the comment after the reference
+      cy.get('h6[class*="MuiTypography-h6"]').should(
+        'contain.text',
+        'Chapter Introduction'
+      );
+    });
+
+    it('should not show comment after reference when comment is undefined for CHAPTERNUMBER type', () => {
+      const cardInfo = createMockSheet({
+        passageType: PassageTypeEnum.CHAPTERNUMBER,
+        reference: '1',
+        comment: undefined, // Explicitly undefined
+        passage: {
+          id: 'passage-1',
+          type: 'passage',
+          attributes: {
+            sequencenum: 1,
+            book: 'GEN',
+            reference: 'CHNUM|1',
+            state: '',
+            hold: false,
+            title: '',
+            lastComment: '',
+            stepComplete: '{}',
+            dateCreated: '',
+            dateUpdated: '',
+            lastModifiedBy: 0,
+          },
+        },
+      });
+
+      mountPassageCard(cardInfo, {
+        getBookName: mockGetBookName,
+        handleViewStep: mockHandleViewStep,
+        isPlaying: false,
+      });
+
+      // Should show only the reference without any comment text
+      cy.get('h6[class*="MuiTypography-h6"]').should('be.visible');
+      // The h6 should not contain any comment text - only RefRender content
+      cy.get('h6[class*="MuiTypography-h6"]').should(
+        'not.contain.text',
+        'undefined'
+      );
+    });
+
+    it('should not show comment after reference when comment is empty string for CHAPTERNUMBER type', () => {
+      const cardInfo = createMockSheet({
+        passageType: PassageTypeEnum.CHAPTERNUMBER,
+        reference: '1',
+        comment: '', // Empty string
+        passage: {
+          id: 'passage-1',
+          type: 'passage',
+          attributes: {
+            sequencenum: 1,
+            book: 'GEN',
+            reference: 'CHNUM|1',
+            state: '',
+            hold: false,
+            title: '',
+            lastComment: '',
+            stepComplete: '{}',
+            dateCreated: '',
+            dateUpdated: '',
+            lastModifiedBy: 0,
+          },
+        },
+      });
+
+      mountPassageCard(cardInfo, {
+        getBookName: mockGetBookName,
+        handleViewStep: mockHandleViewStep,
+        isPlaying: false,
+      });
+
+      // Should show only the reference without any comment text
+      cy.get('h6[class*="MuiTypography-h6"]').should('be.visible');
+      // Should not show any additional text after the reference
+      cy.get('h6[class*="MuiTypography-h6"]').should('not.contain.text', ' ');
+    });
+  });
+
+  // Tests for graphic rendering
+  describe('Graphic rendering', () => {
+    it('should show graphic avatar for NOTE type when graphicUri is provided', () => {
+      const cardInfo = createMockSheet({
+        passageType: PassageTypeEnum.NOTE,
+        graphicUri: 'https://example.com/note-image.png',
+        passage: {
+          id: 'passage-1',
+          type: 'passage',
+          attributes: {
+            sequencenum: 1,
+            book: 'GEN',
+            reference: 'NOTE|Special Note',
+            state: '',
+            hold: false,
+            title: '',
+            lastComment: '',
+            stepComplete: '{}',
+            dateCreated: '',
+            dateUpdated: '',
+            lastModifiedBy: 0,
+          },
+        },
+      });
+
+      mountPassageCard(cardInfo, {
+        getBookName: mockGetBookName,
+        handleViewStep: mockHandleViewStep,
+        isPlaying: false,
+      });
+
+      // Should show avatar with image source
+      cy.get('div[class*="MuiAvatar-root"]').should('be.visible');
+      cy.get('img[src="https://example.com/note-image.png"]').should('exist');
+    });
+
+    it('should show graphic avatar for CHAPTERNUMBER type when graphicUri is provided', () => {
+      const cardInfo = createMockSheet({
+        passageType: PassageTypeEnum.CHAPTERNUMBER,
+        graphicUri: 'https://example.com/chapter-image.png',
+        reference: '1',
+        passage: {
+          id: 'passage-1',
+          type: 'passage',
+          attributes: {
+            sequencenum: 1,
+            book: 'GEN',
+            reference: 'CHNUM|1',
+            state: '',
+            hold: false,
+            title: '',
+            lastComment: '',
+            stepComplete: '{}',
+            dateCreated: '',
+            dateUpdated: '',
+            lastModifiedBy: 0,
+          },
+        },
+      });
+
+      mountPassageCard(cardInfo, {
+        getBookName: mockGetBookName,
+        handleViewStep: mockHandleViewStep,
+        isPlaying: false,
+      });
+
+      // Should show avatar with image source
+      cy.get('div[class*="MuiAvatar-root"]').should('be.visible');
+      cy.get('img[src="https://example.com/chapter-image.png"]').should(
+        'exist'
+      );
+    });
+
+    it('should show string avatar for NOTE type when no graphicUri is provided', () => {
+      const cardInfo = createMockSheet({
+        passageType: PassageTypeEnum.NOTE,
+        reference: 'Special Note',
+        passage: {
+          id: 'passage-1',
+          type: 'passage',
+          attributes: {
+            sequencenum: 1,
+            book: 'GEN',
+            reference: 'NOTE|Special Note',
+            state: '',
+            hold: false,
+            title: '',
+            lastComment: '',
+            stepComplete: '{}',
+            dateCreated: '',
+            dateUpdated: '',
+            lastModifiedBy: 0,
+          },
+        },
+      });
+
+      mountPassageCard(cardInfo, {
+        getBookName: mockGetBookName,
+        handleViewStep: mockHandleViewStep,
+        isPlaying: false,
+      });
+
+      // Should show avatar with generated text
+      cy.get('div[class*="MuiAvatar-root"]').should('be.visible');
+      // Avatar should contain text (stringAvatar generates initials from the reference)
+      cy.get('div[class*="MuiAvatar-root"]').should('not.be.empty');
+    });
+
+    it('should show string avatar for CHAPTERNUMBER type when no graphicUri is provided', () => {
+      const cardInfo = createMockSheet({
+        passageType: PassageTypeEnum.CHAPTERNUMBER,
+        reference: '1',
+        passage: {
+          id: 'passage-1',
+          type: 'passage',
+          attributes: {
+            sequencenum: 1,
+            book: 'GEN',
+            reference: 'CHNUM|1',
+            state: '',
+            hold: false,
+            title: '',
+            lastComment: '',
+            stepComplete: '{}',
+            dateCreated: '',
+            dateUpdated: '',
+            lastModifiedBy: 0,
+          },
+        },
+      });
+
+      mountPassageCard(cardInfo, {
+        getBookName: mockGetBookName,
+        handleViewStep: mockHandleViewStep,
+        isPlaying: false,
+      });
+
+      // Should show avatar with generated text
+      cy.get('div[class*="MuiAvatar-root"]').should('be.visible');
+      // Avatar should contain text (stringAvatar generates initials from the reference)
+      cy.get('div[class*="MuiAvatar-root"]').should('not.be.empty');
+    });
+
+    it('should apply border color styling to avatar when color is provided', () => {
+      const cardInfo = createMockSheet({
+        passageType: PassageTypeEnum.NOTE,
+        color: '#ff0000',
+        reference: 'Special Note',
+        passage: {
+          id: 'passage-1',
+          type: 'passage',
+          attributes: {
+            sequencenum: 1,
+            book: 'GEN',
+            reference: 'NOTE|Special Note',
+            state: '',
+            hold: false,
+            title: '',
+            lastComment: '',
+            stepComplete: '{}',
+            dateCreated: '',
+            dateUpdated: '',
+            lastModifiedBy: 0,
+          },
+        },
+      });
+
+      mountPassageCard(cardInfo, {
+        getBookName: mockGetBookName,
+        handleViewStep: mockHandleViewStep,
+        isPlaying: false,
+      });
+
+      // Should show avatar with border styling
+      cy.get('div[class*="MuiAvatar-root"]')
+        .should('be.visible')
+        .and('have.css', 'border-color', 'rgb(255, 0, 0)'); // #ff0000 in rgb
+    });
+
+    it('should not show graphic for PASSAGE type', () => {
+      const cardInfo = createMockSheet({
+        passageType: PassageTypeEnum.PASSAGE,
+        graphicUri: 'https://example.com/image.png',
+        passage: {
+          id: 'passage-1',
+          type: 'passage',
+          attributes: {
+            sequencenum: 1,
+            book: 'GEN',
+            reference: '1:1',
+            state: '',
+            hold: false,
+            title: '',
+            lastComment: '',
+            stepComplete: '{}',
+            dateCreated: '',
+            dateUpdated: '',
+            lastModifiedBy: 0,
+          },
+        },
+      });
+
+      mountPassageCard(cardInfo, {
+        getBookName: mockGetBookName,
+        handleViewStep: mockHandleViewStep,
+        isPlaying: false,
+      });
+
+      // Should not show avatar for PASSAGE type
+      cy.get('div[class*="MuiAvatar-root"]').should('not.exist');
+    });
+
+    it('should not show graphic for other passage types', () => {
+      const cardInfo = createMockSheet({
+        passageType: PassageTypeEnum.BOOK,
+        graphicUri: 'https://example.com/image.png',
+        passage: {
+          id: 'passage-1',
+          type: 'passage',
+          attributes: {
+            sequencenum: 1,
+            book: 'GEN',
+            reference: 'BOOK|Genesis',
+            state: '',
+            hold: false,
+            title: '',
+            lastComment: '',
+            stepComplete: '{}',
+            dateCreated: '',
+            dateUpdated: '',
+            lastModifiedBy: 0,
+          },
+        },
+      });
+
+      mountPassageCard(cardInfo, {
+        getBookName: mockGetBookName,
+        handleViewStep: mockHandleViewStep,
+        isPlaying: false,
+      });
+
+      // Should not show avatar for BOOK type
+      cy.get('div[class*="MuiAvatar-root"]').should('not.exist');
+    });
   });
 });
