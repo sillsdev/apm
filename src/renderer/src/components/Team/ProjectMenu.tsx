@@ -7,7 +7,13 @@ import {
   IToDoTableStrings,
   VProject,
 } from '../../model';
-import { IconButton, ListItemIcon, ListItemText } from '@mui/material';
+import {
+  IconButton,
+  ListItemIcon,
+  ListItemText,
+  useMediaQuery,
+  useTheme,
+} from '@mui/material';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import SettingsIcon from '@mui/icons-material/Settings';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
@@ -61,6 +67,8 @@ export function ProjectMenu(props: IProps) {
   const [projType, setProjType] = useState('');
   const t: ICardsStrings = useSelector(cardsSelector, shallowEqual);
   const [shift, setShift] = React.useState(false);
+  const theme = useTheme();
+  const isMobileWidth = useMediaQuery(theme.breakpoints.down('sm'));
   const tpb: IProjButtonsStrings = useSelector(
     projButtonsSelector,
     shallowEqual
@@ -110,15 +118,18 @@ export function ProjectMenu(props: IProps) {
         open={Boolean(anchorEl)}
         onClose={handle('Close')}
       >
-        {!inProject && isAdmin && (!isOffline || offlineOnly) && (
-          <StyledMenuItem id="projMenuSettings" onClick={handle('settings')}>
-            <ListItemIcon>
-              <SettingsIcon />
-            </ListItemIcon>
-            <ListItemText primary={t.settings} />
-          </StyledMenuItem>
-        )}
-        {shift && !inProject && isAdmin && !isOffline && (
+        {!isMobileWidth &&
+          !inProject &&
+          isAdmin &&
+          (!isOffline || offlineOnly) && (
+            <StyledMenuItem id="projMenuSettings" onClick={handle('settings')}>
+              <ListItemIcon>
+                <SettingsIcon />
+              </ListItemIcon>
+              <ListItemText primary={t.settings} />
+            </StyledMenuItem>
+          )}
+        {shift && !isMobileWidth && !inProject && isAdmin && !isOffline && (
           <StyledMenuItem id="projMenuCopySameOrg" onClick={handle('copysame')}>
             <ListItemIcon>
               <ContentCopyIcon />
@@ -126,7 +137,7 @@ export function ProjectMenu(props: IProps) {
             <ListItemText primary={t.copySame} />
           </StyledMenuItem>
         )}
-        {shift && !inProject && isAdmin && !isOffline && (
+        {shift && !isMobileWidth && !inProject && isAdmin && !isOffline && (
           <StyledMenuItem id="projMenuCopyNewOrg" onClick={handle('copynew')}>
             <ListItemIcon>
               <ContentCopyIcon />
@@ -155,6 +166,7 @@ export function ProjectMenu(props: IProps) {
           </StyledMenuItem>
         )} */}
         {!justFilter &&
+          !isMobileWidth &&
           pathname &&
           projType.toLowerCase() === 'scripture' &&
           pathname.indexOf(ArtifactTypeSlug.Retell) === -1 &&
@@ -166,17 +178,20 @@ export function ProjectMenu(props: IProps) {
               <ListItemText primary={addPt(tpb.integrations)} />
             </StyledMenuItem>
           )}
-        {!inProject && (!isOffline || offlineOnly) && isAdmin && (
-          <StyledMenuItem id="projMenuCat" onClick={handle('category')}>
-            <ListItemIcon>
-              <EditIcon />
-            </ListItemIcon>
-            <ListItemText
-              primary={!isPersonal ? t.editCategory : t.editPersonalCategory}
-            />
-          </StyledMenuItem>
-        )}
-        {!justFilter && isAdmin && !inProject && (
+        {!isMobileWidth &&
+          !inProject &&
+          (!isOffline || offlineOnly) &&
+          isAdmin && (
+            <StyledMenuItem id="projMenuCat" onClick={handle('category')}>
+              <ListItemIcon>
+                <EditIcon />
+              </ListItemIcon>
+              <ListItemText
+                primary={!isPersonal ? t.editCategory : t.editPersonalCategory}
+              />
+            </StyledMenuItem>
+          )}
+        {!justFilter && isAdmin && !isMobileWidth && !inProject && (
           <StyledMenuItem id="projMenuImp" onClick={handle('import')}>
             <ListItemIcon>
               <ImportIcon />
@@ -201,7 +216,8 @@ export function ProjectMenu(props: IProps) {
           </StyledMenuItem>
         ) : (
           (!isOffline || offlineOnly) &&
-          isAdmin && (
+          isAdmin &&
+          !isMobileWidth && (
             <StyledMenuItem id="projMenuDel" onClick={handle('delete')}>
               <ListItemIcon>
                 <DeleteIcon />
