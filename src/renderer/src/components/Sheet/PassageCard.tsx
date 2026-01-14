@@ -116,12 +116,16 @@ export function PassageCard(props: IProps) {
               </>
             ) : null}
           </Typography>
-          <PlayButton
-            mediaId={cardInfo.mediaId?.id}
-            isPlaying={isPlaying && psgType !== PassageTypeEnum.CHAPTERNUMBER}
-            onPlayStatus={onPlayStatus}
-            onPlayEnd={handlePlayEnd}
-          />
+          {psgType !== PassageTypeEnum.CHAPTERNUMBER ? (
+            <PlayButton
+              mediaId={cardInfo.mediaId?.id}
+              isPlaying={isPlaying}
+              onPlayStatus={onPlayStatus}
+              onPlayEnd={handlePlayEnd}
+            />
+          ) : (
+            <></>
+          )}
         </Box>
         {psgType !== PassageTypeEnum.CHAPTERNUMBER ? (
           <>
@@ -178,6 +182,7 @@ export function PassageCard(props: IProps) {
             sx={{
               display: 'flex',
               justifyContent: 'space-around',
+              mt: 2,
             }}
           >
             <PlayButton
