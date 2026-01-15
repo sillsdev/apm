@@ -1965,7 +1965,7 @@ export function ScriptureTable(props: IProps) {
     }
     return filtered;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sheet, width, colNames, flat, publishingOn, organizedBy]);
+  }, [sheet, width, colNames, flat, publishingOn, organizedBy, hidePublishing]);
 
   const rowdata = useMemo(
     () => workSheet(rowinfo, colNames, sheet),
@@ -2036,9 +2036,12 @@ export function ScriptureTable(props: IProps) {
           <PlanView
             rowInfo={rowinfo}
             publishingView={publishingOn && !hidePublishing}
-            handleOpenPublishDialog={(i: number) =>
-              setSectionPublish(i, [PublishDestinationEnum.AkuoPublic])
-            }
+            handlePublish={(
+              i: number,
+              destinations: PublishDestinationEnum[]
+            ) => {
+              setSectionPublish(i, destinations);
+            }}
             handleGraphic={handleGraphic}
           />
         </>

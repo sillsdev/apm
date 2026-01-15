@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useContext, useMemo, useRef, useState } from 'react';
 import { shallowEqual, useSelector } from 'react-redux';
 import {
   ISheet,
@@ -9,34 +9,50 @@ import {
 } from '../../model';
 import { Button, Box, Typography, Grid } from '@mui/material';
 import PublishOnIcon from '@mui/icons-material/PublicOutlined';
+import PublishOffIcon from '@mui/icons-material/PublicOffOutlined';
 import { PassageCard } from './PassageCard';
 import StickyRedirect from '../StickyRedirect';
 import { useParams } from 'react-router-dom';
 import { GraphicAvatar } from './GraphicAvatar';
 import { GrowingSpacer } from '../../control';
-import { isPersonalTeam } from '../../crud';
+import {
+  isPersonalTeam,
+  PublishDestinationEnum,
+  usePublishDestination,
+} from '../../crud';
 import { useGlobal } from '../../context/useGlobal';
 import { planSheetSelector } from '../../selector';
 import { useOrbitData } from '../../hoc/useOrbitData';
 import { useSectionIdDescription } from './useSectionIdDescription';
+import ConfirmPublishDialog from '../ConfirmPublishDialog';
+import { rowTypes } from './rowTypes';
+import { PlanContext } from '../../context/PlanContext';
 
 interface IProps {
   rowInfo: ISheet[];
   publishingView: boolean;
-  handleOpenPublishDialog: (index: number) => void;
+  handlePublish: (
+    index: number,
+    destinations: PublishDestinationEnum[]
+  ) => void;
   handleGraphic: (index: number) => void;
 }
 
 export function PlanView(props: IProps) {
-  const { rowInfo, publishingView, handleOpenPublishDialog, handleGraphic } =
-    props;
+  const { rowInfo, publishingView, handlePublish, handleGraphic } = props;
   const { prjId } = useParams();
+  const ctx = useContext(PlanContext);
+  const { shared, publishingOn } = ctx.state;
   const [srcMediaId, setSrcMediaId] = useState<string | undefined>(undefined);
   const [view, setView] = useState('');
+  const [confirmPublish, setConfirmPublish] = useState(false);
+  const publishRow = useRef<number>(-1);
+  const { isMovement } = rowTypes(rowInfo);
   const teams = useOrbitData<OrganizationD[]>('organization');
   const getDescription = useSectionIdDescription();
   const t: IPlanSheetStrings = useSelector(planSheetSelector, shallowEqual);
   const [teamId] = useGlobal('organization');
+  const { isPublished } = usePublishDestination();
   const isPersonal = useMemo(
     () => isPersonalTeam(teamId, teams),
     [teamId, teams]
@@ -50,6 +66,19 @@ export function PlanView(props: IProps) {
     const passageRemoteId = rowInfo[passageIndex].passage?.keys?.remoteId;
 
     setView(`/detail/${prjId}/${passageRemoteId}`);
+  };
+
+  const publishConfirm = async (destinations: PublishDestinationEnum[]) => {
+    setConfirmPublish(false);
+    handlePublish(publishRow.current, destinations);
+  };
+  const publishRefused = () => {
+    setConfirmPublish(false);
+  };
+
+  const onPublish = (rowIndex: number) => {
+    publishRow.current = rowIndex;
+    setConfirmPublish(true);
   };
 
   if (view !== '') return <StickyRedirect to={view} />;
@@ -110,7 +139,7 @@ export function PlanView(props: IProps) {
               {row.passageType === 'PASS' && publishingView ? (
                 <Button
                   variant="outlined"
-                  onClick={() => handleOpenPublishDialog(i)}
+                  onClick={() => onPublish(i)}
                   sx={{
                     color: 'primary.light',
                     minWidth: 'auto',
@@ -129,7 +158,12 @@ export function PlanView(props: IProps) {
                       },
                     }}
                   >
-                    <PublishOnIcon fontSize="small" /> {t.published}
+                    {isPublished(rowInfo[i].published) ? (
+                      <PublishOffIcon fontSize="small" />
+                    ) : (
+                      <PublishOnIcon fontSize="small" />
+                    )}
+                    {t.published}
                   </Box>
                 </Button>
               ) : null}
@@ -154,6 +188,18 @@ export function PlanView(props: IProps) {
           return null;
         }
       })}
+      {confirmPublish && (
+        <ConfirmPublishDialog
+          context="plan"
+          isMovement={isMovement(publishRow.current)}
+          yesResponse={publishConfirm}
+          noResponse={publishRefused}
+          current={rowInfo[publishRow.current].published}
+          sharedProject={shared}
+          hasPublishing={publishingOn}
+          passageType={rowInfo[publishRow.current]?.passageType}
+        />
+      )}
     </Grid>
   );
 }

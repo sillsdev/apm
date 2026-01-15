@@ -19,6 +19,7 @@ import {
   SectionD,
 } from '../../model';
 import { RecordIdentity } from '@orbit/records';
+import { PublishDestinationEnum } from '../../crud/usePublishDestination';
 
 // Mock dependencies
 const createMockLiveQuery = (data: any[] = []) => ({
@@ -91,6 +92,13 @@ const mockPlanSheetStrings = new LocalizedStrings({
   en: {
     published: 'Published',
     unknownBook: 'Unknown Book',
+    confirmPublish: 'Publish {0}?',
+    propagate: 'Publish {0} for this {1}?',
+    confirmPublishMovement: 'Publish movement for {0}',
+    confirmPublishSection: 'Publish section for {0}',
+    confirmPublishMovementNoPropagate: 'Do not propagate for {0} to {1}',
+    confirmPublishSectionNoPropagate: 'Do not propagate for {0}',
+    movement: 'movement',
   },
 });
 
@@ -119,11 +127,11 @@ const mockStore = createStore(
 );
 
 describe('PlanView', () => {
-  let mockHandleOpenPublishDialog: ReturnType<typeof cy.stub>;
+  let mockHandlePublish: ReturnType<typeof cy.stub>;
   let mockHandleGraphic: ReturnType<typeof cy.stub>;
 
   beforeEach(() => {
-    mockHandleOpenPublishDialog = cy.stub().as('handleOpenPublishDialog');
+    mockHandlePublish = cy.stub().as('handlePublish');
     mockHandleGraphic = cy.stub().as('handleGraphic');
   });
 
@@ -259,7 +267,10 @@ describe('PlanView', () => {
       rowInfo: ISheet[];
       bookMap: Record<string, string>;
       publishingView: boolean;
-      handleOpenPublishDialog: (index: number) => void;
+      handlePublish: (
+        index: number,
+        destinations: PublishDestinationEnum[]
+      ) => void;
       handleGraphic: (index: number) => void;
     },
     planContextOverrides = {},
@@ -344,7 +355,7 @@ describe('PlanView', () => {
       rowInfo,
       bookMap,
       publishingView: false,
-      handleOpenPublishDialog: mockHandleOpenPublishDialog,
+      handlePublish: mockHandlePublish,
       handleGraphic: mockHandleGraphic,
     });
 
@@ -366,7 +377,7 @@ describe('PlanView', () => {
       rowInfo,
       bookMap,
       publishingView: false,
-      handleOpenPublishDialog: mockHandleOpenPublishDialog,
+      handlePublish: mockHandlePublish,
       handleGraphic: mockHandleGraphic,
     });
 
@@ -389,7 +400,7 @@ describe('PlanView', () => {
       rowInfo,
       bookMap,
       publishingView: false,
-      handleOpenPublishDialog: mockHandleOpenPublishDialog,
+      handlePublish: mockHandlePublish,
       handleGraphic: mockHandleGraphic,
     });
 
@@ -412,7 +423,7 @@ describe('PlanView', () => {
       rowInfo,
       bookMap,
       publishingView: true,
-      handleOpenPublishDialog: mockHandleOpenPublishDialog,
+      handlePublish: mockHandlePublish,
       handleGraphic: mockHandleGraphic,
     });
 
@@ -433,7 +444,7 @@ describe('PlanView', () => {
       rowInfo,
       bookMap,
       publishingView: false,
-      handleOpenPublishDialog: mockHandleOpenPublishDialog,
+      handlePublish: mockHandlePublish,
       handleGraphic: mockHandleGraphic,
     });
 
@@ -453,7 +464,7 @@ describe('PlanView', () => {
       rowInfo,
       bookMap,
       publishingView: true,
-      handleOpenPublishDialog: mockHandleOpenPublishDialog,
+      handlePublish: mockHandlePublish,
       handleGraphic: mockHandleGraphic,
     });
 
@@ -473,13 +484,18 @@ describe('PlanView', () => {
       rowInfo,
       bookMap,
       publishingView: true,
-      handleOpenPublishDialog: mockHandleOpenPublishDialog,
+      handlePublish: mockHandlePublish,
       handleGraphic: mockHandleGraphic,
     });
 
     cy.wait(100);
-    cy.contains('button', 'Published', { timeout: 5000 }).should('be.visible');
-    cy.get('svg[data-testid="PublicOutlinedIcon"]').should('exist');
+    cy.get(
+      'svg[data-testid="PublicOutlinedIcon"], svg[data-testid="PublicOffOutlinedIcon"]',
+      { timeout: 5000 }
+    )
+      .first()
+      .closest('button')
+      .should('be.visible');
   });
 
   it('should not render publish button when publishingView is false', () => {
@@ -493,17 +509,50 @@ describe('PlanView', () => {
       rowInfo,
       bookMap,
       publishingView: false,
-      handleOpenPublishDialog: mockHandleOpenPublishDialog,
+      handlePublish: mockHandlePublish,
       handleGraphic: mockHandleGraphic,
     });
 
     cy.wait(100);
-    cy.contains('button', 'Published').should('not.exist');
+    cy.get(
+      'svg[data-testid="PublicOutlinedIcon"], svg[data-testid="PublicOffOutlinedIcon"]'
+    ).should('not.exist');
   });
 
-  it('should call handleOpenPublishDialog when publish button is clicked', () => {
+  it('should call handlePublish when publish is confirmed', () => {
     const section = createMockSection({
       passageType: PassageTypeEnum.PASSAGE as any,
+    });
+    const rowInfo: ISheet[] = [section];
+    const bookMap = createMockBookNameMap();
+
+    mountPlanView(
+      {
+        rowInfo,
+        bookMap,
+        publishingView: true,
+        handlePublish: mockHandlePublish,
+        handleGraphic: mockHandleGraphic,
+      },
+      { publishingOn: false }
+    );
+
+    cy.wait(100);
+    cy.get(
+      'svg[data-testid="PublicOutlinedIcon"], svg[data-testid="PublicOffOutlinedIcon"]',
+      { timeout: 5000 }
+    )
+      .first()
+      .closest('button')
+      .click();
+    cy.get('button#alertYes', { timeout: 5000 }).click();
+    cy.wrap(mockHandlePublish).should('have.been.calledWith', 0);
+  });
+
+  it('should show PublishOnIcon (PublicOutlinedIcon) when item is not published', () => {
+    const section = createMockSection({
+      passageType: 'PASS' as any,
+      published: [], // Not published
     });
     const rowInfo: ISheet[] = [section];
     const bookMap = createMockBookNameMap();
@@ -512,13 +561,190 @@ describe('PlanView', () => {
       rowInfo,
       bookMap,
       publishingView: true,
-      handleOpenPublishDialog: mockHandleOpenPublishDialog,
+      handlePublish: mockHandlePublish,
       handleGraphic: mockHandleGraphic,
     });
 
     cy.wait(100);
-    cy.contains('button', 'Published', { timeout: 5000 }).click();
-    cy.wrap(mockHandleOpenPublishDialog).should('have.been.calledWith', 0);
+    cy.get('svg[data-testid="PublicOutlinedIcon"]', { timeout: 5000 }).should(
+      'exist'
+    );
+    cy.get('svg[data-testid="PublicOffOutlinedIcon"]').should('not.exist');
+  });
+
+  it('should show PublishOffIcon (PublicOffOutlinedIcon) when item is published', () => {
+    const section = createMockSection({
+      passageType: 'PASS' as any,
+      published: [1], // Published (AkuoPublic = 1)
+    });
+    const rowInfo: ISheet[] = [section];
+    const bookMap = createMockBookNameMap();
+
+    mountPlanView({
+      rowInfo,
+      bookMap,
+      publishingView: true,
+      handlePublish: mockHandlePublish,
+      handleGraphic: mockHandleGraphic,
+    });
+
+    cy.wait(100);
+    cy.get('svg[data-testid="PublicOffOutlinedIcon"]', {
+      timeout: 5000,
+    }).should('exist');
+    cy.get('svg[data-testid="PublicOutlinedIcon"]').should('not.exist');
+  });
+
+  it('should show PublishOnIcon when item has only special publish destinations', () => {
+    const section = createMockSection({
+      passageType: 'PASS' as any,
+      published: [5, 6], // PublishDestinationSetByUser = 5, PropagateSection = 6
+    });
+    const rowInfo: ISheet[] = [section];
+    const bookMap = createMockBookNameMap();
+
+    mountPlanView({
+      rowInfo,
+      bookMap,
+      publishingView: true,
+      handlePublish: mockHandlePublish,
+      handleGraphic: mockHandleGraphic,
+    });
+
+    cy.wait(100);
+    cy.get('svg[data-testid="PublicOutlinedIcon"]', { timeout: 5000 }).should(
+      'exist'
+    );
+    cy.get('svg[data-testid="PublicOffOutlinedIcon"]').should('not.exist');
+  });
+
+  it('should show PublishOffIcon when item has real publish destinations mixed with special ones', () => {
+    const section = createMockSection({
+      passageType: 'PASS' as any,
+      published: [1, 5, 6], // AkuoPublic + special destinations
+    });
+    const rowInfo: ISheet[] = [section];
+    const bookMap = createMockBookNameMap();
+
+    mountPlanView({
+      rowInfo,
+      bookMap,
+      publishingView: true,
+      handlePublish: mockHandlePublish,
+      handleGraphic: mockHandleGraphic,
+    });
+
+    cy.wait(100);
+    cy.get('svg[data-testid="PublicOffOutlinedIcon"]', {
+      timeout: 5000,
+    }).should('exist');
+    cy.get('svg[data-testid="PublicOutlinedIcon"]').should('not.exist');
+  });
+
+  it('should call handlePublish with correct index for multiple passages', () => {
+    const passage1 = createMockSection({
+      passageType: 'PASS' as any,
+      published: [],
+      sectionId: createMockRecordIdentity('section-1', 'section'),
+      sectionSeq: 1,
+    });
+    const passage2 = createMockSection({
+      passageType: 'PASS' as any,
+      published: [],
+      sectionId: createMockRecordIdentity('section-2', 'section'),
+      sectionSeq: 2,
+    });
+    const passage3 = createMockSection({
+      passageType: 'PASS' as any,
+      published: [],
+      sectionId: createMockRecordIdentity('section-3', 'section'),
+      sectionSeq: 3,
+    });
+    const rowInfo: ISheet[] = [passage1, passage2, passage3];
+    const bookMap = createMockBookNameMap();
+
+    mountPlanView(
+      {
+        rowInfo,
+        bookMap,
+        publishingView: true,
+        handlePublish: mockHandlePublish,
+        handleGraphic: mockHandleGraphic,
+      },
+      { publishingOn: false }
+    );
+
+    cy.wait(100);
+
+    // Get all publish icons and verify there are 3
+    cy.get(
+      'svg[data-testid="PublicOutlinedIcon"], svg[data-testid="PublicOffOutlinedIcon"]'
+    ).should('have.length', 3);
+
+    // Click the second button (index 1)
+    cy.get(
+      'svg[data-testid="PublicOutlinedIcon"], svg[data-testid="PublicOffOutlinedIcon"]'
+    )
+      .eq(1)
+      .closest('button')
+      .click();
+    cy.get('button#alertYes', { timeout: 5000 }).click();
+    cy.wrap(mockHandlePublish).should('have.been.calledWith', 1);
+
+    // Click the third button (index 2)
+    cy.get(
+      'svg[data-testid="PublicOutlinedIcon"], svg[data-testid="PublicOffOutlinedIcon"]'
+    )
+      .eq(2)
+      .closest('button')
+      .click();
+    cy.get('button#alertYes', { timeout: 5000 }).click();
+    cy.wrap(mockHandlePublish).should('have.been.calledWith', 2);
+  });
+
+  it('should not show publish button for non-PASS passage types', () => {
+    const bookSection = createMockSection({
+      passageType: PassageTypeEnum.BOOK,
+      published: [],
+    });
+    const rowInfo: ISheet[] = [bookSection];
+    const bookMap = createMockBookNameMap();
+
+    mountPlanView({
+      rowInfo,
+      bookMap,
+      publishingView: true,
+      handlePublish: mockHandlePublish,
+      handleGraphic: mockHandleGraphic,
+    });
+
+    cy.wait(100);
+    cy.get(
+      'svg[data-testid="PublicOutlinedIcon"], svg[data-testid="PublicOffOutlinedIcon"]'
+    ).should('not.exist');
+  });
+
+  it('should render publish button icon with localized strings', () => {
+    const section = createMockSection({
+      passageType: 'PASS' as any,
+      published: [],
+    });
+    const rowInfo: ISheet[] = [section];
+    const bookMap = createMockBookNameMap();
+
+    mountPlanView({
+      rowInfo,
+      bookMap,
+      publishingView: true,
+      handlePublish: mockHandlePublish,
+      handleGraphic: mockHandleGraphic,
+    });
+
+    cy.wait(100);
+    cy.get(
+      'svg[data-testid="PublicOutlinedIcon"], svg[data-testid="PublicOffOutlinedIcon"]',
+      { timeout: 5000 }
+    ).should('be.visible');
   });
 
   it('should render PassageCard when kind is Passage', () => {
@@ -530,7 +756,7 @@ describe('PlanView', () => {
       rowInfo,
       bookMap,
       publishingView: false,
-      handleOpenPublishDialog: mockHandleOpenPublishDialog,
+      handlePublish: mockHandlePublish,
       handleGraphic: mockHandleGraphic,
     });
 
@@ -553,7 +779,7 @@ describe('PlanView', () => {
         rowInfo,
         bookMap,
         publishingView: false,
-        handleOpenPublishDialog: mockHandleOpenPublishDialog,
+        handlePublish: mockHandlePublish,
         handleGraphic: mockHandleGraphic,
       },
       {},
@@ -588,7 +814,7 @@ describe('PlanView', () => {
         rowInfo,
         bookMap,
         publishingView: false,
-        handleOpenPublishDialog: mockHandleOpenPublishDialog,
+        handlePublish: mockHandlePublish,
         handleGraphic: mockHandleGraphic,
       },
       {},
@@ -612,7 +838,7 @@ describe('PlanView', () => {
       rowInfo,
       bookMap,
       publishingView: false,
-      handleOpenPublishDialog: mockHandleOpenPublishDialog,
+      handlePublish: mockHandlePublish,
       handleGraphic: mockHandleGraphic,
     });
 
@@ -637,7 +863,7 @@ describe('PlanView', () => {
       rowInfo,
       bookMap,
       publishingView: false,
-      handleOpenPublishDialog: mockHandleOpenPublishDialog,
+      handlePublish: mockHandlePublish,
       handleGraphic: mockHandleGraphic,
     });
 
@@ -663,7 +889,7 @@ describe('PlanView', () => {
       rowInfo,
       bookMap,
       publishingView: true,
-      handleOpenPublishDialog: mockHandleOpenPublishDialog,
+      handlePublish: mockHandlePublish,
       handleGraphic: mockHandleGraphic,
     });
 
@@ -688,7 +914,7 @@ describe('PlanView', () => {
       rowInfo,
       bookMap,
       publishingView: false,
-      handleOpenPublishDialog: mockHandleOpenPublishDialog,
+      handlePublish: mockHandlePublish,
       handleGraphic: mockHandleGraphic,
     });
 
@@ -708,7 +934,7 @@ describe('PlanView', () => {
       rowInfo,
       bookMap,
       publishingView: false,
-      handleOpenPublishDialog: mockHandleOpenPublishDialog,
+      handlePublish: mockHandlePublish,
       handleGraphic: mockHandleGraphic,
     });
 

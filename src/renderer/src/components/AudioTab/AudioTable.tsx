@@ -18,7 +18,6 @@ import Confirm from '../AlertDialog';
 import {
   findRecord,
   PublishDestinationEnum,
-  useBible,
   useOrganizedBy,
   usePublishDestination,
 } from '../../crud';
@@ -73,7 +72,6 @@ export const AudioTable = (props: IProps) => {
   const lang = useSelector((state: IState) => state.strings.lang);
   const [offline] = useGlobal('offline'); //verified this is not used in a function 2/18/25
   const [memory] = useGlobal('memory');
-  const [org] = useGlobal('organization');
   const [user] = useGlobal('user');
   const [offlineOnly] = useGlobal('offlineOnly'); //will be constant here
   const [, setBusy] = useGlobal('remoteBusy');
@@ -84,8 +82,6 @@ export const AudioTable = (props: IProps) => {
   const [showId, setShowId] = useState('');
   const [mediaPlaying, setMediaPlaying] = useState(false);
   const [publishItem, setPublishItem] = useState(-1);
-  const [hasBible, setHasBible] = useState(false);
-  const { getOrgBible } = useBible();
   // const [verHist, setVerHist] = useState('');
   const [verValue, setVerValue] = useState<number>();
   const { getPublishTo, setPublishTo, isPublished, publishStatus } =
@@ -189,14 +185,6 @@ export const AudioTable = (props: IProps) => {
       setPlayItem(id);
     }
   };
-
-  useEffect(() => {
-    if (org) {
-      const bible = getOrgBible(org);
-      setHasBible((bible?.attributes.bibleName ?? '') !== '');
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [org]);
 
   useEffect(() => {
     //if I set playing when I set the mediaId, it plays a bit of the old
@@ -510,10 +498,7 @@ export const AudioTable = (props: IProps) => {
       )} */}
         {publishItem !== -1 && (
           <ConfirmPublishDialog
-            title={t.publish}
-            propagateLabel={''}
-            description={''}
-            noPropagateDescription={''}
+            context="media"
             yesResponse={publishConfirm}
             noResponse={publishRefused}
             current={getPublishTo(
@@ -524,7 +509,6 @@ export const AudioTable = (props: IProps) => {
             )}
             sharedProject={shared}
             hasPublishing={hasPublishing}
-            hasBible={hasBible}
             noDefaults={true}
             passageType={sortedData[publishItem]?.passageType}
           />
