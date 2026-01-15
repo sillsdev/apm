@@ -18,7 +18,6 @@ import {
   ISheet,
   OrgWorkflowStep,
   SheetLevel,
-  IPassageTypeStrings,
   OrganizationD,
 } from '../../model';
 import { Box, IconButton, debounce, styled } from '@mui/material';
@@ -53,8 +52,6 @@ import {
   isPersonalTeam,
   PublishDestinationEnum,
   remoteIdGuid,
-  useBible,
-  useOrganizedBy,
   usePublishDestination,
 } from '../../crud';
 import MediaPlayer from '../MediaPlayer';
@@ -63,11 +60,7 @@ import { TabAppBar } from '../../control';
 import { HotKeyContext } from '../../context/HotKeyContext';
 import { UnsavedContext } from '../../context/UnsavedContext';
 import FilterMenu, { ISTFilterState } from './filterMenu';
-import {
-  passageTypeSelector,
-  planSheetSelector,
-  sharedSelector,
-} from '../../selector';
+import { planSheetSelector, sharedSelector } from '../../selector';
 import { useSelector, shallowEqual } from 'react-redux';
 import { PassageTypeEnum } from '../../model/passageType';
 import { rowTypes } from './rowTypes';
@@ -77,7 +70,6 @@ import { usePlanSheetFill } from './usePlanSheetFill';
 import { useShowIcon } from './useShowIcon';
 import { RecordKeyMap } from '@orbit/records';
 import ConfirmPublishDialog from '../ConfirmPublishDialog';
-import { Akuo } from '../../assets/brands';
 import { useOrbitData } from '../../hoc/useOrbitData';
 
 const DOWN_ARROW = 'ARROWDOWN';
@@ -314,15 +306,8 @@ export function PlanSheet(props: IProps) {
   const [toRow, setToRow] = useState(0);
   const t: IPlanSheetStrings = useSelector(planSheetSelector, shallowEqual);
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
-  const pt: IPassageTypeStrings = useSelector(
-    passageTypeSelector,
-    shallowEqual
-  );
   const { subscribe, unsubscribe } = useContext(HotKeyContext).state;
   const { isPassageType, isSectionType, isMovement } = rowTypes(rowInfo);
-  const { getOrganizedBy } = useOrganizedBy();
-  const organizedBy = getOrganizedBy(true);
-  const organizedByPlural = getOrganizedBy(false);
   const { isPublished } = usePublishDestination();
 
   const showIcon = useShowIcon({
@@ -345,8 +330,6 @@ export function PlanSheet(props: IProps) {
   const moveDown = false;
   const moveToNewSection = true;
   const [org] = useGlobal('organization');
-  const [hasBible, setHasBible] = useState(false);
-  const { getOrgBible } = useBible();
   const getGlobal = useGetGlobal();
   const teams = useOrbitData<OrganizationD[]>('organization');
   const checkOnline = useCheckOnline('PlanSheet');
@@ -355,15 +338,6 @@ export function PlanSheet(props: IProps) {
     () => !isPersonalTeam(org, teams) && !offlineOnly,
     [org, teams, offlineOnly]
   );
-  useEffect(() => {
-    if (org) {
-      const bible = getOrgBible(org);
-      setHasBible((bible?.attributes.bibleName ?? '') !== '');
-    }
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [org]);
-
   const handleSave = () => {
     startSave();
   };
@@ -1166,50 +1140,13 @@ export function PlanSheet(props: IProps) {
           )}
           {confirmPublish && (
             <ConfirmPublishDialog
-              title={t.confirmPublish.replace(
-                '{0}',
-                isMovement(currentRowRef.current - 1) ? pt.MOVE : organizedBy
-              )}
-              propagateLabel={t.propagate
-                .replaceAll(
-                  '{0}',
-                  isMovement(currentRowRef.current - 1)
-                    ? organizedByPlural.toLocaleLowerCase()
-                    : ts.passages.toLocaleLowerCase()
-                )
-                .replaceAll(
-                  '{1}',
-                  isMovement(currentRowRef.current - 1)
-                    ? t.movement.toLocaleLowerCase()
-                    : organizedBy.toLocaleLowerCase()
-                )}
-              description={
-                isMovement(currentRowRef.current - 1)
-                  ? t.confirmPublishMovement.replaceAll(
-                      '{0}',
-                      organizedByPlural.toLocaleLowerCase()
-                    )
-                  : t.confirmPublishSection.replaceAll(
-                      '{0}',
-                      organizedBy.toLocaleLowerCase()
-                    )
-              }
-              noPropagateDescription={
-                isMovement(currentRowRef.current - 1)
-                  ? t.confirmPublishMovementNoPropagate
-                      .replaceAll('{0}', organizedByPlural.toLocaleLowerCase())
-                      .replaceAll('{1}', Akuo)
-                  : t.confirmPublishSectionNoPropagate.replaceAll(
-                      '{0}',
-                      organizedBy.toLocaleLowerCase()
-                    )
-              }
+              context="plan"
+              isMovement={isMovement(currentRowRef.current - 1)}
               yesResponse={publishConfirm}
               noResponse={publishRefused}
               current={currentRowPublishLevel}
               sharedProject={shared}
               hasPublishing={publishingOn}
-              hasBible={hasBible}
               passageType={rowInfo[currentRowRef.current - 1]?.passageType}
             />
           )}
