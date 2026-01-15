@@ -703,7 +703,6 @@ export function PlanSheet(props: IProps) {
     onFilterChange({ ...filterState, disabled: true }, false);
   };
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   const filtered = useMemo(() => {
     return (
       !filterState.disabled &&

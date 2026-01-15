@@ -2,7 +2,8 @@ import React from 'react';
 import { PassageCard } from './PassageCard';
 import { ISheet, PassageTypeEnum, IwsKind, SheetLevel } from '../../model';
 import { RecordIdentity } from '@orbit/records';
-import { GlobalProvider } from '../../context/GlobalContext';
+import { GlobalProvider, GlobalState } from '../../context/GlobalContext';
+import { PlanContext, ICtxState } from '../../context/PlanContext';
 import { Provider } from 'react-redux';
 import { legacy_createStore as createStore, combineReducers } from 'redux';
 import DataProvider from '../../hoc/DataProvider';
@@ -10,6 +11,7 @@ import Coordinator from '@orbit/coordinator';
 import Memory from '@orbit/memory';
 import bugsnagClient from '../../auth/bugsnagClient';
 import localizationReducer from '../../store/localization/reducers';
+import LocalizedStrings from 'react-localization';
 
 // Mock dependencies
 // Create a mock liveQuery object with subscribe and query methods
@@ -30,6 +32,23 @@ const mockCoordinator = {
   getSource: () => mockMemory,
 } as unknown as Coordinator;
 
+const mockPlanSheetStrings = new LocalizedStrings({
+  en: {
+    unknownBook: 'Unknown Book',
+    chapter: 'Chapter',
+    verse: 'Verse',
+  },
+});
+
+const mockBooksReducer = () => ({
+  map: {
+    GEN: 'Genesis',
+    EXO: 'Exodus',
+    MAT: 'Matthew',
+    JOH: 'John',
+  },
+});
+
 // Create a mock reducer for Redux store
 const mockStringsReducer = () => {
   const initialState = localizationReducer(undefined, { type: '@@INIT' });
@@ -47,6 +66,7 @@ const mockStringsReducer = () => {
     loaded: true,
     lang: 'en',
     cards: mockCardsStrings,
+    planSheet: mockPlanSheetStrings,
   };
 };
 
@@ -54,7 +74,7 @@ const mockStringsReducer = () => {
 const mockStore = createStore(
   combineReducers({
     strings: mockStringsReducer,
-    books: () => ({}),
+    books: mockBooksReducer,
     orbit: () => ({}),
     upload: () => ({}),
     paratext: () => ({}),
@@ -66,18 +86,16 @@ const mockStore = createStore(
 describe('PassageCard', () => {
   let mockHandleViewStep: ReturnType<typeof cy.stub>;
   let mockOnPlayStatus: ReturnType<typeof cy.stub>;
-  let mockGetBookName: ReturnType<typeof cy.stub>;
 
   beforeEach(() => {
     // Create stubs for each test
     mockHandleViewStep = cy.stub().as('handleViewStep');
     mockOnPlayStatus = cy.stub().as('onPlayStatus');
-    mockGetBookName = cy.stub().as('getBookName');
-    // Default return value for getBookName
-    mockGetBookName.returns('Genesis');
   });
 
-  const createInitialState = (overrides = {}) => ({
+  const createInitialState = (
+    overrides: Partial<GlobalState> = {}
+  ): GlobalState => ({
     coordinator: mockCoordinator,
     errorReporter: bugsnagClient,
     fingerprint: 'test-fingerprint',
@@ -115,30 +133,61 @@ describe('PassageCard', () => {
     ...overrides,
   });
 
+  const createPlanContextState = (
+    overrides: Partial<ICtxState> = {}
+  ): ICtxState => ({
+    t: {} as any,
+    connected: true,
+    projButtonStr: {} as any,
+    mediafiles: [],
+    discussions: [],
+    groupmemberships: [],
+    scripture: true,
+    flat: false,
+    shared: false,
+    publishingOn: true,
+    hidePublishing: true,
+    canEditSheet: false,
+    canPublish: false,
+    sectionArr: [],
+    setSectionArr: () => {},
+    togglePublishing: () => {},
+    setCanAddPublishing: () => {},
+    tab: 0,
+    setTab: () => {},
+    ...overrides,
+  });
+
   // Helper function to mount PassageCard with required providers
   const mountPassageCard = (
     cardInfo: ISheet,
     props: {
-      getBookName: (bookAbbreviation: string | undefined) => string;
       handleViewStep: () => void;
       onPlayStatus?: () => void;
       isPlaying: boolean;
       isPersonal?: boolean;
-    }
+    },
+    planContextOverrides: Partial<ICtxState> = {}
   ) => {
     const initialState = createInitialState();
+    const planContextState = createPlanContextState(planContextOverrides);
+    const mockPlanContextValue = {
+      state: planContextState,
+      setState: cy.stub(),
+    };
     cy.mount(
       <Provider store={mockStore}>
         <GlobalProvider init={initialState}>
           <DataProvider dataStore={mockMemory}>
-            <PassageCard
-              cardInfo={cardInfo}
-              getBookName={props.getBookName}
-              handleViewStep={props.handleViewStep}
-              onPlayStatus={props.onPlayStatus}
-              isPlaying={props.isPlaying}
-              isPersonal={props.isPersonal}
-            />
+            <PlanContext.Provider value={mockPlanContextValue as any}>
+              <PassageCard
+                cardInfo={cardInfo}
+                handleViewStep={props.handleViewStep}
+                onPlayStatus={props.onPlayStatus}
+                isPlaying={props.isPlaying}
+                isPersonal={props.isPersonal}
+              />
+            </PlanContext.Provider>
           </DataProvider>
         </GlobalProvider>
       </Provider>
@@ -193,7 +242,6 @@ describe('PassageCard', () => {
   it('should render card with basic information', () => {
     const cardInfo = createMockSheet();
     mountPassageCard(cardInfo, {
-      getBookName: mockGetBookName,
       handleViewStep: mockHandleViewStep,
       isPlaying: false,
     });
@@ -208,20 +256,8 @@ describe('PassageCard', () => {
     cy.contains('Step 1').should('be.visible');
   });
 
-  it('should call getBookName with book abbreviation', () => {
-    const cardInfo = createMockSheet({ book: 'MAT' });
-    mountPassageCard(cardInfo, {
-      getBookName: mockGetBookName,
-      handleViewStep: mockHandleViewStep,
-      isPlaying: false,
-    });
-
-    cy.wrap(mockGetBookName).should('have.been.calledWith', 'MAT');
-  });
-
   it('should display passage reference when passageType is PASSAGE', () => {
     const cardInfo = createMockSheet({
-      passageType: PassageTypeEnum.PASSAGE,
       book: 'MAT',
       passage: {
         id: 'passage-1',
@@ -241,10 +277,8 @@ describe('PassageCard', () => {
         },
       },
     });
-    mockGetBookName.returns('Matthew');
 
     mountPassageCard(cardInfo, {
-      getBookName: mockGetBookName,
       handleViewStep: mockHandleViewStep,
       isPlaying: false,
     });
@@ -254,9 +288,8 @@ describe('PassageCard', () => {
     cy.contains('5:3').should('be.visible');
   });
 
-  it('should not display book name for general projects', () => {
+  it('should not display book name for non-scripture projects', () => {
     const cardInfo = createMockSheet({
-      passageType: PassageTypeEnum.PASSAGE,
       book: 'MAT',
       passage: {
         id: 'passage-1',
@@ -276,24 +309,19 @@ describe('PassageCard', () => {
         },
       },
     });
-    // For general projects, getBookName returns empty string
-    mockGetBookName.returns('');
 
     mountPassageCard(cardInfo, {
-      getBookName: mockGetBookName,
       handleViewStep: mockHandleViewStep,
       isPlaying: false,
-    });
+    }, { scripture: false });
 
     // Should show only reference, not book name
     cy.contains('5:3').should('be.visible');
     // Should not show book name (Matthew)
     cy.contains('Matthew').should('not.exist');
-    // Should not show Genesis (default mock value)
-    cy.contains('Genesis').should('not.exist');
   });
 
-  it('should render card with reference only for general projects', () => {
+  it('should render card with reference only for non-scripture projects', () => {
     const cardInfo = createMockSheet({
       book: 'GEN',
       reference: '1:1',
@@ -315,14 +343,11 @@ describe('PassageCard', () => {
         },
       },
     });
-    // For general projects, getBookName returns empty string
-    mockGetBookName.returns('');
 
     mountPassageCard(cardInfo, {
-      getBookName: mockGetBookName,
       handleViewStep: mockHandleViewStep,
       isPlaying: false,
-    });
+    }, { scripture: false });
 
     // Should render the card
     cy.get('div[class*="MuiCard-root"]').should('be.visible');
@@ -361,10 +386,26 @@ describe('PassageCard', () => {
           lastModifiedByUser: { data: null },
         },
       },
+      passage: {
+        id: 'passage-1',
+        type: 'passage',
+        attributes: {
+          sequencenum: 1,
+          book: 'GEN',
+          reference: 'NOTE|Note Title',
+          state: '',
+          hold: false,
+          title: '',
+          lastComment: '',
+          stepComplete: '{}',
+          dateCreated: '',
+          dateUpdated: '',
+          lastModifiedBy: 0,
+        },
+      },
     });
 
     mountPassageCard(cardInfo, {
-      getBookName: mockGetBookName,
       handleViewStep: mockHandleViewStep,
       isPlaying: false,
     });
@@ -398,10 +439,26 @@ describe('PassageCard', () => {
           lastModifiedByUser: { data: null },
         },
       },
+      passage: {
+        id: 'passage-1',
+        type: 'passage',
+        attributes: {
+          sequencenum: 1,
+          book: 'GEN',
+          reference: 'NOTE|Note Title',
+          state: '',
+          hold: false,
+          title: '',
+          lastComment: '',
+          stepComplete: '{}',
+          dateCreated: '',
+          dateUpdated: '',
+          lastModifiedBy: 0,
+        },
+      },
     });
 
     mountPassageCard(cardInfo, {
-      getBookName: mockGetBookName,
       handleViewStep: mockHandleViewStep,
       isPlaying: false,
     });
@@ -416,7 +473,6 @@ describe('PassageCard', () => {
     });
 
     mountPassageCard(cardInfo, {
-      getBookName: mockGetBookName,
       handleViewStep: mockHandleViewStep,
       onPlayStatus: mockOnPlayStatus,
       isPlaying: false,
@@ -433,7 +489,6 @@ describe('PassageCard', () => {
     });
 
     mountPassageCard(cardInfo, {
-      getBookName: mockGetBookName,
       handleViewStep: mockHandleViewStep,
       onPlayStatus: mockOnPlayStatus,
       isPlaying: true,
@@ -458,7 +513,6 @@ describe('PassageCard', () => {
     });
 
     mountPassageCard(cardInfo, {
-      getBookName: mockGetBookName,
       handleViewStep: mockHandleViewStep,
       onPlayStatus: mockOnPlayStatus,
       isPlaying: false,
@@ -474,7 +528,6 @@ describe('PassageCard', () => {
     });
 
     mountPassageCard(cardInfo, {
-      getBookName: mockGetBookName,
       handleViewStep: mockHandleViewStep,
       isPlaying: false,
     });
@@ -491,7 +544,6 @@ describe('PassageCard', () => {
     });
 
     mountPassageCard(cardInfo, {
-      getBookName: mockGetBookName,
       handleViewStep: mockHandleViewStep,
       isPlaying: false,
       isPersonal: false,
@@ -508,7 +560,6 @@ describe('PassageCard', () => {
     });
 
     mountPassageCard(cardInfo, {
-      getBookName: mockGetBookName,
       handleViewStep: mockHandleViewStep,
       isPlaying: false,
       isPersonal: false,
@@ -526,7 +577,6 @@ describe('PassageCard', () => {
     });
 
     mountPassageCard(cardInfo, {
-      getBookName: mockGetBookName,
       handleViewStep: mockHandleViewStep,
       isPlaying: false,
       isPersonal: true,
@@ -546,7 +596,6 @@ describe('PassageCard', () => {
     });
 
     mountPassageCard(cardInfo, {
-      getBookName: mockGetBookName,
       handleViewStep: mockHandleViewStep,
       isPlaying: false,
       isPersonal: true,
@@ -564,7 +613,6 @@ describe('PassageCard', () => {
     });
 
     mountPassageCard(cardInfo, {
-      getBookName: mockGetBookName,
       handleViewStep: mockHandleViewStep,
       isPlaying: false,
     });
@@ -580,7 +628,6 @@ describe('PassageCard', () => {
     });
 
     mountPassageCard(cardInfo, {
-      getBookName: mockGetBookName,
       handleViewStep: mockHandleViewStep,
       isPlaying: false,
     });
@@ -592,7 +639,6 @@ describe('PassageCard', () => {
     const cardInfo = createMockSheet();
 
     mountPassageCard(cardInfo, {
-      getBookName: mockGetBookName,
       handleViewStep: mockHandleViewStep,
       isPlaying: false,
     });
@@ -630,7 +676,6 @@ describe('PassageCard', () => {
     });
 
     mountPassageCard(cardInfo, {
-      getBookName: mockGetBookName,
       handleViewStep: mockHandleViewStep,
       isPlaying: false,
     });
@@ -647,7 +692,6 @@ describe('PassageCard', () => {
     });
 
     mountPassageCard(cardInfo, {
-      getBookName: mockGetBookName,
       handleViewStep: mockHandleViewStep,
       isPlaying: false,
     });
@@ -663,7 +707,6 @@ describe('PassageCard', () => {
     });
 
     mountPassageCard(cardInfo, {
-      getBookName: mockGetBookName,
       handleViewStep: mockHandleViewStep,
       isPlaying: false,
     });
@@ -677,7 +720,6 @@ describe('PassageCard', () => {
 
     const cardInfo = createMockSheet();
     mountPassageCard(cardInfo, {
-      getBookName: mockGetBookName,
       handleViewStep: mockHandleViewStep,
       isPlaying: false,
     });
@@ -695,7 +737,6 @@ describe('PassageCard', () => {
 
     const cardInfo = createMockSheet();
     mountPassageCard(cardInfo, {
-      getBookName: mockGetBookName,
       handleViewStep: mockHandleViewStep,
       isPlaying: false,
     });
@@ -709,7 +750,6 @@ describe('PassageCard', () => {
 
   it('should handle non-PASSAGE passage types with RefRender', () => {
     const cardInfo = createMockSheet({
-      passageType: PassageTypeEnum.NOTE,
       passage: {
         id: 'passage-1',
         type: 'passage',
@@ -730,7 +770,6 @@ describe('PassageCard', () => {
     });
 
     mountPassageCard(cardInfo, {
-      getBookName: mockGetBookName,
       handleViewStep: mockHandleViewStep,
       isPlaying: false,
     });
@@ -763,7 +802,6 @@ describe('PassageCard', () => {
     });
 
     mountPassageCard(cardInfo, {
-      getBookName: mockGetBookName,
       handleViewStep: mockHandleViewStep,
       isPlaying: false,
     });
@@ -778,7 +816,6 @@ describe('PassageCard', () => {
     });
 
     mountPassageCard(cardInfo, {
-      getBookName: mockGetBookName,
       handleViewStep: mockHandleViewStep,
       onPlayStatus: mockOnPlayStatus,
       isPlaying: true,
@@ -796,7 +833,6 @@ describe('PassageCard', () => {
     });
 
     mountPassageCard(cardInfo, {
-      getBookName: mockGetBookName,
       handleViewStep: mockHandleViewStep,
       onPlayStatus: mockOnPlayStatus,
       isPlaying: false,
@@ -811,7 +847,6 @@ describe('PassageCard', () => {
   describe('CHAPTERNUMBER passage type', () => {
     it('should render correctly when passageType is CHAPTERNUMBER', () => {
       const cardInfo = createMockSheet({
-        passageType: PassageTypeEnum.CHAPTERNUMBER,
         reference: '1',
         comment: 'Chapter Introduction',
         passage: {
@@ -834,7 +869,6 @@ describe('PassageCard', () => {
       });
 
       mountPassageCard(cardInfo, {
-        getBookName: mockGetBookName,
         handleViewStep: mockHandleViewStep,
         isPlaying: false,
       });
@@ -846,7 +880,6 @@ describe('PassageCard', () => {
 
     it('should not show comment section for CHAPTERNUMBER type', () => {
       const cardInfo = createMockSheet({
-        passageType: PassageTypeEnum.CHAPTERNUMBER,
         reference: '1',
         comment: 'Chapter Introduction',
         passage: {
@@ -869,7 +902,6 @@ describe('PassageCard', () => {
       });
 
       mountPassageCard(cardInfo, {
-        getBookName: mockGetBookName,
         handleViewStep: mockHandleViewStep,
         isPlaying: false,
       });
@@ -880,7 +912,6 @@ describe('PassageCard', () => {
 
     it('should not show assign section for CHAPTERNUMBER type', () => {
       const cardInfo = createMockSheet({
-        passageType: PassageTypeEnum.CHAPTERNUMBER,
         reference: '1',
         assign: createMockRecordIdentity('user-1', 'user'),
         passage: {
@@ -903,7 +934,6 @@ describe('PassageCard', () => {
       });
 
       mountPassageCard(cardInfo, {
-        getBookName: mockGetBookName,
         handleViewStep: mockHandleViewStep,
         isPlaying: false,
         isPersonal: false,
@@ -916,7 +946,6 @@ describe('PassageCard', () => {
 
     it('should not show step button for CHAPTERNUMBER type', () => {
       const cardInfo = createMockSheet({
-        passageType: PassageTypeEnum.CHAPTERNUMBER,
         reference: '1',
         step: 'Record',
         passage: {
@@ -939,7 +968,6 @@ describe('PassageCard', () => {
       });
 
       mountPassageCard(cardInfo, {
-        getBookName: mockGetBookName,
         handleViewStep: mockHandleViewStep,
         isPlaying: false,
       });
@@ -951,7 +979,6 @@ describe('PassageCard', () => {
 
     it('should show play button when mediaId exists for CHAPTERNUMBER type', () => {
       const cardInfo = createMockSheet({
-        passageType: PassageTypeEnum.CHAPTERNUMBER,
         reference: '1',
         mediaId: createMockRecordIdentity('media-1', 'mediafile'),
         passage: {
@@ -974,7 +1001,6 @@ describe('PassageCard', () => {
       });
 
       mountPassageCard(cardInfo, {
-        getBookName: mockGetBookName,
         handleViewStep: mockHandleViewStep,
         onPlayStatus: mockOnPlayStatus,
         isPlaying: false,
@@ -987,7 +1013,6 @@ describe('PassageCard', () => {
 
     it('should show AudioProgressButton when playing for CHAPTERNUMBER type', () => {
       const cardInfo = createMockSheet({
-        passageType: PassageTypeEnum.CHAPTERNUMBER,
         reference: '1',
         mediaId: createMockRecordIdentity('media-1', 'mediafile'),
         passage: {
@@ -1010,7 +1035,6 @@ describe('PassageCard', () => {
       });
 
       mountPassageCard(cardInfo, {
-        getBookName: mockGetBookName,
         handleViewStep: mockHandleViewStep,
         onPlayStatus: mockOnPlayStatus,
         isPlaying: true,
@@ -1024,7 +1048,6 @@ describe('PassageCard', () => {
 
     it('should show comment after reference when comment is defined for CHAPTERNUMBER type', () => {
       const cardInfo = createMockSheet({
-        passageType: PassageTypeEnum.CHAPTERNUMBER,
         reference: '1',
         comment: 'Chapter Introduction',
         passage: {
@@ -1047,7 +1070,6 @@ describe('PassageCard', () => {
       });
 
       mountPassageCard(cardInfo, {
-        getBookName: mockGetBookName,
         handleViewStep: mockHandleViewStep,
         isPlaying: false,
       });
@@ -1061,7 +1083,6 @@ describe('PassageCard', () => {
 
     it('should not show comment after reference when comment is undefined for CHAPTERNUMBER type', () => {
       const cardInfo = createMockSheet({
-        passageType: PassageTypeEnum.CHAPTERNUMBER,
         reference: '1',
         comment: undefined, // Explicitly undefined
         passage: {
@@ -1084,7 +1105,6 @@ describe('PassageCard', () => {
       });
 
       mountPassageCard(cardInfo, {
-        getBookName: mockGetBookName,
         handleViewStep: mockHandleViewStep,
         isPlaying: false,
       });
@@ -1100,7 +1120,6 @@ describe('PassageCard', () => {
 
     it('should not show comment after reference when comment is empty string for CHAPTERNUMBER type', () => {
       const cardInfo = createMockSheet({
-        passageType: PassageTypeEnum.CHAPTERNUMBER,
         reference: '1',
         comment: '', // Empty string
         passage: {
@@ -1123,7 +1142,6 @@ describe('PassageCard', () => {
       });
 
       mountPassageCard(cardInfo, {
-        getBookName: mockGetBookName,
         handleViewStep: mockHandleViewStep,
         isPlaying: false,
       });
@@ -1139,7 +1157,6 @@ describe('PassageCard', () => {
   describe('Graphic rendering', () => {
     it('should show graphic avatar for NOTE type when graphicUri is provided', () => {
       const cardInfo = createMockSheet({
-        passageType: PassageTypeEnum.NOTE,
         graphicUri: 'https://example.com/note-image.png',
         passage: {
           id: 'passage-1',
@@ -1161,7 +1178,6 @@ describe('PassageCard', () => {
       });
 
       mountPassageCard(cardInfo, {
-        getBookName: mockGetBookName,
         handleViewStep: mockHandleViewStep,
         isPlaying: false,
       });
@@ -1173,7 +1189,6 @@ describe('PassageCard', () => {
 
     it('should show graphic avatar for CHAPTERNUMBER type when graphicUri is provided', () => {
       const cardInfo = createMockSheet({
-        passageType: PassageTypeEnum.CHAPTERNUMBER,
         graphicUri: 'https://example.com/chapter-image.png',
         reference: '1',
         passage: {
@@ -1196,7 +1211,6 @@ describe('PassageCard', () => {
       });
 
       mountPassageCard(cardInfo, {
-        getBookName: mockGetBookName,
         handleViewStep: mockHandleViewStep,
         isPlaying: false,
       });
@@ -1210,7 +1224,6 @@ describe('PassageCard', () => {
 
     it('should show string avatar for NOTE type when no graphicUri is provided', () => {
       const cardInfo = createMockSheet({
-        passageType: PassageTypeEnum.NOTE,
         reference: 'Special Note',
         passage: {
           id: 'passage-1',
@@ -1232,7 +1245,6 @@ describe('PassageCard', () => {
       });
 
       mountPassageCard(cardInfo, {
-        getBookName: mockGetBookName,
         handleViewStep: mockHandleViewStep,
         isPlaying: false,
       });
@@ -1245,7 +1257,6 @@ describe('PassageCard', () => {
 
     it('should show string avatar for CHAPTERNUMBER type when no graphicUri is provided', () => {
       const cardInfo = createMockSheet({
-        passageType: PassageTypeEnum.CHAPTERNUMBER,
         reference: '1',
         passage: {
           id: 'passage-1',
@@ -1267,7 +1278,6 @@ describe('PassageCard', () => {
       });
 
       mountPassageCard(cardInfo, {
-        getBookName: mockGetBookName,
         handleViewStep: mockHandleViewStep,
         isPlaying: false,
       });
@@ -1280,7 +1290,6 @@ describe('PassageCard', () => {
 
     it('should apply border color styling to avatar when color is provided', () => {
       const cardInfo = createMockSheet({
-        passageType: PassageTypeEnum.NOTE,
         color: '#ff0000',
         reference: 'Special Note',
         passage: {
@@ -1303,7 +1312,6 @@ describe('PassageCard', () => {
       });
 
       mountPassageCard(cardInfo, {
-        getBookName: mockGetBookName,
         handleViewStep: mockHandleViewStep,
         isPlaying: false,
       });
@@ -1316,7 +1324,6 @@ describe('PassageCard', () => {
 
     it('should not show graphic for PASSAGE type', () => {
       const cardInfo = createMockSheet({
-        passageType: PassageTypeEnum.PASSAGE,
         graphicUri: 'https://example.com/image.png',
         passage: {
           id: 'passage-1',
@@ -1338,7 +1345,6 @@ describe('PassageCard', () => {
       });
 
       mountPassageCard(cardInfo, {
-        getBookName: mockGetBookName,
         handleViewStep: mockHandleViewStep,
         isPlaying: false,
       });
@@ -1349,7 +1355,6 @@ describe('PassageCard', () => {
 
     it('should not show graphic for other passage types', () => {
       const cardInfo = createMockSheet({
-        passageType: PassageTypeEnum.BOOK,
         graphicUri: 'https://example.com/image.png',
         passage: {
           id: 'passage-1',
@@ -1371,7 +1376,6 @@ describe('PassageCard', () => {
       });
 
       mountPassageCard(cardInfo, {
-        getBookName: mockGetBookName,
         handleViewStep: mockHandleViewStep,
         isPlaying: false,
       });
