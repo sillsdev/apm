@@ -6,7 +6,6 @@ import {
 } from '../burrito/data/alignmentBuilder';
 import {
   Burrito,
-  BurritoFormats,
   BurritoIngredients,
   BurritoScopes,
 } from '../burrito/data/burritoBuilder';
@@ -192,7 +191,7 @@ export const useBurritoAudo = (teamId: string) => {
       mimeType: 'application/json',
       size: alignmentContent.length,
       scope: { [book]: Array.from(chapters).sort() },
-      role: ['timing'],
+      role: 'timing',
     };
     const curScopes = scopes.get(book) || [];
     scopes.set(book, [...curScopes, ...Array.from(chapters).sort()]);
@@ -206,17 +205,17 @@ export const useBurritoAudo = (teamId: string) => {
     metadata.ingredients = ingredients;
 
     // add the formats to the metadata file
-    const formats: BurritoFormats = {};
-    let formatn = 0;
-    Array.from(compressions).forEach((c) => {
-      formats[`format${++formatn}`] = {
-        compression: c,
-        trackConfiguration: 'mono',
-      };
-    });
-    if (metadata.type?.flavorType?.flavor) {
-      metadata.type.flavorType.flavor.formats = formats;
-    }
+    // const formats: BurritoFormats = {};
+    // let formatn = 0;
+    // Array.from(compressions).forEach((c) => {
+    //   formats[`format${++formatn}`] = {
+    //     compression: c,
+    //     trackConfiguration: 'mono',
+    //   };
+    // });
+    // if (metadata.type?.flavorType?.flavor) {
+    //   metadata.type.flavorType.flavor.formats = formats;
+    // }
     return metadata;
   };
 };

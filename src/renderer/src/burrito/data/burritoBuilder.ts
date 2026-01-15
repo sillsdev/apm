@@ -38,22 +38,22 @@ interface BurritoLanguage {
   };
 }
 
-interface BurritoFormat {
-  compression: string;
-  trackConfiguration?: string;
-  bitRate?: number;
-  bitDepth?: number;
-  samplingRate?: number;
-}
+// interface BurritoFormat {
+//   compression: string;
+//   trackConfiguration?: string;
+//   bitRate?: number;
+//   bitDepth?: number;
+//   samplingRate?: number;
+// }
 
-export interface BurritoFormats {
-  [key: string]: BurritoFormat;
-}
+// export interface BurritoFormats {
+//   [key: string]: BurritoFormat;
+// }
 
 interface BurritoFlavor {
   name: string;
-  performance: string[];
-  formats: BurritoFormats;
+  // performance: string[];
+  // formats: BurritoFormats;
 }
 
 export interface BurritoScopes {
@@ -112,7 +112,7 @@ interface BurritoIngredient {
   scope?: {
     [key: string]: string[];
   };
-  role?: string[];
+  role?: string;
 }
 
 export interface BurritoIngredients {
@@ -177,8 +177,8 @@ export class BurritoBuilder {
         name: 'scripture',
         flavor: {
           name: 'audioTranslation',
-          performance: [],
-          formats: {},
+          // performance: [],
+          // formats: {},
         },
         currentScope: {},
       },
@@ -198,11 +198,11 @@ export class BurritoBuilder {
     return this;
   }
 
-  withIdAuthority(id: string, name: string): BurritoBuilder {
+  withIdAuthority(key: string, id: string, name: string): BurritoBuilder {
     if (!this.burrito.idAuthorities) {
       this.burrito.idAuthorities = {};
     }
-    this.burrito.idAuthorities[id] = {
+    this.burrito.idAuthorities[key] = {
       id,
       name: { en: name },
     };
@@ -239,8 +239,8 @@ export class BurritoBuilder {
               name: '',
               flavor: {
                 name: '',
-                performance: [],
-                formats: {},
+                // performance: [],
+                // formats: {},
               },
               currentScope: {},
             },
@@ -250,8 +250,8 @@ export class BurritoBuilder {
           name: '',
           flavor: {
             name: '',
-            performance: [],
-            formats: {},
+            // performance: [],
+            // formats: {},
           },
           currentScope: {},
         };
@@ -458,7 +458,11 @@ export const createAudioBurrito = () => {
       },
       comments: ['Updated with working audio files for GEN 1-3 and MAT 1-3'],
     })
-    .withIdAuthority('dbl', 'The Digital Bible Library')
+    .withIdAuthority(
+      'dbl',
+      'https://www.thedigitalbiblelibrary.org',
+      'The Digital Bible Library'
+    )
     .withIdentification({
       primary: {
         dbl: {
@@ -474,16 +478,16 @@ export const createAudioBurrito = () => {
     })
     .withLanguage('en', 'English')
     .withFlavor({
-      performance: ['multipleVoice', 'drama', 'withMusic'],
-      formats: {
-        format1: {
-          compression: 'mp3',
-          trackConfiguration: '2/0 (Stereo)',
-          bitRate: 128000,
-          bitDepth: 16,
-          samplingRate: 44100,
-        },
-      },
+      // performance: ['multipleVoice', 'drama', 'withMusic'],
+      // formats: {
+      //   format1: {
+      //     compression: 'mp3',
+      //     trackConfiguration: '2/0 (Stereo)',
+      //     bitRate: 128000,
+      //     bitDepth: 16,
+      //     samplingRate: 44100,
+      //   },
+      // },
     })
     .withAgency({
       id: 'dbl::54650cfa5117ad690fb05fb6',

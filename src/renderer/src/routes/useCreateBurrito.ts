@@ -89,6 +89,11 @@ export const useCreateBurrito = (teamId: string) => {
     [teamId]
   );
 
+  const cleanName = (name: string) => {
+    const m = name.match(/^[^A-Za-z]*([A-Za-z0-9 ]+)[^A-Za-z0-9]*$/);
+    return m ? m[1] : name;
+  };
+
   const getMetadata = () => {
     const userRec = users.find((user) => user.id === userId);
     const teamRec = teams.find((team) => team.id === teamId);
@@ -118,7 +123,11 @@ export const useCreateBurrito = (teamId: string) => {
           }`,
         ],
       })
-      .withIdAuthority('apm', productName)
+      .withIdAuthority(
+        'apm',
+        'https://www.audioprojectmanager.org',
+        productName
+      )
       .withIdentification({
         primary: {
           apm: {
@@ -130,8 +139,8 @@ export const useCreateBurrito = (teamId: string) => {
         },
         name: {
           en:
-            bible?.attributes.bibleName ||
-            teamRec?.attributes.name ||
+            cleanName(bible?.attributes.bibleName || '') ||
+            cleanName(teamRec?.attributes.name || '') ||
             'Unknown Bible',
         },
         description: { en: bible?.attributes.description || '' },
@@ -142,7 +151,9 @@ export const useCreateBurrito = (teamId: string) => {
       .withAgency({
         id: `apm::${teamRemId}`,
         roles: ['rightsHolder'],
-        name: { en: teamRec?.attributes.name || 'Unknown Team' },
+        name: {
+          en: cleanName(teamRec?.attributes.name || '') || 'Unknown Team',
+        },
       })
       .withTargetArea('US', 'United States')
       .withLocalizedNames(localizedNames)
