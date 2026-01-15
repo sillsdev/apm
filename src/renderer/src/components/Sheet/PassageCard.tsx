@@ -1,6 +1,5 @@
-import { ICardsStrings, ISheet, PassageTypeEnum } from '../../model';
+import { ICardsStrings, ISheet, IwsKind, PassageTypeEnum } from '../../model';
 import {
-  Avatar,
   Box,
   Button,
   Card,
@@ -12,15 +11,15 @@ import {
 import { ArrowForwardIos, Person } from '@mui/icons-material';
 import TaskAvatar from '../../components/TaskAvatar';
 import { passageTypeFromRef } from '../../control/passageTypeFromRef';
-import { RefRender } from '../../control/RefRender';
 import { PlayButton } from '../PlayButton';
 import { cardsSelector } from '../../selector';
 import { shallowEqual, useSelector } from 'react-redux';
-import { stringAvatar } from '../../utils';
+import { PassageGraphic } from './PassageGraphic';
+import { PassageRef } from './PassageRef';
+import { useSectionIdDescription } from './useSectionIdDescription';
 
 interface IProps {
   cardInfo: ISheet;
-  getBookName: (bookAbbreviation: string | undefined) => string;
   handleViewStep: () => void;
   onPlayStatus?: () => void;
   isPlaying: boolean;
@@ -30,20 +29,11 @@ interface IProps {
 export function PassageCard(props: IProps) {
   const theme = useTheme();
   const mobileWidth = useMediaQuery(theme.breakpoints.down('sm'));
-  const {
-    cardInfo,
-    getBookName,
-    handleViewStep,
-    onPlayStatus,
-    isPlaying,
-    isPersonal,
-  } = props;
+  const { cardInfo, handleViewStep, onPlayStatus, isPlaying, isPersonal } =
+    props;
+  const getDescription = useSectionIdDescription();
   const t: ICardsStrings = useSelector(cardsSelector, shallowEqual);
-
-  const fullBookName = getBookName(cardInfo.book);
-
   const noteTitle = cardInfo?.sharedResource?.attributes.title;
-
   const ref = noteTitle || cardInfo.passage?.attributes.reference;
 
   const comment =
@@ -62,40 +52,6 @@ export function PassageCard(props: IProps) {
     }
   };
 
-  const getGraphicValue = () => {
-    if (
-      psgType !== PassageTypeEnum.NOTE &&
-      psgType !== PassageTypeEnum.CHAPTERNUMBER
-    ) {
-      return null;
-    }
-
-    const borderColor = cardInfo?.color;
-    const border = borderColor ? { border: '2px solid', borderColor } : {};
-    const pointer = { cursor: 'pointer' };
-
-    if (cardInfo.graphicUri) {
-      return (
-        <Avatar
-          sx={{ ...pointer, ...border, mr: 1 }}
-          src={cardInfo.graphicUri}
-          variant="rounded"
-        />
-      );
-    }
-
-    return (
-      <Avatar
-        {...stringAvatar(ref || cardInfo.reference || 'Note', {
-          // ...pointer,  # Disable untile we add ability to edit graphics here.
-          ...border,
-          mr: 1,
-        })}
-        variant="rounded"
-      />
-    );
-  };
-
   return (
     <Card
       elevation={3}
@@ -103,19 +59,21 @@ export function PassageCard(props: IProps) {
     >
       <CardContent>
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
-          {getGraphicValue()}
-          <Typography variant="h6">
-            {psgType === PassageTypeEnum.PASSAGE ? (
-              `${fullBookName} ${ref}`
-            ) : ref ? (
-              <>
-                <RefRender value={ref} pt={psgType} fontSize={'0.8rem'} />
-                {psgType === PassageTypeEnum.CHAPTERNUMBER && comment
-                  ? ` ${comment}`
-                  : null}
-              </>
-            ) : null}
-          </Typography>
+          <PassageGraphic
+            cardInfo={cardInfo}
+            reference={ref}
+            psgType={psgType}
+          />
+          {cardInfo.kind === IwsKind.Passage ? (
+            <PassageRef
+              psgType={psgType}
+              book={cardInfo.book}
+              ref={ref}
+              comment={comment}
+            />
+          ) : (
+            <Typography variant="h6">{getDescription(cardInfo)}</Typography>
+          )}
           {psgType !== PassageTypeEnum.CHAPTERNUMBER ? (
             <PlayButton
               mediaId={cardInfo.mediaId?.id}
@@ -127,6 +85,14 @@ export function PassageCard(props: IProps) {
             <></>
           )}
         </Box>
+        {cardInfo.kind === IwsKind.SectionPassage && (
+          <PassageRef
+            psgType={psgType}
+            book={cardInfo.book}
+            ref={ref}
+            comment={comment}
+          />
+        )}
         {psgType !== PassageTypeEnum.CHAPTERNUMBER ? (
           <>
             <Typography variant="body2" color="grey">

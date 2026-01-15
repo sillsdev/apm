@@ -1,12 +1,11 @@
-import { useContext, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { shallowEqual, useSelector } from 'react-redux';
 import {
   ISheet,
-  BookNameMap,
-  SectionD,
   PassageTypeEnum,
   IPlanSheetStrings,
   OrganizationD,
+  IwsKind,
 } from '../../model';
 import { Button, Box, Typography, Grid } from '@mui/material';
 import PublishOnIcon from '@mui/icons-material/PublicOutlined';
@@ -15,37 +14,27 @@ import StickyRedirect from '../StickyRedirect';
 import { useParams } from 'react-router-dom';
 import { GraphicAvatar } from './GraphicAvatar';
 import { GrowingSpacer } from '../../control';
-import { findRecord, isPersonalTeam } from '../../crud';
+import { isPersonalTeam } from '../../crud';
 import { useGlobal } from '../../context/useGlobal';
-import { sectionDescription } from '../../crud';
-import { PlanContext } from '../../context/PlanContext';
 import { planSheetSelector } from '../../selector';
 import { useOrbitData } from '../../hoc/useOrbitData';
+import { useSectionIdDescription } from './useSectionIdDescription';
 
 interface IProps {
   rowInfo: ISheet[];
-  bookMap: BookNameMap;
   publishingView: boolean;
   handleOpenPublishDialog: (index: number) => void;
   handleGraphic: (index: number) => void;
 }
 
 export function PlanView(props: IProps) {
-  const {
-    rowInfo,
-    bookMap,
-    publishingView,
-    handleOpenPublishDialog,
-    handleGraphic,
-  } = props;
+  const { rowInfo, publishingView, handleOpenPublishDialog, handleGraphic } =
+    props;
   const { prjId } = useParams();
-  const [memory] = useGlobal('memory');
-  const ctx = useContext(PlanContext);
-  const { sectionArr } = ctx.state;
   const [srcMediaId, setSrcMediaId] = useState<string | undefined>(undefined);
   const [view, setView] = useState('');
   const teams = useOrbitData<OrganizationD[]>('organization');
-  const sectionMap = useMemo(() => new Map(sectionArr), [sectionArr]);
+  const getDescription = useSectionIdDescription();
   const t: IPlanSheetStrings = useSelector(planSheetSelector, shallowEqual);
   const [teamId] = useGlobal('organization');
   const isPersonal = useMemo(
@@ -55,19 +44,6 @@ export function PlanView(props: IProps) {
 
   const onPlayStatus = (mediaId: string) => {
     setSrcMediaId(mediaId);
-  };
-
-  const getSectionRec = (id: string) =>
-    findRecord(memory, 'section', id) as SectionD | undefined;
-
-  const getBookName = (bookAbbreviation: string | undefined): string => {
-    // For general projects (non-scripture), return empty string
-    if (!ctx.state.scripture) {
-      return '';
-    }
-    return bookAbbreviation && bookMap
-      ? bookMap[bookAbbreviation]
-      : bookAbbreviation || t.unknownBook;
   };
 
   const handleViewStep = (passageIndex: number) => {
@@ -91,7 +67,7 @@ export function PlanView(props: IProps) {
       }}
     >
       {rowInfo.map((row, i) => {
-        if (row.kind === 0) {
+        if (row.kind === IwsKind.Section) {
           const isBook =
             row.passageType === PassageTypeEnum.BOOK ||
             row.passageType === PassageTypeEnum.ALTBOOK;
@@ -128,12 +104,7 @@ export function PlanView(props: IProps) {
                   {row.title}
                 </Typography>
               ) : (
-                <Typography variant="h5">
-                  {sectionDescription(
-                    getSectionRec(row.sectionId?.id || '') as SectionD,
-                    sectionMap
-                  )}
-                </Typography>
+                <Typography variant="h5">{getDescription(row)}</Typography>
               )}
               <GrowingSpacer />
               {row.passageType === 'PASS' && publishingView ? (
@@ -164,13 +135,15 @@ export function PlanView(props: IProps) {
               ) : null}
             </Box>
           );
-        } else if (row.kind === 1) {
+        } else if (
+          row.kind === IwsKind.Passage ||
+          row.kind === IwsKind.SectionPassage
+        ) {
           const mediaId = row.mediaId?.id;
           return (
             <PassageCard
               key={row.passage?.id}
               cardInfo={row}
-              getBookName={getBookName}
               handleViewStep={() => handleViewStep(i)}
               onPlayStatus={mediaId ? () => onPlayStatus(mediaId) : undefined}
               isPlaying={mediaId === srcMediaId}

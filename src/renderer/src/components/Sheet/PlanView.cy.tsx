@@ -625,7 +625,7 @@ describe('PlanView', () => {
     cy.get('div[class*="MuiCard-root"]').should('not.exist');
   });
 
-  it('should return null for rows with kind other than 0 or 1', () => {
+  it('should return null for rows with kind other than IwsKind.Section, IwsKind.Passage, or IwsKind.SectionPassage', () => {
     const invalidRow = {
       ...createMockSection(),
       kind: 99 as any, // Invalid kind
@@ -675,5 +675,45 @@ describe('PlanView', () => {
     cy.get('div[class*="MuiAvatar-root"]')
       .eq(1)
       .should('have.css', 'margin-left');
+  });
+
+  it('should render PassageCard for IwsKind.Passage', () => {
+    const passageRow = createMockPassage({
+      kind: IwsKind.Passage,
+    });
+    const rowInfo: ISheet[] = [passageRow];
+    const bookMap = createMockBookNameMap();
+
+    mountPlanView({
+      rowInfo,
+      bookMap,
+      publishingView: false,
+      handleOpenPublishDialog: mockHandleOpenPublishDialog,
+      handleGraphic: mockHandleGraphic,
+    });
+
+    cy.wait(100);
+    // Should render PassageCard for IwsKind.Passage
+    cy.get('div[class*="MuiCard-root"]').should('be.visible');
+  });
+
+  it('should render PassageCard for IwsKind.SectionPassage', () => {
+    const sectionPassageRow = createMockPassage({
+      kind: IwsKind.SectionPassage,
+    });
+    const rowInfo: ISheet[] = [sectionPassageRow];
+    const bookMap = createMockBookNameMap();
+
+    mountPlanView({
+      rowInfo,
+      bookMap,
+      publishingView: false,
+      handleOpenPublishDialog: mockHandleOpenPublishDialog,
+      handleGraphic: mockHandleGraphic,
+    });
+
+    cy.wait(100);
+    // Should render PassageCard for IwsKind.SectionPassage
+    cy.get('div[class*="MuiCard-root"]').should('be.visible');
   });
 });

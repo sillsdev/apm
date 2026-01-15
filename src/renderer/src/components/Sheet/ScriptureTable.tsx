@@ -343,10 +343,10 @@ export function ScriptureTable(props: IProps) {
         filterState.maxStep !== '' ||
         filterState.hideDone ||
         filterState.minSection > minSection ||
-        (filterState.maxSection > -1 && filterState.maxSection < maximumSection) ||
+        (filterState.maxSection > -1 &&
+          filterState.maxSection < maximumSection) ||
         filterState.assignedToMe)
     );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filterState, minSection, maximumSection]);
 
   const publishingTitle = (passageType: PassageTypeEnum) =>
@@ -1277,7 +1277,6 @@ export function ScriptureTable(props: IProps) {
     return () => {
       window.removeEventListener('resize', handleResize);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); //do this once to get the default;
 
   useEffect(() => {
@@ -2036,7 +2035,6 @@ export function ScriptureTable(props: IProps) {
           />
           <PlanView
             rowInfo={rowinfo}
-            bookMap={bookMap}
             publishingView={publishingOn && !hidePublishing}
             handleOpenPublishDialog={(i: number) =>
               setSectionPublish(i, [PublishDestinationEnum.AkuoPublic])

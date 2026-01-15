@@ -219,7 +219,6 @@ export const usePlanSheetFill = ({
   const ActivateCell: ICellEditor = (props: any) => {
     doSetActive();
     props.onRevert();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     return <></>;
   };
 
