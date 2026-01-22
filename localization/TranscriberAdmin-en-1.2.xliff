@@ -905,8 +905,8 @@
                <context context-type="sourcefile">ProjectCard.tsx</context>
             </context-group>
          </trans-unit>
-         <trans-unit id="cards.copyNew">
-            <source>Copy project to new team.</source>
+         <trans-unit id="cards.copyProject">
+            <source>Copy project</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">addCard.tsx</context>
@@ -914,13 +914,6 @@
          </trans-unit>
          <trans-unit id="cards.copyright">
             <source>Copyright</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">addCard.tsx</context>
-            </context-group>
-         </trans-unit>
-         <trans-unit id="cards.copySame">
-            <source>Copy project to same team.</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">addCard.tsx</context>
@@ -3006,8 +2999,22 @@
                <context context-type="sourcefile">Import.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="import.createNewTeam">
+            <source>Create new team</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">ImportTab.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="import.error">
             <source>Import Error</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">Import.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="import.externalSource">
+            <source>Create a new project in APM from an external source (.ptf)</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">Import.tsx</context>
@@ -3083,13 +3090,6 @@
                <context context-type="sourcefile">electronImport.tsx</context>
             </context-group>
          </trans-unit>
-         <trans-unit id="import.importSyncUp">
-            <source>Syncing offline changes</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">electronImport.tsx</context>
-            </context-group>
-         </trans-unit>
          <trans-unit id="import.importSyncDown">
             <source>Syncing online changes</source>
             <target/>
@@ -3097,15 +3097,22 @@
                <context context-type="sourcefile">electronImport.tsx</context>
             </context-group>
          </trans-unit>
-         <trans-unit id="import.invalidITF">
-            <source>Not a valid Incremental Transcriber File (ITF).</source>
+         <trans-unit id="import.importSyncUp">
+            <source>Syncing offline changes</source>
             <target/>
             <context-group>
-               <context context-type="sourcefile">import.tsx</context>
+               <context context-type="sourcefile">electronImport.tsx</context>
             </context-group>
          </trans-unit>
-         <trans-unit id="import.unknownError">
-            <source>If this error occurred while importing offline changes, please close the app immediately and reopen.  If the error persists, contact support.  If you continue to use the app, you will lose offline changes.</source>
+         <trans-unit id="import.incrementalImport">
+            <source>Import Incremental Changes from an offline coworker (.itf)</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">Import.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="import.invalidITF">
+            <source>Not a valid Incremental Transcriber File (ITF).</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">import.tsx</context>
@@ -3130,6 +3137,13 @@
             <target/>
             <context-group>
                <context context-type="sourcefile">import.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="import.offlineImport">
+            <source>Import an APM Project File to use offline and sync when online, or a project file from an external source that you will only use offline.  Projects from an external source that are not imported while online cannot be synced online.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">Import.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="import.old">
@@ -3188,6 +3202,20 @@
                <context context-type="sourcefile">import.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="import.selectImportFileType">
+            <source>Select import file type:</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">ImportTab.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="import.selectTeam">
+            <source>Select Team</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">ImportTab.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="import.showHideFilter">
             <source>Show/Hide filter rows</source>
             <target/>
@@ -3218,6 +3246,13 @@
          </trans-unit>
          <trans-unit id="import.unassigned">
             <source>unassigned</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">import.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="import.unknownError">
+            <source>If this error occurred while importing offline changes, please close the app immediately and reopen.  If the error persists, contact support.  If you continue to use the app, you will lose offline changes.</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">import.tsx</context>

@@ -1,6 +1,7 @@
 import React, { useContext, useMemo, useState, useEffect } from 'react';
 import { useGetGlobal, useGlobal } from '../../context/useGlobal';
 import { useDispatch, useSelector } from 'react-redux';
+import { shallowEqual } from 'react-redux';
 import {
   Card,
   CardActions,
@@ -12,6 +13,11 @@ import {
   CardContentProps,
   Box,
   ChipProps,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
 } from '@mui/material';
 import * as actions from '../../store';
 import ScriptureIcon from '@mui/icons-material/MenuBook';
@@ -65,6 +71,9 @@ import { useOrbitData } from '../../hoc/useOrbitData';
 import { UpdateRecord } from '../../model/baseModel';
 import { useProjectPermissions } from '../../utils/useProjectPermissions';
 import { IProjectDialog } from './ProjectDialog/projectDialogTypes';
+import { TeamSelector } from '../ImportTab';
+import { useAdminTeams } from '../useAdminTeams';
+import { importSelector } from '../../selector';
 
 const PencilSquare = BsPencilSquare as unknown as React.FC<IconBaseProps>;
 
@@ -159,6 +168,8 @@ export const ProjectCard = (props: IProps) => {
   const [deleteItem, setDeleteItem] = useState<VProjectD>();
   const [open, setOpen] = useState('');
   const [isAdmin, setIsAdmin] = useState(false);
+  const [openCopyDialog, setOpenCopyDialog] = useState(false);
+  const [selectedTeamId, setSelectedTeamId] = useState<string>('');
   const { getProjectDefault } = useProjectDefaults();
   const t = cardStrings;
   const tpb = projButtonStrings;
@@ -176,6 +187,8 @@ export const ProjectCard = (props: IProps) => {
     related(project, 'organization'),
     related(project, 'project')
   );
+  const teams = useAdminTeams();
+  const tImport: any = useSelector(importSelector, shallowEqual);
 
   useEffect(() => {
     if (open !== '') doOpen(open);
@@ -238,21 +251,8 @@ export const ProjectCard = (props: IProps) => {
       case 'category':
         setOpenCategory(true);
         break;
-      case 'copysame':
-      case 'copynew':
-        setCopying(true);
-        copyProject({
-          projectid: remoteIdNum(
-            'project',
-            getGlobal('project'),
-            memory?.keyMap as RecordKeyMap
-          ),
-          sameorg: what === 'copysame',
-          token: accessToken,
-          errorReporter: errorReporter,
-          pendingmsg: t.copyStatus,
-          completemsg: t.copyComplete,
-        });
+      case 'copyproject':
+        setOpenCopyDialog(true);
         break;
       case 'import':
       case 'export':
@@ -356,6 +356,36 @@ export const ProjectCard = (props: IProps) => {
 
   const handleDeleteRefused = () => {
     setDeleteItem(undefined);
+  };
+
+  const handleCopyConfirm = () => {
+    setOpenCopyDialog(false);
+    setCopying(true);
+    copyProject({
+      projectid: remoteIdNum(
+        'project',
+        getGlobal('project'),
+        memory?.keyMap as RecordKeyMap
+      ),
+      orgid:
+        selectedTeamId == 'new'
+          ? 0
+          : remoteIdNum(
+              'organization',
+              selectedTeamId,
+              memory?.keyMap as RecordKeyMap
+            ),
+      token: accessToken,
+      errorReporter: errorReporter,
+      pendingmsg: t.copyStatus,
+      completemsg: t.copyComplete,
+    });
+    setSelectedTeamId('');
+  };
+
+  const handleCopyCancel = () => {
+    setOpenCopyDialog(false);
+    setSelectedTeamId('');
   };
 
   const isStory = useMemo(
@@ -545,6 +575,24 @@ export const ProjectCard = (props: IProps) => {
           noResponse={handleDeleteRefused}
         />
       )}
+      <Dialog open={openCopyDialog} onClose={handleCopyCancel}>
+        <DialogTitle>{t.copyProject}</DialogTitle>
+        <DialogContent>
+          <TeamSelector
+            selectedTeamId={selectedTeamId}
+            onTeamChange={setSelectedTeamId}
+            teams={teams}
+            includeNewTeam={false}
+            selectLabel={tImport?.selectTeam || 'Select Team'}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCopyCancel}>{t.cancel || 'Cancel'}</Button>
+          <Button onClick={handleCopyConfirm} variant="contained">
+            {t.copyProject || 'Copy'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </ProjectCardRoot>
   );
 };

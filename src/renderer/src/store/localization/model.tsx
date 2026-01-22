@@ -158,9 +158,8 @@ export interface ICardsStrings extends Localize.LocalizedStringsMethods {
     "convertVoice": string;
     "convertVoiceSettings": string;
     "copyComplete": string;
-    "copyNew": string;
+    "copyProject": string;
     "copyright": string;
-    "copySame": string;
     "copyStatus": string;
     "creatorAdd": string;
     "creatorEmail": string;
@@ -518,7 +517,9 @@ export interface IImportStrings extends Localize.LocalizedStringsMethods {
     "continue": string;
     "copy": string;
     "copyfail": string;
+    "createNewTeam": string;
     "error": string;
+    "externalSource": string;
     "family": string;
     "filter": string;
     "fontsize": string;
@@ -529,13 +530,14 @@ export interface IImportStrings extends Localize.LocalizedStringsMethods {
     "importPending": string;
     "importProject": string;
     "importSync": string;
-    "importSyncUp": string;
     "importSyncDown": string;
+    "importSyncUp": string;
+    "incrementalImport": string;
     "invalidITF": string;
-    "unknownError": string;
     "invalidProject": string;
     "locale": string;
     "noFile": string;
+    "offlineImport": string;
     "old": string;
     "onlineChangeReport": string;
     "other": string;
@@ -544,11 +546,14 @@ export interface IImportStrings extends Localize.LocalizedStringsMethods {
     "plan": string;
     "projectDeleted": string;
     "projectNotFound": string;
+    "selectImportFileType": string;
+    "selectTeam": string;
     "showHideFilter": string;
     "state": string;
     "timezone": string;
     "transcription": string;
     "unassigned": string;
+    "unknownError": string;
     "username": string;
 };
 

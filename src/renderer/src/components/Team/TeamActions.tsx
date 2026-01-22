@@ -11,7 +11,7 @@ import {
 import { DialogMode } from '../../model';
 import TeamDialog, { ITeamDialog } from './TeamDialog';
 import { TeamContext } from '../../context/TeamContext';
-import { API_CONFIG, isElectron } from '../../../api-variable';
+import { API_CONFIG } from '../../../api-variable';
 import ImportTab from '../ImportTab';
 import { AltButton } from '../../control';
 import { useMyNavigate } from '../../utils';
@@ -117,15 +117,9 @@ const TeamActions = () => {
           {t.addTeam}
         </AltButton>
       )}
-      {offline && (
-        <AltButton
-          id="teamActImport"
-          sx={{ mb: 2 }}
-          onClick={handleClickImport}
-        >
-          {t.import}
-        </AltButton>
-      )}
+      <AltButton id="teamActImport" sx={{ mb: 2 }} onClick={handleClickImport}>
+        {t.import}
+      </AltButton>
       {!offline && userIsSharedContentAdmin && (
         <AltButton
           id="contentCreator"
@@ -173,9 +167,7 @@ const TeamActions = () => {
           labelPlacement="bottom"
         />
       </BigDialog>
-      {isElectron && importOpen && (
-        <ImportTab isOpen={importOpen} onOpen={setImportOpen} />
-      )}
+      {importOpen && <ImportTab isOpen={importOpen} onOpen={setImportOpen} />}
     </RootBox>
   );
 };

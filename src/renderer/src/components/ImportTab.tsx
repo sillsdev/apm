@@ -16,6 +16,7 @@ import {
   localizeActivityState,
   IActivityStateStrings,
   IApiError,
+  OrganizationD,
 } from '../model';
 import Confirm from './AlertDialog';
 import {
@@ -31,6 +32,12 @@ import {
   DialogActions,
   styled,
   SxProps,
+  RadioGroup,
+  Radio,
+  FormControlLabel,
+  FormControl,
+  TextField,
+  MenuItem,
 } from '@mui/material';
 import Memory from '@orbit/memory';
 import JSONAPISource from '@orbit/jsonapi';
@@ -65,7 +72,8 @@ import { useSelector } from 'react-redux';
 import { activitySelector, importSelector, sharedSelector } from '../selector';
 import { useDispatch } from 'react-redux';
 import {
-  ImportProjectFromElectronProps,
+  ImportProjectITFFromElectronProps,
+  ImportProjectFromExternalProps,
   ImportProjectToElectronProps,
   ImportSyncFromElectronProps,
 } from '../store';
@@ -76,12 +84,55 @@ import {
   type GridColumnVisibilityModel,
   type GridSortModel,
 } from '@mui/x-data-grid';
+import { useAdminTeams } from './useAdminTeams';
 
 const headerProps = {
   display: 'flex',
   flexDirection: 'row',
   justifyContent: 'center',
 } as SxProps;
+
+interface ITeamSelectorProps {
+  selectedTeamId: string;
+  onTeamChange: (teamId: string) => void;
+  label?: string;
+  includeNewTeam?: boolean;
+  teams: OrganizationD[];
+  selectLabel?: string;
+  createNewLabel?: string;
+}
+
+export const TeamSelector = (props: ITeamSelectorProps) => {
+  const {
+    selectedTeamId,
+    onTeamChange,
+    label,
+    includeNewTeam = true,
+    teams,
+    selectLabel,
+    createNewLabel,
+  } = props;
+  return (
+    <FormControl fullWidth sx={{ mt: 2, mb: 2 }}>
+      <TextField
+        select
+        label={label || selectLabel}
+        value={selectedTeamId}
+        onChange={(e) => onTeamChange(e.target.value)}
+        variant="outlined"
+      >
+        {includeNewTeam && (
+          <MenuItem value="new">{createNewLabel || 'Create New Team'}</MenuItem>
+        )}
+        {teams.map((team) => (
+          <MenuItem key={team.id} value={team.id}>
+            {team.attributes.name}
+          </MenuItem>
+        ))}
+      </TextField>
+    </FormControl>
+  );
+};
 
 const StyledDialog = styled(Dialog)<DialogProps>(({ theme }) => ({
   '& .MuiDialog-paper': {
@@ -139,11 +190,14 @@ export function ImportTab(props: IProps) {
   const importComplete = () => dispatch(actions.importComplete() as any);
   const importProjectToElectron = (props: ImportProjectToElectronProps) =>
     dispatch(actions.importProjectToElectron(props) as any);
-  const importProjectFromElectron = (props: ImportProjectFromElectronProps) =>
-    dispatch(actions.importProjectFromElectron(props) as any);
+  const importProjectITFFromElectron = (
+    props: ImportProjectITFFromElectronProps
+  ) => dispatch(actions.importProjectITFFromElectron(props) as any);
+  const importProjectFromExternal = (props: ImportProjectFromExternalProps) =>
+    dispatch(actions.importFromExternal(props) as any);
   const importSyncFromElectron = (props: ImportSyncFromElectronProps) =>
     dispatch(actions.importSyncFromElectron(props) as any);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
   const [, setBusy] = useGlobal('importexportBusy');
   const importingRef = useRef(false);
   const [coordinator] = useGlobal('coordinator');
@@ -163,6 +217,12 @@ export function ImportTab(props: IProps) {
   const [fileName, setFileName] = useState<string>('');
   const [importProject, setImportProject] = useState<string>('');
   const [uploadVisible, setUploadVisible] = useState(false);
+  const [selectedImportType, setSelectedImportType] = useState<UploadType>(
+    UploadType.PTF
+  );
+  const [showImportTypeSelection, setShowImportTypeSelection] = useState(false);
+  const [selectedTeamId, setSelectedTeamId] = useState<string>('new');
+  const teams = useAdminTeams();
   const { getOrganizedBy } = useOrganizedBy();
   const forceDataChanges = useDataChanges();
   const { handleElectronImport, getElectronImportData } = useElectronImport();
@@ -237,29 +297,12 @@ export function ImportTab(props: IProps) {
     setChangeDatax(data);
   };
   useEffect(() => {
-    const electronImport = async () => {
-      const importData = await getElectronImportData(project || '');
-      if (importData.valid) {
-        setFileName(importData.fileName);
-        setImportProject(importData.projectName);
-        if (importData.warnMsg) {
-          setConfirmAction(importData.warnMsg);
-        } else {
-          //no warning...so set confirmed
-          handleActionConfirmed();
-        }
-      } else handleActionRefused();
-    };
-
     setImportTitle('');
     setChangeData([]);
-    if (isElectron) {
-      if (syncFile && syncBuffer) uploadSyncITF(syncBuffer, syncFile);
-      //or do I want isLoggedIn...or are they the same???
-      //if offline they should actually get to choose between replacing the project, or uploading someone else's changes...TODO
-      else if (isOffline) electronImport();
-      else setUploadVisible(true); //I'm online so allow upload of ITF
-    } else setUploadVisible(true);
+    if (isElectron && syncFile && syncBuffer) {
+      uploadSyncITF(syncBuffer, syncFile);
+    } // Need to ask user if they want to import PTF or ITF
+    else setShowImportTypeSelection(true);
   }, []);
 
   const setImporting = (importing: boolean, errMsg?: string) => {
@@ -284,27 +327,84 @@ export function ImportTab(props: IProps) {
     handleClose();
   };
 
-  const uploadITF = (files: File[]) => {
+  const electronImport = async () => {
+    const importData = await getElectronImportData(project || '');
+    if (importData.valid) {
+      setFileName(importData.fileName);
+      setImportProject(importData.projectName);
+      if (importData.warnMsg) {
+        setConfirmAction(importData.warnMsg);
+      } else {
+        //no warning...so set confirmed
+        handleActionConfirmed();
+      }
+    } else handleActionRefused();
+  };
+
+  const handleImportTypeSelected = () => {
+    setShowImportTypeSelection(false);
+    if (selectedImportType === UploadType.PTF && isOffline) {
+      //this has it's own upload dialog so we don't need to setUploadVisible(true);
+      uploadPTFOffline();
+    } else {
+      setUploadVisible(true);
+    }
+  };
+
+  const uploadPTFOffline = () => {
+    // For offline PTF, we use electronImport which uses the Electron file picker
+    electronImport();
+    setUploadVisible(false);
+  };
+
+  const handleFileUpload = (
+    files: File[],
+    importAction: (props: any) => void,
+    props: Record<string, any>
+  ) => {
     if (!files || files.length === 0) {
       showMessage(t.noFile);
-    } else {
-      if (project) {
-        setImporting(true);
-        importProjectFromElectron({
-          files,
-          projectid: remoteIdNum(
-            'project',
-            project,
-            memory?.keyMap as RecordKeyMap
-          ),
-          token,
-          errorReporter,
-          pendingmsg: t.importPending,
-          completemsg: t.importComplete,
-        });
-      }
+      return;
     }
+    setImporting(true);
+    importAction({
+      files,
+      ...props,
+    });
     setUploadVisible(false);
+  };
+
+  const uploadPTFOnline = (files: File[]) => {
+    const teamIdNum =
+      selectedTeamId === 'new'
+        ? 0
+        : remoteIdNum(
+            'organization',
+            selectedTeamId,
+            memory?.keyMap as RecordKeyMap
+          );
+    handleFileUpload(files, importProjectFromExternal, {
+      teamId: teamIdNum,
+      token,
+      errorReporter,
+      pendingmsg: t.importPending,
+      completemsg: t.importComplete,
+    });
+  };
+
+  const uploadITF = (files: File[]) => {
+    if (!project) return;
+    handleFileUpload(files, importProjectITFFromElectron, {
+      projectid: remoteIdNum(
+        'project',
+        project,
+        memory?.keyMap as RecordKeyMap
+      ),
+      token,
+      errorReporter,
+      pendingmsg: t.importPending,
+      completemsg: t.importComplete,
+    });
   };
   const uploadSyncITF = (buffer: Buffer, fileName: string) => {
     setImportTitle(t.importSyncUp);
@@ -724,7 +824,6 @@ export function ImportTab(props: IProps) {
         handleClose();
       }
     }
-    /* eslint-disable-next-line react-hooks/exhaustive-deps */
   }, [importStatus]);
 
   const handleClose = () => {
@@ -743,7 +842,6 @@ export function ImportTab(props: IProps) {
       (status?.errMsg && status?.errMsg !== '[]' ? ': ' + status?.errMsg : '')
     );
   };
-
   return (
     <StyledDialog
       open={isOpen}
@@ -798,13 +896,62 @@ export function ImportTab(props: IProps) {
               <LinearProgress variant="indeterminate" />
             </ProgressBar>
           )}
-          <MediaUpload
-            visible={uploadVisible}
-            onVisible={setUploadVisible}
-            uploadType={UploadType.ITF}
-            uploadMethod={uploadITF}
-            cancelMethod={uploadCancel}
-          />
+          {showImportTypeSelection && (
+            <FormControl component="fieldset" sx={{ mt: 2, mb: 2 }}>
+              <Typography variant="subtitle1" sx={{ mb: 2 }}>
+                {t.selectImportFileType}
+              </Typography>
+              <RadioGroup
+                value={selectedImportType}
+                onChange={(e) =>
+                  setSelectedImportType(parseInt(e.target.value) as UploadType)
+                }
+              >
+                <FormControlLabel
+                  value={UploadType.PTF}
+                  control={<Radio />}
+                  label={!isOffline ? t.externalSource : t.offlineImport}
+                />
+                {selectedImportType === UploadType.PTF && !isOffline && (
+                  <TeamSelector
+                    selectedTeamId={selectedTeamId}
+                    onTeamChange={setSelectedTeamId}
+                    teams={teams}
+                    selectLabel={t.selectTeam}
+                    createNewLabel={t.createNewTeam}
+                  />
+                )}
+                <FormControlLabel
+                  value={UploadType.ITF}
+                  control={<Radio />}
+                  label={t.incrementalImport}
+                />
+              </RadioGroup>
+              <ActionRow sx={{ mt: 2 }}>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={handleImportTypeSelected}
+                >
+                  {t.continue}
+                </Button>
+              </ActionRow>
+            </FormControl>
+          )}
+
+          {uploadVisible && (
+            <MediaUpload
+              visible={uploadVisible}
+              onVisible={setUploadVisible}
+              uploadType={selectedImportType}
+              uploadMethod={
+                selectedImportType === UploadType.PTF
+                  ? uploadPTFOnline
+                  : uploadITF
+              }
+              cancelMethod={uploadCancel}
+            />
+          )}
           {confirmAction === '' || (
             <Confirm
               jsx={

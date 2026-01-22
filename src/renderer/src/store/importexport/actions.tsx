@@ -1,4 +1,4 @@
-import Axios, { AxiosError } from 'axios';
+import Axios, { AxiosError, HttpStatusCode } from 'axios';
 import path from 'path-browserify';
 import {
   Comment,
@@ -229,7 +229,6 @@ export const exportProject =
           bodyFormData,
           token
         )
-          // eslint-disable-next-line no-loop-func
           .then((result) => {
             const response = result as { data: FileResponse };
             const fr = response.data as FileResponse;
@@ -260,7 +259,7 @@ export const exportProject =
                   });
                 } else {
                   const pct = Math.min(
-                    Math.round((start / (numberOfMedia + 15)) * 100),
+                    Math.round((start / ((numberOfMedia + 15) * 1.5)) * 100),
                     90
                   );
                   dispatch({
@@ -270,7 +269,6 @@ export const exportProject =
                 }
             }
           })
-          // eslint-disable-next-line no-loop-func
           .catch((err: AxiosError) => {
             logError(
               Severity.error,
@@ -284,7 +282,7 @@ export const exportProject =
             });
           });
         if (start > -1) {
-          await new Promise((r) => setTimeout(r, 3000));
+          await new Promise((r) => setTimeout(r, 6000));
         }
       } while (start > -1);
     }
@@ -297,6 +295,192 @@ export const importComplete = () => (dispatch: any) => {
 };
 const partialMessage = (msg: string, partialMsg: string) =>
   (msg.length > 0 ? ',' : '') + partialMsg.substring(1, partialMsg.length - 2);
+
+interface ProcessImportFileParams {
+  filename: string;
+  file: Blob | File;
+  getProcessUrl: (filename: string, fileURL: string) => string;
+  getInitialStart: () => string;
+  token: string | null;
+  errorReporter: any;
+  pendingmsg: string;
+  completemsg: string;
+  dispatch: any;
+}
+
+const processImportFile = async ({
+  filename,
+  file,
+  getProcessUrl,
+  getInitialStart,
+  token,
+  errorReporter,
+  pendingmsg,
+  completemsg,
+  dispatch,
+}: ProcessImportFileParams) => {
+  //get the put url for the file
+  const url = API_CONFIG.host + '/api/offlineData/project/import/' + filename;
+  const response = await Axios.get(url, {
+    headers: {
+      Authorization: 'Bearer ' + token,
+    },
+  });
+
+  const uploadedFilename = response.data.message;
+  let xhr = new XMLHttpRequest();
+  const cleanup = () => {
+    xhr.onload = null;
+    xhr.onerror = null;
+    xhr.onabort = null;
+    // @ts-ignore allow memory release
+    xhr = null;
+  };
+
+  /* FUTURE TODO Limit is 5G, but it's recommended to use a multipart upload > 100M */
+  xhr.open('PUT', response.data.fileURL, true);
+  xhr.setRequestHeader('Content-Type', response.data.contentType);
+  xhr.send(file.slice());
+
+  return new Promise<void>((resolve, reject) => {
+    xhr.onload = async () => {
+      if (xhr.status < 300) {
+        cleanup();
+        dispatch({
+          payload: pendingmsg.replace('{0}', '20'),
+          type: IMPORT_PENDING,
+        });
+        let start = getInitialStart();
+        let msg = '';
+        let mapKey = '';
+        let processUrl = '';
+        do {
+          try {
+            /* tell it to process the file now */
+            processUrl = getProcessUrl(uploadedFilename, mapKey);
+            const putresponse = await Axios.put(processUrl + start, null, {
+              headers: {
+                Authorization: 'Bearer ' + token,
+              },
+            });
+            if (putresponse.data.status === 200) {
+              dispatch({
+                payload: {
+                  status: completemsg,
+                  msg:
+                    msg.length > 0
+                      ? '[' +
+                        msg +
+                        partialMessage(msg, putresponse.data.message) +
+                        ']'
+                      : putresponse.data.message,
+                },
+                type: IMPORT_SUCCESS,
+              });
+              await cleanupCopyProject(mapKey, token);
+              resolve();
+              break;
+            } else if (
+              putresponse.data.status === HttpStatusCode.PartialContent
+            ) {
+              start = putresponse.data.startindex;
+              mapKey = putresponse.data.fileURL;
+              msg += partialMessage(msg, putresponse.data.message);
+            } else {
+              logError(
+                Severity.error,
+                errorReporter,
+                'import error' + putresponse.data.message
+              );
+              dispatch({
+                payload: errorStatus(
+                  putresponse.data.status,
+                  putresponse.data.message
+                ),
+                type: IMPORT_ERROR,
+              });
+              await cleanupCopyProject(mapKey, token);
+              reject(new Error(putresponse.data.message));
+              break;
+            }
+          } catch (reason: any) {
+            logError(Severity.error, errorReporter, 'import error' + reason);
+            dispatch({
+              payload: errorStatus(-1, reason.toString()),
+              type: IMPORT_ERROR,
+            });
+            await cleanupCopyProject(mapKey, token);
+            reject(reason);
+            break;
+          }
+        } while (start !== '0' && start !== '0/0');
+      } else {
+        logError(
+          Severity.error,
+          errorReporter,
+          `upload ${uploadedFilename}: ${xhr.responseText}`
+        );
+        dispatch({
+          payload: errorStatus(xhr.status, xhr.responseText),
+          type: IMPORT_ERROR,
+        });
+        cleanup();
+        reject(new Error(xhr.responseText));
+      }
+    };
+
+    xhr.onerror = () => {
+      cleanup();
+      reject(new Error('Upload failed'));
+    };
+  });
+};
+
+export interface ImportProjectFromExternalProps {
+  files: File[];
+  teamId?: number;
+  token: string | null;
+  errorReporter: any;
+  pendingmsg: string;
+  completemsg: string;
+}
+export const importFromExternal =
+  ({
+    files,
+    teamId,
+    token,
+    errorReporter,
+    pendingmsg,
+    completemsg,
+  }: ImportProjectFromExternalProps) =>
+  (dispatch: any) => {
+    dispatch({
+      payload: pendingmsg.replace('{0}', '1'),
+      type: IMPORT_PENDING,
+    });
+    const file = files[0];
+    processImportFile({
+      filename: file.name,
+      file,
+      getProcessUrl: (filename, mapKey) => {
+        return mapKey !== ''
+          ? `${API_CONFIG.host}/api/offlineData/project/copyfromfile/${teamId}/${filename}/${mapKey}/`
+          : `${API_CONFIG.host}/api/offlineData/project/copyfromfile/${teamId}/${filename}`;
+      },
+      getInitialStart: () => '',
+      token,
+      errorReporter,
+      pendingmsg,
+      completemsg,
+      dispatch,
+    }).catch((reason) => {
+      logError(Severity.error, errorReporter, `Import Error: ${reason}`);
+      dispatch({
+        payload: errorStatus(-1, reason.toString()),
+        type: IMPORT_ERROR,
+      });
+    });
+  };
 
 const importFromElectron =
   (
@@ -313,128 +497,56 @@ const importFromElectron =
       payload: pendingmsg.replace('{0}', '1'),
       type: IMPORT_PENDING,
     });
-    let url = API_CONFIG.host + '/api/offlineData/project/import/' + filename;
-    Axios.get(url, {
-      headers: {
-        Authorization: 'Bearer ' + token,
+    processImportFile({
+      filename,
+      file,
+      getProcessUrl: (uploadedFilename) => {
+        if (projectid === 0) {
+          return `${API_CONFIG.host}/api/offlineData/sync/${uploadedFilename}/`;
+        }
+        //import the itf into the project
+        return `${API_CONFIG.host}/api/offlineData/project/import/${projectid}/${uploadedFilename}/`;
       },
-    })
-      .then((response) => {
-        const filename = response.data.message;
-        let xhr = new XMLHttpRequest();
-        const cleanup = () => {
-          xhr.onload = null;
-          xhr.onerror = null;
-          xhr.onabort = null;
-          // @ts-ignore allow memory release
-          xhr = null;
-        };
-        /* FUTURE TODO Limit is 5G, but it's recommended to use a multipart upload > 100M */
-        xhr.open('PUT', response.data.fileURL, true);
-        xhr.setRequestHeader('Content-Type', response.data.contentType);
-        xhr.send(file.slice());
-        xhr.onload = async () => {
-          if (xhr.status < 300) {
-            cleanup();
-            dispatch({
-              payload: pendingmsg.replace('{0}', '20'),
-              type: IMPORT_PENDING,
-            });
-            let start = '0';
-            let msg = '';
-            if (projectid === 0) {
-              url = `${API_CONFIG.host}/api/offlineData/sync/${filename}/`;
-              start = '0/0';
-            } else
-              url = `${API_CONFIG.host}/api/offlineData/project/import/${projectid}/${filename}/`;
-            do {
-              try {
-                /* tell it to process the file now */
-                const putresponse = await Axios.put(url + start, null, {
-                  headers: {
-                    Authorization: 'Bearer ' + token,
-                  },
-                });
-                if (putresponse.data.status === 200) {
-                  dispatch({
-                    payload: {
-                      status: completemsg,
-                      msg:
-                        msg.length > 0
-                          ? '[' +
-                            msg +
-                            partialMessage(msg, putresponse.data.message) +
-                            ']'
-                          : putresponse.data.message,
-                    },
-                    type: IMPORT_SUCCESS,
-                  });
-                  break;
-                } else if (putresponse.data.status === 206) {
-                  start = putresponse.data.startindex;
-                  msg += partialMessage(msg, putresponse.data.message);
-                } else {
-                  logError(
-                    Severity.error,
-                    errorReporter,
-                    'import error' + putresponse.data.message
-                  );
-                  dispatch({
-                    payload: errorStatus(
-                      putresponse.data.status,
-                      putresponse.data.message
-                    ),
-                    type: IMPORT_ERROR,
-                  });
-                  break;
-                }
-              } catch (reason: any) {
-                logError(
-                  Severity.error,
-                  errorReporter,
-                  'import error' + reason
-                );
-                dispatch({
-                  payload: errorStatus(-1, reason.toString()),
-                  type: IMPORT_ERROR,
-                });
-                break;
-              }
-            } while (start !== '0' && start !== '0/0');
-          } else {
-            logError(
-              Severity.error,
-              errorReporter,
-              `upload ${filename}: ${xhr.responseText}`
-            );
-            dispatch({
-              payload: errorStatus(xhr.status, xhr.responseText),
-              type: IMPORT_ERROR,
-            });
-            cleanup();
-          }
-        };
-      })
-      .catch((reason) => {
-        logError(Severity.error, errorReporter, `Import Error: ${reason}`);
-        dispatch({
-          payload: errorStatus(-1, reason.toString()),
-          type: IMPORT_ERROR,
-        });
+      getInitialStart: () => (projectid === 0 ? '0/0' : '0'),
+      token,
+      errorReporter,
+      pendingmsg,
+      completemsg,
+      dispatch,
+    }).catch((reason) => {
+      logError(Severity.error, errorReporter, `Import Error: ${reason}`);
+      dispatch({
+        payload: errorStatus(-1, reason.toString()),
+        type: IMPORT_ERROR,
       });
+    });
   };
 export interface CopyProjectProps {
   projectid: number;
-  sameorg: boolean;
+  orgid: number;
   token: string | null;
   errorReporter: any;
   pendingmsg: string;
   completemsg: string;
 }
+export const cleanupCopyProject = async (
+  mapKey: string,
+  token: string | null
+) => {
+  if (mapKey) {
+    const url = `${API_CONFIG.host}/api/offlineData/project/copyp/${mapKey}`;
+    await Axios.put(url, null, {
+      headers: {
+        Authorization: 'Bearer ' + token,
+      },
+    });
+  }
+};
+
 export const copyProject =
   ({
     projectid,
-    sameorg,
+    orgid,
     token,
     errorReporter,
     pendingmsg,
@@ -443,13 +555,14 @@ export const copyProject =
   async (dispatch: any) => {
     let newproject = '';
     dispatch({
-      payload: pendingmsg.replace('{0}', 'same ' + sameorg.toString()),
+      payload: pendingmsg.replace('{0}', ''),
       type: COPY_PENDING,
     });
     let start = 0;
-    let url = `${API_CONFIG.host}/api/offlineData/project/copyp/${sameorg}/${projectid}/${start}`;
+    let url = `${API_CONFIG.host}/api/offlineData/project/copydata/${orgid}/${projectid}`;
 
     let returnstatus = 0;
+    let status = '';
     do {
       const response = await Axios.put(url, null, {
         headers: {
@@ -458,13 +571,13 @@ export const copyProject =
       });
       start = response.data.id;
       returnstatus = response.data.status;
-      const status = response.data.message;
+      status = response.data.message;
       newproject = response.data.fileURL as string;
       dispatch({
         payload: pendingmsg.replace('{0}', status),
         type: COPY_PENDING,
       });
-      url = `${API_CONFIG.host}/api/offlineData/project/copyp/${projectid}/${start}/${newproject}`;
+      url = `${API_CONFIG.host}/api/offlineData/project/copydata/${orgid}/${projectid}/${newproject}/${start}`;
     } while (returnstatus === 200 && start !== -1);
     if (start === -1)
       dispatch({
@@ -483,12 +596,7 @@ export const copyProject =
     }
     //clean it up
     if (newproject) {
-      url = `${API_CONFIG.host}/api/offlineData/project/copyp/${newproject}`;
-      await Axios.put(url, null, {
-        headers: {
-          Authorization: 'Bearer ' + token,
-        },
-      });
+      await cleanupCopyProject(newproject, token);
     }
   };
 export const copyComplete = () => (dispatch: any) => {
@@ -530,7 +638,7 @@ export const importSyncFromElectron =
     );
   };
 
-export interface ImportProjectFromElectronProps {
+export interface ImportProjectITFFromElectronProps {
   files: File[];
   projectid: number;
   token: string | null;
@@ -539,7 +647,7 @@ export interface ImportProjectFromElectronProps {
   completemsg: string;
 }
 
-export const importProjectFromElectron =
+export const importProjectITFFromElectron =
   ({
     files,
     projectid,
@@ -547,7 +655,7 @@ export const importProjectFromElectron =
     errorReporter,
     pendingmsg,
     completemsg,
-  }: ImportProjectFromElectronProps) =>
+  }: ImportProjectITFFromElectronProps) =>
   (dispatch: any) => {
     dispatch(
       importFromElectron(
