@@ -606,6 +606,10 @@ const TeamProvider = (props: IProps) => {
   const teamDelete = async (team: RecordIdentity) => {
     setState((state) => ({ ...state, isDeleting: true }));
     await orbitTeamDelete(team.id);
+    const selectedTeamId = localStorage.getItem(localUserKey(LocalKey.team));
+    if (selectedTeamId === team.id) {
+      localStorage.removeItem(localUserKey(LocalKey.team));
+    }
     setState((state) => ({ ...state, isDeleting: false }));
   };
 
