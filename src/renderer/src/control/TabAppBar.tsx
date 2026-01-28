@@ -23,6 +23,7 @@ export const TabAppBar = styled(AppBar, {
     width: '95%',
   }),
   ...(mobileBar && {
-    position: 'unset',
+    top: `${HeadHeight}px`,
+    position: 'fixed',
   }),
 }));
