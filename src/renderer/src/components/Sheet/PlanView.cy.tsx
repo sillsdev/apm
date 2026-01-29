@@ -20,6 +20,7 @@ import {
 } from '../../model';
 import { RecordIdentity } from '@orbit/records';
 import { PublishDestinationEnum } from '../../crud/usePublishDestination';
+import { ActionHeight } from '../../control/TabAppBar';
 
 // Mock dependencies
 const createMockLiveQuery = (data: any[] = []) => ({
@@ -941,5 +942,28 @@ describe('PlanView', () => {
     cy.wait(100);
     // Should render PassageCard for IwsKind.SectionPassage
     cy.get('div[class*="MuiCard-root"]').should('be.visible');
+  });
+
+  it('should apply top padding for sticky toolbar', () => {
+    const rowInfo: ISheet[] = [];
+    const bookMap = createMockBookNameMap();
+
+    mountPlanView({
+      rowInfo,
+      bookMap,
+      publishingView: false,
+      handlePublish: mockHandlePublish,
+      handleGraphic: mockHandleGraphic,
+    });
+
+    cy.wait(100);
+    cy.get('div[class*="MuiGrid-container"]', { timeout: 5000 })
+      .first()
+      .should(($el) => {
+        const paddingTop = window.getComputedStyle($el[0]).paddingTop;
+        const expectedCalc = `calc(${ActionHeight}px + 16px)`;
+        const expectedPx = `${ActionHeight + 16}px`;
+        expect([expectedCalc, expectedPx]).to.include(paddingTop);
+      });
   });
 });

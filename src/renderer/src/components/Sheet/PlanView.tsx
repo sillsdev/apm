@@ -14,7 +14,7 @@ import { PassageCard } from './PassageCard';
 import StickyRedirect from '../StickyRedirect';
 import { useParams } from 'react-router-dom';
 import { GraphicAvatar } from './GraphicAvatar';
-import { GrowingSpacer } from '../../control';
+import { ActionHeight, GrowingSpacer } from '../../control';
 import {
   isPersonalTeam,
   PublishDestinationEnum,
@@ -93,6 +93,7 @@ export function PlanView(props: IProps) {
         flexDirection: 'row',
         gap: '1rem',
         padding: '0 1.5rem',
+        paddingTop: `calc(${ActionHeight}px + 16px)`,
       }}
     >
       {rowInfo.map((row, i) => {
