@@ -40,7 +40,7 @@
   "typescript.tsserver.watchOptions": {
     "watchFile": "useFsEvents",
     "watchDirectory": "useFsEvents",
-    "fallbackPolling": "dynamicPriority",
+    "fallbackPolling": "dynamicPriorityPolling",
     "synchronousWatchDirectory": true,
     "excludeDirectories": ["**/node_modules", "**/dist", "**/coverage"]
   },
