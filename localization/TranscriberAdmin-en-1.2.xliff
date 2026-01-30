@@ -1060,6 +1060,13 @@
                <context context-type="sourcefile">addCard.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="cards.newTeam">
+            <source>new team</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">ProjectCard.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="cards.noProjects">
             <source>No projects yet.</source>
             <target/>
@@ -2979,7 +2986,7 @@
             </context-group>
          </trans-unit>
          <trans-unit id="import.continue">
-            <source>Continue?</source>
+            <source>Continue</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">Import.tsx</context>

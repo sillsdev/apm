@@ -195,6 +195,7 @@ const initialState = {
 			"members": "Members ({0})",
 			"nameInUse": "Name in use",
 			"newProject": "New Audio Project",
+			"newTeam": "new team",
 			"noProjects": "No projects yet.",
 			"normalize": "Audio Normalize",
 			"notesLabel": "Introductory Notes Title",
@@ -549,7 +550,7 @@ const initialState = {
 	"import": new LocalizedStrings({
 		"en": {
 			"close": "Close",
-			"continue": "Continue?",
+			"continue": "Continue",
 			"copy": "Copy Report",
 			"copyfail": "Copy Failed",
 			"createNewTeam": "Create new team",
@@ -1666,7 +1667,7 @@ const initialState = {
 			"confirm": "Are you sure you want to cancel the download?",
 			"copyTip": "Copy transcriptions to Clipboard",
 			"copyTranscriptions": "Copy Transcriptions",
-			"creatingDownloadFile": "Creating File...{0}",
+			"creatingDownloadFile": "Creating File...{0}%",
 			"writingDownloadFile": "Writing file...It could take up to 6 minutes to resume progress.",
 			"nopermission": "You do not have permission to download the project.",
 			"downloading": "Creation complete. Downloading {0}",

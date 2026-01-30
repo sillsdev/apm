@@ -361,6 +361,10 @@ export const ProjectCard = (props: IProps) => {
   const handleCopyConfirm = () => {
     setOpenCopyDialog(false);
     setCopying(true);
+    const teamName =
+      selectedTeamId == 'new'
+        ? t.newTeam
+        : teams.find((t) => t.id == selectedTeamId)?.attributes.name || '';
     copyProject({
       projectid: remoteIdNum(
         'project',
@@ -377,7 +381,7 @@ export const ProjectCard = (props: IProps) => {
             ),
       token: accessToken,
       errorReporter: errorReporter,
-      pendingmsg: t.copyStatus,
+      pendingmsg: t.copyStatus.replace('{0}', teamName),
       completemsg: t.copyComplete,
     });
     setSelectedTeamId('');
@@ -582,8 +586,9 @@ export const ProjectCard = (props: IProps) => {
             selectedTeamId={selectedTeamId}
             onTeamChange={setSelectedTeamId}
             teams={teams}
-            includeNewTeam={false}
+            includeNewTeam={true}
             selectLabel={tImport?.selectTeam || 'Select Team'}
+            createNewLabel={tImport?.createNewTeam || 'Create New Team'}
           />
         </DialogContent>
         <DialogActions>

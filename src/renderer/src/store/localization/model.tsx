@@ -180,6 +180,7 @@ export interface ICardsStrings extends Localize.LocalizedStringsMethods {
     "members": string;
     "nameInUse": string;
     "newProject": string;
+    "newTeam": string;
     "noProjects": string;
     "normalize": string;
     "notesLabel": string;

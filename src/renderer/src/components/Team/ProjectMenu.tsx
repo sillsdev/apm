@@ -66,7 +66,6 @@ export function ProjectMenu(props: IProps) {
   const offlineProjectRead = useOfflnProjRead();
   const [projType, setProjType] = useState('');
   const t: ICardsStrings = useSelector(cardsSelector, shallowEqual);
-  const [shift, setShift] = React.useState(false);
   const theme = useTheme();
   const isMobileWidth = useMediaQuery(theme.breakpoints.down('sm'));
   const tpb: IProjButtonsStrings = useSelector(
@@ -95,7 +94,7 @@ export function ProjectMenu(props: IProps) {
     }
   };
 
-  useEffect(() => {});
+  useEffect(() => { });
 
   const offlineProject = offlineProjectRead(project);
 

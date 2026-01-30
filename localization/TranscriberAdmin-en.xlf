@@ -910,6 +910,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="cards.newTeam">
+         <segment>
+            <source>new team</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="cards.noProjects">
          <segment>
             <source>No projects yet.</source>
@@ -2556,7 +2562,7 @@
       </unit>
       <unit id="import.continue">
          <segment>
-            <source>Continue?</source>
+            <source>Continue</source>
             <target/>
          </segment>
       </unit>
@@ -7986,7 +7992,7 @@
       </unit>
       <unit id="transcriptionTab.creatingDownloadFile">
          <segment>
-            <source>Creating File...{0}</source>
+            <source>Creating File...{0}%</source>
             <target/>
          </segment>
       </unit>
