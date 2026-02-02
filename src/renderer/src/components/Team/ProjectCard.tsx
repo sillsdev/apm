@@ -362,9 +362,9 @@ export const ProjectCard = (props: IProps) => {
     setOpenCopyDialog(false);
     setCopying(true);
     const teamName =
-      selectedTeamId == 'new'
+      selectedTeamId === 'new'
         ? t.newTeam
-        : teams.find((t) => t.id == selectedTeamId)?.attributes.name || '';
+        : teams.find((t) => t.id === selectedTeamId)?.attributes.name || '';
     copyProject({
       projectid: remoteIdNum(
         'project',
@@ -372,7 +372,7 @@ export const ProjectCard = (props: IProps) => {
         memory?.keyMap as RecordKeyMap
       ),
       orgid:
-        selectedTeamId == 'new'
+        selectedTeamId === 'new'
           ? 0
           : remoteIdNum(
               'organization',
