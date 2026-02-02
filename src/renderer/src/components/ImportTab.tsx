@@ -138,7 +138,7 @@ const StyledDialog = styled(Dialog)<DialogProps>(({ theme }) => ({
   '& .MuiDialog-paper': {
     maxWidth: '90%',
     minWidth: '600px',
-    minHeight: '80%',
+    maxHeight: '85%',
   },
   '& .MuiTable-root': {
     tableLayout: 'auto',
@@ -857,47 +857,51 @@ export function ImportTab(props: IProps) {
         <div>
           <Typography variant="h5">{importTitle}</Typography>
           <br />
-          <Typography variant="subtitle2" sx={headerProps}>
-            {fileName}
-          </Typography>
-          <Typography variant="h4" sx={headerProps}>
-            {importProject}
-          </Typography>
-          <br />
-          <Typography variant="body1" sx={headerProps}>
-            {statusMsg(importStatus)}
-          </Typography>
-          {changeData.length > 0 && (
-            <ActionRow>
-              <AltButton
-                id="importCopy"
-                key="copy"
-                aria-label={t.copy}
-                onClick={handleCopy}
-                title={t.copy}
-              >
-                {t.copy}
-              </AltButton>
-            </ActionRow>
-          )}
-          {changeData.length > 0 && (
-            <DataGrid
-              columns={columns}
-              rows={sortedRows}
-              disableColumnSorting
-              disableRowSelectionOnClick
-              initialState={{
-                columns: { columnVisibilityModel },
-              }}
-            />
-          )}
-          {!importStatus || (
-            <ProgressBar position="fixed" color="inherit">
-              <LinearProgress variant="indeterminate" />
-            </ProgressBar>
+          {!showImportTypeSelection && (
+            <>
+              <Typography variant="subtitle2" sx={headerProps}>
+                {fileName}
+              </Typography>
+              <Typography variant="h4" sx={headerProps}>
+                {importProject}
+              </Typography>
+              <br />
+              <Typography variant="body1" sx={headerProps}>
+                {statusMsg(importStatus)}
+              </Typography>
+              {changeData.length > 0 && (
+                <ActionRow>
+                  <AltButton
+                    id="importCopy"
+                    key="copy"
+                    aria-label={t.copy}
+                    onClick={handleCopy}
+                    title={t.copy}
+                  >
+                    {t.copy}
+                  </AltButton>
+                </ActionRow>
+              )}
+              {changeData.length > 0 && (
+                <DataGrid
+                  columns={columns}
+                  rows={sortedRows}
+                  disableColumnSorting
+                  disableRowSelectionOnClick
+                  initialState={{
+                    columns: { columnVisibilityModel },
+                  }}
+                />
+              )}
+              {!importStatus || (
+                <ProgressBar position="fixed" color="inherit">
+                  <LinearProgress variant="indeterminate" />
+                </ProgressBar>
+              )}
+            </>
           )}
           {showImportTypeSelection && (
-            <FormControl component="fieldset" sx={{ mt: 2, mb: 2 }}>
+            <FormControl component="fieldset" sx={{ mt: 1, mb: 2 }}>
               <Typography variant="subtitle1" sx={{ mb: 2 }}>
                 {t.selectImportFileType}
               </Typography>
@@ -927,15 +931,6 @@ export function ImportTab(props: IProps) {
                   label={t.incrementalImport}
                 />
               </RadioGroup>
-              <ActionRow sx={{ mt: 2 }}>
-                <Button
-                  variant="contained"
-                  color="primary"
-                  onClick={handleImportTypeSelected}
-                >
-                  {t.continue}
-                </Button>
-              </ActionRow>
             </FormControl>
           )}
 
@@ -976,18 +971,29 @@ export function ImportTab(props: IProps) {
           pb: 2,
           display: 'flex',
           flexDirection: 'row',
-          justifyContent: 'flex-start',
+          justifyContent: 'flex-end',
         }}
       >
         <Button
           id="importClose"
           onClick={handleClose}
-          variant="contained"
+          variant="outlined"
           color="primary"
           disabled={importStatus !== undefined}
         >
           {t.close}
         </Button>
+        {showImportTypeSelection && (
+          <Button
+            id="importContinue"
+            onClick={handleImportTypeSelected}
+            variant="contained"
+            color="primary"
+            autoFocus
+          >
+            {t.continue}
+          </Button>
+        )}
       </DialogActions>
     </StyledDialog>
   );
