@@ -1328,11 +1328,16 @@ function WSAudioPlayer(props: IProps) {
             flexDirection: 'column',
             whiteSpace: 'nowrap',
             width: '100%',
+            minWidth: 0,
+            overflowX: 'auto',
           }}
           style={style}
         >
           <>
-            <Grid container sx={toolbarProp}>
+            <Grid
+              container
+              sx={{ ...toolbarProp, minWidth: 0, flexWrap: 'nowrap' }}
+            >
               <Grid sx={{ ml: 1 }}>
                 <LightTooltip id="wsAudioPlayTip" title={playTooltipTitle}>
                   <span>
@@ -1485,8 +1490,16 @@ function WSAudioPlayer(props: IProps) {
                       >
                         {allowZoom && (
                           <MenuItem
-                            onClick={handleMoreMenuClose}
-                            sx={{ pointerEvents: 'none' }}
+                            onClick={(e) => {//don't close menu if zoom in or out button is clicked
+                              const target = e.target as HTMLElement;
+                              if (
+                                target.closest?.(
+                                  '[id="wsZoomIn"], [id="wsZoomOut"]'
+                                )
+                              )
+                                return;
+                              handleMoreMenuClose();
+                            }}
                           >
                             <WSAudioPlayerZoom
                               ready={ready && !recording && !waitingForAI}
