@@ -253,6 +253,7 @@ export function ScriptureTable(props: IProps) {
   const [uploadGraphicVisible, setUploadGraphicVisible] = useState(false);
   const [importList, setImportList] = useState<File[]>();
   const cancelled = useRef(false);
+  const graphicUploadCompleted = useRef(false);
   const uploadItem = useRef<ISheet | undefined>(undefined);
   const [editRow, setEditRow] = useState<ISheet>();
   const [versionRow, setVersionRow] = useState<ISheet>();
@@ -1156,6 +1157,7 @@ export function ScriptureTable(props: IProps) {
 
   const handleGraphic = (i: number) => {
     saveIfChanged(() => {
+      graphicUploadCompleted.current = false;
       setUploadType(UploadType.Graphic);
       const { ws } = getByIndex(sheetRef.current, i);
       const defaultName = getDefaultName(ws, 'graphic', memory, plan);
@@ -1219,9 +1221,14 @@ export function ScriptureTable(props: IProps) {
 
   const handleUploadGraphicVisible = (v: boolean) => {
     if (!v && Boolean(uploadType)) {
-      afterConvert([]).then(() => {
+      if (graphicUploadCompleted.current) {
+        // Skip afterConvert - upload already saved; Dialog onClose may call us again
         graphicsClosed(false);
-      });
+      } else {
+        afterConvert([]).then(() => {
+          graphicsClosed(false);
+        });
+      }
     } else {
       graphicsClosed(v);
     }
@@ -2121,7 +2128,10 @@ export function ScriptureTable(props: IProps) {
         onOpen={handleUploadGraphicVisible}
         showMessage={showMessage}
         hasRights={Boolean(curGraphicRights)}
-        finish={afterConvert}
+        finish={(images) => {
+          if (images.length > 0) graphicUploadCompleted.current = true;
+          return afterConvert(images);
+        }}
         cancelled={cancelled}
         uploadType={uploadType as UploadType}
         onFiles={onFiles}
