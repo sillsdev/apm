@@ -66,7 +66,6 @@ export function ProjectMenu(props: IProps) {
   const offlineProjectRead = useOfflnProjRead();
   const [projType, setProjType] = useState('');
   const t: ICardsStrings = useSelector(cardsSelector, shallowEqual);
-  const [shift, setShift] = React.useState(false);
   const theme = useTheme();
   const isMobileWidth = useMediaQuery(theme.breakpoints.down('sm'));
   const tpb: IProjButtonsStrings = useSelector(
@@ -83,7 +82,6 @@ export function ProjectMenu(props: IProps) {
 
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {
     event.stopPropagation();
-    setShift(event.shiftKey);
     setAnchorEl(event.currentTarget);
     if (stopPlayer) stopPlayer();
   };
@@ -96,7 +94,7 @@ export function ProjectMenu(props: IProps) {
     }
   };
 
-  useEffect(() => {});
+  useEffect(() => { });
 
   const offlineProject = offlineProjectRead(project);
 
@@ -118,31 +116,20 @@ export function ProjectMenu(props: IProps) {
         open={Boolean(anchorEl)}
         onClose={handle('Close')}
       >
-        {!isMobileWidth &&
-          !inProject &&
-          isAdmin &&
-          (!isOffline || offlineOnly) && (
-            <StyledMenuItem id="projMenuSettings" onClick={handle('settings')}>
-              <ListItemIcon>
-                <SettingsIcon />
-              </ListItemIcon>
-              <ListItemText primary={t.settings} />
-            </StyledMenuItem>
-          )}
-        {shift && !isMobileWidth && !inProject && isAdmin && !isOffline && (
-          <StyledMenuItem id="projMenuCopySameOrg" onClick={handle('copysame')}>
+        {!isMobileWidth && !inProject && isAdmin && (!isOffline || offlineOnly) && (
+          <StyledMenuItem id="projMenuSettings" onClick={handle('settings')}>
             <ListItemIcon>
-              <ContentCopyIcon />
+              <SettingsIcon />
             </ListItemIcon>
-            <ListItemText primary={t.copySame} />
+            <ListItemText primary={t.settings} />
           </StyledMenuItem>
         )}
-        {shift && !isMobileWidth && !inProject && isAdmin && !isOffline && (
-          <StyledMenuItem id="projMenuCopyNewOrg" onClick={handle('copynew')}>
+        {!isMobileWidth && !inProject && isAdmin && !isOffline && (
+          <StyledMenuItem id="projMenuCopy" onClick={handle('copyproject')}>
             <ListItemIcon>
               <ContentCopyIcon />
             </ListItemIcon>
-            <ListItemText primary={t.copyNew} />
+            <ListItemText primary={t.copyProject} />
           </StyledMenuItem>
         )}
         {isElectron && !isOffline && !justFilter && isDeveloper && (

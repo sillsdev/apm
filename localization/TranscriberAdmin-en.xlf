@@ -778,21 +778,15 @@
             <target/>
          </segment>
       </unit>
-      <unit id="cards.copyNew">
+      <unit id="cards.copyProject">
          <segment>
-            <source>Copy project to new team.</source>
+            <source>Copy project</source>
             <target/>
          </segment>
       </unit>
       <unit id="cards.copyright">
          <segment>
             <source>Copyright</source>
-            <target/>
-         </segment>
-      </unit>
-      <unit id="cards.copySame">
-         <segment>
-            <source>Copy project to same team.</source>
             <target/>
          </segment>
       </unit>
@@ -913,6 +907,12 @@
       <unit id="cards.newProject">
          <segment>
             <source>New Audio Project</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="cards.newTeam">
+         <segment>
+            <source>new team</source>
             <target/>
          </segment>
       </unit>
@@ -2562,7 +2562,7 @@
       </unit>
       <unit id="import.continue">
          <segment>
-            <source>Continue?</source>
+            <source>Continue</source>
             <target/>
          </segment>
       </unit>
@@ -2578,9 +2578,21 @@
             <target/>
          </segment>
       </unit>
+      <unit id="import.createNewTeam">
+         <segment>
+            <source>Create new team</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="import.error">
          <segment>
             <source>Import Error</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="import.externalSource">
+         <segment>
+            <source>Create a new project in APM from an external source (.ptf)</source>
             <target/>
          </segment>
       </unit>
@@ -2644,27 +2656,27 @@
             <target/>
          </segment>
       </unit>
-      <unit id="import.importSyncUp">
-         <segment>
-            <source>Syncing offline changes</source>
-            <target/>
-         </segment>
-      </unit>
       <unit id="import.importSyncDown">
          <segment>
             <source>Syncing online changes</source>
             <target/>
          </segment>
       </unit>
-      <unit id="import.invalidITF">
+      <unit id="import.importSyncUp">
          <segment>
-            <source>Not a valid Incremental Transcriber File (ITF).</source>
+            <source>Syncing offline changes</source>
             <target/>
          </segment>
       </unit>
-      <unit id="import.unknownError">
+      <unit id="import.incrementalImport">
          <segment>
-            <source>If this error occurred while importing offline changes, please close the app immediately and reopen.  If the error persists, contact support.  If you continue to use the app, you will lose offline changes.</source>
+            <source>Import Incremental Changes from an offline coworker (.itf)</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="import.invalidITF">
+         <segment>
+            <source>Not a valid Incremental Transcriber File (ITF).</source>
             <target/>
          </segment>
       </unit>
@@ -2683,6 +2695,12 @@
       <unit id="import.noFile">
          <segment>
             <source>Please select file to be uploaded.</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="import.offlineImport">
+         <segment>
+            <source>Import an APM Project File to use offline and sync when online, or a project file from an external source that you will only use offline.  Projects from an external source that are not imported while online cannot be synced online.</source>
             <target/>
          </segment>
       </unit>
@@ -2734,6 +2752,18 @@
             <target/>
          </segment>
       </unit>
+      <unit id="import.selectImportFileType">
+         <segment>
+            <source>Select import file type:</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="import.selectTeam">
+         <segment>
+            <source>Select Team</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="import.showHideFilter">
          <segment>
             <source>Show/Hide filter rows</source>
@@ -2761,6 +2791,12 @@
       <unit id="import.unassigned">
          <segment>
             <source>unassigned</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="import.unknownError">
+         <segment>
+            <source>If this error occurred while importing offline changes, please close the app immediately and reopen.  If the error persists, contact support.  If you continue to use the app, you will lose offline changes.</source>
             <target/>
          </segment>
       </unit>

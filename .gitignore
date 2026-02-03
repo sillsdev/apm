@@ -23,3 +23,4 @@ src/renderer/node_modules
 **/bin
 migration-data
 tmp-burrito
+errorLog

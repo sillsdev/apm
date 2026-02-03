@@ -135,7 +135,6 @@ export function TranscriptionTab(props: IProps) {
   const sections = useOrbitData<SectionD[]>('section');
   const users = useOrbitData<UserD[]>('user');
   const roles = useOrbitData<RoleD[]>('role');
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [busy, setBusy] = useGlobal('importexportBusy'); //verified this is not used in a function 2/18/25
   const [plan, setPlan] = useGlobal('plan'); //will be constant here
   const getPlanType = usePlanType();
@@ -387,12 +386,12 @@ export function TranscriptionTab(props: IProps) {
     return Boolean(
       step
         ? orgSteps &&
-            passRec &&
-            afterStep({
-              psgCompleted: getStepComplete(passRec),
-              target: step,
-              orgWorkflowSteps: orgSteps,
-            })
+        passRec &&
+        afterStep({
+          psgCompleted: getStepComplete(passRec),
+          target: step,
+          orgWorkflowSteps: orgSteps,
+        })
         : true
     );
   }, [passages, step, orgSteps, pasId]);
