@@ -94,8 +94,6 @@ export function ProjectMenu(props: IProps) {
     }
   };
 
-  useEffect(() => {});
-
   const offlineProject = offlineProjectRead(project);
 
   return (

@@ -605,7 +605,7 @@ export const ProjectCard = (props: IProps) => {
           <Button
             onClick={handleCopyConfirm}
             variant="contained"
-            disabled={copying || selectedTeamId == ''}
+            disabled={copying || selectedTeamId === ''}
           >
             {t.copyProject || 'Copy'}
           </Button>
