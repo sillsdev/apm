@@ -31,6 +31,7 @@ function WSAudioPlayerZoom(props: IProps) {
 
   const t: IWsAudioPlayerZoomStrings = useSelector(audioPlayerZoomSelector);
   const readyRef = useRef(ready);
+  const prevFillPxRef = useRef<number | undefined>(undefined);
 
   const ZOOMIN_KEY = 'CTRL+1';
   const ZOOMOUT_KEY = 'CTRL+3';
@@ -51,8 +52,16 @@ function WSAudioPlayerZoom(props: IProps) {
     if (tellParent) onZoom(value);
   };
   useEffect(() => {
-    setZoom(fillPx);
     setZoomMin(fillPx);
+    // Only sync zoom to fillPx when fillPx actually changes (e.g. resize), not on mount.
+    // On mount, curPx effect sets zoom; avoid overwriting with fillPx so menu reopen keeps zoom.
+    if (
+      prevFillPxRef.current !== undefined &&
+      prevFillPxRef.current !== fillPx
+    ) {
+      setZoom(fillPx);
+    }
+    prevFillPxRef.current = fillPx;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fillPx]);
 
@@ -79,12 +88,10 @@ function WSAudioPlayerZoom(props: IProps) {
     ];
     keys.forEach((k) => subscribe(k.key, k.cb));
     return () => {
-      // eslint-disable-next-line react-hooks/exhaustive-deps
       keys.forEach((k) => unsubscribe(k.key));
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
   return (
     <GrowingDiv>
       <ToolbarGrid container>
