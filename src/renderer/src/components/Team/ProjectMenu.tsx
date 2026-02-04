@@ -94,7 +94,7 @@ export function ProjectMenu(props: IProps) {
     }
   };
 
-  useEffect(() => { });
+  useEffect(() => {});
 
   const offlineProject = offlineProjectRead(project);
 
@@ -116,14 +116,17 @@ export function ProjectMenu(props: IProps) {
         open={Boolean(anchorEl)}
         onClose={handle('Close')}
       >
-        {!isMobileWidth && !inProject && isAdmin && (!isOffline || offlineOnly) && (
-          <StyledMenuItem id="projMenuSettings" onClick={handle('settings')}>
-            <ListItemIcon>
-              <SettingsIcon />
-            </ListItemIcon>
-            <ListItemText primary={t.settings} />
-          </StyledMenuItem>
-        )}
+        {!isMobileWidth &&
+          !inProject &&
+          isAdmin &&
+          (!isOffline || offlineOnly) && (
+            <StyledMenuItem id="projMenuSettings" onClick={handle('settings')}>
+              <ListItemIcon>
+                <SettingsIcon />
+              </ListItemIcon>
+              <ListItemText primary={t.settings} />
+            </StyledMenuItem>
+          )}
         {!isMobileWidth && !inProject && isAdmin && !isOffline && (
           <StyledMenuItem id="projMenuCopy" onClick={handle('copyproject')}>
             <ListItemIcon>
