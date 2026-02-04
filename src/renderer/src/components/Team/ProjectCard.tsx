@@ -55,7 +55,7 @@ import {
 } from '../../crud';
 import { localizeProjectTag } from '../../utils/localizeProjectTag';
 import OfflineIcon from '@mui/icons-material/OfflinePin';
-import { useHome, useJsonParams } from '../../utils';
+import { useDataChanges, useHome, useJsonParams } from '../../utils';
 import { copyComplete, CopyProjectProps } from '../../store';
 import { TokenContext } from '../../context/TokenProvider';
 import { useSnackBar } from '../../hoc/SnackBar';
@@ -139,6 +139,7 @@ export const ProjectCard = (props: IProps) => {
     doImport,
   } = ctx.state;
   const dispatch = useDispatch();
+  const forceDataChanges = useDataChanges();
 
   const copyProject = (props: CopyProjectProps) =>
     dispatch(actions.copyProject(props) as any);
@@ -211,8 +212,16 @@ export const ProjectCard = (props: IProps) => {
       if (copyStatus.errStatus || copyStatus.complete) {
         copyComplete();
         setCopying(false);
-        setBusy(false);
-        showMessage(copyStatus.errMsg ?? copyStatus.statusMsg);
+        forceDataChanges()
+          .then(() => {
+            setBusy(false);
+            showMessage(
+              copyStatus.errMsg ?? copyStatus.statusMsg ?? 'COPY COMPLETE'
+            );
+          })
+          .catch((err) => {
+            showMessage(err.message);
+          });
       } else showMessage(copyStatus.statusMsg);
     }
     /* eslint-disable-next-line react-hooks/exhaustive-deps */
@@ -593,7 +602,11 @@ export const ProjectCard = (props: IProps) => {
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCopyCancel}>{t.cancel || 'Cancel'}</Button>
-          <Button onClick={handleCopyConfirm} variant="contained">
+          <Button
+            onClick={handleCopyConfirm}
+            variant="contained"
+            disabled={copying || selectedTeamId === ''}
+          >
             {t.copyProject || 'Copy'}
           </Button>
         </DialogActions>
