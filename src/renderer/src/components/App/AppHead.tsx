@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useGetGlobal, useGlobal } from '../../context/useGlobal';
 import { useLocation, useParams } from 'react-router-dom';
-import { IState, IViewModeStrings } from '../../model';
+import { IState, IViewModeStrings, RoleNames } from '../../model';
 import { shallowEqual, useSelector } from 'react-redux';
 import {
   AppBar,
@@ -47,7 +47,6 @@ import { useHome } from '../../utils/useHome';
 import { ApmLogo } from '../../control/ApmLogo';
 import { OrgHead } from './OrgHead';
 import { HeadStatus } from './HeadStatus';
-import MobileDetailTitle from './MobileDetailTitle';
 
 const twoIcon = { minWidth: `calc(${48 * 2}px)` } as React.CSSProperties;
 const threeIcon = { minWidth: `calc(${48 * 3}px)` } as React.CSSProperties;
@@ -97,6 +96,138 @@ const ProjectName = ({ switchTo }: INameProps) => {
         {getPlanName(plan)}
       </Typography>
     </>
+  );
+};
+
+interface DesktopToolbarProps {
+  switchTo?: boolean;
+  home: boolean;
+  orgRole: RoleNames | undefined;
+  cssVars: React.CSSProperties;
+  pathname: string;
+  handleMenu: (what: string, reason?: DownloadAlertReason | null) => void;
+  setVersion: (version: string) => void;
+  setLatestVersion: (version: string) => void;
+  setUpdateTipOpen: (open: boolean) => void;
+  isOffline: boolean;
+  updateTipOpen: boolean;
+  handleUserMenu: (what: string) => void;
+  tv: IViewModeStrings;
+}
+
+const DesktopToolbar = ({
+  switchTo,
+  home,
+  orgRole,
+  cssVars,
+  pathname,
+  handleMenu,
+  setVersion,
+  setLatestVersion,
+  setUpdateTipOpen,
+  isOffline,
+  updateTipOpen,
+  handleUserMenu,
+  tv,
+}: DesktopToolbarProps) => {
+  return (
+    <Toolbar>
+      {!home && orgRole && (
+        <>
+          <ProjectName switchTo={switchTo ?? false} />
+          <GrowingSpacer />
+          <Typography variant="h6">
+            {switchTo ? tv.work : tv.audioProject}
+          </Typography>
+          <GrowingSpacer />
+        </>
+      )}
+      {home && <span style={cssVars}>{'\u00A0'}</span>}
+      <GrowingSpacer />
+      {(pathname === '/' || pathname.startsWith('/access')) && (
+        <>
+          <Typography variant="h6" noWrap>
+            {API_CONFIG.productName}
+          </Typography>
+          <GrowingSpacer />
+        </>
+      )}
+      {'\u00A0'}
+      <HeadStatus
+        handleMenu={handleMenu}
+        onVersion={setVersion}
+        onLatestVersion={setLatestVersion}
+        onUpdateTipOpen={setUpdateTipOpen}
+      />
+      <HelpMenu
+        online={!isOffline}
+        sx={updateTipOpen && isElectron ? { top: '40px' } : {}}
+      />
+      {pathname !== '/' && !pathname.startsWith('/access') && (
+        <UserMenu action={handleUserMenu} />
+      )}
+    </Toolbar>
+  );
+};
+
+interface MobileToolbarProps {
+  isDetail: boolean;
+  planUrl: string | null;
+  navigate: (path: string) => void;
+  isMobileWidth: boolean;
+  handleMenu: (what: string, reason?: DownloadAlertReason | null) => void;
+  setVersion: (version: string) => void;
+  setLatestVersion: (version: string) => void;
+  setUpdateTipOpen: (open: boolean) => void;
+  isOffline: boolean;
+  updateTipOpen: boolean;
+  pathname: string;
+  handleUserMenu: (what: string) => void;
+}
+
+const MobileToolbar = ({
+  isDetail,
+  planUrl,
+  navigate,
+  isMobileWidth,
+  handleMenu,
+  setVersion,
+  setLatestVersion,
+  setUpdateTipOpen,
+  isOffline,
+  updateTipOpen,
+  pathname,
+  handleUserMenu,
+}: MobileToolbarProps) => {
+  return (
+    <Toolbar>
+      {!isDetail ? (
+        <IconButton onClick={() => navigate('/team')} sx={{ p: 0 }}>
+          <ApmLogo sx={{ width: '24px', height: '24px' }} />
+        </IconButton>
+      ) : (
+        <IconButton onClick={() => navigate(planUrl || '/team')}>
+          <ArrowBackIcon sx={{ width: '24px', height: '24px' }} />
+        </IconButton>
+      )}
+      <OrgHead />
+      <GrowingSpacer />
+      {!isMobileWidth && (
+        <HeadStatus
+          handleMenu={handleMenu}
+          onVersion={setVersion}
+          onLatestVersion={setLatestVersion}
+          onUpdateTipOpen={setUpdateTipOpen}
+        />
+      )}
+      <HelpMenu
+        online={!isOffline}
+        sx={updateTipOpen && isElectron ? { top: '40px' } : {}}
+      />
+      {pathname !== '/' && !pathname.startsWith('/access') && (
+        <UserMenu action={handleUserMenu} small={true} />
+      )}
+    </Toolbar>
   );
 };
 
@@ -282,12 +413,6 @@ export const AppHead = (props: IProps) => {
     return undefined;
   };
 
-  const handleTeamNav = () => {
-    checkSavedFn(() => navigate('/team'));
-  };
-
-  const handlePlanNav = () => checkSavedFn(() => navigate(planUrl || '/team'));
-
   useEffect(() => {
     window.addEventListener('beforeunload', handleUnload);
     if (!user) {
@@ -348,7 +473,9 @@ export const AppHead = (props: IProps) => {
   if (view === 'Terms') navigate('/terms');
   if (view === 'Privacy') navigate('/privacy');
 
-  return !isMobileView && !isMobileWidth ? (
+  const isMobile = isMobileView || isMobileWidth;
+
+  return (
     <AppBar
       position="fixed"
       sx={{ width: '100%', display: 'flex' }}
@@ -363,95 +490,41 @@ export const AppHead = (props: IProps) => {
         {(!busy && !saving && !dataChangeCount) || complete !== 0 || (
           <LinearProgress id="busy" variant="indeterminate" />
         )}
-        <Toolbar>
-          {!home && orgRole && (
-            <>
-              <ProjectName switchTo={switchTo ?? false} />
-              <GrowingSpacer />
-              <Typography variant="h6">
-                {switchTo ? tv.work : tv.audioProject}
-              </Typography>
-              <GrowingSpacer />
-            </>
-          )}
-          {home && <span style={cssVars}>{'\u00A0'}</span>}
-          <GrowingSpacer />
-          {(pathname === '/' || pathname.startsWith('/access')) && (
-            <>
-              <Typography variant="h6" noWrap>
-                {API_CONFIG.productName}
-              </Typography>
-              <GrowingSpacer />
-            </>
-          )}
-          {'\u00A0'}
-          <HeadStatus
+
+        {isMobile ? (
+          <MobileToolbar
+            isDetail={isDetail}
+            planUrl={planUrl}
+            navigate={navigate}
+            isMobileWidth={isMobileWidth}
             handleMenu={handleMenu}
-            onVersion={setVersion}
-            onLatestVersion={setLatestVersion}
-            onUpdateTipOpen={setUpdateTipOpen}
+            setVersion={setVersion}
+            setLatestVersion={setLatestVersion}
+            setUpdateTipOpen={setUpdateTipOpen}
+            isOffline={isOffline}
+            updateTipOpen={updateTipOpen}
+            pathname={pathname}
+            handleUserMenu={handleUserMenu}
           />
-          <HelpMenu
-            online={!isOffline}
-            sx={updateTipOpen && isElectron ? { top: '40px' } : {}}
+        ) : (
+          <DesktopToolbar
+            switchTo={switchTo}
+            home={home}
+            orgRole={orgRole}
+            cssVars={cssVars}
+            pathname={pathname}
+            handleMenu={handleMenu}
+            setVersion={setVersion}
+            setLatestVersion={setLatestVersion}
+            setUpdateTipOpen={setUpdateTipOpen}
+            isOffline={isOffline}
+            updateTipOpen={updateTipOpen}
+            handleUserMenu={handleUserMenu}
+            tv={tv}
           />
-          {pathname !== '/' && !pathname.startsWith('/access') && (
-            <UserMenu action={handleUserMenu} />
-          )}
-        </Toolbar>
+        )}
         {importexportBusy && !downloadAlert && <Busy />}
         {downloadAlert && <ProjectDownloadAlert cb={downDone} />}
-        <PolicyDialog
-          isOpen={Boolean(showTerms)}
-          content={showTerms}
-          onClose={handleTermsClose}
-        />
-      </>
-    </AppBar>
-  ) : (
-    <AppBar
-      position="fixed"
-      sx={{ width: '100%', display: 'flex' }}
-      color="inherit"
-    >
-      <>
-        <Toolbar>
-          {!isDetail ? (
-            <IconButton onClick={handleTeamNav} sx={{ p: 0 }}>
-              <ApmLogo sx={{ width: '24px', height: '24px' }} />
-            </IconButton>
-          ) : (
-            <IconButton onClick={handlePlanNav}>
-              <ArrowBackIcon sx={{ width: '24px', height: '24px' }} />
-            </IconButton>
-          )}
-          {isDetail ? <MobileDetailTitle /> : <OrgHead />}
-          <GrowingSpacer />
-          {!isMobileWidth && (
-            <HeadStatus
-              handleMenu={handleMenu}
-              onVersion={setVersion}
-              onLatestVersion={setLatestVersion}
-              onUpdateTipOpen={setUpdateTipOpen}
-            />
-          )}
-          <HelpMenu
-            online={!isOffline}
-            sx={updateTipOpen && isElectron ? { top: '40px' } : {}}
-          />
-          {pathname !== '/' && !pathname.startsWith('/access') && (
-            <UserMenu action={handleUserMenu} small={true} />
-          )}
-        </Toolbar>
-        {complete === 0 || complete === 100 || (
-          <Box sx={{ width: '100%' }}>
-            <LinearProgress id="prog" variant="determinate" value={complete} />
-          </Box>
-        )}
-        {(!busy && !saving && !dataChangeCount) || complete !== 0 || (
-          <LinearProgress id="busy" variant="indeterminate" />
-        )}
-        {!importexportBusy || <Busy />}
         <PolicyDialog
           isOpen={Boolean(showTerms)}
           content={showTerms}
