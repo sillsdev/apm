@@ -77,7 +77,7 @@ export const HeadStatus = (props: IProps) => {
         : 'online-local'
     );
     localStorage.setItem(LocalKey.plan, getGlobal('plan'));
-    handleMenu('Logout', !isOffline ? 'cloud' : null);
+    handleMenu('Logout', !getGlobal('offline') ? 'cloud' : null);
   };
 
   const handleSetOnline = (cb?: () => void) => {

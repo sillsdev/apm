@@ -1574,6 +1574,39 @@ function WSAudioPlayer(props: IProps) {
                         </span>
                       </LightTooltip>
                     )}
+                    <Menu
+                      anchorEl={moreMenuAnchorEl}
+                      open={moreMenuOpen}
+                      onClose={handleMoreMenuClose}
+                      anchorOrigin={{
+                        vertical: 'bottom',
+                        horizontal: 'right',
+                      }}
+                      transformOrigin={{
+                        vertical: 'top',
+                        horizontal: 'right',
+                      }}
+                    >
+                      {allowZoom && (
+                        <MenuItem
+                          onClick={(e) => {
+                            //don't close menu if zoom in or out button is clicked
+                            const target = e.target as HTMLElement;
+                            if (
+                              target.closest?.(
+                                '[id="wsZoomIn"], [id="wsZoomOut"]'
+                              )
+                            )
+                              return;
+                            handleMoreMenuClose();
+                          }}
+                        >
+                          {/* Additional menu content or controls for zoom could go here */}
+                          {t.zoomControls}
+                        </MenuItem>
+                      )}
+                      {/* You can add more MenuItems here as needed */}
+                    </Menu>
                     {hasRegion === 0 && (
                       <LightTooltip
                         id="wsAudioDeleteTip"

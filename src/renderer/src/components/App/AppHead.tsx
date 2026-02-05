@@ -399,7 +399,7 @@ export const AppHead = (props: IProps) => {
             <UserMenu action={handleUserMenu} />
           )}
         </Toolbar>
-        {!importexportBusy || <Busy />}
+        {importexportBusy && !downloadAlert && <Busy />}
         {downloadAlert && <ProjectDownloadAlert cb={downDone} />}
         <PolicyDialog
           isOpen={Boolean(showTerms)}
