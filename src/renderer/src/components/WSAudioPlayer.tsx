@@ -115,6 +115,7 @@ interface IProps {
   setInitialPosition?: (position: number | undefined) => void;
   allowRecord?: boolean;
   allowZoom?: boolean;
+  hideZoom?: boolean;
   allowSegment?: NamedRegions | undefined;
   allowGoTo?: boolean;
   allowAutoSegment?: boolean;
@@ -207,6 +208,7 @@ function WSAudioPlayer(props: IProps) {
     setInitialPosition,
     allowRecord,
     allowZoom,
+    hideZoom,
     allowSegment,
     allowGoTo,
     allowAutoSegment,
@@ -1426,7 +1428,7 @@ function WSAudioPlayer(props: IProps) {
             display: 'flex',
             flexDirection: 'column',
             whiteSpace: 'nowrap',
-            width: '100%',
+            width: '110%',
             minWidth: 0,
             overflowX: 'auto',
           }}
@@ -1460,7 +1462,7 @@ function WSAudioPlayer(props: IProps) {
                   </Typography>
                 </Grid>
                 <VertDivider id="wsAudioDiv2" />
-                {allowZoom && !isMobileView && (
+                {allowZoom && !isMobileView && !hideZoom && (
                   <>
                     <Grid>
                       <WSAudioPlayerZoom
@@ -1590,7 +1592,7 @@ function WSAudioPlayer(props: IProps) {
                             horizontal: 'right',
                           }}
                         >
-                          {allowZoom && (
+                          {allowZoom && !hideZoom && (
                             <MenuItem
                               onClick={(e) => {
                                 //don't close menu if zoom in or out button is clicked

@@ -661,6 +661,8 @@ export function PassageDetailItem(props: IProps) {
             showSegmentsChangedMessage();
             userSegmentInteractionRef.current = true;
           }}
+          allowZoomAndSpeed={true}
+          hideZoom={true}
         />
         {activity === Activity.Preview ? (
           <Guidance>

@@ -93,6 +93,7 @@ export interface DetailPlayerProps {
   metaData?: React.ReactNode;
   hasSegmentUndo?: boolean;
   segmentUndoValue?: string;
+  hideZoom?: boolean;
 }
 
 export function PassageDetailPlayer(props: DetailPlayerProps) {
@@ -130,6 +131,7 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
     metaData,
     hasSegmentUndo,
     segmentUndoValue,
+    hideZoom,
   } = props;
 
   const [memory] = useGlobal('memory');
@@ -495,7 +497,8 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
         onInteraction={handleInteraction}
         onCurrentSegment={onCurrentSegment}
         allowZoom={allowZoomAndSpeed}
-        allowSpeed={allowZoomAndSpeed}
+        allowSpeed={allowZoomAndSpeed && !hideZoom}
+        hideZoom={hideZoom}
         onProgress={onProgress}
         onSaveProgress={onSaveProgress}
         onDuration={handleDuration}
