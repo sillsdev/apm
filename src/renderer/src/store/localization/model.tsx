@@ -260,10 +260,12 @@ export interface ICommentEditorStrings extends Localize.LocalizedStringsMethods 
 
 export interface ICommunityStrings extends Localize.LocalizedStringsMethods {
     "addSpeaker": string;
+    "autoSegment": string;
     "backTranslationComplete": string;
     "deleteItem": string;
     "finished": string;
     "later": string;
+    "listen": string;
     "loading": string;
     "none": string;
     "noVoiceCreation": string;
@@ -865,6 +867,16 @@ export interface IMediaUploadStrings extends Localize.LocalizedStringsMethods {
     "upload": string;
 };
 
+export interface IMobileStrings extends Localize.LocalizedStringsMethods {
+    "addSegment": string;
+    "next": string;
+    "previous": string;
+    "removeSegment": string;
+    "resetBT": string;
+    "restoreBoundaries": string;
+    "segment": string;
+};
+
 export interface INewProjectStrings extends Localize.LocalizedStringsMethods {
     "audioProduct": string;
     "blank": string;
@@ -1250,6 +1262,12 @@ export interface IResourceStrings extends Localize.LocalizedStringsMethods {
     "terms": string;
     "title": string;
     "versions": string;
+};
+
+export interface IRecordButtonStrings extends Localize.LocalizedStringsMethods {
+    "record": string;
+    "rerecord": string;
+    "resume": string;
 };
 
 export interface IRecordStepSettingsStrings extends Localize.LocalizedStringsMethods {
@@ -1853,6 +1871,7 @@ export interface IWsAudioPlayerStrings extends Localize.LocalizedStringsMethods 
     "recognizeSpeechSettings": string;
     "record": string;
     "reduceNoise": string;
+    "reset": string;
     "resume": string;
     "saveSegments": string;
     "seconds": string;
@@ -1932,6 +1951,7 @@ export interface ILocalizedStrings {
 	mediaTab: IMediaTabStrings;
 	mediaTitle: IMediaTitleStrings;
 	mediaUpload: IMediaUploadStrings;
+	mobile: IMobileStrings;
 	newProject: INewProjectStrings;
 	passageChooser: IPassageChooserStrings;
 	passageDetailArtifacts: IPassageDetailArtifactsStrings;
@@ -1953,6 +1973,7 @@ export interface ILocalizedStrings {
 	publishLevel: IPublishLevelStrings;
 	publishTo: IPublishToStrings;
 	resource: IResourceStrings;
+	recordButton: IRecordButtonStrings;
 	recordStepSettings: IRecordStepSettingsStrings;
 	scriptureTable: IScriptureTableStrings;
 	scriptureTableFilter: IScriptureTableFilterStrings;

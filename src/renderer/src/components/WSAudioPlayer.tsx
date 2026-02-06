@@ -11,6 +11,7 @@ import {
   Badge,
   Menu,
   MenuItem,
+  Stack,
 } from '@mui/material';
 import {
   useState,
@@ -56,8 +57,8 @@ import {
   useCheckOnline,
   LocalKey,
   localUserKey,
+  useMobile,
 } from '../utils';
-import { isMobileWidth } from '../utils/isMobileWidth';
 import {
   IRegion,
   IRegionParams,
@@ -69,7 +70,7 @@ import Confirm from './AlertDialog';
 import { NamedRegions } from '../utils/namedSegments';
 import { sharedSelector, wsAudioPlayerSelector } from '../selector';
 import { shallowEqual, useSelector } from 'react-redux';
-import { AltButton } from '../control';
+import { AltButton, smallButtonProps } from '../control';
 import { AudioAiFunc, useAudioAi } from '../utils/useAudioAi';
 import { Exception } from '@orbit/core';
 import { useGlobal } from '../context/useGlobal';
@@ -152,11 +153,40 @@ interface IProps {
   onInteraction?: () => void;
   onRecording?: (r: boolean) => void;
   onCurrentSegment?: (currentSegment: IRegion | undefined) => void;
+  onSegmentPlaybackEnd?: (segment: IRegion) => void;
+  forceRegionOnly?: boolean;
   onMarkerClick?: (time: number) => void;
   reload?: (blob: Blob) => void;
   noNewVoice?: boolean;
   allowNoNoise?: boolean;
   keepItSmall?: boolean;
+  controlsRef?: React.MutableRefObject<WSAudioPlayerControls | null>;
+  hideToolbar?: boolean;
+  hideControls?: boolean;
+  hideSegmentControls?: boolean;
+  highlightAutoSegment?: boolean;
+  onAutoSegment?: () => void;
+  hasRecording?: boolean;
+  isStopLogic?: boolean;
+  hasSegmentUndo?: boolean;
+  onSegmentUndo?: () => void;
+}
+
+export interface WSAudioPlayerControls {
+  togglePlay: () => void;
+  toggleRecord: () => void;
+  prevSegment: () => void;
+  nextSegment: () => void;
+  addSegment: () => void;
+  removeNextSegment: () => void;
+  undoSegmentChange: () => void;
+  resetSegments: () => void;
+  deleteRecording: () => void;
+  confirmedDelete: () => void;
+  getProgress: () => number;
+  getDuration: () => number;
+  isReady: () => boolean;
+  isPlaying: () => boolean;
 }
 
 const PLAY_PAUSE_KEY = 'F1,CTRL+SPACE';
@@ -214,11 +244,23 @@ function WSAudioPlayer(props: IProps) {
     onInteraction,
     onRecording,
     onCurrentSegment,
+    onSegmentPlaybackEnd,
+    forceRegionOnly,
     onMarkerClick,
     reload,
     noNewVoice,
     allowNoNoise,
     keepItSmall,
+    controlsRef,
+    hideToolbar,
+    hideSegmentControls,
+    hideControls,
+    highlightAutoSegment,
+    onAutoSegment,
+    hasRecording,
+    isStopLogic,
+    hasSegmentUndo,
+    onSegmentUndo,
   } = props;
 
   const waveformRef = useRef<HTMLDivElement | null>(null);
@@ -289,22 +331,9 @@ function WSAudioPlayer(props: IProps) {
     null
   );
   const moreMenuOpen = Boolean(moreMenuAnchorEl);
-  const [isMobileView, setIsMobileView] = useState(isMobileWidth());
+  const { isMobile: isMobileView } = useMobile();
   const cancelAIRef = useRef(false);
 
-  useEffect(() => {
-    const handleResize = () => {
-      setIsMobileView(isMobileWidth());
-    };
-
-    window.addEventListener('resize', handleResize);
-    // Check on mount in case the initial state was wrong
-    handleResize();
-
-    return () => {
-      window.removeEventListener('resize', handleResize);
-    };
-  }, []);
   const { requestAudioAi } = useAudioAi();
   const checkOnline = useCheckOnline(t.reduceNoise);
   const { subscribe, unsubscribe, localizeHotKey } =
@@ -489,7 +518,9 @@ function WSAudioPlayer(props: IProps) {
     currentSegmentIndex,
     myOnCurrentSegment,
     onStartRegion,
-    verses
+    onSegmentPlaybackEnd ? onSegmentPlaybackEnd : undefined,
+    verses,
+    hasSegmentUndo
   );
 
   //because we have to call hooks consistently, call this even if we aren't going to record
@@ -607,14 +638,33 @@ function WSAudioPlayer(props: IProps) {
     }
   };
 
-  const handleClearRegions = () => {
+  const notifySegmentInteraction = useCallback(() => {
+    onInteraction?.();
+  }, [onInteraction]);
+
+  const handleClearRegions = useCallback(() => {
+    notifySegmentInteraction();
     wsClearRegions();
     if (verses) {
       segmentsRef.current = verses;
       loadRegions();
       onSegmentChange && onSegmentChange(verses);
     }
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wsClearRegions, verses, onSegmentChange, notifySegmentInteraction]);
+
+  const handleAddRegion = useCallback(() => {
+    notifySegmentInteraction();
+    return wsAddRegion();
+  }, [notifySegmentInteraction, wsAddRegion]);
+
+  const handleRemoveSplitRegion = useCallback(
+    (next?: boolean) => {
+      notifySegmentInteraction();
+      return wsRemoveSplitRegion(next);
+    },
+    [notifySegmentInteraction, wsRemoveSplitRegion]
+  );
   //#endregion
 
   const playerKeys = [
@@ -853,8 +903,12 @@ function WSAudioPlayer(props: IProps) {
     if (durationRef.current === 0 || recordingRef.current) return false;
     let nowplaying = play;
 
-    if (play && regionOnly && currentSegmentRef.current) {
-      wsPlayRegion(currentSegmentRef.current);
+    if (play && (regionOnly || forceRegionOnly) && currentSegmentRef.current) {
+      const position = wsPosition();
+      const { start, end } = currentSegmentRef.current;
+      const resumeWithinSegment =
+        position > start + 0.01 && position < end - 0.01;
+      wsPlayRegion(currentSegmentRef.current, resumeWithinSegment);
       nowplaying = true;
     } else nowplaying = wsTogglePlay();
     if (nowplaying && Math.abs(wsPosition() - durationRef.current) < 0.2)
@@ -993,18 +1047,21 @@ function WSAudioPlayer(props: IProps) {
       setProgress(wsPosition());
     });
   };
+  const confirmedDelete = () => {
+    setPlaying(false);
+    wsClear();
+    setDuration(0);
+    setProgress(0);
+    setChanged && setChanged(false);
+    onBlobReady && onBlobReady(undefined);
+    setBlobReady && setBlobReady(false);
+    oneShotUsed && setOneShotUsed(false);
+    setReady(false);
+  };
   const handleActionConfirmed = () => {
     initialPosRef.current = undefined;
     if (confirmAction === t.deleteRecording) {
-      setPlaying(false);
-      wsClear();
-      setDuration(0);
-      setProgress(0);
-      setChanged && setChanged(false);
-      onBlobReady && onBlobReady(undefined);
-      setBlobReady && setBlobReady(false);
-      oneShotUsed && setOneShotUsed(false);
-      setReady(false);
+      confirmedDelete();
     } else {
       handleDeleteRegion();
     }
@@ -1025,6 +1082,45 @@ function WSAudioPlayer(props: IProps) {
     wsUndo();
     handleChanged();
   };
+  useEffect(() => {
+    if (!controlsRef) return;
+    controlsRef.current = {
+      togglePlay: togglePlayStatus,
+      toggleRecord: handleRecorder,
+      prevSegment: handlePrevRegion,
+      nextSegment: handleNextRegion,
+      addSegment: () => {
+        if (allowSegment) handleAddRegion();
+      },
+      removeNextSegment: () => {
+        if (allowSegment) handleRemoveSplitRegion(true);
+      },
+      undoSegmentChange: handleUndo,
+      resetSegments: handleClearRegions,
+      deleteRecording: handleDelete,
+      confirmedDelete: confirmedDelete,
+      getProgress: () => progressRef.current,
+      getDuration: () => durationRef.current,
+      isReady: () => readyRef.current,
+      isPlaying: () => playingRef.current,
+    };
+    return () => {
+      controlsRef.current = null;
+    };
+  }, [
+    controlsRef,
+    allowSegment,
+    handleAddRegion,
+    handleRemoveSplitRegion,
+    togglePlayStatus,
+    handleRecorder,
+    handlePrevRegion,
+    handleNextRegion,
+    handleUndo,
+    handleClearRegions,
+    handleDelete,
+    confirmedDelete,
+  ]);
   const doingProcess = (inprogress: boolean, msg?: string) => {
     setProcessMsg(msg ?? t.aiInProgress);
     setWaitingForAI(inprogress);
@@ -1178,6 +1274,9 @@ function WSAudioPlayer(props: IProps) {
     () => !ready || playing || recording || duration === 0 || waitingForAI,
     [ready, playing, recording, duration, waitingForAI]
   );
+  const showSegmentUndo = Boolean(
+    isMobileView && hasSegmentUndo && onSegmentUndo
+  );
 
   const noiseRemovalControl = useCallback(() => {
     if (!allowNoNoise || !features?.noNoise || offline) return null;
@@ -1321,7 +1420,7 @@ function WSAudioPlayer(props: IProps) {
 
   return (
     <Box>
-      <Paper sx={{ p: 1, mb: 1, width: width, maxWidth: width }}>
+      <Paper sx={{ p: 1, mb: 1, width: width - 10, maxWidth: width - 10 }}>
         <Box
           sx={{
             display: 'flex',
@@ -1334,280 +1433,288 @@ function WSAudioPlayer(props: IProps) {
           style={style}
         >
           <>
-            <Grid
-              container
-              sx={{ ...toolbarProp, minWidth: 0, flexWrap: 'nowrap' }}
-            >
-              <Grid sx={{ ml: 1 }}>
-                <LightTooltip id="wsAudioPlayTip" title={playTooltipTitle}>
-                  <span>
-                    <IconButton
-                      id="wsAudioPlay"
-                      onClick={togglePlayStatus}
-                      disabled={duration === 0 || recording || waitingForAI}
-                    >
-                      <>{playing ? <PauseIcon /> : <PlayIcon />}</>
-                    </IconButton>
-                  </span>
-                </LightTooltip>
-              </Grid>
-              <VertDivider id="wsAudioDiv1" />
-
-              <Grid>
-                <Typography sx={{ m: '5px' }}>
-                  <Duration id="wsAudioPosition" seconds={progress} /> {' / '}
-                  <Duration id="wsAudioDuration" seconds={duration} />
-                </Typography>
-              </Grid>
-              <VertDivider id="wsAudioDiv2" />
-              {allowZoom && !isMobileView && (
-                <>
-                  <Grid>
-                    <WSAudioPlayerZoom
-                      // startBig={allowRecord || false}
-                      ready={ready && !recording && !waitingForAI}
-                      fillPx={recording ? 100 : wsFillPx()}
-                      curPx={pxPerSec}
-                      onZoom={wsZoom}
-                    ></WSAudioPlayerZoom>
-                  </Grid>
-                  <VertDivider id="wsAudioDiv3" />
-                </>
-              )}
-              {allowRecord && !isMobileView && (
-                <>
-                  {noiseRemovalControl()}
-                  {voiceChangeControl()}
-                  {normalizeControl()}
-                </>
-              )}
-              {allowRecord && (
-                <>
-                  {hasRegion !== 0 && !oneShotUsed && (
-                    <LightTooltip
-                      id="wsAudioDeleteRegionTip"
-                      title={t.deleteRegion}
-                    >
-                      <span>
-                        <IconButton
-                          id="wsAudioDeleteRegion"
-                          onClick={handleDeleteRegion}
-                          disabled={recording || waitingForAI}
-                        >
-                          <HandScissors />
-                        </IconButton>
-                      </span>
-                    </LightTooltip>
-                  )}
-                  {canUndo && !oneShotUsed && (
-                    <LightTooltip id="wsUndoTip" title={t.undoTip}>
-                      <span>
-                        <IconButton
-                          id="wsUndo"
-                          onClick={handleUndo}
-                          disabled={recording || waitingForAI}
-                        >
-                          <UndoIcon />
-                        </IconButton>
-                      </span>
-                    </LightTooltip>
-                  )}
-                  {hasRegion === 0 && (
-                    <LightTooltip
-                      id="wsAudioDeleteTip"
-                      title={t.deleteRecording}
-                    >
-                      <span>
-                        <IconButton
-                          id="wsAudioDelete"
-                          onClick={handleDelete}
-                          disabled={recording || duration === 0 || waitingForAI}
-                        >
-                          <DeleteIcon />
-                        </IconButton>
-                      </span>
-                    </LightTooltip>
-                  )}
-                  <GrowingSpacer />
-                  {!isMobileView && !keepItSmall && (
-                    <Grid>
-                      {microphoneControl()}
-                      <Menu
-                        anchorEl={micMenuAnchorEl}
-                        open={micMenuOpen}
-                        onClose={handleMicMenuClose}
-                        anchorOrigin={{
-                          vertical: 'bottom',
-                          horizontal: 'left',
-                        }}
-                        transformOrigin={{
-                          vertical: 'top',
-                          horizontal: 'left',
-                        }}
+            {!hideToolbar && (
+              <Grid
+                container
+                sx={{ ...toolbarProp, minWidth: 0, flexWrap: 'nowrap' }}
+              >
+                <Grid sx={{ ml: 1 }}>
+                  <LightTooltip id="wsAudioPlayTip" title={playTooltipTitle}>
+                    <span>
+                      <IconButton
+                        id="wsAudioPlay"
+                        onClick={togglePlayStatus}
+                        disabled={duration === 0 || recording || waitingForAI}
                       >
-                        {audioInputDevices.length === 0 ? (
-                          <MenuItem disabled>{ts.noAudio}</MenuItem>
-                        ) : (
-                          audioInputDevices.map((device, index) => (
-                            <MenuItem
-                              key={device.deviceId || `input-${index}`}
-                              selected={
-                                selectedMicrophoneId === device.deviceId
-                              }
-                              onClick={() => handleMicSelect(device.deviceId)}
-                            >
-                              {device.label || `Input ${index + 1}`}
-                            </MenuItem>
-                          ))
-                        )}
-                      </Menu>
-                    </Grid>
-                  )}
-                  {isMobileView && (
+                        <>{playing ? <PauseIcon /> : <PlayIcon />}</>
+                      </IconButton>
+                    </span>
+                  </LightTooltip>
+                </Grid>
+                <VertDivider id="wsAudioDiv1" />
+
+                <Grid>
+                  <Typography sx={{ m: '5px' }}>
+                    <Duration id="wsAudioPosition" seconds={progress} /> {' / '}
+                    <Duration id="wsAudioDuration" seconds={duration} />
+                  </Typography>
+                </Grid>
+                <VertDivider id="wsAudioDiv2" />
+                {allowZoom && !isMobileView && (
+                  <>
                     <Grid>
-                      <LightTooltip id="wsAudioMoreTip" title="More options">
+                      <WSAudioPlayerZoom
+                        // startBig={allowRecord || false}
+                        ready={ready && !recording && !waitingForAI}
+                        fillPx={recording ? 100 : wsFillPx()}
+                        curPx={pxPerSec}
+                        onZoom={wsZoom}
+                      ></WSAudioPlayerZoom>
+                    </Grid>
+                    <VertDivider id="wsAudioDiv3" />
+                  </>
+                )}
+                {allowRecord && !isMobileView && (
+                  <>
+                    {noiseRemovalControl()}
+                    {voiceChangeControl()}
+                    {normalizeControl()}
+                  </>
+                )}
+                {allowRecord && (
+                  <>
+                    {hasRegion !== 0 && !oneShotUsed && (
+                      <LightTooltip
+                        id="wsAudioDeleteRegionTip"
+                        title={t.deleteRegion}
+                      >
                         <span>
                           <IconButton
-                            id="wsAudioMore"
-                            onClick={handleMoreMenuOpen}
+                            id="wsAudioDeleteRegion"
+                            onClick={handleDeleteRegion}
+                            disabled={recording || waitingForAI}
                           >
-                            <MoreVertIcon />
+                            <HandScissors />
                           </IconButton>
                         </span>
                       </LightTooltip>
-                      <Menu
-                        anchorEl={moreMenuAnchorEl}
-                        open={moreMenuOpen}
-                        onClose={handleMoreMenuClose}
-                        anchorOrigin={{
-                          vertical: 'bottom',
-                          horizontal: 'right',
-                        }}
-                        transformOrigin={{
-                          vertical: 'top',
-                          horizontal: 'right',
-                        }}
-                      >
-                        {allowZoom && (
-                          <MenuItem
-                            onClick={(e) => {//don't close menu if zoom in or out button is clicked
-                              const target = e.target as HTMLElement;
-                              if (
-                                target.closest?.(
-                                  '[id="wsZoomIn"], [id="wsZoomOut"]'
-                                )
-                              )
-                                return;
-                              handleMoreMenuClose();
-                            }}
+                    )}
+                    {canUndo && !oneShotUsed && (
+                      <LightTooltip id="wsUndoTip" title={t.undoTip}>
+                        <span>
+                          <IconButton
+                            id="wsUndo"
+                            onClick={handleUndo}
+                            disabled={recording || waitingForAI}
                           >
-                            <WSAudioPlayerZoom
-                              ready={ready && !recording && !waitingForAI}
-                              fillPx={recording ? 100 : wsFillPx()}
-                              curPx={pxPerSec}
-                              onZoom={wsZoom}
-                            />
-                          </MenuItem>
-                        )}
-                        {allowRecord && (
-                          <>
-                            {noiseRemovalControl() && (
-                              <MenuItem onClick={handleMoreMenuClose}>
-                                {noiseRemovalControl()}
+                            <UndoIcon />
+                          </IconButton>
+                        </span>
+                      </LightTooltip>
+                    )}
+                    {hasRegion === 0 && (
+                      <LightTooltip
+                        id="wsAudioDeleteTip"
+                        title={t.deleteRecording}
+                      >
+                        <span>
+                          <IconButton
+                            id="wsAudioDelete"
+                            onClick={handleDelete}
+                            disabled={
+                              recording || duration === 0 || waitingForAI
+                            }
+                          >
+                            <DeleteIcon />
+                          </IconButton>
+                        </span>
+                      </LightTooltip>
+                    )}
+                    <GrowingSpacer />
+                    {!isMobileView && !keepItSmall && (
+                      <Grid>
+                        {microphoneControl()}
+                        <Menu
+                          anchorEl={micMenuAnchorEl}
+                          open={micMenuOpen}
+                          onClose={handleMicMenuClose}
+                          anchorOrigin={{
+                            vertical: 'bottom',
+                            horizontal: 'left',
+                          }}
+                          transformOrigin={{
+                            vertical: 'top',
+                            horizontal: 'left',
+                          }}
+                        >
+                          {audioInputDevices.length === 0 ? (
+                            <MenuItem disabled>{ts.noAudio}</MenuItem>
+                          ) : (
+                            audioInputDevices.map((device, index) => (
+                              <MenuItem
+                                key={device.deviceId || `input-${index}`}
+                                selected={
+                                  selectedMicrophoneId === device.deviceId
+                                }
+                                onClick={() => handleMicSelect(device.deviceId)}
+                              >
+                                {device.label || `Input ${index + 1}`}
                               </MenuItem>
-                            )}
-                            {voiceChangeControl() && (
-                              <MenuItem onClick={handleMoreMenuClose}>
-                                {voiceChangeControl()}
+                            ))
+                          )}
+                        </Menu>
+                      </Grid>
+                    )}
+                    {isMobileView && (
+                      <Grid>
+                        <LightTooltip id="wsAudioMoreTip" title="More options">
+                          <span>
+                            <IconButton
+                              id="wsAudioMore"
+                              onClick={handleMoreMenuOpen}
+                            >
+                              <MoreVertIcon />
+                            </IconButton>
+                          </span>
+                        </LightTooltip>
+                        <Menu
+                          anchorEl={moreMenuAnchorEl}
+                          open={moreMenuOpen}
+                          onClose={handleMoreMenuClose}
+                          anchorOrigin={{
+                            vertical: 'bottom',
+                            horizontal: 'right',
+                          }}
+                          transformOrigin={{
+                            vertical: 'top',
+                            horizontal: 'right',
+                          }}
+                        >
+                          {allowZoom && (
+                            <MenuItem
+                              onClick={(e) => {
+                                //don't close menu if zoom in or out button is clicked
+                                const target = e.target as HTMLElement;
+                                if (
+                                  target.closest?.(
+                                    '[id="wsZoomIn"], [id="wsZoomOut"]'
+                                  )
+                                )
+                                  return;
+                                handleMoreMenuClose();
+                              }}
+                              sx={{ pointerEvents: 'none' }}
+                            >
+                              <WSAudioPlayerZoom
+                                ready={ready && !recording && !waitingForAI}
+                                fillPx={recording ? 100 : wsFillPx()}
+                                curPx={pxPerSec}
+                                onZoom={wsZoom}
+                              />
+                            </MenuItem>
+                          )}
+                          {allowRecord === true && (
+                            <>
+                              {noiseRemovalControl() && (
+                                <MenuItem onClick={handleMoreMenuClose}>
+                                  {noiseRemovalControl()}
+                                </MenuItem>
+                              )}
+                              {voiceChangeControl() && (
+                                <MenuItem onClick={handleMoreMenuClose}>
+                                  {voiceChangeControl()}
+                                </MenuItem>
+                              )}
+                              {normalizeControl() && (
+                                <MenuItem onClick={handleMoreMenuClose}>
+                                  {normalizeControl()}
+                                </MenuItem>
+                              )}
+                              {!keepItSmall && (
+                                <MenuItem onClick={handleMoreMenuClose}>
+                                  {microphoneControl()}
+                                </MenuItem>
+                              )}
+                            </>
+                          )}
+                        </Menu>
+                        <Menu
+                          anchorEl={micMenuAnchorEl}
+                          open={micMenuOpen}
+                          onClose={handleMicMenuClose}
+                          anchorOrigin={{
+                            vertical: 'bottom',
+                            horizontal: 'left',
+                          }}
+                          transformOrigin={{
+                            vertical: 'top',
+                            horizontal: 'left',
+                          }}
+                        >
+                          {audioInputDevices.length === 0 ? (
+                            <MenuItem disabled>{ts.noAudio}</MenuItem>
+                          ) : (
+                            audioInputDevices.map((device, index) => (
+                              <MenuItem
+                                key={device.deviceId || `input-${index}`}
+                                selected={
+                                  selectedMicrophoneId === device.deviceId
+                                }
+                                onClick={() => handleMicSelect(device.deviceId)}
+                              >
+                                {device.label || `Input ${index + 1}`}
                               </MenuItem>
-                            )}
-                            {normalizeControl() && (
-                              <MenuItem onClick={handleMoreMenuClose}>
-                                {normalizeControl()}
-                              </MenuItem>
-                            )}
-                            {!keepItSmall && (
-                              <MenuItem onClick={handleMoreMenuClose}>
-                                {microphoneControl()}
-                              </MenuItem>
-                            )}
-                          </>
-                        )}
-                      </Menu>
-                      <Menu
-                        anchorEl={micMenuAnchorEl}
-                        open={micMenuOpen}
-                        onClose={handleMicMenuClose}
-                        anchorOrigin={{
-                          vertical: 'bottom',
-                          horizontal: 'left',
-                        }}
-                        transformOrigin={{
-                          vertical: 'top',
-                          horizontal: 'left',
+                            ))
+                          )}
+                        </Menu>
+                      </Grid>
+                    )}
+                  </>
+                )}
+                {allowSegment && !hideToolbar && !hideSegmentControls && (
+                  <WSAudioPlayerSegment
+                    ready={ready}
+                    onSplit={onSplit}
+                    onParamChange={onSegmentParamChange}
+                    loop={loopingRef.current || false}
+                    playing={playing}
+                    currentNumRegions={hasRegion}
+                    params={defaultRegionParams}
+                    canSetDefault={canSetDefaultParams}
+                    highlightAutoSegment={highlightAutoSegment}
+                    onAutoSegment={onAutoSegment}
+                    wsAutoSegment={allowAutoSegment ? wsAutoSegment : undefined}
+                    wsRemoveSplitRegion={handleRemoveSplitRegion}
+                    wsAddRegion={handleAddRegion}
+                    wsClearRegions={handleClearRegions}
+                    setBusy={setBusy}
+                  />
+                )}
+                {waitingForAI && (
+                  <Grid container sx={{ pr: 6 }}>
+                    <Grid size={12}>
+                      <Typography sx={{ whiteSpace: 'normal' }}>
+                        {processMsg}
+                      </Typography>
+                    </Grid>
+                    <Grid
+                      size={12}
+                      sx={{ display: 'flex', justifyContent: 'center' }}
+                    >
+                      <AltButton
+                        id="ai-cancel"
+                        onClick={() => {
+                          cancelAIRef.current = true;
+                          doingProcess(false);
                         }}
                       >
-                        {audioInputDevices.length === 0 ? (
-                          <MenuItem disabled>{ts.noAudio}</MenuItem>
-                        ) : (
-                          audioInputDevices.map((device, index) => (
-                            <MenuItem
-                              key={device.deviceId || `input-${index}`}
-                              selected={
-                                selectedMicrophoneId === device.deviceId
-                              }
-                              onClick={() => handleMicSelect(device.deviceId)}
-                            >
-                              {device.label || `Input ${index + 1}`}
-                            </MenuItem>
-                          ))
-                        )}
-                      </Menu>
+                        {ts.cancel}
+                      </AltButton>
                     </Grid>
-                  )}
-                </>
-              )}
-              {allowSegment && (
-                <WSAudioPlayerSegment
-                  ready={ready}
-                  onSplit={onSplit}
-                  onParamChange={onSegmentParamChange}
-                  loop={loopingRef.current || false}
-                  playing={playing}
-                  currentNumRegions={hasRegion}
-                  params={defaultRegionParams}
-                  canSetDefault={canSetDefaultParams}
-                  wsAutoSegment={allowAutoSegment ? wsAutoSegment : undefined}
-                  wsRemoveSplitRegion={wsRemoveSplitRegion}
-                  wsAddRegion={wsAddRegion}
-                  wsClearRegions={handleClearRegions}
-                  setBusy={setBusy}
-                />
-              )}
-              {waitingForAI && (
-                <Grid container sx={{ pr: 6 }}>
-                  <Grid size={12}>
-                    <Typography sx={{ whiteSpace: 'normal' }}>
-                      {processMsg}
-                    </Typography>
                   </Grid>
-                  <Grid
-                    size={12}
-                    sx={{ display: 'flex', justifyContent: 'center' }}
-                  >
-                    <AltButton
-                      id="ai-cancel"
-                      onClick={() => {
-                        cancelAIRef.current = true;
-                        doingProcess(false);
-                      }}
-                    >
-                      {ts.cancel}
-                    </AltButton>
-                  </Grid>
-                </Grid>
-              )}
-            </Grid>
+                )}
+              </Grid>
+            )}
             {keepItSmall && allowRecord && !oneShotUsed ? (
               <Box
                 sx={{
@@ -1631,12 +1738,18 @@ function WSAudioPlayer(props: IProps) {
                   disabled={playing || processingRecording || waitingForAI}
                   tooltipTitle={recordTooltipTitle}
                   isSmall={true}
+                  hasRecording={hasRecording ?? false}
+                  isStopLogic={isStopLogic ?? false}
                 />
               </Box>
             ) : (
               <>
                 <Box
-                  sx={{ width: width - 40, maxWidth: width - 40, minWidth: 0 }}
+                  sx={{
+                    width: width - 10,
+                    maxWidth: width - 10,
+                    minWidth: 0,
+                  }}
                 >
                   <div id="wsAudioWaveform" ref={waveformRef} />
                 </Box>
@@ -1645,13 +1758,61 @@ function WSAudioPlayer(props: IProps) {
                     container
                     sx={{
                       ...toolbarProp,
-                      width: width - 40,
-                      maxWidth: width - 40,
+                      width: width - 5,
+                      maxWidth: width - 5,
                       minWidth: 0,
                     }}
                   >
+                    {allowSegment && hideToolbar && !hideSegmentControls && (
+                      <Stack direction="row" spacing={1}>
+                        <WSAudioPlayerSegment
+                          ready={ready}
+                          onSplit={onSplit}
+                          onParamChange={onSegmentParamChange}
+                          loop={loopingRef.current || false}
+                          playing={playing}
+                          currentNumRegions={hasRegion}
+                          params={defaultRegionParams}
+                          canSetDefault={canSetDefaultParams}
+                          highlightAutoSegment={highlightAutoSegment}
+                          onAutoSegment={onAutoSegment}
+                          altRemove={true}
+                          wsAutoSegment={
+                            allowAutoSegment ? wsAutoSegment : undefined
+                          }
+                          wsRemoveSplitRegion={handleRemoveSplitRegion}
+                          wsAddRegion={handleAddRegion}
+                          wsClearRegions={handleClearRegions}
+                          setBusy={setBusy}
+                        />
+                        {showSegmentUndo ? (
+                          <LightTooltip id="wsUndoTip" title={t.undoTip}>
+                            <span>
+                              <IconButton
+                                id="wsUndo"
+                                onClick={() => onSegmentUndo?.()}
+                                disabled={recording || waitingForAI}
+                              >
+                                <UndoIcon />
+                              </IconButton>
+                            </span>
+                          </LightTooltip>
+                        ) : (
+                          canUndo &&
+                          !oneShotUsed && (
+                            <IconButton
+                              id="wsUndo"
+                              onClick={handleUndo}
+                              disabled={recording || waitingForAI}
+                            >
+                              <UndoIcon />
+                            </IconButton>
+                          )
+                        )}
+                      </Stack>
+                    )}
                     <Grid>
-                      {allowAutoSegment && (
+                      {allowAutoSegment && !isMobileView && (
                         <LightTooltip
                           id="wsAudioLoopTip"
                           title={looping ? t.loopon : t.loopoff}
@@ -1670,7 +1831,7 @@ function WSAudioPlayer(props: IProps) {
                           </span>
                         </LightTooltip>
                       )}
-                      {allowSegment && (
+                      {allowSegment && !isMobileView && (
                         <>
                           <LightTooltip
                             id="wsPrevTip"
@@ -1847,28 +2008,44 @@ function WSAudioPlayer(props: IProps) {
                     )}
                     <GrowingSpacer />
                     {!onSaveProgress && <>{metaData}</>}
+                    {isMobileView && !hideSegmentControls && (
+                      <AltButton
+                        sx={smallButtonProps}
+                        onClick={handleClearRegions}
+                      >
+                        {t.reset}
+                      </AltButton>
+                    )}
                   </Grid>
                 )}
-                {allowRecord && !oneShotUsed && !keepItSmall && (
-                  <Box
-                    sx={{
-                      display: 'flex',
-                      justifyContent: 'center',
-                      alignItems: 'center',
-                      width: '100%',
-                      py: 1,
-                    }}
-                  >
-                    <RecordButton
-                      recording={recording}
-                      oneTryOnly={oneTryOnly}
-                      onClick={handleRecorder}
-                      disabled={playing || processingRecording || waitingForAI}
-                      tooltipTitle={recordTooltipTitle}
-                      isSmall={false}
-                    />
-                  </Box>
-                )}
+                {allowRecord &&
+                  !oneShotUsed &&
+                  !keepItSmall &&
+                  !hideControls && (
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        width: '100%',
+                        py: 1,
+                      }}
+                    >
+                      <RecordButton
+                        recording={recording}
+                        oneTryOnly={oneTryOnly}
+                        onClick={handleRecorder}
+                        disabled={
+                          playing || processingRecording || waitingForAI
+                        }
+                        tooltipTitle={recordTooltipTitle}
+                        isSmall={false}
+                        showText={hasRecording ?? false}
+                        hasRecording={hasRecording ?? false}
+                        isStopLogic={isStopLogic ?? false}
+                      />
+                    </Box>
+                  )}
               </>
             )}
             {confirmAction === '' || (

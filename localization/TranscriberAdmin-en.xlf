@@ -1318,6 +1318,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="community.autoSegment">
+         <segment>
+            <source>Use {0} for autosegmentation, or tap in the waveform and use + for manual segmentation</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="community.backTranslationComplete">
          <segment>
             <source>Version {0}: Back translation: {1}</source>
@@ -1339,6 +1345,12 @@
       <unit id="community.later">
          <segment>
             <source>Do later</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="community.listen">
+         <segment>
+            <source>Use {0} to listen to the passage</source>
             <target/>
          </segment>
       </unit>
@@ -4468,6 +4480,48 @@
             <target/>
          </segment>
       </unit>
+      <unit id="mobile.addSegment">
+         <segment>
+            <source>Add segment boundary</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="mobile.next">
+         <segment>
+            <source>Next</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="mobile.previous">
+         <segment>
+            <source>Previous</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="mobile.removeSegment">
+         <segment>
+            <source>Remove next segment boundary</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="mobile.resetBT">
+         <segment>
+            <source>Reset back translation</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="mobile.restoreBoundaries">
+         <segment>
+            <source>Restore original segment boundaries</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="mobile.segment">
+         <segment>
+            <source>Segment: {0}</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="newProject.audioProduct">
          <segment>
             <source>Audio Product</source>
@@ -6409,6 +6463,24 @@
       <unit id="resource.versions">
          <segment>
             <source>Versions</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="recordButton.record">
+         <segment>
+            <source>RECORD</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="recordButton.rerecord">
+         <segment>
+            <source>RERECORD</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="recordButton.resume">
+         <segment>
+            <source>RESUME</source>
             <target/>
          </segment>
       </unit>
@@ -9433,6 +9505,12 @@
       <unit id="wsAudioPlayer.reduceNoise">
          <segment>
             <source>Reduce Noise</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="wsAudioPlayer.reset">
+         <segment>
+            <source>Reset</source>
             <target/>
          </segment>
       </unit>

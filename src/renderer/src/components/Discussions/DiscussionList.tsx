@@ -243,7 +243,6 @@ export function DiscussionList({ onClose }: DiscussionListProps) {
     return getMediaInPlans([planId], mediafiles, VernacularTag, true).map(
       (r) => r.id
     );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [planId, mediafiles]);
 
   const discussionSort = (x: Discussion, y: Discussion) => {
@@ -374,7 +373,6 @@ export function DiscussionList({ onClose }: DiscussionListProps) {
 
   useEffect(() => {
     setAdding(false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentstep, passage]);
 
   const nextState = (what: string) => {

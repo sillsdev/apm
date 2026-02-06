@@ -10,6 +10,7 @@ import {
   infoMsg,
   getFingerprintArray,
   LocalKey,
+  localUserKey,
   Online,
 } from '../src/utils';
 import { isElectron, OrbitNetworkErrorRetries } from '../api-variable';
@@ -86,7 +87,8 @@ Promise.all(promises)
       releaseDate: '',
       progress: 0,
       playingMediaId: '',
-      mobileView: false,
+      mobileView:
+        localStorage.getItem(localUserKey(LocalKey.mobileView)) === 'true',
     };
 
     const root = createRoot(document.getElementById('root') as HTMLElement);

@@ -7,13 +7,7 @@ import {
   IToDoTableStrings,
   VProject,
 } from '../../model';
-import {
-  IconButton,
-  ListItemIcon,
-  ListItemText,
-  useMediaQuery,
-  useTheme,
-} from '@mui/material';
+import { IconButton, ListItemIcon, ListItemText } from '@mui/material';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import SettingsIcon from '@mui/icons-material/Settings';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
@@ -36,6 +30,7 @@ import {
 } from '../../selector';
 import { shallowEqual, useSelector } from 'react-redux';
 import { addPt } from '../../utils/addPt';
+import { useMobile } from '../../utils';
 
 interface IProps {
   inProject?: boolean;
@@ -66,8 +61,7 @@ export function ProjectMenu(props: IProps) {
   const offlineProjectRead = useOfflnProjRead();
   const [projType, setProjType] = useState('');
   const t: ICardsStrings = useSelector(cardsSelector, shallowEqual);
-  const theme = useTheme();
-  const isMobileWidth = useMediaQuery(theme.breakpoints.down('sm'));
+  const { isMobileWidth } = useMobile();
   const tpb: IProjButtonsStrings = useSelector(
     projButtonsSelector,
     shallowEqual

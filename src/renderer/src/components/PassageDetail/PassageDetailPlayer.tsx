@@ -1,13 +1,14 @@
 import { useGlobal } from '../../context/useGlobal';
-import { Badge, Box, Button, IconButton, Typography } from '@mui/material';
+import { Badge, Box, IconButton, Typography } from '@mui/material';
 import { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { UnsavedContext } from '../../context/UnsavedContext';
 import {
   IRegionParams,
   IRegions,
+  IRegion,
   parseRegions,
 } from '../../crud/useWavesurferRegions';
-import WSAudioPlayer from '../WSAudioPlayer';
+import WSAudioPlayer, { WSAudioPlayerControls } from '../WSAudioPlayer';
 import { useSelector, shallowEqual } from 'react-redux';
 import {
   ISharedStrings,
@@ -41,11 +42,12 @@ import AsrButton from '../../control/ConfButton';
 import { IFeatures } from '../Team/TeamSettings';
 import AsrProgress from '../../business/asr/AsrProgress';
 import { useGetAsrSettings } from '../../crud/useGetAsrSettings';
-import { LightTooltip } from '../StepEditor';
+import { LightTooltip, PriButton, smallButtonProps } from '../StepEditor';
 import { useOrbitData } from '../../hoc/useOrbitData';
 import { pullTableList, ToolSlug, useStepTool } from '../../crud';
 import IndexedDBSource from '@orbit/indexeddb';
 import JSONAPISource from '@orbit/jsonapi';
+import { useMobile } from '../../utils';
 import { useCheckOnline } from '../../utils/useCheckOnline';
 import { useSnackBar } from '../../hoc/SnackBar';
 import { useLocLangName } from '../../utils/useLocLangName';
@@ -53,11 +55,13 @@ import { SaveSegments } from './SaveSegments';
 import { AsrTarget } from '../../business/asr/AsrTarget';
 
 export const PLAYER_HEIGHT = 120 + 80;
+export const PLAYER_HEIGHT_MOBILE = 120 + 40;
 
 export interface DetailPlayerProps {
   allowSegment?: NamedRegions | undefined;
   saveSegments?: SaveSegments | undefined;
   allowAutoSegment?: boolean;
+  hideSegmentChange?: boolean;
   suggestedSegments?: string;
   verses?: string;
   defaultSegParams?: IRegionParams;
@@ -69,16 +73,26 @@ export interface DetailPlayerProps {
   onStartRegion?: (position: number) => void;
   onProgress?: (progress: number) => void;
   onSaveProgress?: (progress: number) => void;
+  onDuration?: (duration: number) => void;
   onInteraction?: () => void;
+  onSegmentFinished?: (segment: IRegion) => void;
   onTranscription?: (transcription: string) => void;
+  forceRegionOnly?: boolean;
   allowZoomAndSpeed?: boolean;
   position?: number;
   width: number;
+  controlsRef?: React.RefObject<WSAudioPlayerControls | null>;
+  hideToolbar?: boolean;
+  hideSegmentControls?: boolean;
+  highlightAutoSegment?: boolean;
+  onAutoSegment?: () => void;
   parentToolId?: string;
   role?: string;
   hasTranscription?: boolean;
   contentVerses?: string[];
   metaData?: React.ReactNode;
+  hasSegmentUndo?: boolean;
+  segmentUndoValue?: string;
 }
 
 export function PassageDetailPlayer(props: DetailPlayerProps) {
@@ -86,6 +100,7 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
     allowSegment,
     allowAutoSegment,
     saveSegments,
+    hideSegmentChange,
     suggestedSegments,
     verses,
     defaultSegParams,
@@ -95,16 +110,26 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
     onStartRegion,
     onProgress,
     onSaveProgress,
+    onDuration: onDurationProp,
     onInteraction,
+    onSegmentFinished,
     onTranscription,
+    forceRegionOnly,
     allowZoomAndSpeed,
     position,
     width,
+    controlsRef,
+    hideToolbar,
+    hideSegmentControls,
+    highlightAutoSegment,
+    onAutoSegment,
     parentToolId,
     role,
     hasTranscription,
     contentVerses,
     metaData,
+    hasSegmentUndo,
+    segmentUndoValue,
   } = props;
 
   const [memory] = useGlobal('memory');
@@ -123,6 +148,7 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
   const t: IWsAudioPlayerStrings = useSelector(playerSelector, shallowEqual);
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
   const toolId = 'ArtifactSegments';
+  const { isMobile: mobile } = useMobile();
   const [requestPlay, setRequestPlay] = useState<RequestPlay>({
     play: undefined,
     regionOnly: false,
@@ -153,6 +179,8 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
   const backup = coordinator?.getSource('backup') as IndexedDBSource;
   const [reporter] = useGlobal('errorReporter');
   const segmentsRef = useRef('');
+  const baseSegmentsRef = useRef('{}');
+  const userInteractedRef = useRef(false);
   const playingRef = useRef(playing);
   const savingRef = useRef(false);
   const mediafileRef = useRef<MediaFile | undefined>(undefined);
@@ -166,7 +194,6 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
   const [asrLangVisible, setAsrLangVisible] = useState(false);
   const [phonetic, setPhonetic] = useState(false);
   const [forceAi, setForceAi] = useState<boolean>();
-
   const [features, setFeatures] = useState<IFeatures>();
   const [asrProgressVisble, setAsrProgressVisble] = useState(false);
   const checkOnline = useCheckOnline(t.recognizeSpeech);
@@ -256,7 +283,7 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
     );
   }, [playerMediafile, mediarecs]);
 
-  const onDuration = (duration: number) => {
+  const handleDuration = (duration: number) => {
     durationRef.current = duration;
     if (
       mediafileRef.current &&
@@ -282,6 +309,24 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
         });
     }
     setSegmentToWhole();
+    onDurationProp?.(duration);
+  };
+
+  useEffect(() => {
+    userInteractedRef.current = false;
+    baseSegmentsRef.current =
+      allowSegment && suggestedSegments ? suggestedSegments : '{}';
+  }, [
+    playerMediafile?.id,
+    allowSegment,
+    suggestedSegments,
+    verses,
+    currentstep,
+  ]);
+
+  const handleInteraction = () => {
+    userInteractedRef.current = true;
+    onInteraction?.();
   };
 
   const setPlayerSegments = (segments: string) => {
@@ -311,11 +356,23 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
     setDefaultSegments(segments); //now we'll notice if we reset them in SetPlayerSegments
     onSegment && onSegment(segments, false);
     if (allowSegment && saveSegments !== undefined) {
+      const isSegmentChanged = segments !== baseSegmentsRef.current;
+      if (!isSegmentChanged) {
+        toolChanged(parentToolId ?? toolId, false);
+        return;
+      }
+      if (!userInteractedRef.current) return;
       //if I have a parentToolId it will save the segments
-      toolChanged(parentToolId ?? toolId);
+      toolChanged(parentToolId ?? toolId, true);
     } else {
       //not saving segments...so don't update changed
     }
+  };
+
+  const handleSegmentUndo = () => {
+    if (!segmentUndoValue) return;
+    userInteractedRef.current = true;
+    onSegmentChange(segmentUndoValue);
   };
 
   useEffect(() => {
@@ -327,6 +384,9 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
   }, [currentstep, allowSegment]);
 
   useEffect(() => {
+    if (mobile && isChanged(toolId) && !saveRequested(toolId)) {
+      setTimeout(() => handleSave(), 100);
+    }
     if (saveRequested(toolId) && !savingRef.current) writeSegments();
     else if (clearRequested(toolId)) {
       clearCompleted(toolId);
@@ -408,7 +468,7 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
       <WSAudioPlayer
         id="audioPlayer"
         allowRecord={false}
-        height={PLAYER_HEIGHT}
+        height={mobile ? PLAYER_HEIGHT_MOBILE : PLAYER_HEIGHT}
         width={width}
         blob={audioBlob}
         initialposition={initialposition}
@@ -432,13 +492,22 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
         onSegmentParamChange={onSegmentParamChange}
         onStartRegion={onStartRegion}
         onPlayStatus={onPlayStatus}
-        onInteraction={onInteraction}
+        onInteraction={handleInteraction}
         onCurrentSegment={onCurrentSegment}
         allowZoom={allowZoomAndSpeed}
         allowSpeed={allowZoomAndSpeed}
         onProgress={onProgress}
         onSaveProgress={onSaveProgress}
-        onDuration={onDuration}
+        onDuration={handleDuration}
+        onSegmentPlaybackEnd={onSegmentFinished}
+        forceRegionOnly={forceRegionOnly}
+        controlsRef={controlsRef}
+        hideToolbar={hideToolbar}
+        hideSegmentControls={hideSegmentControls || hideSegmentChange}
+        highlightAutoSegment={highlightAutoSegment}
+        onAutoSegment={onAutoSegment}
+        hasSegmentUndo={hasSegmentUndo ?? Boolean(segmentUndoValue)}
+        onSegmentUndo={handleSegmentUndo}
         metaData={
           <>
             {playerMediafile?.attributes?.transcription &&
@@ -482,16 +551,17 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
                 </span>
               </LightTooltip>
             )}
-            {saveSegments === SaveSegments.showSaveButton ? (
-              <Button
+            {saveSegments === SaveSegments.showSaveButton &&
+            !mobile &&
+            isChanged(toolId) ? (
+              <PriButton
                 id="segment-save"
                 onClick={handleSave}
-                variant="contained"
-                color="primary"
                 disabled={!isChanged(toolId)}
+                sx={smallButtonProps}
               >
                 {t.saveSegments}
-              </Button>
+              </PriButton>
             ) : (
               <></>
             )}

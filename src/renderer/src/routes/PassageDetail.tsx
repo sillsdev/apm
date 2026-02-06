@@ -38,7 +38,7 @@ import {
   useUrlContext,
 } from '../crud';
 import { Plan, IToolStrings } from '../model';
-import { NamedRegions } from '../utils';
+import { NamedRegions, useMobile } from '../utils';
 import { useSelector, shallowEqual } from 'react-redux';
 import { toolSelector } from '../selector';
 import Busy from '../components/Busy';
@@ -76,6 +76,7 @@ const PassageDetailGrids = () => {
   const discussionSizeRef = React.useRef(discussionSize);
   const t = useSelector(toolSelector, shallowEqual) as IToolStrings;
   const [paneWidth, setPaneWidth] = useState(0);
+  const { isMobile } = useMobile();
 
   const scrollbarWidthRef = React.useRef(0);
 
@@ -211,55 +212,70 @@ const PassageDetailGrids = () => {
         direction="row"
         sx={{ ...rowProps, minWidth: 0, flexWrap: 'wrap' }}
       >
-        <Grid
-          container
-          direction="row"
-          sx={{
-            alignItems: 'center',
-            flexGrow: 1,
-            minWidth: 0,
-            flexWrap: 'wrap',
-            gap: 1,
-          }}
-        >
-          <Grid
-            sx={{ ...rowProps, minWidth: 0, flexShrink: 1 }}
-            size={{ xs: 'auto' }}
-          >
-            <PassageDetailSectionPassage />
-          </Grid>
-          <Grid
-            id="tool"
-            sx={{
-              alignItems: 'center',
-              minWidth: 0,
-              flexShrink: 1,
-              whiteSpace: 'nowrap',
-              ml: 'auto',
-            }}
-            size={{ xs: 'auto' }}
-          >
-            {tool && Object.prototype.hasOwnProperty.call(t, tool)
-              ? addPt(t.getString(tool))
-              : tool}
-          </Grid>
-          <Grid
-            id="stepcomplete"
-            sx={{
-              display: 'flex',
-              justifyContent: 'flex-end',
-              minWidth: 0,
-              flexShrink: 0,
-              ml: 'auto',
-            }}
-            size={{ xs: 'auto' }}
-          >
-            <PassageDetailStepComplete />
-          </Grid>
-        </Grid>
-        <Grid sx={descProps} size={{ xs: 12 }}>
-          <WorkflowSteps />
-        </Grid>
+        {!(isMobile && tool === ToolSlug.PhraseBackTranslate) && (
+          <>
+            <Grid
+              container
+              direction="row"
+              sx={{
+                alignItems: 'center',
+                flexGrow: 1,
+                minWidth: 0,
+                flexWrap: 'wrap',
+                gap: 1,
+              }}
+            >
+              <Grid
+                sx={{ ...rowProps, minWidth: 0, flexShrink: 1 }}
+                size={{ xs: 'auto' }}
+              >
+                <PassageDetailSectionPassage />
+              </Grid>
+              <Grid
+                id="tool"
+                sx={{
+                  alignItems: 'center',
+                  minWidth: 0,
+                  flexShrink: 1,
+                  whiteSpace: 'nowrap',
+                  ml: 'auto',
+                }}
+                size={{ xs: 'auto' }}
+              >
+                {tool && Object.prototype.hasOwnProperty.call(t, tool)
+                  ? addPt(t.getString(tool))
+                  : tool}
+              </Grid>
+              <Grid
+                id="stepcomplete"
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'flex-end',
+                  minWidth: 0,
+                  flexShrink: 0,
+                  ml: 'auto',
+                }}
+                size={{ xs: 'auto' }}
+              >
+                <PassageDetailStepComplete />
+              </Grid>
+            </Grid>
+            <Grid
+              sx={{
+                ...descProps,
+                position: 'sticky',
+                top: 0,
+                zIndex: (theme) => theme.zIndex.appBar,
+                backgroundColor: 'background.default',
+                borderBottom: '1px solid',
+                borderColor: 'divider',
+              }}
+              size={{ xs: 12 }}
+            >
+              <WorkflowSteps />
+            </Grid>
+          </>
+        )}
         {tool === ToolSlug.Resource && (
           <Grid
             container
@@ -382,6 +398,7 @@ const PassageDetailGrids = () => {
                     ? NamedRegions.BackTranslation
                     : undefined
                 }
+                isMobile={isMobile && tool === ToolSlug.PhraseBackTranslate}
               />
             </Grid>
           </Grid>

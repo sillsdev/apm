@@ -11,8 +11,6 @@ import {
   LinearProgress,
   Tooltip,
   Box,
-  useTheme,
-  useMediaQuery,
 } from '@mui/material';
 import HomeIcon from '@mui/icons-material/Home';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -35,6 +33,7 @@ import {
   exitApp,
   useMyNavigate,
   useWaitForRemoteQueue,
+  useMobile,
 } from '../../utils';
 import { withBucket } from '../../hoc/withBucket';
 import { usePlan } from '../../crud';
@@ -48,6 +47,7 @@ import { useHome } from '../../utils/useHome';
 import { ApmLogo } from '../../control/ApmLogo';
 import { OrgHead } from './OrgHead';
 import { HeadStatus } from './HeadStatus';
+import MobileDetailTitle from './MobileDetailTitle';
 
 const twoIcon = { minWidth: `calc(${48 * 2}px)` } as React.CSSProperties;
 const threeIcon = { minWidth: `calc(${48 * 3}px)` } as React.CSSProperties;
@@ -115,8 +115,7 @@ export const AppHead = (props: IProps) => {
   const orbitErrorMsg = useSelector((state: IState) => state.orbit.message);
   const { pathname } = useLocation();
   const navigate = useMyNavigate();
-  const theme = useTheme();
-  const isMobileWidth = useMediaQuery(theme.breakpoints.down('sm'));
+  const { isMobileView, isMobileWidth } = useMobile();
   const [home] = useGlobal('home'); //verified this is not used in a function 2/18/25
   const [orgRole] = useGlobal('orgRole'); //verified this is not used in a function 2/18/25
   const [errorReporter] = useGlobal('errorReporter');
@@ -149,7 +148,6 @@ export const AppHead = (props: IProps) => {
   const [showTerms, setShowTerms] = useState('');
   const waitForRemoteQueue = useWaitForRemoteQueue();
   const waitForDataChangesQueue = useWaitForRemoteQueue('datachanges');
-  const [mobileView] = useGlobal('mobileView');
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const saving = useMemo(() => anySaving(), [toolsChanged]);
@@ -284,6 +282,12 @@ export const AppHead = (props: IProps) => {
     return undefined;
   };
 
+  const handleTeamNav = () => {
+    checkSavedFn(() => navigate('/team'));
+  };
+
+  const handlePlanNav = () => checkSavedFn(() => navigate(planUrl || '/team'));
+
   useEffect(() => {
     window.addEventListener('beforeunload', handleUnload);
     if (!user) {
@@ -344,7 +348,7 @@ export const AppHead = (props: IProps) => {
   if (view === 'Terms') navigate('/terms');
   if (view === 'Privacy') navigate('/privacy');
 
-  return !mobileView && !isMobileWidth ? (
+  return !isMobileView && !isMobileWidth ? (
     <AppBar
       position="fixed"
       sx={{ width: '100%', display: 'flex' }}
@@ -413,15 +417,15 @@ export const AppHead = (props: IProps) => {
       <>
         <Toolbar>
           {!isDetail ? (
-            <IconButton onClick={() => navigate('/team')} sx={{ p: 0 }}>
+            <IconButton onClick={handleTeamNav} sx={{ p: 0 }}>
               <ApmLogo sx={{ width: '24px', height: '24px' }} />
             </IconButton>
           ) : (
-            <IconButton onClick={() => navigate(planUrl || '/team')}>
+            <IconButton onClick={handlePlanNav}>
               <ArrowBackIcon sx={{ width: '24px', height: '24px' }} />
             </IconButton>
           )}
-          <OrgHead />
+          {isDetail ? <MobileDetailTitle /> : <OrgHead />}
           <GrowingSpacer />
           {!isMobileWidth && (
             <HeadStatus

@@ -13,7 +13,7 @@ import {
   MediaFileD,
   OrganizationD,
 } from '../model';
-import { AppBar, Tabs, Tab, Box, useTheme, useMediaQuery } from '@mui/material';
+import { AppBar, Tabs, Tab, Box } from '@mui/material';
 import ScriptureTable from './Sheet/ScriptureTable';
 import AudioTab from '../components/AudioTab/AudioTab';
 import AssignmentTable from './AssignmentTable';
@@ -27,6 +27,7 @@ import {
   isPersonalTeam,
 } from '../crud';
 import { HeadHeight } from '../App';
+import { useMobile } from '../utils';
 import { TabHeight } from '../control';
 import { useOrbitData } from '../hoc/useOrbitData';
 import { shallowEqual, useSelector } from 'react-redux';
@@ -49,9 +50,7 @@ const ScrollableTabsButtonAuto = (props: IProps) => {
   const [isOffline] = useGlobal('offline'); //verified this is not used in a function 2/18/25
   const [offlineOnly] = useGlobal('offlineOnly'); //will be constant here
   const [plan] = useGlobal('plan'); //will be constant here
-  const [mobileView] = useGlobal('mobileView');
-  const theme = useTheme();
-  const mobileWidth = useMediaQuery(theme.breakpoints.down('sm'));
+  const { isMobile } = useMobile();
   const getGlobal = useGetGlobal();
   const { prjId, tabNm } = useParams();
   const { getOrganizedBy } = useOrganizedBy();
@@ -111,7 +110,7 @@ const ScrollableTabsButtonAuto = (props: IProps) => {
   if (tab !== undefined && tab.toString() !== tabNm)
     return <StickyRedirect to={`/plan/${prjId}/${tab}`} />;
 
-  return (mobileView || mobileWidth) && tab === PlanTabEnum.sectionPassage ? (
+  return isMobile && tab === PlanTabEnum.sectionPassage ? (
     <ScriptureTable {...props} colNames={colNames} />
   ) : (
     <Box

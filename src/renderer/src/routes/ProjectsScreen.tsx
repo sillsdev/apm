@@ -5,8 +5,6 @@ import {
   Typography,
   Button,
   Grid,
-  useTheme,
-  useMediaQuery,
   BoxProps,
   styled,
 } from '@mui/material';
@@ -17,7 +15,7 @@ import { ProjectCard } from '../components/Team/ProjectCard';
 import { DialogMode, VProject } from '../model';
 import { ProjectDialog } from '../components/Team/ProjectDialog';
 import { useMyNavigate } from '../utils/useMyNavigate';
-import { LocalKey, localUserKey, useJsonParams } from '../utils';
+import { LocalKey, localUserKey, useJsonParams, useMobile } from '../utils';
 import { projDefBook, projDefStory } from '../crud/useProjectDefaults';
 import { useGlobal, useGetGlobal } from '../context/useGlobal';
 import { remoteId } from '../crud';
@@ -57,8 +55,7 @@ export const ProjectsScreenInner: React.FC = () => {
   const unsavedCtx = React.useContext(UnsavedContext);
   const { startClear, startSave, waitForSave } = unsavedCtx.state;
   const getGlobal = useGetGlobal();
-  const theme = useTheme();
-  const isMobileWidth = useMediaQuery(theme.breakpoints.down('sm'));
+  const { isMobileWidth } = useMobile();
 
   const handleSwitchTeams = React.useCallback(() => {
     localStorage.removeItem(LocalKey.plan);

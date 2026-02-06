@@ -38,3 +38,4 @@ export * from './GrowingDiv';
 export * from './ToolbarGrid';
 export * from './TeamPaper';
 export * from './TemplateEditor';
+export * from './smallBtnProps';

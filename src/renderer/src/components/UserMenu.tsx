@@ -10,8 +10,6 @@ import {
   styled,
   MenuItemProps,
   Checkbox,
-  useTheme,
-  useMediaQuery,
 } from '@mui/material';
 import ExitIcon from '@mui/icons-material/ExitToApp';
 import AccountIcon from '@mui/icons-material/AccountCircle';
@@ -19,7 +17,13 @@ import ClearIcon from '@mui/icons-material/Clear';
 import { StyledMenu, StyledMenuItem } from '../control/StyledMenu';
 import UserAvatar from './UserAvatar';
 import { isElectron } from '../../api-variable';
-import { localizeRole, restoreScroll, LocalKey, localUserKey } from '../utils';
+import {
+  localizeRole,
+  restoreScroll,
+  LocalKey,
+  localUserKey,
+  useMobile,
+} from '../utils';
 import { useOrbitData } from '../hoc/useOrbitData';
 import { shallowEqual, useSelector } from 'react-redux';
 import { mainSelector, sharedSelector } from '../selector';
@@ -50,13 +54,12 @@ export function UserMenu(props: IProps) {
   const [orgRole] = useGlobal('orgRole'); //verified this is not used in a function 2/18/25
   const [developer] = useGlobal('developer');
   const [user] = useGlobal('user');
-  const [mobileView, setMobileView] = useGlobal('mobileView');
+  const [, setMobileView] = useGlobal('mobileView');
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const [shift, setShift] = React.useState(false);
   const [userRec, setUserRec] = React.useState<UserD | undefined>(undefined);
   const [profileOpen, setProfileOpen] = React.useState(false);
-  const theme = useTheme();
-  const isMobileWidth = useMediaQuery(theme.breakpoints.down('sm'));
+  const { isMobileView, isMobileWidth } = useMobile();
   const t: IMainStrings = useSelector(mainSelector, shallowEqual);
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
 
@@ -80,25 +83,13 @@ export function UserMenu(props: IProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, users, userRec]);
 
-  // Sync mobileView from localStorage once user is available (after authentication)
-  useEffect(() => {
-    if (user) {
-      const stored = localStorage.getItem(localUserKey(LocalKey.mobileView));
-      const storedValue = stored === 'true';
-      if (storedValue !== mobileView) {
-        setMobileView(storedValue);
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
-
   const handleAction = (what: string) => () => {
     setAnchorEl(null);
     if (action) action(what);
   };
 
   const handleMobileViewToggle = () => {
-    const newValue = !mobileView;
+    const newValue = !isMobileView;
     setMobileView(newValue);
     localStorage.setItem(localUserKey(LocalKey.mobileView), String(newValue));
     setAnchorEl(null);
@@ -144,7 +135,11 @@ export function UserMenu(props: IProps) {
         {!isMobileWidth && (
           <StyledMenuItem id="mobileView" onClick={handleMobileViewToggle}>
             <ListItemIcon>
-              <Checkbox checked={mobileView} size="small" sx={{ padding: 0 }} />
+              <Checkbox
+                checked={isMobileView}
+                size="small"
+                sx={{ padding: 0 }}
+              />
             </ListItemIcon>
             <ListItemText primary={t.mobileView} />
           </StyledMenuItem>

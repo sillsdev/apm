@@ -32,6 +32,7 @@ export * from './localUserKey';
 export * from './getFingerprint';
 export * from './useProjectsLoaded';
 export * from './useMounted';
+export * from './useMobile';
 export * from './execFolder';
 export * from './createFolder';
 export * from './loadBlob';

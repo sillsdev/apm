@@ -1,5 +1,6 @@
 import { useContext, useEffect, useMemo, useState } from 'react';
 import { LocalKey, localUserKey } from '../../utils/localUserKey';
+import { useMobile } from '../../utils';
 import { useGlobal } from '../../context/useGlobal';
 import {
   IconButton,
@@ -7,8 +8,6 @@ import {
   MenuItem,
   Stack,
   Typography,
-  useMediaQuery,
-  useTheme,
 } from '@mui/material';
 import SettingsIcon from '@mui/icons-material/Settings';
 import UsersIcon from '@mui/icons-material/People';
@@ -45,8 +44,7 @@ export const OrgHead = () => {
   );
   const [sortVisible, setSortVisible] = useState(false);
   const [workflowVisible, setWorkflowVisible] = useState(false);
-  const theme = useTheme();
-  const isMobileWidth = useMediaQuery(theme.breakpoints.down('sm'));
+  const { isMobileWidth } = useMobile();
   const commitTeamSettings = useCommitTeamSettings();
   const { pathname } = useLocation();
   const isTeamScreen = pathname.includes('/team');

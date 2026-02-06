@@ -43,7 +43,9 @@ export function useWaveSurfer(
   currentSegmentIndex?: number | undefined,
   onCurrentRegion?: (currentRegion: IRegion | undefined) => void,
   onStartRegion?: (start: number) => void,
-  verses?: string
+  onRegionPlayEnd?: (region: IRegion) => void,
+  verses?: string,
+  hasSegmentUndo?: boolean
 ) {
   const [errorReporter] = useGlobal('errorReporter');
   const progressRef = useRef(0);
@@ -146,8 +148,8 @@ export function useWaveSurfer(
     return Math.abs(position - progressRef.current) < 0.3;
   };
 
-  const wsGoto = async (position: number) => {
-    resetPlayingRegion();
+  const wsGoto = async (position: number, keepPlayRegion: boolean = false) => {
+    if (!keepPlayRegion) resetPlayingRegion();
     const duration = wsDuration();
     if (position > duration) position = duration;
     onRegionGoTo(position);
@@ -190,6 +192,7 @@ export function useWaveSurfer(
     singleRegionOnly,
     currentSegmentIndex ?? -1,
     wavesurferRef.current,
+    container,
     onRegion,
     wsDuration,
     isNear,
@@ -199,8 +202,10 @@ export function useWaveSurfer(
     setPlaying,
     onCurrentRegion,
     onStartRegion,
+    onRegionPlayEnd,
     onMarkerClick,
-    verses
+    verses,
+    hasSegmentUndo
   );
 
   const setPlayingx = (value: boolean, regionOnly: boolean) => {
@@ -219,7 +224,7 @@ export function useWaveSurfer(
         }
       } else {
         try {
-          if (isPlayingRef.current) wavesurferRef.current?.pause();
+          wavesurferRef.current?.pause();
         } catch {
           //ignore
         }

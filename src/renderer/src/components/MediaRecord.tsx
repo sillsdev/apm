@@ -9,7 +9,7 @@ import React, {
 import { useGlobal } from '../context/useGlobal';
 import { IPassageRecordStrings, ISharedStrings } from '../model';
 import { Stack, Paper, Typography } from '@mui/material';
-import WSAudioPlayer from './WSAudioPlayer';
+import WSAudioPlayer, { WSAudioPlayerControls } from './WSAudioPlayer';
 import { loadBlobAsync, waitForIt } from '../utils';
 import {
   IMediaState,
@@ -65,6 +65,14 @@ interface IProps {
   noNewVoice?: boolean | undefined;
   allowNoNoise?: boolean;
   allowZoom?: boolean;
+  controlsRef?: React.RefObject<WSAudioPlayerControls | null>;
+  hideControls?: boolean;
+  onProgress?: (progress: number) => void;
+  onDuration?: (duration: number) => void;
+  hideToolbar?: boolean;
+  hasRecording?: boolean;
+  isStopLogic?: boolean;
+  showSize?: boolean;
 }
 export const DEFAULT_COMPRESSED_MIME = 'audio/ogg;codecs=opus';
 
@@ -103,8 +111,16 @@ function MediaRecord(props: IProps) {
     noNewVoice,
     allowNoNoise,
     allowZoom,
+    controlsRef,
+    hideControls,
+    onProgress,
+    onDuration,
+    hideToolbar,
     width,
     keepItSmall,
+    hasRecording,
+    isStopLogic,
+    showSize = true,
   } = props;
   const context = usePassageDetailContext();
   const { settings: toolSettings } = useStepTool(context?.currentstep || '');
@@ -442,8 +458,8 @@ function MediaRecord(props: IProps) {
       return mediaStateRef.current.url;
     return '';
   };
-  const handleLoadAudio = async () => {
-    showMessage(t.loading);
+  const handleLoadAudio = async (silent: boolean = false) => {
+    if (!silent) showMessage(t.loading);
     if (loading || !mediaId) return;
     setLoading(true);
     reset();
@@ -467,21 +483,32 @@ function MediaRecord(props: IProps) {
 
   useEffect(() => {
     if ((preload ?? 0) > 0 && !loading) {
-      handleLoadAudio();
+      handleLoadAudio(true);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [preload]);
 
+  useEffect(() => {
+    if (!mediaId) {
+      reset();
+      return;
+    }
+    if (!loading) {
+      handleLoadAudio(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mediaId]);
+
   const segments = '{}';
 
-  return (
-    <Paper id="mediaRecord" sx={{ width: width, maxWidth: width, minWidth: 0 }}>
+  const content = (
+    <>
       <WSAudioPlayer
         allowRecord={allowRecord !== false}
         allowZoom={allowZoom}
         allowDeltaVoice={allowDeltaVoice}
         oneTryOnly={oneTryOnly}
-        width={width - 20}
+        width={width}
         height={height || 300}
         blob={originalBlob}
         onBlobReady={onBlobReady}
@@ -491,26 +518,47 @@ function MediaRecord(props: IProps) {
         onPlayStatus={onPlayStatus}
         doReset={doReset}
         autoStart={autoStart}
+        onProgress={onProgress}
+        onDuration={onDuration}
+        controlsRef={controlsRef}
+        hideToolbar={hideToolbar}
+        hideControls={hideControls}
         segments={segments}
         reload={gotTheBlob}
         noNewVoice={noNewVoice}
         allowNoNoise={allowNoNoise}
         keepItSmall={keepItSmall}
+        hasRecording={hasRecording ?? false}
+        isStopLogic={isStopLogic ?? false}
       />
       {warning && (
         <Typography sx={{ m: 2, color: 'warning.dark' }} id="warning">
           {warning}
         </Typography>
       )}
-      <Stack
-        direction="row"
-        sx={{ alignItems: 'center', justifyContent: 'flex-end' }}
-      >
-        <Typography sx={{ mr: 3 }} id="size">
-          {`${((audioBlob?.size ?? 0) / 1000000 / compression).toFixed(2)}MB`}
-        </Typography>
-        {metaData}
-      </Stack>
+      {(showSize || metaData) && (
+        <Stack
+          direction="row"
+          sx={{ alignItems: 'center', justifyContent: 'flex-end' }}
+        >
+          {showSize && (
+            <Typography sx={{ mr: 3 }} id="size">
+              {`${((audioBlob?.size ?? 0) / 1000000 / compression).toFixed(2)}MB`}
+            </Typography>
+          )}
+          {metaData}
+        </Stack>
+      )}
+    </>
+  );
+
+  if (!showSize && !metaData) {
+    return content;
+  }
+
+  return (
+    <Paper id="mediaRecord" sx={{ width: width, maxWidth: width, minWidth: 0 }}>
+      {content}
     </Paper>
   );
 }
