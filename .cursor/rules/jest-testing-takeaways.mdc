@@ -1,0 +1,21 @@
+---
+description: Jest testing takeaways for this repo
+alwaysApply: true
+---
+
+# Jest Testing Takeaways
+
+- Favor unit tests for non-React modules (pure functions, CRUD helpers).
+- Mock Orbit helpers (`related`, `findRecord`) and other dependencies; keep test data minimal.
+- Cover edge cases: missing relationships, missing current id, filtering, wrap-around.
+- Prefer deterministic sorting in tests (explicit `sequencenum`).
+- Use `--runInBand --watchAll=false` to avoid hanging runs in CI/automation.
+
+## Running a New Jest Test Module
+
+Run Jest from `src/renderer` (required for this repo).
+
+```bash
+cd src/renderer
+npm test -- <moduleName> --runInBand --watchAll=false
+```

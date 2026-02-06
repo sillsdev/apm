@@ -1536,6 +1536,13 @@
       			<context context-type="sourcefile">SpeakerName.tsx</context>
       		</context-group>
       	</trans-unit>
+         <trans-unit id="community.autoSegment">
+            <source>Use {0} for autosegmentation, or tap in the waveform and use + for manual segmentation</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">SpeakerName.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="community.backTranslationComplete">
             <source>Version {0}: Back translation: {1}</source>
             <target/>
@@ -1564,6 +1571,13 @@
       			<context context-type="sourcefile">SpeakerName.tsx</context>
       		</context-group>
       	</trans-unit>
+         <trans-unit id="community.listen">
+            <source>Use {0} to listen to the passage</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">SpeakerName.tsx</context>
+            </context-group>
+         </trans-unit>
       	<trans-unit id="community.loading">
       		<source>Loading:</source>
       		<target/>
@@ -5211,6 +5225,56 @@
                <context context-type="sourcefile">MediaUpload.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="mobile.addSegment">
+            <source>Add segment boundary</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">SegmentControlIsMobile.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="mobile.next">
+            <source>Next</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">PassageDetailMobileFooter.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="mobile.previous">
+            <source>Previous</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">PassageDetailMobileFooter.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="mobile.removeSegment">
+            <source>Remove next segment boundary</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">SegmentControlIsMobile.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="mobile.resetBT">
+            <source>Reset back translation</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">SegmentControlIsMobile.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="mobile.restoreBoundaries">
+            <source>Restore original segment boundaries</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">SegmentControlIsMobile.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="mobile.segment">
+            <source>Segment: {0}</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">SegmentControlIsMobile.tsx</context>
+            </context-group>
+         </trans-unit>
+         
          <trans-unit id="newProject.audioProduct">
             <source>Audio Product</source>
             <target/>
@@ -7480,6 +7544,27 @@
       			<context context-type="sourcefile">ResourceOverview.tsx</context>
       		</context-group>
       	</trans-unit>
+         <trans-unit id="recordButton.record">
+            <source>RECORD</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">RecordButton.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="recordButton.rerecord">
+            <source>RERECORD</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">RecordButton.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="recordButton.resume">
+            <source>RESUME</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">RecordButton.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="recordStepSettings.custom">
             <source>Custom</source>
             <target/>
@@ -11005,6 +11090,13 @@
          </trans-unit>
          <trans-unit id="wsAudioPlayer.reduceNoise">
             <source>Reduce Noise</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">wsAudioPlayer.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="wsAudioPlayer.reset">
+            <source>Reset</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">wsAudioPlayer.tsx</context>

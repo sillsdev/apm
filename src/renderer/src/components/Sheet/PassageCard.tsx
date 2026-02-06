@@ -5,8 +5,6 @@ import {
   Card,
   CardContent,
   Typography,
-  useMediaQuery,
-  useTheme,
 } from '@mui/material';
 import { ArrowForwardIos, Person } from '@mui/icons-material';
 import TaskAvatar from '../../components/TaskAvatar';
@@ -17,6 +15,7 @@ import { shallowEqual, useSelector } from 'react-redux';
 import { PassageGraphic } from './PassageGraphic';
 import { PassageRef } from './PassageRef';
 import { useSectionIdDescription } from './useSectionIdDescription';
+import { useMobile } from '../../utils';
 
 interface IProps {
   cardInfo: ISheet;
@@ -27,8 +26,7 @@ interface IProps {
 }
 
 export function PassageCard(props: IProps) {
-  const theme = useTheme();
-  const mobileWidth = useMediaQuery(theme.breakpoints.down('sm'));
+  const { isMobileWidth } = useMobile();
   const { cardInfo, handleViewStep, onPlayStatus, isPlaying, isPersonal } =
     props;
   const getDescription = useSectionIdDescription();
@@ -55,7 +53,7 @@ export function PassageCard(props: IProps) {
   return (
     <Card
       elevation={3}
-      sx={{ minWidth: mobileWidth ? '100%' : 275, maxWidth: 400 }}
+      sx={{ minWidth: isMobileWidth ? '100%' : 275, maxWidth: 400 }}
     >
       <CardContent>
         <Box sx={{ display: 'flex', alignItems: 'center' }}>

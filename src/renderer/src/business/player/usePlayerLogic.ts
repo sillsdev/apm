@@ -70,7 +70,7 @@ export const usePlayerLogic = (props: PlayerLogicProps) => {
 
   useEffect(() => {
     if (allowSegment)
-      if (suggestedSegments) {
+      if (suggestedSegments && segmentsRef.current !== suggestedSegments) {
         segmentsRef.current = suggestedSegments;
         setDefaultSegments(segmentsRef.current);
         onSegment && onSegment(segmentsRef.current, true);

@@ -1,4 +1,5 @@
-import { useContext, useMemo } from 'react';
+import { useContext, useEffect, useMemo, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { shallowEqual, useSelector } from 'react-redux';
 import {
   DiscussionD,
@@ -24,6 +25,8 @@ export default function DiscussionPanel() {
     currentstep,
     setDiscussOpen,
   } = ctx.state;
+  const { pathname } = useLocation();
+  const isDetail = pathname.startsWith('/detail');
   const discussions = useOrbitData<DiscussionD[]>('discussion');
   const mediafiles = useOrbitData<MediaFileD[]>('mediafile');
   const groupmemberships = useOrbitData<GroupMembership[]>('groupmembership');
@@ -31,6 +34,16 @@ export default function DiscussionPanel() {
     discussionListSelector,
     shallowEqual
   );
+  const [windowWidth, setWindowWidth] = useState(
+    typeof window === 'undefined' ? discussionSize.width : window.innerWidth
+  );
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const handleResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+  const panelWidth = Math.min(discussionSize.width, windowWidth);
   const getDiscussionCount = useDiscussionCount({
     mediafiles,
     discussions,
@@ -47,14 +60,25 @@ export default function DiscussionPanel() {
       <Grid
         size={{ xs: 12 }}
         container
-        sx={{ width: discussionSize.width, justifyContent: 'center' }}
+        sx={{
+          width: panelWidth,
+          maxWidth: '100%',
+          justifyContent: 'center',
+        }}
       >
         <Grid container direction="column">
           <DiscussionList onClose={() => setDiscussOpen(false)} />
         </Grid>
       </Grid>
     ) : (
-      <Box sx={{ position: 'fixed', bottom: 10, right: 10, zIndex: 1000 }}>
+      <Box
+        sx={{
+          position: 'fixed',
+          bottom: isDetail ? 50 : 10,
+          right: 10,
+          zIndex: 1000,
+        }}
+      >
         {discussionCount > 0 ? (
           <Badge badgeContent={discussionCount} color="primary">
             <Fab

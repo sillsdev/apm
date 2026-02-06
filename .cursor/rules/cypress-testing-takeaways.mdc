@@ -1,0 +1,41 @@
+---
+description: Cypress component test takeaways for this repo
+alwaysApply: true
+---
+
+# Cypress Component Testing Takeaways
+
+- Avoid stubbing ESM imports in Cypress CT; prefer data-driven setup via providers.
+- Build the full provider stack: `GlobalProvider`, Redux store, `OrbitContext`,
+  and any feature contexts (e.g. `PassageDetailContext`, `UnsavedContext`).
+- For permission logic (`useStepPermissions`), drive outcomes with real mock records and relationships.
+- Localization selectors need `LocalizedStrings` in the correct `strings` slice keys.
+- Use stable DOM selectors (ids/data-cy) for assertions.
+- When testing navigation that uses `usePassageNavigate`, include a `MemoryRouter`
+  - `Routes` and stub `UnsavedContext.checkSavedFn` to run immediately.
+- `nextPasId`/`prevPasId` depend on `section.relationships.passages` and
+  `memory` records; empty relationships mean no neighbors.
+- `WorkflowStepsMobile` renders SVG stages (no visible text nodes). Assert on
+  structure (`svg`, `svg g`) or wrapper labels, not `cy.contains` on step names.
+- `WorkflowStepsMobile` depends on `workflow`/`currentstep` from context; keep
+  defaults intact when overriding to avoid empty steps.
+- For `WorkflowStepsMobile`, set viewport and dispatch a `resize` after mount so
+  the width-driven step list is computed.
+- When testing busy/recording state, assert via `setCurrentStep` calls and snack
+  messages rather than DOM class changes.
+- Pagination needs enough steps and a small viewport to expose `prev`/`next`.
+- Run the component spec and iterate on failures:
+  - `cd src\renderer`
+  - `npm run cy:run-ct -- --spec=**/YourComponent.cy.tsx`
+
+## Example: Minimal Strings Slice
+
+```ts
+const mockStringsReducer = () => ({
+  loaded: true,
+  lang: 'en',
+  passageDetailStepComplete: new LocalizedStrings({
+    en: { title: 'Complete' },
+  }),
+});
+```

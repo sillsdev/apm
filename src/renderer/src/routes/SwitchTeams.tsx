@@ -9,7 +9,6 @@ import {
   FormControlLabel,
   TextField,
   IconButton,
-  useMediaQuery,
 } from '@mui/material';
 import { DialogMode } from '../model';
 import TeamDialog, { ITeamDialog } from '../components/Team/TeamDialog';
@@ -30,7 +29,7 @@ import { TeamProvider } from '../context/TeamContext';
 import { TeamContext } from '../context/TeamContext';
 import { validateEmail } from '../utils/validateEmail';
 import { axiosPost } from '../utils/axios';
-import { LocalKey, localUserKey } from '../utils';
+import { LocalKey, localUserKey, useMobile } from '../utils';
 
 interface ISettingsButtonProps {
   label: string;
@@ -41,7 +40,7 @@ const SettingsButton = ({ label, onOpenSettings }: ISettingsButtonProps) => {
   const theme = useTheme();
   const bgColor = theme.palette.primary.light;
   const contrastColor = theme.palette.getContrastText(bgColor);
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const { isMobileWidth } = useMobile();
 
   return (
     <IconButton
@@ -52,7 +51,7 @@ const SettingsButton = ({ label, onOpenSettings }: ISettingsButtonProps) => {
         onOpenSettings();
       }}
       sx={(theme) => ({
-        color: isMobile ? 'inherit' : theme.palette.primary.light,
+        color: isMobileWidth ? 'inherit' : theme.palette.primary.light,
         transition: 'background-color .2s, color .2s',
         '&:hover': {
           color: contrastColor,
@@ -84,7 +83,7 @@ const TeamCard = ({ label, teamId, name, onOpenSettings }: ITeamCardProps) => {
   const ctx = React.useContext(TeamContext);
   const { isAdmin, teams, personalTeam } = ctx.state;
   const teamRec = teams.find((t) => t.id === teamId);
-  const mobileWidth = useMediaQuery(theme.breakpoints.down('sm'));
+  const { isMobileWidth: mobileWidth } = useMobile();
   // For personal team, always show settings button (user owns it)
   // For other teams, show settings button only if user is admin
   const isPersonalTeam = teamId === personalTeam;

@@ -120,6 +120,9 @@ export const mediaTabSelector = (state: IState) =>
 export const mainSelector = (state: IState) =>
   localStrings(state as IState, { layout: 'main' });
 
+export const mobileSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'mobile' });
+
 export const newProjectSelector = (state: IState) =>
   localStrings(state as IState, { layout: 'newProject' });
 
@@ -200,6 +203,9 @@ export const sharedSelector = (state: IState) =>
 
 export const sharedResSelector = (state: IState) =>
   localStrings(state as IState, { layout: 'sharedResource' });
+
+export const recordButtonSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'recordButton' });
 
 export const recordStepSettingsSelector = (state: IState) =>
   localStrings(state as IState, { layout: 'recordStepSettings' });

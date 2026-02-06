@@ -58,17 +58,20 @@ export function useWaveSurferRegions(
   singleRegionOnly: boolean,
   defaultRegionIndex: number,
   ws: WaveSurfer | null,
+  container: any,
   onRegion: (count: number, newRegion: boolean) => void,
   duration: () => number,
   isNear: (test: number) => boolean,
-  goto: (position: number) => void,
+  goto: (position: number, keepPlayRegion?: boolean) => void,
   progress: () => number,
   isPlaying: () => boolean,
   setPlaying: (playing: boolean) => void,
   onCurrentRegion?: (currentRegion: IRegion | undefined) => void,
   onStartRegion?: (start: number) => void,
+  onRegionPlayEnd?: (region: IRegion) => void,
   onMarkerClick?: (time: number) => void,
-  verses?: string
+  verses?: string,
+  hasSegmentUndo?: boolean
 ) {
   const theme = useTheme();
   const wsRef = useRef<WaveSurfer | null>(ws);
@@ -81,12 +84,15 @@ export function useWaveSurferRegions(
   const resizingRef = useRef(false);
   const loadingRef = useRef(false);
   const playRegionRef = useRef<Region | undefined>(undefined);
+  const playRegionIdRef = useRef<string | undefined>(undefined);
   const paramsRef = useRef<IRegionParams | undefined>(undefined);
   const peaksRef = useRef<Array<number> | undefined>(undefined);
   const lastClickTimeRef = useRef<number>(0);
   const lastClickedRegionRef = useRef<string>(''); //for both clicks and double clicks
   const lastDoubleClickTimeRef = useRef<number>(0);
   const currentRegionOriginalColorRef = useRef<string>(''); // Store the original color of the current region
+  const hasSegmentUndoRef = useRef<boolean | undefined>(hasSegmentUndo);
+  const regionBeforeClickRef = useRef<Region | undefined>(undefined);
 
   // Store finish handler reference for cleanup
   const finishHandlerRef = useRef<(() => void) | undefined>(undefined);
@@ -115,15 +121,36 @@ export function useWaveSurferRegions(
     singleRegionRef.current = singleRegionOnly;
   }, [singleRegionOnly]);
 
+  useEffect(() => {
+    hasSegmentUndoRef.current = hasSegmentUndo;
+  }, [hasSegmentUndo]);
+
+  useEffect(() => {
+    const el = container?.current;
+    if (!el) return;
+
+    const handlePointerDown = () => {
+      regionBeforeClickRef.current = currentRegionRef.current;
+    };
+
+    el.addEventListener('pointerdown', handlePointerDown);
+    return () => {
+      el.removeEventListener('pointerdown', handlePointerDown);
+    };
+  }, [container]);
+
   // Helper to get current time - only called from event handlers, not during render
   const getCurrentTime = () => Date.now();
 
   // handle region clicks with deduplication
   // This is an event handler, not a render function, so Date.now() is safe here
-  const handleRegionClick = (r: Region) => {
+  const handleRegionClick = (r: Region, e: Event) => {
     const currentTime = getCurrentTime();
     const timeSinceLastClick = currentTime - lastClickTimeRef.current;
     const isSameRegion = lastClickedRegionRef.current === r.id;
+    const regionBeforeClick =
+      regionBeforeClickRef.current ?? currentRegionRef.current;
+    const wasCurrentRegion = regionBeforeClick?.id === r.id;
 
     // Prevent duplicate clicks within debounce time if it's the same region
     if (timeSinceLastClick < CLICK_DEBOUNCE_MS && isSameRegion) {
@@ -137,6 +164,10 @@ export function useWaveSurferRegions(
       onMarkerClick && onMarkerClick(r.start);
     } else {
       setCurrentRegion(r);
+      if (!wasCurrentRegion) {
+        goto(r.start);
+        e.stopPropagation();
+      }
     }
   };
 
@@ -203,15 +234,34 @@ export function useWaveSurferRegions(
     if (selfIfAtStart && (numRegions() === 1 || isNear(r.start))) return r;
     return (r as any).attributes?.nextRegion;
   };
-  const playRegion = (r: Region) => {
+  const setPlayRegionTarget = (r: Region | undefined) => {
     playRegionRef.current = r;
-    r.play();
+    playRegionIdRef.current = r?.id;
   };
-  const wsPlayRegion = (r: IRegion) => {
+  const playRegion = (r: Region) => {
+    setPlayRegionTarget(r);
+    if (wsRef.current) {
+      wsRef.current.play(r.start, r.end);
+    } else {
+      r.play();
+    }
+  };
+  const wsPlayRegion = (r: IRegion, startAtCurrent: boolean = false) => {
     updatingRef.current = true;
     const reg = findRegion(r.start, true);
-    if (!isInRegion(reg, ws?.getCurrentTime() ?? progress())) goto(r.start);
-    playRegion(reg);
+    setPlayRegionTarget(reg);
+    const currentTime = ws?.getCurrentTime() ?? progress();
+    const inRegion = isInRegion(reg, currentTime);
+    if (!inRegion) goto(r.start, true);
+    if (wsRef.current) {
+      if (startAtCurrent && inRegion) {
+        wsRef.current.play(currentTime, reg.end);
+      } else {
+        wsRef.current.play(reg.start, reg.end);
+      }
+    } else {
+      playRegion(reg);
+    }
   };
   // Cleanup function to remove all event listeners
   const cleanupEventListeners = () => {
@@ -360,14 +410,24 @@ export function useWaveSurferRegions(
           if (r === loopingRegionRef.current && isPlaying()) {
             r.play();
           }
-        } else if (playRegionRef.current === r) {
+        } else if (
+          playRegionRef.current === r ||
+          playRegionIdRef.current === r.id
+        ) {
           //we just wanted to play this region
           setPlaying(false);
+          goto(r.start);
+          setPlayRegionTarget(undefined);
+          onRegionPlayEnd?.({
+            start: r.start,
+            end: r.end,
+            label: r.content?.textContent || '',
+          });
         }
       });
-      regionsPlugin.on('region-clicked', function (r: Region) {
+      regionsPlugin.on('region-clicked', function (r: Region, e: Event) {
         //do NOT stop propagation here or progress doesn't update
-        handleRegionClick(r);
+        handleRegionClick(r, e);
       });
       regionsPlugin.on('region-double-clicked', function (r: Region, e: Event) {
         e.stopPropagation(); // prevent triggering a dblclick on the waveform
@@ -842,34 +902,36 @@ export function useWaveSurferRegions(
   }
   const wsPrevRegion = () => {
     const r = findPrevRegion(currentRegion());
-    let newPlay = true;
     if (r) {
+      setPlayRegionTarget(r);
       onStartRegion && onStartRegion(r.start);
-      goto(r.start);
+      goto(r.start, true);
       setCurrentRegion(r);
+      playRegion(r);
+      return true;
     } else {
       goto(0);
-      newPlay = false;
+      setPlaying(false);
+      return false;
     }
-    setPlaying(newPlay);
-    return newPlay;
   };
   const wsNextRegion = () => {
     //TT-2825 changing selfIfAtStart to false
     //but I coded that in there for this call, so
     //wonder what case I was handling then????
     const r = findNextRegion(currentRegion(), false);
-    let newPlay = true;
     if (r) {
-      goto(r.start);
+      setPlayRegionTarget(r);
+      goto(r.start, true);
       onStartRegion && onStartRegion(r.start);
       setCurrentRegion(r);
+      playRegion(r);
+      return true;
     } else {
       goto(duration());
-      newPlay = false;
+      setPlaying(false);
+      return false;
     }
-    setPlaying(newPlay);
-    return newPlay;
   };
 
   const wsGetRegions = () => {
@@ -977,7 +1039,7 @@ export function useWaveSurferRegions(
     return Math.round(n * 10) / 10;
   }
   function resetPlayingRegion() {
-    playRegionRef.current = undefined;
+    setPlayRegionTarget(undefined);
   }
   function justPlayRegion(progress: number) {
     if (

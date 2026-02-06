@@ -279,10 +279,12 @@ const initialState = {
 	"community": new LocalizedStrings({
 		"en": {
 			"addSpeaker": "Add '{0}'",
+			"autoSegment": "Use {0} for autosegmentation, or tap in the waveform and use + for manual segmentation",
 			"backTranslationComplete": "Version {0}: Back translation: {1}",
 			"deleteItem": "Delete Item",
 			"finished": "finished",
 			"later": "Do later",
+			"listen": "Use {0} to listen to the passage",
 			"loading": "Loading:",
 			"none": "none",
 			"noVoiceCreation": "New Voice change samples must be created before a recording is waiting to be saved.",
@@ -910,6 +912,17 @@ const initialState = {
 			"upload": "Upload",
 		}
 	}),
+	"mobile": new LocalizedStrings({
+		"en": {
+			"addSegment": "Add segment boundary",
+			"next": "Next",
+			"previous": "Previous",
+			"removeSegment": "Remove next segment boundary",
+			"resetBT": "Reset back translation",
+			"restoreBoundaries": "Restore original segment boundaries",
+			"segment": "Segment: {0}",
+		}
+	}),
 	"newProject": new LocalizedStrings({
 		"en": {
 			"audioProduct": "Audio Product",
@@ -1316,6 +1329,13 @@ const initialState = {
 			"terms": "Terms of use",
 			"title": "Title",
 			"versions": "Versions",
+		}
+	}),
+	"recordButton": new LocalizedStrings({
+		"en": {
+			"record": "RECORD",
+			"rerecord": "RERECORD",
+			"resume": "RESUME",
 		}
 	}),
 	"recordStepSettings": new LocalizedStrings({
@@ -1952,6 +1972,7 @@ const initialState = {
 			"recognizeSpeechSettings": "Auto Transcription Settings",
 			"record": "Record [{0}]",
 			"reduceNoise": "Reduce Noise",
+			"reset": "Reset",
 			"resume": "Resume",
 			"saveSegments": "Save Segments",
 			"seconds": "seconds",
@@ -2038,6 +2059,7 @@ const localizationReducer = function (state = initialState, action: any): ILocal
 				"mediaTab" : new LocalizedStrings(action.payload.data.mediaTab),
 				"mediaTitle" : new LocalizedStrings(action.payload.data.mediaTitle),
 				"mediaUpload" : new LocalizedStrings(action.payload.data.mediaUpload),
+				"mobile" : new LocalizedStrings(action.payload.data.mobile),
 				"newProject" : new LocalizedStrings(action.payload.data.newProject),
 				"passageChooser" : new LocalizedStrings(action.payload.data.passageChooser),
 				"passageDetailArtifacts" : new LocalizedStrings(action.payload.data.passageDetailArtifacts),
@@ -2059,6 +2081,7 @@ const localizationReducer = function (state = initialState, action: any): ILocal
 				"publishLevel" : new LocalizedStrings(action.payload.data.publishLevel),
 				"publishTo" : new LocalizedStrings(action.payload.data.publishTo),
 				"resource" : new LocalizedStrings(action.payload.data.resource),
+				"recordButton" : new LocalizedStrings(action.payload.data.recordButton),
 				"recordStepSettings" : new LocalizedStrings(action.payload.data.recordStepSettings),
 				"scriptureTable" : new LocalizedStrings(action.payload.data.scriptureTable),
 				"scriptureTableFilter" : new LocalizedStrings(action.payload.data.scriptureTableFilter),

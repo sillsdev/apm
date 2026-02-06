@@ -1,8 +1,8 @@
 import { useState, useEffect, useContext, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useGlobal } from '../context/useGlobal';
-import { LocalKey, localUserKey, useHome } from '../utils';
-import { Box, Grid, useMediaQuery, useTheme } from '@mui/material';
+import { LocalKey, localUserKey, useHome, useMobile } from '../utils';
+import { Box, Grid } from '@mui/material';
 import AppHead from '../components/App/AppHead';
 import { TeamProvider } from '../context/TeamContext';
 import { TeamProjects } from '../components/Team';
@@ -22,12 +22,10 @@ export const TeamScreen = () => {
   const [memory] = useGlobal('memory');
   const [plan] = useGlobal('plan'); //verified this is not used in a function 2/18/25
   const [home, setHome] = useGlobal('home'); //verified this is not used in a function 2/18/25
-  const [mobileView] = useGlobal('mobileView');
   const [view, setView] = useState('');
   const { startClear } = useContext(UnsavedContext).state;
   const { resetProject } = useHome();
-  const theme = useTheme();
-  const isMobileWidth = useMediaQuery(theme.breakpoints.down('sm'));
+  const { isMobile } = useMobile();
   const loaded = useRef(false);
 
   useEffect(() => {
@@ -75,7 +73,7 @@ export const TeamScreen = () => {
     return <StickyRedirect to={view} />;
   }
 
-  return !mobileView && !isMobileWidth ? (
+  return !isMobile ? (
     <Box sx={{ width: '100%' }}>
       <TeamProvider>
         <>

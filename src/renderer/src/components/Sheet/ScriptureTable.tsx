@@ -41,7 +41,7 @@ import {
 import * as actions from '../../store';
 import Memory from '@orbit/memory';
 import JSONAPISource from '@orbit/jsonapi';
-import { Badge, Box, useMediaQuery, useTheme } from '@mui/material';
+import { Badge, Box } from '@mui/material';
 import { useSnackBar } from '../../hoc/SnackBar';
 import PlanSheet, { ICell, ICellChange } from './PlanSheet';
 import {
@@ -71,6 +71,7 @@ import {
   useDataChanges,
   useWaitForRemoteQueue,
   useCanPublish,
+  useMobile,
 } from '../../utils';
 import {
   isSectionRow,
@@ -184,9 +185,7 @@ export function ScriptureTable(props: IProps) {
     dispatch(actions.fetchBooks(lang) as any);
   const { prjId } = useParams();
   const [width, setWidth] = useState(window.innerWidth);
-  const theme = useTheme();
-  const mobileWidth = useMediaQuery(theme.breakpoints.down('sm'));
-  const [mobileView] = useGlobal('mobileView');
+  const { isMobile } = useMobile();
   const [organization] = useGlobal('organization');
   const [project] = useGlobal('project'); //will be constant here
   const [plan] = useGlobal('plan'); //will be constant here
@@ -2024,7 +2023,7 @@ export function ScriptureTable(props: IProps) {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-      {mobileView || mobileWidth ? (
+      {isMobile ? (
         <>
           <PlanBar
             publishingOn={publishingOn}

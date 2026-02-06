@@ -159,6 +159,17 @@ const UnsavedProvider = (props: PropsWithChildren) => {
     saveErr.current = '';
   };
 
+  const forceClearPending = () => {
+    if (Object.keys(toolsChangedRef.current).length === 0) return;
+    toolsChangedRef.current = {};
+    setToolsChanged({});
+    setChanged(false);
+    setBusy(false);
+    setComplete(0);
+    saveErr.current = '';
+    setSaveResult('');
+  };
+
   const saveError = () => saveErr.current || '';
 
   const SaveComplete = () =>
@@ -291,6 +302,7 @@ const UnsavedProvider = (props: PropsWithChildren) => {
     saveConfirm.current = undefined;
     setAlertOpen(false);
     startClear();
+    forceClearPending();
     finishConfirmed(savedMethod, 18);
   };
 

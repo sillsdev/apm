@@ -7,6 +7,7 @@ import { IWsAudioPlayerSegmentStrings } from '../model';
 import { IoMdBarcode } from 'react-icons/io';
 import type { IconBaseProps } from 'react-icons';
 import RemoveOneIcon from '@mui/icons-material/Clear';
+import AltRemoveIcon from '@mui/icons-material/Remove';
 import SettingsIcon from '@mui/icons-material/Settings';
 import ClearIcon from '@mui/icons-material/Delete';
 import { HotKeyContext } from '../context/HotKeyContext';
@@ -16,6 +17,9 @@ import { useSelector } from 'react-redux';
 import WSSegmentParameters from './WSSegmentParameters';
 import { useSnackBar } from '../hoc/SnackBar';
 import { audioPlayerSegmentSelector } from '../selector';
+import { useGlobal } from '../context/useGlobal';
+import { useMobile } from '../utils';
+import HighlightButton from './PassageDetail/mobile/HighlightButton';
 
 const Barcode = IoMdBarcode as unknown as React.FC<IconBaseProps>;
 
@@ -26,6 +30,9 @@ interface IProps {
   params?: IRegionParams;
   playing: boolean;
   canSetDefault?: boolean;
+  highlightAutoSegment?: boolean;
+  onAutoSegment?: () => void;
+  altRemove?: boolean;
   onSplit: (split: IRegionChange) => void;
   onParamChange?: (params: IRegionParams, teamDefault: boolean) => void;
   wsAutoSegment?: (loop: boolean | undefined, params: IRegionParams) => number;
@@ -42,7 +49,10 @@ function WSAudioPlayerSegment(props: IProps) {
     currentNumRegions,
     params,
     playing,
+    altRemove,
     canSetDefault,
+    highlightAutoSegment,
+    onAutoSegment,
     onSplit,
     onParamChange,
     wsAutoSegment,
@@ -61,6 +71,8 @@ function WSAudioPlayerSegment(props: IProps) {
   });
   const busyRef = useRef(false);
   const [showSettings, setShowSettings] = useState(false);
+  const { isMobile, isMobileView } = useMobile();
+  const [isDeveloper] = useGlobal('developer');
   const { subscribe, unsubscribe, localizeHotKey } =
     useContext(HotKeyContext).state;
   const { showMessage } = useSnackBar();
@@ -104,6 +116,7 @@ function WSAudioPlayerSegment(props: IProps) {
     const numRegions = (wsAutoSegment && wsAutoSegment(loop, segParams)) ?? 0;
     showMessage(t.segmentsCreated.replace('{0}', numRegions.toString()));
     setSegmenting(false);
+    onAutoSegment?.();
     return true;
   };
   const handleShowSettings = () => {
@@ -151,26 +164,40 @@ function WSAudioPlayerSegment(props: IProps) {
                 title={t.autoSegment.replace('[{0}]', '')}
               >
                 <span>
-                  <IconButton
-                    id="wsSegment"
-                    onClick={handleAutoSegment}
-                    disabled={!ready || playing || busyRef.current}
-                  >
-                    <Barcode />
-                  </IconButton>
+                  {highlightAutoSegment ? (
+                    <HighlightButton
+                      id="wsSegment"
+                      ariaLabel={t.autoSegment.replace('[{0}]', '')}
+                      onClick={handleAutoSegment}
+                      disabled={!ready || playing || busyRef.current}
+                      highlight={true}
+                    >
+                      <Barcode />
+                    </HighlightButton>
+                  ) : (
+                    <IconButton
+                      id="wsSegment"
+                      onClick={handleAutoSegment}
+                      disabled={!ready || playing || busyRef.current}
+                    >
+                      <Barcode />
+                    </IconButton>
+                  )}
                 </span>
               </LightTooltip>
-              <LightTooltip id="wsSettingsTip" title={t.segmentSettings}>
-                <span>
-                  <IconButton
-                    id="wsSegmentSettings"
-                    onClick={handleShowSettings}
-                    disabled={playing}
-                  >
-                    <SettingsIcon fontSize="small" />
-                  </IconButton>
-                </span>
-              </LightTooltip>
+              {(!isMobileView || isDeveloper) && (
+                <LightTooltip id="wsSettingsTip" title={t.segmentSettings}>
+                  <span>
+                    <IconButton
+                      id="wsSegmentSettings"
+                      onClick={handleShowSettings}
+                      disabled={playing}
+                    >
+                      <SettingsIcon fontSize="small" />
+                    </IconButton>
+                  </span>
+                </LightTooltip>
+              )}
               <WSSegmentParameters
                 loop={loop}
                 params={segParams}
@@ -184,7 +211,6 @@ function WSAudioPlayerSegment(props: IProps) {
               />
             </>
           )}
-
           <LightTooltip
             id="wsSplitTip"
             title={t.splitSegment.replace('{0}', localizeHotKey(ADDREMSEG_KEY))}
@@ -209,21 +235,25 @@ function WSAudioPlayerSegment(props: IProps) {
                 onClick={handleRemoveNextSplit}
                 disabled={!ready || busyRef.current || currentNumRegions === 0}
               >
-                <RemoveOneIcon />
+                {altRemove ? <AltRemoveIcon /> : <RemoveOneIcon />}
               </IconButton>
             </span>
           </LightTooltip>
-          <LightTooltip id="wsDeleteTip" title={t.removeAll}>
-            <span>
-              <IconButton
-                id="wsSegmentClear"
-                onClick={handleClearSegments}
-                disabled={!ready || busyRef.current || currentNumRegions === 0}
-              >
-                <ClearIcon fontSize="small" />
-              </IconButton>
-            </span>
-          </LightTooltip>
+          {(!isMobile || isDeveloper) && (
+            <LightTooltip id="wsDeleteTip" title={t.removeAll}>
+              <span>
+                <IconButton
+                  id="wsSegmentClear"
+                  onClick={handleClearSegments}
+                  disabled={
+                    !ready || busyRef.current || currentNumRegions === 0
+                  }
+                >
+                  <ClearIcon fontSize="small" />
+                </IconButton>
+              </span>
+            </LightTooltip>
+          )}
         </Grid>
       </ToolbarGrid>
     </GrowingDiv>
