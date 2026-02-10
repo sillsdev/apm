@@ -1109,20 +1109,9 @@ function WSAudioPlayer(props: IProps) {
     return () => {
       controlsRef.current = null;
     };
-  }, [
-    controlsRef,
-    allowSegment,
-    handleAddRegion,
-    handleRemoveSplitRegion,
-    togglePlayStatus,
-    handleRecorder,
-    handlePrevRegion,
-    handleNextRegion,
-    handleUndo,
-    handleClearRegions,
-    handleDelete,
-    confirmedDelete,
-  ]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [controlsRef, allowSegment]);
+
   const doingProcess = (inprogress: boolean, msg?: string) => {
     setProcessMsg(msg ?? t.aiInProgress);
     setWaitingForAI(inprogress);

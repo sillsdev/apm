@@ -189,7 +189,6 @@ export const HeadStatus = (props: IProps) => {
 
   useEffect(() => {
     setUpdateTipOpen(pathname === '/');
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname]);
 
   const handleUpdateOpen = () => {
