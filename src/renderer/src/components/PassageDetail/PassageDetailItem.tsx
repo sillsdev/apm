@@ -77,6 +77,12 @@ enum Activity {
   Next,
 }
 
+enum WhichPlay {
+  None,
+  Top,
+  Bottom,
+}
+
 const PlayerRow = styled(Box)<BoxProps>(() => ({
   width: '100%',
   '& audio': {
@@ -187,6 +193,7 @@ export function PassageDetailItem(props: IProps) {
   const [currentVersion, setCurrentVersion] = useState(1);
   const [segString, setSegString] = useState('{}');
   const [verses, setVerses] = useState('');
+  const [whichPlay, setWhichPlay] = useState<WhichPlay>(WhichPlay.None);
   const cancelled = useRef(false);
   const { canDoSectionStep } = useStepPermissions();
   const { getOrgDefault, setOrgDefault, canSetOrgDefault } = useOrgDefaults();
@@ -575,6 +582,8 @@ export function PassageDetailItem(props: IProps) {
   }, [playerPosition]);
 
   useEffect(() => {
+    if (!playerControlsRef.current?.isPlaying() && whichPlay !== WhichPlay.None)
+      setWhichPlay(WhichPlay.None);
     if (
       activityRef.current === Activity.Preview &&
       previewStartedRef.current &&
@@ -586,7 +595,7 @@ export function PassageDetailItem(props: IProps) {
       setPlayerPosition(0);
       setActivity(Activity.Segment);
     }
-  }, [activity, playing, playerDuration, playerProgress]);
+  }, [activity, playing, playerDuration, playerProgress, whichPlay]);
 
   const renderMobileRecordContent = () => {
     if (discussOpen && !showSideBySide) return null;
@@ -603,10 +612,15 @@ export function PassageDetailItem(props: IProps) {
             ariaLabel={playing ? 'Pause' : 'Play'}
             onClick={() => {
               setActivity(Activity.Preview);
+              setWhichPlay(WhichPlay.Top);
               if (!playing) previewStartedRef.current = true;
               playerControlsRef.current?.togglePlay();
             }}
-            disabled={playerDuration === 0 || isRecording()}
+            disabled={
+              playerDuration === 0 ||
+              isRecording() ||
+              whichPlay === WhichPlay.Bottom
+            }
             highlight={activityRef.current === Activity.Preview}
             sx={{ py: '2px', px: '4px' }}
           >
@@ -788,9 +802,10 @@ export function PassageDetailItem(props: IProps) {
                 ariaLabel="Listen"
                 onClick={() => {
                   setActivity(Activity.Listen);
+                  setWhichPlay(WhichPlay.Bottom);
                   playerControlsRef.current?.togglePlay();
                 }}
-                disabled={isRecording()}
+                disabled={isRecording() || whichPlay === WhichPlay.Top}
                 highlight={activityRef.current === Activity.Listen}
               >
                 {playerControlsRef.current?.isPlaying() ? (
