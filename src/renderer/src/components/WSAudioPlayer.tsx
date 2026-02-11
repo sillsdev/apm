@@ -2107,7 +2107,7 @@ function WSAudioPlayer(props: IProps) {
                     )}
                     <GrowingSpacer />
                     {!onSaveProgress && <>{metaData}</>}
-                    {isMobileView && !hideSegmentControls && (
+                    {allowSegment && !hideSegmentControls && hideToolbar && (
                       <AltButton
                         sx={smallButtonProps}
                         onClick={handleClearRegions}
