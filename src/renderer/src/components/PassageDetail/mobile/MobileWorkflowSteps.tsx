@@ -117,7 +117,7 @@ export default function MobileWorkflowSteps() {
               onClick={() => setTipOpen(true)}
               data-cy="workflow-step-tip"
               sx={{ borderRadius: 1 }}
-              area-label={currentTip}
+              aria-label={currentTip}
             >
               {getWfLabel(currentLabel) + '\u00A0'}
               <InfoIcon color={'info'} fontSize="small" />
