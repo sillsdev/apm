@@ -1587,7 +1587,7 @@ function WSAudioPlayer(props: IProps) {
                         horizontal: 'right',
                       }}
                     >
-                      {allowZoom && (
+                      {allowZoom && !hideZoom && (
                         <MenuItem
                           onClick={(e) => {
                             //don't close menu if zoom in or out button is clicked
@@ -1601,8 +1601,12 @@ function WSAudioPlayer(props: IProps) {
                             handleMoreMenuClose();
                           }}
                         >
-                          {/* Additional menu content or controls for zoom could go here */}
-                          {t.zoomControls}
+                          <WSAudioPlayerZoom
+                            ready={ready && !recording && !waitingForAI}
+                            fillPx={recording ? 100 : wsFillPx()}
+                            curPx={pxPerSec}
+                            onZoom={wsZoom}
+                          />
                         </MenuItem>
                       )}
                       {/* You can add more MenuItems here as needed */}
