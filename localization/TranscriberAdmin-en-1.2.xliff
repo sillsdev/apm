@@ -5274,7 +5274,7 @@
                <context context-type="sourcefile">SegmentControlIsMobile.tsx</context>
             </context-group>
          </trans-unit>
-         
+
          <trans-unit id="newProject.audioProduct">
             <source>Audio Product</source>
             <target/>
@@ -10626,8 +10626,22 @@
                <context context-type="sourcefile">passageDetail.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="workflowSteps.backTranslationTip">
+            <source>Record a back translation</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">passageDetail.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="workflowSteps.communityTest1">
             <source>Community Test 1</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">passageDetail.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="workflowSteps.communityTest1Tip">
+            <source>Ask community test questions and record responses</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">passageDetail.tsx</context>
@@ -10640,8 +10654,22 @@
                <context context-type="sourcefile">passageDetail.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="workflowSteps.communityTest2Tip">
+            <source>Ask community test questions and record responses</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">passageDetail.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="workflowSteps.communityTesting">
             <source>Community Test</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">passageDetail.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="workflowSteps.communityTestingTip">
+            <source>Ask community test questions and record responses</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">passageDetail.tsx</context>
@@ -10654,6 +10682,13 @@
                <context context-type="sourcefile">passageDetail.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="workflowSteps.consultantCheckTip">
+            <source>The consultant listens to recorded content and asks questions in discussions.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">passageDetail.tsx</context>
+            </context-group>
+         </trans-unit>
       	<trans-unit id="workflowSteps.consultantCheck1">
       		<source>First Consultant Check</source>
       		<target/>
@@ -10661,6 +10696,13 @@
       			<context context-type="sourcefile">passageDetail.tsx</context>
       		</context-group>
       	</trans-unit>
+         <trans-unit id="workflowSteps.consultantCheck1Tip">
+            <source>The consultant listens to recorded content and asks questions in discussions.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">passageDetail.tsx</context>
+            </context-group>
+         </trans-unit>
       	<trans-unit id="workflowSteps.consultantCheck2">
       		<source>Second Consultant Check</source>
       		<target/>
@@ -10668,6 +10710,13 @@
       			<context context-type="sourcefile">passageDetail.tsx</context>
       		</context-group>
       	</trans-unit>
+         <trans-unit id="workflowSteps.consultantCheck2Tip">
+            <source>The consultant listens to recorded content and asks questions in discussions.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">passageDetail.tsx</context>
+            </context-group>
+         </trans-unit>
       	<trans-unit id="workflowSteps.done">
       		<source>Done</source>
       		<target/>
@@ -10675,8 +10724,22 @@
       			<context context-type="sourcefile">passageDetail.tsx</context>
       		</context-group>
       	</trans-unit>
+         <trans-unit id="workflowSteps.doneTip">
+            <source>All steps have been completed for this passage or note</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">passageDetail.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="workflowSteps.export">
             <source>Export</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">passageDetail.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="workflowSteps.exportTip">
+            <source>Export work done to this point if desired.</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">passageDetail.tsx</context>
@@ -10689,8 +10752,22 @@
                <context context-type="sourcefile">passageDetail.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="workflowSteps.finalRecordingTip">
+            <source>Make a final recording in a studio if desired.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">passageDetail.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="workflowSteps.finalReview">
             <source>Final Audio Review</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">passageDetail.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="workflowSteps.finalReviewTip">
+            <source>Listen one last time to the results to see if any more changes are needed.</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">passageDetail.tsx</context>
@@ -10703,8 +10780,22 @@
       			<context context-type="sourcefile">passageDetail.tsx</context>
       		</context-group>
       	</trans-unit>
+         <trans-unit id="workflowSteps.finalReviewTextTip">
+            <source>Read through the transcription one last time to see if any additional changes are needed.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">passageDetail.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="workflowSteps.internalize">
             <source>Internalize</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">passageDetail.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="workflowSteps.internalizeTip">
+            <source>Review the resources to become able to tell the passage from memory in the target languages.</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">passageDetail.tsx</context>
@@ -10717,6 +10808,13 @@
       			<context context-type="sourcefile">passageDetail.tsx</context>
       		</context-group>
       	</trans-unit>
+         <trans-unit id="workflowSteps.paratextConsultantCheckTip">
+            <source>Review the text in another program with more analysis resources.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">passageDetail.tsx</context>
+            </context-group>
+         </trans-unit>
       	<trans-unit id="workflowSteps.paratextPeerReview">
       		<source>Peer Review in {0}</source>
       		<target/>
@@ -10724,8 +10822,22 @@
       			<context context-type="sourcefile">passageDetail.tsx</context>
       		</context-group>
       	</trans-unit>
+         <trans-unit id="workflowSteps.paratextPeerReviewTip">
+            <source>Team reviews the text in another program with more analysis resources.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">passageDetail.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="workflowSteps.paratextSync">
             <source>Sync to {0}</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">passageDetail.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="workflowSteps.paratextSyncTip">
+            <source>Sync text to another text translation tool.</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">passageDetail.tsx</context>
@@ -10738,8 +10850,22 @@
                <context context-type="sourcefile">passageDetail.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="workflowSteps.peerReviewTip">
+            <source>Peer review content to this point.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">passageDetail.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="workflowSteps.phraseBackTranslation">
             <source>Phrase Back Translate</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">passageDetail.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="workflowSteps.phraseBackTranslationTip">
+            <source>Record a back translation of each phrase of the passage.</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">passageDetail.tsx</context>
@@ -10752,8 +10878,22 @@
                <context context-type="sourcefile">passageDetail.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="workflowSteps.pBTTranscribeTip">
+            <source>Transcribe each of the back translated phrases.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">passageDetail.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="workflowSteps.pBTParatextSync">
             <source>Phrase BT {0}</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">passageDetail.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="workflowSteps.pBTParatextSyncTip">
+            <source>Synchronize the back translated text to another tool for analysis and review.</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">passageDetail.tsx</context>
@@ -10766,8 +10906,22 @@
                <context context-type="sourcefile">passageDetail.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="workflowSteps.preliminaryApprovalTip">
+            <source>Get preliminary approval.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">passageDetail.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="workflowSteps.record">
             <source>Record</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">passageDetail.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="workflowSteps.recordTip">
+            <source>Record the passage.</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">passageDetail.tsx</context>
@@ -10780,6 +10934,13 @@
       			<context context-type="sourcefile">passageDetail.tsx</context>
       		</context-group>
       	</trans-unit>
+         <trans-unit id="workflowSteps.retellBackTranslationTip">
+            <source>Retell the entire passage in the language understood by the consultant.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">passageDetail.tsx</context>
+            </context-group>
+         </trans-unit>
       	<trans-unit id="workflowSteps.retellBTTranscribe">
       		<source>Retell BT Transcribe</source>
       		<target/>
@@ -10787,6 +10948,13 @@
       			<context context-type="sourcefile">passageDetail.tsx</context>
       		</context-group>
       	</trans-unit>
+         <trans-unit id="workflowSteps.retellBTTranscribeTip">
+            <source>Transcribe the recording of the text being retold in the language of the consultant.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">passageDetail.tsx</context>
+            </context-group>
+         </trans-unit>
       	<trans-unit id="workflowSteps.review">
       		<source>Review Transcription</source>
       		<target/>
@@ -10794,6 +10962,13 @@
       			<context context-type="sourcefile">passageDetail.tsx</context>
       		</context-group>
       	</trans-unit>
+         <trans-unit id="workflowSteps.reviewTip">
+            <source>Review the transcription to make sure it is accurate.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">passageDetail.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="workflowSteps.saveFirst">
             <source>Save before changing step?</source>
             <target/>
@@ -10808,6 +10983,13 @@
                <context context-type="sourcefile">passageDetail.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="workflowSteps.teamCheckTip">
+            <source>Check over the work of another sub team in the translation project.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">passageDetail.tsx</context>
+            </context-group>
+         </trans-unit>
       	<trans-unit id="workflowSteps.termVerify">
       		<source>Term Verify</source>
       		<target/>
@@ -10815,6 +10997,13 @@
       			<context context-type="sourcefile">passageDetail.tsx</context>
       		</context-group>
       	</trans-unit>
+         <trans-unit id="workflowSteps.termVerifyTip">
+            <source>Make recordings of how terms contained in the passage are being rendered.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">passageDetail.tsx</context>
+            </context-group>
+         </trans-unit>
       	<trans-unit id="workflowSteps.teamReview">
       		<source>Term Review</source>
       		<target/>
@@ -10822,8 +11011,22 @@
       			<context context-type="sourcefile">passageDetail.tsx</context>
       		</context-group>
       	</trans-unit>
+         <trans-unit id="workflowSteps.teamReviewTip">
+            <source>Review how terms were rendered before and how they are rendered this time.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">passageDetail.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="workflowSteps.transcribe">
             <source>Transcribe</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">passageDetail.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="workflowSteps.transcribeTip">
+            <source>Transcribe the recording.</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">passageDetail.tsx</context>
@@ -10843,8 +11046,22 @@
                <context context-type="sourcefile">passageDetail.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="workflowSteps.markVersesTip">
+            <source>Listen to the recording and mark where the verse boundaries occur.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">passageDetail.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="workflowSteps.wholeBackTranslate">
             <source>Whole Back Translate</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">passageDetail.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="workflowSteps.wholeBackTranslateTip">
+            <source>Record the back translation of the entire passage in the language of the consultant.</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">passageDetail.tsx</context>
@@ -10857,6 +11074,13 @@
                <context context-type="sourcefile">passageDetail.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="workflowSteps.wholeBackTranslationTip">
+            <source>Record the back translation of the entire passage in the language of the consultant.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">passageDetail.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="workflowSteps.wBTTranscribe">
             <source>Whole BT Transcribe</source>
             <target/>
@@ -10864,8 +11088,22 @@
                <context context-type="sourcefile">passageDetail.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="workflowSteps.wBTTranscribeTip">
+            <source>Transcribe the recording of the passage in the language of the consultant.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">passageDetail.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="workflowSteps.wBTParatextSync">
             <source>Whole BT {0}</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">passageDetail.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="workflowSteps.wBTParatextSyncTip">
+            <source>Sync transcription of the back translation to another tool for analysis and review.</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">passageDetail.tsx</context>

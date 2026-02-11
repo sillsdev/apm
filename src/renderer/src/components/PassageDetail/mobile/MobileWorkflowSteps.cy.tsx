@@ -72,6 +72,7 @@ const createInitialState = (
 const mockSharedStrings = new LocalizedStrings({
   en: {
     wait: 'Please wait',
+    close: 'Close',
   },
 });
 
@@ -79,6 +80,7 @@ const mockWorkflowStepsStrings = new LocalizedStrings({
   en: {
     record: 'Record',
     review: 'Review',
+    recordTip: 'Record tip',
   },
 });
 
@@ -106,28 +108,38 @@ const createPassageDetailState = (
     currentstep: 'step-1',
     recording: false,
     commentRecording: false,
+    stepComplete: () => false,
     setCurrentStep: cy.stub(),
     ...overrides,
   }) as ICtxState;
 
 const mountMobileWorkflowSteps = ({
   currentstep = 'step-1',
+  workflow,
+  completedStepIds = [],
   remoteBusy = false,
   recording = false,
   commentRecording = false,
 }: {
   currentstep?: string;
+  workflow?: ICtxState['workflow'];
+  completedStepIds?: string[];
   remoteBusy?: boolean;
   recording?: boolean;
   commentRecording?: boolean;
 } = {}) => {
   const setCurrentStep = cy.stub().as('setCurrentStep');
-  const ctxState = createPassageDetailState({
+  const ctxOverrides: Partial<ICtxState> = {
     currentstep,
     recording,
     commentRecording,
     setCurrentStep,
-  });
+    stepComplete: (id: string) => completedStepIds.includes(id),
+  };
+  if (workflow) {
+    ctxOverrides.workflow = workflow;
+  }
+  const ctxState = createPassageDetailState(ctxOverrides);
   const initialState = createInitialState({ remoteBusy });
 
   cy.mount(
@@ -151,6 +163,38 @@ describe('MobileWorkflowSteps', () => {
 
     cy.get('[data-cy="workflow-step"]').should('have.length', 2);
     cy.get('[data-cy="workflow-step-label"]').should('contain.text', 'Record');
+  });
+
+  it('shows current, complete, and incomplete step colors', () => {
+    mountMobileWorkflowSteps({
+      workflow: [
+        { id: 'step-1', label: 'Record' },
+        { id: 'step-2', label: 'Review' },
+        { id: 'step-3', label: 'Publish' },
+      ],
+      completedStepIds: ['step-2'],
+    });
+
+    cy.get('[data-cy="workflow-step"]')
+      .eq(0)
+      .should('have.css', 'background-color', 'rgb(97, 97, 97)');
+    cy.get('[data-cy="workflow-step"]')
+      .eq(1)
+      .should('have.css', 'background-color', 'rgb(189, 189, 189)');
+    cy.get('[data-cy="workflow-step"]')
+      .eq(2)
+      .should('have.css', 'background-color', 'rgb(238, 238, 238)');
+  });
+
+  it('shows a tip dialog for the current step', () => {
+    mountMobileWorkflowSteps();
+
+    cy.get('[data-cy="workflow-step-tip"]').click();
+
+    cy.get('[role="dialog"]').should('be.visible');
+    cy.contains('Record tip').should('be.visible');
+    cy.contains('Close').click();
+    cy.get('[role="dialog"]').should('not.exist');
   });
 
   it('selects a different step when clicked', () => {
