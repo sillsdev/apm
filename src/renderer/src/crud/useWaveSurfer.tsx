@@ -188,6 +188,7 @@ export function useWaveSurfer(
     currentRegion,
     wsSetRegionColor,
     wsRemoveCurrentRegion,
+    prepareForDestroy,
   } = useWaveSurferRegions(
     singleRegionOnly,
     currentSegmentIndex ?? -1,
@@ -268,7 +269,6 @@ export function useWaveSurfer(
       }
 
       loadingRef.current = false;
-
       if (!loadRequests.current) {
         if (!regionsLoadedRef.current) {
           //we need to call this even if undefined to setup regions variables
@@ -291,11 +291,12 @@ export function useWaveSurfer(
     regionsLoadedRef.current = false;
     if (wavesurfer) {
       wavesurfer.on('ready', handleReady);
+      //this is received way more times than expected
       wavesurfer.on('destroy', function () {
-        //this is received way more times than expected
-        wavesurferRef.current = null;
+        prepareForDestroy();
         //prevent region-removed messages from the destroy
         Regions?.unAll();
+        wavesurferRef.current = null;
       });
 
       wavesurfer.on('finish', function () {
@@ -335,6 +336,7 @@ export function useWaveSurfer(
   useEffect(() => {
     // Removes events, elements and disconnects Web Audio nodes on component unmount
     return () => {
+      prepareForDestroy();
       blobToLoad.current = undefined;
 
       if (wavesurferRef.current) {
@@ -384,9 +386,8 @@ export function useWaveSurfer(
       setUndoBuffer(copyOriginal());
     } else setUndoBuffer(undefined);
     onCanUndo(!preventUndo);
-    clearRegions();
+    clearRegions(false, preventUndo);
     wsGoto(0);
-
     loadBlob();
   };
 

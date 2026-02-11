@@ -83,6 +83,7 @@ export function useWaveSurferRegions(
   const updatingRef = useRef(false);
   const resizingRef = useRef(false);
   const loadingRef = useRef(false);
+  const destroyingRef = useRef(false);
   const playRegionRef = useRef<Region | undefined>(undefined);
   const playRegionIdRef = useRef<string | undefined>(undefined);
   const paramsRef = useRef<IRegionParams | undefined>(undefined);
@@ -296,6 +297,7 @@ export function useWaveSurferRegions(
     }
     if (ws && regionsPlugin) {
       // Clean up existing listeners before setting up new ones
+      destroyingRef.current = false;
       cleanupEventListeners();
 
       wsRef.current = ws;
@@ -336,7 +338,7 @@ export function useWaveSurferRegions(
           ra.attributes.nextRegion.attributes.prevRegion =
             ra.attributes?.prevRegion;
 
-        if (wsRef.current && !loadingRef.current) {
+        if (wsRef.current && !loadingRef.current && !destroyingRef.current) {
           // wait for it to be removed from this list
           waitForIt(
             'region removed',
@@ -344,6 +346,7 @@ export function useWaveSurferRegions(
             () => false,
             200
           ).then(() => {
+            if (destroyingRef.current) return;
             onRegion(numRegions(), true);
             setCurrentRegion(findRegion(progress(), true));
           });
@@ -723,6 +726,7 @@ export function useWaveSurferRegions(
     currentRegionRef.current = undefined;
     loopingRegionRef.current = undefined;
     loadingRef.current = false;
+
     if (!quietly) onRegion(0, true);
     return savedMarkers;
   }
@@ -757,10 +761,6 @@ export function useWaveSurferRegions(
       const r = Regions()?.addRegion(region);
       region.id = r?.id;
     });
-    console.log('loadRegions', regarray.length, numRegions());
-    if (numRegions() !== regarray.length) {
-      console.log('wHY NOT');
-    }
     setPrevNext(regarray.map((r: any) => r.id));
     onRegion(regarray.length, newRegions);
     onRegionGoTo(regarray[defaultRegionIndex]?.start ?? 0);
@@ -1065,6 +1065,10 @@ export function useWaveSurferRegions(
     lastClickedRegionRef.current = '';
     lastDoubleClickTimeRef.current = 0;
   };
+  const prepareForDestroy = () => {
+    destroyingRef.current = true;
+  };
+
   return {
     setupRegions,
     wsAutoSegment,
@@ -1087,5 +1091,6 @@ export function useWaveSurferRegions(
     currentRegion,
     wsSetRegionColor,
     wsRemoveCurrentRegion,
+    prepareForDestroy,
   };
 }
