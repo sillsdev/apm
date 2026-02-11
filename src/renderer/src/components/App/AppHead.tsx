@@ -1,26 +1,16 @@
 import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useGetGlobal, useGlobal } from '../../context/useGlobal';
-import { useLocation, useParams } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { IState, IViewModeStrings } from '../../model';
 import { shallowEqual, useSelector } from 'react-redux';
 import {
   AppBar,
-  Toolbar,
-  Typography,
-  IconButton,
   LinearProgress,
-  Tooltip,
   Box,
 } from '@mui/material';
-import HomeIcon from '@mui/icons-material/Home';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import TableViewIcon from '@mui/icons-material/TableView';
-import { API_CONFIG, isElectron } from '../../../api-variable';
+import { isElectron } from '../../../api-variable';
 import { TokenContext } from '../../context/TokenProvider';
 import { UnsavedContext } from '../../context/UnsavedContext';
-import HelpMenu from '../HelpMenu';
-import UserMenu from '../UserMenu';
-import { GrowingSpacer } from '../../control';
 import {
   resetData,
   exitElectronApp,
@@ -36,69 +26,17 @@ import {
   useMobile,
 } from '../../utils';
 import { withBucket } from '../../hoc/withBucket';
-import { usePlan } from '../../crud';
 import Busy from '../Busy';
 import ProjectDownloadAlert from '../ProjectDownloadAlert';
 import { useSnackBar } from '../../hoc/SnackBar';
 import PolicyDialog from '../PolicyDialog';
 import JSONAPISource from '@orbit/jsonapi';
 import { viewModeSelector } from '../../selector';
-import { useHome } from '../../utils/useHome';
-import { ApmLogo } from '../../control/ApmLogo';
-import { OrgHead } from './OrgHead';
-import { HeadStatus } from './HeadStatus';
-import MobileDetailTitle from './MobileDetailTitle';
+import { DesktopToolbar } from './DesktopToolbar';
+import { MobileToolbar } from './MobileToolbar';
 
 const twoIcon = { minWidth: `calc(${48 * 2}px)` } as React.CSSProperties;
 const threeIcon = { minWidth: `calc(${48 * 3}px)` } as React.CSSProperties;
-
-interface INameProps {
-  switchTo: boolean;
-}
-
-const ProjectName = ({ switchTo }: INameProps) => {
-  const ctx = useContext(UnsavedContext);
-  const { checkSavedFn } = ctx.state;
-  const { getPlanName } = usePlan();
-  const [plan] = useGlobal('plan'); //verified this is not used in a function 2/18/25
-  const { prjId } = useParams();
-  const navigate = useMyNavigate();
-  const { goHome } = useHome();
-  const t: IViewModeStrings = useSelector(viewModeSelector, shallowEqual);
-
-  const handleHome = () => {
-    localStorage.removeItem(LocalKey.plan);
-    localStorage.removeItem('mode');
-    goHome();
-  };
-
-  const handleAudioProject = () => {
-    navigate(`/plan/${prjId}/0`);
-  };
-
-  const checkSavedAndGoAP = () => checkSavedFn(() => handleAudioProject());
-  const checkSavedAndGoHome = () => checkSavedFn(() => handleHome());
-
-  return (
-    <>
-      <Tooltip title={t.home}>
-        <IconButton id="home" onClick={checkSavedAndGoHome}>
-          <HomeIcon />
-        </IconButton>
-      </Tooltip>
-      {plan && switchTo && (
-        <Tooltip title={t.audioProject}>
-          <IconButton id="project" onClick={checkSavedAndGoAP}>
-            <TableViewIcon />
-          </IconButton>
-        </Tooltip>
-      )}
-      <Typography variant="h6" noWrap>
-        {getPlanName(plan)}
-      </Typography>
-    </>
-  );
-};
 
 type ResetRequests = () => Promise<void>;
 
@@ -282,12 +220,6 @@ export const AppHead = (props: IProps) => {
     return undefined;
   };
 
-  const handleTeamNav = () => {
-    checkSavedFn(() => navigate('/team'));
-  };
-
-  const handlePlanNav = () => checkSavedFn(() => navigate(planUrl || '/team'));
-
   useEffect(() => {
     window.addEventListener('beforeunload', handleUnload);
     if (!user) {
@@ -348,7 +280,9 @@ export const AppHead = (props: IProps) => {
   if (view === 'Terms') navigate('/terms');
   if (view === 'Privacy') navigate('/privacy');
 
-  return !isMobileView && !isMobileWidth ? (
+  const isMobile = isMobileView || isMobileWidth;
+
+  return (
     <AppBar
       position="fixed"
       sx={{ width: '100%', display: 'flex' }}
@@ -363,95 +297,41 @@ export const AppHead = (props: IProps) => {
         {(!busy && !saving && !dataChangeCount) || complete !== 0 || (
           <LinearProgress id="busy" variant="indeterminate" />
         )}
-        <Toolbar>
-          {!home && orgRole && (
-            <>
-              <ProjectName switchTo={switchTo ?? false} />
-              <GrowingSpacer />
-              <Typography variant="h6">
-                {switchTo ? tv.work : tv.audioProject}
-              </Typography>
-              <GrowingSpacer />
-            </>
-          )}
-          {home && <span style={cssVars}>{'\u00A0'}</span>}
-          <GrowingSpacer />
-          {(pathname === '/' || pathname.startsWith('/access')) && (
-            <>
-              <Typography variant="h6" noWrap>
-                {API_CONFIG.productName}
-              </Typography>
-              <GrowingSpacer />
-            </>
-          )}
-          {'\u00A0'}
-          <HeadStatus
+
+        {isMobile ? (
+          <MobileToolbar
+            isDetail={isDetail}
+            planUrl={planUrl}
+            navigate={navigate}
+            isMobileWidth={isMobileWidth}
             handleMenu={handleMenu}
-            onVersion={setVersion}
-            onLatestVersion={setLatestVersion}
-            onUpdateTipOpen={setUpdateTipOpen}
+            setVersion={setVersion}
+            setLatestVersion={setLatestVersion}
+            setUpdateTipOpen={setUpdateTipOpen}
+            isOffline={isOffline}
+            updateTipOpen={updateTipOpen}
+            pathname={pathname}
+            handleUserMenu={handleUserMenu}
           />
-          <HelpMenu
-            online={!isOffline}
-            sx={updateTipOpen && isElectron ? { top: '40px' } : {}}
+        ) : (
+          <DesktopToolbar
+            switchTo={switchTo}
+            home={home}
+            orgRole={orgRole}
+            cssVars={cssVars}
+            pathname={pathname}
+            handleMenu={handleMenu}
+            setVersion={setVersion}
+            setLatestVersion={setLatestVersion}
+            setUpdateTipOpen={setUpdateTipOpen}
+            isOffline={isOffline}
+            updateTipOpen={updateTipOpen}
+            handleUserMenu={handleUserMenu}
+            tv={tv}
           />
-          {pathname !== '/' && !pathname.startsWith('/access') && (
-            <UserMenu action={handleUserMenu} />
-          )}
-        </Toolbar>
-        {!importexportBusy || <Busy />}
+        )}
+        {importexportBusy && !downloadAlert && <Busy />}
         {downloadAlert && <ProjectDownloadAlert cb={downDone} />}
-        <PolicyDialog
-          isOpen={Boolean(showTerms)}
-          content={showTerms}
-          onClose={handleTermsClose}
-        />
-      </>
-    </AppBar>
-  ) : (
-    <AppBar
-      position="fixed"
-      sx={{ width: '100%', display: 'flex' }}
-      color="inherit"
-    >
-      <>
-        <Toolbar>
-          {!isDetail ? (
-            <IconButton onClick={handleTeamNav} sx={{ p: 0 }}>
-              <ApmLogo sx={{ width: '24px', height: '24px' }} />
-            </IconButton>
-          ) : (
-            <IconButton onClick={handlePlanNav}>
-              <ArrowBackIcon sx={{ width: '24px', height: '24px' }} />
-            </IconButton>
-          )}
-          {isDetail ? <MobileDetailTitle /> : <OrgHead />}
-          <GrowingSpacer />
-          {!isMobileWidth && (
-            <HeadStatus
-              handleMenu={handleMenu}
-              onVersion={setVersion}
-              onLatestVersion={setLatestVersion}
-              onUpdateTipOpen={setUpdateTipOpen}
-            />
-          )}
-          <HelpMenu
-            online={!isOffline}
-            sx={updateTipOpen && isElectron ? { top: '40px' } : {}}
-          />
-          {pathname !== '/' && !pathname.startsWith('/access') && (
-            <UserMenu action={handleUserMenu} small={true} />
-          )}
-        </Toolbar>
-        {complete === 0 || complete === 100 || (
-          <Box sx={{ width: '100%' }}>
-            <LinearProgress id="prog" variant="determinate" value={complete} />
-          </Box>
-        )}
-        {(!busy && !saving && !dataChangeCount) || complete !== 0 || (
-          <LinearProgress id="busy" variant="indeterminate" />
-        )}
-        {!importexportBusy || <Busy />}
         <PolicyDialog
           isOpen={Boolean(showTerms)}
           content={showTerms}

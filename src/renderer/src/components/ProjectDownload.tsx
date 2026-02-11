@@ -123,12 +123,12 @@ export const ProjectDownload = (props: IProps) => {
         cancelRef.current = false;
         doProjectExport(ExportType.PTF, projectIds[currentStep] ?? '');
       } else if (getGlobal('importexportBusy')) {
-        setBusy(false);
         if (offlineUpdates.length > 0) updateLocalOnly();
         setTimeout(() => {
           setExportName('');
           setExportUrl('');
           setProgress(Steps.Finished);
+          setBusy(false);
           finish();
         }, 1000);
       }

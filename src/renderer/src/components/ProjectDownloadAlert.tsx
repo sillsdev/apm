@@ -332,7 +332,6 @@ export const ProjectDownloadAlert = (props: IProps) => {
   const mb = (bytes: number) =>
     bytes > 0 ? Math.ceil(bytes / 1024 / 1024 + 0.5) : 0;
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   const sizeMb = useMemo(() => mb(downloadSize), [downloadSize]);
 
   const szOfVal = (proj: string, value: string) => {
