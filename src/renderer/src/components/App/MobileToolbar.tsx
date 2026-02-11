@@ -1,4 +1,3 @@
-import React from 'react';
 import { Toolbar, IconButton } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { isElectron } from '../../../api-variable';
@@ -9,6 +8,7 @@ import { HeadStatus } from './HeadStatus';
 import { OrgHead } from './OrgHead';
 import { ApmLogo } from '../../control/ApmLogo';
 import { type DownloadAlertReason } from './AppHead';
+import MobileDetailTitle from './MobileDetailTitle';
 
 export interface MobileToolbarProps {
   isDetail: boolean;
@@ -50,7 +50,7 @@ export const MobileToolbar = ({
           <ArrowBackIcon sx={{ width: '24px', height: '24px' }} />
         </IconButton>
       )}
-      <OrgHead />
+      {isDetail ? <MobileDetailTitle /> : <OrgHead />}
       <GrowingSpacer />
       {!isMobileWidth && (
         <HeadStatus
