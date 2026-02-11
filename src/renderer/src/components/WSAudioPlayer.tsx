@@ -349,12 +349,36 @@ function WSAudioPlayer(props: IProps) {
   const recTimerRef = useRef<NodeJS.Timeout | undefined>(undefined);
   const recBaseProgressRef = useRef<number>(0);
   const recBaseDurationRef = useRef<number>(0);
+  const setPlaying = useCallback((value: boolean) => {
+    playingRef.current = value;
+    setPlayingx(value);
+  }, []);
+  const setDuration = useCallback(
+    (value: number) => {
+      durationRef.current = value;
+      setDurationx(value);
+      if (onDuration) onDuration(value);
+    },
+    [onDuration]
+  );
+  const setProgress = useCallback(
+    (value: number) => {
+      progressRef.current = value;
+      setProgressx(value);
+      if (onProgress) onProgress(value);
+    },
+    [onProgress]
+  );
+  const setReady = useCallback((value: boolean) => {
+    setReadyx(value);
+    readyRef.current = value;
+  }, []);
 
-  const setPxPerSec = (px: number) => {
+  const setPxPerSec = useCallback((px: number) => {
     if (recordingRef.current) return;
     pxPerSecRef.current = px;
     setPxPerSecx(px);
-  };
+  }, []);
 
   useEffect(() => {
     try {
@@ -399,7 +423,7 @@ function WSAudioPlayer(props: IProps) {
             }
           }
         : undefined,
-    [allowZoom]
+    [allowZoom, setPxPerSec]
   );
 
   const singleRegionOnly = useMemo(() => {
@@ -535,10 +559,10 @@ function WSAudioPlayer(props: IProps) {
     selectedMicrophoneId || undefined
   );
 
-  const setProcessingRecording = (value: boolean) => {
+  const setProcessingRecording = useCallback((value: boolean) => {
     setProcessingRecordingx(value);
     processRecordRef.current = value;
-  };
+  }, []);
   //#region hotkey handlers
   const handleJumpForward = () => {
     return handleJumpFn(jump);
@@ -557,14 +581,14 @@ function WSAudioPlayer(props: IProps) {
   const handleToggleLoop = () => {
     setLooping(wsLoopRegion(!looping));
   };
-  const handlePrevRegion = () => {
+  const handlePrevRegion = useCallback(() => {
     setPlaying(wsPrevRegion());
     return true;
-  };
-  const handleNextRegion = () => {
+  }, [wsPrevRegion, setPlaying]);
+  const handleNextRegion = useCallback(() => {
     setPlaying(wsNextRegion());
     return true;
-  };
+  }, [wsNextRegion, setPlaying]);
 
   const gotoEnd = () => {
     wsPause();
@@ -581,7 +605,35 @@ function WSAudioPlayer(props: IProps) {
     }
     return false;
   };
-  const handleRecorder = () => {
+  const setRecording = useCallback(
+    (value: boolean) => {
+      recordingRef.current = value;
+      setRecordingx(value);
+      if (onRecording) onRecording(value);
+
+      if (value) {
+        // start timer
+        recElapsedRef.current = 0;
+        recBaseProgressRef.current = progressRef.current;
+        recBaseDurationRef.current = durationRef.current;
+        if (recTimerRef.current) clearInterval(recTimerRef.current);
+        recTimerRef.current = setInterval(() => {
+          if (!recordingRef.current) return;
+          recElapsedRef.current++;
+          setDuration(recBaseDurationRef.current + recElapsedRef.current);
+          setProgress(recBaseProgressRef.current + recElapsedRef.current);
+        }, 1000);
+      } else {
+        if (recTimerRef.current) {
+          clearInterval(recTimerRef.current);
+          recTimerRef.current = undefined;
+        }
+      }
+    },
+    [onRecording, setDuration, setProgress]
+  );
+
+  const handleRecorder = useCallback(() => {
     if (
       !allowRecord ||
       playingRef.current ||
@@ -611,34 +663,22 @@ function WSAudioPlayer(props: IProps) {
       if (oneTryOnly) setOneShotUsed(true);
     }
     return true;
-  };
-
-  const setRecording = (value: boolean) => {
-    recordingRef.current = value;
-    setRecordingx(value);
-    if (onRecording) onRecording(value);
-
-    if (value) {
-      // start timer
-      recElapsedRef.current = 0;
-      // capture base values at start
-      recBaseProgressRef.current = progressRef.current;
-      recBaseDurationRef.current = durationRef.current;
-      if (recTimerRef.current) clearInterval(recTimerRef.current);
-      recTimerRef.current = setInterval(() => {
-        if (!recordingRef.current) return;
-        recElapsedRef.current++;
-        setDuration(recBaseDurationRef.current + recElapsedRef.current);
-        setProgress(recBaseProgressRef.current + recElapsedRef.current);
-      }, 1000);
-    } else {
-      // stop timer
-      if (recTimerRef.current) {
-        clearInterval(recTimerRef.current);
-        recTimerRef.current = undefined;
-      }
-    }
-  };
+  }, [
+    allowRecord,
+    setBlobReady,
+    wsPause,
+    wsPosition,
+    wsStartRecord,
+    startRecording,
+    stopRecording,
+    wsStopRecord,
+    oneTryOnly,
+    setOneShotUsed,
+    oneShotUsed,
+    setPxPerSec,
+    setRecording,
+    setProcessingRecording,
+  ]);
 
   const notifySegmentInteraction = useCallback(() => {
     onInteraction?.();
@@ -898,29 +938,46 @@ function WSAudioPlayer(props: IProps) {
     });
   }, [busy, loading]);
 
-  const togglePlayStatus = () => {
-    handlePlayStatus(!playingRef.current);
-  };
-  const handlePlayStatus = (play: boolean) => {
-    if (durationRef.current === 0 || recordingRef.current) return false;
-    let nowplaying = play;
+  const handlePlayStatus = useCallback(
+    (play: boolean) => {
+      if (durationRef.current === 0 || recordingRef.current) return false;
+      let nowplaying = play;
 
-    if (play && (regionOnly || forceRegionOnly) && currentSegmentRef.current) {
-      const position = wsPosition();
-      const { start, end } = currentSegmentRef.current;
-      const resumeWithinSegment =
-        position > start + 0.01 && position < end - 0.01;
-      wsPlayRegion(currentSegmentRef.current, resumeWithinSegment);
-      nowplaying = true;
-    } else nowplaying = wsTogglePlay();
-    if (nowplaying && Math.abs(wsPosition() - durationRef.current) < 0.2)
-      wsGoto(0);
-    setPlaying(nowplaying);
-    if (onPlayStatus && isPlaying !== undefined && nowplaying !== isPlaying) {
-      onPlayStatus(nowplaying);
-    }
-    return undefined;
-  };
+      if (
+        play &&
+        (regionOnly || forceRegionOnly) &&
+        currentSegmentRef.current
+      ) {
+        const position = wsPosition();
+        const { start, end } = currentSegmentRef.current;
+        const resumeWithinSegment =
+          position > start + 0.01 && position < end - 0.01;
+        wsPlayRegion(currentSegmentRef.current, resumeWithinSegment);
+        nowplaying = true;
+      } else nowplaying = wsTogglePlay();
+      if (nowplaying && Math.abs(wsPosition() - durationRef.current) < 0.2)
+        wsGoto(0);
+      setPlaying(nowplaying);
+      if (onPlayStatus && isPlaying !== undefined && nowplaying !== isPlaying) {
+        onPlayStatus(nowplaying);
+      }
+      return undefined;
+    },
+    [
+      regionOnly,
+      forceRegionOnly,
+      wsPosition,
+      wsPlayRegion,
+      wsTogglePlay,
+      wsGoto,
+      onPlayStatus,
+      isPlaying,
+      setPlaying,
+    ]
+  );
+  const togglePlayStatus = useCallback(() => {
+    handlePlayStatus(!playingRef.current);
+  }, [handlePlayStatus]);
 
   useEffect(() => {
     if (isPlaying !== undefined) handlePlayStatus(isPlaying);
@@ -1007,10 +1064,6 @@ function WSAudioPlayer(props: IProps) {
     if (onPlayStatus) onPlayStatus(status);
   }
 
-  const setPlaying = (value: boolean) => {
-    playingRef.current = value;
-    setPlayingx(value);
-  };
   const setLooping = (value: boolean) => {
     loopingRef.current = value;
     setLoopingx(value);
@@ -1021,24 +1074,7 @@ function WSAudioPlayer(props: IProps) {
     setPlaybackRatex(newVal);
   };
 
-  const setDuration = (value: number) => {
-    durationRef.current = value;
-    setDurationx(value);
-    if (onDuration) onDuration(value);
-  };
-
-  const setProgress = (value: number) => {
-    progressRef.current = value;
-    setProgressx(value);
-    if (onProgress) onProgress(value);
-  };
-
-  const setReady = (value: boolean) => {
-    setReadyx(value);
-    readyRef.current = value;
-  };
-
-  const handleChanged = async () => {
+  const handleChanged = useCallback(async () => {
     setChanged && setChanged(durationRef.current !== 0);
     setBlobReady && setBlobReady(false);
     wsBlob().then((newblob) => {
@@ -1048,8 +1084,19 @@ function WSAudioPlayer(props: IProps) {
       setDuration(wsDuration());
       setProgress(wsPosition());
     });
-  };
-  const confirmedDelete = () => {
+  }, [
+    setChanged,
+    setBlobReady,
+    wsBlob,
+    onBlobReady,
+    setMimeType,
+    setDuration,
+    setProgress,
+    wsDuration,
+    wsPosition,
+  ]);
+
+  const confirmedDelete = useCallback(() => {
     setPlaying(false);
     wsClear();
     setDuration(0);
@@ -1059,7 +1106,18 @@ function WSAudioPlayer(props: IProps) {
     setBlobReady && setBlobReady(false);
     oneShotUsed && setOneShotUsed(false);
     setReady(false);
-  };
+  }, [
+    wsClear,
+    setChanged,
+    onBlobReady,
+    setBlobReady,
+    oneShotUsed,
+    setOneShotUsed,
+    setPlaying,
+    setDuration,
+    setProgress,
+    setReady,
+  ]);
   const handleActionConfirmed = () => {
     initialPosRef.current = undefined;
     if (confirmAction === t.deleteRecording) {
@@ -1072,18 +1130,19 @@ function WSAudioPlayer(props: IProps) {
   const handleActionRefused = () => {
     setConfirmAction('');
   };
-  const handleDelete = () => {
+  const handleDelete = useCallback(() => {
     setConfirmAction(t.deleteRecording);
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const handleDeleteRegion = () => {
     setPlaying(false);
     wsRegionDelete();
     handleChanged();
   };
-  const handleUndo = () => {
+  const handleUndo = useCallback(() => {
     wsUndo();
     handleChanged();
-  };
+  }, [wsUndo, handleChanged]);
   useEffect(() => {
     if (!controlsRef) return;
     controlsRef.current = {
@@ -1109,8 +1168,20 @@ function WSAudioPlayer(props: IProps) {
     return () => {
       controlsRef.current = null;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [controlsRef, allowSegment]);
+  }, [
+    controlsRef,
+    allowSegment,
+    togglePlayStatus,
+    handleRecorder,
+    handlePrevRegion,
+    handleNextRegion,
+    handleUndo,
+    handleClearRegions,
+    handleDelete,
+    confirmedDelete,
+    handleAddRegion,
+    handleRemoveSplitRegion,
+  ]);
 
   const doingProcess = (inprogress: boolean, msg?: string) => {
     setProcessMsg(msg ?? t.aiInProgress);
