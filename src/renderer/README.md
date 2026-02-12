@@ -53,6 +53,7 @@ To run locally without Docker:
 ```bash
 npm start # run this in one terminal
 npm run cy:run-ct # run this in a separate terminal
+npm run cy:run-ct -- --spec "src/routes/SwitchTeams.cy.tsx" #run just this test file
 ```
 
 The first time the tests are run, there may be some flakiness since vite optimizes dynamically and this dynamic optimization interferes with the tests. To get around this, you could run `npm run cy:run-ct` a second time.

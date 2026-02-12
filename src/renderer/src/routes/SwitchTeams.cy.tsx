@@ -13,6 +13,7 @@ import { LocalKey } from '../utils';
 import Coordinator from '@orbit/coordinator';
 import Memory from '@orbit/memory';
 import bugsnagClient from '../auth/bugsnagClient';
+import { schema, keyMap } from '../schema';
 import LocalizedStrings from 'react-localization';
 import localizationReducer from '../store/localization/reducers';
 import DataProvider from '../hoc/DataProvider';
@@ -25,9 +26,11 @@ const createMockLiveQuery = () => ({
   query: () => [],
 });
 
-// Mock memory
+// Mock memory - schema and keyMap required for StandardRecordNormalizer (used by ImportTab's useOfflineSetup)
 const createMockMemory = (): Memory => {
   return {
+    schema,
+    keyMap,
     cache: {
       query: () => [],
       liveQuery: createMockLiveQuery,
@@ -51,6 +54,7 @@ const mockCoordinator = {
 const mockCardStrings = new LocalizedStrings({
   en: {
     addNewTeam: 'Add New Team...',
+    addTeam: 'Add Team',
     import: 'Import',
     personalProjects: 'Personal Audio Projects',
     creatorAdd: 'Add Shared Content Creator',
@@ -238,14 +242,14 @@ describe('SwitchTeams', () => {
     cy.get('[data-testid="teams-section"]').should('exist');
   });
 
-  it('should show "Add New Team..." button', () => {
+  it('should show "Add Team" button', () => {
     mountSwitchTeams(createInitialState());
 
     cy.get('#TeamActAdd').should('be.visible');
-    cy.contains('Add New Team...').should('be.visible');
+    cy.contains('Add Team').should('be.visible');
   });
 
-  it('should open TeamDialog when "Add New Team..." button is clicked', () => {
+  it('should open TeamDialog when "Add Team" button is clicked', () => {
     mountSwitchTeams(createInitialState());
 
     cy.get('#TeamActAdd').click();
@@ -261,10 +265,11 @@ describe('SwitchTeams', () => {
     cy.contains('Import').should('be.visible');
   });
 
-  it('should not show Import button when online', () => {
+  it('should show Import button when online', () => {
     mountSwitchTeams(createInitialState({ offline: false }));
 
-    cy.get('#teamActImport').should('not.exist');
+    cy.get('#teamActImport').should('be.visible');
+    cy.contains('Import').should('be.visible');
   });
 
   it('should show Shared Content Creator button when online and user is admin', () => {
@@ -419,13 +424,13 @@ describe('SwitchTeams', () => {
   });
 
   it('should handle Import dialog when Import button is clicked', () => {
+    cy.viewport(1024, 768);
     mountSwitchTeams(createInitialState({ offline: true }));
 
-    cy.get('#teamActImport').click();
+    cy.get('[data-testid="import-button"]').should('be.visible').click();
 
-    // Import dialog should open (if isElectron is true)
-    // The dialog behavior depends on isElectron flag
-    cy.wait(100);
+    // Import dialog should open
+    cy.get('#importDlg', { timeout: 5000 }).should('be.visible');
   });
 
   it('should show settings button on desktop width', () => {
