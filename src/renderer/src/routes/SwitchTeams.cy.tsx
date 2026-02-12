@@ -261,10 +261,11 @@ describe('SwitchTeams', () => {
     cy.contains('Import').should('be.visible');
   });
 
-  it('should not show Import button when online', () => {
+  it('should show Import button when online', () => {
     mountSwitchTeams(createInitialState({ offline: false }));
 
-    cy.get('#teamActImport').should('not.exist');
+    cy.get('#teamActImport').should('be.visible');
+    cy.contains('Import').should('be.visible');
   });
 
   it('should show Shared Content Creator button when online and user is admin', () => {

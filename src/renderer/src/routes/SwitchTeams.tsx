@@ -167,7 +167,7 @@ const TeamsSection = ({ onOpenSettings }: ITeamsSectionProps) => {
   );
 };
 
-// Floating actions cluster: Add Team, Import (Electron), Shared Content Creator, Error (developer)
+// Floating actions cluster: Add Team, Import, Shared Content Creator, Error (developer)
 const FloatingActions = () => {
   const {
     t,
@@ -227,6 +227,7 @@ const FloatingActions = () => {
           )}
           <Button
             id="teamActImport"
+            data-testid="import-button"
             variant="outlined"
             onClick={handleImportClick}
             sx={(theme) => ({

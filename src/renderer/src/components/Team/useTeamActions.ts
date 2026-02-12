@@ -1,4 +1,4 @@
-import { useContext, useState } from 'react';
+import { useContext, useState, ChangeEvent } from 'react';
 import { useGlobal } from '../../context/useGlobal';
 import { TeamContext } from '../../context/TeamContext';
 import { TokenContext } from '../../context/TokenProvider';
@@ -52,7 +52,7 @@ export function useTeamActions() {
     });
   };
 
-  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleEmailChange = (e: ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.toLowerCase();
     setEmail(value);
     setValidEmail(validateEmail(value));

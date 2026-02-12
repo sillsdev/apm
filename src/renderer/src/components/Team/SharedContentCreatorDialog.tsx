@@ -1,17 +1,18 @@
 import { FormControlLabel, TextField, SxProps, Theme } from '@mui/material';
 import BigDialog from '../../hoc/BigDialog';
 import { BigDialogBp } from '../../hoc/BigDialogBp';
+import { ChangeEvent } from 'react';
 
 interface IProps {
   isOpen: boolean;
-  onOpen: () => void;
+  onOpen: (isOpen: boolean) => void;
   onSave: (() => void) | undefined;
   onCancel: () => void;
   title: string;
   creatorEmail: string;
   bp: BigDialogBp;
   email: string;
-  onEmailChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onEmailChange: (e: ChangeEvent<HTMLInputElement>) => void;
   validEmail: boolean;
   contentStatus: string;
   textFieldSx?: SxProps<Theme>;
