@@ -788,7 +788,7 @@ export function PassageDetailItem(props: IProps) {
                   setActivity(Activity.Listen);
                   recorderControlsRef.current?.deleteRecording();
                 }}
-                disabled={isRecording() || playing}
+                disabled={isRecording() || playing || !currentSegmentMediaId}
               >
                 <DeleteIcon />
               </IconButton>
