@@ -94,6 +94,7 @@ const PlayerRow = styled(Box)<BoxProps>(() => ({
 
 const paperProps = { p: 2, m: 'auto', width: `calc(100% - 40px)` } as SxProps;
 const buttonProp = { mx: 1 } as SxProps;
+const DEBOUNCE_CLICK_MS = 400;
 const ctlProps = { m: 1, pb: 2 } as SxProps;
 const smallInputProps = {
   maxWidth: 200,
@@ -219,8 +220,16 @@ export function PassageDetailItem(props: IProps) {
   const recorderRecordingRef = useRef(false);
   const recorderPlayingRef = useRef(false);
   const userSegmentInteractionRef = useRef(false);
+  const lastPlayRecordClickRef = useRef(0);
   const previewStartedRef = useRef(false);
   const showTextRef = useRef(false);
+
+  const handleDebouncedPlayRecordClick = (callback: () => void) => {
+    const now = Date.now();
+    if (now - lastPlayRecordClickRef.current < DEBOUNCE_CLICK_MS) return;
+    lastPlayRecordClickRef.current = now;
+    callback();
+  };
 
   const rowProp = useMemo(
     () => ({ display: 'flex', width: paneWidth - 40 }),
@@ -450,10 +459,9 @@ export function PassageDetailItem(props: IProps) {
     setConfirm('');
   };
 
-  const isRecording = () =>
-    recorderRecordingRef.current || recorderPlayingRef.current;
+  const isRecording = () => recorderRecordingRef.current;
   const updateRecorderBusy = () => {
-    setRecording(isRecording());
+    setRecording(isRecording() || recorderPlayingRef.current);
   };
   const handleRecorderRecording = (recording: boolean) => {
     const wasRecording = recorderRecordingRef.current;
@@ -611,14 +619,17 @@ export function PassageDetailItem(props: IProps) {
           <HighlightButton
             ariaLabel={playing ? 'Pause' : 'Play'}
             onClick={() => {
-              setActivity(Activity.Preview);
-              setWhichPlay(WhichPlay.Top);
-              if (!playing) previewStartedRef.current = true;
-              playerControlsRef.current?.togglePlay();
+              handleDebouncedPlayRecordClick(() => {
+                setActivity(Activity.Preview);
+                setWhichPlay(WhichPlay.Top);
+                if (!playing) previewStartedRef.current = true;
+                playerControlsRef.current?.togglePlay();
+              });
             }}
             disabled={
               playerDuration === 0 ||
               isRecording() ||
+              isRecorderPlaying ||
               whichPlay === WhichPlay.Bottom
             }
             highlight={activityRef.current === Activity.Preview}
@@ -702,8 +713,12 @@ export function PassageDetailItem(props: IProps) {
             >
               <IconButton
                 aria-label={isRecorderPlaying ? 'Pause' : 'Play'}
-                onClick={() => recorderControlsRef.current?.togglePlay()}
-                disabled={recorderDuration === 0 || isRecording()}
+                onClick={() => {
+                  handleDebouncedPlayRecordClick(() =>
+                    recorderControlsRef.current?.togglePlay()
+                  );
+                }}
+                disabled={recorderDuration === 0 || isRecording() || playing}
                 sx={{ pl: 0 }}
               >
                 {isRecorderPlaying ? <PauseIcon /> : <PlayArrowIcon />}
@@ -799,13 +814,19 @@ export function PassageDetailItem(props: IProps) {
               }}
             >
               <HighlightButton
-                ariaLabel="Listen"
+                ariaLabel={playing ? 'Pause' : 'Listen'}
                 onClick={() => {
-                  setActivity(Activity.Listen);
-                  setWhichPlay(WhichPlay.Bottom);
-                  playerControlsRef.current?.togglePlay();
+                  handleDebouncedPlayRecordClick(() => {
+                    setActivity(Activity.Listen);
+                    setWhichPlay(WhichPlay.Bottom);
+                    playerControlsRef.current?.togglePlay();
+                  });
                 }}
-                disabled={isRecording() || whichPlay === WhichPlay.Top}
+                disabled={
+                  isRecording() ||
+                  isRecorderPlaying ||
+                  whichPlay === WhichPlay.Top
+                }
                 highlight={activityRef.current === Activity.Listen}
               >
                 {playerControlsRef.current?.isPlaying() ? (
@@ -818,18 +839,20 @@ export function PassageDetailItem(props: IProps) {
                 recording={recorderRecordingRef.current}
                 oneTryOnly={true}
                 onClick={() => {
-                  setActivity(Activity.Record);
-                  showTextRef.current = false;
-                  if (currentSegmentMediaId) {
-                    recorderControlsRef.current?.confirmedDelete();
-                    setTimeout(() => {
+                  handleDebouncedPlayRecordClick(() => {
+                    setActivity(Activity.Record);
+                    showTextRef.current = false;
+                    if (currentSegmentMediaId) {
+                      recorderControlsRef.current?.confirmedDelete();
+                      setTimeout(() => {
+                        recorderControlsRef.current?.toggleRecord();
+                      }, 1000);
+                    } else {
                       recorderControlsRef.current?.toggleRecord();
-                    }, 1000);
-                  } else {
-                    recorderControlsRef.current?.toggleRecord();
-                  }
+                    }
+                  });
                 }}
-                disabled={playing}
+                disabled={playing || isRecorderPlaying}
                 isSmall={false}
                 showText={showTextRef.current}
                 hasRecording={Boolean(currentSegmentMediaId)}
@@ -842,7 +865,10 @@ export function PassageDetailItem(props: IProps) {
                   handleNextSegmentClick();
                 }}
                 disabled={
-                  isRecording() || playing || Boolean(toolChanged(toolId))
+                  isRecording() ||
+                  playing ||
+                  isRecorderPlaying ||
+                  Boolean(toolChanged(toolId))
                 }
                 highlight={activityRef.current === Activity.Next}
               >
