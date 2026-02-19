@@ -90,7 +90,7 @@ export const useNotes = () => {
     const secRec = findRecord(memory, 'section', sectionId) as SectionD;
     if (secRec?.attributes?.level === SheetLevel.Movement)
       return `${shortBook(passage.attributes.book)} ${computeMovementRef(
-        passage
+        sectionId
       )}`;
     const notePassage = passages
       .filter((p) => related(p, 'section') === sectionId)
@@ -109,7 +109,7 @@ export const useNotes = () => {
     }
     return (
       result ||
-      `${shortBook(passage.attributes.book)} ${computeSectionRef(passage)}` ||
+      `${shortBook(passage.attributes.book)} ${computeSectionRef(sectionId)}` ||
       shortBook(passage.attributes.book)
     );
   };

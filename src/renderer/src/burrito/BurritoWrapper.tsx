@@ -3,17 +3,27 @@ import React from 'react';
 import StickyRedirect from '../components/StickyRedirect';
 import { useOrgDefaults } from '../crud/useOrgDefaults';
 import { BurritoHeader } from '../components/BurritoHeader';
-import { MetadataView } from '../burrito/MetadataView';
-import type { BurritoWrapper as BurritoWrapperType } from '../burrito/data/wrapperBuilder';
-import { wrapperBuilder } from '../burrito/data/wrapperBuilder';
+import { MetadataView } from './MetadataView';
+import type { BurritoWrapper as BurritoWrapperType } from './data/wrapperBuilder';
+import { wrapperBuilder } from './data/wrapperBuilder';
 import { useOrbitData } from '../hoc/useOrbitData';
-import { BibleD, OrganizationBibleD, OrganizationD, UserD } from '../model';
+import {
+  BibleD,
+  IBurritoStrings,
+  ISharedStrings,
+  OrganizationBibleD,
+  OrganizationD,
+  UserD,
+} from '../model';
 import related from '../crud/related';
 import { burritoContents } from './BurritoContents';
-import { BurritoType } from '../burrito/BurritoType';
-import { Burrito } from '../burrito/data/wrapperBuilder';
+import { BurritoType } from './BurritoType';
+import { Burrito } from './data/wrapperBuilder';
 import { AltButton } from '../control/AltButton';
 import packageJson from '../../package.json';
+import { toCamel } from '../utils';
+import { shallowEqual, useSelector } from 'react-redux';
+import { burritoSelector, sharedSelector } from '../selector';
 const version = packageJson.version;
 const productName = packageJson.build.productName;
 
@@ -30,6 +40,8 @@ export function BurritoWrapper() {
   const [refresh, setRefresh] = React.useState(0);
   const [metaData, setMetaData] = React.useState<BurritoWrapperType>();
   const { getOrgDefault, setOrgDefault } = useOrgDefaults();
+  const t: IBurritoStrings = useSelector(burritoSelector, shallowEqual);
+  const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
 
   const handleSave = () => {
     setOrgDefault(burritoWrapper, metaData, teamId);
@@ -43,15 +55,11 @@ export function BurritoWrapper() {
     setOrgDefault(burritoWrapper, undefined, teamId);
   };
 
+  // NOTE: these are part of the spec so don't get translated
   const burritoRole = (type: BurritoType) =>
     type === BurritoType.Audio
       ? 'source'
-      : [
-            BurritoType.Text,
-            BurritoType.Timing,
-            BurritoType.BackTranslation,
-            BurritoType.WholeBackTranslation,
-          ].includes(type)
+      : [BurritoType.Text /* BurritoType.BackTranslation */].includes(type)
         ? 'derived'
         : 'supplemental';
 
@@ -78,15 +86,12 @@ export function BurritoWrapper() {
             const curContents = getOrgDefault(burritoContents, teamId) as
               | string[]
               | undefined;
-            const filteredContents = curContents?.filter(
-              (c: string) => c.toLocaleLowerCase() !== 'timing'
-            );
             const burritos =
-              filteredContents?.map(
+              curContents?.map(
                 (c: string) =>
                   ({
-                    id: `${abbreviation}-${c}`,
-                    path: c.toLocaleLowerCase(),
+                    id: `${abbreviation}-${toCamel(c)}`,
+                    path: toCamel(c).toLocaleLowerCase(),
                     role: burritoRole(c as BurritoType),
                   }) as Burrito
               ) || [];
@@ -118,7 +123,7 @@ export function BurritoWrapper() {
 
   return (
     <BurritoHeader
-      burritoType={'Wrapper'}
+      burritoType={t.wrapper}
       setView={setView}
       teamId={teamId}
       onSave={handleSave}
@@ -129,7 +134,7 @@ export function BurritoWrapper() {
         </AltButton>
       }
     >
-      {metaData ? <MetadataView wrapper={metaData} /> : 'Loading...'}
+      {metaData ? <MetadataView wrapper={metaData} /> : ts.loading}
     </BurritoHeader>
   );
 }

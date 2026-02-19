@@ -40,7 +40,7 @@ export const dataPath = async (
           ? parsedUrl.pathname
             ? parsedUrl.pathname.split('?')[0]?.split('/').pop() || ''
             : ''
-          : path.basename(relPath);
+          : path.basename(relPath || '');
         localName = path.join(
           homeDir,
           offlineData,

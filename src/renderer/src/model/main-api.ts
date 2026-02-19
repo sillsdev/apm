@@ -40,6 +40,7 @@ export interface MainAPI {
   ) => Promise<unknown>;
   append: (filePath: string, data: unknown) => Promise<unknown>;
   delete: (filePath: string) => Promise<unknown>;
+  deleteFolder: (folder: string) => Promise<unknown>;
   copyFile: (from: string, to: string) => Promise<unknown>;
   times: (
     filePath: string,

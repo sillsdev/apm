@@ -22,10 +22,10 @@ import { default as Auth } from '../hoc/PrivateRoute';
 import { isElectron } from '../../api-variable';
 import { ErrorPage } from '../components/ErrorPage';
 import { ScriptureBurrito } from './ScriptureBurrito';
-import { BurritoStep } from './BurritoStep';
-import { BurritoBooks } from './BurritoBooks';
-import { BurritoContents } from './BurritoContents';
-import { BurritoWrapper } from './BurritoWrapper';
+import { BurritoStep } from '../burrito/BurritoStep';
+import { BurritoBooks } from '../burrito/BurritoBooks';
+import { BurritoContents } from '../burrito/BurritoContents';
+import { BurritoWrapper } from '../burrito/BurritoWrapper';
 import SwitchTeams from './SwitchTeams';
 
 const routes = createRoutesFromElements([

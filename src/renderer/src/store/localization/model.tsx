@@ -141,6 +141,42 @@ export interface IAudioDownloadStrings extends Localize.LocalizedStringsMethods 
     "downloadMedia": string;
 };
 
+export interface IBurritoStrings extends Localize.LocalizedStringsMethods {
+    "apmData": string;
+    "audio": string;
+    "backTranslation": string;
+    "books": string;
+    "create": string;
+    "createAudio": string;
+    "createText": string;
+    "createNotes": string;
+    "createResources": string;
+    "createNavigation": string;
+    "createData": string;
+    "createOther": string;
+    "communityFeedback": string;
+    "contents": string;
+    "deselectAll": string;
+    "discussions": string;
+    "enterNewValue": string;
+    "failed": string;
+    "intellectualProperty": string;
+    "navigation": string;
+    "notes": string;
+    "open": string;
+    "preparing": string;
+    "projects": string;
+    "resources": string;
+    "selectAll": string;
+    "selectedBooks": string;
+    "success": string;
+    "terms": string;
+    "text": string;
+    "updateValue": string;
+    "valueWarning": string;
+    "wrapper": string;
+};
+
 export interface ICardsStrings extends Localize.LocalizedStringsMethods {
     "add": string;
     "addNewProject": string;
@@ -1365,6 +1401,7 @@ export interface ISharedStrings extends Localize.LocalizedStringsMethods {
     "cantCopy": string;
     "clipboardCopy": string;
     "close": string;
+    "confirm": string;
     "consultant": string;
     "delete": string;
     "description": string;
@@ -1954,6 +1991,7 @@ export interface ILocalizedStrings {
 	assignSection: IAssignSectionStrings;
 	audacityManager: IAudacityManagerStrings;
 	audioDownload: IAudioDownloadStrings;
+	burrito: IBurritoStrings;
 	cards: ICardsStrings;
 	category: ICategoryStrings;
 	commentCard: ICommentCardStrings;

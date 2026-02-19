@@ -113,6 +113,9 @@ interface BurritoIngredient {
     [key: string]: string[];
   };
   role?: string;
+  properties?: {
+    [key: string]: string;
+  };
 }
 
 export interface BurritoIngredients {

@@ -151,6 +151,10 @@ export function ipcMethods(): void {
     return await fs.unlink(filePath);
   });
 
+  ipcMain.handle('deleteFolder', async (_event, folder) => {
+    if (fs.existsSync(folder)) return await fs.rm(folder, { recursive: true });
+  });
+
   ipcMain.handle('copyFile', async (_event, from, to) => {
     return await fs.copyFile(from, to);
   });

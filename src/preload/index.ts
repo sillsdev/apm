@@ -46,6 +46,8 @@ const api = {
   append: async (filePath, data) =>
     await ipcRenderer.invoke('append', filePath, data),
   delete: async (filePath) => await ipcRenderer.invoke('delete', filePath),
+  deleteFolder: async (folder) =>
+    await ipcRenderer.invoke('deleteFolder', folder),
   copyFile: async (from, to) => await ipcRenderer.invoke('copyFile', from, to),
   times: async (filePath, create, modify) =>
     await ipcRenderer.invoke('times', filePath, create, modify),

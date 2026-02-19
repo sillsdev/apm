@@ -12,6 +12,11 @@ export function strNumCompare(a: string, b: string): number {
   if (isNaN(numB)) return -1;
   return numA - numB;
 }
+
+/** Sorts chapter strings by numeric value (1, 2, 10 instead of 1, 10, 2). */
+export function sortChapters(chapters: Iterable<string>): string[] {
+  return Array.from(chapters).sort(strNumCompare);
+}
 export function strCompare(a: string, b: string): number {
   return a < b ? -1 : a > b ? 1 : 0;
 }

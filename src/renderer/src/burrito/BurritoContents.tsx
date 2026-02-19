@@ -1,11 +1,14 @@
 import { useLocation, useParams } from 'react-router-dom';
 import React from 'react';
 import StickyRedirect from '../components/StickyRedirect';
-import { BurritoOption } from '../burrito/BurritoOption';
-import { pad2 } from '../utils';
+import { BurritoOption } from './BurritoOption';
+import { pad2, toCamel } from '../utils';
 import { useOrgDefaults } from '../crud/useOrgDefaults';
 import { BurritoHeader } from '../components/BurritoHeader';
-import { BurritoType } from '../burrito/BurritoType';
+import { BurritoType } from './BurritoType';
+import { shallowEqual, useSelector } from 'react-redux';
+import { burritoSelector } from '../selector';
+import { IBurritoStrings } from '@model/index';
 
 export const burritoContents = 'burritoContents';
 
@@ -17,6 +20,7 @@ export function BurritoContents() {
   const [view, setView] = React.useState('');
   const [checked, setChecked] = React.useState<string[]>([]);
   const { getOrgDefault, setOrgDefault } = useOrgDefaults();
+  const t: IBurritoStrings = useSelector(burritoSelector, shallowEqual);
 
   const handleSave = () => {
     setOrgDefault(burritoContents, checked, teamId);
@@ -43,7 +47,7 @@ export function BurritoContents() {
 
   return (
     <BurritoHeader
-      burritoType={'Contents'}
+      burritoType={t.contents}
       setView={setView}
       teamId={teamId}
       onSave={handleSave}
@@ -51,7 +55,7 @@ export function BurritoContents() {
     >
       <BurritoOption
         options={contents.map((content, index) => ({
-          label: `${pad2(index + 1)} - ${content}`,
+          label: `${pad2(index + 1)} - ${t.getString(toCamel(content)) ?? content}`,
           value: content,
         }))}
         value={checked}

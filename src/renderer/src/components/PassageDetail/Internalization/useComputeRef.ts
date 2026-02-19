@@ -1,4 +1,3 @@
-import { useGlobal } from '../../../context/useGlobal';
 import related from '../../../crud/related';
 import { useOrbitData } from '../../../hoc/useOrbitData';
 import { PassageD, SectionD } from '../../../model';
@@ -16,25 +15,27 @@ const findPassage = (p: PassageD) =>
 export const useComputeRef = () => {
   const passages = useOrbitData<PassageD[]>('passage');
   const sections = useOrbitData<SectionD[]>('section');
-  const [planId] = useGlobal('plan'); //will be constant here
 
-  const computeMovementRef = (passage: PassageD) => {
-    const sectionId = related(passage, 'section');
+  const computeMovementRef = (sectionId: string) => {
     const section = sections.find((s) => s.id === sectionId) as SectionD;
-    const movements = sections
-      .filter(
-        (s) =>
-          related(s, 'plan') === planId &&
-          s.attributes.sequencenum !== Math.floor(s.attributes.sequencenum)
-      )
-      .sort((a, b) => b.attributes.sequencenum - a.attributes.sequencenum);
+    const movements = section
+      ? sections
+          .filter(
+            (s) =>
+              related(s, 'plan') === related(section, 'plan') &&
+              s.attributes.sequencenum !== Math.floor(s.attributes.sequencenum)
+          )
+          .sort((a, b) => b.attributes.sequencenum - a.attributes.sequencenum)
+      : [];
     const movementsB4 = movements.filter(
       (m) => m.attributes.sequencenum < section?.attributes.sequencenum
     );
     const movement = movementsB4.length > 0 ? movementsB4[0] : undefined;
-    const sortedSections = sections
-      .filter((s) => related(s, 'plan') === planId)
-      .sort((a, b) => a.attributes.sequencenum - b.attributes.sequencenum);
+    const sortedSections = section
+      ? sections
+          .filter((s) => related(s, 'plan') === related(section, 'plan'))
+          .sort((a, b) => a.attributes.sequencenum - b.attributes.sequencenum)
+      : [];
     const startIndex = movement
       ? sortedSections.findIndex((s) => s.id === movement?.id)
       : 0;
@@ -85,8 +86,7 @@ export const useComputeRef = () => {
     }
   };
 
-  const computeSectionRef = (passage: PassageD) => {
-    const sectionId = related(passage, 'section');
+  const computeSectionRef = (sectionId: string) => {
     const sectPass = passages.filter(
       (p) => related(p, 'section') === sectionId
     );
