@@ -1,19 +1,15 @@
 export enum BurritoType {
   Audio = 'Audio',
-  Timing = 'Timing',
   Text = 'Text',
-  BackTranslation = 'Back translation',
-  WholeBackTranslation = 'Whole Back Translation',
-  CommunityQuestions = 'Community Questions',
-  CommunityRetelling = 'Community Retelling',
-  Navigation = 'Navigation',
-  Discussions = 'Discussions',
-  IntellectualProperty = 'Intellectual Property',
-  Terms = 'Terms',
   Resources = 'Resources',
-  SharedResources = 'Shared Resources',
+  Navigation = 'Navigation',
   Notes = 'Notes',
-  Status = 'Status',
+  // BackTranslation = 'Back translation',
+  // CommunityFeedback = 'Community Feedback',
+  // Discussions = 'Discussions',
+  // IntellectualProperty = 'Intellectual Property',
+  // Terms = 'Terms',
+  ApmData = 'Apm Data',
 }
 
 export default BurritoType;

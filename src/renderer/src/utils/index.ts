@@ -49,7 +49,6 @@ export * from './getWhereis';
 export * from './launchAudacity';
 export * from './pad2';
 export * from './getAudacityExe';
-export * from './useInterval';
 export * from './generateUUID';
 export * from './useDebounce';
 export * from './prettySegment';

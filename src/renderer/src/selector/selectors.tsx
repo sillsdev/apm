@@ -34,6 +34,9 @@ export const audioPlayerSegmentSelector = (state: IState) =>
 export const audioPlayerZoomSelector = (state: IState) =>
   localStrings(state as IState, { layout: 'wsAudioPlayerZoom' });
 
+export const burritoSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'burrito' });
+
 export const cardsSelector = (state: IState) =>
   localStrings(state as IState, { layout: 'cards' });
 

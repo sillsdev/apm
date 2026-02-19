@@ -793,6 +793,237 @@
                <context context-type="sourcefile">AudioDownload.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="burrito.apmData">
+            <source>APM Data</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">BurritoContents.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="burrito.audio">
+            <source>Audio</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">BurritoContents.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="burrito.backTranslation">
+            <source>Back Translation</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">BurritoContents.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="burrito.books">
+            <source>Books</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">BurritoBooks.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="burrito.create">
+            <source>Create Burrito</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">ScriptureBurrito.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="burrito.createAudio">
+            <source>Create audio burrito</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">useCreateBurrito.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="burrito.createText">
+            <source>Create text burrito</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">useCreateBurrito.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="burrito.createNotes">
+            <source>Create notes burrito</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">useCreateBurrito.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="burrito.createResources">
+            <source>Create resources burrito</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">useCreateBurrito.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="burrito.createNavigation">
+            <source>Create navigation burrito</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">useCreateBurrito.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="burrito.createData">
+            <source>Create data burrito</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">useCreateBurrito.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="burrito.createOther">
+            <source>Create {0} burrito</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">useCreateBurrito.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="burrito.communityFeedback">
+            <source>Community Feedback</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">BurritoContents.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="burrito.contents">
+            <source>Contents</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">BurritoContents.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="burrito.deselectAll">
+            <source>Deselect All</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">BurritoOption.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="burrito.discussions">
+            <source>Discussions</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">BurritoContents.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="burrito.enterNewValue">
+            <source>Please enter the new value for</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">MetaValue.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="burrito.failed">
+            <source>Failed to create burrito</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">MetaValue.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="burrito.intellectualProperty">
+            <source>Intellectual Property</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">BurritoContents.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="burrito.navigation">
+            <source>Navigation</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">BurritoContents.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="burrito.notes">
+            <source>Notes</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">BurritoContents.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="burrito.open">
+            <source>Open</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">BurritoContents.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="burrito.preparing">
+            <source>Preparing burrito...</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">ScriptureBurrito.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="burrito.projects">
+            <source>Projects</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">BurritoBooks.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="burrito.resources">
+            <source>Resources</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">BurritoContents.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="burrito.selectAll">
+            <source>Select All</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">BurritoOption.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="burrito.selectedBooks">
+            <source>Selected Books</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">BurritoBooks.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="burrito.success">
+            <source>Burrito created successfully!</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">ScriptureBurrito.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="burrito.terms">
+            <source>Terms</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">BurritoContents.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="burrito.text">
+            <source>Text</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">BurritoContents.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="burrito.updateValue">
+            <source>Update Value</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">MetaValue.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="burrito.valueWarning">
+            <source>Warning: Input contains JSON structural characters (quotes, curly braces, or square brackets)</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">MetaValue.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="burrito.wrapper">
+            <source>Wrapper</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">BurritoWrapper.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="cards.add">
             <source>Add</source>
             <target/>
@@ -8071,6 +8302,13 @@
          </trans-unit>
          <trans-unit id="shared.close">
             <source>Close</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">Access.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="shared.confirm">
+            <source>Confirm</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">Access.tsx</context>

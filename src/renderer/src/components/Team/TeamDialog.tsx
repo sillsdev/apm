@@ -91,7 +91,6 @@ export function TeamDialog(props: IProps) {
   const { cardStrings, personalTeam } = ctx.state;
   const t = cardStrings;
   const [memory] = useGlobal('memory');
-  const [isDeveloper] = useGlobal('developer');
   const [process, setProcess] = useState<string>();
   const [processOptions, setProcessOptions] = useState<OptionType[]>([]);
   const savingRef = useRef(false);
@@ -466,7 +465,7 @@ export function TeamDialog(props: IProps) {
           )}
         </DialogContent>
         <DialogActions>
-          {isElectron && isDeveloper && (
+          {isElectron && (
             <Button
               id="burrito"
               onClick={() => setView(`/burrito/${values?.team.id}`)}

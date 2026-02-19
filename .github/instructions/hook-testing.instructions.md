@@ -212,10 +212,20 @@ const createMockRow = (overrides: Partial<ISheet> = {}): ISheet => ({
 
 ### Running Tests
 
+**IMPORTANT**: Tests for the renderer application must be run from the `src\renderer` directory.
+
+**PowerShell Syntax** (Windows):
+```powershell
+cd src\renderer; npm test -- MetadataView
+```
+
+**Bash Syntax** (Linux/Mac):
 ```bash
 cd src/renderer
 npm test -- yourHookName.test.tsx
 ```
+
+Note: Use semicolons (`;`) in PowerShell to chain commands, not `&&`.
 
 ## Common Errors and Solutions
 

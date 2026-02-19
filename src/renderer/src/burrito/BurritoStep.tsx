@@ -16,6 +16,7 @@ export function BurritoStep() {
     return <StickyRedirect to={view} />;
   }
 
+  // Since this is a placeholder, we don't need to translate it
   return (
     <Box sx={{ width: '100%' }}>
       <AppHead />

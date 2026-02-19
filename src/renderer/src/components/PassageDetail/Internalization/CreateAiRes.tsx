@@ -34,7 +34,12 @@ import ClearIcon from '@mui/icons-material/Clear';
 import { PassageTypeEnum } from '../../../model/passageType';
 import { passageTypeFromRef } from '../../../control/passageTypeFromRef';
 import { useGlobal } from '../../../context/useGlobal';
-import { useNotes, usePlanType, useSharedResRead } from '../../../crud';
+import {
+  related,
+  useNotes,
+  usePlanType,
+  useSharedResRead,
+} from '../../../crud';
 
 interface CreateAiResProps {
   resources: BibleResource[];
@@ -136,13 +141,14 @@ export default function CreateAiRes({ resources, onTab }: CreateAiResProps) {
         ref = curNoteRef(passage);
       }
     }
+    const sectionId = related(passage, 'section') as string;
     if (scope === scopeOptions[scopeI.section]) {
-      ref = `${book} ${computeSectionRef(passage)}`;
+      ref = `${book} ${computeSectionRef(sectionId)}`;
     } else if (scope === scopeOptions[scopeI.chapter]) {
-      const chapter = parseInt(computeSectionRef(passage) ?? '1');
+      const chapter = parseInt(computeSectionRef(sectionId) ?? '1');
       ref = `${book} ${chapter}`;
     } else if (scope === scopeOptions[scopeI.movement]) {
-      ref = `${book} ${computeMovementRef(passage)}`;
+      ref = `${book} ${computeMovementRef(sectionId)}`;
     } else if (scope === scopeOptions[scopeI.book]) {
       ref = t.biblicalBook.replace('{0}', book);
     } else if (terms.includes(scope)) {

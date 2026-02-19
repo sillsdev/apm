@@ -3,7 +3,7 @@ import {
   Burrito,
   BurritoIngredients,
   BurritoScopes,
-} from '../burrito/data/burritoBuilder';
+} from './data/burritoBuilder';
 import related from '../crud/related';
 import { VernacularTag } from '../crud/useArtifactType';
 import { useOrgDefaults } from '../crud/useOrgDefaults';
@@ -13,6 +13,7 @@ import { parseRef } from '../crud/passage';
 import { passageTypeFromRef } from '../control/passageTypeFromRef';
 import { PassageTypeEnum } from '../model/passageType';
 
+import { sortChapters } from '../utils/sort';
 import { MainAPI } from '@model/main-api';
 import { sectionDescription } from '../crud/section';
 const ipc = window?.api as MainAPI;
@@ -137,19 +138,22 @@ export const useBurritoText = (teamId: string) => {
         checksum: { md5: await ipc?.md5File(textPath) },
         mimeType: 'application/json',
         size: content.length,
-        scope: { [book]: Array.from(chapters).sort() },
+        scope: { [book]: sortChapters(chapters) },
       };
     }
     const curScopes = scopes.get(book) || [];
-    scopes.set(book, [...curScopes, ...Array.from(chapters).sort()]);
+    scopes.set(book, [...curScopes, ...sortChapters(chapters)]);
     const newScopes: BurritoScopes = {};
     Array.from(scopes).forEach((scope) => {
       newScopes[scope[0]] = scope[1];
     });
     if (metadata.type?.flavorType) {
-      metadata.type.flavorType.currentScope = newScopes;
+      metadata.type.flavorType.currentScope = {
+        ...metadata.type.flavorType.currentScope,
+        ...newScopes,
+      };
     }
-    metadata.ingredients = ingredients;
+    metadata.ingredients = { ...metadata.ingredients, ...ingredients };
     if (metadata.type?.flavorType?.flavor?.name) {
       metadata.type.flavorType.flavor.name = 'textTranslation';
     }

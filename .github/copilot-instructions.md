@@ -61,7 +61,13 @@ Because we have not enumerated the `scripts` field inside `package.json` here, u
 | Format | `format` | `npm run format` |
 | Build (production) | `build` | `npm run build` |
 | Package installer | `dist` / `package` | `npm run dist` (common with electron-builder) |
-| Tests | `test` | `npm test` |
+| Tests | `test` | `npm test` (Note: Renderer tests must run from `src\renderer` directory) |
+
+**Running Renderer Tests** (PowerShell on Windows):
+```powershell
+cd src\renderer; npm test -- TestName
+```
+Use semicolons (`;`) to chain commands in PowerShell, not `&&`.
 
 If a command fails:
 1. Confirm dependencies installed (`node_modules` exists).
