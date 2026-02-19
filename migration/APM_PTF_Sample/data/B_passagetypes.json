@@ -1,0 +1,52 @@
+{"data": [
+    {
+        "type": "passagetypes",
+        "attributes": {
+            "usfm": "toc1",
+            "title": "bookname",
+            "abbrev": "BOOK",
+            "default-order": -4
+        },
+        "id": "ca4868a9-6165-4de3-845c-b327c10b761f"
+    },
+    {
+        "type": "passagetypes",
+        "attributes": {
+            "usfm": "fn",
+            "title": "audionote",
+            "abbrev": "NOTE",
+            "default-order": 0
+        },
+        "id": "1d1153cd-e5a8-4ae4-a322-2c11db17370c"
+    },
+    {
+        "type": "passagetypes",
+        "attributes": {
+            "usfm": "ms",
+            "title": "movement",
+            "abbrev": "MOVE",
+            "default-order": -1
+        },
+        "id": "eb6cd030-ceb3-4a71-a822-031b41366622"
+    },
+    {
+        "type": "passagetypes",
+        "attributes": {
+            "usfm": "toc2",
+            "title": "altbookname",
+            "abbrev": "ALTBK",
+            "default-order": -3
+        },
+        "id": "81aed904-caa3-4aaf-bc46-c24b05d40c6b"
+    },
+    {
+        "type": "passagetypes",
+        "attributes": {
+            "usfm": "c",
+            "title": "chapter number",
+            "abbrev": "CHNUM",
+            "default-order": -2
+        },
+        "id": "c2e4ffea-3d96-40f5-aed8-eb8ad961efb3"
+    }
+]}

@@ -1,0 +1,30 @@
+{"data": [{
+    "type": "users",
+    "attributes": {
+        "name": "Initial User",
+        "given-name": "Initial",
+        "family-name": "User",
+        "email": "",
+        "phone": "",
+        "timezone": "America/Chicago",
+        "locale": "en",
+        "is-locked": false,
+        "uilanguagebcp47": "",
+        "digest-preference": 0,
+        "news-preference": false,
+        "date-created": "2025-11-11T20:01:23.948Z",
+        "date-updated": "2025-11-11T20:01:23.949Z"
+    },
+    "relationships": {
+        "lastModifiedByUser": {"data": null},
+        "organizationMemberships": {"data": [{
+            "type": "organizationmembership",
+            "id": "ce683d72-c41c-4aee-9f8c-062bc5c6750c"
+        }]},
+        "groupMemberships": {"data": [{
+            "type": "groupmembership",
+            "id": "03d6fee1-e19c-4d8e-b5d3-8d191576195b"
+        }]}
+    },
+    "id": "5b1295fe-04e4-40b2-a2db-1f0d259f43db"
+}]}

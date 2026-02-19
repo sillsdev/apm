@@ -1,0 +1,882 @@
+{"data": [
+    {
+        "type": "workflowsteps",
+        "attributes": {
+            "process": "OBTr",
+            "name": "Done",
+            "sequencenum": 10,
+            "tool": "{\"tool\": \"done\"}",
+            "permissions": "{}"
+        },
+        "id": "4ae1b4b5-32ff-4eaa-8c1f-043d2ef0d6d0"
+    },
+    {
+        "type": "workflowsteps",
+        "attributes": {
+            "process": "OBT",
+            "name": "ParatextSync",
+            "sequencenum": 7,
+            "tool": "{\"tool\": \"paratext\"}",
+            "permissions": "{}"
+        },
+        "id": "0c152af5-db1f-4937-9e79-63049e53c517"
+    },
+    {
+        "type": "workflowsteps",
+        "attributes": {
+            "process": "draft",
+            "name": "TeamCheck",
+            "sequencenum": 3,
+            "tool": "{\"tool\": \"teamCheck\"}",
+            "permissions": "{}"
+        },
+        "id": "f3a49ccd-adb7-445d-99e5-39a9afa529e5"
+    },
+    {
+        "type": "workflowsteps",
+        "attributes": {
+            "process": "OBT",
+            "name": "MarkVerses",
+            "sequencenum": 4,
+            "tool": "{\"tool\": \"verses\"}",
+            "permissions": "{}"
+        },
+        "id": "b4fc7ce6-0d7b-4ba0-8546-a8c45e2fdb8d"
+    },
+    {
+        "type": "workflowsteps",
+        "attributes": {
+            "process": "transcriber",
+            "name": "Record",
+            "sequencenum": 1,
+            "tool": "{\"tool\": \"record\"}",
+            "permissions": "{}"
+        },
+        "id": "2865b30c-cab0-4827-8c87-c9a15a29648f"
+    },
+    {
+        "type": "workflowsteps",
+        "attributes": {
+            "process": "transcriber",
+            "name": "MarkVerses",
+            "sequencenum": 2,
+            "tool": "{\"tool\": \"verses\"}",
+            "permissions": "{}"
+        },
+        "id": "f05f6e7f-b036-450a-acac-603070c729cc"
+    },
+    {
+        "type": "workflowsteps",
+        "attributes": {
+            "process": "OBTo",
+            "name": "PBTTranscribe",
+            "sequencenum": 10,
+            "tool": "{\"tool\": \"transcribe\", \"settings\":{\"artifactTypeId\": \"5eeb1f6a-14de-416e-81d0-e4026630dfc2\"}}",
+            "permissions": "{}"
+        },
+        "id": "7d7522ae-8114-42d9-90f3-bdd58cdc1696"
+    },
+    {
+        "type": "workflowsteps",
+        "attributes": {
+            "process": "OBS",
+            "name": "PeerReview",
+            "sequencenum": 4,
+            "tool": "{\"tool\": \"teamCheck\"}",
+            "permissions": "{}"
+        },
+        "id": "15c5dfa5-a0e8-4388-b930-f945600c3828"
+    },
+    {
+        "type": "workflowsteps",
+        "attributes": {
+            "process": "OBS",
+            "name": "FinalReview",
+            "sequencenum": 10,
+            "tool": "{\"tool\": \"discuss\"}",
+            "permissions": "{}"
+        },
+        "id": "2d10b57f-64a5-466c-8c3f-f002ba743b70"
+    },
+    {
+        "type": "workflowsteps",
+        "attributes": {
+            "process": "OBS",
+            "name": "BackTranslation",
+            "sequencenum": 7,
+            "tool": "{\"tool\": \"phraseBackTranslate\"}",
+            "permissions": "{}"
+        },
+        "id": "3575f6c1-91c6-462e-9c18-a43fde19d0e5"
+    },
+    {
+        "type": "workflowsteps",
+        "attributes": {
+            "process": "OBT",
+            "name": "Review",
+            "sequencenum": 6,
+            "tool": "{\"tool\": \"transcribe\"}",
+            "permissions": "{}"
+        },
+        "id": "c47a36ea-90a6-452f-a394-3ad46e14c48c"
+    },
+    {
+        "type": "workflowsteps",
+        "attributes": {
+            "process": "transcriber",
+            "name": "Export",
+            "sequencenum": 5,
+            "tool": "{\"tool\": \"export\"}",
+            "permissions": "{}"
+        },
+        "id": "3d05ab29-0660-410f-be7a-e59d8b0e2579"
+    },
+    {
+        "type": "workflowsteps",
+        "attributes": {
+            "process": "OBTo",
+            "name": "FinalRecording",
+            "sequencenum": 14,
+            "tool": "{\"tool\": \"discuss\"}",
+            "permissions": "{}"
+        },
+        "id": "bfd359fa-0728-47f6-a85b-2b117a1f5721"
+    },
+    {
+        "type": "workflowsteps",
+        "attributes": {
+            "process": "OBTo",
+            "name": "ConsultantCheck1",
+            "sequencenum": 6,
+            "tool": "{\"tool\": \"consultantCheck\"}",
+            "permissions": "{}"
+        },
+        "id": "cfa6dd98-86c3-4e28-b0eb-1ee90d2b47aa"
+    },
+    {
+        "type": "workflowsteps",
+        "attributes": {
+            "process": "OBS",
+            "name": "Internalize",
+            "sequencenum": 1,
+            "tool": "{\"tool\": \"resource\"}",
+            "permissions": "{}"
+        },
+        "id": "54b3279a-2c11-4569-9633-24916c6a46eb"
+    },
+    {
+        "type": "workflowsteps",
+        "attributes": {
+            "process": "draft",
+            "name": "MarkVerses",
+            "sequencenum": 4,
+            "tool": "{\"tool\": \"verses\"}",
+            "permissions": "{}"
+        },
+        "id": "2d3a7c02-c12b-4d2f-b1fd-ca67bd35072f"
+    },
+    {
+        "type": "workflowsteps",
+        "attributes": {
+            "process": "OBT",
+            "name": "Export",
+            "sequencenum": 16,
+            "tool": "{\"tool\": \"export\"}",
+            "permissions": "{}"
+        },
+        "id": "17e372b3-0ebf-48d8-aad7-68717e8435e6"
+    },
+    {
+        "type": "workflowsteps",
+        "attributes": {
+            "process": "OBS",
+            "name": "PreliminaryApproval",
+            "sequencenum": 9,
+            "tool": "{\"tool\": \"export\"}",
+            "permissions": "{}"
+        },
+        "id": "b633904b-c5ad-4d7f-8af1-3e4925be1b9a"
+    },
+    {
+        "type": "workflowsteps",
+        "attributes": {
+            "process": "draft",
+            "name": "Review",
+            "sequencenum": 6,
+            "tool": "{\"tool\": \"transcribe\"}",
+            "permissions": "{}"
+        },
+        "id": "4a7f528e-1d9e-49c2-9b97-78ae4b344a4e"
+    },
+    {
+        "type": "workflowsteps",
+        "attributes": {
+            "process": "OBTo",
+            "name": "ConsultantCheck2",
+            "sequencenum": 12,
+            "tool": "{\"tool\": \"consultantCheck\"}",
+            "permissions": "{}"
+        },
+        "id": "732b8e87-4dab-464d-969f-70bdeae0a864"
+    },
+    {
+        "type": "workflowsteps",
+        "attributes": {
+            "process": "Render",
+            "name": "PhraseBackTranslation",
+            "sequencenum": 6,
+            "tool": "{\"tool\": \"phraseBackTranslate\"}",
+            "permissions": "{}"
+        },
+        "id": "1cbf7985-7851-4b9b-8cf3-cc60500cc291"
+    },
+    {
+        "type": "workflowsteps",
+        "attributes": {
+            "process": "draft",
+            "name": "ParatextSync",
+            "sequencenum": 7,
+            "tool": "{\"tool\": \"paratext\"}",
+            "permissions": "{}"
+        },
+        "id": "60bf722f-3348-40b6-8dfb-12c7d6de777d"
+    },
+    {
+        "type": "workflowsteps",
+        "attributes": {
+            "process": "OBTo",
+            "name": "Record",
+            "sequencenum": 2,
+            "tool": "{\"tool\": \"record\"}",
+            "permissions": "{}"
+        },
+        "id": "00767390-32c5-4a9b-9079-8bb4044a8400"
+    },
+    {
+        "type": "workflowsteps",
+        "attributes": {
+            "process": "draft",
+            "name": "Done",
+            "sequencenum": 8,
+            "tool": "{\"tool\": \"done\"}",
+            "permissions": "{}"
+        },
+        "id": "4a678b7f-2023-467c-b9ee-1b20e2886e41"
+    },
+    {
+        "type": "workflowsteps",
+        "attributes": {
+            "process": "Render",
+            "name": "PBTTranscribe",
+            "sequencenum": 7,
+            "tool": "{\"tool\": \"transcribe\", \"settings\":{\"artifactTypeId\": \"5eeb1f6a-14de-416e-81d0-e4026630dfc2\"}}",
+            "permissions": "{}"
+        },
+        "id": "e33475e5-026e-4463-a34b-31215d24dd3f"
+    },
+    {
+        "type": "workflowsteps",
+        "attributes": {
+            "process": "draft",
+            "name": "Transcribe",
+            "sequencenum": 5,
+            "tool": "{\"tool\": \"transcribe\"}",
+            "permissions": "{}"
+        },
+        "id": "c4cf71a7-b345-4864-b28e-62f2fe54d991"
+    },
+    {
+        "type": "workflowsteps",
+        "attributes": {
+            "process": "Render",
+            "name": "ParatextSync",
+            "sequencenum": 2,
+            "tool": "{\"tool\": \"paratext\"}",
+            "permissions": "{}"
+        },
+        "id": "107fab81-4a2b-4371-9973-07e3caead887"
+    },
+    {
+        "type": "workflowsteps",
+        "attributes": {
+            "process": "Render",
+            "name": "WholeBackTranslation",
+            "sequencenum": 3,
+            "tool": "{\"tool\": \"wholeBackTranslate\"}",
+            "permissions": "{}"
+        },
+        "id": "d50bd39b-c018-447f-8512-488edd2b376c"
+    },
+    {
+        "type": "workflowsteps",
+        "attributes": {
+            "process": "OBTr",
+            "name": "Export",
+            "sequencenum": 9,
+            "tool": "{\"tool\": \"export\"}",
+            "permissions": "{}"
+        },
+        "id": "93d0434e-1fcc-4ff4-a53b-97ef6d6faa6e"
+    },
+    {
+        "type": "workflowsteps",
+        "attributes": {
+            "process": "OBT",
+            "name": "FinalReviewText",
+            "sequencenum": 15,
+            "tool": "{\"tool\": \"transcribe\"}",
+            "permissions": "{}"
+        },
+        "id": "02ffe44f-af10-4be7-a48a-7985aac9c810"
+    },
+    {
+        "type": "workflowsteps",
+        "attributes": {
+            "process": "OBTo",
+            "name": "PeerReview",
+            "sequencenum": 4,
+            "tool": "{\"tool\": \"teamCheck\"}",
+            "permissions": "{}"
+        },
+        "id": "423aca57-4bfb-4662-b1e5-35b54c0a24a5"
+    },
+    {
+        "type": "workflowsteps",
+        "attributes": {
+            "process": "OBT",
+            "name": "PhraseBackTranslation",
+            "sequencenum": 10,
+            "tool": "{\"tool\": \"phraseBackTranslate\"}",
+            "permissions": "{}"
+        },
+        "id": "f3d47c94-5907-41cf-9b9d-c51e09e2fa3c"
+    },
+    {
+        "type": "workflowsteps",
+        "attributes": {
+            "process": "OBT",
+            "name": "Record",
+            "sequencenum": 2,
+            "tool": "{\"tool\": \"record\"}",
+            "permissions": "{}"
+        },
+        "id": "993765d4-fc35-4266-9865-f20dfd3810a8"
+    },
+    {
+        "type": "workflowsteps",
+        "attributes": {
+            "process": "OBTo",
+            "name": "PhraseBackTranslation",
+            "sequencenum": 9,
+            "tool": "{\"tool\": \"phraseBackTranslate\"}",
+            "permissions": "{}"
+        },
+        "id": "25016e32-94f9-4108-aed8-5f41022e2094"
+    },
+    {
+        "type": "workflowsteps",
+        "attributes": {
+            "process": "OBTo",
+            "name": "Export",
+            "sequencenum": 15,
+            "tool": "{\"tool\": \"export\"}",
+            "permissions": "{}"
+        },
+        "id": "6e4a0f46-a746-4d85-b924-7a21ccace4ad"
+    },
+    {
+        "type": "workflowsteps",
+        "attributes": {
+            "process": "OBS",
+            "name": "TeamCheck",
+            "sequencenum": 3,
+            "tool": "{\"tool\": \"teamCheck\"}",
+            "permissions": "{}"
+        },
+        "id": "fa4bfd23-bcd9-4c9a-95c4-25d7e461f5be"
+    },
+    {
+        "type": "workflowsteps",
+        "attributes": {
+            "process": "Render",
+            "name": "Transcribe",
+            "sequencenum": 1,
+            "tool": "{\"tool\": \"transcribe\"}",
+            "permissions": "{}"
+        },
+        "id": "e6c37080-677e-4c60-8f60-56fc768b0278"
+    },
+    {
+        "type": "workflowsteps",
+        "attributes": {
+            "process": "transcriber",
+            "name": "Done",
+            "sequencenum": 6,
+            "tool": "{\"tool\": \"done\"}",
+            "permissions": "{}"
+        },
+        "id": "18518f19-7bcf-4341-82a4-439634fdf0c2"
+    },
+    {
+        "type": "workflowsteps",
+        "attributes": {
+            "process": "OBTr",
+            "name": "CommunityTesting",
+            "sequencenum": 5,
+            "tool": "{\"tool\": \"community\"}",
+            "permissions": "{}"
+        },
+        "id": "f50b6e95-6f54-4f2a-9aa0-da692c706db1"
+    },
+    {
+        "type": "workflowsteps",
+        "attributes": {
+            "process": "OBT",
+            "name": "PBTParatextSync",
+            "sequencenum": 12,
+            "tool": "{\"tool\": \"paratext\", \"settings\":{\"artifactTypeId\": \"5eeb1f6a-14de-416e-81d0-e4026630dfc2\"}}",
+            "permissions": "{}"
+        },
+        "id": "85bda99b-bd9c-4a40-96bb-3413fd1e8b2b"
+    },
+    {
+        "type": "workflowsteps",
+        "attributes": {
+            "process": "Render",
+            "name": "WBTParatextSync",
+            "sequencenum": 5,
+            "tool": "{\"tool\": \"paratext\", \"settings\":{\"artifactTypeId\": \"5e45fbda-0887-4d4d-9567-f75f29919c06\"}}",
+            "permissions": "{}"
+        },
+        "id": "6179ba0b-a353-4f8f-bf9d-026df90b94c3"
+    },
+    {
+        "type": "workflowsteps",
+        "attributes": {
+            "process": "OBTo",
+            "name": "FinalReview",
+            "sequencenum": 13,
+            "tool": "{\"tool\": \"discuss\"}",
+            "permissions": "{}"
+        },
+        "id": "8baaf31b-3b8a-4aa3-b7e1-5297f4eec0e0"
+    },
+    {
+        "type": "workflowsteps",
+        "attributes": {
+            "process": "OBTo",
+            "name": "RetellTranscribe",
+            "sequencenum": 11,
+            "tool": "{\"tool\": \"paratext\", \"settings\":{\"artifactTypeId\": \"384cd7ac-4571-4ec8-943d-5b31990ea2a3\"}}",
+            "permissions": "{}"
+        },
+        "id": "837ceab7-0fdf-48f2-96c1-30b2f983364a"
+    },
+    {
+        "type": "workflowsteps",
+        "attributes": {
+            "process": "Render",
+            "name": "PBTParatextSync",
+            "sequencenum": 8,
+            "tool": "{\"tool\": \"paratext\", \"settings\":{\"artifactTypeId\": \"5eeb1f6a-14de-416e-81d0-e4026630dfc2\"}}",
+            "permissions": "{}"
+        },
+        "id": "81da9c80-07d7-4dad-8394-1e82f481a1d4"
+    },
+    {
+        "type": "workflowsteps",
+        "attributes": {
+            "process": "OBTr",
+            "name": "TeamCheck",
+            "sequencenum": 3,
+            "tool": "{\"tool\": \"teamCheck\"}",
+            "permissions": "{}"
+        },
+        "id": "9fc34b7d-984b-43da-b1ef-9b0cf7b195bf"
+    },
+    {
+        "type": "workflowsteps",
+        "attributes": {
+            "process": "OBTr",
+            "name": "Record",
+            "sequencenum": 2,
+            "tool": "{\"tool\": \"record\"}",
+            "permissions": "{}"
+        },
+        "id": "85d7bedc-84c8-472e-9411-ab53c5a3a368"
+    },
+    {
+        "type": "workflowsteps",
+        "attributes": {
+            "process": "OBS",
+            "name": "Export",
+            "sequencenum": 12,
+            "tool": "{\"tool\": \"export\"}",
+            "permissions": "{}"
+        },
+        "id": "d736bfe3-20a6-415d-86b0-1d78d01ff395"
+    },
+    {
+        "type": "workflowsteps",
+        "attributes": {
+            "process": "OBS",
+            "name": "ConsultantCheck",
+            "sequencenum": 8,
+            "tool": "{\"tool\": \"consultantCheck\"}",
+            "permissions": "{}"
+        },
+        "id": "9f617921-a729-4fae-b707-43a9073bbd86"
+    },
+    {
+        "type": "workflowsteps",
+        "attributes": {
+            "process": "OBTo",
+            "name": "PhraseBackTranslation",
+            "sequencenum": 5,
+            "tool": "{\"tool\": \"phraseBackTranslate\"}",
+            "permissions": "{}"
+        },
+        "id": "ffa8a26d-3e88-4a64-a1a8-45e6dd5f8919"
+    },
+    {
+        "type": "workflowsteps",
+        "attributes": {
+            "process": "OBTo",
+            "name": "CommunityTesting",
+            "sequencenum": 7,
+            "tool": "{\"tool\": \"community\"}",
+            "permissions": "{}"
+        },
+        "id": "8a0cc422-27af-415f-bd58-6f459a88312c"
+    },
+    {
+        "type": "workflowsteps",
+        "attributes": {
+            "process": "OBS",
+            "name": "CommunityTest1",
+            "sequencenum": 5,
+            "tool": "{\"tool\": \"community\"}",
+            "permissions": "{}"
+        },
+        "id": "bee6198c-1c5b-4e7e-8f9f-4ca30e450d97"
+    },
+    {
+        "type": "workflowsteps",
+        "attributes": {
+            "process": "OBT",
+            "name": "PBTTranscribe",
+            "sequencenum": 11,
+            "tool": "{\"tool\": \"transcribe\", \"settings\":{\"artifactTypeId\": \"5eeb1f6a-14de-416e-81d0-e4026630dfc2\"}}",
+            "permissions": "{}"
+        },
+        "id": "bffe8bec-21d1-4308-b856-1769e6e9e717"
+    },
+    {
+        "type": "workflowsteps",
+        "attributes": {
+            "process": "OBTs",
+            "name": "Record",
+            "sequencenum": 1,
+            "tool": "{\"tool\": \"record\"}",
+            "permissions": "{}"
+        },
+        "id": "ff95921b-b3d7-463d-a086-bedbe11cc441"
+    },
+    {
+        "type": "workflowsteps",
+        "attributes": {
+            "process": "Render",
+            "name": "WBTTranscribe",
+            "sequencenum": 4,
+            "tool": "{\"tool\": \"transcribe\", \"settings\":{\"artifactTypeId\": \"5e45fbda-0887-4d4d-9567-f75f29919c06\"}}",
+            "permissions": "{}"
+        },
+        "id": "c0503d0c-2bd8-4489-b9bb-3c9298f51a73"
+    },
+    {
+        "type": "workflowsteps",
+        "attributes": {
+            "process": "OBT",
+            "name": "Internalize",
+            "sequencenum": 1,
+            "tool": "{\"tool\": \"resource\"}",
+            "permissions": "{}"
+        },
+        "id": "5ce3bffc-4e1c-401f-bc1a-8f45ec6655f5"
+    },
+    {
+        "type": "workflowsteps",
+        "attributes": {
+            "process": "OBTr",
+            "name": "ConsultantCheck",
+            "sequencenum": 8,
+            "tool": "{\"tool\": \"consultantCheck\"}",
+            "permissions": "{}"
+        },
+        "id": "fdc0c09d-b6bf-4a1d-bff3-cbdee38b3f1b"
+    },
+    {
+        "type": "workflowsteps",
+        "attributes": {
+            "process": "OBS",
+            "name": "Done",
+            "sequencenum": 13,
+            "tool": "{\"tool\": \"done\"}",
+            "permissions": "{}"
+        },
+        "id": "9aa39cd6-87fd-428a-8b23-7771aea10c77"
+    },
+    {
+        "type": "workflowsteps",
+        "attributes": {
+            "process": "OBTs",
+            "name": "Export",
+            "sequencenum": 2,
+            "tool": "{\"tool\": \"export\"}",
+            "permissions": "{}"
+        },
+        "id": "79892ff7-df78-4fc8-81f9-4564e85cc8ab"
+    },
+    {
+        "type": "workflowsteps",
+        "attributes": {
+            "process": "draft",
+            "name": "Internalize",
+            "sequencenum": 1,
+            "tool": "{\"tool\": \"resource\"}",
+            "permissions": "{}"
+        },
+        "id": "9d9518df-42d1-47e4-b2fc-0dc74b9d89f1"
+    },
+    {
+        "type": "workflowsteps",
+        "attributes": {
+            "process": "OBTo",
+            "name": "TermIdentify",
+            "sequencenum": 3,
+            "tool": "{\"tool\": \"keyterm\"}",
+            "permissions": "{}"
+        },
+        "id": "9512f91d-d152-484a-bcf9-6d01aea3d929"
+    },
+    {
+        "type": "workflowsteps",
+        "attributes": {
+            "process": "OBTr",
+            "name": "Internalize",
+            "sequencenum": 1,
+            "tool": "{\"tool\": \"resource\"}",
+            "permissions": "{}"
+        },
+        "id": "3a8ddd3d-0fff-4406-aff6-df3c21ce4189"
+    },
+    {
+        "type": "workflowsteps",
+        "attributes": {
+            "process": "OBT",
+            "name": "ConsultantCheck",
+            "sequencenum": 13,
+            "tool": "{\"tool\": \"consultantCheck\"}",
+            "permissions": "{}"
+        },
+        "id": "81d5b1aa-3ea9-42a0-b144-0a7121789fd6"
+    },
+    {
+        "type": "workflowsteps",
+        "attributes": {
+            "process": "OBTr",
+            "name": "PhraseBackTranslation",
+            "sequencenum": 7,
+            "tool": "{\"tool\": \"phraseBackTranslate\"}",
+            "permissions": "{}"
+        },
+        "id": "e4e5958a-f2a3-4da0-979a-7bedc36f3a44"
+    },
+    {
+        "type": "workflowsteps",
+        "attributes": {
+            "process": "OBS",
+            "name": "Record",
+            "sequencenum": 2,
+            "tool": "{\"tool\": \"record\"}",
+            "permissions": "{}"
+        },
+        "id": "45d9b0ca-06cd-46be-bfbb-2dd3817bbf0b"
+    },
+    {
+        "type": "workflowsteps",
+        "attributes": {
+            "process": "OBT",
+            "name": "Transcribe",
+            "sequencenum": 5,
+            "tool": "{\"tool\": \"transcribe\"}",
+            "permissions": "{}"
+        },
+        "id": "474b623e-91c7-4cfd-9e84-c78a368eb3df"
+    },
+    {
+        "type": "workflowsteps",
+        "attributes": {
+            "process": "transcriber",
+            "name": "Transcribe",
+            "sequencenum": 3,
+            "tool": "{\"tool\": \"transcribe\"}",
+            "permissions": "{}"
+        },
+        "id": "058cfc3c-c955-4f93-a525-685915f64a1f"
+    },
+    {
+        "type": "workflowsteps",
+        "attributes": {
+            "process": "draft",
+            "name": "Record",
+            "sequencenum": 2,
+            "tool": "{\"tool\": \"record\"}",
+            "permissions": "{}"
+        },
+        "id": "8a9b9bd7-5065-4a30-8bd9-ede5916801f8"
+    },
+    {
+        "type": "workflowsteps",
+        "attributes": {
+            "process": "OBT",
+            "name": "ParatextPeerReview",
+            "sequencenum": 8,
+            "tool": "{\"tool\": \"discuss\"}",
+            "permissions": "{}"
+        },
+        "id": "cbf921fa-5ee5-4320-817c-a144b2747980"
+    },
+    {
+        "type": "workflowsteps",
+        "attributes": {
+            "process": "OBTo",
+            "name": "Done",
+            "sequencenum": 16,
+            "tool": "{\"tool\": \"done\"}",
+            "permissions": "{}"
+        },
+        "id": "8f93fe9f-bfe2-44d5-a48e-b495da4250ad"
+    },
+    {
+        "type": "workflowsteps",
+        "attributes": {
+            "process": "OBT",
+            "name": "FinalReview",
+            "sequencenum": 14,
+            "tool": "{\"tool\": \"record\"}",
+            "permissions": "{}"
+        },
+        "id": "9ad3a6af-1007-48b4-8bf4-f42d30c2c9c4"
+    },
+    {
+        "type": "workflowsteps",
+        "attributes": {
+            "process": "OBTr",
+            "name": "PeerReview",
+            "sequencenum": 4,
+            "tool": "{\"tool\": \"teamCheck\"}",
+            "permissions": "{}"
+        },
+        "id": "df8613c9-29c3-4c66-b4ca-5ae234343a3f"
+    },
+    {
+        "type": "workflowsteps",
+        "attributes": {
+            "process": "transcriber",
+            "name": "ParatextSync",
+            "sequencenum": 4,
+            "tool": "{\"tool\": \"paratext\"}",
+            "permissions": "{}"
+        },
+        "id": "3cebbfb4-4459-4f00-8229-15bc905205c1"
+    },
+    {
+        "type": "workflowsteps",
+        "attributes": {
+            "process": "OBTr",
+            "name": "WholeBackTranslation",
+            "sequencenum": 6,
+            "tool": "{\"tool\": \"wholeBackTranslate\"}",
+            "permissions": "{}"
+        },
+        "id": "4861382a-024a-4e2b-8108-07ee4fa2e960"
+    },
+    {
+        "type": "workflowsteps",
+        "attributes": {
+            "process": "OBT",
+            "name": "TermIdentify",
+            "sequencenum": 3,
+            "tool": "{\"tool\": \"keyterm\"}",
+            "permissions": "{}"
+        },
+        "id": "6cd39beb-fd36-4110-bdb5-7777b2602d70"
+    },
+    {
+        "type": "workflowsteps",
+        "attributes": {
+            "process": "OBT",
+            "name": "CommunityTesting",
+            "sequencenum": 9,
+            "tool": "{\"tool\": \"community\"}",
+            "permissions": "{}"
+        },
+        "id": "87fdff6d-6fe8-47d8-a6b3-2bb21ee21598"
+    },
+    {
+        "type": "workflowsteps",
+        "attributes": {
+            "process": "OBTo",
+            "name": "RetellBackTranslation",
+            "sequencenum": 8,
+            "tool": "{\"tool\": \"phraseBackTranslate\", \"settings\":{\"artifactTypeId\": \"384cd7ac-4571-4ec8-943d-5b31990ea2a3\"}}",
+            "permissions": "{}"
+        },
+        "id": "4bb6a364-efd2-4473-9026-0edc8ad2125b"
+    },
+    {
+        "type": "workflowsteps",
+        "attributes": {
+            "process": "OBTo",
+            "name": "Internalize",
+            "sequencenum": 1,
+            "tool": "{\"tool\": \"resource\"}",
+            "permissions": "{}"
+        },
+        "id": "50112fe3-7207-49b0-9f31-f48855c97151"
+    },
+    {
+        "type": "workflowsteps",
+        "attributes": {
+            "process": "OBS",
+            "name": "CommunityTest2",
+            "sequencenum": 6,
+            "tool": "{\"tool\": \"community\"}",
+            "permissions": "{}"
+        },
+        "id": "02891222-44c7-4614-b002-3df8b4c74bdf"
+    },
+    {
+        "type": "workflowsteps",
+        "attributes": {
+            "process": "OBS",
+            "name": "FinalRecording",
+            "sequencenum": 11,
+            "tool": "{\"tool\": \"discuss\"}",
+            "permissions": "{}"
+        },
+        "id": "8e23f6b1-5f0c-4263-954d-923ba4e69542"
+    },
+    {
+        "type": "workflowsteps",
+        "attributes": {
+            "process": "OBT",
+            "name": "Done",
+            "sequencenum": 17,
+            "tool": "{\"tool\": \"done\"}",
+            "permissions": "{}"
+        },
+        "id": "7a26d087-c82a-4d06-9afb-aab280ab5caa"
+    }
+]}

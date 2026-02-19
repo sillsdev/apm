@@ -1,0 +1,16 @@
+{"data": [
+    {
+        "type": "projecttypes",
+        "attributes": {"name": "Generic"},
+        "relationships": {"projects": {"data": [{
+            "type": "project",
+            "id": "954660c8-b788-46ff-8608-05a3c28b3de0"
+        }]}},
+        "id": "0f6ba66f-0af8-401a-a23b-4f8815eb817a"
+    },
+    {
+        "type": "projecttypes",
+        "attributes": {"name": "Scripture"},
+        "id": "b0a999f1-141a-4eea-b257-519629fbc06d"
+    }
+]}

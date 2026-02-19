@@ -1,0 +1,16 @@
+{"data": [
+    {
+        "type": "plantypes",
+        "attributes": {"name": "Scripture"},
+        "id": "bc29b2c2-3aeb-4a05-b007-c069ad4f8266"
+    },
+    {
+        "type": "plantypes",
+        "attributes": {"name": "Other"},
+        "relationships": {"plans": {"data": [{
+            "type": "plan",
+            "id": "21c35309-8073-422c-a172-3013fd077ab1"
+        }]}},
+        "id": "cffc9a3e-860d-496d-8303-02f792ee4bcf"
+    }
+]}

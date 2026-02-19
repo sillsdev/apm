@@ -1,0 +1,29 @@
+{"data": [{
+    "type": "groups",
+    "attributes": {
+        "name": "All users of >Initial User Personal<",
+        "abbreviation": "all-users",
+        "all-users": true,
+        "date-created": "2025-11-11T20:01:24.619Z",
+        "date-updated": "2025-11-11T20:01:24.619Z"
+    },
+    "relationships": {
+        "lastModifiedByUser": {"data": {
+            "type": "user",
+            "id": "5b1295fe-04e4-40b2-a2db-1f0d259f43db"
+        }},
+        "owner": {"data": {
+            "type": "organization",
+            "id": "9d0cf859-206d-480b-86e3-47c148daec1a"
+        }},
+        "groupMemberships": {"data": [{
+            "type": "groupmembership",
+            "id": "03d6fee1-e19c-4d8e-b5d3-8d191576195b"
+        }]},
+        "projects": {"data": [{
+            "type": "project",
+            "id": "954660c8-b788-46ff-8608-05a3c28b3de0"
+        }]}
+    },
+    "id": "dee186b5-3e55-4d0a-854f-f7ae8cf86cd1"
+}]}

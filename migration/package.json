@@ -1,0 +1,29 @@
+{
+  "name": "onestory-migration",
+  "version": "1.0.0",
+  "description": "Migration scripts to import OneStory data into Audio Project Manager",
+  "main": "index.js",
+  "scripts": {
+    "verify": "node 00-verify-setup.js",
+    "scrape": "node 01-scrape-onestory.js",
+    "download": "node 02-download-audio.js",
+    "transform": "node 03-transform-to-ptf.js",
+    "story-burrito": "node 04-generate-audio-burrito.js",
+    "ptf-burrito": "node 05-burrito-to-ptf.js",
+    "migrate": "npm run scrape && npm run download && npm run transform && npm run burrito",
+    "start": "npm run verify && npm run migrate"
+  },
+  "keywords": [
+    "migration",
+    "onestory",
+    "apm"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "adm-zip": "^0.5.16",
+    "luxon": "^3.7.1",
+    "mui-language-picker": "^2.5.2",
+    "puppeteer": "^24.0.0"
+  }
+}

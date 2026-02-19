@@ -1,0 +1,31 @@
+{"data": [{
+    "type": "passages",
+    "attributes": {
+        "sequencenum": 1,
+        "book": "",
+        "reference": "Story 01",
+        "title": "",
+        "state": "noMedia",
+        "date-created": "2025-11-11T21:51:27.997Z",
+        "date-updated": "2025-11-11T21:51:27.997Z",
+        "start-chapter": 0,
+        "end-chapter": 0,
+        "start-verse": 0,
+        "end-verse": 0
+    },
+    "relationships": {
+        "lastModifiedByUser": {"data": {
+            "type": "user",
+            "id": "5b1295fe-04e4-40b2-a2db-1f0d259f43db"
+        }},
+        "section": {"data": {
+            "type": "section",
+            "id": "ad3aaf48-47da-4a97-bdc0-c469144a7931"
+        }},
+        "mediafiles": {"data": [{
+            "type": "mediafile",
+            "id": "af8676c3-9cc1-45af-8dee-5c95f751a740"
+        }]}
+    },
+    "id": "5ff22606-0617-49c9-a1dd-26c0dc3a09c6"
+}]}

@@ -1,0 +1,26 @@
+{"data": [{
+    "type": "organizationmemberships",
+    "attributes": {
+        "date-created": "2025-11-11T20:01:24.619Z",
+        "date-updated": "2025-11-11T20:01:24.619Z"
+    },
+    "relationships": {
+        "lastModifiedByUser": {"data": {
+            "type": "user",
+            "id": "5b1295fe-04e4-40b2-a2db-1f0d259f43db"
+        }},
+        "user": {"data": {
+            "type": "user",
+            "id": "5b1295fe-04e4-40b2-a2db-1f0d259f43db"
+        }},
+        "organization": {"data": {
+            "type": "organization",
+            "id": "9d0cf859-206d-480b-86e3-47c148daec1a"
+        }},
+        "role": {"data": {
+            "type": "role",
+            "id": "e4283577-f08e-4396-aae8-bba3122c52ff"
+        }}
+    },
+    "id": "ce683d72-c41c-4aee-9f8c-062bc5c6750c"
+}]}
