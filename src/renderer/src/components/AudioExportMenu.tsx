@@ -14,7 +14,7 @@ interface IProps {
 }
 
 export function AudioExportMenu(props: IProps) {
-  const { action, localizedArtifact, isScripture, stopPlayer, disabled } =
+  const { action, localizedArtifact, /* isScripture,*/ stopPlayer, disabled } =
     props;
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const t: ITranscriptionTabStrings = useSelector(
@@ -79,7 +79,7 @@ export function AudioExportMenu(props: IProps) {
             }
           />
         </StyledMenuItem>
-        {isScripture && (
+        {/* {isScripture && (
           <StyledMenuItem
             id="burritoExport"
             aria-hidden={!anchorEl}
@@ -87,7 +87,7 @@ export function AudioExportMenu(props: IProps) {
           >
             <ListItemText primary={t.scriptureBurrito} />
           </StyledMenuItem>
-        )}
+        )} */}
       </StyledMenu>
     </>
   );
