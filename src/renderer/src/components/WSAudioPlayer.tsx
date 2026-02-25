@@ -582,13 +582,13 @@ function WSAudioPlayer(props: IProps) {
     setLooping(wsLoopRegion(!looping));
   };
   const handlePrevRegion = useCallback(() => {
-    setPlaying(wsPrevRegion());
+    wsPrevRegion();
     return true;
-  }, [wsPrevRegion, setPlaying]);
+  }, [wsPrevRegion]);
   const handleNextRegion = useCallback(() => {
-    setPlaying(wsNextRegion());
+    wsNextRegion();
     return true;
-  }, [wsNextRegion, setPlaying]);
+  }, [wsNextRegion]);
 
   const gotoEnd = () => {
     wsPause();
@@ -1689,53 +1689,64 @@ function WSAudioPlayer(props: IProps) {
                             horizontal: 'right',
                           }}
                         >
-                          {allowZoom && !hideZoom && (
-                            <MenuItem
-                              onClick={(e) => {
-                                //don't close menu if zoom in or out button is clicked
-                                const target = e.target as HTMLElement;
-                                if (
-                                  target.closest?.(
-                                    '[id="wsZoomIn"], [id="wsZoomOut"]'
+                          {[
+                            allowZoom && !hideZoom && (
+                              <MenuItem
+                                key="zoom-control"
+                                onClick={(e) => {
+                                  //don't close menu if zoom in or out button is clicked
+                                  const target = e.target as HTMLElement;
+                                  if (
+                                    target.closest?.(
+                                      '[id="wsZoomIn"], [id="wsZoomOut"]'
+                                    )
                                   )
-                                )
-                                  return;
-                                handleMoreMenuClose();
-                              }}
-                              sx={{ pointerEvents: 'none' }}
-                            >
-                              <WSAudioPlayerZoom
-                                ready={ready && !recording && !waitingForAI}
-                                fillPx={recording ? 100 : wsFillPx()}
-                                curPx={pxPerSec}
-                                onZoom={wsZoom}
-                              />
-                            </MenuItem>
-                          )}
-                          {allowRecord === true && (
-                            <>
-                              {noiseRemovalControl() && (
-                                <MenuItem onClick={handleMoreMenuClose}>
-                                  {noiseRemovalControl()}
-                                </MenuItem>
-                              )}
-                              {voiceChangeControl() && (
-                                <MenuItem onClick={handleMoreMenuClose}>
-                                  {voiceChangeControl()}
-                                </MenuItem>
-                              )}
-                              {normalizeControl() && (
-                                <MenuItem onClick={handleMoreMenuClose}>
-                                  {normalizeControl()}
-                                </MenuItem>
-                              )}
-                              {!keepItSmall && (
-                                <MenuItem onClick={handleMoreMenuClose}>
-                                  {microphoneControl()}
-                                </MenuItem>
-                              )}
-                            </>
-                          )}
+                                    return;
+                                  handleMoreMenuClose();
+                                }}
+                                sx={{ pointerEvents: 'none' }}
+                              >
+                                <WSAudioPlayerZoom
+                                  ready={ready && !recording && !waitingForAI}
+                                  fillPx={recording ? 100 : wsFillPx()}
+                                  curPx={pxPerSec}
+                                  onZoom={wsZoom}
+                                />
+                              </MenuItem>
+                            ),
+                            allowRecord === true && noiseRemovalControl() && (
+                              <MenuItem
+                                key="noise-removal"
+                                onClick={handleMoreMenuClose}
+                              >
+                                {noiseRemovalControl()}
+                              </MenuItem>
+                            ),
+                            allowRecord === true && voiceChangeControl() && (
+                              <MenuItem
+                                key="voice-change"
+                                onClick={handleMoreMenuClose}
+                              >
+                                {voiceChangeControl()}
+                              </MenuItem>
+                            ),
+                            allowRecord === true && normalizeControl() && (
+                              <MenuItem
+                                key="normalize"
+                                onClick={handleMoreMenuClose}
+                              >
+                                {normalizeControl()}
+                              </MenuItem>
+                            ),
+                            allowRecord === true && !keepItSmall && (
+                              <MenuItem
+                                key="microphone-control"
+                                onClick={handleMoreMenuClose}
+                              >
+                                {microphoneControl()}
+                              </MenuItem>
+                            ),
+                          ].filter(Boolean)}
                         </Menu>
                         <Menu
                           anchorEl={micMenuAnchorEl}
@@ -1930,7 +1941,7 @@ function WSAudioPlayer(props: IProps) {
                           </span>
                         </LightTooltip>
                       )}
-                      {allowSegment && !isMobileView && (
+                      {allowSegment && (
                         <>
                           <LightTooltip
                             id="wsPrevTip"
