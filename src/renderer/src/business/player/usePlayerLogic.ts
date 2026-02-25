@@ -26,10 +26,10 @@ interface PlayerLogicProps {
   setRequestPlay: (request: RequestPlay) => void;
   setInitialPosition: (position: number | undefined) => void;
   playerMediafile?: MediaFile | undefined;
-  mediafileRef: React.MutableRefObject<MediaFile | undefined>;
-  segmentsRef: React.MutableRefObject<string>;
-  durationRef: React.MutableRefObject<number>;
-  playingRef: React.MutableRefObject<boolean | undefined>;
+  mediafileRef: React.RefObject<MediaFile | undefined>;
+  segmentsRef: React.RefObject<string>;
+  durationRef: React.RefObject<number>;
+  playingRef: React.RefObject<boolean | undefined>;
   onSegment?: ((segments: string, whole: boolean) => void) | undefined;
 }
 

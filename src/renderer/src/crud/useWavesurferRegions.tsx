@@ -77,8 +77,9 @@ export function useWaveSurferRegions(
   const wsRef = useRef<WaveSurfer | null>(ws);
   const regionsRef = useRef<RegionsPlugin | undefined>(undefined);
   const singleRegionRef = useRef(singleRegionOnly);
-  const currentRegionRef = useRef<any>(undefined);
-  const loopingRegionRef = useRef<any>(undefined);
+  const currentRegionRef = useRef<Region | undefined>(undefined);
+  const nextPrevRegionRef = useRef<Region | undefined>(undefined);
+  const loopingRegionRef = useRef<Region | undefined>(undefined);
   const loopingRef = useRef(false);
   const updatingRef = useRef(false);
   const resizingRef = useRef(false);
@@ -94,6 +95,7 @@ export function useWaveSurferRegions(
   const currentRegionOriginalColorRef = useRef<string>(''); // Store the original color of the current region
   const hasSegmentUndoRef = useRef<boolean | undefined>(hasSegmentUndo);
   const regionBeforeClickRef = useRef<Region | undefined>(undefined);
+  const playTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
   // Store finish handler reference for cleanup
   const finishHandlerRef = useRef<(() => void) | undefined>(undefined);
@@ -263,6 +265,9 @@ export function useWaveSurferRegions(
     } else {
       playRegion(reg);
     }
+    // Sync playing state and UI so parent/effects don't override; region-out
+    // uses nextPrevRegionRef so snap-back still works.
+    playTimeoutRef.current = setTimeout(() => setPlaying(true), 100);
   };
   // Cleanup function to remove all event listeners
   const cleanupEventListeners = () => {
@@ -280,6 +285,10 @@ export function useWaveSurferRegions(
 
     return () => {
       cleanupEventListeners();
+      if (playTimeoutRef.current) {
+        clearTimeout(playTimeoutRef.current);
+        playTimeoutRef.current = undefined;
+      }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -413,12 +422,9 @@ export function useWaveSurferRegions(
           if (r === loopingRegionRef.current && isPlaying()) {
             r.play();
           }
-        } else if (
-          playRegionRef.current === r ||
-          playRegionIdRef.current === r.id
-        ) {
+        } else if (nextPrevRegionRef.current?.id === r?.id) {
           //we just wanted to play this region
-          setPlaying(false);
+          if (isPlaying()) nextPrevRegionRef.current = undefined;
           goto(r.start);
           setPlayRegionTarget(undefined);
           onRegionPlayEnd?.({
@@ -426,6 +432,8 @@ export function useWaveSurferRegions(
             end: r.end,
             label: r.content?.textContent || '',
           });
+        } else {
+          setPlaying(false);
         }
       });
       regionsPlugin.on('region-clicked', function (r: Region, e: Event) {
@@ -464,7 +472,11 @@ export function useWaveSurferRegions(
   };
 
   const findRegion = (value: number, force: boolean = false) => {
-    if (!force && currentRegion() && isInRegion(currentRegion(), value))
+    if (
+      !force &&
+      currentRegion() &&
+      isInRegion(currentRegion() as Region, value)
+    )
       return currentRegion();
     let foundIt: any = undefined;
     regions().forEach(function (r) {
@@ -901,13 +913,16 @@ export function useWaveSurferRegions(
     return regions.length;
   }
   const wsPrevRegion = () => {
-    const r = findPrevRegion(currentRegion());
+    const r = findPrevRegion(currentRegion() as Region);
     if (r) {
-      setPlayRegionTarget(r);
+      nextPrevRegionRef.current = r;
       onStartRegion && onStartRegion(r.start);
-      goto(r.start, true);
-      setCurrentRegion(r);
-      playRegion(r);
+      // const target: IRegion = {
+      //   start: r.start,
+      //   end: r.end,
+      //   label: r.content?.textContent || '',
+      // };
+      wsPlayRegion(r);
       return true;
     } else {
       goto(0);
@@ -919,13 +934,16 @@ export function useWaveSurferRegions(
     //TT-2825 changing selfIfAtStart to false
     //but I coded that in there for this call, so
     //wonder what case I was handling then????
-    const r = findNextRegion(currentRegion(), false);
+    const r = findNextRegion(currentRegion() as Region, false);
     if (r) {
-      setPlayRegionTarget(r);
-      goto(r.start, true);
+      nextPrevRegionRef.current = r;
       onStartRegion && onStartRegion(r.start);
-      setCurrentRegion(r);
-      playRegion(r);
+      // const target: IRegion = {
+      //   start: r.start,
+      //   end: r.end,
+      //   label: r.content?.textContent || '',
+      // };
+      wsPlayRegion(r);
       return true;
     } else {
       goto(duration());
@@ -1045,10 +1063,10 @@ export function useWaveSurferRegions(
     if (
       currentRegion() &&
       !loopingRef.current &&
-      roundToTenths(currentRegion().start) <= roundToTenths(progress) && //account for discussion topic rounding
-      currentRegion().end > progress + 0.01
+      roundToTenths(currentRegion()?.start ?? 0) <= roundToTenths(progress) && //account for discussion topic rounding
+      (currentRegion()?.end ?? 0) > progress + 0.01
     ) {
-      playRegion(currentRegion());
+      playRegion(currentRegion() as Region);
       return true;
     }
     resetPlayingRegion();

@@ -514,8 +514,8 @@ export function useWaveSurfer(
   const wsRegionBlob = async () => {
     if (!wavesurfer) return;
     if (!currentRegion()) return wsBlob();
-    const start = trimTo(currentRegion().start, 3);
-    const end = trimTo(currentRegion().end, 3);
+    const start = trimTo(currentRegion()?.start ?? 0, 3);
+    const end = trimTo(currentRegion()?.end ?? 0, 3);
     const len = end - start;
     if (!len) return wsBlob();
 
@@ -701,9 +701,9 @@ export function useWaveSurfer(
   //delete the audio in the current region
   const wsRegionDelete = async () => {
     if (!currentRegion() || !wavesurferRef.current) return;
-    const start = trimTo(currentRegion().start, 3);
-    const end = trimTo(currentRegion().end, 3);
-    currentRegion().remove();
+    const start = trimTo(currentRegion()?.start ?? 0, 3);
+    const end = trimTo(currentRegion()?.end ?? 0, 3);
+    currentRegion()?.remove();
     const len = end - start;
 
     if (!len) return wsClear();
@@ -755,8 +755,8 @@ export function useWaveSurfer(
       wsLoad(blob);
       return blob;
     }
-    const start = trimTo(currentRegion().start, 3);
-    const end = trimTo(currentRegion().end, 3);
+    const start = trimTo(currentRegion()?.start ?? 0, 3);
+    const end = trimTo(currentRegion()?.end ?? 0, 3);
     const len = end - start;
     if (!len || !blobRef.current) {
       wsLoad(blob);

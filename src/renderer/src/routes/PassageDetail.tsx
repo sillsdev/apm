@@ -398,7 +398,6 @@ const PassageDetailGrids = () => {
                     ? NamedRegions.BackTranslation
                     : undefined
                 }
-                isMobile={isMobile && tool === ToolSlug.PhraseBackTranslate}
               />
             </Grid>
           </Grid>
