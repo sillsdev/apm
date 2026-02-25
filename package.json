@@ -153,6 +153,7 @@
     "@types/react-router-dom": "^5.3.3",
     "@types/request": "^2.48.13",
     "@types/wavesurfer.js": "^6.0.12",
+    "@upstash/context7-mcp": "^2.1.2",
     "@vitejs/plugin-react": "^5.1.1",
     "dotenv": "^17.0.0",
     "electron": "^39.2.6",
