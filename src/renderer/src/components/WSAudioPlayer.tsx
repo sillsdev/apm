@@ -981,8 +981,9 @@ function WSAudioPlayer(props: IProps) {
   };
   const handleDeleteRegion = () => {
     setPlaying(false);
-    wsRegionDelete();
-    handleChanged();
+    wsRegionDelete().then(() => {
+      handleChanged();
+    });
   };
   const handleUndo = () => {
     wsUndo();
