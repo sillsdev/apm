@@ -1,6 +1,6 @@
 {
   "name": "apm-vite-web",
-  "version": "4.4.3",
+  "version": "4.5.0",
   "license": "MIT",
   "scripts": {
     "start": "vite",
@@ -187,7 +187,7 @@
   "build": {
     "appId": "sil.lsdev.audio-project-manager",
     "productName": "Audio Project Manager",
-    "copyright": "Copyright © 2020-2025 ${author}",
+    "copyright": "Copyright © 2020-2026 ${author}",
     "win": {
       "icon": "public/icon.png"
     },

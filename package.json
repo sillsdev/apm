@@ -1,6 +1,6 @@
 {
   "name": "audio-project-manager",
-  "version": "4.4.3",
+  "version": "4.5.0",
   "description": "An Electron application with React and TypeScript",
   "main": "./out/main/index.js",
   "homepage": "./out",
@@ -180,7 +180,7 @@
   "build": {
     "appId": "sil.lsdev.audio-project-manager",
     "productName": "Audio Project Manager",
-    "copyright": "Copyright © 2020-2025 ${author}",
+    "copyright": "Copyright © 2020-2026 ${author}",
     "win": {
       "icon": "resources/icon.png"
     },

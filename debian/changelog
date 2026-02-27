@@ -1,3 +1,9 @@
+audio - project - manager(4.5.0.0)  experimental; urgency = high
+
+ * hot fix audio recording cut
+
+ -- Greg Trihus <greg_trihus@sil.org>  Mon, 27 Feb 2026 14:44:00 - 0500
+
 audio - project - manager(4.4.3.0)  experimental; urgency = high
 
  * TT-6940 audio delete
