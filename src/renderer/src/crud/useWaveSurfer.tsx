@@ -465,7 +465,7 @@ export function useWaveSurfer(
     blobToLoad.current = blob;
     positionToLoad.current = position;
   };
-  const wsLoad = (blob?: Blob, position?: number) => {
+  const wsLoad = async (blob?: Blob, position?: number) => {
     regionsLoadedRef.current = false;
     if (!wavesurferRef.current) {
       queueLoad(blob, position);
@@ -476,11 +476,11 @@ export function useWaveSurfer(
         queueLoad(blob, position);
         loadRequests.current = 2; //if there was another, we'll bypass it
       } else {
-        loadBlob(blob, position);
         loadRequests.current = 1;
+        await loadBlob(blob, position);
       }
     } else if (blobToLoad.current) {
-      loadBlob(blobToLoad.current, positionToLoad.current);
+      await loadBlob(blobToLoad.current, positionToLoad.current);
       blobToLoad.current = undefined;
     } else {
       loadRequests.current--;
@@ -581,7 +581,7 @@ export function useWaveSurfer(
   }
 
   async function loadDecoded(audioBuffer: AudioBuffer, position?: number) {
-    wsLoad(await audioBufferToWavBlob(audioBuffer), position);
+    return await wsLoad(await audioBufferToWavBlob(audioBuffer), position);
   }
   const copyOriginal = () => {
     if (!wavesurferRef.current) return undefined;
@@ -747,14 +747,14 @@ export function useWaveSurfer(
     onCanUndo(true);
 
     if (!currentRegion()) {
-      wsLoad(blob);
+      await wsLoad(blob);
       return blob;
     }
     const start = trimTo(currentRegion().start, 3);
     const end = trimTo(currentRegion().end, 3);
     const len = end - start;
     if (!len || !blobRef.current) {
-      wsLoad(blob);
+      await wsLoad(blob);
       return blob;
     }
 
