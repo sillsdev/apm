@@ -5,6 +5,7 @@ import { API_CONFIG } from '../../api-variable';
 import BigDialog from '../hoc/BigDialog';
 import { BigDialogBp } from '../hoc/BigDialogBp';
 import MediaUploadContent from './MediaUploadContent';
+import FilterContent from './FilterContent';
 import { FaithBridge } from '../assets/brands';
 import { UploadType } from './UploadType';
 
@@ -94,23 +95,66 @@ function MediaUpload(props: IProps) {
       title={title[uploadType] ?? ''}
       bp={BigDialogBp.sm}
     >
-      <MediaUploadContent
-        onVisible={onVisible}
-        uploadType={uploadType}
-        multiple={multiple}
-        uploadMethod={uploadMethod}
-        cancelMethod={cancelMethod}
-        cancelLabel={cancelLabel}
-        metaData={metaData}
-        ready={ready}
-        speaker={speaker}
-        onSpeaker={onSpeaker}
-        team={team}
-        onFiles={onFiles}
-        inValue={inValue}
-        onValue={onValue}
-        onNonAudio={onNonAudio}
-      />
+      <>
+        {' '}
+        {/* The FilterContent will have to be moved once Scripture Burrito Import is Ready */}
+        {/* All that it was inside BigDialog before this testing was done:
+          <MediaUploadContent
+            onVisible={onVisible}
+            uploadType={uploadType}
+            multiple={multiple}
+            uploadMethod={uploadMethod}
+            cancelMethod={cancelMethod}
+            cancelLabel={cancelLabel}
+            metaData={metaData}
+            ready={ready}
+            speaker={speaker}
+            onSpeaker={onSpeaker}
+            team={team}
+            onFiles={onFiles}
+            inValue={inValue}
+            onValue={onValue}
+            onNonAudio={onNonAudio}
+          /> */}
+        {uploadType !== UploadType.Test && (
+          <MediaUploadContent
+            onVisible={onVisible}
+            uploadType={uploadType}
+            multiple={multiple}
+            uploadMethod={uploadMethod}
+            cancelMethod={cancelMethod}
+            cancelLabel={cancelLabel}
+            metaData={metaData}
+            ready={ready}
+            speaker={speaker}
+            onSpeaker={onSpeaker}
+            team={team}
+            onFiles={onFiles}
+            inValue={inValue}
+            onValue={onValue}
+            onNonAudio={onNonAudio}
+          />
+        )}
+        {uploadType === UploadType.Test && (
+          <FilterContent
+            onVisible={onVisible}
+            uploadType={uploadType}
+            multiple={multiple}
+            uploadMethod={uploadMethod}
+            cancelMethod={cancelMethod}
+            cancelLabel={cancelLabel}
+            metaData={metaData}
+            ready={ready}
+            speaker={speaker}
+            onSpeaker={onSpeaker}
+            team={team}
+            onFiles={onFiles}
+            inValue={inValue}
+            onValue={onValue}
+            onNonAudio={onNonAudio}
+          />
+        )}
+      </>
     </BigDialog>
   );
 }
