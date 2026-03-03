@@ -93,9 +93,9 @@ function MediaUpload(props: IProps) {
   };
 
   const data = {
+    label: 'Spoken English Bible',
     books: [
       {
-        code: 'RUT',
         label: 'Ruth',
         chapters: [
           'Introduction',
@@ -115,7 +115,6 @@ function MediaUpload(props: IProps) {
         ],
       },
       {
-        code: 'LUK',
         label: 'Luke',
         chapters: ['Chapter 1', 'Chapter 2', 'Chapter 22', 'Chapter 30'],
         burritos: ['Resources', 'Notes', 'Navigation', 'APM Data'],

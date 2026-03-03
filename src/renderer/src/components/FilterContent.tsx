@@ -29,6 +29,7 @@ interface FilterProps {
 
 // Set types here for filter data.
 type FilterData = {
+  label: string;
   books: filterBook[];
 };
 type filterBook = {
@@ -41,7 +42,8 @@ type filterBook = {
 type TreeNode = {
   id: string;
   label: string;
-  children?: TreeNode[] | filterBook[]; // either node or book entries are allowed
+  type: 'chapter' | 'book' | 'burrito' | 'all';
+  children?: TreeNode[]; // either node or book entries are allowed
 };
 
 function FilterContent(props: FilterProps) {
@@ -95,29 +97,40 @@ function FilterContent(props: FilterProps) {
   };
   const convertDataToTreeForm = (): TreeNode[] => {
     let filters: TreeNode[] = [];
-    const bks: filterBook[] = [];
-    const chps: string[] = [];
-    const burs: string[] = [];
+    const bks: TreeNode[] = [];
     filterData.books.forEach((book) => {
+      const children: TreeNode[] = [];
+      const item: TreeNode = {
+        id: 'chps' + book.label,
+        label: 'All Chapters of ' + book.label,
+        type: 'all',
+        children: [],
+      };
+      children.push(item);
       book.chapters.forEach((c) => {
-        chps.push(c);
+        item.children?.push({ id: c + book.label, label: c, type: 'chapter' });
       });
       book.burritos.forEach((b) => {
-        burs.push(b);
+        children.push({ id: b + book.label, label: b, type: 'burrito' });
       });
       bks.push({
         id: book.label,
         label: book.label,
-        chapters: chps,
-        burritos: burs,
+        type: 'book',
+        children: children,
       });
     });
     if (filterData.books.length > 1) {
-      const item: TreeNode = { id: 'books', label: 'All Books', children: [] };
+      const item: TreeNode = {
+        id: 'books',
+        label: 'All Books',
+        type: 'all',
+        children: [],
+      };
       item.children = bks;
       filters = [item];
     } else {
-      filters = bks as unknown as TreeNode[];
+      filters = bks as TreeNode[];
     }
     return filters;
   };
@@ -164,7 +177,7 @@ function FilterContent(props: FilterProps) {
     <BigDialog
       isOpen={visible}
       onOpen={handleCancel}
-      title={'This is temporary Title'}
+      title={'Scripture Burrito: ' + filterData.label}
       bp={BigDialogBp.sm}
     >
       <>
