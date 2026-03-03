@@ -89,34 +89,16 @@ function MediaUpload(props: IProps) {
   };
 
   return (
-    <BigDialog
-      isOpen={visible}
-      onOpen={handleCancel}
-      title={title[uploadType] ?? ''}
-      bp={BigDialogBp.sm}
-    >
-      <>
-        {' '}
-        {/* The FilterContent will have to be moved once Scripture Burrito Import is Ready */}
-        {/* All that it was inside BigDialog before this testing was done:
-          <MediaUploadContent
-            onVisible={onVisible}
-            uploadType={uploadType}
-            multiple={multiple}
-            uploadMethod={uploadMethod}
-            cancelMethod={cancelMethod}
-            cancelLabel={cancelLabel}
-            metaData={metaData}
-            ready={ready}
-            speaker={speaker}
-            onSpeaker={onSpeaker}
-            team={team}
-            onFiles={onFiles}
-            inValue={inValue}
-            onValue={onValue}
-            onNonAudio={onNonAudio}
-          /> */}
-        {uploadType !== UploadType.Test && (
+    <>
+      {' '}
+      {/* The FilterContent will have to be moved once Scripture Burrito Import is Ready */}
+      {uploadType !== UploadType.Test && (
+        <BigDialog
+          isOpen={visible}
+          onOpen={handleCancel}
+          title={title[uploadType] ?? ''}
+          bp={BigDialogBp.sm}
+        >
           <MediaUploadContent
             onVisible={onVisible}
             uploadType={uploadType}
@@ -134,8 +116,15 @@ function MediaUpload(props: IProps) {
             onValue={onValue}
             onNonAudio={onNonAudio}
           />
-        )}
-        {uploadType === UploadType.Test && (
+        </BigDialog>
+      )}
+      {uploadType === UploadType.Test && (
+        <BigDialog
+          isOpen={visible}
+          onOpen={handleCancel}
+          title={title[uploadType] ?? ''}
+          bp={BigDialogBp.sm}
+        >
           <FilterContent
             onVisible={onVisible}
             uploadType={uploadType}
@@ -153,9 +142,9 @@ function MediaUpload(props: IProps) {
             onValue={onValue}
             onNonAudio={onNonAudio}
           />
-        )}
-      </>
-    </BigDialog>
+        </BigDialog>
+      )}
+    </>
   );
 }
 
