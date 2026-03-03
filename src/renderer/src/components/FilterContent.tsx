@@ -144,34 +144,79 @@ function FilterContent(props: IProps) {
 
   const data = [
     {
-      id: '1',
+      id: 'books',
       label: 'All Books',
       children: [
-        { id: '2', label: 'Ruth' },
-        { id: '3', label: 'Jonah' },
-      ],
-    },
-    {
-      id: '4',
-      label: 'All Burritos',
-      children: [
-        { id: '5', label: 'Audio' },
-        { id: '5', label: 'Navigation' },
-        { id: '5', label: 'Notes' },
-        { id: '5', label: 'Resources' },
-        { id: '5', label: 'Text' },
+        {
+          id: 'ruth',
+          label: 'Ruth',
+          children: [
+            {
+              id: 'chps_ruth',
+              label: 'All Chapters',
+              children: [
+                { id: 'ruth_chp1', label: 'Chapter 1' },
+                { id: 'ruth_chp2', label: 'Chapter 2' },
+                { id: 'ruth_chp3', label: 'Chapter 3' },
+              ],
+            },
+            { id: 'ruth_audio', label: 'Audio' },
+            { id: 'ruth_nav', label: 'Navigation' },
+            { id: 'ruth_notes', label: 'Notes' },
+            { id: 'ruth_resrc', label: 'Resources' },
+            { id: 'ruth_text', label: 'Text' },
+          ],
+        },
+        {
+          id: 'jonah',
+          label: 'Jonah',
+          children: [
+            {
+              id: 'chps_jonah',
+              label: 'All Chapters',
+              children: [
+                { id: 'jonah_chp1', label: 'Chapter 1' },
+                { id: 'jonah_chp2', label: 'Chapter 2' },
+                { id: 'jonah_chp3', label: 'Chapter 3' },
+              ],
+            },
+            { id: 'jonah_audio', label: 'Audio' },
+            { id: 'jonah_nav', label: 'Navigation' },
+            { id: 'jonah_notes', label: 'Notes' },
+            { id: 'jonah_resrc', label: 'Resources' },
+            { id: 'jonah_text', label: 'Text' },
+          ],
+        },
       ],
     },
   ];
   const [checked, setChecked] = React.useState<string[]>([]);
 
-  const handleToggle = (nodeId: any) => {
-    setChecked((prev) =>
-      prev.includes(nodeId)
-        ? prev.filter((id) => id !== nodeId)
-        : [...prev, nodeId]
-    );
+  const getAllDescendantIds = (node: any): string[] => {
+    const ids = [node.id];
+    if (Array.isArray(node.children)) {
+      node.children.forEach((child: any) => {
+        ids.push(...getAllDescendantIds(child));
+      });
+    }
+    return ids;
   };
+
+  const handleToggle = (nodeId: any, node?: any) => {
+    setChecked((prev) => {
+      const isChecked = prev.includes(nodeId);
+      const nodesToToggle = node ? getAllDescendantIds(node) : [nodeId];
+
+      if (isChecked) {
+        // Remove this node and all descendants
+        return prev.filter((id) => !nodesToToggle.includes(id));
+      } else {
+        // Add this node and all descendants
+        return [...prev, ...nodesToToggle.filter((id) => !prev.includes(id))];
+      }
+    });
+  };
+  // TODO - Needs to return the data after the checkbox tree is checked w/ the upload button
   const renderTree = (nodes: any) => (
     <TreeItem
       key={nodes.id}
@@ -184,7 +229,7 @@ function FilterContent(props: IProps) {
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
           <Checkbox
             checked={checked.includes(nodes.id)}
-            onChange={() => handleToggle(nodes.id)}
+            onChange={() => handleToggle(nodes.id, nodes)}
             onClick={(e) => e.stopPropagation()}
           />
           {nodes.label}
@@ -204,43 +249,6 @@ function FilterContent(props: IProps) {
           {"This text box is not very great right now, but we tryin'."}
         </DialogContentText>
         <SimpleTreeView>{data.map((node) => renderTree(node))}</SimpleTreeView>
-        {/* <TreeView>
-          <FormGroup>
-            <FormControlLabel
-              control={
-                <Checkbox
-                  id="checkbox-books"
-                  indeterminate={someBooks}
-                  checked={allBooks}
-                  onChange={handleAllBooks}
-                />
-              }
-              label={'All books'}
-            />
-            <FormGroup>
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    id="checkbox-book-{book1}"
-                    checked={book1}
-                    onChange={handleBook1}
-                  />
-                }
-                label={'Ruth'}
-              />
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    id="checkbox-book-{book2}"
-                    checked={book2}
-                    onChange={handleBook2}
-                  />
-                }
-                label={'Jonah'}
-              />
-            </FormGroup>
-          </FormGroup>
-        </TreeView> */}
       </DialogContent>
       <DialogActions>
         <Button
