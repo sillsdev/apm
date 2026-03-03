@@ -88,6 +88,10 @@ function MediaUpload(props: IProps) {
     onVisible(false);
   };
 
+  const handleTreeChange = (data: string[]) => {
+    console.log('Received from child:', data);
+  };
+
   return (
     <>
       {' '}
@@ -119,30 +123,14 @@ function MediaUpload(props: IProps) {
         </BigDialog>
       )}
       {uploadType === UploadType.Test && (
-        <BigDialog
-          isOpen={visible}
-          onOpen={handleCancel}
-          title={title[uploadType] ?? ''}
-          bp={BigDialogBp.sm}
-        >
-          <FilterContent
-            onVisible={onVisible}
-            uploadType={uploadType}
-            multiple={multiple}
-            uploadMethod={uploadMethod}
-            cancelMethod={cancelMethod}
-            cancelLabel={cancelLabel}
-            metaData={metaData}
-            ready={ready}
-            speaker={speaker}
-            onSpeaker={onSpeaker}
-            team={team}
-            onFiles={onFiles}
-            inValue={inValue}
-            onValue={onValue}
-            onNonAudio={onNonAudio}
-          />
-        </BigDialog>
+        <FilterContent
+          visible={visible}
+          onVisible={onVisible}
+          onChange={handleTreeChange}
+          uploadType={uploadType}
+          filterData={[]}
+          cancelMethod={cancelMethod}
+        />
       )}
     </>
   );
