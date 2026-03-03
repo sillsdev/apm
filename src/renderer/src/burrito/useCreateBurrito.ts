@@ -1,4 +1,4 @@
-import React, { useCallback, useRef } from 'react';
+import React, { useCallback, useMemo, useRef } from 'react';
 import path from 'path-browserify';
 import { BurritoBuilder, BurritoLocalizedNames } from './data/burritoBuilder';
 import { useGlobal } from '../context/useGlobal';
@@ -234,17 +234,30 @@ export const useCreateBurrito = (teamId: string) => {
     };
   }, [getOrgDefault, teamId, projects, plans, sections, passages]);
 
+  const defaultBurritoName = useMemo(() => {
+    if (!teamId) return '';
+    const teamRec = teams.find((t) => t.id === teamId);
+    const name = cleanFileName(teamRec?.attributes.name || '')
+      .trim()
+      .replace(/\s/g, '-');
+    const len = teamId.length;
+    const unique =
+      teamRec?.keys?.remoteId ||
+      (len > 4 ? teamId.substring(len - 4, len) : '');
+    return name + unique;
+  }, [teamId, teams]);
+
   const myName = (name: string, part?: string) =>
     part
       ? path.join(
           PathType.BURRITO,
-          bible?.attributes?.bibleId || teamId || '',
+          bible?.attributes?.bibleId || defaultBurritoName || '',
           part.toLowerCase(),
           name
         )
       : path.join(
           PathType.BURRITO,
-          bible?.attributes?.bibleId || teamId || '',
+          bible?.attributes?.bibleId || defaultBurritoName || '',
           name
         );
 
