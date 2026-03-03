@@ -22,10 +22,27 @@ interface FilterProps {
   onVisible: (v: boolean) => void;
   uploadType: UploadType;
   onChange: (value: string[]) => void;
-  filterData: any;
+  filterData: FilterData;
   cancelMethod?: (() => void) | undefined;
   cancelLabel?: string | undefined;
 }
+
+// Set types here for filter data.
+type FilterData = {
+  books: filterBook[];
+};
+type filterBook = {
+  id?: string;
+  label: string;
+  chapters: string[];
+  burritos: string[];
+};
+//TreeNode Type
+type TreeNode = {
+  id: string;
+  label: string;
+  children?: TreeNode[] | filterBook[]; // either node or book entries are allowed
+};
 
 function FilterContent(props: FilterProps) {
   const {
@@ -36,10 +53,6 @@ function FilterContent(props: FilterProps) {
     cancelMethod,
     cancelLabel,
   } = props;
-  // const [allBooks, setAllBooks] = useState(false);
-  // const [someBooks, setSomeBooks] = useState(false);
-  // const [book1, setBook1] = useState(false);
-  // const [book2, setBook2] = useState(false);
   const t: IMediaUploadStrings = useSelector(mediaUploadSelector, shallowEqual);
   const [checked, setChecked] = useState<string[]>([]);
 
@@ -80,8 +93,33 @@ function FilterContent(props: FilterProps) {
     }
     return ids;
   };
-  const convertDataToTreeForm = () => {
-    data = filterData; // TODO - do later
+  const convertDataToTreeForm = (): TreeNode[] => {
+    let filters: TreeNode[] = [];
+    const bks: filterBook[] = [];
+    const chps: string[] = [];
+    const burs: string[] = [];
+    filterData.books.forEach((book) => {
+      book.chapters.forEach((c) => {
+        chps.push(c);
+      });
+      book.burritos.forEach((b) => {
+        burs.push(b);
+      });
+      bks.push({
+        id: book.label,
+        label: book.label,
+        chapters: chps,
+        burritos: burs,
+      });
+    });
+    if (filterData.books.length > 1) {
+      const item: TreeNode = { id: 'books', label: 'All Books', children: [] };
+      item.children = bks;
+      filters = [item];
+    } else {
+      filters = bks as unknown as TreeNode[];
+    }
+    return filters;
   };
   const savePreferences = () => {
     console.log(data);
@@ -117,54 +155,10 @@ function FilterContent(props: FilterProps) {
     </TreeItem>
   );
 
-  let data = [
-    {
-      id: 'books',
-      label: 'All Books',
-      children: [
-        {
-          id: 'ruth',
-          label: 'Ruth',
-          children: [
-            {
-              id: 'chps_ruth',
-              label: 'All Chapters',
-              children: [
-                { id: 'ruth_chp1', label: 'Chapter 1' },
-                { id: 'ruth_chp2', label: 'Chapter 2' },
-                { id: 'ruth_chp3', label: 'Chapter 3' },
-              ],
-            },
-            { id: 'ruth_audio', label: 'Audio' },
-            { id: 'ruth_nav', label: 'Navigation' },
-            { id: 'ruth_notes', label: 'Notes' },
-            { id: 'ruth_resrc', label: 'Resources' },
-            { id: 'ruth_text', label: 'Text' },
-          ],
-        },
-        {
-          id: 'jonah',
-          label: 'Jonah',
-          children: [
-            {
-              id: 'chps_jonah',
-              label: 'All Chapters',
-              children: [
-                { id: 'jonah_chp1', label: 'Chapter 1' },
-                { id: 'jonah_chp2', label: 'Chapter 2' },
-                { id: 'jonah_chp3', label: 'Chapter 3' },
-              ],
-            },
-            { id: 'jonah_audio', label: 'Audio' },
-            { id: 'jonah_nav', label: 'Navigation' },
-            { id: 'jonah_notes', label: 'Notes' },
-            { id: 'jonah_resrc', label: 'Resources' },
-            { id: 'jonah_text', label: 'Text' },
-          ],
-        },
-      ],
-    },
-  ];
+  // declare `data` as an array of TreeNode. It can be initialized empty or via `convertDataToTreeForm`.
+  let data: TreeNode[] = [];
+  // if you want to populate immediately from filterData call the converter here:
+  data = convertDataToTreeForm();
 
   return (
     <BigDialog

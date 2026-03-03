@@ -92,6 +92,37 @@ function MediaUpload(props: IProps) {
     console.log('Received from child:', data);
   };
 
+  const data = {
+    books: [
+      {
+        code: 'RUT',
+        label: 'Ruth',
+        chapters: [
+          'Introduction',
+          'Chapter 1',
+          'Chapter 2',
+          'Chapter 3',
+          'Chapter 4',
+          'Chapter 5',
+        ],
+        burritos: [
+          'Resources',
+          'Text',
+          'Notes',
+          'Audio',
+          'Navigation',
+          'APM Data',
+        ],
+      },
+      {
+        code: 'LUK',
+        label: 'Luke',
+        chapters: ['Chapter 1', 'Chapter 2', 'Chapter 22', 'Chapter 30'],
+        burritos: ['Resources', 'Notes', 'Navigation', 'APM Data'],
+      },
+    ],
+  };
+
   return (
     <>
       {' '}
@@ -128,7 +159,7 @@ function MediaUpload(props: IProps) {
           onVisible={onVisible}
           onChange={handleTreeChange}
           uploadType={uploadType}
-          filterData={[]}
+          filterData={data}
           cancelMethod={cancelMethod}
         />
       )}
