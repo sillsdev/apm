@@ -97,16 +97,7 @@ function FilterContent(props: FilterProps) {
     }
     return ids;
   };
-  /**
-   * Return a flat list containing the specified node and all of its
-   * descendants.  The tree structure is walked recursively but the
-   * returned array has only a single level.
-   *
-   * @param node  root of the subtree to flatten
-   * @param includeRoot  when true the root node itself is included; when
-   *                     false only its children (and their children, etc.)
-   *                     are returned.
-   */
+  // Return a flat list containing the specified node and all of its descendants.
   const getAllDescendants = (
     node: TreeNode,
     includeRoot = false
