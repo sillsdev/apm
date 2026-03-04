@@ -21,7 +21,7 @@ interface FilterProps {
   visible: boolean;
   onVisible: (v: boolean) => void;
   uploadType: UploadType;
-  onChange: (value: string[]) => void;
+  onChange: (value: FilterData) => void;
   filterData: FilterData;
   cancelMethod?: (() => void) | undefined;
   cancelLabel?: string | undefined;
@@ -60,8 +60,10 @@ function FilterContent(props: FilterProps) {
 
   const handleSavePreferences = () => {
     const fdata = savePreferences();
-    console.log(fdata);
-    onChange(checked);
+    const tempData = filterData;
+    // eslint-disable-next-line react-hooks/immutability
+    tempData.books = fdata;
+    onChange(tempData);
     handleCancel(); // closes dialog - hopefully doesn't cancel everything else
   };
   const handleCancel = () => {
@@ -94,6 +96,37 @@ function FilterContent(props: FilterProps) {
       });
     }
     return ids;
+  };
+  /**
+   * Return a flat list containing the specified node and all of its
+   * descendants.  The tree structure is walked recursively but the
+   * returned array has only a single level.
+   *
+   * @param node  root of the subtree to flatten
+   * @param includeRoot  when true the root node itself is included; when
+   *                     false only its children (and their children, etc.)
+   *                     are returned.
+   */
+  const getAllDescendants = (
+    node: TreeNode,
+    includeRoot = false
+  ): TreeNode[] => {
+    const result: TreeNode[] = [];
+
+    const recurse = (n: TreeNode) => {
+      result.push(n);
+      if (Array.isArray(n.children)) {
+        n.children.forEach(recurse);
+      }
+    };
+
+    if (includeRoot) {
+      recurse(node);
+    } else if (Array.isArray(node.children)) {
+      node.children.forEach(recurse);
+    }
+
+    return result;
   };
   const convertDataToTreeForm = (): TreeNode[] => {
     let filters: TreeNode[] = [];
@@ -134,15 +167,29 @@ function FilterContent(props: FilterProps) {
     }
     return filters;
   };
-  const savePreferences = () => {
-    console.log(data);
-    const returnData = [];
-    for (const i of checked) {
-      returnData.push(i);
+  const checkedNodeLabels = () => {
+    // flatten every branch in `data` and include the book nodes themselves
+    const allNodes = data.flatMap((n) => getAllDescendants(n, true));
+    return allNodes
+      .filter((node) => checked.includes(node.id))
+      .map((node) => node.label);
+  };
+  const savePreferences = (): filterBook[] => {
+    const checkedLabels = checkedNodeLabels();
+    const returnData = filterData.books.filter((book) =>
+      checkedLabels.includes(book.label)
+    );
+    for (let i = 0; i < returnData.length; i++) {
+      returnData[i].chapters = returnData[i].chapters.filter((chp) =>
+        checkedLabels.includes(chp)
+      );
+      returnData[i].burritos = returnData[i].burritos.filter((bur) =>
+        checkedLabels.includes(bur)
+      );
     }
+    return returnData;
   };
 
-  // TODO - Needs to return the data after the checkbox tree is checked w/ the upload button
   const renderTree = (nodes: any) => (
     <TreeItem
       key={nodes.id}

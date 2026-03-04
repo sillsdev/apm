@@ -88,7 +88,7 @@ function MediaUpload(props: IProps) {
     onVisible(false);
   };
 
-  const handleTreeChange = (data: string[]) => {
+  const handleTreeChange = (data: any) => {
     console.log('Received from child:', data);
   };
 
