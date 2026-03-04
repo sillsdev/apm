@@ -1499,7 +1499,12 @@ function WSAudioPlayer(props: IProps) {
             {!hideToolbar && (
               <Grid
                 container
-                sx={{ ...toolbarProp, minWidth: 0, flexWrap: 'nowrap' }}
+                sx={{
+                  ...toolbarProp,
+                  minWidth: 0,
+                  width: '90%', // 90% of the width keeps menu on screen
+                  flexWrap: 'nowrap',
+                }}
               >
                 <Grid sx={{ ml: 1 }}>
                   <LightTooltip id="wsAudioPlayTip" title={playTooltipTitle}>
@@ -1523,27 +1528,6 @@ function WSAudioPlayer(props: IProps) {
                   </Typography>
                 </Grid>
                 <VertDivider id="wsAudioDiv2" />
-                {allowZoom && !isMobileView && !hideZoom && (
-                  <>
-                    <Grid>
-                      <WSAudioPlayerZoom
-                        // startBig={allowRecord || false}
-                        ready={ready && !recording && !waitingForAI}
-                        fillPx={recording ? 100 : wsFillPx()}
-                        curPx={pxPerSec}
-                        onZoom={wsZoom}
-                      ></WSAudioPlayerZoom>
-                    </Grid>
-                    <VertDivider id="wsAudioDiv3" />
-                  </>
-                )}
-                {allowRecord && !isMobileView && (
-                  <>
-                    {noiseRemovalControl()}
-                    {voiceChangeControl()}
-                    {normalizeControl()}
-                  </>
-                )}
                 {allowRecord && (
                   <>
                     {hasRegion !== 0 && !oneShotUsed && (
@@ -1612,6 +1596,7 @@ function WSAudioPlayer(props: IProps) {
                       )}
                       {/* You can add more MenuItems here as needed */}
                     </Menu>
+                    <GrowingSpacer />
                     {hasRegion === 0 && (
                       <LightTooltip
                         id="wsAudioDeleteTip"
@@ -1630,156 +1615,118 @@ function WSAudioPlayer(props: IProps) {
                         </span>
                       </LightTooltip>
                     )}
-                    <GrowingSpacer />
-                    {!isMobileView && !keepItSmall && (
-                      <Grid>
-                        {microphoneControl()}
-                        <Menu
-                          anchorEl={micMenuAnchorEl}
-                          open={micMenuOpen}
-                          onClose={handleMicMenuClose}
-                          anchorOrigin={{
-                            vertical: 'bottom',
-                            horizontal: 'left',
-                          }}
-                          transformOrigin={{
-                            vertical: 'top',
-                            horizontal: 'left',
-                          }}
-                        >
-                          {audioInputDevices.length === 0 ? (
-                            <MenuItem disabled>{ts.noAudio}</MenuItem>
-                          ) : (
-                            audioInputDevices.map((device, index) => (
-                              <MenuItem
-                                key={device.deviceId || `input-${index}`}
-                                selected={
-                                  selectedMicrophoneId === device.deviceId
-                                }
-                                onClick={() => handleMicSelect(device.deviceId)}
-                              >
-                                {device.label || `Input ${index + 1}`}
-                              </MenuItem>
-                            ))
-                          )}
-                        </Menu>
-                      </Grid>
-                    )}
-                    {isMobileView && (
-                      <Grid>
-                        <LightTooltip id="wsAudioMoreTip" title="More options">
-                          <span>
-                            <IconButton
-                              id="wsAudioMore"
-                              onClick={handleMoreMenuOpen}
-                            >
-                              <MoreVertIcon />
-                            </IconButton>
-                          </span>
-                        </LightTooltip>
-                        <Menu
-                          anchorEl={moreMenuAnchorEl}
-                          open={moreMenuOpen}
-                          onClose={handleMoreMenuClose}
-                          anchorOrigin={{
-                            vertical: 'bottom',
-                            horizontal: 'right',
-                          }}
-                          transformOrigin={{
-                            vertical: 'top',
-                            horizontal: 'right',
-                          }}
-                        >
-                          {[
-                            allowZoom && !hideZoom && (
-                              <MenuItem
-                                key="zoom-control"
-                                onClick={(e) => {
-                                  //don't close menu if zoom in or out button is clicked
-                                  const target = e.target as HTMLElement;
-                                  if (
-                                    target.closest?.(
-                                      '[id="wsZoomIn"], [id="wsZoomOut"]'
-                                    )
+                    <Grid>
+                      <LightTooltip id="wsAudioMoreTip" title="More options">
+                        <span>
+                          <IconButton
+                            id="wsAudioMore"
+                            onClick={handleMoreMenuOpen}
+                          >
+                            <MoreVertIcon />
+                          </IconButton>
+                        </span>
+                      </LightTooltip>
+                      <Menu
+                        anchorEl={moreMenuAnchorEl}
+                        open={moreMenuOpen}
+                        onClose={handleMoreMenuClose}
+                        anchorOrigin={{
+                          vertical: 'bottom',
+                          horizontal: 'right',
+                        }}
+                        transformOrigin={{
+                          vertical: 'top',
+                          horizontal: 'right',
+                        }}
+                      >
+                        {[
+                          allowZoom && !hideZoom && (
+                            <MenuItem
+                              key="zoom-control"
+                              onClick={(e) => {
+                                //don't close menu if zoom in or out button is clicked
+                                const target = e.target as HTMLElement;
+                                if (
+                                  target.closest?.(
+                                    '[id="wsZoomIn"], [id="wsZoomOut"]'
                                   )
-                                    return;
-                                  handleMoreMenuClose();
-                                }}
-                                sx={{ pointerEvents: 'none' }}
-                              >
-                                <WSAudioPlayerZoom
-                                  ready={ready && !recording && !waitingForAI}
-                                  fillPx={recording ? 100 : wsFillPx()}
-                                  curPx={pxPerSec}
-                                  onZoom={wsZoom}
-                                />
-                              </MenuItem>
-                            ),
-                            allowRecord === true && noiseRemovalControl() && (
-                              <MenuItem
-                                key="noise-removal"
-                                onClick={handleMoreMenuClose}
-                              >
-                                {noiseRemovalControl()}
-                              </MenuItem>
-                            ),
-                            allowRecord === true && voiceChangeControl() && (
-                              <MenuItem
-                                key="voice-change"
-                                onClick={handleMoreMenuClose}
-                              >
-                                {voiceChangeControl()}
-                              </MenuItem>
-                            ),
-                            allowRecord === true && normalizeControl() && (
-                              <MenuItem
-                                key="normalize"
-                                onClick={handleMoreMenuClose}
-                              >
-                                {normalizeControl()}
-                              </MenuItem>
-                            ),
-                            allowRecord === true && !keepItSmall && (
-                              <MenuItem
-                                key="microphone-control"
-                                onClick={handleMoreMenuClose}
-                              >
-                                {microphoneControl()}
-                              </MenuItem>
-                            ),
-                          ].filter(Boolean)}
-                        </Menu>
-                        <Menu
-                          anchorEl={micMenuAnchorEl}
-                          open={micMenuOpen}
-                          onClose={handleMicMenuClose}
-                          anchorOrigin={{
-                            vertical: 'bottom',
-                            horizontal: 'left',
-                          }}
-                          transformOrigin={{
-                            vertical: 'top',
-                            horizontal: 'left',
-                          }}
-                        >
-                          {audioInputDevices.length === 0 ? (
-                            <MenuItem disabled>{ts.noAudio}</MenuItem>
-                          ) : (
-                            audioInputDevices.map((device, index) => (
-                              <MenuItem
-                                key={device.deviceId || `input-${index}`}
-                                selected={
-                                  selectedMicrophoneId === device.deviceId
-                                }
-                                onClick={() => handleMicSelect(device.deviceId)}
-                              >
-                                {device.label || `Input ${index + 1}`}
-                              </MenuItem>
-                            ))
-                          )}
-                        </Menu>
-                      </Grid>
-                    )}
+                                )
+                                  return;
+                                handleMoreMenuClose();
+                              }}
+                            >
+                              <WSAudioPlayerZoom
+                                ready={ready && !recording && !waitingForAI}
+                                fillPx={recording ? 100 : wsFillPx()}
+                                curPx={pxPerSec}
+                                onZoom={wsZoom}
+                              />
+                            </MenuItem>
+                          ),
+                          allowRecord === true && noiseRemovalControl() && (
+                            <MenuItem
+                              key="noise-removal"
+                              onClick={handleMoreMenuClose}
+                            >
+                              {noiseRemovalControl()}
+                            </MenuItem>
+                          ),
+                          allowRecord === true && voiceChangeControl() && (
+                            <MenuItem
+                              key="voice-change"
+                              onClick={handleMoreMenuClose}
+                            >
+                              {voiceChangeControl()}
+                            </MenuItem>
+                          ),
+                          allowRecord === true && normalizeControl() && (
+                            <MenuItem
+                              key="normalize"
+                              onClick={handleMoreMenuClose}
+                            >
+                              {normalizeControl()}
+                            </MenuItem>
+                          ),
+                          allowRecord === true && !keepItSmall && (
+                            <MenuItem
+                              key="microphone-control"
+                              onClick={handleMoreMenuClose}
+                            >
+                              {microphoneControl()}
+                            </MenuItem>
+                          ),
+                        ].filter(Boolean)}
+                      </Menu>
+                      <Menu
+                        anchorEl={micMenuAnchorEl}
+                        open={micMenuOpen}
+                        onClose={handleMicMenuClose}
+                        anchorOrigin={{
+                          vertical: 'bottom',
+                          horizontal: 'left',
+                        }}
+                        transformOrigin={{
+                          vertical: 'top',
+                          horizontal: 'left',
+                        }}
+                      >
+                        {audioInputDevices.length === 0 ? (
+                          <MenuItem disabled>{ts.noAudio}</MenuItem>
+                        ) : (
+                          audioInputDevices.map((device, index) => (
+                            <MenuItem
+                              key={device.deviceId || `input-${index}`}
+                              selected={
+                                selectedMicrophoneId === device.deviceId
+                              }
+                              onClick={() => handleMicSelect(device.deviceId)}
+                            >
+                              {device.label || `Input ${index + 1}`}
+                            </MenuItem>
+                          ))
+                        )}
+                      </Menu>
+                    </Grid>
                   </>
                 )}
                 {allowSegment && !hideToolbar && !hideSegmentControls && (
