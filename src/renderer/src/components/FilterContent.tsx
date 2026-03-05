@@ -28,11 +28,11 @@ interface FilterProps {
 }
 
 // Set types here for filter data.
-type FilterData = {
+export type FilterData = {
   label: string;
   books: filterBook[];
 };
-type filterBook = {
+export type filterBook = {
   id?: string;
   label: string;
   chapters: string[];

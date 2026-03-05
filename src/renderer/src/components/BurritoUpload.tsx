@@ -13,7 +13,7 @@ import { useSnackBar, AlertSeverity } from '../hoc/SnackBar';
 import path from 'path-browserify';
 import { MainAPI } from '@model/main-api';
 import { useSelector } from 'react-redux';
-import { importSelector } from 'selector';
+import { importSelector } from '../selector';
 import { shallowEqual } from 'react-redux';
 import { IImportStrings } from '@model/index';
 
