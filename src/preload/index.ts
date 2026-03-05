@@ -30,6 +30,8 @@ const api = {
   closeApp: async () => await ipcRenderer.invoke('closeApp'),
   importOpen: async (filters) =>
     await ipcRenderer.invoke('importOpen', filters),
+  openDirectoryDialog: async () =>
+    await ipcRenderer.invoke('openDirectoryDialog'),
   execPath: async () => await ipcRenderer.invoke('execPath'),
   md5File: async (filePath) => await ipcRenderer.invoke('md5File', filePath),
   isWindows: async () => await ipcRenderer.invoke('isWindows'),

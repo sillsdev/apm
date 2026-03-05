@@ -26,6 +26,7 @@ export interface MainAPI {
   importOpen: (
     filters: { name: string; extensions: string[] }[]
   ) => Promise<string[] | undefined>;
+  openDirectoryDialog: () => Promise<string[] | undefined>;
   execPath: () => Promise<string>;
   md5File: (filePath: string) => Promise<string>;
   isWindows: () => Promise<boolean>;

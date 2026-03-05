@@ -187,6 +187,12 @@ export function ipcMethods(): void {
     return dialog.showOpenDialogSync(options as any);
   });
 
+  ipcMain.handle('openDirectoryDialog', async () => {
+    return dialog.showOpenDialogSync({
+      properties: ['openDirectory'],
+    });
+  });
+
   ipcMain.handle('audacityOpen', async () => {
     return dialog.showOpenDialogSync({
       filters: [{ name: 'Audacity', extensions: ['aup3'] }],
