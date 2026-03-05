@@ -43,7 +43,7 @@ type TreeNode = {
   id: string;
   label: string;
   type: 'chapter' | 'book' | 'burrito' | 'all';
-  children?: TreeNode[]; // either node or book entries are allowed
+  children?: TreeNode[];
 };
 
 function FilterContent(props: FilterProps) {
@@ -124,18 +124,32 @@ function FilterContent(props: FilterProps) {
     const bks: TreeNode[] = [];
     filterData.books.forEach((book) => {
       const children: TreeNode[] = [];
-      const item: TreeNode = {
-        id: 'chps' + book.label,
-        label: 'All Chapters of ' + book.label,
-        type: 'all',
-        children: [],
-      };
-      children.push(item);
-      book.chapters.forEach((c) => {
-        item.children?.push({ id: c + book.label, label: c, type: 'chapter' });
-      });
+      if (book.chapters.length > 1) {
+        const item: TreeNode = {
+          id: 'chps' + book.label,
+          label: 'All Chapters of ' + book.label,
+          type: 'all',
+          children: [],
+        };
+        children.push(item);
+        book.chapters.forEach((c) => {
+          item.children?.push({
+            id: c + book.label,
+            label: c,
+            type: 'chapter',
+          });
+        });
+      } else {
+        book.chapters.forEach((c) => {
+          children.push({ id: c + book.label, label: c, type: 'chapter' });
+        });
+      }
+
       book.burritos.forEach((b) => {
-        children.push({ id: b + book.label, label: b, type: 'burrito' });
+        if (b != 'APM Data') {
+          // Does not display the "Apm Data" as a burrito for each book
+          children.push({ id: b + book.label, label: b, type: 'burrito' });
+        }
       });
       bks.push({
         id: book.label,
@@ -144,7 +158,7 @@ function FilterContent(props: FilterProps) {
         children: children,
       });
     });
-    if (filterData.books.length > 1) {
+    if (bks.length > 1) {
       const item: TreeNode = {
         id: 'books',
         label: 'All Books',
@@ -154,7 +168,7 @@ function FilterContent(props: FilterProps) {
       item.children = bks;
       filters = [item];
     } else {
-      filters = bks as TreeNode[];
+      filters = bks;
     }
     return filters;
   };
@@ -221,7 +235,9 @@ function FilterContent(props: FilterProps) {
       <>
         <DialogContent>
           <DialogContentText>
-            {"This text box is not very great right now, but we tryin'."}
+            {'Please select the information you want to import into your team.'}
+            <br />
+            {'Each selected book will be imported as a separate project.'}
           </DialogContentText>
           <SimpleTreeView>
             {data.map((node) => renderTree(node))}

@@ -116,8 +116,8 @@ function MediaUpload(props: IProps) {
       },
       {
         label: 'Luke',
-        chapters: ['Chapter 1', 'Chapter 2', 'Chapter 22', 'Chapter 30'],
-        burritos: ['Resources', 'Notes', 'Navigation', 'APM Data'],
+        chapters: [], //'Chapter 1', 'Chapter 2', 'Chapter 22', 'Chapter 30'
+        burritos: [], //'Resources', 'Notes', 'Navigation', 'APM Data'
       },
     ],
   };
