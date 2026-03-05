@@ -595,6 +595,7 @@ const initialState = {
 			"createNewTeam": "Create new team",
 			"error": "Import Error",
 			"externalSource": "Create a new project in APM from an external source (.ptf)",
+			"externalSourceBurrito": "Create a new project in APM from a Scripture Burrito",
 			"family": "Family Name",
 			"filter": "Filter",
 			"fontsize": "Font Size",

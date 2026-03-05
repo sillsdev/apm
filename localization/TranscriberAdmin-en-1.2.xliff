@@ -3272,6 +3272,13 @@
                <context context-type="sourcefile">Import.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="import.externalSourceBurrito">
+            <source>Create a new project in APM from a Scripture Burrito</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">Import.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="import.family">
             <source>Family Name</source>
             <target/>

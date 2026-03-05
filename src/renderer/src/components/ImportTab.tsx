@@ -85,6 +85,10 @@ import {
   type GridSortModel,
 } from '@mui/x-data-grid';
 import { useAdminTeams } from './useAdminTeams';
+import BurritoUploadDialog from './BurritoUpload';
+import { MainAPI } from '@model/main-api';
+
+const ipc = window?.api as MainAPI;
 
 const headerProps = {
   display: 'flex',
@@ -417,6 +421,35 @@ export function ImportTab(props: IProps) {
       pendingmsg: t.importPending,
       completemsg: t.importComplete,
     });
+  };
+
+  const uploadBurrito = async (directories: string[]) => {
+    const teamIdNum =
+      selectedTeamId === 'new'
+        ? 0
+        : remoteIdNum(
+            'organization',
+            selectedTeamId,
+            memory?.keyMap as RecordKeyMap
+          );
+    const ptfs = directories.map((dir) => {
+      console.log(dir);
+      // pass to representation former
+      // open dialog with rep
+      // pass to converter
+      ipc.deleteFolder(dir);
+      // return new ptf files (ptf for each book)
+      return new File([], 'A');
+    });
+
+    handleFileUpload(ptfs, importProjectFromExternal, {
+      teamId: teamIdNum,
+      token,
+      errorReporter,
+      pendingmsg: t.importPending,
+      completemsg: t.importComplete,
+    });
+    // delete temp ptf
   };
 
   const uploadCancel = () => {
@@ -925,6 +958,28 @@ export function ImportTab(props: IProps) {
                     createNewLabel={t.createNewTeam}
                   />
                 )}
+                {isElectron && (
+                  <>
+                    <FormControlLabel
+                      value={UploadType.Burrito}
+                      control={<Radio />}
+                      label={
+                        !isOffline ? t.externalSourceBurrito : t.offlineImport
+                      }
+                    />
+
+                    {selectedImportType === UploadType.Burrito &&
+                      !isOffline && (
+                        <TeamSelector
+                          selectedTeamId={selectedTeamId}
+                          onTeamChange={setSelectedTeamId}
+                          teams={teams}
+                          selectLabel={t.selectTeam}
+                          createNewLabel={t.createNewTeam}
+                        />
+                      )}
+                  </>
+                )}
                 <FormControlLabel
                   value={UploadType.ITF}
                   control={<Radio />}
@@ -941,7 +996,7 @@ export function ImportTab(props: IProps) {
             </FormControl>
           )}
 
-          {uploadVisible && (
+          {uploadVisible && selectedImportType !== UploadType.Burrito && (
             <MediaUpload
               visible={uploadVisible}
               onVisible={setUploadVisible}
@@ -952,6 +1007,13 @@ export function ImportTab(props: IProps) {
                   : uploadITF
               }
               cancelMethod={uploadCancel}
+            />
+          )}
+          {uploadVisible && selectedImportType === UploadType.Burrito && (
+            <BurritoUploadDialog
+              open={selectedImportType === UploadType.Burrito}
+              onSubmit={(dirPath) => uploadBurrito([dirPath])}
+              onCancel={uploadCancel}
             />
           )}
           {confirmAction === '' || (

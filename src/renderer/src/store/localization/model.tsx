@@ -559,6 +559,7 @@ export interface IImportStrings extends Localize.LocalizedStringsMethods {
     "createNewTeam": string;
     "error": string;
     "externalSource": string;
+    "externalSourceBurrito": string;
     "family": string;
     "filter": string;
     "fontsize": string;

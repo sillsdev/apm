@@ -2806,6 +2806,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="import.externalSourceBurrito">
+         <segment>
+            <source>Create a new project in APM from a Scripture Burrito</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="import.family">
          <segment>
             <source>Family Name</source>

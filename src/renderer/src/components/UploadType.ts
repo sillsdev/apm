@@ -10,5 +10,6 @@ export enum UploadType {
   Link = 8,
   MarkDown = 9,
   FaithbridgeLink = 10,
-  Test = 11 /* DELETE ONCE TEST RADIO for SKIPPING UPLOAD IS UNNECESSARY */,
+  Burrito = 11,
+  Test = 12, // DELETE ONCE TEST RADIO for SKIPPING UPLOAD IS UNNECESSARY
 }
