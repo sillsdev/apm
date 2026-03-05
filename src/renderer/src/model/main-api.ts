@@ -23,7 +23,9 @@ export interface MainAPI {
   exitApp: () => Promise<unknown>;
   relaunchApp: () => Promise<unknown>;
   closeApp: () => Promise<unknown>;
-  importOpen: () => Promise<string[] | undefined>;
+  importOpen: (
+    filters: { name: string; extensions: string[] }[]
+  ) => Promise<string[] | undefined>;
   execPath: () => Promise<string>;
   md5File: (filePath: string) => Promise<string>;
   isWindows: () => Promise<boolean>;

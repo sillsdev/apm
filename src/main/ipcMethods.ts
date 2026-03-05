@@ -179,9 +179,9 @@ export function ipcMethods(): void {
     return null;
   });
 
-  ipcMain.handle('importOpen', async () => {
+  ipcMain.handle('importOpen', async (filters) => {
     const options = {
-      filters: [{ name: 'ptf', extensions: ['ptf'] }],
+      filters,
       properties: ['openFile'],
     };
     return dialog.showOpenDialogSync(options as any);

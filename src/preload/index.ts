@@ -28,7 +28,8 @@ const api = {
   exitApp: async () => await ipcRenderer.invoke('exitApp'),
   relaunchApp: async () => await ipcRenderer.invoke('relaunchApp'),
   closeApp: async () => await ipcRenderer.invoke('closeApp'),
-  importOpen: async () => await ipcRenderer.invoke('importOpen'),
+  importOpen: async (filters) =>
+    await ipcRenderer.invoke('importOpen', filters),
   execPath: async () => await ipcRenderer.invoke('execPath'),
   md5File: async (filePath) => await ipcRenderer.invoke('md5File', filePath),
   isWindows: async () => await ipcRenderer.invoke('isWindows'),
