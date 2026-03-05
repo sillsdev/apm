@@ -1,5 +1,7 @@
-import * as fs from 'fs';
-import * as path from 'path';
+import { MainAPI } from '@model/main-api';
+import path from 'path-browserify';
+
+const ipc = window?.api as MainAPI;
 
 interface BookStructure {
   label: string;
@@ -35,8 +37,8 @@ interface AudioMetadata {
   >;
 }
 
-function readJson<T>(filePath: string): T {
-  return JSON.parse(fs.readFileSync(filePath, 'utf8')) as T;
+async function readJson<T>(filePath: string): Promise<T> {
+  return JSON.parse((await ipc.read(filePath, 'utf8')) as string) as T;
 }
 
 function extractLabel(labels: LocalizedStringMap, lang: string): string {
@@ -49,16 +51,16 @@ function extractLabel(labels: LocalizedStringMap, lang: string): string {
   return label.replace(/\s*Burrito Wrapper\s*$/i, '').trim();
 }
 
-export function buildStructure(
+export async function buildStructure(
   burritoWrapperPath: string,
   lang: string
-): WrapperStructure {
+): Promise<WrapperStructure> {
   try {
-    const wrapper = readJson<WrapperMetadata>(
+    const wrapper = await readJson<WrapperMetadata>(
       path.join(burritoWrapperPath, 'metadata.json')
     );
 
-    const audio = readJson<AudioMetadata>(
+    const audio = await readJson<AudioMetadata>(
       path.join(burritoWrapperPath, 'audio', 'metadata.json')
     );
 
