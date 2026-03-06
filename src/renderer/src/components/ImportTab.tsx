@@ -487,7 +487,10 @@ export function ImportTab(props: IProps) {
       pendingmsg: t.importPending,
       completemsg: t.importComplete,
     });
-    // TODO: delete temp ptf
+
+    ptfs.forEach(async (ptf) => {
+      await ipc.delete(ptf);
+    });
   };
 
   const translateError = (err: IAxiosStatus): string => {
