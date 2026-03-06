@@ -58,6 +58,10 @@ async function getMediaData(
   );
 
   for (const burrito of wrapper.contents?.burritos ?? []) {
+    if (burrito.path === 'apmdata') {
+      continue;
+    }
+
     const burritoPath = path.join(wrapperDirPath, burrito.path);
 
     const burritoMedia = await enumerateIngredients(burritoPath);
@@ -85,11 +89,16 @@ export async function convertWrapperToPTFs(
   dirPath: string
 ) {
   const paths = [];
-  const data = await getMediaData(dirPath);
+  const media = await getMediaData(dirPath);
+  const apm = await enumerateIngredients(path.join(dirPath, 'apmdata')); // Assumes that apmdata exists
   for (const book of filter.books) {
     const paddedCode = pad2(getBookCode(book.label));
     const bookName = `${paddedCode}${book.label}`;
-    const ptfPath = await convertBookToPTF(bookName, data[book.label]);
+    const ptfPath = await convertBookToPTF(
+      bookName,
+      media[book.label],
+      apm[book.label]
+    );
     paths.push(ptfPath);
   }
   return paths;
@@ -102,7 +111,8 @@ export async function convertWrapperToPTFs(
  */
 export async function convertBookToPTF(
   bookName: string,
-  mediaList: PathObject[]
+  mediaList: PathObject[],
+  dataList: PathObject[]
 ) {
   // make a new directory for ptf named after the project
   // Create SILTranscriber and Version
@@ -114,6 +124,13 @@ export async function convertBookToPTF(
     await ipc.copyFile(
       path.format(mediaPath),
       path.join(ptfDir, 'media', mediaPath.base)
+    );
+  }
+  await ipc.createFolder(path.join(ptfDir, 'data'));
+  for (const dataPath of dataList) {
+    await ipc.copyFile(
+      path.format(dataPath),
+      path.join(ptfDir, 'media', dataPath.base)
     );
   }
   await ipc.write(

@@ -5,6 +5,7 @@ import path from 'path-browserify';
 const ipc = window?.api as MainAPI;
 
 export interface BookStructure {
+  id: string;
   label: string;
   chapters: string[];
   burritos: string[];
@@ -61,6 +62,7 @@ export async function buildStructure(
       if (!entry?.long) continue;
 
       books.push({
+        id: bookId,
         label: extractLabel(entry.long, lang),
         chapters: [],
         burritos: [],
