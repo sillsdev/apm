@@ -87,7 +87,8 @@ import {
 import { useAdminTeams } from './useAdminTeams';
 import BurritoUploadDialog from './BurritoUpload';
 import { MainAPI } from '@model/main-api';
-import { buildStructure } from '@utils/parseBurritoMetadata';
+import { buildStructure } from '../utils/parseBurritoMetadata';
+import { convertWrapperToPTFs } from '../utils/burritoConversion';
 import FilterContent, { FilterData } from './FilterContent';
 
 const ipc = window?.api as MainAPI;
@@ -443,14 +444,17 @@ export function ImportTab(props: IProps) {
           );
     const ptfs = await Promise.all(
       directories.map(async (dir) => {
-        console.log(dir);
         const struct = await buildStructure(dir, locale);
-        console.log(struct);
-        // open dialog with rep
         setFilterData(struct);
         setFilterVisible(true);
 
-        // pass to converter
+        await convertWrapperToPTFs(
+          {
+            label: 'AAAA',
+            books: [{ label: 'RUT', chapters: [], burritos: [] }],
+          },
+          dir
+        );
         ipc.deleteFolder(dir);
         // return new ptf files (ptf for each book)
         return new File([], 'A');
