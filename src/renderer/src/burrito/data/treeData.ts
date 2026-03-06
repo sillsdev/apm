@@ -1,5 +1,4 @@
-import type { Burrito } from './burritoBuilder';
-import type { BurritoWrapper } from './wrapperBuilder';
+import type { Burrito, BurritoWrapper } from './types';
 
 interface TreeItem {
   id: string;

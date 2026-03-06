@@ -4,11 +4,7 @@ import {
   AlignmentGroup,
   AlignmentRecord,
 } from './data/alignmentBuilder';
-import {
-  Burrito,
-  BurritoIngredients,
-  BurritoScopes,
-} from './data/burritoBuilder';
+import { Burrito, BurritoIngredients, BurritoScopes } from './data/types';
 import related from '../crud/related';
 import { VernacularTag, useArtifactType } from '../crud/useArtifactType';
 import { ArtifactTypeSlug } from '../crud/artifactTypeSlug';

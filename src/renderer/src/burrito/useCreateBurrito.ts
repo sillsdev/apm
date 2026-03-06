@@ -1,6 +1,7 @@
 import React, { useCallback, useRef } from 'react';
 import path from 'path-browserify';
-import { BurritoBuilder, BurritoLocalizedNames } from './data/burritoBuilder';
+import { BurritoBuilder } from './data/burritoBuilder';
+import { BurritoLocalizedNames } from './data/types';
 import { useGlobal } from '../context/useGlobal';
 import {
   remoteId,

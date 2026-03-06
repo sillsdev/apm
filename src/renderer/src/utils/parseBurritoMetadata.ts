@@ -1,4 +1,5 @@
 import { MainAPI } from '@model/main-api';
+import { Burrito, BurritoWrapper, LocalizedString } from 'burrito/data/types';
 import path from 'path-browserify';
 
 const ipc = window?.api as MainAPI;
@@ -14,46 +15,11 @@ export interface WrapperStructure {
   books: BookStructure[];
 }
 
-export interface BurritoEntry {
-  id: string;
-  path: string;
-  role: 'source' | 'derived' | 'supplemental';
-}
-
-export interface BurritoContents {
-  burritos: BurritoEntry[];
-}
-
-export type LocalizedStringMap = Record<string, string>;
-
-export interface WrapperMetadata {
-  meta: {
-    name: LocalizedStringMap;
-  };
-  format: 'scripture burrito wrapper';
-  contents: BurritoContents;
-}
-
-export interface AudioMetadata {
-  ingredients: Record<
-    string,
-    {
-      scope?: Record<string, string[]>;
-    }
-  >;
-  localizedNames: Record<
-    string,
-    {
-      long: LocalizedStringMap;
-    }
-  >;
-}
-
 export async function readJson<T>(filePath: string): Promise<T> {
   return JSON.parse((await ipc.read(filePath, 'utf8')) as string) as T;
 }
 
-export function extractLabel(labels: LocalizedStringMap, lang: string): string {
+export function extractLabel(labels: LocalizedString, lang: string): string {
   const label = labels[lang] ?? Object.values(labels)[0];
 
   if (!label) {
@@ -68,11 +34,11 @@ export async function buildStructure(
   lang: string
 ): Promise<WrapperStructure> {
   try {
-    const wrapper = await readJson<WrapperMetadata>(
+    const wrapper = await readJson<BurritoWrapper>(
       path.join(burritoWrapperPath, 'metadata.json')
     );
 
-    const audio = await readJson<AudioMetadata>(
+    const audio = await readJson<Burrito>(
       path.join(burritoWrapperPath, 'audio', 'metadata.json')
     );
 
@@ -88,6 +54,8 @@ export async function buildStructure(
     const books: BookStructure[] = [];
 
     for (const bookId of bookIds) {
+      if (!audio.localizedNames) continue;
+
       const entry = audio.localizedNames[`book-${bookId.toLowerCase()}`];
 
       if (!entry?.long) continue;
