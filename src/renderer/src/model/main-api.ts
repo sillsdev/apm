@@ -99,6 +99,7 @@ export interface MainAPI {
   zipStreamEntryData: (zip: string, name: string) => Promise<Uint8Array>;
   zipStreamEntryText: (zip: string, name: string) => Promise<string>;
   zipStreamClose: (zip: string) => Promise<void>;
+  zipFolder: (sourceDir: string, outFile: string) => Promise<void>;
   writeBuffer: (
     filePath: string,
     blob: ArrayBuffer | Uint8Array

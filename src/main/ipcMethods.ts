@@ -311,6 +311,17 @@ export function ipcMethods(): void {
     }
   });
 
+  ipcMain.handle('zipFolder', async (_event, sourceDir, outFile) => {
+    if (!fs.existsSync(sourceDir)) {
+      throw new Error('Source directory does not exist');
+    }
+
+    const zip = new AdmZip();
+    zip.addLocalFolder(sourceDir, '');
+    zip.writeZip(outFile);
+    return true;
+  });
+
   ipcMain.handle('writeBuffer', async (_event, filePath, arrayBuffer) => {
     if (process.platform === 'win32') {
       filePath = filePath.replace(/\//g, '\\');

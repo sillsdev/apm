@@ -94,6 +94,8 @@ const api = {
     await ipcRenderer.invoke('zipStreamEntryText', zip, name),
   zipStreamClose: async (zip) =>
     await ipcRenderer.invoke('zipStreamClose', zip),
+  zipFolder: async (sourceDir, outFile) =>
+    await ipcRenderer.invoke('zipFolder', sourceDir, outFile),
   writeBuffer: async (filePath, blob) =>
     await ipcRenderer.invoke('writeBuffer', filePath, blob),
   downloadFile: async (url, localFile) =>
