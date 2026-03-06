@@ -451,7 +451,7 @@ export function ImportTab(props: IProps) {
     });
   };
 
-  const uploadBurrito = async (directories: string[]) => {
+  const uploadBurrito = async (directories: string[], isZip: boolean) => {
     const teamIdNum =
       selectedTeamId === 'new'
         ? 0
@@ -471,7 +471,9 @@ export function ImportTab(props: IProps) {
 
         if (filterConfirmed) {
           // const ptfPaths = await convertWrapperToPTFs(struct, dir);
-          ipc.deleteFolder(dir); // TODO: Only delete if zip
+          if (isZip) {
+            ipc.deleteFolder(dir);
+          }
         }
         // return new ptf files (ptf for each book)
         return new File([], 'A');
@@ -1044,7 +1046,7 @@ export function ImportTab(props: IProps) {
           {uploadVisible && selectedImportType === UploadType.Burrito && (
             <BurritoUploadDialog
               open={selectedImportType === UploadType.Burrito}
-              onSubmit={(dirPath) => uploadBurrito([dirPath])}
+              onSubmit={(dirPath, isZip) => uploadBurrito([dirPath], isZip)}
               onCancel={uploadCancel}
             />
           )}

@@ -21,7 +21,7 @@ const ipc = window?.api as MainAPI;
 
 interface BurritoUploadDialogProps {
   open: boolean;
-  onSubmit: (directoryPath: string) => void;
+  onSubmit: (directoryPath: string, isZip: boolean) => void;
   onCancel: () => void;
   title?: string;
 }
@@ -66,6 +66,7 @@ const BurritoUploadDialog: React.FC<BurritoUploadDialogProps> = ({
     setLoading(true);
     try {
       let extractPath = selectedPath;
+      let isZip = false;
 
       // Extract zip if selected
       if (isZipFile && zipFilePath) {
@@ -89,6 +90,7 @@ const BurritoUploadDialog: React.FC<BurritoUploadDialogProps> = ({
             extractPath = firstEntryPath;
           }
         }
+        isZip = true;
       }
 
       // Check for metadata.json
