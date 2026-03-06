@@ -1,15 +1,8 @@
-import { useState, useEffect } from 'react';
 import codeNum from '../assets/code-num.json';
 
 type CodeNum = [string, number][];
+const bookCodesMap = new Map(codeNum as CodeNum);
 
-export const useBookN = () => {
-  const [bookCodes, setBookCodes] = useState<Map<string, number>>();
+export const getBookCode = (book: string) => bookCodesMap.get(book) ?? 0;
 
-  useEffect(() => {
-    setBookCodes(new Map(codeNum as CodeNum));
-  }, []);
-
-  return (book: string) =>
-    (bookCodes ?? new Map(codeNum as CodeNum)).get(book) ?? 0;
-};
+export const useBookN = () => getBookCode;

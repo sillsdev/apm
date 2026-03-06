@@ -1,9 +1,5 @@
 import path from 'path-browserify';
-import {
-  Burrito,
-  BurritoIngredients,
-  BurritoScopes,
-} from './data/burritoBuilder';
+import { Burrito, BurritoIngredients, BurritoScopes } from './data/types';
 import related from '../crud/related';
 import { useFetchUrlNow } from '../crud/useFetchUrlNow';
 import { useSnackBar } from '../hoc/SnackBar';

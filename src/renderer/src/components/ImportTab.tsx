@@ -85,6 +85,16 @@ import {
   type GridSortModel,
 } from '@mui/x-data-grid';
 import { useAdminTeams } from './useAdminTeams';
+import BurritoUploadDialog from './BurritoUpload';
+import { MainAPI } from '@model/main-api';
+import {
+  buildStructure,
+  WrapperStructure,
+} from '../utils/parseBurritoMetadata';
+import { convertWrapperToPTFs } from '../utils/burritoConversion';
+import FilterContent from './FilterContent';
+
+const ipc = window?.api as MainAPI;
 
 const headerProps = {
   display: 'flex',
@@ -198,6 +208,7 @@ export function ImportTab(props: IProps) {
   const importSyncFromElectron = (props: ImportSyncFromElectronProps) =>
     dispatch(actions.importSyncFromElectron(props) as any);
 
+  const [locale] = useGlobal('lang');
   const [, setBusy] = useGlobal('importexportBusy');
   const importingRef = useRef(false);
   const [coordinator] = useGlobal('coordinator');
@@ -217,6 +228,11 @@ export function ImportTab(props: IProps) {
   const [fileName, setFileName] = useState<string>('');
   const [importProject, setImportProject] = useState<string>('');
   const [uploadVisible, setUploadVisible] = useState(false);
+  const [filterVisible, setFilterVisible] = useState(false);
+  const [filterData, setFilterData] = useState<WrapperStructure>({
+    label: '',
+    books: [],
+  });
   const [selectedImportType, setSelectedImportType] = useState<UploadType>(
     UploadType.PTF
   );
@@ -259,6 +275,26 @@ export function ImportTab(props: IProps) {
         showMessage(t.copyfail);
       });
   };
+
+  const onFilterVisible = (visible: boolean) => {
+    setFilterVisible(visible);
+  };
+  const uploadCancel = () => {
+    setUploadVisible(false);
+    handleClose();
+  };
+  const filterSubmit = (data: any) => {
+    setFilterData(data);
+    if (filterResolveRef.current) {
+      filterResolveRef.current(data);
+      filterResolveRef.current = null; // Clean up
+    }
+    onFilterVisible(false);
+  };
+  const filterResolveRef = useRef<((data: WrapperStructure) => void) | null>(
+    null
+  );
+
   const columns: GridColDef<IRow>[] = [
     { field: 'plan', headerName: t.plan, width: 200 },
     { field: 'section', headerName: getOrganizedBy(true), width: 100 },
@@ -419,9 +455,65 @@ export function ImportTab(props: IProps) {
     });
   };
 
-  const uploadCancel = () => {
-    setUploadVisible(false);
-    handleClose();
+  const getFilterConfirmation = (
+    struct: WrapperStructure
+  ): Promise<WrapperStructure> => {
+    return new Promise((resolve) => {
+      setFilterData(struct);
+      onFilterVisible(true);
+      filterResolveRef.current = resolve; // Store resolve function
+    });
+  };
+
+  const uploadBurrito = async (directories: string[], isZip: boolean) => {
+    const teamIdNum =
+      selectedTeamId === 'new'
+        ? 0
+        : remoteIdNum(
+            'organization',
+            selectedTeamId,
+            memory?.keyMap as RecordKeyMap
+          );
+    const ptfPaths = (
+      await Promise.all(
+        directories.flatMap(async (dir): Promise<string[]> => {
+          const struct = await buildStructure(dir, locale);
+
+          setFilterData(struct);
+          setFilterVisible(true);
+          const filteredConfirmed = await getFilterConfirmation(struct);
+          if (filteredConfirmed) {
+            const ptfPaths = await convertWrapperToPTFs(struct, dir);
+            if (isZip) {
+              ipc.deleteFolder(dir);
+            }
+            return ptfPaths;
+          }
+          return [];
+        })
+      )
+    ).flat();
+
+    const ptfs = await Promise.all(
+      ptfPaths.map(async (filePath) => {
+        const content = await ipc.read(filePath);
+        const fileName = filePath.split(/[/\\]/).pop() || 'unknown';
+        const buffer = new Uint8Array(content as Uint8Array);
+        return new File([buffer], fileName);
+      })
+    );
+
+    handleFileUpload(ptfs, importProjectFromExternal, {
+      teamId: teamIdNum,
+      token,
+      errorReporter,
+      pendingmsg: t.importPending,
+      completemsg: t.importComplete,
+    });
+
+    ptfPaths.forEach(async (ptfPath) => {
+      await ipc.delete(ptfPath);
+    });
   };
 
   const translateError = (err: IAxiosStatus): string => {
@@ -842,6 +934,7 @@ export function ImportTab(props: IProps) {
       (status?.errMsg && status?.errMsg !== '[]' ? ': ' + status?.errMsg : '')
     );
   };
+
   return (
     <StyledDialog
       open={isOpen}
@@ -925,6 +1018,28 @@ export function ImportTab(props: IProps) {
                     createNewLabel={t.createNewTeam}
                   />
                 )}
+                {isElectron && (
+                  <>
+                    <FormControlLabel
+                      value={UploadType.Burrito}
+                      control={<Radio />}
+                      label={
+                        !isOffline ? t.externalSourceBurrito : t.offlineImport
+                      }
+                    />
+
+                    {selectedImportType === UploadType.Burrito &&
+                      !isOffline && (
+                        <TeamSelector
+                          selectedTeamId={selectedTeamId}
+                          onTeamChange={setSelectedTeamId}
+                          teams={teams}
+                          selectLabel={t.selectTeam}
+                          createNewLabel={t.createNewTeam}
+                        />
+                      )}
+                  </>
+                )}
                 <FormControlLabel
                   value={UploadType.ITF}
                   control={<Radio />}
@@ -934,7 +1049,7 @@ export function ImportTab(props: IProps) {
             </FormControl>
           )}
 
-          {uploadVisible && (
+          {uploadVisible && selectedImportType !== UploadType.Burrito && (
             <MediaUpload
               visible={uploadVisible}
               onVisible={setUploadVisible}
@@ -945,6 +1060,22 @@ export function ImportTab(props: IProps) {
                   : uploadITF
               }
               cancelMethod={uploadCancel}
+            />
+          )}
+          {uploadVisible && selectedImportType === UploadType.Burrito && (
+            <BurritoUploadDialog
+              open={selectedImportType === UploadType.Burrito}
+              onSubmit={(dirPath, isZip) => uploadBurrito([dirPath], isZip)}
+              onCancel={uploadCancel}
+            />
+          )}
+          {filterVisible && (
+            <FilterContent
+              filterVisible={filterVisible}
+              onFilterVisible={onFilterVisible}
+              filterSubmit={filterSubmit}
+              filterData={filterData}
+              uploadCancel={uploadCancel}
             />
           )}
           {confirmAction === '' || (

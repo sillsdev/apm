@@ -179,12 +179,18 @@ export function ipcMethods(): void {
     return null;
   });
 
-  ipcMain.handle('importOpen', async () => {
+  ipcMain.handle('importOpen', async (_event, filters) => {
     const options = {
-      filters: [{ name: 'ptf', extensions: ['ptf'] }],
+      filters,
       properties: ['openFile'],
     };
     return dialog.showOpenDialogSync(options as any);
+  });
+
+  ipcMain.handle('openDirectoryDialog', async () => {
+    return dialog.showOpenDialogSync({
+      properties: ['openDirectory'],
+    });
   });
 
   ipcMain.handle('audacityOpen', async () => {
@@ -303,6 +309,16 @@ export function ipcMethods(): void {
       await zipStr.get(zip).close();
       zipStr.delete(zip);
     }
+  });
+
+  ipcMain.handle('zipFolder', async (_event, sourceDir, outFile) => {
+    if (!fs.existsSync(sourceDir)) {
+      throw new Error('Source directory does not exist');
+    }
+
+    const zip = new AdmZip();
+    zip.addLocalFolder(sourceDir);
+    zip.writeZip(outFile);
   });
 
   ipcMain.handle('writeBuffer', async (_event, filePath, arrayBuffer) => {

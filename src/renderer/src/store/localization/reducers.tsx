@@ -466,6 +466,15 @@ const initialState = {
 			"video": "video",
 		}
 	}),
+	"filterContent": new LocalizedStrings({
+		"en": {
+			"allChapters": "All Chapters of {0}",
+			"allBooks": "All Books",
+			"title": "Scripture Burrito: {0}",
+			"subtitle1": "Please select the information you want to import into your team.",
+			"subtitle2": "Each selected book will be imported as a separate project.",
+		}
+	}),
 	"filterMenu": new LocalizedStrings({
 		"en": {
 			"all": "All",
@@ -595,6 +604,7 @@ const initialState = {
 			"createNewTeam": "Create new team",
 			"error": "Import Error",
 			"externalSource": "Create a new project in APM from an external source (.ptf)",
+			"externalSourceBurrito": "Create a new project in APM from a Scripture Burrito",
 			"family": "Family Name",
 			"filter": "Filter",
 			"fontsize": "Font Size",
@@ -630,6 +640,18 @@ const initialState = {
 			"unassigned": "unassigned",
 			"unknownError": "If this error occurred while importing offline changes, please close the app immediately and reopen.  If the error persists, contact support.  If you continue to use the app, you will lose offline changes.",
 			"username": "Name",
+		}
+	}),
+	"scriptureBurritoImport": new LocalizedStrings({
+		"en": {
+			"title": "Import Scripture Burrito",
+			"zipExtractError": "Failed to extract zip file",
+			"metadataNotFoundError": "metadata.json not found in the selected file/directory",
+			"invalidWrapperMetadataError": "Invalid format: expected \"scripture burrito wrapper\"",
+			"subtitle": "Select a Burrito directory or a .zip file to extract and import.",
+			"browseDirectory": "Browse Directory",
+			"browseZipFile": "Browse Zip File",
+			"selected": "Selected: ",
 		}
 	}),
 	"integration": new LocalizedStrings({
@@ -788,6 +810,7 @@ const initialState = {
 			"exit": "Exit",
 			"export": "Export",
 			"flatSample": "Scripture flat sample spreadsheet",
+			"genericError": "Error: {0}",
 			"genFlatSample": "General flat sample spreadsheet",
 			"genHierarchicalSample": "General hierarchical sample spreadsheet",
 			"goOffline": "Go Offline",
@@ -830,6 +853,7 @@ const initialState = {
 			"unexpectedError": "Sorry, an unexpected error has occurred.",
 			"UnsavedData": "Unsaved Data",
 			"updateAvailable": "Update available: Version {0} was released {1}",
+			"upload": "Upload",
 			"version": "Version: {0} - {1}",
 			"videos": "Access Training Videos",
 			"walkThru": "Access Walk Through",
@@ -2116,12 +2140,14 @@ const localizationReducer = function (state = initialState, action: any): ILocal
 				"electronImport" : new LocalizedStrings(action.payload.data.electronImport),
 				"emailUnverified" : new LocalizedStrings(action.payload.data.emailUnverified),
 				"faithbridge" : new LocalizedStrings(action.payload.data.faithbridge),
+				"filterContent" : new LocalizedStrings(action.payload.data.filterContent),
 				"filterMenu" : new LocalizedStrings(action.payload.data.filterMenu),
 				"findResource" : new LocalizedStrings(action.payload.data.findResource),
 				"grid" : new LocalizedStrings(action.payload.data.grid),
 				"groupTabs" : new LocalizedStrings(action.payload.data.groupTabs),
 				"hotKey" : new LocalizedStrings(action.payload.data.hotKey),
 				"import" : new LocalizedStrings(action.payload.data.import),
+				"scriptureBurritoImport" : new LocalizedStrings(action.payload.data.scriptureBurritoImport),
 				"integration" : new LocalizedStrings(action.payload.data.integration),
 				"invitationTable" : new LocalizedStrings(action.payload.data.invitationTable),
 				"invite" : new LocalizedStrings(action.payload.data.invite),

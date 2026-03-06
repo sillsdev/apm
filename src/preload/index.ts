@@ -28,7 +28,10 @@ const api = {
   exitApp: async () => await ipcRenderer.invoke('exitApp'),
   relaunchApp: async () => await ipcRenderer.invoke('relaunchApp'),
   closeApp: async () => await ipcRenderer.invoke('closeApp'),
-  importOpen: async () => await ipcRenderer.invoke('importOpen'),
+  importOpen: async (filters) =>
+    await ipcRenderer.invoke('importOpen', filters),
+  openDirectoryDialog: async () =>
+    await ipcRenderer.invoke('openDirectoryDialog'),
   execPath: async () => await ipcRenderer.invoke('execPath'),
   md5File: async (filePath) => await ipcRenderer.invoke('md5File', filePath),
   isWindows: async () => await ipcRenderer.invoke('isWindows'),
@@ -91,6 +94,8 @@ const api = {
     await ipcRenderer.invoke('zipStreamEntryText', zip, name),
   zipStreamClose: async (zip) =>
     await ipcRenderer.invoke('zipStreamClose', zip),
+  zipFolder: async (sourceDir, outFile) =>
+    await ipcRenderer.invoke('zipFolder', sourceDir, outFile),
   writeBuffer: async (filePath, blob) =>
     await ipcRenderer.invoke('writeBuffer', filePath, blob),
   downloadFile: async (url, localFile) =>

@@ -5,7 +5,8 @@
     "src/main/**/*",
     "src/preload/**/*",
     "src/renderer/src/model/IdToken.ts",
-    "src/renderer/src/model/main-api.ts"
+    "src/renderer/src/model/main-api.ts",
+    "src/renderer/src/utils/burritoConversion.ts"
   ],
   "compilerOptions": {
     "composite": true,
