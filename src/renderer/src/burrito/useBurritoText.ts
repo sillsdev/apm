@@ -40,43 +40,45 @@ export const useBurritoText = (teamId: string) => {
     const textMap = new Map<number, string[]>();
 
     let chapter = 0;
-    let bookStart = '';
-    let chapterStart = '';
+    let sectionId = '';
+    let initialText = new Array<string>();
     const versions = parseInt(
       (getOrgDefault('burritoVersions', teamId) || '1') as string
     );
 
     for (const section of sections) {
-      let sectionStart = `\\s ${sectionDescription(section).trim()}\n`;
-
       // get the passages files for the plan sorted by sequence number
       const planMedia = mediafiles.filter(
         (m) => related(section, 'plan') === related(m, 'plan')
       );
+
+      let paraStart = '\\p';
       const passageRecs = passages
         .filter((p) => related(p, 'section') === section.id)
         .sort((a, b) => a.attributes.sequencenum - b.attributes.sequencenum);
       for (const p of passageRecs) {
         // get additional passage info
         const passageType = passageTypeFromRef(p.attributes.reference, false);
+        if (passageType !== PassageTypeEnum.PASSAGE) continue;
 
-        // parse the passage reference
+        // initialize the text for the passage
+        const mediaSectionId = related(p, 'section');
         parseRef(p);
-        let { startChapter } = p.attributes;
-        // content before first passage with a chapter number is in chapter 1
-        if (!startChapter && chapter === 0) startChapter = 1;
-        if (passageType === PassageTypeEnum.CHAPTERNUMBER) {
-          startChapter = parseInt(p.attributes.reference.split(' ')[1]);
-        }
-
-        // new chapter number create a new chapter folder and usfm chapter header if necessary
+        const { startChapter, startVerse, endChapter, endVerse } = p.attributes;
         if (startChapter && startChapter !== chapter) {
+          if (startChapter === 1) initialText.push(`\\id ${book}`);
           chapter = startChapter;
-          if (chapter === 1) bookStart = `\\id ${book}`;
-          chapterStart = `\\c ${chapter.toString()}`;
+          initialText.push(`\\c ${chapter.toString()}`);
           chapters.add(chapter.toString());
         }
-        if (passageType !== PassageTypeEnum.PASSAGE) continue;
+        if (sectionId !== mediaSectionId) {
+          sectionId = mediaSectionId;
+          if (paraStart) initialText.push(paraStart);
+          paraStart = '';
+          initialText.push(
+            `\\s ${sectionDescription(section).trim().split('\u00A0\u00A0').slice(1).join('\u00A0\u00A0')}`
+          );
+        }
 
         // get the media files for the passage
         const media = planMedia.filter((m) => related(m, 'passage') === p.id);
@@ -99,29 +101,37 @@ export const useBurritoText = (teamId: string) => {
           if (!textNameMap.has(i)) {
             textNameMap.set(i, `${book}v${i + 1}.usfm`);
           }
-          if (!textMap.has(i)) {
-            const initialText = new Array<string>();
-            if (bookStart) initialText.push(bookStart);
-            if (sectionStart) initialText.push(sectionStart);
-            if (chapterStart) initialText.push(chapterStart);
-            textMap.set(i, initialText);
-            chapterStart = '';
-            sectionStart = '';
-            bookStart = '';
-          }
+
+          textMap.set(
+            i,
+            textMap.has(i)
+              ? (textMap.get(i) || []).concat(initialText)
+              : initialText
+          );
 
           // get the transcription for the usfm file
           if (attr?.transcription) {
             const text = textMap.get(i);
             if (text) {
+              if (paraStart) text.push(paraStart);
               let verseRange = attr.transcription;
               if (!/\\v/.test(verseRange)) {
-                verseRange = `\\v ${p.attributes.reference} ${attr.transcription}`;
+                let ref = startVerse?.toString();
+                if (endChapter && endChapter !== startChapter) {
+                  ref = `${ref}-${endChapter}:${endVerse?.toString()}`;
+                } else if (endVerse && endVerse !== startVerse) {
+                  ref = `${ref}-${endVerse?.toString()}`;
+                }
+                verseRange = `\\v ${ref} ${attr.transcription}`;
               }
               text.push(verseRange);
               textMap.set(i, text);
             }
           }
+        }
+        if (vernMedia.length > 0) {
+          initialText = new Array<string>();
+          paraStart = '\\p';
         }
       }
     }
