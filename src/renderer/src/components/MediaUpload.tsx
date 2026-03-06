@@ -152,15 +152,15 @@ function MediaUpload(props: IProps) {
           />
         </BigDialog>
       )}
-      {uploadType === UploadType.Test && (
-        <FilterContent
+      {/* {uploadType === UploadType.Test && (
+        <FilterContentDialog
           visible={visible}
           onVisible={onVisible}
           onSubmit={handleTreeChange}
           filterData={data}
           cancelMethod={cancelMethod}
         />
-      )}
+      )} */}
     </>
   );
 }

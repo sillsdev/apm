@@ -225,8 +225,11 @@ export function ImportTab(props: IProps) {
   const [fileName, setFileName] = useState<string>('');
   const [importProject, setImportProject] = useState<string>('');
   const [uploadVisible, setUploadVisible] = useState(false);
-  const [filterVisible, setFilterVisible] = useState(false);
-  const [filterData, setFilterData] = useState<FilterData>();
+  const [filterVisible, onFilterVisible] = useState(false);
+  const [filterData, setFilterData] = useState<FilterData>({
+    label: '',
+    books: [],
+  });
   const [selectedImportType, setSelectedImportType] = useState<UploadType>(
     UploadType.PTF
   );
@@ -269,6 +272,22 @@ export function ImportTab(props: IProps) {
         showMessage(t.copyfail);
       });
   };
+
+  const uploadCancel = () => {
+    setUploadVisible(false);
+    handleClose();
+  };
+  const filterSubmit = (data: any) => {
+    setFilterData(data);
+  };
+  const { filterConfirm, FilterContentDialog } = FilterContent({
+    filterVisible,
+    onFilterVisible,
+    filterSubmit,
+    filterData,
+    uploadCancel,
+  });
+
   const columns: GridColDef<IRow>[] = [
     { field: 'plan', headerName: t.plan, width: 200 },
     { field: 'section', headerName: getOrganizedBy(true), width: 100 },
@@ -335,10 +354,6 @@ export function ImportTab(props: IProps) {
     setConfirmAction('');
     setBusy(false);
     handleClose();
-  };
-
-  const filterSubmit = (data: any) => {
-    setFilterData(data);
   };
 
   const electronImport = async () => {
@@ -446,16 +461,19 @@ export function ImportTab(props: IProps) {
       directories.map(async (dir) => {
         const struct = await buildStructure(dir, locale);
         setFilterData(struct);
-        setFilterVisible(true);
-
-        await convertWrapperToPTFs(
-          {
-            label: 'AAAA',
-            books: [{ label: 'RUT', chapters: [], burritos: [] }],
-          },
-          dir
-        );
-        ipc.deleteFolder(dir);
+        onFilterVisible(true);
+        //make it stop
+        const filterConfirmed = await filterConfirm();
+        if (filterConfirmed) {
+          await convertWrapperToPTFs(
+            {
+              label: 'AAAA',
+              books: [{ label: 'RUT', chapters: [], burritos: [] }],
+            },
+            dir
+          );
+          ipc.deleteFolder(dir);
+        }
         // return new ptf files (ptf for each book)
         return new File([], 'A');
       })
@@ -469,11 +487,6 @@ export function ImportTab(props: IProps) {
       completemsg: t.importComplete,
     });
     // delete temp ptf
-  };
-
-  const uploadCancel = () => {
-    setUploadVisible(false);
-    handleClose();
   };
 
   const translateError = (err: IAxiosStatus): string => {
@@ -1036,15 +1049,7 @@ export function ImportTab(props: IProps) {
               onCancel={uploadCancel}
             />
           )}
-          {filterVisible && (
-            <FilterContent
-              visible={filterVisible}
-              onVisible={setFilterVisible}
-              onSubmit={filterSubmit}
-              filterData={filterData as FilterData}
-              cancelMethod={uploadCancel}
-            />
-          )}
+          {filterVisible && <FilterContentDialog />}
           {confirmAction === '' || (
             <Confirm
               jsx={

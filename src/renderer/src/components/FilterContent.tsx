@@ -17,11 +17,11 @@ import BigDialog from '../hoc/BigDialog';
 import { BigDialogBp } from '../hoc/BigDialogBp';
 
 interface FilterProps {
-  visible: boolean;
-  onVisible: (v: boolean) => void;
-  onSubmit: (value: FilterData) => void;
+  filterVisible: boolean;
+  onFilterVisible: (v: boolean) => void;
+  filterSubmit: (value: FilterData) => void;
   filterData: FilterData;
-  cancelMethod?: (() => void) | undefined;
+  uploadCancel?: (() => void) | undefined;
   cancelLabel?: string | undefined;
 }
 
@@ -44,31 +44,44 @@ type TreeNode = {
   children?: TreeNode[];
 };
 
-function FilterContent(props: FilterProps) {
+export default function FilterContent(props: FilterProps) {
   const {
-    visible,
-    onVisible,
-    onSubmit,
+    filterVisible,
+    onFilterVisible,
+    filterSubmit,
     filterData,
-    cancelMethod,
+    uploadCancel,
     cancelLabel,
   } = props;
   const t: IMediaUploadStrings = useSelector(mediaUploadSelector, shallowEqual);
   const [checked, setChecked] = useState<string[]>([]);
+  const [resolver, setResolver] = useState<((value: boolean) => void) | null>(
+    null
+  );
 
-  const handleSavePreferences = () => {
+  const handleSavePreferences = (result: boolean) => {
     const fdata = savePreferences();
     const tempData = filterData;
     // eslint-disable-next-line react-hooks/immutability
     tempData.books = fdata;
-    onSubmit(tempData);
+    filterSubmit(tempData);
+    if (resolver) {
+      resolver(result);
+      setResolver(null);
+    }
     handleCancel(); // closes dialog - hopefully doesn't cancel everything else
   };
   const handleCancel = () => {
-    if (cancelMethod) {
-      cancelMethod();
+    if (uploadCancel) {
+      uploadCancel();
     }
-    onVisible(false);
+    onFilterVisible(false);
+  };
+
+  const filterConfirm = () => {
+    return new Promise((resolve) => {
+      setResolver(() => resolve);
+    });
   };
 
   const handleToggle = (nodeId: any, node?: any) => {
@@ -223,9 +236,9 @@ function FilterContent(props: FilterProps) {
   // if you want to populate immediately from filterData call the converter here:
   data = convertDataToTreeForm();
 
-  return (
+  const FilterContentDialog = () => (
     <BigDialog
-      isOpen={visible}
+      isOpen={filterVisible}
       onOpen={handleCancel}
       title={'Scripture Burrito: ' + filterData.label}
       bp={BigDialogBp.sm}
@@ -252,7 +265,7 @@ function FilterContent(props: FilterProps) {
           </Button>
           <Button
             id="filterSave"
-            onClick={handleSavePreferences}
+            onClick={() => handleSavePreferences(true)}
             variant="contained"
             color="primary"
             disabled={false}
@@ -263,6 +276,7 @@ function FilterContent(props: FilterProps) {
       </>
     </BigDialog>
   );
+  return { filterConfirm, FilterContentDialog };
 }
 
-export default FilterContent;
+//export default FilterContent;
