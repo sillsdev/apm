@@ -63,14 +63,21 @@ export const useBurritoApmData = (memory: Memory) => {
         checksum: { md5 },
         mimeType: 'application/json',
         size: content.length,
-        scope: {},
+        ...(bookCode ? { scope: { [bookCode]: [] } } : {}),
       };
-      if (bookCode) {
-        ingredients[relPath].scope = { [bookCode]: [] };
-      }
+
+
+
     }
 
     metadata.ingredients = { ...metadata.ingredients, ...ingredients };
+    if (bookCode && metadata.type?.flavorType) {
+      const currentScope = metadata.type.flavorType.currentScope ?? {};
+      metadata.type.flavorType.currentScope = {
+        ...currentScope,
+        [bookCode]: [],
+      };
+    }
     if (metadata.type?.flavorType?.flavor) {
       metadata.type.flavorType.flavor.name = 'x-apmdata';
     }
