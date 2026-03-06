@@ -1,7 +1,7 @@
 import { MainAPI } from '@model/main-api';
 import { FilterData } from '../components/FilterContent';
 import { BurritoWrapper } from 'burrito/data/wrapperBuilder';
-import { readJson } from './parseBurritoMetadata';
+import { AudioMetadata, readJson } from './parseBurritoMetadata';
 import path from 'path';
 
 const ipc = window?.api as MainAPI;
