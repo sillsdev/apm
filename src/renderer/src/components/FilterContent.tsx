@@ -35,7 +35,7 @@ type TreeNode = {
   children?: TreeNode[];
 };
 
-function FilterContent2(props: FilterProps) {
+function FilterContent(props: FilterProps) {
   const {
     filterVisible,
     onFilterVisible,
@@ -257,4 +257,4 @@ function FilterContent2(props: FilterProps) {
   );
 }
 
-export default FilterContent2;
+export default FilterContent;
