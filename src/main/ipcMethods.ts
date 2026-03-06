@@ -179,7 +179,7 @@ export function ipcMethods(): void {
     return null;
   });
 
-  ipcMain.handle('importOpen', async (filters) => {
+  ipcMain.handle('importOpen', async (_event, filters) => {
     const options = {
       filters,
       properties: ['openFile'],
