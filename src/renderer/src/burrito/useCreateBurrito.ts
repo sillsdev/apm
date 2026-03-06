@@ -252,7 +252,7 @@ export const useCreateBurrito = (teamId: string) => {
       ? path.join(
           PathType.BURRITO,
           bible?.attributes?.bibleId || defaultBurritoName || '',
-          part.toLowerCase(),
+          part.toLowerCase().replaceAll(' ', ''),
           name
         )
       : path.join(
