@@ -12,7 +12,6 @@ import {
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import { mediaUploadSelector } from '../selector';
-import { UploadType } from './UploadType';
 import { TreeItem, SimpleTreeView } from '@mui/x-tree-view';
 import BigDialog from '../hoc/BigDialog';
 import { BigDialogBp } from '../hoc/BigDialogBp';
@@ -20,8 +19,7 @@ import { BigDialogBp } from '../hoc/BigDialogBp';
 interface FilterProps {
   visible: boolean;
   onVisible: (v: boolean) => void;
-  uploadType: UploadType;
-  onChange: (value: FilterData) => void;
+  onSubmit: (value: FilterData) => void;
   filterData: FilterData;
   cancelMethod?: (() => void) | undefined;
   cancelLabel?: string | undefined;
@@ -50,7 +48,7 @@ function FilterContent(props: FilterProps) {
   const {
     visible,
     onVisible,
-    onChange,
+    onSubmit,
     filterData,
     cancelMethod,
     cancelLabel,
@@ -63,7 +61,7 @@ function FilterContent(props: FilterProps) {
     const tempData = filterData;
     // eslint-disable-next-line react-hooks/immutability
     tempData.books = fdata;
-    onChange(tempData);
+    onSubmit(tempData);
     handleCancel(); // closes dialog - hopefully doesn't cancel everything else
   };
   const handleCancel = () => {

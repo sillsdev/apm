@@ -88,6 +88,7 @@ import { useAdminTeams } from './useAdminTeams';
 import BurritoUploadDialog from './BurritoUpload';
 import { MainAPI } from '@model/main-api';
 import { buildStructure } from '@utils/parseBurritoMetadata';
+import FilterContent, { FilterData } from './FilterContent';
 
 const ipc = window?.api as MainAPI;
 
@@ -223,6 +224,8 @@ export function ImportTab(props: IProps) {
   const [fileName, setFileName] = useState<string>('');
   const [importProject, setImportProject] = useState<string>('');
   const [uploadVisible, setUploadVisible] = useState(false);
+  const [filterVisible, setFilterVisible] = useState(false);
+  const [filterData, setFilterData] = useState<FilterData>();
   const [selectedImportType, setSelectedImportType] = useState<UploadType>(
     UploadType.PTF
   );
@@ -333,6 +336,10 @@ export function ImportTab(props: IProps) {
     handleClose();
   };
 
+  const filterSubmit = (data: any) => {
+    setFilterData(data);
+  };
+
   const electronImport = async () => {
     const importData = await getElectronImportData(project || '');
     if (importData.valid) {
@@ -440,6 +447,9 @@ export function ImportTab(props: IProps) {
         const struct = await buildStructure(dir, locale);
         console.log(struct);
         // open dialog with rep
+        setFilterData(struct);
+        setFilterVisible(true);
+
         // pass to converter
         ipc.deleteFolder(dir);
         // return new ptf files (ptf for each book)
@@ -880,6 +890,7 @@ export function ImportTab(props: IProps) {
       (status?.errMsg && status?.errMsg !== '[]' ? ': ' + status?.errMsg : '')
     );
   };
+
   return (
     <StyledDialog
       open={isOpen}
@@ -1019,6 +1030,15 @@ export function ImportTab(props: IProps) {
               open={selectedImportType === UploadType.Burrito}
               onSubmit={(dirPath) => uploadBurrito([dirPath])}
               onCancel={uploadCancel}
+            />
+          )}
+          {filterVisible && (
+            <FilterContent
+              visible={filterVisible}
+              onVisible={setFilterVisible}
+              onSubmit={filterSubmit}
+              filterData={filterData as FilterData}
+              cancelMethod={uploadCancel}
             />
           )}
           {confirmAction === '' || (

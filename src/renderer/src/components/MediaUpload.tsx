@@ -156,8 +156,7 @@ function MediaUpload(props: IProps) {
         <FilterContent
           visible={visible}
           onVisible={onVisible}
-          onChange={handleTreeChange}
-          uploadType={uploadType}
+          onSubmit={handleTreeChange}
           filterData={data}
           cancelMethod={cancelMethod}
         />
