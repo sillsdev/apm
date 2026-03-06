@@ -92,12 +92,12 @@ export async function convertWrapperToPTFs(
   const media = await getMediaData(dirPath);
   const apm = await enumerateIngredients(path.join(dirPath, 'apmdata')); // Assumes that apmdata exists
   for (const book of filter.books) {
-    const paddedCode = pad2(getBookCode(book.label));
-    const bookName = `${paddedCode}${book.label}`;
+    const paddedCode = pad2(getBookCode(book.id));
+    const bookName = `${paddedCode}${book.id}`;
     const ptfPath = await convertBookToPTF(
       bookName,
-      media[book.label],
-      apm[book.label]
+      media[book.id],
+      apm[book.id]
     );
     paths.push(ptfPath);
   }
@@ -130,7 +130,7 @@ export async function convertBookToPTF(
   for (const dataPath of dataList) {
     await ipc.copyFile(
       path.format(dataPath),
-      path.join(ptfDir, 'media', dataPath.base)
+      path.join(ptfDir, 'data', dataPath.base)
     );
   }
   await ipc.write(
