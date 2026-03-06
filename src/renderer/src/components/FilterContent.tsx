@@ -21,7 +21,6 @@ interface FilterProps {
   filterVisible: boolean;
   onFilterVisible: (v: boolean) => void;
   filterSubmit: (value: WrapperStructure) => void;
-  filterConfirm: (v: boolean) => void;
   filterData: WrapperStructure;
   uploadCancel?: (() => void) | undefined;
   cancelLabel?: string | undefined;
@@ -40,7 +39,6 @@ function FilterContent(props: FilterProps) {
     filterVisible,
     onFilterVisible,
     filterSubmit,
-    filterConfirm,
     filterData,
     uploadCancel,
     cancelLabel,
@@ -54,7 +52,6 @@ function FilterContent(props: FilterProps) {
     // eslint-disable-next-line react-hooks/immutability
     tempData.books = fdata;
     filterSubmit(tempData);
-    filterConfirm(true);
     onFilterVisible(false);
   };
   const handleCancel = () => {

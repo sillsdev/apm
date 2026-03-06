@@ -291,7 +291,6 @@ export function ImportTab(props: IProps) {
     }
     onFilterVisible(false);
   };
-  const [filterConfirmed, setFilterConfirmed] = useState(false);
   const filterResolveRef = useRef<((data: WrapperStructure) => void) | null>(
     null
   );
@@ -483,8 +482,7 @@ export function ImportTab(props: IProps) {
           setFilterData(struct);
           setFilterVisible(true);
           const filteredConfirmed = await getFilterConfirmation(struct);
-          const t = filterConfirmed || true;
-          if (filteredConfirmed && t) {
+          if (filteredConfirmed) {
             const ptfPaths = await convertWrapperToPTFs(struct, dir);
             if (isZip) {
               ipc.deleteFolder(dir);
@@ -1076,7 +1074,6 @@ export function ImportTab(props: IProps) {
               filterVisible={filterVisible}
               onFilterVisible={onFilterVisible}
               filterSubmit={filterSubmit}
-              filterConfirm={(confirm) => setFilterConfirmed(confirm)}
               filterData={filterData}
               uploadCancel={uploadCancel}
             />
