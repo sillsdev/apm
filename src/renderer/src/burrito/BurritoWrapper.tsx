@@ -22,7 +22,10 @@ import packageJson from '../../package.json';
 import { toCamel } from '../utils';
 import { shallowEqual, useSelector } from 'react-redux';
 import { burritoSelector, sharedSelector } from '../selector';
-import { BurritoEntry, BurritoWrapper } from 'burrito/data/types';
+import {
+  BurritoEntry,
+  BurritoWrapper as BurritoWrapperType,
+} from 'burrito/data/types';
 const version = packageJson.version;
 const productName = packageJson.build.productName;
 
@@ -37,7 +40,7 @@ export function BurritoWrapper() {
   const bibles = useOrbitData<BibleD[]>('bible');
   const [view, setView] = React.useState('');
   const [refresh, setRefresh] = React.useState(0);
-  const [metaData, setMetaData] = React.useState<BurritoWrapper>();
+  const [metaData, setMetaData] = React.useState<BurritoWrapperType>();
   const { getOrgDefault, setOrgDefault } = useOrgDefaults();
   const t: IBurritoStrings = useSelector(burritoSelector, shallowEqual);
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
@@ -66,7 +69,7 @@ export function BurritoWrapper() {
     if (teamId) {
       if (teamId) {
         const curContents = getOrgDefault(burritoWrapper, teamId) as
-          | BurritoWrapper
+          | BurritoWrapperType
           | undefined;
         if (curContents) {
           setMetaData(curContents);
