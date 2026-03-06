@@ -27,14 +27,14 @@ export const useBurritoApmData = (memory: Memory) => {
   const getBookCode = (project: ProjectD) => {
     const akuoBook =
       (getProjectDefault(projDefBook, project) as string) ?? 'B01';
-    const bookParse = /([AB])(\d\d)/.exec(akuoBook);
+    const bookParse = /^([AB])(\d\d)$/.exec(akuoBook);
     let bookCode: string | undefined;
     if (bookParse) {
       const bookNum =
         bookParse[1] === 'A'
-          ? parseInt(bookParse[2])
+          ? parseInt(bookParse[2], 10)
           : bookParse[1] === 'B'
-            ? parseInt(bookParse[2]) + 39
+            ? parseInt(bookParse[2], 10) + 39
             : 999;
       bookCode = num2BookCode(bookNum);
     }
