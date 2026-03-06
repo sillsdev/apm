@@ -1051,13 +1051,6 @@ export function ImportTab(props: IProps) {
                   control={<Radio />}
                   label={t.incrementalImport}
                 />
-                {/* This is for testing only - delete once integrated with
-                scripture burrito import. */}
-                <FormControlLabel
-                  value={UploadType.Test}
-                  control={<Radio />}
-                  label={'Skip the import and look at Scripture Burrito stuff.'}
-                />
               </RadioGroup>
             </FormControl>
           )}

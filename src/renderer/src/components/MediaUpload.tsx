@@ -5,7 +5,6 @@ import { API_CONFIG } from '../../api-variable';
 import BigDialog from '../hoc/BigDialog';
 import { BigDialogBp } from '../hoc/BigDialogBp';
 import MediaUploadContent from './MediaUploadContent';
-import FilterContent from './FilterContent';
 import { FaithBridge } from '../assets/brands';
 import { UploadType } from './UploadType';
 
@@ -88,80 +87,31 @@ function MediaUpload(props: IProps) {
     onVisible(false);
   };
 
-  const handleTreeChange = (data: any) => {
-    console.log('Received from child:', data);
-  };
-
-  const data = {
-    label: 'Spoken English Bible',
-    books: [
-      {
-        label: 'Ruth',
-        chapters: [
-          'Introduction',
-          'Chapter 1',
-          'Chapter 2',
-          'Chapter 3',
-          'Chapter 4',
-          'Chapter 5',
-        ],
-        burritos: [
-          'Resources',
-          'Text',
-          'Notes',
-          'Audio',
-          'Navigation',
-          'APM Data',
-        ],
-      },
-      {
-        label: 'Luke',
-        chapters: [], //'Chapter 1', 'Chapter 2', 'Chapter 22', 'Chapter 30'
-        burritos: [], //'Resources', 'Notes', 'Navigation', 'APM Data'
-      },
-    ],
-  };
-
   return (
-    <>
-      {' '}
-      {/* The FilterContent will have to be moved once Scripture Burrito Import is Ready */}
-      {uploadType !== UploadType.Test && (
-        <BigDialog
-          isOpen={visible}
-          onOpen={handleCancel}
-          title={title[uploadType] ?? ''}
-          bp={BigDialogBp.sm}
-        >
-          <MediaUploadContent
-            onVisible={onVisible}
-            uploadType={uploadType}
-            multiple={multiple}
-            uploadMethod={uploadMethod}
-            cancelMethod={cancelMethod}
-            cancelLabel={cancelLabel}
-            metaData={metaData}
-            ready={ready}
-            speaker={speaker}
-            onSpeaker={onSpeaker}
-            team={team}
-            onFiles={onFiles}
-            inValue={inValue}
-            onValue={onValue}
-            onNonAudio={onNonAudio}
-          />
-        </BigDialog>
-      )}
-      {/* {uploadType === UploadType.Test && (
-        <FilterContentDialog
-          visible={visible}
-          onVisible={onVisible}
-          onSubmit={handleTreeChange}
-          filterData={data}
-          cancelMethod={cancelMethod}
-        />
-      )} */}
-    </>
+    <BigDialog
+      isOpen={visible}
+      onOpen={handleCancel}
+      title={title[uploadType] ?? ''}
+      bp={BigDialogBp.sm}
+    >
+      <MediaUploadContent
+        onVisible={onVisible}
+        uploadType={uploadType}
+        multiple={multiple}
+        uploadMethod={uploadMethod}
+        cancelMethod={cancelMethod}
+        cancelLabel={cancelLabel}
+        metaData={metaData}
+        ready={ready}
+        speaker={speaker}
+        onSpeaker={onSpeaker}
+        team={team}
+        onFiles={onFiles}
+        inValue={inValue}
+        onValue={onValue}
+        onNonAudio={onNonAudio}
+      />
+    </BigDialog>
   );
 }
 
