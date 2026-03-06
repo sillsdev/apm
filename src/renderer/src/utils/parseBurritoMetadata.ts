@@ -3,26 +3,38 @@ import path from 'path-browserify';
 
 const ipc = window?.api as MainAPI;
 
-interface BookStructure {
+export interface BookStructure {
   label: string;
   chapters: string[];
   burritos: string[];
 }
 
-interface WrapperStructure {
+export interface WrapperStructure {
   label: string;
   books: BookStructure[];
 }
 
-type LocalizedStringMap = Record<string, string>;
+export interface BurritoEntry {
+  id: string;
+  path: string;
+  role: 'source' | 'derived' | 'supplemental';
+}
 
-interface WrapperMetadata {
+export interface BurritoContents {
+  burritos: BurritoEntry[];
+}
+
+export type LocalizedStringMap = Record<string, string>;
+
+export interface WrapperMetadata {
   meta: {
     name: LocalizedStringMap;
   };
+  format: 'scripture burrito wrapper';
+  contents: BurritoContents;
 }
 
-interface AudioMetadata {
+export interface AudioMetadata {
   ingredients: Record<
     string,
     {
@@ -37,11 +49,11 @@ interface AudioMetadata {
   >;
 }
 
-async function readJson<T>(filePath: string): Promise<T> {
+export async function readJson<T>(filePath: string): Promise<T> {
   return JSON.parse((await ipc.read(filePath, 'utf8')) as string) as T;
 }
 
-function extractLabel(labels: LocalizedStringMap, lang: string): string {
+export function extractLabel(labels: LocalizedStringMap, lang: string): string {
   const label = labels[lang] ?? Object.values(labels)[0];
 
   if (!label) {
