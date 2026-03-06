@@ -15,27 +15,17 @@ import { mediaUploadSelector } from '../selector';
 import { TreeItem, SimpleTreeView } from '@mui/x-tree-view';
 import BigDialog from '../hoc/BigDialog';
 import { BigDialogBp } from '../hoc/BigDialogBp';
+import { BookStructure, WrapperStructure } from '../utils/parseBurritoMetadata';
 
 interface FilterProps {
   filterVisible: boolean;
   onFilterVisible: (v: boolean) => void;
-  filterSubmit: (value: FilterData) => void;
-  filterData: FilterData;
+  filterSubmit: (value: WrapperStructure) => void;
+  filterData: WrapperStructure;
   uploadCancel?: (() => void) | undefined;
   cancelLabel?: string | undefined;
 }
 
-// Set types here for filter data.
-export type FilterData = {
-  label: string;
-  books: filterBook[];
-};
-export type filterBook = {
-  id?: string;
-  label: string;
-  chapters: string[];
-  burritos: string[];
-};
 //TreeNode Type
 type TreeNode = {
   id: string;
@@ -59,23 +49,25 @@ export default function FilterContent(props: FilterProps) {
     null
   );
 
-  const handleSavePreferences = (result: boolean) => {
+  const handleSavePreferences = () => {
     const fdata = savePreferences();
     const tempData = filterData;
-    // eslint-disable-next-line react-hooks/immutability
     tempData.books = fdata;
     filterSubmit(tempData);
     if (resolver) {
-      resolver(result);
+      resolver(true);
       setResolver(null);
     }
-    handleCancel(); // closes dialog - hopefully doesn't cancel everything else
+    onFilterVisible(false);
   };
   const handleCancel = () => {
+    if (resolver) {
+      resolver(false);
+      setResolver(null);
+    }
     if (uploadCancel) {
       uploadCancel();
     }
-    onFilterVisible(false);
   };
 
   const filterConfirm = () => {
@@ -190,7 +182,7 @@ export default function FilterContent(props: FilterProps) {
       .filter((node) => checked.includes(node.id))
       .map((node) => node.label);
   };
-  const savePreferences = (): filterBook[] => {
+  const savePreferences = (): BookStructure[] => {
     const checkedLabels = checkedNodeLabels();
     const returnData = filterData.books.filter((book) =>
       checkedLabels.includes(book.label)
@@ -265,7 +257,7 @@ export default function FilterContent(props: FilterProps) {
           </Button>
           <Button
             id="filterSave"
-            onClick={() => handleSavePreferences(true)}
+            onClick={() => handleSavePreferences}
             variant="contained"
             color="primary"
             disabled={false}

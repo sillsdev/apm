@@ -1,7 +1,6 @@
 import { MainAPI } from '@model/main-api';
-import { FilterData } from '../components/FilterContent';
 import { Burrito, BurritoWrapper } from 'burrito/data/types';
-import { readJson } from './parseBurritoMetadata';
+import { readJson, WrapperStructure } from './parseBurritoMetadata';
 import path, { PathObject } from 'path-browserify';
 import { getBookCode } from './useBookN';
 import { pad2 } from './pad2';
@@ -82,15 +81,18 @@ async function getMediaData(
  * @param dirPath - Path to the wrapper directory
  */
 export async function convertWrapperToPTFs(
-  filter: FilterData,
+  filter: WrapperStructure,
   dirPath: string
 ) {
+  const paths = [];
   const data = await getMediaData(dirPath);
   for (const book of filter.books) {
     const paddedCode = pad2(getBookCode(book.label));
     const bookName = `${paddedCode}${book.label}`;
-    await convertBookToPTF(bookName, data[book.label]);
+    const ptfPath = await convertBookToPTF(bookName, data[book.label]);
+    paths.push(ptfPath);
   }
+  return paths;
 }
 
 /**
@@ -121,4 +123,5 @@ export async function convertBookToPTF(
   await ipc.write(path.join(ptfDir, 'Version'), '1');
   const zipPath = path.join(tempDir, `${bookName}.ptf`);
   await ipc.zipFolder(ptfDir, zipPath);
+  return zipPath;
 }

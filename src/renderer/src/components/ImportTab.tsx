@@ -87,9 +87,12 @@ import {
 import { useAdminTeams } from './useAdminTeams';
 import BurritoUploadDialog from './BurritoUpload';
 import { MainAPI } from '@model/main-api';
-import { buildStructure } from '../utils/parseBurritoMetadata';
-import { convertWrapperToPTFs } from '../utils/burritoConversion';
-import FilterContent, { FilterData } from './FilterContent';
+import {
+  buildStructure,
+  WrapperStructure,
+} from '../utils/parseBurritoMetadata';
+// import { convertWrapperToPTFs } from '../utils/burritoConversion';
+import FilterContent from './FilterContent';
 
 const ipc = window?.api as MainAPI;
 
@@ -226,7 +229,7 @@ export function ImportTab(props: IProps) {
   const [importProject, setImportProject] = useState<string>('');
   const [uploadVisible, setUploadVisible] = useState(false);
   const [filterVisible, onFilterVisible] = useState(false);
-  const [filterData, setFilterData] = useState<FilterData>({
+  const [filterData, setFilterData] = useState<WrapperStructure>({
     label: '',
     books: [],
   });
@@ -460,19 +463,15 @@ export function ImportTab(props: IProps) {
     const ptfs = await Promise.all(
       directories.map(async (dir) => {
         const struct = await buildStructure(dir, locale);
+
         setFilterData(struct);
         onFilterVisible(true);
-        //make it stop
+
         const filterConfirmed = await filterConfirm();
+
         if (filterConfirmed) {
-          await convertWrapperToPTFs(
-            {
-              label: 'AAAA',
-              books: [{ label: 'RUT', chapters: [], burritos: [] }],
-            },
-            dir
-          );
-          ipc.deleteFolder(dir);
+          // const ptfPaths = await convertWrapperToPTFs(struct, dir);
+          ipc.deleteFolder(dir); // TODO: Only delete if zip
         }
         // return new ptf files (ptf for each book)
         return new File([], 'A');
@@ -486,7 +485,7 @@ export function ImportTab(props: IProps) {
       pendingmsg: t.importPending,
       completemsg: t.importComplete,
     });
-    // delete temp ptf
+    // TODO: delete temp ptf
   };
 
   const translateError = (err: IAxiosStatus): string => {
