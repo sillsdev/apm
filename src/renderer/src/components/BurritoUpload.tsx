@@ -118,7 +118,7 @@ const BurritoUploadDialog: React.FC<BurritoUploadDialogProps> = ({
         return;
       }
 
-      onSubmit(extractPath);
+      onSubmit(extractPath, isZip);
     } catch (error) {
       showMessage(
         `Error: ${error instanceof Error ? error.message : 'Unknown error'}`,

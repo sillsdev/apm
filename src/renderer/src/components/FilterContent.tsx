@@ -257,7 +257,7 @@ export default function FilterContent(props: FilterProps) {
           </Button>
           <Button
             id="filterSave"
-            onClick={() => handleSavePreferences}
+            onClick={handleSavePreferences}
             variant="contained"
             color="primary"
             disabled={false}

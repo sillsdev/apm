@@ -91,7 +91,7 @@ import {
   buildStructure,
   WrapperStructure,
 } from '../utils/parseBurritoMetadata';
-// import { convertWrapperToPTFs } from '../utils/burritoConversion';
+import { convertWrapperToPTFs } from '../utils/burritoConversion';
 import FilterContent from './FilterContent';
 
 const ipc = window?.api as MainAPI;
@@ -228,7 +228,7 @@ export function ImportTab(props: IProps) {
   const [fileName, setFileName] = useState<string>('');
   const [importProject, setImportProject] = useState<string>('');
   const [uploadVisible, setUploadVisible] = useState(false);
-  const [filterVisible, onFilterVisible] = useState(false);
+  const [filterVisible, setFilterVisible] = useState(false);
   const [filterData, setFilterData] = useState<WrapperStructure>({
     label: '',
     books: [],
@@ -276,6 +276,12 @@ export function ImportTab(props: IProps) {
       });
   };
 
+  const onFilterVisible = (visible: boolean) => {
+    setFilterVisible(visible);
+    if (!visible) {
+      handleClose();
+    }
+  };
   const uploadCancel = () => {
     setUploadVisible(false);
     handleClose();
@@ -460,23 +466,35 @@ export function ImportTab(props: IProps) {
             selectedTeamId,
             memory?.keyMap as RecordKeyMap
           );
-    const ptfs = await Promise.all(
-      directories.map(async (dir) => {
-        const struct = await buildStructure(dir, locale);
+    const ptfPaths = (
+      await Promise.all(
+        directories.flatMap(async (dir): Promise<string[]> => {
+          const struct = await buildStructure(dir, locale);
 
-        setFilterData(struct);
-        onFilterVisible(true);
+          setFilterData(struct);
+          setFilterVisible(true);
 
-        const filterConfirmed = await filterConfirm();
+          const filterConfirmed = await filterConfirm();
 
-        if (filterConfirmed) {
-          // const ptfPaths = await convertWrapperToPTFs(struct, dir);
-          if (isZip) {
-            ipc.deleteFolder(dir);
+          if (filterConfirmed) {
+            const ptfPaths = await convertWrapperToPTFs(struct, dir);
+            if (isZip) {
+              ipc.deleteFolder(dir);
+            }
+            return ptfPaths;
           }
-        }
-        // return new ptf files (ptf for each book)
-        return new File([], 'A');
+          return [];
+        })
+      )
+    ).flat();
+
+    const ptfs = await Promise.all(
+      ptfPaths.map(async (filePath) => {
+        const content = await ipc.read(filePath);
+        const fileName = filePath.split(/[/\\]/).pop() || 'unknown';
+        const buffer = new Uint8Array(content as Uint8Array);
+        const blob = new Blob([buffer]);
+        return new File([blob], fileName, { type: 'application/zip' });
       })
     );
 
@@ -488,8 +506,8 @@ export function ImportTab(props: IProps) {
       completemsg: t.importComplete,
     });
 
-    ptfs.forEach(async (ptf) => {
-      await ipc.delete(ptf);
+    ptfPaths.forEach(async (ptfPath) => {
+      await ipc.delete(ptfPath);
     });
   };
 
