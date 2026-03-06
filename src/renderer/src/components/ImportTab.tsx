@@ -87,6 +87,7 @@ import {
 import { useAdminTeams } from './useAdminTeams';
 import BurritoUploadDialog from './BurritoUpload';
 import { MainAPI } from '@model/main-api';
+import { buildStructure } from '@utils/parseBurritoMetadata';
 
 const ipc = window?.api as MainAPI;
 
@@ -202,6 +203,7 @@ export function ImportTab(props: IProps) {
   const importSyncFromElectron = (props: ImportSyncFromElectronProps) =>
     dispatch(actions.importSyncFromElectron(props) as any);
 
+  const [locale] = useGlobal('lang');
   const [, setBusy] = useGlobal('importexportBusy');
   const importingRef = useRef(false);
   const [coordinator] = useGlobal('coordinator');
@@ -432,15 +434,18 @@ export function ImportTab(props: IProps) {
             selectedTeamId,
             memory?.keyMap as RecordKeyMap
           );
-    const ptfs = directories.map((dir) => {
-      console.log(dir);
-      // pass to representation former
-      // open dialog with rep
-      // pass to converter
-      ipc.deleteFolder(dir);
-      // return new ptf files (ptf for each book)
-      return new File([], 'A');
-    });
+    const ptfs = await Promise.all(
+      directories.map(async (dir) => {
+        console.log(dir);
+        const struct = await buildStructure(dir, locale);
+        console.log(struct);
+        // open dialog with rep
+        // pass to converter
+        ipc.deleteFolder(dir);
+        // return new ptf files (ptf for each book)
+        return new File([], 'A');
+      })
+    );
 
     handleFileUpload(ptfs, importProjectFromExternal, {
       teamId: teamIdNum,
