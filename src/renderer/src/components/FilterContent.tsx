@@ -21,6 +21,7 @@ interface FilterProps {
   filterVisible: boolean;
   onFilterVisible: (v: boolean) => void;
   filterSubmit: (value: WrapperStructure) => void;
+  filterConfirm: (v: boolean) => void;
   filterData: WrapperStructure;
   uploadCancel?: (() => void) | undefined;
   cancelLabel?: string | undefined;
@@ -34,46 +35,32 @@ type TreeNode = {
   children?: TreeNode[];
 };
 
-export default function FilterContent(props: FilterProps) {
+function FilterContent2(props: FilterProps) {
   const {
     filterVisible,
     onFilterVisible,
     filterSubmit,
+    filterConfirm,
     filterData,
     uploadCancel,
     cancelLabel,
   } = props;
   const t: IMediaUploadStrings = useSelector(mediaUploadSelector, shallowEqual);
   const [checked, setChecked] = useState<string[]>([]);
-  const [resolver, setResolver] = useState<((value: boolean) => void) | null>(
-    null
-  );
 
   const handleSavePreferences = () => {
     const fdata = savePreferences();
     const tempData = filterData;
+    // eslint-disable-next-line react-hooks/immutability
     tempData.books = fdata;
     filterSubmit(tempData);
-    if (resolver) {
-      resolver(true);
-      setResolver(null);
-    }
+    filterConfirm(true);
     onFilterVisible(false);
   };
   const handleCancel = () => {
-    if (resolver) {
-      resolver(false);
-      setResolver(null);
-    }
     if (uploadCancel) {
       uploadCancel();
     }
-  };
-
-  const filterConfirm = () => {
-    return new Promise((resolve) => {
-      setResolver(() => resolve);
-    });
   };
 
   const handleToggle = (nodeId: any, node?: any) => {
@@ -228,7 +215,7 @@ export default function FilterContent(props: FilterProps) {
   // if you want to populate immediately from filterData call the converter here:
   data = convertDataToTreeForm();
 
-  const FilterContentDialog = () => (
+  return (
     <BigDialog
       isOpen={filterVisible}
       onOpen={handleCancel}
@@ -268,7 +255,6 @@ export default function FilterContent(props: FilterProps) {
       </>
     </BigDialog>
   );
-  return { filterConfirm, FilterContentDialog };
 }
 
-//export default FilterContent;
+export default FilterContent2;

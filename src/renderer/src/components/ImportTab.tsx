@@ -288,14 +288,16 @@ export function ImportTab(props: IProps) {
   };
   const filterSubmit = (data: any) => {
     setFilterData(data);
+    if (filterResolveRef.current) {
+      filterResolveRef.current(data);
+      filterResolveRef.current = null; // Clean up
+    }
+    onFilterVisible(false);
   };
-  const { filterConfirm, FilterContentDialog } = FilterContent({
-    filterVisible,
-    onFilterVisible,
-    filterSubmit,
-    filterData,
-    uploadCancel,
-  });
+  const [filterConfirmed, setFilterConfirmed] = useState(false);
+  const filterResolveRef = useRef<((data: WrapperStructure) => void) | null>(
+    null
+  );
 
   const columns: GridColDef<IRow>[] = [
     { field: 'plan', headerName: t.plan, width: 200 },
@@ -457,6 +459,16 @@ export function ImportTab(props: IProps) {
     });
   };
 
+  const getFilterConfirmation = (
+    struct: WrapperStructure
+  ): Promise<WrapperStructure> => {
+    return new Promise((resolve) => {
+      setFilterData(struct);
+      onFilterVisible(true);
+      filterResolveRef.current = resolve; // Store resolve function
+    });
+  };
+
   const uploadBurrito = async (directories: string[], isZip: boolean) => {
     const teamIdNum =
       selectedTeamId === 'new'
@@ -473,10 +485,9 @@ export function ImportTab(props: IProps) {
 
           setFilterData(struct);
           setFilterVisible(true);
-
-          const filterConfirmed = await filterConfirm();
-
-          if (filterConfirmed) {
+          const filteredConfirmed = await getFilterConfirmation(struct);
+          const t = filterConfirmed || true;
+          if (filteredConfirmed && t) {
             const ptfPaths = await convertWrapperToPTFs(struct, dir);
             if (isZip) {
               ipc.deleteFolder(dir);
@@ -1071,7 +1082,16 @@ export function ImportTab(props: IProps) {
               onCancel={uploadCancel}
             />
           )}
-          {filterVisible && <FilterContentDialog />}
+          {filterVisible && (
+            <FilterContent
+              filterVisible={filterVisible}
+              onFilterVisible={onFilterVisible}
+              filterSubmit={filterSubmit}
+              filterConfirm={(confirm) => setFilterConfirmed(confirm)}
+              filterData={filterData}
+              uploadCancel={uploadCancel}
+            />
+          )}
           {confirmAction === '' || (
             <Confirm
               jsx={
