@@ -278,9 +278,6 @@ export function ImportTab(props: IProps) {
 
   const onFilterVisible = (visible: boolean) => {
     setFilterVisible(visible);
-    if (!visible) {
-      handleClose();
-    }
   };
   const uploadCancel = () => {
     setUploadVisible(false);
@@ -504,8 +501,7 @@ export function ImportTab(props: IProps) {
         const content = await ipc.read(filePath);
         const fileName = filePath.split(/[/\\]/).pop() || 'unknown';
         const buffer = new Uint8Array(content as Uint8Array);
-        const blob = new Blob([buffer]);
-        return new File([blob], fileName, { type: 'application/zip' });
+        return new File([buffer], fileName);
       })
     );
 

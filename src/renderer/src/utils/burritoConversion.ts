@@ -137,7 +137,7 @@ export async function convertBookToPTF(
     path.join(ptfDir, 'SILTranscriber'),
     new Date().toUTCString()
   );
-  await ipc.write(path.join(ptfDir, 'Version'), '1');
+  await ipc.write(path.join(ptfDir, 'Version'), '8');
   const zipPath = path.join(tempDir, `${bookName}.ptf`);
   await ipc.zipFolder(ptfDir, zipPath);
   return zipPath;
