@@ -317,9 +317,8 @@ export function ipcMethods(): void {
     }
 
     const zip = new AdmZip();
-    zip.addLocalFolder(sourceDir, '');
+    zip.addLocalFolder(sourceDir);
     zip.writeZip(outFile);
-    return true;
   });
 
   ipcMain.handle('writeBuffer', async (_event, filePath, arrayBuffer) => {

@@ -119,6 +119,6 @@ export async function convertBookToPTF(
     new Date().toUTCString()
   );
   await ipc.write(path.join(ptfDir, 'Version'), '1');
-  await ipc.zipFolder(ptfDir, path.join(tempDir, `${bookName}.ptf`));
-  console.log();
+  const zipPath = path.join(tempDir, `${bookName}.ptf`);
+  await ipc.zipFolder(ptfDir, zipPath);
 }
