@@ -79,6 +79,9 @@ export const emailUnverifiedSelector = (state: IState) =>
 export const faithbridgeSelector = (state: IState) =>
   localStrings(state as IState, { layout: 'faithbridge' });
 
+export const filterContentSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'filterContent' });
+
 export const filterMenuSelector = (state: IState) =>
   localStrings(state as IState, { layout: 'filterMenu' });
 
@@ -194,6 +197,9 @@ export const sharedResourceSelector = (state: IState) =>
 
 export const projButtonsSelector = (state: IState) =>
   localStrings(state as IState, { layout: 'projButtons' });
+
+export const scriptureBurritoImportSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'scriptureBurritoImport' });
 
 export const scriptureTableFilterMenuSelector = (state: IState) =>
   localStrings(state as IState, { layout: 'scriptureTableFilter' });

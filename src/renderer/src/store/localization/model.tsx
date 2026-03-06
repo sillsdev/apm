@@ -436,6 +436,14 @@ export interface IFaithbridgeStrings extends Localize.LocalizedStringsMethods {
     "video": string;
 };
 
+export interface IFilterContentStrings extends Localize.LocalizedStringsMethods {
+    "allChapters": string;
+    "allBooks": string;
+    "title": string;
+    "subtitle1": string;
+    "subtitle2": string;
+};
+
 export interface IFilterMenuStrings extends Localize.LocalizedStringsMethods {
     "all": string;
     "allPassages": string;
@@ -597,6 +605,17 @@ export interface IImportStrings extends Localize.LocalizedStringsMethods {
     "username": string;
 };
 
+export interface IScriptureBurritoImportStrings extends Localize.LocalizedStringsMethods {
+    "title": string;
+    "zipExtractError": string;
+    "metadataNotFoundError": string;
+    "invalidWrapperMetadataError": string;
+    "subtitle": string;
+    "browseDirectory": string;
+    "browseZipFile": string;
+    "selected": string;
+};
+
 export interface IIntegrationStrings extends Localize.LocalizedStringsMethods {
     "allCriteria": string;
     "countError": string;
@@ -747,6 +766,7 @@ export interface IMainStrings extends Localize.LocalizedStringsMethods {
     "exit": string;
     "export": string;
     "flatSample": string;
+    "genericError": string;
     "genFlatSample": string;
     "genHierarchicalSample": string;
     "goOffline": string;
@@ -789,6 +809,7 @@ export interface IMainStrings extends Localize.LocalizedStringsMethods {
     "unexpectedError": string;
     "UnsavedData": string;
     "updateAvailable": string;
+    "upload": string;
     "version": string;
     "videos": string;
     "walkThru": string;
@@ -2008,12 +2029,14 @@ export interface ILocalizedStrings {
 	electronImport: IElectronImportStrings;
 	emailUnverified: IEmailUnverifiedStrings;
 	faithbridge: IFaithbridgeStrings;
+	filterContent: IFilterContentStrings;
 	filterMenu: IFilterMenuStrings;
 	findResource: IFindResourceStrings;
 	grid: IGridStrings;
 	groupTabs: IGroupTabsStrings;
 	hotKey: IHotKeyStrings;
 	import: IImportStrings;
+	scriptureBurritoImport: IScriptureBurritoImportStrings;
 	integration: IIntegrationStrings;
 	invitationTable: IInvitationTableStrings;
 	invite: IInviteStrings;

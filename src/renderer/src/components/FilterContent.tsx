@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { shallowEqual, useSelector } from 'react-redux';
-import { IMediaUploadStrings } from '../model';
+import { IFilterContentStrings, IMainStrings } from '../model';
 import {
   Button,
   Checkbox,
@@ -11,7 +11,7 @@ import {
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
-import { mediaUploadSelector } from '../selector';
+import { filterContentSelector, mediaUploadSelector } from '../selector';
 import { TreeItem, SimpleTreeView } from '@mui/x-tree-view';
 import BigDialog from '../hoc/BigDialog';
 import { BigDialogBp } from '../hoc/BigDialogBp';
@@ -41,9 +41,15 @@ function FilterContent(props: FilterProps) {
     filterSubmit,
     filterData,
     uploadCancel,
-    cancelLabel,
   } = props;
-  const t: IMediaUploadStrings = useSelector(mediaUploadSelector, shallowEqual);
+  const mainStrings: IMainStrings = useSelector(
+    mediaUploadSelector,
+    shallowEqual
+  );
+  const filterStrings: IFilterContentStrings = useSelector(
+    filterContentSelector,
+    shallowEqual
+  );
   const [checked, setChecked] = useState<string[]>([]);
 
   const handleSavePreferences = () => {
@@ -114,7 +120,7 @@ function FilterContent(props: FilterProps) {
       if (book.chapters.length > 1) {
         const item: TreeNode = {
           id: 'chps' + book.label,
-          label: 'All Chapters of ' + book.label,
+          label: filterStrings.allChapters.replace('{0}', book.label),
           type: 'all',
           children: [],
         };
@@ -133,7 +139,7 @@ function FilterContent(props: FilterProps) {
       }
 
       book.burritos.forEach((b) => {
-        if (b != 'APM Data') {
+        if (b !== 'APM Data') {
           // Does not display the "Apm Data" as a burrito for each book
           children.push({ id: b + book.label, label: b, type: 'burrito' });
         }
@@ -148,7 +154,7 @@ function FilterContent(props: FilterProps) {
     if (bks.length > 1) {
       const item: TreeNode = {
         id: 'books',
-        label: 'All Books',
+        label: filterStrings.allBooks,
         type: 'all',
         children: [],
       };
@@ -216,15 +222,15 @@ function FilterContent(props: FilterProps) {
     <BigDialog
       isOpen={filterVisible}
       onOpen={handleCancel}
-      title={'Scripture Burrito: ' + filterData.label}
+      title={filterStrings.title.replace('{0}', filterData.label)}
       bp={BigDialogBp.sm}
     >
       <>
         <DialogContent>
           <DialogContentText>
-            {'Please select the information you want to import into your team.'}
+            {filterStrings.subtitle1}
             <br />
-            {'Each selected book will be imported as a separate project.'}
+            {filterStrings.subtitle2}
           </DialogContentText>
           <SimpleTreeView>
             {data.map((node) => renderTree(node))}
@@ -237,7 +243,7 @@ function FilterContent(props: FilterProps) {
             variant="outlined"
             color="primary"
           >
-            {cancelLabel || t.cancel}
+            {mainStrings.cancel}
           </Button>
           <Button
             id="filterSave"
@@ -246,7 +252,7 @@ function FilterContent(props: FilterProps) {
             color="primary"
             disabled={false}
           >
-            {t.upload}
+            {mainStrings.upload}
           </Button>
         </DialogActions>
       </>

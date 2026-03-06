@@ -13,9 +13,9 @@ import { useSnackBar, AlertSeverity } from '../hoc/SnackBar';
 import path from 'path-browserify';
 import { MainAPI } from '@model/main-api';
 import { useSelector } from 'react-redux';
-import { importSelector } from '../selector';
+import { mainSelector, scriptureBurritoImportSelector } from '../selector';
 import { shallowEqual } from 'react-redux';
-import { IImportStrings } from '@model/index';
+import { IMainStrings, IScriptureBurritoImportStrings } from '@model/index';
 
 const ipc = window?.api as MainAPI;
 
@@ -30,10 +30,12 @@ const BurritoUploadDialog: React.FC<BurritoUploadDialogProps> = ({
   open,
   onSubmit,
   onCancel,
-  title = 'Import Scripture Burrito',
 }) => {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const t: IImportStrings = useSelector(importSelector, shallowEqual);
+  const importStrings: IScriptureBurritoImportStrings = useSelector(
+    scriptureBurritoImportSelector,
+    shallowEqual
+  );
+  const mainStrings: IMainStrings = useSelector(mainSelector, shallowEqual);
   const [loading, setLoading] = useState(false);
   const [selectedPath, setSelectedPath] = useState<string | null>(null);
   const [isZipFile, setIsZipFile] = useState(false);
@@ -76,7 +78,7 @@ const BurritoUploadDialog: React.FC<BurritoUploadDialogProps> = ({
         const zipId = await ipc.zipOpen(zipFilePath);
         const success = await ipc.zipExtract(zipId, extractPath, true);
         if (!success) {
-          showMessage('Failed to extract zip file', AlertSeverity.Error);
+          showMessage(importStrings.zipExtractError, AlertSeverity.Error);
           return;
         }
 
@@ -97,10 +99,7 @@ const BurritoUploadDialog: React.FC<BurritoUploadDialogProps> = ({
       const metadataPath = path.join(extractPath, 'metadata.json');
       const metadataExists = await ipc.exists(metadataPath);
       if (!metadataExists) {
-        showMessage(
-          'metadata.json not found in the selected file/directory',
-          AlertSeverity.Error
-        );
+        showMessage(importStrings.metadataNotFoundError, AlertSeverity.Error);
         return;
       }
 
@@ -112,7 +111,7 @@ const BurritoUploadDialog: React.FC<BurritoUploadDialogProps> = ({
 
       if (metadata.format !== 'scripture burrito wrapper') {
         showMessage(
-          'Invalid format: expected "scripture burrito wrapper"',
+          importStrings.invalidWrapperMetadataError,
           AlertSeverity.Error
         );
         return;
@@ -121,7 +120,9 @@ const BurritoUploadDialog: React.FC<BurritoUploadDialogProps> = ({
       onSubmit(extractPath, isZip);
     } catch (error) {
       showMessage(
-        `Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        error instanceof Error
+          ? mainStrings.genericError.replace('{0}', error.message)
+          : mainStrings.unexpectedError,
         AlertSeverity.Error
       );
     } finally {
@@ -138,11 +139,11 @@ const BurritoUploadDialog: React.FC<BurritoUploadDialogProps> = ({
 
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
-      <DialogTitle>{title}</DialogTitle>
+      <DialogTitle>{importStrings.title}</DialogTitle>
 
       <DialogContent>
         <Typography variant="body2" gutterBottom>
-          Select a Burrito directory or a .zip file to extract and import.
+          {importStrings.subtitle}
         </Typography>
 
         <div style={{ display: 'flex', gap: 12, marginTop: 16 }}>
@@ -151,7 +152,7 @@ const BurritoUploadDialog: React.FC<BurritoUploadDialogProps> = ({
             onClick={handleBrowseDirectory}
             disabled={loading}
           >
-            Browse Directory
+            {importStrings.browseDirectory}
           </Button>
 
           <Button
@@ -159,7 +160,7 @@ const BurritoUploadDialog: React.FC<BurritoUploadDialogProps> = ({
             onClick={handleBrowseZip}
             disabled={loading}
           >
-            Browse Zip File
+            {importStrings.browseZipFile}
           </Button>
         </div>
 
@@ -173,7 +174,7 @@ const BurritoUploadDialog: React.FC<BurritoUploadDialogProps> = ({
             }}
           >
             <Typography variant="body2" color="text.secondary">
-              Selected {isZipFile ? 'zip file: ' : 'directory: '}
+              {importStrings.selected}
             </Typography>
             <Typography variant="body1" sx={{ wordBreak: 'break-all' }}>
               {path.basename(selectedPath)}
@@ -190,14 +191,14 @@ const BurritoUploadDialog: React.FC<BurritoUploadDialogProps> = ({
 
       <DialogActions>
         <Button onClick={handleClose} variant="outlined">
-          Cancel
+          {mainStrings.cancel}
         </Button>
         <Button
           onClick={handleSubmit}
           variant="contained"
           disabled={!selectedPath || loading}
         >
-          Import
+          {mainStrings.import}
         </Button>
       </DialogActions>
     </Dialog>
