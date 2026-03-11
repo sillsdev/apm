@@ -19,3 +19,7 @@ export const refMatch = (ref: string): RegExpExecArray | null => {
   }
   return m;
 };
+
+export const chapterMatch = (ref: string): RegExpExecArray | null => {
+  return /^([0-9]+)-?([0-9]*)$/g.exec(ref);
+};

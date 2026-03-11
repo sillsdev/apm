@@ -28,7 +28,7 @@ import {
   ApmDim,
   CompressedImages,
   IGraphicInfo,
-} from '../components/GraphicUploader';
+} from '../utils/useCompression';
 import { MainAPI } from '@model/main-api';
 import { RecordKeyMap } from '@orbit/records';
 import {

@@ -2964,6 +2964,76 @@
                <context context-type="sourcefile">findResource.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="graphic.graphicSearch">
+            <source>Search graphics</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">GraphicPicker.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="graphic.graphicSource">
+            <source>graphic source tabs</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">GraphicPicker.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="graphic.loadFailure">
+            <source>Failed to load</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">GraphicPicker.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="graphic.noSelection">
+            <source>no {0} selected.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">GraphicPicker.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="graphic.placeHolder">
+            <source>title and keyword search words</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">shapingTable.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="graphic.setGraphic">
+            <source>Set as Graphic</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">shapingTable.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="graphic.tabCurrent">
+            <source>Current</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">shapingTable.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="graphic.tabCustom">
+            <source>Custom</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">shapingTable.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="graphic.tabBible">
+            <source>Library</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">shapingTable.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="graphic.title">
+            <source>Graphic Picker</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">shapingTable.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="grid.all">
             <source>All</source>
             <target/>

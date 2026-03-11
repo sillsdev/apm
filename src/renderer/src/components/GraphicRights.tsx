@@ -6,7 +6,7 @@ import { Graphic, IMediaTabStrings } from '../model';
 import { shallowEqual, useSelector } from 'react-redux';
 import { mediaTabSelector } from '../selector';
 import { useOrbitData } from '../hoc/useOrbitData';
-import { Rights } from './GraphicUploader';
+import { Rights } from '../utils/useCompression';
 import { useGlobal } from '../context/useGlobal';
 import { related } from '../crud';
 import { JSONParse } from '../utils';

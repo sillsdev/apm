@@ -4,7 +4,7 @@ import {
   CompressedImages,
   IGraphicInfo,
   Rights,
-} from './GraphicUploader';
+} from '../utils/useCompression';
 
 const FullSize = 1024;
 

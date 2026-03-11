@@ -104,6 +104,7 @@ export * from './useAllSharedResourceRead';
 export * from './useNotes';
 export * from './usePassageUpdate';
 export * from './useGraphicFind';
+export * from './useGraphicUrlBuilder';
 export * from './usePublishLevel';
 export * from './useFetchUrlNow';
 export * from './usePublishDestination';
