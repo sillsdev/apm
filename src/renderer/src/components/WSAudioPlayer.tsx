@@ -161,7 +161,7 @@ interface IProps {
   noNewVoice?: boolean;
   allowNoNoise?: boolean;
   keepItSmall?: boolean;
-  controlsRef?: React.MutableRefObject<WSAudioPlayerControls | null>;
+  controlsRef?: React.RefObject<WSAudioPlayerControls | null>;
   hideToolbar?: boolean;
   hideControls?: boolean;
   hideSegmentControls?: boolean;

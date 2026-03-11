@@ -62,6 +62,7 @@ export * from './sharedResource';
 export * from './sharedResourceReference';
 export * from './bookRef';
 export * from './graphic';
+export * from './bibleImage';
 export * from './bible';
 export * from './organizationBible';
 export * from './paratextProject';

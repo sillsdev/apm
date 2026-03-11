@@ -79,3 +79,7 @@ export * from './useDataChanges';
 export * from './useJsonParams';
 export * from './jsonParse';
 export * from './useNum2BookCode';
+export * from './refNumPat';
+export * from './blobToBase64';
+export * from './urlToFile';
+export * from './getUrlNameAndExt';

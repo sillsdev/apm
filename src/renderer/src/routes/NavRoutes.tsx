@@ -27,6 +27,7 @@ import { BurritoBooks } from '../burrito/BurritoBooks';
 import { BurritoContents } from '../burrito/BurritoContents';
 import { BurritoWrapper } from '../burrito/BurritoWrapper';
 import SwitchTeams from './SwitchTeams';
+import GraphicPicker from '../components/GraphicPicker';
 
 const routes = createRoutesFromElements([
   <Route key="error" errorElement={<ErrorPage />}>

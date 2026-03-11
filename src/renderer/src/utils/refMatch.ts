@@ -19,3 +19,11 @@ export const refMatch = (ref: string): RegExpExecArray | null => {
   }
   return m;
 };
+
+export const chapterMatch = (ref: string): RegExpExecArray | null => {
+  const m = /^([0-9]+)-?([0-9]*)$/g.exec(ref);
+  if (!m) return m;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [_, start, end] = m;
+  return m;
+};

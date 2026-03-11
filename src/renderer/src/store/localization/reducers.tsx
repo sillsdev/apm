@@ -537,6 +537,20 @@ const initialState = {
 			"withTiming": "Audio Bible with verse timing",
 		}
 	}),
+	"graphic": new LocalizedStrings({
+		"en": {
+			"graphicSearch": "Search graphics",
+			"graphicSource": "graphic source tabs",
+			"loadFailure": "Failed to load",
+			"noSelection": "no {0} selected.",
+			"placeHolder": "title and keyword search words",
+			"setGraphic": "Set as Graphic",
+			"tabCurrent": "Current",
+			"tabCustom": "Custom",
+			"tabBible": "Library",
+			"title": "Graphic Picker",
+		}
+	}),
 	"grid": new LocalizedStrings({
 		"en": {
 			"all": "All",
@@ -2118,6 +2132,7 @@ const localizationReducer = function (state = initialState, action: any): ILocal
 				"faithbridge" : new LocalizedStrings(action.payload.data.faithbridge),
 				"filterMenu" : new LocalizedStrings(action.payload.data.filterMenu),
 				"findResource" : new LocalizedStrings(action.payload.data.findResource),
+				"graphic" : new LocalizedStrings(action.payload.data.graphic),
 				"grid" : new LocalizedStrings(action.payload.data.grid),
 				"groupTabs" : new LocalizedStrings(action.payload.data.groupTabs),
 				"hotKey" : new LocalizedStrings(action.payload.data.hotKey),

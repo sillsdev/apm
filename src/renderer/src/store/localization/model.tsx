@@ -505,6 +505,19 @@ export interface IFindResourceStrings extends Localize.LocalizedStringsMethods {
     "withTiming": string;
 };
 
+export interface IGraphicStrings extends Localize.LocalizedStringsMethods {
+    "graphicSearch": string;
+    "graphicSource": string;
+    "loadFailure": string;
+    "noSelection": string;
+    "placeHolder": string;
+    "setGraphic": string;
+    "tabCurrent": string;
+    "tabCustom": string;
+    "tabBible": string;
+    "title": string;
+};
+
 export interface IGridStrings extends Localize.LocalizedStringsMethods {
     "all": string;
     "avg": string;
@@ -2009,6 +2022,7 @@ export interface ILocalizedStrings {
 	faithbridge: IFaithbridgeStrings;
 	filterMenu: IFilterMenuStrings;
 	findResource: IFindResourceStrings;
+	graphic: IGraphicStrings;
 	grid: IGridStrings;
 	groupTabs: IGroupTabsStrings;
 	hotKey: IHotKeyStrings;
