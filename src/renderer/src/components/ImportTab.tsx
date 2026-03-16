@@ -810,7 +810,9 @@ export function ImportTab(props: IProps) {
           const chdata = getChangeData(importStatus.errMsg);
           setChangeData([...changeData].concat(chdata));
           setImportTitle(
-            chdata.length > 0 ? t.onlineChangeReport : t.importSyncDown
+            chdata.length > 0
+              ? t.onlineChangeReport
+              : t.importSyncDown + ' ' + importStatus.errMsg
           );
           if (remote) forceDataChanges().then(() => setImporting(false));
           else {

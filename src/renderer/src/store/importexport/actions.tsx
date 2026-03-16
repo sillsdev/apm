@@ -573,8 +573,9 @@ export const copyProject =
       returnstatus = response.data.status;
       status = response.data.message;
       newproject = response.data.fileURL as string;
+      console.log('status', status, 'pendingmsg', pendingmsg);
       dispatch({
-        payload: pendingmsg.replace('{0}', status),
+        payload: `${pendingmsg} ${status}`,
         type: COPY_PENDING,
       });
       url = `${API_CONFIG.host}/api/offlineData/project/copydata/${orgid}/${projectid}/${newproject}/${start}`;
