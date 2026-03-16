@@ -480,15 +480,7 @@ const TeamProvider = (props: IProps) => {
     const key =
       sortKey ?? (getProjectDefault(projDefBook, proj) as string | undefined);
     if (key) planSortMap.set(p.id, key);
-    else {
-      logError(
-        Severity.info,
-        errorReporter,
-        'No sort book sort key found for: ' +
-          p?.attributes?.name +
-          '. sorting by name'
-      );
-    }
+
     //I suggest prepending the sort order to the plan slug
     return key ?? p?.attributes?.name ?? noPlan;
   };

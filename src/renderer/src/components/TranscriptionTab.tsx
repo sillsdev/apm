@@ -410,8 +410,7 @@ export function TranscriptionTab(props: IProps) {
   useEffect(() => {
     if (exportUrl && exportName !== '') {
       if (exportAnchor && exportAnchor.current) {
-        if (import.meta.env.VITE_DEBUG !== 'true') exportAnchor.current.click();
-        else console.log(exportUrl);
+        exportAnchor.current.click();
         URL.revokeObjectURL(exportUrl);
         setExportUrl(undefined);
         showTitledMessage(

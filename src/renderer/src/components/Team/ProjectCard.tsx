@@ -30,6 +30,7 @@ import EditNoteIcon from '@mui/icons-material/EditNote';
 import {
   DialogMode,
   IState,
+  ITranscriptionTabStrings,
   ProjectD,
   Section,
   SectionArray,
@@ -73,7 +74,7 @@ import { useProjectPermissions } from '../../utils/useProjectPermissions';
 import { IProjectDialog } from './ProjectDialog/projectDialogTypes';
 import { TeamSelector } from '../ImportTab';
 import { useAdminTeams } from '../useAdminTeams';
-import { importSelector } from '../../selector';
+import { importSelector, transcriptionTabSelector } from '../../selector';
 
 const PencilSquare = BsPencilSquare as unknown as React.FC<IconBaseProps>;
 
@@ -173,6 +174,10 @@ export const ProjectCard = (props: IProps) => {
   const [selectedTeamId, setSelectedTeamId] = useState<string>('');
   const { getProjectDefault } = useProjectDefaults();
   const t = cardStrings;
+  const tt: ITranscriptionTabStrings = useSelector(
+    transcriptionTabSelector,
+    shallowEqual
+  );
   const tpb = projButtonStrings;
   const { userIsOrgAdmin } = useRole();
   const { leaveHome } = useHome();
@@ -183,7 +188,6 @@ export const ProjectCard = (props: IProps) => {
     loadProject(project);
     leaveHome();
   };
-
   const { canPublish, canEditSheet } = useProjectPermissions(
     related(project, 'organization'),
     related(project, 'project')
@@ -209,19 +213,21 @@ export const ProjectCard = (props: IProps) => {
 
   useEffect(() => {
     if (copying && copyStatus) {
+      console.log('copyStatus', copyStatus);
       if (copyStatus.errStatus || copyStatus.complete) {
         copyComplete();
         setCopying(false);
-        forceDataChanges()
-          .then(() => {
+        if (copyStatus.complete) {
+          showMessage(
+            tt.downloading.replace('{0}', copyStatus.statusMsg ?? '')
+          );
+          forceDataChanges().then(() => {
             setBusy(false);
             showMessage(
-              copyStatus.errMsg ?? copyStatus.statusMsg ?? 'COPY COMPLETE'
+              t.copyComplete.replace('{0}', copyStatus.statusMsg ?? '')
             );
-          })
-          .catch((err) => {
-            showMessage(err.message);
           });
+        } else showMessage(copyStatus.errMsg ?? copyStatus.statusMsg);
       } else showMessage(copyStatus.statusMsg);
     }
     /* eslint-disable-next-line react-hooks/exhaustive-deps */
@@ -370,6 +376,7 @@ export const ProjectCard = (props: IProps) => {
   const handleCopyConfirm = () => {
     setOpenCopyDialog(false);
     setCopying(true);
+    setBusy(true);
     const teamName =
       selectedTeamId === 'new'
         ? t.newTeam
@@ -391,7 +398,7 @@ export const ProjectCard = (props: IProps) => {
       token: accessToken,
       errorReporter: errorReporter,
       pendingmsg: t.copyStatus.replace('{0}', teamName),
-      completemsg: t.copyComplete,
+      completemsg: '{0}',
     });
     setSelectedTeamId('');
   };
@@ -596,18 +603,18 @@ export const ProjectCard = (props: IProps) => {
             onTeamChange={setSelectedTeamId}
             teams={teams}
             includeNewTeam={true}
-            selectLabel={tImport?.selectTeam || 'Select Team'}
-            createNewLabel={tImport?.createNewTeam || 'Create New Team'}
+            selectLabel={tImport?.selectTeam}
+            createNewLabel={tImport?.createNewTeam}
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCopyCancel}>{t.cancel || 'Cancel'}</Button>
+          <Button onClick={handleCopyCancel}>{t.cancel}</Button>
           <Button
             onClick={handleCopyConfirm}
             variant="contained"
             disabled={copying || selectedTeamId === ''}
           >
-            {t.copyProject || 'Copy'}
+            {t.copyProject}
           </Button>
         </DialogActions>
       </Dialog>
