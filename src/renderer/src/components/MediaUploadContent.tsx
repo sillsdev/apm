@@ -1,7 +1,8 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { shallowEqual, useSelector } from 'react-redux';
 import { IMediaUploadStrings } from '../model';
 import {
+  Box,
   Button,
   DialogActions,
   DialogContent,
@@ -108,6 +109,11 @@ const DropTarget = (targetProps: ITargetProps) => {
   );
 };
 
+export interface MediaUploadControlsRef {
+  handleAddOrSave: (() => void) | null;
+  handleCancel: (() => void) | null;
+}
+
 interface IProps {
   onVisible: (v: boolean) => void;
   uploadType: UploadType;
@@ -125,6 +131,8 @@ interface IProps {
   onValue?: ((value: string) => void) | undefined;
   onNonAudio?: ((nonAudio: boolean) => void) | undefined;
   saveText?: string | undefined;
+  controlsRef?: React.RefObject<MediaUploadControlsRef>;
+  onSaveDisabled?: ((disabled: boolean) => void) | undefined;
 }
 
 function MediaUploadContent(props: IProps) {
@@ -145,6 +153,8 @@ function MediaUploadContent(props: IProps) {
     onValue,
     onNonAudio,
     saveText,
+    controlsRef,
+    onSaveDisabled,
   } = props;
   const [name, setName] = useState('');
   const [files, setFilesx] = useState<File[]>([]);
@@ -184,6 +194,24 @@ function MediaUploadContent(props: IProps) {
     }
     onVisible(false);
   };
+  const saveDisabled = useMemo(
+    () =>
+      !ready?.() ||
+      !files ||
+      files.length === 0 ||
+      (files[0] as File).name.trim() === '' ||
+      !hasRights ||
+      (uploadType === UploadType.Link && !isUrl((files[0] as File).name)) ||
+      progress,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [ready, files, hasRights, uploadType, isUrl, progress]
+  );
+
+  useEffect(() => {
+    onSaveDisabled?.(saveDisabled);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [saveDisabled]);
+
   const setFiles = (f: File[]) => {
     filesRef.current = f;
     setFilesx(f);
@@ -255,6 +283,14 @@ function MediaUploadContent(props: IProps) {
     onValue && onValue(newValue);
   };
 
+  useEffect(() => {
+    if (controlsRef !== undefined) {
+      controlsRef.current.handleAddOrSave = handleAddOrSave;
+      controlsRef.current.handleCancel = handleCancel;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [handleAddOrSave, handleCancel]);
+
   useEffect(() => setProgress(false), []);
 
   useEffect(() => {
@@ -311,7 +347,9 @@ function MediaUploadContent(props: IProps) {
   }, [uploadType]);
 
   return (
-    <>
+    <Box
+      sx={{ display: 'flex', flexDirection: 'column', alignItems: 'stretch' }}
+    >
       <DialogContent>
         <DialogContentText>
           {(text[uploadType] as string).replace('{0}', speaker || '')}
@@ -352,35 +390,28 @@ function MediaUploadContent(props: IProps) {
         {metaData}
         {progress && <LinearProgress variant="indeterminate" />}
       </DialogContent>
-      <DialogActions>
-        <Button
-          id="uploadCancel"
-          onClick={handleCancel}
-          variant="outlined"
-          color="primary"
-        >
-          {cancelLabel || t.cancel}
-        </Button>
-        <Button
-          id="uploadSave"
-          onClick={handleAddOrSave}
-          variant="contained"
-          color="primary"
-          disabled={
-            (ready && !ready()) ||
-            !files ||
-            files.length === 0 ||
-            (files[0] as File).name.trim() === '' ||
-            !hasRights ||
-            (uploadType === UploadType.Link &&
-              !isUrl((files[0] as File).name)) ||
-            progress
-          }
-        >
-          {saveText || t.upload}
-        </Button>
-      </DialogActions>
-    </>
+      {!controlsRef && (
+        <DialogActions>
+          <Button
+            id="uploadCancel"
+            onClick={handleCancel}
+            variant="outlined"
+            color="primary"
+          >
+            {cancelLabel || t.cancel}
+          </Button>
+          <Button
+            id="uploadSave"
+            onClick={handleAddOrSave}
+            variant="contained"
+            color="primary"
+            disabled={saveDisabled}
+          >
+            {saveText || t.upload}
+          </Button>
+        </DialogActions>
+      )}
+    </Box>
   );
 }
 

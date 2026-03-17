@@ -1,42 +1,31 @@
 import { shallowEqual, useSelector } from 'react-redux';
 import { restoreScroll } from '../utils';
-import MediaUpload, { SIZELIMIT } from './MediaUpload';
+import MediaUpload from './MediaUpload';
 import { UploadType } from './UploadType';
-import { mediaTabSelector, sharedSelector } from '../selector';
-import { IMediaTabStrings, ISharedStrings } from '../model';
-import imageCompression from 'browser-image-compression';
-import { useGlobal } from '../context/useGlobal';
-import { logError, Severity } from '../utils';
+import { sharedSelector } from '../selector';
+import { ISharedStrings } from '../model';
+import MediaUploadContent, {
+  MediaUploadControlsRef,
+} from './MediaUploadContent';
+import { CompressedImages, useCompression } from '../utils/useCompression';
 
 // Converting to/from Blob: https://stackoverflow.com/questions/68276368/javascript-convert-a-blob-object-to-a-string-and-back
 // https://stackoverflow.com/questions/18650168/convert-blob-to-base64
 
-export const ApmDim = 40;
-export const Rights = 'rights';
-
-export interface CompressedImages {
-  name: string;
-  content: string;
-  type: string;
-  dimension: number;
-}
-
-export interface IGraphicInfo {
-  [key: string]: CompressedImages | string | undefined;
-}
-
 interface IProps {
   defaultFilename?: string;
   dimension: number[];
-  isOpen: boolean;
+  isOpen?: boolean;
   onOpen: (visible: boolean) => void;
   showMessage: (msg: string | React.JSX.Element) => void;
   hasRights?: boolean; // required for upload
   finish?: (images: CompressedImages[]) => void; // when conversion complete
-  cancelled: React.MutableRefObject<boolean>;
+  cancelled: React.RefObject<boolean>;
   uploadType?: UploadType;
   metadata?: React.JSX.Element;
   onFiles?: (files: File[]) => void;
+  mediaUploadControlsRef?: React.RefObject<MediaUploadControlsRef>;
+  onSaveDisabled?: ((disabled: boolean) => void) | undefined;
 }
 
 export function GraphicUploader(props: IProps) {
@@ -52,94 +41,26 @@ export function GraphicUploader(props: IProps) {
     finish,
     metadata,
     onFiles,
+    onSaveDisabled,
   } = props;
-  const t: IMediaTabStrings = useSelector(mediaTabSelector, shallowEqual);
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
-  const [errorReporter] = useGlobal('errorReporter');
-
-  function blobToBase64(blob: Blob) {
-    return new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result);
-      reader.readAsDataURL(blob);
-    });
-  }
-
-  const fileReport = (imageFile: File | Blob, desc?: string) => {
-    // console.log(`${desc} instance of Blob`, imageFile instanceof Blob);
-    const value = imageFile.size / 1024 / 1024;
-    console.log(
-      `${desc} size ` +
-        (value > 1
-          ? `${value.toFixed(2)} MB`
-          : `${(value * 1024).toFixed(2)} KB`)
-    );
-  };
-  const showFile = (files: File[]) => {
-    const options = {
-      maxSizeMb: SIZELIMIT,
-      maxWidthOrHeight: 1024,
-      useWebWorker: true,
-    };
-    if (onFiles && files.length === 1) {
-      try {
-        imageCompression(files[0], options).then((compressedFile) => {
-          onFiles([compressedFile]);
-        });
-      } catch {
-        // ignore errors here
-      }
-    }
-  };
-
-  const sizedName = (name: string, size: number, ext: string | undefined) => {
-    return ext && name.endsWith(ext)
-      ? name.replace(`.${ext}`, `-${size}.${ext}`)
-      : `${name}-${size}.${ext}`;
-  };
-
-  const uploadMedia = async (files: File[]) => {
-    if (!files || files.length === 0) {
-      showMessage(t.selectFiles);
-      return;
-    }
-
-    const results: CompressedImages[] = [];
-    const imageFile = files[0];
-    fileReport(imageFile, 'Original');
-
-    for (const dim of dimension) {
-      const options = {
-        maxSizeMb: SIZELIMIT,
-        maxWidthOrHeight: dim,
-        useWebWorker: true,
-      };
-      try {
-        const compressedFile = await imageCompression(imageFile, options);
-        fileReport(compressedFile, `Compressed ${dim}`);
-        const ext = imageFile.name.split('.').pop();
-        results.push({
-          name: sizedName(defaultFilename || imageFile.name, dim, ext),
-          content: (await blobToBase64(compressedFile)) as string,
-          type: imageFile?.type,
-          dimension: dim,
-        });
-      } catch (error) {
-        logError(Severity.error, errorReporter, error as Error);
-      }
-    }
-    if (finish) finish(results);
-    onOpen(false);
-  };
+  const { showFile, uploadMedia } = useCompression({
+    onFiles,
+    showMessage,
+    dimension,
+    defaultFilename,
+    finish,
+    onOpen,
+  });
 
   const uploadCancel = () => {
-    onOpen(false);
+    onOpen?.(false);
     // eslint-disable-next-line react-hooks/immutability
     if (cancelled) cancelled.current = true;
     restoreScroll();
   };
 
-  return (
+  return isOpen ? (
     <MediaUpload
       visible={isOpen}
       onVisible={onOpen}
@@ -150,6 +71,19 @@ export function GraphicUploader(props: IProps) {
       cancelLabel={ts.close}
       metaData={metadata}
       onFiles={showFile}
+    />
+  ) : (
+    <MediaUploadContent
+      onVisible={onOpen}
+      uploadType={uploadType || UploadType.Media}
+      uploadMethod={uploadMedia}
+      cancelMethod={uploadCancel}
+      cancelLabel={ts.close}
+      metaData={metadata}
+      ready={() => Boolean(hasRights)}
+      onFiles={showFile}
+      controlsRef={props.mediaUploadControlsRef}
+      onSaveDisabled={onSaveDisabled}
     />
   );
 }

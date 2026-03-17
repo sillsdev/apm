@@ -85,6 +85,9 @@ export const filterMenuSelector = (state: IState) =>
 export const findResourceSelector = (state: IState) =>
   localStrings(state as IState, { layout: 'findResource' });
 
+export const graphicStringsSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'graphic' });
+
 export const gridSelector = (state: IState) =>
   localStrings(state as IState, { layout: 'grid' });
 

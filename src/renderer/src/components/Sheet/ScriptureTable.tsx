@@ -62,6 +62,7 @@ import {
   useSharedResRead,
   PublishDestinationEnum,
   usePublishDestination,
+  useNotes,
 } from '../../crud';
 import {
   lookupBook,
@@ -72,6 +73,7 @@ import {
   useWaitForRemoteQueue,
   useCanPublish,
   useMobile,
+  refNumPat,
 } from '../../utils';
 import {
   isSectionRow,
@@ -122,12 +124,12 @@ import { isPublishingTitle } from '../../control/passageTypeFromRef';
 import { UploadType } from '../UploadType';
 import { useGraphicCreate } from '../../crud/useGraphicCreate';
 import {
-  ApmDim,
   CompressedImages,
-  GraphicUploader,
   IGraphicInfo,
   Rights,
-} from '../GraphicUploader';
+  ApmDim,
+} from '../../utils/useCompression';
+import { GraphicUploader } from '../GraphicUploader';
 import Confirm from '../AlertDialog';
 import { getDefaultName } from './getDefaultName';
 import GraphicRights from '../GraphicRights';
@@ -140,8 +142,13 @@ import bookSortJson from '../../assets/akuosort.json';
 import { PlanView } from './PlanView';
 import { addPt } from '../../utils/addPt';
 import { PlanBar } from './PlanBar';
+import GraphicPicker from '../GraphicPicker';
+import { MediaUploadControlsRef } from '../../components/MediaUploadContent';
+import { useComputeRef } from '../../components/PassageDetail/Internalization/useComputeRef';
 
 const SaveWait = 500;
+
+type IVrs = [string, number[]];
 
 interface IProps {
   colNames: string[];
@@ -232,6 +239,7 @@ export function ScriptureTable(props: IProps) {
     useState(false);
   const [view, setView] = useState('');
   const [lastSaved, setLastSaved] = useState<string>();
+  const dimensions = [1024, 512, ApmDim];
   const toolId = 'scriptureTable';
   const {
     saveRequested,
@@ -250,8 +258,18 @@ export function ScriptureTable(props: IProps) {
   const [assignSections, setAssignSections] = useState<number[]>([]);
   const [uploadVisible, setUploadVisible] = useState(false);
   const [uploadGraphicVisible, setUploadGraphicVisible] = useState(false);
+  const [graphicPickerRefString, setGraphicPickerRefString] =
+    useState('1:1-25');
+  const { curNoteRef } = useNotes();
+  const { computeSectionRef, computeMovementRef } = useComputeRef();
+  const mediaUploadControlsRef = useRef<MediaUploadControlsRef>({
+    handleCancel: null,
+    handleAddOrSave: null,
+  } as MediaUploadControlsRef);
+  const [saveDisabled, setSaveDisabled] = useState(false);
   const [importList, setImportList] = useState<File[]>();
   const cancelled = useRef(false);
+  const [engVrs, setEngVrs] = useState<Map<string, number[]>>(new Map());
   const graphicUploadCompleted = useRef(false);
   const uploadItem = useRef<ISheet | undefined>(undefined);
   const [editRow, setEditRow] = useState<ISheet>();
@@ -313,10 +331,12 @@ export function ScriptureTable(props: IProps) {
   const { canAddPublishing } = useCanPublish();
 
   const firstBook = useMemo(
-    () =>
-      scripture
+    () => {
+      return scripture
         ? (sheet.find((b) => !b.deleted && (b.book ?? '') !== '')?.book ?? '')
-        : getProjectDefault(projDefBook),
+        : ((getProjectDefault(projDefBook) as unknown as string | undefined) ??
+            'LUK');
+    },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [scripture, sheet]
   );
@@ -328,6 +348,9 @@ export function ScriptureTable(props: IProps) {
     if (minSection !== defaultFilterState.minSection) {
       setDefaultFilterState((fs) => ({ ...fs, minSection }));
     }
+    import('../../assets/eng-vrs').then((module) => {
+      setEngVrs(new Map<string, number[]>(module.default as IVrs[]));
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [minSection]);
 
@@ -1154,8 +1177,49 @@ export function ScriptureTable(props: IProps) {
     setUploadGraphicVisible(v);
   };
 
+  const computeRef = (ref: string) => {
+    const m = refNumPat.exec(ref);
+    if (m) return m[1];
+    return ref;
+  };
+  const getGraphicPickerRefString = (i: number) => {
+    const { ws } = getByIndex(sheetRef.current, i);
+    const passageType = passageTypeFromRef(ws?.reference ?? '', flat);
+    if (passageType === PassageTypeEnum.NOTE) {
+      if (ws?.passage) {
+        const noteRef = computeRef(curNoteRef(ws?.passage as PassageD));
+        if (noteRef.length > 0) return noteRef;
+      }
+    } else if (passageType === PassageTypeEnum.MOVEMENT) {
+      const movementRef = computeRef(
+        computeMovementRef(ws?.sectionId?.id ?? '')
+      );
+      if (movementRef.length > 0) return movementRef;
+    } else if (passageType === PassageTypeEnum.CHAPTERNUMBER) {
+      const chapter = (ws?.reference ?? '').match(/(\d+)$/);
+      const chapNum = chapter ? parseInt(chapter[1]) : undefined;
+      const verses = engVrs.get(firstBook);
+      if (verses && chapNum && chapNum < verses.length) {
+        return `${firstBook} ${chapNum}:1-${verses[chapNum - 1]}`;
+      }
+      return firstBook + ' ' + (chapter?.[1] ?? '1') + ':1-999';
+    } else if (
+      [PassageTypeEnum.BOOK, PassageTypeEnum.ALTBOOK].includes(passageType)
+    ) {
+      const verses = engVrs.get(firstBook);
+      if (verses) {
+        return (
+          firstBook + ' 1:1-' + verses.length + ':' + verses[verses.length - 1]
+        );
+      }
+      return firstBook + ' 1:1-999:999';
+    }
+    return computeRef(computeSectionRef(ws?.sectionId?.id ?? ''));
+  };
+
   const handleGraphic = (i: number) => {
     saveIfChanged(() => {
+      setGraphicPickerRefString(getGraphicPickerRefString(i));
       graphicUploadCompleted.current = false;
       setUploadType(UploadType.Graphic);
       const { ws } = getByIndex(sheetRef.current, i);
@@ -2021,6 +2085,11 @@ export function ScriptureTable(props: IProps) {
     onPublishing(false);
   };
 
+  const handleFinish = (images: CompressedImages[]) => {
+    if (images.length > 0) graphicUploadCompleted.current = true;
+    return afterConvert(images);
+  };
+
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column' }}>
       {isMobile ? (
@@ -2120,30 +2189,43 @@ export function ScriptureTable(props: IProps) {
         onSpeakerChange={handleNameChange}
         ready={isReady}
       />
-      <GraphicUploader
-        dimension={[1024, 512, ApmDim]}
-        defaultFilename={defaultFilename}
+      <GraphicPicker
+        bookCode={firstBook}
+        refString={graphicPickerRefString}
         isOpen={uploadGraphicVisible}
         onOpen={handleUploadGraphicVisible}
+        mediaUploadControlsRef={mediaUploadControlsRef}
+        saveDisabled={saveDisabled}
         showMessage={showMessage}
-        hasRights={Boolean(curGraphicRights)}
-        finish={(images) => {
-          if (images.length > 0) graphicUploadCompleted.current = true;
-          return afterConvert(images);
-        }}
-        cancelled={cancelled}
-        uploadType={uploadType as UploadType}
-        onFiles={onFiles}
+        dimension={dimensions}
+        finish={handleFinish}
+        currentGraphic={
+          graphicFullsizeUrl && (
+            <img src={graphicFullsizeUrl} alt="new" width={400} />
+          )
+        }
         metadata={
-          <>
-            <GraphicRights
-              value={curGraphicRights}
-              onChange={handleRightsChange}
-            />
-            {graphicFullsizeUrl && (
-              <img src={graphicFullsizeUrl} alt="new" width={400} />
-            )}
-          </>
+          <GraphicUploader
+            onOpen={handleUploadGraphicVisible}
+            dimension={dimensions}
+            defaultFilename={defaultFilename}
+            showMessage={showMessage}
+            hasRights={Boolean(curGraphicRights)}
+            finish={handleFinish}
+            cancelled={cancelled}
+            uploadType={uploadType as UploadType}
+            onFiles={onFiles}
+            mediaUploadControlsRef={mediaUploadControlsRef}
+            onSaveDisabled={setSaveDisabled}
+            metadata={
+              <Box>
+                <GraphicRights
+                  value={curGraphicRights}
+                  onChange={handleRightsChange}
+                />
+              </Box>
+            }
+          />
         }
       />
       <BigDialog

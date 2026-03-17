@@ -2542,6 +2542,66 @@
             <target/>
          </segment>
       </unit>
+      <unit id="graphic.graphicSearch">
+         <segment>
+            <source>Search graphics</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="graphic.graphicSource">
+         <segment>
+            <source>graphic source tabs</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="graphic.loadFailure">
+         <segment>
+            <source>Failed to load</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="graphic.noSelection">
+         <segment>
+            <source>no {0} selected.</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="graphic.placeHolder">
+         <segment>
+            <source>title and keyword search words</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="graphic.setGraphic">
+         <segment>
+            <source>Set as Graphic</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="graphic.tabCurrent">
+         <segment>
+            <source>Current</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="graphic.tabCustom">
+         <segment>
+            <source>Custom</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="graphic.tabBible">
+         <segment>
+            <source>Library</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="graphic.title">
+         <segment>
+            <source>Graphic Picker</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="grid.all">
          <segment>
             <source>All</source>
