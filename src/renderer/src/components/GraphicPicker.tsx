@@ -57,6 +57,7 @@ export interface GraphicPickerImage {
   label?: string;
   keywords?: string[];
   styles?: string[];
+  copyright?: string | null;
 }
 
 interface TabPanelProps {
@@ -164,6 +165,7 @@ function bibleImageToPickerImage(b: BibleImage): GraphicPickerImage {
     label: b.title,
     keywords: b.keywords,
     styles: b.styles,
+    copyright: b.copyright,
   };
 }
 
@@ -272,6 +274,8 @@ export interface GraphicPickerProps {
   defaultFilename?: string;
   /** Finish callback for the compression */
   finish: (images: CompressedImages[]) => void;
+  /** Called when a Bible image is chosen so caller can set rights */
+  onSelectedRights?: (rights: string | null | undefined) => void;
 }
 
 export function GraphicPicker({
@@ -289,6 +293,7 @@ export function GraphicPicker({
   dimension,
   defaultFilename,
   finish,
+  onSelectedRights,
 }: GraphicPickerProps) {
   const [qBook, setQBook] = useState<string | undefined>(undefined);
   const [qRef, setQRef] = useState<string | undefined>(undefined);
@@ -541,6 +546,9 @@ export function GraphicPicker({
         setSelectedId(null);
         return;
       }
+      if (tabValue === 0 && onSelectedRights) {
+        onSelectedRights(img.copyright);
+      }
       const { base, ext } = getUrlNameAndExt(img.url);
       const mimeType = mimeMap[ext.toLowerCase()] || 'image/jpeg';
       urlToFile(img.url, `${base}.${ext}`, mimeType)
@@ -559,7 +567,7 @@ export function GraphicPicker({
         });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tabValue, selectedId, images, onOpen]);
+  }, [tabValue, selectedId, images, onOpen, onSelectedRights]);
 
   const handleTabChange = useCallback(
     (_event: React.SyntheticEvent, newValue: number) => {
