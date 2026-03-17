@@ -41,7 +41,7 @@ import {
 import * as actions from '../../store';
 import Memory from '@orbit/memory';
 import JSONAPISource from '@orbit/jsonapi';
-import { Badge, Box } from '@mui/material';
+import { Badge, Box, Typography } from '@mui/material';
 import { useSnackBar } from '../../hoc/SnackBar';
 import PlanSheet, { ICell, ICellChange } from './PlanSheet';
 import {
@@ -1240,6 +1240,10 @@ export function ScriptureTable(props: IProps) {
     setCurGraphicRights(graphicRights);
   };
 
+  const handlePickerRights = (rights?: string | null) => {
+    handleRightsChange(rights ?? '');
+  };
+
   const afterConvert = async (images: CompressedImages[]) => {
     const ws = uploadItem.current;
     const resourceType = ws?.kind === IwsKind.Section ? 'section' : 'passage';
@@ -2199,9 +2203,19 @@ export function ScriptureTable(props: IProps) {
         showMessage={showMessage}
         dimension={dimensions}
         finish={handleFinish}
+        onSelectedRights={handlePickerRights}
         currentGraphic={
-          graphicFullsizeUrl && (
-            <img src={graphicFullsizeUrl} alt="new" width={400} />
+          (graphicFullsizeUrl || curGraphicRights) && (
+            <Box>
+              {graphicFullsizeUrl && (
+                <img src={graphicFullsizeUrl} alt="new" width={400} />
+              )}
+              {curGraphicRights && (
+                <Box mt={1}>
+                  <Typography variant="body2">{curGraphicRights}</Typography>
+                </Box>
+              )}
+            </Box>
           )
         }
         metadata={
