@@ -168,7 +168,7 @@ export function useGraphicUrlBuilder(
     const book = words[0];
     if (book && bookNameMap.has(book.toLocaleUpperCase())) {
       const newCode = bookNameMap.get(book.toLocaleUpperCase()) as string;
-      if (newCode && newCode !== bookCode) {
+      if (newCode && !refOverride) {
         setQBook(newCode);
       }
       const ref = words[1];
