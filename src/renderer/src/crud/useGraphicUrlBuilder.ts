@@ -162,14 +162,23 @@ export function useGraphicUrlBuilder(
     [scriptureRange, scriptureRefChecked, refOverride]
   );
 
-  const refFromQuery = (query: string) => {
+  const refFromQuery = (
+    query: string,
+    setQBook?: (book: string | undefined) => void,
+    setQRef?: (ref: string | undefined) => void
+  ) => {
+    let pquery = query.trim();
+    const mBook = /^([1-5])\s([^\s]+)/.exec(pquery);
+    if (mBook) {
+      pquery = `${mBook[1]}_${mBook[2]}${pquery.slice(mBook[0].length)}`;
+    }
     // check for book and reference in the query
-    const words = query.split(' ');
-    const book = words[0];
+    const words = pquery.split(' ');
+    const book = words[0].replace('_', ' ');
     if (book && bookNameMap.has(book.toLocaleUpperCase())) {
       const newCode = bookNameMap.get(book.toLocaleUpperCase()) as string;
-      if (newCode && !refOverride) {
-        setQBook(newCode);
+      if (newCode && (!refOverride || newCode !== bookCode)) {
+        setQBook?.(newCode);
       }
       const ref = words[1];
       const m = chapterMatch(ref);
@@ -179,18 +188,18 @@ export function useGraphicUrlBuilder(
         let chapterRef = `${start}:1-`;
         if (end) chapterRef += `${end}:`;
         chapterRef += '999';
-        setQRef(chapterRef);
-        query = query.replace(`${book} ${ref}`, '');
+        setQRef?.(chapterRef);
+        query = query.replace(`${mBook?.[0] ?? words[0]} ${ref}`, '');
       } else if (ref && refMatch(ref)) {
-        setQRef(ref);
-        query = query.replace(`${book} ${ref}`, '');
+        setQRef?.(ref);
+        query = query.replace(`${mBook?.[0] ?? words[0]} ${ref}`, '');
       } else {
-        setQRef('1:1-999:999');
-        query = query.replace(book, '');
+        setQRef?.('1:1-999:999');
+        query = query.replace(mBook?.[0] ?? words[0], '');
       }
     } else {
-      setQBook(undefined);
-      setQRef(undefined);
+      setQBook?.(undefined);
+      setQRef?.(undefined);
     }
     return query;
   };
@@ -203,7 +212,7 @@ export function useGraphicUrlBuilder(
         limit = 100,
         sortByNewest = true,
       } = options;
-      const query = refFromQuery(options.query);
+      const query = refFromQuery(options.query, setQBook, setQRef);
       return buildGraphicUrl('search', { page, limit }, (append) => {
         append('q', query);
         append('sortByNewest', String(sortByNewest));
@@ -252,6 +261,8 @@ export function useGraphicUrlBuilder(
     getKeywordUrl,
     /** Build the style URL from keywords, page, limit */
     getStyleUrl,
+    /** Get Reference from Query */
+    refFromQuery,
   };
 }
 

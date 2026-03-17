@@ -44,7 +44,6 @@ import { urlToFile } from '../utils/urlToFile';
 import { CompressedImages, useCompression } from '../utils/useCompression';
 import { mimeMap } from '../utils/loadBlob';
 import { useOrganizedBy } from '../crud';
-import { chapterMatch, refMatch } from '../utils/refMatch';
 import { VertScrollBox } from '../control/VertScrollBox';
 import logError, { Severity } from '../utils/logErrorService';
 import { useGlobal } from '../context/useGlobal';
@@ -342,14 +341,15 @@ export function GraphicPicker({
   const TAB_CUSTOM = t.tabCustom;
   const TAB_CURRENT = t.tabCurrent;
 
-  const { getSearchUrl, getKeywordUrl, getStyleUrl } = useGraphicUrlBuilder(
-    qBook ?? bookCode ?? '',
-    qRef ?? refString ?? '',
-    filterScriptureRefChecked,
-    Boolean(qBook),
-    setQBook,
-    setQRef
-  );
+  const { getSearchUrl, getKeywordUrl, getStyleUrl, refFromQuery } =
+    useGraphicUrlBuilder(
+      qBook ?? bookCode ?? '',
+      qRef ?? refString ?? '',
+      filterScriptureRefChecked,
+      Boolean(qBook),
+      setQBook,
+      setQRef
+    );
 
   const scriptureReference = useMemo((): ScriptureReferenceFilter | null => {
     return getRefFilter(
@@ -461,7 +461,7 @@ export function GraphicPicker({
     runBibleFetch({
       getUrl: () =>
         getSearchUrl({
-          query: debouncedSearch.trim(),
+          query: debouncedSearch,
           filterState: derivedFilterState,
           page: 1,
           limit: 100,
@@ -491,15 +491,7 @@ export function GraphicPicker({
   );
 
   const filteredImages = useMemo(() => {
-    let q = debouncedSearch.trim().toLowerCase();
-    // remove reference prefix from debounced query
-    const words = q.split(' ');
-    if (qBook) {
-      q = words.slice(1).join(' ');
-      if (refMatch(words[1]) || chapterMatch(words[1])) {
-        q = words.slice(2).join(' ');
-      }
-    }
+    const q = refFromQuery(debouncedSearch.trim().toLowerCase());
     if (!q) return images;
     return images.filter((img) => {
       if ((img.label ?? '').toLowerCase().indexOf(q) !== -1) return true;
@@ -511,7 +503,7 @@ export function GraphicPicker({
       }
       return false;
     });
-  }, [images, debouncedSearch, qBook]);
+  }, [images, debouncedSearch, refFromQuery]);
 
   const handleClose = useCallback(() => {
     if (mediaUploadControlsRef?.current?.handleCancel && tabValue === 1) {
