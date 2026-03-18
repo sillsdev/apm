@@ -196,7 +196,7 @@ function MediaUploadContent(props: IProps) {
   };
   const saveDisabled = useMemo(
     () =>
-      !ready?.() ||
+      (ready && !ready()) ||
       !files ||
       files.length === 0 ||
       (files[0] as File).name.trim() === '' ||
