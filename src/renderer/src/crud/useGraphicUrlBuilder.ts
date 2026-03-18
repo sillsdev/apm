@@ -201,7 +201,7 @@ export function useGraphicUrlBuilder(
       setQBook?.(undefined);
       setQRef?.(undefined);
     }
-    return query;
+    return query.trim();
   };
 
   const getSearchUrl = useCallback(
