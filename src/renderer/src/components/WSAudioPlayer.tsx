@@ -709,50 +709,6 @@ function WSAudioPlayer(props: IProps) {
   );
   //#endregion
 
-  const playerKeys = [
-    {
-      key: PLAY_PAUSE_KEY,
-      cb: () => {
-        togglePlayStatus();
-        return true;
-      },
-    },
-    {
-      key: HOME_KEY,
-      cb: () => {
-        if (!readyRef.current || recordingRef.current) return false;
-        wsGoto(0);
-        return true;
-      },
-    },
-    {
-      key: END_KEY,
-      cb: () => {
-        if (!readyRef.current || recordingRef.current) return false;
-        gotoEnd();
-        return true;
-      },
-    },
-    { key: BACK_KEY, cb: handleJumpBackward },
-    { key: AHEAD_KEY, cb: handleJumpForward },
-    { key: TIMER_KEY, cb: handleSendProgress },
-  ];
-  const simplePlayerKeys = [
-    {
-      key: ALT_PLAY_PAUSE_KEY,
-      cb: () => {
-        togglePlayStatus();
-        return true;
-      },
-    },
-  ];
-
-  const recordKeys = [{ key: RECORD_KEY, cb: handleRecorder }];
-
-  const segmentKeys = [
-    { key: LEFT_KEY, cb: handlePrevRegion },
-    { key: RIGHT_KEY, cb: handleNextRegion },
-  ];
   const handleRefresh = () => {
     setVoice((getOrgDefault(orgDefaultVoices) as IVoicePerm)?.fullName ?? '');
   };
@@ -811,21 +767,6 @@ function WSAudioPlayer(props: IProps) {
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  useEffect(() => {
-    if (justPlayButton) simplePlayerKeys.forEach((k) => subscribe(k.key, k.cb));
-    else playerKeys.forEach((k) => subscribe(k.key, k.cb));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [justPlayButton]);
-
-  useEffect(() => {
-    if (allowRecord) recordKeys.forEach((k) => subscribe(k.key, k.cb));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allowRecord]);
-  useEffect(() => {
-    if (allowSegment) segmentKeys.forEach((k) => subscribe(k.key, k.cb));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allowSegment]);
 
   useEffect(() => {
     if (org) {
@@ -976,8 +917,89 @@ function WSAudioPlayer(props: IProps) {
     ]
   );
   const togglePlayStatus = useCallback(() => {
+    if (!readyRef.current || recordingRef.current) return false;
     handlePlayStatus(!playingRef.current);
+    return true;
   }, [handlePlayStatus]);
+
+  const playerKeys = useMemo(
+    () => [
+      {
+        key: PLAY_PAUSE_KEY,
+        cb: () => {
+          togglePlayStatus();
+          return true;
+        },
+      },
+      {
+        key: HOME_KEY,
+        cb: () => {
+          if (!readyRef.current || recordingRef.current) return false;
+          wsGoto(0);
+          return true;
+        },
+      },
+      {
+        key: END_KEY,
+        cb: () => {
+          if (!readyRef.current || recordingRef.current) return false;
+          gotoEnd();
+          return true;
+        },
+      },
+      { key: BACK_KEY, cb: handleJumpBackward },
+      { key: AHEAD_KEY, cb: handleJumpForward },
+      { key: TIMER_KEY, cb: handleSendProgress },
+    ],
+    [
+      handleJumpBackward,
+      handleJumpForward,
+      handleSendProgress,
+      togglePlayStatus,
+      wsGoto,
+      gotoEnd,
+    ]
+  );
+  const simplePlayerKeys = useMemo(
+    () => [
+      {
+        key: ALT_PLAY_PAUSE_KEY,
+        cb: () => {
+          togglePlayStatus();
+          return true;
+        },
+      },
+    ],
+    [togglePlayStatus]
+  );
+
+  const recordKeys = useMemo(
+    () => [{ key: RECORD_KEY, cb: handleRecorder }],
+    [handleRecorder]
+  );
+
+  const segmentKeys = useMemo(
+    () => [
+      { key: LEFT_KEY, cb: handlePrevRegion },
+      { key: RIGHT_KEY, cb: handleNextRegion },
+    ],
+    [handlePrevRegion, handleNextRegion]
+  );
+
+  useEffect(() => {
+    if (justPlayButton) simplePlayerKeys.forEach((k) => subscribe(k.key, k.cb));
+    else playerKeys.forEach((k) => subscribe(k.key, k.cb));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [justPlayButton]);
+
+  useEffect(() => {
+    if (allowRecord) recordKeys.forEach((k) => subscribe(k.key, k.cb));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allowRecord]);
+  useEffect(() => {
+    if (allowSegment) segmentKeys.forEach((k) => subscribe(k.key, k.cb));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allowSegment]);
 
   useEffect(() => {
     if (isPlaying !== undefined) handlePlayStatus(isPlaying);
