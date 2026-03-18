@@ -713,6 +713,7 @@ function WSAudioPlayer(props: IProps) {
     {
       key: PLAY_PAUSE_KEY,
       cb: () => {
+        if (!readyRef.current || recordingRef.current) return false;
         togglePlayStatus();
         return true;
       },
