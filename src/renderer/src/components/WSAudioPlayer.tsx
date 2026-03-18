@@ -709,14 +709,16 @@ function WSAudioPlayer(props: IProps) {
   );
   //#endregion
 
+  const handlePlayPauseHotkey = useCallback(() => {
+    if (!readyRef.current || recordingRef.current) return false;
+    togglePlayStatus();
+    return true;
+  }, [togglePlayStatus]);
+
   const playerKeys = [
     {
       key: PLAY_PAUSE_KEY,
-      cb: () => {
-        if (!readyRef.current || recordingRef.current) return false;
-        togglePlayStatus();
-        return true;
-      },
+      cb: handlePlayPauseHotkey,
     },
     {
       key: HOME_KEY,
