@@ -42,11 +42,17 @@ export const RecordButton = ({
 }: IRecordButtonProps) => {
   const theme = useTheme();
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' || e.key === ' ') {
+    if (e.key === 'Enter') {
       e.preventDefault();
-      if (!disabled) {
-        onClick();
-      }
+      if (!disabled) onClick();
+      return;
+    }
+    if (e.key === ' ') {
+      // Avoid triggering record while the user is using shortcuts like Ctrl+Space.
+      // This button may be keyboard-focused, so we must ignore modified Space.
+      if (e.ctrlKey || e.altKey || e.shiftKey) return;
+      e.preventDefault();
+      if (!disabled) onClick();
     }
   };
   const handleClick = (e: React.MouseEvent) => {

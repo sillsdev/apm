@@ -65,6 +65,28 @@ describe('RecordButton', () => {
     cy.wrap(onClick).should('have.been.calledTwice');
   });
 
+  it('does not call onClick when Space has modifiers', () => {
+    const onClick = cy.stub().as('onClick');
+    mountRecordButton({
+      recording: false,
+      onClick,
+      disabled: false,
+      tooltipTitle: 'Record',
+    });
+
+    cy.get('[role="button"]').trigger('keydown', {
+      key: ' ',
+      ctrlKey: true,
+    });
+    cy.get('[role="button"]').trigger('keydown', {
+      key: ' ',
+      altKey: true,
+      ctrlKey: true,
+    });
+
+    cy.wrap(onClick).should('not.have.been.called');
+  });
+
   it('does not call onClick when disabled', () => {
     const onClick = cy.stub().as('onClick');
     mountRecordButton({

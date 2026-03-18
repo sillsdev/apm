@@ -288,6 +288,11 @@ function WSAudioPlayer(props: IProps) {
   const recordStartPosition = useRef(0);
   const recordOverwritePosition = useRef<number | undefined>(undefined);
   const recordingRef = useRef(false);
+  // When recording is initiated, `recordingRef` is updated asynchronously
+  // (after `startRecording(...).then(...)` resolves). This ref closes the
+  // timing gap so global play hotkeys can't toggle while recording is
+  // starting/stopping.
+  const recordingStartPendingRef = useRef(false);
   const [recording, setRecordingx] = useState(false);
   const [waitingForAI, setWaitingForAI] = useState(false);
   const [processMsg, setProcessMsg] = useState<string | undefined>(undefined);
@@ -647,7 +652,9 @@ function WSAudioPlayer(props: IProps) {
       wsPause(); //stop if playing
       recordStartPosition.current = wsPosition();
       wsStartRecord();
+      recordingStartPendingRef.current = true;
       startRecording(500).then((value) => {
+        recordingStartPendingRef.current = false;
         setRecording(value);
       });
 
@@ -657,6 +664,7 @@ function WSAudioPlayer(props: IProps) {
         : undefined;
     } else {
       setProcessingRecording(true);
+      recordingStartPendingRef.current = false;
       stopRecording();
       wsStopRecord();
       setRecording(false);
@@ -713,6 +721,12 @@ function WSAudioPlayer(props: IProps) {
     {
       key: PLAY_PAUSE_KEY,
       cb: () => {
+        if (
+          recordingRef.current ||
+          recordingStartPendingRef.current ||
+          processRecordRef.current
+        )
+          return false;
         togglePlayStatus();
         return true;
       },
@@ -741,6 +755,12 @@ function WSAudioPlayer(props: IProps) {
     {
       key: ALT_PLAY_PAUSE_KEY,
       cb: () => {
+        if (
+          recordingRef.current ||
+          recordingStartPendingRef.current ||
+          processRecordRef.current
+        )
+          return false;
         togglePlayStatus();
         return true;
       },
@@ -989,6 +1009,7 @@ function WSAudioPlayer(props: IProps) {
   }
 
   async function onRecordStop(blob: Blob) {
+    recordingStartPendingRef.current = false;
     const newPos = await wsInsertAudio(
       blob,
       undefined,
@@ -1002,6 +1023,7 @@ function WSAudioPlayer(props: IProps) {
   }
 
   function onRecordError(e: any) {
+    recordingStartPendingRef.current = false;
     setProcessingRecording(false);
 
     if (autostartTimer.current && e.error === 'No mediaRecorder') {
