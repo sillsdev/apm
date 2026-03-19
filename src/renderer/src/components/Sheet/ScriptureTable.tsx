@@ -2121,7 +2121,7 @@ export function ScriptureTable(props: IProps) {
             ) => {
               setSectionPublish(i, destinations);
             }}
-            handleGraphic={handleGraphic}
+            handleGraphic={canPublish ? handleGraphic : undefined}
           />
         </>
       ) : (

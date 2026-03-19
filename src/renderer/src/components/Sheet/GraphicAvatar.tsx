@@ -8,12 +8,13 @@ interface IProps {
   sectionSeq: number;
   organizedBy: string;
   style?: React.CSSProperties;
-  onClick: () => void;
+  onClick?: () => void;
 }
 
 export function GraphicAvatar(props: IProps) {
   const { graphicUri, reference, sectionSeq, organizedBy, style, onClick } =
     props;
+  const isClickable = Boolean(onClick);
 
   const label =
     reference ||
@@ -24,7 +25,7 @@ export function GraphicAvatar(props: IProps) {
   if (graphicUri) {
     return (
       <Avatar
-        sx={{ cursor: 'pointer' }}
+        sx={isClickable ? { cursor: 'pointer' } : undefined}
         src={graphicUri}
         variant="rounded"
         style={style}
@@ -34,7 +35,7 @@ export function GraphicAvatar(props: IProps) {
   }
   return (
     <Avatar
-      {...stringAvatar(label, { cursor: 'pointer' })}
+      {...stringAvatar(label, isClickable ? { cursor: 'pointer' } : undefined)}
       variant="rounded"
       style={style}
       onClick={onClick}

@@ -272,7 +272,7 @@ describe('PlanView', () => {
         index: number,
         destinations: PublishDestinationEnum[]
       ) => void;
-      handleGraphic: (index: number) => void;
+      handleGraphic?: (index: number) => void;
     },
     planContextOverrides = {},
     globalStateOverrides = {},
@@ -472,6 +472,29 @@ describe('PlanView', () => {
     cy.wait(100);
     cy.get('div[class*="MuiAvatar-root"]', { timeout: 5000 }).click();
     cy.wrap(mockHandleGraphic).should('have.been.calledWith', 0);
+  });
+
+  it('should not make GraphicAvatar clickable when handleGraphic is undefined', () => {
+    const section = createMockSection({
+      graphicUri: 'https://example.com/image.png',
+      sectionSeq: 1,
+    });
+    const rowInfo: ISheet[] = [section];
+    const bookMap = createMockBookNameMap();
+
+    mountPlanView({
+      rowInfo,
+      bookMap,
+      publishingView: true,
+      handlePublish: mockHandlePublish,
+      handleGraphic: undefined,
+    });
+
+    cy.wait(100);
+    cy.get('div[class*="MuiAvatar-root"]', { timeout: 5000 })
+      .should('be.visible')
+      .and('not.have.css', 'cursor', 'pointer');
+    cy.get('div[class*="MuiAvatar-root"]', { timeout: 5000 }).click();
   });
 
   it('should render publish button when publishingView is true and passageType is PASS', () => {
