@@ -1,11 +1,5 @@
 import { ICardsStrings, ISheet, IwsKind, PassageTypeEnum } from '../../model';
-import {
-  Box,
-  Button,
-  Card,
-  CardContent,
-  Typography,
-} from '@mui/material';
+import { Box, Button, Card, CardContent, Typography } from '@mui/material';
 import { ArrowForwardIos, Person } from '@mui/icons-material';
 import TaskAvatar from '../../components/TaskAvatar';
 import { passageTypeFromRef } from '../../control/passageTypeFromRef';
@@ -21,14 +15,21 @@ interface IProps {
   cardInfo: ISheet;
   handleViewStep: () => void;
   onPlayStatus?: () => void;
+  onGraphicClick?: () => void;
   isPlaying: boolean;
   isPersonal?: boolean;
 }
 
 export function PassageCard(props: IProps) {
   const { isMobileWidth } = useMobile();
-  const { cardInfo, handleViewStep, onPlayStatus, isPlaying, isPersonal } =
-    props;
+  const {
+    cardInfo,
+    handleViewStep,
+    onPlayStatus,
+    onGraphicClick,
+    isPlaying,
+    isPersonal,
+  } = props;
   const getDescription = useSectionIdDescription();
   const t: ICardsStrings = useSelector(cardsSelector, shallowEqual);
   const noteTitle = cardInfo?.sharedResource?.attributes.title;
@@ -61,6 +62,7 @@ export function PassageCard(props: IProps) {
             cardInfo={cardInfo}
             reference={ref}
             psgType={psgType}
+            onClick={onGraphicClick}
           />
           {cardInfo.kind === IwsKind.Passage ? (
             <PassageRef

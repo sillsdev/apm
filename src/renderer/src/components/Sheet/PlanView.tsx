@@ -35,7 +35,7 @@ interface IProps {
     index: number,
     destinations: PublishDestinationEnum[]
   ) => void;
-  handleGraphic: (index: number) => void;
+  handleGraphic?: (index: number) => void;
 }
 
 export function PlanView(props: IProps) {
@@ -124,7 +124,7 @@ export function PlanView(props: IProps) {
                   sectionSeq={row.sectionSeq}
                   organizedBy="B"
                   style={indent ? { marginLeft: '2rem' } : undefined}
-                  onClick={() => handleGraphic(i)}
+                  onClick={handleGraphic ? () => handleGraphic(i) : undefined}
                 />
               )}
               {row.passageType === PassageTypeEnum.BOOK ? (
@@ -181,6 +181,11 @@ export function PlanView(props: IProps) {
               cardInfo={row}
               handleViewStep={() => handleViewStep(i)}
               onPlayStatus={mediaId ? () => onPlayStatus(mediaId) : undefined}
+              onGraphicClick={
+                publishingView && handleGraphic
+                  ? () => handleGraphic(i)
+                  : undefined
+              }
               isPlaying={mediaId === srcMediaId}
               isPersonal={isPersonal}
             />

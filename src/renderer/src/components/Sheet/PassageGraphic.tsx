@@ -9,12 +9,14 @@ interface PassageGraphicProps {
   cardInfo: ISheet;
   reference?: string;
   psgType: PassageTypeEnum;
+  onClick?: () => void;
 }
 
 export function PassageGraphic({
   cardInfo,
   reference,
   psgType,
+  onClick,
 }: PassageGraphicProps) {
   const [hasGraphicError, setHasGraphicError] = useState(false);
   const t: IPassageTypeStrings = useSelector(passageTypeSelector, shallowEqual);
@@ -32,12 +34,13 @@ export function PassageGraphic({
 
   const borderColor = cardInfo?.color;
   const border = borderColor ? { border: '2px solid', borderColor } : {};
-  const pointer = { cursor: 'pointer' };
+  const pointer = onClick ? { cursor: 'pointer' } : undefined;
   const fallbackName = reference || cardInfo.reference || t.NOTE;
 
   if (cardInfo.graphicUri && !hasGraphicError) {
     return (
       <Avatar
+        onClick={onClick}
         sx={{ ...pointer, ...border, mr: 1 }}
         src={cardInfo.graphicUri}
         slotProps={{ img: { onError: () => setHasGraphicError(true) } }}
@@ -51,8 +54,10 @@ export function PassageGraphic({
       {...stringAvatar(fallbackName, {
         // ...pointer,  # Disable until we add ability to edit graphics here.
         ...border,
+        ...(pointer || {}),
         mr: 1,
       })}
+      onClick={onClick}
       variant="rounded"
     />
   );
