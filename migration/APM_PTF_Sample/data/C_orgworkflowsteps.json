@@ -1,0 +1,186 @@
+{"data": [
+    {
+        "type": "orgworkflowsteps",
+        "attributes": {
+            "process": "draft",
+            "name": "MarkVerses",
+            "sequencenum": 4,
+            "tool": "{\"tool\": \"verses\"}",
+            "permissions": "{}",
+            "date-created": "2025-11-11T20:01:24.619Z",
+            "date-updated": "2025-11-11T20:01:24.619Z"
+        },
+        "relationships": {
+            "lastModifiedByUser": {"data": {
+                "type": "user",
+                "id": "5b1295fe-04e4-40b2-a2db-1f0d259f43db"
+            }},
+            "organization": {"data": {
+                "type": "organization",
+                "id": "9d0cf859-206d-480b-86e3-47c148daec1a"
+            }}
+        },
+        "id": "4af00998-b648-4b95-9d61-4a5cfabfff20"
+    },
+    {
+        "type": "orgworkflowsteps",
+        "attributes": {
+            "process": "draft",
+            "name": "Transcribe",
+            "sequencenum": 5,
+            "tool": "{\"tool\": \"transcribe\"}",
+            "permissions": "{}",
+            "date-created": "2025-11-11T20:01:24.619Z",
+            "date-updated": "2025-11-11T20:01:24.619Z"
+        },
+        "relationships": {
+            "lastModifiedByUser": {"data": {
+                "type": "user",
+                "id": "5b1295fe-04e4-40b2-a2db-1f0d259f43db"
+            }},
+            "organization": {"data": {
+                "type": "organization",
+                "id": "9d0cf859-206d-480b-86e3-47c148daec1a"
+            }}
+        },
+        "id": "ce1323fd-7abd-4fb7-82ee-973ae4f29793"
+    },
+    {
+        "type": "orgworkflowsteps",
+        "attributes": {
+            "process": "draft",
+            "name": "Review",
+            "sequencenum": 6,
+            "tool": "{\"tool\": \"transcribe\"}",
+            "permissions": "{}",
+            "date-created": "2025-11-11T20:01:24.619Z",
+            "date-updated": "2025-11-11T20:01:24.619Z"
+        },
+        "relationships": {
+            "lastModifiedByUser": {"data": {
+                "type": "user",
+                "id": "5b1295fe-04e4-40b2-a2db-1f0d259f43db"
+            }},
+            "organization": {"data": {
+                "type": "organization",
+                "id": "9d0cf859-206d-480b-86e3-47c148daec1a"
+            }}
+        },
+        "id": "1f7df640-6ac2-4fc7-83c7-01d0b1bbc26d"
+    },
+    {
+        "type": "orgworkflowsteps",
+        "attributes": {
+            "process": "draft",
+            "name": "TeamCheck",
+            "sequencenum": 3,
+            "tool": "{\"tool\": \"teamCheck\"}",
+            "permissions": "{}",
+            "date-created": "2025-11-11T20:01:24.619Z",
+            "date-updated": "2025-11-11T20:01:24.619Z"
+        },
+        "relationships": {
+            "lastModifiedByUser": {"data": {
+                "type": "user",
+                "id": "5b1295fe-04e4-40b2-a2db-1f0d259f43db"
+            }},
+            "organization": {"data": {
+                "type": "organization",
+                "id": "9d0cf859-206d-480b-86e3-47c148daec1a"
+            }}
+        },
+        "id": "9678101a-455e-4b7d-90c4-526502084b16"
+    },
+    {
+        "type": "orgworkflowsteps",
+        "attributes": {
+            "process": "draft",
+            "name": "Done",
+            "sequencenum": 8,
+            "tool": "{\"tool\": \"done\"}",
+            "permissions": "{}",
+            "date-created": "2025-11-11T20:01:24.619Z",
+            "date-updated": "2025-11-11T20:01:24.619Z"
+        },
+        "relationships": {
+            "lastModifiedByUser": {"data": {
+                "type": "user",
+                "id": "5b1295fe-04e4-40b2-a2db-1f0d259f43db"
+            }},
+            "organization": {"data": {
+                "type": "organization",
+                "id": "9d0cf859-206d-480b-86e3-47c148daec1a"
+            }}
+        },
+        "id": "be45c27e-48af-4d49-a8d9-0fd755e42c79"
+    },
+    {
+        "type": "orgworkflowsteps",
+        "attributes": {
+            "process": "draft",
+            "name": "ParatextSync",
+            "sequencenum": 7,
+            "tool": "{\"tool\": \"paratext\"}",
+            "permissions": "{}",
+            "date-created": "2025-11-11T20:01:24.619Z",
+            "date-updated": "2025-11-11T20:01:24.619Z"
+        },
+        "relationships": {
+            "lastModifiedByUser": {"data": {
+                "type": "user",
+                "id": "5b1295fe-04e4-40b2-a2db-1f0d259f43db"
+            }},
+            "organization": {"data": {
+                "type": "organization",
+                "id": "9d0cf859-206d-480b-86e3-47c148daec1a"
+            }}
+        },
+        "id": "b093c577-e05a-4070-ae6c-9a83fc32c065"
+    },
+    {
+        "type": "orgworkflowsteps",
+        "attributes": {
+            "process": "draft",
+            "name": "Record",
+            "sequencenum": 2,
+            "tool": "{\"tool\": \"record\"}",
+            "permissions": "{}",
+            "date-created": "2025-11-11T20:01:24.619Z",
+            "date-updated": "2025-11-11T20:01:24.619Z"
+        },
+        "relationships": {
+            "lastModifiedByUser": {"data": {
+                "type": "user",
+                "id": "5b1295fe-04e4-40b2-a2db-1f0d259f43db"
+            }},
+            "organization": {"data": {
+                "type": "organization",
+                "id": "9d0cf859-206d-480b-86e3-47c148daec1a"
+            }}
+        },
+        "id": "4760f974-35bb-40a9-b1fc-183bdfc25382"
+    },
+    {
+        "type": "orgworkflowsteps",
+        "attributes": {
+            "process": "draft",
+            "name": "Internalize",
+            "sequencenum": 1,
+            "tool": "{\"tool\": \"resource\"}",
+            "permissions": "{}",
+            "date-created": "2025-11-11T20:01:24.619Z",
+            "date-updated": "2025-11-11T20:01:24.619Z"
+        },
+        "relationships": {
+            "lastModifiedByUser": {"data": {
+                "type": "user",
+                "id": "5b1295fe-04e4-40b2-a2db-1f0d259f43db"
+            }},
+            "organization": {"data": {
+                "type": "organization",
+                "id": "9d0cf859-206d-480b-86e3-47c148daec1a"
+            }}
+        },
+        "id": "237bc141-71eb-4ca0-aea1-4030ae3ed75a"
+    }
+]}
