@@ -37,6 +37,7 @@ import {
   SharedResourceD,
   AltBkSeq,
   BookSeq,
+  IGraphicStrings,
 } from '../../model';
 import * as actions from '../../store';
 import Memory from '@orbit/memory';
@@ -112,6 +113,7 @@ import {
   useProjectDefaults,
 } from '../../crud/useProjectDefaults';
 import {
+  graphicStringsSelector,
   planSheetSelector,
   scriptureTableSelector,
   sharedResourceSelector,
@@ -180,6 +182,7 @@ export function ScriptureTable(props: IProps) {
   );
   const s: IPlanSheetStrings = useSelector(planSheetSelector, shallowEqual);
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
+  const tg: IGraphicStrings = useSelector(graphicStringsSelector, shallowEqual);
   const lang = useSelector((state: IState) => state.strings.lang);
   const bookSuggestions = useSelector(
     (state: IState) => state.books.suggestions
@@ -2208,7 +2211,18 @@ export function ScriptureTable(props: IProps) {
           (graphicFullsizeUrl || curGraphicRights) && (
             <Box>
               {graphicFullsizeUrl && (
-                <img src={graphicFullsizeUrl} alt="new" width={400} />
+                <img
+                  src={graphicFullsizeUrl}
+                  alt={tg.graphicDisplay}
+                  style={{
+                    maxWidth: '100%',
+                    maxHeight: '80vh',
+                    width: 'auto',
+                    height: 'auto',
+                    display: 'block',
+                    margin: '0 auto',
+                  }}
+                />
               )}
               {curGraphicRights && (
                 <Box mt={1}>

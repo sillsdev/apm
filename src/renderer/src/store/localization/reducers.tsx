@@ -539,6 +539,7 @@ const initialState = {
 	}),
 	"graphic": new LocalizedStrings({
 		"en": {
+			"graphicDisplay": "Display current graphic",
 			"graphicSearch": "Search graphics",
 			"graphicSource": "graphic source tabs",
 			"loadFailure": "Failed to load",

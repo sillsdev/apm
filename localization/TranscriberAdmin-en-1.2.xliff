@@ -2964,6 +2964,13 @@
                <context context-type="sourcefile">findResource.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="graphic.graphicDisplay">
+            <source>Display current graphic</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">GraphicPicker.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="graphic.graphicSearch">
             <source>Search graphics</source>
             <target/>

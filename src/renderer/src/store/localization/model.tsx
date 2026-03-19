@@ -506,6 +506,7 @@ export interface IFindResourceStrings extends Localize.LocalizedStringsMethods {
 };
 
 export interface IGraphicStrings extends Localize.LocalizedStringsMethods {
+    "graphicDisplay": string;
     "graphicSearch": string;
     "graphicSource": string;
     "loadFailure": string;
