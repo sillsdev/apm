@@ -2542,6 +2542,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="graphic.graphicDisplay">
+         <segment>
+            <source>Display current graphic</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="graphic.graphicSearch">
          <segment>
             <source>Search graphics</source>
