@@ -219,7 +219,7 @@ export const ProjectCard = (props: IProps) => {
           showMessage(
             tt.downloading.replace('{0}', copyStatus.statusMsg ?? '')
           );
-          forceDataChanges().then(() => {
+          forceDataChanges().finally(() => {
             setBusy(false);
             showMessage(
               t.copyComplete.replace('{0}', copyStatus.statusMsg ?? '')
