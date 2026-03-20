@@ -57,7 +57,7 @@ import {
 import { localizeProjectTag } from '../../utils/localizeProjectTag';
 import OfflineIcon from '@mui/icons-material/OfflinePin';
 import { useDataChanges, useHome, useJsonParams } from '../../utils';
-import { copyComplete, CopyProjectProps } from '../../store';
+import { CopyProjectProps } from '../../store';
 import { TokenContext } from '../../context/TokenProvider';
 import { useSnackBar } from '../../hoc/SnackBar';
 import CategoryTabs from './CategoryTabs';
@@ -147,6 +147,7 @@ export const ProjectCard = (props: IProps) => {
   const copyStatus = useSelector(
     (state: IState) => state.importexport.importexportStatus
   );
+  const copyComplete = () => dispatch(actions.copyComplete() as any);
   const [copying, setCopying] = useState(false);
   const accessToken = useContext(TokenContext)?.state?.accessToken ?? null;
   const [errorReporter] = useGlobal('errorReporter');
@@ -213,21 +214,24 @@ export const ProjectCard = (props: IProps) => {
 
   useEffect(() => {
     if (copying && copyStatus) {
-      console.log('copyStatus', copyStatus);
       if (copyStatus.errStatus || copyStatus.complete) {
-        copyComplete();
-        setCopying(false);
         if (copyStatus.complete) {
           showMessage(
             tt.downloading.replace('{0}', copyStatus.statusMsg ?? '')
           );
-          forceDataChanges().then(() => {
+          forceDataChanges().finally(() => {
             setBusy(false);
             showMessage(
               t.copyComplete.replace('{0}', copyStatus.statusMsg ?? '')
             );
+            copyComplete();
+            setCopying(false);
           });
-        } else showMessage(copyStatus.errMsg ?? copyStatus.statusMsg);
+        } else {
+          showMessage(copyStatus.errMsg ?? copyStatus.statusMsg);
+          copyComplete();
+          setCopying(false);
+        }
       } else showMessage(copyStatus.statusMsg);
     }
     /* eslint-disable-next-line react-hooks/exhaustive-deps */

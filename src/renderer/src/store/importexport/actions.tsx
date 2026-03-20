@@ -463,9 +463,10 @@ export const importFromExternal =
       filename: file.name,
       file,
       getProcessUrl: (filename, mapKey) => {
+        const encodedFilename = encodeURIComponent(filename);
         return mapKey !== ''
-          ? `${API_CONFIG.host}/api/offlineData/project/copyfromfile/${teamId}/${filename}/${mapKey}/`
-          : `${API_CONFIG.host}/api/offlineData/project/copyfromfile/${teamId}/${filename}`;
+          ? `${API_CONFIG.host}/api/offlineData/project/copyfromfile/${teamId}/${encodedFilename}/${mapKey}/`
+          : `${API_CONFIG.host}/api/offlineData/project/copyfromfile/${teamId}/${encodedFilename}/`;
       },
       getInitialStart: () => '',
       token,
@@ -573,7 +574,6 @@ export const copyProject =
       returnstatus = response.data.status;
       status = response.data.message;
       newproject = response.data.fileURL as string;
-      console.log('status', status, 'pendingmsg', pendingmsg);
       dispatch({
         payload: `${pendingmsg} ${status}`,
         type: COPY_PENDING,

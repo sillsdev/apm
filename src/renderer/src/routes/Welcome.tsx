@@ -106,7 +106,6 @@ export function Welcome(props: IProps) {
   const { search } = useLocation();
   const navigate = useMyNavigate();
   const offlineSetup = useOfflineSetup();
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [, setBusy] = useGlobal('importexportBusy');
   const [user, setUser] = useGlobal('user');
   const [isDeveloper] = useGlobal('developer');
