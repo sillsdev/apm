@@ -131,7 +131,9 @@ export function PassageDetailItem(props: IProps) {
   );
   const [currentVersion, setCurrentVersion] = useState(1);
   const [segString, setSegString] = useState('{}');
-  const [allowRecord, setAllowRecord] = useState(false);
+  const [allowRecord, setAllowRecord] = useState(
+    recordType !== ArtifactTypeSlug.PhraseBackTranslation
+  );
   const [verses, setVerses] = useState('');
   const cancelled = useRef(false);
   const { canDoSectionStep } = useStepPermissions();
