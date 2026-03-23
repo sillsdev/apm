@@ -17,7 +17,6 @@ import { passageDefaultFilename } from '../../../../utils/passageDefaultFilename
 import { useStepTool } from '../../../../crud/useStepTool';
 import Memory from '@orbit/memory';
 import { useSnackBar } from '../../../../hoc/SnackBar';
-import MediaRecord from '../../../MediaRecord';
 import { UnsavedContext } from '../../../../context/UnsavedContext';
 import Uploader from '../../../Uploader';
 import { AltButton, PriButton } from '../../../../control';
@@ -29,6 +28,7 @@ import { useOrbitData } from '../../../../hoc/useOrbitData';
 import { useStepPermissions } from '../../../../utils/useStepPermission';
 import AddIcon from '@mui/icons-material/LibraryAddOutlined';
 import VersionsIcon from '@mui/icons-material/List';
+import MediaRecordMobile from './MediaRecordMobile';
 
 interface IProps {
   ready?: () => boolean;
@@ -249,7 +249,7 @@ export function PassageDetailRecord(props: IProps) {
         </AltButton>
       </Box>
 
-      <MediaRecord
+      <MediaRecordMobile
         toolId={toolId}
         artifactId={VernacularTag}
         passageId={passageId}

@@ -1504,16 +1504,18 @@ function WSAudioPlayer(props: IProps) {
   const onSplit = () => {};
 
   return (
-    <Box>
-      <Paper sx={{ p: 1, mb: 1, width: width - 10, maxWidth: width - 10 }}>
+    <Box sx={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
+      <Paper sx={{ p: 1, mb: 1, width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
         <Box
           sx={{
             display: 'flex',
             flexDirection: 'column',
             whiteSpace: 'nowrap',
-            width: '110%',
+            width: '100%',
+            maxWidth: '100%',
             minWidth: 0,
-            overflowX: 'auto',
+            boxSizing: 'border-box',
+            overflowX: 'hidden',
           }}
           style={style}
         >
@@ -1826,9 +1828,10 @@ function WSAudioPlayer(props: IProps) {
               <>
                 <Box
                   sx={{
-                    width: width - 10,
-                    maxWidth: width - 10,
+                    width: '100%',
+                    maxWidth: '100%',
                     minWidth: 0,
+                    boxSizing: 'border-box',
                   }}
                 >
                   <div id="wsAudioWaveform" ref={waveformRef} />
