@@ -92,6 +92,16 @@ const headerProps = {
   justifyContent: 'center',
 } as SxProps;
 
+/** Successful import/sync puts a JSON change report in errMsg; hide raw JSON and malformed fragments in titles/messages. */
+function userVisibleImportErrMsg(errMsg: string | undefined): string {
+  const raw = errMsg?.trim() ?? '';
+  if (!raw) return '';
+  if (tryParseJSON(raw) !== false) return '';
+  const lead = raw.trimStart();
+  if (lead.startsWith('[') || lead.startsWith('{')) return '';
+  return raw;
+}
+
 interface ITeamSelectorProps {
   selectedTeamId: string;
   onTeamChange: (teamId: string) => void;
@@ -809,10 +819,11 @@ export function ImportTab(props: IProps) {
           //import completed ok but might have message
           const chdata = getChangeData(importStatus.errMsg);
           setChangeData([...changeData].concat(chdata));
+          const syncExtra = userVisibleImportErrMsg(importStatus.errMsg);
           setImportTitle(
             chdata.length > 0
               ? t.onlineChangeReport
-              : t.importSyncDown + ' ' + importStatus.errMsg
+              : t.importSyncDown + ' ' + syncExtra
           );
           if (remote) forceDataChanges().then(() => setImporting(false));
           else {
@@ -839,10 +850,8 @@ export function ImportTab(props: IProps) {
 
   const statusMsg = (status: IAxiosStatus | undefined) => {
     if (!status || status.statusMsg === 'Import Complete') return '';
-    return (
-      status?.statusMsg +
-      (status?.errMsg && status?.errMsg !== '[]' ? ': ' + status?.errMsg : '')
-    );
+    const extra = userVisibleImportErrMsg(status.errMsg);
+    return status.statusMsg + (extra ? ': ' + extra : '');
   };
   return (
     <StyledDialog
