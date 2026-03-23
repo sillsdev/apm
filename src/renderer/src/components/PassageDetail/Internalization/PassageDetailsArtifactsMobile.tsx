@@ -20,7 +20,9 @@ import AddResource from './AddResource';
 import SortableHeader from './SortableHeader';
 import { IRow } from '../../../context/PassageDetailContext';
 import { AltButton } from '../../../control';
-import { AIGenerated, SortableItem } from '.';
+import { AIGenerated } from '.';
+import { AudioResourceCard } from './mobile components/AudioResourceCard';
+import { TextResourceCard } from './mobile components/TextResourceCard';
 import {
   remoteIdGuid,
   useSecResCreate,
@@ -860,19 +862,30 @@ export function PassageDetailArtifactsMobile() {
       <SortableHeader />
       <VertListDnd key={`sort-${sortKey}`} onDrop={onSortEnd} dragHandle>
         {selectedRows.map((value, index) => (
-          <SortableItem
-            key={`item-${index}`}
-            value={value as any}
-            contentType={mediaContentType(value.mediafile)}
-            isPlaying={playItem === value.id && itemPlaying}
-            onPlay={handlePlay}
-            onView={handleDisplayId}
-            onLink={handleLinkId}
-            onMarkDown={handleMarkDownId}
-            onDone={handleDone}
-            onDelete={modifiable ? handleDelete : undefined}
-            onEdit={modifiable ? handleEdit : undefined}
-          />
+          /^audio/.test(mediaContentType(value.mediafile)) ? (
+            <AudioResourceCard
+              key={`item-${index}`}
+              row={value}
+              isPlaying={playItem === value.id && itemPlaying}
+              onPlay={handlePlay}
+              onDone={handleDone}
+              onEnded={handleEnded}
+              limits={{ start: mediaStart ?? 0, end: mediaEnd ?? 0 }}
+            />
+          ) : (
+            <TextResourceCard
+              key={`item-${index}`}
+              row={value}
+              onView={
+                mediaContentType(value.mediafile) === UriLinkType
+                  ? handleLinkId
+                  : mediaContentType(value.mediafile) === MarkDownType
+                    ? handleMarkDownId
+                    : handleDisplayId
+              }
+              onDone={handleDone}
+            />
+          )
         ))}
       </VertListDnd>
       <Uploader

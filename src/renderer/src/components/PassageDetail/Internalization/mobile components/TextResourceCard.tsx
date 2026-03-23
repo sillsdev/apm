@@ -1,0 +1,89 @@
+import { Box, Card, Checkbox, IconButton, SxProps, Typography } from '@mui/material';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import { IRow } from '../../../../context/PassageDetailContext';
+import { SectionResourceD } from '../../../../model';
+
+// This card is used for non-audio resources in the mobile list.
+// It covers markdown text, URI links, PDFs, images, and other file types
+// that are not routed to the audio player card.
+
+interface IProps {
+  row: IRow;
+  onView: (id: string) => void;
+  onDone?: (id: string, res: SectionResourceD | null) => void;
+  subtitle?: string;
+  sx?: SxProps;
+}
+
+export function TextResourceCard({
+  row,
+  onView,
+  onDone,
+  subtitle = 'Translation Resource',
+  sx,
+}: IProps) {
+  const handleDoneToggle = () => {
+    if (onDone) {
+      onDone(row.id, row.resource);
+    }
+  };
+
+  return (
+    <Card
+      elevation={0}
+      sx={{
+        border: '2px solid',
+        borderColor: 'grey.700',
+        borderRadius: 2,
+        backgroundColor: 'background.paper',
+        px: 1.25,
+        py: 1,
+        ...sx,
+      }}
+    >
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'flex-start',
+          justifyContent: 'space-between',
+          gap: 1,
+        }}
+      >
+        <Box sx={{ minWidth: 0 }}>
+          <Typography variant="subtitle1" sx={{ lineHeight: 1.25 }}>
+            {row.artifactName}
+          </Typography>
+          <Typography variant="h6" sx={{ lineHeight: 1.25 }}>
+            {subtitle}
+          </Typography>
+        </Box>
+        <Checkbox
+          checked={Boolean(row.done)}
+          onChange={handleDoneToggle}
+          size="small"
+          sx={{ mt: -0.5, mr: -0.5 }}
+          inputProps={{
+            'aria-label': `Mark ${row.artifactName} complete`,
+          }}
+        />
+      </Box>
+
+      <Box sx={{ mt: 1, display: 'flex', alignItems: 'center' }}>
+        <IconButton
+          size="small"
+          // Parent decides what "view" means by content type:
+          // - links open externally
+          // - markdown opens the text dialog
+          // - pdf/images/other files open the media/file viewer
+          onClick={() => onView(row.id)}
+          aria-label={`View ${row.artifactName}`}
+          sx={{ p: 0.25 }}
+        >
+          <VisibilityIcon fontSize="medium" />
+        </IconButton>
+      </Box>
+    </Card>
+  );
+}
+
+export default TextResourceCard;
