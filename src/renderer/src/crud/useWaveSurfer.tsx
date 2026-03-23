@@ -17,7 +17,7 @@ import { convertToWav } from '../utils/wav';
 import { useGlobal } from '../context/useGlobal';
 import { maxZoom } from '../components/WSAudioPlayerZoom';
 import WaveSurfer from 'wavesurfer.js';
-import { NamedRegions } from '../utils';
+import { NamedRegions, useMobile } from '../utils';
 
 const noop = () => {};
 
@@ -47,6 +47,7 @@ export function useWaveSurfer(
   verses?: string,
   hasSegmentUndo?: boolean
 ) {
+  const { isMobile } = useMobile();
   const [errorReporter] = useGlobal('errorReporter');
   const progressRef = useRef(0);
   const [Regions, setRegions] = useState<RegionsPlugin>();
@@ -73,6 +74,11 @@ export function useWaveSurfer(
   const loadingRef = useRef(false);
   const recordingRef = useRef(false);
   const currentBlobUrlRef = useRef<string | undefined>(undefined);
+  const lastWaveformTapTimeRef = useRef(0);
+  const lastWaveformTapProgressRef = useRef<number | undefined>(undefined);
+
+  const MOBILE_DOUBLE_TAP_MS = 350;
+  const MOBILE_DOUBLE_TAP_POSITION_SLOP = 0.75;
 
   // Create plugins outside of useMemo to ensure they're stable
   const regionsPlugin = useMemo(() => {
@@ -308,10 +314,31 @@ export function useWaveSurfer(
       wavesurfer.on('click', (/*relativeX: number, relativeY: number*/) => {
         if (singleRegionOnly) {
           wsRemoveCurrentRegion();
+          return;
+        }
+        if (isMobile) {
+          const now = Date.now();
+          const currentProgress = progress();
+          const isDoubleTap =
+            now - lastWaveformTapTimeRef.current <= MOBILE_DOUBLE_TAP_MS &&
+            lastWaveformTapProgressRef.current !== undefined &&
+            Math.abs(
+              currentProgress - lastWaveformTapProgressRef.current
+            ) <= MOBILE_DOUBLE_TAP_POSITION_SLOP;
+
+          if (isDoubleTap) {
+            lastWaveformTapTimeRef.current = 0;
+            lastWaveformTapProgressRef.current = undefined;
+            wsAddRegion();
+            return;
+          }
+
+          lastWaveformTapTimeRef.current = now;
+          lastWaveformTapProgressRef.current = currentProgress;
         }
       });
       wavesurfer.on('dblclick', (/*relativeX: number, relativeY: number*/) => {
-        if (!singleRegionOnly) {
+        if (!singleRegionOnly && !isMobile) {
           wsAddRegion();
         }
       });
