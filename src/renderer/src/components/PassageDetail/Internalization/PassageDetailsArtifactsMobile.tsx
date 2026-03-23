@@ -17,7 +17,6 @@ import { PlayInPlayer } from '../../../context/PlayInPlayer';
 import { useSnackBar } from '../../../hoc/SnackBar';
 import Uploader from '../../Uploader';
 import AddResource from './AddResource';
-import SortableHeader from './SortableHeader';
 import { IRow } from '../../../context/PassageDetailContext';
 import { AltButton } from '../../../control';
 import { AIGenerated } from '.';
@@ -859,7 +858,6 @@ export function PassageDetailArtifactsMobile() {
           )}
         </Grid>
       </Stack>
-      <SortableHeader />
       <VertListDnd key={`sort-${sortKey}`} onDrop={onSortEnd} dragHandle>
         {selectedRows.map((value, index) => (
           /^audio/.test(mediaContentType(value.mediafile)) ? (
