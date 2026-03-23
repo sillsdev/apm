@@ -57,44 +57,54 @@ export function AudioResourceCard({
     >
       <Box
         sx={{
+          flex: 1,
           display: 'flex',
-          alignItems: 'flex-start',
+          flexDirection: 'column',
           justifyContent: 'space-between',
-          gap: 1,
+          minHeight: 0,
         }}
       >
-        <Box sx={{ minWidth: 0, overflow: 'hidden' }}>
-          <Typography variant="subtitle1" sx={{ lineHeight: 1.25 }} noWrap>
-            {row.artifactName}
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            {subtitle}
-          </Typography>
-        </Box>
-        <Checkbox
-          checked={Boolean(row.done)}
-          onChange={handleDoneToggle}
-          size="small"
-          sx={{ mt: -0.5, mr: -0.5 }}
-          inputProps={{
-            'aria-label': `Mark ${row.artifactName} complete`,
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'flex-start',
+            justifyContent: 'space-between',
+            gap: 1,
           }}
-        />
-      </Box>
-      <Box sx={{ mt: 0.5 }}>
-        {/* Audio playback UI for audio/* resource files. */}
-        <LimitedMediaPlayer
-          srcMediaId={row.id}
-          requestPlay={isPlaying}
-          onEnded={onEnded ?? (() => {})}
-          onTogglePlay={() => onPlay(row.id)}
-          controls
-          limits={limits ?? {}}
-          noClose
-          noRestart
-          noSkipBack
-          sx={{ borderRadius: 1, bgcolor: 'grey.100' }}
-        />
+        >
+          <Box sx={{ minWidth: 0, overflow: 'hidden' }}>
+            <Typography variant="h6" sx={{ lineHeight: 1.25 }} noWrap>
+              {row.artifactName}
+            </Typography>
+          </Box>
+          <Checkbox
+            checked={Boolean(row.done)}
+            onChange={handleDoneToggle}
+            size="small"
+            sx={{ mt: -0.5, mr: -0.5 }}
+            inputProps={{
+              'aria-label': `Mark ${row.artifactName} complete`,
+            }}
+          />
+        </Box>
+        <Typography variant="h6" sx={{ lineHeight: 1.25 }}>
+          {subtitle}
+        </Typography>
+        <Box>
+          {/* Audio playback UI for audio/* resource files. */}
+          <LimitedMediaPlayer
+            srcMediaId={row.id}
+            requestPlay={isPlaying}
+            onEnded={onEnded ?? (() => {})}
+            onTogglePlay={() => onPlay(row.id)}
+            controls
+            limits={limits ?? {}}
+            noClose
+            noRestart
+            noSkipBack
+            sx={{ borderRadius: 1, bgcolor: 'grey.100' }}
+          />
+        </Box>
       </Box>
     </Card>
   );

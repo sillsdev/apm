@@ -49,44 +49,55 @@ export function TextResourceCard({
     >
       <Box
         sx={{
+          flex: 1,
           display: 'flex',
-          alignItems: 'flex-start',
+          flexDirection: 'column',
           justifyContent: 'space-between',
-          gap: 1,
+          minHeight: 0,
         }}
       >
-        <Box sx={{ minWidth: 0, overflow: 'hidden' }}>
-          <Typography variant="subtitle1" sx={{ lineHeight: 1.25 }} noWrap>
-            {row.artifactName}
-          </Typography>
-          <Typography variant="h6" sx={{ lineHeight: 1.25 }}>
-            {subtitle}
-          </Typography>
-        </Box>
-        <Checkbox
-          checked={Boolean(row.done)}
-          onChange={handleDoneToggle}
-          size="small"
-          sx={{ mt: -0.5, mr: -0.5 }}
-          inputProps={{
-            'aria-label': `Mark ${row.artifactName} complete`,
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'flex-start',
+            justifyContent: 'space-between',
+            gap: 1,
           }}
-        />
-      </Box>
-
-      <Box sx={{ mt: 1, display: 'flex', alignItems: 'center' }}>
-        <IconButton
-          size="small"
-          // Parent decides what "view" means by content type:
-          // - links open externally
-          // - markdown opens the text dialog
-          // - pdf/images/other files open the media/file viewer
-          onClick={() => onView(row.id)}
-          aria-label={`View ${row.artifactName}`}
-          sx={{ p: 0.25 }}
         >
-          <VisibilityIcon fontSize="medium" />
-        </IconButton>
+          <Box sx={{ minWidth: 0, overflow: 'hidden' }}>
+            <Typography variant="h6" sx={{ lineHeight: 1.25 }} noWrap>
+              {row.artifactName}
+            </Typography>
+          </Box>
+          <Checkbox
+            checked={Boolean(row.done)}
+            onChange={handleDoneToggle}
+            size="medium"
+            sx={{ mt: -0.5, mr: -0.5 }}
+            inputProps={{
+              'aria-label': `Mark ${row.artifactName} complete`,
+            }}
+          />
+        </Box>
+
+        <Typography variant="h6" sx={{ lineHeight: 1.25 }}>
+          {subtitle}
+        </Typography>
+
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          <IconButton
+            size="small"
+            // Parent decides what "view" means by content type:
+            // - links open externally
+            // - markdown opens the text dialog
+            // - pdf/images/other files open the media/file viewer
+            onClick={() => onView(row.id)}
+            aria-label={`View ${row.artifactName}`}
+            sx={{ p: 0.25 }}
+          >
+            <VisibilityIcon fontSize="medium" />
+          </IconButton>
+        </Box>
       </Box>
     </Card>
   );

@@ -858,7 +858,7 @@ export function PassageDetailArtifactsMobile() {
           )}
         </Grid>
       </Stack>
-      <Box sx={{ width: '100vw' }}>
+      <Box sx={{ width: '100%' }}>
         <VertListDnd key={`sort-${sortKey}`} onDrop={onSortEnd} dragHandle>
           {selectedRows.map((value, index) => (
             <Box key={`item-${index}`} sx={{ width: '100%' }}>
