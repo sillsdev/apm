@@ -41,6 +41,12 @@ export function AudioResourceCard({
     <Card
       elevation={0}
       sx={{
+        width: '100%',
+        minHeight: 'clamp(7.5rem, 16vw, 9rem)',
+        boxSizing: 'border-box',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-between',
         border: '2px solid',
         borderColor: 'grey.700',
         borderRadius: 2,
@@ -57,8 +63,8 @@ export function AudioResourceCard({
           gap: 1,
         }}
       >
-        <Box sx={{ minWidth: 0 }}>
-          <Typography variant="subtitle1" sx={{ lineHeight: 1.25 }}>
+        <Box sx={{ minWidth: 0, overflow: 'hidden' }}>
+          <Typography variant="subtitle1" sx={{ lineHeight: 1.25 }} noWrap>
             {row.artifactName}
           </Typography>
           <Typography variant="body2" color="text.secondary">
@@ -75,7 +81,7 @@ export function AudioResourceCard({
           }}
         />
       </Box>
-      <Box sx={{ mt: 1 }}>
+      <Box sx={{ mt: 0.5 }}>
         {/* Audio playback UI for audio/* resource files. */}
         <LimitedMediaPlayer
           srcMediaId={row.id}

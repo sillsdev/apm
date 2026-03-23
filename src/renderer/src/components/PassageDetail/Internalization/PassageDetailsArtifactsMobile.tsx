@@ -858,34 +858,36 @@ export function PassageDetailArtifactsMobile() {
           )}
         </Grid>
       </Stack>
-      <VertListDnd key={`sort-${sortKey}`} onDrop={onSortEnd} dragHandle>
-        {selectedRows.map((value, index) => (
-          /^audio/.test(mediaContentType(value.mediafile)) ? (
-            <AudioResourceCard
-              key={`item-${index}`}
-              row={value}
-              isPlaying={playItem === value.id && itemPlaying}
-              onPlay={handlePlay}
-              onDone={handleDone}
-              onEnded={handleEnded}
-              limits={{ start: mediaStart ?? 0, end: mediaEnd ?? 0 }}
-            />
-          ) : (
-            <TextResourceCard
-              key={`item-${index}`}
-              row={value}
-              onView={
-                mediaContentType(value.mediafile) === UriLinkType
-                  ? handleLinkId
-                  : mediaContentType(value.mediafile) === MarkDownType
-                    ? handleMarkDownId
-                    : handleDisplayId
-              }
-              onDone={handleDone}
-            />
-          )
-        ))}
-      </VertListDnd>
+      <Box sx={{ width: '100vw' }}>
+        <VertListDnd key={`sort-${sortKey}`} onDrop={onSortEnd} dragHandle>
+          {selectedRows.map((value, index) => (
+            <Box key={`item-${index}`} sx={{ width: '100%' }}>
+              {/^audio/.test(mediaContentType(value.mediafile)) ? (
+                <AudioResourceCard
+                  row={value}
+                  isPlaying={playItem === value.id && itemPlaying}
+                  onPlay={handlePlay}
+                  onDone={handleDone}
+                  onEnded={handleEnded}
+                  limits={{ start: mediaStart ?? 0, end: mediaEnd ?? 0 }}
+                />
+              ) : (
+                <TextResourceCard
+                  row={value}
+                  onView={
+                    mediaContentType(value.mediafile) === UriLinkType
+                      ? handleLinkId
+                      : mediaContentType(value.mediafile) === MarkDownType
+                        ? handleMarkDownId
+                        : handleDisplayId
+                  }
+                  onDone={handleDone}
+                />
+              )}
+            </Box>
+          ))}
+        </VertListDnd>
+      </Box>
       <Uploader
         recordAudio={recordAudio}
         isOpen={uploadVisible}
