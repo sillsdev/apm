@@ -47,6 +47,9 @@ import PassageDetailParatextIntegration from '../components/PassageDetail/Passag
 import { PassageDetailDiscuss } from '../components/PassageDetail/PassageDetailDiscuss';
 import { addPt } from '../utils/addPt';
 import DiscussionPanel from '../components/Discussions/DiscussionPanel';
+import PassageDetailMobileDetail from '../components/PassageDetail/PassageDetailMobileDetail';
+import PassageDetailsArtifactsMobile from '../components/PassageDetail/Internalization/PassageDetailsArtifactsMobile';
+
 
 const KeyTerms = React.lazy(
   () => import('../components/PassageDetail/Keyterms/KeyTerms')
@@ -433,6 +436,17 @@ export const PassageDetail = () => {
   const [user] = useGlobal('user');
   const { setProjectType } = useProjectType();
 
+  const { isMobile } = useMobile();
+  const [paneWidth, setPaneWidth] = useState(0);
+
+  useEffect(() => {
+    if (isMobile) {
+      setPaneWidth(window.innerWidth);
+    } else {
+      setPaneWidth(window.innerWidth - 450); // Start with discussion panel open on desktop
+    }
+  }, [isMobile]);
+
   useEffect(() => {
     const projectId = setUrlContext(prjId ?? '');
     if (user && projType === '') {
@@ -460,7 +474,19 @@ export const PassageDetail = () => {
     >
       <AppHead switchTo={true} />
       <PassageDetailProvider>
-        <PassageDetailGrids />
+        { isMobile ? (
+          <PassageDetailMobileDetail
+            currentVersion={1}
+            showSideBySide={false}
+            recordContent={<Grid container sx={{ minWidth: 0 }}>
+                {/* <PassageDetailChooser width={paneWidth - 24} sx={{ pl: 2 }} /> */}
+                <PassageDetailsArtifactsMobile />
+              </Grid>}
+            noAudioText={''}
+          />
+        ) : (
+          <PassageDetailGrids />
+        )}
       </PassageDetailProvider>
     </Box>
   );
