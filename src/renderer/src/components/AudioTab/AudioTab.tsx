@@ -240,7 +240,6 @@ export function AudioTab() {
     if (plan) {
       setPlanMedia(getMediaInPlans([plan], mediaFiles, VernacularTag, true));
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mediaFiles, plan, refresh]);
 
   // Check if playItem changes

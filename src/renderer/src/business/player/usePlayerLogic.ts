@@ -90,7 +90,8 @@ export const usePlayerLogic = (props: PlayerLogicProps) => {
         | IRegions
         | undefined;
       //might be "[]"
-      if ((segs?.regions?.length ?? 0) < 3) {
+      //why was this 3?
+      if ((segs?.regions?.length ?? 0) < 2) {
         setCurrentSegment({ start: 0, end: durationRef.current }, -1);
         return true;
       }
