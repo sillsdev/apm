@@ -1,4 +1,5 @@
-import { Box, Card, Checkbox, SxProps, Typography } from '@mui/material';
+import { Box, Card, Checkbox, IconButton, SxProps, Typography } from '@mui/material';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import { IRow } from '../../../../context/PassageDetailContext';
 import { SectionResourceD } from '../../../../model';
 import LimitedMediaPlayer from '../../../LimitedMediaPlayer';
@@ -12,6 +13,7 @@ interface IProps {
   isPlaying: boolean;
   onPlay: (id: string) => void;
   onDone?: (id: string, res: SectionResourceD | null) => void;
+  onDelete?: (id: string) => void;
   onEnded?: () => void;
   subtitle?: string;
   limits?: {
@@ -26,6 +28,7 @@ export function AudioResourceCard({
   isPlaying,
   onPlay,
   onDone,
+  onDelete,
   onEnded,
   subtitle = 'Scripture',
   limits,
@@ -90,21 +93,33 @@ export function AudioResourceCard({
         <Typography variant="h6" sx={{ lineHeight: 1.25 }}>
           {subtitle}
         </Typography>
-        <Box>
+        <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: 1 }}>
           {/* Audio playback UI for audio/* resource files. */}
-          <LimitedMediaPlayer
-            srcMediaId={row.id}
-            requestPlay={isPlaying}
-            onEnded={onEnded ?? (() => {})}
-            onTogglePlay={() => onPlay(row.id)}
-            controls
-            limits={limits ?? {}}
-            noClose
-            noRestart
-            noSkipBack
-            playButtonSize="large"
-            sx={{ borderRadius: 1, bgcolor: 'grey.100' }}
-          />
+          <Box sx={{ flex: 1, minWidth: 0 }}>
+            <LimitedMediaPlayer
+              srcMediaId={row.id}
+              requestPlay={isPlaying}
+              onEnded={onEnded ?? (() => {})}
+              onTogglePlay={() => onPlay(row.id)}
+              controls
+              limits={limits ?? {}}
+              noClose
+              noRestart
+              noSkipBack
+              playButtonSize="large"
+              sx={{ borderRadius: 1, bgcolor: 'grey.100' }}
+            />
+          </Box>
+          {onDelete && (
+            <IconButton
+              size="small"
+              onClick={() => onDelete(row.id)}
+              aria-label={`Delete ${row.artifactName}`}
+              sx={{ p: 0.25 }}
+            >
+              <DeleteOutlineIcon fontSize="medium" />
+            </IconButton>
+          )}
         </Box>
       </Box>
     </Card>

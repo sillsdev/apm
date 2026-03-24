@@ -1,5 +1,6 @@
 import { Box, Card, Checkbox, IconButton, SxProps, Typography } from '@mui/material';
 import VisibilityIcon from '@mui/icons-material/Visibility';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import { IRow } from '../../../../context/PassageDetailContext';
 import { SectionResourceD } from '../../../../model';
 
@@ -11,6 +12,7 @@ interface IProps {
   row: IRow;
   onView: (id: string) => void;
   onDone?: (id: string, res: SectionResourceD | null) => void;
+  onDelete?: (id: string) => void;
   subtitle?: string;
   sx?: SxProps;
 }
@@ -19,6 +21,7 @@ export function TextResourceCard({
   row,
   onView,
   onDone,
+  onDelete,
   subtitle = 'Translation Resource',
   sx,
 }: IProps) {
@@ -84,7 +87,7 @@ export function TextResourceCard({
           {subtitle}
         </Typography>
 
-        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <IconButton
             size="small"
             // Parent decides what "view" means by content type:
@@ -97,10 +100,19 @@ export function TextResourceCard({
           >
             <VisibilityIcon fontSize="medium" />
           </IconButton>
+          {onDelete && (
+            <IconButton
+              size="small"
+              onClick={() => onDelete(row.id)}
+              aria-label={`Delete ${row.artifactName}`}
+              sx={{ p: 0.25 }}
+            >
+              <DeleteOutlineIcon fontSize="medium" />
+            </IconButton>
+          )}
         </Box>
       </Box>
     </Card>
   );
 }
-
 export default TextResourceCard;
