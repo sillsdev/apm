@@ -101,6 +101,7 @@ export default function PassageDetailMarkVersesIsMobile({
   const [pastedSegments, setPastedSegments] = useState(emptySegments);
   const [engVrs, setEngVrs] = useState<Map<string, number[]>>(new Map());
   const [isReferenceEditing, setIsReferenceEditing] = useState(false);
+  const [playerResetKey, setPlayerResetKey] = useState(0);
   const savingRef = useRef(false);
   const canceling = useRef(false);
   const dataRef = useRef<ICell[][]>([]);
@@ -679,6 +680,7 @@ export default function PassageDetailMarkVersesIsMobile({
     setConfirm('');
     setIssues([]);
     resetSegments([]);
+    setPlayerResetKey((value) => value + 1);
 
     if (hadChanges) {
       toolChanged(verseToolId);
@@ -805,6 +807,7 @@ export default function PassageDetailMarkVersesIsMobile({
   return (
     <Box>
       <PassageDetailPlayer
+        key={`mark-verses-player-${mediafileId}-${playerResetKey}`}
         width={width}
         data-testid="player"
         allowSegment={NamedRegions.Verse}
