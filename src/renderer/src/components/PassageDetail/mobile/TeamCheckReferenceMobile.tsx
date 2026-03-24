@@ -14,7 +14,18 @@ const StyledGrid = styled(Grid)<GridProps>(({ theme }) => ({
     display: 'flex',
     width: 'inherit',
     marginRight: theme.spacing(2),
+    justifyContent: 'center',
+    alignItems: 'center',
+    alignContent: 'center',
   },
+}));
+
+const MobileGrid = styled(Grid)<GridProps>(() => ({
+  display: 'flex',
+  margin: '0 auto',
+  justifyContent: 'center',
+  alignItems: 'center',
+  alignContent: 'center',
 }));
 
 export function TeamCheckReferenceMobile() {
@@ -84,20 +95,28 @@ export function TeamCheckReferenceMobile() {
   }, [section, passage, currentstep, resetCount]);
 
   return (
-    <Grid container direction="column">
-      <Grid
-        size={{ xs: 10 }}
+    <MobileGrid
+      sx={{
+        m: '10%',
+        p: '2px',
+        display: 'flex', // ← Add this
+        width: '90%', // ← Add this
+        alignItems: 'center', // ← Add this
+      }}
+      container
+      direction="column"
+    >
+      <MobileGrid
         sx={{
-          m: '2px',
+          m: '10%',
           p: '2px',
           display: 'flex', // ← Add this
-          justifyContent: 'center', // ← Add this
+          width: '90%', // ← Add this
           alignItems: 'center', // ← Add this
-          backgroundColor: 'red', // ← Add this
         }}
       >
         <SelectMyResource onChange={handleResource} inResource={resource} />
-      </Grid>
+      </MobileGrid>
       <StyledGrid size={{ xs: 10 }}>
         <LimitedMediaPlayer
           srcMediaId={playItem}
@@ -109,7 +128,7 @@ export function TeamCheckReferenceMobile() {
           limits={{ start: mediaStart, end: mediaEnd }}
         />
       </StyledGrid>
-    </Grid>
+    </MobileGrid>
   );
 }
 

@@ -316,7 +316,11 @@ const PassageDetailGrids = () => {
               tool !== ToolSlug.ConsultantCheck ? (
                 <Stack
                   direction="column"
-                  sx={{ width: '100%', minWidth: 0, maxWidth: paneWidth }}
+                  sx={{
+                    width: '100%',
+                    minWidth: 0,
+                    maxWidth: paneWidth,
+                  }}
                 >
                   <PassageDetailChooser width={paneWidth} />
                   {(tool !== ToolSlug.KeyTerm || mediafileId) && (
@@ -433,7 +437,6 @@ export const PassageDetail = () => {
   const [view, setView] = useState('');
   const [projType] = useGlobal('projType'); //verified this is not used in a function 2/18/25
   const { isMobile } = useMobile();
-  const [paneWidth, setPaneWidth] = useState(0);
   const [user] = useGlobal('user');
   const { setProjectType } = useProjectType();
 
@@ -455,16 +458,15 @@ export const PassageDetail = () => {
     <Box
       sx={{
         flexGrow: 1,
-        display: 'flex', // ← Add this
-        justifyContent: 'center', // ← Add this
-        alignItems: 'center', // ← Add this
-        backgroundColor: 'blue', // ← Add this
         minWidth: 0,
         minHeight: '536px',
         width: '100%',
         maxWidth: '100%',
         overflow: 'hidden',
+        alignItems: 'center',
+        alignContent: 'center',
       }}
+      alignItems="center"
     >
       <AppHead switchTo={true} />
       <PassageDetailProvider>
