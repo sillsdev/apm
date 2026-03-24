@@ -90,6 +90,7 @@ export default function PassageDetailMarkVersesIsMobile({
     passage,
     currentstep,
     currentSegment,
+    setCurrentSegment,
     setStepComplete,
     gotoNextStep,
     rowData,
@@ -393,10 +394,33 @@ export default function PassageDetailMarkVersesIsMobile({
     return `${minutes}:${seconds.toFixed(1).padStart(4, '0')}`;
   };
 
+  const parseFormattedTime = (value: string) => {
+    const trimmed = value.trim();
+    if (!trimmed) return NaN;
+    if (trimmed.includes(':')) {
+      const [minPart, secPart] = trimmed.split(':');
+      const minutes = parseInt(minPart, 10);
+      const seconds = parseFloat(secPart);
+      if (Number.isNaN(minutes) || Number.isNaN(seconds)) return NaN;
+      return minutes * 60 + seconds;
+    }
+    return parseFloat(trimmed);
+  };
+
   const formLim = useCallback(
     ({ start, end }: IRegion) => `${formatTime(start)}-${formatTime(end)}`,
     []
   );
+
+  const getSegmentFromRow = useCallback((row?: ICell[]) => {
+    if (!row) return undefined;
+    const limits = `${row[ColName.Limits]?.value ?? ''}`.split('-');
+    if (limits.length !== 2) return undefined;
+    const start = parseFormattedTime(limits[0]);
+    const end = parseFormattedTime(limits[1]);
+    if (Number.isNaN(start) || Number.isNaN(end)) return undefined;
+    return { start, end } as IRegion;
+  }, []);
 
   const resetSegments = (regions: IRegion[]) => {
     const segments = JSON.stringify({ regions });
@@ -512,14 +536,12 @@ export default function PassageDetailMarkVersesIsMobile({
     const regions: IRegion[] = [];
     dataRef.current.forEach((row, index) => {
       if (index === 0) return;
-      const limits = `${row[ColName.Limits].value}`.split('-');
-      if (limits.length === 2) {
-        regions.push({
-          start: parseFloat(limits[0]),
-          end: parseFloat(limits[1]),
-          label: row[ColName.Ref].value,
-        });
-      }
+      const segment = getSegmentFromRow(row);
+      if (!segment) return;
+      regions.push({
+        ...segment,
+        label: row[ColName.Ref].value,
+      });
     });
     resetSegments(regions);
   };
@@ -532,6 +554,7 @@ export default function PassageDetailMarkVersesIsMobile({
     );
 
     let changed = false;
+    let activeRowIndex = -1;
 
     changes.forEach((change) => {
       const value = change.value?.trim() ?? '';
@@ -543,6 +566,7 @@ export default function PassageDetailMarkVersesIsMobile({
 
       if (value !== cell.value) {
         changed = true;
+        activeRowIndex = change.row;
 
         if (change.col === ColName.Ref) {
           row[change.col] = {
@@ -560,8 +584,25 @@ export default function PassageDetailMarkVersesIsMobile({
     });
 
     if (changed) {
+      newData.forEach((row, index) => {
+        if (index === 0) return;
+        const limits = row[ColName.Limits] as ICell;
+        limits.className = limits.className?.replace(/\s*cur\b/g, '') || 'lim';
+      });
+
+      const activeRow =
+        activeRowIndex > 0 ? (newData[activeRowIndex] as ICell[]) : undefined;
+      const activeSegment = getSegmentFromRow(activeRow);
+      if (activeRow && activeSegment) {
+        const limits = activeRow[ColName.Limits] as ICell;
+        limits.className = `${limits.className ?? 'lim'} cur`.trim();
+      }
+
       setData(newData);
       setSegments();
+      if (activeSegment) {
+        setCurrentSegment(activeSegment, activeRowIndex - 1);
+      }
       toolChanged(verseToolId);
     }
   };
@@ -725,9 +766,6 @@ export default function PassageDetailMarkVersesIsMobile({
       </Paper>
     );
   }
-
-  console.log('MARK VERSES table data:', data);
-
   return (
     <Box>
       <PassageDetailPlayer

@@ -2,6 +2,7 @@
 import React from 'react';
 import { act } from 'react';
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import Coordinator from '@orbit/coordinator';
 import { UnsavedProvider } from '../../../../context/UnsavedContext';
 import { useGetGlobal, useGlobal } from '../../../../context/useGlobal';
@@ -50,6 +51,7 @@ const mockMediafileId = 'm1';
 const mockPassageId = 'p1';
 const mockCurrentStep = 'step1';
 const mockSetCurrentStep = jest.fn();
+const mockSetCurrentSegment = jest.fn();
 let mockPlayerAction: ((segment: string, init: boolean) => void) | undefined;
 const mockRowData: IRow[] = [];
 
@@ -98,6 +100,7 @@ jest.mock('../../../../context/usePassageDetailContext', () => () => ({
   passage: mockPassage,
   currentstep: mockCurrentStep,
   currentSegment: '',
+  setCurrentSegment: mockSetCurrentSegment,
   setCurrentStep: mockSetCurrentStep,
   orgWorkflowSteps: [mockOrgWorkflowStep],
   setupLocate: jest.fn(),
@@ -268,12 +271,34 @@ test('updates timestamp rows when the player emits verse markers', async () => {
   });
 
   await waitFor(() => {
-    expect(screen.getByText('0.0-10.0')).toBeInTheDocument();
+    expect(screen.getByText('0:00.0-0:10.0')).toBeInTheDocument();
   });
 
-  expect(screen.getByText('10.0-20.0')).toBeInTheDocument();
-  expect(screen.getByText('20.0-69.0')).toBeInTheDocument();
+  expect(screen.getByText('0:10.0-0:20.0')).toBeInTheDocument();
+  expect(screen.getByText('0:20.0-1:09.0')).toBeInTheDocument();
   expect(screen.getByLabelText('verse-reference-1')).toHaveValue('1:1');
   expect(screen.getByLabelText('verse-reference-2')).toHaveValue('1:2');
   expect(screen.getByLabelText('verse-reference-3')).toHaveValue('1:3');
+});
+
+test('highlights the matching waveform region when a row is edited', async () => {
+  const user = userEvent.setup();
+
+  runTest({ width: 375 });
+
+  act(() => {
+    mockPlayerAction?.(
+      '{"regions":"[{\\"start\\":0,\\"end\\":10},{\\"start\\":10,\\"end\\":20},{\\"start\\":20,\\"end\\":69}]"}',
+      false
+    );
+  });
+
+  const secondReference = await screen.findByLabelText('verse-reference-2');
+  await user.clear(secondReference);
+  await user.type(secondReference, '1:2a');
+
+  expect(mockSetCurrentSegment).toHaveBeenLastCalledWith(
+    expect.objectContaining({ start: 10, end: 20 }),
+    1
+  );
 });
