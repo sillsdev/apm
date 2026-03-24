@@ -11,10 +11,6 @@ import { shallowEqual, useSelector } from 'react-redux';
 import { useGlobal } from '../../../../context/useGlobal';
 import usePassageDetailContext from '../../../../context/usePassageDetailContext';
 import { UnsavedContext } from '../../../../context/UnsavedContext';
-import { ActionRow } from '../../../../control/ActionRow';
-import { AltButton } from '../../../../control/AltButton';
-import { GrowingSpacer } from '../../../../control/GrowingSpacer';
-import { PriButton } from '../../../../control/PriButton';
 import { passageTypeFromRef } from '../../../../control/passageTypeFromRef';
 import { findRecord } from '../../../../crud/tryFindRecord';
 import { parseRef } from '../../../../crud/passage';
@@ -872,31 +868,6 @@ export default function PassageDetailMarkVersesIsMobile({
         onCellsChanged={handleCellsChanged}
         onParsePaste={handleParsePaste}
       />
-      <ActionRow sx={{ flexWrap: 'wrap', gap: 1, alignItems: 'center' }}>
-        <AltButton
-          id="copy-verse-sheet"
-          onClick={handleCopy}
-          disabled={numSegments === 0}
-        >
-          {ts.clipboardCopy}
-        </AltButton>
-        <GrowingSpacer />
-        <PriButton
-          id="create-mark-verse"
-          onClick={handleSaveMarkup}
-          disabled={
-            numSegments === 0 ||
-            savingRef.current ||
-            !isChanged(verseToolId) ||
-            !hasPermission
-          }
-        >
-          {t.saveVerseMarkup}
-        </PriButton>
-        <AltButton id="cancel-mark-verse" onClick={handleCancel}>
-          {ts.cancel}
-        </AltButton>
-      </ActionRow>
       {confirm && (
         <Confirm
           jsx={
