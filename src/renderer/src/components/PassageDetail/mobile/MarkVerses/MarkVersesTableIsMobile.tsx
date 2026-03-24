@@ -75,7 +75,7 @@ export default function MarkVersesTableIsMobile({
       handleReferencePaste(event, rowIndex);
     };
 
-    return (
+  return (
     <TableContainer
       component={Paper}
       id="verse-sheet"
