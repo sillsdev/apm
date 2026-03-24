@@ -306,6 +306,7 @@ const PassageDetailGrids = () => {
           tool === ToolSlug.ConsultantCheck ||
           tool === ToolSlug.KeyTerm) && (
           <Paper
+            id="Ryan3"
             key={currentstep}
             sx={{ p: 0, margin: 'auto', width: `calc(100% - 32px)` }}
           >
@@ -315,6 +316,7 @@ const PassageDetailGrids = () => {
               tool !== ToolSlug.Record &&
               tool !== ToolSlug.ConsultantCheck ? (
                 <Stack
+                  id="Ryan4"
                   direction="column"
                   sx={{
                     width: '100%',
@@ -322,6 +324,13 @@ const PassageDetailGrids = () => {
                     maxWidth: paneWidth,
                   }}
                 >
+                  <PassageDetailChooser width={paneWidth} />
+                  {(tool !== ToolSlug.KeyTerm || mediafileId) && (
+                    <PassageDetailPlayer
+                      width={Math.max(0, paneWidth - 40)}
+                      allowZoomAndSpeed={true}
+                    />
+                  )}
                   <PassageDetailChooser width={paneWidth} />
                   {(tool !== ToolSlug.KeyTerm || mediafileId) && (
                     <PassageDetailPlayer
@@ -463,8 +472,6 @@ export const PassageDetail = () => {
         width: '100%',
         maxWidth: '100%',
         overflow: 'hidden',
-        alignItems: 'center',
-        alignContent: 'center',
       }}
       alignItems="center"
     >
