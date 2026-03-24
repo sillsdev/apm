@@ -102,6 +102,7 @@ export function AudioResourceCard({
             noClose
             noRestart
             noSkipBack
+            playButtonSize="large"
             sx={{ borderRadius: 1, bgcolor: 'grey.100' }}
           />
         </Box>

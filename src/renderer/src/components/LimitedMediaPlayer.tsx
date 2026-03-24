@@ -73,6 +73,7 @@ interface IProps {
   sx?: SxProps;
   noRestart?: boolean;
   noSkipBack?: boolean;
+  playButtonSize?: 'small' | 'medium' | 'large';
 }
 
 export function LimitedMediaPlayer(props: IProps) {
@@ -88,6 +89,7 @@ export function LimitedMediaPlayer(props: IProps) {
     sx,
     noRestart,
     noSkipBack,
+    playButtonSize = 'small',
   } = props;
   const [value, setValue] = useState(0);
   const [ready, setReady] = useState(false);
@@ -295,10 +297,13 @@ export function LimitedMediaPlayer(props: IProps) {
                   onClick={handlePlayPause}
                 >
                   {playing ? (
-                    <Pause fontSize="small" sx={{ color: 'text.secondary' }} />
+                    <Pause
+                      fontSize={playButtonSize}
+                      sx={{ color: 'text.secondary' }}
+                    />
                   ) : (
                     <PlayArrow
-                      fontSize="small"
+                      fontSize={playButtonSize}
                       sx={{ color: 'text.secondary' }}
                     />
                   )}

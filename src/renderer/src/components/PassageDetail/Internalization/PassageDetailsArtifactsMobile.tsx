@@ -835,6 +835,7 @@ export function PassageDetailArtifactsMobile() {
               {/^audio/.test(mediaContentType(value.mediafile)) ? (
                 <AudioResourceCard
                   row={value}
+                  subtitle={value.artifactCategory || undefined}
                   isPlaying={playItem === value.id && itemPlaying}
                   onPlay={handlePlay}
                   onDone={handleDone}
@@ -844,6 +845,7 @@ export function PassageDetailArtifactsMobile() {
               ) : (
                 <TextResourceCard
                   row={value}
+                  subtitle={value.artifactCategory || undefined}
                   onView={
                     mediaContentType(value.mediafile) === UriLinkType
                       ? handleLinkId
