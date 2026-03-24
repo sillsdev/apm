@@ -48,7 +48,7 @@ export function TextResourceCard({
         borderColor: 'grey.700',
         borderRadius: 2,
         backgroundColor: 'background.paper',
-        px: 1.25,
+        px: 0.5,
         py: 1,
         ...sx,
       }}

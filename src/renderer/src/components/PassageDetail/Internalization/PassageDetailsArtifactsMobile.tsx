@@ -829,6 +829,9 @@ export function PassageDetailArtifactsMobile() {
           dragHandle
           dragHandleRegion="top-half"
           lockHorizontal
+          itemSpacing={0.25}
+          listPaddingX={0}
+          itemPaddingX={0}
         >
           {selectedRows.map((value, index) => (
             <Box key={`item-${index}`} sx={{ width: '100%' }}>

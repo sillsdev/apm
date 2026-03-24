@@ -74,6 +74,7 @@ interface IProps {
   noRestart?: boolean;
   noSkipBack?: boolean;
   playButtonSize?: 'small' | 'medium' | 'large';
+  noContainer?: boolean;
 }
 
 export function LimitedMediaPlayer(props: IProps) {
@@ -90,6 +91,7 @@ export function LimitedMediaPlayer(props: IProps) {
     noRestart,
     noSkipBack,
     playButtonSize = 'small',
+    noContainer,
   } = props;
   const [value, setValue] = useState(0);
   const [ready, setReady] = useState(false);
@@ -258,8 +260,24 @@ export function LimitedMediaPlayer(props: IProps) {
       {!controls ? (
         <></>
       ) : (
-        <StyledChip
-          icon={
+        (() => {
+          const playPauseButtonSx = noContainer
+            ? {
+                alignSelf: 'center',
+                color: 'text.primary',
+                m: 0,
+                p: 0.5,
+              }
+            : {
+                alignSelf: 'center',
+                color: 'text.primary',
+                m: '0!important',
+                pb: '0!important',
+                pt: '7px!important',
+                pr: '0',
+              };
+
+          const mediaControls = (
             <>
               {!noRestart && (
                 <StyledTip title={t.resourceStart}>
@@ -286,14 +304,7 @@ export function LimitedMediaPlayer(props: IProps) {
               <StyledTip title={playing ? tm.pause : tm.play}>
                 <IconButton
                   data-testid="play-pause"
-                  sx={{
-                    alignSelf: 'center',
-                    color: 'text.primary',
-                    m: '0!important',
-                    pb: '0!important',
-                    pt: '7px!important',
-                    pr: '0!important',
-                  }}
+                  sx={playPauseButtonSx}
                   onClick={handlePlayPause}
                 >
                   {playing ? (
@@ -310,9 +321,16 @@ export function LimitedMediaPlayer(props: IProps) {
                 </IconButton>
               </StyledTip>
             </>
-          }
-          label={
-            <Stack direction="row" sx={{ pr: 1, pl: 0 }}>
+          );
+
+          const mediaLabel = (
+            <Stack
+              direction="row"
+              sx={{
+                pr: noContainer ? 0 : 1,
+                pl: 0,
+              }}
+            >
               <Stack direction="column" sx={{ width: '100%', pl: 0 }}>
                 <Box
                   sx={{
@@ -345,24 +363,42 @@ export function LimitedMediaPlayer(props: IProps) {
                 />
               </Stack>
             </Stack>
-          }
-          deleteIcon={
-            !noClose ? (
-              <StyledTip title={ts.close}>
-                <IconButton
-                  data-testid="close"
-                  sx={{ alignSelf: 'center' }}
-                  onClick={ended}
-                >
-                  <CloseIcon fontSize="small" />
-                </IconButton>
-              </StyledTip>
-            ) : (
-              <></>
-            )
-          }
-          sx={{ ...sx, width: '100%' }}
-        />
+          );
+
+          const closeControl = !noClose ? (
+            <StyledTip title={ts.close}>
+              <IconButton
+                data-testid="close"
+                sx={{ alignSelf: 'center' }}
+                onClick={ended}
+              >
+                <CloseIcon fontSize="small" />
+              </IconButton>
+            </StyledTip>
+          ) : (
+            <></>
+          );
+
+          return noContainer ? (
+            <Stack
+              direction="row"
+              sx={{ width: '100%', alignItems: 'flex-end', px: 0.5, gap: 1, ...sx }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', pb: 0.5 }}>
+                {mediaControls}
+              </Box>
+              <Box sx={{ flex: 1, minWidth: 0 }}>{mediaLabel}</Box>
+              {closeControl}
+            </Stack>
+          ) : (
+            <StyledChip
+              icon={mediaControls}
+              label={mediaLabel}
+              deleteIcon={closeControl}
+              sx={{ ...sx, width: '100%' }}
+            />
+          );
+        })()
       )}
       <HiddenPlayer
         onProgress={timeUpdate}

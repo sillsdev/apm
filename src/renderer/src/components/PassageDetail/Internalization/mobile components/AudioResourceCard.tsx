@@ -110,7 +110,7 @@ export function AudioResourceCard({
               noRestart
               noSkipBack
               playButtonSize="large"
-              sx={{ borderRadius: 1, bgcolor: 'grey.100' }}
+              noContainer
             />
           </Box>
           {onEdit && (

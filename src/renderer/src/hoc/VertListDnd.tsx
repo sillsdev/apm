@@ -36,6 +36,9 @@ export interface VertListDndProps extends PropsWithChildren {
   dragHandle?: boolean;
   lockHorizontal?: boolean;
   dragHandleRegion?: 'full' | 'top-half';
+  itemSpacing?: number;
+  listPaddingX?: number;
+  itemPaddingX?: number;
   onDrop?: (props: OnDropProps) => void;
 }
 
@@ -45,6 +48,9 @@ export const VertListDnd = ({
   dragHandle,
   lockHorizontal,
   dragHandleRegion = 'full',
+  itemSpacing = 1,
+  listPaddingX,
+  itemPaddingX,
   children,
 }: VertListDndProps) => {
   const [items, setItems] = useState<DropProp[]>(
@@ -114,7 +120,8 @@ export const VertListDnd = ({
             ref={provided.innerRef}
             sx={{
               bgcolor: snapshot.isDraggingOver ? 'secondary.light' : 'white',
-              p: 1,
+              py: 1,
+              px: listPaddingX ?? 1,
             }}
           >
             {items.map((item, index) => (
@@ -134,7 +141,8 @@ export const VertListDnd = ({
                         : dragHandle
                           ? 'transparent'
                           : 'lightgrey',
-                      mb: 1,
+                      mb: itemSpacing,
+                      ...(itemPaddingX !== undefined ? { px: itemPaddingX } : {}),
                     }}
                   >
                     {dragHandleRegion === 'top-half' && (
