@@ -798,8 +798,8 @@ export default function PassageDetailMarkVersesIsMobile({
     );
   }
 
-  const editReferenceLabel = 'Edit References';
-  const doneEditingReferenceLabel = 'Done Editing';
+  const editReferenceLabel = t.editReference || 'Edit Reference';
+  const doneEditingReferenceLabel = t.doneEditingReference || 'Done Editing';
   const resetLabel = t.reset || 'Reset';
 
   return (

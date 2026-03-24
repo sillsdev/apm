@@ -289,6 +289,10 @@ test('highlights the matching waveform region when a row is edited', async () =>
 
   runTest({ width: 375 });
 
+  await waitFor(() => {
+    expect(screen.getByLabelText('verse-reference-1')).toHaveValue('1:1');
+  });
+
   act(() => {
     mockPlayerAction?.(
       '{"regions":"[{\\"start\\":0,\\"end\\":10},{\\"start\\":10,\\"end\\":20},{\\"start\\":20,\\"end\\":69}]"}',
@@ -296,6 +300,7 @@ test('highlights the matching waveform region when a row is edited', async () =>
     );
   });
 
+  await screen.findByText('0:10.0-0:20.0');
   await user.click(screen.getByRole('button', { name: 'Edit Reference' }));
   const secondReference = await screen.findByLabelText('verse-reference-2');
   await user.clear(secondReference);

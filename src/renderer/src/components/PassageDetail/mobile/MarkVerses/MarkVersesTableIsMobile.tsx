@@ -10,6 +10,7 @@ import {
   Typography,
 } from '@mui/material';
 import type { ChangeEvent, ClipboardEvent } from 'react';
+import { getSegmentRegionColor } from '../../../../crud/useWavesurferRegions';
 import type { ICell, ICellChange } from './PassageDetailMarkVersesIsMobile';
 
 interface MarkVersesTableIsMobileProps {
@@ -97,10 +98,22 @@ export default function MarkVersesTableIsMobile({
             const limits = row[ColName.Limits] as ICell;
             const reference = row[ColName.Ref] as ICell;
             const invalid = reference.className?.includes('Err');
+            const rowColor = limits.value
+              ? getSegmentRegionColor(index, 0.24)
+              : 'transparent';
 
             return (
-              <TableRow key={`verse-row-${index}`}>
-                <TableCell sx={{ whiteSpace: 'nowrap', width: '42%' }}>
+              <TableRow
+                key={`verse-row-${index}`}
+                sx={{ backgroundColor: rowColor }}
+              >
+                <TableCell
+                  sx={{
+                    whiteSpace: 'nowrap',
+                    width: '42%',
+                    backgroundColor: 'inherit',
+                  }}
+                >
                   <Typography
                     variant="body2"
                     sx={{
@@ -112,7 +125,7 @@ export default function MarkVersesTableIsMobile({
                   </Typography>
                 </TableCell>
 
-                <TableCell>
+                <TableCell sx={{ backgroundColor: 'inherit' }}>
                   <TextField
                     fullWidth
                     variant="standard"
