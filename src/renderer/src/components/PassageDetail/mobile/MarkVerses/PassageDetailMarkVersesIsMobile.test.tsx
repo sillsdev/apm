@@ -140,10 +140,13 @@ jest.mock('react-redux', () => ({
     cantCopy: "Can't Copy",
     clipboard: 'Clipboard',
     clipboardCopy: 'Copy to Clipboard',
+    doneEditingReference: 'Done Editing',
+    editReference: 'Edit Reference',
     markVerses: 'Mark Verses',
     noData: 'No Data {0}',
     pasteFormat: 'Paste Format',
     reference: 'Reference',
+    reset: 'Reset',
     saveVerseMarkup: 'Save Verse Markup',
     startStop: 'Start-Stop',
     badReferences: 'ERROR: Markup contains bad references',
@@ -293,12 +296,66 @@ test('highlights the matching waveform region when a row is edited', async () =>
     );
   });
 
+  await user.click(screen.getByRole('button', { name: 'Edit Reference' }));
   const secondReference = await screen.findByLabelText('verse-reference-2');
   await user.clear(secondReference);
   await user.type(secondReference, '1:2a');
 
-  expect(mockSetCurrentSegment).toHaveBeenLastCalledWith(
-    expect.objectContaining({ start: 10, end: 20 }),
-    1
-  );
+  await waitFor(() => {
+    expect(mockSetCurrentSegment).toHaveBeenLastCalledWith(
+      expect.objectContaining({ start: 10, end: 20 }),
+      1
+    );
+  });
+});
+
+test('locks reference inputs until edit reference is enabled', async () => {
+  const user = userEvent.setup();
+
+  runTest({ width: 375 });
+
+  const firstReference = await screen.findByLabelText('verse-reference-1');
+  expect(firstReference).toBeDisabled();
+
+  await user.click(screen.getByRole('button', { name: 'Edit Reference' }));
+  expect(firstReference).not.toBeDisabled();
+
+  await user.clear(firstReference);
+  await user.type(firstReference, '1:1a');
+  expect(firstReference).toHaveValue('1:1a');
+
+  await user.click(screen.getByRole('button', { name: 'Done Editing' }));
+  expect(screen.getByLabelText('verse-reference-1')).toBeDisabled();
+});
+
+test('reset clears markers and restores the original reference table', async () => {
+  const user = userEvent.setup();
+
+  runTest({ width: 375 });
+
+  act(() => {
+    mockPlayerAction?.(
+      '{"regions":"[{\\"start\\":0,\\"end\\":10},{\\"start\\":10,\\"end\\":20},{\\"start\\":20,\\"end\\":69}]"}',
+      false
+    );
+  });
+
+  await screen.findByText('0:00.0-0:10.0');
+
+  await user.click(screen.getByRole('button', { name: 'Edit Reference' }));
+  const secondReference = screen.getByLabelText('verse-reference-2');
+  await user.clear(secondReference);
+  await user.type(secondReference, '2:10');
+  expect(secondReference).toHaveValue('2:10');
+
+  await user.click(screen.getByRole('button', { name: 'Reset' }));
+
+  await waitFor(() => {
+    expect(screen.queryByText('0:00.0-0:10.0')).not.toBeInTheDocument();
+  });
+
+  expect(screen.getByLabelText('verse-reference-1')).toHaveValue('1:1');
+  expect(screen.getByLabelText('verse-reference-2')).toHaveValue('1:2');
+  expect(screen.getByLabelText('verse-reference-3')).toHaveValue('1:3');
+  expect(screen.getByLabelText('verse-reference-1')).toBeDisabled();
 });

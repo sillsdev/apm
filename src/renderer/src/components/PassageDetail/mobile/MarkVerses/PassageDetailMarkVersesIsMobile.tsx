@@ -6,7 +6,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import { Box, Paper, SxProps, Typography } from '@mui/material';
+import { Box, Button, Paper, SxProps, Typography } from '@mui/material';
 import { shallowEqual, useSelector } from 'react-redux';
 import { useGlobal } from '../../../../context/useGlobal';
 import usePassageDetailContext from '../../../../context/usePassageDetailContext';
@@ -104,6 +104,7 @@ export default function PassageDetailMarkVersesIsMobile({
   const [numSegments, setNumSegments] = useState(0);
   const [pastedSegments, setPastedSegments] = useState(emptySegments);
   const [engVrs, setEngVrs] = useState<Map<string, number[]>>(new Map());
+  const [isReferenceEditing, setIsReferenceEditing] = useState(false);
   const savingRef = useRef(false);
   const canceling = useRef(false);
   const dataRef = useRef<ICell[][]>([]);
@@ -654,6 +655,40 @@ export default function PassageDetailMarkVersesIsMobile({
       });
   };
 
+  const handleToggleReferenceEditing = () => {
+    setIsReferenceEditing((value) => !value);
+  };
+
+  const handleResetMarkup = () => {
+    const refs =
+      passageRefs.current.length > 0
+        ? passageRefs.current
+        : getPassageRefs(passage);
+    const newData = emptyTable();
+
+    refs.forEach((ref) => {
+      newData.push(rowCells(['', ref]));
+    });
+
+    const hadChanges =
+      numSegments > 0 ||
+      tableSignature(dataRef.current) !== tableSignature(newData);
+
+    passageRefs.current = refs;
+    segmentsRef.current = emptySegments;
+    setNumSegments(0);
+    setData(newData);
+    setCurrentSegment(undefined, -1);
+    setIsReferenceEditing(false);
+    setConfirm('');
+    setIssues([]);
+    resetSegments([]);
+
+    if (hadChanges) {
+      toolChanged(verseToolId);
+    }
+  };
+
   useEffect(() => {
     if (saveRequested(verseToolId) && !savingRef.current) {
       writeResources();
@@ -766,6 +801,11 @@ export default function PassageDetailMarkVersesIsMobile({
       </Paper>
     );
   }
+
+  const editReferenceLabel = 'Edit References';
+  const doneEditingReferenceLabel = 'Done Editing';
+  const resetLabel = t.reset || 'Reset';
+
   return (
     <Box>
       <PassageDetailPlayer
@@ -776,10 +816,52 @@ export default function PassageDetailMarkVersesIsMobile({
         suggestedSegments={pastedSegments}
         allowZoomAndSpeed={true}
       />
+      <Box
+        sx={{
+          mt: 1,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 1,
+          flexWrap: 'wrap',
+        }}
+      >
+
+
+        <Button
+          variant="outlined"
+          size="medium"
+          onClick={handleToggleReferenceEditing}
+          disabled={!hasPermission}
+          sx={{ minHeight: 40, px: 2.5, py: 0.75 }}
+        >
+          {isReferenceEditing
+            ? doneEditingReferenceLabel
+            : editReferenceLabel}
+        </Button>
+
+        <Button
+          variant="outlined"
+          size="medium"
+          onClick={handleResetMarkup}
+          disabled={!hasPermission}
+          sx={{ minHeight: 40, px: 2.5, py: 0.75 }}
+        >
+          {resetLabel}
+        </Button>
+      </Box>
       <MarkVersesTableIsMobile
         data={
           hasPermission
-            ? data
+            ? data.map((row, rowIndex) =>
+                row.map((cell, colIndex) => ({
+                  ...cell,
+                  readOnly:
+                    rowIndex === 0 ||
+                    colIndex === ColName.Limits ||
+                    !isReferenceEditing,
+                }))
+              )
             : data.map((row) =>
                 row.map((cell) => ({
                   ...cell,

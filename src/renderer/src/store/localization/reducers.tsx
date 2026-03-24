@@ -1819,6 +1819,8 @@ const initialState = {
 			"btNotUpdated": "WARNING: Since back translation recordings already exist, back translation segments will not be updated to line up with verse changes.",
 			"canceling": "Canceling verse markup",
 			"clipboard": "clipboard",
+			"doneEditingReference": "Done Editing",
+			"editReference": "Edit Reference",
 			"issues": "The verse markup has issues. Do you want to continue?",
 			"markVerses": "Mark Verses",
 			"missingReferences": "Warning: Verses in passage not included: ({0})",
@@ -1827,6 +1829,7 @@ const initialState = {
 			"outsideReferences": "ERROR: Some verses are outside passage: ({0})",
 			"pasteFormat": "Invalid number of columns on clipboard.",
 			"reference": "Reference",
+			"reset": "Reset",
 			"saveVerseMarkup": "Save Verse Markup",
 			"startStop": "Start --> Stop",
 		}
