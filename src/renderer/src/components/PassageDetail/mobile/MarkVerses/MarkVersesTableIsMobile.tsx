@@ -96,14 +96,10 @@ export default function MarkVersesTableIsMobile({
           {rows.map((row, index) => {
             const limits = row[ColName.Limits] as ICell;
             const reference = row[ColName.Ref] as ICell;
-            const current = limits.className?.includes('cur');
             const invalid = reference.className?.includes('Err');
 
             return (
-              <TableRow
-                key={`verse-row-${index}`}
-                sx={current ? { backgroundColor: 'warning.light' } : undefined}
-              >
+              <TableRow key={`verse-row-${index}`}>
                 <TableCell sx={{ whiteSpace: 'nowrap', width: '42%' }}>
                   <Typography
                     variant="body2"
