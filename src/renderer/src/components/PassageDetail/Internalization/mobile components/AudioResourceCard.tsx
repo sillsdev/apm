@@ -1,5 +1,6 @@
 import { Box, Card, Checkbox, IconButton, SxProps, Typography } from '@mui/material';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import EditIcon from '@mui/icons-material/Edit';
 import { IRow } from '../../../../context/PassageDetailContext';
 import { SectionResourceD } from '../../../../model';
 import LimitedMediaPlayer from '../../../LimitedMediaPlayer';
@@ -13,6 +14,7 @@ interface IProps {
   isPlaying: boolean;
   onPlay: (id: string) => void;
   onDone?: (id: string, res: SectionResourceD | null) => void;
+  onEdit?: (id: string) => void;
   onDelete?: (id: string) => void;
   onEnded?: () => void;
   subtitle?: string;
@@ -28,6 +30,7 @@ export function AudioResourceCard({
   isPlaying,
   onPlay,
   onDone,
+  onEdit,
   onDelete,
   onEnded,
   subtitle = 'Scripture',
@@ -110,6 +113,16 @@ export function AudioResourceCard({
               sx={{ borderRadius: 1, bgcolor: 'grey.100' }}
             />
           </Box>
+          {onEdit && (
+            <IconButton
+              size="small"
+              onClick={() => onEdit(row.id)}
+              aria-label={`Edit ${row.artifactName}`}
+              sx={{ p: 0.25 }}
+            >
+              <EditIcon fontSize="medium" />
+            </IconButton>
+          )}
           {onDelete && (
             <IconButton
               size="small"

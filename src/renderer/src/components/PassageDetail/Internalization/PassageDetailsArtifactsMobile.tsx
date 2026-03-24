@@ -839,6 +839,7 @@ export function PassageDetailArtifactsMobile() {
                   isPlaying={playItem === value.id && itemPlaying}
                   onPlay={handlePlay}
                   onDone={handleDone}
+                  onEdit={modifiable ? handleEdit : undefined}
                   onDelete={modifiable ? handleDelete : undefined}
                   onEnded={handleEnded}
                   limits={{ start: mediaStart ?? 0, end: mediaEnd ?? 0 }}
@@ -855,6 +856,7 @@ export function PassageDetailArtifactsMobile() {
                         : handleDisplayId
                   }
                   onDone={handleDone}
+                  onEdit={modifiable ? handleEdit : undefined}
                   onDelete={modifiable ? handleDelete : undefined}
                 />
               )}

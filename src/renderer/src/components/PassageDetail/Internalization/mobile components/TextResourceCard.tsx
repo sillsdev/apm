@@ -1,6 +1,7 @@
 import { Box, Card, Checkbox, IconButton, SxProps, Typography } from '@mui/material';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import EditIcon from '@mui/icons-material/Edit';
 import { IRow } from '../../../../context/PassageDetailContext';
 import { SectionResourceD } from '../../../../model';
 
@@ -12,6 +13,7 @@ interface IProps {
   row: IRow;
   onView: (id: string) => void;
   onDone?: (id: string, res: SectionResourceD | null) => void;
+  onEdit?: (id: string) => void;
   onDelete?: (id: string) => void;
   subtitle?: string;
   sx?: SxProps;
@@ -21,6 +23,7 @@ export function TextResourceCard({
   row,
   onView,
   onDone,
+  onEdit,
   onDelete,
   subtitle = 'Translation Resource',
   sx,
@@ -100,16 +103,28 @@ export function TextResourceCard({
           >
             <VisibilityIcon fontSize="medium" />
           </IconButton>
-          {onDelete && (
-            <IconButton
-              size="small"
-              onClick={() => onDelete(row.id)}
-              aria-label={`Delete ${row.artifactName}`}
-              sx={{ p: 0.25 }}
-            >
-              <DeleteOutlineIcon fontSize="medium" />
-            </IconButton>
-          )}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            {onEdit && (
+              <IconButton
+                size="small"
+                onClick={() => onEdit(row.id)}
+                aria-label={`Edit ${row.artifactName}`}
+                sx={{ p: 0.25 }}
+              >
+                <EditIcon fontSize="medium" />
+              </IconButton>
+            )}
+            {onDelete && (
+              <IconButton
+                size="small"
+                onClick={() => onDelete(row.id)}
+                aria-label={`Delete ${row.artifactName}`}
+                sx={{ p: 0.25 }}
+              >
+                <DeleteOutlineIcon fontSize="medium" />
+              </IconButton>
+            )}
+          </Box>
         </Box>
       </Box>
     </Card>
