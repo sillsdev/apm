@@ -16,10 +16,12 @@ import { usePlanType } from '../../../crud';
 interface IProps {
   action?: (what: string) => void;
   stopPlayer?: () => void;
+  buttonDark?: boolean;
+  buttonElevated?: boolean; // setting for some shadowing 
 }
 
 export const AddResource = (props: IProps) => {
-  const { action, stopPlayer } = props;
+  const { action, stopPlayer, buttonDark, buttonElevated } = props;
   const { passage } = usePassageDetailContext();
   const { getPassageTypeFromId } = usePassageType();
   const [biblebrain, setBiblebrain] = useState(true);
@@ -61,7 +63,12 @@ export const AddResource = (props: IProps) => {
 
   return (
     <div>
-      <AltButton id="add-resource" onClick={handleClick}>
+      <AltButton
+        id="add-resource"
+        onClick={handleClick}
+        dark={buttonDark}
+        elevated={buttonElevated}
+      >
         {t.add}
       </AltButton>
       <StyledMenu

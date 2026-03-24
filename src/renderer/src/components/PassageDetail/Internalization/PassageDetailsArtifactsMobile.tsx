@@ -788,19 +788,23 @@ export function PassageDetailArtifactsMobile() {
         <Grid
           container
           size={12}
-          sx={{ display: 'flex', alignItems: 'center' }}
+          sx={{ display: 'flex', alignItems: 'center', justifyContent: 'end', paddingTop:1.5}}
         >
           {isScripture && (
             <Grid>
-              <AltButton onClick={() => handleFindVisible(true)}>
-                <Badge badgeContent={`(${ts.ai})`}>{t.research}</Badge>
+              <AltButton dark elevated onClick={() => handleFindVisible(true)}>
+                <Badge>{t.research}</Badge>
               </AltButton>
             </Grid>
           )}
           {hasPermission && (!offline || offlineOnly) && (
             <>
               <Grid>
-                <AddResource action={handleAction} />
+                <AddResource
+                  action={handleAction}
+                  buttonDark
+                  buttonElevated
+                />
               </Grid>
               {hasProjRes && (
                 <Grid>
