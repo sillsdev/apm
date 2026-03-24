@@ -5,7 +5,7 @@ import {
   Draggable,
   DropResult,
 } from '@hello-pangea/dnd';
-import { List, ListItem } from '@mui/material';
+import { Box, List, ListItem } from '@mui/material';
 
 export interface DropProp {
   id: string;
@@ -34,6 +34,8 @@ export interface OnDropProps {
 export interface VertListDndProps extends PropsWithChildren {
   data?: DropProp[];
   dragHandle?: boolean;
+  lockHorizontal?: boolean;
+  dragHandleRegion?: 'full' | 'top-half';
   onDrop?: (props: OnDropProps) => void;
 }
 
@@ -41,6 +43,8 @@ export const VertListDnd = ({
   data,
   onDrop,
   dragHandle,
+  lockHorizontal,
+  dragHandleRegion = 'full',
   children,
 }: VertListDndProps) => {
   const [items, setItems] = useState<DropProp[]>(
@@ -79,6 +83,28 @@ export const VertListDnd = ({
     }
   };
 
+  const lockTransformToVertical = (style: any) => {
+    if (!lockHorizontal || !style?.transform) return style;
+    const transform = String(style.transform);
+    if (transform.startsWith('translate3d(')) {
+      // translate3d(xpx, ypx, zpx) -> lock x to 0px
+      style.transform = transform.replace(
+        /translate3d\([^,]+,\s*([^,]+),\s*([^\)]+)\)/,
+        'translate3d(0px, $1, $2)'
+      );
+      return style;
+    }
+    if (transform.startsWith('translate(')) {
+      // translate(xpx, ypx) -> lock x to 0px
+      style.transform = transform.replace(
+        /translate\([^,]+,\s*([^\)]+)\)/,
+        'translate(0px, $1)'
+      );
+      return style;
+    }
+    return style;
+  };
+
   return (
     <DragDropContext onDragEnd={onDragEnd}>
       <Droppable droppableId="droppable">
@@ -97,8 +123,12 @@ export const VertListDnd = ({
                   <ListItem
                     ref={provided.innerRef}
                     {...provided.draggableProps}
-                    {...provided.dragHandleProps}
+                    {...(dragHandleRegion === 'full'
+                      ? provided.dragHandleProps
+                      : {})}
+                    style={lockTransformToVertical(provided.draggableProps.style)}
                     sx={{
+                      position: 'relative',
                       bgcolor: snapshot.isDragging
                         ? 'primary.light'
                         : dragHandle
@@ -107,6 +137,23 @@ export const VertListDnd = ({
                       mb: 1,
                     }}
                   >
+                    {dragHandleRegion === 'top-half' && (
+                      <Box
+                        {...provided.dragHandleProps}
+                        sx={{
+                          position: 'absolute',
+                          top: 0,
+                          left: 0,
+                          right: 0,
+                          height: '50%',
+                          zIndex: 1,
+                          p: 0,
+                          m: 0,
+                          bgcolor: 'transparent',
+                          cursor: 'grab',
+                        }}
+                      />
+                    )}
                     {item.content}
                   </ListItem>
                 )}

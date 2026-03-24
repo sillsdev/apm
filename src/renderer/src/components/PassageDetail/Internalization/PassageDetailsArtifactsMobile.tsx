@@ -49,14 +49,11 @@ import SelectProjectResource from './SelectProjectResource';
 import SelectSections from './SelectSections';
 import ResourceData from './ResourceData';
 import { MarkDownType, UriLinkType } from '../../MediaUpload';
-import LimitedMediaPlayer from '../../LimitedMediaPlayer';
 import {
   Badge,
   Box,
-  BoxProps,
   Grid,
   Stack,
-  styled,
   Typography,
 } from '@mui/material';
 import { ReplaceRelatedRecord } from '../../../model/baseModel';
@@ -99,17 +96,6 @@ import { MarkDownView } from '../../../control/MarkDownView';
 import { UploadType } from '../../UploadType';
 import { ResourceTypeEnum } from './ResourceTypeEnum';
 
-const MediaContainer = styled(Box)<BoxProps>(({ theme }) => ({
-  marginRight: theme.spacing(2),
-  marginTop: theme.spacing(1),
-  width: '100%',
-  '& audio': {
-    height: '40px',
-    display: 'flex',
-    width: 'inherit',
-  },
-}));
-
 export function PassageDetailArtifactsMobile() {
   const sectionResources = useOrbitData<SectionResourceD[]>('sectionresource');
   const mediafiles = useOrbitData<MediaFileD[]>('mediafile');
@@ -134,7 +120,6 @@ export function PassageDetailArtifactsMobile() {
     toggleDone,
     forceRefresh,
     handleItemPlayEnd,
-    handleItemTogglePlay,
     getProjectResources,
   } = usePassageDetailContext();
   const { getOrganizedBy } = useOrganizedBy();
@@ -779,12 +764,6 @@ export function PassageDetailArtifactsMobile() {
     handleItemPlayEnd();
   };
 
-  const handleLoaded = () => {
-    if (playItem !== '' && !itemPlaying) {
-      setTimeout(() => handleItemTogglePlay(), 1000);
-    }
-  };
-
   const [hasProjRes, setHasProjRes] = useState(false);
 
   useEffect(() => {
@@ -832,21 +811,6 @@ export function PassageDetailArtifactsMobile() {
               )}
             </>
           )}
-          {playItem !== '' && (
-            <Grid sx={{ width: '50%' }}>
-              <MediaContainer>
-                <LimitedMediaPlayer
-                  srcMediaId={playItem}
-                  requestPlay={itemPlaying}
-                  onEnded={handleEnded}
-                  onLoaded={handleLoaded}
-                  onTogglePlay={handleItemTogglePlay}
-                  controls={playItem !== ''}
-                  limits={{ start: mediaStart ?? 0, end: mediaEnd ?? 0 }}
-                />
-              </MediaContainer>
-            </Grid>
-          )}
           {otherResourcesAvailable && (
             <Grid>
               <PassageResourceButton
@@ -859,7 +823,13 @@ export function PassageDetailArtifactsMobile() {
         </Grid>
       </Stack>
       <Box sx={{ width: '100%' }}>
-        <VertListDnd key={`sort-${sortKey}`} onDrop={onSortEnd} dragHandle>
+        <VertListDnd
+          key={`sort-${sortKey}`}
+          onDrop={onSortEnd}
+          dragHandle
+          dragHandleRegion="top-half"
+          lockHorizontal
+        >
           {selectedRows.map((value, index) => (
             <Box key={`item-${index}`} sx={{ width: '100%' }}>
               {/^audio/.test(mediaContentType(value.mediafile)) ? (
