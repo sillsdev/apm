@@ -50,6 +50,7 @@ import { useProjectSegmentSave } from '../../Internalization/useProjectSegmentSa
 import MarkVersesTableIsMobile from './MarkVersesTableIsMobile';
 
 const verseToolId = 'VerseTool';
+const emptySegments = JSON.stringify({ regions: [] });
 const paperProps = { p: 2, m: 'auto', width: 'calc(100% - 32px)' } as SxProps;
 const readOnlys = [true, false];
 const widths = [150, 150];
@@ -100,7 +101,7 @@ export default function PassageDetailMarkVersesIsMobile({
   const [issues, setIssues] = useState<string[]>([]);
   const [confirm, setConfirm] = useState('');
   const [numSegments, setNumSegments] = useState(0);
-  const [pastedSegments, setPastedSegments] = useState('');
+  const [pastedSegments, setPastedSegments] = useState(emptySegments);
   const [engVrs, setEngVrs] = useState<Map<string, number[]>>(new Map());
   const savingRef = useRef(false);
   const canceling = useRef(false);
@@ -146,6 +147,12 @@ export default function PassageDetailMarkVersesIsMobile({
     });
   }, []);
 
+  useEffect(() => {
+    segmentsRef.current = emptySegments;
+    setNumSegments(0);
+    setPastedSegments(emptySegments);
+  }, [mediafileId]);
+
   const rowCells = useCallback(
     (row: string[], first = false) =>
       row.map(
@@ -165,7 +172,10 @@ export default function PassageDetailMarkVersesIsMobile({
     []
   );
 
-  const emptyTable = () => [rowCells([t.startStop, t.reference], true)];
+  const emptyTable = useCallback(
+    () => [rowCells([t.startStop, t.reference], true)],
+    [rowCells, t.reference, t.startStop]
+  );
 
   const setData = (newData: ICell[][]) => {
     setDatax(newData);
@@ -173,10 +183,10 @@ export default function PassageDetailMarkVersesIsMobile({
   };
 
   useEffect(() => {
-  if (dataRef.current.length === 0) {
-    setData(emptyTable());
-  }
-}, [t.reference, t.startStop]);
+    if (dataRef.current.length === 0) {
+      setData(emptyTable());
+    }
+  }, [emptyTable]);
 
   const tableSignature = (tableData: ICell[][]) =>
     JSON.stringify(
@@ -215,8 +225,9 @@ export default function PassageDetailMarkVersesIsMobile({
     (value: string, book: string) => {
       const normalized = value
         .replace(/[–—]/g, '-')
-        .replace(/(\d+)\.(\d+)/g, '$1:$2')
-        .trim();
+        .replace(/\s+/g, ' ')
+        .trim()
+        .replace(/^[^\d]*/, '');
 
       const psg = {
         attributes: {
@@ -262,63 +273,52 @@ export default function PassageDetailMarkVersesIsMobile({
   );
 
   const getPassageRefs = useCallback(
-  (psg?: Passage) => {
-    if (!psg?.attributes?.book) return [];
+    (psg?: Passage) => {
+      if (!psg?.attributes) return [];
 
-    if (psg.attributes.reference) {
-      const refsFromReference = getRefs(
-        psg.attributes.reference,
-        psg.attributes.book
-      );
-      if (refsFromReference.length > 0) return refsFromReference;
-    }
-
-    const {
-      book,
-      startChapter,
-      startVerse,
-      endChapter,
-      endVerse,
-    } = psg.attributes;
-
-    if (!startChapter || !startVerse) return [];
-
-    const finalChapter = endChapter ?? startChapter;
-    const finalVerse = endVerse ?? startVerse;
-    const refs: string[] = [];
-
-    if (startChapter === finalChapter) {
-      for (let verse = startVerse; verse <= finalVerse; verse += 1) {
-        refs.push(`${startChapter}:${verse}`);
+      const book = psg.attributes.book ?? '';
+      if (psg.attributes.reference) {
+        const refsFromReference = getRefs(psg.attributes.reference, book);
+        if (refsFromReference.length > 0) return refsFromReference;
       }
+
+      const { startChapter, startVerse, endChapter, endVerse } = psg.attributes;
+      if (!startChapter || !startVerse) return [];
+
+      const finalChapter = endChapter ?? startChapter;
+      const finalVerse = endVerse ?? startVerse;
+      const refs: string[] = [];
+
+      if (startChapter === finalChapter) {
+        for (let verse = startVerse; verse <= finalVerse; verse += 1) {
+          refs.push(`${startChapter}:${verse}`);
+        }
+        return refs;
+      }
+
+      if (!book) return [];
+
+      for (let chapter = startChapter; chapter <= finalChapter; chapter += 1) {
+        const fromVerse = chapter === startChapter ? startVerse : 1;
+        const toVerse =
+          chapter === finalChapter
+            ? finalVerse
+            : (engVrs.get(book) ?? [])[chapter - 1];
+
+        if (!toVerse) continue;
+
+        for (let verse = fromVerse; verse <= toVerse; verse += 1) {
+          refs.push(`${chapter}:${verse}`);
+        }
+      }
+
       return refs;
-    }
-
-    for (let chapter = startChapter; chapter <= finalChapter; chapter += 1) {
-      const fromVerse = chapter === startChapter ? startVerse : 1;
-      const toVerse =
-        chapter === finalChapter
-          ? finalVerse
-          : (engVrs.get(book) ?? [])[chapter - 1];
-
-      if (!toVerse) continue;
-
-      for (let verse = fromVerse; verse <= toVerse; verse += 1) {
-        refs.push(`${chapter}:${verse}`);
-      }
-    }
-
-    return refs;
-  },
-  [engVrs, getRefs]
-);
+    },
+    [engVrs, getRefs]
+  );
 
   useEffect(() => {
     const refs = getPassageRefs(passage);
-
-    console.log('passage attributes:', passage?.attributes);
-    console.log('expanded refs from passage:', refs);
-
     if (refs.length > 0) {
       setupData(refs);
     } else if (dataRef.current.length === 0) {
@@ -387,31 +387,16 @@ export default function PassageDetailMarkVersesIsMobile({
     [getRefs, passage.attributes.book]
   );
 
-const formatTime = (value: number) => {
-  const minutes = Math.floor(value / 60);
-  const seconds = value - minutes * 60;
-  return `${minutes}:${seconds.toFixed(1).padStart(4, '0')}`;
-};
+  const formatTime = (value: number) => {
+    const minutes = Math.floor(value / 60);
+    const seconds = value - minutes * 60;
+    return `${minutes}:${seconds.toFixed(1).padStart(4, '0')}`;
+  };
 
-const parseFormattedTime = (value: string) => {
-  const trimmed = value.trim();
-
-  if (trimmed.includes(':')) {
-    const [minPart, secPart] = trimmed.split(':');
-    const minutes = parseInt(minPart, 10);
-    const seconds = parseFloat(secPart);
-
-    if (Number.isNaN(minutes) || Number.isNaN(seconds)) return NaN;
-    return minutes * 60 + seconds;
-  }
-
-  return parseFloat(trimmed);
-};
-
-const formLim = ({ start, end }: IRegion) =>
-  `${formatTime(start)}-${formatTime(end)}`;
-
-  
+  const formLim = useCallback(
+    ({ start, end }: IRegion) => `${formatTime(start)}-${formatTime(end)}`,
+    []
+  );
 
   const resetSegments = (regions: IRegion[]) => {
     const segments = JSON.stringify({ regions });
@@ -425,9 +410,6 @@ const formLim = ({ start, end }: IRegion) =>
     (segments: string, init: boolean) => {
       segmentsRef.current = segments;
 
-      console.log('passage reference:', passage?.attributes?.reference);
-      console.log('passageRefs.current:', passageRefs.current);
-
       if (resettingSegmentsRef.current) {
         resettingSegmentsRef.current = false;
         return;
@@ -437,8 +419,18 @@ const formLim = ({ start, end }: IRegion) =>
         return;
       }
       const regions = getSortedRegions(segments);
+      const autoRefs =
+        passageRefs.current.length > 0
+          ? passageRefs.current
+          : getPassageRefs(passage);
       const previousData =
-        dataRef.current.length > 0 ? dataRef.current : emptyTable();
+        dataRef.current.length > 0
+          ? dataRef.current
+          : [emptyTable()[0], ...autoRefs.map((ref) => rowCells(['', ref]))];
+
+      if (passageRefs.current.length === 0 && autoRefs.length > 0) {
+        passageRefs.current = autoRefs;
+      }
 
       setNumSegments(regions.length);
 
@@ -456,8 +448,8 @@ const formLim = ({ start, end }: IRegion) =>
           | undefined;
         let nextReference = `${previousReference?.value ?? ''}`;
 
-        if (!nextReference && passageRefs.current[index]) {
-          nextReference = passageRefs.current[index];
+        if (!nextReference && autoRefs[index]) {
+          nextReference = autoRefs[index];
         }
         if (region.label && init) {
           const refsSoFar = collectRefs(newData);
@@ -504,6 +496,10 @@ const formLim = ({ start, end }: IRegion) =>
       currentSegment,
       hasPermission,
       isChanged,
+      getPassageRefs,
+      emptyTable,
+      formLim,
+      passage,
       numSegments,
       rowCells,
       t.reference,
