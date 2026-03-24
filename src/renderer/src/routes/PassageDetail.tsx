@@ -426,7 +426,6 @@ const PassageDetailGrids = () => {
   );
 };
 
-
 export const PassageDetail = () => {
   const { prjId } = useParams();
   const { pathname } = useLocation();
@@ -456,6 +455,10 @@ export const PassageDetail = () => {
     <Box
       sx={{
         flexGrow: 1,
+        display: 'flex', // ← Add this
+        justifyContent: 'center', // ← Add this
+        alignItems: 'center', // ← Add this
+        backgroundColor: 'blue', // ← Add this
         minWidth: 0,
         minHeight: '536px',
         width: '100%',
@@ -466,26 +469,26 @@ export const PassageDetail = () => {
       <AppHead switchTo={true} />
       <PassageDetailProvider>
         {
-        // If on mobile render PassageDetailMobileDetail which includes the TeamCheckReference content,
-        // otherwise render the grids which will include the TeamCheckReference component in the right
-        // pane when that tool is selected
-        isMobile ? (
-          <PassageDetailMobileDetail
-            currentVersion={1}
-            showSideBySide={false}
-            recordContent={<TeamCheckReferenceMobile/>}
-            noAudioText={''}
-          />
-        ) :
-        // Else, do PassageDetailGrids
-        (<PassageDetailGrids/>)}
+          // If on mobile render PassageDetailMobileDetail which includes the TeamCheckReference content,
+          // otherwise render the grids which will include the TeamCheckReference component in the right
+          // pane when that tool is selected
+          isMobile ? (
+            <PassageDetailMobileDetail
+              currentVersion={1}
+              showSideBySide={false}
+              recordContent={<TeamCheckReferenceMobile />}
+              noAudioText={''}
+            />
+          ) : (
+            // Else, do PassageDetailGrids
+            <PassageDetailGrids />
+          )
+        }
       </PassageDetailProvider>
     </Box>
   );
 };
 export default PassageDetail;
-
-
 
 /*
 <PassageDetailProvider>
@@ -505,7 +508,6 @@ export default PassageDetail;
         (<PassageDetailGrids/>)}
       </PassageDetailProvider>
 */
-
 
 /*
 

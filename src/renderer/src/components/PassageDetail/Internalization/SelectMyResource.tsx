@@ -52,11 +52,11 @@ export const SelectMyResource = (props: IProps) => {
       id="select-my-resource"
       ref={controlRef}
       sx={{
-        mx: 10,
+        mx: 1,
         display: 'flex',
         flexGrow: 1,
         textOverflow: 'ellipsis',
-        minWidth: '100%',
+        minWidth: '400px',
         ...(myWidth && {
           maxWidth: `${myWidth - 32}px`,
         }),

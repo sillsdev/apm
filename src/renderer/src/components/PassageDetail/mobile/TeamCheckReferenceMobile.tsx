@@ -1,5 +1,5 @@
 import { useContext, useEffect, useState } from 'react';
-import { Grid, GridProps, styled, Box } from '@mui/material';
+import { Grid, GridProps, styled } from '@mui/material';
 import SelectMyResource from '../Internalization/SelectMyResource';
 import { LimitedMediaPlayer } from '../../LimitedMediaPlayer';
 import { PassageDetailContext } from '../../../context/PassageDetailContext';
@@ -17,7 +17,7 @@ const StyledGrid = styled(Grid)<GridProps>(({ theme }) => ({
   },
 }));
 
-export function TeamCheckReferenceMobile()  {
+export function TeamCheckReferenceMobile() {
   const ctx = useContext(PassageDetailContext);
   const {
     rowData,
@@ -85,7 +85,17 @@ export function TeamCheckReferenceMobile()  {
 
   return (
     <Grid container direction="column">
-      <Grid size={{ xs: 10 }} sx={{ m: 2, p: 2 }}>
+      <Grid
+        size={{ xs: 10 }}
+        sx={{
+          m: '2px',
+          p: '2px',
+          display: 'flex', // ← Add this
+          justifyContent: 'center', // ← Add this
+          alignItems: 'center', // ← Add this
+          backgroundColor: 'red', // ← Add this
+        }}
+      >
         <SelectMyResource onChange={handleResource} inResource={resource} />
       </Grid>
       <StyledGrid size={{ xs: 10 }}>
