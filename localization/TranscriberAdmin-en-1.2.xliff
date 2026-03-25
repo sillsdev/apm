@@ -2307,7 +2307,7 @@
             </context-group>
          </trans-unit>
          <trans-unit id="electronImport.allDataOverwritten">
-            <source>All {name0} data will be overwritten.</source>
+            <source>All '{name0}' data will be overwritten.</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">electronImport.tsx</context>
@@ -2363,7 +2363,7 @@
             </context-group>
          </trans-unit>
          <trans-unit id="electronImport.lastExported">
-            <source>Current data in audio project {name0} was last exported {date0}.</source>
+            <source>Current data in audio project '{name0}' was last exported {date0}.</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">electronImport.tsx</context>
@@ -2377,7 +2377,7 @@
             </context-group>
          </trans-unit>
          <trans-unit id="electronImport.neverExported">
-            <source>Current data in audio project {name0} has never been exported to an itf file to preserve changes.</source>
+            <source>Current data in audio project '{name0}' has never been exported to an itf file to preserve changes.</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">electronImport.tsx</context>
@@ -2398,7 +2398,7 @@
             </context-group>
          </trans-unit>
          <trans-unit id="electronImport.projectImported">
-            <source>Audio Project {name0} was previously imported with a newer file: {date1} </source>
+            <source>Audio Project '{name0}' was previously imported with a newer file: {date1} </source>
             <target/>
             <context-group>
                <context context-type="sourcefile">electronImport.tsx</context>
@@ -6258,13 +6258,6 @@
          </trans-unit>
          <trans-unit id="passageRecord.fileType">
             <source>File Type</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">passageRecord.tsx</context>
-            </context-group>
-         </trans-unit>
-         <trans-unit id="passageRecord.loadlatest">
-            <source>Load Latest Audio</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">passageRecord.tsx</context>

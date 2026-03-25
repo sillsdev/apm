@@ -86,7 +86,13 @@ const TeamActions = () => {
         contentStatus={contentStatus}
         textFieldSx={{ width: '600px' }}
       />
-      {importOpen && <ImportTab isOpen={importOpen} onOpen={setImportOpen} />}
+      {importOpen && (
+        <ImportTab
+          isOpen={importOpen}
+          onOpen={setImportOpen}
+          offerPtf={!offline}
+        />
+      )}
     </RootBox>
   );
 };
