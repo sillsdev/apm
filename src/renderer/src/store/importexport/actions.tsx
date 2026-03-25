@@ -489,12 +489,6 @@ export const importFromExternal =
       pendingmsg,
       completemsg,
       dispatch,
-    }).catch((reason) => {
-      logError(Severity.error, errorReporter, `Import Error: ${reason}`);
-      dispatch({
-        payload: errorStatus(-1, reason.toString()),
-        type: IMPORT_ERROR,
-      });
     });
   };
 
@@ -529,12 +523,6 @@ const importFromElectron =
       pendingmsg,
       completemsg,
       dispatch,
-    }).catch((reason) => {
-      logError(Severity.error, errorReporter, `Import Error: ${reason}`);
-      dispatch({
-        payload: errorStatus(-1, reason.toString()),
-        type: IMPORT_ERROR,
-      });
     });
   };
 export interface CopyProjectProps {

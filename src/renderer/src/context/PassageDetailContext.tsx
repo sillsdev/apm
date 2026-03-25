@@ -1082,7 +1082,6 @@ const PassageDetailProvider = (props: IProps) => {
       label: s.attributes.name,
     }));
     setState((state: ICtxState) => ({ ...state, workflow: wf }));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.orgWorkflowSteps]);
 
   useEffect(() => {

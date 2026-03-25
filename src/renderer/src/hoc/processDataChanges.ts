@@ -303,7 +303,6 @@ export const processDataChanges = async (pdc: {
     for (let ix = 0; ix < deletes.length; ix++) {
       const table = deletes[ix] as ChangeList;
       const operations: RecordOperation[] = [];
-      // eslint-disable-next-line no-loop-func
       table.ids.forEach((r) => {
         const localId = remoteIdGuid(
           table.type,

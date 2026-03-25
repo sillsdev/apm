@@ -289,7 +289,13 @@ const FloatingActions = () => {
         contentStatus={contentStatus}
       />
 
-      {importOpen && <ImportTab isOpen={importOpen} onOpen={setImportOpen} />}
+      {importOpen && (
+        <ImportTab
+          isOpen={importOpen}
+          onOpen={setImportOpen}
+          offerPtf={!offline}
+        />
+      )}
     </>
   );
 };

@@ -168,6 +168,7 @@ export const ProjButtons = (props: IProps) => {
           onOpen={setOpenImport}
           planName={planName}
           project={project}
+          offerPtf={false}
         />
       )}
       {onLeft && <Divider orientation="vertical" flexItem />}

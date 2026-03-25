@@ -386,12 +386,12 @@ export function TranscriptionTab(props: IProps) {
     return Boolean(
       step
         ? orgSteps &&
-        passRec &&
-        afterStep({
-          psgCompleted: getStepComplete(passRec),
-          target: step,
-          orgWorkflowSteps: orgSteps,
-        })
+            passRec &&
+            afterStep({
+              psgCompleted: getStepComplete(passRec),
+              target: step,
+              orgWorkflowSteps: orgSteps,
+            })
         : true
     );
   }, [passages, step, orgSteps, pasId]);
@@ -404,7 +404,6 @@ export function TranscriptionTab(props: IProps) {
         setDataName('');
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dataUrl, dataName, eafAnchor]);
 
   useEffect(() => {
@@ -664,16 +663,7 @@ export function TranscriptionTab(props: IProps) {
                 {t.exportProject}
               </AltButton>
             )}
-            <AltButton
-              id="transCopy"
-              key="copy"
-              aria-label={t.copyTranscriptions}
-              onClick={handleCopyPlan}
-              title={t.copyTip}
-            >
-              {t.copyTranscriptions +
-                (localizedArtifact ? ' (' + localizedArtifact + ')' : '')}
-            </AltButton>
+
             {step && (
               <AudioExportMenu
                 key="audioexport"
@@ -701,6 +691,16 @@ export function TranscriptionTab(props: IProps) {
               </PriButton>
             )}
             <GrowingSpacer />
+            <AltButton
+              id="transCopy"
+              key="copy"
+              aria-label={t.copyTranscriptions}
+              onClick={handleCopyPlan}
+              title={t.copyTip}
+            >
+              {t.copyTranscriptions +
+                (localizedArtifact ? ' (' + localizedArtifact + ')' : '')}
+            </AltButton>
             <SelectExportType
               exportType={artifactType}
               exportTypes={artifactTypes}

@@ -509,7 +509,11 @@ export function Access() {
             </ContainerBox>
           )}
           {importOpen && (
-            <ImportTab isOpen={importOpen} onOpen={setImportOpen} />
+            <ImportTab
+              isOpen={importOpen}
+              onOpen={setImportOpen}
+              offerPtf={false}
+            />
           )}
         </Box>
       )}

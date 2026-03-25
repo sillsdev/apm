@@ -378,7 +378,13 @@ export function Welcome(props: IProps) {
           </Grid>
         </Box>
       )}
-      {importOpen && <ImportTab isOpen={importOpen} onOpen={setImportOpen} />}
+      {importOpen && (
+        <ImportTab
+          isOpen={importOpen}
+          onOpen={setImportOpen}
+          offerPtf={!isElectron}
+        />
+      )}
     </RootBox>
   );
 }

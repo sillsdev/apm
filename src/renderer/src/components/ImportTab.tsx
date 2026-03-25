@@ -181,10 +181,12 @@ interface IProps {
   syncBuffer?: Buffer | undefined;
   syncFile?: string | undefined;
   isOpen: boolean;
+  offerPtf: boolean;
   onOpen: (val: boolean) => void;
 }
 export function ImportTab(props: IProps) {
-  const { isOpen, onOpen, project, planName, syncBuffer, syncFile } = props;
+  const { isOpen, onOpen, project, planName, syncBuffer, syncFile, offerPtf } =
+    props;
   const t: IImportStrings = useSelector(importSelector, shallowEqual);
   const ta: IActivityStateStrings = useSelector(activitySelector, shallowEqual);
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
@@ -236,6 +238,7 @@ export function ImportTab(props: IProps) {
   const { getOrganizedBy } = useOrganizedBy();
   const forceDataChanges = useDataChanges();
   const { handleElectronImport, getElectronImportData } = useElectronImport();
+  const getImportFileRef = useRef(false);
   const headerRow = () =>
     t.plan +
     '\t' +
@@ -312,8 +315,29 @@ export function ImportTab(props: IProps) {
     if (isElectron && syncFile && syncBuffer) {
       uploadSyncITF(syncBuffer, syncFile);
     } // Need to ask user if they want to import PTF or ITF
-    else setShowImportTypeSelection(true);
+    else if (offerPtf) setShowImportTypeSelection(true);
+    else {
+      setSelectedImportType(isOffline ? UploadType.PTF : UploadType.ITF);
+      if (!getImportFileRef.current)
+        getImportFile(isOffline ? UploadType.PTF : UploadType.ITF);
+    }
   }, []);
+
+  const getImportFile = async (type: UploadType) => {
+    setShowImportTypeSelection(false);
+    if (type === UploadType.PTF && isOffline) {
+      // For offline PTF, we use electronImport which uses the Electron file picker
+      getImportFileRef.current = true;
+      await electronImport();
+      getImportFileRef.current = false;
+    } else {
+      setUploadVisible(true);
+    }
+  };
+
+  const handleImportTypeSelected = () => {
+    getImportFile(selectedImportType);
+  };
 
   const setImporting = (importing: boolean, errMsg?: string) => {
     importingRef.current = importing;
@@ -349,22 +373,6 @@ export function ImportTab(props: IProps) {
         handleActionConfirmed();
       }
     } else handleActionRefused();
-  };
-
-  const handleImportTypeSelected = () => {
-    setShowImportTypeSelection(false);
-    if (selectedImportType === UploadType.PTF && isOffline) {
-      //this has it's own upload dialog so we don't need to setUploadVisible(true);
-      uploadPTFOffline();
-    } else {
-      setUploadVisible(true);
-    }
-  };
-
-  const uploadPTFOffline = () => {
-    // For offline PTF, we use electronImport which uses the Electron file picker
-    electronImport();
-    setUploadVisible(false);
   };
 
   const handleFileUpload = (
@@ -403,13 +411,10 @@ export function ImportTab(props: IProps) {
   };
 
   const uploadITF = (files: File[]) => {
-    if (!project) return;
     handleFileUpload(files, importProjectITFFromElectron, {
-      projectid: remoteIdNum(
-        'project',
-        project,
-        memory?.keyMap as RecordKeyMap
-      ),
+      projectid: project
+        ? remoteIdNum('project', project, memory?.keyMap as RecordKeyMap)
+        : 0,
       token,
       errorReporter,
       pendingmsg: t.importPending,
