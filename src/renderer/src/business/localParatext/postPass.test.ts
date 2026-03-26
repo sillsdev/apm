@@ -300,4 +300,84 @@ describe('postPass', () => {
       `<usx><para style="p">\r\n<verse number="1-10" style="v"/>rest of transcription</para></usx>`
     );
   });
+
+  it('should re-sync a verse range without affecting surrounding verses', () => {
+    // Arrange: existing DOM has verses 7-11 each in their own paragraph
+    mockChapDom = domParser.parseFromString(
+      '<usx>' +
+        '<para style="p">\r\n<verse number="7" style="v"/>V7</para>' +
+        '<para style="p">\r\n<verse number="8" style="v"/>V8<verse number="9" style="v"/>V9<verse number="10" style="v"/>V10</para>' +
+        '<para style="p">\r\n<verse number="11" style="v"/>V11</para>' +
+        '</usx>'
+    );
+    const passage = {
+      attributes: {
+        book: 'LUK',
+        reference: '1:8-10',
+      },
+    } as PassageD;
+    const params = {
+      doc: mockChapDom,
+      chap: '1',
+      currentPI: {
+        passage,
+        mediaId: 'm1',
+        transcription: '\\v 8 new8 \\v 9 new9 \\v 10 new10',
+      } as PassageInfo,
+      exportNumbers: false,
+      sectionArr: [],
+      memory: mockMemory,
+    };
+
+    // Act
+    postPass(params);
+
+    // Assert: v7 and v11 paragraphs remain, v8-10 grouped in one new paragraph
+    const result = mockChapDom.documentElement?.toString();
+    expect(result).toContain(
+      '<verse number="7" style="v"/>V7</para>'
+    );
+    expect(result).toContain(
+      '<verse number="11" style="v"/>V11</para>'
+    );
+    expect(result).toContain(
+      '<verse number="8" style="v"/>new8<verse number="9" style="v"/>new9<verse number="10" style="v"/>new10</para>'
+    );
+    // Order: v7 para, v8-10 para, v11 para
+    const v7pos = result!.indexOf('number="7"');
+    const v8pos = result!.indexOf('number="8"');
+    const v11pos = result!.indexOf('number="11"');
+    expect(v7pos).toBeLessThan(v8pos);
+    expect(v8pos).toBeLessThan(v11pos);
+  });
+
+  it('should keep multiple marked verses in one paragraph', () => {
+    // Arrange
+    const passage = {
+      attributes: {
+        book: 'MAT',
+        reference: '1:1-4',
+      },
+    } as PassageD;
+    const params = {
+      doc: mockChapDom,
+      chap: '1',
+      currentPI: {
+        passage,
+        mediaId: 'm1',
+        transcription: '\\v 1 one \\v 2 two \\v 3 three \\v 4 four',
+      } as PassageInfo,
+      exportNumbers: false,
+      sectionArr: [],
+      memory: mockMemory,
+    };
+
+    // Act
+    postPass(params);
+
+    // Assert
+    expect(mockChapDom.documentElement?.toString()).toBe(
+      `<usx><para style="p">\r\n<verse number="1" style="v"/>one<verse number="2" style="v"/>two<verse number="3" style="v"/>three<verse number="4" style="v"/>four</para></usx>`
+    );
+  });
 });

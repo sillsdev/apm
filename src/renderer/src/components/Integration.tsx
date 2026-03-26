@@ -747,7 +747,6 @@ export function IntegrationPanel(props: IProps) {
     } else {
       setHasPermission(false);
     }
-    /* eslint-disable-next-line react-hooks/exhaustive-deps */
   }, [ptProj, paratext_projects]);
   const pRef = React.useRef<HTMLDivElement>(null);
 
@@ -832,13 +831,15 @@ export function IntegrationPanel(props: IProps) {
                         : ''
                     }
                     onChange={handleParatextProjectChange}
-                    SelectProps={{
-                      MenuProps: {
-                        sx: menuProps,
+                    slotProps={{
+                      select: {
+                        MenuProps: {
+                          sx: menuProps,
+                        },
                       },
+                      input: { sx: formText },
+                      inputLabel: { sx: formText },
                     }}
-                    InputProps={{ sx: formText }}
-                    InputLabelProps={{ sx: formText }}
                     margin="normal"
                     variant="filled"
                     required={true}
@@ -1015,13 +1016,15 @@ export function IntegrationPanel(props: IProps) {
                         : ''
                     }
                     onChange={handleParatextProjectChange}
-                    SelectProps={{
-                      MenuProps: {
-                        sx: menuProps,
+                    slotProps={{
+                      select: {
+                        MenuProps: {
+                          sx: menuProps,
+                        },
                       },
+                      input: { sx: formText },
+                      inputLabel: { sx: formText },
                     }}
-                    InputProps={{ sx: formText }}
-                    InputLabelProps={{ sx: formText }}
                     margin="normal"
                     variant="filled"
                     required={true}

@@ -24,6 +24,15 @@ const passageVerses = (p: Passage) =>
     ? '-' + (p?.attributes.endVerse || 0).toString()
     : '');
 
+const startsParagraphInTranscription = (transcription: string, p: Passage) => {
+  const v = passageVerses(p).replace('-', '\\-');
+  const refPat = new RegExp(
+    `(?:^|(?:\\r\\n|\\n|\\r|\\\\n)\\s*)\\\\v\\s*${v}\\s`,
+    'i'
+  );
+  return refPat.test(transcription);
+};
+
 export interface IPostPass {
   doc: Document;
   chap: string;
@@ -59,13 +68,35 @@ export const postPass = ({
   }
 
   const parsed = parseTranscription(curPass, transcription);
+  const parsedInChapter = parsed.filter(
+    (p) => p.attributes.startChapter === curChap
+  );
   if (parsed.length > 1) {
-    //remove original range if it exists and we're replacing with multiple
-    const existing = getExistingVerses(doc, curPass);
-    if (existing.exactVerse) removeVerse(existing.exactVerse);
-    existing.allVerses.forEach((v) => {
-      if (isSection(v)) removeSection(v);
-    });
+    // remove the full parsed span in this chapter before reinserting
+    const startVerse = Math.min(
+      ...parsedInChapter.map((p) => p.attributes.startVerse || 0)
+    );
+    const endVerse = Math.max(
+      ...parsedInChapter.map((p) => p.attributes.endVerse || 0)
+    );
+    if (startVerse > 0 && endVerse > 0) {
+      const cleanupPass = {
+        ...curPass,
+        attributes: {
+          ...curPass.attributes,
+          startChapter: curChap,
+          endChapter: curChap,
+          startVerse,
+          endVerse,
+        },
+      } as Passage;
+      const existing = getExistingVerses(doc, cleanupPass);
+      if (existing.exactVerse) removeVerse(existing.exactVerse);
+      existing.allVerses.forEach((v) => {
+        if (isSection(v)) removeSection(v);
+        else removeVerse(v);
+      });
+    }
   }
   const altRef =
     !hasVerse &&
@@ -73,41 +104,56 @@ export const postPass = ({
       currentPI.passage.attributes.endChapter
       ? `[${curPass.attributes.reference}] `
       : '';
-  parsed
-    .filter((p) => p.attributes.startChapter === curChap)
-    .forEach((p) => {
-      //remove existing verses
-      let thisVerse = removeOverlappingVerses(doc, p);
+  let isFirstVerse = true;
+  let lastInserted: Element | undefined;
+  parsedInChapter.forEach((p) => {
+    const startsParagraph = startsParagraphInTranscription(transcription, p);
+    const paraForThisVerse = isFirstVerse || !hasVerse || startsParagraph;
+    let thisVerse = removeOverlappingVerses(doc, p);
 
-      if (thisVerse) {
-        thisVerse = moveToPara(doc, thisVerse);
-        if (thisVerse)
-          replaceText(doc, thisVerse, altRef + p.attributes.lastComment);
-      } else {
-        const verses = getVerses(doc.documentElement);
-        const nextVerse = findNodeAfterVerse(
-          doc,
-          verses,
-          p?.attributes.startVerse || 0,
-          p?.attributes.endVerse || 0
-        );
-        thisVerse = addParatextVerse({
-          doc,
-          sibling: nextVerse,
-          verses: passageVerses(p),
-          transcript: altRef + p.attributes.lastComment,
-          before: true,
-        });
-      }
-      if (p.attributes.sequencenum === 1 && thisVerse) {
-        addSection({
-          doc,
-          passage: p,
-          verse: thisVerse,
-          memory,
-          addNumbers: exportNumbers,
-          sectionArr,
-        });
-      }
-    });
+    if (thisVerse) {
+      if (paraForThisVerse) thisVerse = moveToPara(doc, thisVerse);
+
+      if (thisVerse)
+        replaceText(doc, thisVerse, altRef + p.attributes.lastComment);
+    } else if (paraForThisVerse) {
+      const verses = getVerses(doc.documentElement);
+      const nextVerse = findNodeAfterVerse(
+        doc,
+        verses,
+        p?.attributes.startVerse || 0,
+        p?.attributes.endVerse || 0
+      );
+      thisVerse = addParatextVerse({
+        doc,
+        sibling: nextVerse,
+        verses: passageVerses(p),
+        transcript: altRef + p.attributes.lastComment,
+        before: true,
+        firstVerse: true,
+      });
+    } else {
+      thisVerse = addParatextVerse({
+        doc,
+        sibling: lastInserted,
+        verses: passageVerses(p),
+        transcript: altRef + p.attributes.lastComment,
+        before: false,
+        firstVerse: false,
+      });
+    }
+    if (p.attributes.sequencenum === 1 && thisVerse) {
+      addSection({
+        doc,
+        passage: p,
+        verse: thisVerse,
+        memory,
+        addNumbers: exportNumbers,
+        sectionArr,
+      });
+    }
+
+    lastInserted = thisVerse;
+    isFirstVerse = false;
+  });
 };
