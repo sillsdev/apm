@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { IPassageDetailArtifactsStrings } from '../../../model';
-import { ListItemText } from '@mui/material';
+import { ListItemText, SxProps, Theme } from '@mui/material';
 import InfoIcon from '@mui/icons-material/Info';
 import { AltButton, LightTooltip } from '../../../control';
 import { resourceSelector } from '../../../selector';
@@ -17,11 +17,12 @@ interface IProps {
   action?: (what: string) => void;
   stopPlayer?: () => void;
   buttonDark?: boolean;
-  buttonElevated?: boolean; // setting for some shadowing 
+  buttonElevated?: boolean; // setting for some shadowing
+  buttonSx?: SxProps<Theme>;
 }
 
 export const AddResource = (props: IProps) => {
-  const { action, stopPlayer, buttonDark, buttonElevated } = props;
+  const { action, stopPlayer, buttonDark, buttonElevated, buttonSx } = props;
   const { passage } = usePassageDetailContext();
   const { getPassageTypeFromId } = usePassageType();
   const [biblebrain, setBiblebrain] = useState(true);
@@ -68,6 +69,7 @@ export const AddResource = (props: IProps) => {
         onClick={handleClick}
         dark={buttonDark}
         elevated={buttonElevated}
+        sx={buttonSx}
       >
         {t.add}
       </AltButton>

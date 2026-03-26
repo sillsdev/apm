@@ -797,7 +797,12 @@ export function PassageDetailArtifactsMobile() {
         >
           {isScripture && (
             <Grid>
-              <AltButton dark elevated onClick={() => handleFindVisible(true)}>
+              <AltButton
+                dark
+                elevated
+                onClick={() => handleFindVisible(true)}
+                sx={{ fontSize: (theme) => theme.typography.h6.fontSize }}
+              >
                 <Badge>{t.research}</Badge>
               </AltButton>
             </Grid>
@@ -809,6 +814,7 @@ export function PassageDetailArtifactsMobile() {
                   action={handleAction}
                   buttonDark
                   buttonElevated
+                  buttonSx={{ fontSize: (theme) => theme.typography.h6.fontSize }}
                 />
               </Grid>
               {hasProjRes && (
