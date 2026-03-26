@@ -28,7 +28,7 @@ import { useOrbitData } from '../../../../hoc/useOrbitData';
 import { useStepPermissions } from '../../../../utils/useStepPermission';
 import AddIcon from '@mui/icons-material/LibraryAddOutlined';
 import VersionsIcon from '@mui/icons-material/List';
-import MediaRecordMobile from './MediaRecordMobile';
+import MediaRecord from '../../../../components/MediaRecord';
 
 interface IProps {
   ready?: () => boolean;
@@ -249,7 +249,7 @@ export function PassageDetailRecord(props: IProps) {
         </AltButton>
       </Box>
 
-      <MediaRecordMobile
+      <MediaRecord
         toolId={toolId}
         artifactId={VernacularTag}
         passageId={passageId}

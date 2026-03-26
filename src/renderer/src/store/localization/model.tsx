@@ -1458,6 +1458,7 @@ export interface ISharedStrings extends Localize.LocalizedStringsMethods {
     "teamrole": string;
     "transcriber": string;
     "translator": string;
+    "upload": string;
     "uploadMediaPlural": string;
     "uploadMediaSingular": string;
     "uploadRights": string;

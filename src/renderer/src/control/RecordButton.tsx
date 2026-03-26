@@ -2,6 +2,7 @@ import { Box, Button, SxProps, useTheme } from '@mui/material';
 import { LightTooltip } from './LightTooltip';
 import PauseIcon from '@mui/icons-material/Pause';
 import StopIcon from '@mui/icons-material/Stop';
+import { Typography } from '@mui/material';
 import { FaSquare, FaCircle } from 'react-icons/fa';
 import type { IconBaseProps } from 'react-icons/lib';
 import { shallowEqual, useSelector } from 'react-redux';
@@ -24,6 +25,7 @@ interface IRecordButtonProps {
   sx?: SxProps;
   isStopLogic?: boolean;
   active?: boolean;
+  isMobileView?: boolean;
 }
 
 export const RecordButton = ({
@@ -39,6 +41,7 @@ export const RecordButton = ({
   isStopLogic = false,
   active = true,
   sx,
+  isMobileView,
 }: IRecordButtonProps) => {
   const theme = useTheme();
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -67,6 +70,46 @@ export const RecordButton = ({
     recordButtonSelector,
     shallowEqual
   );
+
+  if (isMobileView){
+    return(
+      <>
+        <Box
+          onClick={handleClick}
+          role="button"
+          tabIndex={0}
+          onKeyDown={handleKeyDown}
+          sx={{
+            display: 'flex',
+            cursor: 'pointer',
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: 'black',
+            borderRadius: '4px',
+            padding: '4px',
+            boxShadow: theme.shadows[2],
+          }}
+        >
+          {recording ? (
+            <>
+              <StopIcon style={{ color: 'white', fontSize: isSmall ? '1.4em' : '1.4rem' }} />
+              <Typography variant="caption" sx={{ mt: 0.5, textAlign: 'center', color: 'white', ml: 1 }}>
+                {'STOP'}
+              </Typography>
+            </>
+          ) : (
+            <>
+              <WhiteCircle style={{ color: redColor, fontSize: isSmall ? '1.2rem' : '1.4rem' }} />
+              <Typography variant="caption" sx={{ mt: 0.5, textAlign: 'center', color: 'white', ml: 1 }}>
+                {t.record}
+              </Typography>
+            </>
+          )}
+        </Box>
+      </>
+    )
+  };
 
   if (showText) {
     if (recording) {

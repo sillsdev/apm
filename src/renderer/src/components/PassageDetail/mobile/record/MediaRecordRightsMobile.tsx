@@ -9,6 +9,7 @@ import React, {
 import { useGlobal } from '../../../../context/useGlobal';
 import { IPassageRecordStrings, ISharedStrings } from '../../../../model';
 import { Stack, Paper, Typography } from '@mui/material';
+import { SxProps } from '@mui/material/styles';
 import WSAudioPlayer, { WSAudioPlayerControls } from '../../../WSAudioPlayer';
 import { loadBlobAsync, waitForIt } from '../../../../utils';
 import {
@@ -73,10 +74,12 @@ interface IProps {
   hasRecording?: boolean;
   isStopLogic?: boolean;
   showSize?: boolean;
+  handleUpload: () => void;
+  buttonProp?: SxProps;
 }
 export const DEFAULT_COMPRESSED_MIME = 'audio/ogg;codecs=opus';
 
-function MediaRecordMobile(props: IProps) {
+function MediaRecordRightsMobile(props: IProps) {
   const {
     toolId,
     onReady,
@@ -121,6 +124,8 @@ function MediaRecordMobile(props: IProps) {
     hasRecording,
     isStopLogic,
     showSize = true,
+    handleUpload,
+    buttonProp,
   } = props;
   const context = usePassageDetailContext();
   const { settings: toolSettings } = useStepTool(context?.currentstep || '');
@@ -530,6 +535,9 @@ function MediaRecordMobile(props: IProps) {
         keepItSmall={keepItSmall}
         hasRecording={hasRecording ?? false}
         isStopLogic={isStopLogic ?? false}
+        isRecordingRights={true}
+        handleUpload={handleUpload}
+        buttonProp={buttonProp}
       />
       {warning && (
         <Typography sx={{ m: 2, color: 'warning.dark' }} id="warning">
@@ -557,9 +565,11 @@ function MediaRecordMobile(props: IProps) {
   }
 
   return (
-    <Paper id="mediaRecord" sx={{ width: width - 12, maxWidth: width, minWidth: 0 }}>
+    <>
       {content}
-    </Paper>
+    </>
+    // <Paper id="mediaRecord" sx={{ width: width - 12, maxWidth: width, minWidth: 0 }}>
+    // </Paper>
   );
 }
-export default MediaRecordMobile;
+export default MediaRecordRightsMobile;

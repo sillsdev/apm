@@ -10,7 +10,7 @@ import { useGlobal } from '../context/useGlobal';
 import { IPassageRecordStrings, ISharedStrings } from '../model';
 import { Stack, Paper, Typography } from '@mui/material';
 import WSAudioPlayer, { WSAudioPlayerControls } from './WSAudioPlayer';
-import { loadBlobAsync, waitForIt } from '../utils';
+import { loadBlobAsync, useMobile, waitForIt } from '../utils';
 import {
   IMediaState,
   MediaSt,
@@ -556,8 +556,10 @@ function MediaRecord(props: IProps) {
     return content;
   }
 
+  const { isMobile: isMobileView } = useMobile();
+
   return (
-    <Paper id="mediaRecord" sx={{ width: width, maxWidth: width, minWidth: 0 }}>
+    <Paper id="mediaRecord" sx={{ width: isMobileView ? width - 12 : width, maxWidth: width, minWidth: 0 }}>
       {content}
     </Paper>
   );

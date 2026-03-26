@@ -8700,6 +8700,13 @@
                <context context-type="sourcefile">PlanSheet.tsx</context>
             </context-group>
          </trans-unit>
+        <trans-unit id="shared.upload">
+          <source>Upload</source>
+          <target/>
+          <context-group>
+              <context context-type="sourcefile">PlanSheet.tsx</context>
+          </context-group>
+        </trans-unit>
       	<trans-unit id="shared.uploadRights">
       		<source>Upload Rights File</source>
       		<target/>

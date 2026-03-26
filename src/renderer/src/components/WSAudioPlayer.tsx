@@ -36,6 +36,8 @@ import UndoIcon from '@mui/icons-material/Undo';
 import MicIcon from '@mui/icons-material/SettingsVoice';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import NormalizeIcon from '../control/NormalizeIcon';
+import UploadIcon from '@mui/icons-material/CloudUpload';
+import { Button } from '@mui/material';
 import { ISharedStrings, IWsAudioPlayerStrings } from '../model';
 import { FaHandScissors } from 'react-icons/fa';
 import type { IconBaseProps } from 'react-icons/lib';
@@ -171,6 +173,9 @@ interface IProps {
   isStopLogic?: boolean;
   hasSegmentUndo?: boolean;
   onSegmentUndo?: () => void;
+  isRecordingRights?: boolean;
+  handleUpload?: () => void;
+  buttonProp?: SxProps;
 }
 
 export interface WSAudioPlayerControls {
@@ -263,6 +268,9 @@ function WSAudioPlayer(props: IProps) {
     isStopLogic,
     hasSegmentUndo,
     onSegmentUndo,
+    isRecordingRights,
+    handleUpload,
+    buttonProp,
   } = props;
 
   const waveformRef = useRef<HTMLDivElement | null>(null);
@@ -1502,6 +1510,103 @@ function WSAudioPlayer(props: IProps) {
   }, [audioInputDevices.length, isMobileView]);
 
   const onSplit = () => {};
+
+  if (isMobileView && isRecordingRights) {
+    return (
+      <>
+        <Stack direction="row" spacing={1} sx={{ mx: 1, py: 1, display: 'flex', justifyContent: 'space-between' }}>
+          {duration === 0 || recording ? (
+            <RecordButton
+              recording={recording}
+              oneTryOnly={oneTryOnly}
+              onClick={handleRecorder}
+              disabled={playing || processingRecording || waitingForAI}
+              tooltipTitle={recordTooltipTitle}
+              isSmall={true}
+              hasRecording={hasRecording ?? false}
+              isStopLogic={isStopLogic ?? false}
+              isMobileView={true}
+            />
+          ) : (
+            <Stack direction="row" spacing={1} sx={{ display: 'flex', alignItems: 'center' }}>
+              <LightTooltip
+                id="wsAudioPlayTip"
+                title={(playing
+                  ? oneTryOnly
+                    ? t.stopTip
+                    : t.pauseTip
+                  : t.playTip
+                ).replace('{0}', localizeHotKey(PLAY_PAUSE_KEY))}
+              >
+                <span>
+                  <IconButton
+                    id="wsAudioPlay"
+                    onClick={togglePlayStatus}
+                    disabled={duration === 0 || recording}
+                  >
+                    <>{playing ? <PauseIcon /> : <PlayIcon />}</>
+                  </IconButton>
+                </span>
+              </LightTooltip>
+              <Typography sx={{ m: '5px' }}>
+                <Duration id="wsAudioPosition" seconds={progress} /> {' / '}
+                <Duration id="wsAudioDuration" seconds={duration} />
+              </Typography>
+              {hasRegion === 0 && (
+                <LightTooltip
+                  id="wsAudioDeleteTip"
+                  title={t.deleteRecording}
+                >
+                  <span>
+                    <IconButton
+                      id="wsAudioDelete"
+                      onClick={handleDelete}
+                      disabled={
+                        recording || duration === 0 || waitingForAI
+                      }
+                    >
+                      <DeleteIcon />
+                    </IconButton>
+                  </span>
+                </LightTooltip>
+              )}
+            </Stack>
+          )}
+          <Box>
+            <Button
+              sx={buttonProp}
+              id="spkr-upload"
+              onClick={handleUpload}
+              title={ts.upload}
+            >
+              <UploadIcon />
+              {ts.upload}
+            </Button>
+          </Box>
+        </Stack>
+        <Box
+          sx={{
+            width: '100%',
+            maxWidth: '100%',
+            minWidth: 0,
+            boxSizing: 'border-box',
+          }}
+        >
+          <div id="wsAudioWaveform" ref={waveformRef} />
+        </Box>
+        {confirmAction === '' || (
+          <Confirm
+            jsx={
+              typeof confirmAction !== 'string' ? confirmAction : undefined
+            }
+            text={typeof confirmAction === 'string' ? confirmAction : ''}
+            yesResponse={handleActionConfirmed}
+            noResponse={handleActionRefused}
+          />
+        )}
+      </>
+    )
+  };
 
   return (
     <Box sx={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>

@@ -9,9 +9,9 @@ import {
   Paper,
   Typography,
   Box,
-  SxProps,
   LinearProgress,
 } from '@mui/material';
+import { SxProps } from '@mui/material/styles';
 import {
   useContext,
   useEffect,
@@ -33,7 +33,7 @@ import {
 } from '../crud';
 import Memory from '@orbit/memory';
 import { useSnackBar } from '../hoc/SnackBar';
-import { cleanFileName } from '../utils';
+import { cleanFileName, useMobile } from '../utils';
 import MediaRecord from './MediaRecord';
 import { useGetGlobal, useGlobal } from '../context/useGlobal';
 import { UnsavedContext } from '../context/UnsavedContext';
@@ -53,6 +53,7 @@ import {
 import React from 'react';
 import { VoiceStatement } from '../business/voice/VoiceStatement';
 import { IVoicePerm } from '../business/voice/PersonalizeVoicePermission';
+import ProvideRightsMobile from './PassageDetail/mobile/record/ProvideRightsMobile';
 
 const paperProps = { p: 2, m: 'auto', width: `calc(100% - 32px)` } as SxProps;
 const rowProp = { display: 'flex', p: 2 };
@@ -278,6 +279,41 @@ export function ProvideRights(props: IProps) {
   const handleLater = () => {
     onRights && onRights(true);
   };
+
+  const { isMobile: isMobileView } = useMobile();
+
+  if (isMobileView) {
+    return <ProvideRightsMobile
+      paperRef={paperRef}
+      paperProps={paperProps}
+      rowProp={rowProp}
+      buttonProp={buttonProp}
+      statusProps={statusProps}
+      speaker={speaker}
+      team={team}
+      state={state}
+      recordingRequired={recordingRequired}
+      handleUpload={handleUpload}
+      handleLater={handleLater}
+      handleSave={handleSave}
+      canSave={canSave}
+      busy={busy}
+      setState={setState}
+      handleStatement={handleStatement}
+      toolId={toolId}
+      statusText={statusText}
+      teamRec={teamRec}
+      defaultFilename={defaultFilename}
+      artifactState={artifactState}
+      setSaving={setSaving}
+      setStatusText={setStatusText}
+      setResetMedia={setResetMedia}
+      resetMedia={resetMedia}
+      afterUploadCb={afterUploadCb}
+      handleSetCanSave={handleSetCanSave}
+      paperWidth={paperWidth}
+    />;
+  }
 
   return (
     <div>

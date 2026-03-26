@@ -260,7 +260,7 @@ template.end	Ending verse number	Numéro du verset de fin	Número do versículo 
 grid.endsWith	Ends with	Se termine par	Termina com	Termina con	Berakhir dengan	Заканчивается на	结束于
 mediaUpload.markdownTitle	Enter Text	Saisir le texte	Inserir texto	Introducir Texto	Ketik Teks	Введите текст	输入文本
 grid.equal	Equals	Équivaut à	Igual	Es igual a	Sama dengan	Равно	等于
-faithbridge.error	Error: 	Erreur : 	Erro: 	Error: 	Error: 	Ошибка:	错误： 
+faithbridge.error	Error: 	Erreur : 	Erro: 	Error: 	Error: 	Ошибка:	错误：
 keyTerms.exclude	Exclude	Exclure	Excluir	Excluir	Kecualikan	Исключить	排除
 voice.excludeName	Exclude my name.	Exclure mon nom.	Exclua meu nome.	Excluir mi nombre.	Kecualikan nama saya.	Исключите мое имя.	排除我的姓名。
 voice.excludedLanguages	Excluded languages	Langues exclues	Idiomas excluídos	Idiomas excluidos	Bahasa yang dikecualikan	Исключенные языки	排除的语言
@@ -780,6 +780,7 @@ cards.uploadProgress	Upload Progress	Progression du téléchargement	Progresso d
 mediaUpload.resourceTitle	Upload Resources	Télécharger les ressources	Carregar Recursos	Cargar recursos	Unggah Sumber	Загрузить ресурсы	上传资源
 shared.uploadRights	Upload Rights File	Télécharger le fichier des droits	Upload de ficheiros de direitos	Cargar archivo de derechos	Unggah File Hak Cipta	Загрузить файл с правами	上传权利文件
 shared.uploadSuccess	Upload Successful	Téléchargement réussi	Carregamento bem sucedido	Carga correcta	Pengunggahan Berhasil	Загрузка успешна	上传成功
+shared.upload Upload  Annuler	Cancelar	Cancelar	Batal	Отмена	取消
 passageDetailArtifacts.upload	Uploads	Téléchargements	Uploads	Cargas	Unggahan	Загрузка	上传
 mediaTab.user	User	Utilisateur	Utilizador	Usuario	Pengguna	Пользователь	用户
 profile.userProfile	User profile	Profil du utilisateur	Perfil do usuário	Perfil de usuario	Profil pengguna	Профиль пользователя	用户资料
