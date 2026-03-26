@@ -444,6 +444,37 @@ test('split uses the selected left and right verses rather than the dialog row',
   expect(screen.getByLabelText('verse-reference-3')).toHaveValue('1:4');
 });
 
+test('shows undo after dialog save and restores the previous table', async () => {
+  const user = userEvent.setup();
+
+  runTest({ width: 375 });
+
+  act(() => {
+    mockPlayerAction?.(
+      '{"regions":"[{\\"start\\":0,\\"end\\":10},{\\"start\\":10,\\"end\\":20},{\\"start\\":20,\\"end\\":69}]"}',
+      false
+    );
+  });
+
+  await screen.findByText('0:00.0-0:10.0');
+
+  await user.click(screen.getByRole('button', { name: 'Split Verse' }));
+  await user.click(await screen.findByRole('checkbox'));
+  await user.selectOptions(screen.getByLabelText('start verse suffix'), 'a');
+  await user.selectOptions(screen.getByLabelText('end verse suffix'), 'e');
+  await user.click(screen.getByRole('button', { name: 'Save' }));
+
+  expect(screen.getByRole('button', { name: 'Undo' })).toBeInTheDocument();
+  expect(screen.getByLabelText('verse-reference-1')).toHaveValue('1:1a-2e');
+
+  await user.click(screen.getByRole('button', { name: 'Undo' }));
+
+  expect(screen.queryByRole('button', { name: 'Undo' })).not.toBeInTheDocument();
+  expect(screen.getByLabelText('verse-reference-1')).toHaveValue('1:1');
+  expect(screen.getByLabelText('verse-reference-2')).toHaveValue('1:2');
+  expect(screen.getByLabelText('verse-reference-3')).toHaveValue('1:3');
+});
+
 test('reset clears markers and restores the original reference table', async () => {
   const user = userEvent.setup();
 

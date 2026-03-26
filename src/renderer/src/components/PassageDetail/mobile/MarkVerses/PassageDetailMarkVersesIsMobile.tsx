@@ -90,6 +90,10 @@ interface IEditReferenceDialogState extends EditReferenceValue {
   verseOptions: number[];
 }
 
+interface IUndoState {
+  tableData: ICell[][];
+}
+
 export interface MarkVersesProps {
   width: number;
 }
@@ -120,6 +124,7 @@ export default function PassageDetailMarkVersesIsMobile({
   const [isReferenceEditing, setIsReferenceEditing] = useState(false);
   const [editReferenceDialog, setEditReferenceDialog] =
     useState<IEditReferenceDialogState>();
+  const [undoState, setUndoState] = useState<IUndoState>();
   const [playerResetKey, setPlayerResetKey] = useState(0);
   const savingRef = useRef(false);
   const canceling = useRef(false);
@@ -594,6 +599,14 @@ export default function PassageDetailMarkVersesIsMobile({
     return firstSegmentedIndex > 0 ? firstSegmentedIndex : -1;
   }, []);
 
+  const findHighlightedRowIndex = useCallback((tableData: ICell[][]) => {
+    return tableData.findIndex(
+      (row, index) =>
+        index > 0 &&
+        ((row[ColName.Limits] as ICell).className ?? '').includes('cur')
+    );
+  }, []);
+
   const buildEditReferenceDialogState = useCallback(
     (rowIndex: number) => {
       const row = dataRef.current[rowIndex] as ICell[] | undefined;
@@ -680,6 +693,7 @@ export default function PassageDetailMarkVersesIsMobile({
   const handleSaveSplitVerseDialog = (value: EditReferenceValue) => {
     if (!editReferenceDialog) return;
 
+    const previousData = cloneTableData(dataRef.current);
     const newData = cloneTableData(dataRef.current);
     const findRowIndexForVerse = (
       chapter: number,
@@ -757,6 +771,9 @@ export default function PassageDetailMarkVersesIsMobile({
       }
     }
 
+    setUndoState({
+      tableData: previousData,
+    });
     setActiveRowHighlight(newData, startRowIndex);
     setData(newData);
     setSegments();
@@ -768,6 +785,29 @@ export default function PassageDetailMarkVersesIsMobile({
 
     toolChanged(verseToolId);
     setEditReferenceDialog(undefined);
+  };
+
+  const handleUndoSplitVerseSave = () => {
+    if (!undoState) return;
+
+    const restoredData = cloneTableData(undoState.tableData);
+    const highlightedRowIndex = findHighlightedRowIndex(restoredData);
+    setData(restoredData);
+    setSegments();
+
+    if (highlightedRowIndex > 0) {
+      const activeSegment = getSegmentFromRow(
+        restoredData[highlightedRowIndex] as ICell[]
+      );
+      if (activeSegment) {
+        setCurrentSegment(activeSegment, highlightedRowIndex - 1);
+      }
+    } else {
+      setCurrentSegment(undefined, -1);
+    }
+
+    toolChanged(verseToolId);
+    setUndoState(undefined);
   };
 
   const resetSegments = (regions: IRegion[]) => {
@@ -928,6 +968,7 @@ export default function PassageDetailMarkVersesIsMobile({
     });
 
     if (changed) {
+      setUndoState(undefined);
       setActiveRowHighlight(newData, activeRowIndex);
       const activeRow =
         activeRowIndex > 0 ? (newData[activeRowIndex] as ICell[]) : undefined;
@@ -1015,6 +1056,7 @@ export default function PassageDetailMarkVersesIsMobile({
     setCurrentSegment(undefined, -1);
     setIsReferenceEditing(false);
     setEditReferenceDialog(undefined);
+    setUndoState(undefined);
     setConfirm('');
     setIssues([]);
     resetSegments([]);
@@ -1144,6 +1186,7 @@ export default function PassageDetailMarkVersesIsMobile({
   const resetLabel = t.reset || 'Reset';
   const saveLabel = ts.save || 'Save';
   const cancelLabel = ts.cancel || 'Cancel';
+  const undoLabel = 'Undo';
 
   return (
     <Box>
@@ -1198,6 +1241,13 @@ export default function PassageDetailMarkVersesIsMobile({
           {resetLabel}
         </Button>
       </Box>
+      {undoState && (
+        <Box sx={{ mt: 1, display: 'flex', justifyContent: 'flex-end' }}>
+          <Button variant="contained" size="small" onClick={handleUndoSplitVerseSave}>
+            {undoLabel}
+          </Button>
+        </Box>
+      )}
       <MarkVersesTableIsMobile
         data={
           hasPermission
