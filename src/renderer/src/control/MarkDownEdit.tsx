@@ -74,7 +74,19 @@ export const MarkDownEdit = ({
               : { border: '1px solid grey', flexGrow: 1 }
           }
         >
-          <FormLabel component={'legend'}>{t.preview}</FormLabel>
+          <FormLabel component={'legend'}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+              {t.preview}
+              <LightTooltip title={t.githubSupport}>
+                <IconButton
+                  onClick={() => setLink(gfmSyntax.replace('{0}', lang))}
+                  sx={{ p: '2px' }}
+                >
+                  <InfoIcon fontSize="small" color="secondary" />
+                </IconButton>
+              </LightTooltip>
+            </Box>
+          </FormLabel>
           <Box
             sx={
               wrapPreviewOverflow
@@ -86,14 +98,6 @@ export const MarkDownEdit = ({
           </Box>
         </FormControl>
       )}
-      <LightTooltip title={t.githubSupport}>
-        <IconButton
-          onClick={() => setLink(gfmSyntax.replace('{0}', lang))}
-          sx={{ alignSelf: 'flex-start', p: '2px' }}
-        >
-          <InfoIcon fontSize="small" color="secondary" />
-        </IconButton>
-      </LightTooltip>
       <LaunchLink url={link} reset={() => setLink('')} />
     </Stack>
   );
