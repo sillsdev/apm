@@ -1,0 +1,25 @@
+{"data": [{
+    "type": "organizations",
+    "attributes": {
+        "name": ">Initial User Personal<",
+        "slug": "_Initial User Personal_",
+        "default-params": "{\"langProps\":{\"bcp47\":\"seh\",\"languageName\":\"Sena\",\"font\":\"charissil\",\"rtl\":false,\"spellCheck\":false}}",
+        "date-created": "2025-11-11T20:01:24.619Z",
+        "date-updated": "2025-11-11T20:01:51.702Z"
+    },
+    "relationships": {
+        "lastModifiedByUser": {"data": {
+            "type": "user",
+            "id": "5b1295fe-04e4-40b2-a2db-1f0d259f43db"
+        }},
+        "owner": {"data": {
+            "type": "user",
+            "id": "5b1295fe-04e4-40b2-a2db-1f0d259f43db"
+        }},
+        "groups": {"data": [{
+            "type": "group",
+            "id": "dee186b5-3e55-4d0a-854f-f7ae8cf86cd1"
+        }]}
+    },
+    "id": "9d0cf859-206d-480b-86e3-47c148daec1a"
+}]}

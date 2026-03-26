@@ -221,6 +221,13 @@
     "directories": {
       "buildResources": "assets"
     },
+    "extraResources": [
+      {
+        "from": "migration",
+        "to": "migration",
+        "filter": ["**/*"]
+      }
+    ],
     "extraFiles": [
       {
         "from": "./src/renderer/public/localization",

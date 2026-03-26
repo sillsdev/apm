@@ -132,12 +132,14 @@ export function BurritoBooks() {
     if (teamId && teams) {
       const team = teams.find((t) => t.id === teamId);
       if (team) {
-        setTeamProjs(
-          projects.filter((p) => related(p, 'organization') === teamId)
+        const teamProjs = projects.filter(
+          (p) => related(p, 'organization') === teamId
         );
+        setTeamProjs(teamProjs);
+        const teamProjIds = teamProjs.map((p) => p.id);
         const curProjects = getOrgDefault(burritoProjects, teamId) as string[];
         if (curProjects) {
-          setChecked(curProjects);
+          setChecked(curProjects.filter((p) => teamProjIds.includes(p)));
         }
         const curBooks = getOrgDefault(burritoBooks, teamId) as string[];
         if (curBooks) {

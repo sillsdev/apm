@@ -38,7 +38,7 @@ export function PlayButton({
   }
 
   return (
-    <IconButton onClick={onPlayStatus}>
+    <IconButton data-testid="play-button" onClick={onPlayStatus}>
       <PlayCircleOutline fontSize="large" color="primary" />
     </IconButton>
   );

@@ -1,0 +1,3000 @@
+{
+  "type": "USJ",
+  "version": "3.1",
+  "content": [
+    {
+      "type": "book",
+      "marker": "id",
+      "code": "LUK",
+      "content": []
+    },
+    {
+      "type": "chapter",
+      "marker": "c",
+      "number": "1",
+      "sid": "LUK 1"
+    },
+    {
+      "type": "para",
+      "marker": "s",
+      "content": [
+        "Luke's Introduction\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": []
+    },
+    {
+      "type": "para",
+      "marker": "s",
+      "content": [
+        "Prediction of John's birth\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        "The story starts during the time when Herod was king of Judea. During that time, there was a man named Zechariah who was married to a woman named Elizabeth, and they were both descendants of Aaron, who was Israel's first priest. Zechariah worked in the section of priests named after Abijah, ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "6",
+          "sid": "LUK 1:6"
+        },
+        "and both of them did everything that God considered to be right. And they followed all of God's commands exactly. ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "7",
+          "sid": "LUK 1:7"
+        },
+        "They were both old and did not have any children because Elizabeth was unable to get pregnant. \n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "8",
+          "sid": "LUK 1:8"
+        },
+        "So at one point, it came time for Zachariah to go with his section of priests to serve God in Jerusalem. ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "9",
+          "sid": "LUK 1:9"
+        },
+        "And there, the priests drew straws to select which one of them would get to go into the temple of the one in charge to burn the incense. And Zachariah was the one selected. ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "10",
+          "sid": "LUK 1:10"
+        },
+        "So, when he went inside of the temple, there was a big crowd of people outside praying. ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "11",
+          "sid": "LUK 1:11"
+        },
+        "And he went in and he was burning incense when all of a sudden, an angel appeared at the right side of the incense altar. ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "12",
+          "sid": "LUK 1:12"
+        },
+        "And Zachariah was terrified. ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "13",
+          "sid": "LUK 1:13"
+        },
+        "But the angel said, \"Zechariah, don't be scared. God has heard your prayers, and soon your wife Elizabeth will get pregnant with a son. Name him John. ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "14",
+          "sid": "LUK 1:14"
+        },
+        "And of course, this will make you very happy, but it will also make many other people celebrate with you. ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "15",
+          "sid": "LUK 1:15"
+        },
+        "Your son will be very important to the one in charge. He will have to spend his whole life without drinking any alcohol, and even before he's born, he will be full of the divine spirit. ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "16",
+          "sid": "LUK 1:16"
+        },
+        "He will be the one to turn his fellow Israelites back to God as the one in charge. ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "17",
+          "sid": "LUK 1:17"
+        },
+        "He will prepare the people for God to come to them, he'll be like another Elijah like him in both his personality and his presence. He will help restore the relationships between parents and their children, he will help rebellious people get their minds right to get on God's path. He will prepare the people for the one in charge to come to them.\"\n",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "18",
+          "sid": "LUK 1:18"
+        },
+        "And when Zachariah heard this, he said, \"you're going to have to show me some kind of proof that this is possible because I am already very old and my wife is also old as well.\" ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "19",
+          "sid": "LUK 1:19"
+        },
+        "And then the angel said, \"I am the angel Gabriel, I stand in God's very presence, and he's the one that sent me with this good news to bring to you. ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "20",
+          "sid": "LUK 1:20"
+        },
+        "And now, because you didn't believe this news, you will be unable to speak until your son is born. Because this prediction that I have brought will come true when the time is right.\"\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "21",
+          "sid": "LUK 1:21"
+        },
+        "So while this was happening, the people outside of the temple were wondering what had happened to Zachariah because he'd been in there so long. ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "22",
+          "sid": "LUK 1:22"
+        },
+        "And when he finally came out, he couldn't talk. So he started making hand motions, and eventually because of the hand motions and the fact that he couldn't speak, they understood that he had seen some kind of vision. ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "23",
+          "sid": "LUK 1:23"
+        },
+        "Well, after that, Zachariah stayed on in Jerusalem for the rest of his week of service, and then he went home. ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "24",
+          "sid": "LUK 1:24"
+        },
+        "And before too long, his wife Elizabeth was pregnant. And so she stayed away from people for five months. ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "25",
+          "sid": "LUK 1:25"
+        },
+        "And she said, \"The one in charge has done this for me. He is so kind to me. Now I don't have to be ashamed for not having any children.\"\n\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "s",
+      "content": [
+        "Gabriel visits Mary\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "26",
+          "sid": "LUK 1:26"
+        },
+        "When Elizabeth had been pregnant for six months, God sent the angel Gabriel ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "27",
+          "sid": "LUK 1:27"
+        },
+        "to a young woman named Mary. He lived in a little village named Nazareth in a region of Israel called Galilee and she was a virgin. She was engaged to get married to a man named Joseph, who was a descendant of King David. ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "28",
+          "sid": "LUK 1:28"
+        },
+        "And so, Gabriel came and said, \"Hello Mary, the one in charge is with you and has chosen you for something very important.\" ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "29",
+          "sid": "LUK 1:29"
+        },
+        "And Mary was confused by this. She didn't know what to think about what this angel was saying. ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "30",
+          "sid": "LUK 1:30"
+        },
+        "And so Gabriel said, \"Mary, don't be scared. God has chosen you for something very important. ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "31",
+          "sid": "LUK 1:31"
+        },
+        "You are gonna get pregnant and have a boy. Name him Jesus. ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "32",
+          "sid": "LUK 1:32"
+        },
+        "He is going to be amazing. He's going to be the son of the God of all creation. And God, the one in charge, will make him King of Israel. He'll give him the authority that his ancestor David had, ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "33",
+          "sid": "LUK 1:33"
+        },
+        "and he will rule over Israel forever. He will always be king.\"\n",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "34",
+          "sid": "LUK 1:34"
+        },
+        "And Mary said, \"How is this possible? I'm not married yet.\"\n",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "35",
+          "sid": "LUK 1:35"
+        },
+        "And Gabriel said, \"The Divine Spirit will come to you and the power of the God of all Creation will be over you. And so this child of yours will be fully dedicated to God. He will be God's son. ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "36",
+          "sid": "LUK 1:36"
+        },
+        "You know your relative, Elizabeth, the one that nobody thought was ever gonna be able to get pregnant? Well now, she is six months pregnant. ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "37",
+          "sid": "LUK 1:37"
+        },
+        "And this is because nothing is impossible for God.\" ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "38",
+          "sid": "LUK 1:38"
+        },
+        "And so Mary said, \"I want whatever God wants. He's the one in charge. I'll do whatever he says.\" And then, Gabriel left.\n\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "s",
+      "content": [
+        "Mary Visits Elizabeth\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "39",
+          "sid": "LUK 1:39"
+        },
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "40",
+          "sid": "LUK 1:40"
+        },
+        "where Zechariah and Elizabeth lived. ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "41",
+          "sid": "LUK 1:41"
+        },
+        "And when she went into their home and greeted Elizabeth, the baby inside of Elizabeth jumped. ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "42",
+          "sid": "LUK 1:42"
+        },
+        "And Elizabeth was filled with the holy spirit and said, \"Mary, you have received something amazing from God, more than any other woman, and the baby inside of you has also received something amazing from God. ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "43",
+          "sid": "LUK 1:43"
+        },
+        "Mary, you are the mother of the one in charge of me. Who am I that you would come to see me now? ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "44",
+          "sid": "LUK 1:44"
+        },
+        "When you greeted me, the baby inside of me jumped for joy. ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "45",
+          "sid": "LUK 1:45"
+        },
+        "Mary, you have received this because you trusted that God is in charge and that when he says something is going to happen, it does.\n\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "s",
+      "content": [
+        "Mary's Song\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "46",
+          "sid": "LUK 1:46"
+        },
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "47-55",
+          "sid": "LUK 1:47-55"
+        },
+        "All that I am to my core celebrates the one in charge.\n\nAll of my heart\n\nleaps for joy when I think of him, he saved me. Though I'm a nobody, he takes good care of me and I'm\n\nhonored just to serve him.\n\nFrom now on, everyone will see these gifts he has given\n\nto me.\n\nHe who is mighty has treated me well.\nHe the source of all pure and lovely things\n\nHelping those who honor him for all eternity.\n\nWith his overwhelming power, he does incredible things.\n\nWith the strength of his arm, he scares the proud away.\n\nAnd takes ruler's crowns as the lowly take their place\n\nThose who hunger, he will more than satisfy, but the wealthy ask for more and are denied.\n\nHe helps his servant Israel with a kindness undeserved\n\nto Abraham, His children, our people\n\nHe forever keeps His word.\n\n\n",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "56",
+          "sid": "LUK 1:56"
+        }
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "s",
+      "content": [
+        "John's Birth\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": []
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "67",
+          "sid": "LUK 1:67"
+        },
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "68-79",
+          "sid": "LUK 1:68-79"
+        },
+        "Let us worship the one in charge, he has come to free Israel, his people, by sending a hero from the line of David. To save us from violent hands, in God's kindness, he kept his word, told by ancient messengers, devoted to them. Honoring the oath he swore to keep with Abraham, A sacred promise of protection so we never have to fear, we will devote our lives to Him and do good in His eyes.\nAnd you, my boy will be a messenger for the God of all creation.\nYou will prepare the way for the one in charge by telling his people the rescue plan: that they can be forgiven the ways they fail God...\nGod is so kind, His light will shine From heaven onto a weary world. I can see it now, the sun is piercing through the clouds. There's not a shadow on the ground. The path to peace can now be found. ooh ooh dadada.. ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "80",
+          "sid": "LUK 1:80"
+        },
+        "And after that, John did grow up and became a man of conviction, and he lived in the wilderness until it was time for him to make an appearance to the people of Israel.\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "s",
+      "content": [
+        "Jesus's Birth\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": []
+    },
+    {
+      "type": "chapter",
+      "marker": "c",
+      "number": "2",
+      "sid": "LUK 2"
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "1",
+          "sid": "LUK 2:1"
+        },
+        "So a little while after John was born, the Roman Emperor Caesar Augustus sent out an order that everyone in the empire needed to be counted in a census. ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "2",
+          "sid": "LUK 2:2"
+        },
+        "This was the first census that took place after Corus became governor of Syria. ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "3",
+          "sid": "LUK 2:3"
+        },
+        "So everyone had to return to their family's original hometown to be counted there.\n\n",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "4",
+          "sid": "LUK 2:4"
+        },
+        "[a] And since Joseph was a descendant of King David, he had to go to Bethlehem. ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "5",
+          "sid": "LUK 2:5"
+        },
+        "And since Mary was engaged to him, she went to Bethlehem as well, to be counted there. [4b] So they left Nazareth in Galilee where they lived and went to Bethlehem, which was in Judea. ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "6",
+          "sid": "LUK 2:6"
+        },
+        "And Mary was getting closer to having her baby. ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "7",
+          "sid": "LUK 2:7"
+        },
+        "[c] And when they got to Bethlehem, there was nowhere left for them to stay, [b] so they ended up having their baby in a place with animals nearby.\n\n[a] And the baby was a boy and was Mary's first child, and she wrapped him up and laid him down in an animal feeding trough.\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "8",
+          "sid": "LUK 2:8"
+        },
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "9",
+          "sid": "LUK 2:9"
+        },
+        "And all of a sudden, one of Yahweh's angels appeared there in front of them. And Yahweh's majesty lit up the whole place. And the shepherds were terrified. ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "10",
+          "sid": "LUK 2:10"
+        },
+        "But the angel said: \"do not fear I've come with a message to bring all people joy. ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "11",
+          "sid": "LUK 2:11"
+        },
+        "On this day in David home city was born a baby boy. He is the one in charge, a rescuer, the chosen one. ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "12",
+          "sid": "LUK 2:12"
+        },
+        "You'll know it's him he's in a trough and wrapped cloth.\"\n",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "13",
+          "sid": "LUK 2:13"
+        },
+        "Then the first angel was joined by a huge group of other angels that filled up the night sky. And they all worshiped God said,\n",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "14",
+          "sid": "LUK 2:14"
+        },
+        "\"Oh, how great is God in heaven above all else his glory shines. Calm the hearts of all the earth and give his children peace through life. Do not fear, do not fear, do not fear, do not fear.\"\n",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "15",
+          "sid": "LUK 2:15"
+        },
+        "And then, after that, the angels went back up into heaven. And the shepherds looked at each other and said, \"let's go into Bethlehem and see what the One in Charge was talking about.\" ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "16",
+          "sid": "LUK 2:16"
+        },
+        "And so they rushed into Bethlehem and they found Mary and Joseph... and there was Jesus, lying in a feeding trough ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "17",
+          "sid": "LUK 2:17"
+        },
+        "and they told everyone there what the angels had said about him. ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "18",
+          "sid": "LUK 2:18"
+        },
+        "And everyone was amazed. ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "19",
+          "sid": "LUK 2:19"
+        },
+        "This all had a big impact on Mary and she started thinking deeply about everything that had happened. ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "20",
+          "sid": "LUK 2:20"
+        },
+        "After a little bit, the shepherds left and went back to their sheep, as they went they were talking about how AWESOME God is and worshiping him because everything that they 'ad seen and heard was just like the angel had described.\n\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "s",
+      "content": [
+        "Jesus Dedicated at the Temple\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "21",
+          "sid": "LUK 2:21"
+        },
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "22",
+          "sid": "LUK 2:22"
+        },
+        "Now, there were two other ceremonial requirements that Mary and Joseph had to complete. These were things that the Yahweh had given Moses instructions about centuries before. ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "23",
+          "sid": "LUK 2:23"
+        },
+        "The first one was that if a Jewish family's first child was a boy, they needed to go and dedicate him to the Yahweh at the temple in Jerusalem. ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "24",
+          "sid": "LUK 2:24"
+        },
+        "And then the other one was about how a mother, after having a baby, could become eligible for religious activities again. What she needed to do was wait for 40 days and then make an offering of either two pigeons or two doves that would be sacrificed, and then she would be eligible again. And so, Mary and Joseph took Jesus to Jerusalem and completed his dedication ceremony. And they also made the offering of the two birds.\n\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "25",
+          "sid": "LUK 2:25"
+        },
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "26",
+          "sid": "LUK 2:26"
+        },
+        "and had even revealed to him that he would get to see the Chosen One with his own eyes before he died. ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "27",
+          "sid": "LUK 2:27"
+        },
+        "So on the day that Joseph and Mary brought Jesus for his dedication ceremony at the temple, the Spirit had already prompted Simeon to go to the temple as well. ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "28",
+          "sid": "LUK 2:28"
+        },
+        "And so he went up to them and took Jesus into his arms and praised God and said:\n",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "29",
+          "sid": "LUK 2:29"
+        },
+        "\"Oh, one in charge, my life is complete now.\nYou promised to me that one day ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "30",
+          "sid": "LUK 2:30"
+        },
+        "I would see the rescuer's plan.\nAnd now I hold him in my hands.\n",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "31-32",
+          "sid": "LUK 2:31-32"
+        },
+        "[32a] He'll be a light [31] to all of the people.\n[32b] Your heart will be shown in this place we call home, that's how Israel will be known throughout the land.\n",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "33",
+          "sid": "LUK 2:33"
+        },
+        "Mary and Joseph were blown away when they heard this. \n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "36-40",
+          "sid": "LUK 2:36-40"
+        },
+        "Also at the temple that day, there was a woman named Anna. She was a messenger for God. Her father's name was Fanuel, and he was from the tribe of Asher. Now, Anna was very old at this time. Her husband had died a long time earlier, after only being married for seven years, and she was now... 84 years old. She spent all her time at the temple.\n\nShe was there day and night. She would go without food and talk to God and worship him. And when she saw Mary and Joseph and Jesus, she thanked God and then immediately started talking about Jesus to the people there who were looking forward to the time when Jerusalem would be set free. Now after Mary and Joseph had completed all of Yahweh's requirements, They went back to Galilee and settled in their hometown of Nazareth.\n\nAnd it was there that Jesus grew up. He was healthy and he was wise. God was very pleased with him and very good to him.\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "s",
+      "content": [
+        "Jesus as a Boy\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "41-52",
+          "sid": "LUK 2:41-52"
+        },
+        "So every year, Jesus' family would go to Jerusalem to celebrate the Passover festival. And when Jesus was 12 years old, they went like they normally did. And after the celebration, Mary and Joseph started heading back to Nazareth. But Jesus stayed in Jerusalem, and Mary and Joseph didn't realize that he had stayed.\n\nAnd so a day into their journey back, they realized that they hadn't seen him yet. So they started looking around, checking with friends and family, and they couldn't find him anywhere. So they turned around and went back to Jerusalem to look for him there. And after three days of looking, they finally found him at the temple with the religious teachers.\n\nHe was listening to their teaching and asking questions. And everyone there was amazed at his understanding of the concepts and his answers to the questions the teachers asked. And Mary and Joseph, when they saw this, were blown away. Mary said, Jesus, how could you do this to us? Your father and I have been worried sick looking everywhere for you.\n\nAnd Jesus said, Why did you have to look? Where else would I be except in my father's house? And Mary and Joseph had no idea what he was talking about when he said that. So then, the three of them went back to Nazareth, and Jesus continued to obey and respect his parents. And all of this had a big impact on Mary.\n\nShe would often think deeply about everything that had happened. So after that, Jesus grew up and was wise, and God was very pleased with him, and so were all of the people that he came in contact with.\n"
+      ]
+    },
+    {
+      "type": "chapter",
+      "marker": "c",
+      "number": "3",
+      "sid": "LUK 3"
+    },
+    {
+      "type": "para",
+      "marker": "s",
+      "content": [
+        "John gets the people ready\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        "So it had been fifteen years since Tiberias had become ruler over the Roman Empire. And during that time Rome had appointed four different men to rule over the part of the world where the Jews lived. There was Pontius Pilate who was governor over Judea, Herod was over Galilee. Herod's brother, Philip, was over Iturea and Trachonitis. And Lysanious was over Abiliene."
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "2",
+          "sid": "LUK 3:2"
+        },
+        "And the Jewish high priests in Jerusalem at the time were Annas and Caiaphas."
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        "And so, during that time, During that time John, the son of Zechariah, got a message from God while he was living in the desert.",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "3",
+          "sid": "LUK 3:3"
+        },
+        "And so he went to the Jordan river valley and started traveling around that region, telling people that they needed to participate in this washing ceremony, and that the washing ceremony called for them to acknowledge that they had failed God and to turn to Him and be forgiven."
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "4",
+          "sid": "LUK 3:4"
+        },
+        "And this was all similar to something that God's messenger Isaiah had spoken about centuries before when he had said, \"There's someone shouting in the desert, he's shouting, \"Get the path ready for the Eternal One, get the road ready for the True King to come. s!",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "5",
+          "sid": "LUK 3:5"
+        },
+        "All of the low spots will be filled in, all of the high spots will be flattened out. The curves will be straightened out, and the rough spots will be smoothed out. ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "6",
+          "sid": "LUK 3:6"
+        },
+        "And in this way everyone will be able to see God's power to rescue.\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "s",
+      "content": [
+        "Jesus the Son of God\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "21-38",
+          "sid": "LUK 3:21-38"
+        },
+        "So during the time when John was giving people the washing ceremony, Jesus also came to be washed. And while he was talking to God, the skies opened up and the divine spirit took on a physical form and came down onto Jesus the way that a dove would come down and land somewhere. And then a voice boomed from the skies that said, \"You are my son. I love you. And I am very pleased with you.\" \n"
+      ]
+    },
+    {
+      "type": "chapter",
+      "marker": "c",
+      "number": "4",
+      "sid": "LUK 4"
+    },
+    {
+      "type": "para",
+      "marker": "s",
+      "content": [
+        "Temptation\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "1-13",
+          "sid": "LUK 4:1-13"
+        },
+        "So Jesus was full of the Divine Spirit and the Spirit took him away from the Jordan River out into the middle of nowhere, where Satan the Deceiver came and tempted him for 40 days. And for these 40 days Jesus didn't eat anything and by the end he was very hungry. \nAnd then the deceiver came to him and said, \"If you really are God's Son, why don't you turn these rocks into bread so you can eat?\"\nAnd Jesus said, \"The Scriptures say we need more than just food to truly live.\"\nSo then The Deceiver took him to the top of a mountain, and in an instant showed him all of the countries of the world and he said, \"This can all be yours, they've all been given to me, in all of their wealth and beauty, and I can do whatever I want with them, so if you will just swear your loyalty to me I will give them to you.\"\nAnd Jesus said, \"The Scriptures say the only one we can swear our loyalty to is the Eternal One our God.\"\nAnd then The Deceiver took him into the city of Jerusalem up to the highest point of the temple and said, \"If you are the God's Son why don't you jump off from here, because the Scriptures say that God will send His angels and they'll catch you in their arms and you wont even hurt your foot on a rock?\"\nAnd Jesus said, \"The Scriptures also say, 'Do not make the Eternal One your God prove Himself.'\"\nSo after that The Deceiver left him to wait until another opportunity.\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "s",
+      "content": [
+        "M3S1 Rejection in Nazareth\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": []
+    },
+    {
+      "type": "para",
+      "marker": "s",
+      "content": [
+        "M3S2 Acceptance in Capernaum\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "31-37",
+          "sid": "LUK 4:31-37"
+        },
+        "Jesus went to Capernaum which is another town in Galilee. And on the day of worship he went to the Jewish meeting place and started teaching . And everybody there was amazed because they could tell that he really knew what he was talking about. \nThere was a man in the meeting place who was possessed by a demon, and he shouted, \"Hey, this is not your business, Jesus of Nazareth! Are you here to destroy us? I know who you are, God sent you, your the One!\" \nAnd Jesus responded, \"Silence, come out of him!\"\nAnd immediately the demon threw the man into the center of the crowd and came out of the man. And he didn't even hurt him. And the crowd watched with amazement, and said, \"Who is this man, who speaks with such power and authority, even the demons have to obey and leave?\"\nAnd news about Jesus spread throughout the whole region. \n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "38-41",
+          "sid": "LUK 4:38-41"
+        },
+        "So when Jesus left the meeting place he went to the home of a man named Simon. And Simon's mother-in-law was there and she was very sick with a high fever. And the people there asked Jesus to heal her. So he went over to where she was and he bent over and COMMANDED the fever to leave her. And right away it did. And so she got up and started giving food to people. \n\nAnd later that evening as the sun was going down, people from all around started bringing their friends and relatives to Jesus to be healed. They were sick with all different kinds of diseases. And when Jesus would touch them they would get better. There were also people who were possessed by demons that were there. And when Jesus commanded the demons to leave, they would should \"You are the son of God.\" But Jesus silenced them. He didn't want them speaking because they knew that he was the promised king. \n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "42-44",
+          "sid": "LUK 4:42-44"
+        },
+        "The next morning Jesus got up early and went out to find a place to be by himself. And the people of the village started looking everywhere for Him. And when they found him they begged Him to stay with them in their village. And Jesus said, \" I need to keep moving, I need to tell people in other places also about the good news of how God rules in the world, that's the whole reason I've been sent.\" \nAnd so Jesus continued on from village to village in Judea, teaching in the Jewish meeting places. \n"
+      ]
+    },
+    {
+      "type": "chapter",
+      "marker": "c",
+      "number": "5",
+      "sid": "LUK 5"
+    },
+    {
+      "type": "para",
+      "marker": "s",
+      "content": [
+        "M3S3 Simon and fishermen become disciples\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "1-11",
+          "sid": "LUK 5:1-11"
+        },
+        "One day Jesus was by the Lake of Gennesaret, which is also called the Sea of Galilee. And He was teaching people the message from God. And they were all crowding up around him to listen. And he noticed these two boats there on the edge of the water that belonged to some fisherman who were there washing out their nets. \n\nAnd He got into one of the boats and asked its owner Simon to push out a little ways from the shore. And then He sat down in the boar and kept on teaching from there. And when He finished, He told Simon, \"Go out a little ways into the deep water and put down your nets and catch some fish.\" \n\nBut Simon's like, \"But Rabbi, we have been working really hard all night long and we haven't caught anything.....but, since you're asking, we'll try again.\" And so they went out into the deep water and put down the nets. But this time they caught so many fish that the nets were starting to break. So they quick signaled to their business partners in the other boat to come and help, and they filled up both boats so full of fish that they were both starting to sink.\n\nAnd when Simon Peter sees whats happened he's just shaken to his core, and so is everybody else with him, including his business partners, James and John, who were Zebedees' sons. And he falls down on his knees in front of Jesus and he says, \"Sir, please, go away from me! I am a man whose failed God!\"\n\nBut Jesus says, \"Don't be afraid, from now on you are going to be fishing for people instead of for fish!\" And so when they get back to shore they leave everything there and they follow Jesus. \n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "s",
+      "content": [
+        "M3S4 Jesus heals a man with a skin disease\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": []
+    },
+    {
+      "type": "para",
+      "marker": "s",
+      "content": [
+        "M3S5 Jesus Heals a paralyzed man\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "17-26",
+          "sid": "LUK 5:17-26"
+        },
+        "So one day Jesus is teaching people in a house. And there are some Pharisees there, who are members of a religious party, and some experts in the religious law. And they had come from all over, from every city in the northern region of Galilee and the southern region of Judea. Even from the capital city of Jerusalem. And God's power was in Jesus to heal people. \n\nAnd there was a paralyzed man whose friends wanted to bring him to Jesus so Jesus could heal him. But they couldn't get in the place because it was so jam packed. So... they bring the paralyzed man on his sleeping mat up on top of the roof. And they make a hole in the roof taking away the roof tiles. And then they lower him down on his mat right in fronta Jesus. Well, when Jesus sees how much they trust him, he turns to the paralyzed man and he says, \"Hey, the ways that you're not on good terms with God, those are all cleared up now.\" \n\nWhen the Pharisees and the experts in the religious law hear this they start thinking to themselves, \"Who does this guy think he is insulting God like that. Only God gets to decide if someone's on good terms with him or not.\" \n\nJesus knows what they're thinking. So he turns to them and he's like, \"Why are you thinking these kids of things? Which is easier? To say, 'You're on good terms with God now.' Or to say, 'Get up and walk'? But to show you that I, the Son of Humanity, has authority on earth to put people on good terms with God.\" And he turns to the paralyzed man, and he says, \"Get on up. Pick up your sleeping mat and go on home.\" \n\nAnd immediately, the man gets up, and he picks up the mat that he'd been lying on and he goes on home, talking about how amazing God is. Everybody there is in shock. And they're also talking about how amazing God is. And they're kinda freaked out. And they're like, \"We have seen some really crazy things today.\" \n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "s",
+      "content": [
+        "M3S6 Levi\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "27-32",
+          "sid": "LUK 5:27-32"
+        },
+        "So after all this happened, Jesus left the house. And he notices this tax collector sitting at his tax kiosk. The guy's name is Levi. And Jesus talks with him and he's like, \"Come with me. Be my apprentice.\" And Levi gets up. He leaves everything there. And he follows Jesus and becomes his apprentice. \n\nAnd he throws Jesus this big party at his house. There are other tax collectors there and a bunch of other people. And the Pharisees and the religious experts go to Jesus's other apprentices and they're like, \"What are you doing? Why are you hanging out and eating with tax collectors and sinners?\" \n\nJesus answers them and he's like, \"Who actually needs a doctor? Is it the healthy people or the sick people? It's the same thing here. I didn't come for the good people. I came for the sinner, to help them turn to God.\"\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "s",
+      "content": [
+        "M3 S7 Why Disciples don't fast\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "33-39",
+          "sid": "LUK 5:33-39"
+        },
+        "And the Pharisees and their religious experts said to Jesus, \"Now, John's apprentices pray and go without having food or water really frequently to show that they've turned their lives around to God. And the Pharisees apprentices, they also fast. But your apprentices, they just keep eating and drinking.\" \n\nAnd Jesus said to them, \"It's impossible to make the friends of the groom go without food or water while they're celebrating at the reception with him. But a time's coming when the groom will be taken away from them. And in that time, they'll go without food or water.\" \n\nJesus also gave them an illustration, \"He said, 'Nobody takes a piece of new clothing, and rips it up to fix a piece of old clothing, because then the new clothing is ripped up and it doesn't even match the old clothing.\"\n\n\"Also, nobody takes unfermented wine, grape juice, and puts it into some old stretched out leather wine bag. Or else, as it's fermenting, that grape juice explodes the wine bag and it's spilled everywhere. People put grape juice into new upstretched win bags.\"\n\n\"Also, nobody, when they've had well aged wine, says, 'Hmmmmm, I want some grape juice right now.' No, they say, 'well aged wine, that'll fit the bill.'\"\n"
+      ]
+    },
+    {
+      "type": "chapter",
+      "marker": "c",
+      "number": "6",
+      "sid": "LUK 6"
+    },
+    {
+      "type": "para",
+      "marker": "s",
+      "content": [
+        "Ruler over the day of worship\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "1-11",
+          "sid": "LUK 6:1-11"
+        },
+        "Now one day Jesus and his followers were walking through some grain fields, and it was the day of worship. And some of them were grabbing up the heads of grain and rubbing them together in their hands to separate out the seeds to eat them. \nAnd there were some Pharisees who saw what they were doing. And they went up to them and said, \"Why are you violating our religious law by harvesting grain on the day of worship?\"\nAnd Jesus replied, \"Don't you remember when King David was hungry, how he went into God's house and he ate the special bread that only the priests were supposed to eat, and he also gave some to his men? Understand this: the Son of Humanity is ruler even over the day of worship.\"\nOn another day of worship, Jesus was teaching in one of the Jewish places of worship, and there was a man there that day who had a deformed right hand. And there were also some Pharisees and experts in the religious law that were there. And they were watching Jesus very closely to see if He would heal the man with the deformed hand, because then they could accuse Him of doing work on the day of worship. \nJesus knew what they were thinking and so he said to the man, \"Why don't you come up here in front of everyone?\" \nAnd so the man went up in front, in front of the crowd. And Jesus asked the people that were trying to trap him a couple questions. He said, \"Is it legal to do good on the day of worship? Or is it a day for doing evil? Is it a day to save a life, or to destroy it?\" \nThen he looked around at each one of them, one by one, and then He turned to the man with the deformed hand and he said, \"Hold your hand out.\" And when the man did that, when he held his hand out, it was totally healed, as good as new! \nThe people that were trying to trap him were furious, and they started talking with each other about what they were gonna to do with Jesus. \n\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "s",
+      "content": [
+        "Official Representatives\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "12-16",
+          "sid": "LUK 6:12-16"
+        },
+        "A few day later Jesus went up on a mountain and spent the whole night there talking with God. In the morning he came down and called all of His apprentices together and from out of them he choose 12 to be his official representatives. And these are their names:\nThere was Simon, who Jesus also called Peter. There was Andrew, who was Simon's brother. \nThere was James and John, Philip and Bartholomew, Matthew and Thomas. There was another James, whose father was Alpheus. There was another Simon, who fought against the Roman occupation. There was Judas, whose father was James, and Judas Iscariot, who would later betray Jesus. \n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "s",
+      "content": [
+        "Sermon on the Plain\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "17-19",
+          "sid": "LUK 6:17-19"
+        },
+        "Jesus and His followers were coming down from the mountain and they came to this level area where a large crowd had gathered. And this crowd was from as far south as Jerusalem and Judea. And as far north from the coastal areas of Tyre and Sidon.\n\nNow they had come to hear Jesus teach and be healed of their sicknesses and also freed from demons. Now they were all crowding around him trying to touch Jesus because when they did, there was this energy that surged from him to them and they were healed. \n\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "20-26",
+          "sid": "LUK 6:20-26"
+        },
+        "Then Jesus looked his followers and said, \"People who are poor are actually better off because they can experience Heaven on Earth. \nPeople who are hungry are actually better off because they will be provided for. \nPeople who cry are better off because they will laugh. \nYou're actually better off when people hate you or mock you or exclude you or say evil things about you because you're a follower of the Son of Man. \nBe happy, leap for joy because something awesome is waiting for you in heaven. And remember, the people that do those things to you, their ancestors did the same things to God's messengers long ago. \n\nBut, those of you who've had plenty of money now... you've had all your fun. \nAnd those of you who've had tons to eat... one day you will go hungry. \nAnd those of you who've been full of laughter... one day you will be crying. \nAnd for those who are really popular now... remember, the people who made up messages from God, they were popular too. \n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "27-31",
+          "sid": "LUK 6:27-31"
+        },
+        "Listen up, guys, you need to love your enemies. \nGive to the people that hate you. \nSay good things about the people that curse you. \nAsk God to do good for the people that bully you. \n\nIf someone slaps you on the cheek, turn your head and let 'em slap the other one too. \nIf someone steals your jacket, let 'em have your shirt too. \nGive to everyone that asks you for something. \nIf someone takes something from you, don't chase 'em down to get it back. Just let 'em have it. \n\nTreat other people the way you want to be treated. \n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "32-36",
+          "sid": "LUK 6:32-36"
+        },
+        "If you love people, but only the people who love you back, do you think that makes you look good? Even evil people love those who love them back. \n\nOr if you help out people that you're pretty sure will help you back, is that a big deal? Even evil people will help out those who help them. \n\nOr if someone wants to borrow money from you, will you lend it to them only if you're sure that they'll give you money back? Well that's just the way evil people work. They'll lend money to people when they know they're gonna get that money back. \n\nYou need to love your enemies. You need to help them out. And loan to whoever asks. But don't worry about if they can repay. \n\nThen you will be rewarded and you will be acting like children of God in heaven. Because he is kind to those that are unthankful, to the people who are evil. So be merciful, just like your father in heaven is merciful. \n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "37-38",
+          "sid": "LUK 6:37-38"
+        },
+        "Don't judge other people and then God won't judge you. Don't condemn other people and God won't condemn you. Forgive and God will forgive you. Give generously and God will give back to you. It'll be like someone trying to fill your container up that they have to pack it down in and shake it together and it still overflows into your lap. That's the way you'll get it back. The way you deal with other people is the way God will deal with you.\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "39-45",
+          "sid": "LUK 6:39-45"
+        },
+        "Then Jesus shared a series of illustrations to bring out his teaching. He said, Would you ever expect one blind person to lead another blind person? No. They'd both end up falling in a ditch. And a student is never greater than their teacher. But everyone who is well trained can become like their teacher. Or suppose you go chop wood with a friend one day and you notice that he's got a speck of sawdust in his eye. But what you don't notice is that you have a big honking beam in your eye. It'd be ridiculous for you to say, hey, buddy, let me help you with the sawdust in your eye when you can't even see past the beam in your own eye. Quit acting like you're better than you are. First, get the beam out of your own eye, and then you can see clearly and go help your friend with the sawdust in his eye. A good tree doesn't produce bad fruit, and a bad tree doesn't produce good fruit. You can tell what kind of tree it is by the fruit it produces. You're never going to get figs from at horn bush or grapes from a briar patch. A good person does good because of the good that's in their heart. And an evil person does evil because of the evil in their heart. Your words reflect what 's in your heart.\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "46-49",
+          "sid": "LUK 6:46-49"
+        },
+        "Then Jesus said, why do you treat me with honorand respect, but you don't do what I say? Let me tell you about people who listen to my teaching and put it into practice. They are like a man who builds a house by a river. The first thing he does is dig down deep until he finds a layer of solid rock and puts the foundation for the house on that rock. And then he builds the house on top of it. And that way, when the river overflows its banks and the waters come rushing against the house, the house doesn't even move because its foundation is connected to the rock. But people who hear my teaching and don't put it into practice are like a man who builds his house by the river, and he just builds it straight on the ground with no foundation at all. And when the waters come against that house, it will collapse and be totally destroyed.\n"
+      ]
+    },
+    {
+      "type": "chapter",
+      "marker": "c",
+      "number": "7",
+      "sid": "LUK 7"
+    },
+    {
+      "type": "para",
+      "marker": "s",
+      "content": [
+        "Jesus heals an army officer's servant\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "1-10",
+          "sid": "LUK 7:1-10"
+        },
+        "When Jesus finished teaching he left and went to the town of Capernaum. And in Capernaum at the time, there was a certain Roman officer that was stationed there. And this guy had a servant in his household that was very sick. Like almost to the point of dying. And he really cared about him. And so when he heard that Jesus was in town, he got some Jewish leaders that he knew to go and see if they could get Jesus to come and heal his servant. And so the leaders went and they found Jesus and begged him to come and heal the servant. They said, \"If anybody deserves for you to do this for him, it's this officer, this Roman officer. He really loves our people and he even built a place of worship for us.\" So Jesus agreed and started going with them to the officer's house. And when they were almost there, the officer sent some of his friends out with a message for Jesus. And in the message he said, \"Sir, it's really not necessary for you to come to my house. I'm not important enough to have you in my house. And that's also why I didn't come see you. Because I'm not important enough. But I know that if you just give the command where you are, my servant will be healed. I know this because I have superior officers over me. And I have soldiers that report to me. And if I tell one to go, he goes. If I tell another one to come. He comes. If I tell a servant to do something, he does it. So if you'll just give the command, my servant will be healed.\" When Jesus heard this he was amazed. He turned around to the people that were following and he said, \"Wow, even among all of the Jewish people I haven't found anyone that trusts me like this.\" So then the men that had come turned around and went back to the officer's house and when they got there they discovered that the servant was healed. \n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "s",
+      "content": [
+        "The Widow's Son\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "11-17",
+          "sid": "LUK 7:11-17"
+        },
+        "A little while later, Jesus and his apprentices, along with a large crowd that was following along with them, were walking to the small town of Nain. And as they were coming up to the town, there was a funeral procession that was coming out of the town. And the funeral was for a young man that had died. And his mother was there in the procession, along with a pretty large group from the town. And this woman had already lost her husband and then this son that had died was her only son. And so, Jesus was heartbroken over what she was going through. But he went over to her and he said, \"It's ok. Don't cry.\" And then he went to the stretcher and he put his hand on it. And right away the men that were carrying the stretcher stopped. And then Jesus spoke directly to the corpse on the stretcher and said, \"Young man, sit up.\" And right away the young man sat up there on the stretcher and started speaking. And then Jesus took him and reunited him with his mother. \n\nAnd when the people saw this they were a little bit freaked out but at the same time were saying wonderful things about God. Things like \"A powerful messenger from God is here with us. \" And, \"God has come to be with his people.\" And so, afterward, this story about Jesus started spreading throughout Judea and the surrounding countryside. \n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "s",
+      "content": [
+        "Jesus and John\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": []
+    },
+    {
+      "type": "para",
+      "marker": "s",
+      "content": [
+        "A woman washes Jesus's feet\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "36-50",
+          "sid": "LUK 7:36-50"
+        },
+        "Now there was a man by the name of Simon, who was a Pharisee. And he invited Jesus to his home for a meal. Jesus accepted, and went to his house. Now, in this town was this woman. And she had [<- emphasis] quite the reputation. She heard [<- emphasis] that Jesus was at Simon's house. And so she went and got a special jar of expensive perfume. And she went behind Jesus where he was lounging at a low table with his feet behind him. And just started crying. And her tears fell on his feet. And then she would take her hair and just wipe his feet. And she grabbed his feet and kept on kissing them. And then she took that expensive perfume and poured it onto Jesus's feet. \n\nAnd Simon, seeing all this, thought to himself, \"If this man truly was a messenger from God, he [<- emphasis] would know who this woman is, and what she's done, and that she's failed God.\" \n\nJesus knew what Simon was thinking. So he said, \"Simon, I have a story for you.\"\n\nAnd Simon said, \"OK, let me, let me hear it.\" \n\nAnd Jesus said, \"There was a certain man that loaned some of his money to two different people. He loaned 50 pieces of silver to one and 500 pieces of silver to the other. But over time, neither one of them could pay the money back. And so the man forgave both of their loans. He told them that they didn't have to pay the money back.\n\n\"Now, Simon, which of those two people do you think would be more grateful?\" \n\nAnd Simon said, \"Well, it's gotta be the one that had the larger loan.\" \n\nAnd Jesus said, \"Exactly.\" \n\nAnd then Jesus turned to face the woman. And he said, \"Simon, do you see this woman? When I got here you didn't give me any water to wash my feet with. But this woman hasn't stopped washing my feet with her tears and drying them with her hair. You didn't greet me with the customary kiss. But she hasn't stopped kissing my feet. You didn't give me any oil to put on my head to honor me. But she's been putting this expensive perfume on my feet. And she's doing all of this because she's so grateful for being forgiven for all of the many ways she's failed God. But someone who's only been forgiven for a few things is gonna be much less grateful.\"\n\nAnd then he spoke to the woman and said, \"You [pause] are forgiven for all the ways you've failed God.\" \n\nAnd the men that were around the table started grumbling, saying, \"Who who does this guy think he is going around forgiving people for the ways they've failed God?\"\n\nAnd then Jesus spoke again to the woman and said, \"Because you've trusted me, you have been rescued. Now go in peace.\"\n"
+      ]
+    },
+    {
+      "type": "chapter",
+      "marker": "c",
+      "number": "8",
+      "sid": "LUK 8"
+    },
+    {
+      "type": "para",
+      "marker": "s",
+      "content": [
+        "Women in Jesus's Group\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "1",
+          "sid": "LUK 8:1"
+        },
+        "After this, Jesus began traveling, visiting different towns, big and small, announcing to them the good news of God's reign in the world. And he had his twelve representatives with him, ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "2",
+          "sid": "LUK 8:2"
+        },
+        "along with a group of women. Several of these women had been possessed by evil spirits and Jesus had expelled them. He had also healed some of them from all different kinds of diseases. In this group of women, there was Mary, who they called Magdalene because she was from the town of Magdala. He had expelled seven demons from her. ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "3",
+          "sid": "LUK 8:3"
+        },
+        "There was also Joanna, who was married to a man named Kuza, who was Governor Herod's business manager. Then there was also Susannah and several other women. And these women, out of their own pockets, paid the expenses of the entire group.\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "s",
+      "content": [
+        "The Farmer planting seed\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "4",
+          "sid": "LUK 8:4"
+        },
+        "One day a large crowd gathered around Jesus. And they were from a bunch of different towns (pause). And so Jesus taught them using a story. He said, ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "5",
+          "sid": "LUK 8:5"
+        },
+        "\"Once there was a farmer who went out to plant seeds in his field. And so when he went to scatter them, some of them landed on the footpath there in the field, and people walked on them, and the birds came and ate them. And so those ones didn't ever grow into anything. ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "6",
+          "sid": "LUK 8:6"
+        },
+        "Some of the seeds landed on an area that was just shallow soil over rock. And so when they sprouted up, it looked like they were doing good, but because they couldn't get enough moisture, they soon withered and died. ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "7",
+          "sid": "LUK 8:7"
+        },
+        "Some of the seeds landed in an area where thorn bushes were starting to grow, and those seeds sprouted up WITH the thorn bushes, but the thorn bushes soon crowded them out, and so they never produced anything. ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "8",
+          "sid": "LUK 8:8"
+        },
+        "But... some of the seeds landed on good fertile soil, and they grew up and produced a harvest that was a hundred times more than what the farmer had planted. And then Jesus added, \"(RAISE INTENSITY) Please! If your ears work, pay attention.\"\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "9",
+          "sid": "LUK 8:9"
+        },
+        "So when Jesus finished telling the story, the guys he was mentoring came and asked him what it meant. ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "10",
+          "sid": "LUK 8:10"
+        },
+        "And he said, \"you all get to understand how God rules in the world. But this reality is being hidden from other people. And that's why I teach using stories. So that, like it says in the scriptures: \"they'll look, but they won't see. They'll hear, but they won't understand.\" ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "11",
+          "sid": "LUK 8:11"
+        },
+        "So here's the meaning of the story. In the story, the seeds represent God's message for the world. ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "12",
+          "sid": "LUK 8:12"
+        },
+        "The footbath (that the seeds landed on) represents people that hear the message. But before they can do anything with it, Satan the deceiver, comes and steals it away from them. And so they don't believe it and are not rescued. ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "13",
+          "sid": "LUK 8:13"
+        },
+        "The shallow soil (that the seeds landed on) represents people that hear the message and are excited about it and believe it at first. But because they only have very shallow roots, when things get rough, they give up and turn away. ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "14",
+          "sid": "LUK 8:14"
+        },
+        "The soil with the thorn bushes represents the people that hear God's message and start to grow. But then the worries of life and the desire to make a lot of money and have fun come and crowd out God's message. And so these people never mature into anything. ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "15",
+          "sid": "LUK 8:15"
+        },
+        "But the good fertile soil, that represents sincere people with good hearts that hear God's message and stick to it and produce a huge harvest.\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "s",
+      "content": [
+        "Lantern under a bucket\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "16",
+          "sid": "LUK 8:16"
+        },
+        "Nobody lights an oil lamp and then hides it under a bucket or puts it under a bed. Instead, you put it up in a high place so that everybody who comes into the room can see its light. ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "17",
+          "sid": "LUK 8:17"
+        },
+        "You know, everything that's hidden is going to be brought into the light, all that's kept secret will be shown to everyone. ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "18",
+          "sid": "LUK 8:18"
+        },
+        "So listen carefully, because when it comes to understanding my teaching, the rich get richer and the poor don't just get poorer: they lose it all. \n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "s",
+      "content": [
+        "Jesus's Family\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "19",
+          "sid": "LUK 8:19"
+        },
+        "As Jesus was teaching the crowds that day, his mother and siblings came looking for him, but they couldn't get to him because there were too many people in the crowd. ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "20",
+          "sid": "LUK 8:20"
+        },
+        "And so, someone came to Jesus and told him, \"your mother and your siblings are outside and they want to see you.\" ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "21",
+          "sid": "LUK 8:21"
+        },
+        "And Jesus said, \"My mother and my siblings are the people who hear God's message and live by it.\" \n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "s",
+      "content": [
+        "Jesus stops a storm\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "22",
+          "sid": "LUK 8:22"
+        },
+        "One day, Jesus said to the guys he was mentoring, \"(NEUTRAL) let's go across to the other side of the lake.\" And so they got on a boat and started sailing across to the other side. ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "23",
+          "sid": "LUK 8:23"
+        },
+        "And as they were heading there, Jesus laid down and took a nap. And then pretty soon, a storm blew in with fierce winds. And the boat was filling with water. The guys were worried that the boat was going to sink. ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "24",
+          "sid": "LUK 8:24"
+        },
+        "And so they went to wake Jesus up. They said, \"we're going to drown, we're going to drown!\" So Jesus stood up and commanded the wind and the waves to stop. And right away, they did. The wind quit blowing, and the waves were calm. ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "25",
+          "sid": "LUK 8:25"
+        },
+        "And then Jesus looked at his guys and said, \"why didn't you trust me?\" And the guys were blown away and freaked out at the same time and looked at each other and said, \"Who is this guy that he can tell the weather what to do and it obeys?\" \n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "s",
+      "content": [
+        "Demons in Gadara\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "26",
+          "sid": "LUK 8:26"
+        },
+        "So they kept sailing and got to the other side of the lake, opposite from Galilee, and came to the region where the city of Gadara was. ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "27-29",
+          "sid": "LUK 8:27-29"
+        },
+        "And when Jesus stepped out of the boat, immediately a demon possessed man came up to him. And this man, for a long time, had not worn any clothes. He didn't live in a house. He lived in the caves where they buried people. And these demons were fully in control of him. "
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        "[v29b] The people from the town would sometimes send people out to try to get him under control. They would put his hands and his feet in chains and put guards to watch him, and he would just snap the chains and the demons would make him run back into the wilderness. "
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        "[v28a] And so, when he came up to Jesus, he shrieked and threw himself down at Jesus' feet. [v29a] And then Jesus commanded the demons to leave the man. [v28b] And the man said, \"Jesus, son of the God of all creation, what are you doing here? Why are you interfering with me? Please, please, don't torture me.\" "
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "30",
+          "sid": "LUK 8:30"
+        },
+        "And then Jesus said, \"What is your name?\" "
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        "And the demons inside the man said, \"Army. Our name is army.\" And they said that because there were so many demons inside of the man. ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "31",
+          "sid": "LUK 8:31"
+        },
+        "And then the demons begged Jesus not to make them go into the underworld ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "32",
+          "sid": "LUK 8:32"
+        },
+        "and instead asked for permission to go into a herd of pigs that was grazing on a hill nearby. And Jesus gave them premission to do that. ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "33",
+          "sid": "LUK 8:33"
+        },
+        "And so they left the man and went and entered into the pigs and the whole herd of pigs ran down the steep hill slope into the lake and they all drowned. "
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "34",
+          "sid": "LUK 8:34"
+        },
+        "Now there were some men there that were there that were watching over the pigs and they ran back to the town and to the countryside around the town, telling everyone what had happened. "
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "35",
+          "sid": "LUK 8:35"
+        },
+        "And so, a big crowd came out to see, and when they got there, they saw that the man, who was now free from the demons, had clothes on, he was sitting at Jesus' feet, and was perfectly sane. And when they saw this, they were terrified. ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "36",
+          "sid": "LUK 8:36"
+        },
+        "And then they heard what all had happened, how the man had been healed of the demons. And they got so scared that they begged Jesus to leave. "
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        "And so Jesus was getting in to the boat to leave, ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "38",
+          "sid": "LUK 8:38"
+        },
+        "and then the man came and begged Jesus to allow him to go with him. And Jesus said, ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "39",
+          "sid": "LUK 8:39"
+        },
+        "\"No, I need you to stay here. Go back to your family and tell them what God has done for you.\" And so the man did. He went back into the town and told everyone what Jesus had done for him. \n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "s",
+      "content": [
+        "Jesus' Healings\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "40",
+          "sid": "LUK 8:40"
+        },
+        "Well when they got back to the other side of the lake, there was a large crowd waiting for Jesus, and they gave him a warm welcome. ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "41",
+          "sid": "LUK 8:41"
+        },
+        "And in the crowd, there was a man named Jairus, who was the leader of the local Jewish place of worship. And he came and threw himself down in front of Jesus and begged Jesus to come to his house. "
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "42",
+          "sid": "LUK 8:42"
+        },
+        "He had a daughter who was 12 years old, who was his only child, and she was very sick, about to die. ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "42",
+          "sid": "LUK 8:42"
+        },
+        "So Jesus went with him. And as they were walking along, the crowd was swarming around Jesus, everyone was tryna get close to him. ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "43",
+          "sid": "LUK 8:43"
+        },
+        "And in the swarm, there was a woman who had a problem with her cycle where she had been bleeding for 12 years. And she had spent all her money seeing doctors but not one of them was able to help her. "
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "44",
+          "sid": "LUK 8:44"
+        },
+        "And so she snuck up to where Jesus was and reached out and touched the edge of his clothes. And immediately she felt the bleeding problem ... stop. And Jesus said: \"[slightly positive/ambiguous] Who touched me?\" "
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        "And everybody there denied it, nobody would say it was them. And Peter even said, \"Jesus, there's people all around you bumping into you.\" "
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "46",
+          "sid": "LUK 8:46"
+        },
+        "And Jesus said, \"No, I felt someone touch me. Healing power went out from me.\" ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "47",
+          "sid": "LUK 8:47"
+        },
+        "And by this time, the woman realized that she was not gonna be able to hide any longer, and so she came foward. She was so terrfied that she was shaking. And she knelt down in front of Jesus, and with everyone there listening, she explained what had happened, how she had touched Jesus's clothes and been healed immediately. ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "48",
+          "sid": "LUK 8:48"
+        },
+        "And then Jesus spoke to her and said, \"Precious child, you believed that I could heal you. That's what made you well. Now go and live a full life.\" \n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        "Well, while Jesus was still talking, someone arrived from Jairus's house and told Jairus, \"Sir, there's no need to keep bothering the teacher. Your daughter is dead.\" ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "50",
+          "sid": "LUK 8:50"
+        },
+        "But when Jesus heard this, he said, \"Jairus, don't worry. Just trust me and your daughter's going to be okay.\" And then they continued on to Jairus's house. ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "51",
+          "sid": "LUK 8:51"
+        },
+        "And when they got there, Jesus took Peter, James, and John, as well as Jairus and Jairus's wife into the house and he made everyone else stay outside. And inside the house, ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "52",
+          "sid": "LUK 8:52"
+        },
+        "there was a whole bunch of people wailing. They were grieving over the girl's death. And Jesus said, \"You don't... need to be doing this. She's not dead. She's sleeping.\" ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "53",
+          "sid": "LUK 8:53"
+        },
+        "And they laughed in his face 'cause they knew that she was dead. ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "54",
+          "sid": "LUK 8:54"
+        },
+        "And then Jesus walked... over... to where the girl was, and he took her by the hand, and said, \"Okay, sweetie...Get up.\" ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "55",
+          "sid": "LUK 8:55"
+        },
+        "And right away, her life came back into her, and she got up. And Jesus told someone to bring her some food to eat. ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "56",
+          "sid": "LUK 8:56"
+        },
+        "And when Jairus and his wife saw this, they were blown away. But Jesus told them that they couldn't tell anyone what had happened. \n"
+      ]
+    },
+    {
+      "type": "chapter",
+      "marker": "c",
+      "number": "9",
+      "sid": "LUK 9"
+    },
+    {
+      "type": "para",
+      "marker": "s",
+      "content": [
+        "Jesus Sends Out the 12\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "1",
+          "sid": "LUK 9:1"
+        },
+        "Then Jesus called \"the twelve\" together and gave them power and authority over all demons, and the ability to cure diseases. ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "2",
+          "sid": "LUK 9:2"
+        },
+        "And then he sent them out to tell people about God's dominion. And to heal sick people. ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "3",
+          "sid": "LUK 9:3"
+        },
+        "He said, \"Don't take anything with you. Don't take a walking stick or a bag or food or money, not even a change of clothes. ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "4",
+          "sid": "LUK 9:4"
+        },
+        "And when you get to a town, stay with the first family that welcomes you in, stay with them until it's time to leave. ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "5",
+          "sid": "LUK 9:5"
+        },
+        "And if you get somewhere where they don't welcome you, shake the dust from their streets off your feet as a way of telling them they missed their chance. ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "6",
+          "sid": "LUK 9:6"
+        },
+        "And so, the students went from town to town and everywhere they went, they shared the good news and they healed people.\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "s",
+      "content": [
+        "Herod Considers Jesus\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": []
+    },
+    {
+      "type": "para",
+      "marker": "s",
+      "content": [
+        "Jesus Feeds 5,000\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "10-17",
+          "sid": "LUK 9:10-17"
+        },
+        "So when the 12 representatives got back, they told Jesus about everything that had happened and then Jesus took them with him and went out toward the town of Bethsaida so they could be by themselves. And pretty soon people found out where Jesus had gone. And so they went to go find him. And there were about 5,000 people that went, not even counting women and children. \n\nWhen they got there, Jesus welcomed them and started teaching them about how God rules as king, and he healed the people that were sick. And this went on all day until late in the day, the 12 came to Jesus and said, Jesus, we need to send these people away because they need to go find food and a place to stay.\n\nWe're out here in the middle of nowhere and Jesus said. I want you to give them food. And his followers said, whoa, all we have is a couple of fish and five flatbreads. You don't want us to go buy food to feed everybody, do you? And Jesus said, have everybody sit down in groups of about 50. And so his followers did that. \n\nAnd then when everybody had sat down, Jesus took the two fish and the five flatbreads. Looked up at the sky and thanked God for them. And then he tore the bread into pieces and started handing the food to his followers and his followers took it out to the people, and everybody had more than enough to eat. \n\nAfter they were finished eating, Jesus followers picked up 12 baskets of food that was left.\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "s",
+      "content": [
+        "Peter Confesses\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "18-22",
+          "sid": "LUK 9:18-22"
+        },
+        "Then Jesus went off with his students to be alone with them, and he talked to God for a while. Then he asked his students, he said, what are people saying about me? Who do they think I am? And they said, well, they're saying that you are Baptizer John, or that you're Elijah, or that you are another one of the ancient messengers who's back from the dead. \n\nAnd Jesus said, well, what about you guys? Who do you think I am? And Peter said, you are the chosen one. God sent you. And Jesus made it very clear to them right then and there that they couldn't tell anyone about this and, and then he said. All kinds of horrible things are gonna happen to the son of Adam, the community leaders, the head priests and the scripture experts are all gonna turn on him and he's gonna be put to death. \n\nBut then three days later, he'll come back to life.\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "23-27",
+          "sid": "LUK 9:23-27"
+        },
+        "When he talked to the crowds again, he said, if you wanna be one of my students, you need to forget about yourself. Take a daily walk down death row and let me lead, because if you cling tightly to your life, you'll lose it. But if you give up your life for me. Then you'll get it back because what good would it be for the whole world to be yours if you sacrifice yourself to get it? \n\nAnyone that turns their back on me or on the things that I'm teaching, I as the son of Adam, will turn my back on them when I return and when the son of Adam returns, it's gonna be magnificent. As magnificent as the father and the sacred angels. In fact, some of you before you die will get to see what it's like when God is king.\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "s",
+      "content": [
+        "Meeting on the Mountain\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": []
+    },
+    {
+      "type": "para",
+      "marker": "s",
+      "content": [
+        "Jesus Heals Boy with Unclean Spirit\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": []
+    },
+    {
+      "type": "para",
+      "marker": "s",
+      "content": [
+        "The son of Adam what?\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": []
+    },
+    {
+      "type": "para",
+      "marker": "s",
+      "content": [
+        "Further Teachings\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": []
+    },
+    {
+      "type": "para",
+      "marker": "s",
+      "content": [
+        "Jesus Heads Toward Jerusalem\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": []
+    },
+    {
+      "type": "chapter",
+      "marker": "c",
+      "number": "10",
+      "sid": "LUK 10"
+    },
+    {
+      "type": "para",
+      "marker": "s",
+      "content": [
+        "72 Apprentices Prepare the Way\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": []
+    },
+    {
+      "type": "para",
+      "marker": "s",
+      "content": [
+        "The Story of the Good Samaritan\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": []
+    },
+    {
+      "type": "para",
+      "marker": "s",
+      "content": [
+        "Jesus Visits Mary and Martha: You Won't Believe What Happens Next!\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": []
+    },
+    {
+      "type": "chapter",
+      "marker": "c",
+      "number": "11",
+      "sid": "LUK 11"
+    },
+    {
+      "type": "para",
+      "marker": "s",
+      "content": [
+        "How to Pray\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": []
+    },
+    {
+      "type": "para",
+      "marker": "s",
+      "content": [
+        "Jesus Challenged for Performing Exorcisms\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": []
+    },
+    {
+      "type": "para",
+      "marker": "s",
+      "content": [
+        "Jesus Calls Out the Crowd and the Pharisees\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": []
+    },
+    {
+      "type": "chapter",
+      "marker": "c",
+      "number": "12",
+      "sid": "LUK 12"
+    },
+    {
+      "type": "para",
+      "marker": "s",
+      "content": [
+        "Jesus Tells His Apprentices What to Worry About\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": []
+    },
+    {
+      "type": "para",
+      "marker": "s",
+      "content": [
+        "An Inheritance Dispute Interrupts\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": []
+    },
+    {
+      "type": "para",
+      "marker": "s",
+      "content": [
+        "Don't Worry and Be Trustworthy\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": []
+    },
+    {
+      "type": "para",
+      "marker": "s",
+      "content": [
+        "Jesus Will Divide the Earth\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": []
+    },
+    {
+      "type": "para",
+      "marker": "s",
+      "content": [
+        "Jesus Warns the Crowd\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": []
+    },
+    {
+      "type": "chapter",
+      "marker": "c",
+      "number": "13",
+      "sid": "LUK 13"
+    },
+    {
+      "type": "para",
+      "marker": "s",
+      "content": [
+        "Jesus Warns About Destruction\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": []
+    },
+    {
+      "type": "chapter",
+      "marker": "c",
+      "number": "14",
+      "sid": "LUK 14"
+    },
+    {
+      "type": "para",
+      "marker": "s",
+      "content": [
+        "Dinner at a Pharisee's House\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": []
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "12-15",
+          "sid": "LUK 14:12-15"
+        },
+        "And then he also told the man who invited him, \"Whenever you host a lunch or a dinner party, don't just always invite your friends and siblings and relatives and rich neighbors. Otherwise they'll return the favor and invite you back. No, what you should do is, whenever you throw a party, invite poor people, disabled people, folks who can't walk or see, and you'll be so glad you did. But because they can't return the favor. Because, you see, God will return the favor when he resurrects everyone that has a relationship with him.\" And then when one of the other guests heard that, he said, \"Yeah, what could be better than feasting in God's new world?\"\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "16-24",
+          "sid": "LUK 14:16-24"
+        },
+        "And then Jesus told him, \"Once there was this man who decided to throw a huge dinner party, and he invited a ton of people. And when it was time for the party, he sent his servant to go tell all the people who promised they'd come. 'Food's ready. Come on over.' But one by one, all the guests start making excuses. One of them said, 'Sorry, I just bought field and I got to go see it, so please tell them I can't come.' Another one said, 'Yeah, I just bought ten oxen to plow with. I'm going to check them out. Please tell them I can't come.' And another one said, 'I just got married. I can't come.' Well, the servant went back and told the host what had happened, and the host got really mad. He said, 'Then hurry into town to find poor people, disabled people, folks who can't see or walk and bring them here.' And when the servant had done that, he said, 'sir, there's still more room.' And so then the host said, 'Then go out of town anywhere you can and make people come to my party until my house is full, because you better believe that none of the people who were invited will get even a bite of my food.'\"\n"
+      ]
+    },
+    {
+      "type": "chapter",
+      "marker": "c",
+      "number": "15",
+      "sid": "LUK 15"
+    },
+    {
+      "type": "para",
+      "marker": "s",
+      "content": [
+        "Celebrating the Return of Lost People\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": []
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "1-10",
+          "sid": "LUK 15:1-10"
+        },
+        "When the tax collectors and other bad people were crowding around to hear what Jesus had to say, the Pharisees and the scripture experts were complaining. They said, \"This guy, he hangs out with bad people and he even eats with them.\" So Jesus asked them some questions. \"Imagine you had 100 sheep, and one of them goes missing. Wouldn't you leave the other 99 sheep in the wilderness and go search for the one sheep until you found it? And when you found it, you would be so excited, you'd put it over your shoulders and go home. And you'd call together your friends and neighbors and say, 'Let's celebrate. I found the sheep that was lost.' Seriously, it's just like that in heaven. There's more excitement over one bad person who turns their life around than over 99 good people who don't need to do anything. Or imagine there's a woman who loses a 10th of her savings somewhere in the house. Wouldn't she light a lamp and sweep every corner, just turn the whole place upside down until she finds the money? And when she finds it, she'll call together her friends and neighbors and say, 'Let's celebrate. I found the money I lost.' Seriously, the angels in heaven are that excited if someone comes back to God.\"\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "11-32",
+          "sid": "LUK 15:11-32"
+        },
+        "Then he said, so there was a man who had two sons, and the younger son came to his dad and told him, 'Dad, I want my inheritance now.' So the father divided up everything he had, and he gave his son his share. And a few days later, the younger son took it all and he left to go to a far off country. And he spent all of it on whatever he wanted to. And after he had spent everything, a severe famine hit that land, and the son was in trouble. He had to get a job with one of the local pig farmers, who sent him out into the fields to feed the pigs. And the son was so hungry, he was craving the food that the pigs were supposed to eat, but no one gave him anything. Finally, he came to his senses and he said, 'My father's lowest worker has plenty to eat. And here I am starving to death. I'll get up and I'll go back to my dad and I'll tell him, dad, I've hurt God and I've hurt you. I don't deserve to be called your son anymore. Please hire me as one of your workers.' And so he got up and he went back to his dad. And while he was still a ways off, his dad saw him and his heart melted, and he ran to his son and he threw his arms around him and he kissed him. And the son said, 'Dad, I've hurt God and I've hurt you. I don't deserve to be called your son anymore.' But the father told his servants, 'Get him a change of clothes, quickly. The best we have. Go get a ring for his finger. Go get some shoes for his feet. Go take that calf we've been fattening up and slaughter it. Let's eat. Let's party. My son was dead, but now he's alive. We'd lost him, but we found him again.' And so they celebrated. And meanwhile, the older brother was out in the field. And when he got back to the house, he heard the sound of music and dancing. And so he grabbed one of the servants and he asked him what was going on. The servant told him, 'Well, your brother's come back, and your father was so excited to get him back safe and sound that he killed that calf you've been fattening up.' The brother was furious, and he refused to go inside. The father came out to him and begged him to. But the brother said, 'Listen, I have been slaving away for you all these years. And in all that time, I have never disobeyed anything you told me to do. And you've never even offered to let me cook up a young goat to have a party with my friends. But when your son, he comes back after spending all your money on prostitutes, you kill the fattened calf for him.' The father told him, \"My son, you've been with me this whole time. And everything I have belongs to you. But we had to celebrate. We had to get excited because your brother, he was dead. But now he's alive. We'd lost him, but we found him again.'\"\n"
+      ]
+    },
+    {
+      "type": "chapter",
+      "marker": "c",
+      "number": "16",
+      "sid": "LUK 16"
+    },
+    {
+      "type": "para",
+      "marker": "s",
+      "content": [
+        "Be Wise with Your Money\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "1-9",
+          "sid": "LUK 16:1-9"
+        },
+        "1 Then Jesus said to his apprentices, \"There was this rich guy, and he hired a manager, and then he found out that his manager was losing him a bunch of money. 2 So he called the guy in and said, 'I know what you did. Turn in your reports, then you'll be fired.' 3 The manager said to himself, 'What am I going to do? I'm about to be fired. I'm not cut out for manual labor. I'm too proud to beg... 4 I've got it! I know what to do so that when I'm fired people will take care of me.' 5 So he called in all of the people who owed his boss something. And he said to the first guy, 'How much do you owe my boss?' 6 And the first guy said, ' A thousand gallons of olive oil.' The manager said, 'well hurry come on over here, and let's change that to- Let's change that to 500 gallons. ' 7 Then he said to the second guy, 'What about you?' And the second guy said, '30 tons of wheat.' The manager said, 'Let's change that to 24 tons.' 8 The rich guy had to hand it to him. I mean, he was dishonest, but he was smart.\n\nPeople who belong to this world are just a lot smarter at dealing with people than people who know what's coming. 9 So here's some advice. Use your earthly money to make friends. Then when money is meaningless, you'll be welcomed into eternal homes.\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "10-18",
+          "sid": "LUK 16:10-18"
+        },
+        "If you could be trusted with small things, you could be trusted with big things. If you lie about small things, you'll lie about big things. So if you don't use your earthly money right, who's going to give you true wealth? If you haven't proven that you're trustworthy managing someone else's property, who's going to trust you with property of your own? No one can have two people in charge of them at the same time, because either they'll hate working for the first and love working for the second, or they'll be loyal to the first and resent the second. You can't serve God and be a slave to money.\" Well, the Pharisees loved money, so when they heard that, they tried to dismiss him by making fun of him. So then he told them, \"You can justify your actions to people all you want, but God sees right through it because he hates what you love and serve. Moses. And the messengers spoke for God up until John. And now I'm here telling people about God's new world and urging everyone to find a way in. But to be clear, it would be easier to destroy all of creation than to repeal even the smallest part of Moses's law. Which means, by the way, that all of you who divorce your wife to marry someone else, you're guilty of cheating. And as for all of you who marry the women, they leave you're guilty of cheating too.\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "19-31",
+          "sid": "LUK 16:19-31"
+        },
+        "There was this rich man who wore expensive linen clothes and lived it up every day. There was also this poor man named Lazarus who had been dumped outside the rich guy's gate, abscesses oozed all over his body, and he just wanted to eat some of the food that fell off the rich man's table. But instead, feral dogs came and licked at his wounds. Eventually, the poor man died, and angels carried him to heaven and escorted him right next to Abraham, the father of all the Jews. The rich man also died and was buried, and while he was in hell suffering, he looked over and saw Abraham and Lazarus sitting right next to him. So he screamed, 'Abraham, I'm your child. Help me. Send Lazarus over to give me just a drop of water to cool me off. Just have him dip his little finger in water and drip it on my tongue. I can't handle these flames.' But Abraham replied, 'Son, don't you remember? You got everything you ever wanted in life, and Lazarus got everything he didn't want. Well, now we're here, and I'm comforting him, and you can suffer. And besides that, there's an impassable void between us. None of us can come over to you guys, even if we wanted to. And none of you all can come over here.' The rich man replied, 'Then, Abraham, I'm begging you, send him to my family. I have five siblings. He could warn them so that they don't end up in this terrible place.' Abraham said 'they have Moses and God's other messengers.' They've got to listen to them.' The rich man replied, 'no, Abraham, they won't. But if someone came to them from beyond the grave, they would change.' Abraham responded, 'if they won't listen to Moses or God's other messengers, they won't be convinced. Even if someone comes back to life.'\"\n"
+      ]
+    },
+    {
+      "type": "chapter",
+      "marker": "c",
+      "number": "17",
+      "sid": "LUK 17"
+    },
+    {
+      "type": "para",
+      "marker": "s",
+      "content": [
+        "Jesus Teaches on Forgiveness, Faith, and Humility\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "1-10",
+          "sid": "LUK 17:1-10"
+        },
+        "And then Jesus said to his apprentices, Look, there's always going to be people hurting others, but it's not going to go well for the people who do. Because whoever hurts someone else just because they think they're a nobody, it'd be better for them if they had a boulder tied around their neck and they were thrown in a lake.\n\nSo you better watch yourself. And, on the other hand, whenever your sibling does something against you, go to them, and if they're sorry, forgive them. Even if they hurt you seven times on the same day, If they come back to you and they're sincere and they're like, I'm sorry, then you've got to forgive them. \n\nAnd then the representatives asked the one in charge, please help us trust you more so we can actually do that. And then the one in charge said, Imagine a tiny mustard seed. If you trusted me just that much, then you could tell the biggest tree you could find, uproot yourself and go plant yourself in the bottom of the sea.\n\nAnd it would do whatever you said. But if someone had a servant plowing a field or taking care of sheep, would they say to their servant as soon as they came in from the field, Come, sit down and eat right away! No. They're going to say, Get dinner ready and change and then serve me while I have dinner.\n\nAnd then you can get yourself something. Nobody gives their servant a reward just for doing what they're told, do they? That's how it works with you all. When you've done what you're told, say, We're just servants. We were simply doing our job. \n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "s",
+      "content": [
+        "Jesus Heals 10 Men\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "11-19",
+          "sid": "LUK 17:11-19"
+        },
+        "11 Jesus was still on his way to Jerusalem, and, at this point, he was on the border between Galilee and Samaria. 12 And as he was going into a small town, he was met by these ten people, each with a serious skin disease that meant that they had to stay far away from everyone else. 13 They shouted to him, \"Jesus, help us, please. We know you can.\" 14 And when Jesus saw them, he said, \"Go show yourselves to the priests, since they're the ones who verify you've been healed.\" 15 And as they went on the way, the thing that kept them isolated from the community disappeared. 16 And when one of them saw that he had been healed, he went back. He was loudly praising God, and he bowed down in front of Jesus, and he was just thanking Him. And he was Samaritan. 17 Jesus said to him, \"Didn't I heal ten of you? Where are the other nine? 18 You're an outsider! Are you the only one who came back to praise God?\" 19 And then he said to him, \"Get up and go on your way. You trusted God, and that's what saved you.\"\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "s",
+      "content": [
+        "When Will God's New World Come?\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "20-37",
+          "sid": "LUK 17:20-37"
+        },
+        "When the Pharisees were asking Jesus when God would come take the throne and rule over the nations, Jesus told them, \"God's not gonna take the throne in some flashy spectacle. Nobody's gonna say, 'Look here!' or 'Look there!' and this is important. That's because God's already reigning right here under your noses.\" \nAnd then he told his apprentices, \"One day you will wish that the Heir of Humanity would come back, but he won't yet. And people will tell you, 'Look there' or 'Look there', but don't go running off wherever they tell you too. Because when the Heir of Humanity comes it will be like when lightning strikes and it lights up the whole sky. But first he's gonna have to suffer terrible things and be rejected by the people. So when the Heir of Humanity comes back, it will be like when Noah was building the boat. People were eating and drinking, and getting married, just living their lives right up until Noah got in to the boat. And then the flood came and everything was destroyed. Or like when Lot was living in Sodom. People were eating and drinking, and buying and selling, and planting and building, just living their lives right up until Lot left Sodom, and then flaming rocks rained down from the sky and everything was destroyed. That's what it will be like when the Heir of Humanity is revealed. And when that day comes, it will be baaad. So if you're on the rooftop, don't even go inside to grab anything. And if you're out in the field, don't go back home, just run! Remember what happened to Lot's wife when she turned back. You'll smother your life if you try to protect it, but killing it keeps it alive. And that night, two people will be in the same bed. But one will be rescued and the other abandoned. Or two people will be working at the same mill. But one will be rescued and the other abandoned.\"\nAnd his apprentices asked, \"Wait, where will this happen?\" \nHe said, \"Where there's a dead body, vultures will gather.\"\n"
+      ]
+    },
+    {
+      "type": "chapter",
+      "marker": "c",
+      "number": "18",
+      "sid": "LUK 18"
+    },
+    {
+      "type": "para",
+      "marker": "s",
+      "content": [
+        "Two Stories about Talking to God\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "1-8",
+          "sid": "LUK 18:1-8"
+        },
+        "Jesus wanted to teach his apprentices to always ask God for help and never give up. So he told them this story. In a certain town lived a judge and a widow. Now, the judge didn't listen to God, and he didn't care about anybody. The widow kept coming to him, asking Him to protect her from the people who were trying to take advantage of her. But for a long time, he refused to help. Eventually, though, he said to himself self, I know that I don't listen to God and I don't care about anybody, but this woman is driving me crazy. I'll do the right thing just so she doesn't come over and attack me again. And then the one in charge said, did you hear what that terrible judge said? And won't God make sure that his chosen people get justice? The people who beg Him day tonight, won't he patiently listen to them? I'm telling you, justice will come for them before you know it. Of course, when the heir of humanity comes, will people on Earth even trust Him?\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "9-14",
+          "sid": "LUK 18:9-14"
+        },
+        "And then Jesus also had something to say to self righteous people who looked down on everybody else. He said, two people went up to the temple to pray. One was a pharisee, the other a tax collector. Now, the pharisee stood off by himself and told God, god, thank you that I'm not like everybody else. I don't take things from people. I don't do bad things. I don't sleep around, and I'm definitely not like that tax collector. Twice a week, I fast to show my devotion to you, and I give you a 10th of everything that I get. The tax collector, he distanced himself from everybody else, and he kept his eyes on the ground because he was so ashamed. And he was even hitting himself in the chest because he was so torn up about who he had become. He said, God, I know I'm a horrible person, but please show mercy. And you know what? He's the one who went back home with his relationship with God repaired, not the other guy. Taken be taken from. Give and be given to.\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "s",
+      "content": [
+        "Jesus Welcomes Kids\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "15-17",
+          "sid": "LUK 18:15-17"
+        },
+        "Later, some people were bringing their babies to Jesus so he would hold them and bless them. But when the apprentices saw that, they got on to them. But then Jesus called them over. He said, \"Don't stop the kids, let them come. Because God's New World includes them too. In fact, if you don't welcome God's New World like a kid, then you won't get in at all.\"\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "s",
+      "content": [
+        "A Politician Asks about Eternal Life\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "18-30",
+          "sid": "LUK 18:18-30"
+        },
+        "Then a politician came to Jesus and asked him, ah, the good teacher. Sir, what do I need to do to live forever? Jesus said, what makes you say I'm good? You know that only God is good. And you know God's laws. Don't break the covenant of marriage, don't murder, don't steal, don't commit perjury and respect your parents. The man said, I've obeyed each of those since I was child. And when Jesus heard that, he said, oh, then there's only one thing left for you to do. Go sell everything you have and give the money to people who need it. Then you'll have treasure in heaven. After that, come follow me. When the man heard that, he was devastated because he was really rich. And when Jesus saw how sad he was, he said, it's so hard for rich people to accept God as their king. It's easier to thread a camel through a needle than it is for a rich person to enter God's new world. And when the people heard that, they said, well, then, can any of us get in? And Jesus replied, what you can't do, God can. And Peter said, sir, we've given up everything to follow you. And Jesus answered, yeah. And I'll tell you what. Anyone who leaves their home or their spouse or their siblings, their parents or their children for God's new world will absolutely receive more in this life than they ever left behind. And in the next life, they'll live forever.\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "s",
+      "content": [
+        "Jesus Predicts His Death\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "31-34",
+          "sid": "LUK 18:31-34"
+        },
+        "And then he took the Twelve aside and told them, \"We're going up to Jerusalem and everything that God's messengers wrote about the heir of humanity is going to happen. Meaning, I will be handed over to non-Jews, I will be mocked and insulted and spat on. And after they tear the flesh from my body, they will kill me. And three days later, I will come back to life.\" But the apprentices didn't understand what he was saying. The words were too confusing. They didn't get it.\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "s",
+      "content": [
+        "Jesus at Jericho\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "35-43",
+          "sid": "LUK 18:35-43"
+        },
+        "As Jesus got close to Jericho, there was a blind man sitting by the side of the road and begging. And when he heard the crowd that was with Jesus, he asked what was happening. And they told him that Jesus from Nazareth had arrived on his way to Jerusalem. So the man started shouting, Jesus, heir to David's throne, please help me. The people around him got onto him and tried to make him be quiet, but he shouted even louder, heir of David, please help me. Then Jesus paused, and he told them to bring the blind man to him. And when he got closer, Jesus asked, what can I do for you? The man said, My king, I want to see. And Jesus said, Then see, you trusted me, so now you're healed. And immediately the man could see. And he went with Jesus, celebrating and thanking God. And everyone in the crowd who saw what happened, they praised God.\n"
+      ]
+    },
+    {
+      "type": "chapter",
+      "marker": "c",
+      "number": "19",
+      "sid": "LUK 19"
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "1-10",
+          "sid": "LUK 19:1-10"
+        },
+        "1 Jesus got to Jericho and was passing through, 2 and there was this man there named Zacchaeus. He was a really rich, really important tax collector, 3 and he wanted to see what this Jesus was all about, but he couldn't because the crowd was too thick and he was too short. 4 So he ran ahead and climbed into the biggest tree he could find because Jesus was about to go that way. 5 And when Jesus got there, he looked up and said, \"Zacchaeus, come down. Let's go. I've got to stay at your house tonight.\" 6 So Zacchaeus hurried down and happily hosted him. 7 But when everyone saw that, they complained. They said, \"I can't believe Jesus would eat with someone like that.\" 8 So Zacchaeus stood up and said to the One in Charge, \"Look, I'm yours. I'll give half of what I have to the people who need it. And if I've taken more money from anyone than I was supposed to, I'll pay back four times what took.\" 9 Jesus said to him, \"Today your house has been rescued because you're one of Abraham's kids. 10 And the heir of humanity came to find and to rescue the people who are lost\"\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "11-28",
+          "sid": "LUK 19:11-28"
+        },
+        "While the people were listening to Jesus, they were getting really close to Jerusalem. And because they all thought that they were going to go straight into God's new World right away, jesus told them this story. He said there was a really important man who was going to go far away to see the emperor, to get appointed as king. But before he went, he got ten of his servants together, and he gave them each a pound of gold, and he told them, use this to make more money for me while I'm gone. But the people that he was going to be king over hated him. And so they sent a delegate behind him to say, we don't want this man to be our king. But he became king anyway. And when he got back, he got his ten servants together to see what they had done with his money. The first one came up to him and said, sir, with the money you gave me, I got ten more pounds of gold. And he said, Excellent work. And since you have shown that you can be trusted with a little responsibility, I'll put you in charge of ten of my cities. Then the second one came up to him and said, sir, with the money you gave me, I got five more pounds of gold. And he said, I'll put you in charge of five cities. And then another one came up to him and said, sir, here's your pound of gold. I hid it away for safekeeping. I can never win with you. So I was scared to try. You're always trying to get something for nothing and taking what you didn't earn. And then he said, you're so bad at doing what I told you to do, you're saying you can never win with me, that I'm always trying to get something for nothing and taking what I didn't earn. Well then, if that's the case, why didn't you at least put it in the bank so that I could get a little interest off of it? And then he said to the people who were standing around, take this man's pound of gold and give it to the one who has ten. But they said, but sir, he's already got ten pounds of gold. Yes, but when it comes to responsibility, you either use it or you lose it. And as for my enemies, you know, the ones that didn't want me to be their king, bring them here and execute them in front of me. And then when Jesus finished telling them that story, he led the way up to Jerusalem.\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "s",
+      "content": [
+        "The King Arrives\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "29-40",
+          "sid": "LUK 19:29-40"
+        },
+        "As Jesus got near the towns of Bethany and Bethphage on the slopes of Mount Olive Grove, he sent two of his apprentices ahead. He told them, \"Go into that town over there and you'll find a young donkey that no one has ever ridden on before. It'll be tied to a hitching post. Untie it and bring it to me. And if anyone asks you what you're doing, tell them 'the one in charge needs this'.\" So they went and they found that everything was just like he said it would be. As they were untying it, the people in charge of the donkey asked, \"What are you doing with that donkey?\" And they said, \"The one in charge needs it.\" So they let them take the donkey back to Jesus. And the apprentices used their coats for a saddle, and they helped Jesus onto the donkey. And as he rode, they honored him as their king by covering the path with their coats. And as he was getting close, coming down Mount Olive Grove, the whole crowd of his apprentices got so excited, they started loudly praising God for all the incredible things they'd seen. They said, \"Let's praise the king that Yahweh sent. He's bringing peace from heaven. He's the greatest of all time.\" Some of the Pharisees in the crowd said, \"You're supposed to be their teacher. Stop them. But Jesus told them, \"Listen, if they stopped praising me, the rocks themselves would do it.\"\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "41-44",
+          "sid": "LUK 19:41-44"
+        },
+        "And he got really close to Jerusalem. And when the city came into view he started crying and he said, \"You of all people should know by now what would bring you peace, but still to this day you can't see it. So one day soon, your enemies will surround you and barricade you in, and attack you from every side, and demolish your walls and your residents, until there's not a single stone left in place... all because you weren't ready for your king to come.\"\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "s",
+      "content": [
+        "Jesus Enters the Temple\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "45-20",
+          "sid": "LUK 19:45-20"
+        },
+        ":8 Then Jesus entered the temple compound and there werecpeople making money off of the sacrificial system. So he started kicking them out, saying, \"Don't the scriptures say my house is supposed to be a place for people to come talk to me? But you have turned it into a 'hideout for thieves.'\" \nAfter that, he started teaching in the Temple every day, and the head priests and the religious lawyers and the other important people were looking for a way to kill him, but they couldn't figure out how to do it because people were hanging on his every word. \nOne of these days, Jesus was teaching the people and telling them the great news when the head priests, the religious lawyers and the community leaders came up to him and said, \"What gives you the right to do all this? Who gave you that authority?\" Jesus said, \"Let me ask you a question. John's Washing Ceremony--did heaven tell him to do it or not?\" Then they started discussing among themselves, \"Well, if we say 'heaven,' then he's going to say, 'Well then why didn't you believe him?' But if we go with 'not,' the people are going to kill us for breaking God's law because they believe he really was God's messenger.\" So they said they didn't know. Jesus said, \"Well, then I'm not going to tell you what gives me the right to do all this either.\"\n"
+      ]
+    },
+    {
+      "type": "chapter",
+      "marker": "c",
+      "number": "20",
+      "sid": "LUK 20"
+    },
+    {
+      "type": "para",
+      "marker": "s",
+      "content": [
+        "The Authorities Challenge Jesus\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "9-16",
+          "sid": "LUK 20:9-16"
+        },
+        "9 And Jesus began to teach the people with this story. \"So there is this man, and he plants a vineyard, and he leases it out to some farmers. And then he goes away for a while. 10 And when the time comes, he sends one of his workers to go collect some fruit for rent. But the farmers beat up this worker, and he's forced to leave without anything. 11 So the owner tries again. He sends another one of his workers, and this one they beat up, too, and humiliate him. And he forced to leave without anything. 12 The farmer tries again. He sends a third worker, and this one they severely injure and throw out of the vineyard. 13 Well, the man who planted the vineyard says to himself, 'What am I going to do? I'll send my dear son. Surely they'll show him some respect.' 14 But when they spotted him coming, they talked about what they were going to do. 'See, this is the heir. They said. We could kill him, and then the inheritance will be ours.' 15 So they drag him out of the vineyard and they kill him. What is the vineyard owner going to do? 16 He's going to come and destroy those farmers, and he'll lease that vineyard out to other people.\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "17-19",
+          "sid": "LUK 20:17-19"
+        },
+        "17 When everyone heard this, they were horrified, and they cried out, \"no!\" But Jesus looked right at them and said, then why do the scriptures say the stone which the builders discarded? That stone has become the most important one, and 18 anyone who falls on that stone will be shattered, and it will crush anyone it falls on.\" 19 And from that moment on, the head priests and the scripture experts were looking for a way to arrest Jesus because they knew that story was about them, but they couldn't find a way because they were afraid of the people.\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "20-26",
+          "sid": "LUK 20:20-26"
+        },
+        "20 So while they were keeping a close eye on him, they sent some guys who were opposing his people, just trying to do the right thing. But it was really a setup so that they could bait him into saying something that would let them turn him over to the governor because he had the power and authority to execute Jesus. 21 So they said, \"Hey, we know that you're a teacher who always says the right thing. Instead of telling people what they want to hear, you teach teach the truth about God's way of doing things. 22 Is it right for us to pay the tribute tax to Caesar or not?\" 23 But Jesus saw right through them, and he said, 24 \"Show me some Roman money. Whose face is on it, whose name?\" they said, \"Caesar.\" 25 He said, all right, then give Caesar's stuff to Caesar and God's stuff to God. 26 And so they failed. They couldn't get him to take the bait in front of people. And they were so flabbergasted, they shut right up.\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "27-40",
+          "sid": "LUK 20:27-40"
+        },
+        "27 There was another group called the Sadducees who said there wasn't an afterlife. And they came up to Jesus and said, 28 \"Since you're a teacher, we have a question. You know how Moses said that if a man has a brother who gets married and then dies without having any kids, then the man is supposed to marry his brother's widow and have a kid that is considered his brother's child? 29 Well, let's say there were seven brothers. The first one marries this woman and then dies without having any kids. 30 And then the same thing happens to the second brother 31 and then to the third brother until all seven of them marry the same woman and die without having any kids. 32 And then eventually the woman dies too.33 So who's going to be her husband in the afterlife? All seven were married to her.\"34 And then Jesus said, \"People in this life get married, 35 but whoever's worthy of what's to come will be like the angels.36 They don't get married in the afterlife. They can't die because they're God's children since he brought them back to life.37 And even Moses showed that the dead come back to life in the story about the Bush when he called Yahweh the God of Abraham and the God of Isaac and the God of Jacob.38 And since God isn't the God over dead people, but over people who were alive, then, obviously, as far as God's concerned, everyone's alive.\"39 And then some of the scripture experts were like, well said, teacher.40 And after that, nobody dared to question him again.\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "s",
+      "content": [
+        "Jesus Challenges the Authorities (Or:Jesus Claps Back)\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "41-44",
+          "sid": "LUK 20:41-44"
+        },
+        "41 Then Jesus said to them, \"how come everyone says that the chosen one is David's descendant? 42 Because David himself says in the book of Psalms, 'Yahweh told the person ruling over me, come sit right next to me 43 and I'll put your enemies under your thumb.' 44 So how can the Chosen One be both David's descendant and rule over him?'\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "45-47",
+          "sid": "LUK 20:45-47"
+        },
+        "45 Then Jesus said to his apprentices, where everyone could hear, 46 \"Be careful because the scripture experts set a dangerous example. They like to wear their fancy clothes and want to be greeted out in public and to have the most important seats when they go to worship and when they go to dinner parties. 47 But they find widows and steal everything they have. And to justify it, they make long speeches to God. They are going to get exactly what they deserve.\"\n"
+      ]
+    },
+    {
+      "type": "chapter",
+      "marker": "c",
+      "number": "21",
+      "sid": "LUK 21"
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "1-4",
+          "sid": "LUK 21:1-4"
+        },
+        "1 Then Jesus looked over and saw the rich bringing their donations to the temple.2 And he also saw a widow who was clearly living in poverty. And she came up and put in two small coins. And Jesus said, 3 \"Seriously, I'm telling you, this poor widow put in more than anyone else.4 They all gave what they did because they're rich. But because she's poor, she just put in everything she had.\"\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "s",
+      "content": [
+        "Jesus Predicts destruction\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "5-28",
+          "sid": "LUK 21:5-28"
+        },
+        "5 And at one point some people were talking about the temple, how it was covered in beautiful marble and these gifts of gold. So Jesus told them, 6 \"you see all this? one day it will be destroyed down to the last stone.\" 7 So they asked him, \"Wait, so when? Jesus, what's going to let us know that's about to happen?\" 8 So he told them, \"Pay attention in and don't let yourselves get tricked, because a lot of people are going to come and pretend to be me and say I'm here and it's time. But don't listen to them. 9 Now, the first thing that has to happen are wars and revolutions. But whenever you hear about that, don't freak out because the end's not going to come till later. 10 And then he explained to them, country will fight against country, king against king. 11 There will be big earthquakes and famines and epidemics everywhere and there will be horrible things and momentous omens in the sky. 12 But before all that, you will be arrested and oppressed and put on trial in the synagogue and thrown into jail. You will be dragged before kings and authorities, all because you're with me. 13 And that will give you an opportunity to tell others about me. 14 So decide now not to prepare anything, 15 because I will give you the wisdom and the words to say so that your enemies won't be able to contradict or oppose you. 16 However, you will be betrayed by parents and siblings and relatives and friends, and some of you will be killed. 17 Everyone will hate you because you're with me, 18 but you will be protected even down to the hairs on your head. 19 So don't give up and you will save your soul. 20 Now, when you see Jerusalem surrounded by armies, that's when you know she's about to be destroyed. 21 So if you're in Judea, run for the mountains. And if you're in the city, get out. And if you're out in the country, don't go into the city. 22 Because this time, when she's being punished, it's fulfilling everything that scripture said would happen. 23 Oh, the pregnant women and nursing mothers. Then the land will be devastated. And this people will be punished. 24 They will be slaughtered by the sword and exiled into the nations. And the nations will occupy Jerusalem until they've had enough time. 25 The sun and the moon and the stars will all give warning signs and the sea and the waves will crash so loudly that the people will panic and not know what to do. 26 People will just be fainting from fear and anticipation of what's coming to them because the sky itself will be shaken. 27 And then they will see the son of Adam riding in on a cloud, shining brightly and powerfully. 28 So when it starts, stand strong with your head held high, because you're about to be rescued.\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "29-38",
+          "sid": "LUK 21:29-38"
+        },
+        "29 And then to illustrate his point, he said, \"You know how when a fig tree or any other tree 30 starts sprouting leaves, you know summer's coming? 31 It's like that when you see all these things happening, you know God, your king, is coming. 32 And I'm telling you, this generation actually won't die out before all these things happen. 33 Heaven and earth will die out, but my words will live on. 34 So watch yourselves. Make sure you keep your wits about you. Don't be hungover or drunk or anxious in general, or else that day will ambush you 35 because it's coming for everyone. 36 Don't ever fall asleep. Spend your time asking God to give you the strength to escape these things that are coming and to stand tall before the Son of Adam.\" 37 Jesus was teaching in the temple every day, and he would go to Mount Olive Grove to spend the night night. 38 And everyone would go to the temple first thing in the morning to hear him.\n"
+      ]
+    },
+    {
+      "type": "chapter",
+      "marker": "c",
+      "number": "22",
+      "sid": "LUK 22"
+    },
+    {
+      "type": "para",
+      "marker": "s",
+      "content": [
+        "Judah Plots Against Jesus\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "1-6",
+          "sid": "LUK 22:1-6"
+        },
+        "At that point, the Flatbread Festival, also known as Passover, was coming up and the head priests and judges of Judaism were looking for a way to get rid of Jesus, but they were afraid of the crowds. When Satan used Judah Iscariot, who was one of the Twelve, and Judah went to the head priests and the officers of Temple Security and he offered to hand Jesus over to them. Well, they loved this and they agreed to pay him. So he made the deal and began looking for an opportunity to hand over Jesus when none of the crowds were around.\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "s",
+      "content": [
+        "Jesus's Last Passover\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "7-13",
+          "sid": "LUK 22:7-13"
+        },
+        "Then on the first day of the Flatbread Festival, the day when the Passover lamb is butchered, Jesus said to Peter and John, \"Hey, go ahead and prepare the Passover meal for us so that we can eat.\" Peter and John replied, \"Where would you like for us to prepare it?\" So Jesus was like, \"All right, pay attention. Go into the city, and a man who's carrying a big thing of water will meet you. He's headed to a house. Follow him there and look for the homeowner. And then say, the master sent us to ask where the room where he can eat the Passover meal with his apprentices is, and he'll show you a room on the roof that's already set up. Go ahead and prepare the Passover there.\" So Peter and John went out, and everything was just like Jesus described it. So they prepared the Passover.\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "14-23",
+          "sid": "LUK 22:14-23"
+        },
+        "So then, when it was time to eat, he gathered around the table with his delegates. Guys, I've been really wanting to eat this meal with you before I suffer, because I’m telling you, I'm not going to eat it again until it's fully realized under God's reign. And then he grabbed a cup of wine and he thanked God for it. And he said, Pass this around and everybody pour yourself some, because I'm telling you, I'm not going to drink anything from the vineyard until God reigns here. And then he grabbed some of the flatbread and he thanked God for it. And he tore it into pieces, gave it to them, and he said, this is my body. I'm giving it up for you all. Do this to remember me. And then after they ate it, he did the same thing with the cup. This is the new blood oath made with my blood. I'm pouring it out for you all. But here's the thing: the person who's going to betray me is right here with me at the table. Because as the Human Son, betrayal is what has to happen next. But, oh, it is not going to be good for the person who does it. So then they start arguing with each other about who it could be.\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "24-30",
+          "sid": "LUK 22:24-30"
+        },
+        "Then they started really getting into it, about who they thought should be higher up. And Jesus said, the kings in this world lord it over their subjects. And the authorities call themselves great philanthropists, but you're not going to be like that. Instead, the higher ups among you will work the hardest. And whoever's in charge will serve. Because who does everyone say is more important? The person who's sitting at the table or the person who's serving him? It's the person who's sitting at the table, right? But when I've been with you, I've served you. You are the ones who've stuck with me through thick and thin. And just like my dad made me king, I'm making you all kings as well. You're going to feast at my table and sit as judges on three thrones, presiding over the twelve clans of Israel.\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "31-33",
+          "sid": "LUK 22:31-33"
+        },
+        "\"And Simon, oh Simon, Satan has demanded the authority to put you all to the test. But I have asked God not to let your trust in me die. And when you come back, support your siblings.\" But he replied, \"You're my leader, I will go to prison with you! I'd even die with you!\" \"I'm telling you, Peter, before the rooster crows in the morning, you are going to disown me -- deny you even know me! -- three times.\"\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "34-38",
+          "sid": "LUK 22:34-38"
+        },
+        "\"Everyone, remember when I sent you out barefoot, penniless, with only the clothes on your back? Was anything not provided?\" \"No,\" they replied. \"But now I'm telling you everything that's written about me is happening: 'He was considered a lawless criminal' -- so that's what has to happen. So pack your backs, grab your money. And if you don't have a sword, sell whatever it takes to get one.\" \"Look, we have two swords.\" \"That's enough of that.\"\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "s",
+      "content": [
+        "Olive Tree Mountain\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": []
+    },
+    {
+      "type": "para",
+      "marker": "s",
+      "content": [
+        "Jesus's Trial and Peter's Denial\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "54",
+          "sid": "LUK 22:54"
+        },
+        "Then they arrested Jesus, and led him away to the high priest's house. But Peter followed at a distance. ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "55",
+          "sid": "LUK 22:55"
+        },
+        "And when they had lit a fire in the center of the courtyard next to where they were holding Jesus, they all sat around it, Peter joined them and sat down. ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "56",
+          "sid": "LUK 22:56"
+        },
+        "And a servant saw him in the firelight, and she looked at him closely and said, \"This man was with him.\"\n",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "57",
+          "sid": "LUK 22:57"
+        },
+        "But Peter denied it, \"No, ma'am, I don't even know him.\"\n",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "58",
+          "sid": "LUK 22:58"
+        },
+        "A little while later, another person said, \"You were one of them.\"\nBut Peter replied, \"No, sir, I'm not.\"\n",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "59",
+          "sid": "LUK 22:59"
+        },
+        "About an hour later, a third person said, \"He was with them. You can tell--he's Galilean.\"\n",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "60",
+          "sid": "LUK 22:60"
+        },
+        "And Peter replied, \"Sir, I don't even know what you're talking about.\"\nAnd as he was speaking, the rooster crowed, ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "61",
+          "sid": "LUK 22:61"
+        },
+        "and the his leader turned and looked at Peter. Peter remembered the words that the leader had said: \"Before the rooster crows this morning, you will deny me three times.\" ",
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "62",
+          "sid": "LUK 22:62"
+        },
+        "And Peter left the house and broke down crying. \n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "s",
+      "content": [
+        "Jesus Tried by Pilate and Herod\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": []
+    },
+    {
+      "type": "chapter",
+      "marker": "c",
+      "number": "23",
+      "sid": "LUK 23"
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "6-12",
+          "sid": "LUK 23:6-12"
+        },
+        "Now, when Pilate heard that, he asked if Jesus was a Galilean. And since that meant that he was under Herod's jurisdiction Pilate sent him to Herod, who happened to be in Jerusalem at the time. Now, when Herod saw Jesus, he was overjoyed; he'd been wanting to see him ever since he first heard about him a long time ago, and he was hoping to see some supernatural feat performed by Jesus. So he asked him question after question, but Jesus didn't answer him at all. Now, at the same time, there were head priests and judges of Judaism there hurling accusations against Jesus. And eventually, Herod and his soldiers got bored. They mocked Jesus, dressed him up in fancy clothes and sent him back to Pilate. That day, Pilate and Herod became friends. They used to be enemies.\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "s",
+      "content": [
+        "The Crucifixion\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "26-49",
+          "sid": "LUK 23:26-49"
+        },
+        "And as they were leading him away to be executed, they grabbed this guy who happened to becoming into town, simon from Cyrene, and they forced him to carry the cross behind Jesus. And there were a ton of other people who were following behind Jesus, including these women who were weeping and wailing for him. And Jesus turned to them and he said, y'all are daughters of Jerusalem, and you're crying for me when you should be crying for yourselves, for your own kids. Because listen, it's going to get so bad that you'll say it's better to be infertile with a sterile womb and dry breasts. You're going to beg the mountains to fall on you and the hills to cover you up, because if this is what they do now while the tree is still green, how bad will it burn when the wood is dry? Now, there were two others criminals who were being led away to be executed with Jesus. And when they made it up to the top of the mountain that they called Skull Top, they nailed Jesus to his cross, and they nailed the two criminals to their crosses, one on his right and one on his left. And they were gambling over his clothes, and everyone was watching, and the authorities were mocking him. He saved others. He can save himself if he's God's chosen king. And the soldiers were laughing at him andoffering Him this disgusting wine vinegar to drink. And they were saying, “Save yourself since you're the King of Judah.” And there was a sign over his head that says, this is the King of Judah. And even one of the criminals who was hanging on the cross right next to him hated him: “Aren’t you supposed to be the Chosen One? Save yourself! Save us!” The other one responded, “Shut up!Aren’t you scared of God at all? You're getting the same death sentence as Him. And we've earned this. We're getting exactly what we deserve. But this man is innocent… Jesus, when you get to your kingdom and sit on your throne, please remember me.” And Jesus said, “Yes. Tell you what, I'll see you there in Eden today.” That was at about noon, and then everything went dark until 3:00. And while the sun was blacked out, the temple curtain ripped right down the middle. And Jesus shouted out with everything he had left: “Dad, I put my life in your hands. And then he died. And when the Roman officer in charge of the execution saw how Jesus died, he recognized how right God was. And he said, “This man really was innocent!” And when everyone who gathered to watch what was happening, when they saw everything, they went home, devastated. But the people who knew Jesus, like the women who were there with Him ever since Galilee, they stayed back, and they kept watching.\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "s",
+      "content": [
+        "Jesus's Tomb\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "50-54",
+          "sid": "LUK 23:50-54"
+        },
+        "But listen, there was a man named Joseph from the Jewish town Arimathea. He was a good man who always did the right thing. And he was a leader in the Jewish National Council, although he refused to go along with their plan or what they did; he welcomed God's reign. He went to Pilate for Jesus's body, took it down, wrapped it in linen strips and set it in a tomb carved into a rock face where no one had ever been placed so that it could decay. Now, this was the day where people prepared for the Rest Day, which was right around the corner.\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "55-24",
+          "sid": "LUK 23:55-24"
+        },
+        ":12 Now the women who had traveled with Jesus ever since Galilee, they followed after Joseph and they saw the tomb and how Jesus's body was handled. So they left to go prepare perfumes and aromatic herbs. They rested like they were supposed to on the 7th day; but early in the morning, on the first day of the week, they went to the tomb, bringing along the herbs. Now they found the stone that was supposed to be in front of the tomb, rolled to the side. But when they went in, they didn't find the body of their master, Jesus. They had no idea what to do with this when look, suddenly two men in dazzling bright clothes were standing right in front of them. The women were terrified and they bowed to the ground to avoid provoking them. But the men just said \"why are you searching among the dead for someone who's alive? He's not here. He got up. Remember he told you while he was still in Galilee that the human son must be betrayed to corrupt hands crucified and raised on the third day.\" And they did remember what he said. They left the tomb to go tell the Eleven and the others this was Mary from Magdala, Joanna, Mary, James's Mary and the rest of the women with them. And they were telling the representatives all of this, but to them it seemed too crazy to believe. Except, Peter rushed to the tomb and when he got there he looked in and he saw there was nothing there except the strips of cloth. And he went away to be by himself, utterly confused at everything that had happened.\n"
+      ]
+    },
+    {
+      "type": "chapter",
+      "marker": "c",
+      "number": "24",
+      "sid": "LUK 24"
+    },
+    {
+      "type": "para",
+      "marker": "s",
+      "content": [
+        "The appearances of Jesus\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "13-35",
+          "sid": "LUK 24:13-35"
+        },
+        "Later that day, two of the apprentices were walking from Jerusalem to Emmaus, which was about a couple hours away. And while they were walking, they were talking about everything that had happened. And while they were talking and really getting into it, Jesus appeared and joined them. But it was like someone had covered their eyes, they couldn't recognize Him. \nAnd Jesus said, \"What are you talking about on your walk?\" \nAnd they stood there, visibly upset. \nOne of them, the one named Cleopas, answered, \"You have to be the only person in the whole Jerusalem area who doesn't know what just happened there.\"\n\"What?\"\nThey answered, \"What happened with Jesus of Nazareth. God made Him a powerful spokesperson and everyone could see it in what he said and did. And then our head priests and authorities handed Him over to be executed and nailed Him to a cross. We'd thought he was going to rescue Israel soon, but that was three days ago, counting today. But then some of the women in our group said some really unsettling things. Early this morning they went to the tomb, but when they didn't find his body, they came back talking about a vision of angels who said he wasn't dead anymore. And then some of the guys in our group went to the tomb to check everything out. And it was just like how the women had described it. They didn't find his body either.\" \nAnd then Jesus replied, \"You just don't get it. Why is it taking you so long to trust everything God spokespeople have said? Wasn't it necessary for the Chosen One to suffer and shine in his rightful place?\"\nAnd then, starting with what Moses and God's spokespeople had said, he explained how everything that had been written down was about Him. \nWhen they just about got to the place where they were going, Jesus pretended like he was going to keep on walking. \nBut the two of them insisted, \"Please, come stay with us. The day's almost over, it's getting dark.\"\nSo he agreed to stay with them. And when they had gathered around the table to eat, Jesus thanked God for the bread, split it and handed it to them. And at that moment their eyes were uncovered. They recognized Him and he disappeared into thin air. \nThen they said to each other, \"Weren't our hearts burning with the desire to tell people back when we were on the road and he was explaining everything that had been written to us?\"\nSo right away they went back to Jerusalem. And when they got there, they found the Eleven and the others who were saying that the Master really wasn't dead anymore and that he'd appeared to Simon. And then the two of them explained everything that had happened to them on the road and how they'd recognized Jesus when he'd split the bread.\n"
+      ]
+    },
+    {
+      "type": "para",
+      "marker": "p",
+      "content": [
+        {
+          "type": "verse",
+          "marker": "v",
+          "number": "36-53",
+          "sid": "LUK 24:36-53"
+        },
+        "They were still talking when Jesus appeared right there with them. And he said, \"Peace, friends.\" They jumped, started freaking out, thought he was a ghost. And so he said, \"you guys are panicking. Why are your head so full of questions? Look at my wrists and my ankles. Here I am. Feel them and you'll know, because ghosts don't have skin or bones. Like you can tell I do.\" And he was showing them his wrists and his ankles, but it was just so surreal. They thought it was too good to be true. So then he said, \"Is there anything to eat around here?\" And they handed him a piece of roasted fish and he ate it right there in front of them. And he said, \"this is what I was telling you when I was still with you. Everything Moses, the spokespeople, the rest of the writings said about me had to happen.\" And he made them understand what had been written. He said, \"It says the Chosen One would suffer and three days later come back from the dead. And by the authority of his name, the message would go out that people need to change their hearts and they'll be forgiven for what they've done wrong. It'll start in Jerusalem and go to every nation. You are the Eyewitnesses and I will send you what my dad has promised. But stay here in the city until power from the highest place rains down on you.\" And then he took them out to Bethany and he raised his arms to make a promise. God would smile on them. And while he was making the promise, he was taken away from them, carried up into the sky. And they recognized his greatness and swore their loyalty to Him as God. And they went back to Jerusalem, super excited. And they spent all their time in the temple thanking God."
+      ]
+    }
+  ]
+}

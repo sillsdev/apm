@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useRef, useState } from 'react';
+import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useGlobal } from '../../context/useGlobal';
 import Confirm from '../AlertDialog';
 import {
@@ -18,6 +18,7 @@ import {
   OptionType,
   WorkflowStep,
   BibleD,
+  ProjectD,
 } from '../../model';
 import DeleteExpansion from '../DeleteExpansion';
 import { TeamContext } from '../../context/TeamContext';
@@ -71,6 +72,7 @@ export function TeamDialog(props: IProps) {
   const { pathname } = useLocation();
   const bibles = useOrbitData<BibleD[]>('bible');
   const organizations = useOrbitData<OrganizationD[]>('organization');
+  const projects = useOrbitData<ProjectD[]>('project');
   const [name, setName] = React.useState('');
   const [iso, setIso] = React.useState('');
   const [bible, setBible] = React.useState<BibleD | undefined>(values?.bible);
@@ -103,6 +105,12 @@ export function TeamDialog(props: IProps) {
     useContext(UnsavedContext).state;
   const { getBible, getBibleOwner, getOrgBible } = useBible();
   const { canUserPublish } = useUserCanPublish();
+
+  const teamHasProject = useMemo(() => {
+    const teamId = values?.team?.id;
+    if (!teamId) return false;
+    return projects.some((p) => related(p, 'organization') === teamId);
+  }, [projects, values?.team?.id]);
 
   const [workflowProgression, setWorkflowProgression] = useState(
     t.workflowProgressionPassage
@@ -469,6 +477,7 @@ export function TeamDialog(props: IProps) {
             <Button
               id="burrito"
               onClick={() => setView(`/burrito/${values?.team.id}`)}
+              disabled={!teamHasProject}
             >
               <BurritoLogo />
             </Button>

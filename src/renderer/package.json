@@ -31,6 +31,7 @@
     "@bugsnag/plugin-react": "^8.4.0",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
+    "@fingerprintjs/fingerprintjs": "^5.0.1",
     "@fontsource/roboto": "^5.2.6",
     "@fortawesome/fontawesome-svg-core": "^7.0.1",
     "@fortawesome/free-regular-svg-icons": "^7.0.1",
@@ -59,7 +60,6 @@
     "axios": "^1.11.0",
     "browser-image-compression": "^2.0.2",
     "electron-updater": "^6.3.9",
-    "@fingerprintjs/fingerprintjs": "^5.0.1",
     "jwt-decode": "^4.0.0",
     "lodash": "^4.17.21",
     "luxon": "^3.7.1",
@@ -84,6 +84,7 @@
     "remark-gfm": "^4.0.1",
     "styled-components": "^6.1.19",
     "url-parse": "^1.5.10",
+    "usfm-grammar-web": "^3.2.0",
     "wavesurfer.js": "^7.10.1",
     "xpath": "^0.0.34"
   },

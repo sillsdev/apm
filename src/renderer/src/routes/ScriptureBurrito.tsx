@@ -24,7 +24,7 @@ import { IBurritoStrings, ISharedStrings } from '@model/index';
 import { MainAPI } from '@model/main-api';
 const ipc = window?.api as MainAPI;
 
-const setup = ['Books', 'Contents', 'Wrapper' /* 'Version', 'Format' */];
+const setup = ['Books', 'Contents', 'Wrapper', 'Format' /* 'Version' */];
 
 export function ScriptureBurrito() {
   const { pathname } = useLocation();
@@ -158,7 +158,10 @@ export function ScriptureBurrito() {
 
         <Stack direction="row" spacing={1} alignItems="center">
           {isCreating && (
-            <AltButton onClick={cancel} aria-label="Cancel burrito creation">
+            <AltButton
+              onClick={cancel}
+              aria-label={t.getString('cancelCreation')}
+            >
               {ts.cancel}
             </AltButton>
           )}

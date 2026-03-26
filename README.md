@@ -17,6 +17,8 @@ $ npm install
 $ npm run stamp
 ```
 
+Note: This project uses `usfm-grammar-web` (wasm-based), which typically does not require local C/C++ toolchain setup (for example, MSVC build tools).
+
 Install the user interface
 
 ```bash
@@ -54,7 +56,7 @@ $ docker run -d -p 3000:3000 --name apm-vite-renderer apm-vite-renderer
 
 Once the dev server is running, you can run the tests using the commands described in the readme for `src/renderer` which are `npm run cy:run-ct` for terminal and `npm run cy:open-ct` for running the tests in the browser.
 
-WHen finished, the container can be deleted using the `Docker Desktop` or with the command
+When finished, the container can be deleted using the `Docker Desktop` or with the command
 
 ```bash
 docker stop apm-vite-renderer # stops container from running

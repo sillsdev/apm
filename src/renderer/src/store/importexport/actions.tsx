@@ -311,6 +311,40 @@ const partialMessage = (msg: string, partialMsg: string | undefined | null) => {
   return (msg.length > 0 ? ',' : '') + inner;
 };
 
+/** Remote organization id from import change report (for chaining copyfromfile URLs after creating a team). */
+function extractOrganizationRemoteIdFromImportMessage(
+  message: unknown
+): number | undefined {
+  if (message == null) return undefined;
+  let data: unknown = message;
+  if (typeof message === 'string') {
+    const trimmed = message.trim();
+    if (!trimmed) return undefined;
+    try {
+      data = JSON.parse(trimmed);
+    } catch {
+      return undefined;
+    }
+  }
+  if (!Array.isArray(data)) return undefined;
+  for (const entry of data) {
+    if (
+      entry &&
+      typeof entry === 'object' &&
+      (entry as { type?: string }).type === 'organization' &&
+      (entry as { imported?: { data?: { id?: unknown } } }).imported?.data
+    ) {
+      const id = (entry as { imported: { data: { id?: unknown } } }).imported
+        .data.id;
+      if (id != null && id !== '') {
+        const n = typeof id === 'number' ? id : parseInt(String(id), 10);
+        return Number.isFinite(n) ? n : undefined;
+      }
+    }
+  }
+  return undefined;
+}
+
 interface ProcessImportFileParams {
   filename: string;
   file: Blob | File;
@@ -321,6 +355,12 @@ interface ProcessImportFileParams {
   pendingmsg: string;
   completemsg: string;
   dispatch: any;
+  /** When true, upload/process still runs but `IMPORT_SUCCESS` is not dispatched (use for multi-file batch). */
+  suppressSuccessDispatch?: boolean;
+}
+
+export interface ProcessImportFileResult {
+  organizationRemoteId?: number;
 }
 
 const processImportFile = async ({
@@ -333,7 +373,8 @@ const processImportFile = async ({
   pendingmsg,
   completemsg,
   dispatch,
-}: ProcessImportFileParams) => {
+  suppressSuccessDispatch = false,
+}: ProcessImportFileParams): Promise<ProcessImportFileResult> => {
   //get the put url for the file
   const url = API_CONFIG.host + '/api/offlineData/project/import/' + filename;
   const response = await Axios.get(url, {
@@ -357,7 +398,7 @@ const processImportFile = async ({
   xhr.setRequestHeader('Content-Type', response.data.contentType);
   xhr.send(file.slice());
 
-  return new Promise<void>((resolve, reject) => {
+  return new Promise<ProcessImportFileResult>((resolve, reject) => {
     xhr.onload = async () => {
       if (xhr.status < 300) {
         cleanup();
@@ -379,21 +420,26 @@ const processImportFile = async ({
               },
             });
             if (putresponse.data.status === 200) {
-              dispatch({
-                payload: {
-                  status: completemsg,
-                  msg:
-                    msg.length > 0
-                      ? '[' +
-                        msg +
-                        partialMessage(msg, putresponse.data.message) +
-                        ']'
-                      : putresponse.data.message,
-                },
-                type: IMPORT_SUCCESS,
-              });
+              const fullMsg =
+                msg.length > 0
+                  ? '[' +
+                    msg +
+                    partialMessage(msg, putresponse.data.message) +
+                    ']'
+                  : putresponse.data.message;
+              const organizationRemoteId =
+                extractOrganizationRemoteIdFromImportMessage(fullMsg);
+              if (!suppressSuccessDispatch) {
+                dispatch({
+                  payload: {
+                    status: completemsg,
+                    msg: fullMsg,
+                  },
+                  type: IMPORT_SUCCESS,
+                });
+              }
               await cleanupCopyProject(mapKey, token);
-              resolve();
+              resolve({ organizationRemoteId });
               break;
             } else if (
               putresponse.data.status === HttpStatusCode.PartialContent
@@ -458,6 +504,8 @@ export interface ImportProjectFromExternalProps {
   errorReporter: any;
   pendingmsg: string;
   completemsg: string;
+  /** Shown when creating a new team from multiple files but the first import response lacks an organization id. */
+  newTeamChainFailed: string;
 }
 export const importFromExternal =
   ({
@@ -467,29 +515,63 @@ export const importFromExternal =
     errorReporter,
     pendingmsg,
     completemsg,
+    newTeamChainFailed,
   }: ImportProjectFromExternalProps) =>
-  (dispatch: any) => {
-    dispatch({
-      payload: pendingmsg.replace('{0}', '1'),
-      type: IMPORT_PENDING,
-    });
-    const file = files[0];
-    processImportFile({
-      filename: file.name,
-      file,
-      getProcessUrl: (filename, mapKey) => {
-        const encodedFilename = encodeURIComponent(filename);
-        return mapKey !== ''
-          ? `${API_CONFIG.host}/api/offlineData/project/copyfromfile/${teamId}/${encodedFilename}/${mapKey}/`
-          : `${API_CONFIG.host}/api/offlineData/project/copyfromfile/${teamId}/${encodedFilename}/`;
-      },
-      getInitialStart: () => '',
-      token,
-      errorReporter,
-      pendingmsg,
-      completemsg,
-      dispatch,
-    });
+  async (dispatch: any) => {
+    if (!files?.length) {
+      return;
+    }
+    const total = files.length;
+    const isNewTeam = (teamId ?? 0) === 0;
+    let effectiveTeamId = teamId ?? 0;
+    for (let i = 0; i < total; i++) {
+      const file = files[i];
+      const isLast = i === total - 1;
+      dispatch({
+        payload: pendingmsg.replace(
+          '{0}',
+          String(Math.max(1, Math.floor((i / total) * 100)))
+        ),
+        type: IMPORT_PENDING,
+      });
+      try {
+        const result = await processImportFile({
+          filename: file.name,
+          file,
+          getProcessUrl: (filename, mapKey) => {
+            const encodedFilename = encodeURIComponent(filename);
+            const tid = effectiveTeamId;
+            return mapKey !== ''
+              ? `${API_CONFIG.host}/api/offlineData/project/copyfromfile/${tid}/${encodedFilename}/${mapKey}/`
+              : `${API_CONFIG.host}/api/offlineData/project/copyfromfile/${tid}/${encodedFilename}/`;
+          },
+          getInitialStart: () => '',
+          token,
+          errorReporter,
+          pendingmsg,
+          completemsg,
+          dispatch,
+          suppressSuccessDispatch: !isLast,
+        });
+        if (isNewTeam && i === 0 && total > 1) {
+          if (result.organizationRemoteId == null) {
+            logError(
+              Severity.error,
+              errorReporter,
+              'import: could not read new team id from first import response'
+            );
+            dispatch({
+              payload: errorStatus(-1, newTeamChainFailed),
+              type: IMPORT_ERROR,
+            });
+            return;
+          }
+          effectiveTeamId = result.organizationRemoteId;
+        }
+      } catch {
+        return;
+      }
+    }
   };
 
 const importFromElectron =

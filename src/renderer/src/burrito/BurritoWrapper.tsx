@@ -4,7 +4,6 @@ import StickyRedirect from '../components/StickyRedirect';
 import { useOrgDefaults } from '../crud/useOrgDefaults';
 import { BurritoHeader } from '../components/BurritoHeader';
 import { MetadataView } from './MetadataView';
-import type { BurritoWrapper as BurritoWrapperType } from './data/wrapperBuilder';
 import { wrapperBuilder } from './data/wrapperBuilder';
 import { useOrbitData } from '../hoc/useOrbitData';
 import {
@@ -18,12 +17,15 @@ import {
 import related from '../crud/related';
 import { burritoContents } from './BurritoContents';
 import { BurritoType } from './BurritoType';
-import { Burrito } from './data/wrapperBuilder';
 import { AltButton } from '../control/AltButton';
 import packageJson from '../../package.json';
 import { toCamel } from '../utils';
 import { shallowEqual, useSelector } from 'react-redux';
 import { burritoSelector, sharedSelector } from '../selector';
+import {
+  BurritoEntry,
+  BurritoWrapper as BurritoWrapperType,
+} from './data/types';
 const version = packageJson.version;
 const productName = packageJson.build.productName;
 
@@ -93,7 +95,7 @@ export function BurritoWrapper() {
                     id: `${abbreviation}-${toCamel(c)}`,
                     path: toCamel(c).toLocaleLowerCase(),
                     role: burritoRole(c as BurritoType),
-                  }) as Burrito
+                  }) as BurritoEntry
               ) || [];
 
             setMetaData(

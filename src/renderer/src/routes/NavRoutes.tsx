@@ -26,6 +26,7 @@ import { BurritoStep } from '../burrito/BurritoStep';
 import { BurritoBooks } from '../burrito/BurritoBooks';
 import { BurritoContents } from '../burrito/BurritoContents';
 import { BurritoWrapper } from '../burrito/BurritoWrapper';
+import { BurritoFormat } from '../burrito/BurritoFormat';
 import SwitchTeams from './SwitchTeams';
 
 const routes = createRoutesFromElements([
@@ -69,6 +70,11 @@ const routes = createRoutesFromElements([
       key="burrito-wrapper"
       path="/burrito/:teamId/wrapper"
       element={<Auth el={<BurritoWrapper />} />}
+    />
+    <Route
+      key="burrito-format"
+      path="/burrito/:teamId/format"
+      element={<Auth el={<BurritoFormat />} />}
     />
     <Route
       key="burrito-step"
