@@ -22,9 +22,14 @@ const gfmSyntax =
 interface MarkDownEditProps {
   inValue?: string;
   onValue?: (value: string) => void;
+  wrapPreviewOverflow?: boolean;
 }
 
-export const MarkDownEdit = ({ inValue, onValue }: MarkDownEditProps) => {
+export const MarkDownEdit = ({
+  inValue,
+  onValue,
+  wrapPreviewOverflow = false,
+}: MarkDownEditProps) => {
   const [value, setValue] = useState<string>(inValue || '');
   const [link, setLink] = useState<string>();
   const [lang] = useGlobal('lang');
@@ -49,16 +54,35 @@ export const MarkDownEdit = ({ inValue, onValue }: MarkDownEditProps) => {
         label={t.markdownTitle}
         value={value}
         onChange={handleValue}
-        sx={{ flexGrow: 1, mr: 1, minWidth: '40%' }}
+        sx={
+          wrapPreviewOverflow
+            ? { flex: '1 1 0', mr: 1, minWidth: 0 }
+            : { flexGrow: 1, mr: 1, minWidth: '40%' }
+        }
       />
       {value && (
         <FormControl
           component={'fieldset'}
-          sx={{ border: '1px solid grey', flexGrow: 1 }}
+          sx={
+            wrapPreviewOverflow
+              ? {
+                  border: '1px solid grey',
+                  flex: '1 1 0',
+                  minWidth: 0,
+                  overflowX: 'hidden',
+                }
+              : { border: '1px solid grey', flexGrow: 1 }
+          }
         >
           <FormLabel component={'legend'}>{t.preview}</FormLabel>
-          <Box sx={{ mx: 1 }}>
-            <MarkDownView value={value} />
+          <Box
+            sx={
+              wrapPreviewOverflow
+                ? { mx: 1, minWidth: 0, overflowX: 'hidden' }
+                : { mx: 1 }
+            }
+          >
+            <MarkDownView value={value} wrapOverflow={wrapPreviewOverflow} />
           </Box>
         </FormControl>
       )}

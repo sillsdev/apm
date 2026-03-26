@@ -10,7 +10,7 @@ interface MarkDownProps {
   wrapOverflow?: boolean;
 }
 
-export function MarkDownView({ value }: MarkDownProps) {
+export function MarkDownView({ value, wrapOverflow = false }: MarkDownProps) {
   // adapted from https://stackoverflow.com/questions/31749625/make-a-link-from-electron-open-in-browser (zrbecker's)
   const handleClick = (event: any) => {
     if (event.target.tagName.toLowerCase() === 'a') {
@@ -28,7 +28,42 @@ export function MarkDownView({ value }: MarkDownProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  return <MarkDown remarkPlugins={[remarkGfm]}>{value}</MarkDown>;
+  return (
+    <Box
+      sx={
+        wrapOverflow
+          ? {
+              width: '100%',
+              maxWidth: '100%',
+              minWidth: 0,
+              wordBreak: 'break-word',
+              overflowWrap: 'anywhere',
+              '& pre': {
+                whiteSpace: 'pre-wrap',
+                wordBreak: 'break-word',
+                overflowWrap: 'anywhere',
+                overflowX: 'hidden',
+              },
+              '& code': {
+                whiteSpace: 'pre-wrap',
+                wordBreak: 'break-word',
+                overflowWrap: 'anywhere',
+              },
+              '& table': {
+                width: '100%',
+                tableLayout: 'fixed',
+              },
+              '& th, & td': {
+                wordBreak: 'break-word',
+                overflowWrap: 'anywhere',
+              },
+            }
+          : undefined
+      }
+    >
+      <MarkDown remarkPlugins={[remarkGfm]}>{value}</MarkDown>
+    </Box>
+  );
 }
 
 export function CompactMarkDownView({ value, wrapOverflow = false }: MarkDownProps) {

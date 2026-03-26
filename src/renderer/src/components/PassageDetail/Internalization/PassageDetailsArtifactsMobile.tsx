@@ -992,7 +992,7 @@ export function PassageDetailArtifactsMobile() {
         onOpen={handleEditResourceVisible}
         onSave={allowEditSave ? handleEditSave : undefined}
         onCancel={handleEditCancel}
-        bp={BigDialogBp.sm}
+        bp={BigDialogBp.mobile}
       >
         <ResourceData
           media={mediaRef.current}
@@ -1007,6 +1007,7 @@ export function PassageDetailArtifactsMobile() {
           onPassResChange={handlePassRes}
           allowProject={false}
           onTextChange={handleTextChange}
+          wrapPreviewOverflow
           sectDesc={sectDesc}
           passDesc={passDesc}
         />
