@@ -70,12 +70,9 @@ export const localSync = async ({
       const passage = passages.find((p) => p.id === passageId);
       if (passage)
         ready.push({
-          passage: passage,
+          passage,
           mediaId: pr.id,
-          transcription: getTranscription(passage.id, artifactId).replace(
-            '\n',
-            ' '
-          ),
+          transcription: getTranscription(passage.id, artifactId),
         });
     }
   });
