@@ -1831,6 +1831,7 @@ const initialState = {
 			"reference": "Reference",
 			"reset": "Reset",
 			"saveVerseMarkup": "Save Verse Markup",
+			"splitVerse": "Split Verse",
 			"startStop": "Start --> Stop",
 		}
 	}),

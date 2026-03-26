@@ -43,6 +43,9 @@ import { useStepPermissions } from '../../../../utils/useStepPermission';
 import Confirm from '../../../AlertDialog';
 import PassageDetailPlayer from '../../PassageDetailPlayer';
 import { useProjectSegmentSave } from '../../Internalization/useProjectSegmentSave';
+import EditReferenceDropdown, {
+  EditReferenceValue,
+} from './EditReferenceDropdown';
 import MarkVersesTableIsMobile from './MarkVersesTableIsMobile';
 
 const verseToolId = 'VerseTool';
@@ -73,6 +76,20 @@ enum ColName {
   Ref,
 }
 
+interface IParsedReference {
+  chapter: number;
+  verse: number;
+  suffix: string;
+}
+
+interface IEditReferenceDialogState extends EditReferenceValue {
+  rowIndex: number;
+  limits: string;
+  existingSplit: boolean;
+  maxVerse: number;
+  verseOptions: number[];
+}
+
 export interface MarkVersesProps {
   width: number;
 }
@@ -101,6 +118,8 @@ export default function PassageDetailMarkVersesIsMobile({
   const [pastedSegments, setPastedSegments] = useState(emptySegments);
   const [engVrs, setEngVrs] = useState<Map<string, number[]>>(new Map());
   const [isReferenceEditing, setIsReferenceEditing] = useState(false);
+  const [editReferenceDialog, setEditReferenceDialog] =
+    useState<IEditReferenceDialogState>();
   const [playerResetKey, setPlayerResetKey] = useState(0);
   const savingRef = useRef(false);
   const canceling = useRef(false);
@@ -420,6 +439,324 @@ export default function PassageDetailMarkVersesIsMobile({
     return { start, end } as IRegion;
   }, []);
 
+  const cloneTableData = useCallback(
+    (tableData: ICell[][]) =>
+      tableData.map((row) =>
+        row.map((cell) => ({
+          ...cell,
+        }))
+      ),
+    []
+  );
+
+  const setActiveRowHighlight = useCallback(
+    (tableData: ICell[][], rowIndex: number) => {
+      tableData.forEach((row, index) => {
+        if (index === 0) return;
+        const limits = row[ColName.Limits] as ICell;
+        limits.className = limits.className?.replace(/\s*cur\b/g, '') || 'lim';
+      });
+
+      if (rowIndex > 0) {
+        const activeRow = tableData[rowIndex] as ICell[] | undefined;
+        const limits = activeRow?.[ColName.Limits] as ICell | undefined;
+        if (limits) {
+          limits.className = `${limits.className ?? 'lim'} cur`.trim();
+        }
+      }
+    },
+    []
+  );
+
+  const buildReferenceCell = useCallback((value: string, cell: ICell) => {
+    return {
+      ...cell,
+      value,
+      className: `ref${value && !refMatch(value) ? ' Err' : ''}`,
+    };
+  }, []);
+
+  const parseReferencePart = useCallback(
+    (value: string, fallbackChapter: number) => {
+      const match = /^(?:(\d+):)?(\d+)([a-e]?)$/i.exec(value.trim());
+      if (!match) return undefined;
+      return {
+        chapter: match[1] ? parseInt(match[1], 10) : fallbackChapter,
+        verse: parseInt(match[2], 10),
+        suffix: (match[3] ?? '').toLowerCase(),
+      } as IParsedReference;
+    },
+    []
+  );
+
+  const parseReferenceValue = useCallback(
+    (value: string) => {
+      const normalized = value
+        .replace(/[–—]/g, '-')
+        .replace(/\s+/g, '')
+        .trim();
+      if (!normalized) return undefined;
+
+      const [startText, endText] = normalized.split('-', 2);
+      const start = parseReferencePart(startText, 0);
+      if (!start) return undefined;
+      const end = endText
+        ? parseReferencePart(endText, start.chapter)
+        : start;
+      if (!end) return undefined;
+      return { start, end };
+    },
+    [parseReferencePart]
+  );
+
+  const formatReferenceValue = useCallback(
+    ({
+      startChapter,
+      startVerse,
+      startSuffix,
+      endChapter,
+      endVerse,
+      endSuffix,
+      splitVerse,
+    }: EditReferenceValue) => {
+      const startLabel = `${startChapter}:${startVerse}${startSuffix}`;
+      const sameVerse =
+        startChapter === endChapter && startVerse === endVerse;
+
+      if (!splitVerse || sameVerse) {
+        if (endSuffix && endSuffix !== startSuffix) {
+          return `${startLabel}-${endVerse}${endSuffix}`;
+        }
+        return startLabel;
+      }
+
+      if (startChapter === endChapter) {
+        return `${startLabel}-${endVerse}${endSuffix}`;
+      }
+
+      return `${startLabel}-${endChapter}:${endVerse}${endSuffix}`;
+    },
+    []
+  );
+
+  const getHighestVerseInput = useCallback(
+    (tableData: ICell[][]) => {
+      const highestVerse = tableData.reduce((maxVerse, row, index) => {
+        if (index === 0) return maxVerse;
+        const parsedReference = parseReferenceValue(
+          `${row[ColName.Ref]?.value ?? ''}`
+        );
+        if (!parsedReference) return maxVerse;
+        return Math.max(
+          maxVerse,
+          parsedReference.start.verse,
+          parsedReference.end.verse
+        );
+      }, 0);
+
+      return highestVerse > 0 ? highestVerse : 1;
+    },
+    [parseReferenceValue]
+  );
+
+  const getVerseOptionsFromInputs = useCallback(
+    (tableData: ICell[][]) => {
+      const verseNumbers = tableData.reduce<number[]>((allVerses, row, index) => {
+        if (index === 0) return allVerses;
+        const parsedReference = parseReferenceValue(
+          `${row[ColName.Ref]?.value ?? ''}`
+        );
+        if (!parsedReference) return allVerses;
+        allVerses.push(parsedReference.start.verse, parsedReference.end.verse);
+        return allVerses;
+      }, []);
+
+      const uniqueSortedVerses = Array.from(new Set(verseNumbers)).sort(
+        (left, right) => left - right
+      );
+
+      return uniqueSortedVerses.length > 0 ? uniqueSortedVerses : [1];
+    },
+    [parseReferenceValue]
+  );
+
+  const findActiveRowIndex = useCallback(() => {
+    const highlightedIndex = dataRef.current.findIndex(
+      (row, index) =>
+        index > 0 &&
+        ((row[ColName.Limits] as ICell).className ?? '').includes('cur')
+    );
+    if (highlightedIndex > 0) return highlightedIndex;
+
+    const firstSegmentedIndex = dataRef.current.findIndex(
+      (row, index) => index > 0 && Boolean((row[ColName.Limits] as ICell).value)
+    );
+    return firstSegmentedIndex > 0 ? firstSegmentedIndex : -1;
+  }, []);
+
+  const buildEditReferenceDialogState = useCallback(
+    (rowIndex: number) => {
+      const row = dataRef.current[rowIndex] as ICell[] | undefined;
+      if (!row) return undefined;
+
+      const currentValue = `${row[ColName.Ref]?.value ?? ''}`;
+      const fallbackValue =
+        passageRefs.current[rowIndex - 1] || currentValue || '1:1';
+      const currentRef =
+        parseReferenceValue(currentValue) || parseReferenceValue(fallbackValue);
+      if (!currentRef) return undefined;
+
+      const nextRow = dataRef.current[rowIndex + 1] as ICell[] | undefined;
+      const nextValue = `${nextRow?.[ColName.Ref]?.value ?? ''}`;
+      const nextRef = parseReferenceValue(nextValue);
+      const existingSplit =
+        currentRef.start.chapter !== currentRef.end.chapter ||
+        currentRef.start.verse !== currentRef.end.verse;
+      const canSplit =
+        existingSplit ||
+        Boolean(nextRef) ||
+        Boolean(`${nextRow?.[ColName.Ref]?.value ?? ''}`.trim()) ||
+        Boolean(`${nextRow?.[ColName.Limits]?.value ?? ''}`.trim());
+
+      return {
+        rowIndex,
+        limits: `${row[ColName.Limits]?.value ?? ''}`,
+        canSplit,
+        splitVerse: existingSplit,
+        existingSplit,
+        maxVerse: Math.max(
+          getHighestVerseInput(dataRef.current),
+          currentRef.start.verse,
+          currentRef.end.verse,
+          nextRef?.start.verse ?? 0
+        ),
+        verseOptions: getVerseOptionsFromInputs(dataRef.current),
+        startChapter: currentRef.start.chapter,
+        startVerse: currentRef.start.verse,
+        startSuffix: currentRef.start.suffix,
+        endChapter: existingSplit
+          ? currentRef.end.chapter
+          : (nextRef?.start.chapter ?? currentRef.end.chapter),
+        endVerse: existingSplit
+          ? currentRef.end.verse
+          : (nextRef?.start.verse ?? currentRef.end.verse),
+        endSuffix: existingSplit
+          ? currentRef.end.suffix
+          : (nextRef?.start.suffix ?? currentRef.end.suffix),
+      } as IEditReferenceDialogState;
+    },
+    [getHighestVerseInput, getVerseOptionsFromInputs, parseReferenceValue]
+  );
+
+  const handleSelectRow = useCallback(
+    (rowIndex: number) => {
+      const row = dataRef.current[rowIndex] as ICell[] | undefined;
+      const activeSegment = getSegmentFromRow(row);
+      if (!row || !activeSegment) return;
+
+      const newData = cloneTableData(dataRef.current);
+      setActiveRowHighlight(newData, rowIndex);
+      setData(newData);
+      setCurrentSegment(activeSegment, rowIndex - 1);
+    },
+    [cloneTableData, getSegmentFromRow, setCurrentSegment, setData, setActiveRowHighlight]
+  );
+
+  const handleOpenSplitVerseDialog = useCallback(() => {
+    const rowIndex = findActiveRowIndex();
+    if (rowIndex < 1) return;
+    const nextDialog = buildEditReferenceDialogState(rowIndex);
+    if (nextDialog) {
+      setEditReferenceDialog(nextDialog);
+    }
+  }, [buildEditReferenceDialogState, findActiveRowIndex]);
+
+  const handleCloseSplitVerseDialog = () => {
+    setEditReferenceDialog(undefined);
+  };
+
+  const handleSaveSplitVerseDialog = (value: EditReferenceValue) => {
+    if (!editReferenceDialog) return;
+
+    const newData = cloneTableData(dataRef.current);
+    const row = newData[editReferenceDialog.rowIndex] as ICell[] | undefined;
+    if (!row) return;
+
+    if (!value.splitVerse) {
+      row[ColName.Ref] = buildReferenceCell(
+        `${value.startChapter}:${value.startVerse}${value.startSuffix}`,
+        row[ColName.Ref] as ICell
+      );
+
+      if (
+        editReferenceDialog.canSplit &&
+        !editReferenceDialog.existingSplit &&
+        newData[editReferenceDialog.rowIndex + 1]
+      ) {
+        const nextRow = newData[editReferenceDialog.rowIndex + 1] as ICell[];
+        nextRow[ColName.Ref] = buildReferenceCell(
+          `${value.endChapter}:${value.endVerse}${value.endSuffix}`,
+          nextRow[ColName.Ref] as ICell
+        );
+      }
+    } else {
+      const referenceValues = newData.map(
+        (existingRow) => `${existingRow[ColName.Ref]?.value ?? ''}`
+      );
+      const nextReference = formatReferenceValue(value);
+      const targetRowIndex = newData.findIndex((existingRow, index) => {
+        if (index <= editReferenceDialog.rowIndex) return false;
+        const parsedReference = parseReferenceValue(
+          `${existingRow[ColName.Ref]?.value ?? ''}`
+        );
+        return (
+          parsedReference?.start.chapter === value.endChapter &&
+          parsedReference.start.verse === value.endVerse
+        );
+      });
+      const rowsConsumed =
+        targetRowIndex > editReferenceDialog.rowIndex
+          ? targetRowIndex - editReferenceDialog.rowIndex
+          : 1;
+      row[ColName.Ref] = buildReferenceCell(
+        nextReference,
+        row[ColName.Ref] as ICell
+      );
+
+      if (value.canSplit) {
+        for (
+          let index = editReferenceDialog.rowIndex + 1;
+          index < newData.length;
+          index += 1
+        ) {
+          const shiftedValue = referenceValues[index + rowsConsumed] ?? '';
+          const referenceCell = newData[index]?.[ColName.Ref] as
+            | ICell
+            | undefined;
+          if (!referenceCell) continue;
+          newData[index][ColName.Ref] = buildReferenceCell(
+            shiftedValue,
+            referenceCell
+          );
+        }
+      }
+    }
+
+    setActiveRowHighlight(newData, editReferenceDialog.rowIndex);
+    setData(newData);
+    setSegments();
+
+    const activeSegment = getSegmentFromRow(
+      newData[editReferenceDialog.rowIndex] as ICell[]
+    );
+    if (activeSegment) {
+      setCurrentSegment(activeSegment, editReferenceDialog.rowIndex - 1);
+    }
+
+    toolChanged(verseToolId);
+    setEditReferenceDialog(undefined);
+  };
+
   const resetSegments = (regions: IRegion[]) => {
     const segments = JSON.stringify({ regions });
     setTimeout(() => {
@@ -545,11 +882,7 @@ export default function PassageDetailMarkVersesIsMobile({
   };
 
   const handleCellsChanged = (changes: Array<ICellChange>) => {
-    const newData = dataRef.current.map((row) =>
-      row.map((cell) => ({
-        ...cell,
-      }))
-    );
+    const newData = cloneTableData(dataRef.current);
 
     let changed = false;
     let activeRowIndex = -1;
@@ -582,19 +915,10 @@ export default function PassageDetailMarkVersesIsMobile({
     });
 
     if (changed) {
-      newData.forEach((row, index) => {
-        if (index === 0) return;
-        const limits = row[ColName.Limits] as ICell;
-        limits.className = limits.className?.replace(/\s*cur\b/g, '') || 'lim';
-      });
-
+      setActiveRowHighlight(newData, activeRowIndex);
       const activeRow =
         activeRowIndex > 0 ? (newData[activeRowIndex] as ICell[]) : undefined;
       const activeSegment = getSegmentFromRow(activeRow);
-      if (activeRow && activeSegment) {
-        const limits = activeRow[ColName.Limits] as ICell;
-        limits.className = `${limits.className ?? 'lim'} cur`.trim();
-      }
 
       setData(newData);
       setSegments();
@@ -677,6 +1001,7 @@ export default function PassageDetailMarkVersesIsMobile({
     setData(newData);
     setCurrentSegment(undefined, -1);
     setIsReferenceEditing(false);
+    setEditReferenceDialog(undefined);
     setConfirm('');
     setIssues([]);
     resetSegments([]);
@@ -802,7 +1127,10 @@ export default function PassageDetailMarkVersesIsMobile({
 
   const editReferenceLabel = t.editReference || 'Edit Reference';
   const doneEditingReferenceLabel = t.doneEditingReference || 'Done Editing';
+  const splitVerseLabel = t.splitVerse || 'Split Verse';
   const resetLabel = t.reset || 'Reset';
+  const saveLabel = ts.save || 'Save';
+  const cancelLabel = ts.cancel || 'Cancel';
 
   return (
     <Box>
@@ -825,8 +1153,6 @@ export default function PassageDetailMarkVersesIsMobile({
           flexWrap: 'wrap',
         }}
       >
-
-
         <Button
           variant="outlined"
           size="medium"
@@ -837,6 +1163,16 @@ export default function PassageDetailMarkVersesIsMobile({
           {isReferenceEditing
             ? doneEditingReferenceLabel
             : editReferenceLabel}
+        </Button>
+
+        <Button
+          variant="outlined"
+          size="medium"
+          onClick={handleOpenSplitVerseDialog}
+          disabled={!hasPermission}
+          sx={{ minHeight: 40, px: 2.5, py: 0.75 }}
+        >
+          {splitVerseLabel}
         </Button>
 
         <Button
@@ -870,7 +1206,23 @@ export default function PassageDetailMarkVersesIsMobile({
         }
         onCellsChanged={handleCellsChanged}
         onParsePaste={handleParsePaste}
+        onRowSelect={handleSelectRow}
       />
+      {editReferenceDialog && (
+        <EditReferenceDropdown
+          open={Boolean(editReferenceDialog)}
+          limits={editReferenceDialog.limits}
+          maxVerse={editReferenceDialog.maxVerse}
+          verseOptions={editReferenceDialog.verseOptions}
+          title={`${editReferenceLabel} for`}
+          cancelLabel={cancelLabel}
+          saveLabel={saveLabel}
+          splitVerseLabel={splitVerseLabel}
+          value={editReferenceDialog}
+          onCancel={handleCloseSplitVerseDialog}
+          onSave={handleSaveSplitVerseDialog}
+        />
+      )}
       {confirm && (
         <Confirm
           jsx={

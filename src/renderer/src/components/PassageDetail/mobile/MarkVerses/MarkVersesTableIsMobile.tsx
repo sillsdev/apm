@@ -17,6 +17,7 @@ interface MarkVersesTableIsMobileProps {
   data: ICell[][];
   onCellsChanged: (changes: Array<ICellChange>) => void;
   onParsePaste: (clipboard: string) => any[];
+  onRowSelect?: (rowIndex: number) => void;
 }
 
 enum ColName {
@@ -28,6 +29,7 @@ export default function MarkVersesTableIsMobile({
   data,
   onCellsChanged,
   onParsePaste,
+  onRowSelect,
 }: MarkVersesTableIsMobileProps) {
   const rows = data.slice(1);
   const header = data[0] ?? [];
@@ -105,6 +107,7 @@ export default function MarkVersesTableIsMobile({
             return (
               <TableRow
                 key={`verse-row-${index}`}
+                onClick={() => onRowSelect?.(index + 1)}
                 sx={{ backgroundColor: rowColor }}
               >
                 <TableCell

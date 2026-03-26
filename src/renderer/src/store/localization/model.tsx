@@ -1734,6 +1734,7 @@ export interface IVerseStrings extends Localize.LocalizedStringsMethods {
     "reference": string;
     "reset": string;
     "saveVerseMarkup": string;
+    "splitVerse": string;
     "startStop": string;
 };
 

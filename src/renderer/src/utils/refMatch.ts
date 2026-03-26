@@ -1,6 +1,6 @@
 export const refMatch = (ref: string): RegExpExecArray | null => {
   const m =
-    /^([0-9]+)[:.]([0-9]+[a-c]?)-?([0-9]*[a-c]?)[:.]?([0-9]*[a-c]?)$/g.exec(
+    /^([0-9]+)[:.]([0-9]+[a-e]?)-?([0-9]*[a-e]?)[:.]?([0-9]*[a-e]?)$/g.exec(
       ref
     );
   if (!m) return m;

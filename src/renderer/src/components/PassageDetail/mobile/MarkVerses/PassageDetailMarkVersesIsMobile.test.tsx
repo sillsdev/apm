@@ -148,6 +148,7 @@ jest.mock('react-redux', () => ({
     reference: 'Reference',
     reset: 'Reset',
     saveVerseMarkup: 'Save Verse Markup',
+    splitVerse: 'Split Verse',
     startStop: 'Start-Stop',
     badReferences: 'ERROR: Markup contains bad references',
     btNotUpdated:
@@ -157,6 +158,7 @@ jest.mock('react-redux', () => ({
     noReferences: 'Warning: Some audio segments will not be included in verses',
     noSegments: 'ERROR: Some verses have no segment: ({0})',
     outsideReferences: 'ERROR: Some verses are outside passage: ({0})',
+    save: 'Save',
   }),
   shallowEqual: jest.fn(),
 }));
@@ -331,6 +333,89 @@ test('locks reference inputs until edit reference is enabled', async () => {
 
   await user.click(screen.getByRole('button', { name: 'Done Editing' }));
   expect(screen.getByLabelText('verse-reference-1')).toBeDisabled();
+});
+
+test('opens and cancels the split verse dialog', async () => {
+  const user = userEvent.setup();
+
+  runTest({ width: 375 });
+
+  act(() => {
+    mockPlayerAction?.(
+      '{"regions":"[{\\"start\\":0,\\"end\\":10},{\\"start\\":10,\\"end\\":20},{\\"start\\":20,\\"end\\":69}]"}',
+      false
+    );
+  });
+
+  await screen.findByText('0:00.0-0:10.0');
+
+  await user.click(screen.getByRole('button', { name: 'Split Verse' }));
+
+  expect(
+    screen.getByRole('heading', { name: 'Edit Reference for 0:00.0-0:10.0' })
+  ).toBeInTheDocument();
+  expect(screen.getByLabelText('end verse number')).toBeDisabled();
+  expect(screen.getAllByRole('option', { name: '4' })).toHaveLength(2);
+  expect(screen.queryAllByRole('option', { name: '5' })).toHaveLength(0);
+  expect(screen.getByLabelText('start verse suffix')).toBeInTheDocument();
+  expect(screen.getByLabelText('end verse suffix')).toBeInTheDocument();
+  expect(screen.getAllByRole('option', { name: 'e' })).toHaveLength(2);
+
+  await user.click(screen.getByRole('button', { name: 'Cancel' }));
+  expect(
+    screen.queryByRole('heading', {
+      name: 'Edit Reference for 0:00.0-0:10.0',
+    })
+  ).not.toBeInTheDocument();
+});
+
+test('saves a split verse range and shifts following references up', async () => {
+  const user = userEvent.setup();
+
+  runTest({ width: 375 });
+
+  act(() => {
+    mockPlayerAction?.(
+      '{"regions":"[{\\"start\\":0,\\"end\\":10},{\\"start\\":10,\\"end\\":20},{\\"start\\":20,\\"end\\":69}]"}',
+      false
+    );
+  });
+
+  await screen.findByText('0:00.0-0:10.0');
+
+  await user.click(screen.getByRole('button', { name: 'Split Verse' }));
+  await user.click(screen.getByRole('checkbox', { name: 'Split Verse' }));
+  expect(screen.getByLabelText('end verse number')).not.toBeDisabled();
+  await user.selectOptions(screen.getByLabelText('start verse suffix'), 'a');
+  await user.selectOptions(screen.getByLabelText('end verse suffix'), 'e');
+  await user.click(screen.getByRole('button', { name: 'Save' }));
+
+  expect(screen.getByLabelText('verse-reference-1')).toHaveValue('1:1a-2e');
+  expect(screen.getByLabelText('verse-reference-2')).toHaveValue('1:3');
+  expect(screen.getByLabelText('verse-reference-3')).toHaveValue('1:4');
+});
+
+test('saving a suffix on the second line updates that line instead of creating a range', async () => {
+  const user = userEvent.setup();
+
+  runTest({ width: 375 });
+
+  act(() => {
+    mockPlayerAction?.(
+      '{"regions":"[{\\"start\\":0,\\"end\\":10},{\\"start\\":10,\\"end\\":20},{\\"start\\":20,\\"end\\":69}]"}',
+      false
+    );
+  });
+
+  await screen.findByText('0:00.0-0:10.0');
+
+  await user.click(screen.getByRole('button', { name: 'Split Verse' }));
+  await user.selectOptions(screen.getByLabelText('end verse suffix'), 'e');
+  await user.click(screen.getByRole('button', { name: 'Save' }));
+
+  expect(screen.getByLabelText('verse-reference-1')).toHaveValue('1:1');
+  expect(screen.getByLabelText('verse-reference-2')).toHaveValue('1:2e');
+  expect(screen.getByLabelText('verse-reference-1')).not.toHaveValue('1:1-2e');
 });
 
 test('reset clears markers and restores the original reference table', async () => {
