@@ -664,8 +664,10 @@ export default function PassageDetailMarkVersesIsMobile({
 
   const handleOpenSplitVerseDialog = useCallback(() => {
     const rowIndex = findActiveRowIndex();
-    if (rowIndex < 1) return;
-    const nextDialog = buildEditReferenceDialogState(rowIndex);
+    const fallbackRowIndex =
+      rowIndex > 0 ? rowIndex : dataRef.current.length > 1 ? 1 : -1;
+    if (fallbackRowIndex < 1) return;
+    const nextDialog = buildEditReferenceDialogState(fallbackRowIndex);
     if (nextDialog) {
       setEditReferenceDialog(nextDialog);
     }
@@ -706,6 +708,8 @@ export default function PassageDetailMarkVersesIsMobile({
     );
     const resolvedEndRowIndex =
       endRowIndex > startRowIndex ? endRowIndex : startRowIndex + 1;
+    const hasDistinctEndRow =
+      endRowIndex > startRowIndex && Boolean(newData[endRowIndex]);
     const row = newData[startRowIndex] as ICell[] | undefined;
     if (!row) return;
 
@@ -716,11 +720,11 @@ export default function PassageDetailMarkVersesIsMobile({
       );
 
       if (
-        editReferenceDialog.canSplit &&
+        hasDistinctEndRow &&
         !editReferenceDialog.existingSplit &&
-        newData[resolvedEndRowIndex]
+        newData[endRowIndex]
       ) {
-        const nextRow = newData[resolvedEndRowIndex] as ICell[];
+        const nextRow = newData[endRowIndex] as ICell[];
         nextRow[ColName.Ref] = buildReferenceCell(
           `${value.endChapter}:${value.endVerse}${value.endSuffix}`,
           nextRow[ColName.Ref] as ICell
@@ -731,18 +735,16 @@ export default function PassageDetailMarkVersesIsMobile({
         (existingRow) => `${existingRow[ColName.Ref]?.value ?? ''}`
       );
       const nextReference = formatReferenceValue(value);
-      const rowsConsumed =
-        resolvedEndRowIndex > startRowIndex
-          ? resolvedEndRowIndex - startRowIndex
-          : 1;
       row[ColName.Ref] = buildReferenceCell(
         nextReference,
         row[ColName.Ref] as ICell
       );
 
-      if (value.canSplit) {
-        for (let index = startRowIndex + 1; index < newData.length; index += 1) {
-          const shiftedValue = referenceValues[index + rowsConsumed] ?? '';
+      if (hasDistinctEndRow) {
+        const deleteRowIndex = endRowIndex;
+
+        for (let index = deleteRowIndex; index < newData.length; index += 1) {
+          const shiftedValue = referenceValues[index + 1] ?? '';
           const referenceCell = newData[index]?.[ColName.Ref] as
             | ICell
             | undefined;
