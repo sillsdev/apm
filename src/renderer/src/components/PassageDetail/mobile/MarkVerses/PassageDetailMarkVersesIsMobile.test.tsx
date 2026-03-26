@@ -276,11 +276,11 @@ test('updates timestamp rows when the player emits verse markers', async () => {
   });
 
   await waitFor(() => {
-    expect(screen.getByText('0:00.0-0:10.0')).toBeInTheDocument();
+    expect(screen.getByText('0:00-0:10')).toBeInTheDocument();
   });
 
-  expect(screen.getByText('0:10.0-0:20.0')).toBeInTheDocument();
-  expect(screen.getByText('0:20.0-1:09.0')).toBeInTheDocument();
+  expect(screen.getByText('0:10-0:20')).toBeInTheDocument();
+  expect(screen.getByText('0:20-1:09')).toBeInTheDocument();
   expect(screen.getByLabelText('verse-reference-1')).toHaveValue('1:1');
   expect(screen.getByLabelText('verse-reference-2')).toHaveValue('1:2');
   expect(screen.getByLabelText('verse-reference-3')).toHaveValue('1:3');
@@ -302,7 +302,7 @@ test('highlights the matching waveform region when a row is edited', async () =>
     );
   });
 
-  await screen.findByText('0:10.0-0:20.0');
+  await screen.findByText('0:10-0:20');
   await user.click(screen.getByRole('button', { name: 'Edit Reference' }));
   const secondReference = await screen.findByLabelText('verse-reference-2');
   await user.clear(secondReference);
@@ -347,12 +347,12 @@ test('opens and cancels the split verse dialog', async () => {
     );
   });
 
-  await screen.findByText('0:00.0-0:10.0');
+  await screen.findByText('0:00-0:10');
 
   await user.click(screen.getByRole('button', { name: 'Split Verse' }));
 
   expect(
-    screen.getByRole('heading', { name: 'Edit Reference for 0:00.0-0:10.0' })
+    screen.getByRole('heading', { name: 'Edit Reference for 0:00-0:10' })
   ).toBeInTheDocument();
   expect(screen.getByLabelText('end verse number')).toBeDisabled();
   expect(screen.getAllByRole('option', { name: '4' })).toHaveLength(2);
@@ -364,7 +364,7 @@ test('opens and cancels the split verse dialog', async () => {
   await user.click(screen.getByRole('button', { name: 'Cancel' }));
   expect(
     screen.queryByRole('heading', {
-      name: 'Edit Reference for 0:00.0-0:10.0',
+      name: 'Edit Reference for 0:00-0:10',
     })
   ).not.toBeInTheDocument();
 });
@@ -381,7 +381,7 @@ test('saves a split verse range and shifts following references up', async () =>
     );
   });
 
-  await screen.findByText('0:00.0-0:10.0');
+  await screen.findByText('0:00-0:10');
 
   await user.click(screen.getByRole('button', { name: 'Split Verse' }));
   await user.click(await screen.findByRole('checkbox'));
@@ -407,7 +407,7 @@ test('saving a suffix on the second line updates that line instead of creating a
     );
   });
 
-  await screen.findByText('0:00.0-0:10.0');
+  await screen.findByText('0:00-0:10');
 
   await user.click(screen.getByRole('button', { name: 'Split Verse' }));
   await user.selectOptions(screen.getByLabelText('end verse suffix'), 'e');
@@ -430,9 +430,9 @@ test('split uses the selected left and right verses rather than the dialog row',
     );
   });
 
-  await screen.findByText('0:20.0-1:09.0');
+  await screen.findByText('0:20-1:09');
 
-  await user.click(screen.getByText('0:20.0-1:09.0'));
+  await user.click(screen.getByText('0:20-1:09'));
   await user.click(screen.getByRole('button', { name: 'Split Verse' }));
   await user.selectOptions(screen.getByLabelText('start verse number'), '2');
   await user.click(screen.getByRole('checkbox', { name: 'Split Verse' }));
@@ -456,7 +456,7 @@ test('shows undo after dialog save and restores the previous table', async () =>
     );
   });
 
-  await screen.findByText('0:00.0-0:10.0');
+  await screen.findByText('0:00-0:10');
 
   await user.click(screen.getByRole('button', { name: 'Split Verse' }));
   await user.click(await screen.findByRole('checkbox'));
@@ -487,7 +487,7 @@ test('reset clears markers and restores the original reference table', async () 
     );
   });
 
-  await screen.findByText('0:00.0-0:10.0');
+  await screen.findByText('0:00-0:10');
 
   await user.click(screen.getByRole('button', { name: 'Edit Reference' }));
   const secondReference = screen.getByLabelText('verse-reference-2');
@@ -498,7 +498,7 @@ test('reset clears markers and restores the original reference table', async () 
   await user.click(screen.getByRole('button', { name: 'Reset' }));
 
   await waitFor(() => {
-    expect(screen.queryByText('0:00.0-0:10.0')).not.toBeInTheDocument();
+    expect(screen.queryByText('0:00-0:10')).not.toBeInTheDocument();
   });
 
   expect(screen.getByLabelText('verse-reference-1')).toHaveValue('1:1');
