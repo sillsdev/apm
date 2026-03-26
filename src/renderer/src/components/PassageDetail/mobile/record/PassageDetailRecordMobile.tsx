@@ -19,7 +19,7 @@ import Memory from '@orbit/memory';
 import { useSnackBar } from '../../../../hoc/SnackBar';
 import { UnsavedContext } from '../../../../context/UnsavedContext';
 import Uploader from '../../../Uploader';
-import { AltButton, PriButton } from '../../../../control';
+import { AltButton } from '../../../../control';
 import BigDialog from '../../../../hoc/BigDialog';
 import VersionDlg from '../../../AudioTab/VersionDlg';
 import SpeakerName from '../../../SpeakerName';
@@ -27,7 +27,6 @@ import { sharedSelector } from '../../../../selector';
 import { useOrbitData } from '../../../../hoc/useOrbitData';
 import { useStepPermissions } from '../../../../utils/useStepPermission';
 import AddIcon from '@mui/icons-material/LibraryAddOutlined';
-import VersionsIcon from '@mui/icons-material/List';
 import MediaRecord from '../../../../components/MediaRecord';
 
 interface IProps {
@@ -96,6 +95,22 @@ export function PassageDetailRecord(props: IProps) {
     }
     setUploadVisiblex(value);
   };
+  const [isSaveDisabled, setIsSaveDisabled] = useState(
+    (ready && !ready()) ||
+    !canSave ||
+    !hasRights ||
+    !canDoVernacular(related(passage, 'section'))
+  );
+
+  useEffect(() => {
+    setIsSaveDisabled(
+      (ready && !ready()) ||
+      !canSave ||
+      !hasRights ||
+      !canDoVernacular(related(passage, 'section'))
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canSave, hasRights, passage]);
 
   useEffect(() => {
     toolChanged(toolId, canSave);
@@ -230,7 +245,7 @@ export function PassageDetailRecord(props: IProps) {
   const onVersions = hasExistingVersion ? handleVersions : undefined;
 
   return (
-    <Stack sx={{ width: '100%', maxWidth: props.width, minWidth: 0, boxSizing: 'border-box' }}>
+    <Stack sx={{ height: '100%', maxWidth: props.width, minWidth: 0, boxSizing: 'border-box' }}>
       <Box sx={{ py: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: props.width }}>
         <SpeakerName
           name={speaker}
@@ -273,45 +288,13 @@ export function PassageDetailRecord(props: IProps) {
         width={props.width}
         allowNoNoise={true}
         allowDeltaVoice={true}
-        metaData={
-          <>
-            <Typography
-              variant="caption"
-              sx={{
-                mr: 2,
-                alignSelf: 'center',
-                display: 'block',
-                gutterBottom: 'true',
-              }}
-            >
-              {statusText}
-            </Typography>
-            <PriButton
-              id="rec-save"
-              onClick={handleSave}
-              disabled={
-                (ready && !ready()) ||
-                !canSave ||
-                !hasRights ||
-                !canDoVernacular(related(passage, 'section'))
-              }
-            >
-              {ts.save}
-            </PriButton>
-          </>
-        }
+        handleUpload={handleUpload}
+        isRecordingRights={false}
+        onVersions={onVersions}
+        handleSave={handleSave}
+        isSaveDisabled={isSaveDisabled}
+        hasRecording={recorderState?.status === MediaSt.FETCHED}
       />
-
-      <Box sx={{ display: 'flex', justifyContent: 'flex-start', mt: 1 }}>
-        <AltButton
-          id="pdRecordVersions"
-          onClick={onVersions}
-          title={ts.versionHistory}
-          startIcon={<VersionsIcon sx={IconSize} />}
-        >
-          {ts.versionHistory}
-        </AltButton>
-      </Box>
 
       <Uploader
         recordAudio={false}

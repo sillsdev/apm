@@ -35,6 +35,7 @@ import NextSegmentIcon from '@mui/icons-material/ArrowRightAlt';
 import UndoIcon from '@mui/icons-material/Undo';
 import MicIcon from '@mui/icons-material/SettingsVoice';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
+import VersionsIcon from '@mui/icons-material/List';
 import NormalizeIcon from '../control/NormalizeIcon';
 import UploadIcon from '@mui/icons-material/CloudUpload';
 import { Button } from '@mui/material';
@@ -50,6 +51,7 @@ import { LightTooltip } from '../control/LightTooltip';
 import { RecordButton } from '../control/RecordButton';
 import { useSnackBar } from '../hoc/SnackBar';
 import { HotKeyContext } from '../context/HotKeyContext';
+import { PriButton } from '../control';
 import WSAudioPlayerZoom, { maxZoom } from './WSAudioPlayerZoom';
 import {
   dataPath,
@@ -175,7 +177,9 @@ interface IProps {
   onSegmentUndo?: () => void;
   isRecordingRights?: boolean;
   handleUpload?: () => void;
-  buttonProp?: SxProps;
+  onVersions?: () => void;
+  handleSave?: () => void;
+  isSaveDisabled?: boolean;
 }
 
 export interface WSAudioPlayerControls {
@@ -270,7 +274,9 @@ function WSAudioPlayer(props: IProps) {
     onSegmentUndo,
     isRecordingRights,
     handleUpload,
-    buttonProp,
+    onVersions,
+    handleSave,
+    isSaveDisabled,
   } = props;
 
   const waveformRef = useRef<HTMLDivElement | null>(null);
@@ -1511,23 +1517,109 @@ function WSAudioPlayer(props: IProps) {
 
   const onSplit = () => {};
 
-  if (isMobileView && isRecordingRights) {
-    return (
-      <>
-        <Stack direction="row" spacing={1} sx={{ mx: 1, py: 1, display: 'flex', justifyContent: 'space-between' }}>
-          {duration === 0 || recording ? (
-            <RecordButton
-              recording={recording}
-              oneTryOnly={oneTryOnly}
-              onClick={handleRecorder}
-              disabled={playing || processingRecording || waitingForAI}
-              tooltipTitle={recordTooltipTitle}
-              isSmall={true}
-              hasRecording={hasRecording ?? false}
-              isStopLogic={isStopLogic ?? false}
-              isMobileView={true}
+  if (isMobileView) {
+    if (isRecordingRights) {
+      return (
+        <>
+          <Stack direction="row" spacing={1} sx={{ mx: 1, py: 1, display: 'flex', justifyContent: 'space-between' }}>
+            {duration === 0 || recording ? (
+              <RecordButton
+                recording={recording}
+                oneTryOnly={oneTryOnly}
+                onClick={handleRecorder}
+                disabled={playing || processingRecording || waitingForAI}
+                tooltipTitle={recordTooltipTitle}
+                isSmall={true}
+                hasRecording={hasRecording ?? false}
+                isStopLogic={isStopLogic ?? false}
+                isMobileView={true}
+                isRecordingRights={true}
+              />
+            ) : (
+              <Stack direction="row" spacing={1} sx={{ display: 'flex', alignItems: 'center' }}>
+                <LightTooltip
+                  id="wsAudioPlayTip"
+                  title={(playing
+                    ? oneTryOnly
+                      ? t.stopTip
+                      : t.pauseTip
+                    : t.playTip
+                  ).replace('{0}', localizeHotKey(PLAY_PAUSE_KEY))}
+                >
+                  <span>
+                    <IconButton
+                      id="wsAudioPlay"
+                      onClick={togglePlayStatus}
+                      disabled={duration === 0 || recording}
+                    >
+                      <>{playing ? <PauseIcon /> : <PlayIcon />}</>
+                    </IconButton>
+                  </span>
+                </LightTooltip>
+                <Typography sx={{ m: '5px' }}>
+                  <Duration id="wsAudioPosition" seconds={progress} /> {' / '}
+                  <Duration id="wsAudioDuration" seconds={duration} />
+                </Typography>
+                {hasRegion === 0 && (
+                  <LightTooltip
+                    id="wsAudioDeleteTip"
+                    title={t.deleteRecording}
+                  >
+                    <span>
+                      <IconButton
+                        id="wsAudioDelete"
+                        onClick={handleDelete}
+                        disabled={
+                          recording || duration === 0 || waitingForAI
+                        }
+                      >
+                        <DeleteIcon />
+                      </IconButton>
+                    </span>
+                  </LightTooltip>
+                )}
+              </Stack>
+            )}
+            <Box>
+              <Button
+                sx={{ mx: 1 }}
+                id="spkr-upload"
+                onClick={handleUpload}
+                title={ts.upload}
+              >
+                <UploadIcon />
+                {ts.upload}
+              </Button>
+            </Box>
+          </Stack>
+          <Box
+            sx={{
+              width: '100%',
+              maxWidth: '100%',
+              minWidth: 0,
+              boxSizing: 'border-box',
+            }}
+          >
+            <div id="wsAudioWaveform" ref={waveformRef} />
+          </Box>
+          {confirmAction === '' || (
+            <Confirm
+              jsx={
+                typeof confirmAction !== 'string' ? confirmAction : undefined
+              }
+              text={typeof confirmAction === 'string' ? confirmAction : ''}
+              yesResponse={handleActionConfirmed}
+              noResponse={handleActionRefused}
             />
-          ) : (
+          )}
+        </>
+      )
+    }
+
+    return (
+      <Stack direction="column" sx={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+        <Stack>
+          <Stack direction="row" spacing={1} sx={{ py: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <Stack direction="row" spacing={1} sx={{ display: 'flex', alignItems: 'center' }}>
               <LightTooltip
                 id="wsAudioPlayTip"
@@ -1552,6 +1644,63 @@ function WSAudioPlayer(props: IProps) {
                 <Duration id="wsAudioPosition" seconds={progress} /> {' / '}
                 <Duration id="wsAudioDuration" seconds={duration} />
               </Typography>
+            </Stack>
+
+            <Menu
+              anchorEl={moreMenuAnchorEl}
+              open={moreMenuOpen}
+              onClose={handleMoreMenuClose}
+              anchorOrigin={{
+                vertical: 'bottom',
+                horizontal: 'right',
+              }}
+              transformOrigin={{
+                vertical: 'top',
+                horizontal: 'right',
+              }}
+            >
+              {audioInputDevices.length === 0 ? (
+                <MenuItem disabled>{ts.noAudio}</MenuItem>
+              ) : (
+                audioInputDevices.map((device, index) => (
+                  <MenuItem
+                    key={device.deviceId || `input-${index}`}
+                    selected={
+                      selectedMicrophoneId === device.deviceId
+                    }
+                    onClick={() => handleMicSelect(device.deviceId)}
+                  >
+                    {device.label || `Input ${index + 1}`}
+                  </MenuItem>
+                ))
+              )}
+            </Menu>
+          </Stack>
+          <Box
+            sx={{
+              width: '100%',
+              maxWidth: '100%',
+              minWidth: 0,
+              boxSizing: 'border-box',
+            }}
+          >
+            <div id="wsAudioWaveform" ref={waveformRef} />
+          </Box>
+
+          {/* Row with Versions, Trash, Save */}
+          <Stack direction="row" spacing={1} sx={{ py: 1, display: 'flex', justifyContent: 'space-between' }}>
+            <Box sx={{ display: 'flex', justifyContent: 'flex-start', mt: 1 }}>
+              <AltButton
+                id="pdRecordVersions"
+                onClick={onVersions}
+                title={ts.versionHistory}
+                startIcon={<VersionsIcon sx={{ width: '14px', height: '14px' }} />}
+              >
+                {ts.versionHistory}
+              </AltButton>
+            </Box>
+
+            <Stack direction="row" spacing={1} sx={{ display: 'flex', alignItems: 'center' }}>
               {hasRegion === 0 && (
                 <LightTooltip
                   id="wsAudioDeleteTip"
@@ -1564,36 +1713,38 @@ function WSAudioPlayer(props: IProps) {
                       disabled={
                         recording || duration === 0 || waitingForAI
                       }
-                    >
+                      >
                       <DeleteIcon />
                     </IconButton>
                   </span>
                 </LightTooltip>
               )}
+              <PriButton
+                id="rec-save"
+                onClick={handleSave}
+                disabled={isSaveDisabled}
+              >
+                {ts.save}
+              </PriButton>
             </Stack>
-          )}
-          <Box>
-            <Button
-              sx={buttonProp}
-              id="spkr-upload"
-              onClick={handleUpload}
-              title={ts.upload}
-            >
-              <UploadIcon />
-              {ts.upload}
-            </Button>
-          </Box>
+          </Stack>
         </Stack>
-        <Box
-          sx={{
-            width: '100%',
-            maxWidth: '100%',
-            minWidth: 0,
-            boxSizing: 'border-box',
-          }}
-        >
-          <div id="wsAudioWaveform" ref={waveformRef} />
-        </Box>
+        {allowRecord && (
+          <Box sx={{ width: 'auto' }}>
+            <RecordButton
+              recording={recording}
+              oneTryOnly={oneTryOnly}
+              onClick={handleRecorder}
+              disabled={playing || processingRecording || waitingForAI}
+              tooltipTitle={recordTooltipTitle}
+              isSmall={true}
+              hasRecording={hasRecording ?? false}
+              isStopLogic={isStopLogic ?? false}
+              isMobileView={true}
+              isRecordingRights={false}
+            />
+          </Box>
+        )}
         {confirmAction === '' || (
           <Confirm
             jsx={
@@ -1604,8 +1755,8 @@ function WSAudioPlayer(props: IProps) {
             noResponse={handleActionRefused}
           />
         )}
-      </>
-    )
+      </Stack>
+    );
   };
 
   return (

@@ -1,7 +1,7 @@
 import React from 'react';
 import UploadIcon from '@mui/icons-material/CloudUpload';
 import { VoiceStatement } from '../../../../business/voice/VoiceStatement';
-import MediaRecordRightsMobile from './MediaRecordRightsMobile';
+import MediaRecord from '../../../MediaRecord';
 import { GrowingSpacer, PriButton } from '../../../../control';
 import { Button, Paper, Typography, Box, LinearProgress } from '@mui/material';
 import { SxProps } from '@mui/material/styles';
@@ -16,7 +16,6 @@ interface IProps {
   paperProps: SxProps;
   paperWidth: number;
   rowProp: SxProps;
-  buttonProp: SxProps;
   statusProps: SxProps;
   statusText: string;
   canSave: boolean;
@@ -56,7 +55,7 @@ const ProvideRightsMobile = (props: IProps) => {
         setState={props.setState}
         setStatement={props.handleStatement}
       />
-      <MediaRecordRightsMobile
+      <MediaRecord
         toolId={props.toolId}
         defaultFilename={props.defaultFilename}
         afterUploadCb={async (mediaId) => {
@@ -76,7 +75,7 @@ const ProvideRightsMobile = (props: IProps) => {
         width={props.paperWidth - 20 || 500}
         onSaving={() => props.setSaving(true)}
         handleUpload={props.handleUpload}
-        buttonProp={props.buttonProp}
+        isRecordingRights={true}
       />
       <Box sx={props.rowProp}>
         {!props.recordingRequired && (
@@ -90,7 +89,7 @@ const ProvideRightsMobile = (props: IProps) => {
         <GrowingSpacer />
         <PriButton
           id="spkr-save"
-          sx={props.buttonProp}
+          sx={{ mx: 1 }}
           onClick={props.handleSave}
           disabled={!props.canSave || props.state?.valid === false}
         >

@@ -164,7 +164,6 @@ export function SpeakerName({
       onChange && onChange(newValue.inputValue);
       setHasNoRightsMobile(true);
     } else {
-      console.log('selected existing option', newValue);
       setValue(newValue);
       if (newValue) {
         valueRef.current = newValue.name;

@@ -26,6 +26,7 @@ interface IRecordButtonProps {
   isStopLogic?: boolean;
   active?: boolean;
   isMobileView?: boolean;
+  isRecordingRights?: boolean;
 }
 
 export const RecordButton = ({
@@ -42,6 +43,7 @@ export const RecordButton = ({
   active = true,
   sx,
   isMobileView,
+  isRecordingRights,
 }: IRecordButtonProps) => {
   const theme = useTheme();
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -72,8 +74,9 @@ export const RecordButton = ({
   );
 
   if (isMobileView){
-    return(
-      <>
+    {/* small black button for rights recording mobile */}
+    if (isRecordingRights) {
+      return(
         <Box
           onClick={handleClick}
           role="button"
@@ -107,8 +110,61 @@ export const RecordButton = ({
             </>
           )}
         </Box>
-      </>
-    )
+      );
+    }
+    {/* Record button with Resume text for mobile view */}
+    return (
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%'}}>
+        <Box
+          onClick={handleClick}
+          role="button"
+          tabIndex={0}
+          onKeyDown={handleKeyDown}
+          sx={(theme) => {
+            return {
+              px: isSmall ? 1 : undefined,
+              py: isSmall ? 1 : undefined,
+              minWidth: isSmall ? 48 : 60,
+              maxWidth: recording ? 100 : hasRecording ? 100 : 48,
+              height: 48,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: recording || hasRecording ? 'white' : `${disabled ? disabledColor : redColor} !important`,
+              color: 'white',
+              border: '1px solid black',
+              borderRadius: recording ? '8px' : hasRecording ? '8px' : '50%',
+              cursor: disabled ? 'not-allowed' : 'pointer',
+              fontFamily: 'inherit',
+              fontSize: 'inherit',
+              outline: 'none',
+              opacity: disabled ? 0.7 : 1,
+              '& svg': {
+                fontSize: isSmall ? '1.5rem' : '1.75rem',
+                color: 'red',
+                fill: 'red',
+              },
+            };
+          }}
+        >
+          {recording ? (
+            oneTryOnly ? (
+              <RecordSquare />
+            ) : isStopLogic ? (
+              <StopIcon />
+            ) : (
+              <PauseIcon />
+            )
+          ) : hasRecording ? (
+            <Typography variant="caption" sx={{ m: 1, textAlign: 'center', color: 'red', fontSize: '1rem', fontWeight: 'bold' }}>
+              {t.resume}
+            </Typography>
+          ) : (
+            <WhiteCircle style={{ fontSize: isSmall ? '1.2rem' : '1.4rem' }} />
+          )}
+        </Box>
+      </Box>
+    );
   };
 
   if (showText) {

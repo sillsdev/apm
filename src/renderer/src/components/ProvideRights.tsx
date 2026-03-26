@@ -287,7 +287,6 @@ export function ProvideRights(props: IProps) {
       paperRef={paperRef}
       paperProps={paperProps}
       rowProp={rowProp}
-      buttonProp={buttonProp}
       statusProps={statusProps}
       speaker={speaker}
       team={team}
@@ -356,6 +355,7 @@ export function ProvideRights(props: IProps) {
           height={200}
           width={paperWidth - 20 || 500}
           onSaving={() => setSaving(true)}
+          handleUpload={handleUpload}
         />
         <Box sx={rowProp}>
           {!recordingRequired && (
