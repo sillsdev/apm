@@ -331,13 +331,6 @@ const PassageDetailGrids = () => {
                       allowZoomAndSpeed={true}
                     />
                   )}
-                  <PassageDetailChooser width={paneWidth} />
-                  {(tool !== ToolSlug.KeyTerm || mediafileId) && (
-                    <PassageDetailPlayer
-                      width={Math.max(0, paneWidth - 40)}
-                      allowZoomAndSpeed={true}
-                    />
-                  )}
                   {tool === ToolSlug.TeamCheck && <TeamCheckReference />}
                   {tool === ToolSlug.KeyTerm && (
                     <Suspense fallback={<Busy />}>
