@@ -679,7 +679,34 @@ export default function PassageDetailMarkVersesIsMobile({
     if (!editReferenceDialog) return;
 
     const newData = cloneTableData(dataRef.current);
-    const row = newData[editReferenceDialog.rowIndex] as ICell[] | undefined;
+    const findRowIndexForVerse = (
+      chapter: number,
+      verse: number,
+      startAt = 1
+    ) =>
+      newData.findIndex((existingRow, index) => {
+        if (index < startAt) return false;
+        const parsedReference = parseReferenceValue(
+          `${existingRow[ColName.Ref]?.value ?? ''}`
+        );
+        return (
+          parsedReference?.start.chapter === chapter &&
+          parsedReference.start.verse === verse
+        );
+      });
+
+    const startRowIndex = Math.max(
+      findRowIndexForVerse(value.startChapter, value.startVerse),
+      1
+    );
+    const endRowIndex = findRowIndexForVerse(
+      value.endChapter,
+      value.endVerse,
+      startRowIndex + 1
+    );
+    const resolvedEndRowIndex =
+      endRowIndex > startRowIndex ? endRowIndex : startRowIndex + 1;
+    const row = newData[startRowIndex] as ICell[] | undefined;
     if (!row) return;
 
     if (!value.splitVerse) {
@@ -691,9 +718,9 @@ export default function PassageDetailMarkVersesIsMobile({
       if (
         editReferenceDialog.canSplit &&
         !editReferenceDialog.existingSplit &&
-        newData[editReferenceDialog.rowIndex + 1]
+        newData[resolvedEndRowIndex]
       ) {
-        const nextRow = newData[editReferenceDialog.rowIndex + 1] as ICell[];
+        const nextRow = newData[resolvedEndRowIndex] as ICell[];
         nextRow[ColName.Ref] = buildReferenceCell(
           `${value.endChapter}:${value.endVerse}${value.endSuffix}`,
           nextRow[ColName.Ref] as ICell
@@ -704,19 +731,9 @@ export default function PassageDetailMarkVersesIsMobile({
         (existingRow) => `${existingRow[ColName.Ref]?.value ?? ''}`
       );
       const nextReference = formatReferenceValue(value);
-      const targetRowIndex = newData.findIndex((existingRow, index) => {
-        if (index <= editReferenceDialog.rowIndex) return false;
-        const parsedReference = parseReferenceValue(
-          `${existingRow[ColName.Ref]?.value ?? ''}`
-        );
-        return (
-          parsedReference?.start.chapter === value.endChapter &&
-          parsedReference.start.verse === value.endVerse
-        );
-      });
       const rowsConsumed =
-        targetRowIndex > editReferenceDialog.rowIndex
-          ? targetRowIndex - editReferenceDialog.rowIndex
+        resolvedEndRowIndex > startRowIndex
+          ? resolvedEndRowIndex - startRowIndex
           : 1;
       row[ColName.Ref] = buildReferenceCell(
         nextReference,
@@ -724,11 +741,7 @@ export default function PassageDetailMarkVersesIsMobile({
       );
 
       if (value.canSplit) {
-        for (
-          let index = editReferenceDialog.rowIndex + 1;
-          index < newData.length;
-          index += 1
-        ) {
+        for (let index = startRowIndex + 1; index < newData.length; index += 1) {
           const shiftedValue = referenceValues[index + rowsConsumed] ?? '';
           const referenceCell = newData[index]?.[ColName.Ref] as
             | ICell
@@ -742,15 +755,13 @@ export default function PassageDetailMarkVersesIsMobile({
       }
     }
 
-    setActiveRowHighlight(newData, editReferenceDialog.rowIndex);
+    setActiveRowHighlight(newData, startRowIndex);
     setData(newData);
     setSegments();
 
-    const activeSegment = getSegmentFromRow(
-      newData[editReferenceDialog.rowIndex] as ICell[]
-    );
+    const activeSegment = getSegmentFromRow(newData[startRowIndex] as ICell[]);
     if (activeSegment) {
-      setCurrentSegment(activeSegment, editReferenceDialog.rowIndex - 1);
+      setCurrentSegment(activeSegment, startRowIndex - 1);
     }
 
     toolChanged(verseToolId);

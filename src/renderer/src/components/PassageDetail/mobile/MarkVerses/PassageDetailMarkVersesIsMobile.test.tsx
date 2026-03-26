@@ -384,7 +384,7 @@ test('saves a split verse range and shifts following references up', async () =>
   await screen.findByText('0:00.0-0:10.0');
 
   await user.click(screen.getByRole('button', { name: 'Split Verse' }));
-  await user.click(screen.getByRole('checkbox', { name: 'Split Verse' }));
+  await user.click(await screen.findByRole('checkbox'));
   expect(screen.getByLabelText('end verse number')).not.toBeDisabled();
   await user.selectOptions(screen.getByLabelText('start verse suffix'), 'a');
   await user.selectOptions(screen.getByLabelText('end verse suffix'), 'e');
@@ -416,6 +416,32 @@ test('saving a suffix on the second line updates that line instead of creating a
   expect(screen.getByLabelText('verse-reference-1')).toHaveValue('1:1');
   expect(screen.getByLabelText('verse-reference-2')).toHaveValue('1:2e');
   expect(screen.getByLabelText('verse-reference-1')).not.toHaveValue('1:1-2e');
+});
+
+test('split uses the selected left and right verses rather than the dialog row', async () => {
+  const user = userEvent.setup();
+
+  runTest({ width: 375 });
+
+  act(() => {
+    mockPlayerAction?.(
+      '{"regions":"[{\\"start\\":0,\\"end\\":10},{\\"start\\":10,\\"end\\":20},{\\"start\\":20,\\"end\\":69}]"}',
+      false
+    );
+  });
+
+  await screen.findByText('0:20.0-1:09.0');
+
+  await user.click(screen.getByText('0:20.0-1:09.0'));
+  await user.click(screen.getByRole('button', { name: 'Split Verse' }));
+  await user.selectOptions(screen.getByLabelText('start verse number'), '2');
+  await user.click(screen.getByRole('checkbox', { name: 'Split Verse' }));
+  await user.selectOptions(screen.getByLabelText('end verse number'), '3');
+  await user.click(screen.getByRole('button', { name: 'Save' }));
+
+  expect(screen.getByLabelText('verse-reference-1')).toHaveValue('1:1');
+  expect(screen.getByLabelText('verse-reference-2')).toHaveValue('1:2-3');
+  expect(screen.getByLabelText('verse-reference-3')).toHaveValue('1:4');
 });
 
 test('reset clears markers and restores the original reference table', async () => {
