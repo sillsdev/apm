@@ -36,6 +36,7 @@ import { getContentType } from '../utils/contentType';
 import { OrbitNetworkErrorRetries } from '../../api-variable';
 import { UploadType } from './UploadType';
 import { Box } from '@mui/material';
+import { BigDialogBp } from '../hoc/BigDialogBp';
 
 interface IProps {
   noBusy?: boolean | undefined;
@@ -65,6 +66,7 @@ interface IProps {
   inValue?: string | undefined; // used when adding Aquifer markdown
   team?: string | undefined; // used when adding a card to check speakers
   onNonAudio?: ((nonAudio: boolean) => void) | undefined;
+  uploadDialogBp?: BigDialogBp;
 }
 
 export const Uploader = (props: IProps) => {
@@ -93,6 +95,7 @@ export const Uploader = (props: IProps) => {
     team,
     onNonAudio,
     finish,
+    uploadDialogBp,
   } = props;
   const { metaData, ready } = props;
   const [isDeveloper] = useGlobal('developer');
@@ -458,6 +461,7 @@ export const Uploader = (props: IProps) => {
         <MediaUpload
           visible={isOpen}
           onVisible={onOpen}
+          bp={uploadDialogBp}
           uploadType={uploadType || UploadType.Media}
           multiple={multiple}
           uploadMethod={uploadMedia}

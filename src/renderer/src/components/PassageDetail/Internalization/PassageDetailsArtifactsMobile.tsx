@@ -886,6 +886,7 @@ export function PassageDetailArtifactsMobile() {
         recordAudio={recordAudio}
         isOpen={uploadVisible}
         onOpen={handleUploadVisible}
+        uploadDialogBp={recordAudio ? BigDialogBp.sm : BigDialogBp.mobile}
         showMessage={showMessage}
         multiple={true}
         finish={afterUpload}
@@ -939,7 +940,7 @@ export function PassageDetailArtifactsMobile() {
         )}
         isOpen={sharedResourceVisible}
         onOpen={handleSharedResourceVisible}
-        bp={BigDialogBp.md}
+        bp={BigDialogBp.mobile}
       >
         <SelectSharedResource
           sourcePassages={resourceSourcePassages}
@@ -1054,7 +1055,7 @@ export function PassageDetailArtifactsMobile() {
           title={t.audioScripture}
           isOpen={Boolean(audioScriptureVisible)}
           onOpen={() => setAudioScriptureVisible(false)}
-          bp={BigDialogBp.sm}
+          bp={BigDialogBp.mobile}
           setCloseRequested={setBiblebrainClose}
         >
           <FindBibleBrain
