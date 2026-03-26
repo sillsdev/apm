@@ -56,6 +56,7 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
+import VisibilityIcon from '@mui/icons-material/Visibility';
 import { ReplaceRelatedRecord } from '../../../model/baseModel';
 import { PassageResourceButton } from './PassageResourceButton';
 import ProjectResourceConfigure from './ProjectResourceConfigure';
@@ -92,7 +93,7 @@ import { useStepPermissions } from '../../../utils/useStepPermission';
 import FindBibleBrain from './FindBibleBrain';
 import { useHandleLink } from './addLinkKind';
 import { usePassageRef } from './usePassageRef';
-import { MarkDownView } from '../../../control/MarkDownView';
+import { CompactMarkDownView } from '../../../control/MarkDownView';
 import { UploadType } from '../../UploadType';
 import { ResourceTypeEnum } from './ResourceTypeEnum';
 
@@ -141,6 +142,7 @@ export function PassageDetailArtifactsMobile() {
   const [displayId, setDisplayId] = useState('');
   const [link, setLink] = useState<string>();
   const [markDown, setMarkDoan] = useState('');
+  const [markDownTitle, setMarkDownTitle] = useState('');
   const [audioScriptureVisible, setAudioScriptureVisible] = useState(false);
   const [nonAudio, setNonAudio] = useState(false);
   const [sharedResourceVisible, setSharedResourceVisible] = useState(false);
@@ -271,6 +273,9 @@ export function PassageDetailArtifactsMobile() {
   };
 
   const handleMarkDownId = (id: string) => {
+    setMarkDownTitle(
+      rowData.find((r) => r.id === id)?.artifactName || t.textResource
+    );
     setMarkDoan(
       rowData.find((r) => r.id === id)?.mediafile?.attributes?.originalFile ??
         ''
@@ -1018,12 +1023,23 @@ export function PassageDetailArtifactsMobile() {
       )}
       {markDown && (
         <BigDialog
-          title={t.textResource}
+          title={markDownTitle || t.textResource}
+          titleStartAdornment={<VisibilityIcon fontSize="medium" />}
+          titleVariant="h6"
+          showTopCloseButton={false}
+          showBottomCloseButton
+          bottomCloseLabel={ts.close}
+          paperOutlineColor="black"
+          mobileThickScrollbar
+          mobileNoHorizontalScroll
           isOpen={Boolean(markDown)}
-          onOpen={() => setMarkDoan('')}
-          bp={BigDialogBp.sm}
+          onOpen={() => {
+            setMarkDoan('');
+            setMarkDownTitle('');
+          }}
+          bp={BigDialogBp.mobile}
         >
-          <MarkDownView value={markDown} />
+          <CompactMarkDownView value={markDown} wrapOverflow />
         </BigDialog>
       )}
       {audioScriptureVisible && (

@@ -11,6 +11,8 @@ import {
   DialogTitle,
   IconButton,
   Box,
+  Typography,
+  TypographyProps,
   styled,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
@@ -23,11 +25,18 @@ import { BigDialogBp } from './BigDialogBp';
 // see: https://mui.com/material-ui/customization/how-to-customize/
 export interface StyledDialogProps extends DialogProps {
   bp?: BigDialogBp;
+  paperOutlineColor?: string;
+  mobileThickScrollbar?: boolean;
+  mobileNoHorizontalScroll?: boolean;
 }
 // eslint-disable-block TS2783
 export const StyledDialog = styled(Dialog, {
-  shouldForwardProp: (prop) => prop !== 'bp',
-})<StyledDialogProps>(({ bp, theme }) => ({
+  shouldForwardProp: (prop) =>
+    prop !== 'bp' &&
+    prop !== 'paperOutlineColor' &&
+    prop !== 'mobileThickScrollbar' &&
+    prop !== 'mobileNoHorizontalScroll',
+})<StyledDialogProps>(({ bp, paperOutlineColor, mobileThickScrollbar, mobileNoHorizontalScroll, theme }) => ({
   '& .MuiTable-root': {
     tableLayout: 'auto',
     paddingRight: theme.spacing(1),
@@ -83,12 +92,54 @@ export const StyledDialog = styled(Dialog, {
                   minHeight: '80%',
                 },
               }),
+  ...(paperOutlineColor
+    ? {
+        '& .MuiDialog-paper': {
+          border: '1px solid',
+          borderColor: paperOutlineColor,
+        },
+      }
+    : {}),
+  ...(bp === BigDialogBp.mobile && mobileThickScrollbar
+    ? {
+        '& .MuiDialogContent-root': {
+          scrollbarColor: '#666 #d0d0d0',
+          scrollbarWidth: 'auto',
+          '&::-webkit-scrollbar': {
+            width: '14px',
+            height: '14px',
+          },
+          '&::-webkit-scrollbar-thumb': {
+            backgroundColor: '#666',
+            borderRadius: '8px',
+          },
+          '&::-webkit-scrollbar-track': {
+            backgroundColor: '#d0d0d0',
+          },
+        },
+      }
+    : {}),
+  ...(bp === BigDialogBp.mobile && mobileNoHorizontalScroll
+    ? {
+        '& .MuiDialogContent-root': {
+          overflowX: 'hidden',
+        },
+      }
+    : {}),
 }));
 // eslint-enable-block
 
 interface IProps {
   title: string;
   description?: ReactElement | undefined;
+  titleStartAdornment?: ReactElement;
+  titleVariant?: TypographyProps['variant'];
+  showTopCloseButton?: boolean;
+  showBottomCloseButton?: boolean;
+  bottomCloseLabel?: string;
+  paperOutlineColor?: string;
+  mobileThickScrollbar?: boolean;
+  mobileNoHorizontalScroll?: boolean;
   children: React.JSX.Element;
   isOpen: boolean;
   onOpen: (isOpen: boolean) => void;
@@ -101,6 +152,14 @@ interface IProps {
 export function BigDialog({
   title,
   description,
+  titleStartAdornment,
+  titleVariant,
+  showTopCloseButton = true,
+  showBottomCloseButton = false,
+  bottomCloseLabel,
+  paperOutlineColor,
+  mobileThickScrollbar = false,
+  mobileNoHorizontalScroll = false,
   children,
   isOpen,
   onOpen,
@@ -131,16 +190,22 @@ export function BigDialog({
       onClose={handleClose}
       aria-labelledby="bigDlg"
       bp={bp ?? BigDialogBp.sm}
+      paperOutlineColor={paperOutlineColor}
+      mobileThickScrollbar={mobileThickScrollbar}
+      mobileNoHorizontalScroll={mobileNoHorizontalScroll}
       disableEnforceFocus
     >
       <DialogTitle id="bigDlg">
         <Box sx={{ display: 'flex' }}>
-          <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-            {title}
-            {description}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            {titleStartAdornment}
+            <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+              <Typography variant={titleVariant}>{title}</Typography>
+              {description}
+            </Box>
           </Box>
           <GrowingSpacer />
-          {!isExportBusy ? (
+          {showTopCloseButton && !isExportBusy ? (
             <IconButton id="bigClose" onClick={handleClose}>
               <CloseIcon />
             </IconButton>
@@ -150,8 +215,14 @@ export function BigDialog({
         </Box>
       </DialogTitle>
       <DialogContent>{children}</DialogContent>
-      {(onCancel || onSave) && (
-        <DialogActions>
+      {(showBottomCloseButton || onCancel || onSave) && (
+        <DialogActions sx={{ justifyContent: 'center'}}>
+          {showBottomCloseButton && (
+            <AltButton id="bigCloseBottom" dark elevated onClick={handleClose}
+             sx={{ backgroundColor: 'black', color: 'white' }}>
+              {bottomCloseLabel || ts.close}
+            </AltButton>
+          )}
           {onCancel && (
             <AltButton id="bigCancel" onClick={onCancel} sx={{ color: 'grey' }}>
               {ts.cancel}
