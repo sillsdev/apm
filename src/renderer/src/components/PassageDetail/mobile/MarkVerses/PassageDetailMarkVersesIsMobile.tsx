@@ -412,8 +412,8 @@ export default function PassageDetailMarkVersesIsMobile({
 
   const formatTime = (value: number) => {
     const minutes = Math.floor(value / 60);
-    const seconds = value - minutes * 60;
-    return `${minutes}:${seconds.toFixed(1).padStart(4, '0')}`;
+    const seconds = Math.floor(value - minutes * 60);
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   };
 
   const parseFormattedTime = (value: string) => {
