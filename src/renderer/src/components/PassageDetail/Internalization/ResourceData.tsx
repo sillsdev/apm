@@ -46,6 +46,7 @@ interface IProps {
   catAllowNew?: boolean | undefined;
   sectDesc?: string | undefined;
   passDesc?: string | undefined;
+  wrapPreviewOverflow?: boolean;
 }
 export function ResourceData(props: IProps) {
   const {
@@ -63,6 +64,7 @@ export function ResourceData(props: IProps) {
     media,
     uploadType,
     onTextChange,
+    wrapPreviewOverflow,
   } = props;
   const [description, setDescription] = useState(initDescription);
   const { getOrganizedBy } = useOrganizedBy();
@@ -105,7 +107,11 @@ export function ResourceData(props: IProps) {
         <LinkEdit inValue={text} onValue={handleTextChange} />
       )}
       {mediaContentType(media) === MarkDownType && (
-        <MarkDownEdit inValue={text} onValue={handleTextChange} />
+        <MarkDownEdit
+          inValue={text}
+          onValue={handleTextChange}
+          wrapPreviewOverflow={wrapPreviewOverflow}
+        />
       )}
       <Grid container spacing={2} sx={{ pt: 1 }}>
         <Grid size={{ xs: 12, sm: 6 }}>

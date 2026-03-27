@@ -47,6 +47,9 @@ import PassageDetailParatextIntegration from '../components/PassageDetail/Passag
 import { PassageDetailDiscuss } from '../components/PassageDetail/PassageDetailDiscuss';
 import { addPt } from '../utils/addPt';
 import DiscussionPanel from '../components/Discussions/DiscussionPanel';
+import PassageDetailMobileDetail from '../components/PassageDetail/PassageDetailMobileDetail';
+import PassageDetailsArtifactsMobile from '../components/PassageDetail/Internalization/PassageDetailsArtifactsMobile';
+
 
 const KeyTerms = React.lazy(
   () => import('../components/PassageDetail/Keyterms/KeyTerms')
@@ -285,7 +288,11 @@ const PassageDetailGrids = () => {
             <Grid size={{ xs: 12 }} sx={{ minWidth: 0 }}>
               <Grid container sx={{ minWidth: 0 }}>
                 <PassageDetailChooser width={width - 24} sx={{ pl: 2 }} />
-                <PassageDetailArtifacts />
+                {isMobile ? (
+                  <PassageDetailsArtifactsMobile />
+                ) : (
+                  <PassageDetailArtifacts />
+                )}
               </Grid>
             </Grid>
           </Grid>

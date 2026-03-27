@@ -9,3 +9,4 @@ export * from './ResourceEditAction';
 export * from './ViewButton';
 export * from './PassageResourceButton';
 export * from './useFullReference';
+export * from './mobile components/AudioResourceCard';
