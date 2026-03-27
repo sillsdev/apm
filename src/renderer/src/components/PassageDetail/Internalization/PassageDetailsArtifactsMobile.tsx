@@ -22,6 +22,7 @@ import { AltButton } from '../../../control';
 import { AIGenerated } from '.';
 import { AudioResourceCard } from './mobile components/AudioResourceCard';
 import { TextResourceCard } from './mobile components/TextResourceCard';
+import { SettingsDialog } from './mobile components/SettingsDialog';
 import {
   remoteIdGuid,
   useSecResCreate,
@@ -55,6 +56,7 @@ import {
   Grid,
   Stack,
   Typography,
+  IconButton
 } from '@mui/material';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import { ReplaceRelatedRecord } from '../../../model/baseModel';
@@ -96,6 +98,7 @@ import { usePassageRef } from './usePassageRef';
 import { CompactMarkDownView } from '../../../control/MarkDownView';
 import { UploadType } from '../../UploadType';
 import { ResourceTypeEnum } from './ResourceTypeEnum';
+import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
 
 export function PassageDetailArtifactsMobile() {
   const sectionResources = useOrbitData<SectionResourceD[]>('sectionresource');
@@ -787,6 +790,8 @@ export function PassageDetailArtifactsMobile() {
     [hasPermission, offline, offlineOnly]
   );
 
+  const [settingsOpen, setSettingsOpen] = useState(false);
+
   return (
     <>
       <Stack sx={{ width: '100%' }} direction="row" spacing={1}>
@@ -817,16 +822,24 @@ export function PassageDetailArtifactsMobile() {
                   buttonSx={{ fontSize: (theme) => theme.typography.h6.fontSize }}
                 />
               </Grid>
-              {hasProjRes && (
+              {/* {hasProjRes && (
                 <Grid>
                   <AltButton onClick={() => setProjectResourceVisible(true)}>
                     {t.configure}
                   </AltButton>
                 </Grid>
-              )}
+              )} */}
             </>
           )}
-          {otherResourcesAvailable && (
+          <IconButton
+            sx = {{color: 'black'}}
+            onClick= { () =>
+            (otherResourcesAvailable || hasProjRes) && setSettingsOpen(true)
+            }
+          >
+            <SettingsOutlinedIcon fontSize="large"/>
+          </IconButton>
+          {/* {otherResourcesAvailable && (
             <Grid>
               <PassageResourceButton
                 value={allResources}
@@ -834,7 +847,7 @@ export function PassageDetailArtifactsMobile() {
                 cb={handleAllResources}
               />
             </Grid>
-          )}
+          )} */}
         </Grid>
       </Stack>
       <Box sx={{ width: '100%' }}>
@@ -952,7 +965,7 @@ export function PassageDetailArtifactsMobile() {
         />
       </BigDialog>
       <BigDialog
-        bp={BigDialogBp.lg}
+        bp={BigDialogBp.mobile}
         title={t.generalResources}
         isOpen={projectResourceVisible}
         onOpen={handleProjectResourceVisible}
@@ -1020,6 +1033,18 @@ export function PassageDetailArtifactsMobile() {
           passDesc={passDesc}
         />
       </BigDialog>
+      <SettingsDialog
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        showResources={otherResourcesAvailable}
+        showConfigureGeneral={hasProjRes}
+        resourcesChecked={allResources}
+        handleShowResources={handleAllResources}
+        handleConfigureGeneral={() => {
+          setSettingsOpen(false);
+          setProjectResourceVisible(true);
+        }}
+      />
       {confirm && (
         <Confirm
           text={t.deleteConfirm}
