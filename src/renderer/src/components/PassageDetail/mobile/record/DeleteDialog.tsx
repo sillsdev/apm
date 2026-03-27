@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Button, Dialog, Stack, Typography } from '@mui/material';
+import { Button, Dialog, Stack, Typography } from '@mui/material';
 import { PriButton } from '../../../../control';
 
 interface IProps {
