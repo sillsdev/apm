@@ -409,6 +409,7 @@ export function Loading() {
                   syncFile={orbitFetchResults?.syncFile}
                   isOpen={importOpen}
                   onOpen={setImportOpen}
+                  offerPtf={false}
                 />
               )}
             </>

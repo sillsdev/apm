@@ -425,7 +425,7 @@ const initialState = {
 	}),
 	"electronImport": new LocalizedStrings({
 		"en": {
-			"allDataOverwritten": "All {name0} data will be overwritten.",
+			"allDataOverwritten": "All '{name0}' data will be overwritten.",
 			"exportedLost": "Import file will not include latest exported data.",
 			"importComplete": "Import Complete",
 			"importCreated": "Import file was created: {date0}.",
@@ -433,12 +433,12 @@ const initialState = {
 			"importPending": "Import In Progress...{0}%",
 			"importProject": "Import Audio Project",
 			"invalidProject": "Import File does not contain current audio project.",
-			"lastExported": "Current data in audio project {name0} was last exported {date0}.",
+			"lastExported": "Current data in audio project '{name0}' was last exported {date0}.",
 			"members": "Members",
-			"neverExported": "Current data in audio project {name0} has never been exported to an itf file to preserve changes.",
+			"neverExported": "Current data in audio project '{name0}' has never been exported to an itf file to preserve changes.",
 			"newerVersion": "This file was exported with a newer version of the program.  You should download the latest version before importing!  If you continue, some data may not be imported correctly.",
 			"project": "Audio Project",
-			"projectImported": "Audio Project {name0} was previously imported with a newer file: {date1} ",
+			"projectImported": "Audio Project '{name0}' was previously imported with a newer file: {date1} ",
 			"ptfError": "Not a valid Portable Transcriber File",
 			"userWontSeeProject": "You are not a member of this audio project team. This audio project will not be accessible after import.",
 		}
@@ -1098,7 +1098,6 @@ const initialState = {
 			"defaultFilename": "MyRecording",
 			"fileName": "Name",
 			"fileType": "File Type",
-			"loadlatest": "Load Latest Audio",
 			"loading": "Loading...",
 			"save": "Save",
 			"saving": "Saving...",

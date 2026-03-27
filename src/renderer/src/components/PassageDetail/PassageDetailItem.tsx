@@ -131,6 +131,9 @@ export function PassageDetailItem(props: IProps) {
   );
   const [currentVersion, setCurrentVersion] = useState(1);
   const [segString, setSegString] = useState('{}');
+  const [allowRecord, setAllowRecord] = useState(
+    recordType !== ArtifactTypeSlug.PhraseBackTranslation
+  );
   const [verses, setVerses] = useState('');
   const cancelled = useRef(false);
   const { canDoSectionStep } = useStepPermissions();
@@ -213,6 +216,12 @@ export function PassageDetailItem(props: IProps) {
     setCurrentVersion(mediaRec?.attributes?.versionNumber || 0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mediafileId, mediafiles, hasBtRecordings]);
+
+  useEffect(() => {
+    if (ArtifactTypeSlug.PhraseBackTranslation === recordType)
+      setAllowRecord(Boolean(currentSegment) && (segString || '{}') !== '{}');
+    else setAllowRecord(true);
+  }, [segString, recordType, currentSegment]);
 
   const recordTypeId = useMemo(
     () => getTypeId(recordType),
@@ -399,20 +408,20 @@ export function PassageDetailItem(props: IProps) {
                       width={paneWidth}
                     />
                   </Box>
-                  <Box sx={rowProp}>
-                    <Button
-                      sx={buttonProp}
-                      id="pdRecordUpload"
-                      onClick={handleUpload}
-                      title={ts.uploadMediaSingular}
-                    >
-                      <AddIcon />
-                      {ts.uploadMediaSingular}
-                    </Button>
-                    <GrowingSpacer />
-                    {currentSegment &&
-                      segString !== '{}' &&
-                      ArtifactTypeSlug.PhraseBackTranslation === recordType && (
+                  {allowRecord && (
+                    <Box sx={rowProp}>
+                      <Button
+                        sx={buttonProp}
+                        id="pdRecordUpload"
+                        onClick={handleUpload}
+                        title={ts.uploadMediaSingular}
+                      >
+                        <AddIcon />
+                        {ts.uploadMediaSingular}
+                      </Button>
+                      <GrowingSpacer />
+                      {ArtifactTypeSlug.PhraseBackTranslation ===
+                        recordType && (
                         <TextField
                           sx={ctlProps}
                           id="segment"
@@ -421,7 +430,8 @@ export function PassageDetailItem(props: IProps) {
                           label={t.segment}
                         />
                       )}
-                  </Box>
+                    </Box>
+                  )}
                   <Box sx={rowProp}>
                     <Typography sx={statusProps}>{t.record}</Typography>
                     {slugs.length > 1 && (
@@ -472,6 +482,7 @@ export function PassageDetailItem(props: IProps) {
                         ? JSON.stringify(getCurrentSegment())
                         : '{}'
                     }
+                    allowRecord={allowRecord}
                     sourceMediaId={mediafileId}
                     artifactId={recordTypeId}
                     performedBy={speaker}

@@ -1116,7 +1116,6 @@ function WSAudioPlayer(props: IProps) {
   };
 
   const handleChanged = useCallback(async () => {
-    setChanged && setChanged(durationRef.current !== 0);
     setBlobReady && setBlobReady(false);
     wsBlob().then((newblob) => {
       onBlobReady && onBlobReady(newblob);
@@ -1124,6 +1123,7 @@ function WSAudioPlayer(props: IProps) {
       if (setMimeType && newblob?.type) setMimeType(newblob?.type);
       setDuration(wsDuration());
       setProgress(wsPosition());
+      setChanged && setChanged(durationRef.current !== 0);
     });
   }, [
     setChanged,
@@ -1188,8 +1188,9 @@ function WSAudioPlayer(props: IProps) {
   }
 
   const handleUndo = useCallback(() => {
-    wsUndo();
-    handleChanged();
+    wsUndo().then(() => {
+      handleChanged();
+    });
   }, [wsUndo, handleChanged]);
   useEffect(() => {
     if (!controlsRef) return;

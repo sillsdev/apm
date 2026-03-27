@@ -293,8 +293,23 @@ export const importComplete = () => (dispatch: any) => {
     type: IMPORT_COMPLETE,
   });
 };
-const partialMessage = (msg: string, partialMsg: string) =>
-  (msg.length > 0 ? ',' : '') + partialMsg.substring(1, partialMsg.length - 2);
+/**
+ * Each PUT response `message` is a JSON array string. We peel one `[` / `]` pair and
+ * concatenate the inner slices with commas into a valid `[...]` on the final 200.
+ *
+ * The old `substring(1, length - 2)` broke on `[]` (substring(1,0) becomes "[") and
+ * stripped two trailing chars from real payloads, producing fragments like `[[,[,[]`.
+ */
+const partialMessage = (msg: string, partialMsg: string | undefined | null) => {
+  const trimmed = (partialMsg ?? '').trim();
+  if (trimmed.length < 2) return '';
+  const inner =
+    trimmed.startsWith('[') && trimmed.endsWith(']')
+      ? trimmed.slice(1, -1).trim()
+      : trimmed;
+  if (inner.length === 0) return '';
+  return (msg.length > 0 ? ',' : '') + inner;
+};
 
 interface ProcessImportFileParams {
   filename: string;
@@ -474,12 +489,6 @@ export const importFromExternal =
       pendingmsg,
       completemsg,
       dispatch,
-    }).catch((reason) => {
-      logError(Severity.error, errorReporter, `Import Error: ${reason}`);
-      dispatch({
-        payload: errorStatus(-1, reason.toString()),
-        type: IMPORT_ERROR,
-      });
     });
   };
 
@@ -514,12 +523,6 @@ const importFromElectron =
       pendingmsg,
       completemsg,
       dispatch,
-    }).catch((reason) => {
-      logError(Severity.error, errorReporter, `Import Error: ${reason}`);
-      dispatch({
-        payload: errorStatus(-1, reason.toString()),
-        type: IMPORT_ERROR,
-      });
     });
   };
 export interface CopyProjectProps {
