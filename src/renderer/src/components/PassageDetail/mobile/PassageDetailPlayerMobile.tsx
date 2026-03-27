@@ -24,6 +24,7 @@ import {
   NamedRegions,
   updateSegments,
 } from '../../../utils/namedSegments';
+import usePassageDetailContextMobile from './usePassageDetailContextMobile';
 import ViewIcon from '@mui/icons-material/RemoveRedEye';
 import TranscriptionShow from '../../TranscriptionShow';
 import { related } from '../../../crud/related';
@@ -54,7 +55,6 @@ import { useLocLangName } from '../../../utils/useLocLangName';
 import { SaveSegments } from '../SaveSegments';
 import { AsrTarget } from '../../../business/asr/AsrTarget';
 import { PlayInPlayer } from '../../../context/PlayInPlayer';
-import usePassageDetailContext from 'context/usePassageDetailContext';
 
 export const PLAYER_HEIGHT = 120 + 80;
 
