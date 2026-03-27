@@ -331,7 +331,7 @@ const PassageDetailGrids = () => {
                       allowZoomAndSpeed={true}
                     />
                   )}
-                  {tool === ToolSlug.TeamCheck && <TeamCheckReference />}
+                  {tool === ToolSlug.TeamCheck && <TeamCheckReferenceMobile />}
                   {tool === ToolSlug.KeyTerm && (
                     <Suspense fallback={<Busy />}>
                       <KeyTerms width={paneWidth} />

@@ -1,10 +1,19 @@
-import { useContext, useEffect, useState } from 'react';
+import {
+  useContext,
+  useEffect,
+  useState,
+  useRef,
+  useLayoutEffect,
+} from 'react';
 import { Grid, GridProps, styled } from '@mui/material';
 import SelectMyResource from '../Internalization/SelectMyResource';
 import { LimitedMediaPlayer } from '../../LimitedMediaPlayer';
 import { PassageDetailContext } from '../../../context/PassageDetailContext';
 import { getSegments, NamedRegions } from '../../../utils';
 import { storedCompareKey } from '../../../utils/storedCompareKey';
+import { PassageDetailChooser } from '../PassageDetailChooser';
+import { ToolSlug, useStepTool } from '../../../crud';
+import PassageDetailPlayerMobile from './PassageDetailPlayerMobile';
 
 const StyledGrid = styled(Grid)<GridProps>(({ theme }) => ({
   margin: theme.spacing(2),
@@ -21,15 +30,19 @@ const StyledGrid = styled(Grid)<GridProps>(({ theme }) => ({
 }));
 
 const MobileGrid = styled(Grid)<GridProps>(() => ({
-  display: 'flex',
+  m: '10%',
+  p: '2px',
+  display: 'flex', // ← Add this
+  width: '80%', // ← Add this
+  alignItems: 'center', // ← Add this
   margin: '0 auto',
   justifyContent: 'center',
-  alignItems: 'center',
   alignContent: 'center',
 }));
 
 export function TeamCheckReferenceMobile() {
   const ctx = useContext(PassageDetailContext);
+
   const {
     rowData,
     playItem,
@@ -42,6 +55,7 @@ export function TeamCheckReferenceMobile() {
     passage,
     currentstep,
   } = ctx.state;
+
   const [mediaStart, setMediaStart] = useState<number | undefined>();
   const [mediaEnd, setMediaEnd] = useState<number | undefined>();
   const [resource, setResource] = useState('');
@@ -51,8 +65,18 @@ export function TeamCheckReferenceMobile() {
     section
   );
 
+  useEffect(() => {
+    console.log('mediafileId changed:', ctx.state.mediafileId);
+    console.log('ta dataaaaaaaaaaaa: ', resource);
+    console.log(
+      'ta data: ',
+      rowData.find((r) => r.id === resource)
+    );
+  }, [ctx.state.mediafileId, resource, rowData]);
+
   const handleResource = (id: string) => {
     const row = rowData.find((r) => r.id === id);
+    console.log('handleResource', id, row);
     if (row) {
       removeStoredKeys();
       saveKey(id);
@@ -94,30 +118,61 @@ export function TeamCheckReferenceMobile() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [section, passage, currentstep, resetCount]);
 
+  //const [paneWidth, setPaneWidth] = useState(0);
+  const paneWidth = 100;
+  const tool = useStepTool(currentstep).tool;
+
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const [playerWidth, setPlayerWidth] = useState(0);
+
+  useLayoutEffect(() => {
+    if (!containerRef.current) return;
+
+    const updateWidth = () => {
+      setPlayerWidth(containerRef.current!.offsetWidth);
+    };
+
+    updateWidth();
+
+    const observer = new ResizeObserver(updateWidth);
+    observer.observe(containerRef.current);
+
+    return () => observer.disconnect();
+  }, []);
+  //const currentstep = ctx.state.currentstep;
+
   return (
-    <MobileGrid
-      sx={{
-        m: '10%',
-        p: '2px',
-        display: 'flex', // ← Add this
-        width: '90%', // ← Add this
-        alignItems: 'center', // ← Add this
-      }}
-      container
-      direction="column"
-    >
-      <MobileGrid
-        sx={{
-          m: '10%',
-          p: '2px',
-          display: 'flex', // ← Add this
-          width: '90%', // ← Add this
-          alignItems: 'center', // ← Add this
-        }}
-      >
+    <MobileGrid container direction="column">
+      <MobileGrid>
+        <StyledGrid ref={containerRef} id="Ryan2" size={{ xs: 12 }}>
+          <PassageDetailChooser width={paneWidth} />
+          {tool !== ToolSlug.KeyTerm && (
+            <PassageDetailPlayerMobile
+              width={Math.round(playerWidth)}
+              allowZoomAndSpeed={true}
+            />
+          )}
+        </StyledGrid>
+      </MobileGrid>
+
+      <MobileGrid>
         <SelectMyResource onChange={handleResource} inResource={resource} />
       </MobileGrid>
-      <StyledGrid id="Ryan2" size={{ xs: 10 }}>
+
+      <MobileGrid>
+        <StyledGrid ref={containerRef} id="Ryan2" size={{ xs: 12 }}>
+          <PassageDetailChooser width={paneWidth} />
+          {tool !== ToolSlug.KeyTerm && (
+            <PassageDetailPlayerMobile
+              width={Math.round(playerWidth)}
+              allowZoomAndSpeed={true}
+              mediaFileId={resource}
+            />
+          )}
+        </StyledGrid>
+      </MobileGrid>
+
+      {/* <StyledGrid id="Ryan2" size={{ xs: 12 }}>
         <LimitedMediaPlayer
           srcMediaId={playItem}
           requestPlay={itemPlaying}
@@ -127,7 +182,7 @@ export function TeamCheckReferenceMobile() {
           controls={true}
           limits={{ start: mediaStart, end: mediaEnd }}
         />
-      </StyledGrid>
+      </StyledGrid> */}
     </MobileGrid>
   );
 }
