@@ -325,18 +325,27 @@ const PassageDetailGrids = () => {
                   }}
                 >
                   <PassageDetailChooser width={paneWidth} />
-                  {(tool !== ToolSlug.KeyTerm || mediafileId) && (
-                    <PassageDetailPlayer
-                      width={Math.max(0, paneWidth - 40)}
-                      allowZoomAndSpeed={true}
-                    />
-                  )}
+                  isMobile ? (
                   {tool === ToolSlug.TeamCheck && <TeamCheckReferenceMobile />}
                   {tool === ToolSlug.KeyTerm && (
                     <Suspense fallback={<Busy />}>
                       <KeyTerms width={paneWidth} />
                     </Suspense>
                   )}
+                  ) : (
+                  {(tool !== ToolSlug.KeyTerm || mediafileId) && (
+                    <PassageDetailPlayer
+                      width={Math.max(0, paneWidth - 40)}
+                      allowZoomAndSpeed={true}
+                    />
+                  )}
+                  {tool === ToolSlug.TeamCheck && <TeamCheckReference />}
+                  {tool === ToolSlug.KeyTerm && (
+                    <Suspense fallback={<Busy />}>
+                      <KeyTerms width={paneWidth} />
+                    </Suspense>
+                  )}
+                  )
                   {tool === ToolSlug.Discuss && (
                     <PassageDetailDiscuss
                       width={paneWidth}
@@ -474,17 +483,17 @@ export const PassageDetail = () => {
           // If on mobile render PassageDetailMobileDetail which includes the TeamCheckReference content,
           // otherwise render the grids which will include the TeamCheckReference component in the right
           // pane when that tool is selected
-          isMobile ? (
-            <PassageDetailMobileDetail
-              currentVersion={1}
-              showSideBySide={false}
-              recordContent={<TeamCheckReferenceMobile />}
-              noAudioText={''}
-            />
-          ) : (
-            // Else, do PassageDetailGrids
-            <PassageDetailGrids />
-          )
+          // isMobile ? (
+          //   <PassageDetailMobileDetail
+          //     currentVersion={1}
+          //     showSideBySide={false}
+          //     recordContent={<TeamCheckReferenceMobile />}
+          //     noAudioText={''}
+          //   />
+          // ) : (
+          // Else, do PassageDetailGrids
+          <PassageDetailGrids />
+          //)
         }
       </PassageDetailProvider>
     </Box>

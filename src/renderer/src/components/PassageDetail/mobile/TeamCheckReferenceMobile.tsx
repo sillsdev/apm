@@ -4,6 +4,7 @@ import {
   useState,
   useRef,
   useLayoutEffect,
+  useMemo,
 } from 'react';
 import { Grid, GridProps, styled } from '@mui/material';
 import SelectMyResource from '../Internalization/SelectMyResource';
@@ -18,6 +19,8 @@ import {
   PassageDetailPlayerMobile,
 } from './PassageDetailPlayerMobile';
 import PassageDetailPlayer from '../PassageDetailPlayer';
+import { BlobStatus, useFetchMediaBlob } from '../../../crud/useFetchMediaBlob';
+import { MediaFileD } from '@model/mediafile';
 
 const StyledGrid = styled(Grid)<GridProps>(({ theme }) => ({
   margin: theme.spacing(2),
@@ -64,7 +67,7 @@ export function TeamCheckReferenceMobile() {
 
   const [loading, setLoading] = useState(false);
   const [pdBusy, setPDBusy] = useState(false);
-  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+  const [blobState, fetchBlob] = useFetchMediaBlob();
   const [playing, setPlaying] = useState(false);
   const [currentSegmentIndex, setCurrentSegmentIndex] = useState<
     number | undefined
@@ -72,8 +75,10 @@ export function TeamCheckReferenceMobile() {
   const [discussionMarkers, setDiscussionMarkers] = useState<
     { position: number; id: string }[]
   >([]);
-  const [playerMediafile, setPlayerMediafile] = useState<string | undefined>(
-    undefined
+  const [mediaId, setMediaId] = useState<string | undefined>(undefined);
+  const playerMediafile = useMemo(
+    () => rowData.find((r) => r.id === mediaId)?.mediafile,
+    [mediaId, rowData]
   );
   const forceRefresh = () => {
     console.log('forceRefresh called');
@@ -132,8 +137,14 @@ export function TeamCheckReferenceMobile() {
         setMediaEnd(undefined);
       }
     }
-    setPlayerMediafile(id);
+    setMediaId(id);
   };
+
+  useEffect(() => {
+    if (mediaId) {
+      fetchBlob(mediaId);
+    }
+  }, [mediaId, fetchBlob]);
 
   const handleEnded = () => {
     setPlayerMediafile('');
@@ -206,7 +217,10 @@ export function TeamCheckReferenceMobile() {
                   loading,
                   pdBusy,
                   setPDBusy,
-                  audioBlob,
+                  audioBlob:
+                    blobState.blobStat === BlobStatus.FETCHED
+                      ? blobState.blob
+                      : undefined,
                   setupLocate,
                   playing,
                   setPlaying,
