@@ -38,7 +38,7 @@ export const AudioVersionCard: React.FC<AudioVersionCardProps> = (props) => {
     >
       <Stack direction="row">
         <Stack direction="column" sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <IconButton
+          <IconButton
             id="audActPlayStop"
             sx={{ color: 'primary.light' }}
             title={isPlaying ? t.pause : t.play}
@@ -50,8 +50,29 @@ export const AudioVersionCard: React.FC<AudioVersionCardProps> = (props) => {
           <Typography variant="caption">{props.duration}</Typography>
           <AudioDownload mediaId={props.id} />
         </Stack>
-        <Stack direction="column" sx={{ display: 'flex', alignItems: 'flex-start', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', px: 1 }}>
-          <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>{props.fileName}</Typography>
+        <Stack
+          direction="column"
+          sx={{
+            display: 'flex',
+            alignItems: 'flex-start',
+            px: 1,
+            flex: 1,
+            minWidth: 0,
+          }}
+        >
+          <Typography
+            variant="subtitle1"
+            sx={{
+              fontWeight: 'bold',
+              display: 'block',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              width: '100%',
+            }}
+          >
+            {props.fileName}
+          </Typography>
           <Typography variant="body2">{props.reference}</Typography>
           <Typography variant="caption">{dateOrTime(props.date, props.lang)}</Typography>
           <Typography variant="caption">{(props.size / (1024 * 1024)).toFixed(2)} MB</Typography>
