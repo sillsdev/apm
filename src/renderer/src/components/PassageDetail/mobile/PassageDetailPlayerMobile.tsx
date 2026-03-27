@@ -3,6 +3,7 @@ import { Badge, Box, Button, IconButton, Typography } from '@mui/material';
 import { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { UnsavedContext } from '../../../context/UnsavedContext';
 import {
+  IRegion,
   IRegionParams,
   IRegions,
   parseRegions,
@@ -53,6 +54,7 @@ import { useSnackBar } from '../../../hoc/SnackBar';
 import { useLocLangName } from '../../../utils/useLocLangName';
 import { SaveSegments } from '../SaveSegments';
 import { AsrTarget } from '../../../business/asr/AsrTarget';
+import { IMarker } from '../../../crud/useWaveSurfer';
 
 export const PLAYER_HEIGHT = 120 + 80;
 
@@ -66,9 +68,9 @@ export interface IPlayerState {
   setPlaying: (playing: boolean) => void;
   currentstep?: string;
   currentSegmentIndex?: number;
-  setCurrentSegment: (index: number) => void;
-  discussionMarkers?: { position: number; id: string }[];
-  handleHighlightDiscussion?: (id: string) => void;
+  setCurrentSegment?: (region: IRegion | undefined, index: number) => void;
+  discussionMarkers?: IMarker[];
+  handleHighlightDiscussion?: (time: number) => void;
   playerMediafile?: MediaFile;
   forceRefresh?: () => void;
 }
@@ -203,7 +205,7 @@ export function PassageDetailPlayerMobile(props: DetailPlayerProps) {
   const checkOnline = useCheckOnline(t.recognizeSpeech);
   const { showMessage } = useSnackBar();
   const [getName] = useLocLangName();
-  const { tool } = useStepTool(currentstep);
+  const { tool } = useStepTool(currentstep ?? '');
 
   const { onPlayStatus, onCurrentSegment, setSegmentToWhole } = usePlayerLogic({
     allowSegment,
@@ -270,7 +272,7 @@ export function PassageDetailPlayerMobile(props: DetailPlayerProps) {
       reporter
     )
       .then(() => {
-        forceRefresh();
+        if (forceRefresh) forceRefresh();
       })
       .finally(() => {
         setSegmentToWhole();
@@ -309,7 +311,7 @@ export function PassageDetailPlayerMobile(props: DetailPlayerProps) {
           )
         )
         .then(() => {
-          forceRefresh();
+          if (forceRefresh) forceRefresh();
         });
     }
     setSegmentToWhole();

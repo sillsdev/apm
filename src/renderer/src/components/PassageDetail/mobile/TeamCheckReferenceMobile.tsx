@@ -12,10 +12,11 @@ import { PassageDetailContext } from '../../../context/PassageDetailContext';
 import { getSegments, NamedRegions } from '../../../utils';
 import { storedCompareKey } from '../../../utils/storedCompareKey';
 import { PassageDetailChooser } from '../PassageDetailChooser';
-import { ToolSlug, useStepTool } from '../../../crud';
+import { IRegion, ToolSlug, useStepTool } from '../../../crud';
 import { PassageDetailPlayerMobile } from './PassageDetailPlayerMobile';
 import PassageDetailPlayer from '../PassageDetailPlayer';
 import { BlobStatus, useFetchMediaBlob } from '../../../crud/useFetchMediaBlob';
+import { IMarker } from 'crud/useWaveSurfer';
 
 const StyledGrid = styled(Grid)<GridProps>(({ theme }) => ({
   margin: theme.spacing(2),
@@ -59,7 +60,7 @@ export function TeamCheckReferenceMobile() {
   const [currentSegmentIndex, setCurrentSegmentIndex] = useState<
     number | undefined
   >(undefined);
-  const [discussionMarkers] = useState<{ position: number; id: string }[]>([]);
+  const [discussionMarkers] = useState<IMarker[]>([]);
   const [mediaId, setMediaId] = useState<string | undefined>(undefined);
   const playerMediafile = useMemo(
     () => rowData.find((r) => r.id === mediaId)?.mediafile,
@@ -71,7 +72,7 @@ export function TeamCheckReferenceMobile() {
   const setupLocate = () => {
     console.log('setupLocate called');
   };
-  const setCurrentSegment = (index: number) => {
+  const setCurrentSegment = (region: IRegion | undefined, index: number) => {
     console.log('setCurrentSegment called with index', index);
     setCurrentSegmentIndex(index);
   };
@@ -82,8 +83,8 @@ export function TeamCheckReferenceMobile() {
     section
   );
 
-  const handleHighlightDiscussion = (id: string) => {
-    console.log('handleHighlightDiscussion called with id', id);
+  const handleHighlightDiscussion = (time: number) => {
+    console.log('handleHighlightDiscussion called with time', time);
   };
 
   useEffect(() => {
