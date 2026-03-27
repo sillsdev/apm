@@ -1646,35 +1646,67 @@ function WSAudioPlayer(props: IProps) {
               </Typography>
             </Stack>
 
-            <Menu
-              anchorEl={moreMenuAnchorEl}
-              open={moreMenuOpen}
-              onClose={handleMoreMenuClose}
-              anchorOrigin={{
-                vertical: 'bottom',
-                horizontal: 'right',
-              }}
-              transformOrigin={{
-                vertical: 'top',
-                horizontal: 'right',
-              }}
-            >
-              {audioInputDevices.length === 0 ? (
-                <MenuItem disabled>{ts.noAudio}</MenuItem>
-              ) : (
-                audioInputDevices.map((device, index) => (
-                  <MenuItem
-                    key={device.deviceId || `input-${index}`}
-                    selected={
-                      selectedMicrophoneId === device.deviceId
-                    }
-                    onClick={() => handleMicSelect(device.deviceId)}
-                  >
-                    {device.label || `Input ${index + 1}`}
-                  </MenuItem>
-                ))
+            <Stack direction="row" spacing={1} sx={{ display: 'flex', alignItems: 'center' }}>
+              {hasRegion !== 0 && !oneShotUsed && (
+                <LightTooltip
+                  id="wsAudioDeleteRegionTip"
+                  title={t.deleteRegion}
+                >
+                  <span>
+                    <IconButton
+                      id="wsAudioDeleteRegion"
+                      onClick={handleDeleteRegion}
+                      disabled={recording || waitingForAI}
+                    >
+                      <HandScissors />
+                    </IconButton>
+                  </span>
+                </LightTooltip>
               )}
-            </Menu>
+              {canUndo && !oneShotUsed && (
+                <LightTooltip id="wsUndoTip" title={t.undoTip}>
+                  <span>
+                    <IconButton
+                      id="wsUndo"
+                      onClick={handleUndo}
+                      disabled={recording || waitingForAI}
+                    >
+                      <UndoIcon />
+                    </IconButton>
+                  </span>
+                </LightTooltip>
+              )}
+              <Menu
+                anchorEl={moreMenuAnchorEl}
+                open={moreMenuOpen}
+                onClose={handleMoreMenuClose}
+                anchorOrigin={{
+                  vertical: 'bottom',
+                  horizontal: 'right',
+                }}
+                transformOrigin={{
+                  vertical: 'top',
+                  horizontal: 'right',
+                }}
+              >
+                {audioInputDevices.length === 0 ? (
+                  <MenuItem disabled>{ts.noAudio}</MenuItem>
+                ) : (
+                  audioInputDevices.map((device, index) => (
+                    <MenuItem
+                      key={device.deviceId || `input-${index}`}
+                      selected={
+                        selectedMicrophoneId === device.deviceId
+                      }
+                      onClick={() => handleMicSelect(device.deviceId)}
+                    >
+                      {device.label || `Input ${index + 1}`}
+                    </MenuItem>
+                  ))
+                )}
+              </Menu>
+            </Stack>
+
           </Stack>
           <Box
             sx={{
@@ -1687,7 +1719,6 @@ function WSAudioPlayer(props: IProps) {
             <div id="wsAudioWaveform" ref={waveformRef} />
           </Box>
 
-          {/* Row with Versions, Trash, Save */}
           <Stack direction="row" spacing={1} sx={{ py: 1, display: 'flex', justifyContent: 'space-between' }}>
             <Box sx={{ display: 'flex', justifyContent: 'flex-start', mt: 1 }}>
               <AltButton
