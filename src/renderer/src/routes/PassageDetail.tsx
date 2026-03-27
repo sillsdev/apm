@@ -325,27 +325,22 @@ const PassageDetailGrids = () => {
                   }}
                 >
                   <PassageDetailChooser width={paneWidth} />
-                  isMobile ? (
-                  {tool === ToolSlug.TeamCheck && <TeamCheckReferenceMobile />}
-                  {tool === ToolSlug.KeyTerm && (
-                    <Suspense fallback={<Busy />}>
-                      <KeyTerms width={paneWidth} />
-                    </Suspense>
-                  )}
-                  ) : (
-                  {(tool !== ToolSlug.KeyTerm || mediafileId) && (
+                  {(tool !== ToolSlug.KeyTerm || mediafileId) && !isMobile && (
                     <PassageDetailPlayer
                       width={Math.max(0, paneWidth - 40)}
                       allowZoomAndSpeed={true}
                     />
                   )}
-                  {tool === ToolSlug.TeamCheck && <TeamCheckReference />}
+                  {tool === ToolSlug.TeamCheck && isMobile ? (
+                    <TeamCheckReferenceMobile />
+                  ) : (
+                    <TeamCheckReference />
+                  )}
                   {tool === ToolSlug.KeyTerm && (
                     <Suspense fallback={<Busy />}>
                       <KeyTerms width={paneWidth} />
                     </Suspense>
                   )}
-                  )
                   {tool === ToolSlug.Discuss && (
                     <PassageDetailDiscuss
                       width={paneWidth}
