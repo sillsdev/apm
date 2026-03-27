@@ -1682,37 +1682,119 @@ function WSAudioPlayer(props: IProps) {
                   </span>
                 </LightTooltip>
               )}
-              <Menu
-                anchorEl={moreMenuAnchorEl}
-                open={moreMenuOpen}
-                onClose={handleMoreMenuClose}
-                anchorOrigin={{
-                  vertical: 'bottom',
-                  horizontal: 'right',
-                }}
-                transformOrigin={{
-                  vertical: 'top',
-                  horizontal: 'right',
-                }}
-              >
-                {audioInputDevices.length === 0 ? (
-                  <MenuItem disabled>{ts.noAudio}</MenuItem>
-                ) : (
-                  audioInputDevices.map((device, index) => (
-                    <MenuItem
-                      key={device.deviceId || `input-${index}`}
-                      selected={
-                        selectedMicrophoneId === device.deviceId
-                      }
-                      onClick={() => handleMicSelect(device.deviceId)}
+              <Grid>
+                <LightTooltip id="wsAudioMoreTip" title="More options">
+                  <span>
+                    <IconButton
+                      id="wsAudioMore"
+                      onClick={handleMoreMenuOpen}
                     >
-                      {device.label || `Input ${index + 1}`}
-                    </MenuItem>
-                  ))
-                )}
-              </Menu>
+                      <MoreVertIcon />
+                    </IconButton>
+                  </span>
+                </LightTooltip>
+                <Menu
+                  anchorEl={moreMenuAnchorEl}
+                  open={moreMenuOpen}
+                  onClose={handleMoreMenuClose}
+                  anchorOrigin={{
+                    vertical: 'bottom',
+                    horizontal: 'right',
+                  }}
+                  transformOrigin={{
+                    vertical: 'top',
+                    horizontal: 'right',
+                  }}
+                >
+                  {[
+                    allowZoom && !hideZoom && (
+                      <MenuItem
+                        key="zoom-control"
+                        onClick={(e) => {
+                          //don't close menu if zoom in or out button is clicked
+                          const target = e.target as HTMLElement;
+                          if (
+                            target.closest?.(
+                              '[id="wsZoomIn"], [id="wsZoomOut"]'
+                            )
+                          )
+                            return;
+                          handleMoreMenuClose();
+                        }}
+                      >
+                        <WSAudioPlayerZoom
+                          ready={ready && !recording && !waitingForAI}
+                          fillPx={recording ? 100 : wsFillPx()}
+                          curPx={pxPerSec}
+                          onZoom={wsZoom}
+                        />
+                      </MenuItem>
+                    ),
+                    allowRecord === true && noiseRemovalControl() && (
+                      <MenuItem
+                        key="noise-removal"
+                        onClick={handleMoreMenuClose}
+                      >
+                        {noiseRemovalControl()}
+                      </MenuItem>
+                    ),
+                    allowRecord === true && voiceChangeControl() && (
+                      <MenuItem
+                        key="voice-change"
+                        onClick={handleMoreMenuClose}
+                      >
+                        {voiceChangeControl()}
+                      </MenuItem>
+                    ),
+                    allowRecord === true && normalizeControl() && (
+                      <MenuItem
+                        key="normalize"
+                        onClick={handleMoreMenuClose}
+                      >
+                        {normalizeControl()}
+                      </MenuItem>
+                    ),
+                    allowRecord === true && !keepItSmall && (
+                      <MenuItem
+                        key="microphone-control"
+                        onClick={handleMoreMenuClose}
+                      >
+                        {microphoneControl()}
+                      </MenuItem>
+                    ),
+                  ].filter(Boolean)}
+                </Menu>
+                <Menu
+                  anchorEl={micMenuAnchorEl}
+                  open={micMenuOpen}
+                  onClose={handleMicMenuClose}
+                  anchorOrigin={{
+                    vertical: 'bottom',
+                    horizontal: 'left',
+                  }}
+                  transformOrigin={{
+                    vertical: 'top',
+                    horizontal: 'left',
+                  }}
+                >
+                  {audioInputDevices.length === 0 ? (
+                    <MenuItem disabled>{ts.noAudio}</MenuItem>
+                  ) : (
+                    audioInputDevices.map((device, index) => (
+                      <MenuItem
+                        key={device.deviceId || `input-${index}`}
+                        selected={
+                          selectedMicrophoneId === device.deviceId
+                        }
+                        onClick={() => handleMicSelect(device.deviceId)}
+                      >
+                        {device.label || `Input ${index + 1}`}
+                      </MenuItem>
+                    ))
+                  )}
+                </Menu>
+              </Grid>
             </Stack>
-
           </Stack>
           <Box
             sx={{
