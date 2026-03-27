@@ -96,6 +96,7 @@ import WSAudioPlayerRate from './WSAudioPlayerRate';
 import { IVoicePerm } from '../business/voice/PersonalizeVoicePermission';
 import BigDialogBp from '../hoc/BigDialogBp';
 import { MainAPI } from '@model/main-api';
+import DeleteDialog from './PassageDetail/mobile/record/DeleteDialog';
 const ipc = window?.api as MainAPI;
 
 const HandScissors = FaHandScissors as unknown as React.FC<IconBaseProps>;
@@ -299,6 +300,7 @@ function WSAudioPlayer(props: IProps) {
   const [looping, setLoopingx] = useState(false);
   const [hasRegion, setHasRegion] = useState(0);
   const [canUndo, setCanUndo] = useState(false);
+  const [showDeleteMobile, setShowDeleteMobile] = useState(false);
   const recordStartPosition = useRef(0);
   const recordOverwritePosition = useRef<number | undefined>(undefined);
   const recordingRef = useRef(false);
@@ -1176,6 +1178,12 @@ function WSAudioPlayer(props: IProps) {
       handleChanged();
     });
   };
+
+  const handleDeleteMobile = () => {
+    confirmedDelete();
+    setShowDeleteMobile(false);
+  }
+
   const handleUndo = useCallback(() => {
     wsUndo();
     handleChanged();
@@ -1602,14 +1610,12 @@ function WSAudioPlayer(props: IProps) {
           >
             <div id="wsAudioWaveform" ref={waveformRef} />
           </Box>
-          {confirmAction === '' || (
-            <Confirm
-              jsx={
-                typeof confirmAction !== 'string' ? confirmAction : undefined
-              }
-              text={typeof confirmAction === 'string' ? confirmAction : ''}
-              yesResponse={handleActionConfirmed}
-              noResponse={handleActionRefused}
+          {showDeleteMobile && (
+            <DeleteDialog
+              handleDelete={handleDeleteMobile}
+              handleSave={handleSave}
+              handleCancel={() => setShowDeleteMobile(false)}
+              isSaveDisabled={isSaveDisabled ?? false}
             />
           )}
         </>
@@ -1740,7 +1746,7 @@ function WSAudioPlayer(props: IProps) {
                   <span>
                     <IconButton
                       id="wsAudioDelete"
-                      onClick={handleDelete}
+                      onClick={() => setShowDeleteMobile(true)}
                       disabled={
                         recording || duration === 0 || waitingForAI
                       }
@@ -1776,14 +1782,12 @@ function WSAudioPlayer(props: IProps) {
             />
           </Box>
         )}
-        {confirmAction === '' || (
-          <Confirm
-            jsx={
-              typeof confirmAction !== 'string' ? confirmAction : undefined
-            }
-            text={typeof confirmAction === 'string' ? confirmAction : ''}
-            yesResponse={handleActionConfirmed}
-            noResponse={handleActionRefused}
+        {showDeleteMobile && (
+          <DeleteDialog
+            handleDelete={handleDeleteMobile}
+            handleSave={handleSave}
+            handleCancel={() => setShowDeleteMobile(false)}
+            isSaveDisabled={isSaveDisabled ?? false}
           />
         )}
       </Stack>
