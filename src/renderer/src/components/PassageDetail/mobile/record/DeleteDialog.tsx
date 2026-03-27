@@ -1,9 +1,9 @@
 import React from 'react';
 import { Button, Dialog, Stack, Typography } from '@mui/material';
 import { PriButton } from '../../../../control';
-import { ISharedStrings } from '../../../../store/localization/model';
+import { IMediaActionsStrings, ISharedStrings } from '../../../../store/localization/model';
 import { shallowEqual, useSelector } from 'react-redux';
-import { sharedSelector } from '../../../../selector/selectors';
+import { sharedSelector, mediaActionsSelector } from '../../../../selector/selectors';
 
 interface IProps {
   handleCancel: () => void;
@@ -15,6 +15,7 @@ interface IProps {
 
 export const DeleteDialog = (props: IProps) => {
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
+  const tsm: IMediaActionsStrings = useSelector(mediaActionsSelector, shallowEqual);
   return (
     <Dialog
       open={true}
@@ -48,7 +49,7 @@ export const DeleteDialog = (props: IProps) => {
               boxShadow: theme.shadows[2],
               color: 'black'})}
           >
-            {ts.delete}
+            {tsm.delete}
           </Button>
           <PriButton onClick={props.handleSave} disabled={props.isSaveDisabled}>
             {ts.save}

@@ -10,6 +10,7 @@ import {
   IState,
   ProjectD,
   SectionArray,
+  ISharedStrings,
 } from '../../model';
 import {
   findRecord,
@@ -25,14 +26,16 @@ import { ActionRow, GrowingDiv } from '../StepEditor';
 import SelectLatest from './SelectLatest';
 import { UpdateRecord } from '../../model/baseModel';
 import { useOrbitData } from '../../hoc/useOrbitData';
-import { useSelector } from 'react-redux';
+import { shallowEqual, useSelector } from 'react-redux';
 
 import {
   projDefSectionMap,
   useProjectDefaults,
 } from '../../crud/useProjectDefaults';
 import { useMobile } from '../../utils/index';
-import { Button, Typography, Box } from '@mui/material';
+import { Typography, Box } from '@mui/material';
+import { sharedSelector } from '../../selector/selectors';
+import { PriButton } from '../../control';
 
 interface IProps {
   passId: string;
@@ -46,6 +49,7 @@ export const VersionDlg = (props: IProps) => {
   const sections = useOrbitData<Section[]>('section');
   const passages = useOrbitData<Passage[]>('passage');
 
+  const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
   const [plan] = useGlobal('plan'); //will be constant here
   const [project] = useGlobal('project'); //will be constant here
   const [memory] = useGlobal('memory');
@@ -141,7 +145,7 @@ export const VersionDlg = (props: IProps) => {
       <ActionRow>
         {isMobileView ? (
           <Box sx={{ pt: 2 }}>
-            <Button
+            <PriButton
               onClick={() => {
                 if (selectedId) {
                   handleLatest(parseInt(data.find((d) => d.id === selectedId)?.version || '0'));
@@ -149,16 +153,11 @@ export const VersionDlg = (props: IProps) => {
                 }
               }}
               disabled={!selectedId}
-              sx={(theme) => ({
-                backgroundColor: !selectedId ? 'grey' : 'black',
-                borderRadius: '8px',
-                padding: '4px',
-                boxShadow: theme.shadows[2],})}
             >
               <Typography sx={{ color: 'white', p: 0.5 }}>
-                Use Selected Version
+                {ts.useThisVersion}
               </Typography>
-            </Button>
+            </PriButton>
           </Box>
         ) : (
           <>

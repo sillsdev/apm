@@ -1467,6 +1467,7 @@ export interface ISharedStrings extends Localize.LocalizedStringsMethods {
     "uploadRights": string;
     "uploadSuccess": string;
     "user": string;
+    "useThisVersion": string;
     "versionHistory": string;
     "wait": string;
     "yes": string;
