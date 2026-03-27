@@ -80,7 +80,6 @@ const PassageDetailGrids = () => {
   const { isMobile } = useMobile();
 
   const scrollbarWidthRef = React.useRef(0);
-
   // Calculate scrollbar width dynamically
   const getScrollbarWidth = () => {
     // Create a temporary div to measure scrollbar width
