@@ -9,7 +9,6 @@ import React, {
 import { useGlobal } from '../context/useGlobal';
 import { IPassageRecordStrings, ISharedStrings } from '../model';
 import { Stack, Paper, Typography } from '@mui/material';
-import { SxProps } from '@mui/material/styles';
 import WSAudioPlayer, { WSAudioPlayerControls } from './WSAudioPlayer';
 import { loadBlobAsync, useMobile, waitForIt } from '../utils';
 import {

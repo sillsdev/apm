@@ -1,12 +1,10 @@
 import React from 'react';
-import UploadIcon from '@mui/icons-material/CloudUpload';
 import { VoiceStatement } from '../../../../business/voice/VoiceStatement';
 import MediaRecord from '../../../MediaRecord';
 import { GrowingSpacer, PriButton } from '../../../../control';
-import { Button, Paper, Typography, Box, LinearProgress } from '@mui/material';
+import { Button, Typography, Box, LinearProgress } from '@mui/material';
 import { SxProps } from '@mui/material/styles';
-import { useMobile } from '../../../../utils/index';
-import { ICommunityStrings, ISharedStrings } from 'store/localization/model';
+import { ICommunityStrings, ISharedStrings } from '../../../../store/localization/model';
 import { shallowEqual, useSelector } from 'react-redux';
 import { communitySelector, sharedSelector } from '../../../../selector/selectors';
 import { IVoicePerm } from '../../../../business/voice/PersonalizeVoicePermission';

@@ -308,7 +308,7 @@ export function ProvideRights(props: IProps) {
       setStatusText={setStatusText}
       setResetMedia={setResetMedia}
       resetMedia={resetMedia}
-      afterUploadCb={afterUploadCb}
+      afterUploadCb={(mediaId, _second) => afterUploadCb(mediaId)}
       handleSetCanSave={handleSetCanSave}
       paperWidth={paperWidth}
     />;
