@@ -12,7 +12,11 @@ interface Props {
   noAudioText: string;
 }
 
-const paperProps = { p: 2, m: 'auto', width: `calc(100% - 40px)` } as SxProps;
+const paperProps = {
+  p: 2,
+  m: 'auto',
+  width: `calc(100% - 40px)`,
+} as SxProps;
 
 export default function PassageDetailMobileDetail({
   currentVersion,
@@ -43,7 +47,7 @@ export default function PassageDetailMobileDetail({
               </Box>
             </Box>
           ) : (
-            <Stack spacing={1}>
+            <Stack alignItems="center" spacing={1}>
               {recordContent}
               <DiscussionPanel />
             </Stack>

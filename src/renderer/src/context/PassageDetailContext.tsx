@@ -202,6 +202,8 @@ const initState = {
   canPublish: false,
   discussOpen: false,
   setDiscussOpen: (_discussOpen: boolean) => {},
+  compareMediaId: undefined as string | undefined,
+  setCompareMediaId: (_id: string | undefined) => {},
 };
 
 export type ICtxState = typeof initState;
@@ -260,6 +262,9 @@ const PassageDetailProvider = (props: IProps) => {
     wfStr,
     prjId: prjId ?? '',
   });
+  const [compareMediaId, setCompareMediaId] = useState<string | undefined>(
+    undefined
+  );
   const [blobState, fetchBlob] = useFetchMediaBlob();
   const fetching = useRef('');
   const segmentsCb = useRef<((segments: string) => void) | undefined>(
@@ -1142,6 +1147,8 @@ const PassageDetailProvider = (props: IProps) => {
           handleHighlightDiscussion,
           forceRefresh,
           setDiscussOpen,
+          compareMediaId,
+          setCompareMediaId,
           sectionArr: (getProjectDefault(projDefSectionMap) ??
             []) as SectionArray,
         },

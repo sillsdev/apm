@@ -47,6 +47,7 @@ import PassageDetailParatextIntegration from '../components/PassageDetail/Passag
 import { PassageDetailDiscuss } from '../components/PassageDetail/PassageDetailDiscuss';
 import { addPt } from '../utils/addPt';
 import DiscussionPanel from '../components/Discussions/DiscussionPanel';
+import TeamCheckReferenceMobile from '../components/PassageDetail/mobile/TeamCheckReferenceMobile';
 
 const KeyTerms = React.lazy(
   () => import('../components/PassageDetail/Keyterms/KeyTerms')
@@ -314,16 +315,25 @@ const PassageDetailGrids = () => {
               tool !== ToolSlug.ConsultantCheck ? (
                 <Stack
                   direction="column"
-                  sx={{ width: '100%', minWidth: 0, maxWidth: paneWidth }}
+                  sx={{
+                    width: '100%',
+                    minWidth: 0,
+                    maxWidth: paneWidth,
+                  }}
                 >
                   <PassageDetailChooser width={paneWidth} />
-                  {(tool !== ToolSlug.KeyTerm || mediafileId) && (
+                  {(tool !== ToolSlug.KeyTerm || mediafileId) && !isMobile && (
                     <PassageDetailPlayer
                       width={Math.max(0, paneWidth - 40)}
                       allowZoomAndSpeed={true}
                     />
                   )}
-                  {tool === ToolSlug.TeamCheck && <TeamCheckReference />}
+                  {tool === ToolSlug.TeamCheck &&
+                    (isMobile ? (
+                      <TeamCheckReferenceMobile />
+                    ) : (
+                      <TeamCheckReference />
+                    ))}
                   {tool === ToolSlug.KeyTerm && (
                     <Suspense fallback={<Busy />}>
                       <KeyTerms width={paneWidth} />
@@ -459,9 +469,7 @@ export const PassageDetail = () => {
       }}
     >
       <AppHead switchTo={true} />
-      <PassageDetailProvider>
-        <PassageDetailGrids />
-      </PassageDetailProvider>
+      <PassageDetailProvider>{<PassageDetailGrids />}</PassageDetailProvider>
     </Box>
   );
 };
