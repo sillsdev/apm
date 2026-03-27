@@ -288,7 +288,11 @@ const PassageDetailGrids = () => {
             <Grid size={{ xs: 12 }} sx={{ minWidth: 0 }}>
               <Grid container sx={{ minWidth: 0 }}>
                 <PassageDetailChooser width={width - 24} sx={{ pl: 2 }} />
-                <PassageDetailArtifacts />
+                {isMobile ? (
+                  <PassageDetailsArtifactsMobile />
+                ) : (
+                  <PassageDetailArtifacts />
+                )}
               </Grid>
             </Grid>
           </Grid>
@@ -436,17 +440,6 @@ export const PassageDetail = () => {
   const [user] = useGlobal('user');
   const { setProjectType } = useProjectType();
 
-  const { isMobile } = useMobile();
-  const [paneWidth, setPaneWidth] = useState(0);
-
-  useEffect(() => {
-    if (isMobile) {
-      setPaneWidth(window.innerWidth);
-    } else {
-      setPaneWidth(window.innerWidth - 450); // Start with discussion panel open on desktop
-    }
-  }, [isMobile]);
-
   useEffect(() => {
     const projectId = setUrlContext(prjId ?? '');
     if (user && projType === '') {
@@ -474,19 +467,7 @@ export const PassageDetail = () => {
     >
       <AppHead switchTo={true} />
       <PassageDetailProvider>
-        { isMobile ? (
-          <PassageDetailMobileDetail
-            currentVersion={1}
-            showSideBySide={false}
-            recordContent={<Grid container sx={{ minWidth: 0 }}>
-                {/* <PassageDetailChooser width={paneWidth - 24} sx={{ pl: 2 }} /> */}
-                <PassageDetailsArtifactsMobile />
-              </Grid>}
-            noAudioText={''}
-          />
-        ) : (
-          <PassageDetailGrids />
-        )}
+        <PassageDetailGrids />
       </PassageDetailProvider>
     </Box>
   );
