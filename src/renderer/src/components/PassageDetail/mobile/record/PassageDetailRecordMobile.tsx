@@ -28,6 +28,7 @@ import { useOrbitData } from '../../../../hoc/useOrbitData';
 import { useStepPermissions } from '../../../../utils/useStepPermission';
 import AddIcon from '@mui/icons-material/LibraryAddOutlined';
 import MediaRecord from '../../../../components/MediaRecord';
+import BigDialogBp from '../../../../hoc/BigDialogBp';
 
 interface IProps {
   ready?: () => boolean;
@@ -313,11 +314,13 @@ export function PassageDetailRecord(props: IProps) {
         title={ts.versionHistory}
         isOpen={versionVisible}
         onOpen={handleVerHistClose}
+        bp={BigDialogBp.mobile}
       >
         <VersionDlg
           passId={passageId}
           canSetDestination={false}
           hasPublishing={false}
+          close={handleVerHistClose}
         />
       </BigDialog>
     </Stack>

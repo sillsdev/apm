@@ -31,14 +31,17 @@ import {
   projDefSectionMap,
   useProjectDefaults,
 } from '../../crud/useProjectDefaults';
+import { useMobile } from '../../utils/index';
+import { Button, Typography, Box } from '@mui/material';
 
 interface IProps {
   passId: string;
   canSetDestination: boolean;
   hasPublishing: boolean;
+  close: () => void;
 }
 export const VersionDlg = (props: IProps) => {
-  const { passId, canSetDestination, hasPublishing } = props;
+  const { passId, canSetDestination, hasPublishing, close } = props;
   const mediaFiles = useOrbitData<MediaFileD[]>('mediafile');
   const sections = useOrbitData<Section[]>('section');
   const passages = useOrbitData<Passage[]>('passage');
@@ -52,6 +55,7 @@ export const VersionDlg = (props: IProps) => {
   const [user] = useGlobal('user');
   const [planRec] = useState(getPlan(plan) || ({} as Plan));
   const [playItem, setPlayItem] = useState('');
+  const [selectedId, setSelectedId] = useState('');
   const [data, setData] = useState<IRow[]>([]);
   const [sectionArr, setSectionArr] = useState<SectionArray>([]);
   const [sectionMap, setSectionMap] = useState(new Map<number, string>());
@@ -117,6 +121,8 @@ export const VersionDlg = (props: IProps) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mediaFiles, sections, passages, planRec, passId, playItem, refresh]);
 
+  const { isMobile: isMobileView } = useMobile();
+
   return (
     <>
       <AudioTable
@@ -124,6 +130,8 @@ export const VersionDlg = (props: IProps) => {
         setRefresh={handleRefresh}
         playItem={playItem}
         setPlayItem={setPlayItem}
+        selectedId={selectedId}
+        setSelectedId={setSelectedId}
         readonly={readonly}
         sectionArr={sectionArr}
         shared={shared}
@@ -131,8 +139,33 @@ export const VersionDlg = (props: IProps) => {
         hasPublishing={hasPublishing}
       />
       <ActionRow>
-        <GrowingDiv />
-        <SelectLatest versions={versions} onChange={handleLatest} />
+        {isMobileView ? (
+          <Box sx={{ pt: 2 }}>
+            <Button
+              onClick={() => {
+                if (selectedId) {
+                  handleLatest(parseInt(data.find((d) => d.id === selectedId)?.version || '0'));
+                  close();
+                }
+              }}
+              disabled={!selectedId}
+              sx={(theme) => ({
+                backgroundColor: !selectedId ? 'grey' : 'black',
+                borderRadius: '8px',
+                padding: '4px',
+                boxShadow: theme.shadows[2],})}
+            >
+              <Typography sx={{ color: 'white', p: 0.5 }}>
+                Use Selected Version
+              </Typography>
+            </Button>
+          </Box>
+        ) : (
+          <>
+            <GrowingDiv />
+            <SelectLatest versions={versions} onChange={handleLatest} />
+          </>
+        )}
       </ActionRow>
     </>
   );
