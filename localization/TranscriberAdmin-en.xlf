@@ -6748,6 +6748,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="recordButton.stop">
+         <segment>
+            <source>STOP</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="recordStepSettings.custom">
          <segment>
             <source>Custom</source>
@@ -7459,6 +7465,18 @@
       <unit id="shared.upload">
          <segment>
             <source>Upload</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="shared.resetRecording">
+         <segment>
+            <source>Reset Recording</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="shared.discardRecording">
+         <segment>
+            <source>Would you like to discard this recording or save it?</source>
             <target/>
          </segment>
       </unit>
