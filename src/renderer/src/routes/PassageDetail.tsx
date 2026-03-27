@@ -47,7 +47,6 @@ import PassageDetailParatextIntegration from '../components/PassageDetail/Passag
 import { PassageDetailDiscuss } from '../components/PassageDetail/PassageDetailDiscuss';
 import { addPt } from '../utils/addPt';
 import DiscussionPanel from '../components/Discussions/DiscussionPanel';
-import PassageDetailMobileDetail from '../components/PassageDetail/PassageDetailMobileDetail';
 import TeamCheckReferenceMobile from '../components/PassageDetail/mobile/TeamCheckReferenceMobile';
 
 const KeyTerms = React.lazy(
@@ -329,11 +328,12 @@ const PassageDetailGrids = () => {
                       allowZoomAndSpeed={true}
                     />
                   )}
-                  {tool === ToolSlug.TeamCheck && isMobile ? (
-                    <TeamCheckReferenceMobile />
-                  ) : (
-                    <TeamCheckReference />
-                  )}
+                  {tool === ToolSlug.TeamCheck &&
+                    (isMobile ? (
+                      <TeamCheckReferenceMobile />
+                    ) : (
+                      <TeamCheckReference />
+                    ))}
                   {tool === ToolSlug.KeyTerm && (
                     <Suspense fallback={<Busy />}>
                       <KeyTerms width={paneWidth} />
@@ -467,7 +467,6 @@ export const PassageDetail = () => {
         maxWidth: '100%',
         overflow: 'hidden',
       }}
-      alignItems="center"
     >
       <AppHead switchTo={true} />
       <PassageDetailProvider>{<PassageDetailGrids />}</PassageDetailProvider>
