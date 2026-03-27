@@ -24,7 +24,6 @@ import {
   NamedRegions,
   updateSegments,
 } from '../../../utils/namedSegments';
-import usePassageDetailContext from '../../../context/usePassageDetailContext';
 import ViewIcon from '@mui/icons-material/RemoveRedEye';
 import TranscriptionShow from '../../TranscriptionShow';
 import { related } from '../../../crud/related';
@@ -54,9 +53,25 @@ import { useSnackBar } from '../../../hoc/SnackBar';
 import { useLocLangName } from '../../../utils/useLocLangName';
 import { SaveSegments } from '../SaveSegments';
 import { AsrTarget } from '../../../business/asr/AsrTarget';
-import { PlayInPlayer } from '../../../context/PlayInPlayer';
 
 export const PLAYER_HEIGHT = 120 + 80;
+
+export interface IPlayerState {
+  loading: boolean;
+  pdBusy: boolean;
+  setPDBusy: (busy: boolean) => void;
+  audioBlob?: Blob;
+  setupLocate: (callback?: (segments: string) => void) => void;
+  playing: boolean;
+  setPlaying: (playing: boolean) => void;
+  currentstep?: string;
+  currentSegmentIndex?: number;
+  setCurrentSegment: (index: number) => void;
+  discussionMarkers?: { position: number; id: string }[];
+  handleHighlightDiscussion?: (id: string) => void;
+  playerMediafile?: MediaFile;
+  forceRefresh?: () => void;
+}
 
 export interface DetailPlayerProps {
   allowSegment?: NamedRegions | undefined;
@@ -84,7 +99,7 @@ export interface DetailPlayerProps {
   hasTranscription?: boolean;
   contentVerses?: string[];
   metaData?: React.ReactNode;
-  mediaFileId?: string | undefined;
+  playerState: IPlayerState;
 }
 
 export function PassageDetailPlayerMobile(props: DetailPlayerProps) {
@@ -112,7 +127,7 @@ export function PassageDetailPlayerMobile(props: DetailPlayerProps) {
     hasTranscription,
     contentVerses,
     metaData,
-    mediaFileId,
+    playerState,
   } = props;
 
   const [memory] = useGlobal('memory');
@@ -137,14 +152,13 @@ export function PassageDetailPlayerMobile(props: DetailPlayerProps) {
     request: new Date(),
   });
   const [initialposition, setInitialPosition] = useState<number | undefined>(0);
-  const newContext = usePassageDetailContext();
   //if (mediaFileId) newContext.setSelected(mediaFileId, PlayInPlayer.yes);
 
-  useEffect(() => {
-    if (mediaFileId && mediaFileId !== newContext.playerMediafile?.id) {
-      newContext.setSelected(mediaFileId, PlayInPlayer.yes);
-    }
-  }, [mediaFileId, newContext]);
+  // useEffect(() => {
+  //   if (mediaFileId && mediaFileId !== newContext.playerMediafile?.id) {
+  //     newContext.setSelected(mediaFileId, PlayInPlayer.yes);
+  //   }
+  // }, [mediaFileId, newContext]);
 
   const {
     loading,
@@ -161,7 +175,7 @@ export function PassageDetailPlayerMobile(props: DetailPlayerProps) {
     handleHighlightDiscussion,
     playerMediafile,
     forceRefresh,
-  } = newContext;
+  } = playerState;
 
   const [defaultSegments, setDefaultSegments] = useState('{}');
   const [showTranscriptionId, setShowTranscriptionId] = useState('');

@@ -13,7 +13,11 @@ import { getSegments, NamedRegions } from '../../../utils';
 import { storedCompareKey } from '../../../utils/storedCompareKey';
 import { PassageDetailChooser } from '../PassageDetailChooser';
 import { ToolSlug, useStepTool } from '../../../crud';
-import { PassageDetailPlayerMobile } from './PassageDetailPlayerMobile';
+import {
+  IPlayerState,
+  PassageDetailPlayerMobile,
+} from './PassageDetailPlayerMobile';
+import PassageDetailPlayer from '../PassageDetailPlayer';
 
 const StyledGrid = styled(Grid)<GridProps>(({ theme }) => ({
   margin: theme.spacing(2),
@@ -54,7 +58,38 @@ export function TeamCheckReferenceMobile() {
     section,
     passage,
     currentstep,
+    compareMediaId,
+    setCompareMediaId,
   } = ctx.state;
+
+  const [loading, setLoading] = useState(false);
+  const [pdBusy, setPDBusy] = useState(false);
+  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+  const [playing, setPlaying] = useState(false);
+  const [currentSegmentIndex, setCurrentSegmentIndex] = useState<
+    number | undefined
+  >(undefined);
+  const [discussionMarkers, setDiscussionMarkers] = useState<
+    { position: number; id: string }[]
+  >([]);
+  const [playerMediafile, setPlayerMediafile] = useState<string | undefined>(
+    undefined
+  );
+  const forceRefresh = () => {
+    console.log('forceRefresh called');
+  };
+  const setupLocate = (
+    cb: (mediafileId: string, start?: number, end?: number) => void // done
+  ) => {
+    console.log('setupLocate called');
+  };
+  const handleHighlightDiscussion = (id: string) => {
+    console.log('handleHighlightDiscussion called with', start, end);
+  };
+  const setCurrentSegment = (index: number) => {
+    console.log('setCurrentSegment called with index', index);
+    setCurrentSegmentIndex(index);
+  };
 
   const [mediaStart, setMediaStart] = useState<number | undefined>();
   const [mediaEnd, setMediaEnd] = useState<number | undefined>();
@@ -97,11 +132,11 @@ export function TeamCheckReferenceMobile() {
         setMediaEnd(undefined);
       }
     }
-    setPlayItem(id);
+    setPlayerMediafile(id);
   };
 
   const handleEnded = () => {
-    setPlayItem('');
+    setPlayerMediafile('');
     handleItemPlayEnd();
     setTimeout(() => setResetCount(resetCount + 1), 500);
   };
@@ -147,8 +182,8 @@ export function TeamCheckReferenceMobile() {
         <StyledGrid ref={containerRef} id="Ryan2" size={{ xs: 12 }}>
           <PassageDetailChooser width={paneWidth} />
           {tool !== ToolSlug.KeyTerm && (
-            <PassageDetailPlayerMobile
-              width={Math.round(playerWidth)}
+            <PassageDetailPlayer
+              width={Math.max(playerWidth)}
               allowZoomAndSpeed={true}
             />
           )}
@@ -166,7 +201,24 @@ export function TeamCheckReferenceMobile() {
             <PassageDetailPlayerMobile
               width={Math.round(playerWidth)}
               allowZoomAndSpeed={true}
-              mediaFileId={resource}
+              playerState={
+                {
+                  loading,
+                  pdBusy,
+                  setPDBusy,
+                  audioBlob,
+                  setupLocate,
+                  playing,
+                  setPlaying,
+                  currentstep,
+                  currentSegmentIndex,
+                  setCurrentSegment,
+                  discussionMarkers,
+                  handleHighlightDiscussion,
+                  playerMediafile,
+                  forceRefresh,
+                } as IPlayerState
+              }
             />
           )}
         </StyledGrid>
