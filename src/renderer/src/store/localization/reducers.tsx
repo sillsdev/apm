@@ -1538,6 +1538,7 @@ const initialState = {
 			"translator": "Translator",
 			"uploadMediaPlural": "Upload Audio",
 			"uploadMediaSingular": "Upload Audio",
+			"upload": "Upload",
 			"uploadRights": "Upload Rights File",
 			"uploadSuccess": "Upload Successful",
 			"user": "Team Member",
