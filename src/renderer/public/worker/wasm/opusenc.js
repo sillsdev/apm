@@ -524,7 +524,7 @@ function setValue(ptr, value, type, noSafe) {
       HEAP32[ptr >> 2] = value;
       break;
     case 'i64':
-      ((tempI64 = [
+      (tempI64 = [
         value >>> 0,
         ((tempDouble = value),
         +Math_abs(tempDouble) >= 1
@@ -538,7 +538,7 @@ function setValue(ptr, value, type, noSafe) {
           : 0),
       ]),
         (HEAP32[ptr >> 2] = tempI64[0]),
-        (HEAP32[(ptr + 4) >> 2] = tempI64[1]));
+        (HEAP32[(ptr + 4) >> 2] = tempI64[1]);
       break;
     case 'float':
       HEAPF32[ptr >> 2] = value;
@@ -1278,10 +1278,10 @@ function integrateWasmJS(Module) {
       return ((x >>> 0) / (y >>> 0)) >>> 0;
     },
     'i32s-rem': function (x, y) {
-      return ((x | 0) % (y | 0)) | 0;
+      return (x | 0) % (y | 0) | 0;
     },
     'i32u-rem': function (x, y) {
-      return ((x >>> 0) % (y >>> 0)) >>> 0;
+      return (x >>> 0) % (y >>> 0) >>> 0;
     },
     debugger: function () {
       debugger;
