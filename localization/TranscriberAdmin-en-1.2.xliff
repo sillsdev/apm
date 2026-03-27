@@ -7873,6 +7873,13 @@
                <context context-type="sourcefile">RecordButton.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="recordButton.stop">
+            <source>STOP</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">RecordButton.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="recordStepSettings.custom">
             <source>Custom</source>
             <target/>
@@ -8716,13 +8723,6 @@
         </trans-unit>
         <trans-unit id="shared.discardRecording">
           <source>Would you like to discard this recording or save it?</source>
-          <target/>
-          <context-group>
-              <context context-type="sourcefile">PlanSheet.tsx</context>
-          </context-group>
-        </trans-unit>
-        <trans-unit id="shared.stop">
-          <source>STOP</source>
           <target/>
           <context-group>
               <context context-type="sourcefile">PlanSheet.tsx</context>

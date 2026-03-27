@@ -1318,6 +1318,7 @@ export interface IRecordButtonStrings extends Localize.LocalizedStringsMethods {
     "record": string;
     "rerecord": string;
     "resume": string;
+    "stop": string;
 };
 
 export interface IRecordStepSettingsStrings extends Localize.LocalizedStringsMethods {
@@ -1457,6 +1458,7 @@ export interface ISharedStrings extends Localize.LocalizedStringsMethods {
     "scheme": string;
     "scheme2": string;
     "select": string;
+    "stop": string;
     "teamrole": string;
     "transcriber": string;
     "translator": string;

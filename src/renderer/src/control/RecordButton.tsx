@@ -98,7 +98,7 @@ export const RecordButton = ({
             <>
               <StopIcon style={{ color: 'white', fontSize: isSmall ? '1.4em' : '1.4rem' }} />
               <Typography variant="caption" sx={{ mt: 0.5, textAlign: 'center', color: 'white', ml: 1 }}>
-                {'STOP'}
+                {t.stop}
               </Typography>
             </>
           ) : (
