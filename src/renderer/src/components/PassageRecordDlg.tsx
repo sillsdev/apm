@@ -20,14 +20,7 @@ import SpeakerName from './SpeakerName';
 import { AltButton, PriButton } from '../control';
 import { passageRecordSelector } from '../selector';
 import Busy from './Busy';
-
-const RecordDialog = styled(Dialog)<DialogProps>(() => ({
-  flexGrow: 1,
-  '& .MuiDialog-paper': {
-    maxWidth: '90%',
-    minWidth: '90%',
-  },
-}));
+import { useMobile } from '../utils';
 
 const StatusMessage = styled(Typography)<TypographyProps>(({ theme }) => ({
   marginRight: theme.spacing(2),
@@ -140,6 +133,16 @@ function PassageRecordDlg(props: IProps) {
   const onRecording = (isRecording: boolean) => {
     setRecording(isRecording);
   };
+
+  const { isMobile: isMobileView } = useMobile();
+
+  const RecordDialog = styled(Dialog)<DialogProps>(() => ({
+  flexGrow: 1,
+  '& .MuiDialog-paper': {
+    maxWidth: '90%',
+    minWidth: !isMobileView ? '90%' : 0,
+  },
+}));
 
   return (
     <RecordDialog
