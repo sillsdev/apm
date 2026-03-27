@@ -919,11 +919,12 @@ export function PassageDetailArtifactsMobile() {
         }
       />
       <BigDialog
-        title={t.findResource.replace('{0}', passageRef(passage) || '')}
-        description={<Typography>{t.findResourceDesc}</Typography>}
+        title={`Research - ${passageRef(passage) || ''}`.trim()}
+        titleVariant="h6"
+        description={<Typography sx={{ color: 'text.secondary' }}>{t.findResourceDesc}</Typography>}
         isOpen={findOpen}
         onOpen={handleFindVisible}
-        bp={BigDialogBp.sm}
+        bp={BigDialogBp.mobile}
       >
         <FindTabs
           onClose={() => handleFindVisible(false)}
