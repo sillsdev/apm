@@ -13,7 +13,7 @@ import { getSegments, NamedRegions } from '../../../utils';
 import { storedCompareKey } from '../../../utils/storedCompareKey';
 import { PassageDetailChooser } from '../PassageDetailChooser';
 import { ToolSlug, useStepTool } from '../../../crud';
-import PassageDetailPlayerMobile from './PassageDetailPlayerMobile';
+import { PassageDetailPlayerMobile } from './PassageDetailPlayerMobile';
 
 const StyledGrid = styled(Grid)<GridProps>(({ theme }) => ({
   margin: theme.spacing(2),

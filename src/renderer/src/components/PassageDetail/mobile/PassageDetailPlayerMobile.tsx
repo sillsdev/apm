@@ -24,7 +24,7 @@ import {
   NamedRegions,
   updateSegments,
 } from '../../../utils/namedSegments';
-import usePassageDetailContextMobile from './usePassageDetailContextMobile';
+import usePassageDetailContext from '../../../context/usePassageDetailContext';
 import ViewIcon from '@mui/icons-material/RemoveRedEye';
 import TranscriptionShow from '../../TranscriptionShow';
 import { related } from '../../../crud/related';
