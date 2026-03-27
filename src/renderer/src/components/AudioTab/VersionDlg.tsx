@@ -38,7 +38,7 @@ interface IProps {
   passId: string;
   canSetDestination: boolean;
   hasPublishing: boolean;
-  close: () => void;
+  close?: () => void;
 }
 export const VersionDlg = (props: IProps) => {
   const { passId, canSetDestination, hasPublishing, close } = props;
@@ -145,7 +145,7 @@ export const VersionDlg = (props: IProps) => {
               onClick={() => {
                 if (selectedId) {
                   handleLatest(parseInt(data.find((d) => d.id === selectedId)?.version || '0'));
-                  close();
+                  close && close();
                 }
               }}
               disabled={!selectedId}
