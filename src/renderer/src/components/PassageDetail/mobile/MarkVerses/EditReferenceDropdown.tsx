@@ -223,13 +223,13 @@ export default function EditReferenceDropdown({
                 ))}
               </NativeSelect>
             </Box>
-              <NativeSelect
-                value={draft.endSuffix}
-                onChange={handleSuffixChange('endSuffix')}
-                disabled={!canEditEndSuffix}
-                inputProps={{ 'aria-label': 'end verse suffix' }}
-                sx={selectSx}
-              >
+            <NativeSelect
+              value={draft.endSuffix}
+              onChange={handleSuffixChange('endSuffix')}
+              disabled={!canEditEndSuffix}
+              inputProps={{ 'aria-label': 'end verse suffix' }}
+              sx={selectSx}
+            >
               {suffixOptions.map((option) => (
                 <option
                   key={option || 'none-end'}
@@ -245,10 +245,7 @@ export default function EditReferenceDropdown({
 
         <FormControlLabel
           control={
-            <Checkbox
-              checked={draft.splitVerse}
-              onChange={handleSplitChange}
-            />
+            <Checkbox checked={draft.splitVerse} onChange={handleSplitChange} />
           }
           label={splitVerseLabel}
         />
