@@ -1542,6 +1542,7 @@ const initialState = {
 			"upload": "Upload",
 			"resetRecording": "Reset Recording",
 			"discardRecording": "Would you like to discard this recording or save it?",
+			"useThisVersion": "Use This Version",
 			"uploadRights": "Upload Rights File",
 			"uploadSuccess": "Upload Successful",
 			"user": "Team Member",

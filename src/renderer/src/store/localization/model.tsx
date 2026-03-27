@@ -1464,10 +1464,10 @@ export interface ISharedStrings extends Localize.LocalizedStringsMethods {
     "upload": string;
     "resetRecording": string;
     "discardRecording": string;
+    "useThisVersion": string;
     "uploadRights": string;
     "uploadSuccess": string;
     "user": string;
-    "useThisVersion": string;
     "versionHistory": string;
     "wait": string;
     "yes": string;
