@@ -37,7 +37,7 @@ interface IProps {
 
 const SaveWait = 500;
 
-export function PassageDetailRecord(props: IProps) {
+export function PassageDetailRecordMobile(props: IProps) {
   const { ready } = props;
   const mediafiles = useOrbitData<MediaFileD[]>('mediafile');
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
@@ -327,4 +327,4 @@ export function PassageDetailRecord(props: IProps) {
   );
 }
 
-export default PassageDetailRecord;
+export default PassageDetailRecordMobile;
