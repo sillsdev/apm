@@ -55,7 +55,10 @@ export const usePlayerLogic = (props: PlayerLogicProps) => {
   const loadSegments = () => {
     const segs = mediafileRef.current?.attributes?.segments || '{}';
     if (allowSegment) {
-      segmentsRef.current = getSegments(allowSegment, segs);
+      segmentsRef.current =
+        suggestedSegments && suggestedSegments.length > 0
+          ? suggestedSegments
+          : getSegments(allowSegment, segs);
       setSegmentToWhole();
     }
     setDefaultSegments(segmentsRef.current);

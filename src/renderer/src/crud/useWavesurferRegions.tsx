@@ -54,6 +54,32 @@ export const parseRegions = (regionstr: string) => {
   segs.regions.sort((a: IRegion, b: IRegion) => a.start - b.start);
   return segs as IRegions;
 };
+
+const segmentPalette = [
+  [244, 67, 54],
+  [33, 150, 243],
+  [76, 175, 80],
+  [255, 152, 0],
+  [156, 39, 176],
+  [0, 188, 212],
+  [233, 30, 99],
+  [139, 195, 74],
+  [255, 87, 34],
+  [63, 81, 181],
+];
+
+export const getSegmentRegionColor = (index: number, alpha: number = 0.28) => {
+  const [red, green, blue] = segmentPalette[index % segmentPalette.length];
+  return `rgba(${red}, ${green}, ${blue}, ${alpha})`;
+};
+
+const withRegionColorAlpha = (color: string, alpha: number) => {
+  const match = color.match(
+    /rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)(?:\s*,\s*[\d.]+)?\s*\)/
+  );
+  if (!match) return color;
+  return `rgba(${match[1]}, ${match[2]}, ${match[3]}, ${alpha})`;
+};
 export function useWaveSurferRegions(
   singleRegionOnly: boolean,
   defaultRegionIndex: number,
@@ -101,7 +127,7 @@ export function useWaveSurferRegions(
   const finishHandlerRef = useRef<(() => void) | undefined>(undefined);
 
   const CLICK_DEBOUNCE_MS = 100; // Minimum time between clicks
-  const CURRENT_REGION_COLOR = (theme.palette as any).custom.currentRegion; // Green color for current region
+  const CURRENT_REGION_BORDER = (theme.palette as any).custom.currentRegion;
   const NEXT_BORDER_COLOR = 'red';
 
   const Regions = () => regionsRef.current;
@@ -213,13 +239,16 @@ export function useWaveSurferRegions(
 
       // Set new current region color and remember its current color
       if (r) {
-        currentRegionOriginalColorRef.current = r.color || randomColor(0.1);
-        r.setOptions({ color: CURRENT_REGION_COLOR });
+        currentRegionOriginalColorRef.current =
+          r.color || getSegmentRegionColor(0);
+        r.setOptions({
+          color: withRegionColorAlpha(currentRegionOriginalColorRef.current, 0.48),
+        });
         if (
           !singleRegionRef.current &&
           (!isAtEnd(r.end) || numRegions() === 1)
         ) {
-          setRegionEndBorderColor(r, NEXT_BORDER_COLOR);
+          setRegionEndBorderColor(r, CURRENT_REGION_BORDER);
         }
       } else {
         currentRegionOriginalColorRef.current = '';
@@ -330,6 +359,7 @@ export function useWaveSurferRegions(
             500
           )
             .then(() => {
+              setPrevNext(getSortedIds());
               setCurrentRegion(
                 singleRegionRef.current ? r : findRegion(progress(), true)
               );
@@ -356,6 +386,7 @@ export function useWaveSurferRegions(
             200
           ).then(() => {
             if (destroyingRef.current) return;
+            setPrevNext(getSortedIds());
             onRegion(numRegions(), true);
             setCurrentRegion(findRegion(progress(), true));
           });
@@ -705,11 +736,19 @@ export function useWaveSurferRegions(
     if (!wsRef.current || sortedIds.length === 0 || singleRegionRef.current)
       return;
     let prev: Region | undefined = undefined;
-    sortedIds.forEach(function (id) {
+    sortedIds.forEach(function (id, index) {
       const r = region(id);
       if (r && prev) {
         setAttribute(prev, 'nextRegion', r);
         setAttribute(r, 'prevRegion', prev);
+      }
+      if (r) {
+        const baseColor = getSegmentRegionColor(index);
+        if (currentRegionRef.current?.id === r.id) {
+          currentRegionOriginalColorRef.current = baseColor;
+        } else {
+          r.setOptions({ color: baseColor });
+        }
       }
       prev = r;
     });
@@ -767,7 +806,7 @@ export function useWaveSurferRegions(
     regarray.forEach(function (region: any) {
       region.start = roundToFiveDecimals(region.start);
       region.end = roundToFiveDecimals(region.end);
-      region.color = randomColor(0.1);
+      region.color = getSegmentRegionColor(regarray.indexOf(region));
       region.drag = false;
       region.content = region.label;
       const r = Regions()?.addRegion(region);
@@ -807,7 +846,7 @@ export function useWaveSurferRegions(
       start: split,
       end: ret.end,
       drag: false,
-      color: randomColor(0.1),
+      color: getSegmentRegionColor(0),
     };
     const sortedIds: string[] = getSortedIds(); //need to get sorted ids before adding the new region
     const newRegion = Regions()?.addRegion(region);
@@ -825,7 +864,7 @@ export function useWaveSurferRegions(
         start: 0,
         end: split,
         drag: false,
-        color: randomColor(0.1),
+        color: getSegmentRegionColor(0),
       };
       const firstRegion = Regions()?.addRegion(region);
       newSorted.push(firstRegion?.id ?? 'fr');
@@ -892,7 +931,7 @@ export function useWaveSurferRegions(
   };
 
   const wsAddRegion = () => {
-    return wsSplitRegion(currentRegion(), progress());
+    return wsSplitRegion(findRegion(progress(), true), progress());
   };
 
   const wsRemoveCurrentRegion = () => {
@@ -1036,22 +1075,6 @@ export function useWaveSurferRegions(
     loopingRef.current = loop;
     return loop;
   };
-  /**
-   * Random RGBA color.
-   */
-  function randomColor(seed: number) {
-    return (
-      'rgba(' +
-      [
-        ~~(Math.random() * 255),
-        ~~(Math.random() * 255),
-        ~~(Math.random() * 255),
-        seed || 1,
-      ] +
-      ')'
-    );
-  }
-
   const roundToFiveDecimals = (n: number) => Math.round(n * 100000) / 100000;
   function roundToTenths(n: number) {
     return Math.round(n * 10) / 10;

@@ -9,11 +9,16 @@ import { planSheetSelector } from '../../selector';
 interface PassageRefProps {
   psgType: PassageTypeEnum;
   book?: string;
-  ref?: string;
+  passageRef?: string;
   comment?: string;
 }
 
-export function PassageRef({ psgType, book, ref, comment }: PassageRefProps) {
+export function PassageRef({
+  psgType,
+  book,
+  passageRef,
+  comment,
+}: PassageRefProps) {
   const ctx = useContext(PlanContext);
   const t: IPlanSheetStrings = useSelector(planSheetSelector, shallowEqual);
   const bookMap = useSelector((state: IState) => state.books.map);
@@ -33,10 +38,10 @@ export function PassageRef({ psgType, book, ref, comment }: PassageRefProps) {
   return (
     <Typography variant="h6">
       {psgType === PassageTypeEnum.PASSAGE ? (
-        `${fullBookName} ${ref}`
-      ) : ref ? (
+        `${fullBookName} ${passageRef}`
+      ) : passageRef ? (
         <>
-          <RefRender value={ref} pt={psgType} fontSize={'0.8rem'} />
+          <RefRender value={passageRef} pt={psgType} fontSize={'0.8rem'} />
           {psgType === PassageTypeEnum.CHAPTERNUMBER && comment
             ? ` ${comment}`
             : null}

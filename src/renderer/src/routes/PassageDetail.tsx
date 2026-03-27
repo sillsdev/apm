@@ -25,6 +25,7 @@ import PassageDetailPlayer from '../components/PassageDetail/PassageDetailPlayer
 import PassageDetailRecord from '../components/PassageDetail/PassageDetailRecord';
 import PassageDetailItem from '../components/PassageDetail/PassageDetailItem';
 import PassageDetailMarkVerses from '../components/PassageDetail/PassageDetailMarkVerses';
+import PassageDetailMarkVersesIsMobile from '../components/PassageDetail/mobile/MarkVerses/PassageDetailMarkVersesIsMobile';
 import PassageDetailTranscribe from '../components/PassageDetail/PassageDetailTranscribe';
 import PassageDetailChooser from '../components/PassageDetail/PassageDetailChooser';
 import ConsultantCheck from '../components/PassageDetail/ConsultantCheck';
@@ -79,7 +80,6 @@ const PassageDetailGrids = () => {
   const { isMobile } = useMobile();
 
   const scrollbarWidthRef = React.useRef(0);
-
   // Calculate scrollbar width dynamically
   const getScrollbarWidth = () => {
     // Create a temporary div to measure scrollbar width
@@ -347,9 +347,12 @@ const PassageDetailGrids = () => {
                   size={{ xs: 12 }}
                 >
                   <PassageDetailChooser width={paneWidth} />
-                  {tool === ToolSlug.Verses && (
-                    <PassageDetailMarkVerses width={paneWidth} />
-                  )}
+                  {tool === ToolSlug.Verses &&
+                    (isMobile ? (
+                      <PassageDetailMarkVersesIsMobile width={paneWidth} />
+                    ) : (
+                      <PassageDetailMarkVerses width={paneWidth} />
+                    ))}
                   {tool === ToolSlug.Transcribe && (
                     <PassageDetailTranscribe
                       width={Math.max(

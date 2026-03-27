@@ -68,7 +68,7 @@ export function PassageCard(props: IProps) {
             <PassageRef
               psgType={psgType}
               book={cardInfo.book}
-              ref={ref}
+              passageRef={ref}
               comment={comment}
             />
           ) : (
@@ -89,7 +89,7 @@ export function PassageCard(props: IProps) {
           <PassageRef
             psgType={psgType}
             book={cardInfo.book}
-            ref={ref}
+            passageRef={ref}
             comment={comment}
           />
         )}
