@@ -125,11 +125,14 @@ export function PassageDetailRecordMobile(props: IProps) {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [toolsChanged]);
+
   useEffect(() => {
     if (!mediafileId) {
-      fetchMediaUrl({ id: mediafileId });
       setResetMedia(true);
-    } else if (mediafileId !== mediaState.id) {
+      return;
+    }
+
+    if (mediafileId !== mediaState.id) {
       fetchMediaUrl({ id: mediafileId });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

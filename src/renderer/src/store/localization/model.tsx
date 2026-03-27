@@ -1419,6 +1419,7 @@ export interface ISharedStrings extends Localize.LocalizedStringsMethods {
     "consultant": string;
     "delete": string;
     "description": string;
+    "discardRecording": string;
     "editor": string;
     "expiredParatextToken": string;
     "expiredToken": string;
@@ -1447,6 +1448,7 @@ export interface ISharedStrings extends Localize.LocalizedStringsMethods {
     "passages": string;
     "peerreviewer": string;
     "recordingInProgress": string;
+    "resetRecording": string;
     "bookNotFound": string;
     "referenceNotFound": string;
     "role": string;

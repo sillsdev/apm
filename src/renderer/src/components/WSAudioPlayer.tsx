@@ -1579,7 +1579,7 @@ function WSAudioPlayer(props: IProps) {
                     <span>
                       <IconButton
                         id="wsAudioDelete"
-                        onClick={handleDelete}
+                        onClick={() => setShowDeleteMobile(true)}
                         disabled={
                           recording || duration === 0 || waitingForAI
                         }
@@ -1593,12 +1593,12 @@ function WSAudioPlayer(props: IProps) {
             )}
             <Box>
               <Button
-                sx={{ mx: 1 }}
+                sx={{ mx: 1, border: '0.5px solid blue', borderRadius: '8px' }}
                 id="spkr-upload"
                 onClick={handleUpload}
                 title={ts.upload}
               >
-                <UploadIcon />
+                <UploadIcon sx={{ mr: 1 }}/>
                 {ts.upload}
               </Button>
             </Box>

@@ -1,6 +1,9 @@
 import React from 'react';
 import { Button, Dialog, Stack, Typography } from '@mui/material';
 import { PriButton } from '../../../../control';
+import { ISharedStrings } from '../../../../store/localization/model';
+import { shallowEqual, useSelector } from 'react-redux';
+import { sharedSelector } from '../../../../selector/selectors';
 
 interface IProps {
   handleCancel: () => void;
@@ -11,6 +14,7 @@ interface IProps {
 
 
 export const DeleteDialog = (props: IProps) => {
+  const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
   return (
     <Dialog
       open={true}
@@ -18,8 +22,8 @@ export const DeleteDialog = (props: IProps) => {
     >
       <Stack direction="column" sx={{ p: 2, gap: 2 }}>
         <Stack direction="column" sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          <Typography variant="subtitle1" sx={{ fontWeight: 'bold', fontSize: '20px' }}>Reset Recording</Typography>
-          <Typography variant="body1">Would you like to discard this recording or save it?</Typography>
+          <Typography variant="subtitle1" sx={{ fontWeight: 'bold', fontSize: '20px' }}>{ts.resetRecording}</Typography>
+          <Typography variant="body1">{ts.discardRecording}</Typography>
         </Stack>
         <Stack direction="row" spacing={1} sx={{ width: '100%',display: 'flex', alignItems: 'center', justifyContent: 'flex-end', px: 1, flex: 1, minWidth: 0 }}>
           <Button
@@ -32,7 +36,7 @@ export const DeleteDialog = (props: IProps) => {
               boxShadow: theme.shadows[2],
               color: 'black'})}
           >
-            Cancel
+            {ts.cancel}
           </Button>
           <Button
             onClick={props.handleDelete}
@@ -44,10 +48,10 @@ export const DeleteDialog = (props: IProps) => {
               boxShadow: theme.shadows[2],
               color: 'black'})}
           >
-            Delete
+            {ts.delete}
           </Button>
           <PriButton onClick={props.handleSave} disabled={props.isSaveDisabled}>
-            Save
+            {ts.save}
           </PriButton>
         </Stack>
       </Stack>

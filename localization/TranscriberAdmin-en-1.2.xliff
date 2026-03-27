@@ -8707,6 +8707,27 @@
               <context context-type="sourcefile">PlanSheet.tsx</context>
           </context-group>
         </trans-unit>
+        <trans-unit id="shared.resetRecording">
+          <source>Reset Recording</source>
+          <target/>
+          <context-group>
+              <context context-type="sourcefile">PlanSheet.tsx</context>
+          </context-group>
+        </trans-unit>
+        <trans-unit id="shared.discardRecording">
+          <source>Would you like to discard this recording or save it?</source>
+          <target/>
+          <context-group>
+              <context context-type="sourcefile">PlanSheet.tsx</context>
+          </context-group>
+        </trans-unit>
+        <trans-unit id="shared.stop">
+          <source>STOP</source>
+          <target/>
+          <context-group>
+              <context context-type="sourcefile">PlanSheet.tsx</context>
+          </context-group>
+        </trans-unit>
       	<trans-unit id="shared.uploadRights">
       		<source>Upload Rights File</source>
       		<target/>
