@@ -47,6 +47,7 @@ import PassageDetailParatextIntegration from '../components/PassageDetail/Passag
 import { PassageDetailDiscuss } from '../components/PassageDetail/PassageDetailDiscuss';
 import { addPt } from '../utils/addPt';
 import DiscussionPanel from '../components/Discussions/DiscussionPanel';
+import PassageDetailRecordMobile from '../components/PassageDetail/mobile/record/PassageDetailRecordMobile';
 
 const KeyTerms = React.lazy(
   () => import('../components/PassageDetail/Keyterms/KeyTerms')
@@ -362,7 +363,7 @@ const PassageDetailGrids = () => {
                     />
                   )}
                   {tool === ToolSlug.Record && (
-                    <PassageDetailRecord width={Math.max(0, paneWidth - 40)} />
+                    isMobile ? <PassageDetailRecordMobile width={Math.max(0, paneWidth - 40)} /> : <PassageDetailRecord width={Math.max(0, paneWidth - 40)} />
                   )}
                   {tool === ToolSlug.ConsultantCheck && (
                     <ConsultantCheck width={paneWidth} />
