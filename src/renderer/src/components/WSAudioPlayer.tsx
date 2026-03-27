@@ -97,6 +97,7 @@ import { IVoicePerm } from '../business/voice/PersonalizeVoicePermission';
 import BigDialogBp from '../hoc/BigDialogBp';
 import { MainAPI } from '@model/main-api';
 import DeleteDialog from './PassageDetail/mobile/record/DeleteDialog';
+import { AudioDownload } from './AudioDownload';
 const ipc = window?.api as MainAPI;
 
 const HandScissors = FaHandScissors as unknown as React.FC<IconBaseProps>;
@@ -121,6 +122,7 @@ interface IProps {
   allowRecord?: boolean;
   allowZoom?: boolean;
   hideZoom?: boolean;
+  mediaId?: string;
   allowSegment?: NamedRegions | undefined;
   allowGoTo?: boolean;
   allowAutoSegment?: boolean;
@@ -219,6 +221,7 @@ function WSAudioPlayer(props: IProps) {
     allowRecord,
     allowZoom,
     hideZoom,
+    mediaId,
     allowSegment,
     allowGoTo,
     allowAutoSegment,
@@ -1682,6 +1685,7 @@ function WSAudioPlayer(props: IProps) {
                   </span>
                 </LightTooltip>
               )}
+              <AudioDownload mediaId={mediaId ?? ''} />
               <Grid>
                 <LightTooltip id="wsAudioMoreTip" title="More options">
                   <span>

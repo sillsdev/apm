@@ -523,6 +523,7 @@ function MediaRecord(props: IProps) {
         oneTryOnly={oneTryOnly}
         width={width}
         height={height || 300}
+        mediaId={mediaId}
         blob={originalBlob}
         onBlobReady={onBlobReady}
         setChanged={setFilechanged}
