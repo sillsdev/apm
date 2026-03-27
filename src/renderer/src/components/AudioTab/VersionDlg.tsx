@@ -10,6 +10,7 @@ import {
   IState,
   ProjectD,
   SectionArray,
+  ISharedStrings,
 } from '../../model';
 import {
   findRecord,
@@ -25,24 +26,30 @@ import { ActionRow, GrowingDiv } from '../StepEditor';
 import SelectLatest from './SelectLatest';
 import { UpdateRecord } from '../../model/baseModel';
 import { useOrbitData } from '../../hoc/useOrbitData';
-import { useSelector } from 'react-redux';
+import { shallowEqual, useSelector } from 'react-redux';
 
 import {
   projDefSectionMap,
   useProjectDefaults,
 } from '../../crud/useProjectDefaults';
+import { useMobile } from '../../utils/index';
+import { Typography, Box } from '@mui/material';
+import { sharedSelector } from '../../selector/selectors';
+import { PriButton } from '../../control';
 
 interface IProps {
   passId: string;
   canSetDestination: boolean;
   hasPublishing: boolean;
+  close?: () => void;
 }
 export const VersionDlg = (props: IProps) => {
-  const { passId, canSetDestination, hasPublishing } = props;
+  const { passId, canSetDestination, hasPublishing, close } = props;
   const mediaFiles = useOrbitData<MediaFileD[]>('mediafile');
   const sections = useOrbitData<Section[]>('section');
   const passages = useOrbitData<Passage[]>('passage');
 
+  const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
   const [plan] = useGlobal('plan'); //will be constant here
   const [project] = useGlobal('project'); //will be constant here
   const [memory] = useGlobal('memory');
@@ -52,6 +59,7 @@ export const VersionDlg = (props: IProps) => {
   const [user] = useGlobal('user');
   const [planRec] = useState(getPlan(plan) || ({} as Plan));
   const [playItem, setPlayItem] = useState('');
+  const [selectedId, setSelectedId] = useState('');
   const [data, setData] = useState<IRow[]>([]);
   const [sectionArr, setSectionArr] = useState<SectionArray>([]);
   const [sectionMap, setSectionMap] = useState(new Map<number, string>());
@@ -117,6 +125,8 @@ export const VersionDlg = (props: IProps) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mediaFiles, sections, passages, planRec, passId, playItem, refresh]);
 
+  const { isMobile: isMobileView } = useMobile();
+
   return (
     <>
       <AudioTable
@@ -124,6 +134,8 @@ export const VersionDlg = (props: IProps) => {
         setRefresh={handleRefresh}
         playItem={playItem}
         setPlayItem={setPlayItem}
+        selectedId={selectedId}
+        setSelectedId={setSelectedId}
         readonly={readonly}
         sectionArr={sectionArr}
         shared={shared}
@@ -131,8 +143,28 @@ export const VersionDlg = (props: IProps) => {
         hasPublishing={hasPublishing}
       />
       <ActionRow>
-        <GrowingDiv />
-        <SelectLatest versions={versions} onChange={handleLatest} />
+        {isMobileView ? (
+          <Box sx={{ pt: 2 }}>
+            <PriButton
+              onClick={() => {
+                if (selectedId) {
+                  handleLatest(parseInt(data.find((d) => d.id === selectedId)?.version || '0'));
+                  close && close();
+                }
+              }}
+              disabled={!selectedId}
+            >
+              <Typography sx={{ color: 'white', p: 0.5 }}>
+                {ts.useThisVersion}
+              </Typography>
+            </PriButton>
+          </Box>
+        ) : (
+          <>
+            <GrowingDiv />
+            <SelectLatest versions={versions} onChange={handleLatest} />
+          </>
+        )}
       </ActionRow>
     </>
   );

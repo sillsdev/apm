@@ -29,6 +29,7 @@ import {
   useWaitForRemoteQueue,
   strNumCompare,
   doSort,
+  useMobile,
 } from '../../utils';
 import PlayCell from './PlayCell';
 import DetachCell from './DetachCell';
@@ -43,6 +44,7 @@ import {
   GridSortModel,
   type GridColDef,
 } from '@mui/x-data-grid';
+import { AudioVersionCard } from '../../components/PassageDetail/mobile/record/AudioVersionCard';
 
 interface IProps {
   data: IRow[];
@@ -54,6 +56,8 @@ interface IProps {
   hasPublishing: boolean;
   sectionArr: SectionArray;
   setPlayItem: (item: string) => void;
+  selectedId?: string;
+  setSelectedId?: (item: string) => void;
   onAttach?: (checks: number[], attach: boolean) => void;
 }
 export const AudioTable = (props: IProps) => {
@@ -469,6 +473,37 @@ export const AudioTable = (props: IProps) => {
   }, []); //do this once to get the default;
 
   const columnVisibilityModel: GridColumnVisibilityModel = { planName: false };
+
+  const { isMobile: isMobileView } = useMobile();
+  const [localSelectedId, setLocalSelectedId] = useState<string>(
+    sortedData[0]?.id || ''
+  );
+  const selectedId = props.selectedId ?? localSelectedId;
+  const setSelectedId = props.setSelectedId ?? setLocalSelectedId;
+
+  if (isMobileView) {
+    return (
+      <Box sx={{height: '20rem', overflowY: 'scroll' }}>
+        {sortedData.map((row) => (
+          <AudioVersionCard
+            key={row.id}
+            {...row}
+            isSelected={row.id === selectedId}
+            setIsSelected={setSelectedId}
+            lang={lang}
+            handleSelect={handleSelect}
+            playItem={playItem}
+            mediaPlaying={mediaPlaying}
+          />
+        ))}
+        <MediaPlayer
+          srcMediaId={playItem}
+          requestPlay={mediaPlaying}
+          onEnded={playEnded}
+        />
+      </Box>
+    );
+  }
 
   return (
     <Box ref={boxRef} sx={{ width: '100%' }}>

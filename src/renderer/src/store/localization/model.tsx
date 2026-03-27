@@ -1317,6 +1317,7 @@ export interface IRecordButtonStrings extends Localize.LocalizedStringsMethods {
     "record": string;
     "rerecord": string;
     "resume": string;
+    "stop": string;
 };
 
 export interface IRecordStepSettingsStrings extends Localize.LocalizedStringsMethods {
@@ -1459,6 +1460,10 @@ export interface ISharedStrings extends Localize.LocalizedStringsMethods {
     "translator": string;
     "uploadMediaPlural": string;
     "uploadMediaSingular": string;
+    "upload": string;
+    "resetRecording": string;
+    "discardRecording": string;
+    "useThisVersion": string;
     "uploadRights": string;
     "uploadSuccess": string;
     "user": string;

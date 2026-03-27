@@ -2,6 +2,7 @@ import { Box, Button, SxProps, useTheme } from '@mui/material';
 import { LightTooltip } from './LightTooltip';
 import PauseIcon from '@mui/icons-material/Pause';
 import StopIcon from '@mui/icons-material/Stop';
+import { Typography } from '@mui/material';
 import { FaSquare, FaCircle } from 'react-icons/fa';
 import type { IconBaseProps } from 'react-icons/lib';
 import { shallowEqual, useSelector } from 'react-redux';
@@ -24,6 +25,8 @@ interface IRecordButtonProps {
   sx?: SxProps;
   isStopLogic?: boolean;
   active?: boolean;
+  isMobileView?: boolean;
+  isRecordingRights?: boolean;
 }
 
 export const RecordButton = ({
@@ -39,6 +42,8 @@ export const RecordButton = ({
   isStopLogic = false,
   active = true,
   sx,
+  isMobileView,
+  isRecordingRights,
 }: IRecordButtonProps) => {
   const theme = useTheme();
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -67,6 +72,100 @@ export const RecordButton = ({
     recordButtonSelector,
     shallowEqual
   );
+
+  if (isMobileView){
+    {/* small black button for rights recording mobile */}
+    if (isRecordingRights) {
+      return(
+        <Box
+          onClick={handleClick}
+          role="button"
+          tabIndex={0}
+          onKeyDown={handleKeyDown}
+          sx={{
+            display: 'flex',
+            cursor: 'pointer',
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: 'black',
+            borderRadius: '4px',
+            padding: '4px',
+            boxShadow: theme.shadows[2],
+          }}
+        >
+          {recording ? (
+            <>
+              <StopIcon style={{ color: 'white', fontSize: isSmall ? '1.4em' : '1.4rem' }} />
+              <Typography variant="caption" sx={{ mt: 0.5, textAlign: 'center', color: 'white', ml: 1 }}>
+                {t.stop}
+              </Typography>
+            </>
+          ) : (
+            <>
+              <WhiteCircle style={{ color: redColor, fontSize: isSmall ? '1.2rem' : '1.4rem' }} />
+              <Typography variant="caption" sx={{ mt: 0.5, textAlign: 'center', color: 'white', ml: 1 }}>
+                {t.record}
+              </Typography>
+            </>
+          )}
+        </Box>
+      );
+    }
+    {/* Record button with Resume text for mobile view */}
+    return (
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%'}}>
+        <Box
+          onClick={handleClick}
+          role="button"
+          tabIndex={0}
+          onKeyDown={handleKeyDown}
+          sx={(theme) => {
+            return {
+              px: isSmall ? 1 : undefined,
+              py: isSmall ? 1 : undefined,
+              minWidth: isSmall ? 48 : 60,
+              maxWidth: recording ? 100 : hasRecording ? 100 : 48,
+              height: 48,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: recording || hasRecording ? 'white' : `${disabled ? disabledColor : redColor} !important`,
+              color: 'white',
+              border: '1px solid black',
+              borderRadius: recording ? '8px' : hasRecording ? '8px' : '50%',
+              cursor: disabled ? 'not-allowed' : 'pointer',
+              fontFamily: 'inherit',
+              fontSize: 'inherit',
+              outline: 'none',
+              opacity: disabled ? 0.7 : 1,
+              '& svg': {
+                fontSize: isSmall ? '1.5rem' : '1.75rem',
+                color: 'red',
+                fill: 'red',
+              },
+            };
+          }}
+        >
+          {recording ? (
+            oneTryOnly ? (
+              <RecordSquare />
+            ) : isStopLogic ? (
+              <StopIcon />
+            ) : (
+              <PauseIcon />
+            )
+          ) : hasRecording ? (
+            <Typography variant="caption" sx={{ m: 1, textAlign: 'center', color: 'red', fontSize: '1rem', fontWeight: 'bold' }}>
+              {t.resume}
+            </Typography>
+          ) : (
+            <WhiteCircle style={{ fontSize: isSmall ? '1.2rem' : '1.4rem' }} />
+          )}
+        </Box>
+      </Box>
+    );
+  };
 
   if (showText) {
     if (recording) {

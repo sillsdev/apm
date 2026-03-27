@@ -12,6 +12,7 @@ import { ISharedStrings, IVoiceStrings, Organization } from '../../model';
 import BigDialog from '../../hoc/BigDialog';
 import { shallowEqual, useSelector } from 'react-redux';
 import { sharedSelector, voiceSelector } from '../../selector';
+import { useMobile } from '../../utils/index';
 
 interface IProps {
   voice?: string;
@@ -42,6 +43,8 @@ export const VoiceStatement = ({
     navigator.clipboard.writeText(permStatement);
   };
 
+  const { isMobile: isMobileView } = useMobile();
+
   function handlePersonalize() {
     const newState = { ...state, fullName: voice };
     setState && setState(newState);
@@ -55,18 +58,22 @@ export const VoiceStatement = ({
 
   return (
     <Box>
-      <Stack direction="column" spacing={1} sx={{ mx: 1 }}>
-        <Typography sx={{ lineHeight: '1.2rem', pt: 1 }}>
+      <Stack direction="column" spacing={1} sx={{ mx: isMobileView ? 0 : 1 }}>
+        <Typography sx={{ lineHeight: '1.2rem', pt: 1, ...(isMobileView ? { maxHeight: '8rem', overflowY: 'auto', border: '1px solid gray', borderRadius: '4px', p: 1 } : {}) }}>
           {permStatement}
         </Typography>
         <ActionRow>
-          <IconButton onClick={handleCopy} title={ts.clipboardCopy}>
-            <ContentCopyIcon color="primary" fontSize="small" />
-          </IconButton>
-          <GrowingSpacer />
-          <AltButton onClick={handlePersonalize} disabled={saving}>
-            {t.personalize}
-          </AltButton>
+          {!isMobileView && (
+            <>
+              <IconButton onClick={handleCopy} title={ts.clipboardCopy}>
+                <ContentCopyIcon color="primary" fontSize="small" />
+              </IconButton>
+              <GrowingSpacer />
+              <AltButton onClick={handlePersonalize} disabled={saving}>
+                {t.personalize}
+              </AltButton>
+            </>
+          )}
         </ActionRow>
       </Stack>
       <BigDialog

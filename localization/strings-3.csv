@@ -376,7 +376,7 @@ main.apiError	API Error:	Erreur API:	Erro de API:	Error de la API:	Kesalahan API
 integration.usernameError	Username error:	Erreur de nom d'utilisateur:	Erro de nome de usuário:	Error de nombre de usuario:	Kesalahan nama pengguna:	Ошибка имени пользователя:	用户名错误：
 integration.syncError	Sync error:	Erreur de synchronisation:	Erro de sincronização:	Error de sincronización:	Kesalahan kirim/terima:	Ошибка синхронизации:	同步出错
 transcriptionTab.error	Export Error	Erreur d'exportation	Erro de Exportação	Error en la exportación	Kesalahan Saat Mengekspor	Ошибка экспорта	导出错误
-faithbridge.error	Error: 	Erreur : 	Erro: 	Error: 	Error: 	Ошибка:	错误： 
+faithbridge.error	Error: 	Erreur : 	Erro: 	Error: 	Error: 	Ошибка:	错误：
 grid.equal	Equals	Équivaut à	Igual	Es igual a	Sama dengan	Равно	等于
 vProject.scenes	Scene/Scenes	Scène/Scènes	Cena/Cenas	Escena/Escenas	Adegan	Сцена/Сцены	场景
 control.scripture	Scripture	Écritures	Referência Bíblica	Escritura	Alkitab	Писание	经文

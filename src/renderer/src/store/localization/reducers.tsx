@@ -1387,6 +1387,7 @@ const initialState = {
 			"record": "RECORD",
 			"rerecord": "RERECORD",
 			"resume": "RESUME",
+			"stop": "STOP",
 		}
 	}),
 	"recordStepSettings": new LocalizedStrings({
@@ -1537,6 +1538,10 @@ const initialState = {
 			"translator": "Translator",
 			"uploadMediaPlural": "Upload Audio",
 			"uploadMediaSingular": "Upload Audio",
+			"upload": "Upload",
+			"resetRecording": "Reset Recording",
+			"discardRecording": "Would you like to discard this recording or save it?",
+			"useThisVersion": "Use This Version",
 			"uploadRights": "Upload Rights File",
 			"uploadSuccess": "Upload Successful",
 			"user": "Team Member",
