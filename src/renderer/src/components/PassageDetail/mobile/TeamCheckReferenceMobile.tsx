@@ -8,7 +8,6 @@ import {
 } from 'react';
 import { Grid, GridProps, styled } from '@mui/material';
 import SelectMyResource from '../Internalization/SelectMyResource';
-import { LimitedMediaPlayer } from '../../LimitedMediaPlayer';
 import { PassageDetailContext } from '../../../context/PassageDetailContext';
 import { getSegments, NamedRegions } from '../../../utils';
 import { storedCompareKey } from '../../../utils/storedCompareKey';
@@ -20,7 +19,6 @@ import {
 } from './PassageDetailPlayerMobile';
 import PassageDetailPlayer from '../PassageDetailPlayer';
 import { BlobStatus, useFetchMediaBlob } from '../../../crud/useFetchMediaBlob';
-import { MediaFileD } from '@model/mediafile';
 
 const StyledGrid = styled(Grid)<GridProps>(({ theme }) => ({
   margin: theme.spacing(2),
@@ -146,12 +144,6 @@ export function TeamCheckReferenceMobile() {
     }
   }, [mediaId, fetchBlob]);
 
-  const handleEnded = () => {
-    setPlayerMediafile('');
-    handleItemPlayEnd();
-    setTimeout(() => setResetCount(resetCount + 1), 500);
-  };
-
   useEffect(() => {
     setPlayItem('');
     // We track the user's choices for each passage of the section
@@ -237,18 +229,6 @@ export function TeamCheckReferenceMobile() {
           )}
         </StyledGrid>
       </MobileGrid>
-
-      {/* <StyledGrid id="Ryan2" size={{ xs: 12 }}>
-        <LimitedMediaPlayer
-          srcMediaId={playItem}
-          requestPlay={itemPlaying}
-          onTogglePlay={handleItemTogglePlay}
-          onEnded={handleEnded}
-          noClose={true}
-          controls={true}
-          limits={{ start: mediaStart, end: mediaEnd }}
-        />
-      </StyledGrid> */}
     </MobileGrid>
   );
 }

@@ -306,7 +306,6 @@ const PassageDetailGrids = () => {
           tool === ToolSlug.ConsultantCheck ||
           tool === ToolSlug.KeyTerm) && (
           <Paper
-            id="Ryan3"
             key={currentstep}
             sx={{ p: 0, margin: 'auto', width: `calc(100% - 32px)` }}
           >
@@ -316,7 +315,6 @@ const PassageDetailGrids = () => {
               tool !== ToolSlug.Record &&
               tool !== ToolSlug.ConsultantCheck ? (
                 <Stack
-                  id="Ryan4"
                   direction="column"
                   sx={{
                     width: '100%',
@@ -442,7 +440,6 @@ export const PassageDetail = () => {
   const setUrlContext = useUrlContext();
   const [view, setView] = useState('');
   const [projType] = useGlobal('projType'); //verified this is not used in a function 2/18/25
-  const { isMobile } = useMobile();
   const [user] = useGlobal('user');
   const { setProjectType } = useProjectType();
 
@@ -473,76 +470,8 @@ export const PassageDetail = () => {
       alignItems="center"
     >
       <AppHead switchTo={true} />
-      <PassageDetailProvider>
-        {
-          // If on mobile render PassageDetailMobileDetail which includes the TeamCheckReference content,
-          // otherwise render the grids which will include the TeamCheckReference component in the right
-          // pane when that tool is selected
-          // isMobile ? (
-          //   <PassageDetailMobileDetail
-          //     currentVersion={1}
-          //     showSideBySide={false}
-          //     recordContent={<TeamCheckReferenceMobile />}
-          //     noAudioText={''}
-          //   />
-          // ) : (
-          // Else, do PassageDetailGrids
-          <PassageDetailGrids />
-          //)
-        }
-      </PassageDetailProvider>
+      <PassageDetailProvider>{<PassageDetailGrids />}</PassageDetailProvider>
     </Box>
   );
 };
 export default PassageDetail;
-
-/*
-<PassageDetailProvider>
-        {
-        // If on mobile render PassageDetailMobileDetail which includes the TeamCheckReference content,
-        // otherwise render the grids which will include the TeamCheckReference component in the right
-        // pane when that tool is selected
-        isMobile ? (
-          <PassageDetailMobileDetail
-            currentVersion={1}
-            showSideBySide={false}
-            recordContent={<TeamCheckReferenceMobile/>}
-            noAudioText={''}
-          />
-        ) :
-        // Else, do PassageDetailGrids
-        (<PassageDetailGrids/>)}
-      </PassageDetailProvider>
-*/
-
-/*
-
-  return (
-    <Box
-      sx={{
-        flexGrow: 1,
-        minWidth: 0,
-        minHeight: '536px',
-        width: '100%',
-        maxWidth: '100%',
-        overflow: 'hidden',
-      }}
-    >
-      <AppHead switchTo={true} />
-      <PassageDetailProvider>
-        { isMobile ? (
-          <PassageDetailMobileDetail
-            currentVersion={1}
-            showSideBySide={true}
-            recordContent={<PassageDetailRecord width={Math.max(0, paneWidth - 40)} />}
-            noAudioText={''}
-          />
-        ) : (
-          <PassageDetailGrids />
-        )}
-      </PassageDetailProvider>
-    </Box>
-  );
-};
-export default PassageDetail;
-*/
