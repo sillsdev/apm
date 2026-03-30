@@ -1,0 +1,52 @@
+{"data": [
+    {
+        "type": "artifacttypes",
+        "attributes": {"typename": "intellectualproperty"},
+        "id": "d4b1aa86-a7a6-4215-9750-1c7f391d9e67"
+    },
+    {
+        "type": "artifacttypes",
+        "attributes": {"typename": "projectresource"},
+        "id": "4e364fec-4b6c-43bf-98b7-8bffd8e88a1b"
+    },
+    {
+        "type": "artifacttypes",
+        "attributes": {"typename": "qanda"},
+        "id": "8b822a5c-00e1-4f47-93d3-ae9fef6b61a2"
+    },
+    {
+        "type": "artifacttypes",
+        "attributes": {"typename": "retell"},
+        "id": "384cd7ac-4571-4ec8-943d-5b31990ea2a3"
+    },
+    {
+        "type": "artifacttypes",
+        "attributes": {"typename": "resource"},
+        "id": "c689c474-4d2c-49a5-ba9e-44266d589ade"
+    },
+    {
+        "type": "artifacttypes",
+        "attributes": {"typename": "backtranslation"},
+        "id": "5eeb1f6a-14de-416e-81d0-e4026630dfc2"
+    },
+    {
+        "type": "artifacttypes",
+        "attributes": {"typename": "activity"},
+        "id": "4de8f378-c3a2-4c62-80b1-06387da08063"
+    },
+    {
+        "type": "artifacttypes",
+        "attributes": {"typename": "sharedresource"},
+        "id": "b42e0bc8-0ff7-44fb-8390-365aaccbeef7"
+    },
+    {
+        "type": "artifacttypes",
+        "attributes": {"typename": "comment"},
+        "id": "4fa4a460-02b7-4dbb-9058-7bc76ae385d4"
+    },
+    {
+        "type": "artifacttypes",
+        "attributes": {"typename": "wholebacktranslation"},
+        "id": "5e45fbda-0887-4d4d-9567-f75f29919c06"
+    }
+]}

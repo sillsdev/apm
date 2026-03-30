@@ -1,5 +1,5 @@
 import path from 'path-browserify';
-import { Burrito, BurritoIngredients } from './data/burritoBuilder';
+import { Burrito, BurritoIngredients } from './data/types';
 import { ProjectD } from '../model';
 import { MainAPI } from '@model/main-api';
 import { getProjectDataFiles } from '../store/importexport/projectDataExport';

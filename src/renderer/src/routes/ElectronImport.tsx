@@ -99,7 +99,9 @@ export const useElectronImport = () => {
     project: string
   ): Promise<IImportData> => {
     if (!isElectron) return invalidReturn;
-    const filePaths = await ipc?.importOpen();
+    const filePaths = await ipc?.importOpen([
+      { name: 'ptf', extensions: ['ptf'] },
+    ]);
     if (!filePaths || filePaths.length === 0) {
       zipRef.current = undefined;
       //they didn't pick a file

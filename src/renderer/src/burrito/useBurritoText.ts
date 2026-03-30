@@ -1,9 +1,5 @@
 import path from 'path-browserify';
-import {
-  Burrito,
-  BurritoIngredients,
-  BurritoScopes,
-} from './data/burritoBuilder';
+import { Burrito, BurritoIngredients, BurritoScopes } from './data/types';
 import related from '../crud/related';
 import { VernacularTag } from '../crud/useArtifactType';
 import { useOrgDefaults } from '../crud/useOrgDefaults';
@@ -16,7 +12,24 @@ import { PassageTypeEnum } from '../model/passageType';
 import { sortChapters } from '../utils/sort';
 import { MainAPI } from '@model/main-api';
 import { sectionDescription } from '../crud/section';
+import {
+  burritoFormat,
+  BurritoTextOutputFormat,
+  parseBurritoTextOutputFormat,
+} from './burritoFormatParams';
+import { convertBurritoText } from './usfmTextConvert';
 const ipc = window?.api as MainAPI;
+
+function textIngredientMimeType(format: BurritoTextOutputFormat): string {
+  switch (format) {
+    case 'usj':
+      return 'application/usj+json';
+    case 'usx':
+      return 'application/usx+xml';
+    default:
+      return 'text/usfm';
+  }
+}
 
 interface Props {
   metadata: Burrito;
@@ -44,6 +57,13 @@ export const useBurritoText = (teamId: string) => {
     let initialText = new Array<string>();
     const versions = parseInt(
       (getOrgDefault('burritoVersions', teamId) || '1') as string
+    );
+    const textOutputFormat = parseBurritoTextOutputFormat(
+      (
+        getOrgDefault(burritoFormat, teamId) as
+          | { textOutputFormat?: unknown }
+          | undefined
+      )?.textOutputFormat
     );
 
     for (const section of sections) {
@@ -73,11 +93,11 @@ export const useBurritoText = (teamId: string) => {
         }
         if (sectionId !== mediaSectionId) {
           sectionId = mediaSectionId;
-          if (paraStart) initialText.push(paraStart);
-          paraStart = '';
           initialText.push(
             `\\s ${sectionDescription(section).trim().split('\u00A0\u00A0').slice(1).join('\u00A0\u00A0')}`
           );
+          if (paraStart) initialText.push(paraStart);
+          paraStart = '';
         }
 
         // get the media files for the passage
@@ -99,7 +119,7 @@ export const useBurritoText = (teamId: string) => {
 
           // initialize name and text maps
           if (!textNameMap.has(i)) {
-            textNameMap.set(i, `${book}v${i + 1}.usfm`);
+            textNameMap.set(i, `${book}v${i + 1}.${textOutputFormat}`);
           }
 
           textMap.set(
@@ -114,7 +134,9 @@ export const useBurritoText = (teamId: string) => {
             const text = textMap.get(i);
             if (text) {
               if (paraStart) text.push(paraStart);
-              let verseRange = attr.transcription;
+              let verseRange = attr.transcription
+                .replace(/(\\[a-z])(\\[a-z])/g, '$1\n$2')
+                .replace(/\\v([0-9]+)/g, '\\v $1');
               if (!/\\v/.test(verseRange)) {
                 let ref = startVerse?.toString();
                 if (endChapter && endChapter !== startChapter) {
@@ -140,13 +162,16 @@ export const useBurritoText = (teamId: string) => {
       if (!name) continue;
       const textPath = path.join(bookPath, name);
       const text = textMap.get(i);
-      const content = text?.join('\n') as string;
+      let content = (text?.join('\n') ?? '') as string;
+      if (textOutputFormat === 'usx' || textOutputFormat === 'usj') {
+        content = await convertBurritoText(content, textOutputFormat);
+      }
       await ipc?.write(textPath, content);
       // add the alignment file to the metadata file
       const docid = textPath.substring(preLen);
       ingredients[docid] = {
         checksum: { md5: await ipc?.md5File(textPath) },
-        mimeType: 'application/json',
+        mimeType: textIngredientMimeType(textOutputFormat),
         size: content.length,
         scope: { [book]: sortChapters(chapters) },
       };

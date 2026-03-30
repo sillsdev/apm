@@ -1,9 +1,5 @@
 import path from 'path-browserify';
-import {
-  Burrito,
-  BurritoIngredients,
-  BurritoScopes,
-} from './data/burritoBuilder';
+import { Burrito, BurritoIngredients, BurritoScopes } from './data/types';
 import related from '../crud/related';
 import { useFetchUrlNow } from '../crud/useFetchUrlNow';
 import { useSnackBar } from '../hoc/SnackBar';
@@ -425,6 +421,9 @@ export const useBurritoNavigation = (teamId: string) => {
       }
     }
 
+    const categoryGraphicsPath = path.join(bookPath, 'graphics');
+    await ipc?.createFolder(categoryGraphicsPath);
+
     for (const cat of artifactCategories.filter((c) => categoryIds.has(c.id))) {
       const catRemId = remoteId('artifactcategory', cat.id, keyMap);
       if (!catRemId) continue;
@@ -456,7 +455,7 @@ export const useBurritoNavigation = (teamId: string) => {
       if (categoryGraphic) {
         await processGraphic(
           categoryGraphic,
-          'graphics',
+          categoryGraphicsPath,
           '',
           'category',
           catRemId

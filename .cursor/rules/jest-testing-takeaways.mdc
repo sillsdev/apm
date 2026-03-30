@@ -11,6 +11,63 @@ alwaysApply: true
 - Prefer deterministic sorting in tests (explicit `sequencenum`).
 - Use `--runInBand --watchAll=false` to avoid hanging runs in CI/automation.
 
+## Custom hooks (`renderHook`)
+
+- Use `renderHook` from `@testing-library/react` (top-level import is fine for normal
+  specs). Wrap async updates in `act`.
+- When you **`require` RTL inside a test** (e.g. after `jest.resetModules()`), use
+  `@testing-library/react/pure` — see “`renderHook` after dynamic `require`” below.
+- When a hook returns an async function, `await act(async () => { await result.current(args); })`.
+- Mocks of other hooks (`useProjectDefaults`, etc.) must match the **real return shape**
+  from the implementation (field names and types), or TypeScript and runtime behavior
+  drift. Prefer reading the source of the hook being mocked before stubbing.
+
+## Barrel imports and Jest parse failures
+
+- If the hook under test imports from a **barrel** (e.g. `from '../utils'`), Jest may
+  load unrelated files (`redux`, `react-localization` ESM) and fail with
+  “Cannot use import statement outside a module”.
+- In tests, `jest.mock('../utils', () => ({ onlyWhatYouNeed: ... }))` is often enough.
+- Alternatively, change the production import to a **leaf path** (e.g.
+  `from '../utils/useNum2BookCode'`) only when that is an intentional refactor, not
+  only to fix tests.
+
+## Module-level `window` / global capture
+
+- If the module does **`const ipc = window?.api` (or similar) at top level**, that
+  value is fixed when the module is first loaded. Setting `window.api` in `beforeEach`
+  **after** a top-level `import` of the module under test will **not** update `ipc`.
+- To test different `window.api` values **per test** while still using `renderHook`:
+  - Use **`jest.resetModules()`**, assign **`window.api`** (or `delete` it), then
+    **`require`** the hook module so it re-reads the global at load time.
+  - In the **same** reset/require cycle, **`require('@testing-library/react/pure')`**
+    for `renderHook` / `act` (see below). That way the hook and RTL share **one**
+    React instance from the fresh module registry.
+  - **Re-configure `jest.mock` implementations** after `resetModules()` for any mock
+    you `require` again (e.g. `useProjectDefaults.mockReturnValue(...)`). The mocked
+    module instance is new; `mockReturnValue` on an old reference from a top-level
+    `import` may not apply.
+- **Do not** use `jest.isolateModules` for this pattern with **React hooks**: it
+  loads a **second copy** of `react`, which causes “Invalid hook call” /
+  `Cannot read properties of null (reading 'useRef')` when `renderHook` runs the hook.
+
+## `renderHook` after dynamic `require` of RTL
+
+- The main **`@testing-library/react`** entry registers Jest **`beforeAll` /
+  `afterEach`** hooks when loaded. **`require('@testing-library/react')` inside an
+  `it()`** triggers: “Hooks cannot be defined inside tests”.
+- Prefer **`require('@testing-library/react/pure')`** when you load RTL inside a
+  test (e.g. after `jest.resetModules()`). It exposes `renderHook` and `act` without
+  those global Jest hooks.
+
+## Cutting heavy import graphs (hooks)
+
+- If the hook imports a module that pulls **ESM-only** or **deep** trees
+  (e.g. `useCompression` → localization/redux), **`jest.mock` that module** with the
+  minimal runtime shape the hook needs (often a constant like `ApmDim` only; type-only
+  imports are erased and need not be on the mock). This complements the barrel-import
+  section above when the problematic file is a **direct** import, not only a barrel.
+
 ## Running a New Jest Test Module
 
 Run Jest from `src/renderer` (required for this repo).

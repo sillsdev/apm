@@ -26,14 +26,12 @@ export const dataPath = async (
       case PathType.AVATARS:
       case PathType.LOGOS:
       case PathType.FONTS:
-      case PathType.BURRITO:
-        localName = path.join(
-          homeDir,
-          offlineData,
-          type,
-          local_out?.localname || path.basename(relPath || '')
-        );
+      case PathType.BURRITO: {
+        // relPath from myName() is already burrito/<bibleId>/<part>/…; do not use basename
+        const tail = local_out?.localname || relPath || '';
+        localName = path.join(homeDir, offlineData, tail);
         break;
+      }
       case PathType.MEDIA: {
         const parsedUrl = parse(relPath);
         const fileName = relPath?.startsWith('http')

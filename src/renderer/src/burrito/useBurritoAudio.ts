@@ -4,11 +4,7 @@ import {
   AlignmentGroup,
   AlignmentRecord,
 } from './data/alignmentBuilder';
-import {
-  Burrito,
-  BurritoIngredients,
-  BurritoScopes,
-} from './data/burritoBuilder';
+import { Burrito, BurritoIngredients, BurritoScopes } from './data/types';
 import related from '../crud/related';
 import { VernacularTag, useArtifactType } from '../crud/useArtifactType';
 import { ArtifactTypeSlug } from '../crud/artifactTypeSlug';
@@ -38,6 +34,10 @@ import { useComputeRef } from '../components/PassageDetail/Internalization/useCo
 import { MainAPI } from '@model/main-api';
 import { Stats } from 'fs';
 import getMediaExt from '../utils/getMediaExt';
+import {
+  BURRITO_AUDIO_FILE_EXTENSIONS,
+  inferAudioContentType,
+} from '../utils/mimeTypes';
 const ipc = window?.api as MainAPI;
 
 interface Props {
@@ -53,6 +53,8 @@ interface Props {
   flavorTypeName?: string;
   /** When set, only include media files whose artifact type slug is in this list (e.g. Resource, SharedResource, ProjectResource). */
   artifactTypeFilter?: ArtifactTypeSlug[];
+  /** When true, transcode non-MP3 audio in the burrito tree to MP3 and update ingredient paths and metadata. */
+  convertToMp3?: boolean;
 }
 
 export const useBurritoAudio = (teamId: string) => {
@@ -76,6 +78,7 @@ export const useBurritoAudio = (teamId: string) => {
     passageTypeFilter = PassageTypeEnum.PASSAGE,
     flavorTypeName,
     artifactTypeFilter,
+    convertToMp3 = false,
   }: Props) => {
     if (flavorTypeName && metadata.type?.flavorType) {
       metadata.type.flavorType.name = flavorTypeName;
@@ -142,8 +145,24 @@ export const useBurritoAudio = (teamId: string) => {
           return;
         }
       }
-      const docid = destPath.substring(preLen);
       await ipc?.copyFile(mediaName, destPath);
+      let finalPath = destPath;
+      if (convertToMp3) {
+        const ext = path.extname(destPath).toLowerCase();
+        if (BURRITO_AUDIO_FILE_EXTENSIONS.has(ext) && ext !== '.mp3') {
+          const mp3Path = ext
+            ? destPath.slice(0, -ext.length) + '.mp3'
+            : `${destPath}.mp3`;
+          const convResult = await ipc?.convertToMp3(destPath, mp3Path);
+          if (typeof convResult === 'string') {
+            showMessage(`Failed to convert ${contextLabel} to mp3`);
+            return;
+          }
+          await ipc?.delete(destPath);
+          finalPath = mp3Path;
+        }
+      }
+      const docid = finalPath.substring(preLen);
       if (buildAlignment) {
         const alignmentRecords: AlignmentRecord[] = [];
         const regionstr = getSegments(
@@ -171,14 +190,12 @@ export const useBurritoAudio = (teamId: string) => {
           });
         }
       }
-      if (!attr.filesize || attr.filesize === 0) {
-        const stat = JSON.parse(await ipc?.stat(destPath)) as Stats;
-        attr.filesize = stat?.size || 0;
-      }
+      const stat = JSON.parse(await ipc?.stat(finalPath)) as Stats;
+      const size = stat?.size ?? 0;
       ingredients[docid] = {
-        checksum: { md5: await ipc?.md5File(destPath) },
-        mimeType: attr.contentType,
-        size: attr.filesize,
+        checksum: { md5: await ipc?.md5File(finalPath) },
+        mimeType: inferAudioContentType(finalPath, attr.contentType),
+        size,
         scope: { [book]: [scopeRef] },
         properties: {
           apmId: m.keys?.remoteId || m.id,

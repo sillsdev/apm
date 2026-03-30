@@ -1,6 +1,7 @@
 import React, { useCallback, useMemo, useRef } from 'react';
 import path from 'path-browserify';
-import { BurritoBuilder, BurritoLocalizedNames } from './data/burritoBuilder';
+import { BurritoBuilder } from './data/burritoBuilder';
+import { BurritoLocalizedNames } from './data/types';
 import { useGlobal } from '../context/useGlobal';
 import {
   remoteId,
@@ -29,6 +30,7 @@ import * as actions from '../store';
 import dataPath, { PathType } from '../utils/dataPath';
 import cleanFileName from '../utils/cleanFileName';
 import { burritoContents } from './BurritoContents';
+import { burritoFormat } from './burritoFormatParams';
 import { BurritoType } from './BurritoType';
 import { burritoWrapper } from './BurritoWrapper';
 import { pad2 } from '../utils/pad2';
@@ -45,6 +47,8 @@ import { MainAPI } from '@model/main-api';
 import { useBurritoText } from './useBurritoText';
 import { burritoSelector } from '../selector';
 const ipc = window?.api as MainAPI;
+const WRAPPER_FILENAME = 'wrapper.json';
+const METADATA_FILENAME = 'metadata.json';
 
 export interface CreateBurritoProgress {
   current: number;
@@ -286,10 +290,16 @@ export const useCreateBurrito = (teamId: string) => {
     ) => void
   ) => {
     const metaName = await dataPath(
-      myName('metadata.json', part),
+      myName(METADATA_FILENAME, part),
       PathType.BURRITO
     );
-    const preLen = metaName.indexOf('metadata.json');
+    const preLen = metaName.indexOf(METADATA_FILENAME);
+    const convertToMp3 =
+      (
+        getOrgDefault(burritoFormat, teamId) as
+          | { convertToMp3?: boolean }
+          | undefined
+      )?.convertToMp3 === true;
     await ipc?.createFolder(path.dirname(metaName));
     let metaData = getMetadata(languages);
 
@@ -347,6 +357,7 @@ export const useCreateBurrito = (teamId: string) => {
             bookPath,
             preLen,
             sections: bookSecs,
+            convertToMp3,
           });
         }
         if (part === BurritoType.Notes) {
@@ -359,6 +370,7 @@ export const useCreateBurrito = (teamId: string) => {
             sections: bookSecs,
             passageTypeFilter: PassageTypeEnum.NOTE,
             flavorTypeName: 'x-notes',
+            convertToMp3,
           });
         }
         if (part === BurritoType.Resources) {
@@ -376,6 +388,21 @@ export const useCreateBurrito = (teamId: string) => {
               ArtifactTypeSlug.SharedResource,
               ArtifactTypeSlug.ProjectResource,
             ],
+            convertToMp3,
+          });
+        }
+        if (part === BurritoType.IntellectualProperty) {
+          metaData = await burritoAudio({
+            metadata: metaData,
+            bible: bible as BibleD,
+            book,
+            bookPath,
+            preLen,
+            sections: bookSecs,
+            passageTypeFilter: null,
+            flavorTypeName: 'x-intellectualproperty',
+            artifactTypeFilter: [ArtifactTypeSlug.IntellectualProperty],
+            convertToMp3,
           });
         }
         if (part === BurritoType.Text) {
@@ -406,7 +433,7 @@ export const useCreateBurrito = (teamId: string) => {
   };
 
   const getWrapperPath = async () => {
-    return await dataPath(myName('metadata.json'), PathType.BURRITO);
+    return await dataPath(myName(WRAPPER_FILENAME), PathType.BURRITO);
   };
 
   const getResultPath = async () => {
@@ -457,11 +484,13 @@ export const useCreateBurrito = (teamId: string) => {
                 ? t.createNotes
                 : part === BurritoType.Resources
                   ? t.createResources
-                  : part === BurritoType.Navigation
-                    ? t.createNavigation
-                    : part === BurritoType.ApmData
-                      ? t.createData
-                      : t.createOther.replace('{0}', part.toLowerCase());
+                  : part === BurritoType.IntellectualProperty
+                    ? t.createIntellectualProperty
+                    : part === BurritoType.Navigation
+                      ? t.createNavigation
+                      : part === BurritoType.ApmData
+                        ? t.createData
+                        : t.createOther.replace('{0}', part.toLowerCase());
 
         await createPart(
           part,

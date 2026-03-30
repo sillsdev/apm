@@ -1,0 +1,59 @@
+---
+description: How to add and consume localization strings in this repo
+alwaysApply: true
+---
+
+# Localization Takeaways
+
+- **Source of truth for new strings:** edit
+  [`localization/TranscriberAdmin-en-1.2.xliff`](localization/TranscriberAdmin-en-1.2.xliff).
+  Add or update `<trans-unit>` entries in the correct `<group>` for the feature
+  (ids follow `section.key`, e.g. `burrito.format`, `burrito.convertToMp3`).
+  Prefer keeping `<trans-unit id="…">` order **alphabetically by id** within that
+  group so diffs stay predictable. Use `<source>…</source>` and an empty
+  `<target/>` for new English units; add a `<context-group>` with
+  `context-type="sourcefile"` set to the primary consuming file (e.g.
+  `BurritoFormat.tsx`) so translators see where the string is used.
+- **Regenerate TypeScript and default English:** after XLIFF changes, run the
+  updater from [**`localization\bin\Debug`**](localization/bin/Debug) as the
+  **current working directory** — not the repo root. The tool resolves inputs as
+  `..\..\…` relative to that folder (see [`localization/Program.cs`](localization/Program.cs));
+  starting it elsewhere makes it look for `TranscriberAdmin-en-1.2.xliff` in the
+  wrong place and fails with `FileNotFoundException`. Convenience:
+  [`localization/Updatestrings.bat`](localization/Updatestrings.bat) does
+  `cd bin\debug` then runs the exe.
+- **What the pipeline writes:** the exe generates `localizeModel.tsx` and
+  `localizationReducer.tsx` under `localization\`, then
+  [`localization/UpdateLocalizationFollowUp.bat`](localization/UpdateLocalizationFollowUp.bat)
+  (spawned when present) copies them to
+  [`src/renderer/src/store/localization/model.tsx`](src/renderer/src/store/localization/model.tsx)
+  and
+  [`reducers.tsx`](src/renderer/src/store/localization/reducers.tsx), and
+  refreshes `strings*.json` / `exported-strings-name.json` under
+  `src/renderer/public/localization` and `src/renderer/src/store/localization`.
+  Avoid hand-editing `model.tsx` / `reducers.tsx` for strings that belong in
+  XLIFF, or the next tool run will overwrite or fight those edits.
+- **Using strings in components:** follow existing patterns — typically
+  `useSelector` with a selector from
+  [`src/renderer/src/selector/selectors.tsx`](src/renderer/src/selector/selectors.tsx)
+  (e.g. `burritoSelector` → `layout: 'burrito'`), then read properties on the
+  returned `LocalizedStrings` object (and `getString` / format helpers where
+  used elsewhere).
+- **New string _section_ (new `layout` bucket):** if none of the existing
+  selectors fit, add a new entry in `selectors.tsx` that calls
+  `localStrings(state, { layout: 'yourSection' })`, matching the section name
+  the tool emits in `model.tsx` / Redux `strings` slice. Add the corresponding
+  groups and units in XLIFF, then run the updater from `localization\bin\Debug`
+  as above.
+- **Verify after regen:** run `npm run typecheck` from `src\renderer` (or root
+  `npm run typecheck:web`, which delegates there).
+
+## Quick reference
+
+| Step | Action                                                                                                         |
+| ---- | -------------------------------------------------------------------------------------------------------------- |
+| 1    | Add/update `<trans-unit>` in `localization/TranscriberAdmin-en-1.2.xliff`                                      |
+| 2    | `cd localization\bin\Debug` → run `updateLocalization.exe`, **or** run `Updatestrings.bat` from `localization` |
+| 3    | Confirm `model.tsx` / `reducers.tsx` (and JSON if applicable) updated under `src/renderer/…`                   |
+| 4    | `cd src\renderer` → `npm run typecheck`                                                                        |
+| 5    | Use `useSelector(yourSelector)` (add a selector only if the section is new)                                    |

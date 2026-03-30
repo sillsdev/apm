@@ -4,10 +4,10 @@ export enum BurritoType {
   Resources = 'Resources',
   Navigation = 'Navigation',
   Notes = 'Notes',
+  IntellectualProperty = 'Intellectual Property',
   // BackTranslation = 'Back translation',
   // CommunityFeedback = 'Community Feedback',
   // Discussions = 'Discussions',
-  // IntellectualProperty = 'Intellectual Property',
   // Terms = 'Terms',
   ApmData = 'Apm Data',
 }

@@ -146,20 +146,24 @@ export interface IBurritoStrings extends Localize.LocalizedStringsMethods {
     "audio": string;
     "backTranslation": string;
     "books": string;
+    "cancelCreation": string;
     "create": string;
     "createAudio": string;
     "createText": string;
     "createNotes": string;
     "createResources": string;
+    "createIntellectualProperty": string;
     "createNavigation": string;
     "createData": string;
     "createOther": string;
     "communityFeedback": string;
     "contents": string;
+    "convertToMp3": string;
     "deselectAll": string;
     "discussions": string;
     "enterNewValue": string;
     "failed": string;
+    "format": string;
     "intellectualProperty": string;
     "navigation": string;
     "notes": string;
@@ -172,6 +176,10 @@ export interface IBurritoStrings extends Localize.LocalizedStringsMethods {
     "success": string;
     "terms": string;
     "text": string;
+    "textOutputFormat": string;
+    "textOutputUsfm": string;
+    "textOutputUsj": string;
+    "textOutputUsx": string;
     "updateValue": string;
     "valueWarning": string;
     "wrapper": string;
@@ -436,6 +444,17 @@ export interface IFaithbridgeStrings extends Localize.LocalizedStringsMethods {
     "video": string;
 };
 
+export interface IFilterContentStrings extends Localize.LocalizedStringsMethods {
+    "allChapters": string;
+    "allBooks": string;
+    "audioContent": string;
+    "other": string;
+    "title": string;
+    "transcriptionContent": string;
+    "subtitle1": string;
+    "subtitle2": string;
+};
+
 export interface IFilterMenuStrings extends Localize.LocalizedStringsMethods {
     "all": string;
     "allPassages": string;
@@ -566,6 +585,9 @@ export interface IHotKeyStrings extends Localize.LocalizedStringsMethods {
 };
 
 export interface IImportStrings extends Localize.LocalizedStringsMethods {
+    "burritoConvertingBook": string;
+    "burritoPreparingLocal": string;
+    "burritoReadingFiles": string;
     "close": string;
     "continue": string;
     "copy": string;
@@ -573,6 +595,7 @@ export interface IImportStrings extends Localize.LocalizedStringsMethods {
     "createNewTeam": string;
     "error": string;
     "externalSource": string;
+    "externalSourceBurrito": string;
     "family": string;
     "filter": string;
     "fontsize": string;
@@ -589,6 +612,7 @@ export interface IImportStrings extends Localize.LocalizedStringsMethods {
     "invalidITF": string;
     "invalidProject": string;
     "locale": string;
+    "newTeamChainFailed": string;
     "noFile": string;
     "offlineImport": string;
     "old": string;
@@ -608,6 +632,18 @@ export interface IImportStrings extends Localize.LocalizedStringsMethods {
     "unassigned": string;
     "unknownError": string;
     "username": string;
+};
+
+export interface IScriptureBurritoImportStrings extends Localize.LocalizedStringsMethods {
+    "title": string;
+    "zipExtractError": string;
+    "metadataNotFoundError": string;
+    "invalidWrapperMetadataError": string;
+    "subtitle": string;
+    "browseDirectory": string;
+    "browseZipFile": string;
+    "selected": string;
+    "wrapperNotFoundError": string;
 };
 
 export interface IIntegrationStrings extends Localize.LocalizedStringsMethods {
@@ -760,6 +796,7 @@ export interface IMainStrings extends Localize.LocalizedStringsMethods {
     "exit": string;
     "export": string;
     "flatSample": string;
+    "genericError": string;
     "genFlatSample": string;
     "genHierarchicalSample": string;
     "goOffline": string;
@@ -790,6 +827,7 @@ export interface IMainStrings extends Localize.LocalizedStringsMethods {
     "reportWhenOnline": string;
     "saveFirst": string;
     "saving": string;
+    "scriptureBurrito": string;
     "sessionExpireTask": string;
     "sessionExpiring": string;
     "settings": string;
@@ -802,6 +840,7 @@ export interface IMainStrings extends Localize.LocalizedStringsMethods {
     "unexpectedError": string;
     "UnsavedData": string;
     "updateAvailable": string;
+    "upload": string;
     "version": string;
     "videos": string;
     "walkThru": string;
@@ -2020,6 +2059,7 @@ export interface ILocalizedStrings {
 	electronImport: IElectronImportStrings;
 	emailUnverified: IEmailUnverifiedStrings;
 	faithbridge: IFaithbridgeStrings;
+	filterContent: IFilterContentStrings;
 	filterMenu: IFilterMenuStrings;
 	findResource: IFindResourceStrings;
 	graphic: IGraphicStrings;
@@ -2027,6 +2067,7 @@ export interface ILocalizedStrings {
 	groupTabs: IGroupTabsStrings;
 	hotKey: IHotKeyStrings;
 	import: IImportStrings;
+	scriptureBurritoImport: IScriptureBurritoImportStrings;
 	integration: IIntegrationStrings;
 	invitationTable: IInvitationTableStrings;
 	invite: IInviteStrings;

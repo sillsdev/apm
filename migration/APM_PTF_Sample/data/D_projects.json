@@ -1,0 +1,50 @@
+{"data": [{
+    "type": "projects",
+    "attributes": {
+        "name": "Language",
+        "description": "",
+        "uilanguagebcp47": "en",
+        "language": "seh",
+        "language-name": "Sena",
+        "is-public": false,
+        "spell-check": false,
+        "default-font": "charissil",
+        "default-font-size": "large",
+        "rtl": false,
+        "allow-claim": true,
+        "date-created": "2025-11-11T20:01:51.766Z",
+        "date-updated": "2025-11-11T21:51:15.682Z",
+        "default-params": "{\"book\":\"010\",\"story\":true,\"sectionMap\":[]}"
+    },
+    "relationships": {
+        "lastModifiedByUser": {"data": {
+            "type": "user",
+            "id": "5b1295fe-04e4-40b2-a2db-1f0d259f43db"
+        }},
+        "projecttype": {"data": {
+            "type": "projecttype",
+            "id": "0f6ba66f-0af8-401a-a23b-4f8815eb817a"
+        }},
+        "group": {"data": {
+            "type": "group",
+            "id": "dee186b5-3e55-4d0a-854f-f7ae8cf86cd1"
+        }},
+        "organization": {"data": {
+            "type": "organization",
+            "id": "9d0cf859-206d-480b-86e3-47c148daec1a"
+        }},
+        "owner": {"data": {
+            "type": "user",
+            "id": "5b1295fe-04e4-40b2-a2db-1f0d259f43db"
+        }},
+        "editsheetuser": {"data": null},
+        "editsheetgroup": {"data": null},
+        "publishuser": {"data": null},
+        "publishgroup": {"data": null},
+        "plans": {"data": [{
+            "type": "plan",
+            "id": "21c35309-8073-422c-a172-3013fd077ab1"
+        }]}
+    },
+    "id": "954660c8-b788-46ff-8608-05a3c28b3de0"
+}]}

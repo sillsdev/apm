@@ -1,0 +1,47 @@
+{"data": [
+    {
+        "type": "artifactcategories",
+        "attributes": {
+            "discussion": false,
+            "resource": true,
+            "categoryname": "activity"
+        },
+        "id": "a8e2c440-d055-46d4-8a5f-9a97f82a4f6e"
+    },
+    {
+        "type": "artifactcategories",
+        "attributes": {
+            "discussion": false,
+            "resource": true,
+            "categoryname": "scripture"
+        },
+        "id": "b24cf46b-8fc9-4529-b6cf-fe28487916b7"
+    },
+    {
+        "type": "artifactcategories",
+        "attributes": {
+            "discussion": false,
+            "resource": true,
+            "categoryname": "biblestory"
+        },
+        "id": "738f04b5-6752-4799-8809-cf4ccc1c60e8"
+    },
+    {
+        "type": "artifactcategories",
+        "attributes": {
+            "discussion": false,
+            "resource": true,
+            "categoryname": "translationresource"
+        },
+        "id": "5523cac5-6889-4043-ae99-bbadcfe19ad9"
+    },
+    {
+        "type": "artifactcategories",
+        "attributes": {
+            "discussion": false,
+            "resource": true,
+            "categoryname": "bookintro"
+        },
+        "id": "0a15e286-0cd0-4a4e-a89a-b40edb022bba"
+    }
+]}

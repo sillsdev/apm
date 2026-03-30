@@ -425,11 +425,12 @@ describe('SwitchTeams', () => {
 
   it('should handle Import dialog when Import button is clicked', () => {
     cy.viewport(1024, 768);
-    mountSwitchTeams(createInitialState({ offline: true }));
+    // Online keeps offerPtf true so ImportTab only shows type selection; offline + browser
+    // runs electron import in useEffect, gets invalid data, and closes immediately.
+    mountSwitchTeams(createInitialState({ offline: false }));
 
     cy.get('[data-testid="import-button"]').should('be.visible').click();
 
-    // Import dialog should open
     cy.get('#importDlg', { timeout: 5000 }).should('be.visible');
   });
 

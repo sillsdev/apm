@@ -13,6 +13,12 @@ Based on
 npm run validate
 ```
 
+### Install
+
+```bash
+npm install
+```
+
 ### Development
 
 ```bash

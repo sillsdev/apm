@@ -30,6 +30,10 @@ export function PassageRef({ psgType, book, ref, comment }: PassageRefProps) {
 
   const fullBookName = getBookName(book);
 
+  if (psgType !== PassageTypeEnum.PASSAGE && !ref) {
+    return null;
+  }
+
   return (
     <Typography variant="h6">
       {psgType === PassageTypeEnum.PASSAGE ? (

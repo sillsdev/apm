@@ -26,13 +26,14 @@ export const useLoadProjectData = () => {
       if (cb) cb();
       return;
     }
+    const projectsLoaded = getGlobal('projectsLoaded');
     checkOnline((online) => {
       LoadProjectData(
         projectId,
         coordinator,
         setCompleted,
         online && !getGlobal('offline'),
-        getGlobal('projectsLoaded'),
+        projectsLoaded,
         AddProjectLoaded,
         setBusy,
         doOrbitError
