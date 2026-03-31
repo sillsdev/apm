@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 /**
  * @jest-environment node
  */
@@ -35,7 +36,6 @@ type UsjStructureModule = {
   ) => ExtractedStructure;
 };
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports -- Jest runs as CJS; migration impl is CommonJS
 const { normalizeTextToUsj, extractStructureFromUsj } =
   require('../../../../migration/usj-structure-impl.cjs') as UsjStructureModule;
 

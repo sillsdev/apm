@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 describe('burritoConversion', () => {
   beforeEach(() => {
     jest.resetModules();
@@ -8,7 +9,9 @@ describe('burritoConversion', () => {
     return {
       temp: jest.fn().mockResolvedValue('/tmp'),
       createFolder: jest.fn().mockResolvedValue(undefined),
-      burritoToPtf: jest.fn().mockResolvedValue({ ok: true, ptfPath: '/tmp/out.ptf' }),
+      burritoToPtf: jest
+        .fn()
+        .mockResolvedValue({ ok: true, ptfPath: '/tmp/out.ptf' }),
     };
   }
 
@@ -81,8 +84,18 @@ describe('burritoConversion', () => {
       {
         label: 'Wrapper',
         books: [
-          { id: 'GEN', label: 'Genesis', chapters: ['1'], burritos: ['audioTranslation'] },
-          { id: 'EXO', label: 'Exodus', chapters: ['1'], burritos: ['textTranslation'] },
+          {
+            id: 'GEN',
+            label: 'Genesis',
+            chapters: ['1'],
+            burritos: ['audioTranslation'],
+          },
+          {
+            id: 'EXO',
+            label: 'Exodus',
+            chapters: ['1'],
+            burritos: ['textTranslation'],
+          },
         ],
       } as any,
       '/wrapper',
@@ -120,4 +133,3 @@ describe('burritoConversion', () => {
     ).rejects.toThrow('nope');
   });
 });
-

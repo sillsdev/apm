@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 describe('dataPath', () => {
   beforeEach(() => {
     jest.resetModules();
@@ -33,13 +34,16 @@ describe('dataPath', () => {
 
   it('returns http(s) relPath unchanged when not in electron/offline mode', async () => {
     const { mod } = load({ isElectron: false, offlineData: 'offline' });
-    await expect(mod.dataPath('https://example.com/file.mp3', mod.PathType.MEDIA))
-      .resolves.toBe('https://example.com/file.mp3');
+    await expect(
+      mod.dataPath('https://example.com/file.mp3', mod.PathType.MEDIA)
+    ).resolves.toBe('https://example.com/file.mp3');
   });
 
   it('joins home/offlineData/relPath when offlineData is set and relPath is not http', async () => {
     const { mod } = load({ isElectron: false, offlineData: 'offline' });
-    await expect(mod.dataPath('media/file.mp3', mod.PathType.MEDIA)).resolves.toBe(
+    await expect(
+      mod.dataPath('media/file.mp3', mod.PathType.MEDIA)
+    ).resolves.toBe(
       // path-browserify uses posix separators
       'C:\\\\home/offline/media/file.mp3'
     );
@@ -56,7 +60,9 @@ describe('dataPath', () => {
     const p = await mod.dataPath(url, mod.PathType.MEDIA);
 
     expect(p).toBe('C:\\\\home/offline/media/Hello World.mp3');
-    expect(api.exists).toHaveBeenCalledWith('C:\\\\home/offline/media/Hello World.mp3');
+    expect(api.exists).toHaveBeenCalledWith(
+      'C:\\\\home/offline/media/Hello World.mp3'
+    );
   });
 
   it('in electron+offline, ZIP uses basename of relPath and preserves local_out.localname', async () => {
@@ -72,13 +78,18 @@ describe('dataPath', () => {
 
   it('in electron+offline, BURRITO does not basename (keeps tail path)', async () => {
     const { mod } = load({ isElectron: true, offlineData: 'offline' });
-    const p = await mod.dataPath('burrito/TST/text/metadata.json', mod.PathType.BURRITO);
+    const p = await mod.dataPath(
+      'burrito/TST/text/metadata.json',
+      mod.PathType.BURRITO
+    );
     expect(p).toBe('C:\\\\home/offline/burrito/TST/text/metadata.json');
   });
 
   it('returns empty string when offlineData is empty and relPath is not http', async () => {
     const { mod } = load({ isElectron: false, offlineData: '' });
-    await expect(mod.dataPath('media/file.mp3', mod.PathType.MEDIA)).resolves.toBe('');
+    await expect(
+      mod.dataPath('media/file.mp3', mod.PathType.MEDIA)
+    ).resolves.toBe('');
   });
 
   it('s3.amazonaws fallback re-tries filename extraction when first exists fails', async () => {
@@ -100,4 +111,3 @@ describe('dataPath', () => {
     expect(p).toBe('C:\\\\home/offline/media/Dir/Weird Name.mp3');
   });
 });
-

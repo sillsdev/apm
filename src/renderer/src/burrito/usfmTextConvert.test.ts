@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-empty-function */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 jest.mock('@xmldom/xmldom', () => ({
   XMLSerializer: class XMLSerializer {
     serializeToString() {
@@ -122,4 +124,3 @@ describe('convertBurritoText', () => {
     expect(init).toHaveBeenCalledTimes(2);
   });
 });
-
