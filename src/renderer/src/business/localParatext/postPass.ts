@@ -110,12 +110,11 @@ export const postPass = ({
     const startsParagraph = startsParagraphInTranscription(transcription, p);
     const paraForThisVerse = isFirstVerse || !hasVerse || startsParagraph;
     let thisVerse = removeOverlappingVerses(doc, p);
+    const transcript = altRef + p.attributes.lastComment;
 
     if (thisVerse) {
       if (paraForThisVerse) thisVerse = moveToPara(doc, thisVerse);
-
-      if (thisVerse)
-        replaceText(doc, thisVerse, altRef + p.attributes.lastComment);
+      if (thisVerse) lastInserted = replaceText(doc, thisVerse, transcript);
     } else if (paraForThisVerse) {
       const verses = getVerses(doc.documentElement);
       const nextVerse = findNodeAfterVerse(
@@ -128,19 +127,21 @@ export const postPass = ({
         doc,
         sibling: nextVerse,
         verses: passageVerses(p),
-        transcript: altRef + p.attributes.lastComment,
+        transcript,
         before: true,
         firstVerse: true,
       });
+      lastInserted = thisVerse;
     } else {
       thisVerse = addParatextVerse({
         doc,
         sibling: lastInserted,
         verses: passageVerses(p),
-        transcript: altRef + p.attributes.lastComment,
+        transcript,
         before: false,
         firstVerse: false,
       });
+      lastInserted = thisVerse;
     }
     if (p.attributes.sequencenum === 1 && thisVerse) {
       addSection({
@@ -152,8 +153,6 @@ export const postPass = ({
         sectionArr,
       });
     }
-
-    lastInserted = thisVerse;
     isFirstVerse = false;
   });
 };

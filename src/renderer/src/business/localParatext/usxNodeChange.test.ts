@@ -662,6 +662,57 @@ describe('usxNodeChange', () => {
     // NOTE: The \r of the newline is removed
   });
 
+  it('should replace text when given a verse element in a multi-verse paragraph', async () => {
+    // Arrange: two verses in one paragraph
+    const doc = domParser.parseFromString(
+      '<usx><para style="p"><verse number="1" style="v"/>T1<verse number="2" style="v"/>old</para></usx>'
+    ) as Document;
+    const verse2 = doc.getElementsByTagName('verse')[1];
+
+    // Act: replace text on the verse element directly (not the paragraph)
+    const result = replaceText(doc, verse2, 'new');
+
+    // Assert: only verse 2's text is replaced, verse 1 is untouched
+    expect(doc.documentElement?.toString()).toBe(
+      '<usx><para style="p"><verse number="1" style="v"/>T1<verse number="2" style="v"/>new</para></usx>'
+    );
+    expect(result.nodeName).toBe('para');
+  });
+
+  it('should replace text on a verse element with newlines creating continuation paragraphs', async () => {
+    // Arrange: two verses in one paragraph
+    const doc = domParser.parseFromString(
+      '<usx><para style="p"><verse number="1" style="v"/>T1<verse number="2" style="v"/>old</para></usx>'
+    ) as Document;
+    const verse2 = doc.getElementsByTagName('verse')[1];
+
+    // Act: replace with text containing a newline
+    const result = replaceText(doc, verse2, 'first\nsecond');
+
+    // Assert: verse 2's text becomes "first", continuation para has "second"
+    expect(doc.documentElement?.toString()).toBe(
+      '<usx><para style="p"><verse number="1" style="v"/>T1<verse number="2" style="v"/>first</para><para style="p">\r\nsecond</para></usx>'
+    );
+    // Returns the last (continuation) paragraph
+    expect(result.nodeName).toBe('para');
+    expect(result.textContent).toContain('second');
+  });
+
+  it('should return the containing paragraph when replaceText is called on a verse', async () => {
+    // Arrange
+    const doc = domParser.parseFromString(
+      '<usx><para style="p"><verse number="1" style="v"/>old</para></usx>'
+    ) as Document;
+    const verse = doc.getElementsByTagName('verse')[0];
+
+    // Act
+    const result = replaceText(doc, verse, 'new');
+
+    // Assert: returns the containing paragraph, not the verse
+    expect(result.nodeName).toBe('para');
+    expect(result).toBe(doc.getElementsByTagName('para')[0]);
+  });
+
   it('should remove the verse from the dom', async () => {
     // Arrange
     const doc = domParser.parseFromString(

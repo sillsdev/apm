@@ -303,17 +303,20 @@ export const removeText = (v: Element) => {
 
 export const replaceText = (
   doc: Document,
-  para: Element,
+  verseOrPara: Element,
   transcript: string
-) => {
-  const verse = firstVerse(para);
+): Element => {
+  const verse = isVerse(verseOrPara) ? verseOrPara : firstVerse(verseOrPara);
+  if (!verse) return verseOrPara;
   removeText(verse);
   const cleaned = removeTimestamps(transcript).replace(/\r\n|\r/g, '\n');
   const lines = cleaned.split('\n');
   let last: Node = verse;
   if (lines[0] !== '')
     last = addAfter(doc, verse, doc.createTextNode(lines[0])) as Node;
-  insertContinuationParagraphs(doc, lines, last);
+  last = insertContinuationParagraphs(doc, lines, last);
+  const resultPara = isPara(last) ? last : paragraphContainer(last);
+  return (resultPara ?? verseOrPara) as Element;
 };
 
 export const removeVerse = (v: Element) => {
