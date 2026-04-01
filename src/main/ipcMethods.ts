@@ -474,11 +474,20 @@ export function ipcMethods(): void {
         stderr: string;
         code: number | null;
       }>((resolve, reject) => {
+        const appNodeModules = path.join(app.getAppPath(), 'node_modules');
+        const nodePath = process.env.NODE_PATH
+          ? `${appNodeModules}${path.delimiter}${process.env.NODE_PATH}`
+          : appNodeModules;
         const child = fork(scriptPath, args, {
           cwd: migrationDir,
           silent: true,
           // fork defaults to process.execPath (Electron); run the script as Node, not a second GUI app
-          env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
+          // Migration lives in extraResources (outside app.asar); NODE_PATH lets require() see app deps.
+          env: {
+            ...process.env,
+            ELECTRON_RUN_AS_NODE: '1',
+            NODE_PATH: nodePath,
+          },
         });
         let stdout = '';
         let stderr = '';
@@ -535,5 +544,4 @@ export function ipcMethods(): void {
       return JSON.stringify(error);
     }
   });
-
 }

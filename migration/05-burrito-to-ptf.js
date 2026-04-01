@@ -19,7 +19,7 @@ const path = require('path');
 const { pathToFileURL } = require('node:url');
 const AdmZip = require('adm-zip');
 const { DateTime } = require('luxon');
-const { getLangTag, getRtl } = require('mui-language-picker');
+const { getLangTag, getRtl } = require('mui-language-picker/dist/langTags');
 
 const SAMPLE_ARTIFACT_CATEGORIES = require('./APM_PTF_Sample/data/C_artifactcategorys.json');
 const SAMPLE_ARTIFACT_TYPES = require('./APM_PTF_Sample/data/C_artifacttypes.json');
