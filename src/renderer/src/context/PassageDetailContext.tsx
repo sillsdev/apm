@@ -907,28 +907,25 @@ const PassageDetailProvider = (props: IProps) => {
               psgCompleted: [...complete],
             };
           });
-        } else if (
-          state.psgCompleted.length !== complete.length ||
-          !state.psgCompleted
-            .sort(stepCmp)
-            .every((c, i) => shallowEqual(c, complete[i]))
-        ) {
-          setState((state: ICtxState) => ({
-            ...state,
-            psgCompleted: [...complete],
-          }));
+        } else {
+          const sortedPrev = [...state.psgCompleted].sort(stepCmp);
+          const sortedNew = [...complete].sort(stepCmp);
+          const sameAsOrbit =
+            sortedPrev.length === sortedNew.length &&
+            sortedPrev.every((c, i) => shallowEqual(c, sortedNew[i]));
+          if (!sameAsOrbit) {
+            setState((state: ICtxState) => ({
+              ...state,
+              psgCompleted: [...complete],
+            }));
+          }
         }
       }
     }
-  }, [
-    memory,
-    pasId,
-    passages,
-    sections,
-    state.passage.id,
-    state.psgCompleted,
-    state.section.id,
-  ]);
+    // Intentionally omit state.psgCompleted from deps: this effect writes psgCompleted;
+    // listing it retriggers every sync and causes "Maximum update depth exceeded".
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- sync from orbit only; see comment above
+  }, [memory, pasId, passages, sections, state.passage.id, state.section.id]);
 
   useEffect(() => {
     if (!booksLoaded) {
@@ -1031,15 +1028,15 @@ const PassageDetailProvider = (props: IProps) => {
       const i = state.selected
         ? newData.findIndex((r) => r.mediafile.id === state.selected)
         : state.index;
+      const willSetSelected =
+        state.tool !== ToolSlug.Resource &&
+        state.tool !== ToolSlug.Transcribe &&
+        mediafileId !== state.playerMediafile?.id;
       setState((state: ICtxState) => {
         return { ...state, rowData: newData, index: i, mediafileId };
       });
 
-      if (
-        state.tool !== ToolSlug.Resource &&
-        state.tool !== ToolSlug.Transcribe &&
-        mediafileId !== state.playerMediafile?.id
-      ) {
+      if (willSetSelected) {
         setSelected(mediafileId, PlayInPlayer.yes, newData);
       }
     });

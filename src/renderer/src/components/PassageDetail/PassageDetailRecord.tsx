@@ -15,7 +15,6 @@ import { useGlobal } from '../../context/useGlobal';
 import usePassageDetailContext from '../../context/usePassageDetailContext';
 import { passageDefaultFilename } from '../../utils/passageDefaultFilename';
 import { useStepTool } from '../../crud/useStepTool';
-import Memory from '@orbit/memory';
 import { useSnackBar } from '../../hoc/SnackBar';
 import MediaRecord from '../MediaRecord';
 import { UnsavedContext } from '../../context/UnsavedContext';
@@ -58,10 +57,8 @@ export function PassageDetailRecord(props: IProps) {
   const { fetchMediaUrl, mediaState } = useFetchMediaUrl(reporter);
   const [statusText, setStatusText] = useState('');
   const [canSave, setCanSave] = useState(false);
-  const [defaultFilename, setDefaultFileName] = useState('');
-  const [coordinator] = useGlobal('coordinator');
   const [offline] = useGlobal('offline'); //verified this is not used in a function 2/18/25
-  const memory = coordinator?.getSource('memory') as Memory;
+  const [memory] = useGlobal('memory');
   const {
     passage,
     sharedResource,
@@ -87,12 +84,31 @@ export function PassageDetailRecord(props: IProps) {
   const [preload, setPreload] = useState(0);
   const [recorderState, setRecorderState] = useState<IMediaState>();
   const [hasExistingVersion, setHasExistingVersion] = useState(false);
+  /** Prevents handleReload ↔ mediaState PENDING/FETCHED loops; reset when mediafileId changes. */
+  const recordPreloadInitiatedRef = useRef<string | null>(null);
   const [resetMedia, setResetMedia] = useState(false);
   const [speaker, setSpeaker] = useState('');
   const [hasRights, setHasRight] = useState(false);
   const { canDoVernacular } = useStepPermissions();
   const allBookData = useSelector((state: IState) => state.books.bookData);
   const { getSharedResource } = useSharedResRead();
+
+  const defaultFilename = useMemo(() => {
+    const sr = getSharedResource(passage);
+    return passageDefaultFilename(
+      passage,
+      plan,
+      memory,
+      VernacularTag,
+      offline,
+      '',
+      toolSettings,
+      allBookData,
+      sr?.attributes.title
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [getSharedResource, passage, plan, offline, toolSettings, allBookData]);
+
   const setUploadVisible = (value: boolean) => {
     if (value) {
       cancelled.current = false;
@@ -123,32 +139,6 @@ export function PassageDetailRecord(props: IProps) {
   }, [mediafileId, passage]);
 
   useEffect(() => {
-    const sr = getSharedResource(passage);
-    setDefaultFileName(
-      passageDefaultFilename(
-        passage,
-        plan,
-        memory,
-        VernacularTag,
-        offline,
-        '',
-        toolSettings,
-        allBookData,
-        sr?.attributes.title
-      )
-    );
-  }, [
-    memory,
-    passage,
-    mediafiles,
-    plan,
-    offline,
-    toolSettings,
-    allBookData,
-    getSharedResource,
-  ]);
-
-  useEffect(() => {
     const mediaRec = findRecord(memory, 'mediafile', mediafileId) as
       | MediaFileD
       | undefined;
@@ -161,15 +151,21 @@ export function PassageDetailRecord(props: IProps) {
   }, [mediafileId, mediafiles]);
 
   useEffect(() => {
+    recordPreloadInitiatedRef.current = null;
+  }, [mediafileId]);
+
+  useEffect(() => {
     const hasExisting =
       Boolean(mediafileId) &&
       recorderState?.status === MediaSt.FETCHED &&
       recorderState?.id === mediafileId;
-    if (hasExisting && !hasExistingVersion) {
+    const shouldAutoPreload =
+      hasExisting && recordPreloadInitiatedRef.current !== mediafileId;
+    if (shouldAutoPreload) {
+      recordPreloadInitiatedRef.current = mediafileId;
       handleReload();
     }
     setHasExistingVersion(hasExisting);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mediafileId, recorderState]);
 
   const passageId = useMemo(
@@ -238,7 +234,9 @@ export function PassageDetailRecord(props: IProps) {
     setSpeaker(name);
   };
   const handleRights = (hasRights: boolean) => setHasRight(hasRights);
-  const handleReload = () => setPreload(preload + 1);
+  const handleReload = () => {
+    setPreload((p) => p + 1);
+  };
   const handleTrackRecorder = (state: IMediaState) => setRecorderState(state);
   const handleRecording = (recording: boolean) => {
     setRecording(recording);
