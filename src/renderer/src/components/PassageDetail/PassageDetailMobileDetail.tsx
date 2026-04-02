@@ -43,9 +43,14 @@ export default function PassageDetailMobileDetail({
               </Box>
             </Box>
           ) : (
-            <Stack spacing={1}>
+            <Stack
+              spacing={1}
+              sx={{ height: '100%', width: '100%', minWidth: 0 }}
+            >
               {recordContent}
-              <DiscussionPanel />
+              <Box sx={{ width: '100%', minWidth: 0 }}>
+                <DiscussionPanel />
+              </Box>
             </Stack>
           )}
         </>

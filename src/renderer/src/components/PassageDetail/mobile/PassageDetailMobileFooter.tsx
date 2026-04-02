@@ -36,22 +36,27 @@ export default function PassageDetailMobileFooter() {
       sx={{
         display: 'flex',
         alignItems: 'center',
-        gap: 1,
+        gap: 0.5,
         width: '100%',
+        minHeight: 0,
       }}
     >
       <Button
-        startIcon={<ArrowBackIcon />}
+        size="small"
+        startIcon={<ArrowBackIcon fontSize="small" />}
         onClick={() => handleNavigate(false)}
         disabled={!prevId}
       >
         {t?.previous ?? 'Previous'}
       </Button>
-      <Box sx={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
+      <Box
+        sx={{ flex: 1, display: 'flex', justifyContent: 'center', minWidth: 0 }}
+      >
         <MobileStepComplete />
       </Box>
       <Button
-        endIcon={<ArrowForwardIcon />}
+        size="small"
+        endIcon={<ArrowForwardIcon fontSize="small" />}
         onClick={() => handleNavigate(true)}
         disabled={!nextId}
       >

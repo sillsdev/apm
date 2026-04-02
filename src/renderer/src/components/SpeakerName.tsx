@@ -18,6 +18,7 @@ import { ArtifactTypeSlug, findRecord, related } from '../crud';
 import { Typography, Stack } from '@mui/material';
 import { useOrbitData } from '../hoc/useOrbitData';
 import { useSnackBar } from '../hoc/SnackBar';
+import { useMobile } from '../utils/index';
 
 interface NameOptionType {
   inputValue?: string;
@@ -56,6 +57,7 @@ export function SpeakerName({
   const [memory] = useGlobal('memory');
   const t: ICommunityStrings = useSelector(communitySelector, shallowEqual);
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
+  const [hasNoRightsMobile, setHasNoRightsMobile] = React.useState(false);
 
   const handleRights = () => {
     onRights && onRights(false);
@@ -94,6 +96,8 @@ export function SpeakerName({
   const handleRightsChange = (hasRights: boolean) => {
     onRights && onRights(hasRights);
     setShowDialog(false);
+    setHasNoRightsMobile(false);
+    setShowSelectDialog(false);
   };
 
   const handleNameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -131,6 +135,41 @@ export function SpeakerName({
         valueRef.current = newValue.name;
         onChange && onChange(newValue?.name || '');
         onRights && onRights(true);
+      }
+    }
+  };
+
+  const handleChoiceMobile = (newValue: string | NameOptionType | null) => {
+    if (newValue === null) {
+      nameReset();
+      setHasNoRightsMobile(false);
+    } else if (typeof newValue === 'string') {
+      valueRef.current = newValue;
+      setValue({
+        name: newValue,
+      });
+      onChange && onChange(newValue);
+      if (inList(newValue)) {
+        setHasNoRightsMobile(false);
+        setShowSelectDialog(false);
+      } else {
+        setHasNoRightsMobile(true);
+      }
+    } else if (newValue && newValue.inputValue) {
+      // Create a new value from the user input
+      valueRef.current = newValue.inputValue;
+      setValue({
+        name: newValue.inputValue,
+      });
+      onChange && onChange(newValue.inputValue);
+      setHasNoRightsMobile(true);
+    } else {
+      setValue(newValue);
+      if (newValue) {
+        valueRef.current = newValue.name;
+        onChange && onChange(newValue?.name || '');
+        setHasNoRightsMobile(false);
+        setShowSelectDialog(false);
       }
     }
   };
@@ -199,13 +238,18 @@ export function SpeakerName({
 
   const buttonText = name?.trim() !== '' ? name : t.selectSpeaker + '...';
 
+  const { isMobile: isMobileView } = useMobile();
+
   return (
     <>
       <Button
         variant={name?.trim() !== '' ? 'outlined' : 'contained'}
         onClick={handleOpenSelectDialog}
         disabled={disabled}
-        sx={{ minWidth: 200, justifyContent: 'flex-start' }}
+        sx={{
+          minWidth: isMobileView ? 100 : 200,
+          justifyContent: 'flex-start',
+        }}
       >
         <Stack direction="row" spacing={1} alignItems="center">
           <SupportAgentIcon />
@@ -227,7 +271,11 @@ export function SpeakerName({
         <DialogContent>
           <Autocomplete
             value={value}
-            onChange={(event, newValue) => handleSelectAndClose(newValue)}
+            onChange={(event, newValue) =>
+              isMobileView
+                ? handleChoiceMobile(newValue)
+                : handleSelectAndClose(newValue)
+            }
             onClose={handleLeave}
             filterOptions={(options, params) => {
               const filtered = filter(options, params);
@@ -252,8 +300,8 @@ export function SpeakerName({
             id="speaker-name"
             options={speakers}
             getOptionLabel={getOptionLabel}
-            renderOption={(props, option) => (
-              <li {...props} key={option.name}>
+            renderOption={(props, option, state) => (
+              <li {...props} key={`spkr-opt-${state.index}`}>
                 {option.name}
               </li>
             )}
@@ -280,29 +328,47 @@ export function SpeakerName({
               );
             }}
           />
+          {isMobileView && hasNoRightsMobile && (
+            <>
+              <Typography sx={{ my: 2 }}>
+                {recordingRequired ? t.voiceRights : t.releaseRights}
+              </Typography>
+              <ProvideRights
+                speaker={value?.name || ''}
+                recordType={ArtifactTypeSlug.IntellectualProperty}
+                onRights={handleRightsChange}
+                team={team}
+                recordingRequired={recordingRequired}
+              />
+            </>
+          )}
         </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseSelectDialog}>{ts.cancel}</Button>
-        </DialogActions>
+        {!isMobileView && (
+          <DialogActions>
+            <Button onClick={handleCloseSelectDialog}>{ts.cancel}</Button>
+          </DialogActions>
+        )}
       </Dialog>
-      <BigDialog
-        title={t.provideRights}
-        isOpen={showDialog}
-        onOpen={handleCancelRights}
-      >
-        <>
-          <Typography>
-            {recordingRequired ? t.voiceRights : t.releaseRights}
-          </Typography>
-          <ProvideRights
-            speaker={value?.name || ''}
-            recordType={ArtifactTypeSlug.IntellectualProperty}
-            onRights={handleRightsChange}
-            team={team}
-            recordingRequired={recordingRequired}
-          />
-        </>
-      </BigDialog>
+      {!isMobileView && (
+        <BigDialog
+          title={t.provideRights}
+          isOpen={showDialog}
+          onOpen={handleCancelRights}
+        >
+          <>
+            <Typography>
+              {recordingRequired ? t.voiceRights : t.releaseRights}
+            </Typography>
+            <ProvideRights
+              speaker={value?.name || ''}
+              recordType={ArtifactTypeSlug.IntellectualProperty}
+              onRights={handleRightsChange}
+              team={team}
+              recordingRequired={recordingRequired}
+            />
+          </>
+        </BigDialog>
+      )}
     </>
   );
 }

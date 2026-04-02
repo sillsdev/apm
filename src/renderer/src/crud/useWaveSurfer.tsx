@@ -53,6 +53,13 @@ export function useWaveSurfer(
   const blobToLoad = useRef<Blob | undefined>(undefined);
   const positionToLoad = useRef<number | undefined>(undefined);
   const loadRequests = useRef(0);
+  /** Resolvers for wsLoad(blob) calls that hit the queue while another load was in flight; all are flushed when that queued load finishes */
+  const loadQueueWaitersRef = useRef<Array<() => void>>([]);
+  const flushLoadQueueWaiters = () => {
+    const waiters = loadQueueWaitersRef.current;
+    loadQueueWaitersRef.current = [];
+    waiters.forEach((resolve) => resolve());
+  };
   const playingRef = useRef(false);
   const loopingRef = useRef(false);
   const durationRef = useRef(0);
@@ -294,6 +301,7 @@ export function useWaveSurfer(
       //this is received way more times than expected
       wavesurfer.on('destroy', function () {
         prepareForDestroy();
+        flushLoadQueueWaiters();
         //prevent region-removed messages from the destroy
         Regions?.unAll();
         wavesurferRef.current = null;
@@ -338,6 +346,7 @@ export function useWaveSurfer(
     return () => {
       prepareForDestroy();
       blobToLoad.current = undefined;
+      flushLoadQueueWaiters();
 
       if (wavesurferRef.current) {
         const ws = wavesurferRef.current;
@@ -477,13 +486,21 @@ export function useWaveSurfer(
         //queue this
         queueLoad(blob, position);
         loadRequests.current = 2; //if there was another, we'll bypass it
+        await new Promise<void>((resolve) => {
+          loadQueueWaitersRef.current.push(resolve);
+        });
+        return;
       } else {
         loadRequests.current = 1;
         await loadBlob(blob, position);
       }
     } else if (blobToLoad.current) {
-      await loadBlob(blobToLoad.current, positionToLoad.current);
-      blobToLoad.current = undefined;
+      try {
+        await loadBlob(blobToLoad.current, positionToLoad.current);
+      } finally {
+        blobToLoad.current = undefined;
+        flushLoadQueueWaiters();
+      }
     } else {
       loadRequests.current--;
       //no blob so clear

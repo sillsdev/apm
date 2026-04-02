@@ -22,6 +22,35 @@ alwaysApply: true
   from the implementation (field names and types), or TypeScript and runtime behavior
   drift. Prefer reading the source of the hook being mocked before stubbing.
 
+## `useGlobal` in hook tests
+
+- Real `useGlobal` returns `[value, setter]`. Match that in mocks.
+- **Keyed map pattern** (see `ConsultantCheck.test.tsx`, `useStepPermission.test.ts`):
+  `mockImplementation((key: string) => { const mockValues: Record<string, unknown> = { memory, plan, project, ...overrides }; return [mockValues[key], jest.fn()]; })`.
+- **Factory + `beforeEach` pattern** (see `useSectionIdDescription.test.tsx`): `jest.mock(..., () => ({ useGlobal: jest.fn() }))`, then
+  `(useGlobal as jest.Mock).mockImplementation(...)` or `mockReturnValue([...])` when the hook only reads one key.
+- For hooks that call `useGlobal` many times, centralize defaults and spread **overrides** once (e.g. offline / offlineOnly) so each key stays consistent.
+
+## `useSelector` / `react-redux` in hook tests
+
+- Mock **`react-redux`** with at least `useSelector: jest.fn()`. Many component tests also stub **`shallowEqual: jest.fn()`** (e.g. `ConsultantCheck.test.tsx`, `MediaPlayer.test.tsx`) so the mock matches what libraries import.
+- **Run the real selector against a stub state** (see `burrito/useCreateBurrito.test.ts`): build a minimal object (often `Pick<IState, 'books'>` or a slice typed like `IBookNameData`) and use  
+  `(useSelector as unknown as jest.Mock).mockImplementation((sel: (s: IState) => unknown) => sel(mockState as IState))`.  
+  That way the hook’s `(state) => state.books.bookData` (or similar) is exercised and `allBookData` stays aligned with the stub.
+- **TypeScript:** assigning `mockImplementation` on `useSelector` often requires **`as unknown as jest.Mock`**; a direct `as jest.Mock` cast may fail under ts-jest (`UseSelector` vs `Mock` overlap).
+
+## `useOrbitData` and `useEffect` dependency churn
+
+- `useOrbitData` is typically mocked with `jest.fn()` / `mockImplementation((model) => ...)`.
+- If the mock returns a **new array literal on every call** (e.g. `return [{ id: 'x' }]` inline), the hook sees a **new `mediaFiles` / `sections` / `passages` reference every render**. Any `useEffect` that lists those in its dependency array will run **every render**.
+- Combined with effects that call `setState` when derived data changes, that can produce **maximum update depth** errors or **heap OOM** in Jest.
+- Prefer **stable references**: e.g. `let orbitMedia: MediaFileD[] = [];` set in `beforeEach`, and `if (model === 'mediafile') return orbitMedia` (reassign `orbitMedia` only when a test needs different records). Same idea for `section` / `passage` stubs.
+
+## Test file layout (`jest.mock` vs imports)
+
+- Put **`jest.mock(...)` calls before importing the module under test**, after any **hoist-safe** values the factory needs (e.g. `const mockMemory = { ... }` defined above the mock, as in `useStepPermission.test.ts` / `doChapter.test.ts`).
+- Place **type-only imports** with the rest of imports after mocks if that keeps factories clean; Jest hoists mocks, but readability matches other specs in this repo.
+
 ## Barrel imports and Jest parse failures
 
 - If the hook under test imports from a **barrel** (e.g. `from '../utils'`), Jest may

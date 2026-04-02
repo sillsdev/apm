@@ -64,7 +64,8 @@ export default function PassageDetailMobileLayout({
           borderTop: '1px solid',
           borderColor: 'divider',
           px: 1,
-          py: 0.5,
+          pt: '4px',
+          pb: 'calc(2px + env(safe-area-inset-bottom, 0px))',
         }}
       >
         {footer}
