@@ -29,6 +29,7 @@ import {
   useWaitForRemoteQueue,
   strNumCompare,
   doSort,
+  useMobile,
 } from '../../utils';
 import PlayCell from './PlayCell';
 import DetachCell from './DetachCell';
@@ -43,6 +44,7 @@ import {
   GridSortModel,
   type GridColDef,
 } from '@mui/x-data-grid';
+import { AudioVersionCard } from '../../components/PassageDetail/mobile/record/AudioVersionCard';
 
 interface IProps {
   data: IRow[];
@@ -54,7 +56,11 @@ interface IProps {
   hasPublishing: boolean;
   sectionArr: SectionArray;
   setPlayItem: (item: string) => void;
+  selectedId?: string;
+  setSelectedId?: (item: string) => void;
   onAttach?: (checks: number[], attach: boolean) => void;
+  /** Mobile cards: show a radio for “pick this version” (e.g. Versions dialog). */
+  showVersionRadio?: boolean;
 }
 export const AudioTable = (props: IProps) => {
   const { data: initialData, setRefresh } = props;
@@ -66,6 +72,7 @@ export const AudioTable = (props: IProps) => {
     shared,
     canSetDestination,
     hasPublishing,
+    showVersionRadio,
   } = props;
   const t: IMediaTabStrings = useSelector(mediaTabSelector, shallowEqual);
   // const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
@@ -469,6 +476,45 @@ export const AudioTable = (props: IProps) => {
   }, []); //do this once to get the default;
 
   const columnVisibilityModel: GridColumnVisibilityModel = { planName: false };
+
+  const { isMobile: isMobileView } = useMobile();
+  const [localSelectedId, setLocalSelectedId] = useState<string>(
+    sortedData[0]?.id || ''
+  );
+  const selectedId = props.selectedId ?? localSelectedId;
+  const setSelectedId = props.setSelectedId ?? setLocalSelectedId;
+
+  useEffect(() => {
+    if (props.selectedId || localSelectedId) return;
+    const firstRowId = sortedData[0]?.id;
+    if (firstRowId) {
+      setLocalSelectedId(firstRowId);
+    }
+  }, [localSelectedId, props.selectedId, sortedData]);
+  if (isMobileView) {
+    return (
+      <Box sx={{ height: '20rem', overflowY: 'scroll' }}>
+        {sortedData.map((row) => (
+          <AudioVersionCard
+            key={row.id}
+            {...row}
+            isSelected={row.id === selectedId}
+            setIsSelected={setSelectedId}
+            lang={lang}
+            handleSelect={handleSelect}
+            playItem={playItem}
+            mediaPlaying={mediaPlaying}
+            showSelectionRadio={showVersionRadio}
+          />
+        ))}
+        <MediaPlayer
+          srcMediaId={playItem}
+          requestPlay={mediaPlaying}
+          onEnded={playEnded}
+        />
+      </Box>
+    );
+  }
 
   return (
     <Box ref={boxRef} sx={{ width: '100%' }}>

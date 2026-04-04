@@ -1,6 +1,7 @@
 import { shallowEqual, useSelector } from 'react-redux';
 import { ISharedStrings, IState, MediaFileD } from '../../model';
 import { Typography, Box, Stack } from '@mui/material';
+import FolderOpenOutlinedIcon from '@mui/icons-material/FolderOpenOutlined';
 import { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import {
   findRecord,
@@ -21,12 +22,15 @@ import { UnsavedContext } from '../../context/UnsavedContext';
 import Uploader from '../Uploader';
 import AudacityManager from '../Sheet/AudacityManager';
 import { isElectron } from '../../../api-variable';
-import { PriButton } from '../../control';
+import { AltButton, PriButton } from '../../control';
 import BigDialog from '../../hoc/BigDialog';
+import BigDialogBp from '../../hoc/BigDialogBp';
 import VersionDlg from '../AudioTab/VersionDlg';
+import { usePassageVernacularVersionCount } from '../AudioTab/usePassageVersionAudioRows';
 import SpeakerName from '../SpeakerName';
 import { sharedSelector } from '../../selector';
 import { RecordButtons } from './RecordButtons';
+import { useMobile } from '../../utils';
 import { useOrbitData } from '../../hoc/useOrbitData';
 import { RecordIdentity } from '@orbit/records';
 import { useStepPermissions } from '../../utils/useStepPermission';
@@ -90,6 +94,7 @@ export function PassageDetailRecord(props: IProps) {
   const [speaker, setSpeaker] = useState('');
   const [hasRights, setHasRight] = useState(false);
   const { canDoVernacular } = useStepPermissions();
+  const { isMobile: isMobileView } = useMobile();
   const allBookData = useSelector((state: IState) => state.books.bookData);
   const { getSharedResource } = useSharedResRead();
 
@@ -172,6 +177,7 @@ export function PassageDetailRecord(props: IProps) {
     () => related(sharedResource, 'passage') ?? passage.id,
     [sharedResource, passage]
   );
+  const vernacularVersionCount = usePassageVernacularVersionCount(passageId);
   const handleSave = () => {
     startSave(toolId);
   };
@@ -242,28 +248,64 @@ export function PassageDetailRecord(props: IProps) {
     setRecording(recording);
   };
 
+  const canVern = canDoVernacular(related(passage, 'section'));
+
   return (
     <Stack sx={{ width: props.width, maxWidth: props.width, minWidth: 0 }}>
-      <RecordButtons
-        onVersions={hasExistingVersion ? handleVersions : undefined}
-        onUpload={
-          canDoVernacular(related(passage, 'section'))
-            ? handleUpload
-            : undefined
-        }
-        onAudacity={
-          isElectron && canDoVernacular(related(passage, 'section'))
-            ? handleAudacity
-            : undefined
-        }
-      />
-      <Box sx={{ py: 1 }}>
-        <SpeakerName
-          name={speaker}
-          onChange={handleNameChange}
-          onRights={handleRights}
-          disabled={!canDoVernacular(related(passage, 'section'))}
+      {!isMobileView ? (
+        <RecordButtons
+          onVersions={hasExistingVersion ? handleVersions : undefined}
+          onUpload={canVern ? handleUpload : undefined}
+          onAudacity={isElectron && canVern ? handleAudacity : undefined}
         />
+      ) : (
+        isElectron &&
+        canVern && (
+          <RecordButtons
+            showVersions={false}
+            showUpload={false}
+            onAudacity={handleAudacity}
+          />
+        )
+      )}
+      <Box sx={{ py: 1 }}>
+        {isMobileView ? (
+          <Stack
+            direction="row"
+            alignItems="center"
+            spacing={1}
+            sx={{ width: '100%', minWidth: 0 }}
+          >
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+              <SpeakerName
+                name={speaker}
+                onChange={handleNameChange}
+                onRights={handleRights}
+                disabled={!canVern}
+              />
+            </Box>
+            {canVern && (
+              <AltButton
+                id="pdRecordLoadFile"
+                onClick={handleUpload}
+                title={ts.loadFromFile}
+                startIcon={
+                  <FolderOpenOutlinedIcon sx={{ width: '14px', height: '14px' }} />
+                }
+                sx={{ flexShrink: 0 }}
+              >
+                {ts.loadFromFile}
+              </AltButton>
+            )}
+          </Stack>
+        ) : (
+          <SpeakerName
+            name={speaker}
+            onChange={handleNameChange}
+            onRights={handleRights}
+            disabled={!canVern}
+          />
+        )}
       </Box>
       <MediaRecord
         toolId={toolId}
@@ -276,7 +318,7 @@ export function PassageDetailRecord(props: IProps) {
         onReady={onReady}
         onRecording={handleRecording}
         defaultFilename={defaultFilename}
-        allowRecord={hasRights && canDoVernacular(related(passage, 'section'))}
+        allowRecord={hasRights && canVern}
         allowZoom={true}
         allowWave={true}
         preload={preload}
@@ -289,6 +331,10 @@ export function PassageDetailRecord(props: IProps) {
         width={props.width}
         allowNoNoise={true}
         allowDeltaVoice={true}
+        handleSave={handleSave}
+        isSaveDisabled={
+          (ready && !ready()) || !hasRights || !canVern
+        }
         metaData={
           <>
             <Typography
@@ -302,19 +348,24 @@ export function PassageDetailRecord(props: IProps) {
             >
               {statusText}
             </Typography>
-            <PriButton
-              id="rec-save"
-              onClick={handleSave}
-              disabled={
-                (ready && !ready()) ||
-                !canSave ||
-                !hasRights ||
-                !canDoVernacular(related(passage, 'section'))
-              }
-            >
-              {ts.save}
-            </PriButton>
+            {!isMobileView && canSave && (
+              <PriButton
+                id="rec-save"
+                onClick={handleSave}
+                disabled={
+                  (ready && !ready()) || !hasRights || !canVern
+                }
+              >
+                {ts.save}
+              </PriButton>
+            )}
           </>
+        }
+        onVersions={
+          hasExistingVersion &&
+          (!isMobileView || vernacularVersionCount > 1)
+            ? handleVersions
+            : undefined
         }
       />
 
@@ -350,11 +401,14 @@ export function PassageDetailRecord(props: IProps) {
         title={ts.versionHistory}
         isOpen={versionVisible}
         onOpen={handleVerHistClose}
+        bp={isMobileView ? BigDialogBp.mobile : undefined}
       >
         <VersionDlg
           passId={passageId}
           canSetDestination={false}
           hasPublishing={false}
+          close={handleVerHistClose}
+          onVersionApplied={handleReload}
         />
       </BigDialog>
     </Stack>

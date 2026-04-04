@@ -5,6 +5,7 @@ import { API_CONFIG } from '../../api-variable';
 import BigDialog from '../hoc/BigDialog';
 import { BigDialogBp } from '../hoc/BigDialogBp';
 import MediaUploadContent from './MediaUploadContent';
+import { useMobile } from '../utils';
 import { FaithBridge } from '../assets/brands';
 import { UploadType } from './UploadType';
 
@@ -66,6 +67,7 @@ function MediaUpload(props: IProps) {
     onValue,
     onNonAudio,
   } = props;
+  const { isMobile } = useMobile();
   const t: IMediaUploadStrings = useSelector(mediaUploadSelector, shallowEqual);
   const title = [
     t.title,
@@ -92,7 +94,7 @@ function MediaUpload(props: IProps) {
       isOpen={visible}
       onOpen={handleCancel}
       title={title[uploadType] ?? ''}
-      bp={BigDialogBp.sm}
+      bp={isMobile ? BigDialogBp.mobile : BigDialogBp.sm}
     >
       <MediaUploadContent
         onVisible={onVisible}

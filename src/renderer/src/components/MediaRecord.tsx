@@ -10,7 +10,7 @@ import { useGlobal } from '../context/useGlobal';
 import { IPassageRecordStrings, ISharedStrings } from '../model';
 import { Stack, Paper, Typography } from '@mui/material';
 import WSAudioPlayer, { WSAudioPlayerControls } from './WSAudioPlayer';
-import { loadBlobAsync, waitForIt } from '../utils';
+import { loadBlobAsync, useMobile, waitForIt } from '../utils';
 import {
   IMediaState,
   MediaSt,
@@ -73,6 +73,11 @@ interface IProps {
   hasRecording?: boolean;
   isStopLogic?: boolean;
   showSize?: boolean;
+  handleUpload?: () => void;
+  isRecordingRights?: boolean;
+  onVersions?: () => void;
+  handleSave?: () => void;
+  isSaveDisabled?: boolean;
 }
 export const DEFAULT_COMPRESSED_MIME = 'audio/ogg;codecs=opus';
 
@@ -121,6 +126,11 @@ function MediaRecord(props: IProps) {
     hasRecording,
     isStopLogic,
     showSize = true,
+    handleUpload,
+    isRecordingRights,
+    handleSave,
+    onVersions,
+    isSaveDisabled,
   } = props;
   const context = usePassageDetailContext();
   const { settings: toolSettings } = useStepTool(context?.currentstep || '');
@@ -159,6 +169,7 @@ function MediaRecord(props: IProps) {
     initialMimeType === 'audio/wav' ? 1 : 20
   );
   const [warning, setWarning] = useState('');
+  const [waveformNeedsSave, setWaveformNeedsSave] = useState(false);
   const [tooBig, setTooBig] = useState(false);
   const { showMessage } = useSnackBar();
   const [converting, setConverting] = useState(false);
@@ -275,15 +286,16 @@ function MediaRecord(props: IProps) {
   }, [mimeType, extensions, mimes]);
 
   useEffect(() => {
-    setCanSave(
+    const needsSave =
       blobReady &&
-        !tooBig &&
-        filechanged &&
-        !converting &&
-        !uploading &&
-        !recording &&
-        !saveRef.current
-    );
+      !tooBig &&
+      filechanged &&
+      !converting &&
+      !uploading &&
+      !recording &&
+      !saveRef.current;
+    setCanSave(needsSave);
+    setWaveformNeedsSave(needsSave);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     blobReady,
@@ -501,6 +513,8 @@ function MediaRecord(props: IProps) {
 
   const segments = '{}';
 
+  const { isMobile: isMobileView } = useMobile();
+
   const content = (
     <>
       <WSAudioPlayer
@@ -510,6 +524,7 @@ function MediaRecord(props: IProps) {
         oneTryOnly={oneTryOnly}
         width={width}
         height={height || 300}
+        mediaId={mediaId}
         blob={originalBlob}
         onBlobReady={onBlobReady}
         setChanged={setFilechanged}
@@ -530,13 +545,19 @@ function MediaRecord(props: IProps) {
         keepItSmall={keepItSmall}
         hasRecording={hasRecording ?? false}
         isStopLogic={isStopLogic ?? false}
+        isRecordingRights={isRecordingRights}
+        handleUpload={handleUpload}
+        handleSave={handleSave}
+        onVersions={onVersions}
+        isSaveDisabled={isSaveDisabled}
+        showWaveformSave={waveformNeedsSave}
       />
-      {warning && (
+      {warning && !isMobileView && (
         <Typography sx={{ m: 2, color: 'warning.dark' }} id="warning">
           {warning}
         </Typography>
       )}
-      {(showSize || metaData) && (
+      {(showSize || metaData) && !isMobileView && (
         <Stack
           direction="row"
           sx={{ alignItems: 'center', justifyContent: 'flex-end' }}
@@ -556,8 +577,17 @@ function MediaRecord(props: IProps) {
     return content;
   }
 
-  return (
-    <Paper id="mediaRecord" sx={{ width: width, maxWidth: width, minWidth: 0 }}>
+  return isMobileView ? (
+    content
+  ) : (
+    <Paper
+      id="mediaRecord"
+      sx={{
+        width: width, // isMobileView is false here
+        maxWidth: width,
+        minWidth: 0,
+      }}
+    >
       {content}
     </Paper>
   );

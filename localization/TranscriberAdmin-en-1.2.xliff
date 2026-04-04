@@ -8097,6 +8097,13 @@
                <context context-type="sourcefile">RecordButton.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="recordButton.stop">
+            <source>STOP</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">RecordButton.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="recordStepSettings.custom">
             <source>Custom</source>
             <target/>
@@ -8699,6 +8706,13 @@
                <context context-type="sourcefile">PlanSheet.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="shared.loadFromFile">
+            <source>Load from file...</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">PassageDetailRecord.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="shared.loading">
             <source>Loading...</source>
             <target/>
@@ -8924,6 +8938,34 @@
                <context context-type="sourcefile">PlanSheet.tsx</context>
             </context-group>
          </trans-unit>
+        <trans-unit id="shared.upload">
+          <source>Upload</source>
+          <target/>
+          <context-group>
+              <context context-type="sourcefile">PlanSheet.tsx</context>
+          </context-group>
+        </trans-unit>
+        <trans-unit id="shared.resetRecording">
+          <source>Reset Recording</source>
+          <target/>
+          <context-group>
+              <context context-type="sourcefile">PlanSheet.tsx</context>
+          </context-group>
+        </trans-unit>
+        <trans-unit id="shared.discardRecording">
+          <source>Would you like to discard this recording or save it?</source>
+          <target/>
+          <context-group>
+              <context context-type="sourcefile">PlanSheet.tsx</context>
+          </context-group>
+        </trans-unit>
+        <trans-unit id="shared.useThisVersion">
+          <source>Use This Version</source>
+          <target/>
+          <context-group>
+              <context context-type="sourcefile">PlanSheet.tsx</context>
+          </context-group>
+        </trans-unit>
       	<trans-unit id="shared.uploadRights">
       		<source>Upload Rights File</source>
       		<target/>
@@ -11762,6 +11804,13 @@
          </trans-unit>
         <trans-unit id="wsAudioPlayer.microphone">
             <source>Select microphone</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">passageRecord.tsx</context>
+            </context-group>
+        </trans-unit>
+         <trans-unit id="wsAudioPlayer.moreOptions">
+            <source>More Options</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">passageRecord.tsx</context>

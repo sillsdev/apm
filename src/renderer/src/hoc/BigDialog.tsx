@@ -39,9 +39,11 @@ export const StyledDialog = styled(Dialog, {
   ...(bp === BigDialogBp.mobile
     ? {
         '& .MuiDialog-paper': {
-          maxWidth: '90%',
-          minWidth: '300px',
+          maxWidth: `calc(100vw - ${theme.spacing(4)})`,
+          width: '100%',
+          minWidth: 0,
           minHeight: '50%',
+          boxSizing: 'border-box',
         },
       }
     : bp === BigDialogBp.sm
