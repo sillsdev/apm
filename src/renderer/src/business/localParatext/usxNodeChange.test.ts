@@ -265,7 +265,7 @@ describe('usxNodeChange', () => {
     );
   });
 
-  it('should put the starting verse at the beginning of a new paragraph', async () => {
+  it('should find the next verse after a given verse number', async () => {
     // Arrange
     const doc = domParser.parseFromString(
       '<usx><para style="p"><verse number="1" style="v">T1</verse><verse number="2" style="v">T2</verse><verse number="3" style="v">T3</verse><verse number="4" style="v">T4</verse></para></usx>'
@@ -275,15 +275,11 @@ describe('usxNodeChange', () => {
     const result = findNodeAfterVerse(doc, verses, 2, 2);
     // Assert
     expect(result).toBeDefined();
-    expect(result?.nodeName).toBe('para');
-    expect(doc.documentElement?.toString()).toBe(
-      '<usx><para style="p"><verse number="1" style="v">T1</verse><verse number="2" style="v">T2</verse></para><para style="p">\r\n<verse number="3" style="v">T3</verse><verse number="4" style="v">T4</verse></para></usx>'
-    );
-    expect((result?.childNodes[1] as Element).getAttribute('number')).toBe('3');
+    expect(result?.nodeName).toBe('verse');
+    expect((result as Element).getAttribute('number')).toBe('3');
   });
 
-  it('should put the starting verse of a range at the beginning of a new paragraph', async () => {
-    // NOTE: it isn't putting a new paragraph after the range of verses
+  it('should find the next verse after a range of verses', async () => {
     // Arrange
     const doc = domParser.parseFromString(
       '<usx><para style="p"><verse number="1" style="v">T1</verse><verse number="2" style="v">T2</verse><verse number="3" style="v">T3</verse><verse number="4" style="v">T4</verse></para></usx>'
@@ -291,13 +287,10 @@ describe('usxNodeChange', () => {
     const verses = Array.from(doc.getElementsByTagName('verse')) as Element[];
     // Act
     const result = findNodeAfterVerse(doc, verses, 2, 3);
-    // Assert
+    // Assert: finds verse 3 (first verse with vstart > startVerse)
     expect(result).toBeDefined();
-    expect(result?.nodeName).toBe('para');
-    expect(doc.documentElement?.toString()).toBe(
-      '<usx><para style="p"><verse number="1" style="v">T1</verse><verse number="2" style="v">T2</verse></para><para style="p">\r\n<verse number="3" style="v">T3</verse><verse number="4" style="v">T4</verse></para></usx>'
-    );
-    expect((result?.childNodes[1] as Element).getAttribute('number')).toBe('3');
+    expect(result?.nodeName).toBe('verse');
+    expect((result as Element).getAttribute('number')).toBe('3');
   });
 
   it('should return null if the starting verse is not found', async () => {
@@ -312,25 +305,18 @@ describe('usxNodeChange', () => {
     expect(result).toBeUndefined();
   });
 
-  it('should return paragraph node if verse alread starts a paragraph', async () => {
-    // NOTE: search range doesn't include full verse range
-    // Arrange
+  it('should return verse when it spans wider than the search range', async () => {
+    // Arrange: verse 1-4 in the DOM, searching for where to insert 1-3
     const doc = domParser.parseFromString(
       '<usx><para style="p"><verse number="1-4" style="v">T1-4</verse></para></usx>'
     );
     const verses = Array.from(doc.getElementsByTagName('verse')) as Element[];
     // Act
     const result = findNodeAfterVerse(doc, verses, 1, 3);
-    // Assert
+    // Assert: returns the 1-4 verse (startVerse matches, vend > endVerse)
     expect(result).toBeDefined();
-    expect(result?.nodeName).toBe('para');
-    expect(doc.documentElement?.toString()).toBe(
-      '<usx><para style="p"><verse number="1-4" style="v">T1-4</verse></para></usx>'
-    );
-    // NOTE: Text node not inserted if paragraph node not created
-    expect((result?.childNodes[0] as Element).getAttribute('number')).toBe(
-      '1-4'
-    );
+    expect(result?.nodeName).toBe('verse');
+    expect((result as Element).getAttribute('number')).toBe('1-4');
   });
 
   it('should addSection with text', async () => {
@@ -450,6 +436,8 @@ describe('usxNodeChange', () => {
       sibling,
       verses: '1',
       transcript: 'T1',
+      before: true,
+      paraForThisVerse: true,
     });
     // Assert
     expect(result).toBeDefined();
@@ -478,6 +466,7 @@ describe('usxNodeChange', () => {
       verses: '1',
       transcript: 'T1',
       before: true,
+      paraForThisVerse: true,
     });
     // Assert
     expect(result).toBeDefined();
@@ -492,6 +481,115 @@ describe('usxNodeChange', () => {
     );
     expect(doc.documentElement?.toString()).toBe(
       '<usx><para style="p">\r\n<verse number="1" style="v"/>T1</para><v/></usx>'
+    );
+  });
+
+  it('should merge inserted verse into prior paragraph when not firstVerse', async () => {
+    // Arrange
+    const doc = domParser.parseFromString(
+      '<usx><para style="p"><verse number="1" style="v"/>T1</para></usx>'
+    );
+    const sibling = doc.getElementsByTagName('para')[0];
+
+    // Act
+    const result = addParatextVerse({
+      doc,
+      sibling,
+      verses: '2',
+      transcript: 'T2',
+      before: false,
+      paraForThisVerse: false,
+    });
+
+    // Assert
+    expect(result).toBeDefined();
+    expect(result.nodeName).toBe('para');
+    expect(doc.documentElement?.toString()).toBe(
+      '<usx><para style="p"><verse number="1" style="v"/>T1<verse number="2" style="v"/>T2</para></usx>'
+    );
+  });
+
+  it('should insert para before a verse inside another para without nesting', async () => {
+    // Arrange: verse 2 is inside a paragraph (xmldom normalizes \r\n to \n)
+    const doc = domParser.parseFromString(
+      '<usx><para style="p">\r\n<verse number="2" style="v"/>T2</para></usx>'
+    );
+    const verse2 = doc.getElementsByTagName('verse')[0];
+
+    // Act: insert verse 1 before verse 2
+    const result = addParatextVerse({
+      doc,
+      sibling: verse2,
+      verses: '1',
+      transcript: 'T1',
+      before: true,
+      paraForThisVerse: true,
+    });
+
+    // Assert: new para is a sibling, not nested inside verse 2's para
+    expect(result.nodeName).toBe('para');
+    expect(doc.documentElement?.toString()).toBe(
+      '<usx><para style="p">\r\n<verse number="1" style="v"/>T1</para><para style="p">\n<verse number="2" style="v"/>T2</para></usx>'
+    );
+  });
+
+  it('should create continuation paragraphs for newlines in transcript', async () => {
+    // Arrange
+    const doc = domParser.parseFromString('<usx/>');
+
+    // Act: transcript with a newline
+    const result = addParatextVerse({
+      doc,
+      sibling: null,
+      verses: '1',
+      transcript: 'first part\nsecond part',
+      before: false,
+      paraForThisVerse: true,
+    });
+
+    // Assert: first part in original para, second part in a new para
+    expect(result.nodeName).toBe('para');
+    expect(doc.documentElement?.toString()).toBe(
+      '<usx><para style="p">\r\n<verse number="1" style="v"/>first part</para><para style="p">\r\nsecond part</para></usx>'
+    );
+  });
+
+  it('should return the last continuation paragraph when newlines are present', async () => {
+    // Arrange
+    const doc = domParser.parseFromString(
+      '<usx><para style="p">\r\n<verse number="2" style="v"/>T2</para></usx>'
+    );
+    const verse2 = doc.getElementsByTagName('verse')[0];
+
+    // Act
+    const result = addParatextVerse({
+      doc,
+      sibling: verse2,
+      verses: '1',
+      transcript: 'first\nsecond',
+      before: true,
+      paraForThisVerse: true,
+    });
+
+    // Assert: returns the continuation para (last one), not the verse's para
+    const paras = doc.getElementsByTagName('para');
+    expect(paras.length).toBe(3);
+    expect(result).toBe(paras[1]); // the "second" para, not verse 1's para
+  });
+
+  it('should split replaceText across paragraphs for newlines', async () => {
+    // Arrange (xmldom normalizes \r\n to \n when parsing)
+    const doc = domParser.parseFromString(
+      '<usx><para style="p">\r\n<verse number="1" style="v"/>old text</para></usx>'
+    ) as Document;
+    const para = doc.getElementsByTagName('para')[0];
+
+    // Act
+    replaceText(doc, para, 'line one\nline two');
+
+    // Assert: original para keeps \n, new continuation para has \r\n
+    expect(doc.documentElement?.toString()).toBe(
+      '<usx><para style="p">\n<verse number="1" style="v"/>line one</para><para style="p">\r\nline two</para></usx>'
     );
   });
 
@@ -564,6 +662,57 @@ describe('usxNodeChange', () => {
       '<usx><para style="p">\n<verse number="1" style="v"/>T1</para></usx>'
     );
     // NOTE: The \r of the newline is removed
+  });
+
+  it('should replace text when given a verse element in a multi-verse paragraph', async () => {
+    // Arrange: two verses in one paragraph
+    const doc = domParser.parseFromString(
+      '<usx><para style="p"><verse number="1" style="v"/>T1<verse number="2" style="v"/>old</para></usx>'
+    ) as Document;
+    const verse2 = doc.getElementsByTagName('verse')[1];
+
+    // Act: replace text on the verse element directly (not the paragraph)
+    const result = replaceText(doc, verse2, 'new');
+
+    // Assert: only verse 2's text is replaced, verse 1 is untouched
+    expect(doc.documentElement?.toString()).toBe(
+      '<usx><para style="p"><verse number="1" style="v"/>T1<verse number="2" style="v"/>new</para></usx>'
+    );
+    expect(result.nodeName).toBe('para');
+  });
+
+  it('should replace text on a verse element with newlines creating continuation paragraphs', async () => {
+    // Arrange: two verses in one paragraph
+    const doc = domParser.parseFromString(
+      '<usx><para style="p"><verse number="1" style="v"/>T1<verse number="2" style="v"/>old</para></usx>'
+    ) as Document;
+    const verse2 = doc.getElementsByTagName('verse')[1];
+
+    // Act: replace with text containing a newline
+    const result = replaceText(doc, verse2, 'first\nsecond');
+
+    // Assert: verse 2's text becomes "first", continuation para has "second"
+    expect(doc.documentElement?.toString()).toBe(
+      '<usx><para style="p"><verse number="1" style="v"/>T1<verse number="2" style="v"/>first</para><para style="p">\r\nsecond</para></usx>'
+    );
+    // Returns the last (continuation) paragraph
+    expect(result.nodeName).toBe('para');
+    expect(result.textContent).toContain('second');
+  });
+
+  it('should return the containing paragraph when replaceText is called on a verse', async () => {
+    // Arrange
+    const doc = domParser.parseFromString(
+      '<usx><para style="p"><verse number="1" style="v"/>old</para></usx>'
+    ) as Document;
+    const verse = doc.getElementsByTagName('verse')[0];
+
+    // Act
+    const result = replaceText(doc, verse, 'new');
+
+    // Assert: returns the containing paragraph, not the verse
+    expect(result.nodeName).toBe('para');
+    expect(result).toBe(doc.getElementsByTagName('para')[0]);
   });
 
   it('should remove the verse from the dom', async () => {

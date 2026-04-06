@@ -44,6 +44,29 @@ export const addAfter = (
       ? last?.parentNode.appendChild(next)
       : doc.documentElement.appendChild(next);
 
+const paragraphContainer = (node: Node | null): Node | null => {
+  let cur: Node | null = node;
+  while (cur && !isPara(cur)) cur = cur.parentNode;
+  return cur;
+};
+
+const insertContinuationParagraphs = (
+  doc: Document,
+  lines: string[],
+  after: Node
+): Node => {
+  let last = after;
+  for (let ix = 1; ix < lines.length; ix++) {
+    const nextPara =
+      lines[ix] === ''
+        ? paratextPara(doc, 'p')
+        : paratextPara(doc, 'p', doc.createTextNode(lines[ix]));
+    const anchor = paragraphContainer(last);
+    last = addAfter(doc, anchor ?? last, nextPara) as Node;
+  }
+  return last;
+};
+
 export const paratextPara = (
   doc: Document,
   style: string,
@@ -104,7 +127,7 @@ export const findNodeAfterVerse = (
   let after: Element | undefined = undefined;
   let nextverse: number = 9999;
   /* these may not be ordered */
-  verses.forEach((v) => {
+  for (const v of verses) {
     const [vstart, vend] = domVnum(v);
     if (
       (startVerse === vstart && vend > endVerse) ||
@@ -114,9 +137,8 @@ export const findNodeAfterVerse = (
       nextverse = vstart;
     }
     if (after) nextverse = vstart;
-  });
+  }
   if (after) {
-    after = moveToPara(doc, after);
     let style = after?.getAttribute('style');
     if (style && style.startsWith('q')) {
       let level = parseInt(style.substring(1)) || 0;
@@ -189,8 +211,12 @@ export const addSection = ({
 export const paratextVerse = (
   doc: Document,
   verses: string,
-  transcript: string
+  transcript: string,
+  paraForThisVerse: boolean = true
 ) => {
+  if (!paraForThisVerse) {
+    return newEl(doc, 'verse', 'v', verses);
+  }
   const para = paratextPara(doc, 'p', newEl(doc, 'verse', 'v', verses));
   if (transcript && transcript !== '')
     para.appendChild(doc.createTextNode(transcript));
@@ -203,6 +229,7 @@ export interface IaddParatextVerse {
   verses: string;
   transcript: string;
   before?: boolean;
+  paraForThisVerse: boolean;
 }
 
 export const addParatextVerse = ({
@@ -210,20 +237,44 @@ export const addParatextVerse = ({
   sibling,
   verses,
   transcript,
-  before = false,
+  before,
+  paraForThisVerse,
 }: IaddParatextVerse) => {
-  const lines: string[] = removeTimestamps(transcript).split('\n');
-  const first = paratextVerse(doc, verses, lines[0]);
-  if (before && sibling) sibling.parentNode?.insertBefore(first, sibling);
-  else addAfter(doc, sibling, first);
+  const cleaned = removeTimestamps(transcript).replace(/\r\n|\r/g, '\n');
+  const lines = cleaned.split('\n');
+  const wrapsInPara = paraForThisVerse || lines[0] === '';
 
-  let last = first;
-  for (let ix = 1; ix < lines.length; ix++) {
-    addAfter(doc, last, paratextPara(doc, 'p', doc.createTextNode(lines[ix])));
-    last = last?.nextSibling as HTMLElement;
-  }
+  const first = paratextVerse(
+    doc,
+    verses,
+    wrapsInPara ? lines[0] : '',
+    wrapsInPara
+  );
 
-  return first;
+  // Place the verse/para into the DOM
+  const siblingNode = sibling ?? null;
+  if (!wrapsInPara && !before && isPara(siblingNode))
+    (siblingNode as Element).appendChild(first);
+  else if (before && sibling) {
+    // When inserting a para before a verse inside another para,
+    // insert before the containing para to avoid nesting
+    const insertPoint =
+      isPara(first) && isPara(sibling.parentNode)
+        ? sibling.parentNode
+        : sibling;
+    insertPoint?.parentNode?.insertBefore(first, insertPoint);
+  } else addAfter(doc, sibling, first);
+
+  // Append trailing text for inline (non-para) verses
+  let last: Node = first;
+  if (!wrapsInPara && lines[0] !== '')
+    last = addAfter(doc, last, doc.createTextNode(lines[0])) as Node;
+
+  last = insertContinuationParagraphs(doc, lines, last);
+
+  const resultPara = isPara(last) ? last : paragraphContainer(last);
+  if (resultPara) return resultPara as Element;
+  return (isPara(first.parentNode) ? first.parentNode : first) as Element;
 };
 
 export const removeSection = (v: Element) => v.parentNode?.removeChild(v);
@@ -242,7 +293,7 @@ export const removeText = (v: Element) => {
     if (next) {
       remParent =
         rem && rem.parentNode?.childNodes.length === 1 ? rem.parentNode : null;
-      next = next =
+      next =
         next.firstChild || next.nextSibling || next.parentNode?.nextSibling;
     }
     if (rem) rem.parentNode?.removeChild(rem);
@@ -252,19 +303,20 @@ export const removeText = (v: Element) => {
 
 export const replaceText = (
   doc: Document,
-  para: Element,
+  verseOrPara: Element,
   transcript: string
-) => {
-  //remove text
-  const verse = firstVerse(para);
+): Element => {
+  const verse = isVerse(verseOrPara) ? verseOrPara : firstVerse(verseOrPara);
+  if (!verse) return verseOrPara;
   removeText(verse);
-  const lines: string[] = removeTimestamps(transcript).split('\n');
-  let last = addAfter(doc, verse, doc.createTextNode(lines[0]));
-  //let last = para;
-  for (let ix = 1; ix < lines.length; ix++) {
-    addAfter(doc, last, paratextPara(doc, 'p', doc.createTextNode(lines[ix])));
-    last = last?.nextSibling as HTMLElement;
-  }
+  const cleaned = removeTimestamps(transcript).replace(/\r\n|\r/g, '\n');
+  const lines = cleaned.split('\n');
+  let last: Node = verse;
+  if (lines[0] !== '')
+    last = addAfter(doc, verse, doc.createTextNode(lines[0])) as Node;
+  last = insertContinuationParagraphs(doc, lines, last);
+  const resultPara = isPara(last) ? last : paragraphContainer(last);
+  return (resultPara ?? verseOrPara) as Element;
 };
 
 export const removeVerse = (v: Element) => {
