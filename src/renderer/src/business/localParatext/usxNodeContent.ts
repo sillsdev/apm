@@ -107,6 +107,34 @@ export const getPassageVerses = (doc: Document, p: Passage) => {
   return transcription;
 };
 
+export const logUsxStructure = (doc: Document, label?: string) => {
+  const root = doc.documentElement;
+  const lines: string[] = [];
+  for (let i = 0; i < root.childNodes.length; i++) {
+    const node = root.childNodes[i];
+    if (isPara(node)) {
+      const el = node as Element;
+      const style = el.getAttribute('style') || '?';
+      let content = '';
+      for (let j = 0; j < el.childNodes.length; j++) {
+        const child = el.childNodes[j];
+        if (isVerse(child))
+          content += `\\v ${(child as Element).getAttribute('number') || '?'} `;
+        else if (isSection(child)) content += `[s] `;
+        else if (isText(child)) {
+          const txt = (child.nodeValue || '').replace(/[\r\n]/g, '');
+          if (txt) content += txt;
+        }
+      }
+      lines.push(`\\${style} ${content}`.trimEnd());
+    } else if (isText(node)) {
+      const txt = (node.nodeValue || '').trim();
+      if (txt) lines.push(txt);
+    }
+  }
+  console.log(`--- ${label ?? 'USX'} ---\n` + lines.join('\n'));
+};
+
 export const verseText = (v: Element) => {
   let next: Node | undefined | null =
     v.firstChild || v.nextSibling || v.parentNode?.nextSibling;

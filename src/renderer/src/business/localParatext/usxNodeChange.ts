@@ -212,9 +212,9 @@ export const paratextVerse = (
   doc: Document,
   verses: string,
   transcript: string,
-  firstVerse: boolean = true
+  paraForThisVerse: boolean = true
 ) => {
-  if (!firstVerse) {
+  if (!paraForThisVerse) {
     return newEl(doc, 'verse', 'v', verses);
   }
   const para = paratextPara(doc, 'p', newEl(doc, 'verse', 'v', verses));
@@ -229,7 +229,7 @@ export interface IaddParatextVerse {
   verses: string;
   transcript: string;
   before?: boolean;
-  firstVerse: boolean;
+  paraForThisVerse: boolean;
 }
 
 export const addParatextVerse = ({
@@ -237,12 +237,12 @@ export const addParatextVerse = ({
   sibling,
   verses,
   transcript,
-  before = false,
-  firstVerse,
+  before,
+  paraForThisVerse,
 }: IaddParatextVerse) => {
   const cleaned = removeTimestamps(transcript).replace(/\r\n|\r/g, '\n');
   const lines = cleaned.split('\n');
-  const wrapsInPara = firstVerse || lines[0] === '';
+  const wrapsInPara = paraForThisVerse || lines[0] === '';
 
   const first = paratextVerse(
     doc,

@@ -3,7 +3,11 @@ import { parseRef } from '../../crud/passage';
 import { PassageInfo } from './PassageInfo';
 import { vInt } from './vInt';
 import { parseTranscription } from './parseTranscription';
-import { getExistingVerses, getVerses } from './usxNodeContent';
+import {
+  getExistingVerses,
+  getVerses,
+  logUsxStructure,
+} from './usxNodeContent';
 import {
   addParatextVerse,
   addSection,
@@ -24,6 +28,7 @@ const passageVerses = (p: Passage) =>
     ? '-' + (p?.attributes.endVerse || 0).toString()
     : '');
 
+//does the given verse marker appears at the start of a new line (or at the very start) in the transcription string.
 const startsParagraphInTranscription = (transcription: string, p: Passage) => {
   const v = passageVerses(p).replace('-', '\\-');
   const refPat = new RegExp(
@@ -104,18 +109,16 @@ export const postPass = ({
       currentPI.passage.attributes.endChapter
       ? `[${curPass.attributes.reference}] `
       : '';
-  let isFirstVerse = true;
   let lastInserted: Element | undefined;
   parsedInChapter.forEach((p) => {
-    const startsParagraph = startsParagraphInTranscription(transcription, p);
-    const paraForThisVerse = isFirstVerse || !hasVerse || startsParagraph;
+    const paraForThisVerse = startsParagraphInTranscription(transcription, p);
     let thisVerse = removeOverlappingVerses(doc, p);
     const transcript = altRef + p.attributes.lastComment;
 
     if (thisVerse) {
       if (paraForThisVerse) thisVerse = moveToPara(doc, thisVerse);
       if (thisVerse) lastInserted = replaceText(doc, thisVerse, transcript);
-    } else if (paraForThisVerse) {
+    } else {
       const verses = getVerses(doc.documentElement);
       const nextVerse = findNodeAfterVerse(
         doc,
@@ -125,21 +128,11 @@ export const postPass = ({
       );
       thisVerse = addParatextVerse({
         doc,
-        sibling: nextVerse,
+        sibling: paraForThisVerse ? nextVerse : lastInserted,
         verses: passageVerses(p),
         transcript,
-        before: true,
-        firstVerse: true,
-      });
-      lastInserted = thisVerse;
-    } else {
-      thisVerse = addParatextVerse({
-        doc,
-        sibling: lastInserted,
-        verses: passageVerses(p),
-        transcript,
-        before: false,
-        firstVerse: false,
+        before: paraForThisVerse,
+        paraForThisVerse: paraForThisVerse,
       });
       lastInserted = thisVerse;
     }
@@ -153,6 +146,5 @@ export const postPass = ({
         sectionArr,
       });
     }
-    isFirstVerse = false;
   });
 };

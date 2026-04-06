@@ -436,7 +436,8 @@ describe('usxNodeChange', () => {
       sibling,
       verses: '1',
       transcript: 'T1',
-      firstVerse: true,
+      before: true,
+      paraForThisVerse: true,
     });
     // Assert
     expect(result).toBeDefined();
@@ -465,7 +466,7 @@ describe('usxNodeChange', () => {
       verses: '1',
       transcript: 'T1',
       before: true,
-      firstVerse: true,
+      paraForThisVerse: true,
     });
     // Assert
     expect(result).toBeDefined();
@@ -497,7 +498,7 @@ describe('usxNodeChange', () => {
       verses: '2',
       transcript: 'T2',
       before: false,
-      firstVerse: false,
+      paraForThisVerse: false,
     });
 
     // Assert
@@ -522,7 +523,7 @@ describe('usxNodeChange', () => {
       verses: '1',
       transcript: 'T1',
       before: true,
-      firstVerse: true,
+      paraForThisVerse: true,
     });
 
     // Assert: new para is a sibling, not nested inside verse 2's para
@@ -542,7 +543,8 @@ describe('usxNodeChange', () => {
       sibling: null,
       verses: '1',
       transcript: 'first part\nsecond part',
-      firstVerse: true,
+      before: false,
+      paraForThisVerse: true,
     });
 
     // Assert: first part in original para, second part in a new para
@@ -566,7 +568,7 @@ describe('usxNodeChange', () => {
       verses: '1',
       transcript: 'first\nsecond',
       before: true,
-      firstVerse: true,
+      paraForThisVerse: true,
     });
 
     // Assert: returns the continuation para (last one), not the verse's para
