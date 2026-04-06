@@ -1976,6 +1976,7 @@ export interface IWsAudioPlayerStrings extends Localize.LocalizedStringsMethods 
     "beginVoiceConvert": string;
     "backTip": string;
     "convertVoice": string;
+    "convertVoiceAi": string;
     "beginningTip": string;
     "deleteRecording": string;
     "deleteRegion": string;
@@ -2001,11 +2002,14 @@ export interface IWsAudioPlayerStrings extends Localize.LocalizedStringsMethods 
     "recognizeSpeechSettings": string;
     "record": string;
     "reduceNoise": string;
+    "reduceNoiseAi": string;
     "reset": string;
     "resume": string;
     "saveSegments": string;
     "seconds": string;
+    "selectMicrophoneMenu": string;
     "selectVoice": string;
+    "selectVoiceForConversion": string;
     "selectVoicePrompt": string;
     "silence": string;
     "slowerTip": string;

@@ -5,6 +5,7 @@ import { ThemeProvider, createTheme } from '@mui/material/styles';
 import Coordinator from '@orbit/coordinator';
 import Memory from '@orbit/memory';
 import { UninitializedRecord } from '@orbit/records';
+import LocalizedStrings from 'react-localization';
 import bugsnagClient from '../../../../auth/bugsnagClient';
 import { GlobalProvider, GlobalState } from '../../../../context/GlobalContext';
 import { IOrbitContext } from '../../../../hoc/OrbitContext';
@@ -18,7 +19,23 @@ import { AudioVersionCard } from './AudioVersionCard';
 type RecordsByType = Record<string, unknown[]>;
 
 const createMockQueryBuilder = (recordsByType: RecordsByType) => ({
-  findRecords: (type: string) => recordsByType[type] ?? [],
+  findRecords: (type: string) => {
+    const recs = (recordsByType[type] ?? []) as any[];
+    return {
+      filter: (arg: any) => {
+        // Orbit query builder supports filter specs like:
+        // { relation: 'passage', record: { type: 'passage', id } }
+        if (typeof arg === 'function') return recs.filter(arg);
+        if (arg?.relation === 'passage' && arg?.record?.id) {
+          const passageId = String(arg.record.id);
+          return recs.filter(
+            (r) => r?.relationships?.passage?.data?.id === passageId
+          );
+        }
+        return recs;
+      },
+    };
+  },
   findRecord: (identity: { type: string; id: string }) =>
     (recordsByType[identity.type] ?? []).find((rec) => (rec as { id: string }).id === identity.id),
 });
@@ -44,12 +61,30 @@ const mockCoordinator = {
   getSource: () => createMockMemory({}),
 } as unknown as Coordinator;
 
+const mockMediaActionsStrings = new LocalizedStrings({
+  en: {
+    play: 'Play',
+    pause: 'Pause',
+    attach: 'Attach',
+    detach: 'Detach',
+    delete: 'Delete',
+  },
+});
+
+const mockTranscriptionShowStrings = new LocalizedStrings({
+  en: {
+    transcription: 'Transcription',
+  },
+});
+
 const mockStringsReducer = () => {
   const initialState = localizationReducer(undefined, { type: '@@INIT' });
   return {
     ...initialState,
     loaded: true,
     lang: 'en',
+    mediaActions: mockMediaActionsStrings,
+    transcriptionShow: mockTranscriptionShowStrings,
   };
 };
 
@@ -113,7 +148,7 @@ const createMockRow = (overrides: Partial<IRow> = {}): IRow => ({
   reference: 'JHN 1:1',
   referenceString: 'JHN 1:1',
   duration: '0:42',
-  size: 2 * 1024 * 1024,
+  size: 2,
   version: '1',
   date: '2020-06-15T14:30:00.000Z',
   readyToShare: false,
@@ -171,6 +206,7 @@ describe('AudioVersionCard', () => {
                 setIsSelected={cy.stub().as('setIsSelected')}
                 lang="en"
                 handleSelect={cy.stub().as('handleSelect')}
+                onSelectCard={cy.stub().as('onSelectCard')}
                 playItem=""
                 mediaPlaying={false}
                 {...createMockRow()}
@@ -221,11 +257,11 @@ describe('AudioVersionCard', () => {
       });
   });
 
-  it('calls setIsSelected with the media id when the card body is clicked', () => {
+  it('calls onSelectCard when the card body is clicked', () => {
     mountCard();
 
     cy.get('[data-cy="audio-version-file-name"]').click({ force: true });
-    cy.get('@setIsSelected').should('have.been.calledWith', 'media-1');
+    cy.get('@onSelectCard').should('have.been.called');
   });
 
   it('calls handleSelect when the play control is clicked', () => {
@@ -257,6 +293,13 @@ describe('AudioVersionCard', () => {
     mountCard({ id: '' });
 
     cy.get('#audActPlayStop').should('be.disabled');
+  });
+
+  it('calls setIsSelected when selection radio is shown and clicked', () => {
+    mountCard({ showSelectionRadio: true });
+
+    cy.get('input[aria-label="recording.wav"]').click({ force: true });
+    cy.get('@setIsSelected').should('have.been.calledWith', 'media-1');
   });
 
   it('applies selected background styling when isSelected is true', () => {

@@ -10,7 +10,6 @@ import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import IntellectualProperty from '../model/intellectualProperty';
-import BigDialog from '../hoc/BigDialog';
 import ProvideRights from './ProvideRights';
 import { communitySelector, sharedSelector } from '../selector';
 import { shallowEqual, useSelector } from 'react-redux';
@@ -49,15 +48,39 @@ export function SpeakerName({
   const ipRecs = useOrbitData<IntellectualProperty[]>('intellectualproperty');
   const [value, setValue] = React.useState<NameOptionType | null>({ name });
   const valueRef = React.useRef<string>('');
-  const [speakers, setSpeakers] = React.useState<NameOptionType[]>([]);
-  const [showDialog, setShowDialog] = React.useState(false);
   const [showSelectDialog, setShowSelectDialog] = React.useState(false);
   const [organization] = useGlobal('organization');
   const { showMessage } = useSnackBar();
   const [memory] = useGlobal('memory');
   const t: ICommunityStrings = useSelector(communitySelector, shallowEqual);
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
-  const [hasNoRightsMobile, setHasNoRightsMobile] = React.useState(false);
+  const [hasNoRights, setHasNoRights] = React.useState(false);
+
+  const speakers = React.useMemo((): NameOptionType[] => {
+    const orgId = team || organization;
+    const orgIp = ipRecs.filter((r) => related(r, 'organization') === orgId);
+
+    const newSpeakers: NameOptionType[] = [];
+    if (recordingRequired) {
+      orgIp.forEach((r) => {
+        const mediaRec = findRecord(
+          memory,
+          'mediafile',
+          related(r, 'releaseMediafile')
+        ) as MediaFileD;
+        if (mediaRec?.attributes?.transcription) {
+          newSpeakers.push({ name: r.attributes.rightsHolder });
+        }
+      });
+    } else {
+      newSpeakers.push(
+        ...orgIp.map((r) => ({ name: r.attributes.rightsHolder }))
+      );
+    }
+
+    newSpeakers.sort((a, b) => a.name.localeCompare(b.name));
+    return newSpeakers;
+  }, [ipRecs, team, organization, recordingRequired, memory]);
 
   const handleRights = () => {
     onRights && onRights(false);
@@ -66,18 +89,14 @@ export function SpeakerName({
       onChange?.(name);
       return;
     }
-    setShowDialog(true);
+    setHasNoRights(true);
   };
 
   const nameReset = () => {
     valueRef.current = '';
     onChange && onChange('');
     onRights && onRights(false);
-  };
-
-  const handleCancelRights = () => {
-    setShowDialog(false);
-    nameReset();
+    setHasNoRights(false);
   };
 
   const getOptionLabel = (option: string | NameOptionType) => {
@@ -95,8 +114,7 @@ export function SpeakerName({
 
   const handleRightsChange = (hasRights: boolean) => {
     onRights && onRights(hasRights);
-    setShowDialog(false);
-    setHasNoRightsMobile(false);
+    setHasNoRights(false);
     setShowSelectDialog(false);
   };
 
@@ -118,6 +136,7 @@ export function SpeakerName({
       onChange && onChange(newValue);
       if (inList(newValue)) {
         onRights && onRights(true);
+        setHasNoRights(false);
       } else handleRights();
     } else if (newValue && newValue.inputValue) {
       // Create a new value from the user input
@@ -128,6 +147,7 @@ export function SpeakerName({
       onChange && onChange(newValue.inputValue);
       if (inList(newValue.inputValue)) {
         onRights && onRights(true);
+        setHasNoRights(false);
       } else handleRights();
     } else {
       setValue(newValue);
@@ -135,6 +155,7 @@ export function SpeakerName({
         valueRef.current = newValue.name;
         onChange && onChange(newValue?.name || '');
         onRights && onRights(true);
+        setHasNoRights(false);
       }
     }
   };
@@ -142,7 +163,7 @@ export function SpeakerName({
   const handleChoiceMobile = (newValue: string | NameOptionType | null) => {
     if (newValue === null) {
       nameReset();
-      setHasNoRightsMobile(false);
+      setHasNoRights(false);
     } else if (typeof newValue === 'string') {
       valueRef.current = newValue;
       setValue({
@@ -150,10 +171,10 @@ export function SpeakerName({
       });
       onChange && onChange(newValue);
       if (inList(newValue)) {
-        setHasNoRightsMobile(false);
+        setHasNoRights(false);
         setShowSelectDialog(false);
       } else {
-        setHasNoRightsMobile(true);
+        setHasNoRights(true);
       }
     } else if (newValue && newValue.inputValue) {
       // Create a new value from the user input
@@ -162,13 +183,13 @@ export function SpeakerName({
         name: newValue.inputValue,
       });
       onChange && onChange(newValue.inputValue);
-      setHasNoRightsMobile(true);
+      setHasNoRights(true);
     } else {
       setValue(newValue);
       if (newValue) {
         valueRef.current = newValue.name;
         onChange && onChange(newValue?.name || '');
-        setHasNoRightsMobile(false);
+        setHasNoRights(false);
         setShowSelectDialog(false);
       }
     }
@@ -182,34 +203,6 @@ export function SpeakerName({
     )
       handleChoice(valueRef.current);
   };
-
-  React.useEffect(() => {
-    const newSpeakers = new Array<NameOptionType>();
-    const orgId = team || organization;
-    const orgIp = ipRecs.filter((r) => related(r, 'organization') === orgId);
-    if (recordingRequired) {
-      orgIp.forEach((r) => {
-        const mediaRec = findRecord(
-          memory,
-          'mediafile',
-          related(r, 'releaseMediafile')
-        ) as MediaFileD;
-        if (mediaRec?.attributes?.transcription) {
-          newSpeakers.push({ name: r.attributes.rightsHolder });
-        }
-      });
-    } else {
-      newSpeakers.push(
-        ...orgIp.map((r) => ({ name: r.attributes.rightsHolder }))
-      );
-    }
-    setSpeakers(
-      newSpeakers.sort((a, b) =>
-        getOptionLabel(a).localeCompare(getOptionLabel(b))
-      )
-    );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ipRecs, team, organization, recordingRequired]);
 
   React.useEffect(() => {
     if (inList(name)) {
@@ -232,8 +225,39 @@ export function SpeakerName({
   };
 
   const handleSelectAndClose = (newValue: string | NameOptionType | null) => {
-    handleChoice(newValue);
-    setShowSelectDialog(false);
+    // Desktop: keep the dialog open when the user is adding a new speaker
+    // so we can show ProvideRights inline.
+    if (newValue === null) {
+      nameReset();
+      return;
+    }
+    const nextName =
+      typeof newValue === 'string'
+        ? newValue
+        : newValue.inputValue
+          ? newValue.inputValue
+          : newValue.name;
+
+    // If empty, keep dialog open (don't launch rights).
+    if (!nextName?.trim()) {
+      nameReset();
+      setValue({ name: '' });
+      return;
+    }
+
+    valueRef.current = nextName;
+    setValue({ name: nextName });
+    onChange && onChange(nextName);
+
+    if (inList(nextName)) {
+      onRights && onRights(true);
+      setHasNoRights(false);
+      setShowSelectDialog(false);
+    } else {
+      onRights && onRights(false);
+      setHasNoRights(true);
+      // keep dialog open
+    }
   };
 
   const buttonText = name?.trim() !== '' ? name : t.selectSpeaker + '...';
@@ -328,7 +352,7 @@ export function SpeakerName({
               );
             }}
           />
-          {isMobileView && hasNoRightsMobile && (
+          {hasNoRights && (
             <>
               <Typography sx={{ my: 2 }}>
                 {recordingRequired ? t.voiceRights : t.releaseRights}
@@ -343,32 +367,10 @@ export function SpeakerName({
             </>
           )}
         </DialogContent>
-        {!isMobileView && (
-          <DialogActions>
-            <Button onClick={handleCloseSelectDialog}>{ts.cancel}</Button>
-          </DialogActions>
-        )}
+        <DialogActions>
+          <Button onClick={handleCloseSelectDialog}>{ts.cancel}</Button>
+        </DialogActions>
       </Dialog>
-      {!isMobileView && (
-        <BigDialog
-          title={t.provideRights}
-          isOpen={showDialog}
-          onOpen={handleCancelRights}
-        >
-          <>
-            <Typography>
-              {recordingRequired ? t.voiceRights : t.releaseRights}
-            </Typography>
-            <ProvideRights
-              speaker={value?.name || ''}
-              recordType={ArtifactTypeSlug.IntellectualProperty}
-              onRights={handleRightsChange}
-              team={team}
-              recordingRequired={recordingRequired}
-            />
-          </>
-        </BigDialog>
-      )}
     </>
   );
 }

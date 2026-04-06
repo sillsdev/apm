@@ -21,6 +21,11 @@ interface IProps {
   saving: boolean;
   setState?: React.Dispatch<React.SetStateAction<IVoicePerm>>;
   setStatement?: (statement: string) => void;
+  registerActions?: (actions: {
+    copy: () => void;
+    personalize: () => void;
+  }) => void;
+  forceMobileLayout?: boolean;
 }
 
 export const VoiceStatement = ({
@@ -30,6 +35,8 @@ export const VoiceStatement = ({
   saving,
   setState,
   setStatement,
+  registerActions,
+  forceMobileLayout,
 }: IProps) => {
   const [showPersonalize, setShowPersonalize] = React.useState<IVoicePerm>();
   const t: IVoiceStrings = useSelector(voiceSelector, shallowEqual);
@@ -44,12 +51,22 @@ export const VoiceStatement = ({
   };
 
   const { isMobile: isMobileView } = useMobile();
+  const effectiveMobileLayout = forceMobileLayout ?? isMobileView;
+  const showInlineActions = !effectiveMobileLayout && !registerActions;
 
   function handlePersonalize() {
     const newState = { ...state, fullName: voice };
     setState && setState(newState);
     setShowPersonalize(newState);
   }
+
+  useEffect(() => {
+    registerActions?.({
+      copy: handleCopy,
+      personalize: handlePersonalize,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [registerActions, permStatement, state, voice, saving]);
 
   useEffect(() => {
     setStatement && setStatement(permStatement);
@@ -64,7 +81,7 @@ export const VoiceStatement = ({
           sx={{
             lineHeight: '1.2rem',
             pt: 1,
-            ...(isMobileView
+            ...(effectiveMobileLayout
               ? {
                   maxHeight: '8rem',
                   overflowY: 'auto',
@@ -78,7 +95,7 @@ export const VoiceStatement = ({
           {permStatement}
         </Typography>
         <ActionRow>
-          {!isMobileView && (
+          {showInlineActions && (
             <>
               <IconButton
                 data-cy="voice-statement-copy"

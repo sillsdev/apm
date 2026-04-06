@@ -107,12 +107,14 @@ describe('VoiceStatement', () => {
 
   const mountVoiceStatement = ({
     globalOverrides,
+    viewport,
     ...props
   }: Partial<React.ComponentProps<typeof VoiceStatement>> & {
     globalOverrides?: Partial<GlobalState>;
+    viewport?: { width: number; height: number };
   } = {}) => {
     const theme = createTheme();
-    cy.viewport(1280, 800);
+    cy.viewport(viewport?.width ?? 1280, viewport?.height ?? 800);
     cy.mount(
       <Provider store={mockStore}>
         <ThemeProvider theme={theme}>
@@ -170,7 +172,10 @@ describe('VoiceStatement', () => {
   });
 
   it('hides copy and personalize when global mobile view is enabled', () => {
-    mountVoiceStatement({ globalOverrides: { mobileView: true } });
+    mountVoiceStatement({
+      globalOverrides: { mobileView: true },
+      viewport: { width: 480, height: 800 },
+    });
 
     cy.get('[data-cy="voice-statement-copy"]').should('not.exist');
     cy.get('[data-cy="voice-statement-personalize"]').should('not.exist');

@@ -75,6 +75,9 @@ interface IProps {
   showSize?: boolean;
   handleUpload?: () => void;
   isRecordingRights?: boolean;
+  rightsLeftActions?: React.JSX.Element;
+  /** Force mobile layout (used by rights UI to match mobile experience on desktop). */
+  forceMobileView?: boolean;
   onVersions?: () => void;
   handleSave?: () => void;
   isSaveDisabled?: boolean;
@@ -128,6 +131,8 @@ function MediaRecord(props: IProps) {
     showSize = true,
     handleUpload,
     isRecordingRights,
+    rightsLeftActions,
+    forceMobileView,
     handleSave,
     onVersions,
     isSaveDisabled,
@@ -514,6 +519,7 @@ function MediaRecord(props: IProps) {
   const segments = '{}';
 
   const { isMobile: isMobileView } = useMobile();
+  const effectiveMobileView = Boolean(forceMobileView) || isMobileView;
 
   const content = (
     <>
@@ -547,17 +553,19 @@ function MediaRecord(props: IProps) {
         isStopLogic={isStopLogic ?? false}
         isRecordingRights={isRecordingRights}
         handleUpload={handleUpload}
+        rightsLeftActions={rightsLeftActions}
+        forceMobileView={forceMobileView}
         handleSave={handleSave}
         onVersions={onVersions}
         isSaveDisabled={isSaveDisabled}
         showWaveformSave={waveformNeedsSave}
       />
-      {warning && !isMobileView && (
+      {warning && !effectiveMobileView && (
         <Typography sx={{ m: 2, color: 'warning.dark' }} id="warning">
           {warning}
         </Typography>
       )}
-      {(showSize || metaData) && !isMobileView && (
+      {(showSize || metaData) && !effectiveMobileView && (
         <Stack
           direction="row"
           sx={{ alignItems: 'center', justifyContent: 'flex-end' }}
@@ -577,7 +585,7 @@ function MediaRecord(props: IProps) {
     return content;
   }
 
-  return isMobileView ? (
+  return effectiveMobileView ? (
     content
   ) : (
     <Paper

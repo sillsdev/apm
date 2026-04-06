@@ -8,7 +8,6 @@ import {
   ToggleButton,
   Box,
   SxProps,
-  Badge,
   Menu,
   MenuItem,
   Stack,
@@ -29,13 +28,12 @@ import ReplayIcon from '@mui/icons-material/Replay';
 import PlayIcon from '@mui/icons-material/PlayArrow';
 import PauseIcon from '@mui/icons-material/Pause';
 import LoopIcon from '@mui/icons-material/Loop';
-import DeleteIcon from '@mui/icons-material/Delete';
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import TimerIcon from '@mui/icons-material/AccessTime';
 import NextSegmentIcon from '@mui/icons-material/ArrowRightAlt';
 import UndoIcon from '@mui/icons-material/Undo';
 import MicIcon from '@mui/icons-material/SettingsVoice';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
+import SettingsIcon from '@mui/icons-material/Settings';
 import VersionsIcon from '@mui/icons-material/List';
 import NormalizeIcon from '../control/NormalizeIcon';
 import UploadIcon from '@mui/icons-material/CloudUpload';
@@ -87,7 +85,6 @@ import {
   useOrgDefaults,
 } from '../crud/useOrgDefaults';
 import NoChickenIcon from '../control/NoChickenIcon';
-import VcButton from '../control/ConfButton';
 import VoiceConversionLogo from '../control/VoiceConversionLogo';
 import BigDialog from '../hoc/BigDialog';
 import { useVoiceUrl } from '../crud/useVoiceUrl';
@@ -181,6 +178,10 @@ interface IProps {
   onSegmentUndo?: () => void;
   isRecordingRights?: boolean;
   handleUpload?: () => void;
+  /** Extra controls to show just left of Upload on rights mobile layout when space permits. */
+  rightsLeftActions?: React.JSX.Element;
+  /** Force mobile layout even when global mobile view is false. */
+  forceMobileView?: boolean;
   onVersions?: () => void;
   handleSave?: () => void;
   isSaveDisabled?: boolean;
@@ -281,6 +282,8 @@ function WSAudioPlayer(props: IProps) {
     onSegmentUndo,
     isRecordingRights,
     handleUpload,
+    rightsLeftActions,
+    forceMobileView,
     onVersions,
     handleSave,
     isSaveDisabled,
@@ -363,7 +366,8 @@ function WSAudioPlayer(props: IProps) {
     null
   );
   const moreMenuOpen = Boolean(moreMenuAnchorEl);
-  const { isMobile: isMobileView } = useMobile();
+  const { isMobile: isMobileView, isMobileWidth } = useMobile();
+  const effectiveMobileView = Boolean(forceMobileView) || isMobileView;
   const cancelAIRef = useRef(false);
 
   const { requestAudioAi } = useAudioAi();
@@ -462,15 +466,6 @@ function WSAudioPlayer(props: IProps) {
 
   const calculatedHeight = useMemo(() => height - 120, [height]);
 
-  const voiceConvertTip = useMemo(
-    () =>
-      (t.convertVoice + '\u00A0\u00A0').replace(
-        '{0}',
-        voice ? `\u2039 ${voice} \u203A` : ''
-      ),
-    [t.convertVoice, voice]
-  );
-
   // Memoize tooltip titles to prevent infinite re-renders
   const recordTooltipTitle = useMemo(() => {
     const baseTitle = recording
@@ -500,16 +495,6 @@ function WSAudioPlayer(props: IProps) {
     localizeHotKey,
     justPlayButton,
   ]);
-
-  const noiseRemovalTooltipTitle = useMemo(
-    () => <Badge badgeContent={ts.ai}>{t.reduceNoise}</Badge>,
-    [ts.ai, t.reduceNoise]
-  );
-
-  const voiceChangeTooltipTitle = useMemo(
-    () => <Badge badgeContent={ts.ai}>{voiceConvertTip}</Badge>,
-    [ts.ai, voiceConvertTip]
-  );
 
   const myOnCurrentSegment = useCallback(
     (currentSegment: IRegion | undefined) => {
@@ -1170,7 +1155,7 @@ function WSAudioPlayer(props: IProps) {
   ]);
   const handleActionConfirmed = () => {
     initialPosRef.current = undefined;
-    if (confirmAction === t.deleteRecording) {
+    if (confirmAction === ts.resetRecording) {
       confirmedDelete();
     } else {
       handleDeleteRegion();
@@ -1181,9 +1166,8 @@ function WSAudioPlayer(props: IProps) {
     setConfirmAction('');
   };
   const handleDelete = useCallback(() => {
-    setConfirmAction(t.deleteRecording);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    setConfirmAction(ts.resetRecording);
+  }, [ts.resetRecording]);
   const handleDeleteRegion = () => {
     setPlaying(false);
     wsRegionDelete().then(() => {
@@ -1247,6 +1231,75 @@ function WSAudioPlayer(props: IProps) {
     setBusy && setBusy(inprogress);
     setBlobReady && setBlobReady(!inprogress);
   };
+
+  const showLoadingWaveform =
+    Boolean(blob) && !ready && !recording && !waitingForAI;
+  const showAiProgressOverlay = waitingForAI;
+
+  const waveformNode = (
+    <Box
+      sx={{
+        width: '100%',
+        maxWidth: '100%',
+        minWidth: 0,
+        boxSizing: 'border-box',
+        position: 'relative',
+        minHeight: calculatedHeight,
+      }}
+    >
+      <div
+        id="wsAudioWaveform"
+        ref={waveformRef}
+        style={{
+          visibility:
+            showLoadingWaveform || showAiProgressOverlay ? 'hidden' : 'visible',
+        }}
+      />
+      {showLoadingWaveform && (
+        <Box
+          sx={{
+            position: 'absolute',
+            inset: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            pointerEvents: 'none',
+          }}
+        >
+          <Typography>{ts.loading}</Typography>
+        </Box>
+      )}
+      {showAiProgressOverlay && (
+        <Box
+          sx={{
+            position: 'absolute',
+            inset: 0,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 1,
+            px: 2,
+            pointerEvents: 'auto',
+          }}
+        >
+          <Typography sx={{ textAlign: 'center', whiteSpace: 'normal' }}>
+            {processMsg}
+          </Typography>
+          <AltButton
+            id="ai-cancel"
+            onClick={() => {
+              cancelAIRef.current = true;
+              doingProcess(false);
+            }}
+          >
+            {ts.cancel}
+          </AltButton>
+        </Box>
+      )}
+    </Box>
+  );
+
   const audioAiMsg = (
     func: AudioAiFunc,
     targetVoice?: string,
@@ -1352,6 +1405,24 @@ function WSAudioPlayer(props: IProps) {
     });
   };
 
+  const voiceDialogNode = (
+    <BigDialog
+      title={t.selectVoice}
+      description={<Typography>{t.selectVoicePrompt}</Typography>}
+      isOpen={voiceVisible}
+      onOpen={handleCloseVoice}
+      bp={BigDialogBp.sm}
+    >
+      <SelectVoice
+        noNewVoice={noNewVoice && duration > 0}
+        onlySettings={duration === 0}
+        onOpen={handleCloseVoice}
+        begin={applyVoiceChange}
+        refresh={handleRefresh}
+      />
+    </BigDialog>
+  );
+
   const handleNormal = async () => {
     if (!reload) throw new Exception('need reload defined.');
 
@@ -1398,258 +1469,268 @@ function WSAudioPlayer(props: IProps) {
     isMobileView && hasSegmentUndo && onSegmentUndo
   );
 
-  const noiseRemovalControl = useCallback(() => {
-    if (!allowNoNoise || !features?.noNoise || offline) return null;
-
-    const handleClick = (e?: React.MouseEvent) => {
-      if (e) e.stopPropagation();
-      handleNoiseRemoval();
-      isMobileView && handleMoreMenuClose?.();
-    };
-
-    return (
-      <LightTooltip id={`noiseRemovalTip`} title={noiseRemovalTooltipTitle}>
-        <IconButton
-          id={`noiseRemoval`}
-          onClick={handleClick}
-          disabled={isControlDisabled}
-          size={isMobileView ? 'small' : 'medium'}
-        >
-          <NoChickenIcon
-            sx={{ width: '20pt', height: '20pt' }}
-            disabled={isControlDisabled}
-          />
-        </IconButton>
-      </LightTooltip>
-    );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    isMobileView,
-    allowNoNoise,
-    features?.noNoise,
-    offline,
-    isControlDisabled,
-    noiseRemovalTooltipTitle,
-  ]);
-
-  const voiceChangeControl = useCallback(
-    () => {
-      if (!features?.deltaVoice || allowDeltaVoice === false || offline)
-        return null;
-
-      const handleClick = () => {
-        handleVoiceChange();
-        handleMoreMenuClose();
-      };
-
-      return (
-        <LightTooltip id={`voiceChangeTip`} title={voiceChangeTooltipTitle}>
-          <span
+  const renderMoreMenuItems = () =>
+    [
+      allowZoom &&
+        !hideZoom && (
+          <MenuItem
+            key="zoom-control"
             onClick={(e) => {
-              e.stopPropagation();
+              const target = e.target as HTMLElement;
+              if (
+                target.closest?.('[id="wsZoomIn"], [id="wsZoomOut"]')
+              ) {
+                return;
+              }
+              handleMoreMenuClose();
             }}
           >
-            <VcButton
-              id={`voiceChange`}
-              onClick={handleClick}
-              onSettings={handleVoiceSettings}
-              disabled={isControlDisabled}
-              allowSettings={duration === 0}
+            <WSAudioPlayerZoom
+              ready={ready && !recording && !waitingForAI}
+              fillPx={recording ? 100 : wsFillPx()}
+              curPx={pxPerSec}
+              onZoom={wsZoom}
+            />
+          </MenuItem>
+        ),
+      allowRecord === true &&
+        allowNoNoise &&
+        features?.noNoise &&
+        !offline && (
+          <MenuItem
+            key="noise-removal"
+            id="noiseRemoval"
+            onClick={() => {
+              handleNoiseRemoval();
+              handleMoreMenuClose();
+            }}
+            disabled={isControlDisabled}
+          >
+            <Stack
+              direction="row"
+              alignItems="center"
+              spacing={1}
+              sx={{ py: 0.25 }}
             >
+              <NoChickenIcon
+                sx={{ width: '14pt', height: '14pt', flexShrink: 0 }}
+                disabled={isControlDisabled}
+              />
+              <Typography variant="body2">{t.reduceNoiseAi}</Typography>
+            </Stack>
+          </MenuItem>
+        ),
+      allowRecord === true &&
+        features?.deltaVoice &&
+        allowDeltaVoice !== false &&
+        !offline && (
+          <MenuItem
+            key="voice-convert"
+            id="voiceChange"
+            onClick={() => {
+              handleVoiceChange();
+              handleMoreMenuClose();
+            }}
+            disabled={isControlDisabled}
+          >
+            <Stack direction="row" alignItems="center" spacing={1}>
               <VoiceConversionLogo
                 sx={{
                   width: '18pt',
                   height: '18pt',
+                  flexShrink: 0,
                 }}
                 disabled={isControlDisabled}
               />
-            </VcButton>
-          </span>
-        </LightTooltip>
-      );
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [
-      features?.deltaVoice,
-      allowDeltaVoice,
-      offline,
-      isControlDisabled,
-      voiceChangeTooltipTitle,
-      duration,
-    ]
-  );
-
-  const normalizeControl = useCallback(
-    () => {
-      if (!features?.normalize || !isElectron) return null;
-
-      const handleClick = (e?: React.MouseEvent) => {
-        if (e) e.stopPropagation();
-        handleNormal();
-        handleMoreMenuClose();
-      };
-
-      return (
-        <LightTooltip id={`normalizeTip`} title={t.normalize}>
-          <IconButton
-            id={`normalize`}
-            onClick={handleClick}
-            disabled={isControlDisabled}
-            size={isMobileView ? 'small' : 'medium'}
-          >
-            <NormalizeIcon
-              width={'20pt'}
-              height={'20pt'}
-              disabled={isControlDisabled}
-            />
-          </IconButton>
-        </LightTooltip>
-      );
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [features?.normalize, isControlDisabled]
-  );
-
-  const microphoneControl = useCallback(() => {
-    const handleClick = (e: React.MouseEvent<HTMLElement>) => {
-      e.stopPropagation();
-      handleMicMenuOpen(e);
-      handleMoreMenuClose();
-    };
-
-    return (
-      <LightTooltip id={`wsAudioMicTip`} title={t.microphone}>
-        <IconButton
-          id={`wsAudioMic`}
-          onClick={handleClick}
-          size={isMobileView ? 'small' : 'medium'}
-        >
-          <MicIcon
-            sx={{
-              color:
-                audioInputDevices.length === 0 ? 'text.disabled' : 'inherit',
+              <Typography variant="body2">{t.convertVoiceAi}</Typography>
+            </Stack>
+          </MenuItem>
+        ),
+      allowRecord === true &&
+        features?.deltaVoice &&
+        allowDeltaVoice !== false &&
+        !offline && (
+          <MenuItem
+            key="voice-convert-settings"
+            onClick={() => {
+              handleVoiceSettings();
+              handleMoreMenuClose();
             }}
-          />
-        </IconButton>
-      </LightTooltip>
-    );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [audioInputDevices.length, isMobileView]);
+            disabled={isControlDisabled && duration > 0}
+          >
+            <Stack direction="row" alignItems="center" spacing={1}>
+              <SettingsIcon
+                fontSize="small"
+                sx={{
+                  flexShrink: 0,
+                  color:
+                    isControlDisabled && duration > 0
+                      ? 'action.disabled'
+                      : 'secondary.light',
+                  opacity: 0.85,
+                }}
+              />
+              <Typography variant="body2">
+                {t.selectVoiceForConversion}
+              </Typography>
+            </Stack>
+          </MenuItem>
+        ),
+      allowRecord === true &&
+        features?.normalize &&
+        isElectron && (
+          <MenuItem
+            key="normalize"
+            id="normalize"
+            onClick={() => {
+              handleNormal();
+              handleMoreMenuClose();
+            }}
+            disabled={isControlDisabled}
+          >
+            <Stack direction="row" alignItems="center" spacing={1}>
+              <NormalizeIcon
+                width="18pt"
+                height="18pt"
+                disabled={isControlDisabled}
+              />
+              <Typography variant="body2">{t.normalize}</Typography>
+            </Stack>
+          </MenuItem>
+        ),
+      allowRecord === true &&
+        !keepItSmall && (
+          <MenuItem
+            key="microphone-control"
+            id="wsAudioMic"
+            onClick={(e) => {
+              handleMicMenuOpen(e);
+              handleMoreMenuClose();
+            }}
+          >
+            <Stack direction="row" alignItems="center" spacing={1}>
+              <MicIcon
+                sx={{
+                  flexShrink: 0,
+                  color:
+                    audioInputDevices.length === 0
+                      ? 'text.disabled'
+                      : 'inherit',
+                }}
+              />
+              <Typography variant="body2">{t.selectMicrophoneMenu}</Typography>
+            </Stack>
+          </MenuItem>
+        ),
+    ].filter(Boolean);
 
   const onSplit = () => {};
 
-  if (isMobileView) {
-    if (isRecordingRights) {
-      return (
-        <>
-          <Stack
-            direction="row"
-            spacing={1}
-            sx={{
-              mx: 1,
-              py: 1,
-              display: 'flex',
-              justifyContent: 'space-between',
-            }}
-          >
-            {duration === 0 || recording ? (
-              <RecordButton
-                recording={recording}
-                oneTryOnly={oneTryOnly}
-                onClick={handleRecorder}
-                disabled={playing || processingRecording || waitingForAI}
-                tooltipTitle={recordTooltipTitle}
-                isSmall={true}
-                hasRecording={hasRecording ?? false}
-                isStopLogic={isStopLogic ?? false}
-                isMobileView={true}
-                isRecordingRights={true}
-              />
-            ) : (
-              <Stack
-                direction="row"
-                spacing={1}
-                sx={{ display: 'flex', alignItems: 'center' }}
+  if (isRecordingRights) {
+    return (
+      <>
+        <Stack
+          direction="row"
+          spacing={1}
+          sx={{
+            mx: 1,
+            py: 1,
+            display: 'flex',
+            justifyContent: 'space-between',
+          }}
+        >
+          {duration === 0 || recording ? (
+            <RecordButton
+              recording={recording}
+              oneTryOnly={oneTryOnly}
+              onClick={handleRecorder}
+              disabled={playing || processingRecording || waitingForAI}
+              tooltipTitle={recordTooltipTitle}
+              isSmall={true}
+              hasRecording={hasRecording ?? false}
+              isStopLogic={isStopLogic ?? false}
+              isMobileView={true}
+              isRecordingRights={true}
+            />
+          ) : (
+            <Stack
+              direction="row"
+              spacing={1}
+              sx={{ display: 'flex', alignItems: 'center' }}
+            >
+              <LightTooltip
+                id="wsAudioPlayTip"
+                title={(playing
+                  ? oneTryOnly
+                    ? t.stopTip
+                    : t.pauseTip
+                  : t.playTip
+                ).replace('{0}', localizeHotKey(PLAY_PAUSE_KEY))}
               >
-                <LightTooltip
-                  id="wsAudioPlayTip"
-                  title={(playing
-                    ? oneTryOnly
-                      ? t.stopTip
-                      : t.pauseTip
-                    : t.playTip
-                  ).replace('{0}', localizeHotKey(PLAY_PAUSE_KEY))}
-                >
+                <span>
+                  <IconButton
+                    id="wsAudioPlay"
+                    onClick={togglePlayStatus}
+                    disabled={duration === 0 || recording}
+                  >
+                    <>{playing ? <PauseIcon /> : <PlayIcon />}</>
+                  </IconButton>
+                </span>
+              </LightTooltip>
+              <Typography sx={{ m: '5px' }}>
+                <Duration id="wsAudioPosition" seconds={progress} /> {' / '}
+                <Duration id="wsAudioDuration" seconds={duration} />
+              </Typography>
+              {hasRegion === 0 && (
+                <LightTooltip id="wsAudioDeleteTip" title={ts.resetRecording}>
                   <span>
-                    <IconButton
-                      id="wsAudioPlay"
-                      onClick={togglePlayStatus}
-                      disabled={duration === 0 || recording}
+                    <AltButton
+                      id="wsAudioDelete"
+                      onClick={() => setShowDeleteMobile(true)}
+                      disabled={recording || duration === 0 || waitingForAI}
+                      sx={smallButtonProps}
                     >
-                      <>{playing ? <PauseIcon /> : <PlayIcon />}</>
-                    </IconButton>
+                      {t.reset}
+                    </AltButton>
                   </span>
                 </LightTooltip>
-                <Typography sx={{ m: '5px' }}>
-                  <Duration id="wsAudioPosition" seconds={progress} /> {' / '}
-                  <Duration id="wsAudioDuration" seconds={duration} />
-                </Typography>
-                {hasRegion === 0 && (
-                  <LightTooltip id="wsAudioDeleteTip" title={t.deleteRecording}>
-                    <span>
-                      <IconButton
-                        id="wsAudioDelete"
-                        onClick={() => setShowDeleteMobile(true)}
-                        disabled={recording || duration === 0 || waitingForAI}
-                      >
-                        <DeleteOutlineIcon />
-                      </IconButton>
-                    </span>
-                  </LightTooltip>
-                )}
-              </Stack>
-            )}
-            {handleUpload && (
-              <Box>
-                <Button
-                  sx={{
-                    mx: 1,
-                    border: '0.5px solid blue',
-                    borderRadius: '8px',
-                  }}
-                  id="spkr-upload"
-                  onClick={handleUpload}
-                  title={ts.upload}
-                >
-                  <UploadIcon sx={{ mr: 1 }} />
-                  {ts.upload}
-                </Button>
-              </Box>
-            )}
-          </Stack>
-          <Box
-            sx={{
-              width: '100%',
-              maxWidth: '100%',
-              minWidth: 0,
-              boxSizing: 'border-box',
-            }}
-          >
-            <div id="wsAudioWaveform" ref={waveformRef} />
-          </Box>
-          {showDeleteMobile && (
-            <DeleteDialog
-              handleDelete={handleDeleteMobile}
-              handleSave={handleSave}
-              handleCancel={() => setShowDeleteMobile(false)}
-              isSaveDisabled={isSaveDisabled ?? false}
-              showSaveButton={showWaveformSaveButton}
-            />
+              )}
+            </Stack>
           )}
-        </>
-      );
-    }
+          {handleUpload && (
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              {!isMobileWidth && rightsLeftActions}
+              <Button
+                sx={{
+                  mx: 1,
+                  border: '0.5px solid blue',
+                  borderRadius: '8px',
+                }}
+                id="spkr-upload"
+                onClick={handleUpload}
+                title={ts.upload}
+              >
+                <UploadIcon sx={{ mr: 1 }} />
+                {ts.upload}
+              </Button>
+            </Box>
+          )}
+        </Stack>
+        {waveformNode}
+        {showDeleteMobile && (
+          <DeleteDialog
+            handleDelete={handleDeleteMobile}
+            handleSave={handleSave}
+            handleCancel={() => setShowDeleteMobile(false)}
+            isSaveDisabled={isSaveDisabled ?? false}
+            showSaveButton={showWaveformSaveButton}
+          />
+        )}
+      </>
+    );
+  }
 
+  if (effectiveMobileView) {
     return (
       <Stack
         direction="column"
@@ -1757,60 +1838,7 @@ function WSAudioPlayer(props: IProps) {
                     horizontal: 'right',
                   }}
                 >
-                  {[
-                    allowZoom && !hideZoom && (
-                      <MenuItem
-                        key="zoom-control"
-                        onClick={(e) => {
-                          //don't close menu if zoom in or out button is clicked
-                          const target = e.target as HTMLElement;
-                          if (
-                            target.closest?.(
-                              '[id="wsZoomIn"], [id="wsZoomOut"]'
-                            )
-                          )
-                            return;
-                          handleMoreMenuClose();
-                        }}
-                      >
-                        <WSAudioPlayerZoom
-                          ready={ready && !recording && !waitingForAI}
-                          fillPx={recording ? 100 : wsFillPx()}
-                          curPx={pxPerSec}
-                          onZoom={wsZoom}
-                        />
-                      </MenuItem>
-                    ),
-                    allowRecord === true && noiseRemovalControl() && (
-                      <MenuItem
-                        key="noise-removal"
-                        onClick={handleMoreMenuClose}
-                      >
-                        {noiseRemovalControl()}
-                      </MenuItem>
-                    ),
-                    allowRecord === true && voiceChangeControl() && (
-                      <MenuItem
-                        key="voice-change"
-                        onClick={handleMoreMenuClose}
-                      >
-                        {voiceChangeControl()}
-                      </MenuItem>
-                    ),
-                    allowRecord === true && normalizeControl() && (
-                      <MenuItem key="normalize" onClick={handleMoreMenuClose}>
-                        {normalizeControl()}
-                      </MenuItem>
-                    ),
-                    allowRecord === true && !keepItSmall && (
-                      <MenuItem
-                        key="microphone-control"
-                        onClick={handleMoreMenuClose}
-                      >
-                        {microphoneControl()}
-                      </MenuItem>
-                    ),
-                  ].filter(Boolean)}
+                  {renderMoreMenuItems()}
                 </Menu>
                 <Menu
                   anchorEl={micMenuAnchorEl}
@@ -1842,15 +1870,8 @@ function WSAudioPlayer(props: IProps) {
               </Grid>
             </Stack>
           </Stack>
-          <Box
-            sx={{
-              width: '100%',
-              maxWidth: '100%',
-              minWidth: 0,
-              boxSizing: 'border-box',
-            }}
-          >
-            <div id="wsAudioWaveform" ref={waveformRef} />
+          <Box sx={{ width: '100%', maxWidth: '100%', minWidth: 0 }}>
+            {waveformNode}
           </Box>
 
           <Stack
@@ -1879,15 +1900,16 @@ function WSAudioPlayer(props: IProps) {
               sx={{ display: 'flex', alignItems: 'center' }}
             >
               {hasRegion === 0 && (
-                <LightTooltip id="wsAudioDeleteTip" title={t.deleteRecording}>
+                <LightTooltip id="wsAudioDeleteTip" title={ts.resetRecording}>
                   <span>
-                    <IconButton
+                    <AltButton
                       id="wsAudioDelete"
                       onClick={() => setShowDeleteMobile(true)}
                       disabled={recording || duration === 0 || waitingForAI}
+                      sx={smallButtonProps}
                     >
-                      <DeleteOutlineIcon />
-                    </IconButton>
+                      {t.reset}
+                    </AltButton>
                   </span>
                 </LightTooltip>
               )}
@@ -1928,6 +1950,7 @@ function WSAudioPlayer(props: IProps) {
             showSaveButton={showWaveformSaveButton}
           />
         )}
+        {voiceDialogNode}
       </Stack>
     );
   }
@@ -2021,64 +2044,28 @@ function WSAudioPlayer(props: IProps) {
                         </span>
                       </LightTooltip>
                     )}
-                    <Menu
-                      anchorEl={moreMenuAnchorEl}
-                      open={moreMenuOpen}
-                      onClose={handleMoreMenuClose}
-                      anchorOrigin={{
-                        vertical: 'bottom',
-                        horizontal: 'right',
-                      }}
-                      transformOrigin={{
-                        vertical: 'top',
-                        horizontal: 'right',
-                      }}
-                    >
-                      {allowZoom && !hideZoom && (
-                        <MenuItem
-                          onClick={(e) => {
-                            //don't close menu if zoom in or out button is clicked
-                            const target = e.target as HTMLElement;
-                            if (
-                              target.closest?.(
-                                '[id="wsZoomIn"], [id="wsZoomOut"]'
-                              )
-                            )
-                              return;
-                            handleMoreMenuClose();
-                          }}
-                        >
-                          <WSAudioPlayerZoom
-                            ready={ready && !recording && !waitingForAI}
-                            fillPx={recording ? 100 : wsFillPx()}
-                            curPx={pxPerSec}
-                            onZoom={wsZoom}
-                          />
-                        </MenuItem>
-                      )}
-                      {/* You can add more MenuItems here as needed */}
-                    </Menu>
                     <GrowingSpacer />
                     {hasRegion === 0 && (
                       <LightTooltip
                         id="wsAudioDeleteTip"
-                        title={t.deleteRecording}
+                        title={ts.resetRecording}
                       >
                         <span>
-                          <IconButton
+                          <AltButton
                             id="wsAudioDelete"
                             onClick={handleDelete}
                             disabled={
                               recording || duration === 0 || waitingForAI
                             }
+                            sx={smallButtonProps}
                           >
-                            <DeleteIcon />
-                          </IconButton>
+                            {t.reset}
+                          </AltButton>
                         </span>
                       </LightTooltip>
                     )}
                     <Grid>
-                      <LightTooltip id="wsAudioMoreTip" title="More options">
+                      <LightTooltip id="wsAudioMoreTip" title={t.moreOptions}>
                         <span>
                           <IconButton
                             id="wsAudioMore"
@@ -2101,63 +2088,7 @@ function WSAudioPlayer(props: IProps) {
                           horizontal: 'right',
                         }}
                       >
-                        {[
-                          allowZoom && !hideZoom && (
-                            <MenuItem
-                              key="zoom-control"
-                              onClick={(e) => {
-                                //don't close menu if zoom in or out button is clicked
-                                const target = e.target as HTMLElement;
-                                if (
-                                  target.closest?.(
-                                    '[id="wsZoomIn"], [id="wsZoomOut"]'
-                                  )
-                                )
-                                  return;
-                                handleMoreMenuClose();
-                              }}
-                            >
-                              <WSAudioPlayerZoom
-                                ready={ready && !recording && !waitingForAI}
-                                fillPx={recording ? 100 : wsFillPx()}
-                                curPx={pxPerSec}
-                                onZoom={wsZoom}
-                              />
-                            </MenuItem>
-                          ),
-                          allowRecord === true && noiseRemovalControl() && (
-                            <MenuItem
-                              key="noise-removal"
-                              onClick={handleMoreMenuClose}
-                            >
-                              {noiseRemovalControl()}
-                            </MenuItem>
-                          ),
-                          allowRecord === true && voiceChangeControl() && (
-                            <MenuItem
-                              key="voice-change"
-                              onClick={handleMoreMenuClose}
-                            >
-                              {voiceChangeControl()}
-                            </MenuItem>
-                          ),
-                          allowRecord === true && normalizeControl() && (
-                            <MenuItem
-                              key="normalize"
-                              onClick={handleMoreMenuClose}
-                            >
-                              {normalizeControl()}
-                            </MenuItem>
-                          ),
-                          allowRecord === true && !keepItSmall && (
-                            <MenuItem
-                              key="microphone-control"
-                              onClick={handleMoreMenuClose}
-                            >
-                              {microphoneControl()}
-                            </MenuItem>
-                          ),
-                        ].filter(Boolean)}
+                        {renderMoreMenuItems()}
                       </Menu>
                       <Menu
                         anchorEl={micMenuAnchorEl}
@@ -2210,29 +2141,6 @@ function WSAudioPlayer(props: IProps) {
                     setBusy={setBusy}
                   />
                 )}
-                {waitingForAI && (
-                  <Grid container sx={{ pr: 6 }}>
-                    <Grid size={12}>
-                      <Typography sx={{ whiteSpace: 'normal' }}>
-                        {processMsg}
-                      </Typography>
-                    </Grid>
-                    <Grid
-                      size={12}
-                      sx={{ display: 'flex', justifyContent: 'center' }}
-                    >
-                      <AltButton
-                        id="ai-cancel"
-                        onClick={() => {
-                          cancelAIRef.current = true;
-                          doingProcess(false);
-                        }}
-                      >
-                        {ts.cancel}
-                      </AltButton>
-                    </Grid>
-                  </Grid>
-                )}
               </Grid>
             )}
             {keepItSmall && allowRecord && !oneShotUsed ? (
@@ -2247,9 +2155,7 @@ function WSAudioPlayer(props: IProps) {
                   minWidth: 0,
                 }}
               >
-                <Box sx={{ flex: 1, minWidth: 0 }}>
-                  <div id="wsAudioWaveform" ref={waveformRef} />
-                </Box>
+                <Box sx={{ flex: 1, minWidth: 0 }}>{waveformNode}</Box>
 
                 <RecordButton
                   recording={recording}
@@ -2264,16 +2170,7 @@ function WSAudioPlayer(props: IProps) {
               </Box>
             ) : (
               <>
-                <Box
-                  sx={{
-                    width: '100%',
-                    maxWidth: '100%',
-                    minWidth: 0,
-                    boxSizing: 'border-box',
-                  }}
-                >
-                  <div id="wsAudioWaveform" ref={waveformRef} />
-                </Box>
+                {waveformNode}
                 {justPlayButton || (
                   <Grid
                     container
@@ -2579,21 +2476,7 @@ function WSAudioPlayer(props: IProps) {
                 noResponse={handleActionRefused}
               />
             )}
-            <BigDialog
-              title={t.selectVoice}
-              description={<Typography>{t.selectVoicePrompt}</Typography>}
-              isOpen={voiceVisible}
-              onOpen={handleCloseVoice}
-              bp={BigDialogBp.sm}
-            >
-              <SelectVoice
-                noNewVoice={noNewVoice && duration > 0}
-                onlySettings={duration === 0}
-                onOpen={handleCloseVoice}
-                begin={applyVoiceChange}
-                refresh={handleRefresh}
-              />
-            </BigDialog>
+            {voiceDialogNode}
           </>
         </Box>
       </Paper>

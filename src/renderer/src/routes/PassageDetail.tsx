@@ -9,7 +9,13 @@ import {
   PassageDetailProvider,
 } from '../context/PassageDetailContext';
 import StickyRedirect from '../components/StickyRedirect';
-import { ToolSlug, useProjectType, useStepTool, useUrlContext } from '../crud';
+import {
+  ToolSlug,
+  toolAllowsEmptyVernacularAudio,
+  useProjectType,
+  useStepTool,
+  useUrlContext,
+} from '../crud';
 import PassageDetailGrids from '../components/PassageDetail/PassageDetailGrids';
 import { useMobile } from '../utils/useMobile';
 import PassageDetailMobileDetail from '../components/PassageDetail/PassageDetailMobileDetail';
@@ -38,11 +44,21 @@ const MobileStep = () => {
 
 const MobileDetail = () => {
   const { isMobileWidth } = useMobile();
-  const { discussOpen, rowData } = useContext(PassageDetailContext)?.state ?? {
+  const { discussOpen, rowData, currentstep } = useContext(
+    PassageDetailContext
+  )?.state ?? {
     discussOpen: false,
     rowData: [],
+    currentstep: '',
   };
+  const { tool } = useStepTool(currentstep);
   const currentVersion = useMemo(() => rowData[0]?.version ?? 0, [rowData]);
+  /** Policy lives here (with step tool); the layout component only branches on the result. */
+  const showNoAudioPlaceholder = useMemo(
+    () =>
+      currentVersion === 0 && !toolAllowsEmptyVernacularAudio(tool),
+    [currentVersion, tool]
+  );
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
 
   const showSideBySide = useMemo(() => !isMobileWidth, [isMobileWidth]);
@@ -53,7 +69,7 @@ const MobileDetail = () => {
 
   return (
     <PassageDetailMobileDetail
-      currentVersion={currentVersion}
+      showNoAudioPlaceholder={showNoAudioPlaceholder}
       showSideBySide={showSideBySide}
       flushDiscussionLeft={flushDiscussionLeft}
       recordContent={!discussOpen || showSideBySide ? <MobileStep /> : null}

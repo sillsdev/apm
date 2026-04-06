@@ -21,7 +21,6 @@ import MediaRecord from '../MediaRecord';
 import { UnsavedContext } from '../../context/UnsavedContext';
 import Uploader from '../Uploader';
 import AudacityManager from '../Sheet/AudacityManager';
-import { isElectron } from '../../../api-variable';
 import { AltButton, PriButton } from '../../control';
 import BigDialog from '../../hoc/BigDialog';
 import BigDialogBp from '../../hoc/BigDialogBp';
@@ -29,7 +28,6 @@ import VersionDlg from '../AudioTab/VersionDlg';
 import { usePassageVernacularVersionCount } from '../AudioTab/usePassageVersionAudioRows';
 import SpeakerName from '../SpeakerName';
 import { sharedSelector } from '../../selector';
-import { RecordButtons } from './RecordButtons';
 import { useMobile } from '../../utils';
 import { useOrbitData } from '../../hoc/useOrbitData';
 import { RecordIdentity } from '@orbit/records';
@@ -252,60 +250,35 @@ export function PassageDetailRecord(props: IProps) {
 
   return (
     <Stack sx={{ width: props.width, maxWidth: props.width, minWidth: 0 }}>
-      {!isMobileView ? (
-        <RecordButtons
-          onVersions={hasExistingVersion ? handleVersions : undefined}
-          onUpload={canVern ? handleUpload : undefined}
-          onAudacity={isElectron && canVern ? handleAudacity : undefined}
-        />
-      ) : (
-        isElectron &&
-        canVern && (
-          <RecordButtons
-            showVersions={false}
-            showUpload={false}
-            onAudacity={handleAudacity}
-          />
-        )
-      )}
       <Box sx={{ py: 1 }}>
-        {isMobileView ? (
-          <Stack
-            direction="row"
-            alignItems="center"
-            spacing={1}
-            sx={{ width: '100%', minWidth: 0 }}
-          >
-            <Box sx={{ flex: 1, minWidth: 0 }}>
-              <SpeakerName
-                name={speaker}
-                onChange={handleNameChange}
-                onRights={handleRights}
-                disabled={!canVern}
-              />
-            </Box>
-            {canVern && (
-              <AltButton
-                id="pdRecordLoadFile"
-                onClick={handleUpload}
-                title={ts.loadFromFile}
-                startIcon={
-                  <FolderOpenOutlinedIcon sx={{ width: '14px', height: '14px' }} />
-                }
-                sx={{ flexShrink: 0 }}
-              >
-                {ts.loadFromFile}
-              </AltButton>
-            )}
-          </Stack>
-        ) : (
-          <SpeakerName
-            name={speaker}
-            onChange={handleNameChange}
-            onRights={handleRights}
-            disabled={!canVern}
-          />
-        )}
+        <Stack
+          direction="row"
+          alignItems="center"
+          spacing={1}
+          sx={{ width: '100%', minWidth: 0 }}
+        >
+          <Box sx={{ flex: 1, minWidth: 0 }}>
+            <SpeakerName
+              name={speaker}
+              onChange={handleNameChange}
+              onRights={handleRights}
+              disabled={!canVern}
+            />
+          </Box>
+          {canVern && (
+            <AltButton
+              id="pdRecordLoadFile"
+              onClick={handleUpload}
+              title={ts.loadFromFile}
+              startIcon={
+                <FolderOpenOutlinedIcon sx={{ width: '14px', height: '14px' }} />
+              }
+              sx={{ flexShrink: 0 }}
+            >
+              {ts.loadFromFile}
+            </AltButton>
+          )}
+        </Stack>
       </Box>
       <MediaRecord
         toolId={toolId}
@@ -332,6 +305,7 @@ export function PassageDetailRecord(props: IProps) {
         allowNoNoise={true}
         allowDeltaVoice={true}
         handleSave={handleSave}
+        forceMobileView={true}
         isSaveDisabled={
           (ready && !ready()) || !hasRights || !canVern
         }
@@ -363,7 +337,7 @@ export function PassageDetailRecord(props: IProps) {
         }
         onVersions={
           hasExistingVersion &&
-          (!isMobileView || vernacularVersionCount > 1)
+          (vernacularVersionCount > 1)
             ? handleVersions
             : undefined
         }
