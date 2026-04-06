@@ -3,11 +3,7 @@ import { parseRef } from '../../crud/passage';
 import { PassageInfo } from './PassageInfo';
 import { vInt } from './vInt';
 import { parseTranscription } from './parseTranscription';
-import {
-  getExistingVerses,
-  getVerses,
-  logUsxStructure,
-} from './usxNodeContent';
+import { getExistingVerses, getVerses } from './usxNodeContent';
 import {
   addParatextVerse,
   addSection,
@@ -111,7 +107,13 @@ export const postPass = ({
       : '';
   let lastInserted: Element | undefined;
   parsedInChapter.forEach((p) => {
-    const paraForThisVerse = startsParagraphInTranscription(transcription, p);
+    // Cross-chapter transcriptions (e.g. "\\v 17 ... \\c 2 \\v 1-10 ..."):
+    // the first verse of THIS chapter won't match ^ in startsParagraphInTranscription
+    const isFirstVerse = lastInserted === undefined;
+    const paraForThisVerse =
+      isFirstVerse ||
+      !hasVerse ||
+      startsParagraphInTranscription(transcription, p);
     let thisVerse = removeOverlappingVerses(doc, p);
     const transcript = altRef + p.attributes.lastComment;
 

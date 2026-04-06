@@ -436,7 +436,7 @@ describe('usxNodeChange', () => {
       sibling,
       verses: '1',
       transcript: 'T1',
-      before: true,
+      before: false,
       paraForThisVerse: true,
     });
     // Assert

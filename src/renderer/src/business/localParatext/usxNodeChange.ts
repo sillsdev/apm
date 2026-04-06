@@ -228,7 +228,7 @@ export interface IaddParatextVerse {
   sibling: Node | null | undefined;
   verses: string;
   transcript: string;
-  before?: boolean;
+  before: boolean;
   paraForThisVerse: boolean;
 }
 
