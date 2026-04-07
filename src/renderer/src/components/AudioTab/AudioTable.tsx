@@ -1,17 +1,13 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useGlobal } from '../../context/useGlobal';
 import { shallowEqual, useSelector } from 'react-redux';
 import {
   IState,
   IMediaTabStrings,
   MediaFileD,
-  UserD,
-  // ISharedStrings,
   SectionArray,
 } from '../../model';
-import { Box, Button, debounce, IconButton } from '@mui/material';
-// import BigDialog from '../../hoc/BigDialog';
-// import VersionDlg from './VersionDlg';
+import { Box } from '@mui/material';
 import TranscriptionShow from '../TranscriptionShow';
 import MediaPlayer from '../MediaPlayer';
 import Confirm from '../AlertDialog';
@@ -22,27 +18,17 @@ import {
   usePublishDestination,
 } from '../../crud';
 import {
-  numCompare,
-  dateCompare,
-  dateOrTime,
   useDataChanges,
   useWaitForRemoteQueue,
-  strNumCompare,
   doSort,
 } from '../../utils';
-import PlayCell from './PlayCell';
-import DetachCell from './DetachCell';
 import { IRow } from '.';
 import { UpdateRecord } from '../../model/baseModel';
 import { mediaTabSelector } from '../../selector';
-import UserAvatar from '../UserAvatar';
 import ConfirmPublishDialog from '../ConfirmPublishDialog';
-import {
-  DataGrid,
-  GridColumnVisibilityModel,
-  GridSortModel,
-  type GridColDef,
-} from '@mui/x-data-grid';
+import type { GridSortModel } from '@mui/x-data-grid';
+import { AudioVersionCard } from '../../components/PassageDetail/mobile/record/AudioVersionCard';
+import { isElectron } from '../../../api-variable';
 
 interface IProps {
   data: IRow[];
@@ -54,7 +40,11 @@ interface IProps {
   hasPublishing: boolean;
   sectionArr: SectionArray;
   setPlayItem: (item: string) => void;
+  selectedId?: string;
+  setSelectedId?: (item: string) => void;
   onAttach?: (checks: number[], attach: boolean) => void;
+  /** Version dialog: show radio + selection highlight */
+  showVersionRadio?: boolean;
 }
 export const AudioTable = (props: IProps) => {
   const { data: initialData, setRefresh } = props;
@@ -66,14 +56,14 @@ export const AudioTable = (props: IProps) => {
     shared,
     canSetDestination,
     hasPublishing,
+    showVersionRadio,
   } = props;
   const t: IMediaTabStrings = useSelector(mediaTabSelector, shallowEqual);
-  // const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
   const lang = useSelector((state: IState) => state.strings.lang);
-  const [offline] = useGlobal('offline'); //verified this is not used in a function 2/18/25
+  const [offline] = useGlobal('offline');
   const [memory] = useGlobal('memory');
   const [user] = useGlobal('user');
-  const [offlineOnly] = useGlobal('offlineOnly'); //will be constant here
+  const [offlineOnly] = useGlobal('offlineOnly');
   const [, setBusy] = useGlobal('remoteBusy');
   const { getOrganizedBy } = useOrganizedBy();
   const [organizedBy] = useState(getOrganizedBy(true));
@@ -82,36 +72,30 @@ export const AudioTable = (props: IProps) => {
   const [showId, setShowId] = useState('');
   const [mediaPlaying, setMediaPlaying] = useState(false);
   const [publishItem, setPublishItem] = useState(-1);
-  // const [verHist, setVerHist] = useState('');
   const [verValue, setVerValue] = useState<number>();
   const { getPublishTo, setPublishTo, isPublished, publishStatus } =
     usePublishDestination();
   const forceDataChanges = useDataChanges();
   const waitForRemoteQueue = useWaitForRemoteQueue();
-  const boxRef = useRef<HTMLDivElement>(null);
-  const [addWidth, setAddWidth] = useState(0);
-  //we are mixing manual and automatic sorting to provide multi column sort as the initial data but the user can manually sort by one column.
+
   const [sortedData, setSortedData] = useState<IRow[]>([]);
-  const [sortModel, setSortModel] = useState<GridSortModel>([]);
   useEffect(() => {
     const sm: GridSortModel = onAttach
       ? [
           { field: 'planName', sort: 'asc' },
-          { field: 'sectionDesc', sort: 'asc' }, //for attached files
+          { field: 'sectionDesc', sort: 'asc' },
           { field: 'reference', sort: 'asc' },
-          { field: 'fileName', sort: 'asc' }, //for unattached files
+          { field: 'fileName', sort: 'asc' },
           { field: 'date', sort: 'desc' },
         ]
       : [{ field: 'version', sort: 'desc' }];
-    setSortModel(sm);
-    //don't resort when sortModel changes. Just give them the sorted data at the start.
     setSortedData([...initialData].sort(doSort(sm)));
   }, [initialData, onAttach]);
 
   const handleShowTranscription = (id: string) => () => {
     const row = sortedData.find((r) => r.id === id);
     const rowVer = row?.version;
-    if (rowVer) setVerValue(parseInt(rowVer));
+    if (rowVer) setVerValue(parseInt(rowVer, 10));
     setShowId(id);
   };
   const updateMediaRec = async (
@@ -159,7 +143,7 @@ export const AudioTable = (props: IProps) => {
         id: sortedData[i].id,
       })
     );
-    setBusy(false); // forces refresh of plan tabs
+    setBusy(false);
   };
 
   const handleActionConfirmed = () => {
@@ -187,357 +171,168 @@ export const AudioTable = (props: IProps) => {
   };
 
   useEffect(() => {
-    //if I set playing when I set the mediaId, it plays a bit of the old
     if (playItem) setMediaPlaying(true);
   }, [playItem]);
-
-  // // const handleVerHistOpen = (passId: string) => () => {
-  // //   setVerHist(passId);
-  // // };
-  // const handleVerHistClose = () => {
-  //   setVerHist('');
-  // };
 
   const playEnded = () => {
     setPlayItem('');
     setMediaPlaying(false);
   };
 
-  const getUser = (id: string) => {
-    return findRecord(memory, 'user', id) as UserD;
-  };
-
-  const nameCount = useMemo(() => sortedData.length, [sortedData]);
-
   const canCreate = useMemo(
     () => !offline || offlineOnly,
     [offline, offlineOnly]
   );
 
-  const planCol: GridColDef<IRow> = {
-    field: 'planName',
-    headerName: t.planName,
-    width: 150,
-  };
-
-  const versionCol: GridColDef<IRow> = {
-    field: 'version',
-    headerName: t.version,
-    width: 70,
-    align: 'right',
-    sortComparator: strNumCompare, // data has strings but they contain numbers
-    // renderCell: (params) => (
-    //   <Button
-    //     color="primary"
-    //     onClick={handleVerHistOpen(params.row.passId)}
-    //   >
-    //     {params.value}
-    //   </Button>
-    // ),
-  };
-
-  const durationCol: GridColDef<IRow> = {
-    field: 'duration',
-    headerName: t.duration,
-    width: 80,
-    align: 'right',
-    // sortComparator: numCompare, // duration is already formatted as HH:MM:SS
-    sortable: true,
-  };
-
-  const dateCol: GridColDef<IRow> = {
-    field: 'date',
-    headerName: t.date,
-    align: 'right',
-    width: 100,
-    sortComparator: dateCompare,
-    sortable: true,
-    renderCell: (params) => dateOrTime(params.value, lang),
-  };
-
-  const sizeCol: GridColDef<IRow> = {
-    field: 'size',
-    headerName: t.size,
-    width: 80,
-    align: 'right',
-    sortable: true,
-    sortComparator: numCompare,
-  };
-
-  const userCol: GridColDef<IRow> = {
-    field: 'user',
-    headerName: t.user,
-    width: 70,
-    renderCell: (params) => <UserAvatar userRec={getUser(params.value)} />,
-    sortable: true,
-  };
-
-  const refCol: GridColDef<IRow> = {
-    field: 'reference',
-    headerName: t.reference,
-    width: 150,
-    renderCell: (params) => (
-      <Button color="primary" onClick={handleShowTranscription(params.row.id)}>
-        {params.value}
-      </Button>
-    ),
-    sortable: false,
-  };
-
-  const MinSectionWidth = 170;
-
-  const columns: GridColDef<IRow>[] = useMemo(
-    () =>
-      shared || hasPublishing
-        ? [
-            planCol,
-            {
-              field: 'actions',
-              headerName: '\u00A0',
-              align: 'center',
-              width: onAttach ? 75 : 60,
-              sortable: false,
-              filterable: false,
-              renderCell: (params) => (
-                <PlayCell
-                  {...params}
-                  canCreate={canCreate}
-                  onAttach={onAttach}
-                  readonly={readonly}
-                  handleSelect={handleSelect}
-                  playItem={playItem}
-                  mediaPlaying={mediaPlaying}
-                />
-              ),
-            },
-            versionCol,
-            {
-              field: 'publishTo',
-              headerName: t.published,
-              width: 100,
-              renderCell: (params) => (
-                <IconButton
-                  onClick={handleChangeReadyToShare(params.row.id)}
-                  disabled={
-                    (params.row.passId || '') === '' || !canSetDestination
-                  }
-                >
-                  {publishStatus(
-                    getPublishTo(params.value, hasPublishing, shared, true)
-                  )}
-                </IconButton>
-              ),
-            },
-            {
-              field: 'fileName',
-              headerName: `${t.fileName} (${nameCount})`,
-              width: 205,
-              sortable: true,
-            },
-            {
-              field: 'sectionDesc',
-              headerName: organizedBy,
-              align: 'left',
-              cellClassName: 'word-wrap',
-              width: MinSectionWidth + addWidth,
-              sortable: true,
-            },
-            refCol,
-            userCol,
-            durationCol,
-            sizeCol,
-            dateCol,
-            {
-              field: 'detach',
-              headerName: '\u00A0',
-              width: 83,
-              sortable: false,
-              renderCell: (params) => (
-                <DetachCell
-                  {...params}
-                  canCreate={canCreate}
-                  readonly={readonly}
-                  handleConfirmAction={handleConfirmAction}
-                />
-              ),
-            },
-          ]
-        : [
-            planCol,
-            {
-              field: 'actions',
-              headerName: '\u00A0',
-              align: 'center',
-              width: onAttach ? 75 : 60,
-              sortable: false,
-              filterable: false,
-              renderCell: (params) => (
-                <PlayCell
-                  {...params}
-                  canCreate={canCreate}
-                  onAttach={onAttach}
-                  readonly={readonly}
-                  handleSelect={handleSelect}
-                  playItem={playItem}
-                  mediaPlaying={mediaPlaying}
-                />
-              ),
-            },
-            versionCol,
-            {
-              field: 'fileName',
-              headerName: `${t.fileName} (${nameCount})`,
-              width: 205,
-            },
-            {
-              field: 'sectionDesc',
-              headerName: organizedBy,
-              align: 'left',
-              cellClassName: 'word-wrap',
-              width: MinSectionWidth + addWidth,
-            },
-            refCol,
-            userCol,
-            durationCol,
-            sizeCol,
-            dateCol,
-            {
-              field: 'detach',
-              headerName: '\u00A0',
-              width: 83,
-              sortable: false,
-              renderCell: (params) => (
-                <DetachCell
-                  {...params}
-                  canCreate={canCreate}
-                  readonly={readonly}
-                  handleConfirmAction={handleConfirmAction}
-                />
-              ),
-            },
-          ],
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [
-      organizedBy,
-      shared,
-      hasPublishing,
-      onAttach,
-      nameCount,
-      mediaPlaying,
-      addWidth,
-      playItem,
-    ]
+  const versionPickMode = Boolean(
+    showVersionRadio ||
+      props.selectedId !== undefined ||
+      props.setSelectedId !== undefined
   );
 
-  const totalWidth = useMemo(
-    () =>
-      columns.reduce(
-        (sum, col) =>
-          col.field === 'sectionDesc'
-            ? sum + MinSectionWidth
-            : sum + (col.width ?? 0),
-        0
-      ),
-    [columns]
+  const [localSelectedId, setLocalSelectedId] = useState<string>('');
+  const selectedId = props.selectedId ?? localSelectedId;
+  const setSelectedIdInner = props.setSelectedId ?? setLocalSelectedId;
+
+  const [expandedFileNameMediaId, setExpandedFileNameMediaId] = useState<
+    string | null
+  >(null);
+
+  const setSelectedId = useCallback(
+    (id: string) => {
+      setExpandedFileNameMediaId((prev) =>
+        prev && prev !== id ? null : prev
+      );
+      setSelectedIdInner(id);
+    },
+    [setSelectedIdInner]
   );
 
-  const ExtraWidth = 0;
-
-  // keep track of screen width
-  const setDimensions = () => {
-    const boxWidth = boxRef.current?.clientWidth ?? 0;
-    setAddWidth(boxWidth > totalWidth ? boxWidth - totalWidth - ExtraWidth : 0);
-  };
-
-  useEffect(() => {
-    setDimensions();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [totalWidth]);
+  const expandFileNameForMedia = useCallback(
+    (id: string) => {
+      setSelectedIdInner(id);
+      setExpandedFileNameMediaId(id);
+    },
+    [setSelectedIdInner]
+  );
 
   useEffect(() => {
-    setDimensions();
-    const handleResize = debounce(() => {
-      setDimensions();
-    }, 100);
+    if (
+      expandedFileNameMediaId &&
+      !sortedData.some((r) => r.id === expandedFileNameMediaId)
+    ) {
+      setExpandedFileNameMediaId(null);
+    }
+  }, [sortedData, expandedFileNameMediaId]);
 
-    window.addEventListener('resize', handleResize);
-    return () => {
-      handleResize.clear();
-      window.removeEventListener('resize', handleResize);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); //do this once to get the default;
+  useEffect(() => {
+    if (!versionPickMode) return;
+    if (props.selectedId || localSelectedId) return;
+    const firstRowId = sortedData[0]?.id;
+    if (firstRowId) {
+      setLocalSelectedId(firstRowId);
+    }
+  }, [localSelectedId, props.selectedId, sortedData, versionPickMode]);
 
-  const columnVisibilityModel: GridColumnVisibilityModel = { planName: false };
+  const sheetAttach = Boolean(onAttach && !readonly);
+  const showPublishing = shared || hasPublishing;
 
   return (
-    <Box ref={boxRef} sx={{ width: '100%' }}>
-      <>
-        <DataGrid
-          columns={columns}
-          rows={sortedData}
-          sortModel={sortModel}
-          onSortModelChange={setSortModel}
-          disableRowSelectionOnClick
-          initialState={{
-            columns: { columnVisibilityModel },
-          }}
-        />
-        {/* {verHist && (
-        <BigDialog
-          title={ts.versionHistory}
-          isOpen={Boolean(verHist)}
-          onOpen={handleVerHistClose}
-        >
-          <VersionDlg
-            passId={verHist}
-            canSetDestination={canSetDestination}
-            hasPublishing={hasPublishing}
-          />
-        </BigDialog>
-      )} */}
-        {publishItem !== -1 && (
-          <ConfirmPublishDialog
-            context="media"
-            yesResponse={publishConfirm}
-            noResponse={publishRefused}
-            current={getPublishTo(
-              sortedData[publishItem].publishTo,
-              hasPublishing,
-              shared,
-              true
+    <Box
+      sx={{
+        width: '100%',
+        minHeight: '20rem',
+        maxHeight: { xs: '20rem', sm: 'none' },
+        overflowY: 'auto',
+      }}
+    >
+      {sortedData.map((row) => {
+        const canDelete = !readonly && !row.readyToShare;
+        return (
+          <AudioVersionCard
+            key={row.id}
+            {...row}
+            isSelected={versionPickMode && row.id === selectedId}
+            setIsSelected={setSelectedId}
+            onSelectCard={
+              versionPickMode ? () => setSelectedId(row.id) : undefined
+            }
+            lang={lang}
+            handleSelect={handleSelect}
+            playItem={playItem}
+            mediaPlaying={mediaPlaying}
+            showSelectionRadio={showVersionRadio}
+            onShowTranscription={handleShowTranscription(row.id)}
+            expandedFileNameId={expandedFileNameMediaId}
+            setExpandedFileNameId={setExpandedFileNameMediaId}
+            expandFileNameForMedia={expandFileNameForMedia}
+            allowPlay={isElectron || canCreate}
+            allowDownload={!onAttach || isElectron || canCreate}
+            showMediaSheetMetadata={Boolean(onAttach)}
+            sectionLabel={organizedBy}
+            showAttachControl={sheetAttach}
+            attached={Boolean(row.passId)}
+            onAttachToggle={
+              onAttach
+                ? () => onAttach([row.index], !Boolean(row.passId))
+                : undefined
+            }
+            canDeleteMedia={canDelete}
+            onRequestDelete={
+              canDelete ? () => handleConfirmAction(row.id) : undefined
+            }
+            showPublishControl={showPublishing}
+            publishDisabled={
+              (row.passId || '') === '' || !canSetDestination
+            }
+            onPublishClick={handleChangeReadyToShare(row.id)}
+            publishStatusIcon={publishStatus(
+              getPublishTo(row.publishTo, hasPublishing, shared, true)
             )}
-            sharedProject={shared}
-            hasPublishing={hasPublishing}
-            noDefaults={true}
-            passageType={sortedData[publishItem]?.passageType}
           />
-        )}
-        {showId !== '' && (
-          <TranscriptionShow
-            id={showId}
-            isMediaId={true}
-            visible={showId !== ''}
-            closeMethod={handleCloseTranscription}
-            version={verValue}
-          />
-        )}
-        {confirmAction === '' || (
-          <Confirm
-            text={t.deleteConfirm.replace(
-              '{0}',
-              sortedData[deleteItem].fileName
-            )}
-            yesResponse={handleActionConfirmed}
-            noResponse={handleActionRefused}
-          />
-        )}
-        <MediaPlayer
-          srcMediaId={playItem}
-          requestPlay={mediaPlaying}
-          onEnded={playEnded}
+        );
+      })}
+      {publishItem !== -1 && (
+        <ConfirmPublishDialog
+          context="media"
+          yesResponse={publishConfirm}
+          noResponse={publishRefused}
+          current={getPublishTo(
+            sortedData[publishItem].publishTo,
+            hasPublishing,
+            shared,
+            true
+          )}
+          sharedProject={shared}
+          hasPublishing={hasPublishing}
+          noDefaults={true}
+          passageType={sortedData[publishItem]?.passageType}
         />
-      </>
+      )}
+      {showId !== '' && (
+        <TranscriptionShow
+          id={showId}
+          isMediaId={true}
+          visible={showId !== ''}
+          closeMethod={handleCloseTranscription}
+          version={verValue}
+        />
+      )}
+      {confirmAction === '' || (
+        <Confirm
+          text={t.deleteConfirm.replace(
+            '{0}',
+            sortedData[deleteItem].fileName
+          )}
+          yesResponse={handleActionConfirmed}
+          noResponse={handleActionRefused}
+        />
+      )}
+      <MediaPlayer
+        srcMediaId={playItem}
+        requestPlay={mediaPlaying}
+        onEnded={playEnded}
+      />
     </Box>
   );
 };

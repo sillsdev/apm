@@ -10,7 +10,6 @@ import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import IntellectualProperty from '../model/intellectualProperty';
-import BigDialog from '../hoc/BigDialog';
 import ProvideRights from './ProvideRights';
 import { communitySelector, sharedSelector } from '../selector';
 import { shallowEqual, useSelector } from 'react-redux';
@@ -18,6 +17,7 @@ import { ArtifactTypeSlug, findRecord, related } from '../crud';
 import { Typography, Stack } from '@mui/material';
 import { useOrbitData } from '../hoc/useOrbitData';
 import { useSnackBar } from '../hoc/SnackBar';
+import { useMobile } from '../utils/index';
 
 interface NameOptionType {
   inputValue?: string;
@@ -48,14 +48,39 @@ export function SpeakerName({
   const ipRecs = useOrbitData<IntellectualProperty[]>('intellectualproperty');
   const [value, setValue] = React.useState<NameOptionType | null>({ name });
   const valueRef = React.useRef<string>('');
-  const [speakers, setSpeakers] = React.useState<NameOptionType[]>([]);
-  const [showDialog, setShowDialog] = React.useState(false);
   const [showSelectDialog, setShowSelectDialog] = React.useState(false);
   const [organization] = useGlobal('organization');
   const { showMessage } = useSnackBar();
   const [memory] = useGlobal('memory');
   const t: ICommunityStrings = useSelector(communitySelector, shallowEqual);
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
+  const [hasNoRights, setHasNoRights] = React.useState(false);
+
+  const speakers = React.useMemo((): NameOptionType[] => {
+    const orgId = team || organization;
+    const orgIp = ipRecs.filter((r) => related(r, 'organization') === orgId);
+
+    const newSpeakers: NameOptionType[] = [];
+    if (recordingRequired) {
+      orgIp.forEach((r) => {
+        const mediaRec = findRecord(
+          memory,
+          'mediafile',
+          related(r, 'releaseMediafile')
+        ) as MediaFileD;
+        if (mediaRec?.attributes?.transcription) {
+          newSpeakers.push({ name: r.attributes.rightsHolder });
+        }
+      });
+    } else {
+      newSpeakers.push(
+        ...orgIp.map((r) => ({ name: r.attributes.rightsHolder }))
+      );
+    }
+
+    newSpeakers.sort((a, b) => a.name.localeCompare(b.name));
+    return newSpeakers;
+  }, [ipRecs, team, organization, recordingRequired, memory]);
 
   const handleRights = () => {
     onRights && onRights(false);
@@ -64,18 +89,14 @@ export function SpeakerName({
       onChange?.(name);
       return;
     }
-    setShowDialog(true);
+    setHasNoRights(true);
   };
 
   const nameReset = () => {
     valueRef.current = '';
     onChange && onChange('');
     onRights && onRights(false);
-  };
-
-  const handleCancelRights = () => {
-    setShowDialog(false);
-    nameReset();
+    setHasNoRights(false);
   };
 
   const getOptionLabel = (option: string | NameOptionType) => {
@@ -93,7 +114,8 @@ export function SpeakerName({
 
   const handleRightsChange = (hasRights: boolean) => {
     onRights && onRights(hasRights);
-    setShowDialog(false);
+    setHasNoRights(false);
+    setShowSelectDialog(false);
   };
 
   const handleNameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -114,6 +136,7 @@ export function SpeakerName({
       onChange && onChange(newValue);
       if (inList(newValue)) {
         onRights && onRights(true);
+        setHasNoRights(false);
       } else handleRights();
     } else if (newValue && newValue.inputValue) {
       // Create a new value from the user input
@@ -124,6 +147,7 @@ export function SpeakerName({
       onChange && onChange(newValue.inputValue);
       if (inList(newValue.inputValue)) {
         onRights && onRights(true);
+        setHasNoRights(false);
       } else handleRights();
     } else {
       setValue(newValue);
@@ -131,6 +155,42 @@ export function SpeakerName({
         valueRef.current = newValue.name;
         onChange && onChange(newValue?.name || '');
         onRights && onRights(true);
+        setHasNoRights(false);
+      }
+    }
+  };
+
+  const handleChoiceMobile = (newValue: string | NameOptionType | null) => {
+    if (newValue === null) {
+      nameReset();
+      setHasNoRights(false);
+    } else if (typeof newValue === 'string') {
+      valueRef.current = newValue;
+      setValue({
+        name: newValue,
+      });
+      onChange && onChange(newValue);
+      if (inList(newValue)) {
+        setHasNoRights(false);
+        setShowSelectDialog(false);
+      } else {
+        setHasNoRights(true);
+      }
+    } else if (newValue && newValue.inputValue) {
+      // Create a new value from the user input
+      valueRef.current = newValue.inputValue;
+      setValue({
+        name: newValue.inputValue,
+      });
+      onChange && onChange(newValue.inputValue);
+      setHasNoRights(true);
+    } else {
+      setValue(newValue);
+      if (newValue) {
+        valueRef.current = newValue.name;
+        onChange && onChange(newValue?.name || '');
+        setHasNoRights(false);
+        setShowSelectDialog(false);
       }
     }
   };
@@ -143,34 +203,6 @@ export function SpeakerName({
     )
       handleChoice(valueRef.current);
   };
-
-  React.useEffect(() => {
-    const newSpeakers = new Array<NameOptionType>();
-    const orgId = team || organization;
-    const orgIp = ipRecs.filter((r) => related(r, 'organization') === orgId);
-    if (recordingRequired) {
-      orgIp.forEach((r) => {
-        const mediaRec = findRecord(
-          memory,
-          'mediafile',
-          related(r, 'releaseMediafile')
-        ) as MediaFileD;
-        if (mediaRec?.attributes?.transcription) {
-          newSpeakers.push({ name: r.attributes.rightsHolder });
-        }
-      });
-    } else {
-      newSpeakers.push(
-        ...orgIp.map((r) => ({ name: r.attributes.rightsHolder }))
-      );
-    }
-    setSpeakers(
-      newSpeakers.sort((a, b) =>
-        getOptionLabel(a).localeCompare(getOptionLabel(b))
-      )
-    );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ipRecs, team, organization, recordingRequired]);
 
   React.useEffect(() => {
     if (inList(name)) {
@@ -193,11 +225,44 @@ export function SpeakerName({
   };
 
   const handleSelectAndClose = (newValue: string | NameOptionType | null) => {
-    handleChoice(newValue);
-    setShowSelectDialog(false);
+    // Desktop: keep the dialog open when the user is adding a new speaker
+    // so we can show ProvideRights inline.
+    if (newValue === null) {
+      nameReset();
+      return;
+    }
+    const nextName =
+      typeof newValue === 'string'
+        ? newValue
+        : newValue.inputValue
+          ? newValue.inputValue
+          : newValue.name;
+
+    // If empty, keep dialog open (don't launch rights).
+    if (!nextName?.trim()) {
+      nameReset();
+      setValue({ name: '' });
+      return;
+    }
+
+    valueRef.current = nextName;
+    setValue({ name: nextName });
+    onChange && onChange(nextName);
+
+    if (inList(nextName)) {
+      onRights && onRights(true);
+      setHasNoRights(false);
+      setShowSelectDialog(false);
+    } else {
+      onRights && onRights(false);
+      setHasNoRights(true);
+      // keep dialog open
+    }
   };
 
   const buttonText = name?.trim() !== '' ? name : t.selectSpeaker + '...';
+
+  const { isMobile: isMobileView } = useMobile();
 
   return (
     <>
@@ -205,7 +270,10 @@ export function SpeakerName({
         variant={name?.trim() !== '' ? 'outlined' : 'contained'}
         onClick={handleOpenSelectDialog}
         disabled={disabled}
-        sx={{ minWidth: 200, justifyContent: 'flex-start' }}
+        sx={{
+          minWidth: isMobileView ? 100 : 200,
+          justifyContent: 'flex-start',
+        }}
       >
         <Stack direction="row" spacing={1} alignItems="center">
           <SupportAgentIcon />
@@ -227,7 +295,11 @@ export function SpeakerName({
         <DialogContent>
           <Autocomplete
             value={value}
-            onChange={(event, newValue) => handleSelectAndClose(newValue)}
+            onChange={(event, newValue) =>
+              isMobileView
+                ? handleChoiceMobile(newValue)
+                : handleSelectAndClose(newValue)
+            }
             onClose={handleLeave}
             filterOptions={(options, params) => {
               const filtered = filter(options, params);
@@ -252,8 +324,8 @@ export function SpeakerName({
             id="speaker-name"
             options={speakers}
             getOptionLabel={getOptionLabel}
-            renderOption={(props, option) => (
-              <li {...props} key={option.name}>
+            renderOption={(props, option, state) => (
+              <li {...props} key={`spkr-opt-${state.index}`}>
                 {option.name}
               </li>
             )}
@@ -280,29 +352,25 @@ export function SpeakerName({
               );
             }}
           />
+          {hasNoRights && (
+            <>
+              <Typography sx={{ my: 2 }}>
+                {recordingRequired ? t.voiceRights : t.releaseRights}
+              </Typography>
+              <ProvideRights
+                speaker={value?.name || ''}
+                recordType={ArtifactTypeSlug.IntellectualProperty}
+                onRights={handleRightsChange}
+                team={team}
+                recordingRequired={recordingRequired}
+              />
+            </>
+          )}
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseSelectDialog}>{ts.cancel}</Button>
         </DialogActions>
       </Dialog>
-      <BigDialog
-        title={t.provideRights}
-        isOpen={showDialog}
-        onOpen={handleCancelRights}
-      >
-        <>
-          <Typography>
-            {recordingRequired ? t.voiceRights : t.releaseRights}
-          </Typography>
-          <ProvideRights
-            speaker={value?.name || ''}
-            recordType={ArtifactTypeSlug.IntellectualProperty}
-            onRights={handleRightsChange}
-            team={team}
-            recordingRequired={recordingRequired}
-          />
-        </>
-      </BigDialog>
     </>
   );
 }

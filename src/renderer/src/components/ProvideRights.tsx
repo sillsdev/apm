@@ -4,14 +4,8 @@ import {
   MediaFileD,
   Organization,
 } from '../model';
-import {
-  Button,
-  Paper,
-  Typography,
-  Box,
-  SxProps,
-  LinearProgress,
-} from '@mui/material';
+import { Button, Paper, Typography, Box, LinearProgress } from '@mui/material';
+import { SxProps } from '@mui/material/styles';
 import {
   useContext,
   useEffect,
@@ -34,12 +28,9 @@ import {
 import Memory from '@orbit/memory';
 import { useSnackBar } from '../hoc/SnackBar';
 import { cleanFileName } from '../utils';
-import MediaRecord from './MediaRecord';
 import { useGetGlobal, useGlobal } from '../context/useGlobal';
 import { UnsavedContext } from '../context/UnsavedContext';
 import Uploader from './Uploader';
-import AddIcon from '@mui/icons-material/LibraryAddOutlined';
-import { GrowingSpacer, PriButton } from '../control';
 import { communitySelector, sharedSelector } from '../selector';
 import { shallowEqual, useSelector } from 'react-redux';
 import { AddRecord, ReplaceRelatedRecord } from '../model/baseModel';
@@ -53,10 +44,10 @@ import {
 import React from 'react';
 import { VoiceStatement } from '../business/voice/VoiceStatement';
 import { IVoicePerm } from '../business/voice/PersonalizeVoicePermission';
+import ProvideRightsMobile from './PassageDetail/mobile/record/ProvideRightsMobile';
 
 const paperProps = { p: 2, m: 'auto', width: `calc(100% - 32px)` } as SxProps;
 const rowProp = { display: 'flex', p: 2 };
-const buttonProp = { mx: 1 } as SxProps;
 const statusProps = {
   mr: 2,
   alignSelf: 'center',
@@ -281,75 +272,35 @@ export function ProvideRights(props: IProps) {
 
   return (
     <div>
-      <Paper id="provideRights" ref={paperRef} sx={paperProps}>
-        {!recordingRequired && (
-          <Box sx={rowProp}>
-            <Button
-              sx={buttonProp}
-              id="spkr-upload"
-              onClick={handleUpload}
-              title={ts.uploadRights}
-            >
-              <AddIcon />
-              {ts.uploadRights}
-            </Button>
-          </Box>
-        )}
-        <VoiceStatement
-          voice={speaker}
-          team={teamRec}
-          state={state}
-          saving={saving}
-          setState={setState}
-          setStatement={handleStatement}
-        />
-        <MediaRecord
-          toolId={toolId}
-          defaultFilename={defaultFilename}
-          afterUploadCb={afterUploadCb}
-          artifactId={artifactState.id}
-          passageId={undefined}
-          performedBy={speaker}
-          allowWave={false}
-          allowDeltaVoice={false}
-          allowNoNoise={false}
-          setCanSave={handleSetCanSave}
-          setStatusText={setStatusText}
-          doReset={resetMedia}
-          setDoReset={setResetMedia}
-          height={200}
-          width={paperWidth - 20 || 500}
-          onSaving={() => setSaving(true)}
-        />
-        <Box sx={rowProp}>
-          {!recordingRequired && (
-            <Button id="spkr-later" onClick={handleLater}>
-              {t.later}
-            </Button>
-          )}
-          <Typography variant="caption" sx={statusProps}>
-            {statusText}
-          </Typography>
-          <GrowingSpacer />
-          <PriButton
-            id="spkr-save"
-            sx={buttonProp}
-            onClick={handleSave}
-            disabled={!canSave || state?.valid === false}
-          >
-            {ts.save}
-          </PriButton>
-        </Box>
-        {busy && (
-          <Box sx={{ display: 'flex', flexGrow: 1, alignItems: 'center' }}>
-            <Typography>{`${t.loading}\u00A0`}</Typography>
-            <LinearProgress
-              variant="indeterminate"
-              sx={{ display: 'flex', flexGrow: 1 }}
-            />
-          </Box>
-        )}
-      </Paper>
+      <ProvideRightsMobile
+        paperRef={paperRef}
+        paperProps={paperProps}
+        rowProp={rowProp}
+        statusProps={statusProps}
+        speaker={speaker}
+        team={team}
+        state={state}
+        recordingRequired={recordingRequired}
+        handleUpload={handleUpload}
+        handleLater={handleLater}
+        handleSave={handleSave}
+        canSave={canSave}
+        busy={busy}
+        setState={setState}
+        handleStatement={handleStatement}
+        toolId={toolId}
+        statusText={statusText}
+        teamRec={teamRec}
+        defaultFilename={defaultFilename}
+        artifactState={artifactState}
+        setSaving={setSaving}
+        setStatusText={setStatusText}
+        setResetMedia={setResetMedia}
+        resetMedia={resetMedia}
+        afterUploadCb={(mediaId) => afterUploadCb(mediaId)}
+        handleSetCanSave={handleSetCanSave}
+        paperWidth={paperWidth}
+      />
       <Uploader
         noBusy={false}
         recordAudio={false}

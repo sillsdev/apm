@@ -14,12 +14,31 @@ dotenv.config({
 // Merge the base vite config with test-specific overrides
 const testViteConfig = {
   ...viteConfig,
+  // Pre-bundle common CT deps so the first spec does not hit "optimized dependencies
+  // changed, reloading" mid-run (which can flake the first assertion attempt).
+  optimizeDeps: {
+    ...viteConfig.optimizeDeps,
+    include: [
+      ...(Array.isArray(viteConfig.optimizeDeps?.include)
+        ? viteConfig.optimizeDeps.include
+        : []),
+      'react',
+      'react-dom',
+      'react/jsx-runtime',
+      '@mui/material',
+      '@mui/material/styles',
+      '@mui/icons-material/PlayArrowOutlined',
+      '@mui/icons-material/Pause',
+      '@mui/icons-material/GetAppOutlined',
+    ],
+  },
   define: {
     'process.env.NODE_ENV': JSON.stringify('test'),
     'process.env.FA_VERSION': JSON.stringify('test-version'),
   },
   resolve: {
     ...viteConfig.resolve,
+    dedupe: ['react', 'react-dom'],
     alias: {
       ...viteConfig.resolve?.alias,
       // Break circular dependency: NavRoutes imports SwitchTeams, but we're testing SwitchTeams

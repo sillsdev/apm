@@ -14,8 +14,14 @@ import DiscussIcon from '../../control/DiscussIcon';
 import { useOrbitData } from '../../hoc/useOrbitData';
 import { useDiscussionCount } from '../../crud/useDiscussionCount';
 import { discussionListSelector } from '../../selector';
+import { useMobile } from '../../utils/useMobile';
+
+/** Sits just above PassageDetailMobileLayout footer: border + pt + compact row + pb + safe area, plus small gap. */
+const discussionFabBottomDetailMobile =
+  'calc(8px + 1px + 4px + 40px + 2px + env(safe-area-inset-bottom, 0px))';
 
 export default function DiscussionPanel() {
+  const { isMobile } = useMobile();
   const ctx = useContext(PassageDetailContext);
   const {
     discussionSize,
@@ -61,12 +67,15 @@ export default function DiscussionPanel() {
         size={{ xs: 12 }}
         container
         sx={{
-          width: panelWidth,
+          // Mobile content area is narrower than window (layout padding); fill parent, don’t use innerWidth.
+          width: isMobile ? '100%' : panelWidth,
           maxWidth: '100%',
+          minWidth: 0,
+          boxSizing: 'border-box',
           justifyContent: 'center',
         }}
       >
-        <Grid container direction="column">
+        <Grid container direction="column" sx={{ minWidth: 0, width: '100%' }}>
           <DiscussionList onClose={() => setDiscussOpen(false)} />
         </Grid>
       </Grid>
@@ -74,7 +83,11 @@ export default function DiscussionPanel() {
       <Box
         sx={{
           position: 'fixed',
-          bottom: isDetail ? 50 : 10,
+          bottom: isDetail
+            ? isMobile
+              ? discussionFabBottomDetailMobile
+              : 50
+            : 10,
           right: 10,
           zIndex: 1000,
         }}

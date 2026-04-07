@@ -11,6 +11,7 @@ import {
   useTheme,
 } from '@mui/material';
 import { useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { useMobile } from '../../utils/useMobile';
 import { shallowEqual, useSelector } from 'react-redux';
 import { PassageDetailContext } from '../../context/PassageDetailContext';
 import {
@@ -72,6 +73,7 @@ interface DiscussionListProps {
 }
 
 export function DiscussionList({ onClose }: DiscussionListProps) {
+  const { isMobile } = useMobile();
   const discussions = useOrbitData<DiscussionD[]>('discussion');
   const mediafiles = useOrbitData<MediaFileD[]>('mediafile');
   const users = useOrbitData<User[]>('user');
@@ -104,7 +106,6 @@ export function DiscussionList({ onClose }: DiscussionListProps) {
     return (currentSegmentIndex >= 0 ? currentSegment : undefined) ?? '';
   };
   const currentSegmentRef = useRef(getCurrentSegment());
-  const discussionSizeRef = useRef(discussionSize);
   const { toolsChanged, isChanged, startSave, startClear, clearCompleted } =
     useContext(UnsavedContext).state;
   const t: IDiscussionListStrings = useSelector(
@@ -120,10 +121,22 @@ export function DiscussionList({ onClose }: DiscussionListProps) {
     return playerMediafile?.id ?? '';
   }, [playerMediafile]);
 
-  const [rootWidthStyle, setRootWidthStyle] = useState({
-    width: `${discussionSizeRef.current?.width - 64}px`, //leave room for scroll bar
-    maxHeight: `${discussionSizeRef.current?.height - 120}px`,
-  });
+  const rootWidthStyle = useMemo(
+    () =>
+      isMobile
+        ? {
+            width: '100%',
+            maxWidth: '100%',
+            maxHeight: `${discussionSize.height - 120}px`,
+            boxSizing: 'border-box' as const,
+          }
+        : {
+            width: `${discussionSize.width - 64}px`, // leave room for scroll bar
+            maxHeight: `${discussionSize.height - 120}px`,
+            boxSizing: 'border-box' as const,
+          },
+    [discussionSize.height, discussionSize.width, isMobile]
+  );
   const { userIsAdmin } = useRole();
   const defaultFilterState: IFilterState = {
     forYou: false,
@@ -176,14 +189,6 @@ export function DiscussionList({ onClose }: DiscussionListProps) {
     addingRef.current = adding;
     setAddingx(adding);
   };
-
-  useEffect(() => {
-    discussionSizeRef.current = discussionSize;
-    setRootWidthStyle({
-      width: `${discussionSizeRef.current?.width - 64}px`, // space for scroll bar
-      maxHeight: `${discussionSizeRef.current?.height - 120}px`,
-    });
-  }, [discussionSize]);
 
   useEffect(
     () => setCanSetTeamDefault(userIsAdmin && !isOffline),
@@ -505,14 +510,45 @@ export function DiscussionList({ onClose }: DiscussionListProps) {
   );
 
   return (
-    <StyledPaper id="DiscussionListHeader">
+    <StyledPaper
+      id="DiscussionListHeader"
+      sx={{
+        width: '100%',
+        maxWidth: '100%',
+        minWidth: 0,
+        boxSizing: 'border-box',
+      }}
+    >
       <>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', p: 1 }}>
-          <div>
-            <Title variant="h6">{t.title}</Title>
-            <Typography>{filterStatus}</Typography>
-          </div>
-          <div>
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'flex-start',
+            gap: 0.5,
+            p: 1,
+            width: '100%',
+            minWidth: 0,
+            boxSizing: 'border-box',
+          }}
+        >
+          <Box sx={{ minWidth: 0, flex: '1 1 auto', overflow: 'hidden', pr: 0.5 }}>
+            <Title variant={isMobile ? 'subtitle1' : 'h6'} component="div">
+              {t.title}
+            </Title>
+            <Typography variant="body2" sx={{ wordBreak: 'break-word' }}>
+              {filterStatus}
+            </Typography>
+          </Box>
+          <Box
+            sx={{
+              flex: '0 0 auto',
+              display: 'flex',
+              flexWrap: 'wrap',
+              justifyContent: 'flex-end',
+              rowGap: 0.25,
+            }}
+          >
             <SortMenu
               state={sortState}
               action={handleSortAction}
@@ -552,7 +588,7 @@ export function DiscussionList({ onClose }: DiscussionListProps) {
             >
               <CloseIcon />
             </IconButton>
-          </div>
+          </Box>
         </Box>
         <StyledPaper ref={formRef} id="DiscussionList" style={rootWidthStyle}>
           <Grid container>

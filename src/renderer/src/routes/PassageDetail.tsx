@@ -1,426 +1,80 @@
-import React, {
-  useEffect,
-  useState,
-  useContext,
-  useMemo,
-  Suspense,
-} from 'react';
+import { useContext, useEffect, useMemo, useState } from 'react';
 import { useGlobal } from '../context/useGlobal';
 import { useLocation, useParams } from 'react-router-dom';
-import { Grid, debounce, Paper, Box, SxProps, Stack } from '@mui/material';
+import { Box } from '@mui/material';
 
 import AppHead from '../components/App/AppHead';
-import { HeadHeight } from '../App';
 import {
-  PassageDetailProvider,
   PassageDetailContext,
+  PassageDetailProvider,
 } from '../context/PassageDetailContext';
 import StickyRedirect from '../components/StickyRedirect';
-import { WorkflowSteps } from '../components/PassageDetail/WorkflowSteps';
-import PassageDetailSectionPassage from '../components/PassageDetail/PassageDetailSectionPassage';
-import PassageDetailStepComplete from '../components/PassageDetail/PassageDetailStepComplete';
-import PassageDetailArtifacts from '../components/PassageDetail/Internalization/PassageDetailArtifacts';
-import TeamCheckReference from '../components/PassageDetail/TeamCheckReference';
-import PassageDetailPlayer from '../components/PassageDetail/PassageDetailPlayer';
-import PassageDetailRecord from '../components/PassageDetail/PassageDetailRecord';
-import PassageDetailItem from '../components/PassageDetail/PassageDetailItem';
-import PassageDetailMarkVerses from '../components/PassageDetail/PassageDetailMarkVerses';
-import PassageDetailTranscribe from '../components/PassageDetail/PassageDetailTranscribe';
-import PassageDetailChooser from '../components/PassageDetail/PassageDetailChooser';
-import ConsultantCheck from '../components/PassageDetail/ConsultantCheck';
-import TranscriptionTab from '../components/TranscriptionTab';
 import {
-  ArtifactTypeSlug,
-  remoteIdGuid,
   ToolSlug,
+  toolAllowsEmptyVernacularAudio,
   useProjectType,
   useStepTool,
   useUrlContext,
 } from '../crud';
-import { Plan, IToolStrings } from '../model';
-import { NamedRegions, useMobile } from '../utils';
-import { useSelector, shallowEqual } from 'react-redux';
-import { toolSelector } from '../selector';
-import Busy from '../components/Busy';
-import { RecordKeyMap } from '@orbit/records';
-import PassageDetailParatextIntegration from '../components/PassageDetail/PassageDetailParatextIntegration';
-import { PassageDetailDiscuss } from '../components/PassageDetail/PassageDetailDiscuss';
-import { addPt } from '../utils/addPt';
-import DiscussionPanel from '../components/Discussions/DiscussionPanel';
+import PassageDetailGrids from '../components/PassageDetail/PassageDetailGrids';
+import { useMobile } from '../utils/useMobile';
+import PassageDetailMobileDetail from '../components/PassageDetail/PassageDetailMobileDetail';
+import { ISharedStrings } from '@model/index';
+import { shallowEqual, useSelector } from 'react-redux';
+import { sharedSelector } from '../selector';
+import PassageDetailRecord from '../components/PassageDetail/PassageDetailRecord';
+import { usePaneWidth } from '../components/usePaneWidth';
+import { HeadHeight } from '../App';
 
-const KeyTerms = React.lazy(
-  () => import('../components/PassageDetail/Keyterms/KeyTerms')
-);
+const NotImplemented = () => 'Not implemented';
 
-const descProps = { overflow: 'hidden', textOverflow: 'ellipsis' } as SxProps;
-const rowProps = { alignItems: 'center', whiteSpace: 'nowrap' } as SxProps;
-
-const PassageDetailGrids = () => {
-  const [plan] = useGlobal('plan'); //will be constant here
-  const [width, setWidth] = useState(window.innerWidth);
-  const widthRef = React.useRef(window.innerWidth);
-
-  const [memory] = useGlobal('memory');
-  const ctx = useContext(PassageDetailContext);
-  const {
-    currentstep,
-    discussionSize,
-    setDiscussionSize,
-    orgWorkflowSteps,
-    mediafileId,
-    sectionArr,
-    discussOpen,
-  } = ctx.state;
-
-  const { tool, settings } = useStepTool(currentstep);
-  const discussionSizeRef = React.useRef(discussionSize);
-  const t = useSelector(toolSelector, shallowEqual) as IToolStrings;
-  const [paneWidth, setPaneWidth] = useState(0);
-  const { isMobile } = useMobile();
-
-  const scrollbarWidthRef = React.useRef(0);
-
-  // Calculate scrollbar width dynamically
-  const getScrollbarWidth = () => {
-    // Create a temporary div to measure scrollbar width
-    const outer = document.createElement('div');
-    outer.style.visibility = 'hidden';
-    outer.style.overflow = 'scroll';
-    // @ts-ignore - msOverflowStyle is a Microsoft-specific property for old IE
-    outer.style.msOverflowStyle = 'scrollbar';
-    document.body.appendChild(outer);
-
-    const inner = document.createElement('div');
-    outer.appendChild(inner);
-
-    const scrollbarWidth = outer.offsetWidth - inner.offsetWidth;
-
-    outer.parentNode?.removeChild(outer);
-    return scrollbarWidth;
+const MobileStep = () => {
+  const { currentstep } = useContext(PassageDetailContext)?.state ?? {
+    currentstep: '',
   };
+  const { tool } = useStepTool(currentstep);
+  const { paneWidth } = usePaneWidth();
 
-  // Detect vertical scrollbar and calculate its width
-  useEffect(() => {
-    // Pre-calculate scrollbar width once (it's constant per browser/OS)
-    const cachedScrollbarWidth = getScrollbarWidth();
+  return tool === ToolSlug.Record ? (
+    <PassageDetailRecord width={Math.max(0, paneWidth - 40)} />
+  ) : (
+    <NotImplemented />
+  );
+};
 
-    const checkScrollbar = () => {
-      // Check if document body has vertical scrollbar
-      const hasScrollbar =
-        document.documentElement.scrollHeight >
-        document.documentElement.clientHeight;
-
-      // Use cached scrollbar width only if scrollbar exists
-      scrollbarWidthRef.current = hasScrollbar ? cachedScrollbarWidth : 0;
-    };
-
-    checkScrollbar();
-    const handleResize = debounce(() => {
-      checkScrollbar();
-    }, 200);
-    window.addEventListener('resize', handleResize);
-
-    return () => {
-      window.removeEventListener('resize', handleResize);
-    };
-  }, []);
-
-  useEffect(() => {
-    discussionSizeRef.current = discussionSize;
-    widthRef.current = width;
-    let newPaneWidth = widthRef.current;
-    if (discussOpen) {
-      newPaneWidth -= discussionSize.width;
-    }
-    newPaneWidth = Math.max(0, newPaneWidth);
-    setPaneWidth(newPaneWidth);
-  }, [discussionSize, width, discussOpen]);
-
-  const artifactId = useMemo(() => {
-    if (settings) {
-      const id = JSON.parse(settings).artifactTypeId;
-      if (id)
-        return (
-          remoteIdGuid('artifacttype', id, memory?.keyMap as RecordKeyMap) ?? id
-        );
-    }
-    return null;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [settings]);
-
-  const [communitySlugs] = useState([
-    ArtifactTypeSlug.Retell,
-    ArtifactTypeSlug.QandA,
-  ]);
-  const [phraseBackTranslationSlugs] = useState([
-    ArtifactTypeSlug.PhraseBackTranslation,
-  ]);
-  const [wholeBackTranslationSlugs] = useState([
-    ArtifactTypeSlug.WholeBackTranslation,
-  ]);
-
-  const setDimensions = () => {
-    // Always use actual window width - let components adapt to available space
-    const newWidth = window.innerWidth;
-    setWidth(newWidth);
-
-    let newDiscWidth = discussionSizeRef.current.width;
-    if (newDiscWidth > 450) newDiscWidth = 450;
-    const newDiscHeight = window.innerHeight - 170;
-    if (
-      discussionSizeRef.current.height !== newDiscHeight ||
-      discussionSizeRef.current.width !== newDiscWidth
-    )
-      setDiscussionSize({
-        width: newDiscWidth, //should we be smarter here?
-        height: newDiscHeight,
-      });
+const MobileDetail = () => {
+  const { isMobileWidth } = useMobile();
+  const { discussOpen, rowData, currentstep } = useContext(
+    PassageDetailContext
+  )?.state ?? {
+    discussOpen: false,
+    rowData: [],
+    currentstep: '',
   };
+  const { tool } = useStepTool(currentstep);
+  const currentVersion = useMemo(() => rowData[0]?.version ?? 0, [rowData]);
+  /** Policy lives here (with step tool); the layout component only branches on the result. */
+  const showNoAudioPlaceholder = useMemo(
+    () =>
+      currentVersion === 0 && !toolAllowsEmptyVernacularAudio(tool),
+    [currentVersion, tool]
+  );
+  const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
 
-  useEffect(() => {
-    setDimensions();
-    const handleResize = debounce(() => {
-      setDimensions();
-    }, 100);
-    window.addEventListener('resize', handleResize);
-    return () => {
-      window.removeEventListener('resize', handleResize);
-    };
-    /* eslint-disable-next-line react-hooks/exhaustive-deps */
-  }, []);
+  const showSideBySide = useMemo(() => !isMobileWidth, [isMobileWidth]);
+  const flushDiscussionLeft = useMemo(
+    () => discussOpen && !showSideBySide,
+    [discussOpen, showSideBySide]
+  );
 
-  const plans = useMemo(() => {
-    const plans = memory.cache.query((q) => q.findRecords('plan')) as Plan[];
-    return plans.filter((p) => p.id === plan);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [plan]);
-  const MAGIC_NUMBER_THAT_MAKES_IT_FIT = 16;
   return (
-    <Box
-      sx={{
-        display: 'flex',
-        flexDirection: 'row',
-        paddingTop: `${HeadHeight}px`,
-        width: '100%',
-        maxWidth: '100%',
-        minWidth: 0,
-        overflow: 'hidden',
-      }}
-    >
-      <Grid
-        container
-        direction="row"
-        sx={{ ...rowProps, minWidth: 0, flexWrap: 'wrap' }}
-      >
-        {!(isMobile && tool === ToolSlug.PhraseBackTranslate) && (
-          <>
-            <Grid
-              container
-              direction="row"
-              sx={{
-                alignItems: 'center',
-                flexGrow: 1,
-                minWidth: 0,
-                flexWrap: 'wrap',
-                gap: 1,
-              }}
-            >
-              <Grid
-                sx={{ ...rowProps, minWidth: 0, flexShrink: 1 }}
-                size={{ xs: 'auto' }}
-              >
-                <PassageDetailSectionPassage />
-              </Grid>
-              <Grid
-                id="tool"
-                sx={{
-                  alignItems: 'center',
-                  minWidth: 0,
-                  flexShrink: 1,
-                  whiteSpace: 'nowrap',
-                  ml: 'auto',
-                }}
-                size={{ xs: 'auto' }}
-              >
-                {tool && Object.prototype.hasOwnProperty.call(t, tool)
-                  ? addPt(t.getString(tool))
-                  : tool}
-              </Grid>
-              <Grid
-                id="stepcomplete"
-                sx={{
-                  display: 'flex',
-                  justifyContent: 'flex-end',
-                  minWidth: 0,
-                  flexShrink: 0,
-                  ml: 'auto',
-                }}
-                size={{ xs: 'auto' }}
-              >
-                <PassageDetailStepComplete />
-              </Grid>
-            </Grid>
-            <Grid
-              sx={{
-                ...descProps,
-                position: 'sticky',
-                top: 0,
-                zIndex: (theme) => theme.zIndex.appBar,
-                backgroundColor: 'background.default',
-                borderBottom: '1px solid',
-                borderColor: 'divider',
-              }}
-              size={{ xs: 12 }}
-            >
-              <WorkflowSteps />
-            </Grid>
-          </>
-        )}
-        {tool === ToolSlug.Resource && (
-          <Grid
-            container
-            direction="row"
-            sx={{ ...rowProps, minWidth: 0, flexWrap: 'wrap' }}
-          >
-            <Grid size={{ xs: 12 }} sx={{ minWidth: 0 }}>
-              <Grid container sx={{ minWidth: 0 }}>
-                <PassageDetailChooser width={width - 24} sx={{ pl: 2 }} />
-                <PassageDetailArtifacts />
-              </Grid>
-            </Grid>
-          </Grid>
-        )}
-        {tool === ToolSlug.Paratext && (
-          <Stack sx={{ width: '100%', minWidth: 0 }}>
-            <PassageDetailChooser width={width - 24} sx={{ pl: 2 }} />
-            <PassageDetailParatextIntegration />
-          </Stack>
-        )}
-        {(tool === ToolSlug.Discuss ||
-          tool === ToolSlug.TeamCheck ||
-          tool === ToolSlug.Record ||
-          tool === ToolSlug.Verses ||
-          tool === ToolSlug.Transcribe ||
-          tool === ToolSlug.ConsultantCheck ||
-          tool === ToolSlug.KeyTerm) && (
-          <Paper
-            key={currentstep}
-            sx={{ p: 0, margin: 'auto', width: `calc(100% - 32px)` }}
-          >
-            <Stack direction="row" spacing={1}>
-              {tool !== ToolSlug.Transcribe &&
-              tool !== ToolSlug.Verses &&
-              tool !== ToolSlug.Record &&
-              tool !== ToolSlug.ConsultantCheck ? (
-                <Stack
-                  direction="column"
-                  sx={{ width: '100%', minWidth: 0, maxWidth: paneWidth }}
-                >
-                  <PassageDetailChooser width={paneWidth} />
-                  {(tool !== ToolSlug.KeyTerm || mediafileId) && (
-                    <PassageDetailPlayer
-                      width={Math.max(0, paneWidth - 40)}
-                      allowZoomAndSpeed={true}
-                    />
-                  )}
-                  {tool === ToolSlug.TeamCheck && <TeamCheckReference />}
-                  {tool === ToolSlug.KeyTerm && (
-                    <Suspense fallback={<Busy />}>
-                      <KeyTerms width={paneWidth} />
-                    </Suspense>
-                  )}
-                  {tool === ToolSlug.Discuss && (
-                    <PassageDetailDiscuss
-                      width={paneWidth}
-                      currentStep={currentstep}
-                    />
-                  )}
-                </Stack>
-              ) : (
-                <Grid
-                  sx={{
-                    ...descProps,
-                    width: paneWidth,
-                    maxWidth: paneWidth,
-                    minWidth: 0,
-                  }}
-                  size={{ xs: 12 }}
-                >
-                  <PassageDetailChooser width={paneWidth} />
-                  {tool === ToolSlug.Verses && (
-                    <PassageDetailMarkVerses width={paneWidth} />
-                  )}
-                  {tool === ToolSlug.Transcribe && (
-                    <PassageDetailTranscribe
-                      width={Math.max(
-                        0,
-                        paneWidth -
-                          MAGIC_NUMBER_THAT_MAKES_IT_FIT -
-                          scrollbarWidthRef.current
-                      )}
-                      artifactTypeId={artifactId}
-                    />
-                  )}
-                  {tool === ToolSlug.Record && (
-                    <PassageDetailRecord width={Math.max(0, paneWidth - 40)} />
-                  )}
-                  {tool === ToolSlug.ConsultantCheck && (
-                    <ConsultantCheck width={paneWidth} />
-                  )}
-                </Grid>
-              )}
-              <DiscussionPanel />
-            </Stack>
-          </Paper>
-        )}
-        {(tool === ToolSlug.Community ||
-          tool === ToolSlug.PhraseBackTranslate ||
-          tool === ToolSlug.WholeBackTranslate) && (
-          <Grid
-            key={currentstep}
-            container
-            direction="row"
-            sx={{ ...rowProps, minWidth: 0, flexWrap: 'wrap' }}
-          >
-            <Grid size={{ xs: 12 }} sx={{ minWidth: 0 }}>
-              <PassageDetailItem
-                width={width}
-                slugs={
-                  tool === ToolSlug.Community
-                    ? communitySlugs
-                    : tool === ToolSlug.PhraseBackTranslate
-                      ? phraseBackTranslationSlugs
-                      : wholeBackTranslationSlugs
-                }
-                showTopic={tool === ToolSlug.Community}
-                segments={
-                  tool === ToolSlug.PhraseBackTranslate
-                    ? NamedRegions.BackTranslation
-                    : undefined
-                }
-              />
-            </Grid>
-          </Grid>
-        )}
-
-        {(tool === ToolSlug.Export || tool === ToolSlug.Done) && (
-          <Grid container sx={{ minWidth: 0 }}>
-            <Grid size={{ xs: 12 }} sx={{ minWidth: 0 }}>
-              <PassageDetailChooser width={width - 16} />
-              {tool === ToolSlug.Export && (
-                <TranscriptionTab
-                  projectPlans={plans}
-                  floatTop
-                  step={currentstep}
-                  orgSteps={orgWorkflowSteps}
-                  sectionArr={sectionArr}
-                />
-              )}
-            </Grid>
-          </Grid>
-        )}
-      </Grid>
-    </Box>
+    <PassageDetailMobileDetail
+      showNoAudioPlaceholder={showNoAudioPlaceholder}
+      showSideBySide={showSideBySide}
+      flushDiscussionLeft={flushDiscussionLeft}
+      recordContent={!discussOpen || showSideBySide ? <MobileStep /> : null}
+      noAudioText={ts.noAudio}
+    />
   );
 };
 
@@ -432,6 +86,7 @@ export const PassageDetail = () => {
   const [projType] = useGlobal('projType'); //verified this is not used in a function 2/18/25
   const [user] = useGlobal('user');
   const { setProjectType } = useProjectType();
+  const { isMobile } = useMobile();
 
   useEffect(() => {
     const projectId = setUrlContext(prjId ?? '');
@@ -460,7 +115,24 @@ export const PassageDetail = () => {
     >
       <AppHead switchTo={true} />
       <PassageDetailProvider>
-        <PassageDetailGrids />
+        {isMobile ? (
+          <Box
+            sx={{
+              // AppHead is position:fixed — offset in-flow content like PassageDetailGrids does,
+              // otherwise mobile layout height calc(100vh - HeadHeight) leaves a gap at the bottom.
+              pt: `${HeadHeight}px`,
+              width: '100%',
+              flex: 1,
+              minHeight: 0,
+              display: 'flex',
+              flexDirection: 'column',
+            }}
+          >
+            <MobileDetail />
+          </Box>
+        ) : (
+          <PassageDetailGrids />
+        )}
       </PassageDetailProvider>
     </Box>
   );

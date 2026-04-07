@@ -20,20 +20,26 @@ import SpeakerName from './SpeakerName';
 import { AltButton, PriButton } from '../control';
 import { passageRecordSelector } from '../selector';
 import Busy from './Busy';
-
-const RecordDialog = styled(Dialog)<DialogProps>(() => ({
-  flexGrow: 1,
-  '& .MuiDialog-paper': {
-    maxWidth: '90%',
-    minWidth: '90%',
-  },
-}));
+import { useMobile } from '../utils';
 
 const StatusMessage = styled(Typography)<TypographyProps>(({ theme }) => ({
   marginRight: theme.spacing(2),
   alignSelf: 'center',
   display: 'block',
   gutterBottom: 'true',
+}));
+
+interface RecordDialogProps extends DialogProps {
+  isMobileView?: boolean;
+}
+const RecordDialog = styled(Dialog, {
+  shouldForwardProp: (prop) => prop !== 'isMobileView',
+})<RecordDialogProps>(({ isMobileView }) => ({
+  flexGrow: 1,
+  '& .MuiDialog-paper': {
+    maxWidth: '90%',
+    minWidth: !isMobileView ? '90%' : 0,
+  },
 }));
 
 interface IProps {
@@ -141,12 +147,15 @@ function PassageRecordDlg(props: IProps) {
     setRecording(isRecording);
   };
 
+  const { isMobile: isMobileView } = useMobile();
+
   return (
     <RecordDialog
       open={visible}
       onClose={handleCancel}
       aria-labelledby="recDlg"
       disableEnforceFocus
+      isMobileView={isMobileView}
     >
       <DialogTitle id="recDlg">{t.title}</DialogTitle>
       <DialogContent id="recDlgContent" ref={dialogRef}>

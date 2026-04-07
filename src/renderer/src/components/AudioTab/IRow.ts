@@ -15,6 +15,7 @@ export interface IRow {
   reference: React.ReactNode;
   referenceString: string; // String version of reference for sorting
   duration: string;
+  /** Megabytes (from `getMedia`: filesize converted and rounded). */
   size: number;
   version: string;
   date: string;

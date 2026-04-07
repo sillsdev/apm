@@ -5,7 +5,8 @@ import MobileWorkflowSteps from './mobile/MobileWorkflowSteps';
 import PassageDetailMobileFooter from './mobile/PassageDetailMobileFooter';
 
 interface Props {
-  currentVersion: number;
+  /** When true, show the no-audio message instead of step content (Discuss, playback, etc.). */
+  showNoAudioPlaceholder: boolean;
   showSideBySide: boolean;
   flushDiscussionLeft?: boolean;
   recordContent: React.ReactNode;
@@ -15,7 +16,7 @@ interface Props {
 const paperProps = { p: 2, m: 'auto', width: `calc(100% - 40px)` } as SxProps;
 
 export default function PassageDetailMobileDetail({
-  currentVersion,
+  showNoAudioPlaceholder,
   showSideBySide,
   flushDiscussionLeft,
   recordContent,
@@ -27,7 +28,7 @@ export default function PassageDetailMobileDetail({
       footer={<PassageDetailMobileFooter />}
       contentSx={flushDiscussionLeft ? { pl: 0 } : undefined}
     >
-      {currentVersion !== 0 ? (
+      {!showNoAudioPlaceholder ? (
         <>
           {showSideBySide ? (
             <Box
@@ -43,9 +44,14 @@ export default function PassageDetailMobileDetail({
               </Box>
             </Box>
           ) : (
-            <Stack spacing={1}>
+            <Stack
+              spacing={1}
+              sx={{ height: '100%', width: '100%', minWidth: 0 }}
+            >
               {recordContent}
-              <DiscussionPanel />
+              <Box sx={{ width: '100%', minWidth: 0 }}>
+                <DiscussionPanel />
+              </Box>
             </Stack>
           )}
         </>

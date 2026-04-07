@@ -16,16 +16,26 @@ interface IProps {
   onVersions?: () => void;
   onUpload?: () => void;
   onAudacity?: () => void;
+  /** When false, hide the version history button (e.g. mobile passage record). */
+  showVersions?: boolean;
+  /** When false, hide the upload button (e.g. upload is inline with speaker on mobile). */
+  showUpload?: boolean;
 }
 
-export const RecordButtons = ({ onVersions, onUpload, onAudacity }: IProps) => {
+export const RecordButtons = ({
+  onVersions,
+  onUpload,
+  onAudacity,
+  showVersions = true,
+  showUpload = true,
+}: IProps) => {
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
 
   const IconSize = { width: '14px', height: '14px' };
 
   return (
     <StyledButtonGroup size="small" sx={{ my: 1 }}>
-      {onVersions && (
+      {showVersions && onVersions && (
         <AltButton
           id="pdRecordVersions"
           onClick={onVersions}
@@ -35,15 +45,17 @@ export const RecordButtons = ({ onVersions, onUpload, onAudacity }: IProps) => {
           {ts.versionHistory}
         </AltButton>
       )}
-      <AltButton
-        id="pdRecordUpload"
-        onClick={onUpload}
-        title={ts.uploadMediaSingular}
-        startIcon={<AddIcon sx={IconSize} />}
-        disabled={!onUpload}
-      >
-        {ts.uploadMediaSingular}
-      </AltButton>
+      {showUpload && (
+        <AltButton
+          id="pdRecordUpload"
+          onClick={onUpload}
+          title={ts.uploadMediaSingular}
+          startIcon={<AddIcon sx={IconSize} />}
+          disabled={!onUpload}
+        >
+          {ts.uploadMediaSingular}
+        </AltButton>
+      )}
       {onAudacity && (
         <AltButton
           id="pdAudacity"

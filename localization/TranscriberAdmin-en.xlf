@@ -6940,6 +6940,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="recordButton.stop">
+         <segment>
+            <source>STOP</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="recordStepSettings.custom">
          <segment>
             <source>Custom</source>
@@ -7456,6 +7462,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="shared.loadFromFile">
+         <segment>
+            <source>Load from file...</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="shared.loading">
          <segment>
             <source>Loading...</source>
@@ -7645,6 +7657,30 @@
       <unit id="shared.uploadMediaSingular">
          <segment>
             <source>Upload Audio</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="shared.upload">
+         <segment>
+            <source>Upload</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="shared.resetRecording">
+         <segment>
+            <source>Reset Recording</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="shared.discardRecording">
+         <segment>
+            <source>Would you like to discard this recording or save it?</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="shared.useThisVersion">
+         <segment>
+            <source>Use This Version</source>
             <target/>
          </segment>
       </unit>
@@ -10030,6 +10066,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="wsAudioPlayer.convertVoiceAi">
+         <segment>
+            <source>Convert Voice (AI)</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="wsAudioPlayer.beginningTip">
          <segment>
             <source>Go to Beginning [{0}]</source>
@@ -10081,6 +10123,12 @@
       <unit id="wsAudioPlayer.microphone">
          <segment>
             <source>Select microphone</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="wsAudioPlayer.moreOptions">
+         <segment>
+            <source>More Options</source>
             <target/>
          </segment>
       </unit>
@@ -10174,6 +10222,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="wsAudioPlayer.reduceNoiseAi">
+         <segment>
+            <source>Reduce Noise (AI)</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="wsAudioPlayer.reset">
          <segment>
             <source>Reset</source>
@@ -10198,9 +10252,21 @@
             <target/>
          </segment>
       </unit>
+      <unit id="wsAudioPlayer.selectMicrophoneMenu">
+         <segment>
+            <source>Select Microphone</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="wsAudioPlayer.selectVoice">
          <segment>
             <source>Select Voice</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="wsAudioPlayer.selectVoiceForConversion">
+         <segment>
+            <source>Select Voice for Conversion</source>
             <target/>
          </segment>
       </unit>

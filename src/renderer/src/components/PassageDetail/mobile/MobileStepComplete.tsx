@@ -44,9 +44,18 @@ export default function MobileStepComplete() {
   }, [complete, currentstep, passage, section]);
 
   return (
-    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25 }}>
+    <Box
+      sx={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 0.25,
+        minHeight: 0,
+        maxWidth: '100%',
+      }}
+    >
       <IconButton
         id="mobile-complete"
+        size="small"
         title={t.title}
         onClick={handleToggleComplete}
         disabled={
@@ -54,12 +63,14 @@ export default function MobileStepComplete() {
         }
       >
         {complete ? (
-          <CompleteIcon id="step-yes" />
+          <CompleteIcon id="step-yes" fontSize="small" />
         ) : (
-          <NotCompleteIcon id="step-no" />
+          <NotCompleteIcon id="step-no" fontSize="small" />
         )}
       </IconButton>
-      <Typography variant="body2">{t.title}</Typography>
+      <Typography variant="body2" sx={{ lineHeight: 1.2 }}>
+        {t.title}
+      </Typography>
     </Box>
   );
 }
