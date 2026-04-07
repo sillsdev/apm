@@ -3545,6 +3545,13 @@
                <context context-type="sourcefile">import.tsx</context>
             </context-group>
          </trans-unit>
+          <trans-unit id="import.fileProcessing">
+            <source>Processing file {0} of {1}</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">import.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="import.importProject">
             <source>Import Audio Project</source>
             <target/>

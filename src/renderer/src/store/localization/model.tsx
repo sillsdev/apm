@@ -604,6 +604,7 @@ export interface IImportStrings extends Localize.LocalizedStringsMethods {
     "importComplete": string;
     "imported": string;
     "importPending": string;
+    "fileProcessing": string;
     "importProject": string;
     "importSync": string;
     "importSyncDown": string;
