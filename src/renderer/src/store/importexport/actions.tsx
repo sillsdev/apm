@@ -328,6 +328,7 @@ const partialMessage = (msg: string, partialMsg: string | undefined | null) => {
 interface ProcessImportFileParams {
   filename: string;
   file: Blob | File;
+  itf: boolean;
   getProcessUrl: (filename: string, fileURL: string) => string;
   getInitialStart: () => string;
   token: string | null;
@@ -359,7 +360,6 @@ const singlePutUpload = (
     };
     xhr.open('PUT', fileURL, true);
     xhr.setRequestHeader('Content-Type', contentType);
-    xhr.send(file.slice());
 
     xhr.onload = () => {
       if (xhr.status < 300) {
@@ -375,6 +375,11 @@ const singlePutUpload = (
       cleanup();
       reject(new Error('Upload failed'));
     };
+    xhr.onabort = () => {
+      cleanup();
+      reject(new Error('Upload aborted'));
+    };
+    xhr.send(file.slice());
   });
 };
 
@@ -478,6 +483,7 @@ const multipartUpload = async (
 const processImportFile = async ({
   filename,
   file,
+  itf,
   getProcessUrl,
   getInitialStart,
   token,
@@ -559,11 +565,12 @@ const processImportFile = async ({
       } else if (putresponse.data.status === HttpStatusCode.PartialContent) {
         start = putresponse.data.startindex;
         mapKey = putresponse.data.fileURL;
-        msg += partialMessage(msg, putresponse.data.message);
-        dispatch({
-          payload: pendingmsg + ' ' + putresponse.data.message,
-          type: IMPORT_PENDING,
-        });
+        if (itf) msg += partialMessage(msg, putresponse.data.message);
+        else
+          dispatch({
+            payload: pendingmsg + ' ' + putresponse.data.message,
+            type: IMPORT_PENDING,
+          });
       } else {
         logError(
           Severity.error,
@@ -643,6 +650,7 @@ export const importFromExternal =
         const result = await processImportFile({
           filename: file.name,
           file,
+          itf: false,
           getProcessUrl: (filename, mapKey) => {
             const encodedFilename = encodeURIComponent(filename);
             const tid = effectiveTeamId;
@@ -697,6 +705,7 @@ const importFromElectron =
     processImportFile({
       filename,
       file,
+      itf: true,
       getProcessUrl: (uploadedFilename) => {
         if (projectid === 0) {
           return `${API_CONFIG.host}/api/offlineData/sync/${uploadedFilename}/`;
