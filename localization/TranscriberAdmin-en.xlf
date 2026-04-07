@@ -3040,6 +3040,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="import.fileProcessing">
+         <segment>
+            <source>Processing file {0} of {1}</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="import.importProject">
          <segment>
             <source>Import Audio Project</source>

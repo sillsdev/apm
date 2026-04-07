@@ -461,6 +461,7 @@ export function ImportTab(props: IProps) {
       token,
       errorReporter,
       pendingmsg: t.importPending,
+      fileProcessingMsg: t.fileProcessing,
       completemsg: t.importComplete,
       newTeamChainFailed: t.newTeamChainFailed,
     });

@@ -71,7 +71,7 @@ const queryError =
   (transform: RecordTransform, ex: unknown) => {
     console.log('***** api query fail', transform, ex);
     if (ex instanceof Exception && (ex as IApiError).response?.status === 401) {
-      tokenCtx?.state.logout();
+      tokenCtx?.state?.logout();
     } else if (networkError(ex)) {
       orbitError(ex as IApiError);
       //signal to datachanges that we've had a network error
@@ -93,7 +93,7 @@ const updateError =
   (transform: RecordTransform, ex: unknown) => {
     console.log('***** api update fail', transform, ex);
     if (ex instanceof Exception && (ex as IApiError).response?.status === 401) {
-      tokenCtx?.state.logout();
+      tokenCtx?.state?.logout();
     } else if (networkError(ex)) {
       if (orbitRetries > 0) {
         setOrbitRetries(orbitRetries - 1);

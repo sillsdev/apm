@@ -642,6 +642,7 @@ const initialState = {
 			"importComplete": "Import Complete",
 			"imported": "Imported Value",
 			"importPending": "Import In Progress...",
+			"fileProcessing": "Processing file {0} of {1}",
 			"importProject": "Import Audio Project",
 			"importSync": "Syncing changes",
 			"importSyncDown": "Syncing online changes",
