@@ -126,10 +126,18 @@ export function useWaveSurfer(
     isPlayingRef.current = isPlaying;
   }, [isPlaying]);
 
-  // Debounce the progress callback to prevent excessive re-renders
-  const debouncedProgressCallback = debounce((value: number) => {
-    onProgress(value);
-  }, 200);
+  const onProgressRef = useRef(onProgress);
+  onProgressRef.current = onProgress;
+
+  // Debounce the progress callback to prevent excessive re-renders. Single instance
+  // across renders so cancel() and unmount cleanup clear pending trailing calls.
+  const debouncedProgressCallback = useMemo(
+    () =>
+      debounce((value: number) => {
+        onProgressRef.current(value);
+      }, 200),
+    []
+  );
 
   const setProgress = (value: number) => {
     progressRef.current = value;
