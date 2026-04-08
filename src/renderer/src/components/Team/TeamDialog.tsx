@@ -189,7 +189,7 @@ export function TeamDialog(props: IProps) {
           ...current,
           attributes: {
             ...current.attributes,
-            name,
+            name: name.trim(),
             defaultParams: df,
           },
         } as OrganizationD;
@@ -311,8 +311,15 @@ export function TeamDialog(props: IProps) {
   };
 
   const nameInUse = (newName: string): boolean => {
-    if (newName === values?.team.attributes.name) return false;
-    return Boolean(organizations.find((o) => o?.attributes?.name === newName));
+    const trimmed = newName.trim();
+    if (trimmed === '') return false;
+    if (trimmed === (values?.team?.attributes?.name ?? '').trim())
+      return false;
+    return Boolean(
+      organizations.find(
+        (o) => (o?.attributes?.name ?? '').trim() === trimmed
+      )
+    );
   };
 
   useEffect(() => {
@@ -413,7 +420,9 @@ export function TeamDialog(props: IProps) {
               id="teamName"
               label={t.teamName}
               value={name}
-              helperText={!saving && name && nameInUse(name) && t.nameInUse}
+              helperText={
+                !saving && name.trim() && nameInUse(name) && t.nameInUse
+              }
               required
               onChange={handleChange}
               fullWidth
@@ -499,7 +508,7 @@ export function TeamDialog(props: IProps) {
               disabled ||
               recording ||
               saving ||
-              name === '' ||
+              !name.trim() ||
               nameInUse(name) ||
               !changed ||
               (bibleIdError !== '' && bibleId.length > 0)
