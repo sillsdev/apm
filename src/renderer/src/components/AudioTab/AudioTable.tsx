@@ -12,16 +12,11 @@ import TranscriptionShow from '../TranscriptionShow';
 import MediaPlayer from '../MediaPlayer';
 import Confirm from '../AlertDialog';
 import {
-  findRecord,
   PublishDestinationEnum,
   useOrganizedBy,
   usePublishDestination,
 } from '../../crud';
-import {
-  useDataChanges,
-  useWaitForRemoteQueue,
-  doSort,
-} from '../../utils';
+import { useDataChanges, useWaitForRemoteQueue, doSort } from '../../utils';
 import { IRow } from '.';
 import { UpdateRecord } from '../../model/baseModel';
 import { mediaTabSelector } from '../../selector';
@@ -186,8 +181,8 @@ export const AudioTable = (props: IProps) => {
 
   const versionPickMode = Boolean(
     showVersionRadio ||
-      props.selectedId !== undefined ||
-      props.setSelectedId !== undefined
+    props.selectedId !== undefined ||
+    props.setSelectedId !== undefined
   );
 
   const [localSelectedId, setLocalSelectedId] = useState<string>('');
@@ -200,9 +195,7 @@ export const AudioTable = (props: IProps) => {
 
   const setSelectedId = useCallback(
     (id: string) => {
-      setExpandedFileNameMediaId((prev) =>
-        prev && prev !== id ? null : prev
-      );
+      setExpandedFileNameMediaId((prev) => (prev && prev !== id ? null : prev));
       setSelectedIdInner(id);
     },
     [setSelectedIdInner]
@@ -273,18 +266,14 @@ export const AudioTable = (props: IProps) => {
             showAttachControl={sheetAttach}
             attached={Boolean(row.passId)}
             onAttachToggle={
-              onAttach
-                ? () => onAttach([row.index], !Boolean(row.passId))
-                : undefined
+              onAttach ? () => onAttach([row.index], !row.passId) : undefined
             }
             canDeleteMedia={canDelete}
             onRequestDelete={
               canDelete ? () => handleConfirmAction(row.id) : undefined
             }
             showPublishControl={showPublishing}
-            publishDisabled={
-              (row.passId || '') === '' || !canSetDestination
-            }
+            publishDisabled={(row.passId || '') === '' || !canSetDestination}
             onPublishClick={handleChangeReadyToShare(row.id)}
             publishStatusIcon={publishStatus(
               getPublishTo(row.publishTo, hasPublishing, shared, true)
@@ -320,10 +309,7 @@ export const AudioTable = (props: IProps) => {
       )}
       {confirmAction === '' || (
         <Confirm
-          text={t.deleteConfirm.replace(
-            '{0}',
-            sortedData[deleteItem].fileName
-          )}
+          text={t.deleteConfirm.replace('{0}', sortedData[deleteItem].fileName)}
           yesResponse={handleActionConfirmed}
           noResponse={handleActionRefused}
         />

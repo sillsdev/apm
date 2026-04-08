@@ -4,7 +4,6 @@ import {
   MediaFileD,
   Organization,
 } from '../model';
-import { Button, Paper, Typography, Box, LinearProgress } from '@mui/material';
 import { SxProps } from '@mui/material/styles';
 import {
   useContext,
@@ -42,7 +41,6 @@ import {
   UninitializedRecord,
 } from '@orbit/records';
 import React from 'react';
-import { VoiceStatement } from '../business/voice/VoiceStatement';
 import { IVoicePerm } from '../business/voice/PersonalizeVoicePermission';
 import ProvideRightsMobile from './PassageDetail/mobile/record/ProvideRightsMobile';
 
@@ -80,7 +78,7 @@ export function ProvideRights(props: IProps) {
   const uploadVisibleRef = useRef(false);
   const [resetMedia, setResetMedia] = useState(false);
   const [statement, setStatement] = useState<string>('');
-  const [saving, setSaving] = useState(false);
+  const [, setSaving] = useState(false);
   const [paperWidth, setPaperWidth] = useState<number>(0);
   const paperRef = useRef<HTMLDivElement>(null);
   const getGlobal = useGetGlobal();

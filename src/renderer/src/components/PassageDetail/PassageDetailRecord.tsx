@@ -223,11 +223,11 @@ export function PassageDetailRecord(props: IProps) {
       setUploadVisible(true);
     });
   };
-  const handleAudacity = () => {
-    saveIfChanged(() => {
-      setAudacityVisible(true);
-    });
-  };
+  // const handleAudacity = () => {
+  //   saveIfChanged(() => {
+  //     setAudacityVisible(true);
+  //   });
+  // };
   const handleVersions = () => {
     setVersionVisible(true);
   };
@@ -271,7 +271,9 @@ export function PassageDetailRecord(props: IProps) {
               onClick={handleUpload}
               title={ts.loadFromFile}
               startIcon={
-                <FolderOpenOutlinedIcon sx={{ width: '14px', height: '14px' }} />
+                <FolderOpenOutlinedIcon
+                  sx={{ width: '14px', height: '14px' }}
+                />
               }
               sx={{ flexShrink: 0 }}
             >
@@ -306,9 +308,7 @@ export function PassageDetailRecord(props: IProps) {
         allowDeltaVoice={true}
         handleSave={handleSave}
         forceMobileView={true}
-        isSaveDisabled={
-          (ready && !ready()) || !hasRights || !canVern
-        }
+        isSaveDisabled={(ready && !ready()) || !hasRights || !canVern}
         metaData={
           <>
             <Typography
@@ -326,9 +326,7 @@ export function PassageDetailRecord(props: IProps) {
               <PriButton
                 id="rec-save"
                 onClick={handleSave}
-                disabled={
-                  (ready && !ready()) || !hasRights || !canVern
-                }
+                disabled={(ready && !ready()) || !hasRights || !canVern}
               >
                 {ts.save}
               </PriButton>
@@ -336,8 +334,7 @@ export function PassageDetailRecord(props: IProps) {
           </>
         }
         onVersions={
-          hasExistingVersion &&
-          (vernacularVersionCount > 1)
+          hasExistingVersion && vernacularVersionCount > 1
             ? handleVersions
             : undefined
         }
