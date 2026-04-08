@@ -115,7 +115,7 @@ export const uploadFile = (
     };
     xhr.open('PUT', data.audioUrl, true);
     xhr.setRequestHeader('Content-Type', data.contentType);
-    xhr.send(file.slice());
+
     xhr.onload = () => {
       if (xhr.status < 300) {
         cleanup();
@@ -138,6 +138,7 @@ export const uploadFile = (
       cleanup();
       reject({ statusNum: 500, statusText: 'upload aborted' });
     };
+    xhr.send(file.slice());
   });
 };
 
