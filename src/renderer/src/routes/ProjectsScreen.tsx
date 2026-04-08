@@ -109,10 +109,11 @@ export const ProjectsScreenInner: React.FC = () => {
   // duplicate name check for add dialog
   const nameInUse = React.useCallback(
     (newName: string) => {
-      const t = newName.trim();
-      if (t === '') return false;
+      const trimmedName = newName.trim();
+      if (trimmedName === '') return false;
       const compare = (p: any) =>
-        (p?.attributes?.name || '').trim().toLowerCase() === t.toLowerCase();
+        (p?.attributes?.name || '').trim().toLowerCase() ===
+        trimmedName.toLowerCase();
       return projects.some(compare);
     },
     [projects]
