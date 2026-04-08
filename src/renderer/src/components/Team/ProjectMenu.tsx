@@ -61,7 +61,7 @@ export function ProjectMenu(props: IProps) {
   const offlineProjectRead = useOfflnProjRead();
   const [projType, setProjType] = useState('');
   const t: ICardsStrings = useSelector(cardsSelector, shallowEqual);
-  const { isMobileWidth } = useMobile();
+  const { isMobile } = useMobile();
   const tpb: IProjButtonsStrings = useSelector(
     projButtonsSelector,
     shallowEqual
@@ -108,18 +108,15 @@ export function ProjectMenu(props: IProps) {
         open={Boolean(anchorEl)}
         onClose={handle('Close')}
       >
-        {!isMobileWidth &&
-          !inProject &&
-          isAdmin &&
-          (!isOffline || offlineOnly) && (
-            <StyledMenuItem id="projMenuSettings" onClick={handle('settings')}>
-              <ListItemIcon>
-                <SettingsIcon />
-              </ListItemIcon>
-              <ListItemText primary={t.settings} />
-            </StyledMenuItem>
-          )}
-        {!isMobileWidth && !inProject && isAdmin && !isOffline && (
+        {!isMobile && !inProject && isAdmin && (!isOffline || offlineOnly) && (
+          <StyledMenuItem id="projMenuSettings" onClick={handle('settings')}>
+            <ListItemIcon>
+              <SettingsIcon />
+            </ListItemIcon>
+            <ListItemText primary={t.settings} />
+          </StyledMenuItem>
+        )}
+        {!isMobile && !inProject && isAdmin && !isOffline && (
           <StyledMenuItem id="projMenuCopy" onClick={handle('copyproject')}>
             <ListItemIcon>
               <ContentCopyIcon />
@@ -148,7 +145,7 @@ export function ProjectMenu(props: IProps) {
           </StyledMenuItem>
         )} */}
         {!justFilter &&
-          !isMobileWidth &&
+          !isMobile &&
           pathname &&
           projType.toLowerCase() === 'scripture' &&
           pathname.indexOf(ArtifactTypeSlug.Retell) === -1 &&
@@ -160,20 +157,17 @@ export function ProjectMenu(props: IProps) {
               <ListItemText primary={addPt(tpb.integrations)} />
             </StyledMenuItem>
           )}
-        {!isMobileWidth &&
-          !inProject &&
-          (!isOffline || offlineOnly) &&
-          isAdmin && (
-            <StyledMenuItem id="projMenuCat" onClick={handle('category')}>
-              <ListItemIcon>
-                <EditIcon />
-              </ListItemIcon>
-              <ListItemText
-                primary={!isPersonal ? t.editCategory : t.editPersonalCategory}
-              />
-            </StyledMenuItem>
-          )}
-        {!isMobileWidth && !justFilter && isAdmin && !inProject && (
+        {!isMobile && !inProject && (!isOffline || offlineOnly) && isAdmin && (
+          <StyledMenuItem id="projMenuCat" onClick={handle('category')}>
+            <ListItemIcon>
+              <EditIcon />
+            </ListItemIcon>
+            <ListItemText
+              primary={!isPersonal ? t.editCategory : t.editPersonalCategory}
+            />
+          </StyledMenuItem>
+        )}
+        {!isMobile && !justFilter && isAdmin && !inProject && (
           <StyledMenuItem id="projMenuImp" onClick={handle('import')}>
             <ListItemIcon>
               <ImportIcon />
@@ -199,7 +193,7 @@ export function ProjectMenu(props: IProps) {
         ) : (
           (!isOffline || offlineOnly) &&
           isAdmin &&
-          !isMobileWidth && (
+          !isMobile && (
             <StyledMenuItem id="projMenuDel" onClick={handle('delete')}>
               <ListItemIcon>
                 <DeleteIcon />

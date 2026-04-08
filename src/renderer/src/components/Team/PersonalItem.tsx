@@ -21,6 +21,7 @@ export const PersonalItem = () => {
   const t = cardStrings;
   const [offlineOnly] = useGlobal('offlineOnly'); //will be constant here
   const [isOffline] = useGlobal('offline'); //verified this is not used in a function 2/18/25
+  const [connected] = useGlobal('connected');
   const [busy] = useGlobal('remoteBusy'); //verified this is not used in a function 2/18/25
   const orgs = useOrbitData<OrganizationD[]>('organization');
   const getGlobal = useGetGlobal();
@@ -36,7 +37,6 @@ export const PersonalItem = () => {
 
   const team = React.useMemo(
     () => orgs.find((o) => o.id === personalTeam),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [personalTeam, orgs]
   );
 
@@ -76,8 +76,8 @@ export const PersonalItem = () => {
   const handleEditWorkflow = () => {
     setShowWorkflow(true);
   };
-  const canModify = (offline: boolean, offlineOnly: boolean) =>
-    !offline || offlineOnly;
+  const canModify = (offline: boolean, offlineOnly: boolean, online: boolean) =>
+    (!offline && online) || offlineOnly;
 
   return (
     <TeamPaper id="PersonalItem">
@@ -94,17 +94,17 @@ export const PersonalItem = () => {
             sx={{ display: 'flex', justifyContent: 'flex-end' }}
           >
             {personalProjects.length > 1 &&
-              canModify(isOffline, offlineOnly) && (
+              canModify(isOffline, offlineOnly, connected) && (
                 <IconButton onClick={() => setSortVisible(true)}>
                   <SortIcon />
                 </IconButton>
               )}
-            {canModify(isOffline, offlineOnly) && (
+            {canModify(isOffline, offlineOnly, connected) && (
               <AltButton id="editWorkflow" onClick={handleEditWorkflow}>
                 {t.editWorkflow.replace('{0}', '')}
               </AltButton>
             )}
-            {canModify(isOffline, offlineOnly) && (
+            {canModify(isOffline, offlineOnly, connected) && (
               <AltButton
                 id="teamSettings"
                 onClick={handleSettings}

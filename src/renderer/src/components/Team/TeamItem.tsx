@@ -28,6 +28,7 @@ export const TeamItem = (props: IProps) => {
   const { team } = props;
   const [offline] = useGlobal('offline'); //verified this is not used in a function 2/18/25
   const [offlineOnly] = useGlobal('offlineOnly'); //will be constant here
+  const [connected] = useGlobal('connected');
   const [, setOrganization] = useGlobal('organization');
   const [busy] = useGlobal('remoteBusy'); //verified this is not used in a function 2/18/25
   const [editOpen, setEditOpen] = useState(false);
@@ -93,8 +94,8 @@ export const TeamItem = (props: IProps) => {
   };
 
   const canModify = useMemo(() => {
-    return (!offline && isAdmin(team)) || offlineOnly;
-  }, [offline, team, offlineOnly, isAdmin]);
+    return (!offline && connected && isAdmin(team)) || offlineOnly;
+  }, [offline, team, offlineOnly, isAdmin, connected]);
 
   return (
     <TeamPaper id="TeamItem">

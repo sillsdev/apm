@@ -2,13 +2,7 @@ import { useContext, useEffect, useMemo, useState } from 'react';
 import { LocalKey, localUserKey } from '../../utils/localUserKey';
 import { useMobile } from '../../utils';
 import { useGlobal } from '../../context/useGlobal';
-import {
-  IconButton,
-  Menu,
-  MenuItem,
-  Stack,
-  Typography,
-} from '@mui/material';
+import { IconButton, Menu, MenuItem, Stack, Typography } from '@mui/material';
 import SettingsIcon from '@mui/icons-material/Settings';
 import UsersIcon from '@mui/icons-material/People';
 import { API_CONFIG } from '../../../api-variable';
@@ -44,7 +38,7 @@ export const OrgHead = () => {
   );
   const [sortVisible, setSortVisible] = useState(false);
   const [workflowVisible, setWorkflowVisible] = useState(false);
-  const { isMobileWidth } = useMobile();
+  const { isMobile } = useMobile();
   const commitTeamSettings = useCommitTeamSettings();
   const { pathname } = useLocation();
   const isTeamScreen = pathname.includes('/team');
@@ -56,6 +50,7 @@ export const OrgHead = () => {
   const [project] = useGlobal('project');
   const [offlineOnly] = useGlobal('offlineOnly');
   const [isOffline] = useGlobal('offline');
+  const [connected] = useGlobal('connected');
   const [width, setWidth] = useState(window.innerWidth);
 
   // keep track of screen width
@@ -73,12 +68,10 @@ export const OrgHead = () => {
     return () => {
       window.removeEventListener('resize', handleResize);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); //do this once to get the default;
 
   const orgId = useMemo(
     () => localStorage.getItem(localUserKey(LocalKey.team)),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [user]
   );
 
@@ -107,8 +100,8 @@ export const OrgHead = () => {
   }, [orgId, teamProjects]);
 
   const canModify = useMemo(() => {
-    return (!isOffline && isAdmin) || offlineOnly;
-  }, [isAdmin, isOffline, offlineOnly]);
+    return (!isOffline && connected && isAdmin) || offlineOnly;
+  }, [isAdmin, isOffline, offlineOnly, connected]);
 
   const showSort = hasMoreThanOneProject && canModify;
 
@@ -179,9 +172,7 @@ export const OrgHead = () => {
           overflow: 'hidden',
           textOverflow: 'ellipsis',
           whiteSpace: 'nowrap',
-          maxWidth: isMobileWidth
-            ? width - MOBILE_HEADER_COMPONENTS_WIDTH
-            : '800px',
+          maxWidth: isMobile ? width - MOBILE_HEADER_COMPONENTS_WIDTH : '800px',
           alignItems: 'center',
           display: 'flex',
           mx: 1,
@@ -195,7 +186,7 @@ export const OrgHead = () => {
       </Typography>
       {isTeamScreen && (
         <>
-          {isAdmin && (!isMobileWidth || showSort) && (
+          {isAdmin && (!isMobile || showSort) && (
             <>
               <IconButton
                 onClick={handleSettingsMenuOpen}
@@ -208,12 +199,12 @@ export const OrgHead = () => {
                 open={Boolean(settingsMenuEl)}
                 onClose={handleSettingsMenuClose}
               >
-                {!isMobileWidth && (
+                {!isMobile && (
                   <MenuItem onClick={handleSettings}>
                     {cardStrings?.teamSettings || 'Team Settings'}
                   </MenuItem>
                 )}
-                {!isMobileWidth && canModify && (
+                {!isMobile && canModify && (
                   <MenuItem onClick={handleWorkflow}>
                     {cardStrings?.editWorkflow?.replace('{0}', '') ||
                       'Edit Workflow'}
@@ -258,7 +249,7 @@ export const OrgHead = () => {
         )}
         isOpen={openMember}
         onOpen={setOpenMember}
-        bp={isMobileWidth ? BigDialogBp.mobile : BigDialogBp.md}
+        bp={isMobile ? BigDialogBp.mobile : BigDialogBp.md}
       >
         <GroupTabs />
       </BigDialog>
@@ -277,7 +268,7 @@ export const OrgHead = () => {
           }
           isOpen={workflowVisible}
           onOpen={setWorkflowVisible}
-          bp={isMobileWidth ? BigDialogBp.mobile : BigDialogBp.md}
+          bp={isMobile ? BigDialogBp.mobile : BigDialogBp.md}
         >
           <StepEditor
             process={defaultWorkflow}
@@ -290,7 +281,7 @@ export const OrgHead = () => {
           title={cardStrings?.sortProjects}
           isOpen={sortVisible}
           onOpen={setSortVisible}
-          bp={isMobileWidth ? BigDialogBp.mobile : BigDialogBp.md}
+          bp={isMobile ? BigDialogBp.mobile : BigDialogBp.md}
         >
           <ProjectSort teamId={orgId} onClose={() => setSortVisible(false)} />
         </BigDialog>
