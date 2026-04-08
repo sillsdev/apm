@@ -532,7 +532,7 @@ const multipartUpload = async (
       const batch = parts.slice(idx, idx + MAX_CONCURRENT_PARTS);
       const results = await Promise.all(
         batch.map((p, i) =>
-          uploadPart(filename, uploadId, file, idx + 1 + i, p, token)
+          uploadPart(uploadedFilename, uploadId, file, idx + 1 + i, p, token)
         )
       );
       uploaded.push(...results);
