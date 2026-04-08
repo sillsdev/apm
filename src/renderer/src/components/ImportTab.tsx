@@ -629,6 +629,8 @@ export function ImportTab(props: IProps) {
         return t.invalidITF + ' ' + err.errMsg;
       case 450:
         return t.invalidProject;
+      case 413:
+        return t.fileTooLarge.replace('{0}', err.errMsg);
     }
     return t.unknownError + ' ' + err.errMsg;
   };

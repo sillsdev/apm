@@ -73,15 +73,16 @@ import { MainAPI } from '@model/main-api';
 const ipc = window?.api as MainAPI;
 
 const MULTIPART_THRESHOLD = 100 * 1024 * 1024; // 100 MB
-const MAX_FILE_SIZE = 5 * 1024 * 1024 * 1024; // 5 GB
-const PART_SIZE = 10 * 1024 * 1024; // 10 MB
+const MAX_FILE_SIZE = 50 * 1024 * 1024 * 1024; // 50 GB
+const PART_SIZE = 64 * 1024 * 1024; // 64 MB
 const MAX_CONCURRENT_PARTS = 4;
+const MAX_TOTAL_PARTS = 10000; //s3 limit
 
 interface MultipartInitiateResponse {
   uploadId: string;
   key: string;
-  message: string;
-  parts: { partNumber: number; url: string }[];
+  filename: string;
+  parts: string[];
 }
 
 interface UploadedPart {
@@ -382,8 +383,21 @@ const singlePutUpload = (
     xhr.send(file.slice());
   });
 };
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-const uploadPart = (
+const isRetryableStatus = (status: number) =>
+  status === 0 || status >= 500 || status === 429;
+const isExpiredUrlError = (err: unknown) => {
+  const msg = err instanceof Error ? err.message.toLowerCase() : '';
+  return (
+    msg.includes('expired') ||
+    msg.includes('signature') ||
+    msg.includes('authorization') ||
+    msg.includes('forbidden') ||
+    msg.includes('403')
+  );
+};
+const tryUploadPart = (
   file: Blob,
   partNumber: number,
   url: string
@@ -410,6 +424,64 @@ const uploadPart = (
     };
   });
 };
+const getPartUrl = async (
+  filename: string,
+  partNumber: number,
+  uploadId: string,
+  token: string | null
+): Promise<string> => {
+  const response = await Axios.post(
+    `${API_CONFIG.host}/api/s3Files/multipart/part`,
+    {
+      uploadId: uploadId,
+      filename: filename,
+      folder: 'imports',
+      partNumber: partNumber,
+    },
+    { headers: { Authorization: 'Bearer ' + token } }
+  );
+  return response.data.url;
+};
+
+const uploadPart = async (
+  filename: string,
+  uploadId: string,
+  file: Blob,
+  partNumber: number,
+  url: string,
+  token: string | null,
+  maxAttempts = 5
+): Promise<UploadedPart> => {
+  let lastError: unknown;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      return await tryUploadPart(file, partNumber, url);
+    } catch (err: any) {
+      lastError = err;
+
+      const message = err instanceof Error ? err.message : String(err);
+      const statusMatch = message.match(/:\s*(\d{3})$/);
+      const status = statusMatch ? Number(statusMatch[1]) : NaN;
+
+      if (isExpiredUrlError(err)) {
+        url = await getPartUrl(filename, partNumber, uploadId, token);
+      } else if (!Number.isNaN(status) && !isRetryableStatus(status)) {
+        throw err;
+      }
+
+      if (attempt === maxAttempts) {
+        throw lastError;
+      }
+
+      const baseDelay = 250;
+      const delay = baseDelay * 2 ** (attempt - 1) + Math.random() * baseDelay;
+      await sleep(delay);
+    }
+  }
+
+  throw lastError;
+};
 const singlepartUpload = async (
   file: Blob,
   filename: string,
@@ -422,19 +494,26 @@ const singlepartUpload = async (
   await singlePutUpload(file, response.data.fileURL, response.data.contentType);
   return response.data.message; //filename
 };
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+
 const multipartUpload = async (
   file: Blob,
   filename: string,
   token: string | null
 ): Promise<string> => {
   const totalParts = Math.ceil(file.size / PART_SIZE);
+  if (totalParts > MAX_TOTAL_PARTS) {
+    //this is 640GB which we will never reach
+    throw new Error(
+      `File exceeds maximum size of ${(MAX_TOTAL_PARTS * PART_SIZE) / (1024 * 1024 * 1024)} GB`
+    );
+  }
   const authHeaders = { Authorization: 'Bearer ' + token };
 
   const initResponse = await Axios.post(
-    `${API_CONFIG.host}/api/offlineData/project/import/multipart/initiate`,
+    `${API_CONFIG.host}/api/s3Files/multipart/initiate`,
     {
       filename,
+      folder: 'imports',
       contentType: (file as File).type || 'application/octet-stream',
       parts: totalParts,
     },
@@ -443,33 +522,37 @@ const multipartUpload = async (
   const {
     uploadId,
     key,
-    message: uploadedFilename,
+    filename: uploadedFilename,
     parts,
   } = initResponse.data as MultipartInitiateResponse;
-
   try {
     const uploaded: UploadedPart[] = [];
     let idx = 0;
     while (idx < parts.length) {
       const batch = parts.slice(idx, idx + MAX_CONCURRENT_PARTS);
       const results = await Promise.all(
-        batch.map((p) => uploadPart(file, p.partNumber, p.url))
+        batch.map((p, i) =>
+          uploadPart(uploadedFilename, uploadId, file, idx + 1 + i, p, token)
+        )
       );
       uploaded.push(...results);
       idx += MAX_CONCURRENT_PARTS;
     }
 
     await Axios.post(
-      `${API_CONFIG.host}/api/offlineData/project/import/multipart/complete`,
-      { uploadId, key, parts: uploaded },
+      `${API_CONFIG.host}/api/s3Files/multipart/complete`,
+      {
+        uploadId,
+        key,
+        parts: uploaded.sort((a, b) => a.partNumber - b.partNumber),
+      },
       { headers: authHeaders }
     );
-
     return uploadedFilename;
   } catch (err) {
     try {
       await Axios.post(
-        `${API_CONFIG.host}/api/offlineData/project/import/multipart/abort`,
+        `${API_CONFIG.host}/api/s3Files/multipart/abort`,
         { uploadId, key },
         { headers: authHeaders }
       );
@@ -494,24 +577,20 @@ const processImportFile = async ({
   suppressSuccessDispatch = false,
 }: ProcessImportFileParams): Promise<ProcessImportFileResult> => {
   if (file.size > MAX_FILE_SIZE) {
-    const err = new Error(
-      `File exceeds maximum size of ${MAX_FILE_SIZE / (1024 * 1024 * 1024)} GB`
-    );
+    const err = new Error(`${MAX_FILE_SIZE / (1024 * 1024 * 1024)} GB`);
     logError(Severity.error, errorReporter, err.message);
     dispatch({
-      payload: errorStatus(-1, err.message),
+      payload: errorStatus(413, err.message),
       type: IMPORT_ERROR,
     });
-    throw err;
+    return {};
   }
 
   let uploadedFilename: string;
 
   try {
-    /* TODO: multipart upload is not working yet */
     if (file.size >= MULTIPART_THRESHOLD) {
-      //uploadedFilename = await multipartUpload(file, filename, token);
-      uploadedFilename = await singlepartUpload(file, filename, token);
+      uploadedFilename = await multipartUpload(file, filename, token);
     } else {
       uploadedFilename = await singlepartUpload(file, filename, token);
     }

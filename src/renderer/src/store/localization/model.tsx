@@ -631,6 +631,7 @@ export interface IImportStrings extends Localize.LocalizedStringsMethods {
     "timezone": string;
     "transcription": string;
     "unassigned": string;
+    "fileTooLarge": string;
     "unknownError": string;
     "username": string;
 };

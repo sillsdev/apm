@@ -669,7 +669,8 @@ const initialState = {
 			"timezone": "Time zone",
 			"transcription": "Transcription",
 			"unassigned": "unassigned",
-			"unknownError": "If this error occurred while importing offline changes, please close the app immediately and reopen.  If the error persists, contact support.  If you continue to use the app, you will lose offline changes.",
+			"fileTooLarge": "File exceeds maximum size of {0}",
+			"unknownError": "If this error occurred while syncing offline changes, please close the app immediately and reopen.  If the error persists, contact support.  If you continue to use the app, you will lose offline changes.",
 			"username": "Name",
 		}
 	}),
