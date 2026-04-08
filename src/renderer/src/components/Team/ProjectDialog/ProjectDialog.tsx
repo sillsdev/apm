@@ -76,7 +76,7 @@ export function ProjectDialog(props: IProps) {
       addingRef.current = true;
 
       if (onOpen) onOpen(false);
-      onCommit(state);
+      onCommit({ ...state, name: state.name.trim() });
     }
   };
 
@@ -186,8 +186,8 @@ export function ProjectDialog(props: IProps) {
         primaryLabel={mode === Mode.add ? t.add : t.save}
         primaryOnClick={handleAdd}
         primaryDisabled={
-          (nameInUse && nameInUse(name)) ||
-          name === '' ||
+          (nameInUse && nameInUse(name.trim())) ||
+          !name.trim() ||
           bcp47 === 'und' ||
           type === '' ||
           (mode !== Mode.add && shallowEqual(state, originalState))

@@ -125,7 +125,10 @@ export const AddCard = (props: IProps) => {
 
   const nameInUse = (newName: string) => {
     const projects = team ? teamProjects(team.id) : personalProjects;
-    const sameNameRec = projects.filter((p) => p?.attributes?.name === newName);
+    const trimmed = newName.trim();
+    const sameNameRec = projects.filter(
+      (p) => (p?.attributes?.name ?? '').trim() === trimmed
+    );
     return sameNameRec.length > 0;
   };
 
