@@ -7,8 +7,8 @@ import MobileStepComplete from './MobileStepComplete';
 import { usePassageNavigate } from '../usePassageNavigate';
 import { useGlobal } from '../../../context/useGlobal';
 import { rememberCurrentPassage } from '../../../utils';
-import { nextPasId, nextPassageRecord } from '../../../crud/nextPasId';
-import { prevPasId, prevPassageRecord } from '../../../crud/prevPasId';
+import { nextPassageRecord } from '../../../crud/nextPasId';
+import { prevPassageRecord } from '../../../crud/prevPasId';
 import { useParams } from 'react-router-dom';
 import { shallowEqual, useSelector } from 'react-redux';
 import { mobileSelector } from '../../../selector';
@@ -57,9 +57,6 @@ export default function PassageDetailMobileFooter() {
   const isStepProgression =
     getOrgDefault(orgDefaultWorkflowProgression) === 'step';
 
-  const nextId = nextPasId(section, passage.id, memory);
-  const prevId = prevPasId(section, passage.id, memory);
-
   const sortedSteps = useMemo(
     () =>
       [...orgWorkflowSteps].sort(
@@ -76,15 +73,19 @@ export default function PassageDetailMobileFooter() {
   const prevStepRec: OrgWorkflowStepD | undefined =
     stepIndex > 0 ? sortedSteps[stepIndex - 1] : undefined;
 
-  const nextPassRec = nextPassageRecord(section, passage.id, memory);
-  const prevPassRec = prevPassageRecord(section, passage.id, memory);
+  const nextPassRec = isStepProgression
+    ? undefined
+    : nextPassageRecord(section, passage.id, memory);
+  const prevPassRec = isStepProgression
+    ? undefined
+    : prevPassageRecord(section, passage.id, memory);
 
   const prevNavEnabled = isStepProgression
     ? Boolean(prevStepRec)
-    : Boolean(prevId);
+    : Boolean(prevPassRec);
   const nextNavEnabled = isStepProgression
     ? Boolean(nextStepRec)
-    : Boolean(nextId);
+    : Boolean(nextPassRec);
 
   const prevLabelFull = isStepProgression
     ? prevStepRec
@@ -111,7 +112,9 @@ export default function PassageDetailMobileFooter() {
       if (stepRec) setCurrentStep(stepRec.id);
       return;
     }
-    const targetId = forward ? nextId : prevId;
+    const targetId = forward
+      ? nextPassRec?.keys?.remoteId
+      : prevPassRec?.keys?.remoteId;
     if (targetId && targetId !== passage?.keys?.remoteId) {
       rememberCurrentPassage(memory, targetId);
       passageNavigate(`/detail/${prjId}/${targetId}`);
