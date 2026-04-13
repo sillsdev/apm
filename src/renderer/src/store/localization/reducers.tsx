@@ -896,7 +896,7 @@ const initialState = {
 	"mediaActions": new LocalizedStrings({
 		"en": {
 			"attach": "Associate",
-			"delete": "Delete",
+			"delete": "Discard",
 			"detach": "Disassociate",
 			"download": "Download",
 			"drag": "Drag to reorder",
@@ -1584,7 +1584,7 @@ const initialState = {
 			"uploadMediaSingular": "Upload Audio",
 			"upload": "Upload",
 			"resetRecording": "Reset Recording",
-			"discardRecording": "Would you like to discard this recording or save it?",
+			"discardRecording": "Would you like to discard this recording?",
 			"useThisVersion": "Use This Version",
 			"uploadRights": "Upload Rights File",
 			"uploadSuccess": "Upload Successful",

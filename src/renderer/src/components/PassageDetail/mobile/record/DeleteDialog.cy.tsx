@@ -33,9 +33,6 @@ describe('DeleteDialog', () => {
           <DeleteDialog
             handleCancel={cy.stub().as('handleCancel')}
             handleDelete={cy.stub().as('handleDelete')}
-            handleSave={cy.stub().as('handleSave')}
-            isSaveDisabled={false}
-            {...props}
           />
         </ThemeProvider>
       </Provider>
@@ -69,32 +66,4 @@ describe('DeleteDialog', () => {
     cy.get('[data-cy="delete-dialog-delete"]').click();
     cy.get('@handleDelete').should('have.been.calledOnce');
   });
-
-  it('calls handleSave when save is clicked (enabled)', () => {
-    mountDialog({ isSaveDisabled: false });
-
-    cy.get('[data-cy="delete-dialog-save"]').click();
-    cy.get('@handleSave').should('have.been.calledOnce');
-  });
-
-  it('disables save when isSaveDisabled is true', () => {
-    mountDialog({ isSaveDisabled: true });
-
-    cy.get('[data-cy="delete-dialog-save"]').should('be.disabled');
-    cy.get('[data-cy="delete-dialog-save"]').click({ force: true });
-    cy.get('@handleSave').should('not.have.been.called');
-  });
-
-  it('hides save when showSaveButton is false', () => {
-    mountDialog({ showSaveButton: false });
-
-    cy.get('[data-cy="delete-dialog-save"]').should('not.exist');
-  });
-
-  it('hides save when handleSave is undefined', () => {
-    mountDialog({ handleSave: undefined });
-
-    cy.get('[data-cy="delete-dialog-save"]').should('not.exist');
-  });
 });
-

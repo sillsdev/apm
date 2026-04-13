@@ -294,7 +294,7 @@ export function useWaveSurfer(
       if (positionRef.current !== undefined && positionRef.current >= 0) {
         wsGoto(positionRef.current);
       } else {
-        wsGoto(0);
+        wsGoto(durationRef.current); //this has to be at the end for recording
       }
 
       loadingRef.current = false;
@@ -467,7 +467,6 @@ export function useWaveSurfer(
       return;
     }
     try {
-      pushProgressImmediate(0);
       loadingRef.current = true;
       blobAudioRef.current = await audioContext().decodeAudioData(
         await blob.arrayBuffer()
@@ -686,9 +685,9 @@ export function useWaveSurfer(
           start_offset + newBuffer.length
         );
     }
+
     const position = (start_offset + newBuffer.length) / newBuffer.sampleRate;
     await loadDecoded(uberSegment, position);
-
     return position;
   };
 

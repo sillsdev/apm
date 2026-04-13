@@ -1020,13 +1020,12 @@ function WSAudioPlayer(props: IProps) {
 
   async function onRecordStop(blob: Blob) {
     recordingStartPendingRef.current = false;
-    const newPos = await wsInsertAudio(
+    await wsInsertAudio(
       blob,
       undefined,
       recordStartPosition.current,
       recordOverwritePosition.current
     );
-    initialPosRef.current = newPos;
     recordOverwritePosition.current = undefined;
     setProcessingRecording(false);
     void handleChanged();
@@ -1053,7 +1052,6 @@ function WSAudioPlayer(props: IProps) {
         recordOverwritePosition.current
       );
       if (insertingRef.current) recordOverwritePosition.current = newPos;
-      initialPosRef.current = newPos;
     }
   }
 
@@ -1140,7 +1138,7 @@ function WSAudioPlayer(props: IProps) {
     onBlobReady && onBlobReady(undefined);
     setBlobReady && setBlobReady(false);
     oneShotUsed && setOneShotUsed(false);
-    setReady(false);
+    setReady(true);
   }, [
     wsClear,
     setChanged,
@@ -1231,9 +1229,8 @@ function WSAudioPlayer(props: IProps) {
     setBusy && setBusy(inprogress);
     setBlobReady && setBlobReady(!inprogress);
   };
+  const showLoadingWaveform = !ready && !recording && !waitingForAI;
 
-  const showLoadingWaveform =
-    Boolean(blob) && !ready && !recording && !waitingForAI;
   const showAiProgressOverlay = waitingForAI;
 
   const waveformNode = (
@@ -1471,55 +1468,49 @@ function WSAudioPlayer(props: IProps) {
 
   const renderMoreMenuItems = () =>
     [
-      allowZoom &&
-        !hideZoom && (
-          <MenuItem
-            key="zoom-control"
-            onClick={(e) => {
-              const target = e.target as HTMLElement;
-              if (
-                target.closest?.('[id="wsZoomIn"], [id="wsZoomOut"]')
-              ) {
-                return;
-              }
-              handleMoreMenuClose();
-            }}
+      allowZoom && !hideZoom && (
+        <MenuItem
+          key="zoom-control"
+          onClick={(e) => {
+            const target = e.target as HTMLElement;
+            if (target.closest?.('[id="wsZoomIn"], [id="wsZoomOut"]')) {
+              return;
+            }
+            handleMoreMenuClose();
+          }}
+        >
+          <WSAudioPlayerZoom
+            ready={ready && !recording && !waitingForAI}
+            fillPx={recording ? 100 : wsFillPx()}
+            curPx={pxPerSec}
+            onZoom={wsZoom}
+          />
+        </MenuItem>
+      ),
+      allowRecord === true && allowNoNoise && features?.noNoise && !offline && (
+        <MenuItem
+          key="noise-removal"
+          id="noiseRemoval"
+          onClick={() => {
+            handleNoiseRemoval();
+            handleMoreMenuClose();
+          }}
+          disabled={isControlDisabled}
+        >
+          <Stack
+            direction="row"
+            alignItems="center"
+            spacing={1}
+            sx={{ py: 0.25 }}
           >
-            <WSAudioPlayerZoom
-              ready={ready && !recording && !waitingForAI}
-              fillPx={recording ? 100 : wsFillPx()}
-              curPx={pxPerSec}
-              onZoom={wsZoom}
+            <NoChickenIcon
+              sx={{ width: '14pt', height: '14pt', flexShrink: 0 }}
+              disabled={isControlDisabled}
             />
-          </MenuItem>
-        ),
-      allowRecord === true &&
-        allowNoNoise &&
-        features?.noNoise &&
-        !offline && (
-          <MenuItem
-            key="noise-removal"
-            id="noiseRemoval"
-            onClick={() => {
-              handleNoiseRemoval();
-              handleMoreMenuClose();
-            }}
-            disabled={isControlDisabled}
-          >
-            <Stack
-              direction="row"
-              alignItems="center"
-              spacing={1}
-              sx={{ py: 0.25 }}
-            >
-              <NoChickenIcon
-                sx={{ width: '14pt', height: '14pt', flexShrink: 0 }}
-                disabled={isControlDisabled}
-              />
-              <Typography variant="body2">{t.reduceNoiseAi}</Typography>
-            </Stack>
-          </MenuItem>
-        ),
+            <Typography variant="body2">{t.reduceNoiseAi}</Typography>
+          </Stack>
+        </MenuItem>
+      ),
       allowRecord === true &&
         features?.deltaVoice &&
         allowDeltaVoice !== false &&
@@ -1576,52 +1567,47 @@ function WSAudioPlayer(props: IProps) {
             </Stack>
           </MenuItem>
         ),
-      allowRecord === true &&
-        features?.normalize &&
-        isElectron && (
-          <MenuItem
-            key="normalize"
-            id="normalize"
-            onClick={() => {
-              handleNormal();
-              handleMoreMenuClose();
-            }}
-            disabled={isControlDisabled}
-          >
-            <Stack direction="row" alignItems="center" spacing={1}>
-              <NormalizeIcon
-                width="18pt"
-                height="18pt"
-                disabled={isControlDisabled}
-              />
-              <Typography variant="body2">{t.normalize}</Typography>
-            </Stack>
-          </MenuItem>
-        ),
-      allowRecord === true &&
-        !keepItSmall && (
-          <MenuItem
-            key="microphone-control"
-            id="wsAudioMic"
-            onClick={(e) => {
-              handleMicMenuOpen(e);
-              handleMoreMenuClose();
-            }}
-          >
-            <Stack direction="row" alignItems="center" spacing={1}>
-              <MicIcon
-                sx={{
-                  flexShrink: 0,
-                  color:
-                    audioInputDevices.length === 0
-                      ? 'text.disabled'
-                      : 'inherit',
-                }}
-              />
-              <Typography variant="body2">{t.selectMicrophoneMenu}</Typography>
-            </Stack>
-          </MenuItem>
-        ),
+      allowRecord === true && features?.normalize && isElectron && (
+        <MenuItem
+          key="normalize"
+          id="normalize"
+          onClick={() => {
+            handleNormal();
+            handleMoreMenuClose();
+          }}
+          disabled={isControlDisabled}
+        >
+          <Stack direction="row" alignItems="center" spacing={1}>
+            <NormalizeIcon
+              width="18pt"
+              height="18pt"
+              disabled={isControlDisabled}
+            />
+            <Typography variant="body2">{t.normalize}</Typography>
+          </Stack>
+        </MenuItem>
+      ),
+      allowRecord === true && !keepItSmall && (
+        <MenuItem
+          key="microphone-control"
+          id="wsAudioMic"
+          onClick={(e) => {
+            handleMicMenuOpen(e);
+            handleMoreMenuClose();
+          }}
+        >
+          <Stack direction="row" alignItems="center" spacing={1}>
+            <MicIcon
+              sx={{
+                flexShrink: 0,
+                color:
+                  audioInputDevices.length === 0 ? 'text.disabled' : 'inherit',
+              }}
+            />
+            <Typography variant="body2">{t.selectMicrophoneMenu}</Typography>
+          </Stack>
+        </MenuItem>
+      ),
     ].filter(Boolean);
 
   const onSplit = () => {};
@@ -1720,10 +1706,7 @@ function WSAudioPlayer(props: IProps) {
         {showDeleteMobile && (
           <DeleteDialog
             handleDelete={handleDeleteMobile}
-            handleSave={handleSave}
             handleCancel={() => setShowDeleteMobile(false)}
-            isSaveDisabled={isSaveDisabled ?? false}
-            showSaveButton={showWaveformSaveButton}
           />
         )}
       </>
@@ -1944,10 +1927,7 @@ function WSAudioPlayer(props: IProps) {
         {showDeleteMobile && (
           <DeleteDialog
             handleDelete={handleDeleteMobile}
-            handleSave={handleSave}
             handleCancel={() => setShowDeleteMobile(false)}
-            isSaveDisabled={isSaveDisabled ?? false}
-            showSaveButton={showWaveformSaveButton}
           />
         )}
         {voiceDialogNode}
