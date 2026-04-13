@@ -58,11 +58,16 @@ const mockStepCompleteStrings = new LocalizedStrings({
   },
 });
 
+const mockWorkflowStepsStrings = new LocalizedStrings({
+  en: { configure: 'Configure' },
+});
+
 const mockStringsReducer = () => ({
   loaded: true,
   lang: 'en',
   mobile: mockMobileStrings,
   passageDetailStepComplete: mockStepCompleteStrings,
+  workflowSteps: mockWorkflowStepsStrings,
 });
 
 const mockStore = createStore(
