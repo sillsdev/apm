@@ -5100,7 +5100,7 @@
             </context-group>
          </trans-unit>
          <trans-unit id="mediaActions.delete">
-            <source>Delete</source>
+            <source>Discard</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">MediaActions.tsx</context>
@@ -8967,7 +8967,7 @@
           </context-group>
         </trans-unit>
         <trans-unit id="shared.discardRecording">
-          <source>Would you like to discard this recording or save it?</source>
+          <source>Would you like to discard this recording?</source>
           <target/>
           <context-group>
               <context context-type="sourcefile">PlanSheet.tsx</context>

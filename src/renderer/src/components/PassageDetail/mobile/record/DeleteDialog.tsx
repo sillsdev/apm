@@ -1,5 +1,4 @@
 import { Button, Dialog, Stack, Typography } from '@mui/material';
-import { PriButton } from '../../../../control';
 import {
   IMediaActionsStrings,
   ISharedStrings,
@@ -13,14 +12,9 @@ import {
 interface IProps {
   handleCancel: () => void;
   handleDelete: () => void;
-  handleSave: (() => void) | undefined;
-  isSaveDisabled: boolean;
-  /** When false, Save is hidden (nothing to persist). Default true. */
-  showSaveButton?: boolean;
 }
 
 export const DeleteDialog = (props: IProps) => {
-  const showSave = props.showSaveButton ?? true;
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
   const tsm: IMediaActionsStrings = useSelector(
     mediaActionsSelector,
@@ -86,15 +80,6 @@ export const DeleteDialog = (props: IProps) => {
           >
             {tsm.delete}
           </Button>
-          {showSave && props.handleSave != null && (
-            <PriButton
-              onClick={props.handleSave}
-              disabled={props.isSaveDisabled}
-              data-cy="delete-dialog-save"
-            >
-              {ts.save}
-            </PriButton>
-          )}
         </Stack>
       </Stack>
     </Dialog>

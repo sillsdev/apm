@@ -126,25 +126,44 @@ export function useWaveSurfer(
     isPlayingRef.current = isPlaying;
   }, [isPlaying]);
 
-  // Debounce the progress callback to prevent excessive re-renders
-  const debouncedProgressCallback = debounce((value: number) => {
-    onProgress(value);
-  }, 200);
+  const onProgressRef = useRef(onProgress);
+  onProgressRef.current = onProgress;
+
+  // Debounce the progress callback to prevent excessive re-renders. Single instance
+  // across renders so cancel() and unmount cleanup clear pending trailing calls.
+  const debouncedProgressCallback = useMemo(
+    () =>
+      debounce((value: number) => {
+        onProgressRef.current(value);
+      }, 200),
+    []
+  );
 
   const setProgress = (value: number) => {
     progressRef.current = value;
     debouncedProgressCallback(value);
   };
 
-  useEffect(() => {
-    const roundToFiveDecimals = (n: number) => Math.round(n * 100000) / 100000;
+  /** Bypass debounce so labels match the playhead immediately after load/seek. */
+  const pushProgressImmediate = (value: number) => {
+    debouncedProgressCallback.cancel();
+    progressRef.current = value;
+    onProgress(value);
+  };
 
-    if (
-      !loadingRef.current ||
-      (currentTime > 0 && progressRef.current !== currentTime)
-    ) {
-      setProgress(roundToFiveDecimals(currentTime));
-    }
+  const roundTime = (n: number) => Math.round(n * 100000) / 100000;
+
+  useEffect(() => {
+    // Ignore updates while loading (previous clip). Prefer getCurrentTime() over
+    // the hook's currentTime — it can lag setTime() so labels show the end while
+    // the cursor is at the start.
+    if (loadingRef.current) return;
+
+    const ws = wavesurferRef.current;
+    const t =
+      ws != null ? roundTime(ws.getCurrentTime()) : roundTime(currentTime);
+
+    setProgress(t);
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentTime]);
@@ -157,16 +176,19 @@ export function useWaveSurfer(
 
   const wsGoto = async (position: number, keepPlayRegion: boolean = false) => {
     if (!keepPlayRegion) resetPlayingRegion();
+    let pos = position;
     const duration = wsDuration();
-    if (position > duration) position = duration;
-    onRegionGoTo(position);
-    if (position === duration && isPlayingRef.current) {
+    if (pos > duration) pos = duration;
+    if (pos < 0) pos = 0;
+    onRegionGoTo(pos);
+    if (pos === duration && isPlayingRef.current) {
       //if playing, position messages come in after this one that set it back to previously playing position.  Turn this off first in hopes that all messages are done before we set the position...
       wavesurferRef.current?.pause();
     }
-    if (progress() !== position) {
-      wavesurferRef.current?.setTime(position);
+    if (progress() !== pos) {
+      wavesurferRef.current?.setTime(pos);
     }
+    pushProgressImmediate(pos);
   };
 
   const progress = () => progressRef.current;
@@ -272,7 +294,7 @@ export function useWaveSurfer(
       if (positionRef.current !== undefined && positionRef.current >= 0) {
         wsGoto(positionRef.current);
       } else {
-        wsGoto(durationRef.current);
+        wsGoto(durationRef.current); //this has to be at the end for recording
       }
 
       loadingRef.current = false;
@@ -663,9 +685,9 @@ export function useWaveSurfer(
           start_offset + newBuffer.length
         );
     }
+
     const position = (start_offset + newBuffer.length) / newBuffer.sampleRate;
     await loadDecoded(uberSegment, position);
-
     return position;
   };
 
@@ -821,9 +843,7 @@ export function useWaveSurfer(
         start * sampleRate + newBuffer.length
       );
     }
-    const position = (start + newBuffer.length) / sampleRate;
-    // Load the new buffer into Wavesurfer
-    await loadDecoded(combinedBuffer, position);
+    await loadDecoded(combinedBuffer, start);
     return await wsBlob();
   };
 
