@@ -52,10 +52,13 @@ export const ProjectsScreenInner: React.FC = () => {
   const [plan] = useGlobal('plan');
   const [memory] = useGlobal('memory');
   const [home, setHome] = useGlobal('home');
+  const [connected] = useGlobal('connected');
+  const [isOffline] = useGlobal('offline');
+  const [offlineOnly] = useGlobal('offlineOnly');
   const unsavedCtx = React.useContext(UnsavedContext);
   const { startClear, startSave, waitForSave } = unsavedCtx.state;
   const getGlobal = useGetGlobal();
-  const { isMobileWidth } = useMobile();
+  const { isMobile } = useMobile();
 
   const handleSwitchTeams = React.useCallback(() => {
     localStorage.removeItem(LocalKey.plan);
@@ -195,8 +198,12 @@ export const ProjectsScreenInner: React.FC = () => {
   }, [plan, pathname, home]);
 
   const showAddButton = React.useMemo(() => {
-    return thisTeam && isAdmin(thisTeam);
-  }, [thisTeam, isAdmin]);
+    const canAdd =
+      ((!isOffline && connected) || offlineOnly) &&
+      thisTeam &&
+      isAdmin(thisTeam);
+    return Boolean(canAdd);
+  }, [thisTeam, isAdmin, connected, isOffline, offlineOnly]);
 
   // Early return when teamId is missing to prevent errors in derived values
   if (!teamId) {
@@ -208,7 +215,7 @@ export const ProjectsScreenInner: React.FC = () => {
       <AppHead />
       <ProjectsBox
         id="ProjectsScreen"
-        isMobile={isMobileWidth}
+        isMobile={isMobile}
         sx={{
           paddingTop: '80px',
           px: 2,

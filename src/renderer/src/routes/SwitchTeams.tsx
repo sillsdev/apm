@@ -32,7 +32,7 @@ const SettingsButton = ({ label, onOpenSettings }: ISettingsButtonProps) => {
   const theme = useTheme();
   const bgColor = theme.palette.primary.light;
   const contrastColor = theme.palette.getContrastText(bgColor);
-  const { isMobileWidth } = useMobile();
+  const { isMobile } = useMobile();
 
   return (
     <IconButton
@@ -43,7 +43,7 @@ const SettingsButton = ({ label, onOpenSettings }: ISettingsButtonProps) => {
         onOpenSettings();
       }}
       sx={(theme) => ({
-        color: isMobileWidth ? 'inherit' : theme.palette.primary.light,
+        color: isMobile ? 'inherit' : theme.palette.primary.light,
         transition: 'background-color .2s, color .2s',
         '&:hover': {
           color: contrastColor,
@@ -75,7 +75,7 @@ const TeamCard = ({ label, teamId, name, onOpenSettings }: ITeamCardProps) => {
   const ctx = React.useContext(TeamContext);
   const { isAdmin, teams, personalTeam } = ctx.state;
   const teamRec = teams.find((t) => t.id === teamId);
-  const { isMobileWidth: mobileWidth } = useMobile();
+  const { isMobile } = useMobile();
   // For personal team, always show settings button (user owns it)
   // For other teams, show settings button only if user is admin
   const isPersonalTeam = teamId === personalTeam;
@@ -112,7 +112,7 @@ const TeamCard = ({ label, teamId, name, onOpenSettings }: ITeamCardProps) => {
         >
           {name}
         </Typography>
-        {showSettings && !mobileWidth && (
+        {showSettings && !isMobile && (
           <SettingsButton label={label} onOpenSettings={onOpenSettings} />
         )}
       </Box>
