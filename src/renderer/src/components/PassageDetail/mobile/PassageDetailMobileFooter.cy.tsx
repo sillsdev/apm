@@ -18,6 +18,7 @@ import {
 } from '../../../context/UnsavedContext';
 import { PassageD, RoleNames, SectionD } from '../../../model';
 import { LocalKey, localUserKey } from '../../../utils/localUserKey';
+import { orgDefaultWorkflowProgression } from '../../../crud/useOrgDefaults';
 import PassageDetailMobileFooter from './PassageDetailMobileFooter';
 
 type RecordsByType = Record<string, any[]>;
@@ -57,11 +58,16 @@ const mockStepCompleteStrings = new LocalizedStrings({
   },
 });
 
+const mockWorkflowStepsStrings = new LocalizedStrings({
+  en: { configure: 'Configure' },
+});
+
 const mockStringsReducer = () => ({
   loaded: true,
   lang: 'en',
   mobile: mockMobileStrings,
   passageDetailStepComplete: mockStepCompleteStrings,
+  workflowSteps: mockWorkflowStepsStrings,
 });
 
 const mockStore = createStore(
@@ -158,14 +164,44 @@ const mountFooter = ({
   currentPassageId,
   prjId = 'project-1',
   sectionPassages,
+  workflowProgression,
+  passageDetailOverrides,
 }: {
   passages: PassageD[];
   currentPassageId: string;
   prjId?: string;
   sectionPassages?: { type: string; id: string }[];
+  workflowProgression?: 'step';
+  passageDetailOverrides?: Partial<PassageDetailState>;
 }) => {
   const currentPassage = passages.find((p) => p.id === currentPassageId);
   const setCurrentStep = cy.stub().as('setCurrentStep');
+  const defaultParams: Record<string, unknown> = { permissions: true };
+  if (workflowProgression === 'step') {
+    defaultParams[orgDefaultWorkflowProgression] = 'step';
+  }
+  const defaultOrbitStep = {
+    id: 'step-1',
+    type: 'orgworkflowstep',
+    attributes: { tool: '{}' },
+    relationships: {
+      organization: { data: { type: 'organization', id: 'org-1' } },
+    },
+  };
+  const overrideSteps = passageDetailOverrides?.orgWorkflowSteps as
+    | PassageDetailState['orgWorkflowSteps']
+    | undefined;
+  const orgworkflowstep =
+    overrideSteps && overrideSteps.length > 0
+      ? overrideSteps.map((s) => ({
+          ...s,
+          type: 'orgworkflowstep' as const,
+          relationships: {
+            organization: { data: { type: 'organization', id: 'org-1' } },
+            ...(s.relationships ?? {}),
+          },
+        }))
+      : [defaultOrbitStep];
   const recordsByType: RecordsByType = {
     passage: passages,
     organization: [
@@ -173,21 +209,12 @@ const mountFooter = ({
         id: 'org-1',
         type: 'organization',
         attributes: {
-          defaultParams: JSON.stringify({ permissions: true }),
+          defaultParams: JSON.stringify(defaultParams),
         },
       },
     ],
     organizationschemestep: [],
-    orgworkflowstep: [
-      {
-        id: 'step-1',
-        type: 'orgworkflowstep',
-        attributes: { tool: '{}' },
-        relationships: {
-          organization: { data: { type: 'organization', id: 'org-1' } },
-        },
-      },
-    ],
+    orgworkflowstep,
     group: [],
     groupmembership: [],
     user: [{ id: 'user-1', type: 'user', attributes: { name: 'User One' } }],
@@ -219,6 +246,7 @@ const mountFooter = ({
     section,
     passage: currentPassage as PassageD,
     setCurrentStep,
+    ...passageDetailOverrides,
   });
   const initialState = createInitialState({
     memory,
@@ -271,8 +299,8 @@ describe('PassageDetailMobileFooter', () => {
 
     mountFooter({ passages, currentPassageId: 'passage-2' });
 
-    cy.contains('Previous').should('be.visible');
-    cy.contains('Next').should('be.visible');
+    cy.contains('button', '1:1').should('be.visible');
+    cy.contains('button', '3:3').should('be.visible');
     cy.get('#mobile-complete').should('exist');
   });
 
@@ -303,7 +331,7 @@ describe('PassageDetailMobileFooter', () => {
     });
 
     cy.clock();
-    cy.contains('Next').click();
+    cy.contains('button', '3:3').click();
     cy.tick(1000);
 
     cy.get('[data-cy="location"]').should(
@@ -316,5 +344,36 @@ describe('PassageDetailMobileFooter', () => {
         'remote-3'
       );
     });
+  });
+
+  it('in step progression mode shows next step name and navigates by step', () => {
+    const passages = [createPassage('passage-1', 1, 'remote-1')];
+    const orgWorkflowSteps = [
+      {
+        id: 'step-1',
+        type: 'orgworkflowstep' as const,
+        attributes: { name: 'Discuss', tool: '{}', sequencenum: 1 },
+      },
+      {
+        id: 'step-2',
+        type: 'orgworkflowstep' as const,
+        attributes: { name: 'Record', tool: '{}', sequencenum: 2 },
+      },
+    ];
+
+    mountFooter({
+      passages,
+      currentPassageId: 'passage-1',
+      workflowProgression: 'step',
+      passageDetailOverrides: {
+        currentstep: 'step-1',
+        orgWorkflowSteps: orgWorkflowSteps as PassageDetailState['orgWorkflowSteps'],
+      },
+    });
+
+    cy.contains('button', 'Previous').closest('button').should('be.disabled');
+    cy.contains('button', 'Record').should('be.visible');
+    cy.contains('button', 'Record').click();
+    cy.get('@setCurrentStep').should('have.been.calledWith', 'step-2');
   });
 });

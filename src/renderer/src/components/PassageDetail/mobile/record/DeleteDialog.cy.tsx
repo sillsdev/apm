@@ -44,13 +44,12 @@ describe('DeleteDialog', () => {
 
     cy.get('[data-cy="delete-dialog"]').should('be.visible');
     cy.contains('Reset Recording').should('be.visible');
-    cy.contains('Would you like to discard this recording or save it?').should(
+    cy.contains('Would you like to discard this recording?').should(
       'be.visible'
     );
 
     cy.get('[data-cy="delete-dialog-cancel"]').should('be.visible');
     cy.get('[data-cy="delete-dialog-delete"]').should('be.visible');
-    cy.get('[data-cy="delete-dialog-save"]').should('be.visible');
   });
 
   it('calls handleCancel when cancel is clicked', () => {
