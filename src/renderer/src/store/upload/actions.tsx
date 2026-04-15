@@ -28,6 +28,11 @@ import bugsnagClient from '../../auth/bugsnagClient';
 import { Dispatch } from 'redux';
 import { MediaFileAttributes } from '../../model';
 import { MainAPI } from '../../model/main-api';
+import {
+  MULTIPART_THRESHOLD,
+  singlePutUpload,
+  multipartS3Upload,
+} from '../../utils/s3Upload';
 const ipc = window?.api as MainAPI;
 
 export const uploadFiles = (files: File[]) => (dispatch: Dispatch) => {
@@ -98,48 +103,66 @@ const deleteMediaAfterFailedUpload = (
     );
   });
 };
-
-export const uploadFile = (
-  data: MediaFileAttributes,
-  file: File,
+const getMediaFolder = async (
+  mediaid: number,
   errorReporter: typeof bugsnagClient
+): Promise<string> => {
+  const response = await Axios.get(
+    `${API_CONFIG.host}/api/mediafiles/${mediaid}/folder`
+  );
+  if (response.data.status === 200) {
+    return response.data.folder;
+  } else {
+    logError(
+      Severity.error,
+      errorReporter,
+      infoMsg(
+        response.data.error,
+        `unable to get mediafolder for mediafile ${mediaid}`
+      )
+    );
+    return '';
+  }
+};
+export const uploadFile = async (
+  mediaid: number,
+  audioUrl: string,
+  contentType: string,
+  file: File,
+  errorReporter: typeof bugsnagClient,
+  token: string,
+  aero: boolean = false
 ): Promise<{ statusNum: number; statusText: string }> => {
-  return new Promise((resolve, reject) => {
-    let xhr = new XMLHttpRequest();
-    const cleanup = (): void => {
-      xhr.onload = null;
-      xhr.onerror = null;
-      xhr.onabort = null;
-      // @ts-ignore allow memory to be released
-      xhr = null;
-    };
-    xhr.open('PUT', data.audioUrl, true);
-    xhr.setRequestHeader('Content-Type', data.contentType);
-
-    xhr.onload = () => {
-      if (xhr.status < 300) {
-        cleanup();
-        resolve({ statusNum: 0, statusText: '' });
-      } else {
-        logError(
-          Severity.error,
-          errorReporter,
-          `upload ${file.name}: (${xhr.status}) ${xhr.responseText}`
-        );
-        cleanup();
-        reject({ statusNum: 500, statusText: 'upload failed' });
-      }
-    };
-    xhr.onerror = () => {
-      cleanup();
-      reject({ statusNum: 500, statusText: 'upload failed' });
-    };
-    xhr.onabort = () => {
-      cleanup();
-      reject({ statusNum: 500, statusText: 'upload aborted' });
-    };
-    xhr.send(file.slice());
-  });
+  if (file.size >= MULTIPART_THRESHOLD) {
+    let folder = '';
+    if (mediaid > 0) {
+      folder = await getMediaFolder(mediaid, errorReporter);
+    } else {
+      folder = 'input_files'; //AI
+    }
+    try {
+      await multipartS3Upload(file, file.name, folder, token, aero);
+      return { statusNum: 0, statusText: '' };
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      logError(Severity.error, errorReporter, `upload ${file.name}: ${msg}`);
+      return await Promise.reject({
+        statusNum: 500,
+        statusText: 'upload failed',
+      });
+    }
+  }
+  try {
+    await singlePutUpload(file, audioUrl, contentType);
+    return { statusNum: 0, statusText: '' };
+  } catch (err_1) {
+    const msg = err_1 instanceof Error ? err_1.message : String(err_1);
+    logError(Severity.error, errorReporter, `upload ${file.name}: ${msg}`);
+    return await Promise.reject({
+      statusNum: 500,
+      statusText: 'upload failed',
+    });
+  }
 };
 
 export interface NextUploadProps {
@@ -150,6 +173,8 @@ export interface NextUploadProps {
   offline: boolean;
   errorReporter: typeof bugsnagClient;
   uploadType: UploadType;
+  /** S3 folder prefix for multipart uploads, e.g. `"orgSlug/planSlug"` */
+  folder?: string;
   cb?: (n: number, success: boolean, data?: MediaFileAttributes) => void;
 }
 export const nextUpload =
@@ -334,9 +359,12 @@ export const nextUpload =
         for (let iTries = 5; iTries; iTries--) {
           try {
             const status = await uploadFile(
-              mediaA,
+              mediaId,
+              mediaA.audioUrl,
+              mediaA.contentType,
               files[n] as File,
-              errorReporter
+              errorReporter,
+              token
             );
             if (status.statusNum === 0) {
               completeCB(true, mediaA, status.statusNum, status.statusText);

@@ -13,12 +13,11 @@ import { uploadFile } from '../store/upload/actions';
 import { useContext, useRef } from 'react';
 import { TokenContext } from '../context/TokenProvider';
 import { loadBlobAsync } from './loadBlob';
-import { MediaFileAttributes } from '../model/mediafile';
 
 interface fileTask {
   taskId: string;
   cb: (file: File | Error) => void;
-  cancelRef: React.MutableRefObject<boolean>;
+  cancelRef: React.RefObject<boolean>;
 }
 const timerDelay = 10000; //10 seconds
 
@@ -190,7 +189,7 @@ export const useAudioAi = (): AudioAIResult => {
 
   const s3request = async (
     func: AudioAiFunc,
-    cancelRef: React.MutableRefObject<boolean>,
+    cancelRef: React.RefObject<boolean>,
     file: File,
     targetVoice: string | undefined,
     cb: (file: File | Error) => void
@@ -202,40 +201,38 @@ export const useAudioAi = (): AudioAIResult => {
       token
     );
     const response = result as string;
-    uploadFile(
-      {
-        id: 0,
-        audioUrl: response,
-        contentType: 'audio/wav',
-      } as MediaFileAttributes & { id: number },
-      file,
-      reporter
-    ).then((status) => {
-      if (status.statusNum === 0)
-        if (!cancelRef.current)
+    uploadFile(0, response, 'audio/wav', file, reporter, token, true).then(
+      (status) => {
+        if (status.statusNum === 0)
           if (!cancelRef.current)
-            axiosSendSignedUrl(`aero/${func}/fromfile`, file.name, targetVoice)
-              .then((nrresponse) => {
-                const response = nrresponse as AxiosResponse;
-                if (response.status === HttpStatusCode.Ok) {
-                  const taskId = response.data ?? '';
-                  returnAsS3List.push({
-                    taskId,
-                    cb,
-                    cancelRef,
-                  });
-                  if (!taskTimer.current) launchTimer(func);
-                } else cb(new Error(response.statusText));
-              })
-              .catch((err) => {
-                logError(Severity.error, errorReporter, err);
-                cb(err as Error);
-              })
-              .finally(() => console.log('done', file.name));
-          //deleteS3File(file.name));
-          else doCancel(func, cb);
-        else deleteS3File(file.name);
-    });
+            if (!cancelRef.current)
+              axiosSendSignedUrl(
+                `aero/${func}/fromfile`,
+                file.name,
+                targetVoice
+              )
+                .then((nrresponse) => {
+                  const response = nrresponse as AxiosResponse;
+                  if (response.status === HttpStatusCode.Ok) {
+                    const taskId = response.data ?? '';
+                    returnAsS3List.push({
+                      taskId,
+                      cb,
+                      cancelRef,
+                    });
+                    if (!taskTimer.current) launchTimer(func);
+                  } else cb(new Error(response.statusText));
+                })
+                .catch((err) => {
+                  logError(Severity.error, errorReporter, err);
+                  cb(err as Error);
+                })
+                .finally(() => console.log('done', file.name));
+            //deleteS3File(file.name));
+            else doCancel(func, cb);
+          else deleteS3File(file.name);
+      }
+    );
   };
 
   const requestAudioAi = async ({

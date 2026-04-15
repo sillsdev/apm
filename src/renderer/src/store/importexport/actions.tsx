@@ -60,6 +60,11 @@ import { DateTime } from 'luxon';
 import { logError, orbitInfo, Severity } from '../../utils';
 import Coordinator from '@orbit/coordinator';
 import { axiosPost } from '../../utils/axios';
+import {
+  MULTIPART_THRESHOLD,
+  singlePutUpload,
+  multipartS3Upload,
+} from '../../utils/s3Upload';
 import { updateBackTranslationType } from '../../crud/updateBackTranslationType';
 import { updateConsultantWorkflowStep } from '../../crud/updateConsultantWorkflowStep';
 import {
@@ -72,23 +77,7 @@ import { requestedSchema } from '../../schema';
 import { MainAPI } from '@model/main-api';
 const ipc = window?.api as MainAPI;
 
-const MULTIPART_THRESHOLD = 100 * 1024 * 1024; // 100 MB
 const MAX_FILE_SIZE = 50 * 1024 * 1024 * 1024; // 50 GB
-const PART_SIZE = 64 * 1024 * 1024; // 64 MB
-const MAX_CONCURRENT_PARTS = 4;
-const MAX_TOTAL_PARTS = 10000; //s3 limit
-
-interface MultipartInitiateResponse {
-  uploadId: string;
-  key: string;
-  filename: string;
-  parts: string[];
-}
-
-interface UploadedPart {
-  partNumber: number;
-  etag: string;
-}
 
 export const exportComplete = () => (dispatch: any) => {
   dispatch({
@@ -345,143 +334,6 @@ export interface ProcessImportFileResult {
   organizationRemoteId?: number;
 }
 
-const singlePutUpload = (
-  file: Blob,
-  fileURL: string,
-  contentType: string
-): Promise<void> => {
-  return new Promise<void>((resolve, reject) => {
-    let xhr = new XMLHttpRequest();
-    const cleanup = () => {
-      xhr.onload = null;
-      xhr.onerror = null;
-      xhr.onabort = null;
-      // @ts-ignore allow memory release
-      xhr = null;
-    };
-    xhr.open('PUT', fileURL, true);
-    xhr.setRequestHeader('Content-Type', contentType);
-
-    xhr.onload = () => {
-      if (xhr.status < 300) {
-        cleanup();
-        resolve();
-      } else {
-        const msg = xhr.responseText;
-        cleanup();
-        reject(new Error(msg));
-      }
-    };
-    xhr.onerror = () => {
-      cleanup();
-      reject(new Error('Upload failed'));
-    };
-    xhr.onabort = () => {
-      cleanup();
-      reject(new Error('Upload aborted'));
-    };
-    xhr.send(file.slice());
-  });
-};
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
-const isRetryableStatus = (status: number) =>
-  status === 0 || status >= 500 || status === 429;
-const isExpiredUrlError = (err: unknown) => {
-  const msg = err instanceof Error ? err.message.toLowerCase() : '';
-  return (
-    msg.includes('expired') ||
-    msg.includes('signature') ||
-    msg.includes('authorization') ||
-    msg.includes('forbidden') ||
-    msg.includes('403')
-  );
-};
-const tryUploadPart = (
-  file: Blob,
-  partNumber: number,
-  url: string
-): Promise<UploadedPart> => {
-  return new Promise<UploadedPart>((resolve, reject) => {
-    const start = (partNumber - 1) * PART_SIZE;
-    const end = Math.min(start + PART_SIZE, file.size);
-    const slice = file.slice(start, end);
-
-    const xhr = new XMLHttpRequest();
-    xhr.open('PUT', url, true);
-    xhr.send(slice);
-
-    xhr.onload = () => {
-      if (xhr.status < 300) {
-        const etag = xhr.getResponseHeader('ETag') ?? '';
-        resolve({ partNumber, etag });
-      } else {
-        reject(new Error(`Part ${partNumber} upload failed: ${xhr.status}`));
-      }
-    };
-    xhr.onerror = () => {
-      reject(new Error(`Part ${partNumber} upload failed`));
-    };
-  });
-};
-const getPartUrl = async (
-  filename: string,
-  partNumber: number,
-  uploadId: string,
-  token: string | null
-): Promise<string> => {
-  const response = await Axios.post(
-    `${API_CONFIG.host}/api/s3Files/multipart/part`,
-    {
-      uploadId: uploadId,
-      filename: filename,
-      folder: 'imports',
-      partNumber: partNumber,
-    },
-    { headers: { Authorization: 'Bearer ' + token } }
-  );
-  return response.data.url;
-};
-
-const uploadPart = async (
-  filename: string,
-  uploadId: string,
-  file: Blob,
-  partNumber: number,
-  url: string,
-  token: string | null,
-  maxAttempts = 5
-): Promise<UploadedPart> => {
-  let lastError: unknown;
-
-  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-    try {
-      return await tryUploadPart(file, partNumber, url);
-    } catch (err: any) {
-      lastError = err;
-
-      const message = err instanceof Error ? err.message : String(err);
-      const statusMatch = message.match(/:\s*(\d{3})$/);
-      const status = statusMatch ? Number(statusMatch[1]) : NaN;
-
-      if (isExpiredUrlError(err)) {
-        url = await getPartUrl(filename, partNumber, uploadId, token);
-      } else if (!Number.isNaN(status) && !isRetryableStatus(status)) {
-        throw err;
-      }
-
-      if (attempt === maxAttempts) {
-        throw lastError;
-      }
-
-      const baseDelay = 250;
-      const delay = baseDelay * 2 ** (attempt - 1) + Math.random() * baseDelay;
-      await sleep(delay);
-    }
-  }
-
-  throw lastError;
-};
 const singlepartUpload = async (
   file: Blob,
   filename: string,
@@ -495,73 +347,12 @@ const singlepartUpload = async (
   return response.data.message; //filename
 };
 
-const multipartUpload = async (
+const multipartUpload = (
   file: Blob,
   filename: string,
-  token: string | null
-): Promise<string> => {
-  const totalParts = Math.ceil(file.size / PART_SIZE);
-  if (totalParts > MAX_TOTAL_PARTS) {
-    //this is 640GB which we will never reach
-    throw new Error(
-      `File exceeds maximum size of ${(MAX_TOTAL_PARTS * PART_SIZE) / (1024 * 1024 * 1024)} GB`
-    );
-  }
-  const authHeaders = { Authorization: 'Bearer ' + token };
-
-  const initResponse = await Axios.post(
-    `${API_CONFIG.host}/api/s3Files/multipart/initiate`,
-    {
-      filename,
-      folder: 'imports',
-      contentType: (file as File).type || 'application/octet-stream',
-      parts: totalParts,
-    },
-    { headers: authHeaders }
-  );
-  const {
-    uploadId,
-    key,
-    filename: uploadedFilename,
-    parts,
-  } = initResponse.data as MultipartInitiateResponse;
-  try {
-    const uploaded: UploadedPart[] = [];
-    let idx = 0;
-    while (idx < parts.length) {
-      const batch = parts.slice(idx, idx + MAX_CONCURRENT_PARTS);
-      const results = await Promise.all(
-        batch.map((p, i) =>
-          uploadPart(uploadedFilename, uploadId, file, idx + 1 + i, p, token)
-        )
-      );
-      uploaded.push(...results);
-      idx += MAX_CONCURRENT_PARTS;
-    }
-
-    await Axios.post(
-      `${API_CONFIG.host}/api/s3Files/multipart/complete`,
-      {
-        uploadId,
-        key,
-        parts: uploaded.sort((a, b) => a.partNumber - b.partNumber),
-      },
-      { headers: authHeaders }
-    );
-    return uploadedFilename;
-  } catch (err) {
-    try {
-      await Axios.post(
-        `${API_CONFIG.host}/api/s3Files/multipart/abort`,
-        { uploadId, key },
-        { headers: authHeaders }
-      );
-    } catch {
-      /* swallow abort error so it doesn't mask the original */
-    }
-    throw err;
-  }
-};
+  token: string
+): Promise<string> =>
+  multipartS3Upload(file, filename, 'imports', token, false);
 
 const processImportFile = async ({
   filename,
@@ -576,6 +367,9 @@ const processImportFile = async ({
   dispatch,
   suppressSuccessDispatch = false,
 }: ProcessImportFileParams): Promise<ProcessImportFileResult> => {
+  if (!token) {
+    throw new Error('Token is required');
+  }
   if (file.size > MAX_FILE_SIZE) {
     const err = new Error(`${MAX_FILE_SIZE / (1024 * 1024 * 1024)} GB`);
     logError(Severity.error, errorReporter, err.message);
