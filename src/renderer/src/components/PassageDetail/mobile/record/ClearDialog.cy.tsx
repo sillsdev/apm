@@ -3,7 +3,7 @@ import { Provider } from 'react-redux';
 import { legacy_createStore as createStore, combineReducers } from 'redux';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import localizationReducer from '../../../../store/localization/reducers';
-import { DeleteDialog } from './DeleteDialog';
+import { ClearDialog } from './ClearDialog';
 
 const mockStringsReducer = () => {
   const initialState = localizationReducer(undefined, { type: '@@INIT' });
@@ -20,9 +20,9 @@ const mockStore = createStore(
   })
 );
 
-describe('DeleteDialog', () => {
+describe('ClearDialog', () => {
   const mountDialog = (
-    props: Partial<React.ComponentProps<typeof DeleteDialog>> = {}
+    props: Partial<React.ComponentProps<typeof ClearDialog>> = {}
   ) => {
     const theme = createTheme();
     cy.viewport(480, 800);
@@ -30,7 +30,7 @@ describe('DeleteDialog', () => {
     cy.mount(
       <Provider store={mockStore}>
         <ThemeProvider theme={theme}>
-          <DeleteDialog
+          <ClearDialog
             handleCancel={cy.stub().as('handleCancel')}
             handleDelete={cy.stub().as('handleDelete')}
           />
@@ -39,14 +39,12 @@ describe('DeleteDialog', () => {
     );
   };
 
-  it('renders the reset/discard copy and action buttons', () => {
+  it('renders the reset/clear copy and action buttons', () => {
     mountDialog();
 
     cy.get('[data-cy="delete-dialog"]').should('be.visible');
-    cy.contains('Reset Recording').should('be.visible');
-    cy.contains('Would you like to discard this recording?').should(
-      'be.visible'
-    );
+    cy.contains('Clear Recording').should('be.visible');
+    cy.contains('Would you like to clear this recording?').should('be.visible');
 
     cy.get('[data-cy="delete-dialog-cancel"]').should('be.visible');
     cy.get('[data-cy="delete-dialog-delete"]').should('be.visible');
