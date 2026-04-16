@@ -896,7 +896,7 @@ const initialState = {
 	"mediaActions": new LocalizedStrings({
 		"en": {
 			"attach": "Associate",
-			"delete": "Discard",
+			"delete": "Clear",
 			"detach": "Disassociate",
 			"download": "Download",
 			"drag": "Drag to reorder",
@@ -1583,8 +1583,8 @@ const initialState = {
 			"uploadMediaPlural": "Upload Audio",
 			"uploadMediaSingular": "Upload Audio",
 			"upload": "Upload",
-			"resetRecording": "Reset Recording",
-			"discardRecording": "Would you like to discard this recording?",
+			"resetRecording": "Clear Recording",
+			"discardRecording": "Would you like to clear this recording?",
 			"useThisVersion": "Use This Version",
 			"uploadRights": "Upload Rights File",
 			"uploadSuccess": "Upload Successful",
@@ -2110,7 +2110,7 @@ const initialState = {
 			"record": "Record [{0}]",
 			"reduceNoise": "Reduce Noise",
 			"reduceNoiseAi": "Reduce Noise (AI)",
-			"reset": "Reset",
+			"reset": "Clear",
 			"resume": "Resume",
 			"saveSegments": "Save Segments",
 			"seconds": "seconds",

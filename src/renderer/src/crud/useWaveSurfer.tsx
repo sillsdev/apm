@@ -750,11 +750,10 @@ export function useWaveSurfer(
     if (!originalBuffer) return null;
     setUndoBuffer(copyOriginal());
     onCanUndo(true);
-    const { numberOfChannels, sampleRate, duration } = originalBuffer;
+    const { numberOfChannels, sampleRate, length } = originalBuffer;
     const startSample = Math.floor(start * sampleRate);
     const endSample = Math.floor(end * sampleRate);
-    const totalSamples = Math.floor(duration * sampleRate);
-    const newLength = totalSamples - (endSample - startSample);
+    const newLength = length - (endSample - startSample);
 
     const newAudioBuffer = audioContext().createBuffer(
       numberOfChannels,

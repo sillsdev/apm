@@ -14,7 +14,7 @@ interface IProps {
   handleDelete: () => void;
 }
 
-export const DeleteDialog = (props: IProps) => {
+export const ClearDialog = (props: IProps) => {
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
   const tsm: IMediaActionsStrings = useSelector(
     mediaActionsSelector,
@@ -86,4 +86,4 @@ export const DeleteDialog = (props: IProps) => {
   );
 };
 
-export default DeleteDialog;
+export default ClearDialog;

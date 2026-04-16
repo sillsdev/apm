@@ -38,7 +38,11 @@ import VersionsIcon from '@mui/icons-material/List';
 import NormalizeIcon from '../control/NormalizeIcon';
 import UploadIcon from '@mui/icons-material/CloudUpload';
 import { Button } from '@mui/material';
-import { ISharedStrings, IWsAudioPlayerStrings } from '../model';
+import {
+  IAudioDownloadStrings,
+  ISharedStrings,
+  IWsAudioPlayerStrings,
+} from '../model';
 import { FaHandScissors } from 'react-icons/fa';
 import type { IconBaseProps } from 'react-icons/lib';
 
@@ -71,7 +75,11 @@ import {
 import WSAudioPlayerSegment from './WSAudioPlayerSegment';
 import Confirm from './AlertDialog';
 import { NamedRegions } from '../utils/namedSegments';
-import { sharedSelector, wsAudioPlayerSelector } from '../selector';
+import {
+  audioDownloadSelector,
+  sharedSelector,
+  wsAudioPlayerSelector,
+} from '../selector';
 import { shallowEqual, useSelector } from 'react-redux';
 import { AltButton, smallButtonProps } from '../control';
 import { AudioAiFunc, useAudioAi } from '../utils/useAudioAi';
@@ -94,8 +102,9 @@ import WSAudioPlayerRate from './WSAudioPlayerRate';
 import { IVoicePerm } from '../business/voice/PersonalizeVoicePermission';
 import BigDialogBp from '../hoc/BigDialogBp';
 import { MainAPI } from '@model/main-api';
-import DeleteDialog from './PassageDetail/mobile/record/DeleteDialog';
-import { AudioDownload } from './AudioDownload';
+import ClearDialog from './PassageDetail/mobile/record/ClearDialog';
+import { AudioDownloadView } from './AudioDownload';
+import { useAudioDownload } from './useAudioDownload';
 const ipc = window?.api as MainAPI;
 
 const HandScissors = FaHandScissors as unknown as React.FC<IconBaseProps>;
@@ -290,8 +299,10 @@ function WSAudioPlayer(props: IProps) {
     showWaveformSave,
   } = props;
 
-  const showWaveformSaveButton = showWaveformSave ?? true;
+  const audioDownload = useAudioDownload(mediaId ?? '');
 
+  const showWaveformSaveButton = showWaveformSave ?? true;
+  const [myMediaId, setMyMediaId] = useState(mediaId ?? '');
   const waveformRef = useRef<HTMLDivElement | null>(null);
   const [offline] = useGlobal('offline'); //verified this is not used in a function 2/18/25
   const [org] = useGlobal('organization');
@@ -342,6 +353,8 @@ function WSAudioPlayer(props: IProps) {
     wsAudioPlayerSelector,
     shallowEqual
   );
+  const ta: IAudioDownloadStrings = useSelector(audioDownloadSelector);
+
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
   const [style, setStyle] = useState({
     cursor: busy || loading ? 'progress' : 'default',
@@ -413,6 +426,10 @@ function WSAudioPlayer(props: IProps) {
     pxPerSecRef.current = px;
     setPxPerSecx(px);
   }, []);
+
+  useEffect(() => {
+    setMyMediaId(mediaId ?? '');
+  }, [mediaId]);
 
   useEffect(() => {
     try {
@@ -1105,6 +1122,7 @@ function WSAudioPlayer(props: IProps) {
   };
 
   const handleChanged = useCallback(async () => {
+    setMyMediaId('');
     setBlobReady && setBlobReady(false);
     const newblob = await wsBlob();
     onBlobReady && onBlobReady(newblob);
@@ -1139,6 +1157,7 @@ function WSAudioPlayer(props: IProps) {
     setBlobReady && setBlobReady(false);
     oneShotUsed && setOneShotUsed(false);
     setReady(true);
+    setMyMediaId('');
   }, [
     wsClear,
     setChanged,
@@ -1163,9 +1182,10 @@ function WSAudioPlayer(props: IProps) {
   const handleActionRefused = () => {
     setConfirmAction('');
   };
-  const handleDelete = useCallback(() => {
+  const handleClear = useCallback(() => {
     setConfirmAction(ts.resetRecording);
   }, [ts.resetRecording]);
+
   const handleDeleteRegion = () => {
     setPlaying(false);
     wsRegionDelete().then(() => {
@@ -1198,7 +1218,7 @@ function WSAudioPlayer(props: IProps) {
       },
       undoSegmentChange: handleUndo,
       resetSegments: handleClearRegions,
-      deleteRecording: handleDelete,
+      deleteRecording: handleClear,
       confirmedDelete: confirmedDelete,
       getProgress: () => progressRef.current,
       getDuration: () => durationRef.current,
@@ -1217,7 +1237,7 @@ function WSAudioPlayer(props: IProps) {
     handleNextRegion,
     handleUndo,
     handleClearRegions,
-    handleDelete,
+    handleClear,
     confirmedDelete,
     handleAddRegion,
     handleRemoveSplitRegion,
@@ -1229,7 +1249,8 @@ function WSAudioPlayer(props: IProps) {
     setBusy && setBusy(inprogress);
     setBlobReady && setBlobReady(!inprogress);
   };
-  const showLoadingWaveform = !ready && !recording && !waitingForAI;
+  const showLoadingWaveform =
+    myMediaId && !ready && !recording && !waitingForAI;
 
   const showAiProgressOverlay = waitingForAI;
 
@@ -1468,25 +1489,6 @@ function WSAudioPlayer(props: IProps) {
 
   const renderMoreMenuItems = () =>
     [
-      allowZoom && !hideZoom && (
-        <MenuItem
-          key="zoom-control"
-          onClick={(e) => {
-            const target = e.target as HTMLElement;
-            if (target.closest?.('[id="wsZoomIn"], [id="wsZoomOut"]')) {
-              return;
-            }
-            handleMoreMenuClose();
-          }}
-        >
-          <WSAudioPlayerZoom
-            ready={ready && !recording && !waitingForAI}
-            fillPx={recording ? 100 : wsFillPx()}
-            curPx={pxPerSec}
-            onZoom={wsZoom}
-          />
-        </MenuItem>
-      ),
       allowRecord === true && allowNoNoise && features?.noNoise && !offline && (
         <MenuItem
           key="noise-removal"
@@ -1584,6 +1586,30 @@ function WSAudioPlayer(props: IProps) {
               disabled={isControlDisabled}
             />
             <Typography variant="body2">{t.normalize}</Typography>
+          </Stack>
+        </MenuItem>
+      ),
+      myMediaId && (
+        <MenuItem
+          key="audio-download"
+          disabled={audioDownload.isDisabled}
+          onClick={() => {
+            audioDownload.startDownload();
+            handleMoreMenuClose();
+          }}
+        >
+          <Stack
+            direction="row"
+            alignItems="center"
+            spacing={1}
+            sx={{ py: 0.25 }}
+          >
+            <AudioDownloadView
+              mediaId={myMediaId}
+              menuItem
+              {...audioDownload}
+            />
+            <Typography variant="body2">{ta.downloadMedia}</Typography>
           </Stack>
         </MenuItem>
       ),
@@ -1704,7 +1730,7 @@ function WSAudioPlayer(props: IProps) {
         </Stack>
         {waveformNode}
         {showDeleteMobile && (
-          <DeleteDialog
+          <ClearDialog
             handleDelete={handleDeleteMobile}
             handleCancel={() => setShowDeleteMobile(false)}
           />
@@ -1712,7 +1738,6 @@ function WSAudioPlayer(props: IProps) {
       </>
     );
   }
-
   if (effectiveMobileView) {
     return (
       <Stack
@@ -1763,6 +1788,14 @@ function WSAudioPlayer(props: IProps) {
                 <Duration id="wsAudioPosition" seconds={progress} /> {' / '}
                 <Duration id="wsAudioDuration" seconds={duration} />
               </Typography>
+              {!isMobileView && allowZoom && !hideZoom && (
+                <WSAudioPlayerZoom
+                  ready={ready && !recording && !waitingForAI}
+                  fillPx={recording ? 100 : wsFillPx()}
+                  curPx={pxPerSec}
+                  onZoom={wsZoom}
+                />
+              )}
             </Stack>
 
             <Stack
@@ -1799,7 +1832,6 @@ function WSAudioPlayer(props: IProps) {
                   </span>
                 </LightTooltip>
               )}
-              <AudioDownload mediaId={mediaId ?? ''} />
               <Grid>
                 <LightTooltip id="wsAudioMoreTip" title={t.moreOptions}>
                   <span>
@@ -1925,7 +1957,7 @@ function WSAudioPlayer(props: IProps) {
           </Box>
         )}
         {showDeleteMobile && (
-          <DeleteDialog
+          <ClearDialog
             handleDelete={handleDeleteMobile}
             handleCancel={() => setShowDeleteMobile(false)}
           />
@@ -1985,7 +2017,6 @@ function WSAudioPlayer(props: IProps) {
                   </LightTooltip>
                 </Grid>
                 <VertDivider id="wsAudioDiv1" />
-
                 <Grid>
                   <Typography sx={{ m: '5px' }}>
                     <Duration id="wsAudioPosition" seconds={progress} /> {' / '}
@@ -1993,6 +2024,14 @@ function WSAudioPlayer(props: IProps) {
                   </Typography>
                 </Grid>
                 <VertDivider id="wsAudioDiv2" />
+                {allowZoom && !hideZoom && (
+                  <WSAudioPlayerZoom
+                    ready={ready && !recording && !waitingForAI}
+                    fillPx={recording ? 100 : wsFillPx()}
+                    curPx={pxPerSec}
+                    onZoom={wsZoom}
+                  />
+                )}
                 {allowRecord && (
                   <>
                     {hasRegion !== 0 && !oneShotUsed && (
@@ -2025,25 +2064,21 @@ function WSAudioPlayer(props: IProps) {
                       </LightTooltip>
                     )}
                     <GrowingSpacer />
-                    {hasRegion === 0 && (
-                      <LightTooltip
-                        id="wsAudioDeleteTip"
-                        title={ts.resetRecording}
-                      >
-                        <span>
-                          <AltButton
-                            id="wsAudioDelete"
-                            onClick={handleDelete}
-                            disabled={
-                              recording || duration === 0 || waitingForAI
-                            }
-                            sx={smallButtonProps}
-                          >
-                            {t.reset}
-                          </AltButton>
-                        </span>
-                      </LightTooltip>
-                    )}
+                    <LightTooltip
+                      id="wsAudioDeleteTip"
+                      title={ts.resetRecording}
+                    >
+                      <span>
+                        <AltButton
+                          id="wsAudioDelete"
+                          onClick={handleClear}
+                          disabled={recording || duration === 0 || waitingForAI}
+                          sx={smallButtonProps}
+                        >
+                          {t.reset}
+                        </AltButton>
+                      </span>
+                    </LightTooltip>
                     <Grid>
                       <LightTooltip id="wsAudioMoreTip" title={t.moreOptions}>
                         <span>
