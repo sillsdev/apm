@@ -24,3 +24,4 @@ src/renderer/node_modules
 migration-data
 tmp-burrito
 errorLog
+tsconfig.tsbuildinfo

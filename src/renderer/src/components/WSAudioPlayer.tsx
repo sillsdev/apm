@@ -428,6 +428,10 @@ function WSAudioPlayer(props: IProps) {
   }, []);
 
   useEffect(() => {
+    setMyMediaId(mediaId ?? '');
+  }, [mediaId]);
+
+  useEffect(() => {
     try {
       const storageKey = localUserKey(LocalKey.microphoneId);
       if (selectedMicrophoneId) {

@@ -25,9 +25,30 @@ export function useAudioDownload(mediaId: string): AudioDownloadApi {
   const [reporter] = useGlobal('errorReporter');
   const { fetchMediaUrl, mediaState } = useFetchMediaUrl(reporter);
   const audAnchor = React.useRef<HTMLAnchorElement>(null);
+  const blobObjectUrlRef = React.useRef<string | null>(null);
   const [audName, setAudName] = useState('');
   const [blobUrl, setBlobUrl] = useState('');
   const { showMessage } = useSnackBar();
+
+  const updateBlobUrl = useCallback((next: string) => {
+    if (blobObjectUrlRef.current) {
+      URL.revokeObjectURL(blobObjectUrlRef.current);
+      blobObjectUrlRef.current = null;
+    }
+    if (next !== '') {
+      blobObjectUrlRef.current = next;
+    }
+    setBlobUrl(next);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (blobObjectUrlRef.current) {
+        URL.revokeObjectURL(blobObjectUrlRef.current);
+        blobObjectUrlRef.current = null;
+      }
+    };
+  }, []);
 
   const isDisabled =
     (mediaId || '') === '' || mediaId === mediaState.remoteId || audName !== '';
@@ -67,15 +88,20 @@ export function useAudioDownload(mediaId: string): AudioDownloadApi {
   );
 
   useEffect(() => {
-    setBlobUrl('');
+    updateBlobUrl('');
     if (mediaState.status === MediaSt.FETCHED)
       loadBlob(mediaState.url, (url, b) => {
         //not sure what this intermediary file is, but causes console errors
-        if (b && b?.type !== 'text/html') setBlobUrl(URL.createObjectURL(b));
+        if (b && b?.type !== 'text/html') updateBlobUrl(URL.createObjectURL(b));
       });
     if (mediaState?.error?.startsWith('no offline file'))
       showMessage(ts.fileNotFound);
     else if (mediaState?.error) showMessage(mediaState.error);
+
+    if (mediaState?.error) {
+      setAudName('');
+      fetchMediaUrl({ id: '' });
+    }
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mediaState]);
@@ -85,7 +111,7 @@ export function useAudioDownload(mediaId: string): AudioDownloadApi {
       if (audAnchor?.current) {
         audAnchor.current.click();
         setAudName('');
-        setBlobUrl('');
+        updateBlobUrl('');
       }
       fetchMediaUrl({ id: '' });
     }
