@@ -252,7 +252,23 @@ export const AudioVersionCard: React.FC<AudioVersionCardProps> = (props) => {
             >
               {props.fileName}
             </Typography>
-            <Typography variant="body2" component="div">
+            <Typography
+              variant="body2"
+              component="div"
+              sx={{
+                // props.reference renders RefRender, which wraps its text in a
+                // Typography span hard-coded to nowrap/ellipsis with a 200px cap.
+                // Override those so long references wrap inside the card.
+                '& .MuiTypography-root': {
+                  whiteSpace: 'normal',
+                  overflow: 'visible',
+                  textOverflow: 'clip',
+                  maxWidth: 'none',
+                  wordBreak: 'break-word',
+                  overflowWrap: 'anywhere',
+                },
+              }}
+            >
               {props.reference}
             </Typography>
             {props.showMediaSheetMetadata && props.sectionDesc ? (
