@@ -277,7 +277,10 @@ export function AssignmentTable() {
       .sort(sectionCompare);
 
     plansections.forEach(function (section) {
-      const sort = (section.attributes?.sequencenum || 0).toFixed(2).toString();
+      const sort = (section.attributes?.sequencenum || 0)
+        .toFixed(2)
+        .toString()
+        .padStart(6, '0');
       sectionRow = {
         id: id++,
         recId: section.id as string,
@@ -466,8 +469,6 @@ export function AssignmentTable() {
       if (section !== undefined) selected.push(section);
     });
     setSelectedSections(selected);
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [check, sections]);
 
   const sortModel: GridSortModel = [{ field: 'sort', sort: 'asc' }];
