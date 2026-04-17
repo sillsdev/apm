@@ -57,10 +57,14 @@ export const processDataChanges = async (pdc: {
   const memory = coordinator?.getSource('memory') as Memory;
   const remote = coordinator?.getSource('datachanges') as JSONAPISource;
   const backup = coordinator?.getSource('backup') as IndexedDBSource;
-  const reloadOrgs = async (localId: string, reloadAll: boolean) => {
+  const reloadOrgs = async (
+    localId: string,
+    reloadTheOrgs: boolean,
+    reloadAll: boolean
+  ) => {
     const orgmem = findRecord(memory, 'organizationmembership', localId);
     if (orgmem) {
-      if (related(orgmem, 'user') === user) {
+      if (related(orgmem, 'user') === user && reloadTheOrgs) {
         for (const table of [
           'organization',
           'orgworkflowstep',
@@ -70,6 +74,7 @@ export const processDataChanges = async (pdc: {
           await pullRemoteToMemory({ table, memory, remote });
         }
       }
+      return true;
     } else {
       if (reloadAll)
         await pullRemoteToMemory({
@@ -77,25 +82,28 @@ export const processDataChanges = async (pdc: {
           memory,
           remote,
         });
-      return true;
+      return false;
     }
-    return false;
   };
 
-  const reloadProjects = async (localId: string, reloadAll: boolean) => {
+  const reloadProjects = async (
+    localId: string,
+    reloadProjects: boolean,
+    reloadAll: boolean
+  ) => {
     const grpmem = findRecord(memory, 'groupmembership', localId);
     if (grpmem) {
-      if (related(grpmem, 'user') === user) {
+      if (related(grpmem, 'user') === user && reloadProjects) {
         for (const table of ['group', 'project', 'plan', 'groupmembership']) {
           await pullRemoteToMemory({ table, memory, remote });
         }
       }
+      return true;
     } else {
       if (reloadAll)
         await pullRemoteToMemory({ table: 'groupmembership', memory, remote });
-      return true;
+      return false;
     }
-    return false;
   };
   const processTableChanges = async (
     transforms: RecordTransform[],
@@ -166,7 +174,9 @@ export const processDataChanges = async (pdc: {
       await backup.sync(() => ops);
       await memory.sync(() => ops);
       let reloadAllOrgs = false;
+      let reloadedOrgs = false;
       let reloadAllProjects = false;
+      let reloadedProjects = false;
       for (const o of myOps) {
         if (o.op === 'updateRecord') {
           upRec = o as UpdateRecordOperation;
@@ -248,19 +258,28 @@ export const processDataChanges = async (pdc: {
                 AcceptInvitation(remote, upRec.record as InvitationD);
               break;
             case 'organizationmembership':
-              reloadAllOrgs =
-                (await reloadOrgs(upRec.record.id, false)) || reloadAllOrgs;
+              const foundTheOrg = await reloadOrgs(
+                upRec.record.id,
+                !reloadedOrgs,
+                false
+              );
+              reloadedOrgs = foundTheOrg || reloadedOrgs;
+              reloadAllOrgs = !foundTheOrg || reloadAllOrgs;
               break;
             case 'groupmembership':
-              reloadAllProjects =
-                (await reloadProjects(upRec.record.id, false)) ||
-                reloadAllProjects;
+              const foundTheProject = await reloadProjects(
+                upRec.record.id,
+                !reloadedProjects,
+                false
+              );
+              reloadedProjects = foundTheProject || reloadedProjects;
+              reloadAllProjects = !foundTheProject || reloadAllProjects;
               break;
           }
         }
       }
-      if (reloadAllOrgs) reloadOrgs('x', true);
-      if (reloadAllProjects) reloadProjects('x', true);
+      if (reloadAllOrgs) reloadOrgs('x', false, true);
+      if (reloadAllProjects) reloadProjects('x', false, true);
       if (localOps.length > 0) {
         await backup.sync(() => localOps);
         await memory.sync(() => localOps);
@@ -312,10 +331,10 @@ export const processDataChanges = async (pdc: {
         if (localId) {
           switch (table.type) {
             case 'organizationmembership':
-              reloadOrgs(localId, true);
+              reloadOrgs(localId, true, true);
               break;
             case 'groupmembership':
-              reloadProjects(localId, true);
+              reloadProjects(localId, true, true);
               break;
           }
           operations.push(
