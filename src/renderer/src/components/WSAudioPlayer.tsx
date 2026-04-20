@@ -1631,6 +1631,104 @@ function WSAudioPlayer(props: IProps) {
 
   const onSplit = () => {};
 
+  const positionDurationNode = (
+    <Typography sx={{ m: '5px' }}>
+      <Duration id="wsAudioPosition" seconds={progress} /> {' / '}
+      <Duration id="wsAudioDuration" seconds={duration} />
+    </Typography>
+  );
+
+  const deleteRegionNode = hasRegion !== 0 && !oneShotUsed && (
+    <LightTooltip id="wsAudioDeleteRegionTip" title={t.deleteRegion}>
+      <span>
+        <IconButton
+          id="wsAudioDeleteRegion"
+          onClick={handleDeleteRegion}
+          disabled={recording || waitingForAI}
+        >
+          <HandScissors />
+        </IconButton>
+      </span>
+    </LightTooltip>
+  );
+
+  const undoNode = canUndo && !oneShotUsed && (
+    <LightTooltip id="wsUndoTip" title={t.undoTip}>
+      <span>
+        <IconButton
+          id="wsUndo"
+          onClick={handleUndo}
+          disabled={recording || waitingForAI}
+        >
+          <UndoIcon />
+        </IconButton>
+      </span>
+    </LightTooltip>
+  );
+
+  const moreAndMicMenusNode = (
+    <Grid>
+      <LightTooltip id="wsAudioMoreTip" title={t.moreOptions}>
+        <span>
+          <IconButton id="wsAudioMore" onClick={handleMoreMenuOpen}>
+            <MoreVertIcon />
+          </IconButton>
+        </span>
+      </LightTooltip>
+      <Menu
+        anchorEl={moreMenuAnchorEl}
+        open={moreMenuOpen}
+        onClose={handleMoreMenuClose}
+        anchorOrigin={{
+          vertical: 'bottom',
+          horizontal: 'right',
+        }}
+        transformOrigin={{
+          vertical: 'top',
+          horizontal: 'right',
+        }}
+      >
+        {renderMoreMenuItems()}
+      </Menu>
+      <Menu
+        anchorEl={micMenuAnchorEl}
+        open={micMenuOpen}
+        onClose={handleMicMenuClose}
+        anchorOrigin={{
+          vertical: 'bottom',
+          horizontal: 'left',
+        }}
+        transformOrigin={{
+          vertical: 'top',
+          horizontal: 'left',
+        }}
+      >
+        {audioInputDevices.length === 0 ? (
+          <MenuItem disabled>{ts.noAudio}</MenuItem>
+        ) : (
+          audioInputDevices.map((device, index) => (
+            <MenuItem
+              key={device.deviceId || `input-${index}`}
+              selected={selectedMicrophoneId === device.deviceId}
+              onClick={() => handleMicSelect(device.deviceId)}
+            >
+              {device.label || `Input ${index + 1}`}
+            </MenuItem>
+          ))
+        )}
+      </Menu>
+    </Grid>
+  );
+
+  const confirmNode = confirmAction !== '' && (
+    <Confirm
+      jsx={typeof confirmAction !== 'string' ? confirmAction : undefined}
+      text={typeof confirmAction === 'string' ? confirmAction : ''}
+      yesResponse={handleActionConfirmed}
+      noResponse={handleActionRefused}
+    />
+  );
+
   if (isRecordingRights) {
     return (
       <>
@@ -1682,10 +1780,7 @@ function WSAudioPlayer(props: IProps) {
                   </IconButton>
                 </span>
               </LightTooltip>
-              <Typography sx={{ m: '5px' }}>
-                <Duration id="wsAudioPosition" seconds={progress} /> {' / '}
-                <Duration id="wsAudioDuration" seconds={duration} />
-              </Typography>
+              {positionDurationNode}
               <LightTooltip id="wsAudioDeleteTip" title={t.clearRecordingTip}>
                 <span>
                   <AltButton
@@ -1720,6 +1815,8 @@ function WSAudioPlayer(props: IProps) {
           )}
         </Stack>
         {waveformNode}
+        {confirmNode}
+        {voiceDialogNode}
       </>
     );
   }
@@ -1769,10 +1866,7 @@ function WSAudioPlayer(props: IProps) {
                   </IconButton>
                 </span>
               </LightTooltip>
-              <Typography sx={{ m: '5px' }}>
-                <Duration id="wsAudioPosition" seconds={progress} /> {' / '}
-                <Duration id="wsAudioDuration" seconds={duration} />
-              </Typography>
+              {positionDurationNode}
               {!isMobileView && allowZoom && !hideZoom && (
                 <WSAudioPlayerZoom
                   ready={ready && !recording && !waitingForAI}
@@ -1788,86 +1882,9 @@ function WSAudioPlayer(props: IProps) {
               spacing={1}
               sx={{ display: 'flex', alignItems: 'center' }}
             >
-              {hasRegion !== 0 && !oneShotUsed && (
-                <LightTooltip
-                  id="wsAudioDeleteRegionTip"
-                  title={t.deleteRegion}
-                >
-                  <span>
-                    <IconButton
-                      id="wsAudioDeleteRegion"
-                      onClick={handleDeleteRegion}
-                      disabled={recording || waitingForAI}
-                    >
-                      <HandScissors />
-                    </IconButton>
-                  </span>
-                </LightTooltip>
-              )}
-              {canUndo && !oneShotUsed && (
-                <LightTooltip id="wsUndoTip" title={t.undoTip}>
-                  <span>
-                    <IconButton
-                      id="wsUndo"
-                      onClick={handleUndo}
-                      disabled={recording || waitingForAI}
-                    >
-                      <UndoIcon />
-                    </IconButton>
-                  </span>
-                </LightTooltip>
-              )}
-              <Grid>
-                <LightTooltip id="wsAudioMoreTip" title={t.moreOptions}>
-                  <span>
-                    <IconButton id="wsAudioMore" onClick={handleMoreMenuOpen}>
-                      <MoreVertIcon />
-                    </IconButton>
-                  </span>
-                </LightTooltip>
-                <Menu
-                  anchorEl={moreMenuAnchorEl}
-                  open={moreMenuOpen}
-                  onClose={handleMoreMenuClose}
-                  anchorOrigin={{
-                    vertical: 'bottom',
-                    horizontal: 'right',
-                  }}
-                  transformOrigin={{
-                    vertical: 'top',
-                    horizontal: 'right',
-                  }}
-                >
-                  {renderMoreMenuItems()}
-                </Menu>
-                <Menu
-                  anchorEl={micMenuAnchorEl}
-                  open={micMenuOpen}
-                  onClose={handleMicMenuClose}
-                  anchorOrigin={{
-                    vertical: 'bottom',
-                    horizontal: 'left',
-                  }}
-                  transformOrigin={{
-                    vertical: 'top',
-                    horizontal: 'left',
-                  }}
-                >
-                  {audioInputDevices.length === 0 ? (
-                    <MenuItem disabled>{ts.noAudio}</MenuItem>
-                  ) : (
-                    audioInputDevices.map((device, index) => (
-                      <MenuItem
-                        key={device.deviceId || `input-${index}`}
-                        selected={selectedMicrophoneId === device.deviceId}
-                        onClick={() => handleMicSelect(device.deviceId)}
-                      >
-                        {device.label || `Input ${index + 1}`}
-                      </MenuItem>
-                    ))
-                  )}
-                </Menu>
-              </Grid>
+              {deleteRegionNode}
+              {undoNode}
+              {moreAndMicMenusNode}
             </Stack>
           </Stack>
           <Box sx={{ width: '100%', maxWidth: '100%', minWidth: 0 }}>
@@ -1940,14 +1957,7 @@ function WSAudioPlayer(props: IProps) {
             />
           </Box>
         )}
-        {confirmAction === '' || (
-          <Confirm
-            jsx={typeof confirmAction !== 'string' ? confirmAction : undefined}
-            text={typeof confirmAction === 'string' ? confirmAction : ''}
-            yesResponse={handleActionConfirmed}
-            noResponse={handleActionRefused}
-          />
-        )}
+        {confirmNode}
         {voiceDialogNode}
       </Stack>
     );
@@ -2003,12 +2013,7 @@ function WSAudioPlayer(props: IProps) {
                   </LightTooltip>
                 </Grid>
                 <VertDivider id="wsAudioDiv1" />
-                <Grid>
-                  <Typography sx={{ m: '5px' }}>
-                    <Duration id="wsAudioPosition" seconds={progress} /> {' / '}
-                    <Duration id="wsAudioDuration" seconds={duration} />
-                  </Typography>
-                </Grid>
+                <Grid>{positionDurationNode}</Grid>
                 <VertDivider id="wsAudioDiv2" />
                 {allowZoom && !hideZoom && (
                   <WSAudioPlayerZoom
@@ -2020,35 +2025,8 @@ function WSAudioPlayer(props: IProps) {
                 )}
                 {allowRecord && (
                   <>
-                    {hasRegion !== 0 && !oneShotUsed && (
-                      <LightTooltip
-                        id="wsAudioDeleteRegionTip"
-                        title={t.deleteRegion}
-                      >
-                        <span>
-                          <IconButton
-                            id="wsAudioDeleteRegion"
-                            onClick={handleDeleteRegion}
-                            disabled={recording || waitingForAI}
-                          >
-                            <HandScissors />
-                          </IconButton>
-                        </span>
-                      </LightTooltip>
-                    )}
-                    {canUndo && !oneShotUsed && (
-                      <LightTooltip id="wsUndoTip" title={t.undoTip}>
-                        <span>
-                          <IconButton
-                            id="wsUndo"
-                            onClick={handleUndo}
-                            disabled={recording || waitingForAI}
-                          >
-                            <UndoIcon />
-                          </IconButton>
-                        </span>
-                      </LightTooltip>
-                    )}
+                    {deleteRegionNode}
+                    {undoNode}
                     <GrowingSpacer />
                     <LightTooltip
                       id="wsAudioDeleteTip"
@@ -2065,62 +2043,7 @@ function WSAudioPlayer(props: IProps) {
                         </AltButton>
                       </span>
                     </LightTooltip>
-                    <Grid>
-                      <LightTooltip id="wsAudioMoreTip" title={t.moreOptions}>
-                        <span>
-                          <IconButton
-                            id="wsAudioMore"
-                            onClick={handleMoreMenuOpen}
-                          >
-                            <MoreVertIcon />
-                          </IconButton>
-                        </span>
-                      </LightTooltip>
-                      <Menu
-                        anchorEl={moreMenuAnchorEl}
-                        open={moreMenuOpen}
-                        onClose={handleMoreMenuClose}
-                        anchorOrigin={{
-                          vertical: 'bottom',
-                          horizontal: 'right',
-                        }}
-                        transformOrigin={{
-                          vertical: 'top',
-                          horizontal: 'right',
-                        }}
-                      >
-                        {renderMoreMenuItems()}
-                      </Menu>
-                      <Menu
-                        anchorEl={micMenuAnchorEl}
-                        open={micMenuOpen}
-                        onClose={handleMicMenuClose}
-                        anchorOrigin={{
-                          vertical: 'bottom',
-                          horizontal: 'left',
-                        }}
-                        transformOrigin={{
-                          vertical: 'top',
-                          horizontal: 'left',
-                        }}
-                      >
-                        {audioInputDevices.length === 0 ? (
-                          <MenuItem disabled>{ts.noAudio}</MenuItem>
-                        ) : (
-                          audioInputDevices.map((device, index) => (
-                            <MenuItem
-                              key={device.deviceId || `input-${index}`}
-                              selected={
-                                selectedMicrophoneId === device.deviceId
-                              }
-                              onClick={() => handleMicSelect(device.deviceId)}
-                            >
-                              {device.label || `Input ${index + 1}`}
-                            </MenuItem>
-                          ))
-                        )}
-                      </Menu>
-                    </Grid>
+                    {moreAndMicMenusNode}
                   </>
                 )}
                 {allowSegment && !hideToolbar && !hideSegmentControls && (
@@ -2467,16 +2390,7 @@ function WSAudioPlayer(props: IProps) {
                   )}
               </>
             )}
-            {confirmAction === '' || (
-              <Confirm
-                jsx={
-                  typeof confirmAction !== 'string' ? confirmAction : undefined
-                }
-                text={typeof confirmAction === 'string' ? confirmAction : ''}
-                yesResponse={handleActionConfirmed}
-                noResponse={handleActionRefused}
-              />
-            )}
+            {confirmNode}
             {voiceDialogNode}
           </>
         </Box>
