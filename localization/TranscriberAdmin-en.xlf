@@ -7678,12 +7678,6 @@
             <target/>
          </segment>
       </unit>
-      <unit id="shared.resetRecording">
-         <segment>
-            <source>Clear Recording</source>
-            <target/>
-         </segment>
-      </unit>
       <unit id="shared.discardRecording">
          <segment>
             <source>Would you like to clear this recording?</source>
@@ -10075,6 +10069,18 @@
       <unit id="wsAudioPlayer.convertVoice">
          <segment>
             <source>Convert Voice {0}</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="wsAudioPlayer.clearRecording">
+         <segment>
+            <source>Clear Recording?</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="wsAudioPlayer.clearRecordingTip">
+         <segment>
+            <source>Clear Recording</source>
             <target/>
          </segment>
       </unit>

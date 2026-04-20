@@ -1503,7 +1503,6 @@ export interface ISharedStrings extends Localize.LocalizedStringsMethods {
     "uploadMediaPlural": string;
     "uploadMediaSingular": string;
     "upload": string;
-    "resetRecording": string;
     "discardRecording": string;
     "useThisVersion": string;
     "uploadRights": string;
@@ -1978,6 +1977,8 @@ export interface IWsAudioPlayerStrings extends Localize.LocalizedStringsMethods 
     "beginVoiceConvert": string;
     "backTip": string;
     "convertVoice": string;
+    "clearRecording": string;
+    "clearRecordingTip": string;
     "convertVoiceAi": string;
     "beginningTip": string;
     "deleteRecording": string;

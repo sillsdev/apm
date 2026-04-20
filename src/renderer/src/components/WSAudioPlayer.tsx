@@ -102,7 +102,6 @@ import WSAudioPlayerRate from './WSAudioPlayerRate';
 import { IVoicePerm } from '../business/voice/PersonalizeVoicePermission';
 import BigDialogBp from '../hoc/BigDialogBp';
 import { MainAPI } from '@model/main-api';
-import ClearDialog from './PassageDetail/mobile/record/ClearDialog';
 import { AudioDownloadView } from './AudioDownload';
 import { useAudioDownload } from './useAudioDownload';
 const ipc = window?.api as MainAPI;
@@ -323,7 +322,6 @@ function WSAudioPlayer(props: IProps) {
   const [looping, setLoopingx] = useState(false);
   const [hasRegion, setHasRegion] = useState(0);
   const [canUndo, setCanUndo] = useState(false);
-  const [showDeleteMobile, setShowDeleteMobile] = useState(false);
   const recordStartPosition = useRef(0);
   const recordOverwritePosition = useRef<number | undefined>(undefined);
   const recordingRef = useRef(false);
@@ -1172,7 +1170,7 @@ function WSAudioPlayer(props: IProps) {
   ]);
   const handleActionConfirmed = () => {
     initialPosRef.current = undefined;
-    if (confirmAction === ts.resetRecording) {
+    if (confirmAction === t.clearRecording) {
       confirmedDelete();
     } else {
       handleDeleteRegion();
@@ -1183,19 +1181,14 @@ function WSAudioPlayer(props: IProps) {
     setConfirmAction('');
   };
   const handleClear = useCallback(() => {
-    setConfirmAction(ts.resetRecording);
-  }, [ts.resetRecording]);
+    setConfirmAction(t.clearRecording);
+  }, [t.clearRecording]);
 
   const handleDeleteRegion = () => {
     setPlaying(false);
     wsRegionDelete().then(() => {
       handleChanged();
     });
-  };
-
-  const handleDeleteMobile = () => {
-    confirmedDelete();
-    setShowDeleteMobile(false);
   };
 
   const handleUndo = useCallback(() => {
@@ -1693,20 +1686,18 @@ function WSAudioPlayer(props: IProps) {
                 <Duration id="wsAudioPosition" seconds={progress} /> {' / '}
                 <Duration id="wsAudioDuration" seconds={duration} />
               </Typography>
-              {hasRegion === 0 && (
-                <LightTooltip id="wsAudioDeleteTip" title={ts.resetRecording}>
-                  <span>
-                    <AltButton
-                      id="wsAudioDelete"
-                      onClick={() => setShowDeleteMobile(true)}
-                      disabled={recording || duration === 0 || waitingForAI}
-                      sx={smallButtonProps}
-                    >
-                      {t.reset}
-                    </AltButton>
-                  </span>
-                </LightTooltip>
-              )}
+              <LightTooltip id="wsAudioDeleteTip" title={t.clearRecordingTip}>
+                <span>
+                  <AltButton
+                    id="wsAudioDelete"
+                    onClick={() => handleClear()}
+                    disabled={recording || duration === 0 || waitingForAI}
+                    sx={smallButtonProps}
+                  >
+                    {t.reset}
+                  </AltButton>
+                </span>
+              </LightTooltip>
             </Stack>
           )}
           {handleUpload && (
@@ -1729,12 +1720,6 @@ function WSAudioPlayer(props: IProps) {
           )}
         </Stack>
         {waveformNode}
-        {showDeleteMobile && (
-          <ClearDialog
-            handleDelete={handleDeleteMobile}
-            handleCancel={() => setShowDeleteMobile(false)}
-          />
-        )}
       </>
     );
   }
@@ -1914,20 +1899,19 @@ function WSAudioPlayer(props: IProps) {
               spacing={1}
               sx={{ display: 'flex', alignItems: 'center' }}
             >
-              {hasRegion === 0 && (
-                <LightTooltip id="wsAudioDeleteTip" title={ts.resetRecording}>
-                  <span>
-                    <AltButton
-                      id="wsAudioDelete"
-                      onClick={() => setShowDeleteMobile(true)}
-                      disabled={recording || duration === 0 || waitingForAI}
-                      sx={smallButtonProps}
-                    >
-                      {t.reset}
-                    </AltButton>
-                  </span>
-                </LightTooltip>
-              )}
+              <LightTooltip id="wsAudioDeleteTip" title={t.clearRecordingTip}>
+                <span>
+                  <AltButton
+                    id="wsAudioDelete"
+                    onClick={() => handleClear()}
+                    disabled={recording || duration === 0 || waitingForAI}
+                    sx={smallButtonProps}
+                  >
+                    {t.reset}
+                  </AltButton>
+                </span>
+              </LightTooltip>
+
               {handleSave && showWaveformSaveButton && (
                 <PriButton
                   id="rec-save"
@@ -1956,10 +1940,12 @@ function WSAudioPlayer(props: IProps) {
             />
           </Box>
         )}
-        {showDeleteMobile && (
-          <ClearDialog
-            handleDelete={handleDeleteMobile}
-            handleCancel={() => setShowDeleteMobile(false)}
+        {confirmAction === '' || (
+          <Confirm
+            jsx={typeof confirmAction !== 'string' ? confirmAction : undefined}
+            text={typeof confirmAction === 'string' ? confirmAction : ''}
+            yesResponse={handleActionConfirmed}
+            noResponse={handleActionRefused}
           />
         )}
         {voiceDialogNode}
@@ -2066,7 +2052,7 @@ function WSAudioPlayer(props: IProps) {
                     <GrowingSpacer />
                     <LightTooltip
                       id="wsAudioDeleteTip"
-                      title={ts.resetRecording}
+                      title={t.clearRecordingTip}
                     >
                       <span>
                         <AltButton

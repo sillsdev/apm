@@ -8959,13 +8959,6 @@
               <context context-type="sourcefile">PlanSheet.tsx</context>
           </context-group>
         </trans-unit>
-        <trans-unit id="shared.resetRecording">
-          <source>Clear Recording</source>
-          <target/>
-          <context-group>
-              <context context-type="sourcefile">PlanSheet.tsx</context>
-          </context-group>
-        </trans-unit>
         <trans-unit id="shared.discardRecording">
           <source>Would you like to clear this recording?</source>
           <target/>
@@ -11760,6 +11753,20 @@
                <context context-type="sourcefile">wsAudioPlayer.tsx</context>
             </context-group>
          </trans-unit>
+        <trans-unit id="wsAudioPlayer.clearRecording">
+          <source>Clear Recording?</source>
+          <target/>
+          <context-group>
+              <context context-type="sourcefile">wsAudioPlayer.tsx</context>
+          </context-group>
+        </trans-unit>
+        <trans-unit id="wsAudioPlayer.clearRecordingTip">
+          <source>Clear Recording</source>
+          <target/>
+          <context-group>
+              <context context-type="sourcefile">wsAudioPlayer.tsx</context>
+          </context-group>
+        </trans-unit>
          <trans-unit id="wsAudioPlayer.convertVoiceAi">
             <source>Convert Voice (AI)</source>
             <target/>
