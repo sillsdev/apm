@@ -50,6 +50,7 @@ export default function MobileStepComplete() {
         alignItems: 'center',
         gap: 0.25,
         minHeight: 0,
+        flexShrink: 0,
         maxWidth: '100%',
       }}
     >
@@ -68,7 +69,10 @@ export default function MobileStepComplete() {
           <NotCompleteIcon id="step-no" fontSize="small" />
         )}
       </IconButton>
-      <Typography variant="body2" sx={{ lineHeight: 1.2 }}>
+      <Typography
+        variant="body2"
+        sx={{ lineHeight: 1.2, whiteSpace: 'nowrap' }}
+      >
         {t.title}
       </Typography>
     </Box>
