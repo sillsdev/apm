@@ -1981,7 +1981,7 @@ export interface IWsAudioPlayerStrings extends Localize.LocalizedStringsMethods 
     "clearRecordingTip": string;
     "convertVoiceAi": string;
     "beginningTip": string;
-    "deleteRecording": string;
+    "clear": string;
     "deleteRegion": string;
     "endTip": string;
     "fasterTip": string;

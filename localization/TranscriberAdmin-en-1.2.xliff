@@ -11781,8 +11781,8 @@
                <context context-type="sourcefile">wsAudioPlayer.tsx</context>
             </context-group>
          </trans-unit>
-         <trans-unit id="wsAudioPlayer.deleteRecording">
-            <source>Delete Entire Recording</source>
+         <trans-unit id="wsAudioPlayer.clear">
+            <source>Clear</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">wsAudioPlayer.tsx</context>
@@ -11957,7 +11957,7 @@
             </context-group>
          </trans-unit>
          <trans-unit id="wsAudioPlayer.reset">
-            <source>Clear</source>
+            <source>Reset Segments</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">wsAudioPlayer.tsx</context>
