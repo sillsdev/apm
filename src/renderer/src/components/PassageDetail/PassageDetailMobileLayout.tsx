@@ -21,7 +21,12 @@ export default function PassageDetailMobileLayout({
       sx={{
         width: '100%',
         minWidth: 0,
+        // 100vh on mobile often exceeds the *visible* viewport (URL bar / Samsung browser chrome),
+        // so the flex footer sits below the fold. 100dvh tracks the dynamic viewport.
         height: `calc(100vh - ${HeadHeight}px)`,
+        '@supports (height: 100dvh)': {
+          height: `calc(100dvh - ${HeadHeight}px)`,
+        },
         display: 'flex',
         flexDirection: 'column',
       }}
