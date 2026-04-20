@@ -119,7 +119,7 @@ export const PassageDetail = () => {
           <Box
             sx={{
               // AppHead is position:fixed — offset in-flow content like PassageDetailGrids does,
-              // otherwise mobile layout height calc(100vh - HeadHeight) leaves a gap at the bottom.
+              // otherwise mobile layout height calc(100dvh - HeadHeight) leaves a gap at the bottom.
               pt: `${HeadHeight}px`,
               width: '100%',
               flex: 1,
