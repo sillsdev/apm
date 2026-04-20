@@ -19,19 +19,27 @@ import {
 } from '../../../crud/useOrgDefaults';
 import { useOrgWorkflowSteps } from '../../../crud/useOrgWorkflowSteps';
 
-const NAV_LABEL_MAX_PX = 120;
-
-function NavButtonLabel({ text, title }: { text: string; title?: string }) {
+function NavButtonLabel({
+  text,
+  title,
+  align,
+}: {
+  text: string;
+  title?: string;
+  align: 'left' | 'right';
+}) {
   return (
     <Box
       component="span"
       title={title ?? text}
       sx={{
         display: 'block',
-        maxWidth: NAV_LABEL_MAX_PX,
+        minWidth: 0,
+        maxWidth: '100%',
         overflow: 'hidden',
         textOverflow: 'ellipsis',
         whiteSpace: 'nowrap',
+        textAlign: align,
       }}
     >
       {text}
@@ -124,36 +132,62 @@ export default function PassageDetailMobileFooter() {
   return (
     <Box
       sx={{
-        display: 'flex',
+        display: 'grid',
+        gridTemplateColumns: 'minmax(0, 1fr) auto minmax(0, 1fr)',
         alignItems: 'center',
         gap: 0.5,
         width: '100%',
         minHeight: 0,
       }}
     >
-      <Button
-        size="small"
-        startIcon={<ArrowBackIcon fontSize="small" />}
-        onClick={() => handleNavigate(false)}
-        disabled={!prevNavEnabled}
-        sx={{ minWidth: 0, flexShrink: 1 }}
-      >
-        <NavButtonLabel text={prevButtonText} title={prevLabelFull} />
-      </Button>
+      <Box sx={{ minWidth: 0, display: 'flex', justifyContent: 'flex-start' }}>
+        <Button
+          size="small"
+          startIcon={<ArrowBackIcon fontSize="small" />}
+          onClick={() => handleNavigate(false)}
+          disabled={!prevNavEnabled}
+          sx={{
+            minWidth: 0,
+            maxWidth: '100%',
+            justifyContent: 'flex-start',
+          }}
+        >
+          <NavButtonLabel
+            text={prevButtonText}
+            title={prevLabelFull}
+            align="left"
+          />
+        </Button>
+      </Box>
       <Box
-        sx={{ flex: 1, display: 'flex', justifyContent: 'center', minWidth: 0 }}
+        sx={{
+          flexShrink: 0,
+          display: 'flex',
+          justifyContent: 'center',
+          minWidth: 'min-content',
+        }}
       >
         <MobileStepComplete />
       </Box>
-      <Button
-        size="small"
-        endIcon={<ArrowForwardIcon fontSize="small" />}
-        onClick={() => handleNavigate(true)}
-        disabled={!nextNavEnabled}
-        sx={{ minWidth: 0, flexShrink: 1 }}
-      >
-        <NavButtonLabel text={nextButtonText} title={nextLabelFull} />
-      </Button>
+      <Box sx={{ minWidth: 0, display: 'flex', justifyContent: 'flex-end' }}>
+        <Button
+          size="small"
+          endIcon={<ArrowForwardIcon fontSize="small" />}
+          onClick={() => handleNavigate(true)}
+          disabled={!nextNavEnabled}
+          sx={{
+            minWidth: 0,
+            maxWidth: '100%',
+            justifyContent: 'flex-end',
+          }}
+        >
+          <NavButtonLabel
+            text={nextButtonText}
+            title={nextLabelFull}
+            align="right"
+          />
+        </Button>
+      </Box>
     </Box>
   );
 }
