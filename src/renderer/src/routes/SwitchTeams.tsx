@@ -84,9 +84,7 @@ const TeamCard = ({ label, teamId, name, onOpenSettings }: ITeamCardProps) => {
   // For other teams, show settings button only if user is admin
   const isPersonalTeam = teamId === personalTeam;
   const showSettings = isPersonalTeam || (teamRec && isAdmin(teamRec));
-  const canModifyTeamSettings =
-    ((!isOffline && connected) || offlineOnly) &&
-    (isPersonalTeam || Boolean(teamRec && isAdmin(teamRec)));
+  const canModifyTeamSettings = (!isOffline && connected) || offlineOnly;
 
   return (
     <Card
