@@ -142,7 +142,7 @@ export const AudioVersionCard: React.FC<AudioVersionCardProps> = (props) => {
           sx={{
             width: '100%',
             minWidth: 0,
-            alignItems: 'stretch',
+            alignItems: 'flex-start',
           }}
         >
           <Stack
@@ -150,7 +150,7 @@ export const AudioVersionCard: React.FC<AudioVersionCardProps> = (props) => {
             alignItems="center"
             sx={{
               flexShrink: 0,
-              alignSelf: 'stretch',
+              alignSelf: 'flex-start',
             }}
           >
             {props.showAttachControl && props.onAttachToggle && (
@@ -324,9 +324,9 @@ export const AudioVersionCard: React.FC<AudioVersionCardProps> = (props) => {
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
-              justifyContent: 'flex-end',
+              justifyContent: 'flex-start',
               flexShrink: 0,
-              alignSelf: 'stretch',
+              alignSelf: 'flex-start',
             }}
           >
             <UserAvatar
