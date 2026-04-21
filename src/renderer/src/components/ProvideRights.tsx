@@ -32,10 +32,15 @@ import { UnsavedContext } from '../context/UnsavedContext';
 import Uploader from './Uploader';
 import { communitySelector, sharedSelector } from '../selector';
 import { shallowEqual, useSelector } from 'react-redux';
-import { AddRecord, ReplaceRelatedRecord } from '../model/baseModel';
+import {
+  AddRecord,
+  ReplaceRelatedRecord,
+  UpdateRecord,
+} from '../model/baseModel';
 import IntellectualProperty from '../model/intellectualProperty';
 import { UploadType } from './UploadType';
 import {
+  InitializedRecord,
   RecordIdentity,
   RecordKeyMap,
   UninitializedRecord,
@@ -198,30 +203,59 @@ export function ProvideRights(props: IProps) {
           attributes: { ...mediaRec.attributes, transcription: statement },
         } as MediaFileD);
       }
-      const ip = {
-        type: 'intellectualproperty',
-        attributes: {
-          rightsHolder: speaker,
-          notes: JSON.stringify(state),
-        },
-      } as IntellectualProperty & UninitializedRecord;
-      await memory.update((t) => [
-        ...AddRecord(t, ip, user, memory),
-        ...ReplaceRelatedRecord(
-          t,
-          ip as RecordIdentity,
-          'releaseMediafile',
-          'mediafile',
-          mediaId
-        ),
-        ...ReplaceRelatedRecord(
-          t,
-          ip as RecordIdentity,
-          'organization',
-          'organization',
-          orgId
-        ),
-      ]);
+      const speakerKey = speaker.trim().toLowerCase();
+      const existingIp = (
+        memory.cache.query((q) => q.findRecords('intellectualproperty')) as (IntellectualProperty &
+          InitializedRecord)[]
+      ).find((r) => {
+        if (related(r, 'organization') !== orgId) return false;
+        const holder = r.attributes?.rightsHolder?.trim().toLowerCase() ?? '';
+        return holder.length > 0 && holder === speakerKey;
+      });
+      if (existingIp) {
+        const updated: IntellectualProperty & InitializedRecord = {
+          ...existingIp,
+          attributes: {
+            ...existingIp.attributes,
+            notes: JSON.stringify(state),
+          },
+        };
+        await memory.update((t) => [
+          ...ReplaceRelatedRecord(
+            t,
+            existingIp,
+            'releaseMediafile',
+            'mediafile',
+            mediaId
+          ),
+          ...UpdateRecord(t, updated, user),
+        ]);
+      } else {
+        const ip = {
+          type: 'intellectualproperty',
+          attributes: {
+            rightsHolder: speaker,
+            notes: JSON.stringify(state),
+          },
+        } as IntellectualProperty & UninitializedRecord;
+        await memory.update((t) => [
+          ...AddRecord(t, ip, user, memory),
+          ...ReplaceRelatedRecord(
+            t,
+            ip as RecordIdentity,
+            'releaseMediafile',
+            'mediafile',
+            mediaId
+          ),
+          ...ReplaceRelatedRecord(
+            t,
+            ip as RecordIdentity,
+            'organization',
+            'organization',
+            orgId
+          ),
+        ]);
+      }
       onRights && onRights(true);
       if (importList) {
         setImportList(undefined);

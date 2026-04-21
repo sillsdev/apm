@@ -250,21 +250,30 @@ export const Uploader = (props: IProps) => {
     const next = n + 1;
     if (next < uploadList.length && !cancelled.current) {
       doUpload(next);
-    } else if (!getGlobal('offline') && mediaIdRef.current?.length > 0) {
-      pullTableList(
-        'mediafile',
-        mediaIdRef.current,
-        memory,
-        remote,
-        backup,
-        errorReporter
-      ).then(() => {
+    } else {
+      // User closed the upload dialog while a file was still uploading: do not
+      // treat a completed network request as an accepted upload (avoids e.g.
+      // duplicate intellectual-property rows for the same speaker).
+      if (cancelled.current) {
+        successCount.current = 0;
+        mediaIdRef.current = [];
+      }
+      if (!getGlobal('offline') && mediaIdRef.current?.length > 0) {
+        pullTableList(
+          'mediafile',
+          mediaIdRef.current,
+          memory,
+          remote,
+          backup,
+          errorReporter
+        ).then(() => {
+          finishMessage();
+          onOpen(false); //do this just for uploader
+        });
+      } else {
         finishMessage();
         onOpen(false); //do this just for uploader
-      });
-    } else {
-      finishMessage();
-      onOpen(false); //do this just for uploader
+      }
     }
   };
 
