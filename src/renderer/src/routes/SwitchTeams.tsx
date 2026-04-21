@@ -80,8 +80,9 @@ const TeamCard = ({ label, teamId, name, onOpenSettings }: ITeamCardProps) => {
   const [isOffline] = useGlobal('offline');
   const [offlineOnly] = useGlobal('offlineOnly');
   const [connected] = useGlobal('connected');
-  // For personal team, always show settings button (user owns it)
-  // For other teams, show settings button only if user is admin
+  // Personal teams are always eligible for settings; other teams require admin access.
+  // The button is only rendered when team settings can be modified in the current
+  // connectivity mode (online, or offlineOnly).
   const isPersonalTeam = teamId === personalTeam;
   const showSettings = isPersonalTeam || (teamRec && isAdmin(teamRec));
   const canModifyTeamSettings = (!isOffline && connected) || offlineOnly;
