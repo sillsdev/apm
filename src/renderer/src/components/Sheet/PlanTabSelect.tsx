@@ -11,8 +11,10 @@ import { PlanContext } from '../../context/PlanContext';
 import { useGlobal } from '../../context/useGlobal';
 import { useOrbitData } from '../../hoc/useOrbitData';
 import { PlanTabEnum } from '../PlanTabsEnum';
+import { UnsavedContext } from '../../context/UnsavedContext';
 
 export const PlanTabSelect = () => {
+  const { checkSavedFn: checkSaved } = useContext(UnsavedContext).state;
   const [actionMenuItem, setActionMenuItem] = useState<null | HTMLElement>(
     null
   );
@@ -40,7 +42,7 @@ export const PlanTabSelect = () => {
   }, [defaultItem, t.media, t.assignments, t.transcriptions, showAssign]);
   const handleMenu = (e: any) => setActionMenuItem(e.currentTarget);
   const handleClose = () => setActionMenuItem(null);
-  const handleChange = (menuIndex: number) => () => {
+  const handleChange = (menuIndex: number) => {
     const tabIndex =
       showAssign || menuIndex < PlanTabEnum.assignment
         ? menuIndex
@@ -73,7 +75,11 @@ export const PlanTabSelect = () => {
         onClose={handleClose}
       >
         {options.map((v, i) => (
-          <MenuItem key={v} id={v} onClick={handleChange(i)}>
+          <MenuItem
+            key={v}
+            id={v}
+            onClick={() => checkSaved(() => handleChange(i))}
+          >
             {v}
           </MenuItem>
         ))}
