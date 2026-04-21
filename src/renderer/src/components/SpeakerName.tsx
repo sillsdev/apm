@@ -26,6 +26,13 @@ interface NameOptionType {
 
 const filter = createFilterOptions<NameOptionType>();
 
+/** Non-empty trimmed name, or null if the value is missing / whitespace-only. */
+function normalizedSpeakerName(raw: string | undefined | null): string | null {
+  if (raw == null) return null;
+  const t = raw.trim();
+  return t.length === 0 ? null : t;
+}
+
 interface IProps {
   name: string;
   noNewVoice?: boolean | undefined;
@@ -123,37 +130,51 @@ export function SpeakerName({
     onRights && onRights(false);
   };
 
-  const inList = (name: string) => speakers.find((s) => s.name === name);
+  const inList = (name: string) => {
+    const n = normalizedSpeakerName(name);
+    if (!n) return undefined;
+    return speakers.find((s) => normalizedSpeakerName(s.name) === n);
+  };
 
   const handleChoice = (newValue: string | NameOptionType | null) => {
     if (newValue === null) {
       nameReset();
     } else if (typeof newValue === 'string') {
-      valueRef.current = newValue;
-      setValue({
-        name: newValue,
-      });
-      onChange && onChange(newValue);
-      if (inList(newValue)) {
+      const n = normalizedSpeakerName(newValue);
+      if (!n) {
+        nameReset();
+        return;
+      }
+      valueRef.current = n;
+      setValue({ name: n });
+      onChange && onChange(n);
+      if (inList(n)) {
         onRights && onRights(true);
         setHasNoRights(false);
       } else handleRights();
     } else if (newValue && newValue.inputValue) {
-      // Create a new value from the user input
-      valueRef.current = newValue.inputValue;
-      setValue({
-        name: newValue.inputValue,
-      });
-      onChange && onChange(newValue.inputValue);
-      if (inList(newValue.inputValue)) {
+      const n = normalizedSpeakerName(newValue.inputValue);
+      if (!n) {
+        nameReset();
+        return;
+      }
+      valueRef.current = n;
+      setValue({ name: n });
+      onChange && onChange(n);
+      if (inList(n)) {
         onRights && onRights(true);
         setHasNoRights(false);
       } else handleRights();
     } else {
       setValue(newValue);
       if (newValue) {
-        valueRef.current = newValue.name;
-        onChange && onChange(newValue?.name || '');
+        const n = normalizedSpeakerName(newValue.name);
+        if (!n) {
+          nameReset();
+          return;
+        }
+        valueRef.current = n;
+        onChange && onChange(n);
         onRights && onRights(true);
         setHasNoRights(false);
       }
@@ -165,30 +186,43 @@ export function SpeakerName({
       nameReset();
       setHasNoRights(false);
     } else if (typeof newValue === 'string') {
-      valueRef.current = newValue;
-      setValue({
-        name: newValue,
-      });
-      onChange && onChange(newValue);
-      if (inList(newValue)) {
+      const n = normalizedSpeakerName(newValue);
+      if (!n) {
+        nameReset();
+        setHasNoRights(false);
+        return;
+      }
+      valueRef.current = n;
+      setValue({ name: n });
+      onChange && onChange(n);
+      if (inList(n)) {
         setHasNoRights(false);
         setShowSelectDialog(false);
       } else {
         setHasNoRights(true);
       }
     } else if (newValue && newValue.inputValue) {
-      // Create a new value from the user input
-      valueRef.current = newValue.inputValue;
-      setValue({
-        name: newValue.inputValue,
-      });
-      onChange && onChange(newValue.inputValue);
+      const n = normalizedSpeakerName(newValue.inputValue);
+      if (!n) {
+        nameReset();
+        setHasNoRights(false);
+        return;
+      }
+      valueRef.current = n;
+      setValue({ name: n });
+      onChange && onChange(n);
       setHasNoRights(true);
     } else {
       setValue(newValue);
       if (newValue) {
-        valueRef.current = newValue.name;
-        onChange && onChange(newValue?.name || '');
+        const n = normalizedSpeakerName(newValue.name);
+        if (!n) {
+          nameReset();
+          setHasNoRights(false);
+          return;
+        }
+        valueRef.current = n;
+        onChange && onChange(n);
         setHasNoRights(false);
         setShowSelectDialog(false);
       }
@@ -231,15 +265,16 @@ export function SpeakerName({
       nameReset();
       return;
     }
-    const nextName =
+    const rawName =
       typeof newValue === 'string'
         ? newValue
         : newValue.inputValue
           ? newValue.inputValue
           : newValue.name;
 
+    const nextName = normalizedSpeakerName(rawName);
     // If empty, keep dialog open (don't launch rights).
-    if (!nextName?.trim()) {
+    if (!nextName) {
       nameReset();
       setValue({ name: '' });
       return;
@@ -305,14 +340,16 @@ export function SpeakerName({
               const filtered = filter(options, params);
 
               const { inputValue } = params;
-              // Suggest the creation of a new value
-              const isExisting = options.some(
-                (option) => inputValue === option.name
-              );
-              if (inputValue !== '' && !isExisting) {
+              const trimmed = normalizedSpeakerName(inputValue);
+              const isExisting =
+                trimmed != null &&
+                options.some(
+                  (option) => normalizedSpeakerName(option.name) === trimmed
+                );
+              if (trimmed && !isExisting) {
                 filtered.push({
-                  inputValue,
-                  name: t.addSpeaker.replace('{0}', inputValue),
+                  inputValue: trimmed,
+                  name: t.addSpeaker.replace('{0}', trimmed),
                 });
               }
 
