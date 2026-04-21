@@ -188,6 +188,8 @@ interface IProps {
   onVersions?: () => void;
   handleSave?: () => void;
   isSaveDisabled?: boolean;
+  /** True while passage media save/upload is in progress (disables Clear, etc.). */
+  mediaSaveInProgress?: boolean;
   /** When false, hide Save (e.g. waveform already persisted). Default true if omitted. */
   showWaveformSave?: boolean;
 }
@@ -289,6 +291,7 @@ function WSAudioPlayer(props: IProps) {
     onVersions,
     handleSave,
     isSaveDisabled,
+    mediaSaveInProgress,
     showWaveformSave,
   } = props;
 
@@ -1754,7 +1757,12 @@ function WSAudioPlayer(props: IProps) {
         <AltButton
           id="wsAudioClear"
           onClick={() => handleClear()}
-          disabled={recording || duration === 0 || waitingForAI}
+          disabled={
+            recording ||
+            duration === 0 ||
+            waitingForAI ||
+            Boolean(mediaSaveInProgress)
+          }
           sx={smallButtonProps}
         >
           {t.reset}
