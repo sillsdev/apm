@@ -186,7 +186,7 @@ export const OrgHead = () => {
       </Typography>
       {isTeamScreen && (
         <>
-          {isAdmin && canModify && (
+          {canModify && (
             <>
               <IconButton
                 onClick={handleSettingsMenuOpen}
