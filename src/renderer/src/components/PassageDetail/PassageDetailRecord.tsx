@@ -66,6 +66,7 @@ export function PassageDetailRecord(props: IProps) {
     sharedResource,
     mediafileId,
     chooserSize,
+    recording,
     setRecording,
     currentstep,
   } = usePassageDetailContext();
@@ -270,6 +271,7 @@ export function PassageDetailRecord(props: IProps) {
               id="pdRecordLoadFile"
               onClick={handleUpload}
               title={ts.loadFromFile}
+              disabled={recording}
               startIcon={
                 <FolderOpenOutlinedIcon
                   sx={{ width: '14px', height: '14px' }}
