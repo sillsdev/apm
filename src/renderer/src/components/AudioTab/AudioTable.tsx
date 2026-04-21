@@ -234,9 +234,8 @@ export const AudioTable = (props: IProps) => {
     <Box
       sx={{
         width: '100%',
-        minHeight: '20rem',
-        maxHeight: { xs: '20rem', sm: 'none' },
-        overflowY: 'auto',
+        // xs: let the list grow with the page so multiple cards are visible without a short inner scroll pane.
+        minHeight: { xs: 0, sm: '20rem' },
       }}
     >
       {sortedData.map((row) => {
