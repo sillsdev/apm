@@ -186,7 +186,7 @@ export const OrgHead = () => {
       </Typography>
       {isTeamScreen && (
         <>
-          {isAdmin && (!isMobile || showSort) && (
+          {canModify && (
             <>
               <IconButton
                 onClick={handleSettingsMenuOpen}
@@ -199,17 +199,13 @@ export const OrgHead = () => {
                 open={Boolean(settingsMenuEl)}
                 onClose={handleSettingsMenuClose}
               >
-                {!isMobile && (
-                  <MenuItem onClick={handleSettings}>
-                    {cardStrings?.teamSettings || 'Team Settings'}
-                  </MenuItem>
-                )}
-                {!isMobile && canModify && (
-                  <MenuItem onClick={handleWorkflow}>
-                    {cardStrings?.editWorkflow?.replace('{0}', '') ||
-                      'Edit Workflow'}
-                  </MenuItem>
-                )}
+                <MenuItem onClick={handleSettings}>
+                  {cardStrings?.teamSettings || 'Team Settings'}
+                </MenuItem>
+                <MenuItem onClick={handleWorkflow}>
+                  {cardStrings?.editWorkflow?.replace('{0}', '') ||
+                    'Edit Workflow'}
+                </MenuItem>
                 {showSort && (
                   <MenuItem onClick={handleSort}>
                     {cardStrings?.sortProjects || 'Sort Projects'}

@@ -886,19 +886,18 @@ describe('OrgHead', () => {
     });
   });
 
-  it('should not show first two menu items on mobile width', () => {
+  it('should show team settings menu on mobile width when online admin', () => {
     // Set mobile viewport (below 'sm' breakpoint which is 600px)
     cy.viewport(375, 667);
     const orgId = 'test-org-id';
     const orgName = 'Test Organization';
     const orgData = createMockOrganization(orgId, orgName);
-    // Create multiple projects to make showSort true
     const project1 = createMockProject('project-1', 'Project 1');
     const project2 = createMockProject('project-2', 'Project 2');
     const projectData = [project1, project2];
 
     mountOrgHead(
-      createInitialState({ offlineOnly: true }, orgData, projectData),
+      createInitialState({}, orgData, projectData),
       ['/team'],
       orgId,
       orgData,
@@ -907,20 +906,58 @@ describe('OrgHead', () => {
       projectData
     );
 
-    // Settings button should exist because showSort is true
     cy.get('button').first().click();
     cy.get('[role="menu"]').should('be.visible');
 
-    // First two menu items should NOT be visible on mobile
-    cy.contains('Team Settings').should('not.exist');
-    cy.contains('Edit Workflow').should('not.exist');
-
-    // Sort Projects (third item) should be visible since showSort is true
+    cy.contains('Team Settings').should('be.visible');
+    cy.contains('Edit Workflow').should('be.visible');
     cy.contains('Sort Projects').should('be.visible');
   });
 
-  it('should not show settings button on mobile width when showSort is false', () => {
+  it('should not show settings menu on mobile width when offline', () => {
+    cy.viewport(375, 667);
+    const orgId = 'test-org-id';
+    const orgName = 'Test Organization';
+    const orgData = createMockOrganization(orgId, orgName);
+    const project1 = createMockProject('project-1', 'Project 1');
+    const project2 = createMockProject('project-2', 'Project 2');
+    const projectData = [project1, project2];
+
+    mountOrgHead(
+      createInitialState({ offline: true, connected: false }, orgData, projectData),
+      ['/team'],
+      orgId,
+      orgData,
+      true,
+      undefined,
+      projectData
+    );
+
+    cy.get('button').should('have.length', 1);
+    cy.contains('Team Settings').should('not.exist');
+  });
+
+  it('should not show settings button on mobile width when offline (showSort false)', () => {
     // Set mobile viewport (below 'sm' breakpoint which is 600px)
+    cy.viewport(375, 667);
+    const orgId = 'test-org-id';
+    const orgName = 'Test Organization';
+    const orgData = createMockOrganization(orgId, orgName);
+
+    mountOrgHead(
+      createInitialState({ offline: true, connected: false }),
+      ['/team'],
+      orgId,
+      orgData,
+      true
+    );
+
+    // Team settings gear is hidden when offline (same as desktop TeamItem)
+    cy.get('button').should('have.length', 1); // Only members button should exist
+    cy.get('button svg').should('have.length', 1); // Only one icon (members)
+  });
+
+  it('should show settings button on mobile width when online admin even if showSort is false', () => {
     cy.viewport(375, 667);
     const orgId = 'test-org-id';
     const orgName = 'Test Organization';
@@ -928,10 +965,8 @@ describe('OrgHead', () => {
 
     mountOrgHead(createInitialState(), ['/team'], orgId, orgData, true);
 
-    // Settings button should NOT exist because isMobileWidth is true and showSort is false
-    // (no projects means hasMoreThanOneProject is false, so showSort is false)
-    cy.get('button').should('have.length', 1); // Only members button should exist
-    cy.get('button svg').should('have.length', 1); // Only one icon (members)
+    cy.get('button').should('have.length', 2); // Settings + members
+    cy.get('button svg').should('have.length', 2);
   });
 
   it('should show settings button on mobile width when showSort is true', () => {
@@ -955,7 +990,7 @@ describe('OrgHead', () => {
       projectData
     );
 
-    // Settings button should exist because showSort is true
+    // Settings button should exist because canModify is true (offlineOnly)
     cy.get('button').should('have.length.at.least', 2); // Settings and members buttons
     cy.get('button svg').should('have.length.at.least', 2); // At least two icons
 
@@ -963,11 +998,11 @@ describe('OrgHead', () => {
     cy.get('button').first().click();
     cy.get('[role="menu"]').should('be.visible');
 
-    // Sort Projects should be visible
+    cy.contains('Team Settings').should('be.visible');
     cy.contains('Sort Projects').should('be.visible');
   });
 
-  it('should not show Team Settings or Edit Workflow when mobile view is on at desktop width', () => {
+  it('should not show team settings menu when mobile view is on at desktop width but offline', () => {
     cy.viewport(1024, 768);
     cy.window().then((win) => {
       win.localStorage.setItem(
@@ -983,7 +1018,11 @@ describe('OrgHead', () => {
     const projectData = [project1, project2];
 
     mountOrgHead(
-      createInitialState({ mobileView: true, offlineOnly: true }, orgData, projectData),
+      createInitialState(
+        { mobileView: true, offline: true, connected: false },
+        orgData,
+        projectData
+      ),
       ['/team'],
       orgId,
       orgData,
@@ -992,10 +1031,7 @@ describe('OrgHead', () => {
       projectData
     );
 
-    cy.get('button').first().click();
-    cy.get('[role="menu"]').should('be.visible');
+    cy.get('button').should('have.length', 1);
     cy.contains('Team Settings').should('not.exist');
-    cy.contains('Edit Workflow').should('not.exist');
-    cy.contains('Sort Projects').should('be.visible');
   });
 });
