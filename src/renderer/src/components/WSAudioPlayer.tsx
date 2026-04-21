@@ -657,11 +657,19 @@ function WSAudioPlayer(props: IProps) {
   );
 
   const handleRecorder = useCallback(() => {
+    const blockedWhileExistingMediaLoads =
+      Boolean(myMediaId) &&
+      !readyRef.current &&
+      !recordingRef.current &&
+      !waitingForAI;
     if (
       !allowRecord ||
       playingRef.current ||
       processRecordRef.current ||
-      oneShotUsed
+      oneShotUsed ||
+      loading ||
+      busy ||
+      blockedWhileExistingMediaLoads
     )
       return false;
     if (!recordingRef.current) {
@@ -704,6 +712,10 @@ function WSAudioPlayer(props: IProps) {
     setPxPerSec,
     setRecording,
     setProcessingRecording,
+    myMediaId,
+    loading,
+    busy,
+    waitingForAI,
   ]);
 
   const notifySegmentInteraction = useCallback(() => {
@@ -1662,7 +1674,14 @@ function WSAudioPlayer(props: IProps) {
       recording={recording}
       oneTryOnly={oneTryOnly}
       onClick={handleRecorder}
-      disabled={playing || processingRecording || waitingForAI}
+      disabled={
+        playing ||
+        processingRecording ||
+        waitingForAI ||
+        Boolean(loading) ||
+        Boolean(busy) ||
+        (Boolean(myMediaId) && !ready && !recording && !waitingForAI)
+      }
       tooltipTitle={recordTooltipTitle}
       hasRecording={hasRecording ?? false}
       isStopLogic={isStopLogic ?? false}

@@ -527,6 +527,7 @@ function MediaRecord(props: IProps) {
     <>
       <WSAudioPlayer
         allowRecord={allowRecord !== false}
+        loading={loading}
         allowZoom={allowZoom}
         allowDeltaVoice={allowDeltaVoice}
         oneTryOnly={oneTryOnly}
