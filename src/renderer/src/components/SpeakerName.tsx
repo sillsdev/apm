@@ -131,9 +131,13 @@ export function SpeakerName({
   };
 
   const inList = (name: string) => {
-    const n = normalizedSpeakerName(name);
-    if (!n) return undefined;
-    return speakers.find((s) => normalizedSpeakerName(s.name) === n);
+    const normalized = normalizedSpeakerName(name);
+    if (!normalized) return undefined;
+    const n = normalized.toLocaleLowerCase();
+    return speakers.find((s) => {
+      const sn = normalizedSpeakerName(s.name);
+      return sn != null && sn.toLocaleLowerCase() === n;
+    });
   };
 
   const handleChoice = (newValue: string | NameOptionType | null) => {
