@@ -13,6 +13,8 @@ alwaysApply: true
 - Use stable DOM selectors (ids/data-cy) for assertions.
 - When testing navigation that uses `usePassageNavigate`, include a `MemoryRouter`
   - `Routes` and stub `UnsavedContext.checkSavedFn` to run immediately.
+- `PlanTabSelect` (and parents like `PlanBar`) consume `UnsavedContext`; wrap CT with
+  `UnsavedContext.Provider` and set `checkSavedFn` to invoke the callback immediately.
 - `nextPasId`/`prevPasId` depend on `section.relationships.passages` and
   `memory` records; empty relationships mean no neighbors.
 - `WorkflowStepsMobile` renders SVG stages (no visible text nodes). Assert on

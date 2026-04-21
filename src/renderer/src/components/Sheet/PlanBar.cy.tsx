@@ -5,6 +5,10 @@ import { Provider } from 'react-redux';
 import { legacy_createStore as createStore, combineReducers } from 'redux';
 import DataProvider from '../../hoc/DataProvider';
 import { PlanContext } from '../../context/PlanContext';
+import {
+  UnsavedContext,
+  ICtxState as UnsavedState,
+} from '../../context/UnsavedContext';
 import Coordinator from '@orbit/coordinator';
 import Memory from '@orbit/memory';
 import bugsnagClient from '../../auth/bugsnagClient';
@@ -253,6 +257,9 @@ describe('PlanBar', () => {
   ) => {
     const initialState = createInitialState(globalStateOverrides);
     const planContextState = createMockPlanContextState(planContextOverrides);
+    const unsavedState = {
+      checkSavedFn: (cb: () => void) => cb(),
+    } as UnsavedState;
 
     cy.mount(
       <Provider store={mockStore}>
@@ -264,7 +271,11 @@ describe('PlanBar', () => {
                 setState: cy.stub(),
               }}
             >
-              <PlanBar {...props} />
+              <UnsavedContext.Provider
+                value={{ state: unsavedState, setState: cy.stub() }}
+              >
+                <PlanBar {...props} />
+              </UnsavedContext.Provider>
             </PlanContext.Provider>
           </DataProvider>
         </GlobalProvider>
