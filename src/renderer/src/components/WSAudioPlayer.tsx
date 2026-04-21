@@ -1719,6 +1719,7 @@ function WSAudioPlayer(props: IProps) {
 
   const moreAndMicMenusNode = (
     <Grid>
+      {audioDownload.hiddenAnchor}
       <LightTooltip id="wsAudioMoreTip" title={t.moreOptions}>
         <span>
           <IconButton id="wsAudioMore" onClick={handleMoreMenuOpen}>

@@ -23,21 +23,18 @@ export function AudioDownloadView(
 ): React.ReactElement {
   const { title, menuItem, startDownload, isDisabled, hiddenAnchor } = props;
   const t: IAudioDownloadStrings = useSelector(audioDownloadSelector);
-
+  //The menuitem host must have the hiddenAnchor so it is still in the DOM when the file is downloaded
   if (menuItem) {
     return (
-      <>
-        <StyledIcon
-          id="audDownload"
-          title={title || t.downloadMedia}
-          disabled={isDisabled}
-          onClick={startDownload}
-          sx={{ p: 0, flexShrink: 0 }}
-        >
-          <DownloadIcon fontSize="small" />
-        </StyledIcon>
-        {hiddenAnchor}
-      </>
+      <StyledIcon
+        id="audDownload"
+        title={title || t.downloadMedia}
+        disabled={isDisabled}
+        onClick={startDownload}
+        sx={{ p: 0, flexShrink: 0 }}
+      >
+        <DownloadIcon fontSize="small" />
+      </StyledIcon>
     );
   }
 
