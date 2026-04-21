@@ -272,6 +272,7 @@ export function PassageDetailRecord(props: IProps) {
               onClick={handleUpload}
               disabled={canSave || recording}
               title={ts.loadFromFile}
+              disabled={recording}
               startIcon={
                 <FolderOpenOutlinedIcon
                   sx={{ width: '14px', height: '14px' }}
