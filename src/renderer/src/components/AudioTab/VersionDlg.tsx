@@ -1,4 +1,11 @@
-import { useState, useMemo, useCallback, useLayoutEffect } from 'react';
+import {
+  useState,
+  useMemo,
+  useCallback,
+  useLayoutEffect,
+  useEffect,
+  useRef,
+} from 'react';
 import { useGlobal } from '../../context/useGlobal';
 import { MediaFileD, ISharedStrings } from '../../model';
 import AudioTable from './AudioTable';
@@ -47,8 +54,24 @@ export const VersionDlg = (props: IProps) => {
   );
   const latestRowId = rowsByVersionDesc[0]?.id ?? '';
 
+  const prevDataLenRef = useRef<number | null>(null);
+  useEffect(() => {
+    prevDataLenRef.current = null;
+  }, [passId]);
+
+  useEffect(() => {
+    const prev = prevDataLenRef.current;
+    prevDataLenRef.current = data.length;
+    if (prev !== null && prev > 0 && data.length === 0) {
+      close?.();
+    }
+  }, [data.length, close, passId]);
+
   useLayoutEffect(() => {
-    if (!latestRowId) return;
+    if (!latestRowId) {
+      setSelectedId('');
+      return;
+    }
     setSelectedId((prev) => {
       const prevStillInList = prev && data.some((d) => d.id === prev);
       if (!prevStillInList) return latestRowId;
@@ -90,32 +113,34 @@ export const VersionDlg = (props: IProps) => {
         hasPublishing={hasPublishing}
         showVersionRadio={true}
       />
-      <ActionRow>
-        <Box
-          sx={{
-            pt: 2,
-            width: '100%',
-            display: 'flex',
-            justifyContent: 'flex-end',
-          }}
-        >
-          <PriButton
-            onClick={() => {
-              if (!selectedId || selectedId === latestRowId) return;
-              const version = parseInt(
-                data.find((d) => d.id === selectedId)?.version || '0',
-                10
-              );
-              void promoteVersionToLatest(version).then(() => close?.());
+      {data.length > 0 && (
+        <ActionRow>
+          <Box
+            sx={{
+              pt: 2,
+              width: '100%',
+              display: 'flex',
+              justifyContent: 'flex-end',
             }}
-            disabled={!selectedId || selectedId === latestRowId}
           >
-            <Typography sx={{ color: 'white', p: 0.5 }}>
-              {ts.useThisVersion}
-            </Typography>
-          </PriButton>
-        </Box>
-      </ActionRow>
+            <PriButton
+              onClick={() => {
+                if (!selectedId || selectedId === latestRowId) return;
+                const version = parseInt(
+                  data.find((d) => d.id === selectedId)?.version || '0',
+                  10
+                );
+                void promoteVersionToLatest(version).then(() => close?.());
+              }}
+              disabled={!selectedId || selectedId === latestRowId}
+            >
+              <Typography sx={{ color: 'white', p: 0.5 }}>
+                {ts.useThisVersion}
+              </Typography>
+            </PriButton>
+          </Box>
+        </ActionRow>
+      )}
     </>
   );
 };

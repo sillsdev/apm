@@ -2265,6 +2265,7 @@ export function ScriptureTable(props: IProps) {
           passId={versionRow?.passage?.id || ''}
           canSetDestination={!offline && canPublish}
           hasPublishing={publishingOn}
+          close={handleVerHistClose}
         />
       </BigDialog>
       <BigDialog
