@@ -66,6 +66,7 @@ export function PassageDetailRecord(props: IProps) {
     sharedResource,
     mediafileId,
     chooserSize,
+    recording,
     setRecording,
     currentstep,
   } = usePassageDetailContext();
@@ -269,6 +270,7 @@ export function PassageDetailRecord(props: IProps) {
             <AltButton
               id="pdRecordLoadFile"
               onClick={handleUpload}
+              disabled={canSave || recording}
               title={ts.loadFromFile}
               startIcon={
                 <FolderOpenOutlinedIcon
