@@ -20,6 +20,7 @@ import AppHead from '../components/App/AppHead';
 import { useTheme, alpha } from '@mui/material/styles';
 import { TeamProvider } from '../context/TeamContext';
 import { TeamContext } from '../context/TeamContext';
+import { useGlobal } from '../context/useGlobal';
 import { useTeamActions } from '../components/Team/useTeamActions';
 import { SharedContentCreatorDialog } from '../components/Team/SharedContentCreatorDialog';
 
@@ -76,10 +77,16 @@ const TeamCard = ({ label, teamId, name, onOpenSettings }: ITeamCardProps) => {
   const { isAdmin, teams, personalTeam } = ctx.state;
   const teamRec = teams.find((t) => t.id === teamId);
   const { isMobile } = useMobile();
+  const [isOffline] = useGlobal('offline');
+  const [offlineOnly] = useGlobal('offlineOnly');
+  const [connected] = useGlobal('connected');
   // For personal team, always show settings button (user owns it)
   // For other teams, show settings button only if user is admin
   const isPersonalTeam = teamId === personalTeam;
   const showSettings = isPersonalTeam || (teamRec && isAdmin(teamRec));
+  const canModifyTeamSettings =
+    ((!isOffline && connected) || offlineOnly) &&
+    (isPersonalTeam || Boolean(teamRec && isAdmin(teamRec)));
 
   return (
     <Card
@@ -112,7 +119,7 @@ const TeamCard = ({ label, teamId, name, onOpenSettings }: ITeamCardProps) => {
         >
           {name}
         </Typography>
-        {showSettings && !isMobile && (
+        {showSettings && !isMobile && canModifyTeamSettings && (
           <SettingsButton label={label} onOpenSettings={onOpenSettings} />
         )}
       </Box>
