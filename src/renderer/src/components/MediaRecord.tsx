@@ -187,6 +187,8 @@ function MediaRecord(props: IProps) {
     clearCompleted,
   } = useContext(UnsavedContext).state;
   const saveRef = useRef(false);
+  const mediaSaveInProgress =
+    saveRequested(toolId) || uploading || converting;
   const extensions = useMemo(
     () => ['mp3', 'mp3', 'webm', 'mka', 'm4a', 'wav', 'ogg'],
     []
@@ -558,6 +560,7 @@ function MediaRecord(props: IProps) {
         handleSave={handleSave}
         onVersions={onVersions}
         isSaveDisabled={isSaveDisabled}
+        mediaSaveInProgress={mediaSaveInProgress}
         showWaveformSave={waveformNeedsSave}
       />
       {warning && !effectiveMobileView && (
