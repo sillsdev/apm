@@ -31,7 +31,11 @@ import SpeakerName from '../SpeakerName';
 import { sharedSelector } from '../../selector';
 import { useMobile } from '../../utils';
 import { useOrbitData } from '../../hoc/useOrbitData';
-import { RecordIdentity, RecordKeyMap, RecordTransformBuilder } from '@orbit/records';
+import {
+  RecordIdentity,
+  RecordKeyMap,
+  RecordTransformBuilder,
+} from '@orbit/records';
 import { useStepPermissions } from '../../utils/useStepPermission';
 
 interface IProps {
@@ -187,24 +191,22 @@ export function PassageDetailRecord(props: IProps) {
     } else setStatusText(ts.NoSaveWoMedia);
   };
   const afterUpload = async (planId: string, mediaRemoteIds?: string[]) => {
-    if (!cancelled.current) {
-      const id =
-        mediaRemoteIds && mediaRemoteIds.length > 0
-          ? remoteIdGuid(
-              'mediafile',
-              mediaRemoteIds[0],
-              memory?.keyMap as RecordKeyMap
-            ) || mediaRemoteIds[0]
-          : undefined;
-      if (cancelled.current && id) {
-        await memory.update((tr: RecordTransformBuilder) =>
-          tr.removeRecord({ type: 'mediafile', id }).toOperation()
-        );
-      } else {
-        await afterUploadCb(id);
-      }
-      if (id) handleReload();
+    const id =
+      mediaRemoteIds && mediaRemoteIds.length > 0
+        ? remoteIdGuid(
+            'mediafile',
+            mediaRemoteIds[0],
+            memory?.keyMap as RecordKeyMap
+          ) || mediaRemoteIds[0]
+        : undefined;
+    if (cancelled.current && id) {
+      await memory.update((tr: RecordTransformBuilder) =>
+        tr.removeRecord({ type: 'mediafile', id }).toOperation()
+      );
+    } else {
+      await afterUploadCb(id);
     }
+    if (id) handleReload();
     cancelled.current = false;
     if (importList) {
       setImportList(undefined);

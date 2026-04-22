@@ -44,7 +44,9 @@ interface IProps {
   isOpen: boolean;
   onOpen: (visible: boolean) => void;
   showMessage: (msg: string | React.JSX.Element, alert?: AlertSeverity) => void;
-  finish?: ((planId: string, mediaRemoteIds?: string[]) => void) | undefined; // logic when upload complete
+  finish?:
+    | ((planId: string, mediaRemoteIds?: string[]) => Promise<void>)
+    | undefined; // logic when upload complete
   metaData?: React.JSX.Element | undefined; // component embeded in dialog
   ready?: (() => boolean) | undefined; // if false control is disabled
   // createProject?: (name: string) => Promise<string>;
@@ -153,7 +155,7 @@ export const Uploader = (props: IProps) => {
     while (err) err = errMsgs.pop();
   };
 
-  const finishMessage = () => {
+  const finishMessage = async () => {
     console.log('finishMessage', successCount.current);
     //wait for any error messages to show up
     setTimeout(() => {
@@ -177,7 +179,7 @@ export const Uploader = (props: IProps) => {
       setComplete(0);
       setBusy(false);
       cancelled.current = successCount.current <= 0;
-      finish && finish(planIdRef.current, mediaIdRef.current);
+      if (finish) finish(planIdRef.current, mediaIdRef.current);
     }, 1000);
   };
 

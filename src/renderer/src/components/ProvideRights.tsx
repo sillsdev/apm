@@ -178,7 +178,7 @@ export function ProvideRights(props: IProps) {
   };
 
   const afterUploadCb = async (mediaId: string | undefined) => {
-    if (mediaId && !cancelled.current) {
+    if (mediaId) {
       let orgId = team || organizationId;
       if (!orgId) {
         const planRec = findRecord(memory, 'plan', getGlobal('plan'));
