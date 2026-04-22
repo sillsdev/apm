@@ -233,6 +233,7 @@ export function ProvideRights(props: IProps) {
     } else {
       setStatusText(ts.NoSaveWoMedia);
       saveCompleted(toolId, ts.NoSaveWoMedia);
+      cancelled.current = false;
     }
     setSaving(false);
   };

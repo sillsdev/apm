@@ -311,6 +311,7 @@ export function AudioTab() {
         );
         setAttachVisible(true);
       }
+      cancelled.current = false;
     }
   };
 

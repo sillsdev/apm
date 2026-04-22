@@ -573,56 +573,59 @@ export function PassageDetailArtifacts() {
   };
 
   const afterUpload = async (planId: string, mediaRemoteIds?: string[]) => {
-    let cnt = rowData.length;
-    const projRes = new Array<MediaFileD>();
-    if (mediaRemoteIds && mediaRemoteIds.length > 0) {
-      for (const remId of mediaRemoteIds) {
-        cnt += 1;
-        const id =
-          remoteIdGuid('mediafile', remId, memory?.keyMap as RecordKeyMap) ||
-          remId;
-        const mediaRecId = { type: 'mediafile', id };
-        if (descriptionRef.current) {
-          await memory.update((t) => [
-            t.replaceAttribute(mediaRecId, 'topic', descriptionRef.current),
-          ]);
-        }
-        if (catIdRef.current) {
-          await memory.update((t) => [
-            ...ReplaceRelatedRecord(
-              t,
+    if (!cancelled.current) {
+      let cnt = rowData.length;
+      const projRes = new Array<MediaFileD>();
+      if (mediaRemoteIds && mediaRemoteIds.length > 0) {
+        for (const remId of mediaRemoteIds) {
+          cnt += 1;
+          const id =
+            remoteIdGuid('mediafile', remId, memory?.keyMap as RecordKeyMap) ||
+            remId;
+          const mediaRecId = { type: 'mediafile', id };
+          if (descriptionRef.current) {
+            await memory.update((t) => [
+              t.replaceAttribute(mediaRecId, 'topic', descriptionRef.current),
+            ]);
+          }
+          if (catIdRef.current) {
+            await memory.update((t) => [
+              ...ReplaceRelatedRecord(
+                t,
+                mediaRecId,
+                'artifactCategory',
+                'artifactcategory',
+                catIdRef.current
+              ),
+            ]);
+          }
+          if (isPassageResource()) {
+            await memory.update((t) => [
+              ...ReplaceRelatedRecord(
+                t,
+                mediaRecId,
+                'passage',
+                'passage',
+                passage.id
+              ),
+            ]);
+          }
+          if (!isProjectResource()) {
+            await AddSectionResource(
+              cnt,
+              descriptionRef.current,
               mediaRecId,
-              'artifactCategory',
-              'artifactcategory',
-              catIdRef.current
-            ),
-          ]);
+              isPassageResource() ? passage.id : null
+            );
+          } else {
+            projRes.push(findRecord(memory, 'mediafile', id) as MediaFileD);
+          }
         }
-        if (isPassageResource()) {
-          await memory.update((t) => [
-            ...ReplaceRelatedRecord(
-              t,
-              mediaRecId,
-              'passage',
-              'passage',
-              passage.id
-            ),
-          ]);
-        }
-        if (!isProjectResource()) {
-          await AddSectionResource(
-            cnt,
-            descriptionRef.current,
-            mediaRecId,
-            isPassageResource() ? passage.id : null
-          );
-        } else {
-          projRes.push(findRecord(memory, 'mediafile', id) as MediaFileD);
-        }
+        if (projRes.length === 1) setProjResSetup(projRes);
+        resetEdit();
       }
-      if (projRes.length === 1) setProjResSetup(projRes);
-      resetEdit();
     }
+    cancelled.current = false;
   };
 
   const resourceSourcePassages = useMemo(() => {

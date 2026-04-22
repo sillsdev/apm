@@ -269,7 +269,7 @@ export function PassageDetailItem(props: IProps) {
   };
 
   const afterUpload = async (planId: string, mediaRemoteIds?: string[]) => {
-    if (mediaRemoteIds && mediaRemoteIds[0]) {
+    if (mediaRemoteIds && mediaRemoteIds[0] && !cancelled.current) {
       setStatusText('');
       setTopic('');
       saveCompleted(toolId);
@@ -281,6 +281,7 @@ export function PassageDetailItem(props: IProps) {
     } else {
       saveCompleted(toolId, ts.NoSaveWoMedia);
       showMessage(ts.NoSaveWoMedia);
+      cancelled.current = false;
     }
   };
 

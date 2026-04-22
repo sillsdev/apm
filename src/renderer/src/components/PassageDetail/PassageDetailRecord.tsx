@@ -186,12 +186,15 @@ export function PassageDetailRecord(props: IProps) {
     } else setStatusText(ts.NoSaveWoMedia);
   };
   const afterUpload = async (planId: string, mediaRemoteIds?: string[]) => {
-    const mediaId =
-      mediaRemoteIds && mediaRemoteIds.length > 0
-        ? mediaRemoteIds[0]
-        : undefined;
-    afterUploadCb(mediaId);
-    if (mediaId) handleReload();
+    if (!cancelled.current) {
+      const mediaId =
+        mediaRemoteIds && mediaRemoteIds.length > 0
+          ? mediaRemoteIds[0]
+          : undefined;
+      afterUploadCb(mediaId);
+      if (mediaId) handleReload();
+    }
+    cancelled.current = false;
     if (importList) {
       setImportList(undefined);
       setUploadVisible(false);
