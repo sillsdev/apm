@@ -1134,9 +1134,9 @@ function WSAudioPlayer(props: IProps) {
     const nextDuration = wsDuration();
     setDuration(nextDuration);
     setProgress(wsPosition());
-    // wsDuration() can still be 0 for a tick after insert; non-empty blob means we have audio to save.
-    const hasAudio =
-      nextDuration !== 0 || (newblob !== undefined && newblob.size > 0);
+    // Only positive duration counts as savable audio. A trim can yield 0:00 while the blob still
+    // has non-zero size (e.g. container/header only); those must not enable Save.
+    const hasAudio = nextDuration > 0;
     setChanged && setChanged(hasAudio);
   }, [
     setChanged,
