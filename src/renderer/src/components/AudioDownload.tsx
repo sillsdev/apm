@@ -23,7 +23,8 @@ export function AudioDownloadView(
 ): React.ReactElement {
   const { title, menuItem, startDownload, isDisabled, hiddenAnchor } = props;
   const t: IAudioDownloadStrings = useSelector(audioDownloadSelector);
-  //The menuitem host must have the hiddenAnchor so it is still in the DOM when the file is downloaded
+  // Menu content can be transient, so this branch does not render hiddenAnchor.
+  // Any required download anchor must be rendered by a stable parent outside the menu.
   if (menuItem) {
     return (
       <StyledIcon
