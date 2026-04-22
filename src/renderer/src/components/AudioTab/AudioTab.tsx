@@ -48,7 +48,7 @@ import { useSelector } from 'react-redux';
 import { mediaTabSelector, sharedSelector } from '../../selector';
 import { IPassageData, getPassages } from './getPassages';
 import { useOrbitData } from '../../hoc/useOrbitData';
-import { RecordKeyMap } from '@orbit/records';
+import { RecordKeyMap, RecordTransformBuilder } from '@orbit/records';
 import { PlanContext } from '../../context/PlanContext';
 
 export function AudioTab() {
@@ -299,19 +299,24 @@ export function AudioTab() {
     /* eslint-disable-next-line react-hooks/exhaustive-deps */
   }, [attachMap, attachVisible, autoMatch]);
 
-  const afterUpload = (planId: string, mediaRemoteIds?: string[]) => {
+  const afterUpload = async (planId: string, mediaRemoteIds?: string[]) => {
     if (mediaRemoteIds && mediaRemoteIds.length === 1) {
+      const id =
+        remoteIdGuid(
+          'mediafile',
+          mediaRemoteIds[0],
+          memory?.keyMap as RecordKeyMap
+        ) || mediaRemoteIds[0];
       if (!cancelled.current) {
-        setUploadMedia(
-          remoteIdGuid(
-            'mediafile',
-            mediaRemoteIds[0],
-            memory?.keyMap as RecordKeyMap
-          ) || mediaRemoteIds[0]
-        );
+        setUploadMedia(id);
         setAttachVisible(true);
+      } else {
+        await memory.update((tr: RecordTransformBuilder) =>
+          tr.removeRecord({ type: 'mediafile', id }).toOperation()
+        );
       }
     }
+    cancelled.current = false;
   };
 
   const matchMap = useCallback(

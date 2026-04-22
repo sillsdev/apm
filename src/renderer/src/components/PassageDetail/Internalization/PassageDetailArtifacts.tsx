@@ -75,6 +75,7 @@ import { useOrbitData } from '../../../hoc/useOrbitData';
 import {
   RecordIdentity,
   RecordKeyMap,
+  RecordOperation,
   RecordTransformBuilder,
 } from '@orbit/records';
 import { shallowEqual, useSelector } from 'react-redux';
@@ -575,6 +576,8 @@ export function PassageDetailArtifacts() {
   const afterUpload = async (planId: string, mediaRemoteIds?: string[]) => {
     let cnt = rowData.length;
     const projRes = new Array<MediaFileD>();
+    const removeMedia = new Array<RecordOperation>();
+    const tr = new RecordTransformBuilder();
     if (mediaRemoteIds && mediaRemoteIds.length > 0) {
       for (const remId of mediaRemoteIds) {
         cnt += 1;
@@ -582,6 +585,10 @@ export function PassageDetailArtifacts() {
           remoteIdGuid('mediafile', remId, memory?.keyMap as RecordKeyMap) ||
           remId;
         const mediaRecId = { type: 'mediafile', id };
+        if (cancelled.current) {
+          removeMedia.push(tr.removeRecord(mediaRecId).toOperation());
+          continue;
+        }
         if (descriptionRef.current) {
           await memory.update((t) => [
             t.replaceAttribute(mediaRecId, 'topic', descriptionRef.current),
@@ -623,6 +630,10 @@ export function PassageDetailArtifacts() {
       if (projRes.length === 1) setProjResSetup(projRes);
       resetEdit();
     }
+    if (removeMedia.length > 0) {
+      await memory.update(removeMedia);
+    }
+    cancelled.current = false;
   };
 
   const resourceSourcePassages = useMemo(() => {

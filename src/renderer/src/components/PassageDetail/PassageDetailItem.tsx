@@ -20,6 +20,7 @@ import {
   ArtifactTypeSlug,
   IRegionParams,
   related,
+  remoteIdGuid,
   useArtifactType,
   useFetchMediaUrl,
   useOrgDefaults,
@@ -49,6 +50,7 @@ import { useOrbitData } from '../../hoc/useOrbitData';
 import { useStepPermissions } from '../../utils/useStepPermission';
 import { btDefaultSegParams } from './btDefaultSegParams';
 import DiscussionPanel from '../../components/Discussions/DiscussionPanel';
+import { RecordKeyMap, RecordTransformBuilder } from '@orbit/records';
 
 const PlayerRow = styled('div')(() => ({
   width: '100%',
@@ -270,6 +272,17 @@ export function PassageDetailItem(props: IProps) {
 
   const afterUpload = async (planId: string, mediaRemoteIds?: string[]) => {
     if (mediaRemoteIds && mediaRemoteIds[0]) {
+      if (cancelled.current) {
+        const id =
+          remoteIdGuid(
+            'mediafile',
+            mediaRemoteIds[0],
+            memory?.keyMap as RecordKeyMap
+          ) || mediaRemoteIds[0];
+        await memory.update((tr: RecordTransformBuilder) =>
+          tr.removeRecord({ type: 'mediafile', id }).toOperation()
+        );
+      }
       setStatusText('');
       setTopic('');
       saveCompleted(toolId);
@@ -282,6 +295,7 @@ export function PassageDetailItem(props: IProps) {
       saveCompleted(toolId, ts.NoSaveWoMedia);
       showMessage(ts.NoSaveWoMedia);
     }
+    cancelled.current = false;
   };
 
   //from recorder

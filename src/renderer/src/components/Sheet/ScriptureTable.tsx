@@ -2054,6 +2054,7 @@ export function ScriptureTable(props: IProps) {
   const afterUpload = async () => {
     uploadItem.current = undefined;
     if (!cancelled.current) setUploadVisible(false);
+    cancelled.current = false;
     if (importList) {
       setImportList(undefined);
     }
