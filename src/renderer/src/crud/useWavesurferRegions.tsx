@@ -347,17 +347,24 @@ export function useWaveSurferRegions(
           ra.attributes.nextRegion.attributes.prevRegion =
             ra.attributes?.prevRegion;
 
+        // Drop the selection immediately when this removal is the active region.
+        // Otherwise currentRegionRef can keep a dead Region reference across
+        // wsRegionDelete → loadDecoded while region-removed used waitForIt with a
+        // 1s poll interval, causing races and Delete Region to no-op.
+        if (currentRegionRef.current?.id === r.id) {
+          currentRegionOriginalColorRef.current = '';
+          loopingRegionRef.current = undefined;
+          currentRegionRef.current = undefined;
+          onCurrentRegion && onCurrentRegion(undefined);
+        }
+
         if (wsRef.current && !loadingRef.current && !destroyingRef.current) {
-          // wait for it to be removed from this list
-          waitForIt(
-            'region removed',
-            () => region(r.id) === undefined,
-            () => false,
-            200
-          ).then(() => {
-            if (destroyingRef.current) return;
+          queueMicrotask(() => {
+            if (destroyingRef.current || !wsRef.current) return;
             onRegion(numRegions(), true);
-            setCurrentRegion(findRegion(progress(), true));
+            if (!currentRegionRef.current) {
+              setCurrentRegion(findRegion(progress(), true));
+            }
           });
         }
       });
