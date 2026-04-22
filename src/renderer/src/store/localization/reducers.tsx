@@ -2111,7 +2111,7 @@ const initialState = {
 			"record": "Record [{0}]",
 			"reduceNoise": "Reduce Noise",
 			"reduceNoiseAi": "Reduce Noise (AI)",
-			"reset": "Reset Segments",
+			"reset": "Clear",
 			"resume": "Resume",
 			"saveSegments": "Save Segments",
 			"seconds": "seconds",

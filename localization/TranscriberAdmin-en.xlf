@@ -10248,7 +10248,7 @@
       </unit>
       <unit id="wsAudioPlayer.reset">
          <segment>
-            <source>Reset Segments</source>
+            <source>Clear</source>
             <target/>
          </segment>
       </unit>

@@ -11957,7 +11957,7 @@
             </context-group>
          </trans-unit>
          <trans-unit id="wsAudioPlayer.reset">
-            <source>Reset Segments</source>
+            <source>Clear</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">wsAudioPlayer.tsx</context>
