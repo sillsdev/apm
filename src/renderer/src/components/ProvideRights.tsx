@@ -38,6 +38,7 @@ import { UploadType } from './UploadType';
 import {
   RecordIdentity,
   RecordKeyMap,
+  RecordTransformBuilder,
   UninitializedRecord,
 } from '@orbit/records';
 import React from 'react';
@@ -188,41 +189,47 @@ export function ProvideRights(props: IProps) {
         );
         orgId = related(projRec, 'organization');
       }
-      mediaId =
+      const id =
         remoteIdGuid('mediafile', mediaId, memory?.keyMap as RecordKeyMap) ??
         mediaId;
-      if (statement) {
-        const mediaRec = findRecord(memory, 'mediafile', mediaId) as MediaFileD;
-        updateRecord({
-          ...mediaRec,
-          attributes: { ...mediaRec.attributes, transcription: statement },
-        } as MediaFileD);
+      if (cancelled.current && id) {
+        await memory.update((tr: RecordTransformBuilder) =>
+          tr.removeRecord({ type: 'mediafile', id }).toOperation()
+        );
+      } else {
+        if (statement) {
+          const mediaRec = findRecord(memory, 'mediafile', id) as MediaFileD;
+          updateRecord({
+            ...mediaRec,
+            attributes: { ...mediaRec.attributes, transcription: statement },
+          } as MediaFileD);
+        }
+        const ip = {
+          type: 'intellectualproperty',
+          attributes: {
+            rightsHolder: speaker,
+            notes: JSON.stringify(state),
+          },
+        } as IntellectualProperty & UninitializedRecord;
+        await memory.update((t) => [
+          ...AddRecord(t, ip, user, memory),
+          ...ReplaceRelatedRecord(
+            t,
+            ip as RecordIdentity,
+            'releaseMediafile',
+            'mediafile',
+            id
+          ),
+          ...ReplaceRelatedRecord(
+            t,
+            ip as RecordIdentity,
+            'organization',
+            'organization',
+            orgId
+          ),
+        ]);
+        onRights && onRights(true);
       }
-      const ip = {
-        type: 'intellectualproperty',
-        attributes: {
-          rightsHolder: speaker,
-          notes: JSON.stringify(state),
-        },
-      } as IntellectualProperty & UninitializedRecord;
-      await memory.update((t) => [
-        ...AddRecord(t, ip, user, memory),
-        ...ReplaceRelatedRecord(
-          t,
-          ip as RecordIdentity,
-          'releaseMediafile',
-          'mediafile',
-          mediaId
-        ),
-        ...ReplaceRelatedRecord(
-          t,
-          ip as RecordIdentity,
-          'organization',
-          'organization',
-          orgId
-        ),
-      ]);
-      onRights && onRights(true);
       if (importList) {
         setImportList(undefined);
         setUploadVisible(false);
@@ -233,9 +240,9 @@ export function ProvideRights(props: IProps) {
     } else {
       setStatusText(ts.NoSaveWoMedia);
       saveCompleted(toolId, ts.NoSaveWoMedia);
-      cancelled.current = false;
     }
     setSaving(false);
+    cancelled.current = false;
   };
 
   const afterUpload = async (planId: string, mediaRemoteIds?: string[]) => {

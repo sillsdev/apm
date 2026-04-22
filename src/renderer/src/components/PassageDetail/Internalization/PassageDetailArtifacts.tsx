@@ -75,6 +75,7 @@ import { useOrbitData } from '../../../hoc/useOrbitData';
 import {
   RecordIdentity,
   RecordKeyMap,
+  RecordOperation,
   RecordTransformBuilder,
 } from '@orbit/records';
 import { shallowEqual, useSelector } from 'react-redux';
@@ -573,57 +574,64 @@ export function PassageDetailArtifacts() {
   };
 
   const afterUpload = async (planId: string, mediaRemoteIds?: string[]) => {
-    if (!cancelled.current) {
-      let cnt = rowData.length;
-      const projRes = new Array<MediaFileD>();
-      if (mediaRemoteIds && mediaRemoteIds.length > 0) {
-        for (const remId of mediaRemoteIds) {
-          cnt += 1;
-          const id =
-            remoteIdGuid('mediafile', remId, memory?.keyMap as RecordKeyMap) ||
-            remId;
-          const mediaRecId = { type: 'mediafile', id };
-          if (descriptionRef.current) {
-            await memory.update((t) => [
-              t.replaceAttribute(mediaRecId, 'topic', descriptionRef.current),
-            ]);
-          }
-          if (catIdRef.current) {
-            await memory.update((t) => [
-              ...ReplaceRelatedRecord(
-                t,
-                mediaRecId,
-                'artifactCategory',
-                'artifactcategory',
-                catIdRef.current
-              ),
-            ]);
-          }
-          if (isPassageResource()) {
-            await memory.update((t) => [
-              ...ReplaceRelatedRecord(
-                t,
-                mediaRecId,
-                'passage',
-                'passage',
-                passage.id
-              ),
-            ]);
-          }
-          if (!isProjectResource()) {
-            await AddSectionResource(
-              cnt,
-              descriptionRef.current,
-              mediaRecId,
-              isPassageResource() ? passage.id : null
-            );
-          } else {
-            projRes.push(findRecord(memory, 'mediafile', id) as MediaFileD);
-          }
+    let cnt = rowData.length;
+    const projRes = new Array<MediaFileD>();
+    const removeMedia = new Array<RecordOperation>();
+    const tr = new RecordTransformBuilder();
+    if (mediaRemoteIds && mediaRemoteIds.length > 0) {
+      for (const remId of mediaRemoteIds) {
+        cnt += 1;
+        const id =
+          remoteIdGuid('mediafile', remId, memory?.keyMap as RecordKeyMap) ||
+          remId;
+        const mediaRecId = { type: 'mediafile', id };
+        if (cancelled.current) {
+          removeMedia.push(tr.removeRecord(mediaRecId).toOperation());
+          continue;
         }
-        if (projRes.length === 1) setProjResSetup(projRes);
-        resetEdit();
+        if (descriptionRef.current) {
+          await memory.update((t) => [
+            t.replaceAttribute(mediaRecId, 'topic', descriptionRef.current),
+          ]);
+        }
+        if (catIdRef.current) {
+          await memory.update((t) => [
+            ...ReplaceRelatedRecord(
+              t,
+              mediaRecId,
+              'artifactCategory',
+              'artifactcategory',
+              catIdRef.current
+            ),
+          ]);
+        }
+        if (isPassageResource()) {
+          await memory.update((t) => [
+            ...ReplaceRelatedRecord(
+              t,
+              mediaRecId,
+              'passage',
+              'passage',
+              passage.id
+            ),
+          ]);
+        }
+        if (!isProjectResource()) {
+          await AddSectionResource(
+            cnt,
+            descriptionRef.current,
+            mediaRecId,
+            isPassageResource() ? passage.id : null
+          );
+        } else {
+          projRes.push(findRecord(memory, 'mediafile', id) as MediaFileD);
+        }
       }
+      if (projRes.length === 1) setProjResSetup(projRes);
+      resetEdit();
+    }
+    if (removeMedia.length > 0) {
+      await memory.update(removeMedia);
     }
     cancelled.current = false;
   };
