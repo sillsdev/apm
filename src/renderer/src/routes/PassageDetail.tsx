@@ -72,7 +72,9 @@ const MobileDetail = () => {
       showNoAudioPlaceholder={showNoAudioPlaceholder}
       showSideBySide={showSideBySide}
       flushDiscussionLeft={flushDiscussionLeft}
-      recordContent={!discussOpen || showSideBySide ? <MobileStep /> : null}
+      // Always mount MobileStep on narrow mobile while discussion is open; unmounting
+      // drops PassageDetailRecord/MediaRecord state and clears an in-progress recording.
+      recordContent={<MobileStep />}
       noAudioText={ts.noAudio}
     />
   );

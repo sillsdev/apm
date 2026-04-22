@@ -48,7 +48,15 @@ export default function PassageDetailMobileDetail({
               spacing={1}
               sx={{ height: '100%', width: '100%', minWidth: 0 }}
             >
-              {recordContent}
+              <Box
+                sx={
+                  flushDiscussionLeft
+                    ? { display: 'none' }
+                    : { minWidth: 0, width: '100%' }
+                }
+              >
+                {recordContent}
+              </Box>
               <Box sx={{ width: '100%', minWidth: 0 }}>
                 <DiscussionPanel />
               </Box>
