@@ -326,6 +326,114 @@ const partialMessage = (msg: string, partialMsg: string | undefined | null) => {
   return (msg.length > 0 ? ',' : '') + inner;
 };
 
+/** Numeric remote id used in `/copyfromfile/{teamId}/...` after a new team is created. */
+const coerceToPositiveOrgRemoteId = (value: unknown): number | undefined => {
+  if (typeof value === 'number' && Number.isFinite(value) && value > 0) {
+    return Math.trunc(value);
+  }
+  if (typeof value === 'string' && /^\d+$/.test(value.trim())) {
+    return parseInt(value.trim(), 10);
+  }
+  return undefined;
+};
+
+const safeJsonParseUnknown = (raw: string | undefined | null): unknown => {
+  if (raw == null || typeof raw !== 'string') return undefined;
+  const t = raw.trim();
+  if (t.length === 0) return undefined;
+  try {
+    return JSON.parse(t);
+  } catch {
+    return undefined;
+  }
+};
+
+const getNestedRecord = (
+  obj: Record<string, unknown>,
+  key: string
+): Record<string, unknown> | undefined => {
+  const v = obj[key];
+  return v && typeof v === 'object' ? (v as Record<string, unknown>) : undefined;
+};
+
+const organizationIdFromImportResource = (item: unknown): number | undefined => {
+  if (!item || typeof item !== 'object') return undefined;
+  const rec = item as Record<string, unknown>;
+  if (rec.type === 'organization' && rec.id != null) {
+    return coerceToPositiveOrgRemoteId(rec.id);
+  }
+  const imported = rec.imported as Record<string, unknown> | undefined;
+  const data = imported?.data as Record<string, unknown> | undefined;
+  if (data?.type === 'organization' && data.id != null) {
+    return coerceToPositiveOrgRemoteId(data.id);
+  }
+  if (data?.type === 'project') {
+    const rel = data.relationships as Record<string, unknown> | undefined;
+    const orgLink = rel?.organization as Record<string, unknown> | undefined;
+    const orgData = orgLink?.data as Record<string, unknown> | undefined;
+    if (orgData?.id != null) {
+      return coerceToPositiveOrgRemoteId(orgData.id);
+    }
+  }
+  return undefined;
+};
+
+const organizationIdFromParsedPayload = (parsed: unknown): number | undefined => {
+  if (parsed == null) return undefined;
+  if (Array.isArray(parsed)) {
+    for (const el of parsed) {
+      const n = organizationIdFromImportResource(el);
+      if (n != null) return n;
+    }
+    return undefined;
+  }
+  if (typeof parsed === 'object') {
+    return organizationIdFromImportResource(parsed);
+  }
+  return undefined;
+};
+
+/**
+ * Server shape varies (PascalCase vs camelCase, id on body vs inside JSON `message`).
+ * Used to chain multi-file imports into the team created by the first file.
+ */
+const extractOrganizationRemoteIdFromImportResponse = (
+  responseBody: unknown,
+  assembledMessage: string,
+  lastMessageFragment: string | undefined | null
+): number | undefined => {
+  if (responseBody && typeof responseBody === 'object') {
+    const d = responseBody as Record<string, unknown>;
+    const candidates: unknown[] = [
+      d.Id,
+      d.id,
+      d.OrganizationId,
+      d.organizationId,
+    ];
+    for (const nestKey of ['Data', 'data', 'Result', 'result']) {
+      const nest = getNestedRecord(d, nestKey);
+      if (nest) {
+        candidates.push(
+          nest.Id,
+          nest.id,
+          nest.OrganizationId,
+          nest.organizationId
+        );
+      }
+    }
+    for (const c of candidates) {
+      const n = coerceToPositiveOrgRemoteId(c);
+      if (n != null) return n;
+    }
+  }
+  for (const raw of [assembledMessage, lastMessageFragment ?? '']) {
+    const parsed = safeJsonParseUnknown(raw);
+    const fromPayload = organizationIdFromParsedPayload(parsed);
+    if (fromPayload != null) return fromPayload;
+  }
+  return undefined;
+};
+
 interface ProcessImportFileParams {
   filename: string;
   file: Blob | File;
@@ -629,7 +737,11 @@ const processImportFile = async ({
           msg.length > 0
             ? '[' + msg + partialMessage(msg, putresponse.data.message) + ']'
             : putresponse.data.message;
-        const organizationRemoteId = putresponse.data.Id;
+        const organizationRemoteId = extractOrganizationRemoteIdFromImportResponse(
+          putresponse.data,
+          typeof fullMsg === 'string' ? fullMsg : String(fullMsg ?? ''),
+          putresponse.data.message
+        );
         if (!suppressSuccessDispatch) {
           dispatch({
             payload: {
@@ -689,6 +801,10 @@ export interface ImportProjectFromExternalProps {
   token: string | null;
   errorReporter: any;
   pendingmsg: string;
+  /**
+   * Message template used when importing multiple files.
+   * Should include `{0}` for current file index (1-based) and `{1}` for total.
+   */
   fileProcessingMsg: string;
   completemsg: string;
   /** Shown when creating a new team from multiple files but the first import response lacks an organization id. */
@@ -717,7 +833,7 @@ export const importFromExternal =
       const isLast = i === total - 1;
       const msg =
         total > 1
-          ? fileProcessingMsg
+          ? (fileProcessingMsg || pendingmsg)
               .replace('{0}', (i + 1).toString())
               .replace('{1}', total.toString())
           : pendingmsg;
