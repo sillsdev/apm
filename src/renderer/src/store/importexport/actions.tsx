@@ -331,8 +331,14 @@ const coerceToPositiveOrgRemoteId = (value: unknown): number | undefined => {
   if (typeof value === 'number' && Number.isFinite(value) && value > 0) {
     return Math.trunc(value);
   }
-  if (typeof value === 'string' && /^\d+$/.test(value.trim())) {
-    return parseInt(value.trim(), 10);
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (/^\d+$/.test(trimmed)) {
+      const parsed = parseInt(trimmed, 10);
+      if (Number.isFinite(parsed) && parsed > 0) {
+        return Math.trunc(parsed);
+      }
+    }
   }
   return undefined;
 };
