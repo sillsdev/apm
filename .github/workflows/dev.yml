@@ -71,6 +71,9 @@ jobs:
       - name: Install root dependencies
         run: npm ci
 
+      - name: Run migration Scripture Burrito USJ structure tests
+        run: node --test migration/usj-structure.test.mjs
+
       - name: Install renderer dependencies
         working-directory: src/renderer
         run: npm ci
