@@ -2,6 +2,27 @@ import type { Burrito } from './data/types';
 import type { BibleD } from '../model';
 import type { SectionD } from '../model';
 
+jest.mock('../crud/related', () => ({
+  __esModule: true,
+  default: (rec: any, rel: string) => {
+    const r = rec?.relationships?.[rel];
+    if (!r) return null;
+    const data = r?.data;
+    if (typeof data === 'string') return data;
+    if (data && typeof data === 'object' && 'id' in data) return data.id;
+    return data ?? null;
+  },
+}));
+
+jest.mock('../utils/dataPath', () => ({
+  __esModule: true,
+  PathType: { MEDIA: 'MEDIA' },
+  default: jest.fn(async (_url: string, _pathType: unknown, local: any) => {
+    local.localname = '/local/source.ogg';
+    return local;
+  }),
+}));
+
 jest.mock('../hoc/useOrbitData', () => ({
   useOrbitData: jest.fn(() => []),
 }));
@@ -180,5 +201,90 @@ describe('useBurritoAudio', () => {
     );
     expect(alignIngredient).toBeDefined();
     expect(alignIngredient!.checksum.md5).toBeUndefined();
+  });
+
+  it('uses audio/mpeg when converting .ogg/.opus to .mp3', async () => {
+    const ipc = makeIpc();
+    ipc.convertToMp3 = jest.fn().mockResolvedValue(undefined);
+    const { renderHook, act, useBurritoAudio } = loadAudioForApi(ipc);
+
+    // Configure orbit data for this test case.
+    const { useOrbitData } = require('../hoc/useOrbitData');
+    // Use stable references to avoid re-render churn in hooks under test.
+    const orbitMedia = [
+      {
+        id: 'm1',
+        type: 'mediafile',
+        keys: { remoteId: '35928' },
+        attributes: {
+          audioUrl: 'https://example.test/audio',
+          originalFile: 'ENGSEB2-RUT-v1.ogg',
+          contentType: 'audio/ogg;codecs=opus',
+          versionNumber: 1,
+          segments: '{}',
+        },
+        relationships: {
+          plan: { data: { type: 'plan', id: 'plan1' } },
+          passage: { data: { type: 'passage', id: 'p1' } },
+          artifactType: { data: null },
+        },
+      },
+    ];
+    const orbitPassages = [
+      {
+        id: 'p1',
+        type: 'passage',
+        attributes: {
+          book: 'GEN',
+          reference: 'GEN 1:1',
+          startChapter: 1,
+          sequencenum: 1,
+        },
+        relationships: {
+          section: { data: { type: 'section', id: 's1' } },
+          sharedResource: { data: null },
+        },
+      },
+    ];
+    const orbitSectionResources: unknown[] = [];
+    const orbitSharedResources: unknown[] = [];
+
+    useOrbitData.mockImplementation((type: string) => {
+      if (type === 'mediafile') return orbitMedia;
+      if (type === 'passage') return orbitPassages;
+      if (type === 'sectionresource') return orbitSectionResources;
+      if (type === 'sharedresource') return orbitSharedResources;
+      return [];
+    });
+
+    const metadata = burritoFixture();
+    const { result } = renderHook(() => useBurritoAudio(teamId));
+
+    await act(async () => {
+      await result.current({
+        metadata,
+        bible: bibleFixture,
+        book: 'GEN',
+        bookPath: '/burrito/GEN',
+        preLen: 0,
+        sections: [
+          {
+            id: 's1',
+            type: 'section',
+            relationships: {
+              plan: { data: { type: 'plan', id: 'plan1' } },
+            },
+          } as SectionD,
+        ],
+        convertToMp3: true,
+      });
+    });
+
+    const audioIngredient = Object.entries(metadata.ingredients).find(
+      ([, ing]) => ing?.properties?.apmId === '35928'
+    );
+    expect(audioIngredient).toBeDefined();
+    expect(audioIngredient![0].toLowerCase().endsWith('.mp3')).toBe(true);
+    expect(audioIngredient![1].mimeType).toBe('audio/mpeg');
   });
 });

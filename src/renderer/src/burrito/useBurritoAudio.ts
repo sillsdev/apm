@@ -192,9 +192,15 @@ export const useBurritoAudio = (teamId: string) => {
       }
       const stat = JSON.parse(await ipc?.stat(finalPath)) as Stats;
       const size = stat?.size ?? 0;
+      const outputExt = path.extname(finalPath).toLowerCase();
       ingredients[docid] = {
         checksum: { md5: await ipc?.md5File(finalPath) },
-        mimeType: inferAudioContentType(finalPath, attr.contentType),
+        // When we transcode to MP3, the source MediaFile contentType may still be
+        // e.g. `audio/ogg;codecs=opus`. Ingredient mimeType must reflect the output.
+        mimeType:
+          outputExt === '.mp3'
+            ? 'audio/mpeg'
+            : inferAudioContentType(finalPath, attr.contentType),
         size,
         scope: { [book]: [scopeRef] },
         properties: {
