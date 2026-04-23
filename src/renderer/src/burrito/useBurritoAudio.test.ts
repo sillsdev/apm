@@ -203,7 +203,7 @@ describe('useBurritoAudio', () => {
     expect(alignIngredient!.checksum.md5).toBeUndefined();
   });
 
-  it('uses audio/mpeg when converting .ogg/.opus to .mp3', async () => {
+  it('uses audio/mpeg when converting .ogg to .mp3', async () => {
     const ipc = makeIpc();
     ipc.convertToMp3 = jest.fn().mockResolvedValue(undefined);
     const { renderHook, act, useBurritoAudio } = loadAudioForApi(ipc);
