@@ -44,3 +44,23 @@ test('normalization parity for usfm/usx/usj structure extraction', () => {
   assert.deepEqual(usfmShape, usjShape);
   assert.deepEqual(usxShape, usjShape);
 });
+
+test('section heading after \\c keeps ch4 audio in second section when ch4 has no verses yet', () => {
+  const usfm = [
+    '\\id RUT',
+    '\\c 3',
+    '\\s Ruth 3: Ruth Proposes Marriage',
+    '\\p',
+    '\\v 1-18 transcribe it',
+    '\\c 4',
+    '\\s Ruth 4: Joy',
+    '\\p',
+  ].join('\n');
+  const usj = normalizeTextToUsj(usfm, 'usfm');
+  const { sections, paragraphs } = extractStructureFromUsj(usj, null);
+  assert.equal(sections.length, 2);
+  assert.equal(sections[1].startChapter, 4);
+  assert.equal(sections[1].endChapter, 4);
+  const ch4Paras = paragraphs.filter((p) => p.chapter === 4);
+  assert.equal(ch4Paras.length, 0);
+});
