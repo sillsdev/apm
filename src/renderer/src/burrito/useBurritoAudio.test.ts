@@ -28,9 +28,10 @@ jest.mock('../hoc/useOrbitData', () => ({
 }));
 
 jest.mock('../crud/useArtifactType', () => ({
-  useArtifactType: () => ({
+  useArtifactType: jest.fn(() => ({
     slugFromId: jest.fn(() => 'vernacular'),
-  }),
+    VernacularTag: null,
+  })),
   VernacularTag: null,
 }));
 
@@ -288,5 +289,87 @@ describe('useBurritoAudio', () => {
     expect(audioIngredient).toBeDefined();
     expect(audioIngredient![0].toLowerCase().endsWith('.mp3')).toBe(true);
     expect(audioIngredient![1].mimeType).toBe('audio/mpeg');
+  });
+
+  it('exports intellectual property media attached to a plan without a passage', async () => {
+    const ipc = makeIpc();
+    const { renderHook, act, useBurritoAudio } = loadAudioForApi(ipc);
+
+    /* eslint-disable @typescript-eslint/no-require-imports -- resetModules pattern */
+    const { useOrbitData } = require('../hoc/useOrbitData');
+    const { useArtifactType } = require('../crud/useArtifactType');
+    const { ArtifactTypeSlug } = require('../crud/artifactTypeSlug');
+    /* eslint-enable @typescript-eslint/no-require-imports */
+
+    useArtifactType.mockImplementation(() => ({
+      slugFromId: jest.fn((id: string | null | undefined) =>
+        id === 'at-ip' ? 'intellectualproperty' : 'vernacular'
+      ),
+      VernacularTag: null,
+    }));
+
+    const orbitMedia = [
+      {
+        id: 'ip-media-1',
+        type: 'mediafile',
+        keys: { remoteId: 'remote-ip-1' },
+        attributes: {
+          audioUrl: 'https://example.test/ip-release.mp3',
+          originalFile: 'rights-statement.mp3',
+          contentType: 'audio/mpeg',
+          versionNumber: 1,
+          segments: '{}',
+        },
+        relationships: {
+          plan: { data: { type: 'plan', id: 'plan1' } },
+          passage: { data: null },
+          artifactType: { data: { type: 'artifacttype', id: 'at-ip' } },
+        },
+      },
+    ];
+
+    useOrbitData.mockImplementation((type: string) => {
+      if (type === 'mediafile') return orbitMedia;
+      if (type === 'passage') return [];
+      if (type === 'sectionresource') return [];
+      if (type === 'sharedresource') return [];
+      return [];
+    });
+
+    const metadata = burritoFixture();
+    const { result } = renderHook(() => useBurritoAudio(teamId));
+
+    await act(async () => {
+      await result.current({
+        metadata,
+        bible: bibleFixture,
+        book: 'GEN',
+        bookPath: '/burrito/GEN',
+        preLen: 0,
+        sections: [
+          {
+            id: 's1',
+            type: 'section',
+            relationships: {
+              plan: { data: { type: 'plan', id: 'plan1' } },
+            },
+          } as SectionD,
+        ],
+        artifactTypeFilter: [ArtifactTypeSlug.IntellectualProperty],
+      });
+    });
+
+    expect(ipc.copyFile).toHaveBeenCalled();
+    const ipIngredient = Object.entries(metadata.ingredients).find(
+      ([, ing]) => ing?.properties?.apmId === 'remote-ip-1'
+    );
+    expect(ipIngredient).toBeDefined();
+    expect(ipIngredient![0]).toContain('rights-statement');
+    expect(ipIngredient![1].mimeType).toBe('audio/mpeg');
+
+    useArtifactType.mockImplementation(() => ({
+      slugFromId: jest.fn(() => 'vernacular'),
+      VernacularTag: null,
+    }));
   });
 });
