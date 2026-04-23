@@ -326,6 +326,8 @@ function extractStructureFromUsj(usjDoc, scopeFilter) {
       name: name || `Section ${sections.length + 1}`,
       sequencenum: sections.length + 1,
       level: 3,
+      /** Active \\c when this \\s was parsed; used if no verses land in the section. */
+      headingChapter: chapter,
       startChapter: null,
       startVerse: null,
       endChapter: null,
@@ -412,11 +414,20 @@ function extractStructureFromUsj(usjDoc, scopeFilter) {
 
   sections.forEach((section) => {
     if (section.startChapter == null) {
-      section.startChapter = 1;
-      section.endChapter = 1;
-      section.startVerse = 1;
-      section.endVerse = 1;
+      const hc = section.headingChapter;
+      if (hc != null && Number.isFinite(hc)) {
+        section.startChapter = hc;
+        section.endChapter = hc;
+        section.startVerse = 1;
+        section.endVerse = 999;
+      } else {
+        section.startChapter = 1;
+        section.endChapter = 1;
+        section.startVerse = 1;
+        section.endVerse = 1;
+      }
     }
+    delete section.headingChapter;
   });
 
   return { sections, paragraphs };
