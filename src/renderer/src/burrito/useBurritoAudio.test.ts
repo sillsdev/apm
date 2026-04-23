@@ -19,7 +19,7 @@ jest.mock('../utils/dataPath', () => ({
   PathType: { MEDIA: 'MEDIA' },
   default: jest.fn(async (_url: string, _pathType: unknown, local: any) => {
     local.localname = '/local/source.ogg';
-    return local;
+    return local.localname;
   }),
 }));
 
