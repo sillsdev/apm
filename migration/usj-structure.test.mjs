@@ -45,7 +45,7 @@ test('normalization parity for usfm/usx/usj structure extraction', () => {
   assert.deepEqual(usxShape, usjShape);
 });
 
-test('section heading after \\c keeps ch4 audio in fourth section when ch4 has no verses yet', () => {
+test('section heading after \\c keeps ch4 audio in second section when ch4 has no verses yet', () => {
   const usfm = [
     '\\id RUT',
     '\\c 3',
