@@ -231,6 +231,7 @@ export const useBurritoAudio = (teamId: string) => {
 
     let chapter = 0;
     let chapterPath = '';
+    let plan: string | undefined;
 
     for (const section of sections) {
       const refCount = new Map<string, number>();
@@ -240,9 +241,8 @@ export const useBurritoAudio = (teamId: string) => {
       };
 
       // get the passage files for the plan sorted by sequence number
-      const planMedia = mediafiles.filter(
-        (m) => related(section, 'plan') === related(m, 'plan')
-      );
+      plan = related(section, 'plan') as string;
+      const planMedia = mediafiles.filter((m) => plan === related(m, 'plan'));
       const passageRecs = passages
         .filter((p) => related(p, 'section') === section.id)
         .sort((a, b) => a.attributes.sequencenum - b.attributes.sequencenum);
@@ -359,6 +359,18 @@ export const useBurritoAudio = (teamId: string) => {
           );
         }
       }
+    }
+    // filters by plan set in the section records
+    const planMedia = mediafiles
+      .filter(
+        (m) => related(m, 'plan') === plan && related(m, 'passage') === null
+      )
+      .filter(makeArtifactFilter());
+    for (const m of planMedia) {
+      const { name } = path.parse(m.attributes.originalFile);
+      const destName = `${bibleId}-${book}-${cleanFileName(name)}.${getMediaExt(m)}`;
+      const destPath = path.join(bookPath, destName);
+      await processMediaFile(m, destPath, '', '', false);
     }
     const alignment = new AlignmentBuilder()
       .withGroups(alignmentGroups)
