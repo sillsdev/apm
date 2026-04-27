@@ -1,13 +1,59 @@
 import type { Burrito } from './data/types';
-import type { BibleD } from '../model';
+import { BookSeq, type BibleD } from '../model';
+import type { MediaFileD } from '../model';
 import type { SectionD } from '../model';
+import type { MainAPI } from '../model/main-api';
 
 jest.mock('../utils/useCompression', () => ({
   ApmDim: 40,
 }));
 
+let orbitMediafiles: MediaFileD[] = [];
+let orbitPassages: any[] = [];
+let orbitSharedResources: any[] = [];
+let orbitGraphics: any[] = [];
+let orbitArtifactCategories: any[] = [];
+let orbitSectionsAll: SectionD[] = [];
+
 jest.mock('../hoc/useOrbitData', () => ({
-  useOrbitData: jest.fn(() => []),
+  useOrbitData: jest.fn((model: string) => {
+    switch (model) {
+      case 'mediafile':
+        return orbitMediafiles;
+      case 'passage':
+        return orbitPassages;
+      case 'sharedresource':
+        return orbitSharedResources;
+      case 'graphic':
+        return orbitGraphics;
+      case 'artifactcategory':
+        return orbitArtifactCategories;
+      case 'section':
+        return orbitSectionsAll;
+      default:
+        return [];
+    }
+  }),
+}));
+
+jest.mock('../crud/related', () => ({
+  __esModule: true,
+  default: (record: any, relName: string) =>
+    record?.relationships?.[relName]?.data?.id,
+}));
+
+jest.mock('../utils/getMediaExt', () => ({
+  __esModule: true,
+  default: () => 'mp3',
+}));
+
+jest.mock('../utils/dataPath', () => ({
+  __esModule: true,
+  default: jest.fn(async (url: string, _type: unknown, local?: any) => {
+    if (local && typeof local === 'object') local.localname = url;
+    return url;
+  }),
+  PathType: { MEDIA: 'MEDIA' },
 }));
 
 jest.mock('../crud/useProjectDefaults', () => ({
@@ -111,7 +157,7 @@ function makeIpc() {
  * would give the hook a second React copy and break hooks; `resetModules` +
  * requiring RTL before the hook keeps a single React for `renderHook`.
  */
-function loadNavigationForApi(api: typeof window.api) {
+function loadNavigationForApi(api: MainAPI | undefined) {
   jest.resetModules();
   (window as unknown as { api?: typeof api }).api = api;
   // `react` entry registers Jest hooks; `pure` does not (invalid inside `it`).
@@ -136,6 +182,12 @@ describe('useBurritoNavigation', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    orbitMediafiles = [];
+    orbitPassages = [];
+    orbitSharedResources = [];
+    orbitGraphics = [];
+    orbitArtifactCategories = [];
+    orbitSectionsAll = [];
   });
 
   it('sets x-nav flavor, writes navigation.json, graphics folder, and merges manifest ingredient', async () => {
@@ -160,9 +212,9 @@ describe('useBurritoNavigation', () => {
 
     expect(metadata.type?.flavorType?.name).toBe('x-nav');
     expect(ipc.createFolder).toHaveBeenCalled();
-    expect(ipc.createFolder.mock.calls.some((c) => c[0].includes('graphics'))).toBe(
-      true
-    );
+    expect(
+      ipc.createFolder.mock.calls.some((c) => c[0].includes('graphics'))
+    ).toBe(true);
     expect(ipc.write).toHaveBeenCalled();
     const writePaths = (ipc.write as jest.Mock).mock.calls.map((c) => c[0]);
     expect(writePaths.some((p: string) => p.includes('navigation.json'))).toBe(
@@ -170,7 +222,9 @@ describe('useBurritoNavigation', () => {
     );
     expect(ipc.md5File).toHaveBeenCalled();
 
-    const navPath = writePaths.find((p: string) => p.includes('navigation.json'))!;
+    const navPath = writePaths.find((p: string) =>
+      p.includes('navigation.json')
+    )!;
     expect(metadata.ingredients[navPath]).toMatchObject({
       checksum: { md5: 'nav-md5' },
       mimeType: 'application/json',
@@ -207,5 +261,74 @@ describe('useBurritoNavigation', () => {
     );
     expect(manifestIngredient).toBeDefined();
     expect(manifestIngredient!.checksum.md5).toBeUndefined();
+  });
+
+  it('includes special book sections (BookSeq/AltBkSeq encded in the sequence number for each plan), even with no passages', async () => {
+    const ipc = makeIpc();
+    const { renderHook, act, useBurritoNavigation } = loadNavigationForApi(
+      ipc as never
+    );
+
+    // normal section list passed into the hook: determines planIdsForBook
+    const normalSection = {
+      id: 'sec-normal',
+      type: 'section',
+      attributes: { sequencenum: 1, state: '' },
+      relationships: { plan: { data: { id: 'plan-1' } } },
+    } as unknown as SectionD;
+
+    // special negative "book section" stored outside the normal list
+    const specialBookSection = {
+      id: 'sec-book',
+      type: 'section',
+      attributes: {
+        sequencenum: BookSeq,
+        state: 'BOOK GEN',
+      },
+      relationships: {
+        plan: { data: { id: 'plan-1' } },
+        titleMediafile: { data: { id: 'med-1' } },
+      },
+    } as unknown as SectionD;
+
+    orbitSectionsAll = [normalSection, specialBookSection];
+    orbitMediafiles = [
+      {
+        id: 'med-1',
+        type: 'mediafile',
+        attributes: {
+          audioUrl: '/tmp/book-title.mp3',
+          originalFile: 'book-title.mp3',
+          contentType: 'audio/mpeg',
+        },
+      } as unknown as MediaFileD,
+    ];
+
+    const { result } = renderHook(() => useBurritoNavigation(teamId));
+    const metadata = burritoFixture();
+
+    await act(async () => {
+      await result.current({
+        metadata,
+        bible: bibleFixture,
+        book: 'GEN',
+        bookPath: '/burrito/GEN',
+        preLen: 0,
+        sections: [normalSection],
+      });
+    });
+
+    const written = (ipc.write as jest.Mock).mock.calls.find((c) =>
+      (c[0] as string).includes('navigation.json')
+    )?.[1] as string;
+    const manifest = JSON.parse(written);
+    expect(manifest.titleMedia).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          resourceType: 'section',
+          remoteId: 'remote-1',
+        }),
+      ])
+    );
   });
 });

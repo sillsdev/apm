@@ -42,6 +42,7 @@ import {
 } from '../crud/useProjectDefaults';
 import { useRef } from 'react';
 import cleanFileName from '../utils/cleanFileName';
+import { AltBkSeq, BookSeq } from '../model/section';
 
 const ipc = window?.api as MainAPI;
 const FullSize = 1024;
@@ -75,6 +76,7 @@ interface Props {
 export const useBurritoNavigation = (teamId: string) => {
   const mediafiles = useOrbitData<MediaFileD[]>('mediafile');
   const passages = useOrbitData<PassageD[]>('passage');
+  const sectionsAll = useOrbitData<SectionD[]>('section');
   const sharedResources = useOrbitData<SharedResourceD[]>('sharedresource');
   const graphics = useOrbitData<GraphicD[]>('graphic');
   const artifactCategories =
@@ -126,7 +128,7 @@ export const useBurritoNavigation = (teamId: string) => {
       );
       if (resLocalId) {
         const section = findRecord(memory, 'section', resLocalId) as SectionD;
-        resNum = `-${getSectionNum(section)}`;
+        resNum = getSectionNum(section);
       }
     }
     return resNum;
@@ -170,6 +172,24 @@ export const useBurritoNavigation = (teamId: string) => {
     return '';
   };
 
+  const getBookType = (rType: string, resNum: string) => {
+    return resNum === BookSeq.toString()
+      ? 'book'
+      : resNum === AltBkSeq.toString()
+        ? 'altbook'
+        : rType + '-' + resNum;
+  };
+
+  const chapterPathForSectionRef = async (
+    bookPath: string,
+    sectionRef: string
+  ) => {
+    const chapter = sectionRef.split(':')[0] || '1';
+    const chapterPath = path.join(bookPath, pad3(parseInt(chapter, 10)));
+    await ipc?.createFolder(chapterPath);
+    return { chapter, chapterPath };
+  };
+
   return async ({
     metadata,
     bible,
@@ -188,7 +208,28 @@ export const useBurritoNavigation = (teamId: string) => {
     const titleMediaManifest: NavigationTitleMedia[] = [];
     const graphicsManifest: NavigationGraphic[] = [];
 
-    const sectionIds = new Set(sections.map((s) => s.id));
+    // Navigation-level assets (like the book graphic / title) are stored as
+    // special sections with negative sequence numbers. They are typically not
+    // part of the normal section list collected for a book, so include them
+    // here if they belong to this book.
+    const planIdsForBook = new Set(
+      sections.map((s) => related(s, 'plan') as string)
+    );
+    const specialBookSections = sectionsAll.filter((s) => {
+      const seq = s.attributes?.sequencenum ?? 0;
+      if (seq !== BookSeq && seq !== AltBkSeq) return false;
+      const planId = related(s, 'plan') as string;
+      if (!planId || !planIdsForBook.has(planId)) return false;
+      return true;
+    });
+    const sectionsForNav = [
+      ...sections,
+      ...specialBookSections.filter(
+        (s) => !sections.some((x) => x.id === s.id)
+      ),
+    ];
+
+    const sectionIds = new Set(sectionsForNav.map((s) => s.id));
     const passageIds = new Set(
       passages
         .filter((p) => sectionIds.has(related(p, 'section') as string))
@@ -289,7 +330,8 @@ export const useBurritoNavigation = (teamId: string) => {
           const ext = getMediaExt(m);
           const resNum = getResourceNum(g);
           const ref = getGraphicRef(g, resNum);
-          const destName = `${bibleId}-${book}-${resourceType}${resNum}${ref}-nav-${remoteIdVal}-${g.keys?.remoteId || g.id}.${ext}`;
+          const typeNum = getBookType(resourceType, resNum);
+          const destName = `${bibleId}-${book}-${typeNum}${ref}-nav-${remoteIdVal}-${g.keys?.remoteId || g.id}.${ext}`;
           const destPath = path.join(navChapterPath, destName);
           const ok = await processMediaFile(m, destPath, scopeRef);
           if (ok) {
@@ -316,7 +358,8 @@ export const useBurritoNavigation = (teamId: string) => {
         const resNum = getResourceNum(g);
         const ref = getGraphicRef(g, resNum);
         const rType = resourceType === 'passage' ? 'note' : resourceType;
-        const destName = `${bibleId}-${book}-${rType}${resNum}${ref}-nav-${remoteIdVal}-${g.keys?.remoteId || g.id}.${ext}`;
+        const typeNum = getBookType(rType, resNum);
+        const destName = `${bibleId}-${book}-${typeNum}${ref}-nav-${remoteIdVal}-${g.keys?.remoteId || g.id}.${ext}`;
         const destPath = path.join(navChapterPath, destName);
         const ok = await writeGraphicContent(imgInfo.content, destPath);
         if (ok) {
@@ -346,7 +389,7 @@ export const useBurritoNavigation = (teamId: string) => {
 
     let navChapterPath = '';
 
-    for (const section of sections) {
+    for (const section of sectionsForNav) {
       loadSegionArr(section);
       const sectionRef = computeSectionRef(section.id);
       const sectionChapter = sectionRef.split(':')[0] || '1';
@@ -362,7 +405,8 @@ export const useBurritoNavigation = (teamId: string) => {
           const ext = getMediaExt(m);
           const num = getSectionNum(section);
           const ref = getRef(num, section.id);
-          const destName = `${bibleId}-${book}-section-${num}${ref}-title-${sectionRemId}.${ext}`;
+          const typeNum = getBookType('section', num);
+          const destName = `${bibleId}-${book}-${typeNum}${ref}-title-${sectionRemId}.${ext}`;
           const destPath = path.join(navChapterPath, destName);
           const ok = await processMediaFile(m, destPath, sectionRef);
           if (ok) {
@@ -400,6 +444,11 @@ export const useBurritoNavigation = (teamId: string) => {
       const sectionRef = passage
         ? computeSectionRef(related(passage, 'section') as string)
         : '';
+      const { chapter, chapterPath } = sectionRef
+        ? await chapterPathForSectionRef(bookPath, sectionRef)
+        : { chapter: '1', chapterPath: path.join(bookPath, pad3(1)) };
+      await ipc?.createFolder(chapterPath);
+      chapters.add(chapter);
 
       const titleMediaId = related(sr, 'titleMediafile');
       if (titleMediaId) {
@@ -408,7 +457,7 @@ export const useBurritoNavigation = (teamId: string) => {
           const ext = getMediaExt(m);
           const ref = passage ? getNoteRef(passage) : '';
           const destName = `${bibleId}-${book}-note${ref}-title-${cleanFileName(sr.attributes.title)}-${srRemId}.${ext}`;
-          const destPath = path.join(navChapterPath, destName);
+          const destPath = path.join(chapterPath, destName);
           const ok = await processMediaFile(m, destPath, sectionRef);
           if (ok) {
             titleMediaManifest.push({
@@ -434,7 +483,7 @@ export const useBurritoNavigation = (teamId: string) => {
         if (m) {
           const ext = getMediaExt(m);
           const destName = `${bibleId}-${book}-category-title-${cleanFileName(cat.attributes.categoryname)}-${catRemId}.${ext}`;
-          const destPath = path.join(navChapterPath, destName);
+          const destPath = path.join(categoryGraphicsPath, destName);
           const ok = await processMediaFile(m, destPath, '');
           if (ok) {
             titleMediaManifest.push({
@@ -470,6 +519,11 @@ export const useBurritoNavigation = (teamId: string) => {
       if (!passRemId) continue;
       const sectionId = related(p, 'section') as string;
       const sectionRef = computeSectionRef(sectionId);
+      const { chapter, chapterPath } = await chapterPathForSectionRef(
+        bookPath,
+        sectionRef
+      );
+      chapters.add(chapter);
 
       const passageGraphic = graphics.find(
         (g) =>
@@ -479,7 +533,7 @@ export const useBurritoNavigation = (teamId: string) => {
       if (passageGraphic) {
         await processGraphic(
           passageGraphic,
-          navChapterPath,
+          chapterPath,
           sectionRef,
           'passage',
           passRemId
