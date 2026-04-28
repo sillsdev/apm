@@ -55,6 +55,7 @@ export const useBurritoText = (teamId: string) => {
     let chapter = 0;
     let sectionId = '';
     let initialText = new Array<string>();
+    initialText.push(`\\id ${book}`);
     const versions = parseInt(
       (getOrgDefault('burritoVersions', teamId) || '1') as string
     );
@@ -86,7 +87,6 @@ export const useBurritoText = (teamId: string) => {
         parseRef(p);
         const { startChapter, startVerse, endChapter, endVerse } = p.attributes;
         if (startChapter && startChapter !== chapter) {
-          if (startChapter === 1) initialText.push(`\\id ${book}`);
           chapter = startChapter;
           initialText.push(`\\c ${chapter.toString()}`);
           chapters.add(chapter.toString());
