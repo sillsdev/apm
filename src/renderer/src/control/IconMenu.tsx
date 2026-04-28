@@ -1,5 +1,5 @@
 import { IconButton, Menu } from '@mui/material';
-import { LightTooltip } from '../components/PassageDetail/Internalization';
+import { LightTooltip } from './LightTooltip';
 import { PropsWithChildren, useState } from 'react';
 
 function IconMenuTrigger(props: {
@@ -14,6 +14,7 @@ function IconMenuTrigger(props: {
       onClick={handleClick}
       size="small"
       sx={{ ml: 2 }}
+      aria-label="icon-menu"
       aria-controls={open ? 'icon-menu' : undefined}
       aria-haspopup="true"
       aria-expanded={open ? 'true' : undefined}

@@ -36,99 +36,107 @@ export const StyledDialog = styled(Dialog, {
     prop !== 'paperOutlineColor' &&
     prop !== 'mobileThickScrollbar' &&
     prop !== 'mobileNoHorizontalScroll',
-})<StyledDialogProps>(({ bp, paperOutlineColor, mobileThickScrollbar, mobileNoHorizontalScroll, theme }) => ({
-  '& .MuiTable-root': {
-    tableLayout: 'auto',
-    paddingRight: theme.spacing(1),
-  },
-  '& .MuiDialogTitle-root': {
-    paddingBottom: 0,
-  },
-  '& #bigClose': { alignSelf: 'flex-start' },
-  ...(bp === BigDialogBp.mobile
-    ? {
-        '& .MuiDialog-paper': {
-          maxWidth: `calc(100vw - ${theme.spacing(4)})`,
-          width: '100%',
-          minWidth: 0,
-          minHeight: '50%',
-          boxSizing: 'border-box',
-        },
-      }
-    : bp === BigDialogBp.sm
+})<StyledDialogProps>(
+  ({
+    bp,
+    paperOutlineColor,
+    mobileThickScrollbar,
+    mobileNoHorizontalScroll,
+    theme,
+  }) => ({
+    '& .MuiTable-root': {
+      tableLayout: 'auto',
+      paddingRight: theme.spacing(1),
+    },
+    '& .MuiDialogTitle-root': {
+      paddingBottom: 0,
+    },
+    '& #bigClose': { alignSelf: 'flex-start' },
+    ...(bp === BigDialogBp.mobile
       ? {
           '& .MuiDialog-paper': {
-            maxWidth: '90%',
-            minWidth: '600px',
+            maxWidth: `calc(100vw - ${theme.spacing(4)})`,
+            width: '100%',
+            minWidth: 0,
             minHeight: '50%',
+            boxSizing: 'border-box',
           },
         }
-      : bp === BigDialogBp.md
+      : bp === BigDialogBp.sm
         ? {
             '& .MuiDialog-paper': {
               maxWidth: '90%',
-              minHeight: '80%',
-              minWidth: '960px',
+              minWidth: '600px',
+              minHeight: '50%',
             },
           }
-        : bp === BigDialogBp.lg
+        : bp === BigDialogBp.md
           ? {
               '& .MuiDialog-paper': {
                 maxWidth: '90%',
                 minHeight: '80%',
-                minWidth: '1280px',
+                minWidth: '960px',
               },
             }
-          : bp === BigDialogBp.xl
+          : bp === BigDialogBp.lg
             ? {
                 '& .MuiDialog-paper': {
                   maxWidth: '90%',
                   minHeight: '80%',
-                  minWidth: '1920px',
+                  minWidth: '1280px',
                 },
               }
-            : {
-                '& .MuiDialog-paper': {
-                  maxWidth: '90%',
-                  minWidth: '600px',
-                  minHeight: '80%',
-                },
-              }),
-  ...(paperOutlineColor
-    ? {
-        '& .MuiDialog-paper': {
-          border: '1px solid',
-          borderColor: paperOutlineColor,
-        },
-      }
-    : {}),
-  ...(bp === BigDialogBp.mobile && mobileThickScrollbar
-    ? {
-        '& .MuiDialogContent-root': {
-          scrollbarColor: '#666 #d0d0d0',
-          scrollbarWidth: 'auto',
-          '&::-webkit-scrollbar': {
-            width: '14px',
-            height: '14px',
+            : bp === BigDialogBp.xl
+              ? {
+                  '& .MuiDialog-paper': {
+                    maxWidth: '90%',
+                    minHeight: '80%',
+                    minWidth: '1920px',
+                  },
+                }
+              : {
+                  '& .MuiDialog-paper': {
+                    maxWidth: '90%',
+                    minWidth: '600px',
+                    minHeight: '80%',
+                  },
+                }),
+    ...(paperOutlineColor
+      ? {
+          '& .MuiDialog-paper': {
+            border: '1px solid',
+            borderColor: paperOutlineColor,
           },
-          '&::-webkit-scrollbar-thumb': {
-            backgroundColor: '#666',
-            borderRadius: '8px',
+        }
+      : {}),
+    ...(bp === BigDialogBp.mobile && mobileThickScrollbar
+      ? {
+          '& .MuiDialogContent-root': {
+            scrollbarColor: '#666 #d0d0d0',
+            scrollbarWidth: 'auto',
+            '&::-webkit-scrollbar': {
+              width: '14px',
+              height: '14px',
+            },
+            '&::-webkit-scrollbar-thumb': {
+              backgroundColor: '#666',
+              borderRadius: '8px',
+            },
+            '&::-webkit-scrollbar-track': {
+              backgroundColor: '#d0d0d0',
+            },
           },
-          '&::-webkit-scrollbar-track': {
-            backgroundColor: '#d0d0d0',
+        }
+      : {}),
+    ...(bp === BigDialogBp.mobile && mobileNoHorizontalScroll
+      ? {
+          '& .MuiDialogContent-root': {
+            overflowX: 'hidden',
           },
-        },
-      }
-    : {}),
-  ...(bp === BigDialogBp.mobile && mobileNoHorizontalScroll
-    ? {
-        '& .MuiDialogContent-root': {
-          overflowX: 'hidden',
-        },
-      }
-    : {}),
-}));
+        }
+      : {}),
+  })
+);
 // eslint-enable-block
 
 interface IProps {
@@ -202,7 +210,7 @@ export function BigDialog({
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             {titleStartAdornment}
             <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-              <Typography variant={titleVariant}>{title}</Typography>
+              <Typography variant={titleVariant ?? 'h6'}>{title}</Typography>
               {description}
             </Box>
           </Box>
@@ -218,10 +226,9 @@ export function BigDialog({
       </DialogTitle>
       <DialogContent>{children}</DialogContent>
       {(showBottomCloseButton || onCancel || onSave) && (
-        <DialogActions sx={{ justifyContent: 'center'}}>
+        <DialogActions sx={{ justifyContent: 'center' }}>
           {showBottomCloseButton && (
-            <AltButton id="bigCloseBottom" dark elevated onClick={handleClose}
-             sx={{ backgroundColor: 'black', color: 'white' }}>
+            <AltButton id="bigCloseBottom" onClick={handleClose}>
               {bottomCloseLabel || ts.close}
             </AltButton>
           )}

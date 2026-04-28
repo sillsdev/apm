@@ -5,6 +5,7 @@ import {
   Draggable,
   DropResult,
 } from '@hello-pangea/dnd';
+import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import { Box, List, ListItem } from '@mui/material';
 
 export interface DropProp {
@@ -35,6 +36,11 @@ export interface VertListDndProps extends PropsWithChildren {
   data?: DropProp[];
   dragHandle?: boolean;
   lockHorizontal?: boolean;
+  /**
+   * `full` — entire row initiates drag (blocks e.g. MUI Slider inside the row).
+   * `top-half` — narrow leading gutter initiates drag so titles, checkboxes, and
+   * sliders on resource cards remain usable (used by mobile passage artifacts).
+   */
   dragHandleRegion?: 'full' | 'top-half';
   itemSpacing?: number;
   listPaddingX?: number;
@@ -89,13 +95,14 @@ export const VertListDnd = ({
     }
   };
 
+  // style is mutated, watch for side effects
   const lockTransformToVertical = (style: any) => {
     if (!lockHorizontal || !style?.transform) return style;
     const transform = String(style.transform);
     if (transform.startsWith('translate3d(')) {
       // translate3d(xpx, ypx, zpx) -> lock x to 0px
       style.transform = transform.replace(
-        /translate3d\([^,]+,\s*([^,]+),\s*([^\)]+)\)/,
+        /translate3d\([^,]+,\s*([^,]+),\s*([^)]+)\)/,
         'translate3d(0px, $1, $2)'
       );
       return style;
@@ -103,13 +110,15 @@ export const VertListDnd = ({
     if (transform.startsWith('translate(')) {
       // translate(xpx, ypx) -> lock x to 0px
       style.transform = transform.replace(
-        /translate\([^,]+,\s*([^\)]+)\)/,
+        /translate\([^,]+,\s*([^)]+)\)/,
         'translate(0px, $1)'
       );
       return style;
     }
     return style;
   };
+
+  const useLeadingDragGutter = dragHandleRegion === 'top-half';
 
   return (
     <DragDropContext onDragEnd={onDragEnd}>
@@ -126,45 +135,84 @@ export const VertListDnd = ({
           >
             {items.map((item, index) => (
               <Draggable key={item.id} draggableId={item.id} index={index}>
-                {(provided, snapshot) => (
-                  <ListItem
-                    ref={provided.innerRef}
-                    {...provided.draggableProps}
-                    {...(dragHandleRegion === 'full'
+                {(provided, snapshot) => {
+                  const handleProps =
+                    dragHandleRegion === 'full' && provided.dragHandleProps
                       ? provided.dragHandleProps
-                      : {})}
-                    style={lockTransformToVertical(provided.draggableProps.style)}
-                    sx={{
-                      position: 'relative',
-                      bgcolor: snapshot.isDragging
-                        ? 'primary.light'
-                        : dragHandle
-                          ? 'transparent'
-                          : 'lightgrey',
-                      mb: itemSpacing,
-                      ...(itemPaddingX !== undefined ? { px: itemPaddingX } : {}),
-                    }}
-                  >
-                    {dragHandleRegion === 'top-half' && (
-                      <Box
-                        {...provided.dragHandleProps}
-                        sx={{
-                          position: 'absolute',
-                          top: 0,
-                          left: 0,
-                          right: 0,
-                          height: '50%',
-                          zIndex: 1,
-                          p: 0,
-                          m: 0,
-                          bgcolor: 'transparent',
-                          cursor: 'grab',
-                        }}
-                      />
-                    )}
-                    {item.content}
-                  </ListItem>
-                )}
+                      : {};
+                  const gutterProps =
+                    useLeadingDragGutter && provided.dragHandleProps
+                      ? provided.dragHandleProps
+                      : {};
+
+                  return (
+                    <ListItem
+                      ref={provided.innerRef}
+                      {...provided.draggableProps}
+                      {...handleProps}
+                      style={lockTransformToVertical(
+                        provided.draggableProps.style
+                      )}
+                      sx={{
+                        position: 'relative',
+                        bgcolor: snapshot.isDragging
+                          ? 'primary.light'
+                          : dragHandle
+                            ? 'transparent'
+                            : 'lightgrey',
+                        mb: itemSpacing,
+                        ...(itemPaddingX !== undefined
+                          ? { px: itemPaddingX }
+                          : {}),
+                        ...(useLeadingDragGutter
+                          ? {
+                              display: 'flex',
+                              flexDirection: 'row',
+                              alignItems: 'stretch',
+                              gap: 0.5,
+                            }
+                          : {}),
+                      }}
+                    >
+                      {useLeadingDragGutter ? (
+                        <>
+                          <Box
+                            data-cy="vert-list-dnd-drag-handle"
+                            {...gutterProps}
+                            sx={{
+                              flex: '0 0 auto',
+                              width: 40,
+                              minWidth: 40,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              alignSelf: 'stretch',
+                              cursor: 'grab',
+                              color: 'text.secondary',
+                              my: -0.5,
+                            }}
+                          >
+                            <DragIndicatorIcon
+                              sx={{ fontSize: '1.25rem' }}
+                              aria-hidden
+                            />
+                          </Box>
+                          <Box
+                            sx={{
+                              flex: '1 1 auto',
+                              minWidth: 0,
+                              alignSelf: 'stretch',
+                            }}
+                          >
+                            {item.content}
+                          </Box>
+                        </>
+                      ) : (
+                        item.content
+                      )}
+                    </ListItem>
+                  );
+                }}
               </Draggable>
             ))}
             {provided.placeholder}

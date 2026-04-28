@@ -1,9 +1,18 @@
-import { Box, Card, Checkbox, IconButton, SxProps, Typography } from '@mui/material';
+import {
+  Box,
+  Card,
+  Checkbox,
+  IconButton,
+  SxProps,
+  Typography,
+} from '@mui/material';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import EditIcon from '@mui/icons-material/Edit';
 import { IRow } from '../../../../context/PassageDetailContext';
 import { SectionResourceD } from '../../../../model';
+import { WrapTitle } from '../../../../control/WrapTitle';
+import { useMemo } from 'react';
 
 // This card is used for non-audio resources in the mobile list.
 // It covers markdown text, URI links, PDFs, images, and other file types
@@ -12,6 +21,8 @@ import { SectionResourceD } from '../../../../model';
 interface IProps {
   row: IRow;
   onView: (id: string) => void;
+  expandedId?: string | null;
+  setExpandedId: (id: string | null) => void;
   onDone?: (id: string, res: SectionResourceD | null) => void;
   onEdit?: (id: string) => void;
   onDelete?: (id: string) => void;
@@ -22,12 +33,19 @@ interface IProps {
 export function TextResourceCard({
   row,
   onView,
+  expandedId,
+  setExpandedId,
   onDone,
   onEdit,
   onDelete,
   subtitle = 'Translation Resource',
   sx,
 }: IProps) {
+  const statusColor = useMemo(
+    () => (row.done ? 'grey.400' : 'grey.700'),
+    [row.done]
+  );
+
   const handleDoneToggle = () => {
     if (onDone) {
       onDone(row.id, row.resource);
@@ -45,7 +63,7 @@ export function TextResourceCard({
         flexDirection: 'column',
         justifyContent: 'space-between',
         border: '2px solid',
-        borderColor: 'grey.700',
+        borderColor: statusColor,
         borderRadius: 2,
         backgroundColor: 'background.paper',
         px: 0.5,
@@ -71,26 +89,44 @@ export function TextResourceCard({
           }}
         >
           <Box sx={{ minWidth: 0, overflow: 'hidden' }}>
-            <Typography variant="h6" sx={{ lineHeight: 1.25 }} noWrap>
+            <WrapTitle
+              id={row.id}
+              expandedId={expandedId}
+              setExpandedId={setExpandedId}
+              typographyProps={{
+                variant: 'h6',
+                sx: {
+                  lineHeight: 1.25,
+                  color: statusColor,
+                  fontWeight: undefined,
+                },
+              }}
+            >
               {row.artifactName}
-            </Typography>
+            </WrapTitle>
           </Box>
           <Checkbox
             checked={Boolean(row.done)}
             onChange={handleDoneToggle}
             size="medium"
             sx={{ mt: -0.5, mr: -0.5 }}
-            inputProps={{
-              'aria-label': `Mark ${row.artifactName} complete`,
+            slotProps={{
+              input: { 'aria-label': `Mark ${row.artifactName} complete` },
             }}
           />
         </Box>
 
-        <Typography variant="h6" sx={{ lineHeight: 1.25 }}>
+        <Typography variant="h6" sx={{ lineHeight: 1.25, color: statusColor }}>
           {subtitle}
         </Typography>
 
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
           <IconButton
             size="small"
             // Parent decides what "view" means by content type:

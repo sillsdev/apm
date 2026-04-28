@@ -197,6 +197,9 @@ export function PassageDetailArtifactsMobile() {
   const handleLink = useHandleLink({ passage, setLink });
   const { passageRef } = usePassageRef();
   const { isMobileWidth } = useMobile();
+  const [expandedArtifactNameId, setExpandedArtifactNameId] = useState<
+    string | null
+  >(null);
 
   const planRec = plan ? getPlan(plan) : null;
   const filename = planRec?.attributes?.slug
@@ -838,14 +841,16 @@ export function PassageDetailArtifactsMobile() {
           listPaddingX={0}
           itemPaddingX={0}
         >
-          {selectedRows.map((value, index) => (
-            <Box key={`item-${index}`} sx={{ width: '100%' }}>
+          {selectedRows.map((value) => (
+            <Box key={`item-${value.id}`} sx={{ width: '100%' }}>
               {/^audio/.test(mediaContentType(value.mediafile)) ? (
                 <AudioResourceCard
                   row={value}
                   subtitle={value.artifactCategory || undefined}
                   isPlaying={playItem === value.id && itemPlaying}
                   onPlay={handlePlay}
+                  expandedId={expandedArtifactNameId}
+                  setExpandedId={setExpandedArtifactNameId}
                   onDone={handleDone}
                   onEdit={modifiable ? handleEdit : undefined}
                   onDelete={modifiable ? handleDelete : undefined}
@@ -856,6 +861,8 @@ export function PassageDetailArtifactsMobile() {
                 <TextResourceCard
                   row={value}
                   subtitle={value.artifactCategory || undefined}
+                  expandedId={expandedArtifactNameId}
+                  setExpandedId={setExpandedArtifactNameId}
                   onView={
                     mediaContentType(value.mediafile) === UriLinkType
                       ? handleLinkId

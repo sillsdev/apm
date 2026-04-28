@@ -1,5 +1,5 @@
-import React, { useLayoutEffect, useRef, useState } from 'react';
-import { Typography } from '@mui/material';
+import React, { useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { Typography, TypographyProps } from '@mui/material';
 
 export type WrapTitleId = string | null | undefined;
 
@@ -7,6 +7,7 @@ interface WrapTitleProps {
   id: string;
   expandedId: WrapTitleId;
   setExpandedId: (id: string | null) => void;
+  typographyProps?: TypographyProps;
   children: React.ReactNode;
   dataCy?: string;
 }
@@ -15,12 +16,13 @@ export const WrapTitle: React.FC<WrapTitleProps> = ({
   id,
   expandedId,
   setExpandedId,
+  typographyProps,
   children,
   dataCy,
 }) => {
   const titleRef = useRef<HTMLElement>(null);
   const [isTruncated, setIsTruncated] = useState(false);
-  const isExpanded = expandedId === id;
+  const isExpanded = useMemo(() => expandedId === id, [expandedId, id]);
 
   useLayoutEffect(() => {
     if (isExpanded) return;
@@ -32,6 +34,7 @@ export const WrapTitle: React.FC<WrapTitleProps> = ({
     };
 
     measure();
+    if (typeof ResizeObserver === 'undefined') return;
     const ro = new ResizeObserver(measure);
     ro.observe(el);
     return () => ro.disconnect();
@@ -53,10 +56,10 @@ export const WrapTitle: React.FC<WrapTitleProps> = ({
     <Typography
       ref={titleRef}
       data-cy={dataCy}
-      variant="subtitle1"
-      onClick={handleClick}
+      {...typographyProps}
       sx={{
         fontWeight: 'bold',
+        ...typographyProps?.sx,
         display: 'block',
         width: '100%',
         minWidth: 0,
@@ -76,6 +79,7 @@ export const WrapTitle: React.FC<WrapTitleProps> = ({
               cursor: isTruncated ? 'pointer' : 'inherit',
             }),
       }}
+      onClick={handleClick}
     >
       {children}
     </Typography>

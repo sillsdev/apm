@@ -13,6 +13,7 @@ import { SectionResourceD } from '../../../../model';
 import LimitedMediaPlayer from '../../../LimitedMediaPlayer';
 import { useMobile } from '../../../../utils/useMobile';
 import { useMemo } from 'react';
+import { WrapTitle } from '../../../../control/WrapTitle';
 
 // This card is used for audio resources in the mobile list.
 // It is selected when the media content type starts with "audio/"
@@ -22,6 +23,8 @@ interface IProps {
   row: IRow;
   isPlaying: boolean;
   onPlay: (id: string) => void;
+  expandedId?: string | null;
+  setExpandedId: (id: string | null) => void;
   onDone?: (id: string, res: SectionResourceD | null) => void;
   onEdit?: (id: string) => void;
   onDelete?: (id: string) => void;
@@ -38,6 +41,8 @@ export function AudioResourceCard({
   row,
   isPlaying,
   onPlay,
+  expandedId,
+  setExpandedId,
   onDone,
   onEdit,
   onDelete,
@@ -94,13 +99,21 @@ export function AudioResourceCard({
           }}
         >
           <Box sx={{ minWidth: 0, overflow: 'hidden' }}>
-            <Typography
-              variant="h6"
-              sx={{ lineHeight: 1.25, color: statusColor }}
-              noWrap
+            <WrapTitle
+              id={row.id}
+              expandedId={expandedId}
+              setExpandedId={setExpandedId}
+              typographyProps={{
+                variant: 'h6',
+                sx: {
+                  lineHeight: 1.25,
+                  color: statusColor,
+                  fontWeight: undefined,
+                },
+              }}
             >
               {row.artifactName}
-            </Typography>
+            </WrapTitle>
           </Box>
           <Checkbox
             checked={Boolean(row.done)}
