@@ -16,7 +16,7 @@ import { useSnackBar } from '../../../hoc/SnackBar';
 import { sharedSelector, workflowStepsSelector } from '../../../selector';
 import { shallowEqual, useSelector } from 'react-redux';
 import { useWfLabel } from '../../../utils/useWfLabel';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { IWorkflowStepsStrings } from '../../../model';
 import { toCamel } from '../../../utils/toCamel';
 
@@ -63,14 +63,32 @@ export default function MobileWorkflowSteps() {
       : '';
   }, [currentLabel, t]);
 
+  const didMountRef = useRef(false);
+  const stepRefs = useRef(new Map<string, HTMLElement>());
+
+  useEffect(() => {
+    const el = stepRefs.current.get(currentstep);
+    if (!el) {
+      return;
+    }
+    el.scrollIntoView({
+      behavior: didMountRef.current ? 'smooth' : 'auto',
+      block: 'nearest',
+      inline: 'center',
+    });
+    didMountRef.current = true;
+  }, [currentstep, workflow.length]);
+
   return (
     <Box sx={{ px: 1.5, py: 0.5 }} data-cy="workflow-steps">
       <Box
         sx={{
           display: 'flex',
-          justifyContent: 'center',
+          justifyContent: 'flex-start',
           gap: 0.75,
-          overflowX: 'hidden',
+          overflowX: 'auto',
+          overflowY: 'hidden',
+          WebkitOverflowScrolling: 'touch',
           pb: 0.25,
         }}
       >
@@ -83,6 +101,13 @@ export default function MobileWorkflowSteps() {
               role="button"
               onClick={handleSelect(step.id)}
               tabIndex={0}
+              ref={(el) => {
+                if (el) {
+                  stepRefs.current.set(step.id, el);
+                } else {
+                  stepRefs.current.delete(step.id);
+                }
+              }}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
                   e.preventDefault();

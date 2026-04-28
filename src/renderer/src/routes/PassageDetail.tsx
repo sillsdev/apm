@@ -44,9 +44,8 @@ const MobileStep = () => {
 
 const MobileDetail = () => {
   const { isMobileWidth } = useMobile();
-  const { discussOpen, rowData, currentstep } = useContext(
-    PassageDetailContext
-  )?.state ?? {
+  const { discussOpen, rowData, currentstep } = useContext(PassageDetailContext)
+    ?.state ?? {
     discussOpen: false,
     rowData: [],
     currentstep: '',
@@ -55,8 +54,7 @@ const MobileDetail = () => {
   const currentVersion = useMemo(() => rowData[0]?.version ?? 0, [rowData]);
   /** Policy lives here (with step tool); the layout component only branches on the result. */
   const showNoAudioPlaceholder = useMemo(
-    () =>
-      currentVersion === 0 && !toolAllowsEmptyVernacularAudio(tool),
+    () => currentVersion === 0 && !toolAllowsEmptyVernacularAudio(tool),
     [currentVersion, tool]
   );
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
