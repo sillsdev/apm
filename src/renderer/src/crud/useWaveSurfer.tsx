@@ -1,4 +1,4 @@
-import { debounce } from 'lodash';
+import { debounce, throttle } from 'lodash';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useWavesurfer } from '@wavesurfer/react';
 import Timeline from 'wavesurfer.js/dist/plugins/timeline';
@@ -129,11 +129,14 @@ export function useWaveSurfer(
   const onProgressRef = useRef(onProgress);
   onProgressRef.current = onProgress;
 
-  // Debounce the progress callback to prevent excessive re-renders. Single instance
-  // across renders so cancel() and unmount cleanup clear pending trailing calls.
-  const debouncedProgressCallback = useMemo(
+  // Throttle (not debounce) the progress callback: debounce would only fire after
+  // the wait with no new calls, so during playback currentTime never goes quiet
+  // and onProgress would never run. Throttle limits re-renders while still
+  // updating the UI on a steady cadence. Single instance so cancel() and
+  // unmount cleanup clear the trailing invocation.
+  const throttledProgressCallback = useMemo(
     () =>
-      debounce((value: number) => {
+      throttle((value: number) => {
         onProgressRef.current(value);
       }, 200),
     []
@@ -141,14 +144,14 @@ export function useWaveSurfer(
 
   const setProgress = (value: number) => {
     progressRef.current = value;
-    debouncedProgressCallback(value);
+    throttledProgressCallback(value);
   };
 
-  /** Bypass debounce so labels match the playhead immediately after load/seek. */
+  /** Bypass throttle so labels match the playhead immediately after load/seek. */
   const pushProgressImmediate = (value: number) => {
-    debouncedProgressCallback.cancel();
+    throttledProgressCallback.cancel();
     progressRef.current = value;
-    onProgress(value);
+    onProgressRef.current(value);
   };
 
   const roundTime = (n: number) => Math.round(n * 100000) / 100000;
@@ -394,8 +397,8 @@ export function useWaveSurfer(
       blobRef.current = undefined;
       setPlayerUrl(undefined);
 
-      // Cleanup debounced function on unmount
-      debouncedProgressCallback.cancel();
+      // Cleanup throttled function on unmount
+      throttledProgressCallback.cancel();
     }; // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
