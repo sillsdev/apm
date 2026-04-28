@@ -18,7 +18,7 @@ import { useSnackBar } from '../../../hoc/SnackBar';
 import Uploader from '../../Uploader';
 import AddResource from './AddResource';
 import { IRow } from '../../../context/PassageDetailContext';
-import { AltButton } from '../../../control';
+import { AltButton, GrowingSpacer } from '../../../control';
 import { AIGenerated } from '.';
 import { AudioResourceCard } from './mobile components/AudioResourceCard';
 import { TextResourceCard } from './mobile components/TextResourceCard';
@@ -50,17 +50,9 @@ import SelectProjectResource from './SelectProjectResource';
 import SelectSections from './SelectSections';
 import ResourceData from './ResourceData';
 import { MarkDownType, UriLinkType } from '../../MediaUpload';
-import {
-  Badge,
-  Box,
-  Grid,
-  Stack,
-  Typography,
-  IconButton
-} from '@mui/material';
+import { Badge, Box, Stack, Typography, IconButton } from '@mui/material';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import { ReplaceRelatedRecord } from '../../../model/baseModel';
-import { PassageResourceButton } from './PassageResourceButton';
 import ProjectResourceConfigure from './ProjectResourceConfigure';
 import { useProjectResourceSave } from './useProjectResourceSave';
 import { UnsavedContext } from '../../../context/UnsavedContext';
@@ -71,6 +63,7 @@ import {
   removeExtension,
   isVisual,
   isUrl,
+  useMobile,
 } from '../../../utils';
 import { useOrbitData } from '../../../hoc/useOrbitData';
 import {
@@ -196,6 +189,7 @@ export function PassageDetailArtifactsMobile() {
   const getGlobal = useGetGlobal();
   const handleLink = useHandleLink({ passage, setLink });
   const { passageRef } = usePassageRef();
+  const { isMobileWidth } = useMobile();
 
   const planRec = plan ? getPlan(plan) : null;
   const filename = planRec?.attributes?.slug
@@ -793,62 +787,29 @@ export function PassageDetailArtifactsMobile() {
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   return (
-    <>
+    <Box sx={{ maxWidth: '800px', margin: '0 auto' }}>
       <Stack sx={{ width: '100%' }} direction="row" spacing={1}>
-        <Grid
-          container
-          size={12}
-          sx={{ display: 'flex', alignItems: 'center', justifyContent: 'end', paddingTop:1.5}}
-        >
-          {isScripture && (
-            <Grid>
-              <AltButton
-                dark
-                elevated
-                onClick={() => handleFindVisible(true)}
-                sx={{ fontSize: (theme) => theme.typography.h6.fontSize }}
-              >
-                <Badge>{t.research}</Badge>
-              </AltButton>
-            </Grid>
-          )}
-          {hasPermission && (!offline || offlineOnly) && (
-            <>
-              <Grid>
-                <AddResource
-                  action={handleAction}
-                  buttonDark
-                  buttonElevated
-                  buttonSx={{ fontSize: (theme) => theme.typography.h6.fontSize }}
-                />
-              </Grid>
-              {/* {hasProjRes && (
-                <Grid>
-                  <AltButton onClick={() => setProjectResourceVisible(true)}>
-                    {t.configure}
-                  </AltButton>
-                </Grid>
-              )} */}
-            </>
-          )}
-          <IconButton
-            sx = {{color: 'black'}}
-            onClick= { () =>
-            (otherResourcesAvailable || hasProjRes) && setSettingsOpen(true)
-            }
-          >
-            <SettingsOutlinedIcon fontSize="large"/>
+        {isScripture && (
+          <Box>
+            <AltButton onClick={() => handleFindVisible(true)}>
+              <Badge>{t.research}</Badge>
+            </AltButton>
+          </Box>
+        )}
+        {hasPermission && (!offline || offlineOnly) && !isMobileWidth && (
+          <AddResource action={handleAction} />
+        )}
+        {/* hasPermission && (!offline || offlineOnly) && !isMobileWidth && hasProjRes && (
+            <AltButton onClick={() => setProjectResourceVisible(true)}>
+              {t.configure}
+            </AltButton>
+          */}
+        <GrowingSpacer />
+        {(otherResourcesAvailable || hasProjRes) && (
+          <IconButton color="primary" onClick={() => setSettingsOpen(true)}>
+            <SettingsOutlinedIcon />
           </IconButton>
-          {/* {otherResourcesAvailable && (
-            <Grid>
-              <PassageResourceButton
-                value={allResources}
-                label={t.allResources}
-                cb={handleAllResources}
-              />
-            </Grid>
-          )} */}
-        </Grid>
+        )}
       </Stack>
       <Box sx={{ width: '100%' }}>
         <VertListDnd
@@ -934,7 +895,11 @@ export function PassageDetailArtifactsMobile() {
       <BigDialog
         title={`Research - ${passageRef(passage) || ''}`.trim()}
         titleVariant="h6"
-        description={<Typography sx={{ color: 'text.secondary' }}>{t.findResourceDesc}</Typography>}
+        description={
+          <Typography sx={{ color: 'text.secondary' }}>
+            {t.findResourceDesc}
+          </Typography>
+        }
         isOpen={findOpen}
         onOpen={handleFindVisible}
         bp={BigDialogBp.mobile}
@@ -1092,7 +1057,7 @@ export function PassageDetailArtifactsMobile() {
         </BigDialog>
       )}
       <LaunchLink url={link} reset={() => setLink('')} />
-    </>
+    </Box>
   );
 }
 

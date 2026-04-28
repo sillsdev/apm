@@ -382,7 +382,13 @@ export function LimitedMediaPlayer(props: IProps) {
           return noContainer ? (
             <Stack
               direction="row"
-              sx={{ width: '100%', alignItems: 'flex-end', px: 0.5, gap: 1, ...sx }}
+              sx={{
+                width: '100%',
+                alignItems: 'center',
+                px: 0.5,
+                gap: 1,
+                ...sx,
+              }}
             >
               <Box sx={{ display: 'flex', alignItems: 'center', pb: 0.5 }}>
                 {mediaControls}

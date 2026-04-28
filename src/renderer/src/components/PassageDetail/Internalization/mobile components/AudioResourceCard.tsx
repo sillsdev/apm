@@ -1,9 +1,18 @@
-import { Box, Card, Checkbox, IconButton, SxProps, Typography } from '@mui/material';
+import {
+  Box,
+  Card,
+  Checkbox,
+  IconButton,
+  SxProps,
+  Typography,
+} from '@mui/material';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import EditIcon from '@mui/icons-material/Edit';
 import { IRow } from '../../../../context/PassageDetailContext';
 import { SectionResourceD } from '../../../../model';
 import LimitedMediaPlayer from '../../../LimitedMediaPlayer';
+import { useMobile } from '../../../../utils/useMobile';
+import { useMemo } from 'react';
 
 // This card is used for audio resources in the mobile list.
 // It is selected when the media content type starts with "audio/"
@@ -37,11 +46,18 @@ export function AudioResourceCard({
   limits,
   sx,
 }: IProps) {
+  const { isMobileWidth } = useMobile();
+
   const handleDoneToggle = () => {
     if (onDone) {
       onDone(row.id, row.resource);
     }
   };
+
+  const statusColor = useMemo(
+    () => (row.done ? 'grey.400' : 'grey.700'),
+    [row.done]
+  );
 
   return (
     <Card
@@ -54,7 +70,7 @@ export function AudioResourceCard({
         flexDirection: 'column',
         justifyContent: 'space-between',
         border: '2px solid',
-        borderColor: 'grey.700',
+        borderColor: statusColor,
         borderRadius: 2,
         backgroundColor: 'background.paper',
         p: 1,
@@ -73,13 +89,16 @@ export function AudioResourceCard({
         <Box
           sx={{
             display: 'flex',
-            alignItems: 'flex-start',
             justifyContent: 'space-between',
             gap: 1,
           }}
         >
           <Box sx={{ minWidth: 0, overflow: 'hidden' }}>
-            <Typography variant="h6" sx={{ lineHeight: 1.25 }} noWrap>
+            <Typography
+              variant="h6"
+              sx={{ lineHeight: 1.25, color: statusColor }}
+              noWrap
+            >
               {row.artifactName}
             </Typography>
           </Box>
@@ -88,17 +107,19 @@ export function AudioResourceCard({
             onChange={handleDoneToggle}
             size="small"
             sx={{ mt: -0.5, mr: -0.5 }}
-            inputProps={{
-              'aria-label': `Mark ${row.artifactName} complete`,
+            slotProps={{
+              input: {
+                'aria-label': `Mark ${row.artifactName} complete`,
+              },
             }}
           />
         </Box>
-        <Typography variant="h6" sx={{ lineHeight: 1.25 }}>
+        <Typography variant="h6" sx={{ lineHeight: 1.25, color: statusColor }}>
           {subtitle}
         </Typography>
-        <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: 1 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           {/* Audio playback UI for audio/* resource files. */}
-          <Box sx={{ flex: 1, minWidth: 0 }}>
+          <Box sx={{ flex: 1, minWidth: 0, pr: 2 }}>
             <LimitedMediaPlayer
               srcMediaId={row.id}
               requestPlay={isPlaying}
@@ -113,7 +134,7 @@ export function AudioResourceCard({
               noContainer
             />
           </Box>
-          {onEdit && (
+          {onEdit && !isMobileWidth && (
             <IconButton
               size="small"
               onClick={() => onEdit(row.id)}
@@ -123,7 +144,7 @@ export function AudioResourceCard({
               <EditIcon fontSize="medium" />
             </IconButton>
           )}
-          {onDelete && (
+          {onDelete && !isMobileWidth && (
             <IconButton
               size="small"
               onClick={() => onDelete(row.id)}
