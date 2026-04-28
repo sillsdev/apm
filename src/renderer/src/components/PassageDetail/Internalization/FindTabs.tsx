@@ -23,7 +23,7 @@ import { findResourceSelector, sharedSelector } from '../../../selector';
 import FindAquifer from './FindAquifer';
 import FindBibleBrain from './FindBibleBrain';
 import FaithbridgeIframe from './FaithbridgeIframe';
-import { Aquifer, FaithBridge } from '../../../assets/brands';
+import { Aquifer, FaithBridge, BibleBrain } from '../../../assets/brands';
 import { useHandleLink } from './addLinkKind';
 
 export interface OptionProps {
@@ -108,6 +108,7 @@ export default function FindTabs({
   };
 
   const handleSelectChange = (event: SelectChangeEvent<number>) => {
+    setValue(Number(event.target.value));
     setSelectedValue(Number(event.target.value));
   };
 
@@ -149,7 +150,7 @@ export default function FindTabs({
                 value={bibleBrainTabIndex}
                 sx={{ fontSize: (theme) => theme.typography.h6.fontSize }}
               >
-                Bible Brain
+                {BibleBrain}
               </MenuItem>
               <MenuItem
                 value={faithBridgeTabIndex}
@@ -185,7 +186,7 @@ export default function FindTabs({
             onChange={handleChange}
             aria-label="basic tabs example"
           >
-            <Tab label="Bible Brain" {...a11yProps(bibleBrainTabIndex)} />
+            <Tab label={BibleBrain} {...a11yProps(bibleBrainTabIndex)} />
             <Tab
               label={<Badge badgeContent={ts.ai}>{FaithBridge}</Badge>}
               {...a11yProps(faithBridgeTabIndex)}
@@ -214,7 +215,8 @@ export default function FindTabs({
                 flex: 1,
                 minHeight: 0,
                 overflowY: 'auto',
-                overflowX: aquifer && value === aquiferTabIndex ? 'auto' : 'hidden',
+                overflowX:
+                  aquifer && value === aquiferTabIndex ? 'auto' : 'hidden',
               }
             : {}
         }
@@ -230,7 +232,10 @@ export default function FindTabs({
           <FaithbridgeIframe onMarkdown={onMarkdown} onClose={onClose} />
         </CustomTabPanel>
         <CustomTabPanel value={value} index={createTabIndex}>
-          <CreateAiRes resources={resources} onTab={() => handleSetTab(faithBridgeTabIndex)} />
+          <CreateAiRes
+            resources={resources}
+            onTab={() => handleSetTab(faithBridgeTabIndex)}
+          />
         </CustomTabPanel>
         {aquifer && (
           <CustomTabPanel value={value} index={aquiferTabIndex}>
@@ -255,8 +260,17 @@ export default function FindTabs({
             boxShadow: '0 -2px 8px rgba(0, 0, 0, 0.12)',
           }}
         >
-          <AltButton dark elevated onClick={handleLaunchSelectedTab}
-            sx={{ width: '20%', backgroundColor: 'black', color: 'white', justifyContent: 'center' }}>
+          <AltButton
+            dark
+            elevated
+            onClick={handleLaunchSelectedTab}
+            sx={{
+              width: '20%',
+              backgroundColor: 'black',
+              color: 'white',
+              justifyContent: 'center',
+            }}
+          >
             {t.launch}
           </AltButton>
         </Box>
