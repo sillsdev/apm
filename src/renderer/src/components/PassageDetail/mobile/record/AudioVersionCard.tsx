@@ -1,4 +1,4 @@
-import React, { useLayoutEffect, useRef, useState } from 'react';
+import React from 'react';
 import { IRow } from '../../../../components/AudioTab';
 import {
   Box,
@@ -30,6 +30,7 @@ import {
   transcriptionShowSelector,
 } from '../../../../selector/selectors';
 import { useGlobal } from '../../../../context/useGlobal';
+import { WrapTitle } from '../../../../control/WrapTitle';
 
 const Paperclip = FaPaperclip as unknown as React.FC<IconBaseProps>;
 const Unlink = FaUnlink as unknown as React.FC<IconBaseProps>;
@@ -88,40 +89,6 @@ export const AudioVersionCard: React.FC<AudioVersionCardProps> = (props) => {
   const isPlaying = props.playItem === props.id && props.mediaPlaying;
   const allowPlay = props.allowPlay !== false;
   const allowDownload = props.allowDownload !== false;
-
-  const fileNameRef = useRef<HTMLElement>(null);
-  const [isTruncated, setIsTruncated] = useState(false);
-  const fileNameExpanded = props.expandedFileNameId === props.id;
-
-  useLayoutEffect(() => {
-    if (fileNameExpanded) return;
-    const el = fileNameRef.current;
-    if (!el) return;
-    const measure = () => {
-      setIsTruncated(el.scrollWidth > el.clientWidth + 1);
-    };
-    measure();
-    const ro = new ResizeObserver(measure);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [props.fileName, fileNameExpanded]);
-
-  const handleFileNameClick = (e: React.MouseEvent) => {
-    if (!props.setExpandedFileNameId) return;
-    if (fileNameExpanded) {
-      e.stopPropagation();
-      props.setExpandedFileNameId?.(null);
-      return;
-    }
-    if (isTruncated) {
-      e.stopPropagation();
-      if (props.expandFileNameForMedia) {
-        props.expandFileNameForMedia(props.id);
-      } else {
-        props.setExpandedFileNameId?.(props.id);
-      }
-    }
-  };
 
   return (
     <Stack direction="row" alignItems="center" sx={{ my: 1, gap: 0.5 }}>
@@ -223,35 +190,21 @@ export const AudioVersionCard: React.FC<AudioVersionCardProps> = (props) => {
               maxWidth: '100%',
             }}
           >
-            <Typography
-              ref={fileNameRef}
-              data-cy="audio-version-file-name"
-              variant="subtitle1"
-              onClick={handleFileNameClick}
-              sx={{
-                fontWeight: 'bold',
-                display: 'block',
-                width: '100%',
-                minWidth: 0,
-                maxWidth: '100%',
-                ...(fileNameExpanded
-                  ? {
-                      whiteSpace: 'normal',
-                      wordBreak: 'break-word',
-                      overflow: 'visible',
-                      textOverflow: 'clip',
-                      cursor: 'pointer',
-                    }
-                  : {
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                      cursor: isTruncated ? 'pointer' : 'inherit',
-                    }),
+            <WrapTitle
+              id={props.id}
+              expandedId={props.expandedFileNameId}
+              setExpandedId={(idOrNull) => {
+                if (!props.setExpandedFileNameId) return;
+                if (idOrNull === props.id && props.expandFileNameForMedia) {
+                  props.expandFileNameForMedia(props.id);
+                  return;
+                }
+                props.setExpandedFileNameId(idOrNull);
               }}
+              dataCy="audio-version-file-name"
             >
               {props.fileName}
-            </Typography>
+            </WrapTitle>
             <Typography
               variant="body2"
               component="div"
@@ -350,7 +303,7 @@ export const AudioVersionCard: React.FC<AudioVersionCardProps> = (props) => {
             onChange={() => props.setIsSelected(props.id)}
             value={props.id}
             size="small"
-            inputProps={{ 'aria-label': props.fileName }}
+            slotProps={{ input: { 'aria-label': props.fileName } }}
           />
         </Box>
       )}
