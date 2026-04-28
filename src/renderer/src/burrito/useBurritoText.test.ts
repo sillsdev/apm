@@ -229,6 +229,45 @@ describe('useBurritoText', () => {
     );
   });
 
+  it('writes each USFM file beginning with a \\id line', async () => {
+    const ipc = makeIpc();
+    const { renderHook, act, useBurritoText } = loadTextForApi(ipc as never, {
+      passages: [passageFixture()],
+      mediafiles: [
+        mediaFixture({ versionNumber: 2, transcription: 'Second version' }),
+        mediaFixture({ versionNumber: 1, transcription: 'First version' }),
+      ],
+      getOrgDefaultImpl: (key: string) => {
+        if (key === 'burritoVersions') return '2';
+        if (key === 'burritoFormat') return { textOutputFormat: 'usfm' };
+        return undefined;
+      },
+    });
+
+    const { result } = renderHook(() => useBurritoText(teamId));
+    const metadata = burritoFixture();
+
+    await act(async () => {
+      await result.current({
+        metadata,
+        book: 'GEN',
+        bookPath,
+        preLen,
+        sections: [sectionFixture()],
+      });
+    });
+
+    const usfmWrites = ipc.write.mock.calls.filter((c: unknown[]) =>
+      String(c[0]).endsWith('.usfm')
+    );
+    expect(usfmWrites).toHaveLength(2);
+
+    for (const writeCall of usfmWrites) {
+      const written = writeCall[1] as string;
+      expect(written.split('\n')[0]).toBe('\\id GEN');
+    }
+  });
+
   it('does not throw when window.api is missing', async () => {
     const { renderHook, act, useBurritoText } = loadTextForApi(undefined, {
       passages: [passageFixture()],
