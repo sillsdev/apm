@@ -1,5 +1,6 @@
 import {
   Autocomplete,
+  Box,
   Grid,
   IconButton,
   InputAdornment,
@@ -403,9 +404,14 @@ export default function FindAquifer({ onClose }: IProps) {
     <Grid
       container
       spacing={2}
-      sx={{ alignItems: 'center', justifyContent: 'center' }}
+      sx={{
+        alignItems: 'center',
+        justifyContent: 'flex-start',
+        width: '100%',
+        overflowX: 'auto',
+      }}
     >
-      <StyledStack>
+      <StyledStack sx={{ width: '100%', minWidth: 'max-content' }}>
         <Grid
           container
           direction={'row'}
@@ -551,17 +557,20 @@ export default function FindAquifer({ onClose }: IProps) {
           </Stack>
         )}
         {data.length > 0 ? (
-          <DataGrid
-            columns={columns}
-            rows={data}
-            initialState={{
-              sorting: { sortModel },
-            }}
-            checkboxSelection
-            disableRowSelectionOnClick
-            onRowSelectionModelChange={handleRowSelectionChange}
-            rowSelectionModel={selectedRows}
-          />
+          <Box sx={{ width: '100%', overflowX: 'auto' }}>
+            <DataGrid
+              columns={columns}
+              rows={data}
+              initialState={{
+                sorting: { sortModel },
+              }}
+              checkboxSelection
+              disableRowSelectionOnClick
+              onRowSelectionModelChange={handleRowSelectionChange}
+              rowSelectionModel={selectedRows}
+              sx={{ minWidth: 820 }}
+            />
+          </Box>
         ) : (
           <Grid
             container

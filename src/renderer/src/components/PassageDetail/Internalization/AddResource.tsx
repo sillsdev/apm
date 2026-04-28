@@ -1,33 +1,26 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import { IPassageDetailArtifactsStrings } from '../../../model';
-import { ListItemText } from '@mui/material';
+import { ListItemText, SxProps, Theme } from '@mui/material';
 import InfoIcon from '@mui/icons-material/Info';
 import { AltButton, LightTooltip } from '../../../control';
 import { resourceSelector } from '../../../selector';
 import { shallowEqual, useSelector } from 'react-redux';
 import { StyledMenu, StyledMenuItem } from '../../../control';
 import { useGlobal } from '../../../context/useGlobal';
-import usePassageDetailContext from '../../../context/usePassageDetailContext';
-import { usePassageType } from '../../../crud/usePassageType';
-import related from '../../../crud/related';
-import { PassageTypeEnum } from '../../../model/passageType';
-import { usePlanType } from '../../../crud';
 
 interface IProps {
   action?: (what: string) => void;
   stopPlayer?: () => void;
+  buttonDark?: boolean;
+  buttonElevated?: boolean; // setting for some shadowing
+  buttonSx?: SxProps<Theme>;
 }
 
 export const AddResource = (props: IProps) => {
-  const { action, stopPlayer } = props;
-  const { passage } = usePassageDetailContext();
-  const { getPassageTypeFromId } = usePassageType();
-  const [biblebrain, setBiblebrain] = useState(true);
+  const { action, stopPlayer, buttonDark, buttonElevated, buttonSx } = props;
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [offline] = useGlobal('offline'); //verified this is not used in a function 2/18/25
   const [offlineOnly] = useGlobal('offlineOnly'); //will be constant here
-  const [plan] = useGlobal('plan'); //will be constant here
-  const planType = usePlanType();
 
   const t: IPassageDetailArtifactsStrings = useSelector(
     resourceSelector,
@@ -46,22 +39,16 @@ export const AddResource = (props: IProps) => {
       action(what);
     }
   };
-  const isScripture = useMemo(
-    () => planType(plan)?.scripture,
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [plan]
-  );
-  useEffect(() => {
-    if (isScripture) {
-      const pt = getPassageTypeFromId(related(passage, 'passagetype'));
-      setBiblebrain(pt === PassageTypeEnum.PASSAGE);
-    } else setBiblebrain(false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [passage, isScripture]);
 
   return (
     <div>
-      <AltButton id="add-resource" onClick={handleClick}>
+      <AltButton
+        id="add-resource"
+        onClick={handleClick}
+        dark={buttonDark}
+        elevated={buttonElevated}
+        sx={buttonSx}
+      >
         {t.add}
       </AltButton>
       <StyledMenu
@@ -76,11 +63,6 @@ export const AddResource = (props: IProps) => {
         <StyledMenuItem id="uploadResource" onClick={handle('upload')}>
           <ListItemText>{t.upload}</ListItemText>
         </StyledMenuItem>
-        {biblebrain && (
-          <StyledMenuItem id="audioScripture" onClick={handle('scripture')}>
-            <ListItemText>{t.audioScripture}</ListItemText>
-          </StyledMenuItem>
-        )}
         <StyledMenuItem id="linkResource" onClick={handle('link')}>
           <ListItemText>{t.linkResource}</ListItemText>
         </StyledMenuItem>
