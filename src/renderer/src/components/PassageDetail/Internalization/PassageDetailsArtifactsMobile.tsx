@@ -22,7 +22,6 @@ import { AltButton, GrowingSpacer } from '../../../control';
 import { AIGenerated } from '.';
 import { AudioResourceCard } from './mobile components/AudioResourceCard';
 import { TextResourceCard } from './mobile components/TextResourceCard';
-import { SettingsDialog } from './mobile components/SettingsDialog';
 import {
   remoteIdGuid,
   useSecResCreate,
@@ -50,7 +49,14 @@ import SelectProjectResource from './SelectProjectResource';
 import SelectSections from './SelectSections';
 import ResourceData from './ResourceData';
 import { MarkDownType, UriLinkType } from '../../MediaUpload';
-import { Badge, Box, Stack, Typography, IconButton } from '@mui/material';
+import {
+  Badge,
+  Box,
+  Stack,
+  Typography,
+  MenuItem,
+  MenuList,
+} from '@mui/material';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import { ReplaceRelatedRecord } from '../../../model/baseModel';
 import ProjectResourceConfigure from './ProjectResourceConfigure';
@@ -92,6 +98,7 @@ import { CompactMarkDownView } from '../../../control/MarkDownView';
 import { UploadType } from '../../UploadType';
 import { ResourceTypeEnum } from './ResourceTypeEnum';
 import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
+import IconMenu from '../../../control/IconMenu';
 
 export function PassageDetailArtifactsMobile() {
   const sectionResources = useOrbitData<SectionResourceD[]>('sectionresource');
@@ -784,8 +791,6 @@ export function PassageDetailArtifactsMobile() {
     [hasPermission, offline, offlineOnly]
   );
 
-  const [settingsOpen, setSettingsOpen] = useState(false);
-
   return (
     <Box sx={{ maxWidth: '800px', margin: '0 auto' }}>
       <Stack sx={{ width: '100%' }} direction="row" spacing={1}>
@@ -806,9 +811,20 @@ export function PassageDetailArtifactsMobile() {
           */}
         <GrowingSpacer />
         {(otherResourcesAvailable || hasProjRes) && (
-          <IconButton color="primary" onClick={() => setSettingsOpen(true)}>
-            <SettingsOutlinedIcon />
-          </IconButton>
+          <IconMenu icon={<SettingsOutlinedIcon />}>
+            <MenuList dense>
+              {otherResourcesAvailable && (
+                <MenuItem onClick={handleAllResources}>
+                  {t.allResources}
+                </MenuItem>
+              )}
+              {hasProjRes && (
+                <MenuItem onClick={() => setProjectResourceVisible(true)}>
+                  {t.configure}
+                </MenuItem>
+              )}
+            </MenuList>
+          </IconMenu>
         )}
       </Stack>
       <Box sx={{ width: '100%' }}>
@@ -998,18 +1014,6 @@ export function PassageDetailArtifactsMobile() {
           passDesc={passDesc}
         />
       </BigDialog>
-      <SettingsDialog
-        open={settingsOpen}
-        onClose={() => setSettingsOpen(false)}
-        showResources={otherResourcesAvailable}
-        showConfigureGeneral={hasProjRes}
-        resourcesChecked={allResources}
-        handleShowResources={handleAllResources}
-        handleConfigureGeneral={() => {
-          setSettingsOpen(false);
-          setProjectResourceVisible(true);
-        }}
-      />
       {confirm && (
         <Confirm
           text={t.deleteConfirm}
