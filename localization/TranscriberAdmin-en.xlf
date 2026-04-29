@@ -8920,6 +8920,18 @@
             <target/>
          </segment>
       </unit>
+      <unit id="verse.doneEditingReference">
+         <segment>
+            <source>Done Editing</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="verse.editReference">
+         <segment>
+            <source>Edit Reference</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="verse.issues">
          <segment>
             <source>The verse markup has issues. Do you want to continue?</source>
@@ -8968,9 +8980,21 @@
             <target/>
          </segment>
       </unit>
+      <unit id="verse.reset">
+         <segment>
+            <source>Reset</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="verse.saveVerseMarkup">
          <segment>
             <source>Save Verse Markup</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="verse.splitVerse">
+         <segment>
+            <source>Split Verse</source>
             <target/>
          </segment>
       </unit>
