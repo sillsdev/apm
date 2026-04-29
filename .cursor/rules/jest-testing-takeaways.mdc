@@ -97,6 +97,29 @@ alwaysApply: true
   imports are erased and need not be on the mock). This complements the barrel-import
   section above when the problematic file is a **direct** import, not only a barrel.
 
+## Component / RTL: tables, dialogs, and timing
+
+- **`getAllByRole('row')` on a `<table>`** may or may not include header rows depending on
+  environment; **numeric row indices are brittle** for “click the *n*th data row.” Prefer:
+  - scoping to **`tbody`** (e.g. `table.querySelector('tbody')` + `within(tbody)`) and then
+    `getAllByRole('row')`, or
+  - finding the row by **visible cell text** the user cares about (e.g. time range in the
+    Limits column), or
+  - `within(table).getAllByRole('rowgroup')` — note **both `thead` and `tbody` are rowgroups**,
+    so do not assume “last rowgroup” is tbody without checking order.
+- **Unscoped `screen.findByText` / `getByText` for segment times** (e.g. `0:00-0:10`) can
+  **false-match** or pass before the **grid** has updated. Assert times **inside `tbody`**
+  (or another stable container) when the value must come from the table.
+- **Async setup before mocked “player” / segment callbacks:** if the real flow needs passage
+  rows to exist first, add a **`waitFor`** (or similar) on a stable signal (e.g. first
+  `verse-reference-*` input value) **before** `act` + `mockPlayerAction` so `handleSegment`
+  runs against the same table state as in the app.
+- **`getByRole('dialog' | 'heading', { name: '...' })` / accessible name:** with MUI
+  `Dialog` + `DialogTitle` + `aria-labelledby`, the **computed** name in JSDOM may not always
+  match a long, composed string; if a query fails, check `screen.debug()` / printed a11y
+  tree, or assert via **`within(dialog)` + partial name regex** or **`#id` + `textContent`**
+  for the title node when appropriate.
+
 ## Running a New Jest Test Module
 
 Run Jest from `src/renderer` (required for this repo).

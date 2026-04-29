@@ -6,7 +6,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import { Box, Button, Paper, SxProps, Typography } from '@mui/material';
+import { Box, IconButton, Paper, SxProps, Typography } from '@mui/material';
 import { shallowEqual, useSelector } from 'react-redux';
 import { useGlobal } from '../../../../context/useGlobal';
 import usePassageDetailContext from '../../../../context/usePassageDetailContext';
@@ -19,41 +19,115 @@ import { useArtifactType } from '../../../../crud/useArtifactType';
 import { usePlanType } from '../../../../crud/usePlanType';
 import { IRegion } from '../../../../crud/useWavesurferRegions';
 import { useSnackBar } from '../../../../hoc/SnackBar';
+import EditIcon from '@mui/icons-material/Edit';
+import AddIcon from '@mui/icons-material/Add';
+import RemoveIcon from '@mui/icons-material/Remove';
+import UndoIcon from '@mui/icons-material/Undo';
 import {
   ISharedStrings,
   ITranscriptionTabStrings,
   IVerseStrings,
+  IWsAudioPlayerSegmentStrings,
+  IWsAudioPlayerStrings,
   MediaFileD,
   Passage,
 } from '../../../../model';
 import { PassageTypeEnum } from '../../../../model/passageType';
 import {
+  audioPlayerSegmentSelector,
   sharedSelector,
   transcriptionTabSelector,
   verseSelector,
+  wsAudioPlayerSelector,
 } from '../../../../selector';
 import { cleanClipboard } from '../../../../utils/cleanClipboard';
 import {
+  getSegments,
   getSortedRegions,
   NamedRegions,
   updateSegments,
 } from '../../../../utils/namedSegments';
+import { prettySegment } from '../../../../utils/prettySegment';
 import { refMatch } from '../../../../utils/refMatch';
 import { useStepPermissions } from '../../../../utils/useStepPermission';
 import Confirm from '../../../AlertDialog';
+import { type WSAudioPlayerControls } from '../../../WSAudioPlayer';
 import PassageDetailPlayer from '../../PassageDetailPlayer';
 import { useProjectSegmentSave } from '../../Internalization/useProjectSegmentSave';
 import EditReferenceDropdown, {
   EditReferenceValue,
 } from './EditReferenceDropdown';
 import MarkVersesTableIsMobile from './MarkVersesTableIsMobile';
+import { AltButton } from '../../../../control/AltButton';
+import { GrowingSpacer } from '../../../../control/GrowingSpacer';
+import { LightTooltip } from '../../../../control/LightTooltip';
+import { PriButton } from '../../../../control/PriButton';
+import { TabActions } from '../../../../control/TabActions';
+import { HotKeyContext } from '../../../../context/HotKeyContext';
+import {
+  ADDREMSEG_KEY,
+  DELREG_KEY,
+} from '../../../../components/WSAudioPlayerSegment';
+import { useMobile } from '../../../../utils/useMobile';
 
 const verseToolId = 'VerseTool';
 const emptySegments = JSON.stringify({ regions: [] });
+/** Distance (seconds) used for Add (must be away from boundaries) and Remove (must be at a join). */
+const SEGMENT_BOUNDARY_TOLERANCE_SEC = 0.1;
+/**
+ * Before remove-next-boundary, if the playhead is on the right-hand segment, seek back by this amount
+ * (tolerance + tolerance) so `currentRegion` is the left segment and the correct join is removed.
+ */
+const REMOVE_BOUNDARY_PLAYHEAD_NUDGE_SEC =
+  SEGMENT_BOUNDARY_TOLERANCE_SEC + SEGMENT_BOUNDARY_TOLERANCE_SEC;
 const paperProps = { p: 2, m: 'auto', width: 'calc(100% - 32px)' } as SxProps;
 const readOnlys = [true, false];
 const widths = [150, 150];
 const cClass = ['lim', 'ref'];
+
+function isProgressNearAnyRegionBoundary(
+  progressSec: number,
+  regions: IRegion[],
+  minDistanceSec: number
+): boolean {
+  if (regions.length === 0) return false;
+  const boundaries = new Set<number>();
+  for (const r of regions) {
+    boundaries.add(r.start);
+    boundaries.add(r.end);
+  }
+  for (const b of boundaries) {
+    if (Math.abs(progressSec - b) <= minDistanceSec) return true;
+  }
+  return false;
+}
+
+/** Closest internal join within `tol` of `progressSec`, if any (tie: smallest distance). */
+function findClosestInternalJoin(
+  progressSec: number,
+  regions: IRegion[],
+  tol: number
+): { join: number; leftSegment: IRegion } | undefined {
+  if (regions.length < 2) return undefined;
+  const sorted = [...regions].sort((a, b) => a.start - b.start);
+  let best: { join: number; leftSegment: IRegion; dist: number } | undefined;
+  for (let i = 0; i < sorted.length - 1; i++) {
+    const join = sorted[i].end;
+    const d = Math.abs(progressSec - join);
+    if (d <= tol && (!best || d < best.dist)) {
+      best = { join, leftSegment: sorted[i], dist: d };
+    }
+  }
+  return best ? { join: best.join, leftSegment: best.leftSegment } : undefined;
+}
+
+function isProgressNearInternalJoin(
+  progressSec: number,
+  regions: IRegion[],
+  tol: number
+): boolean {
+  return findClosestInternalJoin(progressSec, regions, tol) !== undefined;
+}
 
 type IVrs = [string, number[]];
 
@@ -113,25 +187,34 @@ export default function PassageDetailMarkVersesIsMobile({
     rowData,
   } = usePassageDetailContext();
   const [memory] = useGlobal('memory');
+  const { isMobile } = useMobile();
   const [, setComplete] = useGlobal('progress');
   const [plan] = useGlobal('plan');
   const [data, setDatax] = useState<ICell[][]>([]);
   const [issues, setIssues] = useState<string[]>([]);
   const [confirm, setConfirm] = useState('');
   const [numSegments, setNumSegments] = useState(0);
-  const [pastedSegments, setPastedSegments] = useState(emptySegments);
+  // Keep this empty by default so `PassageDetailPlayer` loads the *saved* segments
+  // from `media.attributes.segments` (it prefers `suggestedSegments` when non-empty).
+  const [pastedSegments, setPastedSegments] = useState('');
   const [engVrs, setEngVrs] = useState<Map<string, number[]>>(new Map());
   const [isReferenceEditing, setIsReferenceEditing] = useState(false);
   const [editReferenceDialog, setEditReferenceDialog] =
     useState<IEditReferenceDialogState>();
   const [undoState, setUndoState] = useState<IUndoState>();
   const [playerResetKey, setPlayerResetKey] = useState(0);
+  const [playerProgressSec, setPlayerProgressSec] = useState(0);
+  /** Precise segment JSON from the waveform (table limits round to whole seconds). */
+  const [waveSegmentsJson, setWaveSegmentsJson] = useState('{}');
+  const playerControlsRef = useRef<WSAudioPlayerControls | null>(null);
   const savingRef = useRef(false);
   const canceling = useRef(false);
   const dataRef = useRef<ICell[][]>([]);
   const segmentsRef = useRef('{}');
   const passageRefs = useRef<string[]>([]);
   const resettingSegmentsRef = useRef(false);
+  /** After local Reset, do not re-apply `savedVerseSegmentsJson` from the media record until save or media change. */
+  const suppressVerseResyncFromMediaRef = useRef(false);
   const { canDoSectionStep } = useStepPermissions();
   const hasPermission = canDoSectionStep(currentstep, section);
   const { localizedArtifactType } = useArtifactType();
@@ -141,6 +224,15 @@ export default function PassageDetailMarkVersesIsMobile({
     transcriptionTabSelector,
     shallowEqual
   ) as ITranscriptionTabStrings;
+  const tp = useSelector(
+    audioPlayerSegmentSelector,
+    shallowEqual
+  ) as IWsAudioPlayerSegmentStrings;
+  const tr = useSelector(
+    wsAudioPlayerSelector,
+    shallowEqual
+  ) as IWsAudioPlayerStrings;
+  const { localizeHotKey } = useContext(HotKeyContext).state;
   const {
     toolChanged,
     toolsChanged,
@@ -153,6 +245,7 @@ export default function PassageDetailMarkVersesIsMobile({
     checkSavedFn,
     waitForSave,
   } = useContext(UnsavedContext).state;
+  const hasChanged = useMemo(() => isChanged(verseToolId), [isChanged]);
   const projectSegmentSave = useProjectSegmentSave();
   const { showMessage } = useSnackBar();
   const planType = usePlanType();
@@ -171,9 +264,10 @@ export default function PassageDetailMarkVersesIsMobile({
   }, []);
 
   useEffect(() => {
-    segmentsRef.current = emptySegments;
+    segmentsRef.current = '{}';
     setNumSegments(0);
-    setPastedSegments(emptySegments);
+    setPastedSegments('');
+    suppressVerseResyncFromMediaRef.current = false;
   }, [mediafileId]);
 
   const rowCells = useCallback(
@@ -225,6 +319,15 @@ export default function PassageDetailMarkVersesIsMobile({
   const media = useMemo(
     () => findRecord(memory, 'mediafile', mediafileId) as MediaFileD,
     [mediafileId, memory]
+  );
+
+  /** Same extraction as `PassageDetailPlayer` / desktop so the table can hydrate when segments arrive or after the passage rows exist. */
+  const savedVerseSegmentsJson = useMemo(
+    () =>
+      media?.attributes?.segments
+        ? getSegments(NamedRegions.Verse, media.attributes.segments)
+        : '{}',
+    [media?.attributes?.segments]
   );
 
   const hasBtRecordings = useMemo(() => {
@@ -340,6 +443,11 @@ export default function PassageDetailMarkVersesIsMobile({
     [engVrs, getRefs]
   );
 
+  const passageRefsKey = useMemo(
+    () => getPassageRefs(passage).join('\u001f'),
+    [getPassageRefs, passage]
+  );
+
   useEffect(() => {
     const refs = getPassageRefs(passage);
     if (refs.length > 0) {
@@ -381,6 +489,7 @@ export default function PassageDetailMarkVersesIsMobile({
       projectSegmentSave({ media, segments })
         .then(() => {
           saveCompleted(verseToolId);
+          suppressVerseResyncFromMediaRef.current = false;
         })
         .catch((err) => {
           saveCompleted(verseToolId, err.message);
@@ -402,7 +511,7 @@ export default function PassageDetailMarkVersesIsMobile({
         .forEach((row) => {
           const value = (row[ColName.Ref] as ICell).value;
           if (refMatch(value)) {
-            refs.push(...getRefs(value, passage.attributes.book));
+            refs.push(...getRefs(value, passage?.attributes?.book ?? ''));
           }
         });
       return refs;
@@ -443,6 +552,71 @@ export default function PassageDetailMarkVersesIsMobile({
     if (Number.isNaN(start) || Number.isNaN(end)) return undefined;
     return { start, end } as IRegion;
   }, []);
+
+  const waveformRegions = useMemo(
+    () => getSortedRegions(waveSegmentsJson),
+    [waveSegmentsJson]
+  );
+
+  const addBoundaryTooCloseToExisting = useMemo(
+    () =>
+      isProgressNearAnyRegionBoundary(
+        playerProgressSec,
+        waveformRegions,
+        SEGMENT_BOUNDARY_TOLERANCE_SEC
+      ),
+    [playerProgressSec, waveformRegions]
+  );
+
+  const removeBoundaryEnabled = useMemo(
+    () =>
+      isProgressNearInternalJoin(
+        playerProgressSec,
+        waveformRegions,
+        SEGMENT_BOUNDARY_TOLERANCE_SEC
+      ),
+    [playerProgressSec, waveformRegions]
+  );
+
+  const syncProgressFromPlayer = useCallback(() => {
+    const apply = () => {
+      const c = playerControlsRef.current;
+      if (c?.isReady()) setPlayerProgressSec(c.getProgress());
+    };
+    apply();
+    requestAnimationFrame(apply);
+  }, []);
+
+  const handleRemoveBoundaryClick = useCallback(async () => {
+    const ctrl = playerControlsRef.current;
+    if (!ctrl?.isReady() || !removeBoundaryEnabled) return;
+
+    const p = ctrl.getProgress();
+    const hit = findClosestInternalJoin(
+      p,
+      waveformRegions,
+      SEGMENT_BOUNDARY_TOLERANCE_SEC
+    );
+    if (!hit) return;
+
+    const { join, leftSegment } = hit;
+
+    if (p >= join - 1e-6) {
+      let target = join - REMOVE_BOUNDARY_PLAYHEAD_NUDGE_SEC;
+      target = Math.max(leftSegment.start + 0.001, target);
+      target = Math.min(target, join - 0.001);
+      await ctrl.gotoTime(target);
+    }
+    ctrl.removeNextSegment();
+    syncProgressFromPlayer();
+  }, [removeBoundaryEnabled, waveformRegions, syncProgressFromPlayer]);
+
+  useEffect(() => {
+    const ctrl = playerControlsRef.current;
+    if (ctrl?.isReady()) {
+      setPlayerProgressSec(ctrl.getProgress());
+    }
+  }, [waveSegmentsJson, playerResetKey]);
 
   const cloneTableData = useCallback(
     (tableData: ICell[][]) =>
@@ -585,20 +759,6 @@ export default function PassageDetailMarkVersesIsMobile({
     [parseReferenceValue]
   );
 
-  const findActiveRowIndex = useCallback(() => {
-    const highlightedIndex = dataRef.current.findIndex(
-      (row, index) =>
-        index > 0 &&
-        ((row[ColName.Limits] as ICell).className ?? '').includes('cur')
-    );
-    if (highlightedIndex > 0) return highlightedIndex;
-
-    const firstSegmentedIndex = dataRef.current.findIndex(
-      (row, index) => index > 0 && Boolean((row[ColName.Limits] as ICell).value)
-    );
-    return firstSegmentedIndex > 0 ? firstSegmentedIndex : -1;
-  }, []);
-
   const findHighlightedRowIndex = useCallback((tableData: ICell[][]) => {
     return tableData.findIndex(
       (row, index) =>
@@ -664,8 +824,25 @@ export default function PassageDetailMarkVersesIsMobile({
   const handleSelectRow = useCallback(
     (rowIndex: number) => {
       const row = dataRef.current[rowIndex] as ICell[] | undefined;
+      if (!row) return;
+
+      if (isReferenceEditing) {
+        const nextDialog = buildEditReferenceDialogState(rowIndex);
+        if (nextDialog) {
+          setEditReferenceDialog(nextDialog);
+        }
+        const activeSegment = getSegmentFromRow(row);
+        const newData = cloneTableData(dataRef.current);
+        setActiveRowHighlight(newData, rowIndex);
+        setData(newData);
+        if (activeSegment) {
+          setCurrentSegment(activeSegment, rowIndex - 1);
+        }
+        return;
+      }
+
       const activeSegment = getSegmentFromRow(row);
-      if (!row || !activeSegment) return;
+      if (!activeSegment) return;
 
       const newData = cloneTableData(dataRef.current);
       setActiveRowHighlight(newData, rowIndex);
@@ -673,24 +850,15 @@ export default function PassageDetailMarkVersesIsMobile({
       setCurrentSegment(activeSegment, rowIndex - 1);
     },
     [
+      buildEditReferenceDialogState,
       cloneTableData,
       getSegmentFromRow,
+      isReferenceEditing,
       setCurrentSegment,
       setData,
       setActiveRowHighlight,
     ]
   );
-
-  const handleOpenSplitVerseDialog = useCallback(() => {
-    const rowIndex = findActiveRowIndex();
-    const fallbackRowIndex =
-      rowIndex > 0 ? rowIndex : dataRef.current.length > 1 ? 1 : -1;
-    if (fallbackRowIndex < 1) return;
-    const nextDialog = buildEditReferenceDialogState(fallbackRowIndex);
-    if (nextDialog) {
-      setEditReferenceDialog(nextDialog);
-    }
-  }, [buildEditReferenceDialogState, findActiveRowIndex]);
 
   const handleCloseSplitVerseDialog = () => {
     setEditReferenceDialog(undefined);
@@ -825,6 +993,7 @@ export default function PassageDetailMarkVersesIsMobile({
   const handleSegment = useCallback(
     (segments: string, init: boolean) => {
       segmentsRef.current = segments;
+      setWaveSegmentsJson((prev) => (prev === segments ? prev : segments));
 
       if (resettingSegmentsRef.current) {
         resettingSegmentsRef.current = false;
@@ -880,7 +1049,8 @@ export default function PassageDetailMarkVersesIsMobile({
         const row = rowCells([formLim(region), nextReference]);
         const limits = row[ColName.Limits] as ICell;
         const reference = row[ColName.Ref] as ICell;
-        if (formLim(region) === currentSegment.trim()) {
+        // Match `PassageDetailContext` / desktop: `currentSegment` is `prettySegment`, not mm:ss.
+        if (prettySegment(region).trim() === currentSegment.trim()) {
           limits.className = `${limits.className ?? 'lim'} cur`;
         }
         if (!refMatch(nextReference)) {
@@ -924,6 +1094,20 @@ export default function PassageDetailMarkVersesIsMobile({
       isChanged,
     ]
   );
+
+  const handleSegmentRef = useRef(handleSegment);
+  handleSegmentRef.current = handleSegment;
+
+  useEffect(() => {
+    if (!mediafileId) return;
+    if (suppressVerseResyncFromMediaRef.current) return;
+    const regions = getSortedRegions(savedVerseSegmentsJson);
+    if (regions.length === 0) return;
+    if (!passageRefsKey) return;
+    queueMicrotask(() => {
+      handleSegmentRef.current(savedVerseSegmentsJson, true);
+    });
+  }, [mediafileId, passageRefsKey, savedVerseSegmentsJson]);
 
   const setSegments = () => {
     const regions: IRegion[] = [];
@@ -1039,6 +1223,12 @@ export default function PassageDetailMarkVersesIsMobile({
     setIsReferenceEditing((value) => !value);
   };
 
+  useEffect(() => {
+    if (!isReferenceEditing) {
+      setEditReferenceDialog(undefined);
+    }
+  }, [isReferenceEditing]);
+
   const handleResetMarkup = () => {
     const refs =
       passageRefs.current.length > 0
@@ -1056,6 +1246,7 @@ export default function PassageDetailMarkVersesIsMobile({
 
     passageRefs.current = refs;
     segmentsRef.current = emptySegments;
+    suppressVerseResyncFromMediaRef.current = true;
     setNumSegments(0);
     setData(newData);
     setCurrentSegment(undefined, -1);
@@ -1064,7 +1255,8 @@ export default function PassageDetailMarkVersesIsMobile({
     setUndoState(undefined);
     setConfirm('');
     setIssues([]);
-    resetSegments([]);
+    // Non-empty so `usePlayerLogic` uses this instead of reloading Verse segments from the media record.
+    setPastedSegments(emptySegments);
     setPlayerResetKey((value) => value + 1);
 
     if (hadChanges) {
@@ -1081,54 +1273,54 @@ export default function PassageDetailMarkVersesIsMobile({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [toolsChanged]);
 
-  // const checkRefs = () => {
-  //   const refs = collectRefs(dataRef.current);
-  //   const noSegRefs = dataRef.current
-  //     .filter((_, index) => index > 0)
-  //     .filter(
-  //       (row) =>
-  //         (row[ColName.Ref] as ICell).value &&
-  //         !(row[ColName.Limits] as ICell).value
-  //     )
-  //     .map((row) => (row[ColName.Ref] as ICell).value);
-  //   const noRefSegs = dataRef.current
-  //     .filter((_, index) => index > 0)
-  //     .some(
-  //       (row) =>
-  //         !(row[ColName.Ref] as ICell).value &&
-  //         (row[ColName.Limits] as ICell).value
-  //     );
-  //   const matchAll = refs.every((ref) => refMatch(ref));
-  //   const refSet = new Set(passageRefs.current);
-  //   const outsideRefs = new Set<string>();
+  const checkRefs = () => {
+    const refs = collectRefs(dataRef.current);
+    const noSegRefs = dataRef.current
+      .filter((_, index) => index > 0)
+      .filter(
+        (row) =>
+          (row[ColName.Ref] as ICell).value &&
+          !(row[ColName.Limits] as ICell).value
+      )
+      .map((row) => (row[ColName.Ref] as ICell).value);
+    const noRefSegs = dataRef.current
+      .filter((_, index) => index > 0)
+      .some(
+        (row) =>
+          !(row[ColName.Ref] as ICell).value &&
+          (row[ColName.Limits] as ICell).value
+      );
+    const matchAll = refs.every((ref) => refMatch(ref));
+    const refSet = new Set(passageRefs.current);
+    const outsideRefs = new Set<string>();
 
-  //   refs.forEach((ref) => {
-  //     if (refSet.has(ref)) {
-  //       refSet.delete(ref);
-  //     } else if (refMatch(ref)) {
-  //       outsideRefs.add(ref);
-  //     }
-  //   });
+    refs.forEach((ref) => {
+      if (refSet.has(ref)) {
+        refSet.delete(ref);
+      } else if (refMatch(ref)) {
+        outsideRefs.add(ref);
+      }
+    });
 
-  //   const nextIssues: string[] = [];
-  //   if (!matchAll) nextIssues.push(t.badReferences);
-  //   if (noSegRefs.length > 0) {
-  //     nextIssues.push(t.noSegments.replace('{0}', noSegRefs.join(', ')));
-  //   }
-  //   if (refSet.size > 0) {
-  //     nextIssues.push(
-  //       t.missingReferences.replace('{0}', Array.from(refSet).sort().join(', '))
-  //     );
-  //   }
-  //   if (outsideRefs.size > 0) {
-  //     nextIssues.push(
-  //       t.outsideReferences.replace('{0}', Array.from(outsideRefs).join(', '))
-  //     );
-  //   }
-  //   if (noRefSegs) nextIssues.push(t.noReferences);
-  //   if (hasBtRecordings) nextIssues.push(t.btNotUpdated);
-  //   return nextIssues;
-  // };
+    const nextIssues: string[] = [];
+    if (!matchAll) nextIssues.push(t.badReferences);
+    if (noSegRefs.length > 0) {
+      nextIssues.push(t.noSegments.replace('{0}', noSegRefs.join(', ')));
+    }
+    if (refSet.size > 0) {
+      nextIssues.push(
+        t.missingReferences.replace('{0}', Array.from(refSet).sort().join(', '))
+      );
+    }
+    if (outsideRefs.size > 0) {
+      nextIssues.push(
+        t.outsideReferences.replace('{0}', Array.from(outsideRefs).join(', '))
+      );
+    }
+    if (noRefSegs) nextIssues.push(t.noReferences);
+    if (hasBtRecordings) nextIssues.push(t.btNotUpdated);
+    return nextIssues;
+  };
 
   const handleCancel = () => {
     if (savingRef.current) {
@@ -1155,15 +1347,15 @@ export default function PassageDetailMarkVersesIsMobile({
     resetSave();
   };
 
-  // const handleSaveMarkup = () => {
-  //   const nextIssues = checkRefs();
-  //   if (nextIssues.length > 0) {
-  //     setIssues(nextIssues);
-  //     setConfirm(t.issues);
-  //   } else {
-  //     handleNoIssueSave();
-  //   }
-  // };
+  const handleSaveMarkup = () => {
+    const nextIssues = checkRefs();
+    if (nextIssues.length > 0) {
+      setIssues(nextIssues);
+      setConfirm(t.issues);
+    } else {
+      handleNoIssueSave();
+    }
+  };
 
   if (!mediafileId) {
     return (
@@ -1191,10 +1383,12 @@ export default function PassageDetailMarkVersesIsMobile({
   const resetLabel = t.reset || 'Reset';
   const saveLabel = ts.save || 'Save';
   const cancelLabel = ts.cancel || 'Cancel';
-  const undoLabel = 'Undo';
 
   return (
-    <Box>
+    <Box
+      id="mark-verses-mobile"
+      sx={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}
+    >
       <PassageDetailPlayer
         key={`mark-verses-player-${mediafileId}-${playerResetKey}`}
         width={width}
@@ -1203,8 +1397,11 @@ export default function PassageDetailMarkVersesIsMobile({
         onSegment={handleSegment}
         suggestedSegments={pastedSegments}
         allowZoomAndSpeed={true}
+        controlsRef={playerControlsRef}
+        onProgress={setPlayerProgressSec}
+        onInteraction={syncProgressFromPlayer}
       />
-      <Box
+      <TabActions
         sx={{
           mt: 1,
           display: 'flex',
@@ -1212,49 +1409,80 @@ export default function PassageDetailMarkVersesIsMobile({
           justifyContent: 'space-between',
           gap: 1,
           flexWrap: 'wrap',
+          width: !isMobile ? 'calc(100% + 32px)' : '100%', // lines up with the end of the wave
         }}
       >
-        <Button
-          variant="outlined"
-          size="medium"
-          onClick={handleToggleReferenceEditing}
-          disabled={!hasPermission}
-          sx={{ minHeight: 40, px: 2.5, py: 0.75 }}
-        >
-          {isReferenceEditing ? doneEditingReferenceLabel : editReferenceLabel}
-        </Button>
-
-        <Button
-          variant="outlined"
-          size="medium"
-          onClick={handleOpenSplitVerseDialog}
-          disabled={!hasPermission}
-          sx={{ minHeight: 40, px: 2.5, py: 0.75 }}
-        >
-          {splitVerseLabel}
-        </Button>
-
-        <Button
-          variant="outlined"
-          size="medium"
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+          <LightTooltip
+            id="markVersesSplitTip"
+            title={tp.splitSegment.replace(
+              '{0}',
+              localizeHotKey(ADDREMSEG_KEY)
+            )}
+          >
+            <IconButton
+              onClick={() => playerControlsRef.current?.addSegment()}
+              disabled={!hasPermission || addBoundaryTooCloseToExisting}
+              sx={{ pr: 2.5, pl: '0px !important' }}
+            >
+              <AddIcon />
+            </IconButton>
+          </LightTooltip>
+          <LightTooltip
+            id="markVersesRemoveBoundaryTip"
+            title={tp.removeSegment.replace('{0}', localizeHotKey(DELREG_KEY))}
+          >
+            <IconButton
+              onClick={() => void handleRemoveBoundaryClick()}
+              disabled={!hasPermission || !removeBoundaryEnabled}
+              sx={{ px: 1 }}
+            >
+              <RemoveIcon />
+            </IconButton>
+          </LightTooltip>
+        </Box>
+        <AltButton
           onClick={handleResetMarkup}
           disabled={!hasPermission}
-          sx={{ minHeight: 40, px: 2.5, py: 0.75 }}
+          sx={{ px: 2.5, py: 0.75 }}
         >
           {resetLabel}
-        </Button>
-      </Box>
-      {undoState && (
-        <Box sx={{ mt: 1, display: 'flex', justifyContent: 'flex-end' }}>
-          <Button
-            variant="contained"
-            size="small"
-            onClick={handleUndoSplitVerseSave}
-          >
-            {undoLabel}
-          </Button>
-        </Box>
-      )}
+        </AltButton>
+      </TabActions>
+      <TabActions
+        sx={{
+          mt: 1,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 1,
+        }}
+      >
+        <GrowingSpacer />
+        <AltButton
+          onClick={handleToggleReferenceEditing}
+          disabled={!hasPermission}
+        >
+          {!isReferenceEditing && <EditIcon sx={{ mr: 1 }} fontSize="small" />}
+          {isReferenceEditing ? doneEditingReferenceLabel : editReferenceLabel}
+        </AltButton>
+        <GrowingSpacer />
+        {undoState && (
+          <LightTooltip id="markVersesUndoTip" title={tr.undoTip}>
+            <IconButton
+              aria-label={tr.undoTip}
+              onClick={handleUndoSplitVerseSave}
+            >
+              <UndoIcon />
+            </IconButton>
+          </LightTooltip>
+        )}
+        {hasChanged && (
+          <PriButton onClick={handleSaveMarkup} disabled={!hasPermission}>
+            {saveLabel}
+          </PriButton>
+        )}
+      </TabActions>
       <MarkVersesTableIsMobile
         data={
           hasPermission
@@ -1264,7 +1492,7 @@ export default function PassageDetailMarkVersesIsMobile({
                   readOnly:
                     rowIndex === 0 ||
                     colIndex === ColName.Limits ||
-                    !isReferenceEditing,
+                    (colIndex === ColName.Ref && !isReferenceEditing),
                 }))
               )
             : data.map((row) =>

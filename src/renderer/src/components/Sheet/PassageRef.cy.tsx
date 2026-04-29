@@ -137,7 +137,7 @@ describe('PassageRef', () => {
     props: {
       psgType: PassageTypeEnum;
       book?: string;
-      ref?: string;
+      passageRef?: string;
       comment?: string;
     },
     planContextOverrides: Partial<ICtxState> = {}
@@ -168,7 +168,7 @@ describe('PassageRef', () => {
       mountComponent({
         psgType: PassageTypeEnum.PASSAGE,
         book: 'GEN',
-        ref: '1:1-5',
+        passageRef: '1:1-5',
         comment: 'Test comment',
       });
 
@@ -183,7 +183,7 @@ describe('PassageRef', () => {
         {
           psgType: PassageTypeEnum.PASSAGE,
           book: 'GEN',
-          ref: '1:1-5',
+          passageRef: '1:1-5',
         },
         { scripture: false }
       );
@@ -194,10 +194,10 @@ describe('PassageRef', () => {
         .and('not.contain.text', 'Genesis');
     });
 
-    it('should use RefRender component for non-PASSAGE types with ref', () => {
+    it('should use RefRender component for non-PASSAGE types with passageRef', () => {
       mountComponent({
         psgType: PassageTypeEnum.CHAPTERNUMBER,
-        ref: '1',
+        passageRef: '1',
         comment: 'Chapter comment',
       });
 
@@ -209,7 +209,7 @@ describe('PassageRef', () => {
     it('should append comment for CHAPTERNUMBER type when comment exists', () => {
       mountComponent({
         psgType: PassageTypeEnum.CHAPTERNUMBER,
-        ref: '1',
+        passageRef: '1',
         comment: 'Introduction',
       });
 
@@ -222,7 +222,7 @@ describe('PassageRef', () => {
     it('should not append comment for non-CHAPTERNUMBER types', () => {
       mountComponent({
         psgType: PassageTypeEnum.NOTE,
-        ref: 'Note reference',
+        passageRef: 'Note reference',
         comment: 'Note comment',
       });
 
@@ -232,7 +232,7 @@ describe('PassageRef', () => {
         .and('not.contain.text', 'Note comment');
     });
 
-    it('should return null when no ref is provided for non-PASSAGE types', () => {
+    it('should return null when no passageRef is provided for non-PASSAGE types', () => {
       mountComponent({
         psgType: PassageTypeEnum.NOTE,
         book: 'GEN',
@@ -248,7 +248,7 @@ describe('PassageRef', () => {
       mountComponent({
         psgType: PassageTypeEnum.PASSAGE,
         book: 'MAT',
-        ref: '5:1-12',
+        passageRef: '5:1-12',
       });
 
       cy.get('.MuiTypography-h6')
@@ -260,7 +260,7 @@ describe('PassageRef', () => {
       mountComponent({
         psgType: PassageTypeEnum.PASSAGE,
         book: 'UNK',
-        ref: '1:1',
+        passageRef: '1:1',
       });
 
       cy.get('.MuiTypography-h6')
@@ -292,7 +292,7 @@ describe('PassageRef', () => {
                 <PassageRef
                   psgType={PassageTypeEnum.PASSAGE}
                   book="GEN"
-                  ref="1:1"
+                  passageRef="1:1"
                 />
               </PlanContext.Provider>
             </DataProvider>
@@ -308,7 +308,7 @@ describe('PassageRef', () => {
     it('should handle undefined book gracefully in scripture projects', () => {
       mountComponent({
         psgType: PassageTypeEnum.PASSAGE,
-        ref: '1:1',
+        passageRef: '1:1',
       });
 
       cy.get('.MuiTypography-h6')
@@ -322,7 +322,7 @@ describe('PassageRef', () => {
       mountComponent({
         psgType: PassageTypeEnum.PASSAGE,
         book: 'GEN',
-        ref: '',
+        passageRef: '',
       });
 
       cy.get('.MuiTypography-h6')
@@ -337,7 +337,7 @@ describe('PassageRef', () => {
       mountComponent({
         psgType: PassageTypeEnum.PASSAGE,
         book: 'GEN',
-        ref: longRef,
+        passageRef: longRef,
       });
 
       cy.get('.MuiTypography-h6')
@@ -349,7 +349,7 @@ describe('PassageRef', () => {
       mountComponent({
         psgType: PassageTypeEnum.PASSAGE,
         book: 'GEN',
-        ref: '1:1-5 "Special quote" & symbols',
+        passageRef: '1:1-5 "Special quote" & symbols',
       });
 
       cy.get('.MuiTypography-h6')
@@ -360,7 +360,7 @@ describe('PassageRef', () => {
     it('should handle special characters in comment', () => {
       mountComponent({
         psgType: PassageTypeEnum.CHAPTERNUMBER,
-        ref: '1',
+        passageRef: '1',
         comment: 'Comment with "quotes" & symbols',
       });
 
@@ -372,7 +372,7 @@ describe('PassageRef', () => {
     it('should handle numeric-only references', () => {
       mountComponent({
         psgType: PassageTypeEnum.CHAPTERNUMBER,
-        ref: '123',
+        passageRef: '123',
       });
 
       cy.get('.MuiTypography-h6').should('exist').and('contain.text', '123');
@@ -381,7 +381,7 @@ describe('PassageRef', () => {
     it('should handle empty comment for CHAPTERNUMBER type', () => {
       mountComponent({
         psgType: PassageTypeEnum.CHAPTERNUMBER,
-        ref: '1',
+        passageRef: '1',
         comment: '',
       });
 
@@ -397,7 +397,7 @@ describe('PassageRef', () => {
       mountComponent({
         psgType: PassageTypeEnum.PASSAGE,
         book: 'GEN',
-        ref: '1:1',
+        passageRef: '1:1',
       });
 
       cy.get('.MuiTypography-h6').should('exist');
@@ -409,7 +409,7 @@ describe('PassageRef', () => {
       mountComponent({
         psgType: PassageTypeEnum.PASSAGE,
         book: 'GEN',
-        ref: '1:1',
+        passageRef: '1:1',
       });
 
       cy.get('.MuiTypography-h6')
@@ -432,7 +432,7 @@ describe('PassageRef', () => {
                   >
                     <PassageRef
                       psgType={PassageTypeEnum.NOTE}
-                      ref="Note reference"
+                      passageRef="Note reference"
                     />
                   </PlanContext.Provider>
                 </DataProvider>
@@ -454,7 +454,7 @@ describe('PassageRef', () => {
       mountComponent({
         psgType: PassageTypeEnum.PASSAGE,
         book: 'GEN',
-        ref: '1:1',
+        passageRef: '1:1',
       });
 
       cy.get('.MuiTypography-h6').should('contain.text', 'Genesis 1:1');
@@ -474,7 +474,7 @@ describe('PassageRef', () => {
               >
                 <PassageRef
                   psgType={PassageTypeEnum.CHAPTERNUMBER}
-                  ref="1"
+                  passageRef="1"
                   comment="Chapter intro"
                 />
               </PlanContext.Provider>
@@ -494,7 +494,7 @@ describe('PassageRef', () => {
         {
           psgType: PassageTypeEnum.PASSAGE,
           book: 'GEN',
-          ref: '1:1',
+          passageRef: '1:1',
         },
         { scripture: true }
       );
@@ -517,7 +517,7 @@ describe('PassageRef', () => {
                 <PassageRef
                   psgType={PassageTypeEnum.PASSAGE}
                   book="GEN"
-                  ref="1:1"
+                  passageRef="1:1"
                 />
               </PlanContext.Provider>
             </DataProvider>
@@ -570,7 +570,7 @@ describe('PassageRef', () => {
         mountComponent({
           psgType: type,
           book: 'GEN',
-          ref: 'Test reference',
+          passageRef: 'Test reference',
         });
 
         cy.get('.MuiTypography-h6').should('exist');

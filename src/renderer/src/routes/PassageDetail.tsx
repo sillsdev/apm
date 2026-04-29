@@ -26,6 +26,7 @@ import PassageDetailRecord from '../components/PassageDetail/PassageDetailRecord
 import { usePaneWidth } from '../components/usePaneWidth';
 import { HeadHeight } from '../App';
 import PassageDetailsArtifactsMobile from '../components/PassageDetail/Internalization/PassageDetailsArtifactsMobile';
+import PassageDetailMarkVersesIsMobile from '../components/PassageDetail/mobile/MarkVerses/PassageDetailMarkVersesIsMobile';
 
 const NotImplemented = () => 'Not implemented';
 
@@ -40,6 +41,8 @@ const MobileStep = () => {
     <PassageDetailRecord width={Math.max(0, paneWidth - 40)} />
   ) : tool === ToolSlug.Resource ? (
     <PassageDetailsArtifactsMobile />
+  ) : tool === ToolSlug.Verses ? (
+    <PassageDetailMarkVersesIsMobile width={Math.max(0, paneWidth - 40)} />
   ) : (
     <NotImplemented />
   );

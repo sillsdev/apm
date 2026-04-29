@@ -209,6 +209,7 @@ export interface WSAudioPlayerControls {
   getDuration: () => number;
   isReady: () => boolean;
   isPlaying: () => boolean;
+  gotoTime: (seconds: number) => Promise<void>;
 }
 
 const PLAY_PAUSE_KEY = 'F1,CTRL+SPACE';
@@ -1222,6 +1223,7 @@ function WSAudioPlayer(props: IProps) {
       getDuration: () => durationRef.current,
       isReady: () => readyRef.current,
       isPlaying: () => playingRef.current,
+      gotoTime: (seconds: number) => wsGoto(seconds),
     };
     return () => {
       controlsRef.current = null;
@@ -1239,6 +1241,7 @@ function WSAudioPlayer(props: IProps) {
     confirmedDelete,
     handleAddRegion,
     handleRemoveSplitRegion,
+    wsGoto,
   ]);
 
   const doingProcess = (inprogress: boolean, msg?: string) => {
@@ -1689,7 +1692,7 @@ function WSAudioPlayer(props: IProps) {
     />
   );
 
-  const deleteRegionNode = hasRegion !== 0 && !oneShotUsed && (
+  const deleteRegionNode = hasRegion !== 0 && !oneShotUsed && !isMobileView && (
     <LightTooltip id="wsAudioDeleteRegionTip" title={t.deleteRegion}>
       <span>
         <IconButton
@@ -1717,7 +1720,7 @@ function WSAudioPlayer(props: IProps) {
     </LightTooltip>
   );
 
-  const moreAndMicMenusNode = (
+  const moreAndMicMenusNode = renderMoreMenuItems().length > 0 && (
     <Grid>
       {audioDownload.hiddenAnchor}
       <LightTooltip id="wsAudioMoreTip" title={t.moreOptions}>
@@ -1771,7 +1774,7 @@ function WSAudioPlayer(props: IProps) {
       </Menu>
     </Grid>
   );
-  const clearRecordingNode = (
+  const clearRecordingNode = allowRecord && (
     <LightTooltip id="wsAudioClearTip" title={t.clearRecordingTip}>
       <span>
         <AltButton

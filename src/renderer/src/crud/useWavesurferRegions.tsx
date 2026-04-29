@@ -811,10 +811,10 @@ export function useWaveSurferRegions(
     )
       .filter((r: any) => r.start !== undefined && r.end - r.start > 0.03)
       .sort((a: any, b: any) => a.start - b.start);
-    regarray.forEach(function (region: any) {
+    regarray.forEach(function (region: any, index: number) {
       region.start = roundToFiveDecimals(region.start);
       region.end = roundToFiveDecimals(region.end);
-      region.color = getSegmentRegionColor(regarray.indexOf(region));
+      region.color = getSegmentRegionColor(index);
       region.drag = false;
       region.content = region.label;
       const r = Regions()?.addRegion(region);

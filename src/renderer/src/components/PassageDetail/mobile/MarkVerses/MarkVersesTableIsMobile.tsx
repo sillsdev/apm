@@ -9,6 +9,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import type { ChangeEvent, ClipboardEvent } from 'react';
 import { getSegmentRegionColor } from '../../../../crud/useWavesurferRegions';
 import type { ICell, ICellChange } from './PassageDetailMarkVersesIsMobile';
@@ -83,7 +84,15 @@ export default function MarkVersesTableIsMobile({
       component={Paper}
       id="verse-sheet"
       data-testid="verse-sheet"
-      sx={{ mt: 1, maxHeight: 280 }}
+      sx={{
+        mt: 1,
+        flex: '1 1 auto',
+        minHeight: 0,
+        overflowY: 'auto',
+        width: '100%',
+        maxWidth: 800,
+        mx: 'auto',
+      }}
     >
       <Table stickyHeader size="small" aria-label="mobile mark verses table">
         <TableHead>
@@ -100,6 +109,7 @@ export default function MarkVersesTableIsMobile({
             const limits = row[ColName.Limits] as ICell;
             const reference = row[ColName.Ref] as ICell;
             const invalid = reference.className?.includes('Err');
+            const isCurrentRow = (limits.className ?? '').includes('cur');
             const rowColor = limits.value
               ? getSegmentRegionColor(index, 0.24)
               : 'transparent';
@@ -108,7 +118,11 @@ export default function MarkVersesTableIsMobile({
               <TableRow
                 key={`verse-row-${index}`}
                 onClick={() => onRowSelect?.(index + 1)}
-                sx={{ backgroundColor: rowColor }}
+                sx={(theme) => ({
+                  backgroundColor: isCurrentRow
+                    ? alpha(theme.palette.warning.main, 0.35)
+                    : rowColor,
+                })}
               >
                 <TableCell
                   sx={{
@@ -138,8 +152,18 @@ export default function MarkVersesTableIsMobile({
                     error={Boolean(invalid)}
                     inputProps={{
                       'aria-label': `verse-reference-${index + 1}`,
-                      onPaste: handlePaste(index),
+                      // Enabled during Edit Reference mode for tapping; typing still happens in the dialog.
+                      readOnly: !reference.readOnly,
+                      onPaste: reference.readOnly ? handlePaste(index) : undefined,
                     }}
+                    sx={
+                      reference.readOnly
+                        ? {
+                            // Disabled fields still capture clicks; row `onClick` uses pointer-events on the cell.
+                            pointerEvents: 'none',
+                          }
+                        : undefined
+                    }
                   />
                 </TableCell>
               </TableRow>

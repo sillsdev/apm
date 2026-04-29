@@ -48,7 +48,16 @@ describe('MarkVersesTableIsMobile', () => {
   it('updates the selected reference cell', () => {
     mountTable();
 
-    cy.get('input[aria-label="verse-reference-1"]').clear().type('2:15');
+    // Reference <input> is `readOnly` when the cell is not disabled so taps go to
+    // the parent dialog; exercise onChange by clearing readOnly in the test only.
+    const ref1 = 'input[aria-label="verse-reference-1"]';
+    cy.get(ref1)
+      .should('have.value', '2:11')
+      .and('have.attr', 'readOnly');
+    cy.get(ref1).then(($el) => {
+      ($el[0] as HTMLInputElement).readOnly = false;
+    });
+    cy.get(ref1).clear().type('2:15');
     cy.get('@onCellsChanged').should('have.been.called');
   });
 });
