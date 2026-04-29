@@ -20,6 +20,8 @@ import {
   TextField,
   Typography,
   styled,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import {
   DataGrid,
@@ -113,6 +115,8 @@ export const PassageDataTable = (props: IProps) => {
     shallowEqual
   );
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
+  const theme = useTheme();
+  const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
   const columns: GridColDef<IRRow>[] = !isNote
     ? [
         { field: 'language', headerName: t.language, width: 150 },
@@ -350,7 +354,16 @@ export const PassageDataTable = (props: IProps) => {
   return (
     <div id="passage-data-table">
       {isScripture && (
-        <Stack direction="row" spacing={1} sx={{ alignItems: 'center', my: 1 }}>
+        <Stack
+          direction="row"
+          spacing={1}
+          sx={{
+            alignItems: isSmallScreen ? 'stretch' : 'center',
+            my: 1,
+            flexWrap: 'wrap',
+            rowGap: 1,
+          }}
+        >
           {onScope && (
             <FormControlLabel
               control={
@@ -362,10 +375,10 @@ export const PassageDataTable = (props: IProps) => {
               label={t.passageResource}
             />
           )}
-          <GrowingSpacer />
+          {!isSmallScreen && <GrowingSpacer />}
           {refLevel !== RefLevel.All && (
             <>
-              <Box sx={{ width: '200px' }}>
+              <Box sx={{ width: isSmallScreen ? '100%' : '200px' }}>
                 <BookSelect
                   placeHolder={t.selectBook}
                   suggestions={bookSuggestions}
@@ -388,7 +401,7 @@ export const PassageDataTable = (props: IProps) => {
                       placeholder: passage?.attributes.reference ?? t.reference,
                     },
                   }}
-                  sx={{ width: '400px' }}
+                  sx={{ width: isSmallScreen ? '100%' : '400px' }}
                 />
               )}
             </>
@@ -398,7 +411,7 @@ export const PassageDataTable = (props: IProps) => {
               id="ref-level"
               value={refLevel ?? RefLevel.All}
               onChange={handleLevelChange as any}
-              sx={{ width: '325px' }}
+              sx={{ width: isSmallScreen ? '100%' : '325px' }}
               inputProps={{ autoFocus: true }}
             >
               {referenceLevel.map((rl) => (

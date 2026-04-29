@@ -32,6 +32,7 @@ export const SIZELIMIT = (uploadType: UploadType) => {
 interface IProps {
   visible: boolean;
   onVisible: (v: boolean) => void;
+  bp?: BigDialogBp;
   uploadType: UploadType;
   uploadMethod?: ((files: File[]) => void) | undefined;
   multiple?: boolean | undefined;
@@ -52,6 +53,7 @@ function MediaUpload(props: IProps) {
   const {
     visible,
     onVisible,
+    bp,
     uploadType,
     multiple,
     uploadMethod,
