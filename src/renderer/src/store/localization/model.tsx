@@ -1767,6 +1767,8 @@ export interface IVerseStrings extends Localize.LocalizedStringsMethods {
     "btNotUpdated": string;
     "canceling": string;
     "clipboard": string;
+    "doneEditingReference": string;
+    "editReference": string;
     "issues": string;
     "markVerses": string;
     "missingReferences": string;
@@ -1775,7 +1777,9 @@ export interface IVerseStrings extends Localize.LocalizedStringsMethods {
     "outsideReferences": string;
     "pasteFormat": string;
     "reference": string;
+    "reset": string;
     "saveVerseMarkup": string;
+    "splitVerse": string;
     "startStop": string;
 };
 

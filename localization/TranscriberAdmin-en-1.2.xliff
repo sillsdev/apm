@@ -10409,6 +10409,20 @@
                <context context-type="sourcefile">PassageDetailMarkVerse.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="verse.doneEditingReference">
+            <source>Done Editing</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">PassageDetailMarkVerse.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="verse.editReference">
+            <source>Edit Reference</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">PassageDetailMarkVerse.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="verse.issues">
             <source>The verse markup has issues. Do you want to continue?</source>
             <target/>
@@ -10465,8 +10479,22 @@
                <context context-type="sourcefile">PassageDetailMarkVerse.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="verse.reset">
+            <source>Reset</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">PassageDetailMarkVerse.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="verse.saveVerseMarkup">
             <source>Save Verse Markup</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">PassageDetailMarkVerse.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="verse.splitVerse">
+            <source>Split Verse</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">PassageDetailMarkVerse.tsx</context>

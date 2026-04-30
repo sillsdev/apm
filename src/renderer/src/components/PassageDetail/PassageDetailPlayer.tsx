@@ -1,13 +1,22 @@
 import { useGlobal } from '../../context/useGlobal';
 import { Badge, Box, Button, IconButton, Typography } from '@mui/material';
-import { useContext, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type RefObject,
+} from 'react';
 import { UnsavedContext } from '../../context/UnsavedContext';
 import {
   IRegionParams,
   IRegions,
   parseRegions,
 } from '../../crud/useWavesurferRegions';
-import WSAudioPlayer from '../WSAudioPlayer';
+import WSAudioPlayer, {
+  type WSAudioPlayerControls,
+} from '../WSAudioPlayer';
 import { useSelector, shallowEqual } from 'react-redux';
 import {
   ISharedStrings,
@@ -80,6 +89,8 @@ export interface DetailPlayerProps {
   hasTranscription?: boolean;
   contentVerses?: string[];
   metaData?: React.ReactNode;
+  /** When set, exposes waveform imperative controls (e.g. add segment at playhead). */
+  controlsRef?: RefObject<WSAudioPlayerControls | null>;
 }
 
 export function PassageDetailPlayer(props: DetailPlayerProps) {
@@ -107,6 +118,7 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
     hasTranscription,
     contentVerses,
     metaData,
+    controlsRef,
   } = props;
 
   const [memory] = useGlobal('memory');
@@ -412,6 +424,7 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
         allowRecord={false}
         height={PLAYER_HEIGHT}
         width={width}
+        controlsRef={controlsRef}
         blob={audioBlob}
         initialposition={initialposition}
         setInitialPosition={setInitialPosition}

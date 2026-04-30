@@ -18,8 +18,11 @@ import WSSegmentParameters from './WSSegmentParameters';
 import { useSnackBar } from '../hoc/SnackBar';
 import { audioPlayerSegmentSelector } from '../selector';
 import { useGlobal } from '../context/useGlobal';
-import { useMobile } from '../utils';
+import { useMobile } from '../utils/useMobile';
 import HighlightButton from './PassageDetail/mobile/HighlightButton';
+
+export const ADDREMSEG_KEY = 'CTRL+ALT+Y';
+export const DELREG_KEY = 'CTRL+ARROWDOWN';
 
 const Barcode = IoMdBarcode as unknown as React.FC<IconBaseProps>;
 
@@ -76,8 +79,6 @@ function WSAudioPlayerSegment(props: IProps) {
   const { subscribe, unsubscribe, localizeHotKey } =
     useContext(HotKeyContext).state;
   const { showMessage } = useSnackBar();
-  const DELREG_KEY = 'CTRL+ALT+X';
-  const ADDREMSEG_KEY = 'CTRL+ARROWDOWN';
   const readyRef = useRef(ready);
 
   useEffect(() => {
