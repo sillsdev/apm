@@ -182,6 +182,9 @@ export interface IBurritoStrings extends Localize.LocalizedStringsMethods {
     "textOutputUsx": string;
     "updateValue": string;
     "valueWarning": string;
+    "vernacularAudioMissingTranscriptionListTitle": string;
+    "vernacularAudioMissingTranscriptionTitle": string;
+    "vernacularAudioMissingTranscriptionWarning": string;
     "wrapper": string;
 };
 

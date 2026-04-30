@@ -1073,6 +1073,27 @@
                <context context-type="sourcefile">MetaValue.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="burrito.vernacularAudioMissingTranscriptionListTitle">
+            <source>Passages missing transcriptions (first {0})</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">VernacularAudioMissingTranscriptionDialog.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="burrito.vernacularAudioMissingTranscriptionTitle">
+            <source>Missing transcription(s)</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">VernacularAudioMissingTranscriptionDialog.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="burrito.vernacularAudioMissingTranscriptionWarning">
+            <source>Audio files without transcriptions will make it difficult to associate the audio with the proper section.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">useBurritoAudio.ts</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="burrito.wrapper">
             <source>Wrapper</source>
             <target/>

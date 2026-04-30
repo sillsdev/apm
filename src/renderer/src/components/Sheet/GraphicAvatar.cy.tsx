@@ -2,6 +2,13 @@ import React from 'react';
 import { GraphicAvatar } from './GraphicAvatar';
 
 describe('GraphicAvatar', () => {
+  // Use an inline image to avoid CI/network differences.
+  const INLINE_TEST_SVG =
+    'data:image/svg+xml;charset=utf-8,' +
+    encodeURIComponent(
+      `<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"><rect width="10" height="10" fill="blue"/></svg>`
+    );
+
   let mockOnClick: ReturnType<typeof cy.stub>;
 
   beforeEach(() => {
@@ -10,7 +17,7 @@ describe('GraphicAvatar', () => {
   });
 
   it('should render with graphicUri when provided', () => {
-    const graphicUri = 'https://example.com/image.png';
+    const graphicUri = INLINE_TEST_SVG;
     cy.mount(
       <GraphicAvatar
         graphicUri={graphicUri}
@@ -22,7 +29,9 @@ describe('GraphicAvatar', () => {
 
     // Should render an Avatar with the image source
     cy.get('div[class*="MuiAvatar-root"]').should('be.visible');
-    cy.get('img').should('have.attr', 'src', graphicUri);
+    cy.get('div[class*="MuiAvatar-root"]')
+      .find('img')
+      .should('have.attr', 'src', graphicUri);
   });
 
   it('should render with text avatar when graphicUri is not provided', () => {
@@ -143,7 +152,7 @@ describe('GraphicAvatar', () => {
   });
 
   it('should prioritize graphicUri over reference and organizedBy', () => {
-    const graphicUri = 'https://example.com/image.png';
+    const graphicUri = INLINE_TEST_SVG;
     cy.mount(
       <GraphicAvatar
         graphicUri={graphicUri}
@@ -155,7 +164,9 @@ describe('GraphicAvatar', () => {
     );
 
     // Should show image, not text
-    cy.get('img').should('have.attr', 'src', graphicUri);
+    cy.get('div[class*="MuiAvatar-root"]')
+      .find('img')
+      .should('have.attr', 'src', graphicUri);
     // Should not contain text initials
     cy.get('div[class*="MuiAvatar-root"]').should('not.contain.text', 'G');
   });

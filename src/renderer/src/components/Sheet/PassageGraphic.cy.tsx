@@ -18,6 +18,13 @@ import localizationReducer from '../../store/localization/reducers';
 import bugsnagClient from '../../auth/bugsnagClient';
 
 describe('PassageGraphic', () => {
+  // Use an inline image to avoid network access differences (CI often blocks outbound HTTP).
+  const INLINE_TEST_SVG =
+    'data:image/svg+xml;charset=utf-8,' +
+    encodeURIComponent(
+      `<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"><rect width="10" height="10" fill="red"/></svg>`
+    );
+
   // Mock setup
   const createMockLiveQuery = () => ({
     subscribe: () => () => {}, // Returns an unsubscribe function
@@ -130,7 +137,7 @@ describe('PassageGraphic', () => {
   describe('Core Functionality', () => {
     it('should render Avatar with graphic URI when graphicUri is provided and psgType is NOTE', () => {
       const mockSheet = createMockSheet({
-        graphicUri: 'https://example.com/test-image.jpg',
+        graphicUri: INLINE_TEST_SVG,
         passageType: PassageTypeEnum.NOTE,
       });
 
@@ -140,9 +147,9 @@ describe('PassageGraphic', () => {
         psgType: PassageTypeEnum.NOTE,
       });
 
-      cy.get('.MuiAvatar-root img')
-        .should('exist')
-        .and('have.attr', 'src', 'https://example.com/test-image.jpg');
+      cy.get('.MuiAvatar-root')
+        .find('img')
+        .should('have.attr', 'src', INLINE_TEST_SVG);
 
       cy.get('.MuiAvatar-rounded').should('exist');
       cy.get('.MuiAvatar-root').should('have.css', 'margin-right', '8px');
@@ -150,7 +157,7 @@ describe('PassageGraphic', () => {
 
     it('should render Avatar with graphic URI when graphicUri is provided and psgType is CHAPTERNUMBER', () => {
       const mockSheet = createMockSheet({
-        graphicUri: 'https://example.com/chapter-image.jpg',
+        graphicUri: INLINE_TEST_SVG,
         passageType: PassageTypeEnum.CHAPTERNUMBER,
       });
 
@@ -160,9 +167,9 @@ describe('PassageGraphic', () => {
         psgType: PassageTypeEnum.CHAPTERNUMBER,
       });
 
-      cy.get('.MuiAvatar-root img')
-        .should('exist')
-        .and('have.attr', 'src', 'https://example.com/chapter-image.jpg');
+      cy.get('.MuiAvatar-root')
+        .find('img')
+        .should('have.attr', 'src', INLINE_TEST_SVG);
 
       cy.get('.MuiAvatar-rounded').should('exist');
     });
@@ -330,7 +337,7 @@ describe('PassageGraphic', () => {
   describe('UI/Styling', () => {
     it('should apply correct MUI styling classes', () => {
       const mockSheet = createMockSheet({
-        graphicUri: 'https://example.com/test.jpg',
+        graphicUri: INLINE_TEST_SVG,
         passageType: PassageTypeEnum.NOTE,
       });
 
@@ -346,7 +353,7 @@ describe('PassageGraphic', () => {
 
     it('should apply border styling when color is provided', () => {
       const mockSheet = createMockSheet({
-        graphicUri: 'https://example.com/test.jpg',
+        graphicUri: INLINE_TEST_SVG,
         color: '#ff0000',
         passageType: PassageTypeEnum.NOTE,
       });
@@ -372,7 +379,7 @@ describe('PassageGraphic', () => {
 
     it('should apply right margin styling', () => {
       const mockSheet = createMockSheet({
-        graphicUri: 'https://example.com/test.jpg',
+        graphicUri: INLINE_TEST_SVG,
         passageType: PassageTypeEnum.NOTE,
       });
 
@@ -450,7 +457,7 @@ describe('PassageGraphic', () => {
 
       // Update with new props
       const updatedSheet = createMockSheet({
-        graphicUri: 'https://example.com/updated.jpg',
+        graphicUri: INLINE_TEST_SVG,
         passageType: PassageTypeEnum.NOTE,
       });
 
@@ -468,14 +475,14 @@ describe('PassageGraphic', () => {
         </Provider>
       );
 
-      cy.get('.MuiAvatar-root img')
-        .should('exist')
-        .and('have.attr', 'src', 'https://example.com/updated.jpg');
+      cy.get('.MuiAvatar-root')
+        .find('img')
+        .should('have.attr', 'src', INLINE_TEST_SVG);
     });
 
     it('should update when psgType changes to unsupported type', () => {
       const mockSheet = createMockSheet({
-        graphicUri: 'https://example.com/test.jpg',
+        graphicUri: INLINE_TEST_SVG,
         passageType: PassageTypeEnum.NOTE,
       });
 
@@ -507,7 +514,7 @@ describe('PassageGraphic', () => {
 
     it('should switch between image and text avatar when graphicUri changes', () => {
       const mockSheet = createMockSheet({
-        graphicUri: 'https://example.com/test.jpg',
+        graphicUri: INLINE_TEST_SVG,
         passageType: PassageTypeEnum.NOTE,
       });
 
@@ -517,7 +524,7 @@ describe('PassageGraphic', () => {
         psgType: PassageTypeEnum.NOTE,
       });
 
-      cy.get('.MuiAvatar-root img').should('exist');
+      cy.get('.MuiAvatar-root').find('img').should('have.attr', 'src', INLINE_TEST_SVG);
       cy.get('.MuiAvatar-root').should('not.contain.text');
 
       // Update to remove graphicUri
@@ -584,7 +591,7 @@ describe('PassageGraphic', () => {
         shouldRender ? 'render' : 'return null'
       } for ${description}`, () => {
         const mockSheet = createMockSheet({
-          graphicUri: 'https://example.com/test.jpg',
+          graphicUri: INLINE_TEST_SVG,
           passageType: type,
         });
 

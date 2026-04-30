@@ -197,6 +197,9 @@ const initialState = {
 			"textOutputUsx": "USX",
 			"updateValue": "Update Value",
 			"valueWarning": "Warning: Input contains JSON structural characters (quotes, curly braces, or square brackets)",
+			"vernacularAudioMissingTranscriptionListTitle": "Passages missing transcriptions (first {0})",
+			"vernacularAudioMissingTranscriptionTitle": "Missing transcription(s)",
+			"vernacularAudioMissingTranscriptionWarning": "Audio files without transcriptions will make it difficult to associate the audio with the proper section.",
 			"wrapper": "Wrapper",
 		}
 	}),
