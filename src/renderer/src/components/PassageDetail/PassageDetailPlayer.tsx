@@ -186,8 +186,9 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
     setupLocate = playerState.setupLocate;
     playing = playerState.playing;
     setPlaying = playerState.setPlaying;
-    if (playerState.currentstep) currentstep = playerState.currentstep;
-    if (playerState.currentSegmentIndex)
+    if (playerState.currentstep !== undefined)
+      currentstep = playerState.currentstep;
+    if (playerState.currentSegmentIndex !== undefined)
       currentSegmentIndex = playerState.currentSegmentIndex;
     if (playerState.setCurrentSegment)
       setCurrentSegment = playerState.setCurrentSegment;
