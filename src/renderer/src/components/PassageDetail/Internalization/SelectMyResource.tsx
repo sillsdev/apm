@@ -5,6 +5,7 @@ import { ITeamCheckReferenceStrings } from '../../../model';
 import { PassageDetailContext } from '../../../context/PassageDetailContext';
 import { related, useArtifactCategory } from '../../../crud';
 import { teamCheckRefSelector } from '../../../selector';
+import { useMobile } from '../../../utils';
 
 interface IProps {
   inResource?: string;
@@ -21,6 +22,7 @@ export const SelectMyResource = (props: IProps) => {
   const { scriptureTypeCategory } = useArtifactCategory();
   const [myWidth, setMyWidth] = useState(0);
   const controlRef = useRef<any>(undefined);
+  const isMobile = useMobile();
   const t: ITeamCheckReferenceStrings = useSelector(
     teamCheckRefSelector,
     shallowEqual
@@ -51,16 +53,23 @@ export const SelectMyResource = (props: IProps) => {
     <TextField
       id="select-my-resource"
       ref={controlRef}
-      sx={{
-        mx: 1,
-        display: 'flex',
-        flexGrow: 1,
-        textOverflow: 'ellipsis',
-        minWidth: '400px',
-        ...(myWidth && {
-          maxWidth: `${myWidth - 32}px`,
-        }),
-      }}
+      sx={
+        isMobile.isMobile
+          ? {
+              textOverflow: 'ellipsis',
+              width: '100%',
+            }
+          : {
+              mx: 1,
+              display: 'flex',
+              flexGrow: 1,
+              textOverflow: 'ellipsis',
+              minWidth: '400px',
+              ...(myWidth && {
+                maxWidth: `${myWidth - 32}px`,
+              }),
+            }
+      }
       select
       label={t.resource}
       helperText={t.resourcehelper}
