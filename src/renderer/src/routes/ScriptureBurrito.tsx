@@ -22,6 +22,7 @@ import { shallowEqual, useSelector } from 'react-redux';
 import { burritoSelector, sharedSelector } from '../selector';
 import { IBurritoStrings, ISharedStrings } from '@model/index';
 import { MainAPI } from '@model/main-api';
+import { VernacularAudioMissingTranscriptionDialog } from '../burrito/VernacularAudioMissingTranscriptionDialog';
 const ipc = window?.api as MainAPI;
 
 const setup = ['Books', 'Contents', 'Wrapper', 'Format' /* 'Version' */];
@@ -36,8 +37,11 @@ export function ScriptureBurrito() {
   const { showMessage } = useSnackBar();
   const t: IBurritoStrings = useSelector(burritoSelector, shallowEqual);
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
+  const [missingTxRefs, setMissingTxRefs] = React.useState<string[]>([]);
+  const [missingTxOpen, setMissingTxOpen] = React.useState(false);
   const {
     createBurrito,
+    preflightVernacularAudioMissingTranscriptions,
     progress,
     isCreating,
     error,
@@ -90,6 +94,12 @@ export function ScriptureBurrito() {
 
   const handleCreateBurrito = async () => {
     try {
+      const missing = preflightVernacularAudioMissingTranscriptions();
+      if (missing.length > 0) {
+        setMissingTxRefs(missing);
+        setMissingTxOpen(true);
+        return;
+      }
       await createBurrito();
     } catch {
       // Error already displayed via hook state
@@ -103,6 +113,19 @@ export function ScriptureBurrito() {
   return (
     <BurritoHeader setView={setView} teamId={teamId}>
       <Stack direction="column" spacing={2} alignItems="center">
+        <VernacularAudioMissingTranscriptionDialog
+          open={missingTxOpen}
+          missingRefs={missingTxRefs}
+          onCancel={() => setMissingTxOpen(false)}
+          onConfirm={async () => {
+            setMissingTxOpen(false);
+            try {
+              await createBurrito();
+            } catch {
+              // Error already displayed via hook state
+            }
+          }}
+        />
         <List sx={{ pt: 3 }}>
           {setup.map((item, index) => (
             <ListItemButton key={index} onClick={handleClick}>

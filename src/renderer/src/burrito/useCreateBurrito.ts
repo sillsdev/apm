@@ -17,6 +17,7 @@ import {
   IState,
   OrganizationBibleD,
   OrganizationD,
+  MediaFileD,
   PassageD,
   PlanD,
   ProjectD,
@@ -46,6 +47,7 @@ const productName = packageJson.build.productName;
 import { MainAPI } from '@model/main-api';
 import { useBurritoText } from './useBurritoText';
 import { burritoSelector } from '../selector';
+import { firstMissingTranscriptionRefsForVernacularAudio } from './vernacularAudioWarnings';
 const ipc = window?.api as MainAPI;
 const WRAPPER_FILENAME = 'wrapper.json';
 const METADATA_FILENAME = 'metadata.json';
@@ -82,6 +84,7 @@ export const useCreateBurrito = (teamId: string) => {
   const plans = useOrbitData<PlanD[]>('plan');
   const sections = useOrbitData<SectionD[]>('section');
   const passages = useOrbitData<PassageD[]>('passage');
+  const mediafiles = useOrbitData<MediaFileD[]>('mediafile');
   const { getOrgDefault } = useOrgDefaults();
   const lang = useSelector((state: IState) => state.strings.lang);
   const allBookData = useSelector((state: IState) => state.books.bookData);
@@ -529,8 +532,36 @@ export const useCreateBurrito = (teamId: string) => {
     }
   };
 
+  const preflightVernacularAudioMissingTranscriptions = useCallback(() => {
+    const content = (getOrgDefault(burritoContents, teamId) ?? []) as string[];
+    if (!content.includes(BurritoType.Audio)) return [];
+
+    const { bkSecIds } = getSections();
+    const versions = parseInt(
+      (getOrgDefault('burritoVersions', teamId) || '1') as string
+    );
+
+    const allSecs: SectionD[] = [];
+    for (const book of books) {
+      const bookSectIds = bkSecIds.find((b) => b[0] === book)?.[1] || [];
+      const bookSecs = sections
+        .filter((s) => bookSectIds.includes(s.id))
+        .sort(sectionSort);
+      allSecs.push(...bookSecs);
+    }
+
+    return firstMissingTranscriptionRefsForVernacularAudio({
+      sections: allSecs,
+      passages,
+      mediafiles,
+      versions: isNaN(versions) ? 1 : versions,
+      maxRefs: 10,
+    });
+  }, [books, getOrgDefault, getSections, mediafiles, passages, sections, teamId]);
+
   return {
     createBurrito,
+    preflightVernacularAudioMissingTranscriptions,
     progress,
     isCreating,
     error,

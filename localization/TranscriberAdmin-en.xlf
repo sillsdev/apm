@@ -922,6 +922,24 @@
             <target/>
          </segment>
       </unit>
+      <unit id="burrito.vernacularAudioMissingTranscriptionListTitle">
+         <segment>
+            <source>Passages missing transcriptions (first {0})</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="burrito.vernacularAudioMissingTranscriptionTitle">
+         <segment>
+            <source>Missing transcription(s)</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="burrito.vernacularAudioMissingTranscriptionWarning">
+         <segment>
+            <source>Audio files without transcriptions will make it difficult to associate the audio with the proper section.</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="burrito.wrapper">
          <segment>
             <source>Wrapper</source>
