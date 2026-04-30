@@ -32,9 +32,9 @@ const StyledGrid = styled(Grid)<GridProps>(({ theme }) => ({
 }));
 
 const MobileGrid = styled(Grid)<GridProps>(() => ({
-  display: 'flex', // ← Add this
-  width: '100%', // ← Add this
-  alignItems: 'center', // ← Add this
+  display: 'flex',
+  width: '100%',
+  alignItems: 'center',
   margin: '0 auto',
   justifyContent: 'center',
   alignContent: 'center',
