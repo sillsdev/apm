@@ -15,7 +15,7 @@ import { PassageDetailChooser } from '../PassageDetailChooser';
 import { IRegion, ToolSlug, useStepTool } from '../../../crud';
 import { PassageDetailPlayer } from '../PassageDetailPlayer';
 import { BlobStatus, useFetchMediaBlob } from '../../../crud/useFetchMediaBlob';
-import { IMarker } from 'crud/useWaveSurfer';
+import { IMarker } from '../../../crud/useWaveSurfer';
 
 const StyledGrid = styled(Grid)<GridProps>(({ theme }) => ({
   margin: theme.spacing(2),
@@ -32,15 +32,20 @@ const StyledGrid = styled(Grid)<GridProps>(({ theme }) => ({
 }));
 
 const MobileGrid = styled(Grid)<GridProps>(() => ({
-  display: 'flex', // ← Add this
-  width: '100%', // ← Add this
-  alignItems: 'center', // ← Add this
+  display: 'flex',
+  width: '100%',
+  alignItems: 'center',
   margin: '0 auto',
   justifyContent: 'center',
   alignContent: 'center',
 }));
 
-export function TeamCheckReferenceMobile() {
+interface IProps {
+  width?: number;
+}
+
+export function TeamCheckReferenceMobile(props: IProps) {
+  const { width } = props;
   const ctx = useContext(PassageDetailContext);
 
   const {
@@ -134,9 +139,7 @@ export function TeamCheckReferenceMobile() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [section, passage, currentstep]);
-
-  //const [paneWidth, setPaneWidth] = useState(0);
-  const paneWidth = 100;
+  const paneWidth = width ?? 100;
   const tool = useStepTool(currentstep).tool;
 
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -148,15 +151,14 @@ export function TeamCheckReferenceMobile() {
     const updateWidth = () => {
       setPlayerWidth(containerRef.current!.offsetWidth);
     };
-
-    updateWidth();
-
-    const observer = new ResizeObserver(updateWidth);
-    observer.observe(containerRef.current);
-
-    return () => observer.disconnect();
-  }, []);
-  //const currentstep = ctx.state.currentstep;
+    let observer: ResizeObserver | undefined;
+    if (typeof ResizeObserver !== 'undefined') {
+      updateWidth();
+      observer = new ResizeObserver(updateWidth);
+      observer?.observe(containerRef.current as Element);
+    }
+    return () => observer?.disconnect();
+  }, [containerRef]);
 
   return (
     <MobileGrid container direction="column">

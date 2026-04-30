@@ -45,7 +45,7 @@ const MobileStep = () => {
   ) : tool === ToolSlug.Verses ? (
     <PassageDetailMarkVersesIsMobile width={Math.max(0, paneWidth - 40)} />
   ) : tool === ToolSlug.TeamCheck ? (
-    <TeamCheckReferenceMobile />
+    <TeamCheckReferenceMobile width={Math.max(0, paneWidth - 40)} />
   ) : (
     <NotImplemented />
   );
