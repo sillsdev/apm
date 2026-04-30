@@ -71,7 +71,6 @@ export default function FindTabs({
   onMarkdown,
 }: FindTabsProps) {
   const [value, setValue] = useState(0);
-  const [selectedValue, setSelectedValue] = useState(0);
   const { passage } = usePassageDetailContext();
   const [aquifer, setAquifer] = useState(true);
   const [resources, setResources] = useState<BibleResource[]>([]);
@@ -98,22 +97,18 @@ export default function FindTabs({
 
   useEffect(() => {
     setAquifer(canAdd);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canAdd]);
 
   const handleChange = (event: SyntheticEvent, newValue: number) => {
     setValue(newValue);
-    setSelectedValue(newValue);
   };
 
   const handleSelectChange = (event: SelectChangeEvent<number>) => {
     setValue(Number(event.target.value));
-    setSelectedValue(Number(event.target.value));
   };
 
   const handleSetTab = (tab: number) => {
     setValue(tab);
-    setSelectedValue(tab);
   };
 
   return (
@@ -135,7 +130,7 @@ export default function FindTabs({
         {isSmallScreen ? (
           <FormControl fullWidth size="small" sx={{ my: 1 }}>
             <Select<number>
-              value={selectedValue}
+              value={value}
               onChange={handleSelectChange}
               displayEmpty
               aria-label={t.findResource}
