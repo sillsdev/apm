@@ -33,7 +33,7 @@ const StyledGrid = styled(Grid)<GridProps>(({ theme }) => ({
 
 const MobileGrid = styled(Grid)<GridProps>(() => ({
   display: 'flex', // ← Add this
-  width: '80%', // ← Add this
+  width: '100%', // ← Add this
   alignItems: 'center', // ← Add this
   margin: '0 auto',
   justifyContent: 'center',
@@ -172,7 +172,7 @@ export function TeamCheckReferenceMobile() {
         </StyledGrid>
       </MobileGrid>
 
-      <MobileGrid>
+      <MobileGrid maxWidth={800} sx={{ width: '80%' }}>
         <SelectMyResource onChange={handleResource} inResource={resource} />
       </MobileGrid>
 
