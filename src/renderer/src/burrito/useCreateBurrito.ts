@@ -555,7 +555,6 @@ export const useCreateBurrito = (teamId: string) => {
       passages,
       mediafiles,
       versions: isNaN(versions) ? 1 : versions,
-      maxRefs: 10,
     });
   }, [books, getOrgDefault, getSections, mediafiles, passages, sections, teamId]);
 
