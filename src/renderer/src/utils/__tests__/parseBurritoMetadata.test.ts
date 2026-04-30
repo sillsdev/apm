@@ -1,15 +1,14 @@
 type LocalizedString = Record<string, string>;
 
-jest.mock('path-browserify', () => ({
-  __esModule: true,
-  default: {
-    join: (...args: string[]) => args.join('/'),
-    extname: (p: string) => {
-      const idx = p.lastIndexOf('.');
-      return idx >= 0 ? p.slice(idx) : '';
-    },
-  },
-}));
+jest.mock('path-browserify', () => {
+  const actual = jest.requireActual('path-browserify') as {
+    default?: typeof import('path-browserify');
+  };
+  return {
+    __esModule: true,
+    default: actual.default ?? (actual as unknown as typeof import('path-browserify')),
+  };
+});
 
 describe('parseBurritoMetadata', () => {
   beforeEach(() => {
@@ -176,6 +175,68 @@ describe('parseBurritoMetadata', () => {
 
       await expect(buildStructure(wrapperRoot, 'en')).rejects.toThrow(
         /Invalid Scripture Burrito for import:/
+      );
+    });
+
+    it('does not read files outside the wrapper when burrito or ingredient paths are malicious', async () => {
+      jest.resetModules();
+
+      const wrapperRoot = '/test/path';
+      const readPaths: string[] = [];
+      (window as any).api = {
+        exists: jest.fn(
+          async (p: string) =>
+            p === `${wrapperRoot}/wrapper.json` ||
+            p === `${wrapperRoot}/audio/metadata.json` ||
+            p === `${wrapperRoot}/audio/ingredients/MAT.usfm`
+        ),
+        read: jest.fn(async (p: string) => {
+          readPaths.push(p);
+          if (p === `${wrapperRoot}/wrapper.json`) {
+            return JSON.stringify({
+              meta: { name: { en: 'Wrapper' } },
+              contents: {
+                burritos: [
+                  { path: 'apmdata' },
+                  { path: '../outside' },
+                  { path: 'audio' },
+                ],
+              },
+            });
+          }
+          if (p === `${wrapperRoot}/audio/metadata.json`) {
+            return JSON.stringify({
+              type: { flavorType: { flavor: { name: 'audioTranslation' } } },
+              localizedNames: { 'book-mat': { long: { en: 'Matthew' } } },
+              ingredients: {
+                'ingredients/MAT.usfm': {
+                  mimeType: 'text/usfm',
+                  scope: { MAT: ['1'] },
+                },
+                '../../../etc/passwd': {
+                  mimeType: 'text/usfm',
+                  scope: { MAT: ['1'] },
+                },
+              },
+            });
+          }
+          if (p === `${wrapperRoot}/audio/ingredients/MAT.usfm`) {
+            return '\\id MAT\n\\c 1\n';
+          }
+          throw new Error(`unexpected read: ${p}`);
+        }),
+      };
+
+      const { buildStructure, BURRITO_CHAPTER_FILTER_OTHER } =
+        await import('../parseBurritoMetadata');
+
+      const result = await buildStructure(wrapperRoot, 'en');
+      expect(readPaths.every((rp) => rp.startsWith(`${wrapperRoot}/`))).toBe(
+        true
+      );
+      expect(result.books).toHaveLength(1);
+      expect(result.books[0].chapters).toEqual(
+        expect.arrayContaining(['1', BURRITO_CHAPTER_FILTER_OTHER])
       );
     });
   });

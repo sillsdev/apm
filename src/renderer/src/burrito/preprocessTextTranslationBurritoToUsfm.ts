@@ -1,5 +1,6 @@
 import path from 'path-browserify';
 import { MainAPI } from '@model/main-api';
+import { resolvePathUnderRoot } from '../utils/resolvePathUnderRoot';
 import { normalizeTextToUsfm } from './normalizeTextToUsfm';
 
 type BurritoTextFormat = 'usfm' | 'usj' | 'usx';
@@ -52,8 +53,8 @@ export async function preprocessTextTranslationBurritoToUsfm(
   const ipc = (ipcOverride ?? (window?.api as MainAPI)) as MinimalIpc;
   if (!ipc) return;
 
-  const wrapperPath = path.join(wrapperDir, 'wrapper.json');
-  if (!(await ipc.exists(wrapperPath))) return;
+  const wrapperPath = resolvePathUnderRoot(wrapperDir, 'wrapper.json');
+  if (!wrapperPath || !(await ipc.exists(wrapperPath))) return;
 
   const wrapperRaw = (await ipc.read(wrapperPath, { encoding: 'utf-8' })) as
     | string
@@ -65,8 +66,12 @@ export async function preprocessTextTranslationBurritoToUsfm(
     const burritoPath = String(burrito?.path ?? '');
     if (!burritoPath || burritoPath === 'apmdata') continue;
 
-    const metaPath = path.join(wrapperDir, burritoPath, 'metadata.json');
-    if (!(await ipc.exists(metaPath))) continue;
+    const metaPath = resolvePathUnderRoot(
+      wrapperDir,
+      burritoPath,
+      'metadata.json'
+    );
+    if (!metaPath || !(await ipc.exists(metaPath))) continue;
     const metaRaw = (await ipc.read(metaPath, { encoding: 'utf-8' })) as
       | string
       | Uint8Array;
@@ -82,8 +87,8 @@ export async function preprocessTextTranslationBurritoToUsfm(
       const format = detectBurritoTextFormat(relPath, (ing as any)?.mimeType);
       if (format !== 'usj' && format !== 'usx') continue;
 
-      const absPath = path.join(wrapperDir, burritoPath, relPath);
-      if (!(await ipc.exists(absPath))) continue;
+      const absPath = resolvePathUnderRoot(wrapperDir, burritoPath, relPath);
+      if (!absPath || !(await ipc.exists(absPath))) continue;
 
       const raw = (await ipc.read(absPath, { encoding: 'utf-8' })) as
         | string
@@ -92,7 +97,8 @@ export async function preprocessTextTranslationBurritoToUsfm(
       if (!usfm.trim()) continue;
 
       const usfmRel = toUsfmIngredientPath(relPath);
-      const usfmAbs = path.join(wrapperDir, burritoPath, usfmRel);
+      const usfmAbs = resolvePathUnderRoot(wrapperDir, burritoPath, usfmRel);
+      if (!usfmAbs) continue;
       await ipc.write(usfmAbs, usfm);
 
       generated[usfmRel] = {
