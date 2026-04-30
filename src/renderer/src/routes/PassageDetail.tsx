@@ -27,6 +27,7 @@ import { usePaneWidth } from '../components/usePaneWidth';
 import { HeadHeight } from '../App';
 import PassageDetailsArtifactsMobile from '../components/PassageDetail/Internalization/PassageDetailsArtifactsMobile';
 import PassageDetailMarkVersesIsMobile from '../components/PassageDetail/mobile/MarkVerses/PassageDetailMarkVersesIsMobile';
+import TeamCheckReferenceMobile from '../components/PassageDetail/mobile/TeamCheckReferenceMobile';
 
 const NotImplemented = () => 'Not implemented';
 
@@ -43,6 +44,8 @@ const MobileStep = () => {
     <PassageDetailsArtifactsMobile />
   ) : tool === ToolSlug.Verses ? (
     <PassageDetailMarkVersesIsMobile width={Math.max(0, paneWidth - 40)} />
+  ) : tool === ToolSlug.TeamCheck ? (
+    <TeamCheckReferenceMobile width={Math.max(0, paneWidth - 40)} />
   ) : (
     <NotImplemented />
   );

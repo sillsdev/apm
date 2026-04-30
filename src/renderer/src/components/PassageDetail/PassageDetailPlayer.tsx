@@ -10,13 +10,12 @@ import {
 } from 'react';
 import { UnsavedContext } from '../../context/UnsavedContext';
 import {
+  IRegion,
   IRegionParams,
   IRegions,
   parseRegions,
 } from '../../crud/useWavesurferRegions';
-import WSAudioPlayer, {
-  type WSAudioPlayerControls,
-} from '../WSAudioPlayer';
+import WSAudioPlayer, { type WSAudioPlayerControls } from '../WSAudioPlayer';
 import { useSelector, shallowEqual } from 'react-redux';
 import {
   ISharedStrings,
@@ -60,8 +59,25 @@ import { useSnackBar } from '../../hoc/SnackBar';
 import { useLocLangName } from '../../utils/useLocLangName';
 import { SaveSegments } from './SaveSegments';
 import { AsrTarget } from '../../business/asr/AsrTarget';
-
+import { IMarker } from '../../crud/useWaveSurfer';
 export const PLAYER_HEIGHT = 120 + 80;
+
+export interface IPlayerState {
+  loading: boolean;
+  pdBusy: boolean;
+  setPDBusy: (busy: boolean) => void;
+  audioBlob?: Blob;
+  setupLocate: (callback?: (segments: string) => void) => void;
+  playing: boolean;
+  setPlaying: (playing: boolean) => void;
+  currentstep?: string;
+  currentSegmentIndex?: number;
+  setCurrentSegment?: (region: IRegion | undefined, index: number) => void;
+  discussionMarkers?: IMarker[];
+  handleHighlightDiscussion?: (time: number | undefined) => void;
+  playerMediafile?: MediaFile;
+  forceRefresh?: () => void;
+}
 
 export interface DetailPlayerProps {
   allowSegment?: NamedRegions | undefined;
@@ -91,6 +107,7 @@ export interface DetailPlayerProps {
   metaData?: React.ReactNode;
   /** When set, exposes waveform imperative controls (e.g. add segment at playhead). */
   controlsRef?: RefObject<WSAudioPlayerControls | null>;
+  playerState?: IPlayerState;
 }
 
 export function PassageDetailPlayer(props: DetailPlayerProps) {
@@ -119,6 +136,7 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
     contentVerses,
     metaData,
     controlsRef,
+    playerState,
   } = props;
 
   const [memory] = useGlobal('memory');
@@ -143,7 +161,7 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
     request: new Date(),
   });
   const [initialposition, setInitialPosition] = useState<number | undefined>(0);
-  const {
+  let {
     loading,
     pdBusy,
     setPDBusy,
@@ -159,6 +177,29 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
     playerMediafile,
     forceRefresh,
   } = usePassageDetailContext();
+
+  if (playerState) {
+    loading = playerState.loading;
+    pdBusy = playerState.pdBusy;
+    setPDBusy = playerState.setPDBusy;
+    audioBlob = playerState.audioBlob;
+    setupLocate = playerState.setupLocate;
+    playing = playerState.playing;
+    setPlaying = playerState.setPlaying;
+    if (playerState.currentstep !== undefined)
+      currentstep = playerState.currentstep;
+    if (playerState.currentSegmentIndex !== undefined)
+      currentSegmentIndex = playerState.currentSegmentIndex;
+    if (playerState.setCurrentSegment)
+      setCurrentSegment = playerState.setCurrentSegment;
+    if (playerState.discussionMarkers)
+      discussionMarkers = playerState.discussionMarkers;
+    if (playerState.handleHighlightDiscussion)
+      handleHighlightDiscussion = playerState.handleHighlightDiscussion;
+    if (playerState.playerMediafile)
+      playerMediafile = playerState.playerMediafile;
+    if (playerState.forceRefresh) forceRefresh = playerState.forceRefresh;
+  }
 
   const [defaultSegments, setDefaultSegments] = useState('{}');
   const [showTranscriptionId, setShowTranscriptionId] = useState('');
@@ -186,7 +227,7 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
   const checkOnline = useCheckOnline(t.recognizeSpeech);
   const { showMessage } = useSnackBar();
   const [getName] = useLocLangName();
-  const { tool } = useStepTool(currentstep);
+  const { tool } = useStepTool(currentstep ?? '');
 
   const { onPlayStatus, onCurrentSegment, setSegmentToWhole } = usePlayerLogic({
     allowSegment,
@@ -253,7 +294,7 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
       reporter
     )
       .then(() => {
-        forceRefresh();
+        if (forceRefresh) forceRefresh();
       })
       .finally(() => {
         setSegmentToWhole();
@@ -292,7 +333,7 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
           )
         )
         .then(() => {
-          forceRefresh();
+          if (forceRefresh) forceRefresh();
         });
     }
     setSegmentToWhole();
