@@ -15,7 +15,6 @@ import CreateAiRes from './CreateAiRes';
 import usePassageDetailContext from '../../../context/usePassageDetailContext';
 import { ReactNode, useEffect, useState, SyntheticEvent } from 'react';
 import { LaunchLink } from '../../../control/LaunchLink';
-import { AltButton } from '../../../control';
 import { BibleResource } from '../../../model/bible-resource';
 import { IFindResourceStrings, ISharedStrings } from '../../../model';
 import { shallowEqual, useSelector } from 'react-redux';
@@ -72,7 +71,6 @@ export default function FindTabs({
   onMarkdown,
 }: FindTabsProps) {
   const [value, setValue] = useState(0);
-  const [selectedValue, setSelectedValue] = useState(0);
   const { passage } = usePassageDetailContext();
   const [aquifer, setAquifer] = useState(true);
   const [resources, setResources] = useState<BibleResource[]>([]);
@@ -99,26 +97,18 @@ export default function FindTabs({
 
   useEffect(() => {
     setAquifer(canAdd);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canAdd]);
 
   const handleChange = (event: SyntheticEvent, newValue: number) => {
     setValue(newValue);
-    setSelectedValue(newValue);
   };
 
   const handleSelectChange = (event: SelectChangeEvent<number>) => {
     setValue(Number(event.target.value));
-    setSelectedValue(Number(event.target.value));
-  };
-
-  const handleLaunchSelectedTab = () => {
-    setValue(selectedValue);
   };
 
   const handleSetTab = (tab: number) => {
     setValue(tab);
-    setSelectedValue(tab);
   };
 
   return (
@@ -140,7 +130,7 @@ export default function FindTabs({
         {isSmallScreen ? (
           <FormControl fullWidth size="small" sx={{ my: 1 }}>
             <Select<number>
-              value={selectedValue}
+              value={value}
               onChange={handleSelectChange}
               displayEmpty
               aria-label={t.findResource}
@@ -246,35 +236,6 @@ export default function FindTabs({
           <FindOther handleLink={handleLink} resources={resources} />
         </CustomTabPanel>
       </Box>
-      {isSmallScreen && (
-        <Box
-          sx={{
-            flexShrink: 0,
-            py: 1,
-            px: 1,
-            backgroundColor: 'background.paper',
-            display: 'flex',
-            justifyContent: 'center',
-            borderTop: 1,
-            borderColor: 'divider',
-            boxShadow: '0 -2px 8px rgba(0, 0, 0, 0.12)',
-          }}
-        >
-          <AltButton
-            dark
-            elevated
-            onClick={handleLaunchSelectedTab}
-            sx={{
-              width: '20%',
-              backgroundColor: 'black',
-              color: 'white',
-              justifyContent: 'center',
-            }}
-          >
-            {t.launch}
-          </AltButton>
-        </Box>
-      )}
       <LaunchLink url={link} reset={() => setLink('')} />
     </Box>
   );
