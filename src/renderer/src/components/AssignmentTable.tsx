@@ -20,7 +20,14 @@ import {
   SectionD,
 } from '../model';
 import { RecordIdentity } from '@orbit/records';
-import { Button, debounce, Menu, MenuItem, styled } from '@mui/material';
+import {
+  Button,
+  debounce,
+  Menu,
+  MenuItem,
+  styled,
+  Typography,
+} from '@mui/material';
 import DropDownIcon from '@mui/icons-material/ArrowDropDown';
 import { AltButton, iconMargin } from '../control';
 import { useSnackBar } from '../hoc/SnackBar';
@@ -127,6 +134,7 @@ export function AssignmentTable() {
   );
 
   const handleView = (schemeId: string) => () => {
+    if (!schemeId) return;
     setAssignMenu(undefined);
     setAssignSectionVisible(schemeId);
     setReadOnly(true);
@@ -137,6 +145,13 @@ export function AssignmentTable() {
     const section = sections.find((s) => s.id === sectionId);
     const schemeId = related(section, 'organizationScheme');
     const scheme = schemes.find((s) => s.id === schemeId);
+    if (!schemeId) {
+      return (
+        <Typography component="span">
+          {scheme?.attributes?.name ?? ''}
+        </Typography>
+      );
+    }
     return (
       <Button onClick={handleView(schemeId)}>
         {scheme?.attributes?.name ?? ''}
@@ -551,7 +566,7 @@ export function AssignmentTable() {
       <AssignSection
         sections={selectedSections}
         scheme={assignSectionVisible}
-        visible={assignSectionVisible !== undefined}
+        visible={assignSectionVisible != null}
         closeMethod={handleCloseAssignSection}
         refresh={() => setRefresh(refresh + 1)}
         readOnly={readOnly}
