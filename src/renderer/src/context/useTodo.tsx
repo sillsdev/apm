@@ -10,7 +10,7 @@ const useTodo = () => {
     ...state,
     filter,
     setFilter,
-    index: state.index || -1,
+    index: state.index ?? -1,
     transSelected: state.transSelected || '',
   };
 };

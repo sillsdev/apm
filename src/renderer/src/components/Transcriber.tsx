@@ -183,7 +183,6 @@ export function Transcriber(props: IProps) {
     );
   const {
     rowData,
-    index,
     transcriberStr,
     sharedStr,
     transSelected,
@@ -196,7 +195,17 @@ export function Transcriber(props: IProps) {
     useOrbitData<ProjectIntegration[]>('projectintegration');
 
   const { slug } = useParams();
-  const { section, passage, mediafile, state, role } = rowData[index] || {
+  /** Prefer transSelected over rowData[index] — index can lag after task list refresh (PBT). */
+  const selectedMediaRow = useMemo(() => {
+    if (!transSelected) return undefined;
+    const asTranscriber = rowData.find(
+      (r) => r.mediafile?.id === transSelected && r.role === 'transcriber'
+    );
+    if (asTranscriber) return asTranscriber;
+    return rowData.find((r) => r.mediafile?.id === transSelected);
+  }, [rowData, transSelected]);
+
+  const { section, passage, mediafile, state, role } = selectedMediaRow || {
     section: {} as Section,
     passage: {} as Passage,
     mediafile: undefined,
@@ -261,6 +270,8 @@ export function Transcriber(props: IProps) {
   const transcriptionRef = React.useRef<any>(null);
   const playingRef = useRef<boolean | undefined>(undefined);
   const mediaRef = useRef<MediaFile | undefined>(undefined);
+  /** Last transSelected we loaded into the textarea; index can lag so we key off selection id. */
+  const prevSyncedTransSelectedRef = useRef<string | undefined>(undefined);
   const autosaveTimer = React.useRef<NodeJS.Timeout | undefined>(undefined);
   const { subscribe, unsubscribe } = useContext(HotKeyContext).state;
   const t = transcriberStr;
@@ -476,18 +487,24 @@ export function Transcriber(props: IProps) {
     transSelected && rowData.some((r) => r.mediafile.id === transSelected);
   //if task table has changed selected...tell the world
   useEffect(() => {
+    const selectionChanged =
+      transSelected !== prevSyncedTransSelectedRef.current;
     if (
       hasRow &&
       transSelected !== undefined &&
       transSelected !== playerMediafile?.id
     )
       setSelected(transSelected, PlayInPlayer.yes);
-    if (!transSelected)
+    if (!transSelected) {
+      prevSyncedTransSelectedRef.current = undefined;
       showTranscription({
         transcription: undefined,
         position: 0,
       });
-    else if (!saving.current) showTranscription(getTranscription());
+    } else if (!saving.current || selectionChanged) {
+      showTranscription(getTranscription());
+      prevSyncedTransSelectedRef.current = transSelected;
+    }
     /* eslint-disable-next-line react-hooks/exhaustive-deps */
   }, [hasRow, transSelected]);
 
@@ -632,12 +649,12 @@ export function Transcriber(props: IProps) {
   }, [project, projType, artifactTypeSlug, artifactId, offline]);
 
   useEffect(() => {
-    const newAssigned = rowData[index]?.assigned;
+    const newAssigned = selectedMediaRow?.assigned;
     if (newAssigned !== assigned) setAssigned(newAssigned ?? '');
     stateRef.current = state;
     focusOnTranscription();
     /* eslint-disable-next-line react-hooks/exhaustive-deps */
-  }, [index, rowData, state]);
+  }, [selectedMediaRow, state]);
 
   useEffect(() => {
     if (!offline) {
