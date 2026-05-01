@@ -366,8 +366,14 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
     setDefaultSegments(segments); //now we'll notice if we reset them in SetPlayerSegments
     onSegment && onSegment(segments, false);
     if (allowSegment && saveSegments !== undefined) {
-      //if I have a parentToolId it will save the segments
-      toolChanged(parentToolId ?? toolId);
+      const currentMedia = mediarecs.find((m) => m.id === playerMediafile?.id);
+      const saved = getSegments(
+        allowSegment,
+        currentMedia?.attributes?.segments ?? '{}'
+      );
+      if (segments !== saved) {
+        toolChanged(parentToolId ?? toolId);
+      }
     } else {
       //not saving segments...so don't update changed
     }

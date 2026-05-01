@@ -34,6 +34,7 @@ import {
   findRecord,
   VernacularTag,
 } from '../crud';
+import { mediaFileName } from '../crud/media';
 import StickyRedirect from '../components/StickyRedirect';
 import { shallowEqual, useSelector } from 'react-redux';
 import {
@@ -63,6 +64,46 @@ export interface IRowData {
   assigned: string;
   transcriber: string;
   editor: string;
+}
+
+function sourceSegmentStart(mediafile: MediaFileD): number {
+  const seg = mediafile.attributes?.sourceSegments;
+  if (!seg) return Number.NaN;
+  try {
+    return parseFloat(JSON.parse(seg as string).start);
+  } catch {
+    return Number.NaN;
+  }
+}
+
+function compareTranscribeRowsByPhrase(a: IRowData, b: IRowData): number {
+  const aStart = sourceSegmentStart(a.mediafile);
+  const bStart = sourceSegmentStart(b.mediafile);
+  if (!Number.isNaN(aStart) && !Number.isNaN(bStart)) return aStart - bStart;
+  if (!Number.isNaN(aStart)) return -1;
+  if (!Number.isNaN(bStart)) return 1;
+  return mediaFileName(a.mediafile) <= mediaFileName(b.mediafile) ? -1 : 1;
+}
+
+/** First passage-detail transcriber task in phrase order (PBT segments). */
+function firstPassageTranscriberTaskId(
+  rowList: IRowData[],
+  passageOrbitId: string
+): string | undefined {
+  const candidates = rowList.filter(
+    (r) =>
+      r.passage?.id === passageOrbitId &&
+      r.mediafile?.id &&
+      r.role === 'transcriber'
+  );
+  if (candidates.length === 0) return undefined;
+  candidates.sort(compareTranscribeRowsByPhrase);
+  return candidates[0].mediafile.id as string;
+}
+
+function firstRealTaskMediaId(rowList: IRowData[]): string | undefined {
+  const row = rowList.find((r) => r.passage?.id && r.mediafile?.id);
+  return row?.mediafile.id as string | undefined;
 }
 
 const initState = {
@@ -199,7 +240,17 @@ const TranscriberProvider = (props: IProps) => {
     transSelected: string | undefined,
     rowData: IRowData[] = state.rowData
   ) => {
-    const i = rowData.findIndex((r) => r.mediafile.id === transSelected);
+    let i = -1;
+    if (transSelected) {
+      if (isDetail && curRole === 'transcriber') {
+        i = rowData.findIndex(
+          (r) => r.mediafile.id === transSelected && r.role === 'transcriber'
+        );
+      }
+      if (i < 0) {
+        i = rowData.findIndex((r) => r.mediafile.id === transSelected);
+      }
+    }
     if (i < 0) return;
     const r = rowData[i] as IRowData;
 
@@ -448,17 +499,38 @@ const TranscriberProvider = (props: IProps) => {
       }
 
       if (transSelected !== '') {
-        const selectedRow = rowList.filter(
+        const rowsForId = rowList.filter(
           (r) => r.mediafile.id === transSelected
         );
-        if (selectedRow.length > 0) {
-          setTransSelected(transSelected, rowList);
-        } else {
+        if (rowsForId.length === 0) {
           transSelected = '';
+        } else if (
+          isDetail &&
+          curRole === 'transcriber' &&
+          !rowsForId.some((r) => r.role === 'transcriber')
+        ) {
+          transSelected = '';
+        } else {
+          setTransSelected(transSelected, rowList);
         }
       }
       if (transSelected === '') {
-        setTransSelected((rowList[1] as IRowData).mediafile.id, rowList);
+        const psg =
+          remoteIdGuid(
+            'passage',
+            pasId ?? '',
+            memory?.keyMap as RecordKeyMap
+          ) || pasId;
+        let pick: string | undefined;
+        if (isDetail && curRole === 'transcriber' && psg) {
+          pick = firstPassageTranscriberTaskId(rowList, psg);
+        }
+        if (!pick) {
+          pick = firstRealTaskMediaId(rowList);
+        }
+        if (pick) {
+          setTransSelected(pick, rowList);
+        }
       }
     } else {
       setState((state: ICtxState) => {
@@ -547,7 +619,19 @@ const TranscriberProvider = (props: IProps) => {
     });
     if (changed) {
       setState({ ...state, rowData }); //eh...what to do about: playing:false
-      if (forcerefresh) refresh(); //force the transcriber pane to refresh also
+      if (forcerefresh) {
+        refresh(); //force the transcriber pane to refresh also
+      } else if (
+        isDetail &&
+        curRole === 'transcriber' &&
+        state.transSelected &&
+        !rowData.some(
+          (r) =>
+            r.mediafile.id === state.transSelected && r.role === 'transcriber'
+        )
+      ) {
+        refresh();
+      }
     }
     /* eslint-disable-next-line react-hooks/exhaustive-deps */
   }, [mediafiles, pasId]);
