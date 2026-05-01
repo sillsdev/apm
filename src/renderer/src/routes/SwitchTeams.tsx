@@ -23,6 +23,7 @@ import { TeamContext } from '../context/TeamContext';
 import { useGlobal } from '../context/useGlobal';
 import { useTeamActions } from '../components/Team/useTeamActions';
 import { SharedContentCreatorDialog } from '../components/Team/SharedContentCreatorDialog';
+import StickyRedirect from '../components/StickyRedirect';
 
 interface ISettingsButtonProps {
   label: string;
@@ -384,6 +385,28 @@ const useSettingsHandlers = () => {
   return ctx;
 };
 
+/** Work Alone / PAP-like: only personal team exists — redirect to team home instead of picker */
+const SwitchTeamsGuard: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
+  const ctx = React.useContext(TeamContext);
+  const { teams, personalTeam } = ctx.state;
+
+  if (!personalTeam) {
+    return null;
+  }
+
+  if (teams.length === 0) {
+    const key = localUserKey(LocalKey.team);
+    if (localStorage.getItem(key) !== personalTeam) {
+      localStorage.setItem(key, personalTeam);
+    }
+    return <StickyRedirect to="/team" />;
+  }
+
+  return <>{children}</>;
+};
+
 const MainTeamsLayout: React.FC = () => {
   const { openSettingsForTeam, openSettingsForPersonal } =
     useSettingsHandlers();
@@ -416,9 +439,11 @@ export const SwitchTeams: React.FC = () => {
       <TeamProvider>
         <>
           <AppHead />
-          <SettingsProvider>
-            <MainTeamsLayout />
-          </SettingsProvider>
+          <SwitchTeamsGuard>
+            <SettingsProvider>
+              <MainTeamsLayout />
+            </SettingsProvider>
+          </SwitchTeamsGuard>
         </>
       </TeamProvider>
     </Box>

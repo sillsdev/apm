@@ -37,7 +37,12 @@ const ProjectsBox = styled(Box)<ProjectBoxProps>(({ theme, isMobile }) => ({
 
 export const ProjectsScreenInner: React.FC = () => {
   const navigate = useMyNavigate();
-  const teamId = localStorage.getItem(localUserKey(LocalKey.team));
+  const [bootstrappedTeamId, setBootstrappedTeamId] = React.useState<
+    string | null
+  >(null);
+  const teamId =
+    bootstrappedTeamId ??
+    localStorage.getItem(localUserKey(LocalKey.team));
   const ctx = React.useContext(TeamContext);
   const {
     teamProjects,
@@ -65,13 +70,21 @@ export const ProjectsScreenInner: React.FC = () => {
     navigate('/switch-teams');
   }, [navigate]);
 
-  // Handle missing teamId with useEffect to prevent infinite render loops
+  // Handle missing teamId: PAP-like users (only personal team) stay on /team; others pick a team
   React.useEffect(() => {
-    if (!teamId) {
-      handleSwitchTeams();
+    const currentId =
+      bootstrappedTeamId ??
+      localStorage.getItem(localUserKey(LocalKey.team));
+    if (currentId) return;
+    if (!personalTeam) return;
+    if (teams.length === 0) {
+      localStorage.setItem(localUserKey(LocalKey.team), personalTeam);
+      setBootstrappedTeamId(personalTeam);
+      return;
     }
+    handleSwitchTeams();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [handleSwitchTeams]);
+  }, [bootstrappedTeamId, personalTeam, teams, handleSwitchTeams]);
 
   React.useEffect(() => {
     startClear();
@@ -81,6 +94,8 @@ export const ProjectsScreenInner: React.FC = () => {
   }, []);
 
   const isPersonal = teamId === personalTeam;
+  const isPapLike =
+    Boolean(personalTeam) && isPersonal && teams.length === 0;
   const projects = React.useMemo(
     () => (isPersonal ? personalProjects : teamId ? teamProjects(teamId) : []),
     [isPersonal, personalProjects, teamId, teamProjects]
@@ -270,17 +285,19 @@ export const ProjectsScreenInner: React.FC = () => {
               {t.addNewProject || 'Add New Project...'}
             </Button>
           )}
-          <Button
-            id="ProjectActSwitch"
-            variant="outlined"
-            onClick={handleSwitchTeams}
-            sx={(theme) => ({
-              minWidth: 120,
-              bgcolor: theme.palette.common.white,
-            })}
-          >
-            {t.switchTeams || 'Switch Teams'}
-          </Button>
+          {!isPapLike && (
+            <Button
+              id="ProjectActSwitch"
+              variant="outlined"
+              onClick={handleSwitchTeams}
+              sx={(theme) => ({
+                minWidth: 120,
+                bgcolor: theme.palette.common.white,
+              })}
+            >
+              {t.switchTeams || 'Switch Teams'}
+            </Button>
+          )}
         </Stack>
       </Box>
       <BigDialog
