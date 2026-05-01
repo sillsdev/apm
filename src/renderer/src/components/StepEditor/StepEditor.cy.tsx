@@ -216,10 +216,11 @@ describe('StepEditor (Edit Workflow)', () => {
       { id: 'wfs-1', name: 'Only Stage', sequencenum: 0 },
     ]);
     mountStepEditor(memory);
+    cy.get('.MuiDialogContent-root input#stepName').should('have.length', 1);
     cy.get('#wk-step-add').click();
-    cy.get('input').should('have.length.at.least', 2);
+    cy.get('.MuiDialogContent-root input#stepName').should('have.length', 2);
     cy.get('#wk-step-add').click();
-    cy.get('input').should('have.length.at.least', 3);
+    cy.get('.MuiDialogContent-root input#stepName').should('have.length', 3);
   });
 
   it('keeps the sticky toolbar in view when dialog content is scrolled', () => {
