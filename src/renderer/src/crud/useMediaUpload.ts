@@ -16,7 +16,8 @@ import { UploadType } from '../components/UploadType';
 import { RecordKeyMap } from '@orbit/records';
 import { getContentType } from '../utils/contentType';
 import { ISharedStrings, MediaFileAttributes, MediaFileD } from '../model';
-import { sharedSelector } from '../selector';
+import { useSnackBar } from '../hoc/SnackBar';
+import { mediaTabSelector, sharedSelector } from '../selector';
 import { OrbitNetworkErrorRetries } from '../../api-variable';
 
 interface IProps {
@@ -44,7 +45,7 @@ export const useMediaUpload = ({
     dispatch(actions.uploadFiles(files) as any);
   const nextUpload = (props: actions.NextUploadProps) =>
     dispatch(actions.nextUpload(props) as any);
-  const uploadComplete = () => dispatch(actions.uploadComplete as any);
+  const { showMessage } = useSnackBar();
   const [reporter] = useGlobal('errorReporter');
   const [memory] = useGlobal('memory');
   const [coordinator] = useGlobal('coordinator');
@@ -57,6 +58,7 @@ export const useMediaUpload = ({
   const mediaIdRef = useRef('');
   const { createMedia } = useOfflnMediafileCreate();
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
+  const t = useSelector(mediaTabSelector, shallowEqual);
   const { localizedArtifactTypeFromId } = useArtifactType();
   const [, setOrbitRetries] = useGlobal('orbitRetries'); //verified this is not used in a function 2/18/25
   const getLatestVersion = () => {
@@ -103,6 +105,17 @@ export const useMediaUpload = ({
         )
       ).id;
     } else mediaIdRef.current = '';
+    const finishUpload = () => {
+      dispatch(actions.uploadComplete() as any);
+      const total = fileList.current?.length ?? 1;
+      const ok = mediaIdRef.current ? 1 : 0;
+      showMessage(
+        t.uploadComplete
+          .replace('{0}', String(ok))
+          .replace('{1}', String(total))
+      );
+      void afterUploadCb(mediaIdRef.current);
+    };
     if (!getGlobal('offline') && mediaIdRef.current) {
       pullTableList(
         'mediafile',
@@ -111,13 +124,9 @@ export const useMediaUpload = ({
         remote,
         backup,
         reporter
-      ).then(() => {
-        uploadComplete();
-        afterUploadCb(mediaIdRef.current);
-      });
+      ).then(finishUpload);
     } else {
-      uploadComplete();
-      afterUploadCb(mediaIdRef.current);
+      finishUpload();
     }
   };
 

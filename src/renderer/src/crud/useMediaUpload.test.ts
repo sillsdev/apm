@@ -1,0 +1,413 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
+import React from 'react';
+import type { MediaFileD } from '../model';
+import { UPLOAD_COMPLETE } from '../store/upload/types';
+import { OrbitNetworkErrorRetries } from '../../api-variable';
+
+jest.mock('react-redux', () => ({
+  shallowEqual: jest.fn(() => true),
+  useDispatch: jest.fn(),
+  useSelector: jest.fn(),
+}));
+
+const mockShowMessage = jest.fn();
+jest.mock('../hoc/SnackBar', () => ({
+  useSnackBar: () => ({ showMessage: mockShowMessage }),
+}));
+
+jest.mock('../store', () => ({
+  uploadFiles: jest.fn((files: File[]) => ({
+    type: 'UPLOAD_LIST',
+    payload: files,
+  })),
+  nextUpload: jest.fn((props: unknown) => ({
+    type: 'NEXT_UPLOAD',
+    payload: props,
+  })),
+  uploadComplete: jest.fn(() => ({ type: 'UPLOAD_COMPLETE' })),
+}));
+
+jest.mock('../selector', () => ({
+  mediaTabSelector: (state: { mediaTab: { uploadComplete: string } }) =>
+    state.mediaTab,
+  sharedSelector: (state: { shared: { mediaAttached: string } }) =>
+    state.shared,
+}));
+
+jest.mock('../context/TokenProvider', () => ({
+  TokenContext: React.createContext({ state: { accessToken: 'tok' } }),
+}));
+
+let mockMediaFiles: MediaFileD[] = [];
+const mockMemory = {
+  cache: {
+    query: jest.fn(() => mockMediaFiles),
+  },
+  keyMap: {},
+};
+
+jest.mock('./index', () => {
+  const pullTableList = jest.fn(() => Promise.resolve());
+  const createMedia = jest.fn().mockResolvedValue({ id: 'created-id' });
+  return {
+    pullTableList,
+    related: jest.requireActual('./related').related,
+    /** Avoid real keyMap: pass through local ids for plan/passage/user/media */
+    remoteIdNum: jest.fn(
+      (_table: string, localId: string | undefined) => localId ?? ''
+    ),
+    useArtifactType: () => ({
+      localizedArtifactTypeFromId: jest.fn(() => 'artifact-label'),
+    }),
+    useOfflnMediafileCreate: () => ({
+      createMedia,
+    }),
+  };
+});
+
+let mockOffline = false;
+const mockReporter = {};
+const mockRemote = {};
+const mockBackup = {};
+const mockCoordinator = {
+  getSource: jest.fn((name: string) => {
+    if (name === 'remote') return mockRemote;
+    if (name === 'backup') return mockBackup;
+    return {};
+  }),
+};
+const mockSetOrbitRetries = jest.fn();
+
+jest.mock('../context/useGlobal', () => ({
+  useGlobal: jest.fn((key: string) => {
+    const map: Record<string, [unknown, jest.Mock]> = {
+      errorReporter: [mockReporter, jest.fn()],
+      memory: [mockMemory, jest.fn()],
+      coordinator: [mockCoordinator, jest.fn()],
+      user: ['user-1', jest.fn()],
+      orbitRetries: [0, mockSetOrbitRetries],
+    };
+    return map[key] ?? [undefined, jest.fn()];
+  }),
+  useGetGlobal: jest.fn(() => (key: string) => {
+    if (key === 'offline') return mockOffline;
+    if (key === 'plan') return 'plan-1';
+    return undefined;
+  }),
+}));
+
+const mockState = {
+  mediaTab: {
+    uploadComplete: '{0} of {1} files uploaded successfully.',
+  },
+  shared: {
+    mediaAttached: 'Media attached',
+  },
+};
+
+function makeFile(name = 'rec.webm') {
+  return new File([new Uint8Array([1, 2, 3])], name, {
+    type: 'audio/webm',
+  });
+}
+
+function vernacularMedia(
+  id: string,
+  passageId: string,
+  versionNumber: number
+): MediaFileD {
+  return {
+    id,
+    type: 'mediafile',
+    attributes: { versionNumber } as MediaFileD['attributes'],
+    relationships: {
+      passage: { data: { id: passageId, type: 'passage' } },
+      artifactType: { data: null },
+    },
+  } as MediaFileD;
+}
+
+describe('useMediaUpload', () => {
+  let dispatch: jest.Mock;
+  let useDispatch: jest.Mock;
+  let useSelector: jest.Mock;
+  let pullTableList: jest.Mock;
+  let createMedia: jest.Mock;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockOffline = false;
+    mockMediaFiles = [];
+    ({ useDispatch, useSelector } = require('react-redux'));
+    dispatch = jest.fn((action: unknown) => action);
+    useDispatch.mockReturnValue(dispatch);
+    (useSelector as unknown as jest.Mock).mockImplementation(
+      (sel: (s: typeof mockState) => unknown) => sel(mockState)
+    );
+
+    const idx = jest.requireMock('./index') as {
+      pullTableList: jest.Mock;
+      useOfflnMediafileCreate: () => { createMedia: jest.Mock };
+    };
+    pullTableList = idx.pullTableList;
+    createMedia = idx.useOfflnMediafileCreate().createMedia;
+    pullTableList.mockImplementation(() => Promise.resolve());
+    createMedia.mockResolvedValue({ id: 'created-id' });
+  });
+
+  function renderUploadHook(props: {
+    artifactId: string | null;
+    passageId: string | undefined;
+    planId?: string;
+    afterUploadCb: jest.Mock;
+  }) {
+    const { renderHook } = require('@testing-library/react');
+    const { useMediaUpload } = require('./useMediaUpload');
+    return renderHook(() =>
+      useMediaUpload({
+        artifactId: props.artifactId,
+        passageId: props.passageId,
+        planId: props.planId,
+        afterUploadCb: props.afterUploadCb,
+      })
+    );
+  }
+
+  it('online success: pullTableList, dispatch UPLOAD_COMPLETE, snackbar, afterUploadCb', async () => {
+    mockOffline = false;
+    const afterUploadCb = jest.fn().mockResolvedValue(undefined);
+    const { result } = renderUploadHook({
+      artifactId: null,
+      passageId: 'psg-1',
+      afterUploadCb,
+    });
+    const upload = result.current as (files: File[]) => Promise<void>;
+
+    const { nextUpload } = require('../store');
+    const files = [makeFile()];
+
+    await upload(files);
+
+    expect(nextUpload).toHaveBeenCalled();
+    const uploadProps = (nextUpload as jest.Mock).mock.calls[0][0];
+    const cb = uploadProps.cb as (
+      n: number,
+      success: boolean,
+      data?: { stringId?: string }
+    ) => void | Promise<void>;
+
+    await cb(0, true, { stringId: 'media-1' });
+
+    expect(pullTableList).toHaveBeenCalledWith(
+      'mediafile',
+      ['media-1'],
+      mockMemory,
+      mockRemote,
+      mockBackup,
+      mockReporter
+    );
+
+    expect(dispatch).toHaveBeenCalledWith(
+      expect.objectContaining({ type: UPLOAD_COMPLETE })
+    );
+    expect(mockShowMessage).toHaveBeenCalledWith(
+      '1 of 1 files uploaded successfully.'
+    );
+    expect(afterUploadCb).toHaveBeenCalledWith('media-1');
+  });
+
+  it('failure path: orbit retries, 0 of 1 snackbar, empty media id, no pullTableList', async () => {
+    const afterUploadCb = jest.fn().mockResolvedValue(undefined);
+    const { result } = renderUploadHook({
+      artifactId: null,
+      passageId: 'psg-1',
+      afterUploadCb,
+    });
+    const upload = result.current as (files: File[]) => Promise<void>;
+
+    const { nextUpload } = require('../store');
+    await upload([makeFile()]);
+    const uploadProps = (nextUpload as jest.Mock).mock.calls[0][0];
+    const cb = uploadProps.cb as (
+      n: number,
+      success: boolean,
+      data?: unknown
+    ) => void | Promise<void>;
+
+    await cb(0, false, undefined);
+
+    expect(mockSetOrbitRetries).toHaveBeenCalledWith(
+      OrbitNetworkErrorRetries - 1
+    );
+    expect(pullTableList).not.toHaveBeenCalled();
+    expect(mockShowMessage).toHaveBeenCalledWith(
+      '0 of 1 files uploaded successfully.'
+    );
+    expect(afterUploadCb).toHaveBeenCalledWith('');
+  });
+
+  it('offline success: createMedia, snackbar, afterUploadCb with created id, no pullTableList', async () => {
+    mockOffline = true;
+    const afterUploadCb = jest.fn().mockResolvedValue(undefined);
+    const { result } = renderUploadHook({
+      artifactId: null,
+      passageId: 'psg-1',
+      afterUploadCb,
+    });
+    const upload = result.current as (files: File[]) => Promise<void>;
+
+    const { nextUpload } = require('../store');
+    await upload([makeFile()]);
+    const uploadProps = (nextUpload as jest.Mock).mock.calls[0][0];
+    const cb = uploadProps.cb as (
+      n: number,
+      success: boolean,
+      data?: unknown
+    ) => void | Promise<void>;
+
+    await cb(0, true, { blob: true });
+
+    expect(pullTableList).not.toHaveBeenCalled();
+    expect(createMedia).toHaveBeenCalledWith(
+      { blob: true },
+      1,
+      expect.any(Number),
+      'psg-1',
+      null,
+      '',
+      'user-1'
+    );
+    expect(mockShowMessage).toHaveBeenCalledWith(
+      '1 of 1 files uploaded successfully.'
+    );
+    expect(afterUploadCb).toHaveBeenCalledWith('created-id');
+  });
+
+  it('getLatestVersion: existing vernacular versions yield num = 3 for offline createMedia', async () => {
+    mockOffline = true;
+    mockMediaFiles = [
+      vernacularMedia('m1', 'psg-1', 1),
+      vernacularMedia('m2', 'psg-1', 2),
+      vernacularMedia('other', 'psg-9', 99),
+    ];
+    const afterUploadCb = jest.fn().mockResolvedValue(undefined);
+    const { result } = renderUploadHook({
+      artifactId: null,
+      passageId: 'psg-1',
+      afterUploadCb,
+    });
+    const upload = result.current as (files: File[]) => Promise<void>;
+
+    const { nextUpload } = require('../store');
+    await upload([makeFile()]);
+    const cb = (nextUpload as jest.Mock).mock.calls[0][0].cb as (
+      n: number,
+      success: boolean,
+      data?: unknown
+    ) => void | Promise<void>;
+
+    await cb(0, true, { offline: true });
+
+    expect(createMedia).toHaveBeenCalledWith(
+      expect.any(Object),
+      3,
+      expect.any(Number),
+      'psg-1',
+      null,
+      '',
+      'user-1'
+    );
+  });
+
+  it('getLatestVersion: no existing files yields num = 1', async () => {
+    mockOffline = true;
+    mockMediaFiles = [];
+    const afterUploadCb = jest.fn().mockResolvedValue(undefined);
+    const { result } = renderUploadHook({
+      artifactId: null,
+      passageId: 'psg-1',
+      afterUploadCb,
+    });
+    const upload = result.current as (files: File[]) => Promise<void>;
+
+    const { nextUpload } = require('../store');
+    await upload([makeFile()]);
+    const cb = (nextUpload as jest.Mock).mock.calls[0][0].cb as (
+      n: number,
+      success: boolean,
+      data?: unknown
+    ) => void | Promise<void>;
+
+    await cb(0, true, { offline: true });
+
+    expect(createMedia).toHaveBeenCalledWith(
+      expect.any(Object),
+      1,
+      expect.any(Number),
+      'psg-1',
+      null,
+      '',
+      'user-1'
+    );
+  });
+
+  it('getLatestVersion: artifact Id skips version bump (num = 1)', async () => {
+    mockOffline = true;
+    mockMediaFiles = [vernacularMedia('m1', 'psg-1', 5)];
+    const afterUploadCb = jest.fn().mockResolvedValue(undefined);
+    const { result } = renderUploadHook({
+      artifactId: 'art-1',
+      passageId: 'psg-1',
+      afterUploadCb,
+    });
+    const upload = result.current as (files: File[]) => Promise<void>;
+
+    const { nextUpload } = require('../store');
+    await upload([makeFile()]);
+    const cb = (nextUpload as jest.Mock).mock.calls[0][0].cb as (
+      n: number,
+      success: boolean,
+      data?: unknown
+    ) => void | Promise<void>;
+
+    await cb(0, true, { offline: true });
+
+    expect(createMedia).toHaveBeenCalledWith(
+      expect.any(Object),
+      1,
+      expect.any(Number),
+      'psg-1',
+      'art-1',
+      '',
+      'user-1'
+    );
+  });
+
+  it('dispatches uploadComplete action object, not the action creator function', async () => {
+    const afterUploadCb = jest.fn().mockResolvedValue(undefined);
+    const { result } = renderUploadHook({
+      artifactId: null,
+      passageId: 'psg-1',
+      afterUploadCb,
+    });
+    const upload = result.current as (files: File[]) => Promise<void>;
+
+    const { nextUpload, uploadComplete } = require('../store');
+    await upload([makeFile()]);
+    const cb = (nextUpload as jest.Mock).mock.calls[0][0].cb as (
+      n: number,
+      success: boolean,
+      data?: { stringId?: string }
+    ) => void | Promise<void>;
+
+    await cb(0, true, { stringId: 'media-x' });
+
+    const completeCalls = dispatch.mock.calls.filter(
+      (c) => c[0]?.type === UPLOAD_COMPLETE
+    );
+    expect(completeCalls.length).toBeGreaterThanOrEqual(1);
+    expect(completeCalls[0][0]).toEqual({ type: UPLOAD_COMPLETE });
+    expect(uploadComplete).toHaveBeenCalled();
+    expect(typeof completeCalls[0][0]).toBe('object');
+  });
+});
