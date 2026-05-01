@@ -1,4 +1,11 @@
-import { useContext, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import {
   IStepEditorStrings,
   OrgWorkflowStep,
@@ -86,6 +93,8 @@ export const StepEditor = ({ process, org }: IProps) => {
   const [toolSettingsRow, setToolSettingsRow] = useState(-1);
   const toolRef = useRef<number | undefined>(undefined);
   const focusIndex = useRef<number>(0);
+  const scrollNewStepIntoViewRef = useRef(false);
+  const listEndAnchorRef = useRef<HTMLDivElement | null>(null);
   const settingsTools = [
     ToolSlug.Transcribe,
     ToolSlug.Paratext,
@@ -276,6 +285,7 @@ export const StepEditor = ({ process, org }: IProps) => {
   };
 
   const handleAdd = async () => {
+    scrollNewStepIntoViewRef.current = true;
     const name = mangleName(se.nextStep, getOrgNames());
     const tool = ToolSlug.Discuss;
     setRows([
@@ -414,6 +424,34 @@ export const StepEditor = ({ process, org }: IProps) => {
     setSortKey((sortKey) => sortKey + 1);
   }, [rows, showAll]);
 
+  useLayoutEffect(() => {
+    if (!scrollNewStepIntoViewRef.current) return;
+    const el = listEndAnchorRef.current;
+    if (!el) return;
+    scrollNewStepIntoViewRef.current = false;
+    const scrollParent = (() => {
+      let p: HTMLElement | null = el.parentElement;
+      while (p) {
+        const oy = getComputedStyle(p).overflowY;
+        if (oy === 'auto' || oy === 'scroll') return p;
+        p = p.parentElement;
+      }
+      return null;
+    })();
+    if (scrollParent) {
+      const pad = 8;
+      const spRect = scrollParent.getBoundingClientRect();
+      const elRect = el.getBoundingClientRect();
+      if (elRect.bottom > spRect.bottom - pad) {
+        scrollParent.scrollTop += elRect.bottom - spRect.bottom + pad;
+      } else if (elRect.top < spRect.top + pad) {
+        scrollParent.scrollTop += elRect.top - spRect.top - pad;
+      }
+    } else {
+      el.scrollIntoView({ block: 'nearest', behavior: 'auto' });
+    }
+  }, [sortKey]);
+
   const prettySettings = (tool: string, settings: string) => {
     const json = settings ? JSON.parse(settings) : undefined;
     switch (tool as ToolSlug) {
@@ -435,7 +473,18 @@ export const StepEditor = ({ process, org }: IProps) => {
 
   return (
     <div>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+      <Box
+        sx={(theme) => ({
+          display: 'flex',
+          justifyContent: 'space-between',
+          position: 'sticky',
+          top: 0,
+          zIndex: 1,
+          bgcolor: theme.palette.background.paper,
+          pb: 1,
+          borderBottom: `1px solid ${theme.palette.divider}`,
+        })}
+      >
         <Button id="wk-step-add" onClick={handleAdd} variant="contained">
           {se.add}
         </Button>
@@ -471,6 +520,12 @@ export const StepEditor = ({ process, org }: IProps) => {
             />
           ))}
       </VertListDnd>
+      <Box
+        ref={listEndAnchorRef}
+        id="wk-step-list-end-anchor"
+        aria-hidden
+        sx={{ height: 1, width: '100%', flexShrink: 0 }}
+      />
       {toolSettingsRow > -1 && (
         <BigDialog
           title={localizedTool((rows[toolSettingsRow] as IStepRow).tool)}
