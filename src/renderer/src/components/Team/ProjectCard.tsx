@@ -18,6 +18,7 @@ import {
   DialogContent,
   DialogActions,
   Button,
+  Tooltip,
 } from '@mui/material';
 import * as actions from '../../store';
 import ScriptureIcon from '@mui/icons-material/MenuBook';
@@ -467,13 +468,12 @@ export const ProjectCard = (props: IProps) => {
       <StyledCard id={`card-${project.id}`} onClick={handleSelect(project)}>
         <StyledCardContent>
           <FirstLineDiv>
-            <Typography
-              variant="h6"
-              component="h2"
+            <Box
               sx={{
                 display: 'flex',
                 alignItems: 'center',
-                textAlign: 'center',
+                flex: 1,
+                minWidth: 0,
               }}
             >
               {(project?.attributes?.type || '').toLowerCase() ===
@@ -486,16 +486,32 @@ export const ProjectCard = (props: IProps) => {
               )}
               {project.attributes.isPublic && <ShareIcon />}
               {'\u00A0 '}
-              {project?.attributes?.name}
-            </Typography>
-            <ProjectMenu
-              action={handleProjectAction}
-              project={project}
-              inProject={false}
-              isAdmin={isAdmin}
-              isPersonal={personalProjects.includes(project)}
-              canPublish={canPublish}
-            />
+              <Tooltip title={project?.attributes?.name ?? ''}>
+                <Typography
+                  variant="h6"
+                  component="h2"
+                  noWrap
+                  sx={{
+                    minWidth: 0,
+                    flex: 1,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                  }}
+                >
+                  {project?.attributes?.name}
+                </Typography>
+              </Tooltip>
+            </Box>
+            <Box sx={{ flexShrink: 0 }}>
+              <ProjectMenu
+                action={handleProjectAction}
+                project={project}
+                inProject={false}
+                isAdmin={isAdmin}
+                isPersonal={personalProjects.includes(project)}
+                canPublish={canPublish}
+              />
+            </Box>
           </FirstLineDiv>
           <Typography sx={{ mb: 2 }}>{projectDescription(project)}</Typography>
           <Typography variant="body2" component="p">
