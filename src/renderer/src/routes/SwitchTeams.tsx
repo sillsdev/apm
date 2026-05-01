@@ -386,21 +386,34 @@ const useSettingsHandlers = () => {
 };
 
 /** Work Alone / PAP-like: only personal team exists — redirect to team home instead of picker */
-const SwitchTeamsGuard: React.FC<{ children: React.ReactNode }> = ({
+export const SwitchTeamsGuard: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const ctx = React.useContext(TeamContext);
-  const { teams, personalTeam } = ctx.state;
+  const { teams, personalTeam, teamDirectoryReady } = ctx.state;
+  const [isOffline] = useGlobal('offline');
+  const [offlineOnly] = useGlobal('offlineOnly');
+  // When offline && !offlineOnly, getTeams() may be empty because shared teams
+  // without local projects are filtered out — not the same as true PAP-only.
+  const isPapLike =
+    Boolean(personalTeam) &&
+    teams.length === 0 &&
+    teamDirectoryReady &&
+    (!isOffline || offlineOnly);
+
+  React.useEffect(() => {
+    if (!isPapLike || !personalTeam) return;
+    const key = localUserKey(LocalKey.team);
+    if (localStorage.getItem(key) !== personalTeam) {
+      localStorage.setItem(key, personalTeam);
+    }
+  }, [isPapLike, personalTeam]);
 
   if (!personalTeam) {
     return null;
   }
 
-  if (teams.length === 0) {
-    const key = localUserKey(LocalKey.team);
-    if (localStorage.getItem(key) !== personalTeam) {
-      localStorage.setItem(key, personalTeam);
-    }
+  if (isPapLike) {
     return <StickyRedirect to="/team" />;
   }
 
@@ -444,6 +457,22 @@ export const SwitchTeams: React.FC = () => {
               <MainTeamsLayout />
             </SettingsProvider>
           </SwitchTeamsGuard>
+        </>
+      </TeamProvider>
+    </Box>
+  );
+};
+
+/** Same UI as the route without the PAP-like redirect; CT uses empty orbit data so `teams` stays []. */
+export const SwitchTeamsUnguarded: React.FC = () => {
+  return (
+    <Box sx={{ width: '100%' }}>
+      <TeamProvider>
+        <>
+          <AppHead />
+          <SettingsProvider>
+            <MainTeamsLayout />
+          </SettingsProvider>
         </>
       </TeamProvider>
     </Box>

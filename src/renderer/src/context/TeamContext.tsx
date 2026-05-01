@@ -107,6 +107,8 @@ const initState = {
   planTypes: Array<PlanType>(),
   isDeleting: false,
   teams: Array<OrganizationD>(),
+  /** True once orbit has returned org or membership rows (teams list is not just pre-load empty). */
+  teamDirectoryReady: false,
   personalTeam: '',
   personalProjects: Array<VProjectD>(),
   teamProjects: (teamId: string) => Array<VProjectD>(),
@@ -666,9 +668,20 @@ const TeamProvider = (props: IProps) => {
       });
     }
     const teams = getTeams();
-    if (JSON.stringify(teams) !== JSON.stringify(state.teams)) {
-      setState((state) => ({ ...state, teams }));
-    }
+    const teamsChanged = JSON.stringify(teams) !== JSON.stringify(state.teams);
+    const directoryNowReady =
+      organizations.length > 0 || orgMembers.length > 0;
+    setState((state) => {
+      const nextReady = state.teamDirectoryReady || directoryNowReady;
+      if (!teamsChanged && nextReady === state.teamDirectoryReady) {
+        return state;
+      }
+      return {
+        ...state,
+        ...(teamsChanged ? { teams } : {}),
+        teamDirectoryReady: nextReady,
+      };
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [organizations, orgMembers, user, isOffline]);
 

@@ -37,12 +37,7 @@ const ProjectsBox = styled(Box)<ProjectBoxProps>(({ theme, isMobile }) => ({
 
 export const ProjectsScreenInner: React.FC = () => {
   const navigate = useMyNavigate();
-  const [bootstrappedTeamId, setBootstrappedTeamId] = React.useState<
-    string | null
-  >(null);
-  const teamId =
-    bootstrappedTeamId ??
-    localStorage.getItem(localUserKey(LocalKey.team));
+  const teamId = localStorage.getItem(localUserKey(LocalKey.team));
   const ctx = React.useContext(TeamContext);
   const {
     teamProjects,
@@ -50,6 +45,7 @@ export const ProjectsScreenInner: React.FC = () => {
     personalTeam,
     cardStrings,
     teams,
+    teamDirectoryReady,
     isAdmin,
   } = ctx.state;
   const t = cardStrings;
@@ -70,21 +66,13 @@ export const ProjectsScreenInner: React.FC = () => {
     navigate('/switch-teams');
   }, [navigate]);
 
-  // Handle missing teamId: PAP-like users (only personal team) stay on /team; others pick a team
+  // Missing teamId: always open picker; SwitchTeamsGuard redirects true PAP-like users back to /team
   React.useEffect(() => {
-    const currentId =
-      bootstrappedTeamId ??
-      localStorage.getItem(localUserKey(LocalKey.team));
+    const currentId = localStorage.getItem(localUserKey(LocalKey.team));
     if (currentId) return;
     if (!personalTeam) return;
-    if (teams.length === 0) {
-      localStorage.setItem(localUserKey(LocalKey.team), personalTeam);
-      setBootstrappedTeamId(personalTeam);
-      return;
-    }
     handleSwitchTeams();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bootstrappedTeamId, personalTeam, teams, handleSwitchTeams]);
+  }, [personalTeam, handleSwitchTeams]);
 
   React.useEffect(() => {
     startClear();
@@ -95,7 +83,10 @@ export const ProjectsScreenInner: React.FC = () => {
 
   const isPersonal = teamId === personalTeam;
   const isPapLike =
-    Boolean(personalTeam) && isPersonal && teams.length === 0;
+    Boolean(personalTeam) &&
+    isPersonal &&
+    teams.length === 0 &&
+    teamDirectoryReady;
   const projects = React.useMemo(
     () => (isPersonal ? personalProjects : teamId ? teamProjects(teamId) : []),
     [isPersonal, personalProjects, teamId, teamProjects]
