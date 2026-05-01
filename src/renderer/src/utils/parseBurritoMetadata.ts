@@ -7,6 +7,7 @@ import {
   LocalizedString,
 } from '../burrito/data/types';
 import path from 'path-browserify';
+import { resolvePathUnderRoot } from './resolvePathUnderRoot';
 import { sortChapters } from './sort';
 
 const ipc = window?.api as MainAPI;
@@ -113,7 +114,8 @@ function extractChapterNumbersFromScripture(raw: string): string[] {
 }
 
 async function chaptersFromScriptureFilesForBook(
-  burritoRoot: string,
+  wrapperPath: string,
+  burritoRelFolder: string,
   metadata: Burrito,
   bookId: string
 ): Promise<string[]> {
@@ -127,8 +129,8 @@ async function chaptersFromScriptureFilesForBook(
     if (!isScriptureTextIngredient(relPath, ing)) {
       continue;
     }
-    const absPath = path.join(burritoRoot, relPath);
-    if (!(await ipc.exists(absPath))) {
+    const absPath = resolvePathUnderRoot(wrapperPath, burritoRelFolder, relPath);
+    if (!absPath || !(await ipc.exists(absPath))) {
       continue;
     }
     try {
@@ -177,24 +179,29 @@ export async function buildStructure(
   lang: string
 ): Promise<WrapperStructure> {
   try {
-    const wrapper = await readJson<BurritoWrapper>(
-      path.join(burritoWrapperPath, 'wrapper.json')
+    const wrapperJsonPath = resolvePathUnderRoot(
+      burritoWrapperPath,
+      'wrapper.json'
     );
+    if (!wrapperJsonPath) {
+      throw new Error('Invalid wrapper path');
+    }
+    const wrapper = await readJson<BurritoWrapper>(wrapperJsonPath);
 
     const flavorNames = new Set<string>();
-    let audioBurritoPath: string | null = null;
-    let textBurritoPath: string | null = null;
+    let audioBurritoRel: string | null = null;
+    let textBurritoRel: string | null = null;
 
     for (const burrito of wrapper.contents?.burritos ?? []) {
       if (burrito.path === 'apmdata') {
         continue;
       }
-      const metaPath = path.join(
+      const metaPath = resolvePathUnderRoot(
         burritoWrapperPath,
         burrito.path,
         'metadata.json'
       );
-      if (!(await ipc.exists(metaPath))) {
+      if (!metaPath || !(await ipc.exists(metaPath))) {
         continue;
       }
       const meta = await readJson<Burrito>(metaPath);
@@ -203,25 +210,35 @@ export async function buildStructure(
         flavorNames.add(fn);
       }
       if (fn === 'audioTranslation') {
-        audioBurritoPath = path.join(burritoWrapperPath, burrito.path);
+        audioBurritoRel = burrito.path;
       }
       if (fn === 'textTranslation') {
-        textBurritoPath = path.join(burritoWrapperPath, burrito.path);
+        textBurritoRel = burrito.path;
       }
     }
 
-    if (!audioBurritoPath) {
-      audioBurritoPath = path.join(burritoWrapperPath, 'audio');
+    if (!audioBurritoRel) {
+      audioBurritoRel = 'audio';
     }
 
-    const audio = await readJson<Burrito>(
-      path.join(audioBurritoPath, 'metadata.json')
+    const audioMetaPath = resolvePathUnderRoot(
+      burritoWrapperPath,
+      audioBurritoRel,
+      'metadata.json'
     );
+    if (!audioMetaPath) {
+      throw new Error('Invalid audio burrito path');
+    }
+    const audio = await readJson<Burrito>(audioMetaPath);
 
     let text: Burrito | null = null;
-    if (textBurritoPath) {
-      const textMetaPath = path.join(textBurritoPath, 'metadata.json');
-      if (await ipc.exists(textMetaPath)) {
+    if (textBurritoRel) {
+      const textMetaPath = resolvePathUnderRoot(
+        burritoWrapperPath,
+        textBurritoRel,
+        'metadata.json'
+      );
+      if (textMetaPath && (await ipc.exists(textMetaPath))) {
         try {
           text = await readJson<Burrito>(textMetaPath);
         } catch {
@@ -270,14 +287,16 @@ export async function buildStructure(
         ? chaptersFromScopesForBook(text.ingredients, bookId)
         : [];
       const chaptersFromAudioFiles = await chaptersFromScriptureFilesForBook(
-        audioBurritoPath,
+        burritoWrapperPath,
+        audioBurritoRel,
         audio,
         bookId
       );
       const chaptersFromTextFiles =
-        text && textBurritoPath
+        text && textBurritoRel
           ? await chaptersFromScriptureFilesForBook(
-              textBurritoPath,
+              burritoWrapperPath,
+              textBurritoRel,
               text,
               bookId
             )

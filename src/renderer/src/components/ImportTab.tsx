@@ -96,6 +96,7 @@ import {
 } from '../utils/parseBurritoMetadata';
 import { convertWrapperToPTFs } from '../utils/burritoConversion';
 import FilterContent from './FilterContent';
+import { preprocessTextTranslationBurritoToUsfm } from '../burrito/preprocessTextTranslationBurritoToUsfm';
 
 const ipc = window?.api as MainAPI;
 
@@ -526,6 +527,11 @@ export function ImportTab(props: IProps) {
             if (books.length === 0) {
               return [];
             }
+
+            // Renderer-only: ensure `textTranslation` contains `text/usfm` so the
+            // Node migration script can populate `mediafile.transcription`.
+            await preprocessTextTranslationBurritoToUsfm(dir);
+
             flushSync(() => {
               setBurritoPrepareProgress({
                 phase: 'convert',
