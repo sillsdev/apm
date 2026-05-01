@@ -494,8 +494,6 @@ export const ProjectCard = (props: IProps) => {
                   sx={{
                     minWidth: 0,
                     flex: 1,
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
                   }}
                 >
                   {project?.attributes?.name}
