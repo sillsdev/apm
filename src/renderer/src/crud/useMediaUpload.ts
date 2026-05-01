@@ -107,13 +107,15 @@ export const useMediaUpload = ({
     } else mediaIdRef.current = '';
     const finishUpload = () => {
       dispatch(actions.uploadComplete() as any);
-      const total = fileList.current?.length ?? 1;
-      const ok = mediaIdRef.current ? 1 : 0;
-      showMessage(
-        t.uploadComplete
-          .replace('{0}', String(ok))
-          .replace('{1}', String(total))
-      );
+      if (mediaIdRef.current) {
+        const total = fileList.current?.length ?? 1;
+        const ok = 1;
+        showMessage(
+          t.uploadComplete
+            .replace('{0}', String(ok))
+            .replace('{1}', String(total))
+        );
+      }
       void afterUploadCb(mediaIdRef.current);
     };
     if (!getGlobal('offline') && mediaIdRef.current) {
