@@ -1,5 +1,6 @@
 import React from 'react';
-import SwitchTeams from './SwitchTeams';
+import { SwitchTeamsGuard, SwitchTeamsUnguarded } from './SwitchTeams';
+import { TeamContext } from '../context/TeamContext';
 import { GlobalProvider } from '../context/GlobalContext';
 import { Provider } from 'react-redux';
 import {
@@ -190,7 +191,7 @@ describe('SwitchTeams', () => {
             <DataProvider dataStore={memory}>
               <UnsavedProvider>
                 <TokenContext.Provider value={mockTokenContextValue as any}>
-                  <SwitchTeams />
+                  <SwitchTeamsUnguarded />
                 </TokenContext.Provider>
               </UnsavedProvider>
             </DataProvider>
@@ -456,5 +457,95 @@ describe('SwitchTeams', () => {
     // Settings button should not be visible on mobile
     cy.get('[data-testid="personal-settings"]').should('not.exist');
     cy.get('[data-testid^="team-settings"]').should('not.exist');
+  });
+});
+
+describe('SwitchTeamsGuard', () => {
+  const papLikeTeamState = {
+    teams: [],
+    personalTeam: 'personal-team-id',
+    teamDirectoryReady: true,
+  };
+
+  const mountGuard = (
+    globalOverrides: Record<string, unknown>,
+    teamState: typeof papLikeTeamState
+  ) => {
+    const mockTeamCtx = {
+      state: { ...papLikeTeamState, ...teamState } as any,
+      setState: cy.stub(),
+    };
+    cy.mount(
+      <MemoryRouter initialEntries={['/switch-teams']}>
+        <Provider store={mockStore}>
+          <GlobalProvider
+            init={{
+              coordinator: mockCoordinator,
+              errorReporter: bugsnagClient,
+              fingerprint: 'test-fingerprint',
+              memory: createMockMemory(),
+              lang: 'en',
+              latestVersion: '',
+              loadComplete: false,
+              offlineOnly: false,
+              organization: '',
+              releaseDate: '',
+              user: 'test-user-id',
+              alertOpen: false,
+              autoOpenAddMedia: false,
+              changed: false,
+              connected: true,
+              dataChangeCount: 0,
+              developer: false,
+              enableOffsite: false,
+              home: false,
+              importexportBusy: false,
+              orbitRetries: 0,
+              orgRole: undefined,
+              plan: '',
+              playingMediaId: '',
+              progress: 0,
+              project: '',
+              projectsLoaded: [],
+              projType: '',
+              remoteBusy: false,
+              saveResult: undefined,
+              snackAlert: undefined,
+              snackMessage: (<></>) as React.JSX.Element,
+              offline: false,
+              mobileView: false,
+              ...globalOverrides,
+            }}
+          >
+            <TeamContext.Provider value={mockTeamCtx as any}>
+              <SwitchTeamsGuard>
+                <div id="TeamsScreen">picker</div>
+              </SwitchTeamsGuard>
+            </TeamContext.Provider>
+          </GlobalProvider>
+        </Provider>
+      </MemoryRouter>
+    );
+  };
+
+  it('shows picker when offline and not offlineOnly (empty teams is not reliable PAP)', () => {
+    mountGuard(
+      { offline: true, offlineOnly: false },
+      papLikeTeamState
+    );
+    cy.get('#TeamsScreen').should('exist');
+  });
+
+  it('redirects when online and PAP-like', () => {
+    mountGuard({ offline: false, offlineOnly: false }, papLikeTeamState);
+    cy.get('#TeamsScreen').should('not.exist');
+  });
+
+  it('redirects when offlineOnly and PAP-like', () => {
+    mountGuard(
+      { offline: true, offlineOnly: true },
+      papLikeTeamState
+    );
+    cy.get('#TeamsScreen').should('not.exist');
   });
 });

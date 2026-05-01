@@ -191,6 +191,7 @@ describe('ProjectsScreen', () => {
         planTypes: [],
         isDeleting: false,
         teams: teams,
+        teamDirectoryReady: true,
         personalTeam: personalTeam,
         personalProjects: [],
         teamProjects: () => [],
@@ -444,27 +445,16 @@ describe('ProjectsScreen', () => {
     cy.get('#ProjectsScreen').should('exist');
   });
 
-  it('should navigate to /switch-teams when teamId is undefined', () => {
+  it('should navigate to switch-teams when teamId is undefined (picker decides PAP redirect)', () => {
     mountWithoutTeam({ planId: 'test-plan-id' });
 
-    // Wait for the navigation effect to occur
-    // The component calls handleSwitchTeams() in useEffect when teamId is undefined,
-    // which removes the plan from localStorage and navigates to /switch-teams
     cy.wait(200).then(() => {
-      // Verify that navigation occurred by checking side effects of handleSwitchTeams
-      // handleSwitchTeams removes LocalKey.plan before navigating to /switch-teams
       cy.window().then((win) => {
-        // The plan should be removed (side effect of handleSwitchTeams, proving it was called)
-        // This confirms that navigation to /switch-teams was triggered
+        expect(win.localStorage.getItem(localUserKey(LocalKey.team))).to.be.null;
         expect(win.localStorage.getItem(LocalKey.plan)).to.be.null;
-        // Verify teamId is still undefined
-        expect(win.localStorage.getItem(localUserKey(LocalKey.team))).to.be
-          .null;
       });
     });
 
-    // The component should not render its content when teamId is missing
-    // (it returns null early)
     cy.get('#ProjectsScreen').should('not.exist');
   });
 
@@ -477,7 +467,7 @@ describe('ProjectsScreen', () => {
     const mockTeam = createTestTeam(teamId);
 
     // Mount with teamId defined - this should NOT trigger navigation
-    // The component has: if (!teamId) handleSwitchTeams();
+    // The component navigates to /switch-teams when teamId is missing (after personalTeam is set).
     // Since teamId is defined, handleSwitchTeams should not be called
     mountProjectsScreen(createInitialState(), ['/projects'], {
       isAdmin: () => false,

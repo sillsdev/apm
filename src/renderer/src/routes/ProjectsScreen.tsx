@@ -45,6 +45,7 @@ export const ProjectsScreenInner: React.FC = () => {
     personalTeam,
     cardStrings,
     teams,
+    teamDirectoryReady,
     isAdmin,
   } = ctx.state;
   const t = cardStrings;
@@ -65,13 +66,13 @@ export const ProjectsScreenInner: React.FC = () => {
     navigate('/switch-teams');
   }, [navigate]);
 
-  // Handle missing teamId with useEffect to prevent infinite render loops
+  // Missing teamId: always open picker; SwitchTeamsGuard redirects true PAP-like users back to /team
   React.useEffect(() => {
-    if (!teamId) {
-      handleSwitchTeams();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [handleSwitchTeams]);
+    const currentId = localStorage.getItem(localUserKey(LocalKey.team));
+    if (currentId) return;
+    if (!personalTeam) return;
+    handleSwitchTeams();
+  }, [personalTeam, handleSwitchTeams]);
 
   React.useEffect(() => {
     startClear();
@@ -81,6 +82,11 @@ export const ProjectsScreenInner: React.FC = () => {
   }, []);
 
   const isPersonal = teamId === personalTeam;
+  const isPapLike =
+    Boolean(personalTeam) &&
+    isPersonal &&
+    teams.length === 0 &&
+    teamDirectoryReady;
   const projects = React.useMemo(
     () => (isPersonal ? personalProjects : teamId ? teamProjects(teamId) : []),
     [isPersonal, personalProjects, teamId, teamProjects]
@@ -270,17 +276,19 @@ export const ProjectsScreenInner: React.FC = () => {
               {t.addNewProject || 'Add New Project...'}
             </Button>
           )}
-          <Button
-            id="ProjectActSwitch"
-            variant="outlined"
-            onClick={handleSwitchTeams}
-            sx={(theme) => ({
-              minWidth: 120,
-              bgcolor: theme.palette.common.white,
-            })}
-          >
-            {t.switchTeams || 'Switch Teams'}
-          </Button>
+          {!isPapLike && (
+            <Button
+              id="ProjectActSwitch"
+              variant="outlined"
+              onClick={handleSwitchTeams}
+              sx={(theme) => ({
+                minWidth: 120,
+                bgcolor: theme.palette.common.white,
+              })}
+            >
+              {t.switchTeams || 'Switch Teams'}
+            </Button>
+          )}
         </Stack>
       </Box>
       <BigDialog

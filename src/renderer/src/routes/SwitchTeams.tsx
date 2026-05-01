@@ -23,6 +23,7 @@ import { TeamContext } from '../context/TeamContext';
 import { useGlobal } from '../context/useGlobal';
 import { useTeamActions } from '../components/Team/useTeamActions';
 import { SharedContentCreatorDialog } from '../components/Team/SharedContentCreatorDialog';
+import StickyRedirect from '../components/StickyRedirect';
 
 interface ISettingsButtonProps {
   label: string;
@@ -384,6 +385,41 @@ const useSettingsHandlers = () => {
   return ctx;
 };
 
+/** Work Alone / PAP-like: only personal team exists — redirect to team home instead of picker */
+export const SwitchTeamsGuard: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
+  const ctx = React.useContext(TeamContext);
+  const { teams, personalTeam, teamDirectoryReady } = ctx.state;
+  const [isOffline] = useGlobal('offline');
+  const [offlineOnly] = useGlobal('offlineOnly');
+  // When offline && !offlineOnly, getTeams() may be empty because shared teams
+  // without local projects are filtered out — not the same as true PAP-only.
+  const isPapLike =
+    Boolean(personalTeam) &&
+    teams.length === 0 &&
+    teamDirectoryReady &&
+    (!isOffline || offlineOnly);
+
+  React.useEffect(() => {
+    if (!isPapLike || !personalTeam) return;
+    const key = localUserKey(LocalKey.team);
+    if (localStorage.getItem(key) !== personalTeam) {
+      localStorage.setItem(key, personalTeam);
+    }
+  }, [isPapLike, personalTeam]);
+
+  if (!personalTeam) {
+    return null;
+  }
+
+  if (isPapLike) {
+    return <StickyRedirect to="/team" />;
+  }
+
+  return <>{children}</>;
+};
+
 const MainTeamsLayout: React.FC = () => {
   const { openSettingsForTeam, openSettingsForPersonal } =
     useSettingsHandlers();
@@ -411,6 +447,24 @@ const MainTeamsLayout: React.FC = () => {
 };
 
 export const SwitchTeams: React.FC = () => {
+  return (
+    <Box sx={{ width: '100%' }}>
+      <TeamProvider>
+        <>
+          <AppHead />
+          <SwitchTeamsGuard>
+            <SettingsProvider>
+              <MainTeamsLayout />
+            </SettingsProvider>
+          </SwitchTeamsGuard>
+        </>
+      </TeamProvider>
+    </Box>
+  );
+};
+
+/** Same UI as the route without the PAP-like redirect; CT uses empty orbit data so `teams` stays []. */
+export const SwitchTeamsUnguarded: React.FC = () => {
   return (
     <Box sx={{ width: '100%' }}>
       <TeamProvider>
