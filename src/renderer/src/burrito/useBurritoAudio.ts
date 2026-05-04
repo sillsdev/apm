@@ -174,7 +174,9 @@ export const useBurritoAudio = (teamId: string) => {
         const id = m.keys?.remoteId || m.id;
         await fetchUrl({ id, cancelled: () => false });
         if (!(await ipc?.exists(mediaName))) {
-          showMessage(`Failed to download ${truncateForMessage(attr.audioUrl)}`);
+          showMessage(
+            `Failed to download ${truncateForMessage(attr.audioUrl)}`
+          );
           return;
         }
       }

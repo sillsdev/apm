@@ -24,7 +24,10 @@ const idStem = (m: MediaFileD): string => {
  * rather than a real file path, using `path.parse(originalFile).name` produces unusable paths.
  */
 const inlineTextShouldUseIdStem = (m: MediaFileD): boolean => {
-  const ct = (m.attributes.contentType || '').split(';')[0].trim().toLowerCase();
+  const ct = (m.attributes.contentType || '')
+    .split(';')[0]
+    .trim()
+    .toLowerCase();
   if (!ct.startsWith('text/')) return false;
   const raw = m.attributes.originalFile || '';
   if (raw.length > MAX_STEM_LEN) return true;
@@ -76,7 +79,7 @@ export const getBurritoMediaExportStem = (m: MediaFileD): string => {
 
   const base = safeBasename(raw);
   const { name } = removeExtension(base);
-  let stem = name || 'media';
+  const stem = name || 'media';
 
   if (stem.length > MAX_STEM_LEN) {
     return idStem(m);

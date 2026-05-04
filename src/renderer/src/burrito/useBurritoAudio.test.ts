@@ -768,7 +768,8 @@ describe('useBurritoAudio', () => {
     expect(ipc.copyFile).not.toHaveBeenCalled();
     expect(ipc.write).toHaveBeenCalled();
     const textWrite = (ipc.write as jest.Mock).mock.calls.find(
-      (c: unknown[]) => typeof c[1] === 'string' && (c[1] as string) === longBody
+      (c: unknown[]) =>
+        typeof c[1] === 'string' && (c[1] as string) === longBody
     );
     expect(textWrite).toBeDefined();
     expect((textWrite![0] as string).endsWith('.txt')).toBe(true);

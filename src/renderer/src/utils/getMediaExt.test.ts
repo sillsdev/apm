@@ -21,4 +21,24 @@ describe('getMediaExt', () => {
     } as MediaFileD;
     expect(getMediaExt(media)).toBe('mp3');
   });
+
+  it('uses contentType for webm when basename has no valid extension', () => {
+    const media = {
+      attributes: {
+        originalFile: 'inline-recording',
+        contentType: 'audio/webm;codecs=opus',
+      },
+    } as MediaFileD;
+    expect(getMediaExt(media)).toBe('webm');
+  });
+
+  it('uses opus extension for audio/opus, not ogg', () => {
+    const media = {
+      attributes: {
+        originalFile: 'clip',
+        contentType: 'audio/opus',
+      },
+    } as MediaFileD;
+    expect(getMediaExt(media)).toBe('opus');
+  });
 });

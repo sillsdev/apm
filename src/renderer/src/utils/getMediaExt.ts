@@ -1,5 +1,6 @@
 import path from 'path-browserify';
 import { MediaFileD } from '@model/mediafile';
+import { extensionFromAudioContentType } from './mimeTypes';
 import { removeExtension } from './removeExtension';
 
 /** Last path segment only, so URL/path strings do not produce bogus "extensions" with separators. */
@@ -17,14 +18,13 @@ const extFromContentType = (m: MediaFileD): string => {
     .split(';')[0]
     .trim()
     .toLowerCase();
-  if (ct === 'audio/mpeg') return 'mp3';
-  if (ct === 'audio/mp4' || ct === 'audio/x-m4a' || ct === 'audio/m4a')
-    return 'm4a';
-  if (ct === 'audio/wav' || ct === 'audio/x-wav') return 'wav';
-  if (ct === 'audio/ogg' || ct === 'audio/opus') return 'ogg';
+  const audioExt = extensionFromAudioContentType(
+    m.attributes.contentType || ''
+  );
+  if (audioExt) return audioExt;
   if (ct === 'text/markdown') return 'md';
   if (ct.startsWith('text/')) return 'txt';
-  if (ct.startsWith('audio/')) return 'mp3';
+  if (ct.startsWith('audio/')) return 'dat';
   return 'dat';
 };
 
