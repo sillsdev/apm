@@ -281,6 +281,7 @@ export function ScriptureTable(props: IProps) {
   const [defaultFilename, setDefaultFilename] = useState('');
   const [uploadType, setUploadType] = useState<UploadType>();
   const [curGraphicRights, setCurGraphicRights] = useState('');
+  const [customRightsDraft, setCustomRightsDraft] = useState('');
   const [graphicFullsizeUrl, setGraphicFullsizeUrl] = useState('');
   const [warningVisible, setWarningVisible] = useState<boolean>(false);
   const graphicCreate = useGraphicCreate();
@@ -1231,6 +1232,7 @@ export function ScriptureTable(props: IProps) {
       uploadItem.current = ws;
       setGraphicFullsizeUrl(ws?.graphicFullSizeUrl ?? '');
       setCurGraphicRights(ws?.graphicRights ?? '');
+      setCustomRightsDraft(ws?.graphicRights ?? '');
     });
   };
   useEffect(() => {
@@ -2074,6 +2076,7 @@ export function ScriptureTable(props: IProps) {
   const onFiles = (files: File[]) => {
     if (files.length > 0) {
       setGraphicFullsizeUrl(URL.createObjectURL(files[0] as File));
+      setCustomRightsDraft('');
     } else setGraphicFullsizeUrl('');
   };
 
@@ -2208,6 +2211,7 @@ export function ScriptureTable(props: IProps) {
         dimension={dimensions}
         finish={handleFinish}
         onSelectedRights={handlePickerRights}
+        onCustomCommit={() => handleRightsChange(customRightsDraft)}
         currentGraphic={
           (graphicFullsizeUrl || curGraphicRights) && (
             <Box>
@@ -2239,7 +2243,7 @@ export function ScriptureTable(props: IProps) {
             dimension={dimensions}
             defaultFilename={defaultFilename}
             showMessage={showMessage}
-            hasRights={Boolean(curGraphicRights)}
+            hasRights={Boolean(customRightsDraft)}
             finish={handleFinish}
             cancelled={cancelled}
             uploadType={uploadType as UploadType}
@@ -2249,8 +2253,8 @@ export function ScriptureTable(props: IProps) {
             metadata={
               <Box>
                 <GraphicRights
-                  value={curGraphicRights}
-                  onChange={handleRightsChange}
+                  value={customRightsDraft}
+                  onChange={setCustomRightsDraft}
                 />
               </Box>
             }

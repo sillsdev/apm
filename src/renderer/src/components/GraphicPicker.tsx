@@ -276,6 +276,8 @@ export interface GraphicPickerProps {
   finish: (images: CompressedImages[]) => void;
   /** Called when a Bible image is chosen so caller can set rights */
   onSelectedRights?: (rights: string | null | undefined) => void;
+  /** Called when Custom tab Set As Graphic is clicked, before upload */
+  onCustomCommit?: () => void;
 }
 
 export function GraphicPicker({
@@ -294,6 +296,7 @@ export function GraphicPicker({
   defaultFilename,
   finish,
   onSelectedRights,
+  onCustomCommit,
 }: GraphicPickerProps) {
   const [qBook, setQBook] = useState<string | undefined>(undefined);
   const [qRef, setQRef] = useState<string | undefined>(undefined);
@@ -525,6 +528,7 @@ export function GraphicPicker({
   const handleSetGraphic = useCallback(() => {
     userTabRef.current = false;
     if (tabValue === 1) {
+      onCustomCommit?.();
       if (mediaUploadControlsRef?.current?.handleAddOrSave) {
         mediaUploadControlsRef.current.handleAddOrSave();
       }
@@ -567,7 +571,7 @@ export function GraphicPicker({
         });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tabValue, selectedId, images, onOpen, onSelectedRights]);
+  }, [tabValue, selectedId, images, onOpen, onSelectedRights, onCustomCommit]);
 
   const handleTabChange = useCallback(
     (_event: React.SyntheticEvent, newValue: number) => {
