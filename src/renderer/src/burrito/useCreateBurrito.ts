@@ -390,6 +390,7 @@ export const useCreateBurrito = (teamId: string) => {
               ArtifactTypeSlug.Resource,
               ArtifactTypeSlug.SharedResource,
               ArtifactTypeSlug.ProjectResource,
+              ArtifactTypeSlug.AIResource,
             ],
             convertToMp3,
           });

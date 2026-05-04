@@ -372,4 +372,410 @@ describe('useBurritoAudio', () => {
       VernacularTag: null,
     }));
   });
+
+  it('section resources with same version and extension use distinct paths per sequenceNum', async () => {
+    const ipc = makeIpc();
+    const { renderHook, act, useBurritoAudio } = loadAudioForApi(ipc);
+
+    /* eslint-disable @typescript-eslint/no-require-imports -- resetModules pattern */
+    const { useOrbitData } = require('../hoc/useOrbitData');
+    const { useArtifactType } = require('../crud/useArtifactType');
+    const { ArtifactTypeSlug } = require('../crud/artifactTypeSlug');
+    /* eslint-enable @typescript-eslint/no-require-imports */
+
+    useArtifactType.mockImplementation(() => ({
+      slugFromId: jest.fn(() => 'resource'),
+      VernacularTag: null,
+    }));
+
+    const orbitMedia = [
+      {
+        id: 'm-a',
+        type: 'mediafile',
+        keys: { remoteId: 'remote-a' },
+        attributes: {
+          audioUrl: 'https://example.test/a.mp3',
+          originalFile: 'a.mp3',
+          contentType: 'audio/mpeg',
+          versionNumber: 1,
+          segments: '{}',
+        },
+        relationships: {
+          plan: { data: { type: 'plan', id: 'plan1' } },
+          passage: { data: null },
+          artifactType: { data: { type: 'artifacttype', id: 'at-r' } },
+        },
+      },
+      {
+        id: 'm-b',
+        type: 'mediafile',
+        keys: { remoteId: 'remote-b' },
+        attributes: {
+          audioUrl: 'https://example.test/b.mp3',
+          originalFile: 'b.mp3',
+          contentType: 'audio/mpeg',
+          versionNumber: 1,
+          segments: '{}',
+        },
+        relationships: {
+          plan: { data: { type: 'plan', id: 'plan1' } },
+          passage: { data: null },
+          artifactType: { data: { type: 'artifacttype', id: 'at-r' } },
+        },
+      },
+    ];
+
+    const orbitSectionResources = [
+      {
+        id: 'sr-2',
+        type: 'sectionresource',
+        attributes: {
+          sequenceNum: 2,
+          description: '',
+          dateCreated: '',
+          dateUpdated: '',
+          lastModifiedBy: 0,
+        },
+        relationships: {
+          section: { data: { type: 'section', id: 's1' } },
+          mediafile: { data: { type: 'mediafile', id: 'm-b' } },
+        },
+      },
+      {
+        id: 'sr-1',
+        type: 'sectionresource',
+        attributes: {
+          sequenceNum: 1,
+          description: '',
+          dateCreated: '',
+          dateUpdated: '',
+          lastModifiedBy: 0,
+        },
+        relationships: {
+          section: { data: { type: 'section', id: 's1' } },
+          mediafile: { data: { type: 'mediafile', id: 'm-a' } },
+        },
+      },
+    ];
+
+    const orbitPassages = [
+      {
+        id: 'p1',
+        type: 'passage',
+        attributes: {
+          book: 'GEN',
+          reference: 'GEN 1:1',
+          startChapter: 1,
+          sequencenum: 1,
+        },
+        relationships: {
+          section: { data: { type: 'section', id: 's1' } },
+          sharedResource: { data: null },
+        },
+      },
+    ];
+
+    useOrbitData.mockImplementation((type: string) => {
+      if (type === 'mediafile') return orbitMedia;
+      if (type === 'passage') return orbitPassages;
+      if (type === 'sectionresource') return orbitSectionResources;
+      if (type === 'sharedresource') return [];
+      return [];
+    });
+
+    const metadata = burritoFixture();
+    const { result } = renderHook(() => useBurritoAudio(teamId));
+
+    await act(async () => {
+      await result.current({
+        metadata,
+        bible: bibleFixture,
+        book: 'GEN',
+        bookPath: '/burrito/GEN',
+        preLen: 0,
+        sections: [
+          {
+            id: 's1',
+            type: 'section',
+            relationships: {
+              plan: { data: { type: 'plan', id: 'plan1' } },
+            },
+          } as SectionD,
+        ],
+        passageTypeFilter: null,
+        flavorTypeName: 'x-resources',
+        artifactTypeFilter: [ArtifactTypeSlug.Resource],
+      });
+    });
+
+    const destPaths = (ipc.copyFile as jest.Mock).mock.calls.map(
+      (c: unknown[]) => c[1] as string
+    );
+    const sectionDestPaths = destPaths.filter((p) => p.includes('-section-'));
+    expect(sectionDestPaths).toHaveLength(2);
+    expect(sectionDestPaths.some((p) => p.includes('r1v1.'))).toBe(true);
+    expect(sectionDestPaths.some((p) => p.includes('r2v1.'))).toBe(true);
+    expect(sectionDestPaths[0]).not.toBe(sectionDestPaths[1]);
+
+    useArtifactType.mockImplementation(() => ({
+      slugFromId: jest.fn(() => 'vernacular'),
+      VernacularTag: null,
+    }));
+  });
+
+  it('skips plan-root copy for media already exported as section resources', async () => {
+    const ipc = makeIpc();
+    const { renderHook, act, useBurritoAudio } = loadAudioForApi(ipc);
+
+    /* eslint-disable @typescript-eslint/no-require-imports -- resetModules pattern */
+    const { useOrbitData } = require('../hoc/useOrbitData');
+    const { useArtifactType } = require('../crud/useArtifactType');
+    const { ArtifactTypeSlug } = require('../crud/artifactTypeSlug');
+    /* eslint-enable @typescript-eslint/no-require-imports */
+
+    useArtifactType.mockImplementation(() => ({
+      slugFromId: jest.fn(() => 'resource'),
+      VernacularTag: null,
+    }));
+
+    const orbitMedia = [
+      {
+        id: 'm-section',
+        type: 'mediafile',
+        keys: { remoteId: 'remote-s' },
+        attributes: {
+          audioUrl: 'https://example.test/section.mp3',
+          originalFile: 'section.mp3',
+          contentType: 'audio/mpeg',
+          versionNumber: 1,
+          segments: '{}',
+        },
+        relationships: {
+          plan: { data: { type: 'plan', id: 'plan1' } },
+          passage: { data: null },
+          artifactType: { data: { type: 'artifacttype', id: 'at-r' } },
+        },
+      },
+      {
+        id: 'm-plan-only',
+        type: 'mediafile',
+        keys: { remoteId: 'remote-p' },
+        attributes: {
+          audioUrl: 'https://example.test/plan-only.mp3',
+          originalFile: 'plan-only.mp3',
+          contentType: 'audio/mpeg',
+          versionNumber: 1,
+          segments: '{}',
+        },
+        relationships: {
+          plan: { data: { type: 'plan', id: 'plan1' } },
+          passage: { data: null },
+          artifactType: { data: { type: 'artifacttype', id: 'at-r' } },
+        },
+      },
+    ];
+
+    const orbitSectionResources = [
+      {
+        id: 'sr-1',
+        type: 'sectionresource',
+        attributes: {
+          sequenceNum: 1,
+          description: '',
+          dateCreated: '',
+          dateUpdated: '',
+          lastModifiedBy: 0,
+        },
+        relationships: {
+          section: { data: { type: 'section', id: 's1' } },
+          mediafile: { data: { type: 'mediafile', id: 'm-section' } },
+        },
+      },
+    ];
+
+    const orbitPassages = [
+      {
+        id: 'p1',
+        type: 'passage',
+        attributes: {
+          book: 'GEN',
+          reference: 'GEN 1:1',
+          startChapter: 1,
+          sequencenum: 1,
+        },
+        relationships: {
+          section: { data: { type: 'section', id: 's1' } },
+          sharedResource: { data: null },
+        },
+      },
+    ];
+
+    useOrbitData.mockImplementation((type: string) => {
+      if (type === 'mediafile') return orbitMedia;
+      if (type === 'passage') return orbitPassages;
+      if (type === 'sectionresource') return orbitSectionResources;
+      if (type === 'sharedresource') return [];
+      return [];
+    });
+
+    const metadata = burritoFixture();
+    const { result } = renderHook(() => useBurritoAudio(teamId));
+
+    await act(async () => {
+      await result.current({
+        metadata,
+        bible: bibleFixture,
+        book: 'GEN',
+        bookPath: '/burrito/GEN',
+        preLen: 0,
+        sections: [
+          {
+            id: 's1',
+            type: 'section',
+            relationships: {
+              plan: { data: { type: 'plan', id: 'plan1' } },
+            },
+          } as SectionD,
+        ],
+        passageTypeFilter: null,
+        flavorTypeName: 'x-resources',
+        artifactTypeFilter: [ArtifactTypeSlug.Resource],
+      });
+    });
+
+    const copyDests = (ipc.copyFile as jest.Mock).mock.calls.map(
+      (c: unknown[]) => c[1] as string
+    );
+    const sectionCopies = copyDests.filter((p) => p.includes('-section-'));
+    const planRootCopies = copyDests.filter(
+      (p) => p.includes('/burrito/GEN/') && !p.includes('/001/')
+    );
+    expect(sectionCopies).toHaveLength(1);
+    expect(sectionCopies[0]).toMatch(/-section-/);
+    expect(planRootCopies).toHaveLength(1);
+    expect(planRootCopies[0]).toContain('plan-only');
+
+    useArtifactType.mockImplementation(() => ({
+      slugFromId: jest.fn(() => 'vernacular'),
+      VernacularTag: null,
+    }));
+  });
+
+  it('writes inline text/plain to burrito without audioUrl', async () => {
+    const ipc = makeIpc();
+    const { renderHook, act, useBurritoAudio } = loadAudioForApi(ipc);
+
+    /* eslint-disable @typescript-eslint/no-require-imports */
+    const { useOrbitData } = require('../hoc/useOrbitData');
+    const { useArtifactType } = require('../crud/useArtifactType');
+    const { ArtifactTypeSlug } = require('../crud/artifactTypeSlug');
+    /* eslint-enable @typescript-eslint/no-require-imports */
+
+    useArtifactType.mockImplementation(() => ({
+      slugFromId: jest.fn(() => 'resource'),
+      VernacularTag: null,
+    }));
+
+    const longBody = `${'x'.repeat(500)}`;
+    const orbitMedia = [
+      {
+        id: 'm-text',
+        type: 'mediafile',
+        keys: { remoteId: 'remote-t' },
+        attributes: {
+          audioUrl: '',
+          originalFile: longBody,
+          contentType: 'text/plain',
+          versionNumber: 1,
+          segments: '{}',
+        },
+        relationships: {
+          plan: { data: { type: 'plan', id: 'plan1' } },
+          passage: { data: null },
+          artifactType: { data: { type: 'artifacttype', id: 'at-r' } },
+        },
+      },
+    ];
+
+    const orbitSectionResources = [
+      {
+        id: 'sr-t',
+        type: 'sectionresource',
+        attributes: {
+          sequenceNum: 1,
+          description: '',
+          dateCreated: '',
+          dateUpdated: '',
+          lastModifiedBy: 0,
+        },
+        relationships: {
+          section: { data: { type: 'section', id: 's1' } },
+          mediafile: { data: { type: 'mediafile', id: 'm-text' } },
+        },
+      },
+    ];
+
+    const orbitPassages = [
+      {
+        id: 'p1',
+        type: 'passage',
+        attributes: {
+          book: 'GEN',
+          reference: 'GEN 1:1',
+          startChapter: 1,
+          sequencenum: 1,
+        },
+        relationships: {
+          section: { data: { type: 'section', id: 's1' } },
+          sharedResource: { data: null },
+        },
+      },
+    ];
+
+    useOrbitData.mockImplementation((type: string) => {
+      if (type === 'mediafile') return orbitMedia;
+      if (type === 'passage') return orbitPassages;
+      if (type === 'sectionresource') return orbitSectionResources;
+      if (type === 'sharedresource') return [];
+      return [];
+    });
+
+    const metadata = burritoFixture();
+    const { result } = renderHook(() => useBurritoAudio(teamId));
+
+    await act(async () => {
+      await result.current({
+        metadata,
+        bible: bibleFixture,
+        book: 'GEN',
+        bookPath: '/burrito/GEN',
+        preLen: 0,
+        sections: [
+          {
+            id: 's1',
+            type: 'section',
+            relationships: {
+              plan: { data: { type: 'plan', id: 'plan1' } },
+            },
+          } as SectionD,
+        ],
+        passageTypeFilter: null,
+        flavorTypeName: 'x-resources',
+        artifactTypeFilter: [ArtifactTypeSlug.Resource],
+      });
+    });
+
+    expect(ipc.copyFile).not.toHaveBeenCalled();
+    expect(ipc.write).toHaveBeenCalled();
+    const textWrite = (ipc.write as jest.Mock).mock.calls.find(
+      (c: unknown[]) => typeof c[1] === 'string' && (c[1] as string) === longBody
+    );
+    expect(textWrite).toBeDefined();
+    expect((textWrite![0] as string).endsWith('.txt')).toBe(true);
+
+    useArtifactType.mockImplementation(() => ({
+      slugFromId: jest.fn(() => 'vernacular'),
+      VernacularTag: null,
+    }));
+  });
 });

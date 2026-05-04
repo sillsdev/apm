@@ -34,11 +34,31 @@ import { useComputeRef } from '../components/PassageDetail/Internalization/useCo
 import { MainAPI } from '@model/main-api';
 import { Stats } from 'fs';
 import getMediaExt from '../utils/getMediaExt';
+import getBurritoMediaExportStem from '../utils/burritoMediaFileStem';
 import {
   BURRITO_AUDIO_FILE_EXTENSIONS,
   inferAudioContentType,
 } from '../utils/mimeTypes';
 const ipc = window?.api as MainAPI;
+
+const truncateForMessage = (s: string, maxLen = 120): string => {
+  const t = (s ?? '').trim();
+  if (t.length <= maxLen) return t;
+  return `${t.slice(0, maxLen - 1)}…`;
+};
+
+const primaryContentType = (m: MediaFileD): string =>
+  (m.attributes.contentType || '').split(';')[0]?.trim().toLowerCase() ?? '';
+
+const looksLikeHttpUrl = (s: string): boolean =>
+  /^https?:\/\//i.test((s || '').trim());
+
+const inlineTextExtension = (contentType: string): string => {
+  const sub = contentType.split('/')[1]?.trim() || '';
+  if (sub === 'html' || sub === 'xhtml+xml') return '.html';
+  if (sub === 'markdown') return '.md';
+  return '.txt';
+};
 
 interface Props {
   metadata: Burrito;
@@ -120,6 +140,17 @@ export const useBurritoAudio = (teamId: string) => {
             : () => true
         );
 
+    const stripTrailingExtension = (filePath: string): string => {
+      const ext = path.extname(filePath);
+      return ext ? filePath.slice(0, -ext.length) : filePath;
+    };
+
+    const ensureParentDir = async (filePath: string) => {
+      const dir = path.dirname(filePath);
+      if (!dir || dir === '.' || dir === '/') return;
+      await ipc?.createFolder(dir);
+    };
+
     const processMediaFile = async (
       m: MediaFileD,
       destPath: string,
@@ -131,7 +162,9 @@ export const useBurritoAudio = (teamId: string) => {
       // const ext = getExtention(m);
       // compressions.add(ext ?? '');
       if (!attr.audioUrl) {
-        showMessage(`No media URL for ${contextLabel} (${attr.originalFile})`);
+        showMessage(
+          `No media URL for ${truncateForMessage(contextLabel)} (${truncateForMessage(attr.originalFile)})`
+        );
         return;
       }
       const local = { localname: '' };
@@ -141,10 +174,11 @@ export const useBurritoAudio = (teamId: string) => {
         const id = m.keys?.remoteId || m.id;
         await fetchUrl({ id, cancelled: () => false });
         if (!(await ipc?.exists(mediaName))) {
-          showMessage(`Failed to download ${attr.audioUrl}`);
+          showMessage(`Failed to download ${truncateForMessage(attr.audioUrl)}`);
           return;
         }
       }
+      await ensureParentDir(destPath);
       await ipc?.copyFile(mediaName, destPath);
       let finalPath = destPath;
       if (convertToMp3) {
@@ -155,7 +189,9 @@ export const useBurritoAudio = (teamId: string) => {
             : `${destPath}.mp3`;
           const convResult = await ipc?.convertToMp3(destPath, mp3Path);
           if (typeof convResult === 'string') {
-            showMessage(`Failed to convert ${contextLabel} to mp3`);
+            showMessage(
+              `Failed to convert ${truncateForMessage(contextLabel)} to mp3`
+            );
             return;
           }
           await ipc?.delete(destPath);
@@ -215,11 +251,14 @@ export const useBurritoAudio = (teamId: string) => {
       scopeRef: string
     ) => {
       const attr = m.attributes;
-      destPath += '.md';
-      ipc?.write(destPath, attr.originalFile);
-      const docid = destPath.substring(preLen);
+      const finalPath = destPath.toLowerCase().endsWith('.md')
+        ? destPath
+        : `${stripTrailingExtension(destPath)}.md`;
+      await ensureParentDir(finalPath);
+      await ipc?.write(finalPath, attr.originalFile);
+      const docid = finalPath.substring(preLen);
       ingredients[docid] = {
-        checksum: { md5: await ipc?.md5File(destPath) },
+        checksum: { md5: await ipc?.md5File(finalPath) },
         mimeType: attr.contentType,
         size: attr.originalFile.length,
         scope: { [book]: [scopeRef] },
@@ -229,9 +268,87 @@ export const useBurritoAudio = (teamId: string) => {
       };
     };
 
+    const processInlineTextFile = async (
+      m: MediaFileD,
+      destPath: string,
+      scopeRef: string
+    ) => {
+      const attr = m.attributes;
+      const ct = primaryContentType(m);
+      const ext = inlineTextExtension(ct);
+      const base = stripTrailingExtension(destPath);
+      const finalPath = `${base}${ext}`;
+      await ensureParentDir(finalPath);
+      await ipc?.write(finalPath, attr.originalFile);
+      const docid = finalPath.substring(preLen);
+      ingredients[docid] = {
+        checksum: { md5: await ipc?.md5File(finalPath) },
+        mimeType: attr.contentType || 'text/plain',
+        size: attr.originalFile.length,
+        scope: { [book]: [scopeRef] },
+        properties: {
+          apmId: m.keys?.remoteId || m.id,
+        },
+      };
+    };
+
+    const processLinkUrlFile = async (
+      m: MediaFileD,
+      destPath: string,
+      scopeRef: string
+    ) => {
+      const url = m.attributes.originalFile.trim();
+      const base = stripTrailingExtension(destPath);
+      const finalPath = `${base}.link.txt`;
+      await ensureParentDir(finalPath);
+      await ipc?.write(finalPath, `${url}\n`);
+      const docid = finalPath.substring(preLen);
+      ingredients[docid] = {
+        checksum: { md5: await ipc?.md5File(finalPath) },
+        mimeType: 'text/plain',
+        size: url.length + 1,
+        scope: { [book]: [scopeRef] },
+        properties: {
+          apmId: m.keys?.remoteId || m.id,
+        },
+      };
+    };
+
+    const processExportableMedia = async (
+      m: MediaFileD,
+      destPath: string,
+      scopeRef: string,
+      contextLabel: string,
+      buildAlignment: boolean
+    ) => {
+      const attr = m.attributes;
+      const ct = primaryContentType(m);
+      if (ct === 'text/markdown') {
+        await processMarkdownFile(m, destPath, scopeRef);
+        return;
+      }
+      if (ct.startsWith('text/')) {
+        await processInlineTextFile(m, destPath, scopeRef);
+        return;
+      }
+      if (!attr.audioUrl && looksLikeHttpUrl(attr.originalFile || '')) {
+        await processLinkUrlFile(m, destPath, scopeRef);
+        return;
+      }
+      await processMediaFile(
+        m,
+        destPath,
+        scopeRef,
+        contextLabel,
+        buildAlignment
+      );
+    };
+
     let chapter = 0;
     let chapterPath = '';
     let plan: string | undefined;
+    /** Avoid duplicating section-level resources into the book folder (plan-attached, passage-null loop below). */
+    const mediaIdsExportedAsSectionResources = new Set<string>();
 
     for (const section of sections) {
       const refCount = new Map<string, number>();
@@ -267,41 +384,37 @@ export const useBurritoAudio = (teamId: string) => {
 
       // when using artifactTypeFilter (e.g. Resources), include section-level resources (one copy each)
       if (artifactTypeFilter) {
-        const sectionLevelSecRes = sectionResources.filter(
-          (sr) =>
-            related(sr, 'section') === section.id && !related(sr, 'passage')
-        );
-        const seenMediaIds = new Set<string>();
-        const sectionResourceMedia = sectionLevelSecRes
-          .map((sr) => planMedia.find((m) => m.id === related(sr, 'mediafile')))
+        const sectionLevelSecRes = sectionResources
           .filter(
-            (m): m is MediaFileD =>
-              m != null &&
-              !seenMediaIds.has(m.id) &&
-              (seenMediaIds.add(m.id), true)
+            (sr) =>
+              related(sr, 'section') === section.id && !related(sr, 'passage')
+          )
+          .sort(
+            (a, b) =>
+              (a.attributes.sequenceNum ?? 0) - (b.attributes.sequenceNum ?? 0)
           );
-        const sectionFilteredMedia = filterAndSortMedia(
-          sectionResourceMedia,
-          true
-        );
-        if (sectionFilteredMedia.length > 0) {
-          const sectionRefCount = nextRef(sectionRef);
-          for (const m of sectionFilteredMedia) {
-            const attr = m.attributes;
-            const destName = `${bibleId}-${book}-section-${cleanFileName(sectionRef) + `${nType}${sectionRefCount}`}v${attr.versionNumber}.${getMediaExt(m)}`;
-            const destPath = path.join(sectionChapterPath, destName);
-            if (attr.contentType === 'text/markdown') {
-              await processMarkdownFile(m, destPath, sectionRef);
-            } else {
-              await processMediaFile(
-                m,
-                destPath,
-                sectionRef,
-                'section resource',
-                false
-              );
-            }
+        const exportedSectionMediaIds = new Set<string>();
+        let sectionRefCount: string | null = null;
+        for (const sr of sectionLevelSecRes) {
+          const m = planMedia.find((x) => x.id === related(sr, 'mediafile'));
+          if (!m || !makeArtifactFilter()(m)) continue;
+          if (exportedSectionMediaIds.has(m.id)) continue;
+          exportedSectionMediaIds.add(m.id);
+          mediaIdsExportedAsSectionResources.add(m.id);
+          if (sectionRefCount === null) {
+            sectionRefCount = nextRef(sectionRef);
           }
+          const seq = sr.attributes.sequenceNum ?? 0;
+          const attr = m.attributes;
+          const destName = `${bibleId}-${book}-section-${cleanFileName(sectionRef) + `${nType}${sectionRefCount}`}r${seq}v${attr.versionNumber}.${getMediaExt(m)}`;
+          const destPath = path.join(sectionChapterPath, destName);
+          await processExportableMedia(
+            m,
+            destPath,
+            sectionRef,
+            'section resource',
+            false
+          );
         }
       }
 
@@ -350,7 +463,7 @@ export const useBurritoAudio = (teamId: string) => {
           const destName = `${bibleId}-${book}-${cleanFileName(lastReference + lastReferenceCount + sharedResourceTitle)}v${m.attributes.versionNumber}.${getMediaExt(m)}`;
           const destPath = path.join(chapterPath, destName);
           const contextLabel = `${p.attributes.book} ${lastReference}`;
-          await processMediaFile(
+          await processExportableMedia(
             m,
             destPath,
             lastReference,
@@ -367,10 +480,11 @@ export const useBurritoAudio = (teamId: string) => {
       )
       .filter(makeArtifactFilter());
     for (const m of planMedia) {
-      const { name } = path.parse(m.attributes.originalFile);
-      const destName = `${bibleId}-${book}-${cleanFileName(name)}.${getMediaExt(m)}`;
+      if (mediaIdsExportedAsSectionResources.has(m.id)) continue;
+      const stem = getBurritoMediaExportStem(m);
+      const destName = `${bibleId}-${book}-${stem}.${getMediaExt(m)}`;
       const destPath = path.join(bookPath, destName);
-      await processMediaFile(m, destPath, '', '', false);
+      await processExportableMedia(m, destPath, '', '', false);
     }
     const alignment = new AlignmentBuilder()
       .withGroups(alignmentGroups)
