@@ -477,7 +477,10 @@ function WSAudioPlayer(props: IProps) {
     return allowRecord || !allowSegment;
   }, [allowRecord, allowSegment]);
 
-  const calculatedHeight = useMemo(() => height - 120, [height]);
+  const calculatedHeight = useMemo(
+    () => (keepItSmall && hideToolbar ? height : height - 120),
+    [height, keepItSmall, hideToolbar]
+  );
 
   // Memoize tooltip titles to prevent infinite re-renders
   const recordTooltipTitle = useMemo(() => {
@@ -914,9 +917,11 @@ function WSAudioPlayer(props: IProps) {
   }, [autoStart]);
 
   useEffect(() => {
-    wsSetHeight(waitingForAI ? 0 : height - 120); //does this need to be smarter?
+    wsSetHeight(
+      waitingForAI ? 0 : keepItSmall && hideToolbar ? height : height - 120
+    ); //does this need to be smarter?
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [height, waitingForAI]);
+  }, [height, waitingForAI, keepItSmall, hideToolbar]);
 
   useEffect(() => {
     if (initialposition !== undefined) {
@@ -1823,6 +1828,30 @@ function WSAudioPlayer(props: IProps) {
       noResponse={handleActionRefused}
     />
   );
+
+  if (keepItSmall && hideToolbar && allowRecord && !oneShotUsed) {
+    return (
+      <>
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: 'row',
+            alignItems: 'stretch',
+            gap: 1,
+            width: '100%',
+            maxWidth: '100%',
+            minWidth: 0,
+          }}
+        >
+          <Box sx={{ flex: 1, minWidth: 0, height: calculatedHeight }}>
+            {waveformNode}
+          </Box>
+          {renderRecordButton({ isSmall: true })}
+        </Box>
+        {confirmNode}
+      </>
+    );
+  }
 
   if (isRecordingRights) {
     return (
