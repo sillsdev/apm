@@ -147,17 +147,19 @@ export function PassageDetailRecord(props: IProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mediafileId, passage]);
 
-  useEffect(() => {
+  const performedByFromMedia = useMemo(() => {
     const mediaRec = findRecord(memory, 'mediafile', mediafileId) as
       | MediaFileD
       | undefined;
-    const performer = mediaRec?.attributes?.performedBy;
-    if (performer) {
-      setSpeaker(performer);
+    return mediaRec?.attributes?.performedBy;
+  }, [memory, mediafileId, mediafiles]);
+
+  useEffect(() => {
+    if (performedByFromMedia) {
+      setSpeaker(performedByFromMedia);
       setHasRight(true);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mediafileId, mediafiles]);
+  }, [mediafileId, performedByFromMedia]);
 
   useEffect(() => {
     recordPreloadInitiatedRef.current = null;
