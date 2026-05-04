@@ -390,6 +390,7 @@ export const useCreateBurrito = (teamId: string) => {
               ArtifactTypeSlug.Resource,
               ArtifactTypeSlug.SharedResource,
               ArtifactTypeSlug.ProjectResource,
+              ArtifactTypeSlug.AIResource,
             ],
             convertToMp3,
           });
@@ -556,7 +557,15 @@ export const useCreateBurrito = (teamId: string) => {
       mediafiles,
       versions: isNaN(versions) ? 1 : versions,
     });
-  }, [books, getOrgDefault, getSections, mediafiles, passages, sections, teamId]);
+  }, [
+    books,
+    getOrgDefault,
+    getSections,
+    mediafiles,
+    passages,
+    sections,
+    teamId,
+  ]);
 
   return {
     createBurrito,
