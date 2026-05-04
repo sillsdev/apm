@@ -109,7 +109,6 @@ export const CommentEditor = (props: IProps) => {
     if (myChanged !== changed) setMyChanged(changed);
     if (saveRequested(toolId)) handleOk();
     else if (clearRequested(toolId)) handleCancel();
-    else if (changed) setStatusText(t.unsaved);
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [toolsChanged, toolId]);
@@ -214,7 +213,7 @@ export const CommentEditor = (props: IProps) => {
               allowWave={false}
               setCanSave={handleSetCanSave}
               setStatusText={setStatusText}
-              height={200}
+              height={40}
               width={250}
               autoStart={true}
               allowDeltaVoice={false}
@@ -222,6 +221,8 @@ export const CommentEditor = (props: IProps) => {
               allowZoom={false}
               keepItSmall={true}
               oneTryOnly={false}
+              hideToolbar={true}
+              showSize={false}
             />
             <div
               style={{
