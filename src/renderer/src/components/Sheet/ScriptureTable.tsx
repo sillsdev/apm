@@ -282,6 +282,11 @@ export function ScriptureTable(props: IProps) {
   const [uploadType, setUploadType] = useState<UploadType>();
   const [curGraphicRights, setCurGraphicRights] = useState('');
   const [customRightsDraft, setCustomRightsDraft] = useState('');
+  /** Live input for Custom tab; avoids setState-per-keystroke loops with GraphicRights. */
+  const customRightsDraftRef = useRef('');
+  const [, setCustomRightsDraftTick] = useState(0);
+  /** Remount GraphicRights when seed resets (open picker / new custom file). */
+  const [graphicRightsFieldKey, setGraphicRightsFieldKey] = useState(0);
   const [graphicFullsizeUrl, setGraphicFullsizeUrl] = useState('');
   const [warningVisible, setWarningVisible] = useState<boolean>(false);
   const graphicCreate = useGraphicCreate();
@@ -1232,7 +1237,10 @@ export function ScriptureTable(props: IProps) {
       uploadItem.current = ws;
       setGraphicFullsizeUrl(ws?.graphicFullSizeUrl ?? '');
       setCurGraphicRights(ws?.graphicRights ?? '');
-      setCustomRightsDraft(ws?.graphicRights ?? '');
+      const seeded = ws?.graphicRights ?? '';
+      setCustomRightsDraft(seeded);
+      customRightsDraftRef.current = seeded;
+      setGraphicRightsFieldKey((k) => k + 1);
     });
   };
   useEffect(() => {
@@ -1247,6 +1255,16 @@ export function ScriptureTable(props: IProps) {
 
   const handlePickerRights = (rights?: string | null) => {
     handleRightsChange(rights ?? '');
+  };
+
+  const handleCustomRightsDraftChange = (v: string) => {
+    setCustomRightsDraft(v);
+    customRightsDraftRef.current = v;
+  };
+
+  const handleCustomRightsInput = (v: string) => {
+    customRightsDraftRef.current = v;
+    setCustomRightsDraftTick((t) => t + 1);
   };
 
   const afterConvert = async (images: CompressedImages[]) => {
@@ -2077,6 +2095,8 @@ export function ScriptureTable(props: IProps) {
     if (files.length > 0) {
       setGraphicFullsizeUrl(URL.createObjectURL(files[0] as File));
       setCustomRightsDraft('');
+      customRightsDraftRef.current = '';
+      setGraphicRightsFieldKey((k) => k + 1);
     } else setGraphicFullsizeUrl('');
   };
 
@@ -2211,7 +2231,7 @@ export function ScriptureTable(props: IProps) {
         dimension={dimensions}
         finish={handleFinish}
         onSelectedRights={handlePickerRights}
-        onCustomCommit={() => handleRightsChange(customRightsDraft)}
+        onCustomCommit={() => handleRightsChange(customRightsDraftRef.current)}
         currentGraphic={
           (graphicFullsizeUrl || curGraphicRights) && (
             <Box>
@@ -2243,7 +2263,7 @@ export function ScriptureTable(props: IProps) {
             dimension={dimensions}
             defaultFilename={defaultFilename}
             showMessage={showMessage}
-            hasRights={Boolean(customRightsDraft)}
+            hasRights={Boolean(customRightsDraftRef.current.trim())}
             finish={handleFinish}
             cancelled={cancelled}
             uploadType={uploadType as UploadType}
@@ -2253,8 +2273,10 @@ export function ScriptureTable(props: IProps) {
             metadata={
               <Box>
                 <GraphicRights
+                  key={graphicRightsFieldKey}
                   value={customRightsDraft}
-                  onChange={setCustomRightsDraft}
+                  onChange={handleCustomRightsDraftChange}
+                  onInputValueChange={handleCustomRightsInput}
                 />
               </Box>
             }
