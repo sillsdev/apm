@@ -164,6 +164,8 @@ export function useWaveSurfer(
   };
 
   const roundTime = (n: number) => Math.round(n * 100000) / 100000;
+  const clamp = (n: number, min: number, max: number) =>
+    Math.min(Math.max(n, min), max);
 
   useEffect(() => {
     // Ignore updates while loading (previous clip). Prefer getCurrentTime() over
@@ -176,10 +178,7 @@ export function useWaveSurfer(
       ws != null ? roundTime(ws.getCurrentTime()) : roundTime(currentTime);
 
     const duration = durationRef.current || 0;
-    if (duration > 0) {
-      if (t < 0) t = 0;
-      else if (t > duration) t = duration;
-    }
+    if (duration > 0) t = clamp(t, 0, duration);
 
     setProgress(t);
 
@@ -194,10 +193,9 @@ export function useWaveSurfer(
 
   const wsGoto = async (position: number, keepPlayRegion: boolean = false) => {
     if (!keepPlayRegion) resetPlayingRegion();
-    let pos = position;
     const duration = wsDuration();
-    if (pos > duration) pos = duration;
-    if (pos < 0) pos = 0;
+    const pos =
+      duration > 0 ? clamp(position, 0, duration) : Math.max(position, 0);
     onRegionGoTo(pos);
     if (pos === duration && isPlayingRef.current) {
       //if playing, position messages come in after this one that set it back to previously playing position.  Turn this off first in hopes that all messages are done before we set the position...
@@ -347,7 +345,7 @@ export function useWaveSurfer(
         wavesurferRef.current = null;
       });
 
-      wavesurfer.on('finish', function () {
+      wavesurfer.on('finish', async function () {
         if (playingRef.current && !loopingRef.current) {
           const duration = durationRef.current || 0;
           if (duration > 0) {
@@ -355,7 +353,11 @@ export function useWaveSurfer(
               0,
               roundTime(duration - FINISH_END_EPSILON_SEC)
             );
-            void wsGoto(safeEnd);
+            try {
+              await wsGoto(safeEnd);
+            } catch (error: any) {
+              logError(Severity.error, errorReporter, error);
+            }
           }
           setPlaying(false);
         }
