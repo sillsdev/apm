@@ -21,6 +21,9 @@ import { NamedRegions, useMobile } from '../utils';
 
 const noop = () => {};
 
+/** Nudge playhead slightly before true duration so the custom cursor (CSS) stays visible at end. */
+const FINISH_END_EPSILON_SEC = 0.005;
+
 export interface IMarker {
   time: number;
   label?: string;
@@ -169,8 +172,14 @@ export function useWaveSurfer(
     if (loadingRef.current) return;
 
     const ws = wavesurferRef.current;
-    const t =
+    let t =
       ws != null ? roundTime(ws.getCurrentTime()) : roundTime(currentTime);
+
+    const duration = durationRef.current || 0;
+    if (duration > 0) {
+      if (t < 0) t = 0;
+      else if (t > duration) t = duration;
+    }
 
     setProgress(t);
 
@@ -339,7 +348,17 @@ export function useWaveSurfer(
       });
 
       wavesurfer.on('finish', function () {
-        if (playingRef.current && !loopingRef.current) setPlaying(false);
+        if (playingRef.current && !loopingRef.current) {
+          const duration = durationRef.current || 0;
+          if (duration > 0) {
+            const safeEnd = Math.max(
+              0,
+              roundTime(duration - FINISH_END_EPSILON_SEC)
+            );
+            void wsGoto(safeEnd);
+          }
+          setPlaying(false);
+        }
       });
       wavesurfer.on('interaction', function (/*newTime: number*/) {
         onInteraction();
