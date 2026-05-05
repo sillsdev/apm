@@ -48,10 +48,9 @@ export function createAudioMediaRecorder(
         mediaRecorder.ondataavailable = (event) => {
           if (event.data && event.data.size > 0) {
             recordedChunks.push(event.data);
-            // Combine all accumulated chunks into a single blob (complete recording so far)
-            const accumulatedBlob = new Blob(recordedChunks);
-            // Pass complete accumulated blob to onDataAvailable - wavesurfer will decode it
-            onDataAvailable(accumulatedBlob);
+            // Preview: emit only this timeslice chunk so WaveSurfer does not re-decode the full
+            // recording every tick (O(n²) decode/load). Final blob still merges all chunks in stop().
+            onDataAvailable(event.data);
           }
         };
 
