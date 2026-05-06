@@ -475,6 +475,14 @@ export function GraphicPicker({
     setFilterPanelOpen(false);
   }, [defaultScriptureRefChecked]);
 
+  const handleFilterOpenChange = useCallback((open: boolean) => {
+    setFilterPanelOpen(open);
+    if (!open) {
+      // Popover unmounts CheckboxList without firing onSearchChange('').
+      setKeywordListSearch('');
+    }
+  }, []);
+
   useEffect(() => {
     if (!isOpen || tabValue !== 0) return;
     runBibleFetch({
@@ -716,7 +724,7 @@ export function GraphicPicker({
                   />
                   <GraphicImageFilter
                     open={filterPanelOpen}
-                    onOpenChange={setFilterPanelOpen}
+                    onOpenChange={handleFilterOpenChange}
                     sortBy={filterSortBy}
                     onSortByChange={setFilterSortBy}
                     styles={filterStyles}
