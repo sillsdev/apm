@@ -21,6 +21,9 @@ import { NamedRegions, useMobile } from '../utils';
 
 const noop = () => {};
 
+/** Nudge playhead slightly before true duration so the custom cursor (CSS) stays visible at end. */
+const FINISH_END_EPSILON_SEC = 0.005;
+
 export interface IMarker {
   time: number;
   label?: string;
@@ -161,6 +164,8 @@ export function useWaveSurfer(
   };
 
   const roundTime = (n: number) => Math.round(n * 100000) / 100000;
+  const clamp = (n: number, min: number, max: number) =>
+    Math.min(Math.max(n, min), max);
 
   useEffect(() => {
     // Ignore updates while loading (previous clip). Prefer getCurrentTime() over
@@ -169,8 +174,11 @@ export function useWaveSurfer(
     if (loadingRef.current) return;
 
     const ws = wavesurferRef.current;
-    const t =
+    let t =
       ws != null ? roundTime(ws.getCurrentTime()) : roundTime(currentTime);
+
+    const duration = durationRef.current || 0;
+    if (duration > 0) t = clamp(t, 0, duration);
 
     setProgress(t);
 
@@ -185,10 +193,9 @@ export function useWaveSurfer(
 
   const wsGoto = async (position: number, keepPlayRegion: boolean = false) => {
     if (!keepPlayRegion) resetPlayingRegion();
-    let pos = position;
     const duration = wsDuration();
-    if (pos > duration) pos = duration;
-    if (pos < 0) pos = 0;
+    const pos =
+      duration > 0 ? clamp(position, 0, duration) : Math.max(position, 0);
     onRegionGoTo(pos);
     if (pos === duration && isPlayingRef.current) {
       //if playing, position messages come in after this one that set it back to previously playing position.  Turn this off first in hopes that all messages are done before we set the position...
@@ -338,8 +345,22 @@ export function useWaveSurfer(
         wavesurferRef.current = null;
       });
 
-      wavesurfer.on('finish', function () {
-        if (playingRef.current && !loopingRef.current) setPlaying(false);
+      wavesurfer.on('finish', async function () {
+        if (playingRef.current && !loopingRef.current) {
+          const duration = durationRef.current || 0;
+          if (duration > 0) {
+            const safeEnd = Math.max(
+              0,
+              roundTime(duration - FINISH_END_EPSILON_SEC)
+            );
+            try {
+              await wsGoto(safeEnd);
+            } catch (error: any) {
+              logError(Severity.error, errorReporter, error);
+            }
+          }
+          setPlaying(false);
+        }
       });
       wavesurfer.on('interaction', function (/*newTime: number*/) {
         onInteraction();
