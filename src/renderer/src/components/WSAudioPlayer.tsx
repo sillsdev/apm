@@ -226,7 +226,7 @@ const RIGHT_KEY = 'CTRL+ARROWRIGHT';
  * MediaRecorder / WavRecorder timeslice for live waveform preview (not final quality).
  * 1000ms balances preview responsiveness vs. decode/insert overhead.
  */
-const RECORD_PREVIEW_TIMESLICE_MS = 2000;
+const RECORD_PREVIEW_TIMESLICE_MS = 1000;
 
 function WSAudioPlayer(props: IProps) {
   const {
