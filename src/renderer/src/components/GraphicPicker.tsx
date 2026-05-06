@@ -305,6 +305,11 @@ export function GraphicPicker({
   const userTabRef = useRef(false);
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebounce(search, 500);
+  /** Tracks Keywords accordion list filter text (not API keyword selection). */
+  const [keywordListSearch, setKeywordListSearch] = useState('');
+  const [keywordsListSearchResetKey, setKeywordsListSearchResetKey] =
+    useState(0);
+  const didShowKeywordSearchAlertRef = useRef(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [bibleImagesFromApi, setBibleImagesFromApi] = useState<
     GraphicPickerImage[]
@@ -449,6 +454,9 @@ export function GraphicPicker({
     setQBook(undefined);
     setQRef(undefined);
     setSearch('');
+    setKeywordListSearch('');
+    didShowKeywordSearchAlertRef.current = false;
+    setKeywordsListSearchResetKey((k) => k + 1);
     setFilterPanelOpen(false);
   };
 
@@ -461,8 +469,19 @@ export function GraphicPicker({
     setQBook(undefined);
     setQRef(undefined);
     setSearch('');
+    setKeywordListSearch('');
+    didShowKeywordSearchAlertRef.current = false;
+    setKeywordsListSearchResetKey((k) => k + 1);
     setFilterPanelOpen(false);
   }, [defaultScriptureRefChecked]);
+
+  const handleFilterOpenChange = useCallback((open: boolean) => {
+    setFilterPanelOpen(open);
+    if (!open) {
+      // Popover unmounts CheckboxList without firing onSearchChange('').
+      setKeywordListSearch('');
+    }
+  }, []);
 
   useEffect(() => {
     if (!isOpen || tabValue !== 0) return;
@@ -513,6 +532,18 @@ export function GraphicPicker({
     });
   }, [images, debouncedSearch, refFromQuery]);
 
+  useEffect(() => {
+    if (!isOpen || tabValue !== 0) return;
+    if (
+      search.trim().length > 0 &&
+      keywordListSearch.trim().length > 0 &&
+      !didShowKeywordSearchAlertRef.current
+    ) {
+      showMessage(t.keywordSearchHint);
+      didShowKeywordSearchAlertRef.current = true;
+    }
+  }, [isOpen, tabValue, search, keywordListSearch, showMessage, t]);
+
   const handleClose = useCallback(() => {
     if (mediaUploadControlsRef?.current?.handleCancel && tabValue === 1) {
       mediaUploadControlsRef.current.handleCancel();
@@ -520,6 +551,9 @@ export function GraphicPicker({
     onOpen(false);
     onCancel?.();
     setSearch('');
+    setKeywordListSearch('');
+    didShowKeywordSearchAlertRef.current = false;
+    setKeywordsListSearchResetKey((k) => k + 1);
     setSelectedId(null);
     userTabRef.current = false;
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -690,7 +724,7 @@ export function GraphicPicker({
                   />
                   <GraphicImageFilter
                     open={filterPanelOpen}
-                    onOpenChange={setFilterPanelOpen}
+                    onOpenChange={handleFilterOpenChange}
                     sortBy={filterSortBy}
                     onSortByChange={setFilterSortBy}
                     styles={filterStyles}
@@ -699,6 +733,8 @@ export function GraphicPicker({
                     keywords={filterKeywords}
                     selectedKeywords={filterSelectedKeywords}
                     onKeywordsChange={setFilterSelectedKeywords}
+                    onKeywordsSearchChange={setKeywordListSearch}
+                    keywordsListSearchResetKey={keywordsListSearchResetKey}
                     scriptureReference={scriptureReference}
                     scriptureRefChecked={filterScriptureRefChecked}
                     onScriptureRefCheckedChange={setFilterScriptureRefChecked}
