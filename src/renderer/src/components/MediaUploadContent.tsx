@@ -117,7 +117,9 @@ export interface MediaUploadControlsRef {
 interface IProps {
   onVisible: (v: boolean) => void;
   uploadType: UploadType;
-  uploadMethod?: ((files: File[]) => void) | undefined;
+  uploadMethod?:
+    | ((files: File[]) => void | boolean | Promise<void | boolean>)
+    | undefined;
   multiple?: boolean | undefined;
   cancelMethod?: (() => void) | undefined;
   cancelLabel?: string | undefined;
@@ -180,12 +182,23 @@ function MediaUploadContent(props: IProps) {
     t.faithbridgeTitle,
   ];
 
-  const handleAddOrSave = () => {
-    if (uploadMethod && files) {
-      setProgress(true);
-      uploadMethod(files);
+  const handleAddOrSave = async () => {
+    if (!uploadMethod || !files) return;
+
+    setProgress(true);
+    try {
+      const started = await Promise.resolve(uploadMethod(files));
+      // If the upload method indicates “nothing started” (e.g. async validation failed),
+      // keep the file selected and re-enable the dialog.
+      if (started === false) {
+        setProgress(false);
+        return;
+      }
+      // Historical behavior: clear selection after initiating an upload.
+      handleFiles(undefined);
+    } catch {
+      setProgress(false);
     }
-    handleFiles(undefined);
   };
   const handleCancel = () => {
     handleFiles(undefined);

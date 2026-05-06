@@ -34,7 +34,9 @@ interface IProps {
   onVisible: (v: boolean) => void;
   bp?: BigDialogBp;
   uploadType: UploadType;
-  uploadMethod?: ((files: File[]) => void) | undefined;
+  uploadMethod?:
+    | ((files: File[]) => void | boolean | Promise<void | boolean>)
+    | undefined;
   multiple?: boolean | undefined;
   cancelMethod?: (() => void) | undefined;
   cancelLabel?: string | undefined;

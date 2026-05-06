@@ -472,7 +472,7 @@ export function ImportTab(props: IProps) {
   const uploadITF = async (files: File[]) => {
     if (!files || files.length === 0) {
       showMessage(t.noFile);
-      return;
+      return false;
     }
 
     // Home/Welcome import has no `project` prop → sync endpoint can succeed without a
@@ -482,7 +482,7 @@ export function ImportTab(props: IProps) {
         const embedded = await readItfEmbeddedProject(files[0]);
         if (!embedded) {
           showMessage(t.invalidITF, AlertSeverity.Error);
-          return;
+          return false;
         }
 
         const projects = memory.cache.query((q) => q.findRecords('project')) as
@@ -490,11 +490,8 @@ export function ImportTab(props: IProps) {
           | undefined;
 
         const embeddedGuid =
-          remoteIdGuid(
-            'project',
-            embedded.id,
-            memory.keyMap as RecordKeyMap
-          ) || embedded.id;
+          remoteIdGuid('project', embedded.id, memory.keyMap as RecordKeyMap) ||
+          embedded.id;
 
         const found = projects?.some((p) => p.id === embeddedGuid);
         if (!found) {
@@ -503,7 +500,7 @@ export function ImportTab(props: IProps) {
             t.projectNotFound.replace('{0}', display),
             AlertSeverity.Error
           );
-          return;
+          return false;
         }
       } catch (err) {
         logError(
@@ -512,7 +509,7 @@ export function ImportTab(props: IProps) {
           err instanceof Error ? err : String(err)
         );
         showMessage(t.invalidITF, AlertSeverity.Error);
-        return;
+        return false;
       }
     }
 
@@ -525,6 +522,7 @@ export function ImportTab(props: IProps) {
       pendingmsg: t.importPending,
       completemsg: t.importComplete,
     });
+    return true;
   };
   const uploadSyncITF = (buffer: Buffer, fileName: string) => {
     setImportTitle(t.importSyncUp);
