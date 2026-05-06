@@ -2674,6 +2674,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="graphic.keywordSearchHint">
+         <segment>
+            <source>The Keywords search only filters the keyword list. To filter images, select one or more keywords or use the main search.</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="graphic.loadFailure">
          <segment>
             <source>Failed to load</source>

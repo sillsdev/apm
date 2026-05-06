@@ -565,6 +565,7 @@ const initialState = {
 			"graphicDisplay": "Display current graphic",
 			"graphicSearch": "Search graphics",
 			"graphicSource": "graphic source tabs",
+			"keywordSearchHint": "The Keywords search only filters the keyword list. To filter images, select one or more keywords or use the main search.",
 			"loadFailure": "Failed to load",
 			"noSelection": "no {0} selected.",
 			"placeHolder": "title and keyword search words",

@@ -531,6 +531,7 @@ export interface IGraphicStrings extends Localize.LocalizedStringsMethods {
     "graphicDisplay": string;
     "graphicSearch": string;
     "graphicSource": string;
+    "keywordSearchHint": string;
     "loadFailure": string;
     "noSelection": string;
     "placeHolder": string;

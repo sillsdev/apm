@@ -74,6 +74,7 @@ function CheckboxList({
   showAllOption = false,
   allLabel = 'All',
   idPrefix = 'list',
+  onSearchChange,
 }: {
   items: string[];
   selectedSet: Set<string>;
@@ -82,6 +83,7 @@ function CheckboxList({
   showAllOption?: boolean;
   allLabel?: string;
   idPrefix?: string;
+  onSearchChange?: (value: string) => void;
 }) {
   const [search, setSearch] = useState('');
   const t: IGraphicStrings = useSelector(graphicStringsSelector, shallowEqual);
@@ -118,7 +120,11 @@ function CheckboxList({
           size="small"
           placeholder={t.placeHolder}
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => {
+            const v = e.target.value;
+            setSearch(v);
+            onSearchChange?.(v);
+          }}
           slotProps={{
             input: {
               startAdornment: (
@@ -202,6 +208,10 @@ export interface GraphicImageFilterProps {
   selectedKeywords: string[];
   /** Called when keyword selection changes. */
   onKeywordsChange: (selected: string[]) => void;
+  /** Called when the Keywords list search text changes (filters the list only). */
+  onKeywordsSearchChange?: (value: string) => void;
+  /** Increment to remount the Keywords list and clear its local search field. */
+  keywordsListSearchResetKey?: number;
   /** Scripture reference to display (book, chapter, verse range). */
   scriptureReference: ScriptureReferenceFilter | null;
   /** Which parts of the reference are checked. */
@@ -256,6 +266,8 @@ export function GraphicImageFilter({
   keywords,
   selectedKeywords,
   onKeywordsChange,
+  onKeywordsSearchChange,
+  keywordsListSearchResetKey = 0,
   scriptureReference,
   scriptureRefChecked,
   onScriptureRefCheckedChange,
@@ -525,11 +537,13 @@ export function GraphicImageFilter({
             </AccordionSummary>
             <AccordionDetails sx={{ pt: 0 }}>
               <CheckboxList
+                key={keywordsListSearchResetKey}
                 idPrefix="graphic-filter-keywords"
                 items={keywords}
                 selectedSet={selectedKeywordsSet}
                 onSelectionChange={onKeywordsChange}
                 showSearch={true}
+                onSearchChange={onKeywordsSearchChange}
               />
             </AccordionDetails>
           </Accordion>

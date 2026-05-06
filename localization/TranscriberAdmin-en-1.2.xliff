@@ -3118,6 +3118,13 @@
                <context context-type="sourcefile">GraphicPicker.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="graphic.keywordSearchHint">
+            <source>The Keywords search only filters the keyword list. To filter images, select one or more keywords or use the main search.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">GraphicImageFilter.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="graphic.loadFailure">
             <source>Failed to load</source>
             <target/>
