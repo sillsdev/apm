@@ -97,6 +97,7 @@ import {
 import { convertWrapperToPTFs } from '../utils/burritoConversion';
 import FilterContent from './FilterContent';
 import { preprocessTextTranslationBurritoToUsfm } from '../burrito/preprocessTextTranslationBurritoToUsfm';
+import { readItfEmbeddedProject } from '../utils/readItfEmbeddedProject';
 
 const ipc = window?.api as MainAPI;
 
@@ -468,7 +469,53 @@ export function ImportTab(props: IProps) {
     });
   };
 
-  const uploadITF = (files: File[]) => {
+  const uploadITF = async (files: File[]) => {
+    if (!files || files.length === 0) {
+      showMessage(t.noFile);
+      return;
+    }
+
+    // Home/Welcome import has no `project` prop → sync endpoint can succeed without a
+    // 406-style error. Preflight the ITF to ensure it references a project present in memory.
+    if (!project && memory) {
+      try {
+        const embedded = await readItfEmbeddedProject(files[0]);
+        if (!embedded) {
+          showMessage(t.invalidITF, AlertSeverity.Error);
+          return;
+        }
+
+        const projects = memory.cache.query((q) => q.findRecords('project')) as
+          | Project[]
+          | undefined;
+
+        const embeddedGuid =
+          remoteIdGuid(
+            'project',
+            embedded.id,
+            memory.keyMap as RecordKeyMap
+          ) || embedded.id;
+
+        const found = projects?.some((p) => p.id === embeddedGuid);
+        if (!found) {
+          const display = embedded.name || embedded.id;
+          showMessage(
+            t.projectNotFound.replace('{0}', display),
+            AlertSeverity.Error
+          );
+          return;
+        }
+      } catch (err) {
+        logError(
+          Severity.error,
+          errorReporter,
+          err instanceof Error ? err : String(err)
+        );
+        showMessage(t.invalidITF, AlertSeverity.Error);
+        return;
+      }
+    }
+
     handleFileUpload(files, importProjectITFFromElectron, {
       projectid: project
         ? remoteIdNum('project', project, memory?.keyMap as RecordKeyMap)
