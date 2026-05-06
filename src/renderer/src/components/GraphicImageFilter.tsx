@@ -212,6 +212,8 @@ export interface GraphicImageFilterProps {
   onKeywordsSearchChange?: (value: string) => void;
   /** Increment to remount the Keywords list and clear its local search field. */
   keywordsListSearchResetKey?: number;
+  /** Whether the project is a Scripture-type plan; controls Scripture accordion visibility. */
+  scripture?: boolean;
   /** Scripture reference to display (book, chapter, verse range). */
   scriptureReference: ScriptureReferenceFilter | null;
   /** Which parts of the reference are checked. */
@@ -268,6 +270,7 @@ export function GraphicImageFilter({
   onKeywordsChange,
   onKeywordsSearchChange,
   keywordsListSearchResetKey = 0,
+  scripture = true,
   scriptureReference,
   scriptureRefChecked,
   onScriptureRefCheckedChange,
@@ -428,108 +431,116 @@ export function GraphicImageFilter({
             </AccordionDetails>
           </Accordion>
 
-          <Accordion disableGutters square>
-            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-              <Typography variant="body2">{labels.scripture}</Typography>
-            </AccordionSummary>
-            <AccordionDetails sx={{ pt: 0 }}>
-              {scriptureReference ? (
-                <List dense disablePadding>
-                  <ListItem disablePadding>
-                    <ListItemButton
-                      onClick={() => {
-                        const nextBook = !scriptureRefChecked.book;
-                        onScriptureRefCheckedChange({
-                          book: nextBook,
-                          // When book is unchecked, also uncheck chapter and verse.
-                          chapter: nextBook
-                            ? scriptureRefChecked.chapter
-                            : false,
-                          verse: nextBook ? scriptureRefChecked.verse : false,
-                        });
-                      }}
-                      dense
-                      id="graphic-filter-ref-book"
-                      disabled={refOverride}
-                    >
-                      <ListItemIcon sx={{ minWidth: 36 }}>
-                        <Checkbox
-                          edge="start"
-                          checked={scriptureRefChecked.book}
-                          tabIndex={-1}
-                          disableRipple
+          {scripture && (
+            <Accordion disableGutters square>
+              <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                <Typography variant="body2">{labels.scripture}</Typography>
+              </AccordionSummary>
+              <AccordionDetails sx={{ pt: 0 }}>
+                {scriptureReference ? (
+                  <List dense disablePadding>
+                    <ListItem disablePadding>
+                      <ListItemButton
+                        onClick={() => {
+                          const nextBook = !scriptureRefChecked.book;
+                          onScriptureRefCheckedChange({
+                            book: nextBook,
+                            // When book is unchecked, also uncheck chapter and verse.
+                            chapter: nextBook
+                              ? scriptureRefChecked.chapter
+                              : false,
+                            verse: nextBook
+                              ? scriptureRefChecked.verse
+                              : false,
+                          });
+                        }}
+                        dense
+                        id="graphic-filter-ref-book"
+                        disabled={refOverride}
+                      >
+                        <ListItemIcon sx={{ minWidth: 36 }}>
+                          <Checkbox
+                            edge="start"
+                            checked={scriptureRefChecked.book}
+                            tabIndex={-1}
+                            disableRipple
+                          />
+                        </ListItemIcon>
+                        <ListItemText primary={scriptureReference.bookName} />
+                      </ListItemButton>
+                    </ListItem>
+                    <ListItem disablePadding sx={{ pl: 3 }}>
+                      <ListItemButton
+                        onClick={() => {
+                          const nextChapter = !scriptureRefChecked.chapter;
+                          onScriptureRefCheckedChange({
+                            // If chapter is checked, ensure book is also checked.
+                            book: nextChapter
+                              ? true
+                              : scriptureRefChecked.book,
+                            chapter: nextChapter,
+                            // When chapter is unchecked, also uncheck verse.
+                            verse: nextChapter
+                              ? scriptureRefChecked.verse
+                              : false,
+                          });
+                        }}
+                        dense
+                        id="graphic-filter-ref-chapter"
+                        disabled={refOverride}
+                      >
+                        <ListItemIcon sx={{ minWidth: 36 }}>
+                          <Checkbox
+                            edge="start"
+                            checked={scriptureRefChecked.chapter}
+                            tabIndex={-1}
+                            disableRipple
+                          />
+                        </ListItemIcon>
+                        <ListItemText
+                          primary={scriptureReference.chapterNumbers}
                         />
-                      </ListItemIcon>
-                      <ListItemText primary={scriptureReference.bookName} />
-                    </ListItemButton>
-                  </ListItem>
-                  <ListItem disablePadding sx={{ pl: 3 }}>
-                    <ListItemButton
-                      onClick={() => {
-                        const nextChapter = !scriptureRefChecked.chapter;
-                        onScriptureRefCheckedChange({
-                          // If chapter is checked, ensure book is also checked.
-                          book: nextChapter ? true : scriptureRefChecked.book,
-                          chapter: nextChapter,
-                          // When chapter is unchecked, also uncheck verse.
-                          verse: nextChapter
-                            ? scriptureRefChecked.verse
-                            : false,
-                        });
-                      }}
-                      dense
-                      id="graphic-filter-ref-chapter"
-                      disabled={refOverride}
-                    >
-                      <ListItemIcon sx={{ minWidth: 36 }}>
-                        <Checkbox
-                          edge="start"
-                          checked={scriptureRefChecked.chapter}
-                          tabIndex={-1}
-                          disableRipple
+                      </ListItemButton>
+                    </ListItem>
+                    <ListItem disablePadding sx={{ pl: 5 }}>
+                      <ListItemButton
+                        onClick={() => {
+                          const nextVerse = !scriptureRefChecked.verse;
+                          onScriptureRefCheckedChange({
+                            // If verse is checked, ensure chapter (and book) are also checked.
+                            book: nextVerse ? true : scriptureRefChecked.book,
+                            chapter: nextVerse
+                              ? true
+                              : scriptureRefChecked.chapter,
+                            verse: nextVerse,
+                          });
+                        }}
+                        dense
+                        id="graphic-filter-ref-verse"
+                        disabled={refOverride}
+                      >
+                        <ListItemIcon sx={{ minWidth: 36 }}>
+                          <Checkbox
+                            edge="start"
+                            checked={scriptureRefChecked.verse}
+                            tabIndex={-1}
+                            disableRipple
+                          />
+                        </ListItemIcon>
+                        <ListItemText
+                          primary={scriptureReference.verseRange}
                         />
-                      </ListItemIcon>
-                      <ListItemText
-                        primary={scriptureReference.chapterNumbers}
-                      />
-                    </ListItemButton>
-                  </ListItem>
-                  <ListItem disablePadding sx={{ pl: 5 }}>
-                    <ListItemButton
-                      onClick={() => {
-                        const nextVerse = !scriptureRefChecked.verse;
-                        onScriptureRefCheckedChange({
-                          // If verse is checked, ensure chapter (and book) are also checked.
-                          book: nextVerse ? true : scriptureRefChecked.book,
-                          chapter: nextVerse
-                            ? true
-                            : scriptureRefChecked.chapter,
-                          verse: nextVerse,
-                        });
-                      }}
-                      dense
-                      id="graphic-filter-ref-verse"
-                      disabled={refOverride}
-                    >
-                      <ListItemIcon sx={{ minWidth: 36 }}>
-                        <Checkbox
-                          edge="start"
-                          checked={scriptureRefChecked.verse}
-                          tabIndex={-1}
-                          disableRipple
-                        />
-                      </ListItemIcon>
-                      <ListItemText primary={scriptureReference.verseRange} />
-                    </ListItemButton>
-                  </ListItem>
-                </List>
-              ) : (
-                <Typography variant="body2" color="text.secondary">
-                  No scripture reference
-                </Typography>
-              )}
-            </AccordionDetails>
-          </Accordion>
+                      </ListItemButton>
+                    </ListItem>
+                  </List>
+                ) : (
+                  <Typography variant="body2" color="text.secondary">
+                    No scripture reference
+                  </Typography>
+                )}
+              </AccordionDetails>
+            </Accordion>
+          )}
 
           <Accordion disableGutters square>
             <AccordionSummary expandIcon={<ExpandMoreIcon />}>

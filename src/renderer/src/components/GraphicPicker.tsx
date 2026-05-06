@@ -250,6 +250,8 @@ export interface GraphicPickerProps {
   bookCode: string;
   /** Reference string */
   refString: string;
+  /** Whether the project is a Scripture-type plan; controls Scripture filter */
+  scripture?: boolean;
   /** Filter state passed to getSearchUrl (style/keyword) */
   filterState?: GraphicFilterState;
   /** Images for the Custom tab */
@@ -286,6 +288,7 @@ export function GraphicPicker({
   onCancel,
   bookCode,
   refString,
+  scripture = true,
   customImages = [],
   metadata,
   currentGraphic,
@@ -337,8 +340,11 @@ export function GraphicPicker({
     onOpen,
   });
   const defaultScriptureRefChecked: ScriptureRefChecked = useMemo(
-    () => ({ book: true, chapter: true, verse: true }),
-    []
+    () =>
+      scripture
+        ? { book: true, chapter: true, verse: true }
+        : { book: false, chapter: false, verse: false },
+    [scripture]
   );
   const [filterScriptureRefChecked, setFilterScriptureRefChecked] =
     useState<ScriptureRefChecked>(defaultScriptureRefChecked);
@@ -735,6 +741,7 @@ export function GraphicPicker({
                     onKeywordsChange={setFilterSelectedKeywords}
                     onKeywordsSearchChange={setKeywordListSearch}
                     keywordsListSearchResetKey={keywordsListSearchResetKey}
+                    scripture={scripture}
                     scriptureReference={scriptureReference}
                     scriptureRefChecked={filterScriptureRefChecked}
                     onScriptureRefCheckedChange={setFilterScriptureRefChecked}
@@ -759,6 +766,14 @@ export function GraphicPicker({
                   ) : bibleError ? (
                     <Typography color="error" variant="body2">
                       {bibleError}
+                    </Typography>
+                  ) : filteredImages.length === 0 ? (
+                    <Typography
+                      color="text.secondary"
+                      variant="body2"
+                      sx={{ p: 2, textAlign: 'center' }}
+                    >
+                      {t.noResults}
                     </Typography>
                   ) : (
                     <Grid container spacing={1}>
