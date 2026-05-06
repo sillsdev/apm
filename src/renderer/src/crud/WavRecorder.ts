@@ -299,22 +299,30 @@ export function createWavRecorder(
     workletNode?.port.postMessage({ type: 'stopRecording' });
 
     const RECORDING_COMPLETE_MS = 15000;
+    let timeoutHandle: ReturnType<typeof setTimeout> | null = null;
     try {
       await Promise.race([
         waitComplete,
-        new Promise<void>((_, reject) =>
-          setTimeout(
+        new Promise<void>((_, reject) => {
+          timeoutHandle = setTimeout(
             () =>
               reject(
                 new Error('WavRecorder: recordingComplete timeout from worklet')
               ),
             RECORDING_COMPLETE_MS
-          )
-        ),
+          );
+        }),
       ]);
     } catch (e) {
       console.error(e);
       pendingRecordingCompleteResolve = null;
+    } finally {
+      // Clear the timeout on success so it cannot fire later and produce
+      // an unhandled rejection long after stop() has resolved.
+      if (timeoutHandle) {
+        clearTimeout(timeoutHandle);
+        timeoutHandle = null;
+      }
     }
 
     return convertAudioDataToWav();

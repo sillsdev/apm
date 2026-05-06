@@ -222,7 +222,10 @@ const TIMER_KEY = 'F6,CTRL+6';
 const RECORD_KEY = 'F9,CTRL+9';
 const LEFT_KEY = 'CTRL+ARROWLEFT';
 const RIGHT_KEY = 'CTRL+ARROWRIGHT';
-/** MediaRecorder / WavRecorder timeslice for live waveform preview (not final quality). */
+/**
+ * MediaRecorder / WavRecorder timeslice for live waveform preview (not final quality).
+ * 1000ms balances preview responsiveness vs. decode/insert overhead.
+ */
 const RECORD_PREVIEW_TIMESLICE_MS = 2000;
 
 function WSAudioPlayer(props: IProps) {
@@ -1100,7 +1103,11 @@ function WSAudioPlayer(props: IProps) {
       ) {
         return;
       }
-      if (insertingRef.current) recordOverwritePosition.current = newPos;
+      // With delta-only preview chunks, each tick contains only NEW audio.
+      // Always advance the overwrite position so the next delta is appended
+      // after this one (instead of replacing it at the same start position).
+      // Without this, the live waveform only shows the latest delta chunk.
+      recordOverwritePosition.current = newPos;
     } catch (err) {
       logError(
         Severity.error,

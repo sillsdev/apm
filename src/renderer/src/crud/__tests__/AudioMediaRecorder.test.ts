@@ -11,7 +11,7 @@ class MockMediaRecorder {
     MockMediaRecorder.instances.push(this);
   }
 
-  start(_timeSlice?: number): void {
+  start(): void {
     this.state = 'recording';
   }
 
@@ -42,7 +42,7 @@ describe('createAudioMediaRecorder', () => {
     })) as unknown as typeof AudioContext;
   });
 
-  it('passes each timeslice blob to onDataAvailable (delta), stop() returns merged blob', async () => {
+  it('passes accumulated blob to onDataAvailable each tick, stop() returns merged blob', async () => {
     const onDataAvailable = jest.fn();
     const stream = {} as MediaStream;
     const rec = createAudioMediaRecorder(stream, onDataAvailable);
@@ -54,9 +54,11 @@ describe('createAudioMediaRecorder', () => {
     inst.simulateChunk(a);
     inst.simulateChunk(b);
 
+    // Preview must emit an accumulated (decodable) blob each tick because
+    // individual container-format chunks are not independently decodable.
     expect(onDataAvailable).toHaveBeenCalledTimes(2);
-    expect(onDataAvailable.mock.calls[0][0]).toBe(a);
-    expect(onDataAvailable.mock.calls[1][0]).toBe(b);
+    expect(onDataAvailable.mock.calls[0][0].size).toBe(a.size);
+    expect(onDataAvailable.mock.calls[1][0].size).toBe(a.size + b.size);
 
     const finalBlob = await rec.stop();
     expect(finalBlob.size).toBe(a.size + b.size);
