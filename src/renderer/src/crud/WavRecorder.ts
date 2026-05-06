@@ -1,6 +1,21 @@
 import { convertToWav } from '../utils/wav';
 import { APMRecorder } from './useWavRecorder';
 
+/** New Float32 chunks since last preview emit (exported for unit tests). */
+export function takeRecordingDeltaChunks(
+  chunks: Float32Array[],
+  lastEmittedExclusiveIndex: number
+): { delta: Float32Array[]; nextIndex: number } {
+  const len = chunks.length;
+  if (len <= lastEmittedExclusiveIndex) {
+    return { delta: [], nextIndex: lastEmittedExclusiveIndex };
+  }
+  return {
+    delta: chunks.slice(lastEmittedExclusiveIndex),
+    nextIndex: len,
+  };
+}
+
 // Web Audio API-based WAV recorder using AudioWorklet
 export function createWavRecorder(
   stream: MediaStream,
@@ -14,6 +29,9 @@ export function createWavRecorder(
   let workletLoaded = false;
   let dataAvailableTimer: ReturnType<typeof setInterval> | null = null;
   let timeSlice: number = 1000; // Default 1 second
+  let lastEmittedChunkIndex = 0;
+  let pendingRecordingCompleteResolve: (() => void) | null = null;
+  let previewTickInFlight = false;
 
   async function initializeWorklet(): Promise<void> {
     if (workletLoaded) return;
@@ -112,6 +130,8 @@ export function createWavRecorder(
           case 'recordingComplete':
             // All audio data has been collected
             audioData = data;
+            pendingRecordingCompleteResolve?.();
+            pendingRecordingCompleteResolve = null;
             break;
         }
       };
@@ -141,6 +161,8 @@ export function createWavRecorder(
 
     isRecording = true;
     audioData = [];
+    lastEmittedChunkIndex = 0;
+    pendingRecordingCompleteResolve = null;
 
     // Send start message to worklet
     workletNode?.port.postMessage({ type: 'startRecording' });
@@ -158,11 +180,27 @@ export function createWavRecorder(
       clearInterval(dataAvailableTimer);
     }
 
-    dataAvailableTimer = setInterval(async () => {
-      if (isRecording && audioData.length > 0) {
-        // Convert AudioBuffer to WAV blob before calling onDataAvailable
-        onDataAvailable(await convertAudioDataToWav());
-      }
+    dataAvailableTimer = setInterval(() => {
+      void (async () => {
+        if (!isRecording || previewTickInFlight) return;
+        previewTickInFlight = true;
+        try {
+          const { delta, nextIndex } = takeRecordingDeltaChunks(
+            audioData,
+            lastEmittedChunkIndex
+          );
+          if (delta.length === 0) return;
+          const blob = await deltaChunksToWavBlob(delta);
+          if (blob.size > 0) {
+            onDataAvailable(blob);
+          }
+          lastEmittedChunkIndex = nextIndex;
+        } catch (e) {
+          console.error('WavRecorder preview tick failed:', e);
+        } finally {
+          previewTickInFlight = false;
+        }
+      })();
     }, timeSlice);
   }
 
@@ -191,6 +229,26 @@ export function createWavRecorder(
       clearInterval(dataAvailableTimer);
       dataAvailableTimer = null;
     }
+  }
+
+  function deltaChunksToWavBlob(chunks: Float32Array[]): Promise<Blob> {
+    const sampleRate = audioContext.sampleRate;
+    const channels = 1;
+    if (chunks.length === 0) {
+      return Promise.resolve(new Blob([], { type: 'audio/wav' }));
+    }
+    const length = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
+    if (length === 0) {
+      return Promise.resolve(new Blob([], { type: 'audio/wav' }));
+    }
+    const audioBuffer = audioContext.createBuffer(channels, length, sampleRate);
+    const combinedData = audioBuffer.getChannelData(0);
+    let offset = 0;
+    for (const chunk of chunks) {
+      combinedData.set(chunk, offset);
+      offset += chunk.length;
+    }
+    return audioBufferToWavBlob(audioBuffer);
   }
 
   function createAudioBuffer(): AudioBuffer {
@@ -233,11 +291,40 @@ export function createWavRecorder(
       workletNode.disconnect();
     }
 
+    const waitComplete = new Promise<void>((resolve) => {
+      pendingRecordingCompleteResolve = resolve;
+    });
+
     // Send stop message to worklet
     workletNode?.port.postMessage({ type: 'stopRecording' });
 
-    // Wait a bit for the worklet to process the stop message
-    await new Promise((resolve) => setTimeout(resolve, 100));
+    const RECORDING_COMPLETE_MS = 15000;
+    let timeoutHandle: ReturnType<typeof setTimeout> | null = null;
+    try {
+      await Promise.race([
+        waitComplete,
+        new Promise<void>((_, reject) => {
+          timeoutHandle = setTimeout(
+            () =>
+              reject(
+                new Error('WavRecorder: recordingComplete timeout from worklet')
+              ),
+            RECORDING_COMPLETE_MS
+          );
+        }),
+      ]);
+    } catch (e) {
+      console.error(e);
+      pendingRecordingCompleteResolve = null;
+    } finally {
+      // Clear the timeout on success so it cannot fire later and produce
+      // an unhandled rejection long after stop() has resolved.
+      if (timeoutHandle) {
+        clearTimeout(timeoutHandle);
+        timeoutHandle = null;
+      }
+    }
+
     return convertAudioDataToWav();
   }
 

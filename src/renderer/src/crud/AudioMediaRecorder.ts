@@ -43,14 +43,15 @@ export function createAudioMediaRecorder(
       try {
         mediaRecorder = new MediaRecorder(mediaStream);
 
-        // Collect chunks as they become available (for final output)
-        // Combine all accumulated chunks and pass to onDataAvailable callback - let wavesurfer decode
+        // Collect chunks as they become available. We must emit the accumulated blob
+        // (not just event.data) because individual MediaRecorder chunks from container
+        // formats (webm/mp4) after the first are not independently decodable — only
+        // the first chunk carries the container header. WaveSurfer needs a complete,
+        // decodable blob for preview. WavRecorder (raw PCM) uses a true delta path.
         mediaRecorder.ondataavailable = (event) => {
           if (event.data && event.data.size > 0) {
             recordedChunks.push(event.data);
-            // Combine all accumulated chunks into a single blob (complete recording so far)
             const accumulatedBlob = new Blob(recordedChunks);
-            // Pass complete accumulated blob to onDataAvailable - wavesurfer will decode it
             onDataAvailable(accumulatedBlob);
           }
         };

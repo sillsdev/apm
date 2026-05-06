@@ -222,6 +222,11 @@ const TIMER_KEY = 'F6,CTRL+6';
 const RECORD_KEY = 'F9,CTRL+9';
 const LEFT_KEY = 'CTRL+ARROWLEFT';
 const RIGHT_KEY = 'CTRL+ARROWRIGHT';
+/**
+ * MediaRecorder / WavRecorder timeslice for live waveform preview (not final quality).
+ * 1000ms balances preview responsiveness vs. decode/insert overhead.
+ */
+const RECORD_PREVIEW_TIMESLICE_MS = 2000;
 
 function WSAudioPlayer(props: IProps) {
   const {
@@ -386,6 +391,10 @@ function WSAudioPlayer(props: IProps) {
   const [pxPerSec, setPxPerSecx] = useState(maxZoom);
   const pxPerSecRef = useRef(maxZoom);
   const insertingRef = useRef(false);
+  /** Bumped when user stops recording so in-flight preview inserts are ignored after await. */
+  const recordPreviewGenerationRef = useRef(0);
+  /** True after Stop until final `onRecordStop` finishes — blocks late preview ticks. */
+  const recordPreviewSuppressedRef = useRef(false);
   const currentSegmentRef = useRef<IRegion | undefined>(undefined);
   // Recording timer refs for local progress/duration while recording
   const recElapsedRef = useRef<number>(0);
@@ -677,13 +686,14 @@ function WSAudioPlayer(props: IProps) {
     )
       return false;
     if (!recordingRef.current) {
+      recordPreviewSuppressedRef.current = false;
       setPxPerSec(100);
       setBlobReady && setBlobReady(false);
       wsPause(); //stop if playing
       recordStartPosition.current = wsPosition();
       wsStartRecord();
       recordingStartPendingRef.current = true;
-      startRecording(500).then((value) => {
+      startRecording(RECORD_PREVIEW_TIMESLICE_MS).then((value) => {
         recordingStartPendingRef.current = false;
         setRecording(value);
       });
@@ -693,6 +703,8 @@ function WSAudioPlayer(props: IProps) {
         ? recordStartPosition.current
         : undefined;
     } else {
+      recordPreviewGenerationRef.current += 1;
+      recordPreviewSuppressedRef.current = true;
       setProcessingRecording(true);
       recordingStartPendingRef.current = false;
       stopRecording();
@@ -1046,19 +1058,24 @@ function WSAudioPlayer(props: IProps) {
 
   async function onRecordStop(blob: Blob) {
     recordingStartPendingRef.current = false;
-    await wsInsertAudio(
-      blob,
-      undefined,
-      recordStartPosition.current,
-      recordOverwritePosition.current
-    );
-    recordOverwritePosition.current = undefined;
-    setProcessingRecording(false);
-    void handleChanged();
+    try {
+      await wsInsertAudio(
+        blob,
+        undefined,
+        recordStartPosition.current,
+        recordOverwritePosition.current
+      );
+      recordOverwritePosition.current = undefined;
+      void handleChanged();
+    } finally {
+      recordPreviewSuppressedRef.current = false;
+      setProcessingRecording(false);
+    }
   }
 
   function onRecordError(e: any) {
     recordingStartPendingRef.current = false;
+    recordPreviewSuppressedRef.current = false;
     setProcessingRecording(false);
 
     if (autostartTimer.current && e.error === 'No mediaRecorder') {
@@ -1070,14 +1087,33 @@ function WSAudioPlayer(props: IProps) {
   }
 
   async function onRecordDataAvailable(blob: Blob) {
-    if (blob.size > 0) {
+    if (blob.size <= 0) return;
+    if (recordPreviewSuppressedRef.current) return;
+    const previewGen = recordPreviewGenerationRef.current;
+    try {
       const newPos = await wsInsertAudio(
         blob,
         undefined,
         recordStartPosition.current,
         recordOverwritePosition.current
       );
-      if (insertingRef.current) recordOverwritePosition.current = newPos;
+      if (
+        recordPreviewSuppressedRef.current ||
+        previewGen !== recordPreviewGenerationRef.current
+      ) {
+        return;
+      }
+      // With delta-only preview chunks, each tick contains only NEW audio.
+      // Always advance the overwrite position so the next delta is appended
+      // after this one (instead of replacing it at the same start position).
+      // Without this, the live waveform only shows the latest delta chunk.
+      recordOverwritePosition.current = newPos;
+    } catch (err) {
+      logError(
+        Severity.error,
+        errorReporter,
+        err instanceof Error ? err : new Error(String(err))
+      );
     }
   }
 
