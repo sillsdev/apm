@@ -185,9 +185,14 @@ export function UserTable() {
     () => data.filter((d) => d.role === RoleNames.Admin),
     [data]
   );
+  /** Team membership changes (invite, add, edit, remove) only apply locally when offline; they are not synced to the server. */
+  const memberActionsEnabled = useMemo(
+    () => !offline && !offlineOnly,
+    [offline, offlineOnly]
+  );
   const canEdit = useMemo(
-    () => userIsAdmin && (!offline || offlineOnly),
-    [userIsAdmin, offline, offlineOnly]
+    () => userIsAdmin && memberActionsEnabled,
+    [userIsAdmin, memberActionsEnabled]
   );
 
   const columns: GridColDef<IRow>[] = [
@@ -198,7 +203,8 @@ export function UserTable() {
     { field: 'role', headerName: ts.teamrole, width: 100 },
     {
       field: 'action',
-      headerName: userIsAdmin ? t.action : '\u00A0',
+      headerName:
+        userIsAdmin && memberActionsEnabled ? t.action : '\u00A0',
       width: 150,
       sortable: false,
       filterable: false,
@@ -208,6 +214,7 @@ export function UserTable() {
           handleEdit={handleEdit}
           handleDelete={handleDelete}
           admins={admins}
+          memberActionsEnabled={memberActionsEnabled}
         />
       ),
     },
