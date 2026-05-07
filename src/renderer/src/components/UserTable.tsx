@@ -182,12 +182,21 @@ export function UserTable() {
   }, [organization, users, roles, organizationMemberships]);
 
   const admins = useMemo(
-    () => data.filter((d) => d.role === RoleNames.Admin),
-    [data]
+    () =>
+      data.filter((d) => {
+        const rec = organizationMemberships.find(
+          (om) =>
+            related(om, 'user') === d.id &&
+            related(om, 'organization') === organization
+        );
+        const role = roles.find((r) => r.id === related(rec, 'role'));
+        return role && role.attributes.roleName === RoleNames.Admin;
+      }),
+    [data, organizationMemberships, roles, organization]
   );
-  /** Team membership changes (invite, add, edit, remove) only apply locally when offline; they are not synced to the server. */
+  /** Team membership changes are allowed when online, or when running as an offline-only desktop (local-first). They are blocked only when an online session has lost connectivity, since changes could not be synced. */
   const memberActionsEnabled = useMemo(
-    () => !offline && !offlineOnly,
+    () => !offline || offlineOnly,
     [offline, offlineOnly]
   );
   const canEdit = useMemo(
@@ -203,8 +212,7 @@ export function UserTable() {
     { field: 'role', headerName: ts.teamrole, width: 100 },
     {
       field: 'action',
-      headerName:
-        userIsAdmin && memberActionsEnabled ? t.action : '\u00A0',
+      headerName: userIsAdmin && memberActionsEnabled ? t.action : '\u00A0',
       width: 150,
       sortable: false,
       filterable: false,
