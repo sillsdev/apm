@@ -7,6 +7,7 @@ import {
   MenuItem,
   Select,
   SelectChangeEvent,
+  SxProps,
   useMediaQuery,
   useTheme,
 } from '@mui/material';
@@ -34,10 +35,12 @@ interface TabPanelProps {
   children?: ReactNode;
   index: number;
   value: number;
+  contentSx?: SxProps;
+  fillParent?: boolean;
 }
 
 function CustomTabPanel(props: TabPanelProps) {
-  const { children, value, index, ...other } = props;
+  const { children, value, index, contentSx, fillParent, ...other } = props;
 
   return (
     <div
@@ -46,8 +49,37 @@ function CustomTabPanel(props: TabPanelProps) {
       id={`simple-tabpanel-${index}`}
       aria-labelledby={`simple-tab-${index}`}
       {...other}
+      style={
+        fillParent
+          ? {
+              flex: 1,
+              minHeight: 0,
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden',
+            }
+          : undefined
+      }
     >
-      {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
+      {value === index && (
+        <Box
+          sx={{
+            p: 3,
+            ...contentSx,
+            ...(fillParent
+              ? {
+                  flex: 1,
+                  minHeight: 0,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  overflow: 'hidden',
+                }
+              : {}),
+          }}
+        >
+          {children}
+        </Box>
+      )}
     </div>
   );
 }
@@ -83,6 +115,9 @@ export default function FindTabs({
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
   const theme = useTheme();
   const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
+  const researchTabPanelContentSx: SxProps | undefined = isSmallScreen
+    ? { px: 0 }
+    : undefined;
   const bibleBrainTabIndex = 0;
   const faithBridgeTabIndex = 1;
   const createTabIndex = 2;
@@ -111,6 +146,10 @@ export default function FindTabs({
     setValue(tab);
   };
 
+  const fixedFooterTabOverflowHidden =
+    isSmallScreen &&
+    (value === faithBridgeTabIndex || value === bibleBrainTabIndex);
+
   return (
     <Box
       sx={{
@@ -119,14 +158,15 @@ export default function FindTabs({
           ? {
               display: 'flex',
               flexDirection: 'column',
-              minHeight: '70vh',
-              maxHeight: '70vh',
+              flex: 1,
+              minHeight: 0,
+              maxHeight: '100%',
               overflow: 'hidden',
             }
           : {}),
       }}
     >
-      <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+      <Box sx={{ borderBottom: 1, borderColor: 'divider', flexShrink: 0 }}>
         {isSmallScreen ? (
           <FormControl fullWidth size="small" sx={{ my: 1 }}>
             <Select<number>
@@ -204,35 +244,71 @@ export default function FindTabs({
             ? {
                 flex: 1,
                 minHeight: 0,
-                overflowY: 'auto',
-                overflowX:
-                  aquifer && value === aquiferTabIndex ? 'auto' : 'hidden',
+                display: 'flex',
+                flexDirection: 'column',
+                overflowY: fixedFooterTabOverflowHidden ? 'hidden' : 'auto',
+                overflowX: fixedFooterTabOverflowHidden
+                  ? 'hidden'
+                  : aquifer && value === aquiferTabIndex
+                    ? 'auto'
+                    : 'hidden',
               }
             : {}
         }
       >
-        <CustomTabPanel value={value} index={bibleBrainTabIndex}>
+        <CustomTabPanel
+          value={value}
+          index={bibleBrainTabIndex}
+          contentSx={
+            isSmallScreen ? { px: 0, py: 0 } : researchTabPanelContentSx
+          }
+          fillParent={value === bibleBrainTabIndex ? isSmallScreen : undefined}
+        >
           <FindBibleBrain
             handleLink={handleLink}
             onClose={onClose}
             closeRequested={false}
+            fixedFooterLayout={isSmallScreen}
           />
         </CustomTabPanel>
-        <CustomTabPanel value={value} index={faithBridgeTabIndex}>
-          <FaithbridgeIframe onMarkdown={onMarkdown} onClose={onClose} />
+        <CustomTabPanel
+          value={value}
+          index={faithBridgeTabIndex}
+          contentSx={
+            isSmallScreen ? { px: 0, py: 0 } : researchTabPanelContentSx
+          }
+          fillParent={value === faithBridgeTabIndex ? isSmallScreen : undefined}
+        >
+          <FaithbridgeIframe
+            onMarkdown={onMarkdown}
+            onClose={onClose}
+            fixedFooterLayout={isSmallScreen}
+          />
         </CustomTabPanel>
-        <CustomTabPanel value={value} index={createTabIndex}>
+        <CustomTabPanel
+          value={value}
+          index={createTabIndex}
+          contentSx={researchTabPanelContentSx}
+        >
           <CreateAiRes
             resources={resources}
             onTab={() => handleSetTab(faithBridgeTabIndex)}
           />
         </CustomTabPanel>
         {aquifer && (
-          <CustomTabPanel value={value} index={aquiferTabIndex}>
+          <CustomTabPanel
+            value={value}
+            index={aquiferTabIndex}
+            contentSx={researchTabPanelContentSx}
+          >
             <FindAquifer onClose={onClose} />
           </CustomTabPanel>
         )}
-        <CustomTabPanel value={value} index={findOtherTabIndex}>
+        <CustomTabPanel
+          value={value}
+          index={findOtherTabIndex}
+          contentSx={researchTabPanelContentSx}
+        >
           <FindOther handleLink={handleLink} resources={resources} />
         </CustomTabPanel>
       </Box>

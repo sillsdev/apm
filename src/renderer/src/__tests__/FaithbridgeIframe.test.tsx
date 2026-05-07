@@ -259,7 +259,10 @@ describe('FaithbridgeIframe', () => {
         'src',
         'https://faithbridge.multilingualai.com/apm?chatSessionId=mock-uuid-123&verseRef=MAT+1%3A1-5&userId=remote-user-123'
       );
-      expect(iframe).toHaveAttribute('style', 'width: 100%; height: 600px;');
+      expect(iframe).toHaveAttribute(
+        'style',
+        'width: 100%; height: 600px; display: block; overflow: hidden;'
+      );
       expect(iframe).toHaveAttribute('allowFullScreen');
     });
 
