@@ -10,11 +10,19 @@ interface IProps {
   handleEdit: (userId: string) => () => void;
   handleDelete: (value: string) => () => void;
   admins: IRow[];
+  /** When false (offline or desktop offline-only), member row actions must stay disabled — local changes are not synced. */
+  memberActionsEnabled?: boolean;
 }
 
 export default function PlayCell(params: GridRenderCellParams<IRow> & IProps) {
   const [user] = useGlobal('user');
-  const { value, handleEdit, handleDelete, admins } = params;
+  const {
+    value,
+    handleEdit,
+    handleDelete,
+    admins,
+    memberActionsEnabled = true,
+  } = params;
   const { userIsAdmin } = useRole();
 
   const isCurrentUser = (userId: string) => userId === user;
@@ -27,7 +35,7 @@ export default function PlayCell(params: GridRenderCellParams<IRow> & IProps) {
         aria-label={'edit-' + value}
         color="default"
         onClick={handleEdit(value)}
-        disabled={isCurrentUser(value)}
+        disabled={!memberActionsEnabled || isCurrentUser(value)}
       >
         <EditIcon />
       </IconButton>
@@ -38,9 +46,10 @@ export default function PlayCell(params: GridRenderCellParams<IRow> & IProps) {
         color="default"
         onClick={handleDelete(value)}
         disabled={
-          userIsAdmin
+          !memberActionsEnabled ||
+          (userIsAdmin
             ? admins.length === 1 && isCurrentUser(value)
-            : !isCurrentUser(value)
+            : !isCurrentUser(value))
         }
       >
         <DeleteIcon />

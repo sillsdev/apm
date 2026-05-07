@@ -790,7 +790,21 @@ export function ProfileDialog(props: ProfileDialogProps) {
 
   useEffect(() => setReadOnly(mode === 'viewMyAccount'), [mode]);
 
+  useEffect(() => {
+    if (mode !== 'editMember' || !editId || /Add/i.test(editId)) return;
+    if (isOffline || offlineOnly) setReadOnly(true);
+    else setReadOnly(false);
+  }, [mode, editId, isOffline, offlineOnly, open]);
+
   const onEditClicked = () => {
+    if (
+      mode === 'editMember' &&
+      editId &&
+      !/Add/i.test(editId) &&
+      (isOffline || offlineOnly)
+    ) {
+      return;
+    }
     setReadOnly(false);
   };
 
