@@ -14,6 +14,7 @@ import {
   Typography,
   TypographyProps,
   styled,
+  SxProps,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import { PriButton, AltButton, GrowingSpacer } from '../control';
@@ -28,6 +29,8 @@ export interface StyledDialogProps extends DialogProps {
   paperOutlineColor?: string;
   mobileThickScrollbar?: boolean;
   mobileNoHorizontalScroll?: boolean;
+  /** When `bp` is mobile, CSS value for both paper `maxWidth` and `width` (e.g. min(356px, calc(100vw - 4px))). */
+  mobilePaperWidth?: string;
 }
 // eslint-disable-block TS2783
 export const StyledDialog = styled(Dialog, {
@@ -35,13 +38,15 @@ export const StyledDialog = styled(Dialog, {
     prop !== 'bp' &&
     prop !== 'paperOutlineColor' &&
     prop !== 'mobileThickScrollbar' &&
-    prop !== 'mobileNoHorizontalScroll',
+    prop !== 'mobileNoHorizontalScroll' &&
+    prop !== 'mobilePaperWidth',
 })<StyledDialogProps>(
   ({
     bp,
     paperOutlineColor,
     mobileThickScrollbar,
     mobileNoHorizontalScroll,
+    mobilePaperWidth,
     theme,
   }) => ({
     '& .MuiTable-root': {
@@ -50,15 +55,33 @@ export const StyledDialog = styled(Dialog, {
     },
     '& .MuiDialogTitle-root': {
       paddingBottom: 0,
+      ...(mobilePaperWidth && bp === BigDialogBp.mobile
+        ? { flexShrink: 0 }
+        : {}),
     },
     '& #bigClose': { alignSelf: 'flex-start' },
     ...(bp === BigDialogBp.mobile
       ? {
           '& .MuiDialog-paper': {
-            maxWidth: `calc(100vw - ${theme.spacing(4)})`,
-            width: '100%',
+            ...(mobilePaperWidth
+              ? {
+                  maxWidth: mobilePaperWidth,
+                  width: mobilePaperWidth,
+                  // MUI paper defaults to 32px horizontal margin, which caps width at
+                  // 100vw - 64px (e.g. 296px on a 360px viewport) regardless of maxWidth.
+                  margin: `${theme.spacing(2)} 2px`,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  maxHeight: '100dvh',
+                }
+              : {
+                  maxWidth: `calc(100vw - ${theme.spacing(4)})`,
+                  width: '100%',
+                }),
             minWidth: 0,
-            minHeight: '50%',
+            minHeight: mobilePaperWidth
+              ? 'min(92dvh, calc(100dvh - 24px))'
+              : '50%',
             boxSizing: 'border-box',
           },
         }
@@ -150,6 +173,8 @@ interface IProps {
   paperOutlineColor?: string;
   mobileThickScrollbar?: boolean;
   mobileNoHorizontalScroll?: boolean;
+  mobilePaperWidth?: string;
+  dialogContentSx?: SxProps;
   children: React.JSX.Element;
   isOpen: boolean;
   onOpen: (isOpen: boolean) => void;
@@ -170,6 +195,8 @@ export function BigDialog({
   paperOutlineColor,
   mobileThickScrollbar = false,
   mobileNoHorizontalScroll = false,
+  mobilePaperWidth,
+  dialogContentSx,
   children,
   isOpen,
   onOpen,
@@ -203,6 +230,7 @@ export function BigDialog({
       paperOutlineColor={paperOutlineColor}
       mobileThickScrollbar={mobileThickScrollbar}
       mobileNoHorizontalScroll={mobileNoHorizontalScroll}
+      mobilePaperWidth={mobilePaperWidth}
       disableEnforceFocus
     >
       <DialogTitle id="bigDlg">
@@ -224,7 +252,7 @@ export function BigDialog({
           )}
         </Box>
       </DialogTitle>
-      <DialogContent>{children}</DialogContent>
+      <DialogContent sx={dialogContentSx}>{children}</DialogContent>
       {(showBottomCloseButton || onCancel || onSave) && (
         <DialogActions sx={{ justifyContent: 'center' }}>
           {showBottomCloseButton && (

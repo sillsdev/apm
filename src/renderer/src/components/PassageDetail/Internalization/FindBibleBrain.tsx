@@ -55,6 +55,7 @@ import { useSnackBar } from '../../../hoc/SnackBar';
 interface FindBibleBrainProps {
   onClose?: () => void;
   closeRequested: boolean;
+  fixedFooterLayout?: boolean;
   handleLink: (
     kind: string
   ) => (_event: SyntheticEvent, newValue: OptionProps | null) => void;
@@ -64,6 +65,7 @@ export default function FindBibleBrain({
   handleLink,
   onClose,
   closeRequested,
+  fixedFooterLayout = false,
 }: FindBibleBrainProps) {
   const forceDataChanges = useDataChanges();
   const waitForDataChangesQueue = useWaitForRemoteQueue('datachanges');
@@ -296,12 +298,57 @@ export default function FindBibleBrain({
     }
   }, [closeRequested]);
 
-  return (
+  const actionFooter = (
+    <Box sx={{ pb: fixedFooterLayout ? '4px' : 0, width: '100%' }}>
+      <Grid
+        container
+        direction="row"
+        spacing={2}
+        sx={{ my: fixedFooterLayout ? 0 : 1 }}
+      >
+        <Divider sx={{ width: '100%' }} />
+        <ActionRow>
+          <AltButton
+            disabled={!bibleOpt}
+            onClick={(e) => handleLink('bibleBrain')(e, bibleOpt)}
+            sx={
+              fixedFooterLayout
+                ? {
+                    whiteSpace: 'normal',
+                    overflow: 'visible',
+                    textAlign: 'center',
+                    minWidth: 0,
+                  }
+                : undefined
+            }
+          >
+            {t.launch}
+          </AltButton>
+          <PriButton
+            disabled={
+              !bibleOpt ||
+              adding ||
+              (!createPassages && !createSections && timing) ||
+              (creationScope === scopeI.passage && createSections)
+            }
+            onClick={() => handleAdd()}
+          >
+            {t.create}
+          </PriButton>
+        </ActionRow>
+      </Grid>
+    </Box>
+  );
+
+  const mainForm = (
     <Grid
       container
       spacing={2}
       direction="row"
-      sx={{ justifyContent: 'center', mb: '150px' }}
+      sx={{
+        justifyContent: 'center',
+        ...(fixedFooterLayout ? {} : { mb: '150px' }),
+      }}
     >
       <Grid>
         <Stack sx={{ m: 1 }} spacing={2}>
@@ -422,28 +469,37 @@ export default function FindBibleBrain({
           <Typography>{count}</Typography>
         </Box>
       )}
-      <Grid container direction={'row'} spacing={2} sx={{ my: 1 }}>
-        <Divider sx={{ width: '100%' }} />
-        <ActionRow>
-          <AltButton
-            disabled={!bibleOpt}
-            onClick={(e) => handleLink('bibleBrain')(e, bibleOpt)}
-          >
-            {t.launch}
-          </AltButton>
-          <PriButton
-            disabled={
-              !bibleOpt ||
-              adding ||
-              (!createPassages && !createSections && timing) ||
-              (creationScope === scopeI.passage && createSections)
-            }
-            onClick={() => handleAdd()}
-          >
-            {t.create}
-          </PriButton>
-        </ActionRow>
-      </Grid>
+      {!fixedFooterLayout ? actionFooter : null}
     </Grid>
   );
+
+  if (fixedFooterLayout) {
+    return (
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          flex: 1,
+          minHeight: 0,
+          height: '100%',
+          width: '100%',
+        }}
+      >
+        <Box
+          sx={{
+            position: 'relative',
+            flex: '1 1 0px',
+            minHeight: 0,
+            width: '100%',
+            overflow: 'auto',
+          }}
+        >
+          {mainForm}
+        </Box>
+        {actionFooter}
+      </Box>
+    );
+  }
+
+  return mainForm;
 }

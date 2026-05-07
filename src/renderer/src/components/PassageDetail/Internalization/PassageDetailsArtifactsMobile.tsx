@@ -926,6 +926,16 @@ export function PassageDetailArtifactsMobile() {
         isOpen={findOpen}
         onOpen={handleFindVisible}
         bp={BigDialogBp.mobile}
+        mobilePaperWidth="min(356px, calc(100vw - 4px))"
+        dialogContentSx={{
+          px: '3px',
+          pb: '4px',
+          display: 'flex',
+          flexDirection: 'column',
+          flex: '1 1 auto',
+          minHeight: 0,
+          overflow: 'hidden',
+        }}
       >
         <FindTabs
           onClose={() => handleFindVisible(false)}

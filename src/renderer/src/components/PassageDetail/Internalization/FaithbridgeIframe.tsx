@@ -15,7 +15,7 @@ import { useGlobal } from '../../../context/useGlobal';
 import { useFaithbridgeResult } from './useFaithbridgeResult';
 import usePassageDetailContext from '../../../context/usePassageDetailContext';
 import { GrowingSpacer } from '../../../control/GrowingSpacer';
-import { Checkbox, FormControlLabel, Stack } from '@mui/material';
+import { Checkbox, FormControlLabel, Stack, Box } from '@mui/material';
 import { remoteId } from '../../../crud';
 import { RecordKeyMap } from '@orbit/records';
 import { FaithBridge } from '../../../assets/brands';
@@ -30,11 +30,13 @@ import { usePassageRef } from './usePassageRef';
 interface IFaithbridgeIframeProps {
   onMarkdown: (query: string, audioUrl: string, transcript: string) => void;
   onClose?: (() => void) | undefined;
+  fixedFooterLayout?: boolean;
 }
 
 export const FaithbridgeIframe = ({
   onMarkdown,
   onClose,
+  fixedFooterLayout = false,
 }: IFaithbridgeIframeProps) => {
   const [chat, setChat] = useState<string | null>(null);
   const [verseRef, setVerseRef] = useState<string | null>(null);
@@ -206,58 +208,139 @@ export const FaithbridgeIframe = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [offlineOnly, isOffline, audio]);
 
-  return connected ? (
+  const iframeSrc = `https://faithbridge.multilingualai.com/apm?${
+    urlParams ? urlParams.toString() : ''
+  }`;
+
+  const actionFooter = (
     <>
-      <iframe
-        src={`https://faithbridge.multilingualai.com/apm?${
-          urlParams ? urlParams.toString() : ''
-        }`}
-        title={FaithBridge}
-        style={{ width: '100%', height: '600px', border: 'none' }}
-        allowFullScreen
-        allow="microphone; clipboard-write"
-      />
-      {loading && <div>{t.loading}</div>}
-      <ActionRow>
-        {!offlineOnly && !isOffline && (
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={audio}
-                onChange={(_ev, checked) => setAudio(checked)}
-              />
-            }
-            label={t.audioResources}
-          />
-        )}
-        <GrowingSpacer />
-        <AltButton
-          disabled={fetching}
-          onClick={getNewChat}
-          sx={{ height: 'fit-content', alignSelf: 'center' }}
-        >
-          {t.newChat}
-        </AltButton>
-        {hasPermission && (!isOffline || offlineOnly) ? (
-          <Stack sx={{ justifyContent: 'center', alignItems: 'center' }}>
-            <PriButton disabled={fetching} onClick={handleAddContent}>
-              {t.addContent.replace('{0}', audio ? t.audio : t.text)}
-            </PriButton>
-            {!/404/.test(error || '') ? (
-              error && (
-                <div>
-                  {t.error} {error}
-                </div>
-              )
-            ) : (
-              <></>
-            )}
-          </Stack>
-        ) : (
-          <></>
-        )}
-      </ActionRow>
+      {loading && !fixedFooterLayout && <div>{t.loading}</div>}
+      <Box sx={{ pb: fixedFooterLayout ? '4px' : 0, width: '100%' }}>
+        <ActionRow>
+          {!offlineOnly && !isOffline && (
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={audio}
+                  onChange={(_ev, checked) => setAudio(checked)}
+                />
+              }
+              label={t.audioResources}
+            />
+          )}
+          <GrowingSpacer />
+          <AltButton
+            disabled={fetching}
+            onClick={getNewChat}
+            sx={{
+              height: 'fit-content',
+              alignSelf: 'center',
+              ...(fixedFooterLayout
+                ? {
+                    whiteSpace: 'normal',
+                    overflow: 'visible',
+                    textAlign: 'center',
+                    minWidth: 0,
+                  }
+                : {}),
+            }}
+          >
+            {t.newChat}
+          </AltButton>
+          {hasPermission && (!isOffline || offlineOnly) ? (
+            <Stack sx={{ justifyContent: 'center', alignItems: 'center' }}>
+              <PriButton disabled={fetching} onClick={handleAddContent}>
+                {t.addContent.replace('{0}', audio ? t.audio : t.text)}
+              </PriButton>
+              {!/404/.test(error || '') ? (
+                error && (
+                  <div>
+                    {t.error} {error}
+                  </div>
+                )
+              ) : (
+                <></>
+              )}
+            </Stack>
+          ) : (
+            <></>
+          )}
+        </ActionRow>
+      </Box>
     </>
+  );
+
+  return connected ? (
+    fixedFooterLayout ? (
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          flex: 1,
+          minHeight: 0,
+          height: '100%',
+          width: '100%',
+        }}
+      >
+        <Box
+          sx={{
+            position: 'relative',
+            flex: '1 1 0px',
+            minHeight: 0,
+            width: '100%',
+            overflow: 'hidden',
+          }}
+        >
+          <iframe
+            src={iframeSrc}
+            title={FaithBridge}
+            style={{
+              border: 'none',
+              display: 'block',
+              width: '100%',
+              height: '100%',
+              minHeight: 0,
+              overflow: 'hidden',
+            }}
+            allowFullScreen
+            allow="microphone; clipboard-write"
+          />
+          {loading ? (
+            <Box
+              sx={{
+                position: 'absolute',
+                left: 0,
+                right: 0,
+                bottom: 0,
+                bgcolor: 'action.hover',
+                px: 1,
+                py: 0.5,
+              }}
+            >
+              {t.loading}
+            </Box>
+          ) : null}
+        </Box>
+        {actionFooter}
+      </Box>
+    ) : (
+      <>
+        <iframe
+          src={iframeSrc}
+          title={FaithBridge}
+          style={{
+            width: '100%',
+            height: '600px',
+            border: 'none',
+            display: 'block',
+            overflow: 'hidden',
+          }}
+          allowFullScreen
+          allow="microphone; clipboard-write"
+        />
+        {actionFooter}
+      </>
+    )
   ) : (
     <Typography variant="h6">{onlineMsg}</Typography>
   );
