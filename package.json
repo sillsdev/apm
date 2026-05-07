@@ -65,6 +65,7 @@
     "ffmpeg-static": "^5.2.0",
     "ffprobe-static": "^3.1.0",
     "fs-extra": "^11.2.0",
+    "jszip": "^3.10.1",
     "jwt-decode": "^4.0.0",
     "keytar": "^7.9.0",
     "lodash": "^4.17.21",
@@ -225,7 +226,9 @@
       {
         "from": "migration",
         "to": "migration",
-        "filter": ["**/*"]
+        "filter": [
+          "**/*"
+        ]
       }
     ],
     "extraFiles": [
