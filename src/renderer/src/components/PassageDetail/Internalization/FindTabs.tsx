@@ -148,7 +148,9 @@ export default function FindTabs({
 
   const fixedFooterTabOverflowHidden =
     isSmallScreen &&
-    (value === faithBridgeTabIndex || value === bibleBrainTabIndex);
+    (value === faithBridgeTabIndex ||
+      value === bibleBrainTabIndex ||
+      (aquifer && value === aquiferTabIndex));
 
   return (
     <Box
@@ -299,7 +301,10 @@ export default function FindTabs({
           <CustomTabPanel
             value={value}
             index={aquiferTabIndex}
-            contentSx={researchTabPanelContentSx}
+            contentSx={
+              isSmallScreen ? { px: 0, py: 0 } : researchTabPanelContentSx
+            }
+            fillParent={value === aquiferTabIndex ? isSmallScreen : undefined}
           >
             <FindAquifer onClose={onClose} />
           </CustomTabPanel>
