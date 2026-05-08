@@ -72,7 +72,8 @@ export const StyledDialog = styled(Dialog, {
                   margin: `${theme.spacing(2)} 2px`,
                   display: 'flex',
                   flexDirection: 'column',
-                  maxHeight: '100dvh',
+                  // Account for vertical margin so paper never exceeds viewport height.
+                  maxHeight: `calc(100dvh - ${theme.spacing(4)})`,
                 }
               : {
                   maxWidth: `calc(100vw - ${theme.spacing(4)})`,

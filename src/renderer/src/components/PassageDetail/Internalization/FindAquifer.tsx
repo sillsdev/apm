@@ -410,6 +410,7 @@ export default function FindAquifer({ onClose }: IProps) {
         });
       })
       .catch((err) => {
+        setAdding(false);
         showMessage(t.addError + (err as AxiosError).message);
         logError(Severity.error, errorReporter, infoMsg(err, t.addError));
       });
