@@ -211,6 +211,7 @@ function runBibleFetch<T>({
   setLoading,
   setError,
   t,
+  onSettled,
 }: {
   getUrl: () => string | undefined;
   parse: (data: unknown) => T;
@@ -219,6 +220,8 @@ function runBibleFetch<T>({
   setLoading: (value: boolean) => void;
   setError: (message: string | null) => void;
   t: IGraphicStrings;
+  /** Called when the request finishes (after loading is cleared), including on error. */
+  onSettled?: () => void;
 }) {
   const url = getUrl();
   if (!url) return;
@@ -239,7 +242,10 @@ function runBibleFetch<T>({
       setError(err instanceof Error ? err.message : t.loadFailure);
       onFailure();
     })
-    .finally(() => setLoading(false));
+    .finally(() => {
+      setLoading(false);
+      onSettled?.();
+    });
 }
 
 export interface GraphicPickerProps {
@@ -250,6 +256,8 @@ export interface GraphicPickerProps {
   bookCode: string;
   /** Reference string */
   refString: string;
+  /** Whether the project is a Scripture-type plan; controls Scripture filter */
+  scripture?: boolean;
   /** Filter state passed to getSearchUrl (style/keyword) */
   filterState?: GraphicFilterState;
   /** Images for the Custom tab */
@@ -286,6 +294,7 @@ export function GraphicPicker({
   onCancel,
   bookCode,
   refString,
+  scripture = true,
   customImages = [],
   metadata,
   currentGraphic,
@@ -316,6 +325,9 @@ export function GraphicPicker({
   >([]);
   const [bibleLoading, setBibleLoading] = useState(false);
   const [bibleError, setBibleError] = useState<string | null>(null);
+  /** Avoid showing "no results" before the first Library search request has run (useEffect is post-paint). */
+  const [librarySearchFetchCompleted, setLibrarySearchFetchCompleted] =
+    useState(false);
 
   const [excludedStyles, setExcludedStyles] = useState<string[]>([
     ...DEFAULT_EXCLUDED_STYLES,
@@ -337,8 +349,11 @@ export function GraphicPicker({
     onOpen,
   });
   const defaultScriptureRefChecked: ScriptureRefChecked = useMemo(
-    () => ({ book: true, chapter: true, verse: true }),
-    []
+    () =>
+      scripture
+        ? { book: true, chapter: true, verse: true }
+        : { book: false, chapter: false, verse: false },
+    [scripture]
   );
   const [filterScriptureRefChecked, setFilterScriptureRefChecked] =
     useState<ScriptureRefChecked>(defaultScriptureRefChecked);
@@ -384,6 +399,13 @@ export function GraphicPicker({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentGraphic]);
+
+  useEffect(() => {
+    if (!isOpen || tabValue !== 0) {
+      setLibrarySearchFetchCompleted(false);
+      return;
+    }
+  }, [isOpen, tabValue]);
 
   useEffect(() => {
     if (!isOpen || tabValue !== 0) return;
@@ -501,6 +523,7 @@ export function GraphicPicker({
       setLoading: setBibleLoading,
       setError: setBibleError,
       t,
+      onSettled: () => setLibrarySearchFetchCompleted(true),
     });
   }, [
     isOpen,
@@ -735,6 +758,7 @@ export function GraphicPicker({
                     onKeywordsChange={setFilterSelectedKeywords}
                     onKeywordsSearchChange={setKeywordListSearch}
                     keywordsListSearchResetKey={keywordsListSearchResetKey}
+                    scripture={scripture}
                     scriptureReference={scriptureReference}
                     scriptureRefChecked={filterScriptureRefChecked}
                     onScriptureRefCheckedChange={setFilterScriptureRefChecked}
@@ -759,6 +783,15 @@ export function GraphicPicker({
                   ) : bibleError ? (
                     <Typography color="error" variant="body2">
                       {bibleError}
+                    </Typography>
+                  ) : filteredImages.length === 0 &&
+                    librarySearchFetchCompleted ? (
+                    <Typography
+                      color="text.secondary"
+                      variant="body2"
+                      sx={{ p: 2, textAlign: 'center' }}
+                    >
+                      {t.noResults}
                     </Typography>
                   ) : (
                     <Grid container spacing={1}>

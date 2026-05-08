@@ -2223,6 +2223,7 @@ export function ScriptureTable(props: IProps) {
       <GraphicPicker
         bookCode={firstBook}
         refString={graphicPickerRefString}
+        scripture={scripture}
         isOpen={uploadGraphicVisible}
         onOpen={handleUploadGraphicVisible}
         mediaUploadControlsRef={mediaUploadControlsRef}

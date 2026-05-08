@@ -2686,6 +2686,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="graphic.noResults">
+         <segment>
+            <source>No matching images found. Try a different search or adjust the filters.</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="graphic.noSelection">
          <segment>
             <source>no {0} selected.</source>
