@@ -790,7 +790,21 @@ export function ProfileDialog(props: ProfileDialogProps) {
 
   useEffect(() => setReadOnly(mode === 'viewMyAccount'), [mode]);
 
+  useEffect(() => {
+    if (mode !== 'editMember' || !editId || /Add/i.test(editId)) return;
+    if (isOffline && !offlineOnly) setReadOnly(true);
+    else setReadOnly(false);
+  }, [mode, editId, isOffline, offlineOnly, open]);
+
+  const memberEditOfflineBlocked =
+    mode === 'editMember' &&
+    !!editId &&
+    !/Add/i.test(editId) &&
+    isOffline &&
+    !offlineOnly;
+
   const onEditClicked = () => {
+    if (memberEditOfflineBlocked) return;
     setReadOnly(false);
   };
 
@@ -849,7 +863,7 @@ export function ProfileDialog(props: ProfileDialogProps) {
             <Caption sx={profileEmailProps}>{email || ''}</Caption>
             {((editId && /Add/i.test(editId)) || !userNotComplete()) && (
               <Button
-                disabled={!readOnly}
+                disabled={!readOnly || memberEditOfflineBlocked}
                 variant="contained"
                 onClick={onEditClicked}
                 sx={editProfileProps}
