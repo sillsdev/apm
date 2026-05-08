@@ -42,6 +42,7 @@ jest.mock('./data/burritoBuilder', () => ({
       meta: { version: '0.1', category: 'scripture' },
       ingredients: {},
       type: { flavorType: { name: 'scripture', flavor: { name: 'base' }, currentScope: {} } },
+      identification: {},
     };
     withMeta(meta: any) {
       this.obj.meta = { ...this.obj.meta, ...meta };
@@ -50,7 +51,11 @@ jest.mock('./data/burritoBuilder', () => ({
     withIdAuthority() {
       return this;
     }
-    withIdentification() {
+    withIdentification(identification: any) {
+      this.obj.identification = {
+        ...this.obj.identification,
+        ...identification,
+      };
       return this;
     }
     withAgency() {
@@ -322,6 +327,66 @@ describe('useCreateBurrito', () => {
     // effect runs after mount
     await act(async () => Promise.resolve());
     expect(dispatch).toHaveBeenCalled();
+  });
+
+  it('trims identification.name.en and language display names in metadata', async () => {
+    const ipc = makeIpc();
+    const { user, team, bible, teamBible } = fixtures(teamId);
+    bible.attributes.bibleName = '  Trimmed Bible  ';
+    const project = {
+      id: 'proj-1',
+      type: 'project',
+      attributes: {
+        name: 'Proj',
+        language: 'eng',
+        languageName: '  English  ',
+      },
+      relationships: {},
+    } as any;
+    const plan = {
+      id: 'plan-1',
+      type: 'plan',
+      relationships: { project: { data: { id: 'proj-1' } } },
+    } as any;
+
+    const { renderHook, act, useCreateBurrito } = loadCreateBurrito(ipc as never, {
+      orgDefaults: {
+        burritoBooks: ['GEN'],
+        burritoContents: [BurritoType.Text],
+        burritoWrapper: { wrapper: true },
+        burritoProjects: ['proj-1'],
+        burritoFormat: { convertToMp3: false },
+        burritoRevision: '  2  ',
+      },
+      orbit: {
+        user: [user],
+        organization: [team],
+        organizationbible: [teamBible],
+        bible: [bible],
+        project: [project],
+        plan: [plan],
+        section: [],
+        passage: [],
+      },
+    });
+
+    const { result } = renderHook(() => useCreateBurrito(teamId));
+
+    await act(async () => {
+      await result.current.createBurrito();
+    });
+
+    const metaWrites = ipc.write.mock.calls.filter((c) =>
+      String(c[0]).includes('metadata.json')
+    );
+    expect(metaWrites.length).toBeGreaterThan(0);
+    const metadata = JSON.parse(metaWrites[metaWrites.length - 1][1] as string);
+    expect(metadata.identification?.name?.en).toBe('Trimmed Bible');
+    expect(metadata.identification?.abbreviation?.en).toBe('TST');
+    expect(metadata.languages).toEqual([
+      { tag: 'eng', name: { en: 'English' } },
+    ]);
+    expect(metadata.identification?.primary?.apm?.['rem-1']?.revision).toBe('2');
   });
 });
 

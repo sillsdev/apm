@@ -366,6 +366,8 @@ describe('useBurritoAudio', () => {
     expect(ipIngredient).toBeDefined();
     expect(ipIngredient![0]).toContain('rights-statement');
     expect(ipIngredient![1].mimeType).toBe('audio/mpeg');
+    expect(ipIngredient![1].scope).toEqual({ GEN: [] });
+    expect(ipIngredient![1].scope?.GEN).not.toContain('');
 
     useArtifactType.mockImplementation(() => ({
       slugFromId: jest.fn(() => 'vernacular'),

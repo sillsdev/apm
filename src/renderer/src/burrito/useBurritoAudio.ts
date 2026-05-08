@@ -240,7 +240,7 @@ export const useBurritoAudio = (teamId: string) => {
             ? 'audio/mpeg'
             : inferAudioContentType(finalPath, attr.contentType),
         size,
-        scope: { [book]: [scopeRef] },
+        scope: { [book]: scopeRef ? [scopeRef] : [] },
         properties: {
           apmId: m.keys?.remoteId || m.id,
         },
@@ -263,7 +263,7 @@ export const useBurritoAudio = (teamId: string) => {
         checksum: { md5: await ipc?.md5File(finalPath) },
         mimeType: attr.contentType,
         size: attr.originalFile.length,
-        scope: { [book]: [scopeRef] },
+        scope: { [book]: scopeRef ? [scopeRef] : [] },
         properties: {
           apmId: m.keys?.remoteId || m.id,
         },
@@ -287,7 +287,7 @@ export const useBurritoAudio = (teamId: string) => {
         checksum: { md5: await ipc?.md5File(finalPath) },
         mimeType: attr.contentType || 'text/plain',
         size: attr.originalFile.length,
-        scope: { [book]: [scopeRef] },
+        scope: { [book]: scopeRef ? [scopeRef] : [] },
         properties: {
           apmId: m.keys?.remoteId || m.id,
         },
@@ -309,7 +309,7 @@ export const useBurritoAudio = (teamId: string) => {
         checksum: { md5: await ipc?.md5File(finalPath) },
         mimeType: 'text/plain',
         size: url.length + 1,
-        scope: { [book]: [scopeRef] },
+        scope: { [book]: scopeRef ? [scopeRef] : [] },
         properties: {
           apmId: m.keys?.remoteId || m.id,
         },

@@ -277,7 +277,7 @@ export const useBurritoNavigation = (teamId: string) => {
         checksum: { md5: await ipc?.md5File(destPath) },
         mimeType: attr.contentType || 'image/png',
         size,
-        scope: { [book]: [scopeRef] },
+        scope: { [book]: scopeRef ? [scopeRef] : [] },
         properties: {
           apmId: m.keys?.remoteId || m.id,
         },
@@ -370,7 +370,7 @@ export const useBurritoNavigation = (teamId: string) => {
             checksum: { md5: await ipc?.md5File(destPath) },
             mimeType: imgInfo.type || 'image/png',
             size: stat?.size ?? 0,
-            scope: { [book]: [scopeRef] },
+            scope: { [book]: scopeRef ? [scopeRef] : [] },
             properties: {
               apmId: g.keys?.remoteId || g.id,
             },
