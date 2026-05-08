@@ -47,6 +47,7 @@ import {
   useWaitForRemoteQueue,
 } from '../../../utils';
 import BigDialog from '../../../hoc/BigDialog';
+import { BigDialogBp } from '../../../hoc/BigDialogBp';
 import { Aquifer } from '../../../assets/brands';
 import { useSnackBar } from '../../../hoc/SnackBar';
 import { AxiosError } from 'axios';
@@ -419,18 +420,50 @@ export default function FindAquifer({ onClose }: IProps) {
   const previewDialog = content && (
     <BigDialog
       title={t.preview}
-      description={<Typography sx={{ pb: 2 }}>{previewItem?.name}</Typography>}
+      description={
+        <Typography sx={{ pb: isMobileLayout ? 1 : 2 }}>
+          {previewItem?.name}
+        </Typography>
+      }
       isOpen={previewOpen}
       onOpen={(isOpen: boolean) => {
         setPreviewOpen(isOpen);
         if (!isOpen) setPreviewItem(null);
       }}
+      bp={isMobileLayout ? BigDialogBp.mobile : BigDialogBp.sm}
+      mobileNoHorizontalScroll
+      mobilePaperWidth="min(720px, calc(100vw - 4px))"
+      dialogContentSx={{
+        display: 'flex',
+        flexDirection: 'column',
+        flex: '1 1 auto',
+        minHeight: 0,
+        overflowY: 'auto',
+        overflowX: 'hidden',
+        p: isMobileLayout ? 1 : 2,
+        '& img': {
+          maxWidth: '100%',
+          height: 'auto',
+        },
+        '& pre': {
+          overflowX: 'auto',
+          maxWidth: '100%',
+        },
+        '& *': {
+          overflowWrap: 'anywhere',
+          wordBreak: 'break-word',
+        },
+      }}
     >
       <>
         {previewItem?.mediaType.toLowerCase() === 'text' ? (
-          <Markdown>{(content.content as string[])[0]}</Markdown>
+          <Box sx={{ width: '100%' }}>
+            <Markdown>{(content.content as string[])[0]}</Markdown>
+          </Box>
         ) : previewItem?.mediaType.toLowerCase() === 'image' ? (
-          <img src={(content.content as any)?.url} alt={previewItem?.name} />
+          <Box sx={{ width: '100%' }}>
+            <img src={(content.content as any)?.url} alt={previewItem?.name} />
+          </Box>
         ) : previewItem?.mediaType.toLowerCase() === 'audio' ? (
           <IconButton
             onClick={() => setLink((content.content as any)?.mp3.url)}
@@ -542,7 +575,7 @@ export default function FindAquifer({ onClose }: IProps) {
                       <Stack
                         direction="row"
                         flexWrap="wrap"
-                        alignItems="flex-start"
+                        alignItems="center"
                         gap={1}
                         useFlexGap
                       >
