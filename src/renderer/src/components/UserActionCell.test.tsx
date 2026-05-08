@@ -1,4 +1,3 @@
-import React from 'react';
 import { render, screen } from '@testing-library/react';
 import UserActionCell from './UserActionCell';
 import type { GridRenderCellParams } from '@mui/x-data-grid';
