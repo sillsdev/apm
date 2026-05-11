@@ -123,9 +123,7 @@ describe('findPlanSheetRowFromReferenceQuery', () => {
   });
 
   it('matches scripture with explicit book token', () => {
-    const rowInfo: ISheet[] = [
-      basePassage({ book: 'MAT', reference: '5:3' }),
-    ];
+    const rowInfo: ISheet[] = [basePassage({ book: 'MAT', reference: '5:3' })];
     const r = findPlanSheetRowFromReferenceQuery('MAT 5:3', rowInfo, {
       ...defaultOpts,
     });
@@ -181,10 +179,14 @@ describe('findPlanSheetRowFromReferenceQuery', () => {
     const rowInfo: ISheet[] = [
       basePassage({ reference: '  Episode 3 — cold open  ', book: '' }),
     ];
-    const r = findPlanSheetRowFromReferenceQuery('episode 3 — cold open', rowInfo, {
-      ...defaultOpts,
-      scripture: false,
-    });
+    const r = findPlanSheetRowFromReferenceQuery(
+      'episode 3 — cold open',
+      rowInfo,
+      {
+        ...defaultOpts,
+        scripture: false,
+      }
+    );
     expect(r).toEqual({ ok: true, rowIndex: 0 });
   });
 

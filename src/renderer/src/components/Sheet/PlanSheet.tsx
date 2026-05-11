@@ -767,7 +767,7 @@ export function PlanSheet(props: IProps) {
       scripture,
     });
 
-    if (!result.ok) {
+    if (result.ok === false) {
       if (result.error === 'ms_unavailable_filtered') {
         showMessage(t.referenceFilteredNoPublishingLabels);
       } else {

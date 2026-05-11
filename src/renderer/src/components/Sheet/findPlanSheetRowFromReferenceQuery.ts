@@ -201,7 +201,11 @@ export function findPlanSheetRowFromReferenceQuery(
   const publishingLabelsVisible = opts.publishingOn && !opts.hidePublishing;
   const publishingHidden = !opts.publishingOn || opts.hidePublishing;
 
-  if (publishingLabelsVisible && opts.filtered && looksLikePublishingReferenceQuery(trimmed)) {
+  if (
+    publishingLabelsVisible &&
+    opts.filtered &&
+    looksLikePublishingReferenceQuery(trimmed)
+  ) {
     return { ok: false, error: 'ms_unavailable_filtered' };
   }
 
