@@ -20,10 +20,22 @@ import {
   SheetLevel,
   OrganizationD,
 } from '../../model';
-import { Box, IconButton, debounce, styled } from '@mui/material';
+import {
+  Box,
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  IconButton,
+  TextField,
+  debounce,
+  styled,
+} from '@mui/material';
 import SaveIcon from '@mui/icons-material/Save';
 import PublishOffIcon from '@mui/icons-material/PublicOffOutlined';
 import PublishOnIcon from '@mui/icons-material/PublicOutlined';
+import SearchIcon from '@mui/icons-material/Search';
 import { useSnackBar } from '../../hoc/SnackBar';
 import DataSheet from 'react-datasheet';
 import Confirm from '../AlertDialog';
@@ -71,6 +83,7 @@ import { useShowIcon } from './useShowIcon';
 import { RecordKeyMap } from '@orbit/records';
 import ConfirmPublishDialog from '../ConfirmPublishDialog';
 import { useOrbitData } from '../../hoc/useOrbitData';
+import { findPlanSheetRowFromReferenceQuery } from './findPlanSheetRowFromReferenceQuery';
 
 const DOWN_ARROW = 'ARROWDOWN';
 export const SectionSeqCol = 0;
@@ -245,6 +258,7 @@ export function PlanSheet(props: IProps) {
     paste,
     resequence,
     inlinePassages,
+    lookupBook,
     onPassageDetail,
     onFilterChange,
     onPublishing,
@@ -262,6 +276,7 @@ export function PlanSheet(props: IProps) {
     sectionArr,
     shared,
     canPublish,
+    scripture,
   } = ctx.state;
 
   const [memory] = useGlobal('memory');
@@ -326,6 +341,8 @@ export function PlanSheet(props: IProps) {
   const rowsPerPage = useRef(20);
   const [scrollCount, setScrollCount] = useState(0);
   const [curTop, setCurTop] = useState(0);
+  const [goToOpen, setGoToOpen] = useState(false);
+  const [goToQuery, setGoToQuery] = useState('');
   const moveUp = true;
   const moveDown = false;
   const moveToNewSection = true;
@@ -709,6 +726,74 @@ export function PlanSheet(props: IProps) {
     onFirstMovement: myOnFirstMovement,
   });
 
+  const jumpToRowIndex = useCallback(
+    (rowIndex0: number) => {
+      const targetRow = rowIndex0 + 1; // includes header row
+      const nr = rowsPerPage.current || 1;
+      const maxTop = Math.max(1, rowInfo.length - nr + 1);
+      const desiredTop = Math.min(
+        maxTop,
+        Math.max(1, targetRow - Math.floor(nr / 2))
+      );
+
+      setCurTop(desiredTop);
+      setCurrentRow(targetRow);
+
+      const tryScroll = (attempt: number) => {
+        const nodes = bodyChildren();
+        const targetNode = nodes && (nodes[targetRow] as HTMLDivElement);
+        if (targetNode) {
+          sheetScroll();
+          return;
+        }
+        if (attempt < 6) {
+          setTimeout(() => tryScroll(attempt + 1), 50);
+        }
+      };
+      setTimeout(() => tryScroll(0), 0);
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [rowInfo.length]
+  );
+
+  const handleGoToSubmit = useCallback(() => {
+    const result = findPlanSheetRowFromReferenceQuery(goToQuery, rowInfo, {
+      publishingOn,
+      hidePublishing,
+      filtered,
+      sectionArr,
+      inlinePassages,
+      lookupBook,
+      scripture,
+    });
+
+    if (!result.ok) {
+      if (result.error === 'ms_unavailable_filtered') {
+        showMessage(t.referenceFilteredNoPublishingLabels);
+      } else {
+        showMessage(t.referenceNotFound);
+      }
+      return;
+    }
+
+    setGoToOpen(false);
+    jumpToRowIndex(result.rowIndex);
+  }, [
+    filtered,
+    goToQuery,
+    hidePublishing,
+    inlinePassages,
+    jumpToRowIndex,
+    lookupBook,
+    publishingOn,
+    rowInfo,
+    scripture,
+    sectionArr,
+    showMessage,
+    t.referenceFilteredNoPublishingLabels,
+    t.referenceNotFound,
+  ]);
+
   const handleAutoSave = () => {
     if (
       changedRef.current &&
@@ -1090,6 +1175,18 @@ export function PlanSheet(props: IProps) {
               hidePublishing={hidePublishing}
               disabled={!filtered && (rowInfo.length < 2 || anyRecording)}
             />
+            <LightTooltip
+              sx={{ backgroundColor: 'transparent' }}
+              title={t.goToReference}
+            >
+              <IconButton
+                aria-label={t.goToReference}
+                onClick={() => setGoToOpen(true)}
+                disabled={rowInfo.length < 2}
+              >
+                <SearchIcon sx={{ color: 'primary.light' }} />
+              </IconButton>
+            </LightTooltip>
             {!readonly && (
               <>
                 <PriButton
@@ -1107,6 +1204,35 @@ export function PlanSheet(props: IProps) {
             )}
           </TabActions>
         </TabAppBar>
+        <Dialog
+          open={goToOpen}
+          onClose={() => setGoToOpen(false)}
+          maxWidth="sm"
+        >
+          <DialogTitle>{t.goToReferenceTitle}</DialogTitle>
+          <DialogContent>
+            <TextField
+              autoFocus
+              fullWidth
+              margin="dense"
+              value={goToQuery}
+              onChange={(e) => setGoToQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleGoToSubmit();
+                }
+              }}
+              placeholder={t.goToReferencePlaceholder}
+            />
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setGoToOpen(false)}>{ts.cancel}</Button>
+            <Button variant="contained" onClick={handleGoToSubmit}>
+              {t.goToReferenceSubmit}
+            </Button>
+          </DialogActions>
+        </Dialog>
         <ContentDiv id="PlanSheet" ref={sheetRef}>
           {warning && (
             <WarningDiv

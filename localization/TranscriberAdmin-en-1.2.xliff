@@ -7152,6 +7152,34 @@
       			<context context-type="sourcefile">PlanSheet.tsx</context>
       		</context-group>
       	</trans-unit>
+         <trans-unit id="planSheet.goToReference">
+            <source>Go to reference</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">PlanSheet.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="planSheet.goToReferencePlaceholder">
+            <source>Verse reference, M1 S1 (if shown), section.passage (example: 2.3), or exact reference text</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">PlanSheet.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="planSheet.goToReferenceTitle">
+            <source>Go to reference</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">PlanSheet.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="planSheet.goToReferenceSubmit">
+            <source>Go</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">PlanSheet.tsx</context>
+            </context-group>
+         </trans-unit>
       	<trans-unit id="planSheet.hidePublishing">
       		<source>Hide Publishing Information</source>
       		<target/>
@@ -7266,6 +7294,20 @@
          </trans-unit>
          <trans-unit id="planSheet.refErr">
             <source>This project contains invalid Books or References and will not sync or publish. (A valid reference would be 3:2-5 or similar.)</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">PlanSheet.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="planSheet.referenceFilteredNoPublishingLabels">
+            <source>Clear the filter to go to a movement/section label (M/S).</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">PlanSheet.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="planSheet.referenceNotFound">
+            <source>No matching row was found.</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">PlanSheet.tsx</context>
