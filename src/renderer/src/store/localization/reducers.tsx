@@ -1262,7 +1262,7 @@ const initialState = {
 			"firstMovement": "Start At",
 			"graphic": "Graphic",
 			"goToReference": "Go to reference",
-			"goToReferencePlaceholder": "Verse reference, M1 S1, or section.passage (example: 2.3)",
+			"goToReferencePlaceholder": "Verse reference, M1 S1 (if shown), section.passage (example: 2.3), or exact reference text",
 			"goToReferenceTitle": "Go to reference",
 			"goToReferenceSubmit": "Go",
 			"hidePublishing": "Hide Publishing Information",

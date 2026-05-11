@@ -7160,7 +7160,7 @@
             </context-group>
          </trans-unit>
          <trans-unit id="planSheet.goToReferencePlaceholder">
-            <source>Verse reference, M1 S1, or section.passage (example: 2.3)</source>
+            <source>Verse reference, M1 S1 (if shown), section.passage (example: 2.3), or exact reference text</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">PlanSheet.tsx</context>

@@ -6138,7 +6138,7 @@
       </unit>
       <unit id="planSheet.goToReferencePlaceholder">
          <segment>
-            <source>Verse reference, M1 S1, or section.passage (example: 2.3)</source>
+            <source>Verse reference, M1 S1 (if shown), section.passage (example: 2.3), or exact reference text</source>
             <target/>
          </segment>
       </unit>

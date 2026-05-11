@@ -276,6 +276,7 @@ export function PlanSheet(props: IProps) {
     sectionArr,
     shared,
     canPublish,
+    scripture,
   } = ctx.state;
 
   const [memory] = useGlobal('memory');
@@ -763,6 +764,7 @@ export function PlanSheet(props: IProps) {
       sectionArr,
       inlinePassages,
       lookupBook,
+      scripture,
     });
 
     if (!result.ok) {
@@ -785,6 +787,7 @@ export function PlanSheet(props: IProps) {
     lookupBook,
     publishingOn,
     rowInfo,
+    scripture,
     sectionArr,
     showMessage,
     t.referenceFilteredNoPublishingLabels,
@@ -1172,20 +1175,18 @@ export function PlanSheet(props: IProps) {
               hidePublishing={hidePublishing}
               disabled={!filtered && (rowInfo.length < 2 || anyRecording)}
             />
-            {ctx.state.scripture && (
-              <LightTooltip
-                sx={{ backgroundColor: 'transparent' }}
-                title={t.goToReference}
+            <LightTooltip
+              sx={{ backgroundColor: 'transparent' }}
+              title={t.goToReference}
+            >
+              <IconButton
+                aria-label={t.goToReference}
+                onClick={() => setGoToOpen(true)}
+                disabled={rowInfo.length < 2}
               >
-                <IconButton
-                  aria-label={t.goToReference}
-                  onClick={() => setGoToOpen(true)}
-                  disabled={rowInfo.length < 2}
-                >
-                  <SearchIcon sx={{ color: 'primary.light' }} />
-                </IconButton>
-              </LightTooltip>
-            )}
+                <SearchIcon sx={{ color: 'primary.light' }} />
+              </IconButton>
+            </LightTooltip>
             {!readonly && (
               <>
                 <PriButton

@@ -57,6 +57,7 @@ describe('findPlanSheetRowFromReferenceQuery', () => {
     sectionArr: [] as SectionArray,
     inlinePassages: false,
     lookupBook: lookupMat,
+    scripture: true,
   };
 
   it('matches publishing M/S label to first passage in section', () => {
@@ -157,5 +158,44 @@ describe('findPlanSheetRowFromReferenceQuery', () => {
       ...defaultOpts,
     });
     expect(r).toEqual({ ok: false, error: 'not_found' });
+  });
+
+  it('general project: matches section.passage N.N without scripture parsing', () => {
+    const rowInfo: ISheet[] = [
+      baseSection({ sectionSeq: 3 }),
+      basePassage({
+        sectionSeq: 3,
+        passageSeq: 1,
+        reference: 'Any label',
+        book: '',
+      }),
+    ];
+    const r = findPlanSheetRowFromReferenceQuery('3.1', rowInfo, {
+      ...defaultOpts,
+      scripture: false,
+    });
+    expect(r).toEqual({ ok: true, rowIndex: 1 });
+  });
+
+  it('general project: matches arbitrary reference text (case-insensitive)', () => {
+    const rowInfo: ISheet[] = [
+      basePassage({ reference: '  Episode 3 — cold open  ', book: '' }),
+    ];
+    const r = findPlanSheetRowFromReferenceQuery('episode 3 — cold open', rowInfo, {
+      ...defaultOpts,
+      scripture: false,
+    });
+    expect(r).toEqual({ ok: true, rowIndex: 0 });
+  });
+
+  it('scripture project: falls back to exact reference string when not a verse query', () => {
+    const rowInfo: ISheet[] = [
+      basePassage({ book: 'MAT', reference: 'Front matter' }),
+    ];
+    const r = findPlanSheetRowFromReferenceQuery('Front matter', rowInfo, {
+      ...defaultOpts,
+      scripture: true,
+    });
+    expect(r).toEqual({ ok: true, rowIndex: 0 });
   });
 });

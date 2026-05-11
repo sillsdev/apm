@@ -11,8 +11,9 @@ import { isPassageRow, isSectionRow } from './isSectionPassage';
  *
  * Priority (first match wins):
  * 1. Publishing labels M{n} S{m} (and S-only when that is the displayed label), when publishing rows are visible and the sheet is not filtered.
- * 2. Section.passage display form "N.N" when publishing rows are hidden.
- * 3. Scripture reference (optional book token via lookupBook), equality on normalizeReference.
+ * 2. Section.passage display form "N.N" when publishing rows are hidden (scripture and general; flat often uses passage sequence 1).
+ * 3. Scripture reference (optional book token via lookupBook), equality on normalizeReference — only when opts.scripture is true.
+ * 4. General / non-scripture: exact reference text match (trimmed, case-insensitive) on passage rows — also used as a last fallback for scripture projects.
  *
  * Flat (SectionPassage) rows use the same rules; isPassageRow covers them.
  */
@@ -154,6 +155,29 @@ function findScriptureRow(
   return undefined;
 }
 
+function normalizeGeneralRef(s: string): string {
+  return s.replace(/\s+/g, ' ').trim().toLocaleLowerCase();
+}
+
+/** Exact reference string match for general (or fallback) projects. */
+function findGeneralReferenceRow(
+  rowInfo: ISheet[],
+  query: string
+): number | undefined {
+  const want = normalizeGeneralRef(query);
+  if (!want) return undefined;
+  for (let i = 0; i < rowInfo.length; i++) {
+    const r = rowInfo[i];
+    if (!isPassageRow(r)) continue;
+    const ref = r.reference;
+    if (typeof ref !== 'string' || !ref.trim()) continue;
+    if (normalizeGeneralRef(ref) === want) {
+      return i;
+    }
+  }
+  return undefined;
+}
+
 export function findPlanSheetRowFromReferenceQuery(
   query: string,
   rowInfo: ISheet[],
@@ -164,6 +188,8 @@ export function findPlanSheetRowFromReferenceQuery(
     sectionArr: SectionArray;
     inlinePassages: boolean;
     lookupBook: (book: string) => string;
+    /** When false, verse-style parsing (chapter:verse) is skipped; N.N and plain reference still apply. */
+    scripture: boolean;
   }
 ): FindPlanSheetReferenceResult {
   void opts.inlinePassages;
@@ -203,12 +229,19 @@ export function findPlanSheetRowFromReferenceQuery(
     }
   }
 
-  const parsed = parseScriptureQuery(trimmed, opts.lookupBook);
-  if (parsed) {
-    const rowIndex = findScriptureRow(rowInfo, parsed);
-    if (rowIndex !== undefined) {
-      return { ok: true, rowIndex };
+  if (opts.scripture) {
+    const parsed = parseScriptureQuery(trimmed, opts.lookupBook);
+    if (parsed) {
+      const rowIndex = findScriptureRow(rowInfo, parsed);
+      if (rowIndex !== undefined) {
+        return { ok: true, rowIndex };
+      }
     }
+  }
+
+  const generalIdx = findGeneralReferenceRow(rowInfo, trimmed);
+  if (generalIdx !== undefined) {
+    return { ok: true, rowIndex: generalIdx };
   }
 
   return { ok: false, error: 'not_found' };
