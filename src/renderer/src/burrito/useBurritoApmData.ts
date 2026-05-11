@@ -5,7 +5,8 @@ import { MainAPI } from '@model/main-api';
 import { getProjectDataFiles } from '../store/importexport/projectDataExport';
 import Memory from '@orbit/memory';
 import { projDefBook, useProjectDefaults } from '../crud/useProjectDefaults';
-import { useNum2BookCode } from '../utils';
+import { useNum2BookCode } from '../utils/useNum2BookCode';
+import { projectDefaultToBurritoBookKey } from './akuoBookToUsfm';
 
 const ipc = window?.api as MainAPI;
 
@@ -24,22 +25,11 @@ export const useBurritoApmData = (memory: Memory) => {
   const { getProjectDefault } = useProjectDefaults();
   const num2BookCode = useNum2BookCode();
 
-  const getBookCode = (project: ProjectD) => {
-    const akuoBook =
-      (getProjectDefault(projDefBook, project) as string) ?? 'B01';
-    const bookParse = /^([AB])(\d\d)$/.exec(akuoBook);
-    let bookCode: string | undefined;
-    if (bookParse) {
-      const bookNum =
-        bookParse[1] === 'A'
-          ? parseInt(bookParse[2], 10)
-          : bookParse[1] === 'B'
-            ? parseInt(bookParse[2], 10) + 39
-            : 999;
-      bookCode = num2BookCode(bookNum);
-    }
-    return bookCode;
-  };
+  const getBookCode = (project: ProjectD) =>
+    projectDefaultToBurritoBookKey(
+      (getProjectDefault(projDefBook, project) as string) ?? 'B01',
+      num2BookCode
+    );
 
   return async ({
     metadata,

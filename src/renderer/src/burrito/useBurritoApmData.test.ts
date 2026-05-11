@@ -10,7 +10,7 @@ jest.mock('../crud/useProjectDefaults', () => ({
   useProjectDefaults: jest.fn(),
 }));
 
-jest.mock('../utils', () => ({
+jest.mock('../utils/useNum2BookCode', () => ({
   useNum2BookCode: () => () => 'GEN',
 }));
 
@@ -144,7 +144,7 @@ describe('useBurritoApmData', () => {
     });
   });
 
-  it('omits book scope when project default book code is not A##/B##', async () => {
+  it('omits book scope when project default book code is not A##/B## or 3-digit', async () => {
     const { renderHook, act, useBurritoApmData } = loadApmDataForApi(
       undefined,
       {
@@ -169,6 +169,36 @@ describe('useBurritoApmData', () => {
     expect(ing).toBeDefined();
     expect(ing.scope).toBeUndefined();
     expect(updated!.type!.flavorType!.currentScope).toEqual({});
+  });
+
+  it('sets book scope for general-resource 3-digit project book designation', async () => {
+    const { renderHook, act, useBurritoApmData } = loadApmDataForApi(
+      undefined,
+      {
+        ...defaultProjectDefaults(),
+        getProjectDefault: jest.fn(() => '010'),
+      }
+    );
+
+    const { result } = renderHook(() => useBurritoApmData(memoryStub));
+
+    let updated: Burrito;
+    await act(async () => {
+      updated = await result.current({
+        metadata: burritoFixture(),
+        project: projectFixture,
+        projectPath: '/myproj',
+        preLen: 0,
+      });
+    });
+
+    const ing = updated!.ingredients['/myproj/data/test.json'];
+    expect(ing).toMatchObject({
+      scope: { '010': [] },
+    });
+    expect(updated!.type!.flavorType!.currentScope).toMatchObject({
+      '010': [],
+    });
   });
 
   it('does not throw when window.api is missing', async () => {

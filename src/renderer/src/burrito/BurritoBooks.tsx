@@ -24,6 +24,9 @@ import { BurritoOption } from './BurritoOption';
 import { shallowEqual, useDispatch, useSelector } from 'react-redux';
 import * as actions from '../store';
 import { useOrgDefaults } from '../crud/useOrgDefaults';
+import { projDefBook, useProjectDefaults } from '../crud/useProjectDefaults';
+import { useNum2BookCode } from '../utils/useNum2BookCode';
+import { projectDefaultToBurritoBookKey } from './akuoBookToUsfm';
 import { BurritoHeader } from '../components/BurritoHeader';
 import { useLoadProjectData, useOfflnProjRead } from '../crud';
 import { useGlobal, useGetGlobal } from '../context/useGlobal';
@@ -64,6 +67,8 @@ export function BurritoBooks() {
   const { showMessage } = useSnackBar();
   const tAudacity = useSelector(audacityManagerSelector, shallowEqual);
   const t: IBurritoStrings = useSelector(burritoSelector, shallowEqual);
+  const { getProjectDefault } = useProjectDefaults();
+  const num2BookCode = useNum2BookCode();
 
   const handleSave = () => {
     if (checked.length === 0) return;
@@ -121,8 +126,19 @@ export function BurritoBooks() {
     return a.localeCompare(b);
   };
 
-  const bookName = (book: string) =>
-    allBookData.find((b) => b.code === book)?.short || book;
+  const bookName = (book: string) => {
+    const catalog = allBookData.find((b) => b.code === book)?.short;
+    if (catalog) return catalog;
+    if (/^\d{3}$/.test(book)) {
+      const proj = teamProjs.find(
+        (p) =>
+          checked.includes(p.id) &&
+          String(getProjectDefault(projDefBook, p) ?? '').trim() === book
+      );
+      if (proj?.attributes?.name) return proj.attributes.name;
+    }
+    return book;
+  };
 
   React.useEffect(() => {
     setCodeNum(new Map(CodeNum as [string, number][]));
@@ -169,9 +185,17 @@ export function BurritoBooks() {
               console.warn('multiple books in one project');
             }
             book = p.attributes.book;
-            newBooks.add(book);
           }
         });
+        if (book) {
+          newBooks.add(book);
+        } else {
+          const fromDefault = projectDefaultToBurritoBookKey(
+            (getProjectDefault(projDefBook, proj) as string) ?? 'B01',
+            num2BookCode
+          );
+          if (fromDefault) newBooks.add(fromDefault);
+        }
       });
     setBooks(Array.from(newBooks).sort(bookSort));
     // eslint-disable-next-line react-hooks/exhaustive-deps
