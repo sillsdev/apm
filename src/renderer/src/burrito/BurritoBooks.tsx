@@ -185,17 +185,17 @@ export function BurritoBooks() {
               console.warn('multiple books in one project');
             }
             book = p.attributes.book;
+            if (book) {
+              newBooks.add(book);
+            } else {
+              const fromDefault = projectDefaultToBurritoBookKey(
+                (getProjectDefault(projDefBook, proj) as string) ?? 'B01',
+                num2BookCode
+              );
+              if (fromDefault) newBooks.add(fromDefault);
+            }
           }
         });
-        if (book) {
-          newBooks.add(book);
-        } else {
-          const fromDefault = projectDefaultToBurritoBookKey(
-            (getProjectDefault(projDefBook, proj) as string) ?? 'B01',
-            num2BookCode
-          );
-          if (fromDefault) newBooks.add(fromDefault);
-        }
       });
     setBooks(Array.from(newBooks).sort(bookSort));
     // eslint-disable-next-line react-hooks/exhaustive-deps
