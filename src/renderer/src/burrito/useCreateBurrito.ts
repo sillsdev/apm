@@ -10,6 +10,9 @@ import {
   useOrgDefaults,
   related,
 } from '../crud';
+import { projDefBook, useProjectDefaults } from '../crud/useProjectDefaults';
+import { useNum2BookCode } from '../utils/useNum2BookCode';
+import { projectDefaultToBurritoBookKey } from './akuoBookToUsfm';
 import { useOrbitData } from '../hoc/useOrbitData';
 import {
   BibleD,
@@ -86,6 +89,8 @@ export const useCreateBurrito = (teamId: string) => {
   const passages = useOrbitData<PassageD[]>('passage');
   const mediafiles = useOrbitData<MediaFileD[]>('mediafile');
   const { getOrgDefault } = useOrgDefaults();
+  const { getProjectDefault } = useProjectDefaults();
+  const num2BookCode = useNum2BookCode();
   const lang = useSelector((state: IState) => state.strings.lang);
   const allBookData = useSelector((state: IState) => state.books.bookData);
   const booksLoaded = useSelector((state: IState) => state.books.loaded);
@@ -236,9 +241,16 @@ export const useCreateBurrito = (teamId: string) => {
                 related(p, 'section') === section.id &&
                 Boolean(p.attributes.book)
             )?.attributes?.book || '';
-          if (sectBook) {
-            const curIds = sectIds.get(sectBook) || [];
-            sectIds.set(sectBook, [...curIds, section.id]);
+          const resolvedBook =
+            sectBook ||
+            projectDefaultToBurritoBookKey(
+              (getProjectDefault(projDefBook, proj) as string) ?? 'B01',
+              num2BookCode
+            ) ||
+            '';
+          if (resolvedBook) {
+            const curIds = sectIds.get(resolvedBook) || [];
+            sectIds.set(resolvedBook, [...curIds, section.id]);
           }
         });
       });
@@ -246,7 +258,16 @@ export const useCreateBurrito = (teamId: string) => {
       languages: Array.from(langs).sort(),
       bkSecIds: Array.from(sectIds),
     };
-  }, [getOrgDefault, teamId, projects, plans, sections, passages]);
+  }, [
+    getOrgDefault,
+    getProjectDefault,
+    num2BookCode,
+    teamId,
+    projects,
+    plans,
+    sections,
+    passages,
+  ]);
 
   const defaultBurritoName = useMemo(() => {
     if (!teamId) return '';

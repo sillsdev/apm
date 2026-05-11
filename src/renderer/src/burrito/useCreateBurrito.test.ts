@@ -122,6 +122,15 @@ jest.mock('../crud', () => {
   };
 });
 
+jest.mock('../crud/useProjectDefaults', () => ({
+  projDefBook: 'book',
+  useProjectDefaults: jest.fn(),
+}));
+
+jest.mock('../utils/useNum2BookCode', () => ({
+  useNum2BookCode: jest.fn(),
+}));
+
 function makeIpc() {
   return {
     createFolder: jest.fn().mockResolvedValue(undefined),
@@ -135,6 +144,9 @@ type LoadOpts = {
   booksLoaded?: boolean;
   bookData?: Array<{ code: string; abbr?: string; short?: string; long?: string }>;
   orbit?: Partial<Record<string, unknown[]>>;
+  /** Akuo book slot per project id for projDefBook resolution in tests */
+  projBookById?: Record<string, string>;
+  num2BookCodeImpl?: (bookNum: number) => string | undefined;
 };
 
 function loadCreateBurrito(api: typeof window.api, opts: LoadOpts = {}) {
@@ -181,6 +193,24 @@ function loadCreateBurrito(api: typeof window.api, opts: LoadOpts = {}) {
   const { useOrgDefaults } = require('../crud');
   useOrgDefaults.mockReturnValue({
     getOrgDefault: jest.fn((k: string) => opts.orgDefaults?.[k]),
+  });
+
+  const { useNum2BookCode } = require('../utils/useNum2BookCode');
+  useNum2BookCode.mockReturnValue(
+    opts.num2BookCodeImpl ??
+      ((bookNum: number) =>
+        ({ 1: 'GEN', 4: 'NUM', 40: 'MAT', 43: 'JHN' } as Record<number, string | undefined>)[
+          bookNum
+        ])
+  );
+
+  const { useProjectDefaults } = require('../crud/useProjectDefaults');
+  useProjectDefaults.mockReturnValue({
+    getProjectDefault: jest.fn((label: string, proj: any) => {
+      if (label !== 'book') return undefined;
+      if (opts.projBookById && proj?.id) return opts.projBookById[proj.id] ?? 'A01';
+      return 'A01';
+    }),
   });
 
   const { useOrbitData } = require('../hoc/useOrbitData');
@@ -387,6 +417,157 @@ describe('useCreateBurrito', () => {
       { tag: 'eng', name: { en: 'English' } },
     ]);
     expect(metadata.identification?.primary?.apm?.['rem-1']?.revision).toBe('2');
+  });
+
+  it('includes General project sections in Text export via projDefBook when passages have no book', async () => {
+    const ipc = makeIpc();
+    const { user, team, bible, teamBible } = fixtures(teamId);
+
+    const generalProject = {
+      id: 'proj-g',
+      type: 'project',
+      attributes: {
+        name: 'General Proj',
+        language: 'eng',
+        languageName: 'English',
+        defaultParams: '{}',
+      },
+      relationships: { organization: { data: { id: teamId } } },
+    } as any;
+    const generalPlan = {
+      id: 'plan-g',
+      type: 'plan',
+      relationships: { project: { data: { id: 'proj-g' } } },
+    } as any;
+    const generalSection = {
+      id: 'sec-g',
+      type: 'section',
+      relationships: { plan: { data: { id: 'plan-g' } } },
+      attributes: { sequencenum: 1 },
+    } as any;
+    const generalPassage = {
+      id: 'pas-g',
+      type: 'passage',
+      relationships: { section: { data: { id: 'sec-g' } } },
+      attributes: { sequencenum: 1, reference: 'p1' },
+    } as any;
+
+    const { renderHook, act, useCreateBurrito } = loadCreateBurrito(ipc as never, {
+      orgDefaults: {
+        burritoBooks: ['NUM'],
+        burritoContents: [BurritoType.Text],
+        burritoWrapper: { wrapper: true },
+        burritoProjects: ['proj-g'],
+        burritoFormat: { convertToMp3: false },
+        burritoRevision: '1',
+      },
+      bookData: [
+        { code: 'GEN', abbr: 'Gen', short: 'Genesis', long: 'Genesis' },
+        { code: 'NUM', abbr: 'Nu', short: 'Numbers', long: 'Numbers' },
+      ],
+      projBookById: { 'proj-g': 'A04' },
+      orbit: {
+        user: [user],
+        organization: [team],
+        organizationbible: [teamBible],
+        bible: [bible],
+        project: [generalProject],
+        plan: [generalPlan],
+        section: [generalSection],
+        passage: [generalPassage],
+      },
+    });
+
+    const { result } = renderHook(() => useCreateBurrito(teamId));
+
+    await act(async () => {
+      await result.current.createBurrito();
+    });
+
+    const { useBurritoText } = require('./useBurritoText');
+    const innerText = useBurritoText.mock.results[0].value as jest.Mock;
+    expect(innerText).toHaveBeenCalled();
+    const textCall = innerText.mock.calls.find(
+      (c: any[]) => c[0]?.book === 'NUM'
+    );
+    expect(textCall).toBeDefined();
+    expect(textCall[0].sections.map((s: { id: string }) => s.id)).toContain('sec-g');
+  });
+
+  it('includes General project sections when book default is a 3-digit general code', async () => {
+    const ipc = makeIpc();
+    const { user, team, bible, teamBible } = fixtures(teamId);
+
+    const generalProject = {
+      id: 'proj-g2',
+      type: 'project',
+      attributes: {
+        name: 'Shared Notes',
+        language: 'eng',
+        languageName: 'English',
+        defaultParams: '{}',
+      },
+      relationships: { organization: { data: { id: teamId } } },
+    } as any;
+    const generalPlan = {
+      id: 'plan-g2',
+      type: 'plan',
+      relationships: { project: { data: { id: 'proj-g2' } } },
+    } as any;
+    const generalSection = {
+      id: 'sec-g2',
+      type: 'section',
+      relationships: { plan: { data: { id: 'plan-g2' } } },
+      attributes: { sequencenum: 1 },
+    } as any;
+    const generalPassage = {
+      id: 'pas-g2',
+      type: 'passage',
+      relationships: { section: { data: { id: 'sec-g2' } } },
+      attributes: { sequencenum: 1, reference: 'p1' },
+    } as any;
+
+    const { renderHook, act, useCreateBurrito } = loadCreateBurrito(ipc as never, {
+      orgDefaults: {
+        burritoBooks: ['010'],
+        burritoContents: [BurritoType.Text],
+        burritoWrapper: { wrapper: true },
+        burritoProjects: ['proj-g2'],
+        burritoFormat: { convertToMp3: false },
+        burritoRevision: '1',
+      },
+      bookData: [
+        { code: 'GEN', abbr: 'Gen', short: 'Genesis', long: 'Genesis' },
+        { code: 'NUM', abbr: 'Nu', short: 'Numbers', long: 'Numbers' },
+      ],
+      projBookById: { 'proj-g2': '010' },
+      orbit: {
+        user: [user],
+        organization: [team],
+        organizationbible: [teamBible],
+        bible: [bible],
+        project: [generalProject],
+        plan: [generalPlan],
+        section: [generalSection],
+        passage: [generalPassage],
+      },
+    });
+
+    const { result } = renderHook(() => useCreateBurrito(teamId));
+
+    await act(async () => {
+      await result.current.createBurrito();
+    });
+
+    const { useBurritoText } = require('./useBurritoText');
+    const innerText = useBurritoText.mock.results[0].value as jest.Mock;
+    const textCall = innerText.mock.calls.find(
+      (c: any[]) => c[0]?.book === '010'
+    );
+    expect(textCall).toBeDefined();
+    expect(textCall[0].sections.map((s: { id: string }) => s.id)).toContain(
+      'sec-g2'
+    );
   });
 });
 
