@@ -32,6 +32,7 @@ export * from './useTeamDelete';
 export * from './useTeamRead';
 export * from './useTeamApiPull';
 export * from './useTeamUpdate';
+export * from './useTeamWorkflowProcess';
 export * from './useTypeId';
 export * from './useVProjectCreate';
 export * from './useVProjectDelete';

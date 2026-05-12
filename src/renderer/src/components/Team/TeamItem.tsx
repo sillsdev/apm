@@ -10,7 +10,7 @@ import { StepEditor } from '../StepEditor';
 import GroupTabs from '../GroupTabs';
 import { ProjectCard, AddCard } from '.';
 import TeamDialog, { ITeamDialog } from './TeamDialog';
-import { useRole, defaultWorkflow } from '../../crud';
+import { useRole, defaultWorkflow, useTeamWorkflowProcess } from '../../crud';
 import Confirm from '../AlertDialog';
 import { UnsavedContext } from '../../context/UnsavedContext';
 import { TeamPaper, TeamHeadDiv, TeamName, AltButton } from '../../control';
@@ -39,6 +39,8 @@ export const TeamItem = (props: IProps) => {
   const t = ctx.state.cardStrings;
   const [openMember, setOpenMember] = useState(false);
   const { setMyOrgRole, userIsOrgAdmin } = useRole();
+  const teamWorkflow = useTeamWorkflowProcess(team.id);
+  const stepEditorProcess = teamWorkflow ?? defaultWorkflow;
   const { startSave, waitForSave } = useContext(UnsavedContext).state;
   const [sortVisible, setSortVisible] = useState(false);
   const getGlobal = useGetGlobal();
@@ -170,7 +172,7 @@ export const TeamItem = (props: IProps) => {
         isOpen={showWorkflow}
         onOpen={handleWorkflow}
       >
-        <StepEditor process={defaultWorkflow} org={team.id} />
+        <StepEditor process={stepEditorProcess} org={team.id} />
       </BigDialog>
       <BigDialog
         title={t.sortProjects}
