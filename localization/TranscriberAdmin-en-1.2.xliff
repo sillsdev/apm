@@ -5421,6 +5421,76 @@
                <context context-type="sourcefile">MediaTab.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="mediaTab.pendingUploadBatchRetry">
+            <source>Retry all</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">PendingUploadsDialog.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="mediaTab.pendingUploadDeleteFailed">
+            <source>The online media record could not be removed (id {0}). Others may still see a broken entry until an administrator cleans it up. Your file is saved locally.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">useMediaUpload.ts</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="mediaTab.pendingUploadDismiss">
+            <source>Remove from list</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">PendingUploadsDialog.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="mediaTab.pendingUploadEmpty">
+            <source>No pending uploads.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">PendingUploadsDialog.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="mediaTab.pendingUploadMenu">
+            <source>Pending media uploads</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">TeamActions.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="mediaTab.pendingUploadPathLabel">
+            <source>File saved at: {0}</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">useMediaUpload.ts</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="mediaTab.pendingUploadQueuedHint">
+            <source>You can retry from Team → {0} when your connection improves.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">useMediaUpload.ts</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="mediaTab.pendingUploadRetryLater">
+            <source>Try again when your internet connection is more stable.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">useMediaUpload.ts</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="mediaTab.pendingUploadRetryOne">
+            <source>Retry</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">PendingUploadsDialog.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="mediaTab.pendingUploadTitle">
+            <source>Pending media uploads</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">PendingUploadsDialog.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="mediaTab.planName">
             <source>Plan</source>
             <target/>

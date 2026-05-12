@@ -16,9 +16,10 @@ import { UploadType } from '../components/UploadType';
 import { RecordKeyMap } from '@orbit/records';
 import { getContentType } from '../utils/contentType';
 import { ISharedStrings, MediaFileAttributes, MediaFileD } from '../model';
-import { useSnackBar } from '../hoc/SnackBar';
+import { AlertSeverity, useSnackBar } from '../hoc/SnackBar';
 import { mediaTabSelector, sharedSelector } from '../selector';
 import { OrbitNetworkErrorRetries } from '../../api-variable';
+import { formatUploadTerminalFailureMessage } from '../store/upload/uploadTerminalMessages';
 
 interface IProps {
   artifactId: string | null;
@@ -29,6 +30,8 @@ interface IProps {
   performedBy?: string | undefined;
   topic?: string | undefined;
   afterUploadCb: (mediaId: string) => Promise<void>;
+  /** When retrying a queued failed upload, pass id to clear the queue entry after success. */
+  pendingUploadIdToClearOnSuccess?: string;
 }
 export const useMediaUpload = ({
   artifactId,
@@ -39,6 +42,7 @@ export const useMediaUpload = ({
   planId,
   topic,
   afterUploadCb,
+  pendingUploadIdToClearOnSuccess,
 }: IProps) => {
   const dispatch = useDispatch();
   const uploadFiles = (files: File[]) =>
@@ -197,6 +201,13 @@ export const useMediaUpload = ({
       errorReporter: reporter,
       uploadType: UploadType.Media,
       cb: itemComplete,
+      pendingUploadIdToClearOnSuccess,
+      onTerminalFailure: (info) => {
+        showMessage(
+          formatUploadTerminalFailureMessage(t, info),
+          AlertSeverity.Warning
+        );
+      },
     });
   };
 };
