@@ -34,6 +34,7 @@ import { RecordKeyMap } from '@orbit/records';
 import { AlertSeverity } from '../hoc/SnackBar';
 import { getContentType } from '../utils/contentType';
 import { OrbitNetworkErrorRetries } from '../../api-variable';
+import { formatUploadTerminalFailureMessage } from '../store/upload/uploadTerminalMessages';
 import { UploadType } from './UploadType';
 import { Box } from '@mui/material';
 import { BigDialogBp } from '../hoc/BigDialogBp';
@@ -326,6 +327,13 @@ export const Uploader = (props: IProps) => {
       errorReporter,
       uploadType: uploadType ?? UploadType.Media,
       cb: itemComplete,
+      getImportExportBusy: () => Boolean(getGlobal('importexportBusy')),
+      onTerminalFailure: (info) => {
+        showMessage(
+          formatUploadTerminalFailureMessage(t, info),
+          AlertSeverity.Warning
+        );
+      },
     });
   };
   const preUpload = async (files: File[]) => {
