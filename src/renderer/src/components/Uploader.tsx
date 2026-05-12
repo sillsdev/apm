@@ -327,6 +327,7 @@ export const Uploader = (props: IProps) => {
       errorReporter,
       uploadType: uploadType ?? UploadType.Media,
       cb: itemComplete,
+      getImportExportBusy: () => Boolean(getGlobal('importexportBusy')),
       onTerminalFailure: (info) => {
         showMessage(
           formatUploadTerminalFailureMessage(t, info),

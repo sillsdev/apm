@@ -11,3 +11,16 @@ export const uploadRetryDelayMs = (attemptIndexZeroBased: number): number => {
 
 export const sleepMs = (ms: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, ms));
+
+/** First-login ImportTab sync (`importSyncFromElectron`) holds `importexportBusy` until uploads finish. */
+export const IMPORT_EXPORT_BUSY_POLL_MS = 400;
+export const IMPORT_EXPORT_BUSY_MAX_WAIT_MS = 30 * 60 * 1000;
+
+export async function waitForImportExportIdle(
+  getBusy: () => boolean
+): Promise<void> {
+  const deadline = Date.now() + IMPORT_EXPORT_BUSY_MAX_WAIT_MS;
+  while (getBusy() && Date.now() < deadline) {
+    await sleepMs(IMPORT_EXPORT_BUSY_POLL_MS);
+  }
+}

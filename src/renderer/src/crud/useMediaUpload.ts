@@ -202,6 +202,7 @@ export const useMediaUpload = ({
       uploadType: UploadType.Media,
       cb: itemComplete,
       pendingUploadIdToClearOnSuccess,
+      getImportExportBusy: () => Boolean(getGlobal('importexportBusy')),
       onTerminalFailure: (info) => {
         showMessage(
           formatUploadTerminalFailureMessage(t, info),

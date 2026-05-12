@@ -32,6 +32,7 @@ import {
   sleepMs,
   uploadRetryDelayMs,
   UPLOAD_MAX_ATTEMPTS,
+  waitForImportExportIdle,
 } from './uploadRetry';
 import {
   appendPendingMediaUpload,
@@ -214,6 +215,11 @@ export interface NextUploadProps {
   onTerminalFailure?: (info: UploadTerminalFailureInfo) => void;
   /** When retrying from the pending queue, pass the entry id to remove after a successful upload. */
   pendingUploadIdToClearOnSuccess?: string;
+  /**
+   * When set, online uploads wait until this is false before staging/POST so first-login
+   * ImportTab sync (`importexportBusy`) can finish first.
+   */
+  getImportExportBusy?: () => boolean;
 }
 export const nextUpload =
   ({
@@ -227,6 +233,7 @@ export const nextUpload =
     cb,
     onTerminalFailure,
     pendingUploadIdToClearOnSuccess,
+    getImportExportBusy,
   }: NextUploadProps) =>
   (dispatch: Dispatch) => {
     dispatch({ payload: n, type: UPLOAD_ITEM_PENDING });
@@ -391,6 +398,10 @@ export const nextUpload =
     };
 
     void (async () => {
+      if (getImportExportBusy) {
+        await waitForImportExportIdle(getImportExportBusy);
+      }
+
       let localAbsolutePath = '';
       let fileForPut = files[n] as File;
 

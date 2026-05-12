@@ -92,17 +92,18 @@ export function PendingUploadsDialog(props: IProps) {
     const file = new File([bytes], entry.record.originalFile, {
       type: entry.record.contentType,
     });
-    dispatch(
-      actions.nextUpload({
-        record: entry.record as unknown as MediaFileAttributes,
-        files: [file],
-        n: 0,
-        token: accessToken || '',
-        offline: getGlobal('offline'),
-        errorReporter: reporter,
-        uploadType: entry.uploadType,
-        pendingUploadIdToClearOnSuccess: entry.id,
-        onTerminalFailure: (info) => {
+      dispatch(
+        actions.nextUpload({
+          record: entry.record as unknown as MediaFileAttributes,
+          files: [file],
+          n: 0,
+          token: accessToken || '',
+          offline: getGlobal('offline'),
+          errorReporter: reporter,
+          uploadType: entry.uploadType,
+          pendingUploadIdToClearOnSuccess: entry.id,
+          getImportExportBusy: () => Boolean(getGlobal('importexportBusy')),
+          onTerminalFailure: (info) => {
           showMessage(
             formatUploadTerminalFailureMessage(t, info),
             AlertSeverity.Warning
