@@ -51,7 +51,11 @@ export function getAudioDiagnosticsContext(): UnknownRecord {
   };
 }
 
-export function getAudioTrackDiagnostics(stream: MediaStream): UnknownRecord[] {
+export function getAudioTrackDiagnostics(
+  stream: Partial<MediaStream>
+): UnknownRecord[] {
+  if (typeof stream.getAudioTracks !== 'function') return [];
+
   return stream.getAudioTracks().map((track) => ({
     id: track.id,
     kind: track.kind,
