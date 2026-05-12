@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { useGetGlobal } from '../context/useGlobal';
+import { useGlobal } from '../context/useGlobal';
 import { OrgWorkflowStepD } from '../model';
 import { related } from './related';
 import { useOrbitData } from '../hoc/useOrbitData';
@@ -13,11 +13,10 @@ export const BOLD_WORKFLOW_PROCESS = 'bold';
  */
 export const useTeamWorkflowProcess = (teamId: string | undefined) => {
   const steps = useOrbitData<OrgWorkflowStepD[]>('orgworkflowstep');
-  const getGlobal = useGetGlobal();
+  const [offlineOnly] = useGlobal('offlineOnly');
 
   return useMemo(() => {
     if (!teamId) return undefined;
-    const offlineOnly = getGlobal('offlineOnly');
     const orgSteps = steps
       .filter(
         (s) =>
@@ -26,5 +25,5 @@ export const useTeamWorkflowProcess = (teamId: string | undefined) => {
       )
       .sort((a, b) => a.attributes.sequencenum - b.attributes.sequencenum);
     return orgSteps[0]?.attributes?.process;
-  }, [teamId, steps, getGlobal]);
+  }, [teamId, steps, offlineOnly]);
 };

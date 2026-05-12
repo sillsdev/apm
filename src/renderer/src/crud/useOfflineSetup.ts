@@ -283,7 +283,9 @@ export const useOfflineSetup = () => {
         { name: 'Done', tool: 'done' },
       ]);
     }
-    if (allRecs.filter((w) => w.attributes.process === 'bold').length === 0) {
+    if (
+      offlineRecs.filter((w) => w.attributes.process === 'bold').length === 0
+    ) {
       await makeWorkflowProcessSteps('bold', [
         { name: 'Record', tool: 'record' },
         {
