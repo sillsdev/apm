@@ -27,6 +27,7 @@ import {
   ArtifactTypeSlug,
   remoteIdGuid,
   ToolSlug,
+  useArtifactType,
   useStepTool,
 } from '../../crud';
 import { Plan, IToolStrings } from '../../model';
@@ -43,6 +44,33 @@ import { usePaneWidth } from '../usePaneWidth';
 
 const KeyTerms = React.lazy(() => import('./Keyterms/KeyTerms'));
 
+function phraseBackNamedRegionFromSettings(
+  parsed: Record<string, unknown> | null
+): NamedRegions {
+  if (!parsed) return NamedRegions.BackTranslation;
+  const nr = parsed.namedRegion;
+  if (
+    typeof nr === 'string' &&
+    (Object.values(NamedRegions) as string[]).includes(nr)
+  ) {
+    return nr as NamedRegions;
+  }
+  return NamedRegions.BackTranslation;
+}
+
+function parseStepSettings(settings: unknown): Record<string, unknown> | null {
+  if (!settings) return null;
+  if (typeof settings === 'string') {
+    try {
+      return JSON.parse(settings) as Record<string, unknown>;
+    } catch {
+      return null;
+    }
+  }
+  if (typeof settings === 'object') return settings as Record<string, unknown>;
+  return null;
+}
+
 const descProps = { overflow: 'hidden', textOverflow: 'ellipsis' } as SxProps;
 const rowProps = { alignItems: 'center', whiteSpace: 'nowrap' } as SxProps;
 
@@ -54,6 +82,11 @@ const PassageDetailGrids = () => {
   const { currentstep, orgWorkflowSteps, mediafileId, sectionArr } = ctx.state;
 
   const { tool, settings } = useStepTool(currentstep);
+  const { slugFromId } = useArtifactType();
+  const stepSettingsParsed = useMemo(
+    () => parseStepSettings(settings),
+    [settings]
+  );
   const t = useSelector(toolSelector, shallowEqual) as IToolStrings;
   const { paneWidth, width } = usePaneWidth();
   const { isMobile } = useMobile();
@@ -106,27 +139,40 @@ const PassageDetailGrids = () => {
   }, []);
 
   const artifactId = useMemo(() => {
-    if (settings) {
-      const id = JSON.parse(settings).artifactTypeId;
-      if (id)
-        return (
-          remoteIdGuid('artifacttype', id, memory?.keyMap as RecordKeyMap) ?? id
-        );
-    }
+    const id = stepSettingsParsed?.artifactTypeId as string | undefined;
+    if (id)
+      return (
+        remoteIdGuid('artifacttype', id, memory?.keyMap as RecordKeyMap) ?? id
+      );
     return null;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [settings]);
+  }, [stepSettingsParsed, memory?.keyMap]);
 
   const [communitySlugs] = useState([
     ArtifactTypeSlug.Retell,
     ArtifactTypeSlug.QandA,
   ]);
-  const [phraseBackTranslationSlugs] = useState([
-    ArtifactTypeSlug.PhraseBackTranslation,
-  ]);
   const [wholeBackTranslationSlugs] = useState([
     ArtifactTypeSlug.WholeBackTranslation,
   ]);
+
+  const phraseBackArtifactSlugs = useMemo((): ArtifactTypeSlug[] => {
+    const id = stepSettingsParsed?.artifactTypeId as string | undefined;
+    if (id) {
+      const resolved =
+        (memory?.keyMap &&
+          remoteIdGuid('artifacttype', id, memory.keyMap as RecordKeyMap)) ??
+        id;
+      const slug = slugFromId(resolved) as ArtifactTypeSlug;
+      if (slug && slug !== ArtifactTypeSlug.Vernacular) return [slug];
+    }
+    return [ArtifactTypeSlug.PhraseBackTranslation];
+  }, [stepSettingsParsed, memory?.keyMap, slugFromId]);
+
+  const phraseBackNamedRegion = useMemo(
+    () => phraseBackNamedRegionFromSettings(stepSettingsParsed),
+    [stepSettingsParsed]
+  );
 
   const plans = useMemo(() => {
     const plans = memory.cache.query((q) => q.findRecords('plan')) as Plan[];
@@ -328,13 +374,13 @@ const PassageDetailGrids = () => {
                   tool === ToolSlug.Community
                     ? communitySlugs
                     : tool === ToolSlug.PhraseBackTranslate
-                      ? phraseBackTranslationSlugs
+                      ? phraseBackArtifactSlugs
                       : wholeBackTranslationSlugs
                 }
                 showTopic={tool === ToolSlug.Community}
                 segments={
                   tool === ToolSlug.PhraseBackTranslate
-                    ? NamedRegions.BackTranslation
+                    ? phraseBackNamedRegion
                     : undefined
                 }
               />

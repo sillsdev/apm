@@ -24,6 +24,7 @@ import IndexedDBSource from '@orbit/indexeddb';
 import { ArtifactTypeSlug, useArtifactType } from '.';
 import PassageType, { PassageTypeD } from '../model/passageType';
 import { requestedSchema } from '../schema';
+import { NamedRegions } from '../utils';
 
 export const useOfflineSetup = () => {
   const [memory] = useGlobal('memory');
@@ -138,14 +139,19 @@ export const useOfflineSetup = () => {
     name: string;
     tool: string;
     artId?: string;
+    namedRegion?: string;
   }
 
   const makeWorkflowProcessSteps = async (process: string, steps: ISteps[]) => {
     const t = new RecordTransformBuilder();
     const ops = steps.map((step, ix) => {
-      const toolSettings = step.artId
-        ? `, "settings":{"artifactTypeId": "${step.artId}"}`
-        : '';
+      const settings: Record<string, string> = {};
+      if (step.artId) settings.artifactTypeId = step.artId;
+      if (step.namedRegion) settings.namedRegion = step.namedRegion;
+      const toolSettings =
+        Object.keys(settings).length > 0
+          ? `, "settings":${JSON.stringify(settings)}`
+          : '';
       let rec = {
         type: 'workflowstep',
         attributes: {
@@ -177,6 +183,7 @@ export const useOfflineSetup = () => {
       true
     ) as string;
     const RBT = getTypeId(ArtifactTypeSlug.Retell, true) as string;
+    const CS = getTypeId(ArtifactTypeSlug.CarefulSpeech, true) as string;
     // console.log('WBT', WBT, 'PBT', PBT);
     if (offlineRecs.length === 0) {
       await makeWorkflowProcessSteps('OBT', [
@@ -279,12 +286,26 @@ export const useOfflineSetup = () => {
     if (allRecs.filter((w) => w.attributes.process === 'bold').length === 0) {
       await makeWorkflowProcessSteps('bold', [
         { name: 'Record', tool: 'record' },
-        { name: 'Careful speech', tool: 'phraseBackTranslate' },
-        { name: 'Lwc translation', tool: 'phraseBackTranslate' },
-        { name: 'Careful transcription', tool: 'transcribe' },
-        { name: 'Lwc transcription', tool: 'transcribe' },
+        {
+          name: 'Careful speech',
+          tool: 'phraseBackTranslate',
+          artId: CS,
+          namedRegion: NamedRegions.CarefulSpeech,
+        },
+        {
+          name: 'Lwc translation',
+          tool: 'phraseBackTranslate',
+          artId: PBT,
+          namedRegion: NamedRegions.BackTranslation,
+        },
+        {
+          name: 'Careful transcription',
+          tool: 'transcribe',
+          artId: CS,
+        },
+        { name: 'Lwc transcription', tool: 'transcribe', artId: PBT },
         { name: 'Free translation', tool: 'wholeBackTranslate' },
-        { name: 'Free transcription', tool: 'transcribe' },
+        { name: 'Free transcription', tool: 'transcribe', artId: WBT },
       ]);
     }
     if (
@@ -343,6 +364,7 @@ export const useOfflineSetup = () => {
       const ops = [
         'activity',
         'backtranslation',
+        'carefulspeech',
         'comment',
         'qanda',
         'resource',

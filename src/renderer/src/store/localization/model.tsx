@@ -62,6 +62,7 @@ export interface IArtifactTypeStrings extends Localize.LocalizedStringsMethods {
     "activity": string;
     "airesource": string;
     "backtranslation": string;
+    "carefulspeech": string;
     "comment": string;
     "graphic": string;
     "intellectualproperty": string;

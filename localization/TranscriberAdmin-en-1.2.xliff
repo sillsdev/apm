@@ -338,6 +338,13 @@
                <context context-type="sourcefile">AlertDialog.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="artifactType.carefulspeech">
+            <source>Careful speech</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">artifactTypeSlug.ts</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="artifactType.comment">
             <source>Comment</source>
             <target/>

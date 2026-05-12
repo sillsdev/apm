@@ -72,6 +72,7 @@ const initialState = {
 			"activity": "Activity",
 			"airesource": "AI Generated",
 			"backtranslation": "Phrase Back Translation",
+			"carefulspeech": "Careful speech",
 			"comment": "Comment",
 			"graphic": "Graphic",
 			"intellectualproperty": "Intellectual Property",
