@@ -1,3 +1,5 @@
+import { getBlobDiagnostics, logAudioDiagnostic } from './audioDiagnostics';
+
 /**
  * Converts an AudioBuffer to WebM using MediaRecorder API.
  * This is the most efficient method as it uses native browser encoding.
@@ -23,6 +25,29 @@ export async function convertAudioBufferToWebM(
   const mediaRecorder = new MediaRecorder(destination.stream, {
     mimeType: 'audio/webm;codecs=opus',
   });
+  const durationSeconds = audioBuffer.length / audioBuffer.sampleRate;
+  logAudioDiagnostic('convert-webm-start', {
+    conversion: {
+      targetMimeType: 'audio/webm;codecs=opus',
+      requestedMimeType: 'audio/webm;codecs=opus',
+      requestedAudioBitsPerSecond: undefined,
+      requestedBitsPerSecond: undefined,
+      requestedQuality: undefined,
+      encoder: 'MediaRecorder',
+    },
+    inputAudioBuffer: {
+      durationSeconds,
+      sampleRate: audioBuffer.sampleRate,
+      length: audioBuffer.length,
+      numberOfChannels: audioBuffer.numberOfChannels,
+    },
+    mediaRecorder: {
+      mimeType: mediaRecorder.mimeType,
+      audioBitsPerSecond: mediaRecorder.audioBitsPerSecond,
+      videoBitsPerSecond: mediaRecorder.videoBitsPerSecond,
+      state: mediaRecorder.state,
+    },
+  });
 
   const chunks: Blob[] = [];
 
@@ -35,6 +60,23 @@ export async function convertAudioBufferToWebM(
 
     mediaRecorder.onstop = () => {
       const webmBlob = new Blob(chunks, { type: 'audio/webm;codecs=opus' });
+      logAudioDiagnostic('convert-webm-complete', {
+        conversion: {
+          targetMimeType: 'audio/webm;codecs=opus',
+          requestedAudioBitsPerSecond: undefined,
+          requestedQuality: undefined,
+          encoder: 'MediaRecorder',
+        },
+        outputBlob: getBlobDiagnostics(webmBlob, durationSeconds),
+        chunkCount: chunks.length,
+        chunkSizes: chunks.map((chunk) => chunk.size),
+        mediaRecorder: {
+          mimeType: mediaRecorder.mimeType,
+          audioBitsPerSecond: mediaRecorder.audioBitsPerSecond,
+          videoBitsPerSecond: mediaRecorder.videoBitsPerSecond,
+          state: mediaRecorder.state,
+        },
+      });
       resolve(webmBlob);
     };
 
@@ -59,12 +101,28 @@ export async function convertAudioBufferToWebM(
  * @returns Promise<Blob> - The resulting WebM Blob
  */
 export async function convertToWebM(audioBlob: Blob): Promise<Blob> {
+  logAudioDiagnostic('convert-input-read-start', {
+    inputBlob: getBlobDiagnostics(audioBlob),
+    targetMimeType: 'audio/webm;codecs=opus',
+  });
   // Read audio data as ArrayBuffer
   const audioBuffer = await audioBlob.arrayBuffer();
 
   // Use Web Audio API to decode any supported audio format
   const audioContext = new AudioContext();
   const decodedAudioBuffer = await audioContext.decodeAudioData(audioBuffer);
+  logAudioDiagnostic('convert-input-decoded', {
+    inputBlob: getBlobDiagnostics(
+      audioBlob,
+      decodedAudioBuffer.duration || undefined
+    ),
+    decodedAudioBuffer: {
+      durationSeconds: decodedAudioBuffer.duration,
+      sampleRate: decodedAudioBuffer.sampleRate,
+      length: decodedAudioBuffer.length,
+      numberOfChannels: decodedAudioBuffer.numberOfChannels,
+    },
+  });
 
   // Convert the AudioBuffer to WebM
   return convertAudioBufferToWebM(decodedAudioBuffer);
@@ -106,10 +164,22 @@ async function convertToOggWithWorker(
         inData[fakeSourceName] = new Uint8Array(blobData as ArrayBuffer);
         const outData: any = {};
         outData[fakeOggName] = { MIME: targetMimeType };
+        const args = [fakeSourceName, fakeOggName];
+        logAudioDiagnostic('convert-ogg-worker-start', {
+          inputBlob: getBlobDiagnostics(audioBlob),
+          conversion: {
+            targetMimeType,
+            requestedAudioBitsPerSecond: undefined,
+            requestedBitRate: undefined,
+            requestedQuality: undefined,
+            encoder: 'opusenc.js worker',
+            args,
+          },
+        });
 
         worker.postMessage({
           command: 'encode',
-          args: [fakeSourceName, fakeOggName],
+          args,
           outData: outData,
           fileData: inData,
         });
@@ -126,6 +196,16 @@ async function convertToOggWithWorker(
       } else if (message.reply === 'done') {
         const result = message.values[fakeOggName];
         worker?.terminate();
+        logAudioDiagnostic('convert-ogg-worker-complete', {
+          conversion: {
+            targetMimeType,
+            requestedAudioBitsPerSecond: undefined,
+            requestedBitRate: undefined,
+            requestedQuality: undefined,
+            encoder: 'opusenc.js worker',
+          },
+          outputBlob: getBlobDiagnostics(result.blob),
+        });
         resolve(result.blob);
       }
       // Progress messages are ignored in this context
@@ -156,6 +236,11 @@ export async function convertToFormat(
 ): Promise<Blob> {
   // Normalize the target MIME type to avoid subtle mismatches
   const normalizedMimeType = targetMimeType.trim().toLowerCase();
+  logAudioDiagnostic('convert-format-requested', {
+    inputBlob: getBlobDiagnostics(audioBlob),
+    targetMimeType,
+    normalizedMimeType,
+  });
 
   // For OGG formats, always use worker-based conversion to ensure the output matches the request.
   if (
