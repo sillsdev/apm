@@ -18,11 +18,10 @@ import { useMyNavigate } from '../utils/useMyNavigate';
 import { LocalKey, localUserKey, useJsonParams, useMobile } from '../utils';
 import { projDefBook, projDefStory } from '../crud/useProjectDefaults';
 import { useGlobal, useGetGlobal } from '../context/useGlobal';
-import { remoteId } from '../crud';
+import { remoteId, defaultWorkflow, useTeamWorkflowProcess } from '../crud';
 import { UnsavedContext } from '../context/UnsavedContext';
 import BigDialog from '../hoc/BigDialog';
 import { StepEditor } from '../components/StepEditor';
-import { defaultWorkflow } from '../crud';
 
 interface ProjectBoxProps extends BoxProps {
   isMobile?: boolean;
@@ -101,6 +100,9 @@ export const ProjectsScreenInner: React.FC = () => {
       } as any;
     return teams.find((o) => o.id === teamId);
   }, [isPersonal, teamId, teams, t.personalProjects, personalTeam]);
+
+  const teamWorkflowProcess = useTeamWorkflowProcess(thisTeam?.id);
+  const workflowEditProcess = teamWorkflowProcess ?? defaultWorkflow;
 
   // New project dialog state
   const [addOpen, setAddOpen] = React.useState(false);
@@ -300,7 +302,7 @@ export const ProjectsScreenInner: React.FC = () => {
         onOpen={handleWorkflowOpen}
       >
         {/* Use defaultWorkflow, same as TeamItem */}
-        <StepEditor process={defaultWorkflow} org={thisTeam?.id} />
+        <StepEditor process={workflowEditProcess} org={thisTeam?.id} />
       </BigDialog>
       {addOpen && (
         <ProjectDialog

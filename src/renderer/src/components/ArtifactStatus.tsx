@@ -6,7 +6,10 @@ import { useArtifactType } from '../crud/useArtifactType';
 import { ICommunityStrings } from '../model';
 import { shallowEqual, useSelector } from 'react-redux';
 import { communitySelector } from '../selector';
-import { ArtifactTypeSlug } from '../crud/artifactTypeSlug';
+import {
+  ArtifactTypeSlug,
+  isPhraseSegmentArtifact,
+} from '../crud/artifactTypeSlug';
 import { getSortedRegions } from '../utils/namedSegments';
 import { IRow } from '../context/PassageDetailContext';
 import { StyledBox } from '../control/StyledBox';
@@ -69,7 +72,7 @@ export default function ArtifactStatus({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rowData, recordType, currentVersion, segments]);
 
-  return recordType === ArtifactTypeSlug.PhraseBackTranslation ? (
+  return isPhraseSegmentArtifact(recordType) ? (
     <StyledBox width={width} sx={{ overflowX: 'auto' }}>
       <Typography>
         {t.segmentsComplete

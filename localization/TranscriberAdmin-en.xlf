@@ -292,6 +292,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="artifactType.carefulspeech">
+         <segment>
+            <source>Careful speech</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="artifactType.comment">
          <segment>
             <source>Comment</source>
@@ -1003,6 +1009,12 @@
       <unit id="cards.biblename">
          <segment>
             <source>Name of Bible</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="cards.bold">
+         <segment>
+            <source>BOLD (Basic Oral Language Documentation)</source>
             <target/>
          </segment>
       </unit>
@@ -9703,6 +9715,78 @@
       <unit id="workflowSteps.backTranslationTip">
          <segment>
             <source>Record a back translation</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.carefulSpeech">
+         <segment>
+            <source>Careful speech</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.carefulSpeechTip">
+         <segment>
+            <source>Record careful speech for each segment.</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.carefulTranscription">
+         <segment>
+            <source>Careful transcription</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.carefulTranscriptionTip">
+         <segment>
+            <source>Transcribe the careful speech recording for each segment.</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.freeTranscription">
+         <segment>
+            <source>Free transcription</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.freeTranscriptionTip">
+         <segment>
+            <source>Transcribe the free translation recording.</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.freeTranslation">
+         <segment>
+            <source>Free translation</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.freeTranslationTip">
+         <segment>
+            <source>Record a free translation of the entire passage in the language of wider communication.</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.lwcTranscription">
+         <segment>
+            <source>LWC transcription</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.lwcTranscriptionTip">
+         <segment>
+            <source>Transcribe the LWC translation recording.</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.lwcTranslation">
+         <segment>
+            <source>LWC translation</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.lwcTranslationTip">
+         <segment>
+            <source>Listen to each careful speech segment and record a translation in the language of wider communication.</source>
             <target/>
          </segment>
       </unit>

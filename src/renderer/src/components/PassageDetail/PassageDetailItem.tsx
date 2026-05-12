@@ -19,6 +19,7 @@ import { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArtifactTypeSlug,
   IRegionParams,
+  isPhraseSegmentArtifact,
   related,
   remoteIdGuid,
   useArtifactType,
@@ -134,7 +135,7 @@ export function PassageDetailItem(props: IProps) {
   const [currentVersion, setCurrentVersion] = useState(1);
   const [segString, setSegString] = useState('{}');
   const [allowRecord, setAllowRecord] = useState(
-    recordType !== ArtifactTypeSlug.PhraseBackTranslation
+    !isPhraseSegmentArtifact(slugs[0] as ArtifactTypeSlug)
   );
   const [verses, setVerses] = useState('');
   const cancelled = useRef(false);
@@ -190,25 +191,22 @@ export function PassageDetailItem(props: IProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mediafileId, mediaState.id]);
 
+  const segmentRegion = segments ?? NamedRegions.BackTranslation;
+
   const hasBtRecordings = useMemo(() => {
     const mediaRec = mediafiles.find((m) => m.id === mediafileId);
-    const btType = localizedArtifactType(
-      ArtifactTypeSlug.PhraseBackTranslation
-    );
     const version = mediaRec?.attributes.versionNumber;
+    const typeNames = slugs.map((s) => localizedArtifactType(s));
     return rowData.some(
-      (r) => r.artifactType === btType && r.sourceVersion === version
+      (r) => typeNames.includes(r.artifactType) && r.sourceVersion === version
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rowData, mediafileId, mediafiles]);
+  }, [rowData, mediafileId, mediafiles, slugs, localizedArtifactType]);
 
   useEffect(() => {
     const mediaRec = mediafiles.find((m) => m.id === mediafileId);
     const defaultSegments = mediaRec?.attributes?.segments ?? '{}';
-    const newSegString = getSegments(
-      NamedRegions.BackTranslation,
-      defaultSegments
-    );
+    const newSegString = getSegments(segmentRegion, defaultSegments);
     if (segString !== newSegString) {
       setSegString(newSegString);
       if (hasBtRecordings)
@@ -217,10 +215,10 @@ export function PassageDetailItem(props: IProps) {
     setVerses(getSegments(NamedRegions.Verse, defaultSegments));
     setCurrentVersion(mediaRec?.attributes?.versionNumber || 0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mediafileId, mediafiles, hasBtRecordings]);
+  }, [mediafileId, mediafiles, hasBtRecordings, segmentRegion]);
 
   useEffect(() => {
-    if (ArtifactTypeSlug.PhraseBackTranslation === recordType)
+    if (isPhraseSegmentArtifact(recordType))
       setAllowRecord(Boolean(currentSegment) && (segString || '{}') !== '{}');
     else setAllowRecord(true);
   }, [segString, recordType, currentSegment]);
@@ -401,7 +399,7 @@ export function PassageDetailItem(props: IProps) {
                     editStep ? onSegmentParamChange : undefined
                   }
                   metaData={
-                    recordType === ArtifactTypeSlug.PhraseBackTranslation &&
+                    isPhraseSegmentArtifact(recordType) &&
                     segString === '{}' ? (
                       <Typography
                         variant="h6"
@@ -434,8 +432,7 @@ export function PassageDetailItem(props: IProps) {
                         {ts.uploadMediaSingular}
                       </Button>
                       <GrowingSpacer />
-                      {ArtifactTypeSlug.PhraseBackTranslation ===
-                        recordType && (
+                      {isPhraseSegmentArtifact(recordType) && (
                         <TextField
                           sx={ctlProps}
                           id="segment"
@@ -492,7 +489,7 @@ export function PassageDetailItem(props: IProps) {
                     toolId={toolId}
                     passageId={related(sharedResource, 'passage') ?? passage.id}
                     sourceSegments={
-                      ArtifactTypeSlug.PhraseBackTranslation === recordType
+                      isPhraseSegmentArtifact(recordType)
                         ? JSON.stringify(getCurrentSegment())
                         : '{}'
                     }
@@ -528,8 +525,7 @@ export function PassageDetailItem(props: IProps) {
                       onClick={handleSave}
                       disabled={
                         !canSave ||
-                        (ArtifactTypeSlug.PhraseBackTranslation ===
-                          recordType &&
+                        (isPhraseSegmentArtifact(recordType) &&
                           (segString || '{}') === '{}')
                       }
                     >

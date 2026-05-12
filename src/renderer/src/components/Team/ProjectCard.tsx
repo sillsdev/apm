@@ -54,6 +54,8 @@ import {
   related,
   useRole,
   remoteIdNum,
+  BOLD_WORKFLOW_PROCESS,
+  useTeamWorkflowProcess,
 } from '../../crud';
 import { localizeProjectTag } from '../../utils/localizeProjectTag';
 import OfflineIcon from '@mui/icons-material/OfflinePin';
@@ -463,6 +465,10 @@ export const ProjectCard = (props: IProps) => {
     [project]
   );
 
+  const orgId = related(project, 'organization') as string;
+  const teamWorkflow = useTeamWorkflowProcess(orgId);
+  const showBoldCardMark = teamWorkflow === BOLD_WORKFLOW_PROCESS;
+
   return (
     <ProjectCardRoot>
       <StyledCard id={`card-${project.id}`} onClick={handleSelect(project)}>
@@ -476,8 +482,21 @@ export const ProjectCard = (props: IProps) => {
                 minWidth: 0,
               }}
             >
-              {(project?.attributes?.type || '').toLowerCase() ===
-              'scripture' ? (
+              {showBoldCardMark ? (
+                <Typography
+                  component="span"
+                  sx={{
+                    fontWeight: 700,
+                    fontSize: '1.35rem',
+                    lineHeight: 1,
+                    mr: 0.25,
+                  }}
+                  aria-hidden
+                >
+                  B
+                </Typography>
+              ) : (project?.attributes?.type || '').toLowerCase() ===
+                'scripture' ? (
                 <ScriptureIcon />
               ) : isStory ? (
                 <StoryIcon />

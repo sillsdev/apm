@@ -62,6 +62,7 @@ export interface IArtifactTypeStrings extends Localize.LocalizedStringsMethods {
     "activity": string;
     "airesource": string;
     "backtranslation": string;
+    "carefulspeech": string;
     "comment": string;
     "graphic": string;
     "intellectualproperty": string;
@@ -199,6 +200,7 @@ export interface ICardsStrings extends Localize.LocalizedStringsMethods {
     "bibleidiso": string;
     "bibleIdExplain": string;
     "biblename": string;
+    "bold": string;
     "cancel": string;
     "closeNoSave": string;
     "convertPrompt": string;
@@ -1913,6 +1915,18 @@ export interface IWorkflowStepsStrings extends Localize.LocalizedStringsMethods 
     "addingStep": string;
     "backTranslation": string;
     "backTranslationTip": string;
+    "carefulSpeech": string;
+    "carefulSpeechTip": string;
+    "carefulTranscription": string;
+    "carefulTranscriptionTip": string;
+    "freeTranscription": string;
+    "freeTranscriptionTip": string;
+    "freeTranslation": string;
+    "freeTranslationTip": string;
+    "lwcTranscription": string;
+    "lwcTranscriptionTip": string;
+    "lwcTranslation": string;
+    "lwcTranslationTip": string;
     "communityTest1": string;
     "communityTest1Tip": string;
     "communityTest2": string;

@@ -37,6 +37,7 @@ export const TranscribeStepSettings = ({ toolSettings, onChange }: IProps) => {
     ArtifactTypeSlug.Vernacular,
     ArtifactTypeSlug.WholeBackTranslation,
     ArtifactTypeSlug.PhraseBackTranslation,
+    ArtifactTypeSlug.CarefulSpeech,
     ArtifactTypeSlug.QandA,
     ArtifactTypeSlug.Retell,
   ];
@@ -68,6 +69,7 @@ export const TranscribeStepSettings = ({ toolSettings, onChange }: IProps) => {
   const langSlugs = [
     ArtifactTypeSlug.WholeBackTranslation,
     ArtifactTypeSlug.PhraseBackTranslation,
+    ArtifactTypeSlug.CarefulSpeech,
   ];
 
   const hasLang = useMemo(() => {

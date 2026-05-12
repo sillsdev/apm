@@ -27,6 +27,10 @@ import { StyledDialogTitle } from '../../StyledDialogTitle';
 import Tags from '../../../control/Tags';
 import { AltActionBar } from '../../../components/AltActionBar';
 import { initProjectState, IProjectDialog } from './projectDialogTypes';
+import {
+  BOLD_WORKFLOW_PROCESS,
+  useTeamWorkflowProcess,
+} from '../../../crud';
 
 interface IProps extends IDialog<IProjectDialog> {
   nameInUse?: (newName: string) => boolean;
@@ -49,6 +53,7 @@ export function ProjectDialog(props: IProps) {
   const { name, type, bcp47 } = state;
   const [basicTab, setBasicTab] = useState(true);
   const addingRef = React.useRef(false);
+  const teamWorkflow = useTeamWorkflowProcess(team);
 
   const initTags = useMemo(
     () => ({
@@ -65,6 +70,17 @@ export function ProjectDialog(props: IProps) {
     if (isOpen) addingRef.current = false;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [values, isOpen]);
+
+  useEffect(() => {
+    if (!isOpen || mode !== Mode.add || !team) return;
+    if (teamWorkflow !== BOLD_WORKFLOW_PROCESS) return;
+    setState((s) => ({
+      ...s,
+      type: 'other',
+      flat: false,
+      organizedBy: 'section',
+    }));
+  }, [isOpen, mode, team, teamWorkflow]);
 
   const handleClose = () => {
     if (onOpen) onOpen(false);
@@ -149,7 +165,7 @@ export function ProjectDialog(props: IProps) {
               />
               <ProjectDescription state={state} setState={setState} />
             </Box>
-            <ProjectType type={type} onChange={handleTypeChange} />
+            <ProjectType type={type} onChange={handleTypeChange} team={team} />
             <ProjectStory state={state} setState={setState} />
             <Stack sx={{ pt: 1, pb: 2 }}>
               <Language
