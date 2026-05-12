@@ -161,12 +161,13 @@ export const uploadFile = (
           errorReporter,
           `upload ${file.name}: (${xhr.status}) ${xhr.responseText}`
         );
-        cleanup();
         const rej: UploadFileReject = {
           statusNum: xhr.status,
           statusText: xhr.responseText || 'upload failed',
           httpStatus: xhr.status,
         };
+        // cleanup removes the xhr values loaded into UploadFileReject (above)
+        cleanup();
         reject(rej);
       }
     };
@@ -468,7 +469,12 @@ export const nextUpload =
           const ax = err as AxiosError;
           const st = ax.response?.status;
           if (st === 401 || st === 403) {
-            await finalizeTerminalFailure(undefined, false, st, `Upload ${name} failed.`);
+            await finalizeTerminalFailure(
+              undefined,
+              false,
+              st,
+              `Upload ${name} failed.`
+            );
             return;
           }
           if (attempt < UPLOAD_MAX_ATTEMPTS - 1) {
@@ -486,7 +492,12 @@ export const nextUpload =
       }
 
       if (!json) {
-        await finalizeTerminalFailure(undefined, false, 500, `Upload ${name} failed.`);
+        await finalizeTerminalFailure(
+          undefined,
+          false,
+          500,
+          `Upload ${name} failed.`
+        );
         return;
       }
 
@@ -502,11 +513,7 @@ export const nextUpload =
       let lastTxt = '';
       for (let attempt = 0; attempt < UPLOAD_MAX_ATTEMPTS; attempt++) {
         try {
-          const status = await uploadFile(
-            mediaA,
-            fileForPut,
-            errorReporter
-          );
+          const status = await uploadFile(mediaA, fileForPut, errorReporter);
           if (status.statusNum === 0) {
             completeCB(true, mediaA, 0, '');
             return;
