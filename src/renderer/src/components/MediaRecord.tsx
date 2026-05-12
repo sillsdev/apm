@@ -17,6 +17,8 @@ import {
   useFetchMediaUrl,
   useMediaUpload,
   convertToFormat,
+  getBlobDiagnostics,
+  logAudioDiagnostic,
 } from '../crud';
 import { useSnackBar } from '../hoc/SnackBar';
 import { UnsavedContext } from '../context/UnsavedContext';
@@ -318,10 +320,26 @@ function MediaRecord(props: IProps) {
     if (setCanCancel) setCanCancel(!converting && !uploading);
   }, [converting, uploading, setCanCancel]);
 
+  const { isMobile: isMobileView } = useMobile();
+  const effectiveMobileView = Boolean(forceMobileView) || isMobileView;
+
   const doUpload = useCallback(
     async (blob: Blob, mimeType: string, filetype: string) => {
       setUploading(true);
       setStatusText(t.saving);
+      logAudioDiagnostic('media-record-upload-prep', {
+        blob: getBlobDiagnostics(blob),
+        upload: {
+          mimeType,
+          filetype,
+          filename: defaultFilename + '.' + filetype,
+        },
+        mediaRecord: {
+          isMobileView,
+          forceMobileView,
+          effectiveMobileView,
+        },
+      });
       const files = [
         new File([blob], defaultFilename + '.' + filetype, {
           type: mimeType,
@@ -329,7 +347,15 @@ function MediaRecord(props: IProps) {
       ];
       await uploadMedia(files);
     },
-    [setStatusText, t.saving, defaultFilename, uploadMedia]
+    [
+      setStatusText,
+      t.saving,
+      defaultFilename,
+      uploadMedia,
+      isMobileView,
+      forceMobileView,
+      effectiveMobileView,
+    ]
   );
 
   const convertComplete = () => {
@@ -351,6 +377,21 @@ function MediaRecord(props: IProps) {
         if (audioBlob) {
           onSaving && onSaving();
           saveRef.current = true;
+          logAudioDiagnostic('media-record-save-requested', {
+            blob: getBlobDiagnostics(audioBlob),
+            save: {
+              mimeType,
+              filetype,
+              compression,
+              converting: mimeType !== 'audio/wav',
+              saveAsWav: mimeType === 'audio/wav',
+            },
+            mediaRecord: {
+              isMobileView,
+              forceMobileView,
+              effectiveMobileView,
+            },
+          });
           if (mimeType !== 'audio/wav') {
             // Convert to target format
             setStatusText(t.compressing);
@@ -519,9 +560,6 @@ function MediaRecord(props: IProps) {
   }, [mediaId]);
 
   const segments = '{}';
-
-  const { isMobile: isMobileView } = useMobile();
-  const effectiveMobileView = Boolean(forceMobileView) || isMobileView;
 
   const content = (
     <>

@@ -3,6 +3,11 @@
 // or when recording directly to compressed formats
 
 import { APMRecorder } from './useWavRecorder';
+import {
+  getAudioTrackDiagnostics,
+  getBlobDiagnostics,
+  logAudioDiagnostic,
+} from './audioDiagnostics';
 
 export function createAudioMediaRecorder(
   stream: MediaStream,
@@ -14,6 +19,7 @@ export function createAudioMediaRecorder(
   let timeSlice: number = 1000; // Default 1 second
   let isRecording = false;
   let recordedChunks: Blob[] = [];
+  let recordingStartedAt = 0;
 
   return {
     async initializeWorklet(): Promise<void> {
@@ -42,6 +48,27 @@ export function createAudioMediaRecorder(
 
       try {
         mediaRecorder = new MediaRecorder(mediaStream);
+        recordingStartedAt = performance.now();
+        logAudioDiagnostic('media-recorder-fallback-start', {
+          fallbackRecorder: true,
+          requestedOptions: {
+            mimeType: undefined,
+            audioBitsPerSecond: undefined,
+            bitsPerSecond: undefined,
+          },
+          mediaRecorder: {
+            mimeType: mediaRecorder.mimeType,
+            audioBitsPerSecond: mediaRecorder.audioBitsPerSecond,
+            videoBitsPerSecond: mediaRecorder.videoBitsPerSecond,
+            state: mediaRecorder.state,
+          },
+          timeSliceMs: timeSlice,
+          audioContext: {
+            sampleRate: audioContext.sampleRate,
+            state: audioContext.state,
+          },
+          tracks: getAudioTrackDiagnostics(mediaStream),
+        });
 
         // Collect chunks as they become available. We must emit the accumulated blob
         // (not just event.data) because individual MediaRecorder chunks from container
@@ -52,6 +79,23 @@ export function createAudioMediaRecorder(
           if (event.data && event.data.size > 0) {
             recordedChunks.push(event.data);
             const accumulatedBlob = new Blob(recordedChunks);
+            const elapsedSeconds =
+              recordingStartedAt > 0
+                ? (performance.now() - recordingStartedAt) / 1000
+                : undefined;
+            logAudioDiagnostic('media-recorder-fallback-chunk', {
+              chunk: getBlobDiagnostics(event.data, elapsedSeconds),
+              accumulated: getBlobDiagnostics(
+                accumulatedBlob,
+                elapsedSeconds
+              ),
+              chunkCount: recordedChunks.length,
+              mediaRecorder: {
+                mimeType: mediaRecorder?.mimeType,
+                audioBitsPerSecond: mediaRecorder?.audioBitsPerSecond,
+                state: mediaRecorder?.state,
+              },
+            });
             onDataAvailable(accumulatedBlob);
           }
         };
@@ -111,6 +155,10 @@ export function createAudioMediaRecorder(
 
             // Combine all recorded chunks
             const finalBlob = new Blob(recordedChunks);
+            const durationSeconds =
+              recordingStartedAt > 0
+                ? (performance.now() - recordingStartedAt) / 1000
+                : undefined;
             // Verify the blob has data
             if (finalBlob.size === 0) {
               console.error(
@@ -121,6 +169,19 @@ export function createAudioMediaRecorder(
               return;
             }
 
+            logAudioDiagnostic('media-recorder-fallback-stop', {
+              fallbackRecorder: true,
+              finalBlob: getBlobDiagnostics(finalBlob, durationSeconds),
+              chunkCount: recordedChunks.length,
+              chunkSizes: recordedChunks.map((chunk) => chunk.size),
+              mediaRecorder: {
+                mimeType: mediaRecorder?.mimeType,
+                audioBitsPerSecond: mediaRecorder?.audioBitsPerSecond,
+                videoBitsPerSecond: mediaRecorder?.videoBitsPerSecond,
+                state: mediaRecorder?.state,
+              },
+              tracks: getAudioTrackDiagnostics(mediaStream),
+            });
             resolve(finalBlob);
           } catch (error) {
             reject(error);

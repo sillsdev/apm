@@ -109,3 +109,4 @@ export * from './usePublishLevel';
 export * from './useFetchUrlNow';
 export * from './usePublishDestination';
 export * from './convertToWebM';
+export * from './audioDiagnostics';

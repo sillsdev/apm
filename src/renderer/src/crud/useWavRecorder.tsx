@@ -5,6 +5,11 @@ import { useSnackBar } from '../hoc/SnackBar';
 import { logError, Severity } from '../utils';
 import { createWavRecorder } from './WavRecorder';
 import { createAudioMediaRecorder } from './AudioMediaRecorder';
+import {
+  getAudioTrackDiagnostics,
+  getBlobDiagnostics,
+  logAudioDiagnostic,
+} from './audioDiagnostics';
 
 const createCaptureOptions = (deviceId?: string): MediaStreamConstraints => ({
   audio: {
@@ -61,6 +66,7 @@ export function useWavRecorder(
   const recorderRef = useRef<APMRecorder | undefined>(undefined);
   const useFallbackRef = useRef<boolean | null>(null); // null = not checked yet
   const isRecordingRef = useRef(false);
+  const recordingStartedAtRef = useRef<number | undefined>(undefined);
   const captureOptions = useMemo(
     () => createCaptureOptions(deviceId),
     [deviceId]
@@ -112,6 +118,15 @@ export function useWavRecorder(
         );
         if (stream && stream.id && stream.active) {
           mediaStreamRef.current = stream;
+          logAudioDiagnostic('media-stream-ready', {
+            requestedCaptureOptions: captureOptions,
+            selectedDeviceId: deviceId,
+            stream: {
+              id: stream.id,
+              active: stream.active,
+            },
+            tracks: getAudioTrackDiagnostics(stream),
+          });
         } else {
           const err = 'no media stream ' + stream?.toString();
           logError(Severity.error, reporter, err);
@@ -146,6 +161,15 @@ export function useWavRecorder(
     if (!mediaStreamRef.current) {
       try {
         mediaStreamRef.current = await getMediaStream();
+        logAudioDiagnostic('media-stream-ready', {
+          requestedCaptureOptions: captureOptions,
+          selectedDeviceId: deviceId,
+          stream: {
+            id: mediaStreamRef.current.id,
+            active: mediaStreamRef.current.active,
+          },
+          tracks: getAudioTrackDiagnostics(mediaStreamRef.current),
+        });
       } catch (error) {
         handleError(error);
         return undefined;
@@ -156,16 +180,31 @@ export function useWavRecorder(
         // Check AudioWorklet availability (cache the result)
         if (useFallbackRef.current === null) {
           useFallbackRef.current = !isAudioWorkletAvailable();
+          logAudioDiagnostic('recorder-capability-check', {
+            audioWorkletAvailable: !useFallbackRef.current,
+            fallbackRecorder: useFallbackRef.current,
+          });
         }
         let recorder: APMRecorder;
 
         if (useFallbackRef.current) {
+          logAudioDiagnostic('recorder-selected', {
+            recorderType: 'MediaRecorder',
+            fallbackRecorder: true,
+            reason: 'AudioWorklet unavailable',
+            tracks: getAudioTrackDiagnostics(mediaStreamRef.current),
+          });
           recorder = createAudioMediaRecorder(
             mediaStreamRef.current,
             onDataAvailable
           );
         } else {
           // Use WavRecorder with AudioWorklet (when we need WAV format)
+          logAudioDiagnostic('recorder-selected', {
+            recorderType: 'AudioWorkletWavRecorder',
+            fallbackRecorder: false,
+            tracks: getAudioTrackDiagnostics(mediaStreamRef.current),
+          });
           recorder = createWavRecorder(mediaStreamRef.current, onDataAvailable);
         }
 
@@ -178,6 +217,14 @@ export function useWavRecorder(
         if (!useFallbackRef.current) {
           try {
             useFallbackRef.current = true;
+            logAudioDiagnostic('recorder-fallback-after-error', {
+              fallbackRecorder: true,
+              error:
+                error instanceof Error
+                  ? { name: error.name, message: error.message }
+                  : { message: String(error) },
+              tracks: getAudioTrackDiagnostics(mediaStreamRef.current),
+            });
             const fallbackRecorder = createAudioMediaRecorder(
               mediaStreamRef.current,
               onDataAvailable
@@ -210,6 +257,16 @@ export function useWavRecorder(
     if (recorder) {
       try {
         await recorder.start(timeSlice);
+        recordingStartedAtRef.current = performance.now();
+        logAudioDiagnostic('recording-started', {
+          timeSliceMs: timeSlice,
+          fallbackRecorder: useFallbackRef.current,
+          requestedCaptureOptions: captureOptions,
+          selectedDeviceId: deviceId,
+          tracks: mediaStreamRef.current
+            ? getAudioTrackDiagnostics(mediaStreamRef.current)
+            : undefined,
+        });
         isRecordingRef.current = true;
         onStart();
         return true;
@@ -228,6 +285,17 @@ export function useWavRecorder(
       recorderRef.current
         .stop()
         .then((blob: Blob) => {
+          const durationSeconds = recordingStartedAtRef.current
+            ? (performance.now() - recordingStartedAtRef.current) / 1000
+            : undefined;
+          logAudioDiagnostic('recording-stopped', {
+            fallbackRecorder: useFallbackRef.current,
+            recordedBlob: getBlobDiagnostics(blob, durationSeconds),
+            tracks: mediaStreamRef.current
+              ? getAudioTrackDiagnostics(mediaStreamRef.current)
+              : undefined,
+          });
+          recordingStartedAtRef.current = undefined;
           isRecordingRef.current = false;
           onStop(blob);
         })
