@@ -1,5 +1,16 @@
 import { convertToWav } from '../utils/wav';
-import { APMRecorder } from './useWavRecorder';
+import { logAudioDiagnostic } from './audioDiagnostics';
+import type { APMRecorder } from './useWavRecorder';
+
+const PREFERRED_RECORD_SAMPLE_RATE = 48000;
+
+function createRecorderAudioContext(): AudioContext {
+  try {
+    return new AudioContext({ sampleRate: PREFERRED_RECORD_SAMPLE_RATE });
+  } catch {
+    return new AudioContext();
+  }
+}
 
 /** New Float32 chunks since last preview emit (exported for unit tests). */
 export function takeRecordingDeltaChunks(
@@ -21,8 +32,17 @@ export function createWavRecorder(
   stream: MediaStream,
   onDataAvailable: (blob: Blob) => void
 ): APMRecorder {
-  const audioContext = new AudioContext();
+  const audioContext = createRecorderAudioContext();
+  logAudioDiagnostic('wav-recorder-audio-context', {
+    audioContext: {
+      sampleRate: audioContext.sampleRate,
+      requestedSampleRate: PREFERRED_RECORD_SAMPLE_RATE,
+      state: audioContext.state,
+    },
+  });
   const mediaStreamSource = audioContext.createMediaStreamSource(stream);
+  const silentSinkGain = audioContext.createGain();
+  silentSinkGain.gain.value = 0;
   let workletNode: AudioWorkletNode | null = null;
   let audioData: Float32Array[] = [];
   let isRecording = false;
@@ -167,9 +187,17 @@ export function createWavRecorder(
     // Send start message to worklet
     workletNode?.port.postMessage({ type: 'startRecording' });
 
-    // Connect the audio graph
+    // Connect the audio graph (silent sink keeps the graph active without routing mic to speakers)
+    try {
+      mediaStreamSource.disconnect();
+    } catch {
+      /* not connected yet */
+    }
+    workletNode?.disconnect();
+    silentSinkGain.disconnect();
     mediaStreamSource.connect(workletNode!);
-    workletNode!.connect(audioContext.destination);
+    workletNode!.connect(silentSinkGain);
+    silentSinkGain.connect(audioContext.destination);
 
     // Start the data available timer
     startDataAvailableTimer();
@@ -286,9 +314,19 @@ export function createWavRecorder(
     // Stop the data available timer
     stopDataAvailableTimer();
 
-    // Disconnect the worklet
+    // Disconnect capture graph
+    try {
+      mediaStreamSource.disconnect();
+    } catch {
+      /* */
+    }
     if (workletNode) {
       workletNode.disconnect();
+    }
+    try {
+      silentSinkGain.disconnect();
+    } catch {
+      /* */
     }
 
     const waitComplete = new Promise<void>((resolve) => {
@@ -333,9 +371,22 @@ export function createWavRecorder(
    * Should be called when the WavRecorder is being destroyed.
    */
   function cleanup(): void {
-    // Disconnect media stream source
-    if (mediaStreamSource) {
+    try {
       mediaStreamSource.disconnect();
+    } catch {
+      /* */
+    }
+    if (workletNode) {
+      try {
+        workletNode.disconnect();
+      } catch {
+        /* */
+      }
+    }
+    try {
+      silentSinkGain.disconnect();
+    } catch {
+      /* */
     }
 
     // Close audio context

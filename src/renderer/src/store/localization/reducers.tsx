@@ -1459,8 +1459,12 @@ const initialState = {
 	"recordStepSettings": new LocalizedStrings({
 		"en": {
 			"custom": "Custom",
+			"echoCancellation": "Echo cancellation",
+			"echoCancellationHelper": "Reduces echo when using speakers. May reduce recording quality. Leave off for a cleaner capture when using headphones or a quiet room.",
 			"fileNameTemplate": "File Name Template",
 			"general": "General",
+			"noiseSuppression": "Noise suppression",
+			"noiseSuppressionHelper": "Reduces background noise. May make speech sound less natural. Leave off for the most faithful capture when the environment is already quiet.",
 			"notes": "Notes",
 			"saveAsWav": "Save as wav (uncompressed) file.",
 			"saveAsWavHelper": "These files are large and we suggest you only select this for the final recording.",

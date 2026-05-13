@@ -8286,6 +8286,20 @@
                <context context-type="sourcefile">RecordStepSettings.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="recordStepSettings.echoCancellation">
+            <source>Echo cancellation</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">RecordStepSettings.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="recordStepSettings.echoCancellationHelper">
+            <source>Reduces echo when using speakers. May reduce recording quality. Leave off for a cleaner capture when using headphones or a quiet room.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">RecordStepSettings.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="recordStepSettings.fileNameTemplate">
             <source>File Name Template</source>
             <target/>
@@ -8295,6 +8309,20 @@
          </trans-unit>
          <trans-unit id="recordStepSettings.general">
             <source>General</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">RecordStepSettings.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="recordStepSettings.noiseSuppression">
+            <source>Noise suppression</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">RecordStepSettings.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="recordStepSettings.noiseSuppressionHelper">
+            <source>Reduces background noise. May make speech sound less natural. Leave off for the most faithful capture when the environment is already quiet.</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">RecordStepSettings.tsx</context>

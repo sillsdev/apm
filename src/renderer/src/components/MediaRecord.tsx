@@ -25,6 +25,7 @@ import { UnsavedContext } from '../context/UnsavedContext';
 import { SIZELIMIT } from './MediaUpload';
 import usePassageDetailContext from '../context/usePassageDetailContext';
 import { useStepTool } from '../crud/useStepTool';
+import { parseRecordCaptureAudioProcessing } from '../crud/useWavRecorder';
 import { JSONParse } from '../utils';
 import { UploadType } from './UploadType';
 import { shallowEqual, useSelector } from 'react-redux';
@@ -141,6 +142,10 @@ function MediaRecord(props: IProps) {
   } = props;
   const context = usePassageDetailContext();
   const { settings: toolSettings } = useStepTool(context?.currentstep || '');
+  const captureAudioProcessing = useMemo(
+    () => parseRecordCaptureAudioProcessing(toolSettings),
+    [toolSettings]
+  );
   const t: IPassageRecordStrings = useSelector(passageRecordSelector);
   const WARNINGLIMIT = 1;
   const [reporter] = useGlobal('errorReporter');
@@ -589,6 +594,8 @@ function MediaRecord(props: IProps) {
         reload={gotTheBlob}
         noNewVoice={noNewVoice}
         allowNoNoise={allowNoNoise}
+        captureEchoCancellation={captureAudioProcessing.echoCancellation}
+        captureNoiseSuppression={captureAudioProcessing.noiseSuppression}
         keepItSmall={keepItSmall}
         hasRecording={hasRecording ?? false}
         isStopLogic={isStopLogic ?? false}

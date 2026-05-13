@@ -168,6 +168,10 @@ interface IProps {
   reload?: (blob: Blob) => void;
   noNewVoice?: boolean;
   allowNoNoise?: boolean;
+  /** From Record step toolSettings; when omitted, echo cancellation is off (higher-fidelity default). */
+  captureEchoCancellation?: boolean;
+  /** From Record step toolSettings; when omitted, noise suppression is off (higher-fidelity default). */
+  captureNoiseSuppression?: boolean;
   keepItSmall?: boolean;
   controlsRef?: React.RefObject<WSAudioPlayerControls | null>;
   hideToolbar?: boolean;
@@ -279,6 +283,8 @@ function WSAudioPlayer(props: IProps) {
     reload,
     noNewVoice,
     allowNoNoise,
+    captureEchoCancellation = false,
+    captureNoiseSuppression = false,
     keepItSmall,
     controlsRef,
     hideToolbar,
@@ -596,7 +602,9 @@ function WSAudioPlayer(props: IProps) {
     onRecordStop,
     onRecordError,
     onRecordDataAvailable,
-    selectedMicrophoneId || undefined
+    selectedMicrophoneId || undefined,
+    captureEchoCancellation,
+    captureNoiseSuppression
   );
 
   const setProcessingRecording = useCallback((value: boolean) => {

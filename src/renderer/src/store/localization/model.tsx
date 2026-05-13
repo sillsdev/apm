@@ -1386,8 +1386,12 @@ export interface IRecordButtonStrings extends Localize.LocalizedStringsMethods {
 
 export interface IRecordStepSettingsStrings extends Localize.LocalizedStringsMethods {
     "custom": string;
+    "echoCancellation": string;
+    "echoCancellationHelper": string;
     "fileNameTemplate": string;
     "general": string;
+    "noiseSuppression": string;
+    "noiseSuppressionHelper": string;
     "notes": string;
     "saveAsWav": string;
     "saveAsWavHelper": string;

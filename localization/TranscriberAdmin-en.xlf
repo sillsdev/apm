@@ -7102,6 +7102,18 @@
             <target/>
          </segment>
       </unit>
+      <unit id="recordStepSettings.echoCancellation">
+         <segment>
+            <source>Echo cancellation</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="recordStepSettings.echoCancellationHelper">
+         <segment>
+            <source>Reduces echo when using speakers. May reduce recording quality. Leave off for a cleaner capture when using headphones or a quiet room.</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="recordStepSettings.fileNameTemplate">
          <segment>
             <source>File Name Template</source>
@@ -7111,6 +7123,18 @@
       <unit id="recordStepSettings.general">
          <segment>
             <source>General</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="recordStepSettings.noiseSuppression">
+         <segment>
+            <source>Noise suppression</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="recordStepSettings.noiseSuppressionHelper">
+         <segment>
+            <source>Reduces background noise. May make speech sound less natural. Leave off for the most faithful capture when the environment is already quiet.</source>
             <target/>
          </segment>
       </unit>
