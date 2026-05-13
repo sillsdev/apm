@@ -50,10 +50,11 @@ function buildCaptureConstraints(
     ...(deviceId ? { deviceId } : {}),
   };
 
-  if (supported.echoCancellation !== false) {
+  // handle false and undefined
+  if (supported.echoCancellation) {
     audio.echoCancellation = echoCancellation;
   }
-  if (supported.noiseSuppression !== false) {
+  if (supported.noiseSuppression) {
     audio.noiseSuppression = noiseSuppression;
   }
 
