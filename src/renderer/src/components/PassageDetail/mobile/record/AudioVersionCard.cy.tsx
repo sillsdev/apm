@@ -71,6 +71,13 @@ const mockMediaActionsStrings = new LocalizedStrings({
   },
 });
 
+const mockMediaTabStrings = new LocalizedStrings({
+  en: {
+    publish: 'Publish Media',
+    published: 'Published',
+  },
+});
+
 const mockTranscriptionShowStrings = new LocalizedStrings({
   en: {
     transcription: 'Transcription',
@@ -84,6 +91,7 @@ const mockStringsReducer = () => {
     loaded: true,
     lang: 'en',
     mediaActions: mockMediaActionsStrings,
+    mediaTab: mockMediaTabStrings,
     transcriptionShow: mockTranscriptionShowStrings,
   };
 };
@@ -310,5 +318,25 @@ describe('AudioVersionCard', () => {
       'background-color',
       'rgb(173, 216, 230)'
     );
+  });
+
+  it('shows Publish label when publish control is visible and media is not published', () => {
+    mountCard({
+      showPublishControl: true,
+      readyToShare: false,
+      publishStatusIcon: '⬚',
+    });
+
+    cy.contains('Publish Media').should('be.visible');
+  });
+
+  it('shows Published label when publish control is visible and media is published', () => {
+    mountCard({
+      showPublishControl: true,
+      readyToShare: true,
+      publishStatusIcon: '⬛',
+    });
+
+    cy.contains('Published').should('be.visible');
   });
 });
