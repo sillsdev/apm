@@ -9,7 +9,7 @@ export const getTool = (jsonTool?: string) => {
       return tool.tool || '';
     }
   } catch (error) {
-    console.error('[getTool] error', error); // worflowsteps record not well formed
+    console.error('[getTool] error', error); // workflowsteps record not well formed
   }
   return '';
 };
@@ -22,7 +22,7 @@ export const getToolSettings = (jsonTool?: string) => {
       return typeof settings === 'string' ? settings : JSON.stringify(settings);
     }
   } catch (error) {
-    console.error('[getToolSettings] error', error); // worflowsteps record not well formed
+    console.error('[getToolSettings] error', error); // workflowsteps record not well formed
   }
   return '';
 };

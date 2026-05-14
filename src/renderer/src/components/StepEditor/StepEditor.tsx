@@ -422,11 +422,6 @@ export const StepEditor = ({ process, org }: IProps) => {
         return String(a.id).localeCompare(String(b.id));
       });
       const templates = proc !== 'ANY' ? getProcessTemplateSteps(proc) : [];
-      const seqCounts = new Map<number, number>();
-      sortedOrg.forEach((s) => {
-        const sn = s.attributes?.sequencenum ?? 0;
-        seqCounts.set(sn, (seqCounts.get(sn) ?? 0) + 1);
-      });
       const uniqueSeqs = new Set(
         sortedOrg.map((s) => s.attributes?.sequencenum ?? 0)
       ).size;
@@ -443,7 +438,9 @@ export const StepEditor = ({ process, org }: IProps) => {
           s,
           proc,
           dup,
-          useTemplateIndex ? { index: idx, orgCount: sortedOrg.length } : undefined
+          useTemplateIndex
+            ? { index: idx, orgCount: sortedOrg.length }
+            : undefined
         );
         const tool = getTool(pres.toolAttr);
         const settings = getToolSettings(pres.toolAttr);
