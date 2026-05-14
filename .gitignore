@@ -26,3 +26,4 @@ tmp-burrito
 errorLog
 tsconfig.tsbuildinfo
 .claude
+*.lscache

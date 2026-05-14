@@ -4,6 +4,8 @@
 --
 -- Prerequisites: at least one row in users (lastmodifiedby), and artifacttypes rows for
 -- typename backtranslation, wholebacktranslation, and vernacular (standard seed data).
+--
+-- Variable: :user_email - email address of the user to associate with created/modified records
 
 -- Careful speech recordings use a dedicated artifact type (phrase-style segments use NamedRegions.CarefulSpeech).
 INSERT INTO artifacttypes (typename, datecreated, dateupdated, lastmodifiedby)
@@ -11,7 +13,7 @@ SELECT
   'carefulspeech',
   (now() AT TIME ZONE 'utc'),
   (now() AT TIME ZONE 'utc'),
-  (SELECT u.id FROM users u ORDER BY u.id ASC LIMIT 1)
+  (SELECT u.id FROM users u WHERE u.email = :'user_email' ORDER BY u.id ASC LIMIT 1)
 WHERE NOT EXISTS (SELECT 1 FROM artifacttypes at WHERE at.typename = 'carefulspeech')
   AND EXISTS (SELECT 1 FROM users LIMIT 1);
 
@@ -21,11 +23,11 @@ SELECT
   'bold',
   'Record',
   1,
-  '{"tool": "record"}',
-  '{}',
+  '{"tool": "record"}'::jsonb,
+  '{}'::jsonb,
   (now() AT TIME ZONE 'utc'),
   (now() AT TIME ZONE 'utc'),
-  (SELECT u.id FROM users u ORDER BY u.id ASC LIMIT 1)
+  (SELECT u.id FROM users u WHERE u.email = :'user_email' ORDER BY u.id ASC LIMIT 1)
 WHERE NOT EXISTS (SELECT 1 FROM workflowsteps WHERE process = 'bold' AND sequencenum = 1)
   AND EXISTS (SELECT 1 FROM users LIMIT 1);
 
@@ -35,13 +37,15 @@ SELECT
   'bold',
   'Careful speech',
   2,
-  '{"tool": "phraseBackTranslate", "settings": {"artifactTypeId": "'
+  (
+    '{"tool": "phraseBackTranslate", "settings": "{\"artifactTypeId\": \"'
     || (SELECT CAST(id AS TEXT) FROM artifacttypes WHERE typename = 'carefulspeech' ORDER BY id LIMIT 1)
-    || '", "namedRegion": "CarefulSpeech"}}',
-  '{}',
+    || '\", \"namedRegion\": \"CarefulSpeech\"}"}'
+  )::jsonb,
+  '{}'::jsonb,
   (now() AT TIME ZONE 'utc'),
   (now() AT TIME ZONE 'utc'),
-  (SELECT u.id FROM users u ORDER BY u.id ASC LIMIT 1)
+  (SELECT u.id FROM users u WHERE u.email = :'user_email' ORDER BY u.id ASC LIMIT 1)
 WHERE NOT EXISTS (SELECT 1 FROM workflowsteps WHERE process = 'bold' AND sequencenum = 2)
   AND EXISTS (SELECT 1 FROM users LIMIT 1)
   AND EXISTS (SELECT 1 FROM artifacttypes WHERE typename = 'carefulspeech');
@@ -52,13 +56,15 @@ SELECT
   'bold',
   'Lwc translation',
   3,
-  '{"tool": "phraseBackTranslate", "settings": {"artifactTypeId": "'
+  (
+    '{"tool": "phraseBackTranslate", "settings": "{\"artifactTypeId\": \"'
     || (SELECT CAST(id AS TEXT) FROM artifacttypes WHERE typename = 'backtranslation' ORDER BY id LIMIT 1)
-    || '", "namedRegion": "BT"}}',
-  '{}',
+    || '\", \"namedRegion\": \"BT\"}"}'
+  )::jsonb,
+  '{}'::jsonb,
   (now() AT TIME ZONE 'utc'),
   (now() AT TIME ZONE 'utc'),
-  (SELECT u.id FROM users u ORDER BY u.id ASC LIMIT 1)
+  (SELECT u.id FROM users u WHERE u.email = :'user_email' ORDER BY u.id ASC LIMIT 1)
 WHERE NOT EXISTS (SELECT 1 FROM workflowsteps WHERE process = 'bold' AND sequencenum = 3)
   AND EXISTS (SELECT 1 FROM users LIMIT 1)
   AND EXISTS (SELECT 1 FROM artifacttypes WHERE typename = 'backtranslation');
@@ -69,13 +75,15 @@ SELECT
   'bold',
   'Careful transcription',
   4,
-  '{"tool": "transcribe", "settings": {"artifactTypeId": "'
+  (
+    '{"tool": "transcribe", "settings": "{\"artifactTypeId\": \"'
     || (SELECT CAST(id AS TEXT) FROM artifacttypes WHERE typename = 'carefulspeech' ORDER BY id LIMIT 1)
-    || '"}}',
-  '{}',
+    || '\"}"}'
+  )::jsonb,
+  '{}'::jsonb,
   (now() AT TIME ZONE 'utc'),
   (now() AT TIME ZONE 'utc'),
-  (SELECT u.id FROM users u ORDER BY u.id ASC LIMIT 1)
+  (SELECT u.id FROM users u WHERE u.email = :'user_email' ORDER BY u.id ASC LIMIT 1)
 WHERE NOT EXISTS (SELECT 1 FROM workflowsteps WHERE process = 'bold' AND sequencenum = 4)
   AND EXISTS (SELECT 1 FROM users LIMIT 1)
   AND EXISTS (SELECT 1 FROM artifacttypes WHERE typename = 'carefulspeech');
@@ -86,13 +94,15 @@ SELECT
   'bold',
   'Lwc transcription',
   5,
-  '{"tool": "transcribe", "settings": {"artifactTypeId": "'
+  (
+    '{"tool": "transcribe", "settings": "{\"artifactTypeId\": \"'
     || (SELECT CAST(id AS TEXT) FROM artifacttypes WHERE typename = 'backtranslation' ORDER BY id LIMIT 1)
-    || '"}}',
-  '{}',
+    || '\"}"}'
+  )::jsonb,
+  '{}'::jsonb,
   (now() AT TIME ZONE 'utc'),
   (now() AT TIME ZONE 'utc'),
-  (SELECT u.id FROM users u ORDER BY u.id ASC LIMIT 1)
+  (SELECT u.id FROM users u WHERE u.email = :'user_email' ORDER BY u.id ASC LIMIT 1)
 WHERE NOT EXISTS (SELECT 1 FROM workflowsteps WHERE process = 'bold' AND sequencenum = 5)
   AND EXISTS (SELECT 1 FROM users LIMIT 1)
   AND EXISTS (SELECT 1 FROM artifacttypes WHERE typename = 'backtranslation');
@@ -103,11 +113,11 @@ SELECT
   'bold',
   'Free translation',
   6,
-  '{"tool": "wholeBackTranslate"}',
-  '{}',
+  '{"tool": "wholeBackTranslate"}'::jsonb,
+  '{}'::jsonb,
   (now() AT TIME ZONE 'utc'),
   (now() AT TIME ZONE 'utc'),
-  (SELECT u.id FROM users u ORDER BY u.id ASC LIMIT 1)
+  (SELECT u.id FROM users u WHERE u.email = :'user_email' ORDER BY u.id ASC LIMIT 1)
 WHERE NOT EXISTS (SELECT 1 FROM workflowsteps WHERE process = 'bold' AND sequencenum = 6)
   AND EXISTS (SELECT 1 FROM users LIMIT 1);
 
@@ -117,13 +127,15 @@ SELECT
   'bold',
   'Free transcription',
   7,
-  '{"tool": "transcribe", "settings": {"artifactTypeId": "'
+  (
+    '{"tool": "transcribe", "settings": "{\"artifactTypeId\": \"'
     || (SELECT CAST(id AS TEXT) FROM artifacttypes WHERE typename = 'wholebacktranslation' ORDER BY id LIMIT 1)
-    || '"}}',
-  '{}',
+    || '\"}"}'
+  )::jsonb,
+  '{}'::jsonb,
   (now() AT TIME ZONE 'utc'),
   (now() AT TIME ZONE 'utc'),
-  (SELECT u.id FROM users u ORDER BY u.id ASC LIMIT 1)
+  (SELECT u.id FROM users u WHERE u.email = :'user_email' ORDER BY u.id ASC LIMIT 1)
 WHERE NOT EXISTS (SELECT 1 FROM workflowsteps WHERE process = 'bold' AND sequencenum = 7)
   AND EXISTS (SELECT 1 FROM users LIMIT 1)
   AND EXISTS (SELECT 1 FROM artifacttypes WHERE typename = 'wholebacktranslation');

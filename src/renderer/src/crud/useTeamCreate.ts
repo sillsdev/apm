@@ -143,7 +143,7 @@ export const useTeamCreate = () => {
     ];
     opArray.push(...OrgRelated(t, orgRec as OrganizationD));
     opArray.push(...AddOrgNoteCategoryOps(t, orgRec.id));
-    opArray.push(...CreateOrgWorkflowSteps(t, process, orgRec.id as string));
+    CreateOrgWorkflowSteps(t, process, orgRec.id as string, opArray);
     await memory.update(opArray);
     // the next line prevents shutting off busy until all workflow steps are created
     if (!offlineOnly) await teamApiPull(orgRec.id as string); // Update slug value
