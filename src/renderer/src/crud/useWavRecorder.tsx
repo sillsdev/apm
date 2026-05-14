@@ -11,17 +11,55 @@ import {
   logAudioDiagnostic,
 } from './audioDiagnostics';
 
-const createCaptureOptions = (deviceId?: string): MediaStreamConstraints => ({
-  audio: {
+/** Defaults match Record step toolSettings when keys are absent (both off). */
+export function parseRecordCaptureAudioProcessing(
+  toolSettings: string | undefined | null
+): { echoCancellation: boolean; noiseSuppression: boolean } {
+  if (!toolSettings?.trim()) {
+    return { echoCancellation: false, noiseSuppression: false };
+  }
+  try {
+    const j = JSON.parse(toolSettings) as {
+      echoCancellation?: boolean;
+      noiseSuppression?: boolean;
+    };
+    return {
+      echoCancellation: Boolean(j.echoCancellation),
+      noiseSuppression: Boolean(j.noiseSuppression),
+    };
+  } catch {
+    return { echoCancellation: false, noiseSuppression: false };
+  }
+}
+
+function buildCaptureConstraints(
+  deviceId: string | undefined,
+  echoCancellation: boolean,
+  noiseSuppression: boolean
+): MediaStreamConstraints {
+  const supported =
+    typeof navigator !== 'undefined' &&
+    typeof navigator.mediaDevices?.getSupportedConstraints === 'function'
+      ? navigator.mediaDevices.getSupportedConstraints()
+      : ({} as MediaTrackSupportedConstraints);
+
+  const audio: MediaTrackConstraints = {
     autoGainControl: false,
-    echoCancellation: true,
-    noiseSuppression: true,
-    sampleRate: 48000, // Request high sample rate
-    channelCount: 1, // Mono recording
+    sampleRate: 48000,
+    channelCount: 1,
     ...(deviceId ? { deviceId } : {}),
-  },
-  video: false,
-});
+  };
+
+  // handle false and undefined
+  if (supported.echoCancellation) {
+    audio.echoCancellation = echoCancellation;
+  }
+  if (supported.noiseSuppression) {
+    audio.noiseSuppression = noiseSuppression;
+  }
+
+  return { audio, video: false };
+}
 const noop = () => {};
 
 export interface MimeInfo {
@@ -61,15 +99,17 @@ export function useWavRecorder(
   onStop: (blob: Blob) => void = noop,
   onError: (e: any) => void = noop,
   onDataAvailable: (blob: Blob) => Promise<void>,
-  deviceId?: string
+  deviceId?: string,
+  echoCancellation: boolean = false,
+  noiseSuppression: boolean = false
 ) {
   const recorderRef = useRef<APMRecorder | undefined>(undefined);
   const useFallbackRef = useRef<boolean | null>(null); // null = not checked yet
   const isRecordingRef = useRef(false);
   const recordingStartedAtRef = useRef<number | undefined>(undefined);
   const captureOptions = useMemo(
-    () => createCaptureOptions(deviceId),
-    [deviceId]
+    () => buildCaptureConstraints(deviceId, echoCancellation, noiseSuppression),
+    [deviceId, echoCancellation, noiseSuppression]
   );
   const getMediaStream = useUserMedia(captureOptions);
   const mediaStreamRef = useRef<MediaStream | undefined>(undefined);
@@ -99,12 +139,26 @@ export function useWavRecorder(
     };
   }, []);
 
+  const captureProcessingKeyRef = useRef('');
+
   useEffect(() => {
     if (!allowRecord) {
       mediaStreamRef.current?.getTracks().forEach((track) => track.stop());
       mediaStreamRef.current = undefined;
       previousDeviceIdRef.current = deviceId;
+      captureProcessingKeyRef.current = '';
       return;
+    }
+
+    const processingKey = `${echoCancellation},${noiseSuppression}`;
+    const processingChanged =
+      captureProcessingKeyRef.current !== '' &&
+      captureProcessingKeyRef.current !== processingKey &&
+      mediaStreamRef.current !== undefined;
+
+    if (processingChanged && !isRecordingRef.current) {
+      mediaStreamRef.current?.getTracks().forEach((track) => track.stop());
+      mediaStreamRef.current = undefined;
     }
 
     const deviceChanged =
@@ -114,7 +168,7 @@ export function useWavRecorder(
     const ensureStream = async () => {
       try {
         const stream = await getMediaStream(
-          deviceChanged || !mediaStreamRef.current
+          deviceChanged || processingChanged || !mediaStreamRef.current
         );
         if (stream && stream.id && stream.active) {
           mediaStreamRef.current = stream;
@@ -137,18 +191,19 @@ export function useWavRecorder(
       }
     };
 
-    if (!mediaStreamRef.current || deviceChanged) {
+    if (!mediaStreamRef.current || deviceChanged || processingChanged) {
       ensureStream();
     }
 
-    if (deviceChanged && !isRecordingRef.current) {
+    if ((deviceChanged || processingChanged) && !isRecordingRef.current) {
       recorderRef.current = undefined;
       recorderStreamIdRef.current = undefined;
     }
 
     previousDeviceIdRef.current = deviceId;
+    captureProcessingKeyRef.current = processingKey;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allowRecord, deviceId, reporter]);
+  }, [allowRecord, deviceId, echoCancellation, noiseSuppression, reporter]);
 
   function handleError(e: any) {
     const message =

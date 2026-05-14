@@ -52,6 +52,8 @@ export const RecordStepSettings = ({
   const [generalTemplate, setGeneralTemplate] = useState<string>('');
   const [notesTemplate, setNotesTemplate] = useState<string>('');
   const [saveAsWav, setSaveAsWav] = useState(false);
+  const [echoCancellation, setEchoCancellation] = useState(false);
+  const [noiseSuppression, setNoiseSuppression] = useState(false);
   const [scriptureFormat, setScriptureFormat] =
     useState<FilenameFormat>('bookChapterPassage');
   const [generalFormat, setGeneralFormat] =
@@ -121,6 +123,18 @@ export const RecordStepSettings = ({
     setSaveAsWav(checked);
   };
 
+  const handleEchoCancellationChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    setEchoCancellation(e.target.checked);
+  };
+
+  const handleNoiseSuppressionChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    setNoiseSuppression(e.target.checked);
+  };
+
   const handleScriptureFormatChange = (format: FilenameFormat) => {
     setScriptureFormat(format);
     // Reset validity when switching away from custom
@@ -148,6 +162,8 @@ export const RecordStepSettings = ({
   const getCurrentSettings = () => {
     return JSON.stringify({
       saveAsWav,
+      echoCancellation,
+      noiseSuppression,
       scriptureFilenameTemplate: getScriptureTemplate(),
       generalFilenameTemplate: getGeneralTemplate(),
       notesFilenameTemplate: getNotesTemplate(),
@@ -219,6 +235,8 @@ export const RecordStepSettings = ({
     let newGeneralTemplate = REFERENCE_TEMPLATE;
     let newNotesTemplate = NOTE_TITLE_TEMPLATE;
     let saveAsWav = false;
+    let echoCancellationVal = false;
+    let noiseSuppressionVal = false;
     if (toolSettings) {
       const json = JSONParse(toolSettings) as Record<string, any>;
       newScriptureTemplate =
@@ -226,11 +244,15 @@ export const RecordStepSettings = ({
       newGeneralTemplate = json.generalFilenameTemplate || REFERENCE_TEMPLATE;
       newNotesTemplate = json.notesFilenameTemplate || NOTE_TITLE_TEMPLATE;
       saveAsWav = json.saveAsWav || false;
+      echoCancellationVal = Boolean(json.echoCancellation);
+      noiseSuppressionVal = Boolean(json.noiseSuppression);
     }
     setScriptureTemplate(newScriptureTemplate);
     setGeneralTemplate(newGeneralTemplate);
     setNotesTemplate(newNotesTemplate);
     setSaveAsWav(saveAsWav);
+    setEchoCancellation(echoCancellationVal);
+    setNoiseSuppression(noiseSuppressionVal);
 
     setScriptureFormat(formatFromTemplate(newScriptureTemplate));
     setGeneralFormat(formatFromTemplate(newGeneralTemplate));
@@ -243,6 +265,8 @@ export const RecordStepSettings = ({
     // Store initial settings
     initialSettingsRef.current = JSON.stringify({
       saveAsWav: saveAsWav,
+      echoCancellation: echoCancellationVal,
+      noiseSuppression: noiseSuppressionVal,
       scriptureFilenameTemplate: newScriptureTemplate,
       generalFilenameTemplate: newGeneralTemplate,
       notesFilenameTemplate: newNotesTemplate,
@@ -264,6 +288,38 @@ export const RecordStepSettings = ({
         />
         <Typography variant="caption" color="text.secondary" sx={{ ml: 4.5 }}>
           {t.saveAsWavHelper}
+        </Typography>
+      </Box>
+
+      <Box>
+        <FormControlLabel
+          control={
+            <Checkbox
+              checked={echoCancellation}
+              onChange={handleEchoCancellationChange}
+              id="record-echo-cancellation"
+            />
+          }
+          label={t.echoCancellation}
+        />
+        <Typography variant="caption" color="text.secondary" sx={{ ml: 4.5 }}>
+          {t.echoCancellationHelper}
+        </Typography>
+      </Box>
+
+      <Box>
+        <FormControlLabel
+          control={
+            <Checkbox
+              checked={noiseSuppression}
+              onChange={handleNoiseSuppressionChange}
+              id="record-noise-suppression"
+            />
+          }
+          label={t.noiseSuppression}
+        />
+        <Typography variant="caption" color="text.secondary" sx={{ ml: 4.5 }}>
+          {t.noiseSuppressionHelper}
         </Typography>
       </Box>
 
