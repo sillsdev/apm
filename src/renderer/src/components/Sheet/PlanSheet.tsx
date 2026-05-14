@@ -28,10 +28,13 @@ import {
   DialogContent,
   DialogTitle,
   IconButton,
+  InputAdornment,
   TextField,
+  Typography,
   debounce,
   styled,
 } from '@mui/material';
+import ClearIcon from '@mui/icons-material/Clear';
 import SaveIcon from '@mui/icons-material/Save';
 import PublishOffIcon from '@mui/icons-material/PublicOffOutlined';
 import PublishOnIcon from '@mui/icons-material/PublicOutlined';
@@ -343,6 +346,7 @@ export function PlanSheet(props: IProps) {
   const [curTop, setCurTop] = useState(0);
   const [goToOpen, setGoToOpen] = useState(false);
   const [goToQuery, setGoToQuery] = useState('');
+  const goToInputRef = useRef<HTMLInputElement>(null);
   const moveUp = true;
   const moveDown = false;
   const moveToNewSection = true;
@@ -355,6 +359,19 @@ export function PlanSheet(props: IProps) {
     () => !isPersonalTeam(org, teams) && !offlineOnly,
     [org, teams, offlineOnly]
   );
+
+  useEffect(() => {
+    if (!goToOpen) return;
+    const id = window.setTimeout(() => {
+      const el = goToInputRef.current;
+      if (el) {
+        el.focus();
+        el.select();
+      }
+    }, 100);
+    return () => clearTimeout(id);
+  }, [goToOpen]);
+
   const handleSave = () => {
     startSave();
   };
@@ -765,6 +782,8 @@ export function PlanSheet(props: IProps) {
       inlinePassages,
       lookupBook,
       scripture,
+      currentRowIndex0:
+        currentRowRef.current >= 1 ? currentRowRef.current - 1 : -1,
     });
 
     if (result.ok === false) {
@@ -1211,8 +1230,12 @@ export function PlanSheet(props: IProps) {
         >
           <DialogTitle>{t.goToReferenceTitle}</DialogTitle>
           <DialogContent>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+              {t.goToReferenceDescription}
+            </Typography>
             <TextField
               autoFocus
+              inputRef={goToInputRef}
               fullWidth
               margin="dense"
               value={goToQuery}
@@ -1223,7 +1246,23 @@ export function PlanSheet(props: IProps) {
                   handleGoToSubmit();
                 }
               }}
-              placeholder={t.goToReferencePlaceholder}
+              slotProps={{
+                input: {
+                  endAdornment: goToQuery ? (
+                    <InputAdornment position="end">
+                      <IconButton
+                        aria-label={t.goToReferenceClear}
+                        edge="end"
+                        size="small"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => setGoToQuery('')}
+                      >
+                        <ClearIcon fontSize="small" />
+                      </IconButton>
+                    </InputAdornment>
+                  ) : undefined,
+                },
+              }}
             />
           </DialogContent>
           <DialogActions>

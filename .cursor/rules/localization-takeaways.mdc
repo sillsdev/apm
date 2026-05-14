@@ -14,14 +14,15 @@ alwaysApply: true
   `<target/>` for new English units; add a `<context-group>` with
   `context-type="sourcefile"` set to the primary consuming file (e.g.
   `BurritoFormat.tsx`) so translators see where the string is used.
-- **Regenerate TypeScript and default English:** after XLIFF changes, run the
-  updater from [**`localization\bin\Debug`**](localization/bin/Debug) as the
-  **current working directory** — not the repo root. The tool resolves inputs as
-  `..\..\…` relative to that folder (see [`localization/Program.cs`](localization/Program.cs));
-  starting it elsewhere makes it look for `TranscriberAdmin-en-1.2.xliff` in the
-  wrong place and fails with `FileNotFoundException`. Convenience:
-  [`localization/Updatestrings.bat`](localization/Updatestrings.bat) does
-  `cd bin\debug` then runs the exe.
+- **Regenerate TypeScript and default English:** after XLIFF changes, from the
+  **repo root** in **PowerShell**, run:
+  `cd .\localization\bin\Debug ; &.\.\updateLocalization.exe`
+  The tool expects that working directory — not the repo root as cwd for the exe
+  — because it resolves inputs relative to that folder (see
+  [`localization/Program.cs`](localization/Program.cs)); starting it elsewhere
+  makes it look for `TranscriberAdmin-en-1.2.xliff` in the wrong place and fails
+  with `FileNotFoundException`. Optional: [`localization/Updatestrings.bat`](localization/Updatestrings.bat)
+  (`cd bin\debug` then the exe) if you prefer cmd.
 - **What the pipeline writes:** the exe generates `localizeModel.tsx` and
   `localizationReducer.tsx` under `localization\`, then
   [`localization/UpdateLocalizationFollowUp.bat`](localization/UpdateLocalizationFollowUp.bat)
@@ -43,8 +44,8 @@ alwaysApply: true
   selectors fit, add a new entry in `selectors.tsx` that calls
   `localStrings(state, { layout: 'yourSection' })`, matching the section name
   the tool emits in `model.tsx` / Redux `strings` slice. Add the corresponding
-  groups and units in XLIFF, then run the updater from `localization\bin\Debug`
-  as above.
+  groups and units in XLIFF, then run the updater with the PowerShell one-liner
+  above (cwd `localization\bin\Debug`).
 - **Verify after regen:** run `npm run typecheck` from `src\renderer` (or root
   `npm run typecheck:web`, which delegates there).
 
@@ -53,7 +54,7 @@ alwaysApply: true
 | Step | Action                                                                                                         |
 | ---- | -------------------------------------------------------------------------------------------------------------- |
 | 1    | Add/update `<trans-unit>` in `localization/TranscriberAdmin-en-1.2.xliff`                                      |
-| 2    | `cd localization\bin\Debug` → run `updateLocalization.exe`, **or** run `Updatestrings.bat` from `localization` |
+| 2    | From repo root (PowerShell): `cd .\localization\bin\Debug ; &.\.\updateLocalization.exe` — **or** `Updatestrings.bat` from `localization` (cmd) |
 | 3    | Confirm `model.tsx` / `reducers.tsx` (and JSON if applicable) updated under `src/renderer/…`                   |
 | 4    | `cd src\renderer` → `npm run typecheck`                                                                        |
 | 5    | Use `useSelector(yourSelector)` (add a selector only if the section is new)                                    |
