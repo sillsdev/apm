@@ -18,7 +18,7 @@ import BigDialog from '../../hoc/BigDialog';
 import { BigDialogBp } from '../../hoc/BigDialogBp';
 import GroupTabs from '../GroupTabs';
 import { StepEditor } from '../StepEditor';
-import { defaultWorkflow } from '../../crud';
+import { defaultWorkflow, useTeamWorkflowProcess } from '../../crud';
 import { useRole } from '../../crud/useRole';
 import { useOrbitData } from '../../hoc/useOrbitData';
 import { ProjectSort } from '../Team/ProjectDialog/ProjectSort';
@@ -88,6 +88,9 @@ export const OrgHead = () => {
     if (!orgId) return undefined;
     return organizations.find((o) => o.id === orgId);
   }, [orgId, organizations]);
+
+  const headerWorkflowProcess = useTeamWorkflowProcess(orgId ?? undefined);
+  const stepEditorProcess = headerWorkflowProcess ?? defaultWorkflow;
 
   const isAdmin = useMemo(
     () => userIsOrgAdmin(orgId ?? ''),
@@ -267,7 +270,7 @@ export const OrgHead = () => {
           bp={isMobile ? BigDialogBp.mobile : BigDialogBp.md}
         >
           <StepEditor
-            process={defaultWorkflow}
+            process={stepEditorProcess}
             org={isPersonal ? personalTeam || '' : orgId || ''}
           />
         </BigDialog>

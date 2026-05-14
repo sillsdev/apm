@@ -54,7 +54,88 @@ export const useOrgWorkflowSteps = () => {
     }
   };
 
-  const AddOrgWFToOps = async (
+  /** Same template list as {@link CreateOrgWorkflowSteps} (remote, then offline fallback). */
+  const getProcessTemplateSteps = (process: string): WorkflowStepD[] => {
+    const offlineOnly = getGlobal('offlineOnly');
+    const bySeq = (a: WorkflowStepD, b: WorkflowStepD) =>
+      a.attributes.sequencenum - b.attributes.sequencenum;
+    let processSteps = workflowsteps
+      .filter(
+        (s) =>
+          s.attributes.process === process &&
+          Boolean(s?.keys?.remoteId) !== offlineOnly
+      )
+      .sort(bySeq);
+    if (processSteps.length === 0 && !offlineOnly) {
+      processSteps = workflowsteps
+        .filter((s) => s.attributes.process === process && !s?.keys?.remoteId)
+        .sort(bySeq);
+    }
+    return processSteps;
+  };
+
+  /**
+   * Row label, tool JSON, and optional corrected `sequencenum` for Edit Workflow.
+   *
+   * - **Index alignment**: when `indexAlign` is passed and template count matches
+   *   org count, use the Nth template row (fixes API data where every org step
+   *   reused the same `sequencenum`, so lookup by sequence always hit "Record").
+   * - **Duplicate-name repair**: when raw `name` repeats in the batch, align
+   *   by `sequencenum` when that still distinguishes rows.
+   */
+  const resolveOrgWorkflowStepPresentation = (
+    orgStep: OrgWorkflowStepD,
+    processFilter: string,
+    duplicateRawNameInBatch: boolean,
+    indexAlign?: { index: number; orgCount: number }
+  ): { name: string; toolAttr: string | undefined; sequencenum?: number } => {
+    const orgName = orgStep.attributes?.name ?? '';
+    const orgTool = orgStep.attributes?.tool;
+    if (!processFilter || processFilter === 'ANY') {
+      return {
+        name: localizedWorkStep(orgName),
+        toolAttr: orgTool,
+      };
+    }
+    const templates = getProcessTemplateSteps(processFilter);
+    if (
+      indexAlign &&
+      templates.length === indexAlign.orgCount &&
+      templates[indexAlign.index]
+    ) {
+      const tmpl = templates[indexAlign.index];
+      const sn = tmpl.attributes.sequencenum;
+      const sequencenum =
+        typeof sn === 'number' && sn < 0 ? sn : indexAlign.index + 1;
+      return {
+        name: localizedWorkStep(tmpl.attributes.name),
+        toolAttr: tmpl.attributes.tool ?? orgTool,
+        sequencenum,
+      };
+    }
+    if (!duplicateRawNameInBatch) {
+      return {
+        name: localizedWorkStep(orgName),
+        toolAttr: orgTool,
+      };
+    }
+    const tmpl = templates.find(
+      (w) => w.attributes.sequencenum === orgStep.attributes.sequencenum
+    );
+    if (tmpl?.attributes?.name && orgName !== tmpl.attributes.name) {
+      return {
+        name: localizedWorkStep(tmpl.attributes.name),
+        toolAttr: tmpl.attributes.tool ?? orgTool,
+        sequencenum: tmpl.attributes.sequencenum,
+      };
+    }
+    return {
+      name: localizedWorkStep(orgName),
+      toolAttr: orgTool,
+    };
+  };
+
+  const AddOrgWFToOps = (
     tb: RecordTransformBuilder,
     wf: WorkflowStepD,
     org: string,
@@ -68,10 +149,8 @@ export const useOrgWorkflowSteps = () => {
     // }
     const wfs = {
       type: 'orgworkflowstep',
-      attributes: {
-        ...wf.attributes,
-      },
-    } as OrgWorkflowStep;
+      attributes: { ...wf.attributes },
+    } as OrgWorkflowStepD;
     ops.push(...AddRecord(tb, wfs, user, memory));
     ops.push(
       ...ReplaceRelatedRecord(
@@ -104,7 +183,11 @@ export const useOrgWorkflowSteps = () => {
           related(s, 'organization') === org &&
           Boolean(s.keys?.remoteId) !== getGlobal('offlineOnly')
       )
-      .sort((i, j) => i.attributes.sequencenum - j.attributes.sequencenum);
+      .sort((i, j) => {
+        const d = i.attributes.sequencenum - j.attributes.sequencenum;
+        if (d !== 0) return d;
+        return String(i.id).localeCompare(String(j.id));
+      });
   };
 
   const CreateOrgWorkflowSteps = (
@@ -112,17 +195,23 @@ export const useOrgWorkflowSteps = () => {
     process: string,
     org: string
   ) => {
-    const offlineOnly = getGlobal('offlineOnly');
-    const processSteps = workflowsteps
-      .filter(
-        (s) =>
-          s.attributes.process === process &&
-          Boolean(s?.keys?.remoteId) !== offlineOnly
-      )
-      .sort((a, b) => a.attributes.sequencenum - b.attributes.sequencenum);
+    const processSteps = getProcessTemplateSteps(process);
     const opArray: RecordOperation[] = [];
-    for (let stepIndex = 0; stepIndex < processSteps.length; stepIndex++)
-      AddOrgWFToOps(tb, processSteps[stepIndex] as WorkflowStepD, org, opArray);
+    let visibleOrdinal = 0;
+    for (let stepIndex = 0; stepIndex < processSteps.length; stepIndex++) {
+      const wf = processSteps[stepIndex] as WorkflowStepD;
+      const sn = wf.attributes.sequencenum;
+      const sequencenum =
+        typeof sn === 'number' && sn < 0 ? sn : ++visibleOrdinal;
+      const normalized = {
+        ...wf,
+        attributes: {
+          ...wf.attributes,
+          sequencenum,
+        },
+      } as WorkflowStepD;
+      AddOrgWFToOps(tb, normalized, org, opArray);
+    }
     return opArray;
   };
 
@@ -168,7 +257,9 @@ export const useOrgWorkflowSteps = () => {
   return {
     GetOrgWorkflowSteps,
     CreateOrgWorkflowSteps,
+    getProcessTemplateSteps,
     localizedWorkStepFromId,
     localizedWorkStep,
+    resolveOrgWorkflowStepPresentation,
   };
 };

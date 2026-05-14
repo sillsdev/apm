@@ -195,6 +195,112 @@ const mountStepEditor = (memory: Memory) => {
   );
 };
 
+const BOLD_STEPS: MockOrgWfAttrs[] = [
+  {
+    id: 'bold-1',
+    name: 'Record',
+    sequencenum: 1,
+    process: 'bold',
+    tool: '{"tool": "record"}',
+  },
+  {
+    id: 'bold-2',
+    name: 'Careful speech',
+    sequencenum: 2,
+    process: 'bold',
+    tool: '{"tool": "phraseBackTranslate", "settings": "{\\"artifactTypeId\\": \\"art-cs\\", \\"namedRegion\\": \\"CarefulSpeech\\"}"}',
+  },
+  {
+    id: 'bold-3',
+    name: 'Lwc translation',
+    sequencenum: 3,
+    process: 'bold',
+    tool: '{"tool": "phraseBackTranslate", "settings": "{\\"artifactTypeId\\": \\"art-pbt\\", \\"namedRegion\\": \\"BT\\"}"}',
+  },
+  {
+    id: 'bold-4',
+    name: 'Careful transcription',
+    sequencenum: 4,
+    process: 'bold',
+    tool: '{"tool": "transcribe", "settings": "{\\"artifactTypeId\\": \\"art-cs\\"}"}',
+  },
+  {
+    id: 'bold-5',
+    name: 'Lwc transcription',
+    sequencenum: 5,
+    process: 'bold',
+    tool: '{"tool": "transcribe", "settings": "{\\"artifactTypeId\\": \\"art-pbt\\"}"}',
+  },
+  {
+    id: 'bold-6',
+    name: 'Free translation',
+    sequencenum: 6,
+    process: 'bold',
+    tool: '{"tool": "wholeBackTranslate"}',
+  },
+  {
+    id: 'bold-7',
+    name: 'Free transcription',
+    sequencenum: 7,
+    process: 'bold',
+    tool: '{"tool": "transcribe", "settings": "{\\"artifactTypeId\\": \\"art-wbt\\"}"}',
+  },
+];
+
+describe('StepEditor — Bold workflow', () => {
+  it('loads all 7 Bold workflow steps with correct names', () => {
+    const memory = createWorkflowStepMemory(TEST_ORG_ID, BOLD_STEPS);
+    mountStepEditor(memory);
+    cy.get('.MuiDialogContent-root input#stepName').should('have.length', 7);
+    const names = [
+      'Record',
+      'Careful speech',
+      'LWC translation',
+      'Careful transcription',
+      'LWC transcription',
+      'Free translation',
+      'Free transcription',
+    ];
+    names.forEach((name, i) => {
+      cy.get('.MuiDialogContent-root input#stepName')
+        .eq(i)
+        .should('have.value', name);
+    });
+  });
+
+  it('handles settings stored as an embedded object (pre-fix format) without crashing', () => {
+    // Regression guard: getToolSettings must normalize object settings to a JSON string
+    // so that prettySettings (JSON.parse) does not receive "[object Object]" and throw.
+    const stepsWithEmbeddedObj: MockOrgWfAttrs[] = [
+      {
+        id: 'bold-obj-1',
+        name: 'Record',
+        sequencenum: 1,
+        process: 'bold',
+        tool: '{"tool": "record"}',
+      },
+      {
+        id: 'bold-obj-2',
+        name: 'Careful speech',
+        sequencenum: 2,
+        process: 'bold',
+        // settings as a nested object (old DB format) instead of a JSON string
+        tool: JSON.stringify({
+          tool: 'phraseBackTranslate',
+          settings: { artifactTypeId: 'art-cs', namedRegion: 'CarefulSpeech' },
+        }),
+      },
+    ];
+    const memory = createWorkflowStepMemory(TEST_ORG_ID, stepsWithEmbeddedObj);
+    mountStepEditor(memory);
+    // Both steps must render — if getToolSettings crashes, only step 1 would appear
+    cy.get('.MuiDialogContent-root input#stepName').should('have.length', 2);
+    cy.get('.MuiDialogContent-root input#stepName')
+      .eq(1)
+      .should('have.value', 'Careful speech');
+  });
+});
+
 describe('StepEditor (Edit Workflow)', () => {
   it('loads org workflow steps and shows the top Add control', () => {
     const memory = createWorkflowStepMemory(TEST_ORG_ID, [

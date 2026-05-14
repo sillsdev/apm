@@ -84,7 +84,11 @@ export const StepEditor = ({ process, org }: IProps) => {
     clearRequested,
     clearCompleted,
   } = useContext(UnsavedContext).state;
-  const { GetOrgWorkflowSteps, localizedWorkStep } = useOrgWorkflowSteps();
+  const {
+    GetOrgWorkflowSteps,
+    getProcessTemplateSteps,
+    resolveOrgWorkflowStepPresentation,
+  } = useOrgWorkflowSteps();
   const { showMessage } = useSnackBar();
   const saving = useRef(false);
   const toolId = 'stepEditor';
@@ -397,28 +401,67 @@ export const StepEditor = ({ process, org }: IProps) => {
   }, [toolsChanged]);
 
   useEffect(() => {
-    GetOrgWorkflowSteps({ process: 'ANY', org, showAll: true }).then(
-      (orgSteps) => {
-        const newRows = Array<IStepRow>();
-        orgSteps.forEach((s) => {
-          const tool = getTool(s.attributes?.tool);
-          const settings = getToolSettings(s.attributes?.tool);
-          newRows.push({
-            id: s.id,
-            seq: s.attributes?.sequencenum,
-            name: localizedWorkStep(s.attributes?.name),
-            pos: 0,
-            tool: toCamel(tool),
-            settings: settings,
-            prettySettings: prettySettings(tool, settings),
-            rIdx: newRows.length,
-          });
-        });
-        setRows(newRows.sort((i, j) => i.seq - j.seq));
+    // Scope to the team's workflow when `process` is set (e.g. bold). Using
+    // 'ANY' merged every process and sorted only by sequencenum, so Edit Workflow
+    // could disagree with the steps CreateOrgWorkflowSteps just added.
+    GetOrgWorkflowSteps({
+      process: process ?? 'ANY',
+      org,
+      showAll: true,
+    }).then((orgSteps) => {
+      const newRows = Array<IStepRow>();
+      const rawCounts = new Map<string, number>();
+      for (const s of orgSteps) {
+        const n = s.attributes?.name ?? '';
+        rawCounts.set(n, (rawCounts.get(n) ?? 0) + 1);
       }
-    );
+      const proc = process ?? 'ANY';
+      const sortedOrg = [...orgSteps].sort((a, b) => {
+        const d = a.attributes.sequencenum - b.attributes.sequencenum;
+        if (d !== 0) return d;
+        return String(a.id).localeCompare(String(b.id));
+      });
+      const templates = proc !== 'ANY' ? getProcessTemplateSteps(proc) : [];
+      const seqCounts = new Map<number, number>();
+      sortedOrg.forEach((s) => {
+        const sn = s.attributes?.sequencenum ?? 0;
+        seqCounts.set(sn, (seqCounts.get(sn) ?? 0) + 1);
+      });
+      const uniqueSeqs = new Set(
+        sortedOrg.map((s) => s.attributes?.sequencenum ?? 0)
+      ).size;
+      const useTemplateIndex =
+        proc !== 'ANY' &&
+        templates.length === sortedOrg.length &&
+        sortedOrg.length > 0 &&
+        (uniqueSeqs < sortedOrg.length || uniqueSeqs <= 1);
+
+      sortedOrg.forEach((s, idx) => {
+        const rawName = s.attributes?.name ?? '';
+        const dup = (rawCounts.get(rawName) ?? 0) > 1;
+        const pres = resolveOrgWorkflowStepPresentation(
+          s,
+          proc,
+          dup,
+          useTemplateIndex ? { index: idx, orgCount: sortedOrg.length } : undefined
+        );
+        const tool = getTool(pres.toolAttr);
+        const settings = getToolSettings(pres.toolAttr);
+        newRows.push({
+          id: s.id,
+          seq: pres.sequencenum ?? s.attributes?.sequencenum,
+          name: pres.name,
+          pos: 0,
+          tool: toCamel(tool),
+          settings: settings,
+          prettySettings: prettySettings(tool, settings),
+          rIdx: newRows.length,
+        });
+      });
+      setRows(newRows.sort((i, j) => i.seq - j.seq));
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [org]);
+  }, [org, process]);
 
   useEffect(() => {
     setSortKey((sortKey) => sortKey + 1);

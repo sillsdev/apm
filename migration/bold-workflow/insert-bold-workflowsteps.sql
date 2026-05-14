@@ -21,8 +21,8 @@ SELECT
   'bold',
   'Record',
   1,
-  '{"tool": "record"}',
-  '{}',
+  '{"tool": "record"}'::jsonb,
+  '{}'::jsonb,
   (now() AT TIME ZONE 'utc'),
   (now() AT TIME ZONE 'utc'),
   (SELECT u.id FROM users u ORDER BY u.id ASC LIMIT 1)
@@ -35,10 +35,12 @@ SELECT
   'bold',
   'Careful speech',
   2,
-  '{"tool": "phraseBackTranslate", "settings": {"artifactTypeId": "'
+  (
+    '{"tool": "phraseBackTranslate", "settings": "{\"artifactTypeId\": \"'
     || (SELECT CAST(id AS TEXT) FROM artifacttypes WHERE typename = 'carefulspeech' ORDER BY id LIMIT 1)
-    || '", "namedRegion": "CarefulSpeech"}}',
-  '{}',
+    || '\", \"namedRegion\": \"CarefulSpeech\"}"}'
+  )::jsonb,
+  '{}'::jsonb,
   (now() AT TIME ZONE 'utc'),
   (now() AT TIME ZONE 'utc'),
   (SELECT u.id FROM users u ORDER BY u.id ASC LIMIT 1)
@@ -52,10 +54,12 @@ SELECT
   'bold',
   'Lwc translation',
   3,
-  '{"tool": "phraseBackTranslate", "settings": {"artifactTypeId": "'
+  (
+    '{"tool": "phraseBackTranslate", "settings": "{\"artifactTypeId\": \"'
     || (SELECT CAST(id AS TEXT) FROM artifacttypes WHERE typename = 'backtranslation' ORDER BY id LIMIT 1)
-    || '", "namedRegion": "BT"}}',
-  '{}',
+    || '\", \"namedRegion\": \"BT\"}"}'
+  )::jsonb,
+  '{}'::jsonb,
   (now() AT TIME ZONE 'utc'),
   (now() AT TIME ZONE 'utc'),
   (SELECT u.id FROM users u ORDER BY u.id ASC LIMIT 1)
@@ -69,10 +73,12 @@ SELECT
   'bold',
   'Careful transcription',
   4,
-  '{"tool": "transcribe", "settings": {"artifactTypeId": "'
+  (
+    '{"tool": "transcribe", "settings": "{\"artifactTypeId\": \"'
     || (SELECT CAST(id AS TEXT) FROM artifacttypes WHERE typename = 'carefulspeech' ORDER BY id LIMIT 1)
-    || '"}}',
-  '{}',
+    || '\"}"}'
+  )::jsonb,
+  '{}'::jsonb,
   (now() AT TIME ZONE 'utc'),
   (now() AT TIME ZONE 'utc'),
   (SELECT u.id FROM users u ORDER BY u.id ASC LIMIT 1)
@@ -86,10 +92,12 @@ SELECT
   'bold',
   'Lwc transcription',
   5,
-  '{"tool": "transcribe", "settings": {"artifactTypeId": "'
+  (
+    '{"tool": "transcribe", "settings": "{\"artifactTypeId\": \"'
     || (SELECT CAST(id AS TEXT) FROM artifacttypes WHERE typename = 'backtranslation' ORDER BY id LIMIT 1)
-    || '"}}',
-  '{}',
+    || '\"}"}'
+  )::jsonb,
+  '{}'::jsonb,
   (now() AT TIME ZONE 'utc'),
   (now() AT TIME ZONE 'utc'),
   (SELECT u.id FROM users u ORDER BY u.id ASC LIMIT 1)
@@ -103,8 +111,8 @@ SELECT
   'bold',
   'Free translation',
   6,
-  '{"tool": "wholeBackTranslate"}',
-  '{}',
+  '{"tool": "wholeBackTranslate"}'::jsonb,
+  '{}'::jsonb,
   (now() AT TIME ZONE 'utc'),
   (now() AT TIME ZONE 'utc'),
   (SELECT u.id FROM users u ORDER BY u.id ASC LIMIT 1)
@@ -117,10 +125,12 @@ SELECT
   'bold',
   'Free transcription',
   7,
-  '{"tool": "transcribe", "settings": {"artifactTypeId": "'
+  (
+    '{"tool": "transcribe", "settings": "{\"artifactTypeId\": \"'
     || (SELECT CAST(id AS TEXT) FROM artifacttypes WHERE typename = 'wholebacktranslation' ORDER BY id LIMIT 1)
-    || '"}}',
-  '{}',
+    || '\"}"}'
+  )::jsonb,
+  '{}'::jsonb,
   (now() AT TIME ZONE 'utc'),
   (now() AT TIME ZONE 'utc'),
   (SELECT u.id FROM users u ORDER BY u.id ASC LIMIT 1)
