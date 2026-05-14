@@ -7,4 +7,5 @@ cd ../..
 npm run stamp
 copy ..\..\apm-vite\env-config\*.* env-config\.
 npm run devs
+xcopy ..\..\apm-vite\localization\bin .\localization\bin\ /E /I /Y
 cursor .
