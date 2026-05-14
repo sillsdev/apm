@@ -1210,9 +1210,10 @@ export interface IPlanSheetStrings extends Localize.LocalizedStringsMethods {
     "firstMovement": string;
     "graphic": string;
     "goToReference": string;
-    "goToReferencePlaceholder": string;
-    "goToReferenceTitle": string;
+    "goToReferenceClear": string;
+    "goToReferenceDescription": string;
     "goToReferenceSubmit": string;
+    "goToReferenceTitle": string;
     "hidePublishing": string;
     "moveDown": string;
     "movement": string;

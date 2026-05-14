@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 xliff-core-1.2-strict.xsd" version="1.2">
    <file original="TranscriberAdmin-en.xliff" source-language="en" target-language="en" datatype="plaintext">
       <body>
@@ -7243,15 +7243,15 @@
                <context context-type="sourcefile">PlanSheet.tsx</context>
             </context-group>
          </trans-unit>
-         <trans-unit id="planSheet.goToReferencePlaceholder">
-            <source>Verse reference, M1 S1 (if shown), section.passage (example: 2.3), or exact reference text</source>
+         <trans-unit id="planSheet.goToReferenceClear">
+            <source>Clear</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">PlanSheet.tsx</context>
             </context-group>
          </trans-unit>
-         <trans-unit id="planSheet.goToReferenceTitle">
-            <source>Go to reference</source>
+         <trans-unit id="planSheet.goToReferenceDescription">
+            <source>Verse reference, M1 S1 (if shown), section.passage (example: 2.3), or exact reference text</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">PlanSheet.tsx</context>
@@ -7259,6 +7259,13 @@
          </trans-unit>
          <trans-unit id="planSheet.goToReferenceSubmit">
             <source>Go</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">PlanSheet.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="planSheet.goToReferenceTitle">
+            <source>Go to reference</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">PlanSheet.tsx</context>

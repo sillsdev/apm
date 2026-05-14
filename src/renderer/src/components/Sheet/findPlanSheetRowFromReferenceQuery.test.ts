@@ -150,6 +150,63 @@ describe('findPlanSheetRowFromReferenceQuery', () => {
     expect(r).toEqual({ ok: true, rowIndex: 0 });
   });
 
+  it('matches scripture query verse inside passage range (same chapter)', () => {
+    const rowInfo: ISheet[] = [
+      basePassage({ book: 'MAT', reference: '1:67-80' }),
+    ];
+    const r = findPlanSheetRowFromReferenceQuery('1:68', rowInfo, {
+      ...defaultOpts,
+    });
+    expect(r).toEqual({ ok: true, rowIndex: 0 });
+  });
+
+  it('prefers exact passage row when query matches single verse inside another range', () => {
+    const rowInfo: ISheet[] = [
+      basePassage({ book: 'MAT', reference: '1:68' }),
+      basePassage({ book: 'MAT', reference: '1:67-80' }),
+    ];
+    const r = findPlanSheetRowFromReferenceQuery('1:68', rowInfo, {
+      ...defaultOpts,
+    });
+    expect(r).toEqual({ ok: true, rowIndex: 0 });
+  });
+
+  it('matches scripture query overlapping cross-chapter passage range', () => {
+    const rowInfo: ISheet[] = [
+      basePassage({ book: 'MAT', reference: '1:14-2:20' }),
+    ];
+    expect(
+      findPlanSheetRowFromReferenceQuery('1:15', rowInfo, { ...defaultOpts })
+    ).toEqual({ ok: true, rowIndex: 0 });
+    expect(
+      findPlanSheetRowFromReferenceQuery('2:5', rowInfo, { ...defaultOpts })
+    ).toEqual({ ok: true, rowIndex: 0 });
+    expect(findPlanSheetRowFromReferenceQuery('2:21', rowInfo, { ...defaultOpts })).toEqual({
+      ok: false,
+      error: 'not_found',
+    });
+  });
+
+  it('matches scripture query sub-range overlapping passage range', () => {
+    const rowInfo: ISheet[] = [
+      basePassage({ book: 'MAT', reference: '1:67-80' }),
+    ];
+    const r = findPlanSheetRowFromReferenceQuery('1:68-69', rowInfo, {
+      ...defaultOpts,
+    });
+    expect(r).toEqual({ ok: true, rowIndex: 0 });
+  });
+
+  it('returns not_found when query verse outside passage range', () => {
+    const rowInfo: ISheet[] = [
+      basePassage({ book: 'MAT', reference: '1:67-80' }),
+    ];
+    const r = findPlanSheetRowFromReferenceQuery('1:66', rowInfo, {
+      ...defaultOpts,
+    });
+    expect(r).toEqual({ ok: false, error: 'not_found' });
+  });
+
   it('returns not_found when nothing matches', () => {
     const rowInfo: ISheet[] = [basePassage({ reference: '9:9' })];
     const r = findPlanSheetRowFromReferenceQuery('1:1', rowInfo, {
@@ -199,5 +256,82 @@ describe('findPlanSheetRowFromReferenceQuery', () => {
       scripture: true,
     });
     expect(r).toEqual({ ok: true, rowIndex: 0 });
+  });
+
+  it('finds next section by phrase in title (case-insensitive)', () => {
+    const rowInfo: ISheet[] = [
+      baseSection({ sectionSeq: 1, title: 'Alpha Section' }),
+      basePassage({ sectionSeq: 1, passageSeq: 1, reference: '1:1' }),
+      baseSection({ sectionSeq: 2, title: 'Beta Section' }),
+      basePassage({ sectionSeq: 2, passageSeq: 1, reference: '1:2' }),
+      baseSection({ sectionSeq: 3, title: 'Gamma Section' }),
+      basePassage({ sectionSeq: 3, passageSeq: 1, reference: '1:3' }),
+    ];
+    const r = findPlanSheetRowFromReferenceQuery('gamma', rowInfo, {
+      ...defaultOpts,
+      currentRowIndex0: 1,
+    });
+    expect(r).toEqual({ ok: true, rowIndex: 5 });
+  });
+
+  it('phrase search wraps to earlier sections after the last block', () => {
+    const rowInfo: ISheet[] = [
+      baseSection({ sectionSeq: 1, title: 'Alpha Section' }),
+      basePassage({ sectionSeq: 1, passageSeq: 1, reference: '1:1' }),
+      baseSection({ sectionSeq: 2, title: 'Beta Section' }),
+      basePassage({ sectionSeq: 2, passageSeq: 1, reference: '1:2' }),
+    ];
+    const r = findPlanSheetRowFromReferenceQuery('alpha', rowInfo, {
+      ...defaultOpts,
+      currentRowIndex0: 3,
+    });
+    expect(r).toEqual({ ok: true, rowIndex: 1 });
+  });
+
+  it('phrase search returns not_found when only the current section matches', () => {
+    const rowInfo: ISheet[] = [
+      baseSection({ sectionSeq: 1, title: 'OnlyHere tokenxyz' }),
+      basePassage({ sectionSeq: 1, passageSeq: 1, reference: '1:1' }),
+      baseSection({ sectionSeq: 2, title: 'Other' }),
+      basePassage({ sectionSeq: 2, passageSeq: 1, reference: '2:1' }),
+    ];
+    const r = findPlanSheetRowFromReferenceQuery('tokenxyz', rowInfo, {
+      ...defaultOpts,
+      currentRowIndex0: 1,
+    });
+    expect(r).toEqual({ ok: false, error: 'not_found' });
+  });
+
+  it('finds next section by phrase in passage comment', () => {
+    const rowInfo: ISheet[] = [
+      baseSection({ sectionSeq: 1, title: 'Alpha' }),
+      basePassage({ sectionSeq: 1, passageSeq: 1, reference: '1:1' }),
+      baseSection({ sectionSeq: 2, title: 'Beta' }),
+      basePassage({
+        sectionSeq: 2,
+        passageSeq: 1,
+        reference: '1:2',
+        comment: 'recorded live',
+      }),
+    ];
+    const r = findPlanSheetRowFromReferenceQuery('live', rowInfo, {
+      ...defaultOpts,
+      currentRowIndex0: 1,
+    });
+    expect(r).toEqual({ ok: true, rowIndex: 3 });
+  });
+
+  it('phrase search with currentRowIndex0 -1 uses first matching section in sheet order', () => {
+    const rowInfo: ISheet[] = [
+      baseSection({ sectionSeq: 1, title: 'Alpha' }),
+      basePassage({ sectionSeq: 1, passageSeq: 1, reference: '1:1' }),
+      baseSection({ sectionSeq: 2, title: 'Beta' }),
+      basePassage({ sectionSeq: 2, passageSeq: 1, reference: '1:2' }),
+    ];
+    const r = findPlanSheetRowFromReferenceQuery('beta', rowInfo, {
+      ...defaultOpts,
+      currentRowIndex0: -1,
+    });
+    expect(r).toEqual({ ok: true, rowIndex: 3 });
   });
 });

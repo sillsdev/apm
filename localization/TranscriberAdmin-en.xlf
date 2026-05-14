@@ -6208,21 +6208,27 @@
             <target/>
          </segment>
       </unit>
-      <unit id="planSheet.goToReferencePlaceholder">
+      <unit id="planSheet.goToReferenceClear">
          <segment>
-            <source>Verse reference, M1 S1 (if shown), section.passage (example: 2.3), or exact reference text</source>
+            <source>Clear</source>
             <target/>
          </segment>
       </unit>
-      <unit id="planSheet.goToReferenceTitle">
+      <unit id="planSheet.goToReferenceDescription">
          <segment>
-            <source>Go to reference</source>
+            <source>Verse reference, M1 S1 (if shown), section.passage (example: 2.3), or exact reference text</source>
             <target/>
          </segment>
       </unit>
       <unit id="planSheet.goToReferenceSubmit">
          <segment>
             <source>Go</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="planSheet.goToReferenceTitle">
+         <segment>
+            <source>Go to reference</source>
             <target/>
          </segment>
       </unit>
