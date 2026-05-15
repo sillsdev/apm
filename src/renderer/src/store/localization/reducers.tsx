@@ -1275,7 +1275,7 @@ const initialState = {
 			"graphic": "Graphic",
 			"goToReference": "Go to reference",
 			"goToReferenceClear": "Clear",
-			"goToReferenceDescription": "One of the following:",
+			"goToReferenceDescription": "Enter one of the following:",
 			"goToReferencePassage": "{0} sequence (ex. 3.1)",
 			"goToReferencePhrase": "{0} title word or phrase",
 			"goToReferencePublishing": "{0} identifier (ex: M1 S1)",

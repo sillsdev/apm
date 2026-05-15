@@ -7251,7 +7251,7 @@
             </context-group>
          </trans-unit>
          <trans-unit id="planSheet.goToReferenceDescription">
-            <source>One of the following:</source>
+            <source>Enter one of the following:</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">PlanSheet.tsx</context>

@@ -6216,7 +6216,7 @@
       </unit>
       <unit id="planSheet.goToReferenceDescription">
          <segment>
-            <source>One of the following:</source>
+            <source>Enter one of the following:</source>
             <target/>
          </segment>
       </unit>
