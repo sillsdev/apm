@@ -87,6 +87,7 @@ import { RecordKeyMap } from '@orbit/records';
 import ConfirmPublishDialog from '../ConfirmPublishDialog';
 import { useOrbitData } from '../../hoc/useOrbitData';
 import { findPlanSheetRowFromReferenceQuery } from './findPlanSheetRowFromReferenceQuery';
+import { useOrganizedBy } from '../../crud/useOrganizedBy';
 
 const DOWN_ARROW = 'ARROWDOWN';
 export const SectionSeqCol = 0;
@@ -327,6 +328,8 @@ export function PlanSheet(props: IProps) {
   const { subscribe, unsubscribe } = useContext(HotKeyContext).state;
   const { isPassageType, isSectionType, isMovement } = rowTypes(rowInfo);
   const { isPublished } = usePublishDestination();
+  const { getOrganizedBy } = useOrganizedBy();
+  const organizedBy = getOrganizedBy(true);
 
   const showIcon = useShowIcon({
     canEditSheet,
@@ -1231,7 +1234,19 @@ export function PlanSheet(props: IProps) {
           <DialogTitle>{t.goToReferenceTitle}</DialogTitle>
           <DialogContent>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-              {t.goToReferenceDescription}
+              <>
+                {t.goToReferenceDescription}
+                <ul>
+                  {scripture && <li>{t.goToReferenceScripture}</li>}
+                  <li>
+                    {(publishingOn && !hidePublishing
+                      ? t.goToReferencePublishing
+                      : t.goToReferencePassage
+                    ).replace('{0}', organizedBy)}
+                  </li>
+                  <li>{t.goToReferencePhrase.replace('{0}', organizedBy)}</li>
+                </ul>
+              </>
             </Typography>
             <TextField
               autoFocus

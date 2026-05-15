@@ -1212,6 +1212,10 @@ export interface IPlanSheetStrings extends Localize.LocalizedStringsMethods {
     "goToReference": string;
     "goToReferenceClear": string;
     "goToReferenceDescription": string;
+    "goToReferencePassage": string;
+    "goToReferencePhrase": string;
+    "goToReferencePublishing": string;
+    "goToReferenceScripture": string;
     "goToReferenceSubmit": string;
     "goToReferenceTitle": string;
     "hidePublishing": string;

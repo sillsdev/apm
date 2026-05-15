@@ -6216,7 +6216,31 @@
       </unit>
       <unit id="planSheet.goToReferenceDescription">
          <segment>
-            <source>Verse reference, M1 S1 (if shown), section.passage (example: 2.3), or exact reference text</source>
+            <source>One of the following:</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="planSheet.goToReferencePassage">
+         <segment>
+            <source>{0} sequence (ex. 3.1)</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="planSheet.goToReferencePhrase">
+         <segment>
+            <source>{0} title word or phrase</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="planSheet.goToReferencePublishing">
+         <segment>
+            <source>{0} identifier (ex: M1 S1)</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="planSheet.goToReferenceScripture">
+         <segment>
+            <source>Verse reference (chapter and verse ex 2:45)</source>
             <target/>
          </segment>
       </unit>
