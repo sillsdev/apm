@@ -41,12 +41,14 @@ export const AddRecord = (
   t: RecordTransformBuilder,
   rec: UninitializedRecord,
   user: string,
-  memory: Memory
+  memory: Memory,
+  dateCreated?: string
 ): RecordOperation[] => {
   const rn = new StandardRecordNormalizer({ schema: memory?.schema });
   rec = rn.normalizeRecord(rec);
   if (!rec.attributes) rec.attributes = {} as Dict<unknown>;
-  (rec.attributes as Dict<unknown>).dateCreated = currentDateTime();
+  (rec.attributes as Dict<unknown>).dateCreated =
+    dateCreated ?? currentDateTime();
   return [
     t.addRecord(rec).toOperation(),
     ...UpdateLastModifiedBy(t, rec as InitializedRecord, user),
