@@ -1237,9 +1237,7 @@ export function PlanSheet(props: IProps) {
               <>
                 {t.goToReferenceDescription}
                 <ul>
-                  {scripture && !inlinePassages && (
-                    <li>{t.goToReferenceScripture}</li>
-                  )}
+                  {scripture && <li>{t.goToReferenceScripture}</li>}
                   <li>
                     {(publishingOn && !hidePublishing
                       ? t.goToReferencePublishing
