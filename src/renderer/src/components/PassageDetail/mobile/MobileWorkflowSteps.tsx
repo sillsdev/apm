@@ -85,7 +85,6 @@ export default function MobileWorkflowSteps() {
         sx={{
           display: 'flex',
           justifyContent: 'flex-start',
-          gap: 0.75,
           overflowX: 'auto',
           overflowY: 'hidden',
           WebkitOverflowScrolling: 'touch',
@@ -114,18 +113,17 @@ export default function MobileWorkflowSteps() {
                 }
               }}
               sx={{
-                width: 36,
-                height: 14,
+                flex: '0 0 80px',
+                height: 30,
+                mr: -0.25,
                 backgroundColor: isCurrent
                   ? theme.palette.grey[700]
                   : stepComplete(step.id)
                     ? theme.palette.grey[400]
                     : theme.palette.grey[200],
-                transform: 'skewX(-20deg)',
-                borderRadius: '2px',
+                clipPath: 'polygon(10% 0%, 100% 0%, 90% 100%, 0% 100%)',
                 cursor:
                   recording || commentRecording ? 'not-allowed' : 'pointer',
-                flexShrink: 0,
               }}
             />
           );
