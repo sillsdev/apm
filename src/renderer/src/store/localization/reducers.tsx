@@ -2110,6 +2110,8 @@ const initialState = {
 			"unsaved": "Unsaved content",
 			"markVerses": "Mark Verses",
 			"markVersesTip": "Listen to the recording and mark where the verse boundaries occur.",
+			"prompt": "Prompt",
+			"promptTip": "Listen to the prompt above. Then, move to the next step.",
 			"wholeBackTranslate": "Whole Back Translate",
 			"wholeBackTranslateTip": "Record the back translation of the entire passage in the language of the consultant.",
 			"wholeBackTranslation": "Whole Back Translate",

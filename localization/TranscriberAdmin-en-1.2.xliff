@@ -11977,6 +11977,20 @@
                <context context-type="sourcefile">passageDetail.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="workflowSteps.prompt">
+            <source>Prompt</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">passageDetail.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="workflowSteps.promptTip">
+            <source>Listen to the prompt above. Then, move to the next step.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">passageDetail.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="workflowSteps.wholeBackTranslate">
             <source>Whole Back Translate</source>
             <target/>

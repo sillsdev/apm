@@ -17,13 +17,13 @@ SELECT
 WHERE NOT EXISTS (SELECT 1 FROM artifacttypes at WHERE at.typename = 'carefulspeech')
   AND EXISTS (SELECT 1 FROM users LIMIT 1);
 
--- Record — same tool JSON as other Record steps (e.g. transcriber / OBT).
+-- Prompt — same tool JSON as other Internalization steps (e.g. transcriber / OBT).
 INSERT INTO workflowsteps (process, name, sequencenum, tool, permissions, datecreated, dateupdated, lastmodifiedby)
 SELECT
   'bold',
-  'Record',
+  'Prompt',
   1,
-  '{"tool": "record"}'::jsonb,
+  '{"tool": "resource"}'::jsonb,
   '{}'::jsonb,
   (now() AT TIME ZONE 'utc'),
   (now() AT TIME ZONE 'utc'),
@@ -31,12 +31,26 @@ SELECT
 WHERE NOT EXISTS (SELECT 1 FROM workflowsteps WHERE process = 'bold' AND sequencenum = 1)
   AND EXISTS (SELECT 1 FROM users LIMIT 1);
 
+-- Record — same tool JSON as other Record steps (e.g. transcriber / OBT).
+INSERT INTO workflowsteps (process, name, sequencenum, tool, permissions, datecreated, dateupdated, lastmodifiedby)
+SELECT
+  'bold',
+  'Record',
+  2,
+  '{"tool": "record"}'::jsonb,
+  '{}'::jsonb,
+  (now() AT TIME ZONE 'utc'),
+  (now() AT TIME ZONE 'utc'),
+  (SELECT u.id FROM users u WHERE u.email = :'user_email' ORDER BY u.id ASC LIMIT 1)
+WHERE NOT EXISTS (SELECT 1 FROM workflowsteps WHERE process = 'bold' AND sequencenum = 2)
+  AND EXISTS (SELECT 1 FROM users LIMIT 1);
+
 -- Careful speech — phrase back translate with carefulspeech artifact and its own named segment bucket.
 INSERT INTO workflowsteps (process, name, sequencenum, tool, permissions, datecreated, dateupdated, lastmodifiedby)
 SELECT
   'bold',
-  'Careful speech',
-  2,
+  'CarefulSpeech',
+  3,
   (
     '{"tool": "phraseBackTranslate", "settings": "{\"artifactTypeId\": \"'
     || (SELECT CAST(id AS TEXT) FROM artifacttypes WHERE typename = 'carefulspeech' ORDER BY id LIMIT 1)
@@ -46,16 +60,16 @@ SELECT
   (now() AT TIME ZONE 'utc'),
   (now() AT TIME ZONE 'utc'),
   (SELECT u.id FROM users u WHERE u.email = :'user_email' ORDER BY u.id ASC LIMIT 1)
-WHERE NOT EXISTS (SELECT 1 FROM workflowsteps WHERE process = 'bold' AND sequencenum = 2)
+WHERE NOT EXISTS (SELECT 1 FROM workflowsteps WHERE process = 'bold' AND sequencenum = 3)
   AND EXISTS (SELECT 1 FROM users LIMIT 1)
   AND EXISTS (SELECT 1 FROM artifacttypes WHERE typename = 'carefulspeech');
 
--- Lwc translation — same settings pattern as Phrase Back Translation (vernacular phrase BT artifact + BT regions).
+-- LWC translation — same settings pattern as Phrase Back Translation (vernacular phrase BT artifact + BT regions).
 INSERT INTO workflowsteps (process, name, sequencenum, tool, permissions, datecreated, dateupdated, lastmodifiedby)
 SELECT
   'bold',
-  'Lwc translation',
-  3,
+  'LwcTranslation',
+  4,
   (
     '{"tool": "phraseBackTranslate", "settings": "{\"artifactTypeId\": \"'
     || (SELECT CAST(id AS TEXT) FROM artifacttypes WHERE typename = 'backtranslation' ORDER BY id LIMIT 1)
@@ -65,7 +79,7 @@ SELECT
   (now() AT TIME ZONE 'utc'),
   (now() AT TIME ZONE 'utc'),
   (SELECT u.id FROM users u WHERE u.email = :'user_email' ORDER BY u.id ASC LIMIT 1)
-WHERE NOT EXISTS (SELECT 1 FROM workflowsteps WHERE process = 'bold' AND sequencenum = 3)
+WHERE NOT EXISTS (SELECT 1 FROM workflowsteps WHERE process = 'bold' AND sequencenum = 4)
   AND EXISTS (SELECT 1 FROM users LIMIT 1)
   AND EXISTS (SELECT 1 FROM artifacttypes WHERE typename = 'backtranslation');
 
@@ -73,8 +87,8 @@ WHERE NOT EXISTS (SELECT 1 FROM workflowsteps WHERE process = 'bold' AND sequenc
 INSERT INTO workflowsteps (process, name, sequencenum, tool, permissions, datecreated, dateupdated, lastmodifiedby)
 SELECT
   'bold',
-  'Careful transcription',
-  4,
+  'CarefulTranscription',
+  5,
   (
     '{"tool": "transcribe", "settings": "{\"artifactTypeId\": \"'
     || (SELECT CAST(id AS TEXT) FROM artifacttypes WHERE typename = 'carefulspeech' ORDER BY id LIMIT 1)
@@ -84,16 +98,16 @@ SELECT
   (now() AT TIME ZONE 'utc'),
   (now() AT TIME ZONE 'utc'),
   (SELECT u.id FROM users u WHERE u.email = :'user_email' ORDER BY u.id ASC LIMIT 1)
-WHERE NOT EXISTS (SELECT 1 FROM workflowsteps WHERE process = 'bold' AND sequencenum = 4)
+WHERE NOT EXISTS (SELECT 1 FROM workflowsteps WHERE process = 'bold' AND sequencenum = 5)
   AND EXISTS (SELECT 1 FROM users LIMIT 1)
   AND EXISTS (SELECT 1 FROM artifacttypes WHERE typename = 'carefulspeech');
 
--- Lwc transcription — same as back-translation transcription (phrase BT artifact).
+-- LWC transcription — same as back-translation transcription (phrase BT artifact).
 INSERT INTO workflowsteps (process, name, sequencenum, tool, permissions, datecreated, dateupdated, lastmodifiedby)
 SELECT
   'bold',
-  'Lwc transcription',
-  5,
+  'LwcTranscription',
+  6,
   (
     '{"tool": "transcribe", "settings": "{\"artifactTypeId\": \"'
     || (SELECT CAST(id AS TEXT) FROM artifacttypes WHERE typename = 'backtranslation' ORDER BY id LIMIT 1)
@@ -103,7 +117,7 @@ SELECT
   (now() AT TIME ZONE 'utc'),
   (now() AT TIME ZONE 'utc'),
   (SELECT u.id FROM users u WHERE u.email = :'user_email' ORDER BY u.id ASC LIMIT 1)
-WHERE NOT EXISTS (SELECT 1 FROM workflowsteps WHERE process = 'bold' AND sequencenum = 5)
+WHERE NOT EXISTS (SELECT 1 FROM workflowsteps WHERE process = 'bold' AND sequencenum = 6)
   AND EXISTS (SELECT 1 FROM users LIMIT 1)
   AND EXISTS (SELECT 1 FROM artifacttypes WHERE typename = 'backtranslation');
 
@@ -111,22 +125,22 @@ WHERE NOT EXISTS (SELECT 1 FROM workflowsteps WHERE process = 'bold' AND sequenc
 INSERT INTO workflowsteps (process, name, sequencenum, tool, permissions, datecreated, dateupdated, lastmodifiedby)
 SELECT
   'bold',
-  'Free translation',
-  6,
+  'FreeTranslation',
+  7,
   '{"tool": "wholeBackTranslate"}'::jsonb,
   '{}'::jsonb,
   (now() AT TIME ZONE 'utc'),
   (now() AT TIME ZONE 'utc'),
   (SELECT u.id FROM users u WHERE u.email = :'user_email' ORDER BY u.id ASC LIMIT 1)
-WHERE NOT EXISTS (SELECT 1 FROM workflowsteps WHERE process = 'bold' AND sequencenum = 6)
+WHERE NOT EXISTS (SELECT 1 FROM workflowsteps WHERE process = 'bold' AND sequencenum = 7)
   AND EXISTS (SELECT 1 FROM users LIMIT 1);
 
 -- Free transcription — same as whole-back-translation transcription step (WBT artifact).
 INSERT INTO workflowsteps (process, name, sequencenum, tool, permissions, datecreated, dateupdated, lastmodifiedby)
 SELECT
   'bold',
-  'Free transcription',
-  7,
+  'FreeTranscription',
+  8,
   (
     '{"tool": "transcribe", "settings": "{\"artifactTypeId\": \"'
     || (SELECT CAST(id AS TEXT) FROM artifacttypes WHERE typename = 'wholebacktranslation' ORDER BY id LIMIT 1)
@@ -136,6 +150,6 @@ SELECT
   (now() AT TIME ZONE 'utc'),
   (now() AT TIME ZONE 'utc'),
   (SELECT u.id FROM users u WHERE u.email = :'user_email' ORDER BY u.id ASC LIMIT 1)
-WHERE NOT EXISTS (SELECT 1 FROM workflowsteps WHERE process = 'bold' AND sequencenum = 7)
+WHERE NOT EXISTS (SELECT 1 FROM workflowsteps WHERE process = 'bold' AND sequencenum = 8)
   AND EXISTS (SELECT 1 FROM users LIMIT 1)
   AND EXISTS (SELECT 1 FROM artifacttypes WHERE typename = 'wholebacktranslation');
