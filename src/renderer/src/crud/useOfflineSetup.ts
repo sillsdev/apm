@@ -287,27 +287,28 @@ export const useOfflineSetup = () => {
       offlineRecs.filter((w) => w.attributes.process === 'bold').length === 0
     ) {
       await makeWorkflowProcessSteps('bold', [
+        { name: 'Prompt', tool: 'resource' },
         { name: 'Record', tool: 'record' },
         {
-          name: 'Careful speech',
+          name: 'CarefulSpeech',
           tool: 'phraseBackTranslate',
           artId: CS,
           namedRegion: NamedRegions.CarefulSpeech,
         },
         {
-          name: 'Lwc translation',
+          name: 'LwcTranslation',
           tool: 'phraseBackTranslate',
           artId: PBT,
           namedRegion: NamedRegions.BackTranslation,
         },
         {
-          name: 'Careful transcription',
+          name: 'CarefulTranscription',
           tool: 'transcribe',
           artId: CS,
         },
-        { name: 'Lwc transcription', tool: 'transcribe', artId: PBT },
-        { name: 'Free translation', tool: 'wholeBackTranslate' },
-        { name: 'Free transcription', tool: 'transcribe', artId: WBT },
+        { name: 'LwcTranscription', tool: 'transcribe', artId: PBT },
+        { name: 'FreeTranslation', tool: 'wholeBackTranslate' },
+        { name: 'FreeTranscription', tool: 'transcribe', artId: WBT },
       ]);
     }
     if (

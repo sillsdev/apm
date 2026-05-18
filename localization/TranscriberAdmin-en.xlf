@@ -10264,6 +10264,18 @@
             <target/>
          </segment>
       </unit>
+      <unit id="workflowSteps.prompt">
+         <segment>
+            <source>Prompt</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.promptTip">
+         <segment>
+            <source>Listen to the prompt above. Then, move to the next step.</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="workflowSteps.wholeBackTranslate">
          <segment>
             <source>Whole Back Translate</source>

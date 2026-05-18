@@ -2006,6 +2006,8 @@ export interface IWorkflowStepsStrings extends Localize.LocalizedStringsMethods 
     "unsaved": string;
     "markVerses": string;
     "markVersesTip": string;
+    "prompt": string;
+    "promptTip": string;
     "wholeBackTranslate": string;
     "wholeBackTranslateTip": string;
     "wholeBackTranslation": string;
