@@ -131,15 +131,18 @@ export default function MobileWorkflowSteps() {
       </Box>
       {currentLabel && (
         <Typography
-          variant="caption"
-          sx={{ display: 'block', textAlign: 'center' }}
+          sx={{ mt: 1, textAlign: 'center' }}
           data-cy="workflow-step-label"
         >
           {currentTip ? (
             <ButtonBase
               onClick={() => setTipOpen(true)}
               data-cy="workflow-step-tip"
-              sx={{ borderRadius: 1 }}
+              sx={{
+                borderRadius: 1,
+                fontWeight: 'inherit',
+                fontSize: 'inherit',
+              }}
               aria-label={currentTip}
             >
               {getWfLabel(currentLabel) + '\u00A0'}
