@@ -80,7 +80,7 @@ export default function MobileWorkflowSteps() {
   }, [currentstep, workflow.length]);
 
   return (
-    <Box sx={{ px: 1.5, py: 0.5 }} data-cy="workflow-steps">
+    <Box sx={{ px: 1.5, py: 1 }} data-cy="workflow-steps">
       <Box
         sx={{
           display: 'flex',
