@@ -8068,6 +8068,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="stepEditor.settingsFor">
+         <segment>
+            <source>Settings for {0} of {1}</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="stepEditor.show">
          <segment>
             <source>Show</source>

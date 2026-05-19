@@ -1577,6 +1577,7 @@ export interface IStepEditorStrings extends Localize.LocalizedStringsMethods {
     "qanda": string;
     "retell": string;
     "saving": string;
+    "settingsFor": string;
     "show": string;
     "showAll": string;
     "stepAdded": string;
