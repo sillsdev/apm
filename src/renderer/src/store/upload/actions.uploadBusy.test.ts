@@ -224,6 +224,7 @@ describe('nextUpload import/export busy handling', () => {
   });
 
   it('invokes onReadyToUpload on offline path before local write', async () => {
+    const order: string[] = [];
     const writeSpy = jest
       .spyOn(
         require('./actions') as {
@@ -231,24 +232,50 @@ describe('nextUpload import/export busy handling', () => {
         },
         'writeFileLocal'
       )
-      .mockResolvedValue({
-        relativeMediaPath: 'media/test.mp3',
-        absolutePath: '/tmp/test.mp3',
+      .mockImplementation(async () => {
+        order.push('write');
+        return {
+          relativeMediaPath: 'media/test.mp3',
+          absolutePath: '/tmp/test.mp3',
+        };
       });
-    const onReadyToUpload = jest.fn();
+    const onReadyToUpload = jest.fn(() => {
+      order.push('ready');
+    });
     const cb = jest.fn();
 
     await runNextUpload({ offline: true, onReadyToUpload, cb });
     await flushPromises();
 
+    expect(order).toEqual(['ready', 'write']);
     expect(onReadyToUpload).toHaveBeenCalledTimes(1);
-    expect(writeSpy).toHaveBeenCalled();
+    expect(mockedWait).not.toHaveBeenCalled();
     expect(mockedAxios.post).not.toHaveBeenCalled();
     expect(cb).toHaveBeenCalledWith(
       0,
       true,
       expect.objectContaining({ audioUrl: 'media/test.mp3' })
     );
+    writeSpy.mockRestore();
+  });
+
+  it('does not invoke onReadyToUpload on offline validation failure', async () => {
+    const onReadyToUpload = jest.fn();
+    const writeSpy = jest.spyOn(
+      require('./actions') as {
+        writeFileLocal: typeof import('./actions').writeFileLocal;
+      },
+      'writeFileLocal'
+    );
+
+    await runNextUpload({
+      offline: true,
+      onReadyToUpload,
+      record: { ...baseRecord, originalFile: 'bad.xyz' },
+    });
+
+    expect(onReadyToUpload).not.toHaveBeenCalled();
+    expect(writeSpy).not.toHaveBeenCalled();
     writeSpy.mockRestore();
   });
 });
