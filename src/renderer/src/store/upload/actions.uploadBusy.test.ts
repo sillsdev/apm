@@ -1,8 +1,9 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-require-imports */
 import Axios from 'axios';
 import { UploadType } from '../../components/UploadType';
 import { MediaFileAttributes } from '../../model';
-import { UPLOAD_ITEM_PENDING, UPLOAD_ITEM_SUCCEEDED } from './types';
+import { UPLOAD_ITEM_PENDING } from './types';
 import { waitForImportExportIdle } from './uploadRetry';
 
 jest.mock('../../../api-variable', () => ({
@@ -211,6 +212,14 @@ describe('nextUpload import/export busy handling', () => {
     });
 
     expect(mockedWait).toHaveBeenCalled();
+    expect(mockedAxios.post).toHaveBeenCalled();
+  });
+
+  it('skips import wait when getImportExportBusy is omitted (subsequent batch files)', async () => {
+    mockedWait.mockClear();
+    await runNextUpload({});
+
+    expect(mockedWait).not.toHaveBeenCalled();
     expect(mockedAxios.post).toHaveBeenCalled();
   });
 });

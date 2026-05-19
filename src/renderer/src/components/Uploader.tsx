@@ -318,6 +318,7 @@ export const Uploader = (props: IProps) => {
       recordedbyUserId: string;
       sourceMediaId: string;
     };
+    const isFirstFile = currentlyLoading === 0;
     nextUpload({
       record: mediafile,
       files: uploadList,
@@ -327,8 +328,12 @@ export const Uploader = (props: IProps) => {
       errorReporter,
       uploadType: uploadType ?? UploadType.Media,
       cb: itemComplete,
-      getImportExportBusy: () => Boolean(getGlobal('importexportBusy')),
-      onReadyToUpload: !noBusy ? () => setBusy(true) : undefined,
+      // Only the first file waits for external import/export and sets busy;
+      // later files run while the batch holds importexportBusy until finishMessage.
+      getImportExportBusy: isFirstFile
+        ? () => Boolean(getGlobal('importexportBusy'))
+        : undefined,
+      onReadyToUpload: isFirstFile && !noBusy ? () => setBusy(true) : undefined,
       onTerminalFailure: (info) => {
         showMessage(
           formatUploadTerminalFailureMessage(t, info),
