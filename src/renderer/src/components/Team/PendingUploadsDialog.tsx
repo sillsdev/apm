@@ -103,7 +103,6 @@ export function PendingUploadsDialog(props: IProps) {
         uploadType: entry.uploadType,
         pendingUploadIdToClearOnSuccess: entry.id,
         getImportExportBusy: () => Boolean(getGlobal('importexportBusy')),
-        onReadyToUpload: () => setBusy(true),
         onTerminalFailure: (info) => {
           showMessage(
             formatUploadTerminalFailureMessage(t, info),
@@ -130,6 +129,7 @@ export function PendingUploadsDialog(props: IProps) {
 
   const handleRetryOne = (entry: PendingUploadRecord) => {
     if (busy) return;
+    setBusy(true);
     retryQueueRef.current = [];
     void dispatchOne(entry);
   };
@@ -138,6 +138,7 @@ export function PendingUploadsDialog(props: IProps) {
     if (busy) return;
     const all = loadPendingMediaUploads();
     if (all.length === 0) return;
+    setBusy(true);
     retryQueueRef.current = all.slice(1);
     void dispatchOne(all[0]);
   };
