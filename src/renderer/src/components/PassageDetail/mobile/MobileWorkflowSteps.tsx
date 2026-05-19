@@ -130,7 +130,14 @@ export default function MobileWorkflowSteps() {
             size="small"
             endIcon={<ArrowDropDownIcon />}
             sx={{ whiteSpace: 'nowrap', minWidth: 'auto' }}
-            onClick={(e) => setPassageMenuAnchor(e.currentTarget)}
+            onClick={(e) => {
+              if (recording || commentRecording) return;
+              if (getGlobal('remoteBusy')) {
+                showMessage(ts.wait);
+                return;
+              }
+              setPassageMenuAnchor(e.currentTarget);
+            }}
             data-cy="passage-dropdown"
           >
             {[passage?.attributes?.book, passage?.attributes?.reference]
