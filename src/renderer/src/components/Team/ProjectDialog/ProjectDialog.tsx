@@ -27,10 +27,7 @@ import { StyledDialogTitle } from '../../StyledDialogTitle';
 import Tags from '../../../control/Tags';
 import { AltActionBar } from '../../../components/AltActionBar';
 import { initProjectState, IProjectDialog } from './projectDialogTypes';
-import {
-  BOLD_WORKFLOW_PROCESS,
-  useTeamWorkflowProcess,
-} from '../../../crud';
+import { BOLD_WORKFLOW_PROCESS, useTeamWorkflowProcess } from '../../../crud';
 
 interface IProps extends IDialog<IProjectDialog> {
   nameInUse?: (newName: string) => boolean;
@@ -165,8 +162,16 @@ export function ProjectDialog(props: IProps) {
               />
               <ProjectDescription state={state} setState={setState} />
             </Box>
-            <ProjectType type={type} onChange={handleTypeChange} team={team} />
-            <ProjectStory state={state} setState={setState} />
+            {teamWorkflow !== BOLD_WORKFLOW_PROCESS && (
+              <>
+                <ProjectType
+                  type={type}
+                  onChange={handleTypeChange}
+                  team={team}
+                />
+                <ProjectStory state={state} setState={setState} />
+              </>
+            )}
             <Stack sx={{ pt: 1, pb: 2 }}>
               <Language
                 {...state}
