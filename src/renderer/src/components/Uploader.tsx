@@ -328,6 +328,7 @@ export const Uploader = (props: IProps) => {
       uploadType: uploadType ?? UploadType.Media,
       cb: itemComplete,
       getImportExportBusy: () => Boolean(getGlobal('importexportBusy')),
+      onReadyToUpload: !noBusy ? () => setBusy(true) : undefined,
       onTerminalFailure: (info) => {
         showMessage(
           formatUploadTerminalFailureMessage(t, info),
@@ -377,7 +378,6 @@ export const Uploader = (props: IProps) => {
       showMessage(t.selectFiles);
       return;
     }
-    if (!noBusy) setBusy(true);
     if (
       uploadType &&
       ![

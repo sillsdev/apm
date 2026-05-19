@@ -220,6 +220,11 @@ export interface NextUploadProps {
    * ImportTab sync (`importexportBusy`) can finish first.
    */
   getImportExportBusy?: () => boolean;
+  /**
+   * Called after import/export wait completes and before staging/POST. Use to set
+   * `importexportBusy` for the upload without blocking on that same flag.
+   */
+  onReadyToUpload?: () => void;
 }
 export const nextUpload =
   ({
@@ -234,6 +239,7 @@ export const nextUpload =
     onTerminalFailure,
     pendingUploadIdToClearOnSuccess,
     getImportExportBusy,
+    onReadyToUpload,
   }: NextUploadProps) =>
   (dispatch: Dispatch) => {
     dispatch({ payload: n, type: UPLOAD_ITEM_PENDING });
@@ -401,6 +407,7 @@ export const nextUpload =
       if (getImportExportBusy) {
         await waitForImportExportIdle(getImportExportBusy);
       }
+      onReadyToUpload?.();
 
       let localAbsolutePath = '';
       let fileForPut = files[n] as File;
