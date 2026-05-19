@@ -131,6 +131,8 @@ export const Uploader = (props: IProps) => {
   const [errMsgs] = useState<string[]>([]);
   const { localizedArtifactTypeFromId } = useArtifactType();
   const getGlobal = useGetGlobal();
+  /** True if import/export was busy when the current batch started (before we set busy). */
+  const importWasBusyRef = useRef(false);
 
   const handleSpeakerChange = (speaker: string) => {
     onSpeakerChange && onSpeakerChange(speaker);
@@ -328,12 +330,13 @@ export const Uploader = (props: IProps) => {
       errorReporter,
       uploadType: uploadType ?? UploadType.Media,
       cb: itemComplete,
-      // Only the first file waits for external import/export and sets busy;
-      // later files run while the batch holds importexportBusy until finishMessage.
-      getImportExportBusy: isFirstFile
-        ? () => Boolean(getGlobal('importexportBusy'))
-        : undefined,
-      onReadyToUpload: isFirstFile && !noBusy ? () => setBusy(true) : undefined,
+      // First file waits only for import/export that was already in progress at batch
+      // start; later files skip the wait while importexportBusy stays true until
+      // finishMessage (set in uploadMedia).
+      getImportExportBusy:
+        isFirstFile && importWasBusyRef.current
+          ? () => Boolean(getGlobal('importexportBusy'))
+          : undefined,
       onTerminalFailure: (info) => {
         showMessage(
           formatUploadTerminalFailureMessage(t, info),
@@ -397,6 +400,8 @@ export const Uploader = (props: IProps) => {
     fileList.current = files;
     mediaIdRef.current = new Array<string>();
     artifactTypeRef.current = artifactState?.id || '';
+    importWasBusyRef.current = Boolean(getGlobal('importexportBusy'));
+    if (!noBusy) setBusy(true);
     doUpload(0);
   };
 
