@@ -454,14 +454,13 @@ export const StepEditor = ({ process, org }: IProps) => {
 
   const prettySettings = (tool: string, settings: string) => {
     const json = settings ? JSON.parse(settings) : undefined;
-    const localTool = st.getString(tool as ToolSlug);
     switch (tool as ToolSlug) {
       case ToolSlug.Record:
       case ToolSlug.Transcribe:
       case ToolSlug.Paratext:
         if (json)
           return se.settingsFor
-            .replace('{0}', localTool)
+            .replace('{0}', st.getString(tool as keyof typeof se))
             .replace(
               '{1}',
               localizedArtifactTypeFromId(
@@ -473,7 +472,7 @@ export const StepEditor = ({ process, org }: IProps) => {
               )
             );
         return se.settingsFor
-          .replace('{0}', localTool)
+          .replace('{0}', st.getString(tool as keyof typeof se))
           .replace('{1}', localizedArtifactTypeFromId(VernacularTag));
       default:
         return '';
