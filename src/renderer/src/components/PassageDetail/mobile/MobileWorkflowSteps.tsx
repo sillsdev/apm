@@ -14,26 +14,18 @@ import {
 import InfoIcon from '@mui/icons-material/Info';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import usePassageDetailContext from '../../../context/usePassageDetailContext';
-import { useGetGlobal } from '../../../context/useGlobal';
+import { useGetGlobal, useGlobal } from '../../../context/useGlobal';
 import { useSnackBar } from '../../../hoc/SnackBar';
 import { sharedSelector, workflowStepsSelector } from '../../../selector';
 import { shallowEqual, useSelector } from 'react-redux';
 import { useWfLabel } from '../../../utils/useWfLabel';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { IWorkflowStepsStrings } from '../../../model';
+import { IWorkflowStepsStrings, PassageD } from '../../../model';
 import { toCamel } from '../../../utils/toCamel';
-
-// TODO: Hook this up with real passages
-const mockPassages = [
-  'Passage 1',
-  'Passage 2',
-  'Passage 3',
-  'Passage 4',
-  'Passage 5',
-  'Passage 6',
-  'Passage 7',
-  'Passage 8',
-];
+import { related } from '../../../crud/related';
+import { findRecord } from '../../../crud/tryFindRecord';
+import { rememberCurrentPassage } from '../../../utils';
+import { usePassageNavigate } from '../usePassageNavigate';
 
 export default function MobileWorkflowSteps() {
   const {
@@ -43,7 +35,12 @@ export default function MobileWorkflowSteps() {
     recording,
     commentRecording,
     stepComplete,
+    passage,
+    section,
+    prjId,
   } = usePassageDetailContext();
+  const [memory] = useGlobal('memory');
+  const passageNavigate = usePassageNavigate(() => {}, setCurrentStep);
   const getGlobal = useGetGlobal();
   const { showMessage } = useSnackBar();
   const ts = useSelector(sharedSelector, shallowEqual);
@@ -53,10 +50,18 @@ export default function MobileWorkflowSteps() {
     workflowStepsSelector,
     shallowEqual
   );
+  const sectionPassages = useMemo<PassageD[]>(() => {
+    const passRecIds = related(section, 'passages');
+    if (!Array.isArray(passRecIds)) return [];
+    return passRecIds
+      .map((p) => findRecord(memory, 'passage', p.id) as PassageD)
+      .filter(Boolean)
+      .sort((a, b) => a.attributes.sequencenum - b.attributes.sequencenum);
+  }, [section, memory]);
+
   const [tipOpen, setTipOpen] = useState(false);
   const [passageMenuAnchor, setPassageMenuAnchor] =
     useState<HTMLElement | null>(null);
-  const [passageRef, setPassageRef] = useState(mockPassages[0]);
 
   const handleSelect = (id: string) => () => {
     if (getGlobal('remoteBusy')) {
@@ -128,24 +133,29 @@ export default function MobileWorkflowSteps() {
             onClick={(e) => setPassageMenuAnchor(e.currentTarget)}
             data-cy="passage-dropdown"
           >
-            {passageRef}
+            {[passage?.attributes?.book, passage?.attributes?.reference]
+              .filter(Boolean)
+              .join(' ') || ''}
           </Button>
           <Menu
             anchorEl={passageMenuAnchor}
             open={Boolean(passageMenuAnchor)}
             onClose={() => setPassageMenuAnchor(null)}
           >
-            {/* TODO: Hook this up with real passages */}
-            {mockPassages.map((p) => (
+            {sectionPassages.map((p) => (
               <MenuItem
-                key={p}
-                selected={p === passageRef}
+                key={p.id}
+                selected={p.id === passage?.id}
                 onClick={() => {
-                  setPassageRef(p);
+                  const remId = p.keys?.remoteId ?? p.id;
+                  rememberCurrentPassage(memory, remId);
+                  passageNavigate(`/detail/${prjId}/${remId}`);
                   setPassageMenuAnchor(null);
                 }}
               >
-                {p}
+                {[p.attributes.book, p.attributes.reference]
+                  .filter(Boolean)
+                  .join(' ')}
               </MenuItem>
             ))}
           </Menu>
