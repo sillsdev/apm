@@ -19,6 +19,7 @@ export default function MobileStepComplete() {
     section,
     passage,
     recording,
+    isBoldWorkflow,
   } = usePassageDetailContext();
   const { canDoSectionStep } = useStepPermissions();
   const [busy] = useGlobal('remoteBusy');
@@ -42,6 +43,8 @@ export default function MobileStepComplete() {
     if (!curStatus) gotoNextStep();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [complete, currentstep, passage, section]);
+
+  if (isBoldWorkflow) return null;
 
   return (
     <Box

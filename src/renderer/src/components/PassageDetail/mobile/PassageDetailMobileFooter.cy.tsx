@@ -376,4 +376,41 @@ describe('PassageDetailMobileFooter', () => {
     cy.contains('button', 'Record').click();
     cy.get('@setCurrentStep').should('have.been.calledWith', 'step-2');
   });
+
+  it('in BOLD workflow uses step progression and hides step complete', () => {
+    const passages = [
+      createPassage('passage-1', 1, 'remote-1'),
+      createPassage('passage-2', 2, 'remote-2'),
+    ];
+    const orgWorkflowSteps = [
+      {
+        id: 'step-1',
+        type: 'orgworkflowstep' as const,
+        attributes: { name: 'Discuss', tool: '{}', sequencenum: 1 },
+      },
+      {
+        id: 'step-2',
+        type: 'orgworkflowstep' as const,
+        attributes: { name: 'Record', tool: '{}', sequencenum: 2 },
+      },
+    ];
+
+    mountFooter({
+      passages,
+      currentPassageId: 'passage-1',
+      passageDetailOverrides: {
+        isBoldWorkflow: true,
+        currentstep: 'step-1',
+        orgWorkflowSteps:
+          orgWorkflowSteps as PassageDetailState['orgWorkflowSteps'],
+      },
+    });
+
+    cy.get('#mobile-complete').should('not.exist');
+    cy.contains('button', '2:2').should('not.exist');
+    cy.contains('button', 'Record').should('be.visible');
+    cy.contains('button', 'Record').click();
+    cy.get('@setCurrentStep').should('have.been.calledWith', 'step-2');
+    cy.get('[data-cy="location"]').should('have.text', '/detail/project-1/remote-1');
+  });
 });

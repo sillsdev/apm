@@ -141,6 +141,9 @@ function MediaRecord(props: IProps) {
     isSaveDisabled,
   } = props;
   const context = usePassageDetailContext();
+  const simplified = Boolean(context?.isBoldWorkflow);
+  const effectiveOneTryOnly = oneTryOnly || simplified;
+  const effectiveIsStopLogic = isStopLogic || simplified;
   const { settings: toolSettings } = useStepTool(context?.currentstep || '');
   const captureAudioProcessing = useMemo(
     () => parseRecordCaptureAudioProcessing(toolSettings),
@@ -573,7 +576,7 @@ function MediaRecord(props: IProps) {
         loading={loading}
         allowZoom={allowZoom}
         allowDeltaVoice={allowDeltaVoice}
-        oneTryOnly={oneTryOnly}
+        oneTryOnly={effectiveOneTryOnly}
         width={width}
         height={height || 300}
         mediaId={mediaId}
@@ -598,7 +601,8 @@ function MediaRecord(props: IProps) {
         captureNoiseSuppression={captureAudioProcessing.noiseSuppression}
         keepItSmall={keepItSmall}
         hasRecording={hasRecording ?? false}
-        isStopLogic={isStopLogic ?? false}
+        isStopLogic={effectiveIsStopLogic}
+        hideWaveformEditTools={simplified}
         isRecordingRights={isRecordingRights}
         handleUpload={handleUpload}
         rightsLeftActions={rightsLeftActions}

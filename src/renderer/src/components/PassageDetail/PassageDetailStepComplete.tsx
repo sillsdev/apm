@@ -24,6 +24,7 @@ export const PassageDetailStepComplete = () => {
     section,
     passage,
     recording,
+    isBoldWorkflow,
   } = usePassageDetailContext();
   const { canDoSectionStep, canAlwaysDoStep } = useStepPermissions();
   const { pathname } = useLocation();
@@ -70,6 +71,8 @@ export const PassageDetailStepComplete = () => {
     if (view) setView('');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname]);
+
+  if (isBoldWorkflow) return null;
 
   return (
     <Box

@@ -79,7 +79,8 @@ const PassageDetailGrids = () => {
 
   const [memory] = useGlobal('memory');
   const ctx = useContext(PassageDetailContext);
-  const { currentstep, orgWorkflowSteps, mediafileId, sectionArr } = ctx.state;
+  const { currentstep, orgWorkflowSteps, mediafileId, sectionArr, isBoldWorkflow } =
+    ctx.state;
 
   const { tool, settings } = useStepTool(currentstep);
   const { slugFromId } = useArtifactType();
@@ -231,19 +232,21 @@ const PassageDetailGrids = () => {
                   ? addPt(t.getString(tool))
                   : tool}
               </Grid>
-              <Grid
-                id="stepcomplete"
-                sx={{
-                  display: 'flex',
-                  justifyContent: 'flex-end',
-                  minWidth: 0,
-                  flexShrink: 0,
-                  ml: 'auto',
-                }}
-                size={{ xs: 'auto' }}
-              >
-                <PassageDetailStepComplete />
-              </Grid>
+              {!isBoldWorkflow && (
+                <Grid
+                  id="stepcomplete"
+                  sx={{
+                    display: 'flex',
+                    justifyContent: 'flex-end',
+                    minWidth: 0,
+                    flexShrink: 0,
+                    ml: 'auto',
+                  }}
+                  size={{ xs: 'auto' }}
+                >
+                  <PassageDetailStepComplete />
+                </Grid>
+              )}
             </Grid>
             <Grid
               sx={{

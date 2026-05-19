@@ -158,4 +158,33 @@ describe('RecordButton', () => {
 
     cy.get('svg[data-testid="StopIcon"]').should('be.visible');
   });
+
+  it('on mobile with oneTryOnly after stop does not show Resume until Clear', () => {
+    mountRecordButton({
+      recording: false,
+      onClick: cy.stub(),
+      disabled: true,
+      hasRecording: true,
+      oneTryOnly: true,
+      oneShotUsed: true,
+      isMobileView: true,
+    });
+
+    cy.contains('Resume').should('not.exist');
+    cy.get('[role="button"]').should('have.attr', 'aria-disabled', 'true');
+  });
+
+  it('on mobile with oneTryOnly still shows Resume when recording can continue', () => {
+    mountRecordButton({
+      recording: false,
+      onClick: cy.stub(),
+      disabled: false,
+      hasRecording: true,
+      oneTryOnly: true,
+      oneShotUsed: false,
+      isMobileView: true,
+    });
+
+    cy.contains('Resume').should('be.visible');
+  });
 });

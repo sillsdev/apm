@@ -24,6 +24,8 @@ interface IRecordButtonProps {
   fullWidth?: boolean;
   sx?: SxProps;
   isStopLogic?: boolean;
+  /** When true with oneTryOnly, record is blocked until Clear (e.g. BOLD simplified recording). */
+  oneShotUsed?: boolean;
   active?: boolean;
   isMobileView?: boolean;
   isRecordingRights?: boolean;
@@ -40,11 +42,14 @@ export const RecordButton = ({
   hasRecording = false,
   fullWidth = false,
   isStopLogic = false,
+  oneShotUsed = false,
   active = true,
   sx,
   isMobileView,
   isRecordingRights,
 }: IRecordButtonProps) => {
+  const showResumeAfterStop =
+    hasRecording && !recording && !(oneTryOnly && oneShotUsed);
   const theme = useTheme();
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
@@ -184,7 +189,7 @@ export const RecordButton = ({
             ) : (
               <PauseIcon />
             )
-          ) : hasRecording ? (
+          ) : showResumeAfterStop ? (
             <Typography
               variant="caption"
               sx={{

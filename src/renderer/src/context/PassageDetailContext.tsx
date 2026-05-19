@@ -43,6 +43,10 @@ import { BlobStatus, useFetchMediaBlob } from '../crud/useFetchMediaBlob';
 import { useFilteredSteps } from '../crud/useFilteredSteps';
 import { useOrgDefaults } from '../crud/useOrgDefaults';
 import { useOrgWorkflowSteps } from '../crud/useOrgWorkflowSteps';
+import {
+  BOLD_WORKFLOW_PROCESS,
+  useTeamWorkflowProcess,
+} from '../crud/useTeamWorkflowProcess';
 import StickyRedirect from '../components/StickyRedirect';
 import {
   infoMsg,
@@ -202,6 +206,7 @@ const initState = {
   canPublish: false,
   discussOpen: false,
   setDiscussOpen: (_discussOpen: boolean) => {},
+  isBoldWorkflow: false,
 };
 
 export type ICtxState = typeof initState;
@@ -283,6 +288,8 @@ const PassageDetailProvider = (props: IProps) => {
   const { getOrgDefault } = useOrgDefaults();
   const getGlobal = useGetGlobal();
   const { canPublish } = useProjectPermissions();
+  const teamWorkflowProcess = useTeamWorkflowProcess(org);
+  const isBoldWorkflow = teamWorkflowProcess === BOLD_WORKFLOW_PROCESS;
 
   const setCurrentStep = (stepId: string) => {
     if (getGlobal('changed')) {
@@ -544,6 +551,7 @@ const PassageDetailProvider = (props: IProps) => {
 
   const gotoNextStep = () => {
     const gotoNextPassage =
+      !isBoldWorkflow &&
       getOrgDefault(orgDefaultWorkflowProgression) !== 'step';
     const nextpsg = gotoNextPassage
       ? nextPasId(state.section, state.passage.id, memory)
@@ -1139,6 +1147,7 @@ const PassageDetailProvider = (props: IProps) => {
           handleHighlightDiscussion,
           forceRefresh,
           setDiscussOpen,
+          isBoldWorkflow,
           sectionArr: (getProjectDefault(projDefSectionMap) ??
             []) as SectionArray,
         },

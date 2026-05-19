@@ -128,12 +128,14 @@ const mountMobileStepComplete = ({
   recording = false,
   remoteBusy = false,
   importexportBusy = false,
+  isBoldWorkflow = false,
 }: {
   hasPermission?: boolean;
   complete?: boolean;
   recording?: boolean;
   remoteBusy?: boolean;
   importexportBusy?: boolean;
+  isBoldWorkflow?: boolean;
 } = {}) => {
   const setStepComplete = cy.stub().as('setStepComplete').resolves();
   const gotoNextStep = cy.stub().as('gotoNextStep');
@@ -199,6 +201,7 @@ const mountMobileStepComplete = ({
     stepComplete,
     setStepComplete,
     gotoNextStep,
+    isBoldWorkflow,
   });
   const initialState = createInitialState({
     remoteBusy,
@@ -278,5 +281,12 @@ describe('MobileStepComplete', () => {
     mountMobileStepComplete({ importexportBusy: true });
 
     cy.get('#mobile-complete').should('be.disabled');
+  });
+
+  it('renders nothing for BOLD workflow', () => {
+    mountMobileStepComplete({ isBoldWorkflow: true });
+
+    cy.get('#mobile-complete').should('not.exist');
+    cy.contains('Complete').should('not.exist');
   });
 });
