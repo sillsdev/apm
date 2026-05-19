@@ -875,15 +875,8 @@ describe('OrgHead', () => {
     cy.get('button').first().click();
     cy.get('[role="menu"]').should('be.visible');
 
-    // First two menu items should be visible on desktop
     cy.contains('Team Settings').should('be.visible');
-    // Edit Workflow may or may not be visible depending on canModify
-    cy.get('body').then(($body) => {
-      if ($body.find('[role="menuitem"]').length > 1) {
-        // If Edit Workflow is visible, it should be the second item
-        cy.get('[role="menuitem"]').eq(1).should('be.visible');
-      }
-    });
+    cy.get('#orgHeadEditWorkflow').should('be.visible');
   });
 
   it('should show team settings menu on mobile width when online admin', () => {
@@ -910,7 +903,67 @@ describe('OrgHead', () => {
     cy.get('[role="menu"]').should('be.visible');
 
     cy.contains('Team Settings').should('be.visible');
-    cy.contains('Edit Workflow').should('be.visible');
+    cy.get('#orgHeadEditWorkflow').should('be.visible');
+    cy.contains('Sort Projects').should('be.visible');
+  });
+
+  it('should hide Edit Workflow when mobile view is on at desktop width', () => {
+    cy.viewport(1024, 768);
+    cy.window().then((win) => {
+      win.localStorage.setItem(localUserKey(LocalKey.mobileView), 'true');
+    });
+    const orgId = 'test-org-id';
+    const orgName = 'Test Organization';
+    const orgData = createMockOrganization(orgId, orgName);
+    const project1 = createMockProject('project-1', 'Project 1');
+    const project2 = createMockProject('project-2', 'Project 2');
+    const projectData = [project1, project2];
+
+    mountOrgHead(
+      createInitialState({ mobileView: true }, orgData, projectData),
+      ['/team'],
+      orgId,
+      orgData,
+      true,
+      undefined,
+      projectData
+    );
+
+    cy.get('button').first().click();
+    cy.get('[role="menu"]').should('be.visible');
+
+    cy.contains('Team Settings').should('be.visible');
+    cy.get('#orgHeadEditWorkflow').should('not.exist');
+    cy.contains('Sort Projects').should('be.visible');
+  });
+
+  it('should hide Edit Workflow on narrow viewport when mobile view toggle is on', () => {
+    cy.viewport(375, 667);
+    cy.window().then((win) => {
+      win.localStorage.setItem(localUserKey(LocalKey.mobileView), 'true');
+    });
+    const orgId = 'test-org-id';
+    const orgName = 'Test Organization';
+    const orgData = createMockOrganization(orgId, orgName);
+    const project1 = createMockProject('project-1', 'Project 1');
+    const project2 = createMockProject('project-2', 'Project 2');
+    const projectData = [project1, project2];
+
+    mountOrgHead(
+      createInitialState({ mobileView: true }, orgData, projectData),
+      ['/team'],
+      orgId,
+      orgData,
+      true,
+      undefined,
+      projectData
+    );
+
+    cy.get('button').first().click();
+    cy.get('[role="menu"]').should('be.visible');
+
+    cy.contains('Team Settings').should('be.visible');
+    cy.get('#orgHeadEditWorkflow').should('not.exist');
     cy.contains('Sort Projects').should('be.visible');
   });
 
@@ -999,6 +1052,7 @@ describe('OrgHead', () => {
     cy.get('[role="menu"]').should('be.visible');
 
     cy.contains('Team Settings').should('be.visible');
+    cy.get('#orgHeadEditWorkflow').should('be.visible');
     cy.contains('Sort Projects').should('be.visible');
   });
 
