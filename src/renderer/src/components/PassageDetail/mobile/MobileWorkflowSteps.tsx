@@ -19,7 +19,7 @@ import { useSnackBar } from '../../../hoc/SnackBar';
 import { sharedSelector, workflowStepsSelector } from '../../../selector';
 import { shallowEqual, useSelector } from 'react-redux';
 import { useWfLabel } from '../../../utils/useWfLabel';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { IWorkflowStepsStrings } from '../../../model';
 import { toCamel } from '../../../utils/toCamel';
 
@@ -80,6 +80,22 @@ export default function MobileWorkflowSteps() {
       : '';
   }, [currentLabel, t]);
 
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [dropdownWidth, setDropdownWidth] = useState(0);
+
+  useLayoutEffect(() => {
+    const el = dropdownRef.current;
+    if (!el) return;
+    const update = () => {
+      const style = window.getComputedStyle(el);
+      setDropdownWidth(el.offsetWidth + parseFloat(style.marginRight));
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
   const didMountRef = useRef(false);
   const stepRefs = useRef(new Map<string, HTMLElement>());
 
@@ -105,7 +121,7 @@ export default function MobileWorkflowSteps() {
           width: '100%',
         }}
       >
-        <Box sx={{ flexShrink: 0, mr: 1 }}>
+        <Box ref={dropdownRef} sx={{ flexShrink: 0, mr: 1 }}>
           <Button
             size="small"
             endIcon={<ArrowDropDownIcon />}
@@ -138,50 +154,51 @@ export default function MobileWorkflowSteps() {
           sx={{
             flex: 1,
             display: 'flex',
-            justifyContent: 'flex-start',
             overflowX: 'auto',
             overflowY: 'hidden',
             WebkitOverflowScrolling: 'touch',
-            pb: 0.25,
           }}
         >
-          {workflow.map((step) => {
-            const isCurrent = step.id === currentstep;
-            return (
-              <ButtonBase
-                key={step.id}
-                data-cy="workflow-step"
-                role="button"
-                onClick={handleSelect(step.id)}
-                tabIndex={0}
-                ref={(el) => {
-                  if (el) {
-                    stepRefs.current.set(step.id, el);
-                  } else {
-                    stepRefs.current.delete(step.id);
-                  }
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                  }
-                }}
-                sx={{
-                  flex: '0 0 80px',
-                  height: 30,
-                  mr: -0.25,
-                  backgroundColor: isCurrent
-                    ? theme.palette.grey[700]
-                    : stepComplete(step.id)
-                      ? theme.palette.grey[400]
-                      : theme.palette.grey[200],
-                  clipPath: 'polygon(10% 0%, 100% 0%, 90% 100%, 0% 100%)',
-                  cursor:
-                    recording || commentRecording ? 'not-allowed' : 'pointer',
-                }}
-              />
-            );
-          })}
+          <Box sx={{ display: 'flex', mx: 'auto', pb: 0.25 }}>
+            {workflow.map((step) => {
+              const isCurrent = step.id === currentstep;
+              return (
+                <ButtonBase
+                  key={step.id}
+                  data-cy="workflow-step"
+                  role="button"
+                  onClick={handleSelect(step.id)}
+                  tabIndex={0}
+                  ref={(el) => {
+                    if (el) {
+                      stepRefs.current.set(step.id, el);
+                    } else {
+                      stepRefs.current.delete(step.id);
+                    }
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                    }
+                  }}
+                  sx={{
+                    flex: '0 0 80px',
+                    height: 30,
+                    mr: -0.25,
+                    backgroundColor: isCurrent
+                      ? theme.palette.grey[700]
+                      : stepComplete(step.id)
+                        ? theme.palette.grey[400]
+                        : theme.palette.grey[200],
+                    clipPath: 'polygon(10% 0%, 100% 0%, 90% 100%, 0% 100%)',
+                    cursor:
+                      recording || commentRecording ? 'not-allowed' : 'pointer',
+                  }}
+                />
+              );
+            })}
+            <Box sx={{ flexShrink: 0, width: dropdownWidth }} />
+          </Box>
         </Box>
       </Box>
       {currentLabel && (
