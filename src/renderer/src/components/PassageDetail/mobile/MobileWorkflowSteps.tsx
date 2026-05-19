@@ -67,13 +67,12 @@ export default function MobileWorkflowSteps() {
     }
   };
 
-  const currentLabel = useMemo(() => {
-    return workflow.find((w) => w.id === currentstep)?.label ?? '';
-  }, [currentstep, workflow]);
+  const currentLabel = useMemo(
+    () => workflow.find((w) => w.id === currentstep)?.label ?? '',
+    [currentstep, workflow]
+  );
   const currentTip = useMemo(() => {
-    if (!currentLabel) {
-      return '';
-    }
+    if (!currentLabel) return '';
     const tipKey = toCamel(currentLabel + 'Tip');
     return Object.prototype.hasOwnProperty.call(t, tipKey)
       ? t.getString(tipKey)
@@ -86,10 +85,10 @@ export default function MobileWorkflowSteps() {
   useLayoutEffect(() => {
     const el = dropdownRef.current;
     if (!el) return;
-    const update = () => {
-      const style = window.getComputedStyle(el);
-      setDropdownWidth(el.offsetWidth + parseFloat(style.marginRight));
-    };
+    const update = () =>
+      setDropdownWidth(
+        el.offsetWidth + parseFloat(window.getComputedStyle(el).marginRight)
+      );
     update();
     const ro = new ResizeObserver(update);
     ro.observe(el);
@@ -101,9 +100,7 @@ export default function MobileWorkflowSteps() {
 
   useEffect(() => {
     const el = stepRefs.current.get(currentstep);
-    if (!el) {
-      return;
-    }
+    if (!el) return;
     el.scrollIntoView({
       behavior: didMountRef.current ? 'smooth' : 'auto',
       block: 'nearest',
@@ -170,11 +167,8 @@ export default function MobileWorkflowSteps() {
                   onClick={handleSelect(step.id)}
                   tabIndex={0}
                   ref={(el) => {
-                    if (el) {
-                      stepRefs.current.set(step.id, el);
-                    } else {
-                      stepRefs.current.delete(step.id);
-                    }
+                    if (el) stepRefs.current.set(step.id, el);
+                    else stepRefs.current.delete(step.id);
                   }}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
@@ -218,7 +212,7 @@ export default function MobileWorkflowSteps() {
               aria-label={currentTip}
             >
               {getWfLabel(currentLabel) + '\u00A0'}
-              <InfoIcon color={'info'} fontSize="small" />
+              <InfoIcon color="info" fontSize="small" />
             </ButtonBase>
           ) : (
             getWfLabel(currentLabel)
