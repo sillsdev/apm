@@ -6,10 +6,13 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  Menu,
+  MenuItem,
   Typography,
   useTheme,
 } from '@mui/material';
 import InfoIcon from '@mui/icons-material/Info';
+import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import usePassageDetailContext from '../../../context/usePassageDetailContext';
 import { useGetGlobal } from '../../../context/useGlobal';
 import { useSnackBar } from '../../../hoc/SnackBar';
@@ -19,6 +22,17 @@ import { useWfLabel } from '../../../utils/useWfLabel';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { IWorkflowStepsStrings } from '../../../model';
 import { toCamel } from '../../../utils/toCamel';
+
+const mockPassages = [
+  'Passage 1',
+  'Passage 2',
+  'Passage 3',
+  'Passage 4',
+  'Passage 5',
+  'Passage 6',
+  'Passage 7',
+  'Passage 8',
+];
 
 export default function MobileWorkflowSteps() {
   const {
@@ -39,6 +53,9 @@ export default function MobileWorkflowSteps() {
     shallowEqual
   );
   const [tipOpen, setTipOpen] = useState(false);
+  const [passageMenuAnchor, setPassageMenuAnchor] =
+    useState<HTMLElement | null>(null);
+  const [passageRef, setPassageRef] = useState(mockPassages[0]);
 
   const handleSelect = (id: string) => () => {
     if (getGlobal('remoteBusy')) {
@@ -84,50 +101,88 @@ export default function MobileWorkflowSteps() {
       <Box
         sx={{
           display: 'flex',
-          justifyContent: 'flex-start',
-          overflowX: 'auto',
-          overflowY: 'hidden',
-          WebkitOverflowScrolling: 'touch',
-          pb: 0.25,
+          alignItems: 'flex-start',
+          width: '100%',
         }}
       >
-        {workflow.map((step) => {
-          const isCurrent = step.id === currentstep;
-          return (
-            <ButtonBase
-              key={step.id}
-              data-cy="workflow-step"
-              role="button"
-              onClick={handleSelect(step.id)}
-              tabIndex={0}
-              ref={(el) => {
-                if (el) {
-                  stepRefs.current.set(step.id, el);
-                } else {
-                  stepRefs.current.delete(step.id);
-                }
-              }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                }
-              }}
-              sx={{
-                flex: '0 0 80px',
-                height: 30,
-                mr: -0.25,
-                backgroundColor: isCurrent
-                  ? theme.palette.grey[700]
-                  : stepComplete(step.id)
-                    ? theme.palette.grey[400]
-                    : theme.palette.grey[200],
-                clipPath: 'polygon(10% 0%, 100% 0%, 90% 100%, 0% 100%)',
-                cursor:
-                  recording || commentRecording ? 'not-allowed' : 'pointer',
-              }}
-            />
-          );
-        })}
+        <Box sx={{ flexShrink: 0, mr: 1 }}>
+          <Button
+            size="small"
+            endIcon={<ArrowDropDownIcon />}
+            sx={{ whiteSpace: 'nowrap', minWidth: 'auto' }}
+            onClick={(e) => setPassageMenuAnchor(e.currentTarget)}
+            data-cy="passage-dropdown"
+          >
+            {passageRef}
+          </Button>
+          <Menu
+            anchorEl={passageMenuAnchor}
+            open={Boolean(passageMenuAnchor)}
+            onClose={() => setPassageMenuAnchor(null)}
+          >
+            {mockPassages.map((p) => (
+              <MenuItem
+                key={p}
+                selected={p === passageRef}
+                onClick={() => {
+                  setPassageRef(p);
+                  setPassageMenuAnchor(null);
+                }}
+              >
+                {p}
+              </MenuItem>
+            ))}
+          </Menu>
+        </Box>
+        <Box
+          sx={{
+            flex: 1,
+            display: 'flex',
+            justifyContent: 'flex-start',
+            overflowX: 'auto',
+            overflowY: 'hidden',
+            WebkitOverflowScrolling: 'touch',
+            pb: 0.25,
+          }}
+        >
+          {workflow.map((step) => {
+            const isCurrent = step.id === currentstep;
+            return (
+              <ButtonBase
+                key={step.id}
+                data-cy="workflow-step"
+                role="button"
+                onClick={handleSelect(step.id)}
+                tabIndex={0}
+                ref={(el) => {
+                  if (el) {
+                    stepRefs.current.set(step.id, el);
+                  } else {
+                    stepRefs.current.delete(step.id);
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                  }
+                }}
+                sx={{
+                  flex: '0 0 80px',
+                  height: 30,
+                  mr: -0.25,
+                  backgroundColor: isCurrent
+                    ? theme.palette.grey[700]
+                    : stepComplete(step.id)
+                      ? theme.palette.grey[400]
+                      : theme.palette.grey[200],
+                  clipPath: 'polygon(10% 0%, 100% 0%, 90% 100%, 0% 100%)',
+                  cursor:
+                    recording || commentRecording ? 'not-allowed' : 'pointer',
+                }}
+              />
+            );
+          })}
+        </Box>
       </Box>
       {currentLabel && (
         <Typography
