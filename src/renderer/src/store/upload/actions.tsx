@@ -221,8 +221,9 @@ export interface NextUploadProps {
    */
   getImportExportBusy?: () => boolean;
   /**
-   * Called after import/export wait completes and before staging/POST. Use to set
-   * `importexportBusy` for the upload without blocking on that same flag.
+   * Called when an upload actually starts: offline immediately after validation,
+   * or online after import/export wait and before staging/POST. Use to set
+   * `importexportBusy` without blocking on that flag in the online path.
    */
   onReadyToUpload?: () => void;
 }
@@ -271,6 +272,7 @@ export const nextUpload =
       return;
     }
     if (offline) {
+      onReadyToUpload?.();
       if (!isDownloadable) {
         if (cb) cb(n, true, { ...record });
       } else

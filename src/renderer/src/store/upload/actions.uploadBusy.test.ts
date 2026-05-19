@@ -222,4 +222,33 @@ describe('nextUpload import/export busy handling', () => {
     expect(mockedWait).not.toHaveBeenCalled();
     expect(mockedAxios.post).toHaveBeenCalled();
   });
+
+  it('invokes onReadyToUpload on offline path before local write', async () => {
+    const writeSpy = jest
+      .spyOn(
+        require('./actions') as {
+          writeFileLocal: typeof import('./actions').writeFileLocal;
+        },
+        'writeFileLocal'
+      )
+      .mockResolvedValue({
+        relativeMediaPath: 'media/test.mp3',
+        absolutePath: '/tmp/test.mp3',
+      });
+    const onReadyToUpload = jest.fn();
+    const cb = jest.fn();
+
+    await runNextUpload({ offline: true, onReadyToUpload, cb });
+    await flushPromises();
+
+    expect(onReadyToUpload).toHaveBeenCalledTimes(1);
+    expect(writeSpy).toHaveBeenCalled();
+    expect(mockedAxios.post).not.toHaveBeenCalled();
+    expect(cb).toHaveBeenCalledWith(
+      0,
+      true,
+      expect.objectContaining({ audioUrl: 'media/test.mp3' })
+    );
+    writeSpy.mockRestore();
+  });
 });
