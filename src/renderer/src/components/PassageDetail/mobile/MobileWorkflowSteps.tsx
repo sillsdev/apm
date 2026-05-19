@@ -23,6 +23,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { IWorkflowStepsStrings } from '../../../model';
 import { toCamel } from '../../../utils/toCamel';
 
+// TODO: Hook this up with real passages
 const mockPassages = [
   'Passage 1',
   'Passage 2',
@@ -118,6 +119,7 @@ export default function MobileWorkflowSteps() {
           width: '100%',
         }}
       >
+        {/* Passage dropdown */}
         <Box ref={dropdownRef} sx={{ flexShrink: 0, mr: 1 }}>
           <Button
             size="small"
@@ -133,6 +135,7 @@ export default function MobileWorkflowSteps() {
             open={Boolean(passageMenuAnchor)}
             onClose={() => setPassageMenuAnchor(null)}
           >
+            {/* TODO: Hook this up with real passages */}
             {mockPassages.map((p) => (
               <MenuItem
                 key={p}
@@ -147,6 +150,7 @@ export default function MobileWorkflowSteps() {
             ))}
           </Menu>
         </Box>
+        {/* Workflow step parallelograms */}
         <Box
           sx={{
             flex: 1,
@@ -178,7 +182,7 @@ export default function MobileWorkflowSteps() {
                   sx={{
                     flex: '0 0 80px',
                     height: 30,
-                    mr: -0.25,
+                    mr: -0.25, // Overlap adjacent parallelograms so their edges meet cleanly
                     backgroundColor: isCurrent
                       ? theme.palette.grey[700]
                       : stepComplete(step.id)
@@ -191,6 +195,7 @@ export default function MobileWorkflowSteps() {
                 />
               );
             })}
+            {/* Spacer to mirror the dropdown width so mx:auto centers the parallelograms */}
             <Box sx={{ flexShrink: 0, width: dropdownWidth }} />
           </Box>
         </Box>
