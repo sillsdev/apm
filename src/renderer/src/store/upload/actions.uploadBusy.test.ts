@@ -3,7 +3,6 @@
 import Axios from 'axios';
 import { UploadType } from '../../components/UploadType';
 import { MediaFileAttributes } from '../../model';
-import { UPLOAD_ITEM_PENDING } from './types';
 import { waitForImportExportIdle } from './uploadRetry';
 
 jest.mock('../../../api-variable', () => ({
@@ -156,57 +155,7 @@ describe('nextUpload import/export busy handling', () => {
     await flushPromises();
   };
 
-  it('calls onReadyToUpload after waitForImportExportIdle and before POST', async () => {
-    const order: string[] = [];
-    mockedWait.mockImplementation(async () => {
-      order.push('wait');
-    });
-    const onReadyToUpload = jest.fn(() => {
-      order.push('ready');
-    });
-    mockedAxios.post.mockImplementation(async () => {
-      order.push('post');
-      return vndResponse as never;
-    });
-
-    await runNextUpload({
-      getImportExportBusy: () => false,
-      onReadyToUpload,
-    });
-
-    expect(order).toEqual(['wait', 'ready', 'post']);
-    expect(onReadyToUpload).toHaveBeenCalledTimes(1);
-    expect(mockedAxios.post).toHaveBeenCalled();
-  });
-
-  it('does not deadlock when onReadyToUpload sets busy after external wait completes', async () => {
-    let importBusy = true;
-    const onReadyToUpload = jest.fn(() => {
-      importBusy = true;
-    });
-
-    mockedWait.mockImplementation(async (getBusy) => {
-      let polls = 0;
-      while (getBusy()) {
-        polls += 1;
-        if (polls >= 2) importBusy = false;
-        await Promise.resolve();
-      }
-    });
-
-    await runNextUpload({
-      getImportExportBusy: () => importBusy,
-      onReadyToUpload,
-    });
-
-    expect(onReadyToUpload).toHaveBeenCalledTimes(1);
-    expect(mockedAxios.post).toHaveBeenCalled();
-    expect(dispatch).toHaveBeenCalledWith(
-      expect.objectContaining({ type: UPLOAD_ITEM_PENDING })
-    );
-  });
-
-  it('proceeds without onReadyToUpload when import is not busy', async () => {
+  it('proceeds when import is not busy', async () => {
     await runNextUpload({
       getImportExportBusy: () => false,
     });
@@ -221,61 +170,5 @@ describe('nextUpload import/export busy handling', () => {
 
     expect(mockedWait).not.toHaveBeenCalled();
     expect(mockedAxios.post).toHaveBeenCalled();
-  });
-
-  it('invokes onReadyToUpload on offline path before local write', async () => {
-    const order: string[] = [];
-    const writeSpy = jest
-      .spyOn(
-        require('./actions') as {
-          writeFileLocal: typeof import('./actions').writeFileLocal;
-        },
-        'writeFileLocal'
-      )
-      .mockImplementation(async () => {
-        order.push('write');
-        return {
-          relativeMediaPath: 'media/test.mp3',
-          absolutePath: '/tmp/test.mp3',
-        };
-      });
-    const onReadyToUpload = jest.fn(() => {
-      order.push('ready');
-    });
-    const cb = jest.fn();
-
-    await runNextUpload({ offline: true, onReadyToUpload, cb });
-    await flushPromises();
-
-    expect(order).toEqual(['ready', 'write']);
-    expect(onReadyToUpload).toHaveBeenCalledTimes(1);
-    expect(mockedWait).not.toHaveBeenCalled();
-    expect(mockedAxios.post).not.toHaveBeenCalled();
-    expect(cb).toHaveBeenCalledWith(
-      0,
-      true,
-      expect.objectContaining({ audioUrl: 'media/test.mp3' })
-    );
-    writeSpy.mockRestore();
-  });
-
-  it('does not invoke onReadyToUpload on offline validation failure', async () => {
-    const onReadyToUpload = jest.fn();
-    const writeSpy = jest.spyOn(
-      require('./actions') as {
-        writeFileLocal: typeof import('./actions').writeFileLocal;
-      },
-      'writeFileLocal'
-    );
-
-    await runNextUpload({
-      offline: true,
-      onReadyToUpload,
-      record: { ...baseRecord, originalFile: 'bad.xyz' },
-    });
-
-    expect(onReadyToUpload).not.toHaveBeenCalled();
-    expect(writeSpy).not.toHaveBeenCalled();
-    writeSpy.mockRestore();
   });
 });

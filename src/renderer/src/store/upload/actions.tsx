@@ -220,12 +220,6 @@ export interface NextUploadProps {
    * ImportTab sync (`importexportBusy`) can finish first.
    */
   getImportExportBusy?: () => boolean;
-  /**
-   * Called when an upload actually starts: offline immediately after validation,
-   * or online after import/export wait and before staging/POST. Use to set
-   * `importexportBusy` without blocking on that flag in the online path.
-   */
-  onReadyToUpload?: () => void;
 }
 export const nextUpload =
   ({
@@ -240,7 +234,6 @@ export const nextUpload =
     onTerminalFailure,
     pendingUploadIdToClearOnSuccess,
     getImportExportBusy,
-    onReadyToUpload,
   }: NextUploadProps) =>
   (dispatch: Dispatch) => {
     dispatch({ payload: n, type: UPLOAD_ITEM_PENDING });
@@ -272,7 +265,6 @@ export const nextUpload =
       return;
     }
     if (offline) {
-      onReadyToUpload?.();
       if (!isDownloadable) {
         if (cb) cb(n, true, { ...record });
       } else
@@ -409,7 +401,6 @@ export const nextUpload =
       if (getImportExportBusy) {
         await waitForImportExportIdle(getImportExportBusy);
       }
-      onReadyToUpload?.();
 
       let localAbsolutePath = '';
       let fileForPut = files[n] as File;
