@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
 import Axios from 'axios';
 import { UploadType } from '../../components/UploadType';
-import { MediaFileAttributes } from '../../model';
+import { type MediaFileAttributes } from '../../model';
 import { waitForImportExportIdle } from './uploadRetry';
 
 jest.mock('../../../api-variable', () => ({
