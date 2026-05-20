@@ -1,4 +1,5 @@
 import React from 'react';
+import { MemoryRouter } from 'react-router-dom';
 import { Provider } from 'react-redux';
 import { legacy_createStore as createStore, combineReducers } from 'redux';
 import LocalizedStrings from 'react-localization';
@@ -11,23 +12,95 @@ import {
   PassageDetailContext,
   ICtxState,
 } from '../../../context/PassageDetailContext';
+import { UnsavedContext } from '../../../context/UnsavedContext';
 import MobileWorkflowSteps from './MobileWorkflowSteps';
 
-const createMockMemory = (): Memory =>
-  ({
+// Mock memory that resolves findRecord calls by a "type:id" lookup map
+const createMockMemory = (records: Record<string, any> = {}): Memory => {
+  const qb = {
+    findRecord: ({ type, id }: { type: string; id: string }) => ({ type, id }),
+  };
+  return {
     cache: {
-      query: () => [],
+      query: (fn: any) => {
+        if (typeof fn !== 'function') return undefined;
+        const spec = fn(qb);
+        return spec?.type && spec?.id
+          ? records[`${spec.type}:${spec.id}`]
+          : undefined;
+      },
       liveQuery: () => ({
         subscribe: () => () => {},
         query: () => [],
       }),
     },
     update: () => {},
-  }) as unknown as Memory;
+  } as unknown as Memory;
+};
 
 const mockCoordinator = {
   getSource: () => createMockMemory(),
 } as unknown as Coordinator;
+
+const stepProgressionOrgRecord = {
+  type: 'organization',
+  id: 'test-org',
+  attributes: {
+    defaultParams: JSON.stringify({ WorkflowProgression: 'step' }),
+  },
+};
+
+// Two passage records used in passage progression mode tests
+const mockSectionPassageRecords = {
+  'passage:p-1': {
+    id: 'p-1',
+    attributes: { sequencenum: 1, reference: '1:1', book: 'GEN' },
+  },
+  'passage:p-2': {
+    id: 'p-2',
+    attributes: { sequencenum: 2, reference: '1:2', book: 'GEN' },
+  },
+};
+
+// Extended set with an earlier passage (sequencenum 0) to cover the "complete" colour state
+const mockSectionPassageRecordsWithPrior = {
+  'passage:p-0': {
+    id: 'p-0',
+    attributes: { sequencenum: 0, reference: '1:0', book: 'GEN' },
+  },
+  ...mockSectionPassageRecords,
+};
+
+const mockSectionWithThreePassages = {
+  id: 'section-1',
+  relationships: {
+    passages: {
+      data: [
+        { type: 'passage', id: 'p-0' },
+        { type: 'passage', id: 'p-1' },
+        { type: 'passage', id: 'p-2' },
+      ],
+    },
+  },
+} as any;
+
+// Section whose passages relationship points to the records above
+const mockSection = {
+  id: 'section-1',
+  relationships: {
+    passages: {
+      data: [
+        { type: 'passage', id: 'p-1' },
+        { type: 'passage', id: 'p-2' },
+      ],
+    },
+  },
+} as any;
+
+const mockCurrentPassage = {
+  id: 'p-1',
+  attributes: { sequencenum: 1, reference: '1:1', book: 'GEN' },
+} as any;
 
 const createInitialState = (
   overrides: Partial<GlobalState> = {}
@@ -97,6 +170,24 @@ const mockStore = createStore(
   })
 );
 
+const mockUnsavedState = {
+  checkSavedFn: (method: () => void) => method(),
+  t: {} as any,
+  handleSaveConfirmed: () => {},
+  handleSaveRefused: () => {},
+  toolChanged: () => {},
+  startSave: () => {},
+  startClear: () => {},
+  saveCompleted: () => {},
+  clearCompleted: () => {},
+  waitForSave: async () => {},
+  anySaving: () => false as const,
+  saveRequested: () => false as const,
+  clearRequested: () => false as const,
+  isChanged: () => false as const,
+  toolsChanged: {},
+};
+
 const createPassageDetailState = (
   overrides: Partial<ICtxState> = {}
 ): ICtxState =>
@@ -110,6 +201,9 @@ const createPassageDetailState = (
     commentRecording: false,
     stepComplete: () => false,
     setCurrentStep: cy.stub(),
+    passage: mockCurrentPassage,
+    section: {} as any,
+    prjId: 'proj-1',
     ...overrides,
   }) as ICtxState;
 
@@ -120,6 +214,10 @@ const mountMobileWorkflowSteps = ({
   remoteBusy = false,
   recording = false,
   commentRecording = false,
+  isStepProgression = false,
+  section,
+  passage,
+  extraMemoryRecords = {},
 }: {
   currentstep?: string;
   workflow?: ICtxState['workflow'];
@@ -127,6 +225,10 @@ const mountMobileWorkflowSteps = ({
   remoteBusy?: boolean;
   recording?: boolean;
   commentRecording?: boolean;
+  isStepProgression?: boolean;
+  section?: any;
+  passage?: any;
+  extraMemoryRecords?: Record<string, any>;
 } = {}) => {
   const setCurrentStep = cy.stub().as('setCurrentStep');
   const ctxOverrides: Partial<ICtxState> = {
@@ -135,106 +237,290 @@ const mountMobileWorkflowSteps = ({
     commentRecording,
     setCurrentStep,
     stepComplete: (id: string) => completedStepIds.includes(id),
+    ...(section !== undefined ? { section } : {}),
+    ...(passage !== undefined ? { passage } : {}),
   };
-  if (workflow) {
-    ctxOverrides.workflow = workflow;
-  }
+  if (workflow) ctxOverrides.workflow = workflow;
   const ctxState = createPassageDetailState(ctxOverrides);
-  const initialState = createInitialState({ remoteBusy });
+
+  const mem = createMockMemory({
+    ...(isStepProgression
+      ? { 'organization:test-org': stepProgressionOrgRecord }
+      : {}),
+    ...extraMemoryRecords,
+  });
+  const initialState = createInitialState({ remoteBusy, memory: mem });
 
   cy.mount(
-    <Provider store={mockStore}>
-      <GlobalProvider init={initialState}>
-        <SnackBarProvider>
-          <PassageDetailContext.Provider
-            value={{ state: ctxState, setState: cy.stub() }}
-          >
-            <MobileWorkflowSteps />
-          </PassageDetailContext.Provider>
-        </SnackBarProvider>
-      </GlobalProvider>
-    </Provider>
+    <MemoryRouter>
+      <Provider store={mockStore}>
+        <GlobalProvider init={initialState}>
+          <SnackBarProvider>
+            <UnsavedContext.Provider
+              value={{ state: mockUnsavedState, setState: cy.stub() }}
+            >
+              <PassageDetailContext.Provider
+                value={{ state: ctxState, setState: cy.stub() }}
+              >
+                <MobileWorkflowSteps />
+              </PassageDetailContext.Provider>
+            </UnsavedContext.Provider>
+          </SnackBarProvider>
+        </GlobalProvider>
+      </Provider>
+    </MemoryRouter>
   );
 };
 
 describe('MobileWorkflowSteps', () => {
-  it('renders workflow steps and current label', () => {
-    mountMobileWorkflowSteps();
+  describe('step progression mode', () => {
+    it('renders workflow step parallelograms and current step label', () => {
+      mountMobileWorkflowSteps({ isStepProgression: true });
 
-    cy.get('[data-cy="workflow-step"]').should('have.length', 2);
-    cy.get('[data-cy="workflow-step-label"]').should('contain.text', 'Record');
-  });
-
-  it('shows current, complete, and incomplete step colors', () => {
-    mountMobileWorkflowSteps({
-      workflow: [
-        { id: 'step-1', label: 'Record' },
-        { id: 'step-2', label: 'Review' },
-        { id: 'step-3', label: 'Publish' },
-      ],
-      completedStepIds: ['step-2'],
+      cy.get('[data-cy="workflow-step"]').should('have.length', 2);
+      cy.get('[data-cy="workflow-step-label"]').should(
+        'contain.text',
+        'Record'
+      );
     });
 
-    cy.get('[data-cy="workflow-step"]')
-      .eq(0)
-      .should('have.css', 'background-color', 'rgb(97, 97, 97)');
-    cy.get('[data-cy="workflow-step"]')
-      .eq(1)
-      .should('have.css', 'background-color', 'rgb(189, 189, 189)');
-    cy.get('[data-cy="workflow-step"]')
-      .eq(2)
-      .should('have.css', 'background-color', 'rgb(238, 238, 238)');
+    it('shows current, complete, and incomplete step colors', () => {
+      mountMobileWorkflowSteps({
+        isStepProgression: true,
+        workflow: [
+          { id: 'step-1', label: 'Record' },
+          { id: 'step-2', label: 'Review' },
+          { id: 'step-3', label: 'Publish' },
+        ],
+        completedStepIds: ['step-2'],
+      });
+
+      cy.get('[data-cy="workflow-step"]')
+        .eq(0)
+        .should('have.css', 'background-color', 'rgb(97, 97, 97)');
+      cy.get('[data-cy="workflow-step"]')
+        .eq(1)
+        .should('have.css', 'background-color', 'rgb(189, 189, 189)');
+      cy.get('[data-cy="workflow-step"]')
+        .eq(2)
+        .should('have.css', 'background-color', 'rgb(238, 238, 238)');
+    });
+
+    it('shows a tip button in the step label area that opens a dialog', () => {
+      mountMobileWorkflowSteps({ isStepProgression: true });
+
+      cy.get(
+        '[data-cy="workflow-step-label"] [data-cy="workflow-step-tip"]'
+      ).click();
+
+      cy.get('[role="dialog"]').should('be.visible');
+      cy.contains('Record tip').should('be.visible');
+      cy.contains('Close').click();
+      cy.get('[role="dialog"]').should('not.exist');
+    });
+
+    it('selects a different step when a parallelogram is clicked', () => {
+      mountMobileWorkflowSteps({ isStepProgression: true });
+
+      cy.get('[data-cy="workflow-step"]').eq(1).click();
+
+      cy.get('@setCurrentStep').should('have.been.calledWith', 'step-2');
+    });
+
+    it('does not re-select the current step', () => {
+      mountMobileWorkflowSteps({ isStepProgression: true });
+
+      cy.get('[data-cy="workflow-step"]').eq(0).click();
+
+      cy.get('@setCurrentStep').should('not.have.been.called');
+    });
+
+    it('blocks step selection and shows wait message when remote is busy', () => {
+      mountMobileWorkflowSteps({ isStepProgression: true, remoteBusy: true });
+
+      cy.get('[data-cy="workflow-step"]').eq(1).click();
+
+      cy.get('@setCurrentStep').should('not.have.been.called');
+      cy.contains('Please wait').should('be.visible');
+    });
+
+    it('blocks step selection while recording', () => {
+      mountMobileWorkflowSteps({ isStepProgression: true, recording: true });
+
+      cy.get('[data-cy="workflow-step"]').eq(1).click();
+
+      cy.get('@setCurrentStep').should('not.have.been.called');
+    });
+
+    it('blocks step selection while comment recording', () => {
+      mountMobileWorkflowSteps({
+        isStepProgression: true,
+        commentRecording: true,
+      });
+
+      cy.get('[data-cy="workflow-step"]').eq(1).click();
+
+      cy.get('@setCurrentStep').should('not.have.been.called');
+    });
+
+    it('blocks passage dropdown while recording', () => {
+      mountMobileWorkflowSteps({ isStepProgression: true, recording: true });
+
+      cy.get('[data-cy="passage-dropdown"]').click();
+
+      cy.get('[role="menu"]').should('not.exist');
+    });
+
+    it('blocks passage dropdown and shows wait message when remote is busy', () => {
+      mountMobileWorkflowSteps({ isStepProgression: true, remoteBusy: true });
+
+      cy.get('[data-cy="passage-dropdown"]').click();
+
+      cy.get('[role="menu"]').should('not.exist');
+      cy.contains('Please wait').should('be.visible');
+    });
+
+    it('dropdown shows current passage book and reference', () => {
+      mountMobileWorkflowSteps({ isStepProgression: true });
+
+      cy.get('[data-cy="passage-dropdown"]').should('contain.text', 'GEN 1:1');
+    });
+
+    it('dropdown opens section passages as menu items', () => {
+      mountMobileWorkflowSteps({
+        isStepProgression: true,
+        section: mockSection,
+        extraMemoryRecords: mockSectionPassageRecords,
+      });
+
+      cy.get('[data-cy="passage-dropdown"]').click();
+
+      cy.get('[role="menu"]').should('be.visible');
+      cy.get('[role="menuitem"]').should('have.length', 2);
+      cy.get('[role="menuitem"]').eq(0).should('contain.text', 'GEN 1:1');
+    });
+
+    it('renders the step label as plain text when the current step has no tip', () => {
+      mountMobileWorkflowSteps({
+        isStepProgression: true,
+        currentstep: 'step-2',
+      });
+
+      cy.get('[data-cy="workflow-step-label"]').should(
+        'contain.text',
+        'Review'
+      );
+      cy.get('[data-cy="workflow-step-tip"]').should('not.exist');
+    });
   });
 
-  it('shows a tip dialog for the current step', () => {
-    mountMobileWorkflowSteps();
+  describe('passage progression mode', () => {
+    it('renders passage parallelograms for each section passage', () => {
+      mountMobileWorkflowSteps({
+        section: mockSection,
+        extraMemoryRecords: mockSectionPassageRecords,
+      });
 
-    cy.get('[data-cy="workflow-step-tip"]').click();
+      cy.get('[data-cy="passage-step"]').should('have.length', 2);
+    });
 
-    cy.get('[role="dialog"]').should('be.visible');
-    cy.contains('Record tip').should('be.visible');
-    cy.contains('Close').click();
-    cy.get('[role="dialog"]').should('not.exist');
-  });
+    it('shows a tip button left of the dropdown that opens a dialog', () => {
+      mountMobileWorkflowSteps();
 
-  it('selects a different step when clicked', () => {
-    mountMobileWorkflowSteps();
+      cy.get('[data-cy="workflow-step-tip"]').click();
 
-    cy.get('[data-cy="workflow-step"]').eq(1).click();
+      cy.get('[role="dialog"]').should('be.visible');
+      cy.contains('Record tip').should('be.visible');
+      cy.contains('Close').click();
+      cy.get('[role="dialog"]').should('not.exist');
+    });
 
-    cy.get('@setCurrentStep').should('have.been.calledWith', 'step-2');
-  });
+    it('dropdown shows the current workflow step label', () => {
+      mountMobileWorkflowSteps();
 
-  it('does not re-select the current step', () => {
-    mountMobileWorkflowSteps();
+      cy.get('[data-cy="passage-dropdown"]').should('contain.text', 'Record');
+    });
 
-    cy.get('[data-cy="workflow-step"]').eq(0).click();
+    it('dropdown opens a menu with workflow step options', () => {
+      mountMobileWorkflowSteps();
 
-    cy.get('@setCurrentStep').should('not.have.been.called');
-  });
+      cy.get('[data-cy="passage-dropdown"]').click();
 
-  it('blocks selection and shows wait message when remote busy', () => {
-    mountMobileWorkflowSteps({ remoteBusy: true });
+      cy.get('[role="menu"]').should('be.visible');
+      cy.get('[role="menuitem"]').should('have.length', 2);
+    });
 
-    cy.get('[data-cy="workflow-step"]').eq(1).click();
+    it('blocks passage click while recording', () => {
+      mountMobileWorkflowSteps({
+        section: mockSection,
+        extraMemoryRecords: mockSectionPassageRecords,
+        recording: true,
+      });
 
-    cy.get('@setCurrentStep').should('not.have.been.called');
-    cy.contains('Please wait').should('be.visible');
-  });
+      cy.get('[data-cy="passage-step"]').eq(1).click();
 
-  it('blocks selection while recording', () => {
-    mountMobileWorkflowSteps({ recording: true });
+      cy.get('@setCurrentStep').should('not.have.been.called');
+    });
 
-    cy.get('[data-cy="workflow-step"]').eq(1).click();
+    it('blocks passage click and shows wait message when remote is busy', () => {
+      mountMobileWorkflowSteps({
+        section: mockSection,
+        extraMemoryRecords: mockSectionPassageRecords,
+        remoteBusy: true,
+      });
 
-    cy.get('@setCurrentStep').should('not.have.been.called');
-  });
+      cy.get('[data-cy="passage-step"]').eq(1).click();
 
-  it('blocks selection while comment recording', () => {
-    mountMobileWorkflowSteps({ commentRecording: true });
+      cy.contains('Please wait').should('be.visible');
+    });
 
-    cy.get('[data-cy="workflow-step"]').eq(1).click();
+    it('shows current, complete, and incomplete passage step colors', () => {
+      mountMobileWorkflowSteps({
+        section: mockSectionWithThreePassages,
+        extraMemoryRecords: mockSectionPassageRecordsWithPrior,
+      });
 
-    cy.get('@setCurrentStep').should('not.have.been.called');
+      // p-0 sequencenum 0 < current sequencenum 1 → complete
+      cy.get('[data-cy="passage-step"]')
+        .eq(0)
+        .should('have.css', 'background-color', 'rgb(189, 189, 189)');
+      // p-1 is current passage
+      cy.get('[data-cy="passage-step"]')
+        .eq(1)
+        .should('have.css', 'background-color', 'rgb(97, 97, 97)');
+      // p-2 sequencenum 2 > current sequencenum 1 → incomplete
+      cy.get('[data-cy="passage-step"]')
+        .eq(2)
+        .should('have.css', 'background-color', 'rgb(238, 238, 238)');
+    });
+
+    it('step label shows current passage book and reference', () => {
+      mountMobileWorkflowSteps();
+
+      cy.get('[data-cy="workflow-step-label"]').should(
+        'contain.text',
+        'GEN 1:1'
+      );
+    });
+
+    it('blocks dropdown while comment recording', () => {
+      mountMobileWorkflowSteps({ commentRecording: true });
+
+      cy.get('[data-cy="passage-dropdown"]').click();
+
+      cy.get('[role="menu"]').should('not.exist');
+    });
+
+    it('blocks passage click while comment recording', () => {
+      mountMobileWorkflowSteps({
+        section: mockSection,
+        extraMemoryRecords: mockSectionPassageRecords,
+        commentRecording: true,
+      });
+
+      cy.get('[data-cy="passage-step"]').eq(1).click();
+
+      cy.get('@setCurrentStep').should('not.have.been.called');
+    });
   });
 });
