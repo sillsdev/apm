@@ -6,6 +6,7 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  IconButton,
   Menu,
   MenuItem,
   Typography,
@@ -142,7 +143,21 @@ export default function MobileWorkflowSteps() {
         }}
       >
         {/* Passage dropdown */}
-        <Box ref={dropdownRef} sx={{ flexShrink: 0, mr: 1 }}>
+        <Box
+          ref={dropdownRef}
+          sx={{ flexShrink: 0, mr: 1, display: 'flex', alignItems: 'center' }}
+        >
+          {!isStepProgression && currentTip && (
+            <IconButton
+              size="small"
+              onClick={() => setTipOpen(true)}
+              data-cy="workflow-step-tip"
+              aria-label={currentTip}
+              color="info"
+            >
+              <InfoIcon fontSize="small" />
+            </IconButton>
+          )}
           <Button
             size="small"
             endIcon={<ArrowDropDownIcon />}
