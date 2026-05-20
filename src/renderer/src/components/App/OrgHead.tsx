@@ -38,7 +38,7 @@ export const OrgHead = () => {
   );
   const [sortVisible, setSortVisible] = useState(false);
   const [workflowVisible, setWorkflowVisible] = useState(false);
-  const { isMobile } = useMobile();
+  const { isMobile, isMobileView } = useMobile();
   const commitTeamSettings = useCommitTeamSettings();
   const { pathname } = useLocation();
   const isTeamScreen = pathname.includes('/team');
@@ -205,10 +205,12 @@ export const OrgHead = () => {
                 <MenuItem onClick={handleSettings}>
                   {cardStrings?.teamSettings || 'Team Settings'}
                 </MenuItem>
-                <MenuItem onClick={handleWorkflow}>
-                  {cardStrings?.editWorkflow?.replace('{0}', '') ||
-                    'Edit Workflow'}
-                </MenuItem>
+                {!isMobileView && (
+                  <MenuItem id="orgHeadEditWorkflow" onClick={handleWorkflow}>
+                    {cardStrings?.editWorkflow?.replace('{0}', '') ||
+                      'Edit Workflow'}
+                  </MenuItem>
+                )}
                 {showSort && (
                   <MenuItem onClick={handleSort}>
                     {cardStrings?.sortProjects || 'Sort Projects'}
