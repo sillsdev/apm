@@ -27,6 +27,10 @@ import { findRecord } from '../../../crud/tryFindRecord';
 import { rememberCurrentPassage } from '../../../utils';
 import { usePassageNavigate } from '../usePassageNavigate';
 import { isPublishingTitle } from '../../../control/passageTypeFromRef';
+import {
+  orgDefaultWorkflowProgression,
+  useOrgDefaults,
+} from '../../../crud/useOrgDefaults';
 
 export default function MobileWorkflowSteps() {
   const {
@@ -47,6 +51,9 @@ export default function MobileWorkflowSteps() {
   const ts = useSelector(sharedSelector, shallowEqual);
   const theme = useTheme();
   const getWfLabel = useWfLabel();
+  const { getOrgDefault } = useOrgDefaults();
+  const isStepProgression =
+    getOrgDefault(orgDefaultWorkflowProgression) === 'step';
   const t: IWorkflowStepsStrings = useSelector(
     workflowStepsSelector,
     shallowEqual
@@ -108,7 +115,8 @@ export default function MobileWorkflowSteps() {
   const stepRefs = useRef(new Map<string, HTMLElement>());
 
   useEffect(() => {
-    const el = stepRefs.current.get(currentstep);
+    const currentId = isStepProgression ? currentstep : (passage?.id ?? '');
+    const el = stepRefs.current.get(currentId);
     if (!el) return;
     el.scrollIntoView({
       behavior: didMountRef.current ? 'smooth' : 'auto',
@@ -116,7 +124,13 @@ export default function MobileWorkflowSteps() {
       inline: 'center',
     });
     didMountRef.current = true;
-  }, [currentstep, workflow.length]);
+  }, [
+    currentstep,
+    passage?.id,
+    workflow.length,
+    sectionPassages.length,
+    isStepProgression,
+  ]);
 
   return (
     <Box sx={{ px: 1.5, py: 1 }} data-cy="workflow-steps">
@@ -143,31 +157,46 @@ export default function MobileWorkflowSteps() {
             }}
             data-cy="passage-dropdown"
           >
-            {[passage?.attributes?.book, passage?.attributes?.reference]
-              .filter(Boolean)
-              .join(' ') || ''}
+            {isStepProgression
+              ? [passage?.attributes?.book, passage?.attributes?.reference]
+                  .filter(Boolean)
+                  .join(' ') || ''
+              : currentLabel}
           </Button>
           <Menu
             anchorEl={passageMenuAnchor}
             open={Boolean(passageMenuAnchor)}
             onClose={() => setPassageMenuAnchor(null)}
           >
-            {sectionPassages.map((p) => (
-              <MenuItem
-                key={p.id}
-                selected={p.id === passage?.id}
-                onClick={() => {
-                  const remId = p.keys?.remoteId ?? p.id;
-                  rememberCurrentPassage(memory, remId);
-                  passageNavigate(`/detail/${prjId}/${remId}`);
-                  setPassageMenuAnchor(null);
-                }}
-              >
-                {[p.attributes.book, p.attributes.reference]
-                  .filter(Boolean)
-                  .join(' ')}
-              </MenuItem>
-            ))}
+            {isStepProgression
+              ? sectionPassages.map((p) => (
+                  <MenuItem
+                    key={p.id}
+                    selected={p.id === passage?.id}
+                    onClick={() => {
+                      const remId = p.keys?.remoteId ?? p.id;
+                      rememberCurrentPassage(memory, remId);
+                      passageNavigate(`/detail/${prjId}/${remId}`);
+                      setPassageMenuAnchor(null);
+                    }}
+                  >
+                    {[p.attributes.book, p.attributes.reference]
+                      .filter(Boolean)
+                      .join(' ')}
+                  </MenuItem>
+                ))
+              : workflow.map((step) => (
+                  <MenuItem
+                    key={step.id}
+                    selected={step.id === currentstep}
+                    onClick={() => {
+                      handleSelect(step.id)();
+                      setPassageMenuAnchor(null);
+                    }}
+                  >
+                    {getWfLabel(step.label)}
+                  </MenuItem>
+                ))}
           </Menu>
         </Box>
         {/* Workflow step parallelograms */}
@@ -181,66 +210,123 @@ export default function MobileWorkflowSteps() {
           }}
         >
           <Box sx={{ display: 'flex', mx: 'auto', pb: 0.25 }}>
-            {workflow.map((step) => {
-              const isCurrent = step.id === currentstep;
-              return (
-                <ButtonBase
-                  key={step.id}
-                  data-cy="workflow-step"
-                  role="button"
-                  onClick={handleSelect(step.id)}
-                  tabIndex={0}
-                  ref={(el) => {
-                    if (el) stepRefs.current.set(step.id, el);
-                    else stepRefs.current.delete(step.id);
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                    }
-                  }}
-                  sx={{
-                    flex: '0 0 80px',
-                    height: 30,
-                    mr: -0.25, // Overlap adjacent parallelograms so their edges meet cleanly
-                    backgroundColor: isCurrent
-                      ? theme.palette.grey[700]
-                      : stepComplete(step.id)
-                        ? theme.palette.grey[400]
-                        : theme.palette.grey[200],
-                    clipPath: 'polygon(10% 0%, 100% 0%, 90% 100%, 0% 100%)',
-                    cursor:
-                      recording || commentRecording ? 'not-allowed' : 'pointer',
-                  }}
-                />
-              );
-            })}
+            {isStepProgression
+              ? workflow.map((step) => {
+                  const isCurrent = step.id === currentstep;
+                  return (
+                    <ButtonBase
+                      key={step.id}
+                      data-cy="workflow-step"
+                      role="button"
+                      onClick={handleSelect(step.id)}
+                      tabIndex={0}
+                      ref={(el) => {
+                        if (el) stepRefs.current.set(step.id, el);
+                        else stepRefs.current.delete(step.id);
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                        }
+                      }}
+                      sx={{
+                        flex: '0 0 80px',
+                        height: 30,
+                        mr: -0.25, // Overlap adjacent parallelograms so their edges meet cleanly
+                        backgroundColor: isCurrent
+                          ? theme.palette.grey[700]
+                          : stepComplete(step.id)
+                            ? theme.palette.grey[400]
+                            : theme.palette.grey[200],
+                        clipPath: 'polygon(10% 0%, 100% 0%, 90% 100%, 0% 100%)',
+                        cursor:
+                          recording || commentRecording
+                            ? 'not-allowed'
+                            : 'pointer',
+                      }}
+                    />
+                  );
+                })
+              : sectionPassages.map((p) => {
+                  const isCurrent = p.id === passage?.id;
+                  const isComplete =
+                    (p.attributes.sequencenum ?? 0) <
+                    (passage?.attributes?.sequencenum ?? 0);
+                  return (
+                    <ButtonBase
+                      key={p.id}
+                      data-cy="passage-step"
+                      role="button"
+                      onClick={() => {
+                        if (recording || commentRecording) return;
+                        if (getGlobal('remoteBusy')) {
+                          showMessage(ts.wait);
+                          return;
+                        }
+                        const remId = p.keys?.remoteId ?? p.id;
+                        rememberCurrentPassage(memory, remId);
+                        passageNavigate(`/detail/${prjId}/${remId}`);
+                      }}
+                      tabIndex={0}
+                      ref={(el) => {
+                        if (el) stepRefs.current.set(p.id, el);
+                        else stepRefs.current.delete(p.id);
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                        }
+                      }}
+                      sx={{
+                        flex: '0 0 80px',
+                        height: 30,
+                        mr: -0.25, // Overlap adjacent parallelograms so their edges meet cleanly
+                        backgroundColor: isCurrent
+                          ? theme.palette.grey[700]
+                          : isComplete
+                            ? theme.palette.grey[400]
+                            : theme.palette.grey[200],
+                        clipPath: 'polygon(10% 0%, 100% 0%, 90% 100%, 0% 100%)',
+                        cursor:
+                          recording || commentRecording
+                            ? 'not-allowed'
+                            : 'pointer',
+                      }}
+                    />
+                  );
+                })}
             {/* Spacer to mirror the dropdown width so mx:auto centers the parallelograms */}
             <Box sx={{ flexShrink: 0, width: dropdownWidth }} />
           </Box>
         </Box>
       </Box>
-      {currentLabel && (
+      {(isStepProgression ? currentLabel : passage?.id) && (
         <Typography
           sx={{ mt: 1, textAlign: 'center' }}
           data-cy="workflow-step-label"
         >
-          {currentTip ? (
-            <ButtonBase
-              onClick={() => setTipOpen(true)}
-              data-cy="workflow-step-tip"
-              sx={{
-                borderRadius: 1,
-                fontWeight: 'inherit',
-                fontSize: 'inherit',
-              }}
-              aria-label={currentTip}
-            >
-              {getWfLabel(currentLabel) + '\u00A0'}
-              <InfoIcon color="info" fontSize="small" />
-            </ButtonBase>
+          {isStepProgression ? (
+            currentTip ? (
+              <ButtonBase
+                onClick={() => setTipOpen(true)}
+                data-cy="workflow-step-tip"
+                sx={{
+                  borderRadius: 1,
+                  fontWeight: 'inherit',
+                  fontSize: 'inherit',
+                }}
+                aria-label={currentTip}
+              >
+                {getWfLabel(currentLabel) + '\u00A0'}
+                <InfoIcon color="info" fontSize="small" />
+              </ButtonBase>
+            ) : (
+              getWfLabel(currentLabel)
+            )
           ) : (
-            getWfLabel(currentLabel)
+            [passage?.attributes?.book, passage?.attributes?.reference]
+              .filter(Boolean)
+              .join(' ')
           )}
         </Typography>
       )}
