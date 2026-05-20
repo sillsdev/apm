@@ -181,6 +181,8 @@ interface IProps {
   onAutoSegment?: () => void;
   hasRecording?: boolean;
   isStopLogic?: boolean;
+  /** When true, hide undo and scissors (region delete) waveform edit tools. */
+  hideWaveformEditTools?: boolean;
   hasSegmentUndo?: boolean;
   onSegmentUndo?: () => void;
   isRecordingRights?: boolean;
@@ -294,6 +296,7 @@ function WSAudioPlayer(props: IProps) {
     onAutoSegment,
     hasRecording,
     isStopLogic,
+    hideWaveformEditTools,
     hasSegmentUndo,
     onSegmentUndo,
     isRecordingRights,
@@ -1732,16 +1735,22 @@ function WSAudioPlayer(props: IProps) {
         waitingForAI ||
         Boolean(loading) ||
         Boolean(busy) ||
-        (Boolean(myMediaId) && !ready && !recording && !waitingForAI)
+        (Boolean(myMediaId) && !ready && !recording && !waitingForAI) ||
+        (Boolean(oneTryOnly) && oneShotUsed && !recording)
       }
       tooltipTitle={recordTooltipTitle}
       hasRecording={hasRecording ?? false}
       isStopLogic={isStopLogic ?? false}
+      oneShotUsed={oneShotUsed}
       {...opts}
     />
   );
 
-  const deleteRegionNode = hasRegion !== 0 && !oneShotUsed && !isMobileView && (
+  const deleteRegionNode =
+    !hideWaveformEditTools &&
+    hasRegion !== 0 &&
+    !oneShotUsed &&
+    !isMobileView && (
     <LightTooltip id="wsAudioDeleteRegionTip" title={t.deleteRegion}>
       <span>
         <IconButton
@@ -1755,7 +1764,7 @@ function WSAudioPlayer(props: IProps) {
     </LightTooltip>
   );
 
-  const undoNode = canUndo && !oneShotUsed && (
+  const undoNode = !hideWaveformEditTools && canUndo && !oneShotUsed && (
     <LightTooltip id="wsUndoTip" title={t.undoTip}>
       <span>
         <IconButton

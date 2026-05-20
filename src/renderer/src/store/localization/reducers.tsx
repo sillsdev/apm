@@ -1660,6 +1660,7 @@ const initialState = {
 			"qanda": "Q and A",
 			"retell": "Retell",
 			"saving": "Saving ...",
+			"settingsFor": "Settings for {0} of {1}",
 			"show": "Show",
 			"showAll": "Show all",
 			"stepAdded": "Step added to the end of the list.",

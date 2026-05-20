@@ -54,6 +54,7 @@ export default function PassageDetailMobileFooter() {
     setCurrentStep,
     currentstep,
     orgWorkflowSteps = [],
+    isBoldWorkflow,
   } = usePassageDetailContext();
   const t: IMobileStrings = useSelector(mobileSelector, shallowEqual);
   const [memory] = useGlobal('memory');
@@ -63,6 +64,7 @@ export default function PassageDetailMobileFooter() {
   const { localizedWorkStepFromId } = useOrgWorkflowSteps();
 
   const isStepProgression =
+    isBoldWorkflow ||
     getOrgDefault(orgDefaultWorkflowProgression) === 'step';
 
   const sortedSteps = useMemo(
@@ -133,7 +135,9 @@ export default function PassageDetailMobileFooter() {
     <Box
       sx={{
         display: 'grid',
-        gridTemplateColumns: 'minmax(0, 1fr) auto minmax(0, 1fr)',
+        gridTemplateColumns: isBoldWorkflow
+          ? 'minmax(0, 1fr) minmax(0, 1fr)'
+          : 'minmax(0, 1fr) auto minmax(0, 1fr)',
         alignItems: 'center',
         gap: 0.5,
         width: '100%',
@@ -159,16 +163,18 @@ export default function PassageDetailMobileFooter() {
           />
         </Button>
       </Box>
-      <Box
-        sx={{
-          flexShrink: 0,
-          display: 'flex',
-          justifyContent: 'center',
-          minWidth: 'min-content',
-        }}
-      >
-        <MobileStepComplete />
-      </Box>
+      {!isBoldWorkflow && (
+        <Box
+          sx={{
+            flexShrink: 0,
+            display: 'flex',
+            justifyContent: 'center',
+            minWidth: 'min-content',
+          }}
+        >
+          <MobileStepComplete />
+        </Box>
+      )}
       <Box sx={{ minWidth: 0, display: 'flex', justifyContent: 'flex-end' }}>
         <Button
           size="small"

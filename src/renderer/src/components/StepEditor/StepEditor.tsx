@@ -455,17 +455,25 @@ export const StepEditor = ({ process, org }: IProps) => {
   const prettySettings = (tool: string, settings: string) => {
     const json = settings ? JSON.parse(settings) : undefined;
     switch (tool as ToolSlug) {
+      case ToolSlug.Record:
       case ToolSlug.Transcribe:
       case ToolSlug.Paratext:
         if (json)
-          return localizedArtifactTypeFromId(
-            remoteIdGuid(
-              'artifacttype',
-              json.artifactTypeId,
-              memory?.keyMap as RecordKeyMap
-            ) ?? json.artifactTypeId
-          );
-        return localizedArtifactTypeFromId(VernacularTag);
+          return se.settingsFor
+            .replace('{0}', st.getString(tool as keyof typeof se))
+            .replace(
+              '{1}',
+              localizedArtifactTypeFromId(
+                remoteIdGuid(
+                  'artifacttype',
+                  json.artifactTypeId,
+                  memory?.keyMap as RecordKeyMap
+                ) ?? json.artifactTypeId
+              )
+            );
+        return se.settingsFor
+          .replace('{0}', st.getString(tool as keyof typeof se))
+          .replace('{1}', localizedArtifactTypeFromId(VernacularTag));
       default:
         return '';
     }
