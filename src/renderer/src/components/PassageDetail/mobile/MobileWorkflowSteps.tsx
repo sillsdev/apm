@@ -26,6 +26,7 @@ import { related } from '../../../crud/related';
 import { findRecord } from '../../../crud/tryFindRecord';
 import { rememberCurrentPassage } from '../../../utils';
 import { usePassageNavigate } from '../usePassageNavigate';
+import { isPublishingTitle } from '../../../control/passageTypeFromRef';
 
 export default function MobileWorkflowSteps() {
   const {
@@ -55,7 +56,9 @@ export default function MobileWorkflowSteps() {
     if (!Array.isArray(passRecIds)) return [];
     return passRecIds
       .map((p) => findRecord(memory, 'passage', p.id) as PassageD)
-      .filter(Boolean)
+      .filter(
+        (p) => Boolean(p) && !isPublishingTitle(p?.attributes?.reference, false)
+      )
       .sort((a, b) => a.attributes.sequencenum - b.attributes.sequencenum);
   }, [section, memory]);
 
