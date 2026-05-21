@@ -24,6 +24,7 @@ export interface WrapperMeta {
     name: string;
     version?: string;
   };
+  defaultLocale: string;
   dateCreated?: string;
   comments?: string;
 }
