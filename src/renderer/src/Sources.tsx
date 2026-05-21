@@ -42,6 +42,7 @@ import { updateBackTranslationType } from './crud/updateBackTranslationType';
 import { updateConsultantWorkflowStep } from './crud/updateConsultantWorkflowStep';
 import { serializersSettings } from './serializers/serializersFor';
 import { requestedSchema } from './schema';
+import { logLoginAnalytics } from './crud/logLoginAnalytics';
 import { orbitReset } from './crud/orbitReset';
 type StategyError = (...args: unknown[]) => unknown;
 
@@ -442,6 +443,9 @@ export const Sources = async (
       await forceDataChanges();
       console.log(`Forcing complete`);
     }
+    logLoginAnalytics(tokenState.accessToken).catch((err) =>
+      console.log('login analytics failed', err)
+    );
   }
   const user = localStorage.getItem(LocalKey.userId) as string;
   setUser(user);

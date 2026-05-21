@@ -6,6 +6,7 @@ export * from './getOrgs';
 export * from './groupmembership';
 export * from './hasAnyRelated';
 export * from './loadData';
+export * from './logLoginAnalytics';
 export * from './media';
 export * from './offlineError';
 export * from './passage';

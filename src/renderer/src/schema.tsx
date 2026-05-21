@@ -1035,6 +1035,25 @@ if (requestedSchema > 9 && schemaDefinition.models) {
   };
   schemaDefinition.version = 10;
 }
+if (requestedSchema > 10 && schemaDefinition.models) {
+  schemaDefinition.models.useranalytics = {
+    keys: { remoteId: {} },
+    attributes: {
+      userId: { type: 'number' },
+      year: { type: 'number' },
+      month: { type: 'number' },
+    },
+  };
+  schemaDefinition.models.countryanalytics = {
+    keys: { remoteId: {} },
+    attributes: {
+      country: { type: 'string' },
+      year: { type: 'number' },
+      month: { type: 'number' },
+    },
+  };
+  schemaDefinition.version = 11;
+}
 
 export const schema = new RecordSchema(schemaDefinition);
 
