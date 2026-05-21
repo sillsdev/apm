@@ -279,7 +279,7 @@ export const useBurritoNavigation = (teamId: string) => {
         size,
         scope: { [book]: scopeRef ? [scopeRef] : [] },
         properties: {
-          apmId: m.keys?.remoteId || m.id,
+          'x-apmId': m.keys?.remoteId || m.id,
         },
       };
       return true;
@@ -372,7 +372,7 @@ export const useBurritoNavigation = (teamId: string) => {
             size: stat?.size ?? 0,
             scope: { [book]: scopeRef ? [scopeRef] : [] },
             properties: {
-              apmId: g.keys?.remoteId || g.id,
+              'x-apmId': g.keys?.remoteId || g.id,
             },
           };
           graphicsManifest.push({

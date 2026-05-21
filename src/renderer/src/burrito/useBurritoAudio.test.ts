@@ -284,7 +284,7 @@ describe('useBurritoAudio', () => {
     });
 
     const audioIngredient = Object.entries(metadata.ingredients).find(
-      ([, ing]) => ing?.properties?.apmId === '35928'
+      ([, ing]) => ing?.properties?.['x-apmId'] === '35928'
     );
     expect(audioIngredient).toBeDefined();
     expect(audioIngredient![0].toLowerCase().endsWith('.mp3')).toBe(true);
@@ -361,7 +361,7 @@ describe('useBurritoAudio', () => {
 
     expect(ipc.copyFile).toHaveBeenCalled();
     const ipIngredient = Object.entries(metadata.ingredients).find(
-      ([, ing]) => ing?.properties?.apmId === 'remote-ip-1'
+      ([, ing]) => ing?.properties?.['x-apmId'] === 'remote-ip-1'
     );
     expect(ipIngredient).toBeDefined();
     expect(ipIngredient![0]).toContain('rights-statement');
