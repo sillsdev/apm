@@ -443,9 +443,7 @@ export const Sources = async (
       await forceDataChanges();
       console.log(`Forcing complete`);
     }
-    logLoginAnalytics(tokenState.accessToken).catch((err) =>
-      console.log('login analytics failed', err)
-    );
+    logLoginAnalytics(tokenState.accessToken);
   }
   const user = localStorage.getItem(LocalKey.userId) as string;
   setUser(user);
