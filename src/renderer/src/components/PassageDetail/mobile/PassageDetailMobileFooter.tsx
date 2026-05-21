@@ -18,6 +18,10 @@ import {
   useOrgDefaults,
 } from '../../../crud/useOrgDefaults';
 import { useOrgWorkflowSteps } from '../../../crud/useOrgWorkflowSteps';
+import { ToolSlug, useStepTool } from '../../../crud';
+import { usePromptSectionResource } from '../Prompt/usePromptSectionResource';
+import { useRole } from '../../../crud/useRole';
+import { useStepPermissions } from '../../../utils/useStepPermission';
 
 function NavButtonLabel({
   text,
@@ -55,7 +59,15 @@ export default function PassageDetailMobileFooter() {
     currentstep,
     orgWorkflowSteps = [],
     isBoldWorkflow,
+    rowData,
+    promptPlaybackComplete,
   } = usePassageDetailContext();
+  const { tool } = useStepTool(currentstep);
+  const { hasPrompt } = usePromptSectionResource(rowData, section, currentstep);
+  const { userIsAdmin } = useRole();
+  const { canDoSectionStep, permissionsOn } = useStepPermissions();
+  const showPromptAdmin =
+    userIsAdmin || (permissionsOn && canDoSectionStep(currentstep, section));
   const t: IMobileStrings = useSelector(mobileSelector, shallowEqual);
   const [memory] = useGlobal('memory');
   const { prjId } = useParams();
@@ -64,8 +76,7 @@ export default function PassageDetailMobileFooter() {
   const { localizedWorkStepFromId } = useOrgWorkflowSteps();
 
   const isStepProgression =
-    isBoldWorkflow ||
-    getOrgDefault(orgDefaultWorkflowProgression) === 'step';
+    isBoldWorkflow || getOrgDefault(orgDefaultWorkflowProgression) === 'step';
 
   const sortedSteps = useMemo(
     () =>
@@ -93,9 +104,12 @@ export default function PassageDetailMobileFooter() {
   const prevNavEnabled = isStepProgression
     ? Boolean(prevStepRec)
     : Boolean(prevPassRec);
-  const nextNavEnabled = isStepProgression
+  let nextNavEnabled = isStepProgression
     ? Boolean(nextStepRec)
     : Boolean(nextPassRec);
+  if (tool === ToolSlug.Prompt && isStepProgression && !showPromptAdmin) {
+    nextNavEnabled = nextNavEnabled && hasPrompt && promptPlaybackComplete;
+  }
 
   const prevLabelFull = isStepProgression
     ? prevStepRec

@@ -294,6 +294,9 @@ export const welcomeSelector = (state: IState) =>
 export const workflowStepsSelector = (state: IState) =>
   localStrings(state as IState, { layout: 'workflowSteps' });
 
+export const promptSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'prompt' });
+
 export const wsAudioPlayerSegmentSelector = (state: IState) =>
   localStrings(state as IState, { layout: 'wsAudioPlayerSegment' });
 

@@ -93,6 +93,7 @@ export interface DetailPlayerProps {
     | ((params: IRegionParams, teamDefault: boolean) => void)
     | undefined;
   onStartRegion?: (position: number) => void;
+  onDuration?: (duration: number) => void;
   onProgress?: (progress: number) => void;
   onSaveProgress?: (progress: number) => void;
   onInteraction?: () => void;
@@ -123,6 +124,7 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
     onSegment,
     onSegmentParamChange,
     onStartRegion,
+    onDuration: onDurationProp,
     onProgress,
     onSaveProgress,
     onInteraction,
@@ -313,6 +315,7 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
 
   const onDuration = (duration: number) => {
     durationRef.current = duration;
+    if (onDurationProp) onDurationProp(duration);
     if (
       mediafileRef.current &&
       !mediafileRef.current.attributes.sourceSegments &&

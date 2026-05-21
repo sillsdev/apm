@@ -9,6 +9,7 @@ import bugsnagClient from '../../../auth/bugsnagClient';
 import { GlobalProvider, GlobalState } from '../../../context/GlobalContext';
 import { OrbitContext } from '../../../hoc/OrbitContextProvider';
 import {
+  type IRow,
   PassageDetailContext,
   ICtxState as PassageDetailState,
 } from '../../../context/PassageDetailContext';
@@ -151,6 +152,9 @@ const createPassageDetailState = (
     setStepComplete: cy.stub().resolves(),
     gotoNextStep: cy.stub(),
     setCurrentStep: cy.stub(),
+    rowData: [],
+    promptPlaybackComplete: false,
+    setPromptPlaybackComplete: cy.stub(),
     ...overrides,
   }) as PassageDetailState;
 
@@ -166,6 +170,8 @@ const mountFooter = ({
   sectionPassages,
   workflowProgression,
   passageDetailOverrides,
+  orgRole = RoleNames.Admin,
+  permissions = true,
 }: {
   passages: PassageD[];
   currentPassageId: string;
@@ -173,10 +179,12 @@ const mountFooter = ({
   sectionPassages?: { type: string; id: string }[];
   workflowProgression?: 'step';
   passageDetailOverrides?: Partial<PassageDetailState>;
+  orgRole?: RoleNames;
+  permissions?: boolean;
 }) => {
   const currentPassage = passages.find((p) => p.id === currentPassageId);
   const setCurrentStep = cy.stub().as('setCurrentStep');
-  const defaultParams: Record<string, unknown> = { permissions: true };
+  const defaultParams: Record<string, unknown> = { permissions };
   if (workflowProgression === 'step') {
     defaultParams[orgDefaultWorkflowProgression] = 'step';
   }
@@ -252,7 +260,7 @@ const mountFooter = ({
     memory,
     organization: 'org-1',
     user: 'user-1',
-    orgRole: RoleNames.Admin,
+    orgRole,
   });
   const unsavedState = {
     checkSavedFn: (cb: () => void) => cb(),
@@ -367,7 +375,8 @@ describe('PassageDetailMobileFooter', () => {
       workflowProgression: 'step',
       passageDetailOverrides: {
         currentstep: 'step-1',
-        orgWorkflowSteps: orgWorkflowSteps as PassageDetailState['orgWorkflowSteps'],
+        orgWorkflowSteps:
+          orgWorkflowSteps as PassageDetailState['orgWorkflowSteps'],
       },
     });
 
@@ -411,6 +420,93 @@ describe('PassageDetailMobileFooter', () => {
     cy.contains('button', 'Record').should('be.visible');
     cy.contains('button', 'Record').click();
     cy.get('@setCurrentStep').should('have.been.calledWith', 'step-2');
-    cy.get('[data-cy="location"]').should('have.text', '/detail/project-1/remote-1');
+    cy.get('[data-cy="location"]').should(
+      'have.text',
+      '/detail/project-1/remote-1'
+    );
+  });
+
+  it('on Prompt step disables Next until prompt playback is complete', () => {
+    const passages = [createPassage('passage-1', 1, 'remote-1')];
+    const orgWorkflowSteps = [
+      {
+        id: 'step-prompt',
+        type: 'orgworkflowstep' as const,
+        attributes: {
+          name: 'Prompt',
+          tool: '{"tool":"prompt"}',
+          sequencenum: 1,
+          process: 'bold',
+        },
+      },
+      {
+        id: 'step-record',
+        type: 'orgworkflowstep' as const,
+        attributes: {
+          name: 'Record',
+          tool: '{"tool":"record"}',
+          sequencenum: 2,
+          process: 'bold',
+        },
+      },
+    ];
+    const promptRow = {
+      id: 'media-prompt',
+      sequenceNum: 0,
+      isResource: true,
+      isText: false,
+      passageId: '',
+      resource: {
+        id: 'sr-prompt',
+        type: 'sectionresource',
+        attributes: { sequenceNum: 0 },
+        relationships: {
+          section: { data: { type: 'section', id: 'section-1' } },
+          orgWorkflowStep: {
+            data: { type: 'orgworkflowstep', id: 'step-prompt' },
+          },
+          mediafile: { data: { type: 'mediafile', id: 'media-prompt' } },
+        },
+      },
+      mediafile: {
+        id: 'media-prompt',
+        type: 'mediafile',
+        attributes: { duration: 10 },
+      },
+    };
+
+    mountFooter({
+      passages,
+      currentPassageId: 'passage-1',
+      orgRole: RoleNames.Member,
+      permissions: false,
+      passageDetailOverrides: {
+        isBoldWorkflow: true,
+        currentstep: 'step-prompt',
+        orgWorkflowSteps:
+          orgWorkflowSteps as PassageDetailState['orgWorkflowSteps'],
+        rowData: [promptRow as IRow],
+        promptPlaybackComplete: false,
+      },
+    });
+
+    cy.contains('button', 'Next').closest('button').should('be.disabled');
+
+    mountFooter({
+      passages,
+      currentPassageId: 'passage-1',
+      orgRole: RoleNames.Member,
+      permissions: false,
+      passageDetailOverrides: {
+        isBoldWorkflow: true,
+        currentstep: 'step-prompt',
+        orgWorkflowSteps:
+          orgWorkflowSteps as PassageDetailState['orgWorkflowSteps'],
+        rowData: [promptRow as IRow],
+        promptPlaybackComplete: true,
+      },
+    });
+
+    cy.contains('button', 'Record').should('be.visible').and('not.be.disabled');
   });
 });

@@ -287,7 +287,7 @@ export const useOfflineSetup = () => {
       offlineRecs.filter((w) => w.attributes.process === 'bold').length === 0
     ) {
       await makeWorkflowProcessSteps('bold', [
-        { name: 'Prompt', tool: 'resource' },
+        { name: 'Prompt', tool: 'prompt' },
         { name: 'Record', tool: 'record' },
         {
           name: 'CarefulSpeech',
