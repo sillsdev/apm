@@ -170,6 +170,8 @@ const mountFooter = ({
   sectionPassages,
   workflowProgression,
   passageDetailOverrides,
+  orgRole = RoleNames.Admin,
+  permissions = true,
 }: {
   passages: PassageD[];
   currentPassageId: string;
@@ -177,10 +179,12 @@ const mountFooter = ({
   sectionPassages?: { type: string; id: string }[];
   workflowProgression?: 'step';
   passageDetailOverrides?: Partial<PassageDetailState>;
+  orgRole?: RoleNames;
+  permissions?: boolean;
 }) => {
   const currentPassage = passages.find((p) => p.id === currentPassageId);
   const setCurrentStep = cy.stub().as('setCurrentStep');
-  const defaultParams: Record<string, unknown> = { permissions: true };
+  const defaultParams: Record<string, unknown> = { permissions };
   if (workflowProgression === 'step') {
     defaultParams[orgDefaultWorkflowProgression] = 'step';
   }
@@ -256,7 +260,7 @@ const mountFooter = ({
     memory,
     organization: 'org-1',
     user: 'user-1',
-    orgRole: RoleNames.Admin,
+    orgRole,
   });
   const unsavedState = {
     checkSavedFn: (cb: () => void) => cb(),
@@ -474,6 +478,8 @@ describe('PassageDetailMobileFooter', () => {
     mountFooter({
       passages,
       currentPassageId: 'passage-1',
+      orgRole: RoleNames.Member,
+      permissions: false,
       passageDetailOverrides: {
         isBoldWorkflow: true,
         currentstep: 'step-prompt',
@@ -489,6 +495,8 @@ describe('PassageDetailMobileFooter', () => {
     mountFooter({
       passages,
       currentPassageId: 'passage-1',
+      orgRole: RoleNames.Member,
+      permissions: false,
       passageDetailOverrides: {
         isBoldWorkflow: true,
         currentstep: 'step-prompt',
