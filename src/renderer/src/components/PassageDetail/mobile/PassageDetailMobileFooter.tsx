@@ -20,6 +20,8 @@ import {
 import { useOrgWorkflowSteps } from '../../../crud/useOrgWorkflowSteps';
 import { ToolSlug, useStepTool } from '../../../crud';
 import { usePromptSectionResource } from '../Prompt/usePromptSectionResource';
+import { useRole } from '../../../crud/useRole';
+import { useStepPermissions } from '../../../utils/useStepPermission';
 
 function NavButtonLabel({
   text,
@@ -62,6 +64,10 @@ export default function PassageDetailMobileFooter() {
   } = usePassageDetailContext();
   const { tool } = useStepTool(currentstep);
   const { hasPrompt } = usePromptSectionResource(rowData, section, currentstep);
+  const { userIsAdmin } = useRole();
+  const { canDoSectionStep, permissionsOn } = useStepPermissions();
+  const showPromptAdmin =
+    userIsAdmin || (permissionsOn && canDoSectionStep(currentstep, section));
   const t: IMobileStrings = useSelector(mobileSelector, shallowEqual);
   const [memory] = useGlobal('memory');
   const { prjId } = useParams();
@@ -70,8 +76,7 @@ export default function PassageDetailMobileFooter() {
   const { localizedWorkStepFromId } = useOrgWorkflowSteps();
 
   const isStepProgression =
-    isBoldWorkflow ||
-    getOrgDefault(orgDefaultWorkflowProgression) === 'step';
+    isBoldWorkflow || getOrgDefault(orgDefaultWorkflowProgression) === 'step';
 
   const sortedSteps = useMemo(
     () =>
@@ -102,7 +107,7 @@ export default function PassageDetailMobileFooter() {
   let nextNavEnabled = isStepProgression
     ? Boolean(nextStepRec)
     : Boolean(nextPassRec);
-  if (tool === ToolSlug.Prompt && isStepProgression) {
+  if (tool === ToolSlug.Prompt && isStepProgression && !showPromptAdmin) {
     nextNavEnabled = nextNavEnabled && hasPrompt && promptPlaybackComplete;
   }
 

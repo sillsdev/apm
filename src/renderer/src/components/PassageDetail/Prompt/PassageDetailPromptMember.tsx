@@ -27,7 +27,7 @@ export default function PassageDetailPromptMember(props: IProps) {
   );
   const t: IPromptStrings = useSelector(promptSelector, shallowEqual);
   const [blobState, fetchBlob] = useFetchMediaBlob();
-  const [loading] = useState(false);
+  const loading = false;
   const [pdBusy, setPDBusy] = useState(false);
   const [playing, setPlaying] = useState(false);
   const durationRef = useRef(0);

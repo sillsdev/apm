@@ -9,6 +9,7 @@ import bugsnagClient from '../../../auth/bugsnagClient';
 import { GlobalProvider, GlobalState } from '../../../context/GlobalContext';
 import { OrbitContext } from '../../../hoc/OrbitContextProvider';
 import {
+  type IRow,
   PassageDetailContext,
   ICtxState as PassageDetailState,
 } from '../../../context/PassageDetailContext';
@@ -370,7 +371,8 @@ describe('PassageDetailMobileFooter', () => {
       workflowProgression: 'step',
       passageDetailOverrides: {
         currentstep: 'step-1',
-        orgWorkflowSteps: orgWorkflowSteps as PassageDetailState['orgWorkflowSteps'],
+        orgWorkflowSteps:
+          orgWorkflowSteps as PassageDetailState['orgWorkflowSteps'],
       },
     });
 
@@ -414,7 +416,10 @@ describe('PassageDetailMobileFooter', () => {
     cy.contains('button', 'Record').should('be.visible');
     cy.contains('button', 'Record').click();
     cy.get('@setCurrentStep').should('have.been.calledWith', 'step-2');
-    cy.get('[data-cy="location"]').should('have.text', '/detail/project-1/remote-1');
+    cy.get('[data-cy="location"]').should(
+      'have.text',
+      '/detail/project-1/remote-1'
+    );
   });
 
   it('on Prompt step disables Next until prompt playback is complete', () => {
@@ -474,7 +479,7 @@ describe('PassageDetailMobileFooter', () => {
         currentstep: 'step-prompt',
         orgWorkflowSteps:
           orgWorkflowSteps as PassageDetailState['orgWorkflowSteps'],
-        rowData: [promptRow],
+        rowData: [promptRow as IRow],
         promptPlaybackComplete: false,
       },
     });
@@ -489,7 +494,7 @@ describe('PassageDetailMobileFooter', () => {
         currentstep: 'step-prompt',
         orgWorkflowSteps:
           orgWorkflowSteps as PassageDetailState['orgWorkflowSteps'],
-        rowData: [promptRow],
+        rowData: [promptRow as IRow],
         promptPlaybackComplete: true,
       },
     });
