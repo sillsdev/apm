@@ -242,7 +242,7 @@ export const useBurritoAudio = (teamId: string) => {
         size,
         scope: { [book]: scopeRef ? [scopeRef] : [] },
         properties: {
-          apmId: m.keys?.remoteId || m.id,
+          'x-apmId': m.keys?.remoteId || m.id,
         },
       };
     };
@@ -265,7 +265,7 @@ export const useBurritoAudio = (teamId: string) => {
         size: attr.originalFile.length,
         scope: { [book]: scopeRef ? [scopeRef] : [] },
         properties: {
-          apmId: m.keys?.remoteId || m.id,
+          'x-apmId': m.keys?.remoteId || m.id,
         },
       };
     };
@@ -289,7 +289,7 @@ export const useBurritoAudio = (teamId: string) => {
         size: attr.originalFile.length,
         scope: { [book]: scopeRef ? [scopeRef] : [] },
         properties: {
-          apmId: m.keys?.remoteId || m.id,
+          'x-apmId': m.keys?.remoteId || m.id,
         },
       };
     };
@@ -311,7 +311,7 @@ export const useBurritoAudio = (teamId: string) => {
         size: url.length + 1,
         scope: { [book]: scopeRef ? [scopeRef] : [] },
         properties: {
-          apmId: m.keys?.remoteId || m.id,
+          'x-apmId': m.keys?.remoteId || m.id,
         },
       };
     };
