@@ -28,6 +28,10 @@ describe('mapWrapperToTreeData', () => {
             label: 'version: 0.0.1',
           },
           {
+            id: 'meta|defaultLocale',
+            label: 'defaultLocale: en',
+          },
+          {
             id: 'meta|name',
             label: 'name',
             children: [
@@ -126,6 +130,10 @@ describe('mapWrapperToTreeData', () => {
           {
             id: 'meta|version',
             label: 'version: 0.0.1',
+          },
+          {
+            id: 'meta|defaultLocale',
+            label: 'defaultLocale: en',
           },
           {
             id: 'meta|name',

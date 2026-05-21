@@ -14,6 +14,8 @@ interface RequiredParams {
 interface OptionalParams {
   version?: string;
   abbreviation?: string;
+  description?: string;
+  defaultLocale?: string;
   dateCreated?: string;
   comments?: string;
   genName?: string;
@@ -34,6 +36,7 @@ export function wrapperBuilder({
   name,
   abbreviation,
   description,
+  defaultLocale = 'en',
   dateCreated = new Date().toISOString().split('T')[0],
   comments = '',
   genName,
@@ -43,16 +46,17 @@ export function wrapperBuilder({
 }: WrapperParams): BurritoWrapper {
   const meta = {
     version: version || '0.0.1',
+    defaultLocale,
     name: {
-      en: name,
+      [defaultLocale]: name,
     },
     description: {
-      en: description,
+      [defaultLocale]: description,
     },
     dateCreated: dateCreated || new Date().toISOString().split('T')[0],
   } as WrapperMeta;
   if (abbreviation) {
-    meta.abbreviation = { en: abbreviation };
+    meta.abbreviation = { [defaultLocale]: abbreviation };
   }
   if (genName) {
     meta.generator = { name: genName };
