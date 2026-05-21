@@ -6502,6 +6502,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="prompt.noAudio">
+         <segment>
+            <source>No prompt has been recorded for this section yet.</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="profile.add">
          <segment>
             <source>Add</source>
@@ -8371,6 +8377,12 @@
       <unit id="tool.paratext">
          <segment>
             <source>{0} Sync</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="tool.prompt">
+         <segment>
+            <source>Prompt</source>
             <target/>
          </segment>
       </unit>

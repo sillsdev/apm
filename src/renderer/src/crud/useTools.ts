@@ -8,6 +8,7 @@ import { addPt } from '../utils/addPt';
 
 const toolSlugs = [
   ToolSlug.Resource,
+  ToolSlug.Prompt,
   ToolSlug.Record,
   ToolSlug.KeyTerm,
   ToolSlug.TeamCheck,

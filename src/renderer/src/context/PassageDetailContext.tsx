@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import React, { useState, useEffect, useRef, useContext } from 'react';
+import React, { useState, useEffect, useRef, useContext, useCallback } from 'react';
 // see: https://upmostly.com/tutorials/how-to-use-the-usecontext-hook-in-react
 import { useGetGlobal, useGlobal } from '../context/useGlobal';
 import { useParams } from 'react-router-dom';
@@ -207,6 +207,8 @@ const initState = {
   discussOpen: false,
   setDiscussOpen: (_discussOpen: boolean) => {},
   isBoldWorkflow: false,
+  promptPlaybackComplete: false,
+  setPromptPlaybackComplete: (_complete: boolean) => {},
 };
 
 export type ICtxState = typeof initState;
@@ -390,6 +392,18 @@ const PassageDetailProvider = (props: IProps) => {
       return { ...state, discussOpen };
     });
   };
+
+  const setPromptPlaybackComplete = useCallback(
+    (promptPlaybackComplete: boolean) => {
+      setState((state: ICtxState) => {
+        if (state.promptPlaybackComplete === promptPlaybackComplete) {
+          return state;
+        }
+        return { ...state, promptPlaybackComplete };
+      });
+    },
+    []
+  );
 
   const setRecording = (recording: boolean) => {
     setState((state: ICtxState) => {
@@ -1147,6 +1161,7 @@ const PassageDetailProvider = (props: IProps) => {
           handleHighlightDiscussion,
           forceRefresh,
           setDiscussOpen,
+          setPromptPlaybackComplete,
           isBoldWorkflow,
           sectionArr: (getProjectDefault(projDefSectionMap) ??
             []) as SectionArray,

@@ -1329,6 +1329,11 @@ const initialState = {
 			"transcriptions": "Transcriptions",
 		}
 	}),
+	"prompt": new LocalizedStrings({
+		"en": {
+			"noAudio": "No prompt has been recorded for this section yet.",
+		}
+	}),
 	"profile": new LocalizedStrings({
 		"en": {
 			"add": "Add",
@@ -1731,6 +1736,7 @@ const initialState = {
 			"export": "Export",
 			"keyterm": "Term Verify",
 			"paratext": "{0} Sync",
+			"prompt": "Prompt",
 			"phraseBackTranslate": "Phrase Back Translate",
 			"record": "Record",
 			"resource": "Internalize",
@@ -2271,6 +2277,7 @@ const localizationReducer = function (state = initialState, action: any): ILocal
 				"planActions" : new LocalizedStrings(action.payload.data.planActions),
 				"planSheet" : new LocalizedStrings(action.payload.data.planSheet),
 				"planTabs" : new LocalizedStrings(action.payload.data.planTabs),
+				"prompt" : new LocalizedStrings(action.payload.data.prompt),
 				"profile" : new LocalizedStrings(action.payload.data.profile),
 				"projButtons" : new LocalizedStrings(action.payload.data.projButtons),
 				"projectDownload" : new LocalizedStrings(action.payload.data.projectDownload),

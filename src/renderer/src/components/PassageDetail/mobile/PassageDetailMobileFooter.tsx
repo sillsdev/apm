@@ -18,6 +18,8 @@ import {
   useOrgDefaults,
 } from '../../../crud/useOrgDefaults';
 import { useOrgWorkflowSteps } from '../../../crud/useOrgWorkflowSteps';
+import { ToolSlug, useStepTool } from '../../../crud';
+import { usePromptSectionResource } from '../Prompt/usePromptSectionResource';
 
 function NavButtonLabel({
   text,
@@ -55,7 +57,11 @@ export default function PassageDetailMobileFooter() {
     currentstep,
     orgWorkflowSteps = [],
     isBoldWorkflow,
+    rowData,
+    promptPlaybackComplete,
   } = usePassageDetailContext();
+  const { tool } = useStepTool(currentstep);
+  const { hasPrompt } = usePromptSectionResource(rowData, section, currentstep);
   const t: IMobileStrings = useSelector(mobileSelector, shallowEqual);
   const [memory] = useGlobal('memory');
   const { prjId } = useParams();
@@ -93,9 +99,12 @@ export default function PassageDetailMobileFooter() {
   const prevNavEnabled = isStepProgression
     ? Boolean(prevStepRec)
     : Boolean(prevPassRec);
-  const nextNavEnabled = isStepProgression
+  let nextNavEnabled = isStepProgression
     ? Boolean(nextStepRec)
     : Boolean(nextPassRec);
+  if (tool === ToolSlug.Prompt && isStepProgression) {
+    nextNavEnabled = nextNavEnabled && hasPrompt && promptPlaybackComplete;
+  }
 
   const prevLabelFull = isStepProgression
     ? prevStepRec

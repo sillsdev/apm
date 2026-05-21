@@ -7586,6 +7586,13 @@
                <context context-type="sourcefile">PlanTabs.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="prompt.noAudio">
+            <source>No prompt has been recorded for this section yet.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">PassageDetailPromptMember.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="profile.add">
             <source>Add</source>
             <target/>
@@ -9766,6 +9773,13 @@
          </trans-unit>
          <trans-unit id="tool.paratext">
             <source>{0} Sync</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">useTools.ts</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="tool.prompt">
+            <source>Prompt</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">useTools.ts</context>

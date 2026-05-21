@@ -5,7 +5,10 @@ import { SectionResource, OrgWorkflowStep } from '../model';
 import { AddRecord, ReplaceRelatedRecord } from '../model/baseModel';
 import { getTool, related, ToolSlug } from '.';
 
-export const useSecResCreate = (section: RecordIdentity) => {
+export const useSecResCreate = (
+  section: RecordIdentity,
+  orgWorkflowStepId?: string
+) => {
   const [memory] = useGlobal('memory');
   const [user] = useGlobal('user');
   const [organization] = useGlobal('organization');
@@ -66,7 +69,7 @@ export const useSecResCreate = (section: RecordIdentity) => {
         secRes as RecordIdentity,
         'orgWorkflowStep',
         'orgworkflowstep',
-        internalization?.id
+        orgWorkflowStepId ?? internalization?.id
       ),
     ];
     if (passId) {

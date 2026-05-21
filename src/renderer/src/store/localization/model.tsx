@@ -1264,6 +1264,10 @@ export interface IPlanTabsStrings extends Localize.LocalizedStringsMethods {
     "transcriptions": string;
 };
 
+export interface IPromptStrings extends Localize.LocalizedStringsMethods {
+    "noAudio": string;
+};
+
 export interface IProfileStrings extends Localize.LocalizedStringsMethods {
     "add": string;
     "addMember": string;
@@ -1643,6 +1647,7 @@ export interface IToolStrings extends Localize.LocalizedStringsMethods {
     "export": string;
     "keyterm": string;
     "paratext": string;
+    "prompt": string;
     "phraseBackTranslate": string;
     "record": string;
     "resource": string;
@@ -2159,6 +2164,7 @@ export interface ILocalizedStrings {
 	planActions: IPlanActionsStrings;
 	planSheet: IPlanSheetStrings;
 	planTabs: IPlanTabsStrings;
+	prompt: IPromptStrings;
 	profile: IProfileStrings;
 	projButtons: IProjButtonsStrings;
 	projectDownload: IProjectDownloadStrings;

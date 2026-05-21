@@ -14,6 +14,7 @@ import { WorkflowSteps } from './WorkflowSteps';
 import PassageDetailSectionPassage from './PassageDetailSectionPassage';
 import PassageDetailStepComplete from './PassageDetailStepComplete';
 import PassageDetailArtifacts from './Internalization/PassageDetailArtifacts';
+import PassageDetailPrompt from './Prompt/PassageDetailPrompt';
 import TeamCheckReference from './TeamCheckReference';
 import PassageDetailPlayer from './PassageDetailPlayer';
 import PassageDetailRecord from './PassageDetailRecord';
@@ -275,6 +276,17 @@ const PassageDetailGrids = () => {
                 <PassageDetailChooser width={width - 24} sx={{ pl: 2 }} />
                 <PassageDetailArtifacts />
               </Grid>
+            </Grid>
+          </Grid>
+        )}
+        {tool === ToolSlug.Prompt && (
+          <Grid
+            container
+            direction="row"
+            sx={{ ...rowProps, minWidth: 0, flexWrap: 'wrap' }}
+          >
+            <Grid size={{ xs: 12 }} sx={{ minWidth: 0 }}>
+              <PassageDetailPrompt width={Math.max(0, paneWidth - 40)} />
             </Grid>
           </Grid>
         )}
