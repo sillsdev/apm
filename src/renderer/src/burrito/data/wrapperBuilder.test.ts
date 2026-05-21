@@ -15,6 +15,7 @@ describe('wrapperBuilder', () => {
       format: 'scripture burrito wrapper',
       meta: {
         version: '0.0.1',
+        defaultLocale: 'en',
         name: {
           en: 'Test Wrapper',
         },
@@ -69,6 +70,7 @@ describe('wrapperBuilder', () => {
       format: 'scripture burrito wrapper',
       meta: {
         version: '0.0.1',
+        defaultLocale: 'en',
         name: {
           en: 'Test Wrapper',
         },
@@ -158,6 +160,7 @@ describe('wrapperBuilder', () => {
       format: 'scripture burrito wrapper',
       meta: {
         version: '0.0.1',
+        defaultLocale: 'en',
         name: {
           en: 'Text Translation Bundle with Back Translation and Commentary',
         },
