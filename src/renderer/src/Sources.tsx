@@ -443,7 +443,7 @@ export const Sources = async (
       await forceDataChanges();
       console.log(`Forcing complete`);
     }
-    logLoginAnalytics(tokenState.accessToken);
+    logLoginAnalytics(tokenState.accessToken, errorReporter);
   }
   const user = localStorage.getItem(LocalKey.userId) as string;
   setUser(user);
