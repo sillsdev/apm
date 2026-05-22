@@ -7586,6 +7586,13 @@
                <context context-type="sourcefile">PlanTabs.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="prompt.adminInstructions">
+            <source>Record a short prompt for this section, then save. Team members will listen before they record.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">PassageDetailPromptAdmin.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="prompt.noAudio">
             <source>No prompt has been recorded for this section yet.</source>
             <target/>
@@ -12003,6 +12010,13 @@
             <target/>
             <context-group>
                <context context-type="sourcefile">passageDetail.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="workflowSteps.promptAdminTip">
+            <source>Record a prompt for this section, save it, then continue to the next step when ready.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">MobileWorkflowSteps.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="workflowSteps.promptTip">

@@ -283,9 +283,9 @@ const PassageDetailGrids = () => {
           <Grid
             container
             direction="row"
-            sx={{ ...rowProps, minWidth: 0, flexWrap: 'wrap' }}
+            sx={{ ...rowProps, minWidth: 0, flexWrap: 'wrap', px: 2 }}
           >
-            <Grid size={{ xs: 12 }} sx={{ minWidth: 0 }}>
+            <Grid size={{ xs: 12 }} sx={{ minWidth: 0, width: '100%' }}>
               <PassageDetailPrompt width={Math.max(0, paneWidth - 40)} />
             </Grid>
           </Grid>

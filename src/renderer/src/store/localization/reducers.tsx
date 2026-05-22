@@ -1331,6 +1331,7 @@ const initialState = {
 	}),
 	"prompt": new LocalizedStrings({
 		"en": {
+			"adminInstructions": "Record a short prompt for this section, then save. Team members will listen before they record.",
 			"noAudio": "No prompt has been recorded for this section yet.",
 		}
 	}),
@@ -2118,6 +2119,7 @@ const initialState = {
 			"markVerses": "Mark Verses",
 			"markVersesTip": "Listen to the recording and mark where the verse boundaries occur.",
 			"prompt": "Prompt",
+			"promptAdminTip": "Record a prompt for this section, save it, then continue to the next step when ready.",
 			"promptTip": "Listen to the prompt above. Then, move to the next step.",
 			"wholeBackTranslate": "Whole Back Translate",
 			"wholeBackTranslateTip": "Record the back translation of the entire passage in the language of the consultant.",

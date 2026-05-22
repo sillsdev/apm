@@ -32,6 +32,9 @@ import {
   orgDefaultWorkflowProgression,
   useOrgDefaults,
 } from '../../../crud/useOrgDefaults';
+import { ToolSlug, useStepTool } from '../../../crud';
+import { useRole } from '../../../crud/useRole';
+import { useStepPermissions } from '../../../utils/useStepPermission';
 
 export default function MobileWorkflowSteps() {
   const {
@@ -45,6 +48,11 @@ export default function MobileWorkflowSteps() {
     section,
     prjId,
   } = usePassageDetailContext();
+  const { tool } = useStepTool(currentstep);
+  const { userIsAdmin } = useRole();
+  const { canDoSectionStep, permissionsOn } = useStepPermissions();
+  const showPromptAdmin =
+    userIsAdmin || (permissionsOn && canDoSectionStep(currentstep, section));
   const [memory] = useGlobal('memory');
   const passageNavigate = usePassageNavigate(() => {}, setCurrentStep);
   const getGlobal = useGetGlobal();
@@ -90,11 +98,14 @@ export default function MobileWorkflowSteps() {
   );
   const currentTip = useMemo(() => {
     if (!currentLabel) return '';
+    if (tool === ToolSlug.Prompt && showPromptAdmin) {
+      return t.promptAdminTip;
+    }
     const tipKey = toCamel(currentLabel + 'Tip');
     return Object.prototype.hasOwnProperty.call(t, tipKey)
       ? t.getString(tipKey)
       : '';
-  }, [currentLabel, t]);
+  }, [currentLabel, t, tool, showPromptAdmin]);
 
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [dropdownWidth, setDropdownWidth] = useState(0);

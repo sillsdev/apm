@@ -426,7 +426,7 @@ describe('PassageDetailMobileFooter', () => {
     );
   });
 
-  it('on Prompt step disables Next until prompt playback is complete', () => {
+  it('on Prompt step shows next step name and enables forward when prompt exists', () => {
     const passages = [createPassage('passage-1', 1, 'remote-1')];
     const orgWorkflowSteps = [
       {
@@ -490,23 +490,8 @@ describe('PassageDetailMobileFooter', () => {
       },
     });
 
-    cy.contains('button', 'Next').closest('button').should('be.disabled');
-
-    mountFooter({
-      passages,
-      currentPassageId: 'passage-1',
-      orgRole: RoleNames.Member,
-      permissions: false,
-      passageDetailOverrides: {
-        isBoldWorkflow: true,
-        currentstep: 'step-prompt',
-        orgWorkflowSteps:
-          orgWorkflowSteps as PassageDetailState['orgWorkflowSteps'],
-        rowData: [promptRow as IRow],
-        promptPlaybackComplete: true,
-      },
-    });
-
     cy.contains('button', 'Record').should('be.visible').and('not.be.disabled');
+    cy.contains('button', 'Record').click();
+    cy.get('@setCurrentStep').should('have.been.calledWith', 'step-record');
   });
 });

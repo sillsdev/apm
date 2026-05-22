@@ -46,6 +46,8 @@ export default function PassageDetailMobileLayout({
           pt: 1.5,
           pb: 1.5,
           flex: 1,
+          minWidth: 0,
+          overflowX: 'hidden',
           overflowY: 'auto',
           ...contentSx,
         }}

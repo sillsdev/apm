@@ -60,7 +60,6 @@ export default function PassageDetailMobileFooter() {
     orgWorkflowSteps = [],
     isBoldWorkflow,
     rowData,
-    promptPlaybackComplete,
   } = usePassageDetailContext();
   const { tool } = useStepTool(currentstep);
   const { hasPrompt } = usePromptSectionResource(rowData, section, currentstep);
@@ -108,7 +107,7 @@ export default function PassageDetailMobileFooter() {
     ? Boolean(nextStepRec)
     : Boolean(nextPassRec);
   if (tool === ToolSlug.Prompt && isStepProgression && !showPromptAdmin) {
-    nextNavEnabled = nextNavEnabled && hasPrompt && promptPlaybackComplete;
+    nextNavEnabled = nextNavEnabled && hasPrompt;
   }
 
   const prevLabelFull = isStepProgression
@@ -127,8 +126,7 @@ export default function PassageDetailMobileFooter() {
     prevNavEnabled && prevLabelFull
       ? prevLabelFull
       : (t?.previous ?? 'Previous');
-  const nextButtonText =
-    nextNavEnabled && nextLabelFull ? nextLabelFull : (t?.next ?? 'Next');
+  const nextButtonText = nextLabelFull || (t?.next ?? 'Next');
 
   const handleNavigate = (forward: boolean) => {
     if (isStepProgression) {
