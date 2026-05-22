@@ -252,7 +252,6 @@ export function AudioTab() {
         playItem,
         allBookData,
         sectionMap,
-        isPassageDate: true,
       };
       setData(getMedia(planMedia, mediaData));
     }
@@ -267,7 +266,6 @@ export function AudioTab() {
       playItem,
       allBookData,
       sectionMap,
-      isPassageDate: true,
     };
     setData(getMedia(planMedia, mediaData));
     // eslint-disable-next-line react-hooks/exhaustive-deps

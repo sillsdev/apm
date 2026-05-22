@@ -239,7 +239,6 @@ describe('usePassageVersionAudioRows', () => {
       passages: mockPassages,
       sections: mockSections,
       playItem: 'play-x',
-      isPassageDate: false,
     });
     expect(mediaData.sectionMap.get(1)).toBe('Section One');
     expect(mediaData.allBookData).toBe(mockBooksSlice.bookData);
