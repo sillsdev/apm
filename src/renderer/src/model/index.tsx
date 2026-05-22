@@ -68,5 +68,7 @@ export * from './organizationBible';
 export * from './paratextProject';
 export * from './intellectualProperty';
 export * from './vwchecksum';
+export * from './userAnalytics';
+export * from './countryAnalytics';
 export * from './IExecResult';
 export * from './SectionArray';
