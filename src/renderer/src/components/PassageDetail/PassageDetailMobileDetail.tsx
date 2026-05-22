@@ -3,6 +3,10 @@ import DiscussionPanel from '../../components/Discussions/DiscussionPanel';
 import PassageDetailMobileLayout from './PassageDetailMobileLayout';
 import MobileWorkflowSteps from './mobile/MobileWorkflowSteps';
 import PassageDetailMobileFooter from './mobile/PassageDetailMobileFooter';
+import usePassageDetailContext from '../../context/usePassageDetailContext';
+import { useStepTool, ToolSlug } from '../../crud';
+import { useRole } from '../../crud/useRole';
+import { useStepPermissions } from '../../utils/useStepPermission';
 
 interface Props {
   /** When true, show the no-audio message instead of step content (Discuss, playback, etc.). */
@@ -22,10 +26,40 @@ export default function PassageDetailMobileDetail({
   recordContent,
   noAudioText,
 }: Props) {
+  const {
+    currentstep,
+    section,
+    promptDockedRecordButton,
+    promptDockedRecordFooterVersion,
+  } = usePassageDetailContext();
+  const { tool } = useStepTool(currentstep);
+  const { userIsAdmin } = useRole();
+  const { canDoSectionStep, permissionsOn } = useStepPermissions();
+  const showPromptAdmin =
+    userIsAdmin || (permissionsOn && canDoSectionStep(currentstep, section));
+  const promptRecordFooter =
+    tool === ToolSlug.Prompt &&
+    showPromptAdmin &&
+    promptDockedRecordButton != null ? (
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'center',
+          width: '100%',
+          py: 0.5,
+        }}
+        data-cy="prompt-docked-record"
+        key={promptDockedRecordFooterVersion}
+      >
+        {promptDockedRecordButton}
+      </Box>
+    ) : undefined;
+
   return (
     <PassageDetailMobileLayout
       header={<MobileWorkflowSteps />}
       footer={<PassageDetailMobileFooter />}
+      footerAbove={promptRecordFooter}
       contentSx={flushDiscussionLeft ? { pl: 0 } : undefined}
     >
       {!showNoAudioPlaceholder ? (
@@ -46,7 +80,12 @@ export default function PassageDetailMobileDetail({
           ) : (
             <Stack
               spacing={1}
-              sx={{ height: '100%', width: '100%', minWidth: 0 }}
+              sx={{
+                width: '100%',
+                maxWidth: '100%',
+                minWidth: 0,
+                overflowX: 'hidden',
+              }}
             >
               <Box
                 sx={

@@ -84,6 +84,8 @@ interface IProps {
   onVersions?: () => void;
   handleSave?: () => void;
   isSaveDisabled?: boolean;
+  dockRecordButton?: boolean;
+  onDockedRecordButton?: (node: React.ReactNode | null) => void;
 }
 export const DEFAULT_COMPRESSED_MIME = 'audio/ogg;codecs=opus';
 
@@ -139,6 +141,8 @@ function MediaRecord(props: IProps) {
     handleSave,
     onVersions,
     isSaveDisabled,
+    dockRecordButton,
+    onDockedRecordButton,
   } = props;
   const context = usePassageDetailContext();
   const simplified = Boolean(context?.isBoldWorkflow);
@@ -612,6 +616,8 @@ function MediaRecord(props: IProps) {
         isSaveDisabled={isSaveDisabled}
         mediaSaveInProgress={mediaSaveInProgress}
         showWaveformSave={waveformNeedsSave}
+        dockRecordButton={dockRecordButton}
+        onDockedRecordButton={onDockedRecordButton}
       />
       {warning && !effectiveMobileView && (
         <Typography sx={{ m: 2, color: 'warning.dark' }} id="warning">

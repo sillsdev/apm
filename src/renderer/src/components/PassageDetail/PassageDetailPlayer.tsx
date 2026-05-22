@@ -99,6 +99,8 @@ export interface DetailPlayerProps {
   onInteraction?: () => void;
   onTranscription?: (transcription: string) => void;
   allowZoomAndSpeed?: boolean;
+  allowZoom?: boolean;
+  allowSpeed?: boolean;
   position?: number;
   width: number;
   parentToolId?: string;
@@ -130,6 +132,8 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
     onInteraction,
     onTranscription,
     allowZoomAndSpeed,
+    allowZoom: allowZoomProp,
+    allowSpeed: allowSpeedProp,
     position,
     width,
     parentToolId,
@@ -140,6 +144,9 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
     controlsRef,
     playerState,
   } = props;
+
+  const allowZoom = allowZoomProp ?? allowZoomAndSpeed ?? false;
+  const allowSpeed = allowSpeedProp ?? allowZoomAndSpeed ?? false;
 
   const [memory] = useGlobal('memory');
   const [offline] = useGlobal('offline'); //verified this is not used in a function 2/18/25
@@ -500,8 +507,8 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
         onPlayStatus={onPlayStatus}
         onInteraction={onInteraction}
         onCurrentSegment={onCurrentSegment}
-        allowZoom={allowZoomAndSpeed}
-        allowSpeed={allowZoomAndSpeed}
+        allowZoom={allowZoom}
+        allowSpeed={allowSpeed}
         onProgress={onProgress}
         onSaveProgress={onSaveProgress}
         onDuration={onDuration}

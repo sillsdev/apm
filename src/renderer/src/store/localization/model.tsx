@@ -1265,6 +1265,7 @@ export interface IPlanTabsStrings extends Localize.LocalizedStringsMethods {
 };
 
 export interface IPromptStrings extends Localize.LocalizedStringsMethods {
+    "adminInstructions": string;
     "noAudio": string;
 };
 
@@ -2013,6 +2014,7 @@ export interface IWorkflowStepsStrings extends Localize.LocalizedStringsMethods 
     "markVerses": string;
     "markVersesTip": string;
     "prompt": string;
+    "promptAdminTip": string;
     "promptTip": string;
     "wholeBackTranslate": string;
     "wholeBackTranslateTip": string;

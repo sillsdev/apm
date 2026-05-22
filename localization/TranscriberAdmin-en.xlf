@@ -6502,6 +6502,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="prompt.adminInstructions">
+         <segment>
+            <source>Record a short prompt for this section, then save. Team members will listen before they record.</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="prompt.noAudio">
          <segment>
             <source>No prompt has been recorded for this section yet.</source>
@@ -10285,6 +10291,12 @@
       <unit id="workflowSteps.prompt">
          <segment>
             <source>Prompt</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.promptAdminTip">
+         <segment>
+            <source>Record a prompt for this section, save it, then continue to the next step when ready.</source>
             <target/>
          </segment>
       </unit>

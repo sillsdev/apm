@@ -209,6 +209,9 @@ const initState = {
   isBoldWorkflow: false,
   promptPlaybackComplete: false,
   setPromptPlaybackComplete: (_complete: boolean) => {},
+  promptDockedRecordButton: null as React.ReactNode | null,
+  setPromptDockedRecordButton: (_node: React.ReactNode | null) => {},
+  promptDockedRecordFooterVersion: 0,
 };
 
 export type ICtxState = typeof initState;
@@ -401,6 +404,18 @@ const PassageDetailProvider = (props: IProps) => {
         }
         return { ...state, promptPlaybackComplete };
       });
+    },
+    []
+  );
+
+  const promptDockedRecordButtonRef = useRef<React.ReactNode | null>(null);
+  const [promptDockedRecordFooterVersion, setPromptDockedRecordFooterVersion] =
+    useState(0);
+
+  const setPromptDockedRecordButton = useCallback(
+    (node: React.ReactNode | null) => {
+      promptDockedRecordButtonRef.current = node;
+      setPromptDockedRecordFooterVersion((v) => v + 1);
     },
     []
   );
@@ -1162,6 +1177,9 @@ const PassageDetailProvider = (props: IProps) => {
           forceRefresh,
           setDiscussOpen,
           setPromptPlaybackComplete,
+          setPromptDockedRecordButton,
+          promptDockedRecordButton: promptDockedRecordButtonRef.current,
+          promptDockedRecordFooterVersion,
           isBoldWorkflow,
           sectionArr: (getProjectDefault(projDefSectionMap) ??
             []) as SectionArray,

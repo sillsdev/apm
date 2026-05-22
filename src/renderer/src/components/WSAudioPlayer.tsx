@@ -15,6 +15,7 @@ import {
 import {
   useState,
   useEffect,
+  useLayoutEffect,
   useRef,
   useContext,
   useMemo,
@@ -198,6 +199,9 @@ interface IProps {
   mediaSaveInProgress?: boolean;
   /** When false, hide Save (e.g. waveform already persisted). Default true if omitted. */
   showWaveformSave?: boolean;
+  /** When true in mobile layout, record button is rendered via onDockedRecordButton instead of inline. */
+  dockRecordButton?: boolean;
+  onDockedRecordButton?: (node: React.ReactNode | null) => void;
 }
 
 export interface WSAudioPlayerControls {
@@ -308,6 +312,8 @@ function WSAudioPlayer(props: IProps) {
     isSaveDisabled,
     mediaSaveInProgress,
     showWaveformSave,
+    dockRecordButton,
+    onDockedRecordButton,
   } = props;
 
   const audioDownload = useAudioDownload(mediaId ?? '');
@@ -1316,12 +1322,16 @@ function WSAudioPlayer(props: IProps) {
         boxSizing: 'border-box',
         position: 'relative',
         minHeight: calculatedHeight,
+        overflow: 'hidden',
       }}
     >
       <div
         id="wsAudioWaveform"
         ref={waveformRef}
         style={{
+          width: '100%',
+          maxWidth: '100%',
+          overflow: 'hidden',
           visibility:
             showLoadingWaveform || showAiProgressOverlay ? 'hidden' : 'visible',
         }}
@@ -1746,6 +1756,39 @@ function WSAudioPlayer(props: IProps) {
     />
   );
 
+  const dockedRecordButtonNode = useMemo(
+    () =>
+      allowRecord
+        ? renderRecordButton({
+            isSmall: true,
+            isMobileView: true,
+            isRecordingRights: false,
+          })
+        : null,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [
+      allowRecord,
+      recording,
+      processingRecording,
+      waitingForAI,
+      loading,
+      busy,
+      myMediaId,
+      ready,
+      oneTryOnly,
+      oneShotUsed,
+      hasRecording,
+      isStopLogic,
+      recordTooltipTitle,
+    ]
+  );
+
+  useLayoutEffect(() => {
+    if (!dockRecordButton || !onDockedRecordButton) return;
+    onDockedRecordButton(dockedRecordButtonNode);
+    return () => onDockedRecordButton(null);
+  }, [dockRecordButton, onDockedRecordButton, dockedRecordButtonNode]);
+
   const deleteRegionNode =
     !hideWaveformEditTools &&
     hasRegion !== 0 &&
@@ -1832,7 +1875,9 @@ function WSAudioPlayer(props: IProps) {
       </Menu>
     </Grid>
   );
-  const clearRecordingNode = allowRecord && (
+  const hasClearableAudio =
+    duration > 0 || recording || Boolean(blob) || oneShotUsed;
+  const clearRecordingNode = allowRecord && hasClearableAudio && (
     <LightTooltip id="wsAudioClearTip" title={t.clearRecordingTip}>
       <span>
         <AltButton
@@ -1966,10 +2011,19 @@ function WSAudioPlayer(props: IProps) {
       <Stack
         direction="column"
         sx={{
-          height: '100%',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'space-between',
+          ...(dockRecordButton
+            ? {
+                width: '100%',
+                maxWidth: '100%',
+                minWidth: 0,
+                overflowX: 'hidden',
+              }
+            : {
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+              }),
         }}
       >
         <Stack>
@@ -2045,7 +2099,7 @@ function WSAudioPlayer(props: IProps) {
             </Stack>
           </Stack>
         </Stack>
-        {allowRecord && (
+        {allowRecord && !dockRecordButton && (
           <Box sx={{ width: 'auto' }}>
             {renderRecordButton({
               isSmall: true,

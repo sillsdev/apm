@@ -94,11 +94,12 @@ export default function PassageDetailPromptMember(props: IProps) {
   }
 
   return (
-    <Box sx={{ width: '100%', minWidth: 0 }}>
+    <Box sx={{ width: '100%', maxWidth: '100%', minWidth: 0, boxSizing: 'border-box' }}>
       <Box ref={containerRef} sx={{ width: '100%', minWidth: 0 }}>
         <PassageDetailPlayer
           width={Math.max(0, playerWidth)}
-          allowZoomAndSpeed={true}
+          allowZoom={true}
+          allowSpeed={false}
           onDuration={handleDuration}
           onProgress={handleProgress}
           playerState={{

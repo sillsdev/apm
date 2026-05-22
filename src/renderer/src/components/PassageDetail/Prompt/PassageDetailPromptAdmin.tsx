@@ -1,5 +1,12 @@
-import { useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { Stack } from '@mui/material';
+import {
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+import { Box, Stack, Typography } from '@mui/material';
 import { shallowEqual, useSelector } from 'react-redux';
 import {
   ArtifactTypeSlug,
@@ -22,8 +29,9 @@ import { useStepPermissions } from '../../../utils/useStepPermission';
 import { useSecResCreate, useSecResDelete } from '../../../crud';
 import { usePromptSectionResource } from './usePromptSectionResource';
 import { SectionResourceD } from '../../../model';
-import { sharedSelector } from '../../../selector';
-import { ISharedStrings } from '../../../model';
+import { promptSelector, sharedSelector } from '../../../selector';
+import { IPromptStrings, ISharedStrings } from '../../../model';
+import { useMobile } from '../../../utils';
 
 interface IProps {
   width: number;
@@ -35,9 +43,19 @@ export default function PassageDetailPromptAdmin(props: IProps) {
   const { width } = props;
   const [memory] = useGlobal('memory');
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
+  const promptStrings: IPromptStrings = useSelector(
+    promptSelector,
+    shallowEqual
+  );
   const { getTypeId } = useArtifactType();
-  const { rowData, section, currentstep, forceRefresh, setRecording } =
-    usePassageDetailContext();
+  const {
+    rowData,
+    section,
+    currentstep,
+    forceRefresh,
+    setRecording,
+    setPromptDockedRecordButton,
+  } = usePassageDetailContext();
   const { canDoSectionStep, canAlwaysDoStep } = useStepPermissions();
   const { promptMediaId, sectionResource, hasPrompt } =
     usePromptSectionResource(rowData, section, currentstep);
@@ -65,6 +83,7 @@ export default function PassageDetailPromptAdmin(props: IProps) {
   );
 
   const canEdit = canAlwaysDoStep() || canDoSectionStep(currentstep, section);
+  const { isMobile } = useMobile();
 
   useEffect(() => {
     sectionResourceRef.current = sectionResource;
@@ -93,6 +112,16 @@ export default function PassageDetailPromptAdmin(props: IProps) {
   useEffect(() => {
     recordPreloadInitiatedRef.current = null;
   }, [promptMediaId]);
+
+  useEffect(() => {
+    return () => setPromptDockedRecordButton(null);
+  }, [setPromptDockedRecordButton]);
+
+  useEffect(() => {
+    if (!isMobile) {
+      setPromptDockedRecordButton(null);
+    }
+  }, [isMobile, setPromptDockedRecordButton]);
 
   useEffect(() => {
     const hasExisting =
@@ -163,33 +192,79 @@ export default function PassageDetailPromptAdmin(props: IProps) {
   };
 
   const defaultFilename = useMemo(() => `prompt-${section.id}`, [section.id]);
+  const playerContainerRef = useRef<HTMLDivElement | null>(null);
+  const desktopWidth = Math.max(0, width);
+  const [mobilePlayerWidth, setMobilePlayerWidth] = useState(desktopWidth);
+
+  useLayoutEffect(() => {
+    if (!isMobile) {
+      setMobilePlayerWidth(desktopWidth);
+      return;
+    }
+    const el = playerContainerRef.current;
+    if (!el) return;
+    const updateWidth = () => setMobilePlayerWidth(el.offsetWidth);
+    updateWidth();
+    let observer: ResizeObserver | undefined;
+    if (typeof ResizeObserver !== 'undefined') {
+      observer = new ResizeObserver(updateWidth);
+      observer.observe(el);
+    }
+    return () => observer?.disconnect();
+  }, [isMobile, desktopWidth]);
+
+  const playerWidth = isMobile ? mobilePlayerWidth : desktopWidth;
+  const layoutWidth = isMobile ? '100%' : desktopWidth;
 
   return (
-    <Stack sx={{ width, maxWidth: width, minWidth: 0 }}>
-      <MediaRecord
-        toolId={toolId}
-        artifactId={resourceArtifactId}
-        passageId={undefined}
-        afterUploadCb={afterUploadCb}
-        mediaId={promptMediaId}
-        onSaving={onSaving}
-        onReady={onReady}
-        onRecording={handleRecording}
-        defaultFilename={defaultFilename}
-        allowRecord={canEdit}
-        allowZoom={true}
-        allowWave={true}
-        preload={preload}
-        trackState={handleTrackRecorder}
-        setCanSave={setCanSave}
-        setStatusText={setStatusText}
-        handleSave={handleSave}
-        isSaveDisabled={!canEdit}
-        height={280}
-        width={width}
-        forceMobileView={true}
-        metaData={hasPrompt ? undefined : <span>{statusText}</span>}
-      />
+    <Stack
+      sx={{
+        width: layoutWidth,
+        maxWidth: layoutWidth,
+        minWidth: 0,
+        alignItems: 'stretch',
+        boxSizing: 'border-box',
+      }}
+    >
+      <Box ref={playerContainerRef} sx={{ width: '100%', minWidth: 0 }}>
+        <MediaRecord
+          toolId={toolId}
+          artifactId={resourceArtifactId}
+          passageId={undefined}
+          afterUploadCb={afterUploadCb}
+          mediaId={promptMediaId}
+          onSaving={onSaving}
+          onReady={onReady}
+          onRecording={handleRecording}
+          defaultFilename={defaultFilename}
+          allowRecord={canEdit}
+          allowZoom={true}
+          allowWave={true}
+          preload={preload}
+          trackState={handleTrackRecorder}
+          setCanSave={setCanSave}
+          setStatusText={setStatusText}
+          handleSave={handleSave}
+          isSaveDisabled={!canEdit}
+          height={280}
+          width={playerWidth}
+          forceMobileView={true}
+          dockRecordButton={isMobile}
+          onDockedRecordButton={
+            isMobile ? setPromptDockedRecordButton : undefined
+          }
+          metaData={hasPrompt ? undefined : <span>{statusText}</span>}
+        />
+      </Box>
+      {canEdit && (
+        <Typography
+          variant="body1"
+          align="center"
+          sx={{ mt: 2, px: 1, width: '100%', alignSelf: 'stretch' }}
+        >
+          {promptStrings.adminInstructions}
+        </Typography>
+      )}
     </Stack>
   );
 }
