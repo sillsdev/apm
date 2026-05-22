@@ -13,30 +13,33 @@ import {
   ICtxState,
 } from '../../../context/PassageDetailContext';
 import { UnsavedContext } from '../../../context/UnsavedContext';
+import { OrbitContext } from '../../../hoc/OrbitContextProvider';
 import MobileWorkflowSteps from './MobileWorkflowSteps';
 
-// Mock memory that resolves findRecord calls by a "type:id" lookup map
-const createMockMemory = (records: Record<string, any> = {}): Memory => {
-  const qb = {
-    findRecord: ({ type, id }: { type: string; id: string }) => ({ type, id }),
-  };
-  return {
+type RecordsByKey = Record<string, any>;
+
+const createMockQueryBuilder = (records: RecordsByKey = {}) => ({
+  findRecords: (type: string) =>
+    Object.entries(records)
+      .filter(([key]) => key.startsWith(`${type}:`))
+      .map(([, rec]) => rec),
+  findRecord: ({ type, id }: { type: string; id: string }) =>
+    records[`${type}:${id}`],
+});
+
+/** Mock memory: supports findRecord, findRecords, and liveQuery (for useOrbitData). */
+const createMockMemory = (records: RecordsByKey = {}): Memory =>
+  ({
     cache: {
-      query: (fn: any) => {
-        if (typeof fn !== 'function') return undefined;
-        const spec = fn(qb);
-        return spec?.type && spec?.id
-          ? records[`${spec.type}:${spec.id}`]
-          : undefined;
-      },
-      liveQuery: () => ({
+      query: (queryFn: (q: ReturnType<typeof createMockQueryBuilder>) => unknown) =>
+        queryFn(createMockQueryBuilder(records)),
+      liveQuery: (queryFn: (q: ReturnType<typeof createMockQueryBuilder>) => unknown) => ({
         subscribe: () => () => {},
-        query: () => [],
+        query: () => queryFn(createMockQueryBuilder(records)),
       }),
     },
     update: () => {},
-  } as unknown as Memory;
-};
+  }) as unknown as Memory;
 
 const mockCoordinator = {
   getSource: () => createMockMemory(),
@@ -249,23 +252,34 @@ const mountMobileWorkflowSteps = ({
       : {}),
     ...extraMemoryRecords,
   });
+  const orbitCache = new Map<string, any[]>();
+  const orbitContextValue = {
+    memory: mem,
+    getRecs: (type: string) => orbitCache.get(type),
+    setRecs: (type: string, recs: any[] | undefined) => {
+      if (recs === undefined) orbitCache.delete(type);
+      else orbitCache.set(type, recs);
+    },
+  };
   const initialState = createInitialState({ remoteBusy, memory: mem });
 
   cy.mount(
     <MemoryRouter>
       <Provider store={mockStore}>
         <GlobalProvider init={initialState}>
-          <SnackBarProvider>
-            <UnsavedContext.Provider
-              value={{ state: mockUnsavedState, setState: cy.stub() }}
-            >
-              <PassageDetailContext.Provider
-                value={{ state: ctxState, setState: cy.stub() }}
+          <OrbitContext.Provider value={orbitContextValue}>
+            <SnackBarProvider>
+              <UnsavedContext.Provider
+                value={{ state: mockUnsavedState, setState: cy.stub() }}
               >
-                <MobileWorkflowSteps />
-              </PassageDetailContext.Provider>
-            </UnsavedContext.Provider>
-          </SnackBarProvider>
+                <PassageDetailContext.Provider
+                  value={{ state: ctxState, setState: cy.stub() }}
+                >
+                  <MobileWorkflowSteps />
+                </PassageDetailContext.Provider>
+              </UnsavedContext.Provider>
+            </SnackBarProvider>
+          </OrbitContext.Provider>
         </GlobalProvider>
       </Provider>
     </MemoryRouter>
