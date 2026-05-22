@@ -96,7 +96,6 @@ export function usePassageVersionAudioRows(passId: string, playItem: string) {
       playItem,
       allBookData,
       sectionMap,
-      isPassageDate: false,
     };
     const newData = getMedia(media, mediaData);
     if (newData.length !== data.length || playChange || refresh) {

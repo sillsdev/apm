@@ -15,7 +15,6 @@ export interface IGetMedia {
   playItem: string;
   allBookData: BookName[];
   sectionMap: Map<number, string>;
-  isPassageDate: boolean;
 }
 
 export const mediaRow = (f: MediaFile, data: IGetMedia) => {
@@ -26,11 +25,6 @@ export const mediaRow = (f: MediaFile, data: IGetMedia) => {
   const passage = showId ? passages.filter((p) => p.id === showId) : [];
   const sectionId = related(passage[0], 'section');
   const section = sections.filter((s) => s.id === sectionId);
-  const passdt = passage[0]?.attributes?.dateUpdated || '';
-  const meddt = f?.attributes?.dateUpdated || '';
-  const lastdt = meddt > passdt ? meddt : passdt;
-  const updateddt = showId && data.isPassageDate ? lastdt : meddt;
-
   const passageRef = passage[0]?.attributes?.reference ?? '';
   // Build referenceString matching PassageReference logic: include book name for numeric references
   // Then normalize with zero-padding for proper string sorting
@@ -53,7 +47,7 @@ export const mediaRow = (f: MediaFile, data: IGetMedia) => {
     size:
       Math.round(((f?.attributes?.filesize ?? 0) / 1024 / 1024) * 10) / 10.0,
     version: f?.attributes?.versionNumber?.toString() ?? '',
-    date: updateddt,
+    date: f?.attributes?.dateCreated || '',
     readyToShare: f?.attributes?.readyToShare ?? false,
     publishTo: f?.attributes?.publishTo ?? PublishLevelEnum.None,
     passageType: passageTypeFromRef(passageRef),
