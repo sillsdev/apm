@@ -256,7 +256,7 @@ export default function ResourceOverview(props: IProps) {
           </>
         )}
         <AltButton id="resCancel" onClick={handleClose}>
-          {ts.cancel}
+          {dialogmode === Mode.add ? ts.cancel : ts.close}
         </AltButton>
         {dialogmode !== Mode.view && (
           <PriButton

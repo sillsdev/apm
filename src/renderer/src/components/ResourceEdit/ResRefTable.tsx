@@ -306,7 +306,7 @@ export default function ReferenceTable({
         />
       </Content>
       <ActionRow>
-        <AltButton onClick={handleCancel}>{ts.cancel}</AltButton>
+        <AltButton onClick={handleCancel}>{ts.close}</AltButton>
         {onCommit && (
           <PriButton
             onClick={handleSave}
