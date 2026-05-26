@@ -79,8 +79,16 @@ test('shoulc fail with beg with letter < end with letter, 1:1b-1a', () => {
   expect(refMatch('1:1b-1a')).toBeNull();
 });
 
-test('should fail with beg with letter < end as letter, 1:1b-c', () => {
-  expect(refMatch('1:1b-c')).toBeNull();
+test('same verse letter range 1:22a-b', () => {
+  expect(refMatch('1:22a-b')).not.toBeNull();
+});
+
+test('same verse letter range 1:1b-c', () => {
+  expect(refMatch('1:1b-c')).not.toBeNull();
+});
+
+test('should fail same verse letter range when end is before start, 1:1c-b', () => {
+  expect(refMatch('1:1c-b')).toBeNull();
 });
 
 test('should fail with beg as letter < end with letter, 1:b-2c', () => {

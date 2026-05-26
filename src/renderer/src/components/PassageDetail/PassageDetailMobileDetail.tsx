@@ -1,4 +1,5 @@
 import { Box, Paper, Stack, SxProps, Typography } from '@mui/material';
+import { useMemo } from 'react';
 import DiscussionPanel from '../../components/Discussions/DiscussionPanel';
 import PassageDetailMobileLayout from './PassageDetailMobileLayout';
 import MobileWorkflowSteps from './mobile/MobileWorkflowSteps';
@@ -33,6 +34,22 @@ export default function PassageDetailMobileDetail({
     promptDockedRecordFooterVersion,
   } = usePassageDetailContext();
   const { tool } = useStepTool(currentstep);
+  const markVersesLayout = tool === ToolSlug.Verses;
+  const contentSx = useMemo(
+    () => ({
+      ...(flushDiscussionLeft ? { pl: 0 } : {}),
+      ...(markVersesLayout
+        ? {
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
+            minHeight: 0,
+            flex: 1,
+          }
+        : {}),
+    }),
+    [flushDiscussionLeft, markVersesLayout]
+  );
   const { userIsAdmin } = useRole();
   const { canDoSectionStep, permissionsOn } = useStepPermissions();
   const showPromptAdmin =
@@ -60,7 +77,7 @@ export default function PassageDetailMobileDetail({
       header={<MobileWorkflowSteps />}
       footer={<PassageDetailMobileFooter />}
       footerAbove={promptRecordFooter}
-      contentSx={flushDiscussionLeft ? { pl: 0 } : undefined}
+      contentSx={contentSx}
     >
       {!showNoAudioPlaceholder ? (
         <>
@@ -91,7 +108,17 @@ export default function PassageDetailMobileDetail({
                 sx={
                   flushDiscussionLeft
                     ? { display: 'none' }
-                    : { minWidth: 0, width: '100%' }
+                    : markVersesLayout
+                      ? {
+                          flex: 1,
+                          minHeight: 0,
+                          display: 'flex',
+                          flexDirection: 'column',
+                          overflow: 'hidden',
+                          minWidth: 0,
+                          width: '100%',
+                        }
+                      : { minWidth: 0, width: '100%' }
                 }
               >
                 {recordContent}

@@ -16,6 +16,7 @@ import {
 } from '../../model';
 import {
   Box,
+  Button,
   Paper,
   PaperProps,
   SxProps,
@@ -36,29 +37,40 @@ import { parseRef } from '../../crud/passage';
 import { ActionRow } from '../../control/ActionRow';
 import { AltButton } from '../../control/AltButton';
 import { GrowingSpacer } from '../../control/GrowingSpacer';
-import { PriButton } from '../../control/PriButton';
 import PassageDetailPlayer from './PassageDetailPlayer';
 import {
   NamedRegions,
   updateSegments,
   getSortedRegions,
 } from '../../utils/namedSegments';
-import { useSnackBar } from '../../hoc/SnackBar';
+import { AlertSeverity, useSnackBar } from '../../hoc/SnackBar';
+import Confirm from '../AlertDialog';
 import { UnsavedContext } from '../../context/UnsavedContext';
 import { useProjectSegmentSave } from './Internalization/useProjectSegmentSave';
 import { IRegion } from '../../crud/useWavesurferRegions';
 import { cleanClipboard } from '../../utils/cleanClipboard';
 import { refMatch } from '../../utils/refMatch';
-import Confirm from '../AlertDialog';
 import { useArtifactType } from '../../crud/useArtifactType';
 import { ArtifactTypeSlug } from '../../crud/artifactTypeSlug';
 import { PassageTypeEnum } from '../../model/passageType';
 import { usePlanType } from '../../crud/usePlanType';
 import { passageTypeFromRef } from '../../control/passageTypeFromRef';
 import { useStepPermissions } from '../../utils/useStepPermission';
+import { type WSAudioPlayerControls } from '../WSAudioPlayer';
+import {
+  MARK_VERSES_COMPLETED_RGBA,
+  MARK_VERSES_CURRENT_RGBA,
+  isMarkVersesTableRowCompleted,
+  isMarkVersesTableTailIncomplete,
+} from '../../utils/markVersesSegmentColors';
 
 const NotTable = 490;
 const verseToolId = 'VerseTool';
+/** Nudge past a join when seeking so the playhead lands in the right-hand segment. */
+const SEGMENT_BOUNDARY_TOLERANCE_SEC = 0.1;
+/** Table limits use one decimal; waveform uses float seconds — allow rounding drift. */
+const SEGMENT_ROW_MATCH_TOLERANCE_SEC = 0.6;
+const AUTOSAVE_DEBOUNCE_MS = 1200;
 
 const paperProps = { p: 2, m: 'auto', width: `calc(100% - 32px)` } as SxProps;
 
@@ -89,9 +101,19 @@ const StyledTable = styled('div')(({ theme }) => ({
     verticalAlign: 'inherit !important',
     '& .value-viewer': { textAlign: 'center' },
   },
-  '& .lim.cur': {
+  '& .lim.done, & .ref.done': {
     verticalAlign: 'inherit !important',
-    '& .value-viewer': { textAlign: 'center', backgroundColor: 'yellow' },
+    '& .value-viewer': {
+      textAlign: 'center',
+      backgroundColor: MARK_VERSES_COMPLETED_RGBA,
+    },
+  },
+  '& .lim.cur, & .ref.cur': {
+    verticalAlign: 'inherit !important',
+    '& .value-viewer': {
+      textAlign: 'center',
+      backgroundColor: MARK_VERSES_CURRENT_RGBA,
+    },
   },
   '& .data-grid .Err': { backgroundColor: 'orange' },
 }));
@@ -121,6 +143,8 @@ export function PassageDetailMarkVerses({ width }: MarkVersesProps) {
     passage,
     currentstep,
     currentSegment,
+    currentSegmentIndex,
+    setCurrentSegment,
     setStepComplete,
     gotoNextStep,
     rowData,
@@ -128,8 +152,8 @@ export function PassageDetailMarkVerses({ width }: MarkVersesProps) {
   const [memory] = useGlobal('memory');
   const [, setComplete] = useGlobal('progress');
   const [data, setDatax] = useState<ICell[][]>([]);
-  const [issues, setIssues] = useState<string[]>([]);
-  const [confirm, setConfirm] = useState('');
+  const [saveIssues, setSaveIssues] = useState<string[]>([]);
+  const [issuesDialogOpen, setIssuesDialogOpen] = useState(false);
   const [numSegments, setNumSegments] = useState(0);
   const [pastedSegments, setPastedSegments] = useState('');
   const [heightStyle, setHeightStyle] = useState({
@@ -142,6 +166,9 @@ export function PassageDetailMarkVerses({ width }: MarkVersesProps) {
   const segmentsRef = useRef('{}');
   const passageRefs = useRef<string[]>([]);
   const resettingSegmentsRef = useRef(false);
+  const playerControlsRef = useRef<WSAudioPlayerControls | null>(null);
+  const markVersesTailOpenRef = useRef(false);
+  const lastIssuesNotifyRef = useRef('');
   const { canDoSectionStep } = useStepPermissions();
   const hasPermission = canDoSectionStep(currentstep, section);
   const { localizedArtifactType } = useArtifactType();
@@ -156,7 +183,6 @@ export function PassageDetailMarkVerses({ width }: MarkVersesProps) {
     toolsChanged,
     isChanged,
     saveRequested,
-    startSave,
     saveCompleted,
     clearRequested,
     clearCompleted,
@@ -178,7 +204,6 @@ export function PassageDetailMarkVerses({ width }: MarkVersesProps) {
     [passage, isFlat]
   );
 
-  const readOnlys = [true, false];
   const widths = [200, 150];
   const cClass = ['lim', 'ref'];
 
@@ -206,8 +231,15 @@ export function PassageDetailMarkVerses({ width }: MarkVersesProps) {
     return () => {
       window.removeEventListener('resize', handleResize);
     };
-    /* eslint-disable-next-line react-hooks/exhaustive-deps */
   }, []);
+
+  useEffect(() => {
+    markVersesTailOpenRef.current = isMarkVersesTableTailIncomplete(
+      data,
+      ColName.Limits
+    );
+    playerControlsRef.current?.applyMarkVersesRegionColors?.();
+  }, [ColName.Limits, data, pastedSegments]);
 
   const rowCells = (row: string[], first = false) =>
     row.map(
@@ -215,7 +247,10 @@ export function PassageDetailMarkVerses({ width }: MarkVersesProps) {
         ({
           value: v,
           width: widths[i],
-          readOnly: first || readOnlys[i],
+          readOnly:
+            first ||
+            i === ColName.Limits ||
+            (i === ColName.Ref && !`${row[ColName.Limits] ?? ''}`.trim()),
           className: first
             ? 'cTitle'
             : cClass[i] +
@@ -340,7 +375,6 @@ export function PassageDetailMarkVerses({ width }: MarkVersesProps) {
             savingRef.current = false;
             canceling.current = false;
             setComplete(0);
-            handleComplete(true);
           });
       }
     }
@@ -361,6 +395,115 @@ export function PassageDetailMarkVerses({ width }: MarkVersesProps) {
   const d1 = (d: number) => d.toFixed(1);
 
   const formLim = ({ start, end }: IRegion) => `${d1(start)}-${d1(end)}`;
+
+  const getSegmentFromRow = (row?: ICell[]) => {
+    if (!row) return undefined;
+    const limits = `${row[ColName.Limits]?.value ?? ''}`.split('-');
+    if (limits.length !== 2) return undefined;
+    const start = parseFloat(limits[0]);
+    const end = parseFloat(limits[1]);
+    if (Number.isNaN(start) || Number.isNaN(end)) return undefined;
+    return { start, end } as IRegion;
+  };
+
+  const parseCurrentSegmentRegion = (value: string) => {
+    const match = value.trim().match(/^([\d.]+)-([\d.]+)$/);
+    if (!match) return undefined;
+    const start = parseFloat(match[1]);
+    const end = parseFloat(match[2]);
+    if (Number.isNaN(start) || Number.isNaN(end)) return undefined;
+    return { start, end } as IRegion;
+  };
+
+  const findCurrentTableRowIndex = (tableData: ICell[][]) => {
+    const existingHighlight = tableData.findIndex(
+      (row, index) =>
+        index > 0 &&
+        ((row[ColName.Limits] as ICell).className ?? '').includes('cur')
+    );
+
+    const target = parseCurrentSegmentRegion(currentSegment);
+
+    if (target) {
+      for (let i = 1; i < tableData.length; i++) {
+        const seg = getSegmentFromRow(tableData[i]);
+        if (!seg) continue;
+        if (
+          Math.abs(seg.start - target.start) <=
+            SEGMENT_ROW_MATCH_TOLERANCE_SEC &&
+          Math.abs(seg.end - target.end) <= SEGMENT_ROW_MATCH_TOLERANCE_SEC
+        ) {
+          return i;
+        }
+      }
+      let startOnlyMatch = -1;
+      for (let i = 1; i < tableData.length; i++) {
+        const seg = getSegmentFromRow(tableData[i]);
+        if (!seg) continue;
+        if (
+          Math.abs(seg.start - target.start) <= SEGMENT_ROW_MATCH_TOLERANCE_SEC
+        ) {
+          startOnlyMatch = i;
+        }
+      }
+      if (startOnlyMatch > 0) return startOnlyMatch;
+    } else if (existingHighlight > 0) {
+      return existingHighlight;
+    }
+
+    if (
+      currentSegmentIndex > 0 &&
+      currentSegmentIndex < tableData.length &&
+      getSegmentFromRow(tableData[currentSegmentIndex])
+    ) {
+      if (!target) return currentSegmentIndex;
+      const rowSeg = getSegmentFromRow(
+        tableData[currentSegmentIndex] as ICell[]
+      );
+      if (
+        rowSeg &&
+        Math.abs(rowSeg.start - target.start) <=
+          SEGMENT_ROW_MATCH_TOLERANCE_SEC &&
+        Math.abs(rowSeg.end - target.end) <= SEGMENT_ROW_MATCH_TOLERANCE_SEC
+      ) {
+        return currentSegmentIndex;
+      }
+    }
+
+    return existingHighlight > 0 ? existingHighlight : -1;
+  };
+
+  const applyRowHighlight = (tableData: ICell[][], activeRow: number) => {
+    tableData.forEach((row, index) => {
+      if (index === 0) return;
+      const limits = row[ColName.Limits] as ICell;
+      const ref = row[ColName.Ref] as ICell;
+      const baseLim = 'lim';
+      const baseRef = (ref.className ?? 'ref')
+        .replace(/\s*(cur|done)\b/g, '')
+        .trim();
+      const rowDone = isMarkVersesTableRowCompleted(
+        tableData,
+        index,
+        ColName.Limits
+      );
+      const isCurrent = index === activeRow;
+      limits.className = isCurrent
+        ? `${baseLim} cur`
+        : rowDone
+          ? `${baseLim} done`
+          : baseLim;
+      ref.className = isCurrent
+        ? `${baseRef} cur`
+        : rowDone
+          ? `${baseRef} done`
+          : baseRef;
+    });
+  };
+
+  const applyCurrentRowHighlight = (tableData: ICell[][]) => {
+    applyRowHighlight(tableData, findCurrentTableRowIndex(tableData));
+  };
 
   const resetSegments = (regions: IRegion[]) => {
     const segments = JSON.stringify({ regions });
@@ -403,10 +546,8 @@ export function PassageDetailMarkVerses({ width }: MarkVersesProps) {
       } else {
         const row = dataRef.current[i + 1] as ICell[];
         if ((row[ColName.Limits] as ICell).value !== formLim(r)) {
-          const value = formLim(r);
           const limits = row[ColName.Limits] as ICell;
-          limits.value = value;
-          if (value === currentSegment.trim()) limits.className += ' cur';
+          limits.value = formLim(r);
           change = true;
         }
         const ref = row[ColName.Ref] as ICell;
@@ -438,6 +579,7 @@ export function PassageDetailMarkVerses({ width }: MarkVersesProps) {
     });
 
     if (change) {
+      applyCurrentRowHighlight(newData);
       setData(newData);
       if (reset) {
         resetSegments(regions);
@@ -446,7 +588,87 @@ export function PassageDetailMarkVerses({ width }: MarkVersesProps) {
     }
   };
 
-  const handleValueRenderer = (cell: ICell) => cell.value;
+  useEffect(() => {
+    if (dataRef.current.length === 0) return;
+    const newData = dataRef.current.map((row) =>
+      row.map((cell) => ({ ...cell }))
+    );
+    applyCurrentRowHighlight(newData);
+    setData(newData);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentSegment, currentSegmentIndex, numSegments]);
+
+  const sheetData = useMemo(
+    () =>
+      hasPermission
+        ? data.map((row, rowIndex) =>
+            row.map((cell, colIndex) => ({
+              ...cell,
+              readOnly:
+                rowIndex === 0 ||
+                colIndex === ColName.Limits ||
+                (colIndex === ColName.Ref &&
+                  !`${(row[ColName.Limits] as ICell).value ?? ''}`.trim()),
+            }))
+          )
+        : data.map((r) => r.map((c) => ({ ...c, readOnly: true }))),
+    [ColName.Limits, ColName.Ref, data, hasPermission]
+  );
+
+  const handleRowClick = async (rowIndex: number) => {
+    const row = dataRef.current[rowIndex] as ICell[] | undefined;
+    const segment = getSegmentFromRow(row);
+    if (!row || !segment) return;
+
+    const limits = row[ColName.Limits] as ICell;
+    if ((limits.className ?? '').includes('cur')) return;
+
+    const newData = dataRef.current.map((r) => r.map((c) => ({ ...c })));
+    applyRowHighlight(newData, rowIndex);
+    setData(newData);
+    setCurrentSegment(segment, rowIndex);
+
+    const ctrl = playerControlsRef.current;
+    if (ctrl?.isReady()) {
+      const seekTime =
+        segment.start > 0
+          ? segment.start + SEGMENT_BOUNDARY_TOLERANCE_SEC
+          : segment.start;
+      await ctrl.gotoTime(seekTime, segment);
+      setCurrentSegment(segment, rowIndex);
+    }
+  };
+
+  const handleSheetSelect = (selection: DataSheet.Selection) => {
+    const row = selection.start.i;
+    const col = selection.start.j;
+    if (row <= 0) return;
+    if (col === ColName.Ref) {
+      void handleRowClick(row);
+    }
+  };
+
+  const handleValueRenderer = (cell: ICell, row: number, col: number) => {
+    if (row > 0 && col === ColName.Limits && cell.value) {
+      return (
+        <span
+          role="button"
+          tabIndex={0}
+          style={{ cursor: 'pointer', display: 'block', width: '100%' }}
+          onClick={() => void handleRowClick(row)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              void handleRowClick(row);
+            }
+          }}
+        >
+          {cell.value}
+        </span>
+      );
+    }
+    return cell.value;
+  };
   const setSegments = () => {
     //make an iRegions array from the dataRef.current
     const regions: IRegion[] = [];
@@ -592,28 +814,64 @@ export function PassageDetailMarkVerses({ width }: MarkVersesProps) {
     });
   };
 
-  const resetSave = () => {
-    setConfirm('');
-    setIssues([]);
-  };
+  const writeResourcesRef = useRef(writeResources);
+  writeResourcesRef.current = writeResources;
 
-  const handleNoIssueSave = () => {
-    if (!hasPermission) return handleCancel();
-    if (!saveRequested(verseToolId)) {
-      startSave(verseToolId);
-    }
-    resetSave();
-  };
+  const scheduleAutosave = useMemo(
+    () =>
+      debounce(() => {
+        void writeResourcesRef.current();
+      }, AUTOSAVE_DEBOUNCE_MS),
+    []
+  );
 
-  const handleSaveMarkup = () => {
+  useEffect(
+    () => () => {
+      scheduleAutosave.clear();
+    },
+    [scheduleAutosave]
+  );
+
+  useEffect(() => {
+    if (!isChanged(verseToolId) || !hasPermission || savingRef.current) return;
     const issues = checkRefs();
     if (issues.length > 0) {
-      setIssues(issues);
-      setConfirm(t.issues);
-    } else {
-      handleNoIssueSave();
+      scheduleAutosave.clear();
+      setSaveIssues(issues);
+      const fingerprint = issues.join('\0');
+      if (fingerprint !== lastIssuesNotifyRef.current) {
+        lastIssuesNotifyRef.current = fingerprint;
+        showMessage(
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1,
+              flexWrap: 'wrap',
+            }}
+          >
+            <span>
+              {t.autosaveSkipped.replace('{0}', String(issues.length))}
+            </span>
+            <Button
+              size="small"
+              variant="text"
+              onClick={() => setIssuesDialogOpen(true)}
+            >
+              {t.viewIssues}
+            </Button>
+          </Box>,
+          AlertSeverity.Warning
+        );
+      }
+      return;
     }
-  };
+    lastIssuesNotifyRef.current = '';
+    setSaveIssues([]);
+    setIssuesDialogOpen(false);
+    scheduleAutosave();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [toolsChanged, hasPermission, scheduleAutosave]);
 
   return Boolean(mediafileId) && passType !== PassageTypeEnum.NOTE ? (
     <Box>
@@ -624,17 +882,16 @@ export function PassageDetailMarkVerses({ width }: MarkVersesProps) {
         onSegment={handleSegment}
         suggestedSegments={pastedSegments}
         allowZoomAndSpeed={true}
+        controlsRef={playerControlsRef}
+        markVersesTailOpenRef={markVersesTailOpenRef}
       />
       <StyledPaper style={heightStyle}>
         <StyledTable id="verse-sheet" data-testid="verse-sheet">
           <DataSheet
-            data={
-              hasPermission
-                ? data
-                : data.map((r) => r.map((c) => ({ ...c, readOnly: true })))
-            }
+            data={sheetData}
             valueRenderer={handleValueRenderer}
             onCellsChanged={handleCellsChanged}
+            onSelect={handleSheetSelect}
             parsePaste={handleParsePaste}
           />
         </StyledTable>
@@ -648,34 +905,25 @@ export function PassageDetailMarkVerses({ width }: MarkVersesProps) {
           {ts.clipboardCopy}
         </AltButton>
         <GrowingSpacer />
-        <PriButton
-          id="create-mark-verse"
-          onClick={handleSaveMarkup}
-          disabled={
-            numSegments === 0 ||
-            savingRef.current ||
-            !isChanged(verseToolId) ||
-            !hasPermission
-          }
-        >
-          {t.saveVerseMarkup}
-        </PriButton>
         <AltButton id="cancel-mark-verse" onClick={handleCancel}>
           {ts.cancel}
         </AltButton>
       </ActionRow>
-      {confirm && (
+      {issuesDialogOpen && saveIssues.length > 0 && (
         <Confirm
+          title={t.markupIssuesTitle}
+          text=""
           jsx={
             <ul>
-              {issues.map((i, j) => (
-                <li key={`i${j}`}>{i}</li>
+              {saveIssues.map((issue, j) => (
+                <li key={`issue-${j}`}>{issue}</li>
               ))}
             </ul>
           }
-          text={confirm}
-          noResponse={resetSave}
-          yesResponse={handleNoIssueSave}
+          yes=""
+          no={ts.close}
+          noResponse={() => setIssuesDialogOpen(false)}
+          yesResponse={() => {}}
         />
       )}
     </Box>

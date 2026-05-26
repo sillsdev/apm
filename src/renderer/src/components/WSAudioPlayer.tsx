@@ -175,6 +175,8 @@ interface IProps {
   captureNoiseSuppression?: boolean;
   keepItSmall?: boolean;
   controlsRef?: React.RefObject<WSAudioPlayerControls | null>;
+  /** When Mark Verses has unmarked verse rows, last waveform region stays neutral. */
+  markVersesTailOpenRef?: React.RefObject<boolean>;
   hideToolbar?: boolean;
   hideControls?: boolean;
   hideSegmentControls?: boolean;
@@ -219,7 +221,8 @@ export interface WSAudioPlayerControls {
   getDuration: () => number;
   isReady: () => boolean;
   isPlaying: () => boolean;
-  gotoTime: (seconds: number) => Promise<void>;
+  gotoTime: (seconds: number, targetRegion?: IRegion) => Promise<void>;
+  applyMarkVersesRegionColors?: () => void;
 }
 
 const PLAY_PAUSE_KEY = 'F1,CTRL+SPACE';
@@ -293,6 +296,7 @@ function WSAudioPlayer(props: IProps) {
     captureNoiseSuppression = false,
     keepItSmall,
     controlsRef,
+    markVersesTailOpenRef,
     hideToolbar,
     hideSegmentControls,
     hideControls,
@@ -583,6 +587,7 @@ function WSAudioPlayer(props: IProps) {
     wsStartRecord,
     wsStopRecord,
     wsAddMarkers,
+    applyMarkVersesRegionColors,
   } = useWaveSurfer(
     allowSegment,
     waveformRef,
@@ -601,7 +606,8 @@ function WSAudioPlayer(props: IProps) {
     onStartRegion,
     onSegmentPlaybackEnd ? onSegmentPlaybackEnd : undefined,
     verses,
-    hasSegmentUndo
+    hasSegmentUndo,
+    markVersesTailOpenRef
   );
 
   //because we have to call hooks consistently, call this even if we aren't going to record
@@ -1281,7 +1287,9 @@ function WSAudioPlayer(props: IProps) {
       getDuration: () => durationRef.current,
       isReady: () => readyRef.current,
       isPlaying: () => playingRef.current,
-      gotoTime: (seconds: number) => wsGoto(seconds),
+      gotoTime: (seconds: number, targetRegion?: IRegion) =>
+        wsGoto(seconds, false, targetRegion),
+      applyMarkVersesRegionColors,
     };
     return () => {
       controlsRef.current = null;
@@ -1300,6 +1308,7 @@ function WSAudioPlayer(props: IProps) {
     handleAddRegion,
     handleRemoveSplitRegion,
     wsGoto,
+    applyMarkVersesRegionColors,
   ]);
 
   const doingProcess = (inprogress: boolean, msg?: string) => {
@@ -1789,23 +1798,22 @@ function WSAudioPlayer(props: IProps) {
     return () => onDockedRecordButton(null);
   }, [dockRecordButton, onDockedRecordButton, dockedRecordButtonNode]);
 
-  const deleteRegionNode =
-    !hideWaveformEditTools &&
+  const deleteRegionNode = !hideWaveformEditTools &&
     hasRegion !== 0 &&
     !oneShotUsed &&
     !isMobileView && (
-    <LightTooltip id="wsAudioDeleteRegionTip" title={t.deleteRegion}>
-      <span>
-        <IconButton
-          id="wsAudioDeleteRegion"
-          onClick={handleDeleteRegion}
-          disabled={recording || waitingForAI}
-        >
-          <HandScissors />
-        </IconButton>
-      </span>
-    </LightTooltip>
-  );
+      <LightTooltip id="wsAudioDeleteRegionTip" title={t.deleteRegion}>
+        <span>
+          <IconButton
+            id="wsAudioDeleteRegion"
+            onClick={handleDeleteRegion}
+            disabled={recording || waitingForAI}
+          >
+            <HandScissors />
+          </IconButton>
+        </span>
+      </LightTooltip>
+    );
 
   const undoNode = !hideWaveformEditTools && canUndo && !oneShotUsed && (
     <LightTooltip id="wsUndoTip" title={t.undoTip}>

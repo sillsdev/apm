@@ -1902,6 +1902,7 @@ const initialState = {
 	}),
 	"verse": new LocalizedStrings({
 		"en": {
+			"autosaveSkipped": "Autosave skipped: {0} issue(s) found.",
 			"badReferences": "ERROR: Markup contains bad references",
 			"btNotUpdated": "WARNING: Since back translation recordings already exist, back translation segments will not be updated to line up with verse changes.",
 			"canceling": "Canceling verse markup",
@@ -1910,6 +1911,7 @@ const initialState = {
 			"editReference": "Edit Reference",
 			"issues": "The verse markup has issues. Do you want to continue?",
 			"markVerses": "Mark Verses",
+			"markupIssuesTitle": "Verse markup issues",
 			"missingReferences": "Warning: Verses in passage not included: ({0})",
 			"noReferences": "Warning: Some audio segments will not be included in verses",
 			"noSegments": "ERROR: Some verses have no segment: ({0})",
@@ -1920,6 +1922,7 @@ const initialState = {
 			"saveVerseMarkup": "Save Verse Markup",
 			"splitVerse": "Split Verse",
 			"startStop": "Start --> Stop",
+			"viewIssues": "View issues",
 		}
 	}),
 	"viewMode": new LocalizedStrings({

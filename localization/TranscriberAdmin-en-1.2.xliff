@@ -10633,6 +10633,13 @@
                <context context-type="sourcefile">UserTable.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="verse.autosaveSkipped">
+            <source>Autosave skipped: {0} issue(s) found.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">PassageDetailMarkVerses.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="verse.badReferences">
             <source>ERROR: Markup contains bad references</source>
             <target/>
@@ -10687,6 +10694,13 @@
             <target/>
             <context-group>
                <context context-type="sourcefile">PassageDetailMarkVerse.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="verse.markupIssuesTitle">
+            <source>Verse markup issues</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">PassageDetailMarkVerses.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="verse.missingReferences">
@@ -10757,6 +10771,13 @@
             <target/>
             <context-group>
                <context context-type="sourcefile">PassageDetailMarkVerse.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="verse.viewIssues">
+            <source>View issues</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">PassageDetailMarkVerses.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="viewMode.audioProject">
