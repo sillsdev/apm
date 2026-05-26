@@ -120,6 +120,10 @@ export const useShowIcon = ({
           ) && isPassageType(rowIndex),
         [ExtraIcon.Delete]: canEditSheet,
       };
-      return !offline && !filtered && (extraMap[icon] ?? false);
+      return (
+        !filtered &&
+        (extraMap[icon] ?? false) &&
+        (!offline || icon === ExtraIcon.VernacularRecord)
+      );
     };
 };
