@@ -18,7 +18,7 @@ import { MediaFileAttributes } from '../model/mediafile';
 interface fileTask {
   taskId: string;
   cb: (file: File | Error) => void;
-  cancelRef: React.MutableRefObject<boolean>;
+  cancelRef: React.RefObject<boolean>;
 }
 const timerDelay = 10000; //10 seconds
 
@@ -28,7 +28,7 @@ export enum AudioAiFunc {
 }
 export interface IRequestAudio {
   func: AudioAiFunc;
-  cancelRef: React.MutableRefObject<boolean>;
+  cancelRef: React.RefObject<boolean>;
   file: File;
   targetVoice?: string;
   cb: (file: File | Error) => void;
@@ -190,7 +190,7 @@ export const useAudioAi = (): AudioAIResult => {
 
   const s3request = async (
     func: AudioAiFunc,
-    cancelRef: React.MutableRefObject<boolean>,
+    cancelRef: React.RefObject<boolean>,
     file: File,
     targetVoice: string | undefined,
     cb: (file: File | Error) => void

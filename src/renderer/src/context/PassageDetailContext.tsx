@@ -1,5 +1,11 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import React, { useState, useEffect, useRef, useContext, useCallback } from 'react';
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useContext,
+  useCallback,
+} from 'react';
 // see: https://upmostly.com/tutorials/how-to-use-the-usecontext-hook-in-react
 import { useGetGlobal, useGlobal } from '../context/useGlobal';
 import { useParams } from 'react-router-dom';
@@ -284,6 +290,7 @@ const PassageDetailProvider = (props: IProps) => {
   const mediaEnd = useRef<number | undefined>(undefined);
   const mediaPosition = useRef<number | undefined>(undefined);
   const currentSegmentRef = useRef<IRegion | undefined>(undefined);
+  const currentSegmentIndexRef = useRef(-1);
   const { startSave, startClear, waitForSave } =
     useContext(UnsavedContext).state;
   const highlightRef = useRef<number | undefined>(undefined);
@@ -888,8 +895,12 @@ const PassageDetailProvider = (props: IProps) => {
       handleHighlightDiscussion(undefined);
       settingSegmentRef.current = false;
     }
-    if (currentSegmentRef.current !== segment) {
+    if (
+      currentSegmentRef.current !== segment ||
+      currentSegmentIndexRef.current !== currentSegmentIndex
+    ) {
       currentSegmentRef.current = segment;
+      currentSegmentIndexRef.current = currentSegmentIndex;
       setState((state: ICtxState) => ({
         ...state,
         currentSegment: prettySegment(segment),

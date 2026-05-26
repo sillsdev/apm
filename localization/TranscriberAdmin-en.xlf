@@ -9112,6 +9112,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="verse.autosaveSkipped">
+         <segment>
+            <source>Autosave skipped: {0} issue(s) found.</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="verse.badReferences">
          <segment>
             <source>ERROR: Markup contains bad references</source>
@@ -9157,6 +9163,12 @@
       <unit id="verse.markVerses">
          <segment>
             <source>Mark Verses</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="verse.markupIssuesTitle">
+         <segment>
+            <source>Verse markup issues</source>
             <target/>
          </segment>
       </unit>
@@ -9217,6 +9229,12 @@
       <unit id="verse.startStop">
          <segment>
             <source>Start --&gt; Stop</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="verse.viewIssues">
+         <segment>
+            <source>View issues</source>
             <target/>
          </segment>
       </unit>

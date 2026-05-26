@@ -11,7 +11,7 @@ interface IProps {
   onOpen: (visible: boolean) => void;
   hasRights?: boolean; // required for upload
   finish?: (files: File[]) => void; // when conversion complete
-  cancelled: React.MutableRefObject<boolean>;
+  cancelled: React.RefObject<boolean>;
   uploadType?: UploadType;
   uploadMethod: (files: File[]) => Promise<void>;
   metadata?: React.JSX.Element;

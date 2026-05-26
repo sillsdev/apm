@@ -11,19 +11,24 @@ import {
   Typography,
 } from '@mui/material';
 import type { ChangeEvent } from 'react';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import {
+  type PassageVerseOption,
+  toPassageVerseKey,
+} from '../../../../utils/markVersesPassageVerses';
 
 const suffixOptions = ['', 'a', 'b', 'c', 'd', 'e'];
 const selectSx = {
-  minWidth: 64,
+  minWidth: 56,
   '& .MuiNativeSelect-select': {
-    fontSize: 40,
-    lineHeight: 1.1,
+    fontSize: '1.25rem',
+    lineHeight: 1.2,
     textAlign: 'center',
-    pr: 3,
+    pr: 2.5,
+    py: 0.5,
   },
   '& .MuiNativeSelect-icon': {
-    fontSize: 24,
+    fontSize: '1.25rem',
     right: 0,
   },
 };
@@ -31,14 +36,14 @@ const verseSelectSx = {
   ...selectSx,
   '& .MuiNativeSelect-select': {
     ...selectSx['& .MuiNativeSelect-select'],
-    fontSize: 28,
+    fontSize: '1.1rem',
   },
 };
 const suffixOptionStyle = {
-  fontSize: 50,
+  fontSize: '1.1rem',
 };
 const verseOptionStyle = {
-  fontSize: 48,
+  fontSize: '1rem',
 };
 
 export interface EditReferenceValue {
@@ -55,8 +60,7 @@ export interface EditReferenceValue {
 interface EditReferenceDropdownProps {
   open: boolean;
   limits: string;
-  maxVerse: number;
-  verseOptions: number[];
+  endVerseOptions: PassageVerseOption[];
   title: string;
   cancelLabel: string;
   saveLabel: string;
@@ -69,8 +73,7 @@ interface EditReferenceDropdownProps {
 export default function EditReferenceDropdown({
   open,
   limits,
-  maxVerse,
-  verseOptions,
+  endVerseOptions,
   title,
   cancelLabel,
   saveLabel,
@@ -80,21 +83,44 @@ export default function EditReferenceDropdown({
   onSave,
 }: EditReferenceDropdownProps) {
   const [draft, setDraft] = useState<EditReferenceValue>(value);
-  const verseNumberOptions = Array.from(
-    new Set([...verseOptions, draft.startVerse, draft.endVerse, maxVerse])
-  ).sort((left, right) => left - right);
+  const endSelectValue = toPassageVerseKey(draft.endChapter, draft.endVerse);
+
+  const resolvedEndOptions = useMemo(() => {
+    if (endVerseOptions.length > 0) return endVerseOptions;
+    return [
+      {
+        chapter: draft.startChapter,
+        verse: draft.startVerse,
+        key: toPassageVerseKey(draft.startChapter, draft.startVerse),
+      },
+    ];
+  }, [draft.startChapter, draft.startVerse, endVerseOptions]);
+
+  const showEndChapterPrefix = resolvedEndOptions.some(
+    (option) => option.chapter !== draft.startChapter
+  );
 
   useEffect(() => {
-    setDraft(value);
-  }, [value]);
+    if (!open) return;
+    const splitVerse =
+      /^[a-e]$/i.test(value.startSuffix) || /^[a-e]$/i.test(value.endSuffix);
+    setDraft({
+      ...value,
+      splitVerse,
+      startSuffix: splitVerse ? value.startSuffix : '',
+      endSuffix: splitVerse ? value.endSuffix : '',
+    });
+  }, [open, value]);
 
   const handleSplitChange = (
-    event: ChangeEvent<HTMLInputElement>,
+    _event: ChangeEvent<HTMLInputElement>,
     checked: boolean
   ) => {
     setDraft((current) => ({
       ...current,
       splitVerse: checked,
+      startSuffix: checked ? current.startSuffix : '',
+      endSuffix: checked ? current.endSuffix : '',
     }));
   };
 
@@ -108,21 +134,18 @@ export default function EditReferenceDropdown({
       }));
     };
 
-  const handleVerseChange =
-    (key: 'startVerse' | 'endVerse') =>
-    (event: ChangeEvent<HTMLSelectElement>) => {
-      const nextVerse = parseInt(event.target.value, 10);
-      if (Number.isNaN(nextVerse)) return;
+  const handleEndVerseChange = (event: ChangeEvent<HTMLSelectElement>) => {
+    const selected = resolvedEndOptions.find(
+      (option) => option.key === event.target.value
+    );
+    if (!selected) return;
 
-      setDraft((current) => ({
-        ...current,
-        [key]: nextVerse,
-      }));
-    };
-
-  const displayEndChapter = draft.endChapter;
-  const displayEndVerse = draft.endVerse;
-  const canEditEndSuffix = draft.canSplit || draft.splitVerse;
+    setDraft((current) => ({
+      ...current,
+      endChapter: selected.chapter,
+      endVerse: selected.verse,
+    }));
+  };
 
   return (
     <Dialog
@@ -140,60 +163,46 @@ export default function EditReferenceDropdown({
           sx={{
             display: 'flex',
             justifyContent: 'center',
-            alignItems: 'center',
-            gap: 1.5,
+            alignItems: 'flex-start',
+            gap: 3,
             mb: 2,
             fontVariantNumeric: 'tabular-nums',
           }}
         >
-          <Box sx={{ textAlign: 'center' }}>
-            <Box
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 0.5,
-              }}
+          <Box sx={{ textAlign: 'center', minWidth: 96 }}>
+            <Typography
+              component="div"
+              aria-label="start verse reference"
+              sx={{ fontSize: 28, lineHeight: 1.2, py: 0.5 }}
             >
-              <Typography
-                sx={{ fontSize: 28 }}
-              >{`${draft.startChapter}:`}</Typography>
+              {`${draft.startChapter}:${draft.startVerse}`}
+            </Typography>
+            {draft.splitVerse ? (
               <NativeSelect
-                value={draft.startVerse}
-                onChange={handleVerseChange('startVerse')}
-                inputProps={{ 'aria-label': 'start verse number' }}
-                sx={verseSelectSx}
+                value={draft.startSuffix}
+                onChange={handleSuffixChange('startSuffix')}
+                inputProps={{
+                  'aria-label': 'start verse suffix',
+                  title: 'start verse suffix',
+                }}
+                sx={{ ...selectSx, mt: 0.5 }}
               >
-                {verseNumberOptions.map((option) => (
+                {suffixOptions.map((option) => (
                   <option
-                    key={`start-verse-${option}`}
+                    key={option || 'none-start'}
                     value={option}
-                    style={verseOptionStyle}
+                    style={suffixOptionStyle}
                   >
-                    {option}
+                    {option || ' '}
                   </option>
                 ))}
               </NativeSelect>
-            </Box>
-            <NativeSelect
-              value={draft.startSuffix}
-              onChange={handleSuffixChange('startSuffix')}
-              inputProps={{ 'aria-label': 'start verse suffix' }}
-              sx={selectSx}
-            >
-              {suffixOptions.map((option) => (
-                <option
-                  key={option || 'none-start'}
-                  value={option}
-                  style={suffixOptionStyle}
-                >
-                  {option || ' '}
-                </option>
-              ))}
-            </NativeSelect>
+            ) : null}
           </Box>
-          <Typography variant="h6">-</Typography>
-          <Box sx={{ textAlign: 'center' }}>
+          <Typography variant="h6" sx={{ mt: 0.75 }}>
+            -
+          </Typography>
+          <Box sx={{ textAlign: 'center', minWidth: 96 }}>
             <Box
               sx={{
                 display: 'flex',
@@ -202,53 +211,66 @@ export default function EditReferenceDropdown({
                 gap: 0.5,
               }}
             >
-              <Typography
-                sx={{ fontSize: 24 }}
-              >{`${displayEndChapter}:`}</Typography>
+              {showEndChapterPrefix ? (
+                <Typography sx={{ fontSize: 24 }}>
+                  {`${draft.endChapter}:`}
+                </Typography>
+              ) : null}
               <NativeSelect
-                value={displayEndVerse}
-                onChange={handleVerseChange('endVerse')}
-                disabled={!draft.splitVerse}
-                inputProps={{ 'aria-label': 'end verse number' }}
+                value={endSelectValue}
+                onChange={handleEndVerseChange}
+                inputProps={{
+                  'aria-label': 'end verse number',
+                  title: 'end verse number',
+                }}
                 sx={verseSelectSx}
               >
-                {verseNumberOptions.map((option) => (
+                {resolvedEndOptions.map((option) => (
                   <option
-                    key={`end-verse-${option}`}
-                    value={option}
+                    key={`end-verse-${option.key}`}
+                    value={option.key}
                     style={verseOptionStyle}
                   >
-                    {option}
+                    {showEndChapterPrefix ? option.key : `${option.verse}`}
                   </option>
                 ))}
               </NativeSelect>
             </Box>
-            <NativeSelect
-              value={draft.endSuffix}
-              onChange={handleSuffixChange('endSuffix')}
-              disabled={!canEditEndSuffix}
-              inputProps={{ 'aria-label': 'end verse suffix' }}
-              sx={selectSx}
-            >
-              {suffixOptions.map((option) => (
-                <option
-                  key={option || 'none-end'}
-                  value={option}
-                  style={suffixOptionStyle}
-                >
-                  {option || ' '}
-                </option>
-              ))}
-            </NativeSelect>
+            {draft.splitVerse ? (
+              <NativeSelect
+                value={draft.endSuffix}
+                onChange={handleSuffixChange('endSuffix')}
+                inputProps={{
+                  'aria-label': 'end verse suffix',
+                  title: 'end verse suffix',
+                }}
+                sx={{ ...selectSx, mt: 0.5 }}
+              >
+                {suffixOptions.map((option) => (
+                  <option
+                    key={option || 'none-end'}
+                    value={option}
+                    style={suffixOptionStyle}
+                  >
+                    {option || ' '}
+                  </option>
+                ))}
+              </NativeSelect>
+            ) : null}
           </Box>
         </Box>
 
-        <FormControlLabel
-          control={
-            <Checkbox checked={draft.splitVerse} onChange={handleSplitChange} />
-          }
-          label={splitVerseLabel}
-        />
+        {draft.canSplit ? (
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={draft.splitVerse}
+                onChange={handleSplitChange}
+              />
+            }
+            label={splitVerseLabel}
+          />
+        ) : null}
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 2 }}>
         <Button onClick={onCancel}>{cancelLabel}</Button>

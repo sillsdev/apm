@@ -1,5 +1,6 @@
 import { debounce, throttle } from 'lodash';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { type RefObject } from 'react';
 import { useWavesurfer } from '@wavesurfer/react';
 import Timeline from 'wavesurfer.js/dist/plugins/timeline';
 import ZoomPlugin from 'wavesurfer.js/dist/plugins/zoom';
@@ -48,7 +49,8 @@ export function useWaveSurfer(
   onStartRegion?: (start: number) => void,
   onRegionPlayEnd?: (region: IRegion) => void,
   verses?: string,
-  hasSegmentUndo?: boolean
+  hasSegmentUndo?: boolean,
+  markVersesTailOpenRef?: RefObject<boolean>
 ) {
   const { isMobile } = useMobile();
   const [errorReporter] = useGlobal('errorReporter');
@@ -191,12 +193,15 @@ export function useWaveSurfer(
     return Math.abs(position - progressRef.current) < 0.3;
   };
 
-  const wsGoto = async (position: number, keepPlayRegion: boolean = false) => {
+  const wsGoto = async (
+    position: number,
+    keepPlayRegion: boolean = false,
+    targetRegion?: IRegion
+  ) => {
     if (!keepPlayRegion) resetPlayingRegion();
     const duration = wsDuration();
     const pos =
       duration > 0 ? clamp(position, 0, duration) : Math.max(position, 0);
-    onRegionGoTo(pos);
     if (pos === duration && isPlayingRef.current) {
       //if playing, position messages come in after this one that set it back to previously playing position.  Turn this off first in hopes that all messages are done before we set the position...
       wavesurferRef.current?.pause();
@@ -205,6 +210,7 @@ export function useWaveSurfer(
       wavesurferRef.current?.setTime(pos);
     }
     pushProgressImmediate(pos);
+    applyRegionAtPosition(pos, targetRegion);
   };
 
   const progress = () => progressRef.current;
@@ -229,7 +235,8 @@ export function useWaveSurfer(
     regLoopRegion,
     justPlayRegion,
     resetPlayingRegion,
-    onRegionGoTo,
+    applyRegionAtPosition,
+    applyMarkVersesRegionColors,
     currentRegion,
     wsSetRegionColor,
     wsRemoveCurrentRegion,
@@ -251,7 +258,9 @@ export function useWaveSurfer(
     onRegionPlayEnd,
     onMarkerClick,
     verses,
-    hasSegmentUndo
+    hasSegmentUndo,
+    allowSegment === NamedRegions.Verse,
+    markVersesTailOpenRef
   );
 
   const setPlayingx = (value: boolean, regionOnly: boolean) => {
@@ -932,5 +941,6 @@ export function useWaveSurfer(
     wsAddMarkers,
     wsSetRegionColor,
     wsRemoveCurrentRegion,
+    applyMarkVersesRegionColors,
   };
 }

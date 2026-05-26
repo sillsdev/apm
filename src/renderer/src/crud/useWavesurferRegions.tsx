@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, type RefObject } from 'react';
 import { waitForIt } from '../utils/waitForIt';
 import RegionsPlugin, {
   Region,
@@ -7,6 +7,12 @@ import RegionsPlugin, {
 import WaveSurfer from 'wavesurfer.js';
 import { IMarker } from './useWaveSurfer';
 import { useTheme } from '@mui/material';
+import {
+  getMarkVersesCompletedColor,
+  getMarkVersesCurrentColor,
+  getMarkVersesRegionBaseColor,
+  getMarkVersesUnmarkedColor,
+} from '../utils/markVersesSegmentColors';
 
 export interface IRegionChange {
   start: number;
@@ -88,7 +94,11 @@ export function useWaveSurferRegions(
   onRegion: (count: number, newRegion: boolean) => void,
   duration: () => number,
   isNear: (test: number) => boolean,
-  goto: (position: number, keepPlayRegion?: boolean) => void,
+  goto: (
+    position: number,
+    keepPlayRegion?: boolean,
+    targetRegion?: IRegion
+  ) => void,
   progress: () => number,
   isPlaying: () => boolean,
   setPlaying: (playing: boolean) => void,
@@ -97,7 +107,9 @@ export function useWaveSurferRegions(
   onRegionPlayEnd?: (region: IRegion) => void,
   onMarkerClick?: (time: number) => void,
   verses?: string,
-  hasSegmentUndo?: boolean
+  hasSegmentUndo?: boolean,
+  statusSegmentColors: boolean = false,
+  markVersesTailOpenRef?: RefObject<boolean>
 ) {
   const theme = useTheme();
   const wsRef = useRef<WaveSurfer | null>(ws);
@@ -122,12 +134,57 @@ export function useWaveSurferRegions(
   const hasSegmentUndoRef = useRef<boolean | undefined>(hasSegmentUndo);
   const regionBeforeClickRef = useRef<Region | undefined>(undefined);
   const playTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
+  /** Suppress region-in while the playhead is moved programmatically (table row click). */
+  const programmaticSeekRef = useRef(false);
+  const pendingSplitRightRegionRef = useRef<Region | undefined>(undefined);
+  /** ID of a region that was just truncated by a split — its region-out should
+   *  not stop playback or trigger a seek-back, so audio continues into the new
+   *  right-side region. Cleared after the first region-out matches it. */
+  const splitTruncatedIdRef = useRef<string | undefined>(undefined);
+  /** Time of a recent split that happened during playback. Any region-out
+   *  whose end matches this time (within tolerance) should be ignored, since
+   *  segment autosave can re-create the truncated region with a new ID — we
+   *  can't track that by ID alone. Cleared after a short window. */
+  const splitTruncatedEndRef = useRef<number | undefined>(undefined);
+  const splitTruncatedEndTimerRef = useRef<NodeJS.Timeout | undefined>(
+    undefined
+  );
 
   // Store finish handler reference for cleanup
   const finishHandlerRef = useRef<(() => void) | undefined>(undefined);
 
   const CLICK_DEBOUNCE_MS = 100; // Minimum time between clicks
   const CURRENT_REGION_BORDER = (theme.palette as any).custom.currentRegion;
+  const defaultNewRegionColor = () =>
+    statusSegmentColors
+      ? markVersesTailOpenRef?.current
+        ? getMarkVersesUnmarkedColor()
+        : getMarkVersesCompletedColor()
+      : getSegmentRegionColor(0);
+
+  const sortedRegions = () => [...regions()].sort((a, b) => a.start - b.start);
+
+  const regionIndexInSorted = (r: Region) =>
+    sortedRegions().findIndex((x) => x.id === r.id);
+
+  const applyMarkVersesRegionColors = () => {
+    if (!statusSegmentColors) return;
+    const tailIncomplete = markVersesTailOpenRef?.current ?? false;
+    const sorted = sortedRegions();
+    sorted.forEach((r, index) => {
+      const base = getMarkVersesRegionBaseColor(
+        index,
+        sorted.length,
+        tailIncomplete
+      );
+      if (currentRegionRef.current?.id === r.id) {
+        currentRegionOriginalColorRef.current = base;
+        r.setOptions({ color: getMarkVersesCurrentColor() });
+      } else {
+        r.setOptions({ color: base });
+      }
+    });
+  };
 
   const Regions = () => regionsRef.current;
   const regions = () =>
@@ -193,7 +250,7 @@ export function useWaveSurferRegions(
     } else {
       setCurrentRegion(r);
       if (!wasCurrentRegion) {
-        goto(r.start);
+        goto(r.start, false, { start: r.start, end: r.end });
         e.stopPropagation();
       }
     }
@@ -227,7 +284,18 @@ export function useWaveSurferRegions(
     if (r !== currentRegionRef.current) {
       // Reset previous current region to its original color and remove border
       if (currentRegionRef.current) {
-        if (currentRegionOriginalColorRef.current) {
+        if (statusSegmentColors) {
+          const tailIncomplete = markVersesTailOpenRef?.current ?? false;
+          const sorted = sortedRegions();
+          const prevIdx = regionIndexInSorted(currentRegionRef.current);
+          currentRegionRef.current.setOptions({
+            color: getMarkVersesRegionBaseColor(
+              prevIdx,
+              sorted.length,
+              tailIncomplete
+            ),
+          });
+        } else if (currentRegionOriginalColorRef.current) {
           currentRegionRef.current.setOptions({
             color: currentRegionOriginalColorRef.current,
           });
@@ -238,14 +306,26 @@ export function useWaveSurferRegions(
 
       // Set new current region color and remember its current color
       if (r) {
-        currentRegionOriginalColorRef.current =
-          r.color || getSegmentRegionColor(0);
-        r.setOptions({
-          color: withRegionColorAlpha(
-            currentRegionOriginalColorRef.current,
-            0.48
-          ),
-        });
+        if (statusSegmentColors) {
+          const tailIncomplete = markVersesTailOpenRef?.current ?? false;
+          const sorted = sortedRegions();
+          const idx = regionIndexInSorted(r);
+          currentRegionOriginalColorRef.current = getMarkVersesRegionBaseColor(
+            idx,
+            sorted.length,
+            tailIncomplete
+          );
+          r.setOptions({ color: getMarkVersesCurrentColor() });
+        } else {
+          currentRegionOriginalColorRef.current =
+            r.color || getSegmentRegionColor(0);
+          r.setOptions({
+            color: withRegionColorAlpha(
+              currentRegionOriginalColorRef.current,
+              0.48
+            ),
+          });
+        }
         if (
           !singleRegionRef.current &&
           (!isAtEnd(r.end) || numRegions() === 1)
@@ -283,6 +363,10 @@ export function useWaveSurferRegions(
   const wsPlayRegion = (r: IRegion, startAtCurrent: boolean = false) => {
     updatingRef.current = true;
     const reg = findRegion(r.start, true);
+    if (!reg) {
+      updatingRef.current = false;
+      return;
+    }
     setPlayRegionTarget(reg);
     const currentTime = ws?.getCurrentTime() ?? progress();
     const inRegion = isInRegion(reg, currentTime);
@@ -362,9 +446,15 @@ export function useWaveSurferRegions(
           )
             .then(() => {
               setPrevNext(getSortedIds());
-              setCurrentRegion(
-                singleRegionRef.current ? r : findRegion(progress(), true)
-              );
+              const pendingRight = pendingSplitRightRegionRef.current;
+              if (pendingRight && region(pendingRight.id)) {
+                pendingSplitRightRegionRef.current = undefined;
+                setCurrentRegion(pendingRight);
+              } else {
+                setCurrentRegion(
+                  singleRegionRef.current ? r : findRegion(progress(), true)
+                );
+              }
               onRegion(numRegions(), true);
             })
             .catch((reason) => console.log(reason));
@@ -449,12 +539,28 @@ export function useWaveSurferRegions(
       // });
       regionsPlugin.on('region-in', function (r: Region) {
         if (isMarker(r)) return;
+        if (programmaticSeekRef.current) return;
         //TODO!! need to check for user interaction vs looping
         //this comes before the region-out
         if (!loopingRef.current) setCurrentRegion(r);
       });
       regionsPlugin.on('region-out', function (r: Region) {
         if (isMarker(r)) return;
+        // If this region was just truncated by a split (matched by id, or by
+        // end-time within the autosave-replacement window), ignore region-out
+        // so playback continues into the new right-side region without
+        // stopping or seeking back to the start.
+        const matchesTruncatedId = r.id === splitTruncatedIdRef.current;
+        const matchesTruncatedEnd =
+          splitTruncatedEndRef.current !== undefined &&
+          Math.abs(r.end - splitTruncatedEndRef.current) < 0.01;
+        if (matchesTruncatedId || matchesTruncatedEnd) {
+          if (matchesTruncatedId) splitTruncatedIdRef.current = undefined;
+          if (nextPrevRegionRef.current?.id === r.id) {
+            nextPrevRegionRef.current = undefined;
+          }
+          return;
+        }
         //help it in case it forgot -- unless the user clicked out
         //here is where we could add a pause possibly
         if (loopingRef.current) {
@@ -471,7 +577,14 @@ export function useWaveSurferRegions(
             end: r.end,
             label: r.content?.textContent || '',
           });
-        } else {
+        } else if (
+          !programmaticSeekRef.current &&
+          playRegionRef.current !== undefined
+        ) {
+          // Only stop playback if we were intentionally playing a single
+          // region (wsPlayRegion). In free-play mode (Mark Verses), the
+          // playhead naturally crosses many region boundaries and audio
+          // should continue to the end of the file.
           setPlaying(false);
         }
       });
@@ -510,16 +623,30 @@ export function useWaveSurferRegions(
     return value <= r.end && value >= r.start;
   };
 
+  /** Half-open [start, end) except the last segment, which includes its end time. */
+  const regionContainsTime = (r: Region, value: number, isLast: boolean) =>
+    value >= r.start && (isLast ? value <= r.end : value < r.end);
+
   const findRegion = (value: number, force: boolean = false) => {
+    const sorted = [...regions()].sort((a, b) => a.start - b.start);
+    if (!sorted.length) return undefined;
+
+    const current = currentRegion() as Region | undefined;
     if (
       !force &&
-      currentRegion() &&
-      isInRegion(currentRegion() as Region, value)
-    )
-      return currentRegion();
-    let foundIt: any = undefined;
-    regions().forEach(function (r) {
-      if (isInRegion(r, value)) {
+      current &&
+      regionContainsTime(
+        current,
+        value,
+        sorted[sorted.length - 1]?.id === current.id
+      )
+    ) {
+      return current;
+    }
+
+    let foundIt: Region | undefined;
+    sorted.forEach((r, index) => {
+      if (regionContainsTime(r, value, index === sorted.length - 1)) {
         foundIt = r;
       }
     });
@@ -527,10 +654,16 @@ export function useWaveSurferRegions(
   };
 
   const findRegionByIRegion = (targetRegion: IRegion) => {
-    return regions().find(
+    const exact = regions().find(
       (r) =>
         Math.abs(r.start - targetRegion.start) < 0.001 &&
         Math.abs(r.end - targetRegion.end) < 0.001
+    );
+    if (exact) return exact;
+    return regions().find(
+      (r) =>
+        Math.abs(r.start - targetRegion.start) < 0.6 &&
+        Math.abs(r.end - targetRegion.end) < 0.6
     );
   };
 
@@ -751,15 +884,20 @@ export function useWaveSurferRegions(
         setAttribute(r, 'prevRegion', prev);
       }
       if (r) {
-        const baseColor = getSegmentRegionColor(index);
-        if (currentRegionRef.current?.id === r.id) {
-          currentRegionOriginalColorRef.current = baseColor;
+        if (statusSegmentColors) {
+          // Colors applied in batch after prev/next links are wired.
         } else {
-          r.setOptions({ color: baseColor });
+          const baseColor = getSegmentRegionColor(index);
+          if (currentRegionRef.current?.id === r.id) {
+            currentRegionOriginalColorRef.current = baseColor;
+          } else {
+            r.setOptions({ color: baseColor });
+          }
         }
       }
       prev = r;
     });
+    if (statusSegmentColors) applyMarkVersesRegionColors();
   };
 
   function clearRegions(
@@ -814,7 +952,9 @@ export function useWaveSurferRegions(
     regarray.forEach(function (region: any, index: number) {
       region.start = roundToFiveDecimals(region.start);
       region.end = roundToFiveDecimals(region.end);
-      region.color = getSegmentRegionColor(index);
+      region.color = statusSegmentColors
+        ? getMarkVersesCompletedColor()
+        : getSegmentRegionColor(index);
       region.drag = false;
       region.content = region.label;
       const r = Regions()?.addRegion(region);
@@ -854,15 +994,17 @@ export function useWaveSurferRegions(
       start: split,
       end: ret.end,
       drag: false,
-      color: getSegmentRegionColor(0),
+      color: defaultNewRegionColor(),
     };
     const sortedIds: string[] = getSortedIds(); //need to get sorted ids before adding the new region
     const newRegion = Regions()?.addRegion(region);
 
     let newSorted: string[] = [];
+    let leftRegion: Region | undefined;
     if (r) {
       const curIndex = sortedIds.findIndex((s) => s === r.id);
       updateRegion(r, { end: split });
+      leftRegion = r;
       newSorted = sortedIds
         .slice(0, curIndex + 1)
         .concat(newRegion?.id ?? 'newid')
@@ -872,17 +1014,43 @@ export function useWaveSurferRegions(
         start: 0,
         end: split,
         drag: false,
-        color: getSegmentRegionColor(0),
+        color: defaultNewRegionColor(),
       };
-      const firstRegion = Regions()?.addRegion(region);
-      newSorted.push(firstRegion?.id ?? 'fr');
+      leftRegion = Regions()?.addRegion(region);
+      newSorted.push(leftRegion?.id ?? 'fr');
       newSorted.push(newRegion?.id ?? 'nr');
     }
     setPrevNext(newSorted);
 
-    if (r && loopingRef.current && ret.newEnd < ret.end)
-      //&& playing
-      goto(ret.start + 0.01);
+    if (newRegion) {
+      pendingSplitRightRegionRef.current = newRegion;
+      setCurrentRegion(newRegion);
+      programmaticSeekRef.current = true;
+      if (isPlaying()) {
+        // Audio is playing: don't seek (avoid jumping back from the live
+        // playhead). Mark the left region so its upcoming region-out doesn't
+        // stop playback or snap back to the start. Also remember the end-time
+        // of the truncated region — segment autosave may re-create it with a
+        // new id within the next second or so, and we want to ignore that
+        // region-out too.
+        if (leftRegion) splitTruncatedIdRef.current = leftRegion.id;
+        splitTruncatedEndRef.current = split;
+        if (splitTruncatedEndTimerRef.current) {
+          clearTimeout(splitTruncatedEndTimerRef.current);
+        }
+        splitTruncatedEndTimerRef.current = setTimeout(() => {
+          splitTruncatedEndRef.current = undefined;
+          splitTruncatedEndTimerRef.current = undefined;
+        }, 3000);
+      } else {
+        goto(split + 0.01);
+      }
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          programmaticSeekRef.current = false;
+        });
+      });
+    }
     onRegion(numRegions(), true);
     return ret;
   };
@@ -906,8 +1074,9 @@ export function useWaveSurferRegions(
         updateRegion(r, { start: prev.start });
         ret.newStart = prev.start;
         prev.remove();
+        setCurrentRegion(r);
         onRegion(numRegions(), true);
-        return;
+        return ret;
       }
     }
     //find next region
@@ -916,6 +1085,7 @@ export function useWaveSurferRegions(
       updateRegion(r, { end: next.end });
       ret.newEnd = next.end;
       next.remove();
+      setCurrentRegion(r);
     } else if (numRegions() === 1) {
       r.remove();
     }
@@ -1104,8 +1274,23 @@ export function useWaveSurferRegions(
     return false;
   }
 
+  const applyRegionAtPosition = (position: number, targetRegion?: IRegion) => {
+    programmaticSeekRef.current = true;
+    if (targetRegion) {
+      const reg = findRegionByIRegion(targetRegion);
+      if (reg) setCurrentRegion(reg);
+    } else {
+      setCurrentRegion(findRegion(position, true));
+    }
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        programmaticSeekRef.current = false;
+      });
+    });
+  };
+
   function onRegionGoTo(position: number) {
-    setCurrentRegion(findRegion(position, true));
+    applyRegionAtPosition(position);
   }
 
   // Function to clear click processing states (useful for debugging or reset)
@@ -1137,6 +1322,8 @@ export function useWaveSurferRegions(
     justPlayRegion,
     resetPlayingRegion,
     onRegionGoTo,
+    applyRegionAtPosition,
+    applyMarkVersesRegionColors,
     currentRegion,
     wsSetRegionColor,
     wsRemoveCurrentRegion,

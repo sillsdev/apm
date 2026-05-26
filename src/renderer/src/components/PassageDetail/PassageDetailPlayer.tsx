@@ -110,6 +110,8 @@ export interface DetailPlayerProps {
   metaData?: React.ReactNode;
   /** When set, exposes waveform imperative controls (e.g. add segment at playhead). */
   controlsRef?: RefObject<WSAudioPlayerControls | null>;
+  /** Mark Verses: true while verse rows after the first still lack timestamps. */
+  markVersesTailOpenRef?: React.RefObject<boolean>;
   playerState?: IPlayerState;
 }
 
@@ -142,6 +144,7 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
     contentVerses,
     metaData,
     controlsRef,
+    markVersesTailOpenRef,
     playerState,
   } = props;
 
@@ -482,6 +485,7 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
         height={PLAYER_HEIGHT}
         width={width}
         controlsRef={controlsRef}
+        markVersesTailOpenRef={markVersesTailOpenRef}
         blob={audioBlob}
         initialposition={initialposition}
         setInitialPosition={setInitialPosition}

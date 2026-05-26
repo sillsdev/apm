@@ -56,6 +56,8 @@ const mockCurrentStep = 'step1';
 const mockSetCurrentStep = jest.fn();
 let mockPlayerAction: ((segment: string, init: boolean) => void) | undefined;
 const mockRowData: IRow[] = [];
+const mockShowMessage = jest.fn();
+const mockProjectSegmentSave = jest.fn().mockResolvedValue(undefined);
 
 const passageAttributes = {
   sequencenum: 1,
@@ -128,6 +130,29 @@ jest.mock('./PassageDetailPlayer', () => {
 //   }),
 // }));
 jest.mock('../../utils/logErrorService', () => jest.fn());
+jest.mock('../../hoc/SnackBar', () => {
+  const actual = jest.requireActual('../../hoc/SnackBar');
+  return {
+    ...actual,
+    useSnackBar: () => ({
+      showMessage: mockShowMessage,
+      showTitledMessage: jest.fn(),
+      messageReset: jest.fn(),
+    }),
+  };
+});
+jest.mock('./Internalization/useProjectSegmentSave', () => ({
+  useProjectSegmentSave: () => mockProjectSegmentSave,
+}));
+jest.mock('../AlertDialog', () => ({
+  __esModule: true,
+  default: ({ jsx, title }: { jsx?: React.ReactNode; title?: string }) => (
+    <div data-testid="issues-dialog">
+      <h2>{title}</h2>
+      {jsx}
+    </div>
+  ),
+}));
 jest.mock('../../context/GlobalContext', () => ({
   useGlobal: (arg: string) =>
     arg === 'memory' ? [mockMemory, jest.fn()] : [{}, jest.fn()],
@@ -147,14 +172,18 @@ jest.mock('react-redux', () => ({
     reference: 'Reference',
     saveVerseMarkup: 'Save Verse Markup',
     startStop: 'Start --> Stop',
+    autosaveSkipped: 'Autosave skipped: {0} issue(s) found.',
     badReferences: 'ERROR: Markup contains bad references',
     btNotUpdated:
       'WARNING: Since back translation recordings already exist, back translation segments will not be updated to line up with verse changes.',
     issues: 'The verse markup has issues. Do you want to continue?',
+    markupIssuesTitle: 'Verse markup issues',
     missingReferences: 'Warning: Verses in passage not included: ({0})',
     noReferences: 'Warning: Some audio segments will not be included in verses',
     noSegments: 'ERROR: Some verses have no segment: ({0})',
     outsideReferences: 'ERROR: Some verses are outside passage: ({0})',
+    viewIssues: 'View issues',
+    close: 'Close',
   }),
   shallowEqual: jest.fn(),
 }));
@@ -462,4 +491,41 @@ test('should not add rows including refs already in table', async () => {
 
   // Assert
   expect(tbody.children.length).toBe(4); // 3 limits (with 3 verse refs) + 1 header
+});
+
+test('shows warning snackbar and blocks autosave when checkRefs has issues', async () => {
+  jest.useFakeTimers();
+  runTest({ width: 1000 });
+  const tbody = screen.getByTestId('verse-sheet')?.firstChild?.firstChild
+    ?.firstChild as HTMLElement;
+  await waitFor(() => expect(tbody.children.length).toBeTruthy());
+
+  act(() => {
+    if (mockPlayerAction) {
+      mockPlayerAction(
+        '{"regions":"[{\\"start\\":0,\\"end\\":5},{\\"start\\":5,\\"end\\":9}]"}',
+        false
+      );
+    }
+  });
+
+  await waitFor(() => {
+    expect(mockShowMessage).toHaveBeenCalledWith(
+      expect.anything(),
+      AlertSeverity.Warning
+    );
+  });
+
+  const messageArg = mockShowMessage.mock.calls[0][0] as {
+    props: { children: unknown[] };
+  };
+  const messageText = JSON.stringify(messageArg);
+  expect(messageText).toMatch(/Autosave skipped: \d+ issue\(s\) found\./);
+
+  act(() => {
+    jest.advanceTimersByTime(2000);
+  });
+  expect(mockProjectSegmentSave).not.toHaveBeenCalled();
+
+  jest.useRealTimers();
 });

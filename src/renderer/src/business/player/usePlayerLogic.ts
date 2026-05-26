@@ -105,13 +105,26 @@ export const usePlayerLogic = (props: PlayerLogicProps) => {
   const onCurrentSegment = (segment: IRegion | undefined) => {
     let index = 0;
     if (segment && segmentsRef.current) {
-      const segs = parseRegions(segmentsRef.current);
+      const sorted = parseRegions(segmentsRef.current).regions.sort(
+        (a: IRegion, b: IRegion) => a.start - b.start
+      );
+      const matchTol = 0.6;
       index =
-        segs.regions
-          .sort((a: IRegion, b: IRegion) => a.start - b.start)
-          .findIndex(
-            (r: IRegion) => r.start <= segment?.start && r.end >= segment?.end
+        sorted.findIndex(
+          (r: IRegion) =>
+            Math.abs(r.start - segment.start) <= matchTol &&
+            Math.abs(r.end - segment.end) <= matchTol
+        ) + 1;
+      if (index <= 0) {
+        index =
+          sorted.findIndex(
+            (r: IRegion, i: number) =>
+              segment.start >= r.start - 0.01 &&
+              (i === sorted.length - 1
+                ? segment.start <= r.end + 0.01
+                : segment.start < r.end - 0.01)
           ) + 1;
+      }
     } else {
       if (setSegmentToWhole()) return;
     }

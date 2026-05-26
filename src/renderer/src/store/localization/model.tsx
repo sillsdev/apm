@@ -1802,6 +1802,7 @@ export interface IUsertableStrings extends Localize.LocalizedStringsMethods {
 };
 
 export interface IVerseStrings extends Localize.LocalizedStringsMethods {
+    "autosaveSkipped": string;
     "badReferences": string;
     "btNotUpdated": string;
     "canceling": string;
@@ -1810,6 +1811,7 @@ export interface IVerseStrings extends Localize.LocalizedStringsMethods {
     "editReference": string;
     "issues": string;
     "markVerses": string;
+    "markupIssuesTitle": string;
     "missingReferences": string;
     "noReferences": string;
     "noSegments": string;
@@ -1820,6 +1822,7 @@ export interface IVerseStrings extends Localize.LocalizedStringsMethods {
     "saveVerseMarkup": string;
     "splitVerse": string;
     "startStop": string;
+    "viewIssues": string;
 };
 
 export interface IViewModeStrings extends Localize.LocalizedStringsMethods {

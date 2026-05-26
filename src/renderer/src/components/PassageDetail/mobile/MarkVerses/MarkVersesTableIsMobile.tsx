@@ -6,19 +6,20 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  TextField,
   Typography,
 } from '@mui/material';
-import { alpha } from '@mui/material/styles';
-import type { ChangeEvent, ClipboardEvent } from 'react';
-import { getSegmentRegionColor } from '../../../../crud/useWavesurferRegions';
-import type { ICell, ICellChange } from './PassageDetailMarkVersesIsMobile';
+import type { RefObject } from 'react';
+import {
+  isMarkVersesTableRowCompleted,
+  MARK_VERSES_COMPLETED_RGBA,
+  MARK_VERSES_CURRENT_RGBA,
+} from '../../../../utils/markVersesSegmentColors';
+import type { ICell } from './PassageDetailMarkVersesIsMobile';
 
 interface MarkVersesTableIsMobileProps {
   data: ICell[][];
-  onCellsChanged: (changes: Array<ICellChange>) => void;
-  onParsePaste: (clipboard: string) => any[];
   onRowSelect?: (rowIndex: number) => void;
+  tableRowRefs?: RefObject<(HTMLTableRowElement | null)[]>;
 }
 
 enum ColName {
@@ -28,56 +29,11 @@ enum ColName {
 
 export default function MarkVersesTableIsMobile({
   data,
-  onCellsChanged,
-  onParsePaste,
   onRowSelect,
+  tableRowRefs,
 }: MarkVersesTableIsMobileProps) {
   const rows = data.slice(1);
   const header = data[0] ?? [];
-
-  const handleReferenceChange = (rowIndex: number, value: string) => {
-    onCellsChanged([
-      {
-        cell: null,
-        row: rowIndex + 1,
-        col: ColName.Ref,
-        value,
-      },
-    ]);
-  };
-
-  const handleReferencePaste = (
-    event: ClipboardEvent<HTMLInputElement | HTMLTextAreaElement>,
-    rowIndex: number
-  ) => {
-    const clipboard = event.clipboardData.getData('text');
-    const parsed = onParsePaste(clipboard);
-
-    if (!parsed.length) return;
-
-    event.preventDefault();
-
-    const changes = parsed.map((entry: string[] | string, offset: number) => ({
-      cell: null,
-      row: rowIndex + offset + 1,
-      col: ColName.Ref,
-      value: Array.isArray(entry) ? entry[0] : entry,
-    }));
-
-    onCellsChanged(changes);
-  };
-
-  const handleInputChange =
-    (rowIndex: number) =>
-    (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-      handleReferenceChange(rowIndex, event.target.value);
-    };
-
-  const handlePaste =
-    (rowIndex: number) =>
-    (event: ClipboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-      handleReferencePaste(event, rowIndex);
-    };
 
   return (
     <TableContainer
@@ -85,7 +41,7 @@ export default function MarkVersesTableIsMobile({
       id="verse-sheet"
       data-testid="verse-sheet"
       sx={{
-        mt: 1,
+        mt: 0.5,
         flex: '1 1 auto',
         minHeight: 0,
         overflowY: 'auto',
@@ -110,25 +66,44 @@ export default function MarkVersesTableIsMobile({
             const reference = row[ColName.Ref] as ICell;
             const invalid = reference.className?.includes('Err');
             const isCurrentRow = (limits.className ?? '').includes('cur');
-            const rowColor = limits.value
-              ? getSegmentRegionColor(index, 0.24)
-              : 'transparent';
+            const hasLimits = Boolean(limits.value);
+            const rowCompleted = isMarkVersesTableRowCompleted(
+              data,
+              index + 1,
+              ColName.Limits
+            );
+            const rowBackground = isCurrentRow
+              ? MARK_VERSES_CURRENT_RGBA
+              : rowCompleted
+                ? MARK_VERSES_COMPLETED_RGBA
+                : 'background.paper';
 
             return (
               <TableRow
                 key={`verse-row-${index}`}
+                ref={(el) => {
+                  if (tableRowRefs?.current) {
+                    tableRowRefs.current[index] = el;
+                  }
+                }}
+                data-row-index={index + 1}
                 onClick={() => onRowSelect?.(index + 1)}
-                sx={(theme) => ({
-                  backgroundColor: isCurrentRow
-                    ? alpha(theme.palette.warning.main, 0.35)
-                    : rowColor,
-                })}
+                sx={{
+                  backgroundColor: rowBackground,
+                  cursor: hasLimits ? 'pointer' : 'default',
+                }}
               >
                 <TableCell
                   sx={{
                     whiteSpace: 'nowrap',
                     width: '42%',
                     backgroundColor: 'inherit',
+                    py: 0.75,
+                  }}
+                  onClick={(event) => {
+                    if (!hasLimits) return;
+                    event.stopPropagation();
+                    onRowSelect?.(index + 1);
                   }}
                 >
                   <Typography
@@ -142,29 +117,23 @@ export default function MarkVersesTableIsMobile({
                   </Typography>
                 </TableCell>
 
-                <TableCell sx={{ backgroundColor: 'inherit' }}>
-                  <TextField
-                    fullWidth
-                    variant="standard"
-                    value={reference.value || ''}
-                    onChange={handleInputChange(index)}
-                    disabled={reference.readOnly}
-                    error={Boolean(invalid)}
-                    inputProps={{
-                      'aria-label': `verse-reference-${index + 1}`,
-                      // Enabled during Edit Reference mode for tapping; typing still happens in the dialog.
-                      readOnly: !reference.readOnly,
-                      onPaste: reference.readOnly ? handlePaste(index) : undefined,
+                <TableCell
+                  sx={{ backgroundColor: 'inherit', py: 0.75 }}
+                  onClick={(event) => {
+                    if (!hasLimits) return;
+                    event.stopPropagation();
+                    onRowSelect?.(index + 1);
+                  }}
+                >
+                  <Typography
+                    variant="body2"
+                    aria-label={`verse-reference-${index + 1}`}
+                    sx={{
+                      color: invalid ? 'error.main' : 'text.primary',
                     }}
-                    sx={
-                      reference.readOnly
-                        ? {
-                            // Disabled fields still capture clicks; row `onClick` uses pointer-events on the cell.
-                            pointerEvents: 'none',
-                          }
-                        : undefined
-                    }
-                  />
+                  >
+                    {reference.value || '-'}
+                  </Typography>
                 </TableCell>
               </TableRow>
             );

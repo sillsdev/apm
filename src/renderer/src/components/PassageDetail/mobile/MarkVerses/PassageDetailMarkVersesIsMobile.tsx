@@ -6,7 +6,14 @@ import {
   useRef,
   useState,
 } from 'react';
-import { Box, IconButton, Paper, SxProps, Typography } from '@mui/material';
+import {
+  Box,
+  debounce,
+  IconButton,
+  Paper,
+  SxProps,
+  Typography,
+} from '@mui/material';
 import { shallowEqual, useSelector } from 'react-redux';
 import { useGlobal } from '../../../../context/useGlobal';
 import usePassageDetailContext from '../../../../context/usePassageDetailContext';
@@ -40,7 +47,6 @@ import {
   verseSelector,
   wsAudioPlayerSelector,
 } from '../../../../selector';
-import { cleanClipboard } from '../../../../utils/cleanClipboard';
 import {
   getSegments,
   getSortedRegions,
@@ -52,6 +58,15 @@ import { refMatch } from '../../../../utils/refMatch';
 import { useStepPermissions } from '../../../../utils/useStepPermission';
 import Confirm from '../../../AlertDialog';
 import { type WSAudioPlayerControls } from '../../../WSAudioPlayer';
+import { isMarkVersesTableTailIncomplete } from '../../../../utils/markVersesSegmentColors';
+import {
+  formatMarkVersesReference,
+  getEndingVerseOptions,
+  incrementMarkVersesReferenceSuffix,
+  markVersesReferenceHasLetterSuffix,
+  nextMarkVersesLetterSuffix,
+  parseMarkVersesReference,
+} from '../../../../utils/markVersesPassageVerses';
 import PassageDetailPlayer from '../../PassageDetailPlayer';
 import { useProjectSegmentSave } from '../../Internalization/useProjectSegmentSave';
 import EditReferenceDropdown, {
@@ -59,10 +74,12 @@ import EditReferenceDropdown, {
 } from './EditReferenceDropdown';
 import MarkVersesTableIsMobile from './MarkVersesTableIsMobile';
 import { AltButton } from '../../../../control/AltButton';
-import { GrowingSpacer } from '../../../../control/GrowingSpacer';
 import { LightTooltip } from '../../../../control/LightTooltip';
-import { PriButton } from '../../../../control/PriButton';
 import { TabActions } from '../../../../control/TabActions';
+import {
+  createMarkVersesUndoStack,
+  type MarkVersesSnapshot,
+} from '../../../../utils/markVersesUndoStack';
 import { HotKeyContext } from '../../../../context/HotKeyContext';
 import {
   ADDREMSEG_KEY,
@@ -80,6 +97,8 @@ const SEGMENT_BOUNDARY_TOLERANCE_SEC = 0.1;
  */
 const REMOVE_BOUNDARY_PLAYHEAD_NUDGE_SEC =
   SEGMENT_BOUNDARY_TOLERANCE_SEC + SEGMENT_BOUNDARY_TOLERANCE_SEC;
+/** Table limits use mm:ss; waveform uses float seconds — allow rounding drift. */
+const SEGMENT_ROW_MATCH_TOLERANCE_SEC = 0.6;
 const paperProps = { p: 2, m: 'auto', width: 'calc(100% - 32px)' } as SxProps;
 const readOnlys = [true, false];
 const widths = [150, 150];
@@ -90,6 +109,7 @@ function isProgressNearAnyRegionBoundary(
   regions: IRegion[],
   minDistanceSec: number
 ): boolean {
+  if (Math.abs(progressSec) <= minDistanceSec) return true;
   if (regions.length === 0) return false;
   const boundaries = new Set<number>();
   for (const r of regions) {
@@ -138,34 +158,19 @@ export interface ICell {
   className?: string;
 }
 
-export interface ICellChange {
-  cell: any;
-  row: number;
-  col: number;
-  value: string | null;
-}
-
 enum ColName {
   Limits,
   Ref,
 }
 
-interface IParsedReference {
-  chapter: number;
-  verse: number;
-  suffix: string;
-}
+const REF_SEGMENT_SYNC_DEBOUNCE_MS = 400;
+const AUTOSAVE_DEBOUNCE_MS = 1200;
 
 interface IEditReferenceDialogState extends EditReferenceValue {
   rowIndex: number;
   limits: string;
   existingSplit: boolean;
-  maxVerse: number;
-  verseOptions: number[];
-}
-
-interface IUndoState {
-  tableData: ICell[][];
+  endVerseOptions: ReturnType<typeof getEndingVerseOptions>;
 }
 
 export interface MarkVersesProps {
@@ -181,9 +186,8 @@ export default function PassageDetailMarkVersesIsMobile({
     passage,
     currentstep,
     currentSegment,
+    currentSegmentIndex,
     setCurrentSegment,
-    setStepComplete,
-    gotoNextStep,
     rowData,
   } = usePassageDetailContext();
   const [memory] = useGlobal('memory');
@@ -191,22 +195,28 @@ export default function PassageDetailMarkVersesIsMobile({
   const [, setComplete] = useGlobal('progress');
   const [plan] = useGlobal('plan');
   const [data, setDatax] = useState<ICell[][]>([]);
-  const [issues, setIssues] = useState<string[]>([]);
-  const [confirm, setConfirm] = useState('');
   const [numSegments, setNumSegments] = useState(0);
   // Keep this empty by default so `PassageDetailPlayer` loads the *saved* segments
   // from `media.attributes.segments` (it prefers `suggestedSegments` when non-empty).
   const [pastedSegments, setPastedSegments] = useState('');
   const [engVrs, setEngVrs] = useState<Map<string, number[]>>(new Map());
-  const [isReferenceEditing, setIsReferenceEditing] = useState(false);
   const [editReferenceDialog, setEditReferenceDialog] =
     useState<IEditReferenceDialogState>();
-  const [undoState, setUndoState] = useState<IUndoState>();
+  const [undoAvailable, setUndoAvailable] = useState(false);
+  const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
+  const undoStackRef = useRef(createMarkVersesUndoStack());
   const [playerResetKey, setPlayerResetKey] = useState(0);
   const [playerProgressSec, setPlayerProgressSec] = useState(0);
   /** Precise segment JSON from the waveform (table limits round to whole seconds). */
   const [waveSegmentsJson, setWaveSegmentsJson] = useState('{}');
   const playerControlsRef = useRef<WSAudioPlayerControls | null>(null);
+  const markVersesTailOpenRef = useRef(false);
+  const tableRowRefs = useRef<(HTMLTableRowElement | null)[]>([]);
+  const prevRegionCountRef = useRef(0);
+  const skipScrollIntoViewRef = useRef(false);
+  const setSegmentsDebounceRef = useRef<
+    ReturnType<typeof setTimeout> | undefined
+  >(undefined);
   const savingRef = useRef(false);
   const canceling = useRef(false);
   const dataRef = useRef<ICell[][]>([]);
@@ -238,12 +248,9 @@ export default function PassageDetailMarkVersesIsMobile({
     toolsChanged,
     isChanged,
     saveRequested,
-    startSave,
     saveCompleted,
     clearRequested,
     clearCompleted,
-    checkSavedFn,
-    waitForSave,
   } = useContext(UnsavedContext).state;
   const hasChanged = useMemo(() => isChanged(verseToolId), [isChanged]);
   const projectSegmentSave = useProjectSegmentSave();
@@ -305,16 +312,19 @@ export default function PassageDetailMarkVersesIsMobile({
     }
   }, [emptyTable, setData]);
 
-  const tableSignature = (tableData: ICell[][]) =>
-    JSON.stringify(
-      tableData.map((row) =>
-        row.map((cell) => ({
-          value: cell.value ?? '',
-          className: cell.className ?? '',
-          readOnly: cell.readOnly ?? false,
-        }))
-      )
-    );
+  const tableSignature = useCallback(
+    (tableData: ICell[][]) =>
+      JSON.stringify(
+        tableData.map((row) =>
+          row.map((cell) => ({
+            value: cell.value ?? '',
+            className: cell.className ?? '',
+            readOnly: cell.readOnly ?? false,
+          }))
+        )
+      ),
+    []
+  );
 
   const media = useMemo(
     () => findRecord(memory, 'mediafile', mediafileId) as MediaFileD,
@@ -459,50 +469,6 @@ export default function PassageDetailMarkVersesIsMobile({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [getPassageRefs, passage]);
 
-  const handleComplete = (complete: boolean) => {
-    waitForSave(undefined, 200).finally(async () => {
-      await setStepComplete(currentstep, complete);
-      if (complete) gotoNextStep();
-    });
-  };
-
-  const writeResources = async () => {
-    if (!savingRef.current && media) {
-      savingRef.current = true;
-      let segments = updateSegments(
-        NamedRegions.Transcription,
-        updateSegments(
-          NamedRegions.Verse,
-          media.attributes?.segments,
-          segmentsRef.current
-        ),
-        segmentsRef.current
-      );
-      if (!hasBtRecordings) {
-        segments = updateSegments(
-          NamedRegions.BackTranslation,
-          segments,
-          segmentsRef.current
-        );
-      }
-      segments = updateSegments(NamedRegions.TRTask, segments, '');
-      projectSegmentSave({ media, segments })
-        .then(() => {
-          saveCompleted(verseToolId);
-          suppressVerseResyncFromMediaRef.current = false;
-        })
-        .catch((err) => {
-          saveCompleted(verseToolId, err.message);
-        })
-        .finally(() => {
-          savingRef.current = false;
-          canceling.current = false;
-          setComplete(0);
-          handleComplete(true);
-        });
-    }
-  };
-
   const collectRefs = useCallback(
     (tableData: ICell[][]) => {
       const refs: string[] = [];
@@ -558,6 +524,23 @@ export default function PassageDetailMarkVersesIsMobile({
     [waveSegmentsJson]
   );
 
+  /** Prefer waveform bounds — table limits are mm:ss and can round (e.g. 8.4s → 0:08). */
+  const getActiveSegmentForRow = useCallback(
+    (rowIndex: number, row?: ICell[]) => {
+      if (rowIndex > 0 && waveformRegions[rowIndex - 1]) {
+        return waveformRegions[rowIndex - 1];
+      }
+      return getSegmentFromRow(row);
+    },
+    [waveformRegions, getSegmentFromRow]
+  );
+
+  const rowHasSegment = useCallback(
+    (rowIndex: number, row?: ICell[]) =>
+      Boolean(getActiveSegmentForRow(rowIndex, row)),
+    [getActiveSegmentForRow]
+  );
+
   const addBoundaryTooCloseToExisting = useMemo(
     () =>
       isProgressNearAnyRegionBoundary(
@@ -587,36 +570,20 @@ export default function PassageDetailMarkVersesIsMobile({
     requestAnimationFrame(apply);
   }, []);
 
-  const handleRemoveBoundaryClick = useCallback(async () => {
-    const ctrl = playerControlsRef.current;
-    if (!ctrl?.isReady() || !removeBoundaryEnabled) return;
-
-    const p = ctrl.getProgress();
-    const hit = findClosestInternalJoin(
-      p,
-      waveformRegions,
-      SEGMENT_BOUNDARY_TOLERANCE_SEC
-    );
-    if (!hit) return;
-
-    const { join, leftSegment } = hit;
-
-    if (p >= join - 1e-6) {
-      let target = join - REMOVE_BOUNDARY_PLAYHEAD_NUDGE_SEC;
-      target = Math.max(leftSegment.start + 0.001, target);
-      target = Math.min(target, join - 0.001);
-      await ctrl.gotoTime(target);
-    }
-    ctrl.removeNextSegment();
-    syncProgressFromPlayer();
-  }, [removeBoundaryEnabled, waveformRegions, syncProgressFromPlayer]);
-
   useEffect(() => {
     const ctrl = playerControlsRef.current;
     if (ctrl?.isReady()) {
       setPlayerProgressSec(ctrl.getProgress());
     }
   }, [waveSegmentsJson, playerResetKey]);
+
+  useEffect(() => {
+    markVersesTailOpenRef.current = isMarkVersesTableTailIncomplete(
+      data,
+      ColName.Limits
+    );
+    playerControlsRef.current?.applyMarkVersesRegionColors?.();
+  }, [data, waveSegmentsJson]);
 
   const cloneTableData = useCallback(
     (tableData: ICell[][]) =>
@@ -627,6 +594,27 @@ export default function PassageDetailMarkVersesIsMobile({
       ),
     []
   );
+
+  const pushUndoSnapshot = useCallback(() => {
+    const snapshot: MarkVersesSnapshot = {
+      tableData: cloneTableData(
+        dataRef.current
+      ) as MarkVersesSnapshot['tableData'],
+      segmentsJson: segmentsRef.current,
+      pastedSegments,
+      waveSegmentsJson,
+      currentSegment,
+      currentSegmentIndex,
+    };
+    undoStackRef.current.push(snapshot);
+    setUndoAvailable(undoStackRef.current.canUndo());
+  }, [
+    cloneTableData,
+    pastedSegments,
+    waveSegmentsJson,
+    currentSegment,
+    currentSegmentIndex,
+  ]);
 
   const setActiveRowHighlight = useCallback(
     (tableData: ICell[][], rowIndex: number) => {
@@ -647,6 +635,155 @@ export default function PassageDetailMarkVersesIsMobile({
     []
   );
 
+  const parseCurrentSegmentRegion = useCallback((value: string) => {
+    const match = value.trim().match(/^([\d.]+)-([\d.]+)$/);
+    if (!match) return undefined;
+    const start = parseFloat(match[1]);
+    const end = parseFloat(match[2]);
+    if (Number.isNaN(start) || Number.isNaN(end)) return undefined;
+    return { start, end } as IRegion;
+  }, []);
+
+  const findRowForPlayhead = useCallback(
+    (tableData: ICell[][], playhead?: number) => {
+      const livePlayhead =
+        playhead ??
+        playerControlsRef.current?.getProgress() ??
+        playerProgressSec;
+      const rowSegs: {
+        idx: number;
+        start: number;
+        end: number;
+      }[] = [];
+      for (let i = 1; i < tableData.length; i++) {
+        const seg = getActiveSegmentForRow(i, tableData[i] as ICell[]);
+        if (seg) rowSegs.push({ idx: i, start: seg.start, end: seg.end });
+      }
+      rowSegs.sort((a, b) => a.start - b.start);
+      for (let i = 0; i < rowSegs.length; i++) {
+        const r = rowSegs[i];
+        const isLast = i === rowSegs.length - 1;
+        const inRegion =
+          livePlayhead >= r.start - 0.01 &&
+          (isLast
+            ? livePlayhead <= r.end + 0.01
+            : livePlayhead < r.end - SEGMENT_BOUNDARY_TOLERANCE_SEC);
+        if (inRegion) return r.idx;
+      }
+      return -1;
+    },
+    [getActiveSegmentForRow, playerProgressSec]
+  );
+
+  const findCurrentTableRowIndex = useCallback(
+    (tableData: ICell[][], preferPlayhead: boolean = false) => {
+      if (preferPlayhead) {
+        const playheadRow = findRowForPlayhead(tableData);
+        if (playheadRow > 0) return playheadRow;
+      }
+
+      const existingHighlight = tableData.findIndex(
+        (row, index) =>
+          index > 0 &&
+          ((row[ColName.Limits] as ICell).className ?? '').includes('cur')
+      );
+
+      const target = parseCurrentSegmentRegion(currentSegment);
+
+      if (target) {
+        for (let i = 1; i < tableData.length; i++) {
+          const seg = getActiveSegmentForRow(i, tableData[i]);
+          if (!seg) continue;
+          if (
+            Math.abs(seg.start - target.start) <=
+              SEGMENT_ROW_MATCH_TOLERANCE_SEC &&
+            Math.abs(seg.end - target.end) <= SEGMENT_ROW_MATCH_TOLERANCE_SEC
+          ) {
+            return i;
+          }
+        }
+        let startOnlyMatch = -1;
+        for (let i = 1; i < tableData.length; i++) {
+          const seg = getActiveSegmentForRow(i, tableData[i]);
+          if (!seg) continue;
+          if (
+            Math.abs(seg.start - target.start) <=
+            SEGMENT_ROW_MATCH_TOLERANCE_SEC
+          ) {
+            startOnlyMatch = i;
+          }
+        }
+        if (startOnlyMatch > 0) return startOnlyMatch;
+      } else if (existingHighlight > 0) {
+        return existingHighlight;
+      }
+
+      if (
+        currentSegmentIndex > 0 &&
+        currentSegmentIndex < tableData.length &&
+        rowHasSegment(currentSegmentIndex, tableData[currentSegmentIndex])
+      ) {
+        if (!target) return currentSegmentIndex;
+        const rowSeg = getActiveSegmentForRow(
+          currentSegmentIndex,
+          tableData[currentSegmentIndex] as ICell[]
+        );
+        if (
+          rowSeg &&
+          Math.abs(rowSeg.start - target.start) <=
+            SEGMENT_ROW_MATCH_TOLERANCE_SEC &&
+          Math.abs(rowSeg.end - target.end) <= SEGMENT_ROW_MATCH_TOLERANCE_SEC
+        ) {
+          return currentSegmentIndex;
+        }
+      }
+
+      if (existingHighlight > 0) return existingHighlight;
+
+      if (waveformRegions.length > 0) {
+        const sorted = [...waveformRegions].sort((a, b) => a.start - b.start);
+        for (let i = 0; i < sorted.length; i++) {
+          const r = sorted[i];
+          const isLast = i === sorted.length - 1;
+          const inRegion =
+            playerProgressSec >= r.start - 0.01 &&
+            (isLast
+              ? playerProgressSec <= r.end + 0.01
+              : playerProgressSec < r.end - SEGMENT_BOUNDARY_TOLERANCE_SEC);
+          if (inRegion) {
+            const regionIndex = waveformRegions.findIndex(
+              (wr) => wr.start === r.start && wr.end === r.end
+            );
+            if (regionIndex >= 0) return regionIndex + 1;
+          }
+        }
+      }
+
+      return -1;
+    },
+    [
+      currentSegment,
+      currentSegmentIndex,
+      getActiveSegmentForRow,
+      rowHasSegment,
+      parseCurrentSegmentRegion,
+      playerProgressSec,
+      waveformRegions,
+      findRowForPlayhead,
+    ]
+  );
+
+  const applyActiveRowHighlight = useCallback(
+    (tableData: ICell[][], preferPlayhead: boolean = false) => {
+      const rowIndex = findCurrentTableRowIndex(tableData, preferPlayhead);
+      if (rowIndex > 0) {
+        setActiveRowHighlight(tableData, rowIndex);
+      }
+      return rowIndex;
+    },
+    [findCurrentTableRowIndex, setActiveRowHighlight]
+  );
+
   const buildReferenceCell = useCallback((value: string, cell: ICell) => {
     return {
       ...cell,
@@ -655,108 +792,59 @@ export default function PassageDetailMarkVersesIsMobile({
     };
   }, []);
 
-  const parseReferencePart = useCallback(
-    (value: string, fallbackChapter: number) => {
-      const match = /^(?:(\d+):)?(\d+)([a-e]?)$/i.exec(value.trim());
-      if (!match) return undefined;
-      return {
-        chapter: match[1] ? parseInt(match[1], 10) : fallbackChapter,
-        verse: parseInt(match[2], 10),
-        suffix: (match[3] ?? '').toLowerCase(),
-      } as IParsedReference;
+  /** Assign passage refs after the saved range; add rows when the range no longer covers them. */
+  const redistributeTableTailAfterSave = useCallback(
+    (
+      tableData: ICell[][],
+      startRowIndex: number,
+      passageRange: string[],
+      endPassageIdx: number,
+      leadingRef?: string
+    ) => {
+      if (endPassageIdx < 0) return;
+
+      const tailPassageRefs = leadingRef
+        ? [leadingRef, ...passageRange.slice(endPassageIdx + 1)]
+        : passageRange.slice(endPassageIdx + 1);
+      const insertIndex = startRowIndex + 1;
+      const oldTail = tableData.splice(insertIndex);
+
+      const newTail: ICell[][] = tailPassageRefs.map((passageRef, index) => {
+        const oldRow = oldTail[index] as ICell[] | undefined;
+        if (oldRow) {
+          return [
+            { ...(oldRow[ColName.Limits] as ICell) },
+            buildReferenceCell(passageRef, oldRow[ColName.Ref] as ICell),
+          ];
+        }
+        return rowCells(['', passageRef]);
+      });
+
+      for (
+        let index = tailPassageRefs.length;
+        index < oldTail.length;
+        index += 1
+      ) {
+        const oldRow = oldTail[index] as ICell[] | undefined;
+        if (!oldRow) continue;
+        if (`${oldRow[ColName.Limits]?.value ?? ''}`.trim()) {
+          newTail.push(oldRow.map((cell) => ({ ...cell })));
+        }
+      }
+
+      tableData.push(...newTail);
     },
-    []
+    [buildReferenceCell, rowCells]
   );
 
   const parseReferenceValue = useCallback(
-    (value: string) => {
-      const normalized = value.replace(/[–—]/g, '-').replace(/\s+/g, '').trim();
-      if (!normalized) return undefined;
-
-      const [startText, endText] = normalized.split('-', 2);
-      const start = parseReferencePart(startText, 0);
-      if (!start) return undefined;
-      const end = endText ? parseReferencePart(endText, start.chapter) : start;
-      if (!end) return undefined;
-      return { start, end };
-    },
-    [parseReferencePart]
-  );
-
-  const formatReferenceValue = useCallback(
-    ({
-      startChapter,
-      startVerse,
-      startSuffix,
-      endChapter,
-      endVerse,
-      endSuffix,
-      splitVerse,
-    }: EditReferenceValue) => {
-      const startLabel = `${startChapter}:${startVerse}${startSuffix}`;
-      const sameVerse = startChapter === endChapter && startVerse === endVerse;
-
-      if (!splitVerse || sameVerse) {
-        if (endSuffix && endSuffix !== startSuffix) {
-          return `${startLabel}-${endVerse}${endSuffix}`;
-        }
-        return startLabel;
-      }
-
-      if (startChapter === endChapter) {
-        return `${startLabel}-${endVerse}${endSuffix}`;
-      }
-
-      return `${startLabel}-${endChapter}:${endVerse}${endSuffix}`;
-    },
+    (value: string) => parseMarkVersesReference(value),
     []
   );
 
-  const getHighestVerseInput = useCallback(
-    (tableData: ICell[][]) => {
-      const highestVerse = tableData.reduce((maxVerse, row, index) => {
-        if (index === 0) return maxVerse;
-        const parsedReference = parseReferenceValue(
-          `${row[ColName.Ref]?.value ?? ''}`
-        );
-        if (!parsedReference) return maxVerse;
-        return Math.max(
-          maxVerse,
-          parsedReference.start.verse,
-          parsedReference.end.verse
-        );
-      }, 0);
-
-      return highestVerse > 0 ? highestVerse : 1;
-    },
-    [parseReferenceValue]
-  );
-
-  const getVerseOptionsFromInputs = useCallback(
-    (tableData: ICell[][]) => {
-      const verseNumbers = tableData.reduce<number[]>(
-        (allVerses, row, index) => {
-          if (index === 0) return allVerses;
-          const parsedReference = parseReferenceValue(
-            `${row[ColName.Ref]?.value ?? ''}`
-          );
-          if (!parsedReference) return allVerses;
-          allVerses.push(
-            parsedReference.start.verse,
-            parsedReference.end.verse
-          );
-          return allVerses;
-        },
-        []
-      );
-
-      const uniqueSortedVerses = Array.from(new Set(verseNumbers)).sort(
-        (left, right) => left - right
-      );
-
-      return uniqueSortedVerses.length > 0 ? uniqueSortedVerses : [1];
-    },
-    [parseReferenceValue]
+  const formatReferenceValue = useCallback(
+    (value: EditReferenceValue) => formatMarkVersesReference(value),
+    []
   );
 
   const findHighlightedRowIndex = useCallback((tableData: ICell[][]) => {
@@ -782,83 +870,139 @@ export default function PassageDetailMarkVersesIsMobile({
       const nextRow = dataRef.current[rowIndex + 1] as ICell[] | undefined;
       const nextValue = `${nextRow?.[ColName.Ref]?.value ?? ''}`;
       const nextRef = parseReferenceValue(nextValue);
-      const existingSplit =
+      const hasLetterSuffix = markVersesReferenceHasLetterSuffix(currentRef);
+      const spansMultipleVerses =
         currentRef.start.chapter !== currentRef.end.chapter ||
         currentRef.start.verse !== currentRef.end.verse;
+      const existingSplit = spansMultipleVerses || hasLetterSuffix;
       const canSplit =
         existingSplit ||
         Boolean(nextRef) ||
         Boolean(`${nextRow?.[ColName.Ref]?.value ?? ''}`.trim()) ||
         Boolean(`${nextRow?.[ColName.Limits]?.value ?? ''}`.trim());
+      const passageRange =
+        passageRefs.current.length > 0
+          ? passageRefs.current
+          : getPassageRefs(passage);
+      const endVerseOptions = getEndingVerseOptions(
+        passageRange,
+        currentRef.start.chapter,
+        currentRef.start.verse
+      );
+      const defaultEnd =
+        endVerseOptions.find(
+          (option) =>
+            option.chapter === currentRef.end.chapter &&
+            option.verse === currentRef.end.verse
+        ) ?? endVerseOptions[endVerseOptions.length - 1];
 
       return {
         rowIndex,
         limits: `${row[ColName.Limits]?.value ?? ''}`,
         canSplit,
-        splitVerse: existingSplit,
+        splitVerse: hasLetterSuffix,
         existingSplit,
-        maxVerse: Math.max(
-          getHighestVerseInput(dataRef.current),
-          currentRef.start.verse,
-          currentRef.end.verse,
-          nextRef?.start.verse ?? 0
-        ),
-        verseOptions: getVerseOptionsFromInputs(dataRef.current),
+        endVerseOptions,
         startChapter: currentRef.start.chapter,
         startVerse: currentRef.start.verse,
-        startSuffix: currentRef.start.suffix,
-        endChapter: existingSplit
-          ? currentRef.end.chapter
-          : (nextRef?.start.chapter ?? currentRef.end.chapter),
-        endVerse: existingSplit
-          ? currentRef.end.verse
-          : (nextRef?.start.verse ?? currentRef.end.verse),
-        endSuffix: existingSplit
-          ? currentRef.end.suffix
-          : (nextRef?.start.suffix ?? currentRef.end.suffix),
+        startSuffix: hasLetterSuffix ? currentRef.start.suffix : '',
+        endChapter: defaultEnd.chapter,
+        endVerse: defaultEnd.verse,
+        endSuffix: hasLetterSuffix ? currentRef.end.suffix : '',
       } as IEditReferenceDialogState;
     },
-    [getHighestVerseInput, getVerseOptionsFromInputs, parseReferenceValue]
+    [getPassageRefs, parseReferenceValue, passage]
   );
+
+  const seekToRowSegment = useCallback(
+    async (rowIndex: number) => {
+      const row = dataRef.current[rowIndex] as ICell[] | undefined;
+      if (!row) return;
+
+      const activeSegment = getActiveSegmentForRow(rowIndex, row);
+      const limits = row[ColName.Limits] as ICell;
+      const alreadyCurrent = (limits.className ?? '').includes('cur');
+      const newData = cloneTableData(dataRef.current);
+      setActiveRowHighlight(newData, rowIndex);
+      if (
+        !alreadyCurrent ||
+        tableSignature(dataRef.current) !== tableSignature(newData)
+      ) {
+        setData(newData);
+      }
+
+      if (!activeSegment) return;
+
+      setCurrentSegment(activeSegment, rowIndex);
+      const ctrl = playerControlsRef.current;
+      if (ctrl?.isReady()) {
+        // Nudge past the join so the waveform does not pick the prior segment at the boundary.
+        const seekTime =
+          activeSegment.start > 0
+            ? activeSegment.start + SEGMENT_BOUNDARY_TOLERANCE_SEC
+            : activeSegment.start;
+        await ctrl.gotoTime(seekTime, activeSegment);
+        setCurrentSegment(activeSegment, rowIndex);
+        syncProgressFromPlayer();
+      }
+    },
+    [
+      getActiveSegmentForRow,
+      cloneTableData,
+      setActiveRowHighlight,
+      tableSignature,
+      setCurrentSegment,
+      setData,
+      syncProgressFromPlayer,
+    ]
+  );
+
+  const scrollActiveRowIntoView = useCallback((rowIndex: number) => {
+    if (rowIndex <= 0 || skipScrollIntoViewRef.current) return;
+    const rowEl = tableRowRefs.current[rowIndex - 1];
+    if (rowEl && typeof rowEl.scrollIntoView === 'function') {
+      rowEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+  }, []);
 
   const handleSelectRow = useCallback(
     (rowIndex: number) => {
       const row = dataRef.current[rowIndex] as ICell[] | undefined;
-      if (!row) return;
-
-      if (isReferenceEditing) {
-        const nextDialog = buildEditReferenceDialogState(rowIndex);
-        if (nextDialog) {
-          setEditReferenceDialog(nextDialog);
-        }
-        const activeSegment = getSegmentFromRow(row);
-        const newData = cloneTableData(dataRef.current);
-        setActiveRowHighlight(newData, rowIndex);
-        setData(newData);
-        if (activeSegment) {
-          setCurrentSegment(activeSegment, rowIndex - 1);
-        }
-        return;
-      }
-
-      const activeSegment = getSegmentFromRow(row);
-      if (!activeSegment) return;
-
-      const newData = cloneTableData(dataRef.current);
-      setActiveRowHighlight(newData, rowIndex);
-      setData(newData);
-      setCurrentSegment(activeSegment, rowIndex - 1);
+      if (!row || !rowHasSegment(rowIndex, row)) return;
+      const limits = row[ColName.Limits] as ICell;
+      if ((limits.className ?? '').includes('cur')) return;
+      skipScrollIntoViewRef.current = true;
+      void seekToRowSegment(rowIndex).finally(() => {
+        skipScrollIntoViewRef.current = false;
+      });
     },
-    [
-      buildEditReferenceDialogState,
-      cloneTableData,
-      getSegmentFromRow,
-      isReferenceEditing,
-      setCurrentSegment,
-      setData,
-      setActiveRowHighlight,
-    ]
+    [rowHasSegment, seekToRowSegment]
   );
+
+  const syncTableHighlightToCurrentSegment = useCallback(() => {
+    if (dataRef.current.length === 0) return;
+
+    const newData = cloneTableData(dataRef.current);
+    const rowIndex = applyActiveRowHighlight(newData);
+    if (tableSignature(dataRef.current) === tableSignature(newData)) return;
+    setData(newData);
+    scrollActiveRowIntoView(rowIndex);
+  }, [
+    applyActiveRowHighlight,
+    cloneTableData,
+    setData,
+    tableSignature,
+    scrollActiveRowIntoView,
+  ]);
+
+  useEffect(() => {
+    syncTableHighlightToCurrentSegment();
+  }, [
+    currentSegment,
+    currentSegmentIndex,
+    waveSegmentsJson,
+    syncTableHighlightToCurrentSegment,
+  ]);
 
   const handleCloseSplitVerseDialog = () => {
     setEditReferenceDialog(undefined);
@@ -867,119 +1011,69 @@ export default function PassageDetailMarkVersesIsMobile({
   const handleSaveSplitVerseDialog = (value: EditReferenceValue) => {
     if (!editReferenceDialog) return;
 
-    const previousData = cloneTableData(dataRef.current);
+    const saveValue: EditReferenceValue = value.splitVerse
+      ? value
+      : { ...value, startSuffix: '', endSuffix: '' };
+    pushUndoSnapshot();
     const newData = cloneTableData(dataRef.current);
-    const findRowIndexForVerse = (
-      chapter: number,
-      verse: number,
-      startAt = 1
-    ) =>
-      newData.findIndex((existingRow, index) => {
-        if (index < startAt) return false;
-        const parsedReference = parseReferenceValue(
-          `${existingRow[ColName.Ref]?.value ?? ''}`
-        );
-        return (
-          parsedReference?.start.chapter === chapter &&
-          parsedReference.start.verse === verse
-        );
-      });
-
-    const startRowIndex = Math.max(
-      findRowIndexForVerse(value.startChapter, value.startVerse),
-      1
-    );
-    const endRowIndex = findRowIndexForVerse(
-      value.endChapter,
-      value.endVerse,
-      startRowIndex + 1
-    );
-    const hasDistinctEndRow =
-      endRowIndex > startRowIndex && Boolean(newData[endRowIndex]);
+    const startRowIndex = editReferenceDialog.rowIndex;
     const row = newData[startRowIndex] as ICell[] | undefined;
     if (!row) return;
 
-    if (!value.splitVerse) {
-      row[ColName.Ref] = buildReferenceCell(
-        `${value.startChapter}:${value.startVerse}${value.startSuffix}`,
-        row[ColName.Ref] as ICell
-      );
+    const nextReference = formatReferenceValue(saveValue);
+    row[ColName.Ref] = buildReferenceCell(
+      nextReference,
+      row[ColName.Ref] as ICell
+    );
 
-      if (
-        hasDistinctEndRow &&
-        !editReferenceDialog.existingSplit &&
-        newData[endRowIndex]
-      ) {
-        const nextRow = newData[endRowIndex] as ICell[];
-        nextRow[ColName.Ref] = buildReferenceCell(
-          `${value.endChapter}:${value.endVerse}${value.endSuffix}`,
-          nextRow[ColName.Ref] as ICell
-        );
-      }
-    } else {
-      const referenceValues = newData.map(
-        (existingRow) => `${existingRow[ColName.Ref]?.value ?? ''}`
+    const passageRange =
+      passageRefs.current.length > 0
+        ? passageRefs.current
+        : getPassageRefs(passage);
+    const startPassageIdx = passageRange.findIndex((ref) => {
+      const parsed = parseReferenceValue(ref);
+      return (
+        parsed?.start.chapter === saveValue.startChapter &&
+        parsed.start.verse === saveValue.startVerse
       );
-      const nextReference = formatReferenceValue(value);
-      row[ColName.Ref] = buildReferenceCell(
-        nextReference,
-        row[ColName.Ref] as ICell
+    });
+    const endPassageIdx = passageRange.findIndex((ref) => {
+      const parsed = parseReferenceValue(ref);
+      return (
+        parsed?.start.chapter === saveValue.endChapter &&
+        parsed.start.verse === saveValue.endVerse
       );
+    });
 
-      if (hasDistinctEndRow) {
-        const deleteRowIndex = endRowIndex;
+    const nextLetter =
+      saveValue.splitVerse && saveValue.endSuffix
+        ? nextMarkVersesLetterSuffix(saveValue.endSuffix)
+        : undefined;
+    const leadingRef = nextLetter
+      ? `${saveValue.endChapter}:${saveValue.endVerse}${nextLetter}`
+      : undefined;
 
-        for (let index = deleteRowIndex; index < newData.length; index += 1) {
-          const shiftedValue = referenceValues[index + 1] ?? '';
-          const referenceCell = newData[index]?.[ColName.Ref] as
-            | ICell
-            | undefined;
-          if (!referenceCell) continue;
-          newData[index][ColName.Ref] = buildReferenceCell(
-            shiftedValue,
-            referenceCell
-          );
-        }
-      }
+    if (startPassageIdx >= 0 && endPassageIdx >= 0) {
+      redistributeTableTailAfterSave(
+        newData,
+        startRowIndex,
+        passageRange,
+        endPassageIdx,
+        leadingRef
+      );
     }
 
-    setUndoState({
-      tableData: previousData,
-    });
     setActiveRowHighlight(newData, startRowIndex);
     setData(newData);
     setSegments();
 
     const activeSegment = getSegmentFromRow(newData[startRowIndex] as ICell[]);
     if (activeSegment) {
-      setCurrentSegment(activeSegment, startRowIndex - 1);
+      setCurrentSegment(activeSegment, startRowIndex);
     }
 
     toolChanged(verseToolId);
     setEditReferenceDialog(undefined);
-  };
-
-  const handleUndoSplitVerseSave = () => {
-    if (!undoState) return;
-
-    const restoredData = cloneTableData(undoState.tableData);
-    const highlightedRowIndex = findHighlightedRowIndex(restoredData);
-    setData(restoredData);
-    setSegments();
-
-    if (highlightedRowIndex > 0) {
-      const activeSegment = getSegmentFromRow(
-        restoredData[highlightedRowIndex] as ICell[]
-      );
-      if (activeSegment) {
-        setCurrentSegment(activeSegment, highlightedRowIndex - 1);
-      }
-    } else {
-      setCurrentSegment(undefined, -1);
-    }
-
-    toolChanged(verseToolId);
-    setUndoState(undefined);
   };
 
   const resetSegments = (regions: IRegion[]) => {
@@ -1034,7 +1128,14 @@ export default function PassageDetailMarkVersesIsMobile({
         let nextReference = `${previousReference?.value ?? ''}`;
 
         if (!nextReference && autoRefs[index]) {
-          nextReference = autoRefs[index];
+          const priorNewRow = newData[newData.length - 1] as
+            | ICell[]
+            | undefined;
+          const priorRef = `${priorNewRow?.[ColName.Ref]?.value ?? ''}`;
+          const suffixIncrement = priorRef
+            ? incrementMarkVersesReferenceSuffix(priorRef)
+            : undefined;
+          nextReference = suffixIncrement ?? autoRefs[index];
         }
         if (region.label && init) {
           const refsSoFar = collectRefs(newData);
@@ -1047,12 +1148,7 @@ export default function PassageDetailMarkVersesIsMobile({
         }
 
         const row = rowCells([formLim(region), nextReference]);
-        const limits = row[ColName.Limits] as ICell;
         const reference = row[ColName.Ref] as ICell;
-        // Match `PassageDetailContext` / desktop: `currentSegment` is `prettySegment`, not mm:ss.
-        if (prettySegment(region).trim() === currentSegment.trim()) {
-          limits.className = `${limits.className ?? 'lim'} cur`;
-        }
         if (!refMatch(nextReference)) {
           reference.className = nextReference ? 'ref Err' : 'ref';
         }
@@ -1070,11 +1166,31 @@ export default function PassageDetailMarkVersesIsMobile({
       const change =
         numSegments !== regions.length ||
         tableSignature(previousData) !== tableSignature(newData);
+      const addedSegment = !init && regions.length > prevRegionCountRef.current;
+      prevRegionCountRef.current = regions.length;
 
       if (change) {
-        setData(newData);
+        const rowIndex = applyActiveRowHighlight(newData, addedSegment);
+        if (tableSignature(dataRef.current) !== tableSignature(newData)) {
+          setData(newData);
+        }
         if (reset) resetSegments(regions);
         if (!init && !isChanged(verseToolId)) toolChanged(verseToolId);
+        if (addedSegment && rowIndex > 0) {
+          // If audio is currently playing, don't seek to the new row — that
+          // would jump the playhead backward to the start of the new segment.
+          // The user is mid-listen; let playback continue. Just scroll the row
+          // into view so they can see which segment was added.
+          if (playerControlsRef.current?.isPlaying()) {
+            scrollActiveRowIntoView(rowIndex);
+          } else {
+            queueMicrotask(() => {
+              void seekToRowSegment(rowIndex);
+            });
+          }
+        } else if (rowIndex > 0) {
+          scrollActiveRowIntoView(rowIndex);
+        }
       }
     },
     [
@@ -1083,15 +1199,17 @@ export default function PassageDetailMarkVersesIsMobile({
       passage,
       emptyTable,
       rowCells,
-      t.startStop,
-      t.reference,
+      t,
       collectRefs,
       numSegments,
+      tableSignature,
       toolChanged,
       formLim,
-      currentSegment,
-      setData,
+      applyActiveRowHighlight,
       isChanged,
+      setData,
+      scrollActiveRowIntoView,
+      seekToRowSegment,
     ]
   );
 
@@ -1109,7 +1227,7 @@ export default function PassageDetailMarkVersesIsMobile({
     });
   }, [mediafileId, passageRefsKey, savedVerseSegmentsJson]);
 
-  const setSegments = () => {
+  const setSegments = useCallback(() => {
     const regions: IRegion[] = [];
     dataRef.current.forEach((row, index) => {
       if (index === 0) return;
@@ -1121,77 +1239,193 @@ export default function PassageDetailMarkVersesIsMobile({
       });
     });
     resetSegments(regions);
-  };
+  }, [getSegmentFromRow]);
 
-  const handleCellsChanged = (changes: Array<ICellChange>) => {
-    const newData = cloneTableData(dataRef.current);
+  const flushSetSegments = useCallback(() => {
+    if (setSegmentsDebounceRef.current) {
+      clearTimeout(setSegmentsDebounceRef.current);
+      setSegmentsDebounceRef.current = undefined;
+      setSegments();
+    }
+  }, [setSegments]);
 
-    let changed = false;
-    let activeRowIndex = -1;
+  const scheduleSetSegments = useCallback(() => {
+    if (setSegmentsDebounceRef.current) {
+      clearTimeout(setSegmentsDebounceRef.current);
+    }
+    setSegmentsDebounceRef.current = setTimeout(() => {
+      setSegmentsDebounceRef.current = undefined;
+      setSegments();
+    }, REF_SEGMENT_SYNC_DEBOUNCE_MS);
+  }, [setSegments]);
 
-    changes.forEach((change) => {
-      const value = change.value?.trim() ?? '';
-      const row = newData[change.row];
-      if (!row) return;
+  const flushSetSegmentsRef = useRef(flushSetSegments);
+  flushSetSegmentsRef.current = flushSetSegments;
 
-      const cell = row[change.col] as ICell | undefined;
-      if (!cell) return;
+  const persistSegments = useCallback(async () => {
+    if (savingRef.current || !media) return;
+    flushSetSegmentsRef.current();
+    savingRef.current = true;
+    let segments = updateSegments(
+      NamedRegions.Transcription,
+      updateSegments(
+        NamedRegions.Verse,
+        media.attributes?.segments,
+        segmentsRef.current
+      ),
+      segmentsRef.current
+    );
+    if (!hasBtRecordings) {
+      segments = updateSegments(
+        NamedRegions.BackTranslation,
+        segments,
+        segmentsRef.current
+      );
+    }
+    segments = updateSegments(NamedRegions.TRTask, segments, '');
+    try {
+      await projectSegmentSave({ media, segments });
+      saveCompleted(verseToolId);
+      suppressVerseResyncFromMediaRef.current = false;
+      toolChanged(verseToolId, false);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      saveCompleted(verseToolId, message);
+    } finally {
+      savingRef.current = false;
+      canceling.current = false;
+      setComplete(0);
+    }
+  }, [
+    media,
+    hasBtRecordings,
+    projectSegmentSave,
+    saveCompleted,
+    toolChanged,
+    setComplete,
+  ]);
 
-      if (value !== cell.value) {
-        changed = true;
-        activeRowIndex = change.row;
-
-        if (change.col === ColName.Ref) {
-          row[change.col] = {
-            ...cell,
-            value,
-            className: `ref${value && !refMatch(value) ? ' Err' : ''}`,
-          };
-        } else {
-          row[change.col] = {
-            ...cell,
-            value,
-          };
+  const restoreUndoSnapshot = useCallback(
+    (snapshot: MarkVersesSnapshot) => {
+      const restoredData = cloneTableData(snapshot.tableData as ICell[][]);
+      segmentsRef.current = snapshot.segmentsJson;
+      suppressVerseResyncFromMediaRef.current = true;
+      resettingSegmentsRef.current = true;
+      setWaveSegmentsJson(snapshot.waveSegmentsJson);
+      // Reload waveform regions: clear first so React sees a distinct value
+      // even when snapshot.segmentsJson matches the current pastedSegments.
+      setPastedSegments('');
+      setTimeout(() => {
+        resettingSegmentsRef.current = true;
+        setPastedSegments(snapshot.segmentsJson);
+      }, 40);
+      setData(restoredData);
+      const restoredRegion = parseCurrentSegmentRegion(snapshot.currentSegment);
+      setCurrentSegment(restoredRegion, snapshot.currentSegmentIndex);
+      const highlightedRowIndex = findHighlightedRowIndex(restoredData);
+      if (highlightedRowIndex > 0) {
+        const activeSegment = getSegmentFromRow(
+          restoredData[highlightedRowIndex] as ICell[]
+        );
+        if (activeSegment) {
+          void playerControlsRef.current?.gotoTime(
+            activeSegment.start > 0
+              ? activeSegment.start + SEGMENT_BOUNDARY_TOLERANCE_SEC
+              : activeSegment.start,
+            activeSegment
+          );
         }
       }
-    });
+      toolChanged(verseToolId);
+    },
+    [
+      cloneTableData,
+      setData,
+      parseCurrentSegmentRegion,
+      setCurrentSegment,
+      findHighlightedRowIndex,
+      toolChanged,
+      getSegmentFromRow,
+    ]
+  );
 
-    if (changed) {
-      setUndoState(undefined);
-      setActiveRowHighlight(newData, activeRowIndex);
-      const activeRow =
-        activeRowIndex > 0 ? (newData[activeRowIndex] as ICell[]) : undefined;
-      const activeSegment = getSegmentFromRow(activeRow);
+  const handleUndo = () => {
+    const snapshot = undoStackRef.current.pop();
+    if (!snapshot) return;
+    setUndoAvailable(undoStackRef.current.canUndo());
+    restoreUndoSnapshot(snapshot);
+  };
 
-      setData(newData);
-      setSegments();
-      if (activeSegment) {
-        setCurrentSegment(activeSegment, activeRowIndex - 1);
+  const handleRemoveBoundaryClick = useCallback(async () => {
+    const ctrl = playerControlsRef.current;
+    if (!ctrl?.isReady() || !removeBoundaryEnabled) return;
+
+    const p = ctrl.getProgress();
+    const hit = findClosestInternalJoin(
+      p,
+      waveformRegions,
+      SEGMENT_BOUNDARY_TOLERANCE_SEC
+    );
+    if (!hit) return;
+
+    const { join, leftSegment } = hit;
+    const sorted = [...waveformRegions].sort((a, b) => a.start - b.start);
+    const leftIdx = sorted.findIndex(
+      (r) => Math.abs(r.start - leftSegment.start) < 0.001
+    );
+    const rightEnd =
+      leftIdx >= 0 && leftIdx < sorted.length - 1
+        ? sorted[leftIdx + 1].end
+        : join;
+
+    pushUndoSnapshot();
+
+    if (p >= join - 1e-6) {
+      let target = join - REMOVE_BOUNDARY_PLAYHEAD_NUDGE_SEC;
+      target = Math.max(leftSegment.start + 0.001, target);
+      target = Math.min(target, join - 0.001);
+      await ctrl.gotoTime(target);
+    }
+    ctrl.removeNextSegment();
+    syncProgressFromPlayer();
+
+    if (leftIdx >= 0) {
+      const mergedSegment = {
+        start: leftSegment.start,
+        end: rightEnd,
+      };
+      const tableRowIndex = leftIdx + 1;
+      skipScrollIntoViewRef.current = true;
+      await seekToRowSegment(tableRowIndex);
+      setCurrentSegment(mergedSegment, tableRowIndex);
+      skipScrollIntoViewRef.current = false;
+    }
+  }, [
+    removeBoundaryEnabled,
+    waveformRegions,
+    syncProgressFromPlayer,
+    pushUndoSnapshot,
+    seekToRowSegment,
+    setCurrentSegment,
+  ]);
+
+  const scheduleAutosave = useMemo(
+    () =>
+      debounce(() => {
+        void persistSegments();
+      }, AUTOSAVE_DEBOUNCE_MS),
+    [persistSegments]
+  );
+
+  useEffect(
+    () => () => {
+      scheduleAutosave.clear();
+      if (setSegmentsDebounceRef.current) {
+        clearTimeout(setSegmentsDebounceRef.current);
       }
-      toolChanged(verseToolId);
-    }
-  };
-
-  const handleParsePaste = (clipboard: string) => {
-    const rawData = cleanClipboard(clipboard);
-    if (rawData.length === 0) {
-      showMessage(tt.noData.replace('{0}', t.clipboard));
-      return [];
-    }
-    const rawWidth = (rawData[0] as string[]).length;
-    if (![1, 2].includes(rawWidth)) {
-      showMessage(t.pasteFormat);
-      return [];
-    }
-
-    if (rawWidth === 1) {
-      toolChanged(verseToolId);
-      return rawData;
-    }
-
-    showMessage('TODO: multi-column paste not implemented');
-    return [];
-  };
+    },
+    [scheduleAutosave]
+  );
 
   // const handleCopy = () => {
   //   const content = dataRef.current
@@ -1219,17 +1453,26 @@ export default function PassageDetailMarkVersesIsMobile({
   //     });
   // };
 
-  const handleToggleReferenceEditing = () => {
-    setIsReferenceEditing((value) => !value);
+  const handleEditReference = () => {
+    let rowIndex = findHighlightedRowIndex(dataRef.current);
+    if (rowIndex <= 0 && currentSegment.trim()) {
+      rowIndex = dataRef.current.findIndex((row, index) => {
+        if (index === 0) return false;
+        const segment = getSegmentFromRow(row);
+        return (
+          segment && prettySegment(segment).trim() === currentSegment.trim()
+        );
+      });
+    }
+    if (rowIndex <= 0) return;
+    const row = dataRef.current[rowIndex] as ICell[] | undefined;
+    if (!row || !getSegmentFromRow(row)) return;
+    const nextDialog = buildEditReferenceDialogState(rowIndex);
+    if (nextDialog) setEditReferenceDialog(nextDialog);
   };
 
-  useEffect(() => {
-    if (!isReferenceEditing) {
-      setEditReferenceDialog(undefined);
-    }
-  }, [isReferenceEditing]);
-
-  const handleResetMarkup = () => {
+  const performResetMarkup = () => {
+    pushUndoSnapshot();
     const refs =
       passageRefs.current.length > 0
         ? passageRefs.current
@@ -1248,15 +1491,12 @@ export default function PassageDetailMarkVersesIsMobile({
     segmentsRef.current = emptySegments;
     suppressVerseResyncFromMediaRef.current = true;
     setNumSegments(0);
+    prevRegionCountRef.current = 0;
     setData(newData);
     setCurrentSegment(undefined, -1);
-    setIsReferenceEditing(false);
     setEditReferenceDialog(undefined);
-    setUndoState(undefined);
-    setConfirm('');
-    setIssues([]);
-    // Non-empty so `usePlayerLogic` uses this instead of reloading Verse segments from the media record.
     setPastedSegments(emptySegments);
+    setWaveSegmentsJson(emptySegments);
     setPlayerResetKey((value) => value + 1);
 
     if (hadChanges) {
@@ -1264,16 +1504,25 @@ export default function PassageDetailMarkVersesIsMobile({
     }
   };
 
+  const handleResetMarkup = () => {
+    setResetConfirmOpen(true);
+  };
+
+  const handleAddSegment = () => {
+    pushUndoSnapshot();
+    playerControlsRef.current?.addSegment();
+  };
+
   useEffect(() => {
     if (saveRequested(verseToolId) && !savingRef.current) {
-      writeResources();
+      void persistSegments();
     } else if (clearRequested(verseToolId)) {
       clearCompleted(verseToolId);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [toolsChanged]);
 
-  const checkRefs = () => {
+  const checkRefs = useCallback(() => {
     const refs = collectRefs(dataRef.current);
     const noSegRefs = dataRef.current
       .filter((_, index) => index > 0)
@@ -1320,42 +1569,37 @@ export default function PassageDetailMarkVersesIsMobile({
     if (noRefSegs) nextIssues.push(t.noReferences);
     if (hasBtRecordings) nextIssues.push(t.btNotUpdated);
     return nextIssues;
-  };
+  }, [collectRefs, t, hasBtRecordings]);
 
-  const handleCancel = () => {
-    if (savingRef.current) {
-      showMessage(t.canceling);
-      canceling.current = true;
-      return;
-    }
-    checkSavedFn(() => {
-      toolChanged(verseToolId, false);
-      if (hasPermission) handleComplete(true);
-    });
-  };
+  useEffect(() => {
+    if (!hasChanged || !hasPermission || savingRef.current) return;
+    const issues = checkRefs();
+    if (issues.length > 0) return;
+    scheduleAutosave();
+  }, [toolsChanged, hasChanged, hasPermission, scheduleAutosave, checkRefs]);
 
   const resetSave = () => {
-    setConfirm('');
-    setIssues([]);
+    setResetConfirmOpen(false);
   };
 
-  const handleNoIssueSave = () => {
-    if (!hasPermission) return handleCancel();
-    if (!saveRequested(verseToolId)) {
-      startSave(verseToolId);
-    }
-    resetSave();
-  };
+  const pristineTableSignature = useMemo(() => {
+    const pristine = emptyTable();
+    const refs =
+      passageRefs.current.length > 0
+        ? passageRefs.current
+        : getPassageRefs(passage);
+    refs.forEach((ref) => {
+      pristine.push(rowCells(['', ref]));
+    });
+    return tableSignature(pristine);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [emptyTable, rowCells, passage, getPassageRefs]);
 
-  const handleSaveMarkup = () => {
-    const nextIssues = checkRefs();
-    if (nextIssues.length > 0) {
-      setIssues(nextIssues);
-      setConfirm(t.issues);
-    } else {
-      handleNoIssueSave();
-    }
-  };
+  const hasResettableState = useMemo(
+    () => numSegments > 0 || tableSignature(data) !== pristineTableSignature,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [numSegments, data, pristineTableSignature]
+  );
 
   if (!mediafileId) {
     return (
@@ -1378,16 +1622,21 @@ export default function PassageDetailMarkVersesIsMobile({
   }
 
   const editReferenceLabel = t.editReference || 'Edit Reference';
-  const doneEditingReferenceLabel = t.doneEditingReference || 'Done Editing';
   const splitVerseLabel = t.splitVerse || 'Split Verse';
   const resetLabel = t.reset || 'Reset';
-  const saveLabel = ts.save || 'Save';
   const cancelLabel = ts.cancel || 'Cancel';
+  const saveLabel = ts.save || 'Save';
 
   return (
     <Box
       id="mark-verses-mobile"
-      sx={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        flex: 1,
+        minHeight: 0,
+        overflow: 'hidden',
+      }}
     >
       <PassageDetailPlayer
         key={`mark-verses-player-${mediafileId}-${playerResetKey}`}
@@ -1398,21 +1647,24 @@ export default function PassageDetailMarkVersesIsMobile({
         suggestedSegments={pastedSegments}
         allowZoomAndSpeed={true}
         controlsRef={playerControlsRef}
+        markVersesTailOpenRef={markVersesTailOpenRef}
         onProgress={setPlayerProgressSec}
         onInteraction={syncProgressFromPlayer}
       />
       <TabActions
         sx={{
-          mt: 1,
+          mt: 0.5,
+          py: 0,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          gap: 1,
+          gap: 0.5,
           flexWrap: 'wrap',
-          width: !isMobile ? 'calc(100% + 32px)' : '100%', // lines up with the end of the wave
+          flexShrink: 0,
+          width: !isMobile ? 'calc(100% + 32px)' : '100%',
         }}
       >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0 }}>
           <LightTooltip
             id="markVersesSplitTip"
             title={tp.splitSegment.replace(
@@ -1421,11 +1673,12 @@ export default function PassageDetailMarkVersesIsMobile({
             )}
           >
             <IconButton
-              onClick={() => playerControlsRef.current?.addSegment()}
+              onClick={handleAddSegment}
               disabled={!hasPermission || addBoundaryTooCloseToExisting}
-              sx={{ pr: 2.5, pl: '0px !important' }}
+              size="small"
+              sx={{ pl: '0px !important' }}
             >
-              <AddIcon />
+              <AddIcon fontSize="small" />
             </IconButton>
           </LightTooltip>
           <LightTooltip
@@ -1435,83 +1688,50 @@ export default function PassageDetailMarkVersesIsMobile({
             <IconButton
               onClick={() => void handleRemoveBoundaryClick()}
               disabled={!hasPermission || !removeBoundaryEnabled}
-              sx={{ px: 1 }}
+              size="small"
             >
-              <RemoveIcon />
+              <RemoveIcon fontSize="small" />
             </IconButton>
           </LightTooltip>
+          {undoAvailable && (
+            <LightTooltip id="markVersesUndoTip" title={tr.undoTip}>
+              <IconButton
+                aria-label={tr.undoTip}
+                size="small"
+                onClick={handleUndo}
+              >
+                <UndoIcon fontSize="small" />
+              </IconButton>
+            </LightTooltip>
+          )}
         </Box>
         <AltButton
+          onClick={handleEditReference}
+          disabled={!hasPermission || numSegments === 0}
+          sx={{ px: 1.5, py: 0.5 }}
+        >
+          <EditIcon sx={{ mr: 0.5 }} fontSize="small" />
+          {editReferenceLabel}
+        </AltButton>
+        <AltButton
           onClick={handleResetMarkup}
-          disabled={!hasPermission}
-          sx={{ px: 2.5, py: 0.75 }}
+          disabled={!hasPermission || !hasResettableState}
+          sx={{ px: 1.5, py: 0.5 }}
         >
           {resetLabel}
         </AltButton>
       </TabActions>
-      <TabActions
-        sx={{
-          mt: 1,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 1,
-        }}
-      >
-        <GrowingSpacer />
-        <AltButton
-          onClick={handleToggleReferenceEditing}
-          disabled={!hasPermission}
-        >
-          {!isReferenceEditing && <EditIcon sx={{ mr: 1 }} fontSize="small" />}
-          {isReferenceEditing ? doneEditingReferenceLabel : editReferenceLabel}
-        </AltButton>
-        <GrowingSpacer />
-        {undoState && (
-          <LightTooltip id="markVersesUndoTip" title={tr.undoTip}>
-            <IconButton
-              aria-label={tr.undoTip}
-              onClick={handleUndoSplitVerseSave}
-            >
-              <UndoIcon />
-            </IconButton>
-          </LightTooltip>
-        )}
-        {hasChanged && (
-          <PriButton onClick={handleSaveMarkup} disabled={!hasPermission}>
-            {saveLabel}
-          </PriButton>
-        )}
-      </TabActions>
       <MarkVersesTableIsMobile
-        data={
-          hasPermission
-            ? data.map((row, rowIndex) =>
-                row.map((cell, colIndex) => ({
-                  ...cell,
-                  readOnly:
-                    rowIndex === 0 ||
-                    colIndex === ColName.Limits ||
-                    (colIndex === ColName.Ref && !isReferenceEditing),
-                }))
-              )
-            : data.map((row) =>
-                row.map((cell) => ({
-                  ...cell,
-                  readOnly: true,
-                }))
-              )
-        }
-        onCellsChanged={handleCellsChanged}
-        onParsePaste={handleParsePaste}
+        data={data}
         onRowSelect={handleSelectRow}
+        tableRowRefs={tableRowRefs}
       />
       {editReferenceDialog && (
         <EditReferenceDropdown
+          key={`edit-reference-${editReferenceDialog.rowIndex}-${editReferenceDialog.limits}-${editReferenceDialog.startChapter}-${editReferenceDialog.startVerse}-${editReferenceDialog.endChapter}-${editReferenceDialog.endVerse}`}
           open={Boolean(editReferenceDialog)}
           limits={editReferenceDialog.limits}
-          maxVerse={editReferenceDialog.maxVerse}
-          verseOptions={editReferenceDialog.verseOptions}
+          endVerseOptions={editReferenceDialog.endVerseOptions}
           title={`${editReferenceLabel} for`}
           cancelLabel={cancelLabel}
           saveLabel={saveLabel}
@@ -1521,18 +1741,14 @@ export default function PassageDetailMarkVersesIsMobile({
           onSave={handleSaveSplitVerseDialog}
         />
       )}
-      {confirm && (
+      {resetConfirmOpen && (
         <Confirm
-          jsx={
-            <ul>
-              {issues.map((issue, index) => (
-                <li key={`issue-${index}`}>{issue}</li>
-              ))}
-            </ul>
-          }
-          text={confirm}
+          text={`${resetLabel}?`}
+          yesResponse={() => {
+            performResetMarkup();
+            resetSave();
+          }}
           noResponse={resetSave}
-          yesResponse={handleNoIssueSave}
         />
       )}
     </Box>

@@ -18,19 +18,9 @@ const sampleData = [
 ];
 
 const mountTable = () => {
-  const onCellsChanged = cy.stub();
-  const onParsePaste = cy.stub().returns([]);
-
-  cy.wrap(onCellsChanged).as('onCellsChanged');
-  cy.wrap(onParsePaste).as('onParsePaste');
-
   cy.mount(
     <ThemeProvider theme={createTheme()}>
-      <MarkVersesTableIsMobile
-        data={sampleData}
-        onCellsChanged={onCellsChanged}
-        onParsePaste={onParsePaste}
-      />
+      <MarkVersesTableIsMobile data={sampleData} />
     </ThemeProvider>
   );
 };
@@ -45,19 +35,32 @@ describe('MarkVersesTableIsMobile', () => {
     cy.contains('10.1-18.9').should('be.visible');
   });
 
-  it('updates the selected reference cell', () => {
+  it('shows verse references as read-only text', () => {
     mountTable();
 
-    // Reference <input> is `readOnly` when the cell is not disabled so taps go to
-    // the parent dialog; exercise onChange by clearing readOnly in the test only.
-    const ref1 = 'input[aria-label="verse-reference-1"]';
-    cy.get(ref1)
-      .should('have.value', '2:11')
-      .and('have.attr', 'readOnly');
-    cy.get(ref1).then(($el) => {
-      ($el[0] as HTMLInputElement).readOnly = false;
-    });
-    cy.get(ref1).clear().type('2:15');
-    cy.get('@onCellsChanged').should('have.been.called');
+    cy.get('[aria-label="verse-reference-1"]').should('contain.text', '2:11');
+    cy.get('[aria-label="verse-reference-2"]').should('contain.text', '2:12');
+    cy.get('[aria-label="verse-reference-1"]').should('not.match', 'input');
+  });
+
+  it('keeps reference as text when the row has no timestamps', () => {
+    const dataWithoutLimits = [
+      [
+        { value: 'Start-Stop', readOnly: true },
+        { value: 'Reference', readOnly: true },
+      ],
+      [
+        { value: '', className: 'lim' },
+        { value: '2:11', className: 'ref', readOnly: true },
+      ],
+    ];
+    cy.mount(
+      <ThemeProvider theme={createTheme()}>
+        <MarkVersesTableIsMobile data={dataWithoutLimits} />
+      </ThemeProvider>
+    );
+
+    cy.get('[aria-label="verse-reference-1"]').should('contain.text', '2:11');
+    cy.get('[aria-label="verse-reference-1"]').should('not.match', 'input');
   });
 });
