@@ -206,6 +206,7 @@ export const exportProject =
       let start = 0;
       let laststart = 0;
       let laststartCount = 0;
+      let gatewayTimeoutRetries = 0;
       do {
         if (isCancelled && isCancelled()) {
           dispatch({
@@ -242,63 +243,77 @@ export const exportProject =
           }
         }
 
-        await axiosPost(
-          `offlineData/project/export/${exportType}/${remProjectId}/${start}`,
-          bodyFormData,
-          token
-        )
-          .then((result) => {
-            const response = result as { data: FileResponse };
-            const fr = response.data as FileResponse;
-            start = Number(fr.id);
-            switch (start) {
-              case -1:
+        try {
+          const result = (await axiosPost(
+            `offlineData/project/export/${exportType}/${remProjectId}/${start}`,
+            bodyFormData,
+            token
+          )) as { data: FileResponse };
+          gatewayTimeoutRetries = 0;
+          const fr = result.data as FileResponse;
+          start = Number(fr.id);
+          switch (start) {
+            case -1:
+              dispatch({
+                payload: result.data,
+                type: EXPORT_SUCCESS,
+              });
+              break;
+            case -2:
+              dispatch({
+                payload: errorStatus(undefined, fr.message),
+                type: EXPORT_ERROR,
+              });
+              break;
+            default:
+              if (start === laststart) laststartCount++;
+              else {
+                laststartCount = 0;
+                laststart = start;
+              }
+              if (laststartCount > 20) {
                 dispatch({
-                  payload: response.data,
-                  type: EXPORT_SUCCESS,
+                  payload: writingmsg,
+                  type: EXPORT_PENDING,
                 });
-                break;
-              case -2:
+              } else {
+                const pct = Math.min(
+                  Math.round((start / ((numberOfMedia + 15) * 1.5)) * 100),
+                  90
+                );
                 dispatch({
-                  payload: errorStatus(undefined, fr.message),
-                  type: EXPORT_ERROR,
+                  payload: pendingmsg.replace('{0}', pct.toString()),
+                  type: EXPORT_PENDING,
                 });
-                break;
-              default:
-                if (start === laststart) laststartCount++;
-                else {
-                  laststartCount = 0;
-                  laststart = start;
-                }
-                if (laststartCount > 20) {
-                  dispatch({
-                    payload: writingmsg,
-                    type: EXPORT_PENDING,
-                  });
-                } else {
-                  const pct = Math.min(
-                    Math.round((start / ((numberOfMedia + 15) * 1.5)) * 100),
-                    90
-                  );
-                  dispatch({
-                    payload: pendingmsg.replace('{0}', pct.toString()),
-                    type: EXPORT_PENDING,
-                  });
-                }
-            }
-          })
-          .catch((err: AxiosError) => {
+              }
+          }
+        } catch (err: unknown) {
+          const status = axiosErrorStatus(err);
+          if (
+            isGatewayTimeout(status) &&
+            gatewayTimeoutRetries < GATEWAY_TIMEOUT_MAX_RETRIES
+          ) {
+            gatewayTimeoutRetries++;
             logError(
-              Severity.error,
+              Severity.retry,
               errorReporter,
-              'Export Failed:' + (err.message || err.toString())
+              `export gateway timeout (504), retry ${gatewayTimeoutRetries}/${GATEWAY_TIMEOUT_MAX_RETRIES}`
             );
-            start = -1;
-            dispatch({
-              payload: errStatus(err),
-              type: EXPORT_ERROR,
-            });
+            await sleep(gatewayTimeoutDelayMs(gatewayTimeoutRetries - 1));
+            continue;
+          }
+          logError(
+            Severity.error,
+            errorReporter,
+            'Export Failed:' +
+              (err instanceof Error ? err.message : String(err))
+          );
+          start = -1;
+          dispatch({
+            payload: errStatus(err as AxiosError),
+            type: EXPORT_ERROR,
           });
+        }
         if (start > -1) {
           await new Promise((r) => setTimeout(r, 6000));
         }
@@ -359,10 +374,14 @@ const getNestedRecord = (
   key: string
 ): Record<string, unknown> | undefined => {
   const v = obj[key];
-  return v && typeof v === 'object' ? (v as Record<string, unknown>) : undefined;
+  return v && typeof v === 'object'
+    ? (v as Record<string, unknown>)
+    : undefined;
 };
 
-const organizationIdFromImportResource = (item: unknown): number | undefined => {
+const organizationIdFromImportResource = (
+  item: unknown
+): number | undefined => {
   if (!item || typeof item !== 'object') return undefined;
   const rec = item as Record<string, unknown>;
   if (rec.type === 'organization' && rec.id != null) {
@@ -384,7 +403,9 @@ const organizationIdFromImportResource = (item: unknown): number | undefined => 
   return undefined;
 };
 
-const organizationIdFromParsedPayload = (parsed: unknown): number | undefined => {
+const organizationIdFromParsedPayload = (
+  parsed: unknown
+): number | undefined => {
   if (parsed == null) return undefined;
   if (Array.isArray(parsed)) {
     for (const el of parsed) {
@@ -498,6 +519,22 @@ const singlePutUpload = (
   });
 };
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const GATEWAY_TIMEOUT_MAX_RETRIES = 5;
+
+const axiosErrorStatus = (err: unknown): number | undefined =>
+  Axios.isAxiosError(err) ? err.response?.status : undefined;
+
+const isGatewayTimeout = (status: number | undefined | null) =>
+  status === HttpStatusCode.GatewayTimeout;
+
+const gatewayTimeoutDelayMs = (attemptIndexZeroBased: number): number => {
+  const base = 1000;
+  const cap = 30000;
+  const exp = Math.min(cap, base * 2 ** attemptIndexZeroBased);
+  const jitter = Math.floor(Math.random() * 500);
+  return exp + jitter;
+};
 
 const isRetryableStatus = (status: number) =>
   status === 0 || status >= 500 || status === 429;
@@ -730,6 +767,7 @@ const processImportFile = async ({
   let msg = '';
   let mapKey = '';
   let loopError: any;
+  let gatewayTimeoutRetries = 0;
   do {
     try {
       const processUrl = getProcessUrl(uploadedFilename, mapKey);
@@ -739,15 +777,17 @@ const processImportFile = async ({
         },
       });
       if (putresponse.data.status === 200) {
+        gatewayTimeoutRetries = 0;
         const fullMsg =
           msg.length > 0
             ? '[' + msg + partialMessage(msg, putresponse.data.message) + ']'
             : putresponse.data.message;
-        const organizationRemoteId = extractOrganizationRemoteIdFromImportResponse(
-          putresponse.data,
-          typeof fullMsg === 'string' ? fullMsg : String(fullMsg ?? ''),
-          putresponse.data.message
-        );
+        const organizationRemoteId =
+          extractOrganizationRemoteIdFromImportResponse(
+            putresponse.data,
+            typeof fullMsg === 'string' ? fullMsg : String(fullMsg ?? ''),
+            putresponse.data.message
+          );
         if (!suppressSuccessDispatch) {
           dispatch({
             payload: {
@@ -760,6 +800,7 @@ const processImportFile = async ({
         await cleanupCopyProject(mapKey, token);
         return { organizationRemoteId };
       } else if (putresponse.data.status === HttpStatusCode.PartialContent) {
+        gatewayTimeoutRetries = 0;
         start = putresponse.data.startindex;
         mapKey = putresponse.data.fileURL;
         if (itf) msg += partialMessage(msg, putresponse.data.message);
@@ -768,6 +809,17 @@ const processImportFile = async ({
             payload: pendingmsg + ' ' + putresponse.data.message,
             type: IMPORT_PENDING,
           });
+      } else if (
+        isGatewayTimeout(putresponse.data.status) &&
+        gatewayTimeoutRetries < GATEWAY_TIMEOUT_MAX_RETRIES
+      ) {
+        gatewayTimeoutRetries++;
+        logError(
+          Severity.retry,
+          errorReporter,
+          `import gateway timeout (504), retry ${gatewayTimeoutRetries}/${GATEWAY_TIMEOUT_MAX_RETRIES}`
+        );
+        await sleep(gatewayTimeoutDelayMs(gatewayTimeoutRetries - 1));
       } else {
         logError(
           Severity.error,
@@ -786,14 +838,28 @@ const processImportFile = async ({
         break;
       }
     } catch (reason: any) {
-      logError(Severity.error, errorReporter, 'import error' + reason);
-      dispatch({
-        payload: errorStatus(-1, reason.toString()),
-        type: IMPORT_ERROR,
-      });
-      await cleanupCopyProject(mapKey, token);
-      loopError = reason;
-      break;
+      const status = axiosErrorStatus(reason);
+      if (
+        isGatewayTimeout(status) &&
+        gatewayTimeoutRetries < GATEWAY_TIMEOUT_MAX_RETRIES
+      ) {
+        gatewayTimeoutRetries++;
+        logError(
+          Severity.retry,
+          errorReporter,
+          `import gateway timeout (504), retry ${gatewayTimeoutRetries}/${GATEWAY_TIMEOUT_MAX_RETRIES}`
+        );
+        await sleep(gatewayTimeoutDelayMs(gatewayTimeoutRetries - 1));
+      } else {
+        logError(Severity.error, errorReporter, 'import error' + reason);
+        dispatch({
+          payload: errorStatus(-1, reason.toString()),
+          type: IMPORT_ERROR,
+        });
+        await cleanupCopyProject(mapKey, token);
+        loopError = reason;
+        break;
+      }
     }
   } while (start !== '0' && start !== '0/0');
 
@@ -964,22 +1030,76 @@ export const copyProject =
 
     let returnstatus = 0;
     let status = '';
+    let gatewayTimeoutRetries = 0;
+    let copyFailed = false;
     do {
-      const response = await Axios.put(url, null, {
-        headers: {
-          Authorization: 'Bearer ' + token,
-        },
-      });
-      start = response.data.id;
-      returnstatus = response.data.status;
-      status = response.data.message;
-      newproject = response.data.fileURL as string;
-      dispatch({
-        payload: `${pendingmsg} ${status}`,
-        type: COPY_PENDING,
-      });
-      url = `${API_CONFIG.host}/api/offlineData/project/copydata/${orgid}/${projectid}/${newproject}/${start}`;
-    } while (returnstatus === 200 && start !== -1);
+      try {
+        const response = await Axios.put(url, null, {
+          headers: {
+            Authorization: 'Bearer ' + token,
+          },
+        });
+        if (
+          isGatewayTimeout(response.data.status) &&
+          gatewayTimeoutRetries < GATEWAY_TIMEOUT_MAX_RETRIES
+        ) {
+          gatewayTimeoutRetries++;
+          logError(
+            Severity.retry,
+            errorReporter,
+            `copy gateway timeout (504), retry ${gatewayTimeoutRetries}/${GATEWAY_TIMEOUT_MAX_RETRIES}`
+          );
+          await sleep(gatewayTimeoutDelayMs(gatewayTimeoutRetries - 1));
+          continue;
+        }
+        gatewayTimeoutRetries = 0;
+        start = response.data.id;
+        returnstatus = response.data.status;
+        status = response.data.message;
+        newproject = response.data.fileURL as string;
+        dispatch({
+          payload: `${pendingmsg} ${status}`,
+          type: COPY_PENDING,
+        });
+        url = `${API_CONFIG.host}/api/offlineData/project/copydata/${orgid}/${projectid}/${newproject}/${start}`;
+      } catch (reason: unknown) {
+        const httpStatus = axiosErrorStatus(reason);
+        if (
+          isGatewayTimeout(httpStatus) &&
+          gatewayTimeoutRetries < GATEWAY_TIMEOUT_MAX_RETRIES
+        ) {
+          gatewayTimeoutRetries++;
+          logError(
+            Severity.retry,
+            errorReporter,
+            `copy gateway timeout (504), retry ${gatewayTimeoutRetries}/${GATEWAY_TIMEOUT_MAX_RETRIES}`
+          );
+          await sleep(gatewayTimeoutDelayMs(gatewayTimeoutRetries - 1));
+          continue;
+        }
+        logError(
+          Severity.error,
+          errorReporter,
+          'copy error' +
+            (reason instanceof Error ? reason.message : String(reason))
+        );
+        dispatch({
+          payload: errorStatus(
+            httpStatus ?? -1,
+            reason instanceof Error ? reason.message : String(reason)
+          ),
+          type: COPY_ERROR,
+        });
+        copyFailed = true;
+        break;
+      }
+    } while (returnstatus === 200 && start !== -1 && !copyFailed);
+    if (copyFailed) {
+      if (newproject) {
+        await cleanupCopyProject(newproject, token);
+      }
+      return;
+    }
     if (start === -1)
       dispatch({
         payload: {
