@@ -42,6 +42,8 @@ const toolId = 'PromptTool';
 export default function PassageDetailPromptAdmin(props: IProps) {
   const { width } = props;
   const [memory] = useGlobal('memory');
+  const [offline] = useGlobal('offline');
+  const [offlineOnly] = useGlobal('offlineOnly');
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
   const promptStrings: IPromptStrings = useSelector(
     promptSelector,
@@ -83,6 +85,7 @@ export default function PassageDetailPromptAdmin(props: IProps) {
   );
 
   const canEdit = canAlwaysDoStep() || canDoSectionStep(currentstep, section);
+  const promptAddBlocked = offline || offlineOnly;
   const { isMobile } = useMobile();
 
   useEffect(() => {
@@ -237,7 +240,7 @@ export default function PassageDetailPromptAdmin(props: IProps) {
           onReady={onReady}
           onRecording={handleRecording}
           defaultFilename={defaultFilename}
-          allowRecord={canEdit}
+          allowRecord={canEdit && !promptAddBlocked}
           allowZoom={true}
           allowWave={true}
           preload={preload}
@@ -245,7 +248,7 @@ export default function PassageDetailPromptAdmin(props: IProps) {
           setCanSave={setCanSave}
           setStatusText={setStatusText}
           handleSave={handleSave}
-          isSaveDisabled={!canEdit}
+          isSaveDisabled={!canEdit || promptAddBlocked}
           height={280}
           width={playerWidth}
           forceMobileView={true}
@@ -256,7 +259,17 @@ export default function PassageDetailPromptAdmin(props: IProps) {
           metaData={hasPrompt ? undefined : <span>{statusText}</span>}
         />
       </Box>
-      {canEdit && (
+      {canEdit && promptAddBlocked && (
+        <Typography
+          variant="body1"
+          align="center"
+          color="text.secondary"
+          sx={{ mt: 2, px: 1, width: '100%', alignSelf: 'stretch' }}
+        >
+          {promptStrings.offlineCannotAdd}
+        </Typography>
+      )}
+      {canEdit && !promptAddBlocked && (
         <Typography
           variant="body1"
           align="center"

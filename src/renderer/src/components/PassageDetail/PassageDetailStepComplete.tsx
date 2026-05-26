@@ -11,6 +11,8 @@ import { passageDetailStepCompleteSelector } from '../../selector';
 import { shallowEqual, useSelector } from 'react-redux';
 import { useLocation } from 'react-router-dom';
 import { useStepPermissions } from '../../utils/useStepPermission';
+import { ToolSlug, useStepTool } from '../../crud';
+import { useMobile } from '../../utils';
 
 export const PassageDetailStepComplete = () => {
   const {
@@ -26,6 +28,8 @@ export const PassageDetailStepComplete = () => {
     recording,
     isBoldWorkflow,
   } = usePassageDetailContext();
+  const { tool } = useStepTool(currentstep);
+  const { isMobile } = useMobile();
   const { canDoSectionStep, canAlwaysDoStep } = useStepPermissions();
   const { pathname } = useLocation();
   const [busy] = useGlobal('remoteBusy'); //verified this is not used in a function 2/18/25
@@ -72,7 +76,9 @@ export const PassageDetailStepComplete = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname]);
 
-  if (isBoldWorkflow) return null;
+  if (isBoldWorkflow && (tool !== ToolSlug.Prompt || isMobile)) {
+    return null;
+  }
 
   return (
     <Box

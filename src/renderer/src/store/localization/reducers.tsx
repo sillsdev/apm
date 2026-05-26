@@ -1332,6 +1332,7 @@ const initialState = {
 	"prompt": new LocalizedStrings({
 		"en": {
 			"adminInstructions": "Record a short prompt for this section, then save. Team members will listen before they record.",
+			"offlineCannotAdd": "You must be online to add or replace the prompt recording for this section.",
 			"noAudio": "No prompt has been recorded for this section yet.",
 		}
 	}),

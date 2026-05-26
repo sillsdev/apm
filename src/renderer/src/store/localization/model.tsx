@@ -1266,6 +1266,7 @@ export interface IPlanTabsStrings extends Localize.LocalizedStringsMethods {
 
 export interface IPromptStrings extends Localize.LocalizedStringsMethods {
     "adminInstructions": string;
+    "offlineCannotAdd": string;
     "noAudio": string;
 };
 

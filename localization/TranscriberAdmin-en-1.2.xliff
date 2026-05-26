@@ -7593,6 +7593,13 @@
                <context context-type="sourcefile">PassageDetailPromptAdmin.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="prompt.offlineCannotAdd">
+            <source>You must be online to add or replace the prompt recording for this section.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">PassageDetailPromptAdmin.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="prompt.noAudio">
             <source>No prompt has been recorded for this section yet.</source>
             <target/>
