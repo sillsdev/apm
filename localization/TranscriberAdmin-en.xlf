@@ -6508,6 +6508,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="prompt.offlineCannotAdd">
+         <segment>
+            <source>You must be online to add or replace the prompt recording for this section.</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="prompt.noAudio">
          <segment>
             <source>No prompt has been recorded for this section yet.</source>
