@@ -627,17 +627,22 @@ function WSAudioPlayer(props: IProps) {
     processRecordRef.current = value;
   }, []);
   //#region hotkey handlers
-  const handleJumpForward = () => {
-    return handleJumpFn(jump);
-  };
-  const handleJumpBackward = () => {
-    return handleJumpFn(-1 * jump);
-  };
-  const handleJumpFn = (amount: number) => {
-    if (!readyRef.current || recordingRef.current) return false;
-    wsSkip(amount);
-    return true;
-  };
+  const handleJumpFn = useCallback(
+    (amount: number) => {
+      if (!readyRef.current || recordingRef.current) return false;
+      wsSkip(amount);
+      return true;
+    },
+    [wsSkip]
+  );
+  const handleJumpForward = useCallback(
+    () => handleJumpFn(jump),
+    [handleJumpFn, jump]
+  );
+  const handleJumpBackward = useCallback(
+    () => handleJumpFn(-1 * jump),
+    [handleJumpFn, jump]
+  );
 
   const handleToggleLoop = () => {
     setLooping(wsLoopRegion(!looping));
@@ -651,19 +656,13 @@ function WSAudioPlayer(props: IProps) {
     return true;
   }, [wsNextRegion]);
 
-  const gotoEnd = () => {
-    wsPause();
-    setPlaying(false);
-    wsGoto(durationRef.current);
-  };
-
-  const handleSendProgress = () => {
+  const handleSendProgress = useCallback(() => {
     if (onSaveProgressRef.current) {
       onSaveProgressRef.current(wsPosition());
       return true;
     }
     return false;
-  };
+  }, [wsPosition]);
   const setRecording = useCallback(
     (value: boolean) => {
       recordingRef.current = value;
@@ -786,62 +785,6 @@ function WSAudioPlayer(props: IProps) {
   );
   //#endregion
 
-  const playerKeys = [
-    {
-      key: PLAY_PAUSE_KEY,
-      cb: () => {
-        if (
-          recordingRef.current ||
-          recordingStartPendingRef.current ||
-          processRecordRef.current
-        )
-          return false;
-        togglePlayStatus();
-        return true;
-      },
-    },
-    {
-      key: HOME_KEY,
-      cb: () => {
-        if (!readyRef.current || recordingRef.current) return false;
-        wsGoto(0);
-        return true;
-      },
-    },
-    {
-      key: END_KEY,
-      cb: () => {
-        if (!readyRef.current || recordingRef.current) return false;
-        gotoEnd();
-        return true;
-      },
-    },
-    { key: BACK_KEY, cb: handleJumpBackward },
-    { key: AHEAD_KEY, cb: handleJumpForward },
-    { key: TIMER_KEY, cb: handleSendProgress },
-  ];
-  const simplePlayerKeys = [
-    {
-      key: ALT_PLAY_PAUSE_KEY,
-      cb: () => {
-        if (
-          recordingRef.current ||
-          recordingStartPendingRef.current ||
-          processRecordRef.current
-        )
-          return false;
-        togglePlayStatus();
-        return true;
-      },
-    },
-  ];
-
-  const recordKeys = [{ key: RECORD_KEY, cb: handleRecorder }];
-
-  const segmentKeys = [
-    { key: LEFT_KEY, cb: handlePrevRegion },
-    { key: RIGHT_KEY, cb: handleNextRegion },
-  ];
   const handleRefresh = () => {
     setVoice((getOrgDefault(orgDefaultVoices) as IVoicePerm)?.fullName ?? '');
   };
@@ -888,10 +831,18 @@ function WSAudioPlayer(props: IProps) {
         'devicechange',
         handleDeviceChange
       );
-      playerKeys.forEach((k) => unsubscribe(k.key));
-      simplePlayerKeys.forEach((k) => unsubscribe(k.key));
-      recordKeys.forEach((k) => unsubscribe(k.key));
-      segmentKeys.forEach((k) => unsubscribe(k.key));
+      [
+        PLAY_PAUSE_KEY,
+        ALT_PLAY_PAUSE_KEY,
+        HOME_KEY,
+        END_KEY,
+        BACK_KEY,
+        AHEAD_KEY,
+        TIMER_KEY,
+        RECORD_KEY,
+        LEFT_KEY,
+        RIGHT_KEY,
+      ].forEach((key) => unsubscribe(key));
       if (recTimerRef.current) {
         clearInterval(recTimerRef.current);
         recTimerRef.current = undefined;
@@ -900,21 +851,6 @@ function WSAudioPlayer(props: IProps) {
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  useEffect(() => {
-    if (justPlayButton) simplePlayerKeys.forEach((k) => subscribe(k.key, k.cb));
-    else playerKeys.forEach((k) => subscribe(k.key, k.cb));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [justPlayButton]);
-
-  useEffect(() => {
-    if (allowRecord) recordKeys.forEach((k) => subscribe(k.key, k.cb));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allowRecord]);
-  useEffect(() => {
-    if (allowSegment) segmentKeys.forEach((k) => subscribe(k.key, k.cb));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allowSegment]);
 
   useEffect(() => {
     if (org) {
@@ -1069,6 +1005,84 @@ function WSAudioPlayer(props: IProps) {
   const togglePlayStatus = useCallback(() => {
     handlePlayStatus(!playingRef.current);
   }, [handlePlayStatus]);
+
+  const handlePlayPauseHotkey = useCallback(() => {
+    if (
+      recordingRef.current ||
+      recordingStartPendingRef.current ||
+      processRecordRef.current
+    )
+      return false;
+    togglePlayStatus();
+    return true;
+  }, [togglePlayStatus]);
+
+  const handleHomeHotkey = useCallback(() => {
+    if (!readyRef.current || recordingRef.current) return false;
+    wsGoto(0);
+    return true;
+  }, [wsGoto]);
+
+  const handleEndHotkey = useCallback(() => {
+    if (!readyRef.current || recordingRef.current) return false;
+    wsPause();
+    setPlaying(false);
+    wsGoto(durationRef.current);
+    return true;
+  }, [wsGoto, wsPause, setPlaying]);
+
+  useEffect(() => {
+    if (justPlayButton) {
+      subscribe(ALT_PLAY_PAUSE_KEY, handlePlayPauseHotkey);
+      return () => unsubscribe(ALT_PLAY_PAUSE_KEY);
+    }
+    subscribe(PLAY_PAUSE_KEY, handlePlayPauseHotkey);
+    subscribe(HOME_KEY, handleHomeHotkey);
+    subscribe(END_KEY, handleEndHotkey);
+    subscribe(BACK_KEY, handleJumpBackward);
+    subscribe(AHEAD_KEY, handleJumpForward);
+    subscribe(TIMER_KEY, handleSendProgress);
+    return () => {
+      unsubscribe(PLAY_PAUSE_KEY);
+      unsubscribe(HOME_KEY);
+      unsubscribe(END_KEY);
+      unsubscribe(BACK_KEY);
+      unsubscribe(AHEAD_KEY);
+      unsubscribe(TIMER_KEY);
+    };
+  }, [
+    justPlayButton,
+    handlePlayPauseHotkey,
+    handleHomeHotkey,
+    handleEndHotkey,
+    handleJumpBackward,
+    handleJumpForward,
+    handleSendProgress,
+    subscribe,
+    unsubscribe,
+  ]);
+
+  useEffect(() => {
+    if (!allowRecord) return;
+    subscribe(RECORD_KEY, handleRecorder);
+    return () => unsubscribe(RECORD_KEY);
+  }, [allowRecord, handleRecorder, subscribe, unsubscribe]);
+
+  useEffect(() => {
+    if (!allowSegment) return;
+    subscribe(LEFT_KEY, handlePrevRegion);
+    subscribe(RIGHT_KEY, handleNextRegion);
+    return () => {
+      unsubscribe(LEFT_KEY);
+      unsubscribe(RIGHT_KEY);
+    };
+  }, [
+    allowSegment,
+    handlePrevRegion,
+    handleNextRegion,
+    subscribe,
+    unsubscribe,
+  ]);
 
   useEffect(() => {
     if (isPlaying !== undefined) handlePlayStatus(isPlaying);
