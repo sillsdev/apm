@@ -108,6 +108,17 @@ const personalTeamOrgs = [
   },
 ];
 
+/** Non-personal team — useShowAssignment needs org in orbit + matching global organization. */
+const teamOrgs = [
+  {
+    id: 'org-1',
+    type: 'organization',
+    attributes: { name: 'My Team' },
+  },
+];
+
+const teamGlobal = { organization: 'org-1' };
+
 describe('PlanTabSelect', () => {
   let mockSetTab: ReturnType<typeof cy.stub>;
 
@@ -261,14 +272,14 @@ describe('PlanTabSelect', () => {
     });
 
     it('should update button text when tab changes', () => {
-      mountPlanTabSelect({ flat: false, tab: 0 });
+      mountPlanTabSelect({ flat: false, tab: 0 }, teamGlobal, teamOrgs);
 
       cy.wait(100);
       cy.get('#planTabSelect')
         .should('contain.text', sectionsPassagesLabel)
         .should('contain.text', organizedByDefault);
 
-      mountPlanTabSelect({ flat: false, tab: 2 });
+      mountPlanTabSelect({ flat: false, tab: 2 }, teamGlobal, teamOrgs);
       cy.wait(100);
       cy.get('#planTabSelect').should(
         'contain.text',
@@ -316,7 +327,7 @@ describe('PlanTabSelect', () => {
 
   describe('with assignments tab (non-personal team, online)', () => {
     it('should display all menu options including assignments', () => {
-      mountPlanTabSelect({ flat: false });
+      mountPlanTabSelect({ flat: false }, teamGlobal, teamOrgs);
 
       cy.wait(100);
       openPlanTabMenu();
@@ -333,7 +344,7 @@ describe('PlanTabSelect', () => {
     });
 
     it('should call setTab when Media menu item is clicked', () => {
-      mountPlanTabSelect({ flat: false, tab: 0 });
+      mountPlanTabSelect({ flat: false, tab: 0 }, teamGlobal, teamOrgs);
 
       cy.wait(100);
       openPlanTabMenu();
@@ -342,7 +353,7 @@ describe('PlanTabSelect', () => {
     });
 
     it('should call setTab with correct index for assignments and transcriptions', () => {
-      mountPlanTabSelect({ flat: false, tab: 0 });
+      mountPlanTabSelect({ flat: false, tab: 0 }, teamGlobal, teamOrgs);
 
       cy.wait(100);
       openPlanTabMenu();
@@ -357,7 +368,7 @@ describe('PlanTabSelect', () => {
     });
 
     it('should render menu items with stable ids from localized labels', () => {
-      mountPlanTabSelect({ flat: false });
+      mountPlanTabSelect({ flat: false }, teamGlobal, teamOrgs);
 
       cy.wait(100);
       openPlanTabMenu();
@@ -371,7 +382,7 @@ describe('PlanTabSelect', () => {
     });
 
     it('should handle menu options with flat mode correctly', () => {
-      mountPlanTabSelect({ flat: true });
+      mountPlanTabSelect({ flat: true }, teamGlobal, teamOrgs);
 
       cy.wait(100);
       openPlanTabMenu();
