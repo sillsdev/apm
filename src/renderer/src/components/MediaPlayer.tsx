@@ -130,11 +130,17 @@ export function MediaPlayer(props: IProps) {
     setStartPos(0);
   };
 
+  const stopPlay = useCallback(() => {
+    setPlaying(false);
+    playSuccess.current = false;
+  }, []);
+
   const switchToWaveSurfer = useCallback(() => {
+    stopPlay();
     setReady(false);
     setPlaybackMode('wavesurfer');
     fetchBlob(srcMediaId);
-  }, [fetchBlob, srcMediaId]);
+  }, [fetchBlob, srcMediaId, stopPlay]);
 
   useEffect(() => {
     if (playingRef.current) {
@@ -342,11 +348,6 @@ export function MediaPlayer(props: IProps) {
     setPlaying(true);
   };
 
-  const stopPlay = () => {
-    setPlaying(false);
-    playSuccess.current = false;
-  };
-
   const timeUpdate = (progress: number) => {
     const time = Math.round(progress * 1000) / 1000;
     if (stop.current !== 0 && time >= stop.current) {
@@ -390,6 +391,7 @@ export function MediaPlayer(props: IProps) {
       {controls && playbackMode === 'wavesurfer' && (
         <IconButton
           data-testid="play-pause"
+          aria-label={playing ? 'Pause' : 'Play'}
           sx={{ p: 0, pl: 1 }}
           onClick={handlePlayPause}
         >
