@@ -17,6 +17,7 @@ import { findRecord, related } from '../../../../crud';
 import { useTranscription } from '../../../../crud/useTranscription';
 import {
   IMediaActionsStrings,
+  IMediaTabStrings,
   ITranscriptionShowStrings,
   UserD,
 } from '@model/index';
@@ -27,6 +28,7 @@ import PauseIcon from '@mui/icons-material/Pause';
 import { shallowEqual, useSelector } from 'react-redux';
 import {
   mediaActionsSelector,
+  mediaTabSelector,
   transcriptionShowSelector,
 } from '../../../../selector/selectors';
 import { useGlobal } from '../../../../context/useGlobal';
@@ -80,6 +82,7 @@ export const AudioVersionCard: React.FC<AudioVersionCardProps> = (props) => {
     transcriptionShowSelector,
     shallowEqual
   );
+  const tm: IMediaTabStrings = useSelector(mediaTabSelector, shallowEqual);
   const parsedVersion = props.version ? parseInt(props.version, 10) : NaN;
   const versionNum = Number.isFinite(parsedVersion) ? parsedVersion : undefined;
   const getTranscription = useTranscription(true, undefined, versionNum);
@@ -232,17 +235,30 @@ export const AudioVersionCard: React.FC<AudioVersionCardProps> = (props) => {
               </Typography>
             ) : null}
             {props.showPublishControl && (
-              <IconButton
+              <Button
+                variant="text"
                 size="small"
+                color="primary"
                 disabled={props.publishDisabled}
+                startIcon={
+                  <Box component="span" sx={{ display: 'inline-flex' }}>
+                    {props.publishStatusIcon}
+                  </Box>
+                }
                 onClick={(e) => {
                   e.stopPropagation();
                   props.onPublishClick?.(e);
                 }}
-                sx={{ color: 'primary.light', mt: 0.25, p: 0.5 }}
+                sx={{
+                  mt: 0.25,
+                  px: 0.5,
+                  minWidth: 0,
+                  alignSelf: 'flex-start',
+                  textTransform: 'none',
+                }}
               >
-                {props.publishStatusIcon}
-              </IconButton>
+                {props.readyToShare ? tm.published : tm.publish}
+              </Button>
             )}
             {hasTranscription && props.onShowTranscription && (
               <Button
