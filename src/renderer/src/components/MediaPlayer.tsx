@@ -1,9 +1,13 @@
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, useCallback } from 'react';
 import { useGlobal } from '../context/useGlobal';
 import { useFetchMediaUrl, MediaSt } from '../crud';
+import { remoteIdGuid } from '../crud/remoteId';
+import { findRecord } from '../crud/tryFindRecord';
+import { BlobStatus, useFetchMediaBlob } from '../crud/useFetchMediaBlob';
 import { logError, Severity } from '../utils';
+import { shouldUseWaveSurferPlayback } from '../utils/audioPlayback';
 import { useSnackBar } from '../hoc/SnackBar';
-import { IPeerCheckStrings, ISharedStrings } from '../model';
+import { IPeerCheckStrings, ISharedStrings, MediaFileD } from '../model';
 import { peerCheckSelector, sharedSelector } from '../selector';
 import { shallowEqual, useSelector } from 'react-redux';
 import {
@@ -18,6 +22,10 @@ import CloseIcon from '@mui/icons-material/Close';
 import { LightTooltip } from '../control/LightTooltip';
 import ReplayIcon from '@mui/icons-material/Replay';
 import SkipPrevious from '@mui/icons-material/SkipPrevious';
+import Pause from '@mui/icons-material/Pause';
+import PlayArrow from '@mui/icons-material/PlayArrow';
+import HiddenPlayer from './HiddenPlayer';
+import { RecordKeyMap } from '@orbit/records';
 
 const StyledTip = styled(LightTooltip)<TooltipProps>(() => ({
   backgroundColor: 'transparent',
@@ -31,6 +39,14 @@ const StyledStack = styled(Stack)<StackProps>(() => ({
     width: '100%',
   },
 }));
+
+const StyledHidden = styled('div')({
+  '& #hiddenplayer': {
+    display: 'none',
+  },
+});
+
+type PlaybackMode = 'pending' | 'native' | 'wavesurfer';
 
 interface IProps {
   srcMediaId: string;
@@ -54,14 +70,23 @@ export function MediaPlayer(props: IProps) {
     sx,
   } = props;
   const [reporter] = useGlobal('errorReporter');
+  const [memory] = useGlobal('memory');
   const { fetchMediaUrl, mediaState } = useFetchMediaUrl(reporter);
+  const [blobState, fetchBlob] = useFetchMediaBlob();
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const playSuccess = useRef(false);
   const [playing, setPlayingx] = useState(false);
   const playingRef = useRef(false);
   const [playItem, setPlayItem] = useState('');
   const [ready, setReady] = useState(false);
+  const [playbackMode, setPlaybackMode] = useState<PlaybackMode>('pending');
   const durationSet = useRef(false);
+  const nativeErrorHandled = useRef(false);
+  const durationRef = useRef(0);
+  const valueTracker = useRef(0);
+  const stop = useRef(0);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [startPos, setStartPos] = useState(0);
   const { showMessage } = useSnackBar();
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
   const t: IPeerCheckStrings = useSelector(peerCheckSelector, shallowEqual);
@@ -70,38 +95,98 @@ export function MediaPlayer(props: IProps) {
     setPlayingx(x);
     playingRef.current = x;
   };
+
+  const resolveMediaFileId = useCallback(
+    (mediaId: string) => {
+      if (!mediaId) return '';
+      if (!isNaN(Number(mediaId)) && memory?.keyMap?.keyToId) {
+        return (
+          (remoteIdGuid(
+            'mediafile',
+            mediaId,
+            memory.keyMap as RecordKeyMap
+          ) as string) || mediaId
+        );
+      }
+      return mediaId;
+    },
+    [memory]
+  );
+
+  const getMediaContentType = useCallback(
+    (mediaId: string) => {
+      const id = resolveMediaFileId(mediaId);
+      const rec = findRecord(memory, 'mediafile', id) as MediaFileD | undefined;
+      return rec?.attributes?.contentType ?? '';
+    },
+    [memory, resolveMediaFileId]
+  );
+
+  const resetWaveSurferTiming = () => {
+    durationRef.current = 0;
+    valueTracker.current = 0;
+    stop.current = 0;
+    setCurrentTime(0);
+    setStartPos(0);
+  };
+
+  const switchToWaveSurfer = useCallback(() => {
+    setReady(false);
+    setPlaybackMode('wavesurfer');
+    fetchBlob(srcMediaId);
+  }, [fetchBlob, srcMediaId]);
+
   useEffect(() => {
     if (playingRef.current) {
-      if (audioRef.current) {
+      if (playbackMode === 'native' && audioRef.current) {
         if (playSuccess.current) audioRef.current.pause();
         audioRef.current.currentTime = 0;
       }
       stopPlay();
     }
-    durationSet.current = false;
     if (srcMediaId !== playItem) {
+      durationSet.current = false;
+      nativeErrorHandled.current = false;
+      resetWaveSurferTiming();
+      setPlaybackMode('pending');
       setReady(false);
       fetchMediaUrl({ id: srcMediaId });
       setPlayItem(srcMediaId);
-    } else {
-      durationChange();
+    } else if (playbackMode === 'native') {
+      durationChangeNative();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [srcMediaId]);
 
-  // Cleanup blob URLs when component unmounts or media changes
   useEffect(() => {
     return () => {
+      if (typeof URL.revokeObjectURL !== 'function') return;
       if (mediaState.url && mediaState.url.startsWith('blob:')) {
         URL.revokeObjectURL(mediaState.url);
       }
+      if (blobState.url && blobState.url.startsWith('blob:')) {
+        URL.revokeObjectURL(blobState.url);
+      }
     };
-  }, [mediaState.url]);
+  }, [mediaState.url, blobState.url]);
 
   useEffect(() => {
     if (mediaState.id !== srcMediaId && mediaState.remoteId !== srcMediaId)
       return;
-    if (mediaState.status === MediaSt.FETCHED) setReady(true);
+    if (mediaState.status === MediaSt.FETCHED && playbackMode === 'pending') {
+      const contentType = getMediaContentType(srcMediaId);
+      if (
+        shouldUseWaveSurferPlayback({
+          url: mediaState.url,
+          contentType,
+        })
+      ) {
+        switchToWaveSurfer();
+      } else {
+        setPlaybackMode('native');
+        setReady(true);
+      }
+    }
     if (mediaState.error) {
       if (mediaState.error.startsWith('no offline file'))
         showMessage(ts.fileNotFound);
@@ -109,7 +194,19 @@ export function MediaPlayer(props: IProps) {
       onEnded();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mediaState]);
+  }, [mediaState, playbackMode, srcMediaId]);
+
+  useEffect(() => {
+    if (playbackMode !== 'wavesurfer') return;
+    if (blobState.blobStat === BlobStatus.FETCHED) {
+      if (!ready) setReady(true);
+    }
+    if (blobState.blobStat === BlobStatus.ERROR) {
+      showMessage(ts.mediaError);
+      onEnded();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [blobState, playbackMode]);
 
   useEffect(() => {
     stopPlay();
@@ -117,29 +214,40 @@ export function MediaPlayer(props: IProps) {
   }, [playItem]);
 
   useEffect(() => {
-    if (ready && audioRef.current && playItem !== '' && requestPlay) {
-      startPlay();
-    } else if (!requestPlay) {
-      if (playingRef.current) {
+    if (!ready || playItem === '') return;
+    if (playbackMode === 'native') {
+      if (requestPlay) startPlayNative();
+      else if (playingRef.current) {
         if (audioRef.current && playSuccess.current) audioRef.current.pause();
         stopPlay();
       }
+    } else if (playbackMode === 'wavesurfer') {
+      if (requestPlay) startPlayWaveSurfer();
+      else stopPlay();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ready, requestPlay, playing, playItem]);
+  }, [ready, requestPlay, playing, playItem, playbackMode]);
 
   const setPosition = (position: number | undefined) => {
-    if (
-      audioRef.current &&
-      position !== undefined &&
-      position !== audioRef.current.currentTime
-    ) {
+    if (position === undefined) return;
+    if (playbackMode === 'wavesurfer') {
+      if (position !== currentTime) {
+        setCurrentTime(position);
+        setStartPos(position);
+      }
+      return;
+    }
+    if (audioRef.current && position !== audioRef.current.currentTime) {
       audioRef.current.currentTime = position;
     }
   };
 
   const ended = () => {
-    if (audioRef.current) audioRef.current.currentTime = 0;
+    if (playbackMode === 'native' && audioRef.current) {
+      audioRef.current.currentTime = 0;
+    } else if (playbackMode === 'wavesurfer') {
+      resetWaveSurferTiming();
+    }
     stopPlay();
     if (onEnded) onEnded();
   };
@@ -154,8 +262,7 @@ export function MediaPlayer(props: IProps) {
     if (play !== playingRef.current && onTogglePlay) onTogglePlay();
   };
 
-  const durationChange = () => {
-    //this is called multiple times for some files
+  const durationChangeNative = () => {
     const el = audioRef.current as HTMLMediaElement;
     if (!durationSet.current && el?.duration) {
       durationSet.current = true;
@@ -163,10 +270,34 @@ export function MediaPlayer(props: IProps) {
     }
   };
 
+  const durationChangeWaveSurfer = (duration: number) => {
+    if (durationRef.current === 0 && duration) {
+      stop.current = duration;
+      durationRef.current = duration;
+      if (!durationSet.current) {
+        durationSet.current = true;
+        onLoaded && onLoaded();
+      }
+    }
+  };
+
   const handleError = (e: any) => {
     logError(Severity.error, reporter, e);
-    // showMessage(e.target?.error?.message || ts.mediaError);
+    const mediaError = e?.target?.error;
+    if (mediaError) {
+      logError(
+        Severity.error,
+        reporter,
+        `MediaError code: ${mediaError.code} message: ${mediaError.message ?? ''}`
+      );
+    }
+    if (!nativeErrorHandled.current) {
+      nativeErrorHandled.current = true;
+      switchToWaveSurfer();
+      return;
+    }
     showMessage(ts.mediaError);
+    onEnded();
   };
 
   const handleSegmentStart = () => {
@@ -174,28 +305,62 @@ export function MediaPlayer(props: IProps) {
   };
 
   const handleSkipBack = () => {
+    if (playbackMode === 'wavesurfer') {
+      setPosition(Math.max(currentTime - 3, 0));
+      return;
+    }
     if (audioRef.current)
       setPosition(Math.max(audioRef.current?.currentTime - 3, 0));
   };
 
-  const startPlay = () => {
+  const handlePlayPause = () => {
+    if (onTogglePlay) onTogglePlay();
+    if (playingRef.current) stopPlay();
+    else startPlayWaveSurfer();
+  };
+
+  const startPlayNative = () => {
     if (playing || playSuccess.current) return;
     setPlaying(true);
     playSuccess.current = false;
     if (audioRef.current) {
-      audioRef.current
-        .play()
-        .then(() => {
-          if (audioRef.current) playSuccess.current = true;
-        })
-        .catch(() => {
-          playSuccess.current = false;
-        });
+      const playPromise = audioRef.current.play();
+      if (playPromise) {
+        playPromise
+          .then(() => {
+            if (audioRef.current) playSuccess.current = true;
+          })
+          .catch(() => {
+            playSuccess.current = false;
+          });
+      }
     }
   };
+
+  const startPlayWaveSurfer = () => {
+    if (playingRef.current) return;
+    setPlaying(true);
+  };
+
   const stopPlay = () => {
     setPlaying(false);
     playSuccess.current = false;
+  };
+
+  const timeUpdate = (progress: number) => {
+    const time = Math.round(progress * 1000) / 1000;
+    if (stop.current !== 0 && time >= stop.current) {
+      ended();
+    } else if (
+      durationRef.current - time < 0.1 &&
+      durationRef.current - valueTracker.current < 0.1 &&
+      valueTracker.current !== 0
+    ) {
+      ended();
+    } else if (playingRef.current && valueTracker.current !== time) {
+      valueTracker.current = time;
+      setCurrentTime(time);
+    }
   };
 
   return ready ? (
@@ -222,22 +387,50 @@ export function MediaPlayer(props: IProps) {
           </StyledTip>
         </>
       )}
-      <audio
-        controls={controls}
-        onEnded={ended}
-        ref={audioRef}
-        src={mediaState.url}
-        onDurationChange={durationChange}
-        onError={handleError}
-        onPause={pause}
-        onPlay={play}
-      />
+      {controls && playbackMode === 'wavesurfer' && (
+        <IconButton
+          data-testid="play-pause"
+          sx={{ p: 0, pl: 1 }}
+          onClick={handlePlayPause}
+        >
+          {playing ? (
+            <Pause fontSize="small" />
+          ) : (
+            <PlayArrow fontSize="small" />
+          )}
+        </IconButton>
+      )}
+      {playbackMode === 'native' && (
+        <audio
+          controls={controls}
+          onEnded={ended}
+          ref={audioRef}
+          src={mediaState.url}
+          onDurationChange={durationChangeNative}
+          onError={handleError}
+          onPause={pause}
+          onPlay={play}
+        />
+      )}
       {controls && props.onCancel && (
         <StyledTip title={ts.close}>
           <IconButton onClick={props.onCancel} sx={{ p: 0 }}>
             <CloseIcon fontSize="small" />
           </IconButton>
         </StyledTip>
+      )}
+      {playbackMode === 'wavesurfer' && (
+        <StyledHidden>
+          <HiddenPlayer
+            onProgress={timeUpdate}
+            onDuration={durationChangeWaveSurfer}
+            position={startPos}
+            loading={blobState.blobStat === BlobStatus.PENDING}
+            audioBlob={blobState.blob}
+            playing={playing}
+            setPlaying={setPlaying}
+          />
+        </StyledHidden>
       )}
     </StyledStack>
   ) : (
