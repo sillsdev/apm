@@ -65,6 +65,10 @@ import {
 } from '@mui/x-data-grid';
 import { TreeDataGrid } from './TreeDataGrid';
 import { pad2 } from '../utils/pad2';
+import {
+  resolveSectionForRecId,
+  resolveSelectedSections,
+} from './resolveSectionForRecId';
 
 const AssignmentDiv = styled('div')(() => ({
   display: 'flex',
@@ -355,11 +359,12 @@ export function AssignmentTable() {
     } else {
       let count = 0;
       check.forEach((recId) => {
-        const row = data.find((r) => r.recId === recId);
-        if (!row) return;
-        const sectId = row.scheme as string;
-        if (!sectId) return;
-        const section = sections.find((s) => s.id === sectId);
+        const section = resolveSectionForRecId(
+          recId,
+          data,
+          sections,
+          passages
+        );
         if (!section) return;
         const schemeId = related(section, 'organizationScheme');
         if (schemeId) count++;
@@ -387,7 +392,7 @@ export function AssignmentTable() {
         t,
         s as RecordIdentity,
         'organizationScheme',
-        'user',
+        'organizationscheme',
         ''
       ),
       ...UpdateLastModifiedBy(
@@ -413,7 +418,7 @@ export function AssignmentTable() {
     setCheck([]);
     setSelectedSections([]);
     setSelectedRows({ type: 'include', ids: new Set() });
-    setRefresh(refresh + 1);
+    setRefresh((n) => n + 1);
   };
   const handleRemoveAssignmentsRefused = () => setConfirmAction('');
 
@@ -478,13 +483,10 @@ export function AssignmentTable() {
   ]);
 
   useEffect(() => {
-    const selected = Array<SectionD>();
-    check.forEach((recId) => {
-      const section = sections.find((s) => s.id === recId);
-      if (section !== undefined) selected.push(section);
-    });
-    setSelectedSections(selected);
-  }, [check, sections]);
+    setSelectedSections(
+      resolveSelectedSections(check, data, sections, passages)
+    );
+  }, [check, sections, data, passages]);
 
   const sortModel: GridSortModel = [{ field: 'sort', sort: 'asc' }];
   const columnVisibilityModel: GridColumnVisibilityModel = { sort: false };
@@ -568,7 +570,7 @@ export function AssignmentTable() {
         scheme={assignSectionVisible}
         visible={assignSectionVisible != null}
         closeMethod={handleCloseAssignSection}
-        refresh={() => setRefresh(refresh + 1)}
+        refresh={() => setRefresh((n) => n + 1)}
         readOnly={readOnly}
         inChange={hasAssignmentChange(assignSectionVisible)}
       />

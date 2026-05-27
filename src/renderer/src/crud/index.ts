@@ -20,6 +20,7 @@ export * from './updatePassageState';
 export * from './useAllUserGroup';
 export * from './useFlatAdd';
 export * from './isPersonalTeam';
+export * from './useShowAssignment';
 export * from './useNewTeamId';
 export * from './useOrganizedBy';
 export * from './usePassageRec';

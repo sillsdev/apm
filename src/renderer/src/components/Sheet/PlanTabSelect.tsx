@@ -1,15 +1,13 @@
 import { useContext, useMemo, useState } from 'react';
 import { shallowEqual, useSelector } from 'react-redux';
-import { IPlanTabsStrings, OrganizationD } from '@model/index';
+import { IPlanTabsStrings } from '@model/index';
 import { Menu, MenuItem } from '@mui/material';
 import DropDownIcon from '@mui/icons-material/ArrowDropDown';
 import { AltButton } from '../../control/AltButton';
 import { planTabsSelector } from '../../selector';
 import { useOrganizedBy } from '../../crud/useOrganizedBy';
-import { isPersonalTeam } from '../../crud/isPersonalTeam';
+import { useShowAssignment } from '../../crud/useShowAssignment';
 import { PlanContext } from '../../context/PlanContext';
-import { useGlobal } from '../../context/useGlobal';
-import { useOrbitData } from '../../hoc/useOrbitData';
 import { PlanTabEnum } from '../PlanTabsEnum';
 import { UnsavedContext } from '../../context/UnsavedContext';
 
@@ -23,13 +21,7 @@ export const PlanTabSelect = () => {
   const organizedBy = getOrganizedBy(false);
   const ctx = useContext(PlanContext);
   const { flat, tab, setTab } = ctx.state;
-  const [team] = useGlobal('organization');
-  const [offlineOnly] = useGlobal('offlineOnly');
-  const teams = useOrbitData<OrganizationD[]>('organization');
-  const showAssign = useMemo(
-    () => !isPersonalTeam(team, teams) && !offlineOnly,
-    [team, teams, offlineOnly]
-  );
+  const showAssign = useShowAssignment();
   const defaultItem = useMemo(
     () => (flat ? organizedBy : t.sectionsPassages.replace('{0}', organizedBy)),
     [flat, organizedBy, t]

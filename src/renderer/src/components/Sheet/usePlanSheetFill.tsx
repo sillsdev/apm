@@ -5,7 +5,6 @@ import {
   IViewModeStrings,
   IwsKind,
   OptionType,
-  OrganizationD,
 } from '../../model';
 import { ICell, ICellChange } from './PlanSheet';
 import { planSheetSelector, viewModeSelector } from '../../selector';
@@ -16,7 +15,7 @@ import {
   ArtifactTypeSlug,
   useArtifactType,
   findRecord,
-  isPersonalTeam,
+  useShowAssignment,
 } from '../../crud';
 import { rowTypes } from './rowTypes';
 import { StageReport } from '../../control';
@@ -157,13 +156,7 @@ export const usePlanSheetFill = ({
   const [offline] = useGlobal('offline'); //verified this is not used in a function 2/18/25
   const [offlineOnly] = useGlobal('offlineOnly'); //will be constant here
   const { userIsAdmin } = useRole();
-  const [team] = useGlobal('organization');
-  const teams = useOrbitData<OrganizationD[]>('organization');
-
-  const showAssign = useMemo(
-    () => !isPersonalTeam(team, teams) && !offlineOnly,
-    [teams, team, offlineOnly]
-  );
+  const showAssign = useShowAssignment();
 
   const refErrTest = useRefErrTest();
   const { getOrganizedBy } = useOrganizedBy();

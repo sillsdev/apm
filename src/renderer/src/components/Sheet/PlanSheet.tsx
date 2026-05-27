@@ -18,7 +18,6 @@ import {
   ISheet,
   OrgWorkflowStep,
   SheetLevel,
-  OrganizationD,
 } from '../../model';
 import {
   Box,
@@ -64,7 +63,7 @@ import {
   useCheckOnline,
 } from '../../utils';
 import {
-  isPersonalTeam,
+  useShowAssignment,
   PublishDestinationEnum,
   remoteIdGuid,
   usePublishDestination,
@@ -85,7 +84,6 @@ import { usePlanSheetFill } from './usePlanSheetFill';
 import { useShowIcon } from './useShowIcon';
 import { RecordKeyMap } from '@orbit/records';
 import ConfirmPublishDialog from '../ConfirmPublishDialog';
-import { useOrbitData } from '../../hoc/useOrbitData';
 import { findPlanSheetRowFromReferenceQuery } from './findPlanSheetRowFromReferenceQuery';
 import { useOrganizedBy } from '../../crud/useOrganizedBy';
 
@@ -353,15 +351,10 @@ export function PlanSheet(props: IProps) {
   const moveUp = true;
   const moveDown = false;
   const moveToNewSection = true;
-  const [org] = useGlobal('organization');
   const getGlobal = useGetGlobal();
-  const teams = useOrbitData<OrganizationD[]>('organization');
   const checkOnline = useCheckOnline('PlanSheet');
 
-  const showAssign = useMemo(
-    () => !isPersonalTeam(org, teams) && !offlineOnly,
-    [org, teams, offlineOnly]
-  );
+  const showAssign = useShowAssignment();
 
   useEffect(() => {
     if (!goToOpen) return;

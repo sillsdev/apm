@@ -25,7 +25,7 @@ import {
 } from '../../selector';
 import { shallowEqual, useSelector } from 'react-redux';
 import { OrgWorkflowStepList } from './OrgWorkflowStepList';
-import { useOrganizedBy } from '../../crud';
+import { useOrganizedBy, useShowAssignment } from '../../crud';
 import { PlanContext } from '../../context/PlanContext';
 
 export interface ISTFilterState {
@@ -95,6 +95,7 @@ export function FilterMenu(props: IProps) {
 
   const { getOrganizedBy } = useOrganizedBy();
   const [organizedBy] = useState(getOrganizedBy(true));
+  const showAssignmentFilters = useShowAssignment();
   const applyingRef = useRef(false);
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {
     event.stopPropagation();
@@ -112,7 +113,11 @@ export function FilterMenu(props: IProps) {
     projDefault: boolean
   ) => {
     setApplying(true);
-    onFilterChange(filterState, projDefault);
+    const state =
+      filterState && !showAssignmentFilters
+        ? { ...filterState, assignedToMe: false }
+        : filterState;
+    onFilterChange(state, projDefault);
     setApplying(false);
     handleDefaultCheck(false);
     setChanged(false);
@@ -132,8 +137,14 @@ export function FilterMenu(props: IProps) {
     apply({ ...localState, disabled: event.target.checked }, false);
   };
   useEffect(() => {
-    if (!changed) setLocalState({ ...props.state });
-  }, [props.state, changed]);
+    if (!changed) {
+      setLocalState(
+        showAssignmentFilters
+          ? { ...props.state }
+          : { ...props.state, assignedToMe: false }
+      );
+    }
+  }, [props.state, changed, showAssignmentFilters]);
 
   const filterChange = (what: string, value: any) => {
     const newstate = { ...localState } as any;
@@ -210,19 +221,21 @@ export function FilterMenu(props: IProps) {
         onClose={handleClose}
       >
         <Box sx={{ display: 'inline-flex', flexDirection: 'column' }}>
-          <FormControlLabel
-            control={
-              <Checkbox
-                id="assignedToMe"
-                sx={iconMargin}
-                checked={localState.assignedToMe}
-                onChange={(event) =>
-                  handle('assignedToMe', event.target.checked)
-                }
-              />
-            }
-            label={t.assignedToMe}
-          />
+          {showAssignmentFilters && (
+            <FormControlLabel
+              control={
+                <Checkbox
+                  id="assignedToMe"
+                  sx={iconMargin}
+                  checked={localState.assignedToMe}
+                  onChange={(event) =>
+                    handle('assignedToMe', event.target.checked)
+                  }
+                />
+              }
+              label={t.assignedToMe}
+            />
+          )}
           {localState.canHideDone && (
             <FormControlLabel
               control={
