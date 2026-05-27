@@ -2,8 +2,10 @@
 import React from 'react';
 // See: https://www.w3schools.com/TAGS/ref_av_dom.asp
 import { cleanup, render, waitFor } from '@testing-library/react';
+import '@testing-library/jest-dom';
 import { MediaPlayer } from './MediaPlayer';
 import { act } from 'react';
+import { HiddenPlayerProps } from './HiddenPlayer';
 
 enum MediaSt {
   'IDLE',
@@ -20,6 +22,19 @@ interface IMediaState {
   cancelled: boolean;
 }
 
+enum BlobStatus {
+  'IDLE',
+  'PENDING',
+  'RESET',
+  'FETCHED',
+  'ERROR',
+}
+
+interface IBlobState extends IMediaState {
+  blob: Blob;
+  blobStat: BlobStatus;
+}
+
 const mediaClean = {
   status: MediaSt.IDLE,
   error: null,
@@ -28,7 +43,43 @@ const mediaClean = {
   remoteId: '',
   cancelled: false,
 };
+const mockBlobClean = {
+  ...mediaClean,
+  blob: new Blob(),
+  blobStat: BlobStatus.IDLE,
+};
 let mockMediaState: IMediaState = { ...mediaClean };
+let mockBlobState: IBlobState = { ...mockBlobClean };
+const mockFetchBlob = jest.fn();
+const mockShowMessage = jest.fn();
+let mockShouldUseWaveSurfer = false;
+
+jest.mock('../utils/audioPlayback', () => ({
+  shouldUseWaveSurferPlayback: jest.fn(() => mockShouldUseWaveSurfer),
+}));
+
+jest.mock('./HiddenPlayer', () => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const MockHiddenPlayer = (_props: HiddenPlayerProps) => {
+    return <div id="hiddenplayer" />;
+  };
+  MockHiddenPlayer.displayName = 'MockHiddenPlayer';
+  return MockHiddenPlayer;
+});
+
+jest.mock('../crud/useFetchMediaBlob', () => {
+  const BlobStatus = {
+    IDLE: 0,
+    PENDING: 1,
+    RESET: 2,
+    FETCHED: 3,
+    ERROR: 4,
+  };
+  return {
+    useFetchMediaBlob: () => [mockBlobState, mockFetchBlob],
+    BlobStatus,
+  };
+});
 
 jest.mock('../crud', () => {
   const MediaSt = {
@@ -57,6 +108,15 @@ jest.mock('../crud', () => {
                 url: 'https://localhost/media/1.mp3',
               };
             }, 500);
+          } else if (id === 'ogg-1') {
+            mockMediaState = {
+              ...mockMediaState,
+              id: 'abcd-ogg',
+              remoteId: 'ogg-1',
+              error: '',
+              status: MediaSt.FETCHED,
+              url: 'https://localhost/media/1.ogg',
+            };
           } else {
             mockMediaState = { ...mockMediaState, error: 'error' };
           }
@@ -69,7 +129,7 @@ jest.mock('../crud', () => {
 
 jest.mock('../hoc/SnackBar', () => ({
   useSnackBar: () => ({
-    showMessage: jest.fn(),
+    showMessage: mockShowMessage,
   }),
 }));
 
@@ -84,17 +144,23 @@ jest.mock('react-redux', () => ({
     back3Seconds: 'Skip back 3 seconds',
     resourceStart: 'Play from start of resource',
     mediaError: 'Media error',
+    fileNotFound: 'File not found',
+    close: 'Close',
   }),
   shallowEqual: jest.fn(),
 }));
 
-// Mock GlobalContext to provide proper context structure
 jest.mock('../context/useGlobal', () => ({
   useGlobal: (key: string) => {
-    const mockValues: Record<string, any> = {
+    const mockValues: Record<string, unknown> = {
       errorReporter: jest.fn(),
       memory: {
-        cache: { query: jest.fn(() => []) },
+        keyMap: {},
+        cache: {
+          query: jest.fn(() => ({
+            attributes: { contentType: 'audio/mpeg' },
+          })),
+        },
         update: jest.fn(),
       },
       user: 'test-user',
@@ -107,7 +173,6 @@ jest.mock('../context/useGlobal', () => ({
   },
 }));
 
-// Mock schema to avoid import.meta issues in Jest
 jest.mock('../schema', () => ({
   memory: {
     cache: { query: jest.fn(() => []) },
@@ -120,13 +185,26 @@ jest.mock('../utils', () => {
   const logError = jest.fn(() => {});
   return {
     logError,
+    Severity: { error: 'error' },
   };
 });
 
 describe('<MediaPlayer />', () => {
-  beforeEach(cleanup);
+  beforeEach(() => {
+    cleanup();
+    mockShouldUseWaveSurfer = false;
+    mockFetchBlob.mockClear();
+    mockShowMessage.mockClear();
+    if (!URL.revokeObjectURL) {
+      Object.defineProperty(URL, 'revokeObjectURL', {
+        configurable: true,
+        value: jest.fn(),
+      });
+    }
+  });
   afterEach(() => {
     mockMediaState = { ...mediaClean };
+    mockBlobState = { ...mockBlobClean };
   });
 
   it('should render without crashing', () => {
@@ -220,6 +298,7 @@ describe('<MediaPlayer />', () => {
       'src',
       'https://localhost/media/1.mp3'
     );
+    expect(mockFetchBlob).not.toHaveBeenCalled();
   });
 
   it('should contain controls when controls parameter set', async () => {
@@ -340,5 +419,98 @@ describe('<MediaPlayer />', () => {
       container.querySelector('audio')?.dispatchEvent(new Event('ended'));
     });
     expect(props.onEnded).toHaveBeenCalled();
+  });
+
+  it('uses WaveSurfer proactively for unsupported formats', async () => {
+    mockShouldUseWaveSurfer = true;
+    mockMediaState = {
+      status: MediaSt.FETCHED,
+      error: null,
+      url: 'https://localhost/media/1.ogg',
+      id: 'abcd-ogg',
+      remoteId: 'ogg-1',
+      cancelled: false,
+    };
+    mockBlobState = {
+      ...mockBlobClean,
+      blobStat: BlobStatus.FETCHED,
+      url: 'blob:mock',
+      id: 'abcd-ogg',
+      remoteId: 'ogg-1',
+      blob: new Blob(['audio'], { type: 'audio/ogg' }),
+    };
+
+    const props = {
+      srcMediaId: 'ogg-1',
+      requestPlay: true,
+      onEnded: () => {},
+    };
+    const { container } = render(<MediaPlayer {...props} />);
+    await waitFor(() => expect(mockFetchBlob).toHaveBeenCalledWith('ogg-1'));
+    await waitFor(() =>
+      expect(container.querySelector('#hiddenplayer')).toBeInTheDocument()
+    );
+    expect(container.querySelector('audio')).not.toBeInTheDocument();
+  });
+
+  it('falls back to WaveSurfer when native audio errors', async () => {
+    mockMediaState = {
+      status: MediaSt.FETCHED,
+      error: null,
+      url: 'https://localhost/media/1.mp3',
+      id: 'apcd-1',
+      remoteId: '1',
+      cancelled: false,
+    };
+
+    const props = {
+      srcMediaId: '1',
+      requestPlay: true,
+      onEnded: jest.fn(),
+    };
+    const playStub = jest
+      .spyOn(window.HTMLMediaElement.prototype, 'play')
+      .mockImplementation(() => Promise.resolve());
+    const { container } = render(<MediaPlayer {...props} />);
+    await waitFor(() =>
+      expect(container.querySelector('audio')).toBeInTheDocument()
+    );
+
+    act(() => {
+      container.querySelector('audio')?.dispatchEvent(new Event('error'));
+    });
+
+    await waitFor(() => expect(mockFetchBlob).toHaveBeenCalledWith('1'));
+    expect(mockShowMessage).not.toHaveBeenCalledWith('Media error');
+    playStub.mockRestore();
+  });
+
+  it('shows mediaError when WaveSurfer blob fetch fails', async () => {
+    mockShouldUseWaveSurfer = true;
+    mockMediaState = {
+      status: MediaSt.FETCHED,
+      error: null,
+      url: 'https://localhost/media/1.ogg',
+      id: 'abcd-ogg',
+      remoteId: 'ogg-1',
+      cancelled: false,
+    };
+    mockBlobState = {
+      ...mockBlobClean,
+      blobStat: BlobStatus.ERROR,
+      error: 'fetch failed abcd-ogg',
+      id: 'abcd-ogg',
+      remoteId: 'ogg-1',
+    };
+
+    const onEnded = jest.fn();
+    render(
+      <MediaPlayer srcMediaId="ogg-1" requestPlay={true} onEnded={onEnded} />
+    );
+
+    await waitFor(() =>
+      expect(mockShowMessage).toHaveBeenCalledWith('Media error')
+    );
+    expect(onEnded).toHaveBeenCalled();
   });
 });
