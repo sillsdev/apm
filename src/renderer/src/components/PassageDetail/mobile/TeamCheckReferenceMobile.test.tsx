@@ -57,7 +57,7 @@ jest.mock('../../../utils/storedCompareKey', () => ({
   }),
 }));
 
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars -- JSX (react-jsx) still expects React in scope for TS in this file
 import React from 'react';
@@ -93,6 +93,15 @@ function renderWithContext(stateOverrides?: Record<string, unknown>) {
       <TeamCheckReferenceMobile width={400} />
     </PassageDetailContext.Provider>
   );
+}
+
+function lastBottomPassageDetailPlayerProps() {
+  const bottoms = PassageDetailPlayerMock.mock.calls
+    .map((c) => c[0] as { playerState?: { playing: boolean } })
+    .filter((p) => p.playerState != null);
+  const last = bottoms[bottoms.length - 1];
+  expect(last?.playerState).toBeDefined();
+  return last as { playerState: { playing: boolean } };
 }
 
 describe('TeamCheckReferenceMobile', () => {
@@ -138,5 +147,54 @@ describe('TeamCheckReferenceMobile', () => {
     bottomProps.playerState!.setPlaying(true);
 
     expect(setTopPlaying).toHaveBeenCalledWith(false);
+  });
+
+  it('stops the bottom player when top (vernacular) becomes playing (TT-7280)', async () => {
+    const setTopPlaying = jest.fn();
+    const idleTopState = buildState({
+      playing: false,
+      setPlaying: setTopPlaying,
+    });
+
+    const { rerender } = render(
+      <PassageDetailContext.Provider
+        value={{ state: idleTopState as never, setState: jest.fn() }}
+      >
+        <TeamCheckReferenceMobile width={400} />
+      </PassageDetailContext.Provider>
+    );
+
+    const initialCalls = PassageDetailPlayerMock.mock.calls;
+    expect(initialCalls.length).toBeGreaterThanOrEqual(2);
+    const bottomProps = initialCalls[1][0] as {
+      playerState?: { playing: boolean; setPlaying: (b: boolean) => void };
+    };
+    expect(bottomProps.playerState).toBeDefined();
+    bottomProps.playerState!.setPlaying(true);
+
+    await waitFor(() => {
+      expect(lastBottomPassageDetailPlayerProps().playerState.playing).toBe(
+        true
+      );
+    });
+
+    const topPlayingState = buildState({
+      playing: true,
+      setPlaying: setTopPlaying,
+    });
+
+    rerender(
+      <PassageDetailContext.Provider
+        value={{ state: topPlayingState as never, setState: jest.fn() }}
+      >
+        <TeamCheckReferenceMobile width={400} />
+      </PassageDetailContext.Provider>
+    );
+
+    await waitFor(() => {
+      expect(lastBottomPassageDetailPlayerProps().playerState.playing).toBe(
+        false
+      );
+    });
   });
 });
