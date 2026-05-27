@@ -1094,6 +1094,7 @@ export interface IPassageMediaStrings extends Localize.LocalizedStringsMethods {
 };
 
 export interface IPassageRecordStrings extends Localize.LocalizedStringsMethods {
+    "autosavedLocally": string;
     "cancel": string;
     "compressed": string;
     "compressing": string;

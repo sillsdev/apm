@@ -112,3 +112,6 @@ export * from './useFetchUrlNow';
 export * from './usePublishDestination';
 export * from './convertToWebM';
 export * from './audioDiagnostics';
+export * from './recordingDraftStore';
+export * from './useRecordingAutosave';
+export * from './restoreRecordingDraft';

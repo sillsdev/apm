@@ -5638,6 +5638,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="passageRecord.autosavedLocally">
+         <segment>
+            <source>Saved locally</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="passageRecord.cancel">
          <segment>
             <source>Cancel</source>

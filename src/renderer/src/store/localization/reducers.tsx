@@ -1151,6 +1151,7 @@ const initialState = {
 	}),
 	"passageRecord": new LocalizedStrings({
 		"en": {
+			"autosavedLocally": "Saved locally",
 			"cancel": "Cancel",
 			"compressed": "Compressed",
 			"compressing": "Compressing...{0}%",

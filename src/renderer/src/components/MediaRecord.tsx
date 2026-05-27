@@ -10,7 +10,14 @@ import { useGlobal } from '../context/useGlobal';
 import { IPassageRecordStrings, ISharedStrings } from '../model';
 import { Stack, Paper, Typography } from '@mui/material';
 import WSAudioPlayer, { WSAudioPlayerControls } from './WSAudioPlayer';
-import { loadBlobAsync, useMobile, waitForIt } from '../utils';
+import {
+  infoMsg,
+  loadBlobAsync,
+  logError,
+  Severity,
+  useMobile,
+  waitForIt,
+} from '../utils';
 import {
   IMediaState,
   MediaSt,
@@ -19,6 +26,8 @@ import {
   convertToFormat,
   getBlobDiagnostics,
   logAudioDiagnostic,
+  restoreRecordingDraft,
+  useRecordingAutosave,
 } from '../crud';
 import { useSnackBar } from '../hoc/SnackBar';
 import { UnsavedContext } from '../context/UnsavedContext';
@@ -156,6 +165,7 @@ function MediaRecord(props: IProps) {
   const t: IPassageRecordStrings = useSelector(passageRecordSelector);
   const WARNINGLIMIT = 1;
   const [reporter] = useGlobal('errorReporter');
+  const [memory] = useGlobal('memory');
   const { fetchMediaUrl, mediaState } = useFetchMediaUrl(reporter);
   const mediaStateRef = useRef(mediaState);
   const mediaStateFetchedTimeRef = useRef<number>(0);
@@ -233,6 +243,26 @@ function MediaRecord(props: IProps) {
     return '';
   }, [allowWave, mimeType, t.compressed, t.uncompressed]);
 
+  const { clearDraft } = useRecordingAutosave({
+    passageId,
+    mediaId,
+    audioBlob,
+    performedBy,
+    mimeType,
+    filetype,
+    defaultFilename,
+    blobReady,
+    filechanged,
+    recording,
+    converting,
+    uploading,
+    tooBig,
+    mediaSaveInProgress,
+    setStatusText,
+    autosavedLocallyText: t.autosavedLocally,
+    getCompressedStatusMessage,
+  });
+
   const myAfterUploadCb = async (mediaId: string) => {
     setUploading(false);
     if (filechangedRef.current && mediaId) setFilechanged(false);
@@ -241,6 +271,7 @@ function MediaRecord(props: IProps) {
       setStatusText(ts.NoSaveWoMedia);
       saveCompleted(toolId, ts.NoSaveWoMedia);
     } else {
+      clearDraft();
       // Restore compressed status message if applicable
       setStatusText(getCompressedStatusMessage());
       saveCompleted(toolId);
@@ -470,10 +501,41 @@ function MediaRecord(props: IProps) {
   }, [doReset]);
 
   const reset = () => {
+    clearDraft();
     setFilechanged(false);
     setOriginalBlob(undefined);
     setAudioBlob(undefined);
     clearCompleted(toolId);
+  };
+
+  const applyRestoredDraft = (blob: Blob) => {
+    setOriginalBlob(blob);
+    setAudioBlob(blob);
+    setFilechanged(true);
+    setLoading(false);
+    onLoaded && onLoaded();
+  };
+
+  const tryRestoreFromDraft = async (): Promise<boolean> => {
+    if (!passageId) return false;
+    try {
+      const restored = await restoreRecordingDraft(
+        passageId,
+        mediaId,
+        memory
+      );
+      if (restored) {
+        applyRestoredDraft(restored.blob);
+        return true;
+      }
+    } catch (err: unknown) {
+      logError(
+        Severity.error,
+        reporter,
+        infoMsg(err as Error, 'recording draft restore failed')
+      );
+    }
+    return false;
   };
 
   const gotTheBlob = (b: Blob) => {
@@ -530,9 +592,17 @@ function MediaRecord(props: IProps) {
     return '';
   };
   const handleLoadAudio = async (silent: boolean = false) => {
+    if (loading) return;
+    if (!mediaId) {
+      setLoading(true);
+      await tryRestoreFromDraft();
+      setLoading(false);
+      return;
+    }
     if (!silent) showMessage(t.loading);
-    if (loading || !mediaId) return;
     setLoading(true);
+    if (await tryRestoreFromDraft()) return;
+
     reset();
 
     const url = await getGoodUrl();
@@ -561,7 +631,13 @@ function MediaRecord(props: IProps) {
 
   useEffect(() => {
     if (!mediaId) {
-      reset();
+      void (async () => {
+        if (loading) return;
+        setLoading(true);
+        const restored = await tryRestoreFromDraft();
+        if (!restored) reset();
+        setLoading(false);
+      })();
       return;
     }
     if (!loading) {
