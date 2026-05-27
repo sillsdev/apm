@@ -155,7 +155,7 @@ jest.mock('../context/useGlobal', () => ({
     const mockValues: Record<string, unknown> = {
       errorReporter: jest.fn(),
       memory: {
-        keyMap: {},
+        keyMap: { keyToId: jest.fn(), idToKey: jest.fn() },
         cache: {
           query: jest.fn(() => ({
             attributes: { contentType: 'audio/mpeg' },
