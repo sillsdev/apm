@@ -2263,7 +2263,6 @@ export function ScriptureTable(props: IProps) {
           sections={getSectionsWhere(assignSections)}
           visible={assignSectionVisible}
           closeMethod={handleAssignClose}
-          refresh={refreshSheetAfterAssign}
         />
       )}
       <Uploader

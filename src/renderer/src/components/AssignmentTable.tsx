@@ -65,10 +65,7 @@ import {
 } from '@mui/x-data-grid';
 import { TreeDataGrid } from './TreeDataGrid';
 import { pad2 } from '../utils/pad2';
-import {
-  resolveSectionForRecId,
-  resolveSelectedSections,
-} from './resolveSectionForRecId';
+import { resolveSelectedSections } from './resolveSectionForRecId';
 
 const AssignmentDiv = styled('div')(() => ({
   display: 'flex',
@@ -357,18 +354,9 @@ export function AssignmentTable() {
     if (check.length === 0) {
       showMessage(t.selectRowsToRemove);
     } else {
-      let count = 0;
-      check.forEach((recId) => {
-        const section = resolveSectionForRecId(
-          recId,
-          data,
-          sections,
-          passages
-        );
-        if (!section) return;
-        const schemeId = related(section, 'organizationScheme');
-        if (schemeId) count++;
-      });
+      const count = selectedSections.filter((s) =>
+        related(s, 'organizationScheme')
+      ).length;
       if (count === 0) {
         showMessage(t.selectRowsToRemove);
       } else {
