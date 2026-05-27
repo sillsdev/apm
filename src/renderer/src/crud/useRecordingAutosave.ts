@@ -1,7 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { debounce } from '@mui/material';
 import { writeFileLocal } from '../store/upload/actions';
-import { removeDraft, upsertDraft } from './recordingDraftStore';
+import {
+  deleteDraftFileIfPresent,
+  purgeRecordingDraft,
+} from './recordingDraftFiles';
+import { getDraft, upsertDraft } from './recordingDraftStore';
 import { useSnackBar } from '../hoc/SnackBar';
 import { infoMsg } from '../utils/infoMsg';
 import { logError, Severity } from '../utils/logErrorService';
@@ -55,11 +59,13 @@ export const useRecordingAutosave = ({
     if (!passageId || !audioBlob || !filetype) return;
     try {
       const blobType = audioBlob.type || mimeType;
-      const file = new File(
-        [audioBlob],
-        `${defaultFilename}.${filetype}`,
-        { type: blobType }
-      );
+      const file = new File([audioBlob], `${defaultFilename}.${filetype}`, {
+        type: blobType,
+      });
+      const previous = getDraft(passageId);
+      if (previous?.relativeMediaPath) {
+        await deleteDraftFileIfPresent(previous.relativeMediaPath, reporter);
+      }
       const written = await writeFileLocal(file);
       upsertDraft({
         passageId,
@@ -140,9 +146,10 @@ export const useRecordingAutosave = ({
     scheduleAutosave,
   ]);
 
-  const clearDraft = useCallback(() => {
-    if (passageId) removeDraft(passageId);
-  }, [passageId]);
+  const clearDraft = useCallback(async () => {
+    scheduleAutosave.clear();
+    if (passageId) await purgeRecordingDraft(passageId, reporter);
+  }, [passageId, reporter, scheduleAutosave]);
 
   const restoreStatusAfterAutosave = useCallback(() => {
     if (getCompressedStatusMessage) {

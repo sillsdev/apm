@@ -113,5 +113,6 @@ export * from './usePublishDestination';
 export * from './convertToWebM';
 export * from './audioDiagnostics';
 export * from './recordingDraftStore';
+export * from './recordingDraftFiles';
 export * from './useRecordingAutosave';
 export * from './restoreRecordingDraft';

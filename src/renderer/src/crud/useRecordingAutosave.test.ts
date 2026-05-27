@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
 import { act, renderHook } from '@testing-library/react';
-import { getDraft } from './recordingDraftStore';
+import { getDraft, upsertDraft } from './recordingDraftStore';
 
 jest.mock('../utils/infoMsg', () => ({
   infoMsg: (e: Error, info: string) => ({ ...e, name: info + e.name }),
@@ -12,8 +12,17 @@ jest.mock('../utils/logErrorService', () => ({
 }));
 
 const mockWriteFileLocal = jest.fn();
+const mockDeleteDraftFileIfPresent = jest.fn();
+const mockPurgeRecordingDraft = jest.fn();
+
 jest.mock('../store/upload/actions', () => ({
   writeFileLocal: (...args: unknown[]) => mockWriteFileLocal(...args),
+}));
+
+jest.mock('./recordingDraftFiles', () => ({
+  deleteDraftFileIfPresent: (...args: unknown[]) =>
+    mockDeleteDraftFileIfPresent(...args),
+  purgeRecordingDraft: (...args: unknown[]) => mockPurgeRecordingDraft(...args),
 }));
 
 const mockShowMessage = jest.fn();
@@ -36,6 +45,10 @@ describe('useRecordingAutosave', () => {
     localStorage.clear();
     mockWriteFileLocal.mockReset();
     mockShowMessage.mockReset();
+    mockDeleteDraftFileIfPresent.mockReset();
+    mockPurgeRecordingDraft.mockReset();
+    mockDeleteDraftFileIfPresent.mockResolvedValue(undefined);
+    mockPurgeRecordingDraft.mockResolvedValue(undefined);
     mockWriteFileLocal.mockResolvedValue({
       relativeMediaPath: 'media/autosave.webm',
       absolutePath: '/tmp/media/autosave.webm',
@@ -91,13 +104,54 @@ describe('useRecordingAutosave', () => {
     expect(mockWriteFileLocal).not.toHaveBeenCalled();
   });
 
-  it('clearDraft removes stored draft', () => {
-    const { result } = renderHook(() => useRecordingAutosave(baseProps()));
-
-    act(() => {
-      result.current.clearDraft();
+  it('deletes previous draft file before a subsequent autosave', async () => {
+    upsertDraft({
+      passageId: 'psg-1',
+      relativeMediaPath: 'media/old.webm',
+      mimeType: 'audio/webm',
+      filetype: 'webm',
     });
 
-    expect(getDraft('psg-1')).toBeUndefined();
+    const { rerender } = renderHook((props) => useRecordingAutosave(props), {
+      initialProps: baseProps(),
+    });
+
+    await act(async () => {
+      jest.advanceTimersByTime(RECORDING_AUTOSAVE_DEBOUNCE_MS);
+    });
+
+    expect(mockDeleteDraftFileIfPresent).toHaveBeenCalledWith(
+      'media/old.webm',
+      undefined
+    );
+    expect(mockWriteFileLocal).toHaveBeenCalledTimes(1);
+
+    mockDeleteDraftFileIfPresent.mockClear();
+    mockWriteFileLocal.mockClear();
+
+    rerender({
+      ...baseProps(),
+      audioBlob: new Blob(['updated'], { type: 'audio/webm' }),
+    });
+
+    await act(async () => {
+      jest.advanceTimersByTime(RECORDING_AUTOSAVE_DEBOUNCE_MS);
+    });
+
+    expect(mockDeleteDraftFileIfPresent).toHaveBeenCalledWith(
+      'media/autosave.webm',
+      undefined
+    );
+    expect(mockWriteFileLocal).toHaveBeenCalledTimes(1);
+  });
+
+  it('clearDraft purges stored draft', async () => {
+    const { result } = renderHook(() => useRecordingAutosave(baseProps()));
+
+    await act(async () => {
+      await result.current.clearDraft();
+    });
+
+    expect(mockPurgeRecordingDraft).toHaveBeenCalledWith('psg-1', undefined);
   });
 });

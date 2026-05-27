@@ -273,7 +273,7 @@ function MediaRecord(props: IProps) {
       setStatusText(ts.NoSaveWoMedia);
       saveCompleted(toolId, ts.NoSaveWoMedia);
     } else {
-      clearDraft();
+      await clearDraft();
       // Restore compressed status message if applicable
       setStatusText(getCompressedStatusMessage());
       saveCompleted(toolId);
@@ -503,7 +503,7 @@ function MediaRecord(props: IProps) {
   }, [doReset]);
 
   const reset = () => {
-    clearDraft();
+    void clearDraft();
     setFilechanged(false);
     setOriginalBlob(undefined);
     setAudioBlob(undefined);
