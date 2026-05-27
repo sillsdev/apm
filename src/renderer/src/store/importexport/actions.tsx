@@ -1,4 +1,4 @@
-import Axios, { AxiosError, HttpStatusCode } from 'axios';
+import Axios, { HttpStatusCode } from 'axios';
 import path from 'path-browserify';
 import {
   Comment,
@@ -310,7 +310,12 @@ export const exportProject =
           );
           start = -1;
           dispatch({
-            payload: errStatus(err as AxiosError),
+            payload: Axios.isAxiosError(err)
+              ? errStatus(err)
+              : errorStatus(
+                  -1,
+                  err instanceof Error ? err.message : String(err)
+                ),
             type: EXPORT_ERROR,
           });
         }
@@ -766,9 +771,8 @@ const processImportFile = async ({
   let start = getInitialStart();
   let msg = '';
   let mapKey = '';
-  let loopError: any;
   let gatewayTimeoutRetries = 0;
-  do {
+  while (true) {
     try {
       const processUrl = getProcessUrl(uploadedFilename, mapKey);
       const putresponse = await Axios.put(processUrl + start, null, {
@@ -820,6 +824,7 @@ const processImportFile = async ({
           `import gateway timeout (504), retry ${gatewayTimeoutRetries}/${GATEWAY_TIMEOUT_MAX_RETRIES}`
         );
         await sleep(gatewayTimeoutDelayMs(gatewayTimeoutRetries - 1));
+        continue;
       } else {
         logError(
           Severity.error,
@@ -834,8 +839,7 @@ const processImportFile = async ({
           type: IMPORT_ERROR,
         });
         await cleanupCopyProject(mapKey, token);
-        loopError = new Error(putresponse.data.message);
-        break;
+        throw new Error(putresponse.data.message);
       }
     } catch (reason: any) {
       const status = axiosErrorStatus(reason);
@@ -850,6 +854,7 @@ const processImportFile = async ({
           `import gateway timeout (504), retry ${gatewayTimeoutRetries}/${GATEWAY_TIMEOUT_MAX_RETRIES}`
         );
         await sleep(gatewayTimeoutDelayMs(gatewayTimeoutRetries - 1));
+        continue;
       } else {
         logError(Severity.error, errorReporter, 'import error' + reason);
         dispatch({
@@ -857,14 +862,10 @@ const processImportFile = async ({
           type: IMPORT_ERROR,
         });
         await cleanupCopyProject(mapKey, token);
-        loopError = reason;
-        break;
+        throw reason;
       }
     }
-  } while (start !== '0' && start !== '0/0');
-
-  if (loopError) throw loopError;
-  return {};
+  }
 };
 
 export interface ImportProjectFromExternalProps {
@@ -1031,8 +1032,7 @@ export const copyProject =
     let returnstatus = 0;
     let status = '';
     let gatewayTimeoutRetries = 0;
-    let copyFailed = false;
-    do {
+    while (true) {
       try {
         const response = await Axios.put(url, null, {
           headers: {
@@ -1062,6 +1062,10 @@ export const copyProject =
           type: COPY_PENDING,
         });
         url = `${API_CONFIG.host}/api/offlineData/project/copydata/${orgid}/${projectid}/${newproject}/${start}`;
+
+        if (returnstatus !== 200 || start === -1) {
+          break;
+        }
       } catch (reason: unknown) {
         const httpStatus = axiosErrorStatus(reason);
         if (
@@ -1090,15 +1094,11 @@ export const copyProject =
           ),
           type: COPY_ERROR,
         });
-        copyFailed = true;
-        break;
+        if (newproject) {
+          await cleanupCopyProject(newproject, token);
+        }
+        return;
       }
-    } while (returnstatus === 200 && start !== -1 && !copyFailed);
-    if (copyFailed) {
-      if (newproject) {
-        await cleanupCopyProject(newproject, token);
-      }
-      return;
     }
     if (start === -1)
       dispatch({
