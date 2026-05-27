@@ -63,7 +63,7 @@ export function shouldRestoreDraft(
   if (!mediaDateUpdated) return true;
   const draftTime = Date.parse(draft.updatedAt);
   const mediaTime = Date.parse(mediaDateUpdated);
-  if (Number.isNaN(draftTime)) return true;
+  if (Number.isNaN(draftTime)) return false;
   if (Number.isNaN(mediaTime)) return true;
   return draftTime >= mediaTime;
 }

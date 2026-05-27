@@ -169,6 +169,8 @@ function MediaRecord(props: IProps) {
   const { fetchMediaUrl, mediaState } = useFetchMediaUrl(reporter);
   const mediaStateRef = useRef(mediaState);
   const mediaStateFetchedTimeRef = useRef<number>(0);
+  /** Bumped when mediaId/passageId changes so in-flight load/restore can be ignored. */
+  const loadGenerationRef = useRef(0);
   const [filetype, setFiletype] = useState('');
   const [originalBlob, setOriginalBlob] = useState<Blob>();
   const [audioBlob, setAudioBlob] = useState<Blob>();
@@ -516,7 +518,7 @@ function MediaRecord(props: IProps) {
     onLoaded && onLoaded();
   };
 
-  const tryRestoreFromDraft = async (): Promise<boolean> => {
+  const tryRestoreFromDraft = async (generation: number): Promise<boolean> => {
     if (!passageId) return false;
     try {
       const restored = await restoreRecordingDraft(
@@ -524,6 +526,7 @@ function MediaRecord(props: IProps) {
         mediaId,
         memory
       );
+      if (generation !== loadGenerationRef.current) return false;
       if (restored) {
         applyRestoredDraft(restored.blob);
         return true;
@@ -591,60 +594,74 @@ function MediaRecord(props: IProps) {
       return mediaStateRef.current.url;
     return '';
   };
-  const handleLoadAudio = async (silent: boolean = false) => {
-    if (loading) return;
-    if (!mediaId) {
-      setLoading(true);
-      await tryRestoreFromDraft();
-      setLoading(false);
-      return;
-    }
+  const handleLoadAudio = async (
+    silent: boolean = false,
+    generation: number = loadGenerationRef.current
+  ) => {
+    if (generation !== loadGenerationRef.current || !mediaId) return;
+
     if (!silent) showMessage(t.loading);
     setLoading(true);
-    if (await tryRestoreFromDraft()) return;
+    if (await tryRestoreFromDraft(generation)) return;
+
+    if (generation !== loadGenerationRef.current) return;
 
     reset();
 
     const url = await getGoodUrl();
 
+    if (generation !== loadGenerationRef.current) return;
+
     if (url) {
       try {
         const blob = await loadBlobAsync(url);
+        if (generation !== loadGenerationRef.current) return;
         if (blob) gotTheBlob(blob);
         else blobError('Failed to load blob');
       } catch (error) {
+        if (generation !== loadGenerationRef.current) return;
         blobError(
           error instanceof Error ? error.message : 'Failed to load blob'
         );
       }
     } else {
+      if (generation !== loadGenerationRef.current) return;
       blobError(mediaStateRef.current.error || 'Failed to fetch media URL');
     }
   };
 
   useEffect(() => {
-    if ((preload ?? 0) > 0 && !loading) {
-      handleLoadAudio(true);
+    if ((preload ?? 0) > 0 && mediaId) {
+      void handleLoadAudio(true, loadGenerationRef.current);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [preload]);
 
   useEffect(() => {
-    if (!mediaId) {
-      void (async () => {
-        if (loading) return;
+    const generation = ++loadGenerationRef.current;
+
+    void (async () => {
+      if (!mediaId) {
         setLoading(true);
-        const restored = await tryRestoreFromDraft();
-        if (!restored) reset();
-        setLoading(false);
-      })();
-      return;
-    }
-    if (!loading) {
-      handleLoadAudio(true);
-    }
+        try {
+          const restored = await tryRestoreFromDraft(generation);
+          if (generation !== loadGenerationRef.current) return;
+          if (!restored) reset();
+        } finally {
+          if (generation === loadGenerationRef.current) {
+            setLoading(false);
+          }
+        }
+        return;
+      }
+      await handleLoadAudio(true, generation);
+    })();
+
+    return () => {
+      loadGenerationRef.current += 1;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mediaId]);
+  }, [mediaId, passageId]);
 
   const segments = '{}';
 
