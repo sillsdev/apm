@@ -42,8 +42,10 @@ const waveSurferMock = {
   applyMarkVersesRegionColors: jest.fn(),
 };
 
+// Context must be created inside the factory (jest hoists mocks; use requireActual
+// for React so Provider/useContext share one instance — see jest-testing-takeaways).
 jest.mock('../context/HotKeyContext', () => {
-  const React = require('react');
+  const React = jest.requireActual<typeof import('react')>('react');
   const subscribe = jest.fn();
   const unsubscribe = jest.fn();
   return {
