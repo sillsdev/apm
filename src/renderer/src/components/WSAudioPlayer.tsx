@@ -908,9 +908,10 @@ function WSAudioPlayer(props: IProps) {
   }, [justPlayButton]);
 
   useEffect(() => {
-    if (allowRecord) recordKeys.forEach((k) => subscribe(k.key, k.cb));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allowRecord]);
+    if (!allowRecord) return;
+    subscribe(RECORD_KEY, handleRecorder);
+    return () => unsubscribe(RECORD_KEY);
+  }, [allowRecord, handleRecorder, subscribe, unsubscribe]);
   useEffect(() => {
     if (allowSegment) segmentKeys.forEach((k) => subscribe(k.key, k.cb));
     // eslint-disable-next-line react-hooks/exhaustive-deps
