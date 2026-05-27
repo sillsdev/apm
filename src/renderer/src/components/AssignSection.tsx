@@ -286,14 +286,14 @@ function AssignSection(props: IProps) {
   };
 
   const doAssign = async (schemeId: string): Promise<boolean> => {
-    const needsLink = sections.some(
-      (s) => related(s, 'organizationScheme') !== schemeId
-    );
-    if (!needsLink) return true;
     if (sections.length === 0) {
       showMessage(tAssign.selectRowsToAssign);
       return false;
     }
+    const needsLink = sections.some(
+      (s) => related(s, 'organizationScheme') !== schemeId
+    );
+    if (!needsLink) return true;
     const ids = sections.map(
       (s) => remoteId('section', s.id, memory.keyMap as RecordKeyMap) as string
     );

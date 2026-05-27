@@ -388,9 +388,10 @@ export function ScriptureTable(props: IProps) {
     passageType + ' ' + firstBook;
 
   const getFilter = (fs: ISTFilterState) => {
-    const filter = (getLocalDefault(projDefFilterParam) ??
+    const source = (getLocalDefault(projDefFilterParam) ??
       getProjectDefault(projDefFilterParam) ??
       fs) as ISTFilterState;
+    const filter: ISTFilterState = { ...source };
 
     if (!showAssign && filter.assignedToMe) {
       filter.assignedToMe = false;
@@ -1470,6 +1471,7 @@ export function ScriptureTable(props: IProps) {
     user,
     myGroups,
     developer,
+    setSheet,
   ]);
 
   const handleAssignClose = useCallback(
