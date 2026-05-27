@@ -81,7 +81,7 @@ jest.mock('../crud/useFetchMediaBlob', () => {
   };
 });
 
-jest.mock('../crud', () => {
+function mockUseFetchMediaUrl() {
   const MediaSt = {
     IDLE: 0,
     PENDING: 1,
@@ -123,6 +123,38 @@ jest.mock('../crud', () => {
         },
       };
     },
+  };
+}
+
+jest.mock('../crud', () => {
+  const remoteIdExports = jest.requireActual('../crud/remoteId') as Record<
+    string,
+    unknown
+  >;
+  const MediaSt = {
+    IDLE: 0,
+    PENDING: 1,
+    FETCHED: 2,
+    ERROR: 3,
+  };
+  return {
+    ...remoteIdExports,
+    useFetchMediaUrl: mockUseFetchMediaUrl,
+    MediaSt,
+  };
+});
+
+jest.mock('../crud/useFetchMediaUrl', () => {
+  const MediaSt = {
+    IDLE: 0,
+    PENDING: 1,
+    FETCHED: 2,
+    ERROR: 3,
+  };
+  return {
+    __esModule: true,
+    default: mockUseFetchMediaUrl,
+    useFetchMediaUrl: mockUseFetchMediaUrl,
     MediaSt,
   };
 });
@@ -155,13 +187,17 @@ jest.mock('../context/useGlobal', () => ({
     const mockValues: Record<string, unknown> = {
       errorReporter: jest.fn(),
       memory: {
-        keyMap: { keyToId: jest.fn(), idToKey: jest.fn() },
         cache: {
           query: jest.fn(() => ({
             attributes: { contentType: 'audio/mpeg' },
           })),
         },
         update: jest.fn(),
+        keyMap: {
+          idToKey: (_table: string, _attr: string, localId: string) => localId,
+          keyToId: (_table: string, _attr: string, remoteId: string) =>
+            remoteId,
+        },
       },
       user: 'test-user',
       organization: 'test-org',
