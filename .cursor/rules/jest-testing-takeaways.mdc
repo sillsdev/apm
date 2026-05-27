@@ -51,6 +51,13 @@ alwaysApply: true
 - Put **`jest.mock(...)` calls before importing the module under test**, after any **hoist-safe** values the factory needs (e.g. `const mockMemory = { ... }` defined above the mock, as in `useStepPermission.test.ts` / `doChapter.test.ts`).
 - Place **type-only imports** with the rest of imports after mocks if that keeps factories clean; Jest hoists mocks, but readability matches other specs in this repo.
 
+## Mocking React `Context` / `useContext`
+
+- **`jest.mock` factory + outer-scope `createContext` is fragile with ESM.** If the factory returns `{ MyContext: mockContext }` and `mockContext` is assigned in the test file **above** the mock, the **module under test** can be evaluated **before** that assignment runs (import hoisting / evaluation order). The mock then exports **`undefined`**, and `useContext(MyContext)` throws (e.g. `Cannot read properties of undefined (reading '$$typeof')`).
+- **Prefer creating the context inside the mock factory** so it always exists when the mock initializes, e.g. `jest.mock('.../MyContext', () => { const React = jest.requireActual<typeof import('react')>('react'); return { MyContext: React.createContext(defaultValue) }; })`.
+- **Use the same mocked export for the provider** in tests: `import { MyContext } from '.../MyContext'` (resolves to the mock) and wrap with `<MyContext.Provider value={...}>`. That guarantees `Provider` and `useContext(MyContext)` refer to **one** context object.
+- **Do not** rely on a separate `const MockMyContext = React.createContext(...)` in the spec **unless** it is guaranteed to run before any import of the component that consumes the context; when in doubt, create the context **only** inside the factory (see `TeamCheckReferenceMobile.test.tsx`).
+
 ## Barrel imports and Jest parse failures
 
 - If the hook under test imports from a **barrel** (e.g. `from '../utils'`), Jest may
