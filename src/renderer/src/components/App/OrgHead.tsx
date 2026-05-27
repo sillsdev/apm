@@ -72,6 +72,7 @@ export const OrgHead = () => {
 
   const orgId = useMemo(
     () => localStorage.getItem(localUserKey(LocalKey.team)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [user]
   );
 

@@ -152,6 +152,7 @@ export function PassageDetailRecord(props: IProps) {
       | MediaFileD
       | undefined;
     return mediaRec?.attributes?.performedBy;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [memory, mediafileId, mediafiles]);
 
   useEffect(() => {

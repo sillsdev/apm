@@ -25,14 +25,12 @@ import { ArtifactTypeSlug } from '../../../../crud/artifactTypeSlug';
 import { useArtifactType } from '../../../../crud/useArtifactType';
 import { usePlanType } from '../../../../crud/usePlanType';
 import { IRegion } from '../../../../crud/useWavesurferRegions';
-import { useSnackBar } from '../../../../hoc/SnackBar';
 import EditIcon from '@mui/icons-material/Edit';
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
 import UndoIcon from '@mui/icons-material/Undo';
 import {
   ISharedStrings,
-  ITranscriptionTabStrings,
   IVerseStrings,
   IWsAudioPlayerSegmentStrings,
   IWsAudioPlayerStrings,
@@ -43,7 +41,6 @@ import { PassageTypeEnum } from '../../../../model/passageType';
 import {
   audioPlayerSegmentSelector,
   sharedSelector,
-  transcriptionTabSelector,
   verseSelector,
   wsAudioPlayerSelector,
 } from '../../../../selector';
@@ -163,7 +160,6 @@ enum ColName {
   Ref,
 }
 
-const REF_SEGMENT_SYNC_DEBOUNCE_MS = 400;
 const AUTOSAVE_DEBOUNCE_MS = 1200;
 
 interface IEditReferenceDialogState extends EditReferenceValue {
@@ -230,10 +226,6 @@ export default function PassageDetailMarkVersesIsMobile({
   const { localizedArtifactType } = useArtifactType();
   const t = useSelector(verseSelector, shallowEqual) as IVerseStrings;
   const ts = useSelector(sharedSelector, shallowEqual) as ISharedStrings;
-  const tt = useSelector(
-    transcriptionTabSelector,
-    shallowEqual
-  ) as ITranscriptionTabStrings;
   const tp = useSelector(
     audioPlayerSegmentSelector,
     shallowEqual
@@ -254,7 +246,6 @@ export default function PassageDetailMarkVersesIsMobile({
   } = useContext(UnsavedContext).state;
   const hasChanged = useMemo(() => isChanged(verseToolId), [isChanged]);
   const projectSegmentSave = useProjectSegmentSave();
-  const { showMessage } = useSnackBar();
   const planType = usePlanType();
 
   const isFlat = useMemo(() => planType(plan)?.flat, [plan, planType]);
@@ -1249,16 +1240,6 @@ export default function PassageDetailMarkVersesIsMobile({
     }
   }, [setSegments]);
 
-  const scheduleSetSegments = useCallback(() => {
-    if (setSegmentsDebounceRef.current) {
-      clearTimeout(setSegmentsDebounceRef.current);
-    }
-    setSegmentsDebounceRef.current = setTimeout(() => {
-      setSegmentsDebounceRef.current = undefined;
-      setSegments();
-    }, REF_SEGMENT_SYNC_DEBOUNCE_MS);
-  }, [setSegments]);
-
   const flushSetSegmentsRef = useRef(flushSetSegments);
   flushSetSegmentsRef.current = flushSetSegments;
 
@@ -1426,32 +1407,6 @@ export default function PassageDetailMarkVersesIsMobile({
     },
     [scheduleAutosave]
   );
-
-  // const handleCopy = () => {
-  //   const content = dataRef.current
-  //     .filter((_, index) => index > 0)
-  //     .map(
-  //       (row) =>
-  //         `${(row[ColName.Limits] as ICell).value}\t${
-  //           (row[ColName.Ref] as ICell).value
-  //         }`
-  //     )
-  //     .join('\n');
-
-  //   if (!content.length) {
-  //     showMessage(tt.noData.replace('{0}', t.markVerses));
-  //     return;
-  //   }
-
-  //   navigator.clipboard
-  //     .writeText(content)
-  //     .then(() => {
-  //       showMessage(tt.availableOnClipboard);
-  //     })
-  //     .catch(() => {
-  //       showMessage(ts.cantCopy);
-  //     });
-  // };
 
   const handleEditReference = () => {
     let rowIndex = findHighlightedRowIndex(dataRef.current);
