@@ -44,7 +44,7 @@ interface IProps {
 }
 
 export function TeamCheckReferenceMobile(props: IProps) {
-  const { width } = props;
+  const { width = 0 } = props;
   const ctx = useContext(PassageDetailContext);
 
   const {
@@ -78,7 +78,6 @@ export function TeamCheckReferenceMobile(props: IProps) {
   };
 
   const [resource, setResource] = useState('');
-  const [resetCount, setResetCount] = useState(0);
   const { removeStoredKeys, saveKey, storeKey, SecSlug } = storedCompareKey(
     passage,
     section
@@ -130,9 +129,8 @@ export function TeamCheckReferenceMobile(props: IProps) {
       handleResource(res);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [section, passage, currentstep, resetCount]);
+  }, [section, passage, currentstep]);
 
-  const paneWidth = width ?? 100;
   const tool = useStepTool(currentstep).tool;
 
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -159,7 +157,7 @@ export function TeamCheckReferenceMobile(props: IProps) {
         <StyledGrid ref={containerRef} size={{ xs: 12 }}>
           {tool !== ToolSlug.KeyTerm && (
             <PassageDetailPlayer
-              width={Math.max(playerWidth)}
+              width={Math.max(playerWidth, width)}
               allowZoomAndSpeed={true}
             />
           )}
@@ -174,7 +172,7 @@ export function TeamCheckReferenceMobile(props: IProps) {
         <StyledGrid size={{ xs: 12 }}>
           {tool !== ToolSlug.KeyTerm && (
             <PassageDetailPlayer
-              width={Math.round(playerWidth)}
+              width={Math.round(Math.max(playerWidth, width))}
               allowZoomAndSpeed={true}
               playerState={{
                 loading,

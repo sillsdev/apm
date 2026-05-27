@@ -1,31 +1,30 @@
-// react-router (via PassageDetailContext) requires TextEncoder in this Jest env.
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const { TextDecoder, TextEncoder } = require('util');
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-(global as any).TextEncoder = TextEncoder;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-(global as any).TextDecoder = TextDecoder;
+// react-router (via real PassageDetailContext) expects TextEncoder in some Jest envs;
+// keep polyfill before any module that might pull react-router.
+import { TextDecoder, TextEncoder } from 'util';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const React = require('react');
-const { cleanup, render, screen } = require('@testing-library/react');
-require('@testing-library/jest-dom');
+Object.assign(globalThis, { TextEncoder, TextDecoder });
 
-const { ToolSlug } = require('../../../crud/toolSlug');
-
-// Avoid importing the real PassageDetailContext (pulls localization reducers that import ESM).
-const MockPassageDetailContext = React.createContext({
-  state: {},
-  setState: jest.fn(),
+// Context object must be created inside the factory so it exists when the mock
+// initializes (ESM hoists imports; do not rely on a pre-mock const binding).
+jest.mock('../../../context/PassageDetailContext', () => {
+  const R = jest.requireActual<typeof import('react')>('react');
+  return {
+    PassageDetailContext: R.createContext({
+      state: {},
+      setState: jest.fn(),
+    }),
+  };
 });
-jest.mock('../../../context/PassageDetailContext', () => ({
-  PassageDetailContext: MockPassageDetailContext,
-}));
 
-jest.mock('../../../crud', () => ({
-  ToolSlug,
-  useStepTool: () => ({ tool: ToolSlug.TeamCheck }),
-}));
+jest.mock('../../../crud', () => {
+  const { ToolSlug } = jest.requireActual(
+    '../../../crud/toolSlug'
+  ) as typeof import('../../../crud/toolSlug');
+  return {
+    ToolSlug,
+    useStepTool: () => ({ tool: ToolSlug.TeamCheck }),
+  };
+});
 
 jest.mock('../../../utils', () => ({
   NamedRegions: { ProjectResource: 'ProjectResource' },
@@ -40,15 +39,10 @@ jest.mock('../../../crud/useFetchMediaBlob', () => ({
   ],
 }));
 
-const { TeamCheckReferenceMobile } = require('./TeamCheckReferenceMobile');
-const { PassageDetailPlayer } = require('../PassageDetailPlayer');
-
-const PassageDetailPlayerMock =
-  PassageDetailPlayer as jest.MockedFunction<typeof PassageDetailPlayer>;
-
 jest.mock('../PassageDetailPlayer', () => ({
   PassageDetailPlayer: jest.fn(() => <div data-testid="passage-player" />),
 }));
+
 jest.mock('../Internalization/SelectMyResource', () => ({
   __esModule: true,
   default: () => <div data-testid="select-resource" />,
@@ -62,6 +56,19 @@ jest.mock('../../../utils/storedCompareKey', () => ({
     SecSlug: 'SecSlug',
   }),
 }));
+
+import { cleanup, render, screen } from '@testing-library/react';
+import '@testing-library/jest-dom';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- JSX (react-jsx) still expects React in scope for TS in this file
+import React from 'react';
+import { PassageDetailContext } from '../../../context/PassageDetailContext';
+import { TeamCheckReferenceMobile } from './TeamCheckReferenceMobile';
+import { PassageDetailPlayer } from '../PassageDetailPlayer';
+
+const PassageDetailPlayerMock =
+  PassageDetailPlayer as unknown as jest.MockedFunction<
+    typeof PassageDetailPlayer
+  >;
 
 function buildState(overrides: Record<string, unknown> = {}) {
   return {
@@ -80,11 +87,11 @@ function buildState(overrides: Record<string, unknown> = {}) {
 function renderWithContext(stateOverrides?: Record<string, unknown>) {
   const state = buildState(stateOverrides);
   return render(
-    <MockPassageDetailContext.Provider
+    <PassageDetailContext.Provider
       value={{ state: state as never, setState: jest.fn() }}
     >
       <TeamCheckReferenceMobile width={400} />
-    </MockPassageDetailContext.Provider>
+    </PassageDetailContext.Provider>
   );
 }
 
@@ -92,18 +99,21 @@ describe('TeamCheckReferenceMobile', () => {
   beforeEach(() => {
     cleanup();
     jest.clearAllMocks();
-    (PassageDetailPlayer as unknown as jest.Mock).mockClear();
+    PassageDetailPlayerMock.mockClear();
     global.localStorage.getItem = jest.fn(() => null);
     global.ResizeObserver = class {
-      observe() {}
-      unobserve() {}
-      disconnect() {}
+      observe = jest.fn();
+      unobserve = jest.fn();
+      disconnect = jest.fn();
     };
   });
 
-  it('does not render a PassageDetailChooser on mobile Compare', () => {
+  it('does not render PassageDetailChooser passage tabs on mobile Compare', () => {
     renderWithContext();
-    expect(screen.queryAllByTestId('passage-chooser')).toHaveLength(0);
+    // Matches PassageDetailChooser.tsx (Mui Tabs aria-label); unique in the app.
+    expect(
+      screen.queryByRole('tablist', { name: 'scrollable passage tabs' })
+    ).not.toBeInTheDocument();
   });
 
   it('renders vernacular player and reference resource selector', () => {
@@ -125,7 +135,7 @@ describe('TeamCheckReferenceMobile', () => {
 
     const bottomProps = calls[1][0];
     expect(bottomProps.playerState).toBeDefined();
-    bottomProps.playerState.setPlaying(true);
+    bottomProps.playerState!.setPlaying(true);
 
     expect(setTopPlaying).toHaveBeenCalledWith(false);
   });
