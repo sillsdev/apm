@@ -99,16 +99,13 @@ export function MediaPlayer(props: IProps) {
   const resolveMediaFileId = useCallback(
     (mediaId: string) => {
       if (!mediaId) return '';
-      if (!isNaN(Number(mediaId)) && memory?.keyMap?.keyToId) {
-        return (
-          (remoteIdGuid(
-            'mediafile',
-            mediaId,
-            memory.keyMap as RecordKeyMap
-          ) as string) || mediaId
-        );
-      }
-      return mediaId;
+      return (
+        (remoteIdGuid(
+          'mediafile',
+          mediaId,
+          memory.keyMap as RecordKeyMap
+        ) as string) || mediaId
+      );
     },
     [memory]
   );
