@@ -11,7 +11,6 @@ import SelectMyResource from '../Internalization/SelectMyResource';
 import { PassageDetailContext } from '../../../context/PassageDetailContext';
 import { getSegments, NamedRegions } from '../../../utils';
 import { storedCompareKey } from '../../../utils/storedCompareKey';
-import { PassageDetailChooser } from '../PassageDetailChooser';
 import { IRegion, ToolSlug, useStepTool } from '../../../crud';
 import { PassageDetailPlayer } from '../PassageDetailPlayer';
 import { BlobStatus, useFetchMediaBlob } from '../../../crud/useFetchMediaBlob';
@@ -52,6 +51,8 @@ export function TeamCheckReferenceMobile(props: IProps) {
     rowData,
     setPlayItem,
     setMediaSelected,
+    playing: topPlaying,
+    setPlaying: setTopPlaying,
     section,
     passage,
     currentstep,
@@ -60,7 +61,7 @@ export function TeamCheckReferenceMobile(props: IProps) {
   const [loading] = useState(false);
   const [pdBusy, setPDBusy] = useState(false);
   const [blobState, fetchBlob] = useFetchMediaBlob();
-  const [playing, setPlaying] = useState(false);
+  const [playing, setPlayingRaw] = useState(false);
   const [currentSegmentIndex, setCurrentSegmentIndex] = useState<
     number | undefined
   >(undefined);
@@ -70,39 +71,31 @@ export function TeamCheckReferenceMobile(props: IProps) {
     () => rowData.find((r) => r.id === mediaId)?.mediafile,
     [mediaId, rowData]
   );
-  const forceRefresh = () => {
-    console.log('forceRefresh called');
-  };
-  const setupLocate = () => {
-    console.log('setupLocate called');
-  };
-  const setCurrentSegment = (region: IRegion | undefined, index: number) => {
-    console.log('setCurrentSegment called with index', index);
+  const forceRefresh = () => {};
+  const setupLocate = () => {};
+  const setCurrentSegment = (_region: IRegion | undefined, index: number) => {
     setCurrentSegmentIndex(index);
   };
 
   const [resource, setResource] = useState('');
+  const [resetCount, setResetCount] = useState(0);
   const { removeStoredKeys, saveKey, storeKey, SecSlug } = storedCompareKey(
     passage,
     section
   );
 
-  const handleHighlightDiscussion = (time: number | undefined) => {
-    console.log('handleHighlightDiscussion called with time', time);
+  // Mutual exclusion with the top (vernacular) player.
+  const setPlaying = (play: boolean) => {
+    if (play) setTopPlaying(false);
+    setPlayingRaw(play);
   };
 
   useEffect(() => {
-    console.log('mediafileId changed:', ctx.state.mediafileId);
-    console.log('ta dataaaaaaaaaaaa: ', resource);
-    console.log(
-      'ta data: ',
-      rowData.find((r) => r.id === resource)
-    );
-  }, [ctx.state.mediafileId, resource, rowData]);
+    if (topPlaying && playing) setPlayingRaw(false);
+  }, [topPlaying, playing]);
 
   const handleResource = (id: string) => {
     const row = rowData.find((r) => r.id === id);
-    console.log('handleResource', id, row);
     if (row) {
       removeStoredKeys();
       saveKey(id);
@@ -130,7 +123,6 @@ export function TeamCheckReferenceMobile(props: IProps) {
 
   useEffect(() => {
     setPlayItem('');
-    // We track the user's choices for each passage of the section
     const res = localStorage.getItem(storeKey());
     const secId = localStorage.getItem(storeKey(SecSlug));
     if (res && secId === section.id) {
@@ -138,7 +130,8 @@ export function TeamCheckReferenceMobile(props: IProps) {
       handleResource(res);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [section, passage, currentstep]);
+  }, [section, passage, currentstep, resetCount]);
+
   const paneWidth = width ?? 100;
   const tool = useStepTool(currentstep).tool;
 
@@ -164,7 +157,6 @@ export function TeamCheckReferenceMobile(props: IProps) {
     <MobileGrid container direction="column">
       <MobileGrid>
         <StyledGrid ref={containerRef} size={{ xs: 12 }}>
-          <PassageDetailChooser width={paneWidth} />
           {tool !== ToolSlug.KeyTerm && (
             <PassageDetailPlayer
               width={Math.max(playerWidth)}
@@ -180,7 +172,6 @@ export function TeamCheckReferenceMobile(props: IProps) {
 
       <MobileGrid>
         <StyledGrid size={{ xs: 12 }}>
-          <PassageDetailChooser width={paneWidth} />
           {tool !== ToolSlug.KeyTerm && (
             <PassageDetailPlayer
               width={Math.round(playerWidth)}
@@ -200,7 +191,6 @@ export function TeamCheckReferenceMobile(props: IProps) {
                 currentSegmentIndex,
                 setCurrentSegment,
                 discussionMarkers,
-                handleHighlightDiscussion,
                 playerMediafile,
                 forceRefresh,
               }}
