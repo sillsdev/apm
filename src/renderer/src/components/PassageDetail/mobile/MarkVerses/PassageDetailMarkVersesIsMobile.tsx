@@ -83,10 +83,7 @@ import {
   DELREG_KEY,
 } from '../../../../components/WSAudioPlayerSegment';
 import { useMobile } from '../../../../utils/useMobile';
-import {
-  getMarkVersesAutosaveBlockers,
-  getMarkVersesValidationIssues,
-} from '../../../../utils/markVersesValidation';
+import { getMarkVersesAutosaveBlockers } from '../../../../utils/markVersesValidation';
 import { verseToolId } from '../../markVersesTool';
 const emptySegments = JSON.stringify({ regions: [] });
 /** Distance (seconds) used for Add (must be away from boundaries) and Remove (must be at a join). */
@@ -1393,12 +1390,15 @@ export default function PassageDetailMarkVersesIsMobile({
     setCurrentSegment,
   ]);
 
+  const persistSegmentsRef = useRef(persistSegments);
+  persistSegmentsRef.current = persistSegments;
+
   const scheduleAutosave = useMemo(
     () =>
       debounce(() => {
-        void persistSegments();
+        void persistSegmentsRef.current();
       }, AUTOSAVE_DEBOUNCE_MS),
-    [persistSegments]
+    []
   );
 
   useEffect(
@@ -1474,7 +1474,7 @@ export default function PassageDetailMarkVersesIsMobile({
   useEffect(() => {
     if (saveRequested(verseToolId) && !savingRef.current) {
       scheduleAutosave.clear();
-      void persistSegments();
+      void persistSegmentsRef.current();
     } else if (clearRequested(verseToolId)) {
       clearCompleted(verseToolId);
     }
@@ -1495,11 +1495,6 @@ export default function PassageDetailMarkVersesIsMobile({
       strings: t,
     }),
     [collectRefs, hasBtRecordings, t]
-  );
-
-  const checkRefs = useCallback(
-    () => getMarkVersesValidationIssues(validationInput()),
-    [validationInput]
   );
 
   const checkAutosaveBlockers = useCallback(

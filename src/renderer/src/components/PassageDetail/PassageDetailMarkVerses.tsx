@@ -338,10 +338,17 @@ export function PassageDetailMarkVerses({ width }: MarkVersesProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [passage, engVrs]);
 
+  const setStepCompleteRef = useRef(setStepComplete);
+  setStepCompleteRef.current = setStepComplete;
+  const gotoNextStepRef = useRef(gotoNextStep);
+  gotoNextStepRef.current = gotoNextStep;
+  const currentstepRef = useRef(currentstep);
+  currentstepRef.current = currentstep;
+
   const handleComplete = (complete: boolean) => {
     waitForSave(undefined, 200).finally(async () => {
-      await setStepComplete(currentstep, complete);
-      if (complete) gotoNextStep();
+      await setStepCompleteRef.current(currentstepRef.current, complete);
+      if (complete) gotoNextStepRef.current();
     });
   };
 
@@ -832,8 +839,9 @@ export function PassageDetailMarkVerses({ width }: MarkVersesProps) {
   useEffect(() => {
     if (saveRequested(verseToolId) && !savingRef.current) {
       scheduleAutosave.clear();
-      void writeResources();
+      void writeResourcesRef.current();
     } else if (clearRequested(verseToolId)) clearCompleted(verseToolId);
+    // saveRequested/clearRequested read live UnsavedContext refs via toolsChanged
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [toolsChanged, scheduleAutosave]);
 

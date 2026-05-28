@@ -75,8 +75,17 @@ export const PassageDetailStepComplete = () => {
     }
 
     await finish();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [complete, currentstep, tool, isChanged, startSave, waitForSave]);
+  }, [
+    complete,
+    currentstep,
+    tool,
+    isChanged,
+    startSave,
+    waitForSave,
+    setStepComplete,
+    gotoNextStep,
+    showMessage,
+  ]);
 
   const handleSetCompleteTo = async () => {
     setStepCompleteTo(currentstep);

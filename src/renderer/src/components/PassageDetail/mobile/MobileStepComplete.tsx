@@ -21,13 +21,13 @@ export default function MobileStepComplete() {
     gotoNextStep,
     psgCompleted,
     section,
-    passage,
     recording,
     isBoldWorkflow,
   } = usePassageDetailContext();
   const { tool } = useStepTool(currentstep);
   const { canDoSectionStep } = useStepPermissions();
-  const { isChanged, startSave, waitForSave } = useContext(UnsavedContext).state;
+  const { isChanged, startSave, waitForSave } =
+    useContext(UnsavedContext).state;
   const { showMessage } = useSnackBar();
   const [busy] = useGlobal('remoteBusy');
   const [importexportBusy] = useGlobal('importexportBusy');
@@ -54,7 +54,7 @@ export default function MobileStepComplete() {
     if (!curStatus && tool === ToolSlug.Verses && isChanged(verseToolId)) {
       startSave(verseToolId);
       try {
-        await waitForSave(undefined, 400);
+        await waitForSave(undefined, 25);
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : String(err);
         if (message) showMessage(message);
@@ -63,8 +63,17 @@ export default function MobileStepComplete() {
     }
 
     await finish();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [complete, currentstep, tool, isChanged, startSave, waitForSave]);
+  }, [
+    complete,
+    currentstep,
+    tool,
+    isChanged,
+    startSave,
+    waitForSave,
+    setStepComplete,
+    gotoNextStep,
+    showMessage,
+  ]);
 
   if (isBoldWorkflow) return null;
 
