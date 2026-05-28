@@ -25,6 +25,7 @@ import SkipPrevious from '@mui/icons-material/SkipPrevious';
 import Pause from '@mui/icons-material/Pause';
 import PlayArrow from '@mui/icons-material/PlayArrow';
 import HiddenPlayer from './HiddenPlayer';
+import { WSAudioPlayerControls } from './WSAudioPlayer';
 import { RecordKeyMap } from '@orbit/records';
 
 const StyledTip = styled(LightTooltip)<TooltipProps>(() => ({
@@ -74,6 +75,7 @@ export function MediaPlayer(props: IProps) {
   const { fetchMediaUrl, mediaState } = useFetchMediaUrl(reporter);
   const [blobState, fetchBlob] = useFetchMediaBlob();
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const wsControlsRef = useRef<WSAudioPlayerControls | null>(null);
   const playSuccess = useRef(false);
   const [playing, setPlayingx] = useState(false);
   const playingRef = useRef(false);
@@ -318,6 +320,13 @@ export function MediaPlayer(props: IProps) {
 
   const handlePlayPause = () => {
     if (onTogglePlay) onTogglePlay();
+    // iOS Safari requires AudioContext resume to happen synchronously inside
+    // the user gesture. Driving playback through React state introduces async
+    // hops (incl. a 100ms setTimeout in usePlayerLogic) that lose that context,
+    // so audio toggles silently. Calling wavesurfer directly here keeps us in
+    // the gesture; handlePlayStatus is idempotent so the state chain catching
+    // up later is a no-op.
+    wsControlsRef.current?.togglePlay();
     if (playingRef.current) stopPlay();
     else startPlayWaveSurfer();
   };
@@ -428,6 +437,7 @@ export function MediaPlayer(props: IProps) {
             audioBlob={blobState.blob}
             playing={playing}
             setPlaying={setPlaying}
+            controlsRef={wsControlsRef}
           />
         </StyledHidden>
       )}
