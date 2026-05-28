@@ -130,6 +130,18 @@ jest.mock('./PassageDetailPlayer', () => {
 //   }),
 // }));
 jest.mock('../../utils/logErrorService', () => jest.fn());
+
+const mockMediaFile = {
+  id: 'm1',
+  type: 'mediafile',
+  attributes: { segments: '{}' },
+} as MediaFileD;
+
+jest.mock('../../crud/tryFindRecord', () => ({
+  findRecord: jest.fn((_memory: unknown, table: string, id: string) =>
+    table === 'mediafile' && id === 'm1' ? mockMediaFile : undefined
+  ),
+}));
 jest.mock('../../hoc/SnackBar', () => {
   const actual = jest.requireActual('../../hoc/SnackBar');
   return {
@@ -493,7 +505,32 @@ test('should not add rows including refs already in table', async () => {
   expect(tbody.children.length).toBe(4); // 3 limits (with 3 verse refs) + 1 header
 });
 
-test('shows warning snackbar and blocks autosave when checkRefs has issues', async () => {
+test('autosaves segment markup after debounce when only soft validation warnings', async () => {
+  runTest({ width: 1000 });
+  await waitFor(() =>
+    expect(screen.getByTestId('verse-sheet')).toBeInTheDocument()
+  );
+
+  act(() => {
+    if (mockPlayerAction) {
+      mockPlayerAction(
+        '{"regions":"[{\\"start\\":0,\\"end\\":5},{\\"start\\":5,\\"end\\":9}]"}',
+        false
+      );
+    }
+  });
+
+  await waitFor(
+    () => expect(mockProjectSegmentSave).toHaveBeenCalled(),
+    { timeout: 3000 }
+  );
+  expect(mockShowMessage).not.toHaveBeenCalledWith(
+    expect.anything(),
+    AlertSeverity.Warning
+  );
+});
+
+test('blocks autosave when markup has hard reference errors', async () => {
   jest.useFakeTimers();
   runTest({ width: 1000 });
   const tbody = screen.getByTestId('verse-sheet')?.firstChild?.firstChild
@@ -503,7 +540,7 @@ test('shows warning snackbar and blocks autosave when checkRefs has issues', asy
   act(() => {
     if (mockPlayerAction) {
       mockPlayerAction(
-        '{"regions":"[{\\"start\\":0,\\"end\\":5},{\\"start\\":5,\\"end\\":9}]"}',
+        '{"regions":"[{\\"start\\":0,\\"end\\":5,\\"label\\":\\"9:9\\"}]"}',
         false
       );
     }
@@ -515,12 +552,6 @@ test('shows warning snackbar and blocks autosave when checkRefs has issues', asy
       AlertSeverity.Warning
     );
   });
-
-  const messageArg = mockShowMessage.mock.calls[0][0] as {
-    props: { children: unknown[] };
-  };
-  const messageText = JSON.stringify(messageArg);
-  expect(messageText).toMatch(/Autosave skipped: \d+ issue\(s\) found\./);
 
   act(() => {
     jest.advanceTimersByTime(2000);

@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useContext, useMemo, useState } from 'react';
 import { useGlobal } from '../../../context/useGlobal';
 import { Box, IconButton, Typography } from '@mui/material';
 import CompleteIcon from '@mui/icons-material/CheckBoxOutlined';
@@ -8,6 +8,10 @@ import { IPassageDetailStepCompleteStrings } from '../../../model';
 import { passageDetailStepCompleteSelector } from '../../../selector';
 import { shallowEqual, useSelector } from 'react-redux';
 import { useStepPermissions } from '../../../utils/useStepPermission';
+import { ToolSlug, useStepTool } from '../../../crud';
+import { UnsavedContext } from '../../../context/UnsavedContext';
+import { verseToolId } from '../markVersesTool';
+import { useSnackBar } from '../../../hoc/SnackBar';
 
 export default function MobileStepComplete() {
   const {
@@ -21,7 +25,10 @@ export default function MobileStepComplete() {
     recording,
     isBoldWorkflow,
   } = usePassageDetailContext();
+  const { tool } = useStepTool(currentstep);
   const { canDoSectionStep } = useStepPermissions();
+  const { isChanged, startSave, waitForSave } = useContext(UnsavedContext).state;
+  const { showMessage } = useSnackBar();
   const [busy] = useGlobal('remoteBusy');
   const [importexportBusy] = useGlobal('importexportBusy');
   const [view] = useState('');
@@ -39,10 +46,25 @@ export default function MobileStepComplete() {
 
   const handleToggleComplete = useCallback(async () => {
     const curStatus = complete;
-    await setStepComplete(currentstep, !complete);
-    if (!curStatus) gotoNextStep();
+    const finish = async () => {
+      await setStepComplete(currentstep, !complete);
+      if (!curStatus) gotoNextStep();
+    };
+
+    if (!curStatus && tool === ToolSlug.Verses && isChanged(verseToolId)) {
+      startSave(verseToolId);
+      try {
+        await waitForSave(undefined, 400);
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
+        if (message) showMessage(message);
+        return;
+      }
+    }
+
+    await finish();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [complete, currentstep, passage, section]);
+  }, [complete, currentstep, tool, isChanged, startSave, waitForSave]);
 
   if (isBoldWorkflow) return null;
 

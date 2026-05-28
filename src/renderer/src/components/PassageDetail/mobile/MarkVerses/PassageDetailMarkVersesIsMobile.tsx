@@ -83,8 +83,11 @@ import {
   DELREG_KEY,
 } from '../../../../components/WSAudioPlayerSegment';
 import { useMobile } from '../../../../utils/useMobile';
-
-const verseToolId = 'VerseTool';
+import {
+  getMarkVersesAutosaveBlockers,
+  getMarkVersesValidationIssues,
+} from '../../../../utils/markVersesValidation';
+import { verseToolId } from '../../markVersesTool';
 const emptySegments = JSON.stringify({ regions: [] });
 /** Distance (seconds) used for Add (must be away from boundaries) and Remove (must be at a join). */
 const SEGMENT_BOUNDARY_TOLERANCE_SEC = 0.1;
@@ -1470,68 +1473,51 @@ export default function PassageDetailMarkVersesIsMobile({
 
   useEffect(() => {
     if (saveRequested(verseToolId) && !savingRef.current) {
+      scheduleAutosave.clear();
       void persistSegments();
     } else if (clearRequested(verseToolId)) {
       clearCompleted(verseToolId);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [toolsChanged]);
+  }, [toolsChanged, scheduleAutosave]);
 
-  const checkRefs = useCallback(() => {
-    const refs = collectRefs(dataRef.current);
-    const noSegRefs = dataRef.current
-      .filter((_, index) => index > 0)
-      .filter(
-        (row) =>
-          (row[ColName.Ref] as ICell).value &&
-          !(row[ColName.Limits] as ICell).value
-      )
-      .map((row) => (row[ColName.Ref] as ICell).value);
-    const noRefSegs = dataRef.current
-      .filter((_, index) => index > 0)
-      .some(
-        (row) =>
-          !(row[ColName.Ref] as ICell).value &&
-          (row[ColName.Limits] as ICell).value
-      );
-    const matchAll = refs.every((ref) => refMatch(ref));
-    const refSet = new Set(passageRefs.current);
-    const outsideRefs = new Set<string>();
+  const validationInput = useCallback(
+    () => ({
+      rows: dataRef.current
+        .filter((_, index) => index > 0)
+        .map((row) => ({
+          limits: `${(row[ColName.Limits] as ICell).value ?? ''}`,
+          ref: `${(row[ColName.Ref] as ICell).value ?? ''}`,
+        })),
+      expandedRefs: collectRefs(dataRef.current),
+      passageRefs: passageRefs.current,
+      hasBtRecordings,
+      strings: t,
+    }),
+    [collectRefs, hasBtRecordings, t]
+  );
 
-    refs.forEach((ref) => {
-      if (refSet.has(ref)) {
-        refSet.delete(ref);
-      } else if (refMatch(ref)) {
-        outsideRefs.add(ref);
-      }
-    });
+  const checkRefs = useCallback(
+    () => getMarkVersesValidationIssues(validationInput()),
+    [validationInput]
+  );
 
-    const nextIssues: string[] = [];
-    if (!matchAll) nextIssues.push(t.badReferences);
-    if (noSegRefs.length > 0) {
-      nextIssues.push(t.noSegments.replace('{0}', noSegRefs.join(', ')));
-    }
-    if (refSet.size > 0) {
-      nextIssues.push(
-        t.missingReferences.replace('{0}', Array.from(refSet).sort().join(', '))
-      );
-    }
-    if (outsideRefs.size > 0) {
-      nextIssues.push(
-        t.outsideReferences.replace('{0}', Array.from(outsideRefs).join(', '))
-      );
-    }
-    if (noRefSegs) nextIssues.push(t.noReferences);
-    if (hasBtRecordings) nextIssues.push(t.btNotUpdated);
-    return nextIssues;
-  }, [collectRefs, t, hasBtRecordings]);
+  const checkAutosaveBlockers = useCallback(
+    () => getMarkVersesAutosaveBlockers(validationInput()),
+    [validationInput]
+  );
 
   useEffect(() => {
     if (!hasChanged || !hasPermission || savingRef.current) return;
-    const issues = checkRefs();
-    if (issues.length > 0) return;
+    if (checkAutosaveBlockers().length > 0) return;
     scheduleAutosave();
-  }, [toolsChanged, hasChanged, hasPermission, scheduleAutosave, checkRefs]);
+  }, [
+    toolsChanged,
+    hasChanged,
+    hasPermission,
+    scheduleAutosave,
+    checkAutosaveBlockers,
+  ]);
 
   const resetSave = () => {
     setResetConfirmOpen(false);

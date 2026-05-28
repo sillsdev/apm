@@ -63,9 +63,13 @@ import {
   isMarkVersesTableRowCompleted,
   isMarkVersesTableTailIncomplete,
 } from '../../utils/markVersesSegmentColors';
+import {
+  getMarkVersesAutosaveBlockers,
+  getMarkVersesValidationIssues,
+} from '../../utils/markVersesValidation';
+import { verseToolId } from './markVersesTool';
 
 const NotTable = 490;
-const verseToolId = 'VerseTool';
 /** Nudge past a join when seeking so the playhead lands in the right-hand segment. */
 const SEGMENT_BOUNDARY_TOLERANCE_SEC = 0.1;
 /** Table limits use one decimal; waveform uses float seconds — allow rounding drift. */
@@ -341,42 +345,63 @@ export function PassageDetailMarkVerses({ width }: MarkVersesProps) {
     });
   };
 
+  const syncSegmentsRefFromTable = () => {
+    const regions: IRegion[] = [];
+    dataRef.current.forEach((r, i) => {
+      if (i > 0) {
+        const limits = `${r[ColName.Limits]?.value ?? ''}`.split('-');
+        if (limits.length === 2) {
+          regions.push({
+            start: parseFloat(limits[0]),
+            end: parseFloat(limits[1]),
+            label: `${r[ColName.Ref]?.value ?? ''}`,
+          });
+        }
+      }
+    });
+    segmentsRef.current = JSON.stringify({ regions });
+  };
+
   const writeResources = async () => {
     if (!savingRef.current) {
       savingRef.current = true;
-      if (media) {
-        // update all three segment types: verse, transcription, backtranslation
-        let segments = updateSegments(
-          NamedRegions.Transcription,
-          updateSegments(
-            NamedRegions.Verse,
-            media.attributes?.segments,
-            segmentsRef.current
-          ),
+      syncSegmentsRefFromTable();
+      if (!media) {
+        savingRef.current = false;
+        saveCompleted(verseToolId);
+        return;
+      }
+      // update all three segment types: verse, transcription, backtranslation
+      let segments = updateSegments(
+        NamedRegions.Transcription,
+        updateSegments(
+          NamedRegions.Verse,
+          media.attributes?.segments,
+          segmentsRef.current
+        ),
+        segmentsRef.current
+      );
+      if (!hasBtRecordings) {
+        segments = updateSegments(
+          NamedRegions.BackTranslation,
+          segments,
           segmentsRef.current
         );
-        if (!hasBtRecordings) {
-          segments = updateSegments(
-            NamedRegions.BackTranslation,
-            segments,
-            segmentsRef.current
-          );
-        }
-        // remove TRTask segments that handle AI transcription
-        segments = updateSegments(NamedRegions.TRTask, segments, '');
-        projectSegmentSave({ media, segments })
-          .then(() => {
-            saveCompleted(verseToolId);
-          })
-          .catch((err) => {
-            saveCompleted(verseToolId, err.message);
-          })
-          .finally(() => {
-            savingRef.current = false;
-            canceling.current = false;
-            setComplete(0);
-          });
       }
+      // remove TRTask segments that handle AI transcription
+      segments = updateSegments(NamedRegions.TRTask, segments, '');
+      projectSegmentSave({ media, segments })
+        .then(() => {
+          saveCompleted(verseToolId);
+        })
+        .catch((err) => {
+          saveCompleted(verseToolId, err.message);
+        })
+        .finally(() => {
+          savingRef.current = false;
+          canceling.current = false;
+          setComplete(0);
+        });
     }
   };
 
@@ -756,51 +781,23 @@ export function PassageDetailMarkVerses({ width }: MarkVersesProps) {
     else showMessage(tt.noData.replace('{0}', t.markVerses));
   };
 
-  useEffect(() => {
-    if (saveRequested(verseToolId) && !savingRef.current) writeResources();
-    else if (clearRequested(verseToolId)) clearCompleted(verseToolId);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [toolsChanged]);
+  const validationInput = () => ({
+    rows: dataRef.current
+      .filter((_, i) => i > 0)
+      .map((row) => ({
+        limits: `${(row[ColName.Limits] as ICell).value ?? ''}`,
+        ref: `${(row[ColName.Ref] as ICell).value ?? ''}`,
+      })),
+    expandedRefs: collectRefs(dataRef.current),
+    passageRefs: passageRefs.current,
+    hasBtRecordings,
+    strings: t,
+  });
 
-  const checkRefs = () => {
-    const refs: string[] = collectRefs(dataRef.current);
-    const noSegRefs = dataRef.current
-      .filter((v, i) => i > 0)
-      .filter(
-        (v) =>
-          (v[ColName.Ref] as ICell).value && !(v[ColName.Limits] as ICell).value
-      )
-      .map((v) => (v[ColName.Ref] as ICell).value);
-    const noRefSegs = dataRef.current
-      .filter((v, i) => i > 0)
-      .some(
-        (v) =>
-          !(v[ColName.Ref] as ICell).value && (v[ColName.Limits] as ICell).value
-      );
-    const matchAll = refs.every((r) => refMatch(r));
-    const refSet = new Set(passageRefs.current);
-    const outsideRefs = new Set<string>();
-    refs.forEach((r) => {
-      if (refSet.has(r)) refSet.delete(r);
-      else if (refMatch(r)) outsideRefs.add(r);
-    });
-    const issues: string[] = [];
-    if (!matchAll) issues.push(t.badReferences);
-    if (noSegRefs.length > 0)
-      issues.push(t.noSegments.replace('{0}', noSegRefs.join(', ')));
-    if (refSet.size > 0)
-      issues.push(
-        t.missingReferences.replace('{0}', Array.from(refSet).sort().join(', '))
-      );
-    if (outsideRefs.size > 0) {
-      issues.push(
-        t.outsideReferences.replace('{0}', Array.from(outsideRefs).join(', '))
-      );
-    }
-    if (noRefSegs) issues.push(t.noReferences);
-    if (hasBtRecordings) issues.push(t.btNotUpdated);
-    return issues;
-  };
+  const checkRefs = () => getMarkVersesValidationIssues(validationInput());
+
+  const checkAutosaveBlockers = () =>
+    getMarkVersesAutosaveBlockers(validationInput());
 
   const handleCancel = () => {
     if (savingRef.current) {
@@ -833,12 +830,21 @@ export function PassageDetailMarkVerses({ width }: MarkVersesProps) {
   );
 
   useEffect(() => {
-    if (!isChanged(verseToolId) || !hasPermission || savingRef.current) return;
-    const issues = checkRefs();
-    if (issues.length > 0) {
+    if (saveRequested(verseToolId) && !savingRef.current) {
       scheduleAutosave.clear();
-      setSaveIssues(issues);
-      const fingerprint = issues.join('\0');
+      void writeResources();
+    } else if (clearRequested(verseToolId)) clearCompleted(verseToolId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [toolsChanged, scheduleAutosave]);
+
+  useEffect(() => {
+    if (!isChanged(verseToolId) || !hasPermission || savingRef.current) return;
+    const allIssues = checkRefs();
+    const blockers = checkAutosaveBlockers();
+    setSaveIssues(allIssues);
+    if (blockers.length > 0) {
+      scheduleAutosave.clear();
+      const fingerprint = blockers.join('\0');
       if (fingerprint !== lastIssuesNotifyRef.current) {
         lastIssuesNotifyRef.current = fingerprint;
         showMessage(
@@ -851,7 +857,7 @@ export function PassageDetailMarkVerses({ width }: MarkVersesProps) {
             }}
           >
             <span>
-              {t.autosaveSkipped.replace('{0}', String(issues.length))}
+              {t.autosaveSkipped.replace('{0}', String(blockers.length))}
             </span>
             <Button
               size="small"
@@ -867,8 +873,9 @@ export function PassageDetailMarkVerses({ width }: MarkVersesProps) {
       return;
     }
     lastIssuesNotifyRef.current = '';
-    setSaveIssues([]);
-    setIssuesDialogOpen(false);
+    if (allIssues.length === 0) {
+      setIssuesDialogOpen(false);
+    }
     scheduleAutosave();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [toolsChanged, hasPermission, scheduleAutosave]);
