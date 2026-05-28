@@ -326,8 +326,9 @@ export function MediaPlayer(props: IProps) {
     // so audio toggles silently. Calling wavesurfer directly here keeps us in
     // the gesture; handlePlayStatus is idempotent so the state chain catching
     // up later is a no-op.
+    const wasPlaying = playingRef.current;
     wsControlsRef.current?.togglePlay();
-    if (playingRef.current) stopPlay();
+    if (wasPlaying) stopPlay();
     else startPlayWaveSurfer();
   };
 
