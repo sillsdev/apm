@@ -81,47 +81,37 @@ jest.mock('../crud/useFetchMediaBlob', () => {
   };
 });
 
-function mockUseFetchMediaUrl() {
-  const MediaSt = {
-    IDLE: 0,
-    PENDING: 1,
-    FETCHED: 2,
-    ERROR: 3,
-  };
+function mockUseFetchMediaUrl(_reporter?: unknown) {
   return {
-    useFetchMediaUrl: () => {
-      return {
-        mediaState: mockMediaState,
-        fetchMediaUrl: ({ id }: { id: string }) => {
-          if (id === '1') {
-            mockMediaState = {
-              ...mockMediaState,
-              id: 'abcd-1',
-              remoteId: '1',
-              error: '',
-              status: MediaSt.PENDING,
-            };
-            setTimeout(() => {
-              mockMediaState = {
-                ...mockMediaState,
-                status: MediaSt.FETCHED,
-                url: 'https://localhost/media/1.mp3',
-              };
-            }, 500);
-          } else if (id === 'ogg-1') {
-            mockMediaState = {
-              ...mockMediaState,
-              id: 'abcd-ogg',
-              remoteId: 'ogg-1',
-              error: '',
-              status: MediaSt.FETCHED,
-              url: 'https://localhost/media/1.ogg',
-            };
-          } else {
-            mockMediaState = { ...mockMediaState, error: 'error' };
-          }
-        },
-      };
+    mediaState: mockMediaState,
+    fetchMediaUrl: ({ id }: { id: string }) => {
+      if (id === '1') {
+        mockMediaState = {
+          ...mockMediaState,
+          id: 'abcd-1',
+          remoteId: '1',
+          error: '',
+          status: MediaSt.PENDING,
+        };
+        setTimeout(() => {
+          mockMediaState = {
+            ...mockMediaState,
+            status: MediaSt.FETCHED,
+            url: 'https://localhost/media/1.mp3',
+          };
+        }, 500);
+      } else if (id === 'ogg-1') {
+        mockMediaState = {
+          ...mockMediaState,
+          id: 'abcd-ogg',
+          remoteId: 'ogg-1',
+          error: '',
+          status: MediaSt.FETCHED,
+          url: 'https://localhost/media/1.ogg',
+        };
+      } else {
+        mockMediaState = { ...mockMediaState, error: 'error' };
+      }
     },
   };
 }
