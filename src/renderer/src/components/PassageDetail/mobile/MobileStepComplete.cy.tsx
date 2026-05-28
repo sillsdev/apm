@@ -11,6 +11,7 @@ import {
   PassageDetailContext,
   ICtxState,
 } from '../../../context/PassageDetailContext';
+import { UnsavedContext } from '../../../context/UnsavedContext';
 import { PassageD, RoleNames, SectionD } from '../../../model';
 import MobileStepComplete from './MobileStepComplete';
 
@@ -98,6 +99,24 @@ const mockStore = createStore(
     strings: mockStringsReducer,
   })
 );
+
+const mockUnsavedState = {
+  checkSavedFn: (method: () => void) => method(),
+  t: {} as any,
+  handleSaveConfirmed: () => {},
+  handleSaveRefused: () => {},
+  toolChanged: () => {},
+  startSave: () => {},
+  startClear: () => {},
+  saveCompleted: () => {},
+  clearCompleted: () => {},
+  waitForSave: async () => {},
+  anySaving: () => false as const,
+  saveRequested: () => false as const,
+  clearRequested: () => false as const,
+  isChanged: () => false as const,
+  toolsChanged: {},
+};
 
 const createPassageDetailState = (
   overrides: Partial<ICtxState> = {}
@@ -216,11 +235,15 @@ const mountMobileStepComplete = ({
     <Provider store={mockStore}>
       <GlobalProvider init={initialState}>
         <OrbitContext.Provider value={orbitContextValue}>
-          <PassageDetailContext.Provider
-            value={{ state: ctxState, setState: cy.stub() }}
+          <UnsavedContext.Provider
+            value={{ state: mockUnsavedState, setState: cy.stub() }}
           >
-            <MobileStepComplete />
-          </PassageDetailContext.Provider>
+            <PassageDetailContext.Provider
+              value={{ state: ctxState, setState: cy.stub() }}
+            >
+              <MobileStepComplete />
+            </PassageDetailContext.Provider>
+          </UnsavedContext.Provider>
         </OrbitContext.Provider>
       </GlobalProvider>
     </Provider>
