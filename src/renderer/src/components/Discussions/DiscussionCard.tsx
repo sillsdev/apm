@@ -60,7 +60,12 @@ import {
 } from '../../crud/useArtifactCategory';
 import { LightTooltip, StageReport } from '../../control';
 import { PassageDetailContext } from '../../context/PassageDetailContext';
-import { removeExtension, startEnd, useWaitForRemoteQueue } from '../../utils';
+import {
+  removeExtension,
+  startEnd,
+  useWaitForRemoteQueue,
+  waitForIt,
+} from '../../utils';
 import { useOrgWorkflowSteps } from '../../crud/useOrgWorkflowSteps';
 import { NewDiscussionToolId, NewCommentToolId } from './DiscussionList';
 import { SaveInfo, UnsavedContext } from '../../context/UnsavedContext';
@@ -277,8 +282,13 @@ export const DiscussionCard = (props: IProps) => {
   const [comment, setComment] = useState('');
   const commentMediaId = useRef<string | undefined>(undefined);
   const [canSaveRecording, setCanSaveRecording] = useState(false);
+  const canSaveRecordingRef = useRef(false);
   const [hasAudioDraft, setHasAudioDraft] = useState(false);
   const { userIsAdmin } = useRole();
+
+  useEffect(() => {
+    canSaveRecordingRef.current = canSaveRecording;
+  }, [canSaveRecording]);
 
   const CommentAuthor = (comment: CommentD) =>
     getMentorAuthor(comment.attributes.visible) ??
@@ -786,7 +796,24 @@ export const DiscussionCard = (props: IProps) => {
     //if there is an audio comment, start the upload
     if (cardSavingRef.current) return;
     cardSavingRef.current = true;
-    if (canSaveRecording && !commentMediaId.current) {
+    const hasPendingAudio =
+      (canSaveRecording || hasAudioDraft) && !commentMediaId.current;
+    if (hasPendingAudio) {
+      // hasAudioDraft is set on pause before canSaveRecording; MediaRecord
+      // completes save immediately if startSave runs without a blob.
+      if (hasAudioDraft && !canSaveRecordingRef.current) {
+        try {
+          await waitForIt(
+            'audio comment blob ready',
+            () => canSaveRecordingRef.current,
+            () => false,
+            30
+          );
+        } catch {
+          cardSavingRef.current = false;
+          return;
+        }
+      }
       startSave(NewCommentToolId);
       //we'll do the rest in afterUpload
       return;
