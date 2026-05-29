@@ -1,10 +1,4 @@
-import React, {
-  useEffect,
-  useState,
-  useContext,
-  useMemo,
-  Suspense,
-} from 'react';
+import React, { useState, useContext, useMemo, Suspense } from 'react';
 import { useGlobal } from '../../context/useGlobal';
 import { Grid, Paper, Box, SxProps, Stack } from '@mui/material';
 
@@ -80,8 +74,14 @@ const PassageDetailGrids = () => {
 
   const [memory] = useGlobal('memory');
   const ctx = useContext(PassageDetailContext);
-  const { currentstep, orgWorkflowSteps, mediafileId, sectionArr, isBoldWorkflow, discussOpen } =
-    ctx.state;
+  const {
+    currentstep,
+    orgWorkflowSteps,
+    mediafileId,
+    sectionArr,
+    isBoldWorkflow,
+    discussOpen,
+  } = ctx.state;
 
   const { tool, settings } = useStepTool(currentstep);
   const { slugFromId } = useArtifactType();
@@ -100,7 +100,6 @@ const PassageDetailGrids = () => {
         remoteIdGuid('artifacttype', id, memory?.keyMap as RecordKeyMap) ?? id
       );
     return null;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stepSettingsParsed, memory?.keyMap]);
 
   const [communitySlugs] = useState([
