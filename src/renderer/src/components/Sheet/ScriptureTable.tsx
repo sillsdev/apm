@@ -4,6 +4,7 @@ import React, {
   useRef,
   useContext,
   useMemo,
+  useCallback,
   ReactNode,
   MouseEventHandler,
 } from 'react';
@@ -64,6 +65,7 @@ import {
   PublishDestinationEnum,
   usePublishDestination,
   useNotes,
+  useShowAssignment,
 } from '../../crud';
 import {
   lookupBook,
@@ -206,6 +208,7 @@ export function ScriptureTable(props: IProps) {
   const remote = coordinator?.getSource('remote') as JSONAPISource;
   const [user] = useGlobal('user');
   const [offlineOnly] = useGlobal('offlineOnly'); //will be constant here
+  const showAssign = useShowAssignment();
   const [, setBusy] = useGlobal('importexportBusy');
   const myChangedRef = useRef(false);
   const savingRef = useRef(false);
@@ -385,9 +388,14 @@ export function ScriptureTable(props: IProps) {
     passageType + ' ' + firstBook;
 
   const getFilter = (fs: ISTFilterState) => {
-    const filter = (getLocalDefault(projDefFilterParam) ??
+    const source = (getLocalDefault(projDefFilterParam) ??
       getProjectDefault(projDefFilterParam) ??
       fs) as ISTFilterState;
+    const filter: ISTFilterState = { ...source };
+
+    if (!showAssign && filter.assignedToMe) {
+      filter.assignedToMe = false;
+    }
 
     if (filter.minStep && !isNaN(Number(filter.minStep)))
       filter.minStep = remoteIdGuid(
@@ -1129,8 +1137,6 @@ export function ScriptureTable(props: IProps) {
     });
   };
 
-  const handleAssignClose = () => () => setAssignSectionVisible(false);
-
   const showUpload = (i: number) => {
     waitForPassageId(i, () => {
       const { ws } = getByIndex(sheetRef.current, i);
@@ -1379,7 +1385,7 @@ export function ScriptureTable(props: IProps) {
   useEffect(() => {
     setFilterState(getFilter(defaultFilterState));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [project, defaultFilterState]);
+  }, [project, defaultFilterState, showAssign]);
   useEffect(() => {
     const fm = getProjectDefault(projDefFirstMovement) as number;
     setFirstMovement(fm ?? 1);
@@ -1414,6 +1420,67 @@ export function ScriptureTable(props: IProps) {
       }));
     return tmp?.id ?? 'noDoneStep';
   }, [defaultFilterState, orgSteps]);
+
+  const refreshSheetAfterAssign = useCallback(() => {
+    if (!plan) return;
+    const newWorkflow = getSheet({
+      plan,
+      sections,
+      passages,
+      organizationSchemeSteps,
+      flat,
+      projectShared: shared,
+      memory,
+      orgWorkflowSteps: orgSteps,
+      wfStr,
+      filterState,
+      minSection,
+      hasPublishing: publishingOn,
+      hidePublishing,
+      doneStepId,
+      getDiscussionCount,
+      graphicFind,
+      getPublishTo,
+      publishStatus,
+      getSharedResource,
+      user,
+      myGroups,
+      isDeveloper: developer,
+    });
+    setSheet(newWorkflow);
+  }, [
+    plan,
+    sections,
+    passages,
+    organizationSchemeSteps,
+    flat,
+    shared,
+    memory,
+    orgSteps,
+    wfStr,
+    filterState,
+    minSection,
+    publishingOn,
+    hidePublishing,
+    doneStepId,
+    getDiscussionCount,
+    graphicFind,
+    getPublishTo,
+    publishStatus,
+    getSharedResource,
+    user,
+    myGroups,
+    developer,
+    setSheet,
+  ]);
+
+  const handleAssignClose = useCallback(
+    (cancel?: boolean) => {
+      setAssignSectionVisible(false);
+      if (!cancel) refreshSheetAfterAssign();
+    },
+    [refreshSheetAfterAssign]
+  );
 
   // Save locally or online in batches
   useEffect(() => {
@@ -2197,7 +2264,7 @@ export function ScriptureTable(props: IProps) {
           scheme={getScheme(assignSections) as string}
           sections={getSectionsWhere(assignSections)}
           visible={assignSectionVisible}
-          closeMethod={handleAssignClose()}
+          closeMethod={handleAssignClose}
         />
       )}
       <Uploader

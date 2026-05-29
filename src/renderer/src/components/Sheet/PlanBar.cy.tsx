@@ -24,16 +24,39 @@ const createMockLiveQuery = () => ({
   query: () => [],
 });
 
-const mockMemory = {
-  cache: {
-    query: () => [],
-    liveQuery: createMockLiveQuery,
+const createMockMemory = (organizations: any[] = []) =>
+  ({
+    cache: {
+      query: () => [],
+      liveQuery: (queryBuildFn: (q: any) => any) => {
+        const q = {
+          findRecords: (type: string) => {
+            if (type === 'organization') return organizations;
+            return [];
+          },
+        };
+        const records = queryBuildFn(q);
+        return {
+          subscribe: () => () => {},
+          query: () => records,
+        };
+      },
+    },
+    update: () => {},
+  }) as unknown as Memory;
+
+let currentTestMemory: Memory = createMockMemory();
+
+const personalTeamOrgs = [
+  {
+    id: 'org-1',
+    type: 'organization',
+    attributes: { name: '>Test User Personal<' },
   },
-  update: () => {},
-} as unknown as Memory;
+];
 
 const mockCoordinator = {
-  getSource: () => mockMemory,
+  getSource: () => currentTestMemory,
 } as unknown as Coordinator;
 
 // Mock Redux selectors
@@ -128,7 +151,7 @@ describe('PlanBar', () => {
     coordinator: mockCoordinator,
     errorReporter: bugsnagClient,
     fingerprint: 'test-fingerprint',
-    memory: mockMemory,
+    memory: currentTestMemory,
     lang: 'en',
     latestVersion: '',
     loadComplete: false,
@@ -253,8 +276,10 @@ describe('PlanBar', () => {
       rowInfo: ISheet[];
     },
     planContextOverrides = {},
-    globalStateOverrides = {}
+    globalStateOverrides = {},
+    organizations: any[] = []
   ) => {
+    currentTestMemory = createMockMemory(organizations);
     const initialState = createInitialState(globalStateOverrides);
     const planContextState = createMockPlanContextState(planContextOverrides);
     const unsavedState = {
@@ -264,7 +289,7 @@ describe('PlanBar', () => {
     cy.mount(
       <Provider store={mockStore}>
         <GlobalProvider init={initialState}>
-          <DataProvider dataStore={mockMemory}>
+          <DataProvider dataStore={currentTestMemory}>
             <PlanContext.Provider
               value={{
                 state: planContextState as any,
@@ -765,5 +790,72 @@ describe('PlanBar', () => {
         );
       }
     });
+  });
+
+  it('should not show assignedToMe filter for personal audio projects', () => {
+    const filterState = createMockFilterState();
+    const orgSteps = createMockOrgSteps();
+    const rowInfo = createMockRowInfo(2);
+
+    mountPlanBar(
+      {
+        publishingOn: false,
+        hidePublishing: true,
+        handlePublishToggle: mockHandlePublishToggle,
+        data: [1, 2],
+        canSetDefault: false,
+        filterState,
+        onFilterChange: mockOnFilterChange,
+        orgSteps,
+        minimumSection: 1,
+        maximumSection: 10,
+        filtered: true,
+        rowInfo,
+      },
+      {},
+      { organization: 'org-1' },
+      personalTeamOrgs
+    );
+
+    cy.wait(100);
+    cy.get('#filterMenu', { timeout: 5000 }).click();
+    cy.get('#assignedToMe').should('not.exist');
+  });
+
+  it('should show assignedToMe filter for team projects', () => {
+    const filterState = createMockFilterState();
+    const orgSteps = createMockOrgSteps();
+    const rowInfo = createMockRowInfo(2);
+    const teamOrgs = [
+      {
+        id: 'org-1',
+        type: 'organization',
+        attributes: { name: 'My Team' },
+      },
+    ];
+
+    mountPlanBar(
+      {
+        publishingOn: false,
+        hidePublishing: true,
+        handlePublishToggle: mockHandlePublishToggle,
+        data: [1, 2],
+        canSetDefault: false,
+        filterState,
+        onFilterChange: mockOnFilterChange,
+        orgSteps,
+        minimumSection: 1,
+        maximumSection: 10,
+        filtered: true,
+        rowInfo,
+      },
+      {},
+      { organization: 'org-1' },
+      teamOrgs
+    );
+
+    cy.wait(100);
+    cy.get('#filterMenu', { timeout: 5000 }).click();
+    cy.get('#assignedToMe').should('exist');
   });
 });

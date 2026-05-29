@@ -11,7 +11,6 @@ import {
   levScrColNames,
   levGenColNames,
   MediaFileD,
-  OrganizationD,
 } from '../model';
 import { AppBar, Tabs, Tab, Box } from '@mui/material';
 import ScriptureTable from './Sheet/ScriptureTable';
@@ -24,7 +23,7 @@ import {
   useOrganizedBy,
   useMediaCounts,
   useSectionCounts,
-  isPersonalTeam,
+  useShowAssignment,
 } from '../crud';
 import { HeadHeight } from '../App';
 import { useMobile } from '../utils';
@@ -61,13 +60,7 @@ const ScrollableTabsButtonAuto = (props: IProps) => {
     sections,
     passages
   );
-  const [team] = useGlobal('organization');
-  const teams = useOrbitData<OrganizationD[]>('organization');
-
-  const showAssign = useMemo(
-    () => !isPersonalTeam(team, teams) && !offlineOnly,
-    [team, teams, offlineOnly]
-  );
+  const showAssign = useShowAssignment();
 
   const colNames = React.useMemo(() => {
     return scripture && flat

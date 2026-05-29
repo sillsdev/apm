@@ -29,7 +29,13 @@ import { AddRecord, UpdateRelatedRecord } from '../model/baseModel';
 import { AltButton, GrowingSpacer, PriButton } from '../control';
 import { useOrbitData } from '../hoc/useOrbitData';
 import { useSelector } from 'react-redux';
-import { assignSectionSelector, sharedSelector } from '../selector';
+import {
+  assignSectionSelector,
+  assignmentSelector,
+  sharedSelector,
+} from '../selector';
+import { useSnackBar } from '../hoc/SnackBar';
+import { IAssignmentTableStrings } from '../model';
 import GroupOrUserAssignment from '../control/GroupOrUserAssignment';
 import { OrganizationSchemeD } from '../model/organizationScheme';
 import { waitForIt } from '../utils/waitForIt';
@@ -68,7 +74,12 @@ function AssignSection(props: IProps) {
     assignSectionSelector,
     shallowEqual
   );
+  const tAssign: IAssignmentTableStrings = useSelector(
+    assignmentSelector,
+    shallowEqual
+  );
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
+  const { showMessage } = useSnackBar();
   const allOrgSteps = useOrbitData<OrgWorkflowStepD[]>('orgworkflowstep');
   const schemes = useOrbitData<OrganizationSchemeD[]>('organizationscheme');
   const steps = useOrbitData<OrganizationSchemeStepD[]>(
@@ -274,9 +285,15 @@ function AssignSection(props: IProps) {
     return schemeRec.id as string;
   };
 
-  const doAssign = async (schemeId: string) => {
-    if (!sections.some((s) => related(s, 'organizationScheme') !== schemeId))
-      return;
+  const doAssign = async (schemeId: string): Promise<boolean> => {
+    if (sections.length === 0) {
+      showMessage(tAssign.selectRowsToAssign);
+      return false;
+    }
+    const needsLink = sections.some(
+      (s) => related(s, 'organizationScheme') !== schemeId
+    );
+    if (!needsLink) return true;
     const ids = sections.map(
       (s) => remoteId('section', s.id, memory.keyMap as RecordKeyMap) as string
     );
@@ -286,8 +303,11 @@ function AssignSection(props: IProps) {
       'organizationscheme',
       schemeId
     ) as OrganizationSchemeD;
-    const id = await waitForRemoteId(schemeRec, memory.keyMap as RecordKeyMap);
     try {
+      const id = await waitForRemoteId(
+        schemeRec,
+        memory.keyMap as RecordKeyMap
+      );
       await axiosPatch(`sections/assign/${id}/${list}`, undefined, token);
       await pullTableList(
         'section',
@@ -297,8 +317,11 @@ function AssignSection(props: IProps) {
         backup,
         errorReporter
       );
+      return true;
     } catch (err) {
       logError(Severity.error, errorReporter, err as Error);
+      showMessage((err as Error).message);
+      return false;
     }
   };
 
@@ -351,10 +374,15 @@ function AssignSection(props: IProps) {
   const confirmClose = async () => {
     setSaving(true);
     setBusy(true);
-    const schemeId = await handleAdd();
-    await doAssign(schemeId);
-    setBusy(false);
-    justClose();
+    try {
+      const schemeId = await handleAdd();
+      const ok = await doAssign(schemeId);
+      if (!ok) return;
+      justClose();
+    } finally {
+      setBusy(false);
+      setSaving(false);
+    }
   };
 
   const handleClose = async () => {
