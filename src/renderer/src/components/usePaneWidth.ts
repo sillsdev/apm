@@ -1,14 +1,20 @@
 import { useContext, useEffect, useRef, useState } from 'react';
 import { PassageDetailContext } from '../context/PassageDetailContext';
 import { debounce } from '@mui/material';
+import {
+  documentHasVerticalScrollbar,
+  measureScrollbarWidth,
+} from '../utils/getScrollbarWidth';
 
 export const usePaneWidth = () => {
   const { discussionSize, discussOpen, setDiscussionSize } =
     useContext(PassageDetailContext).state;
   const [paneWidth, setPaneWidth] = useState(0);
   const [width, setWidth] = useState(window.innerWidth);
+  const [scrollbarWidth, setScrollbarWidth] = useState(0);
   const widthRef = useRef(window.innerWidth);
   const discussionSizeRef = useRef(discussionSize);
+  const cachedScrollbarWidthRef = useRef(0);
 
   const setDimensions = () => {
     // Always use actual window width - let components adapt to available space
@@ -26,6 +32,13 @@ export const usePaneWidth = () => {
         width: newDiscWidth, //should we be smarter here?
         height: newDiscHeight,
       });
+
+    if (!cachedScrollbarWidthRef.current) {
+      cachedScrollbarWidthRef.current = measureScrollbarWidth();
+    }
+    setScrollbarWidth(
+      documentHasVerticalScrollbar() ? cachedScrollbarWidthRef.current : 0
+    );
   };
 
   useEffect(() => {
@@ -46,10 +59,11 @@ export const usePaneWidth = () => {
     let newPaneWidth = widthRef.current;
     if (discussOpen) {
       newPaneWidth -= discussionSize.width;
+      newPaneWidth -= scrollbarWidth;
     }
     newPaneWidth = Math.max(0, newPaneWidth);
     setPaneWidth(newPaneWidth);
-  }, [discussionSize, width, discussOpen]);
+  }, [discussionSize, width, discussOpen, scrollbarWidth]);
 
-  return { paneWidth, width };
+  return { paneWidth, width, scrollbarWidth };
 };

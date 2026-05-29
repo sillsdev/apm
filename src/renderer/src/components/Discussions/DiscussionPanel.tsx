@@ -15,6 +15,10 @@ import { useOrbitData } from '../../hoc/useOrbitData';
 import { useDiscussionCount } from '../../crud/useDiscussionCount';
 import { discussionListSelector } from '../../selector';
 import { useMobile } from '../../utils/useMobile';
+import {
+  documentHasVerticalScrollbar,
+  measureScrollbarWidth,
+} from '../../utils/getScrollbarWidth';
 
 /** Sits just above PassageDetailMobileLayout footer: border + pt + compact row + pb + safe area, plus small gap. */
 const discussionFabBottomDetailMobile =
@@ -43,13 +47,31 @@ export default function DiscussionPanel() {
   const [windowWidth, setWindowWidth] = useState(
     typeof window === 'undefined' ? discussionSize.width : window.innerWidth
   );
+  const [scrollbarWidth, setScrollbarWidth] = useState(0);
+  const cachedScrollbarWidthRef = useMemo(
+    () => (typeof document !== 'undefined' ? measureScrollbarWidth() : 0),
+    []
+  );
+
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const handleResize = () => setWindowWidth(window.innerWidth);
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-  const panelWidth = Math.min(discussionSize.width, windowWidth);
+    const updateLayout = () => {
+      setWindowWidth(window.innerWidth);
+      setScrollbarWidth(
+        documentHasVerticalScrollbar() ? cachedScrollbarWidthRef : 0
+      );
+    };
+    updateLayout();
+    window.addEventListener('resize', updateLayout);
+    return () => window.removeEventListener('resize', updateLayout);
+  }, [cachedScrollbarWidthRef]);
+
+  const panelWidth = isMobile
+    ? Math.min(discussionSize.width, windowWidth)
+    : Math.min(
+        discussionSize.width,
+        Math.max(0, windowWidth - scrollbarWidth)
+      );
   const getDiscussionCount = useDiscussionCount({
     mediafiles,
     discussions,
@@ -73,6 +95,11 @@ export default function DiscussionPanel() {
           minWidth: 0,
           boxSizing: 'border-box',
           justifyContent: 'center',
+          ...(isMobile
+            ? {}
+            : {
+                marginRight: `${scrollbarWidth}px`,
+              }),
         }}
       >
         <Grid container direction="column" sx={{ minWidth: 0, width: '100%' }}>

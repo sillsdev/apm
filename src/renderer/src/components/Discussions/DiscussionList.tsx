@@ -131,7 +131,7 @@ export function DiscussionList({ onClose }: DiscussionListProps) {
             boxSizing: 'border-box' as const,
           }
         : {
-            width: `${discussionSize.width - 64}px`, // leave room for scroll bar
+            width: '100%',
             maxHeight: `${discussionSize.height - 120}px`,
             boxSizing: 'border-box' as const,
           },
@@ -165,6 +165,7 @@ export function DiscussionList({ onClose }: DiscussionListProps) {
   const [confirmAction, setConfirmAction] = useState<string>('');
   const discussionOrg = useDiscussionOrg();
   const anyChangedRef = useRef(false);
+  const [anyChanged, setAnyChanged] = useState(false);
   const enum WaitSave {
     add = 'add',
     collapse = 'collapse',
@@ -441,9 +442,9 @@ export function DiscussionList({ onClose }: DiscussionListProps) {
   useEffect(() => {
     const myIds = displayDiscussions.map((d) => d.id);
     myIds.push(NewDiscussionToolId);
-    anyChangedRef.current = Object.keys(toolsChanged).some((t) =>
-      myIds.includes(t)
-    );
+    const changed = Object.keys(toolsChanged).some((t) => myIds.includes(t));
+    anyChangedRef.current = changed;
+    setAnyChanged(changed);
   }, [toolsChanged, displayDiscussions]);
 
   const checkChanged = (whatNext: string) => {
@@ -584,7 +585,7 @@ export function DiscussionList({ onClose }: DiscussionListProps) {
               sx={actionButtonProps}
               title={t.close}
               onClick={onClose}
-              disabled={anyChangedRef.current || adding}
+              disabled={anyChanged || adding}
             >
               <CloseIcon />
             </IconButton>
