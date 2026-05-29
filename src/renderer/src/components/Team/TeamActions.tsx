@@ -71,7 +71,11 @@ const TeamActions = () => {
           sx={{ mb: 2 }}
           onClick={() => setPendingOpen(true)}
         >
-          <Badge badgeContent={pendingCount} color="warning" overlap="rectangular">
+          <Badge
+            badgeContent={pendingCount}
+            color="warning"
+            overlap="rectangular"
+          >
             <span>{mt.pendingUploadMenu}</span>
           </Badge>
         </AltButton>

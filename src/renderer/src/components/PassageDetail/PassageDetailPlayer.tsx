@@ -1,13 +1,6 @@
 import { useGlobal } from '../../context/useGlobal';
-import { Badge, Box, Button, IconButton, Typography } from '@mui/material';
-import {
-  useContext,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type RefObject,
-} from 'react';
+import { Box, Button, IconButton } from '@mui/material';
+import { useContext, useEffect, useRef, useState, type RefObject } from 'react';
 import { UnsavedContext } from '../../context/UnsavedContext';
 import {
   IRegion,
@@ -17,16 +10,9 @@ import {
 } from '../../crud/useWavesurferRegions';
 import WSAudioPlayer, { type WSAudioPlayerControls } from '../WSAudioPlayer';
 import { useSelector, shallowEqual } from 'react-redux';
-import {
-  ISharedStrings,
-  IWsAudioPlayerStrings,
-  MediaFile,
-  MediaFileD,
-  OrganizationD,
-  OrgWorkflowStepD,
-} from '../../model';
+import { IWsAudioPlayerStrings, MediaFile, MediaFileD } from '../../model';
 import { UpdateRecord } from '../../model/baseModel';
-import { playerSelector, sharedSelector } from '../../selector';
+import { playerSelector } from '../../selector';
 import {
   getSegments,
   NamedRegions,
@@ -40,25 +26,10 @@ import {
   RequestPlay,
   usePlayerLogic,
 } from '../../business/player/usePlayerLogic';
-import TranscriptionLogo from '../../control/TranscriptionLogo';
-import { useOrgDefaults, orgDefaultFeatures } from '../../crud/useOrgDefaults';
-import BigDialog from '../../hoc/BigDialog';
-import { BigDialogBp } from '../../hoc/BigDialogBp';
-import SelectAsrLanguage from '../../business/asr/SelectAsrLanguage';
-import AsrButton from '../../control/ConfButton';
-import { IFeatures } from '../Team/TeamSettings';
-import AsrProgress from '../../business/asr/AsrProgress';
-import { useGetAsrSettings } from '../../crud/useGetAsrSettings';
-import { LightTooltip, smallButtonProps } from '../StepEditor';
+import { smallButtonProps } from '../StepEditor';
 import { useOrbitData } from '../../hoc/useOrbitData';
-import { pullTableList, ToolSlug, useStepTool } from '../../crud';
-import IndexedDBSource from '@orbit/indexeddb';
-import JSONAPISource from '@orbit/jsonapi';
-import { useCheckOnline } from '../../utils/useCheckOnline';
-import { useSnackBar } from '../../hoc/SnackBar';
-import { useLocLangName } from '../../utils/useLocLangName';
+import { ToolSlug, useStepTool } from '../../crud';
 import { SaveSegments } from './SaveSegments';
-import { AsrTarget } from '../../business/asr/AsrTarget';
 import { IMarker } from '../../crud/useWaveSurfer';
 export const PLAYER_HEIGHT = 120 + 80;
 
@@ -97,7 +68,6 @@ export interface DetailPlayerProps {
   onProgress?: (progress: number) => void;
   onSaveProgress?: (progress: number) => void;
   onInteraction?: () => void;
-  onTranscription?: (transcription: string) => void;
   allowZoomAndSpeed?: boolean;
   allowZoom?: boolean;
   allowSpeed?: boolean;
@@ -105,8 +75,6 @@ export interface DetailPlayerProps {
   width: number;
   parentToolId?: string;
   role?: string;
-  hasTranscription?: boolean;
-  contentVerses?: string[];
   metaData?: React.ReactNode;
   /** When set, exposes waveform imperative controls (e.g. add segment at playhead). */
   controlsRef?: RefObject<WSAudioPlayerControls | null>;
@@ -132,16 +100,12 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
     onProgress,
     onSaveProgress,
     onInteraction,
-    onTranscription,
     allowZoomAndSpeed,
     allowZoom: allowZoomProp,
     allowSpeed: allowSpeedProp,
     position,
     width,
     parentToolId,
-    role,
-    hasTranscription,
-    contentVerses,
     metaData,
     controlsRef,
     markVersesTailOpenRef,
@@ -152,7 +116,6 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
   const allowSpeed = allowSpeedProp ?? allowZoomAndSpeed ?? false;
 
   const [memory] = useGlobal('memory');
-  const [offline] = useGlobal('offline'); //verified this is not used in a function 2/18/25
   const [user] = useGlobal('user');
   const {
     toolChanged,
@@ -165,7 +128,6 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
     saveCompleted,
   } = useContext(UnsavedContext).state;
   const t: IWsAudioPlayerStrings = useSelector(playerSelector, shallowEqual);
-  const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
   const toolId = 'ArtifactSegments';
   const [requestPlay, setRequestPlay] = useState<RequestPlay>({
     play: undefined,
@@ -215,30 +177,12 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
 
   const [defaultSegments, setDefaultSegments] = useState('{}');
   const [showTranscriptionId, setShowTranscriptionId] = useState('');
-  const [coordinator] = useGlobal('coordinator');
-  const remote = coordinator?.getSource('remote') as JSONAPISource;
-  const backup = coordinator?.getSource('backup') as IndexedDBSource;
-  const [reporter] = useGlobal('errorReporter');
   const segmentsRef = useRef('');
   const playingRef = useRef(playing);
   const savingRef = useRef(false);
   const mediafileRef = useRef<MediaFile | undefined>(undefined);
   const durationRef = useRef(0);
-  const { getOrgDefault } = useOrgDefaults();
-  const [org] = useGlobal('organization');
-  const { getAsrSettings } = useGetAsrSettings();
-  const teams = useOrbitData<OrganizationD[]>('organization');
-  const orgSteps = useOrbitData<OrgWorkflowStepD[]>('orgworkflowstep');
   const mediarecs = useOrbitData<MediaFileD[]>('mediafile');
-  const [asrLangVisible, setAsrLangVisible] = useState(false);
-  const [phonetic, setPhonetic] = useState(false);
-  const [forceAi, setForceAi] = useState<boolean>();
-
-  const [features, setFeatures] = useState<IFeatures>();
-  const [asrProgressVisble, setAsrProgressVisble] = useState(false);
-  const checkOnline = useCheckOnline(t.recognizeSpeech);
-  const { showMessage } = useSnackBar();
-  const [getName] = useLocLangName();
   const { tool } = useStepTool(currentstep ?? '');
 
   const { onPlayStatus, onCurrentSegment, setSegmentToWhole } = usePlayerLogic({
@@ -295,33 +239,6 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
       }
     }
   };
-
-  const onPullTasks = (remoteId: string) => {
-    pullTableList(
-      'mediafile',
-      Array(remoteId),
-      memory,
-      remote,
-      backup,
-      reporter
-    )
-      .then(() => {
-        if (forceRefresh) forceRefresh();
-      })
-      .finally(() => {
-        setSegmentToWhole();
-      });
-  };
-
-  const hasAiTasks = useMemo(() => {
-    const mediaRec = mediarecs.find((m) => m.id === playerMediafile?.id);
-    return (
-      getSegments(
-        NamedRegions.TRTask,
-        mediaRec?.attributes?.segments || '{}'
-      ) !== '{}'
-    );
-  }, [playerMediafile, mediarecs]);
 
   const onDuration = (duration: number) => {
     durationRef.current = duration;
@@ -423,60 +340,6 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
     setShowTranscriptionId('');
   };
 
-  const asrTip = useMemo(() => {
-    const asr = getAsrSettings();
-    return (t.recognizeSpeech + '\u00A0\u00A0').replace(
-      '{0}',
-      asr?.language?.languageName?.trim()
-        ? `\u2039 ${
-            getName(asr?.language.bcp47) || asr?.language?.languageName
-          } \u203A`
-        : ''
-    );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [teams, orgSteps]);
-
-  const handleAsrSettings = () => {
-    checkOnline((online) => {
-      if (!online) {
-        showMessage(ts.mustBeOnline);
-        return;
-      }
-      setAsrLangVisible(true);
-    });
-  };
-
-  const handleTranscribe = (forceAi?: boolean) => {
-    checkOnline((online) => {
-      if (!online) {
-        showMessage(ts.mustBeOnline);
-        return;
-      }
-      const asr = getAsrSettings();
-      if (asr?.mmsIso === undefined || asr?.mmsIso === 'und') {
-        setAsrLangVisible(true);
-        return;
-      }
-      setPhonetic(asr?.target === AsrTarget.phonetic);
-      setForceAi(forceAi);
-      setTimeout(() => {
-        setAsrLangVisible(false);
-        setAsrProgressVisble(true);
-      }, 200);
-    });
-  };
-
-  useEffect(() => {
-    if (org) {
-      setFeatures(getOrgDefault(orgDefaultFeatures) as IFeatures);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [org]);
-
-  const handleAsrProgressVisible = (v: boolean) => {
-    setAsrProgressVisble(v);
-  };
-
   return (
     <Box id="detailplayer" sx={{ width: width }}>
       <WSAudioPlayer
@@ -529,36 +392,6 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
             ) : (
               <></>
             )}
-            {features?.aiTranscribe && !offline && onTranscription && role && (
-              <LightTooltip
-                title={<Badge badgeContent={ts.ai}>{asrTip ?? ''}</Badge>}
-              >
-                <span>
-                  <AsrButton
-                    id="asrButton"
-                    onClick={handleTranscribe}
-                    onSettings={handleAsrSettings}
-                    disabled={role !== 'transcriber'}
-                  >
-                    {!hasTranscription &&
-                    hasAiTasks &&
-                    role === 'transcriber' ? (
-                      <Badge variant="dot" color="primary">
-                        <TranscriptionLogo
-                          disabled={role !== 'transcriber'}
-                          sx={{ height: 18, width: 18 }}
-                        />
-                      </Badge>
-                    ) : (
-                      <TranscriptionLogo
-                        disabled={role !== 'transcriber'}
-                        sx={{ height: 18, width: 18 }}
-                      />
-                    )}
-                  </AsrButton>
-                </span>
-              </LightTooltip>
-            )}
             {saveSegments === SaveSegments.showSaveButton ? (
               <Button
                 id="segment-save"
@@ -583,43 +416,6 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
           visible={showTranscriptionId !== ''}
           closeMethod={handleCloseTranscription}
         />
-      )}
-      {asrLangVisible && onTranscription && (
-        <BigDialog
-          title={t.recognizeSpeechSettings}
-          description={
-            <Typography variant="body2" sx={{ maxWidth: 500 }}>
-              {t.recognizePrompt}
-            </Typography>
-          }
-          isOpen={asrLangVisible}
-          onOpen={() => setAsrLangVisible(false)}
-        >
-          <SelectAsrLanguage
-            onOpen={(cancel, forceAi) =>
-              cancel ? setAsrLangVisible(false) : handleTranscribe(forceAi)
-            }
-            canBegin={true}
-          />
-        </BigDialog>
-      )}
-      {asrProgressVisble && onTranscription && (
-        <BigDialog
-          title={t.recognizeProgress}
-          isOpen={asrProgressVisble}
-          onOpen={handleAsrProgressVisible}
-          bp={BigDialogBp.sm}
-        >
-          <AsrProgress
-            mediaId={playerMediafile?.id ?? ''}
-            phonetic={phonetic}
-            force={forceAi}
-            contentVerses={contentVerses}
-            setTranscription={onTranscription}
-            onPullTasks={onPullTasks}
-            onClose={() => handleAsrProgressVisible(false)}
-          />
-        </BigDialog>
       )}
     </Box>
   );

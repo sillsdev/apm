@@ -1673,11 +1673,13 @@ export interface ITranscribeAddNoteStrings extends Localize.LocalizedStringsMeth
 export interface ITranscriberStrings extends Localize.LocalizedStringsMethods {
     "addNote": string;
     "aiAsrFailed": string;
+    "aiAutomaticTranscription": string;
     "aiWillContinue": string;
-    "beginRecognize": string;
+    "chooseSisterLang": string;
     "comment": string;
     "congratulation": string;
     "done": string;
+    "findingSisterLang": string;
     "historyTip": string;
     "incomplete": string;
     "invalidReference": string;
@@ -1694,16 +1696,21 @@ export interface ITranscriberStrings extends Localize.LocalizedStringsMethods {
     "reject": string;
     "reopen": string;
     "reviewing": string;
+    "run": string;
     "save": string;
     "saveReviewTip": string;
     "saveTip": string;
     "saving": string;
     "scriptOrDialect": string;
+    "scriptTranscription": string;
+    "invalidSisterLang": string;
+    "sisterLang": string;
     "submit": string;
     "submitReviewTip": string;
     "submitTranscriptionTip": string;
     "transcribing": string;
     "transcriptionExists": string;
+    "transcriptionType": string;
     "transliterate": string;
     "updateByOther2": string;
 };

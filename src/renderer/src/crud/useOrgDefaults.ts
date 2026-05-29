@@ -15,6 +15,7 @@ export const orgDefaultResKw = 'ResKw';
 export const orgDefaultLangProps = 'langProps';
 export const orgDefaultFeatures = 'features';
 export const orgDefaultVoices = 'voices';
+/** Legacy org ASR; read fallback and written from Vernacular transcribe step settings. */
 export const orgDefaultAsr = 'asr';
 export const orgDefaultPermissions = 'permissions';
 export const orgDefaultProjSort = 'projSort';

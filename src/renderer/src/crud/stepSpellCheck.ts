@@ -46,11 +46,6 @@ export function defaultSpellCheckForArtifact(
   return false;
 }
 
-export function bcp47FromStepLanguage(language?: string): string | undefined {
-  const [, tag] = language?.split('|') ?? [];
-  return tag && tag !== 'und' ? tag : undefined;
-}
-
 /** Workflow step `tool.settings` is authoritative for Transcriber spell check. */
 export function resolveStepSpellCheck(
   settings: TranscribeStepSettingsJson | Record<string, unknown>,

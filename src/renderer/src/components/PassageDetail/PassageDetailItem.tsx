@@ -206,16 +206,18 @@ export function PassageDetailItem(props: IProps) {
   useEffect(() => {
     const mediaRec = mediafiles.find((m) => m.id === mediafileId);
     const defaultSegments = mediaRec?.attributes?.segments ?? '{}';
-    const newSegString = getSegments(segmentRegion, defaultSegments);
-    if (segString !== newSegString) {
-      setSegString(newSegString);
-      if (hasBtRecordings)
-        showMessage(t.segmentsChanged, AlertSeverity.Warning);
+    if (segments) {
+      const newSegString = getSegments(segmentRegion, defaultSegments);
+      if (segString !== newSegString) {
+        setSegString(newSegString);
+        if (hasBtRecordings)
+          showMessage(t.segmentsChanged, AlertSeverity.Warning);
+      }
     }
     setVerses(getSegments(NamedRegions.Verse, defaultSegments));
     setCurrentVersion(mediaRec?.attributes?.versionNumber || 0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mediafileId, mediafiles, hasBtRecordings, segmentRegion]);
+  }, [mediafileId, mediafiles, hasBtRecordings, segmentRegion, segments]);
 
   useEffect(() => {
     if (isPhraseSegmentArtifact(recordType))
