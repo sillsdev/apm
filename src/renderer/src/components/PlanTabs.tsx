@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect } from 'react';
 import { useGetGlobal, useGlobal } from '../context/useGlobal';
 import { useParams } from 'react-router-dom';
 import {
@@ -48,7 +48,6 @@ const ScrollableTabsButtonAuto = (props: IProps) => {
   const ctx = React.useContext(PlanContext);
   const { flat, scripture, sectionArr, tab, setTab } = ctx.state;
   const [isOffline] = useGlobal('offline'); //verified this is not used in a function 2/18/25
-  const [offlineOnly] = useGlobal('offlineOnly'); //will be constant here
   const [plan] = useGlobal('plan'); //will be constant here
   const { isMobile } = useMobile();
   const getGlobal = useGetGlobal();

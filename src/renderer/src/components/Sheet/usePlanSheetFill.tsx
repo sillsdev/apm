@@ -40,7 +40,6 @@ import { getPubRefs } from './getPubRefs';
 import { PublishButton } from './PublishButton';
 import { NoteIcon } from '../../control/PlanIcons';
 import { OrganizationSchemeD } from '../../model/organizationScheme';
-import { useOrbitData } from '../../hoc/useOrbitData';
 import {
   isPublishingTitle,
   passageTypeFromRef,

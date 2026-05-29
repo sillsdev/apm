@@ -453,14 +453,18 @@ export function ScriptureTable(props: IProps) {
     if (filter) setFilterState(() => filter as ISTFilterState);
     else setFilterState(getFilter(defaultFilterState));
   };
-  const setSheet = (ws: ISheet[]) => {
-    sheetRef.current = ws;
-    setSheetx(ws);
-    const anyPublishing = !getGlobal('offline')
-      ? ws.some((s) => isPublishingTitle(s.reference ?? '', flat))
-      : false;
-    if (publishingOn !== anyPublishing) setCanAddPublishing(anyPublishing);
-  };
+  const setSheet = useCallback(
+    (ws: ISheet[]) => {
+      sheetRef.current = ws;
+      setSheetx(ws);
+      const anyPublishing = !getGlobal('offline')
+        ? ws.some((s) => isPublishingTitle(s.reference ?? '', flat))
+        : false;
+      if (publishingOn !== anyPublishing) setCanAddPublishing(anyPublishing);
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [publishingOn, flat]
+  );
   const passNumCol = React.useMemo(() => {
     return colNames.indexOf('passageSeq');
   }, [colNames]);
