@@ -6,7 +6,7 @@ import React, {
   Suspense,
 } from 'react';
 import { useGlobal } from '../../context/useGlobal';
-import { Grid, debounce, Paper, Box, SxProps, Stack } from '@mui/material';
+import { Grid, Paper, Box, SxProps, Stack } from '@mui/material';
 
 import { HeadHeight } from '../../App';
 import { PassageDetailContext } from '../../context/PassageDetailContext';
@@ -80,7 +80,7 @@ const PassageDetailGrids = () => {
 
   const [memory] = useGlobal('memory');
   const ctx = useContext(PassageDetailContext);
-  const { currentstep, orgWorkflowSteps, mediafileId, sectionArr, isBoldWorkflow } =
+  const { currentstep, orgWorkflowSteps, mediafileId, sectionArr, isBoldWorkflow, discussOpen } =
     ctx.state;
 
   const { tool, settings } = useStepTool(currentstep);
@@ -90,55 +90,8 @@ const PassageDetailGrids = () => {
     [settings]
   );
   const t = useSelector(toolSelector, shallowEqual) as IToolStrings;
-  const { paneWidth, width } = usePaneWidth();
+  const { paneWidth, width, scrollbarWidth } = usePaneWidth();
   const { isMobile } = useMobile();
-
-  const scrollbarWidthRef = React.useRef(0);
-
-  // Calculate scrollbar width dynamically
-  const getScrollbarWidth = () => {
-    // Create a temporary div to measure scrollbar width
-    const outer = document.createElement('div');
-    outer.style.visibility = 'hidden';
-    outer.style.overflow = 'scroll';
-    // @ts-ignore - msOverflowStyle is a Microsoft-specific property for old IE
-    outer.style.msOverflowStyle = 'scrollbar';
-    document.body.appendChild(outer);
-
-    const inner = document.createElement('div');
-    outer.appendChild(inner);
-
-    const scrollbarWidth = outer.offsetWidth - inner.offsetWidth;
-
-    outer.parentNode?.removeChild(outer);
-    return scrollbarWidth;
-  };
-
-  // Detect vertical scrollbar and calculate its width
-  useEffect(() => {
-    // Pre-calculate scrollbar width once (it's constant per browser/OS)
-    const cachedScrollbarWidth = getScrollbarWidth();
-
-    const checkScrollbar = () => {
-      // Check if document body has vertical scrollbar
-      const hasScrollbar =
-        document.documentElement.scrollHeight >
-        document.documentElement.clientHeight;
-
-      // Use cached scrollbar width only if scrollbar exists
-      scrollbarWidthRef.current = hasScrollbar ? cachedScrollbarWidth : 0;
-    };
-
-    checkScrollbar();
-    const handleResize = debounce(() => {
-      checkScrollbar();
-    }, 200);
-    window.addEventListener('resize', handleResize);
-
-    return () => {
-      window.removeEventListener('resize', handleResize);
-    };
-  }, []);
 
   const artifactId = useMemo(() => {
     const id = stepSettingsParsed?.artifactTypeId as string | undefined;
@@ -408,7 +361,7 @@ const PassageDetailGrids = () => {
                         0,
                         paneWidth -
                           MAGIC_NUMBER_THAT_MAKES_IT_FIT -
-                          scrollbarWidthRef.current
+                          (discussOpen ? 0 : scrollbarWidth)
                       )}
                       artifactTypeId={artifactId}
                     />
