@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useGlobal } from '../../context/useGlobal';
 import { IconButton, Box, Typography } from '@mui/material';
 import CompleteIcon from '@mui/icons-material/CheckBoxOutlined';
@@ -13,6 +13,9 @@ import { useLocation } from 'react-router-dom';
 import { useStepPermissions } from '../../utils/useStepPermission';
 import { ToolSlug, useStepTool } from '../../crud';
 import { useMobile } from '../../utils';
+import { UnsavedContext } from '../../context/UnsavedContext';
+import { verseToolId } from './markVersesTool';
+import { useSnackBar } from '../../hoc/SnackBar';
 
 export const PassageDetailStepComplete = () => {
   const {
@@ -24,7 +27,6 @@ export const PassageDetailStepComplete = () => {
     gotoNextStep,
     psgCompleted,
     section,
-    passage,
     recording,
     isBoldWorkflow,
   } = usePassageDetailContext();
@@ -42,6 +44,9 @@ export const PassageDetailStepComplete = () => {
   const passageNavigate = usePassageNavigate(() => {
     setView('');
   }, setCurrentStep);
+  const { isChanged, startSave, waitForSave } =
+    useContext(UnsavedContext).state;
+  const { showMessage } = useSnackBar();
 
   const hasPermission = canDoSectionStep(currentstep, section);
 
@@ -53,11 +58,34 @@ export const PassageDetailStepComplete = () => {
 
   const handleToggleComplete = useCallback(async () => {
     const curStatus = complete;
-    await setStepComplete(currentstep, !complete);
-    //if we're now complete, go to the next step or passage
-    if (!curStatus) gotoNextStep();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [complete, currentstep, passage, section]);
+    const finish = async () => {
+      await setStepComplete(currentstep, !complete);
+      if (!curStatus) gotoNextStep();
+    };
+
+    if (!curStatus && tool === ToolSlug.Verses && isChanged(verseToolId)) {
+      startSave(verseToolId);
+      try {
+        await waitForSave(undefined, 25);
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
+        if (message) showMessage(message);
+        return;
+      }
+    }
+
+    await finish();
+  }, [
+    complete,
+    currentstep,
+    tool,
+    isChanged,
+    startSave,
+    waitForSave,
+    setStepComplete,
+    gotoNextStep,
+    showMessage,
+  ]);
 
   const handleSetCompleteTo = async () => {
     setStepCompleteTo(currentstep);
