@@ -1,4 +1,11 @@
-import { useContext, useEffect, useMemo, useState } from 'react';
+import {
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { useLocation } from 'react-router-dom';
 import { shallowEqual, useSelector } from 'react-redux';
 import {
@@ -48,23 +55,25 @@ export default function DiscussionPanel() {
     typeof window === 'undefined' ? discussionSize.width : window.innerWidth
   );
   const [scrollbarWidth, setScrollbarWidth] = useState(0);
-  const cachedScrollbarWidthRef = useMemo(
-    () => (typeof document !== 'undefined' ? measureScrollbarWidth() : 0),
-    []
-  );
+  const cachedScrollbarWidthRef = useRef(0);
+  useLayoutEffect(() => {
+    if (typeof document !== 'undefined') {
+      cachedScrollbarWidthRef.current = measureScrollbarWidth();
+    }
+  }, []);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const updateLayout = () => {
       setWindowWidth(window.innerWidth);
       setScrollbarWidth(
-        documentHasVerticalScrollbar() ? cachedScrollbarWidthRef : 0
+        documentHasVerticalScrollbar() ? cachedScrollbarWidthRef.current : 0
       );
     };
     updateLayout();
     window.addEventListener('resize', updateLayout);
     return () => window.removeEventListener('resize', updateLayout);
-  }, [cachedScrollbarWidthRef]);
+  }, []);
 
   const panelWidth = isMobile
     ? Math.min(discussionSize.width, windowWidth)
