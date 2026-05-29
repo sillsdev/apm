@@ -26,6 +26,7 @@ export * from './updateXml';
 export * from './useInterval';
 export * from './validateEmail';
 export * from './waitForIt';
+export * from './getScrollbarWidth';
 export * from './lookupBook';
 export * from './refMatch';
 export * from './localUserKey';

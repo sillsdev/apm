@@ -277,6 +277,7 @@ export const DiscussionCard = (props: IProps) => {
   const [comment, setComment] = useState('');
   const commentMediaId = useRef<string | undefined>(undefined);
   const [canSaveRecording, setCanSaveRecording] = useState(false);
+  const [hasAudioDraft, setHasAudioDraft] = useState(false);
   const { userIsAdmin } = useRole();
 
   const CommentAuthor = (comment: CommentD) =>
@@ -357,6 +358,7 @@ export const DiscussionCard = (props: IProps) => {
     setEditCategory('');
     setComment('');
     commentText.current = '';
+    setHasAudioDraft(false);
     setMoveTo(undefined);
   };
 
@@ -801,6 +803,7 @@ export const DiscussionCard = (props: IProps) => {
     cardSavingRef.current = true;
     commentText.current = '';
     commentMediaId.current = '';
+    setHasAudioDraft(false);
     onAddComplete && onAddComplete('');
     setEditing(false);
     setChanged(false);
@@ -968,6 +971,7 @@ export const DiscussionCard = (props: IProps) => {
                     comment={commentText.current}
                     refresh={refresh}
                     setCanSaveRecording={setCanSaveRecording}
+                    onAudioDraftChange={setHasAudioDraft}
                     fileName={fileName(editSubject, '')}
                     afterUploadCb={afterUploadCb}
                     passageId={passageId}
@@ -985,10 +989,19 @@ export const DiscussionCard = (props: IProps) => {
                       segSavingRef.current ||
                       !mediafileId ||
                       editSubject === '' ||
-                      !(canSaveRecording || myComments.length > 0 || comment)
+                      !(
+                        canSaveRecording ||
+                        hasAudioDraft ||
+                        myComments.length > 0 ||
+                        comment
+                      )
                     }
                   >
-                    {discussion.id ? ts.save : t.addComment}
+                    {onAddComplete
+                      ? t.addComment
+                      : discussion.id
+                        ? ts.save
+                        : t.addComment}
                   </Button>
                   <Button
                     id={`cancel-${discussion.id}`}
