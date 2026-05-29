@@ -10,7 +10,14 @@ import { useGlobal } from '../context/useGlobal';
 import { IPassageRecordStrings, ISharedStrings } from '../model';
 import { Stack, Paper, Typography } from '@mui/material';
 import WSAudioPlayer, { WSAudioPlayerControls } from './WSAudioPlayer';
-import { loadBlobAsync, useMobile, waitForIt } from '../utils';
+import {
+  infoMsg,
+  loadBlobAsync,
+  logError,
+  Severity,
+  useMobile,
+  waitForIt,
+} from '../utils';
 import {
   IMediaState,
   MediaSt,
@@ -535,20 +542,18 @@ function MediaRecord(props: IProps) {
     setLoading(true);
     reset();
 
-    const url = await getGoodUrl();
-
-    if (url) {
-      try {
-        const blob = await loadBlobAsync(url);
-        if (blob) gotTheBlob(blob);
-        else blobError('Failed to load blob');
-      } catch (error) {
-        blobError(
-          error instanceof Error ? error.message : 'Failed to load blob'
-        );
+    try {
+      const url = await getGoodUrl();
+      if (!url) {
+        blobError(mediaStateRef.current.error || ts.mediaError);
+        return;
       }
-    } else {
-      blobError(mediaStateRef.current.error || 'Failed to fetch media URL');
+      const blob = await loadBlobAsync(url);
+      if (blob) gotTheBlob(blob);
+      else blobError(ts.mediaError);
+    } catch (error) {
+      logError(Severity.error, reporter, infoMsg(error as Error, 'media load failed'));
+      blobError(ts.mediaError);
     }
   };
 

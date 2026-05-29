@@ -968,6 +968,11 @@ function WSAudioPlayer(props: IProps) {
   const handlePlayStatus = useCallback(
     (play: boolean) => {
       if (durationRef.current === 0 || recordingRef.current) return false;
+      const wouldReplayRegion =
+        play && (regionOnly || forceRegionOnly) && !!currentSegmentRef.current;
+      if (play === playingRef.current && !wouldReplayRegion) {
+        return playingRef.current;
+      }
       let nowplaying = play;
 
       if (
