@@ -12,7 +12,7 @@ import localStrings from '../selector/localize';
 import { useSelector, shallowEqual } from 'react-redux';
 import { findRecord } from './tryFindRecord';
 import { related } from './related';
-import { remoteId } from './remoteId';
+import { remoteId, remoteIdGuid } from './remoteId';
 import { ArtifactTypeSlug } from './artifactTypeSlug';
 import { AddRecord, ReplaceRelatedRecord } from '../model/baseModel';
 
@@ -45,10 +45,15 @@ export const useArtifactType = (org?: string) => {
     );
   };
 
-  const slugFromId = (id: string) => {
-    let at = {} as ArtifactType;
-    if (id) at = findRecord(memory, 'artifacttype', id) as ArtifactType;
-    return at?.attributes?.typename ?? ArtifactTypeSlug.Vernacular;
+  const slugFromId = (id: string | null) => {
+    if (!id) return ArtifactTypeSlug.Vernacular;
+    const guid =
+      remoteIdGuid('artifacttype', id, memory?.keyMap as RecordKeyMap) ?? id;
+    const at = findRecord(memory, 'artifacttype', guid) as ArtifactType;
+    return (
+      (at?.attributes?.typename as ArtifactTypeSlug) ??
+      ArtifactTypeSlug.Vernacular
+    );
   };
 
   const fromLocalizedArtifactType = (val: string) => {

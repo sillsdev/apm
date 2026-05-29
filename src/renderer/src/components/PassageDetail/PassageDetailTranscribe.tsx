@@ -13,7 +13,7 @@ import usePassageDetailContext from '../../context/usePassageDetailContext';
 import { sharedSelector } from '../../selector';
 import { shallowEqual, useSelector } from 'react-redux';
 import TaskList, { TaskTableWidth } from '../TaskList';
-import { getStepComplete, ToolSlug } from '../../crud';
+import { getStepComplete, ToolSlug, useStepTool } from '../../crud';
 import { findRecord } from '../../crud/tryFindRecord';
 import { JSONParse } from '../../utils';
 import { PassageDetailContext } from '../../context/PassageDetailContext';
@@ -54,6 +54,14 @@ export function PassageDetailTranscribe({ width, artifactTypeId }: IProps) {
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
   const { localizedArtifactTypeFromId } = useArtifactType();
   const [memory] = useGlobal('memory');
+  const { settings: workflowStepSettingsRaw } = useStepTool(currentstep);
+  const stepSettings = useMemo(
+    () =>
+      !workflowStepSettingsRaw || workflowStepSettingsRaw === ''
+        ? '{}'
+        : workflowStepSettingsRaw,
+    [workflowStepSettingsRaw]
+  );
 
   interface IStep {
     id: string;
@@ -85,12 +93,6 @@ export function PassageDetailTranscribe({ width, artifactTypeId }: IProps) {
         } as IStep;
       });
   }, [orgWorkflowSteps]);
-
-  const stepSettings = useMemo(() => {
-    if (!currentstep || !parsedSteps) return null;
-    const step = parsedSteps.find((s) => s.id === currentstep);
-    return step ? step.settings : null;
-  }, [currentstep, parsedSteps]);
 
   const vernacularSteps = useMemo(() => {
     return parsedSteps.filter(
@@ -232,7 +234,7 @@ export function PassageDetailTranscribe({ width, artifactTypeId }: IProps) {
                 defaultWidth={
                   width - TaskTableWidth - MAGIC_NUMBER_THAT_MAKES_IT_FIT
                 }
-                stepSettings={stepSettings ?? undefined}
+                stepSettings={stepSettings}
                 hasPermission={hasPermission}
                 onReject={handleReject}
                 onReopen={handleReopen}

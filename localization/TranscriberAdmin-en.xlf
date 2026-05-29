@@ -8638,6 +8638,18 @@
             <target/>
          </segment>
       </unit>
+      <unit id="transcriber.invalidSisterLang">
+         <segment>
+            <source>This language is not supported for speech recognition. Choose another sister language.</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="transcriber.sisterLang">
+         <segment>
+            <source>Your language is not supported for speech recognition. If you wish to try automatic transcription, choose a supported sister language</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="transcriber.submit">
          <segment>
             <source>Submit</source>

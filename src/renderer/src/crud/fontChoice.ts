@@ -3,8 +3,8 @@ import { getFamily, getRtl } from 'mui-language-picker';
 import Memory from '@orbit/memory';
 import { findRecord } from './tryFindRecord';
 import { LocalKey } from '../utils';
+import { parseStepLanguageField } from './transcribeStepAsrSettings';
 import {
-  bcp47FromStepLanguage,
   resolveStepSpellCheck,
   TranscribeStepSettingsJson,
 } from './stepSpellCheck';
@@ -116,7 +116,7 @@ export const getArtTypeFontData = (
     }
     return false;
   });
-  const [, langTag] = stepSettings?.language?.split('|') ?? [];
+  const { bcp47: langTag } = parseStepLanguageField(stepSettings?.language);
   const fontDir = getRtl(langTag) ? 'rtl' : 'ltr';
   const fontFamily = stepSettings?.font || 'CharisSIL';
   const url = getFontUrl(fontFamily);
@@ -124,11 +124,7 @@ export const getArtTypeFontData = (
   const lastFontData = loadFontData(exportId);
   const artSlug = (artifactType?.attributes?.typename ??
     ArtifactTypeSlug.Vernacular) as ArtifactTypeSlug;
-  const spellCheck = resolveStepSpellCheck(
-    stepSettings,
-    artSlug,
-    bcp47FromStepLanguage(stepSettings.language)
-  );
+  const spellCheck = resolveStepSpellCheck(stepSettings, artSlug, langTag);
 
   const data: FontData = {
     langTag,

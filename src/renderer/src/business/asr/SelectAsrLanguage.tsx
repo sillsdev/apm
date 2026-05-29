@@ -19,7 +19,7 @@ import {
 import { shallowEqual, useSelector } from 'react-redux';
 import { sharedSelector, transcriberSelector } from '../../selector';
 import { AsrAlphabet, IAsrState } from './AsrAlphabet';
-import { useMmsLangs } from './useMmsLangs';
+import { getPreferredAsrMethod } from './asrLanguages';
 import { useGetAsrSettings } from '../../crud/useGetAsrSettings';
 import { useCheckOnline } from '../../utils/useCheckOnline';
 import { useSnackBar } from '../../hoc/SnackBar';
@@ -47,7 +47,6 @@ export default function SelectAsrLanguage({
 }: ISelectAsrLanguage) {
   const [asrState, setAsrState] = React.useState<IAsrState>();
   const [asrStateIn, setAsrStateIn] = React.useState<IAsrState>();
-  const mmsLangs = useMmsLangs();
   const t: ITranscriberStrings = useSelector(transcriberSelector, shallowEqual);
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
   const { getAsrSettings, saveAsrSettings, getArtId } = useGetAsrSettings(team);
@@ -95,6 +94,8 @@ export default function SelectAsrLanguage({
         spellCheck: false,
       },
       mmsIso: asr?.mmsIso ?? 'eng',
+      method:
+        asr?.method ?? getPreferredAsrMethod(asr?.mmsIso ?? 'eng') ?? 'whisper',
       dialect: asr?.dialect,
       selectRoman: asr?.selectRoman ?? false,
     };
@@ -109,7 +110,6 @@ export default function SelectAsrLanguage({
         <AsrAlphabet
           state={asrState ?? ({} as IAsrState)}
           setState={setAsrState}
-          mmsLangs={mmsLangs}
         />
         {!getArtId() && (
           <FormControlLabel

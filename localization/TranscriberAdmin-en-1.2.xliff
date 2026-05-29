@@ -10079,6 +10079,20 @@
                <context context-type="sourcefile">LastEdit.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="transcriber.invalidSisterLang">
+            <source>This language is not supported for speech recognition. Choose another sister language.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">TranscribeStepSettings.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="transcriber.sisterLang">
+            <source>Your language is not supported for speech recognition. If you wish to try automatic transcription, choose a supported sister language</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">TranscribeStepSettings.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="transcriber.submit">
             <source>Submit</source>
             <target/>

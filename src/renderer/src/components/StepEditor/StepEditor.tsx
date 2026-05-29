@@ -30,6 +30,7 @@ import {
   getToolSettings,
   remoteIdGuid,
 } from '../../crud';
+import { parseStepLanguageField } from '../../crud/transcribeStepAsrSettings';
 import { AddRecord, ReplaceRelatedRecord } from '../../model/baseModel';
 import { useSnackBar } from '../../hoc/SnackBar';
 import { UnsavedContext } from '../../context/UnsavedContext';
@@ -111,12 +112,10 @@ export const StepEditor = ({ process, org }: IProps) => {
 
   const visible = useMemo(() => {
     return rows.filter((r) => r.seq >= 0).length;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rows]);
 
   const hidden = useMemo(() => {
     return rows.filter((r) => r.seq < 0).length;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rows]);
 
   const hiddenMessage = useMemo(
@@ -200,7 +199,7 @@ export const StepEditor = ({ process, org }: IProps) => {
           }`
         : '';
       const lang = settings?.language
-        ? ` ${settings.language?.split('|')[0]}`
+        ? ` ${parseStepLanguageField(settings.language).languageName}`
         : '';
       let name =
         localizedTool((rows[toolRef.current as number] as IStepRow).tool) +
@@ -544,6 +543,10 @@ export const StepEditor = ({ process, org }: IProps) => {
           bp={BigDialogBp.sm}
         >
           <TranscribeStepSettings
+            org={org}
+            isOpen={
+              (rows[toolSettingsRow] as IStepRow).tool === ToolSlug.Transcribe
+            }
             toolSettings={(rows[toolSettingsRow] as IStepRow).settings}
             onChange={handleSettingsChange}
           />

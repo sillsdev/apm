@@ -166,9 +166,10 @@ export default function AsrProgress({
     const asr = getAsrSettings() as IAsrState | undefined;
     const iso = asr?.mmsIso ?? 'eng';
     const romanize = asr?.selectRoman ?? false;
+    const method = asr?.method ?? 'whisper';
     try {
       const response = (await axiosPost(
-        `mediafiles/${remId}/transcription/${iso}/${romanize}`,
+        `mediafiles/${remId}/transcription/${iso}/${romanize}/${method}`,
         undefined,
         token
       )) as { data: { data: MediaFileD } };
