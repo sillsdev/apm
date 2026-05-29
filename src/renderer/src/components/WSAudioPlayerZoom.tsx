@@ -53,11 +53,15 @@ function WSAudioPlayerZoom(props: IProps) {
   };
   useEffect(() => {
     setZoomMin(fillPx);
-    // Only sync zoom to fillPx when fillPx actually changes (e.g. resize), not on mount.
+    // fillPx is the fit-to-width minimum. When it changes (resize, or duration
+    // change after a snip), only pull the zoom up if the current zoom is now
+    // below that minimum. Otherwise keep the user's zoom so editing audio
+    // doesn't reset how far they were zoomed in.
     // On mount, curPx effect sets zoom; avoid overwriting with fillPx so menu reopen keeps zoom.
     if (
       prevFillPxRef.current !== undefined &&
-      prevFillPxRef.current !== fillPx
+      prevFillPxRef.current !== fillPx &&
+      zoomRef.current < fillPx
     ) {
       setZoom(fillPx);
     }

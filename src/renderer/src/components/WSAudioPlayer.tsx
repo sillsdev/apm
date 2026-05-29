@@ -409,6 +409,9 @@ function WSAudioPlayer(props: IProps) {
     useContext(HotKeyContext).state;
   const [pxPerSec, setPxPerSecx] = useState(maxZoom);
   const pxPerSecRef = useRef(maxZoom);
+  /** When set, the zoom to re-apply after an edit reload (snip/undo) so the
+   * waveform doesn't snap back to fit-to-width. Cleared once consumed. */
+  const preserveZoomOnReloadRef = useRef<number | undefined>(undefined);
   const insertingRef = useRef(false);
   /** Bumped when user stops recording so in-flight preview inserts are ignored after await. */
   const recordPreviewGenerationRef = useRef(0);
@@ -1171,7 +1174,18 @@ function WSAudioPlayer(props: IProps) {
     setDuration(duration);
     if (loadingAnother) return;
     setReady(true);
-    if (!recordingRef.current) setPxPerSec(wsFillPx());
+    if (!recordingRef.current) {
+      // After an edit reload (snip/undo) restore the prior zoom instead of
+      // snapping to fit-to-width. Only restore when it was zoomed in past fit.
+      const preserved = preserveZoomOnReloadRef.current;
+      preserveZoomOnReloadRef.current = undefined;
+      if (preserved !== undefined && preserved > wsFillPx()) {
+        setPxPerSec(preserved);
+        wsZoom(preserved);
+      } else {
+        setPxPerSec(wsFillPx());
+      }
+    }
     if (segmentsRef.current) loadRegions();
 
     if (setBusy) setBusy(false);
@@ -1275,12 +1289,14 @@ function WSAudioPlayer(props: IProps) {
 
   const handleDeleteRegion = () => {
     setPlaying(false);
+    preserveZoomOnReloadRef.current = pxPerSecRef.current;
     wsRegionDelete().then(() => {
       handleChanged();
     });
   };
 
   const handleUndo = useCallback(() => {
+    preserveZoomOnReloadRef.current = pxPerSecRef.current;
     wsUndo().then(() => {
       handleChanged();
     });

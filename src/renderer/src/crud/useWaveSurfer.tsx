@@ -786,7 +786,8 @@ export function useWaveSurfer(
   };
 
   const wsUndo = async () => {
-    if (undoBuffer) await loadDecoded(undoBuffer, 0);
+    // wsGoto clamps the position to the restored duration on load, so no harm if past end.
+    if (undoBuffer) await loadDecoded(undoBuffer, progress());
     else {
       wsClear();
     }
