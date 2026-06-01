@@ -75,6 +75,29 @@ export function appendPendingMediaUpload(
   return full;
 }
 
+export function updatePendingMediaUpload(
+  id: string,
+  patch: Partial<
+    Pick<
+      PendingUploadRecord,
+      'localAbsolutePath' | 'fileSize' | 'record' | 'uploadType'
+    >
+  >
+): PendingUploadRecord | undefined {
+  const items = loadPendingMediaUploads();
+  const idx = items.findIndex((p) => p.id === id);
+  if (idx < 0) return undefined;
+  const updated: PendingUploadRecord = {
+    ...items[idx],
+    ...patch,
+    failedAt: new Date().toISOString(),
+  };
+  const next = [...items];
+  next[idx] = updated;
+  savePendingMediaUploads(next);
+  return updated;
+}
+
 export function removePendingMediaUpload(id: string): void {
   const next = loadPendingMediaUploads().filter((p) => p.id !== id);
   savePendingMediaUploads(next);

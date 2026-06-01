@@ -1,5 +1,6 @@
 import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import {
+  Box,
   Button,
   Dialog,
   DialogActions,
@@ -30,6 +31,7 @@ import JSONAPISource from '@orbit/jsonapi';
 import { IndexedDBSource } from '@orbit/indexeddb';
 import Memory from '@orbit/memory';
 import { MediaFileAttributes } from '../../model';
+import { Online } from '../../utils';
 
 const ipc = window?.api as MainAPI;
 
@@ -46,6 +48,8 @@ export function PendingUploadsDialog(props: IProps) {
   const { showMessage } = useSnackBar();
   const [reporter] = useGlobal('errorReporter');
   const [coordinator] = useGlobal('coordinator');
+  const [connected] = useGlobal('connected');
+  const [offline] = useGlobal('offline');
   const memory = coordinator?.getSource('memory') as Memory;
   const remote = coordinator?.getSource('remote') as JSONAPISource;
   const backup = coordinator?.getSource('backup') as IndexedDBSource;
@@ -55,6 +59,8 @@ export function PendingUploadsDialog(props: IProps) {
   const [busy, setBusy] = useState(false);
   const retryQueueRef = useRef<PendingUploadRecord[]>([]);
 
+  const retryDisabled = busy || !connected || offline;
+
   const refresh = useCallback(() => {
     setItems(loadPendingMediaUploads());
   }, []);
@@ -62,6 +68,36 @@ export function PendingUploadsDialog(props: IProps) {
   useEffect(() => {
     if (open) refresh();
   }, [open, refresh]);
+
+  const showNoConnectionMessage = useCallback(() => {
+    showMessage(
+      offline ? t.pendingUploadRetryLater : ts.mustBeOnline,
+      AlertSeverity.Warning
+    );
+  }, [offline, showMessage, t.pendingUploadRetryLater, ts.mustBeOnline]);
+
+  const assertCanRetry = useCallback(
+    (cb: () => void) => {
+      if (offline || !connected) {
+        showNoConnectionMessage();
+        return;
+      }
+      Online(true, (isConnected) => {
+        if (!isConnected) {
+          showMessage(t.pendingUploadRetryLater, AlertSeverity.Warning);
+          return;
+        }
+        cb();
+      });
+    },
+    [
+      connected,
+      offline,
+      showMessage,
+      showNoConnectionMessage,
+      t.pendingUploadRetryLater,
+    ]
+  );
 
   async function dispatchOne(entry: PendingUploadRecord): Promise<void> {
     const finishOrContinue = () => {
@@ -129,18 +165,30 @@ export function PendingUploadsDialog(props: IProps) {
 
   const handleRetryOne = (entry: PendingUploadRecord) => {
     if (busy) return;
-    setBusy(true);
-    retryQueueRef.current = [];
-    void dispatchOne(entry);
+    if (retryDisabled) {
+      showNoConnectionMessage();
+      return;
+    }
+    assertCanRetry(() => {
+      setBusy(true);
+      retryQueueRef.current = [];
+      void dispatchOne(entry);
+    });
   };
 
   const handleRetryAll = () => {
     if (busy) return;
+    if (retryDisabled) {
+      showNoConnectionMessage();
+      return;
+    }
     const all = loadPendingMediaUploads();
     if (all.length === 0) return;
-    setBusy(true);
-    retryQueueRef.current = all.slice(1);
-    void dispatchOne(all[0]);
+    assertCanRetry(() => {
+      setBusy(true);
+      retryQueueRef.current = all.slice(1);
+      void dispatchOne(all[0]);
+    });
   };
 
   const handleDismiss = (id: string) => {
@@ -161,30 +209,44 @@ export function PendingUploadsDialog(props: IProps) {
             {items.map((row) => (
               <ListItem
                 key={row.id}
-                secondaryAction={
-                  <Stack direction="row" spacing={1}>
-                    <Button
-                      size="small"
-                      variant="outlined"
-                      disabled={busy}
-                      onClick={() => handleRetryOne(row)}
-                    >
-                      {t.pendingUploadRetryOne}
-                    </Button>
-                    <Button
-                      size="small"
-                      disabled={busy}
-                      onClick={() => handleDismiss(row.id)}
-                    >
-                      {t.pendingUploadDismiss}
-                    </Button>
-                  </Stack>
-                }
+                sx={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: 1,
+                  pr: 1,
+                }}
               >
-                <ListItemText
-                  primary={row.record.originalFile}
-                  secondary={row.localAbsolutePath || '—'}
-                />
+                <Box sx={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
+                  <ListItemText
+                    primary={row.record.originalFile}
+                    secondary={row.localAbsolutePath || '—'}
+                    primaryTypographyProps={{
+                      noWrap: true,
+                      title: row.record.originalFile,
+                    }}
+                    secondaryTypographyProps={{
+                      noWrap: true,
+                      title: row.localAbsolutePath || undefined,
+                    }}
+                  />
+                </Box>
+                <Stack direction="row" spacing={1} sx={{ flexShrink: 0 }}>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    disabled={retryDisabled}
+                    onClick={() => handleRetryOne(row)}
+                  >
+                    {t.pendingUploadRetryOne}
+                  </Button>
+                  <Button
+                    size="small"
+                    disabled={busy}
+                    onClick={() => handleDismiss(row.id)}
+                  >
+                    {t.pendingUploadDismiss}
+                  </Button>
+                </Stack>
               </ListItem>
             ))}
           </List>
@@ -194,7 +256,7 @@ export function PendingUploadsDialog(props: IProps) {
         <Button onClick={onClose}>{ts.close}</Button>
         <Button
           variant="contained"
-          disabled={busy || items.length === 0}
+          disabled={retryDisabled || items.length === 0}
           onClick={handleRetryAll}
         >
           {t.pendingUploadBatchRetry}
