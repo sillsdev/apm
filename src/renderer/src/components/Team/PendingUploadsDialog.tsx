@@ -58,6 +58,8 @@ export function PendingUploadsDialog(props: IProps) {
   const [items, setItems] = useState<PendingUploadRecord[]>([]);
   const [busy, setBusy] = useState(false);
   const retryQueueRef = useRef<PendingUploadRecord[]>([]);
+  /** Synchronous guard while waiting for Online() (before React flushes busy). */
+  const retryClaimedRef = useRef(false);
 
   const retryDisabled = busy || !connected || offline;
 
@@ -76,15 +78,23 @@ export function PendingUploadsDialog(props: IProps) {
     );
   }, [offline, showMessage, t.pendingUploadRetryLater, ts.mustBeOnline]);
 
+  const releaseRetryClaim = useCallback(() => {
+    retryClaimedRef.current = false;
+    setBusy(false);
+    retryQueueRef.current = [];
+  }, []);
+
   const assertCanRetry = useCallback(
-    (cb: () => void) => {
+    (cb: () => void, onRejected: () => void) => {
       if (offline || !connected) {
         showNoConnectionMessage();
+        onRejected();
         return;
       }
       Online(true, (isConnected) => {
         if (!isConnected) {
           showMessage(t.pendingUploadRetryLater, AlertSeverity.Warning);
+          onRejected();
           return;
         }
         cb();
@@ -106,6 +116,7 @@ export function PendingUploadsDialog(props: IProps) {
       if (next) {
         void dispatchOne(next);
       } else {
+        retryClaimedRef.current = false;
         setBusy(false);
       }
     };
@@ -164,31 +175,29 @@ export function PendingUploadsDialog(props: IProps) {
   }
 
   const handleRetryOne = (entry: PendingUploadRecord) => {
-    if (busy) return;
-    if (retryDisabled) {
+    if (busy || retryClaimedRef.current) return;
+    if (offline || !connected) {
       showNoConnectionMessage();
       return;
     }
-    assertCanRetry(() => {
-      setBusy(true);
-      retryQueueRef.current = [];
-      void dispatchOne(entry);
-    });
+    retryClaimedRef.current = true;
+    setBusy(true);
+    retryQueueRef.current = [];
+    assertCanRetry(() => void dispatchOne(entry), releaseRetryClaim);
   };
 
   const handleRetryAll = () => {
-    if (busy) return;
-    if (retryDisabled) {
+    if (busy || retryClaimedRef.current) return;
+    if (offline || !connected) {
       showNoConnectionMessage();
       return;
     }
     const all = loadPendingMediaUploads();
     if (all.length === 0) return;
-    assertCanRetry(() => {
-      setBusy(true);
-      retryQueueRef.current = all.slice(1);
-      void dispatchOne(all[0]);
-    });
+    retryClaimedRef.current = true;
+    setBusy(true);
+    retryQueueRef.current = all.slice(1);
+    assertCanRetry(() => void dispatchOne(all[0]), releaseRetryClaim);
   };
 
   const handleDismiss = (id: string) => {
