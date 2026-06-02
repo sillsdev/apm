@@ -39,6 +39,7 @@ import {
   PendingUploadRecord,
   PendingUploadMediaRecord,
   removePendingMediaUpload,
+  updatePendingMediaUpload,
 } from './pendingMediaUploads';
 
 const ipc = window?.api as MainAPI;
@@ -444,12 +445,18 @@ export const nextUpload =
         const pathForQueue =
           localAbsolutePath ||
           ((files[n] as File & { path?: string }).path ?? '');
-        const pendingRecord = appendPendingMediaUpload({
+        const queuePatch = {
           localAbsolutePath: pathForQueue,
           fileSize: size,
           uploadType,
           record: snapshotForPending(),
-        });
+        };
+        const pendingRecord = pendingUploadIdToClearOnSuccess
+          ? (updatePendingMediaUpload(
+              pendingUploadIdToClearOnSuccess,
+              queuePatch
+            ) ?? appendPendingMediaUpload(queuePatch))
+          : appendPendingMediaUpload(queuePatch);
         onTerminalFailure?.({
           localAbsolutePath: pathForQueue || pendingRecord.localAbsolutePath,
           originalFileName: name,
