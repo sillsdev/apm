@@ -86,11 +86,6 @@ export function PendingUploadsDialog(props: IProps) {
 
   const assertCanRetry = useCallback(
     (cb: () => void, onRejected: () => void) => {
-      if (offline || !connected) {
-        showNoConnectionMessage();
-        onRejected();
-        return;
-      }
       Online(true, (isConnected) => {
         if (!isConnected) {
           showMessage(t.pendingUploadRetryLater, AlertSeverity.Warning);
@@ -100,13 +95,7 @@ export function PendingUploadsDialog(props: IProps) {
         cb();
       });
     },
-    [
-      connected,
-      offline,
-      showMessage,
-      showNoConnectionMessage,
-      t.pendingUploadRetryLater,
-    ]
+    [showMessage, t.pendingUploadRetryLater]
   );
 
   async function dispatchOne(entry: PendingUploadRecord): Promise<void> {
