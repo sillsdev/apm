@@ -9911,6 +9911,13 @@
                <context context-type="sourcefile">Transcriber.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="transcriber.chooseSisterLang">
+            <source>Choose a sister language</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">TranscribeStepSettings.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="transcriber.comment">
             <source>Comment</source>
             <target/>
@@ -9930,6 +9937,13 @@
             <target/>
             <context-group>
                <context context-type="sourcefile">Transcriber.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="transcriber.findingSisterLang">
+            <source>Finding supported sister languages…</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">TranscribeStepSettings.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="transcriber.historyTip">

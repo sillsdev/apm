@@ -8494,6 +8494,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="transcriber.chooseSisterLang">
+         <segment>
+            <source>Choose a sister language</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="transcriber.comment">
          <segment>
             <source>Comment</source>
@@ -8509,6 +8515,12 @@
       <unit id="transcriber.done">
          <segment>
             <source>Completed</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="transcriber.findingSisterLang">
+         <segment>
+            <source>Finding supported sister languages…</source>
             <target/>
          </segment>
       </unit>

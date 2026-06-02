@@ -724,7 +724,7 @@ export function Transcriber(props: IProps) {
       const spellCheck = resolveStepSpellCheck(
         lgSettings,
         artifactTypeSlug,
-        langTag ?? parseStepLanguageField(lgSettings?.language).bcp47,
+        langTag,
         availSpellLangs
       );
 
