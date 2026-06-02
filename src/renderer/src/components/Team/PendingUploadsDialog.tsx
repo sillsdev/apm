@@ -201,6 +201,7 @@ export function PendingUploadsDialog(props: IProps) {
   };
 
   const handleDismiss = (id: string) => {
+    if (busy || retryClaimedRef.current) return;
     removePendingMediaUpload(id);
     refresh();
   };
@@ -229,13 +230,15 @@ export function PendingUploadsDialog(props: IProps) {
                   <ListItemText
                     primary={row.record.originalFile}
                     secondary={row.localAbsolutePath || '—'}
-                    primaryTypographyProps={{
-                      noWrap: true,
-                      title: row.record.originalFile,
-                    }}
-                    secondaryTypographyProps={{
-                      noWrap: true,
-                      title: row.localAbsolutePath || undefined,
+                    slotProps={{
+                      primary: {
+                        noWrap: true,
+                        title: row.record.originalFile,
+                      },
+                      secondary: {
+                        noWrap: true,
+                        title: row.localAbsolutePath || undefined,
+                      },
                     }}
                   />
                 </Box>
