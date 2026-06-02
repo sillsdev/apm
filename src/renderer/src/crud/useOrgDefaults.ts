@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useGlobal } from '../context/useGlobal';
 import { Organization, OrganizationD, RoleNames } from '../model';
-import { UpdateRecord } from '../model/baseModel';
+import { UpdateAttribute } from '../model/baseModel';
 import { findRecord } from './tryFindRecord';
 import { useJsonParams } from '../utils';
 
@@ -51,7 +51,15 @@ export const useOrgDefaults = () => {
     ) as OrganizationD;
     if (!org) return; // no defaults on Personal Team
     setDefault(label, value, org);
-    memory.update((t) => UpdateRecord(t, org, user));
+    memory.update((t) =>
+      UpdateAttribute(
+        t,
+        org,
+        'defaultParams',
+        org.attributes.defaultParams,
+        user
+      )
+    );
   };
   const canSetOrgDefault = useMemo(
     () => orgRole === RoleNames.Admin && (offlineOnly || !offline),

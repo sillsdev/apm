@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useGetGlobal, useGlobal } from '../context/useGlobal';
 import { ProjectD, RoleNames } from '../model';
-import { UpdateRecord } from '../model/baseModel';
+import { UpdateAttribute } from '../model/baseModel';
 import { findRecord } from './tryFindRecord';
 import { useJsonParams } from '../utils/useJsonParams';
 import { tryParseJSON } from '../utils/tryParseJson';
@@ -39,7 +39,15 @@ export const useProjectDefaults = () => {
         value,
         proj.attributes.defaultParams
       ) as string;
-      memory.update((t) => UpdateRecord(t, proj, user));
+      memory.update((t) =>
+        UpdateAttribute(
+          t,
+          proj,
+          'defaultParams',
+          proj.attributes.defaultParams,
+          user
+        )
+      );
     }
   };
 
