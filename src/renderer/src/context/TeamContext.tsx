@@ -669,8 +669,7 @@ const TeamProvider = (props: IProps) => {
     }
     const teams = getTeams();
     const teamsChanged = JSON.stringify(teams) !== JSON.stringify(state.teams);
-    const directoryNowReady =
-      organizations.length > 0 || orgMembers.length > 0;
+    const directoryNowReady = organizations.length > 0 || orgMembers.length > 0;
     setState((state) => {
       const nextReady = state.teamDirectoryReady || directoryNowReady;
       if (!teamsChanged && nextReady === state.teamDirectoryReady) {
