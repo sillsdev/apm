@@ -13,6 +13,8 @@ import {
 import type { ChangeEvent } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import {
+  editReferenceValuesEqual,
+  normalizeEditReferenceDraft,
   type PassageVerseOption,
   toPassageVerseKey,
 } from '../../../../utils/markVersesPassageVerses';
@@ -83,7 +85,13 @@ export default function EditReferenceDropdown({
   onSave,
 }: EditReferenceDropdownProps) {
   const [draft, setDraft] = useState<EditReferenceValue>(value);
+  const [initialSnapshot, setInitialSnapshot] =
+    useState<EditReferenceValue>(value);
   const endSelectValue = toPassageVerseKey(draft.endChapter, draft.endVerse);
+  const isDirty = useMemo(
+    () => !editReferenceValuesEqual(draft, initialSnapshot),
+    [draft, initialSnapshot]
+  );
 
   const resolvedEndOptions = useMemo(() => {
     if (endVerseOptions.length > 0) return endVerseOptions;
@@ -102,14 +110,9 @@ export default function EditReferenceDropdown({
 
   useEffect(() => {
     if (!open) return;
-    const splitVerse =
-      /^[a-e]$/i.test(value.startSuffix) || /^[a-e]$/i.test(value.endSuffix);
-    setDraft({
-      ...value,
-      splitVerse,
-      startSuffix: splitVerse ? value.startSuffix : '',
-      endSuffix: splitVerse ? value.endSuffix : '',
-    });
+    const normalized = normalizeEditReferenceDraft(value);
+    setDraft(normalized);
+    setInitialSnapshot(normalized);
   }, [open, value]);
 
   const handleSplitChange = (
@@ -274,7 +277,11 @@ export default function EditReferenceDropdown({
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 2 }}>
         <Button onClick={onCancel}>{cancelLabel}</Button>
-        <Button variant="contained" onClick={() => onSave(draft)}>
+        <Button
+          variant="contained"
+          disabled={!isDirty}
+          onClick={() => onSave(draft)}
+        >
           {saveLabel}
         </Button>
       </DialogActions>

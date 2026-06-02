@@ -57,11 +57,13 @@ import Confirm from '../../../AlertDialog';
 import { type WSAudioPlayerControls } from '../../../WSAudioPlayer';
 import { isMarkVersesTableTailIncomplete } from '../../../../utils/markVersesSegmentColors';
 import {
+  editReferenceValuesEqual,
   formatMarkVersesReference,
   getEndingVerseOptions,
   incrementMarkVersesReferenceSuffix,
   markVersesReferenceHasLetterSuffix,
   nextMarkVersesLetterSuffix,
+  normalizeEditReferenceDraft,
   parseMarkVersesReference,
 } from '../../../../utils/markVersesPassageVerses';
 import PassageDetailPlayer from '../../PassageDetailPlayer';
@@ -1001,6 +1003,12 @@ export default function PassageDetailMarkVersesIsMobile({
 
   const handleSaveSplitVerseDialog = (value: EditReferenceValue) => {
     if (!editReferenceDialog) return;
+
+    const openingValue = normalizeEditReferenceDraft(editReferenceDialog);
+    if (editReferenceValuesEqual(value, openingValue)) {
+      setEditReferenceDialog(undefined);
+      return;
+    }
 
     const saveValue: EditReferenceValue = value.splitVerse
       ? value

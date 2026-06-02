@@ -228,3 +228,41 @@ export const formatMarkVersesReference = ({
 
   return `${startChapter}:${startVerse}${startSuffixPart}-${endChapter}:${endVerse}${endSuffixPart}`;
 };
+
+export interface EditReferenceComparable {
+  splitVerse: boolean;
+  startChapter: number;
+  startVerse: number;
+  startSuffix: string;
+  endChapter: number;
+  endVerse: number;
+  endSuffix: string;
+}
+
+/** Normalize Edit Reference props the same way the dialog initializes draft state. */
+export const normalizeEditReferenceDraft = <T extends EditReferenceComparable>(
+  value: T
+): T => {
+  const splitVerse =
+    MARK_VERSES_LETTER_SUFFIX.test(value.startSuffix) ||
+    MARK_VERSES_LETTER_SUFFIX.test(value.endSuffix);
+  return {
+    ...value,
+    splitVerse,
+    startSuffix: splitVerse ? value.startSuffix : '',
+    endSuffix: splitVerse ? value.endSuffix : '',
+  };
+};
+
+/** Apply save-path normalization (strip suffixes when split is off). */
+export const normalizeEditReferenceForSave = (
+  value: EditReferenceComparable
+): EditReferenceComparable =>
+  value.splitVerse ? value : { ...value, startSuffix: '', endSuffix: '' };
+
+export const editReferenceValuesEqual = (
+  a: EditReferenceComparable,
+  b: EditReferenceComparable
+): boolean =>
+  formatMarkVersesReference(normalizeEditReferenceForSave(a)) ===
+  formatMarkVersesReference(normalizeEditReferenceForSave(b));

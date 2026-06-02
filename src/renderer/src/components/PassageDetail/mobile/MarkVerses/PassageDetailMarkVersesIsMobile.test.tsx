@@ -513,6 +513,78 @@ test('opens and cancels the split verse dialog', async () => {
   ).not.toBeInTheDocument();
 });
 
+test('disables Save on Edit Reference until the reference changes', async () => {
+  const user = userEvent.setup();
+
+  runTest({ width: 375 });
+
+  await waitForPassageRowsReady();
+
+  act(() => {
+    mockPlayerAction?.(
+      '{"regions":"[{\\"start\\":0,\\"end\\":10},{\\"start\\":10,\\"end\\":20},{\\"start\\":20,\\"end\\":69}]"}',
+      false
+    );
+  });
+
+  await within(markVersesTbody()).findByText('0:00-0:10');
+
+  await clickMarkVersesRowByLimitsText(user, '0:00-0:10');
+  await user.click(screen.getByRole('button', { name: 'Edit Reference' }));
+
+  const saveButton = within(editReferenceDialog()).getByRole('button', {
+    name: 'Save',
+  });
+  expect(saveButton).toBeDisabled();
+
+  await user.selectOptions(
+    within(editReferenceDialog()).getByLabelText('end verse number'),
+    '2'
+  );
+  expect(saveButton).not.toBeDisabled();
+
+  await user.selectOptions(
+    within(editReferenceDialog()).getByLabelText('end verse number'),
+    '1'
+  );
+  expect(saveButton).toBeDisabled();
+});
+
+test('keeps Save disabled when Split Verse is toggled without suffix change', async () => {
+  const user = userEvent.setup();
+
+  runTest({ width: 375 });
+
+  await waitForPassageRowsReady();
+
+  act(() => {
+    mockPlayerAction?.(
+      '{"regions":"[{\\"start\\":0,\\"end\\":10},{\\"start\\":10,\\"end\\":20},{\\"start\\":20,\\"end\\":69}]"}',
+      false
+    );
+  });
+
+  await within(markVersesTbody()).findByText('0:00-0:10');
+
+  await clickMarkVersesRowByLimitsText(user, '0:00-0:10');
+  await user.click(screen.getByRole('button', { name: 'Edit Reference' }));
+
+  const saveButton = within(editReferenceDialog()).getByRole('button', {
+    name: 'Save',
+  });
+  expect(saveButton).toBeDisabled();
+
+  await user.click(
+    within(editReferenceDialog()).getByRole('checkbox', { name: 'Split Verse' })
+  );
+  expect(saveButton).toBeDisabled();
+
+  await user.click(
+    within(editReferenceDialog()).getByRole('checkbox', { name: 'Split Verse' })
+  );
+  expect(saveButton).toBeDisabled();
+});
+
 test('saves a split verse range and shifts following references up', async () => {
   const user = userEvent.setup();
 
