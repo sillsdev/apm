@@ -64,6 +64,7 @@ import {
   markVersesReferenceHasLetterSuffix,
   nextMarkVersesLetterSuffix,
   normalizeEditReferenceDraft,
+  normalizeEditReferenceForSave,
   parseMarkVersesReference,
 } from '../../../../utils/markVersesPassageVerses';
 import PassageDetailPlayer from '../../PassageDetailPlayer';
@@ -1005,14 +1006,14 @@ export default function PassageDetailMarkVersesIsMobile({
     if (!editReferenceDialog) return;
 
     const openingValue = normalizeEditReferenceDraft(editReferenceDialog);
+    // Defense in depth: EditReferenceDropdown disables Save via the same helper;
+    // keep both paths on editReferenceValuesEqual so semantics stay aligned.
     if (editReferenceValuesEqual(value, openingValue)) {
       setEditReferenceDialog(undefined);
       return;
     }
 
-    const saveValue: EditReferenceValue = value.splitVerse
-      ? value
-      : { ...value, startSuffix: '', endSuffix: '' };
+    const saveValue = normalizeEditReferenceForSave(value);
     pushUndoSnapshot();
     const newData = cloneTableData(dataRef.current);
     const startRowIndex = editReferenceDialog.rowIndex;
