@@ -30,7 +30,6 @@ export const UpdateRecord = (
   rec: BaseModel & InitializedRecord,
   user: string
 ): RecordOperation[] => {
-  rec.attributes.dateUpdated = currentDateTime();
   return [
     t.updateRecord(rec).toOperation(),
     ...UpdateLastModifiedBy(t, rec, user),
@@ -41,14 +40,11 @@ export const AddRecord = (
   t: RecordTransformBuilder,
   rec: UninitializedRecord,
   user: string,
-  memory: Memory,
-  dateCreated?: string
+  memory: Memory
 ): RecordOperation[] => {
   const rn = new StandardRecordNormalizer({ schema: memory?.schema });
   rec = rn.normalizeRecord(rec);
   if (!rec.attributes) rec.attributes = {} as Dict<unknown>;
-  (rec.attributes as Dict<unknown>).dateCreated =
-    dateCreated ?? currentDateTime();
   return [
     t.addRecord(rec).toOperation(),
     ...UpdateLastModifiedBy(t, rec as InitializedRecord, user),
@@ -62,6 +58,22 @@ export const UpdateLastModifiedBy = (
   return [
     t.replaceAttribute(rec, 'dateUpdated', currentDateTime()).toOperation(),
     ...ReplaceRelatedRecord(t, rec, 'lastModifiedByUser', 'user', user),
+  ];
+};
+
+// Update a single attribute without re-asserting the rest of the cached record
+// (unlike UpdateRecord, which pushes every attribute). Refreshes dateUpdated and
+// lastModifiedByUser via UpdateLastModifiedBy.
+export const UpdateAttribute = (
+  t: RecordTransformBuilder,
+  rec: (BaseModel & InitializedRecord) | RecordIdentity,
+  attribute: string,
+  value: unknown,
+  user: string
+): RecordOperation[] => {
+  return [
+    t.replaceAttribute(rec, attribute, value).toOperation(),
+    ...UpdateLastModifiedBy(t, rec, user),
   ];
 };
 export const ReplaceRelatedRecord = (
