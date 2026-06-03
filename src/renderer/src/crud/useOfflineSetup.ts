@@ -140,14 +140,37 @@ export const useOfflineSetup = () => {
     tool: string;
     artId?: string;
     namedRegion?: string;
+    spellCheck?: boolean;
   }
 
-  const makeWorkflowProcessSteps = async (process: string, steps: ISteps[]) => {
+  const transcribeSpellCheckDefault = (
+    step: ISteps,
+    pbtId: string,
+    wbtId: string,
+    csId: string
+  ): boolean | undefined => {
+    if (step.tool !== 'transcribe') return undefined;
+    if (step.spellCheck != null) return step.spellCheck;
+    if (!step.artId) return false;
+    if (step.artId === csId) return false;
+    if (step.artId === pbtId || step.artId === wbtId) return true;
+    return false;
+  };
+
+  const makeWorkflowProcessSteps = async (
+    process: string,
+    steps: ISteps[],
+    artIds?: { pbt: string; wbt: string; cs: string }
+  ) => {
     const t = new RecordTransformBuilder();
     const ops = steps.map((step, ix) => {
-      const settings: Record<string, string> = {};
+      const settings: Record<string, string | boolean> = {};
       if (step.artId) settings.artifactTypeId = step.artId;
       if (step.namedRegion) settings.namedRegion = step.namedRegion;
+      const spellDefault =
+        artIds &&
+        transcribeSpellCheckDefault(step, artIds.pbt, artIds.wbt, artIds.cs);
+      if (spellDefault != null) settings.spellCheck = spellDefault;
       const toolSettings =
         Object.keys(settings).length > 0
           ? `, "settings":${JSON.stringify(settings)}`
@@ -184,6 +207,7 @@ export const useOfflineSetup = () => {
     ) as string;
     const RBT = getTypeId(ArtifactTypeSlug.Retell, true) as string;
     const CS = getTypeId(ArtifactTypeSlug.CarefulSpeech, true) as string;
+    const artIds = { pbt: PBT, wbt: WBT, cs: CS };
     // console.log('WBT', WBT, 'PBT', PBT);
     if (offlineRecs.length === 0) {
       await makeWorkflowProcessSteps('OBT', [
@@ -204,12 +228,12 @@ export const useOfflineSetup = () => {
         { name: 'FinalReviewText', tool: 'transcribe' },
         { name: 'Export', tool: 'export' },
         { name: 'Done', tool: 'done' },
-      ]);
+      ], artIds);
 
       await makeWorkflowProcessSteps('OBTs', [
         { name: 'Record', tool: 'record' },
         { name: 'Export', tool: 'export' },
-      ]);
+      ], artIds);
 
       await makeWorkflowProcessSteps('OBTr', [
         { name: 'Internalize', tool: 'resource' },
@@ -222,7 +246,7 @@ export const useOfflineSetup = () => {
         { name: 'ConsultantCheck', tool: 'consultantCheck' },
         { name: 'Export', tool: 'export' },
         { name: 'Done', tool: 'done' },
-      ]);
+      ], artIds);
 
       await makeWorkflowProcessSteps('OBTo', [
         { name: 'Internalize', tool: 'resource' },
@@ -245,7 +269,7 @@ export const useOfflineSetup = () => {
         { name: 'FinalRecording', tool: 'discuss' },
         { name: 'Export', tool: 'export' },
         { name: 'Done', tool: 'done' },
-      ]);
+      ], artIds);
 
       await makeWorkflowProcessSteps('OBS', [
         { name: 'Internalize', tool: 'resource' },
@@ -261,7 +285,7 @@ export const useOfflineSetup = () => {
         { name: 'FinalRecording', tool: 'discuss' },
         { name: 'Export', tool: 'export' },
         { name: 'Done', tool: 'done' },
-      ]);
+      ], artIds);
 
       await makeWorkflowProcessSteps('draft', [
         { name: 'Internalize', tool: 'resource' },
@@ -272,7 +296,7 @@ export const useOfflineSetup = () => {
         { name: 'Review', tool: 'transcribe' },
         { name: 'ParatextSync', tool: 'paratext' },
         { name: 'Done', tool: 'done' },
-      ]);
+      ], artIds);
 
       await makeWorkflowProcessSteps('transcriber', [
         { name: 'Record', tool: 'record' },
@@ -281,7 +305,7 @@ export const useOfflineSetup = () => {
         { name: 'ParatextSync', tool: 'paratext' },
         { name: 'Export', tool: 'export' },
         { name: 'Done', tool: 'done' },
-      ]);
+      ], artIds);
     }
     if (
       offlineRecs.filter((w) => w.attributes.process === 'bold').length === 0
@@ -309,7 +333,7 @@ export const useOfflineSetup = () => {
         { name: 'LwcTranscription', tool: 'transcribe', artId: PBT },
         { name: 'FreeTranslation', tool: 'wholeBackTranslate' },
         { name: 'FreeTranscription', tool: 'transcribe', artId: WBT },
-      ]);
+      ], artIds);
     }
     if (
       offlineRecs.filter((w) => w.attributes.process === 'Render').length === 0
@@ -323,7 +347,7 @@ export const useOfflineSetup = () => {
         { name: 'PhraseBackTranslation', tool: 'phraseBackTranslate' },
         { name: 'PBTTranscribe', tool: 'transcribe', artId: PBT },
         { name: 'PBTParatextSync', tool: 'paratext', artId: PBT },
-      ]);
+      ], artIds);
     }
   };
 

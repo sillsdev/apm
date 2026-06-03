@@ -64,6 +64,22 @@ export const Language = (props: IProps) => {
     rtl,
     spellCheck,
   });
+
+  React.useEffect(() => {
+    setState((prev) => {
+      if (
+        prev.bcp47 === bcp47 &&
+        prev.languageName === languageName &&
+        prev.font === font &&
+        prev.rtl === rtl &&
+        prev.spellCheck === spellCheck
+      ) {
+        return prev;
+      }
+      return { bcp47, languageName, font, rtl, spellCheck };
+    });
+  }, [bcp47, languageName, font, rtl, spellCheck]);
+
   const t: IVProjectStrings = useSelector(vProjectSelector, shallowEqual);
   const lt: IPickerStrings = useSelector(pickerSelector, shallowEqual);
   const stateRef = React.useRef<ILanguage | undefined>(undefined);
@@ -171,7 +187,7 @@ export const Language = (props: IProps) => {
             control={
               <Checkbox
                 id="language-spellCheck"
-                checked={spellCheck}
+                checked={state.spellCheck}
                 onChange={handleSpellCheckChange}
                 value="spellCheck"
               />
