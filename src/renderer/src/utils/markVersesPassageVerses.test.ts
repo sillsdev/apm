@@ -1,4 +1,5 @@
 import {
+  editReferenceValuesEqual,
   formatMarkVersesReference,
   getEndingVerseOptions,
   incrementMarkVersesReferenceSuffix,
@@ -154,6 +155,68 @@ describe('markVersesPassageVerses', () => {
 
     it('returns undefined when the next letter would exceed e', () => {
       expect(incrementMarkVersesReferenceSuffix('1:11e')).toBeUndefined();
+    });
+  });
+
+  describe('editReferenceValuesEqual', () => {
+    const singleVerse = {
+      splitVerse: false,
+      startChapter: 1,
+      startVerse: 1,
+      startSuffix: '',
+      endChapter: 1,
+      endVerse: 1,
+      endSuffix: '',
+    };
+
+    it('treats identical single-verse values as equal', () => {
+      expect(editReferenceValuesEqual(singleVerse, { ...singleVerse })).toBe(
+        true
+      );
+    });
+
+    it('treats same range with split toggled and empty suffixes as equal', () => {
+      const range = {
+        splitVerse: false,
+        startChapter: 1,
+        startVerse: 1,
+        startSuffix: '',
+        endChapter: 1,
+        endVerse: 3,
+        endSuffix: '',
+      };
+      expect(
+        editReferenceValuesEqual(range, { ...range, splitVerse: true })
+      ).toBe(true);
+    });
+
+    it('treats different end verses as not equal', () => {
+      expect(
+        editReferenceValuesEqual(singleVerse, {
+          ...singleVerse,
+          endVerse: 2,
+        })
+      ).toBe(false);
+    });
+
+    it('treats letter-suffix references as not equal to plain references', () => {
+      expect(
+        editReferenceValuesEqual(singleVerse, {
+          ...singleVerse,
+          splitVerse: true,
+          startSuffix: 'a',
+          endSuffix: 'e',
+        })
+      ).toBe(false);
+    });
+
+    it('treats split toggled on and off without suffix change as equal to original', () => {
+      expect(
+        editReferenceValuesEqual(singleVerse, {
+          ...singleVerse,
+          splitVerse: true,
+        })
+      ).toBe(true);
     });
   });
 });
