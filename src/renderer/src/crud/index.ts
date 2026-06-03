@@ -1,6 +1,7 @@
 export * from './artifactTypeSlug';
 export * from './fileOrder';
 export * from './fontChoice';
+export * from './stepSpellCheck';
 export * from './getMediaInPlans';
 export * from './getOrgs';
 export * from './groupmembership';

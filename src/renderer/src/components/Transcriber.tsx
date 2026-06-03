@@ -48,7 +48,10 @@ import {
   GetUser,
   saveFontData,
   loadFontData,
+  resolveStepSpellCheck,
+  bcp47FromStepLanguage,
 } from '../crud';
+import { MainAPI } from '@model/main-api';
 import {
   insertAtCursor,
   logError,
@@ -107,6 +110,7 @@ import { SaveSegments } from './PassageDetail/SaveSegments';
 //import useRenderingTrace from '../utils/useRenderingTrace';
 
 const HISTORY_KEY = 'F7,CTRL+7';
+const ipc = window?.api as MainAPI | undefined;
 
 interface IProps {
   defaultWidth: number;
@@ -225,6 +229,7 @@ export function Transcriber(props: IProps) {
   const { accessToken } = useContext(TokenContext).state;
   const [assigned, setAssigned] = useState('');
   const [projData, setProjData] = useState<FontData>();
+  const [availSpellLangs, setAvailSpellLangs] = useState<string[]>([]);
   const [suggestedSegs, setSuggestedSegs] = useState<string>();
   const verseSegs = useRef<string | undefined>(undefined);
   const [verseLabels, setVerseLabels] = useState<string[]>([]);
@@ -620,33 +625,80 @@ export function Transcriber(props: IProps) {
   }, [paratextIntegration, project, projintegrations]);
 
   useEffect(() => {
-    const lgSettings = JSON.parse(stepSettings || '{}');
-    const [language] = lgSettings?.language?.split('|') ?? ['', 'und'];
-    if (artifactTypeSlug === ArtifactTypeSlug.Vernacular || !language) {
-      if (project) {
-        const r = findRecord(memory, 'project', project) as Project | undefined;
-        if (r) getFontData(r, artifactId).then((data) => setProjData(data));
-      }
+    if (isElectron) {
+      ipc
+        ?.availSpellLangs()
+        .then((list: string[]) => setAvailSpellLangs(list ?? []))
+        .catch(() => setAvailSpellLangs([]));
     } else {
-      const lastFontData = loadFontData(artifactId ?? 'project');
-      const defaultFont = lgSettings?.font;
-      const rtl = lgSettings?.rtl ?? false;
-      const spellCheck =
-        lastFontData?.spellCheck ?? lgSettings?.spellCheck ?? false;
-      const defaultFontSize =
-        lastFontData?.fontSize ?? lgSettings?.fontSize ?? 'large';
-      const rec = {
-        attributes: { language, spellCheck, defaultFont, defaultFontSize, rtl },
-      } as Project;
-      getFontData(rec, artifactId).then((data) => setProjData(data));
+      setAvailSpellLangs([]);
     }
+  }, []);
+
+  useEffect(() => {
+    const lgSettings = JSON.parse(stepSettings || '{}');
+    const [, stepLang] = lgSettings?.language?.split('|') ?? ['', 'und'];
+    const useProjectLang =
+      artifactTypeSlug === ArtifactTypeSlug.Vernacular ||
+      !stepLang ||
+      stepLang === 'und';
+
+    const loadProjData = async () => {
+      const r = project
+        ? (findRecord(memory, 'project', project) as Project | undefined)
+        : undefined;
+      let langTag = stepLang && stepLang !== 'und' ? stepLang : undefined;
+      let defaultFont = lgSettings?.font as string | undefined;
+      let rtl = lgSettings?.rtl ?? false;
+      let defaultFontSize = lgSettings?.fontSize as string | undefined;
+
+      if (useProjectLang && r) {
+        langTag = r.attributes?.language ?? langTag;
+        defaultFont = (defaultFont ?? r.attributes?.defaultFont) || undefined;
+        rtl = r.attributes?.rtl ?? rtl;
+        defaultFontSize =
+          (defaultFontSize ?? r.attributes?.defaultFontSize) || undefined;
+      }
+
+      const spellCheck = resolveStepSpellCheck(
+        lgSettings,
+        artifactTypeSlug,
+        langTag ?? bcp47FromStepLanguage(lgSettings?.language),
+        availSpellLangs
+      );
+
+      const lastFontData = loadFontData(artifactId ?? 'project');
+      defaultFontSize = lastFontData?.fontSize ?? defaultFontSize ?? 'large';
+
+      const rec = {
+        attributes: {
+          language: langTag,
+          defaultFont,
+          defaultFontSize,
+          rtl,
+        },
+      } as Project;
+      const data = await getFontData(rec, artifactId);
+      setProjData({ ...data, spellCheck });
+    };
+
+    loadProjData();
+
     const ptCheck =
       [ArtifactTypeSlug.Retell, ArtifactTypeSlug.QandA].includes(
         (artifactTypeSlug || '') as ArtifactTypeSlug
       ) || projType.toLowerCase() !== 'scripture';
     if (ptCheck !== noParatext) setNoParatext(ptCheck);
     /* eslint-disable-next-line react-hooks/exhaustive-deps */
-  }, [project, projType, artifactTypeSlug, artifactId, offline]);
+  }, [
+    project,
+    projType,
+    artifactTypeSlug,
+    artifactId,
+    offline,
+    stepSettings,
+    availSpellLangs,
+  ]);
 
   useEffect(() => {
     const newAssigned = selectedMediaRow?.assigned;
@@ -848,7 +900,6 @@ export function Transcriber(props: IProps) {
     setSettingsState({
       rtl: projData?.fontDir === 'rtl',
       fontSize: projData?.fontSize,
-      spellCheck: projData?.spellCheck,
       vProjectStrings,
     } as IProjectDialog);
     setShowSettings(true);
@@ -861,10 +912,6 @@ export function Transcriber(props: IProps) {
       if (settingsState?.fontSize !== newData.fontSize) {
         change = true;
         newData = { ...newData, fontSize: settingsState.fontSize };
-      }
-      if (settingsState?.spellCheck !== newData.spellCheck) {
-        change = true;
-        newData = { ...newData, spellCheck: settingsState.spellCheck };
       }
       if (change) setProjData(newData);
       saveFontData(newData, artifactId ?? 'project');
@@ -1245,7 +1292,7 @@ export function Transcriber(props: IProps) {
                   overrides={textAreaStyle}
                   onChange={handleChange}
                   lang={projData?.langTag || 'en'}
-                  spellCheck={projData?.spellCheck}
+                  spellCheck={projData?.spellCheck === true}
                 />
               </Grid>
               {showHistory && (

@@ -177,6 +177,7 @@ export function ProjectDialog(props: IProps) {
                 {...state}
                 onChange={handleLanguageChange}
                 direction="row"
+                hideSpelling
                 sx={{ pt: 0 }}
               />
             </Stack>
