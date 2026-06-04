@@ -1104,12 +1104,30 @@ function WSAudioPlayer(props: IProps) {
   async function onRecordStop(blob: Blob) {
     recordingStartPendingRef.current = false;
     try {
-      await wsInsertAudio(
-        blob,
-        undefined,
-        recordStartPosition.current,
-        recordOverwritePosition.current
-      );
+      try {
+        await wsInsertAudio(
+          blob,
+          undefined,
+          recordStartPosition.current,
+          recordOverwritePosition.current
+        );
+      } catch (err) {
+        // Inserting the take against the live-preview buffer failed
+        // (decode/splice race). The recorded blob is the complete take, so
+        // reload it directly rather than losing the recording and leaving
+        // Save/Play unavailable after Pause (TT-7384).
+        logError(
+          Severity.error,
+          errorReporter,
+          err instanceof Error ? err : new Error(String(err))
+        );
+        await wsInsertAudio(
+          blob,
+          undefined,
+          recordStartPosition.current,
+          undefined
+        );
+      }
       recordOverwritePosition.current = undefined;
       void handleChanged();
     } finally {
@@ -1148,11 +1166,13 @@ function WSAudioPlayer(props: IProps) {
       ) {
         return;
       }
-      // With delta-only preview chunks, each tick contains only NEW audio.
-      // Always advance the overwrite position so the next delta is appended
-      // after this one (instead of replacing it at the same start position).
-      // Without this, the live waveform only shows the latest delta chunk.
-      recordOverwritePosition.current = newPos;
+      // Advance the overwrite position only when overdubbing into existing
+      // audio. For a fresh recording we leave it undefined so the final
+      // onRecordStop insert rebuilds the waveform from the complete take in one
+      // clean load instead of splicing the full take against the rolling
+      // preview buffer (that splice could throw, which skipped handleChanged()
+      // and left Save/Play unavailable after Pause - TT-7384).
+      if (insertingRef.current) recordOverwritePosition.current = newPos;
     } catch (err) {
       logError(
         Severity.error,

@@ -758,13 +758,16 @@ export function useWaveSurfer(
   ) => {
     if (!wavesurferRef.current) throw new Error('wavesurfer closed'); //closed while we were working on the blob
 
-    // If we have a blob (from recording), decode it to AudioBuffer
-    if (blob && !buffer) {
-      buffer = await decodeAudioData(audioContext(), await blob.arrayBuffer());
-    }
-
-    if (buffer?.length === 0) return position;
     try {
+      // If we have a blob (from recording), decode it to AudioBuffer
+      if (blob && !buffer) {
+        buffer = await decodeAudioData(
+          audioContext(),
+          await blob.arrayBuffer()
+        );
+      }
+
+      if (buffer?.length === 0) return position;
       return await insertAudioData(buffer!, position, overwriteToPosition);
     } catch (error: any) {
       logError(Severity.error, errorReporter, error);
