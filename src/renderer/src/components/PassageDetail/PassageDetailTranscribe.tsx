@@ -250,6 +250,7 @@ export function PassageDetailTranscribe({ width, artifactTypeId }: IProps) {
           >
             <Transcriber
               defaultWidth={Math.max(0, width - MAGIC_NUMBER_THAT_MAKES_IT_FIT)}
+              stepSettings={stepSettings as string}
               hasChecking={hasChecking}
               setComplete={handleComplete}
               hasPermission={hasPermission}
