@@ -97,8 +97,64 @@ _Avoid_: Section number alone when publishing labels are active; Sequence (7.2)
 ## Workflow
 
 **Process**:
-The workflow template a team follows (e.g. OBT — Oral Bible Translation). Defines the default sequence of steps for that translation approach.
+The workflow template a team follows (e.g. OBT — Oral Bible Translation, BOLD). Defines the default sequence of steps for that translation approach.
 _Avoid_: Workflow step; Tool
+
+**BOLD**:
+A workflow process for Basic Oral Language Documentation. Includes Prompt, Record, Careful Speech, back-translation, and transcription steps tuned for careful oral language work.
+_Avoid_: OBT (different step sequence and goals)
+
+**Careful Speech** (step):
+A BOLD workflow step where the user listens to each **clause** of the **source recording** (from the Record step) and records a slow, careful re-speaking of that clause. The two-phase listen pass / recording pass UX applies to **BOLD projects only**.
+_Avoid_: Record step; vernacular versioning; applying the BOLD Careful Speech flow to non-BOLD processes
+
+**Clause**:
+In BOLD Careful Speech, a time-bounded slice of the source recording — the unit the user listens to and re-records. User-facing term in this step.
+_Avoid_: Segment (in BOLD Careful Speech UI); Passage; PBT phrase
+
+**Source Recording**:
+In Careful Speech, the passage audio from the prior Record step — one waveform divided into clause regions for listening. Not the careful-speech output.
+_Avoid_: Careful Speech recording; Vernacular version
+
+**Careful Speech Recording**:
+A separate audio artifact for one clause — a slow re-speaking linked to the source recording's vernacular version and clause time range. Not a new vernacular version.
+_Avoid_: Vernacular; Source recording
+
+**Speaker** (Careful Speech):
+The person making the **careful speech recordings** for a passage. One speaker covers all clauses in the passage — the same person re-speaks every clause of the source recording. The speaker name is entered in the recording pass and displayed on each careful speech artifact. The field is highlighted in red when empty to encourage entry. Whether a speaker name is required to save a recording is under product review. Planned: the speaker name will be remembered per passage so returning to the tool pre-fills it from the existing recordings.
+_Avoid_: Treating speaker as per-clause metadata; requiring a different speaker per clause
+
+**Listen Pass**:
+The first phase of BOLD Careful Speech: the user plays through every clause of the source recording (without recording). **Start Recording** becomes available only after every clause has been heard at least once. After a clause has been heard, the user may tap within it to reposition the cursor and replay from that point to the end of the clause (or pause mid-playback). An info control on this panel explains **More Clauses** and **Combine with Next Clause**.
+_Avoid_: Recording pass; skipping ahead to record; treating a partial replay as hearing a new clause for the first time
+
+**Recording Pass**:
+The second phase: after **Start Recording**, the user listens to each unrecorded clause again and makes a **Careful Speech recording** per clause. Clause boundaries are locked while the recorder is visible. The same within-clause tap-and-replay behavior applies to the source audio.
+_Avoid_: Listen pass
+
+**More Clauses** / **Fewer Clauses**:
+BOLD Careful Speech controls during the **listen pass** that re-segment the source recording into more or fewer clauses by adjusting auto-segment parameters (not by nudging a single boundary). **Fewer Clauses** reverses the last **More Clauses** change first. Using either control resets listen progress — the user must hear every clause again (typically from the beginning, or by tapping a clause to start there). Hidden during the **recording pass**.
+_Avoid_: Longer / Shorter (removed from BOLD); Combine with Next Clause (recording pass only)
+
+**Combine with Next Clause**:
+A control during the **recording pass** that merges the current clause with the next by removing the boundary between them, then replays the merged clause. Undo restores the previous boundary. Only allowed when **neither** clause has a **Careful Speech recording** yet. Disabled while recording is in progress or after a recording is saved for the current clause.
+_Avoid_: More Clauses / Fewer Clauses; Longer / Shorter; combining clauses that already have recordings
+
+**Clause highlight** (Careful Speech):
+During the **recording pass**, the active unrecorded clause is **yellow**; clauses with a **Careful Speech recording** are **green**. The step is complete when every clause is green (all recorded).
+_Avoid_: Yellow for recorded clauses; treating partial listen progress as green
+
+**Next-action highlight** (Careful Speech):
+A unified affordance meaning "this is the next thing we expect — or require — you to do." Appears as a **highlighted (filled) play button** when the system has positioned the cursor at a clause but wants the user to play it, and as a **yellow clause** on the waveform identifying which clause is active. Both signals point to the same action: play this clause. The highlight is not modal — it does not change meaning between the listen pass and the recording pass. It always means "play here next."
+_Avoid_: Treating the highlighted play button and the yellow clause as separate concepts; using the highlight to mean anything other than "play this next"
+
+**Next Clause**:
+During the **recording pass**, advances to the first unrecorded clause — highlights it yellow, snaps the cursor to its start, and plays it.
+_Avoid_: Next workflow step; chevron navigation without play
+
+**Recording Pass** (tap behavior):
+During the **recording pass**, tapping an **already-recorded** clause replays the source clause and loads that clause's existing **Careful Speech recording** in the recorder (where it can be played). The user may delete it with the trash control and record again. Tapping an unrecorded clause highlights it yellow, snaps to the start, and plays it. After the clause plays through, the clause stays yellow, the play position snaps back to the clause start, and the **Record button becomes enabled** (the primary next action). The play button is not re-highlighted — the user can replay, but recording is the expected next step. If the clause is too short to make a clear careful-speech recording, the alternative is **Combine with Next Clause**. If the user navigates to a different clause (by tapping it on the waveform) and then returns, the system plays the clause again automatically — the user must hear it before Record re-enables. Navigating away forfeits the heard state for that clause.
+_Avoid_: Silently overwriting a recording; ignoring recorded clauses; re-highlighting the play button after play-through; advancing to the next clause automatically after play-through (listen-pass behavior); enabling Record without the user having heard the current clause in the current navigation
 
 **Workflow Step** (Step):
 A named stage in the translation process that a user performs on a passage (e.g. Internalize, Record, PBT Transcribe). Step names are configurable per team and can be in the user's language. What users move through via workflow navigation.
