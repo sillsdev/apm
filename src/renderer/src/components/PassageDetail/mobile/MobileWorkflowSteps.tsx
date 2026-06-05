@@ -322,7 +322,14 @@ export default function MobileWorkflowSteps() {
                   );
                 })}
             {/* Spacer to mirror the dropdown width so mx:auto centers the parallelograms */}
-            <Box sx={{ flexShrink: 0, width: dropdownWidth }} />
+            <Box
+              sx={{
+                flexShrink: 0,
+                width: dropdownWidth,
+                display: 'none',
+                '@media (min-width: 840px)': { display: 'block' },
+              }}
+            />
           </Box>
         </Box>
       </Box>
