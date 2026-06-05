@@ -323,6 +323,7 @@ export default function MobileWorkflowSteps() {
                 })}
             {/* Spacer to mirror the dropdown width so mx:auto centers the parallelograms */}
             <Box
+              data-cy="step-spacer"
               sx={{
                 flexShrink: 0,
                 width: dropdownWidth,
