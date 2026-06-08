@@ -80,7 +80,7 @@ export default function SelectVoice({
   };
 
   return (
-    <Stack sx={{ minWidth: 120, pt: 2 }} spacing={2}>
+    <Stack sx={{ minWidth: 0, width: '100%', pt: 2 }} spacing={2}>
       <SpeakerName
         name={voice ?? ''}
         noNewVoice={noNewVoice}
@@ -88,9 +88,11 @@ export default function SelectVoice({
         onRights={(hasRights) => setRights(hasRights)}
         recordingRequired
       />
-      <Typography>{statement}</Typography>
+      <Typography sx={{ overflowWrap: 'break-word', wordBreak: 'break-word' }}>
+        {statement}
+      </Typography>
       <Divider sx={{ m: 1 }} />
-      <ActionRow>
+      <ActionRow sx={{ flexWrap: 'wrap', gap: 1, minWidth: 0 }}>
         <AltButton onClick={onOpen}>
           {onlySettings ? ts.close : ts.cancel}
         </AltButton>

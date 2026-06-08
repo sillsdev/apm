@@ -1404,11 +1404,25 @@ function WSAudioPlayer(props: IProps) {
             alignItems: 'center',
             justifyContent: 'center',
             gap: 1,
+            width: '100%',
+            maxWidth: '100%',
+            minWidth: 0,
+            boxSizing: 'border-box',
             px: 2,
             pointerEvents: 'auto',
           }}
         >
-          <Typography sx={{ textAlign: 'center', whiteSpace: 'normal' }}>
+          <Typography
+            sx={{
+              textAlign: 'center',
+              whiteSpace: 'normal',
+              width: '100%',
+              maxWidth: '100%',
+              boxSizing: 'border-box',
+              overflowWrap: 'break-word',
+              wordBreak: 'break-word',
+            }}
+          >
             {processMsg}
           </Typography>
           <AltButton
@@ -1467,7 +1481,7 @@ function WSAudioPlayer(props: IProps) {
                   if (regionblob) {
                     wsRegionReplace(regionblob).then((newblob) => {
                       if (newblob) reload(newblob);
-                      setChanged && setChanged(true);
+                      void handleChanged();
                     });
                   }
                 } else {
@@ -1533,10 +1547,24 @@ function WSAudioPlayer(props: IProps) {
   const voiceDialogNode = (
     <BigDialog
       title={t.selectVoice}
-      description={<Typography>{t.selectVoicePrompt}</Typography>}
+      description={
+        <Typography
+          sx={{
+            overflowWrap: 'break-word',
+            wordBreak: 'break-word',
+          }}
+        >
+          {t.selectVoicePrompt}
+        </Typography>
+      }
       isOpen={voiceVisible}
       onOpen={handleCloseVoice}
-      bp={BigDialogBp.sm}
+      bp={effectiveMobileView ? BigDialogBp.mobile : BigDialogBp.sm}
+      mobileNoHorizontalScroll={effectiveMobileView}
+      mobilePaperWidth={
+        effectiveMobileView ? 'min(356px, calc(100vw - 4px))' : undefined
+      }
+      dialogContentSx={{ minWidth: 0, overflowX: 'hidden' }}
     >
       <SelectVoice
         noNewVoice={noNewVoice && duration > 0}
@@ -1573,7 +1601,7 @@ function WSAudioPlayer(props: IProps) {
         });
         const newblob = await wsRegionReplace(regionblob);
         if (newblob) reload(newblob);
-        setChanged && setChanged(true);
+        void handleChanged();
         await ipc?.delete(fileBeg);
         await ipc?.delete(fileEnd);
       }

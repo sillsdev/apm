@@ -197,6 +197,7 @@ function MediaRecord(props: IProps) {
     initialMimeType === 'audio/wav' ? 1 : 20
   );
   const [warning, setWarning] = useState('');
+  const [waveformDuration, setWaveformDuration] = useState(0);
   const [waveformNeedsSave, setWaveformNeedsSave] = useState(false);
   const [tooBig, setTooBig] = useState(false);
   const { showMessage } = useSnackBar();
@@ -234,6 +235,14 @@ function MediaRecord(props: IProps) {
     setFilechangedx(value);
     filechangedRef.current = value;
   };
+
+  const handleWaveformDuration = useCallback(
+    (duration: number) => {
+      setWaveformDuration(duration);
+      onDuration?.(duration);
+    },
+    [onDuration]
+  );
 
   const getCompressedStatusMessage = useCallback(() => {
     if (allowWave) {
@@ -319,6 +328,7 @@ function MediaRecord(props: IProps) {
       blobReady &&
       !tooBig &&
       filechanged &&
+      waveformDuration > 0 &&
       !converting &&
       !uploading &&
       !recording &&
@@ -330,6 +340,7 @@ function MediaRecord(props: IProps) {
     blobReady,
     tooBig,
     filechanged,
+    waveformDuration,
     converting,
     uploading,
     recording,
@@ -394,7 +405,7 @@ function MediaRecord(props: IProps) {
 
     if (saveRequested(toolId)) {
       if (!saveRef.current) {
-        if (audioBlob) {
+        if (audioBlob && waveformDuration > 0) {
           onSaving && onSaving();
           saveRef.current = true;
           logAudioDiagnostic('media-record-save-requested', {
@@ -440,7 +451,9 @@ function MediaRecord(props: IProps) {
           }
           return;
         } else {
-          saveCompleted(toolId);
+          showMessage(ts.NoSaveWoMedia);
+          setStatusText(ts.NoSaveWoMedia);
+          saveCompleted(toolId, ts.NoSaveWoMedia);
           onReady && onReady();
         }
       }
@@ -464,7 +477,6 @@ function MediaRecord(props: IProps) {
 
   function onBlobReady(blob: Blob | undefined) {
     setAudioBlob(blob);
-    setFilechanged(true);
   }
   function myOnRecording(r: boolean) {
     setRecording(r);
@@ -480,6 +492,7 @@ function MediaRecord(props: IProps) {
 
   const reset = () => {
     setFilechanged(false);
+    setWaveformDuration(0);
     setOriginalBlob(undefined);
     setAudioBlob(undefined);
     clearCompleted(toolId);
@@ -599,7 +612,7 @@ function MediaRecord(props: IProps) {
         doReset={doReset}
         autoStart={autoStart}
         onProgress={onProgress}
-        onDuration={onDuration}
+        onDuration={handleWaveformDuration}
         controlsRef={controlsRef}
         hideToolbar={hideToolbar}
         hideSegmentControls={hideSegmentControls}
@@ -620,7 +633,7 @@ function MediaRecord(props: IProps) {
         forceMobileView={forceMobileView}
         handleSave={handleSave}
         onVersions={onVersions}
-        isSaveDisabled={isSaveDisabled}
+        isSaveDisabled={Boolean(isSaveDisabled) || waveformDuration <= 0}
         mediaSaveInProgress={mediaSaveInProgress}
         showWaveformSave={waveformNeedsSave}
         dockRecordButton={dockRecordButton}
