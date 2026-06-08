@@ -109,8 +109,8 @@ A BOLD workflow step where the user listens to each **clause** of the **source r
 _Avoid_: Record step; vernacular versioning; applying the BOLD Careful Speech flow to non-BOLD processes
 
 **Clause**:
-In BOLD Careful Speech, a time-bounded slice of the source recording — the unit the user listens to and re-records. User-facing term in this step.
-_Avoid_: Segment (in BOLD Careful Speech UI); Passage; PBT phrase
+In BOLD phrase-level steps (Careful Speech, LWC Translation), a numbered unit aligned across the workflow — one time range on the **source recording**, one **Careful Speech recording**, and (after LWC Translation) one **LWC translation recording**. User-facing label in clause navigation (e.g. "Clause 3/7").
+_Avoid_: Segment (in BOLD UI when "Clause" is shown); Passage; PBT phrase
 
 **Source Recording**:
 In Careful Speech, the passage audio from the prior Record step — one waveform divided into clause regions for listening. Not the careful-speech output.
@@ -125,8 +125,8 @@ The person making the **careful speech recordings** for a passage. One speaker c
 _Avoid_: Treating speaker as per-clause metadata; requiring a different speaker per clause
 
 **Listen Pass**:
-The first phase of BOLD Careful Speech: the user plays through every clause of the source recording (without recording). **Start Recording** becomes available only after every clause has been heard at least once. After a clause has been heard, the user may tap within it to reposition the cursor and replay from that point to the end of the clause (or pause mid-playback). An info control on this panel explains **More Clauses** and **Combine with Next Clause**.
-_Avoid_: Recording pass; skipping ahead to record; treating a partial replay as hearing a new clause for the first time
+The first phase of BOLD Careful Speech only: the user plays through every clause of the source recording (without recording). Its purpose includes reviewing and adjusting clause boundaries before recording. **Start Recording** becomes available only after every clause has been heard at least once. After a clause has been heard, the user may tap within it to reposition the cursor and replay from that point to the end of the clause (or pause mid-playback). An info control on this panel explains **More Clauses** and **Combine with Next Clause**. **LWC Translation** has no listen pass — clause boundaries are already fixed.
+_Avoid_: Recording pass; LWC Translation; skipping ahead to record; treating a partial replay as hearing a new clause for the first time
 
 **Recording Pass**:
 The second phase: after **Start Recording**, the user listens to each unrecorded clause again and makes a **Careful Speech recording** per clause. Clause boundaries are locked while the recorder is visible. The same within-clause tap-and-replay behavior applies to the source audio.
@@ -155,6 +155,62 @@ _Avoid_: Next workflow step; chevron navigation without play
 **Recording Pass** (tap behavior):
 During the **recording pass**, tapping an **already-recorded** clause replays the source clause and loads that clause's existing **Careful Speech recording** in the recorder (where it can be played). The user may delete it with the trash control and record again. Tapping an unrecorded clause highlights it yellow, snaps to the start, and plays it. After the clause plays through, the clause stays yellow, the play position snaps back to the clause start, and the **Record button becomes enabled** (the primary next action). The play button is not re-highlighted — the user can replay, but recording is the expected next step. If the clause is too short to make a clear careful-speech recording, the alternative is **Combine with Next Clause**. If the user navigates to a different clause (by tapping it on the waveform) and then returns, the system plays the clause again automatically — the user must hear it before Record re-enables. Navigating away forfeits the heard state for that clause.
 _Avoid_: Silently overwriting a recording; ignoring recorded clauses; re-highlighting the play button after play-through; advancing to the next clause automatically after play-through (listen-pass behavior); enabling Record without the user having heard the current clause in the current navigation
+
+**Phrase Back Translate** (tool):
+The listen-and-record tool implementation for phrase-level workflows. In BOLD it powers both **Careful Speech** and **LWC Translation**, configured per step with artifact type and named region. On other processes it backs the **Phrase Back Translation** step on vernacular audio. Developer-facing slug — not the BOLD user-facing step name.
+_Avoid_: LWC Translation (user-facing BOLD step name); Careful Speech step; Phrase Back Translate (in BOLD UI copy)
+
+**LWC** (Language of Wider Communication):
+The language used for back translation in BOLD — a regional or international language consultants and reviewers understand. Configured per workflow step in **StepEditor** (see **LWC language**).
+_Avoid_: Back-translation language (in BOLD user-facing copy when LWC is established); Vernacular; language chosen during recording
+
+**StepEditor**:
+Team-level admin UI for configuring a team's workflow — step sequence, tools, and per-step settings (e.g. artifact type, language).
+_Avoid_: Workflow Navigation; Assignments tab
+
+**LWC language** (step setting):
+The BCP-47 language for the **LWC Translation** step, set in **StepEditor** via the Language Picker when the team configures the BOLD workflow. Not entered during recording in the LWC Translation step itself. Required so downstream **LWC Transcription** can run ASR auto-transcription against the correct language.
+_Avoid_: Vernacular language; per-recording language entry; choosing language in the recorder UI
+
+**LWC Transcription** (step):
+A BOLD workflow step after **LWC Translation** where the user transcribes each **LWC translation recording**. Includes an Auto Translation control that uses ASR (AI) to draft transcriptions, which depends on **LWC language** from the LWC Translation step settings.
+_Avoid_: Careful Transcription; LWC Translation; manual-only transcription without ASR option
+
+**LWC Translation** (step):
+The BOLD user-facing step where the user listens to each **Careful Speech recording** (one per **clause**) and records an **LWC translation recording**. Single-phase flow — no listen pass, because clause boundaries were already set in **Careful Speech** and cannot be changed here. On entry, the step advances to the first clause missing its LWC translation. Requires every clause to have a **Careful Speech recording** before the step is available — partial Careful Speech completion is not supported for now (open product question: noise-only or wordless clauses). The step is **complete** when every clause has an **LWC translation recording**. Mobile-first layout with desktop parity — same simplified clause-by-clause UX on both form factors, not the legacy desktop phrase-back-translate grid.
+_Avoid_: Phrase Back Translate (in BOLD UI copy); Careful Speech step; non-BOLD Phrase Back Translation (different source audio); starting LWC Translation while Careful Speech is incomplete; treating partial LWC translation as step complete; desktop-only or mobile-only exclusivity
+
+**Reference audio** (LWC Translation):
+The **Careful Speech recording** for the current clause, played in the top player before the user records the LWC translation. The top player shows one recording at a time — not a segmented waveform. Clauses are presented in the same order they were recorded in **Careful Speech** (clause 1, then 2, …).
+_Avoid_: Source recording; Vernacular; multi-clause waveform with regions
+
+**LWC Translation Recording**:
+The audio the user records in the **LWC Translation** step for one clause — spoken in LWC, linked to the corresponding **Careful Speech recording** and clause index. Stored as a PBT artifact; not a new vernacular version. Saves immediately when the user stops recording — no separate Save action.
+_Avoid_: Phrase Back Translation (in BOLD user-facing copy); Careful Speech recording; Vernacular; WBT; explicit save-after-record
+
+**Speaker** (LWC Translation):
+The person making the **LWC translation recordings** for a passage — typically whoever on the team speaks the target LWC language. One speaker name covers all clauses in the passage and may differ from the **Speaker** (Careful Speech). Optional text entry; an empty name does not block recording. Pre-filled from existing LWC translation recordings when returning to the step.
+_Avoid_: Speaker (Careful Speech) as the same person; recording-rights flow; per-clause speaker; requiring a name before Record enables
+
+**Clause navigation** (LWC Translation):
+Left and right arrows below the top player flanking the current clause index (e.g. "Clause 1/7"). The **right arrow** advances to the next clause in sequence and may show an existing **LWC translation recording** if that clause is already recorded. The **right arrow** is disabled on the last clause; it highlights once the **current** clause has a recording. The **left arrow** goes to the prior clause and is disabled on the first clause. Distinct from **Next Clause** (LWC Translation).
+_Avoid_: Next Clause (LWC Translation); skipping sequence order; requiring the current clause to be recorded before the right arrow enables
+
+**Next Clause** (LWC Translation):
+A button below the recorder that advances to the **first unrecorded** clause. Hidden until the user stops recording; disabled when every clause has an **LWC translation recording**. Unlike the right arrow, it does not visit already-recorded clauses in sequence — it jumps ahead to the next work remaining.
+_Avoid_: Next Clause (Careful Speech recording pass); the right arrow; Next workflow step; showing the button while recording is active
+
+**Recording lock** (LWC Translation):
+While the bottom recorder is actively capturing audio, all navigation is blocked — left/right clause arrows, **Next Clause**, other workflow steps, and leaving the project or passage. The **Next Clause** button is not shown until recording stops.
+_Avoid_: Allowing clause or workflow navigation mid-recording; showing Next Clause during capture
+
+**Step progress indicator** (LWC Translation):
+A circular indicator at the end of the top player row showing how many clauses have an **LWC translation recording** out of the total clause count.
+_Avoid_: Workflow step completion badge; Careful Speech listen-pass progress
+
+**Recording gate** (LWC Translation):
+The listen-before-record requirement applies only when the user must **make** a new **LWC translation recording** — an unrecorded clause, or a clause whose recording was cleared. The bottom recorder appears after the user has played the current clause's **Careful Speech recording** through to the end. On arrival at an unrecorded clause, **reference audio** auto-plays. Navigating to a clause that already has a recording skips the gate: the saved recording is shown immediately (playable, deletable) and reference audio does not auto-play. Clearing with the trash control returns to the gated state — reference audio auto-plays and the user must listen through before recording.
+_Avoid_: Requiring reference playback on every visit to a recorded clause; showing the recorder before playback completes on unrecorded clauses; skipping the listen requirement after delete; auto-playing reference audio in review mode
 
 **Workflow Step** (Step):
 A named stage in the translation process that a user performs on a passage (e.g. Internalize, Record, PBT Transcribe). Step names are configurable per team and can be in the user's language. What users move through via workflow navigation.
@@ -277,8 +333,8 @@ Prior vernacular recordings kept for a passage after a newer version is saved. S
 _Avoid_: History of PBT/WBT artifacts (those are tied to a vernacular version, not independently versioned)
 
 **Artifact Version Link**:
-Back-translation and other derived artifacts (PBT, WBT, etc.) are associated with the specific vernacular version they were created from — not independently versioned like vernacular.
-_Avoid_: Saying "PBT version 3" when you mean vernacular version 3's PBT
+Back-translation and other derived artifacts (PBT, WBT, **Careful Speech recordings**, **LWC translation recordings**, etc.) are associated with the specific vernacular version they were created from — not independently versioned like vernacular. A new vernacular version does not carry forward prior BOLD downstream work; the team redoes Careful Speech and LWC Translation against the new version.
+_Avoid_: Saying "PBT version 3" when you mean vernacular version 3's PBT; treating derived artifacts as current after a new vernacular is saved
 
 ## Project types
 
