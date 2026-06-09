@@ -235,11 +235,31 @@ export function BigDialog({
       disableEnforceFocus
     >
       <DialogTitle id="bigDlg">
-        <Box sx={{ display: 'flex' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <Box sx={{ display: 'flex', minWidth: 0 }}>
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1,
+              minWidth: 0,
+              flex: 1,
+            }}
+          >
             {titleStartAdornment}
-            <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-              <Typography variant={titleVariant ?? 'h6'}>{title}</Typography>
+            <Box
+              sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                minWidth: 0,
+                flex: 1,
+              }}
+            >
+              <Typography
+                variant={titleVariant ?? 'h6'}
+                sx={{ overflowWrap: 'break-word' }}
+              >
+                {title}
+              </Typography>
               {description}
             </Box>
           </Box>
