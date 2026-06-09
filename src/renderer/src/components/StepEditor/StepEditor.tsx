@@ -93,6 +93,10 @@ export const StepEditor = ({ process, org }: IProps) => {
   const { localizedArtifactTypeFromId, slugFromId } = useArtifactType();
   const [toolSettingsRow, setToolSettingsRow] = useState(-1);
   const toolRef = useRef<number | undefined>(undefined);
+  // Signature of each existing step as it was last loaded/saved, keyed by id.
+  // Used to skip writing steps that were not actually changed (including
+  // sequence changes from rearranging).
+  const baselineRef = useRef<Map<string, string>>(new Map());
   const focusIndex = useRef<number>(0);
   const scrollNewStepIntoViewRef = useRef(false);
   const listEndAnchorRef = useRef<HTMLDivElement | null>(null);
@@ -127,6 +131,17 @@ export const StepEditor = ({ process, org }: IProps) => {
   const getOrgNames = (exceptId?: string) => {
     return rows.filter((r) => r.id !== exceptId).map((r) => r.name);
   };
+
+  // Captures the persisted fields of a row so two rows can be compared for
+  // real changes. Both sides go through the same transforms (localized name,
+  // camel tool, stringified tool/settings), so unchanged steps match exactly.
+  const rowSignature = (row: IStepRow) =>
+    JSON.stringify({
+      name: row.name,
+      seq: row.seq,
+      tool: row.tool,
+      settings: row.settings,
+    });
 
   const mangleName = (
     name: string,
@@ -318,6 +333,12 @@ export const StepEditor = ({ process, org }: IProps) => {
         settings: row.settings,
       });
       if (id) {
+        const baseline = baselineRef.current.get(id);
+        if (baseline !== undefined && baseline === rowSignature(row)) {
+          // Step is unchanged (name, sequence, tool and settings all match
+          // what was loaded) — skip the write.
+          continue;
+        }
         const recId = { type: 'orgworkflowstep', id };
         const rec = memory.cache.query((q) => q.findRecord(recId)) as
           | OrgWorkflowStep
@@ -385,6 +406,9 @@ export const StepEditor = ({ process, org }: IProps) => {
         count += 1;
       }
     }
+    rows.forEach((row) => {
+      if (row.id) baselineRef.current.set(row.id, rowSignature(row));
+    });
     showMessage(se.changes.replace('{0}', count.toString()));
     saving.current = false;
   };
@@ -413,7 +437,11 @@ export const StepEditor = ({ process, org }: IProps) => {
             rIdx: newRows.length,
           });
         });
-        setRows(newRows.sort((i, j) => i.seq - j.seq));
+        const sorted = newRows.sort((i, j) => i.seq - j.seq);
+        baselineRef.current = new Map(
+          sorted.filter((r) => r.id).map((r) => [r.id, rowSignature(r)])
+        );
+        setRows(sorted);
       }
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps

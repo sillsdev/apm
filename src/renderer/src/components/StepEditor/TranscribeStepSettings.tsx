@@ -201,12 +201,12 @@ export const TranscribeStepSettings = ({
     if (org) setOrgDefault(orgDefaultLangProps, val, org);
   };
 
-  const artifactSlugCurrent = useMemo(
-    () => slugFromId(lgState.artId || null),
+  const currentSlug = useMemo(
+    () => slugFromId(lgState.artId),
     [lgState.artId, slugFromId]
   );
 
-  const hasLang = langSlugs.includes(artifactSlugCurrent);
+  const hasLang = langSlugs.includes(currentSlug);
 
   const showSpellCheckOnly = !hasLang;
 
@@ -214,7 +214,7 @@ export const TranscribeStepSettings = ({
     if (toolSettings) {
       const json = JSON.parse(toolSettings);
       setInitialValue(json.artifactTypeId);
-      const [languageName, bcp47] = json?.language?.split('|') ?? ['', 'und'];
+      const { languageName, bcp47 } = parseStepLanguageField(json?.language);
       const slug = slugFromId(json.artifactTypeId);
       const spellCheck = resolveStepSpellCheck(
         json,
@@ -267,12 +267,6 @@ export const TranscribeStepSettings = ({
       })
     );
   };
-
-  const currentSlug = useMemo(
-    () => slugFromId(lgState.artId),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [lgState.artId]
-  );
 
   useEffect(() => {
     if (!isOpen || currentSlug !== ArtifactTypeSlug.Vernacular) return;
@@ -498,29 +492,31 @@ export const TranscribeStepSettings = ({
           sx={{ ml: 1 }}
         />
       ) : (
-        hasLang && (
-          <Language
-            {...lgState}
-            onChange={handleLanguageChange}
-            hideFont
-            required={false}
-            disabled={false}
-            sx={{ ml: 1 }}
-          />
-        )
-      )}
-      {showSpellCheckOnly && (
-        <FormControlLabel
-          sx={{ ml: 1, display: 'block' }}
-          control={
-            <Checkbox
-              id="transcribe-step-spellCheck"
-              checked={lgState.spellCheck}
-              onChange={(e) => handleSpellCheckOnlyChange(e.target.checked)}
+        <>
+          {hasLang && (
+            <Language
+              {...lgState}
+              onChange={handleLanguageChange}
+              hideFont
+              required={false}
+              disabled={false}
+              sx={{ ml: 1 }}
             />
-          }
-          label={t.spellCheck}
-        />
+          )}
+          {showSpellCheckOnly && (
+            <FormControlLabel
+              sx={{ ml: 1, display: 'block' }}
+              control={
+                <Checkbox
+                  id="transcribe-step-spellCheck"
+                  checked={lgState.spellCheck}
+                  onChange={(e) => handleSpellCheckOnlyChange(e.target.checked)}
+                />
+              }
+              label={t.spellCheck}
+            />
+          )}
+        </>
       )}
       {sisterLanguagePicker}
     </>

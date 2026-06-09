@@ -30,7 +30,23 @@ const emptyStepLanguage = (): IStepLanguageInfo => ({
 /** Parses `languageName|bcp47` from step settings `language` / `sisterlanguage`. */
 export function parseStepLanguageField(value: unknown): IStepLanguageInfo {
   if (value == null || value === '') return emptyStepLanguage();
+  if (typeof value === 'object') {
+    const obj = value as { languageName?: unknown; bcp47?: unknown };
+    return {
+      languageName: String(obj.languageName ?? ''),
+      bcp47: String(obj.bcp47 ?? 'und'),
+    };
+  }
   const str = typeof value === 'string' ? value : String(value);
+  // Handle a JSON-serialized ILanguage object stored as a string.
+  const trimmed = str.trim();
+  if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+    try {
+      return parseStepLanguageField(JSON.parse(trimmed));
+    } catch {
+      // fall through to the pipe-delimited parsing below
+    }
+  }
   const pipe = str.indexOf('|');
   if (pipe === -1) {
     return { languageName: '', bcp47: str || 'und' };

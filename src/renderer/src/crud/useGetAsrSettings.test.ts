@@ -35,6 +35,30 @@ describe('parseStepLanguageField', () => {
       bcp47: 'en',
     });
   });
+
+  it('reads an ILanguage object without producing "[object Object]"', () => {
+    expect(
+      parseStepLanguageField({
+        languageName: 'English',
+        bcp47: 'en',
+        font: 'charissil',
+        rtl: false,
+      })
+    ).toEqual({ languageName: 'English', bcp47: 'en' });
+  });
+
+  it('reads a JSON-serialized ILanguage object', () => {
+    expect(
+      parseStepLanguageField('{"languageName":"French","bcp47":"fr"}')
+    ).toEqual({ languageName: 'French', bcp47: 'fr' });
+  });
+
+  it('defaults bcp47 to und for an object missing bcp47', () => {
+    expect(parseStepLanguageField({ languageName: 'English' })).toEqual({
+      languageName: 'English',
+      bcp47: 'und',
+    });
+  });
 });
 
 describe('formatStepLanguageField', () => {
