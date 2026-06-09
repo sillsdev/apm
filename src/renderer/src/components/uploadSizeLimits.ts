@@ -4,7 +4,7 @@ import { UploadType } from './UploadType';
 const PROJECTRESOURCE_SIZELIMIT = 50;
 const NO_SIZELIMIT = 10000;
 
-export const SIZELIMIT = (uploadType: UploadType) => {
+export const limitByType = (uploadType: UploadType) => {
   switch (uploadType) {
     case UploadType.ProjectResource:
       return PROJECTRESOURCE_SIZELIMIT;

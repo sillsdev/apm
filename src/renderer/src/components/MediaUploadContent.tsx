@@ -19,11 +19,10 @@ import { MarkDownEdit } from '../control/MarkDownEdit';
 import { isUrl } from '../utils';
 import {
   FaithbridgeType,
-  filterFilesBySizeLimit,
   MarkDownType,
-  SIZELIMIT,
   UriLinkType,
 } from './MediaUpload';
+import { filterFilesBySizeLimit, limitByType } from './uploadSizeLimits';
 import { UploadType } from './UploadType';
 import { FileDrop } from 'react-file-drop';
 
@@ -58,14 +57,8 @@ interface ITargetProps {
 }
 
 const DropTarget = (targetProps: ITargetProps) => {
-  const {
-    name,
-    multiple,
-    acceptextension,
-    acceptmime,
-    handleFiles,
-    inputRef,
-  } = targetProps;
+  const { name, multiple, acceptextension, acceptmime, handleFiles, inputRef } =
+    targetProps;
   const t: IMediaUploadStrings = useSelector(mediaUploadSelector, shallowEqual);
 
   const handleNameChange = (
@@ -286,7 +279,7 @@ function MediaUploadContent(props: IProps) {
       }
       const nonAudio = goodFiles.some((f) => !f?.type.includes('audio'));
       if (onNonAudio) onNonAudio(nonAudio);
-      goodFiles = checkSizes(goodFiles, SIZELIMIT(uploadType));
+      goodFiles = checkSizes(goodFiles, limitByType(uploadType));
       setName(fileName(goodFiles));
       setFiles(goodFiles);
       if (goodFiles.length === 0) {
@@ -363,7 +356,7 @@ function MediaUploadContent(props: IProps) {
         'image/png, image/jpeg, image/jpeg, image/webp',
       ].map((s) => s)[uploadType] as string
     );
-    const size = SIZELIMIT(uploadType);
+    const size = limitByType(uploadType);
     clearFileInput();
     if (filesRef.current.length > 0) {
       const goodFiles = checkSizes(filesRef.current, size);

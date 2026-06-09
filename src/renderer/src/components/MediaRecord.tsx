@@ -29,7 +29,7 @@ import {
 } from '../crud';
 import { useSnackBar } from '../hoc/SnackBar';
 import { UnsavedContext } from '../context/UnsavedContext';
-import { SIZELIMIT } from './MediaUpload';
+import { limitByType } from './uploadSizeLimits';
 import usePassageDetailContext from '../context/usePassageDetailContext';
 import { useStepTool } from '../crud/useStepTool';
 import { parseRecordCaptureAudioProcessing } from '../crud/useWavRecorder';
@@ -215,7 +215,7 @@ function MediaRecord(props: IProps) {
     () => ['mp3', 'mp3', 'webm', 'mka', 'm4a', 'wav', 'ogg'],
     []
   );
-  const sizeLimit = SIZELIMIT(UploadType.Media);
+  const sizeLimit = limitByType(UploadType.Media);
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
 
   const mimes = useMemo(
@@ -554,7 +554,11 @@ function MediaRecord(props: IProps) {
       if (blob) gotTheBlob(blob);
       else blobError(ts.mediaError);
     } catch (error) {
-      logError(Severity.error, reporter, infoMsg(error as Error, 'media load failed'));
+      logError(
+        Severity.error,
+        reporter,
+        infoMsg(error as Error, 'media load failed')
+      );
       blobError(ts.mediaError);
     }
   };
