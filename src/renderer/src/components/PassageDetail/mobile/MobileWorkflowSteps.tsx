@@ -23,7 +23,8 @@ import { useWfLabel } from '../../../utils/useWfLabel';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { IWorkflowStepsStrings, PassageD } from '../../../model';
 import { toCamel } from '../../../utils/toCamel';
-import { related } from '../../../crud/related';
+import { related, useSharedResRead } from '../../../crud';
+import { usePlanType } from '../../../crud/usePlanType';
 import { findRecord } from '../../../crud/tryFindRecord';
 import { rememberCurrentPassage } from '../../../utils';
 import { usePassageNavigate } from '../usePassageNavigate';
@@ -35,6 +36,34 @@ import {
 import { ToolSlug, useStepTool } from '../../../crud';
 import { useRole } from '../../../crud/useRole';
 import { useStepPermissions } from '../../../utils/useStepPermission';
+import { passageHeaderLabel, passageLabelText } from './passageLabelText';
+
+const MENU_MAX_HEIGHT = '45vh';
+
+function TruncatedLabel({
+  text,
+  title,
+}: {
+  text: string;
+  title?: string;
+}) {
+  return (
+    <Box
+      component="span"
+      title={title ?? text}
+      sx={{
+        display: 'block',
+        minWidth: 0,
+        maxWidth: '100%',
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+        whiteSpace: 'nowrap',
+      }}
+    >
+      {text}
+    </Box>
+  );
+}
 
 export default function MobileWorkflowSteps() {
   const {
@@ -47,6 +76,8 @@ export default function MobileWorkflowSteps() {
     passage,
     section,
     prjId,
+    allBookData,
+    sectionArr,
   } = usePassageDetailContext();
   const { tool } = useStepTool(currentstep);
   const { userIsAdmin } = useRole();
@@ -54,6 +85,7 @@ export default function MobileWorkflowSteps() {
   const showPromptAdmin =
     userIsAdmin || (permissionsOn && canDoSectionStep(currentstep, section));
   const [memory] = useGlobal('memory');
+  const [plan] = useGlobal('plan');
   const passageNavigate = usePassageNavigate(() => {}, setCurrentStep);
   const getGlobal = useGetGlobal();
   const { showMessage } = useSnackBar();
@@ -61,8 +93,15 @@ export default function MobileWorkflowSteps() {
   const theme = useTheme();
   const getWfLabel = useWfLabel();
   const { getOrgDefault } = useOrgDefaults();
+  const planType = usePlanType();
+  const { getSharedResource } = useSharedResRead();
   const isStepProgression =
     getOrgDefault(orgDefaultWorkflowProgression) === 'step';
+  const isFlat = useMemo(() => planType(plan)?.flat ?? false, [plan, planType]);
+  const sectionMap = useMemo(
+    () => new Map<number, string>(sectionArr),
+    [sectionArr]
+  );
   const t: IWorkflowStepsStrings = useSelector(
     workflowStepsSelector,
     shallowEqual
@@ -77,6 +116,40 @@ export default function MobileWorkflowSteps() {
       )
       .sort((a, b) => a.attributes.sequencenum - b.attributes.sequencenum);
   }, [section, memory]);
+
+  const showPassageRacetrack =
+    isStepProgression || sectionPassages.length > 1;
+  const singlePassagePassageProgression =
+    !isStepProgression && sectionPassages.length <= 1;
+
+  const getPassageLabel = (p: PassageD, withSectionDescription = false) =>
+    passageHeaderLabel(p, {
+      allBookData,
+      section,
+      flat: isFlat,
+      sharedResource: getSharedResource(p),
+      sectionMap,
+      withSectionDescription,
+    });
+
+  const currentPassageLabel = useMemo(
+    () =>
+      passage
+        ? getPassageLabel(
+            passage,
+            singlePassagePassageProgression && !isFlat
+          )
+        : '',
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [
+      passage,
+      allBookData,
+      section,
+      isFlat,
+      singlePassagePassageProgression,
+      sectionArr,
+    ]
+  );
 
   const [tipOpen, setTipOpen] = useState(false);
   const [passageMenuAnchor, setPassageMenuAnchor] =
@@ -121,7 +194,7 @@ export default function MobileWorkflowSteps() {
     const ro = new ResizeObserver(update);
     ro.observe(el);
     return () => ro.disconnect();
-  }, []);
+  }, [currentPassageLabel, currentLabel, isStepProgression]);
 
   const didMountRef = useRef(false);
   const stepRefs = useRef(new Map<string, HTMLElement>());
@@ -144,6 +217,30 @@ export default function MobileWorkflowSteps() {
     isStepProgression,
   ]);
 
+  const dropdownText = isStepProgression ? currentPassageLabel : currentLabel;
+  const menuSlotProps = useMemo(
+    () => ({
+      paper: {
+        sx: {
+          maxWidth: `calc(100vw - ${theme.spacing(3)})`,
+        },
+      },
+      list: {
+        sx: {
+          maxHeight: MENU_MAX_HEIGHT,
+          overflow: 'auto',
+        },
+      },
+    }),
+    [theme]
+  );
+  const menuItemSx = {
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+    display: 'block',
+  } as const;
+
   return (
     <Box sx={{ px: 1.5, py: 1 }} data-cy="workflow-steps">
       <Box
@@ -156,7 +253,14 @@ export default function MobileWorkflowSteps() {
         {/* Passage dropdown */}
         <Box
           ref={dropdownRef}
-          sx={{ flexShrink: 0, mr: 1, display: 'flex', alignItems: 'center' }}
+          sx={{
+            flexShrink: showPassageRacetrack ? 1 : 0,
+            minWidth: 0,
+            maxWidth: showPassageRacetrack ? '50%' : '100%',
+            mr: 1,
+            display: 'flex',
+            alignItems: 'center',
+          }}
         >
           {!isStepProgression && currentTip && (
             <IconButton
@@ -172,7 +276,11 @@ export default function MobileWorkflowSteps() {
           <Button
             size="small"
             endIcon={<ArrowDropDownIcon />}
-            sx={{ whiteSpace: 'nowrap', minWidth: 'auto' }}
+            sx={{
+              minWidth: 'auto',
+              maxWidth: '100%',
+              overflow: 'hidden',
+            }}
             onClick={(e) => {
               if (recording || commentRecording) return;
               if (getGlobal('remoteBusy')) {
@@ -182,149 +290,164 @@ export default function MobileWorkflowSteps() {
               setPassageMenuAnchor(e.currentTarget);
             }}
             data-cy="passage-dropdown"
+            title={dropdownText}
           >
-            {isStepProgression
-              ? [passage?.attributes?.book, passage?.attributes?.reference]
-                  .filter(Boolean)
-                  .join(' ') || ''
-              : currentLabel}
+            <TruncatedLabel text={dropdownText} />
           </Button>
           <Menu
             anchorEl={passageMenuAnchor}
             open={Boolean(passageMenuAnchor)}
             onClose={() => setPassageMenuAnchor(null)}
+            slotProps={menuSlotProps}
           >
             {isStepProgression
-              ? sectionPassages.map((p) => (
-                  <MenuItem
-                    key={p.id}
-                    selected={p.id === passage?.id}
-                    onClick={() => {
-                      const remId = p.keys?.remoteId ?? p.id;
-                      rememberCurrentPassage(memory, remId);
-                      passageNavigate(`/detail/${prjId}/${remId}`);
-                      setPassageMenuAnchor(null);
-                    }}
-                  >
-                    {[p.attributes.book, p.attributes.reference]
-                      .filter(Boolean)
-                      .join(' ')}
-                  </MenuItem>
-                ))
-              : workflow.map((step) => (
-                  <MenuItem
-                    key={step.id}
-                    selected={step.id === currentstep}
-                    onClick={() => {
-                      handleSelect(step.id)();
-                      setPassageMenuAnchor(null);
-                    }}
-                  >
-                    {getWfLabel(step.label)}
-                  </MenuItem>
-                ))}
-          </Menu>
-        </Box>
-        {/* Workflow step parallelograms */}
-        <Box
-          sx={{
-            flex: 1,
-            display: 'flex',
-            overflowX: 'auto',
-            overflowY: 'hidden',
-            WebkitOverflowScrolling: 'touch',
-          }}
-        >
-          <Box sx={{ display: 'flex', mx: 'auto', pb: 0.25 }}>
-            {isStepProgression
-              ? workflow.map((step) => {
-                  const isCurrent = step.id === currentstep;
-                  return (
-                    <ButtonBase
-                      key={step.id}
-                      data-cy="workflow-step"
-                      role="button"
-                      onClick={handleSelect(step.id)}
-                      tabIndex={0}
-                      ref={(el) => {
-                        if (el) stepRefs.current.set(step.id, el);
-                        else stepRefs.current.delete(step.id);
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault();
-                        }
-                      }}
-                      sx={{
-                        flex: '0 0 80px',
-                        height: 30,
-                        mr: -0.25, // Overlap adjacent parallelograms so their edges meet cleanly
-                        backgroundColor: isCurrent
-                          ? theme.palette.grey[700]
-                          : stepComplete(step.id)
-                            ? theme.palette.grey[400]
-                            : theme.palette.grey[200],
-                        clipPath: 'polygon(10% 0%, 100% 0%, 90% 100%, 0% 100%)',
-                        cursor:
-                          recording || commentRecording
-                            ? 'not-allowed'
-                            : 'pointer',
-                      }}
-                    />
+              ? sectionPassages.map((p) => {
+                  const label = passageLabelText(
+                    p,
+                    allBookData,
+                    getSharedResource(p),
+                    section
                   );
-                })
-              : sectionPassages.map((p) => {
-                  const isCurrent = p.id === passage?.id;
-                  const isComplete =
-                    (p.attributes.sequencenum ?? 0) <
-                    (passage?.attributes?.sequencenum ?? 0);
                   return (
-                    <ButtonBase
+                    <MenuItem
                       key={p.id}
-                      data-cy="passage-step"
-                      role="button"
+                      selected={p.id === passage?.id}
+                      title={label}
                       onClick={() => {
-                        if (recording || commentRecording) return;
-                        if (getGlobal('remoteBusy')) {
-                          showMessage(ts.wait);
-                          return;
-                        }
                         const remId = p.keys?.remoteId ?? p.id;
                         rememberCurrentPassage(memory, remId);
                         passageNavigate(`/detail/${prjId}/${remId}`);
+                        setPassageMenuAnchor(null);
                       }}
-                      tabIndex={0}
-                      ref={(el) => {
-                        if (el) stepRefs.current.set(p.id, el);
-                        else stepRefs.current.delete(p.id);
+                      sx={menuItemSx}
+                    >
+                      {label}
+                    </MenuItem>
+                  );
+                })
+              : workflow.map((step) => {
+                  const label = getWfLabel(step.label);
+                  return (
+                    <MenuItem
+                      key={step.id}
+                      selected={step.id === currentstep}
+                      title={label}
+                      onClick={() => {
+                        handleSelect(step.id)();
+                        setPassageMenuAnchor(null);
                       }}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault();
-                        }
-                      }}
-                      sx={{
-                        flex: '0 0 80px',
-                        height: 30,
-                        mr: -0.25, // Overlap adjacent parallelograms so their edges meet cleanly
-                        backgroundColor: isCurrent
-                          ? theme.palette.grey[700]
-                          : isComplete
-                            ? theme.palette.grey[400]
-                            : theme.palette.grey[200],
-                        clipPath: 'polygon(10% 0%, 100% 0%, 90% 100%, 0% 100%)',
-                        cursor:
-                          recording || commentRecording
-                            ? 'not-allowed'
-                            : 'pointer',
-                      }}
-                    />
+                      sx={menuItemSx}
+                    >
+                      {label}
+                    </MenuItem>
                   );
                 })}
-            {/* Spacer to mirror the dropdown width so mx:auto centers the parallelograms */}
-            <Box sx={{ flexShrink: 0, width: dropdownWidth }} />
-          </Box>
+          </Menu>
         </Box>
+        {/* Workflow step parallelograms */}
+        {showPassageRacetrack && (
+          <Box
+            sx={{
+              flex: 1,
+              display: 'flex',
+              overflowX: 'auto',
+              overflowY: 'hidden',
+              WebkitOverflowScrolling: 'touch',
+            }}
+            data-cy="racetrack-row"
+          >
+            <Box sx={{ display: 'flex', mx: 'auto', pb: 0.25 }}>
+              {isStepProgression
+                ? workflow.map((step) => {
+                    const isCurrent = step.id === currentstep;
+                    return (
+                      <ButtonBase
+                        key={step.id}
+                        data-cy="workflow-step"
+                        role="button"
+                        onClick={handleSelect(step.id)}
+                        tabIndex={0}
+                        ref={(el) => {
+                          if (el) stepRefs.current.set(step.id, el);
+                          else stepRefs.current.delete(step.id);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                          }
+                        }}
+                        sx={{
+                          flex: '0 0 80px',
+                          height: 30,
+                          mr: -0.25,
+                          backgroundColor: isCurrent
+                            ? theme.palette.grey[700]
+                            : stepComplete(step.id)
+                              ? theme.palette.grey[400]
+                              : theme.palette.grey[200],
+                          clipPath:
+                            'polygon(10% 0%, 100% 0%, 90% 100%, 0% 100%)',
+                          cursor:
+                            recording || commentRecording
+                              ? 'not-allowed'
+                              : 'pointer',
+                        }}
+                      />
+                    );
+                  })
+                : sectionPassages.map((p) => {
+                    const isCurrent = p.id === passage?.id;
+                    const isComplete =
+                      (p.attributes.sequencenum ?? 0) <
+                      (passage?.attributes?.sequencenum ?? 0);
+                    return (
+                      <ButtonBase
+                        key={p.id}
+                        data-cy="passage-step"
+                        role="button"
+                        onClick={() => {
+                          if (recording || commentRecording) return;
+                          if (getGlobal('remoteBusy')) {
+                            showMessage(ts.wait);
+                            return;
+                          }
+                          const remId = p.keys?.remoteId ?? p.id;
+                          rememberCurrentPassage(memory, remId);
+                          passageNavigate(`/detail/${prjId}/${remId}`);
+                        }}
+                        tabIndex={0}
+                        ref={(el) => {
+                          if (el) stepRefs.current.set(p.id, el);
+                          else stepRefs.current.delete(p.id);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                          }
+                        }}
+                        sx={{
+                          flex: '0 0 80px',
+                          height: 30,
+                          mr: -0.25,
+                          backgroundColor: isCurrent
+                            ? theme.palette.grey[700]
+                            : isComplete
+                              ? theme.palette.grey[400]
+                              : theme.palette.grey[200],
+                          clipPath:
+                            'polygon(10% 0%, 100% 0%, 90% 100%, 0% 100%)',
+                          cursor:
+                            recording || commentRecording
+                              ? 'not-allowed'
+                              : 'pointer',
+                        }}
+                      />
+                    );
+                  })}
+              <Box sx={{ flexShrink: 0, width: dropdownWidth }} />
+            </Box>
+          </Box>
+        )}
       </Box>
       {(isStepProgression ? currentLabel : passage?.id) && (
         <Typography
@@ -350,9 +473,7 @@ export default function MobileWorkflowSteps() {
               getWfLabel(currentLabel)
             )
           ) : (
-            [passage?.attributes?.book, passage?.attributes?.reference]
-              .filter(Boolean)
-              .join(' ')
+            currentPassageLabel
           )}
         </Typography>
       )}

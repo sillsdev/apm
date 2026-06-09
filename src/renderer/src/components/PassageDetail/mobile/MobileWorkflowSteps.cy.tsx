@@ -14,6 +14,7 @@ import {
 } from '../../../context/PassageDetailContext';
 import { UnsavedContext } from '../../../context/UnsavedContext';
 import { OrbitContext } from '../../../hoc/OrbitContextProvider';
+import { BookName } from '../../../model';
 import MobileWorkflowSteps from './MobileWorkflowSteps';
 
 type RecordsByKey = Record<string, any>;
@@ -53,6 +54,18 @@ const stepProgressionOrgRecord = {
   },
 };
 
+const hierarchyPlanRecord = {
+  id: 'plan-1',
+  type: 'plan',
+  attributes: { name: 'Hierarchy Plan', flat: false },
+};
+
+const flatPlanRecord = {
+  id: 'plan-flat',
+  type: 'plan',
+  attributes: { name: 'Flat Plan', flat: true },
+};
+
 // Two passage records used in passage progression mode tests
 const mockSectionPassageRecords = {
   'passage:p-1': {
@@ -76,6 +89,7 @@ const mockSectionPassageRecordsWithPrior = {
 
 const mockSectionWithThreePassages = {
   id: 'section-1',
+  attributes: { sequencenum: 1, name: 'Section One' },
   relationships: {
     passages: {
       data: [
@@ -90,12 +104,23 @@ const mockSectionWithThreePassages = {
 // Section whose passages relationship points to the records above
 const mockSection = {
   id: 'section-1',
+  attributes: { sequencenum: 1, name: 'Section One' },
   relationships: {
     passages: {
       data: [
         { type: 'passage', id: 'p-1' },
         { type: 'passage', id: 'p-2' },
       ],
+    },
+  },
+} as any;
+
+const mockSinglePassageSection = {
+  id: 'section-1',
+  attributes: { sequencenum: 2, name: 'Luke Section' },
+  relationships: {
+    passages: {
+      data: [{ type: 'passage', id: 'p-1' }],
     },
   },
 } as any;
@@ -207,6 +232,8 @@ const createPassageDetailState = (
     passage: mockCurrentPassage,
     section: {} as any,
     prjId: 'proj-1',
+    allBookData: [],
+    sectionArr: [],
     ...overrides,
   }) as ICtxState;
 
@@ -218,8 +245,11 @@ const mountMobileWorkflowSteps = ({
   recording = false,
   commentRecording = false,
   isStepProgression = false,
+  isFlat = false,
   section,
   passage,
+  allBookData,
+  sectionArr,
   extraMemoryRecords = {},
 }: {
   currentstep?: string;
@@ -229,8 +259,11 @@ const mountMobileWorkflowSteps = ({
   recording?: boolean;
   commentRecording?: boolean;
   isStepProgression?: boolean;
+  isFlat?: boolean;
   section?: any;
   passage?: any;
+  allBookData?: BookName[];
+  sectionArr?: ICtxState['sectionArr'];
   extraMemoryRecords?: Record<string, any>;
 } = {}) => {
   const setCurrentStep = cy.stub().as('setCurrentStep');
@@ -242,14 +275,19 @@ const mountMobileWorkflowSteps = ({
     stepComplete: (id: string) => completedStepIds.includes(id),
     ...(section !== undefined ? { section } : {}),
     ...(passage !== undefined ? { passage } : {}),
+    ...(allBookData !== undefined ? { allBookData } : {}),
+    ...(sectionArr !== undefined ? { sectionArr } : {}),
   };
   if (workflow) ctxOverrides.workflow = workflow;
   const ctxState = createPassageDetailState(ctxOverrides);
 
+  const planId = isFlat ? 'plan-flat' : 'plan-1';
   const mem = createMockMemory({
     ...(isStepProgression
       ? { 'organization:test-org': stepProgressionOrgRecord }
       : {}),
+    'plan:plan-1': hierarchyPlanRecord,
+    'plan:plan-flat': flatPlanRecord,
     ...extraMemoryRecords,
   });
   const orbitCache = new Map<string, any[]>();
@@ -261,7 +299,11 @@ const mountMobileWorkflowSteps = ({
       else orbitCache.set(type, recs);
     },
   };
-  const initialState = createInitialState({ remoteBusy, memory: mem });
+  const initialState = createInitialState({
+    remoteBusy,
+    memory: mem,
+    plan: planId,
+  });
 
   cy.mount(
     <MemoryRouter>
@@ -394,10 +436,43 @@ describe('MobileWorkflowSteps', () => {
       cy.contains('Please wait').should('be.visible');
     });
 
-    it('dropdown shows current passage book and reference', () => {
+    it('dropdown shows current passage book and reference (scripture)', () => {
       mountMobileWorkflowSteps({ isStepProgression: true });
 
       cy.get('[data-cy="passage-dropdown"]').should('contain.text', 'GEN 1:1');
+    });
+
+    it('dropdown uses passage ref text for scripture even when a shared resource exists', () => {
+      mountMobileWorkflowSteps({
+        isStepProgression: true,
+        passage: {
+          id: 'p-1',
+          attributes: { sequencenum: 1, reference: '1:1-4', book: 'LUK' },
+          relationships: {
+            sharedResource: { data: { type: 'sharedresource', id: 'sr-1' } },
+          },
+        },
+        section: mockSinglePassageSection,
+        extraMemoryRecords: {
+          'passage:p-1': {
+            id: 'p-1',
+            attributes: { sequencenum: 1, reference: '1:1-4', book: 'LUK' },
+            relationships: {
+              sharedResource: { data: { type: 'sharedresource', id: 'sr-1' } },
+            },
+          },
+          'sharedresource:sr-1': {
+            id: 'sr-1',
+            attributes: { title: 'LUK_c001_001-004' },
+          },
+        },
+      });
+
+      cy.get('[data-cy="passage-dropdown"]').should('contain.text', 'LUK 1:1-4');
+      cy.get('[data-cy="passage-dropdown"]').should(
+        'not.contain.text',
+        'LUK_c001_001-004'
+      );
     });
 
     it('dropdown opens section passages as menu items', () => {
@@ -412,6 +487,64 @@ describe('MobileWorkflowSteps', () => {
       cy.get('[role="menu"]').should('be.visible');
       cy.get('[role="menuitem"]').should('have.length', 2);
       cy.get('[role="menuitem"]').eq(0).should('contain.text', 'GEN 1:1');
+    });
+
+    it('keeps racetrack visible when passage dropdown menu is open', () => {
+      mountMobileWorkflowSteps({
+        isStepProgression: true,
+        section: mockSection,
+        extraMemoryRecords: mockSectionPassageRecords,
+      });
+
+      cy.viewport(375, 667);
+      cy.get('[data-cy="passage-dropdown"]').click();
+
+      cy.get('[role="menu"]').should('be.visible');
+      cy.get('[data-cy="racetrack-row"]').should('be.visible');
+      cy.get('[data-cy="workflow-step"]').should('have.length', 2);
+    });
+
+    it('constrains passage menu width and height for long references', () => {
+      const longReference =
+        'A very long general project topic title that should not widen the menu off screen';
+      mountMobileWorkflowSteps({
+        isStepProgression: true,
+        isFlat: true,
+        section: {
+          id: 'section-1',
+          relationships: {
+            passages: { data: [{ type: 'passage', id: 'p-long' }] },
+          },
+        },
+        passage: {
+          id: 'p-long',
+          attributes: { sequencenum: 1, reference: longReference, book: '' },
+        },
+        extraMemoryRecords: {
+          'passage:p-long': {
+            id: 'p-long',
+            attributes: { sequencenum: 1, reference: longReference, book: '' },
+          },
+        },
+      });
+
+      cy.viewport(375, 667);
+      cy.get('[data-cy="passage-dropdown"]').click();
+
+      cy.get('[role="menu"]')
+        .closest('.MuiPaper-root')
+        .should(($paper) => {
+          const maxWidth = parseFloat($paper.css('max-width'));
+          expect(maxWidth).to.be.closeTo(375 - 24, 1);
+        });
+      cy.get('.MuiMenu-list').should(($list) => {
+        const maxHeight = parseFloat($list.css('max-height'));
+        expect(maxHeight).to.be.closeTo(667 * 0.45, 2);
+      });
+      cy.get('[role="menuitem"]')
+        .first()
+        .should('have.attr', 'title', longReference);
+      cy.get('[data-cy="racetrack-row"]').should('be.visible');
     });
 
     it('renders the step label as plain text when the current step has no tip', () => {
@@ -438,6 +571,38 @@ describe('MobileWorkflowSteps', () => {
       cy.get('[data-cy="passage-step"]').should('have.length', 2);
     });
 
+    it('hides passage racetrack for a single passage in hierarchy projects', () => {
+      mountMobileWorkflowSteps({
+        section: mockSinglePassageSection,
+        extraMemoryRecords: mockSectionPassageRecords,
+        sectionArr: [[2, '2']],
+      });
+
+      cy.get('[data-cy="passage-step"]').should('not.exist');
+      cy.get('[data-cy="racetrack-row"]').should('not.exist');
+      cy.get('[data-cy="workflow-step-label"]').should(
+        'contain.text',
+        'Luke Section'
+      );
+      cy.get('[data-cy="workflow-step-label"]').should('contain.text', 'GEN 1:1');
+    });
+
+    it('hides passage racetrack for a single passage in flat projects', () => {
+      mountMobileWorkflowSteps({
+        isFlat: true,
+        section: mockSinglePassageSection,
+        extraMemoryRecords: mockSectionPassageRecords,
+      });
+
+      cy.get('[data-cy="passage-step"]').should('not.exist');
+      cy.get('[data-cy="racetrack-row"]').should('not.exist');
+      cy.get('[data-cy="workflow-step-label"]').should('contain.text', 'GEN 1:1');
+      cy.get('[data-cy="workflow-step-label"]').should(
+        'not.contain.text',
+        'Luke Section'
+      );
+    });
+
     it('shows a tip button left of the dropdown that opens a dialog', () => {
       mountMobileWorkflowSteps();
 
@@ -462,6 +627,20 @@ describe('MobileWorkflowSteps', () => {
 
       cy.get('[role="menu"]').should('be.visible');
       cy.get('[role="menuitem"]').should('have.length', 2);
+    });
+
+    it('keeps racetrack visible when workflow dropdown menu is open', () => {
+      mountMobileWorkflowSteps({
+        section: mockSection,
+        extraMemoryRecords: mockSectionPassageRecords,
+      });
+
+      cy.viewport(375, 667);
+      cy.get('[data-cy="passage-dropdown"]').click();
+
+      cy.get('[role="menu"]').should('be.visible');
+      cy.get('[data-cy="racetrack-row"]').should('be.visible');
+      cy.get('[data-cy="passage-step"]').should('have.length', 2);
     });
 
     it('blocks passage click while recording', () => {
@@ -494,15 +673,12 @@ describe('MobileWorkflowSteps', () => {
         extraMemoryRecords: mockSectionPassageRecordsWithPrior,
       });
 
-      // p-0 sequencenum 0 < current sequencenum 1 → complete
       cy.get('[data-cy="passage-step"]')
         .eq(0)
         .should('have.css', 'background-color', 'rgb(189, 189, 189)');
-      // p-1 is current passage
       cy.get('[data-cy="passage-step"]')
         .eq(1)
         .should('have.css', 'background-color', 'rgb(97, 97, 97)');
-      // p-2 sequencenum 2 > current sequencenum 1 → incomplete
       cy.get('[data-cy="passage-step"]')
         .eq(2)
         .should('have.css', 'background-color', 'rgb(238, 238, 238)');
@@ -514,6 +690,137 @@ describe('MobileWorkflowSteps', () => {
       cy.get('[data-cy="workflow-step-label"]').should(
         'contain.text',
         'GEN 1:1'
+      );
+    });
+
+    it('step label uses passage ref text for scripture even when a shared resource exists', () => {
+      mountMobileWorkflowSteps({
+        section: mockSinglePassageSection,
+        passage: {
+          id: 'p-1',
+          attributes: { sequencenum: 1, reference: '1:1-4', book: 'LUK' },
+          relationships: {
+            sharedResource: { data: { type: 'sharedresource', id: 'sr-1' } },
+          },
+        },
+        extraMemoryRecords: {
+          'passage:p-1': {
+            id: 'p-1',
+            attributes: { sequencenum: 1, reference: '1:1-4', book: 'LUK' },
+            relationships: {
+              sharedResource: { data: { type: 'sharedresource', id: 'sr-1' } },
+            },
+          },
+          'sharedresource:sr-1': {
+            id: 'sr-1',
+            attributes: { title: 'LUK_c001_001-004' },
+          },
+        },
+      });
+
+      cy.get('[data-cy="workflow-step-label"]').should('contain.text', 'LUK 1:1-4');
+      cy.get('[data-cy="workflow-step-label"]').should(
+        'not.contain.text',
+        'LUK_c001_001-004'
+      );
+    });
+
+    it('step label shows shared resource title for note passages in flat projects', () => {
+      mountMobileWorkflowSteps({
+        isFlat: true,
+        section: {
+          id: 'section-1',
+          attributes: { sequencenum: 1, name: 'Notes Section' },
+          relationships: {
+            passages: { data: [{ type: 'passage', id: 'p-note' }] },
+          },
+        },
+        passage: {
+          id: 'p-note',
+          attributes: {
+            sequencenum: 1,
+            reference: 'NOTE|Devotional Note',
+            book: '',
+          },
+          relationships: {
+            sharedResource: { data: { type: 'sharedresource', id: 'sr-1' } },
+          },
+        },
+        extraMemoryRecords: {
+          'passage:p-note': {
+            id: 'p-note',
+            attributes: {
+              sequencenum: 1,
+              reference: 'NOTE|Devotional Note',
+              book: '',
+            },
+            relationships: {
+              sharedResource: { data: { type: 'sharedresource', id: 'sr-1' } },
+            },
+          },
+          'sharedresource:sr-1': {
+            id: 'sr-1',
+            attributes: { title: 'My Devotional Title' },
+          },
+        },
+      });
+
+      cy.get('[data-cy="workflow-step-label"]').should(
+        'contain.text',
+        'My Devotional Title'
+      );
+      cy.get('[data-cy="workflow-step-label"]').should(
+        'not.contain.text',
+        'NOTE|'
+      );
+    });
+
+    it('step label shows shared resource title for note passages in hierarchy projects', () => {
+      mountMobileWorkflowSteps({
+        section: {
+          id: 'section-1',
+          attributes: { sequencenum: 1, name: 'Notes Section' },
+          relationships: {
+            passages: { data: [{ type: 'passage', id: 'p-note' }] },
+          },
+        },
+        passage: {
+          id: 'p-note',
+          attributes: {
+            sequencenum: 1,
+            reference: 'NOTE|Devotional Note',
+            book: '',
+          },
+          relationships: {
+            sharedResource: { data: { type: 'sharedresource', id: 'sr-1' } },
+          },
+        },
+        extraMemoryRecords: {
+          'passage:p-note': {
+            id: 'p-note',
+            attributes: {
+              sequencenum: 1,
+              reference: 'NOTE|Devotional Note',
+              book: '',
+            },
+            relationships: {
+              sharedResource: { data: { type: 'sharedresource', id: 'sr-1' } },
+            },
+          },
+          'sharedresource:sr-1': {
+            id: 'sr-1',
+            attributes: { title: 'My Devotional Title' },
+          },
+        },
+      });
+
+      cy.get('[data-cy="workflow-step-label"]').should(
+        'contain.text',
+        'Notes Section'
+      );
+      cy.get('[data-cy="workflow-step-label"]').should(
+        'contain.text',
+        'My Devotional Title'
       );
     });
 
