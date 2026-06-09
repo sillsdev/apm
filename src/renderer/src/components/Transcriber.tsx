@@ -115,6 +115,7 @@ import AsrButton from '../control/ConfButton';
 import TranscriptionLogo from '../control/TranscriptionLogo';
 import AsrProgress from '../business/asr/AsrProgress';
 import { AsrTarget } from '../business/asr/AsrTarget';
+import { IAsrState } from '../business/asr/AsrAlphabet';
 import SelectAsrLanguage from '../business/asr/SelectAsrLanguage';
 import { IFeatures } from './Team/TeamSettings';
 import { useCheckOnline } from '../utils/useCheckOnline';
@@ -327,8 +328,7 @@ export function Transcriber(props: IProps) {
     () => teams.find((o) => o.id === organization),
     [teams, organization]
   );
-  const { getAsrSettings, hasTranscribeStepLanguageSettings } =
-    useGetAsrSettings(team);
+  const { getAsrSettings } = useGetAsrSettings(team);
   const orgSteps = useOrbitData<OrgWorkflowStepD[]>('orgworkflowstep');
   const mediarecs = useOrbitData<MediaFileD[]>('mediafile');
   const tPlayer: IWsAudioPlayerStrings = useSelector(
@@ -340,10 +340,10 @@ export function Transcriber(props: IProps) {
   const [features, setFeatures] = useState<IFeatures>();
   const [asrProgressVisible, setAsrProgressVisible] = useState(false);
   const [asrLangVisible, setAsrLangVisible] = useState(false);
-  const [asrLangCanBegin, setAsrLangCanBegin] = useState(false);
   const [phonetic, setPhonetic] = useState(false);
-  const [forceAi, setForceAi] = useState<boolean>();
-  const pendingTranscribeRef = useRef<{ forceAi?: boolean } | null>(null);
+  const [asrOverride, setAsrOverride] = useState<IAsrState | undefined>(
+    undefined
+  );
   const remote = coordinator?.getSource('remote') as JSONAPISource;
   const backup = coordinator?.getSource('backup') as IndexedDBSource;
   const [boxHeight, setBoxHeight] = useState(
@@ -1262,55 +1262,34 @@ export function Transcriber(props: IProps) {
     });
   };
 
-  const startAsr = (forceAiRun?: boolean) => {
-    const asr = getAsrSettings();
+  const startAsr = (asrOverrideState?: IAsrState) => {
+    const asr = asrOverrideState ?? getAsrSettings();
+    setAsrOverride(asrOverrideState);
     setPhonetic(asr?.target === AsrTarget.phonetic);
-    setForceAi(forceAiRun);
     setAsrProgressVisible(true);
   };
 
-  const openAsrLanguageSettings = (canBegin: boolean, forceAiRun?: boolean) => {
-    if (canBegin) {
-      pendingTranscribeRef.current = { forceAi: forceAiRun };
-    }
-    setAsrLangCanBegin(canBegin);
+  const openAsrLanguageSettings = () => {
     setAsrLangVisible(true);
   };
 
-  const handleTranscribe = (forceAiRun?: boolean) => {
+  // Confirm step-resolved ASR settings; user may override for this run only.
+  const handleTranscribe = () => {
     checkOnline((online) => {
       if (!online) {
         showMessage(sharedStr.mustBeOnline);
         return;
       }
-      if (!hasTranscribeStepLanguageSettings()) {
-        openAsrLanguageSettings(true, forceAiRun);
-        return;
-      }
-      const asr = getAsrSettings();
-      if (!asr?.mmsIso || asr.mmsIso === 'und') {
-        openAsrLanguageSettings(true, forceAiRun);
-        return;
-      }
-      startAsr(forceAiRun);
+      openAsrLanguageSettings();
     });
   };
 
-  const handleAsrLanguageOpen = (cancel?: boolean, force?: boolean) => {
-    if (cancel) {
-      setAsrLangVisible(false);
-      setAsrLangCanBegin(false);
-      pendingTranscribeRef.current = null;
-      return;
-    }
+  const handleAsrLanguageClose = (cancel: boolean, asrState?: IAsrState) => {
     setAsrLangVisible(false);
-    const pending = pendingTranscribeRef.current;
-    pendingTranscribeRef.current = null;
-    setAsrLangCanBegin(false);
-    if (!force && !pending) return;
-    const asr = getAsrSettings();
+    if (cancel) return;
+    const asr = asrState ?? getAsrSettings();
     if (asr?.mmsIso && asr.mmsIso !== 'und') {
-      startAsr(pending?.forceAi);
+      startAsr(asr);
     }
   };
 
@@ -1433,7 +1412,7 @@ export function Transcriber(props: IProps) {
                             <AsrButton
                               id="asrButton"
                               onClick={handleTranscribe}
-                              onSettings={() => openAsrLanguageSettings(false)}
+                              onSettings={openAsrLanguageSettings}
                               disabled={role !== 'transcriber'}
                             >
                               {!hasTranscription &&
@@ -1621,13 +1600,13 @@ export function Transcriber(props: IProps) {
             </Typography>
           }
           isOpen={asrLangVisible}
-          onOpen={() => handleAsrLanguageOpen(true)}
+          onOpen={() => handleAsrLanguageClose(true)}
           bp={BigDialogBp.sm}
         >
           <SelectAsrLanguage
+            key={asrLangVisible ? 'open' : 'closed'}
             team={team}
-            onOpen={handleAsrLanguageOpen}
-            canBegin={asrLangCanBegin}
+            onClose={handleAsrLanguageClose}
           />
         </BigDialog>
         {asrProgressVisible && (
@@ -1640,7 +1619,7 @@ export function Transcriber(props: IProps) {
             <AsrProgress
               mediaId={playerMediafile?.id ?? ''}
               phonetic={phonetic}
-              force={forceAi}
+              asrState={asrOverride}
               contentVerses={contentVerses}
               setTranscription={handleAutoTranscribe}
               onPullTasks={onPullTasks}

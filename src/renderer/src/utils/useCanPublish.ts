@@ -33,7 +33,7 @@ export const useUserCanPublish = (): UserCanPublishResult => {
   const paratext_canPublishStatus = useSelector(
     (state: IState) => state.paratext.canPublishStatus
   );
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
   const dispatch = useDispatch() as ThunkDispatch<IState, any, any>;
   const getCanPublish = (
     token: string,

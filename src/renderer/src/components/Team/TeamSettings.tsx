@@ -1,10 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import {
-  DialogMode,
-  ISharedStrings,
-  Organization,
-  OrganizationD,
-} from '../../model';
+import { DialogMode, ISharedStrings, Organization } from '../../model';
 import {
   Accordion,
   AccordionSummary,
@@ -28,7 +23,6 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import BigDialog from '../../hoc/BigDialog';
 import { BigDialogBp } from '../../hoc/BigDialogBp';
 import SelectSponsor from '../../business/voice/SelectSponsor';
-import SelectAsrLanguage from '../../business/asr/SelectAsrLanguage';
 import { shallowEqual, useSelector } from 'react-redux';
 import { sharedSelector } from '../../selector';
 import { useGlobal } from '../../context/useGlobal';
@@ -75,7 +69,6 @@ export function TeamSettings(props: IProps) {
   const ctx = React.useContext(TeamContext);
   const [permissions, setPermissions] = useState(true);
   const [voiceVisible, setVoiceVisible] = useState(false);
-  const [asrLangVisible, setAsrLangVisible] = useState(false);
   const [offline] = useGlobal('offline'); //verified this is not used in a function 2/18/25
   const { cardStrings, personalTeam } = ctx.state;
   const t = cardStrings;
@@ -97,7 +90,6 @@ export function TeamSettings(props: IProps) {
 
   useEffect(() => {
     setPermissions(values?.permissions);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [values?.permissions]);
 
   const setProgression = (val: string) => {
@@ -207,14 +199,6 @@ export function TeamSettings(props: IProps) {
                       <Badge badgeContent={ts.ai}>{t.recognizeSpeech}</Badge>
                     }
                   />
-                  {mode !== DialogMode.add && (
-                    <IconButton
-                      onClick={() => setAsrLangVisible(true)}
-                      disabled={!values?.features?.[FeatureSlug.AiTranscribe]}
-                    >
-                      <SettingsIcon />
-                    </IconButton>
-                  )}
                 </Stack>
               )}
               {isElectron && (
@@ -248,22 +232,6 @@ export function TeamSettings(props: IProps) {
           team={team}
           refresh={handleRefresh}
           onOpen={() => setVoiceVisible(false)}
-        />
-      </BigDialog>
-      <BigDialog
-        title={t.recognizeSpeechSettings}
-        description={
-          <Typography variant="body2" sx={{ maxWidth: 500 }}>
-            {t.recognizePrompt}
-          </Typography>
-        }
-        isOpen={asrLangVisible}
-        onOpen={() => setAsrLangVisible(false)}
-      >
-        <SelectAsrLanguage
-          team={team as OrganizationD}
-          refresh={handleRefresh}
-          onOpen={() => setAsrLangVisible(false)}
         />
       </BigDialog>
     </Box>

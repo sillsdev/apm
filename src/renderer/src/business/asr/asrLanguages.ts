@@ -16,9 +16,9 @@ for (const entry of entries) {
 
 /** Lower rank = higher preference. Unlisted methods sort last. */
 const ASR_METHOD_RANK: Record<string, number> = {
-  'w2v-bert': 0,
-  'w2vec-bert': 0,
-  whisper: 1,
+  whisper: 0,
+  'w2v-bert': 1,
+  'w2vec-bert': 1,
   omnilingual: 2,
   omni: 2,
 };

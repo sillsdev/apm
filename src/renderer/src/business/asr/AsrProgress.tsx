@@ -38,6 +38,7 @@ export interface VerseTask {
 interface AsrProgressProps {
   mediaId: string;
   phonetic: boolean;
+  asrState?: IAsrState | undefined;
   force?: boolean | undefined;
   contentVerses?: string[] | undefined;
   setTranscription: (transcription: string) => void;
@@ -48,6 +49,7 @@ interface AsrProgressProps {
 export default function AsrProgress({
   mediaId,
   phonetic,
+  asrState,
   force,
   contentVerses,
   setTranscription,
@@ -119,7 +121,6 @@ export default function AsrProgress({
       `aero/transcription/${taskIdRef.current}`
     );
     if (response?.transcription) {
-      console.log(taskIdRef.current, response);
       let verse = '';
       let nextTask = '';
       if (tasks) {
@@ -131,9 +132,7 @@ export default function AsrProgress({
           nextTask = ix < tasks.length - 1 ? (tasks[ix + 1]?.taskId ?? '') : '';
         }
       }
-      setTranscription(
-        verse + (phonetic ? response?.phonetic : response?.transcription)
-      );
+      setTranscription(verse + response?.transcription);
       setTaskId(nextTask);
     } else if (response?.transcription === '') {
       status(t.noAsrTranscription);
@@ -163,13 +162,14 @@ export default function AsrProgress({
   const postTranscribe = async () => {
     const remId =
       remoteId('mediafile', mediaId, memory?.keyMap as RecordKeyMap) ?? mediaId;
-    const asr = getAsrSettings() as IAsrState | undefined;
+    const asr = asrState ?? (getAsrSettings() as IAsrState | undefined);
     const iso = asr?.mmsIso ?? 'eng';
     const romanize = asr?.selectRoman ?? false;
-    const method = asr?.method ?? 'whisper';
+    const method = asr?.method ?? 'mms';
+    const phoneticParam = phonetic ? '?phonetic=true' : '';
     try {
       const response = (await axiosPost(
-        `mediafiles/${remId}/transcription/${iso}/${romanize}/${method}`,
+        `mediafiles/${remId}/transcription/${iso}/${romanize}/${method}${phoneticParam}`,
         undefined,
         token
       )) as { data: { data: MediaFileD } };

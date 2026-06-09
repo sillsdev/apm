@@ -11,7 +11,7 @@ import {
   sisterBcpFromSettings,
 } from './transcribeStepAsrSettings';
 import { AsrTarget } from '../business/asr/AsrTarget';
-const orgLangPropsKey = 'langProps';
+import { orgDefaultAsr, orgDefaultLangProps } from './useOrgDefaults';
 
 const asrDefault = {
   target: AsrTarget.alphabet,
@@ -124,7 +124,7 @@ describe('hasTranscribeStepLanguageSettings', () => {
       ? ArtifactTypeSlug.PhraseBackTranslation
       : ArtifactTypeSlug.Vernacular;
   const getOrgDefault = (label: string) =>
-    label === orgLangPropsKey
+    label === orgDefaultLangProps
       ? { bcp47: 'und', languageName: '', font: '', rtl: false }
       : undefined;
 
@@ -147,7 +147,7 @@ describe('hasTranscribeStepLanguageSettings', () => {
     const slugFromId = (id: string) =>
       id === '99' ? ArtifactTypeSlug.QandA : ArtifactTypeSlug.Vernacular;
     const getOrgDefault = (label: string) =>
-      label === orgLangPropsKey
+      label === orgDefaultLangProps
         ? { bcp47: 'en', languageName: 'English', font: '', rtl: false }
         : undefined;
 
@@ -220,11 +220,96 @@ describe('buildWorkflowAsrStateFromSettings', () => {
   });
 });
 
+describe('buildWorkflowAsrStateFromSettings Q&A and Retell', () => {
+  const slugFromId = (id: string) =>
+    id === 'qa'
+      ? ArtifactTypeSlug.QandA
+      : id === 'retell'
+        ? ArtifactTypeSlug.Retell
+        : ArtifactTypeSlug.Vernacular;
+
+  it('Q&A uses org default asr for target and resolved language', () => {
+    const getOrgDefault = (label: string) => {
+      if (label === orgDefaultLangProps) {
+        return {
+          bcp47: 'tlh',
+          languageName: 'Klingon',
+          font: 'font1',
+          rtl: true,
+        };
+      }
+      if (label === orgDefaultAsr) {
+        return {
+          target: AsrTarget.phonetic,
+          language: {
+            bcp47: 'en',
+            languageName: 'English',
+            font: '',
+            rtl: false,
+            spellCheck: false,
+          },
+          mmsIso: 'eng',
+          method: 'whisper',
+          dialect: undefined,
+          selectRoman: false,
+        };
+      }
+      return undefined;
+    };
+    const state = buildWorkflowAsrStateFromSettings(
+      { artifactTypeId: 'qa' },
+      slugFromId,
+      getOrgDefault,
+      'org-1',
+      asrDefault
+    );
+    expect(state.target).toBe(AsrTarget.phonetic);
+    expect(state.mmsIso).toBe('eng');
+    expect(state.language.bcp47).toBe('en');
+    expect(state.language.font).toBe('font1');
+    expect(state.language.rtl).toBe(true);
+  });
+});
+
 describe('buildVernacularAsrState', () => {
   const getOrgDefault = (label: string) =>
-    label === orgLangPropsKey
+    label === orgDefaultLangProps
       ? { bcp47: 'tlh', languageName: 'Klingon', font: '', rtl: false }
       : undefined;
+
+  it('prefers org default asr over unsupported org langProps', () => {
+    const getOrgDefaultWithAsr = (label: string) => {
+      if (label === orgDefaultLangProps) {
+        return { bcp47: 'tlh', languageName: 'Klingon', font: '', rtl: false };
+      }
+      if (label === orgDefaultAsr) {
+        return {
+          target: AsrTarget.alphabet,
+          language: {
+            bcp47: 'en',
+            languageName: 'English',
+            font: '',
+            rtl: false,
+            spellCheck: false,
+          },
+          mmsIso: 'eng',
+          method: 'whisper',
+          dialect: undefined,
+          selectRoman: false,
+        };
+      }
+      return undefined;
+    };
+    const state = buildVernacularAsrState(
+      { artifactTypeId: 'retell' },
+      getOrgDefaultWithAsr,
+      'org-1',
+      asrDefault
+    );
+    expect(state.mmsIso).toBe('eng');
+    expect(state.language.languageName).toBe('English');
+    expect(state.language.bcp47).toBe('en');
+  });
 
   it('uses sister languageName from sisterlanguage field', () => {
     const state = buildVernacularAsrState(

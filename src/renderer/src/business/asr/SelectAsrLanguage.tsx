@@ -6,8 +6,10 @@ import {
   BoxProps,
   Divider,
   Stack,
+  FormControl,
   FormControlLabel,
-  Checkbox,
+  RadioGroup,
+  Radio,
   Badge,
 } from '@mui/material';
 import InfoIcon from '@mui/icons-material/Info';
@@ -34,57 +36,38 @@ const StyledBox = styled(Box)<BoxProps>(() => ({
 
 interface ISelectAsrLanguage {
   team?: OrganizationD;
-  refresh?: () => void;
-  onOpen: (cancal?: boolean, force?: boolean) => void;
-  canBegin?: boolean;
+  /** cancel=true dismisses; otherwise returns run-time ASR override (not persisted). */
+  onClose: (cancel: boolean, asrState?: IAsrState) => void;
 }
 
 export default function SelectAsrLanguage({
   team,
-  refresh,
-  onOpen,
-  canBegin,
+  onClose,
 }: ISelectAsrLanguage) {
   const [asrState, setAsrState] = React.useState<IAsrState>();
-  const [asrStateIn, setAsrStateIn] = React.useState<IAsrState>();
   const t: ITranscriberStrings = useSelector(transcriberSelector, shallowEqual);
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
-  const { getAsrSettings, saveAsrSettings, getArtId } = useGetAsrSettings(team);
-  const checkOnline = useCheckOnline(t.beginRecognize);
+  const { getAsrSettings } = useGetAsrSettings(team);
+  const checkOnline = useCheckOnline(t.run);
   const { showMessage } = useSnackBar();
 
-  const handlePhonetic = () => {
-    if (asrState)
-      setAsrState({
-        ...asrState,
-        target:
-          asrState.target === AsrTarget.phonetic
-            ? AsrTarget.alphabet
-            : AsrTarget.phonetic,
-      });
+  const handleTargetChange = (_e: unknown, value: string) => {
+    if (asrState) setAsrState({ ...asrState, target: value as AsrTarget });
   };
 
-  const handleSave = () => {
+  const handleRun = () => {
     checkOnline((online) => {
       if (!online) {
         showMessage(ts.mustBeOnline);
         return;
       }
-      if (asrState) {
-        saveAsrSettings(asrState);
-        refresh?.();
-      }
-      onOpen(
-        false,
-        asrStateIn?.language.bcp47 !== asrState?.language.bcp47 ||
-          asrStateIn?.selectRoman !== asrState?.selectRoman
-      );
+      onClose(false, asrState);
     });
   };
 
   React.useEffect(() => {
     const asr = getAsrSettings();
-    const defaultAsr = {
+    setAsrState({
       target: asr?.target ?? AsrTarget.alphabet,
       language: asr?.language ?? {
         bcp47: 'und',
@@ -98,9 +81,7 @@ export default function SelectAsrLanguage({
         asr?.method ?? getPreferredAsrMethod(asr?.mmsIso ?? 'eng') ?? 'whisper',
       dialect: asr?.dialect,
       selectRoman: asr?.selectRoman ?? false,
-    };
-    setAsrState({ ...defaultAsr } as IAsrState);
-    setAsrStateIn({ ...defaultAsr } as IAsrState);
+    } as IAsrState);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -111,31 +92,36 @@ export default function SelectAsrLanguage({
           state={asrState ?? ({} as IAsrState)}
           setState={setAsrState}
         />
-        {!getArtId() && (
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={asrState?.target === AsrTarget.phonetic}
-                onClick={handlePhonetic}
-              />
-            }
-            label={
-              <Badge
-                badgeContent={<InfoIcon color={'info'} fontSize="small" />}
-                title={t.phoneticTip}
-              >
-                {t.phonetic}
-              </Badge>
-            }
-            sx={{ ml: 2 }}
-          />
-        )}
+        <FormControl sx={{ ml: 2 }}>
+          <RadioGroup
+            value={asrState?.target ?? AsrTarget.alphabet}
+            onChange={handleTargetChange}
+          >
+            <FormControlLabel
+              value={AsrTarget.alphabet}
+              control={<Radio />}
+              label={t.scriptTranscription}
+            />
+            <FormControlLabel
+              value={AsrTarget.phonetic}
+              control={<Radio />}
+              label={
+                <Badge
+                  badgeContent={<InfoIcon color={'info'} fontSize="small" />}
+                  title={t.phoneticTip}
+                >
+                  {t.phonetic}
+                </Badge>
+              }
+            />
+          </RadioGroup>
+        </FormControl>
       </Stack>
       <Divider sx={{ pt: 2 }} />
       <ActionRow>
-        <AltButton onClick={() => onOpen(true)}>{ts.cancel}</AltButton>
+        <AltButton onClick={() => onClose(true)}>{ts.cancel}</AltButton>
         <PriButton
-          onClick={handleSave}
+          onClick={handleRun}
           disabled={
             !asrState?.target ||
             (asrState?.target === AsrTarget.alphabet &&
@@ -143,7 +129,7 @@ export default function SelectAsrLanguage({
                 asrState?.language?.bcp47 === 'und'))
           }
         >
-          {canBegin ? t.beginRecognize : ts.save}
+          {t.run}
         </PriButton>
       </ActionRow>
     </StyledBox>

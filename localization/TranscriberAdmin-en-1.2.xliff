@@ -9897,15 +9897,15 @@
                <context context-type="sourcefile">Transcriber.tsx</context>
             </context-group>
          </trans-unit>
-         <trans-unit id="transcriber.aiWillContinue">
-            <source>The AI will continue to work on the transcription even if you close this progress box. Click the {0} button to open the progress box on this workflow step to see the results. Use the settings gear on {0} button to see the transcription using a different language.</source>
+         <trans-unit id="transcriber.aiAutomaticTranscription">
+            <source>AI Automatic transcription</source>
             <target/>
             <context-group>
-               <context context-type="sourcefile">Transcriber.tsx</context>
+               <context context-type="sourcefile">TranscribeStepSettings.tsx</context>
             </context-group>
          </trans-unit>
-         <trans-unit id="transcriber.beginRecognize">
-            <source>Begin Auto Transcription</source>
+         <trans-unit id="transcriber.aiWillContinue">
+            <source>The AI will continue to work on the transcription even if you close this progress box. Click the {0} button to open the progress box on this workflow step to see the results. Use the settings gear on {0} button to see the transcription using a different language.</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">Transcriber.tsx</context>
@@ -10058,6 +10058,13 @@
                <context context-type="sourcefile">Transcriber.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="transcriber.run">
+            <source>Run</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">SelectAsrLanguage.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="transcriber.save">
             <source>Save</source>
             <target/>
@@ -10091,6 +10098,13 @@
             <target/>
             <context-group>
                <context context-type="sourcefile">LastEdit.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="transcriber.scriptTranscription">
+            <source>Script</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">SelectAsrLanguage.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="transcriber.invalidSisterLang">
@@ -10140,6 +10154,13 @@
             <target/>
             <context-group>
                <context context-type="sourcefile">Transcriber.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="transcriber.transcriptionType">
+            <source>Transcription type</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">TranscribeStepSettings.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="transcriber.transliterate">

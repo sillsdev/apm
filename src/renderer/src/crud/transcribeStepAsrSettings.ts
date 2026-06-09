@@ -1,4 +1,5 @@
 import { IAsrState } from '../business/asr/AsrAlphabet';
+import { AsrTarget } from '../business/asr/AsrTarget';
 import { ILanguage } from '../control';
 import { getLangTag } from 'mui-language-picker';
 import {
@@ -9,8 +10,7 @@ import {
 } from '../business/asr/asrLanguages';
 import { ArtifactTypeSlug } from './artifactTypeSlug';
 import { ToolSlug } from './toolSlug';
-/** Matches {@link orgDefaultLangProps} in useOrgDefaults — kept inline for jest-safe imports. */
-const orgLangPropsKey = 'langProps';
+import { orgDefaultAsr, orgDefaultLangProps } from './useOrgDefaults';
 
 export type SlugFromIdFn = (id: string) => string;
 export type GetOrgDefaultFn = (label: string, orgId?: string) => unknown;
@@ -37,7 +37,7 @@ export function parseStepLanguageField(value: unknown): IStepLanguageInfo {
       bcp47: String(obj.bcp47 ?? 'und'),
     };
   }
-  const str = typeof value === 'string' ? value : String(value);
+  const str = String(value);
   // Handle a JSON-serialized ILanguage object stored as a string.
   const trimmed = str.trim();
   if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
@@ -70,6 +70,15 @@ export function sisterBcpFromSettings(
   return parseStepLanguageField(settings.sisterlanguage).bcp47;
 }
 
+/** Phonetic and script transcription are mutually exclusive ASR targets. */
+export function asrTargetFromSettings(
+  settings: TranscribeStepSettings
+): AsrTarget {
+  return settings?.phonetic === true || settings?.phonetic === 'true'
+    ? AsrTarget.phonetic
+    : AsrTarget.alphabet;
+}
+
 export function artifactTypeSlugFromSettings(
   settings: TranscribeStepSettings,
   slugFromId: SlugFromIdFn
@@ -97,7 +106,7 @@ export function hasTranscribeStepLanguageSettings(
   orgId: string | undefined
 ): boolean {
   const hasOrgVernacular = () => {
-    const orgLang = getOrgDefault(orgLangPropsKey, orgId) as
+    const orgLang = getOrgDefault(orgDefaultLangProps, orgId) as
       | ILanguage
       | undefined;
     return Boolean(orgLang?.bcp47 && orgLang.bcp47 !== 'und');
@@ -128,9 +137,13 @@ export function transcribeSettingsNeedSisterLanguage(
   orgId: string | undefined
 ): boolean {
   const slug = artifactTypeSlugFromSettings(settings, slugFromId);
+  if (slug === ArtifactTypeSlug.QandA || slug === ArtifactTypeSlug.Retell) {
+    const orgAsr = getOrgDefault(orgDefaultAsr, orgId) as IAsrState | undefined;
+    if (orgAsr?.mmsIso && orgAsr.mmsIso !== 'und') return false;
+  }
   let primaryBcp: string;
   if (artifactUsesOrgVernacularLanguage(slug)) {
-    const orgLang = getOrgDefault(orgLangPropsKey, orgId) as
+    const orgLang = getOrgDefault(orgDefaultLangProps, orgId) as
       | ILanguage
       | undefined;
     primaryBcp = orgLang?.bcp47 ?? 'und';
@@ -145,23 +158,56 @@ export function transcribeSettingsNeedSisterLanguage(
   return !sisterBcp || sisterBcp === 'und';
 }
 
+function stepPhoneticIsSet(settings: TranscribeStepSettings): boolean {
+  return (
+    settings?.phonetic === true ||
+    settings?.phonetic === 'true' ||
+    settings?.phonetic === false ||
+    settings?.phonetic === 'false'
+  );
+}
+
 export function buildVernacularAsrState(
   settings: TranscribeStepSettings,
   getOrgDefault: GetOrgDefaultFn,
   orgId: string | undefined,
   asrDefault: IAsrState
 ): IAsrState {
-  const vernacular =
-    (getOrgDefault(orgLangPropsKey, orgId) as ILanguage | undefined) ??
-    asrDefault.language;
-  const vernacularBcp = vernacular.bcp47 ?? 'und';
+  const orgLang = getOrgDefault(orgDefaultLangProps, orgId) as
+    | ILanguage
+    | undefined;
+  const orgAsr = getOrgDefault(orgDefaultAsr, orgId) as IAsrState | undefined;
   const sister = parseStepLanguageField(settings?.sisterlanguage);
   const sisterBcp = sister.bcp47;
+  const hasStepSister = Boolean(sisterBcp && sisterBcp !== 'und');
+
+  // Retell, Q&A, and synced Vernacular store the resolved ASR language in org ASR.
+  if (orgAsr?.mmsIso && orgAsr.mmsIso !== 'und' && !hasStepSister) {
+    const target = stepPhoneticIsSet(settings)
+      ? asrTargetFromSettings(settings)
+      : orgAsr.target;
+    return {
+      ...orgAsr,
+      target,
+      method: orgAsr.method ?? getPreferredAsrMethod(orgAsr.mmsIso),
+      language: {
+        ...orgAsr.language,
+        font: orgLang?.font ?? orgAsr.language.font ?? asrDefault.language.font,
+        rtl: orgLang?.rtl ?? orgAsr.language.rtl ?? asrDefault.language.rtl,
+      },
+    };
+  }
+
+  const vernacular = orgLang ?? asrDefault.language;
+  const vernacularBcp = vernacular.bcp47 ?? 'und';
   const asrBcp = resolveAsrBcp47(vernacularBcp, sisterBcp);
   const langTag = getLangTag(asrBcp);
   const mmsIso = isoFromBcp47(asrBcp);
   return {
     ...asrDefault,
+    target: stepPhoneticIsSet(settings)
+      ? asrTargetFromSettings(settings)
+      : (orgAsr?.target ?? asrDefault.target),
     mmsIso,
     method: getPreferredAsrMethod(mmsIso, langTag?.script),
     language: {
@@ -202,6 +248,7 @@ export function buildWorkflowAsrStateFromSettings(
   const mmsIso = isoFromBcp47(asrBcp);
   return {
     ...asrDefault,
+    target: asrTargetFromSettings(settings),
     mmsIso,
     method: getPreferredAsrMethod(mmsIso, asrLangTag?.script),
     language: {

@@ -8482,15 +8482,15 @@
             <target/>
          </segment>
       </unit>
-      <unit id="transcriber.aiWillContinue">
+      <unit id="transcriber.aiAutomaticTranscription">
          <segment>
-            <source>The AI will continue to work on the transcription even if you close this progress box. Click the {0} button to open the progress box on this workflow step to see the results. Use the settings gear on {0} button to see the transcription using a different language.</source>
+            <source>AI Automatic transcription</source>
             <target/>
          </segment>
       </unit>
-      <unit id="transcriber.beginRecognize">
+      <unit id="transcriber.aiWillContinue">
          <segment>
-            <source>Begin Auto Transcription</source>
+            <source>The AI will continue to work on the transcription even if you close this progress box. Click the {0} button to open the progress box on this workflow step to see the results. Use the settings gear on {0} button to see the transcription using a different language.</source>
             <target/>
          </segment>
       </unit>
@@ -8620,6 +8620,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="transcriber.run">
+         <segment>
+            <source>Run</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="transcriber.save">
          <segment>
             <source>Save</source>
@@ -8647,6 +8653,12 @@
       <unit id="transcriber.scriptOrDialect">
          <segment>
             <source>Script or Dialect</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="transcriber.scriptTranscription">
+         <segment>
+            <source>Script</source>
             <target/>
          </segment>
       </unit>
@@ -8689,6 +8701,12 @@
       <unit id="transcriber.transcriptionExists">
          <segment>
             <source>Transcription already exists</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="transcriber.transcriptionType">
+         <segment>
+            <source>Transcription type</source>
             <target/>
          </segment>
       </unit>

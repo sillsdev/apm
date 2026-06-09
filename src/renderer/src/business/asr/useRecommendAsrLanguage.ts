@@ -170,7 +170,6 @@ export function useRecommendAsrLanguage(): RecommendAsrLanguageResult {
           token
         )) as string;
         const taskId = response ?? '';
-        console.log('transcription/asrsisters task', taskId, response);
         if (!taskId) {
           setError('No task id returned for asr/recommend-language');
           setLoading(false);

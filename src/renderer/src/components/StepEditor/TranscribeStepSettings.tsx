@@ -28,19 +28,31 @@ import {
   Typography,
   CircularProgress,
   FormControl,
+  FormLabel,
   InputLabel,
   MenuItem,
+  Radio,
+  RadioGroup,
   Select,
   SelectChangeEvent,
   Stack,
 } from '@mui/material';
+import { AsrTarget } from '../../business/asr/AsrTarget';
 import { shallowEqual, useSelector } from 'react-redux';
 import { transcriberSelector } from '../../selector';
-import { orgDefaultLangProps, useOrgDefaults } from '../../crud/useOrgDefaults';
 import {
+  orgDefaultAsr,
+  orgDefaultLangProps,
+  useOrgDefaults,
+} from '../../crud/useOrgDefaults';
+import {
+  buildVernacularAsrState,
   formatStepLanguageField,
   parseStepLanguageField,
+  type TranscribeStepSettings as ITranscribeStepSettings,
 } from '../../crud/transcribeStepAsrSettings';
+import { IAsrState } from '../../business/asr/AsrAlphabet';
+import { getPreferredAsrMethod } from '../../business/asr/asrLanguages';
 import { useSnackBar } from '../../hoc/SnackBar';
 
 interface LangState {
@@ -137,6 +149,74 @@ export const TranscribeStepSettings = ({
     );
   }, [getOrgDefault, org]);
 
+  const asrDefault: IAsrState = useMemo(
+    () => ({
+      target: AsrTarget.alphabet,
+      language: {
+        bcp47: 'und',
+        languageName: 'English',
+        font: 'charissil',
+        rtl: false,
+        spellCheck: false,
+      },
+      mmsIso: 'eng',
+      method: getPreferredAsrMethod('eng'),
+      dialect: undefined,
+      selectRoman: false,
+    }),
+    []
+  );
+
+  const vernacularAsrSettings = useCallback(
+    (settingsJson: string): ITranscribeStepSettings => {
+      const settings = JSONParse(settingsJson) as ITranscribeStepSettings;
+      const phonetic = settings.phonetic ?? false;
+      return {
+        ...settings,
+        phonetic,
+        sisterlanguage:
+          settings.sisterlanguage ?? formatStepLanguageField(sisterLanguage),
+      };
+    },
+    [sisterLanguage]
+  );
+
+  const syncOrgAsrIfVernacular = useCallback(
+    (settingsJson: string) => {
+      if (!org) return;
+      const settings = JSONParse(settingsJson) as ITranscribeStepSettings;
+      if (
+        slugFromId(String(settings.artifactTypeId ?? '')) !==
+        ArtifactTypeSlug.Vernacular
+      ) {
+        return;
+      }
+      const asrState = buildVernacularAsrState(
+        vernacularAsrSettings(settingsJson),
+        getOrgDefault,
+        org,
+        asrDefault
+      );
+      setOrgDefault(orgDefaultAsr, asrState, org);
+    },
+    [
+      org,
+      slugFromId,
+      getOrgDefault,
+      setOrgDefault,
+      asrDefault,
+      vernacularAsrSettings,
+    ]
+  );
+
+  const emitSettingsChange = useCallback(
+    (settingsJson: string) => {
+      onChange(settingsJson);
+      syncOrgAsrIfVernacular(settingsJson);
+    },
+    [onChange, syncOrgAsrIfVernacular]
+  );
+
   const primaryNeedsSisterLanguage = (primaryBcp47: string) => {
     if (!primaryBcp47 || primaryBcp47 === 'und') return false;
     const iso = isoFromBcp47(primaryBcp47);
@@ -163,13 +243,25 @@ export const TranscribeStepSettings = ({
     }));
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { spellCheck: _omit, ...rest } = json;
-    onChange(JSON.stringify({ ...rest, artifactTypeId }));
+    emitSettingsChange(JSON.stringify({ ...rest, artifactTypeId }));
   };
 
   const handleSpellCheckOnlyChange = (spellCheck: boolean) => {
     setLgState((state) => ({ ...state, spellCheck, changed: true }));
     const json = JSONParse(toolSettings) as Record<string, unknown>;
-    onChange(JSON.stringify({ ...json, spellCheck }));
+    emitSettingsChange(JSON.stringify({ ...json, spellCheck }));
+  };
+
+  const phoneticSetting = useMemo(() => {
+    const json = JSONParse(toolSettings || '{}') as Record<string, unknown>;
+    return json?.phonetic === true || json?.phonetic === 'true';
+  }, [toolSettings]);
+
+  const handleTargetChange = (_e: unknown, value: string) => {
+    const json = JSONParse(toolSettings) as Record<string, unknown>;
+    emitSettingsChange(
+      JSON.stringify({ ...json, phonetic: value === AsrTarget.phonetic })
+    );
   };
 
   const handleLanguageChange = (val: ILanguage) => {
@@ -180,7 +272,7 @@ export const TranscribeStepSettings = ({
     ) {
       setLgState((state) => ({ ...state, ...val, changed: true }));
       const json = JSONParse(toolSettings) as Record<string, unknown>;
-      onChange(
+      emitSettingsChange(
         JSON.stringify({
           ...json,
           language: formatStepLanguageField(val),
@@ -198,7 +290,10 @@ export const TranscribeStepSettings = ({
       return;
     }
     setVernacularLanguage(val);
-    if (org) setOrgDefault(orgDefaultLangProps, val, org);
+    if (org) {
+      setOrgDefault(orgDefaultLangProps, val, org);
+      syncOrgAsrIfVernacular(toolSettings);
+    }
   };
 
   const currentSlug = useMemo(
@@ -249,7 +344,7 @@ export const TranscribeStepSettings = ({
           spellCheck: false,
         });
         const json = JSONParse(toolSettings) as Record<string, string>;
-        onChange(
+        emitSettingsChange(
           JSON.stringify({
             ...json,
             sisterlanguage: formatStepLanguageField(emptyLanguage()),
@@ -260,7 +355,7 @@ export const TranscribeStepSettings = ({
     }
     setSisterLanguage(val);
     const json = JSONParse(toolSettings) as Record<string, string>;
-    onChange(
+    emitSettingsChange(
       JSON.stringify({
         ...json,
         sisterlanguage: formatStepLanguageField(val),
@@ -359,7 +454,7 @@ export const TranscribeStepSettings = ({
   const saveSisterLanguage = (val: ILanguage) => {
     setSisterLanguage(val);
     const json = JSONParse(toolSettings) as Record<string, string>;
-    onChange(
+    emitSettingsChange(
       JSON.stringify({
         ...json,
         sisterlanguage: formatStepLanguageField(val),
@@ -518,7 +613,47 @@ export const TranscribeStepSettings = ({
           )}
         </>
       )}
-      {sisterLanguagePicker}
+      {showSisterLanguage && (
+        <FormControl
+          component="fieldset"
+          sx={{
+            border: '1px solid grey',
+            ml: 1,
+            mr: 1,
+            px: 2,
+            mt: 1,
+            display: 'block',
+          }}
+        >
+          <FormLabel component="legend" sx={{ color: 'secondary.main' }}>
+            {tt.aiAutomaticTranscription}
+          </FormLabel>
+          <Stack spacing={1} sx={{ mt: 1 }}>
+            {sisterLanguagePicker}
+            <FormControl component="fieldset" variant="standard">
+              <FormLabel component="legend">{tt.transcriptionType}</FormLabel>
+              <RadioGroup
+                row
+                value={
+                  phoneticSetting ? AsrTarget.phonetic : AsrTarget.alphabet
+                }
+                onChange={handleTargetChange}
+              >
+                <FormControlLabel
+                  value={AsrTarget.alphabet}
+                  control={<Radio />}
+                  label={tt.scriptTranscription}
+                />
+                <FormControlLabel
+                  value={AsrTarget.phonetic}
+                  control={<Radio />}
+                  label={tt.phonetic}
+                />
+              </RadioGroup>
+            </FormControl>
+          </Stack>
+        </FormControl>
+      )}
     </>
   );
 };

@@ -258,8 +258,9 @@ describe('WSAudioPlayer record hotkeys', () => {
     expect(recordSubscribeCalls.length).toBeGreaterThanOrEqual(2);
 
     const firstCb = recordSubscribeCalls[0][1] as () => boolean;
-    const lastCb =
-      recordSubscribeCalls[recordSubscribeCalls.length - 1][1] as () => boolean;
+    const lastCb = recordSubscribeCalls[
+      recordSubscribeCalls.length - 1
+    ][1] as () => boolean;
     expect(firstCb).not.toBe(lastCb);
 
     expect(firstCb()).toBe(false);
