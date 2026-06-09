@@ -490,6 +490,22 @@ export function ScriptureTable(props: IProps) {
 
   const setUpdate = (value: boolean) => (updateRef.current = value);
 
+  const sheetHasUnsavedChanges = useMemo(
+    () => isChanged(toolId),
+    [toolsChanged, isChanged, toolId]
+  );
+
+  const blockWhileSavingOrUpdating = () =>
+    savingRef.current || updateRef.current;
+
+  const blockPublishingRows = () =>
+    sheetHasUnsavedChanges || blockWhileSavingOrUpdating();
+
+  const showBlockedPublishingMessage = () => {
+    if (sheetHasUnsavedChanges) showMessage(t.saveFirst);
+    else showMessage(t.saving);
+  };
+
   const handleResequence = () => {
     if (savingRef.current || updateRef.current) {
       showMessage(t.saving);
@@ -1810,7 +1826,9 @@ export function ScriptureTable(props: IProps) {
     destinations: PublishDestinationEnum[]
   ) => {
     await waitForRemoteQueue(t.publishingWarning);
-    if (savingRef.current || updateRef.current) {
+    // Destination edits are allowed while the sheet is unsaved; only block
+    // adding infrastructure rows (doPublish) until save completes.
+    if (blockWhileSavingOrUpdating()) {
       showMessage(t.saving);
       return;
     }
@@ -1857,18 +1875,32 @@ export function ScriptureTable(props: IProps) {
       showMessage(scripture ? t.setupScriptureBook : t.setupGeneralBook);
       return;
     }
-    if (update) await doPublish();
-    else if (!hidePublishing)
+    if (update) {
+      if (blockPublishingRows()) {
+        showBlockedPublishingMessage();
+        return;
+      }
+      await doPublish();
+    } else if (!hidePublishing)
       togglePublishing(); //turn it off
     //if we're going to show now and we don't already have some rows...ask
-    else if (!publishingOn) setConfirmPublishingVisible(true);
-    else togglePublishing(); //turn it on - no update
+    else if (!publishingOn) {
+      if (sheetHasUnsavedChanges) {
+        showMessage(t.saveFirst);
+        return;
+      }
+      setConfirmPublishingVisible(true);
+    } else togglePublishing(); //turn it on - no update
   };
   const onPublishingReject = () => {
     setConfirmPublishingVisible(false);
   };
   const onPublishingConfirm = async () => {
     setConfirmPublishingVisible(false);
+    if (blockPublishingRows()) {
+      showBlockedPublishingMessage();
+      return;
+    }
     await doPublish();
     togglePublishing();
   };
@@ -2017,8 +2049,8 @@ export function ScriptureTable(props: IProps) {
       return gotit;
     };
     let newworkflow: ISheet[] = [];
-    if (savingRef.current || updateRef.current) {
-      showMessage(t.saving);
+    if (blockPublishingRows()) {
+      showBlockedPublishingMessage();
       return;
     }
     setUpdate(true);
@@ -2261,6 +2293,7 @@ export function ScriptureTable(props: IProps) {
           setSectionPublish={setSectionPublish}
           handlePublishToggle={handlePublishToggle}
           onWarning={setWarningVisible}
+          disablePublishingRows={sheetHasUnsavedChanges}
         />
       )}
       {assignSectionVisible && (
