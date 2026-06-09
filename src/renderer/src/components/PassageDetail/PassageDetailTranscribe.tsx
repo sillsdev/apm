@@ -70,15 +70,18 @@ export function PassageDetailTranscribe({ width, artifactTypeId }: IProps) {
           (a.attributes.sequencenum ?? 0) - (b.attributes.sequencenum ?? 0)
       )
       .map((s, ix) => {
-        const toolData = JSONParse(s?.attributes?.tool) as Record<
-          string,
-          string
-        >;
+        const toolData = JSONParse(s?.attributes?.tool) as {
+          tool?: string;
+          settings?: string | object;
+        };
         return {
           id: s.id,
           sequencenum: ix,
-          tool: toolData.tool,
-          settings: (toolData.settings ?? '') === '' ? '{}' : toolData.settings,
+          tool: toolData.tool ?? '',
+          settings:
+            typeof toolData.settings === 'string'
+              ? toolData.settings || '{}'
+              : JSON.stringify(toolData.settings ?? {}),
         } as IStep;
       });
   }, [orgWorkflowSteps]);
@@ -135,8 +138,7 @@ export function PassageDetailTranscribe({ width, artifactTypeId }: IProps) {
     if (!currentstep) return undefined;
     if (!hasPermission) return 'view';
     if (!hasChecking) return 'transcriber';
-    if (JSON.parse(stepSettings as string)?.artifactTypeId)
-      return 'transcriber';
+    if (JSON.parse(stepSettings || '{}')?.artifactTypeId) return 'transcriber';
     if ((vernacularSteps[0] as IStep)?.id === currentstep) return 'transcriber';
     return 'editor';
   }, [currentstep, vernacularSteps, stepSettings, hasChecking, hasPermission]);
@@ -230,7 +232,7 @@ export function PassageDetailTranscribe({ width, artifactTypeId }: IProps) {
                 defaultWidth={
                   width - TaskTableWidth - MAGIC_NUMBER_THAT_MAKES_IT_FIT
                 }
-                stepSettings={stepSettings as string}
+                stepSettings={stepSettings ?? undefined}
                 hasPermission={hasPermission}
                 onReject={handleReject}
                 onReopen={handleReopen}
@@ -250,7 +252,7 @@ export function PassageDetailTranscribe({ width, artifactTypeId }: IProps) {
           >
             <Transcriber
               defaultWidth={Math.max(0, width - MAGIC_NUMBER_THAT_MAKES_IT_FIT)}
-              stepSettings={stepSettings as string}
+              stepSettings={stepSettings ?? undefined}
               hasChecking={hasChecking}
               setComplete={handleComplete}
               hasPermission={hasPermission}
