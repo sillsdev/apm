@@ -47,6 +47,7 @@ interface IProps {
   handleNoContextMenu: () => void;
   showIcon: (icon: ExtraIcon) => boolean;
   onAction: (what: ExtraIcon) => void;
+  disablePublishingRows?: boolean;
 }
 
 export const AddSectionPassageButtons = (props: IProps) => {
@@ -63,6 +64,7 @@ export const AddSectionPassageButtons = (props: IProps) => {
     handleNoContextMenu,
     showIcon,
     onAction,
+    disablePublishingRows,
   } = props;
   const [actionMenuItem, setActionMenuItem] = React.useState<any>(undefined);
   const { getOrganizedBy } = useOrganizedBy();
@@ -165,6 +167,7 @@ export const AddSectionPassageButtons = (props: IProps) => {
               <MenuItem
                 id="publishing"
                 onClick={handleAction(ExtraIcon.Publishing)}
+                disabled={disablePublishingRows}
               >
                 <StyledMenuIcon>
                   <AddPublishingIcon />
@@ -237,7 +240,11 @@ export const AddSectionPassageButtons = (props: IProps) => {
         </>
       )}
       {!canEditSheet && showIcon(ExtraIcon.Publishing) && canAddPublishing && (
-        <MenuItem id="publishing" onClick={handleAction(ExtraIcon.Publishing)}>
+        <MenuItem
+          id="publishing"
+          onClick={handleAction(ExtraIcon.Publishing)}
+          disabled={disablePublishingRows}
+        >
           <StyledMenuIcon>
             <AddPublishingIcon />
           </StyledMenuIcon>

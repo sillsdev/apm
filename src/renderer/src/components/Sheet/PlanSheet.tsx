@@ -233,6 +233,7 @@ interface IProps {
   onFirstMovement: (newFM: number) => void;
   handlePublishToggle: MouseEventHandler<HTMLButtonElement>;
   onWarning: (visible: boolean) => void;
+  disablePublishingRows?: boolean;
 }
 
 export function PlanSheet(props: IProps) {
@@ -268,6 +269,7 @@ export function PlanSheet(props: IProps) {
     onFirstMovement,
     handlePublishToggle,
     onWarning,
+    disablePublishingRows,
   } = props;
   const ctx = useContext(PlanContext);
   const {
@@ -1133,6 +1135,7 @@ export function PlanSheet(props: IProps) {
                     currentRow - 1
                   )}
                   onAction={(what: ExtraIcon) => onAction(currentRow - 1, what)}
+                  disablePublishingRows={disablePublishingRows}
                 />
                 {canEditSheet && (
                   <ProjButtons
