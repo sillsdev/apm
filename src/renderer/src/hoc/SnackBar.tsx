@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Fragment } from 'react';
 import { useGlobal } from '../context/useGlobal';
 import {
   Snackbar as MuiSnackbar,
@@ -45,8 +45,9 @@ function SimpleSnackbar(props: ISBProps) {
   };
 
   useEffect(() => {
-    if ((message?.type === 'span') !== open) {
-      setOpen(!open);
+    const hasMessage = !!message && message.type !== Fragment;
+    if (hasMessage !== open) {
+      setOpen(hasMessage);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [message]);
