@@ -8,8 +8,8 @@ import { waitForImportExportIdle } from './uploadRetry';
 jest.mock('../../../api-variable', () => ({
   API_CONFIG: { host: 'https://api.test', sizeLimit: '500' },
 }));
-jest.mock('../../components/MediaUpload', () => ({
-  SIZELIMIT: () => 500,
+jest.mock('../../components/uploadSizeLimits', () => ({
+  limitByType: () => 500,
 }));
 jest.mock('axios');
 jest.mock('../../auth/bugsnagClient', () => ({}));

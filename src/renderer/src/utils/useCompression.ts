@@ -1,11 +1,12 @@
 import { shallowEqual, useSelector } from 'react-redux';
-import { SIZELIMIT } from '../components/MediaUpload';
+import { limitByType } from '../components/uploadSizeLimits';
 import { mediaTabSelector } from '../selector';
 import { IMediaTabStrings } from '../model';
 import imageCompression from 'browser-image-compression';
 import { useGlobal } from '../context/useGlobal';
 import { logError, Severity } from '../utils';
 import { blobToBase64 } from './blobToBase64';
+import { UploadType } from '../components/UploadType';
 
 // Converting to/from Blob: https://stackoverflow.com/questions/68276368/javascript-convert-a-blob-object-to-a-string-and-back
 // https://stackoverflow.com/questions/18650168/convert-blob-to-base64
@@ -57,7 +58,7 @@ export const useCompression = ({
 
   const showFile = (files: File[]) => {
     const options = {
-      maxSizeMb: SIZELIMIT,
+      maxSizeMb: limitByType(UploadType.Media),
       maxWidthOrHeight: 1024,
       useWebWorker: true,
     };
@@ -90,7 +91,7 @@ export const useCompression = ({
 
     for (const dim of dimension) {
       const options = {
-        maxSizeMb: SIZELIMIT,
+        maxSizeMb: limitByType(UploadType.Media),
         maxWidthOrHeight: dim,
         useWebWorker: true,
       };
