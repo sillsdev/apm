@@ -633,6 +633,13 @@ export function ScriptureTable(props: IProps) {
     passageRow.reference = val;
     passageRow.passageUpdated = currentDateTime();
     passageRow.sharedResource = sr;
+    if (passageRow.passageType === PassageTypeEnum.NOTE && passageRow.passage) {
+      const gr = graphicFind(passageRow.passage, val);
+      passageRow.graphicUri = gr?.uri;
+      passageRow.graphicRights = gr?.rights;
+      passageRow.graphicFullSizeUrl = gr?.url;
+      passageRow.color = gr?.color;
+    }
     setSheet(updateRowAt(sheet, passageRow, index));
     setUpdate(false);
     setChanged(true);
@@ -734,6 +741,11 @@ export function ScriptureTable(props: IProps) {
       passage: undefined,
       passageType: ptype ?? PassageTypeEnum.PASSAGE,
       mediaShared: shared ? IMediaShare.None : IMediaShare.NotPublic,
+      sharedResource: undefined,
+      graphicUri: undefined,
+      graphicRights: undefined,
+      graphicFullSizeUrl: undefined,
+      color: undefined,
       deleted: false,
       filtered: false,
     } as ISheet;

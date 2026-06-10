@@ -613,13 +613,17 @@ export const usePlanSheetFill = ({
           className: calcClassName,
         };
       }
-      if (cellIndex === bookCol && passage)
+      if (cellIndex === bookCol && passage) {
+        const isNote =
+          (rowInfo[rowIndex] as ISheet).passageType === PassageTypeEnum.NOTE;
         return {
           value: e,
           readOnly: !canEditSheet,
-          className: 'book ' + (!e ? 'refErr ' : '') + calcClassName,
+          className:
+            'book ' + (!e && !isNote ? 'refErr ' : '') + calcClassName,
           dataEditor: bookEditor,
         };
+      }
       if (
         cellIndex === titleCol &&
         !passage &&
@@ -826,12 +830,17 @@ export const usePlanSheetFill = ({
       const book = isBook(rowIndex) || isAltBook(rowIndex);
       const iscurrent: string =
         currentRow === rowIndex + 1 ? ' currentrow ' : '';
+      const srPassageId = related(
+        (rowInfo[rowIndex] as ISheet).sharedResource,
+        'passage'
+      );
+      const rowPassageId = (rowInfo[rowIndex] as ISheet).passage?.id;
       const sharedRes =
         passage &&
         Boolean((rowInfo[rowIndex] as ISheet).sharedResource) &&
-        Boolean((rowInfo[rowIndex] as ISheet).passage) &&
-        related((rowInfo[rowIndex] as ISheet).sharedResource, 'passage') !==
-          (rowInfo[rowIndex] as ISheet).passage?.id;
+        Boolean(rowPassageId) &&
+        srPassageId != null &&
+        srPassageId !== rowPassageId;
       const sharedOffline = sharedRes && getGlobal('offline');
       const calcClassName =
         iscurrent +
