@@ -1,3 +1,5 @@
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import React from 'react';
 import { act, cleanup, render, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import MediaRecord from './MediaRecord';

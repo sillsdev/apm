@@ -492,7 +492,7 @@ export function ScriptureTable(props: IProps) {
 
   const sheetHasUnsavedChanges = useMemo(
     () => isChanged(toolId),
-    [toolsChanged, isChanged, toolId]
+    [isChanged, toolId]
   );
 
   const blockWhileSavingOrUpdating = () =>

@@ -135,7 +135,7 @@ export function DiscussionList({ onClose }: DiscussionListProps) {
             maxHeight: `${discussionSize.height - 120}px`,
             boxSizing: 'border-box' as const,
           },
-    [discussionSize.height, discussionSize.width, isMobile]
+    [discussionSize.height, isMobile]
   );
   const { userIsAdmin } = useRole();
   const defaultFilterState: IFilterState = {
@@ -533,7 +533,9 @@ export function DiscussionList({ onClose }: DiscussionListProps) {
             boxSizing: 'border-box',
           }}
         >
-          <Box sx={{ minWidth: 0, flex: '1 1 auto', overflow: 'hidden', pr: 0.5 }}>
+          <Box
+            sx={{ minWidth: 0, flex: '1 1 auto', overflow: 'hidden', pr: 0.5 }}
+          >
             <Title variant={isMobile ? 'subtitle1' : 'h6'} component="div">
               {t.title}
             </Title>
