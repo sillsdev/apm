@@ -1,18 +1,9 @@
 import { ArtifactTypeSlug } from './artifactTypeSlug';
 import {
-  bcp47FromStepLanguage,
   defaultSpellCheckForArtifact,
   hasSpellCheckerDictionary,
   resolveStepSpellCheck,
 } from './stepSpellCheck';
-
-describe('bcp47FromStepLanguage', () => {
-  test('parses BCP47 from step language field', () => {
-    expect(bcp47FromStepLanguage('English|en')).toBe('en');
-    expect(bcp47FromStepLanguage('Unknown|und')).toBeUndefined();
-    expect(bcp47FromStepLanguage(undefined)).toBeUndefined();
-  });
-});
 
 describe('hasSpellCheckerDictionary', () => {
   test('matches exact and primary subtags', () => {
@@ -92,11 +83,7 @@ describe('resolveStepSpellCheck', () => {
 
   test('defaults back translation to true when checker languages are unavailable', () => {
     expect(
-      resolveStepSpellCheck(
-        {},
-        ArtifactTypeSlug.PhraseBackTranslation,
-        'de'
-      )
+      resolveStepSpellCheck({}, ArtifactTypeSlug.PhraseBackTranslation, 'de')
     ).toBe(true);
     expect(
       resolveStepSpellCheck({}, ArtifactTypeSlug.WholeBackTranslation, 'de', [])
