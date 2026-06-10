@@ -1,3 +1,10 @@
+jest.mock('../utils', () => ({
+  useJsonParams: () => ({
+    getParam: jest.fn(),
+    setParam: jest.fn(),
+  }),
+}));
+
 import { ArtifactTypeSlug } from './artifactTypeSlug';
 import { ToolSlug } from './toolSlug';
 import {
