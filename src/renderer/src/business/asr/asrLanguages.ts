@@ -2,9 +2,11 @@ import { getLangTag } from 'mui-language-picker';
 import asrLangData from '../../assets/asrLangs.json';
 import { AsrLangData } from '../../model/asrLang';
 
-const { languages, entries } = asrLangData as AsrLangData;
+const { entries } = asrLangData as AsrLangData;
 
-export const asrLanguageIsos = new Set(languages.map((l) => l.iso));
+export const asrLanguageIsos = new Set(
+  entries.map((entry) => entry.language_iso)
+);
 
 const methodsByIsoScript = new Map<string, Set<string>>();
 for (const entry of entries) {

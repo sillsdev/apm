@@ -1,8 +1,3 @@
-export interface AsrLang {
-  iso: string;
-  name: string;
-}
-
 export interface AsrLangEntry {
   language_iso: string;
   script: string;
@@ -10,6 +5,5 @@ export interface AsrLangEntry {
 }
 
 export interface AsrLangData {
-  languages: AsrLang[];
   entries: AsrLangEntry[];
 }
