@@ -1,4 +1,4 @@
-import { IAsrState } from '../business/asr/AsrAlphabet';
+import { IAsrState } from '../business/asr/asrState';
 import { AsrTarget } from '../business/asr/AsrTarget';
 import { ILanguage } from '../control';
 import { getLangTag } from 'mui-language-picker';

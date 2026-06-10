@@ -115,7 +115,7 @@ import AsrButton from '../control/ConfButton';
 import TranscriptionLogo from '../control/TranscriptionLogo';
 import AsrProgress from '../business/asr/AsrProgress';
 import { AsrTarget } from '../business/asr/AsrTarget';
-import { IAsrState } from '../business/asr/AsrAlphabet';
+import { IAsrState, asrStatesEqual } from '../business/asr/asrState';
 import SelectAsrLanguage from '../business/asr/SelectAsrLanguage';
 import { IFeatures } from './Team/TeamSettings';
 import { useCheckOnline } from '../utils/useCheckOnline';
@@ -1235,19 +1235,24 @@ export function Transcriber(props: IProps) {
     () => textValue !== '' && verseLabels.length <= contentVerses.length,
     [textValue, verseLabels.length, contentVerses.length]
   );
+  const asrSettings = useMemo(
+    () => getAsrSettings(),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [orgSteps, getAsrSettings]
+  );
 
   const asrTip = useMemo(() => {
-    const asr = getAsrSettings();
     return (tPlayer.recognizeSpeech + '\u00A0\u00A0').replace(
       '{0}',
-      asr?.language?.languageName?.trim()
+      asrSettings?.language?.languageName?.trim()
         ? `\u2039 ${
-            getName(asr?.language.bcp47) || asr?.language?.languageName
+            getName(asrSettings?.language.bcp47) ||
+            asrSettings?.language?.languageName
           } \u203A`
         : ''
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [teams, orgSteps]);
+  }, [asrSettings]);
 
   const onPullTasks = (remoteId: string) => {
     pullTableList(
@@ -1263,7 +1268,7 @@ export function Transcriber(props: IProps) {
   };
 
   const startAsr = (asrOverrideState?: IAsrState) => {
-    const asr = asrOverrideState ?? getAsrSettings();
+    const asr = asrOverrideState ?? asrSettings;
     setAsrOverride(asrOverrideState);
     setPhonetic(asr?.target === AsrTarget.phonetic);
     setAsrProgressVisible(true);
@@ -1287,7 +1292,7 @@ export function Transcriber(props: IProps) {
   const handleAsrLanguageClose = (cancel: boolean, asrState?: IAsrState) => {
     setAsrLangVisible(false);
     if (cancel) return;
-    const asr = asrState ?? getAsrSettings();
+    const asr = asrState ?? asrSettings;
     if (asr?.mmsIso && asr.mmsIso !== 'und') {
       startAsr(asr);
     }
@@ -1620,6 +1625,7 @@ export function Transcriber(props: IProps) {
               mediaId={playerMediafile?.id ?? ''}
               phonetic={phonetic}
               asrState={asrOverride}
+              force={!asrStatesEqual(asrOverride, asrSettings)}
               contentVerses={contentVerses}
               setTranscription={handleAutoTranscribe}
               onPullTasks={onPullTasks}

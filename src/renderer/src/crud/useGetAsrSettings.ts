@@ -1,5 +1,5 @@
 import React from 'react';
-import { IAsrState } from '../business/asr/AsrAlphabet';
+import { IAsrState } from '../business/asr/asrState';
 import { OrganizationD, OrgWorkflowStepD } from '../model';
 import { orgDefaultAsr, useOrgDefaults } from './useOrgDefaults';
 import { useGlobal } from '../context/useGlobal';

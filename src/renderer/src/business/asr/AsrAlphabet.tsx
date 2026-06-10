@@ -9,16 +9,7 @@ import { transcriberSelector } from '../../selector';
 import { shallowEqual, useSelector } from 'react-redux';
 import { AsrTarget } from './AsrTarget';
 import { asrLanguageFilter, preferredAsrMethodFromBcp47 } from './asrLanguages';
-
-export interface IAsrState {
-  target: string;
-  language: ILanguage;
-  mmsIso: string;
-  /** Preferred ASR model for this language (w2v-bert, whisper, omnilingual, mms, …). */
-  method?: string;
-  dialect: string | undefined;
-  selectRoman?: boolean;
-}
+import { IAsrState } from './asrState';
 
 interface IAsrAlphabet {
   state: IAsrState;

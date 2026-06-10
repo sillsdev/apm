@@ -51,7 +51,7 @@ import {
   parseStepLanguageField,
   type TranscribeStepSettings as ITranscribeStepSettings,
 } from '../../crud/transcribeStepAsrSettings';
-import { IAsrState } from '../../business/asr/AsrAlphabet';
+import { IAsrState } from '../../business/asr/asrState';
 import { getPreferredAsrMethod } from '../../business/asr/asrLanguages';
 import { useSnackBar } from '../../hoc/SnackBar';
 
@@ -311,6 +311,7 @@ export const TranscribeStepSettings = ({
       setInitialValue(json.artifactTypeId);
       const { languageName, bcp47 } = parseStepLanguageField(json?.language);
       const slug = slugFromId(json.artifactTypeId);
+      const sisterLang = parseStepLanguageField(json?.sisterlanguage);
       const spellCheck = resolveStepSpellCheck(
         json,
         slug,
@@ -327,9 +328,14 @@ export const TranscribeStepSettings = ({
         spellCheck,
         changed: false,
       }));
+      setSisterLanguage((state) => ({
+        ...state,
+        languageName: sisterLang.languageName,
+        bcp47: sisterLang.bcp47,
+      }));
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [toolSettings, availSpellLangs]);
+  }, [toolSettings, availSpellLangs, slugFromId]);
+
   const handleSisterLanguageChange = (val: ILanguage) => {
     const bcp47 = val?.bcp47 ?? 'und';
     if (bcp47 !== 'und') {
@@ -481,27 +487,6 @@ export const TranscribeStepSettings = ({
       (s.iso && s.iso === sisterLanguage.bcp47) ||
       (s.languageName && s.languageName === sisterLanguage.languageName)
   );
-
-  useEffect(() => {
-    if (!toolSettings) return;
-    const json = JSON.parse(toolSettings) as Record<string, string>;
-    setInitialValue(json.artifactTypeId);
-    const { languageName, bcp47 } = parseStepLanguageField(json?.language);
-    const sisterLang = parseStepLanguageField(json?.sisterlanguage);
-    setLgState((state) => ({
-      ...state,
-      artId: json.artifactTypeId,
-      languageName: languageName,
-      bcp47: bcp47 ?? 'und',
-      font: json.font ?? '',
-      rtl: json.rtl === 'true',
-    }));
-    setSisterLanguage((state) => ({
-      ...state,
-      languageName: sisterLang.languageName,
-      bcp47: sisterLang.bcp47,
-    }));
-  }, [toolSettings]);
 
   const manualSisterPicker = (
     <Language

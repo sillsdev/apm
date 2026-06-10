@@ -2,7 +2,7 @@ import * as React from 'react';
 import Box from '@mui/material/Box';
 import LinearProgress from '@mui/material/LinearProgress';
 import { TokenContext } from '../../context/TokenProvider';
-import { IAsrState } from './AsrAlphabet';
+import { IAsrState } from './asrState';
 import { axiosGet, axiosPost } from '../../utils/axios';
 import { AxiosError } from 'axios';
 import { findRecord } from '../../crud/tryFindRecord';

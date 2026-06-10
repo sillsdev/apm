@@ -1,0 +1,28 @@
+---
+description: Use LF line endings for all new text files in this repo
+alwaysApply: true
+---
+
+# Line Endings
+
+This repo requires **LF** (`\n`) line endings for all text files.
+
+- `.gitattributes` sets `eol=lf` for `*.ts`, `*.tsx`, `*.js`, `*.jsx`, `*.json`, `*.md`, and other text types.
+- `.editorconfig` sets `end_of_line = lf`.
+
+When creating or rewriting files:
+
+1. **Always use LF**, never CRLF — even on Windows.
+2. **After every Write/create of a text file**, run LF normalization from repo root (Cursor's Write tool emits CRLF on Windows):
+
+```powershell
+$full = (Resolve-Path '<path>').Path
+$text = [IO.File]::ReadAllText($full) -replace "`r`n","`n" -replace "`r","`n"
+if (-not $text.EndsWith("`n")) { $text += "`n" }
+[IO.File]::WriteAllText($full, $text, (New-Object Text.UTF8Encoding $false))
+```
+
+3. Verify zero `\r\n` sequences remain before finishing.
+4. End files with a single trailing newline.
+
+Only use CRLF for Windows-specific scripts explicitly marked in `.gitattributes` (`*.bat`, `*.cmd`, `*.ps1`).

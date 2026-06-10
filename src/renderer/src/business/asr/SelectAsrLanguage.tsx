@@ -20,7 +20,8 @@ import {
 } from '../../model';
 import { shallowEqual, useSelector } from 'react-redux';
 import { sharedSelector, transcriberSelector } from '../../selector';
-import { AsrAlphabet, IAsrState } from './AsrAlphabet';
+import { AsrAlphabet } from './AsrAlphabet';
+import { IAsrState } from './asrState';
 import { getPreferredAsrMethod } from './asrLanguages';
 import { useGetAsrSettings } from '../../crud/useGetAsrSettings';
 import { useCheckOnline } from '../../utils/useCheckOnline';
