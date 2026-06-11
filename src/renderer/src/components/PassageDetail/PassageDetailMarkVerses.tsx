@@ -185,7 +185,6 @@ export function PassageDetailMarkVerses({ width }: MarkVersesProps) {
   const {
     toolChanged,
     toolsChanged,
-    isChanged,
     saveRequested,
     saveCompleted,
     clearRequested,
@@ -617,9 +616,7 @@ export function PassageDetailMarkVerses({ width }: MarkVersesProps) {
         resetSegments(regions);
       }
       if (!init) {
-        if (!isChanged(verseToolId)) {
-          toolChanged(verseToolId);
-        }
+        toolChanged(verseToolId);
         checkBlockersAndScheduleAutosave();
       }
     }
@@ -745,9 +742,7 @@ export function PassageDetailMarkVerses({ width }: MarkVersesProps) {
     if (changed) {
       setData(newData);
       setSegments();
-      if (!isChanged(verseToolId)) {
-        toolChanged(verseToolId);
-      }
+      toolChanged(verseToolId);
       checkBlockersAndScheduleAutosave();
     }
   };
