@@ -25,7 +25,7 @@ import {
   useSectionCounts,
   useShowAssignment,
 } from '../crud';
-import { HeadHeight } from '../App';
+import { HeadHeight } from '../layout';
 import { useMobile } from '../utils';
 import { TabHeight } from '../control';
 import { useOrbitData } from '../hoc/useOrbitData';

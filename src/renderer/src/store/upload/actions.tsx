@@ -21,7 +21,7 @@ import {
 } from '../../utils';
 import { DateTime } from 'luxon';
 import _ from 'lodash';
-import { SIZELIMIT } from '../../components/MediaUpload';
+import { typeLimit } from '../../utils/typeLimit';
 import { UploadType } from '../../components/UploadType';
 import path from 'path-browserify';
 import bugsnagClient from '../../auth/bugsnagClient';
@@ -261,7 +261,7 @@ export const nextUpload =
       sendError(n, `${name}:unsupported`);
       return;
     }
-    if (size > SIZELIMIT(uploadType) * 1000000) {
+    if (size > typeLimit(uploadType) * 1000000) {
       sendError(n, `${name}:toobig:${(size / 1000000).toFixed(2)}`);
       return;
     }

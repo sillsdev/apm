@@ -1,6 +1,6 @@
 import React from 'react';
 import { TabAppBar, ActionHeight } from './TabAppBar';
-import { HeadHeight } from '../App';
+import { HeadHeight } from '../layout';
 
 describe('TabAppBar', () => {
   it('should fix the mobile bar at the top', () => {

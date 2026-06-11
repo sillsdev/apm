@@ -2,7 +2,7 @@ import React, { useState, useContext, useMemo, Suspense } from 'react';
 import { useGlobal } from '../../context/useGlobal';
 import { Grid, Paper, Box, SxProps, Stack } from '@mui/material';
 
-import { HeadHeight } from '../../App';
+import { HeadHeight } from '../../layout';
 import { PassageDetailContext } from '../../context/PassageDetailContext';
 import { WorkflowSteps } from './WorkflowSteps';
 import PassageDetailSectionPassage from './PassageDetailSectionPassage';

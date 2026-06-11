@@ -8,7 +8,8 @@ import {
   MediaFileAttributes,
   MediaFileD,
 } from '../model';
-import MediaUpload, { FaithbridgeType, SIZELIMIT } from './MediaUpload';
+import MediaUpload, { FaithbridgeType } from './MediaUpload';
+import { typeLimit } from '../utils/typeLimit';
 import {
   findRecord,
   pullTableList,
@@ -432,7 +433,7 @@ export const Uploader = (props: IProps) => {
               uploadError.indexOf('toobig:') + 'toobig:'.length
             )
           )
-          .replace('{2}', SIZELIMIT(uploadType ?? UploadType.Media).toString());
+          .replace('{2}', typeLimit(uploadType ?? UploadType.Media).toString());
       }
       errMsgs.push(msg);
       setBusy(false);

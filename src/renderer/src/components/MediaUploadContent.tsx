@@ -17,12 +17,9 @@ import { mediaUploadSelector } from '../selector';
 import { LinkEdit } from '../control/LinkEdit';
 import { MarkDownEdit } from '../control/MarkDownEdit';
 import { isUrl } from '../utils';
-import {
-  FaithbridgeType,
-  MarkDownType,
-  SIZELIMIT,
-  UriLinkType,
-} from './MediaUpload';
+import { filterFilesBySizeLimit } from '../utils/filterFilesBySizeLimit';
+import { typeLimit } from '../utils/typeLimit';
+import { FaithbridgeType, MarkDownType, UriLinkType } from './MediaUpload';
 import { UploadType } from './UploadType';
 import { FileDrop } from 'react-file-drop';
 
@@ -53,10 +50,11 @@ interface ITargetProps {
   acceptmime: string;
   multiple?: boolean;
   handleFiles: (files: FileList | undefined) => void;
+  inputRef?: React.RefObject<HTMLInputElement | null>;
 }
 
 const DropTarget = (targetProps: ITargetProps) => {
-  const { name, multiple, acceptextension, acceptmime, handleFiles } =
+  const { name, multiple, acceptextension, acceptmime, handleFiles, inputRef } =
     targetProps;
   const t: IMediaUploadStrings = useSelector(mediaUploadSelector, shallowEqual);
 
@@ -82,6 +80,7 @@ const DropTarget = (targetProps: ITargetProps) => {
           : name}
       </MyLabel>
       <HiddenInput
+        ref={inputRef}
         id="upload"
         type="file"
         accept={acceptextension}
@@ -99,6 +98,7 @@ const DropTarget = (targetProps: ITargetProps) => {
           : name}
       </MyLabel>
       <HiddenInput
+        ref={inputRef}
         id="upload"
         type="file"
         accept={acceptmime}
@@ -163,8 +163,8 @@ function MediaUploadContent(props: IProps) {
   const filesRef = useRef(files);
   const { showMessage } = useSnackBar();
   const [acceptextension, setAcceptExtension] = useState('');
-  const [sizeLimit, setSizeLimit] = useState(0);
   const [acceptmime, setAcceptMime] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [hasRights, setHasRight] = useState(!onSpeaker || Boolean(speaker));
   const [progress, setProgress] = useState(false);
   const t: IMediaUploadStrings = useSelector(mediaUploadSelector, shallowEqual);
@@ -225,6 +225,11 @@ function MediaUploadContent(props: IProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [saveDisabled]);
 
+  const clearFileInput = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
   const setFiles = (f: File[]) => {
     filesRef.current = f;
     setFilesx(f);
@@ -238,20 +243,15 @@ function MediaUploadContent(props: IProps) {
         : files.length.toString() + ' files selected';
   };
   const checkSizes = (files: File[], sizelimit: number) => {
-    const smallenoughfiles = Array.from(
-      files.filter((s) => s.size <= sizelimit * 1000000)
-    );
-    if (smallenoughfiles.length < files.length) {
-      const rejectedFiles = Array.from(files).filter(
-        (s) => s.size > sizelimit * 1000000
-      );
+    const { accepted, rejected } = filterFilesBySizeLimit(files, sizelimit);
+    if (rejected.length > 0) {
       showMessage(
         t.toobig
-          .replace('{0}', rejectedFiles.map((f) => f.name).join(', '))
+          .replace('{0}', rejected.map((f) => f.name).join(', '))
           .replace('{1}', sizelimit.toString())
       );
     }
-    return smallenoughfiles;
+    return accepted;
   };
   const handleFiles = (files: FileList | undefined) => {
     if (files) {
@@ -276,12 +276,16 @@ function MediaUploadContent(props: IProps) {
       }
       const nonAudio = goodFiles.some((f) => !f?.type.includes('audio'));
       if (onNonAudio) onNonAudio(nonAudio);
-      goodFiles = checkSizes(goodFiles, sizeLimit);
+      goodFiles = checkSizes(goodFiles, typeLimit(uploadType));
       setName(fileName(goodFiles));
       setFiles(goodFiles);
+      if (goodFiles.length === 0) {
+        clearFileInput();
+      }
     } else {
       setFiles([]);
       setName('');
+      clearFileInput();
     }
   };
 
@@ -349,8 +353,8 @@ function MediaUploadContent(props: IProps) {
         'image/png, image/jpeg, image/jpeg, image/webp',
       ].map((s) => s)[uploadType] as string
     );
-    const size = SIZELIMIT(uploadType);
-    setSizeLimit(size);
+    const size = typeLimit(uploadType);
+    clearFileInput();
     if (filesRef.current.length > 0) {
       const goodFiles = checkSizes(filesRef.current, size);
       setName(fileName(goodFiles));
@@ -388,6 +392,7 @@ function MediaUploadContent(props: IProps) {
                 acceptextension={acceptextension}
                 acceptmime={acceptmime}
                 multiple={multiple ?? false}
+                inputRef={fileInputRef}
               />
             ) : (
               <MyLabel>{'\u00A0'}</MyLabel>

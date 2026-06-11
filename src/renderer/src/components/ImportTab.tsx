@@ -59,7 +59,7 @@ import {
   passageDescText,
 } from '../crud';
 import { isElectron } from '../../api-variable';
-import { HeadHeight } from '../App';
+import { HeadHeight } from '../layout';
 import {
   localUserKey,
   LocalKey,
