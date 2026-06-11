@@ -458,11 +458,11 @@ export function IntegrationPanel(props: IProps) {
       getTranscription,
     });
     resetCount();
-    if (!isMounted()) return;
-    showMessage(translateParatextErr(err, ts) || t.syncComplete);
+    if (!isMounted())
+      showMessage(translateParatextErr(err, ts) || t.syncComplete);
     if (setStepComplete && currentstep && !err) {
       await setStepComplete(currentstep, true);
-      if (gotoNextStep) gotoNextStep();
+      if (!isMounted() && gotoNextStep) gotoNextStep();
     }
     setSyncing(false);
   };
