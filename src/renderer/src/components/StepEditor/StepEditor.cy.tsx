@@ -208,7 +208,7 @@ describe('StepEditor (Edit Workflow)', () => {
     cy.get('.MuiDialogContent-root input#stepName')
       .eq(1)
       .should('have.value', 'Beta Stage');
-    cy.get('#wk-step-add').should('be.visible');
+    cy.get('#wk-step-add').should('be.visible').and('not.be.disabled');
   });
 
   it('top Add appends new steps', () => {
@@ -271,5 +271,22 @@ describe('StepEditor (Edit Workflow)', () => {
       });
     });
     cy.get('.MuiDialogContent-root input#stepName').last().should('be.visible');
+  });
+
+  it('keeps focus on the new step after Add and setting its tool', () => {
+    const resourceTool = JSON.stringify({ tool: 'resource', settings: '' });
+    const memory = createWorkflowStepMemory(TEST_ORG_ID, [
+      { id: 'wfs-1', name: 'Internalize', sequencenum: 0, tool: resourceTool },
+      { id: 'wfs-2', name: 'Record', sequencenum: 1 },
+    ]);
+    mountStepEditor(memory);
+    cy.get('#wk-step-add').click();
+    cy.get('.MuiDialogContent-root input#stepName').should('have.length', 3);
+    cy.get('.MuiDialogContent-root #stepTool').last().click();
+    cy.get('[role="listbox"]').contains('[role="option"]', 'Internalize').click();
+    cy.get('.MuiDialogContent-root input#stepName')
+      .last()
+      .should('have.value', 'Internalize 2')
+      .should('have.focus');
   });
 });

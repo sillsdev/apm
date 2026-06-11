@@ -68,6 +68,7 @@ interface IProps {
 export const StepEditor = ({ process, org }: IProps) => {
   const [sortKey, setSortKey] = useState(0);
   const [rows, setRows] = useState<IStepRow[]>([]);
+  const [stepsLoaded, setStepsLoaded] = useState(false);
   const [showAll, setShowAll] = useState(false);
   const se: IStepEditorStrings = useSelector(stepEditorSelector, shallowEqual);
   const st: IWorkflowStepsStrings = useSelector(
@@ -195,7 +196,8 @@ export const StepEditor = ({ process, org }: IProps) => {
 
   const setToolSettingsOpen = (open: boolean) => {
     if (!open) setToolSettingsRow(-1);
-    if (toolRef.current) {
+    if (toolRef.current !== undefined) {
+      focusIndex.current = toolRef.current;
       const settings = (rows[toolRef.current as number] as IStepRow).settings
         ? JSON.parse((rows[toolRef.current as number] as IStepRow).settings)
         : {};
@@ -247,6 +249,7 @@ export const StepEditor = ({ process, org }: IProps) => {
   };
 
   const handleToolChange = (tool: string, index: number) => {
+    focusIndex.current = index;
     if (settingsTools.includes(tool as ToolSlug)) toolRef.current = index;
     setToolSettingsRow(index); //bring up Settings editor
     let name = (rows[index] as IStepRow).name;
@@ -299,6 +302,7 @@ export const StepEditor = ({ process, org }: IProps) => {
   };
 
   const handleAdd = async () => {
+    focusIndex.current = rows.length;
     scrollNewStepIntoViewRef.current = true;
     const name = mangleName(se.nextStep, getOrgNames());
     const tool = ToolSlug.Discuss;
@@ -420,8 +424,11 @@ export const StepEditor = ({ process, org }: IProps) => {
   }, [toolsChanged]);
 
   useEffect(() => {
+    let cancelled = false;
+    setStepsLoaded(false);
     GetOrgWorkflowSteps({ process: 'ANY', org, showAll: true }).then(
       (orgSteps) => {
+        if (cancelled) return;
         const newRows = Array<IStepRow>();
         orgSteps.forEach((s) => {
           const tool = getTool(s.attributes?.tool);
@@ -442,8 +449,12 @@ export const StepEditor = ({ process, org }: IProps) => {
           sorted.filter((r) => r.id).map((r) => [r.id, rowSignature(r)])
         );
         setRows(sorted);
+        setStepsLoaded(true);
       }
     );
+    return () => {
+      cancelled = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [org]);
 
@@ -520,7 +531,12 @@ export const StepEditor = ({ process, org }: IProps) => {
           borderBottom: `1px solid ${theme.palette.divider}`,
         })}
       >
-        <Button id="wk-step-add" onClick={handleAdd} variant="contained">
+        <Button
+          id="wk-step-add"
+          onClick={handleAdd}
+          variant="contained"
+          disabled={!stepsLoaded}
+        >
           {se.add}
         </Button>
         <div title={hiddenMessage}>
