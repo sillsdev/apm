@@ -1,5 +1,5 @@
 import { Box, SxProps } from '@mui/material';
-import { HeadHeight } from '../../App';
+import { HeadHeight } from '../../layout';
 
 interface Props {
   header: React.ReactNode;

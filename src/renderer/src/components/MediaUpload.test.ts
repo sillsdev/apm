@@ -1,4 +1,5 @@
-import { filterFilesBySizeLimit, SIZELIMIT } from './uploadSizeLimits';
+import { filterFilesBySizeLimit } from '../utils/filterFilesBySizeLimit';
+import { typeLimit } from '../utils/typeLimit';
 import { UploadType } from './UploadType';
 
 jest.mock('../../api-variable', () => ({
@@ -7,14 +8,14 @@ jest.mock('../../api-variable', () => ({
 
 const mb = (n: number) => n * 1000000;
 
-describe('SIZELIMIT', () => {
+describe('typeLimit', () => {
   it('uses API size limit for section/passage resource uploads', () => {
-    expect(SIZELIMIT(UploadType.Resource)).toBe(30);
-    expect(SIZELIMIT(UploadType.Media)).toBe(30);
+    expect(typeLimit(UploadType.Resource)).toBe(30);
+    expect(typeLimit(UploadType.Media)).toBe(30);
   });
 
   it('uses 50 MB for general (project) resource uploads', () => {
-    expect(SIZELIMIT(UploadType.ProjectResource)).toBe(50);
+    expect(typeLimit(UploadType.ProjectResource)).toBe(50);
   });
 });
 
@@ -40,7 +41,7 @@ describe('filterFilesBySizeLimit', () => {
     const files = [file('general.mp3', mb(31))];
     const { accepted, rejected } = filterFilesBySizeLimit(
       files,
-      SIZELIMIT(UploadType.ProjectResource)
+      typeLimit(UploadType.ProjectResource)
     );
     expect(accepted).toEqual(files);
     expect(rejected).toHaveLength(0);
@@ -50,7 +51,7 @@ describe('filterFilesBySizeLimit', () => {
     const files = [file('section.mp3', mb(31))];
     const { accepted, rejected } = filterFilesBySizeLimit(
       files,
-      SIZELIMIT(UploadType.Resource)
+      typeLimit(UploadType.Resource)
     );
     expect(accepted).toHaveLength(0);
     expect(rejected).toEqual(files);

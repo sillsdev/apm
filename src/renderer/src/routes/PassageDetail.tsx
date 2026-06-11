@@ -24,7 +24,7 @@ import { shallowEqual, useSelector } from 'react-redux';
 import { sharedSelector } from '../selector';
 import PassageDetailRecord from '../components/PassageDetail/PassageDetailRecord';
 import { usePaneWidth } from '../components/usePaneWidth';
-import { HeadHeight } from '../App';
+import { HeadHeight } from '../layout';
 import PassageDetailsArtifactsMobile from '../components/PassageDetail/Internalization/PassageDetailsArtifactsMobile';
 import PassageDetailMarkVersesIsMobile from '../components/PassageDetail/mobile/MarkVerses/PassageDetailMarkVersesIsMobile';
 import TeamCheckReferenceMobile from '../components/PassageDetail/mobile/TeamCheckReferenceMobile';

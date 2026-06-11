@@ -1,5 +1,5 @@
 import { AppBar, AppBarProps, styled } from '@mui/material';
-import { HeadHeight } from '../App';
+import { HeadHeight } from '../layout';
 
 export const TabHeight = 52;
 export const ActionHeight = 38;

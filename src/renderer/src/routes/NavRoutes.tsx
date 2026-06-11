@@ -5,6 +5,7 @@ import {
   createBrowserRouter,
   RouterProvider,
 } from 'react-router-dom';
+import { ErrorPage } from '../components/ErrorPage';
 import Logout from './Logout';
 import Loading from './Loading';
 import CreateProfile from './CreateProfile';
@@ -20,7 +21,6 @@ import { privacyContent } from './privacyContent';
 import { default as Detail } from './PassageDetail';
 import { default as Auth } from '../hoc/PrivateRoute';
 import { isElectron } from '../../api-variable';
-import { ErrorPage } from '../components/ErrorPage';
 import { ScriptureBurrito } from './ScriptureBurrito';
 import { BurritoStep } from '../burrito/BurritoStep';
 import { BurritoBooks } from '../burrito/BurritoBooks';

@@ -14,8 +14,8 @@ type WsAudioPlayerProps = {
 
 let latestWsProps: WsAudioPlayerProps | undefined;
 
-jest.mock('./MediaUpload', () => ({
-  SIZELIMIT: () => 100,
+jest.mock('../utils/typeLimit', () => ({
+  typeLimit: () => 100,
 }));
 
 jest.mock('./WSAudioPlayer', () => {

@@ -13,7 +13,6 @@ export const MarkDownType = 'text/markdown';
 export const Mp3Type = 'audio/mpeg';
 export const FaithbridgeType = 'audio/mpeg/s3link';
 
-export { filterFilesBySizeLimit, SIZELIMIT } from './uploadSizeLimits';
 interface IProps {
   visible: boolean;
   onVisible: (v: boolean) => void;
