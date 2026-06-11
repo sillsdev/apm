@@ -537,12 +537,21 @@ test('blocks autosave when markup has hard reference errors', async () => {
     ?.firstChild as HTMLElement;
   await waitFor(() => expect(tbody.children.length).toBeTruthy());
 
+  // Load saved segment data with an out-of-passage ref ("9:9") into the table.
   act(() => {
     if (mockPlayerAction) {
       mockPlayerAction(
         '{"regions":"[{\\"start\\":0,\\"end\\":5,\\"label\\":\\"9:9\\"}]"}',
-        false
+        true
       );
+    }
+  });
+
+  // Simulate a user boundary edit (init=false) so checkBlockersAndScheduleAutosave
+  // runs with "9:9" still in the table — the blocker should be detected and warned.
+  act(() => {
+    if (mockPlayerAction) {
+      mockPlayerAction('{"regions":"[{\\"start\\":0,\\"end\\":6}]"}', false);
     }
   });
 

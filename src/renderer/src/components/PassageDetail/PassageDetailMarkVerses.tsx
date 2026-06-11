@@ -185,7 +185,6 @@ export function PassageDetailMarkVerses({ width }: MarkVersesProps) {
   const {
     toolChanged,
     toolsChanged,
-    isChanged,
     saveRequested,
     saveCompleted,
     clearRequested,
@@ -616,7 +615,10 @@ export function PassageDetailMarkVerses({ width }: MarkVersesProps) {
       if (reset) {
         resetSegments(regions);
       }
-      if (!init && !isChanged(verseToolId)) toolChanged(verseToolId);
+      if (!init) {
+        toolChanged(verseToolId);
+        checkBlockersAndScheduleAutosave();
+      }
     }
   };
 
@@ -741,6 +743,7 @@ export function PassageDetailMarkVerses({ width }: MarkVersesProps) {
       setData(newData);
       setSegments();
       toolChanged(verseToolId);
+      checkBlockersAndScheduleAutosave();
     }
   };
 
@@ -845,8 +848,8 @@ export function PassageDetailMarkVerses({ width }: MarkVersesProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [toolsChanged, scheduleAutosave]);
 
-  useEffect(() => {
-    if (!isChanged(verseToolId) || !hasPermission || savingRef.current) return;
+  const checkBlockersAndScheduleAutosave = () => {
+    if (!hasPermission) return;
     const allIssues = checkRefs();
     const blockers = checkAutosaveBlockers();
     setSaveIssues(allIssues);
@@ -885,8 +888,7 @@ export function PassageDetailMarkVerses({ width }: MarkVersesProps) {
       setIssuesDialogOpen(false);
     }
     scheduleAutosave();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [toolsChanged, hasPermission, scheduleAutosave]);
+  };
 
   return Boolean(mediafileId) && passType !== PassageTypeEnum.NOTE ? (
     <Box>
