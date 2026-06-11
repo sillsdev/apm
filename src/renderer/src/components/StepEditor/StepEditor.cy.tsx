@@ -280,7 +280,7 @@ describe('StepEditor (Edit Workflow)', () => {
       { id: 'wfs-2', name: 'Record', sequencenum: 1 },
     ]);
     mountStepEditor(memory);
-    cy.get('#wk-step-add').click();
+    cy.get('#wk-step-add').should('not.be.disabled').click();
     cy.get('.MuiDialogContent-root input#stepName').should('have.length', 3);
     cy.get('.MuiDialogContent-root #stepTool').last().click();
     cy.get('[role="listbox"]').contains('[role="option"]', 'Internalize').click();
