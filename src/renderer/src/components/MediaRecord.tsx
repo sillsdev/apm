@@ -567,7 +567,11 @@ function MediaRecord(props: IProps) {
       if (blob) gotTheBlob(blob);
       else blobError(ts.mediaError);
     } catch (error) {
-      logError(Severity.error, reporter, infoMsg(error as Error, 'media load failed'));
+      logError(
+        Severity.error,
+        reporter,
+        infoMsg(error as Error, 'media load failed')
+      );
       blobError(ts.mediaError);
     }
   };
