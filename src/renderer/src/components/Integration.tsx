@@ -64,6 +64,7 @@ import {
   useCheckOnline,
   integrationSlug,
   useDataChanges,
+  useMounted,
 } from '../utils';
 import { localSync } from '../business/localParatext/localSync';
 import { TokenContext } from '../context/TokenProvider';
@@ -261,6 +262,7 @@ export function IntegrationPanel(props: IProps) {
 
   const [errorReporter] = useGlobal('errorReporter');
   const { showMessage, showTitledMessage } = useSnackBar();
+  const isMounted = useMounted('integration');
   const [busy] = useGlobal('remoteBusy'); //verified this is not used in a function 2/18/25
   const [ptPath, setPtPath] = useState('');
   const syncing = React.useRef<boolean>(false);
@@ -455,11 +457,12 @@ export function IntegrationPanel(props: IProps) {
       artifactId: getTypeId(exportType),
       getTranscription,
     });
-    showMessage(translateParatextErr(err, ts) || t.syncComplete);
     resetCount();
+    if (!isMounted())
+      showMessage(translateParatextErr(err, ts) || t.syncComplete);
     if (setStepComplete && currentstep && !err) {
       await setStepComplete(currentstep, true);
-      if (gotoNextStep) gotoNextStep();
+      if (!isMounted() && gotoNextStep) gotoNextStep();
     }
     setSyncing(false);
   };
@@ -570,6 +573,16 @@ export function IntegrationPanel(props: IProps) {
   }, []);
 
   useEffect(() => {
+    return () => {
+      resetUserName();
+      resetProjects();
+      resetCount();
+      resetSync();
+    };
+    /* eslint-disable-next-line react-hooks/exhaustive-deps */
+  }, []);
+
+  useEffect(() => {
     setHasParatext(false);
     resetUserName();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -619,17 +632,17 @@ export function IntegrationPanel(props: IProps) {
   }, [integrations, exportType]);
 
   useEffect(() => {
-    if (paratext_countStatus) {
-      if (paratext_countStatus.errStatus) {
+    if (!paratext_countStatus) return;
+    if (paratext_countStatus.errStatus) {
+      if (!isMounted())
         showTitledMessage(
           t.countError,
           translateParatextError(paratext_countStatus, ts)
         );
-        setCountMsg(translateParatextError(paratext_countStatus, ts));
-      } else if (paratext_countStatus.complete) {
-        setCount(paratext_count);
-        resetCount();
-      }
+      setCountMsg(translateParatextError(paratext_countStatus, ts));
+    } else if (paratext_countStatus.complete) {
+      setCount(paratext_count);
+      resetCount();
     }
     /* eslint-disable-next-line react-hooks/exhaustive-deps */
   }, [paratext_countStatus]);
@@ -638,7 +651,7 @@ export function IntegrationPanel(props: IProps) {
     if (!local) {
       if (!paratext_usernameStatus) {
         getUserName(accessToken || '', errorReporter, t.usernamePending);
-      } else if (paratext_usernameStatus.errStatus)
+      } else if (paratext_usernameStatus.errStatus && isMounted())
         showTitledMessage(
           t.usernameError,
           translateParatextError(paratext_usernameStatus, ts)
@@ -690,7 +703,7 @@ export function IntegrationPanel(props: IProps) {
           );
         }
       } else {
-        if (paratext_projectsStatus.errStatus) {
+        if (paratext_projectsStatus.errStatus && isMounted()) {
           showTitledMessage(
             t.projectError,
             translateParatextError(paratext_projectsStatus, ts)
@@ -711,25 +724,25 @@ export function IntegrationPanel(props: IProps) {
   }, [projectintegrations, paratext_projects, paratextIntegration, project]);
 
   useEffect(() => {
-    if (paratext_syncStatus) {
-      if (paratext_syncStatus.errStatus) {
+    if (!paratext_syncStatus) return;
+    if (paratext_syncStatus.errStatus) {
+      if (isMounted())
         showTitledMessage(t.syncError, TranslateSyncError(paratext_syncStatus));
-        resetSync();
-        setSyncing(false);
-      } else if (paratext_syncStatus.statusMsg !== '') {
-        showMessage(paratext_syncStatus.statusMsg);
-      }
-      if (paratext_syncStatus.complete) {
-        if (!paratext_syncStatus.errStatus) setCount(0); //force this to 0 now...if wrong...will reset eventually with new count
-        resetCount();
-        resetSync();
-        setSyncing(false);
-        forceDataChanges();
-        if (setStepComplete && currentstep && !paratext_syncStatus.errStatus) {
-          setStepComplete(currentstep, true).then(() => {
-            if (gotoNextStep) gotoNextStep();
-          });
-        }
+      resetSync();
+      setSyncing(false);
+    } else if (paratext_syncStatus.statusMsg !== '' && isMounted()) {
+      showMessage(paratext_syncStatus.statusMsg);
+    }
+    if (paratext_syncStatus.complete) {
+      if (!paratext_syncStatus.errStatus) setCount(0); //force this to 0 now...if wrong...will reset eventually with new count
+      resetCount();
+      resetSync();
+      setSyncing(false);
+      forceDataChanges();
+      if (setStepComplete && currentstep && !paratext_syncStatus.errStatus) {
+        setStepComplete(currentstep, true).then(() => {
+          if (gotoNextStep) gotoNextStep();
+        });
       }
     }
     /* eslint-disable-next-line react-hooks/exhaustive-deps */
