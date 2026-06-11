@@ -457,9 +457,9 @@ export function IntegrationPanel(props: IProps) {
       artifactId: getTypeId(exportType),
       getTranscription,
     });
+    resetCount();
     if (!isMounted()) return;
     showMessage(translateParatextErr(err, ts) || t.syncComplete);
-    resetCount();
     if (setStepComplete && currentstep && !err) {
       await setStepComplete(currentstep, true);
       if (gotoNextStep) gotoNextStep();
@@ -632,12 +632,13 @@ export function IntegrationPanel(props: IProps) {
   }, [integrations, exportType]);
 
   useEffect(() => {
-    if (!isMounted() || !paratext_countStatus) return;
+    if (!paratext_countStatus) return;
     if (paratext_countStatus.errStatus) {
-      showTitledMessage(
-        t.countError,
-        translateParatextError(paratext_countStatus, ts)
-      );
+      if (!isMounted())
+        showTitledMessage(
+          t.countError,
+          translateParatextError(paratext_countStatus, ts)
+        );
       setCountMsg(translateParatextError(paratext_countStatus, ts));
     } else if (paratext_countStatus.complete) {
       setCount(paratext_count);
