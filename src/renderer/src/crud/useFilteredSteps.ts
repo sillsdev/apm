@@ -5,7 +5,10 @@ import { usePlanType } from './usePlanType';
 import { useOrbitData } from '../hoc/useOrbitData';
 import { getTool } from './useStepTool';
 import { ToolSlug } from './toolSlug';
-import { filterAndSortOrgWorkflowSteps } from './useOrgWorkflowSteps';
+import {
+  filterAndSortOrgWorkflowSteps,
+  filterVisibleOrgWorkflowSteps,
+} from './orgWorkflowStepsUtils';
 
 const filterOrgStepsForPlanType = (
   steps: OrgWorkflowStepD[],
@@ -40,11 +43,13 @@ export const useFilteredSteps = (): OrgWorkflowStepD[] => {
 
   const filtered = useMemo(() => {
     const { scripture } = getPlanType(plan);
-    const steps = filterAndSortOrgWorkflowSteps(
-      orgWorkflowSteps,
-      'ANY',
-      organization,
-      offlineOnly
+    const steps = filterVisibleOrgWorkflowSteps(
+      filterAndSortOrgWorkflowSteps(
+        orgWorkflowSteps,
+        'ANY',
+        organization,
+        offlineOnly
+      )
     );
     return filterOrgStepsForPlanType(steps, scripture);
   }, [orgWorkflowSteps, organization, offlineOnly, plan, getPlanType]);

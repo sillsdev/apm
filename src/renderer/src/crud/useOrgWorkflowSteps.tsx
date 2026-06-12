@@ -1,6 +1,9 @@
 import { useRef } from 'react';
 import { useGlobal, useGetGlobal } from '../context/useGlobal';
-import { related } from '.';
+import {
+  filterAndSortOrgWorkflowSteps,
+  filterVisibleOrgWorkflowSteps,
+} from './orgWorkflowStepsUtils';
 import {
   IWorkflowStepsStrings,
   OrgWorkflowStep,
@@ -22,21 +25,6 @@ import { useOrbitData } from '../hoc/useOrbitData';
 import { useNewTime } from '../utils/useNewTime';
 
 export const defaultWorkflow = 'draft';
-
-export const filterAndSortOrgWorkflowSteps = (
-  orgworkflowsteps: OrgWorkflowStepD[],
-  process: string,
-  org: string,
-  offlineOnly: boolean
-) =>
-  orgworkflowsteps
-    .filter(
-      (s) =>
-        (process === 'ANY' || s.attributes.process === process) &&
-        related(s, 'organization') === org &&
-        Boolean(s.keys?.remoteId) !== offlineOnly
-    )
-    .sort((i, j) => i.attributes.sequencenum - j.attributes.sequencenum);
 
 interface ISwitches {
   [key: string]: any;
@@ -176,7 +164,7 @@ export const useOrgWorkflowSteps = () => {
     //     org
     //   );
     // }
-    return orgsteps.filter((s) => showAll || s.attributes.sequencenum >= 0);
+    return filterVisibleOrgWorkflowSteps(orgsteps, showAll);
   };
 
   return {
