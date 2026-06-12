@@ -20,7 +20,7 @@ import { useSnackBar } from '../../../hoc/SnackBar';
 import { sharedSelector, workflowStepsSelector } from '../../../selector';
 import { shallowEqual, useSelector } from 'react-redux';
 import { useWfLabel } from '../../../utils/useWfLabel';
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { IWorkflowStepsStrings, PassageD } from '../../../model';
 import { toCamel } from '../../../utils/toCamel';
 import { related } from '../../../crud/related';
@@ -67,6 +67,12 @@ export default function MobileWorkflowSteps() {
     workflowStepsSelector,
     shallowEqual
   );
+
+  // Refs used to scroll the current step/passage into view
+  const didMountRef = useRef(false);
+  const stepRefs = useRef(new Map<string, HTMLElement>());
+
+  // Ordered list of passages in the current section, excluding publishing-title rows, sorted by sequence number.
   const sectionPassages = useMemo<PassageD[]>(() => {
     const passRecIds = related(section, 'passages');
     if (!Array.isArray(passRecIds)) return [];
@@ -82,20 +88,13 @@ export default function MobileWorkflowSteps() {
   const [passageMenuAnchor, setPassageMenuAnchor] =
     useState<HTMLElement | null>(null);
 
-  const handleSelect = (id: string) => () => {
-    if (getGlobal('remoteBusy')) {
-      showMessage(ts.wait);
-      return;
-    }
-    if (!recording && !commentRecording && id !== currentstep) {
-      setCurrentStep(id);
-    }
-  };
-
+  // The display label of the currently workflow step
   const currentLabel = useMemo(
     () => workflow.find((w) => w.id === currentstep)?.label ?? '',
     [currentstep, workflow]
   );
+
+  // The tip text for the current workflow step
   const currentTip = useMemo(() => {
     if (!currentLabel) return '';
     if (tool === ToolSlug.Prompt && showPromptAdmin) {
@@ -107,25 +106,57 @@ export default function MobileWorkflowSteps() {
       : '';
   }, [currentLabel, t, tool, showPromptAdmin]);
 
-  const dropdownRef = useRef<HTMLDivElement>(null);
-  const [dropdownWidth, setDropdownWidth] = useState(0);
+  const passageRef = (p?: PassageD) =>
+    [p?.attributes?.book, p?.attributes?.reference].filter(Boolean).join(' ');
 
-  useLayoutEffect(() => {
-    const el = dropdownRef.current;
-    if (!el) return;
-    const update = () =>
-      setDropdownWidth(
-        el.offsetWidth + parseFloat(window.getComputedStyle(el).marginRight)
-      );
-    update();
-    const ro = new ResizeObserver(update);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
+  const navigateToPassage = (p: PassageD) => {
+    const remId = p.keys?.remoteId ?? p.id;
+    rememberCurrentPassage(memory, remId);
+    passageNavigate(`/detail/${prjId}/${remId}`);
+  };
 
-  const didMountRef = useRef(false);
-  const stepRefs = useRef(new Map<string, HTMLElement>());
+  const handleSelect = (id: string) => () => {
+    if (getGlobal('remoteBusy')) {
+      showMessage(ts.wait);
+      return;
+    }
+    if (!recording && !commentRecording && id !== currentstep) {
+      setCurrentStep(id);
+    }
+  };
 
+  const isInteractionBlocked = () => {
+    if (recording || commentRecording) return true;
+    if (getGlobal('remoteBusy')) {
+      showMessage(ts.wait);
+      return true;
+    }
+    return false;
+  };
+
+  // The step/passage data model for the parallelograms
+  const steps = isStepProgression
+    ? workflow.map((s) => ({
+        id: s.id,
+        dataCy: 'workflow-step',
+        isCurrent: s.id === currentstep,
+        isComplete: stepComplete(s.id),
+        onClick: handleSelect(s.id),
+      }))
+    : sectionPassages.map((p) => ({
+        id: p.id,
+        dataCy: 'passage-step',
+        isCurrent: p.id === passage?.id,
+        isComplete:
+          (p.attributes.sequencenum ?? 0) <
+          (passage?.attributes?.sequencenum ?? 0),
+        onClick: () => {
+          if (isInteractionBlocked()) return;
+          navigateToPassage(p);
+        },
+      }));
+
+  // Keep the current step/passage scrolled into view
   useEffect(() => {
     const currentId = isStepProgression ? currentstep : (passage?.id ?? '');
     const el = stepRefs.current.get(currentId);
@@ -145,18 +176,35 @@ export default function MobileWorkflowSteps() {
   ]);
 
   return (
-    <Box sx={{ px: 1.5, py: 1 }} data-cy="workflow-steps">
+    <Box
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        py: 1,
+        px: 1.5,
+      }}
+      data-cy="workflow-steps"
+    >
+      {/* Top row with the passage dropdown and parallelograms */}
       <Box
         sx={{
+          position: 'relative',
           display: 'flex',
-          alignItems: 'flex-start',
+          alignItems: 'center',
           width: '100%',
         }}
       >
         {/* Passage dropdown */}
         <Box
-          ref={dropdownRef}
-          sx={{ flexShrink: 0, mr: 1, display: 'flex', alignItems: 'center' }}
+          sx={{
+            flexShrink: 0,
+            position: 'relative',
+            zIndex: 1,
+            mr: 1,
+            display: 'flex',
+            alignItems: 'center',
+          }}
         >
           {!isStepProgression && currentTip && (
             <IconButton
@@ -172,7 +220,10 @@ export default function MobileWorkflowSteps() {
           <Button
             size="small"
             endIcon={<ArrowDropDownIcon />}
-            sx={{ whiteSpace: 'nowrap', minWidth: 'auto' }}
+            sx={{
+              whiteSpace: 'nowrap',
+              minWidth: 'auto',
+            }}
             onClick={(e) => {
               if (recording || commentRecording) return;
               if (getGlobal('remoteBusy')) {
@@ -183,11 +234,7 @@ export default function MobileWorkflowSteps() {
             }}
             data-cy="passage-dropdown"
           >
-            {isStepProgression
-              ? [passage?.attributes?.book, passage?.attributes?.reference]
-                  .filter(Boolean)
-                  .join(' ') || ''
-              : currentLabel}
+            {isStepProgression ? passageRef(passage) : currentLabel}
           </Button>
           <Menu
             anchorEl={passageMenuAnchor}
@@ -200,15 +247,11 @@ export default function MobileWorkflowSteps() {
                     key={p.id}
                     selected={p.id === passage?.id}
                     onClick={() => {
-                      const remId = p.keys?.remoteId ?? p.id;
-                      rememberCurrentPassage(memory, remId);
-                      passageNavigate(`/detail/${prjId}/${remId}`);
+                      navigateToPassage(p);
                       setPassageMenuAnchor(null);
                     }}
                   >
-                    {[p.attributes.book, p.attributes.reference]
-                      .filter(Boolean)
-                      .join(' ')}
+                    {passageRef(p)}
                   </MenuItem>
                 ))
               : workflow.map((step) => (
@@ -225,145 +268,83 @@ export default function MobileWorkflowSteps() {
                 ))}
           </Menu>
         </Box>
-        {/* Workflow step parallelograms */}
+
+        {/* Step/passage parallelograms */}
         <Box
           sx={{
-            flex: 1,
-            display: 'flex',
             overflowX: 'auto',
-            overflowY: 'hidden',
-            WebkitOverflowScrolling: 'touch',
+            display: 'flex',
+            flex: { xs: 1, md: 'none' },
+            justifyContent: {
+              xs: 'flex-start',
+              md: 'center',
+            },
+            position: { md: 'absolute' },
+            left: { md: 0 },
+            right: { md: 0 },
           }}
         >
-          <Box sx={{ display: 'flex', mx: 'auto', pb: 0.25 }}>
-            {isStepProgression
-              ? workflow.map((step) => {
-                  const isCurrent = step.id === currentstep;
-                  return (
-                    <ButtonBase
-                      key={step.id}
-                      data-cy="workflow-step"
-                      role="button"
-                      onClick={handleSelect(step.id)}
-                      tabIndex={0}
-                      ref={(el) => {
-                        if (el) stepRefs.current.set(step.id, el);
-                        else stepRefs.current.delete(step.id);
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault();
-                        }
-                      }}
-                      sx={{
-                        flex: '0 0 80px',
-                        height: 30,
-                        mr: -0.25, // Overlap adjacent parallelograms so their edges meet cleanly
-                        backgroundColor: isCurrent
-                          ? theme.palette.grey[700]
-                          : stepComplete(step.id)
-                            ? theme.palette.grey[400]
-                            : theme.palette.grey[200],
-                        clipPath: 'polygon(10% 0%, 100% 0%, 90% 100%, 0% 100%)',
-                        cursor:
-                          recording || commentRecording
-                            ? 'not-allowed'
-                            : 'pointer',
-                      }}
-                    />
-                  );
-                })
-              : sectionPassages.map((p) => {
-                  const isCurrent = p.id === passage?.id;
-                  const isComplete =
-                    (p.attributes.sequencenum ?? 0) <
-                    (passage?.attributes?.sequencenum ?? 0);
-                  return (
-                    <ButtonBase
-                      key={p.id}
-                      data-cy="passage-step"
-                      role="button"
-                      onClick={() => {
-                        if (recording || commentRecording) return;
-                        if (getGlobal('remoteBusy')) {
-                          showMessage(ts.wait);
-                          return;
-                        }
-                        const remId = p.keys?.remoteId ?? p.id;
-                        rememberCurrentPassage(memory, remId);
-                        passageNavigate(`/detail/${prjId}/${remId}`);
-                      }}
-                      tabIndex={0}
-                      ref={(el) => {
-                        if (el) stepRefs.current.set(p.id, el);
-                        else stepRefs.current.delete(p.id);
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault();
-                        }
-                      }}
-                      sx={{
-                        flex: '0 0 80px',
-                        height: 30,
-                        mr: -0.25, // Overlap adjacent parallelograms so their edges meet cleanly
-                        backgroundColor: isCurrent
-                          ? theme.palette.grey[700]
-                          : isComplete
-                            ? theme.palette.grey[400]
-                            : theme.palette.grey[200],
-                        clipPath: 'polygon(10% 0%, 100% 0%, 90% 100%, 0% 100%)',
-                        cursor:
-                          recording || commentRecording
-                            ? 'not-allowed'
-                            : 'pointer',
-                      }}
-                    />
-                  );
-                })}
-            {/* Spacer to mirror the dropdown width so mx:auto centers the parallelograms */}
-            <Box
-              data-cy="step-spacer"
-              sx={{
-                flexShrink: 0,
-                width: dropdownWidth,
-                display: 'none',
-                '@media (min-width: 840px)': { display: 'block' },
-              }}
-            />
-          </Box>
-        </Box>
-      </Box>
-      {(isStepProgression ? currentLabel : passage?.id) && (
-        <Typography
-          sx={{ mt: 1, textAlign: 'center' }}
-          data-cy="workflow-step-label"
-        >
-          {isStepProgression ? (
-            currentTip ? (
-              <ButtonBase
-                onClick={() => setTipOpen(true)}
-                data-cy="workflow-step-tip"
-                sx={{
-                  borderRadius: 1,
-                  fontWeight: 'inherit',
-                  fontSize: 'inherit',
+          {steps.map((step) => {
+            const color = step.isCurrent
+              ? theme.palette.grey[700]
+              : step.isComplete
+                ? theme.palette.grey[400]
+                : theme.palette.grey[200];
+            return (
+              <Box
+                key={step.id}
+                data-cy={step.dataCy}
+                ref={(el: HTMLElement | null) => {
+                  if (el) stepRefs.current.set(step.id, el);
+                  else stepRefs.current.delete(step.id);
                 }}
-                aria-label={currentTip}
-              >
-                {getWfLabel(currentLabel) + '\u00A0'}
-                <InfoIcon color="info" fontSize="small" />
-              </ButtonBase>
-            ) : (
-              getWfLabel(currentLabel)
-            )
+                onClick={step.onClick}
+                sx={{
+                  flex: '0 0 80px',
+                  height: 30,
+                  bgcolor: color,
+                  mr: -0.25,
+                  clipPath: 'polygon(10% 0%, 100% 0%, 90% 100%, 0% 100%)',
+                  cursor:
+                    recording || commentRecording ? 'not-allowed' : 'pointer',
+                }}
+              />
+            );
+          })}
+        </Box>
+
+        {/* Spacer to center the parallelograms in the top row on desktop screens */}
+        <Box
+          sx={{ height: 30, flex: 1, display: { xs: 'none', md: 'block' } }}
+        />
+      </Box>
+
+      {/* Bottom row with the labels */}
+      <Typography sx={{ mt: 1 }} data-cy="workflow-step-label">
+        {isStepProgression ? (
+          currentTip ? (
+            <ButtonBase
+              onClick={() => setTipOpen(true)}
+              data-cy="workflow-step-tip"
+              sx={{
+                borderRadius: 1,
+                fontWeight: 'inherit',
+                fontSize: 'inherit',
+              }}
+              aria-label={currentTip}
+            >
+              {getWfLabel(currentLabel) + '\u00A0'}
+              <InfoIcon color="info" fontSize="small" />
+            </ButtonBase>
           ) : (
-            [passage?.attributes?.book, passage?.attributes?.reference]
-              .filter(Boolean)
-              .join(' ')
-          )}
-        </Typography>
-      )}
+            getWfLabel(currentLabel)
+          )
+        ) : (
+          passageRef(passage)
+        )}
+      </Typography>
+
+      {/* Tip dialog */}
       <Dialog open={tipOpen} onClose={() => setTipOpen(false)}>
         <DialogTitle>{getWfLabel(currentLabel)}</DialogTitle>
         <DialogContent>{currentTip}</DialogContent>
