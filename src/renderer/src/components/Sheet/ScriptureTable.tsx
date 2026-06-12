@@ -23,8 +23,6 @@ import {
   ISheet,
   IwsKind,
   IMediaShare,
-  WorkflowStep,
-  OrgWorkflowStep,
   IWorkflowStepsStrings,
   GroupMembership,
   Discussion,
@@ -33,7 +31,6 @@ import {
   GraphicD,
   SectionD,
   PassageD,
-  OrgWorkflowStepD,
   ProjectD,
   SharedResourceD,
   AltBkSeq,
@@ -169,8 +166,6 @@ export function ScriptureTable(props: IProps) {
   const discussions = useOrbitData<Discussion[]>('discussion');
   const groupmemberships = useOrbitData<GroupMembership[]>('groupmembership');
   const graphics = useOrbitData<GraphicD[]>('graphic');
-  const workflowSteps = useOrbitData<WorkflowStep[]>('workflowstep');
-  const orgWorkflowSteps = useOrbitData<OrgWorkflowStep[]>('orgworkflowstep');
   const organizationSchemeSteps = useOrbitData<OrganizationSchemeStepD[]>(
     'organizationschemestep'
   );
@@ -301,8 +296,6 @@ export function ScriptureTable(props: IProps) {
   const [detachPassage] = useMediaAttach();
   const checkOnline = useCheckOnline('ScriptureTable');
   const [speaker, setSpeaker] = useState('');
-  const getStepsBusy = useRef(false);
-  const [orgSteps, setOrgSteps] = useState<OrgWorkflowStepD[]>([]);
   const { myGroups } = usePeerGroups();
   const {
     getProjectDefault,
@@ -312,7 +305,7 @@ export function ScriptureTable(props: IProps) {
     setLocalDefault,
   } = useProjectDefaults();
   const { getSharedResource } = useSharedResRead();
-  const getFilteredSteps = useFilteredSteps();
+  const orgSteps = useFilteredSteps();
   const getDiscussionCount = useDiscussionCount({
     mediafiles,
     discussions,
@@ -1425,61 +1418,53 @@ export function ScriptureTable(props: IProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [project]);
 
-  useEffect(() => {
-    if (!getStepsBusy.current) {
-      getStepsBusy.current = true;
-      getFilteredSteps((orgSteps) => {
-        getStepsBusy.current = false;
-        const newOrgSteps = orgSteps.sort(
-          (i, j) => i.attributes.sequencenum - j.attributes.sequencenum
-        );
-        setOrgSteps(newOrgSteps);
-      });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [workflowSteps, orgWorkflowSteps, organization]);
-
   const doneStepId = useMemo(() => {
-    if (getStepsBusy.current) return 'notready';
     const tmp = orgSteps.find(
       (s) => getTool(s.attributes?.tool) === ToolSlug.Done
     );
+    return tmp?.id ?? 'noDoneStep';
+  }, [orgSteps]);
 
-    if (defaultFilterState.canHideDone !== Boolean(tmp))
+  useEffect(() => {
+    const canHideDone = orgSteps.some(
+      (s) => getTool(s.attributes?.tool) === ToolSlug.Done
+    );
+    if (defaultFilterState.canHideDone !== canHideDone) {
       setDefaultFilterState((fs) => ({
         ...fs,
-        canHideDone: Boolean(tmp),
+        canHideDone,
       }));
-    return tmp?.id ?? 'noDoneStep';
-  }, [defaultFilterState, orgSteps]);
+    }
+  }, [orgSteps, defaultFilterState.canHideDone]);
 
-  const refreshSheetAfterAssign = useCallback(() => {
+  const refreshSheet = useCallback(() => {
     if (!plan) return;
-    const newWorkflow = getSheet({
-      plan,
-      sections,
-      passages,
-      organizationSchemeSteps,
-      flat,
-      projectShared: shared,
-      memory,
-      orgWorkflowSteps: orgSteps,
-      wfStr,
-      filterState,
-      minSection,
-      hasPublishing: publishingOn,
-      hidePublishing,
-      doneStepId,
-      getDiscussionCount,
-      graphicFind,
-      getPublishTo,
-      publishStatus,
-      getSharedResource,
-      user,
-      myGroups,
-      isDeveloper: developer,
-    });
-    setSheet(newWorkflow);
+    setSheet(
+      getSheet({
+        plan,
+        sections,
+        passages,
+        organizationSchemeSteps,
+        flat,
+        projectShared: shared,
+        memory,
+        orgWorkflowSteps: orgSteps,
+        wfStr,
+        filterState,
+        minSection,
+        hasPublishing: publishingOn,
+        hidePublishing,
+        doneStepId,
+        getDiscussionCount,
+        graphicFind,
+        getPublishTo,
+        publishStatus,
+        getSharedResource,
+        user,
+        myGroups,
+        isDeveloper: developer,
+      })
+    );
   }, [
     plan,
     sections,
@@ -1509,9 +1494,9 @@ export function ScriptureTable(props: IProps) {
   const handleAssignClose = useCallback(
     (cancel?: boolean) => {
       setAssignSectionVisible(false);
-      if (!cancel) refreshSheetAfterAssign();
+      if (!cancel) refreshSheet();
     },
-    [refreshSheetAfterAssign]
+    [refreshSheet]
   );
 
   // Save locally or online in batches
@@ -1529,13 +1514,11 @@ export function ScriptureTable(props: IProps) {
       const saveFn = async (sheet: ISheet[]) => {
         if (!offlineOnly && numChanges > 10) {
           return await onlineSave(sheet, prevSave);
-        } else {
-          await localSave(sheet, sections, passages, prevSave);
-          return false;
         }
+        await localSave(sheet, sections, passages, prevSave);
+        return false;
       };
       if (numChanges > 50) setBusy(true);
-      let change = false;
       let start = 0;
       const newsht = [...sheetRef.current];
       if (!offlineOnly) {
@@ -1554,14 +1537,12 @@ export function ScriptureTable(props: IProps) {
             )
               end++;
           }
-          change = (await saveFn(newsht.slice(start, start + end))) || change;
+          await saveFn(newsht.slice(start, start + end));
         }
       }
-      change = (await saveFn(newsht.slice(start))) || change;
+      await saveFn(newsht.slice(start));
       //update plan section count and lastmodified
       await updateLastModified();
-      //not sure we need to do this because its going to be requeried next
-      if (change) setSheet(newsht);
       setBusy(false);
     };
     const setSaving = (value: boolean) => (savingRef.current = value);
@@ -1633,36 +1614,10 @@ export function ScriptureTable(props: IProps) {
       !updateRef.current
     ) {
       setUpdate(true);
-      const newWorkflow = getSheet({
-        plan,
-        sections,
-        passages,
-        organizationSchemeSteps,
-        flat,
-        projectShared: shared,
-        memory,
-        orgWorkflowSteps: orgSteps,
-        wfStr,
-        filterState,
-        minSection,
-        hasPublishing: publishingOn,
-        hidePublishing,
-        doneStepId,
-        getDiscussionCount,
-        graphicFind,
-        getPublishTo,
-        publishStatus,
-        getSharedResource,
-        user,
-        myGroups,
-        isDeveloper: developer,
-      });
-      setSheet(newWorkflow);
-
+      refreshSheet();
       getLastModified(plan);
       setUpdate(false);
     }
-
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     organizationSchemeSteps,
@@ -1677,6 +1632,7 @@ export function ScriptureTable(props: IProps) {
     orgSteps,
     lastSaved,
     hidePublishing,
+    scripture,
   ]);
 
   // Reset column widths based on sheet content

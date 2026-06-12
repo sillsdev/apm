@@ -25,7 +25,6 @@ import {
   SectionResourceUser,
   ArtifactType,
   ArtifactCategory,
-  WorkflowStep,
   IWorkflowStepsStrings,
   IPassageDetailStepCompleteStrings,
   StepComplete,
@@ -242,8 +241,6 @@ const PassageDetailProvider = (props: IProps) => {
     'sectionresourceuser'
   );
   const sectionResources = useOrbitData<SectionResourceD[]>('sectionresource');
-  const orgWorkflowSteps = useOrbitData<OrgWorkflowStep[]>('orgworkflowstep');
-  const workflowSteps = useOrbitData<WorkflowStep[]>('workflowstep');
   const wfStr: IWorkflowStepsStrings = useSelector(
     workflowStepsSelector,
     shallowEqual
@@ -281,11 +278,10 @@ const PassageDetailProvider = (props: IProps) => {
   const segmentsCb = useRef<((segments: string) => void) | undefined>(
     undefined
   );
-  const getFilteredSteps = useFilteredSteps();
+  const filteredOrgSteps = useFilteredSteps();
   const { localizedArtifactType, getTypeId } = useArtifactType();
   const { localizedArtifactCategory } = useArtifactCategory();
   const { localizedWorkStep } = useOrgWorkflowSteps();
-  const getStepsBusy = useRef<boolean>(false);
   const mediaStart = useRef<number | undefined>(undefined);
   const mediaEnd = useRef<number | undefined>(undefined);
   const mediaPosition = useRef<number | undefined>(undefined);
@@ -1107,19 +1103,11 @@ const PassageDetailProvider = (props: IProps) => {
   }, [state.playItem]);
 
   useEffect(() => {
-    if (plan && org && !getStepsBusy.current) {
-      getStepsBusy.current = true;
-
-      getFilteredSteps((wf) => {
-        setState((state: ICtxState) => ({
-          ...state,
-          orgWorkflowSteps: wf,
-        }));
-        getStepsBusy.current = false;
-      });
+    if (state.orgWorkflowSteps !== filteredOrgSteps) {
+      setState((state) => ({ ...state, orgWorkflowSteps: filteredOrgSteps }));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [plan, orgWorkflowSteps, workflowSteps, org]);
+  }, [filteredOrgSteps]);
 
   useEffect(() => {
     const wf: SimpleWf[] = state.orgWorkflowSteps.map((s) => ({
