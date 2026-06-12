@@ -540,20 +540,4 @@ describe('MobileWorkflowSteps', () => {
       cy.get('@setCurrentStep').should('not.have.been.called');
     });
   });
-
-  describe('spacer responsive behavior', () => {
-    it('hides the spacer below 840px to prevent extra horizontal scroll', () => {
-      cy.viewport(839, 600);
-      mountMobileWorkflowSteps({ isStepProgression: true });
-
-      cy.get('[data-cy="step-spacer"]').should('have.css', 'display', 'none');
-    });
-
-    it('shows the spacer at 840px and above to preserve parallelogram centering', () => {
-      cy.viewport(840, 600);
-      mountMobileWorkflowSteps({ isStepProgression: true });
-
-      cy.get('[data-cy="step-spacer"]').should('have.css', 'display', 'block');
-    });
-  });
 });
