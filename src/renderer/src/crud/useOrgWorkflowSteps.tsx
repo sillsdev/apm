@@ -1,6 +1,9 @@
 import { useRef } from 'react';
 import { useGlobal, useGetGlobal } from '../context/useGlobal';
-import { related } from '.';
+import {
+  filterAndSortOrgWorkflowSteps,
+  filterVisibleOrgWorkflowSteps,
+} from './orgWorkflowStepsUtils';
 import {
   IWorkflowStepsStrings,
   OrgWorkflowStep,
@@ -85,7 +88,6 @@ export const useOrgWorkflowSteps = () => {
       )
     );
   };
-
   const QueryOrgWorkflowSteps = async (process: string, org: string) => {
     /* wait for new workflow steps remote id to fill in */
     await waitForRemoteQueue('waiting for workflow update');
@@ -99,14 +101,12 @@ export const useOrgWorkflowSteps = () => {
         q.findRecords('orgworkflowstep')
       )) as OrgWorkflowStepD[];
     }
-    return orgworkflowsteps
-      .filter(
-        (s) =>
-          (process === 'ANY' || s.attributes.process === process) &&
-          related(s, 'organization') === org &&
-          Boolean(s.keys?.remoteId) !== getGlobal('offlineOnly')
-      )
-      .sort((i, j) => i.attributes.sequencenum - j.attributes.sequencenum);
+    return filterAndSortOrgWorkflowSteps(
+      orgworkflowsteps,
+      process,
+      org,
+      getGlobal('offlineOnly')
+    );
   };
 
   const CreateOrgWorkflowSteps = (
@@ -164,7 +164,7 @@ export const useOrgWorkflowSteps = () => {
     //     org
     //   );
     // }
-    return orgsteps.filter((s) => showAll || s.attributes.sequencenum >= 0);
+    return filterVisibleOrgWorkflowSteps(orgsteps, showAll);
   };
 
   return {
