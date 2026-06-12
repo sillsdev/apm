@@ -50,6 +50,7 @@ export function ProjectDialog(props: IProps) {
   const { name, type, bcp47 } = state;
   const [basicTab, setBasicTab] = useState(true);
   const addingRef = React.useRef(false);
+  const wasOpenRef = React.useRef(false);
   const teamWorkflow = useTeamWorkflowProcess(team);
 
   const initTags = useMemo(
@@ -62,11 +63,14 @@ export function ProjectDialog(props: IProps) {
   );
 
   useEffect(() => {
-    setState(!values ? { ...initState } : { ...values });
-    setOriginalState(!values ? { ...initState } : { ...values });
-    if (isOpen) addingRef.current = false;
+    if (isOpen && !wasOpenRef.current) {
+      setState(!values ? { ...initState } : { ...values });
+      setOriginalState(!values ? { ...initState } : { ...values });
+      addingRef.current = false;
+    }
+    wasOpenRef.current = isOpen;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [values, isOpen]);
+  }, [isOpen, values]);
 
   useEffect(() => {
     if (!isOpen || mode !== Mode.add || !team) return;
