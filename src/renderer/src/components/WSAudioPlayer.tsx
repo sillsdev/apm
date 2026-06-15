@@ -240,6 +240,10 @@ export interface WSAudioPlayerControls {
   ) => Promise<number>;
   getRegionsJson?: () => string;
   loadRegionsJson?: (regionsJson: string) => void;
+  findClauseSplitPoint?: (
+    clause: import('../crud/useWavesurferRegions').IRegion,
+    params: import('../crud/useWavesurferRegions').IRegionParams
+  ) => number | undefined;
 }
 
 const PLAY_PAUSE_KEY = 'F1,CTRL+SPACE';
@@ -605,6 +609,7 @@ function WSAudioPlayer(props: IProps) {
     wsFillPx,
     wsZoom,
     wsAutoSegment,
+    wsFindClauseSplitPoint,
     wsPrevRegion,
     wsNextRegion,
     wsRemoveSplitRegion,
@@ -1390,6 +1395,8 @@ function WSAudioPlayer(props: IProps) {
         wsGoto(seconds, false, targetRegion),
       applyRegionColors,
       runAutoSegment: (params) => Promise.resolve(wsAutoSegment(false, params)),
+      findClauseSplitPoint: (clause, params) =>
+        wsFindClauseSplitPoint(clause, params),
       getRegionsJson: () => wsGetRegions(),
       loadRegionsJson: (regionsJson: string) => {
         segmentsRef.current = regionsJson;
@@ -1416,6 +1423,7 @@ function WSAudioPlayer(props: IProps) {
     wsGoto,
     applyRegionColors,
     wsAutoSegment,
+    wsFindClauseSplitPoint,
     wsGetRegions,
     wsLoadRegions,
   ]);

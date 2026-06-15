@@ -15,6 +15,7 @@ const mockCarefulSpeechStrings = new LocalizedStrings({
     moreClauses: 'More Clauses',
     fewerClauses: 'Fewer Clauses',
     combineWithNextClause: 'Combine with Next Clause',
+    splitClause: 'Split Clause',
     undo: 'Undo',
   },
 });
@@ -39,9 +40,11 @@ const baseProps = {
   onMoreClauses: () => {},
   onFewerClauses: () => {},
   onCombineWithNext: () => {},
+  onSplitClause: () => {},
   onUndoCombine: () => {},
   canFewerClauses: true,
   canCombineWithNext: true,
+  canSplitClause: true,
   showUndoCombine: false,
   onStartRecording: () => {},
   onNextClause: () => {},
@@ -91,14 +94,16 @@ describe('CarefulSpeechControls', () => {
     cy.contains('Clause: 0:00 - 0:10').should('be.visible');
   });
 
-  it('shows Combine with Next Clause on recording pass', () => {
+  it('shows Split Clause and Combine with Next Clause on recording pass', () => {
     mountControls({
       ...baseProps,
       phase: 'recordReady',
       recordingPassStarted: true,
     });
 
+    cy.get('#careful-speech-split').should('be.visible');
     cy.get('#careful-speech-combine').should('be.visible');
+    cy.contains(mockCarefulSpeechStrings.splitClause).should('be.visible');
     cy.contains(mockCarefulSpeechStrings.combineWithNextClause).should(
       'be.visible'
     );

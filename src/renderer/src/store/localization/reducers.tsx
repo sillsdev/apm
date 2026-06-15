@@ -370,6 +370,7 @@ const initialState = {
 			"moreClauses": "More Clauses",
 			"nextClause": "Next Clause",
 			"shorter": "Shorter",
+			"splitClause": "Split Clause",
 			"speaker": "Speaker",
 			"startRecording": "Start Recording",
 			"undo": "Undo",

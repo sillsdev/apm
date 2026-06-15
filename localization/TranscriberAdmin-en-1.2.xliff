@@ -2117,6 +2117,13 @@
                <context context-type="sourcefile">CarefulSpeechControls.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="carefulSpeech.splitClause">
+            <source>Split Clause</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">CarefulSpeechControls.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="carefulSpeech.speaker">
             <source>Speaker</source>
             <target/>

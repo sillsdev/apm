@@ -58,6 +58,10 @@ import {
   canCombineWithNext,
   mergeClauseWithNext,
 } from './carefulSpeech/carefulSpeechClauseMerge';
+import {
+  canSplitClause,
+  splitClauseAt,
+} from './carefulSpeech/carefulSpeechClauseSplit';
 import { LocalKey } from '../../utils/localUserKey';
 
 const paperProps = { p: 2, m: 'auto', width: 'calc(100% - 32px)' } as SxProps;
@@ -232,6 +236,13 @@ export function PassageDetailCarefulSpeech({ width }: IProps) {
   }, [allClausesComplete, recordingPassStarted]);
 
   const currentRegion = clauseRegions[currentIndex];
+
+  const currentClauseSplitPoint = useMemo(() => {
+    if (!recordingPassStarted || !currentRegion) return undefined;
+    const ctrl = playerControlsRef.current;
+    if (!ctrl?.isReady?.() || !ctrl.findClauseSplitPoint) return undefined;
+    return ctrl.findClauseSplitPoint(currentRegion, carefulSpeechSegParams);
+  }, [recordingPassStarted, currentRegion, carefulSpeechSegParams]);
 
   const recordingRow = useMemo(
     () =>
@@ -832,6 +843,44 @@ export function PassageDetailCarefulSpeech({ width }: IProps) {
     setCarefulSpeechSegParams,
   ]);
 
+  const handleSplitClause = useCallback(async () => {
+    const region = clauseRegions[currentIndex];
+    if (!region) return;
+    const splitPoint = playerControlsRef.current?.findClauseSplitPoint?.(
+      region,
+      carefulSpeechSegParams
+    );
+    if (
+      !canSplitClause(currentIndex, clauseRegions, completedIndices, splitPoint)
+    ) {
+      return;
+    }
+    const updated = splitClauseAt(clauseRegions, currentIndex, splitPoint!);
+    if (!updated) return;
+    setCombineUndo(clauseSegString);
+    const json = regionsJsonFromList(updated, carefulSpeechSegParams);
+    setClauseSegString(json);
+    await persistClauseSegments(json);
+    playerControlsRef.current?.loadRegionsJson?.(json);
+    applyColors();
+    const firstSubClause = updated[currentIndex];
+    setCurrentSegment(firstSubClause, currentIndex);
+    setCurrentClausePlayed(false);
+    setPhase('readyToRecord');
+    void playCurrentClause(currentIndex, firstSubClause);
+  }, [
+    currentIndex,
+    clauseRegions,
+    completedIndices,
+    clauseSegString,
+    carefulSpeechSegParams,
+    setClauseSegString,
+    persistClauseSegments,
+    applyColors,
+    setCurrentSegment,
+    playCurrentClause,
+  ]);
+
   const handleCombineWithNext = useCallback(async () => {
     if (!canCombineWithNext(currentIndex, clauseRegions, completedIndices)) {
       return;
@@ -1020,9 +1069,16 @@ export function PassageDetailCarefulSpeech({ width }: IProps) {
           onSpeakerChange={handleSpeakerChange}
           onMoreClauses={() => void handleMoreClauses()}
           onFewerClauses={() => void handleFewerClauses()}
+          onSplitClause={() => void handleSplitClause()}
           onCombineWithNext={() => void handleCombineWithNext()}
           onUndoCombine={() => void handleUndoCombine()}
           canFewerClauses={!recordingPassStarted}
+          canSplitClause={canSplitClause(
+            currentIndex,
+            clauseRegions,
+            completedIndices,
+            currentClauseSplitPoint
+          )}
           canCombineWithNext={canCombineWithNext(
             currentIndex,
             clauseRegions,

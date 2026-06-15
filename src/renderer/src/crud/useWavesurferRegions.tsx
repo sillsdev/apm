@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { waitForIt } from '../utils/waitForIt';
+import { findClauseSplitPoint } from '../utils/clauseSplitSilence';
 import RegionsPlugin, {
   Region,
   RegionParams,
@@ -1137,6 +1138,27 @@ export function useWaveSurferRegions(
     if (regions.length) goto(regions[0].start);
     return regions.length;
   }
+
+  const peaksForParams = (params: IRegionParams) => {
+    const minSeconds = params.timeThreshold || 0.05;
+    let numPeaks = Math.floor(duration() / minSeconds);
+    numPeaks = Math.min(Math.max(numPeaks, 512), 512 * 16);
+    if (!wsRef.current) return undefined;
+    const peaks = wsRef.current.exportPeaks({ maxLength: numPeaks });
+    if (peaks.length > 0 && Array.isArray(peaks[0])) {
+      return peaks[0];
+    }
+    return undefined;
+  };
+
+  function wsFindClauseSplitPoint(
+    clause: IRegion,
+    params: IRegionParams
+  ): number | undefined {
+    const peaks = peaksForParams(params);
+    if (!peaks) return undefined;
+    return findClauseSplitPoint(peaks, duration(), clause, params);
+  }
   const wsPrevRegion = () => {
     const r = findPrevRegion(currentRegion() as Region);
     if (r) {
@@ -1315,6 +1337,7 @@ export function useWaveSurferRegions(
   return {
     setupRegions,
     wsAutoSegment,
+    wsFindClauseSplitPoint,
     wsRemoveSplitRegion,
     wsAddRegion,
     wsPrevRegion,

@@ -37,9 +37,11 @@ interface Props {
   onMoreClauses: () => void;
   onFewerClauses: () => void;
   onCombineWithNext: () => void;
+  onSplitClause: () => void;
   onUndoCombine: () => void;
   canFewerClauses: boolean;
   canCombineWithNext: boolean;
+  canSplitClause: boolean;
   showUndoCombine: boolean;
   onStartRecording: () => void;
   onNextClause: () => void;
@@ -74,9 +76,11 @@ export default function CarefulSpeechControls({
   onMoreClauses,
   onFewerClauses,
   onCombineWithNext,
+  onSplitClause,
   onUndoCombine,
   canFewerClauses,
   canCombineWithNext,
+  canSplitClause,
   showUndoCombine,
   onStartRecording,
   onNextClause,
@@ -191,6 +195,15 @@ export default function CarefulSpeechControls({
           alignItems="center"
           sx={{ py: 1 }}
         >
+          <PriButton
+            id="careful-speech-split"
+            disabled={!canSplitClause || phase === 'recording'}
+            onClick={onSplitClause}
+            variant="outlined"
+            color="inherit"
+          >
+            {strings.splitClause}
+          </PriButton>
           <PriButton
             id="careful-speech-combine"
             disabled={!canCombineWithNext || phase === 'recording'}

@@ -223,6 +223,7 @@ export function useWaveSurfer(
   const {
     setupRegions,
     wsAutoSegment,
+    wsFindClauseSplitPoint,
     wsAddRegion,
     wsRemoveSplitRegion,
     wsPrevRegion,
@@ -939,6 +940,7 @@ export function useWaveSurfer(
     wsFillPx,
     wsGetRegions,
     wsAutoSegment,
+    wsFindClauseSplitPoint,
     wsPrevRegion,
     wsNextRegion,
     wsAddRegion,

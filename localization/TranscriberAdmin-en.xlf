@@ -1816,6 +1816,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="carefulSpeech.splitClause">
+         <segment>
+            <source>Split Clause</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="carefulSpeech.speaker">
          <segment>
             <source>Speaker</source>

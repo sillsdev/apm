@@ -349,6 +349,7 @@ export interface ICarefulSpeechStrings extends Localize.LocalizedStringsMethods 
     "moreClauses": string;
     "nextClause": string;
     "shorter": string;
+    "splitClause": string;
     "speaker": string;
     "startRecording": string;
     "undo": string;
