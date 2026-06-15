@@ -1,6 +1,5 @@
 import { debounce, throttle } from 'lodash';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { type RefObject } from 'react';
 import { useWavesurfer } from '@wavesurfer/react';
 import Timeline from 'wavesurfer.js/dist/plugins/timeline';
 import ZoomPlugin from 'wavesurfer.js/dist/plugins/zoom';
@@ -9,6 +8,7 @@ import RegionsPlugin from 'wavesurfer.js/dist/plugins/regions';
 import { logError, Severity } from '../utils/logErrorService';
 
 import {
+  ApplyRegionColor,
   IRegion,
   IRegions,
   parseRegions,
@@ -50,7 +50,7 @@ export function useWaveSurfer(
   onRegionPlayEnd?: (region: IRegion) => void,
   verses?: string,
   hasSegmentUndo?: boolean,
-  markVersesTailOpenRef?: RefObject<boolean>
+  applyRegionColor?: ApplyRegionColor
 ) {
   const { isMobile } = useMobile();
   const [errorReporter] = useGlobal('errorReporter');
@@ -235,6 +235,7 @@ export function useWaveSurfer(
     regLoopRegion,
     justPlayRegion,
     resetPlayingRegion,
+    isPlayRegionLocked,
     applyRegionAtPosition,
     applyRegionColors,
     currentRegion,
@@ -259,8 +260,7 @@ export function useWaveSurfer(
     onMarkerClick,
     verses,
     hasSegmentUndo,
-    allowSegment === NamedRegions.Verse,
-    markVersesTailOpenRef
+    applyRegionColor
   );
 
   const setPlayingx = (value: boolean, regionOnly: boolean) => {
@@ -268,13 +268,16 @@ export function useWaveSurfer(
     try {
       if (value) {
         if (isReadyRef.current) {
-          //play region once if single region
+          // wsPlayRegion may have started bounded playback before this sync runs;
+          // do not clear playRegionRef or start full-file play in that case.
+          if (wavesurferRef.current?.isPlaying() || isPlayRegionLocked()) {
+            if (onPlayStatus) onPlayStatus(true);
+            return;
+          }
           const playingRegion = regionOnly ? justPlayRegion(progress()) : false;
           if (!playingRegion) {
-            //default play (which will loop region if looping is on)
             resetPlayingRegion();
-            if (!wavesurferRef.current?.isPlaying())
-              wavesurferRef.current?.play();
+            wavesurferRef.current?.play();
           }
         }
       } else {

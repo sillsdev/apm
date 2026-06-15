@@ -60,6 +60,7 @@ import { type WSAudioPlayerControls } from '../WSAudioPlayer';
 import {
   MARK_VERSES_COMPLETED_RGBA,
   MARK_VERSES_CURRENT_RGBA,
+  createMarkVersesApplyRegionColor,
   isMarkVersesTableRowCompleted,
   isMarkVersesTableTailIncomplete,
 } from '../../utils/markVersesSegmentColors';
@@ -172,6 +173,10 @@ export function PassageDetailMarkVerses({ width }: MarkVersesProps) {
   const resettingSegmentsRef = useRef(false);
   const playerControlsRef = useRef<WSAudioPlayerControls | null>(null);
   const markVersesTailOpenRef = useRef(false);
+  const applyRegionColor = useMemo(
+    () => createMarkVersesApplyRegionColor(markVersesTailOpenRef),
+    []
+  );
   const lastIssuesNotifyRef = useRef('');
   const { canDoSectionStep } = useStepPermissions();
   const hasPermission = canDoSectionStep(currentstep, section);
@@ -900,7 +905,7 @@ export function PassageDetailMarkVerses({ width }: MarkVersesProps) {
         suggestedSegments={pastedSegments}
         allowZoomAndSpeed={true}
         controlsRef={playerControlsRef}
-        markVersesTailOpenRef={markVersesTailOpenRef}
+        applyRegionColor={applyRegionColor}
       />
       <StyledPaper style={heightStyle}>
         <StyledTable id="verse-sheet" data-testid="verse-sheet">

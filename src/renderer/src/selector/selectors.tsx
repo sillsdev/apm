@@ -40,6 +40,9 @@ export const burritoSelector = (state: IState) =>
 export const cardsSelector = (state: IState) =>
   localStrings(state as IState, { layout: 'cards' });
 
+export const carefulSpeechSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'carefulSpeech' });
+
 export const categorySelector = (state: IState) =>
   localStrings(state as IState, { layout: 'category' });
 

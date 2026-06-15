@@ -1,9 +1,11 @@
 import {
+  createMarkVersesApplyRegionColor,
   getMarkVersesRegionBaseColor,
   isMarkVersesRowCompleted,
   isMarkVersesTableRowCompleted,
   isMarkVersesTableTailIncomplete,
   MARK_VERSES_COMPLETED_RGBA,
+  MARK_VERSES_CURRENT_RGBA,
   MARK_VERSES_UNMARKED_RGBA,
 } from './markVersesSegmentColors';
 
@@ -57,5 +59,18 @@ describe('markVersesSegmentColors', () => {
     expect(isMarkVersesTableRowCompleted(table, 1)).toBe(true);
     expect(isMarkVersesTableRowCompleted(table, 2)).toBe(false);
     expect(isMarkVersesTableTailIncomplete(table)).toBe(true);
+  });
+
+  it('createMarkVersesApplyRegionColor maps roles to region colors', () => {
+    const tailOpenRef = { current: true };
+    const apply = createMarkVersesApplyRegionColor(tailOpenRef);
+    expect(apply('current', 0, 2)).toBe(MARK_VERSES_CURRENT_RGBA);
+    expect(apply('new', 0, 2)).toBe(MARK_VERSES_UNMARKED_RGBA);
+    expect(apply('base', 1, 2)).toBe(MARK_VERSES_UNMARKED_RGBA);
+    expect(apply('base', 0, 2)).toBe(MARK_VERSES_COMPLETED_RGBA);
+
+    tailOpenRef.current = false;
+    expect(apply('new', 0, 2)).toBe(MARK_VERSES_COMPLETED_RGBA);
+    expect(apply('base', 1, 2)).toBe(MARK_VERSES_COMPLETED_RGBA);
   });
 });

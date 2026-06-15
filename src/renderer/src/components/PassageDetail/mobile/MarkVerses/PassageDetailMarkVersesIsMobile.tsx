@@ -55,7 +55,10 @@ import { refMatch } from '../../../../utils/refMatch';
 import { useStepPermissions } from '../../../../utils/useStepPermission';
 import Confirm from '../../../AlertDialog';
 import { type WSAudioPlayerControls } from '../../../WSAudioPlayer';
-import { isMarkVersesTableTailIncomplete } from '../../../../utils/markVersesSegmentColors';
+import {
+  createMarkVersesApplyRegionColor,
+  isMarkVersesTableTailIncomplete,
+} from '../../../../utils/markVersesSegmentColors';
 import {
   editReferenceValuesEqual,
   formatMarkVersesReference,
@@ -210,6 +213,10 @@ export default function PassageDetailMarkVersesIsMobile({
   const [waveSegmentsJson, setWaveSegmentsJson] = useState('{}');
   const playerControlsRef = useRef<WSAudioPlayerControls | null>(null);
   const markVersesTailOpenRef = useRef(false);
+  const applyRegionColor = useMemo(
+    () => createMarkVersesApplyRegionColor(markVersesTailOpenRef),
+    []
+  );
   const tableRowRefs = useRef<(HTMLTableRowElement | null)[]>([]);
   const prevRegionCountRef = useRef(0);
   const skipScrollIntoViewRef = useRef(false);
@@ -1592,7 +1599,7 @@ export default function PassageDetailMarkVersesIsMobile({
         suggestedSegments={pastedSegments}
         allowZoomAndSpeed={true}
         controlsRef={playerControlsRef}
-        markVersesTailOpenRef={markVersesTailOpenRef}
+        applyRegionColor={applyRegionColor}
         onProgress={setPlayerProgressSec}
         onInteraction={syncProgressFromPlayer}
       />

@@ -1,3 +1,6 @@
+import { type RefObject } from 'react';
+import { type ApplyRegionColor } from '../crud/useWavesurferRegions';
+
 /** Waveform / table colors for Mark Verses (completed / current / unmarked). */
 
 export const MARK_VERSES_COMPLETED_RGBA = 'rgba(76, 175, 80, 0.35)';
@@ -60,6 +63,24 @@ export const getMarkVersesRegionBaseColor = (
     return getMarkVersesUnmarkedColor();
   }
   return getMarkVersesCompletedColor();
+};
+
+export const createMarkVersesApplyRegionColor = (
+  tailOpenRef: RefObject<boolean>
+): ApplyRegionColor => {
+  return (role, regionIndex, regionCount) => {
+    if (role === 'current') return getMarkVersesCurrentColor();
+    if (role === 'new') {
+      return tailOpenRef.current
+        ? getMarkVersesUnmarkedColor()
+        : getMarkVersesCompletedColor();
+    }
+    return getMarkVersesRegionBaseColor(
+      regionIndex,
+      regionCount,
+      tailOpenRef.current ?? false
+    );
+  };
 };
 
 export const isMarkVersesTableRowCompleted = (

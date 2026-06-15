@@ -17,6 +17,7 @@ const toolSlugs = [
   ToolSlug.Verses,
   ToolSlug.Transcribe,
   ToolSlug.PhraseBackTranslate,
+  ToolSlug.CarefulSpeech,
   ToolSlug.WholeBackTranslate,
   ToolSlug.Paratext,
   ToolSlug.ConsultantCheck,

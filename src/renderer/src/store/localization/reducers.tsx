@@ -357,6 +357,24 @@ const initialState = {
 			"voiceRights": "The recorded permission is used both as a voice sample to change the audio and as a license to use the voice sample in recordings. A suggested script for the recorded permission is given which can be personalized.",
 		}
 	}),
+	"carefulSpeech": new LocalizedStrings({
+		"en": {
+			"allComplete": "All clauses are complete.",
+			"boldOnly": "Careful Speech is only available for BOLD workflow teams.",
+			"clause": "Clause: {0}",
+			"clearRecording": "Clear Recording",
+			"combineWithNextClause": "Combine with Next Clause",
+			"fewerClauses": "Fewer Clauses",
+			"listenPassHelp": "If clauses are too long, use More Clauses to split them. You can merge neighboring clauses later while recording with Combine with Next Clause — but only before either clause has a recording.",
+			"longer": "Longer",
+			"moreClauses": "More Clauses",
+			"nextClause": "Next Clause",
+			"shorter": "Shorter",
+			"speaker": "Speaker",
+			"startRecording": "Start Recording",
+			"undo": "Undo",
+		}
+	}),
 	"consultantCheck": new LocalizedStrings({
 		"en": {
 			"checked": "Mark Checked",
@@ -1731,6 +1749,7 @@ const initialState = {
 	}),
 	"tool": new LocalizedStrings({
 		"en": {
+			"carefulSpeech": "Careful speech",
 			"community": "Community Test",
 			"consultantCheck": "Consultant Check",
 			"discuss": "Discuss",
@@ -2245,6 +2264,7 @@ const localizationReducer = function (state = initialState, action: any): ILocal
 				"commentCard" : new LocalizedStrings(action.payload.data.commentCard),
 				"commentEditor" : new LocalizedStrings(action.payload.data.commentEditor),
 				"community" : new LocalizedStrings(action.payload.data.community),
+				"carefulSpeech" : new LocalizedStrings(action.payload.data.carefulSpeech),
 				"consultantCheck" : new LocalizedStrings(action.payload.data.consultantCheck),
 				"control" : new LocalizedStrings(action.payload.data.control),
 				"deleteExpansion" : new LocalizedStrings(action.payload.data.deleteExpansion),
