@@ -169,6 +169,10 @@ export default function MediaTitle(props: IProps) {
   const [canSaveRecording, setCanSaveRecording] = useState(false);
   const canSaveRef = useRef(false);
   const [curText, setCurText] = useState(title ?? '');
+  const curTextRef = useRef(curText);
+  curTextRef.current = curText;
+  const isFocusedRef = useRef(false);
+  const prevTitleKeyRef = useRef(titlekey);
   const [startRecord, setStartRecord] = useState(false);
   const [statusText, setStatusText] = useState('');
   const [helperText, setHelperText] = useState('');
@@ -216,9 +220,16 @@ export default function MediaTitle(props: IProps) {
   const recToolId = useMemo(() => toolId + 'rec', [toolId]);
 
   useEffect(() => {
-    setCurText(title ?? '');
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [title]);
+    if (prevTitleKeyRef.current !== titlekey) {
+      prevTitleKeyRef.current = titlekey;
+      isFocusedRef.current = false;
+      setCurText(title ?? '');
+      return;
+    }
+    if (!isFocusedRef.current) {
+      setCurText(title ?? '');
+    }
+  }, [title, titlekey]);
 
   useEffect(() => {
     langRef.current = language;
@@ -240,10 +251,23 @@ export default function MediaTitle(props: IProps) {
       showMessage(t.recording);
       return;
     }
-    setCurText(e.target.value);
-    if (onTextChange && e.target.value !== title) {
-      const err = onTextChange(e.target.value);
+    const value = e.target.value;
+    curTextRef.current = value;
+    setCurText(value);
+    if (onTextChange) {
+      const err = onTextChange(value);
       setHelperText(err);
+    }
+  };
+
+  const handleFocus = () => {
+    isFocusedRef.current = true;
+  };
+
+  const handleBlur = () => {
+    isFocusedRef.current = false;
+    if (onTextChange) {
+      onTextChange(curTextRef.current);
     }
   };
 
@@ -375,6 +399,8 @@ export default function MediaTitle(props: IProps) {
         value={curText}
         onClick={language ? handleLangPick : undefined}
         onChange={handleTextChange}
+        onFocus={handleFocus}
+        onBlur={handleBlur}
         onKeyDown={handleKeyDown}
         helperText={helperText}
         size="small"

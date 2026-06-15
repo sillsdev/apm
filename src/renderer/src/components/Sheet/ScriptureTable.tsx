@@ -1039,54 +1039,60 @@ export function ScriptureTable(props: IProps) {
   interface MyWorkflow extends ISheet {
     [key: string]: any;
   }
-  const updateData = (changes: ICellChange[]) => {
-    waitForIt(
-      'finish save or update',
-      () => !savingRef.current && !updateRef.current,
-      () => false,
-      50
-    ).then(() => {
-      setUpdate(true);
-      const newsht = [...sheetRef.current];
-      changes.forEach((c) => {
-        const { ws, i } = getByIndex(newsht, c.row);
-        const myWf = ws as MyWorkflow | undefined;
-        const name = colNames[c.col];
-        const isNumberCol = c.col === secNumCol || c.col === passNumCol;
+  const applyCellChanges = (changes: ICellChange[]) => {
+    setUpdate(true);
+    const newsht = [...sheetRef.current];
+    changes.forEach((c) => {
+      const { ws, i } = getByIndex(newsht, c.row);
+      const myWf = ws as MyWorkflow | undefined;
+      const name = colNames[c.col];
+      const isNumberCol = c.col === secNumCol || c.col === passNumCol;
 
-        if (isNumberCol && !isValidNumber(c.value || '')) {
-          showMessage(s.nonNumber);
-        } else if (myWf && myWf[name as keyof MyWorkflow] !== c.value) {
-          const isSection = c.col < 2;
-          const sectionUpdated = isSection
-            ? currentDateTime()
-            : ws?.sectionUpdated;
-          const passageUpdated = isSection
-            ? ws?.passageUpdated
-            : currentDateTime();
-          const value = name === 'book' ? findBook(c.value as string) : c.value;
-          const passageType =
-            name === 'reference'
-              ? passageTypeFromRef(c.value as string, flat)
-              : ws?.passageType;
+      if (isNumberCol && !isValidNumber(c.value || '')) {
+        showMessage(s.nonNumber);
+      } else if (myWf && myWf[name as keyof MyWorkflow] !== c.value) {
+        const isSection = c.col < 2;
+        const sectionUpdated = isSection
+          ? currentDateTime()
+          : ws?.sectionUpdated;
+        const passageUpdated = isSection
+          ? ws?.passageUpdated
+          : currentDateTime();
+        const value = name === 'book' ? findBook(c.value as string) : c.value;
+        const passageType =
+          name === 'reference'
+            ? passageTypeFromRef(c.value as string, flat)
+            : ws?.passageType;
 
-          newsht[i] = {
-            ...ws,
-            [name as keyof MyWorkflow]: isNumberCol
-              ? parseInt(value ?? '')
-              : value,
-            sectionUpdated,
-            passageUpdated,
-            passageType,
-          } as ISheet;
-        }
-      });
-      if (changes.length > 0) {
-        setSheet(newsht);
-        setChanged(true);
+        newsht[i] = {
+          ...ws,
+          [name as keyof MyWorkflow]: isNumberCol
+            ? parseInt(value ?? '')
+            : value,
+          sectionUpdated,
+          passageUpdated,
+          passageType,
+        } as ISheet;
       }
-      setUpdate(false);
     });
+    if (changes.length > 0) {
+      setSheet(newsht);
+      setChanged(true);
+    }
+    setUpdate(false);
+  };
+
+  const updateData = (changes: ICellChange[]) => {
+    if (savingRef.current || updateRef.current) {
+      waitForIt(
+        'finish save or update',
+        () => !savingRef.current && !updateRef.current,
+        () => false,
+        50
+      ).then(() => applyCellChanges(changes));
+      return;
+    }
+    applyCellChanges(changes);
   };
 
   const updateTitleMedia = async (index: number, mediaId: string) => {
