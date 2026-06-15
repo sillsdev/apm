@@ -106,10 +106,13 @@ export function PassageDetailCarefulSpeech({ width }: IProps) {
     isBoldWorkflow,
     carefulSpeechSegParams,
     setCarefulSpeechSegParams,
+    setStepComplete,
+    gotoNextStep,
+    stepComplete,
   } = usePassageDetailContext();
   const { settings } = useStepTool(currentstep);
   const { canDoSectionStep } = useStepPermissions();
-  const { startSave } = useContext(UnsavedContext).state;
+  const { startSave, waitForSave } = useContext(UnsavedContext).state;
 
   const playerControlsRef = useRef<WSAudioPlayerControls | null>(null);
   const carefulSpeechStatusRef = useRef<ICarefulSpeechColorStatus | null>(null);
@@ -982,18 +985,37 @@ export function PassageDetailCarefulSpeech({ width }: IProps) {
     [forceRefresh, applyColors]
   );
 
+  const handleAllCompleteDismiss = useCallback(() => {
+    setConfirmAllComplete(false);
+    if (stepComplete(currentstep)) return;
+    waitForSave(undefined, 200).finally(async () => {
+      await setStepComplete(currentstep, true);
+      gotoNextStep();
+    });
+  }, [currentstep, stepComplete, setStepComplete, gotoNextStep, waitForSave]);
+
   const handleClearRecording = useCallback(async () => {
     if (!recordingRow?.mediafile?.id) return;
     await memory.update((t) =>
       t.removeRecord({ type: 'mediafile', id: recordingRow.mediafile.id })
     );
     forceRefresh();
+    if (stepComplete(currentstep)) {
+      await setStepComplete(currentstep, false);
+    }
     setPhase('recordReady');
     setCurrentClausePlayed(true);
     setResetMedia(true);
     applyColors();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [recordingRow, forceRefresh, applyColors]);
+  }, [
+    recordingRow,
+    forceRefresh,
+    applyColors,
+    currentstep,
+    stepComplete,
+    setStepComplete,
+  ]);
 
   const allowRecord =
     recordingPassStarted &&
@@ -1123,8 +1145,8 @@ export function PassageDetailCarefulSpeech({ width }: IProps) {
       {confirmAllComplete && (
         <Confirm
           text={t.allComplete}
-          yesResponse={() => setConfirmAllComplete(false)}
-          noResponse={() => setConfirmAllComplete(false)}
+          yesResponse={handleAllCompleteDismiss}
+          noResponse={handleAllCompleteDismiss}
         />
       )}
     </Box>

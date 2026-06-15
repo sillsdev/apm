@@ -1,4 +1,3 @@
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import React from 'react';
 import { act, cleanup, render, waitFor } from '@testing-library/react';
 import { IRegion } from '../../crud/useWavesurferRegions';
@@ -34,6 +33,17 @@ let mockCompleted = new Set<number>();
 let controlsProps: Record<string, unknown> | undefined;
 let playerProps: Record<string, unknown> | undefined;
 let confirmShown = false;
+let confirmDismiss: (() => void) | undefined;
+let mockStepComplete = false;
+let mockRecordingRow:
+  | { mediafile: { id: string; attributes?: { sourceSegments?: string } } }
+  | undefined;
+
+const mockSetStepComplete = jest.fn().mockResolvedValue(undefined);
+const mockGotoNextStep = jest.fn();
+const mockStepCompleteFn = jest.fn(() => mockStepComplete);
+const mockWaitForSave = jest.fn().mockResolvedValue(undefined);
+const mockMemoryUpdate = jest.fn().mockResolvedValue(undefined);
 
 const stubControls = {
   isReady: jest.fn(() => true),
@@ -66,6 +76,9 @@ const ctx: {
   isBoldWorkflow: true,
   carefulSpeechSegParams: {},
   setCarefulSpeechSegParams: jest.fn(),
+  setStepComplete: mockSetStepComplete,
+  gotoNextStep: mockGotoNextStep,
+  stepComplete: mockStepCompleteFn,
   // updating the engine segment keeps getCurrentSegment consistent with the
   // index the component believes it is on.
   setCurrentSegment: jest.fn((region: IRegion) => {
@@ -100,7 +113,7 @@ jest.mock('./carefulSpeech/carefulSpeechCompletion', () => {
   return {
     ...actual,
     getCompletedClauseIndices: jest.fn(() => mockCompleted),
-    getRecordingForClause: jest.fn(() => undefined),
+    getRecordingForClause: jest.fn(() => mockRecordingRow),
   };
 });
 
@@ -131,14 +144,14 @@ jest.mock('react-redux', () => ({
 jest.mock('../../context/useGlobal', () => ({
   useGlobal: (key: string) =>
     key === 'memory'
-      ? [{ keyMap: {}, update: jest.fn() }, jest.fn()]
+      ? [{ keyMap: {}, update: mockMemoryUpdate }, jest.fn()]
       : [undefined, jest.fn()],
 }));
 jest.mock('../../context/UnsavedContext', () => {
   const ReactActual = jest.requireActual<typeof import('react')>('react');
   return {
     UnsavedContext: ReactActual.createContext({
-      state: { startSave: jest.fn() },
+      state: { startSave: jest.fn(), waitForSave: mockWaitForSave },
     }),
   };
 });
@@ -157,9 +170,7 @@ jest.mock('./PassageDetailPlayer', () => ({
   __esModule: true,
   default: (props: Record<string, unknown>) => {
     playerProps = props;
-    const ref = props.controlsRef as
-      | { current: unknown }
-      | undefined;
+    const ref = props.controlsRef as { current: unknown } | undefined;
     if (ref) ref.current = stubControls;
     return <div data-testid="player" />;
   },
@@ -175,8 +186,15 @@ jest.mock('./carefulSpeech/CarefulSpeechControls', () => ({
 
 jest.mock('../AlertDialog', () => ({
   __esModule: true,
-  default: ({ text }: { text: string }) => {
+  default: ({
+    text,
+    yesResponse,
+  }: {
+    text: string;
+    yesResponse: () => void;
+  }) => {
     confirmShown = true;
+    confirmDismiss = yesResponse;
     return <div data-testid="confirm">{text}</div>;
   },
 }));
@@ -220,9 +238,14 @@ beforeEach(() => {
   controlsProps = undefined;
   playerProps = undefined;
   confirmShown = false;
+  confirmDismiss = undefined;
+  mockStepComplete = false;
+  mockRecordingRow = undefined;
   ctx._seg = regions[0];
   ctx.currentSegmentIndex = 0;
   jest.clearAllMocks();
+  mockWaitForSave.mockResolvedValue(undefined);
+  mockSetStepComplete.mockResolvedValue(undefined);
   stubControls.isReady.mockReturnValue(true);
   stubControls.isPlaying.mockReturnValue(false);
   stubControls.gotoTime.mockResolvedValue(undefined);
@@ -260,6 +283,74 @@ describe('PassageDetailCarefulSpeech — entry positioning', () => {
     expect(controlsProps?.recordingPassStarted).toBe(true);
     expect(controlsProps?.allClausesComplete).toBe(true);
     await waitFor(() => expect(confirmShown).toBe(true));
+  });
+
+  it('dismissing the all-complete dialog marks the step complete and advances', async () => {
+    mockCompleted = new Set([0, 1, 2, 3, 4, 5, 6, 7]);
+    await mountAndSettle();
+    await waitFor(() => expect(confirmDismiss).toBeDefined());
+
+    await act(async () => {
+      confirmDismiss?.();
+    });
+
+    await waitFor(() =>
+      expect(mockWaitForSave).toHaveBeenCalledWith(undefined, 200)
+    );
+    await waitFor(() =>
+      expect(mockSetStepComplete).toHaveBeenCalledWith('step1', true)
+    );
+    expect(mockGotoNextStep).toHaveBeenCalled();
+  });
+
+  it('dismissing the all-complete dialog on a completed step does not advance', async () => {
+    mockCompleted = new Set([0, 1, 2, 3, 4, 5, 6, 7]);
+    mockStepComplete = true;
+    await mountAndSettle();
+    await waitFor(() => expect(confirmDismiss).toBeDefined());
+
+    await act(async () => {
+      confirmDismiss?.();
+    });
+
+    expect(mockSetStepComplete).not.toHaveBeenCalled();
+    expect(mockGotoNextStep).not.toHaveBeenCalled();
+  });
+});
+
+describe('PassageDetailCarefulSpeech — review and clear recording', () => {
+  it('clearing a recording marks a completed step incomplete', async () => {
+    mockCompleted = new Set([0, 1, 2, 3, 4, 5, 6, 7]);
+    mockStepComplete = true;
+    mockRecordingRow = { mediafile: { id: 'rec1' } };
+    await mountAndSettle();
+
+    const onClearRecording = controlsProps?.onClearRecording as
+      | (() => void)
+      | undefined;
+    await act(async () => {
+      onClearRecording?.();
+    });
+
+    await waitFor(() => expect(mockMemoryUpdate).toHaveBeenCalled());
+    await waitFor(() =>
+      expect(mockSetStepComplete).toHaveBeenCalledWith('step1', false)
+    );
+    expect(controlsProps?.phase).toBe('recordReady');
+  });
+
+  it('review mode: tapping a completed clause does not auto-play it', async () => {
+    mockCompleted = new Set([0, 1, 2, 3, 4, 5, 6, 7]);
+    const { rerender } = await mountAndSettle();
+
+    stubControls.setPlay.mockClear();
+    stubControls.gotoTime.mockClear();
+
+    await moveEngineToClause(3, rerender);
+
+    expect(stubControls.setPlay).not.toHaveBeenCalledWith(true);
+    expect(stubControls.gotoTime).toHaveBeenCalledWith(seekFor(3), regions[3]);
+    expect(controlsProps?.phase).toBe('recorded');
   });
 });
 
