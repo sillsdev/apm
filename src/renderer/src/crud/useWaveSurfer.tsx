@@ -236,7 +236,7 @@ export function useWaveSurfer(
     justPlayRegion,
     resetPlayingRegion,
     applyRegionAtPosition,
-    applyMarkVersesRegionColors,
+    applyRegionColors,
     currentRegion,
     wsSetRegionColor,
     wsRemoveCurrentRegion,
@@ -945,6 +945,6 @@ export function useWaveSurfer(
     wsAddMarkers,
     wsSetRegionColor,
     wsRemoveCurrentRegion,
-    applyMarkVersesRegionColors,
+    applyRegionColors,
   };
 }

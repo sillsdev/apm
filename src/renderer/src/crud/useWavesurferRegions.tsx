@@ -167,7 +167,7 @@ export function useWaveSurferRegions(
   const regionIndexInSorted = (r: Region) =>
     sortedRegions().findIndex((x) => x.id === r.id);
 
-  const applyMarkVersesRegionColors = () => {
+  const applyRegionColors = () => {
     if (!statusSegmentColors) return;
     const tailIncomplete = markVersesTailOpenRef?.current ?? false;
     const sorted = sortedRegions();
@@ -897,7 +897,7 @@ export function useWaveSurferRegions(
       }
       prev = r;
     });
-    if (statusSegmentColors) applyMarkVersesRegionColors();
+    if (statusSegmentColors) applyRegionColors();
   };
 
   function clearRegions(
@@ -1323,7 +1323,7 @@ export function useWaveSurferRegions(
     resetPlayingRegion,
     onRegionGoTo,
     applyRegionAtPosition,
-    applyMarkVersesRegionColors,
+    applyRegionColors,
     currentRegion,
     wsSetRegionColor,
     wsRemoveCurrentRegion,

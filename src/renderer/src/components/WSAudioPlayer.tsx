@@ -222,7 +222,7 @@ export interface WSAudioPlayerControls {
   isReady: () => boolean;
   isPlaying: () => boolean;
   gotoTime: (seconds: number, targetRegion?: IRegion) => Promise<void>;
-  applyMarkVersesRegionColors?: () => void;
+  applyRegionColors?: () => void;
 }
 
 const PLAY_PAUSE_KEY = 'F1,CTRL+SPACE';
@@ -590,7 +590,7 @@ function WSAudioPlayer(props: IProps) {
     wsStartRecord,
     wsStopRecord,
     wsAddMarkers,
-    applyMarkVersesRegionColors,
+    applyRegionColors,
   } = useWaveSurfer(
     allowSegment,
     waveformRef,
@@ -1344,7 +1344,7 @@ function WSAudioPlayer(props: IProps) {
       isPlaying: () => playingRef.current,
       gotoTime: (seconds: number, targetRegion?: IRegion) =>
         wsGoto(seconds, false, targetRegion),
-      applyMarkVersesRegionColors,
+      applyRegionColors,
     };
     return () => {
       controlsRef.current = null;
@@ -1363,7 +1363,7 @@ function WSAudioPlayer(props: IProps) {
     handleAddRegion,
     handleRemoveSplitRegion,
     wsGoto,
-    applyMarkVersesRegionColors,
+    applyRegionColors,
   ]);
 
   const doingProcess = (inprogress: boolean, msg?: string) => {

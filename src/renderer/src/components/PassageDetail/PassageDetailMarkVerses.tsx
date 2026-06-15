@@ -241,7 +241,7 @@ export function PassageDetailMarkVerses({ width }: MarkVersesProps) {
       data,
       ColName.Limits
     );
-    playerControlsRef.current?.applyMarkVersesRegionColors?.();
+    playerControlsRef.current?.applyRegionColors?.();
   }, [ColName.Limits, data, pastedSegments]);
 
   const rowCells = (row: string[], first = false) =>

@@ -576,7 +576,7 @@ export default function PassageDetailMarkVersesIsMobile({
       data,
       ColName.Limits
     );
-    playerControlsRef.current?.applyMarkVersesRegionColors?.();
+    playerControlsRef.current?.applyRegionColors?.();
   }, [data, waveSegmentsJson]);
 
   const cloneTableData = useCallback(

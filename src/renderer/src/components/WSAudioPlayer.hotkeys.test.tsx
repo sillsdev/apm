@@ -39,7 +39,7 @@ const waveSurferMock = {
   wsStartRecord: jest.fn(),
   wsStopRecord: jest.fn(),
   wsAddMarkers: jest.fn(),
-  applyMarkVersesRegionColors: jest.fn(),
+  applyRegionColors: jest.fn(),
 };
 
 // Context must be created inside the factory (jest hoists mocks; use requireActual
