@@ -1786,12 +1786,6 @@
             <target/>
          </segment>
       </unit>
-      <unit id="carefulSpeech.listenPassHelp">
-         <segment>
-            <source>If clauses are too long, use More Clauses to split them. You can merge neighboring clauses later while recording with Combine with Next Clause — but only before either clause has a recording.</source>
-            <target/>
-         </segment>
-      </unit>
       <unit id="carefulSpeech.longer">
          <segment>
             <source>Longer</source>

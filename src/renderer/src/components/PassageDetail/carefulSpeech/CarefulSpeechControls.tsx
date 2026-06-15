@@ -120,10 +120,6 @@ export default function CarefulSpeechControls({
     () => !recordingPassStarted,
     [recordingPassStarted]
   );
-  const showListenHelp = useMemo(
-    () => listenPass && currentRegion?.start === 0 && strings.listenPassHelp,
-    [listenPass, currentRegion, strings.listenPassHelp]
-  );
   const showMoreFewer = useMemo(
     () => listenPass && phase !== 'bootstrapping',
     [listenPass, phase]
@@ -228,11 +224,6 @@ export default function CarefulSpeechControls({
       <Typography variant="body2" align="center" sx={{ pb: 1 }}>
         {strings.clause.replace('{0}', formatClauseRange(currentRegion))}
       </Typography>
-      {showListenHelp && (
-        <Typography variant="body2" align="center" sx={{ pb: 1 }}>
-          {strings.listenPassHelp}
-        </Typography>
-      )}
       {showStartButton && (
         <Box sx={{ display: 'flex', justifyContent: 'center', pb: 1 }}>
           <PriButton

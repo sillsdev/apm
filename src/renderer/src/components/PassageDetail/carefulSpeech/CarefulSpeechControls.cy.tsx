@@ -11,7 +11,6 @@ const mockCarefulSpeechStrings = new LocalizedStrings({
     nextClause: 'Next Clause',
     clause: 'Clause: {0}',
     speaker: 'Speaker',
-    listenPassHelp: 'Listen pass help',
     moreClauses: 'More Clauses',
     fewerClauses: 'Fewer Clauses',
     combineWithNextClause: 'Combine with Next Clause',

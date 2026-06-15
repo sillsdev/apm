@@ -365,7 +365,6 @@ const initialState = {
 			"clearRecording": "Clear Recording",
 			"combineWithNextClause": "Combine with Next Clause",
 			"fewerClauses": "Fewer Clauses",
-			"listenPassHelp": "If clauses are too long, use More Clauses to split them. You can merge neighboring clauses later while recording with Combine with Next Clause — but only before either clause has a recording.",
 			"longer": "Longer",
 			"moreClauses": "More Clauses",
 			"nextClause": "Next Clause",
