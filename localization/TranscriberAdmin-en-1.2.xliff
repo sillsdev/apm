@@ -2040,6 +2040,104 @@
                <context context-type="sourcefile">Community.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="carefulSpeech.allComplete">
+            <source>All clauses are complete.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">PassageDetailCarefulSpeech.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="carefulSpeech.boldOnly">
+            <source>Careful Speech is only available for BOLD workflow teams.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">PassageDetailCarefulSpeech.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="carefulSpeech.clause">
+            <source>Clause: {0}</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">CarefulSpeechControls.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="carefulSpeech.clearRecording">
+            <source>Clear Recording</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">CarefulSpeechControls.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="carefulSpeech.combineWithNextClause">
+            <source>Combine with Next Clause</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">CarefulSpeechControls.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="carefulSpeech.fewerClauses">
+            <source>Fewer Clauses</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">CarefulSpeechControls.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="carefulSpeech.longer">
+            <source>Longer</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">CarefulSpeechControls.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="carefulSpeech.moreClauses">
+            <source>More Clauses</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">CarefulSpeechControls.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="carefulSpeech.nextClause">
+            <source>Next Clause</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">CarefulSpeechControls.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="carefulSpeech.shorter">
+            <source>Shorter</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">CarefulSpeechControls.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="carefulSpeech.splitClause">
+            <source>Split Clause</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">CarefulSpeechControls.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="carefulSpeech.speaker">
+            <source>Speaker</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">CarefulSpeechControls.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="carefulSpeech.startRecording">
+            <source>Start Recording</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">CarefulSpeechControls.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="carefulSpeech.undo">
+            <source>Undo</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">CarefulSpeechControls.tsx</context>
+            </context-group>
+         </trans-unit>
       	<trans-unit id="consultantCheck.checked">
       		<source>Mark Checked</source>
       		<target/>
@@ -9741,6 +9839,13 @@
             <target/>
             <context-group>
                <context context-type="sourcefile">ToDoTable.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="tool.carefulSpeech">
+            <source>Careful speech</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">useTools.ts</context>
             </context-group>
          </trans-unit>
          <trans-unit id="tool.community">

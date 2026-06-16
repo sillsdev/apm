@@ -8,6 +8,7 @@ export enum ToolSlug {
   Verses = 'verses',
   Transcribe = 'transcribe',
   PhraseBackTranslate = 'phraseBackTranslate',
+  CarefulSpeech = 'carefulSpeech',
   WholeBackTranslate = 'wholeBackTranslate',
   ConsultantCheck = 'consultantCheck',
   Paratext = 'paratext',

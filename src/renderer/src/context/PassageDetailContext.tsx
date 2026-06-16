@@ -72,7 +72,7 @@ import {
 import Confirm from '../components/AlertDialog';
 import { getNextStep } from '../crud/getNextStep';
 import { UnsavedContext } from './UnsavedContext';
-import { IRegion } from '../crud/useWavesurferRegions';
+import { IRegion, IRegionParams } from '../crud/useWavesurferRegions';
 import { UpdateLastModifiedBy } from '../model/baseModel';
 import { IMarker } from '../crud/useWaveSurfer';
 import { useSelector } from 'react-redux';
@@ -96,6 +96,7 @@ import { usePassageNavigate } from '../components/PassageDetail/usePassageNaviga
 import { useProjectPermissions } from '../utils/useProjectPermissions';
 import { PlayInPlayer } from './PlayInPlayer';
 import { SectionArray } from '@model/SectionArray';
+import { boldDefaultSegParams } from '../components/PassageDetail/carefulSpeech/boldCarefulSpeechSegParams';
 
 export interface IRow {
   id: string;
@@ -217,6 +218,8 @@ const initState = {
   promptDockedRecordButton: null as React.ReactNode | null,
   setPromptDockedRecordButton: (_node: React.ReactNode | null) => {},
   promptDockedRecordFooterVersion: 0,
+  carefulSpeechSegParams: boldDefaultSegParams,
+  setCarefulSpeechSegParams: (_params: IRegionParams) => {},
 };
 
 export type ICtxState = typeof initState;
@@ -466,6 +469,7 @@ const PassageDetailProvider = (props: IProps) => {
       });
     else
       setState((state: ICtxState) => {
+        if (!state.playing) return state;
         return {
           ...state,
           playing,
@@ -545,6 +549,12 @@ const PassageDetailProvider = (props: IProps) => {
         ...state,
         pdBusy: busy,
       };
+    });
+  };
+
+  const setCarefulSpeechSegParams = (params: IRegionParams) => {
+    setState((state: ICtxState) => {
+      return { ...state, carefulSpeechSegParams: params };
     });
   };
 
@@ -1182,6 +1192,7 @@ const PassageDetailProvider = (props: IProps) => {
           isBoldWorkflow,
           sectionArr: (getProjectDefault(projDefSectionMap) ??
             []) as SectionArray,
+          setCarefulSpeechSegParams,
         },
         setState,
       }}

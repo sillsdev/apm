@@ -7,7 +7,7 @@
 --
 -- Variable: :user_email - email address of the user to associate with created/modified records
 
--- Careful speech recordings use a dedicated artifact type (phrase-style segments use NamedRegions.CarefulSpeech).
+-- Careful speech step uses the carefulSpeech tool and carefulspeech artifact (clause / clause-moves segments).
 INSERT INTO artifacttypes (typename, datecreated, dateupdated, lastmodifiedby)
 SELECT
   'carefulspeech',
@@ -45,16 +45,16 @@ SELECT
 WHERE NOT EXISTS (SELECT 1 FROM workflowsteps WHERE process = 'bold' AND sequencenum = 2)
   AND EXISTS (SELECT 1 FROM users LIMIT 1);
 
--- Careful speech — phrase back translate with carefulspeech artifact and its own named segment bucket.
+-- Careful speech — dedicated tool with carefulspeech artifact.
 INSERT INTO workflowsteps (process, name, sequencenum, tool, permissions, datecreated, dateupdated, lastmodifiedby)
 SELECT
   'bold',
   'CarefulSpeech',
   3,
   (
-    '{"tool": "phraseBackTranslate", "settings": "{\"artifactTypeId\": \"'
+    '{"tool": "carefulSpeech", "settings": "{\"artifactTypeId\": \"'
     || (SELECT CAST(id AS TEXT) FROM artifacttypes WHERE typename = 'carefulspeech' ORDER BY id LIMIT 1)
-    || '\", \"namedRegion\": \"CarefulSpeech\"}"}'
+    || '\"}"}'
   )::jsonb,
   '{}'::jsonb,
   (now() AT TIME ZONE 'utc'),

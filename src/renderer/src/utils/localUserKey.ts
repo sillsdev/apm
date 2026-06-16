@@ -33,6 +33,7 @@ export enum LocalKey {
   fontData = 'fontData', // last font data
   microphoneId = 'microphone-id', // preferred recording input
   mobileView = 'mobileView', // toggle mobile view
+  carefulSpeaker = 'carefulSpeaker', // last speaker used for careful speech
 }
 
 export const localUserKey = (id: LocalKey): string => {

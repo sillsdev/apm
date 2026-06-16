@@ -1,8 +1,16 @@
 import { useGlobal } from '../../context/useGlobal';
 import { Box, Button, IconButton } from '@mui/material';
-import { useContext, useEffect, useRef, useState, type RefObject } from 'react';
+import {
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  type RefObject,
+} from 'react';
 import { UnsavedContext } from '../../context/UnsavedContext';
 import {
+  ApplyRegionColor,
   IRegion,
   IRegionParams,
   IRegions,
@@ -68,6 +76,9 @@ export interface DetailPlayerProps {
   onProgress?: (progress: number) => void;
   onSaveProgress?: (progress: number) => void;
   onInteraction?: () => void;
+  /** Careful Speech: reset params, auto-segment, and persist instead of only clearing. */
+  onClearSegments?: () => void | Promise<void>;
+  onTranscription?: (transcription: string) => void;
   allowZoomAndSpeed?: boolean;
   allowZoom?: boolean;
   allowSpeed?: boolean;
@@ -78,9 +89,20 @@ export interface DetailPlayerProps {
   metaData?: React.ReactNode;
   /** When set, exposes waveform imperative controls (e.g. add segment at playhead). */
   controlsRef?: RefObject<WSAudioPlayerControls | null>;
-  /** Mark Verses: true while verse rows after the first still lack timestamps. */
-  markVersesTailOpenRef?: React.RefObject<boolean>;
+  /** Tool-specific waveform region coloring (Mark Verses, Careful Speech, etc.). */
+  applyRegionColor?: ApplyRegionColor;
+  onSegmentPlaybackEnd?: (region: IRegion) => void;
+  /** Called when waveform play/pause changes (in addition to internal player logic). */
+  onPlayStatusNotify?: (playing: boolean) => void;
+  highlightPlay?: boolean;
   playerState?: IPlayerState;
+  /** When false, locating a segment does not start playback. Default true. */
+  autoPlayOnSegmentLocate?: boolean;
+  /** When set, overrides PassageDetailContext `playing` for this player. */
+  playing?: boolean;
+  setPlayingOverride?: (playing: boolean) => void;
+  /** Invoked before starting playback. Return false to skip default play handling. */
+  beforePlay?: () => void | Promise<void | boolean>;
 }
 
 export function PassageDetailPlayer(props: DetailPlayerProps) {
@@ -100,6 +122,7 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
     onProgress,
     onSaveProgress,
     onInteraction,
+    onClearSegments,
     allowZoomAndSpeed,
     allowZoom: allowZoomProp,
     allowSpeed: allowSpeedProp,
@@ -108,8 +131,15 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
     parentToolId,
     metaData,
     controlsRef,
-    markVersesTailOpenRef,
+    applyRegionColor,
+    onSegmentPlaybackEnd,
+    onPlayStatusNotify,
+    highlightPlay,
     playerState,
+    autoPlayOnSegmentLocate = true,
+    playing: playingOverride,
+    setPlayingOverride,
+    beforePlay,
   } = props;
 
   const allowZoom = allowZoomProp ?? allowZoomAndSpeed ?? false;
@@ -175,6 +205,13 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
     if (playerState.forceRefresh) forceRefresh = playerState.forceRefresh;
   }
 
+  if (playingOverride !== undefined) {
+    playing = playingOverride;
+  }
+  if (setPlayingOverride) {
+    setPlaying = setPlayingOverride;
+  }
+
   const [defaultSegments, setDefaultSegments] = useState('{}');
   const [showTranscriptionId, setShowTranscriptionId] = useState('');
   const segmentsRef = useRef('');
@@ -185,7 +222,11 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
   const mediarecs = useOrbitData<MediaFileD[]>('mediafile');
   const { tool } = useStepTool(currentstep ?? '');
 
-  const { onPlayStatus, onCurrentSegment, setSegmentToWhole } = usePlayerLogic({
+  const {
+    onPlayStatus: onPlayStatusInternal,
+    onCurrentSegment,
+    setSegmentToWhole,
+  } = usePlayerLogic({
     allowSegment,
     suggestedSegments,
     position,
@@ -202,6 +243,14 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
     playingRef,
     onSegment,
   });
+
+  const onPlayStatus = useCallback(
+    (playingNow: boolean) => {
+      onPlayStatusInternal(playingNow);
+      onPlayStatusNotify?.(playingNow);
+    },
+    [onPlayStatusInternal, onPlayStatusNotify]
+  );
 
   const writeSegments = async () => {
     if (!savingRef.current) {
@@ -280,7 +329,7 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
     }
     //TT 6149 but I wonder why this was here? if (!playingRef.current) {
     const segs = parseRegions(segments) as IRegions | undefined;
-    if ((segs?.regions?.length ?? 0) > 0) {
+    if (autoPlayOnSegmentLocate && (segs?.regions?.length ?? 0) > 0) {
       setInitialPosition(segs?.regions[0]?.start ?? 0);
       setRequestPlay({
         play: true,
@@ -348,7 +397,8 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
         height={PLAYER_HEIGHT}
         width={width}
         controlsRef={controlsRef}
-        markVersesTailOpenRef={markVersesTailOpenRef}
+        applyRegionColor={applyRegionColor}
+        onSegmentPlaybackEnd={onSegmentPlaybackEnd}
         blob={audioBlob}
         initialposition={initialposition}
         setInitialPosition={setInitialPosition}
@@ -372,7 +422,10 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
         onSegmentParamChange={onSegmentParamChange}
         onStartRegion={onStartRegion}
         onPlayStatus={onPlayStatus}
+        highlightPlay={highlightPlay}
+        beforePlay={beforePlay}
         onInteraction={onInteraction}
+        onClearSegments={onClearSegments}
         onCurrentSegment={onCurrentSegment}
         allowZoom={allowZoom}
         allowSpeed={allowSpeed}

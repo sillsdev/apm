@@ -27,6 +27,7 @@ import { usePaneWidth } from '../components/usePaneWidth';
 import { HeadHeight } from '../layout';
 import PassageDetailsArtifactsMobile from '../components/PassageDetail/Internalization/PassageDetailsArtifactsMobile';
 import PassageDetailMarkVersesIsMobile from '../components/PassageDetail/mobile/MarkVerses/PassageDetailMarkVersesIsMobile';
+import PassageDetailCarefulSpeech from '../components/PassageDetail/PassageDetailCarefulSpeech';
 import TeamCheckReferenceMobile from '../components/PassageDetail/mobile/TeamCheckReferenceMobile';
 import PassageDetailPrompt from '../components/PassageDetail/Prompt/PassageDetailPrompt';
 
@@ -45,6 +46,8 @@ const MobileStep = () => {
     <PassageDetailsArtifactsMobile />
   ) : tool === ToolSlug.Verses ? (
     <PassageDetailMarkVersesIsMobile width={Math.max(0, paneWidth - 40)} />
+  ) : tool === ToolSlug.CarefulSpeech ? (
+    <PassageDetailCarefulSpeech width={Math.max(0, paneWidth - 40)} />
   ) : tool === ToolSlug.TeamCheck ? (
     <TeamCheckReferenceMobile width={Math.max(0, paneWidth - 40)} />
   ) : tool === ToolSlug.Prompt ? (

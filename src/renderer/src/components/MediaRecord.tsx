@@ -94,6 +94,8 @@ interface IProps {
   isSaveDisabled?: boolean;
   dockRecordButton?: boolean;
   onDockedRecordButton?: (node: React.ReactNode | null) => void;
+  /** When true, show the docked record button even if allowRecord is false (button may be disabled). */
+  showDockedRecordButton?: boolean;
 }
 export const DEFAULT_COMPRESSED_MIME = 'audio/ogg;codecs=opus';
 
@@ -152,6 +154,7 @@ function MediaRecord(props: IProps) {
     isSaveDisabled,
     dockRecordButton,
     onDockedRecordButton,
+    showDockedRecordButton,
   } = props;
   const context = usePassageDetailContext();
   const simplified = Boolean(context?.isBoldWorkflow);
@@ -642,6 +645,7 @@ function MediaRecord(props: IProps) {
         showWaveformSave={waveformNeedsSave}
         dockRecordButton={dockRecordButton}
         onDockedRecordButton={onDockedRecordButton}
+        showDockedRecordButton={showDockedRecordButton}
       />
       {warning && !effectiveMobileView && (
         <Typography sx={{ m: 2, color: 'warning.dark' }} id="warning">

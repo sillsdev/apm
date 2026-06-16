@@ -49,6 +49,7 @@ import { Duration } from '../control/Duration';
 import { GrowingSpacer } from '../control/GrowingSpacer';
 import { LightTooltip } from '../control/LightTooltip';
 import { RecordButton } from '../control/RecordButton';
+import HighlightButton from './PassageDetail/mobile/HighlightButton';
 import { useSnackBar } from '../hoc/SnackBar';
 import { HotKeyContext } from '../context/HotKeyContext';
 import { PriButton } from '../control';
@@ -64,6 +65,7 @@ import {
   useMobile,
 } from '../utils';
 import {
+  ApplyRegionColor,
   IRegion,
   IRegionParams,
   parseRegionParams,
@@ -175,13 +177,19 @@ interface IProps {
   captureNoiseSuppression?: boolean;
   keepItSmall?: boolean;
   controlsRef?: React.RefObject<WSAudioPlayerControls | null>;
-  /** When Mark Verses has unmarked verse rows, last waveform region stays neutral. */
-  markVersesTailOpenRef?: React.RefObject<boolean>;
+  /** Tool-specific waveform region coloring (Mark Verses, Careful Speech, etc.). */
+  applyRegionColor?: ApplyRegionColor;
   hideToolbar?: boolean;
   hideControls?: boolean;
   hideSegmentControls?: boolean;
   highlightAutoSegment?: boolean;
+  /** Careful Speech / guided flows: emphasize the main play control until used. */
+  highlightPlay?: boolean;
+  /** Invoked before starting playback. Return false to skip default play handling. */
+  beforePlay?: () => void | Promise<void | boolean>;
   onAutoSegment?: () => void;
+  /** When set, Clear Segments invokes this instead of only clearing regions. */
+  onClearSegments?: () => void | Promise<void>;
   hasRecording?: boolean;
   isStopLogic?: boolean;
   /** When true, hide undo and scissors (region delete) waveform edit tools. */
@@ -204,10 +212,14 @@ interface IProps {
   /** When true in mobile layout, record button is rendered via onDockedRecordButton instead of inline. */
   dockRecordButton?: boolean;
   onDockedRecordButton?: (node: React.ReactNode | null) => void;
+  /** When true, show the docked record button even if allowRecord is false (button may be disabled). */
+  showDockedRecordButton?: boolean;
 }
 
 export interface WSAudioPlayerControls {
   togglePlay: () => void;
+  /** Start or stop playback without toggling (avoids flip when already playing). */
+  setPlay: (play: boolean) => void;
   toggleRecord: () => void;
   prevSegment: () => void;
   nextSegment: () => void;
@@ -222,7 +234,16 @@ export interface WSAudioPlayerControls {
   isReady: () => boolean;
   isPlaying: () => boolean;
   gotoTime: (seconds: number, targetRegion?: IRegion) => Promise<void>;
-  applyMarkVersesRegionColors?: () => void;
+  applyRegionColors?: () => void;
+  runAutoSegment?: (
+    params: import('../crud/useWavesurferRegions').IRegionParams
+  ) => Promise<number>;
+  getRegionsJson?: () => string;
+  loadRegionsJson?: (regionsJson: string) => void;
+  findClauseSplitPoint?: (
+    clause: import('../crud/useWavesurferRegions').IRegion,
+    params: import('../crud/useWavesurferRegions').IRegionParams
+  ) => number | undefined;
 }
 
 const PLAY_PAUSE_KEY = 'F1,CTRL+SPACE';
@@ -296,12 +317,15 @@ function WSAudioPlayer(props: IProps) {
     captureNoiseSuppression = false,
     keepItSmall,
     controlsRef,
-    markVersesTailOpenRef,
+    applyRegionColor,
     hideToolbar,
     hideSegmentControls,
     hideControls,
     highlightAutoSegment,
+    highlightPlay,
+    beforePlay,
     onAutoSegment,
+    onClearSegments,
     hasRecording,
     isStopLogic,
     hideWaveformEditTools,
@@ -318,6 +342,7 @@ function WSAudioPlayer(props: IProps) {
     showWaveformSave,
     dockRecordButton,
     onDockedRecordButton,
+    showDockedRecordButton,
   } = props;
 
   const audioDownload = useAudioDownload(mediaId ?? '');
@@ -339,6 +364,8 @@ function WSAudioPlayer(props: IProps) {
   const playbackRef = useRef(1);
   const [playbackRate, setPlaybackRatex] = useState(1);
   const playingRef = useRef(false);
+  const lastTogglePlayRef = useRef(0);
+  const TOGGLE_PLAY_DEBOUNCE_MS = 300;
   const [playing, setPlayingx] = useState(false);
   const loopingRef = useRef(false);
   const [looping, setLoopingx] = useState(false);
@@ -582,6 +609,7 @@ function WSAudioPlayer(props: IProps) {
     wsFillPx,
     wsZoom,
     wsAutoSegment,
+    wsFindClauseSplitPoint,
     wsPrevRegion,
     wsNextRegion,
     wsRemoveSplitRegion,
@@ -590,7 +618,7 @@ function WSAudioPlayer(props: IProps) {
     wsStartRecord,
     wsStopRecord,
     wsAddMarkers,
-    applyMarkVersesRegionColors,
+    applyRegionColors,
   } = useWaveSurfer(
     allowSegment,
     waveformRef,
@@ -610,7 +638,7 @@ function WSAudioPlayer(props: IProps) {
     onSegmentPlaybackEnd ? onSegmentPlaybackEnd : undefined,
     verses,
     hasSegmentUndo,
-    markVersesTailOpenRef
+    applyRegionColor
   );
 
   //because we have to call hooks consistently, call this even if we aren't going to record
@@ -763,8 +791,12 @@ function WSAudioPlayer(props: IProps) {
     onInteraction?.();
   }, [onInteraction]);
 
-  const handleClearRegions = useCallback(() => {
+  const handleClearRegions = useCallback(async () => {
     notifySegmentInteraction();
+    if (onClearSegments) {
+      await onClearSegments();
+      return;
+    }
     wsClearRegions();
     if (verses) {
       segmentsRef.current = verses;
@@ -772,7 +804,13 @@ function WSAudioPlayer(props: IProps) {
       onSegmentChange && onSegmentChange(verses);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [wsClearRegions, verses, onSegmentChange, notifySegmentInteraction]);
+  }, [
+    wsClearRegions,
+    verses,
+    onSegmentChange,
+    notifySegmentInteraction,
+    onClearSegments,
+  ]);
 
   const handleAddRegion = useCallback(() => {
     notifySegmentInteraction();
@@ -969,8 +1007,12 @@ function WSAudioPlayer(props: IProps) {
   }, [busy, loading]);
 
   const handlePlayStatus = useCallback(
-    (play: boolean) => {
+    async (play: boolean) => {
       if (durationRef.current === 0 || recordingRef.current) return false;
+      if (play && beforePlay) {
+        const skipDefault = await beforePlay();
+        if (skipDefault === false) return playingRef.current;
+      }
       const wouldReplayRegion =
         play && (regionOnly || forceRegionOnly) && !!currentSegmentRef.current;
       if (play === playingRef.current && !wouldReplayRegion) {
@@ -987,13 +1029,16 @@ function WSAudioPlayer(props: IProps) {
         const { start, end } = currentSegmentRef.current;
         const resumeWithinSegment =
           position > start + 0.01 && position < end - 0.01;
-        wsPlayRegion(currentSegmentRef.current, resumeWithinSegment);
-        nowplaying = true;
+        const regionPlayed = wsPlayRegion(
+          currentSegmentRef.current,
+          resumeWithinSegment
+        );
+        nowplaying = regionPlayed ? true : wsTogglePlay();
       } else nowplaying = wsTogglePlay();
       if (nowplaying && Math.abs(wsPosition() - durationRef.current) < 0.2)
         wsGoto(0);
       setPlaying(nowplaying);
-      if (onPlayStatus && isPlaying !== undefined && nowplaying !== isPlaying) {
+      if (onPlayStatus) {
         onPlayStatus(nowplaying);
       }
       return undefined;
@@ -1006,11 +1051,14 @@ function WSAudioPlayer(props: IProps) {
       wsTogglePlay,
       wsGoto,
       onPlayStatus,
-      isPlaying,
       setPlaying,
+      beforePlay,
     ]
   );
   const togglePlayStatus = useCallback(() => {
+    const now = Date.now();
+    if (now - lastTogglePlayRef.current < TOGGLE_PLAY_DEBOUNCE_MS) return;
+    lastTogglePlayRef.current = now;
     handlePlayStatus(!playingRef.current);
   }, [handlePlayStatus]);
 
@@ -1325,6 +1373,7 @@ function WSAudioPlayer(props: IProps) {
     if (!controlsRef) return;
     controlsRef.current = {
       togglePlay: togglePlayStatus,
+      setPlay: handlePlayStatus,
       toggleRecord: handleRecorder,
       prevSegment: handlePrevRegion,
       nextSegment: handleNextRegion,
@@ -1344,7 +1393,15 @@ function WSAudioPlayer(props: IProps) {
       isPlaying: () => playingRef.current,
       gotoTime: (seconds: number, targetRegion?: IRegion) =>
         wsGoto(seconds, false, targetRegion),
-      applyMarkVersesRegionColors,
+      applyRegionColors,
+      runAutoSegment: (params) => Promise.resolve(wsAutoSegment(false, params)),
+      findClauseSplitPoint: (clause, params) =>
+        wsFindClauseSplitPoint(clause, params),
+      getRegionsJson: () => wsGetRegions(),
+      loadRegionsJson: (regionsJson: string) => {
+        segmentsRef.current = regionsJson;
+        wsLoadRegions(regionsJson, loopingRef.current);
+      },
     };
     return () => {
       controlsRef.current = null;
@@ -1353,6 +1410,7 @@ function WSAudioPlayer(props: IProps) {
     controlsRef,
     allowSegment,
     togglePlayStatus,
+    handlePlayStatus,
     handleRecorder,
     handlePrevRegion,
     handleNextRegion,
@@ -1363,7 +1421,11 @@ function WSAudioPlayer(props: IProps) {
     handleAddRegion,
     handleRemoveSplitRegion,
     wsGoto,
-    applyMarkVersesRegionColors,
+    applyRegionColors,
+    wsAutoSegment,
+    wsFindClauseSplitPoint,
+    wsGetRegions,
+    wsLoadRegions,
   ]);
 
   const doingProcess = (inprogress: boolean, msg?: string) => {
@@ -1838,7 +1900,8 @@ function WSAudioPlayer(props: IProps) {
         Boolean(loading) ||
         Boolean(busy) ||
         (Boolean(myMediaId) && !ready && !recording && !waitingForAI) ||
-        (Boolean(oneTryOnly) && oneShotUsed && !recording)
+        (Boolean(oneTryOnly) && oneShotUsed && !recording) ||
+        (!allowRecord && !recording)
       }
       tooltipTitle={recordTooltipTitle}
       hasRecording={hasRecording ?? false}
@@ -1850,7 +1913,7 @@ function WSAudioPlayer(props: IProps) {
 
   const dockedRecordButtonNode = useMemo(
     () =>
-      allowRecord
+      allowRecord || recording || showDockedRecordButton
         ? renderRecordButton({
             isSmall: true,
             isMobileView: true,
@@ -1861,6 +1924,7 @@ function WSAudioPlayer(props: IProps) {
     [
       allowRecord,
       recording,
+      showDockedRecordButton,
       processingRecording,
       waitingForAI,
       loading,
@@ -1968,35 +2032,50 @@ function WSAudioPlayer(props: IProps) {
   );
   const hasClearableAudio =
     duration > 0 || recording || Boolean(blob) || oneShotUsed;
-  const clearRecordingNode = allowRecord && hasClearableAudio && (
-    <LightTooltip id="wsAudioClearTip" title={t.clearRecordingTip}>
-      <span>
-        <AltButton
-          id="wsAudioClear"
-          onClick={() => handleClear()}
-          disabled={
-            recording ||
-            duration === 0 ||
-            waitingForAI ||
-            Boolean(mediaSaveInProgress)
-          }
-          sx={smallButtonProps}
-        >
-          {t.reset}
-        </AltButton>
-      </span>
-    </LightTooltip>
-  );
+  const clearRecordingNode = allowRecord &&
+    hasClearableAudio &&
+    !dockRecordButton && (
+      <LightTooltip id="wsAudioClearTip" title={t.clearRecordingTip}>
+        <span>
+          <AltButton
+            id="wsAudioClear"
+            onClick={() => handleClear()}
+            disabled={
+              recording ||
+              duration === 0 ||
+              waitingForAI ||
+              Boolean(mediaSaveInProgress)
+            }
+            sx={smallButtonProps}
+          >
+            {t.reset}
+          </AltButton>
+        </span>
+      </LightTooltip>
+    );
+  const playDisabled = duration === 0 || recording || waitingForAI;
   const playNode = (
     <LightTooltip id="wsAudioPlayTip" title={playTooltipTitle}>
       <span>
-        <IconButton
-          id="wsAudioPlay"
-          onClick={togglePlayStatus}
-          disabled={duration === 0 || recording || waitingForAI}
-        >
-          <>{playing ? <PauseIcon /> : <PlayIcon />}</>
-        </IconButton>
+        {highlightPlay && !playing ? (
+          <HighlightButton
+            id="wsAudioPlay"
+            ariaLabel={playTooltipTitle}
+            onClick={togglePlayStatus}
+            disabled={playDisabled}
+            highlight={true}
+          >
+            <PlayIcon />
+          </HighlightButton>
+        ) : (
+          <IconButton
+            id="wsAudioPlay"
+            onClick={togglePlayStatus}
+            disabled={playDisabled}
+          >
+            <>{playing ? <PauseIcon /> : <PlayIcon />}</>
+          </IconButton>
+        )}
       </span>
     </LightTooltip>
   );

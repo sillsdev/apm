@@ -14,6 +14,7 @@ import PassageDetailPlayer from './PassageDetailPlayer';
 import PassageDetailRecord from './PassageDetailRecord';
 import PassageDetailItem from './PassageDetailItem';
 import PassageDetailMarkVerses from './PassageDetailMarkVerses';
+import PassageDetailCarefulSpeech from './PassageDetailCarefulSpeech';
 import PassageDetailTranscribe from './PassageDetailTranscribe';
 import PassageDetailChooser from './PassageDetailChooser';
 import ConsultantCheck from './ConsultantCheck';
@@ -156,7 +157,11 @@ const PassageDetailGrids = () => {
         direction="row"
         sx={{ ...rowProps, minWidth: 0, flexWrap: 'wrap' }}
       >
-        {!(isMobile && tool === ToolSlug.PhraseBackTranslate) && (
+        {!(
+          isMobile &&
+          (tool === ToolSlug.PhraseBackTranslate ||
+            tool === ToolSlug.CarefulSpeech)
+        ) && (
           <>
             {boldDesktopCenteredHeader ? (
               <Box
@@ -304,6 +309,7 @@ const PassageDetailGrids = () => {
           tool === ToolSlug.TeamCheck ||
           tool === ToolSlug.Record ||
           tool === ToolSlug.Verses ||
+          tool === ToolSlug.CarefulSpeech ||
           tool === ToolSlug.Transcribe ||
           tool === ToolSlug.ConsultantCheck ||
           tool === ToolSlug.KeyTerm) && (
@@ -314,6 +320,7 @@ const PassageDetailGrids = () => {
             <Stack direction="row" spacing={1}>
               {tool !== ToolSlug.Transcribe &&
               tool !== ToolSlug.Verses &&
+              tool !== ToolSlug.CarefulSpeech &&
               tool !== ToolSlug.Record &&
               tool !== ToolSlug.ConsultantCheck ? (
                 <Stack
@@ -353,6 +360,9 @@ const PassageDetailGrids = () => {
                   <PassageDetailChooser width={paneWidth} />
                   {tool === ToolSlug.Verses && (
                     <PassageDetailMarkVerses width={paneWidth} />
+                  )}
+                  {tool === ToolSlug.CarefulSpeech && (
+                    <PassageDetailCarefulSpeech width={paneWidth} />
                   )}
                   {tool === ToolSlug.Transcribe && (
                     <PassageDetailTranscribe

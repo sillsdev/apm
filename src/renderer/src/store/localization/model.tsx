@@ -337,6 +337,23 @@ export interface ICommunityStrings extends Localize.LocalizedStringsMethods {
     "voiceRights": string;
 };
 
+export interface ICarefulSpeechStrings extends Localize.LocalizedStringsMethods {
+    "allComplete": string;
+    "boldOnly": string;
+    "clause": string;
+    "clearRecording": string;
+    "combineWithNextClause": string;
+    "fewerClauses": string;
+    "longer": string;
+    "moreClauses": string;
+    "nextClause": string;
+    "shorter": string;
+    "splitClause": string;
+    "speaker": string;
+    "startRecording": string;
+    "undo": string;
+};
+
 export interface IConsultantCheckStrings extends Localize.LocalizedStringsMethods {
     "checked": string;
     "compare": string;
@@ -1642,6 +1659,7 @@ export interface IToDoTableStrings extends Localize.LocalizedStringsMethods {
 };
 
 export interface IToolStrings extends Localize.LocalizedStringsMethods {
+    "carefulSpeech": string;
     "community": string;
     "consultantCheck": string;
     "discuss": string;
@@ -2132,6 +2150,7 @@ export interface ILocalizedStrings {
 	commentCard: ICommentCardStrings;
 	commentEditor: ICommentEditorStrings;
 	community: ICommunityStrings;
+	carefulSpeech: ICarefulSpeechStrings;
 	consultantCheck: IConsultantCheckStrings;
 	control: IControlStrings;
 	deleteExpansion: IDeleteExpansionStrings;

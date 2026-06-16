@@ -41,7 +41,7 @@ interface IProps {
   wsAutoSegment?: (loop: boolean | undefined, params: IRegionParams) => number;
   wsRemoveSplitRegion: (next?: boolean) => IRegionChange | undefined;
   wsAddRegion: () => IRegionChange | undefined;
-  wsClearRegions: () => void;
+  wsClearRegions: () => void | Promise<void>;
   setBusy?: (value: boolean) => void;
 }
 
@@ -139,11 +139,14 @@ function WSAudioPlayerSegment(props: IProps) {
     if (setBusy) setBusy(false);
     return true;
   };
-  const handleClearSegments = () => {
+  const handleClearSegments = async () => {
     if (!readyRef.current) return false;
     if (setBusy) setBusy(true);
-    wsClearRegions();
-    if (setBusy) setBusy(false);
+    try {
+      await wsClearRegions();
+    } finally {
+      if (setBusy) setBusy(false);
+    }
     return true;
   };
   const handleSegParamChange = (

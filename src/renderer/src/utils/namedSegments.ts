@@ -8,7 +8,7 @@ import {
 export enum NamedRegions {
   Transcription = 'Transcription',
   BackTranslation = 'BT',
-  CarefulSpeech = 'CarefulSpeech',
+  Clause = 'clause',
   ProjectResource = 'ProjRes',
   Verse = 'Verse',
   TRTask = 'TRTask',
