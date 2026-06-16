@@ -253,7 +253,7 @@ export default function MediaTitle(props: IProps) {
       showMessage(t.recording);
       return;
     }
-    const value = e.target.value;
+    const value = e.target.value.trim();
     setCurText(value);
     if (onTextChange) {
       const err = onTextChange(value);
