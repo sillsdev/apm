@@ -168,9 +168,8 @@ export default function MediaTitle(props: IProps) {
   } = props;
   const [canSaveRecording, setCanSaveRecording] = useState(false);
   const canSaveRef = useRef(false);
-  const [curText, setCurText] = useState(title ?? '');
+  const [curText, setCurTextx] = useState(title ?? '');
   const curTextRef = useRef(curText);
-  curTextRef.current = curText;
   const isFocusedRef = useRef(false);
   const prevTitleKeyRef = useRef(titlekey);
   const [startRecord, setStartRecord] = useState(false);
@@ -200,7 +199,10 @@ export default function MediaTitle(props: IProps) {
 
   // Track playing media globally to coordinate playback (only one plays at a time)
   const [playingMediaId, setPlayingMediaId] = useGlobal('playingMediaId');
-
+  const setCurText = (text: string) => {
+    setCurTextx(text);
+    curTextRef.current = text;
+  };
   useEffect(() => setHelperText(helper ?? ''), [helper]);
 
   useEffect(() => {
@@ -252,7 +254,6 @@ export default function MediaTitle(props: IProps) {
       return;
     }
     const value = e.target.value;
-    curTextRef.current = value;
     setCurText(value);
     if (onTextChange) {
       const err = onTextChange(value);
@@ -266,8 +267,10 @@ export default function MediaTitle(props: IProps) {
 
   const handleBlur = () => {
     isFocusedRef.current = false;
-    if (onTextChange) {
-      onTextChange(curTextRef.current);
+    const value = curTextRef.current;
+    if (onTextChange && value !== (title ?? '')) {
+      const err = onTextChange(value);
+      setHelperText(err);
     }
   };
 
@@ -427,6 +430,7 @@ export default function MediaTitle(props: IProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [
       curText,
+      title,
       recording,
       mediaId,
       canSaveRecording,
