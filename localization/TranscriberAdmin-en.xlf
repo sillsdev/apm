@@ -7840,9 +7840,15 @@
             <target/>
          </segment>
       </unit>
+      <unit id="shared.TooBusy">
+         <segment>
+            <source>Unable to start new save while already saving.</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="shared.NoSaveWoMedia">
          <segment>
-            <source>No media has been saved to the cloud. Please check your internet connection and try again.</source>
+            <source>Save Failed. Please check your internet connection and try again.</source>
             <target/>
          </segment>
       </unit>

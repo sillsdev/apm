@@ -483,6 +483,21 @@ export function ScriptureTable(props: IProps) {
 
   const setUpdate = (value: boolean) => (updateRef.current = value);
 
+  const runWhenSheetIdle = (label: string, fn: () => void) => {
+    if (savingRef.current || updateRef.current) {
+      waitForIt(
+        label,
+        () => !savingRef.current && !updateRef.current,
+        () => false,
+        50
+      )
+        .then(fn)
+        .catch(() => showMessage(t.saving));
+      return;
+    }
+    fn();
+  };
+
   const sheetHasUnsavedChanges = useMemo(
     () => isChanged(toolId),
     [isChanged, toolId]
@@ -817,6 +832,7 @@ export function ScriptureTable(props: IProps) {
       reference: '',
       published: [] as PublishDestinationEnum[],
       book: scripture ? firstBook : '',
+      sectionUpdated: currentDateTime(),
     } as ISheet;
     return newRow;
   };
@@ -825,27 +841,24 @@ export function ScriptureTable(props: IProps) {
     ix?: number,
     ptype?: PassageTypeEnum
   ) => {
-    if (savingRef.current) {
-      showMessage(t.saving);
-      return;
-    }
-    if (updateRef.current) return;
-    setUpdate(true);
-    const i = getUndelIndex(sheetRef.current, ix);
-    let newRow = newSection(level, sheetRef.current, i);
-    if (ptype === PassageTypeEnum.MOVEMENT) {
-      newRow = { ...newRow, reference: publishingTitle(ptype) };
-    }
-    let newData = insertAt(sheetRef.current, newRow, i);
-    //if added in the middle...resequence
-    if (i !== undefined) newData = shtResequence(newData);
-    if (ptype === PassageTypeEnum.MOVEMENT) {
-      setSheet(newData);
-    } else {
-      setSheet(addPassageTo(level, newData, ptype, i));
-    }
-    setUpdate(false);
-    setChanged(true);
+    runWhenSheetIdle('finish save or update before add section', () => {
+      setUpdate(true);
+      const i = getUndelIndex(sheetRef.current, ix);
+      let newRow = newSection(level, sheetRef.current, i);
+      if (ptype === PassageTypeEnum.MOVEMENT) {
+        newRow = { ...newRow, reference: publishingTitle(ptype) };
+      }
+      let newData = insertAt(sheetRef.current, newRow, i);
+      //if added in the middle...resequence
+      if (i !== undefined) newData = shtResequence(newData);
+      if (ptype === PassageTypeEnum.MOVEMENT) {
+        setSheet(newData);
+      } else {
+        setSheet(addPassageTo(level, newData, ptype, i));
+      }
+      setUpdate(false);
+      setChanged(true);
+    });
   };
 
   const addPassage = (
@@ -853,17 +866,15 @@ export function ScriptureTable(props: IProps) {
     ix?: number,
     before?: boolean
   ) => {
-    if (savingRef.current || updateRef.current) {
-      showMessage(t.saving);
-      return;
-    }
-    setUpdate(true);
-    const i = getUndelIndex(sheetRef.current, ix);
-    setSheet(
-      addPassageTo(SheetLevel.Passage, sheetRef.current, ptype, i, before)
-    );
-    setUpdate(false);
-    setChanged(true);
+    runWhenSheetIdle('finish save or update before add passage', () => {
+      setUpdate(true);
+      const i = getUndelIndex(sheetRef.current, ix);
+      setSheet(
+        addPassageTo(SheetLevel.Passage, sheetRef.current, ptype, i, before)
+      );
+      setUpdate(false);
+      setChanged(true);
+    });
   };
   const movePassage = (ix: number, before: boolean, nextSection: boolean) => {
     if (savingRef.current || updateRef.current) {
@@ -1552,31 +1563,54 @@ export function ScriptureTable(props: IProps) {
       setBusy(false);
     };
     const setSaving = (value: boolean) => (savingRef.current = value);
-    const doneSaving = () => {
+    const doneSavingSuccess = () => {
       setSaving(false);
-      setLastSaved(currentDateTime()); //force refresh the sheet
+      setChanged(false);
+      setLastSaved(currentDateTime()); // force refresh the sheet from saved data
       saveCompleted(toolId);
       setComplete(100);
       setUpdate(false);
     };
-    const save = () => {
-      if (!savingRef.current && !updateRef.current) {
-        setSaving(true);
-        setUpdate(true);
-        setChanged(false);
-        prevSave = lastSaved || '';
-        showMessage(t.saving);
-        handleSave().then(() => {
-          if (doForceDataChanges.current) {
-            waitForRemoteQueue(t.publishingWarning).then(() => {
-              forceDataChanges().then(() => doneSaving());
-            });
-            doForceDataChanges.current = false;
-          } else {
-            doneSaving();
-          }
-        });
+    const doneSavingFailure = (saveErr: string) => {
+      setSaving(false);
+      setUpdate(false);
+      setBusy(false);
+      saveCompleted(toolId, saveErr);
+      setComplete(100);
+      showMessage(saveErr);
+    };
+    const finishAfterSave = () => {
+      if (doForceDataChanges.current) {
+        doForceDataChanges.current = false;
+        waitForRemoteQueue(t.publishingWarning)
+          .then(() => forceDataChanges())
+          .catch(() => {})
+          .finally(() => doneSavingSuccess());
+      } else {
+        doneSavingSuccess();
       }
+    };
+    const save = () => {
+      if (savingRef.current || updateRef.current) {
+        waitForIt(
+          'finish save or update',
+          () => !savingRef.current && !updateRef.current,
+          () => false,
+          50
+        )
+          .then(() => save())
+          .catch(() => {
+            doneSavingFailure(ts.TooBusy);
+          });
+        return;
+      }
+      setSaving(true);
+      setUpdate(true);
+      prevSave = lastSaved || '';
+      showMessage(t.saving);
+      handleSave()
+        .then(finishAfterSave)
+        .catch(() => doneSavingFailure(ts.NoSaveWoMedia));
     };
     myChangedRef.current = isChanged(toolId);
     if (saveRequested(toolId)) {
