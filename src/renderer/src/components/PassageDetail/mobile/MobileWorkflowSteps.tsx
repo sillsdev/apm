@@ -72,7 +72,7 @@ export default function MobileWorkflowSteps() {
   const didMountRef = useRef(false);
   const stepRefs = useRef(new Map<string, HTMLElement>());
 
-  // Ordered list of passages in the current section, excluding publishing-title rows, sorted by sequence number.
+  // Ordered list of passages in the current section, excluding publishing-title rows, sorted by sequence number
   const sectionPassages = useMemo<PassageD[]>(() => {
     const passRecIds = related(section, 'passages');
     if (!Array.isArray(passRecIds)) return [];
@@ -114,6 +114,10 @@ export default function MobileWorkflowSteps() {
     rememberCurrentPassage(memory, remId);
     passageNavigate(`/detail/${prjId}/${remId}`);
   };
+
+  // Check if the dropdown has more than one option to pick from
+  const dropdownOptions = isStepProgression ? sectionPassages : workflow;
+  const hasMultipleOptions = dropdownOptions.length > 1;
 
   const handleSelect = (id: string) => () => {
     if (getGlobal('remoteBusy')) {
@@ -219,12 +223,13 @@ export default function MobileWorkflowSteps() {
           )}
           <Button
             size="small"
-            endIcon={<ArrowDropDownIcon />}
+            endIcon={hasMultipleOptions ? <ArrowDropDownIcon /> : undefined}
             sx={{
               whiteSpace: 'nowrap',
               minWidth: 'auto',
             }}
             onClick={(e) => {
+              if (!hasMultipleOptions) return;
               if (recording || commentRecording) return;
               if (getGlobal('remoteBusy')) {
                 showMessage(ts.wait);
