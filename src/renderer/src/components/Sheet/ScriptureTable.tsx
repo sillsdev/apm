@@ -1439,12 +1439,18 @@ export function ScriptureTable(props: IProps) {
 
   const refreshSheet = useCallback(() => {
     if (!plan) return;
+    const freshSections = memory.cache.query((q) =>
+      q.findRecords('section')
+    ) as SectionD[];
+    const freshSchemeSteps = memory.cache.query((q) =>
+      q.findRecords('organizationschemestep')
+    ) as OrganizationSchemeStepD[];
     setSheet(
       getSheet({
         plan,
-        sections,
+        sections: freshSections,
         passages,
-        organizationSchemeSteps,
+        organizationSchemeSteps: freshSchemeSteps,
         flat,
         projectShared: shared,
         memory,
@@ -1467,9 +1473,7 @@ export function ScriptureTable(props: IProps) {
     );
   }, [
     plan,
-    sections,
     passages,
-    organizationSchemeSteps,
     flat,
     shared,
     memory,
