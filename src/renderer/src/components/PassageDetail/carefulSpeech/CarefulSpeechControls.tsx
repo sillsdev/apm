@@ -189,7 +189,7 @@ export default function CarefulSpeechControls({
           spacing={1}
           justifyContent="center"
           alignItems="center"
-          sx={{ py: 1 }}
+          sx={{ pt: 1 }}
         >
           <PriButton
             id="careful-speech-split"
@@ -197,6 +197,7 @@ export default function CarefulSpeechControls({
             onClick={onSplitClause}
             variant="outlined"
             color="inherit"
+            sx={{ px: '8px', py: '2px' }}
           >
             {strings.splitClause}
           </PriButton>
@@ -206,6 +207,7 @@ export default function CarefulSpeechControls({
             onClick={onCombineWithNext}
             variant="outlined"
             color="inherit"
+            sx={{ px: '8px', py: '2px' }}
           >
             {strings.combineWithNextClause}
           </PriButton>
@@ -221,7 +223,7 @@ export default function CarefulSpeechControls({
           )}
         </Stack>
       )}
-      <Typography variant="body2" align="center" sx={{ pb: 1 }}>
+      <Typography variant="body2" align="center" sx={{ py: 2 }}>
         {strings.clause.replace('{0}', formatClauseRange(currentRegion))}
       </Typography>
       {showStartButton && (
