@@ -12,7 +12,6 @@ import { shallowEqual, useSelector } from 'react-redux';
 import { useGlobal } from '../../context/useGlobal';
 import usePassageDetailContext from '../../context/usePassageDetailContext';
 import PassageDetailPlayer from './PassageDetailPlayer';
-import PassageDetailChooser from './PassageDetailChooser';
 import {
   ArtifactTypeSlug,
   remoteIdGuid,
@@ -1057,7 +1056,6 @@ export function PassageDetailCarefulSpeech({ width }: IProps) {
         width: '100%',
       }}
     >
-      <PassageDetailChooser width={width} />
       {allowSourcePlayer && (
         <PassageDetailPlayer
           key={`careful-speech-player-${mediafileId}`}

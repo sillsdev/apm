@@ -161,11 +161,6 @@ jest.mock('../../hoc/useOrbitData', () => ({
   ],
 }));
 
-jest.mock('./PassageDetailChooser', () => ({
-  __esModule: true,
-  default: () => <div data-testid="chooser" />,
-}));
-
 jest.mock('./PassageDetailPlayer', () => ({
   __esModule: true,
   default: (props: Record<string, unknown>) => {
