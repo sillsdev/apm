@@ -1557,12 +1557,21 @@ export function ScriptureTable(props: IProps) {
       setBusy(false);
     };
     const setSaving = (value: boolean) => (savingRef.current = value);
-    const doneSaving = () => {
+    const doneSavingSuccess = () => {
       setSaving(false);
-      setLastSaved(currentDateTime()); //force refresh the sheet
+      setChanged(false);
+      setLastSaved(currentDateTime()); // force refresh the sheet from saved data
       saveCompleted(toolId);
       setComplete(100);
       setUpdate(false);
+    };
+    const doneSavingFailure = (saveErr: string) => {
+      setSaving(false);
+      setUpdate(false);
+      setBusy(false);
+      saveCompleted(toolId, saveErr);
+      setComplete(100);
+      showMessage(saveErr);
     };
     const finishAfterSave = () => {
       if (doForceDataChanges.current) {
@@ -1570,9 +1579,9 @@ export function ScriptureTable(props: IProps) {
         waitForRemoteQueue(t.publishingWarning)
           .then(() => forceDataChanges())
           .catch(() => {})
-          .finally(() => doneSaving());
+          .finally(() => doneSavingSuccess());
       } else {
-        doneSaving();
+        doneSavingSuccess();
       }
     };
     const save = () => {
@@ -1593,10 +1602,11 @@ export function ScriptureTable(props: IProps) {
       }
       setSaving(true);
       setUpdate(true);
-      setChanged(false);
       prevSave = lastSaved || '';
       showMessage(t.saving);
-      handleSave().then(finishAfterSave).catch(finishAfterSave);
+      handleSave()
+        .then(finishAfterSave)
+        .catch(() => doneSavingFailure(ts.NoSaveWoMedia));
     };
     myChangedRef.current = isChanged(toolId);
     if (saveRequested(toolId)) {
