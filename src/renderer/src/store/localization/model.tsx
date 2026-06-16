@@ -1536,6 +1536,7 @@ export interface ISharedStrings extends Localize.LocalizedStringsMethods {
     "noiseRemoval": string;
     "noiseRemovalFailed": string;
     "NoSaveOffline": string;
+    "TooBusy": string;
     "NoSaveWoMedia": string;
     "notSupported": string;
     "observer": string;

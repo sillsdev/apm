@@ -1594,9 +1594,7 @@ export function ScriptureTable(props: IProps) {
         )
           .then(() => save())
           .catch(() => {
-            saveCompleted(toolId);
-            setSaving(false);
-            setUpdate(false);
+            doneSavingFailure(ts.TooBusy);
           });
         return;
       }
