@@ -103,6 +103,20 @@ const mockSection = {
   },
 } as any;
 
+// Section with only the current passage (single dropdown option)
+const mockSectionSinglePassage = {
+  id: 'section-1',
+  relationships: {
+    passages: {
+      data: [{ type: 'passage', id: 'p-1' }],
+    },
+  },
+} as any;
+
+const mockSectionPassageRecordsSingle = {
+  'passage:p-1': mockSectionPassageRecords['passage:p-1'],
+};
+
 const mockCurrentPassage = {
   id: 'p-1',
   attributes: { sequencenum: 1, reference: '1:1', book: 'GEN' },
@@ -389,7 +403,12 @@ describe('MobileWorkflowSteps', () => {
     });
 
     it('blocks passage dropdown and shows wait message when remote is busy', () => {
-      mountMobileWorkflowSteps({ isStepProgression: true, remoteBusy: true });
+      mountMobileWorkflowSteps({
+        isStepProgression: true,
+        remoteBusy: true,
+        section: mockSection,
+        extraMemoryRecords: mockSectionPassageRecords,
+      });
 
       cy.get('[data-cy="passage-dropdown"]').click();
 
@@ -415,6 +434,23 @@ describe('MobileWorkflowSteps', () => {
       cy.get('[role="menu"]').should('be.visible');
       cy.get('[role="menuitem"]').should('have.length', 2);
       cy.get('[role="menuitem"]').eq(0).should('contain.text', 'GEN 1:1');
+    });
+
+    it('does not open the dropdown when the section has only one passage', () => {
+      mountMobileWorkflowSteps({
+        isStepProgression: true,
+        section: mockSectionSinglePassage,
+        extraMemoryRecords: mockSectionPassageRecordsSingle,
+      });
+
+      cy.get('[data-cy="passage-dropdown"]')
+        .should('contain.text', 'GEN 1:1')
+        .find('[data-testid="ArrowDropDownIcon"]')
+        .should('not.exist');
+
+      cy.get('[data-cy="passage-dropdown"]').click();
+
+      cy.get('[role="menu"]').should('not.exist');
     });
 
     it('renders the step label as plain text when the current step has no tip', () => {
@@ -465,6 +501,21 @@ describe('MobileWorkflowSteps', () => {
 
       cy.get('[role="menu"]').should('be.visible');
       cy.get('[role="menuitem"]').should('have.length', 2);
+    });
+
+    it('does not open the dropdown when there is only one workflow step', () => {
+      mountMobileWorkflowSteps({
+        workflow: [{ id: 'step-1', label: 'Record' }],
+      });
+
+      cy.get('[data-cy="passage-dropdown"]')
+        .should('contain.text', 'Record')
+        .find('[data-testid="ArrowDropDownIcon"]')
+        .should('not.exist');
+
+      cy.get('[data-cy="passage-dropdown"]').click();
+
+      cy.get('[role="menu"]').should('not.exist');
     });
 
     it('blocks passage click while recording', () => {
