@@ -234,7 +234,7 @@ export default function MobileWorkflowSteps() {
             }}
             data-cy="passage-dropdown"
           >
-            {isStepProgression ? passageRef(passage) : currentLabel}
+            {isStepProgression ? passageRef(passage) : getWfLabel(currentLabel)}
           </Button>
           <Menu
             anchorEl={passageMenuAnchor}
