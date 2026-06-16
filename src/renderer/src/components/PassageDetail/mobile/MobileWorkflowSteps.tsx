@@ -275,13 +275,13 @@ export default function MobileWorkflowSteps() {
             overflowX: 'auto',
             display: 'flex',
             flex: { xs: 1, md: 'none' },
-            justifyContent: {
-              xs: 'flex-start',
-              md: 'center',
-            },
             position: { md: 'absolute' },
             left: { md: 0 },
             right: { md: 0 },
+            '&::before, &::after': {
+              content: '""',
+              margin: 'auto',
+            },
           }}
         >
           {steps.map((step) => {
