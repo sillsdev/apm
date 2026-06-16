@@ -431,6 +431,7 @@ export default function MediaTitle(props: IProps) {
     [
       curText,
       title,
+      titlekey,
       recording,
       mediaId,
       canSaveRecording,
