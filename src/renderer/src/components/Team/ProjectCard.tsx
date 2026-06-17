@@ -30,6 +30,7 @@ import PublishedWithChangesIcon from '@mui/icons-material/PublishedWithChanges';
 import EditNoteIcon from '@mui/icons-material/EditNote';
 import {
   DialogMode,
+  ICardsStrings,
   IState,
   ITranscriptionTabStrings,
   ProjectD,
@@ -77,7 +78,11 @@ import { useProjectPermissions } from '../../utils/useProjectPermissions';
 import { IProjectDialog } from './ProjectDialog/projectDialogTypes';
 import { TeamSelector } from '../ImportTab';
 import { useAdminTeams } from '../useAdminTeams';
-import { importSelector, transcriptionTabSelector } from '../../selector';
+import {
+  cardsSelector,
+  importSelector,
+  transcriptionTabSelector,
+} from '../../selector';
 
 const PencilSquare = BsPencilSquare as unknown as React.FC<IconBaseProps>;
 
@@ -136,7 +141,6 @@ export const ProjectCard = (props: IProps) => {
     projectLanguage,
     projectUpdate,
     projectDelete,
-    cardStrings,
     vProjectStrings,
     projButtonStrings,
     personalProjects,
@@ -177,7 +181,7 @@ export const ProjectCard = (props: IProps) => {
   const [openCopyDialog, setOpenCopyDialog] = useState(false);
   const [selectedTeamId, setSelectedTeamId] = useState<string>('');
   const { getProjectDefault } = useProjectDefaults();
-  const t = cardStrings;
+  const t: ICardsStrings = useSelector(cardsSelector, shallowEqual);
   const tt: ITranscriptionTabStrings = useSelector(
     transcriptionTabSelector,
     shallowEqual

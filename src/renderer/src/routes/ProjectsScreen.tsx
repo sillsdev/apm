@@ -12,7 +12,9 @@ import AppHead from '../components/App/AppHead';
 import { TeamProvider, TeamContext, TeamIdType } from '../context/TeamContext';
 import { useLocation } from 'react-router-dom';
 import { ProjectCard } from '../components/Team/ProjectCard';
-import { DialogMode, VProject } from '../model';
+import { DialogMode, ICardsStrings, VProject } from '../model';
+import { shallowEqual, useSelector } from 'react-redux';
+import { cardsSelector } from '../selector';
 import { ProjectDialog } from '../components/Team/ProjectDialog';
 import { useMyNavigate } from '../utils/useMyNavigate';
 import { LocalKey, localUserKey, useJsonParams, useMobile } from '../utils';
@@ -42,12 +44,11 @@ export const ProjectsScreenInner: React.FC = () => {
     teamProjects,
     personalProjects,
     personalTeam,
-    cardStrings,
     teams,
     teamDirectoryReady,
     isAdmin,
   } = ctx.state;
-  const t = cardStrings;
+  const t: ICardsStrings = useSelector(cardsSelector, shallowEqual);
   const { pathname } = useLocation();
   const [plan] = useGlobal('plan');
   const [memory] = useGlobal('memory');

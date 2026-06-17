@@ -351,7 +351,6 @@ describe('OrgHead', () => {
         teamDelete: mockTeamDelete,
         teamUpdate: mockTeamUpdate,
         resetProjectPermissions: mockResetProjectPermissions,
-        cardStrings: { members: 'Members of {0}' },
         // Add other required properties to match ICtxState interface
         lang: 'en',
         ts: {} as any,

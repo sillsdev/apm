@@ -11,14 +11,16 @@ import { UnsavedContext } from '../../context/UnsavedContext';
 import { TeamPaper, TeamHeadDiv, TeamName, AltButton } from '../../control';
 import DialogMode from '../../model/dialogMode';
 import { useOrbitData } from '../../hoc/useOrbitData';
-import { OrganizationD } from '../../model';
+import { ICardsStrings, OrganizationD } from '../../model';
+import { shallowEqual, useSelector } from 'react-redux';
+import { cardsSelector } from '../../selector';
 import SortIcon from '@mui/icons-material/Sort';
 import { ProjectSort } from './ProjectDialog/ProjectSort';
 
 export const PersonalItem = () => {
   const ctx = React.useContext(TeamContext);
-  const { personalTeam, personalProjects, cardStrings, teamUpdate } = ctx.state;
-  const t = cardStrings;
+  const { personalTeam, personalProjects, teamUpdate } = ctx.state;
+  const t: ICardsStrings = useSelector(cardsSelector, shallowEqual);
   const [offlineOnly] = useGlobal('offlineOnly'); //will be constant here
   const [isOffline] = useGlobal('offline'); //verified this is not used in a function 2/18/25
   const [connected] = useGlobal('connected');

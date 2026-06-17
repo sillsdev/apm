@@ -211,7 +211,6 @@ describe('ProjectsScreen', () => {
         isAdmin: isAdmin,
         isProjectAdmin: () => false,
         flatAdd: async () => {},
-        cardStrings: mockCardStrings,
         sharedStrings: {} as any,
         vProjectStrings: {} as any,
         pickerStrings: {} as any,

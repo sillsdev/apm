@@ -1,4 +1,7 @@
 import { useContext, useState, ChangeEvent } from 'react';
+import { shallowEqual, useSelector } from 'react-redux';
+import { ICardsStrings } from '../../model';
+import { cardsSelector } from '../../selector';
 import { useGlobal } from '../../context/useGlobal';
 import { TeamContext } from '../../context/TeamContext';
 import { TokenContext } from '../../context/TokenProvider';
@@ -12,7 +15,7 @@ import type { ITeamDialog } from './TeamDialog';
 
 export function useTeamActions() {
   const ctx = useContext(TeamContext);
-  const { teamCreate, cardStrings, isDeleting, sharedStrings } = ctx.state;
+  const { teamCreate, isDeleting, sharedStrings } = ctx.state;
   const [, setBusy] = useGlobal('remoteBusy');
   const [offline] = useGlobal('offline');
   const [isDeveloper] = useGlobal('developer');
@@ -28,7 +31,7 @@ export function useTeamActions() {
   const [validEmail, setValidEmail] = useState(false);
   const [contentStatus, setContentStatus] = useState('');
 
-  const t = cardStrings;
+  const t: ICardsStrings = useSelector(cardsSelector, shallowEqual);
   const ts = sharedStrings;
 
   const handleAddClick = () => setOpenAdd(true);

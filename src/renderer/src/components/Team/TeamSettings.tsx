@@ -1,5 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { DialogMode, ISharedStrings, Organization } from '../../model';
+import {
+  DialogMode,
+  ICardsStrings,
+  ISharedStrings,
+  Organization,
+} from '../../model';
 import {
   Accordion,
   AccordionSummary,
@@ -24,7 +29,7 @@ import BigDialog from '../../hoc/BigDialog';
 import { BigDialogBp } from '../../hoc/BigDialogBp';
 import SelectSponsor from '../../business/voice/SelectSponsor';
 import { shallowEqual, useSelector } from 'react-redux';
-import { sharedSelector } from '../../selector';
+import { cardsSelector, sharedSelector } from '../../selector';
 import { useGlobal } from '../../context/useGlobal';
 import {
   orgDefaultPermissions,
@@ -70,8 +75,8 @@ export function TeamSettings(props: IProps) {
   const [permissions, setPermissions] = useState(true);
   const [voiceVisible, setVoiceVisible] = useState(false);
   const [offline] = useGlobal('offline'); //verified this is not used in a function 2/18/25
-  const { cardStrings, personalTeam } = ctx.state;
-  const t = cardStrings;
+  const { personalTeam } = ctx.state;
+  const t: ICardsStrings = useSelector(cardsSelector, shallowEqual);
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
   const workflowOptions = [
     t.workflowProgressionPassage,

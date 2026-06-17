@@ -274,7 +274,6 @@ describe('AppHead', () => {
         teamDelete: mockTeamDelete,
         teamUpdate: mockTeamUpdate,
         resetProjectPermissions: mockResetProjectPermissions,
-        cardStrings: { members: 'Members of {0}' },
         lang: 'en',
         ts: {} as any,
         resetOrbitError: cy.stub(),

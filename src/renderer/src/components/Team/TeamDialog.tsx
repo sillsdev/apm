@@ -15,11 +15,14 @@ import {
   OrganizationD,
   IDialog,
   DialogMode,
+  ICardsStrings,
   OptionType,
   WorkflowStep,
   BibleD,
   ProjectD,
 } from '../../model';
+import { shallowEqual, useSelector } from 'react-redux';
+import { cardsSelector } from '../../selector';
 import DeleteExpansion from '../DeleteExpansion';
 import { TeamContext } from '../../context/TeamContext';
 import {
@@ -90,8 +93,8 @@ export function TeamDialog(props: IProps) {
   const { setParam } = useJsonParams();
   const [changed, setChanged] = React.useState(false);
   const ctx = React.useContext(TeamContext);
-  const { cardStrings, personalTeam } = ctx.state;
-  const t = cardStrings;
+  const { personalTeam } = ctx.state;
+  const t: ICardsStrings = useSelector(cardsSelector, shallowEqual);
   const [memory] = useGlobal('memory');
   const [process, setProcess] = useState<string>();
   const [processOptions, setProcessOptions] = useState<OptionType[]>([]);

@@ -17,7 +17,6 @@ import {
   OrganizationMembership,
   VProject,
   VProjectD,
-  ICardsStrings,
   IVProjectStrings,
   ILanguagePickerStrings,
   ISharedStrings,
@@ -59,7 +58,6 @@ import {
   remoteIdGuid,
 } from '../crud';
 import {
-  cardsSelector,
   controlSelector,
   newProjectSelector,
   pickerSelector,
@@ -139,7 +137,6 @@ const initState = {
     book: string | undefined,
     setComplete?: (amt: number) => void
   ) => {},
-  cardStrings: {} as ICardsStrings,
   sharedStrings: {} as ISharedStrings,
   vProjectStrings: {} as IVProjectStrings,
   pickerStrings: {} as ILanguagePickerStrings,
@@ -183,7 +180,6 @@ const TeamProvider = (props: IProps) => {
   const passages = useOrbitData<PassageD[]>('passage');
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
   const sharedStrings = ts;
-  const cardStrings: ICardsStrings = useSelector(cardsSelector, shallowEqual);
   const vProjectStrings: IVProjectStrings = useSelector(
     vProjectSelector,
     shallowEqual
@@ -223,7 +219,6 @@ const TeamProvider = (props: IProps) => {
   const [state, setState] = useState({
     ...initState,
     lang,
-    cardStrings,
     sharedStrings,
     vProjectStrings,
     pickerStrings,
