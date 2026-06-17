@@ -207,12 +207,16 @@ function TokenProvider(props: IProps) {
         if (secondsLeft < Expires + 30) {
           setSecondsToExpire(secondsLeft);
           if (!modalOpen) {
+            view.current = '';
             setModalOpen(true);
           } else {
             view.current = '';
           }
         } else {
-          if (modalOpen) setModalOpen(false);
+          if (modalOpen) {
+            view.current = '';
+            setModalOpen(false);
+          }
         }
       }
     }
@@ -237,6 +241,13 @@ function TokenProvider(props: IProps) {
     }
   };
 
+  React.useEffect(() => {
+    if (modalOpen && view.current === '' && secondsToExpire < Expires) {
+      handleLogOut();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [modalOpen, secondsToExpire]);
+
   if (isLoading && !isElectron) {
     return <Busy />;
   }
@@ -250,22 +261,10 @@ function TokenProvider(props: IProps) {
     return <Busy />;
   }
 
-  if (modalOpen && view.current === '') {
-    if (secondsToExpire < Expires) {
-      handleLogOut();
-    }
-    return (
-      <TokenDialog
-        seconds={secondsToExpire}
-        open={modalOpen}
-        onClose={handleClose}
-      />
-    );
-  } else if (view.current === 'Logout') {
+  if (view.current === 'Logout') {
     handleLogOut();
   }
 
-  // If there is no error just render the children component.
   return (
     <TokenContext.Provider
       value={{
@@ -281,6 +280,11 @@ function TokenProvider(props: IProps) {
       }}
     >
       {children}
+      <TokenDialog
+        seconds={secondsToExpire}
+        open={modalOpen && view.current === ''}
+        onClose={handleClose}
+      />
     </TokenContext.Provider>
   );
 }

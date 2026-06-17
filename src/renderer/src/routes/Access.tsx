@@ -102,7 +102,7 @@ export function Access() {
     dispatch(action.setLanguage(lang) as any);
   const { pathname } = useLocation();
   const navigate = useMyNavigate();
-  const { loginWithRedirect, isAuthenticated } = useAuth0();
+  const { loginWithRedirect, isAuthenticated, isLoading } = useAuth0();
   //might need to add this to dependancy arrays?
   const [offline, setOffline] = useGlobal('offline'); //verified this is not used in a function 2/18/25
   const [isDeveloper] = useGlobal('developer');
@@ -289,7 +289,9 @@ export function Access() {
               : ({ login_hint: 'signUp' } as RedirectLoginOptions);
           loginWithRedirect(opts);
         }
-      } else if (!accessToken) {
+      } else if (!accessToken && expiresAt === -1 && !isLoading) {
+        // Auth0 says logged in but local session was cleared (e.g. 401) — not
+        // the normal post-callback window before getAccessTokenSilently resolves.
         tokenCtx.state.invalidateOnlineSession();
       }
     }
@@ -311,7 +313,7 @@ export function Access() {
       }
     }
     /* eslint-disable-next-line react-hooks/exhaustive-deps */
-  }, [accessToken, isAuthenticated, offline]);
+  }, [accessToken, isAuthenticated, offline, expiresAt, isLoading]);
 
   useEffect(() => {
     if (isElectron && selectedUser === '') {
