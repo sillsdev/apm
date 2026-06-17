@@ -28,6 +28,7 @@ import {
   forceLogin,
   useMyNavigate,
   useDataChanges,
+  orbitErr,
 } from '../utils';
 import {
   related,
@@ -44,7 +45,11 @@ import {
   findRecord,
 } from '../crud';
 import { useSnackBar } from '../hoc/SnackBar';
-import { API_CONFIG, isElectron, OrbitNetworkErrorRetries } from '../../api-variable';
+import {
+  API_CONFIG,
+  isElectron,
+  OrbitNetworkErrorRetries,
+} from '../../api-variable';
 import AppHead from '../components/App/AppHead';
 import { useOfflnProjRead } from '../crud/useOfflnProjRead';
 import ImportTab from '../components/ImportTab';
@@ -366,8 +371,19 @@ export function Loading() {
             });
           });
         })
-        .catch(() => {
-          handleAuthFailure();
+        .catch((ex: unknown) => {
+          const apiEx = ex as IApiError;
+          if (apiEx?.response?.status === 401) {
+            handleAuthFailure();
+            return;
+          }
+          if (apiEx?.response?.status != null) {
+            doOrbitError(apiEx);
+          } else {
+            doOrbitError(
+              orbitErr(ex instanceof Error ? ex : null, 'fetch user')
+            );
+          }
         });
     };
     const processBackup = async () => {

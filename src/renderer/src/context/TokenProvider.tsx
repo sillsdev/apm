@@ -230,7 +230,7 @@ function TokenProvider(props: IProps) {
   const handleClose = (value: number) => {
     setModalOpen(false);
     if (value < 0) {
-      view.current = 'Logout';
+      handleLogOut();
     } else {
       resetExpiresAt();
       setState((state) => ({
@@ -259,10 +259,6 @@ function TokenProvider(props: IProps) {
       loginWithRedirect(options);
     }, 1000);
     return <Busy />;
-  }
-
-  if (view.current === 'Logout') {
-    handleLogOut();
   }
 
   return (
