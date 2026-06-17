@@ -10222,6 +10222,30 @@
             <target/>
          </segment>
       </unit>
+      <unit id="workflowSteps.incompleteStepComplete">
+         <segment>
+            <source>Complete</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.incompleteStepContinue">
+         <segment>
+            <source>Continue</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.incompleteStepNavigate">
+         <segment>
+            <source>The current step ({0}) is not complete. Are you sure?</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.incompleteStepNavigateTitle">
+         <segment>
+            <source>Step not complete</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="workflowSteps.internalize">
          <segment>
             <source>Internalize</source>

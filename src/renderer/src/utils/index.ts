@@ -14,6 +14,7 @@ export * from './linuxProgPath';
 export * from './localeDefault';
 export * from './logErrorService';
 export * from './makeAbbr';
+export * from './needsStepNavigationConfirm';
 export * from './useCheckOnline';
 export * from './paratextPath';
 export * from './parseQuery';

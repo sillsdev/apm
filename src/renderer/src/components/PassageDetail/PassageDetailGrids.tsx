@@ -37,6 +37,7 @@ import { PassageDetailDiscuss } from './PassageDetailDiscuss';
 import { addPt } from '../../utils/addPt';
 import DiscussionPanel from '../Discussions/DiscussionPanel';
 import { usePaneWidth } from '../usePaneWidth';
+import { showsBoldDesktopStepComplete } from './boldDesktopStepComplete';
 
 const KeyTerms = React.lazy(() => import('./Keyterms/KeyTerms'));
 
@@ -199,7 +200,9 @@ const PassageDetailGrids = () => {
                   {headerToolLabel}
                 </Box>
                 <Box
-                  id={tool === ToolSlug.Prompt ? 'stepcomplete' : undefined}
+                  id={
+                    showsBoldDesktopStepComplete(tool) ? 'stepcomplete' : undefined
+                  }
                   sx={{
                     minWidth: 0,
                     display: 'flex',
@@ -207,7 +210,9 @@ const PassageDetailGrids = () => {
                     alignItems: 'center',
                   }}
                 >
-                  {tool === ToolSlug.Prompt && <PassageDetailStepComplete />}
+                  {showsBoldDesktopStepComplete(tool) && (
+                    <PassageDetailStepComplete />
+                  )}
                 </Box>
               </Box>
             ) : (

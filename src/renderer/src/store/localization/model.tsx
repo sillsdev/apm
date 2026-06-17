@@ -2005,6 +2005,10 @@ export interface IWorkflowStepsStrings extends Localize.LocalizedStringsMethods 
     "finalReviewTip": string;
     "finalReviewText": string;
     "finalReviewTextTip": string;
+    "incompleteStepComplete": string;
+    "incompleteStepContinue": string;
+    "incompleteStepNavigate": string;
+    "incompleteStepNavigateTitle": string;
     "internalize": string;
     "internalizeTip": string;
     "paratextConsultantCheck": string;

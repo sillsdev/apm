@@ -26,7 +26,6 @@ import { ICarefulSpeechStrings, ISharedStrings, MediaFileD } from '../../model';
 import { passageDefaultFilename } from '../../utils/passageDefaultFilename';
 import { related } from '../../crud/related';
 import { RecordKeyMap } from '@orbit/records';
-import Confirm from '../AlertDialog';
 import CarefulSpeechControls, {
   CarefulSpeechPhase,
 } from './carefulSpeech/CarefulSpeechControls';
@@ -106,7 +105,6 @@ export function PassageDetailCarefulSpeech({ width }: IProps) {
     carefulSpeechSegParams,
     setCarefulSpeechSegParams,
     setStepComplete,
-    gotoNextStep,
     stepComplete,
   } = usePassageDetailContext();
   const { settings } = useStepTool(currentstep);
@@ -141,7 +139,6 @@ export function PassageDetailCarefulSpeech({ width }: IProps) {
   const [resetMedia, setResetMedia] = useState(false);
   const [statusText, setStatusText] = useState('');
   const [canSave, setCanSave] = useState(false);
-  const [confirmAllComplete, setConfirmAllComplete] = useState(false);
   const [recordingPassStarted, setRecordingPassStarted] = useState(false);
   // Mirror of recordingPassStarted set synchronously at the call sites below.
   // region-out can fire before React commits the state-update render, leaving
@@ -154,9 +151,6 @@ export function PassageDetailCarefulSpeech({ width }: IProps) {
   // clause; this lets the recording effect swallow that single +1 advance while
   // still treating any non-adjacent jump as a genuine user tap (TT-7360).
   const pendingOvershootSwallowRef = useRef(false);
-  // Guards the all-complete dialog so it shows once per completion. Re-armed
-  // when a recording is cleared (allClausesComplete drops back to false).
-  const allCompleteNotifiedRef = useRef(false);
   const [heardIndices, setHeardIndices] = useState<number[]>([]);
   const [currentClausePlayed, setCurrentClausePlayed] = useState(false);
   const [combineUndo, setCombineUndo] = useState<string | null>(null);
@@ -222,20 +216,30 @@ export function PassageDetailCarefulSpeech({ width }: IProps) {
     [completedIndices, clauseRegions]
   );
 
-  // Raise the all-complete dialog once when every clause has a recording —
-  // both on entry to an already-complete step and the moment the user records
-  // the last clause. Re-arms if a recording is later cleared.
+  // Mirror clause recording coverage into step completion (no auto-advance).
   useEffect(() => {
-    if (!recordingPassStarted) return;
-    if (allClausesComplete) {
-      if (!allCompleteNotifiedRef.current) {
-        allCompleteNotifiedRef.current = true;
-        setConfirmAllComplete(true);
+    if (!bootstrapped || clauseRegions.length === 0) return;
+
+    const syncStepComplete = async () => {
+      const isComplete = stepComplete(currentstep);
+      if (allClausesComplete) {
+        if (!isComplete) {
+          try {
+            await waitForSave(undefined, 200);
+          } catch {
+            return;
+          }
+          await setStepComplete(currentstep, true);
+        }
+      } else if (isComplete) {
+        await setStepComplete(currentstep, false);
       }
-    } else {
-      allCompleteNotifiedRef.current = false;
-    }
-  }, [allClausesComplete, recordingPassStarted]);
+    };
+
+    void syncStepComplete();
+    // stepComplete reads psgCompleted internally; waitForSave identity is unstable.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allClausesComplete, bootstrapped, clauseRegions.length, currentstep]);
 
   const currentRegion = clauseRegions[currentIndex];
 
@@ -477,7 +481,6 @@ export function PassageDetailCarefulSpeech({ width }: IProps) {
     setRecordingPassStarted(false);
     recordingPassStartedRef.current = false;
     pendingOvershootSwallowRef.current = false;
-    allCompleteNotifiedRef.current = false;
     setHeardIndices([]);
     setCurrentClausePlayed(false);
     setCombineUndo(null);
@@ -547,8 +550,7 @@ export function PassageDetailCarefulSpeech({ width }: IProps) {
       if (firstIdx >= clauseRegions.length) {
         // All clauses are recorded. Enter recording (review) mode positioned on
         // the first clause so the user can replay both the original and the
-        // careful-speech take per clause. The all-complete dialog is raised by
-        // the effect that watches allClausesComplete (TT-7360).
+        // careful-speech take per clause. Step completion syncs via effect.
         setRecordingPassStarted(true);
         recordingPassStartedRef.current = true;
         setShowRecorder(true);
@@ -932,7 +934,12 @@ export function PassageDetailCarefulSpeech({ width }: IProps) {
     setCombineUndo(null);
     const next = firstIncompleteClauseIndex(clauseRegions, completedIndices);
     if (next >= clauseRegions.length) {
-      setConfirmAllComplete(true);
+      setCurrentIndex(0);
+      setCurrentSegment(clauseRegions[0], 0);
+      setCurrentClausePlayed(true);
+      setPhase('recorded');
+      void snapToClauseStart(0);
+      applyColors();
       return;
     }
     setCurrentIndex(next);
@@ -942,14 +949,23 @@ export function PassageDetailCarefulSpeech({ width }: IProps) {
     setPhase('readyToRecord');
     setHighlightPlayButton(false);
     void playCurrentClause(next);
-  }, [clauseRegions, completedIndices, setCurrentSegment, playCurrentClause]);
+  }, [
+    clauseRegions,
+    completedIndices,
+    setCurrentSegment,
+    playCurrentClause,
+    snapToClauseStart,
+    applyColors,
+  ]);
 
   const handleNextClause = useCallback(async () => {
     const effectiveCompleted = new Set(completedIndices);
     effectiveCompleted.add(currentIndex);
     const next = firstIncompleteClauseIndex(clauseRegions, effectiveCompleted);
     if (next >= clauseRegions.length) {
-      setConfirmAllComplete(true);
+      setCurrentClausePlayed(true);
+      setPhase('recorded');
+      applyColors();
       return;
     }
     setCurrentIndex(next);
@@ -971,6 +987,7 @@ export function PassageDetailCarefulSpeech({ width }: IProps) {
     currentIndex,
     setCurrentSegment,
     playCurrentClause,
+    applyColors,
   ]);
 
   const afterUploadCb = useCallback(
@@ -983,15 +1000,6 @@ export function PassageDetailCarefulSpeech({ width }: IProps) {
     },
     [forceRefresh, applyColors]
   );
-
-  const handleAllCompleteDismiss = useCallback(() => {
-    setConfirmAllComplete(false);
-    if (stepComplete(currentstep)) return;
-    waitForSave(undefined, 200).finally(async () => {
-      await setStepComplete(currentstep, true);
-      gotoNextStep();
-    });
-  }, [currentstep, stepComplete, setStepComplete, gotoNextStep, waitForSave]);
 
   const handleClearRecording = useCallback(async () => {
     if (!recordingRow?.mediafile?.id) return;
@@ -1139,13 +1147,6 @@ export function PassageDetailCarefulSpeech({ width }: IProps) {
         <Typography variant="caption" align="center">
           {statusText}
         </Typography>
-      )}
-      {confirmAllComplete && (
-        <Confirm
-          text={t.allComplete}
-          yesResponse={handleAllCompleteDismiss}
-          noResponse={handleAllCompleteDismiss}
-        />
       )}
     </Box>
   );

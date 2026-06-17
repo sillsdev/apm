@@ -56,6 +56,7 @@ import StickyRedirect from '../components/StickyRedirect';
 import {
   infoMsg,
   logError,
+  needsStepNavigationConfirm,
   prettySegment,
   rememberCurrentPassage,
   Severity,
@@ -70,6 +71,7 @@ import {
   resourceRows,
 } from '../components/PassageDetail/Internalization';
 import Confirm from '../components/AlertDialog';
+import StepNavigationConfirmDialog from '../components/PassageDetail/StepNavigationConfirmDialog';
 import { getNextStep } from '../crud/getNextStep';
 import { UnsavedContext } from './UnsavedContext';
 import { IRegion, IRegionParams } from '../crud/useWavesurferRegions';
@@ -266,6 +268,7 @@ const PassageDetailProvider = (props: IProps) => {
   const [errorReporter] = useGlobal('errorReporter');
   const [saveResult, setSaveResult] = useGlobal('saveResult'); //verified this is not used in a function 2/18/25
   const [confirm, setConfirm] = useState('');
+  const [incompleteNavTarget, setIncompleteNavTarget] = useState('');
   const view = React.useRef('');
   const { showMessage } = useSnackBar();
   const [plan] = useGlobal('plan'); //will be constant here
@@ -302,15 +305,13 @@ const PassageDetailProvider = (props: IProps) => {
   const teamWorkflowProcess = useTeamWorkflowProcess(org);
   const isBoldWorkflow = teamWorkflowProcess === BOLD_WORKFLOW_PROCESS;
 
-  const setCurrentStep = (stepId: string) => {
-    if (getGlobal('changed')) {
-      setConfirm(stepId);
-    } else {
-      handleSetCurrentStep(stepId);
-    }
+  const stepComplete = (stepid: string) => {
+    stepid =
+      remoteId('orgworkflowstep', stepid, memory?.keyMap as RecordKeyMap) ||
+      stepid;
+    const step = state.psgCompleted.find((s) => s.stepid === stepid);
+    return Boolean(step?.complete);
   };
-
-  const passageNavigate = usePassageNavigate(() => {}, setCurrentStep);
 
   const handleSetCurrentStep = (stepId: string) => {
     const step = state.orgWorkflowSteps.find((s) => s.id === stepId);
@@ -345,6 +346,24 @@ const PassageDetailProvider = (props: IProps) => {
     segmentsCb.current = undefined;
   };
 
+  const attemptSetCurrentStep = (stepId: string) => {
+    if (needsStepNavigationConfirm(state.currentstep, stepId, stepComplete)) {
+      setIncompleteNavTarget(stepId);
+      return;
+    }
+    handleSetCurrentStep(stepId);
+  };
+
+  const setCurrentStep = (stepId: string) => {
+    if (getGlobal('changed')) {
+      setConfirm(stepId);
+    } else {
+      attemptSetCurrentStep(stepId);
+    }
+  };
+
+  const passageNavigate = usePassageNavigate(() => {}, setCurrentStep);
+
   const forceRefresh = (rowData?: IRow[]) => {
     refreshRef.current = refreshRef.current + 1;
     setState((state: ICtxState) => {
@@ -368,7 +387,7 @@ const PassageDetailProvider = (props: IProps) => {
   const handleConfirmStep = () => {
     startSave();
     waitForSave(() => {
-      handleSetCurrentStep(confirm);
+      attemptSetCurrentStep(confirm);
       setConfirm('');
     }, 400);
   };
@@ -376,7 +395,7 @@ const PassageDetailProvider = (props: IProps) => {
   const handleRefuseStep = () => {
     startClear();
     waitForSave(() => {
-      handleSetCurrentStep(confirm);
+      attemptSetCurrentStep(confirm);
       setConfirm('');
     }, 400);
   };
@@ -583,13 +602,6 @@ const PassageDetailProvider = (props: IProps) => {
       });
     } else settingSegmentRef.current = false;
   };
-  const stepComplete = (stepid: string) => {
-    stepid =
-      remoteId('orgworkflowstep', stepid, memory?.keyMap as RecordKeyMap) ||
-      stepid;
-    const step = state.psgCompleted.find((s) => s.stepid === stepid);
-    return Boolean(step?.complete);
-  };
 
   const gotoNextStep = () => {
     const gotoNextPassage =
@@ -719,6 +731,37 @@ const PassageDetailProvider = (props: IProps) => {
     await memory.update(ops);
     setState((state: ICtxState) => ({ ...state, psgCompleted: completed }));
   };
+
+  const handleIncompleteNavCancel = () => {
+    setIncompleteNavTarget('');
+  };
+
+  const handleIncompleteNavContinue = () => {
+    const target = incompleteNavTarget;
+    setIncompleteNavTarget('');
+    if (target) handleSetCurrentStep(target);
+  };
+
+  const handleIncompleteNavComplete = () => {
+    const target = incompleteNavTarget;
+    const fromStep = state.currentstep;
+    setIncompleteNavTarget('');
+    if (!target || !fromStep) return;
+    void waitForSave(async () => {
+      await setStepComplete(fromStep, true);
+      handleSetCurrentStep(target);
+    }, 200);
+  };
+
+  const incompleteNavMessage = (() => {
+    if (!incompleteNavTarget) return '';
+    const step = state.orgWorkflowSteps.find((s) => s.id === state.currentstep);
+    const label = step
+      ? localizedWorkStep(step.attributes.name)
+      : state.currentstep;
+    return wfStr.incompleteStepNavigate.replace('{0}', label);
+  })();
+
   const getProjectResources = async () => {
     const typeId = getTypeId(ArtifactTypeSlug.ProjectResource);
     return mediafiles.filter(
@@ -1214,6 +1257,15 @@ const PassageDetailProvider = (props: IProps) => {
           noResponse={handleRefuseStep}
         />
       )}
+      <StepNavigationConfirmDialog
+        open={incompleteNavTarget !== ''}
+        message={incompleteNavMessage}
+        workflowStrings={wfStr}
+        sharedStrings={sharedStr}
+        onCancel={handleIncompleteNavCancel}
+        onComplete={handleIncompleteNavComplete}
+        onContinue={handleIncompleteNavContinue}
+      />
     </PassageDetailContext.Provider>
   );
 };
