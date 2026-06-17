@@ -21,6 +21,7 @@ const initState = {
   expiresAt: 0 as number | null,
   email_verified: false as boolean | undefined,
   logout: () => {},
+  invalidateOnlineSession: () => {},
   resetExpiresAt: () => {},
   authenticated: () => false,
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -45,6 +46,7 @@ function TokenProvider(props: IProps) {
   const {
     getAccessTokenSilently,
     loginWithRedirect,
+    logout: auth0Logout,
     user,
     isLoading,
     isAuthenticated,
@@ -63,8 +65,10 @@ function TokenProvider(props: IProps) {
     ...initState,
   });
   const expiresAtRef = useRef<number | null>(null);
+  const skipAuthRestoreRef = useRef(false);
   const getGlobal = useGetGlobal();
   const setAuthSession = (profile: User | undefined, accessToken: string) => {
+    skipAuthRestoreRef.current = false;
     if (accessToken) {
       const decodedToken = jwtDecode(accessToken) as IToken;
       expiresAtRef.current = decodedToken.exp;
@@ -83,7 +87,12 @@ function TokenProvider(props: IProps) {
 
   React.useEffect(() => {
     //this is only called on web
-    if (isAuthenticated && user) {
+    if (!isAuthenticated) {
+      skipAuthRestoreRef.current = false;
+      return;
+    }
+    if (skipAuthRestoreRef.current) return;
+    if (user) {
       getAccessTokenSilently()
         .then((token) => {
           updateOrbitToken(token);
@@ -98,12 +107,26 @@ function TokenProvider(props: IProps) {
   }, [isAuthenticated, user]);
 
   const logout = () => {
+    skipAuthRestoreRef.current = true;
+    expiresAtRef.current = null;
+    localStorage.removeItem(LocalKey.loggedIn);
     setState((state) => ({
       ...state,
       accessToken: null,
       profile: undefined,
-      expiresAt: 0,
+      expiresAt: -1,
+      email_verified: false,
     }));
+  };
+
+  const invalidateOnlineSession = () => {
+    logout();
+    localStorage.removeItem(LocalKey.goingOnline);
+    if (isElectron) {
+      void ipc?.logout();
+    } else {
+      auth0Logout({ returnTo: window.location.origin } as RedirectLoginOptions);
+    }
   };
 
   const authenticated = () => {
@@ -250,6 +273,7 @@ function TokenProvider(props: IProps) {
           ...state,
           setAuthSession,
           logout,
+          invalidateOnlineSession,
           authenticated,
           resetExpiresAt,
         },

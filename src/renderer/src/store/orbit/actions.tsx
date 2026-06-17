@@ -97,7 +97,12 @@ export const fetchOrbitData =
       offlineSetup,
       showMessage,
       forceDataChanges
-    ).then((fr) => {
-      dispatch({ type: FETCH_ORBIT_DATA, payload: fr });
-    });
+    )
+      .then((fr) => {
+        dispatch({ type: FETCH_ORBIT_DATA, payload: fr });
+      })
+      .catch((ex: IApiError) => {
+        if (ex?.response?.status === 401) return;
+        dispatch(orbitError(ex));
+      });
   };

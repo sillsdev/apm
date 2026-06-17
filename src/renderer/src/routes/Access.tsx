@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext, useRef } from 'react';
 import { useGlobal, useGetGlobal } from '../context/useGlobal';
 import { useLocation } from 'react-router-dom';
 import { useAuth0, RedirectLoginOptions } from '@auth0/auth0-react';
@@ -109,6 +109,8 @@ export function Access() {
   const [user] = useGlobal('user');
 
   const [, setOfflineOnly] = useGlobal('offlineOnly');
+  const [, setRemoteBusy] = useGlobal('remoteBusy');
+  const [, setCompleted] = useGlobal('progress');
   const getGlobal = useGetGlobal();
   const tokenCtx = useContext(TokenContext);
   const { logout, accessToken, expiresAt } = tokenCtx.state;
@@ -128,6 +130,7 @@ export function Access() {
   );
   const [goOnlineConfirmation, setGoOnlineConfirmation] =
     useState<React.MouseEvent<HTMLElement>>();
+  const reloginRef = useRef(false);
   const checkOnline = useCheckOnline('Access');
   const handleModeChange = (mode: ListMode) => {
     setListMode(mode);
@@ -274,8 +277,8 @@ export function Access() {
     resetProject();
     checkOnline(() => {}, true);
 
-    if (!tokenCtx.state.authenticated() && !isAuthenticated) {
-      if (!offline && !isElectron) {
+    if (!tokenCtx.state.authenticated() && !offline && !isElectron) {
+      if (!isAuthenticated) {
         const hasUsed = localStorage.key(0) !== null;
         if (hasUsed) {
           loginWithRedirect();
@@ -286,6 +289,8 @@ export function Access() {
               : ({ login_hint: 'signUp' } as RedirectLoginOptions);
           loginWithRedirect(opts);
         }
+      } else if (!accessToken) {
+        tokenCtx.state.invalidateOnlineSession();
       }
     }
     if (user && expiresAt !== -1) {
@@ -294,7 +299,7 @@ export function Access() {
       } else {
         waitForIt(
           'check if token is set',
-          () => accessToken !== undefined,
+          () => Boolean(accessToken),
           () => false,
           200
         ).then(() => {
@@ -306,7 +311,7 @@ export function Access() {
       }
     }
     /* eslint-disable-next-line react-hooks/exhaustive-deps */
-  }, [accessToken]);
+  }, [accessToken, isAuthenticated, offline]);
 
   useEffect(() => {
     if (isElectron && selectedUser === '') {
@@ -358,6 +363,32 @@ export function Access() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [curUser]);
 
+  useEffect(() => {
+    if (expiresAt === -1) {
+      setSelectedUser('');
+      localStorage.removeItem(LocalKey.goingOnline);
+      reloginRef.current = false;
+      setRemoteBusy(false);
+      setCompleted(0);
+    }
+  }, [expiresAt, setRemoteBusy, setCompleted]);
+
+  useEffect(() => {
+    if (
+      isElectron &&
+      !offline &&
+      whichUsers.startsWith('online') &&
+      expiresAt === -1 &&
+      !tokenCtx.state.authenticated() &&
+      !localStorage.getItem(LocalKey.goingOnline) &&
+      !reloginRef.current
+    ) {
+      reloginRef.current = true;
+      handleGoOnline();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [expiresAt, whichUsers, offline]);
+
   if (tokenCtx.state.accessToken && !tokenCtx.state.email_verified) {
     if (localStorage.getItem(LocalKey.loggedIn) === 'true')
       navigate('/emailunverified');
@@ -365,7 +396,7 @@ export function Access() {
   } else if (
     (!isElectron && tokenCtx.state.authenticated()) ||
     getGlobal('offlineOnly') ||
-    (isElectron && selectedUser !== '')
+    (isElectron && selectedUser !== '' && tokenCtx.state.authenticated())
   ) {
     setTimeout(() => navigate('/loading'), 200);
   } else if (/Logout/i.test(view)) {

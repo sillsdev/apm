@@ -56,27 +56,14 @@ export function Logout() {
   }, [pathname]);
 
   useEffect(() => {
-    let timer: NodeJS.Timeout | null = null;
     setLanguage(localeDefault(isDeveloper));
     fetchLocalization();
     if (!isElectron) {
-      // ctx.logout();
-      if (user) {
-        logout({ returnTo: window.origin } as RedirectLoginOptions);
-      } else {
-        timer = setTimeout(() => {
-          console.log(`timer fired path=${curPath.current}`);
-          if (curPath.current === '/logout') {
-            logout({ returnTo: window.origin } as RedirectLoginOptions);
-          }
-        }, 4000);
-      }
-    } else handleLogout();
-    return () => {
-      if (timer) {
-        clearTimeout(timer);
-      }
-    };
+      ctx.logout();
+      logout({ returnTo: window.origin } as RedirectLoginOptions);
+    } else {
+      handleLogout();
+    }
     /* eslint-disable-next-line react-hooks/exhaustive-deps */
   }, []);
 

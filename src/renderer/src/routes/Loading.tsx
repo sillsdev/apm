@@ -44,7 +44,7 @@ import {
   findRecord,
 } from '../crud';
 import { useSnackBar } from '../hoc/SnackBar';
-import { API_CONFIG, isElectron } from '../../api-variable';
+import { API_CONFIG, isElectron, OrbitNetworkErrorRetries } from '../../api-variable';
 import AppHead from '../components/App/AppHead';
 import { useOfflnProjRead } from '../crud/useOfflnProjRead';
 import ImportTab from '../components/ImportTab';
@@ -83,6 +83,7 @@ export function Loading() {
   const [user, setUser] = useGlobal('user');
   const [, setLang] = useGlobal('lang');
   const [orbitRetries, setOrbitRetries] = useGlobal('orbitRetries'); //verified this is not used in a function 2/18/25
+  const [, setRemoteBusy] = useGlobal('remoteBusy');
   const [errorReporter] = useGlobal('errorReporter');
   const [, setProjectsLoaded] = useGlobal('projectsLoaded');
   const [loadComplete, setLoadComplete] = useGlobal('loadComplete');
@@ -111,6 +112,21 @@ export function Loading() {
   const mounted = useRef(0);
   const getGlobal = useGetGlobal();
   const forceDataChanges = useDataChanges();
+
+  const handleAuthFailure = () => {
+    forceLogin();
+    localStorage.removeItem(LocalKey.goingOnline);
+    setCompleted(0);
+    setRemoteBusy(false);
+    setUser('');
+    setOrbitRetries(OrbitNetworkErrorRetries);
+    void remote?.requestQueue?.clear?.();
+    tokenCtx.state.invalidateOnlineSession();
+    if (isElectron) {
+      navigate('/access/online');
+    }
+  };
+
   //remote is passed in because it wasn't always available in global
   const InviteUser = async (newremote: JSONAPISource, userEmail: string) => {
     const inviteId = localStorage.getItem('inviteId');
@@ -349,6 +365,9 @@ export function Loading() {
               LoadComplete();
             });
           });
+        })
+        .catch(() => {
+          handleAuthFailure();
         });
     };
     const processBackup = async () => {
@@ -382,7 +401,13 @@ export function Loading() {
     setView('/logout');
   };
 
-  if (!offline && !authenticated()) navigate('/');
+  useEffect(() => {
+    if (!offline && !authenticated()) {
+      handleAuthFailure();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [offline, accessToken, profile]);
+
   if (view !== '') navigate(view);
 
   return (

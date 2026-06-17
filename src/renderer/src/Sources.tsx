@@ -34,6 +34,7 @@ import {
   LocalKey,
   orbitErr,
   orbitRetry,
+  forceLogin,
 } from './utils';
 import { electronExport } from './store/importexport/electronExport';
 import { restoreBackup } from './crud/restoreBackup';
@@ -67,12 +68,28 @@ const networkError = (ex: unknown): boolean =>
   (ex instanceof Error &&
     (ex.message === 'Failed to fetch' || ex.message === 'Network Error'));
 
+const isUnauthorized = (ex: unknown): ex is IApiError =>
+  ex instanceof Exception && (ex as IApiError).response?.status === 401;
+
+const handleUnauthorized = (
+  tokenCtx: ITokenContext,
+  remote: JSONAPISource,
+  setOrbitRetries: (r: number) => void
+) => {
+  setOrbitRetries(OrbitNetworkErrorRetries);
+  void remote.requestQueue?.clear?.();
+  tokenCtx?.state?.invalidateOnlineSession();
+  forceLogin();
+  localStorage.setItem(LocalKey.offlineAdmin, 'false');
+  return remote.requestQueue.skip();
+};
+
 const queryError =
   ({ tokenCtx, orbitError, remote, setOrbitRetries }: QueryStratErrProps) =>
   (transform: RecordTransform, ex: unknown) => {
     console.log('***** api query fail', transform, ex);
-    if (ex instanceof Exception && (ex as IApiError).response?.status === 401) {
-      tokenCtx?.state?.logout();
+    if (isUnauthorized(ex)) {
+      return handleUnauthorized(tokenCtx, remote, setOrbitRetries);
     } else if (networkError(ex)) {
       orbitError(ex as IApiError);
       //signal to datachanges that we've had a network error
@@ -93,8 +110,8 @@ const updateError =
   }: PullStratErrProps) =>
   (transform: RecordTransform, ex: unknown) => {
     console.log('***** api update fail', transform, ex);
-    if (ex instanceof Exception && (ex as IApiError).response?.status === 401) {
-      tokenCtx?.state?.logout();
+    if (isUnauthorized(ex)) {
+      return handleUnauthorized(tokenCtx, remote, setOrbitRetries);
     } else if (networkError(ex)) {
       if (orbitRetries > 0) {
         setOrbitRetries(orbitRetries - 1);
