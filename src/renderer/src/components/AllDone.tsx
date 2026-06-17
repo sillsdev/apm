@@ -1,7 +1,8 @@
-import React from 'react';
 import { Typography, Box, styled } from '@mui/material';
 import success from '../assets/success.png';
-import { TranscriberContext } from '../context/TranscriberContext';
+import { shallowEqual, useSelector } from 'react-redux';
+import { ITranscriberStrings } from '../model';
+import { transcriberSelector } from '../selector';
 
 const DoneImg = styled('img')(({ theme }) => ({
   width: '343px',
@@ -10,9 +11,7 @@ const DoneImg = styled('img')(({ theme }) => ({
 }));
 
 export const AllDone = () => {
-  const ctx = React.useContext(TranscriberContext);
-  const { transcriberStr } = ctx.state;
-  const t = transcriberStr;
+  const t: ITranscriberStrings = useSelector(transcriberSelector, shallowEqual);
 
   return (
     <Box

@@ -21,7 +21,9 @@ import UserAvatar from './UserAvatar';
 import { useGlobal } from '../context/useGlobal';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
-import useTodo from '../context/useTodo';
+import { shallowEqual, useSelector } from 'react-redux';
+import { IActivityStateStrings } from '../model';
+import { activitySelector } from '../selector';
 import TranscribeAddNote from './TranscribeAddNote';
 import { UpdateRecord } from '../model/baseModel';
 import { dateOrTime } from '../utils';
@@ -50,7 +52,10 @@ export function PassageHistory(props: IProps) {
   const historyStyle = { height: boxHeight };
   const [selectedId, setSelectedId] = React.useState('');
   const [hoveredId, setHoveredId] = React.useState('');
-  const { activityStateStr } = useTodo();
+  const activityStateStr: IActivityStateStrings = useSelector(
+    activitySelector,
+    shallowEqual
+  );
   const [confirmItem, setConfirmItem] = React.useState<string | null>(null);
 
   useEffect(() => {

@@ -162,7 +162,6 @@ const initState = {
   oldVernacularPlaying: false,
   handleOldVernacularPlayEnd: () => {},
   rowData: Array<IRow>(),
-  sharedStr: {} as ISharedStrings,
 
   loading: false,
   audioBlob: undefined as Blob | undefined,
@@ -199,7 +198,6 @@ const initState = {
   commentRecording: false,
   setCommentRecording: (_commentRecording: boolean) => {},
   isNavigationBlocked: () => false,
-  wfStr: {} as IWorkflowStepsStrings,
   handleItemPlayEnd: () => {},
   handleItemTogglePlay: () => {},
   handleCommentPlayEnd: () => {},
@@ -278,7 +276,6 @@ const PassageDetailProvider = (props: IProps) => {
   const [state, setState] = useState({
     ...initState,
     allBookData,
-    wfStr,
     prjId: prjId ?? '',
   });
   const [blobState, fetchBlob] = useFetchMediaBlob();

@@ -113,7 +113,6 @@ describe('PassageRef', () => {
   ): ICtxState => ({
     t: {} as any,
     connected: true,
-    projButtonStr: {} as any,
     mediafiles: [],
     discussions: [],
     groupmemberships: [],

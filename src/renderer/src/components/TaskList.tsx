@@ -1,6 +1,9 @@
 import { useState, useEffect, useRef, CSSProperties, useContext } from 'react';
 import { useGlobal } from '../context/useGlobal';
 import { Box, List, ListItemText, ListItem } from '@mui/material';
+import { shallowEqual, useSelector } from 'react-redux';
+import { IActivityStateStrings } from '../model';
+import { activitySelector } from '../selector';
 import useTodo from '../context/useTodo';
 import { usePlan } from '../crud';
 import usePassageDetailContext from '../context/usePassageDetailContext';
@@ -13,7 +16,11 @@ import { PlayInPlayer } from '../context/PlayInPlayer';
 export const TaskTableWidth = 200;
 
 export function TaskList() {
-  const { rowData, activityStateStr, allDone, refresh, setAllDone } = useTodo();
+  const { rowData, allDone, refresh, setAllDone } = useTodo();
+  const activityStateStr: IActivityStateStrings = useSelector(
+    activitySelector,
+    shallowEqual
+  );
   const { loading, pdBusy, discussionSize, playerMediafile, setSelected } =
     usePassageDetailContext();
   const uctx = useContext(UnsavedContext);

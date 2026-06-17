@@ -236,7 +236,6 @@ describe('PlanBar', () => {
   const createMockPlanContextState = (overrides = {}) => ({
     t: {} as any,
     connected: false,
-    projButtonStr: {} as any,
     mediafiles: [],
     discussions: [],
     groupmemberships: [],

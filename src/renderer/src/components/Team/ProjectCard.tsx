@@ -31,8 +31,10 @@ import EditNoteIcon from '@mui/icons-material/EditNote';
 import {
   DialogMode,
   ICardsStrings,
+  IProjButtonsStrings,
   IState,
   ITranscriptionTabStrings,
+  IVProjectStrings,
   ProjectD,
   Section,
   SectionArray,
@@ -81,7 +83,9 @@ import { useAdminTeams } from '../useAdminTeams';
 import {
   cardsSelector,
   importSelector,
+  projButtonsSelector,
   transcriptionTabSelector,
+  vProjectSelector,
 } from '../../selector';
 
 const PencilSquare = BsPencilSquare as unknown as React.FC<IconBaseProps>;
@@ -141,11 +145,13 @@ export const ProjectCard = (props: IProps) => {
     projectLanguage,
     projectUpdate,
     projectDelete,
-    vProjectStrings,
-    projButtonStrings,
     personalProjects,
     doImport,
   } = ctx.state;
+  const vProjectStrings: IVProjectStrings = useSelector(
+    vProjectSelector,
+    shallowEqual
+  );
   const dispatch = useDispatch();
   const forceDataChanges = useDataChanges();
 
@@ -186,7 +192,10 @@ export const ProjectCard = (props: IProps) => {
     transcriptionTabSelector,
     shallowEqual
   );
-  const tpb = projButtonStrings;
+  const tpb: IProjButtonsStrings = useSelector(
+    projButtonsSelector,
+    shallowEqual
+  );
   const { userIsOrgAdmin } = useRole();
   const { leaveHome } = useHome();
   const { getParam, setParam } = useJsonParams();
