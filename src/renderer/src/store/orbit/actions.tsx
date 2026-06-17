@@ -9,13 +9,14 @@ import {
 } from './types';
 import Coordinator from '@orbit/coordinator';
 import { Sources } from '../../Sources';
-import { Severity } from '../../utils';
+import { Severity, orbitErr } from '../../utils';
 import { OfflineProject, Plan, VProject } from '../../model';
 import { ITokenContext } from '../../context/TokenProvider';
 import { AlertSeverity } from '../../hoc/SnackBar';
 
 export const orbitError = (ex: IApiError) => {
-  return ex.response.status !== Severity.retry
+  const status = ex?.response?.status;
+  return status !== Severity.retry
     ? {
         type: ORBIT_ERROR,
         payload: ex,
@@ -101,8 +102,17 @@ export const fetchOrbitData =
       .then((fr) => {
         dispatch({ type: FETCH_ORBIT_DATA, payload: fr });
       })
-      .catch((ex: IApiError) => {
-        if (ex?.response?.status === 401) return;
-        dispatch(orbitError(ex));
+      .catch((ex: unknown) => {
+        const apiEx = ex as IApiError;
+        if (apiEx?.response?.status === 401) return;
+        if (apiEx?.response?.status != null) {
+          dispatch(orbitError(apiEx));
+        } else {
+          dispatch(
+            orbitError(
+              orbitErr(ex instanceof Error ? ex : null, 'fetch orbit data')
+            )
+          );
+        }
       });
   };
