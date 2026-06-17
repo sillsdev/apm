@@ -28,6 +28,7 @@ import {
   forceLogin,
   useMyNavigate,
   useDataChanges,
+  isOrbitQueueCancelled,
   orbitErr,
 } from '../utils';
 import {
@@ -67,6 +68,7 @@ export function Loading() {
   const orbitFetchResults = useSelector(
     (state: IState) => state.orbit.fetchResults
   );
+  const orbitErrorMsg = useSelector((state: IState) => state.orbit.message);
   const t: IMainStrings = useSelector(mainSelector, shallowEqual);
   const dispatch = useDispatch();
   const fetchLocalization = () => dispatch(action.fetchLocalization() as any);
@@ -115,8 +117,10 @@ export function Loading() {
   const [view, setView] = useState('');
   const [inviteError, setInviteError] = useState('');
   const mounted = useRef(0);
+  const authFailureHandled = useRef(false);
   const getGlobal = useGetGlobal();
   const forceDataChanges = useDataChanges();
+  const { expiresAt } = tokenCtx.state;
 
   const handleAuthFailure = () => {
     forceLogin();
@@ -125,8 +129,10 @@ export function Loading() {
     setRemoteBusy(false);
     setUser('');
     setOrbitRetries(OrbitNetworkErrorRetries);
-    void remote?.requestQueue?.clear?.();
-    tokenCtx.state.invalidateOnlineSession();
+    const alreadyInvalidated = tokenCtx.state.expiresAt === -1;
+    if (!alreadyInvalidated) {
+      tokenCtx.state.invalidateOnlineSession();
+    }
     if (isElectron) {
       navigate('/access/online');
     }
@@ -202,8 +208,8 @@ export function Loading() {
   };
   useEffect(() => {
     if (mounted.current > 0) return;
+    if (!offline && (!accessToken || !authenticated())) return;
     mounted.current += 1;
-    if (!offline && !authenticated()) return;
     if (!offline) {
       const decodedToken = jwtDecode(accessToken || '') as IToken;
       setExpireAt(decodedToken.exp);
@@ -227,7 +233,7 @@ export function Loading() {
       forceDataChanges,
     });
     /* eslint-disable-next-line react-hooks/exhaustive-deps */
-  }, []);
+  }, [accessToken, offline]);
 
   useEffect(() => {
     if (orbitFetchResults) {
@@ -377,6 +383,7 @@ export function Loading() {
             handleAuthFailure();
             return;
           }
+          if (isOrbitQueueCancelled(ex)) return;
           if (apiEx?.response?.status != null) {
             doOrbitError(apiEx);
           } else {
@@ -418,11 +425,30 @@ export function Loading() {
   };
 
   useEffect(() => {
-    if (!offline && !authenticated()) {
+    if (orbitErrorMsg) {
+      setRemoteBusy(false);
+      setCompleted(0);
+    }
+  }, [orbitErrorMsg, setCompleted, setRemoteBusy]);
+
+  useEffect(() => {
+    if ((expiresAt ?? 0) > 0) {
+      authFailureHandled.current = false;
+    }
+  }, [expiresAt]);
+
+  useEffect(() => {
+    if (
+      !offline &&
+      expiresAt === -1 &&
+      !authFailureHandled.current &&
+      isElectron
+    ) {
+      authFailureHandled.current = true;
       handleAuthFailure();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [offline, accessToken, profile]);
+  }, [offline, expiresAt]);
 
   if (view !== '') navigate(view);
 
@@ -431,9 +457,16 @@ export function Loading() {
       <AppHead />
       <Box sx={centerProps}>
         <ApmSplash
-          message={inviteError}
+          message={inviteError || orbitErrorMsg || undefined}
           component={
             <>
+              {orbitErrorMsg && (
+                <Box sx={centerProps}>
+                  <AltButton id="loadErrLogout" onClick={logoutAndTryAgain}>
+                    {t.logout}
+                  </AltButton>
+                </Box>
+              )}
               {loadComplete && inviteError && (
                 <Box sx={centerProps}>
                   <PriButton id="errCont" onClick={continueWithCurrentUser}>

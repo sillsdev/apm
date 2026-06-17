@@ -9,7 +9,7 @@ import {
 } from './types';
 import Coordinator from '@orbit/coordinator';
 import { Sources } from '../../Sources';
-import { Severity, orbitErr } from '../../utils';
+import { Severity, isOrbitQueueCancelled, orbitErr, getHttpStatus } from '../../utils';
 import { OfflineProject, Plan, VProject } from '../../model';
 import { ITokenContext } from '../../context/TokenProvider';
 import { AlertSeverity } from '../../hoc/SnackBar';
@@ -103,8 +103,10 @@ export const fetchOrbitData =
         dispatch({ type: FETCH_ORBIT_DATA, payload: fr });
       })
       .catch((ex: unknown) => {
+        const status = getHttpStatus(ex);
+        if (isOrbitQueueCancelled(ex)) return;
+        if (status === 401) return;
         const apiEx = ex as IApiError;
-        if (apiEx?.response?.status === 401) return;
         if (apiEx?.response?.status != null) {
           dispatch(orbitError(apiEx));
         } else {

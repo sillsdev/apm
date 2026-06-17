@@ -113,7 +113,7 @@ export function Access() {
   const [, setCompleted] = useGlobal('progress');
   const getGlobal = useGetGlobal();
   const tokenCtx = useContext(TokenContext);
-  const { logout, accessToken, expiresAt } = tokenCtx.state;
+  const { logout, accessToken, expiresAt, authSessionCleared } = tokenCtx.state;
   const [importOpen, setImportOpen] = useState(false);
   const [view, setView] = useState('');
   const [curUser, setCurUser] = useState<UserD>();
@@ -289,9 +289,14 @@ export function Access() {
               : ({ login_hint: 'signUp' } as RedirectLoginOptions);
           loginWithRedirect(opts);
         }
-      } else if (!accessToken && expiresAt === -1 && !isLoading) {
-        // Auth0 says logged in but local session was cleared (e.g. 401) — not
-        // the normal post-callback window before getAccessTokenSilently resolves.
+      } else if (
+        authSessionCleared &&
+        !accessToken &&
+        expiresAt === -1 &&
+        !isLoading
+      ) {
+        // Auth0 still authenticated after local session was cleared (e.g. 401).
+        // Not the post-callback window before getAccessTokenSilently resolves.
         tokenCtx.state.invalidateOnlineSession();
       }
     }
