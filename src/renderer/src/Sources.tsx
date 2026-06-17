@@ -77,7 +77,7 @@ const handleUnauthorized = (
   setOrbitRetries: (r: number) => void
 ) => {
   setOrbitRetries(OrbitNetworkErrorRetries);
-  void remote.requestQueue?.clear?.();
+  void remote.requestQueue.clear();
   tokenCtx?.state?.invalidateOnlineSession();
   forceLogin();
   localStorage.setItem(LocalKey.offlineAdmin, 'false');

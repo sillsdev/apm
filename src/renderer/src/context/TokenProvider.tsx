@@ -224,7 +224,7 @@ function TokenProvider(props: IProps) {
 
   useInterval(
     checkTokenExpired,
-    state?.expiresAt && !getGlobal('offline') ? 5000 : null
+    (state?.expiresAt ?? 0) > 0 && !getGlobal('offline') ? 5000 : null
   );
 
   const handleClose = (value: number) => {
