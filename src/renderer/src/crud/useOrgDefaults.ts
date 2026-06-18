@@ -6,6 +6,14 @@ import { findRecord } from './tryFindRecord';
 import { useJsonParams } from '../utils';
 
 export const orgDefaultWorkflowProgression = 'WorkflowProgression';
+/**
+ * Persisted values for {@link orgDefaultWorkflowProgression}. The string values
+ * are stored verbatim in org defaults, so they must not change.
+ */
+export enum WorkflowProgression {
+  Passage = 'passage',
+  Step = 'step',
+}
 export const orgDefaultDiscussionFilter = 'discussionFilter';
 export const orgDefaultConsCheckComp = 'ConsultantCheckCompare';
 export const orgDefaultSortTag = 'ktSort';

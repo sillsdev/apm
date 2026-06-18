@@ -34,6 +34,7 @@ import { useGlobal } from '../../context/useGlobal';
 import {
   orgDefaultPermissions,
   orgDefaultWorkflowProgression,
+  WorkflowProgression,
 } from '../../crud';
 import { isElectron } from '../../../api-variable';
 
@@ -83,21 +84,25 @@ export function TeamSettings(props: IProps) {
     t.workflowProgressionStep,
   ];
   const [workflowProgression, setWorkflowProgression] = useState(
-    values?.workflowProgression ?? t.workflowProgressionPassage
+    values?.workflowProgression ?? WorkflowProgression.Passage
   );
 
   useEffect(() => {
     setWorkflowProgression(
-      values?.workflowProgression ?? t.workflowProgressionPassage
+      values?.workflowProgression ?? WorkflowProgression.Passage
     );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [values?.workflowProgression]);
 
   useEffect(() => {
     setPermissions(values?.permissions);
   }, [values?.permissions]);
 
-  const setProgression = (val: string) => {
+  const setProgression = (label: string) => {
+    // map localized label back to the stable key
+    const val =
+      label === t.workflowProgressionStep
+        ? WorkflowProgression.Step
+        : WorkflowProgression.Passage;
     setWorkflowProgression(val);
     setValue(orgDefaultWorkflowProgression, val);
   };
@@ -139,7 +144,11 @@ export function TeamSettings(props: IProps) {
             )}
             <Options
               label={t.workflowProgression}
-              defaultValue={workflowProgression}
+              defaultValue={
+                workflowProgression === WorkflowProgression.Step
+                  ? t.workflowProgressionStep
+                  : t.workflowProgressionPassage
+              }
               options={workflowOptions}
               onChange={setProgression}
             />

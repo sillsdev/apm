@@ -31,6 +31,7 @@ import { isPublishingTitle } from '../../../control/passageTypeFromRef';
 import {
   orgDefaultWorkflowProgression,
   useOrgDefaults,
+  WorkflowProgression,
 } from '../../../crud/useOrgDefaults';
 import { ToolSlug, useStepTool } from '../../../crud';
 import { useRole } from '../../../crud/useRole';
@@ -67,7 +68,7 @@ export default function MobileWorkflowSteps() {
   const getWfLabel = useWfLabel();
   const { getOrgDefault } = useOrgDefaults();
   const isStepProgression =
-    getOrgDefault(orgDefaultWorkflowProgression) === 'step';
+    getOrgDefault(orgDefaultWorkflowProgression) === WorkflowProgression.Step;
   const t: IWorkflowStepsStrings = useSelector(
     workflowStepsSelector,
     shallowEqual

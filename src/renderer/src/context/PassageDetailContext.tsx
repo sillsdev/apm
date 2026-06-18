@@ -39,7 +39,10 @@ import { getAllMediaRecs } from '../crud/media';
 import { getStepComplete } from '../crud/getStepComplete';
 import { getTool } from '../crud/useStepTool';
 import { nextPasId } from '../crud/nextPasId';
-import { orgDefaultWorkflowProgression } from '../crud/useOrgDefaults';
+import {
+  orgDefaultWorkflowProgression,
+  WorkflowProgression,
+} from '../crud/useOrgDefaults';
 import { related } from '../crud/related';
 import { remoteId, remoteIdGuid } from '../crud/remoteId';
 import { useArtifactCategory } from '../crud/useArtifactCategory';
@@ -621,7 +624,7 @@ const PassageDetailProvider = (props: IProps) => {
   const gotoNextStep = () => {
     const gotoNextPassage =
       !isBoldWorkflow &&
-      getOrgDefault(orgDefaultWorkflowProgression) !== 'step';
+      getOrgDefault(orgDefaultWorkflowProgression) !== WorkflowProgression.Step;
     const nextpsg = gotoNextPassage
       ? nextPasId(state.section, state.passage.id, memory)
       : undefined;
