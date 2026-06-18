@@ -33,7 +33,7 @@ export default function PassageDetailMobileLayout({
     >
       <Box
         sx={{
-          backgroundColor: 'background.default',
+          backgroundColor: 'custom.headerBackground',
           borderBottom: '1px solid',
           borderColor: 'divider',
         }}
