@@ -68,12 +68,11 @@ export default function PassageDetailMobileLayout({
       )}
       <Box
         sx={{
-          backgroundColor: 'background.default',
+          backgroundColor: 'custom.headerBackground',
           borderTop: '1px solid',
           borderColor: 'divider',
-          px: 1,
-          pt: '4px',
-          pb: 'calc(2px + env(safe-area-inset-bottom, 0px))',
+          px: 1.5,
+          py: 1,
         }}
       >
         {footer}
