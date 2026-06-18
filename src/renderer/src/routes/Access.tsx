@@ -310,8 +310,8 @@ export function Access() {
           () => false,
           200
         ).then(() => {
-          if (!localStorage.getItem('goingOnline')) {
-            localStorage.setItem('goingOnline', 'true');
+          if (!localStorage.getItem(LocalKey.goingOnline)) {
+            localStorage.setItem(LocalKey.goingOnline, 'true');
             handleGoOnline();
           }
         });
@@ -372,13 +372,15 @@ export function Access() {
 
   useEffect(() => {
     if (expiresAt === -1) {
-      setSelectedUser('');
+      if (!offline) {
+        setSelectedUser('');
+      }
       localStorage.removeItem(LocalKey.goingOnline);
       reloginRef.current = false;
       setRemoteBusy(false);
       setCompleted(0);
     }
-  }, [expiresAt, setRemoteBusy, setCompleted]);
+  }, [expiresAt, offline, setRemoteBusy, setCompleted]);
 
   useEffect(() => {
     if (
@@ -403,7 +405,7 @@ export function Access() {
   } else if (
     (!isElectron && tokenCtx.state.authenticated()) ||
     getGlobal('offlineOnly') ||
-    (isElectron && selectedUser !== '' && tokenCtx.state.authenticated())
+    (isElectron && selectedUser !== '')
   ) {
     setTimeout(() => navigate('/loading'), 200);
   } else if (/Logout/i.test(view)) {

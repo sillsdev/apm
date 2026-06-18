@@ -356,7 +356,7 @@ export function Loading() {
   useEffect(() => {
     const finishRemoteLoad = () => {
       const tokData = profile || { sub: '' };
-      localStorage.removeItem('goingOnline');
+      localStorage.removeItem(LocalKey.goingOnline);
       remote
         .query((q) =>
           q
@@ -395,7 +395,7 @@ export function Loading() {
     };
     const processBackup = async () => {
       //sync was either not needed, or is done
-      if (syncComplete && orbitFetchResults) {
+      if (syncComplete && orbitFetchResults && !orbitErrorMsg) {
         if (orbitFetchResults.goRemote) {
           localStorage.setItem(localUserKey(LocalKey.time), currentDateTime());
           if (isElectron) finishRemoteLoad();
@@ -412,7 +412,7 @@ export function Loading() {
     };
     processBackup();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [syncComplete, orbitFetchResults]);
+  }, [syncComplete, orbitFetchResults, orbitErrorMsg]);
   const continueWithCurrentUser = () => {
     localStorage.removeItem('inviteError');
     localStorage.removeItem('inviteId');
