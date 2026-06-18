@@ -269,6 +269,12 @@ export default function MobileWorkflowSteps() {
                       navigateToPassage(p);
                       setPassageMenuAnchor(null);
                     }}
+                    sx={{
+                      display: 'block',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}
                   >
                     {passageRef(p)}
                   </MenuItem>
@@ -280,6 +286,12 @@ export default function MobileWorkflowSteps() {
                     onClick={() => {
                       handleSelect(step.id)();
                       setPassageMenuAnchor(null);
+                    }}
+                    sx={{
+                      display: 'block',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
                     }}
                   >
                     {getWfLabel(step.label)}
