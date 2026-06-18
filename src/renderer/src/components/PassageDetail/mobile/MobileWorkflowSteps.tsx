@@ -225,8 +225,11 @@ export default function MobileWorkflowSteps() {
             size="small"
             endIcon={hasMultipleOptions ? <ArrowDropDownIcon /> : undefined}
             sx={{
-              whiteSpace: 'nowrap',
               minWidth: 'auto',
+              textTransform: 'none',
+              // These per-breakpoint widths are fine-tuned to constrain the dropdown so
+              // its label truncates before it can overlap the parallelograms
+              maxWidth: { xs: '45vw', md: '20vw', lg: '25vw' },
             }}
             onClick={(e) => {
               if (!hasMultipleOptions) return;
@@ -239,7 +242,19 @@ export default function MobileWorkflowSteps() {
             }}
             data-cy="passage-dropdown"
           >
-            {isStepProgression ? passageRef(passage) : getWfLabel(currentLabel)}
+            <Box
+              component="span"
+              sx={{
+                minWidth: 0,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {isStepProgression
+                ? passageRef(passage)
+                : getWfLabel(currentLabel)}
+            </Box>
           </Button>
           <Menu
             anchorEl={passageMenuAnchor}
@@ -255,6 +270,12 @@ export default function MobileWorkflowSteps() {
                       navigateToPassage(p);
                       setPassageMenuAnchor(null);
                     }}
+                    sx={{
+                      display: 'block',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}
                   >
                     {passageRef(p)}
                   </MenuItem>
@@ -266,6 +287,12 @@ export default function MobileWorkflowSteps() {
                     onClick={() => {
                       handleSelect(step.id)();
                       setPassageMenuAnchor(null);
+                    }}
+                    sx={{
+                      display: 'block',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
                     }}
                   >
                     {getWfLabel(step.label)}
