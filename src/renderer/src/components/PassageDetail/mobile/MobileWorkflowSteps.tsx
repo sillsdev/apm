@@ -364,8 +364,8 @@ export default function MobileWorkflowSteps() {
               }}
               aria-label={currentTip}
             >
+              {getWfLabel(currentLabel) + '\u00A0'}
               <InfoIcon color="info" fontSize="small" />
-              {'\u00A0' + getWfLabel(currentLabel)}
             </ButtonBase>
           ) : (
             getWfLabel(currentLabel)
