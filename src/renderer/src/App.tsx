@@ -27,6 +27,7 @@ function App(): React.JSX.Element {
             // Custom colors - simple key-value pairs
             custom: {
               currentRegion: 'rgb(102, 255, 0, .5)',
+              headerBackground: '#eee',
             },
           } as any,
           typography: {
