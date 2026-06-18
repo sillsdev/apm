@@ -3,19 +3,26 @@ import {
   ORBIT_ERROR,
   ORBIT_RETRY,
   IApiError,
+  IFetchResults,
   RESET_ORBIT_ERROR,
   ORBIT_SAVING,
   FETCH_ORBIT_DATA_COMPLETE,
 } from './types';
 import Coordinator from '@orbit/coordinator';
 import { Sources } from '../../Sources';
-import { Severity } from '../../utils';
+import {
+  Severity,
+  isOrbitQueueCancelled,
+  orbitErr,
+  getHttpStatus,
+} from '../../utils';
 import { OfflineProject, Plan, VProject } from '../../model';
 import { ITokenContext } from '../../context/TokenProvider';
 import { AlertSeverity } from '../../hoc/SnackBar';
 
 export const orbitError = (ex: IApiError) => {
-  return ex.response.status !== Severity.retry
+  const status = ex?.response?.status;
+  return status !== Severity.retry
     ? {
         type: ORBIT_ERROR,
         payload: ex,
@@ -65,6 +72,12 @@ export interface IFetchOrbitData {
   forceDataChanges: () => Promise<void>;
 }
 
+const fetchOrbitDataFailed = (): IFetchResults => ({
+  syncBuffer: undefined as unknown as Buffer,
+  syncFile: '',
+  goRemote: false,
+});
+
 export const fetchOrbitData =
   ({
     coordinator,
@@ -97,7 +110,27 @@ export const fetchOrbitData =
       offlineSetup,
       showMessage,
       forceDataChanges
-    ).then((fr) => {
-      dispatch({ type: FETCH_ORBIT_DATA, payload: fr });
-    });
+    )
+      .then((fr) => {
+        dispatch({ type: FETCH_ORBIT_DATA, payload: fr });
+      })
+      .catch((ex: unknown) => {
+        const status = getHttpStatus(ex);
+        if (isOrbitQueueCancelled(ex)) return;
+        if (status === 401) return;
+        dispatch({
+          type: FETCH_ORBIT_DATA,
+          payload: fetchOrbitDataFailed(),
+        });
+        const apiEx = ex as IApiError;
+        if (apiEx?.response?.status != null) {
+          dispatch(orbitError(apiEx));
+        } else {
+          dispatch(
+            orbitError(
+              orbitErr(ex instanceof Error ? ex : null, 'fetch orbit data')
+            )
+          );
+        }
+      });
   };

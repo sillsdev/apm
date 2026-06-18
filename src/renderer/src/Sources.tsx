@@ -19,7 +19,7 @@ import IndexedDBBucket from '@orbit/indexeddb-bucket';
 import JSONAPISource from '@orbit/jsonapi';
 import { RecordOperation, RecordTransform } from '@orbit/records';
 import { NetworkError } from '@orbit/jsonapi';
-import { Bucket, Exception } from '@orbit/core';
+import { Bucket } from '@orbit/core';
 import Memory from '@orbit/memory';
 import { ITokenContext } from './context/TokenProvider';
 import {
@@ -34,7 +34,11 @@ import {
   LocalKey,
   orbitErr,
   orbitRetry,
+  forceLogin,
+  syncRemoteAuthHeaders,
+  getHttpStatus,
 } from './utils';
+import { removeOrbitRemote } from './utils/removeOrbitRemote';
 import { electronExport } from './store/importexport/electronExport';
 import { restoreBackup } from './crud/restoreBackup';
 import { AlertSeverity } from './hoc/SnackBar';
@@ -52,27 +56,116 @@ interface PullStratErrProps {
   setOrbitRetries: (r: number) => void;
   showMessage: (msg: string | React.JSX.Element, alert?: AlertSeverity) => void;
   memory: Memory;
-  remote: JSONAPISource;
+  coordinator: Coordinator;
+  fingerprint: string;
   orbitRetries: number;
   errorReporter: typeof Bugsnag | undefined;
 }
 interface QueryStratErrProps {
   tokenCtx: ITokenContext;
   orbitError: (ex: IApiError) => void;
-  remote: JSONAPISource;
+  coordinator: Coordinator;
+  fingerprint: string;
   setOrbitRetries: (r: number) => void;
 }
+let unauthorizedRetryAttempted = false;
+
 const networkError = (ex: unknown): boolean =>
   ex instanceof NetworkError ||
   (ex instanceof Error &&
     (ex.message === 'Failed to fetch' || ex.message === 'Network Error'));
 
+const isUnauthorized = (ex: unknown): boolean => getHttpStatus(ex) === 401;
+
+const skipRemoteQueue = async (remote: JSONAPISource) => {
+  const len = remote?.requestQueue?.length ?? 0;
+  if (len > 0) {
+    try {
+      await remote.requestQueue.skip();
+    } catch {
+      // queue may already be settling
+    }
+  }
+};
+
+const addRemoteLinkStrategies = (coordinator: Coordinator) => {
+  if (!coordinator.strategyNames.includes('remote-request'))
+    coordinator.addStrategy(
+      new RequestStrategy({
+        name: 'remote-request',
+        source: 'memory',
+        on: 'beforeQuery',
+        target: 'remote',
+        action: 'query',
+        blocking: false,
+      })
+    );
+  if (!coordinator.strategyNames.includes('remote-update'))
+    coordinator.addStrategy(
+      new RequestStrategy({
+        name: 'remote-update',
+        source: 'memory',
+        on: 'beforeUpdate',
+        target: 'remote',
+        action: 'update',
+        blocking: false,
+      })
+    );
+  if (!coordinator.strategyNames.includes('remote-sync'))
+    coordinator.addStrategy(
+      new SyncStrategy({
+        name: 'remote-sync',
+        source: 'remote',
+        target: 'memory',
+        blocking: true,
+      })
+    );
+};
+
+const handleUnauthorized = (
+  tokenCtx: ITokenContext,
+  coordinator: Coordinator,
+  fingerprint: string,
+  setOrbitRetries: (r: number) => void
+) => {
+  const remote = coordinator?.getSource('remote') as JSONAPISource;
+  const datachangeremote = coordinator?.getSource(
+    'datachanges'
+  ) as JSONAPISource;
+  const token = tokenCtx?.state?.accessToken;
+  if (token && remote && !unauthorizedRetryAttempted) {
+    unauthorizedRetryAttempted = true;
+    syncRemoteAuthHeaders(remote, token, fingerprint);
+    syncRemoteAuthHeaders(datachangeremote, token, fingerprint);
+    return remote.requestQueue.retry;
+  }
+  unauthorizedRetryAttempted = false;
+  setOrbitRetries(OrbitNetworkErrorRetries);
+  tokenCtx?.state?.invalidateOnlineSession();
+  forceLogin();
+  localStorage.setItem(LocalKey.offlineAdmin, 'false');
+  void skipRemoteQueue(remote);
+  return remote.requestQueue.skip();
+};
+
 const queryError =
-  ({ tokenCtx, orbitError, remote, setOrbitRetries }: QueryStratErrProps) =>
+  ({
+    tokenCtx,
+    orbitError,
+    coordinator,
+    fingerprint,
+    setOrbitRetries,
+  }: QueryStratErrProps) =>
   (transform: RecordTransform, ex: unknown) => {
+    const remote = coordinator?.getSource('remote') as JSONAPISource;
     console.log('***** api query fail', transform, ex);
-    if (ex instanceof Exception && (ex as IApiError).response?.status === 401) {
-      tokenCtx?.state?.logout();
+    if (isUnauthorized(ex)) {
+      return handleUnauthorized(
+        tokenCtx,
+        coordinator,
+        fingerprint,
+        setOrbitRetries
+      );
     } else if (networkError(ex)) {
       orbitError(ex as IApiError);
       //signal to datachanges that we've had a network error
@@ -88,13 +181,20 @@ const updateError =
     setOrbitRetries,
     showMessage,
     memory,
-    remote,
+    coordinator,
+    fingerprint,
     orbitRetries,
   }: PullStratErrProps) =>
   (transform: RecordTransform, ex: unknown) => {
+    const remote = coordinator?.getSource('remote') as JSONAPISource;
     console.log('***** api update fail', transform, ex);
-    if (ex instanceof Exception && (ex as IApiError).response?.status === 401) {
-      tokenCtx?.state?.logout();
+    if (isUnauthorized(ex)) {
+      return handleUnauthorized(
+        tokenCtx,
+        coordinator,
+        fingerprint,
+        setOrbitRetries
+      );
     } else if (networkError(ex)) {
       if (orbitRetries > 0) {
         setOrbitRetries(orbitRetries - 1);
@@ -211,27 +311,39 @@ export const Sources = async (
   const offline = !tokenState.accessToken;
 
   if (!offline) {
-    remote = coordinator.sourceNames.includes('remote')
-      ? (coordinator?.getSource('remote') as JSONAPISource)
-      : new JSONAPISource({
-          schema: memory?.schema,
-          keyMap: memory?.keyMap,
-          bucket,
-          name: 'remote',
-          namespace: 'api',
-          host: API_CONFIG.host,
-          serializerSettingsFor: serializersSettings(),
-          defaultFetchSettings: {
-            headers: {
-              Authorization: 'Bearer ' + (tokenState.accessToken || ''),
-              'X-FP': fingerprint,
-            },
-            timeout: 100000,
-          },
-          defaultTransformOptions: {
-            useRemoteId: true,
-          },
-        });
+    unauthorizedRetryAttempted = false;
+    if (coordinator.sourceNames.includes('remote')) {
+      await removeOrbitRemote(coordinator, false);
+    }
+    if (coordinator.activated) {
+      await coordinator.deactivate();
+    }
+    remote = new JSONAPISource({
+      schema: memory?.schema,
+      keyMap: memory?.keyMap,
+      ...(isElectron ? { bucket } : {}),
+      name: 'remote',
+      namespace: 'api',
+      host: API_CONFIG.host,
+      serializerSettingsFor: serializersSettings(),
+      defaultFetchSettings: {
+        headers: {
+          Authorization: 'Bearer ' + (tokenState.accessToken || ''),
+          'X-FP': fingerprint,
+        },
+        timeout: 100000,
+      },
+      defaultTransformOptions: {
+        useRemoteId: true,
+      },
+    });
+    try {
+      await remote.activated;
+    } catch (ex) {
+      if (isUnauthorized(ex)) {
+        await skipRemoteQueue(remote);
+      }
+    }
     if (!coordinator.sourceNames.includes('remote')) {
       coordinator.addSource(remote);
     }
@@ -247,7 +359,8 @@ export const Sources = async (
           action: queryError({
             tokenCtx,
             orbitError,
-            remote,
+            coordinator,
+            fingerprint,
             setOrbitRetries,
           }) as unknown as StategyError,
           blocking: true,
@@ -266,60 +379,15 @@ export const Sources = async (
             setOrbitRetries,
             showMessage,
             memory,
-            remote,
+            coordinator,
+            fingerprint,
             orbitRetries,
             errorReporter,
           }) as unknown as StategyError,
           blocking: true,
         })
       );
-    // Query the remote server whenever the memory is queried
-    if (!coordinator.strategyNames.includes('remote-request'))
-      coordinator.addStrategy(
-        new RequestStrategy({
-          name: 'remote-request',
-
-          source: 'memory',
-          on: 'beforeQuery',
-
-          target: 'remote',
-          action: 'query',
-
-          blocking: false,
-        })
-      );
-
-    // Trap error updating data (token expired or offline)
-    // See: https://github.com/orbitjs/todomvc-ember-orbit
-
-    // Update the remote server whenever the memory is updated
-    if (!coordinator.strategyNames.includes('remote-update'))
-      coordinator.addStrategy(
-        new RequestStrategy({
-          name: 'remote-update',
-
-          source: 'memory',
-          on: 'beforeUpdate',
-
-          target: 'remote',
-          action: 'update',
-
-          blocking: false,
-        })
-      );
-
-    // Sync all changes received from the remote server to the memory
-    if (!coordinator.strategyNames.includes('remote-sync'))
-      coordinator.addStrategy(
-        new SyncStrategy({
-          name: 'remote-sync',
-
-          source: 'remote',
-          target: 'memory',
-
-          blocking: true,
-        })
-      );
+    addRemoteLinkStrategies(coordinator);
 
     datachangeremote = coordinator.sourceNames.includes('datachanges')
       ? (coordinator?.getSource('datachanges') as JSONAPISource)
@@ -414,10 +482,13 @@ export const Sources = async (
   /* set the user from the token - must be done after the backup is loaded and after changes to offline are recorded */
   if (!offline) {
     console.log(`Activating remote for user: ${tokData.sub}`);
+    await skipRemoteQueue(remote);
     await remote.activated;
     console.log(`Activated remote for user: ${tokData.sub}`);
     let uRecs = (await remote.query((q) =>
-      q.findRecords('user').filter({ attribute: 'auth0Id', value: tokData.sub })
+      q
+        .findRecords('user')
+        .filter({ attribute: 'auth0Id', value: tokData.sub })
     )) as UserD[];
     console.log(`has user rec: ${tokData.sub}`);
     if (!Array.isArray(uRecs)) uRecs = [uRecs];

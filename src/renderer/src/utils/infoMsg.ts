@@ -22,6 +22,18 @@ const orbitMsg = (err: Error | IApiError | null, info: string): string =>
       ((err.data as { errors: { detail: string }[] }).errors?.[0]?.detail || '')
     : info + (err ? ': ' + err.message : '');
 
+export const isOrbitQueueCancelled = (ex: unknown): boolean =>
+  ex instanceof Error &&
+  /TaskQueue#clear|Processing cancelled/i.test(ex.message);
+
+export const getHttpStatus = (ex: unknown): number | undefined => {
+  if (ex && typeof ex === 'object' && 'response' in ex) {
+    const status = (ex as { response?: { status?: number } }).response?.status;
+    if (typeof status === 'number') return status;
+  }
+  return undefined;
+};
+
 export const orbitErr = (
   err: Error | IApiError | null,
   info: string

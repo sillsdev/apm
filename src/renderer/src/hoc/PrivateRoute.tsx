@@ -16,8 +16,9 @@ export function PrivateRoute({ el }: IProps) {
 
   if (!pathname?.endsWith('null') && pathname !== '/loading')
     localStorage.setItem(localUserKey(LocalKey.url), pathname);
-  if (!offline && authenticated && !authenticated())
+  if (!offline && authenticated && !authenticated()) {
     navigate('/', { state: { from: pathname } });
+  }
 
   return el;
 }
