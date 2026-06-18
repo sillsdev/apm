@@ -32,16 +32,11 @@ const seekFor = (i: number) =>
 let mockCompleted = new Set<number>();
 let controlsProps: Record<string, unknown> | undefined;
 let playerProps: Record<string, unknown> | undefined;
-let confirmShown = false;
-let confirmDismiss: (() => void) | undefined;
-let mockStepComplete = false;
 let mockRecordingRow:
   | { mediafile: { id: string; attributes?: { sourceSegments?: string } } }
   | undefined;
 
 const mockSetStepComplete = jest.fn().mockResolvedValue(undefined);
-const mockGotoNextStep = jest.fn();
-const mockStepCompleteFn = jest.fn(() => mockStepComplete);
 const mockWaitForSave = jest.fn().mockResolvedValue(undefined);
 const mockMemoryUpdate = jest.fn().mockResolvedValue(undefined);
 
@@ -77,8 +72,7 @@ const ctx: {
   carefulSpeechSegParams: {},
   setCarefulSpeechSegParams: jest.fn(),
   setStepComplete: mockSetStepComplete,
-  gotoNextStep: mockGotoNextStep,
-  stepComplete: mockStepCompleteFn,
+  stepComplete: jest.fn(() => mockStepComplete),
   // updating the engine segment keeps getCurrentSegment consistent with the
   // index the component believes it is on.
   setCurrentSegment: jest.fn((region: IRegion) => {
@@ -179,20 +173,7 @@ jest.mock('./carefulSpeech/CarefulSpeechControls', () => ({
   },
 }));
 
-jest.mock('../AlertDialog', () => ({
-  __esModule: true,
-  default: ({
-    text,
-    yesResponse,
-  }: {
-    text: string;
-    yesResponse: () => void;
-  }) => {
-    confirmShown = true;
-    confirmDismiss = yesResponse;
-    return <div data-testid="confirm">{text}</div>;
-  },
-}));
+let mockStepComplete = false;
 
 // imported after the mocks so the component picks them up
 import { PassageDetailCarefulSpeech } from './PassageDetailCarefulSpeech';
@@ -232,8 +213,6 @@ beforeEach(() => {
   mockCompleted = new Set<number>();
   controlsProps = undefined;
   playerProps = undefined;
-  confirmShown = false;
-  confirmDismiss = undefined;
   mockStepComplete = false;
   mockRecordingRow = undefined;
   ctx._seg = regions[0];
@@ -271,45 +250,28 @@ describe('PassageDetailCarefulSpeech — entry positioning', () => {
     expect(stubControls.gotoTime).toHaveBeenCalledWith(seekFor(2), regions[2]);
   });
 
-  it('all clauses recorded: enters recording (review) mode and shows the dialog', async () => {
+  it('all clauses recorded: enters review mode and marks step complete without advancing', async () => {
     mockCompleted = new Set([0, 1, 2, 3, 4, 5, 6, 7]);
     await mountAndSettle();
 
     expect(controlsProps?.recordingPassStarted).toBe(true);
     expect(controlsProps?.allClausesComplete).toBe(true);
-    await waitFor(() => expect(confirmShown).toBe(true));
-  });
-
-  it('dismissing the all-complete dialog marks the step complete and advances', async () => {
-    mockCompleted = new Set([0, 1, 2, 3, 4, 5, 6, 7]);
-    await mountAndSettle();
-    await waitFor(() => expect(confirmDismiss).toBeDefined());
-
-    await act(async () => {
-      confirmDismiss?.();
-    });
-
     await waitFor(() =>
       expect(mockWaitForSave).toHaveBeenCalledWith(undefined, 200)
     );
     await waitFor(() =>
       expect(mockSetStepComplete).toHaveBeenCalledWith('step1', true)
     );
-    expect(mockGotoNextStep).toHaveBeenCalled();
   });
 
-  it('dismissing the all-complete dialog on a completed step does not advance', async () => {
-    mockCompleted = new Set([0, 1, 2, 3, 4, 5, 6, 7]);
+  it('marks step incomplete when any clause recording is missing', async () => {
+    mockCompleted = new Set([0, 1, 2]);
     mockStepComplete = true;
     await mountAndSettle();
-    await waitFor(() => expect(confirmDismiss).toBeDefined());
 
-    await act(async () => {
-      confirmDismiss?.();
-    });
-
-    expect(mockSetStepComplete).not.toHaveBeenCalled();
-    expect(mockGotoNextStep).not.toHaveBeenCalled();
+    await waitFor(() =>
+      expect(mockSetStepComplete).toHaveBeenCalledWith('step1', false)
+    );
   });
 });
 

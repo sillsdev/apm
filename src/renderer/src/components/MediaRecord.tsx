@@ -96,6 +96,7 @@ interface IProps {
   onDockedRecordButton?: (node: React.ReactNode | null) => void;
   /** When true, show the docked record button even if allowRecord is false (button may be disabled). */
   showDockedRecordButton?: boolean;
+  onRecordingCleared?: () => void;
 }
 export const DEFAULT_COMPRESSED_MIME = 'audio/ogg;codecs=opus';
 
@@ -155,6 +156,7 @@ function MediaRecord(props: IProps) {
     dockRecordButton,
     onDockedRecordButton,
     showDockedRecordButton,
+    onRecordingCleared,
   } = props;
   const context = usePassageDetailContext();
   const simplified = Boolean(context?.isBoldWorkflow);
@@ -646,6 +648,7 @@ function MediaRecord(props: IProps) {
         dockRecordButton={dockRecordButton}
         onDockedRecordButton={onDockedRecordButton}
         showDockedRecordButton={showDockedRecordButton}
+        onRecordingCleared={onRecordingCleared}
       />
       {warning && !effectiveMobileView && (
         <Typography sx={{ m: 2, color: 'warning.dark' }} id="warning">

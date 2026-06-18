@@ -214,6 +214,7 @@ interface IProps {
   onDockedRecordButton?: (node: React.ReactNode | null) => void;
   /** When true, show the docked record button even if allowRecord is false (button may be disabled). */
   showDockedRecordButton?: boolean;
+  onRecordingCleared?: () => void;
 }
 
 export interface WSAudioPlayerControls {
@@ -343,6 +344,7 @@ function WSAudioPlayer(props: IProps) {
     dockRecordButton,
     onDockedRecordButton,
     showDockedRecordButton,
+    onRecordingCleared,
   } = props;
 
   const audioDownload = useAudioDownload(mediaId ?? '');
@@ -1327,6 +1329,7 @@ function WSAudioPlayer(props: IProps) {
     oneShotUsed && setOneShotUsed(false);
     setReady(true);
     setMyMediaId('');
+    onRecordingCleared?.();
   }, [
     wsClear,
     setChanged,
@@ -1338,6 +1341,7 @@ function WSAudioPlayer(props: IProps) {
     setDuration,
     setProgress,
     setReady,
+    onRecordingCleared,
   ]);
   const handleActionConfirmed = () => {
     initialPosRef.current = undefined;

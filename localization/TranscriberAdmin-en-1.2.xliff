@@ -11928,6 +11928,34 @@
                <context context-type="sourcefile">passageDetail.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="workflowSteps.incompleteStepComplete">
+            <source>Complete</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">StepNavigationConfirmDialog.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="workflowSteps.incompleteStepContinue">
+            <source>Continue</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">StepNavigationConfirmDialog.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="workflowSteps.incompleteStepNavigate">
+            <source>The current step ({0}) is not complete. Are you sure?</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">StepNavigationConfirmDialog.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="workflowSteps.incompleteStepNavigateTitle">
+            <source>Step not complete</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">StepNavigationConfirmDialog.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="workflowSteps.internalize">
             <source>Internalize</source>
             <target/>

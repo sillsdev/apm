@@ -2,7 +2,14 @@ import { shallowEqual, useSelector } from 'react-redux';
 import { ISharedStrings, IState, MediaFileD } from '../../model';
 import { Typography, Box, Stack } from '@mui/material';
 import FolderOpenOutlinedIcon from '@mui/icons-material/FolderOpenOutlined';
-import { useContext, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useCallback,
+} from 'react';
 import {
   findRecord,
   IMediaState,
@@ -74,6 +81,9 @@ export function PassageDetailRecord(props: IProps) {
     recording,
     setRecording,
     currentstep,
+    isBoldWorkflow,
+    setStepComplete,
+    gotoNextStep,
   } = usePassageDetailContext();
   const { showMessage } = useSnackBar();
   const toolId = 'RecordTool';
@@ -191,8 +201,23 @@ export function PassageDetailRecord(props: IProps) {
   const afterUploadCb = async (mediaId: string | undefined) => {
     if (mediaId) {
       setStatusText('');
+      if (isBoldWorkflow) {
+        await setStepComplete(currentstep, true);
+        gotoNextStep();
+      }
     } else setStatusText(ts.NoSaveWoMedia);
   };
+  const handleRecordingCleared = useCallback(async () => {
+    if (!isBoldWorkflow) return;
+    await setStepComplete(currentstep, false);
+    if (mediafileId) {
+      await memory.update((tr: RecordTransformBuilder) =>
+        tr.removeRecord({ type: 'mediafile', id: mediafileId }).toOperation()
+      );
+    }
+    recordPreloadInitiatedRef.current = null;
+    setResetMedia(true);
+  }, [isBoldWorkflow, setStepComplete, currentstep, mediafileId, memory]);
   const afterUpload = async (planId: string, mediaRemoteIds?: string[]) => {
     const id =
       mediaRemoteIds && mediaRemoteIds.length > 0
@@ -359,6 +384,7 @@ export function PassageDetailRecord(props: IProps) {
             ? handleVersions
             : undefined
         }
+        onRecordingCleared={isBoldWorkflow ? handleRecordingCleared : undefined}
       />
 
       <Uploader

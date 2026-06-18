@@ -16,6 +16,7 @@ import { useMobile } from '../../utils';
 import { UnsavedContext } from '../../context/UnsavedContext';
 import { verseToolId } from './markVersesTool';
 import { useSnackBar } from '../../hoc/SnackBar';
+import { showsBoldDesktopStepComplete } from './boldDesktopStepComplete';
 
 export const PassageDetailStepComplete = () => {
   const {
@@ -29,6 +30,7 @@ export const PassageDetailStepComplete = () => {
     section,
     recording,
     isBoldWorkflow,
+    mediafileId,
   } = usePassageDetailContext();
   const { tool } = useStepTool(currentstep);
   const { isMobile } = useMobile();
@@ -104,7 +106,12 @@ export const PassageDetailStepComplete = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname]);
 
-  if (isBoldWorkflow && (tool !== ToolSlug.Prompt || isMobile)) {
+  const boldRecordCheckboxDisabled =
+    isBoldWorkflow &&
+    tool === ToolSlug.Record &&
+    (!mediafileId || isChanged('RecordTool'));
+
+  if (isBoldWorkflow && (!showsBoldDesktopStepComplete(tool) || isMobile)) {
     return null;
   }
 
@@ -128,7 +135,12 @@ export const PassageDetailStepComplete = () => {
         sx={{ color: 'primary.light' }}
         title={t.title}
         onClick={handleToggleComplete}
-        disabled={!hasPermission || view !== '' || recording}
+        disabled={
+          !hasPermission ||
+          view !== '' ||
+          recording ||
+          boldRecordCheckboxDisabled
+        }
       >
         {complete ? (
           <CompleteIcon id="step-yes" />
