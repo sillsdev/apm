@@ -49,7 +49,6 @@ describe('PlayButton', () => {
     errorReporter: bugsnagClient,
     fingerprint: 'test-fingerprint',
     memory: mockMemory,
-    lang: 'en',
     latestVersion: '',
     loadComplete: false,
     offlineOnly: false,

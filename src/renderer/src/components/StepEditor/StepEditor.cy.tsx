@@ -134,7 +134,6 @@ const createInitialState = (memory: Memory): GlobalState => ({
   errorReporter: bugsnagClient,
   fingerprint: 'test-fingerprint',
   memory,
-  lang: 'en',
   latestVersion: '',
   loadComplete: false,
   offlineOnly: false,
