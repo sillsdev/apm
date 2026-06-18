@@ -10,7 +10,6 @@ import {
   Menu,
   MenuItem,
   Typography,
-  useTheme,
 } from '@mui/material';
 import InfoIcon from '@mui/icons-material/Info';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
@@ -58,7 +57,6 @@ export default function MobileWorkflowSteps() {
   const getGlobal = useGetGlobal();
   const { showMessage } = useSnackBar();
   const ts = useSelector(sharedSelector, shallowEqual);
-  const theme = useTheme();
   const getWfLabel = useWfLabel();
   const { getOrgDefault } = useOrgDefaults();
   const isStepProgression =
@@ -318,10 +316,10 @@ export default function MobileWorkflowSteps() {
         >
           {steps.map((step) => {
             const color = step.isCurrent
-              ? theme.palette.grey[700]
+              ? '#111'
               : step.isComplete
-                ? theme.palette.grey[400]
-                : theme.palette.grey[200];
+                ? '#888'
+                : '#ccc';
             return (
               <Box
                 key={step.id}
