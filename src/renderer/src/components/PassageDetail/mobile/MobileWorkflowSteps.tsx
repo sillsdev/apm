@@ -226,7 +226,6 @@ export default function MobileWorkflowSteps() {
             endIcon={hasMultipleOptions ? <ArrowDropDownIcon /> : undefined}
             sx={{
               minWidth: 'auto',
-              textTransform: 'none',
               // These per-breakpoint widths are fine-tuned to constrain the dropdown so
               // its label truncates before it can overlap the parallelograms
               maxWidth: { xs: '45vw', md: '20vw', lg: '25vw' },

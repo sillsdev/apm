@@ -46,7 +46,7 @@ function App(): React.JSX.Element {
           },
           typography: {
             button: {
-              textTransform: 'capitalize',
+              textTransform: 'none',
             },
           },
           components: {
