@@ -284,6 +284,7 @@ export const AppHead = (props: IProps) => {
       sx={{
         width: '100%',
         display: 'flex',
+        px: 1.5,
         backgroundColor: 'custom.headerBackground',
       }}
       color="inherit"
