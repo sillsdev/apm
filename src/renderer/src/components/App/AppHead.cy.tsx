@@ -178,7 +178,6 @@ describe('AppHead', () => {
     errorReporter: bugsnagClient,
     fingerprint: 'test-fingerprint',
     memory: createMockMemory(),
-    lang: 'en',
     latestVersion: '',
     loadComplete: false,
     offlineOnly: false,

@@ -152,7 +152,6 @@ describe('PlanBar', () => {
     errorReporter: bugsnagClient,
     fingerprint: 'test-fingerprint',
     memory: currentTestMemory,
-    lang: 'en',
     latestVersion: '',
     loadComplete: false,
     offlineOnly: false,
