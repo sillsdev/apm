@@ -65,15 +65,15 @@ function App(): React.JSX.Element {
                 root: {
                   borderRadius: '8px',
                   padding: '8px 16px',
-                  boxShadow: '1px 1px 3px rgba(0, 0, 0, 0.12)',
-                  color: 'black',
+                  boxShadow: '1px 1px 3px #0000001F',
+                  color: '#000000',
                   height: 36,
-                  background: '#fff',
+                  background: '#FFFFFF',
                   '&:hover': {
-                    background: '#e2e2e2',
+                    background: '#E2E2E2',
                   },
                   '&:disabled': {
-                    background: '#f0f0f0',
+                    background: '#F0F0F0',
                   },
                 },
               },
@@ -82,13 +82,13 @@ function App(): React.JSX.Element {
                   // Contained buttons are primary buttons
                   props: { variant: 'contained' },
                   style: {
-                    background: '#333',
-                    color: '#fff',
+                    background: '#333333',
+                    color: '#FFFFFF',
                     '&:hover': {
-                      background: '#555',
+                      background: '#555555',
                     },
                     '&:disabled': {
-                      background: '#f0f0f0',
+                      background: '#F0F0F0',
                     },
                   },
                 },
