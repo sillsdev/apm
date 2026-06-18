@@ -6,7 +6,6 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
-  IconButton,
   Menu,
   MenuItem,
   Typography,
@@ -208,19 +207,22 @@ export default function MobileWorkflowSteps() {
             alignItems: 'center',
           }}
         >
-          {!isStepProgression && currentTip && (
-            <IconButton
-              size="small"
-              onClick={() => setTipOpen(true)}
-              data-cy="workflow-step-tip"
-              aria-label={currentTip}
-              color="info"
-            >
-              <InfoIcon fontSize="small" />
-            </IconButton>
-          )}
           <Button
             size="small"
+            startIcon={
+              !isStepProgression && currentTip ? (
+                <InfoIcon
+                  color="info"
+                  fontSize="small"
+                  data-cy="workflow-step-tip"
+                  aria-label={currentTip}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setTipOpen(true);
+                  }}
+                />
+              ) : undefined
+            }
             endIcon={hasMultipleOptions ? <ArrowDropDownIcon /> : undefined}
             sx={{
               minWidth: 'auto',
@@ -363,8 +365,8 @@ export default function MobileWorkflowSteps() {
               }}
               aria-label={currentTip}
             >
-              {getWfLabel(currentLabel) + '\u00A0'}
               <InfoIcon color="info" fontSize="small" />
+              {'\u00A0' + getWfLabel(currentLabel)}
             </ButtonBase>
           ) : (
             getWfLabel(currentLabel)
