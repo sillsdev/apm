@@ -10,6 +10,21 @@ import { getDataGridLocale } from './utils/dataGridLocale';
 import { useMemo } from 'react';
 export { HeadHeight } from './layout';
 
+declare module '@mui/material/styles' {
+  interface Palette {
+    custom: {
+      currentRegion: string;
+      headerBackground: string;
+    };
+  }
+  interface PaletteOptions {
+    custom?: {
+      currentRegion: string;
+      headerBackground: string;
+    };
+  }
+}
+
 function App(): React.JSX.Element {
   const lang = useSelector((state: IState) => state.strings.lang, shallowEqual);
 
@@ -19,17 +34,16 @@ function App(): React.JSX.Element {
         {
           palette: {
             primary: {
-              main: '#135CB9', //Original: 135CB9, Better color: 1D9F90
+              main: '#135CB9',
             },
             secondary: {
-              main: '#00A7E1', //Original: 00A7E1, Better color: 25CBB8
+              main: '#00A7E1',
             },
-            // Custom colors - simple key-value pairs
             custom: {
-              currentRegion: 'rgb(102, 255, 0, .5)',
-              headerBackground: '#eee',
+              currentRegion: '#66FF0080',
+              headerBackground: '#EEEEEE',
             },
-          } as any,
+          },
           typography: {
             button: {
               textTransform: 'capitalize',
@@ -42,6 +56,43 @@ function App(): React.JSX.Element {
                   boxShadow: 'none',
                 },
               },
+            },
+            MuiButton: {
+              defaultProps: {
+                disableElevation: true,
+              },
+              styleOverrides: {
+                root: {
+                  borderRadius: '8px',
+                  padding: '8px 16px',
+                  boxShadow: '1px 1px 3px rgba(0, 0, 0, 0.12)',
+                  color: 'black',
+                  height: 36,
+                  background: '#fff',
+                  '&:hover': {
+                    background: '#e2e2e2',
+                  },
+                  '&:disabled': {
+                    background: '#f0f0f0',
+                  },
+                },
+              },
+              variants: [
+                {
+                  // Contained buttons are primary buttons
+                  props: { variant: 'contained' },
+                  style: {
+                    background: '#333',
+                    color: '#fff',
+                    '&:hover': {
+                      background: '#555',
+                    },
+                    '&:disabled': {
+                      background: '#f0f0f0',
+                    },
+                  },
+                },
+              ],
             },
           },
         },
