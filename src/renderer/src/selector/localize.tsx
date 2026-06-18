@@ -5,15 +5,7 @@ interface IStringsSelectorProps {
 }
 
 /*
- * The localized strings live in redux as react-localization `LocalizedStrings`
- * instances. Changing the UI language only flips `state.strings.lang`; the per
- * layout instances keep the same reference and are updated by *mutating* them
- * in place via `setLanguage`. That means returning the instance directly leaves
- * its reference unchanged across a language switch, so `useSelector` (which
- * compares by reference / shallowEqual) sees "no change" and skips the
- * re-render, leaving stale strings on screen.
- *
- * To fix that we return a fresh, prototype-preserving snapshot whenever the
+ * Return a fresh, prototype-preserving snapshot whenever the
  * (source, language) pair changes, so the reference changes exactly when the
  * displayed strings change. We cache one snapshot per layout so the reference
  * stays stable between renders for the same language -- important because some
