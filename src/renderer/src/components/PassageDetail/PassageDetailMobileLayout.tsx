@@ -42,6 +42,7 @@ export default function PassageDetailMobileLayout({
       </Box>
       <Box
         sx={{
+          backgroundColor: 'background.default',
           px: 1.5,
           pt: 1.5,
           pb: 1.5,
