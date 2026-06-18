@@ -30,16 +30,15 @@ function NavButtonLabel({
 }: {
   text: string;
   title?: string;
-  align: 'left' | 'right';
+  align: 'left' | 'center' | 'right';
 }) {
   return (
     <Box
       component="span"
       title={title ?? text}
       sx={{
-        display: 'block',
+        flexGrow: 1,
         minWidth: 0,
-        maxWidth: '100%',
         overflow: 'hidden',
         textOverflow: 'ellipsis',
         whiteSpace: 'nowrap',
@@ -143,69 +142,49 @@ export default function PassageDetailMobileFooter() {
     }
   };
 
+  const navButtonSx = {
+    flex: 1,
+    minWidth: 'clamp(60px, 16vw, 100px)',
+    maxWidth: 'clamp(110px, 30vw, 190px)',
+  } as const;
+
   return (
     <Box
       sx={{
-        display: 'grid',
-        gridTemplateColumns: isBoldWorkflow
-          ? 'minmax(0, 1fr) minmax(0, 1fr)'
-          : 'minmax(0, 1fr) auto minmax(0, 1fr)',
+        display: 'flex',
         alignItems: 'center',
-        gap: 0.5,
+        justifyContent: 'space-between',
+        gap: 1,
         width: '100%',
-        minHeight: 0,
       }}
     >
-      <Box sx={{ minWidth: 0, display: 'flex', justifyContent: 'flex-start' }}>
-        <Button
-          size="small"
-          startIcon={<ArrowBackIcon fontSize="small" />}
-          onClick={() => handleNavigate(false)}
-          disabled={!prevNavEnabled}
-          sx={{
-            minWidth: 0,
-            maxWidth: '100%',
-            justifyContent: 'flex-start',
-          }}
-        >
-          <NavButtonLabel
-            text={prevButtonText}
-            title={prevLabelFull}
-            align="left"
-          />
-        </Button>
-      </Box>
-      {!isBoldWorkflow && (
-        <Box
-          sx={{
-            flexShrink: 0,
-            display: 'flex',
-            justifyContent: 'center',
-            minWidth: 'min-content',
-          }}
-        >
-          <MobileStepComplete />
-        </Box>
-      )}
-      <Box sx={{ minWidth: 0, display: 'flex', justifyContent: 'flex-end' }}>
-        <Button
-          size="small"
-          endIcon={<ArrowForwardIcon fontSize="small" />}
-          onClick={() => handleNavigate(true)}
-          disabled={!nextNavEnabled}
-          sx={{
-            minWidth: 0,
-            maxWidth: '100%',
-            justifyContent: 'flex-end',
-          }}
-        >
-          <NavButtonLabel
-            text={nextButtonText}
-            title={nextLabelFull}
-            align="right"
-          />
-        </Button>
-      </Box>
+      <Button
+        size="small"
+        startIcon={<ArrowBackIcon fontSize="small" />}
+        onClick={() => handleNavigate(false)}
+        disabled={!prevNavEnabled}
+        sx={{ ...navButtonSx, justifyContent: 'center' }}
+      >
+        <NavButtonLabel
+          text={prevButtonText}
+          title={prevLabelFull}
+          align="center"
+        />
+      </Button>
+      {!isBoldWorkflow && <MobileStepComplete />}
+      <Button
+        size="small"
+        endIcon={<ArrowForwardIcon fontSize="small" />}
+        onClick={() => handleNavigate(true)}
+        disabled={!nextNavEnabled}
+        sx={{ ...navButtonSx, justifyContent: 'center' }}
+      >
+        <NavButtonLabel
+          text={nextButtonText}
+          title={nextLabelFull}
+          align="center"
+        />
+      </Button>
     </Box>
   );
 }
