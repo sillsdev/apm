@@ -212,7 +212,7 @@ export default function MobileWorkflowSteps() {
             startIcon={
               !isStepProgression && currentTip ? (
                 <InfoIcon
-                  color="info"
+                  sx={{ color: 'primary.light' }}
                   fontSize="small"
                   data-cy="workflow-step-tip"
                   aria-label={currentTip}
@@ -365,7 +365,7 @@ export default function MobileWorkflowSteps() {
               aria-label={currentTip}
             >
               {getWfLabel(currentLabel) + '\u00A0'}
-              <InfoIcon color="info" fontSize="small" />
+              <InfoIcon sx={{ color: 'primary.light' }} fontSize="small" />
             </ButtonBase>
           ) : (
             getWfLabel(currentLabel)
