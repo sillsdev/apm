@@ -19,6 +19,7 @@ import {
   ICommentCardStrings,
   MediaFileD,
   IMediaActionsStrings,
+  IState,
   UserD,
 } from '../../model';
 import Confirm from '../AlertDialog';
@@ -117,7 +118,7 @@ export const CommentCard = (props: IProps) => {
   const users = useOrbitData<UserD[]>('user');
   const t: ICommentCardStrings = useSelector(commentCardSelector, shallowEqual);
   const [author, setAuthor] = useState<UserD>();
-  const [lang] = useGlobal('lang');
+  const lang = useSelector((state: IState) => state.strings.lang);
   const [user] = useGlobal('user');
   const [memory] = useGlobal('memory');
   const savingRef = useRef(false);

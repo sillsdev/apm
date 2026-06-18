@@ -1,11 +1,10 @@
 import React from 'react';
 import { useBookN } from '../../../utils/useBookN';
 import { bcvKey } from '../../../utils/bcvKey';
-import { IKeyTerm, ILocalTerm } from '../../../model';
+import { IKeyTerm, ILocalTerm, IState } from '../../../model';
 import { useSelector, shallowEqual } from 'react-redux';
 import { IKeyTermsStrings } from '../../../model';
 import { keyTermsSelector } from '../../../selector';
-import { useGlobal } from '../../../context/useGlobal';
 
 export const ktHide = 'HI';
 
@@ -35,7 +34,7 @@ export const useKeyTerms = () => {
   const [verseTerm, setVerseTerm] = React.useState<Map<string, number[]>>();
   const [lastVerses, setLastVerses] = React.useState<Map<string, number[]>>();
   const [excluded, setExcluded] = React.useState(Array<string | number>());
-  const [lang] = useGlobal('lang');
+  const lang = useSelector((state: IState) => state.strings.lang);
   const [language, setLanguage] = React.useState(
     localeLanguages.find((v) => v.split('-')[0].toLowerCase() === lang) ?? 'En'
   );

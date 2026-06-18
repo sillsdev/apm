@@ -38,6 +38,8 @@ const StyledGrid = styled(Grid)<GridProps>({
 
 const RenderRecommended = () => {
   const t = useSelector(vProjectSelector, shallowEqual);
+  // User cannot change the language while dialog is open, so for now it should be okay if this component does not
+  // respond to changes in the language setting until the dialog is reopened.
 
   return (
     <Typography variant="caption" sx={{ display: 'flex' }}>

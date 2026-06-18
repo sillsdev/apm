@@ -61,7 +61,6 @@ Promise.all(promises)
       plan: '',
       group: '',
       user: '',
-      lang: 'en',
       coordinator,
       memory,
       remoteBusy: true, //prevent datachanges until after login

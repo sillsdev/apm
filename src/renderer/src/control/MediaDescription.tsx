@@ -1,8 +1,9 @@
 import { Box, BoxProps, Chip, styled } from '@mui/material';
-import { MediaFile, MediaFileD } from '../model';
+import { MediaFile, MediaFileD, IState } from '../model';
 import { findRecord, related } from '../crud';
 import { dateOrTime, prettySegment } from '../utils';
 import { useGlobal } from '../context/useGlobal';
+import { useSelector } from 'react-redux';
 
 // see: https://mui.com/material-ui/customization/how-to-customize/
 interface StyledBoxProps extends BoxProps {
@@ -72,7 +73,7 @@ export const ItemDescription = ({
   mediafile?: MediaFile;
   col?: boolean;
 }) => {
-  const [locale] = useGlobal('lang');
+  const locale = useSelector((state: IState) => state.strings.lang);
 
   return (
     <StyledBox col={col} className="item-desc">

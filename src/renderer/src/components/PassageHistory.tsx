@@ -5,6 +5,7 @@ import {
   ActivityStates,
   PassageStateChange,
   PassageStateChangeD,
+  IState,
   UserD,
 } from '../model';
 import Confirm from './AlertDialog';
@@ -46,7 +47,7 @@ export function PassageHistory(props: IProps) {
     []
   );
   const [user] = useGlobal('user');
-  const [locale] = useGlobal('lang');
+  const locale = useSelector((state: IState) => state.strings.lang);
   const { getUserRec } = useUser();
   const [editNoteVisible, setEditNoteVisible] = useState(false);
   const historyStyle = { height: boxHeight };

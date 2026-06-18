@@ -15,13 +15,13 @@ export interface GlobalState {
   memory: Memory;
 
   //effectively constant
-  lang: string; //profile
   latestVersion: string;
   loadComplete: boolean; //Loading
   offlineOnly: boolean; //errorPage, access, logout
   organization: string; //Loading
   releaseDate: string;
   user: string; //loading, profile, welcome, logout
+  // language is now managed by redux and can be accessed with useSelector((state: IState) => state.strings.lang)
 
   //modified during execution
   alertOpen: boolean; //verified

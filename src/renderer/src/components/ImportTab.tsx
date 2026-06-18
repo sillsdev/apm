@@ -225,7 +225,7 @@ export function ImportTab(props: IProps) {
   const importSyncFromElectron = (props: ImportSyncFromElectronProps) =>
     dispatch(actions.importSyncFromElectron(props) as any);
 
-  const [locale] = useGlobal('lang');
+  const locale = useSelector((state: IState) => state.strings.lang);
   const [, setBusy] = useGlobal('importexportBusy');
   const importingRef = useRef(false);
   const [coordinator] = useGlobal('coordinator');

@@ -288,7 +288,6 @@ export function ProfileDialog(props: ProfileDialogProps) {
   const [memory] = useGlobal('memory');
   const [organization] = useGlobal('organization');
   const [user, setUser] = useGlobal('user');
-  const [, setLang] = useGlobal('lang');
   const [offlineOnly] = useGlobal('offlineOnly'); //will be constant here
   const [isDeveloper] = useGlobal('developer');
   const navigate = useMyNavigate();
@@ -503,7 +502,6 @@ export function ProfileDialog(props: ProfileDialogProps) {
             }
           }
         });
-      setLang(locale);
       const mbrRec = getMbrRoleRec(
         'organization',
         organization,

@@ -41,6 +41,8 @@ const tabProps = {
 export function ProjectDialog(props: IProps) {
   const { mode, values, isOpen, onOpen, onCommit, onCancel, nameInUse, team } =
     props;
+  // User cannot change the language while dialog is open, so for now it should be okay if this component does not
+  // respond to changes in the language setting until the dialog is reopened.
   const t: IVProjectStrings = useSelector(vProjectSelector, shallowEqual);
   const initState = { ...initProjectState };
   initState.organizedBy = 'section';
