@@ -1281,8 +1281,6 @@ const PassageDetailProvider = (props: IProps) => {
       <StepNavigationConfirmDialog
         open={incompleteNavTarget !== ''}
         message={incompleteNavMessage}
-        workflowStrings={wfStr}
-        sharedStrings={sharedStr}
         onCancel={handleIncompleteNavCancel}
         onComplete={handleIncompleteNavComplete}
         onContinue={handleIncompleteNavContinue}
