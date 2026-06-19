@@ -374,7 +374,11 @@ const PassageDetailProvider = (props: IProps) => {
     }
   };
 
-  const passageNavigate = usePassageNavigate(() => {}, setCurrentStep);
+  const passageNavigate = usePassageNavigate(
+    () => {},
+    setCurrentStep,
+    isNavigationBlocked
+  );
 
   const forceRefresh = (rowData?: IRow[]) => {
     refreshRef.current = refreshRef.current + 1;

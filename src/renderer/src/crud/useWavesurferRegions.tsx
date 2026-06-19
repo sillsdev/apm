@@ -561,8 +561,8 @@ export function useWaveSurferRegions(
         // Ignore region-in for any region other than the one we're targeting so
         // the adjacent segment isn't spuriously selected.
         if (playRegionRef.current && r.id !== playRegionRef.current.id) return;
-        //TODO!! need to check for user interaction vs looping
-        //this comes before the region-out
+        // lockSegmentSelection does not apply here — playhead-driven updates must
+        // still flow so playback/overshoot logic works; consumers guard effects.
         if (!loopingRef.current) setCurrentRegion(r);
       });
       regionsPlugin.on('region-out', function (r: Region) {

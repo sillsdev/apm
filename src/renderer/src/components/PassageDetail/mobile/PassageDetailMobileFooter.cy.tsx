@@ -152,6 +152,7 @@ const createPassageDetailState = (
     setStepComplete: cy.stub().resolves(),
     gotoNextStep: cy.stub(),
     setCurrentStep: cy.stub(),
+    isNavigationBlocked: () => false,
     rowData: [],
     promptPlaybackComplete: false,
     setPromptPlaybackComplete: cy.stub(),

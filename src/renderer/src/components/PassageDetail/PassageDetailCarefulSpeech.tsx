@@ -147,7 +147,7 @@ export function PassageDetailCarefulSpeech({ width }: IProps) {
   // value; reading this ref makes the recording/listen branch decision reflect
   // intent immediately rather than waiting for a render (TT-7360).
   const recordingPassStartedRef = useRef(false);
-  /** Set synchronously in onRecording so segment navigation is blocked before React re-renders (TT-7437). */
+  /** Mirrors context recording for segment-lock checks once capture is active. */
   const recordingActiveRef = useRef(false);
   // Set true when we park after an auto-play. The playback overshoot into the
   // next clause (or a recorder-mount-induced region-in) advances by exactly one
@@ -355,7 +355,10 @@ export function PassageDetailCarefulSpeech({ width }: IProps) {
   }, [currentRegion, currentIndex]);
 
   useEffect(() => {
-    if (canSave) startSave(toolId);
+    if (canSave) {
+      setSavingRecording(true);
+      startSave(toolId);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canSave]);
 
@@ -1143,14 +1146,21 @@ export function PassageDetailCarefulSpeech({ width }: IProps) {
           recordingMediaId={recordingRow?.mediafile?.id}
           afterUploadCb={afterUploadCb}
           onRecording={(active) => {
-            recordingActiveRef.current = active;
-            setRecording(active);
             if (active) {
+              recordingActiveRef.current = true;
+              setRecording(true);
               setPhase('recording');
-            } else if (showRecorder) {
-              setSavingRecording(true);
-              setPhase('recorded');
+              return;
             }
+            const wasRecording = recordingActiveRef.current;
+            recordingActiveRef.current = false;
+            setRecording(false);
+            if (!showRecorder) return;
+            if (!wasRecording) {
+              setSavingRecording(false);
+              return;
+            }
+            setPhase('recorded');
           }}
           resetMedia={resetMedia}
           setResetMedia={setResetMedia}

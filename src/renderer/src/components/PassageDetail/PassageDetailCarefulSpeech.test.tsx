@@ -406,7 +406,24 @@ describe('PassageDetailCarefulSpeech — recording segment lock (TT-7437)', () =
 });
 
 describe('PassageDetailCarefulSpeech — save in progress (TT-7439)', () => {
-  it('disables Next Clause and locks segments while upload is saving', async () => {
+  it('disables Next Clause and locks segments once save begins', async () => {
+    mockCompleted = new Set([0, 1]);
+    await mountAndSettle();
+    await firePlaybackEnd(2);
+
+    await act(async () => {
+      (controlsProps?.onRecording as (active: boolean) => void)(true);
+      (controlsProps?.onRecording as (active: boolean) => void)(false);
+    });
+    await act(async () => {
+      (controlsProps?.setCanSave as (v: boolean) => void)(true);
+    });
+
+    expect(controlsProps?.savingRecording).toBe(true);
+    expect(playerProps?.lockSegmentSelection).toBe(true);
+  });
+
+  it('does not stick saving when recording never started', async () => {
     mockCompleted = new Set([0, 1]);
     await mountAndSettle();
     await firePlaybackEnd(2);
@@ -415,8 +432,8 @@ describe('PassageDetailCarefulSpeech — save in progress (TT-7439)', () => {
       (controlsProps?.onRecording as (active: boolean) => void)(false);
     });
 
-    expect(controlsProps?.savingRecording).toBe(true);
-    expect(playerProps?.lockSegmentSelection).toBe(true);
+    expect(controlsProps?.savingRecording).toBe(false);
+    expect(controlsProps?.phase).toBe('recordReady');
   });
 
   it('re-enables Next Clause after upload completes', async () => {
@@ -425,7 +442,11 @@ describe('PassageDetailCarefulSpeech — save in progress (TT-7439)', () => {
     await firePlaybackEnd(2);
 
     await act(async () => {
+      (controlsProps?.onRecording as (active: boolean) => void)(true);
       (controlsProps?.onRecording as (active: boolean) => void)(false);
+    });
+    await act(async () => {
+      (controlsProps?.setCanSave as (v: boolean) => void)(true);
     });
     await act(async () => {
       await (
