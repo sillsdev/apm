@@ -398,6 +398,19 @@ function MediaRecord(props: IProps) {
     setConverting(false);
     if (onReady) onReady();
   };
+
+  const handleSaveFailed = useCallback(
+    (error: unknown) => {
+      saveRef.current = false;
+      setUploading(false);
+      setConverting(false);
+      const message =
+        error instanceof Error ? error.message : String(error ?? 'Save failed');
+      saveCompleted(toolId, message);
+      onReady?.();
+    },
+    [toolId, saveCompleted, onReady]
+  );
   useEffect(() => {
     const limit = sizeLimit * compression;
     const big = (audioBlob?.size ?? 0) > limit * 1000000;
@@ -434,9 +447,11 @@ function MediaRecord(props: IProps) {
             setConverting(true);
             convertToFormat(audioBlob, mimeType)
               .then((convert_blob) =>
-                doUpload(convert_blob, mimeType, filetype).then(() => {
-                  convertComplete();
-                })
+                doUpload(convert_blob, mimeType, filetype)
+                  .then(() => {
+                    convertComplete();
+                  })
+                  .catch(handleSaveFailed)
               )
               .catch((error) => {
                 // If conversion fails, show error and save as WAV instead
@@ -445,14 +460,18 @@ function MediaRecord(props: IProps) {
                   (error instanceof Error ? '    ' + error.message : '');
                 showMessage(errorMessage);
                 setConverting(false);
-                doUpload(audioBlob, 'audio/wav', 'wav').then(() => {
-                  onReady && onReady();
-                });
+                doUpload(audioBlob, 'audio/wav', 'wav')
+                  .then(() => {
+                    onReady && onReady();
+                  })
+                  .catch(handleSaveFailed);
               });
           } else {
-            doUpload(audioBlob, mimeType, filetype).then(() => {
-              onReady && onReady();
-            });
+            doUpload(audioBlob, mimeType, filetype)
+              .then(() => {
+                onReady && onReady();
+              })
+              .catch(handleSaveFailed);
           }
           return;
         } else {
