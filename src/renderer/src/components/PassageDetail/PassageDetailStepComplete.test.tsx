@@ -1,3 +1,4 @@
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 
@@ -87,7 +88,9 @@ describe('PassageDetailStepComplete BOLD Record', () => {
 
   it('renders on BOLD desktop Record step', () => {
     render(<PassageDetailStepComplete />);
-    expect(screen.getByRole('button', { name: 'Complete' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'Complete' })
+    ).toBeInTheDocument();
   });
 
   it('disables complete checkbox when no saved mediafileId', () => {
@@ -103,7 +106,11 @@ describe('PassageDetailStepComplete BOLD Careful Speech', () => {
 
   it('renders step complete and bulk-complete controls on BOLD desktop', () => {
     render(<PassageDetailStepComplete />);
-    expect(screen.getByRole('button', { name: 'Complete' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Set next' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'Complete' })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'Set next' })
+    ).toBeInTheDocument();
   });
 });

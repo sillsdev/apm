@@ -1,3 +1,4 @@
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import React from 'react';
 import { act, render } from '@testing-library/react';
 import { RecordTransformBuilder } from '@orbit/records';
@@ -24,7 +25,10 @@ const passageDetailCtx = {
   gotoNextStep: mockGotoNextStep,
 };
 
-jest.mock('../../context/usePassageDetailContext', () => () => passageDetailCtx);
+jest.mock(
+  '../../context/usePassageDetailContext',
+  () => () => passageDetailCtx
+);
 
 jest.mock('../MediaRecord', () => ({
   __esModule: true,
