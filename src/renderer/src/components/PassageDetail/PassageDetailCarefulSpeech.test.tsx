@@ -356,3 +356,86 @@ describe('PassageDetailCarefulSpeech — recording-pass playback', () => {
     expect(stubControls.setPlay).toHaveBeenCalledWith(true);
   });
 });
+
+describe('PassageDetailCarefulSpeech — recording segment lock (TT-7437)', () => {
+  it('locks the source player while a clause recording is in progress', async () => {
+    mockCompleted = new Set([0, 1]);
+    await mountAndSettle();
+    await firePlaybackEnd(2);
+
+    await act(async () => {
+      (controlsProps?.onRecording as (active: boolean) => void)(true);
+    });
+
+    expect(playerProps?.lockSegmentSelection).toBe(true);
+  });
+
+  it('ignores segment changes while recording is in progress', async () => {
+    mockCompleted = new Set([0, 1]);
+    const { rerender } = await mountAndSettle();
+    await firePlaybackEnd(2);
+
+    await act(async () => {
+      (controlsProps?.onRecording as (active: boolean) => void)(true);
+    });
+
+    stubControls.setPlay.mockClear();
+    stubControls.gotoTime.mockClear();
+
+    await moveEngineToClause(6, rerender);
+
+    expect(stubControls.setPlay).not.toHaveBeenCalledWith(true);
+    expect(stubControls.gotoTime).not.toHaveBeenCalledWith(
+      seekFor(6),
+      regions[6]
+    );
+    expect(controlsProps?.phase).toBe('recording');
+  });
+
+  it('sets context recording while a clause recording is in progress', async () => {
+    mockCompleted = new Set([0, 1]);
+    await mountAndSettle();
+    await firePlaybackEnd(2);
+
+    await act(async () => {
+      (controlsProps?.onRecording as (active: boolean) => void)(true);
+    });
+
+    expect(ctx.setRecording).toHaveBeenCalledWith(true);
+  });
+});
+
+describe('PassageDetailCarefulSpeech — save in progress (TT-7439)', () => {
+  it('disables Next Clause and locks segments while upload is saving', async () => {
+    mockCompleted = new Set([0, 1]);
+    await mountAndSettle();
+    await firePlaybackEnd(2);
+
+    await act(async () => {
+      (controlsProps?.onRecording as (active: boolean) => void)(false);
+    });
+
+    expect(controlsProps?.savingRecording).toBe(true);
+    expect(playerProps?.lockSegmentSelection).toBe(true);
+  });
+
+  it('re-enables Next Clause after upload completes', async () => {
+    mockCompleted = new Set([0, 1]);
+    await mountAndSettle();
+    await firePlaybackEnd(2);
+
+    await act(async () => {
+      (controlsProps?.onRecording as (active: boolean) => void)(false);
+    });
+    await act(async () => {
+      await (
+        controlsProps?.afterUploadCb as (
+          mediaId: string | undefined
+        ) => Promise<void>
+      )('media-new');
+    });
+
+    expect(controlsProps?.savingRecording).toBe(false);
+    expect(playerProps?.lockSegmentSelection).toBe(false);
+  });
+});

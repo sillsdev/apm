@@ -99,6 +99,7 @@ import { useProjectPermissions } from '../utils/useProjectPermissions';
 import { PlayInPlayer } from './PlayInPlayer';
 import { SectionArray } from '@model/SectionArray';
 import { boldDefaultSegParams } from '../components/PassageDetail/carefulSpeech/boldCarefulSpeechSegParams';
+import { isPassageNavigationBlocked } from './passageDetailNavigationBlocked';
 
 export interface IRow {
   id: string;
@@ -197,6 +198,7 @@ const initState = {
   setRecording: (_recording: boolean) => {},
   commentRecording: false,
   setCommentRecording: (_commentRecording: boolean) => {},
+  isNavigationBlocked: () => false,
   wfStr: {} as IWorkflowStepsStrings,
   handleItemPlayEnd: () => {},
   handleItemTogglePlay: () => {},
@@ -297,6 +299,8 @@ const PassageDetailProvider = (props: IProps) => {
     useContext(UnsavedContext).state;
   const highlightRef = useRef<number | undefined>(undefined);
   const refreshRef = useRef<number>(0);
+  const recordingRef = useRef(false);
+  const commentRecordingRef = useRef(false);
   const settingSegmentRef = useRef(false);
   const inPlayerRef = useRef<string | undefined>(undefined);
   const { getOrgDefault } = useOrgDefaults();
@@ -312,6 +316,12 @@ const PassageDetailProvider = (props: IProps) => {
     const step = state.psgCompleted.find((s) => s.stepid === stepid);
     return Boolean(step?.complete);
   };
+
+  const isNavigationBlocked = () =>
+    isPassageNavigationBlocked(
+      recordingRef.current,
+      commentRecordingRef.current
+    );
 
   const handleSetCurrentStep = (stepId: string) => {
     const step = state.orgWorkflowSteps.find((s) => s.id === stepId);
@@ -347,6 +357,7 @@ const PassageDetailProvider = (props: IProps) => {
   };
 
   const attemptSetCurrentStep = (stepId: string) => {
+    if (isNavigationBlocked()) return;
     if (needsStepNavigationConfirm(state.currentstep, stepId, stepComplete)) {
       setIncompleteNavTarget(stepId);
       return;
@@ -355,6 +366,7 @@ const PassageDetailProvider = (props: IProps) => {
   };
 
   const setCurrentStep = (stepId: string) => {
+    if (isNavigationBlocked()) return;
     if (getGlobal('changed')) {
       setConfirm(stepId);
     } else {
@@ -446,6 +458,7 @@ const PassageDetailProvider = (props: IProps) => {
   );
 
   const setRecording = (recording: boolean) => {
+    recordingRef.current = recording;
     setState((state: ICtxState) => {
       return {
         ...state,
@@ -458,6 +471,7 @@ const PassageDetailProvider = (props: IProps) => {
     });
   };
   const setCommentRecording = (commentRecording: boolean) => {
+    commentRecordingRef.current = commentRecording;
     setState((state: ICtxState) => {
       return {
         ...state,
@@ -737,12 +751,14 @@ const PassageDetailProvider = (props: IProps) => {
   };
 
   const handleIncompleteNavContinue = () => {
+    if (isNavigationBlocked()) return;
     const target = incompleteNavTarget;
     setIncompleteNavTarget('');
     if (target) handleSetCurrentStep(target);
   };
 
   const handleIncompleteNavComplete = () => {
+    if (isNavigationBlocked()) return;
     const target = incompleteNavTarget;
     const fromStep = state.currentstep;
     setIncompleteNavTarget('');
@@ -1217,6 +1233,7 @@ const PassageDetailProvider = (props: IProps) => {
           gotoNextStep,
           setRecording,
           setCommentRecording,
+          isNavigationBlocked,
           setMediaSelected,
           toggleDone,
           handleItemPlayEnd,

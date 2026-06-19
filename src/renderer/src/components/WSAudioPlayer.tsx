@@ -167,6 +167,8 @@ interface IProps {
   onCurrentSegment?: (currentSegment: IRegion | undefined) => void;
   onSegmentPlaybackEnd?: (segment: IRegion) => void;
   forceRegionOnly?: boolean;
+  /** When true, region clicks and prev/next segment navigation are ignored. */
+  lockSegmentSelection?: boolean;
   onMarkerClick?: (time: number) => void;
   reload?: (blob: Blob) => void;
   noNewVoice?: boolean;
@@ -310,6 +312,7 @@ function WSAudioPlayer(props: IProps) {
     onCurrentSegment,
     onSegmentPlaybackEnd,
     forceRegionOnly,
+    lockSegmentSelection,
     onMarkerClick,
     reload,
     noNewVoice,
@@ -640,7 +643,8 @@ function WSAudioPlayer(props: IProps) {
     onSegmentPlaybackEnd ? onSegmentPlaybackEnd : undefined,
     verses,
     hasSegmentUndo,
-    applyRegionColor
+    applyRegionColor,
+    lockSegmentSelection
   );
 
   //because we have to call hooks consistently, call this even if we aren't going to record
@@ -748,9 +752,10 @@ function WSAudioPlayer(props: IProps) {
       recordStartPosition.current = wsPosition();
       wsStartRecord();
       recordingStartPendingRef.current = true;
+      setRecording(true);
       startRecording(RECORD_PREVIEW_TIMESLICE_MS).then((value) => {
         recordingStartPendingRef.current = false;
-        setRecording(value);
+        if (!value) setRecording(false);
       });
 
       insertingRef.current = durationRef.current > 0;

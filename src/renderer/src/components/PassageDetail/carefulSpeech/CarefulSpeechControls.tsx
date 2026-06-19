@@ -50,6 +50,9 @@ interface Props {
   allClausesComplete: boolean;
   highlightSpeaker: boolean;
   allowRecord: boolean;
+  savingRecording?: boolean;
+  onSaving?: () => void;
+  onSaveSettled?: () => void;
   toolId: string;
   passageId: string | undefined;
   artifactId: string | null;
@@ -89,6 +92,9 @@ export default function CarefulSpeechControls({
   allClausesComplete,
   highlightSpeaker,
   allowRecord,
+  savingRecording = false,
+  onSaving,
+  onSaveSettled,
   toolId,
   passageId,
   artifactId,
@@ -291,6 +297,8 @@ export default function CarefulSpeechControls({
                 height={160}
                 width={width - 80}
                 afterUploadCb={afterUploadCb}
+                onSaving={onSaving}
+                onReady={onSaveSettled}
                 setCanSave={setCanSave}
                 setStatusText={setStatusText}
                 doReset={resetMedia}
@@ -317,7 +325,7 @@ export default function CarefulSpeechControls({
                 <PriButton
                   id="careful-speech-next"
                   onClick={onNextClause}
-                  disabled={allClausesComplete}
+                  disabled={allClausesComplete || savingRecording}
                   sx={primaryHighlightSx}
                 >
                   {strings.nextClause} &gt;

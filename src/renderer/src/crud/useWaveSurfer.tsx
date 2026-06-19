@@ -50,7 +50,8 @@ export function useWaveSurfer(
   onRegionPlayEnd?: (region: IRegion) => void,
   verses?: string,
   hasSegmentUndo?: boolean,
-  applyRegionColor?: ApplyRegionColor
+  applyRegionColor?: ApplyRegionColor,
+  lockSegmentSelection?: boolean
 ) {
   const { isMobile } = useMobile();
   const [errorReporter] = useGlobal('errorReporter');
@@ -261,7 +262,8 @@ export function useWaveSurfer(
     onMarkerClick,
     verses,
     hasSegmentUndo,
-    applyRegionColor
+    applyRegionColor,
+    lockSegmentSelection
   );
 
   const setPlayingx = (value: boolean, regionOnly: boolean) => {

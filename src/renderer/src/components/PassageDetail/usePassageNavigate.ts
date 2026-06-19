@@ -2,6 +2,7 @@ import { useContext } from 'react';
 import { useLocation } from 'react-router-dom';
 import { UnsavedContext } from '../../context/UnsavedContext';
 import { LocalKey, localUserKey, useMyNavigate } from '../../utils';
+import usePassageDetailContext from '../../context/usePassageDetailContext';
 
 export const usePassageNavigate = (
   cb: () => void,
@@ -9,11 +10,12 @@ export const usePassageNavigate = (
 ) => {
   const { pathname } = useLocation();
   const navigate = useMyNavigate();
-  //const { setCurrentStep } = usePassageDetailContext();
+  const { isNavigationBlocked } = usePassageDetailContext();
   const { checkSavedFn } = useContext(UnsavedContext).state;
 
   return (view: string) => {
     if (view && view !== pathname) {
+      if (isNavigationBlocked()) return;
       checkSavedFn(() => {
         if (!view.endsWith('null'))
           localStorage.setItem(localUserKey(LocalKey.url), view);
