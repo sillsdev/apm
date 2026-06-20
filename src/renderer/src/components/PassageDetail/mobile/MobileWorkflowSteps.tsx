@@ -47,6 +47,7 @@ export default function MobileWorkflowSteps() {
     passage,
     section,
     prjId,
+    isNavigationBlocked,
   } = usePassageDetailContext();
   const { tool } = useStepTool(currentstep);
   const { userIsAdmin } = useRole();
@@ -54,7 +55,11 @@ export default function MobileWorkflowSteps() {
   const showPromptAdmin =
     userIsAdmin || (permissionsOn && canDoSectionStep(currentstep, section));
   const [memory] = useGlobal('memory');
-  const passageNavigate = usePassageNavigate(() => {}, setCurrentStep);
+  const passageNavigate = usePassageNavigate(
+    () => {},
+    setCurrentStep,
+    isNavigationBlocked
+  );
   const getGlobal = useGetGlobal();
   const { showMessage } = useSnackBar();
   const ts = useSelector(sharedSelector, shallowEqual);

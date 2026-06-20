@@ -43,17 +43,20 @@ export const PassageDetailChooser = ({ width, sx }: IProps) => {
     chooserSize,
     setChooserSize,
     setCurrentStep,
-    recording,
-    commentRecording,
+    isNavigationBlocked,
   } = usePassageDetailContext();
   const [passageCount, setPassageCount] = useState(0);
   const [value, setValue] = useState(0);
   const marks = useRef<Array<Mark>>([]);
   const [view, setView] = useState('');
   const { getSharedResource } = useSharedResRead();
-  const passageNavigate = usePassageNavigate(() => {
-    setView('');
-  }, setCurrentStep);
+  const passageNavigate = usePassageNavigate(
+    () => {
+      setView('');
+    },
+    setCurrentStep,
+    isNavigationBlocked
+  );
 
   const t = useSelector(
     passageChooserSelector,
@@ -61,7 +64,7 @@ export const PassageDetailChooser = ({ width, sx }: IProps) => {
   ) as IPassageChooserStrings;
 
   const handleChange = (event: React.SyntheticEvent, newValue: any) => {
-    if (recording || commentRecording) return;
+    if (isNavigationBlocked()) return;
     if (typeof newValue === 'number') {
       if (newValue !== value) {
         const selId = marks.current[newValue]?.id;

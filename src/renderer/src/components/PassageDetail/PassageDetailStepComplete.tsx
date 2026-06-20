@@ -31,6 +31,7 @@ export const PassageDetailStepComplete = () => {
     recording,
     isBoldWorkflow,
     mediafileId,
+    isNavigationBlocked,
   } = usePassageDetailContext();
   const { tool } = useStepTool(currentstep);
   const { isMobile } = useMobile();
@@ -43,9 +44,13 @@ export const PassageDetailStepComplete = () => {
     passageDetailStepCompleteSelector,
     shallowEqual
   );
-  const passageNavigate = usePassageNavigate(() => {
-    setView('');
-  }, setCurrentStep);
+  const passageNavigate = usePassageNavigate(
+    () => {
+      setView('');
+    },
+    setCurrentStep,
+    isNavigationBlocked
+  );
   const { isChanged, startSave, waitForSave } =
     useContext(UnsavedContext).state;
   const { showMessage } = useSnackBar();

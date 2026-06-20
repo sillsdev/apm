@@ -2,25 +2,19 @@ import { useContext } from 'react';
 import { useLocation } from 'react-router-dom';
 import { UnsavedContext } from '../../context/UnsavedContext';
 import { LocalKey, localUserKey, useMyNavigate } from '../../utils';
-import usePassageDetailContext from '../../context/usePassageDetailContext';
 
 export const usePassageNavigate = (
   cb: () => void,
   setCurrentStep: (step: string) => void,
-  /** When omitted, reads from PassageDetailContext (must be under Provider). */
-  isNavigationBlockedFromCaller?: () => boolean
+  isNavigationBlocked: () => boolean
 ) => {
   const { pathname } = useLocation();
   const navigate = useMyNavigate();
-  const { isNavigationBlocked: isNavigationBlockedFromContext } =
-    usePassageDetailContext();
-  const isNavigationBlocked =
-    isNavigationBlockedFromCaller ?? isNavigationBlockedFromContext;
   const { checkSavedFn } = useContext(UnsavedContext).state;
 
   return (view: string) => {
     if (view && view !== pathname) {
-      if (isNavigationBlocked?.()) return;
+      if (isNavigationBlocked()) return;
       checkSavedFn(() => {
         if (!view.endsWith('null'))
           localStorage.setItem(localUserKey(LocalKey.url), view);
