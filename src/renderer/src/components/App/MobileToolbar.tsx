@@ -42,8 +42,8 @@ export const MobileToolbar = ({
   return (
     <Toolbar disableGutters>
       {!isDetail ? (
-        <IconButton onClick={() => navigate('/team')}>
-          <ApmLogo sx={{ width: '24px', height: '24px' }} />
+        <IconButton onClick={() => navigate('/team')} sx={{ p: 0 }}>
+          <ApmLogo sx={{ width: '36px', height: '36px' }} />
         </IconButton>
       ) : (
         <IconButton onClick={() => navigate(planUrl || '/team')}>
