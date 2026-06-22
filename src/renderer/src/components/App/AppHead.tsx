@@ -277,6 +277,7 @@ export const AppHead = (props: IProps) => {
   if (view === 'Privacy') navigate('/privacy');
 
   const isMobile = isMobileView || isMobileWidth;
+  const drawBorderBottom = !(isMobile && isDetail);
 
   return (
     <AppBar
@@ -286,6 +287,10 @@ export const AppHead = (props: IProps) => {
         display: 'flex',
         px: 1.5,
         backgroundColor: 'custom.headerBackground',
+        ...(drawBorderBottom && {
+          borderBottom: '1px solid',
+          borderColor: 'divider',
+        }),
       }}
       color="inherit"
     >
