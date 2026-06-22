@@ -150,12 +150,11 @@ export const OrgHead = () => {
   return (
     <Stack direction="row" alignItems="center" sx={{ minWidth: 0 }}>
       <Typography
-        variant="h6"
         noWrap
         sx={{
           minWidth: 0,
-          maxWidth: isMobile ? undefined : '800px',
           mx: 1,
+          fontWeight: 'bold',
         }}
       >
         {isSwitchTeamsScreen
