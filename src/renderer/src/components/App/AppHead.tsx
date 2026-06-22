@@ -296,12 +296,12 @@ export const AppHead = (props: IProps) => {
     >
       <>
         {complete === 0 || complete === 100 || (
-          <Box sx={{ width: '100%' }}>
+          <Box sx={{ mx: -1.5 }}>
             <LinearProgress id="prog" variant="determinate" value={complete} />
           </Box>
         )}
         {(!busy && !saving && !dataChangeCount) || complete !== 0 || (
-          <LinearProgress id="busy" variant="indeterminate" />
+          <LinearProgress id="busy" variant="indeterminate" sx={{ mx: -1.5 }} />
         )}
 
         {isMobile ? (
