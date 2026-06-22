@@ -111,7 +111,8 @@ export function useWaveSurferRegions(
   onMarkerClick?: (time: number) => void,
   verses?: string,
   hasSegmentUndo?: boolean,
-  applyRegionColor?: ApplyRegionColor
+  applyRegionColor?: ApplyRegionColor,
+  lockSegmentSelection?: boolean
 ) {
   const theme = useTheme();
   const wsRef = useRef<WaveSurfer | null>(ws);
@@ -135,6 +136,7 @@ export function useWaveSurferRegions(
   const applyRegionColorRef = useRef<ApplyRegionColor | undefined>(
     applyRegionColor
   );
+  const lockSegmentSelectionRef = useRef(lockSegmentSelection ?? false);
   const regionBeforeClickRef = useRef<Region | undefined>(undefined);
   const playTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
   /** Suppress region-in while the playhead is moved programmatically (table row click). */
@@ -162,6 +164,10 @@ export function useWaveSurferRegions(
   useEffect(() => {
     applyRegionColorRef.current = applyRegionColor;
   }, [applyRegionColor]);
+
+  useEffect(() => {
+    lockSegmentSelectionRef.current = lockSegmentSelection ?? false;
+  }, [lockSegmentSelection]);
 
   const regionColor = (
     role: RegionColorRole,
@@ -246,6 +252,7 @@ export function useWaveSurferRegions(
   // handle region clicks with deduplication
   // This is an event handler, not a render function, so Date.now() is safe here
   const handleRegionClick = (r: Region, e: Event) => {
+    if (lockSegmentSelectionRef.current) return;
     const currentTime = getCurrentTime();
     const timeSinceLastClick = currentTime - lastClickTimeRef.current;
     const isSameRegion = lastClickedRegionRef.current === r.id;
@@ -554,8 +561,8 @@ export function useWaveSurferRegions(
         // Ignore region-in for any region other than the one we're targeting so
         // the adjacent segment isn't spuriously selected.
         if (playRegionRef.current && r.id !== playRegionRef.current.id) return;
-        //TODO!! need to check for user interaction vs looping
-        //this comes before the region-out
+        // lockSegmentSelection does not apply here — playhead-driven updates must
+        // still flow so playback/overshoot logic works; consumers guard effects.
         if (!loopingRef.current) setCurrentRegion(r);
       });
       regionsPlugin.on('region-out', function (r: Region) {
@@ -1160,6 +1167,7 @@ export function useWaveSurferRegions(
     return findClauseSplitPoint(peaks, duration(), clause, params);
   }
   const wsPrevRegion = () => {
+    if (lockSegmentSelectionRef.current) return false;
     const r = findPrevRegion(currentRegion() as Region);
     if (r) {
       onStartRegion && onStartRegion(r.start);
@@ -1177,6 +1185,7 @@ export function useWaveSurferRegions(
     }
   };
   const wsNextRegion = () => {
+    if (lockSegmentSelectionRef.current) return false;
     //TT-2825 changing selfIfAtStart to false
     //but I coded that in there for this call, so
     //wonder what case I was handling then????

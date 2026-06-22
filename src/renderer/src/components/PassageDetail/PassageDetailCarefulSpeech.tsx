@@ -139,6 +139,7 @@ export function PassageDetailCarefulSpeech({ width }: IProps) {
   const [resetMedia, setResetMedia] = useState(false);
   const [statusText, setStatusText] = useState('');
   const [canSave, setCanSave] = useState(false);
+  const [savingRecording, setSavingRecording] = useState(false);
   const [recordingPassStarted, setRecordingPassStarted] = useState(false);
   // Mirror of recordingPassStarted set synchronously at the call sites below.
   // region-out can fire before React commits the state-update render, leaving
@@ -146,6 +147,8 @@ export function PassageDetailCarefulSpeech({ width }: IProps) {
   // value; reading this ref makes the recording/listen branch decision reflect
   // intent immediately rather than waiting for a render (TT-7360).
   const recordingPassStartedRef = useRef(false);
+  /** Mirrors context recording for segment-lock checks once capture is active. */
+  const recordingActiveRef = useRef(false);
   // Set true when we park after an auto-play. The playback overshoot into the
   // next clause (or a recorder-mount-induced region-in) advances by exactly one
   // clause; this lets the recording effect swallow that single +1 advance while
@@ -352,7 +355,10 @@ export function PassageDetailCarefulSpeech({ width }: IProps) {
   }, [currentRegion, currentIndex]);
 
   useEffect(() => {
-    if (canSave) startSave(toolId);
+    if (canSave) {
+      setSavingRecording(true);
+      startSave(toolId);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canSave]);
 
@@ -480,6 +486,8 @@ export function PassageDetailCarefulSpeech({ width }: IProps) {
     setCurrentIndex(0);
     setRecordingPassStarted(false);
     recordingPassStartedRef.current = false;
+    recordingActiveRef.current = false;
+    setSavingRecording(false);
     pendingOvershootSwallowRef.current = false;
     setHeardIndices([]);
     setCurrentClausePlayed(false);
@@ -712,6 +720,7 @@ export function PassageDetailCarefulSpeech({ width }: IProps) {
     const seg = getCurrentSegment();
     if (!seg || clauseRegions.length === 0 || !recordingPassStarted) return;
     if (!entryPositioned) return;
+    if (recordingActiveRef.current || savingRecording) return;
     const idx = findClauseIndex(clauseRegions, seg);
     if (idx < 0) return;
 
@@ -771,6 +780,7 @@ export function PassageDetailCarefulSpeech({ width }: IProps) {
     setCurrentSegment,
     playCurrentClause,
     snapToClauseStart,
+    savingRecording,
   ]);
 
   useEffect(() => {
@@ -959,6 +969,7 @@ export function PassageDetailCarefulSpeech({ width }: IProps) {
   ]);
 
   const handleNextClause = useCallback(async () => {
+    if (savingRecording) return;
     const effectiveCompleted = new Set(completedIndices);
     effectiveCompleted.add(currentIndex);
     const next = firstIncompleteClauseIndex(clauseRegions, effectiveCompleted);
@@ -988,11 +999,13 @@ export function PassageDetailCarefulSpeech({ width }: IProps) {
     setCurrentSegment,
     playCurrentClause,
     applyColors,
+    savingRecording,
   ]);
 
   const afterUploadCb = useCallback(
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     async (_mediaId: string | undefined) => {
+      setSavingRecording(false);
       forceRefresh();
       setPhase('recorded');
       setResetMedia(false);
@@ -1084,6 +1097,7 @@ export function PassageDetailCarefulSpeech({ width }: IProps) {
           highlightPlay={highlightPlayButton}
           onPlayStatusNotify={handlePlayStatusNotify}
           beforePlay={handleBeforeSourcePlay}
+          lockSegmentSelection={phase === 'recording' || savingRecording}
           allowZoom={true}
         />
       )}
@@ -1120,6 +1134,9 @@ export function PassageDetailCarefulSpeech({ width }: IProps) {
           allClausesComplete={allClausesComplete}
           highlightSpeaker={highlightSpeaker}
           allowRecord={allowRecord}
+          savingRecording={savingRecording}
+          onSaving={() => setSavingRecording(true)}
+          onSaveSettled={() => setSavingRecording(false)}
           toolId={toolId}
           passageId={related(playerMediafile, 'passage') ?? passage?.id}
           artifactId={artifactTypeId}
@@ -1129,12 +1146,21 @@ export function PassageDetailCarefulSpeech({ width }: IProps) {
           recordingMediaId={recordingRow?.mediafile?.id}
           afterUploadCb={afterUploadCb}
           onRecording={(active) => {
-            setRecording(active);
             if (active) {
+              recordingActiveRef.current = true;
+              setRecording(true);
               setPhase('recording');
-            } else if (showRecorder) {
-              setPhase('recorded');
+              return;
             }
+            const wasRecording = recordingActiveRef.current;
+            recordingActiveRef.current = false;
+            setRecording(false);
+            if (!showRecorder) return;
+            if (!wasRecording) {
+              setSavingRecording(false);
+              return;
+            }
+            setPhase('recorded');
           }}
           resetMedia={resetMedia}
           setResetMedia={setResetMedia}

@@ -89,6 +89,7 @@ export function WorkflowSteps() {
   };
 
   const handleSelect = (item: string) => {
+    if (recording || commentRecording) return;
     if (getGlobal('remoteBusy')) {
       showMessage(ts.wait);
       return;

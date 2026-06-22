@@ -114,4 +114,19 @@ describe('CarefulSpeechControls — Next Clause completion state', () => {
     expect(next).toBeTruthy();
     expect(next?.disabled).toBe(true);
   });
+
+  it('Next Clause is disabled while the recording upload is in progress', () => {
+    const { container } = render(
+      <CarefulSpeechControls
+        {...baseProps}
+        allClausesComplete={false}
+        savingRecording={true}
+      />
+    );
+    const next = container.querySelector(
+      '#careful-speech-next'
+    ) as HTMLButtonElement | null;
+    expect(next).toBeTruthy();
+    expect(next?.disabled).toBe(true);
+  });
 });

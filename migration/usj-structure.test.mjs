@@ -10,10 +10,16 @@ import {
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
+/**
+ * @param {string} name
+ * @returns {string}
+ */
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 function fixture(name) {
   return fs.readFileSync(path.join(__dirname, 'fixtures', name), 'utf-8');
 }
 
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 function pickShape(structure) {
   return {
     sections: structure.sections.map((section) => ({

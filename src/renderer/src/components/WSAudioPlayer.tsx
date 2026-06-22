@@ -167,6 +167,8 @@ interface IProps {
   onCurrentSegment?: (currentSegment: IRegion | undefined) => void;
   onSegmentPlaybackEnd?: (segment: IRegion) => void;
   forceRegionOnly?: boolean;
+  /** When true, user-initiated selection (clicks, prev/next) is ignored. Playhead-driven region-in is not blocked; consumers that must hold the current clause during recording/saving should guard their segment effects separately (e.g. Careful Speech). */
+  lockSegmentSelection?: boolean;
   onMarkerClick?: (time: number) => void;
   reload?: (blob: Blob) => void;
   noNewVoice?: boolean;
@@ -310,6 +312,7 @@ function WSAudioPlayer(props: IProps) {
     onCurrentSegment,
     onSegmentPlaybackEnd,
     forceRegionOnly,
+    lockSegmentSelection,
     onMarkerClick,
     reload,
     noNewVoice,
@@ -640,7 +643,8 @@ function WSAudioPlayer(props: IProps) {
     onSegmentPlaybackEnd ? onSegmentPlaybackEnd : undefined,
     verses,
     hasSegmentUndo,
-    applyRegionColor
+    applyRegionColor,
+    lockSegmentSelection
   );
 
   //because we have to call hooks consistently, call this even if we aren't going to record
@@ -748,9 +752,12 @@ function WSAudioPlayer(props: IProps) {
       recordStartPosition.current = wsPosition();
       wsStartRecord();
       recordingStartPendingRef.current = true;
+      // onRecording(true) fires only after startRecording succeeds — not while
+      // the mic is still being acquired (see recordingStartPendingRef for that
+      // window). Consumers should treat onRecording(true) as "capture active".
       startRecording(RECORD_PREVIEW_TIMESLICE_MS).then((value) => {
         recordingStartPendingRef.current = false;
-        setRecording(value);
+        if (value) setRecording(true);
       });
 
       insertingRef.current = durationRef.current > 0;

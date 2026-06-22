@@ -103,6 +103,8 @@ export interface DetailPlayerProps {
   setPlayingOverride?: (playing: boolean) => void;
   /** Invoked before starting playback. Return false to skip default play handling. */
   beforePlay?: () => void | Promise<void | boolean>;
+  /** When true, waveform region clicks cannot change the selected segment. */
+  lockSegmentSelection?: boolean;
 }
 
 export function PassageDetailPlayer(props: DetailPlayerProps) {
@@ -140,6 +142,7 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
     playing: playingOverride,
     setPlayingOverride,
     beforePlay,
+    lockSegmentSelection,
   } = props;
 
   const allowZoom = allowZoomProp ?? allowZoomAndSpeed ?? false;
@@ -405,6 +408,7 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
         isPlaying={requestPlay.play}
         regionOnly={requestPlay.regionOnly}
         forceRegionOnly={forceRegionOnly}
+        lockSegmentSelection={lockSegmentSelection}
         request={requestPlay.request}
         loading={loading}
         busy={pdBusy}

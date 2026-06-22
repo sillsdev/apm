@@ -221,6 +221,7 @@ const createPassageDetailState = (
     commentRecording: false,
     stepComplete: () => false,
     setCurrentStep: cy.stub(),
+    isNavigationBlocked: () => false,
     passage: mockCurrentPassage,
     section: {} as any,
     prjId: 'proj-1',

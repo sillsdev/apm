@@ -60,6 +60,7 @@ export default function PassageDetailMobileFooter() {
     orgWorkflowSteps = [],
     isBoldWorkflow,
     rowData,
+    isNavigationBlocked,
   } = usePassageDetailContext();
   const { tool } = useStepTool(currentstep);
   const { hasPrompt } = usePromptSectionResource(rowData, section, currentstep);
@@ -70,7 +71,11 @@ export default function PassageDetailMobileFooter() {
   const t: IMobileStrings = useSelector(mobileSelector, shallowEqual);
   const [memory] = useGlobal('memory');
   const { prjId } = useParams();
-  const passageNavigate = usePassageNavigate(() => {}, setCurrentStep);
+  const passageNavigate = usePassageNavigate(
+    () => {},
+    setCurrentStep,
+    isNavigationBlocked
+  );
   const { getOrgDefault } = useOrgDefaults();
   const { localizedWorkStepFromId } = useOrgWorkflowSteps();
 

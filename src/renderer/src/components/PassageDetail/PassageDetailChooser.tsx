@@ -35,17 +35,28 @@ interface IProps {
 
 export const PassageDetailChooser = ({ width, sx }: IProps) => {
   const [memory] = useGlobal('memory');
-  const { passage, section, prjId, allBookData, chooserSize, setChooserSize } =
-    usePassageDetailContext();
+  const {
+    passage,
+    section,
+    prjId,
+    allBookData,
+    chooserSize,
+    setChooserSize,
+    setCurrentStep,
+    isNavigationBlocked,
+  } = usePassageDetailContext();
   const [passageCount, setPassageCount] = useState(0);
   const [value, setValue] = useState(0);
   const marks = useRef<Array<Mark>>([]);
   const [view, setView] = useState('');
-  const { setCurrentStep } = usePassageDetailContext();
   const { getSharedResource } = useSharedResRead();
-  const passageNavigate = usePassageNavigate(() => {
-    setView('');
-  }, setCurrentStep);
+  const passageNavigate = usePassageNavigate(
+    () => {
+      setView('');
+    },
+    setCurrentStep,
+    isNavigationBlocked
+  );
 
   const t = useSelector(
     passageChooserSelector,
@@ -53,6 +64,7 @@ export const PassageDetailChooser = ({ width, sx }: IProps) => {
   ) as IPassageChooserStrings;
 
   const handleChange = (event: React.SyntheticEvent, newValue: any) => {
+    if (isNavigationBlocked()) return;
     if (typeof newValue === 'number') {
       if (newValue !== value) {
         const selId = marks.current[newValue]?.id;
