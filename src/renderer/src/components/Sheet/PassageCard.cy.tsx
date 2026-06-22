@@ -100,7 +100,6 @@ describe('PassageCard', () => {
     errorReporter: bugsnagClient,
     fingerprint: 'test-fingerprint',
     memory: mockMemory,
-    lang: 'en',
     latestVersion: '',
     loadComplete: false,
     offlineOnly: false,
@@ -138,7 +137,6 @@ describe('PassageCard', () => {
   ): ICtxState => ({
     t: {} as any,
     connected: true,
-    projButtonStr: {} as any,
     mediafiles: [],
     discussions: [],
     groupmemberships: [],

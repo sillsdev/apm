@@ -9,8 +9,7 @@ import {
 import InfoIcon from '@mui/icons-material/Info';
 import { LightTooltip } from './LightTooltip';
 import { useEffect, useState } from 'react';
-import { useGlobal } from '../context/useGlobal';
-import { IMediaUploadStrings } from '../model';
+import { IMediaUploadStrings, IState } from '../model';
 import { shallowEqual, useSelector } from 'react-redux';
 import { mediaUploadSelector } from '../selector';
 import { LaunchLink } from './LaunchLink';
@@ -32,7 +31,7 @@ export const MarkDownEdit = ({
 }: MarkDownEditProps) => {
   const [value, setValue] = useState<string>(inValue || '');
   const [link, setLink] = useState<string>();
-  const [lang] = useGlobal('lang');
+  const lang = useSelector((state: IState) => state.strings.lang);
   const t: IMediaUploadStrings = useSelector(mediaUploadSelector, shallowEqual);
 
   useEffect(() => {

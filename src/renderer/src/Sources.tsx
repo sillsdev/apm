@@ -268,7 +268,6 @@ export const Sources = async (
   setProjectsLoaded: (value: string[]) => void,
   orbitError: (ex: IApiError) => void,
   setOrbitRetries: (r: number) => void,
-  setLang: (locale: string) => void,
   getOfflineProject: (plan: Plan | VProject | string) => OfflineProject,
   offlineSetup: () => Promise<void>,
   showMessage: (msg: string | React.JSX.Element, alert?: AlertSeverity) => void,
@@ -493,8 +492,6 @@ export const Sources = async (
     console.log(`has user rec: ${tokData.sub}`);
     if (!Array.isArray(uRecs)) uRecs = [uRecs];
     const user = uRecs[0] as UserD;
-    const locale = user?.attributes?.locale || 'en';
-    setLang(locale);
     localStorage.setItem(LocalKey.userId, user.id);
     localStorage.setItem(LocalKey.onlineUserId, user.id);
     if (errorReporter && localStorage.getItem(LocalKey.connected) !== 'false')

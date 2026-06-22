@@ -1,5 +1,4 @@
 import * as React from 'react';
-import { useGlobal } from '../../../context/useGlobal';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import SettingsIcon from '@mui/icons-material/Settings';
@@ -8,7 +7,7 @@ import { localeLanguages } from './useKeyTerms';
 import { langName, UiLoc } from '../../../utils';
 import { shallowEqual, useSelector } from 'react-redux';
 import { keyTermsSelector } from '../../../selector';
-import { IKeyTermsStrings } from '../../../model';
+import { IKeyTermsStrings, IState } from '../../../model';
 
 interface IProps {
   curCode: string;
@@ -16,7 +15,7 @@ interface IProps {
 }
 
 export default function KeyTermSetting({ curCode, onChange }: IProps) {
-  const [locale] = useGlobal('lang');
+  const locale = useSelector((state: IState) => state.strings.lang);
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
   const t: IKeyTermsStrings = useSelector(keyTermsSelector, shallowEqual);

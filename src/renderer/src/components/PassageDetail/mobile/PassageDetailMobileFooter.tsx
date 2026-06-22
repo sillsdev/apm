@@ -16,6 +16,7 @@ import { IMobileStrings, OrgWorkflowStepD } from '../../../model';
 import {
   orgDefaultWorkflowProgression,
   useOrgDefaults,
+  WorkflowProgression,
 } from '../../../crud/useOrgDefaults';
 import { useOrgWorkflowSteps } from '../../../crud/useOrgWorkflowSteps';
 import { ToolSlug, useStepTool } from '../../../crud';
@@ -80,7 +81,8 @@ export default function PassageDetailMobileFooter() {
   const { localizedWorkStepFromId } = useOrgWorkflowSteps();
 
   const isStepProgression =
-    isBoldWorkflow || getOrgDefault(orgDefaultWorkflowProgression) === 'step';
+    isBoldWorkflow ||
+    getOrgDefault(orgDefaultWorkflowProgression) === WorkflowProgression.Step;
 
   const sortedSteps = useMemo(
     () =>

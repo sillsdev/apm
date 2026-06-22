@@ -6,13 +6,13 @@ import {
   DialogContentText,
   DialogTitle,
 } from '@mui/material';
+import { shallowEqual, useSelector } from 'react-redux';
 import { ISharedStrings, IWorkflowStepsStrings } from '../../model';
+import { sharedSelector, workflowStepsSelector } from '../../selector';
 
 interface IProps {
   open: boolean;
   message: string;
-  workflowStrings: IWorkflowStepsStrings;
-  sharedStrings: ISharedStrings;
   onCancel: () => void;
   onComplete: () => void;
   onContinue: () => void;
@@ -21,12 +21,18 @@ interface IProps {
 export default function StepNavigationConfirmDialog({
   open,
   message,
-  workflowStrings,
-  sharedStrings,
   onCancel,
   onComplete,
   onContinue,
 }: IProps) {
+  const workflowStrings: IWorkflowStepsStrings = useSelector(
+    workflowStepsSelector,
+    shallowEqual
+  );
+  const sharedStrings: ISharedStrings = useSelector(
+    sharedSelector,
+    shallowEqual
+  );
   return (
     <Dialog
       open={open}

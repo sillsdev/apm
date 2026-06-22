@@ -8,7 +8,9 @@ import UsersIcon from '@mui/icons-material/People';
 import { API_CONFIG } from '../../../api-variable';
 import { OrganizationD } from '@model/organization';
 import TeamDialog, { ITeamDialog } from '../Team/TeamDialog';
-import { DialogMode, ProjectD } from '../../model';
+import { DialogMode, ICardsStrings, ProjectD } from '../../model';
+import { shallowEqual, useSelector } from 'react-redux';
+import { cardsSelector } from '../../selector';
 import { useCommitTeamSettings } from '../../crud/useCommitTeamSettings';
 import { RecordIdentity } from '@orbit/records';
 import Confirm from '../AlertDialog';
@@ -45,8 +47,8 @@ export const OrgHead = () => {
   const isSwitchTeamsScreen = pathname.includes('/switch-teams');
   const { userIsOrgAdmin, setMyOrgRole } = useRole();
   const ctx = useContext(TeamContext);
-  const { teamDelete, personalTeam, teamProjects, cardStrings } =
-    ctx?.state ?? {};
+  const { teamDelete, personalTeam, teamProjects } = ctx?.state ?? {};
+  const cardStrings: ICardsStrings = useSelector(cardsSelector, shallowEqual);
   const [project] = useGlobal('project');
   const [offlineOnly] = useGlobal('offlineOnly');
   const [isOffline] = useGlobal('offline');
@@ -245,7 +247,7 @@ export const OrgHead = () => {
         />
       )}
       <BigDialog
-        title={ctx?.state?.cardStrings?.members?.replace(
+        title={cardStrings?.members?.replace(
           '{0}',
           orgRec?.attributes?.name || ''
         )}

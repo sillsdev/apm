@@ -39,7 +39,10 @@ import { getAllMediaRecs } from '../crud/media';
 import { getStepComplete } from '../crud/getStepComplete';
 import { getTool } from '../crud/useStepTool';
 import { nextPasId } from '../crud/nextPasId';
-import { orgDefaultWorkflowProgression } from '../crud/useOrgDefaults';
+import {
+  orgDefaultWorkflowProgression,
+  WorkflowProgression,
+} from '../crud/useOrgDefaults';
 import { related } from '../crud/related';
 import { remoteId, remoteIdGuid } from '../crud/remoteId';
 import { useArtifactCategory } from '../crud/useArtifactCategory';
@@ -162,7 +165,6 @@ const initState = {
   oldVernacularPlaying: false,
   handleOldVernacularPlayEnd: () => {},
   rowData: Array<IRow>(),
-  sharedStr: {} as ISharedStrings,
 
   loading: false,
   audioBlob: undefined as Blob | undefined,
@@ -199,7 +201,6 @@ const initState = {
   commentRecording: false,
   setCommentRecording: (_commentRecording: boolean) => {},
   isNavigationBlocked: () => false,
-  wfStr: {} as IWorkflowStepsStrings,
   handleItemPlayEnd: () => {},
   handleItemTogglePlay: () => {},
   handleCommentPlayEnd: () => {},
@@ -278,7 +279,6 @@ const PassageDetailProvider = (props: IProps) => {
   const [state, setState] = useState({
     ...initState,
     allBookData,
-    wfStr,
     prjId: prjId ?? '',
   });
   const [blobState, fetchBlob] = useFetchMediaBlob();
@@ -624,7 +624,7 @@ const PassageDetailProvider = (props: IProps) => {
   const gotoNextStep = () => {
     const gotoNextPassage =
       !isBoldWorkflow &&
-      getOrgDefault(orgDefaultWorkflowProgression) !== 'step';
+      getOrgDefault(orgDefaultWorkflowProgression) !== WorkflowProgression.Step;
     const nextpsg = gotoNextPassage
       ? nextPasId(state.section, state.passage.id, memory)
       : undefined;
@@ -1281,8 +1281,6 @@ const PassageDetailProvider = (props: IProps) => {
       <StepNavigationConfirmDialog
         open={incompleteNavTarget !== ''}
         message={incompleteNavMessage}
-        workflowStrings={wfStr}
-        sharedStrings={sharedStr}
         onCancel={handleIncompleteNavCancel}
         onComplete={handleIncompleteNavComplete}
         onContinue={handleIncompleteNavContinue}

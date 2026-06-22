@@ -65,7 +65,6 @@ export interface IFetchOrbitData {
   setUser: (id: string) => void;
   setProjectsLoaded: (value: string[]) => void;
   setOrbitRetries: (r: number) => void;
-  setLang: (locale: string) => void;
   getOfflineProject: (plan: Plan | VProject | string) => OfflineProject;
   offlineSetup: () => Promise<void>;
   showMessage: (msg: string | React.JSX.Element, alert?: AlertSeverity) => void;
@@ -88,7 +87,6 @@ export const fetchOrbitData =
     setUser,
     setProjectsLoaded,
     setOrbitRetries,
-    setLang,
     getOfflineProject,
     offlineSetup,
     showMessage,
@@ -105,7 +103,6 @@ export const fetchOrbitData =
       setProjectsLoaded,
       (ex: IApiError) => dispatch(orbitError(ex)),
       setOrbitRetries,
-      setLang,
       getOfflineProject,
       offlineSetup,
       showMessage,

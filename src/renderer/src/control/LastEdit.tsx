@@ -1,5 +1,5 @@
-import { useGlobal } from '../context/useGlobal';
-import { ISharedStrings } from '../model';
+import { useSelector } from 'react-redux';
+import { ISharedStrings, IState } from '../model';
 import { dateOrTime } from '../utils';
 import { AltButton } from './AltButton';
 
@@ -14,7 +14,7 @@ interface IProps extends IStateProps {
 
 export const LastEdit = (props: IProps) => {
   const { when, cb, t } = props;
-  const [lang] = useGlobal('lang');
+  const lang = useSelector((state: IState) => state.strings.lang);
 
   const handleHistory = () => {
     cb && cb();

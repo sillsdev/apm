@@ -48,7 +48,7 @@ export const HeadStatus = (props: IProps) => {
   const [isOffline] = useGlobal('offline'); //verified this is not used in a function 2/18/25
   const [isOfflineOnly] = useGlobal('offlineOnly'); //verified this is not used in a function 2/18/25
   const [errorReporter] = useGlobal('errorReporter');
-  const [lang] = useGlobal('lang');
+  const lang = useSelector((state: IState) => state.strings.lang);
   const [plan] = useGlobal('plan'); //verified this is not used in a function 2/18/25
   const { getPlan } = usePlan();
   const [version, setVersion] = useState('');

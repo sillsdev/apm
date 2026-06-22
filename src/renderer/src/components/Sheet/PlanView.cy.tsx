@@ -141,7 +141,6 @@ describe('PlanView', () => {
     errorReporter: bugsnagClient,
     fingerprint: 'test-fingerprint',
     memory: mockMemory,
-    lang: 'en',
     latestVersion: '',
     loadComplete: false,
     offlineOnly: false,
@@ -177,7 +176,6 @@ describe('PlanView', () => {
   const createMockPlanContextState = (overrides = {}) => ({
     t: {} as any,
     connected: false,
-    projButtonStr: {} as any,
     mediafiles: [],
     discussions: [],
     groupmemberships: [],

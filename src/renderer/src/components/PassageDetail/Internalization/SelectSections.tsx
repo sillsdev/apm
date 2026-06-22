@@ -105,6 +105,8 @@ export function SelectSections(props: IProps) {
     maxHeight: `${window.innerHeight - 200}px`,
   });
   const { getOrganizedBy } = useOrganizedBy();
+  // User cannot change the language while dialog is open, so for now it should be okay if this component does not
+  // respond to changes in the language setting until the dialog is reopened.
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
   const ta: IPassageDetailArtifactsStrings = useSelector(
     passageDetailArtifactsSelector,

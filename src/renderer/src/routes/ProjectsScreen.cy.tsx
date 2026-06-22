@@ -112,7 +112,6 @@ describe('ProjectsScreen', () => {
     errorReporter: bugsnagClient,
     fingerprint: 'test-fingerprint',
     memory: createMockMemory(),
-    lang: 'en',
     latestVersion: '',
     loadComplete: false,
     offlineOnly: false,
@@ -183,7 +182,6 @@ describe('ProjectsScreen', () => {
     const mockTeamContextValue = {
       state: {
         lang: 'en',
-        ts: {} as any,
         resetOrbitError: cy.stub(),
         bookSuggestions: [],
         bookMap: {} as any,
@@ -211,12 +209,6 @@ describe('ProjectsScreen', () => {
         isAdmin: isAdmin,
         isProjectAdmin: () => false,
         flatAdd: async () => {},
-        cardStrings: mockCardStrings,
-        sharedStrings: {} as any,
-        vProjectStrings: {} as any,
-        pickerStrings: {} as any,
-        projButtonStrings: {} as any,
-        newProjectStrings: {} as any,
         importOpen: false,
         setImportOpen: () => {},
         importProject: undefined,

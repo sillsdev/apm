@@ -207,7 +207,6 @@ describe('BurritoWrapper', () => {
     errorReporter: bugsnagClient,
     fingerprint: 'test-fingerprint',
     memory,
-    lang: 'en',
     latestVersion: '',
     loadComplete: false,
     offlineOnly: false,

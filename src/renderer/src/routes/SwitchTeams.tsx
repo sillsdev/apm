@@ -8,7 +8,9 @@ import {
   Button,
   IconButton,
 } from '@mui/material';
-import { DialogMode } from '../model';
+import { DialogMode, ICardsStrings } from '../model';
+import { shallowEqual, useSelector } from 'react-redux';
+import { cardsSelector } from '../selector';
 import TeamDialog, { ITeamDialog } from '../components/Team/TeamDialog';
 import { useMyNavigate } from '../utils/useMyNavigate';
 import { LocalKey, localUserKey, useMobile } from '../utils';
@@ -132,7 +134,8 @@ interface IPersonalSectionProps {
 }
 const PersonalSection = ({ onOpenSettings }: IPersonalSectionProps) => {
   const ctx = React.useContext(TeamContext);
-  const { cardStrings, personalTeam } = ctx.state;
+  const { personalTeam } = ctx.state;
+  const cardStrings: ICardsStrings = useSelector(cardsSelector, shallowEqual);
 
   return (
     <Stack spacing={1} data-testid="personal-section">
@@ -154,7 +157,8 @@ interface ITeamsSectionProps {
 }
 const TeamsSection = ({ onOpenSettings }: ITeamsSectionProps) => {
   const ctx = React.useContext(TeamContext);
-  const { teams, cardStrings } = ctx.state;
+  const { teams } = ctx.state;
+  const cardStrings: ICardsStrings = useSelector(cardsSelector, shallowEqual);
 
   return (
     <Stack spacing={1} data-testid="teams-section">

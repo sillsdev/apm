@@ -21,6 +21,8 @@ import {
   Integration,
   ProjectIntegration,
   IActivityStateStrings,
+  ISharedStrings,
+  ITranscriberStrings,
   IVProjectStrings,
   SectionD,
   MediaFileD,
@@ -93,6 +95,8 @@ import { UnsavedContext } from '../context/UnsavedContext';
 import {
   activitySelector,
   playerSelector,
+  sharedSelector,
+  transcriberSelector,
   vProjectSelector,
 } from '../selector';
 import {
@@ -217,15 +221,13 @@ export function Transcriber(props: IProps) {
         pendingmsg
       ) as any
     );
-  const {
-    rowData,
-    transcriberStr,
-    sharedStr,
-    transSelected,
-    setTransSelected,
-    allDone,
-    artifactId,
-  } = useTodo();
+  const { rowData, transSelected, setTransSelected, allDone, artifactId } =
+    useTodo();
+  const transcriberStr: ITranscriberStrings = useSelector(
+    transcriberSelector,
+    shallowEqual
+  );
+  const sharedStr: ISharedStrings = useSelector(sharedSelector, shallowEqual);
   const integrations = useOrbitData<Integration[]>('integration');
   const projintegrations =
     useOrbitData<ProjectIntegration[]>('projectintegration');

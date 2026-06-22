@@ -1712,7 +1712,7 @@ export function ScriptureTable(props: IProps) {
       setSaveColAdd([...colAdd]);
     }
     /* eslint-disable-next-line react-hooks/exhaustive-deps */
-  }, [sheet, width, colNames, flat]);
+  }, [sheet, width, colNames, flat, lang]);
 
   useEffect(() => {
     const newWork: ISheet[] = [];

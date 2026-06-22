@@ -2,10 +2,8 @@
 import React, { useEffect, useState } from 'react';
 // see: https://upmostly.com/tutorials/how-to-use-the-usecontext-hook-in-react
 import { useGlobal } from '../context/useGlobal';
-import { shallowEqual } from 'react-redux';
 import {
   IMainStrings,
-  IProjButtonsStrings,
   ProjectD,
   DiscussionD,
   MediaFileD,
@@ -17,8 +15,6 @@ import {
   useProjectDefaults,
 } from '../crud/useProjectDefaults';
 import { useOrbitData } from '../hoc/useOrbitData';
-import { useSelector } from 'react-redux';
-import { projButtonsSelector } from '../selector';
 import { LocalKey, localUserKey } from '../utils';
 import { useProjectPermissions } from '../utils/useProjectPermissions';
 import { SectionArray } from '../model/SectionArray';
@@ -27,7 +23,6 @@ export interface IRowData {}
 const initState = {
   t: {} as IMainStrings,
   connected: false,
-  projButtonStr: {} as IProjButtonsStrings,
   mediafiles: [] as MediaFileD[],
   discussions: [] as DiscussionD[],
   groupmemberships: [] as GroupMembershipD[],
@@ -63,10 +58,6 @@ const PlanProvider = (props: IProps) => {
   const mediafiles = useOrbitData<MediaFileD[]>('mediafile');
   const discussions = useOrbitData<DiscussionD[]>('discussion');
   const groupmemberships = useOrbitData<GroupMembershipD[]>('groupmembership');
-  const projButtonStr: IProjButtonsStrings = useSelector(
-    projButtonsSelector,
-    shallowEqual
-  );
   const [memory] = useGlobal('memory');
   const [plan] = useGlobal('plan'); //will be constant here
   const [project] = useGlobal('project'); //will be constant here
@@ -78,7 +69,6 @@ const PlanProvider = (props: IProps) => {
   const { canEditSheet, canPublish } = useProjectPermissions();
   const [state, setState] = useState({
     ...initState,
-    projButtonStr,
     mediafiles,
     discussions,
     groupmemberships,

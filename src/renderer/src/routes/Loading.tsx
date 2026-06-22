@@ -88,7 +88,6 @@ export function Loading() {
   const [offline] = useGlobal('offline'); //verified this is not used in a function 2/18/25
   const [fingerprint] = useGlobal('fingerprint');
   const [user, setUser] = useGlobal('user');
-  const [, setLang] = useGlobal('lang');
   const [orbitRetries, setOrbitRetries] = useGlobal('orbitRetries'); //verified this is not used in a function 2/18/25
   const [, setRemoteBusy] = useGlobal('remoteBusy');
   const [errorReporter] = useGlobal('errorReporter');
@@ -226,7 +225,6 @@ export function Loading() {
       setUser,
       setProjectsLoaded,
       setOrbitRetries,
-      setLang,
       getOfflineProject,
       offlineSetup,
       showMessage,

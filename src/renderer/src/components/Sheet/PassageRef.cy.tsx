@@ -75,7 +75,6 @@ describe('PassageRef', () => {
     errorReporter: bugsnagClient,
     fingerprint: 'test-fingerprint',
     memory: mockMemory,
-    lang: 'en',
     latestVersion: '',
     loadComplete: false,
     offlineOnly: false,
@@ -113,7 +112,6 @@ describe('PassageRef', () => {
   ): ICtxState => ({
     t: {} as any,
     connected: true,
-    projButtonStr: {} as any,
     mediafiles: [],
     discussions: [],
     groupmemberships: [],

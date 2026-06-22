@@ -152,7 +152,6 @@ describe('PlanBar', () => {
     errorReporter: bugsnagClient,
     fingerprint: 'test-fingerprint',
     memory: currentTestMemory,
-    lang: 'en',
     latestVersion: '',
     loadComplete: false,
     offlineOnly: false,
@@ -236,7 +235,6 @@ describe('PlanBar', () => {
   const createMockPlanContextState = (overrides = {}) => ({
     t: {} as any,
     connected: false,
-    projButtonStr: {} as any,
     mediafiles: [],
     discussions: [],
     groupmemberships: [],

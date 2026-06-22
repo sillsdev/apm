@@ -17,12 +17,7 @@ import {
   OrganizationMembership,
   VProject,
   VProjectD,
-  ICardsStrings,
-  IVProjectStrings,
-  ILanguagePickerStrings,
   ISharedStrings,
-  IProjButtonsStrings,
-  INewProjectStrings,
   BookNameMap,
   BookName,
   RoleNames,
@@ -58,15 +53,7 @@ import {
   orgDefaultProjSort,
   remoteIdGuid,
 } from '../crud';
-import {
-  cardsSelector,
-  controlSelector,
-  newProjectSelector,
-  pickerSelector,
-  projButtonsSelector,
-  sharedSelector,
-  vProjectSelector,
-} from '../selector';
+import { controlSelector, sharedSelector } from '../selector';
 import { useDispatch } from 'react-redux';
 import {
   LocalKey,
@@ -99,7 +86,6 @@ export type TeamIdType = OrganizationD | null;
 
 const initState = {
   lang: 'en',
-  ts: {} as ISharedStrings,
   resetOrbitError: (() => {}) as typeof actions.resetOrbitError,
   bookSuggestions: Array<OptionType>(),
   bookMap: {} as BookNameMap,
@@ -139,12 +125,6 @@ const initState = {
     book: string | undefined,
     setComplete?: (amt: number) => void
   ) => {},
-  cardStrings: {} as ICardsStrings,
-  sharedStrings: {} as ISharedStrings,
-  vProjectStrings: {} as IVProjectStrings,
-  pickerStrings: {} as ILanguagePickerStrings,
-  projButtonStrings: {} as IProjButtonsStrings,
-  newProjectStrings: {} as INewProjectStrings,
   importOpen: false,
   setImportOpen: (val: boolean) => {},
   importProject: undefined as any,
@@ -181,23 +161,10 @@ const TeamProvider = (props: IProps) => {
   const groupMemberships = useOrbitData<GroupMembership[]>('groupmembership');
   const sections = useOrbitData<SectionD[]>('section');
   const passages = useOrbitData<PassageD[]>('passage');
-  const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
-  const sharedStrings = ts;
-  const cardStrings: ICardsStrings = useSelector(cardsSelector, shallowEqual);
-  const vProjectStrings: IVProjectStrings = useSelector(
-    vProjectSelector,
-    shallowEqual
-  );
-  const pickerStrings: ILanguagePickerStrings = useSelector(
-    pickerSelector,
-    shallowEqual
-  );
-  const projButtonStrings: IProjButtonsStrings = useSelector(
-    projButtonsSelector,
-    shallowEqual
-  );
-  const newProjectStrings: INewProjectStrings = useSelector(
-    newProjectSelector,
+  // Shared strings are still needed inside the provider (e.g. useFlatAdd);
+  // string layouts consumed by components are read via selectors there.
+  const sharedStrings: ISharedStrings = useSelector(
+    sharedSelector,
     shallowEqual
   );
   const lang = useSelector((state: IState) => state.strings.lang);
@@ -223,13 +190,6 @@ const TeamProvider = (props: IProps) => {
   const [state, setState] = useState({
     ...initState,
     lang,
-    cardStrings,
-    sharedStrings,
-    vProjectStrings,
-    pickerStrings,
-    projButtonStrings,
-    newProjectStrings,
-    ts,
     resetOrbitError,
   });
   const controlStrings = useSelector(controlSelector, shallowEqual);

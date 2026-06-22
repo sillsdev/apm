@@ -14,14 +14,8 @@ import {
   SectionD,
   MediaFile,
   MediaFileD,
-  ITaskItemStrings,
-  IToDoTableStrings,
-  ITranscriberStrings,
-  IProjButtonsStrings,
   BookName,
   ActivityStates,
-  ISharedStrings,
-  IActivityStateStrings,
 } from '../model';
 import {
   related,
@@ -36,15 +30,7 @@ import {
 } from '../crud';
 import { mediaFileName } from '../crud/media';
 import StickyRedirect from '../components/StickyRedirect';
-import { shallowEqual, useSelector } from 'react-redux';
-import {
-  activitySelector,
-  projButtonsSelector,
-  sharedSelector,
-  taskItemSelector,
-  toDoTableSelector,
-  transcriberSelector,
-} from '../selector';
+import { useSelector } from 'react-redux';
 import { useDispatch } from 'react-redux';
 import { InitializedRecord, RecordKeyMap } from '@orbit/records';
 import { useOrbitData } from '../hoc/useOrbitData';
@@ -120,12 +106,6 @@ const initState = {
   setAllDone: (_val: boolean) => {},
   refresh: () => {},
   allBookData: Array<BookName>(),
-  taskItemStr: {} as ITaskItemStrings,
-  activityStateStr: {} as IActivityStateStrings,
-  sharedStr: {} as ISharedStrings,
-  todoStr: {} as IToDoTableStrings,
-  transcriberStr: {} as ITranscriberStrings,
-  projButtonStr: {} as IProjButtonsStrings,
   flat: false,
   artifactId: null as string | null,
   isDetail: false,
@@ -151,33 +131,12 @@ const TranscriberProvider = (props: IProps) => {
   const passages = useOrbitData<Passage[]>('passage');
   const sections = useOrbitData<Section[]>('section');
   const mediafiles = useOrbitData<MediaFileD[]>('mediafile');
-  const todoStr: IToDoTableStrings = useSelector(
-    toDoTableSelector,
-    shallowEqual
-  );
-  const taskItemStr: ITaskItemStrings = useSelector(
-    taskItemSelector,
-    shallowEqual
-  );
-  const activityStateStr: IActivityStateStrings = useSelector(
-    activitySelector,
-    shallowEqual
-  );
-  const transcriberStr: ITranscriberStrings = useSelector(
-    transcriberSelector,
-    shallowEqual
-  );
-  const projButtonStr: IProjButtonsStrings = useSelector(
-    projButtonsSelector,
-    shallowEqual
-  );
   const allBookData = useSelector((state: IState) => state.books.bookData);
   const lang = useSelector((state: IState) => state.strings.lang);
   const booksLoaded = useSelector((state: IState) => state.books.loaded);
   const dispatch = useDispatch();
   const fetchBooks = (lang: string) =>
     dispatch(actions.fetchBooks(lang) as any);
-  const sharedStr: ISharedStrings = useSelector(sharedSelector, shallowEqual);
   const { pasId, slug, medId } = useParams();
   const [memory] = useGlobal('memory');
   const [user] = useGlobal('user');
@@ -194,12 +153,6 @@ const TranscriberProvider = (props: IProps) => {
   const [state, setState] = useState({
     ...initState,
     allBookData,
-    todoStr,
-    taskItemStr,
-    activityStateStr,
-    transcriberStr,
-    projButtonStr,
-    sharedStr,
     isDetail,
   });
   const { getTypeId } = useArtifactType();

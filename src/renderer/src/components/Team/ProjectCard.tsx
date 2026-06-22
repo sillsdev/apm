@@ -30,8 +30,11 @@ import PublishedWithChangesIcon from '@mui/icons-material/PublishedWithChanges';
 import EditNoteIcon from '@mui/icons-material/EditNote';
 import {
   DialogMode,
+  ICardsStrings,
+  IProjButtonsStrings,
   IState,
   ITranscriptionTabStrings,
+  IVProjectStrings,
   ProjectD,
   Section,
   SectionArray,
@@ -77,7 +80,13 @@ import { useProjectPermissions } from '../../utils/useProjectPermissions';
 import { IProjectDialog } from './ProjectDialog/projectDialogTypes';
 import { TeamSelector } from '../ImportTab';
 import { useAdminTeams } from '../useAdminTeams';
-import { importSelector, transcriptionTabSelector } from '../../selector';
+import {
+  cardsSelector,
+  importSelector,
+  projButtonsSelector,
+  transcriptionTabSelector,
+  vProjectSelector,
+} from '../../selector';
 
 const PencilSquare = BsPencilSquare as unknown as React.FC<IconBaseProps>;
 
@@ -136,12 +145,13 @@ export const ProjectCard = (props: IProps) => {
     projectLanguage,
     projectUpdate,
     projectDelete,
-    cardStrings,
-    vProjectStrings,
-    projButtonStrings,
     personalProjects,
     doImport,
   } = ctx.state;
+  const vProjectStrings: IVProjectStrings = useSelector(
+    vProjectSelector,
+    shallowEqual
+  );
   const dispatch = useDispatch();
   const forceDataChanges = useDataChanges();
 
@@ -177,12 +187,15 @@ export const ProjectCard = (props: IProps) => {
   const [openCopyDialog, setOpenCopyDialog] = useState(false);
   const [selectedTeamId, setSelectedTeamId] = useState<string>('');
   const { getProjectDefault } = useProjectDefaults();
-  const t = cardStrings;
+  const t: ICardsStrings = useSelector(cardsSelector, shallowEqual);
   const tt: ITranscriptionTabStrings = useSelector(
     transcriptionTabSelector,
     shallowEqual
   );
-  const tpb = projButtonStrings;
+  const tpb: IProjButtonsStrings = useSelector(
+    projButtonsSelector,
+    shallowEqual
+  );
   const { userIsOrgAdmin } = useRole();
   const { leaveHome } = useHome();
   const { getParam, setParam } = useJsonParams();

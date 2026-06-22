@@ -15,11 +15,14 @@ import {
   OrganizationD,
   IDialog,
   DialogMode,
+  ICardsStrings,
   OptionType,
   WorkflowStep,
   BibleD,
   ProjectD,
 } from '../../model';
+import { shallowEqual, useSelector } from 'react-redux';
+import { cardsSelector } from '../../selector';
 import DeleteExpansion from '../DeleteExpansion';
 import { TeamContext } from '../../context/TeamContext';
 import {
@@ -28,6 +31,7 @@ import {
   orgDefaultLangProps,
   orgDefaultPermissions,
   orgDefaultWorkflowProgression,
+  WorkflowProgression,
   pubDataCopyright,
   pubDataLangProps,
   pubDataNoteLabel,
@@ -90,8 +94,8 @@ export function TeamDialog(props: IProps) {
   const { setParam } = useJsonParams();
   const [changed, setChanged] = React.useState(false);
   const ctx = React.useContext(TeamContext);
-  const { cardStrings, personalTeam } = ctx.state;
-  const t = cardStrings;
+  const { personalTeam } = ctx.state;
+  const t: ICardsStrings = useSelector(cardsSelector, shallowEqual);
   const [memory] = useGlobal('memory');
   const [process, setProcess] = useState<string>();
   const [processOptions, setProcessOptions] = useState<OptionType[]>([]);
@@ -112,8 +116,8 @@ export function TeamDialog(props: IProps) {
     return projects.some((p) => related(p, 'organization') === teamId);
   }, [projects, values?.team?.id]);
 
-  const [workflowProgression, setWorkflowProgression] = useState(
-    t.workflowProgressionPassage
+  const [workflowProgression, setWorkflowProgression] = useState<string>(
+    WorkflowProgression.Passage
   );
   const [permissions, setPermissions] = useState(false);
   const [savedPermission, setSavedPermission] = useState(false);
@@ -132,7 +136,7 @@ export function TeamDialog(props: IProps) {
     setBible(undefined);
     setDescription('');
     setPublishingData('');
-    setWorkflowProgression(t.workflowProgressionPassage);
+    setWorkflowProgression(WorkflowProgression.Passage);
     setPermissions(false);
     setFeatures({});
     onOpen && onOpen(false);
@@ -178,9 +182,7 @@ export function TeamDialog(props: IProps) {
             : ({ attributes: {} } as OrganizationD);
         let df = setParam(
           orgDefaultWorkflowProgression,
-          workflowProgression === t.workflowProgressionStep
-            ? 'step'
-            : 'passage',
+          workflowProgression,
           current.attributes?.defaultParams ?? defaultParams
         );
         df = setParam(orgDefaultFeatures, features, df);
@@ -313,12 +315,9 @@ export function TeamDialog(props: IProps) {
   const nameInUse = (newName: string): boolean => {
     const trimmed = newName.trim();
     if (trimmed === '') return false;
-    if (trimmed === (values?.team?.attributes?.name ?? '').trim())
-      return false;
+    if (trimmed === (values?.team?.attributes?.name ?? '').trim()) return false;
     return Boolean(
-      organizations.find(
-        (o) => (o?.attributes?.name ?? '').trim() === trimmed
-      )
+      organizations.find((o) => (o?.attributes?.name ?? '').trim() === trimmed)
     );
   };
 
@@ -330,9 +329,9 @@ export function TeamDialog(props: IProps) {
         if (values?.team) {
           const wfp = getDefault(orgDefaultWorkflowProgression, values.team);
           setWorkflowProgression(
-            wfp === 'step'
-              ? t.workflowProgressionStep
-              : t.workflowProgressionPassage
+            wfp === WorkflowProgression.Step
+              ? WorkflowProgression.Step
+              : WorkflowProgression.Passage
           );
           setFeatures(getDefault(orgDefaultFeatures, values.team) as IFeatures);
           const permission =
