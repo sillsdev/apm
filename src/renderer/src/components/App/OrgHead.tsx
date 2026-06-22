@@ -1,4 +1,4 @@
-import { useContext, useEffect, useMemo, useState } from 'react';
+import { useContext, useMemo, useState } from 'react';
 import { LocalKey, localUserKey } from '../../utils/localUserKey';
 import { useMobile } from '../../utils';
 import { useGlobal } from '../../context/useGlobal';
@@ -22,9 +22,6 @@ import { defaultWorkflow, useTeamWorkflowProcess } from '../../crud';
 import { useRole } from '../../crud/useRole';
 import { useOrbitData } from '../../hoc/useOrbitData';
 import { ProjectSort } from '../Team/ProjectDialog/ProjectSort';
-import { debounce } from 'lodash';
-
-const MOBILE_HEADER_COMPONENTS_WIDTH = 5 * 50; // 5 buttons of 50px each
 
 export const OrgHead = () => {
   const [user] = useGlobal('user');
@@ -51,24 +48,6 @@ export const OrgHead = () => {
   const [offlineOnly] = useGlobal('offlineOnly');
   const [isOffline] = useGlobal('offline');
   const [connected] = useGlobal('connected');
-  const [width, setWidth] = useState(window.innerWidth);
-
-  // keep track of screen width
-  const setDimensions = () => {
-    setWidth(window.innerWidth);
-  };
-
-  useEffect(() => {
-    setDimensions();
-    const handleResize = debounce(() => {
-      setDimensions();
-    }, 100);
-
-    window.addEventListener('resize', handleResize);
-    return () => {
-      window.removeEventListener('resize', handleResize);
-    };
-  }, []); //do this once to get the default;
 
   const orgId = useMemo(
     () => localStorage.getItem(localUserKey(LocalKey.team)),
@@ -169,16 +148,13 @@ export const OrgHead = () => {
   };
 
   return (
-    <Stack direction="row">
+    <Stack direction="row" alignItems="center" sx={{ minWidth: 0 }}>
       <Typography
         variant="h6"
+        noWrap
         sx={{
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          whiteSpace: 'nowrap',
-          maxWidth: isMobile ? width - MOBILE_HEADER_COMPONENTS_WIDTH : '800px',
-          alignItems: 'center',
-          display: 'flex',
+          minWidth: 0,
+          maxWidth: isMobile ? undefined : '800px',
           mx: 1,
         }}
       >
