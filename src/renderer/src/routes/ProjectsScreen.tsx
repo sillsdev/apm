@@ -220,7 +220,14 @@ export const ProjectsScreenInner: React.FC = () => {
   }
 
   return (
-    <Box sx={{ width: '100%' }}>
+    <Box
+      sx={{
+        width: '100%',
+        minHeight: '100dvh',
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
       <AppHead />
       <ProjectsBox
         id="ProjectsScreen"
@@ -229,11 +236,11 @@ export const ProjectsScreenInner: React.FC = () => {
           paddingTop: '80px',
           px: 2,
           pb: 8,
-          mx: 'auto',
           display: 'flex',
           flexDirection: 'column',
           gap: 2,
-          minHeight: '100vh',
+          flex: 1,
+          minHeight: 0,
         }}
       >
         <Grid container spacing={1}>
