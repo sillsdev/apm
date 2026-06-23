@@ -218,32 +218,40 @@ const FloatingActions = () => {
           spacing={2}
           sx={{ pointerEvents: 'auto', alignItems: 'center' }}
         >
-          {(!offline || isDeveloper) && (
+          <Box
+            sx={{
+              display: 'inline-grid',
+              gridAutoFlow: 'column',
+              gridAutoColumns: '1fr',
+              alignItems: 'center',
+              gap: 2,
+            }}
+          >
+            {(!offline || isDeveloper) && (
+              <Button
+                id="TeamActAdd"
+                data-testid="add-team-button"
+                variant="outlined"
+                onClick={handleAddClick}
+                sx={(theme) => ({
+                  bgcolor: theme.palette.common.white,
+                })}
+              >
+                {t.addTeam}
+              </Button>
+            )}
             <Button
-              id="TeamActAdd"
-              data-testid="add-team-button"
+              id="teamActImport"
+              data-testid="import-button"
               variant="outlined"
-              onClick={handleAddClick}
+              onClick={handleImportClick}
               sx={(theme) => ({
-                minWidth: 160,
                 bgcolor: theme.palette.common.white,
               })}
             >
-              {t.addTeam}
+              {t.import}
             </Button>
-          )}
-          <Button
-            id="teamActImport"
-            data-testid="import-button"
-            variant="outlined"
-            onClick={handleImportClick}
-            sx={(theme) => ({
-              minWidth: 110,
-              bgcolor: theme.palette.common.white,
-            })}
-          >
-            {t.import}
-          </Button>
+          </Box>
           {!offline && userIsSharedContentAdmin && (
             <Button
               id="contentCreator"

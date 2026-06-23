@@ -1,13 +1,5 @@
 import React from 'react';
-import {
-  Box,
-  Stack,
-  Typography,
-  Button,
-  Grid,
-  BoxProps,
-  styled,
-} from '@mui/material';
+import { Box, Typography, Button, Grid, BoxProps, styled } from '@mui/material';
 import AppHead from '../components/App/AppHead';
 import { TeamProvider, TeamContext, TeamIdType } from '../context/TeamContext';
 import { useLocation } from 'react-router-dom';
@@ -259,10 +251,15 @@ export const ProjectsScreenInner: React.FC = () => {
           pointerEvents: 'none',
         }}
       >
-        <Stack
-          direction="row"
-          spacing={2}
-          sx={{ pointerEvents: 'auto', alignItems: 'center' }}
+        <Box
+          sx={{
+            pointerEvents: 'auto',
+            display: 'inline-grid',
+            gridAutoFlow: 'column',
+            gridAutoColumns: '1fr',
+            alignItems: 'center',
+            gap: 2,
+          }}
         >
           {showAddButton && (
             <Button
@@ -271,7 +268,6 @@ export const ProjectsScreenInner: React.FC = () => {
               variant="outlined"
               onClick={handleAddProject}
               sx={(theme) => ({
-                minWidth: 160,
                 bgcolor: theme.palette.common.white,
               })}
             >
@@ -284,14 +280,13 @@ export const ProjectsScreenInner: React.FC = () => {
               variant="outlined"
               onClick={handleSwitchTeams}
               sx={(theme) => ({
-                minWidth: 120,
                 bgcolor: theme.palette.common.white,
               })}
             >
               {t.switchTeams || 'Switch Teams'}
             </Button>
           )}
-        </Stack>
+        </Box>
       </Box>
       <BigDialog
         title={t.editWorkflow.replace(
