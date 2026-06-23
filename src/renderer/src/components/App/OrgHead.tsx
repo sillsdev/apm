@@ -155,6 +155,8 @@ export const OrgHead = () => {
           minWidth: 0,
           mx: 1,
           fontWeight: 'bold',
+          position: 'relative',
+          top: '1px',
         }}
       >
         {isSwitchTeamsScreen
