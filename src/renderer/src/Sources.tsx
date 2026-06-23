@@ -171,7 +171,7 @@ const queryError =
       //signal to datachanges that we've had a network error
       setOrbitRetries(OrbitNetworkErrorRetries - 1);
     }
-    return remote.requestQueue.retry;
+    return remote.requestQueue.retry();
   };
 
 const updateError =
