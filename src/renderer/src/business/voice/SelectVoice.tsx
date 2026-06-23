@@ -97,10 +97,7 @@ export default function SelectVoice({
           {onlySettings ? ts.close : ts.cancel}
         </AltButton>
         {!onlySettings && (
-          <PriButton
-            onClick={begin}
-            disabled={!voice?.trim() || !rights}
-          >
+          <PriButton onClick={begin} disabled={!voice?.trim() || !rights}>
             {t.convert}
           </PriButton>
         )}

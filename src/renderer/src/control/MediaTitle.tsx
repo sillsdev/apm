@@ -253,7 +253,7 @@ export default function MediaTitle(props: IProps) {
       showMessage(t.recording);
       return;
     }
-    const value = e.target.value.trim();
+    const value = e.target.value;
     setCurText(value);
     if (onTextChange) {
       const err = onTextChange(value);
@@ -268,8 +268,8 @@ export default function MediaTitle(props: IProps) {
   const handleBlur = () => {
     isFocusedRef.current = false;
     const value = curTextRef.current;
-    if (onTextChange && value !== (title ?? '')) {
-      const err = onTextChange(value);
+    if (onTextChange && value.trim() !== (title ?? '')) {
+      const err = onTextChange(value.trim());
       setHelperText(err);
     }
   };
@@ -375,7 +375,6 @@ export default function MediaTitle(props: IProps) {
         setStartRecord(false);
         setShowRecorder(true);
       });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [startRecord, playing]);
 
   const handleMouseDownSave = (event: MouseEvent<HTMLButtonElement>) => {
