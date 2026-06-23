@@ -89,6 +89,10 @@ export const AppHead = (props: IProps) => {
   const tv: IViewModeStrings = useSelector(viewModeSelector, shallowEqual);
 
   const isDetail = useMemo(() => pathname.startsWith('/detail'), [pathname]);
+  const isPlanSheet = useMemo(
+    () => /^\/plan\/[^/]+\/0(\/|$)/.test(pathname),
+    [pathname]
+  );
   const planUrl = useMemo(() => {
     const fromUrl = localStorage.getItem(localUserKey(LocalKey.url));
     if (!fromUrl) return null;
@@ -277,7 +281,7 @@ export const AppHead = (props: IProps) => {
   if (view === 'Privacy') navigate('/privacy');
 
   const isMobile = isMobileView || isMobileWidth;
-  const drawBorderBottom = !(isMobile && isDetail);
+  const drawBorderBottom = !(isMobile && (isDetail || isPlanSheet));
 
   return (
     <AppBar
