@@ -79,6 +79,13 @@ function App(): React.JSX.Element {
               },
               variants: [
                 {
+                  // Outlined buttons get a soft edge to contrast against white
+                  props: { variant: 'outlined' },
+                  style: {
+                    border: '1px solid #0000001F',
+                  },
+                },
+                {
                   // Contained buttons are primary buttons
                   props: { variant: 'contained' },
                   style: {
