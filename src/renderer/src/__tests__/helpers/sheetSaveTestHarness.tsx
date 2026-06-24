@@ -1,4 +1,3 @@
-import React from 'react';
 import { render } from '@testing-library/react';
 import Coordinator from '@orbit/coordinator';
 import {
@@ -52,7 +51,12 @@ export function getForceDataChangesDelay() {
   return forceDataChangesDelayMs;
 }
 
-function mapRemote(keyMap: RecordKeyMap, table: string, localId: string, remoteId: string) {
+function mapRemote(
+  keyMap: RecordKeyMap,
+  table: string,
+  localId: string,
+  remoteId: string
+) {
   keyMap.pushRecord({
     type: table,
     id: localId,
@@ -177,9 +181,7 @@ export function createSheetSaveMemory(
             ? (result as { _operation: RecordOperation })._operation
             : undefined;
         if (op?.op === 'addRecord' && 'record' in op) {
-          passageRecords.push(
-            (op as unknown as { record: PassageD }).record
-          );
+          passageRecords.push((op as unknown as { record: PassageD }).record);
         }
         return [];
       }),
@@ -198,8 +200,11 @@ export function createSheetSaveMemory(
         result &&
         typeof result === 'object' &&
         '_operation' in (result as object)
-          ? (result as { _operation: RecordOperation & { record?: InitializedRecord } })
-              ._operation
+          ? (
+              result as {
+                _operation: RecordOperation & { record?: InitializedRecord };
+              }
+            )._operation
           : undefined;
       if (!op || op.op !== 'addRecord' || !('record' in op)) return null;
       const spRecord = { ...op.record } as InitializedRecord;

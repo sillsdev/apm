@@ -2,7 +2,7 @@
  * Thin CT harness for Sections & Passages save pipeline (TT-7416 / TT-6918 / TT-6919).
  * Wires real UnsavedProvider + useWfOnlineSave without mounting full ScriptureTable.
  */
-import React, { useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { useGlobal } from '../../context/useGlobal';
 import { UnsavedContext } from '../../context/UnsavedContext';
 import { ISheet } from '../../model';
@@ -18,10 +18,8 @@ import {
   genesisPasteTrimmed,
   findGenesisBook,
 } from '../../__tests__/fixtures/genesisPasteTrimmed';
-import {
-  existingPopulatedSheet,
-} from '../../__tests__/helpers/sheetSaveTestHarness';
-import { publishApmTestState, SheetSaveMockMode } from '../../../cypress/support/sheetSaveMocks';
+import { existingPopulatedSheet } from '../../__tests__/helpers/sheetSaveTestHarness';
+import { publishApmTestState } from '../../../cypress/support/sheetSaveMocks';
 import { currentDateTime } from '../../utils/currentDateTime';
 
 const findLukeBook = (val: string) => (/LUK/i.test(val) ? 'LUK' : '');
@@ -34,7 +32,8 @@ const pasteStrings = {
   loadingTable: 'Loading data',
   passage: 'Passage',
   pasteInvalidBooks: 'Invalid book: {0}',
-  pasteInvalidColumns: 'Invalid number of columns ({0}). Expecting {1}} columns.',
+  pasteInvalidColumns:
+    'Invalid number of columns ({0}). Expecting {1}} columns.',
   pasteInvalidPassageBeforeSection: 'Passage before section {0}',
   pasteInvalidSections: 'Invalid {0} number(s):',
   pasteNoRows: 'No Rows in clipboard.',
@@ -45,13 +44,11 @@ const pasteStrings = {
 } as never;
 
 interface Props {
-  mockMode: SheetSaveMockMode;
   preloadPopulated?: boolean;
   pasteGenesis?: boolean;
 }
 
 export function SheetSaveHarness({
-  mockMode,
   preloadPopulated = false,
   pasteGenesis = false,
 }: Props) {
