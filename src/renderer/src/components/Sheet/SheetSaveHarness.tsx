@@ -75,6 +75,9 @@ export function SheetSaveHarness({
   const [hasChanges, setHasChanges] = useState(false);
   const sheetRef = useRef(sheet);
   sheetRef.current = sheet;
+  const savingRef = useRef(false);
+  const progressRef = useRef(progress);
+  progressRef.current = progress;
 
   const paste = useWfPaste({
     secNumCol: sheetPasteColNames.indexOf('sectionSeq'),
@@ -148,26 +151,23 @@ export function SheetSaveHarness({
       setTimeout(() => setComplete(0), 0);
     };
 
-    if (saveRequested(toolId)) {
-      void runSave().catch(() => {
-        // Leave remoteBusy true to mirror TT-7416 save hang when keyMap never updates.
-        publishApmTestState({
-          remoteBusy: true,
-          changed: true,
-          progress: progress ?? 0,
+    if (saveRequested(toolId) && !savingRef.current) {
+      savingRef.current = true;
+      void runSave()
+        .catch(() => {
+          // Leave remoteBusy true to mirror TT-7416 save hang when keyMap never updates.
+          publishApmTestState({
+            remoteBusy: true,
+            changed: true,
+            progress: progressRef.current ?? 0,
+          });
+        })
+        .finally(() => {
+          savingRef.current = false;
         });
-      });
     }
-  }, [
-    toolsChanged,
-    onlineSave,
-    saveCompleted,
-    setRemoteBusy,
-    setComplete,
-    toolId,
-    saveRequested,
-    progress,
-  ]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [toolsChanged]);
 
   useEffect(() => {
     const firstSection = sheet.find(
