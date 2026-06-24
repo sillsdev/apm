@@ -41,14 +41,8 @@ interface SaveRec {
   issection: boolean;
 }
 
-interface MockKeyMap {
-  idToKey: RecordKeyMap['idToKey'];
-  keyToId: RecordKeyMap['keyToId'];
-}
-
 let forceDataChangesDelayMs = 0;
-const remoteByLocal: Record<string, string> = {};
-const localByRemote: Record<string, string> = {};
+let testKeyMap: RecordKeyMap | undefined;
 
 export function setForceDataChangesDelay(ms: number) {
   forceDataChangesDelayMs = ms;
@@ -58,23 +52,21 @@ export function getForceDataChangesDelay() {
   return forceDataChangesDelayMs;
 }
 
-function mapRemote(table: string, localId: string, remoteId: string) {
-  remoteByLocal[`${table}:${localId}`] = remoteId;
-  localByRemote[`${table}:${remoteId}`] = localId;
+function mapRemote(keyMap: RecordKeyMap, table: string, localId: string, remoteId: string) {
+  keyMap.pushRecord({
+    type: table,
+    id: localId,
+    keys: { remoteId },
+  } as InitializedRecord);
 }
 
-export function createTestKeyMap(): MockKeyMap {
-  return {
-    idToKey: (table: string, _field: string, localId: string) =>
-      remoteByLocal[`${table}:${localId}`],
-    keyToId: (table: string, _field: string, remoteId: string) =>
-      localByRemote[`${table}:${remoteId}`],
-  };
+export function createTestKeyMap(): RecordKeyMap {
+  return new RecordKeyMap();
 }
 
 export function resetTestKeyMap() {
-  Object.keys(remoteByLocal).forEach((k) => delete remoteByLocal[k]);
-  Object.keys(localByRemote).forEach((k) => delete localByRemote[k]);
+  testKeyMap?.reset();
+  testKeyMap = undefined;
 }
 
 function buildResponseDataFromInput(inputRecs: SaveRec[][]): SaveRec[][] {
@@ -103,6 +95,7 @@ function buildResponseDataFromInput(inputRecs: SaveRec[][]): SaveRec[][] {
 }
 
 function seedPassageRecords(
+  keyMap: RecordKeyMap,
   passageRecords: PassageD[],
   outrecs: SaveRec[][]
 ) {
@@ -110,7 +103,7 @@ function seedPassageRecords(
     rowRec.forEach((rec) => {
       if (rec.issection) return;
       const localId = `passage-local-${rec.id}`;
-      mapRemote('passage', localId, rec.id);
+      mapRemote(keyMap, 'passage', localId, rec.id);
       passageRecords.push({
         type: 'passage',
         id: localId,
@@ -126,33 +119,35 @@ function seedPassageRecords(
 }
 
 function populateKeyMapFromResponse(
+  keyMap: RecordKeyMap,
   passageRecords: PassageD[],
   rec: InitializedRecord,
   outrecs: SaveRec[][]
 ) {
-  mapRemote('sectionpassage', rec.id as string, `sp-remote-${rec.id}`);
+  mapRemote(keyMap, 'sectionpassage', rec.id as string, `sp-remote-${rec.id}`);
   outrecs.forEach((rowRec) => {
     rowRec.forEach((item) => {
       if (item.issection) {
-        mapRemote('section', `section-local-${item.id}`, item.id);
+        mapRemote(keyMap, 'section', `section-local-${item.id}`, item.id);
       } else {
-        mapRemote('passage', `passage-local-${item.id}`, item.id);
+        mapRemote(keyMap, 'passage', `passage-local-${item.id}`, item.id);
       }
     });
   });
-  seedPassageRecords(passageRecords, outrecs);
+  seedPassageRecords(keyMap, passageRecords, outrecs);
 }
 
 export function createSheetSaveMemory(
   mode: SheetSaveMockMode,
   opts: SheetSaveHarnessOptions = {}
-): { memory: Memory; keyMap: MockKeyMap; backup: { sync: jest.Mock } } {
+): { memory: Memory; keyMap: RecordKeyMap; backup: { sync: jest.Mock } } {
   resetTestKeyMap();
   const keyMap = createTestKeyMap();
+  testKeyMap = keyMap;
   const planLocalId = opts.planId ?? 'plan-local-1';
   const planRemoteId = opts.planRemoteId ?? '42';
-  mapRemote('plan', planLocalId, planRemoteId);
-  mapRemote('passagetype', 'pt1', '99');
+  mapRemote(keyMap, 'plan', planLocalId, planRemoteId);
+  mapRemote(keyMap, 'passagetype', 'pt1', '99');
 
   const passageRecords: PassageD[] = [];
   const memory = {
@@ -224,6 +219,7 @@ export function createSheetSaveMemory(
         mode === 'deleteSyncFails'
       ) {
         populateKeyMapFromResponse(
+          keyMap,
           passageRecords,
           spRecord as InitializedRecord,
           responseRecs
@@ -354,11 +350,11 @@ export function existingPopulatedSheet(): ISheet[] {
   ];
 }
 
-export function seedExistingRemoteIds() {
-  mapRemote('section', 's1-local', '101');
-  mapRemote('passage', 'p1-local', '201');
-  mapRemote('section', 's2-local', '102');
-  mapRemote('passage', 'p2-local', '202');
+export function seedExistingRemoteIds(keyMap: RecordKeyMap) {
+  mapRemote(keyMap, 'section', 's1-local', '101');
+  mapRemote(keyMap, 'passage', 'p1-local', '201');
+  mapRemote(keyMap, 'section', 's2-local', '102');
+  mapRemote(keyMap, 'passage', 'p2-local', '202');
 }
 
 export async function runBatchedOnlineSave(
@@ -403,7 +399,7 @@ interface SetupResult {
   onlineSave: (sheet: ISheet[], lastSaved?: string) => Promise<boolean>;
   setComplete: jest.Mock;
   memory: Memory;
-  keyMap: MockKeyMap;
+  keyMap: RecordKeyMap;
 }
 
 export function setupOnlineSave(
@@ -412,7 +408,7 @@ export function setupOnlineSave(
 ): SetupResult {
   const { memory, keyMap, backup } = createSheetSaveMemory(mode, opts);
   if (mode !== 'brokenKeyMap') {
-    seedExistingRemoteIds();
+    seedExistingRemoteIds(keyMap);
   }
 
   const coordinator = {
