@@ -12,7 +12,6 @@ import {
   ITranscriptionTabStrings,
   IVerseStrings,
   MediaFileD,
-  Passage,
 } from '../../model';
 import {
   Box,
@@ -33,7 +32,6 @@ import {
 } from '../../selector';
 import { shallowEqual, useSelector } from 'react-redux';
 import { findRecord } from '../../crud/tryFindRecord';
-import { parseRef } from '../../crud/passage';
 import { ActionRow } from '../../control/ActionRow';
 import { AltButton } from '../../control/AltButton';
 import { GrowingSpacer } from '../../control/GrowingSpacer';
@@ -50,6 +48,7 @@ import { useProjectSegmentSave } from './Internalization/useProjectSegmentSave';
 import { IRegion } from '../../crud/useWavesurferRegions';
 import { cleanClipboard } from '../../utils/cleanClipboard';
 import { refMatch } from '../../utils/refMatch';
+import { expandMarkVersesRefs } from '../../utils/markVersesExpandRefs';
 import { useArtifactType } from '../../crud/useArtifactType';
 import { ArtifactTypeSlug } from '../../crud/artifactTypeSlug';
 import { PassageTypeEnum } from '../../model/passageType';
@@ -298,36 +297,7 @@ export function PassageDetailMarkVerses({ width }: MarkVersesProps) {
   };
 
   const getRefs = useCallback(
-    (value: string, book: string) => {
-      const refs: string[] = [];
-      const psg = { attributes: { reference: value } } as Passage;
-      parseRef(psg);
-      const { startChapter, startVerse, endChapter, endVerse } = psg.attributes;
-      const match = refMatch(psg.attributes.reference);
-      let firstVerse = startVerse ?? 1;
-      if (match && `${firstVerse}` !== match[2]) {
-        firstVerse += 1;
-        refs.push(`${startChapter}:${match[2]}`);
-      }
-      if (startChapter === endChapter) {
-        for (let i = firstVerse; i < (endVerse ?? firstVerse ?? 1); i++) {
-          refs.push(`${startChapter}:${i}`);
-        }
-        if (match) refs.push(`${endChapter}:${match[3] || match[2]}`);
-      } else {
-        const endChap1 = (engVrs.get(book) ?? [])[
-          (startChapter ?? 1) - 1
-        ] as number;
-        for (let i = firstVerse; i <= endChap1; i++) {
-          refs.push(`${startChapter}:${i}`);
-        }
-        for (let i = 1; i < (endVerse ?? 1); i++) {
-          refs.push(`${endChapter}:${i}`);
-        }
-        if (match) refs.push(`${endChapter}:${match[4]}`);
-      }
-      return refs;
-    },
+    (value: string, book: string) => expandMarkVersesRefs(value, book, engVrs),
     [engVrs]
   );
 
