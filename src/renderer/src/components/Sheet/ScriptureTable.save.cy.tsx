@@ -115,7 +115,7 @@ const mountHarness = (
         <GlobalProvider init={globals}>
           <DataProvider dataStore={memory}>
             <UnsavedProvider>
-              <SheetSaveHarness mockMode={mockMode} {...props} />
+              <SheetSaveHarness {...props} />
             </UnsavedProvider>
           </DataProvider>
         </GlobalProvider>
@@ -130,7 +130,9 @@ const pasteLukeAndWaitForSave = () => {
     'have.length.at.least',
     1
   );
-  cy.get('#planSheetSave', { timeout: 10000 }).should('not.be.disabled').click();
+  cy.get('#planSheetSave', { timeout: 10000 })
+    .should('not.be.disabled')
+    .click();
 };
 
 describe('ScriptureTable save RED', () => {
@@ -142,10 +144,9 @@ describe('ScriptureTable save RED', () => {
   it('TT-7416: paste hierarchical save hangs with broken keyMap', () => {
     mountHarness('brokenKeyMap');
     pasteLukeAndWaitForSave();
-    cy.window().its('__APM_TEST__.remoteBusy', { timeout: 15000 }).should(
-      'eq',
-      true
-    );
+    cy.window()
+      .its('__APM_TEST__.remoteBusy', { timeout: 15000 })
+      .should('eq', true);
   });
 
   it('TT-6918: delete-all paste genesis save fails on removeRecord sync', () => {
@@ -155,10 +156,9 @@ describe('ScriptureTable save RED', () => {
     });
     cy.get('#sheetDeleteAll').click();
     pasteLukeAndWaitForSave();
-    cy.window().its('__APM_TEST__.remoteBusy', { timeout: 15000 }).should(
-      'eq',
-      true
-    );
+    cy.window()
+      .its('__APM_TEST__.remoteBusy', { timeout: 15000 })
+      .should('eq', true);
   });
 });
 
@@ -171,10 +171,9 @@ describe('ScriptureTable save GREEN', () => {
   it('TT-7416: paste hierarchical and save completes', () => {
     mountHarness('happyPath');
     pasteLukeAndWaitForSave();
-    cy.window().its('__APM_TEST__.remoteBusy', { timeout: 15000 }).should(
-      'eq',
-      false
-    );
+    cy.window()
+      .its('__APM_TEST__.remoteBusy', { timeout: 15000 })
+      .should('eq', false);
     cy.window().its('__APM_TEST__.changed').should('eq', false);
     cy.window().its('__APM_TEST__.progress').should('eq', 0);
     cy.get('[data-testid="sheet-row"]')
@@ -191,32 +190,35 @@ describe('ScriptureTable save GREEN', () => {
     cy.get('#sheetDeleteAll').click();
     pasteLukeAndWaitForSave();
     cy.get('#loadErrLogout').should('not.exist');
-    cy.window().its('__APM_TEST__.remoteBusy', { timeout: 15000 }).should(
-      'eq',
-      false
-    );
+    cy.window()
+      .its('__APM_TEST__.remoteBusy', { timeout: 15000 })
+      .should('eq', false);
   });
 
   it('TT-6919: slow save blocks navigation until complete', () => {
-    mountHarness('slowDataChanges', { preloadPopulated: false }, { delayMs: 800 });
+    mountHarness(
+      'slowDataChanges',
+      { preloadPopulated: false },
+      { delayMs: 800 }
+    );
     pasteLukeAndWaitForSave();
     cy.get('#testNavigateHome').click();
     cy.window().its('__navCalled').should('eq', false);
-    cy.window().its('__APM_TEST__.remoteBusy', { timeout: 15000 }).should(
-      'eq',
-      false
-    );
+    cy.window()
+      .its('__APM_TEST__.remoteBusy', { timeout: 15000 })
+      .should('eq', false);
     cy.window().its('__navCalled').should('eq', true);
   });
 
   it('TT-6919: reload after completed save shows no error splash', () => {
     mountHarness('happyPath', { preloadPopulated: true });
     cy.get('#sheetDeleteAll').click();
-    cy.get('#planSheetSave', { timeout: 10000 }).should('not.be.disabled').click();
-    cy.window().its('__APM_TEST__.remoteBusy', { timeout: 15000 }).should(
-      'eq',
-      false
-    );
+    cy.get('#planSheetSave', { timeout: 10000 })
+      .should('not.be.disabled')
+      .click();
+    cy.window()
+      .its('__APM_TEST__.remoteBusy', { timeout: 15000 })
+      .should('eq', false);
     cy.get('#loadErrLogout').should('not.exist');
   });
 });

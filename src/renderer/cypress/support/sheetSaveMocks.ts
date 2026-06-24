@@ -2,6 +2,7 @@
  * Controllable remote mock for Sections & Passages sheet save Cypress CT.
  * Modes mirror Jest sheetSaveTestHarness (TT-7416 / TT-6918 / TT-6919).
  */
+import { TransformOrOperations } from '@orbit/data';
 import Memory from '@orbit/memory';
 import {
   RecordKeyMap,
@@ -109,19 +110,38 @@ export function installSheetSaveRemoteMock(
       return queryFn(q);
     };
 
-  memory.update = async (transformFn: (t: RecordTransformBuilder) => unknown) => {
+  memory.update = (async (
+    transformOrOperations: TransformOrOperations<
+      RecordOperation,
+      RecordTransformBuilder
+    >
+  ) => {
       if (delayMs > 0) {
         await new Promise((resolve) => setTimeout(resolve, delayMs));
       }
-      const tb = new RecordTransformBuilder();
-      const result = transformFn(tb);
-      const op =
-        result &&
-        typeof result === 'object' &&
-        '_operation' in (result as object)
-          ? (result as { _operation: RecordOperation & { record?: InitializedRecord } })
-              ._operation
-          : undefined;
+      let op: (RecordOperation & { record?: InitializedRecord }) | undefined;
+      if (typeof transformOrOperations === 'function') {
+        const tb = new RecordTransformBuilder();
+        const result = transformOrOperations(tb);
+        op =
+          result &&
+          typeof result === 'object' &&
+          '_operation' in (result as object)
+            ? (
+                result as unknown as {
+                  _operation: RecordOperation & { record?: InitializedRecord };
+                }
+              )._operation
+            : undefined;
+      } else if (
+        transformOrOperations &&
+        typeof transformOrOperations === 'object' &&
+        'op' in transformOrOperations
+      ) {
+        op = transformOrOperations as RecordOperation & {
+          record?: InitializedRecord;
+        };
+      }
       if (!op || op.op !== 'addRecord' || !('record' in op)) return null;
       const spRecord = { ...op.record } as InitializedRecord;
       const inputRecs = JSON.parse(
@@ -161,7 +181,7 @@ export function installSheetSaveRemoteMock(
       }
 
       return spRecord;
-    };
+    }) as Memory['update'];
 
   memory.sync = async () => {
       if (mode === 'deleteSyncFails') {
