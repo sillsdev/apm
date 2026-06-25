@@ -1,5 +1,10 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
-import type { BibleD, OrganizationBibleD, OrganizationD, UserD } from '../model';
+import type {
+  BibleD,
+  OrganizationBibleD,
+  OrganizationD,
+  UserD,
+} from '../model';
 import { BurritoType } from './BurritoType';
 
 jest.mock('react-redux', () => ({
@@ -9,7 +14,10 @@ jest.mock('react-redux', () => ({
 }));
 
 jest.mock('../store', () => ({
-  fetchBooks: jest.fn((lang: string) => ({ type: 'FETCH_BOOKS', payload: lang })),
+  fetchBooks: jest.fn((lang: string) => ({
+    type: 'FETCH_BOOKS',
+    payload: lang,
+  })),
 }));
 
 jest.mock('../selector', () => ({
@@ -41,7 +49,13 @@ jest.mock('./data/burritoBuilder', () => ({
       format: 'burrito',
       meta: { version: '0.1', category: 'scripture' },
       ingredients: {},
-      type: { flavorType: { name: 'scripture', flavor: { name: 'base' }, currentScope: {} } },
+      type: {
+        flavorType: {
+          name: 'scripture',
+          flavor: { name: 'base' },
+          currentScope: {},
+        },
+      },
       identification: {},
     };
     withMeta(meta: any) {
@@ -94,23 +108,30 @@ jest.mock('./burritoFormatParams', () => ({
 }));
 
 jest.mock('./useBurritoAudio', () => ({
-  useBurritoAudio: jest.fn(() => jest.fn(async ({ metadata }: any) => metadata)),
+  useBurritoAudio: jest.fn(() =>
+    jest.fn(async ({ metadata }: any) => metadata)
+  ),
 }));
 jest.mock('./useBurritoText', () => ({
   useBurritoText: jest.fn(() => jest.fn(async ({ metadata }: any) => metadata)),
 }));
 jest.mock('./useBurritoNavigation', () => ({
-  useBurritoNavigation: jest.fn(() => jest.fn(async ({ metadata }: any) => metadata)),
+  useBurritoNavigation: jest.fn(() =>
+    jest.fn(async ({ metadata }: any) => metadata)
+  ),
 }));
 jest.mock('./useBurritoApmData', () => ({
-  useBurritoApmData: jest.fn(() => jest.fn(async ({ metadata }: any) => metadata)),
+  useBurritoApmData: jest.fn(() =>
+    jest.fn(async ({ metadata }: any) => metadata)
+  ),
 }));
 
 jest.mock('../crud', () => {
   const related = (rec: any, key: string) =>
-    rec?.relationships?.[key]?.data && !Array.isArray(rec.relationships[key].data)
+    rec?.relationships?.[key]?.data &&
+    !Array.isArray(rec.relationships[key].data)
       ? rec.relationships[key].data.id
-      : rec?.relationships?.[key]?.data ?? null;
+      : (rec?.relationships?.[key]?.data ?? null);
   return {
     pubDataCopyright: 'copyright',
     related,
@@ -142,7 +163,12 @@ function makeIpc() {
 type LoadOpts = {
   orgDefaults?: Record<string, any>;
   booksLoaded?: boolean;
-  bookData?: Array<{ code: string; abbr?: string; short?: string; long?: string }>;
+  bookData?: Array<{
+    code: string;
+    abbr?: string;
+    short?: string;
+    long?: string;
+  }>;
   orbit?: Partial<Record<string, unknown[]>>;
   /** Akuo book slot per project id for projDefBook resolution in tests */
   projBookById?: Record<string, string>;
@@ -158,8 +184,9 @@ function loadCreateBurrito(api: typeof window.api, opts: LoadOpts = {}) {
     strings: { lang: 'en' },
     books: {
       loaded: opts.booksLoaded ?? true,
-      bookData:
-        opts.bookData ?? [{ code: 'GEN', abbr: 'Gen', short: 'Genesis', long: 'Genesis' }],
+      bookData: opts.bookData ?? [
+        { code: 'GEN', abbr: 'Gen', short: 'Genesis', long: 'Genesis' },
+      ],
     },
     burritoStrings: {
       preparing: 'Preparing',
@@ -199,16 +226,20 @@ function loadCreateBurrito(api: typeof window.api, opts: LoadOpts = {}) {
   useNum2BookCode.mockReturnValue(
     opts.num2BookCodeImpl ??
       ((bookNum: number) =>
-        ({ 1: 'GEN', 4: 'NUM', 40: 'MAT', 43: 'JHN' } as Record<number, string | undefined>)[
-          bookNum
-        ])
+        (
+          ({ 1: 'GEN', 4: 'NUM', 40: 'MAT', 43: 'JHN' }) as Record<
+            number,
+            string | undefined
+          >
+        )[bookNum])
   );
 
   const { useProjectDefaults } = require('../crud/useProjectDefaults');
   useProjectDefaults.mockReturnValue({
     getProjectDefault: jest.fn((label: string, proj: any) => {
       if (label !== 'book') return undefined;
-      if (opts.projBookById && proj?.id) return opts.projBookById[proj.id] ?? 'A01';
+      if (opts.projBookById && proj?.id)
+        return opts.projBookById[proj.id] ?? 'A01';
       return 'A01';
     }),
   });
@@ -223,7 +254,11 @@ function loadCreateBurrito(api: typeof window.api, opts: LoadOpts = {}) {
 }
 
 function fixtures(teamId: string) {
-  const user: UserD = { id: 'user-1', type: 'user', attributes: { name: 'Tester' } } as any;
+  const user: UserD = {
+    id: 'user-1',
+    type: 'user',
+    attributes: { name: 'Tester' },
+  } as any;
   const team: OrganizationD = {
     id: teamId,
     type: 'organization',
@@ -233,7 +268,12 @@ function fixtures(teamId: string) {
   const bible: BibleD = {
     id: 'bib-1',
     type: 'bible',
-    attributes: { bibleName: 'Bible', bibleId: 'TST', iso: 'eng', description: '' },
+    attributes: {
+      bibleName: 'Bible',
+      bibleId: 'TST',
+      iso: 'eng',
+      description: '',
+    },
   } as any;
   const teamBible: OrganizationBibleD = {
     id: 'ob-1',
@@ -257,26 +297,29 @@ describe('useCreateBurrito', () => {
     const ipc = makeIpc();
     const { user, team, bible, teamBible } = fixtures(teamId);
 
-    const { renderHook, act, useCreateBurrito } = loadCreateBurrito(ipc as never, {
-      orgDefaults: {
-        burritoBooks: ['GEN'],
-        burritoContents: [BurritoType.Text],
-        burritoWrapper: { wrapper: true },
-        burritoProjects: [],
-        burritoFormat: { convertToMp3: false },
-        burritoRevision: '1',
-      },
-      orbit: {
-        user: [user],
-        organization: [team],
-        organizationbible: [teamBible],
-        bible: [bible],
-        project: [],
-        plan: [],
-        section: [],
-        passage: [],
-      },
-    });
+    const { renderHook, act, useCreateBurrito } = loadCreateBurrito(
+      ipc as never,
+      {
+        orgDefaults: {
+          burritoBooks: ['GEN'],
+          burritoContents: [BurritoType.Text],
+          burritoWrapper: { wrapper: true },
+          burritoProjects: [],
+          burritoFormat: { convertToMp3: false },
+          burritoRevision: '1',
+        },
+        orbit: {
+          user: [user],
+          organization: [team],
+          organizationbible: [teamBible],
+          bible: [bible],
+          project: [],
+          plan: [],
+          section: [],
+          passage: [],
+        },
+      }
+    );
 
     const { result } = renderHook(() => useCreateBurrito(teamId));
 
@@ -302,31 +345,36 @@ describe('useCreateBurrito', () => {
     let resolveText!: () => void;
     const textGate = new Promise<void>((r) => (resolveText = r));
     const { useBurritoText } = require('./useBurritoText');
-    useBurritoText.mockImplementation(() => jest.fn(async ({ metadata }: any) => {
-      await textGate;
-      return metadata;
-    }));
+    useBurritoText.mockImplementation(() =>
+      jest.fn(async ({ metadata }: any) => {
+        await textGate;
+        return metadata;
+      })
+    );
 
-    const { renderHook, act, useCreateBurrito } = loadCreateBurrito(ipc as never, {
-      orgDefaults: {
-        burritoBooks: ['GEN'],
-        burritoContents: [BurritoType.Text],
-        burritoWrapper: { wrapper: true },
-        burritoProjects: [],
-        burritoFormat: { convertToMp3: false },
-        burritoRevision: '1',
-      },
-      orbit: {
-        user: [user],
-        organization: [team],
-        organizationbible: [teamBible],
-        bible: [bible],
-        project: [],
-        plan: [],
-        section: [],
-        passage: [],
-      },
-    });
+    const { renderHook, act, useCreateBurrito } = loadCreateBurrito(
+      ipc as never,
+      {
+        orgDefaults: {
+          burritoBooks: ['GEN'],
+          burritoContents: [BurritoType.Text],
+          burritoWrapper: { wrapper: true },
+          burritoProjects: [],
+          burritoFormat: { convertToMp3: false },
+          burritoRevision: '1',
+        },
+        orbit: {
+          user: [user],
+          organization: [team],
+          organizationbible: [teamBible],
+          bible: [bible],
+          project: [],
+          plan: [],
+          section: [],
+          passage: [],
+        },
+      }
+    );
 
     const { result } = renderHook(() => useCreateBurrito(teamId));
 
@@ -344,13 +392,16 @@ describe('useCreateBurrito', () => {
 
   it('dispatches fetchBooks when books are not loaded', async () => {
     const ipc = makeIpc();
-    const { renderHook, act, useCreateBurrito, dispatch } = loadCreateBurrito(ipc as never, {
-      booksLoaded: false,
-      orgDefaults: {
-        burritoBooks: [],
-        burritoContents: [],
-      },
-    });
+    const { renderHook, act, useCreateBurrito, dispatch } = loadCreateBurrito(
+      ipc as never,
+      {
+        booksLoaded: false,
+        orgDefaults: {
+          burritoBooks: [],
+          burritoContents: [],
+        },
+      }
+    );
 
     renderHook(() => useCreateBurrito(teamId));
 
@@ -379,26 +430,29 @@ describe('useCreateBurrito', () => {
       relationships: { project: { data: { id: 'proj-1' } } },
     } as any;
 
-    const { renderHook, act, useCreateBurrito } = loadCreateBurrito(ipc as never, {
-      orgDefaults: {
-        burritoBooks: ['GEN'],
-        burritoContents: [BurritoType.Text],
-        burritoWrapper: { wrapper: true },
-        burritoProjects: ['proj-1'],
-        burritoFormat: { convertToMp3: false },
-        burritoRevision: '  2  ',
-      },
-      orbit: {
-        user: [user],
-        organization: [team],
-        organizationbible: [teamBible],
-        bible: [bible],
-        project: [project],
-        plan: [plan],
-        section: [],
-        passage: [],
-      },
-    });
+    const { renderHook, act, useCreateBurrito } = loadCreateBurrito(
+      ipc as never,
+      {
+        orgDefaults: {
+          burritoBooks: ['GEN'],
+          burritoContents: [BurritoType.Text],
+          burritoWrapper: { wrapper: true },
+          burritoProjects: ['proj-1'],
+          burritoFormat: { convertToMp3: false },
+          burritoRevision: '  2  ',
+        },
+        orbit: {
+          user: [user],
+          organization: [team],
+          organizationbible: [teamBible],
+          bible: [bible],
+          project: [project],
+          plan: [plan],
+          section: [],
+          passage: [],
+        },
+      }
+    );
 
     const { result } = renderHook(() => useCreateBurrito(teamId));
 
@@ -416,7 +470,9 @@ describe('useCreateBurrito', () => {
     expect(metadata.languages).toEqual([
       { tag: 'eng', name: { en: 'English' } },
     ]);
-    expect(metadata.identification?.primary?.apm?.['rem-1']?.revision).toBe('2');
+    expect(metadata.identification?.primary?.apm?.['rem-1']?.revision).toBe(
+      '2'
+    );
   });
 
   it('includes General project sections in Text export via projDefBook when passages have no book', async () => {
@@ -452,31 +508,34 @@ describe('useCreateBurrito', () => {
       attributes: { sequencenum: 1, reference: 'p1' },
     } as any;
 
-    const { renderHook, act, useCreateBurrito } = loadCreateBurrito(ipc as never, {
-      orgDefaults: {
-        burritoBooks: ['NUM'],
-        burritoContents: [BurritoType.Text],
-        burritoWrapper: { wrapper: true },
-        burritoProjects: ['proj-g'],
-        burritoFormat: { convertToMp3: false },
-        burritoRevision: '1',
-      },
-      bookData: [
-        { code: 'GEN', abbr: 'Gen', short: 'Genesis', long: 'Genesis' },
-        { code: 'NUM', abbr: 'Nu', short: 'Numbers', long: 'Numbers' },
-      ],
-      projBookById: { 'proj-g': 'A04' },
-      orbit: {
-        user: [user],
-        organization: [team],
-        organizationbible: [teamBible],
-        bible: [bible],
-        project: [generalProject],
-        plan: [generalPlan],
-        section: [generalSection],
-        passage: [generalPassage],
-      },
-    });
+    const { renderHook, act, useCreateBurrito } = loadCreateBurrito(
+      ipc as never,
+      {
+        orgDefaults: {
+          burritoBooks: ['NUM'],
+          burritoContents: [BurritoType.Text],
+          burritoWrapper: { wrapper: true },
+          burritoProjects: ['proj-g'],
+          burritoFormat: { convertToMp3: false },
+          burritoRevision: '1',
+        },
+        bookData: [
+          { code: 'GEN', abbr: 'Gen', short: 'Genesis', long: 'Genesis' },
+          { code: 'NUM', abbr: 'Nu', short: 'Numbers', long: 'Numbers' },
+        ],
+        projBookById: { 'proj-g': 'A04' },
+        orbit: {
+          user: [user],
+          organization: [team],
+          organizationbible: [teamBible],
+          bible: [bible],
+          project: [generalProject],
+          plan: [generalPlan],
+          section: [generalSection],
+          passage: [generalPassage],
+        },
+      }
+    );
 
     const { result } = renderHook(() => useCreateBurrito(teamId));
 
@@ -491,7 +550,9 @@ describe('useCreateBurrito', () => {
       (c: any[]) => c[0]?.book === 'NUM'
     );
     expect(textCall).toBeDefined();
-    expect(textCall[0].sections.map((s: { id: string }) => s.id)).toContain('sec-g');
+    expect(textCall[0].sections.map((s: { id: string }) => s.id)).toContain(
+      'sec-g'
+    );
   });
 
   it('includes General project sections when book default is a 3-digit general code', async () => {
@@ -527,31 +588,34 @@ describe('useCreateBurrito', () => {
       attributes: { sequencenum: 1, reference: 'p1' },
     } as any;
 
-    const { renderHook, act, useCreateBurrito } = loadCreateBurrito(ipc as never, {
-      orgDefaults: {
-        burritoBooks: ['010'],
-        burritoContents: [BurritoType.Text],
-        burritoWrapper: { wrapper: true },
-        burritoProjects: ['proj-g2'],
-        burritoFormat: { convertToMp3: false },
-        burritoRevision: '1',
-      },
-      bookData: [
-        { code: 'GEN', abbr: 'Gen', short: 'Genesis', long: 'Genesis' },
-        { code: 'NUM', abbr: 'Nu', short: 'Numbers', long: 'Numbers' },
-      ],
-      projBookById: { 'proj-g2': '010' },
-      orbit: {
-        user: [user],
-        organization: [team],
-        organizationbible: [teamBible],
-        bible: [bible],
-        project: [generalProject],
-        plan: [generalPlan],
-        section: [generalSection],
-        passage: [generalPassage],
-      },
-    });
+    const { renderHook, act, useCreateBurrito } = loadCreateBurrito(
+      ipc as never,
+      {
+        orgDefaults: {
+          burritoBooks: ['010'],
+          burritoContents: [BurritoType.Text],
+          burritoWrapper: { wrapper: true },
+          burritoProjects: ['proj-g2'],
+          burritoFormat: { convertToMp3: false },
+          burritoRevision: '1',
+        },
+        bookData: [
+          { code: 'GEN', abbr: 'Gen', short: 'Genesis', long: 'Genesis' },
+          { code: 'NUM', abbr: 'Nu', short: 'Numbers', long: 'Numbers' },
+        ],
+        projBookById: { 'proj-g2': '010' },
+        orbit: {
+          user: [user],
+          organization: [team],
+          organizationbible: [teamBible],
+          bible: [bible],
+          project: [generalProject],
+          plan: [generalPlan],
+          section: [generalSection],
+          passage: [generalPassage],
+        },
+      }
+    );
 
     const { result } = renderHook(() => useCreateBurrito(teamId));
 
@@ -570,4 +634,3 @@ describe('useCreateBurrito', () => {
     );
   });
 });
-

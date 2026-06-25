@@ -523,7 +523,9 @@ describe('PassageGraphic', () => {
         psgType: PassageTypeEnum.NOTE,
       });
 
-      cy.get('.MuiAvatar-root').find('img').should('have.attr', 'src', INLINE_TEST_SVG);
+      cy.get('.MuiAvatar-root')
+        .find('img')
+        .should('have.attr', 'src', INLINE_TEST_SVG);
       cy.get('.MuiAvatar-root').should('not.contain.text');
 
       // Update to remove graphicUri

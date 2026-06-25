@@ -283,7 +283,10 @@ describe('ProvideRightsMobile', () => {
           <GlobalProvider init={createInitialState(memory, globalOverrides)}>
             <OrbitContext.Provider value={orbitContextValue}>
               <UnsavedContext.Provider
-                value={{ state: unsavedState as any, setState: cy.stub() as any }}
+                value={{
+                  state: unsavedState as any,
+                  setState: cy.stub() as any,
+                }}
               >
                 <HotKeyContext.Provider
                   value={{
@@ -296,7 +299,10 @@ describe('ProvideRightsMobile', () => {
                   }}
                 >
                   <PassageDetailContext.Provider
-                    value={{ state: ctxState as any, setState: cy.stub() as any }}
+                    value={{
+                      state: ctxState as any,
+                      setState: cy.stub() as any,
+                    }}
                   >
                     <ProvideRightsMobile {...defaults} {...componentProps} />
                   </PassageDetailContext.Provider>

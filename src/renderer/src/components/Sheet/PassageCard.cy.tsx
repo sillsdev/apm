@@ -308,10 +308,14 @@ describe('PassageCard', () => {
       },
     });
 
-    mountPassageCard(cardInfo, {
-      handleViewStep: mockHandleViewStep,
-      isPlaying: false,
-    }, { scripture: false });
+    mountPassageCard(
+      cardInfo,
+      {
+        handleViewStep: mockHandleViewStep,
+        isPlaying: false,
+      },
+      { scripture: false }
+    );
 
     // Should show only reference, not book name
     cy.contains('5:3').should('be.visible');
@@ -342,10 +346,14 @@ describe('PassageCard', () => {
       },
     });
 
-    mountPassageCard(cardInfo, {
-      handleViewStep: mockHandleViewStep,
-      isPlaying: false,
-    }, { scripture: false });
+    mountPassageCard(
+      cardInfo,
+      {
+        handleViewStep: mockHandleViewStep,
+        isPlaying: false,
+      },
+      { scripture: false }
+    );
 
     // Should render the card
     cy.get('div[class*="MuiCard-root"]').should('be.visible');

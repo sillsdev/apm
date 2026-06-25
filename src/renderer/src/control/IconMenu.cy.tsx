@@ -12,7 +12,11 @@ describe('IconMenu', () => {
 
     cy.get('button[aria-haspopup="true"]').should('be.visible').click();
     cy.get('#icon-menu').should('be.visible');
-    cy.get('button[aria-haspopup="true"]').should('have.attr', 'aria-expanded', 'true');
+    cy.get('button[aria-haspopup="true"]').should(
+      'have.attr',
+      'aria-expanded',
+      'true'
+    );
 
     cy.get('[data-cy="menu-item"]').click();
     cy.get('#icon-menu').should('not.exist');
@@ -31,4 +35,3 @@ describe('IconMenu', () => {
     cy.get('#icon-menu').should('not.exist');
   });
 });
-

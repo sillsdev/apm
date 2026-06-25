@@ -18,6 +18,3 @@ export const useAdminTeams = () => {
   );
   return teams;
 };
-
-
-

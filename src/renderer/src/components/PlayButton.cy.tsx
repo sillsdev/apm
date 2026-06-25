@@ -20,8 +20,7 @@ describe('PlayButton', () => {
     // implementations to avoid crashes in CT.
     keyMap: {
       idToKey: (_table: string, _attr: string, localId: string) => localId,
-      keyToId: (_table: string, _attr: string, remoteId: string) =>
-        remoteId,
+      keyToId: (_table: string, _attr: string, remoteId: string) => remoteId,
     },
   } as unknown as Memory;
 

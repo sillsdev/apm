@@ -155,7 +155,8 @@ describe('VoiceStatement', () => {
     cy.get('@setStatement').should((stub) => {
       const spy = stub as unknown as sinon.SinonSpy;
       const calledWithJane = spy.args.some(
-        (args) => typeof args?.[0] === 'string' && args[0].includes('Jane Tester')
+        (args) =>
+          typeof args?.[0] === 'string' && args[0].includes('Jane Tester')
       );
       expect(calledWithJane).to.eq(true);
     });

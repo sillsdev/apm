@@ -296,7 +296,10 @@ describe('BurritoBooks', () => {
               <UnsavedProvider>
                 <TokenContext.Provider value={mockTokenContextValue as never}>
                   <Routes>
-                    <Route path="/burrito/:teamId/books" element={<BurritoBooks />} />
+                    <Route
+                      path="/burrito/:teamId/books"
+                      element={<BurritoBooks />}
+                    />
                   </Routes>
                 </TokenContext.Provider>
               </UnsavedProvider>

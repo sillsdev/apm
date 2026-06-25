@@ -26,9 +26,10 @@ function browserInfo(): UnknownRecord {
 export function getAudioDiagnosticsContext(): UnknownRecord {
   const userAgent =
     typeof navigator === 'undefined' ? '' : navigator.userAgent || '';
-  const mobileUserAgent = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobi/i.test(
-    userAgent
-  );
+  const mobileUserAgent =
+    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobi/i.test(
+      userAgent
+    );
   const touchCapable =
     typeof navigator !== 'undefined' && (navigator.maxTouchPoints ?? 0) > 1;
   const isElectron =

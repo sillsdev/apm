@@ -449,9 +449,7 @@ export function GraphicImageFilter({
                             chapter: nextBook
                               ? scriptureRefChecked.chapter
                               : false,
-                            verse: nextBook
-                              ? scriptureRefChecked.verse
-                              : false,
+                            verse: nextBook ? scriptureRefChecked.verse : false,
                           });
                         }}
                         dense
@@ -475,9 +473,7 @@ export function GraphicImageFilter({
                           const nextChapter = !scriptureRefChecked.chapter;
                           onScriptureRefCheckedChange({
                             // If chapter is checked, ensure book is also checked.
-                            book: nextChapter
-                              ? true
-                              : scriptureRefChecked.book,
+                            book: nextChapter ? true : scriptureRefChecked.book,
                             chapter: nextChapter,
                             // When chapter is unchecked, also uncheck verse.
                             verse: nextChapter
@@ -527,9 +523,7 @@ export function GraphicImageFilter({
                             disableRipple
                           />
                         </ListItemIcon>
-                        <ListItemText
-                          primary={scriptureReference.verseRange}
-                        />
+                        <ListItemText primary={scriptureReference.verseRange} />
                       </ListItemButton>
                     </ListItem>
                   </List>

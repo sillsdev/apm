@@ -120,16 +120,21 @@ async function chaptersFromScriptureFilesForBook(
   bookId: string
 ): Promise<string[]> {
   const chapters = new Set<string>();
-  for (const [relPath, ing] of Object.entries(
-    metadata.ingredients ?? {}
-  ) as [string, BurritoIngredient][]) {
+  for (const [relPath, ing] of Object.entries(metadata.ingredients ?? {}) as [
+    string,
+    BurritoIngredient,
+  ][]) {
     if (!ing?.scope?.[bookId]?.length) {
       continue;
     }
     if (!isScriptureTextIngredient(relPath, ing)) {
       continue;
     }
-    const absPath = resolvePathUnderRoot(wrapperPath, burritoRelFolder, relPath);
+    const absPath = resolvePathUnderRoot(
+      wrapperPath,
+      burritoRelFolder,
+      relPath
+    );
     if (!absPath || !(await ipc.exists(absPath))) {
       continue;
     }

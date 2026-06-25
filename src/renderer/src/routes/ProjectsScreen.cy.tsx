@@ -442,7 +442,8 @@ describe('ProjectsScreen', () => {
 
     cy.wait(200).then(() => {
       cy.window().then((win) => {
-        expect(win.localStorage.getItem(localUserKey(LocalKey.team))).to.be.null;
+        expect(win.localStorage.getItem(localUserKey(LocalKey.team))).to.be
+          .null;
         expect(win.localStorage.getItem(LocalKey.plan)).to.be.null;
       });
     });

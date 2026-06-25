@@ -295,7 +295,10 @@ describe('useBurritoText', () => {
 
   it('with empty sections only updates flavor name', async () => {
     const ipc = makeIpc();
-    const { renderHook, act, useBurritoText } = loadTextForApi(ipc as never, {});
+    const { renderHook, act, useBurritoText } = loadTextForApi(
+      ipc as never,
+      {}
+    );
 
     const { result } = renderHook(() => useBurritoText(teamId));
     const metadata = burritoFixture();

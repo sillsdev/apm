@@ -6,7 +6,8 @@ jest.mock('path-browserify', () => {
   };
   return {
     __esModule: true,
-    default: actual.default ?? (actual as unknown as typeof import('path-browserify')),
+    default:
+      actual.default ?? (actual as unknown as typeof import('path-browserify')),
   };
 });
 
@@ -17,8 +18,7 @@ describe('parseBurritoMetadata', () => {
 
   describe('extractLabel', () => {
     it('should extract label for specified language', async () => {
-      const { extractLabel } =
-        await import('../parseBurritoMetadata');
+      const { extractLabel } = await import('../parseBurritoMetadata');
       const labels: LocalizedString = {
         en: 'English Name',
         es: 'Nombre Español',
@@ -27,8 +27,7 @@ describe('parseBurritoMetadata', () => {
     });
 
     it('should fallback to first value if language not found', async () => {
-      const { extractLabel } =
-        await import('../parseBurritoMetadata');
+      const { extractLabel } = await import('../parseBurritoMetadata');
       const labels: LocalizedString = {
         en: 'English Name',
         fr: 'Nom Français',
@@ -37,8 +36,7 @@ describe('parseBurritoMetadata', () => {
     });
 
     it('should remove "Burrito Wrapper" suffix', async () => {
-      const { extractLabel } =
-        await import('../parseBurritoMetadata');
+      const { extractLabel } = await import('../parseBurritoMetadata');
       const labels: LocalizedString = {
         en: 'Test Project Burrito Wrapper',
       };
@@ -46,8 +44,7 @@ describe('parseBurritoMetadata', () => {
     });
 
     it('should throw error for empty labels', async () => {
-      const { extractLabel } =
-        await import('../parseBurritoMetadata');
+      const { extractLabel } = await import('../parseBurritoMetadata');
       const labels: LocalizedString = {};
       expect(() => extractLabel(labels, 'en')).toThrow(
         'Unable to resolve label'
@@ -55,8 +52,7 @@ describe('parseBurritoMetadata', () => {
     });
 
     it('should trim whitespace', async () => {
-      const { extractLabel } =
-        await import('../parseBurritoMetadata');
+      const { extractLabel } = await import('../parseBurritoMetadata');
       const labels: LocalizedString = {
         en: '  Test Project  ',
       };
@@ -64,8 +60,7 @@ describe('parseBurritoMetadata', () => {
     });
 
     it('should handle case insensitive removal of Burrito Wrapper', async () => {
-      const { extractLabel } =
-        await import('../parseBurritoMetadata');
+      const { extractLabel } = await import('../parseBurritoMetadata');
       const labels: LocalizedString = {
         en: 'Test Project BURRITO WRAPPER',
       };
@@ -76,7 +71,9 @@ describe('parseBurritoMetadata', () => {
   describe('buildStructure', () => {
     const setMockIpc = (files: Record<string, string>) => {
       (window as any).api = {
-        exists: jest.fn(async (p: string) => Object.prototype.hasOwnProperty.call(files, p)),
+        exists: jest.fn(async (p: string) =>
+          Object.prototype.hasOwnProperty.call(files, p)
+        ),
         read: jest.fn(async (p: string) => {
           if (!Object.prototype.hasOwnProperty.call(files, p)) {
             throw new Error(`ENOENT: ${p}`);
@@ -98,7 +95,13 @@ describe('parseBurritoMetadata', () => {
       setMockIpc({
         [wrapperJsonPath]: JSON.stringify({
           meta: { name: { en: 'Test Project Burrito Wrapper' } },
-          contents: { burritos: [{ path: 'apmdata' }, { path: 'audio' }, { path: 'text' }] },
+          contents: {
+            burritos: [
+              { path: 'apmdata' },
+              { path: 'audio' },
+              { path: 'text' },
+            ],
+          },
         }),
         [audioMetaPath]: JSON.stringify({
           type: { flavorType: { flavor: { name: 'audioTranslation' } } },
@@ -155,8 +158,7 @@ describe('parseBurritoMetadata', () => {
         }),
       });
 
-      const { buildStructure } =
-        await import('../parseBurritoMetadata');
+      const { buildStructure } = await import('../parseBurritoMetadata');
 
       const result = await buildStructure(wrapperRoot, 'en');
       expect(result.books).toHaveLength(0);
@@ -170,8 +172,7 @@ describe('parseBurritoMetadata', () => {
         [`${wrapperRoot}/wrapper.json`]: '{not valid json',
       });
 
-      const { buildStructure } =
-        await import('../parseBurritoMetadata');
+      const { buildStructure } = await import('../parseBurritoMetadata');
 
       await expect(buildStructure(wrapperRoot, 'en')).rejects.toThrow(
         /Invalid Scripture Burrito for import:/

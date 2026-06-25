@@ -77,10 +77,7 @@ export default function DiscussionPanel() {
 
   const panelWidth = isMobile
     ? Math.min(discussionSize.width, windowWidth)
-    : Math.min(
-        discussionSize.width,
-        Math.max(0, windowWidth - scrollbarWidth)
-      );
+    : Math.min(discussionSize.width, Math.max(0, windowWidth - scrollbarWidth));
   const getDiscussionCount = useDiscussionCount({
     mediafiles,
     discussions,

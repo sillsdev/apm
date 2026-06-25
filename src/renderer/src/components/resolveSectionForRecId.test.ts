@@ -26,15 +26,15 @@ const data = [
 
 describe('resolveSectionForRecId', () => {
   it('resolves a section row by recId', () => {
-    expect(
-      resolveSectionForRecId('sec-1', data, [section1], [passage1])
-    ).toBe(section1);
+    expect(resolveSectionForRecId('sec-1', data, [section1], [passage1])).toBe(
+      section1
+    );
   });
 
   it('resolves a passage row to its parent section', () => {
-    expect(
-      resolveSectionForRecId('pas-1', data, [section1], [passage1])
-    ).toBe(section1);
+    expect(resolveSectionForRecId('pas-1', data, [section1], [passage1])).toBe(
+      section1
+    );
   });
 
   it('returns undefined for unknown recId', () => {

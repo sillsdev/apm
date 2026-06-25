@@ -520,10 +520,9 @@ test('autosaves segment markup after debounce when only soft validation warnings
     }
   });
 
-  await waitFor(
-    () => expect(mockProjectSegmentSave).toHaveBeenCalled(),
-    { timeout: 3000 }
-  );
+  await waitFor(() => expect(mockProjectSegmentSave).toHaveBeenCalled(), {
+    timeout: 3000,
+  });
   expect(mockShowMessage).not.toHaveBeenCalledWith(
     expect.anything(),
     AlertSeverity.Warning

@@ -32,4 +32,3 @@ export async function readItfEmbeddedProject(
     name: first?.attributes?.name?.trim() ?? '',
   };
 }
-

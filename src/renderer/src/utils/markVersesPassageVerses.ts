@@ -255,7 +255,9 @@ export const normalizeEditReferenceDraft = <T extends EditReferenceComparable>(
 };
 
 /** Apply save-path normalization (strip suffixes when split is off). */
-export const normalizeEditReferenceForSave = <T extends EditReferenceComparable>(
+export const normalizeEditReferenceForSave = <
+  T extends EditReferenceComparable,
+>(
   value: T
 ): T =>
   value.splitVerse ? value : { ...value, startSuffix: '', endSuffix: '' };

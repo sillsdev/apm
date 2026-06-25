@@ -485,9 +485,7 @@ export const Sources = async (
     await remote.activated;
     console.log(`Activated remote for user: ${tokData.sub}`);
     let uRecs = (await remote.query((q) =>
-      q
-        .findRecords('user')
-        .filter({ attribute: 'auth0Id', value: tokData.sub })
+      q.findRecords('user').filter({ attribute: 'auth0Id', value: tokData.sub })
     )) as UserD[];
     console.log(`has user rec: ${tokData.sub}`);
     if (!Array.isArray(uRecs)) uRecs = [uRecs];

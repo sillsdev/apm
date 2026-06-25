@@ -33,7 +33,9 @@ const USER_ID = 'test-user-id';
 const BIBLE_ID = 'bib-1';
 const ORG_BIBLE_ID = 'org-bib-1';
 
-const createWrapperDataset = (teamOrgDefaults?: string): Record<string, MockRec[]> => ({
+const createWrapperDataset = (
+  teamOrgDefaults?: string
+): Record<string, MockRec[]> => ({
   user: [
     {
       id: USER_ID,
@@ -299,7 +301,9 @@ describe('BurritoWrapper', () => {
     cy.contains('Test Bible Burrito Wrapper', { timeout: 10000 }).should(
       'be.visible'
     );
-    cy.contains('button', 'Refresh').should('be.visible').and('not.be.disabled');
+    cy.contains('button', 'Refresh')
+      .should('be.visible')
+      .and('not.be.disabled');
     cy.contains('button', 'Save').should('be.visible').and('not.be.disabled');
   });
 

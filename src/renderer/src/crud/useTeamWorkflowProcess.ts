@@ -8,9 +8,8 @@ import { useOrbitData } from '../hoc/useOrbitData';
 export const BOLD_WORKFLOW_PROCESS = 'bold';
 
 /** True when the team's workflow process is BOLD. */
-export const isBoldTeamWorkflow = (
-  process: string | undefined
-): boolean => process === BOLD_WORKFLOW_PROCESS;
+export const isBoldTeamWorkflow = (process: string | undefined): boolean =>
+  process === BOLD_WORKFLOW_PROCESS;
 
 /**
  * Returns the `process` value from the first org workflow step for a team,

@@ -181,7 +181,9 @@ describe('findPlanSheetRowFromReferenceQuery', () => {
     expect(
       findPlanSheetRowFromReferenceQuery('2:5', rowInfo, { ...defaultOpts })
     ).toEqual({ ok: true, rowIndex: 0 });
-    expect(findPlanSheetRowFromReferenceQuery('2:21', rowInfo, { ...defaultOpts })).toEqual({
+    expect(
+      findPlanSheetRowFromReferenceQuery('2:21', rowInfo, { ...defaultOpts })
+    ).toEqual({
       ok: false,
       error: 'not_found',
     });

@@ -101,7 +101,11 @@ describe('MetaValue', () => {
       .type('New description');
     cy.contains('button', 'Confirm').click();
 
-    cy.wrap(onConfirm).should('have.been.calledWith', 'meta|description|en', 'New description');
+    cy.wrap(onConfirm).should(
+      'have.been.calledWith',
+      'meta|description|en',
+      'New description'
+    );
     cy.wrap(onOpen).should('have.been.calledWith', false);
   });
 

@@ -28,7 +28,9 @@ export const AUDIO_CONTENT_TYPE_TO_EXTENSION: Record<string, string> = {
 };
 
 /** Maps `audio/…` MIME (strips `;codecs=` etc.) to a burrito file extension, or undefined if unknown. */
-export function extensionFromAudioContentType(mime: string): string | undefined {
+export function extensionFromAudioContentType(
+  mime: string
+): string | undefined {
   const base = (mime ?? '').split(';')[0].trim().toLowerCase();
   return AUDIO_CONTENT_TYPE_TO_EXTENSION[base];
 }

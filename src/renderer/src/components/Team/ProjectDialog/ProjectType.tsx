@@ -4,10 +4,7 @@ import { Options } from '.';
 import { shallowEqual, useSelector } from 'react-redux';
 import { vProjectSelector } from '../../../selector';
 import { IVProjectStrings } from '../../../model';
-import {
-  BOLD_WORKFLOW_PROCESS,
-  useTeamWorkflowProcess,
-} from '../../../crud';
+import { BOLD_WORKFLOW_PROCESS, useTeamWorkflowProcess } from '../../../crud';
 
 interface IProps {
   type: string;

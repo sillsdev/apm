@@ -6,6 +6,7 @@
   "editor.detectIndentation": false,
   "editor.tabSize": 2,
   "editor.formatOnSave": true,
+  "prettier.configPath": ".prettierrc.yaml",
   "editor.defaultFormatter": "esbenp.prettier-vscode",
   "[typescript]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"

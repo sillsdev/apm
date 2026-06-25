@@ -66,7 +66,10 @@ export function MarkDownView({ value, wrapOverflow = false }: MarkDownProps) {
   );
 }
 
-export function CompactMarkDownView({ value, wrapOverflow = false }: MarkDownProps) {
+export function CompactMarkDownView({
+  value,
+  wrapOverflow = false,
+}: MarkDownProps) {
   // adapted from https://stackoverflow.com/questions/31749625/make-a-link-from-electron-open-in-browser (zrbecker's)
   const handleClick = (event: any) => {
     if (event.target.tagName.toLowerCase() === 'a') {

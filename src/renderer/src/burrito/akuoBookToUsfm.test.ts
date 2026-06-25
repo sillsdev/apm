@@ -5,7 +5,7 @@ import {
 
 describe('akuoBookToUsfm', () => {
   const num2 = (bookNum: number) =>
-    ({ 1: 'GEN', 4: 'NUM', 40: 'MAT', 43: 'JHN' } as Record<number, string>)[
+    (({ 1: 'GEN', 4: 'NUM', 40: 'MAT', 43: 'JHN' }) as Record<number, string>)[
       bookNum
     ];
 
@@ -32,7 +32,7 @@ describe('akuoBookToUsfm', () => {
 
 describe('projectDefaultToBurritoBookKey', () => {
   const num2 = (bookNum: number) =>
-    ({ 1: 'GEN', 4: 'NUM', 40: 'MAT', 43: 'JHN' } as Record<number, string>)[
+    (({ 1: 'GEN', 4: 'NUM', 40: 'MAT', 43: 'JHN' }) as Record<number, string>)[
       bookNum
     ];
 
@@ -47,7 +47,9 @@ describe('projectDefaultToBurritoBookKey', () => {
   });
 
   it('returns undefined for unrecognized non-Akuo strings', () => {
-    expect(projectDefaultToBurritoBookKey('not-a-book-code', num2)).toBeUndefined();
+    expect(
+      projectDefaultToBurritoBookKey('not-a-book-code', num2)
+    ).toBeUndefined();
     expect(projectDefaultToBurritoBookKey('12', num2)).toBeUndefined();
   });
 });

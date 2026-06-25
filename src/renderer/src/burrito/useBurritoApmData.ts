@@ -55,9 +55,6 @@ export const useBurritoApmData = (memory: Memory) => {
         size: content.length,
         ...(bookCode ? { scope: { [bookCode]: [] } } : {}),
       };
-
-
-
     }
 
     metadata.ingredients = { ...metadata.ingredients, ...ingredients };

@@ -27,7 +27,9 @@ describe('resolvePathUnderRoot', () => {
   it('returns null when traversal escapes root', () => {
     expect(resolvePathUnderRoot(root, '..', 'outside')).toBeNull();
     expect(resolvePathUnderRoot(root, 'text', '..', '..', 'etc')).toBeNull();
-    expect(resolvePathUnderRoot(root, 'a', 'b', '..', '..', '..', 'escape')).toBeNull();
+    expect(
+      resolvePathUnderRoot(root, 'a', 'b', '..', '..', '..', 'escape')
+    ).toBeNull();
   });
 
   it('returns null for empty root', () => {
@@ -52,6 +54,8 @@ describe('resolvePathUnderRoot', () => {
     const winRoot = 'D:\\burritos\\import';
     const r = resolvePathUnderRoot(winRoot, 'audio', 'metadata.json');
     expect(r).not.toBeNull();
-    expect(r).toBe(path.normalize(path.join(winRoot, 'audio', 'metadata.json')));
+    expect(r).toBe(
+      path.normalize(path.join(winRoot, 'audio', 'metadata.json'))
+    );
   });
 });

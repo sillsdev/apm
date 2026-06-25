@@ -35,7 +35,9 @@ const TEAM_ID = 'team-one';
 const USER_ID = 'test-user-id';
 
 /** Minimal records: TeamProvider + ProfileDialog; BurritoContents has no project/plan queries. */
-const createContentsDataset = (teamOrgDefaults?: string): Record<string, MockRec[]> => ({
+const createContentsDataset = (
+  teamOrgDefaults?: string
+): Record<string, MockRec[]> => ({
   user: [
     {
       id: USER_ID,
@@ -279,17 +281,15 @@ describe('BurritoContents', () => {
     const defaults = JSON.stringify({
       [burritoContentsOrgKey]: [BurritoType.Audio, BurritoType.Text],
     });
-    const memory = createBurritoMockMemory(
-      createContentsDataset(defaults)
-    );
+    const memory = createBurritoMockMemory(createContentsDataset(defaults));
     mountBurritoContents(createInitialState(memory));
 
-    cy.get(`input[aria-labelledby="checkbox-list-label-${BurritoType.Audio}"]`).should(
-      'be.checked'
-    );
-    cy.get(`input[aria-labelledby="checkbox-list-label-${BurritoType.Text}"]`).should(
-      'be.checked'
-    );
+    cy.get(
+      `input[aria-labelledby="checkbox-list-label-${BurritoType.Audio}"]`
+    ).should('be.checked');
+    cy.get(
+      `input[aria-labelledby="checkbox-list-label-${BurritoType.Text}"]`
+    ).should('be.checked');
     cy.contains('button', 'Save').should('not.be.disabled');
   });
 

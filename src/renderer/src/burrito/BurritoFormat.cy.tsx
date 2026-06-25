@@ -31,7 +31,9 @@ type MockRec = {
 const TEAM_ID = 'team-one';
 const USER_ID = 'test-user-id';
 
-const createFormatDataset = (teamOrgDefaults?: string): Record<string, MockRec[]> => ({
+const createFormatDataset = (
+  teamOrgDefaults?: string
+): Record<string, MockRec[]> => ({
   user: [
     {
       id: USER_ID,

@@ -10,7 +10,7 @@
     "test:ci": "CI=true jest --verbose --maxWorkers=1 --no-cache",
     "test:migration-usj": "cd ../.. && node --test migration/usj-structure.test.mjs",
     "test:coverage": "npm run test --watchAll=false --collectCoverageFrom=src/**/*.ts* --coverage",
-    "format": "prettier --ignore-path .gitignore --write \"**/*.+(js|json|css|md|mdx|html)\"",
+    "format": "prettier --config ../../.prettierrc.yaml --ignore-path ../../.prettierignore --write \"**/*.{js,ts,tsx,json,css,md,mdx,html}\"",
     "lint": "eslint . --cache-location node_modules/.cache/eslint --fix",
     "typecheck": "tsc --noEmit",
     "validate": "npm-run-all --parallel format lint typecheck build",
@@ -89,22 +89,6 @@
     "usfm-grammar-web": "^3.2.0",
     "wavesurfer.js": "^7.10.1",
     "xpath": "^0.0.34"
-  },
-  "prettier": {
-    "trailingComma": "es5",
-    "singleQuote": true,
-    "endOfLine": "lf",
-    "overrides": [
-      {
-        "files": [
-          ".prettierrc",
-          ".eslintrc"
-        ],
-        "options": {
-          "parser": "json"
-        }
-      }
-    ]
   },
   "eslintConfig": {
     "extends": [

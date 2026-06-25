@@ -20,7 +20,11 @@ describe('VertListDnd', () => {
       <VertListDnd dragHandle dragHandleRegion="top-half">
         <div>Alpha</div>
         <div>
-          <button type="button" data-cy="item-action" onClick={() => onAction()}>
+          <button
+            type="button"
+            data-cy="item-action"
+            onClick={() => onAction()}
+          >
             Tap me
           </button>
         </div>
@@ -37,7 +41,11 @@ describe('VertListDnd', () => {
       <VertListDnd dragHandle dragHandleRegion="full">
         <div>Alpha</div>
         <div>
-          <button type="button" data-cy="item-action-full" onClick={() => onAction()}>
+          <button
+            type="button"
+            data-cy="item-action-full"
+            onClick={() => onAction()}
+          >
             Tap me
           </button>
         </div>

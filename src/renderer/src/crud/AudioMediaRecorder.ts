@@ -85,10 +85,7 @@ export function createAudioMediaRecorder(
                 : undefined;
             logAudioDiagnostic('media-recorder-fallback-chunk', {
               chunk: getBlobDiagnostics(event.data, elapsedSeconds),
-              accumulated: getBlobDiagnostics(
-                accumulatedBlob,
-                elapsedSeconds
-              ),
+              accumulated: getBlobDiagnostics(accumulatedBlob, elapsedSeconds),
               chunkCount: recordedChunks.length,
               mediaRecorder: {
                 mimeType: mediaRecorder?.mimeType,

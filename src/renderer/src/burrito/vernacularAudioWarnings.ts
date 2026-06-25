@@ -39,16 +39,22 @@ export function firstMissingTranscriptionRefsForVernacularAudio({
       .sort((a, b) => a.attributes.sequencenum - b.attributes.sequencenum);
 
     for (const p of passageRecs) {
-      if (passageTypeFromRef(p.attributes.reference, false) !== PassageTypeEnum.PASSAGE)
+      if (
+        passageTypeFromRef(p.attributes.reference, false) !==
+        PassageTypeEnum.PASSAGE
+      )
         continue;
 
       const media = planMedia.filter((m) => related(m, 'passage') === p.id);
       const vernMedia = media
         .filter(
           (m) =>
-            related(m, 'artifactType') === VernacularTag || !related(m, 'artifactType')
+            related(m, 'artifactType') === VernacularTag ||
+            !related(m, 'artifactType')
         )
-        .sort((a, b) => b.attributes.versionNumber - a.attributes.versionNumber);
+        .sort(
+          (a, b) => b.attributes.versionNumber - a.attributes.versionNumber
+        );
 
       const take = Math.min(Math.max(versions, 0), vernMedia.length);
       if (take === 0) continue;
@@ -70,4 +76,3 @@ export function firstMissingTranscriptionRefsForVernacularAudio({
 
   return out;
 }
-

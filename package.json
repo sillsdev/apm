@@ -7,7 +7,7 @@
   "scripts": {
     "clean": "rimraf dist out src/renderer/dist src/renderer/coverage",
     "stamp": "node env-config/writeDate.cjs",
-    "format": "prettier --write .",
+    "format": "prettier --config .prettierrc.yaml --write .",
     "lint": "eslint --cache .",
     "typecheck:node": "tsc --noEmit -p tsconfig.node.json --composite false",
     "typecheck:web": "tsc --noEmit -p tsconfig.web.json --composite false",
@@ -92,22 +92,6 @@
     "wavesurfer.js": "^7.10.1",
     "xml-js": "^1.6.11",
     "xpath": "^0.0.34"
-  },
-  "prettier": {
-    "trailingComma": "es5",
-    "singleQuote": true,
-    "endOfLine": "lf",
-    "overrides": [
-      {
-        "files": [
-          ".prettierrc",
-          ".eslintrc"
-        ],
-        "options": {
-          "parser": "json"
-        }
-      }
-    ]
   },
   "eslintConfig": {
     "extends": [

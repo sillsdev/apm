@@ -57,7 +57,11 @@ describe('WrapTitle', () => {
       .and('have.css', 'overflow', 'visible');
 
     cy.get('[data-cy="wrap-title"]').click();
-    cy.get('[data-cy="wrap-title"]').should('have.css', 'white-space', 'nowrap');
+    cy.get('[data-cy="wrap-title"]').should(
+      'have.css',
+      'white-space',
+      'nowrap'
+    );
   });
 
   it('stops propagation when toggling expand/collapse', () => {
@@ -83,9 +87,12 @@ describe('WrapTitle', () => {
       onParentClick,
     });
 
-    cy.get('[data-cy="wrap-title"]').should('have.css', 'white-space', 'nowrap');
+    cy.get('[data-cy="wrap-title"]').should(
+      'have.css',
+      'white-space',
+      'nowrap'
+    );
     cy.get('[data-cy="wrap-title"]').click();
     cy.wrap(onParentClick).should('have.been.calledOnce');
   });
 });
-

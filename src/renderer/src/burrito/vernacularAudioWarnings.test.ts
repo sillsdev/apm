@@ -137,4 +137,3 @@ describe('firstMissingTranscriptionRefsForVernacularAudio', () => {
     expect(refs[9]).toBe('GEN 1:10');
   });
 });
-

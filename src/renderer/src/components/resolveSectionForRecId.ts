@@ -17,7 +17,10 @@ export function resolveSectionForRecId(
   if (row.parentId === '') return sections.find((s) => s.id === recId);
   const parentId =
     row.parentId ||
-    related(passages.find((p) => p.id === recId), 'section');
+    related(
+      passages.find((p) => p.id === recId),
+      'section'
+    );
   return sections.find((s) => s.id === parentId);
 }
 

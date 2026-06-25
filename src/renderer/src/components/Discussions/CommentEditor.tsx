@@ -244,8 +244,7 @@ export const CommentEditor = (props: IProps) => {
     </Box>
   );
 
-  const actionButtons =
-    onOk &&
+  const actionButtons = onOk &&
     (!cancelOnlyIfChanged || doRecordRef.current || myChanged) && (
       <Box
         sx={{

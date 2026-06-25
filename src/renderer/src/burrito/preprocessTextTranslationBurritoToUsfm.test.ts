@@ -129,7 +129,10 @@ describe('preprocessTextTranslationBurritoToUsfm', () => {
       [`${wrapperDir}/text/ingredients/GEN.usj`, '{}'],
     ]);
     (ipc as any).exists = async (p: string) =>
-      p.startsWith(`${wrapperDir}/`) && (files.has(p) || p.endsWith('metadata.json') || p.endsWith('wrapper.json'));
+      p.startsWith(`${wrapperDir}/`) &&
+      (files.has(p) ||
+        p.endsWith('metadata.json') ||
+        p.endsWith('wrapper.json'));
 
     await preprocessTextTranslationBurritoToUsfm(wrapperDir, ipc as any);
 

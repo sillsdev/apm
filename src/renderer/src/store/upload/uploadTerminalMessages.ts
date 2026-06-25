@@ -13,7 +13,10 @@ export function formatUploadTerminalFailureMessage(
   lines.push(t.pendingUploadQueuedHint.replace('{0}', t.pendingUploadMenu));
   if (!info.cloudRowDeleted && info.failedRemoteMediaId !== undefined) {
     lines.push(
-      t.pendingUploadDeleteFailed.replace('{0}', String(info.failedRemoteMediaId))
+      t.pendingUploadDeleteFailed.replace(
+        '{0}',
+        String(info.failedRemoteMediaId)
+      )
     );
   }
   return lines.join('\n');

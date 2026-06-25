@@ -201,7 +201,9 @@ const PassageDetailGrids = () => {
                 </Box>
                 <Box
                   id={
-                    showsBoldDesktopStepComplete(tool) ? 'stepcomplete' : undefined
+                    showsBoldDesktopStepComplete(tool)
+                      ? 'stepcomplete'
+                      : undefined
                   }
                   sx={{
                     minWidth: 0,

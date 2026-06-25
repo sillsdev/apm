@@ -236,9 +236,7 @@ export interface IExportScripturePath extends IExportCommon, IExportScripture {}
 export interface IExportArtifacts extends IExportCommon, IExportFilter {}
 
 export interface IBurritoMeta
-  extends IExportCommon,
-    IExportScripture,
-    IExportFilter {
+  extends IExportCommon, IExportScripture, IExportFilter {
   userId: string;
 }
 

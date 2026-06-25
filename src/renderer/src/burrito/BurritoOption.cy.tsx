@@ -65,8 +65,12 @@ describe('BurritoOption', () => {
     cy.get('[id^="checkbox-list-label-"]')
       .eq(0)
       .should('contain.text', 'Apple');
-    cy.get('[id^="checkbox-list-label-"]').eq(1).should('contain.text', 'Mango');
-    cy.get('[id^="checkbox-list-label-"]').eq(2).should('contain.text', 'Zebra');
+    cy.get('[id^="checkbox-list-label-"]')
+      .eq(1)
+      .should('contain.text', 'Mango');
+    cy.get('[id^="checkbox-list-label-"]')
+      .eq(2)
+      .should('contain.text', 'Zebra');
   });
 
   it('shows Select All when nothing is checked', () => {

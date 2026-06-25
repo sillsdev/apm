@@ -12,8 +12,7 @@ export const refMatch = (ref: string): RegExpExecArray | null => {
   } else if (arg3) {
     // Same verse, letter-suffix range (e.g. 1:22a-b = verse 22, parts a through b).
     const sameVerseLetterEnd =
-      /^[a-e]$/i.test(arg3) &&
-      /^(\d+)([a-e])$/i.exec(verseStart || '');
+      /^[a-e]$/i.test(arg3) && /^(\d+)([a-e])$/i.exec(verseStart || '');
     if (sameVerseLetterEnd) {
       const [, , startLetter] = sameVerseLetterEnd;
       const endLetter = arg3.toLowerCase();

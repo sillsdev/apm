@@ -527,10 +527,7 @@ describe('SwitchTeamsGuard', () => {
   };
 
   it('shows picker when offline and not offlineOnly (empty teams is not reliable PAP)', () => {
-    mountGuard(
-      { offline: true, offlineOnly: false },
-      papLikeTeamState
-    );
+    mountGuard({ offline: true, offlineOnly: false }, papLikeTeamState);
     cy.get('#TeamsScreen').should('exist');
   });
 
@@ -540,10 +537,7 @@ describe('SwitchTeamsGuard', () => {
   });
 
   it('redirects when offlineOnly and PAP-like', () => {
-    mountGuard(
-      { offline: true, offlineOnly: true },
-      papLikeTeamState
-    );
+    mountGuard({ offline: true, offlineOnly: true }, papLikeTeamState);
     cy.get('#TeamsScreen').should('not.exist');
   });
 });

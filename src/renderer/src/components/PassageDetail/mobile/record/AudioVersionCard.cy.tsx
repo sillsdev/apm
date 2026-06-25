@@ -37,7 +37,9 @@ const createMockQueryBuilder = (recordsByType: RecordsByType) => ({
     };
   },
   findRecord: (identity: { type: string; id: string }) =>
-    (recordsByType[identity.type] ?? []).find((rec) => (rec as { id: string }).id === identity.id),
+    (recordsByType[identity.type] ?? []).find(
+      (rec) => (rec as { id: string }).id === identity.id
+    ),
 });
 
 const createMockMemory = (recordsByType: RecordsByType): Memory =>

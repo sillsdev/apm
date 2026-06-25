@@ -969,7 +969,11 @@ describe('OrgHead', () => {
     const projectData = [project1, project2];
 
     mountOrgHead(
-      createInitialState({ offline: true, connected: false }, orgData, projectData),
+      createInitialState(
+        { offline: true, connected: false },
+        orgData,
+        projectData
+      ),
       ['/team'],
       orgId,
       orgData,
@@ -1051,10 +1055,7 @@ describe('OrgHead', () => {
   it('should not show team settings menu when mobile view is on at desktop width but offline', () => {
     cy.viewport(1024, 768);
     cy.window().then((win) => {
-      win.localStorage.setItem(
-        localUserKey(LocalKey.mobileView),
-        'true'
-      );
+      win.localStorage.setItem(localUserKey(LocalKey.mobileView), 'true');
     });
     const orgId = 'test-org-id';
     const orgName = 'Test Organization';

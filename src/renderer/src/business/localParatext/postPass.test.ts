@@ -334,12 +334,8 @@ describe('postPass', () => {
 
     // Assert: v7 and v11 paragraphs remain, v8-10 grouped in one new paragraph
     const result = mockChapDom.documentElement?.toString();
-    expect(result).toContain(
-      '<verse number="7" style="v"/>V7</para>'
-    );
-    expect(result).toContain(
-      '<verse number="11" style="v"/>V11</para>'
-    );
+    expect(result).toContain('<verse number="7" style="v"/>V7</para>');
+    expect(result).toContain('<verse number="11" style="v"/>V11</para>');
     expect(result).toContain(
       '<verse number="8" style="v"/>new8<verse number="9" style="v"/>new9<verse number="10" style="v"/>new10</para>'
     );

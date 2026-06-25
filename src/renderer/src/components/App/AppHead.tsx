@@ -3,11 +3,7 @@ import { useGetGlobal, useGlobal } from '../../context/useGlobal';
 import { useLocation } from 'react-router-dom';
 import { IState, IViewModeStrings } from '../../model';
 import { shallowEqual, useSelector } from 'react-redux';
-import {
-  AppBar,
-  LinearProgress,
-  Box,
-} from '@mui/material';
+import { AppBar, LinearProgress, Box } from '@mui/material';
 import { isElectron } from '../../../api-variable';
 import { TokenContext } from '../../context/TokenProvider';
 import { UnsavedContext } from '../../context/UnsavedContext';
