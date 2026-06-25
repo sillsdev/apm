@@ -69,6 +69,10 @@ export default function MobileWorkflowSteps() {
   const didMountRef = useRef(false);
   const stepRefs = useRef(new Map<string, HTMLElement>());
 
+  // Refs to the label text, used to size every parallelogram to the longest one
+  const labelRefs = useRef(new Map<string, HTMLElement>());
+  const [stepWidth, setStepWidth] = useState(80);
+
   // Ordered list of passages in the current section, excluding publishing-title rows, sorted by sequence number
   const sectionPassages = useMemo<PassageD[]>(() => {
     const passRecIds = related(section, 'passages');
@@ -140,6 +144,7 @@ export default function MobileWorkflowSteps() {
     ? workflow.map((s) => ({
         id: s.id,
         dataCy: 'workflow-step',
+        label: getWfLabel(s.label),
         isCurrent: s.id === currentstep,
         isComplete: stepComplete(s.id),
         onClick: handleSelect(s.id),
@@ -147,6 +152,7 @@ export default function MobileWorkflowSteps() {
     : sectionPassages.map((p) => ({
         id: p.id,
         dataCy: 'passage-step',
+        label: passageRef(p),
         isCurrent: p.id === passage?.id,
         isComplete:
           (p.attributes.sequencenum ?? 0) <
@@ -175,6 +181,20 @@ export default function MobileWorkflowSteps() {
     sectionPassages.length,
     isStepProgression,
   ]);
+
+  // Measure the widest label and size every parallelogram to match it
+  const labelsKey = steps.map((s) => s.label).join('|');
+  useEffect(() => {
+    let max = 0;
+    labelRefs.current.forEach((el) => {
+      max = Math.max(max, el.scrollWidth);
+    });
+    if (max > 0) {
+      // Account for the 10% slanted edges (text sits at mid-height, so ~90%
+      // of the width is usable) plus the horizontal padding, with a small buffer
+      setStepWidth(Math.ceil(max / 0.9) + 16);
+    }
+  }, [labelsKey]);
 
   return (
     <Box
@@ -331,15 +351,35 @@ export default function MobileWorkflowSteps() {
                 }}
                 onClick={step.onClick}
                 sx={{
-                  flex: '0 0 80px',
+                  flex: `0 0 ${stepWidth}px`,
                   height: 30,
                   bgcolor: color,
                   mr: -0.25,
                   clipPath: 'polygon(10% 0%, 100% 0%, 90% 100%, 0% 100%)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  // Inset the text past the slanted edges so it doesn't get clipped
+                  px: 1,
                   cursor:
                     recording || commentRecording ? 'not-allowed' : 'pointer',
                 }}
-              />
+              >
+                <Typography
+                  noWrap
+                  ref={(el: HTMLElement | null) => {
+                    if (el) labelRefs.current.set(step.id, el);
+                    else labelRefs.current.delete(step.id);
+                  }}
+                  sx={{
+                    fontSize: '0.7rem',
+                    lineHeight: 1,
+                    color: step.isCurrent ? '#fff' : '#333',
+                  }}
+                >
+                  {step.label}
+                </Typography>
+              </Box>
             );
           })}
         </Box>
