@@ -2,12 +2,82 @@
 // Used for devices without AudioWorklet support (e.g., iOS Safari)
 // or when recording directly to compressed formats
 
+import { decodeAudioData } from '../utils/decodeAudioData';
+import { audioBufferToWavBlob } from '../utils/audioBufferToWavBlob';
 import { APMRecorder } from './useWavRecorder';
 import {
   getAudioTrackDiagnostics,
   getBlobDiagnostics,
   logAudioDiagnostic,
 } from './audioDiagnostics';
+
+function concatenateAudioBuffers(
+  audioContext: AudioContext,
+  buffers: AudioBuffer[]
+): AudioBuffer {
+  const sampleRate = buffers[0].sampleRate;
+  const channels = buffers[0].numberOfChannels;
+  const totalLength = buffers.reduce((sum, buffer) => sum + buffer.length, 0);
+  const merged = audioContext.createBuffer(channels, totalLength, sampleRate);
+  let offset = 0;
+  for (const buffer of buffers) {
+    for (let ch = 0; ch < channels; ch++) {
+      const sourceCh = Math.min(ch, buffer.numberOfChannels - 1);
+      merged.getChannelData(ch).set(buffer.getChannelData(sourceCh), offset);
+    }
+    offset += buffer.length;
+  }
+  return merged;
+}
+
+async function decodeRecordedChunks(
+  audioContext: AudioContext,
+  recordedChunks: Blob[],
+  mimeType: string
+): Promise<AudioBuffer | null> {
+  if (recordedChunks.length === 0) return null;
+
+  // Multiple standalone WAV fragments decode as one short buffer when concatenated
+  // (first RIFF only). Skip the accumulated attempt so per-chunk merge runs.
+  const skipAccumulatedDecode =
+    recordedChunks.length > 1 &&
+    recordedChunks.every((chunk) => chunk.type.includes('wav'));
+
+  if (!skipAccumulatedDecode) {
+    try {
+      return await decodeAudioData(
+        audioContext,
+        await new Blob(recordedChunks, { type: mimeType }).arrayBuffer()
+      );
+    } catch {
+      // Accumulated container blobs are often undecodable (e.g. concatenated WAV).
+    }
+  }
+
+  const decodedChunks: AudioBuffer[] = [];
+  for (const chunk of recordedChunks) {
+    try {
+      decodedChunks.push(
+        await decodeAudioData(audioContext, await chunk.arrayBuffer())
+      );
+    } catch {
+      // Skip chunks that do not decode on their own.
+    }
+  }
+  if (decodedChunks.length === 0) return null;
+
+  const isCumulative =
+    decodedChunks.length > 1 &&
+    decodedChunks.some(
+      (buffer, index) =>
+        index > 0 && buffer.length > decodedChunks[index - 1].length
+    );
+  if (isCumulative) {
+    return decodedChunks[decodedChunks.length - 1];
+  }
+
+  return concatenateAudioBuffers(audioContext, decodedChunks);
+}
 
 export function createAudioMediaRecorder(
   stream: MediaStream,
@@ -20,6 +90,38 @@ export function createAudioMediaRecorder(
   let isRecording = false;
   let recordedChunks: Blob[] = [];
   let recordingStartedAt = 0;
+  let previewEmitInFlight = false;
+  let previewNeedsRetry = false;
+
+  const decodeAccumulatedOrLatest = async (): Promise<AudioBuffer | null> => {
+    const mimeType = mediaRecorder?.mimeType || 'audio/webm';
+    return decodeRecordedChunks(audioContext, recordedChunks, mimeType);
+  };
+
+  const emitDecodablePreview = async () => {
+    if (previewEmitInFlight) {
+      previewNeedsRetry = true;
+      return;
+    }
+    previewEmitInFlight = true;
+    try {
+      if (!isRecording || recordedChunks.length === 0) return;
+      const decoded = await decodeAccumulatedOrLatest();
+      if (!decoded || !isRecording) return;
+      const previewBlob = await audioBufferToWavBlob(decoded);
+      if (previewBlob.size > 0) {
+        onDataAvailable(previewBlob);
+      }
+    } catch (error) {
+      console.error('AudioMediaRecorder preview decode failed:', error);
+    } finally {
+      previewEmitInFlight = false;
+      if (previewNeedsRetry && isRecording) {
+        previewNeedsRetry = false;
+        void emitDecodablePreview();
+      }
+    }
+  };
 
   return {
     async initializeWorklet(): Promise<void> {
@@ -45,6 +147,7 @@ export function createAudioMediaRecorder(
 
       isRecording = true;
       recordedChunks = [];
+      previewNeedsRetry = false;
 
       try {
         mediaRecorder = new MediaRecorder(mediaStream);
@@ -70,22 +173,17 @@ export function createAudioMediaRecorder(
           tracks: getAudioTrackDiagnostics(mediaStream),
         });
 
-        // Collect chunks as they become available. We must emit the accumulated blob
-        // (not just event.data) because individual MediaRecorder chunks from container
-        // formats (webm/mp4) after the first are not independently decodable — only
-        // the first chunk carries the container header. WaveSurfer needs a complete,
-        // decodable blob for preview. WavRecorder (raw PCM) uses a true delta path.
+        // Collect chunks as they become available. Container-format chunks are
+        // merged for decode; preview/stop emit decodable WAV (TT-7276 / TT-7384).
         mediaRecorder.ondataavailable = (event) => {
           if (event.data && event.data.size > 0) {
             recordedChunks.push(event.data);
-            const accumulatedBlob = new Blob(recordedChunks);
             const elapsedSeconds =
               recordingStartedAt > 0
                 ? (performance.now() - recordingStartedAt) / 1000
                 : undefined;
             logAudioDiagnostic('media-recorder-fallback-chunk', {
               chunk: getBlobDiagnostics(event.data, elapsedSeconds),
-              accumulated: getBlobDiagnostics(accumulatedBlob, elapsedSeconds),
               chunkCount: recordedChunks.length,
               mediaRecorder: {
                 mimeType: mediaRecorder?.mimeType,
@@ -93,7 +191,7 @@ export function createAudioMediaRecorder(
                 state: mediaRecorder?.state,
               },
             });
-            onDataAvailable(accumulatedBlob);
+            void emitDecodablePreview();
           }
         };
 
@@ -115,8 +213,6 @@ export function createAudioMediaRecorder(
         return new Blob([]);
       }
 
-      isRecording = false;
-
       return new Promise((resolve, reject) => {
         if (!mediaRecorder) {
           reject(new Error('AudioMediaRecorder not initialized'));
@@ -136,11 +232,15 @@ export function createAudioMediaRecorder(
             stopTimeout = null;
           }
 
+          isRecording = false;
+
           try {
+            if (audioContext.state === 'suspended') {
+              await audioContext.resume();
+            }
             // Wait a bit to ensure all chunks are collected
             await new Promise((r) => setTimeout(r, 100));
 
-            // Combine all recorded chunks
             if (recordedChunks.length === 0) {
               console.error(
                 'No chunks recorded - MediaRecorder state was:',
@@ -150,13 +250,21 @@ export function createAudioMediaRecorder(
               return;
             }
 
-            // Combine all recorded chunks
-            const finalBlob = new Blob(recordedChunks);
             const durationSeconds =
               recordingStartedAt > 0
                 ? (performance.now() - recordingStartedAt) / 1000
                 : undefined;
-            // Verify the blob has data
+
+            let finalBlob: Blob;
+            const decoded = await decodeAccumulatedOrLatest();
+            if (decoded) {
+              finalBlob = await audioBufferToWavBlob(decoded);
+            } else {
+              finalBlob = new Blob(recordedChunks, {
+                type: mediaRecorder?.mimeType || 'audio/webm',
+              });
+            }
+
             if (finalBlob.size === 0) {
               console.error(
                 'Blob is empty! Chunks:',

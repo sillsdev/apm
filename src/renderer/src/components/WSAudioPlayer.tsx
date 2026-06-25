@@ -1186,7 +1186,7 @@ function WSAudioPlayer(props: IProps) {
         );
       }
       recordOverwritePosition.current = undefined;
-      void handleChanged();
+      await handleChanged();
     } finally {
       recordPreviewSuppressedRef.current = false;
       setProcessingRecording(false);

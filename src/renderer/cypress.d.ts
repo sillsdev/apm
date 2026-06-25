@@ -1,9 +1,21 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { MountOptions, MountReturn } from 'cypress/react';
+import type { InstallRecordingMocksOptions } from './cypress/support/recordingMocks';
+import type { RecordingMockHelpers } from './cypress/support/recordingMocks';
 
 export {};
 declare global {
   namespace Cypress {
+    interface SuiteConfigOverrides {
+      /** @see @cypress/grep */
+      tags?: string | string[];
+    }
+
+    interface TestConfigOverrides {
+      /** @see @cypress/grep */
+      tags?: string | string[];
+    }
+
     interface Chainable {
       /** Yields elements with a data-cy attribute that matches a specified selector.
        * ```
@@ -30,6 +42,11 @@ declare global {
         component: React.ReactNode,
         options?: MountOptions
       ): Cypress.Chainable<MountReturn>;
+
+      /** Install getUserMedia / recording browser mocks before mounting MediaRecord. */
+      installRecordingMocks(
+        options?: InstallRecordingMocksOptions
+      ): Chainable<RecordingMockHelpers>;
     }
   }
 }

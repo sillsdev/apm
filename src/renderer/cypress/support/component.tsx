@@ -36,10 +36,18 @@ if (typeof globalThis !== 'undefined') {
 }
 
 import './commands';
+import { installRecordingMocks } from './recordingMocks';
 
 import { mount } from 'cypress/react';
 
 Cypress.Commands.add('mount', mount);
+
+Cypress.Commands.add(
+  'installRecordingMocks',
+  (options?: Parameters<typeof installRecordingMocks>[1]) => {
+    return cy.window().then(async (win) => installRecordingMocks(win, options));
+  }
+);
 
 // Set up import.meta.env for Vite environment variables
 try {
