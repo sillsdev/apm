@@ -434,24 +434,16 @@ describe('OrgHead', () => {
 
   it('should render product name fallback when organization does not exist', () => {
     mountOrgHead(createInitialState(), ['/team']);
-    // When on team screen and orgRec is undefined, cleanOrgName returns empty string
-    // So the Typography will render but may be empty. Check that the element exists.
-    cy.get('h6, [variant="h6"]').should('exist');
-    // The text will be empty when orgRec doesn't exist on team screen
-    cy.get('h6, [variant="h6"]')
-      .contains('Audio Project Manager')
-      .should('be.visible');
+    // When on team screen and orgRec is undefined, cleanOrgName returns empty
+    // string, so the header Typography falls back to the product name.
+    cy.contains('Audio Project Manager').should('be.visible');
   });
 
   it('should render product name fallback when orgId is not set', () => {
     mountOrgHead(createInitialState(), ['/team'], undefined);
-    // When on team screen and orgId is not set, orgRec will be undefined
-    // So cleanOrgName returns empty string. Check that the element exists.
-    cy.get('h6, [variant="h6"]').should('exist');
-    // The text will be empty when orgId is not set on team screen
-    cy.get('h6, [variant="h6"]')
-      .contains('Audio Project Manager')
-      .should('be.visible');
+    // When on team screen and orgId is not set, orgRec will be undefined, so the
+    // header Typography falls back to the product name.
+    cy.contains('Audio Project Manager').should('be.visible');
   });
 
   it('should show settings and members buttons when on team screen and user is admin', () => {
@@ -608,28 +600,20 @@ describe('OrgHead', () => {
     // Set viewport to mobile size (below 'sm' breakpoint which is 600px)
     cy.viewport(400, 800);
 
-    // Mock window.innerWidth to ensure it matches the viewport when component renders
-    // The component calculates maxWidth as window.innerWidth - 5 * 50
-    cy.window().then((win) => {
-      Object.defineProperty(win, 'innerWidth', {
-        get: () => 400,
-        configurable: true,
-      });
+    const orgId = 'test-org-id';
+    const orgName = 'Test Organization';
+    const orgData = createMockOrganization(orgId, orgName);
 
-      const orgId = 'test-org-id';
-      const orgName = 'Test Organization';
-      const orgData = createMockOrganization(orgId, orgName);
+    mountOrgHead(createInitialState(), ['/team'], orgId, orgData);
 
-      mountOrgHead(createInitialState(), ['/team'], orgId, orgData);
-    });
-
-    // The component should render (mobile width affects maxWidth CSS)
+    // The header Typography truncates with an ellipsis via flexbox (noWrap +
+    // minWidth: 0) rather than a hardcoded maxWidth, so it stays constrained
+    // even on a narrow viewport.
     cy.contains('Test Organization').should('be.visible');
-    // Verify the Typography has mobile width constraint
-    // maxWidth = window.innerWidth - 5 * 50 = 400 - 250 = 150px
     cy.contains('Test Organization')
-      .should('have.css', 'max-width')
-      .and('match', /150px|9.375rem/);
+      .should('have.css', 'white-space', 'nowrap')
+      .and('have.css', 'text-overflow', 'ellipsis')
+      .and('have.css', 'min-width', '0px');
   });
 
   it('should use desktop width styling when not on mobile device', () => {
@@ -642,12 +626,12 @@ describe('OrgHead', () => {
 
     mountOrgHead(createInitialState(), ['/team'], orgId, orgData);
 
-    // The component should render
+    // Same flexbox truncation styling applies on desktop width.
     cy.contains(orgName).should('be.visible');
-    // Verify the Typography has desktop width constraint (maxWidth: 800px on desktop)
     cy.contains(orgName)
-      .should('have.css', 'max-width')
-      .and('match', /800px|50rem/);
+      .should('have.css', 'white-space', 'nowrap')
+      .and('have.css', 'text-overflow', 'ellipsis')
+      .and('have.css', 'min-width', '0px');
   });
 
   it('should display product name instead of organization name when on switch-teams route', () => {
@@ -674,7 +658,8 @@ describe('OrgHead', () => {
     mountOrgHead(createInitialState(), ['/team'], orgId, orgDataWithPrefix);
 
     // The displayed name should not start with >
-    cy.get('h6, [variant="h6"]')
+    cy.get('p')
+      .first()
       .should('be.visible')
       .then(($el) => {
         const displayedText = $el.text();
@@ -689,7 +674,8 @@ describe('OrgHead', () => {
     mountOrgHead(createInitialState(), ['/team'], orgId, orgDataWithSuffix);
 
     // The displayed name should not end with <
-    cy.get('h6, [variant="h6"]')
+    cy.get('p')
+      .first()
       .should('be.visible')
       .then(($el) => {
         const displayedText = $el.text();
@@ -702,7 +688,8 @@ describe('OrgHead', () => {
     mountOrgHead(createInitialState(), ['/team'], orgId, orgDataWithBoth);
 
     // The displayed name should not start with > or end with <
-    cy.get('h6, [variant="h6"]')
+    cy.get('p')
+      .first()
       .should('be.visible')
       .then(($el) => {
         const displayedText = $el.text();
@@ -977,7 +964,11 @@ describe('OrgHead', () => {
     const projectData = [project1, project2];
 
     mountOrgHead(
-      createInitialState({ offline: true, connected: false }, orgData, projectData),
+      createInitialState(
+        { offline: true, connected: false },
+        orgData,
+        projectData
+      ),
       ['/team'],
       orgId,
       orgData,
@@ -1059,10 +1050,7 @@ describe('OrgHead', () => {
   it('should not show team settings menu when mobile view is on at desktop width but offline', () => {
     cy.viewport(1024, 768);
     cy.window().then((win) => {
-      win.localStorage.setItem(
-        localUserKey(LocalKey.mobileView),
-        'true'
-      );
+      win.localStorage.setItem(localUserKey(LocalKey.mobileView), 'true');
     });
     const orgId = 'test-org-id';
     const orgName = 'Test Organization';
