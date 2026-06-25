@@ -32,6 +32,7 @@ import {
   currentDateTime,
 } from '../../utils';
 import { usePassageType } from '../../crud/usePassageType';
+import { syncSectionPassageKeyMap } from './syncSectionPassageKeyMap';
 
 interface SaveRec {
   id: string;
@@ -169,6 +170,8 @@ export const useWfOnlineSave = (props: IProps) => {
       if (rec) {
         setComplete(50);
 
+        syncSectionPassageKeyMap(memory, rec as InitializedRecord);
+
         await waitForRemoteId(
           rec as InitializedRecord,
           memory?.keyMap as RecordKeyMap
@@ -199,15 +202,22 @@ export const useWfOnlineSave = (props: IProps) => {
                 ) as string,
               };
             if (isPassageRow(row) && isPassageAdding(row)) {
-              row.passage = findRecord(
+              const passageRemoteId = (
+                outrecs[index][isSectionRow(row) ? 1 : 0] as SaveRec
+              ).id;
+              const passageLocalId = remoteIdGuid(
+                'passage',
+                passageRemoteId,
+                memory?.keyMap as RecordKeyMap
+              ) as string;
+              row.passage = (findRecord(
                 memory,
                 'passage',
-                remoteIdGuid(
-                  'passage',
-                  (outrecs[index][isSectionRow(row) ? 1 : 0] as SaveRec).id,
-                  memory?.keyMap as RecordKeyMap
-                ) as string
-              ) as PassageD;
+                passageLocalId
+              ) ?? {
+                type: 'passage',
+                id: passageLocalId,
+              }) as PassageD;
             }
           });
         }
