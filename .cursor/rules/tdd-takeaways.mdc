@@ -1,0 +1,91 @@
+---
+description: TDD red/green workflow takeaways from recording bug work (TT-7276 / TT-7384)
+alwaysApply: true
+---
+
+# TDD Takeaways
+
+Lessons from designing failing tests first, fixing production, and proving red/green
+(MediaRecord recording — TT-7276 / TT-7384).
+
+## Write tests that fail for the real bug, not a proxy
+
+- **False green:** asserting only `#rec-save` visible / `setCanSave(true)` passed on
+  unfixed code because Save enabled with ~1s of decodable preview audio while the
+  timer showed the full take under `cy.clock()`.
+- **Discriminating assertion:** after pause, require **waveform-backed duration**
+  (`#wsAudioDuration`) to match ticks recorded, not just the recording timer.
+  Parse `m:ss` and assert `>= minSeconds` (e.g. 3 ticks → `>= 2`, 95 ticks → `>= 90`).
+- If both fixed and unfixed code fail the same way, the test is broken — debug the
+  harness before blaming production.
+
+## Repro the production path in CT
+
+- Use **real components** (`MediaRecord` → `WSAudioPlayer` → `useWaveSurfer`); do not
+  stub the player for integration regressions.
+- Patch **browser APIs on `window`** (`getUserMedia`, optional `MediaRecorder`,
+  `AudioWorklet`) via `cypress/support/recordingMocks.ts` — avoid ESM module stubs.
+- Force the **MediaRecorder fallback** (`forceMediaRecorderFallback: true`) when the
+  bug lives in `AudioMediaRecorder`, not AudioWorklet.
+- `MockMediaRecorder`: emit **one-second WAV fragments** per timeslice so concatenated
+  chunks reproduce the decode/merge failure. Use `Date.now()` for elapsed slices
+  (advances with `cy.tick`, unlike `performance.now()` under `cy.clock()`).
+- Mock `stop()` must **flush pending chunks before** setting `state = 'inactive'`
+  (`emitPreviewChunk` checks `state === 'recording'`).
+
+## `cy.clock()` + async recording
+
+- `beforeEach(() => cy.clock())` for deterministic preview ticks.
+- After click Record, `cy.tick(100)` to flush async `recorder.start()`.
+- On pause, `cy.tick(200)` for `AudioMediaRecorder.stop()`'s 100ms chunk wait.
+- `assertSaveReady()` may `cy.tick(500)` to flush post-stop UI updates.
+
+## Slice tests smallest → full scenario
+
+1. Tracer: short record → pause → Save + duration.
+2. Long record (~95 ticks) — TT-7384.
+3. Duration advances during record — TT-7276.
+4. Overdub second take — TT-7276 scenario 2.
+
+Commit **tests-only** first when possible; production fix in a separate commit.
+
+## Prove red/green before calling it done
+
+From `src/renderer`:
+
+```powershell
+# Green — tests + production fix
+npm run cy:run-ct -- --spec=**/MediaRecord.recording.cy.tsx --browser chrome
+
+# Red — same tests, baseline production (from repo root)
+git checkout <base> -- src/renderer/src/crud/AudioMediaRecorder.ts `
+  src/renderer/src/components/WSAudioPlayer.tsx `
+  src/renderer/src/crud/useWaveSurfer.tsx
+cd src/renderer
+npm run cy:run-ct -- --spec=**/MediaRecord.recording.cy.tsx --browser chrome
+git checkout -- src/renderer/src/crud/AudioMediaRecorder.ts `
+  src/renderer/src/components/WSAudioPlayer.tsx `
+  src/renderer/src/crud/useWaveSurfer.tsx
+```
+
+Expect **fail without fix** (duration stuck at `0:01`) and **pass with fix**.
+
+## Production patterns the tests caught
+
+- **Decode trap:** `decodeAudioData` on concatenated WAV fragments can **succeed** but
+  return only the first RIFF (~1s). Skip accumulated decode when chunks are multiple
+  `audio/wav`; merge per-chunk instead.
+- **Async stop:** `await handleChanged()` in `onRecordStop`, not `void handleChanged()`.
+- **Load races:** bump a load generation on `wsStopRecord` so in-flight preview loads
+  cannot overwrite the final stop take in `useWaveSurfer`.
+- **Unit backstop:** `AudioMediaRecorder.test.ts` for preview/stop blob shape; CT for
+  the full UI path.
+
+## When tests pass without the fix
+
+Check in order:
+
+1. Assertion too weak (Save vs waveform duration).
+2. Mock does not reproduce production chunk shape (native vs mock `MediaRecorder`).
+3. Harness bug (mock `stop()` order, frozen timers, missing `cy.tick` after async stop).
+4. Production accidentally fixed by test-only changes — revert production files and re-run red.

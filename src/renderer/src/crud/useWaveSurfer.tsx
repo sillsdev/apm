@@ -14,7 +14,8 @@ import {
   parseRegions,
   useWaveSurferRegions,
 } from './useWavesurferRegions';
-import { convertToWav } from '../utils/wav';
+import { decodeAudioData } from '../utils/decodeAudioData';
+import { audioBufferToWavBlob } from '../utils/audioBufferToWavBlob';
 import { useGlobal } from '../context/useGlobal';
 import { maxZoom } from '../components/WSAudioPlayerZoom';
 import WaveSurfer from 'wavesurfer.js';
@@ -85,6 +86,10 @@ export function useWaveSurfer(
   const blobAudioRef = useRef<AudioBuffer | undefined>(undefined);
   const positionRef = useRef<number | undefined>(undefined);
   const loadingRef = useRef(false);
+  /** Bumped on wsStopRecord so in-flight preview loads cannot overwrite the final take. */
+  const loadGenerationRef = useRef(0);
+  /** Generation of the blobAudioRef commit in the current/last loadBlob. */
+  const loadBlobGenerationRef = useRef(0);
   const recordingRef = useRef(false);
   const currentBlobUrlRef = useRef<string | undefined>(undefined);
   const lastWaveformTapTimeRef = useRef(0);
@@ -316,35 +321,52 @@ export function useWaveSurfer(
   };
   useEffect(() => {
     const handleReady = () => {
-      isReadyRef.current = true;
       setupRegions(wavesurferRef.current as WaveSurfer);
       //recording also sends ready
       if (loadRequests.current > 0) loadRequests.current--;
-      //do these even if we're going to load another to show progress
-      setDuration(wavesurferRef.current?.getDuration() ?? durationRef.current);
-      if (positionRef.current !== undefined && positionRef.current >= 0) {
-        wsGoto(positionRef.current);
-      } else {
-        wsGoto(durationRef.current); //this has to be at the end for recording
+      const isStaleLoad =
+        loadBlobGenerationRef.current !== loadGenerationRef.current;
+      if (!isStaleLoad) {
+        isReadyRef.current = true;
+        //do these even if we're going to load another to show progress
+        const wsDur = wavesurferRef.current?.getDuration();
+        const bufDur = blobAudioRef.current?.duration;
+        if (!recordingRef.current && bufDur) {
+          setDuration(Math.max(bufDur, wsDur ?? 0));
+        } else {
+          setDuration(wsDur ?? durationRef.current);
+          if (bufDur && bufDur > (wsDur ?? 0)) {
+            setDuration(bufDur);
+          }
+        }
+        if (positionRef.current !== undefined && positionRef.current >= 0) {
+          wsGoto(positionRef.current);
+        } else {
+          wsGoto(durationRef.current); //this has to be at the end for recording
+        }
       }
 
       loadingRef.current = false;
       if (!loadRequests.current) {
-        if (!regionsLoadedRef.current) {
-          //we need to call this even if undefined to setup regions variables
-          regionsLoadedRef.current = loadRegions(
-            inputRegionsRef.current,
-            false
-          );
+        if (!isStaleLoad) {
+          if (!regionsLoadedRef.current) {
+            //we need to call this even if undefined to setup regions variables
+            regionsLoadedRef.current = loadRegions(
+              inputRegionsRef.current,
+              false
+            );
+          }
+          setupZoom();
+          if (playingRef.current) setPlaying(true);
         }
-        setupZoom();
-        if (playingRef.current) setPlaying(true);
-      } else {
+      } else if (!isStaleLoad) {
         //requesting load of blob that came in while this one was loading
         wsLoad();
       }
       //do this too even if we're going to go load another
-      onReady(durationRef.current, loadRequests.current > 0);
+      if (!isStaleLoad) {
+        onReady(durationRef.current, loadRequests.current > 0);
+      }
     };
 
     wavesurferRef.current = wavesurfer;
@@ -517,7 +539,17 @@ export function useWaveSurfer(
     }
   };
 
+  /** Revoke a load's blob URL without clobbering a newer concurrent load. */
+  const releaseLoadBlobUrl = (url: string | undefined) => {
+    if (!url) return;
+    URL.revokeObjectURL(url);
+    if (currentBlobUrlRef.current === url) {
+      currentBlobUrlRef.current = undefined;
+    }
+  };
+
   const loadBlob = async (blob?: Blob, position?: number) => {
+    const generation = loadGenerationRef.current;
     positionRef.current = position;
 
     // Revoke previous blob URL if it exists
@@ -531,12 +563,20 @@ export function useWaveSurfer(
       setDuration(0);
       return;
     }
+    let blobUrl: string | undefined;
     try {
       loadingRef.current = true;
-      blobAudioRef.current = await audioContext().decodeAudioData(
+      const decoded = await decodeAudioData(
+        audioContext(),
         await blob.arrayBuffer()
       );
+      if (generation !== loadGenerationRef.current) {
+        loadingRef.current = false;
+        return;
+      }
 
+      blobAudioRef.current = decoded;
+      loadBlobGenerationRef.current = generation;
       blobRef.current = blob;
 
       setDuration(
@@ -547,15 +587,20 @@ export function useWaveSurfer(
       //await wavesurferRef.current?.loadBlob(blob); // -- this says it is no longer supported but it works
 
       // Create blob URL for wavesurfer
-      const blobUrl = URL.createObjectURL(blob);
+      blobUrl = URL.createObjectURL(blob);
       currentBlobUrlRef.current = blobUrl;
       //setPlayerUrl(blobUrl); //this is slow
       await wavesurferRef.current?.load(blobUrl); //this works and is the approved way
+      if (generation !== loadGenerationRef.current) {
+        loadingRef.current = false;
+        releaseLoadBlobUrl(blobUrl);
+        return;
+      }
     } catch (error) {
       console.error('Error loading blob:', error);
       loadingRef.current = false;
-      // Revoke the blob URL if loading failed
-      revokeCurrentBlobUrl();
+      // Only revoke this load's URL; a concurrent stop load may own currentBlobUrlRef
+      releaseLoadBlobUrl(blobUrl);
       throw error;
     }
   };
@@ -661,33 +706,21 @@ export function useWaveSurfer(
     return ((val * dec) >> 0) / dec;
   };
 
-  /**
-   * Encodes an AudioBuffer to a WAV Blob.
-   */
-
-  async function audioBufferToWavBlob(buffer: AudioBuffer): Promise<Blob> {
-    // Use Web Audio API to decode any supported audio format
-    const decodedAudioBuffer = buffer;
-
-    // Extract PCM data from the decoded audio buffer
-    const channels: Float32Array[] = [];
-    for (let i = 0; i < decodedAudioBuffer.numberOfChannels; i++) {
-      channels.push(decodedAudioBuffer.getChannelData(i));
-    }
-
-    // Convert to WAV using the existing wav.ts utility
-    const leftChannel = channels[0];
-    const rightChannel = channels.length > 1 ? channels[1] : null;
-
-    return convertToWav(leftChannel, rightChannel, {
-      isFloat: true,
-      numChannels: channels.length,
-      sampleRate: decodedAudioBuffer.sampleRate,
-    });
-  }
-
   async function loadDecoded(audioBuffer: AudioBuffer, position?: number) {
-    return await wsLoad(await audioBufferToWavBlob(audioBuffer), position);
+    const blob = await audioBufferToWavBlob(audioBuffer);
+    // Final stop/undo inserts must not resolve behind preview loads in the queue
+    // (that left Save/Play with a short preview take — TT-7384 / TT-7276).
+    if (!recordingRef.current) {
+      if (loadRequests.current || blobToLoad.current) {
+        flushLoadQueueWaiters();
+        loadRequests.current = 0;
+        blobToLoad.current = undefined;
+        positionToLoad.current = undefined;
+      }
+      await loadBlob(blob, position);
+      return;
+    }
+    return await wsLoad(blob, position);
   }
   const copyOriginal = () => {
     if (!wavesurferRef.current) return undefined;
@@ -789,6 +822,8 @@ export function useWaveSurfer(
     setRecording(true);
   };
   const wsStopRecord = () => {
+    loadGenerationRef.current += 1;
+    loadingRef.current = false;
     onCanUndo(true);
     setRecording(false);
     isReadyRef.current = false;
@@ -844,15 +879,6 @@ export function useWaveSurfer(
     onRegion(0, true);
   };
 
-  // Helper function to decode audio data
-  function decodeAudioData(
-    audioContext: AudioContext,
-    arrayBuffer: ArrayBuffer
-  ): Promise<AudioBuffer> {
-    return new Promise((resolve, reject) => {
-      audioContext.decodeAudioData(arrayBuffer, resolve, reject);
-    });
-  }
   const wsRegionReplace = async (blob: Blob) => {
     if (!wavesurferRef.current) return;
     setUndoBuffer(copyOriginal());

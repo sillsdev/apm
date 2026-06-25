@@ -1,4 +1,4 @@
-import { convertToWav } from '../utils/wav';
+import { audioBufferToWavBlob } from '../utils/audioBufferToWavBlob';
 import { logAudioDiagnostic } from './audioDiagnostics';
 import type { APMRecorder } from './useWavRecorder';
 
@@ -230,26 +230,6 @@ export function createWavRecorder(
         }
       })();
     }, timeSlice);
-  }
-
-  async function audioBufferToWavBlob(buffer: AudioBuffer): Promise<Blob> {
-    const sampleRate = buffer.sampleRate;
-    const channels = buffer.numberOfChannels;
-
-    if (buffer.length === 0) {
-      // Create empty WAV if no data
-      return new Blob([], { type: 'audio/wav' });
-    }
-
-    const leftChannel = buffer.getChannelData(0);
-    const rightChannel = channels > 1 ? buffer.getChannelData(1) : null;
-
-    // Convert to WAV
-    return convertToWav(leftChannel, rightChannel, {
-      isFloat: true,
-      numChannels: channels,
-      sampleRate: sampleRate,
-    });
   }
 
   function stopDataAvailableTimer(): void {
