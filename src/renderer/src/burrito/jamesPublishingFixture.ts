@@ -335,6 +335,8 @@ export function buildJamesPublishingFixture(): JamesPublishingFixture {
     noteMedia('med-m2-note', 'p-note-m2', planId, 'm2-note.mp3'),
     noteMedia('med-s2-note', 'p-note-s2', planId, 's2-note.mp3'),
     noteMedia('med-ch14-note', 'p-note-ch14', planId, 'ch14-note.mp3'),
+    noteMedia('med-chnum-1', 'p-chnum-1', planId, 'chnum-1-title.ogg'),
+    noteMedia('med-chnum-14', 'p-chnum-14', planId, 'chnum-14-title.ogg'),
   ];
 
   const graphics: GraphicD[] = [

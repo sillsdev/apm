@@ -347,10 +347,9 @@ describe('useBurritoNavigation', () => {
     });
 
     expect(metadata.type?.flavorType?.name).toBe('x-nav');
-    expect(ipc.createFolder).toHaveBeenCalled();
     expect(
       ipc.createFolder.mock.calls.some((c) => c[0].includes('graphics'))
-    ).toBe(true);
+    ).toBe(false);
     expect(ipc.write).toHaveBeenCalled();
     const writePaths = (ipc.write as jest.Mock).mock.calls.map((c) => c[0]);
     expect(writePaths.some((p: string) => p.includes('navigation.json'))).toBe(
@@ -523,5 +522,23 @@ describe('James publishing hierarchy — navigation folder placement (TT-7189, T
     expect(altGraphic).toBeDefined();
     expect(isBookRootPath(bookGraphic!, JAMES_BOOK_PATH)).toBe(true);
     expect(isBookRootPath(altGraphic!, JAMES_BOOK_PATH)).toBe(true);
+  });
+
+  it('exports CHNUM row title recordings into the matching chapter folder', () => {
+    const ch1 = destForMediaSrc(ipc, 'chnum-1-title.ogg');
+    const ch14 = destForMediaSrc(ipc, 'chnum-14-title.ogg');
+    expect(ch1).toBeDefined();
+    expect(ch14).toBeDefined();
+    expect(ch1).toContain('/001/');
+    expect(ch14).toContain('/014/');
+  });
+
+  it('does not create an empty book-level graphics folder without category assets', () => {
+    const folderPaths = (ipc.createFolder as jest.Mock).mock.calls.map(
+      (c) => c[0] as string
+    );
+    expect(
+      folderPaths.some((p) => p.replace(/\\/g, '/').endsWith('/graphics'))
+    ).toBe(false);
   });
 });

@@ -119,3 +119,17 @@ export function resolveBurritoExportFolder({
     scopeRef,
   };
 }
+
+/** Folder for a CHNUM publishing row (title media lives on the passage). */
+export function resolveChnumExportFolder(
+  passage: PassageD,
+  bookPath: string
+): BurritoExportFolder {
+  const pipe = passage.attributes.reference.split('|');
+  const chapterNum = parseInt(pipe[1] ?? '', 10) || 1;
+  return {
+    folderPath: path.join(bookPath, pad3(chapterNum)),
+    chapter: chapterNum.toString(),
+    scopeRef: `${chapterNum}`,
+  };
+}
