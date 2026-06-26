@@ -10,13 +10,6 @@ import { debounce } from 'lodash';
 
 const changes = {} as GlobalState;
 
-/** Clear module-level useGlobal cache between Cypress/Jest mounts. */
-export const resetUseGlobalModuleState = () => {
-  (Object.keys(changes) as GlobalKey[]).forEach((k) => {
-    delete changes[k];
-  });
-};
-
 export const useGlobal = <K extends GlobalKey>(
   prop?: K
 ): [GlobalState[K], (val: GlobalState[K]) => void] => {
