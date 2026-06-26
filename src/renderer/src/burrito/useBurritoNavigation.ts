@@ -43,6 +43,7 @@ import {
 import { useRef } from 'react';
 import cleanFileName from '../utils/cleanFileName';
 import { AltBkSeq, BookSeq } from '../model/section';
+import { resolveBurritoExportFolder } from './resolveBurritoExportFolder';
 
 const ipc = window?.api as MainAPI;
 const FullSize = 1024;
@@ -391,11 +392,20 @@ export const useBurritoNavigation = (teamId: string) => {
 
     for (const section of sectionsForNav) {
       loadSegionArr(section);
-      const sectionRef = computeSectionRef(section.id);
-      const sectionChapter = sectionRef.split(':')[0] || '1';
-      navChapterPath = path.join(bookPath, pad3(parseInt(sectionChapter, 10)));
+      const exportFolder = resolveBurritoExportFolder({
+        section,
+        bookPath,
+        sections: sectionsAll,
+        passages,
+        computeSectionRef,
+        computeMovementRef,
+      });
+      navChapterPath = exportFolder.folderPath;
       await ipc?.createFolder(navChapterPath);
-      chapters.add(sectionChapter);
+      if (exportFolder.chapter) {
+        chapters.add(exportFolder.chapter);
+      }
+      const sectionRef = exportFolder.scopeRef;
       const sectionRemId = remoteId('section', section.id, keyMap);
 
       const titleMediaId = related(section, 'titleMediafile');
