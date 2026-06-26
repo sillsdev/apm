@@ -14,6 +14,8 @@ import {
 } from '../../../context/PassageDetailContext';
 import { UnsavedContext } from '../../../context/UnsavedContext';
 import { OrbitContext } from '../../../hoc/OrbitContextProvider';
+import { ThemeProvider } from '@mui/material';
+import { createAppTheme } from '../../../theme';
 import MobileWorkflowSteps from './MobileWorkflowSteps';
 
 type RecordsByKey = Record<string, any>;
@@ -283,21 +285,23 @@ const mountMobileWorkflowSteps = ({
   cy.mount(
     <MemoryRouter>
       <Provider store={mockStore}>
-        <GlobalProvider init={initialState}>
-          <OrbitContext.Provider value={orbitContextValue}>
-            <SnackBarProvider>
-              <UnsavedContext.Provider
-                value={{ state: mockUnsavedState, setState: cy.stub() }}
-              >
-                <PassageDetailContext.Provider
-                  value={{ state: ctxState, setState: cy.stub() }}
+        <ThemeProvider theme={createAppTheme('en')}>
+          <GlobalProvider init={initialState}>
+            <OrbitContext.Provider value={orbitContextValue}>
+              <SnackBarProvider>
+                <UnsavedContext.Provider
+                  value={{ state: mockUnsavedState, setState: cy.stub() }}
                 >
-                  <MobileWorkflowSteps />
-                </PassageDetailContext.Provider>
-              </UnsavedContext.Provider>
-            </SnackBarProvider>
-          </OrbitContext.Provider>
-        </GlobalProvider>
+                  <PassageDetailContext.Provider
+                    value={{ state: ctxState, setState: cy.stub() }}
+                  >
+                    <MobileWorkflowSteps />
+                  </PassageDetailContext.Provider>
+                </UnsavedContext.Provider>
+              </SnackBarProvider>
+            </OrbitContext.Provider>
+          </GlobalProvider>
+        </ThemeProvider>
       </Provider>
     </MemoryRouter>
   );
