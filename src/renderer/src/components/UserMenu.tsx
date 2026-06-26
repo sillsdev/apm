@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { useGlobal } from '../context/useGlobal';
 import { IMainStrings, ISharedStrings, User, UserD } from '../model';
 import {
-  Button,
+  IconButton,
   ListItemIcon,
   ListItemText,
   Typography,
@@ -97,15 +97,14 @@ export function UserMenu(props: IProps) {
 
   return (
     <div>
-      <Button
+      <IconButton
         id="userMenu"
         aria-controls="custom-user-menu"
         aria-haspopup="true"
         onClick={handleClick}
-        sx={{ minWidth: '24px', minHeight: '24px' }}
       >
         <UserAvatar userRec={userRec} small={small} />
-      </Button>
+      </IconButton>
       <StyledMenu
         id="custom-user-menu"
         anchorEl={anchorEl}

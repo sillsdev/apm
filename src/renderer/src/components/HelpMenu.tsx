@@ -7,7 +7,7 @@ import ReportIcon from '@mui/icons-material/Report';
 import NotesIcon from '@mui/icons-material/SpeakerNotes';
 import BooksIcon from '@mui/icons-material/LibraryBooks';
 import TrainingIcon from '@mui/icons-material/FlightClass';
-import HelpIcon from '@mui/icons-material/Help';
+import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import InfoIcon from '@mui/icons-material/Info';
 import DownloadIcon from '@mui/icons-material/CloudDownload';
 import FolderIcon from '@mui/icons-material/Folder';
@@ -178,10 +178,9 @@ export function HelpMenu(props: IProps) {
       <IconButton
         aria-controls="customized-menu"
         aria-haspopup="true"
-        color="primary"
         onClick={handleClick}
       >
-        <HelpIcon />
+        <HelpOutlineIcon />
       </IconButton>
       <StyledMenu
         id="helpClose"
@@ -193,14 +192,14 @@ export function HelpMenu(props: IProps) {
       >
         <StyledMenuItem id="helpHelp" onClick={handleHelp('')}>
           <ListItemIcon>
-            <HelpIcon />
+            <HelpOutlineIcon />
           </ListItemIcon>
           <ListItemText primary={t.helpCenter} />
         </StyledMenuItem>
         {planRec && (
           <StyledMenuItem id="helpSheet" onClick={handleHelp(spreadsheetTopic)}>
             <ListItemIcon>
-              <HelpIcon />
+              <HelpOutlineIcon />
             </ListItemIcon>
             <ListItemText primary={t.helpSpreadsheet} />
           </StyledMenuItem>

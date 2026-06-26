@@ -98,7 +98,7 @@ export const DesktopToolbar = ({
   tv,
 }: DesktopToolbarProps) => {
   return (
-    <Toolbar>
+    <Toolbar disableGutters>
       {!home && orgRole && (
         <>
           <ProjectName switchTo={switchTo ?? false} />

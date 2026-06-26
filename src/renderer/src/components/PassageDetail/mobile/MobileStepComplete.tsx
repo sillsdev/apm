@@ -1,7 +1,7 @@
 import { useCallback, useContext, useMemo, useState } from 'react';
 import { useGlobal } from '../../../context/useGlobal';
-import { Box, IconButton, Typography } from '@mui/material';
-import CompleteIcon from '@mui/icons-material/CheckBoxOutlined';
+import { Box, Button } from '@mui/material';
+import CompleteIcon from '@mui/icons-material/CheckBox';
 import NotCompleteIcon from '@mui/icons-material/CheckBoxOutlineBlank';
 import usePassageDetailContext from '../../../context/usePassageDetailContext';
 import { IPassageDetailStepCompleteStrings } from '../../../model';
@@ -78,37 +78,43 @@ export default function MobileStepComplete() {
   if (isBoldWorkflow) return null;
 
   return (
-    <Box
+    <Button
+      id="mobile-complete"
+      size="small"
+      title={t.title}
+      onClick={handleToggleComplete}
+      disabled={
+        !hasPermission || view !== '' || recording || busy || importexportBusy
+      }
+      startIcon={
+        complete ? (
+          <CompleteIcon
+            id="step-yes"
+            fontSize="small"
+            sx={{ color: 'black' }}
+          />
+        ) : (
+          <NotCompleteIcon id="step-no" fontSize="small" />
+        )
+      }
       sx={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 0.25,
-        minHeight: 0,
-        flexShrink: 0,
+        minWidth: 0,
         maxWidth: '100%',
       }}
     >
-      <IconButton
-        id="mobile-complete"
-        size="small"
-        title={t.title}
-        onClick={handleToggleComplete}
-        disabled={
-          !hasPermission || view !== '' || recording || busy || importexportBusy
-        }
-      >
-        {complete ? (
-          <CompleteIcon id="step-yes" fontSize="small" />
-        ) : (
-          <NotCompleteIcon id="step-no" fontSize="small" />
-        )}
-      </IconButton>
-      <Typography
-        variant="body2"
-        sx={{ lineHeight: 1.2, whiteSpace: 'nowrap' }}
+      <Box
+        component="span"
+        sx={{
+          display: 'block',
+          minWidth: 0,
+          maxWidth: '100%',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+        }}
       >
         {t.title}
-      </Typography>
-    </Box>
+      </Box>
+    </Button>
   );
 }

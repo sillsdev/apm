@@ -89,6 +89,10 @@ export const AppHead = (props: IProps) => {
   const tv: IViewModeStrings = useSelector(viewModeSelector, shallowEqual);
 
   const isDetail = useMemo(() => pathname.startsWith('/detail'), [pathname]);
+  const isPlanSheet = useMemo(
+    () => /^\/plan\/[^/]+\/0(\/|$)/.test(pathname),
+    [pathname]
+  );
   const planUrl = useMemo(() => {
     const fromUrl = localStorage.getItem(localUserKey(LocalKey.url));
     if (!fromUrl) return null;
@@ -277,21 +281,31 @@ export const AppHead = (props: IProps) => {
   if (view === 'Privacy') navigate('/privacy');
 
   const isMobile = isMobileView || isMobileWidth;
+  const drawBorderBottom = !(isMobile && (isDetail || isPlanSheet));
 
   return (
     <AppBar
       position="fixed"
-      sx={{ width: '100%', display: 'flex' }}
+      sx={{
+        width: '100%',
+        display: 'flex',
+        px: 1.5,
+        backgroundColor: 'custom.headerBackground',
+        ...(drawBorderBottom && {
+          borderBottom: '1px solid',
+          borderColor: 'divider',
+        }),
+      }}
       color="inherit"
     >
       <>
         {complete === 0 || complete === 100 || (
-          <Box sx={{ width: '100%' }}>
+          <Box sx={{ mx: -1.5 }}>
             <LinearProgress id="prog" variant="determinate" value={complete} />
           </Box>
         )}
         {(!busy && !saving && !dataChangeCount) || complete !== 0 || (
-          <LinearProgress id="busy" variant="indeterminate" />
+          <LinearProgress id="busy" variant="indeterminate" sx={{ mx: -1.5 }} />
         )}
 
         {isMobile ? (

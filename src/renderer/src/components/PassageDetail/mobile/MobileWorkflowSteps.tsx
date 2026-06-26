@@ -6,11 +6,9 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
-  IconButton,
   Menu,
   MenuItem,
   Typography,
-  useTheme,
 } from '@mui/material';
 import InfoIcon from '@mui/icons-material/Info';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
@@ -64,7 +62,6 @@ export default function MobileWorkflowSteps() {
   const getGlobal = useGetGlobal();
   const { showMessage } = useSnackBar();
   const ts = useSelector(sharedSelector, shallowEqual);
-  const theme = useTheme();
   const getWfLabel = useWfLabel();
   const { getOrgDefault } = useOrgDefaults();
   const isStepProgression =
@@ -216,23 +213,25 @@ export default function MobileWorkflowSteps() {
             alignItems: 'center',
           }}
         >
-          {!isStepProgression && currentTip && (
-            <IconButton
-              size="small"
-              onClick={() => setTipOpen(true)}
-              data-cy="workflow-step-tip"
-              aria-label={currentTip}
-              color="info"
-            >
-              <InfoIcon fontSize="small" />
-            </IconButton>
-          )}
           <Button
             size="small"
+            startIcon={
+              !isStepProgression && currentTip ? (
+                <InfoIcon
+                  sx={{ color: 'primary.light' }}
+                  fontSize="small"
+                  data-cy="workflow-step-tip"
+                  aria-label={currentTip}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setTipOpen(true);
+                  }}
+                />
+              ) : undefined
+            }
             endIcon={hasMultipleOptions ? <ArrowDropDownIcon /> : undefined}
             sx={{
               minWidth: 'auto',
-              textTransform: 'none',
               // These per-breakpoint widths are fine-tuned to constrain the dropdown so
               // its label truncates before it can overlap the parallelograms
               maxWidth: { xs: '45vw', md: '20vw', lg: '25vw' },
@@ -324,10 +323,10 @@ export default function MobileWorkflowSteps() {
         >
           {steps.map((step) => {
             const color = step.isCurrent
-              ? theme.palette.grey[700]
+              ? 'custom.racetrackCurrent'
               : step.isComplete
-                ? theme.palette.grey[400]
-                : theme.palette.grey[200];
+                ? 'custom.racetrackComplete'
+                : 'custom.racetrackIncomplete';
             return (
               <Box
                 key={step.id}
@@ -372,7 +371,7 @@ export default function MobileWorkflowSteps() {
               aria-label={currentTip}
             >
               {getWfLabel(currentLabel) + '\u00A0'}
-              <InfoIcon color="info" fontSize="small" />
+              <InfoIcon sx={{ color: 'primary.light' }} fontSize="small" />
             </ButtonBase>
           ) : (
             getWfLabel(currentLabel)

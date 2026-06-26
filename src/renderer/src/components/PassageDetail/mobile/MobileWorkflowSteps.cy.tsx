@@ -14,6 +14,8 @@ import {
 } from '../../../context/PassageDetailContext';
 import { UnsavedContext } from '../../../context/UnsavedContext';
 import { OrbitContext } from '../../../hoc/OrbitContextProvider';
+import { ThemeProvider } from '@mui/material';
+import { createAppTheme } from '../../../theme';
 import MobileWorkflowSteps from './MobileWorkflowSteps';
 
 type RecordsByKey = Record<string, any>;
@@ -283,21 +285,23 @@ const mountMobileWorkflowSteps = ({
   cy.mount(
     <MemoryRouter>
       <Provider store={mockStore}>
-        <GlobalProvider init={initialState}>
-          <OrbitContext.Provider value={orbitContextValue}>
-            <SnackBarProvider>
-              <UnsavedContext.Provider
-                value={{ state: mockUnsavedState, setState: cy.stub() }}
-              >
-                <PassageDetailContext.Provider
-                  value={{ state: ctxState, setState: cy.stub() }}
+        <ThemeProvider theme={createAppTheme('en')}>
+          <GlobalProvider init={initialState}>
+            <OrbitContext.Provider value={orbitContextValue}>
+              <SnackBarProvider>
+                <UnsavedContext.Provider
+                  value={{ state: mockUnsavedState, setState: cy.stub() }}
                 >
-                  <MobileWorkflowSteps />
-                </PassageDetailContext.Provider>
-              </UnsavedContext.Provider>
-            </SnackBarProvider>
-          </OrbitContext.Provider>
-        </GlobalProvider>
+                  <PassageDetailContext.Provider
+                    value={{ state: ctxState, setState: cy.stub() }}
+                  >
+                    <MobileWorkflowSteps />
+                  </PassageDetailContext.Provider>
+                </UnsavedContext.Provider>
+              </SnackBarProvider>
+            </OrbitContext.Provider>
+          </GlobalProvider>
+        </ThemeProvider>
       </Provider>
     </MemoryRouter>
   );
@@ -328,13 +332,13 @@ describe('MobileWorkflowSteps', () => {
 
       cy.get('[data-cy="workflow-step"]')
         .eq(0)
-        .should('have.css', 'background-color', 'rgb(97, 97, 97)');
+        .should('have.css', 'background-color', 'rgb(17, 17, 17)');
       cy.get('[data-cy="workflow-step"]')
         .eq(1)
-        .should('have.css', 'background-color', 'rgb(189, 189, 189)');
+        .should('have.css', 'background-color', 'rgb(136, 136, 136)');
       cy.get('[data-cy="workflow-step"]')
         .eq(2)
-        .should('have.css', 'background-color', 'rgb(238, 238, 238)');
+        .should('have.css', 'background-color', 'rgb(204, 204, 204)');
     });
 
     it('shows a tip button in the step label area that opens a dialog', () => {
@@ -551,15 +555,15 @@ describe('MobileWorkflowSteps', () => {
       // p-0 sequencenum 0 < current sequencenum 1 → complete
       cy.get('[data-cy="passage-step"]')
         .eq(0)
-        .should('have.css', 'background-color', 'rgb(189, 189, 189)');
+        .should('have.css', 'background-color', 'rgb(136, 136, 136)');
       // p-1 is current passage
       cy.get('[data-cy="passage-step"]')
         .eq(1)
-        .should('have.css', 'background-color', 'rgb(97, 97, 97)');
+        .should('have.css', 'background-color', 'rgb(17, 17, 17)');
       // p-2 sequencenum 2 > current sequencenum 1 → incomplete
       cy.get('[data-cy="passage-step"]')
         .eq(2)
-        .should('have.css', 'background-color', 'rgb(238, 238, 238)');
+        .should('have.css', 'background-color', 'rgb(204, 204, 204)');
     });
 
     it('step label shows current passage book and reference', () => {

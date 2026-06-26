@@ -115,6 +115,22 @@ export const PassageDetail = () => {
     /* eslint-disable-next-line react-hooks/exhaustive-deps */
   }, []);
 
+  // Lock document scroll on mobile so only the inner content region scrolls;
+  // this prevents MobileWorkflowSteps being scrolled under the AppBar.
+  useEffect(() => {
+    if (!isMobile) return;
+    const { body } = document;
+    const html = document.documentElement;
+    const prevBody = body.style.overflow;
+    const prevHtml = html.style.overflow;
+    body.style.overflow = 'hidden';
+    html.style.overflow = 'hidden';
+    return () => {
+      body.style.overflow = prevBody;
+      html.style.overflow = prevHtml;
+    };
+  }, [isMobile]);
+
   if (view !== '' && view !== pathname) return <StickyRedirect to={view} />;
 
   return (
@@ -136,6 +152,7 @@ export const PassageDetail = () => {
               // AppHead is position:fixed — offset in-flow content like PassageDetailGrids does,
               // otherwise mobile layout height calc(100dvh - HeadHeight) leaves a gap at the bottom.
               pt: `${HeadHeight}px`,
+              backgroundColor: 'custom.headerBackground',
               width: '100%',
               flex: 1,
               minHeight: 0,
