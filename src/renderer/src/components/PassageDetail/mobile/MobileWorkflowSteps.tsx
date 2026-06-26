@@ -317,10 +317,10 @@ export default function MobileWorkflowSteps() {
         >
           {steps.map((step) => {
             const color = step.isCurrent
-              ? '#111'
+              ? 'custom.racetrackCurrent'
               : step.isComplete
-                ? '#888'
-                : '#ccc';
+                ? 'custom.racetrackComplete'
+                : 'custom.racetrackIncomplete';
             return (
               <Box
                 key={step.id}
