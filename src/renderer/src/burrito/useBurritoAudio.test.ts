@@ -1,6 +1,16 @@
 import type { Burrito } from './data/types';
 import type { BibleD } from '../model';
 import type { SectionD } from '../model';
+import { PassageTypeEnum } from '../model/passageTypeEnum';
+import {
+  JAMES_BOOK,
+  JAMES_BOOK_PATH,
+  buildJamesPublishingFixture,
+  destForMediaSrc,
+  jamesBibleFixture,
+  jamesNoteSections,
+  type JamesPublishingFixture,
+} from './jamesPublishingFixture';
 
 jest.mock('../crud/related', () => ({
   __esModule: true,
@@ -82,6 +92,75 @@ function loadAudioForApi(api: unknown) {
   const { useBurritoAudio } = require('./useBurritoAudio');
   /* eslint-enable @typescript-eslint/no-require-imports */
   return { renderHook, act, useBurritoAudio };
+}
+
+function loadAudioForJames(
+  api: unknown,
+  fixture: JamesPublishingFixture
+) {
+  /* eslint-disable @typescript-eslint/no-require-imports */
+  jest.resetModules();
+  (window as unknown as { api?: unknown }).api = api;
+
+  jest.doMock(
+    '../components/PassageDetail/Internalization/useComputeRef',
+    () =>
+      jest.requireActual(
+        '../components/PassageDetail/Internalization/useComputeRef'
+      )
+  );
+
+  jest.doMock('../utils/dataPath', () => ({
+    __esModule: true,
+    PathType: { MEDIA: 'MEDIA' },
+    default: jest.fn(
+      async (url: string, _pathType: unknown, local: { localname: string }) => {
+        local.localname = url;
+        return url;
+      }
+    ),
+  }));
+
+  const { renderHook, act } = require('@testing-library/react/pure');
+  const { useOrgDefaults } = require('../crud/useOrgDefaults');
+  const { useOrbitData } = require('../hoc/useOrbitData');
+
+  useOrgDefaults.mockReturnValue(defaultOrgDefaults());
+
+  useOrbitData.mockImplementation((type: string) => {
+    if (type === 'mediafile') return fixture.mediafiles;
+    if (type === 'passage') return fixture.passages;
+    if (type === 'sectionresource') return [];
+    if (type === 'sharedresource') return fixture.sharedResources;
+    if (type === 'section') return fixture.sectionsAll;
+    return [];
+  });
+
+  const { useBurritoAudio } = require('./useBurritoAudio');
+  /* eslint-enable @typescript-eslint/no-require-imports */
+  return { renderHook, act, useBurritoAudio };
+}
+
+async function runJamesNotesExport(
+  ipc: ReturnType<typeof makeIpc>,
+  fixture: JamesPublishingFixture
+) {
+  const { renderHook, act, useBurritoAudio } = loadAudioForJames(ipc, fixture);
+  const { result } = renderHook(() => useBurritoAudio('team-1'));
+  const metadata = burritoFixture();
+  await act(async () => {
+    await result.current({
+      metadata,
+      bible: jamesBibleFixture,
+      book: JAMES_BOOK,
+      bookPath: JAMES_BOOK_PATH,
+      preLen: 0,
+      sections: jamesNoteSections(fixture),
+      passageTypeFilter: PassageTypeEnum.NOTE,
+      flavorTypeName: 'x-notes',
+    });
+  });
+  return metadata;
 }
 
 function burritoFixture(): Burrito {
@@ -780,5 +859,43 @@ describe('useBurritoAudio', () => {
       slugFromId: jest.fn(() => 'vernacular'),
       VernacularTag: null,
     }));
+  });
+});
+
+describe('James publishing hierarchy — note folder placement (TT-7191)', () => {
+  let ipc: ReturnType<typeof makeIpc>;
+  let fixture: JamesPublishingFixture;
+
+  beforeEach(async () => {
+    fixture = buildJamesPublishingFixture();
+    ipc = makeIpc();
+    await runJamesNotesExport(ipc, fixture);
+  });
+
+  it('exports note recordings for Book and Movement 1 rows', () => {
+    expect(destForMediaSrc(ipc, 'book-note.mp3')).toBeDefined();
+    expect(destForMediaSrc(ipc, 'm1-note.mp3')).toBeDefined();
+  });
+
+  it('places Movement 2 note in chapter 014 folder', () => {
+    const dest = destForMediaSrc(ipc, 'm2-note.mp3');
+    expect(dest).toBeDefined();
+    expect(dest).toContain('/014/');
+  });
+
+  it('places Section 2 and chapter 14 note recordings in chapter 014 folder', () => {
+    const s2Dest = destForMediaSrc(ipc, 's2-note.mp3');
+    const ch14Dest = destForMediaSrc(ipc, 'ch14-note.mp3');
+    expect(s2Dest).toBeDefined();
+    expect(ch14Dest).toBeDefined();
+    expect(s2Dest).toContain('/014/');
+    expect(ch14Dest).toContain('/014/');
+  });
+
+  it('does not place Section 2, Movement 2, or chapter 14 notes under chapter 001', () => {
+    const misplaced = ['s2-note.mp3', 'm2-note.mp3', 'ch14-note.mp3']
+      .map((name) => destForMediaSrc(ipc, name))
+      .filter((dest): dest is string => dest != null && dest.includes('/001/'));
+    expect(misplaced).toHaveLength(0);
   });
 });
