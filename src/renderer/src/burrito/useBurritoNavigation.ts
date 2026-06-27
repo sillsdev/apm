@@ -43,6 +43,15 @@ import {
 import { useRef } from 'react';
 import cleanFileName from '../utils/cleanFileName';
 import { AltBkSeq, BookSeq } from '../model/section';
+import {
+  resolveBurritoExportFolder,
+  resolveChnumExportFolder,
+} from './resolveBurritoExportFolder';
+import {
+  isPublishingTitle,
+  passageTypeFromRef,
+} from '../control/passageTypeFromRef';
+import { PassageTypeEnum } from '../model/passageTypeEnum';
 
 const ipc = window?.api as MainAPI;
 const FullSize = 1024;
@@ -391,11 +400,20 @@ export const useBurritoNavigation = (teamId: string) => {
 
     for (const section of sectionsForNav) {
       loadSegionArr(section);
-      const sectionRef = computeSectionRef(section.id);
-      const sectionChapter = sectionRef.split(':')[0] || '1';
-      navChapterPath = path.join(bookPath, pad3(parseInt(sectionChapter, 10)));
+      const exportFolder = resolveBurritoExportFolder({
+        section,
+        bookPath,
+        sections: sectionsAll,
+        passages,
+        computeSectionRef,
+        computeMovementRef,
+      });
+      navChapterPath = exportFolder.folderPath;
       await ipc?.createFolder(navChapterPath);
-      chapters.add(sectionChapter);
+      if (exportFolder.chapter) {
+        chapters.add(exportFolder.chapter);
+      }
+      const sectionRef = exportFolder.scopeRef;
       const sectionRemId = remoteId('section', section.id, keyMap);
 
       const titleMediaId = related(section, 'titleMediafile');
@@ -471,9 +489,23 @@ export const useBurritoNavigation = (teamId: string) => {
     }
 
     const categoryGraphicsPath = path.join(bookPath, 'graphics');
-    await ipc?.createFolder(categoryGraphicsPath);
+    const categoriesForExport = artifactCategories.filter((c) =>
+      categoryIds.has(c.id)
+    );
+    const hasCategoryAssets = categoriesForExport.some((cat) => {
+      if (related(cat, 'titleMediafile')) return true;
+      return graphics.some(
+        (g) =>
+          g.attributes.resourceType === 'category' &&
+          g.attributes.resourceId ===
+            remoteIdNum('artifactcategory', cat.id, keyMap)
+      );
+    });
 
-    for (const cat of artifactCategories.filter((c) => categoryIds.has(c.id))) {
+    if (hasCategoryAssets) {
+      await ipc?.createFolder(categoryGraphicsPath);
+
+      for (const cat of categoriesForExport) {
       const catRemId = remoteId('artifactcategory', cat.id, keyMap);
       if (!catRemId) continue;
 
@@ -510,7 +542,18 @@ export const useBurritoNavigation = (teamId: string) => {
           catRemId
         );
       }
+      }
     }
+
+    const latestPassageTitleMedia = (passageId: string) =>
+      mediafiles
+        .filter(
+          (mf) =>
+            related(mf, 'passage') === passageId && !related(mf, 'artifactType')
+        )
+        .sort(
+          (a, b) => b.attributes.versionNumber - a.attributes.versionNumber
+        )[0];
 
     for (const p of passages.filter((p) =>
       sectionIds.has(related(p, 'section') as string)
@@ -518,12 +561,52 @@ export const useBurritoNavigation = (teamId: string) => {
       const passRemId = remoteId('passage', p.id, keyMap);
       if (!passRemId) continue;
       const sectionId = related(p, 'section') as string;
-      const sectionRef = computeSectionRef(sectionId);
-      const { chapter, chapterPath } = await chapterPathForSectionRef(
-        bookPath,
-        sectionRef
-      );
-      chapters.add(chapter);
+      const section = sectionsAll.find((s) => s.id === sectionId);
+      const passageType = passageTypeFromRef(p.attributes.reference, false);
+      const exportFolder =
+        passageType === PassageTypeEnum.CHAPTERNUMBER
+          ? resolveChnumExportFolder(p, bookPath)
+          : section
+            ? resolveBurritoExportFolder({
+                section,
+                bookPath,
+                sections: sectionsAll,
+                passages,
+                computeSectionRef,
+                computeMovementRef,
+              })
+            : {
+                folderPath: path.join(bookPath, pad3(1)),
+                chapter: '1',
+                scopeRef: computeSectionRef(sectionId),
+              };
+      const chapterPath = exportFolder.folderPath;
+      const sectionRef = exportFolder.scopeRef;
+      await ipc?.createFolder(chapterPath);
+      if (exportFolder.chapter) {
+        chapters.add(exportFolder.chapter);
+      }
+
+      if (isPublishingTitle(p.attributes.reference, false)) {
+        const m = latestPassageTitleMedia(p.id);
+        if (m) {
+          const ext = getMediaExt(m);
+          const chSuffix =
+            passageType === PassageTypeEnum.CHAPTERNUMBER
+              ? exportFolder.chapter ?? '1'
+              : cleanFileName(sectionRef);
+          const destName = `${bibleId}-${book}-chapter-${chSuffix}-title-${passRemId}.${ext}`;
+          const destPath = path.join(chapterPath, destName);
+          const ok = await processMediaFile(m, destPath, sectionRef);
+          if (ok) {
+            titleMediaManifest.push({
+              resourceType: 'passage',
+              remoteId: passRemId,
+              path: destPath.substring(preLen),
+            });
+          }
+        }
+      }
 
       const passageGraphic = graphics.find(
         (g) =>

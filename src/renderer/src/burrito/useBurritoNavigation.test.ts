@@ -3,6 +3,16 @@ import { BookSeq, type BibleD } from '../model';
 import type { MediaFileD } from '../model';
 import type { SectionD } from '../model';
 import type { MainAPI } from '../model/main-api';
+import {
+  JAMES_BOOK,
+  JAMES_BOOK_PATH,
+  JAMES_SECTION_REMOTE_NUM,
+  buildJamesPublishingFixture,
+  destForMediaSrc,
+  isBookRootPath,
+  jamesBibleFixture,
+  type JamesPublishingFixture,
+} from './jamesPublishingFixture';
 
 jest.mock('../utils/useCompression', () => ({
   ApmDim: 40,
@@ -177,6 +187,132 @@ function loadNavigationForApi(api: MainAPI | undefined) {
   return { renderHook, act, useBurritoNavigation };
 }
 
+function loadNavigationForJames(
+  api: MainAPI | undefined,
+  fixture: JamesPublishingFixture
+) {
+  jest.resetModules();
+  (window as unknown as { api?: typeof api }).api = api;
+
+  jest.doMock(
+    '../components/PassageDetail/Internalization/useComputeRef',
+    () =>
+      jest.requireActual(
+        '../components/PassageDetail/Internalization/useComputeRef'
+      )
+  );
+
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { renderHook, act } = require('@testing-library/react/pure');
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { useProjectDefaults, projDefSectionMap } = require('../crud/useProjectDefaults');
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { findRecord, remoteId, remoteIdGuid, remoteIdNum } = require('../crud');
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { useGlobal } = require('../context/useGlobal');
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { useOrbitData } = require('../hoc/useOrbitData');
+
+  useProjectDefaults.mockReturnValue({
+    getProjectDefault: jest.fn((key: string) =>
+      key === projDefSectionMap ? fixture.sectionMap : undefined
+    ),
+    setProjectDefault: jest.fn(),
+    canSetProjectDefault: true,
+    getLocalDefault: jest.fn(),
+    setLocalDefault: jest.fn(),
+  });
+
+  const planRec = {
+    id: fixture.planId,
+    type: 'plan',
+    relationships: { project: { data: { id: fixture.projectId } } },
+  };
+  const projectRec = { id: fixture.projectId, type: 'project' };
+
+  findRecord.mockImplementation(
+    (_memory: unknown, type: string, id: string) => {
+      if (type === 'plan') return planRec;
+      if (type === 'project') return projectRec;
+      if (type === 'section') {
+        return fixture.sectionsAll.find((s) => s.id === id);
+      }
+      return undefined;
+    }
+  );
+
+  remoteId.mockImplementation((_type: string, localId: string) => localId);
+  remoteIdNum.mockImplementation((type: string, localId: string) => {
+    if (type === 'section') {
+      return JAMES_SECTION_REMOTE_NUM[localId] ?? 0;
+    }
+    return 1;
+  });
+  remoteIdGuid.mockImplementation((type: string, numStr: string) => {
+    if (type === 'section') {
+      const num = parseInt(numStr, 10);
+      const entry = Object.entries(JAMES_SECTION_REMOTE_NUM).find(
+        ([, v]) => v === num
+      );
+      return entry?.[0];
+    }
+    return undefined;
+  });
+
+  useGlobal.mockImplementation((key: string) => {
+    if (key === 'memory') {
+      return [{ keyMap: {} }, jest.fn()];
+    }
+    return [undefined, jest.fn()];
+  });
+
+  useOrbitData.mockImplementation((model: string) => {
+    switch (model) {
+      case 'mediafile':
+        return fixture.mediafiles;
+      case 'passage':
+        return fixture.passages;
+      case 'sharedresource':
+        return fixture.sharedResources;
+      case 'graphic':
+        return fixture.graphics;
+      case 'artifactcategory':
+        return [];
+      case 'section':
+        return fixture.sectionsAll;
+      default:
+        return [];
+    }
+  });
+
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { useBurritoNavigation } = require('./useBurritoNavigation');
+  return { renderHook, act, useBurritoNavigation };
+}
+
+async function runJamesNavigationExport(
+  ipc: ReturnType<typeof makeIpc>,
+  fixture: JamesPublishingFixture
+) {
+  const { renderHook, act, useBurritoNavigation } = loadNavigationForJames(
+    ipc as never,
+    fixture
+  );
+  const { result } = renderHook(() => useBurritoNavigation('team-1'));
+  const metadata = burritoFixture();
+  await act(async () => {
+    await result.current({
+      metadata,
+      bible: jamesBibleFixture,
+      book: JAMES_BOOK,
+      bookPath: JAMES_BOOK_PATH,
+      preLen: 0,
+      sections: fixture.sections,
+    });
+  });
+  return metadata;
+}
+
 describe('useBurritoNavigation', () => {
   const teamId = 'team-1';
 
@@ -211,10 +347,9 @@ describe('useBurritoNavigation', () => {
     });
 
     expect(metadata.type?.flavorType?.name).toBe('x-nav');
-    expect(ipc.createFolder).toHaveBeenCalled();
     expect(
       ipc.createFolder.mock.calls.some((c) => c[0].includes('graphics'))
-    ).toBe(true);
+    ).toBe(false);
     expect(ipc.write).toHaveBeenCalled();
     const writePaths = (ipc.write as jest.Mock).mock.calls.map((c) => c[0]);
     expect(writePaths.some((p: string) => p.includes('navigation.json'))).toBe(
@@ -330,5 +465,80 @@ describe('useBurritoNavigation', () => {
         }),
       ])
     );
+  });
+});
+
+describe('James publishing hierarchy — navigation folder placement (TT-7189, TT-7190)', () => {
+  let ipc: ReturnType<typeof makeIpc>;
+  let fixture: JamesPublishingFixture;
+
+  beforeEach(async () => {
+    fixture = buildJamesPublishingFixture();
+    ipc = makeIpc();
+    await runJamesNavigationExport(ipc, fixture);
+  });
+
+  it('places Movement 2 title in chapter 014 folder', () => {
+    const dest = destForMediaSrc(ipc, 'm2-title.mp3');
+    expect(dest).toBeDefined();
+    expect(dest).toContain('/014/');
+  });
+
+  it('places Movement 1 title in chapter 001 folder', () => {
+    const dest = destForMediaSrc(ipc, 'm1-title.mp3');
+    expect(dest).toBeDefined();
+    expect(dest).toContain('/001/');
+  });
+
+  it('places Section 2 title in chapter 014 folder', () => {
+    const dest = destForMediaSrc(ipc, 's2-title.mp3');
+    expect(dest).toBeDefined();
+    expect(dest).toContain('/014/');
+  });
+
+  it('places Movement 2 graphic in chapter 014 folder, not chapter 001', () => {
+    const dest = destForMediaSrc(ipc, 'm2-graphic.png');
+    expect(dest).toBeDefined();
+    expect(dest).toContain('/014/');
+    expect(dest).not.toContain('/001/');
+  });
+
+  it('places Book title at book root, not inside a chapter folder', () => {
+    const dest = destForMediaSrc(ipc, 'book-title.mp3');
+    expect(dest).toBeDefined();
+    expect(isBookRootPath(dest!, JAMES_BOOK_PATH)).toBe(true);
+  });
+
+  it('places Alt Book title at book root, not inside a chapter folder', () => {
+    const dest = destForMediaSrc(ipc, 'alt-title.mp3');
+    expect(dest).toBeDefined();
+    expect(isBookRootPath(dest!, JAMES_BOOK_PATH)).toBe(true);
+  });
+
+  it('exports Book and Alt Book section graphics to book root', () => {
+    const bookGraphic = destForMediaSrc(ipc, 'book-graphic.png');
+    const altGraphic = destForMediaSrc(ipc, 'alt-graphic.png');
+    expect(bookGraphic).toBeDefined();
+    expect(altGraphic).toBeDefined();
+    expect(isBookRootPath(bookGraphic!, JAMES_BOOK_PATH)).toBe(true);
+    expect(isBookRootPath(altGraphic!, JAMES_BOOK_PATH)).toBe(true);
+  });
+
+  it('exports CHNUM row title recordings into the matching chapter folder', () => {
+    const ch1 = destForMediaSrc(ipc, 'chnum-1-title.ogg');
+    const ch14 = destForMediaSrc(ipc, 'chnum-14-title.ogg');
+    expect(ch1).toBeDefined();
+    expect(ch14).toBeDefined();
+    expect(ch1).toContain('/001/');
+    expect(ch14).toContain('/014/');
+  });
+
+  it('does not create an empty book-level graphics folder without category assets', () => {
+    const folderPaths = (ipc.createFolder as jest.Mock).mock.calls.map(
+      (c) => c[0] as string
+    );
+    expect(
+      folderPaths.some((p) => p.replace(/\\/g, '/').endsWith('/graphics'))
+    ).toBe(false);
   });
 });

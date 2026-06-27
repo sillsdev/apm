@@ -31,6 +31,10 @@ import { getSegments, NamedRegions } from '../utils/namedSegments';
 import { IRegion } from '../crud/useWavesurferRegions';
 import { timeFmt } from '../utils/timeFmt';
 import { useComputeRef } from '../components/PassageDetail/Internalization/useComputeRef';
+import {
+  isBookLevelSection,
+  resolveBurritoExportFolder,
+} from './resolveBurritoExportFolder';
 import { MainAPI } from '@model/main-api';
 import { Stats } from 'fs';
 import getMediaExt from '../utils/getMediaExt';
@@ -80,13 +84,14 @@ interface Props {
 export const useBurritoAudio = (teamId: string) => {
   const mediafiles = useOrbitData<MediaFileD[]>('mediafile');
   const passages = useOrbitData<PassageD[]>('passage');
+  const sectionsAll = useOrbitData<SectionD[]>('section');
   const sectionResources = useOrbitData<SectionResourceD[]>('sectionresource');
   const sharedResources = useOrbitData<SharedResourceD[]>('sharedresource');
   const { slugFromId } = useArtifactType(teamId);
   const { getOrgDefault } = useOrgDefaults();
   const fetchUrl = useFetchUrlNow();
   const { showMessage } = useSnackBar();
-  const { computeSectionRef } = useComputeRef();
+  const { computeSectionRef, computeMovementRef } = useComputeRef();
 
   return async ({
     metadata,
@@ -365,22 +370,47 @@ export const useBurritoAudio = (teamId: string) => {
       const passageRecs = passages
         .filter((p) => related(p, 'section') === section.id)
         .sort((a, b) => a.attributes.sequencenum - b.attributes.sequencenum);
-      let sectionRef = '';
-      let sectionChapter = 0;
-      let sectionChapterPath = '';
-      if (passageRecs.length > 0) {
+      const exportFolder = resolveBurritoExportFolder({
+        section,
+        bookPath,
+        sections: sectionsAll,
+        passages,
+        computeSectionRef,
+        computeMovementRef,
+      });
+      let sectionRef = exportFolder.scopeRef;
+      let sectionChapter = exportFolder.chapter
+        ? parseInt(exportFolder.chapter, 10)
+        : 0;
+      let sectionChapterPath = exportFolder.folderPath;
+      await ipc?.createFolder(sectionChapterPath);
+      if (exportFolder.chapter) {
+        chapters.add(exportFolder.chapter);
+      }
+      chapter = sectionChapter;
+      chapterPath = sectionChapterPath;
+
+      if (
+        passageRecs.length > 0 &&
+        !isBookLevelSection(section) &&
+        !exportFolder.chapter
+      ) {
         const firstP = passageRecs[0];
         sectionRef = computeSectionRef(section.id);
         parseRef(firstP);
         const pt = passageTypeFromRef(firstP.attributes.reference, false);
-        sectionChapter =
-          pt === PassageTypeEnum.CHAPTERNUMBER
-            ? parseInt(firstP.attributes.reference.split(' ')[1], 10) || 1
-            : firstP.attributes.startChapter || 1;
-        if (!isNaN(sectionChapter)) {
+        if (pt === PassageTypeEnum.CHAPTERNUMBER) {
+          const pipe = firstP.attributes.reference.split('|');
+          sectionChapter = parseInt(pipe[1] ?? '', 10) || 1;
+        } else {
+          sectionChapter = firstP.attributes.startChapter || 1;
+        }
+        if (!isNaN(sectionChapter) && sectionChapter > 0) {
           sectionChapterPath = path.join(bookPath, pad3(sectionChapter));
           chapters.add(sectionChapter.toString());
           await ipc?.createFolder(sectionChapterPath);
+          chapter = sectionChapter;
+          chapterPath = sectionChapterPath;
         }
       }
 
@@ -432,9 +462,12 @@ export const useBurritoAudio = (teamId: string) => {
         parseRef(p);
         let { startChapter } = p.attributes;
         // content before first passage with a chapter number is in chapter 1
-        if (!startChapter && chapter === 0) startChapter = 1;
+        if (!startChapter && chapter === 0 && !isBookLevelSection(section)) {
+          startChapter = 1;
+        }
         if (passageType === PassageTypeEnum.CHAPTERNUMBER) {
-          startChapter = parseInt(lastReference.split(' ')[1]);
+          const pipe = p.attributes.reference.split('|');
+          startChapter = parseInt(pipe[1] ?? '', 10) || 1;
         }
 
         // new chapter number create a new chapter folder and usfm chapter header if necessary
