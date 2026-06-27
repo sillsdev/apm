@@ -105,6 +105,9 @@ export interface DetailPlayerProps {
   beforePlay?: () => void | Promise<void | boolean>;
   /** When true, waveform region clicks cannot change the selected segment. */
   lockSegmentSelection?: boolean;
+  /** When the consumer renders its own segment add/remove UI (e.g. Mark Verses),
+   * hide WSAudioPlayer's built-in segment controls to avoid duplicate buttons. */
+  hideSegmentControls?: boolean;
 }
 
 export function PassageDetailPlayer(props: DetailPlayerProps) {
@@ -143,6 +146,7 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
     setPlayingOverride,
     beforePlay,
     lockSegmentSelection,
+    hideSegmentControls,
   } = props;
 
   const allowZoom = allowZoomProp ?? allowZoomAndSpeed ?? false;
@@ -413,6 +417,7 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
         loading={loading}
         busy={pdBusy}
         allowSegment={allowSegment}
+        hideSegmentControls={hideSegmentControls}
         allowAutoSegment={allowAutoSegment}
         defaultRegionParams={defaultSegParams}
         canSetDefaultParams={canSetDefaultParams}
@@ -438,7 +443,8 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
         onDuration={onDuration}
         metaData={
           <>
-            {playerMediafile?.attributes?.transcription &&
+            {/* TODO do we want this button? */}
+            {/* {playerMediafile?.attributes?.transcription &&
             tool !== ToolSlug.Transcribe ? (
               <IconButton
                 id="show-transcription"
@@ -448,7 +454,7 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
               </IconButton>
             ) : (
               <></>
-            )}
+            )} */}
             {saveSegments === SaveSegments.showSaveButton ? (
               <Button
                 id="segment-save"

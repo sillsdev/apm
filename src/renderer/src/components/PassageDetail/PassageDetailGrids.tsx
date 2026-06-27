@@ -13,7 +13,7 @@ import TeamCheckReference from './TeamCheckReference';
 import PassageDetailPlayer from './PassageDetailPlayer';
 import PassageDetailRecord from './PassageDetailRecord';
 import PassageDetailItem from './PassageDetailItem';
-import PassageDetailMarkVerses from './PassageDetailMarkVerses';
+import PassageDetailMarkVersesIsMobile from './mobile/MarkVerses/PassageDetailMarkVersesIsMobile';
 import PassageDetailCarefulSpeech from './PassageDetailCarefulSpeech';
 import PassageDetailTranscribe from './PassageDetailTranscribe';
 import PassageDetailChooser from './PassageDetailChooser';
@@ -201,7 +201,9 @@ const PassageDetailGrids = () => {
                 </Box>
                 <Box
                   id={
-                    showsBoldDesktopStepComplete(tool) ? 'stepcomplete' : undefined
+                    showsBoldDesktopStepComplete(tool)
+                      ? 'stepcomplete'
+                      : undefined
                   }
                   sx={{
                     minWidth: 0,
@@ -364,7 +366,7 @@ const PassageDetailGrids = () => {
                 >
                   <PassageDetailChooser width={paneWidth} />
                   {tool === ToolSlug.Verses && (
-                    <PassageDetailMarkVerses width={paneWidth} />
+                    <PassageDetailMarkVersesIsMobile width={paneWidth} />
                   )}
                   {tool === ToolSlug.CarefulSpeech && (
                     <PassageDetailCarefulSpeech width={paneWidth} />

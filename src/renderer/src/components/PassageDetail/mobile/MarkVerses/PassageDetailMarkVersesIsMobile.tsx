@@ -88,7 +88,6 @@ import {
   ADDREMSEG_KEY,
   DELREG_KEY,
 } from '../../../../components/WSAudioPlayerSegment';
-import { useMobile } from '../../../../utils/useMobile';
 import { getMarkVersesAutosaveBlockers } from '../../../../utils/markVersesValidation';
 import { verseToolId } from '../../markVersesTool';
 const emptySegments = JSON.stringify({ regions: [] });
@@ -179,6 +178,7 @@ export interface MarkVersesProps {
   width: number;
 }
 
+// TODO: after we finish making all changes for this PR, rename this to PassageDetailMarkVerses. Possibly wait until after review to do this.
 export default function PassageDetailMarkVersesIsMobile({
   width,
 }: MarkVersesProps) {
@@ -193,7 +193,6 @@ export default function PassageDetailMarkVersesIsMobile({
     rowData,
   } = usePassageDetailContext();
   const [memory] = useGlobal('memory');
-  const { isMobile } = useMobile();
   const [, setComplete] = useGlobal('progress');
   const [plan] = useGlobal('plan');
   const [data, setDatax] = useState<ICell[][]>([]);
@@ -1595,6 +1594,7 @@ export default function PassageDetailMarkVersesIsMobile({
         width={width}
         data-testid="player"
         allowSegment={NamedRegions.Verse}
+        hideSegmentControls={true}
         onSegment={handleSegment}
         suggestedSegments={pastedSegments}
         allowZoomAndSpeed={true}
@@ -1613,7 +1613,7 @@ export default function PassageDetailMarkVersesIsMobile({
           gap: 0.5,
           flexWrap: 'wrap',
           flexShrink: 0,
-          width: !isMobile ? 'calc(100% + 32px)' : '100%',
+          width: '100%',
         }}
       >
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0 }}>

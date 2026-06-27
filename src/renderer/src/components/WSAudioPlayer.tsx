@@ -1,5 +1,4 @@
 import {
-  Paper,
   IconButton,
   Typography,
   Divider,
@@ -7,7 +6,6 @@ import {
   Grid,
   ToggleButton,
   Box,
-  SxProps,
   Menu,
   MenuItem,
   Stack,
@@ -26,7 +24,6 @@ import PlayIcon from '@mui/icons-material/PlayArrow';
 import PauseIcon from '@mui/icons-material/Pause';
 import LoopIcon from '@mui/icons-material/Loop';
 import TimerIcon from '@mui/icons-material/AccessTime';
-import NextSegmentIcon from '@mui/icons-material/ArrowRightAlt';
 import UndoIcon from '@mui/icons-material/Undo';
 import MicIcon from '@mui/icons-material/SettingsVoice';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
@@ -46,7 +43,6 @@ import type { IconBaseProps } from 'react-icons/lib';
 import { useWavRecorder } from '../crud/useWavRecorder';
 import { IMarker, useWaveSurfer } from '../crud/useWaveSurfer';
 import { Duration } from '../control/Duration';
-import { GrowingSpacer } from '../control/GrowingSpacer';
 import { LightTooltip } from '../control/LightTooltip';
 import { RecordButton } from '../control/RecordButton';
 import HighlightButton from './PassageDetail/mobile/HighlightButton';
@@ -110,13 +106,6 @@ const HandScissors = FaHandScissors as unknown as React.FC<IconBaseProps>;
 const VertDivider = (prop: DividerProps) => (
   <Divider orientation="vertical" flexItem sx={{ ml: '5px' }} {...prop} />
 );
-
-const toolbarProp = {
-  flexDirection: 'row',
-  alignItems: 'center',
-  justifyItems: 'flex-start',
-  display: 'flex',
-} as SxProps;
 
 interface IProps {
   id?: string;
@@ -280,7 +269,6 @@ function WSAudioPlayer(props: IProps) {
     allowDeltaVoice,
     oneTryOnly,
     height,
-    width,
     segments,
     verses,
     currentSegmentIndex,
@@ -2187,27 +2175,26 @@ function WSAudioPlayer(props: IProps) {
       </>
     );
   }
-  if (effectiveMobileView) {
-    return (
-      <Stack
-        direction="column"
-        sx={{
-          ...(dockRecordButton
-            ? {
-                width: '100%',
-                maxWidth: '100%',
-                minWidth: 0,
-                overflowX: 'hidden',
-              }
-            : {
-                height: '100%',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between',
-              }),
-        }}
-      >
-        <Stack>
+  return (
+    <Stack
+      direction="column"
+      sx={{
+        width: '100%',
+        maxWidth: '100%',
+        minWidth: 0,
+        boxSizing: 'border-box',
+        overflowX: 'hidden',
+        ...(dockRecordButton
+          ? {}
+          : {
+              height: '100%',
+              justifyContent: 'space-between',
+            }),
+      }}
+      style={style}
+    >
+      <Stack>
+        {!hideToolbar && (
           <Stack
             direction="row"
             spacing={1}
@@ -2216,6 +2203,10 @@ function WSAudioPlayer(props: IProps) {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              width: '100%',
+              maxWidth: '100%',
+              minWidth: 0,
             }}
           >
             <Stack
@@ -2233,21 +2224,103 @@ function WSAudioPlayer(props: IProps) {
               spacing={1}
               sx={{ display: 'flex', alignItems: 'center' }}
             >
+              {allowSegment && !hideSegmentControls && renderSegmentControls()}
               {deleteRegionNode}
               {undoNode}
               {moreAndMicMenusNode}
             </Stack>
           </Stack>
+        )}
+
+        {keepItSmall && allowRecord && !oneShotUsed ? (
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: 'row',
+              alignItems: 'stretch',
+              gap: 1,
+              width: '100%',
+              maxWidth: '100%',
+              minWidth: 0,
+            }}
+          >
+            <Box sx={{ flex: 1, minWidth: 0 }}>{waveformNode}</Box>
+            {renderRecordButton({ isSmall: true })}
+          </Box>
+        ) : (
           <Box sx={{ width: '100%', maxWidth: '100%', minWidth: 0 }}>
             {waveformNode}
           </Box>
+        )}
 
+        {!hideControls && (
           <Stack
             direction="row"
             spacing={1}
-            sx={{ py: 1, display: 'flex', justifyContent: 'space-between' }}
+            sx={{
+              py: 1,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              width: '100%',
+              maxWidth: '100%',
+              minWidth: 0,
+            }}
           >
-            <Box sx={{ display: 'flex', justifyContent: 'flex-start', mt: 1 }}>
+            <Stack
+              direction="row"
+              spacing={1}
+              sx={{ display: 'flex', alignItems: 'center' }}
+            >
+              {allowSegment && hideToolbar && !hideSegmentControls && (
+                <Stack direction="row" spacing={1}>
+                  {renderSegmentControls({ altRemove: true })}
+                  {showSegmentUndo ? (
+                    <LightTooltip id="wsUndoTip" title={t.undoTip}>
+                      <span>
+                        <IconButton
+                          id="wsUndo"
+                          onClick={() => onSegmentUndo?.()}
+                          disabled={recording || waitingForAI}
+                        >
+                          <UndoIcon />
+                        </IconButton>
+                      </span>
+                    </LightTooltip>
+                  ) : (
+                    canUndo &&
+                    !oneShotUsed && (
+                      <IconButton
+                        id="wsUndo"
+                        onClick={handleUndo}
+                        disabled={recording || waitingForAI}
+                      >
+                        <UndoIcon />
+                      </IconButton>
+                    )
+                  )}
+                </Stack>
+              )}
+              {allowAutoSegment && !isMobileView && (
+                <LightTooltip
+                  id="wsAudioLoopTip"
+                  title={looping ? t.loopon : t.loopoff}
+                >
+                  <span>
+                    <ToggleButton
+                      id="wsAudioLoop"
+                      sx={{ mx: 1, p: 0.5 }}
+                      value="loop"
+                      selected={looping}
+                      onChange={handleToggleLoop}
+                      disabled={!hasRegion || waitingForAI}
+                    >
+                      <LoopIcon />
+                    </ToggleButton>
+                  </span>
+                </LightTooltip>
+              )}
               {onVersions && (
                 <AltButton
                   id="pdRecordVersions"
@@ -2260,14 +2333,48 @@ function WSAudioPlayer(props: IProps) {
                   {ts.versionHistory}
                 </AltButton>
               )}
-            </Box>
+            </Stack>
 
             <Stack
               direction="row"
               spacing={1}
               sx={{ display: 'flex', alignItems: 'center' }}
             >
+              {allowSpeed && (
+                <>
+                  <VertDivider id="wsAudioDiv6" />
+                  <WSAudioPlayerRate
+                    playbackRate={playbackRate}
+                    setPlaybackRate={setPlaybackRate}
+                    recording={recording}
+                  />
+                </>
+              )}
+              {onSaveProgress && (
+                <>
+                  <VertDivider id="wsAudioDiv7" />
+                  <LightTooltip
+                    id="wsAudioTimestampTip"
+                    title={t.timerTip.replace('{0}', localizeHotKey(TIMER_KEY))}
+                  >
+                    <span>
+                      <IconButton
+                        id="wsAudioTimestamp"
+                        onClick={handleSendProgress}
+                      >
+                        <TimerIcon />
+                      </IconButton>
+                    </span>
+                  </LightTooltip>
+                </>
+              )}
+              {metaData}
               {clearRecordingNode}
+              {allowSegment && !hideSegmentControls && hideToolbar && (
+                <AltButton sx={smallButtonProps} onClick={handleClearRegions}>
+                  {t.reset}
+                </AltButton>
+              )}
               {handleSave && showWaveformSaveButton && (
                 <PriButton
                   id="rec-save"
@@ -2279,271 +2386,30 @@ function WSAudioPlayer(props: IProps) {
               )}
             </Stack>
           </Stack>
-        </Stack>
-        {allowRecord && !dockRecordButton && (
-          <Box sx={{ width: 'auto' }}>
-            {renderRecordButton({
-              isSmall: true,
-              isMobileView: true,
-              isRecordingRights: false,
-            })}
-          </Box>
         )}
-        {confirmNode}
-        {voiceDialogNode}
       </Stack>
-    );
-  }
 
-  return (
-    <Box sx={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
-      <Paper
-        sx={{
-          p: 1,
-          mb: 1,
-          width: '100%',
-          maxWidth: '100%',
-          boxSizing: 'border-box',
-        }}
-      >
+      {allowRecord && !dockRecordButton && !keepItSmall && !hideControls && (
         <Box
           sx={{
             display: 'flex',
-            flexDirection: 'column',
-            whiteSpace: 'nowrap',
+            justifyContent: 'center',
+            alignItems: 'center',
             width: '100%',
-            maxWidth: '100%',
-            minWidth: 0,
-            boxSizing: 'border-box',
-            overflowX: 'hidden',
+            py: 1,
           }}
-          style={style}
         >
-          <>
-            {!hideToolbar && (
-              <Grid
-                container
-                sx={{
-                  ...toolbarProp,
-                  minWidth: 0,
-                  width: '100%',
-                  maxWidth: '100%',
-                  flexWrap: 'nowrap',
-                }}
-              >
-                <Grid sx={{ ml: 1 }}>{playNode}</Grid>
-                <VertDivider id="wsAudioDiv1" />
-                <Grid>{positionDurationNode}</Grid>
-                <VertDivider id="wsAudioDiv2" />
-                {zoomNode}
-                {allowRecord && (
-                  <>
-                    {deleteRegionNode}
-                    {undoNode}
-                    <GrowingSpacer />
-                    {clearRecordingNode}
-                    {moreAndMicMenusNode}
-                  </>
-                )}
-                {allowSegment &&
-                  !hideToolbar &&
-                  !hideSegmentControls &&
-                  renderSegmentControls()}
-              </Grid>
-            )}
-            {keepItSmall && allowRecord && !oneShotUsed ? (
-              <Box
-                sx={{
-                  display: 'flex',
-                  flexDirection: 'row',
-                  alignItems: 'stretch',
-                  gap: 1,
-                  width: '100%',
-                  maxWidth: '100%',
-                  minWidth: 0,
-                }}
-              >
-                <Box sx={{ flex: 1, minWidth: 0 }}>{waveformNode}</Box>
-                {renderRecordButton({ isSmall: true })}
-              </Box>
-            ) : (
-              <>
-                {waveformNode}
-                {justPlayButton || (
-                  <Grid
-                    container
-                    sx={{
-                      ...toolbarProp,
-                      width: width - 5,
-                      maxWidth: width - 5,
-                      minWidth: 0,
-                    }}
-                  >
-                    {allowSegment && hideToolbar && !hideSegmentControls && (
-                      <Stack direction="row" spacing={1}>
-                        {renderSegmentControls({ altRemove: true })}
-                        {showSegmentUndo ? (
-                          <LightTooltip id="wsUndoTip" title={t.undoTip}>
-                            <span>
-                              <IconButton
-                                id="wsUndo"
-                                onClick={() => onSegmentUndo?.()}
-                                disabled={recording || waitingForAI}
-                              >
-                                <UndoIcon />
-                              </IconButton>
-                            </span>
-                          </LightTooltip>
-                        ) : (
-                          canUndo &&
-                          !oneShotUsed && (
-                            <IconButton
-                              id="wsUndo"
-                              onClick={handleUndo}
-                              disabled={recording || waitingForAI}
-                            >
-                              <UndoIcon />
-                            </IconButton>
-                          )
-                        )}
-                      </Stack>
-                    )}
-                    <Grid>
-                      {allowAutoSegment && !isMobileView && (
-                        <LightTooltip
-                          id="wsAudioLoopTip"
-                          title={looping ? t.loopon : t.loopoff}
-                        >
-                          <span>
-                            <ToggleButton
-                              id="wsAudioLoop"
-                              sx={{ mx: 1, p: 0.5 }}
-                              value="loop"
-                              selected={looping}
-                              onChange={handleToggleLoop}
-                              disabled={!hasRegion || waitingForAI}
-                            >
-                              <LoopIcon />
-                            </ToggleButton>
-                          </span>
-                        </LightTooltip>
-                      )}
-                      {allowSegment && (
-                        <>
-                          <LightTooltip
-                            id="wsPrevTip"
-                            title={t.prevRegion.replace(
-                              '{0}',
-                              localizeHotKey(LEFT_KEY)
-                            )}
-                          >
-                            <span>
-                              <IconButton
-                                disabled={!hasRegion || waitingForAI}
-                                id="wsNext"
-                                onClick={handlePrevRegion}
-                              >
-                                <NextSegmentIcon
-                                  sx={{ transform: 'rotate(180deg)' }}
-                                />
-                              </IconButton>
-                            </span>
-                          </LightTooltip>
-                          <LightTooltip
-                            id="wsNextTip"
-                            title={t.nextRegion.replace(
-                              '{0}',
-                              localizeHotKey(RIGHT_KEY)
-                            )}
-                          >
-                            <span>
-                              <IconButton
-                                disabled={!hasRegion || waitingForAI}
-                                id="wsNext"
-                                onClick={handleNextRegion}
-                              >
-                                <NextSegmentIcon />
-                              </IconButton>
-                            </span>
-                          </LightTooltip>
-                        </>
-                      )}
-                    </Grid>
-                    {allowSpeed && (
-                      <>
-                        <VertDivider id="wsAudioDiv6" />
-                        <WSAudioPlayerRate
-                          playbackRate={playbackRate}
-                          setPlaybackRate={setPlaybackRate}
-                          recording={recording}
-                        />
-                      </>
-                    )}
-                    {onSaveProgress && (
-                      <>
-                        <VertDivider id="wsAudioDiv7" />
-                        <Grid>
-                          <LightTooltip
-                            id="wsAudioTimestampTip"
-                            title={t.timerTip.replace(
-                              '{0}',
-                              localizeHotKey(TIMER_KEY)
-                            )}
-                          >
-                            <span>
-                              <IconButton
-                                id="wsAudioTimestamp"
-                                onClick={handleSendProgress}
-                              >
-                                <>
-                                  <TimerIcon />
-                                </>
-                              </IconButton>
-                            </span>
-                          </LightTooltip>
-                        </Grid>
-                        {metaData}
-                      </>
-                    )}
-                    <GrowingSpacer />
-                    {!onSaveProgress && <>{metaData}</>}
-                    {allowSegment && !hideSegmentControls && hideToolbar && (
-                      <AltButton
-                        sx={smallButtonProps}
-                        onClick={handleClearRegions}
-                      >
-                        {t.reset}
-                      </AltButton>
-                    )}
-                  </Grid>
-                )}
-                {allowRecord &&
-                  !oneShotUsed &&
-                  !keepItSmall &&
-                  !hideControls && (
-                    <Box
-                      sx={{
-                        display: 'flex',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        width: '100%',
-                        py: 1,
-                      }}
-                    >
-                      {renderRecordButton({
-                        isSmall: false,
-                        showText: hasRecording ?? false,
-                      })}
-                    </Box>
-                  )}
-              </>
-            )}
-            {confirmNode}
-            {voiceDialogNode}
-          </>
+          {renderRecordButton({
+            isSmall: Boolean(isMobileView),
+            isMobileView: Boolean(isMobileView),
+            isRecordingRights: false,
+            showText: isMobileView ? undefined : (hasRecording ?? false),
+          })}
         </Box>
-      </Paper>
-    </Box>
+      )}
+      {confirmNode}
+      {voiceDialogNode}
+    </Stack>
   );
 }
 
