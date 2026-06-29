@@ -442,7 +442,7 @@ export const TranscribeStepSettings = ({
   };
 
   useEffect(() => {
-    if (showSisterLanguage && primaryLanguageName && primaryIso) {
+    if (showSisterLanguage && primaryLanguageName && isLangSet(primaryIso)) {
       const cached = readCachedRecommendations(primaryLanguageName);
       if (cached !== undefined) {
         seedSuggestions(cached);

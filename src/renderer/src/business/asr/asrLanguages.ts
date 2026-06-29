@@ -84,7 +84,7 @@ export function isValidAsrLanguage(iso: string): boolean {
 export function needsSisterLanguage(primaryBcp47: string): boolean {
   if (!isLangSet(primaryBcp47)) return false;
   const iso = isoFromBcp47(primaryBcp47);
-  if (!isLangSet(iso)) return true;
+  if (!isLangSet(iso)) return false;
   return !isValidAsrLanguage(iso);
 }
 
