@@ -146,6 +146,7 @@ export default function MobileWorkflowSteps() {
     ? workflow.map((s) => ({
         id: s.id,
         dataCy: 'workflow-step',
+        label: getWfLabel(s.label),
         isCurrent: s.id === currentstep,
         isComplete: stepComplete(s.id),
         onClick: handleSelect(s.id),
@@ -153,6 +154,7 @@ export default function MobileWorkflowSteps() {
     : sectionPassages.map((p) => ({
         id: p.id,
         dataCy: 'passage-step',
+        label: passageRef(p),
         isCurrent: p.id === passage?.id,
         isComplete:
           (p.attributes.sequencenum ?? 0) <
@@ -344,8 +346,31 @@ export default function MobileWorkflowSteps() {
                   clipPath: 'polygon(10% 0%, 100% 0%, 90% 100%, 0% 100%)',
                   cursor:
                     recording || commentRecording ? 'not-allowed' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  // Horizontal padding clears the slanted edges so the label
+                  // isn't clipped by the parallelogram's angled corners
+                  px: 1.5,
                 }}
-              />
+              >
+                <Typography
+                  component="span"
+                  sx={{
+                    color: 'common.white',
+                    fontSize: '0.7rem',
+                    lineHeight: 1,
+                    textAlign: 'center',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                    maxWidth: '100%',
+                    pointerEvents: 'none',
+                  }}
+                >
+                  {step.label}
+                </Typography>
+              </Box>
             );
           })}
         </Box>
