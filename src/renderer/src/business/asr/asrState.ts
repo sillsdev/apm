@@ -3,7 +3,7 @@ import { ILanguage } from '../../control/Language';
 export interface IAsrState {
   target: string;
   language: ILanguage;
-  mmsIso: string;
+  asrIso: string;
   /** Preferred ASR model for this language (w2v-bert, whisper, omnilingual, mms, …). */
   method?: string;
   dialect: string | undefined;
@@ -21,7 +21,7 @@ export function asrStatesEqual(
   if (!a || !b) return false;
   return (
     a.target === b.target &&
-    a.mmsIso === b.mmsIso &&
+    a.asrIso === b.asrIso &&
     normalizeMethod(a.method) === normalizeMethod(b.method) &&
     (a.dialect ?? undefined) === (b.dialect ?? undefined) &&
     Boolean(a.selectRoman) === Boolean(b.selectRoman) &&

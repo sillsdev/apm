@@ -163,7 +163,7 @@ export default function AsrProgress({
     const remId =
       remoteId('mediafile', mediaId, memory?.keyMap as RecordKeyMap) ?? mediaId;
     const asr = asrState ?? (getAsrSettings() as IAsrState | undefined);
-    const iso = asr?.mmsIso ?? 'eng';
+    const iso = asr?.asrIso ?? 'eng';
     const romanize = asr?.selectRoman ?? false;
     const method = asr?.method ?? 'mms';
     const phoneticParam = phonetic ? '?phonetic=true' : '';

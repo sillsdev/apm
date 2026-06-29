@@ -330,7 +330,8 @@ export function Transcriber(props: IProps) {
     () => teams.find((o) => o.id === organization),
     [teams, organization]
   );
-  const { getAsrSettings } = useGetAsrSettings(team);
+  const { getAsrSettings, saveProjectAsrSettings, saveTeamAsrSettings } =
+    useGetAsrSettings(team);
   const orgSteps = useOrbitData<OrgWorkflowStepD[]>('orgworkflowstep');
   const mediarecs = useOrbitData<MediaFileD[]>('mediafile');
   const tPlayer: IWsAudioPlayerStrings = useSelector(
@@ -1281,21 +1282,33 @@ export function Transcriber(props: IProps) {
   };
 
   // Confirm step-resolved ASR settings; user may override for this run only.
+  // When the resolved settings are already usable (a valid ASR language is
+  // known from saved org/project settings), skip the dialog and start directly.
   const handleTranscribe = () => {
     checkOnline((online) => {
       if (!online) {
         showMessage(sharedStr.mustBeOnline);
         return;
       }
+      if (asrSettings?.asrIso && asrSettings.asrIso !== 'und') {
+        startAsr();
+        return;
+      }
       openAsrLanguageSettings();
     });
   };
 
-  const handleAsrLanguageClose = (cancel: boolean, asrState?: IAsrState) => {
+  const handleAsrLanguageClose = (
+    cancel: boolean,
+    asrState?: IAsrState,
+    setAsTeamDefault?: boolean
+  ) => {
     setAsrLangVisible(false);
     if (cancel) return;
     const asr = asrState ?? asrSettings;
-    if (asr?.mmsIso && asr.mmsIso !== 'und') {
+    if (asr?.asrIso && asr.asrIso !== 'und') {
+      if (setAsTeamDefault) saveTeamAsrSettings(asr);
+      else saveProjectAsrSettings(asr);
       startAsr(asr);
     }
   };
@@ -1601,11 +1614,6 @@ export function Transcriber(props: IProps) {
         </BigDialog>
         <BigDialog
           title={tPlayer.recognizeSpeechSettings}
-          description={
-            <Typography variant="body2" sx={{ maxWidth: 500 }}>
-              {tPlayer.recognizePrompt}
-            </Typography>
-          }
           isOpen={asrLangVisible}
           onOpen={() => handleAsrLanguageClose(true)}
           bp={BigDialogBp.sm}

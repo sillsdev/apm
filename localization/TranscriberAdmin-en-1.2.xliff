@@ -2824,13 +2824,6 @@
                <context context-type="sourcefile">filterMenu.tsx</context>
             </context-group>
          </trans-unit>
-         <trans-unit id="filterMenu.saveFilter">
-            <source>Save as team default</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">filterMenu.tsx</context>
-            </context-group>
-         </trans-unit>
          <trans-unit id="findResource.add">
             <source>Add</source>
             <target/>
@@ -3091,7 +3084,7 @@
             </context-group>
          </trans-unit>
          <trans-unit id="findResource.querying">
-            <source>Querying...</source>
+            <source>Loading...</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">findResource.tsx</context>
@@ -9267,6 +9260,13 @@
                <context context-type="sourcefile">Access.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="shared.teamDefault">
+            <source>Save as team default</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">SelectAsrLanguage.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="shared.teamrole">
             <source>Team Role</source>
             <target/>
@@ -10010,7 +10010,7 @@
             </context-group>
          </trans-unit>
          <trans-unit id="transcriber.aiAutomaticTranscription">
-            <source>AI Automatic transcription</source>
+            <source>AI Automatic Transcription</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">TranscribeStepSettings.tsx</context>
@@ -10021,6 +10021,13 @@
             <target/>
             <context-group>
                <context context-type="sourcefile">Transcriber.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="transcriber.all">
+            <source>All</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">AsrAlphabet.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="transcriber.chooseSisterLang">
@@ -10149,6 +10156,13 @@
                <context context-type="sourcefile">Transcriber.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="transcriber.recommended">
+            <source>Recommended</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">AsrAlphabet.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="transcriber.reject">
             <source>Reject</source>
             <target/>
@@ -10227,7 +10241,7 @@
             </context-group>
          </trans-unit>
          <trans-unit id="transcriber.sisterLang">
-            <source>Your language is not supported for speech recognition. If you wish to try automatic transcription, choose a supported sister language</source>
+            <source>Your language is not supported for speech recognition. To use automatic transcription, choose a closely related language with a similar writing system.</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">TranscribeStepSettings.tsx</context>
@@ -12742,13 +12756,6 @@
          </trans-unit>
          <trans-unit id="wsAudioPlayerSegment.splitSegment">
             <source>Add Boundary [Double Click/{0}]</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">wsAudioPlayer.tsx</context>
-            </context-group>
-         </trans-unit>
-         <trans-unit id="wsAudioPlayerSegment.teamDefault">
-            <source>Save as team default</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">wsAudioPlayer.tsx</context>

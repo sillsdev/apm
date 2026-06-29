@@ -75,6 +75,18 @@ export function isValidAsrLanguage(iso: string): boolean {
   return asrLanguageIsos.has(iso);
 }
 
+/**
+ * True when the primary (vernacular) language can't be transcribed directly and
+ * therefore needs a sister ASR language. An unset language needs nothing; an
+ * unrecognized one (iso `und`) is assumed to need a sister.
+ */
+export function needsSisterLanguage(primaryBcp47: string): boolean {
+  if (!primaryBcp47 || primaryBcp47 === 'und') return false;
+  const iso = isoFromBcp47(primaryBcp47);
+  if (!iso || iso === 'und') return true;
+  return !isValidAsrLanguage(iso);
+}
+
 /** Use sister BCP when the primary language is not available for ASR. */
 export function resolveAsrBcp47(
   primaryBcp: string,

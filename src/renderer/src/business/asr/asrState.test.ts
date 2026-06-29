@@ -10,7 +10,7 @@ const baseState = (): IAsrState => ({
     rtl: false,
     spellCheck: false,
   },
-  mmsIso: 'eng',
+  asrIso: 'eng',
   method: 'whisper',
   dialect: undefined,
   selectRoman: false,

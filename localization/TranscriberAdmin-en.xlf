@@ -2422,12 +2422,6 @@
             <target/>
          </segment>
       </unit>
-      <unit id="filterMenu.saveFilter">
-         <segment>
-            <source>Save as team default</source>
-            <target/>
-         </segment>
-      </unit>
       <unit id="findResource.add">
          <segment>
             <source>Add</source>
@@ -2652,7 +2646,7 @@
       </unit>
       <unit id="findResource.querying">
          <segment>
-            <source>Querying...</source>
+            <source>Loading...</source>
             <target/>
          </segment>
       </unit>
@@ -7942,6 +7936,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="shared.teamDefault">
+         <segment>
+            <source>Save as team default</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="shared.teamrole">
          <segment>
             <source>Team Role</source>
@@ -8580,13 +8580,19 @@
       </unit>
       <unit id="transcriber.aiAutomaticTranscription">
          <segment>
-            <source>AI Automatic transcription</source>
+            <source>AI Automatic Transcription</source>
             <target/>
          </segment>
       </unit>
       <unit id="transcriber.aiWillContinue">
          <segment>
             <source>The AI will continue to work on the transcription even if you close this progress box. Click the {0} button to open the progress box on this workflow step to see the results. Use the settings gear on {0} button to see the transcription using a different language.</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="transcriber.all">
+         <segment>
+            <source>All</source>
             <target/>
          </segment>
       </unit>
@@ -8698,6 +8704,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="transcriber.recommended">
+         <segment>
+            <source>Recommended</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="transcriber.reject">
          <segment>
             <source>Reject</source>
@@ -8766,7 +8778,7 @@
       </unit>
       <unit id="transcriber.sisterLang">
          <segment>
-            <source>Your language is not supported for speech recognition. If you wish to try automatic transcription, choose a supported sister language</source>
+            <source>Your language is not supported for speech recognition. To use automatic transcription, choose a closely related language with a similar writing system.</source>
             <target/>
          </segment>
       </unit>
@@ -10921,12 +10933,6 @@
       <unit id="wsAudioPlayerSegment.splitSegment">
          <segment>
             <source>Add Boundary [Double Click/{0}]</source>
-            <target/>
-         </segment>
-      </unit>
-      <unit id="wsAudioPlayerSegment.teamDefault">
-         <segment>
-            <source>Save as team default</source>
             <target/>
          </segment>
       </unit>

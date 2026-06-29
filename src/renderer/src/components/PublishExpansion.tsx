@@ -17,6 +17,7 @@ import {
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import InfoIcon from '@mui/icons-material/Info';
 import { ILanguage, LightTooltip } from '../control';
+import { isLangSet } from '../utils';
 import {
   related,
   useOrgDefaults,
@@ -85,12 +86,7 @@ export function PublishExpansion(props: IProps) {
   const setLanguage = (language: ILanguage, init?: boolean) => {
     languageRef.current = language;
     setLanguagex(language);
-    if (
-      init &&
-      !bible?.attributes?.iso &&
-      language?.bcp47 &&
-      language?.bcp47 !== 'und'
-    ) {
+    if (init && !bible?.attributes?.iso && isLangSet(language?.bcp47)) {
       setValue('iso', language?.bcp47, init);
       setValue('languageName', language?.languageName, init);
       setValue(pubDataLangProps, JSON.stringify(language), init);
@@ -105,7 +101,6 @@ export function PublishExpansion(props: IProps) {
     getBibleMediaPlan().then((plan) => {
       setMediaplan(plan?.id ?? '');
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [getBibleMediaPlan]);
 
   useEffect(() => {

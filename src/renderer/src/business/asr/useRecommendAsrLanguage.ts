@@ -68,12 +68,12 @@ interface RecommendAsrLanguageResult {
   attempted: boolean;
   error: string;
   /**
-   * Start a recommend-language task for the given primary language name.
-   * `onResult` is invoked with the parsed suggestions once polling completes
-   * (used to cache them in the step settings).
+   * Start a recommend-language task for the given primary language ISO 639-3
+   * code. `onResult` is invoked with the parsed suggestions once polling
+   * completes (used to cache them in the step settings).
    */
   fetchRecommendations: (
-    userLanguage: string,
+    iso: string,
     onResult?: (suggestions: IAsrLanguageSuggestion[]) => void
   ) => Promise<void>;
   /** Populate suggestions from a cached source without querying the service. */
@@ -153,16 +153,16 @@ export function useRecommendAsrLanguage(): RecommendAsrLanguageResult {
 
   const fetchRecommendations = useCallback(
     async (
-      userLanguage: string,
+      iso: string,
       onResult?: (suggestions: IAsrLanguageSuggestion[]) => void
     ) => {
-      if (!userLanguage) return;
+      if (!iso) return;
       reset();
       onResultRef.current = onResult;
       setLoading(true);
       try {
         const params = new URLSearchParams({
-          userLanguage: userLanguage,
+          iso: iso,
         });
         const response = (await axiosGet(
           `aero/transcription/asrsisters`,

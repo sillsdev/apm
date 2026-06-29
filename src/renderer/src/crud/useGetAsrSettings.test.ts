@@ -29,7 +29,7 @@ const asrDefault = {
     rtl: false,
     spellCheck: false,
   },
-  mmsIso: 'eng',
+  asrIso: 'eng',
   method: 'whisper',
   dialect: undefined,
   selectRoman: false,
@@ -205,8 +205,8 @@ describe('buildWorkflowAsrStateFromSettings', () => {
       'org-1',
       asrDefault
     );
-    expect(state.mmsIso).toBe('eng');
-    expect(state.mmsIso).not.toBe('und');
+    expect(state.asrIso).toBe('eng');
+    expect(state.asrIso).not.toBe('und');
   });
 
   it('uses sister language when primary is not ASR-supported', () => {
@@ -221,9 +221,25 @@ describe('buildWorkflowAsrStateFromSettings', () => {
       'org-1',
       asrDefault
     );
-    expect(state.mmsIso).toBe('eng');
+    expect(state.asrIso).toBe('eng');
     expect(state.language.languageName).toBe('English');
     expect(state.language.bcp47).toBe('en');
+  });
+
+  it('propagates the persisted selectRoman (transliterate) flag', () => {
+    const state = buildWorkflowAsrStateFromSettings(
+      {
+        artifactTypeId: '99',
+        language: 'Klingon|tlh',
+        sisterlanguage: 'English|en',
+        selectRoman: true,
+      },
+      slugFromId,
+      getOrgDefault,
+      'org-1',
+      asrDefault
+    );
+    expect(state.selectRoman).toBe(true);
   });
 });
 
@@ -255,7 +271,7 @@ describe('buildWorkflowAsrStateFromSettings Q&A and Retell', () => {
             rtl: false,
             spellCheck: false,
           },
-          mmsIso: 'eng',
+          asrIso: 'eng',
           method: 'whisper',
           dialect: undefined,
           selectRoman: false,
@@ -271,7 +287,7 @@ describe('buildWorkflowAsrStateFromSettings Q&A and Retell', () => {
       asrDefault
     );
     expect(state.target).toBe(AsrTarget.phonetic);
-    expect(state.mmsIso).toBe('eng');
+    expect(state.asrIso).toBe('eng');
     expect(state.language.bcp47).toBe('en');
     expect(state.language.font).toBe('font1');
     expect(state.language.rtl).toBe(true);
@@ -299,7 +315,7 @@ describe('buildVernacularAsrState', () => {
             rtl: false,
             spellCheck: false,
           },
-          mmsIso: 'eng',
+          asrIso: 'eng',
           method: 'whisper',
           dialect: undefined,
           selectRoman: false,
@@ -313,7 +329,7 @@ describe('buildVernacularAsrState', () => {
       'org-1',
       asrDefault
     );
-    expect(state.mmsIso).toBe('eng');
+    expect(state.asrIso).toBe('eng');
     expect(state.language.languageName).toBe('English');
     expect(state.language.bcp47).toBe('en');
   });
@@ -330,7 +346,134 @@ describe('buildVernacularAsrState', () => {
       'org-1',
       asrDefault
     );
-    expect(state.mmsIso).toBe('eng');
+    expect(state.asrIso).toBe('eng');
     expect(state.language.languageName).toBe('English');
+  });
+
+  it('propagates the persisted selectRoman (transliterate) flag', () => {
+    const state = buildVernacularAsrState(
+      {
+        sisterlanguage: formatStepLanguageField({
+          languageName: 'English',
+          bcp47: 'en',
+        }),
+        selectRoman: true,
+      },
+      getOrgDefault,
+      'org-1',
+      asrDefault
+    );
+    expect(state.selectRoman).toBe(true);
+  });
+
+  it('applies step phonetic + selectRoman when the vernacular is itself the ASR language', () => {
+    const getOrgDefaultWithAsr = (label: string) => {
+      if (label === orgDefaultLangProps) {
+        return { bcp47: 'am', languageName: 'Amharic', font: '', rtl: false };
+      }
+      if (label === orgDefaultAsr) {
+        return {
+          target: AsrTarget.alphabet,
+          language: {
+            bcp47: 'am',
+            languageName: 'Amharic',
+            font: '',
+            rtl: false,
+            spellCheck: false,
+          },
+          asrIso: 'amh',
+          method: 'whisper',
+          dialect: undefined,
+          selectRoman: false,
+        };
+      }
+      return undefined;
+    };
+    const state = buildVernacularAsrState(
+      { phonetic: false, selectRoman: true },
+      getOrgDefaultWithAsr,
+      'org-1',
+      asrDefault
+    );
+    expect(state.asrIso).toBe('amh');
+    expect(state.target).toBe(AsrTarget.alphabet);
+    expect(state.selectRoman).toBe(true);
+  });
+
+  it('clears transliterate when phonetic is selected', () => {
+    const state = buildVernacularAsrState(
+      {
+        sisterlanguage: formatStepLanguageField({
+          languageName: 'English',
+          bcp47: 'en',
+        }),
+        phonetic: true,
+        selectRoman: true,
+      },
+      getOrgDefault,
+      'org-1',
+      asrDefault
+    );
+    expect(state.target).toBe(AsrTarget.phonetic);
+    expect(state.selectRoman).toBe(false);
+  });
+});
+
+describe('buildVernacularAsrState project language override', () => {
+  // Org default vernacular is Klingon (not ASR-supported) with an English sister.
+  const getOrgDefault = (label: string) =>
+    label === orgDefaultLangProps
+      ? { bcp47: 'tlh', languageName: 'Klingon', font: '', rtl: false }
+      : undefined;
+  const settings = {
+    sisterlanguage: formatStepLanguageField({
+      languageName: 'English',
+      bcp47: 'en',
+    }),
+    selectRoman: true,
+  };
+
+  it('defaults to step settings (sister) when project matches org default', () => {
+    const projectLang = {
+      bcp47: 'tlh',
+      languageName: 'Klingon',
+      font: 'pf',
+      rtl: false,
+      spellCheck: false,
+    };
+    const state = buildVernacularAsrState(
+      settings,
+      getOrgDefault,
+      'org-1',
+      asrDefault,
+      projectLang
+    );
+    expect(state.asrIso).toBe('eng');
+    expect(state.language.bcp47).toBe('en');
+    expect(state.language.languageName).toBe('English');
+    expect(state.selectRoman).toBe(true);
+  });
+
+  it('uses the project language and drops the sister when it differs', () => {
+    const projectLang = {
+      bcp47: 'en',
+      languageName: 'Project English',
+      font: 'pf',
+      rtl: false,
+      spellCheck: false,
+    };
+    const state = buildVernacularAsrState(
+      settings,
+      getOrgDefault,
+      'org-1',
+      asrDefault,
+      projectLang
+    );
+    expect(state.asrIso).toBe('eng');
+    expect(state.language.bcp47).toBe('en');
+    expect(state.language.languageName).toBe('Project English');
+    expect(state.language.font).toBe('pf');
+    // sister + transliterate were configured for the org default language.
+    expect(state.selectRoman).toBe(false);
   });
 });

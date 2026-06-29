@@ -307,6 +307,9 @@ export default function FindBibleBrain({
         sx={{ my: fixedFooterLayout ? 0 : 1 }}
       >
         <Divider sx={{ width: '100%' }} />
+        {(queryBible || queryLang) && (
+          <Typography variant="body1">{t.querying}</Typography>
+        )}
         <ActionRow>
           <AltButton
             disabled={!bibleOpt}
