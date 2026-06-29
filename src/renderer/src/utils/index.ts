@@ -82,6 +82,7 @@ export * from './useCanPublish';
 export * from './useDataChanges';
 export * from './useJsonParams';
 export * from './jsonParse';
+export * from './langTag';
 export * from './useNum2BookCode';
 export * from './refNumPat';
 export * from './blobToBase64';

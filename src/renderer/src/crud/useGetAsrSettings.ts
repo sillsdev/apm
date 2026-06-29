@@ -1,5 +1,5 @@
 import React from 'react';
-import { IAsrState } from '../business/asr/asrState';
+import { IAsrState, normalizeAsrState } from '../business/asr/asrState';
 import { IAsrLanguageSuggestion } from '../business/asr/useRecommendAsrLanguage';
 import { OrganizationD, OrgWorkflowStepD, Project } from '../model';
 import { ILanguage } from '../control';
@@ -219,10 +219,10 @@ export function useGetAsrSettings(team?: OrganizationD) {
     const settings = parseStepSettings(json?.settings);
     const slug = artifactTypeSlugFromSettings(settings, slugFromId);
 
-    // When the project's vernacular differs from the org default, a per-project
-    // ASR config (saved on Run) takes precedence over the org-level step settings.
-    if (artifactUsesOrgVernacularLanguage(slug) && projectDiffersFromOrg()) {
-      const projAsr = getProjectDefault(orgDefaultAsr) as IAsrState | undefined;
+    // A per-project ASR config (saved on Run) takes precedence over the
+    // org-level step settings, so the user's last choice always sticks.
+    if (artifactUsesOrgVernacularLanguage(slug)) {
+      const projAsr = normalizeAsrState(getProjectDefault(orgDefaultAsr));
       if (isLangSet(projAsr?.asrIso)) return projAsr;
     }
 
@@ -235,9 +235,7 @@ export function useGetAsrSettings(team?: OrganizationD) {
     );
     const artId = getArtIdFromSettings(settings);
     if (!hasStepLang) {
-      const orgAsr = getOrgDefault(orgDefaultAsr, orgId) as
-        | IAsrState
-        | undefined;
+      const orgAsr = normalizeAsrState(getOrgDefault(orgDefaultAsr, orgId));
       if (orgAsr) return orgAsr;
     }
     if (!artId) {
@@ -271,12 +269,15 @@ export function useGetAsrSettings(team?: OrganizationD) {
       setOrgDefault(orgDefaultLangProps, vernacular, orgId);
     }
     setOrgDefault(orgDefaultAsr, asrState, orgId);
+    // Drop any per-project override so the new team default isn't shadowed.
+    setProjectDefault(orgDefaultAsr, undefined);
   };
 
   /**
-   * Persist the chosen ASR settings to the project default, but only when the
-   * project's vernacular differs from the org default the step was configured
-   * for (otherwise the org-level step settings remain the source of truth).
+   * Persist the chosen ASR settings to the project default so any change the user
+   * makes sticks (the team-default path saves to the org instead). Only applies to
+   * artifacts driven by the org/project vernacular; step-language artifacts keep
+   * their own per-step language settings.
    */
   const saveProjectAsrSettings = (asrState: IAsrState) => {
     const step = orgSteps.find((s) => s.id === currentstep);
@@ -287,7 +288,6 @@ export function useGetAsrSettings(team?: OrganizationD) {
     const settings = parseStepSettings(json?.settings);
     const slug = artifactTypeSlugFromSettings(settings, slugFromId);
     if (!artifactUsesOrgVernacularLanguage(slug)) return;
-    if (!projectDiffersFromOrg()) return;
     setProjectDefault(orgDefaultAsr, asrState);
   };
 

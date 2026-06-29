@@ -25,6 +25,7 @@ import {
 import { useGetAsrSettings } from '../../crud/useGetAsrSettings';
 import { useRecommendAsrLanguage } from './useRecommendAsrLanguage';
 import { useCheckOnline } from '../../utils/useCheckOnline';
+import { isLangSet } from '../../utils/langTag';
 import { useSnackBar } from '../../hoc/SnackBar';
 import { AsrTarget } from './AsrTarget';
 
@@ -146,8 +147,7 @@ export default function SelectAsrLanguage({
           disabled={
             !asrState?.target ||
             (asrState?.target === AsrTarget.alphabet &&
-              (asrState?.language?.bcp47 === undefined ||
-                asrState?.language?.bcp47 === 'und'))
+              !isLangSet(asrState?.language?.bcp47))
           }
         >
           {t.run}

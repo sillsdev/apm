@@ -78,6 +78,7 @@ import {
   updateSegments,
   useWaitForRemoteQueue,
   getSortedRegions,
+  isLangSet,
 } from '../utils';
 import { isElectron } from '../../api-variable';
 import { TokenContext } from '../context/TokenProvider';
@@ -704,7 +705,7 @@ export function Transcriber(props: IProps) {
   useEffect(() => {
     const lgSettings = JSON.parse(stepSettings || '{}');
     const { bcp47: stepLang } = parseStepLanguageField(lgSettings?.language);
-    const hasStepLanguage = Boolean(stepLang && stepLang !== 'und');
+    const hasStepLanguage = isLangSet(stepLang);
 
     const loadProjData = async () => {
       const r = project
@@ -1290,7 +1291,7 @@ export function Transcriber(props: IProps) {
         showMessage(sharedStr.mustBeOnline);
         return;
       }
-      if (asrSettings?.asrIso && asrSettings.asrIso !== 'und') {
+      if (isLangSet(asrSettings?.asrIso)) {
         startAsr();
         return;
       }
@@ -1306,7 +1307,7 @@ export function Transcriber(props: IProps) {
     setAsrLangVisible(false);
     if (cancel) return;
     const asr = asrState ?? asrSettings;
-    if (asr?.asrIso && asr.asrIso !== 'und') {
+    if (isLangSet(asr?.asrIso)) {
       if (setAsTeamDefault) saveTeamAsrSettings(asr);
       else saveProjectAsrSettings(asr);
       startAsr(asr);

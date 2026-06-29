@@ -14,7 +14,7 @@ import {
 } from '../../crud';
 import SelectArtifactType from '../Sheet/SelectArtifactType';
 import { ILanguage, Language } from '../../control';
-import { JSONParse } from '../../utils';
+import { JSONParse, isLangSet } from '../../utils';
 import { isElectron } from '../../../api-variable';
 import { MainAPI } from '@model/main-api';
 import {
@@ -225,7 +225,7 @@ export const TranscribeStepSettings = ({
     ];
     const spellCheck = defaultSpellCheckForArtifact(
       slugFromId(artifactTypeId),
-      bcp47 !== 'und' ? bcp47 : undefined,
+      isLangSet(bcp47) ? bcp47 : undefined,
       availSpellLangs
     );
     setLgState((state) => ({
@@ -301,7 +301,7 @@ export const TranscribeStepSettings = ({
       const spellCheck = resolveStepSpellCheck(
         json,
         slug,
-        bcp47 !== 'und' ? bcp47 : undefined,
+        isLangSet(bcp47) ? bcp47 : undefined,
         availSpellLangs
       );
       setLgState((state) => ({
@@ -337,7 +337,7 @@ export const TranscribeStepSettings = ({
     ) {
       return;
     }
-    if (bcp47 !== 'und' && !isValidAsrLanguage(isoFromBcp47(bcp47))) {
+    if (isLangSet(bcp47) && !isValidAsrLanguage(isoFromBcp47(bcp47))) {
       showMessage(tt.invalidSisterLang);
       setSisterLanguage(emptyLanguage());
       const json = JSONParse(toolSettings) as Record<string, string>;
@@ -399,7 +399,7 @@ export const TranscribeStepSettings = ({
   // ASR settings (transcription type + transliterate) apply whenever there is a
   // primary language to transcribe — either directly (primary is a valid ASR
   // language) or via a sister language.
-  const showAsrSettings = primaryBcp47 !== 'und';
+  const showAsrSettings = isLangSet(primaryBcp47);
 
   const readCachedRecommendations = (
     lang: string

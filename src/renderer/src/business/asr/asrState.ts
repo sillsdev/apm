@@ -10,6 +10,17 @@ export interface IAsrState {
   selectRoman?: boolean;
 }
 
+/**
+ * Coerce a persisted IAsrState read from org/project defaults. `asrIso` was once
+ * stored as `mmsIso`; fall back to that legacy key so older saved data still
+ * resolves a language instead of reading `undefined`.
+ */
+export function normalizeAsrState(raw: unknown): IAsrState | undefined {
+  if (!raw || typeof raw !== 'object') return undefined;
+  const obj = raw as IAsrState & { mmsIso?: string };
+  return { ...obj, asrIso: obj.asrIso ?? obj.mmsIso ?? 'und' };
+}
+
 const normalizeMethod = (method?: string) => method ?? 'mms';
 
 /** Fields that affect the transcription API request in AsrProgress. */

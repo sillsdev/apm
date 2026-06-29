@@ -87,6 +87,7 @@ export function useRecommendAsrLanguage(): RecommendAsrLanguageResult {
   const [attempted, setAttempted] = useState(false);
   const [error, setError] = useState('');
   const timerRef = useRef<NodeJS.Timeout | undefined>(undefined);
+  const mountedRef = useRef(true);
   const taskIdRef = useRef('');
   const token = useContext(TokenContext)?.state?.accessToken ?? undefined;
   const [errorReporter] = useGlobal('errorReporter');
@@ -119,6 +120,12 @@ export function useRecommendAsrLanguage(): RecommendAsrLanguageResult {
         undefined,
         token
       );
+      // The hook may have unmounted while the request was in flight; bail so a
+      // dead instance can't keep updating state or leave the interval running.
+      if (!mountedRef.current) {
+        stop();
+        return;
+      }
       console.log('transcription/asrsisters data', data);
       if (hasData(data)) {
         stop();
@@ -130,12 +137,14 @@ export function useRecommendAsrLanguage(): RecommendAsrLanguageResult {
       }
     } catch (err) {
       stop();
+      if (!mountedRef.current) return;
       logError(Severity.error, errorReporter, err as Error);
       setError((err as Error).message);
       setLoading(false);
       setAttempted(true);
+    } finally {
+      waitingRef.current = false;
     }
-    waitingRef.current = false;
   }, [stop, token, errorReporter]);
 
   const seedSuggestions = useCallback(
@@ -176,19 +185,31 @@ export function useRecommendAsrLanguage(): RecommendAsrLanguageResult {
           setAttempted(true);
           return;
         }
+        // A concurrent fetch (deps change / StrictMode remount) or an unmount
+        // may have occurred during the await. Don't strand a second interval
+        // that stop() could never clear, and don't poll for a dead instance.
+        if (!mountedRef.current) return;
         taskIdRef.current = String(taskId);
+        stop();
         timerRef.current = setInterval(poll, POLL_DELAY);
       } catch (err) {
+        if (!mountedRef.current) return;
         logError(Severity.error, errorReporter, err as Error);
         setError((err as Error).message);
         setLoading(false);
         setAttempted(true);
       }
     },
-    [poll, reset, token, errorReporter]
+    [poll, reset, stop, token, errorReporter]
   );
 
-  useEffect(() => stop, [stop]);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      stop();
+    };
+  }, [stop]);
 
   return {
     suggestions,

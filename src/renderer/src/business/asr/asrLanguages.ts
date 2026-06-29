@@ -1,6 +1,7 @@
 import { getLangTag } from 'mui-language-picker';
 import asrLangData from '../../assets/asrLangs.json';
 import { AsrLangData } from '../../model/asrLang';
+import { isLangSet } from '../../utils/langTag';
 
 const { entries } = asrLangData as AsrLangData;
 
@@ -71,7 +72,7 @@ export const preferredAsrMethodFromBcp47 = (bcp47: string) => {
 
 /** True when iso is in the bundled ASR language list. */
 export function isValidAsrLanguage(iso: string): boolean {
-  if (!iso || iso === 'und') return false;
+  if (!isLangSet(iso)) return false;
   return asrLanguageIsos.has(iso);
 }
 
@@ -81,9 +82,9 @@ export function isValidAsrLanguage(iso: string): boolean {
  * unrecognized one (iso `und`) is assumed to need a sister.
  */
 export function needsSisterLanguage(primaryBcp47: string): boolean {
-  if (!primaryBcp47 || primaryBcp47 === 'und') return false;
+  if (!isLangSet(primaryBcp47)) return false;
   const iso = isoFromBcp47(primaryBcp47);
-  if (!iso || iso === 'und') return true;
+  if (!isLangSet(iso)) return true;
   return !isValidAsrLanguage(iso);
 }
 
@@ -93,8 +94,8 @@ export function resolveAsrBcp47(
   sisterBcp: string | undefined
 ): string {
   const primaryIso = isoFromBcp47(primaryBcp);
-  const needsSister = primaryIso !== 'und' && !isValidAsrLanguage(primaryIso);
-  if (needsSister && sisterBcp && sisterBcp !== 'und') {
+  const needsSister = isLangSet(primaryIso) && !isValidAsrLanguage(primaryIso);
+  if (needsSister && isLangSet(sisterBcp)) {
     return sisterBcp;
   }
   if (needsSister) {

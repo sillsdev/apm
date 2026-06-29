@@ -1,4 +1,4 @@
-import { IAsrState } from '../business/asr/asrState';
+import { IAsrState, normalizeAsrState } from '../business/asr/asrState';
 import { AsrTarget } from '../business/asr/AsrTarget';
 import { ILanguage } from '../control';
 import { getLangTag } from 'mui-language-picker';
@@ -139,7 +139,7 @@ export function transcribeSettingsNeedSisterLanguage(
 ): boolean {
   const slug = artifactTypeSlugFromSettings(settings, slugFromId);
   if (slug === ArtifactTypeSlug.QandA || slug === ArtifactTypeSlug.Retell) {
-    const orgAsr = getOrgDefault(orgDefaultAsr, orgId) as IAsrState | undefined;
+    const orgAsr = normalizeAsrState(getOrgDefault(orgDefaultAsr, orgId));
     if (isLangSet(orgAsr?.asrIso)) return false;
   }
   let primaryBcp: string;
@@ -183,7 +183,7 @@ export function buildVernacularAsrState(
   const orgLang = getOrgDefault(orgDefaultLangProps, orgId) as
     | ILanguage
     | undefined;
-  const orgAsr = getOrgDefault(orgDefaultAsr, orgId) as IAsrState | undefined;
+  const orgAsr = normalizeAsrState(getOrgDefault(orgDefaultAsr, orgId));
   const sister = parseStepLanguageField(settings?.sisterlanguage);
 
   // The step settings (sister language and the synced org ASR) were configured
