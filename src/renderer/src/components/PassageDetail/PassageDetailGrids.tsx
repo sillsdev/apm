@@ -141,6 +141,15 @@ const PassageDetailGrids = () => {
       : tool;
   const boldDesktopCenteredHeader = isBoldWorkflow && !isMobile;
   const MAGIC_NUMBER_THAT_MAKES_IT_FIT = 16;
+  // Width for a step's audio player so it fits the pane without clipping the
+  // right-edge controls: pane minus padding and (when shown) the scrollbar.
+  // Pass this to every step player so a new consumer can't forget the fit math.
+  const playerPaneWidth = Math.max(
+    0,
+    paneWidth -
+      MAGIC_NUMBER_THAT_MAKES_IT_FIT -
+      (discussOpen ? 0 : scrollbarWidth)
+  );
   return (
     <Box
       sx={{
@@ -366,19 +375,14 @@ const PassageDetailGrids = () => {
                 >
                   <PassageDetailChooser width={paneWidth} />
                   {tool === ToolSlug.Verses && (
-                    <PassageDetailMarkVersesIsMobile width={paneWidth} />
+                    <PassageDetailMarkVersesIsMobile width={playerPaneWidth} />
                   )}
                   {tool === ToolSlug.CarefulSpeech && (
-                    <PassageDetailCarefulSpeech width={paneWidth} />
+                    <PassageDetailCarefulSpeech width={playerPaneWidth} />
                   )}
                   {tool === ToolSlug.Transcribe && (
                     <PassageDetailTranscribe
-                      width={Math.max(
-                        0,
-                        paneWidth -
-                          MAGIC_NUMBER_THAT_MAKES_IT_FIT -
-                          (discussOpen ? 0 : scrollbarWidth)
-                      )}
+                      width={playerPaneWidth}
                       artifactTypeId={artifactId}
                     />
                   )}
@@ -386,7 +390,7 @@ const PassageDetailGrids = () => {
                     <PassageDetailRecord width={Math.max(0, paneWidth - 40)} />
                   )}
                   {tool === ToolSlug.ConsultantCheck && (
-                    <ConsultantCheck width={paneWidth} />
+                    <ConsultantCheck width={playerPaneWidth} />
                   )}
                 </Grid>
               )}

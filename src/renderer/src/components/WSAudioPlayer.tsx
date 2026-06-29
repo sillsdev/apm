@@ -2143,7 +2143,9 @@ function WSAudioPlayer(props: IProps) {
             <Stack
               direction="row"
               spacing={1}
-              sx={{ display: 'flex', alignItems: 'center' }}
+              useFlexGap
+              flexWrap="wrap"
+              sx={{ display: 'flex', alignItems: 'center', minWidth: 0 }}
             >
               {playNode}
               {positionDurationNode}
@@ -2182,6 +2184,7 @@ function WSAudioPlayer(props: IProps) {
         width: '100%',
         maxWidth: '100%',
         minWidth: 0,
+        px: 1,
         boxSizing: 'border-box',
         overflowX: 'hidden',
         ...(dockRecordButton
@@ -2212,7 +2215,9 @@ function WSAudioPlayer(props: IProps) {
             <Stack
               direction="row"
               spacing={1}
-              sx={{ display: 'flex', alignItems: 'center' }}
+              useFlexGap
+              flexWrap="wrap"
+              sx={{ display: 'flex', alignItems: 'center', minWidth: 0 }}
             >
               {playNode}
               {positionDurationNode}
@@ -2222,12 +2227,18 @@ function WSAudioPlayer(props: IProps) {
             <Stack
               direction="row"
               spacing={1}
-              sx={{ display: 'flex', alignItems: 'center' }}
+              useFlexGap
+              flexWrap="wrap"
+              sx={{ display: 'flex', alignItems: 'center', minWidth: 0 }}
             >
               {allowSegment && !hideSegmentControls && renderSegmentControls()}
-              {deleteRegionNode}
-              {undoNode}
-              {moreAndMicMenusNode}
+              {allowRecord && (
+                <>
+                  {deleteRegionNode}
+                  {undoNode}
+                  {moreAndMicMenusNode}
+                </>
+              )}
             </Stack>
           </Stack>
         )}
@@ -2271,7 +2282,9 @@ function WSAudioPlayer(props: IProps) {
             <Stack
               direction="row"
               spacing={1}
-              sx={{ display: 'flex', alignItems: 'center' }}
+              useFlexGap
+              flexWrap="wrap"
+              sx={{ display: 'flex', alignItems: 'center', minWidth: 0 }}
             >
               {allowSegment && hideToolbar && !hideSegmentControls && (
                 <Stack direction="row" spacing={1}>
@@ -2333,13 +2346,6 @@ function WSAudioPlayer(props: IProps) {
                   {ts.versionHistory}
                 </AltButton>
               )}
-            </Stack>
-
-            <Stack
-              direction="row"
-              spacing={1}
-              sx={{ display: 'flex', alignItems: 'center' }}
-            >
               {allowSpeed && (
                 <>
                   <VertDivider id="wsAudioDiv6" />
@@ -2350,6 +2356,15 @@ function WSAudioPlayer(props: IProps) {
                   />
                 </>
               )}
+            </Stack>
+
+            <Stack
+              direction="row"
+              spacing={1}
+              useFlexGap
+              flexWrap="wrap"
+              sx={{ display: 'flex', alignItems: 'center', minWidth: 0 }}
+            >
               {onSaveProgress && (
                 <>
                   <VertDivider id="wsAudioDiv7" />

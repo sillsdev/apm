@@ -1,4 +1,5 @@
 import {
+  Box,
   Paper,
   Table,
   TableBody,
@@ -8,7 +9,9 @@ import {
   TableRow,
   Typography,
 } from '@mui/material';
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import type { RefObject } from 'react';
+import { LightTooltip } from '../../../../control/LightTooltip';
 import {
   isMarkVersesTableRowCompleted,
   MARK_VERSES_COMPLETED_RGBA,
@@ -65,6 +68,7 @@ export default function MarkVersesTableIsMobile({
             const limits = row[ColName.Limits] as ICell;
             const reference = row[ColName.Ref] as ICell;
             const invalid = reference.className?.includes('Err');
+            const warn = reference.className?.includes('Warn');
             const isCurrentRow = (limits.className ?? '').includes('cur');
             const hasLimits = Boolean(limits.value);
             const rowCompleted = isMarkVersesTableRowCompleted(
@@ -125,15 +129,29 @@ export default function MarkVersesTableIsMobile({
                     onRowSelect?.(index + 1);
                   }}
                 >
-                  <Typography
-                    variant="body2"
-                    aria-label={`verse-reference-${index + 1}`}
-                    sx={{
-                      color: invalid ? 'error.main' : 'text.primary',
-                    }}
-                  >
-                    {reference.value || '-'}
-                  </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    <Typography
+                      variant="body2"
+                      aria-label={`verse-reference-${index + 1}`}
+                      sx={{
+                        color: invalid ? 'error.main' : 'text.primary',
+                      }}
+                    >
+                      {reference.value || '-'}
+                    </Typography>
+                    {warn ? (
+                      <LightTooltip
+                        id={`verse-reference-warning-tip-${index + 1}`}
+                        title={reference.warning ?? ''}
+                      >
+                        <WarningAmberIcon
+                          fontSize="small"
+                          color="warning"
+                          aria-label={`verse-reference-warning-${index + 1}`}
+                        />
+                      </LightTooltip>
+                    ) : null}
+                  </Box>
                 </TableCell>
               </TableRow>
             );

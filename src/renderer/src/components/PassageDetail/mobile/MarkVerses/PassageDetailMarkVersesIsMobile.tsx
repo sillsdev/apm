@@ -89,6 +89,8 @@ import {
   DELREG_KEY,
 } from '../../../../components/WSAudioPlayerSegment';
 import { getMarkVersesAutosaveBlockers } from '../../../../utils/markVersesValidation';
+import { evaluateMarkVersesEditReference } from '../../../../utils/markVersesEditReference';
+import { getLastVerse } from '../../../../business/localParatext/getLastVerse';
 import { verseToolId } from '../../markVersesTool';
 const emptySegments = JSON.stringify({ regions: [] });
 /** Distance (seconds) used for Add (must be away from boundaries) and Remove (must be at a join). */
@@ -158,6 +160,8 @@ export interface ICell {
   readOnly?: boolean;
   width?: number;
   className?: string;
+  /** Tooltip text shown on the row's warning icon (set when `className` has `Warn`). */
+  warning?: string;
 }
 
 enum ColName {
@@ -784,13 +788,23 @@ export default function PassageDetailMarkVersesIsMobile({
     [findCurrentTableRowIndex, setActiveRowHighlight]
   );
 
-  const buildReferenceCell = useCallback((value: string, cell: ICell) => {
-    return {
-      ...cell,
-      value,
-      className: `ref${value && !refMatch(value) ? ' Err' : ''}`,
-    };
-  }, []);
+  const buildReferenceCell = useCallback(
+    (value: string, cell: ICell, warning?: string) => {
+      // TODO revisit this and the color
+      const illFormatted = Boolean(value) && !refMatch(value);
+      // `Err` (ill-formatted, fails refMatch) renders red; `Warn` (well-formed
+      // but out of range / breaks consecutive numbering) renders a warning icon
+      // with `warning` as its tooltip.
+      const warn = Boolean(warning) && !illFormatted;
+      return {
+        ...cell,
+        value,
+        warning: warn ? warning : undefined,
+        className: `ref${illFormatted ? ' Err' : ''}${warn ? ' Warn' : ''}`,
+      };
+    },
+    []
+  );
 
   /** Assign passage refs after the saved range; add rows when the range no longer covers them. */
   const redistributeTableTailAfterSave = useCallback(
@@ -1026,10 +1040,45 @@ export default function PassageDetailMarkVersesIsMobile({
     const row = newData[startRowIndex] as ICell[] | undefined;
     if (!row) return;
 
+    const previousReference = `${(row[ColName.Ref] as ICell)?.value ?? ''}`;
     const nextReference = formatReferenceValue(saveValue);
+
+    // Decide whether this edit re-numbers the tail, just flags the row, or
+    // leaves numbering alone. Versification is bound to the passage's book so
+    // the chapter-boundary rules match the rest of the app.
+    const book = passage?.attributes?.book ?? '';
+    const lastVerseForBook = (chapter: number) => getLastVerse(book, chapter);
+    const tableReferences = dataRef.current
+      .slice(1)
+      .map((tableRow) => `${(tableRow[ColName.Ref] as ICell)?.value ?? ''}`);
+    const precedingReference =
+      startRowIndex > 1
+        ? `${(newData[startRowIndex - 1]?.[ColName.Ref] as ICell)?.value ?? ''}`
+        : undefined;
+    const { action: editAction, reason: warnReason } =
+      evaluateMarkVersesEditReference({
+        previousReference,
+        newReference: nextReference,
+        precedingReference,
+        tableReferences,
+        rowIndex: startRowIndex - 1,
+        getLastVerse: lastVerseForBook,
+      });
+
+    // Reuse the existing markup-validation messaging for the warning tooltip.
+    const warningMessage =
+      editAction === 'warn'
+        ? warnReason === 'outOfRange'
+          ? t.outsideReferences.replace('{0}', nextReference)
+          : warnReason === 'nonConsecutive'
+            ? t.badReferences
+            : undefined
+        : undefined;
+
     row[ColName.Ref] = buildReferenceCell(
       nextReference,
-      row[ColName.Ref] as ICell
+      row[ColName.Ref] as ICell,
+      warningMessage
     );
 
     const passageRange =
@@ -1059,7 +1108,11 @@ export default function PassageDetailMarkVersesIsMobile({
       ? `${saveValue.endChapter}:${saveValue.endVerse}${nextLetter}`
       : undefined;
 
-    if (startPassageIdx >= 0 && endPassageIdx >= 0) {
+    if (
+      editAction === 'renumber' &&
+      startPassageIdx >= 0 &&
+      endPassageIdx >= 0
+    ) {
       redistributeTableTailAfterSave(
         newData,
         startRowIndex,
