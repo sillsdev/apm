@@ -3,7 +3,6 @@ import React, { useEffect, useState } from 'react';
 // see: https://upmostly.com/tutorials/how-to-use-the-usecontext-hook-in-react
 import { useGlobal } from '../context/useGlobal';
 import {
-  IMainStrings,
   ProjectD,
   DiscussionD,
   MediaFileD,
@@ -21,7 +20,6 @@ import { SectionArray } from '../model/SectionArray';
 export interface IRowData {}
 
 const initState = {
-  t: {} as IMainStrings,
   connected: false,
   mediafiles: [] as MediaFileD[],
   discussions: [] as DiscussionD[],

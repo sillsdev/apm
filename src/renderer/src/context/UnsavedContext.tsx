@@ -6,7 +6,7 @@ import { IMainStrings } from '../model';
 import { waitForIt } from '../utils/waitForIt';
 import { useSnackBar } from '../hoc/SnackBar';
 import Confirm from '../components/AlertDialog';
-import { useSelector } from 'react-redux';
+import { shallowEqual, useSelector } from 'react-redux';
 import { mainSelector } from '../selector';
 
 export interface IRowData {}
@@ -24,7 +24,6 @@ const initState = {
   checkSavedFn: (method: () => void) => {
     return;
   },
-  t: {} as IMainStrings,
   handleSaveConfirmed: () => {},
   handleSaveRefused: () => {},
   toolChanged: (toolId: string, changed?: boolean, toolErr?: string) => {},
@@ -56,14 +55,13 @@ const UnsavedContext = React.createContext({
 } as IContext);
 
 const UnsavedProvider = (props: PropsWithChildren) => {
-  const t: IMainStrings = useSelector(mainSelector);
+  const t: IMainStrings = useSelector(mainSelector, shallowEqual);
   const [, setBusy] = useGlobal('remoteBusy');
   const [alertOpen, setAlertOpen] = useGlobal('alertOpen'); //global because planSheet checks it //verified this is not used in a function 2/18/25
   const saveConfirm = React.useRef<(() => any) | undefined>(undefined);
   const { showMessage } = useSnackBar();
   const [state, setState] = useState({
     ...initState,
-    t,
   });
   const saveErr = useRef<string | undefined>(undefined);
   const [saveResult, setSaveResult] = useGlobal('saveResult'); //verified this is not used in a function 2/18/25
