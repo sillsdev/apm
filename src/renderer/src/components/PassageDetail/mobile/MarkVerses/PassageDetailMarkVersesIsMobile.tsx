@@ -65,7 +65,6 @@ import {
   getEndingVerseOptions,
   incrementMarkVersesReferenceSuffix,
   markVersesReferenceHasLetterSuffix,
-  nextMarkVersesLetterSuffix,
   normalizeEditReferenceDraft,
   normalizeEditReferenceForSave,
   parseMarkVersesReference,
@@ -1022,26 +1021,22 @@ export default function PassageDetailMarkVersesIsMobile({
     setEditReferenceDialog(undefined);
   };
 
-  const handleSaveSplitVerseDialog = (value: EditReferenceValue) => {
-    if (!editReferenceDialog) return;
+  /**
+   * Apply a new reference string to a data row, shared by the Edit Reference
+   * dialog and inline hand-editing. Decides whether to re-number the tail, flag
+   * the row with a warning, or leave numbering alone, then updates the table,
+   * segments, and change state. Caller is responsible for any UI (e.g. closing
+   * the dialog) and for skipping no-op edits before calling.
+   */
+  const applyReferenceEdit = (startRowIndex: number, newReference: string) => {
+    if (!dataRef.current[startRowIndex]) return;
 
-    const openingValue = normalizeEditReferenceDraft(editReferenceDialog);
-    // Defense in depth: EditReferenceDropdown disables Save via the same helper;
-    // keep both paths on editReferenceValuesEqual so semantics stay aligned.
-    if (editReferenceValuesEqual(value, openingValue)) {
-      setEditReferenceDialog(undefined);
-      return;
-    }
-
-    const saveValue = normalizeEditReferenceForSave(value);
     pushUndoSnapshot();
     const newData = cloneTableData(dataRef.current);
-    const startRowIndex = editReferenceDialog.rowIndex;
     const row = newData[startRowIndex] as ICell[] | undefined;
     if (!row) return;
 
     const previousReference = `${(row[ColName.Ref] as ICell)?.value ?? ''}`;
-    const nextReference = formatReferenceValue(saveValue);
 
     // Decide whether this edit re-numbers the tail, just flags the row, or
     // leaves numbering alone. Versification is bound to the passage's book so
@@ -1058,7 +1053,7 @@ export default function PassageDetailMarkVersesIsMobile({
     const { action: editAction, reason: warnReason } =
       evaluateMarkVersesEditReference({
         previousReference,
-        newReference: nextReference,
+        newReference,
         precedingReference,
         tableReferences,
         rowIndex: startRowIndex - 1,
@@ -1069,44 +1064,45 @@ export default function PassageDetailMarkVersesIsMobile({
     const warningMessage =
       editAction === 'warn'
         ? warnReason === 'outOfRange'
-          ? t.outsideReferences.replace('{0}', nextReference)
+          ? t.outsideReferences.replace('{0}', newReference)
           : warnReason === 'nonConsecutive'
             ? t.badReferences
             : undefined
         : undefined;
 
     row[ColName.Ref] = buildReferenceCell(
-      nextReference,
+      newReference,
       row[ColName.Ref] as ICell,
       warningMessage
     );
 
+    const parsed = parseReferenceValue(newReference);
     const passageRange =
       passageRefs.current.length > 0
         ? passageRefs.current
         : getPassageRefs(passage);
-    const startPassageIdx = passageRange.findIndex((ref) => {
-      const parsed = parseReferenceValue(ref);
-      return (
-        parsed?.start.chapter === saveValue.startChapter &&
-        parsed.start.verse === saveValue.startVerse
-      );
-    });
-    const endPassageIdx = passageRange.findIndex((ref) => {
-      const parsed = parseReferenceValue(ref);
-      return (
-        parsed?.start.chapter === saveValue.endChapter &&
-        parsed.start.verse === saveValue.endVerse
-      );
-    });
+    const startPassageIdx = parsed
+      ? passageRange.findIndex((ref) => {
+          const p = parseReferenceValue(ref);
+          return (
+            p?.start.chapter === parsed.start.chapter &&
+            p.start.verse === parsed.start.verse
+          );
+        })
+      : -1;
+    const endPassageIdx = parsed
+      ? passageRange.findIndex((ref) => {
+          const p = parseReferenceValue(ref);
+          return (
+            p?.start.chapter === parsed.end.chapter &&
+            p.start.verse === parsed.end.verse
+          );
+        })
+      : -1;
 
-    const nextLetter =
-      saveValue.splitVerse && saveValue.endSuffix
-        ? nextMarkVersesLetterSuffix(saveValue.endSuffix)
-        : undefined;
-    const leadingRef = nextLetter
-      ? `${saveValue.endChapter}:${saveValue.endVerse}${nextLetter}`
-      : undefined;
+    // When the edited reference ends mid-split (e.g. `1:3a`), the following row
+    // should lead with the next letter (`1:3b`).
+    const leadingRef = incrementMarkVersesReferenceSuffix(newReference);
 
     if (
       editAction === 'renumber' &&
@@ -1132,7 +1128,35 @@ export default function PassageDetailMarkVersesIsMobile({
     }
 
     toolChanged(verseToolId);
+  };
+
+  const handleSaveSplitVerseDialog = (value: EditReferenceValue) => {
+    if (!editReferenceDialog) return;
+
+    const openingValue = normalizeEditReferenceDraft(editReferenceDialog);
+    // Defense in depth: EditReferenceDropdown disables Save via the same helper;
+    // keep both paths on editReferenceValuesEqual so semantics stay aligned.
+    if (editReferenceValuesEqual(value, openingValue)) {
+      setEditReferenceDialog(undefined);
+      return;
+    }
+
+    const saveValue = normalizeEditReferenceForSave(value);
+    applyReferenceEdit(
+      editReferenceDialog.rowIndex,
+      formatReferenceValue(saveValue)
+    );
     setEditReferenceDialog(undefined);
+  };
+
+  /** Commit a reference typed directly into the table's reference cell. */
+  const handleReferenceTextEdit = (rowIndex: number, rawValue: string) => {
+    const row = dataRef.current[rowIndex] as ICell[] | undefined;
+    if (!row) return;
+    const previousReference = `${(row[ColName.Ref] as ICell)?.value ?? ''}`;
+    const newReference = rawValue.trim();
+    if (newReference === previousReference.trim()) return;
+    applyReferenceEdit(rowIndex, newReference);
   };
 
   const resetSegments = (regions: IRegion[]) => {
@@ -1729,6 +1753,8 @@ export default function PassageDetailMarkVersesIsMobile({
       <MarkVersesTableIsMobile
         data={data}
         onRowSelect={handleSelectRow}
+        onReferenceEdit={handleReferenceTextEdit}
+        canEdit={hasPermission}
         tableRowRefs={tableRowRefs}
       />
       {editReferenceDialog && (
