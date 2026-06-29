@@ -329,6 +329,7 @@ export default function MobileWorkflowSteps() {
               : step.isComplete
                 ? 'custom.racetrackComplete'
                 : 'custom.racetrackIncomplete';
+            const textColor = step.isCurrent ? 'common.white' : 'common.black';
             return (
               <Box
                 key={step.id}
@@ -357,7 +358,7 @@ export default function MobileWorkflowSteps() {
                 <Typography
                   component="span"
                   sx={{
-                    color: 'common.white',
+                    color: textColor,
                     fontSize: '0.7rem',
                     lineHeight: 1,
                     textAlign: 'center',
