@@ -39,7 +39,10 @@ export interface ITokenContext {
   setState: React.Dispatch<React.SetStateAction<ICtxState>>;
 }
 
-const TokenContext = React.createContext({} as ITokenContext);
+const TokenContext = React.createContext({
+  state: initState as ICtxState,
+  setState: () => {},
+} as ITokenContext);
 
 interface IProps {
   children: React.JSX.Element;

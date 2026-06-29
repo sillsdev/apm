@@ -50,7 +50,10 @@ interface IContext {
   setState: React.Dispatch<React.SetStateAction<ICtxState>>;
 }
 
-const UnsavedContext = React.createContext({} as IContext);
+const UnsavedContext = React.createContext({
+  state: initState as ICtxState,
+  setState: () => {},
+} as IContext);
 
 const UnsavedProvider = (props: PropsWithChildren) => {
   const t: IMainStrings = useSelector(mainSelector);

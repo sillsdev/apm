@@ -57,7 +57,14 @@ export interface GlobalCtxType {
   setGlobalState: React.Dispatch<React.SetStateAction<GlobalState>>;
 }
 
-const GlobalContext = React.createContext<GlobalCtxType | undefined>(undefined);
+// Default wrapper object (not `undefined`) so consumers can safely destructure
+// `globalState`/`setGlobalState` during a transient default-context render (e.g.
+// HMR/Fast Refresh) instead of throwing. `useGlobal` already guards
+// `globalState === undefined` and returns an empty result in that case.
+const GlobalContext = React.createContext<GlobalCtxType | undefined>({
+  globalState: undefined as unknown as GlobalState,
+  setGlobalState: () => {},
+});
 
 interface GlobalProps {
   init: GlobalState;

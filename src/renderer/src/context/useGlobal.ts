@@ -38,6 +38,8 @@ export const useGetGlobal = (): GetGlobalType => {
   const { globalState } = useContext(GlobalContext) as GlobalCtxType;
   return (prop) => {
     // console.log(`useGetGlobal ${prop} is ${changes[prop]}`);
-    return changes[prop] ?? globalState[prop];
+    // globalState may be undefined during a transient default-context render
+    // (e.g. HMR before the provider mounts); optional chaining avoids throwing.
+    return changes[prop] ?? globalState?.[prop];
   };
 };

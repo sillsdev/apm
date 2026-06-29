@@ -234,7 +234,10 @@ interface IContext {
   setState: React.Dispatch<React.SetStateAction<ICtxState>>;
 }
 
-const PassageDetailContext = React.createContext({} as IContext);
+const PassageDetailContext = React.createContext({
+  state: initState as ICtxState,
+  setState: () => {},
+} as IContext);
 
 interface IProps {
   children: React.ReactElement;
