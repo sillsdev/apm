@@ -110,7 +110,6 @@ describe('PassageRef', () => {
   const createPlanContextState = (
     overrides: Partial<ICtxState> = {}
   ): ICtxState => ({
-    t: {} as any,
     connected: true,
     mediafiles: [],
     discussions: [],

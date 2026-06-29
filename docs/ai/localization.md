@@ -73,7 +73,10 @@ language changes.
 - A provider may still read a string layout it needs **internally** (e.g.
   `sharedStrings` for `useFlatAdd`), but it must not expose strings on context
   state for components to consume.
-- Do not add string-typed fields back to any context `initState`.
+- Do not add **localized-string fields** (any `I*Strings` layout / `LocalizedStrings`
+  snapshot) back to a context `initState`. Plain non-localized `string` values
+  (ids, paths, user-entered text) are fine — the hazard is only the in-place-mutated
+  localized objects.
 
 ### Read the current language from Redux, not global state
 
