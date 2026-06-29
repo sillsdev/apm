@@ -175,16 +175,6 @@ export default function MarkVersesTableIsMobile({
                     <TextField
                       value={draft}
                       onChange={(event) => setDraft(event.target.value)}
-                      onKeyDown={(event) => {
-                        if (event.key === 'Enter') {
-                          event.preventDefault();
-                          event.currentTarget.blur();
-                        } else if (event.key === 'Escape') {
-                          event.preventDefault();
-                          cancelEditRef.current = true;
-                          event.currentTarget.blur();
-                        }
-                      }}
                       onBlur={() => finishEdit(rowIndex)}
                       autoFocus
                       variant="standard"
@@ -192,6 +182,20 @@ export default function MarkVersesTableIsMobile({
                       fullWidth
                       inputProps={{
                         'aria-label': `verse-reference-input-${rowIndex}`,
+                        // onKeyDown must live on the native input (not the
+                        // TextField root) so `currentTarget` is the input and
+                        // `.blur()` actually commits via onBlur. Enter commits,
+                        // Escape cancels.
+                        onKeyDown: (event) => {
+                          if (event.key === 'Enter') {
+                            event.preventDefault();
+                            event.currentTarget.blur();
+                          } else if (event.key === 'Escape') {
+                            event.preventDefault();
+                            cancelEditRef.current = true;
+                            event.currentTarget.blur();
+                          }
+                        },
                       }}
                       sx={{
                         '& input': {
