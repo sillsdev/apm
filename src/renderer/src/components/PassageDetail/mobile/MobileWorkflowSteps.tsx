@@ -378,7 +378,7 @@ export default function MobileWorkflowSteps() {
                   justifyContent: 'center',
                   // Horizontal padding clears the slanted edges so the label
                   // isn't clipped by the parallelogram's angled corners
-                  px: 1.5,
+                  px: 1,
                 }}
               >
                 <Typography
