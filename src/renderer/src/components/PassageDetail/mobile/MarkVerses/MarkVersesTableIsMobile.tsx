@@ -10,13 +10,14 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import WarningAmberIcon from '@mui/icons-material/WarningAmber';
+import WarningIcon from '@mui/icons-material/Warning';
 import { useRef, useState, type RefObject } from 'react';
 import { LightTooltip } from '../../../../control/LightTooltip';
 import {
   isMarkVersesTableRowCompleted,
   MARK_VERSES_COMPLETED_RGBA,
   MARK_VERSES_CURRENT_RGBA,
+  RefStatus,
 } from '../../../../utils/markVersesSegmentColors';
 import type { ICell } from './PassageDetailMarkVersesIsMobile';
 
@@ -85,6 +86,9 @@ export default function MarkVersesTableIsMobile({
             <TableCell>
               {header[ColName.Limits]?.value ?? 'Start-Stop'}
             </TableCell>
+            {/* Dedicated, always-present warning column so the reference text
+                never shifts whether or not a row carries a warning icon. */}
+            <TableCell padding="none" aria-hidden sx={{ width: 36 }} />
             <TableCell>{header[ColName.Ref]?.value ?? 'Reference'}</TableCell>
           </TableRow>
         </TableHead>
@@ -93,8 +97,8 @@ export default function MarkVersesTableIsMobile({
           {rows.map((row, index) => {
             const limits = row[ColName.Limits] as ICell;
             const reference = row[ColName.Ref] as ICell;
-            const invalid = reference.className?.includes('Err');
-            const warn = reference.className?.includes('Warn');
+            const invalid = reference.status === RefStatus.Err;
+            const warn = reference.status === RefStatus.Warn;
             const isCurrentRow = (limits.className ?? '').includes('cur');
             const hasLimits = Boolean(limits.value);
             const rowIndex = index + 1;
@@ -153,6 +157,55 @@ export default function MarkVersesTableIsMobile({
                 </TableCell>
 
                 <TableCell
+                  padding="none"
+                  sx={{
+                    width: 36,
+                    backgroundColor: 'inherit',
+                    py: 0.75,
+                  }}
+                  onClick={(event) => {
+                    if (!hasLimits) return;
+                    event.stopPropagation();
+                    onRowSelect?.(rowIndex);
+                  }}
+                >
+                  {/* Fixed-width slot reserved on every row so the warning icon
+                      sits just left of the reference without shifting it. */}
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      justifyContent: 'flex-end',
+                      alignItems: 'center',
+                      width: 28,
+                    }}
+                  >
+                    {warn || invalid ? (
+                      <LightTooltip
+                        id={`verse-reference-warning-tip-${rowIndex}`}
+                        title={reference.warning ?? ''}
+                      >
+                        {/* LightTooltip (styled(Tooltip)) forwards its own class
+                            onto its child, so wrap the icon in a span — that
+                            class lands on the span and the icon keeps its sx. */}
+                        <Box
+                          component="span"
+                          sx={{ display: 'inline-flex', lineHeight: 0 }}
+                        >
+                          <WarningIcon
+                            aria-label={`verse-reference-warning-${rowIndex}`}
+                            sx={{
+                              fontSize: 28,
+                              color: 'warning.main',
+                              backgroundColor: 'transparent',
+                            }}
+                          />
+                        </Box>
+                      </LightTooltip>
+                    ) : null}
+                  </Box>
+                </TableCell>
+
+                <TableCell
                   sx={{ backgroundColor: 'inherit', py: 0.75 }}
                   onClick={(event) => {
                     if (isEditing) {
@@ -204,31 +257,15 @@ export default function MarkVersesTableIsMobile({
                       }}
                     />
                   ) : (
-                    <Box
-                      sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}
+                    <Typography
+                      variant="body2"
+                      aria-label={`verse-reference-${rowIndex}`}
+                      sx={{
+                        color: invalid ? 'error.main' : 'text.primary',
+                      }}
                     >
-                      <Typography
-                        variant="body2"
-                        aria-label={`verse-reference-${rowIndex}`}
-                        sx={{
-                          color: invalid ? 'error.main' : 'text.primary',
-                        }}
-                      >
-                        {reference.value || '-'}
-                      </Typography>
-                      {warn ? (
-                        <LightTooltip
-                          id={`verse-reference-warning-tip-${rowIndex}`}
-                          title={reference.warning ?? ''}
-                        >
-                          <WarningAmberIcon
-                            fontSize="small"
-                            color="warning"
-                            aria-label={`verse-reference-warning-${rowIndex}`}
-                          />
-                        </LightTooltip>
-                      ) : null}
-                    </Box>
+                      {reference.value || '-'}
+                    </Typography>
                   )}
                 </TableCell>
               </TableRow>

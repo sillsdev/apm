@@ -68,6 +68,12 @@ interface EditReferenceDropdownProps {
   saveLabel: string;
   splitVerseLabel: string;
   value: EditReferenceValue;
+  /**
+   * When true (the row carries a warning icon), the start verse is editable via
+   * a dropdown that mirrors the end verse and shares its option list, so the
+   * user can correct an out-of-range / non-consecutive start.
+   */
+  editStart?: boolean;
   onCancel: () => void;
   onSave: (value: EditReferenceValue) => void;
 }
@@ -81,12 +87,17 @@ export default function EditReferenceDropdown({
   saveLabel,
   splitVerseLabel,
   value,
+  editStart = false,
   onCancel,
   onSave,
 }: EditReferenceDropdownProps) {
   const [draft, setDraft] = useState<EditReferenceValue>(value);
   const [initialSnapshot, setInitialSnapshot] =
     useState<EditReferenceValue>(value);
+  const startSelectValue = toPassageVerseKey(
+    draft.startChapter,
+    draft.startVerse
+  );
   const endSelectValue = toPassageVerseKey(draft.endChapter, draft.endVerse);
   const isDirty = useMemo(
     () => !editReferenceValuesEqual(draft, initialSnapshot),
@@ -104,7 +115,10 @@ export default function EditReferenceDropdown({
     ];
   }, [draft.startChapter, draft.startVerse, endVerseOptions]);
 
-  const showEndChapterPrefix = resolvedEndOptions.some(
+  // Shared by both selects when the start is editable: the start and end
+  // dropdowns draw from the same option list, so they show the chapter prefix
+  // under the same condition.
+  const showChapterPrefix = resolvedEndOptions.some(
     (option) => option.chapter !== draft.startChapter
   );
 
@@ -136,6 +150,19 @@ export default function EditReferenceDropdown({
         [key]: nextSuffix,
       }));
     };
+
+  const handleStartVerseChange = (event: ChangeEvent<HTMLSelectElement>) => {
+    const selected = resolvedEndOptions.find(
+      (option) => option.key === event.target.value
+    );
+    if (!selected) return;
+
+    setDraft((current) => ({
+      ...current,
+      startChapter: selected.chapter,
+      startVerse: selected.verse,
+    }));
+  };
 
   const handleEndVerseChange = (event: ChangeEvent<HTMLSelectElement>) => {
     const selected = resolvedEndOptions.find(
@@ -173,13 +200,49 @@ export default function EditReferenceDropdown({
           }}
         >
           <Box sx={{ textAlign: 'center', minWidth: 96 }}>
-            <Typography
-              component="div"
-              aria-label="start verse reference"
-              sx={{ fontSize: 28, lineHeight: 1.2, py: 0.5 }}
-            >
-              {`${draft.startChapter}:${draft.startVerse}`}
-            </Typography>
+            {editStart ? (
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 0.5,
+                }}
+              >
+                {showChapterPrefix ? (
+                  <Typography sx={{ fontSize: 24 }}>
+                    {`${draft.startChapter}:`}
+                  </Typography>
+                ) : null}
+                <NativeSelect
+                  value={startSelectValue}
+                  onChange={handleStartVerseChange}
+                  inputProps={{
+                    'aria-label': 'start verse number',
+                    title: 'start verse number',
+                  }}
+                  sx={verseSelectSx}
+                >
+                  {resolvedEndOptions.map((option) => (
+                    <option
+                      key={`start-verse-${option.key}`}
+                      value={option.key}
+                      style={verseOptionStyle}
+                    >
+                      {showChapterPrefix ? option.key : `${option.verse}`}
+                    </option>
+                  ))}
+                </NativeSelect>
+              </Box>
+            ) : (
+              <Typography
+                component="div"
+                aria-label="start verse reference"
+                sx={{ fontSize: 28, lineHeight: 1.2, py: 0.5 }}
+              >
+                {`${draft.startChapter}:${draft.startVerse}`}
+              </Typography>
+            )}
             {draft.splitVerse ? (
               <NativeSelect
                 value={draft.startSuffix}
@@ -214,7 +277,7 @@ export default function EditReferenceDropdown({
                 gap: 0.5,
               }}
             >
-              {showEndChapterPrefix ? (
+              {showChapterPrefix ? (
                 <Typography sx={{ fontSize: 24 }}>
                   {`${draft.endChapter}:`}
                 </Typography>
@@ -234,7 +297,7 @@ export default function EditReferenceDropdown({
                     value={option.key}
                     style={verseOptionStyle}
                   >
-                    {showEndChapterPrefix ? option.key : `${option.verse}`}
+                    {showChapterPrefix ? option.key : `${option.verse}`}
                   </option>
                 ))}
               </NativeSelect>

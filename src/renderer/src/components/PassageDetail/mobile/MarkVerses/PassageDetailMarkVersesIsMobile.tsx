@@ -58,6 +58,7 @@ import { type WSAudioPlayerControls } from '../../../WSAudioPlayer';
 import {
   createMarkVersesApplyRegionColor,
   isMarkVersesTableTailIncomplete,
+  RefStatus,
 } from '../../../../utils/markVersesSegmentColors';
 import {
   editReferenceValuesEqual,
@@ -68,6 +69,7 @@ import {
   normalizeEditReferenceDraft,
   normalizeEditReferenceForSave,
   parseMarkVersesReference,
+  passageRefsToVerseOptions,
 } from '../../../../utils/markVersesPassageVerses';
 import PassageDetailPlayer from '../../PassageDetailPlayer';
 import { useProjectSegmentSave } from '../../Internalization/useProjectSegmentSave';
@@ -159,7 +161,8 @@ export interface ICell {
   readOnly?: boolean;
   width?: number;
   className?: string;
-  /** Tooltip text shown on the row's warning icon (set when `className` has `Warn`). */
+  status?: RefStatus;
+  /** Tooltip text shown on the row's warning icon (set when `status` is `RefStatus.Warn`). */
   warning?: string;
 }
 
@@ -175,6 +178,8 @@ interface IEditReferenceDialogState extends EditReferenceValue {
   limits: string;
   existingSplit: boolean;
   endVerseOptions: ReturnType<typeof getEndingVerseOptions>;
+  /** Row carries a warning icon: the start verse becomes editable. */
+  editStart: boolean;
 }
 
 export interface MarkVersesProps {
@@ -282,20 +287,22 @@ export default function PassageDetailMarkVersesIsMobile({
 
   const rowCells = useCallback(
     (row: string[], first = false) =>
-      row.map(
-        (value, index) =>
-          ({
-            value,
-            width: widths[index],
-            readOnly: first || readOnlys[index],
-            className: first
-              ? 'cTitle'
-              : cClass[index] +
-                (index === ColName.Ref && value && !refMatch(value)
-                  ? ' Err'
-                  : ''),
-          }) as ICell
-      ),
+      row.map((value, index) => {
+        // Only reference cells carry a status; limits/title cells stay undefined.
+        const isRef = !first && index === ColName.Ref;
+        const illFormatted = isRef && Boolean(value) && !refMatch(value);
+        return {
+          value,
+          width: widths[index],
+          readOnly: first || readOnlys[index],
+          className: first ? 'cTitle' : cClass[index],
+          status: isRef
+            ? illFormatted
+              ? RefStatus.Err
+              : RefStatus.Valid
+            : undefined,
+        } as ICell;
+      }),
     []
   );
 
@@ -322,6 +329,7 @@ export default function PassageDetailMarkVersesIsMobile({
           row.map((cell) => ({
             value: cell.value ?? '',
             className: cell.className ?? '',
+            status: cell.status ?? '',
             readOnly: cell.readOnly ?? false,
           }))
         )
@@ -791,15 +799,21 @@ export default function PassageDetailMarkVersesIsMobile({
     (value: string, cell: ICell, warning?: string) => {
       // TODO revisit this and the color
       const illFormatted = Boolean(value) && !refMatch(value);
-      // `Err` (ill-formatted, fails refMatch) renders red; `Warn` (well-formed
+      // `'err'` (ill-formatted, fails refMatch) renders red; `'warn'` (well-formed
       // but out of range / breaks consecutive numbering) renders a warning icon
       // with `warning` as its tooltip.
       const warn = Boolean(warning) && !illFormatted;
+      const status: ICell['status'] = illFormatted
+        ? RefStatus.Err
+        : warn
+          ? RefStatus.Warn
+          : RefStatus.Valid;
       return {
         ...cell,
         value,
         warning: warn ? warning : undefined,
-        className: `ref${illFormatted ? ' Err' : ''}${warn ? ' Warn' : ''}`,
+        className: 'ref',
+        status,
       };
     },
     []
@@ -897,11 +911,19 @@ export default function PassageDetailMarkVersesIsMobile({
         passageRefs.current.length > 0
           ? passageRefs.current
           : getPassageRefs(passage);
-      const endVerseOptions = getEndingVerseOptions(
-        passageRange,
-        currentRef.start.chapter,
-        currentRef.start.verse
-      );
+      // Any flagged row — ill-formatted (`Err`) or well-formed but out of range /
+      // non-consecutive (`Warn`) — lets the user fix the start verse, so both
+      // dropdowns offer the full passage verse list rather than just the slice
+      // from the current start onward.
+      const refStatus = (row[ColName.Ref] as ICell)?.status;
+      const editStart = Boolean(refStatus) && refStatus !== RefStatus.Valid;
+      const endVerseOptions = editStart
+        ? passageRefsToVerseOptions(passageRange)
+        : getEndingVerseOptions(
+            passageRange,
+            currentRef.start.chapter,
+            currentRef.start.verse
+          );
       const defaultEnd =
         endVerseOptions.find(
           (option) =>
@@ -915,6 +937,7 @@ export default function PassageDetailMarkVersesIsMobile({
         canSplit,
         splitVerse: hasLetterSuffix,
         existingSplit,
+        editStart,
         endVerseOptions,
         startChapter: currentRef.start.chapter,
         startVerse: currentRef.start.verse,
@@ -1231,10 +1254,7 @@ export default function PassageDetailMarkVersesIsMobile({
         }
 
         const row = rowCells([formLim(region), nextReference]);
-        const reference = row[ColName.Ref] as ICell;
-        if (!refMatch(nextReference)) {
-          reference.className = nextReference ? 'ref Err' : 'ref';
-        }
+        // `rowCells` already flags an ill-formatted reference via `status`.
         newData.push(row);
       });
 
@@ -1763,6 +1783,7 @@ export default function PassageDetailMarkVersesIsMobile({
           open={Boolean(editReferenceDialog)}
           limits={editReferenceDialog.limits}
           endVerseOptions={editReferenceDialog.endVerseOptions}
+          editStart={editReferenceDialog.editStart}
           title={`${editReferenceLabel} for`}
           cancelLabel={cancelLabel}
           saveLabel={saveLabel}

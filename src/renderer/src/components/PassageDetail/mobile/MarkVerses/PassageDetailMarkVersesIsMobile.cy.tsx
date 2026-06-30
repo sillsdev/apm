@@ -1,19 +1,21 @@
 import React from 'react';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import MarkVersesTableIsMobile from './MarkVersesTableIsMobile';
+import type { ICell } from './PassageDetailMarkVersesIsMobile';
+import { RefStatus } from '../../../../utils/markVersesSegmentColors';
 
-const sampleData = [
+const sampleData: ICell[][] = [
   [
     { value: 'Start-Stop', readOnly: true },
     { value: 'Reference', readOnly: true },
   ],
   [
     { value: '0.0-10.0', className: 'lim cur' },
-    { value: '2:11', className: 'ref' },
+    { value: '2:11', className: 'ref', status: RefStatus.Valid },
   ],
   [
     { value: '10.1-18.9', className: 'lim' },
-    { value: '2:12', className: 'ref Err' },
+    { value: '2:12', className: 'ref', status: RefStatus.Err },
   ],
 ];
 
@@ -51,7 +53,7 @@ describe('MarkVersesTableIsMobile', () => {
       ],
       [
         { value: '', className: 'lim' },
-        { value: '2:11', className: 'ref', readOnly: true },
+        { value: '2:11', className: 'ref', readOnly: true, status: RefStatus.Valid },
       ],
     ];
     cy.mount(
