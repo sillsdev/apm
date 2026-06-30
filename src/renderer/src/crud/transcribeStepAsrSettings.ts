@@ -1,4 +1,4 @@
-import { IAsrState } from '../business/asr/asrState';
+import { IAsrState, normalizeAsrState } from '../business/asr/asrState';
 import { AsrTarget } from '../business/asr/AsrTarget';
 import { ILanguage } from '../control';
 import { getLangTag } from 'mui-language-picker';
@@ -11,6 +11,7 @@ import {
 import { ArtifactTypeSlug } from './artifactTypeSlug';
 import { ToolSlug } from './toolSlug';
 import { orgDefaultAsr, orgDefaultLangProps } from './useOrgDefaults';
+import { isLangSet } from '../utils/langTag';
 
 export type SlugFromIdFn = (id: string) => string;
 export type GetOrgDefaultFn = (label: string, orgId?: string) => unknown;
@@ -109,7 +110,7 @@ export function hasTranscribeStepLanguageSettings(
     const orgLang = getOrgDefault(orgDefaultLangProps, orgId) as
       | ILanguage
       | undefined;
-    return Boolean(orgLang?.bcp47 && orgLang.bcp47 !== 'und');
+    return isLangSet(orgLang?.bcp47);
   };
 
   if (tool === ToolSlug.Transcribe && !settings?.artifactTypeId) {
@@ -126,7 +127,7 @@ export function hasTranscribeStepLanguageSettings(
   }
 
   const { bcp47 } = parseStepLanguageField(settings.language);
-  return Boolean(bcp47 && bcp47 !== 'und');
+  return isLangSet(bcp47);
 }
 
 /** True when step language is set but ASR needs a sister language. */
@@ -138,8 +139,8 @@ export function transcribeSettingsNeedSisterLanguage(
 ): boolean {
   const slug = artifactTypeSlugFromSettings(settings, slugFromId);
   if (slug === ArtifactTypeSlug.QandA || slug === ArtifactTypeSlug.Retell) {
-    const orgAsr = getOrgDefault(orgDefaultAsr, orgId) as IAsrState | undefined;
-    if (orgAsr?.mmsIso && orgAsr.mmsIso !== 'und') return false;
+    const orgAsr = normalizeAsrState(getOrgDefault(orgDefaultAsr, orgId));
+    if (isLangSet(orgAsr?.asrIso)) return false;
   }
   let primaryBcp: string;
   if (artifactUsesOrgVernacularLanguage(slug)) {
@@ -149,13 +150,13 @@ export function transcribeSettingsNeedSisterLanguage(
     primaryBcp = orgLang?.bcp47 ?? 'und';
   } else {
     const { bcp47 } = parseStepLanguageField(settings.language);
-    if (!bcp47 || bcp47 === 'und') return false;
+    if (!isLangSet(bcp47)) return false;
     primaryBcp = bcp47;
   }
   const iso = isoFromBcp47(primaryBcp);
-  if (iso === 'und' || isValidAsrLanguage(iso)) return false;
+  if (!isLangSet(iso) || isValidAsrLanguage(iso)) return false;
   const sisterBcp = sisterBcpFromSettings(settings);
-  return !sisterBcp || sisterBcp === 'und';
+  return !isLangSet(sisterBcp);
 }
 
 function stepPhoneticIsSet(settings: TranscribeStepSettings): boolean {
@@ -167,29 +168,49 @@ function stepPhoneticIsSet(settings: TranscribeStepSettings): boolean {
   );
 }
 
+/** The persisted transliterate (Romanize) choice for the step's sister ASR. */
+function stepSelectRoman(settings: TranscribeStepSettings): boolean {
+  return settings?.selectRoman === true || settings?.selectRoman === 'true';
+}
+
 export function buildVernacularAsrState(
   settings: TranscribeStepSettings,
   getOrgDefault: GetOrgDefaultFn,
   orgId: string | undefined,
-  asrDefault: IAsrState
+  asrDefault: IAsrState,
+  projectLang?: ILanguage
 ): IAsrState {
   const orgLang = getOrgDefault(orgDefaultLangProps, orgId) as
     | ILanguage
     | undefined;
-  const orgAsr = getOrgDefault(orgDefaultAsr, orgId) as IAsrState | undefined;
+  const orgAsr = normalizeAsrState(getOrgDefault(orgDefaultAsr, orgId));
   const sister = parseStepLanguageField(settings?.sisterlanguage);
-  const sisterBcp = sister.bcp47;
-  const hasStepSister = Boolean(sisterBcp && sisterBcp !== 'und');
+
+  // The step settings (sister language and the synced org ASR) were configured
+  // for the org default vernacular language. When the project's vernacular
+  // matches it, default to those step settings. When it differs, the saved
+  // config doesn't apply, so transcribe in the project language instead (and
+  // drop the org-default-based sister / transliterate choice).
+  const orgBcp = orgLang?.bcp47 ?? 'und';
+  const projBcp = projectLang?.bcp47 ?? 'und';
+  const useProjectLang = isLangSet(projBcp) && projBcp !== orgBcp;
+
+  const sisterBcp = useProjectLang ? 'und' : sister.bcp47;
+  const hasStepSister = isLangSet(sisterBcp);
 
   // Retell, Q&A, and synced Vernacular store the resolved ASR language in org ASR.
-  if (orgAsr?.mmsIso && orgAsr.mmsIso !== 'und' && !hasStepSister) {
+  if (!useProjectLang && isLangSet(orgAsr?.asrIso) && !hasStepSister) {
     const target = stepPhoneticIsSet(settings)
       ? asrTargetFromSettings(settings)
       : orgAsr.target;
+    // Transliterate defaults to false and is only valid for script transcription.
+    const selectRoman =
+      target === AsrTarget.alphabet && stepSelectRoman(settings);
     return {
       ...orgAsr,
       target,
-      method: orgAsr.method ?? getPreferredAsrMethod(orgAsr.mmsIso),
+      selectRoman,
+      method: orgAsr.method ?? getPreferredAsrMethod(orgAsr.asrIso),
       language: {
         ...orgAsr.language,
         font: orgLang?.font ?? orgAsr.language.font ?? asrDefault.language.font,
@@ -198,22 +219,30 @@ export function buildVernacularAsrState(
     };
   }
 
-  const vernacular = orgLang ?? asrDefault.language;
+  const vernacular = useProjectLang
+    ? projectLang!
+    : (orgLang ?? asrDefault.language);
   const vernacularBcp = vernacular.bcp47 ?? 'und';
   const asrBcp = resolveAsrBcp47(vernacularBcp, sisterBcp);
   const langTag = getLangTag(asrBcp);
-  const mmsIso = isoFromBcp47(asrBcp);
+  const asrIso = isoFromBcp47(asrBcp);
+  const target = stepPhoneticIsSet(settings)
+    ? asrTargetFromSettings(settings)
+    : (orgAsr?.target ?? asrDefault.target);
   return {
     ...asrDefault,
-    target: stepPhoneticIsSet(settings)
-      ? asrTargetFromSettings(settings)
-      : (orgAsr?.target ?? asrDefault.target),
-    mmsIso,
-    method: getPreferredAsrMethod(mmsIso, langTag?.script),
+    target,
+    asrIso,
+    // Transliterate defaults to false and is only valid for script transcription.
+    selectRoman:
+      !useProjectLang &&
+      target === AsrTarget.alphabet &&
+      stepSelectRoman(settings),
+    method: getPreferredAsrMethod(asrIso, langTag?.script),
     language: {
       ...asrDefault.language,
       languageName:
-        asrBcp === sisterBcp && sisterBcp && sisterBcp !== 'und'
+        asrBcp === sisterBcp && isLangSet(sisterBcp)
           ? sister.languageName
           : (vernacular.languageName ?? ''),
       bcp47: asrBcp,
@@ -228,12 +257,19 @@ export function buildWorkflowAsrStateFromSettings(
   slugFromId: SlugFromIdFn,
   getOrgDefault: GetOrgDefaultFn,
   orgId: string | undefined,
-  asrDefault: IAsrState
+  asrDefault: IAsrState,
+  projectLang?: ILanguage
 ): IAsrState {
   if (!settings?.artifactTypeId) return asrDefault;
   const slug = artifactTypeSlugFromSettings(settings, slugFromId);
   if (artifactUsesOrgVernacularLanguage(slug)) {
-    return buildVernacularAsrState(settings, getOrgDefault, orgId, asrDefault);
+    return buildVernacularAsrState(
+      settings,
+      getOrgDefault,
+      orgId,
+      asrDefault,
+      projectLang
+    );
   }
   const { languageName, bcp47 } = parseStepLanguageField(settings?.language);
   const font = String(settings?.font ?? asrDefault.language.font);
@@ -245,16 +281,19 @@ export function buildWorkflowAsrStateFromSettings(
   const sisterBcp = sister.bcp47;
   const asrBcp = resolveAsrBcp47(bcp47, sisterBcp);
   const asrLangTag = getLangTag(asrBcp);
-  const mmsIso = isoFromBcp47(asrBcp);
+  const asrIso = isoFromBcp47(asrBcp);
+  const target = asrTargetFromSettings(settings);
   return {
     ...asrDefault,
-    target: asrTargetFromSettings(settings),
-    mmsIso,
-    method: getPreferredAsrMethod(mmsIso, asrLangTag?.script),
+    target,
+    asrIso,
+    // Transliterate defaults to false and is only valid for script transcription.
+    selectRoman: target === AsrTarget.alphabet && stepSelectRoman(settings),
+    method: getPreferredAsrMethod(asrIso, asrLangTag?.script),
     language: {
       ...asrDefault.language,
       languageName:
-        asrBcp !== bcp47 && sisterBcp && sisterBcp !== 'und'
+        asrBcp !== bcp47 && isLangSet(sisterBcp)
           ? sister.languageName
           : languageName,
       bcp47: asrBcp,

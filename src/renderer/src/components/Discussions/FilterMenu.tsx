@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { IFilterMenuStrings } from '../../model';
+import { IFilterMenuStrings, ISharedStrings } from '../../model';
 import {
   IconButton,
   ListItemIcon,
@@ -13,7 +13,7 @@ import FilterIcon from '@mui/icons-material/FilterList';
 import BoxOpen from '@mui/icons-material/CheckBoxOutlineBlank';
 import BoxClose from '@mui/icons-material/CheckBox';
 import { StyledMenu, StyledMenuItem } from '../../control';
-import { filterMenuSelector } from '../../selector';
+import { filterMenuSelector, sharedSelector } from '../../selector';
 import { shallowEqual, useSelector } from 'react-redux';
 import { FilterResolved } from './FilterResolved';
 
@@ -43,6 +43,7 @@ export function FilterMenu(props: IProps) {
     props.state;
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const t: IFilterMenuStrings = useSelector(filterMenuSelector, shallowEqual);
+  const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
 
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {
     event.stopPropagation();
@@ -145,7 +146,7 @@ export function FilterMenu(props: IProps) {
                 onChange={(event) => setTeamDefault(event.target.checked)}
               />
             }
-            label={t.saveFilter}
+            label={ts.teamDefault}
           />
         )}
       </StyledMenu>

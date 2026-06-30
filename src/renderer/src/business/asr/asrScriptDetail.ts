@@ -8,10 +8,9 @@ interface IAsrScriptDetail {
 export const asrScriptDetail = ({ langTag, scriptName }: IAsrScriptDetail) => {
   let detail = '';
   let showRoman = false;
-  if (!['Latn', 'Zyyy'].includes(langTag?.script ?? '')) {
-    detail += `Script: ${scriptName.get(langTag?.script ?? '')} [${
-      langTag?.script ?? ''
-    }]`;
+  const script = langTag?.script ?? '';
+  if (script && !['Latn', 'Zyyy'].includes(script)) {
+    detail += `Script: ${scriptName.get(script) ?? script} [${script}]`;
     showRoman = true;
   }
   return { detail, showRoman };

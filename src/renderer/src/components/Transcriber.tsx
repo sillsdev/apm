@@ -78,6 +78,7 @@ import {
   updateSegments,
   useWaitForRemoteQueue,
   getSortedRegions,
+  isLangSet,
 } from '../utils';
 import { isElectron } from '../../api-variable';
 import { TokenContext } from '../context/TokenProvider';
@@ -330,7 +331,8 @@ export function Transcriber(props: IProps) {
     () => teams.find((o) => o.id === organization),
     [teams, organization]
   );
-  const { getAsrSettings } = useGetAsrSettings(team);
+  const { getAsrSettings, saveProjectAsrSettings, saveTeamAsrSettings } =
+    useGetAsrSettings(team);
   const orgSteps = useOrbitData<OrgWorkflowStepD[]>('orgworkflowstep');
   const mediarecs = useOrbitData<MediaFileD[]>('mediafile');
   const tPlayer: IWsAudioPlayerStrings = useSelector(
@@ -703,7 +705,7 @@ export function Transcriber(props: IProps) {
   useEffect(() => {
     const lgSettings = JSON.parse(stepSettings || '{}');
     const { bcp47: stepLang } = parseStepLanguageField(lgSettings?.language);
-    const hasStepLanguage = Boolean(stepLang && stepLang !== 'und');
+    const hasStepLanguage = isLangSet(stepLang);
 
     const loadProjData = async () => {
       const r = project
@@ -1281,21 +1283,33 @@ export function Transcriber(props: IProps) {
   };
 
   // Confirm step-resolved ASR settings; user may override for this run only.
+  // When the resolved settings are already usable (a valid ASR language is
+  // known from saved org/project settings), skip the dialog and start directly.
   const handleTranscribe = () => {
     checkOnline((online) => {
       if (!online) {
         showMessage(sharedStr.mustBeOnline);
         return;
       }
+      if (isLangSet(asrSettings?.asrIso)) {
+        startAsr(asrSettings);
+        return;
+      }
       openAsrLanguageSettings();
     });
   };
 
-  const handleAsrLanguageClose = (cancel: boolean, asrState?: IAsrState) => {
+  const handleAsrLanguageClose = (
+    cancel: boolean,
+    asrState?: IAsrState,
+    setAsTeamDefault?: boolean
+  ) => {
     setAsrLangVisible(false);
     if (cancel) return;
     const asr = asrState ?? asrSettings;
-    if (asr?.mmsIso && asr.mmsIso !== 'und') {
+    if (isLangSet(asr?.asrIso)) {
+      if (setAsTeamDefault) saveTeamAsrSettings(asr);
+      else saveProjectAsrSettings(asr);
       startAsr(asr);
     }
   };
@@ -1601,11 +1615,6 @@ export function Transcriber(props: IProps) {
         </BigDialog>
         <BigDialog
           title={tPlayer.recognizeSpeechSettings}
-          description={
-            <Typography variant="body2" sx={{ maxWidth: 500 }}>
-              {tPlayer.recognizePrompt}
-            </Typography>
-          }
           isOpen={asrLangVisible}
           onOpen={() => handleAsrLanguageClose(true)}
           bp={BigDialogBp.sm}

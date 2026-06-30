@@ -47,13 +47,13 @@ export const AsrAlphabet = ({ state, setState }: IAsrAlphabet) => {
       return;
     }
     const langTag = getLangTag(language?.bcp47 ?? 'und');
-    let mmsIso = langTag?.iso639_3 ?? 'und';
-    if (langTag?.tag === 'zh-CN') mmsIso = 'cmn';
+    let asrIso = langTag?.iso639_3 ?? 'und';
+    if (langTag?.tag === 'zh-CN') asrIso = 'cmn';
     const method = preferredAsrMethodFromBcp47(language?.bcp47 ?? 'und');
     setState({
       ...state,
       language,
-      mmsIso,
+      asrIso,
       method,
       dialect: undefined,
       selectRoman: false,

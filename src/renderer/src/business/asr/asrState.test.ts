@@ -1,5 +1,5 @@
 import { AsrTarget } from './AsrTarget';
-import { IAsrState, asrStatesEqual } from './asrState';
+import { IAsrState, asrStatesEqual, normalizeAsrState } from './asrState';
 
 const baseState = (): IAsrState => ({
   target: AsrTarget.alphabet,
@@ -10,7 +10,7 @@ const baseState = (): IAsrState => ({
     rtl: false,
     spellCheck: false,
   },
-  mmsIso: 'eng',
+  asrIso: 'eng',
   method: 'whisper',
   dialect: undefined,
   selectRoman: false,
@@ -41,5 +41,22 @@ describe('asrStatesEqual', () => {
     const withMms = { ...baseState(), method: 'mms' };
     expect(asrStatesEqual(withoutMethod, withMms)).toBe(true);
     expect(asrStatesEqual(withoutMethod, withMethod)).toBe(false);
+  });
+});
+
+describe('normalizeAsrState', () => {
+  it('returns undefined for empty input', () => {
+    expect(normalizeAsrState(undefined)).toBeUndefined();
+    expect(normalizeAsrState(null)).toBeUndefined();
+  });
+
+  it('falls back to the legacy mmsIso key when asrIso is missing', () => {
+    const legacy = { target: AsrTarget.alphabet, mmsIso: 'guj' };
+    expect(normalizeAsrState(legacy)?.asrIso).toBe('guj');
+  });
+
+  it('keeps asrIso when present', () => {
+    const current = { asrIso: 'eng', mmsIso: 'old' };
+    expect(normalizeAsrState(current)?.asrIso).toBe('eng');
   });
 });

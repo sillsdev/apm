@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type SetStateAction,
+} from 'react';
 import {
   ArtifactTypeSlug,
   defaultSpellCheckForArtifact,
@@ -7,36 +14,30 @@ import {
 } from '../../crud';
 import SelectArtifactType from '../Sheet/SelectArtifactType';
 import { ILanguage, Language } from '../../control';
-import { JSONParse } from '../../utils';
+import { JSONParse, isLangSet } from '../../utils';
 import { isElectron } from '../../../api-variable';
 import { MainAPI } from '@model/main-api';
-import { Checkbox, FormControlLabel } from '@mui/material';
+import {
+  Checkbox,
+  FormControl,
+  FormControlLabel,
+  FormLabel,
+} from '@mui/material';
 import { vProjectSelector } from '../../selector';
 import { ITranscriberStrings, IVProjectStrings } from '../../model';
 
 const ipc = window?.api as MainAPI | undefined;
 import {
-  asrLanguageFilter,
   isValidAsrLanguage,
   isoFromBcp47,
+  needsSisterLanguage,
+  preferredAsrMethodFromBcp47,
 } from '../../business/asr/asrLanguages';
+import { AsrSettings } from '../../business/asr/AsrSettings';
 import {
   useRecommendAsrLanguage,
   IAsrLanguageSuggestion,
 } from '../../business/asr/useRecommendAsrLanguage';
-import {
-  Typography,
-  CircularProgress,
-  FormControl,
-  FormLabel,
-  InputLabel,
-  MenuItem,
-  Radio,
-  RadioGroup,
-  Select,
-  SelectChangeEvent,
-  Stack,
-} from '@mui/material';
 import { AsrTarget } from '../../business/asr/AsrTarget';
 import { shallowEqual, useSelector } from 'react-redux';
 import { transcriberSelector } from '../../selector';
@@ -128,7 +129,6 @@ export const TranscribeStepSettings = ({
   const {
     suggestions,
     loading,
-    attempted,
     error,
     fetchRecommendations,
     seedSuggestions,
@@ -159,7 +159,7 @@ export const TranscribeStepSettings = ({
         rtl: false,
         spellCheck: false,
       },
-      mmsIso: 'eng',
+      asrIso: 'eng',
       method: getPreferredAsrMethod('eng'),
       dialect: undefined,
       selectRoman: false,
@@ -217,13 +217,6 @@ export const TranscribeStepSettings = ({
     [onChange, syncOrgAsrIfVernacular]
   );
 
-  const primaryNeedsSisterLanguage = (primaryBcp47: string) => {
-    if (!primaryBcp47 || primaryBcp47 === 'und') return false;
-    const iso = isoFromBcp47(primaryBcp47);
-    if (!iso || iso === 'und') return true;
-    return !isValidAsrLanguage(iso);
-  };
-
   const handleSelect = (artifactTypeId: string | null) => {
     const json = JSONParse(toolSettings) as Record<string, unknown>;
     const [, bcp47] = (json?.language as string | undefined)?.split('|') ?? [
@@ -232,7 +225,7 @@ export const TranscribeStepSettings = ({
     ];
     const spellCheck = defaultSpellCheckForArtifact(
       slugFromId(artifactTypeId),
-      bcp47 !== 'und' ? bcp47 : undefined,
+      isLangSet(bcp47) ? bcp47 : undefined,
       availSpellLangs
     );
     setLgState((state) => ({
@@ -256,13 +249,6 @@ export const TranscribeStepSettings = ({
     const json = JSONParse(toolSettings || '{}') as Record<string, unknown>;
     return json?.phonetic === true || json?.phonetic === 'true';
   }, [toolSettings]);
-
-  const handleTargetChange = (_e: unknown, value: string) => {
-    const json = JSONParse(toolSettings) as Record<string, unknown>;
-    emitSettingsChange(
-      JSON.stringify({ ...json, phonetic: value === AsrTarget.phonetic })
-    );
-  };
 
   const handleLanguageChange = (val: ILanguage) => {
     if (
@@ -315,7 +301,7 @@ export const TranscribeStepSettings = ({
       const spellCheck = resolveStepSpellCheck(
         json,
         slug,
-        bcp47 !== 'und' ? bcp47 : undefined,
+        isLangSet(bcp47) ? bcp47 : undefined,
         availSpellLangs
       );
       setLgState((state) => ({
@@ -334,30 +320,35 @@ export const TranscribeStepSettings = ({
         bcp47: sisterLang.bcp47,
       }));
     }
-  }, [toolSettings, availSpellLangs, slugFromId]);
+    // slugFromId (from useArtifactType) is recreated every render, so listing it
+    // here would re-run this initializer on every render and clobber in-progress
+    // edits (e.g. the sister language the user just picked, before the change has
+    // propagated back through toolSettings). Only re-sync when settings change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [toolSettings, availSpellLangs]);
 
   const handleSisterLanguageChange = (val: ILanguage) => {
     const bcp47 = val?.bcp47 ?? 'und';
-    if (bcp47 !== 'und') {
-      const valid = isValidAsrLanguage(isoFromBcp47(bcp47));
-      if (!valid) {
-        showMessage(tt.invalidSisterLang);
-        setSisterLanguage({
-          bcp47: 'und',
-          languageName: '',
-          font: '',
-          rtl: false,
-          spellCheck: false,
-        });
-        const json = JSONParse(toolSettings) as Record<string, string>;
-        emitSettingsChange(
-          JSON.stringify({
-            ...json,
-            sisterlanguage: formatStepLanguageField(emptyLanguage()),
-          })
-        );
-        return;
-      }
+    // The picker fires onChange once on mount with its initial (current) value.
+    // Ignore that echo so opening the picker doesn't re-save the same language.
+    if (
+      bcp47 === (sisterLanguage?.bcp47 ?? 'und') &&
+      (val?.languageName ?? '') === (sisterLanguage?.languageName ?? '')
+    ) {
+      return;
+    }
+    if (isLangSet(bcp47) && !isValidAsrLanguage(isoFromBcp47(bcp47))) {
+      showMessage(tt.invalidSisterLang);
+      setSisterLanguage(emptyLanguage());
+      const json = JSONParse(toolSettings) as Record<string, string>;
+      emitSettingsChange(
+        JSON.stringify({
+          ...json,
+          sisterlanguage: formatStepLanguageField(emptyLanguage()),
+          selectRoman: false,
+        })
+      );
+      return;
     }
     setSisterLanguage(val);
     const json = JSONParse(toolSettings) as Record<string, string>;
@@ -365,6 +356,7 @@ export const TranscribeStepSettings = ({
       JSON.stringify({
         ...json,
         sisterlanguage: formatStepLanguageField(val),
+        selectRoman: false,
       })
     );
   };
@@ -379,15 +371,16 @@ export const TranscribeStepSettings = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, currentSlug, org]);
 
-  useEffect(() => {
-    const primaryBcp47 =
-      currentSlug === ArtifactTypeSlug.Vernacular
-        ? (vernacularLanguage?.bcp47 ?? 'und')
-        : hasLang
-          ? (lgState.bcp47 ?? 'und')
-          : 'und';
-    setShowSisterLanguage(primaryNeedsSisterLanguage(primaryBcp47));
+  const primaryBcp47 = useMemo(() => {
+    if (currentSlug === ArtifactTypeSlug.Vernacular)
+      return vernacularLanguage?.bcp47 ?? 'und';
+    if (hasLang) return lgState.bcp47 ?? 'und';
+    return 'und';
   }, [currentSlug, vernacularLanguage?.bcp47, lgState.bcp47, hasLang]);
+
+  useEffect(() => {
+    setShowSisterLanguage(needsSisterLanguage(primaryBcp47));
+  }, [primaryBcp47]);
 
   const primaryLanguageName = useMemo(() => {
     if (currentSlug === ArtifactTypeSlug.Vernacular)
@@ -400,6 +393,13 @@ export const TranscribeStepSettings = ({
     lgState.languageName,
     hasLang,
   ]);
+
+  const primaryIso = useMemo(() => isoFromBcp47(primaryBcp47), [primaryBcp47]);
+
+  // ASR settings (transcription type + transliterate) apply whenever there is a
+  // primary language to transcribe — either directly (primary is a valid ASR
+  // language) or via a sister language.
+  const showAsrSettings = isLangSet(primaryBcp47);
 
   const readCachedRecommendations = (
     lang: string
@@ -442,12 +442,12 @@ export const TranscribeStepSettings = ({
   };
 
   useEffect(() => {
-    if (showSisterLanguage && primaryLanguageName) {
+    if (showSisterLanguage && primaryLanguageName && isLangSet(primaryIso)) {
       const cached = readCachedRecommendations(primaryLanguageName);
       if (cached !== undefined) {
         seedSuggestions(cached);
       } else {
-        fetchRecommendations(primaryLanguageName, (found) =>
+        fetchRecommendations(primaryIso, (found) =>
           persistRecommendations(primaryLanguageName, found)
         );
       }
@@ -455,105 +455,58 @@ export const TranscribeStepSettings = ({
       reset();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showSisterLanguage, primaryLanguageName]);
+  }, [showSisterLanguage, primaryLanguageName, primaryIso]);
 
-  const saveSisterLanguage = (val: ILanguage) => {
-    setSisterLanguage(val);
-    const json = JSONParse(toolSettings) as Record<string, string>;
-    emitSettingsChange(
-      JSON.stringify({
-        ...json,
-        sisterlanguage: formatStepLanguageField(val),
-      })
-    );
-  };
+  const sisterSelectRoman = useMemo(() => {
+    const json = JSONParse(toolSettings || '{}') as Record<string, unknown>;
+    return json?.selectRoman === true || json?.selectRoman === 'true';
+  }, [toolSettings]);
 
-  const suggestionToLanguage = (s: IAsrLanguageSuggestion): ILanguage => ({
-    bcp47: s.iso || 'und',
-    languageName: s.languageName,
-    font: '',
-    rtl: false,
-    spellCheck: false,
-  });
-
-  const handleSisterSuggestion = (event: SelectChangeEvent) => {
-    const idx = Number(event.target.value);
-    const s = suggestions[idx];
-    if (s) saveSisterLanguage(suggestionToLanguage(s));
-  };
-
-  const selectedSuggestionIndex = suggestions.findIndex(
-    (s) =>
-      (s.iso && s.iso === sisterLanguage.bcp47) ||
-      (s.languageName && s.languageName === sisterLanguage.languageName)
+  const sisterAsr: IAsrState = useMemo(
+    () => ({
+      target: phoneticSetting ? AsrTarget.phonetic : AsrTarget.alphabet,
+      language: sisterLanguage,
+      asrIso: isoFromBcp47(sisterLanguage?.bcp47 ?? 'und'),
+      method: preferredAsrMethodFromBcp47(sisterLanguage?.bcp47 ?? 'und'),
+      dialect: undefined,
+      selectRoman: sisterSelectRoman,
+    }),
+    [phoneticSetting, sisterLanguage, sisterSelectRoman]
   );
 
-  const manualSisterPicker = (
-    <Language
-      key={`sister-${sisterLanguage?.bcp47 ?? 'und'}`}
-      {...sisterLanguage}
-      onChange={handleSisterLanguageChange}
-      filter={asrLanguageFilter}
-      hideSpelling
-      hideFont
-      required={false}
-      disabled={false}
-      sx={{ ml: 1 }}
-    />
-  );
-
-  const sisterLanguagePicker = showSisterLanguage ? (
-    <>
-      <Typography variant="body2" sx={{ ml: 1 }}>
-        {tt.sisterLang}
-      </Typography>
-      {loading ? (
-        <Stack
-          direction="row"
-          spacing={1}
-          alignItems="center"
-          sx={{ ml: 1, my: 1 }}
-        >
-          <CircularProgress size={16} />
-          <Typography variant="body2">{tt.findingSisterLang}</Typography>
-        </Stack>
-      ) : suggestions.length > 0 ? (
-        <FormControl size="small" sx={{ ml: 1, minWidth: 220 }}>
-          <InputLabel id="sister-lang-label">{tt.chooseSisterLang}</InputLabel>
-          <Select
-            labelId="sister-lang-label"
-            label={tt.chooseSisterLang}
-            value={
-              selectedSuggestionIndex >= 0
-                ? String(selectedSuggestionIndex)
-                : ''
-            }
-            onChange={handleSisterSuggestion}
-          >
-            {suggestions.map((s, i) => (
-              <MenuItem
-                key={`sister-suggestion-${i}`}
-                value={String(i)}
-                title={s.reason}
-              >
-                {s.languageName || s.iso}
-                {s.iso ? ` (${s.iso})` : ''}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-      ) : attempted ? (
-        <>
-          {error && (
-            <Typography variant="body2" color="error" sx={{ ml: 1 }}>
-              {error}
-            </Typography>
-          )}
-          {manualSisterPicker}
-        </>
-      ) : null}
-    </>
-  ) : null;
+  // Single adapter that maps AsrSettings' IAsrState edits back to the step
+  // settings JSON: transcription type (phonetic), sister language, transliterate.
+  const setBoxAsr = (action: SetStateAction<IAsrState | undefined>) => {
+    const next = typeof action === 'function' ? action(sisterAsr) : action;
+    if (!next) return;
+    const nextPhonetic = next.target === AsrTarget.phonetic;
+    if (nextPhonetic !== phoneticSetting) {
+      const json = JSONParse(toolSettings) as Record<string, unknown>;
+      // Transliterate only applies to script transcription; clear it for phonetic.
+      emitSettingsChange(
+        JSON.stringify({
+          ...json,
+          phonetic: nextPhonetic,
+          ...(nextPhonetic ? { selectRoman: false } : {}),
+        })
+      );
+      return;
+    }
+    const langChanged =
+      (next.language?.bcp47 ?? 'und') !== (sisterLanguage?.bcp47 ?? 'und') ||
+      (next.language?.languageName ?? '') !==
+        (sisterLanguage?.languageName ?? '');
+    if (langChanged) {
+      handleSisterLanguageChange(next.language);
+      return;
+    }
+    if (Boolean(next.selectRoman) !== sisterSelectRoman) {
+      const json = JSONParse(toolSettings) as Record<string, unknown>;
+      emitSettingsChange(
+        JSON.stringify({ ...json, selectRoman: Boolean(next.selectRoman) })
+      );
+    }
+  };
 
   return (
     <>
@@ -567,6 +520,7 @@ export const TranscribeStepSettings = ({
           key={`vernacular-${vernacularLanguage?.bcp47 ?? 'und'}`}
           {...vernacularLanguage}
           onChange={handleVernacularLanguageChange}
+          hideFont
           required={true}
           disabled={false}
           sx={{ ml: 1 }}
@@ -598,7 +552,7 @@ export const TranscribeStepSettings = ({
           )}
         </>
       )}
-      {showSisterLanguage && (
+      {showAsrSettings && (
         <FormControl
           component="fieldset"
           sx={{
@@ -613,30 +567,15 @@ export const TranscribeStepSettings = ({
           <FormLabel component="legend" sx={{ color: 'secondary.main' }}>
             {tt.aiAutomaticTranscription}
           </FormLabel>
-          <Stack spacing={1} sx={{ mt: 1 }}>
-            {sisterLanguagePicker}
-            <FormControl component="fieldset" variant="standard">
-              <FormLabel component="legend">{tt.transcriptionType}</FormLabel>
-              <RadioGroup
-                row
-                value={
-                  phoneticSetting ? AsrTarget.phonetic : AsrTarget.alphabet
-                }
-                onChange={handleTargetChange}
-              >
-                <FormControlLabel
-                  value={AsrTarget.alphabet}
-                  control={<Radio />}
-                  label={tt.scriptTranscription}
-                />
-                <FormControlLabel
-                  value={AsrTarget.phonetic}
-                  control={<Radio />}
-                  label={tt.phonetic}
-                />
-              </RadioGroup>
-            </FormControl>
-          </Stack>
+          <AsrSettings
+            asr={sisterAsr}
+            setAsr={setBoxAsr}
+            vernacularBcp47={primaryBcp47}
+            recommendKey={primaryLanguageName}
+            suggestions={suggestions}
+            loading={loading}
+            error={error}
+          />
         </FormControl>
       )}
     </>
