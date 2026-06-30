@@ -568,3 +568,93 @@ export async function getProjectDataFiles(
 
   return files;
 }
+
+export interface OrganizationIntellectualPropertyExport {
+  dataFiles: ProjectDataFiles;
+  releaseMediafiles: MediaFileD[];
+}
+
+/**
+ * PTF-style speaker rights JSON for a team (organization), plus release media rows
+ * referenced by those intellectualproperty records.
+ */
+export function getOrganizationIntellectualPropertyFiles(
+  memory: Memory,
+  organizationId: string
+): OrganizationIntellectualPropertyExport {
+  const ser = getSerializer(memory);
+  const keyMap = memory?.keyMap as RecordKeyMap;
+  const orgs = memory.cache.query((q) =>
+    q.findRecords('organization')
+  ) as OrganizationD[];
+  const org = orgs.find((o) => o.id === organizationId);
+  const needsRemoteIds = Boolean(org?.keys?.remoteId);
+
+  let ips = memory.cache.query((q) =>
+    q.findRecords('intellectualproperty')
+  ) as IntellectualPropertyD[];
+  ips = ips.filter((rec) => related(rec, 'organization') === organizationId);
+
+  if (needsRemoteIds) {
+    ips.forEach((ip) => {
+      if (!remoteId('intellectualproperty', ip.id, keyMap) && ip.attributes)
+        ip.attributes.offlineId = ip.id;
+      if (
+        !remoteId('mediafile', related(ip, 'releaseMediafile'), keyMap) &&
+        ip.attributes
+      )
+        ip.attributes.offlineMediafileId = related(ip, 'releaseMediafile');
+    });
+  }
+
+  const releaseIds = ips
+    .map((ip) => related(ip, 'releaseMediafile'))
+    .filter((id): id is string => Boolean(id));
+  const allMedia = memory.cache.query((q) =>
+    q.findRecords('mediafile')
+  ) as MediaFileD[];
+  let releaseMediafiles = allMedia.filter((m) => releaseIds.includes(m.id));
+  releaseMediafiles = releaseMediafiles.map((m) => ({ ...m }));
+  if (needsRemoteIds) {
+    releaseMediafiles.forEach((m) => {
+      if (!remoteId('mediafile', m.id, keyMap) && m.attributes) {
+        m.attributes.offlineId = m.id;
+      }
+      const src = related(m, 'sourceMedia');
+      if (src && !remoteId('mediafile', src, keyMap) && m.attributes) {
+        m.attributes.sourceMediaOfflineId = src;
+      }
+      delete m.attributes.planId;
+      delete m.attributes.artifactTypeId;
+      delete m.attributes.passageId;
+      delete m.attributes.userId;
+      delete m.attributes.recordedbyUserId;
+      delete m.attributes.recordedByUserId;
+      delete m.attributes.sourceMediaId;
+    });
+  }
+
+  const serializeForExport = (rec: InitializedRecord) => {
+    if (needsRemoteIds) {
+      return ser.serialize(rec) as Record<string, unknown>;
+    }
+    const ri = ser.serialize(rec) as Record<string, unknown>;
+    ri.id = rec.id;
+    ri.relationships = rec.relationships;
+    return ri;
+  };
+
+  const files: ProjectDataFiles = {};
+  if (ips.length > 0) {
+    files['data/I_intellectualpropertys.json'] =
+      '{"data":' + JSON.stringify(ips.map((r) => serializeForExport(r))) + '}';
+  }
+  if (releaseMediafiles.length > 0) {
+    files['data/H_mediafiles.json'] =
+      '{"data":' +
+      JSON.stringify(releaseMediafiles.map((r) => serializeForExport(r))) +
+      '}';
+  }
+
+  return { dataFiles: files, releaseMediafiles };
+}

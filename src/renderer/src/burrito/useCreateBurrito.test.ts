@@ -34,8 +34,14 @@ jest.mock('../hoc/useOrbitData', () => ({
 
 jest.mock('../utils/dataPath', () => ({
   __esModule: true,
-  default: jest.fn(async (p: string) => `/abs/${p}`),
-  PathType: { BURRITO: 'burrito' },
+  default: jest.fn(async (p: string, _pathType?: unknown, local?: any) => {
+    if (local) {
+      local.localname = `/local/${p}`;
+      return local.localname;
+    }
+    return `/abs/${p}`;
+  }),
+  PathType: { BURRITO: 'burrito', MEDIA: 'MEDIA' },
 }));
 
 jest.mock('../utils/cleanFileName', () => ({
@@ -125,6 +131,11 @@ jest.mock('./useBurritoApmData', () => ({
     jest.fn(async ({ metadata }: any) => metadata)
   ),
 }));
+jest.mock('./useBurritoIntellectualProperty', () => ({
+  useBurritoIntellectualProperty: jest.fn(() =>
+    jest.fn(async ({ metadata }: any) => metadata)
+  ),
+}));
 
 jest.mock('../crud', () => {
   const related = (rec: any, key: string) =>
@@ -157,6 +168,10 @@ function makeIpc() {
     createFolder: jest.fn().mockResolvedValue(undefined),
     deleteFolder: jest.fn().mockResolvedValue(undefined),
     write: jest.fn().mockResolvedValue(undefined),
+    copyFile: jest.fn().mockResolvedValue(undefined),
+    md5File: jest.fn().mockResolvedValue('deadbeef'),
+    exists: jest.fn().mockResolvedValue(true),
+    stat: jest.fn().mockResolvedValue(JSON.stringify({ size: 1024 })),
   };
 }
 
@@ -173,6 +188,7 @@ type LoadOpts = {
   /** Akuo book slot per project id for projDefBook resolution in tests */
   projBookById?: Record<string, string>;
   num2BookCodeImpl?: (bookNum: number) => string | undefined;
+  memoryStub?: Record<string, unknown>;
 };
 
 function loadCreateBurrito(api: typeof window.api, opts: LoadOpts = {}) {
@@ -212,7 +228,8 @@ function loadCreateBurrito(api: typeof window.api, opts: LoadOpts = {}) {
 
   const { useGlobal } = require('../context/useGlobal');
   useGlobal.mockImplementation((key: string) => {
-    if (key === 'memory') return [{ keyMap: {} }, jest.fn()];
+    if (key === 'memory')
+      return [opts.memoryStub ?? { keyMap: {} }, jest.fn()];
     if (key === 'user') return ['user-1', jest.fn()];
     return [undefined, jest.fn()];
   });
@@ -632,5 +649,138 @@ describe('useCreateBurrito', () => {
     expect(textCall[0].sections.map((s: { id: string }) => s.id)).toContain(
       'sec-g2'
     );
+  });
+
+  it('creates team-level intellectual property from org speaker rights (TT-7187)', async () => {
+    const {
+      buildJamesSpeakerRightsFixture,
+      buildSpeakerRightsMemoryStub,
+      JAMES_SPEAKER_TEAM_ID,
+    } = require('./jamesSpeakerRightsFixture');
+
+    const ipc = makeIpc();
+    const speakerFixture = buildJamesSpeakerRightsFixture();
+    const memoryStub = buildSpeakerRightsMemoryStub(speakerFixture);
+    const { user, team, bible, teamBible } = fixtures(JAMES_SPEAKER_TEAM_ID);
+
+    const ipJson = JSON.stringify({
+      data: speakerFixture.intellectualproperties.map(
+        (ip: { id: string; attributes: { rightsHolder: string }; relationships: unknown }) => ({
+          type: 'intellectualproperties',
+          id: ip.id,
+          attributes: { rightsHolder: ip.attributes.rightsHolder },
+          relationships: ip.relationships,
+        })
+      ),
+    });
+
+    const { renderHook, act, useCreateBurrito } = loadCreateBurrito(
+      ipc as never,
+      {
+        orgDefaults: {
+          burritoBooks: ['JAS'],
+          burritoContents: [BurritoType.IntellectualProperty],
+          burritoWrapper: { wrapper: true },
+          burritoProjects: [speakerFixture.project.id],
+          burritoFormat: { convertToMp3: false },
+          burritoRevision: '1',
+        },
+        bookData: [
+          { code: 'JAS', abbr: 'Jas', short: 'James', long: 'James' },
+        ],
+        memoryStub,
+        orbit: {
+          user: [user],
+          organization: [team],
+          organizationbible: [teamBible],
+          bible: [bible],
+          project: [speakerFixture.project],
+          plan: [],
+          section: [],
+          passage: [],
+          intellectualproperty: speakerFixture.intellectualproperties,
+          mediafile: speakerFixture.mediafiles,
+        },
+      }
+    );
+
+    const { useBurritoIntellectualProperty } = require('./useBurritoIntellectualProperty');
+    useBurritoIntellectualProperty.mockImplementation(() =>
+      jest.fn(async ({ metadata, partPath, preLen }: any) => {
+        const dataDir = `${partPath}/data`;
+        await ipc.createFolder(dataDir);
+        const ipPath = `${dataDir}/I_intellectualpropertys.json`;
+        await ipc.write(ipPath, ipJson);
+        for (const m of speakerFixture.mediafiles) {
+          const dest = `${partPath}/${m.attributes.originalFile}`;
+          await ipc.copyFile('/local/source', dest);
+        }
+        const relIp = ipPath.substring(preLen);
+        const relMedia = `${partPath}/greg-rights.mp3`.substring(preLen);
+        return {
+          ...metadata,
+          ingredients: {
+            ...metadata.ingredients,
+            [relIp]: {
+              checksum: { md5: 'deadbeef' },
+              mimeType: 'application/json',
+              size: ipJson.length,
+            },
+            [relMedia]: {
+              checksum: { md5: 'deadbeef' },
+              mimeType: 'audio/mpeg',
+              size: 1024,
+            },
+          },
+          type: {
+            ...metadata.type,
+            flavorType: {
+              ...metadata.type?.flavorType,
+              name: 'x-intellectualproperty',
+              flavor: { name: 'x-intellectualproperty' },
+            },
+          },
+        };
+      })
+    );
+
+    const { result } = renderHook(() =>
+      useCreateBurrito(JAMES_SPEAKER_TEAM_ID)
+    );
+
+    await act(async () => {
+      await result.current.createBurrito();
+    });
+
+    const folderPaths = ipc.createFolder.mock.calls.map((c) => String(c[0]));
+    expect(
+      folderPaths.some((p) => /intellectualproperty[/\\]59JAS/i.test(p))
+    ).toBe(false);
+    expect(
+      folderPaths.some((p) => /intellectualproperty[/\\]JAS/i.test(p))
+    ).toBe(false);
+
+    const writePaths = ipc.write.mock.calls.map((c) => String(c[0]));
+    expect(
+      writePaths.some((p) =>
+        p.includes('intellectualproperty/data/I_intellectualpropertys.json')
+      )
+    ).toBe(true);
+    expect(ipc.copyFile.mock.calls.length).toBeGreaterThanOrEqual(5);
+
+    const ipMetaWrite = ipc.write.mock.calls.find(
+      (c) =>
+        String(c[0]).includes('intellectualproperty/metadata.json') &&
+        String(c[1]).includes('x-intellectualproperty')
+    );
+    expect(ipMetaWrite).toBeDefined();
+    const metadata = JSON.parse(ipMetaWrite![1] as string);
+    const ingredientKeys = Object.keys(metadata.ingredients ?? {});
+    expect(
+      ingredientKeys.some((k) => k.includes('I_intellectualpropertys.json'))
+    ).toBe(true);
+    expect(ingredientKeys.some((k) => k.includes('greg-rights'))).toBe(true);
+
+    expect(result.current.result).toBe('success');
   });
 });
