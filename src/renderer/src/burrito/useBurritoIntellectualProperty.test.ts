@@ -47,21 +47,28 @@ function defaultExportPayload(fixture = buildJamesSpeakerRightsFixture()) {
   };
 }
 
-function loadIpHookForApi(
+/**
+ * `useBurritoIntellectualProperty` reads `window.api` at module load.
+ * `jest.resetModules()` plus dynamic `import()` (not top-level import of the
+ * hook) keeps `renderHook` and the hook on one React instance.
+ */
+async function loadIpHookForApi(
   api: unknown,
   exportPayload = defaultExportPayload()
 ) {
   jest.resetModules();
   (window as unknown as { api?: unknown }).api = api;
-  const { renderHook, act } = require('@testing-library/react/pure');
-  const {
-    getOrganizationIntellectualPropertyFiles,
-  } = require('../store/importexport/projectDataExport');
-  getOrganizationIntellectualPropertyFiles.mockReturnValue(exportPayload);
+  const { renderHook, act } = await import('@testing-library/react/pure');
+  const { getOrganizationIntellectualPropertyFiles } =
+    await import('../store/importexport/projectDataExport');
+  (getOrganizationIntellectualPropertyFiles as jest.Mock).mockReturnValue(
+    exportPayload
+  );
   const memoryStub = buildSpeakerRightsMemoryStub(
     buildJamesSpeakerRightsFixture()
   ) as unknown as Memory;
-  const { useBurritoIntellectualProperty } = require('./useBurritoIntellectualProperty');
+  const { useBurritoIntellectualProperty } =
+    await import('./useBurritoIntellectualProperty');
   return {
     renderHook,
     act,
@@ -117,7 +124,7 @@ describe('useBurritoIntellectualProperty', () => {
       useBurritoIntellectualProperty,
       getOrganizationIntellectualPropertyFiles,
       memoryStub,
-    } = loadIpHookForApi(
+    } = await loadIpHookForApi(
       { createFolder, write, copyFile, md5File, exists, stat },
       defaultExportPayload(fixture)
     );
@@ -141,7 +148,9 @@ describe('useBurritoIntellectualProperty', () => {
     );
 
     const ipWrite = write.mock.calls.find((c) =>
-      String(c[0]).endsWith('intellectualproperty/data/I_intellectualpropertys.json')
+      String(c[0]).endsWith(
+        'intellectualproperty/data/I_intellectualpropertys.json'
+      )
     );
     expect(ipWrite).toBeDefined();
     expect(speakerRightsHolders(ipWrite![1] as string)).toEqual(

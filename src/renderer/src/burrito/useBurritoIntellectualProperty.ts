@@ -38,11 +38,7 @@ export const useBurritoIntellectualProperty = (
   memory: Memory,
   organizationId: string
 ) => {
-  return async ({
-    metadata,
-    partPath,
-    preLen,
-  }: Props): Promise<Burrito> => {
+  return async ({ metadata, partPath, preLen }: Props): Promise<Burrito> => {
     const { dataFiles, releaseMediafiles } =
       getOrganizationIntellectualPropertyFiles(memory, organizationId);
     const ingredients: BurritoIngredients = {};
@@ -84,8 +80,7 @@ export const useBurritoIntellectualProperty = (
       const mimeType =
         outputExt === '.mp3'
           ? 'audio/mpeg'
-          : declaredMime &&
-              !declaredMime.toLowerCase().startsWith('audio/')
+          : declaredMime && !declaredMime.toLowerCase().startsWith('audio/')
             ? declaredMime
             : inferAudioContentType(destPath, attr.contentType);
       ingredients[relPath] = {
