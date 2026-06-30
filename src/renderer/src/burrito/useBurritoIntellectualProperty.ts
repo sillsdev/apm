@@ -80,10 +80,14 @@ export const useBurritoIntellectualProperty = (
       const stat = JSON.parse(await ipc?.stat(destPath)) as Stats;
       const size = stat?.size ?? 0;
       const outputExt = path.extname(destPath).toLowerCase();
+      const declaredMime = (attr.contentType ?? '').trim();
       const mimeType =
         outputExt === '.mp3'
           ? 'audio/mpeg'
-          : inferAudioContentType(destPath, attr.contentType);
+          : declaredMime &&
+              !declaredMime.toLowerCase().startsWith('audio/')
+            ? declaredMime
+            : inferAudioContentType(destPath, attr.contentType);
       ingredients[relPath] = {
         checksum: { md5: await ipc?.md5File(destPath) },
         mimeType,

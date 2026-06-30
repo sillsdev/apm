@@ -178,5 +178,18 @@ describe('useBurritoIntellectualProperty', () => {
     expect(updated!.type!.flavorType!.flavor.name).toBe(
       'x-intellectualproperty'
     );
+
+    const ingredientMime = (filename: string) => {
+      const key = Object.keys(updated!.ingredients).find((k) =>
+        k.includes(filename)
+      );
+      expect(key).toBeDefined();
+      return updated!.ingredients[key!]!.mimeType;
+    };
+    expect(ingredientMime('greg-rights')).toBe('audio/mpeg');
+    expect(ingredientMime('fred-release')).toBe('application/pdf');
+    expect(ingredientMime('alex-consent')).toBe('image/png');
+    expect(ingredientMime('sam-statement')).toBe('audio/mpeg');
+    expect(ingredientMime('jane-rights')).toBe('application/pdf');
   });
 });
