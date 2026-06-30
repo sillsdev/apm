@@ -107,7 +107,7 @@ const SEGMENT_BOUNDARY_TOLERANCE_SEC = 0.1;
  */
 const REMOVE_BOUNDARY_PLAYHEAD_NUDGE_SEC =
   SEGMENT_BOUNDARY_TOLERANCE_SEC + SEGMENT_BOUNDARY_TOLERANCE_SEC;
-/** Table limits use mm:ss; waveform uses float seconds — allow rounding drift. */
+/** Table limits use decimal seconds; waveform uses float seconds — allow rounding drift. */
 const SEGMENT_ROW_MATCH_TOLERANCE_SEC = 0.6;
 const paperProps = { p: 2, m: 'auto', width: 'calc(100% - 32px)' } as SxProps;
 const readOnlys = [true, false];
@@ -502,11 +502,8 @@ export default function PassageDetailMarkVersesIsMobile({
     [getRefs, passage.attributes.book]
   );
 
-  const formatTime = (value: number) => {
-    const minutes = Math.floor(value / 60);
-    const seconds = Math.floor(value - minutes * 60);
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-  };
+  const formatTime = (value: number) =>
+    (Math.round(value * 10) / 10).toFixed(1);
 
   const parseFormattedTime = (value: string) => {
     const trimmed = value.trim();
@@ -541,7 +538,7 @@ export default function PassageDetailMarkVersesIsMobile({
     [waveSegmentsJson]
   );
 
-  /** Prefer waveform bounds — table limits are mm:ss and can round (e.g. 8.4s → 0:08). */
+  /** Prefer waveform bounds — table limits are decimal seconds and can round (e.g. 8.44s → 8.4). */
   const getActiveSegmentForRow = useCallback(
     (rowIndex: number, row?: ICell[]) => {
       if (rowIndex > 0 && waveformRegions[rowIndex - 1]) {

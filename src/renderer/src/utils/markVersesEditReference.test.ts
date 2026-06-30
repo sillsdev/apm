@@ -13,12 +13,7 @@ import {
 
 /**
  * TDD spec for the "what happens when a user edits a Mark Verses reference"
- * logic. The dialog currently only offers a constrained set of edits, but free
- * text entry is coming, so this exercises the full rule set. Many of these are
- * expected to FAIL until markVersesReferenceConsecutivelyFollows /
- * isMarkVersesTableConsecutive / decideMarkVersesEditReferenceAction are
- * implemented — the validity predicates already pass since they delegate to the
- * existing refMatch + versification utilities.
+ * logic.
  *
  * "Re-number" === the redistribute-tail behavior in
  * redistributeTableTailAfterSave (PassageDetailMarkVersesIsMobile).
@@ -105,6 +100,7 @@ describe('markVersesReferenceConsecutivelyFollows', () => {
       ['1:3a', '1:3b'], // next letter, same verse
       ['1:4a-c', '1:4d'], // continue letter sequence within the verse
       ['1:3b', '1:4'], // verse 3 complete (>= b) -> plain next verse
+      ['1:3d', '1:4'], // verse 3 complete (>= b) -> plain next verse
       ['1:3b', '1:4a'], // verse 3 complete -> next verse starting at a
     ])('treats %s -> %s as sequential', (prev, next) => {
       expect(
@@ -115,11 +111,13 @@ describe('markVersesReferenceConsecutivelyFollows', () => {
     it.each([
       ['1:3', '1:5'], // gap
       ['1:1-3', '1:3'], // duplicate / overlap (3 already covered)
-      ['1:1a', '1:2'], // 1:1 only has part a; must have part b before moving on
+      ['1:1a', '1:2'], // 1:1 only has part a; for now we are treating letters as all verses must have part b before moving on
       ['1:5', '1:2'], // backwards
       ['1:1a-c', '1:1c'], // c already covered; must be d
-      ['1:1d', '1:1b'], // suffix goes backwards
+      ['1:1d', '1:1b'], // c skipped
       ['1:1', '1:2b'], // a split verse must start at part a, not b
+      ['1:1a', '1:2b'],
+      ['1:1a-2d', '1:3b'],
     ])('treats %s -> %s as NOT sequential', (prev, next) => {
       expect(
         markVersesReferenceConsecutivelyFollows(prev, next, longChapter1)
@@ -156,6 +154,7 @@ describe('markVersesReferenceConsecutivelyFollows', () => {
   });
 });
 
+// Do we really need this function?
 describe('isMarkVersesTableConsecutive', () => {
   it('accepts a fully consecutive table', () => {
     expect(
