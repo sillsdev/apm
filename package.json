@@ -22,7 +22,8 @@
     "build:linux": "electron-vite build && electron-builder --linux",
     "devs": "node env-config/changeEnv.cjs dev",
     "qas": "node env-config/changeEnv.cjs qa",
-    "prods": "node env-config/changeEnv.cjs prod"
+    "prods": "node env-config/changeEnv.cjs prod",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@auth0/auth0-react": "^2.4.0",
@@ -125,6 +126,7 @@
     "@electron-toolkit/eslint-config-prettier": "^3.0.0",
     "@electron-toolkit/eslint-config-ts": "^3.1.0",
     "@electron-toolkit/tsconfig": "^2.0.0",
+    "@playwright/test": "^1.61.1",
     "@types/adm-zip": "^0.5.7",
     "@types/execa": "^0.9.0",
     "@types/ffmpeg-static": "^3.0.3",

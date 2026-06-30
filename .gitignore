@@ -27,3 +27,5 @@ errorLog
 tsconfig.tsbuildinfo
 .claude
 *.lscache
+playwright-results
+playwright-report
