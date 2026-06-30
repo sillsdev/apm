@@ -1473,6 +1473,18 @@ async function transformBurritoToPTF(cli) {
   let lastPtfPath = null;
   const usedTeamNames = new Set();
   const usedOrganizationSlugs = new Set();
+  const apmdataSister = await findBurritoPackageByFlavorName(
+    INPUT_DIR,
+    'x-apmdata'
+  );
+  const apmDataHelpers = await import(
+    pathToFileURL(path.join(__dirname, 'burrito-apmdata.mjs')).href
+  );
+  if (apmdataSister) {
+    console.log(
+      `  Using ApmData burrito for plan structure: ${apmdataSister.pkg.label}`
+    );
+  }
 
   for (const pkg of packages) {
     const packageLabel = pkg.label;
@@ -1962,7 +1974,7 @@ async function transformBurritoToPTF(cli) {
         relationshipIdentifier('organizationmembership', organizationMembership)
       );
 
-      const orgWorkflowSteps = SAMPLE_ORG_WORKFLOW_STEPS.data.map((step) => {
+      let orgWorkflowSteps = SAMPLE_ORG_WORKFLOW_STEPS.data.map((step) => {
         const attributes = {
           ...step.attributes,
           dateCreated: createdAt,
@@ -2069,37 +2081,82 @@ async function transformBurritoToPTF(cli) {
         }
       });
 
-      const sections = normalizedSections.map((sectionInfo, index) => {
-        const section = createJsonApiRecord(
-          'sections',
-          {
-            sequencenum: index + 1,
-            name: sectionInfo.name || `Section ${index + 1}`,
-            state: '',
-            level: sectionInfo.level ?? 3,
-            published: false,
-            publishTo: '{}',
-            dateCreated: createdAt,
-            dateUpdated: createdAt,
-          },
-          {
-            plan: createRelationship('plan', plan),
-            passages: createRelationship('passage', []),
-          }
-        );
-        plan.relationships.sections.data.push(
-          relationshipIdentifier('section', section)
-        );
-        return section;
-      });
+      const apmSnapshot = apmdataSister
+        ? apmDataHelpers.loadApmDataSnapshot(
+            apmdataSister.pkg.entries,
+            apmdataSister.metadata,
+            bookGroupCode
+          )
+        : null;
 
-      const passages = [];
+      let sections;
+      let passages;
       const mediafiles = [];
       const passageBySection = new Map();
-      sections.forEach((section, index) => {
-        passageBySection.set(index, []);
-      });
       let passageSeq = 1;
+
+      if (apmSnapshot) {
+        const remapped = apmDataHelpers.remapApmDataSnapshot(apmSnapshot, {
+          generateId,
+          createdAt,
+          user,
+          organization,
+          plan,
+        });
+        orgWorkflowSteps = remapped.orgWorkflowSteps;
+        sections = remapped.sections;
+        passages = remapped.passages;
+        plan.attributes.sectionCount = sections.length;
+        sections.forEach((section, index) => {
+          plan.relationships.sections.data.push(
+            relationshipIdentifier('section', section)
+          );
+          passageBySection.set(
+            index,
+            passages.filter(
+              (passage) =>
+                passage.relationships?.section?.data?.id === section.id
+            )
+          );
+        });
+        passageSeq =
+          passages.reduce((max, passage) => {
+            const seq = Number(passage.attributes?.sequencenum ?? 0);
+            return Number.isFinite(seq) ? Math.max(max, seq) : max;
+          }, 0) + 1;
+        console.log(
+          `  Imported ${sections.length} section(s), ${passages.length} passage(s), and ${orgWorkflowSteps.length} org workflow step(s) from ApmData`
+        );
+      } else {
+        sections = normalizedSections.map((sectionInfo, index) => {
+          const section = createJsonApiRecord(
+            'sections',
+            {
+              sequencenum: index + 1,
+              name: sectionInfo.name || `Section ${index + 1}`,
+              state: '',
+              level: sectionInfo.level ?? 3,
+              published: false,
+              publishTo: '{}',
+              dateCreated: createdAt,
+              dateUpdated: createdAt,
+            },
+            {
+              plan: createRelationship('plan', plan),
+              passages: createRelationship('passage', []),
+            }
+          );
+          plan.relationships.sections.data.push(
+            relationshipIdentifier('section', section)
+          );
+          return section;
+        });
+
+        passages = [];
+        sections.forEach((section, index) => {
+          passageBySection.set(index, []);
+        });
+      }
 
       function createPassageFromSpan(sectionIndex, span, fallbackTitle) {
         const section = sections[sectionIndex] ?? sections[0];
@@ -2141,6 +2198,7 @@ async function transformBurritoToPTF(cli) {
       }
 
       if (
+        !apmSnapshot &&
         textEntry &&
         paragraphSpans.length > 0 &&
         chaptersCoveredByAudio.size > 0
@@ -2177,29 +2235,42 @@ async function transformBurritoToPTF(cli) {
           referenceLabel,
           audioEntry.reference.bookCode
         );
-        const targetSectionIndex = findBestSectionIndexForSpan(
-          normalizedSections,
-          span
-        );
-        const candidatePassages =
-          passageBySection.get(targetSectionIndex) ?? [];
-        let passage = candidatePassages.find((candidate) => {
-          if (!span) {
-            return false;
-          }
-          return (
-            candidate.attributes['start-chapter'] === span.startChapter &&
-            candidate.attributes['start-verse'] === span.startVerse &&
-            candidate.attributes['end-chapter'] === span.endChapter &&
-            candidate.attributes['end-verse'] === span.endVerse
-          );
-        });
+        let passage;
+        if (apmSnapshot && span) {
+          passage = passages.find((candidate) => {
+            return (
+              candidate.attributes['start-chapter'] === span.startChapter &&
+              candidate.attributes['start-verse'] === span.startVerse &&
+              candidate.attributes['end-chapter'] === span.endChapter &&
+              candidate.attributes['end-verse'] === span.endVerse
+            );
+          });
+        }
         if (!passage) {
-          passage = createPassageFromSpan(
-            targetSectionIndex,
-            span,
-            referenceTitle
+          const targetSectionIndex = findBestSectionIndexForSpan(
+            normalizedSections,
+            span
           );
+          const candidatePassages =
+            passageBySection.get(targetSectionIndex) ?? [];
+          passage = candidatePassages.find((candidate) => {
+            if (!span) {
+              return false;
+            }
+            return (
+              candidate.attributes['start-chapter'] === span.startChapter &&
+              candidate.attributes['start-verse'] === span.startVerse &&
+              candidate.attributes['end-chapter'] === span.endChapter &&
+              candidate.attributes['end-verse'] === span.endVerse
+            );
+          });
+          if (!passage) {
+            passage = createPassageFromSpan(
+              targetSectionIndex,
+              span,
+              referenceTitle
+            );
+          }
         }
         passage.attributes.reference = referenceLabel;
         passage.attributes.title = referenceTitle;
@@ -2348,14 +2419,18 @@ async function transformBurritoToPTF(cli) {
   }
 }
 
-const cliArgs = parseCliArgs();
-transformBurritoToPTF(cliArgs).catch((err) => {
-  console.error('Failed to transform Scripture Burrito to PTF:', err);
-  if (cliArgs.jsonResult) {
-    console.log(
-      'JSON_RESULT:' +
-        JSON.stringify({ ok: false, error: err?.message ?? String(err) })
-    );
-  }
-  process.exitCode = 1;
-});
+module.exports = { transformBurritoToPTF };
+
+if (require.main === module) {
+  const cliArgs = parseCliArgs();
+  transformBurritoToPTF(cliArgs).catch((err) => {
+    console.error('Failed to transform Scripture Burrito to PTF:', err);
+    if (cliArgs.jsonResult) {
+      console.log(
+        'JSON_RESULT:' +
+          JSON.stringify({ ok: false, error: err?.message ?? String(err) })
+      );
+    }
+    process.exitCode = 1;
+  });
+}
