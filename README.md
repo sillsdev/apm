@@ -43,9 +43,18 @@ $ npm start
 ### Testing
 
 ```bash
+$ npm run test:e2e
+```
+
+This runs tests on the desktop app. It requires setting VITE_TEST_EMAIL1 and
+VITE_TEST_PW1 in your .env.local variables. As a minimum, it does a sanity test which launches and logs in using the credendials you give it.
+
+```bash
 $ cd src/renderer
 $ npm run test
 ```
+
+The `npm test` command runs the jest tests. There are also Cypress component tests for the renderer `npm run cy:run-ct` and end to end tests for the renderer `npm run cy:run-local` which at least authenticates the web app using credentials like above. For testing, it is also helpful to include VITE_TEST_CACHE=localstorage in your .env files so that it doesn't ask you to authenticate on each change. Also for Cypress there are commands to launch the component (`npm run cy:open-ct`) or e2e (`npm run cy:open-local`) tests in a browser so you can watch them run.
 
 Cypress tests require that the dev server is running on 3000. There are a couple of ways to do this. You can launch the dev server in one terminal using `npm start` or you can use docker to language the server in the background.
 
