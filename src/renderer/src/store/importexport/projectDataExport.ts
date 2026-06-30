@@ -636,9 +636,9 @@ export function getOrganizationIntellectualPropertyFiles(
 
   const serializeForExport = (rec: InitializedRecord) => {
     if (needsRemoteIds) {
-      return ser.serialize(rec) as Record<string, unknown>;
+      return ser.serialize(rec) as unknown as Record<string, unknown>;
     }
-    const ri = ser.serialize(rec) as Record<string, unknown>;
+    const ri = ser.serialize(rec) as unknown as Record<string, unknown>;
     ri.id = rec.id;
     ri.relationships = rec.relationships;
     return ri;
