@@ -502,26 +502,41 @@ export default function PassageDetailMarkVersesIsMobile({
     [getRefs, passage.attributes.book]
   );
 
-  const formatTime = (value: number) =>
-    (Math.round(value * 10) / 10).toFixed(1);
-
+  // There has been discussion about whether to display timestamps in the table
+  // with mm::ss or ss.s format. Future work to look at the overall app and unify
+  // timestamp formatting, including with Wavesurfer and Disucssions.
+  //
+  // To use mm:ss:
+  // const formatTime = (value: number) =>
+  //   (Math.round(value * 10) / 10).toFixed(1);
+  // const formLim = useCallback(
+  //   ({ start, end }: IRegion) => `${formatTime(start)}-${formatTime(end)}`,
+  //   []
+  // );
+  //   const parseFormattedTime = (value: string) => {
+  //   const trimmed = value.trim();
+  //   if (!trimmed) return NaN;
+  //   if (trimmed.includes(':')) {
+  //     const [minPart, secPart] = trimmed.split(':');
+  //     const minutes = parseInt(minPart, 10);
+  //     const seconds = parseFloat(secPart);
+  //     if (Number.isNaN(minutes) || Number.isNaN(seconds)) return NaN;
+  //     return minutes * 60 + seconds;
+  //   }
+  //   return parseFloat(trimmed);
+  // };
+  //
+  // To use ss.s:
+  const d1 = (d: number) => d.toFixed(1);
+  const formLim = useCallback(
+    ({ start, end }: IRegion) => `${d1(start)}-${d1(end)}`,
+    []
+  );
   const parseFormattedTime = (value: string) => {
     const trimmed = value.trim();
     if (!trimmed) return NaN;
-    if (trimmed.includes(':')) {
-      const [minPart, secPart] = trimmed.split(':');
-      const minutes = parseInt(minPart, 10);
-      const seconds = parseFloat(secPart);
-      if (Number.isNaN(minutes) || Number.isNaN(seconds)) return NaN;
-      return minutes * 60 + seconds;
-    }
     return parseFloat(trimmed);
   };
-
-  const formLim = useCallback(
-    ({ start, end }: IRegion) => `${formatTime(start)}-${formatTime(end)}`,
-    []
-  );
 
   const getSegmentFromRow = useCallback((row?: ICell[]) => {
     if (!row) return undefined;

@@ -50,19 +50,35 @@ const chapter1EndsAt20: GetLastVerse = (chapter) => {
 };
 
 describe('isWellFormedMarkVersesReference', () => {
-  it.each(['1:1', '1:1-4', '1:1a', '1:1a-2e', '1:1a-e', '1:30-2:2', '100:1'])(
-    'accepts well-formatted %s',
-    (ref) => {
-      expect(isWellFormedMarkVersesReference(ref)).toBe(true);
-    }
-  );
+  it.each([
+    '1:1',
+    '1:1-4',
+    '1:1a',
+    '1:1a-2e',
+    '1:1a-e',
+    '1:30-2:2', // range across a single chapter boundary
+    '1:80-2:1', // boundary at the end of a chapter
+    '1:1-3:5', // range spanning two chapter boundaries
+    '1:1-4:10', // range spanning several chapters
+    '1:1-4:10a', // several-chapter span ending on a verse part
+    '2:5a-4:23', // several-chapter span with a start verse part
+    '100:1',
+  ])('accepts well-formatted %s', (ref) => {
+    expect(isWellFormedMarkVersesReference(ref)).toBe(true);
+  });
 
-  it.each(['1:3-1:1', '1:1aa', '1', '#$%', 'foo', ''])(
-    'rejects ill-formatted %s',
-    (ref) => {
-      expect(isWellFormedMarkVersesReference(ref)).toBe(false);
-    }
-  );
+  it.each([
+    '1:3-1:1', // backwards within a chapter
+    '4:10-1:1', // backwards across chapters (end chapter before start)
+    '3:5-3:2', // backwards within a chapter (end verse before start)
+    '1:1aa',
+    '1',
+    '#$%',
+    'foo',
+    '',
+  ])('rejects ill-formatted %s', (ref) => {
+    expect(isWellFormedMarkVersesReference(ref)).toBe(false);
+  });
 });
 
 describe('isMarkVersesReferenceInRange', () => {
@@ -149,6 +165,34 @@ describe('markVersesReferenceConsecutivelyFollows', () => {
     ])('treats %s -> %s as NOT sequential', (prev, next) => {
       expect(
         markVersesReferenceConsecutivelyFollows(prev, next, chapter1EndsAt20)
+      ).toBe(false);
+    });
+  });
+
+  //  Here the individual *range* itself spans one or more chapter boundaries (its start
+  // and end live in different chapters).
+  // (longChapter1: ch1=80, ch2=52, ch3=38, ch4=44.)
+  describe('where an individual range spans chapter boundaries', () => {
+    it.each([
+      ['1:1-2:10', '2:11-2:30'], // range crosses 1->2; next picks up at 2:11
+      ['1:78-2:5', '2:6-3:10'], // both ranges cross a boundary; contiguous at 2:5/2:6
+      ['1:1-1:80', '2:1-3:5'], // prev ends at ch1's last verse; next spans 2->3 from 2:1
+      ['1:1-4:10a', '4:10b-4:23'], // range spans multiple chapters; next continues letter b
+    ])('treats %s -> %s as sequential', (prev, next) => {
+      expect(
+        markVersesReferenceConsecutivelyFollows(prev, next, longChapter1)
+      ).toBe(true);
+    });
+
+    it.each([
+      ['1:1-2:10', '2:12-2:30'], // gap: skips 2:11 after the crossing
+      ['1:1-2:10', '2:10-2:30'], // overlap: 2:10 is covered twice
+      ['1:1-2:10', '3:1-3:5'], // jumps to ch3, skipping the rest of ch2
+      ['1:1-4:10a', '4:11-4:23'], // 4:10 only has part a (incomplete) -> skips 4:10b
+      ['1:1-4:10a', '4:10c-4:23'], // wrong letter: skips part b
+    ])('treats %s -> %s as NOT sequential', (prev, next) => {
+      expect(
+        markVersesReferenceConsecutivelyFollows(prev, next, longChapter1)
       ).toBe(false);
     });
   });

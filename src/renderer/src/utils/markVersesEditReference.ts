@@ -1,7 +1,6 @@
 /**
  * Decision logic for what happens to Mark Verses table numbering when a user
- * edits a reference (via the Edit Reference dialog today, or via free text entry
- * in the future).
+ * edits a reference
  *
  * "Re-numbering" here means the redistribution that
  * `redistributeTableTailAfterSave` performs in PassageDetailMarkVersesIsMobile:
@@ -29,8 +28,8 @@ export type GetLastVerse = (chapter: number) => number | null;
  * - `renumber`: run the existing redistribute-tail logic.
  * - `none`: leave numbering untouched.
  *
- * This decides numbering only. Whether a row is *flagged* with a warning is no
- * longer decided here — that is owned by `evaluateMarkVersesReferenceStatus`,
+ * This decides numbering only. Whether a row is *flagged* with a warning is
+ * owned by `evaluateMarkVersesReferenceStatus`,
  * applied per row both on load and after an edit, so a freshly-loaded table
  * flags the same problems an edit would.
  */
@@ -69,6 +68,7 @@ const partInRange = (
 };
 
 /** Both endpoints exist in the book's versification. */
+// TODO this the wrong check?
 export const isMarkVersesReferenceInRange = (
   ref: string,
   getLastVerse: GetLastVerse
