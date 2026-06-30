@@ -35,9 +35,9 @@ export const createAppTheme = (lang: string) =>
         custom: {
           currentRegion: '#66FF0080',
           headerBackground: '#EEEEEE',
-          racetrackCurrent: '#111',
-          racetrackComplete: '#888',
-          racetrackIncomplete: '#ccc',
+          racetrackCurrent: '#333',
+          racetrackComplete: '#a8a8a8',
+          racetrackIncomplete: '#e0e0e0',
         },
       },
       typography: {
