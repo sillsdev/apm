@@ -334,10 +334,13 @@ export default function MobileWorkflowSteps() {
           sx={{
             overflowX: 'auto',
             display: 'flex',
-            flex: { xs: 1, md: 'none' },
-            position: { md: 'absolute' },
-            left: { md: 0 },
-            right: { md: 0 },
+            flex: 1,
+            '@media (min-width:1401px)': {
+              flex: 'none',
+              position: 'absolute',
+              left: 0,
+              right: 0,
+            },
             '&::before, &::after': {
               content: '""',
               margin: 'auto',
@@ -386,7 +389,7 @@ export default function MobileWorkflowSteps() {
                   }}
                   sx={{
                     color: textColor,
-                    fontSize: '0.7rem',
+                    fontSize: '11px',
                     lineHeight: 1,
                     textAlign: 'center',
                     overflow: 'hidden',
@@ -406,7 +409,12 @@ export default function MobileWorkflowSteps() {
 
         {/* Spacer to center the parallelograms in the top row on desktop screens */}
         <Box
-          sx={{ height: 30, flex: 1, display: { xs: 'none', md: 'block' } }}
+          sx={{
+            height: 30,
+            flex: 1,
+            display: 'none',
+            '@media (min-width:1401px)': { display: 'block' },
+          }}
         />
       </Box>
 
