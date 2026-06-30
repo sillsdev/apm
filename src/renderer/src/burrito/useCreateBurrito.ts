@@ -42,6 +42,7 @@ import CodeNum from '../assets/code-num.json';
 import { useBurritoAudio } from './useBurritoAudio';
 import { useBurritoNavigation } from './useBurritoNavigation';
 import { useBurritoApmData } from './useBurritoApmData';
+import { useBurritoIntellectualProperty } from './useBurritoIntellectualProperty';
 import { PassageTypeEnum } from '../model/passageType';
 import { ArtifactTypeSlug } from '../crud/artifactTypeSlug';
 import packageJson from '../../package.json';
@@ -102,6 +103,10 @@ export const useCreateBurrito = (teamId: string) => {
   const burritoText = useBurritoText(teamId);
   const burritoNavigation = useBurritoNavigation(teamId);
   const burritoApmData = useBurritoApmData(memory);
+  const burritoIntellectualProperty = useBurritoIntellectualProperty(
+    memory,
+    teamId
+  );
   const t: IBurritoStrings = useSelector(burritoSelector, shallowEqual);
 
   const bookData = (book: string) => allBookData.find((b) => b.code === book);
@@ -365,6 +370,16 @@ export const useCreateBurrito = (teamId: string) => {
           apmDataProjects.length
         );
       }
+    } else if (part === BurritoType.IntellectualProperty) {
+      if (cancelRef.current) return;
+      const partPath = path.dirname(metaName);
+      metaData = await burritoIntellectualProperty({
+        metadata: metaData,
+        partPath,
+        preLen,
+      });
+      if (cancelRef.current) return;
+      onBookComplete(partIndex, 1, '', 1);
     } else {
       let bookIndex = 0;
       for (const book of books) {
@@ -420,20 +435,6 @@ export const useCreateBurrito = (teamId: string) => {
               ArtifactTypeSlug.ProjectResource,
               ArtifactTypeSlug.AIResource,
             ],
-            convertToMp3,
-          });
-        }
-        if (part === BurritoType.IntellectualProperty) {
-          metaData = await burritoAudio({
-            metadata: metaData,
-            bible: bible as BibleD,
-            book,
-            bookPath,
-            preLen,
-            sections: bookSecs,
-            passageTypeFilter: null,
-            flavorTypeName: 'x-intellectualproperty',
-            artifactTypeFilter: [ArtifactTypeSlug.IntellectualProperty],
             convertToMp3,
           });
         }
@@ -499,7 +500,9 @@ export const useCreateBurrito = (teamId: string) => {
           sum +
           (part === BurritoType.ApmData
             ? apmDataProjects.length
-            : books.length),
+            : part === BurritoType.IntellectualProperty
+              ? 1
+              : books.length),
         0
       );
       let completedUnits = 0;
