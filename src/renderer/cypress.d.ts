@@ -43,6 +43,12 @@ declare global {
         options?: MountOptions
       ): Cypress.Chainable<MountReturn>;
 
+      /**
+       * Logs in via Auth0 Universal Login using cy.origin() and caches the session.
+       * Reads credentials from Cypress env: auth0_username, auth0_password, auth0_domain.
+       */
+      loginByAuth0(): Chainable<void>;
+
       /** Install getUserMedia / recording browser mocks before mounting MediaRecord. */
       installRecordingMocks(
         options?: InstallRecordingMocksOptions

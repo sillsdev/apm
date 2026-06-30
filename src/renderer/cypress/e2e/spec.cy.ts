@@ -1,8 +1,9 @@
-describe('e2e sanity', () => {
-  it('passes sanity', () => {
-    cy.visit('/');
-    cy.getByCy('count').contains('count is 0');
-    cy.getByCy('count').dblclick().contains('count is 2');
-    cy.task('log', 'e2e sanity passed');
+describe('Authentication and project list', () => {
+  it('logs in and sees Personal Audio Projects', () => {
+    cy.loginByAuth0(); // establishes session; ends on about:blank with token in localStorage
+    cy.visit('/'); // app loads, auth0-spa-js finds cached token — no redirect needed
+    cy.contains('Personal Audio Projects', { timeout: 30000 }).should(
+      'be.visible'
+    );
   });
 });

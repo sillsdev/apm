@@ -8,6 +8,10 @@ export const AuthApp: React.FC = () => {
     <Auth0Provider
       domain={auth0Domain}
       clientId={webClientId}
+      cacheLocation={
+        (import.meta.env.VITE_AUTH_CACHE as 'localstorage' | 'memory') ||
+        'memory'
+      }
       authorizationParams={{
         audience: apiIdentifier,
         redirect_uri: import.meta.env.VITE_CALLBACK,
