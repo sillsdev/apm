@@ -102,10 +102,7 @@ export function selectApmDataProjectFolder(metadata, bookCode) {
  * @returns {unknown[]}
  */
 function readApmDataTable(entries, projectFolder, fileName) {
-  const bytes = readEntryBytes(
-    entries,
-    `${projectFolder}/data/${fileName}`
-  );
+  const bytes = readEntryBytes(entries, `${projectFolder}/data/${fileName}`);
   if (!bytes) {
     return [];
   }

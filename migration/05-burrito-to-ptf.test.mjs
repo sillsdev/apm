@@ -4,11 +4,9 @@ import fs from 'node:fs/promises';
 import fsSync from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
-import { fileURLToPath } from 'node:url';
 import AdmZip from 'adm-zip';
 import { createRequire } from 'node:module';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const require = createRequire(import.meta.url);
 const { transformBurritoToPTF } = require('./05-burrito-to-ptf.js');
 
@@ -240,6 +238,8 @@ function buildPlanStructure() {
 
 /**
  * @param {string} rootDir
+ * @param {number} orgWorkflowStepCount
+ * @returns {Promise<void>}
  */
 async function writeApmDataBurrito(rootDir, orgWorkflowStepCount) {
   const apmRoot = path.join(rootDir, 'apmdata');
@@ -251,6 +251,11 @@ async function writeApmDataBurrito(rootDir, orgWorkflowStepCount) {
   const orgWorkflowSteps = buildOrgWorkflowSteps(orgWorkflowStepCount);
   const scope = { [BOOK]: [] };
 
+  /**
+   * @param {string} fileName
+   * @param {unknown} data
+   * @returns {Promise<void>}
+   */
   const writeTable = async (fileName, data) => {
     await fs.writeFile(
       path.join(dataDir, fileName),
@@ -311,7 +316,11 @@ async function writeApmDataBurrito(rootDir, orgWorkflowStepCount) {
         meta: {
           version: '0.3',
           category: 'scripture',
-          generator: { softwareName: 'apm', softwareVersion: '1', userName: 't' },
+          generator: {
+            softwareName: 'apm',
+            softwareVersion: '1',
+            userName: 't',
+          },
           defaultLocale: 'en',
           dateCreated: '2025-01-01T00:00:00.000Z',
         },
@@ -334,6 +343,7 @@ async function writeApmDataBurrito(rootDir, orgWorkflowStepCount) {
 
 /**
  * @param {string} rootDir
+ * @returns {Promise<void>}
  */
 async function writeAudioBurrito(rootDir) {
   const audioRoot = path.join(rootDir, 'audio');
@@ -360,11 +370,18 @@ async function writeAudioBurrito(rootDir) {
         meta: {
           version: '0.3',
           category: 'scripture',
-          generator: { softwareName: 'apm', softwareVersion: '1', userName: 't' },
+          generator: {
+            softwareName: 'apm',
+            softwareVersion: '1',
+            userName: 't',
+          },
           defaultLocale: 'en',
           dateCreated: '2025-01-01T00:00:00.000Z',
         },
-        identification: { name: { en: 'Audio Fixture' }, abbreviation: { en: 'RUT' } },
+        identification: {
+          name: { en: 'Audio Fixture' },
+          abbreviation: { en: 'RUT' },
+        },
         languages: [{ tag: 'und', name: { en: 'Unknown' } }],
         localizedNames: {
           'book-rut': { long: { en: 'Ruth' }, short: { en: 'Rut' } },
@@ -387,6 +404,7 @@ async function writeAudioBurrito(rootDir) {
 /**
  * @param {string} ptfPath
  * @param {string} tableFile
+ * @returns {unknown}
  */
 function readPtfTable(ptfPath, tableFile) {
   const zip = new AdmZip(ptfPath);
@@ -397,6 +415,8 @@ function readPtfTable(ptfPath, tableFile) {
 
 /**
  * @param {number} orgWorkflowStepCount
+ * @param {(ptfPath: string) => void | Promise<void>} run
+ * @returns {Promise<void>}
  */
 async function withFixture(orgWorkflowStepCount, run) {
   const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), 'burrito-ptf-'));
@@ -413,7 +433,10 @@ async function withFixture(orgWorkflowStepCount, run) {
       jsonResult: true,
     });
     const files = await fs.readdir(outputDir);
-    const ptfPath = path.join(outputDir, files.find((f) => f.endsWith('.ptf')));
+    const ptfPath = path.join(
+      outputDir,
+      files.find((f) => f.endsWith('.ptf'))
+    );
     assert.ok(ptfPath, 'expected a .ptf file');
     await run(ptfPath);
   } finally {
@@ -456,7 +479,9 @@ test('burrito import preserves empty sections from ApmData', async () => {
 test('burrito import preserves publishing rows from ApmData', async () => {
   await withFixture(12, (ptfPath) => {
     const table = readPtfTable(ptfPath, 'G_passages.json');
-    const references = table.data.map((passage) => passage.attributes?.reference);
+    const references = table.data.map(
+      (passage) => passage.attributes?.reference
+    );
     assert.ok(references.includes('Movement 01'), 'movement publishing row');
     assert.ok(references.includes('1'), 'chapter number publishing row');
     assert.ok(references.includes('Note 1'), 'note publishing row');
