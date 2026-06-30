@@ -90,7 +90,12 @@ import {
   DELREG_KEY,
 } from '../../../../components/WSAudioPlayerSegment';
 import { getMarkVersesAutosaveBlockers } from '../../../../utils/markVersesValidation';
-import { evaluateMarkVersesEditReference } from '../../../../utils/markVersesEditReference';
+import {
+  evaluateMarkVersesEditReference,
+  evaluateMarkVersesReferenceStatus,
+  markVersesSkippedPassageRefs,
+  type MarkVersesWarningReason,
+} from '../../../../utils/markVersesEditReference';
 import { getLastVerse } from '../../../../business/localParatext/getLastVerse';
 import { verseToolId } from '../../markVersesTool';
 const emptySegments = JSON.stringify({ regions: [] });
@@ -162,7 +167,8 @@ export interface ICell {
   width?: number;
   className?: string;
   status?: RefStatus;
-  /** Tooltip text shown on the row's warning icon (set when `status` is `RefStatus.Warn`). */
+  /** Tooltip text shown on the row's warning icon (set for either flagged
+   * `status`, `RefStatus.Warn` or `RefStatus.Err`). */
   warning?: string;
 }
 
@@ -795,28 +801,104 @@ export default function PassageDetailMarkVersesIsMobile({
     [findCurrentTableRowIndex, setActiveRowHighlight]
   );
 
+  /** Versification lookup bound to the passage's book (used for range checks). */
+  const lastVerseForBook = useCallback(
+    (chapter: number) => getLastVerse(passage?.attributes?.book ?? '', chapter),
+    [passage]
+  );
+
+  /**
+   * Localized tooltip for a flagged reference. Mirrors the message mapping the
+   * Edit Reference save once did inline, so load-time and edit-time warnings
+   * read identically. `passageRange` feeds the `skipsAhead` "verses skipped"
+   * list.
+   */
+  const referenceWarningMessage = useCallback(
+    (
+      reason: MarkVersesWarningReason | undefined,
+      reference: string,
+      precedingReference: string | undefined,
+      passageRange: string[]
+    ): string | undefined => {
+      switch (reason) {
+        case 'illFormatted':
+        case 'overlap':
+          return t.badReferences;
+        case 'outOfRange':
+          return t.outsideReferences.replace('{0}', reference);
+        case 'skipsAhead':
+          return t.missingReferences.replace(
+            '{0}',
+            markVersesSkippedPassageRefs(
+              precedingReference ?? '',
+              reference,
+              passageRange
+            ).join(', ')
+          );
+        default:
+          return undefined;
+      }
+    },
+    [t]
+  );
+
   const buildReferenceCell = useCallback(
     (value: string, cell: ICell, warning?: string) => {
       // TODO revisit this and the color
       const illFormatted = Boolean(value) && !refMatch(value);
-      // `'err'` (ill-formatted, fails refMatch) renders red; `'warn'` (well-formed
-      // but out of range / breaks consecutive numbering) renders a warning icon
-      // with `warning` as its tooltip.
-      const warn = Boolean(warning) && !illFormatted;
+      // `Err` (ill-formatted, fails refMatch) renders red; `Warn` (well-formed
+      // but out of range / breaks consecutive numbering) renders a warning icon.
+      // `warning` is the tooltip text and is shown for either flagged state.
       const status: ICell['status'] = illFormatted
         ? RefStatus.Err
-        : warn
+        : warning
           ? RefStatus.Warn
           : RefStatus.Valid;
       return {
         ...cell,
         value,
-        warning: warn ? warning : undefined,
+        warning: warning || undefined,
         className: 'ref',
         status,
       };
     },
     []
+  );
+
+  /**
+   * Flag every reference row in place using the shared per-row authority, so a
+   * freshly-loaded table surfaces the same warnings an edit would. Mutates and
+   * returns `tableData`; the header row (index 0) is left untouched.
+   */
+  const annotateReferenceWarnings = useCallback(
+    (tableData: ICell[][], passageRange: string[]): ICell[][] => {
+      const dataRefs = tableData
+        .slice(1)
+        .map((row) => `${(row[ColName.Ref] as ICell)?.value ?? ''}`);
+      tableData.forEach((row, index) => {
+        if (index === 0) return;
+        const cell = row[ColName.Ref] as ICell;
+        const value = `${cell?.value ?? ''}`;
+        const rowIdx = index - 1;
+        const { reason } = evaluateMarkVersesReferenceStatus(
+          value,
+          dataRefs,
+          rowIdx,
+          lastVerseForBook
+        );
+        const precedingReference =
+          rowIdx > 0 ? dataRefs[rowIdx - 1] : undefined;
+        const warning = referenceWarningMessage(
+          reason,
+          value,
+          precedingReference,
+          passageRange
+        );
+        row[ColName.Ref] = buildReferenceCell(value, cell, warning);
+      });
+      return tableData;
+    },
+    [lastVerseForBook, referenceWarningMessage, buildReferenceCell]
   );
 
   /** Assign passage refs after the saved range; add rows when the range no longer covers them. */
@@ -1061,11 +1143,10 @@ export default function PassageDetailMarkVersesIsMobile({
 
     const previousReference = `${(row[ColName.Ref] as ICell)?.value ?? ''}`;
 
-    // Decide whether this edit re-numbers the tail, just flags the row, or
-    // leaves numbering alone. Versification is bound to the passage's book so
-    // the chapter-boundary rules match the rest of the app.
-    const book = passage?.attributes?.book ?? '';
-    const lastVerseForBook = (chapter: number) => getLastVerse(book, chapter);
+    // Decide whether this edit re-numbers the tail or leaves numbering alone.
+    // Versification is bound to the passage's book so the chapter-boundary rules
+    // match the rest of the app. Warning flags are applied below by
+    // annotateReferenceWarnings, not decided here.
     const tableReferences = dataRef.current
       .slice(1)
       .map((tableRow) => `${(tableRow[ColName.Ref] as ICell)?.value ?? ''}`);
@@ -1073,37 +1154,28 @@ export default function PassageDetailMarkVersesIsMobile({
       startRowIndex > 1
         ? `${(newData[startRowIndex - 1]?.[ColName.Ref] as ICell)?.value ?? ''}`
         : undefined;
-    const { action: editAction, reason: warnReason } =
-      evaluateMarkVersesEditReference({
-        previousReference,
-        newReference,
-        precedingReference,
-        tableReferences,
-        rowIndex: startRowIndex - 1,
-        getLastVerse: lastVerseForBook,
-      });
-
-    // Reuse the existing markup-validation messaging for the warning tooltip.
-    const warningMessage =
-      editAction === 'warn'
-        ? warnReason === 'outOfRange'
-          ? t.outsideReferences.replace('{0}', newReference)
-          : warnReason === 'nonConsecutive'
-            ? t.badReferences
-            : undefined
-        : undefined;
-
-    row[ColName.Ref] = buildReferenceCell(
+    const { action: editAction } = evaluateMarkVersesEditReference({
+      previousReference,
       newReference,
-      row[ColName.Ref] as ICell,
-      warningMessage
-    );
+      precedingReference,
+      tableReferences,
+      rowIndex: startRowIndex - 1,
+      getLastVerse: lastVerseForBook,
+    });
 
-    const parsed = parseReferenceValue(newReference);
     const passageRange =
       passageRefs.current.length > 0
         ? passageRefs.current
         : getPassageRefs(passage);
+
+    // Set the edited value; the whole-table warning pass below assigns its
+    // status and tooltip (and re-evaluates every other row).
+    row[ColName.Ref] = buildReferenceCell(
+      newReference,
+      row[ColName.Ref] as ICell
+    );
+
+    const parsed = parseReferenceValue(newReference);
     const startPassageIdx = parsed
       ? passageRange.findIndex((ref) => {
           const p = parseReferenceValue(ref);
@@ -1141,6 +1213,7 @@ export default function PassageDetailMarkVersesIsMobile({
       );
     }
 
+    annotateReferenceWarnings(newData, passageRange);
     setActiveRowHighlight(newData, startRowIndex);
     setData(newData);
     setSegments();
@@ -1266,6 +1339,11 @@ export default function PassageDetailMarkVersesIsMobile({
         }
       });
 
+      // Flag out-of-range / overlapping / skipped-ahead references so they show
+      // on load, exactly as an edit would. (Ill-formatted refs were already
+      // flagged by rowCells; this assigns the matching tooltip too.)
+      annotateReferenceWarnings(newData, autoRefs);
+
       const change =
         numSegments !== regions.length ||
         tableSignature(previousData) !== tableSignature(newData);
@@ -1313,6 +1391,7 @@ export default function PassageDetailMarkVersesIsMobile({
       setData,
       scrollActiveRowIntoView,
       seekToRowSegment,
+      annotateReferenceWarnings,
     ]
   );
 

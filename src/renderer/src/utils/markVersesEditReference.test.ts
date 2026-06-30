@@ -1,11 +1,12 @@
 import {
   decideMarkVersesEditReferenceAction,
-  evaluateMarkVersesEditReference,
+  evaluateMarkVersesReferenceStatus,
   isMarkVersesReferenceInRange,
   isMarkVersesTableConsecutive,
   isValidMarkVersesReference,
   isWellFormedMarkVersesReference,
   markVersesReferenceConsecutivelyFollows,
+  markVersesSkippedPassageRefs,
   type GetLastVerse,
   type MarkVersesEditReferenceContext,
 } from './markVersesEditReference';
@@ -218,7 +219,7 @@ describe('decideMarkVersesEditReferenceAction', () => {
   });
 
   describe('result is out of range or ill-formatted', () => {
-    it('warns (no re-number) when the result is ill-formatted', () => {
+    it('does not re-number when the result is ill-formatted', () => {
       expect(
         decideMarkVersesEditReferenceAction(
           ctx({
@@ -229,10 +230,10 @@ describe('decideMarkVersesEditReferenceAction', () => {
             rowIndex: 1,
           })
         )
-      ).toBe('warn');
+      ).toBe('none');
     });
 
-    it('warns (no re-number) when the result is out of range', () => {
+    it('does not re-number when the result is out of range', () => {
       expect(
         decideMarkVersesEditReferenceAction(
           ctx({
@@ -243,7 +244,7 @@ describe('decideMarkVersesEditReferenceAction', () => {
             rowIndex: 1,
           })
         )
-      ).toBe('warn');
+      ).toBe('none');
     });
   });
 
@@ -262,7 +263,7 @@ describe('decideMarkVersesEditReferenceAction', () => {
       ).toBe('renumber');
     });
 
-    it('warns (no re-number) when the new start creates a gap with the row above', () => {
+    it('does not re-number when the new start creates a gap with the row above', () => {
       expect(
         decideMarkVersesEditReferenceAction(
           ctx({
@@ -273,7 +274,7 @@ describe('decideMarkVersesEditReferenceAction', () => {
             rowIndex: 1,
           })
         )
-      ).toBe('warn');
+      ).toBe('none');
     });
   });
 
@@ -325,68 +326,90 @@ describe('decideMarkVersesEditReferenceAction', () => {
   });
 });
 
-describe('evaluateMarkVersesEditReference (warning reason)', () => {
-  const ctx = (
-    over: Partial<MarkVersesEditReferenceContext>
-  ): MarkVersesEditReferenceContext => ({
-    previousReference: '',
-    newReference: '',
-    precedingReference: undefined,
-    tableReferences: [],
-    rowIndex: 1,
-    getLastVerse: longChapter1,
-    ...over,
+describe('evaluateMarkVersesReferenceStatus (per-row warning reason)', () => {
+  // The reference under test sits at `rowIndex` within `tableReferences`.
+  const status = (
+    tableReferences: string[],
+    rowIndex: number,
+    reference = tableReferences[rowIndex]
+  ) =>
+    evaluateMarkVersesReferenceStatus(
+      reference,
+      tableReferences,
+      rowIndex,
+      longChapter1
+    );
+
+  it('reports no reason for an empty reference', () => {
+    expect(status(['1:1', '', '1:3'], 1)).toEqual({});
   });
 
-  it('reports outOfRange for a well-formed but out-of-range result', () => {
-    expect(
-      evaluateMarkVersesEditReference(
-        ctx({
-          tableReferences: ['1:1', '1:2', '1:3'],
-          precedingReference: '1:1',
-          newReference: '100:1',
-          rowIndex: 1,
-        })
-      )
-    ).toEqual({ action: 'warn', reason: 'outOfRange' });
+  it('reports no reason for a reference that consecutively follows', () => {
+    expect(status(['1:1', '1:2', '1:3'], 1)).toEqual({});
   });
 
-  it('reports illFormatted for a result that fails refMatch', () => {
-    expect(
-      evaluateMarkVersesEditReference(
-        ctx({
-          tableReferences: ['1:1', '1:2', '1:3'],
-          precedingReference: '1:1',
-          newReference: '1:1aa',
-          rowIndex: 1,
-        })
-      )
-    ).toEqual({ action: 'warn', reason: 'illFormatted' });
+  it('reports outOfRange for a well-formed but out-of-range reference', () => {
+    expect(status(['1:1', '100:1', '1:3'], 1)).toEqual({
+      reason: 'outOfRange',
+    });
   });
 
-  it('reports nonConsecutive when a clean-table edit creates a gap', () => {
-    expect(
-      evaluateMarkVersesEditReference(
-        ctx({
-          tableReferences: ['1:1', '1:2', '1:3', '1:4'],
-          precedingReference: '1:1',
-          newReference: '1:4',
-          rowIndex: 1,
-        })
-      )
-    ).toEqual({ action: 'warn', reason: 'nonConsecutive' });
+  it('reports illFormatted for a reference that fails refMatch', () => {
+    expect(status(['1:1', '1:1aa', '1:3'], 1)).toEqual({
+      reason: 'illFormatted',
+    });
   });
 
-  it('reports no reason when re-numbering', () => {
-    expect(
-      evaluateMarkVersesEditReference(
-        ctx({
-          tableReferences: ['1:1', '1:2', '1:3', '1:4'],
-          precedingReference: '1:2',
-          newReference: '1:3-4',
-          rowIndex: 2,
-        })
-      )
-    ).toEqual({ action: 'renumber' });
+  it('reports skipsAhead when the start jumps past the next verse', () => {
+    // 1:1 -> 1:4 leaves 1:2 and 1:3 skipped.
+    expect(status(['1:1', '1:4', '1:5'], 1)).toEqual({ reason: 'skipsAhead' });
+  });
+
+  it('reports overlap when the verse duplicates a row above', () => {
+    expect(status(['1:1', '1:2', '1:1', '1:4'], 2)).toEqual({
+      reason: 'overlap',
+    });
+  });
+
+  it('treats a non-consecutive reference that neither overlaps nor skips ahead as valid', () => {
+    // 1:1 -> 1:2b is non-consecutive (a new split verse must start at part a)
+    // but its verse (1:2) neither overlaps the row above (1:1) nor skips ahead.
+    expect(status(['1:1', '1:2b', '1:3'], 1)).toEqual({});
+  });
+
+  it('checks only range/format for the first row (no preceding reference)', () => {
+    expect(status(['1:4', '1:5'], 0)).toEqual({});
+    expect(status(['100:1', '1:5'], 0)).toEqual({ reason: 'outOfRange' });
+  });
+});
+
+describe('markVersesSkippedPassageRefs', () => {
+  const passage = ['1:1', '1:2', '1:3', '1:4', '1:5'];
+
+  it('lists passage verses strictly between the prior end and the new start', () => {
+    expect(markVersesSkippedPassageRefs('1:1', '1:4', passage)).toEqual([
+      '1:2',
+      '1:3',
+    ]);
+  });
+
+  it('returns empty when the new start immediately follows (no gap)', () => {
+    expect(markVersesSkippedPassageRefs('1:2', '1:3', passage)).toEqual([]);
+  });
+
+  it('returns empty when the new start is not ahead (duplicate / backfill)', () => {
+    expect(markVersesSkippedPassageRefs('1:3', '1:2', passage)).toEqual([]);
+  });
+
+  it('uses the prior reference end, not its start, as the lower bound', () => {
+    expect(markVersesSkippedPassageRefs('1:1-2', '1:5', passage)).toEqual([
+      '1:3',
+      '1:4',
+    ]);
+  });
+
+  it('returns empty when either reference is unparseable', () => {
+    expect(markVersesSkippedPassageRefs('', '1:4', passage)).toEqual([]);
+    expect(markVersesSkippedPassageRefs('1:1', 'nope', passage)).toEqual([]);
   });
 });

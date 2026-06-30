@@ -27,10 +27,14 @@ export type GetLastVerse = (chapter: number) => number | null;
 /**
  * What to do with the surrounding table after a reference edit.
  * - `renumber`: run the existing redistribute-tail logic.
- * - `warn`: flag the edited row (warning icon) and leave numbering untouched.
- * - `none`: leave numbering untouched and add no new warning.
+ * - `none`: leave numbering untouched.
+ *
+ * This decides numbering only. Whether a row is *flagged* with a warning is no
+ * longer decided here — that is owned by `evaluateMarkVersesReferenceStatus`,
+ * applied per row both on load and after an edit, so a freshly-loaded table
+ * flags the same problems an edit would.
  */
-export type MarkVersesEditReferenceAction = 'renumber' | 'warn' | 'none';
+export type MarkVersesEditReferenceAction = 'renumber' | 'none';
 
 export interface MarkVersesEditReferenceContext {
   /** The edited row's reference text before the edit (e.g. `1:3-5`). */
@@ -170,28 +174,165 @@ export const isMarkVersesTableConsecutive = (
 const isNonEmptyRef = (ref?: string): ref is string =>
   Boolean(ref && ref.trim());
 
+/** Chapter-major ordering key for a verse position (suffix ignored). */
+const verseOrderKey = (chapter: number, verse: number): number =>
+  chapter * 1000 + verse;
+
 /**
- * Why the edited row was flagged with a warning (drives the tooltip message).
- * Only meaningful when the action is `warn`.
- * - `illFormatted`: fails refMatch (renders as the red `Err` text, not the icon).
+ * When `newRef` does not consecutively follow `prevRef`, did its start jump
+ * *past* the expected next verse (a forward gap — passage verses are skipped)?
+ * Returning false means it sits at or before the expected next verse (an
+ * overlap/duplicate) or fills an earlier gap (a backfill).
+ */
+const markVersesReferenceSkipsAhead = (
+  prevRef: string,
+  newRef: string,
+  getLastVerse: GetLastVerse
+): boolean => {
+  const prev = parseMarkVersesReference(prevRef);
+  const next = parseMarkVersesReference(newRef);
+  if (!prev || !next) return false;
+
+  const prevEnd = prev.end;
+  const lastVerse = getLastVerse(prevEnd.chapter);
+  if (lastVerse === null || lastVerse === undefined) return false;
+  if (prevEnd.verse > lastVerse) return false;
+
+  const rollover = prevEnd.verse === lastVerse;
+  const expectedChapter = rollover ? prevEnd.chapter + 1 : prevEnd.chapter;
+  const expectedVerse = rollover ? 1 : prevEnd.verse + 1;
+
+  return (
+    verseOrderKey(next.start.chapter, next.start.verse) >
+    verseOrderKey(expectedChapter, expectedVerse)
+  );
+};
+
+/** Two references' verse spans intersect (suffixes ignored, verse granularity). */
+const markVersesReferencesOverlap = (refA: string, refB: string): boolean => {
+  const a = parseMarkVersesReference(refA);
+  const b = parseMarkVersesReference(refB);
+  if (!a || !b) return false;
+  const aStart = verseOrderKey(a.start.chapter, a.start.verse);
+  const aEnd = verseOrderKey(a.end.chapter, a.end.verse);
+  const bStart = verseOrderKey(b.start.chapter, b.start.verse);
+  const bEnd = verseOrderKey(b.end.chapter, b.end.verse);
+  return aStart <= bEnd && bStart <= aEnd;
+};
+
+/**
+ * Does `newRef` overlap any row *above* the edited one? Scans the whole prefix
+ * (not just the immediately preceding row) so an unusual preceding row — empty,
+ * multi-verse, or itself out of order — can't hide a clash with a row higher up.
+ * Rows below are excluded: they get renumbered, so a clash there is not a
+ * duplicate.
+ */
+const overlapsEarlierRow = (
+  tableReferences: string[],
+  editedRowIndex: number,
+  newRef: string
+): boolean => {
+  for (let i = 0; i < editedRowIndex; i += 1) {
+    const ref = tableReferences[i];
+    if (isNonEmptyRef(ref) && markVersesReferencesOverlap(newRef, ref)) {
+      return true;
+    }
+  }
+  return false;
+};
+
+/**
+ * Passage verse refs skipped when `newRef` starts past `prevRef`'s end — those
+ * strictly after `prevRef`'s end and strictly before `newRef`'s start. Used to
+ * fill the `missingReferences` tooltip's verse list. Returns [] when nothing is
+ * skipped or the refs can't be parsed.
+ */
+export const markVersesSkippedPassageRefs = (
+  prevRef: string,
+  newRef: string,
+  passageRefs: string[]
+): string[] => {
+  const prev = parseMarkVersesReference(prevRef);
+  const next = parseMarkVersesReference(newRef);
+  if (!prev || !next) return [];
+
+  const afterKey = verseOrderKey(prev.end.chapter, prev.end.verse);
+  const beforeKey = verseOrderKey(next.start.chapter, next.start.verse);
+  return passageRefs.filter((ref) => {
+    const parsed = parseMarkVersesReference(ref);
+    if (!parsed) return false;
+    const key = verseOrderKey(parsed.start.chapter, parsed.start.verse);
+    return key > afterKey && key < beforeKey;
+  });
+};
+
+/**
+ * Why a row is flagged with a warning (drives the tooltip message). See
+ * `evaluateMarkVersesReferenceStatus`, which is the single authority for this.
+ * - `illFormatted`: fails refMatch.
  * - `outOfRange`: well-formed but the verse is outside the book / passage.
- * - `nonConsecutive`: well-formed and in range, but its start does not follow
- *   the row above (creates a gap, duplicate, or overlap).
+ * - `skipsAhead`: well-formed and in range, but its start jumps *past* the
+ *   expected next verse, leaving passage verses skipped (a forward gap).
+ * - `overlap`: well-formed and in range, but its verse span intersects a row
+ *   above (duplicates / overlaps an already-assigned verse).
+ *
+ * A reference that neither skips ahead nor overlaps an earlier row — e.g. one
+ * that backfills a previously skipped verse — is treated as valid, not flagged.
  */
 export type MarkVersesWarningReason =
   | 'illFormatted'
   | 'outOfRange'
-  | 'nonConsecutive';
+  | 'skipsAhead'
+  | 'overlap';
+
+/**
+ * Per-row warning evaluation: the single authority for whether a reference cell
+ * should be flagged and why, independent of any edit. Applied both when
+ * hydrating the table on load and after an edit, so a freshly-loaded table
+ * flags the same problems an edit would.
+ *
+ * `tableReferences` is every data-row reference in order; `rowIndex` is this
+ * reference's position within it. Ladder (first match wins): illFormatted ->
+ * outOfRange -> overlap (intersects a row above) -> skipsAhead (start jumps past
+ * the expected next verse). A reference that consecutively follows the row
+ * above, or merely backfills an earlier gap, yields no reason.
+ */
+export const evaluateMarkVersesReferenceStatus = (
+  reference: string,
+  tableReferences: string[],
+  rowIndex: number,
+  getLastVerse: GetLastVerse
+): { reason?: MarkVersesWarningReason } => {
+  if (!isNonEmptyRef(reference)) return {};
+  if (!isWellFormedMarkVersesReference(reference)) {
+    return { reason: 'illFormatted' };
+  }
+  if (!isMarkVersesReferenceInRange(reference, getLastVerse)) {
+    return { reason: 'outOfRange' };
+  }
+  if (overlapsEarlierRow(tableReferences, rowIndex, reference)) {
+    return { reason: 'overlap' };
+  }
+  const precedingReference =
+    rowIndex > 0 ? tableReferences[rowIndex - 1] : undefined;
+  if (
+    isNonEmptyRef(precedingReference) &&
+    markVersesReferenceSkipsAhead(precedingReference, reference, getLastVerse)
+  ) {
+    return { reason: 'skipsAhead' };
+  }
+  return {};
+};
 
 export interface MarkVersesEditReferenceResult {
   action: MarkVersesEditReferenceAction;
-  reason?: MarkVersesWarningReason;
 }
 
 /**
- * Evaluate an Edit Reference save: the action to take plus, when flagging, the
- * reason (so the caller can choose the matching localized message). Branches
- * mirror the spec in markVersesEditReference.test.ts.
+ * Evaluate an Edit Reference save: the numbering action to take (`renumber` or
+ * `none`). Row flagging is handled separately by
+ * `evaluateMarkVersesReferenceStatus`. Branches mirror the spec in
+ * markVersesEditReference.test.ts.
  */
 export const evaluateMarkVersesEditReference = (
   ctx: MarkVersesEditReferenceContext
@@ -212,15 +353,10 @@ export const evaluateMarkVersesEditReference = (
   );
   if (preExistingInvalid) return { action: 'none' };
 
-  // Branch 2: the result itself is ill-formatted or out of range — flag it and
-  // leave numbering untouched.
+  // Branch 2: the result itself is ill-formatted or out of range — leave
+  // numbering untouched (the row gets flagged by the per-row status pass).
   if (!isValidMarkVersesReference(newReference, getLastVerse)) {
-    return {
-      action: 'warn',
-      reason: isWellFormedMarkVersesReference(newReference)
-        ? 'outOfRange'
-        : 'illFormatted',
-    };
+    return { action: 'none' };
   }
 
   const wasConsecutive = isMarkVersesTableConsecutive(
@@ -233,13 +369,19 @@ export const evaluateMarkVersesEditReference = (
     // consecutively follows the row above (the dropdown-style edits that keep
     // the start fixed always do). The first data row has nothing above it.
     if (!isNonEmptyRef(precedingReference)) return { action: 'renumber' };
-    return markVersesReferenceConsecutivelyFollows(
-      precedingReference,
-      newReference,
-      getLastVerse
-    )
-      ? { action: 'renumber' }
-      : { action: 'warn', reason: 'nonConsecutive' };
+    if (
+      markVersesReferenceConsecutivelyFollows(
+        precedingReference,
+        newReference,
+        getLastVerse
+      )
+    ) {
+      return { action: 'renumber' };
+    }
+    // Anything else (overlaps a row above, skips ahead, or backfills an earlier
+    // gap) leaves numbering alone; the per-row status pass decides whether to
+    // flag it and why.
+    return { action: 'none' };
   }
 
   // Branch 4: the table already had a duplicate / gap / non-consecutive

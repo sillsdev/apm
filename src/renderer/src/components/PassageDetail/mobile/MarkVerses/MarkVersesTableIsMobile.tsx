@@ -189,12 +189,15 @@ export default function MarkVersesTableIsMobile({
                             class lands on the span and the icon keeps its sx. */}
                         <Box
                           component="span"
-                          sx={{ display: 'inline-flex', lineHeight: 0 }}
+                          sx={{
+                            display: 'inline-flex',
+                            lineHeight: 0,
+                            backgroundColor: 'transparent',
+                          }}
                         >
                           <WarningIcon
                             aria-label={`verse-reference-warning-${rowIndex}`}
                             sx={{
-                              fontSize: 28,
                               color: 'warning.main',
                               backgroundColor: 'transparent',
                             }}
