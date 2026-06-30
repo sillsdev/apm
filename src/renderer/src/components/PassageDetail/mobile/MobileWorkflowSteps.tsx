@@ -18,7 +18,7 @@ import { useSnackBar } from '../../../hoc/SnackBar';
 import { sharedSelector, workflowStepsSelector } from '../../../selector';
 import { shallowEqual, useSelector } from 'react-redux';
 import { useWfLabel } from '../../../utils/useWfLabel';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { IWorkflowStepsStrings, PassageD } from '../../../model';
 import { toCamel } from '../../../utils/toCamel';
 import { related } from '../../../crud/related';
@@ -74,6 +74,10 @@ export default function MobileWorkflowSteps() {
   // Refs used to scroll the current step/passage into view
   const didMountRef = useRef(false);
   const stepRefs = useRef(new Map<string, HTMLElement>());
+
+  // Refs to each parallelogram's label, used to size every parallelogram to the width of the longest one
+  const labelRefs = useRef(new Map<string, HTMLElement>());
+  const [stepWidth, setStepWidth] = useState<number | undefined>(undefined);
 
   // Ordered list of passages in the current section, excluding publishing-title rows, sorted by sequence number
   const sectionPassages = useMemo<PassageD[]>(() => {
@@ -165,6 +169,22 @@ export default function MobileWorkflowSteps() {
         },
       }));
 
+  // The labels joined together, used to re-measure when any label changes (e.g. localization)
+  const labelKey = steps.map((s) => s.label).join(' ');
+
+  // Measure every label and size all parallelograms to the widest one so they are all of equal length
+  useLayoutEffect(() => {
+    let max = 0;
+    labelRefs.current.forEach((el) => {
+      max = Math.max(max, el.scrollWidth);
+    });
+    if (max > 0) {
+      // Add 12 px horizontal padding to each side of the label
+      // Cap the maximum width of the parallelograms at 120 px
+      setStepWidth(Math.min(Math.ceil(max) + 12, 120));
+    }
+  }, [labelKey]);
+
   // Keep the current step/passage scrolled into view
   useEffect(() => {
     const currentId = isStepProgression ? currentstep : (passage?.id ?? '');
@@ -182,6 +202,7 @@ export default function MobileWorkflowSteps() {
     workflow.length,
     sectionPassages.length,
     isStepProgression,
+    stepWidth,
   ]);
 
   return (
@@ -340,11 +361,13 @@ export default function MobileWorkflowSteps() {
                 }}
                 onClick={step.onClick}
                 sx={{
-                  flex: '0 0 80px',
+                  flex: stepWidth ? `0 0 ${stepWidth}px` : '0 0 80px',
+                  minWidth: 0,
                   height: 30,
                   bgcolor: color,
                   mr: -0.25,
-                  clipPath: 'polygon(10% 0%, 100% 0%, 90% 100%, 0% 100%)',
+                  clipPath:
+                    'polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%)',
                   cursor:
                     recording || commentRecording ? 'not-allowed' : 'pointer',
                   display: 'flex',
@@ -357,6 +380,10 @@ export default function MobileWorkflowSteps() {
               >
                 <Typography
                   component="span"
+                  ref={(el: HTMLElement | null) => {
+                    if (el) labelRefs.current.set(step.id, el);
+                    else labelRefs.current.delete(step.id);
+                  }}
                   sx={{
                     color: textColor,
                     fontSize: '0.7rem',
@@ -365,6 +392,7 @@ export default function MobileWorkflowSteps() {
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
                     whiteSpace: 'nowrap',
+                    minWidth: 0,
                     maxWidth: '100%',
                     pointerEvents: 'none',
                   }}
