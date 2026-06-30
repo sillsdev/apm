@@ -1,5 +1,9 @@
 import React from 'react';
-import { IAsrState, normalizeAsrState } from '../business/asr/asrState';
+import {
+  IAsrState,
+  asrStatesEqual,
+  normalizeAsrState,
+} from '../business/asr/asrState';
 import { IAsrLanguageSuggestion } from '../business/asr/useRecommendAsrLanguage';
 import { OrganizationD, OrgWorkflowStepD, Project } from '../model';
 import { ILanguage } from '../control';
@@ -92,7 +96,9 @@ export function useGetAsrSettings(team?: OrganizationD) {
       rtl: p?.attributes?.rtl ?? false,
       spellCheck: p?.attributes?.spellCheck ?? false,
     };
-  }, [project, memory]);
+    // memory is a stable global; intentionally omitted (repo convention).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [project]);
 
   // The language actually being transcribed: the project's vernacular when set,
   // otherwise the org default vernacular. Used to decide whether a sister ASR
@@ -288,6 +294,8 @@ export function useGetAsrSettings(team?: OrganizationD) {
     const settings = parseStepSettings(json?.settings);
     const slug = artifactTypeSlugFromSettings(settings, slugFromId);
     if (!artifactUsesOrgVernacularLanguage(slug)) return;
+    const existing = normalizeAsrState(getProjectDefault(orgDefaultAsr));
+    if (existing && asrStatesEqual(existing, asrState)) return;
     setProjectDefault(orgDefaultAsr, asrState);
   };
 

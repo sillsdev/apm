@@ -78,8 +78,7 @@ export function isValidAsrLanguage(iso: string): boolean {
 
 /**
  * True when the primary (vernacular) language can't be transcribed directly and
- * therefore needs a sister ASR language. An unset language needs nothing; an
- * unrecognized one (iso `und`) is assumed to need a sister.
+ * therefore needs a sister ASR language. An unset language does not need a sister.
  */
 export function needsSisterLanguage(primaryBcp47: string): boolean {
   if (!isLangSet(primaryBcp47)) return false;

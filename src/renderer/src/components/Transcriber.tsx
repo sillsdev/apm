@@ -1292,7 +1292,7 @@ export function Transcriber(props: IProps) {
         return;
       }
       if (isLangSet(asrSettings?.asrIso)) {
-        startAsr();
+        startAsr(asrSettings);
         return;
       }
       openAsrLanguageSettings();

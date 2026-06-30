@@ -10023,13 +10023,6 @@
                <context context-type="sourcefile">Transcriber.tsx</context>
             </context-group>
          </trans-unit>
-         <trans-unit id="transcriber.all">
-            <source>All</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">AsrAlphabet.tsx</context>
-            </context-group>
-         </trans-unit>
          <trans-unit id="transcriber.chooseSisterLang">
             <source>Choose a sister language</source>
             <target/>

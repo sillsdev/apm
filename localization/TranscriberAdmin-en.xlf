@@ -8590,12 +8590,6 @@
             <target/>
          </segment>
       </unit>
-      <unit id="transcriber.all">
-         <segment>
-            <source>All</source>
-            <target/>
-         </segment>
-      </unit>
       <unit id="transcriber.chooseSisterLang">
          <segment>
             <source>Choose a sister language</source>
