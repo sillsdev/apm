@@ -1153,8 +1153,6 @@ export default function PassageDetailMarkVersesIsMobile({
     const row = newData[startRowIndex] as ICell[] | undefined;
     if (!row) return;
 
-    const previousReference = `${(row[ColName.Ref] as ICell)?.value ?? ''}`;
-
     // Decide whether this edit re-numbers the tail or leaves numbering alone.
     // Versification is bound to the passage's book so the chapter-boundary rules
     // match the rest of the app. Warning flags are applied below by
@@ -1167,7 +1165,6 @@ export default function PassageDetailMarkVersesIsMobile({
         ? `${(newData[startRowIndex - 1]?.[ColName.Ref] as ICell)?.value ?? ''}`
         : undefined;
     const { action: editAction } = evaluateMarkVersesEditReference({
-      previousReference,
       newReference,
       precedingReference,
       tableReferences,

@@ -36,8 +36,6 @@ export type GetLastVerse = (chapter: number) => number | null;
 export type MarkVersesEditReferenceAction = 'renumber' | 'none';
 
 export interface MarkVersesEditReferenceContext {
-  /** The edited row's reference text before the edit (e.g. `1:3-5`). */
-  previousReference: string;
   /** The edited row's reference text after the edit (e.g. `1:6-7`). */
   newReference: string;
   /**

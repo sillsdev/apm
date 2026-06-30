@@ -223,7 +223,6 @@ describe('decideMarkVersesEditReferenceAction', () => {
   const ctx = (
     over: Partial<MarkVersesEditReferenceContext>
   ): MarkVersesEditReferenceContext => ({
-    previousReference: '',
     newReference: '',
     precedingReference: undefined,
     tableReferences: [],
@@ -238,7 +237,6 @@ describe('decideMarkVersesEditReferenceAction', () => {
         decideMarkVersesEditReferenceAction(
           ctx({
             tableReferences: ['1:1', '100:1', '1:3'],
-            previousReference: '1:1',
             newReference: '1:1-2',
             precedingReference: undefined,
             rowIndex: 0,
@@ -252,7 +250,6 @@ describe('decideMarkVersesEditReferenceAction', () => {
         decideMarkVersesEditReferenceAction(
           ctx({
             tableReferences: ['1:1', 'foo', '1:3'],
-            previousReference: '1:1',
             newReference: '1:1-2',
             rowIndex: 0,
           })
@@ -268,7 +265,6 @@ describe('decideMarkVersesEditReferenceAction', () => {
           ctx({
             tableReferences: ['1:1', '1:2', '1:3'],
             precedingReference: '1:1',
-            previousReference: '1:2',
             newReference: '1:1aa',
             rowIndex: 1,
           })
@@ -282,7 +278,6 @@ describe('decideMarkVersesEditReferenceAction', () => {
           ctx({
             tableReferences: ['1:1', '1:2', '1:3'],
             precedingReference: '1:1',
-            previousReference: '1:2',
             newReference: '100:1',
             rowIndex: 1,
           })
@@ -298,7 +293,6 @@ describe('decideMarkVersesEditReferenceAction', () => {
           ctx({
             tableReferences: ['1:1', '1:2', '1:3', '1:4'],
             precedingReference: '1:2',
-            previousReference: '1:3',
             newReference: '1:3-4', // start unchanged, only end extended
             rowIndex: 2,
           })
@@ -312,7 +306,6 @@ describe('decideMarkVersesEditReferenceAction', () => {
           ctx({
             tableReferences: ['1:1', '1:2', '1:3', '1:4'],
             precedingReference: '1:1',
-            previousReference: '1:2',
             newReference: '1:4', // start jumps from 2 to 4: gap, does not follow 1:1
             rowIndex: 1,
           })
@@ -332,7 +325,6 @@ describe('decideMarkVersesEditReferenceAction', () => {
           ctx({
             tableReferences: ['1:1-4', '1:3-6', '1:7-10'],
             precedingReference: '1:1-4',
-            previousReference: '1:3-6',
             newReference: '1:5-7',
             rowIndex: 1,
           })
@@ -348,7 +340,6 @@ describe('decideMarkVersesEditReferenceAction', () => {
           ctx({
             tableReferences: ['1:1', '1:2', '1:4'],
             precedingReference: '1:4',
-            previousReference: '1:4',
             newReference: '1:5',
             rowIndex: 2,
           })
