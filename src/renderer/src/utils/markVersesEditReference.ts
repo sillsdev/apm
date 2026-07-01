@@ -163,6 +163,8 @@ const LETTER_SUFFIX_RANK: Record<string, number> = {
   d: 4,
   e: 5,
 };
+/** Rank of a missing suffix at the *start* of a span — the verse begins at part `a`. */
+const VERSE_START_SUFFIX_RANK = LETTER_SUFFIX_RANK.a;
 /** Rank of a missing suffix at the *end* of a span — after every letter part. */
 const VERSE_END_SUFFIX_RANK = 6;
 
@@ -170,9 +172,10 @@ const VERSE_END_SUFFIX_RANK = 6;
  * Fine-grained ordering key that includes the letter subpart, so a subpart can
  * be compared against a bound within the same verse. `atVerseEnd` fixes how a
  * bare verse (no suffix) is ordered relative to its lettered parts: the start of
- * a span sits before part `a` (rank 0), while the end of a span runs through the
- * whole verse, after part `e` (rank 6). A ref/bound that names a specific part
- * (`1:2b`) always uses that part's rank, regardless of `atVerseEnd`.
+ * a span sits at part `a` (a verse begins at its first part), while the end of a
+ * span runs through the whole verse, after part `e` (rank 6). A ref/bound that
+ * names a specific part (`1:2b`) always uses that part's rank, regardless of
+ * `atVerseEnd`.
  */
 const verseSubpartKey = (
   chapter: number,
@@ -184,20 +187,21 @@ const verseSubpartKey = (
     ? (LETTER_SUFFIX_RANK[suffix] ?? 0)
     : atVerseEnd
       ? VERSE_END_SUFFIX_RANK
-      : 0;
+      : VERSE_START_SUFFIX_RANK;
   return verseOrderKey(chapter, verse) * 10 + suffixRank;
 };
 
 /**
- * True when the whole span `ref` covers lies within the passage — its start is
- * at or after `passageStartRef` and its end is at or before `passageEndRef`. The
- * passage is contiguous, so its two bounds fully describe it.
+ * True when the whole span `ref` covers lies within `passage` — its start is at
+ * or after the passage's start verse and its end is at or before the passage's
+ * end verse. The passage is contiguous, so its two bounds (`startChapter`/
+ * `startVerse` .. `endChapter`/`endVerse`) fully describe it.
  *
- * Comparison is subpart-aware: when a bound carries a letter (`1:2b`), a subpart
+ * Comparison is subpart-aware: when a bound carries a letter (`2b`), a subpart
  * outside that part is outside the passage (`1:2a` is before `1:2b`). A bound
- * with no suffix means the whole verse — its start bound sits before part `a`,
- * its end bound after part `e`. Returns false when `ref` or either bound is
- * unparseable.
+ * with no suffix means the whole verse — its start sits at part `a`, its end
+ * after part `e`. Returns false when `ref` is unparseable or a passage bound is
+ * missing.
  */
 export const isMarkVersesReferenceInPassage = (
   ref: string,

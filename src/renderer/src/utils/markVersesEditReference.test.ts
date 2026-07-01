@@ -1,5 +1,4 @@
 import {
-  decideMarkVersesEditReferenceAction,
   evaluateMarkVersesReferenceStatus,
   isRefInVersification,
   isMarkVersesReferenceInPassage,
@@ -9,9 +8,39 @@ import {
   markVersesReferenceConsecutivelyFollows,
   markVersesReferenceStartsPassage,
   markVersesSkippedPassageRefs,
+  shouldAutoRenumberAfterEdit,
   type MarkVersesEditReferenceContext,
 } from './markVersesEditReference';
 import { PassageD } from '../model';
+
+/**
+ * Build a minimal PassageD from a book and its start/end reference strings
+ * (e.g. '1:2b'). Only the attributes the functions under test read are set. A
+ * malformed bound (e.g. '' or 'junk') yields a missing/NaN attribute, which the
+ * functions treat as "not in passage".
+ */
+const passageStub = (
+  book: string,
+  startRef: string,
+  endRef: string
+): PassageD => {
+  // A plain verse is numeric (matching PassageD's `number` attribute); a verse
+  // carrying a letter (e.g. `2b`) stays a string, which the functions split via
+  // splitVerseSuffix. A malformed bound leaves the attribute undefined/NaN.
+  const toVerse = (v: string | undefined): number | string | undefined =>
+    v === undefined ? undefined : /^\d+$/.test(v) ? Number(v) : v;
+  const [startChapter, startVerse] = startRef.split(':');
+  const [endChapter, endVerse] = endRef.split(':');
+  return {
+    attributes: {
+      book,
+      startChapter: Number(startChapter),
+      startVerse: toVerse(startVerse),
+      endChapter: Number(endChapter),
+      endVerse: toVerse(endVerse),
+    },
+  } as unknown as PassageD;
+};
 
 /**
  * TDD spec for the "what happens when a user edits a Mark Verses reference"
@@ -200,19 +229,27 @@ describe('isMarkVersesTableConsecutive', () => {
   });
 });
 
-describe('decideMarkVersesEditReferenceAction', () => {
-  const ctx = (
-    over: Partial<MarkVersesEditReferenceContext>
-  ): MarkVersesEditReferenceContext => ({
-    newReference: '',
-    tableReferences: [],
-    rowIndex: 1,
-    book: longChapter1,
+describe('shouldAutoRenumberAfterEdit', () => {
+  // Convenience overrides: `book` / `passageStartRef` / `passageEndRef` are
+  // assembled into the context's PassageD.
+  const ctx = (over: {
+    newReference?: string;
+    tableReferences?: string[];
+    rowIndex?: number;
+    book?: string;
+    passageStartRef?: string;
+    passageEndRef?: string;
+  }): MarkVersesEditReferenceContext => ({
+    newReference: over.newReference ?? '',
+    tableReferences: over.tableReferences ?? [],
+    rowIndex: over.rowIndex ?? 1,
     // Wide passage bounds so the existing cases turn only on the numbering
     // rules; the passage-bounds behavior is exercised separately below.
-    passageStartRef: '1:1',
-    passageEndRef: '1:80',
-    ...over,
+    passage: passageStub(
+      over.book ?? longChapter1,
+      over.passageStartRef ?? '1:1',
+      over.passageEndRef ?? '1:80'
+    ),
   });
 
   // Rule 1: anything ill-formatted or out of range anywhere in the resulting
@@ -220,57 +257,57 @@ describe('decideMarkVersesEditReferenceAction', () => {
   describe('table has an ill-formatted or out-of-range reference', () => {
     it('never re-numbers when an existing row is out of range', () => {
       expect(
-        decideMarkVersesEditReferenceAction(
+        shouldAutoRenumberAfterEdit(
           ctx({
             tableReferences: ['1:1', '100:1', '1:3'],
             newReference: '1:1-2',
             rowIndex: 0,
           })
         )
-      ).toBe('none');
+      ).toBe(false);
     });
 
     it('never re-numbers when an existing row is ill-formatted', () => {
       expect(
-        decideMarkVersesEditReferenceAction(
+        shouldAutoRenumberAfterEdit(
           ctx({
             tableReferences: ['1:1', 'foo', '1:3'],
             newReference: '1:1-2',
             rowIndex: 0,
           })
         )
-      ).toBe('none');
+      ).toBe(false);
     });
 
     it('does not re-number when the edited result is ill-formatted', () => {
       expect(
-        decideMarkVersesEditReferenceAction(
+        shouldAutoRenumberAfterEdit(
           ctx({
             tableReferences: ['1:1', '1:2', '1:3'],
             newReference: '1:1aa',
             rowIndex: 1,
           })
         )
-      ).toBe('none');
+      ).toBe(false);
     });
 
     it('does not re-number when the edited result is out of range', () => {
       expect(
-        decideMarkVersesEditReferenceAction(
+        shouldAutoRenumberAfterEdit(
           ctx({
             tableReferences: ['1:1', '1:2', '1:3'],
             newReference: '100:1',
             rowIndex: 1,
           })
         )
-      ).toBe('none');
+      ).toBe(false);
     });
 
     it('does not re-number when the edit reaches outside the passage bounds', () => {
       // 1:3-9 is well-formed and within versification, but the passage ends at
       // 1:5, so extending to 1:9 leaves the passage — leave numbering alone.
       expect(
-        decideMarkVersesEditReferenceAction(
+        shouldAutoRenumberAfterEdit(
           ctx({
             tableReferences: ['1:1', '1:2', '1:3'],
             newReference: '1:3-9',
@@ -279,7 +316,7 @@ describe('decideMarkVersesEditReferenceAction', () => {
             passageEndRef: '1:5',
           })
         )
-      ).toBe('none');
+      ).toBe(false);
     });
   });
 
@@ -287,40 +324,40 @@ describe('decideMarkVersesEditReferenceAction', () => {
   describe('new start vs the row above', () => {
     it('does not re-number when the new start creates a gap with the row above', () => {
       expect(
-        decideMarkVersesEditReferenceAction(
+        shouldAutoRenumberAfterEdit(
           ctx({
             tableReferences: ['1:1', '1:2', '1:3', '1:4'],
             newReference: '1:4', // start jumps from 2 to 4: gap, does not follow 1:1
             rowIndex: 1,
           })
         )
-      ).toBe('none');
+      ).toBe(false);
     });
 
     it('does not re-number when the new start overlaps the row above', () => {
       expect(
-        decideMarkVersesEditReferenceAction(
+        shouldAutoRenumberAfterEdit(
           ctx({
             tableReferences: ['1:1', '1:2', '1:3', '1:4'],
             newReference: '1:2-3', // start 1:2 duplicates the 1:2 row above
             rowIndex: 2,
           })
         )
-      ).toBe('none');
+      ).toBe(false);
     });
 
     it('ignores the row-above rule for the first data row', () => {
       // No row above row 0, so rule 2 is skipped; above [] and below
       // (1:3, 1:4) are both sequential -> re-number.
       expect(
-        decideMarkVersesEditReferenceAction(
+        shouldAutoRenumberAfterEdit(
           ctx({
             tableReferences: ['1:1', '1:3', '1:4'],
             newReference: '1:1-2',
             rowIndex: 0,
           })
         )
-      ).toBe('renumber');
+      ).toBe(true);
     });
   });
 
@@ -329,14 +366,14 @@ describe('decideMarkVersesEditReferenceAction', () => {
   describe('both halves around the edited row are sequential', () => {
     it('re-numbers a dropdown-style end extension on a clean table', () => {
       expect(
-        decideMarkVersesEditReferenceAction(
+        shouldAutoRenumberAfterEdit(
           ctx({
             tableReferences: ['1:1', '1:2', '1:3', '1:4'],
             newReference: '1:3-4', // start unchanged, only end extended
             rowIndex: 2,
           })
         )
-      ).toBe('renumber');
+      ).toBe(true);
     });
 
     it('re-numbers when the edit heals the boundary with the row below', () => {
@@ -345,26 +382,26 @@ describe('decideMarkVersesEditReferenceAction', () => {
       // 1:7 overlap between the edited row and the row below remains, which
       // re-numbering the tail absorbs.
       expect(
-        decideMarkVersesEditReferenceAction(
+        shouldAutoRenumberAfterEdit(
           ctx({
             tableReferences: ['1:1-4', '1:3-6', '1:7-10'],
             newReference: '1:5-7',
             rowIndex: 1,
           })
         )
-      ).toBe('renumber');
+      ).toBe(true);
     });
 
     it('re-numbers when editing the last row (nothing below)', () => {
       expect(
-        decideMarkVersesEditReferenceAction(
+        shouldAutoRenumberAfterEdit(
           ctx({
             tableReferences: ['1:1', '1:2', '1:3'],
             newReference: '1:3-5', // follows 1:2; below is empty (sequential)
             rowIndex: 2,
           })
         )
-      ).toBe('renumber');
+      ).toBe(true);
     });
   });
 
@@ -373,14 +410,14 @@ describe('decideMarkVersesEditReferenceAction', () => {
       // Pre-existing gap at 1:2 above the edited row (1:1, 1:3, 1:4); the edit
       // follows the row above it but the gap higher up is left untouched.
       expect(
-        decideMarkVersesEditReferenceAction(
+        shouldAutoRenumberAfterEdit(
           ctx({
             tableReferences: ['1:1', '1:3', '1:4', '1:5'],
             newReference: '1:5-6',
             rowIndex: 3,
           })
         )
-      ).toBe('none');
+      ).toBe(false);
     });
 
     it('does not re-number when a row below the edit is not sequential', () => {
@@ -388,31 +425,33 @@ describe('decideMarkVersesEditReferenceAction', () => {
       // pre-existing gap (1:5 -> 1:7) the user did not touch, so leave the
       // numbering alone rather than silently shifting those rows.
       expect(
-        decideMarkVersesEditReferenceAction(
+        shouldAutoRenumberAfterEdit(
           ctx({
             tableReferences: ['1:1', '1:2-3', '1:5', '1:7'],
             newReference: '1:2-4',
             rowIndex: 1,
           })
         )
-      ).toBe('none');
+      ).toBe(false);
     });
   });
 });
 
 describe('evaluateMarkVersesReferenceStatus (per-row warning reason)', () => {
-  // The reference under test sits at `rowIndex` within `tableReferences`.
+  // The reference under test sits at `rowIndex` within `tableReferences`. The
+  // passage covers 1:1..1:5, so a well-formed, in-versification reference beyond
+  // 1:5 (e.g. 1:8) is out of range without being ill-formatted.
   const status = (
     tableReferences: string[],
     rowIndex: number,
     reference = tableReferences[rowIndex]
   ) =>
-    evaluateMarkVersesReferenceStatus(
-      reference,
+    evaluateMarkVersesReferenceStatus({
+      newReference: reference,
       tableReferences,
       rowIndex,
-      longChapter1
-    );
+      passage: passageStub(longChapter1, '1:1', '1:5'),
+    });
 
   it('reports no reason for an empty reference', () => {
     expect(status(['1:1', '', '1:3'], 1)).toEqual({});
@@ -422,8 +461,9 @@ describe('evaluateMarkVersesReferenceStatus (per-row warning reason)', () => {
     expect(status(['1:1', '1:2', '1:3'], 1)).toEqual({});
   });
 
-  it('reports outOfRange for a well-formed but out-of-range reference', () => {
-    expect(status(['1:1', '100:1', '1:3'], 1)).toEqual({
+  it('reports outOfRange for a well-formed reference outside the passage', () => {
+    // 1:8 exists in the book but the passage ends at 1:5.
+    expect(status(['1:1', '1:8', '1:3'], 1)).toEqual({
       reason: 'outOfRange',
     });
   });
@@ -453,7 +493,8 @@ describe('evaluateMarkVersesReferenceStatus (per-row warning reason)', () => {
 
   it('checks only range/format for the first row (no preceding reference)', () => {
     expect(status(['1:4', '1:5'], 0)).toEqual({});
-    expect(status(['100:1', '1:5'], 0)).toEqual({ reason: 'outOfRange' });
+    // 1:8 is in the book but beyond the passage's 1:5 end.
+    expect(status(['1:8', '1:5'], 0)).toEqual({ reason: 'outOfRange' });
   });
 });
 
@@ -500,13 +541,16 @@ describe('markVersesSkippedPassageRefs', () => {
  * whole verse, so any lettered part of that verse is inside it. A bound that
  * names a part (e.g. `1:2b`) is that exact part, so a part outside it — even in
  * the same verse (`1:2a`) — is outside the passage. An unparseable reference, or
- * an unparseable bound, is never in the passage.
+ * a passage with a missing/unparseable bound, is never in the passage.
  */
 describe('isMarkVersesReferenceInPassage', () => {
   describe('single-verse passage', () => {
     // start === end: the passage is exactly one verse.
     const inPassage = (ref: string) =>
-      isMarkVersesReferenceInPassage(ref, '1:1', '1:1');
+      isMarkVersesReferenceInPassage(
+        ref,
+        passageStub(longChapter1, '1:1', '1:1')
+      );
 
     it('accepts the one verse it contains', () => {
       expect(inPassage('1:1')).toBe(true);
@@ -526,7 +570,10 @@ describe('isMarkVersesReferenceInPassage', () => {
   describe('single-chapter passage', () => {
     // Passage covers 1:2 through 1:5.
     const inPassage = (ref: string) =>
-      isMarkVersesReferenceInPassage(ref, '1:2', '1:5');
+      isMarkVersesReferenceInPassage(
+        ref,
+        passageStub(longChapter1, '1:2', '1:5')
+      );
 
     it.each([
       '1:2', // first verse
@@ -554,7 +601,10 @@ describe('isMarkVersesReferenceInPassage', () => {
   describe('passage spanning multiple chapters', () => {
     // A contiguous selection crossing the 1->2 boundary: 1:30 through 2:2.
     const inPassage = (ref: string) =>
-      isMarkVersesReferenceInPassage(ref, '1:30', '2:2');
+      isMarkVersesReferenceInPassage(
+        ref,
+        passageStub(longChapter1, '1:30', '2:2')
+      );
 
     it.each([
       '1:30-2:2', // the full span
@@ -580,7 +630,10 @@ describe('isMarkVersesReferenceInPassage', () => {
     // Passage covers 1:2a through 1:5c. A reference is not considered to be in the
     // passage if it contains subparts outside of the range
     const inPassage = (ref: string) =>
-      isMarkVersesReferenceInPassage(ref, '1:2b', '1:5c');
+      isMarkVersesReferenceInPassage(
+        ref,
+        passageStub(longChapter1, '1:2b', '1:5c')
+      );
     it.each([
       '1:2b', // first verse, first subpart
       '1:2d',
@@ -606,7 +659,10 @@ describe('isMarkVersesReferenceInPassage', () => {
     });
 
     const inPassage2 = (ref: string) =>
-      isMarkVersesReferenceInPassage(ref, '1:2a', '1:5a');
+      isMarkVersesReferenceInPassage(
+        ref,
+        passageStub(longChapter1, '1:2a', '1:5a')
+      );
     // verse 1:2 is inside the passage because all of verse 2 is included
     it.each([
       '1:2', // before the first subpart (no letter includes all of verse 2)
@@ -624,13 +680,24 @@ describe('isMarkVersesReferenceInPassage', () => {
 
   describe('corner cases', () => {
     it('rejects an unparseable reference', () => {
-      expect(isMarkVersesReferenceInPassage('foo', '1:1', '1:3')).toBe(false);
-      expect(isMarkVersesReferenceInPassage('', '1:1', '1:3')).toBe(false);
+      const passage = passageStub(longChapter1, '1:1', '1:3');
+      expect(isMarkVersesReferenceInPassage('foo', passage)).toBe(false);
+      expect(isMarkVersesReferenceInPassage('', passage)).toBe(false);
     });
 
-    it('rejects when a passage bound is unparseable', () => {
-      expect(isMarkVersesReferenceInPassage('1:1', '', '1:3')).toBe(false);
-      expect(isMarkVersesReferenceInPassage('1:1', '1:1', 'junk')).toBe(false);
+    it('rejects when a passage bound is missing / unparseable', () => {
+      expect(
+        isMarkVersesReferenceInPassage(
+          '1:1',
+          passageStub(longChapter1, '', '1:3')
+        )
+      ).toBe(false);
+      expect(
+        isMarkVersesReferenceInPassage(
+          '1:1',
+          passageStub(longChapter1, '1:1', 'junk')
+        )
+      ).toBe(false);
     });
   });
 });
