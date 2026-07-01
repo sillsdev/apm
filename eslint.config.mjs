@@ -55,5 +55,11 @@ export default tseslint.config(
       'react-hooks/globals': 'off',
     },
   },
+  {
+    files: ['migration/**/*.{js,mjs}'],
+    rules: {
+      '@typescript-eslint/explicit-function-return-type': 'off',
+    },
+  },
   eslintConfigPrettier
 );
