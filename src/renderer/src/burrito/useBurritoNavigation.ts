@@ -37,6 +37,10 @@ import {
 import { useGlobal } from '../context/useGlobal';
 import getMediaExt from '../utils/getMediaExt';
 import {
+  BURRITO_AUDIO_FILE_EXTENSIONS,
+  inferAudioContentType,
+} from '../utils/mimeTypes';
+import {
   projDefSectionMap,
   useProjectDefaults,
 } from '../crud/useProjectDefaults';
@@ -80,6 +84,8 @@ interface Props {
   bookPath: string;
   preLen: number;
   sections: SectionD[];
+  /** When true, transcode non-MP3 audio in the navigation tree to MP3. */
+  convertToMp3?: boolean;
 }
 
 export const useBurritoNavigation = (teamId: string) => {
@@ -206,6 +212,7 @@ export const useBurritoNavigation = (teamId: string) => {
     bookPath,
     preLen,
     sections,
+    convertToMp3 = false,
   }: Props) => {
     if (metadata.type?.flavorType) {
       metadata.type.flavorType.name = 'x-nav';
@@ -255,7 +262,7 @@ export const useBurritoNavigation = (teamId: string) => {
       m: MediaFileD,
       destPath: string,
       scopeRef: string
-    ): Promise<boolean> => {
+    ): Promise<string | null> => {
       const attr = m.attributes;
       let mediaPath = attr.audioUrl;
       if (!mediaPath) {
@@ -264,7 +271,7 @@ export const useBurritoNavigation = (teamId: string) => {
       }
       if (!mediaPath) {
         showMessage(`No media URL for navigation (${attr.originalFile})`);
-        return false;
+        return null;
       }
       const local = { localname: '' };
       await dataPath(mediaPath, PathType.MEDIA, local);
@@ -274,24 +281,46 @@ export const useBurritoNavigation = (teamId: string) => {
         await fetchUrl({ id, cancelled: () => false });
         if (!(await ipc?.exists(mediaName))) {
           showMessage(`Failed to download ${mediaPath}`);
-          return false;
+          return null;
         }
       }
       await ipc?.copyFile(mediaName, destPath);
-      const docid = destPath.substring(preLen);
-      const statStr = await ipc?.stat(destPath);
+      let finalPath = destPath;
+      if (convertToMp3) {
+        const ext = path.extname(destPath).toLowerCase();
+        if (BURRITO_AUDIO_FILE_EXTENSIONS.has(ext) && ext !== '.mp3') {
+          const mp3Path = ext
+            ? destPath.slice(0, -ext.length) + '.mp3'
+            : `${destPath}.mp3`;
+          const convResult = await ipc?.convertToMp3(destPath, mp3Path);
+          if (typeof convResult === 'string') {
+            showMessage(
+              `Failed to convert navigation audio (${attr.originalFile}) to mp3`
+            );
+            return null;
+          }
+          await ipc?.delete(destPath);
+          finalPath = mp3Path;
+        }
+      }
+      const docid = finalPath.substring(preLen);
+      const statStr = await ipc?.stat(finalPath);
       const stat = statStr ? JSON.parse(statStr as string) : null;
       const size = stat?.size ?? 0;
+      const outputExt = path.extname(finalPath).toLowerCase();
       ingredients[docid] = {
-        checksum: { md5: await ipc?.md5File(destPath) },
-        mimeType: attr.contentType || 'image/png',
+        checksum: { md5: await ipc?.md5File(finalPath) },
+        mimeType:
+          outputExt === '.mp3'
+            ? 'audio/mpeg'
+            : inferAudioContentType(finalPath, attr.contentType),
         size,
         scope: { [book]: scopeRef ? [scopeRef] : [] },
         properties: {
           'x-apmId': m.keys?.remoteId || m.id,
         },
       };
-      return true;
+      return finalPath;
     };
 
     const writeGraphicContent = async (
@@ -342,15 +371,15 @@ export const useBurritoNavigation = (teamId: string) => {
           const typeNum = getBookType(resourceType, resNum);
           const destName = `${bibleId}-${book}-${typeNum}${ref}-nav-${remoteIdVal}-${g.keys?.remoteId || g.id}.${ext}`;
           const destPath = path.join(navChapterPath, destName);
-          const ok = await processMediaFile(m, destPath, scopeRef);
-          if (ok) {
+          const finalPath = await processMediaFile(m, destPath, scopeRef);
+          if (finalPath) {
             graphicsManifest.push({
               resourceType,
               remoteId: remoteIdVal,
-              path: destPath.substring(preLen),
+              path: finalPath.substring(preLen),
             });
           }
-          return ok;
+          return Boolean(finalPath);
         }
       }
       const infoStr = g.attributes?.info;
@@ -426,12 +455,12 @@ export const useBurritoNavigation = (teamId: string) => {
           const typeNum = getBookType('section', num);
           const destName = `${bibleId}-${book}-${typeNum}${ref}-title-${sectionRemId}.${ext}`;
           const destPath = path.join(navChapterPath, destName);
-          const ok = await processMediaFile(m, destPath, sectionRef);
-          if (ok) {
+          const finalPath = await processMediaFile(m, destPath, sectionRef);
+          if (finalPath) {
             titleMediaManifest.push({
               resourceType: 'section',
               remoteId: sectionRemId,
-              path: destPath.substring(preLen),
+              path: finalPath.substring(preLen),
             });
           }
         }
@@ -476,12 +505,12 @@ export const useBurritoNavigation = (teamId: string) => {
           const ref = passage ? getNoteRef(passage) : '';
           const destName = `${bibleId}-${book}-note${ref}-title-${cleanFileName(sr.attributes.title)}-${srRemId}.${ext}`;
           const destPath = path.join(chapterPath, destName);
-          const ok = await processMediaFile(m, destPath, sectionRef);
-          if (ok) {
+          const finalPath = await processMediaFile(m, destPath, sectionRef);
+          if (finalPath) {
             titleMediaManifest.push({
               resourceType: 'sharedresource',
               remoteId: srRemId,
-              path: destPath.substring(preLen),
+              path: finalPath.substring(preLen),
             });
           }
         }
@@ -506,42 +535,42 @@ export const useBurritoNavigation = (teamId: string) => {
       await ipc?.createFolder(categoryGraphicsPath);
 
       for (const cat of categoriesForExport) {
-      const catRemId = remoteId('artifactcategory', cat.id, keyMap);
-      if (!catRemId) continue;
+        const catRemId = remoteId('artifactcategory', cat.id, keyMap);
+        if (!catRemId) continue;
 
-      const titleMediaId = related(cat, 'titleMediafile');
-      if (titleMediaId) {
-        const m = mediafiles.find((mf) => mf.id === titleMediaId);
-        if (m) {
-          const ext = getMediaExt(m);
-          const destName = `${bibleId}-${book}-category-title-${cleanFileName(cat.attributes.categoryname)}-${catRemId}.${ext}`;
-          const destPath = path.join(categoryGraphicsPath, destName);
-          const ok = await processMediaFile(m, destPath, '');
-          if (ok) {
-            titleMediaManifest.push({
-              resourceType: 'category',
-              remoteId: catRemId,
-              path: destPath.substring(preLen),
-            });
+        const titleMediaId = related(cat, 'titleMediafile');
+        if (titleMediaId) {
+          const m = mediafiles.find((mf) => mf.id === titleMediaId);
+          if (m) {
+            const ext = getMediaExt(m);
+            const destName = `${bibleId}-${book}-category-title-${cleanFileName(cat.attributes.categoryname)}-${catRemId}.${ext}`;
+            const destPath = path.join(categoryGraphicsPath, destName);
+            const finalPath = await processMediaFile(m, destPath, '');
+            if (finalPath) {
+              titleMediaManifest.push({
+                resourceType: 'category',
+                remoteId: catRemId,
+                path: finalPath.substring(preLen),
+              });
+            }
           }
         }
-      }
 
-      const categoryGraphic = graphics.find(
-        (g) =>
-          g.attributes.resourceType === 'category' &&
-          g.attributes.resourceId ===
-            remoteIdNum('artifactcategory', cat.id, keyMap)
-      );
-      if (categoryGraphic) {
-        await processGraphic(
-          categoryGraphic,
-          categoryGraphicsPath,
-          '',
-          'category',
-          catRemId
+        const categoryGraphic = graphics.find(
+          (g) =>
+            g.attributes.resourceType === 'category' &&
+            g.attributes.resourceId ===
+              remoteIdNum('artifactcategory', cat.id, keyMap)
         );
-      }
+        if (categoryGraphic) {
+          await processGraphic(
+            categoryGraphic,
+            categoryGraphicsPath,
+            '',
+            'category',
+            catRemId
+          );
+        }
       }
     }
 
@@ -593,16 +622,16 @@ export const useBurritoNavigation = (teamId: string) => {
           const ext = getMediaExt(m);
           const chSuffix =
             passageType === PassageTypeEnum.CHAPTERNUMBER
-              ? exportFolder.chapter ?? '1'
+              ? (exportFolder.chapter ?? '1')
               : cleanFileName(sectionRef);
           const destName = `${bibleId}-${book}-chapter-${chSuffix}-title-${passRemId}.${ext}`;
           const destPath = path.join(chapterPath, destName);
-          const ok = await processMediaFile(m, destPath, sectionRef);
-          if (ok) {
+          const finalPath = await processMediaFile(m, destPath, sectionRef);
+          if (finalPath) {
             titleMediaManifest.push({
               resourceType: 'passage',
               remoteId: passRemId,
-              path: destPath.substring(preLen),
+              path: finalPath.substring(preLen),
             });
           }
         }

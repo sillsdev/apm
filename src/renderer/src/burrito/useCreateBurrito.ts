@@ -455,6 +455,7 @@ export const useCreateBurrito = (teamId: string) => {
             bookPath,
             preLen,
             sections: bookSecs,
+            convertToMp3,
           });
         }
         if (cancelRef.current) return;

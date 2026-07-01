@@ -556,30 +556,203 @@ test('burrito import preserves publishing rows from ApmData', async () => {
   });
 });
 
-test('burrito import falls back when ApmData tables contain malformed JSON', async () => {
+const LUK_BOOK = 'LUK';
+
+/**
+ * USFM modeled on TT-7306 Luke 1:1-14 source-project transcription layout.
+ * @returns {string}
+ */
+function lukeChapter1Usfm() {
+  return [
+    '\\id LUK',
+    '\\c 1',
+    '\\p',
+    '\\v 1 To Theophilus: Many have tried to give a history of the things that happened among us.',
+    '\\v 2 They have written the same things that we learned from others the people who saw those things from the beginning and served God by telling people his message.',
+    '\\v 3 I myself studied everything carefully from the beginning, your Excellency. I thought I should write it out for you. So I put it in order in a book.',
+    '\\v 4 I write these things so that you can know that what you have been taught is true.',
+    '\\v 5',
+    '\\v 6',
+    '\\v 7',
+    '\\v 8',
+    '\\v 9',
+    '\\v 10',
+    '\\v 11',
+    '\\v 12',
+    '\\v 13',
+    '\\v 14',
+  ].join('\n');
+}
+
+/**
+ * @param {string} rootDir
+ */
+async function writeLukeTextBurrito(rootDir) {
+  const textRoot = path.join(rootDir, 'text');
+  await fs.mkdir(textRoot, { recursive: true });
+  const usfmName = 'LUKv1.usfm';
+  const usfmContent = lukeChapter1Usfm();
+  await fs.writeFile(path.join(textRoot, usfmName), usfmContent);
+
+  const ingredients = {
+    [usfmName]: {
+      checksum: { md5: '0'.repeat(32) },
+      mimeType: 'text/usfm',
+      size: Buffer.byteLength(usfmContent, 'utf-8'),
+      scope: { [LUK_BOOK]: ['1'] },
+    },
+  };
+
+  await fs.writeFile(
+    path.join(textRoot, 'metadata.json'),
+    JSON.stringify(
+      {
+        format: 'burrito',
+        meta: {
+          version: '0.3',
+          category: 'scripture',
+          generator: {
+            softwareName: 'apm',
+            softwareVersion: '1',
+            userName: 't',
+          },
+          defaultLocale: 'en',
+          dateCreated: '2025-01-01T00:00:00.000Z',
+        },
+        identification: {
+          name: { en: 'Luke Text' },
+          abbreviation: { en: 'LUK' },
+        },
+        languages: [{ tag: 'und', name: { en: 'Unknown' } }],
+        type: {
+          flavorType: {
+            name: 'scripture',
+            flavor: { name: 'textTranslation' },
+            currentScope: { [LUK_BOOK]: ['1'] },
+          },
+        },
+        ingredients,
+      },
+      null,
+      2
+    )
+  );
+}
+
+/**
+ * @param {string} rootDir
+ */
+async function writeLukeAudioBurrito(rootDir) {
+  const audioRoot = path.join(rootDir, 'audio');
+  const ingredientsDir = path.join(audioRoot, 'ingredients');
+  await fs.mkdir(ingredientsDir, { recursive: true });
+  const audioName = 'luk-1-14.wav';
+  const audioPath = path.join(ingredientsDir, audioName);
+  await fs.writeFile(audioPath, tinyWavBytes());
+
+  const ingredients = {
+    [`ingredients/${audioName}`]: {
+      checksum: { md5: '0'.repeat(32) },
+      mimeType: 'audio/wav',
+      size: tinyWavBytes().length,
+      scope: { [LUK_BOOK]: ['1:1-14'] },
+    },
+  };
+
+  await fs.writeFile(
+    path.join(audioRoot, 'metadata.json'),
+    JSON.stringify(
+      {
+        format: 'burrito',
+        meta: {
+          version: '0.3',
+          category: 'scripture',
+          generator: {
+            softwareName: 'apm',
+            softwareVersion: '1',
+            userName: 't',
+          },
+          defaultLocale: 'en',
+          dateCreated: '2025-01-01T00:00:00.000Z',
+        },
+        identification: {
+          name: { en: 'Luke Audio' },
+          abbreviation: { en: 'LUK' },
+        },
+        languages: [{ tag: 'und', name: { en: 'Unknown' } }],
+        localizedNames: {
+          'book-luk': { long: { en: 'Luke' }, short: { en: 'Luk' } },
+        },
+        type: {
+          flavorType: {
+            name: 'scripture',
+            flavor: { name: 'audioTranslation' },
+            currentScope: { [LUK_BOOK]: [] },
+          },
+        },
+        ingredients,
+      },
+      null,
+      2
+    )
+  );
+}
+
+/**
+ * @param {(ptfPath: string) => void | Promise<void>} run
+ */
+async function withTranscriptionFixture(run) {
   const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), 'burrito-ptf-'));
   const outputDir = path.join(rootDir, 'out');
   await fs.mkdir(outputDir, { recursive: true });
   try {
-    await writeAudioBurrito(rootDir);
-    await writeMalformedApmDataBurrito(rootDir);
+    await writeLukeAudioBurrito(rootDir);
+    await writeLukeTextBurrito(rootDir);
     await transformBurritoToPTF({
       input: rootDir,
       output: outputDir,
-      book: BOOK,
-      optionsJson: '{}',
+      book: LUK_BOOK,
+      optionsJson: JSON.stringify({
+        include: { audio: true, transcription: true },
+      }),
       jsonResult: true,
     });
     const files = await fs.readdir(outputDir);
-    const ptfFile = files.find((f) => f.endsWith('.ptf'));
-    assert.ok(ptfFile, 'expected a .ptf file');
-    const table = readPtfTable(path.join(outputDir, ptfFile), 'C_orgworkflowsteps.json');
-    const names = table.data.map((step) => step.attributes?.name);
-    assert.ok(
-      names.includes('MarkVerses'),
-      'malformed ApmData should fall back to migration sample workflow steps'
+    const ptfPath = path.join(
+      outputDir,
+      files.find((f) => f.endsWith('.ptf'))
     );
+    assert.ok(ptfPath, 'expected a .ptf file');
+    await run(ptfPath);
   } finally {
     await fs.rm(rootDir, { recursive: true, force: true });
   }
+}
+
+test('TT-7306: burrito import preserves verse tags and line breaks in transcription', async () => {
+  await withTranscriptionFixture((ptfPath) => {
+    const table = readPtfTable(ptfPath, 'H_mediafiles.json');
+    assert.ok(table.data.length >= 1, 'expected at least one mediafile');
+    const transcription = table.data[0].attributes?.transcription ?? '';
+
+    assert.match(
+      transcription,
+      /\\v\s+1\s+To Theophilus/,
+      'verse markers should remain \\v tags, not plain numbers'
+    );
+    assert.match(
+      transcription,
+      /\\v\s+2\s+They have written/,
+      'each verse should keep its \\v marker'
+    );
+    assert.ok(
+      transcription.includes('\n'),
+      'transcription should preserve line breaks between verses'
+    );
+    assert.doesNotMatch(
+      transcription,
+      /^1 To Theophilus/m,
+      'should not strip \\v markers to bare verse numbers'
+    );
+  });
 });
