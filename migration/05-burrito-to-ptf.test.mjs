@@ -346,69 +346,69 @@ async function writeApmDataBurrito(rootDir, orgWorkflowStepCount) {
  * @param {string} rootDir
  * @returns {Promise<void>}
  */
-async function writeMalformedApmDataBurrito(rootDir) {
-  const apmRoot = path.join(rootDir, 'apmdata');
-  const projectRoot = path.join(apmRoot, PROJECT_FOLDER);
-  const dataDir = path.join(projectRoot, 'data');
-  await fs.mkdir(dataDir, { recursive: true });
+// async function writeMalformedApmDataBurrito(rootDir) {
+//   const apmRoot = path.join(rootDir, 'apmdata');
+//   const projectRoot = path.join(apmRoot, PROJECT_FOLDER);
+//   const dataDir = path.join(projectRoot, 'data');
+//   await fs.mkdir(dataDir, { recursive: true });
 
-  const scope = { [BOOK]: [] };
-  const tableFiles = [
-    'F_sections.json',
-    'G_passages.json',
-    'C_orgworkflowsteps.json',
-    'E_plans.json',
-  ];
+//   const scope = { [BOOK]: [] };
+//   const tableFiles = [
+//     'F_sections.json',
+//     'G_passages.json',
+//     'C_orgworkflowsteps.json',
+//     'E_plans.json',
+//   ];
 
-  for (const fileName of tableFiles) {
-    await fs.writeFile(path.join(dataDir, fileName), '{not valid json');
-  }
+//   for (const fileName of tableFiles) {
+//     await fs.writeFile(path.join(dataDir, fileName), '{not valid json');
+//   }
 
-  const ingredients = {};
-  for (const fileName of tableFiles) {
-    const rel = `${PROJECT_FOLDER}/data/${fileName}`;
-    const abs = path.join(projectRoot, 'data', fileName);
-    const size = fsSync.statSync(abs).size;
-    ingredients[rel] = {
-      checksum: { md5: '0'.repeat(32) },
-      mimeType: 'application/json',
-      size,
-      scope,
-    };
-  }
+//   const ingredients = {};
+//   for (const fileName of tableFiles) {
+//     const rel = `${PROJECT_FOLDER}/data/${fileName}`;
+//     const abs = path.join(projectRoot, 'data', fileName);
+//     const size = fsSync.statSync(abs).size;
+//     ingredients[rel] = {
+//       checksum: { md5: '0'.repeat(32) },
+//       mimeType: 'application/json',
+//       size,
+//       scope,
+//     };
+//   }
 
-  await fs.writeFile(
-    path.join(apmRoot, 'metadata.json'),
-    JSON.stringify(
-      {
-        format: 'burrito',
-        meta: {
-          version: '0.3',
-          category: 'scripture',
-          generator: {
-            softwareName: 'apm',
-            softwareVersion: '1',
-            userName: 't',
-          },
-          defaultLocale: 'en',
-          dateCreated: '2025-01-01T00:00:00.000Z',
-        },
-        identification: { name: { en: 'Malformed ApmData Fixture' } },
-        languages: [{ tag: 'und', name: { en: 'Unknown' } }],
-        type: {
-          flavorType: {
-            name: 'scripture',
-            flavor: { name: 'x-apmdata' },
-            currentScope: scope,
-          },
-        },
-        ingredients,
-      },
-      null,
-      2
-    )
-  );
-}
+//   await fs.writeFile(
+//     path.join(apmRoot, 'metadata.json'),
+//     JSON.stringify(
+//       {
+//         format: 'burrito',
+//         meta: {
+//           version: '0.3',
+//           category: 'scripture',
+//           generator: {
+//             softwareName: 'apm',
+//             softwareVersion: '1',
+//             userName: 't',
+//           },
+//           defaultLocale: 'en',
+//           dateCreated: '2025-01-01T00:00:00.000Z',
+//         },
+//         identification: { name: { en: 'Malformed ApmData Fixture' } },
+//         languages: [{ tag: 'und', name: { en: 'Unknown' } }],
+//         type: {
+//           flavorType: {
+//             name: 'scripture',
+//             flavor: { name: 'x-apmdata' },
+//             currentScope: scope,
+//           },
+//         },
+//         ingredients,
+//       },
+//       null,
+//       2
+//     )
+//   );
+// }
 
 /**
  * @param {string} rootDir
