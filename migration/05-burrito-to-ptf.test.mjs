@@ -433,11 +433,9 @@ async function withFixture(orgWorkflowStepCount, run) {
       jsonResult: true,
     });
     const files = await fs.readdir(outputDir);
-    const ptfPath = path.join(
-      outputDir,
-      files.find((f) => f.endsWith('.ptf'))
-    );
-    assert.ok(ptfPath, 'expected a .ptf file');
+    const ptfFile = files.find((f) => f.endsWith('.ptf'));
+    assert.ok(ptfFile, 'expected a .ptf file');
+    const ptfPath = path.join(outputDir, ptfFile);
     await run(ptfPath);
   } finally {
     await fs.rm(rootDir, { recursive: true, force: true });

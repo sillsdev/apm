@@ -2107,16 +2107,26 @@ async function transformBurritoToPTF(cli) {
         sections = remapped.sections;
         passages = remapped.passages;
         plan.attributes.sectionCount = sections.length;
+        const passagesBySectionId = new Map();
+        for (const passage of passages) {
+          const sectionId = passage.relationships?.section?.data?.id;
+          if (sectionId == null) {
+            continue;
+          }
+          const sectionPassages = passagesBySectionId.get(sectionId);
+          if (sectionPassages) {
+            sectionPassages.push(passage);
+          } else {
+            passagesBySectionId.set(sectionId, [passage]);
+          }
+        }
         sections.forEach((section, index) => {
           plan.relationships.sections.data.push(
             relationshipIdentifier('section', section)
           );
           passageBySection.set(
             index,
-            passages.filter(
-              (passage) =>
-                passage.relationships?.section?.data?.id === section.id
-            )
+            passagesBySectionId.get(section.id) ?? []
           );
         });
         passageSeq =
