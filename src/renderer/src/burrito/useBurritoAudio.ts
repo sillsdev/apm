@@ -32,6 +32,7 @@ import { IRegion } from '../crud/useWavesurferRegions';
 import { timeFmt } from '../utils/timeFmt';
 import { useComputeRef } from '../components/PassageDetail/Internalization/useComputeRef';
 import {
+  chnumChapterFromRef,
   isBookLevelSection,
   resolveBurritoExportFolder,
 } from './resolveBurritoExportFolder';
@@ -400,8 +401,7 @@ export const useBurritoAudio = (teamId: string) => {
         parseRef(firstP);
         const pt = passageTypeFromRef(firstP.attributes.reference, false);
         if (pt === PassageTypeEnum.CHAPTERNUMBER) {
-          const pipe = firstP.attributes.reference.split('|');
-          sectionChapter = parseInt(pipe[1] ?? '', 10) || 1;
+          sectionChapter = chnumChapterFromRef(firstP.attributes.reference) ?? 1;
         } else {
           sectionChapter = firstP.attributes.startChapter || 1;
         }
@@ -466,8 +466,7 @@ export const useBurritoAudio = (teamId: string) => {
           startChapter = 1;
         }
         if (passageType === PassageTypeEnum.CHAPTERNUMBER) {
-          const pipe = p.attributes.reference.split('|');
-          startChapter = parseInt(pipe[1] ?? '', 10) || 1;
+          startChapter = chnumChapterFromRef(p.attributes.reference) ?? 1;
         }
 
         // new chapter number create a new chapter folder and usfm chapter header if necessary

@@ -39,6 +39,29 @@ const sortAscend = (a: PassageD, b: PassageD) =>
 const findScripturePassage = (p: PassageD) =>
   passageTypeFromRef(p.attributes.reference, false) === PassageTypeEnum.PASSAGE;
 
+/** Parses chapter from `CHNUM|12` (sheet) or `CHNUM 12` (PTF / online save). */
+export function chnumChapterFromRef(ref?: string): number | undefined {
+  if (!ref) return undefined;
+  const pipe = ref.split('|');
+  if (pipe.length > 1) {
+    const ch = parseInt(pipe[1] ?? '', 10);
+    if (ch) return ch;
+  }
+  const space = /^CHNUM\s+(\d+)/i.exec(ref);
+  if (space) {
+    const ch = parseInt(space[1], 10);
+    if (ch) return ch;
+  }
+  return undefined;
+}
+
+function bookLevelScopeRef(section: SectionD): string {
+  const seq = section.attributes?.sequencenum ?? 0;
+  if (seq === BookSeq) return 'BOOK';
+  if (seq === AltBkSeq) return 'ALTBK';
+  return '';
+}
+
 function chapterFromSectionPassages(
   sectionId: string,
   passages: PassageD[]
@@ -52,8 +75,7 @@ function chapterFromSectionPassages(
       PassageTypeEnum.CHAPTERNUMBER
   );
   if (chnum) {
-    const pipe = chnum.attributes.reference.split('|');
-    const ch = parseInt(pipe[1] ?? '', 10);
+    const ch = chnumChapterFromRef(chnum.attributes.reference);
     if (ch) return ch;
   }
   const firstPassage = sectPass.find(findScripturePassage);
@@ -98,7 +120,11 @@ export function resolveBurritoExportFolder({
   computeMovementRef,
 }: ResolveBurritoExportFolderInput): BurritoExportFolder {
   if (isBookLevelSection(section)) {
-    return { folderPath: bookPath, chapter: null, scopeRef: '' };
+    return {
+      folderPath: bookPath,
+      chapter: null,
+      scopeRef: bookLevelScopeRef(section),
+    };
   }
   if (isMovementSection(section)) {
     const chapterNum = movementChapterStart(section, sections, passages);
@@ -125,8 +151,7 @@ export function resolveChnumExportFolder(
   passage: PassageD,
   bookPath: string
 ): BurritoExportFolder {
-  const pipe = passage.attributes.reference.split('|');
-  const chapterNum = parseInt(pipe[1] ?? '', 10) || 1;
+  const chapterNum = chnumChapterFromRef(passage.attributes.reference) ?? 1;
   return {
     folderPath: path.join(bookPath, pad3(chapterNum)),
     chapter: chapterNum.toString(),

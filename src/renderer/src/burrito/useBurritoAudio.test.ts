@@ -11,6 +11,15 @@ import {
   jamesNoteSections,
   type JamesPublishingFixture,
 } from './jamesPublishingFixture';
+import {
+  PHP_BOOK,
+  PHP_BOOK_PATH,
+  buildPhilippiansPublishingFixture,
+  phpBibleFixture,
+  phpNoteSections,
+  type PhilippiansPublishingFixture,
+} from './philippiansPublishingFixture';
+import { isBookRootPath } from './jamesPublishingFixture';
 
 jest.mock('../crud/related', () => ({
   __esModule: true,
@@ -156,6 +165,78 @@ async function runJamesNotesExport(
       bookPath: JAMES_BOOK_PATH,
       preLen: 0,
       sections: jamesNoteSections(fixture),
+      passageTypeFilter: PassageTypeEnum.NOTE,
+      flavorTypeName: 'x-notes',
+    });
+  });
+  return metadata;
+}
+
+function loadAudioForPhilippians(
+  api: unknown,
+  fixture: PhilippiansPublishingFixture
+) {
+  /* eslint-disable @typescript-eslint/no-require-imports */
+  jest.resetModules();
+  (window as unknown as { api?: unknown }).api = api;
+
+  jest.doMock(
+    '../components/PassageDetail/Internalization/useComputeRef',
+    () =>
+      jest.requireActual(
+        '../components/PassageDetail/Internalization/useComputeRef'
+      )
+  );
+
+  jest.doMock('../utils/dataPath', () => ({
+    __esModule: true,
+    PathType: { MEDIA: 'MEDIA' },
+    default: jest.fn(
+      async (url: string, _pathType: unknown, local: { localname: string }) => {
+        local.localname = url;
+        return url;
+      }
+    ),
+  }));
+
+  const { renderHook, act } = require('@testing-library/react/pure');
+  const { useOrgDefaults } = require('../crud/useOrgDefaults');
+  const { useOrbitData } = require('../hoc/useOrbitData');
+
+  useOrgDefaults.mockReturnValue(defaultOrgDefaults());
+
+  useOrbitData.mockImplementation((type: string) => {
+    if (type === 'mediafile') return fixture.mediafiles;
+    if (type === 'passage') return fixture.passages;
+    if (type === 'sectionresource') return [];
+    if (type === 'sharedresource') return [];
+    if (type === 'section') return fixture.sectionsAll;
+    return [];
+  });
+
+  const { useBurritoAudio } = require('./useBurritoAudio');
+  /* eslint-enable @typescript-eslint/no-require-imports */
+  return { renderHook, act, useBurritoAudio };
+}
+
+async function runPhilippiansNotesExport(
+  ipc: ReturnType<typeof makeIpc>,
+  fixture: PhilippiansPublishingFixture
+) {
+  const { renderHook, act, useBurritoAudio } = loadAudioForPhilippians(
+    ipc,
+    fixture
+  );
+  const { result } = renderHook(() => useBurritoAudio('team-1'));
+  const metadata = burritoFixture();
+  await act(async () => {
+    await result.current({
+      metadata,
+      bible: phpBibleFixture,
+      book: PHP_BOOK,
+      bookPath: PHP_BOOK_PATH,
+      preLen: 0,
+      sections: phpNoteSections(fixture),
       passageTypeFilter: PassageTypeEnum.NOTE,
       flavorTypeName: 'x-notes',
     });
@@ -897,5 +978,35 @@ describe('James publishing hierarchy — note folder placement (TT-7191)', () =>
       .map((name) => destForMediaSrc(ipc, name))
       .filter((dest): dest is string => dest != null && dest.includes('/001/'));
     expect(misplaced).toHaveLength(0);
+  });
+});
+
+describe('Philippians publishing hierarchy — note export (TT-7191)', () => {
+  let ipc: ReturnType<typeof makeIpc>;
+
+  beforeEach(async () => {
+    ipc = makeIpc();
+    await runPhilippiansNotesExport(ipc, buildPhilippiansPublishingFixture());
+  });
+
+  it('exports Book and Alt Book note recordings to distinct book-root files', () => {
+    const bookDest = destForMediaSrc(ipc, 'book-note.mp3');
+    const altDest = destForMediaSrc(ipc, 'alt-note.mp3');
+    expect(bookDest).toBeDefined();
+    expect(altDest).toBeDefined();
+    expect(isBookRootPath(bookDest!, PHP_BOOK_PATH)).toBe(true);
+    expect(isBookRootPath(altDest!, PHP_BOOK_PATH)).toBe(true);
+    expect(bookDest).not.toBe(altDest);
+  });
+
+  it('places chapter 2 note recordings in chapter 002, not 001', () => {
+    const sectionDest = destForMediaSrc(ipc, 'ch2-section-note.mp3');
+    const chapterDest = destForMediaSrc(ipc, 'ch2-chapter-note.mp3');
+    expect(sectionDest).toBeDefined();
+    expect(chapterDest).toBeDefined();
+    expect(sectionDest).toContain('/002/');
+    expect(chapterDest).toContain('/002/');
+    expect(sectionDest).not.toContain('/001/');
+    expect(chapterDest).not.toContain('/001/');
   });
 });
