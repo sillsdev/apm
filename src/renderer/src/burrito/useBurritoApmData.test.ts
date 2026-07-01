@@ -137,7 +137,7 @@ describe('useBurritoApmData', () => {
       scope: { GEN: [] },
     });
 
-    expect(updated!.type!.flavorType!.name).toBe('x-apmdata');
+    expect(updated!.type!.flavorType!.name).toBe('scripture');
     expect(updated!.type!.flavorType!.flavor.name).toBe('x-apmdata');
     expect(updated!.type!.flavorType!.currentScope).toMatchObject({
       GEN: [],

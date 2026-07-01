@@ -228,8 +228,7 @@ function loadCreateBurrito(api: typeof window.api, opts: LoadOpts = {}) {
 
   const { useGlobal } = require('../context/useGlobal');
   useGlobal.mockImplementation((key: string) => {
-    if (key === 'memory')
-      return [opts.memoryStub ?? { keyMap: {} }, jest.fn()];
+    if (key === 'memory') return [opts.memoryStub ?? { keyMap: {} }, jest.fn()];
     if (key === 'user') return ['user-1', jest.fn()];
     return [undefined, jest.fn()];
   });
@@ -665,7 +664,11 @@ describe('useCreateBurrito', () => {
 
     const ipJson = JSON.stringify({
       data: speakerFixture.intellectualproperties.map(
-        (ip: { id: string; attributes: { rightsHolder: string }; relationships: unknown }) => ({
+        (ip: {
+          id: string;
+          attributes: { rightsHolder: string };
+          relationships: unknown;
+        }) => ({
           type: 'intellectualproperties',
           id: ip.id,
           attributes: { rightsHolder: ip.attributes.rightsHolder },
@@ -685,9 +688,7 @@ describe('useCreateBurrito', () => {
           burritoFormat: { convertToMp3: false },
           burritoRevision: '1',
         },
-        bookData: [
-          { code: 'JAS', abbr: 'Jas', short: 'James', long: 'James' },
-        ],
+        bookData: [{ code: 'JAS', abbr: 'Jas', short: 'James', long: 'James' }],
         memoryStub,
         orbit: {
           user: [user],
@@ -704,7 +705,9 @@ describe('useCreateBurrito', () => {
       }
     );
 
-    const { useBurritoIntellectualProperty } = require('./useBurritoIntellectualProperty');
+    const {
+      useBurritoIntellectualProperty,
+    } = require('./useBurritoIntellectualProperty');
     useBurritoIntellectualProperty.mockImplementation(() =>
       jest.fn(async ({ metadata, partPath, preLen }: any) => {
         const dataDir = `${partPath}/data`;
@@ -736,7 +739,7 @@ describe('useCreateBurrito', () => {
             ...metadata.type,
             flavorType: {
               ...metadata.type?.flavorType,
-              name: 'x-intellectualproperty',
+              name: 'scripture',
               flavor: { name: 'x-intellectualproperty' },
             },
           },

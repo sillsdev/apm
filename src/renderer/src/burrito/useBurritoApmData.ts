@@ -6,7 +6,10 @@ import { getProjectDataFiles } from '../store/importexport/projectDataExport';
 import Memory from '@orbit/memory';
 import { projDefBook, useProjectDefaults } from '../crud/useProjectDefaults';
 import { useNum2BookCode } from '../utils/useNum2BookCode';
-import { projectDefaultToBurritoBookKey } from './akuoBookToUsfm';
+import {
+  projectDefaultToBurritoBookKey,
+  burritoCurrentScopeForProject,
+} from './akuoBookToUsfm';
 
 const ipc = window?.api as MainAPI;
 
@@ -58,18 +61,22 @@ export const useBurritoApmData = (memory: Memory) => {
     }
 
     metadata.ingredients = { ...metadata.ingredients, ...ingredients };
-    if (bookCode && metadata.type?.flavorType) {
-      const currentScope = metadata.type.flavorType.currentScope ?? {};
+    const bookScope = burritoCurrentScopeForProject(
+      project,
+      getProjectDefault,
+      num2BookCode
+    );
+    if (Object.keys(bookScope).length && metadata.type?.flavorType) {
       metadata.type.flavorType.currentScope = {
-        ...currentScope,
-        [bookCode]: [],
+        ...metadata.type.flavorType.currentScope,
+        ...bookScope,
       };
     }
-    if (metadata.type?.flavorType?.flavor) {
-      metadata.type.flavorType.flavor.name = 'x-apmdata';
-    }
     if (metadata.type?.flavorType) {
-      metadata.type.flavorType.name = 'x-apmdata';
+      metadata.type.flavorType.name = 'scripture';
+      if (metadata.type.flavorType.flavor) {
+        metadata.type.flavorType.flavor.name = 'x-apmdata';
+      }
     }
     return metadata;
   };

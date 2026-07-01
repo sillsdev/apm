@@ -165,55 +165,46 @@ function makeIpc() {
 /**
  * `useBurritoNavigation` reads `window.api` at module load. `jest.isolateModules`
  * would give the hook a second React copy and break hooks; `resetModules` +
- * requiring RTL before the hook keeps a single React for `renderHook`.
+ * dynamic `import()` before the hook keeps a single React for `renderHook`.
  */
-function loadNavigationForApi(api: MainAPI | undefined) {
+async function loadNavigationForApi(api: MainAPI | undefined) {
   jest.resetModules();
   (window as unknown as { api?: typeof api }).api = api;
-  // `react` entry registers Jest hooks; `pure` does not (invalid inside `it`).
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { renderHook, act } = require('@testing-library/react/pure');
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { useProjectDefaults } = require('../crud/useProjectDefaults');
-  useProjectDefaults.mockReturnValue({
+  const { renderHook, act } = await import('@testing-library/react/pure');
+  const { useProjectDefaults } = await import('../crud/useProjectDefaults');
+  (useProjectDefaults as jest.Mock).mockReturnValue({
     getProjectDefault: jest.fn(),
     setProjectDefault: jest.fn(),
     canSetProjectDefault: true,
     getLocalDefault: jest.fn(),
     setLocalDefault: jest.fn(),
   });
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { useBurritoNavigation } = require('./useBurritoNavigation');
+  const { useBurritoNavigation } = await import('./useBurritoNavigation');
   return { renderHook, act, useBurritoNavigation };
 }
 
-function loadNavigationForJames(
+async function loadNavigationForJames(
   api: MainAPI | undefined,
   fixture: JamesPublishingFixture
 ) {
   jest.resetModules();
   (window as unknown as { api?: typeof api }).api = api;
 
-  jest.doMock(
-    '../components/PassageDetail/Internalization/useComputeRef',
-    () =>
-      jest.requireActual(
-        '../components/PassageDetail/Internalization/useComputeRef'
-      )
+  jest.doMock('../components/PassageDetail/Internalization/useComputeRef', () =>
+    jest.requireActual(
+      '../components/PassageDetail/Internalization/useComputeRef'
+    )
   );
 
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { renderHook, act } = require('@testing-library/react/pure');
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { useProjectDefaults, projDefSectionMap } = require('../crud/useProjectDefaults');
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { findRecord, remoteId, remoteIdGuid, remoteIdNum } = require('../crud');
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { useGlobal } = require('../context/useGlobal');
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { useOrbitData } = require('../hoc/useOrbitData');
+  const { renderHook, act } = await import('@testing-library/react/pure');
+  const { useProjectDefaults, projDefSectionMap } =
+    await import('../crud/useProjectDefaults');
+  const { findRecord, remoteId, remoteIdGuid, remoteIdNum } =
+    await import('../crud');
+  const { useGlobal } = await import('../context/useGlobal');
+  const { useOrbitData } = await import('../hoc/useOrbitData');
 
-  useProjectDefaults.mockReturnValue({
+  (useProjectDefaults as jest.Mock).mockReturnValue({
     getProjectDefault: jest.fn((key: string) =>
       key === projDefSectionMap ? fixture.sectionMap : undefined
     ),
@@ -230,7 +221,7 @@ function loadNavigationForJames(
   };
   const projectRec = { id: fixture.projectId, type: 'project' };
 
-  findRecord.mockImplementation(
+  (findRecord as jest.Mock).mockImplementation(
     (_memory: unknown, type: string, id: string) => {
       if (type === 'plan') return planRec;
       if (type === 'project') return projectRec;
@@ -241,32 +232,38 @@ function loadNavigationForJames(
     }
   );
 
-  remoteId.mockImplementation((_type: string, localId: string) => localId);
-  remoteIdNum.mockImplementation((type: string, localId: string) => {
-    if (type === 'section') {
-      return JAMES_SECTION_REMOTE_NUM[localId] ?? 0;
+  (remoteId as jest.Mock).mockImplementation(
+    (_type: string, localId: string) => localId
+  );
+  (remoteIdNum as jest.Mock).mockImplementation(
+    (type: string, localId: string) => {
+      if (type === 'section') {
+        return JAMES_SECTION_REMOTE_NUM[localId] ?? 0;
+      }
+      return 1;
     }
-    return 1;
-  });
-  remoteIdGuid.mockImplementation((type: string, numStr: string) => {
-    if (type === 'section') {
-      const num = parseInt(numStr, 10);
-      const entry = Object.entries(JAMES_SECTION_REMOTE_NUM).find(
-        ([, v]) => v === num
-      );
-      return entry?.[0];
+  );
+  (remoteIdGuid as jest.Mock).mockImplementation(
+    (type: string, numStr: string) => {
+      if (type === 'section') {
+        const num = parseInt(numStr, 10);
+        const entry = Object.entries(JAMES_SECTION_REMOTE_NUM).find(
+          ([, v]) => v === num
+        );
+        return entry?.[0];
+      }
+      return undefined;
     }
-    return undefined;
-  });
+  );
 
-  useGlobal.mockImplementation((key: string) => {
+  (useGlobal as jest.Mock).mockImplementation((key: string) => {
     if (key === 'memory') {
       return [{ keyMap: {} }, jest.fn()];
     }
     return [undefined, jest.fn()];
   });
 
-  useOrbitData.mockImplementation((model: string) => {
+  (useOrbitData as jest.Mock).mockImplementation((model: string) => {
     switch (model) {
       case 'mediafile':
         return fixture.mediafiles;
@@ -285,8 +282,7 @@ function loadNavigationForJames(
     }
   });
 
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { useBurritoNavigation } = require('./useBurritoNavigation');
+  const { useBurritoNavigation } = await import('./useBurritoNavigation');
   return { renderHook, act, useBurritoNavigation };
 }
 
@@ -294,10 +290,8 @@ async function runJamesNavigationExport(
   ipc: ReturnType<typeof makeIpc>,
   fixture: JamesPublishingFixture
 ) {
-  const { renderHook, act, useBurritoNavigation } = loadNavigationForJames(
-    ipc as never,
-    fixture
-  );
+  const { renderHook, act, useBurritoNavigation } =
+    await loadNavigationForJames(ipc as never, fixture);
   const { result } = renderHook(() => useBurritoNavigation('team-1'));
   const metadata = burritoFixture();
   await act(async () => {
@@ -328,9 +322,8 @@ describe('useBurritoNavigation', () => {
 
   it('sets x-nav flavor, writes navigation.json, graphics folder, and merges manifest ingredient', async () => {
     const ipc = makeIpc();
-    const { renderHook, act, useBurritoNavigation } = loadNavigationForApi(
-      ipc as never
-    );
+    const { renderHook, act, useBurritoNavigation } =
+      await loadNavigationForApi(ipc as never);
 
     const { result } = renderHook(() => useBurritoNavigation(teamId));
     const metadata = burritoFixture();
@@ -346,7 +339,8 @@ describe('useBurritoNavigation', () => {
       });
     });
 
-    expect(metadata.type?.flavorType?.name).toBe('x-nav');
+    expect(metadata.type?.flavorType?.name).toBe('scripture');
+    expect(metadata.type?.flavorType?.flavor?.name).toBe('x-nav');
     expect(
       ipc.createFolder.mock.calls.some((c) => c[0].includes('graphics'))
     ).toBe(false);
@@ -374,7 +368,7 @@ describe('useBurritoNavigation', () => {
 
   it('does not throw when window.api is missing (empty sections)', async () => {
     const { renderHook, act, useBurritoNavigation } =
-      loadNavigationForApi(undefined);
+      await loadNavigationForApi(undefined);
 
     const { result } = renderHook(() => useBurritoNavigation(teamId));
     const metadata = burritoFixture();
@@ -390,7 +384,8 @@ describe('useBurritoNavigation', () => {
       });
     });
 
-    expect(metadata.type?.flavorType?.name).toBe('x-nav');
+    expect(metadata.type?.flavorType?.name).toBe('scripture');
+    expect(metadata.type?.flavorType?.flavor?.name).toBe('x-nav');
     const manifestIngredient = Object.values(metadata.ingredients).find(
       (i) => i.mimeType === 'application/json' && !i.role
     );
@@ -400,9 +395,8 @@ describe('useBurritoNavigation', () => {
 
   it('includes special book sections (BookSeq/AltBkSeq encded in the sequence number for each plan), even with no passages', async () => {
     const ipc = makeIpc();
-    const { renderHook, act, useBurritoNavigation } = loadNavigationForApi(
-      ipc as never
-    );
+    const { renderHook, act, useBurritoNavigation } =
+      await loadNavigationForApi(ipc as never);
 
     // normal section list passed into the hook: determines planIdsForBook
     const normalSection = {

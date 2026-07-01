@@ -208,7 +208,10 @@ export const useBurritoNavigation = (teamId: string) => {
     sections,
   }: Props) => {
     if (metadata.type?.flavorType) {
-      metadata.type.flavorType.name = 'x-nav';
+      metadata.type.flavorType.name = 'scripture';
+      if (metadata.type.flavorType.flavor) {
+        metadata.type.flavorType.flavor.name = 'x-nav';
+      }
     }
     const bibleId = bible?.attributes?.bibleId || teamId || '';
     const scopes: Map<string, string[]> = new Map();
@@ -506,42 +509,42 @@ export const useBurritoNavigation = (teamId: string) => {
       await ipc?.createFolder(categoryGraphicsPath);
 
       for (const cat of categoriesForExport) {
-      const catRemId = remoteId('artifactcategory', cat.id, keyMap);
-      if (!catRemId) continue;
+        const catRemId = remoteId('artifactcategory', cat.id, keyMap);
+        if (!catRemId) continue;
 
-      const titleMediaId = related(cat, 'titleMediafile');
-      if (titleMediaId) {
-        const m = mediafiles.find((mf) => mf.id === titleMediaId);
-        if (m) {
-          const ext = getMediaExt(m);
-          const destName = `${bibleId}-${book}-category-title-${cleanFileName(cat.attributes.categoryname)}-${catRemId}.${ext}`;
-          const destPath = path.join(categoryGraphicsPath, destName);
-          const ok = await processMediaFile(m, destPath, '');
-          if (ok) {
-            titleMediaManifest.push({
-              resourceType: 'category',
-              remoteId: catRemId,
-              path: destPath.substring(preLen),
-            });
+        const titleMediaId = related(cat, 'titleMediafile');
+        if (titleMediaId) {
+          const m = mediafiles.find((mf) => mf.id === titleMediaId);
+          if (m) {
+            const ext = getMediaExt(m);
+            const destName = `${bibleId}-${book}-category-title-${cleanFileName(cat.attributes.categoryname)}-${catRemId}.${ext}`;
+            const destPath = path.join(categoryGraphicsPath, destName);
+            const ok = await processMediaFile(m, destPath, '');
+            if (ok) {
+              titleMediaManifest.push({
+                resourceType: 'category',
+                remoteId: catRemId,
+                path: destPath.substring(preLen),
+              });
+            }
           }
         }
-      }
 
-      const categoryGraphic = graphics.find(
-        (g) =>
-          g.attributes.resourceType === 'category' &&
-          g.attributes.resourceId ===
-            remoteIdNum('artifactcategory', cat.id, keyMap)
-      );
-      if (categoryGraphic) {
-        await processGraphic(
-          categoryGraphic,
-          categoryGraphicsPath,
-          '',
-          'category',
-          catRemId
+        const categoryGraphic = graphics.find(
+          (g) =>
+            g.attributes.resourceType === 'category' &&
+            g.attributes.resourceId ===
+              remoteIdNum('artifactcategory', cat.id, keyMap)
         );
-      }
+        if (categoryGraphic) {
+          await processGraphic(
+            categoryGraphic,
+            categoryGraphicsPath,
+            '',
+            'category',
+            catRemId
+          );
+        }
       }
     }
 
@@ -593,7 +596,7 @@ export const useBurritoNavigation = (teamId: string) => {
           const ext = getMediaExt(m);
           const chSuffix =
             passageType === PassageTypeEnum.CHAPTERNUMBER
-              ? exportFolder.chapter ?? '1'
+              ? (exportFolder.chapter ?? '1')
               : cleanFileName(sectionRef);
           const destName = `${bibleId}-${book}-chapter-${chSuffix}-title-${passRemId}.${ext}`;
           const destPath = path.join(chapterPath, destName);

@@ -94,20 +94,15 @@ function loadAudioForApi(api: unknown) {
   return { renderHook, act, useBurritoAudio };
 }
 
-function loadAudioForJames(
-  api: unknown,
-  fixture: JamesPublishingFixture
-) {
+function loadAudioForJames(api: unknown, fixture: JamesPublishingFixture) {
   /* eslint-disable @typescript-eslint/no-require-imports */
   jest.resetModules();
   (window as unknown as { api?: unknown }).api = api;
 
-  jest.doMock(
-    '../components/PassageDetail/Internalization/useComputeRef',
-    () =>
-      jest.requireActual(
-        '../components/PassageDetail/Internalization/useComputeRef'
-      )
+  jest.doMock('../components/PassageDetail/Internalization/useComputeRef', () =>
+    jest.requireActual(
+      '../components/PassageDetail/Internalization/useComputeRef'
+    )
   );
 
   jest.doMock('../utils/dataPath', () => ({
@@ -238,7 +233,8 @@ describe('useBurritoAudio', () => {
       });
     });
 
-    expect(metadata.type?.flavorType?.name).toBe('x-notes');
+    expect(metadata.type?.flavorType?.name).toBe('scripture');
+    expect(metadata.type?.flavorType?.flavor?.name).toBe('x-notes');
     expect(ipc.write).toHaveBeenCalled();
     const writePaths = (ipc.write as jest.Mock).mock.calls.map((c) => c[0]);
     expect(writePaths.some((p: string) => p.includes('alignment.json'))).toBe(

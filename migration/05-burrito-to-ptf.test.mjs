@@ -328,7 +328,7 @@ async function writeApmDataBurrito(rootDir, orgWorkflowStepCount) {
         languages: [{ tag: 'und', name: { en: 'Unknown' } }],
         type: {
           flavorType: {
-            name: 'x-apmdata',
+            name: 'scripture',
             flavor: { name: 'x-apmdata' },
             currentScope: scope,
           },
@@ -397,7 +397,7 @@ async function writeMalformedApmDataBurrito(rootDir) {
         languages: [{ tag: 'und', name: { en: 'Unknown' } }],
         type: {
           flavorType: {
-            name: 'x-apmdata',
+            name: 'scripture',
             flavor: { name: 'x-apmdata' },
             currentScope: scope,
           },
@@ -573,7 +573,10 @@ test('burrito import falls back when ApmData tables contain malformed JSON', asy
     const files = await fs.readdir(outputDir);
     const ptfFile = files.find((f) => f.endsWith('.ptf'));
     assert.ok(ptfFile, 'expected a .ptf file');
-    const table = readPtfTable(path.join(outputDir, ptfFile), 'C_orgworkflowsteps.json');
+    const table = readPtfTable(
+      path.join(outputDir, ptfFile),
+      'C_orgworkflowsteps.json'
+    );
     const names = table.data.map((step) => step.attributes?.name);
     assert.ok(
       names.includes('MarkVerses'),
