@@ -1005,7 +1005,7 @@ export default function PassageDetailMarkVersesIsMobile({
         passageRefs.current.length > 0
           ? passageRefs.current
           : getPassageRefs(passage);
-      // Any flagged row — ill-formatted (`Err`) or well-formed but out of range /
+      // Any flagged row — ill-formatted (`Err`) or well-formed but out of passage /
       // non-consecutive (`Warn`) — lets the user fix the start verse, so both
       // dropdowns offer the full passage verse list rather than just the slice
       // from the current start onward.
@@ -1160,17 +1160,20 @@ export default function PassageDetailMarkVersesIsMobile({
     const tableReferences = dataRef.current
       .slice(1)
       .map((tableRow) => `${(tableRow[ColName.Ref] as ICell)?.value ?? ''}`);
-    const editAction = decideMarkVersesEditReferenceAction({
-      newReference,
-      tableReferences,
-      rowIndex: startRowIndex - 1,
-      getLastVerse: lastVerseForBook,
-    });
 
     const passageRange =
       passageRefs.current.length > 0
         ? passageRefs.current
         : getPassageRefs(passage);
+
+    const editAction = decideMarkVersesEditReferenceAction({
+      newReference,
+      tableReferences,
+      rowIndex: startRowIndex - 1,
+      getLastVerse: lastVerseForBook,
+      passageStartRef: passageRange[0] ?? '',
+      passageEndRef: passageRange[passageRange.length - 1] ?? '',
+    });
 
     // Set the edited value; the whole-table warning pass below assigns its
     // status and tooltip (and re-evaluates every other row).

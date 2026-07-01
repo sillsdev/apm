@@ -1,7 +1,8 @@
 import {
   decideMarkVersesEditReferenceAction,
   evaluateMarkVersesReferenceStatus,
-  isMarkVersesReferenceInRange,
+  isRefInVersification,
+  isMarkVersesReferenceInPassage,
   isMarkVersesTableConsecutive,
   isValidMarkVersesReference,
   isWellFormedMarkVersesReference,
@@ -81,20 +82,20 @@ describe('isWellFormedMarkVersesReference', () => {
   });
 });
 
-describe('isMarkVersesReferenceInRange', () => {
+describe('isRefInVersification', () => {
   it('accepts verses that exist in the chapter', () => {
-    expect(isMarkVersesReferenceInRange('1:1', longChapter1)).toBe(true);
-    expect(isMarkVersesReferenceInRange('1:80', longChapter1)).toBe(true);
-    expect(isMarkVersesReferenceInRange('1:30-2:2', longChapter1)).toBe(true);
+    expect(isRefInVersification('1:1', longChapter1)).toBe(true);
+    expect(isRefInVersification('1:80', longChapter1)).toBe(true);
+    expect(isRefInVersification('1:30-2:2', longChapter1)).toBe(true);
   });
 
   it('rejects a chapter that does not exist (e.g. 100:1)', () => {
-    expect(isMarkVersesReferenceInRange('100:1', longChapter1)).toBe(false);
+    expect(isRefInVersification('100:1', longChapter1)).toBe(false);
   });
 
   it('rejects a verse past the end of its chapter', () => {
-    expect(isMarkVersesReferenceInRange('1:81', longChapter1)).toBe(false);
-    expect(isMarkVersesReferenceInRange('1:21', chapter1EndsAt20)).toBe(false);
+    expect(isRefInVersification('1:81', longChapter1)).toBe(false);
+    expect(isRefInVersification('1:21', chapter1EndsAt20)).toBe(false);
   });
 });
 
@@ -227,6 +228,10 @@ describe('decideMarkVersesEditReferenceAction', () => {
     tableReferences: [],
     rowIndex: 1,
     getLastVerse: longChapter1,
+    // Wide passage bounds so the existing cases turn only on the numbering
+    // rules; the passage-bounds behavior is exercised separately below.
+    passageStartRef: '1:1',
+    passageEndRef: '1:80',
     ...over,
   });
 
@@ -276,6 +281,22 @@ describe('decideMarkVersesEditReferenceAction', () => {
             tableReferences: ['1:1', '1:2', '1:3'],
             newReference: '100:1',
             rowIndex: 1,
+          })
+        )
+      ).toBe('none');
+    });
+
+    it('does not re-number when the edit reaches outside the passage bounds', () => {
+      // 1:3-9 is well-formed and within versification, but the passage ends at
+      // 1:5, so extending to 1:9 leaves the passage — leave numbering alone.
+      expect(
+        decideMarkVersesEditReferenceAction(
+          ctx({
+            tableReferences: ['1:1', '1:2', '1:3'],
+            newReference: '1:3-9',
+            rowIndex: 2,
+            passageStartRef: '1:1',
+            passageEndRef: '1:5',
           })
         )
       ).toBe('none');
@@ -484,5 +505,152 @@ describe('markVersesSkippedPassageRefs', () => {
   it('returns empty when either reference is unparseable', () => {
     expect(markVersesSkippedPassageRefs('', '1:4', passage)).toEqual([]);
     expect(markVersesSkippedPassageRefs('1:1', 'nope', passage)).toEqual([]);
+  });
+});
+
+/**
+ * Spec for whether a Mark Verses reference falls inside the passage.
+ *
+ * Contract: the reference is "in passage" when the whole span it covers lies
+ * within the passage — its start is at or after the passage's start and its end
+ * is at or before the passage's end. The passage is contiguous so its two bounds
+ * (start ref, end ref) fully describe it.
+ *
+ * Comparison is subpart-aware. A bound with no suffix (e.g. `1:5`) means the
+ * whole verse, so any lettered part of that verse is inside it. A bound that
+ * names a part (e.g. `1:2b`) is that exact part, so a part outside it — even in
+ * the same verse (`1:2a`) — is outside the passage. An unparseable reference, or
+ * an unparseable bound, is never in the passage.
+ */
+describe('isMarkVersesReferenceInPassage', () => {
+  describe('single-verse passage', () => {
+    // start === end: the passage is exactly one verse.
+    const inPassage = (ref: string) =>
+      isMarkVersesReferenceInPassage(ref, '1:1', '1:1');
+
+    it('accepts the one verse it contains', () => {
+      expect(inPassage('1:1')).toBe(true);
+    });
+
+    it('accepts a lettered subpart of that verse', () => {
+      expect(inPassage('1:1a')).toBe(true);
+      expect(inPassage('1:1a-c')).toBe(true);
+    });
+
+    it('rejects any other verse', () => {
+      expect(inPassage('1:2')).toBe(false);
+      expect(inPassage('2:1')).toBe(false);
+    });
+  });
+
+  describe('single-chapter passage', () => {
+    // Passage covers 1:2 through 1:5.
+    const inPassage = (ref: string) =>
+      isMarkVersesReferenceInPassage(ref, '1:2', '1:5');
+
+    it.each([
+      '1:2', // first verse
+      '1:5', // last verse
+      '1:3', // interior single verse
+      '1:2-5', // the whole passage as one range
+      '1:3-4', // interior range
+      '1:2a', // lettered subpart of an interior verse
+      '1:2a-3e', // lettered range within the passage
+    ])('accepts %s (within the passage)', (ref) => {
+      expect(inPassage(ref)).toBe(true);
+    });
+
+    it.each([
+      '1:6', // one past the last verse
+      '2:1', // next chapter entirely
+      '1:5-6', // starts inside but ends past the last verse
+      '1:1', // before the first verse (parseable, but out)
+      '1:4-8', // interior start, end well past the passage
+    ])('rejects %s (reaches outside the passage)', (ref) => {
+      expect(inPassage(ref)).toBe(false);
+    });
+  });
+
+  describe('passage spanning multiple chapters', () => {
+    // A contiguous selection crossing the 1->2 boundary: 1:30 through 2:2.
+    const inPassage = (ref: string) =>
+      isMarkVersesReferenceInPassage(ref, '1:30', '2:2');
+
+    it.each([
+      '1:30-2:2', // the full span
+      '1:31-2:1', // interior range crossing the boundary
+      '2:2', // last verse, in the second chapter
+      '1:30', // first verse, in the first chapter
+      '1:32a-2:1b', // lettered range crossing the boundary
+    ])('accepts %s (within the multi-chapter passage)', (ref) => {
+      expect(inPassage(ref)).toBe(true);
+    });
+
+    it.each([
+      '1:29-2:2', // starts one verse before the passage begins
+      '1:30-2:3', // ends one verse after the passage ends
+      '3:1', // a chapter beyond the passage
+      '1:1', // an earlier verse in the first chapter, before the passage
+    ])('rejects %s (reaches outside the multi-chapter passage)', (ref) => {
+      expect(inPassage(ref)).toBe(false);
+    });
+  });
+
+  describe('passage bounds with lettered subparts', () => {
+    // Passage covers 1:2a through 1:5c. A reference is not considered to be in the
+    // passage if it contains subparts outside of the range
+    const inPassage = (ref: string) =>
+      isMarkVersesReferenceInPassage(ref, '1:2b', '1:5c');
+    it.each([
+      '1:2b', // first verse, first subpart
+      '1:2d',
+      '1:2d-1:3a',
+      '1:5c', // last verse, last subpart
+      '1:5a-b',
+      '1:3b-1:4b', // interior
+      '1:2b-1:5c', // the whole passage as one range
+    ])('accepts %s (within the passage)', (ref) => {
+      expect(inPassage(ref)).toBe(true);
+    });
+
+    it.each([
+      '1:2a', // before the first subpart
+      '1:5d', // after the last subpart
+      '1:2', // before the first subpart (no letter includes all of verse 2)
+      '1:1', // before the passage
+      '1:6', // after the passage
+      '1:2a-1:5c', // starts before the passage
+      '1:2b-1:5d', // ends after the passage
+    ])('rejects %s (reaches outside the passage)', (ref) => {
+      expect(inPassage(ref)).toBe(false);
+    });
+
+    const inPassage2 = (ref: string) =>
+      isMarkVersesReferenceInPassage(ref, '1:2a', '1:5a');
+    // verse 1:2 is inside the passage because all of verse 2 is included
+    it.each([
+      '1:2', // before the first subpart (no letter includes all of verse 2)
+    ])('accepts %s (within the passage)', (ref) => {
+      expect(inPassage2(ref)).toBe(true);
+    });
+
+    // verse 1:5 is outside of passage because it implies at least a part b is included
+    it.each([
+      '1:5', // after the last subpart
+    ])('rejects %s (reaches outside the passage)', (ref) => {
+      expect(inPassage2(ref)).toBe(false);
+    });
+  });
+
+  describe('corner cases', () => {
+    it('rejects an unparseable reference', () => {
+      expect(isMarkVersesReferenceInPassage('foo', '1:1', '1:3')).toBe(false);
+      expect(isMarkVersesReferenceInPassage('', '1:1', '1:3')).toBe(false);
+    });
+
+    it('rejects when a passage bound is unparseable', () => {
+      expect(isMarkVersesReferenceInPassage('1:1', '', '1:3')).toBe(false);
+      expect(isMarkVersesReferenceInPassage('1:1', '1:1', 'junk')).toBe(false);
+    });
   });
 });

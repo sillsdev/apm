@@ -48,13 +48,17 @@ export interface MarkVersesEditReferenceContext {
   rowIndex: number;
   /** Versification lookup bound to the passage's book. */
   getLastVerse: GetLastVerse;
+  /** First verse ref of the passage (its lower bound), e.g. `1:30`. */
+  passageStartRef: string;
+  /** Last verse ref of the passage (its upper bound), e.g. `2:2`. */
+  passageEndRef: string;
 }
 
 /** Well-formatted per the established table rules (delegates to refMatch). */
 export const isWellFormedMarkVersesReference = (ref: string): boolean =>
   Boolean(ref) && refMatch(ref) !== null;
 
-const partInRange = (
+const verseInChapter = (
   chapter: number,
   verse: number,
   getLastVerse: GetLastVerse
@@ -64,27 +68,26 @@ const partInRange = (
   return verse >= 1 && verse <= last;
 };
 
-/** Both endpoints exist in the book's versification. */
-// TODO this the wrong check?
-export const isMarkVersesReferenceInRange = (
+/** Both endpoint verses exist in their chapters. */
+export const isRefInVersification = (
   ref: string,
   getLastVerse: GetLastVerse
 ): boolean => {
   const parsed = parseMarkVersesReference(ref);
   if (!parsed) return false;
   return (
-    partInRange(parsed.start.chapter, parsed.start.verse, getLastVerse) &&
-    partInRange(parsed.end.chapter, parsed.end.verse, getLastVerse)
+    verseInChapter(parsed.start.chapter, parsed.start.verse, getLastVerse) &&
+    verseInChapter(parsed.end.chapter, parsed.end.verse, getLastVerse)
   );
 };
 
-/** Well-formatted AND in range. */
+/** Well-formatted AND in verses exist in chapters */
 export const isValidMarkVersesReference = (
   ref: string,
   getLastVerse: GetLastVerse
 ): boolean =>
   isWellFormedMarkVersesReference(ref) &&
-  isMarkVersesReferenceInRange(ref, getLastVerse);
+  isRefInVersification(ref, getLastVerse);
 
 /**
  * True when `nextRef`'s start consecutively follows `prevRef`'s end with no gap,
@@ -174,6 +177,87 @@ const isNonEmptyRef = (ref?: string): ref is string =>
 /** Chapter-major ordering key for a verse position (suffix ignored). */
 const verseOrderKey = (chapter: number, verse: number): number =>
   chapter * 1000 + verse;
+
+const LETTER_SUFFIX_RANK: Record<string, number> = {
+  a: 1,
+  b: 2,
+  c: 3,
+  d: 4,
+  e: 5,
+};
+/** Rank of a missing suffix at the *end* of a span — after every letter part. */
+const VERSE_END_SUFFIX_RANK = 6;
+
+/**
+ * Fine-grained ordering key that includes the letter subpart, so a subpart can
+ * be compared against a bound within the same verse. `atVerseEnd` fixes how a
+ * bare verse (no suffix) is ordered relative to its lettered parts: the start of
+ * a span sits before part `a` (rank 0), while the end of a span runs through the
+ * whole verse, after part `e` (rank 6). A ref/bound that names a specific part
+ * (`1:2b`) always uses that part's rank, regardless of `atVerseEnd`.
+ */
+const verseSubpartKey = (
+  chapter: number,
+  verse: number,
+  suffix: string,
+  atVerseEnd: boolean
+): number => {
+  const suffixRank = suffix
+    ? (LETTER_SUFFIX_RANK[suffix] ?? 0)
+    : atVerseEnd
+      ? VERSE_END_SUFFIX_RANK
+      : 0;
+  return verseOrderKey(chapter, verse) * 10 + suffixRank;
+};
+
+/**
+ * True when the whole span `ref` covers lies within the passage — its start is
+ * at or after `passageStartRef` and its end is at or before `passageEndRef`. The
+ * passage is contiguous, so its two bounds fully describe it.
+ *
+ * Comparison is subpart-aware: when a bound carries a letter (`1:2b`), a subpart
+ * outside that part is outside the passage (`1:2a` is before `1:2b`). A bound
+ * with no suffix means the whole verse — its start bound sits before part `a`,
+ * its end bound after part `e`. Returns false when `ref` or either bound is
+ * unparseable.
+ */
+export const isMarkVersesReferenceInPassage = (
+  ref: string,
+  passageStartRef: string,
+  passageEndRef: string
+): boolean => {
+  const parsed = parseMarkVersesReference(ref);
+  const passageStart = parseMarkVersesReference(passageStartRef);
+  const passageEnd = parseMarkVersesReference(passageEndRef);
+  if (!parsed || !passageStart || !passageEnd) return false;
+
+  const lowerBound = verseSubpartKey(
+    passageStart.start.chapter,
+    passageStart.start.verse,
+    passageStart.start.suffix,
+    false
+  );
+  const upperBound = verseSubpartKey(
+    passageEnd.end.chapter,
+    passageEnd.end.verse,
+    passageEnd.end.suffix,
+    true
+  );
+  const refStart = verseSubpartKey(
+    parsed.start.chapter,
+    parsed.start.verse,
+    parsed.start.suffix,
+    false
+  );
+  const refEnd = verseSubpartKey(
+    parsed.end.chapter,
+    parsed.end.verse,
+    parsed.end.suffix,
+    true
+  );
+
+  return refStart >= lowerBound && refEnd <= upperBound;
+};
 
 /**
  * When `newRef` does not consecutively follow `prevRef`, did its start jump
@@ -301,10 +385,10 @@ export const evaluateMarkVersesReferenceStatus = (
   getLastVerse: GetLastVerse
 ): { reason?: MarkVersesWarningReason } => {
   if (!isNonEmptyRef(reference)) return {};
-  if (!isWellFormedMarkVersesReference(reference)) {
+  if (!isValidMarkVersesReference(reference)) {
     return { reason: 'illFormatted' };
   }
-  if (!isMarkVersesReferenceInRange(reference, getLastVerse)) {
+  if (!isRefInVersification(reference, getLastVerse)) {
     return { reason: 'outOfRange' };
   }
   if (overlapsEarlierRow(tableReferences, rowIndex, reference)) {
@@ -344,7 +428,14 @@ export const evaluateMarkVersesReferenceStatus = (
 export const decideMarkVersesEditReferenceAction = (
   ctx: MarkVersesEditReferenceContext
 ): MarkVersesEditReferenceAction => {
-  const { newReference, tableReferences, rowIndex, getLastVerse } = ctx;
+  const {
+    newReference,
+    tableReferences,
+    rowIndex,
+    getLastVerse,
+    passageStartRef,
+    passageEndRef,
+  } = ctx;
 
   const editedTable = tableReferences.map((ref, index) =>
     index === rowIndex ? newReference : ref
@@ -352,11 +443,13 @@ export const decideMarkVersesEditReferenceAction = (
 
   // Rule 1: anything ill-formatted or out of range anywhere in the table blocks
   // re-numbering.
-  const anyInvalid = editedTable.some(
+  const anyBadReferences = editedTable.some(
     (ref) =>
-      isNonEmptyRef(ref) && !isValidMarkVersesReference(ref, getLastVerse)
+      isNonEmptyRef(ref) &&
+      (!isValidMarkVersesReference(ref, getLastVerse) ||
+        !isMarkVersesReferenceInPassage(ref, passageStartRef, passageEndRef))
   );
-  if (anyInvalid) return 'none';
+  if (anyBadReferences) return 'none';
 
   // Rule 2: the new start must consecutively follow the end of the row above it.
   const precedingReference = editedTable
