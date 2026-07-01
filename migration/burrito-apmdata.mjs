@@ -106,8 +106,15 @@ function readApmDataTable(entries, projectFolder, fileName) {
   if (!bytes) {
     return [];
   }
-  const parsed = JSON.parse(bytes.toString('utf-8'));
-  return Array.isArray(parsed?.data) ? parsed.data : [];
+  try {
+    const parsed = JSON.parse(bytes.toString('utf-8'));
+    return Array.isArray(parsed?.data) ? parsed.data : [];
+  } catch (err) {
+    console.warn(
+      `  Unable to parse ApmData table ${fileName}: ${err?.message ?? String(err)}`
+    );
+    return [];
+  }
 }
 
 /**

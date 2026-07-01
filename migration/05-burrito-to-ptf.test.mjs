@@ -342,6 +342,75 @@ async function writeApmDataBurrito(rootDir, orgWorkflowStepCount) {
 }
 
 /**
+ * ApmData burrito whose table files are not valid JSON (conversion should fall back).
+ * @param {string} rootDir
+ * @returns {Promise<void>}
+ */
+async function writeMalformedApmDataBurrito(rootDir) {
+  const apmRoot = path.join(rootDir, 'apmdata');
+  const projectRoot = path.join(apmRoot, PROJECT_FOLDER);
+  const dataDir = path.join(projectRoot, 'data');
+  await fs.mkdir(dataDir, { recursive: true });
+
+  const scope = { [BOOK]: [] };
+  const tableFiles = [
+    'F_sections.json',
+    'G_passages.json',
+    'C_orgworkflowsteps.json',
+    'E_plans.json',
+  ];
+
+  for (const fileName of tableFiles) {
+    await fs.writeFile(path.join(dataDir, fileName), '{not valid json');
+  }
+
+  const ingredients = {};
+  for (const fileName of tableFiles) {
+    const rel = `${PROJECT_FOLDER}/data/${fileName}`;
+    const abs = path.join(projectRoot, 'data', fileName);
+    const size = fsSync.statSync(abs).size;
+    ingredients[rel] = {
+      checksum: { md5: '0'.repeat(32) },
+      mimeType: 'application/json',
+      size,
+      scope,
+    };
+  }
+
+  await fs.writeFile(
+    path.join(apmRoot, 'metadata.json'),
+    JSON.stringify(
+      {
+        format: 'burrito',
+        meta: {
+          version: '0.3',
+          category: 'scripture',
+          generator: {
+            softwareName: 'apm',
+            softwareVersion: '1',
+            userName: 't',
+          },
+          defaultLocale: 'en',
+          dateCreated: '2025-01-01T00:00:00.000Z',
+        },
+        identification: { name: { en: 'Malformed ApmData Fixture' } },
+        languages: [{ tag: 'und', name: { en: 'Unknown' } }],
+        type: {
+          flavorType: {
+            name: 'x-apmdata',
+            flavor: { name: 'x-apmdata' },
+            currentScope: scope,
+          },
+        },
+        ingredients,
+      },
+      null,
+      2
+    )
+  );
+}
+
+/**
  * @param {string} rootDir
  * @returns {Promise<void>}
  */
@@ -485,4 +554,32 @@ test('burrito import preserves publishing rows from ApmData', async () => {
     assert.ok(references.includes('Note 1'), 'note publishing row');
     assert.ok(references.includes('1:1-5'), 'audio passage row');
   });
+});
+
+test('burrito import falls back when ApmData tables contain malformed JSON', async () => {
+  const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), 'burrito-ptf-'));
+  const outputDir = path.join(rootDir, 'out');
+  await fs.mkdir(outputDir, { recursive: true });
+  try {
+    await writeAudioBurrito(rootDir);
+    await writeMalformedApmDataBurrito(rootDir);
+    await transformBurritoToPTF({
+      input: rootDir,
+      output: outputDir,
+      book: BOOK,
+      optionsJson: '{}',
+      jsonResult: true,
+    });
+    const files = await fs.readdir(outputDir);
+    const ptfFile = files.find((f) => f.endsWith('.ptf'));
+    assert.ok(ptfFile, 'expected a .ptf file');
+    const table = readPtfTable(path.join(outputDir, ptfFile), 'C_orgworkflowsteps.json');
+    const names = table.data.map((step) => step.attributes?.name);
+    assert.ok(
+      names.includes('MarkVerses'),
+      'malformed ApmData should fall back to migration sample workflow steps'
+    );
+  } finally {
+    await fs.rm(rootDir, { recursive: true, force: true });
+  }
 });

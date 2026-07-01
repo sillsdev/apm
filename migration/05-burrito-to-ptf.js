@@ -1481,9 +1481,7 @@ async function transformBurritoToPTF(cli) {
     pathToFileURL(path.join(__dirname, 'burrito-apmdata.mjs')).href
   );
   if (apmdataSister) {
-    console.log(
-      `  Using ApmData burrito for plan structure: ${apmdataSister.pkg.label}`
-    );
+    console.log(`  Found ApmData burrito: ${apmdataSister.pkg.label}`);
   }
 
   for (const pkg of packages) {
