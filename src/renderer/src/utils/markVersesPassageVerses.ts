@@ -15,10 +15,34 @@ const MARK_VERSES_LETTER_SUFFIX = /^[a-e]$/i;
 export const normalizeMarkVersesLetterSuffix = (suffix: string) =>
   MARK_VERSES_LETTER_SUFFIX.test(suffix) ? suffix.toLowerCase() : '';
 
+export interface VerseNumberAndSuffix {
+  verseNumber: number;
+  verseLetterSuffix: string;
+}
+
+/**
+ * Split a single verse token into its numeric verse and optional letter suffix.
+ * Accepts a bare number (`2` or `"2"`) or a string carrying a Mark Verses letter
+ * suffix (`"2b"` -> `{ verseNumber: 2, verseLetterSuffix: 'b' }`). A missing or unrecognized
+ * suffix yields `''`. Returns `undefined` when there is no verse number
+ * (empty/nullish input, or trailing garbage such as `"2bb"`).
+ */
+export const splitVerseSuffix = (
+  value: string | number | null | undefined
+): VerseNumberAndSuffix | undefined => {
+  if (value === null || value === undefined) return undefined;
+  const match = /^(\d+)([a-e]?)$/i.exec(String(value).trim());
+  if (!match) return undefined;
+  return {
+    verseNumber: parseInt(match[1], 10),
+    verseLetterSuffix: normalizeMarkVersesLetterSuffix(match[2] ?? ''),
+  };
+};
+
 export interface ParsedMarkVersesReferencePart {
   chapter: number;
   verse: number;
-  suffix: string;
+  verseLetterSuffix: string;
 }
 
 export interface ParsedMarkVersesReference {
@@ -38,17 +62,20 @@ const parseMarkVersesReferencePart = (
     return {
       chapter: fallbackChapter,
       verse: parseInt(trimmed, 10),
-      suffix: '',
+      verseLetterSuffix: '',
     };
   }
 
-  const match = /^(?:(\d+):)?(\d+)([a-e]?)$/i.exec(trimmed);
+  const match = /^(?:(\d+):)?(\d+[a-e]?)$/i.exec(trimmed);
   if (!match) return undefined;
+
+  const versePart = splitVerseSuffix(match[2]);
+  if (!versePart) return undefined;
 
   return {
     chapter: match[1] ? parseInt(match[1], 10) : fallbackChapter,
-    verse: parseInt(match[2], 10),
-    suffix: normalizeMarkVersesLetterSuffix(match[3] ?? ''),
+    verse: versePart.verseNumber,
+    verseLetterSuffix: versePart.verseLetterSuffix,
   };
 };
 
@@ -78,7 +105,7 @@ export const parseMarkVersesReference = (
       end: {
         chapter: start.chapter,
         verse: start.verse,
-        suffix: endText.toLowerCase(),
+        verseLetterSuffix: endText.toLowerCase(),
       },
     };
   }
@@ -90,7 +117,9 @@ export const parseMarkVersesReference = (
 
 export const markVersesReferenceHasLetterSuffix = (
   parsed: ParsedMarkVersesReference
-) => Boolean(parsed.start.suffix) || Boolean(parsed.end.suffix);
+) =>
+  Boolean(parsed.start.verseLetterSuffix) ||
+  Boolean(parsed.end.verseLetterSuffix);
 
 /** Returns `'b'` for `'a'`, `'c'` for `'b'`, ... up to `'e'`. Returns `undefined` past `'e'`, for empty input, or non-letter input. */
 export const nextMarkVersesLetterSuffix = (
@@ -108,7 +137,7 @@ export const incrementMarkVersesReferenceSuffix = (
 ): string | undefined => {
   const parsed = parseMarkVersesReference(ref);
   if (!parsed) return undefined;
-  const endSuffix = parsed.end.suffix;
+  const endSuffix = parsed.end.verseLetterSuffix;
   if (!endSuffix) return undefined;
   const nextSuffix = nextMarkVersesLetterSuffix(endSuffix);
   if (!nextSuffix) return undefined;
@@ -255,7 +284,9 @@ export const normalizeEditReferenceDraft = <T extends EditReferenceComparable>(
 };
 
 /** Apply save-path normalization (strip suffixes when split is off). */
-export const normalizeEditReferenceForSave = <T extends EditReferenceComparable>(
+export const normalizeEditReferenceForSave = <
+  T extends EditReferenceComparable,
+>(
   value: T
 ): T =>
   value.splitVerse ? value : { ...value, startSuffix: '', endSuffix: '' };

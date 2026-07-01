@@ -91,12 +91,11 @@ import {
 } from '../../../../components/WSAudioPlayerSegment';
 import { getMarkVersesAutosaveBlockers } from '../../../../utils/markVersesValidation';
 import {
-  decideMarkVersesEditReferenceAction,
+  shouldAutoRenumberAfterEdit,
   evaluateMarkVersesReferenceStatus,
   markVersesSkippedPassageRefs,
   type MarkVersesWarningReason,
 } from '../../../../utils/markVersesEditReference';
-import { getLastVerse } from '../../../../business/localParatext/getLastVerse';
 import { verseToolId } from '../../markVersesTool';
 const emptySegments = JSON.stringify({ regions: [] });
 /** Distance (seconds) used for Add (must be away from boundaries) and Remove (must be at a join). */
@@ -813,11 +812,8 @@ export default function PassageDetailMarkVersesIsMobile({
     [findCurrentTableRowIndex, setActiveRowHighlight]
   );
 
-  /** Versification lookup bound to the passage's book (used for range checks). */
-  const lastVerseForBook = useCallback(
-    (chapter: number) => getLastVerse(passage?.attributes?.book ?? '', chapter),
-    [passage]
-  );
+  /** The passage's book code, used for versification range checks. */
+  const book = passage?.attributes?.book ?? '';
 
   /**
    * Localized tooltip for a flagged reference. Mirrors the message mapping the
@@ -896,7 +892,7 @@ export default function PassageDetailMarkVersesIsMobile({
           value,
           dataRefs,
           rowIdx,
-          lastVerseForBook
+          passage
         );
         const precedingReference =
           rowIdx > 0 ? dataRefs[rowIdx - 1] : undefined;
@@ -910,7 +906,7 @@ export default function PassageDetailMarkVersesIsMobile({
       });
       return tableData;
     },
-    [lastVerseForBook, referenceWarningMessage, buildReferenceCell]
+    [book, referenceWarningMessage, buildReferenceCell]
   );
 
   /** Assign passage refs after the saved range; add rows when the range no longer covers them. */
@@ -1166,15 +1162,6 @@ export default function PassageDetailMarkVersesIsMobile({
         ? passageRefs.current
         : getPassageRefs(passage);
 
-    const editAction = decideMarkVersesEditReferenceAction({
-      newReference,
-      tableReferences,
-      rowIndex: startRowIndex - 1,
-      getLastVerse: lastVerseForBook,
-      passageStartRef: passageRange[0] ?? '',
-      passageEndRef: passageRange[passageRange.length - 1] ?? '',
-    });
-
     // Set the edited value; the whole-table warning pass below assigns its
     // status and tooltip (and re-evaluates every other row).
     row[ColName.Ref] = buildReferenceCell(
@@ -1206,9 +1193,15 @@ export default function PassageDetailMarkVersesIsMobile({
     // should lead with the next letter (`1:3b`).
     const leadingRef = incrementMarkVersesReferenceSuffix(newReference);
 
+    const renumber = shouldAutoRenumberAfterEdit({
+      newReference,
+      tableReferences,
+      rowIndex: startRowIndex - 1,
+      passage,
+    });
     if (
-      editAction === 'renumber' &&
-      startPassageIdx >= 0 &&
+      renumber &&
+      startPassageIdx >= 0 && // TODO why these checks?
       endPassageIdx >= 0
     ) {
       redistributeTableTailAfterSave(

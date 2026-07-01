@@ -7,10 +7,11 @@ import {
   isValidMarkVersesReference,
   isWellFormedMarkVersesReference,
   markVersesReferenceConsecutivelyFollows,
+  markVersesReferenceStartsPassage,
   markVersesSkippedPassageRefs,
-  type GetLastVerse,
   type MarkVersesEditReferenceContext,
 } from './markVersesEditReference';
+import { PassageD } from '../model';
 
 /**
  * TDD spec for the "what happens when a user edits a Mark Verses reference"
@@ -18,37 +19,16 @@ import {
  *
  * "Re-number" === the redistribute-tail behavior in
  * redistributeTableTailAfterSave (PassageDetailMarkVersesIsMobile).
+ *
+ * Versification comes from the real `eng-vrs` table via `getLastVerse`, so the
+ * tests reference real books whose chapter shapes exercise the rules:
+ * - `longChapter1` = `LUK`: chapter 1 has 80 verses (ch2=52, ch3=38, ch4=44),
+ *   so 1:20 is NOT the last verse of its chapter — used for same-chapter cases.
+ * - `chapter1EndsAt20` = `REV`: chapter 1 ends at verse 20, so 1:20 -> 2:1 is
+ *   the legitimate chapter boundary — used for the cross-chapter cases.
  */
-
-/**
- * Versification stub where chapter 1 is long (80 verses), so 1:20 is NOT the
- * last verse of the chapter. Chapters 1..24 exist (LUK-shaped). Used for the
- * common same-chapter cases.
- */
-const longChapter1: GetLastVerse = (chapter) => {
-  const lengths: Record<number, number> = {
-    1: 80,
-    2: 52,
-    3: 38,
-    4: 44,
-  };
-  if (chapter >= 1 && chapter <= 24) return lengths[chapter] ?? 50;
-  return null;
-};
-
-/**
- * Versification stub where chapter 1 ends at verse 20, so 1:20 -> 2:1 is the
- * legitimate chapter boundary. Used specifically for the cross-chapter cases.
- */
-const chapter1EndsAt20: GetLastVerse = (chapter) => {
-  const lengths: Record<number, number> = {
-    1: 20,
-    2: 25,
-    3: 30,
-  };
-  if (chapter >= 1 && chapter <= 3) return lengths[chapter] ?? null;
-  return null;
-};
+const longChapter1 = 'LUK';
+const chapter1EndsAt20 = 'REV';
 
 describe('isWellFormedMarkVersesReference', () => {
   it.each([
@@ -227,7 +207,7 @@ describe('decideMarkVersesEditReferenceAction', () => {
     newReference: '',
     tableReferences: [],
     rowIndex: 1,
-    getLastVerse: longChapter1,
+    book: longChapter1,
     // Wide passage bounds so the existing cases turn only on the numbering
     // rules; the passage-bounds behavior is exercised separately below.
     passageStartRef: '1:1',
@@ -652,5 +632,82 @@ describe('isMarkVersesReferenceInPassage', () => {
       expect(isMarkVersesReferenceInPassage('1:1', '', '1:3')).toBe(false);
       expect(isMarkVersesReferenceInPassage('1:1', '1:1', 'junk')).toBe(false);
     });
+  });
+});
+
+/**
+ * Spec for whether a reference's *start* lands exactly on the passage's start
+ * verse.
+ *
+ * Contract: true only when the reference parses and its start chapter:verse
+ * equals the passage's `startChapter`:`startVerse` and lands on the beginning of
+ * that verse. Only the start of the reference matters (a range is judged by where
+ * it begins). A letterless start or part `a` is the beginning of the verse; a
+ * later subpart (`b`, `c`, …) starts mid-verse and does not match. A passage
+ * missing either start attribute — or an unparseable reference — is never a match.
+ */
+describe('markVersesReferenceStartsPassage', () => {
+  // Minimal passage stub: the function only reads attributes.startChapter and
+  // attributes.startVerse.
+  const passage = (startChapter?: number, startVerse?: number): PassageD =>
+    ({ attributes: { startChapter, startVerse } }) as PassageD;
+
+  it('accepts a single verse sitting on the passage start', () => {
+    expect(markVersesReferenceStartsPassage('1:5', passage(1, 5))).toBe(true);
+  });
+
+  it('accepts a range whose start is the passage start (judged by its start)', () => {
+    expect(markVersesReferenceStartsPassage('1:5-8', passage(1, 5))).toBe(true);
+  });
+
+  it('accepts part a on the start (part a is the beginning of the verse)', () => {
+    expect(markVersesReferenceStartsPassage('1:5a', passage(1, 5))).toBe(true);
+  });
+
+  it('rejects a later subpart on the start (only part a begins the verse)', () => {
+    // 1:5b starts partway through verse 5, so it does not sit on the passage
+    // start (verse 5, which begins at part a).
+    expect(markVersesReferenceStartsPassage('1:5b-7', passage(1, 5))).toBe(
+      false
+    );
+  });
+
+  it('accepts a cross-chapter passage start', () => {
+    expect(markVersesReferenceStartsPassage('1:30-2:2', passage(1, 30))).toBe(
+      true
+    );
+  });
+
+  it('rejects a different verse in the same chapter', () => {
+    expect(markVersesReferenceStartsPassage('1:6', passage(1, 5))).toBe(false);
+    expect(markVersesReferenceStartsPassage('1:4', passage(1, 5))).toBe(false);
+  });
+
+  it('rejects a matching verse number in a different chapter', () => {
+    expect(markVersesReferenceStartsPassage('2:5', passage(1, 5))).toBe(false);
+  });
+
+  it('rejects a range that ends at the passage start but begins before it', () => {
+    // Judged by the start (1:3), not the end (1:5).
+    expect(markVersesReferenceStartsPassage('1:3-5', passage(1, 5))).toBe(
+      false
+    );
+  });
+
+  it('rejects an unparseable reference', () => {
+    expect(markVersesReferenceStartsPassage('foo', passage(1, 5))).toBe(false);
+    expect(markVersesReferenceStartsPassage('', passage(1, 5))).toBe(false);
+  });
+
+  it('rejects when the passage has no start chapter', () => {
+    expect(markVersesReferenceStartsPassage('1:5', passage(undefined, 5))).toBe(
+      false
+    );
+  });
+
+  it('rejects when the passage has no start verse', () => {
+    expect(markVersesReferenceStartsPassage('1:5', passage(1, undefined))).toBe(
+      false
+    );
   });
 });

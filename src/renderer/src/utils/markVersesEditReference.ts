@@ -6,34 +6,22 @@
  * `redistributeTableTailAfterSave` performs in PassageDetailMarkVersesIsMobile:
  * pushing the passage refs after the edited range down/into the following rows.
  *
- * This module is intentionally pure and book-agnostic: the caller injects a
- * `getLastVerse(chapter)` lookup (bound to the passage's book) so the
- * chapter-boundary rules (e.g. is `1:20 -> 2:1` consecutive?) can be unit
- * tested. That lookup mirrors `business/localParatext/getLastVerse`, which is
- * the existing source of truth for "how many verses are in a chapter" (the
- * `eng-vrs` versification table). The same data already powers `refMatch`'s
- * `endChapter === startChapter + 1` rule used to validate cross-chapter refs.
+ * The caller passes the passage's `book`; chapter-verse lookups go through
+ * `business/localParatext/getLastVerse`, the existing source of truth for "how
+ * many verses are in a chapter" (the `eng-vrs` versification table). That is the
+ * same data powering `refMatch`'s `endChapter === startChapter + 1` rule used to
+ * validate cross-chapter refs. Unit tests exercise the chapter-boundary rules
+ * (e.g. is `1:20 -> 2:1` consecutive?) with real book codes — `LUK` for a long
+ * chapter 1 (80 verses), `REV` for a chapter 1 that ends at verse 20.
  */
 import { refMatch } from './refMatch';
+import { getLastVerse } from '../business/localParatext/getLastVerse';
 import {
   nextMarkVersesLetterSuffix,
   parseMarkVersesReference,
+  splitVerseSuffix,
 } from './markVersesPassageVerses';
-
-/** Last (highest) verse number for a chapter, or null when the chapter is out of range. */
-export type GetLastVerse = (chapter: number) => number | null;
-
-/**
- * What to do with the surrounding table after a reference edit.
- * - `renumber`: run the existing redistribute-tail logic.
- * - `none`: leave numbering untouched.
- *
- * This decides numbering only. Whether a row is *flagged* with a warning is
- * owned by `evaluateMarkVersesReferenceStatus`,
- * applied per row both on load and after an edit, so a freshly-loaded table
- * flags the same problems an edit would.
- */
-export type MarkVersesEditReferenceAction = 'renumber' | 'none';
+import { PassageD } from '@model/index';
 
 export interface MarkVersesEditReferenceContext {
   /** The edited row's reference text after the edit (e.g. `1:6-7`). */
@@ -46,12 +34,7 @@ export interface MarkVersesEditReferenceContext {
    * source of truth for the edited row.
    */
   rowIndex: number;
-  /** Versification lookup bound to the passage's book. */
-  getLastVerse: GetLastVerse;
-  /** First verse ref of the passage (its lower bound), e.g. `1:30`. */
-  passageStartRef: string;
-  /** Last verse ref of the passage (its upper bound), e.g. `2:2`. */
-  passageEndRef: string;
+  passage: PassageD;
 }
 
 /** Well-formatted per the established table rules (delegates to refMatch). */
@@ -59,35 +42,31 @@ export const isWellFormedMarkVersesReference = (ref: string): boolean =>
   Boolean(ref) && refMatch(ref) !== null;
 
 const verseInChapter = (
+  book: string,
   chapter: number,
-  verse: number,
-  getLastVerse: GetLastVerse
+  verse: number
 ): boolean => {
-  const last = getLastVerse(chapter);
+  const last = getLastVerse(book, chapter);
   if (last === null || last === undefined) return false;
   return verse >= 1 && verse <= last;
 };
 
 /** Both endpoint verses exist in their chapters. */
-export const isRefInVersification = (
-  ref: string,
-  getLastVerse: GetLastVerse
-): boolean => {
+export const isRefInVersification = (ref: string, book: string): boolean => {
   const parsed = parseMarkVersesReference(ref);
   if (!parsed) return false;
   return (
-    verseInChapter(parsed.start.chapter, parsed.start.verse, getLastVerse) &&
-    verseInChapter(parsed.end.chapter, parsed.end.verse, getLastVerse)
+    verseInChapter(book, parsed.start.chapter, parsed.start.verse) &&
+    verseInChapter(book, parsed.end.chapter, parsed.end.verse)
   );
 };
 
 /** Well-formatted AND in verses exist in chapters */
 export const isValidMarkVersesReference = (
   ref: string,
-  getLastVerse: GetLastVerse
+  book: string
 ): boolean =>
-  isWellFormedMarkVersesReference(ref) &&
-  isRefInVersification(ref, getLastVerse);
+  isWellFormedMarkVersesReference(ref) && isRefInVersification(ref, book);
 
 /**
  * True when `nextRef`'s start consecutively follows `prevRef`'s end with no gap,
@@ -107,7 +86,7 @@ export const isValidMarkVersesReference = (
 export const markVersesReferenceConsecutivelyFollows = (
   prevRef: string,
   nextRef: string,
-  getLastVerse: GetLastVerse
+  book: string
 ): boolean => {
   const prev = parseMarkVersesReference(prevRef);
   const next = parseMarkVersesReference(nextRef);
@@ -121,17 +100,21 @@ export const markVersesReferenceConsecutivelyFollows = (
     nextStart.chapter === prevEnd.chapter &&
     nextStart.verse === prevEnd.verse
   ) {
-    if (!prevEnd.suffix || !nextStart.suffix) return false;
-    return nextStart.suffix === nextMarkVersesLetterSuffix(prevEnd.suffix);
+    if (!prevEnd.verseLetterSuffix || !nextStart.verseLetterSuffix)
+      return false;
+    return (
+      nextStart.verseLetterSuffix ===
+      nextMarkVersesLetterSuffix(prevEnd.verseLetterSuffix)
+    );
   }
 
   // Moving to a new verse requires the previous verse to be complete. A split
   // verse needs at least parts a and b, so an end suffix of exactly 'a' is
   // incomplete; '' (whole verse) or >= 'b' is complete.
-  if (prevEnd.suffix === 'a') return false;
+  if (prevEnd.verseLetterSuffix === 'a') return false;
 
   // The verse immediately after prevEnd, rolling chapters via versification.
-  const lastVerse = getLastVerse(prevEnd.chapter);
+  const lastVerse = getLastVerse(book, prevEnd.chapter);
   if (lastVerse === null || lastVerse === undefined) return false;
   if (prevEnd.verse > lastVerse) return false;
 
@@ -147,7 +130,8 @@ export const markVersesReferenceConsecutivelyFollows = (
   }
 
   // A newly started split verse must begin at part a.
-  if (nextStart.suffix && nextStart.suffix !== 'a') return false;
+  if (nextStart.verseLetterSuffix && nextStart.verseLetterSuffix !== 'a')
+    return false;
 
   return true;
 };
@@ -155,16 +139,10 @@ export const markVersesReferenceConsecutivelyFollows = (
 /** Every adjacent pair of rows consecutively follows. */
 export const isMarkVersesTableConsecutive = (
   refs: string[],
-  getLastVerse: GetLastVerse
+  book: string
 ): boolean => {
   for (let i = 1; i < refs.length; i += 1) {
-    if (
-      !markVersesReferenceConsecutivelyFollows(
-        refs[i - 1],
-        refs[i],
-        getLastVerse
-      )
-    ) {
+    if (!markVersesReferenceConsecutivelyFollows(refs[i - 1], refs[i], book)) {
       return false;
     }
   }
@@ -223,36 +201,46 @@ const verseSubpartKey = (
  */
 export const isMarkVersesReferenceInPassage = (
   ref: string,
-  passageStartRef: string,
-  passageEndRef: string
+  passage: PassageD
 ): boolean => {
   const parsed = parseMarkVersesReference(ref);
-  const passageStart = parseMarkVersesReference(passageStartRef);
-  const passageEnd = parseMarkVersesReference(passageEndRef);
-  if (!parsed || !passageStart || !passageEnd) return false;
+  const passageStartChapter = passage.attributes.startChapter;
+  const passageEndChapter = passage.attributes.endChapter;
+  // startVerse/endVerse may carry a letter suffix (e.g. `2b`); split it out so
+  // the passage bounds are subpart-aware like the reference being tested.
+  const passageStart = splitVerseSuffix(passage.attributes.startVerse);
+  const passageEnd = splitVerseSuffix(passage.attributes.endVerse);
+  if (
+    !parsed ||
+    !passageStartChapter ||
+    !passageEndChapter ||
+    !passageStart ||
+    !passageEnd
+  )
+    return false;
 
   const lowerBound = verseSubpartKey(
-    passageStart.start.chapter,
-    passageStart.start.verse,
-    passageStart.start.suffix,
+    passageStartChapter,
+    passageStart.verseNumber,
+    passageStart.verseLetterSuffix,
     false
   );
   const upperBound = verseSubpartKey(
-    passageEnd.end.chapter,
-    passageEnd.end.verse,
-    passageEnd.end.suffix,
+    passageEndChapter,
+    passageEnd.verseNumber,
+    passageEnd.verseLetterSuffix,
     true
   );
   const refStart = verseSubpartKey(
     parsed.start.chapter,
     parsed.start.verse,
-    parsed.start.suffix,
+    parsed.start.verseLetterSuffix,
     false
   );
   const refEnd = verseSubpartKey(
     parsed.end.chapter,
     parsed.end.verse,
-    parsed.end.suffix,
+    parsed.end.verseLetterSuffix,
     true
   );
 
@@ -268,14 +256,14 @@ export const isMarkVersesReferenceInPassage = (
 const markVersesReferenceSkipsAhead = (
   prevRef: string,
   newRef: string,
-  getLastVerse: GetLastVerse
+  book: string
 ): boolean => {
   const prev = parseMarkVersesReference(prevRef);
   const next = parseMarkVersesReference(newRef);
   if (!prev || !next) return false;
 
   const prevEnd = prev.end;
-  const lastVerse = getLastVerse(prevEnd.chapter);
+  const lastVerse = getLastVerse(book, prevEnd.chapter);
   if (lastVerse === null || lastVerse === undefined) return false;
   if (prevEnd.verse > lastVerse) return false;
 
@@ -379,92 +367,103 @@ export type MarkVersesWarningReason =
  * above, or merely backfills an earlier gap, yields no reason.
  */
 export const evaluateMarkVersesReferenceStatus = (
-  reference: string,
-  tableReferences: string[],
-  rowIndex: number,
-  getLastVerse: GetLastVerse
+  ctx: MarkVersesEditReferenceContext
 ): { reason?: MarkVersesWarningReason } => {
-  if (!isNonEmptyRef(reference)) return {};
-  if (!isValidMarkVersesReference(reference)) {
+  const { newReference, tableReferences, rowIndex, passage } = ctx;
+  if (!isNonEmptyRef(newReference)) return {};
+  if (
+    !isValidMarkVersesReference(newReference, passage.attributes.book) ||
+    !isRefInVersification(newReference, passage.attributes.book)
+  ) {
     return { reason: 'illFormatted' };
   }
-  if (!isRefInVersification(reference, getLastVerse)) {
+  if (!isMarkVersesReferenceInPassage(newReference, passage)) {
     return { reason: 'outOfRange' };
   }
-  if (overlapsEarlierRow(tableReferences, rowIndex, reference)) {
+  if (overlapsEarlierRow(tableReferences, rowIndex, newReference)) {
     return { reason: 'overlap' };
   }
   const precedingReference =
     rowIndex > 0 ? tableReferences[rowIndex - 1] : undefined;
   if (
     isNonEmptyRef(precedingReference) &&
-    markVersesReferenceSkipsAhead(precedingReference, reference, getLastVerse)
+    markVersesReferenceSkipsAhead(
+      precedingReference,
+      newReference,
+      passage.attributes.book
+    )
   ) {
     return { reason: 'skipsAhead' };
   }
   return {};
 };
 
-// TODO: better check for start matching the right passage (below)
-// and for end going out of passage (see getLastVerse)
+/** True when `ref`'s start sits exactly at the passage's start verse. */
+export const markVersesReferenceStartsPassage = (
+  ref: string,
+  passage: PassageD
+): boolean => {
+  const parsed = parseMarkVersesReference(ref);
+  const { startChapter, startVerse } = passage.attributes;
+  if (!parsed || startChapter === undefined || startVerse === undefined) {
+    return false;
+  }
+  // The start must land on the *beginning* of the passage's start verse: only a
+  // letterless start or part `a` begins the verse; a later subpart (`b`, `c`, …)
+  // starts mid-verse and does not sit on the passage start.
+  const suffix = parsed.start.verseLetterSuffix;
+  if (suffix && suffix !== 'a') {
+    return false;
+  }
+  return (
+    verseOrderKey(parsed.start.chapter, parsed.start.verse) ===
+    verseOrderKey(startChapter, startVerse)
+  );
+};
 
 /**
  * Decide whether an Edit Reference save should re-number the tail (`renumber`)
  * or leave the table alone (`none`). Row flagging is handled separately by
  * `evaluateMarkVersesReferenceStatus`.
- *
- * The rules (see markVersesEditReference.test.ts for worked examples):
- * 1. If anything anywhere in the resulting table is ill-formatted or out of
- *    range, never re-number — we can't reason about the numbering.
- * 2. If the new start does not consecutively follow the end of the row above
- *    it, don't re-number. (The first data row has nothing above it, so it
- *    trivially passes.)
- * 3. Otherwise re-number only when everything above the edited row is sequential
- *    and everything below it is sequential. The lone discontinuity that
- *    re-numbering heals is the gap between the edited row's end number and the
- *    row below it; a break anywhere else (above, or further down the tail) is
- *    left untouched so we never silently shift rows the user did not edit.
- */
-export const decideMarkVersesEditReferenceAction = (
+ **/
+export const shouldAutoRenumberAfterEdit = (
   ctx: MarkVersesEditReferenceContext
-): MarkVersesEditReferenceAction => {
-  const {
-    newReference,
-    tableReferences,
-    rowIndex,
-    getLastVerse,
-    passageStartRef,
-    passageEndRef,
-  } = ctx;
+): boolean => {
+  const { newReference, tableReferences, rowIndex, passage } = ctx;
 
   const editedTable = tableReferences.map((ref, index) =>
     index === rowIndex ? newReference : ref
   );
 
-  // Rule 1: anything ill-formatted or out of range anywhere in the table blocks
+  // Rule 1: any bad references anywhere in the edited table block
   // re-numbering.
   const anyBadReferences = editedTable.some(
     (ref) =>
       isNonEmptyRef(ref) &&
-      (!isValidMarkVersesReference(ref, getLastVerse) ||
-        !isMarkVersesReferenceInPassage(ref, passageStartRef, passageEndRef))
+      (!isValidMarkVersesReference(ref, passage.attributes.book) ||
+        !isMarkVersesReferenceInPassage(ref, passage))
   );
-  if (anyBadReferences) return 'none';
+  if (anyBadReferences) return false;
 
-  // Rule 2: the new start must consecutively follow the end of the row above it.
+  // Rule 2: if the new passage is not the next consecutive passage
+  // don't re-number. The first data row must be the start of the passage to allow re-numbering
   const precedingReference = editedTable
     .slice(0, rowIndex)
     .filter(isNonEmptyRef)
     .pop();
-  if (
-    isNonEmptyRef(precedingReference) &&
-    !markVersesReferenceConsecutivelyFollows(
-      precedingReference,
-      newReference,
-      getLastVerse
-    )
-  ) {
-    return 'none';
+  if (isNonEmptyRef(precedingReference)) {
+    // A data row above the edit: the new start must consecutively follow it.
+    if (
+      !markVersesReferenceConsecutivelyFollows(
+        precedingReference,
+        newReference,
+        passage.attributes.book
+      )
+    ) {
+      return false;
+    }
+  } else if (!markVersesReferenceStartsPassage(newReference, passage)) {
+    return false;
   }
 
   // Rule 3: re-number only when both halves around the edited row are already
@@ -472,11 +471,11 @@ export const decideMarkVersesEditReferenceAction = (
   const above = editedTable.slice(0, rowIndex).filter(isNonEmptyRef);
   const below = editedTable.slice(rowIndex + 1).filter(isNonEmptyRef);
   if (
-    isMarkVersesTableConsecutive(above, getLastVerse) &&
-    isMarkVersesTableConsecutive(below, getLastVerse)
+    isMarkVersesTableConsecutive(above, passage.attributes.book) &&
+    isMarkVersesTableConsecutive(below, passage.attributes.book)
   ) {
-    return 'renumber';
+    return true;
   }
 
-  return 'none';
+  return false;
 };
