@@ -377,6 +377,7 @@ export const useCreateBurrito = (teamId: string) => {
         metadata: metaData,
         partPath,
         preLen,
+        apmDataProjects,
       });
       if (cancelRef.current) return;
       onBookComplete(partIndex, 1, '', 1);

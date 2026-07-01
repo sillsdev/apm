@@ -13,6 +13,15 @@ jest.mock('../store/importexport/projectDataExport', () => ({
   getOrganizationIntellectualPropertyFiles: jest.fn(),
 }));
 
+jest.mock('../crud/useProjectDefaults', () => ({
+  projDefBook: 'book',
+  useProjectDefaults: jest.fn(),
+}));
+
+jest.mock('../utils/useNum2BookCode', () => ({
+  useNum2BookCode: () => () => 'JAS',
+}));
+
 jest.mock('../utils/dataPath', () => ({
   __esModule: true,
   PathType: { MEDIA: 'MEDIA' },
@@ -64,6 +73,14 @@ async function loadIpHookForApi(
   (getOrganizationIntellectualPropertyFiles as jest.Mock).mockReturnValue(
     exportPayload
   );
+  const { useProjectDefaults } = await import('../crud/useProjectDefaults');
+  (useProjectDefaults as jest.Mock).mockReturnValue({
+    getProjectDefault: jest.fn(() => 'B59'),
+    setProjectDefault: jest.fn(),
+    canSetProjectDefault: true,
+    getLocalDefault: jest.fn(),
+    setLocalDefault: jest.fn(),
+  });
   const memoryStub = buildSpeakerRightsMemoryStub(
     buildJamesSpeakerRightsFixture()
   ) as unknown as Memory;
@@ -118,6 +135,7 @@ describe('useBurritoIntellectualProperty', () => {
     const stat = jest.fn().mockResolvedValue(JSON.stringify({ size: 1024 }));
 
     const fixture = buildJamesSpeakerRightsFixture();
+    const apmDataProjects = [fixture.project];
     const {
       renderHook,
       act,
@@ -139,6 +157,7 @@ describe('useBurritoIntellectualProperty', () => {
         metadata: burritoFixture(),
         partPath: '/burrito/TST/intellectualproperty',
         preLen: 0,
+        apmDataProjects,
       });
     });
 
@@ -183,10 +202,11 @@ describe('useBurritoIntellectualProperty', () => {
     });
     expect(ipIngredient.scope).toBeUndefined();
 
-    expect(updated!.type!.flavorType!.name).toBe('x-intellectualproperty');
+    expect(updated!.type!.flavorType!.name).toBe('scripture');
     expect(updated!.type!.flavorType!.flavor.name).toBe(
       'x-intellectualproperty'
     );
+    expect(updated!.type!.flavorType!.currentScope).toEqual({ JAS: [] });
 
     const ingredientMime = (filename: string) => {
       const key = Object.keys(updated!.ingredients).find((k) =>

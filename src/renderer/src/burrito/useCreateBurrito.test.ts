@@ -739,7 +739,7 @@ describe('useCreateBurrito', () => {
             ...metadata.type,
             flavorType: {
               ...metadata.type?.flavorType,
-              name: 'x-intellectualproperty',
+              name: 'scripture',
               flavor: { name: 'x-intellectualproperty' },
             },
           },

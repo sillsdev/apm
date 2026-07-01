@@ -3,13 +3,16 @@ import { Burrito, BurritoIngredients } from './data/types';
 import { MainAPI } from '@model/main-api';
 import { getOrganizationIntellectualPropertyFiles } from '../store/importexport/projectDataExport';
 import Memory from '@orbit/memory';
-import { MediaFileD } from '../model';
+import { MediaFileD, ProjectD } from '../model';
 import dataPath, { PathType } from '../utils/dataPath';
 import getMediaExt from '../utils/getMediaExt';
 import getBurritoMediaExportStem from '../utils/burritoMediaFileStem';
 import cleanFileName from '../utils/cleanFileName';
 import { inferAudioContentType } from '../utils/mimeTypes';
 import { Stats } from 'fs';
+import { useProjectDefaults } from '../crud/useProjectDefaults';
+import { useNum2BookCode } from '../utils/useNum2BookCode';
+import { burritoCurrentScopeForProjects } from './akuoBookToUsfm';
 
 const ipc = window?.api as MainAPI;
 
@@ -17,6 +20,8 @@ interface Props {
   metadata: Burrito;
   partPath: string;
   preLen: number;
+  /** Selected burrito projects; scope matches the ApmData burrito `currentScope`. */
+  apmDataProjects: ProjectD[];
 }
 
 const stemForMedia = (
@@ -38,7 +43,15 @@ export const useBurritoIntellectualProperty = (
   memory: Memory,
   organizationId: string
 ) => {
-  return async ({ metadata, partPath, preLen }: Props): Promise<Burrito> => {
+  const { getProjectDefault } = useProjectDefaults();
+  const num2BookCode = useNum2BookCode();
+
+  return async ({
+    metadata,
+    partPath,
+    preLen,
+    apmDataProjects,
+  }: Props): Promise<Burrito> => {
     const { dataFiles, releaseMediafiles } =
       getOrganizationIntellectualPropertyFiles(memory, organizationId);
     const ingredients: BurritoIngredients = {};
@@ -94,11 +107,22 @@ export const useBurritoIntellectualProperty = (
     }
 
     metadata.ingredients = { ...metadata.ingredients, ...ingredients };
-    if (metadata.type?.flavorType?.flavor) {
-      metadata.type.flavorType.flavor.name = 'x-intellectualproperty';
+    const currentScope = burritoCurrentScopeForProjects(
+      apmDataProjects,
+      getProjectDefault,
+      num2BookCode
+    );
+    if (Object.keys(currentScope).length && metadata.type?.flavorType) {
+      metadata.type.flavorType.currentScope = {
+        ...metadata.type.flavorType.currentScope,
+        ...currentScope,
+      };
     }
     if (metadata.type?.flavorType) {
-      metadata.type.flavorType.name = 'x-intellectualproperty';
+      metadata.type.flavorType.name = 'scripture';
+      if (metadata.type.flavorType.flavor) {
+        metadata.type.flavorType.flavor.name = 'x-intellectualproperty';
+      }
     }
     return metadata;
   };

@@ -74,7 +74,7 @@ interface Props {
   sections: SectionD[];
   /** When set, only include passages of this type. When null, accept any passage type. Defaults to PASSAGE. */
   passageTypeFilter?: PassageTypeEnum | null;
-  /** When set, overrides type.flavorType.name in metadata (e.g. 'x-notes' for Notes export). */
+  /** When set, sets type.flavorType.flavor.name for custom burritos (e.g. 'x-notes'). */
   flavorTypeName?: string;
   /** When set, only include media files whose artifact type slug is in this list (e.g. Resource, SharedResource, ProjectResource). */
   artifactTypeFilter?: ArtifactTypeSlug[];
@@ -107,7 +107,10 @@ export const useBurritoAudio = (teamId: string) => {
     convertToMp3 = false,
   }: Props) => {
     if (flavorTypeName && metadata.type?.flavorType) {
-      metadata.type.flavorType.name = flavorTypeName;
+      metadata.type.flavorType.name = 'scripture';
+      if (metadata.type.flavorType.flavor) {
+        metadata.type.flavorType.flavor.name = flavorTypeName;
+      }
     }
     const bibleId = bible?.attributes?.bibleId || teamId || '';
     const scopes: Map<string, string[]> = new Map();

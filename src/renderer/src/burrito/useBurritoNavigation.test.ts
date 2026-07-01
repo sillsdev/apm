@@ -349,7 +349,8 @@ describe('useBurritoNavigation', () => {
       });
     });
 
-    expect(metadata.type?.flavorType?.name).toBe('x-nav');
+    expect(metadata.type?.flavorType?.name).toBe('scripture');
+    expect(metadata.type?.flavorType?.flavor?.name).toBe('x-nav');
     expect(
       ipc.createFolder.mock.calls.some((c) => c[0].includes('graphics'))
     ).toBe(false);
@@ -393,7 +394,8 @@ describe('useBurritoNavigation', () => {
       });
     });
 
-    expect(metadata.type?.flavorType?.name).toBe('x-nav');
+    expect(metadata.type?.flavorType?.name).toBe('scripture');
+    expect(metadata.type?.flavorType?.flavor?.name).toBe('x-nav');
     const manifestIngredient = Object.values(metadata.ingredients).find(
       (i) => i.mimeType === 'application/json' && !i.role
     );

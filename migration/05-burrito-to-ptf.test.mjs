@@ -328,7 +328,7 @@ async function writeApmDataBurrito(rootDir, orgWorkflowStepCount) {
         languages: [{ tag: 'und', name: { en: 'Unknown' } }],
         type: {
           flavorType: {
-            name: 'x-apmdata',
+            name: 'scripture',
             flavor: { name: 'x-apmdata' },
             currentScope: scope,
           },
@@ -397,7 +397,7 @@ async function writeMalformedApmDataBurrito(rootDir) {
         languages: [{ tag: 'und', name: { en: 'Unknown' } }],
         type: {
           flavorType: {
-            name: 'x-apmdata',
+            name: 'scripture',
             flavor: { name: 'x-apmdata' },
             currentScope: scope,
           },
@@ -718,9 +718,16 @@ async function withTranscriptionFixture(run) {
       jsonResult: true,
     });
     const files = await fs.readdir(outputDir);
-    const ptfPath = path.join(
-      outputDir,
-      files.find((f) => f.endsWith('.ptf'))
+    const ptfFile = files.find((f) => f.endsWith('.ptf'));
+    assert.ok(ptfFile, 'expected a .ptf file');
+    const table = readPtfTable(
+      path.join(outputDir, ptfFile),
+      'C_orgworkflowsteps.json'
+    );
+    const names = table.data.map((step) => step.attributes?.name);
+    assert.ok(
+      names.includes('MarkVerses'),
+      'malformed ApmData should fall back to migration sample workflow steps'
     );
     assert.ok(ptfPath, 'expected a .ptf file');
     await run(ptfPath);

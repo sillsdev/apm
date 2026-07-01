@@ -215,7 +215,10 @@ export const useBurritoNavigation = (teamId: string) => {
     convertToMp3 = false,
   }: Props) => {
     if (metadata.type?.flavorType) {
-      metadata.type.flavorType.name = 'x-nav';
+      metadata.type.flavorType.name = 'scripture';
+      if (metadata.type.flavorType.flavor) {
+        metadata.type.flavorType.flavor.name = 'x-nav';
+      }
     }
     const bibleId = bible?.attributes?.bibleId || teamId || '';
     const scopes: Map<string, string[]> = new Map();

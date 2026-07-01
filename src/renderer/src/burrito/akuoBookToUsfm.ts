@@ -2,6 +2,10 @@
  * Maps an Akuo-style project book slot (e.g. A01, B02 from project `book` default)
  * to a Paratext/USFM 3-letter book code using the same numbering as ApmData export.
  */
+import type { ProjectD } from '../model';
+import { projDefBook } from '../crud/useProjectDefaults';
+import type { BurritoScopes } from './data/types';
+
 export function akuoBookToUsfm(
   akuoBook: string,
   num2BookCode: (bookNum: number) => string | undefined
@@ -31,4 +35,36 @@ export function projectDefaultToBurritoBookKey(
   if (mapped) return mapped;
   if (/^\d{3}$/.test(def)) return def;
   return undefined;
+}
+
+/** `currentScope` entry for one ApmData / intellectualproperty burrito project. */
+export function burritoCurrentScopeForProject(
+  project: ProjectD,
+  getProjectDefault: (key: string, project: ProjectD) => unknown,
+  num2BookCode: (bookNum: number) => string | undefined
+): BurritoScopes {
+  const bookCode = projectDefaultToBurritoBookKey(
+    (getProjectDefault(projDefBook, project) as string) ?? 'B01',
+    num2BookCode
+  );
+  return bookCode ? { [bookCode]: [] } : {};
+}
+
+/** Union of per-project scopes for the ApmData and intellectualproperty burritos. */
+export function burritoCurrentScopeForProjects(
+  projects: ProjectD[],
+  getProjectDefault: (key: string, project: ProjectD) => unknown,
+  num2BookCode: (bookNum: number) => string | undefined
+): BurritoScopes {
+  return projects.reduce<BurritoScopes>(
+    (scope, project) => ({
+      ...scope,
+      ...burritoCurrentScopeForProject(
+        project,
+        getProjectDefault,
+        num2BookCode
+      ),
+    }),
+    {}
+  );
 }

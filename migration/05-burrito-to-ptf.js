@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
-/* eslint-disable @typescript-eslint/explicit-function-return-type */
 /**
  * Scripture Burrito to APM PTF Transformer
  *
@@ -189,9 +188,15 @@ const BURRITO_PTF_FLAVOR_NAME = 'audioTranslation';
 
 function getBurritoFlavor(metadata) {
   const ft = metadata?.type?.flavorType;
+  const rawTypeName = ft?.name ?? null;
+  const flavorName = ft?.flavor?.name ?? null;
+  // Legacy exports stored the custom flavor in flavorType.name instead of flavor.name.
+  const legacyFlavorInTypeName = rawTypeName?.startsWith('x-')
+    ? rawTypeName
+    : null;
   return {
-    flavorTypeName: ft?.name ?? null,
-    flavorName: ft?.flavor?.name ?? null,
+    flavorTypeName: legacyFlavorInTypeName ? 'scripture' : rawTypeName,
+    flavorName: flavorName ?? legacyFlavorInTypeName,
   };
 }
 
