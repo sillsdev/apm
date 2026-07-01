@@ -91,7 +91,7 @@ import {
 } from '../../../../components/WSAudioPlayerSegment';
 import { getMarkVersesAutosaveBlockers } from '../../../../utils/markVersesValidation';
 import {
-  evaluateMarkVersesEditReference,
+  decideMarkVersesEditReferenceAction,
   evaluateMarkVersesReferenceStatus,
   markVersesSkippedPassageRefs,
   type MarkVersesWarningReason,
@@ -1160,13 +1160,8 @@ export default function PassageDetailMarkVersesIsMobile({
     const tableReferences = dataRef.current
       .slice(1)
       .map((tableRow) => `${(tableRow[ColName.Ref] as ICell)?.value ?? ''}`);
-    const precedingReference =
-      startRowIndex > 1
-        ? `${(newData[startRowIndex - 1]?.[ColName.Ref] as ICell)?.value ?? ''}`
-        : undefined;
-    const { action: editAction } = evaluateMarkVersesEditReference({
+    const editAction = decideMarkVersesEditReferenceAction({
       newReference,
-      precedingReference,
       tableReferences,
       rowIndex: startRowIndex - 1,
       getLastVerse: lastVerseForBook,

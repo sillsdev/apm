@@ -38,14 +38,13 @@ export type MarkVersesEditReferenceAction = 'renumber' | 'none';
 export interface MarkVersesEditReferenceContext {
   /** The edited row's reference text after the edit (e.g. `1:6-7`). */
   newReference: string;
-  /**
-   * Reference of the row immediately above the edited row — its "end number
-   * before it". `undefined` when editing the first data row.
-   */
-  precedingReference?: string;
   /** All data-row references in order, as they exist *before* the edit. */
   tableReferences: string[];
-  /** Index of the edited row within `tableReferences`. */
+  /**
+   * Index of the edited row within `tableReferences`.
+   * `tableReferences[rowIndex]`'s prior value is ignored — `newReference` is the
+   * source of truth for the edited row.
+   */
   rowIndex: number;
   /** Versification lookup bound to the passage's book. */
   getLastVerse: GetLastVerse;
@@ -322,95 +321,69 @@ export const evaluateMarkVersesReferenceStatus = (
   return {};
 };
 
-export interface MarkVersesEditReferenceResult {
-  action: MarkVersesEditReferenceAction;
-}
+// TODO: better check for start matching the right passage (below)
+// and for end going out of passage (see getLastVerse)
 
 /**
- * Evaluate an Edit Reference save: the numbering action to take (`renumber` or
- * `none`). Row flagging is handled separately by
- * `evaluateMarkVersesReferenceStatus`. Branches mirror the spec in
- * markVersesEditReference.test.ts.
- */
-export const evaluateMarkVersesEditReference = (
-  ctx: MarkVersesEditReferenceContext
-): MarkVersesEditReferenceResult => {
-  const {
-    newReference,
-    precedingReference,
-    tableReferences,
-    rowIndex,
-    getLastVerse,
-  } = ctx;
-
-  // Branch 1: if the pre-existing table already has an ill-formatted or
-  // out-of-range reference, never re-number — we can't reason about it.
-  const preExistingInvalid = tableReferences.some(
-    (ref) =>
-      isNonEmptyRef(ref) && !isValidMarkVersesReference(ref, getLastVerse)
-  );
-  if (preExistingInvalid) return { action: 'none' };
-
-  // Branch 2: the result itself is ill-formatted or out of range — leave
-  // numbering untouched (the row gets flagged by the per-row status pass).
-  if (!isValidMarkVersesReference(newReference, getLastVerse)) {
-    return { action: 'none' };
-  }
-
-  const wasConsecutive = isMarkVersesTableConsecutive(
-    tableReferences.filter(isNonEmptyRef),
-    getLastVerse
-  );
-
-  if (wasConsecutive) {
-    // Branch 3: clean table + valid result. Re-number when the new start still
-    // consecutively follows the row above (the dropdown-style edits that keep
-    // the start fixed always do). The first data row has nothing above it.
-    if (!isNonEmptyRef(precedingReference)) return { action: 'renumber' };
-    if (
-      markVersesReferenceConsecutivelyFollows(
-        precedingReference,
-        newReference,
-        getLastVerse
-      )
-    ) {
-      return { action: 'renumber' };
-    }
-    // Anything else (overlaps a row above, skips ahead, or backfills an earlier
-    // gap) leaves numbering alone; the per-row status pass decides whether to
-    // flag it and why.
-    return { action: 'none' };
-  }
-
-  // Branch 4: the table already had a duplicate / gap / non-consecutive
-  // situation. Re-number only if this edit heals everything from the top down
-  // through the edited row, leaving at most an overlap with the row below that
-  // was introduced by the edited row's new end number (which re-numbering the
-  // tail will absorb). Otherwise leave numbering alone.
-  //
-  // OPEN QUESTION (per Noel): is there an edge case here where we would NOT want
-  // to re-number? Candidate: a pre-existing break that lives *below* the edited
-  // row (not caused by this edit) — re-numbering the tail would then silently
-  // shift rows the user never touched. That case is intentionally not handled
-  // yet; see the matching it.todo in the test file.
-  const editedTable = tableReferences.map((ref, index) =>
-    index === rowIndex ? newReference : ref
-  );
-  const throughEdited = editedTable
-    .slice(0, rowIndex + 1)
-    .filter(isNonEmptyRef);
-  const upperHealed = isMarkVersesTableConsecutive(throughEdited, getLastVerse);
-  const hasTail = editedTable.slice(rowIndex + 1).some(isNonEmptyRef);
-  if (upperHealed && hasTail) return { action: 'renumber' };
-
-  return { action: 'none' };
-};
-
-/**
- * Decide whether an Edit Reference save should re-number the tail, flag the
- * edited row, or leave the table alone. See `evaluateMarkVersesEditReference`
- * for the reason behind a `warn`.
+ * Decide whether an Edit Reference save should re-number the tail (`renumber`)
+ * or leave the table alone (`none`). Row flagging is handled separately by
+ * `evaluateMarkVersesReferenceStatus`.
+ *
+ * The rules (see markVersesEditReference.test.ts for worked examples):
+ * 1. If anything anywhere in the resulting table is ill-formatted or out of
+ *    range, never re-number — we can't reason about the numbering.
+ * 2. If the new start does not consecutively follow the end of the row above
+ *    it, don't re-number. (The first data row has nothing above it, so it
+ *    trivially passes.)
+ * 3. Otherwise re-number only when everything above the edited row is sequential
+ *    and everything below it is sequential. The lone discontinuity that
+ *    re-numbering heals is the gap between the edited row's end number and the
+ *    row below it; a break anywhere else (above, or further down the tail) is
+ *    left untouched so we never silently shift rows the user did not edit.
  */
 export const decideMarkVersesEditReferenceAction = (
   ctx: MarkVersesEditReferenceContext
-): MarkVersesEditReferenceAction => evaluateMarkVersesEditReference(ctx).action;
+): MarkVersesEditReferenceAction => {
+  const { newReference, tableReferences, rowIndex, getLastVerse } = ctx;
+
+  const editedTable = tableReferences.map((ref, index) =>
+    index === rowIndex ? newReference : ref
+  );
+
+  // Rule 1: anything ill-formatted or out of range anywhere in the table blocks
+  // re-numbering.
+  const anyInvalid = editedTable.some(
+    (ref) =>
+      isNonEmptyRef(ref) && !isValidMarkVersesReference(ref, getLastVerse)
+  );
+  if (anyInvalid) return 'none';
+
+  // Rule 2: the new start must consecutively follow the end of the row above it.
+  const precedingReference = editedTable
+    .slice(0, rowIndex)
+    .filter(isNonEmptyRef)
+    .pop();
+  if (
+    isNonEmptyRef(precedingReference) &&
+    !markVersesReferenceConsecutivelyFollows(
+      precedingReference,
+      newReference,
+      getLastVerse
+    )
+  ) {
+    return 'none';
+  }
+
+  // Rule 3: re-number only when both halves around the edited row are already
+  // internally sequential.
+  const above = editedTable.slice(0, rowIndex).filter(isNonEmptyRef);
+  const below = editedTable.slice(rowIndex + 1).filter(isNonEmptyRef);
+  if (
+    isMarkVersesTableConsecutive(above, getLastVerse) &&
+    isMarkVersesTableConsecutive(below, getLastVerse)
+  ) {
+    return 'renumber';
+  }
+
+  return 'none';
+};

@@ -224,21 +224,21 @@ describe('decideMarkVersesEditReferenceAction', () => {
     over: Partial<MarkVersesEditReferenceContext>
   ): MarkVersesEditReferenceContext => ({
     newReference: '',
-    precedingReference: undefined,
     tableReferences: [],
     rowIndex: 1,
     getLastVerse: longChapter1,
     ...over,
   });
 
-  describe('pre-existing table is out of range or ill-formatted', () => {
+  // Rule 1: anything ill-formatted or out of range anywhere in the resulting
+  // table blocks re-numbering.
+  describe('table has an ill-formatted or out-of-range reference', () => {
     it('never re-numbers when an existing row is out of range', () => {
       expect(
         decideMarkVersesEditReferenceAction(
           ctx({
             tableReferences: ['1:1', '100:1', '1:3'],
             newReference: '1:1-2',
-            precedingReference: undefined,
             rowIndex: 0,
           })
         )
@@ -256,15 +256,12 @@ describe('decideMarkVersesEditReferenceAction', () => {
         )
       ).toBe('none');
     });
-  });
 
-  describe('result is out of range or ill-formatted', () => {
-    it('does not re-number when the result is ill-formatted', () => {
+    it('does not re-number when the edited result is ill-formatted', () => {
       expect(
         decideMarkVersesEditReferenceAction(
           ctx({
             tableReferences: ['1:1', '1:2', '1:3'],
-            precedingReference: '1:1',
             newReference: '1:1aa',
             rowIndex: 1,
           })
@@ -272,12 +269,11 @@ describe('decideMarkVersesEditReferenceAction', () => {
       ).toBe('none');
     });
 
-    it('does not re-number when the result is out of range', () => {
+    it('does not re-number when the edited result is out of range', () => {
       expect(
         decideMarkVersesEditReferenceAction(
           ctx({
             tableReferences: ['1:1', '1:2', '1:3'],
-            precedingReference: '1:1',
             newReference: '100:1',
             rowIndex: 1,
           })
@@ -286,13 +282,55 @@ describe('decideMarkVersesEditReferenceAction', () => {
     });
   });
 
-  describe('pre-existing table was valid and consecutive', () => {
-    it('re-numbers when the result still consecutively follows the row above (dropdown-style end extension)', () => {
+  // Rule 2: the new start must consecutively follow the end of the row above.
+  describe('new start vs the row above', () => {
+    it('does not re-number when the new start creates a gap with the row above', () => {
       expect(
         decideMarkVersesEditReferenceAction(
           ctx({
             tableReferences: ['1:1', '1:2', '1:3', '1:4'],
-            precedingReference: '1:2',
+            newReference: '1:4', // start jumps from 2 to 4: gap, does not follow 1:1
+            rowIndex: 1,
+          })
+        )
+      ).toBe('none');
+    });
+
+    it('does not re-number when the new start overlaps the row above', () => {
+      expect(
+        decideMarkVersesEditReferenceAction(
+          ctx({
+            tableReferences: ['1:1', '1:2', '1:3', '1:4'],
+            newReference: '1:2-3', // start 1:2 duplicates the 1:2 row above
+            rowIndex: 2,
+          })
+        )
+      ).toBe('none');
+    });
+
+    it('ignores the row-above rule for the first data row', () => {
+      // No row above row 0, so rule 2 is skipped; above [] and below
+      // (1:3, 1:4) are both sequential -> re-number.
+      expect(
+        decideMarkVersesEditReferenceAction(
+          ctx({
+            tableReferences: ['1:1', '1:3', '1:4'],
+            newReference: '1:1-2',
+            rowIndex: 0,
+          })
+        )
+      ).toBe('renumber');
+    });
+  });
+
+  // Rule 3: re-number only when everything above and everything below the
+  // edited row are each internally sequential.
+  describe('both halves around the edited row are sequential', () => {
+    it('re-numbers a dropdown-style end extension on a clean table', () => {
+      expect(
+        decideMarkVersesEditReferenceAction(
+          ctx({
+            tableReferences: ['1:1', '1:2', '1:3', '1:4'],
             newReference: '1:3-4', // start unchanged, only end extended
             rowIndex: 2,
           })
@@ -300,31 +338,15 @@ describe('decideMarkVersesEditReferenceAction', () => {
       ).toBe('renumber');
     });
 
-    it('does not re-number when the new start creates a gap with the row above', () => {
-      expect(
-        decideMarkVersesEditReferenceAction(
-          ctx({
-            tableReferences: ['1:1', '1:2', '1:3', '1:4'],
-            precedingReference: '1:1',
-            newReference: '1:4', // start jumps from 2 to 4: gap, does not follow 1:1
-            rowIndex: 1,
-          })
-        )
-      ).toBe('none');
-    });
-  });
-
-  describe('pre-existing table had a duplicate / gap / non-consecutive situation', () => {
-    it('re-numbers when the edit leaves only an overlap caused by the new end number', () => {
-      // (1:1-4, 1:3-6, 1:7-10) -> edit row 1 to 1:5-7 -> (1:1-4, 1:5-7, 1:7-10).
-      // Row above is now consecutive (5 follows 4); only the 1:7 overlap with the
-      // row below remains, and it was caused by the new end number -> re-number
-      // (expected resulting tail: 1:8-10).
+    it('re-numbers when the edit heals the boundary with the row below', () => {
+      // (1:1-4, 1:3-6, 1:7-10) -> edit row 1 to 1:5-7. Above (1:1-4) is
+      // sequential, 1:5 follows 1:4, and below (1:7-10) is sequential; only the
+      // 1:7 overlap between the edited row and the row below remains, which
+      // re-numbering the tail absorbs.
       expect(
         decideMarkVersesEditReferenceAction(
           ctx({
             tableReferences: ['1:1-4', '1:3-6', '1:7-10'],
-            precedingReference: '1:1-4',
             newReference: '1:5-7',
             rowIndex: 1,
           })
@@ -332,31 +354,48 @@ describe('decideMarkVersesEditReferenceAction', () => {
       ).toBe('renumber');
     });
 
-    it('does not re-number when the edit does not resolve the pre-existing non-consecutiveness', () => {
-      // Pre-existing gap at 1:3 (1:1, 1:2, 1:4); editing the last row to 1:5 does
-      // not fix the gap above it, so leave numbering alone.
+    it('re-numbers when editing the last row (nothing below)', () => {
       expect(
         decideMarkVersesEditReferenceAction(
           ctx({
-            tableReferences: ['1:1', '1:2', '1:4'],
-            precedingReference: '1:4',
-            newReference: '1:5',
+            tableReferences: ['1:1', '1:2', '1:3'],
+            newReference: '1:3-5', // follows 1:2; below is empty (sequential)
             rowIndex: 2,
+          })
+        )
+      ).toBe('renumber');
+    });
+  });
+
+  describe('a break elsewhere in the table blocks re-numbering', () => {
+    it('does not re-number when a row above the edit is not sequential', () => {
+      // Pre-existing gap at 1:2 above the edited row (1:1, 1:3, 1:4); the edit
+      // follows the row above it but the gap higher up is left untouched.
+      expect(
+        decideMarkVersesEditReferenceAction(
+          ctx({
+            tableReferences: ['1:1', '1:3', '1:4', '1:5'],
+            newReference: '1:5-6',
+            rowIndex: 3,
           })
         )
       ).toBe('none');
     });
 
-    // OPEN QUESTION (per Noel): is there an edge case in this last branch where a
-    // well-ordered-except-for-the-new-overlap result should NOT be re-numbered?
-    // One candidate: if the overlap is NOT actually caused by the edited end
-    // number but by a pre-existing problem further down, re-numbering could
-    // silently shift rows the user never touched. The example above is
-    // deliberately the clean case; this edge case is left unasserted pending a
-    // decision on the intended behavior.
-    it.todo(
-      'decide whether a pre-existing downstream overlap (not caused by this edit) should block re-numbering'
-    );
+    it('does not re-number when a row below the edit is not sequential', () => {
+      // The edit follows the row above and above is sequential, but below has a
+      // pre-existing gap (1:5 -> 1:7) the user did not touch, so leave the
+      // numbering alone rather than silently shifting those rows.
+      expect(
+        decideMarkVersesEditReferenceAction(
+          ctx({
+            tableReferences: ['1:1', '1:2-3', '1:5', '1:7'],
+            newReference: '1:2-4',
+            rowIndex: 1,
+          })
+        )
+      ).toBe('none');
+    });
   });
 });
 
