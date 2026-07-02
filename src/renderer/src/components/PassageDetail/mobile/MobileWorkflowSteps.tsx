@@ -273,6 +273,7 @@ export default function MobileWorkflowSteps() {
             <Box
               component="span"
               sx={{
+                fontSize: 'small',
                 minWidth: 0,
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
@@ -378,7 +379,7 @@ export default function MobileWorkflowSteps() {
                   justifyContent: 'center',
                   // Horizontal padding clears the slanted edges so the label
                   // isn't clipped by the parallelogram's angled corners
-                  px: 1,
+                  px: 2,
                 }}
               >
                 <Typography
@@ -389,7 +390,7 @@ export default function MobileWorkflowSteps() {
                   }}
                   sx={{
                     color: textColor,
-                    fontSize: '11px',
+                    fontSize: '0.75rem',
                     lineHeight: 1,
                     textAlign: 'center',
                     overflow: 'hidden',
@@ -418,28 +419,42 @@ export default function MobileWorkflowSteps() {
         />
       </Box>
 
-      {/* Bottom row with the labels */}
-      <Typography sx={{ mt: 1 }} data-cy="workflow-step-label">
-        {isStepProgression ? (
-          currentTip ? (
-            <ButtonBase
-              onClick={() => setTipOpen(true)}
-              data-cy="workflow-step-tip"
-              sx={{
-                borderRadius: 1,
-                fontWeight: 'inherit',
-                fontSize: 'inherit',
-              }}
-              aria-label={currentTip}
-            >
-              {getWfLabel(currentLabel) + '\u00A0'}
-              <InfoIcon sx={{ color: 'primary.light' }} fontSize="small" />
-            </ButtonBase>
-          ) : (
-            getWfLabel(currentLabel)
-          )
-        ) : (
-          passageRef(passage)
+      {/* Bottom row with label and tip button */}
+      <Typography
+        component="div"
+        sx={{
+          mt: 1,
+          maxWidth: '80vw',
+          display: 'flex',
+          alignItems: 'center',
+          minWidth: 0,
+        }}
+        data-cy="workflow-step-label"
+      >
+        {/* Label */}
+        <Box
+          component="span"
+          sx={{
+            minWidth: 0,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {isStepProgression ? getWfLabel(currentLabel) : passageRef(passage)}
+        </Box>
+
+        {/* Tip button */}
+        {isStepProgression && currentTip && (
+          <ButtonBase
+            onClick={() => setTipOpen(true)}
+            data-cy="workflow-step-tip"
+            centerRipple
+            sx={{ borderRadius: '50%', p: 0.5, ml: 0.5, flexShrink: 0 }}
+            aria-label={currentTip}
+          >
+            <InfoIcon sx={{ color: 'primary.light' }} fontSize="small" />
+          </ButtonBase>
         )}
       </Typography>
 
