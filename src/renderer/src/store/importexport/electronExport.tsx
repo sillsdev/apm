@@ -932,8 +932,11 @@ export async function electronExport(
       imported = importedDate;
     } else {
       op = getOfflineProject(projRec.id);
+      // getOfflineProject (useOfflnProjRead.ts) returns {} — not undefined —
+      // when no matching record is found (e.g. it hasn't loaded into local
+      // memory yet on this boot), so op.attributes can itself be undefined.
       imported = DateTime.fromISO(
-        op.attributes.snapshotDate || '1900-01-01T00:00:00.000Z'
+        op?.attributes?.snapshotDate || '1900-01-01T00:00:00.000Z'
       ) as DateTime<true>;
       importedDate = imported;
     }
