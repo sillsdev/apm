@@ -1540,28 +1540,8 @@ export function ScriptureTable(props: IProps) {
         return false;
       };
       if (numChanges > 50) setBusy(true);
-      let start = 0;
       const newsht = [...sheetRef.current];
-      if (!offlineOnly) {
-        let end = 200;
-        for (; start + 200 < newsht.length; start += end) {
-          setComplete(Math.floor((90 * start) / numChanges) + 10);
-          end = 200;
-          while (!isSectionRow(newsht[start + end] as ISheet) && end > 0)
-            end -= 1;
-          if (end === 0) {
-            //find the end
-            end = 200;
-            while (
-              end < newsht.length &&
-              !isSectionRow(newsht[start + end] as ISheet)
-            )
-              end++;
-          }
-          await saveFn(newsht.slice(start, start + end));
-        }
-      }
-      await saveFn(newsht.slice(start));
+      await saveFn(newsht);
       //update plan section count and lastmodified
       await updateLastModified();
       setBusy(false);
