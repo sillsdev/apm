@@ -114,9 +114,23 @@ export const HeadStatus = (props: IProps) => {
         cloudAction();
       } else {
         LoadData(getGlobal('project'), () => {
-          offlineAvailToggle(getGlobal('project')).then(() => {
-            cloudAction();
-          });
+          offlineAvailToggle(getGlobal('project'))
+            .then(() => {
+              cloudAction();
+            })
+            .catch((err: Error) => {
+              // This used to be an unhandled rejection, which hid the real
+              // cause behind whatever broke next (e.g. the "Go Offline" crash).
+              logError(
+                Severity.error,
+                errorReporter,
+                infoMsg(
+                  err,
+                  'offlineAvailToggle failed for project ' +
+                    getGlobal('project')
+                )
+              );
+            });
         });
       }
     });

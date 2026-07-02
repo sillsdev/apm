@@ -829,15 +829,13 @@ export function ProfileDialog(props: ProfileDialogProps) {
             : undefined
         }
       >
-        {editId && /Add/i.test(editId) ? (
-          <Typography variant="h6">{tp.addMember}</Typography>
-        ) : userNotComplete() ? (
-          <Typography variant="h6">{tp.completeProfile}</Typography>
-        ) : editId ? (
-          <Typography variant="h6">{tp.editMember}</Typography>
-        ) : (
-          <Typography variant="h6">{t.myAccount}</Typography>
-        )}
+        {editId && /Add/i.test(editId)
+          ? tp.addMember
+          : userNotComplete()
+            ? tp.completeProfile
+            : editId
+              ? tp.editMember
+              : t.myAccount}
       </StyledDialogTitle>
       <DialogContent id="profileContent" sx={profileContentProps}>
         <Box id="profilePanel" sx={profilePanelProps}>

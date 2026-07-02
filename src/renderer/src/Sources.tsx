@@ -34,9 +34,10 @@ import {
   LocalKey,
   orbitErr,
   orbitRetry,
-  forceLogin,
-  syncRemoteAuthHeaders,
   getHttpStatus,
+  handleUnauthorized,
+  resetUnauthorizedRetry,
+  skipRemoteQueue,
 } from './utils';
 import { removeOrbitRemote } from './utils/removeOrbitRemote';
 import { electronExport } from './store/importexport/electronExport';
@@ -68,25 +69,12 @@ interface QueryStratErrProps {
   fingerprint: string;
   setOrbitRetries: (r: number) => void;
 }
-let unauthorizedRetryAttempted = false;
-
 const networkError = (ex: unknown): boolean =>
   ex instanceof NetworkError ||
   (ex instanceof Error &&
     (ex.message === 'Failed to fetch' || ex.message === 'Network Error'));
 
 const isUnauthorized = (ex: unknown): boolean => getHttpStatus(ex) === 401;
-
-const skipRemoteQueue = async (remote: JSONAPISource) => {
-  const len = remote?.requestQueue?.length ?? 0;
-  if (len > 0) {
-    try {
-      await remote.requestQueue.skip();
-    } catch {
-      // queue may already be settling
-    }
-  }
-};
 
 const addRemoteLinkStrategies = (coordinator: Coordinator) => {
   if (!coordinator.strategyNames.includes('remote-request'))
@@ -120,32 +108,6 @@ const addRemoteLinkStrategies = (coordinator: Coordinator) => {
         blocking: true,
       })
     );
-};
-
-const handleUnauthorized = (
-  tokenCtx: ITokenContext,
-  coordinator: Coordinator,
-  fingerprint: string,
-  setOrbitRetries: (r: number) => void
-) => {
-  const remote = coordinator?.getSource('remote') as JSONAPISource;
-  const datachangeremote = coordinator?.getSource(
-    'datachanges'
-  ) as JSONAPISource;
-  const token = tokenCtx?.state?.accessToken;
-  if (token && remote && !unauthorizedRetryAttempted) {
-    unauthorizedRetryAttempted = true;
-    syncRemoteAuthHeaders(remote, token, fingerprint);
-    syncRemoteAuthHeaders(datachangeremote, token, fingerprint);
-    return remote.requestQueue.retry;
-  }
-  unauthorizedRetryAttempted = false;
-  setOrbitRetries(OrbitNetworkErrorRetries);
-  tokenCtx?.state?.invalidateOnlineSession();
-  forceLogin();
-  localStorage.setItem(LocalKey.offlineAdmin, 'false');
-  void skipRemoteQueue(remote);
-  return remote.requestQueue.skip();
 };
 
 const queryError =
@@ -310,7 +272,7 @@ export const Sources = async (
   const offline = !tokenState.accessToken;
 
   if (!offline) {
-    unauthorizedRetryAttempted = false;
+    resetUnauthorizedRetry();
     if (coordinator.sourceNames.includes('remote')) {
       await removeOrbitRemote(coordinator, false);
     }

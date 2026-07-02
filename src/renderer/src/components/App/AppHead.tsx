@@ -16,7 +16,7 @@ import {
   useMounted,
   logError,
   Severity,
-  exitApp,
+  relaunchApp,
   useMyNavigate,
   useWaitForRemoteQueue,
   useMobile,
@@ -178,7 +178,12 @@ export const AppHead = (props: IProps) => {
   };
 
   useEffect(() => {
-    if (tokenState.expiresAt === -1) {
+    // expiresAt is legitimately -1 while genuinely offline (no online token
+    // to expire) — this used to fire Logout unconditionally, which re-ran
+    // the whole "Go Offline" teardown/relaunch flow every time AppHead
+    // mounted offline, looping the app through logout -> relaunch forever.
+    // Loading.tsx's equivalent check already guards with !offline; mirror it.
+    if (!getGlobal('offline') && tokenState.expiresAt === -1) {
       handleMenu('Logout');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -196,7 +201,11 @@ export const AppHead = (props: IProps) => {
       if (userId) localStorage.setItem(LocalKey.userId, userId);
       return;
     }
-    if (localStorage.getItem(LocalKey.userId)) exitApp();
+    // This used to call exitApp(), which just quits with nothing to bring
+    // the app back — the user is left staring at a closed app after
+    // confirming "Go Offline". relaunchApp() quits and restarts, so it
+    // reopens straight into the newly-offline session.
+    if (localStorage.getItem(LocalKey.userId)) relaunchApp();
     else setView('Logout');
   };
 

@@ -122,7 +122,8 @@ export function Loading() {
   const { expiresAt } = tokenCtx.state;
 
   const handleAuthFailure = () => {
-    forceLogin();
+    // invalidateOnlineSession() now calls forceLogin() itself; guard against
+    // calling it twice since on web it triggers an actual page redirect.
     localStorage.removeItem(LocalKey.goingOnline);
     setCompleted(0);
     setRemoteBusy(false);
@@ -291,16 +292,26 @@ export function Loading() {
     if (localStorage.getItem('inviteError')) {
       return;
     }
-    const user = localStorage.getItem(LocalKey.userId) as string;
-    const userRec: User = GetUser(memory, user);
-    if (
-      !userRec?.attributes?.givenName ||
-      !userRec?.attributes?.timezone ||
-      !userRec?.attributes?.locale ||
-      !uiLanguages.includes(userRec?.attributes?.locale)
-    ) {
-      setView('/createProfile');
-      return;
+    // Sources.tsx only refreshes the user's own profile fields from the
+    // server when !offline (see its "Activating remote for user" block) —
+    // when genuinely offline (e.g. right after "Go Offline" relaunches),
+    // memory only has whatever the local backup restored, which isn't
+    // guaranteed to include givenName/timezone/locale even for a real,
+    // already-completed profile. Checking completeness against unverified
+    // local data here incorrectly bounced a returning offline user to
+    // /createProfile instead of resuming where they left off.
+    if (!getGlobal('offline')) {
+      const user = localStorage.getItem(LocalKey.userId) as string;
+      const userRec: User = GetUser(memory, user);
+      if (
+        !userRec?.attributes?.givenName ||
+        !userRec?.attributes?.timezone ||
+        !userRec?.attributes?.locale ||
+        !uiLanguages.includes(userRec?.attributes?.locale)
+      ) {
+        setView('/createProfile');
+        return;
+      }
     }
     let fromUrl = getGotoUrl();
     let waitToNavigate = false;

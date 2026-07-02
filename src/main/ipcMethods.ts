@@ -2,6 +2,7 @@ import { app, ipcMain, session, dialog, BrowserWindow, shell } from 'electron';
 import { createWindow } from './index';
 import { createAuthWindow, createLogoutWindow } from './auth-process.js';
 import { refreshTokens, getProfile, getAccessToken } from './auth-service.js';
+import { getLogingIn, setLogingIn } from './loginState.js';
 import * as fs from 'fs-extra';
 import StreamZip from 'node-stream-zip';
 import AdmZip from 'adm-zip';
@@ -109,7 +110,12 @@ export function ipcMethods(): void {
   });
 
   ipcMain.handle('relaunchApp', async () => {
+    // app.relaunch() only arms a relaunch for whenever the app next exits —
+    // it does not exit by itself, so without this the renderer's "Go
+    // Offline" flow (which calls this expecting an actual restart) would
+    // just leave the current instance running.
     app.relaunch();
+    app.exit();
   });
 
   ipcMain.handle('closeApp', async () => {
@@ -352,25 +358,28 @@ export function ipcMethods(): void {
     }
   });
 
-  let isLogingIn = false;
   let isLogOut = false;
 
   app.on('window-all-closed', () => {
-    if (process.platform !== 'darwin' && !isLogingIn) {
+    if (process.platform !== 'darwin' && !getLogingIn()) {
       app.quit();
     }
   });
 
   ipcMain.handle('login', async (_event, hasUsed, email) => {
-    isLogingIn = true;
+    setLogingIn(true);
     isLogOut = false;
     try {
       await refreshTokens();
-      isLogingIn = false;
-      return createWindow();
+      createWindow();
     } catch {
-      isLogingIn = false;
       createAuthWindow(hasUsed, email);
+    } finally {
+      // Stay true until createWindow()/createAuthWindow() has actually
+      // closed the old window(s) and opened the replacement — resetting
+      // this before that finishes is what let window-all-closed's app.quit()
+      // fire mid-handoff (e.g. re-authenticating after "Go Offline").
+      setLogingIn(false);
     }
   });
 
@@ -390,7 +399,7 @@ export function ipcMethods(): void {
   });
 
   ipcMain.handle('logout', async () => {
-    isLogingIn = false;
+    setLogingIn(false);
     isLogOut = true;
     createLogoutWindow();
   });

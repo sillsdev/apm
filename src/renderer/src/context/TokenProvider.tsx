@@ -7,7 +7,13 @@ import { DateTime } from 'luxon';
 import { jwtDecode } from 'jwt-decode';
 import { useGetGlobal, useGlobal } from '../context/useGlobal';
 import { useUpdateOrbitToken } from '../crud';
-import { LocalKey, logError, Severity, useInterval } from '../utils';
+import {
+  LocalKey,
+  forceLogin,
+  logError,
+  Severity,
+  useInterval,
+} from '../utils';
 import { removeOrbitRemote } from '../utils/removeOrbitRemote';
 import { isElectron } from '../../api-variable';
 import { useProjectDefaults } from '../crud/useProjectDefaults';
@@ -132,9 +138,13 @@ function TokenProvider(props: IProps) {
     }));
   };
 
+  // The single place a rejected/expired session gets torn down. Every caller
+  // used to also call forceLogin() itself (Sources.tsx, Loading.tsx) — folded
+  // in here so there's one canonical "invalidate + force login" sequence.
   const invalidateOnlineSession = () => {
     void removeOrbitRemote(coordinator);
     logout();
+    forceLogin();
     localStorage.removeItem(LocalKey.goingOnline);
     if (isElectron) {
       void ipc?.logout();

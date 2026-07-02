@@ -15,6 +15,7 @@ import {
   isOrbitQueueCancelled,
   orbitErr,
   getHttpStatus,
+  handleUnauthorized,
 } from '../../utils';
 import { OfflineProject, Plan, VProject } from '../../model';
 import { ITokenContext } from '../../context/TokenProvider';
@@ -114,11 +115,42 @@ export const fetchOrbitData =
       .catch((ex: unknown) => {
         const status = getHttpStatus(ex);
         if (isOrbitQueueCancelled(ex)) return;
-        if (status === 401) return;
         dispatch({
           type: FETCH_ORBIT_DATA,
           payload: fetchOrbitDataFailed(),
         });
+        if (status === 401) {
+          // This used to just `return` here, leaving orbitFetchResults unset
+          // and the loading screen waiting forever. handleUnauthorized is the
+          // same retry-once-then-invalidate-session recovery used by the
+          // query/update failure strategies inside Sources() — this is a
+          // safety net for when this promise rejects before those strategies
+          // fire.
+          //
+          // It is NOT a guaranteed no-op if they already ran: tokenCtx here
+          // is a snapshot captured once (useContext in Loading.tsx) and
+          // threaded through the whole async call, so tokenCtx.state never
+          // reflects invalidateOnlineSession()'s setState — accessToken
+          // still reads as the old, stale (already-rejected) value, not
+          // null. Sources.tsx's unauthorizedRetryAttempted flag is also
+          // reset to false right before invalidateOnlineSession() runs (so a
+          // genuinely later 401 still gets its own retry), so calling this
+          // again immediately after a full retry->invalidate cycle already
+          // completed can re-arm the retry branch with a token already
+          // proven bad, triggering one extra wasted retry/invalidate round
+          // (extra forceLogin()/ipc.logout() or auth0Logout() calls). Low
+          // severity — everything invalidateOnlineSession() does is
+          // idempotent-ish — but worth knowing if this ever needs tightening.
+          void Promise.resolve(
+            handleUnauthorized(
+              tokenCtx,
+              coordinator,
+              fingerprint,
+              setOrbitRetries
+            )
+          ).catch(() => {}); // no msg if fails
+          return;
+        }
         const apiEx = ex as IApiError;
         if (apiEx?.response?.status != null) {
           dispatch(orbitError(apiEx));
