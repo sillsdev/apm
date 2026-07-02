@@ -159,7 +159,7 @@ export const useWfOnlineSave = (props: IProps) => {
       sp = rn.normalizeRecord(sp) as SectionPassageD;
       setComplete(completepct);
       const startTime = currentDateTime();
-      const rec = await memory.update((t) => t.addRecord(sp), {
+      let rec = await memory.update((t) => t.addRecord(sp), {
         label: 'Update Plan Section and Passages',
         sources: {
           remote: {
@@ -174,16 +174,16 @@ export const useWfOnlineSave = (props: IProps) => {
         memory?.keyMap as RecordKeyMap
       );
       if (!(rec as SectionPassageD)?.attributes?.complete) {
-        let result = rec as SectionPassageD;
         do {
-          result = (await remote.query((q: any) =>
+          rec = (await remote.query((q: any) =>
             q.findRecord({ type: 'sectionpassage', id: sp.id })
           )) as SectionPassageD;
-          completepct = Math.max(completepct + 10, 50);
+          completepct = Math.min(completepct + 10, 50);
           setComplete(completepct);
-        } while (!result.attributes?.complete);
+        } while (!rec?.attributes?.complete);
       }
-
+      //must wait for these...in case they they navigate away before done
+      await forceDataChanges(startTime);
       const anyNew = sheet.reduce(
         (prev, cur) =>
           prev ||
@@ -219,8 +219,6 @@ export const useWfOnlineSave = (props: IProps) => {
           }
         });
       }
-      //must wait for these...in case they they navigate away before done
-      await forceDataChanges(startTime);
     }
     if (deleteItems.length > 0) {
       const tb = new RecordTransformBuilder();
