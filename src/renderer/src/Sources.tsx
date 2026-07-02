@@ -123,10 +123,10 @@ const addRemoteLinkStrategies = (coordinator: Coordinator) => {
 
 // Shared 401 recovery: retry once with freshly re-synced auth headers (in
 // case this was just a race against a not-yet-applied token), and if a 401
-// happens again, tear the session down. This is the single implementation
-// reused by the query/update failure strategies below, by fetchOrbitData
-// (store/orbit/actions.tsx), and by Loading.tsx's handleAuthFailure — they
-// used to each reimplement "invalidate + force login" separately.
+// happens again, tear the session down. Reused by the query/update failure
+// strategies below and by fetchOrbitData (store/orbit/actions.tsx) as a
+// safety net for the same failure — see the comment at that call site for
+// why it isn't a guaranteed no-op if the strategies already handled it.
 export const handleUnauthorized = (
   tokenCtx: ITokenContext,
   coordinator: Coordinator,

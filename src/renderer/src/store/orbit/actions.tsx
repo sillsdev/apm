@@ -122,10 +122,24 @@ export const fetchOrbitData =
           // This used to just `return` here, leaving orbitFetchResults unset
           // and the loading screen waiting forever. handleUnauthorized is the
           // same retry-once-then-invalidate-session recovery used by the
-          // query/update failure strategies inside Sources() — calling it
-          // again here is a no-op if that already ran, and a safety net if
-          // it didn't (e.g. this promise rejected before those strategies
-          // fired).
+          // query/update failure strategies inside Sources() — this is a
+          // safety net for when this promise rejects before those strategies
+          // fire.
+          //
+          // It is NOT a guaranteed no-op if they already ran: tokenCtx here
+          // is a snapshot captured once (useContext in Loading.tsx) and
+          // threaded through the whole async call, so tokenCtx.state never
+          // reflects invalidateOnlineSession()'s setState — accessToken
+          // still reads as the old, stale (already-rejected) value, not
+          // null. Sources.tsx's unauthorizedRetryAttempted flag is also
+          // reset to false right before invalidateOnlineSession() runs (so a
+          // genuinely later 401 still gets its own retry), so calling this
+          // again immediately after a full retry->invalidate cycle already
+          // completed can re-arm the retry branch with a token already
+          // proven bad, triggering one extra wasted retry/invalidate round
+          // (extra forceLogin()/ipc.logout() or auth0Logout() calls). Low
+          // severity — everything invalidateOnlineSession() does is
+          // idempotent-ish — but worth knowing if this ever needs tightening.
           handleUnauthorized(
             tokenCtx,
             coordinator,
