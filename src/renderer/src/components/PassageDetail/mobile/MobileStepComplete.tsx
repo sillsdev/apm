@@ -1,4 +1,4 @@
-import { useCallback, useContext, useMemo, useState } from 'react';
+import { useCallback, useContext, useMemo } from 'react';
 import { useGlobal } from '../../../context/useGlobal';
 import { Box, Button } from '@mui/material';
 import CompleteIcon from '@mui/icons-material/CheckBox';
@@ -31,7 +31,6 @@ export default function MobileStepComplete() {
   const { showMessage } = useSnackBar();
   const [busy] = useGlobal('remoteBusy');
   const [importexportBusy] = useGlobal('importexportBusy');
-  const [view] = useState('');
   const t: IPassageDetailStepCompleteStrings = useSelector(
     passageDetailStepCompleteSelector,
     shallowEqual
@@ -83,9 +82,7 @@ export default function MobileStepComplete() {
       size="small"
       title={t.title}
       onClick={handleToggleComplete}
-      disabled={
-        !hasPermission || view !== '' || recording || busy || importexportBusy
-      }
+      disabled={!hasPermission || recording || busy || importexportBusy}
       startIcon={
         complete ? (
           <CompleteIcon
@@ -100,6 +97,7 @@ export default function MobileStepComplete() {
       sx={{
         minWidth: 0,
         maxWidth: '100%',
+        '@media (max-width:405px)': { px: 1 },
       }}
     >
       <Box
