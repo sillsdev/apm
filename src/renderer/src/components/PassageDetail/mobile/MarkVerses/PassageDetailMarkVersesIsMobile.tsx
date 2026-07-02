@@ -94,7 +94,7 @@ import {
   shouldAutoRenumberAfterEdit,
   evaluateMarkVersesReferenceStatus,
   markVersesSkippedPassageRefs,
-  type MarkVersesWarningReason,
+  MarkVersesWarningReason,
 } from '../../../../utils/markVersesEditReference';
 import { verseToolId } from '../../markVersesTool';
 const emptySegments = JSON.stringify({ regions: [] });
@@ -829,12 +829,12 @@ export default function PassageDetailMarkVersesIsMobile({
       passageRange: string[]
     ): string | undefined => {
       switch (reason) {
-        case 'illFormatted':
-        case 'overlap':
+        case MarkVersesWarningReason.IllFormatted:
+        case MarkVersesWarningReason.Overlap:
           return t.badReferences;
-        case 'outOfRange':
+        case MarkVersesWarningReason.OutOfRange:
           return t.outsideReferences.replace('{0}', reference);
-        case 'skipsAhead':
+        case MarkVersesWarningReason.SkipsAhead:
           return t.missingReferences.replace(
             '{0}',
             markVersesSkippedPassageRefs(
@@ -888,12 +888,12 @@ export default function PassageDetailMarkVersesIsMobile({
         const cell = row[ColName.Ref] as ICell;
         const value = `${cell?.value ?? ''}`;
         const rowIdx = index - 1;
-        const { reason } = evaluateMarkVersesReferenceStatus(
-          value,
-          dataRefs,
-          rowIdx,
-          passage
-        );
+        const { reason } = evaluateMarkVersesReferenceStatus({
+          newReference: value,
+          tableReferences: dataRefs,
+          rowIndex: rowIdx,
+          passage,
+        });
         const precedingReference =
           rowIdx > 0 ? dataRefs[rowIdx - 1] : undefined;
         const warning = referenceWarningMessage(
@@ -1031,10 +1031,10 @@ export default function PassageDetailMarkVersesIsMobile({
         endVerseOptions,
         startChapter: currentRef.start.chapter,
         startVerse: currentRef.start.verse,
-        startSuffix: hasLetterSuffix ? currentRef.start.suffix : '',
+        startSuffix: hasLetterSuffix ? currentRef.start.verseLetterSuffix : '',
         endChapter: defaultEnd.chapter,
         endVerse: defaultEnd.verse,
-        endSuffix: hasLetterSuffix ? currentRef.end.suffix : '',
+        endSuffix: hasLetterSuffix ? currentRef.end.verseLetterSuffix : '',
       } as IEditReferenceDialogState;
     },
     [getPassageRefs, parseReferenceValue, passage]

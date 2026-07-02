@@ -14,7 +14,6 @@
  * (e.g. is `1:20 -> 2:1` consecutive?) with real book codes — `LUK` for a long
  * chapter 1 (80 verses), `REV` for a chapter 1 that ends at verse 20.
  */
-import { refMatch } from './refMatch';
 import { getLastVerse } from '../business/localParatext/getLastVerse';
 import {
   nextMarkVersesLetterSuffix,
@@ -37,9 +36,36 @@ export interface MarkVersesEditReferenceContext {
   passage: PassageD;
 }
 
-/** Well-formatted per the established table rules (delegates to refMatch). */
-export const isWellFormedMarkVersesReference = (ref: string): boolean =>
-  Boolean(ref) && refMatch(ref) !== null;
+// TODO check this and refMatch
+/**
+ * Well-formatted per the established table rules: the text parses into a
+ * chapter:verse start (and optional end), and the range does not run backwards.
+ *
+ * Unlike `refMatch`, this accepts ranges spanning any number of chapters
+ * (e.g. `1:1-4:10`), not just an adjacent chapter boundary — a Mark Verses row
+ * may legitimately cover several chapters. `parseMarkVersesReference` falls back
+ * to chapter 0 when the text names no chapter (a bare `1`), so a real reference
+ * must have a chapter >= 1 on both ends. A range whose end precedes its start
+ * (`1:3-1:1`, `4:10-1:1`, `3:5-3:2`) is ill-formatted.
+ */
+export const isWellFormedMarkVersesReference = (ref: string): boolean => {
+  const parsed = parseMarkVersesReference(ref);
+  if (!parsed) return false;
+
+  const { start, end } = parsed;
+  if (start.chapter < 1 || end.chapter < 1) return false;
+
+  // End must be at or after start (chapter, then verse, then letter subpart).
+  if (end.chapter !== start.chapter) return end.chapter > start.chapter;
+  if (end.verse !== start.verse) return end.verse > start.verse;
+  // Same verse: a lettered end must not precede a lettered start (a bare end
+  // means the whole verse, which never runs backwards).
+  return !(
+    end.verseLetterSuffix &&
+    start.verseLetterSuffix &&
+    end.verseLetterSuffix < start.verseLetterSuffix
+  );
+};
 
 const verseInChapter = (
   book: string,
@@ -256,18 +282,21 @@ export const isMarkVersesReferenceInPassage = (
  * *past* the expected next verse (a forward gap — passage verses are skipped)?
  * Returning false means it sits at or before the expected next verse (an
  * overlap/duplicate) or fills an earlier gap (a backfill).
+ * This function assumes ref is in passage and is well-formed
  */
 const markVersesReferenceSkipsAhead = (
-  prevRef: string,
+  prevRef: string | undefined,
   newRef: string,
-  book: string
+  passage: PassageD
 ): boolean => {
+  if (!prevRef) return !markVersesReferenceStartsPassage(newRef, passage);
   const prev = parseMarkVersesReference(prevRef);
   const next = parseMarkVersesReference(newRef);
   if (!prev || !next) return false;
+  // If this is the first row and it doesn't line up with the start of the passage, it is skipping ahead (assuming it is not out of passage)
 
   const prevEnd = prev.end;
-  const lastVerse = getLastVerse(book, prevEnd.chapter);
+  const lastVerse = getLastVerse(passage.attributes.book, prevEnd.chapter);
   if (lastVerse === null || lastVerse === undefined) return false;
   if (prevEnd.verse > lastVerse) return false;
 
@@ -342,21 +371,28 @@ export const markVersesSkippedPassageRefs = (
 /**
  * Why a row is flagged with a warning (drives the tooltip message). See
  * `evaluateMarkVersesReferenceStatus`, which is the single authority for this.
- * - `illFormatted`: fails refMatch.
- * - `outOfRange`: well-formed but the verse is outside the book / passage.
- * - `skipsAhead`: well-formed and in range, but its start jumps *past* the
- *   expected next verse, leaving passage verses skipped (a forward gap).
- * - `overlap`: well-formed and in range, but its verse span intersects a row
- *   above (duplicates / overlaps an already-assigned verse).
+ * String-valued so the serialized form stays human-readable, mirroring
+ * `RefStatus`.
  *
  * A reference that neither skips ahead nor overlaps an earlier row — e.g. one
  * that backfills a previously skipped verse — is treated as valid, not flagged.
  */
-export type MarkVersesWarningReason =
-  | 'illFormatted'
-  | 'outOfRange'
-  | 'skipsAhead'
-  | 'overlap';
+export enum MarkVersesWarningReason {
+  /** Fails `refMatch`. */
+  IllFormatted = 'illFormatted',
+  /** Well-formed but the verse is outside the book / passage. */
+  OutOfRange = 'outOfRange',
+  /**
+   * Well-formed and in range, but its start jumps *past* the expected next
+   * verse, leaving passage verses skipped (a forward gap).
+   */
+  SkipsAhead = 'skipsAhead',
+  /**
+   * Well-formed and in range, but its verse span intersects a row above
+   * (duplicates / overlaps an already-assigned verse).
+   */
+  Overlap = 'overlap',
+}
 
 /**
  * Per-row warning evaluation: the single authority for whether a reference cell
@@ -379,25 +415,20 @@ export const evaluateMarkVersesReferenceStatus = (
     !isValidMarkVersesReference(newReference, passage.attributes.book) ||
     !isRefInVersification(newReference, passage.attributes.book)
   ) {
-    return { reason: 'illFormatted' };
+    return { reason: MarkVersesWarningReason.IllFormatted };
   }
   if (!isMarkVersesReferenceInPassage(newReference, passage)) {
-    return { reason: 'outOfRange' };
+    return { reason: MarkVersesWarningReason.OutOfRange };
   }
   if (overlapsEarlierRow(tableReferences, rowIndex, newReference)) {
-    return { reason: 'overlap' };
+    return { reason: MarkVersesWarningReason.Overlap };
   }
   const precedingReference =
     rowIndex > 0 ? tableReferences[rowIndex - 1] : undefined;
   if (
-    isNonEmptyRef(precedingReference) &&
-    markVersesReferenceSkipsAhead(
-      precedingReference,
-      newReference,
-      passage.attributes.book
-    )
+    markVersesReferenceSkipsAhead(precedingReference, newReference, passage)
   ) {
-    return { reason: 'skipsAhead' };
+    return { reason: MarkVersesWarningReason.SkipsAhead };
   }
   return {};
 };

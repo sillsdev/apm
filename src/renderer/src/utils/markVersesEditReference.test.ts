@@ -8,6 +8,7 @@ import {
   markVersesReferenceConsecutivelyFollows,
   markVersesReferenceStartsPassage,
   markVersesSkippedPassageRefs,
+  MarkVersesWarningReason,
   shouldAutoRenumberAfterEdit,
   type MarkVersesEditReferenceContext,
 } from './markVersesEditReference';
@@ -464,24 +465,26 @@ describe('evaluateMarkVersesReferenceStatus (per-row warning reason)', () => {
   it('reports outOfRange for a well-formed reference outside the passage', () => {
     // 1:8 exists in the book but the passage ends at 1:5.
     expect(status(['1:1', '1:8', '1:3'], 1)).toEqual({
-      reason: 'outOfRange',
+      reason: MarkVersesWarningReason.OutOfRange,
     });
   });
 
   it('reports illFormatted for a reference that fails refMatch', () => {
     expect(status(['1:1', '1:1aa', '1:3'], 1)).toEqual({
-      reason: 'illFormatted',
+      reason: MarkVersesWarningReason.IllFormatted,
     });
   });
 
   it('reports skipsAhead when the start jumps past the next verse', () => {
     // 1:1 -> 1:4 leaves 1:2 and 1:3 skipped.
-    expect(status(['1:1', '1:4', '1:5'], 1)).toEqual({ reason: 'skipsAhead' });
+    expect(status(['1:1', '1:4', '1:5'], 1)).toEqual({
+      reason: MarkVersesWarningReason.SkipsAhead,
+    });
   });
 
   it('reports overlap when the verse duplicates a row above', () => {
     expect(status(['1:1', '1:2', '1:1', '1:4'], 2)).toEqual({
-      reason: 'overlap',
+      reason: MarkVersesWarningReason.Overlap,
     });
   });
 
@@ -494,7 +497,9 @@ describe('evaluateMarkVersesReferenceStatus (per-row warning reason)', () => {
   it('checks only range/format for the first row (no preceding reference)', () => {
     expect(status(['1:4', '1:5'], 0)).toEqual({});
     // 1:8 is in the book but beyond the passage's 1:5 end.
-    expect(status(['1:8', '1:5'], 0)).toEqual({ reason: 'outOfRange' });
+    expect(status(['1:8', '1:5'], 0)).toEqual({
+      reason: MarkVersesWarningReason.OutOfRange,
+    });
   });
 });
 
