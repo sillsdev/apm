@@ -122,7 +122,8 @@ export function Loading() {
   const { expiresAt } = tokenCtx.state;
 
   const handleAuthFailure = () => {
-    forceLogin();
+    // invalidateOnlineSession() now calls forceLogin() itself; guard against
+    // calling it twice since on web it triggers an actual page redirect.
     localStorage.removeItem(LocalKey.goingOnline);
     setCompleted(0);
     setRemoteBusy(false);

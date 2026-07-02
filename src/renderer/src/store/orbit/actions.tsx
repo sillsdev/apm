@@ -9,7 +9,7 @@ import {
   FETCH_ORBIT_DATA_COMPLETE,
 } from './types';
 import Coordinator from '@orbit/coordinator';
-import { Sources } from '../../Sources';
+import { Sources, handleUnauthorized } from '../../Sources';
 import {
   Severity,
   isOrbitQueueCancelled,
@@ -114,11 +114,26 @@ export const fetchOrbitData =
       .catch((ex: unknown) => {
         const status = getHttpStatus(ex);
         if (isOrbitQueueCancelled(ex)) return;
-        if (status === 401) return;
         dispatch({
           type: FETCH_ORBIT_DATA,
           payload: fetchOrbitDataFailed(),
         });
+        if (status === 401) {
+          // This used to just `return` here, leaving orbitFetchResults unset
+          // and the loading screen waiting forever. handleUnauthorized is the
+          // same retry-once-then-invalidate-session recovery used by the
+          // query/update failure strategies inside Sources() — calling it
+          // again here is a no-op if that already ran, and a safety net if
+          // it didn't (e.g. this promise rejected before those strategies
+          // fired).
+          handleUnauthorized(
+            tokenCtx,
+            coordinator,
+            fingerprint,
+            setOrbitRetries
+          );
+          return;
+        }
         const apiEx = ex as IApiError;
         if (apiEx?.response?.status != null) {
           dispatch(orbitError(apiEx));

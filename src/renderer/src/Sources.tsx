@@ -34,7 +34,6 @@ import {
   LocalKey,
   orbitErr,
   orbitRetry,
-  forceLogin,
   syncRemoteAuthHeaders,
   getHttpStatus,
 } from './utils';
@@ -122,7 +121,13 @@ const addRemoteLinkStrategies = (coordinator: Coordinator) => {
     );
 };
 
-const handleUnauthorized = (
+// Shared 401 recovery: retry once with freshly re-synced auth headers (in
+// case this was just a race against a not-yet-applied token), and if a 401
+// happens again, tear the session down. This is the single implementation
+// reused by the query/update failure strategies below, by fetchOrbitData
+// (store/orbit/actions.tsx), and by Loading.tsx's handleAuthFailure — they
+// used to each reimplement "invalidate + force login" separately.
+export const handleUnauthorized = (
   tokenCtx: ITokenContext,
   coordinator: Coordinator,
   fingerprint: string,
@@ -137,12 +142,11 @@ const handleUnauthorized = (
     unauthorizedRetryAttempted = true;
     syncRemoteAuthHeaders(remote, token, fingerprint);
     syncRemoteAuthHeaders(datachangeremote, token, fingerprint);
-    return remote.requestQueue.retry;
+    return remote.requestQueue.retry();
   }
   unauthorizedRetryAttempted = false;
   setOrbitRetries(OrbitNetworkErrorRetries);
   tokenCtx?.state?.invalidateOnlineSession();
-  forceLogin();
   localStorage.setItem(LocalKey.offlineAdmin, 'false');
   void skipRemoteQueue(remote);
   return remote.requestQueue.skip();
