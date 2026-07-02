@@ -212,3 +212,128 @@ export async function loginToTeamScreen(
 
   return authed;
 }
+
+/**
+ * Team names must be unique (TeamDialog's nameInUse check), so a test that
+ * creates one has to clean it up or every subsequent run fails at
+ * #teamCommit staying disabled. This spins up its own short-lived app
+ * instance rather than reusing the caller's: a test that goes through
+ * "Go Offline" ends with its original process exited and a relaunched,
+ * untracked instance in its place, so there's no live `authed` page left to
+ * do cleanup with by the time the test finishes.
+ */
+export async function deleteTeamIfExists(
+  teamName: string,
+  credentials: { username: string; password: string }
+): Promise<void> {
+  const launched = await launchApp();
+  try {
+    const authed = await loginToTeamScreen(launched, credentials);
+    await authed
+      .getByText('Personal Audio Projects')
+      .waitFor({ state: 'visible', timeout: 60_000 });
+
+    const teamCard = authed.locator('#TeamItem').filter({ hasText: teamName });
+    const exists = await teamCard
+      .waitFor({ state: 'visible', timeout: 15_000 })
+      .then(() => true)
+      .catch(() => false);
+    if (!exists) return;
+
+    await teamCard.locator('#teamSettings').click();
+    await authed.locator('#teamDialog').waitFor({ state: 'visible' });
+    // #panel1a-header is reused by every accordion in the dialog (Publishing,
+    // Advanced, ...) — scope by the "Advanced" tab's accessible name instead
+    // of the id, which resolves ambiguously.
+    await authed.getByRole('button', { name: 'Advanced' }).click();
+    await authed.locator('#deleteExpand').click();
+    await authed.locator('#alertYes').click();
+    // Let the delete actually sync before tearing this instance down.
+    await authed.waitForTimeout(3_000);
+  } finally {
+    await closeApp(launched);
+  }
+}
+
+/**
+ * The real "is this save actually done" signal, per Orbit's own persistence
+ * model — not a UI proxy. Every Orbit Source (Sources.tsx's 'remote' source)
+ * persists its pending request queue to an IndexedDB-backed bucket
+ * (@orbit/data's Source constructor names it `${sourceName}-requests`,
+ * @orbit/core's TaskQueue stores it via bucket.getItem(name)). The bucket
+ * itself is an IndexedDBBucket namespaced as
+ * `transcriber-<auth0-sub>-bucket` (see Sources.tsx's `bucket` setup), with
+ * a single 'data' object store. localStorage's 'auth-id' key (LocalKey.authId)
+ * holds that same auth0 sub, so it can be read directly from the page.
+ *
+ * Neither the Save button's disabled state (flips on save *start*, not
+ * completion) nor the "Saving..." toast (auto-hides after 30s regardless of
+ * whether the save actually finished — see SnackBar.tsx's autoHideDuration)
+ * are reliable stand-ins for this.
+ */
+export async function getRemoteQueueLength(
+  page: Page,
+  sourceName: 'remote' | 'datachanges' = 'remote'
+): Promise<number> {
+  return page.evaluate(async (source) => {
+    const authId = localStorage.getItem('auth-id');
+    if (!authId) return 0;
+    const namespace = `transcriber-${authId.replace(/\|/g, '-')}-bucket`;
+    let db: IDBDatabase;
+    try {
+      db = await new Promise((resolve, reject) => {
+        const req = indexedDB.open(namespace);
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+        // A bucket DB that's never been written to yet means nothing has
+        // ever been queued — treat the freshly-created empty DB as empty.
+        req.onupgradeneeded = () => resolve(req.result);
+      });
+    } catch {
+      return 0;
+    }
+    try {
+      if (!db.objectStoreNames.contains('data')) return 0;
+      const tasks = await new Promise<unknown>((resolve, reject) => {
+        const tx = db.transaction(['data'], 'readonly');
+        const getReq = tx.objectStore('data').get(`${source}-requests`);
+        getReq.onsuccess = () => resolve(getReq.result);
+        getReq.onerror = () => reject(getReq.error);
+      });
+      return Array.isArray(tasks) ? tasks.length : 0;
+    } finally {
+      db.close();
+    }
+  }, sourceName);
+}
+
+/** Poll until the named Orbit source's persisted request queue is empty. */
+export async function waitForOrbitQueueEmpty(
+  page: Page,
+  sourceName: 'remote' | 'datachanges' = 'remote',
+  timeoutMs = 60_000
+): Promise<void> {
+  await expectPoll(
+    () => getRemoteQueueLength(page, sourceName),
+    (len) => len === 0,
+    timeoutMs
+  );
+}
+
+async function expectPoll<T>(
+  read: () => Promise<T>,
+  isDone: (value: T) => boolean,
+  timeoutMs: number,
+  intervalMs = 500
+): Promise<void> {
+  const deadline = Date.now() + timeoutMs;
+  let last: T | undefined;
+  while (Date.now() < deadline) {
+    last = await read();
+    if (isDone(last)) return;
+    await new Promise((r) => setTimeout(r, intervalMs));
+  }
+  throw new Error(
+    `expectPoll: condition not met within ${timeoutMs}ms (last value: ${JSON.stringify(last)})`
+  );
+}

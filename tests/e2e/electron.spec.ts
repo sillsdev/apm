@@ -1,7 +1,14 @@
 import { test, expect } from '@playwright/test';
 import path from 'path';
 import dotenv from 'dotenv';
-import { launchApp, closeApp, loginToTeamScreen, LaunchedApp } from './helpers';
+import {
+  launchApp,
+  closeApp,
+  loginToTeamScreen,
+  waitForOrbitQueueEmpty,
+  deleteTeamIfExists,
+  LaunchedApp,
+} from './helpers';
 
 // Mirror Vite's env loading order, same as src/renderer/cypress/config/local.config.ts.
 dotenv.config({ path: path.join(__dirname, '../../src/renderer/.env.local') });
@@ -12,6 +19,9 @@ dotenv.config({
 
 const TEST_USERNAME = process.env.VITE_TEST_EMAIL1 ?? '';
 const TEST_PASSWORD = process.env.VITE_TEST_PW1 ?? '';
+const TEST_TEAM_NAME = 'Test Team';
+const TEAM_CREATION_TEST_NAME =
+  'creates a team + hierarchical Scripture project, adds a section/passage, saves, and goes offline';
 
 test.describe('APM desktop e2e sanity check', () => {
   let launched: LaunchedApp;
@@ -20,8 +30,16 @@ test.describe('APM desktop e2e sanity check', () => {
     launched = await launchApp();
   });
 
-  test.afterEach(async () => {
+  test.afterEach(async ({}, testInfo) => {
     if (launched) await closeApp(launched);
+    // Team names must be unique, so leaving "Test Team" behind would break
+    // #teamCommit (nameInUse) on every subsequent run of this test.
+    if (testInfo.title === TEAM_CREATION_TEST_NAME) {
+      await deleteTeamIfExists(TEST_TEAM_NAME, {
+        username: TEST_USERNAME,
+        password: TEST_PASSWORD,
+      });
+    }
   });
 
   test('launches, signs in, and shows Personal Audio Projects', async () => {
@@ -51,11 +69,14 @@ test.describe('APM desktop e2e sanity check', () => {
     expect(appPath.length).toBeGreaterThan(0);
   });
 
-  test('creates a team + hierarchical Scripture project, adds a section/passage, saves, and goes offline', async () => {
+  test(TEAM_CREATION_TEST_NAME, async () => {
     // Many more real-network round trips (team/project create, orbit sync)
     // than the login-only sanity check, so the default 60s test timeout
-    // isn't enough headroom.
-    test.setTimeout(180_000);
+    // isn't enough headroom. Worst case sums close to 300s on its own
+    // (login + creation steps + the 60s save-queue wait + the 150s exit
+    // poll), so this needs real margin above that, not just the 60s test
+    // itself.
+    test.setTimeout(420_000);
 
     // Capture this now, before "Go Offline" exits the process — once the
     // underlying connection drops, launched.app.process() itself throws.
@@ -73,7 +94,7 @@ test.describe('APM desktop e2e sanity check', () => {
     //    until the name field is dirty and not already in use.
     await authed.locator('#TeamActAdd').click();
     await authed.locator('#teamDialog').waitFor({ state: 'visible' });
-    await authed.locator('#teamName').fill('Test Team');
+    await authed.locator('#teamName').fill(TEST_TEAM_NAME);
     await authed.locator('#teamCommit').click();
 
     // 2. The new team's card renders via TeamItem (id="TeamItem" is reused
@@ -81,7 +102,7 @@ test.describe('APM desktop e2e sanity check', () => {
     //    trigger is an unlabeled AddCard with id="teamAdd-<teamId>".
     const teamCard = authed
       .locator('#TeamItem')
-      .filter({ hasText: 'Test Team' });
+      .filter({ hasText: TEST_TEAM_NAME });
     await teamCard.waitFor({ state: 'visible', timeout: 30_000 });
     await teamCard.locator('[id^="teamAdd-"]').click();
 
@@ -122,25 +143,46 @@ test.describe('APM desktop e2e sanity check', () => {
     await authed.locator('#planSheetAddSec').click();
     await authed.locator('#secEnd').click();
 
-    // 8. Type a valid chapter:verse reference into the new passage row. The
-    //    reference cell is the only one carrying both the row's "pass" class
-    //    and a "ref"/"refErr" class (react-datasheet: double-click a <td> to
-    //    mount an <input class="data-editor">; Enter commits the edit).
-    const referenceCell = authed.locator('td.pass.ref, td.pass.refErr').first();
-    await referenceCell.waitFor({ state: 'visible', timeout: 10_000 });
-    await referenceCell.dblclick();
-    const cellEditor = authed.locator('input.data-editor');
-    await cellEditor.fill('1:1');
-    await cellEditor.press('Enter');
+    // 8. Fill in the new passage row's book and reference. The book cell
+    //    (td.book.pass) starts empty here, which — per rowCells() in
+    //    usePlanSheetFill.tsx — also gives it a "refErr" class (book AND
+    //    reference cells both get flagged "refErr" when their value is
+    //    falsy), so a selector matching just ".pass.refErr" ambiguously
+    //    matches the book cell first, not the reference cell. The book
+    //    cell's editor is a react-select (BookSelect.tsx): double-click to
+    //    open it, type to filter, Tab selects the highlighted option and
+    //    closes the menu (tabSelectsValue), a second Tab then moves the
+    //    grid's own selection to the reference column. From there the cell
+    //    is only *selected*, not yet in edit mode — react-datasheet enters
+    //    edit mode on the first keystroke, using it as the initial value.
+    // Each step needs a beat for React to process the previous one's state
+    // update before the next keystroke fires — back-to-back with no pause
+    // races ahead of it (e.g. the second Tab landing before the first Tab's
+    // react-select onCommit/menu-close has actually finished).
+    const bookCell = authed.locator('td.book.pass').first();
+    await bookCell.waitFor({ state: 'visible', timeout: 10_000 });
+    await bookCell.dblclick();
+    await authed.waitForTimeout(300);
+    await authed.keyboard.type('g'); // filters to "Genesis" (first match)
+    await authed.waitForTimeout(300);
+    await authed.keyboard.press('Tab'); // commits the book selection
+    await authed.waitForTimeout(300);
+    await authed.keyboard.press('Tab'); // moves grid selection to reference
+    await authed.waitForTimeout(300);
+    await authed.keyboard.type('1:1');
+    await authed.waitForTimeout(300);
+    await authed.keyboard.press('Enter'); // commits the reference
 
-    // 9. Save persists the sheet; the button is disabled until a change is
-    //    pending, which the reference edit above just triggered. Wait for it
-    //    to go back to disabled (changed -> false on success) so the save is
-    //    actually finished before moving on, rather than racing it.
+    // 9. Save persists the sheet to the server. The real completion signal
+    //    is Orbit's own persisted request queue for the 'remote' source
+    //    going empty — not the Save button's disabled state (flips the
+    //    instant saving *starts*, then stays disabled either way once done)
+    //    or the "Saving..." toast (auto-hides after 30s regardless of real
+    //    completion — see SnackBar.tsx's autoHideDuration).
     const saveButton = authed.locator('#planSheetSave');
     await expect(saveButton).toBeEnabled({ timeout: 10_000 });
     await saveButton.click();
-    await expect(saveButton).toBeDisabled({ timeout: 30_000 });
+    await waitForOrbitQueueEmpty(authed, 'remote', 60_000);
 
     // 10. Reproduces the reported crash: clicking "Go Offline" used to leave
     //     window-all-closed's app.quit() as the last thing that ran, killing
@@ -157,8 +199,11 @@ test.describe('APM desktop e2e sanity check', () => {
     await goOfflineButton.waitFor({ state: 'visible', timeout: 10_000 });
     await goOfflineButton.click();
 
-    await expect
-      .poll(() => mainProcess.exitCode, { timeout: 30_000 })
-      .toBe(0);
+    // checkSavedFn (AppHead.tsx) drains both the remote and datachanges
+    // queues before the logout/relaunch handoff proceeds, on top of the
+    // relaunch's own full app reboot — under real network conditions this
+    // has taken well over 60s to actually flip exitCode even on a confirmed
+    // successful run, so give it real headroom rather than false-failing.
+    await expect.poll(() => mainProcess.exitCode, { timeout: 150_000 }).toBe(0);
   });
 });

@@ -178,7 +178,12 @@ export const AppHead = (props: IProps) => {
   };
 
   useEffect(() => {
-    if (tokenState.expiresAt === -1) {
+    // expiresAt is legitimately -1 while genuinely offline (no online token
+    // to expire) — this used to fire Logout unconditionally, which re-ran
+    // the whole "Go Offline" teardown/relaunch flow every time AppHead
+    // mounted offline, looping the app through logout -> relaunch forever.
+    // Loading.tsx's equivalent check already guards with !offline; mirror it.
+    if (!getGlobal('offline') && tokenState.expiresAt === -1) {
       handleMenu('Logout');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
