@@ -533,6 +533,7 @@ const schemaDefinition: RecordSchemaSettings = {
         data: { type: 'string' },
         planId: { type: 'number' },
         uuid: { type: 'string' },
+        complete: { type: 'boolean' },
       },
       relationships: {},
     },
@@ -1289,7 +1290,7 @@ if (process.env.NODE_ENV === 'test') {
 } else {
   waitForIt(
     'backup open',
-    () => backup?.cache.isDBOpen,
+    () => Boolean(backup?.cache?.isDBOpen),
     () => false,
     1000
   ).then(() => {

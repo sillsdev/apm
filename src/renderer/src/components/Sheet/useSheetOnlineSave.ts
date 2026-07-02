@@ -32,6 +32,7 @@ import {
   currentDateTime,
 } from '../../utils';
 import { usePassageType } from '../../crud/usePassageType';
+import JSONAPISource from '@orbit/jsonapi';
 
 interface SaveRec {
   id: string;
@@ -57,6 +58,7 @@ export const useWfOnlineSave = (props: IProps) => {
   const { setComplete } = props;
   const [memory] = useGlobal('memory');
   const [coordinator] = useGlobal('coordinator');
+  const remote = coordinator?.getSource('remote') as JSONAPISource;
   const backup = coordinator?.getSource('backup') as IndexedDBSource;
   const [plan] = useGlobal('plan'); //will be constant here
   const { getPassageTypeRec, checkIt } = usePassageType();
@@ -142,18 +144,20 @@ export const useWfOnlineSave = (props: IProps) => {
       }
       recs.push(rowRec);
     }
+    let completepct = 20;
     if (anychanged || deleteItems.length > 0) {
       let sp: SectionPassage = {
         attributes: {
           data: JSON.stringify(recs),
           planId: remoteIdNum('plan', plan, memory?.keyMap as RecordKeyMap),
           uuid: generateUUID(),
+          complete: false,
         },
         type: 'sectionpassage',
       } as SectionPassage;
       const rn = new StandardRecordNormalizer({ schema: memory?.schema });
       sp = rn.normalizeRecord(sp) as SectionPassageD;
-      setComplete(20);
+      setComplete(completepct);
       const startTime = currentDateTime();
       const rec = await memory.update((t) => t.addRecord(sp), {
         label: 'Update Plan Section and Passages',
@@ -165,53 +169,58 @@ export const useWfOnlineSave = (props: IProps) => {
           },
         },
       });
-      //null only if sent twice by orbit
-      if (rec) {
-        setComplete(50);
-
-        await waitForRemoteId(
-          rec as InitializedRecord,
-          memory?.keyMap as RecordKeyMap
-        );
-        //must wait for these...in case they they navigate away before done
-        await forceDataChanges(startTime);
-
-        const anyNew = sheet.reduce(
-          (prev, cur) =>
-            prev ||
-            (isSectionRow(cur) && isSectionAdding(cur)) ||
-            (isPassageRow(cur) && isPassageAdding(cur)),
-          false
-        );
-        hasNew = anyNew;
-        if (anyNew) {
-          //set the ids in the sheet
-          //outrecs is an array of arrays of IRecords
-          const outrecs = JSON.parse((rec as any)?.attributes?.data);
-          sheet.forEach((row, index) => {
-            if (isSectionRow(row) && isSectionAdding(row))
-              row.sectionId = {
-                type: 'section',
-                id: remoteIdGuid(
-                  'section',
-                  (outrecs[index][0] as SaveRec).id,
-                  memory?.keyMap as RecordKeyMap
-                ) as string,
-              };
-            if (isPassageRow(row) && isPassageAdding(row)) {
-              row.passage = findRecord(
-                memory,
-                'passage',
-                remoteIdGuid(
-                  'passage',
-                  (outrecs[index][isSectionRow(row) ? 1 : 0] as SaveRec).id,
-                  memory?.keyMap as RecordKeyMap
-                ) as string
-              ) as PassageD;
-            }
-          });
-        }
+      await waitForRemoteId(
+        rec as InitializedRecord,
+        memory?.keyMap as RecordKeyMap
+      );
+      if (!(rec as SectionPassageD)?.attributes?.complete) {
+        let result = rec as SectionPassageD;
+        do {
+          result = (await remote.query((q: any) =>
+            q.findRecord({ type: 'sectionpassage', id: sp.id })
+          )) as SectionPassageD;
+          completepct = Math.max(completepct + 10, 50);
+          setComplete(completepct);
+        } while (!result.attributes?.complete);
       }
+
+      const anyNew = sheet.reduce(
+        (prev, cur) =>
+          prev ||
+          (isSectionRow(cur) && isSectionAdding(cur)) ||
+          (isPassageRow(cur) && isPassageAdding(cur)),
+        false
+      );
+      hasNew = anyNew;
+      if (anyNew) {
+        //set the ids in the sheet
+        //outrecs is an array of arrays of IRecords
+        const outrecs = JSON.parse((rec as any)?.attributes?.data);
+        sheet.forEach((row, index) => {
+          if (isSectionRow(row) && isSectionAdding(row))
+            row.sectionId = {
+              type: 'section',
+              id: remoteIdGuid(
+                'section',
+                (outrecs[index][0] as SaveRec).id,
+                memory?.keyMap as RecordKeyMap
+              ) as string,
+            };
+          if (isPassageRow(row) && isPassageAdding(row)) {
+            row.passage = findRecord(
+              memory,
+              'passage',
+              remoteIdGuid(
+                'passage',
+                (outrecs[index][isSectionRow(row) ? 1 : 0] as SaveRec).id,
+                memory?.keyMap as RecordKeyMap
+              ) as string
+            ) as PassageD;
+          }
+        });
+      }
+      //must wait for these...in case they they navigate away before done
+      await forceDataChanges(startTime);
     }
     if (deleteItems.length > 0) {
       const tb = new RecordTransformBuilder();
@@ -230,6 +239,7 @@ export const useWfOnlineSave = (props: IProps) => {
         await memory.sync(() => operations);
       }
     }
+
     checkIt('useWfOnlineSave');
     return hasNew || deleteItems.length > 0;
   };

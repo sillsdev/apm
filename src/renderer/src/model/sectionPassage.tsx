@@ -5,6 +5,7 @@ export interface SectionPassage extends UninitializedRecord {
     data: string;
     planId: number;
     uuid: string;
+    complete: boolean;
   };
 }
 
