@@ -140,12 +140,14 @@ export const fetchOrbitData =
           // (extra forceLogin()/ipc.logout() or auth0Logout() calls). Low
           // severity — everything invalidateOnlineSession() does is
           // idempotent-ish — but worth knowing if this ever needs tightening.
-          handleUnauthorized(
-            tokenCtx,
-            coordinator,
-            fingerprint,
-            setOrbitRetries
-          );
+          void Promise.resolve(
+            handleUnauthorized(
+              tokenCtx,
+              coordinator,
+              fingerprint,
+              setOrbitRetries
+            )
+          ).catch(() => {}); // no msg if fails
           return;
         }
         const apiEx = ex as IApiError;

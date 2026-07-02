@@ -3,12 +3,12 @@
 // `window-all-closed` (registered in ipcMethods.ts) must not quit the app
 // while that replacement is in flight — even though the window count can
 // legitimately hit zero for an instant during the handoff.
-let isLogingIn = false;
+let isLoggingIn = false;
 
 export function setLogingIn(value: boolean): void {
-  isLogingIn = value;
+  isLoggingIn = value;
 }
 
 export function getLogingIn(): boolean {
-  return isLogingIn;
+  return isLoggingIn;
 }

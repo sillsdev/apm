@@ -248,8 +248,8 @@ export async function deleteTeamIfExists(
     await authed.getByRole('button', { name: 'Advanced' }).click();
     await authed.locator('#deleteExpand').click();
     await authed.locator('#alertYes').click();
-    // Let the delete actually sync before tearing this instance down.
-    await authed.waitForTimeout(3_000);
+    // Let the delete actually sync (drain Orbit's remote request queue) before tearing this instance down.
+    await waitForOrbitQueueEmpty(authed, 'remote', 60_000);
   } finally {
     await closeApp(launched);
   }
