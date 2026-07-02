@@ -494,8 +494,19 @@ describe('evaluateMarkVersesReferenceStatus (per-row warning reason)', () => {
     expect(status(['1:1', '1:2b', '1:3'], 1)).toEqual({});
   });
 
-  it('checks only range/format for the first row (no preceding reference)', () => {
-    expect(status(['1:4', '1:5'], 0)).toEqual({});
+  it('reports no reason for a first row that starts the passage', () => {
+    // Passage starts at 1:1, so a first row of 1:1 skips nothing.
+    expect(status(['1:1', '1:2'], 0)).toEqual({});
+  });
+
+  it('reports skipsAhead for a first row (no preceding reference) that does not start the passage', () => {
+    // Passage starts at 1:1, so a first row of 1:4 skips 1:1..1:3.
+    expect(status(['1:4', '1:5'], 0)).toEqual({
+      reason: MarkVersesWarningReason.SkipsAhead,
+    });
+  });
+
+  it('reports outOfRange before skipsAhead for the first row', () => {
     // 1:8 is in the book but beyond the passage's 1:5 end.
     expect(status(['1:8', '1:5'], 0)).toEqual({
       reason: MarkVersesWarningReason.OutOfRange,
@@ -528,9 +539,28 @@ describe('markVersesSkippedPassageRefs', () => {
     ]);
   });
 
-  it('returns empty when either reference is unparseable', () => {
-    expect(markVersesSkippedPassageRefs('', '1:4', passage)).toEqual([]);
+  it('lists passage verses before the new start when there is no preceding row', () => {
+    expect(markVersesSkippedPassageRefs('', '1:4', passage)).toEqual([
+      '1:1',
+      '1:2',
+      '1:3',
+    ]);
+    expect(markVersesSkippedPassageRefs(undefined, '1:4', passage)).toEqual([
+      '1:1',
+      '1:2',
+      '1:3',
+    ]);
+  });
+
+  it('returns empty with no preceding row when the new ref starts the passage', () => {
+    expect(markVersesSkippedPassageRefs('', '1:1', passage)).toEqual([]);
+  });
+
+  it('returns empty when a reference is unparseable', () => {
+    // Unparseable new ref: no start to bound the skipped range.
     expect(markVersesSkippedPassageRefs('1:1', 'nope', passage)).toEqual([]);
+    // Non-empty but unparseable preceding ref: not treated as "no preceding row".
+    expect(markVersesSkippedPassageRefs('bogus', '1:4', passage)).toEqual([]);
   });
 });
 

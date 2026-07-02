@@ -346,19 +346,30 @@ const overlapsEarlierRow = (
 /**
  * Passage verse refs skipped when `newRef` starts past `prevRef`'s end — those
  * strictly after `prevRef`'s end and strictly before `newRef`'s start. Used to
- * fill the `missingReferences` tooltip's verse list. Returns [] when nothing is
- * skipped or the refs can't be parsed.
+ * fill the `missingReferences` tooltip's verse list.
+ *
+ * With no preceding row (`prevRef` empty/undefined), `newRef` is expected to sit
+ * at the passage start, so every passage verse before `newRef`'s start counts as
+ * skipped — the lower bound drops to before the passage. Returns [] when nothing
+ * is skipped, `newRef` can't be parsed, or a non-empty `prevRef` can't be parsed.
  */
 export const markVersesSkippedPassageRefs = (
-  prevRef: string,
+  prevRef: string | undefined,
   newRef: string,
   passageRefs: string[]
 ): string[] => {
-  const prev = parseMarkVersesReference(prevRef);
   const next = parseMarkVersesReference(newRef);
-  if (!prev || !next) return [];
+  if (!next) return [];
 
-  const afterKey = verseOrderKey(prev.end.chapter, prev.end.verse);
+  // Exclusive lower bound. Without a preceding row the skipped range opens at
+  // the start of the passage, so -Infinity keeps every ref before `newRef`.
+  let afterKey = Number.NEGATIVE_INFINITY;
+  if (isNonEmptyRef(prevRef)) {
+    const prev = parseMarkVersesReference(prevRef);
+    if (!prev) return [];
+    afterKey = verseOrderKey(prev.end.chapter, prev.end.verse);
+  }
+
   const beforeKey = verseOrderKey(next.start.chapter, next.start.verse);
   return passageRefs.filter((ref) => {
     const parsed = parseMarkVersesReference(ref);
