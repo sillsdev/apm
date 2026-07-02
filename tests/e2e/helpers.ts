@@ -6,6 +6,7 @@ import {
 import path from 'path';
 import os from 'os';
 import fs from 'fs';
+import { execFileSync } from 'child_process';
 
 // The built main-process entry. Run `npm run build` before the e2e suite.
 export const MAIN_JS = path.join(__dirname, '../../out/main/index.js');
@@ -53,12 +54,54 @@ export async function launchApp(): Promise<LaunchedApp> {
   return { app, profileDir };
 }
 
+/**
+ * "Go Offline" now restarts the whole app (relaunchApp() in the main
+ * process) rather than just quitting — the relaunched instance is a brand
+ * new OS process using the same --user-data-dir, which Playwright's
+ * ElectronApplication handle never launched and so can't track or close.
+ * Best-effort-kill anything still holding that profile dir so it doesn't
+ * leak a background process, and so the directory can actually be removed.
+ */
+function killProcessesUsingProfile(profileDir: string): void {
+  if (process.platform !== 'win32') return;
+  try {
+    const escaped = profileDir.replace(/\\/g, '\\\\').replace(/'/g, "''");
+    const script =
+      `Get-CimInstance Win32_Process | ` +
+      `Where-Object { $_.CommandLine -like '*${escaped}*' } | ` +
+      `ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }`;
+    execFileSync('powershell.exe', ['-NoProfile', '-Command', script], {
+      stdio: 'ignore',
+    });
+  } catch {
+    // best-effort cleanup only
+  }
+}
+
 export async function closeApp({
   app,
   profileDir,
 }: LaunchedApp): Promise<void> {
   await app.close().catch(() => {});
-  fs.rmSync(profileDir, { recursive: true, force: true });
+  // A relaunch can take a few seconds to actually start (loading the whole
+  // bundle again), so a single kill attempt right after exit can miss it —
+  // it grabs the profile dir's lockfile sometime after this runs. Re-kill on
+  // every retry rather than once up front. This is best-effort OS temp-dir
+  // cleanup, not part of what the test is verifying — a leftover profile
+  // dir (or a relaunched instance still exiting) shouldn't fail the run.
+  for (let attempt = 0; attempt < 10; attempt++) {
+    killProcessesUsingProfile(profileDir);
+    try {
+      fs.rmSync(profileDir, { recursive: true, force: true });
+      return;
+    } catch (err) {
+      if (attempt === 9) {
+        console.warn(`closeApp: could not remove ${profileDir}:`, err);
+        return;
+      }
+      await new Promise((r) => setTimeout(r, 1000));
+    }
+  }
 }
 
 // The app opens several BrowserWindows: the renderer (file://…index.html), a

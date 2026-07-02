@@ -9,6 +9,7 @@ import {
 import { createWindow } from './index';
 import path from 'path';
 import { is } from '@electron-toolkit/utils';
+import { setLogingIn } from './loginState.js';
 
 let win: BrowserWindow | null = null;
 
@@ -34,8 +35,10 @@ export function createAuthWindow(hasUsed: boolean, email: string) {
   }
 
   function workOffline() {
+    setLogingIn(true);
     createWindow();
-    return destroyAuthWin();
+    destroyAuthWin();
+    setLogingIn(false);
   }
 
   const menu = Menu.buildFromTemplate([
@@ -82,8 +85,10 @@ export function createAuthWindow(hasUsed: boolean, email: string) {
 
   webRequest.onBeforeRequest(filter, async ({ url }) => {
     await loadTokens(url);
+    setLogingIn(true);
     createWindow();
-    return destroyAuthWin();
+    destroyAuthWin();
+    setLogingIn(false);
   });
 
   // win.on('authenticated', () => {

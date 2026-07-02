@@ -16,7 +16,7 @@ import {
   useMounted,
   logError,
   Severity,
-  exitApp,
+  relaunchApp,
   useMyNavigate,
   useWaitForRemoteQueue,
   useMobile,
@@ -196,7 +196,11 @@ export const AppHead = (props: IProps) => {
       if (userId) localStorage.setItem(LocalKey.userId, userId);
       return;
     }
-    if (localStorage.getItem(LocalKey.userId)) exitApp();
+    // This used to call exitApp(), which just quits with nothing to bring
+    // the app back — the user is left staring at a closed app after
+    // confirming "Go Offline". relaunchApp() quits and restarts, so it
+    // reopens straight into the newly-offline session.
+    if (localStorage.getItem(LocalKey.userId)) relaunchApp();
     else setView('Logout');
   };
 

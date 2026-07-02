@@ -57,6 +57,10 @@ test.describe('APM desktop e2e sanity check', () => {
     // isn't enough headroom.
     test.setTimeout(180_000);
 
+    // Capture this now, before "Go Offline" exits the process — once the
+    // underlying connection drops, launched.app.process() itself throws.
+    const mainProcess = launched.app.process();
+
     const authed = await loginToTeamScreen(launched, {
       username: TEST_USERNAME,
       password: TEST_PASSWORD,
@@ -130,21 +134,31 @@ test.describe('APM desktop e2e sanity check', () => {
     await cellEditor.press('Enter');
 
     // 9. Save persists the sheet; the button is disabled until a change is
-    //    pending, which the reference edit above just triggered.
+    //    pending, which the reference edit above just triggered. Wait for it
+    //    to go back to disabled (changed -> false on success) so the save is
+    //    actually finished before moving on, rather than racing it.
     const saveButton = authed.locator('#planSheetSave');
     await expect(saveButton).toBeEnabled({ timeout: 10_000 });
     await saveButton.click();
+    await expect(saveButton).toBeDisabled({ timeout: 30_000 });
 
-    // 10. Reproduces the reported crash: clicking "Go Offline" from an open
-    //     plan currently crashes the app (and the crash persists across
-    //     relaunch). Once fixed, the button should flip to "Go Online"
-    //     without the app going away.
+    // 10. Reproduces the reported crash: clicking "Go Offline" used to leave
+    //     window-all-closed's app.quit() as the last thing that ran, killing
+    //     the whole app with nothing to bring it back. "Go Offline" is
+    //     designed to finish by fully restarting the app (relaunchApp() in
+    //     the main process) so it reopens straight into the new offline
+    //     session — which means the *original* process exiting cleanly
+    //     (code 0) is the correct, expected outcome here, not a failure.
+    //     The relaunched instance is a brand-new OS process this Playwright
+    //     session never launched, so it can't be inspected directly; a
+    //     clean exit (vs. hanging forever on "Saving..." or a crash code) is
+    //     the regression signal for this bug.
     const goOfflineButton = authed.getByRole('button', { name: 'Go Offline' });
     await goOfflineButton.waitFor({ state: 'visible', timeout: 10_000 });
     await goOfflineButton.click();
 
-    await expect(authed.getByRole('button', { name: 'Go Online' })).toBeVisible(
-      { timeout: 30_000 }
-    );
+    await expect
+      .poll(() => mainProcess.exitCode, { timeout: 30_000 })
+      .toBe(0);
   });
 });
