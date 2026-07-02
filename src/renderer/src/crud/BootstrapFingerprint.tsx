@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useGlobal } from '../context/useGlobal';
-import { getFingerprintArray } from '../utils';
+import { getFingerprintArray, infoMsg, logError, Severity } from '../utils';
+import bugsnagClient from '../auth/bugsnagClient';
 
 /** Fingerprint is non-critical for first paint; load after mount. */
 export function BootstrapFingerprint() {
@@ -12,11 +13,18 @@ export function BootstrapFingerprint() {
       .then(([fp]) => {
         if (!cancelled && fp) setFingerprint(fp);
       })
-      .catch(() => {});
+      .catch((err) => {
+        logError(
+          Severity.info,
+          bugsnagClient,
+          infoMsg(err as Error, 'Fingerprint failed')
+        );
+      });
     return () => {
       cancelled = true;
     };
-  }, [setFingerprint]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return null;
 }
