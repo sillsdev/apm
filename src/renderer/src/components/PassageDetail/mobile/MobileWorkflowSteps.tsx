@@ -226,109 +226,111 @@ export default function MobileWorkflowSteps() {
         }}
       >
         {/* Passage dropdown */}
-        <Box
-          sx={{
-            flexShrink: 0,
-            position: 'relative',
-            zIndex: 1,
-            mr: 1,
-            display: 'flex',
-            alignItems: 'center',
-          }}
-        >
-          <Button
-            size="small"
-            startIcon={
-              !isStepProgression && currentTip ? (
-                <InfoIcon
-                  sx={{ color: 'primary.light' }}
-                  fontSize="small"
-                  data-cy="workflow-step-tip"
-                  aria-label={currentTip}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setTipOpen(true);
-                  }}
-                />
-              ) : undefined
-            }
-            endIcon={hasMultipleOptions ? <ArrowDropDownIcon /> : undefined}
+        {hasMultipleOptions && (
+          <Box
             sx={{
-              minWidth: 'auto',
-              // These per-breakpoint widths are fine-tuned to constrain the dropdown so
-              // its label truncates before it can overlap the parallelograms
-              maxWidth: { xs: '45vw', md: '20vw', lg: '25vw' },
+              flexShrink: 0,
+              position: 'relative',
+              zIndex: 1,
+              mr: 1,
+              display: 'flex',
+              alignItems: 'center',
             }}
-            onClick={(e) => {
-              if (!hasMultipleOptions) return;
-              if (recording || commentRecording) return;
-              if (getGlobal('remoteBusy')) {
-                showMessage(ts.wait);
-                return;
-              }
-              setPassageMenuAnchor(e.currentTarget);
-            }}
-            data-cy="passage-dropdown"
           >
-            <Box
-              component="span"
+            <Button
+              size="small"
+              startIcon={
+                !isStepProgression && currentTip ? (
+                  <InfoIcon
+                    sx={{ color: 'primary.light' }}
+                    fontSize="small"
+                    data-cy="workflow-step-tip"
+                    aria-label={currentTip}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setTipOpen(true);
+                    }}
+                  />
+                ) : undefined
+              }
+              endIcon={<ArrowDropDownIcon />}
               sx={{
-                fontSize: 'small',
-                minWidth: 0,
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
+                minWidth: 'auto',
+                // These per-breakpoint widths are fine-tuned to constrain the dropdown so
+                // its label truncates before it can overlap the parallelograms
+                maxWidth: { xs: '45vw', md: '20vw', lg: '25vw' },
               }}
+              onClick={(e) => {
+                if (!hasMultipleOptions) return;
+                if (recording || commentRecording) return;
+                if (getGlobal('remoteBusy')) {
+                  showMessage(ts.wait);
+                  return;
+                }
+                setPassageMenuAnchor(e.currentTarget);
+              }}
+              data-cy="passage-dropdown"
+            >
+              <Box
+                component="span"
+                sx={{
+                  fontSize: 'small',
+                  minWidth: 0,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {isStepProgression
+                  ? passageRef(passage)
+                  : getWfLabel(currentLabel)}
+              </Box>
+            </Button>
+            <Menu
+              anchorEl={passageMenuAnchor}
+              open={Boolean(passageMenuAnchor)}
+              onClose={() => setPassageMenuAnchor(null)}
             >
               {isStepProgression
-                ? passageRef(passage)
-                : getWfLabel(currentLabel)}
-            </Box>
-          </Button>
-          <Menu
-            anchorEl={passageMenuAnchor}
-            open={Boolean(passageMenuAnchor)}
-            onClose={() => setPassageMenuAnchor(null)}
-          >
-            {isStepProgression
-              ? sectionPassages.map((p) => (
-                  <MenuItem
-                    key={p.id}
-                    selected={p.id === passage?.id}
-                    onClick={() => {
-                      navigateToPassage(p);
-                      setPassageMenuAnchor(null);
-                    }}
-                    sx={{
-                      display: 'block',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    {passageRef(p)}
-                  </MenuItem>
-                ))
-              : workflow.map((step) => (
-                  <MenuItem
-                    key={step.id}
-                    selected={step.id === currentstep}
-                    onClick={() => {
-                      handleSelect(step.id)();
-                      setPassageMenuAnchor(null);
-                    }}
-                    sx={{
-                      display: 'block',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    {getWfLabel(step.label)}
-                  </MenuItem>
-                ))}
-          </Menu>
-        </Box>
+                ? sectionPassages.map((p) => (
+                    <MenuItem
+                      key={p.id}
+                      selected={p.id === passage?.id}
+                      onClick={() => {
+                        navigateToPassage(p);
+                        setPassageMenuAnchor(null);
+                      }}
+                      sx={{
+                        display: 'block',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {passageRef(p)}
+                    </MenuItem>
+                  ))
+                : workflow.map((step) => (
+                    <MenuItem
+                      key={step.id}
+                      selected={step.id === currentstep}
+                      onClick={() => {
+                        handleSelect(step.id)();
+                        setPassageMenuAnchor(null);
+                      }}
+                      sx={{
+                        display: 'block',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {getWfLabel(step.label)}
+                    </MenuItem>
+                  ))}
+            </Menu>
+          </Box>
+        )}
 
         {/* Step/passage parallelograms */}
         <Box
