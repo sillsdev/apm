@@ -35,6 +35,8 @@ import { ToolSlug, useStepTool } from '../../../crud';
 import { useRole } from '../../../crud/useRole';
 import { useStepPermissions } from '../../../utils/useStepPermission';
 
+const DESKTOP_BREAKPOINT = '@media (min-width:1401px)';
+
 export default function MobileWorkflowSteps() {
   const {
     workflow,
@@ -338,7 +340,7 @@ export default function MobileWorkflowSteps() {
             overflowX: 'auto',
             display: 'flex',
             flex: 1,
-            '@media (min-width:1401px)': {
+            [DESKTOP_BREAKPOINT]: {
               flex: 'none',
               position: 'absolute',
               left: 0,
@@ -416,7 +418,7 @@ export default function MobileWorkflowSteps() {
             height: 30,
             flex: 1,
             display: 'none',
-            '@media (min-width:1401px)': { display: 'block' },
+            [DESKTOP_BREAKPOINT]: { display: 'block' },
           }}
         />
       </Box>
