@@ -124,6 +124,12 @@ const mockCurrentPassage = {
   attributes: { sequencenum: 1, reference: '1:1', book: 'GEN' },
 } as any;
 
+const RACETRACK_STATE_COLOR = {
+  current: 'rgb(51, 51, 51)',
+  complete: 'rgb(168, 168, 168)',
+  incomplete: 'rgb(224, 224, 224)',
+};
+
 const createInitialState = (
   overrides: Partial<GlobalState> = {}
 ): GlobalState => ({
@@ -332,13 +338,17 @@ describe('MobileWorkflowSteps', () => {
 
       cy.get('[data-cy="workflow-step"]')
         .eq(0)
-        .should('have.css', 'background-color', 'rgb(51, 51, 51)');
+        .should('have.css', 'background-color', RACETRACK_STATE_COLOR.current);
       cy.get('[data-cy="workflow-step"]')
         .eq(1)
-        .should('have.css', 'background-color', 'rgb(168, 168, 168)');
+        .should('have.css', 'background-color', RACETRACK_STATE_COLOR.complete);
       cy.get('[data-cy="workflow-step"]')
         .eq(2)
-        .should('have.css', 'background-color', 'rgb(224, 224, 224)');
+        .should(
+          'have.css',
+          'background-color',
+          RACETRACK_STATE_COLOR.incomplete
+        );
     });
 
     it('shows a tip button in the step label area that opens a dialog', () => {
@@ -556,15 +566,19 @@ describe('MobileWorkflowSteps', () => {
       // p-0 sequencenum 0 < current sequencenum 1 → complete
       cy.get('[data-cy="passage-step"]')
         .eq(0)
-        .should('have.css', 'background-color', 'rgb(168, 168, 168)');
+        .should('have.css', 'background-color', RACETRACK_STATE_COLOR.complete);
       // p-1 is current passage
       cy.get('[data-cy="passage-step"]')
         .eq(1)
-        .should('have.css', 'background-color', 'rgb(51, 51, 51)');
+        .should('have.css', 'background-color', RACETRACK_STATE_COLOR.current);
       // p-2 sequencenum 2 > current sequencenum 1 → incomplete
       cy.get('[data-cy="passage-step"]')
         .eq(2)
-        .should('have.css', 'background-color', 'rgb(224, 224, 224)');
+        .should(
+          'have.css',
+          'background-color',
+          RACETRACK_STATE_COLOR.incomplete
+        );
     });
 
     it('step label shows current passage book and reference', () => {
