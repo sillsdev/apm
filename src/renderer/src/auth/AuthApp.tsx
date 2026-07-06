@@ -8,6 +8,11 @@ export const AuthApp: React.FC = () => {
     <Auth0Provider
       domain={auth0Domain}
       clientId={webClientId}
+      // useRefreshTokens is a top-level Auth0Provider option (from
+      // @auth0/auth0-spa-js Auth0ClientOptions), not an authorization param.
+      // Nested inside authorizationParams it is sent to /authorize as an
+      // unrecognized query param and refresh-token rotation stays disabled.
+      useRefreshTokens={true}
       cacheLocation={
         (import.meta.env.VITE_AUTH_CACHE as 'localstorage' | 'memory') ||
         'memory'
@@ -15,7 +20,6 @@ export const AuthApp: React.FC = () => {
       authorizationParams={{
         audience: apiIdentifier,
         redirect_uri: import.meta.env.VITE_CALLBACK,
-        useRefreshTokens: true,
       }}
     >
       <TokenChecked />
