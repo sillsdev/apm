@@ -136,6 +136,30 @@ const queryError =
     return remote.requestQueue.retry();
   };
 
+const datachangesQueryError =
+  ({
+    tokenCtx,
+    coordinator,
+    fingerprint,
+    setOrbitRetries,
+  }: QueryStratErrProps) =>
+  (transform: RecordTransform, ex: unknown) => {
+    const datachangeremote = coordinator?.getSource(
+      'datachanges'
+    ) as JSONAPISource;
+    console.log('***** datachanges query fail', transform, ex);
+    if (isUnauthorized(ex)) {
+      return handleUnauthorized(
+        tokenCtx,
+        coordinator,
+        fingerprint,
+        setOrbitRetries,
+        'datachanges'
+      );
+    }
+    return datachangeremote.requestQueue.skip();
+  };
+
 const updateError =
   ({
     tokenCtx,
@@ -379,6 +403,22 @@ export const Sources = async (
     if (!coordinator.sourceNames.includes('datachanges')) {
       coordinator.addSource(datachangeremote);
     }
+    if (!coordinator.strategyNames.includes('datachanges-query-fail'))
+      coordinator.addStrategy(
+        new RequestStrategy({
+          name: 'datachanges-query-fail',
+          source: 'datachanges',
+          on: 'queryFail',
+          action: datachangesQueryError({
+            tokenCtx,
+            orbitError,
+            coordinator,
+            fingerprint,
+            setOrbitRetries,
+          }) as unknown as StategyError,
+          blocking: true,
+        })
+      );
   } //!offline
   let goRemote =
     !offline &&

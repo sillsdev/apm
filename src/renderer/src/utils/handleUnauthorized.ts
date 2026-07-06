@@ -7,15 +7,46 @@ import { syncRemoteAuthHeaders } from './syncRemoteAuthHeaders';
 
 let unauthorizedRetryAttempted = false;
 
-export const skipRemoteQueue = async (remote: JSONAPISource) => {
-  const len = remote?.requestQueue?.length ?? 0;
-  if (len > 0) {
-    try {
-      await remote.requestQueue.skip();
-    } catch {
-      // queue may already be settling
-    }
+export const skipRemoteQueue = async (remote: JSONAPISource | undefined) => {
+  if (!remote?.requestQueue?.length) return;
+  try {
+    await remote.requestQueue.skip();
+  } catch {
+    // queue may already be settling
   }
+};
+
+export const skipAllRemoteQueues = async (
+  coordinator: Coordinator | undefined
+): Promise<void> => {
+  if (!coordinator) return;
+  const remote = coordinator.sourceNames.includes('remote')
+    ? (coordinator.getSource('remote') as JSONAPISource)
+    : undefined;
+  const datachanges = coordinator.sourceNames.includes('datachanges')
+    ? (coordinator.getSource('datachanges') as JSONAPISource)
+    : undefined;
+  await skipRemoteQueue(remote);
+  await skipRemoteQueue(datachanges);
+};
+const LOGOUT_QUEUE_WAIT_MS = 10_000;
+
+/** Best-effort drain before logout; always skips stuck queues so logout can proceed. */
+export const drainQueuesForLogout = async (
+  waitForRemote: (label: string) => Promise<void>,
+  waitForDataChanges: (label: string) => Promise<void>,
+  coordinator: Coordinator | undefined,
+  label: string
+): Promise<void> => {
+  const drain = Promise.all([
+    waitForRemote(label).catch(() => {}),
+    waitForDataChanges(label).catch(() => {}),
+  ]);
+  const timeout = new Promise<void>((resolve) =>
+    setTimeout(resolve, LOGOUT_QUEUE_WAIT_MS)
+  );
+  await Promise.race([drain, timeout]);
+  await skipAllRemoteQueues(coordinator);
 };
 
 export const resetUnauthorizedRetry = () => {
@@ -32,23 +63,33 @@ export const handleUnauthorized = (
   tokenCtx: ITokenContext,
   coordinator: Coordinator,
   fingerprint: string,
-  setOrbitRetries: (r: number) => void
+  setOrbitRetries: (r: number) => void,
+  failedSource: 'remote' | 'datachanges' = 'remote'
 ) => {
   const remote = coordinator?.getSource('remote') as JSONAPISource;
   const datachangeremote = coordinator?.getSource(
     'datachanges'
   ) as JSONAPISource;
+  // Resolve to the queue that actually failed. A blocking queryFail strategy
+  // waits on the returned promise to advance THAT source's request queue, so
+  // retrying/skipping the wrong queue leaves the failed task stuck forever.
+  const failed =
+    (failedSource === 'datachanges' ? datachangeremote : remote) ?? remote;
   const token = tokenCtx?.state?.accessToken;
   if (token && remote && !unauthorizedRetryAttempted) {
     unauthorizedRetryAttempted = true;
     syncRemoteAuthHeaders(remote, token, fingerprint);
     syncRemoteAuthHeaders(datachangeremote, token, fingerprint);
-    return remote.requestQueue.retry();
+    return failed.requestQueue.retry();
   }
   unauthorizedRetryAttempted = false;
   setOrbitRetries(OrbitNetworkErrorRetries);
   tokenCtx?.state?.invalidateOnlineSession();
   localStorage.setItem(LocalKey.offlineAdmin, 'false');
-  void skipRemoteQueue(remote);
-  return remote.requestQueue.skip();
+  // Skip the other queue as a side effect; return the failed queue's skip so
+  // the blocking strategy that invoked us resolves and unsticks.
+  void skipRemoteQueue(
+    failedSource === 'datachanges' ? remote : datachangeremote
+  );
+  return failed.requestQueue.skip();
 };
