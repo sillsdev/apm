@@ -1,4 +1,10 @@
-import { BrowserWindow, Menu, app, dialog } from 'electron';
+import {
+  BrowserWindow,
+  Menu,
+  app,
+  dialog,
+  MenuItemConstructorOptions,
+} from 'electron';
 import {
   getAuthenticationURL,
   getGoogleLogOutUrl,
@@ -54,7 +60,11 @@ export function createAuthWindow(hasUsed: boolean, email: string) {
               return workOffline();
             },
           },
-          ...(is.dev ? [{ role: 'toggleDevTools' }] : ([] as any)),
+          ...(is.dev
+            ? ([
+                { role: 'toggleDevTools' },
+              ] satisfies MenuItemConstructorOptions[])
+            : []),
           {
             label: s.exit,
             click() {

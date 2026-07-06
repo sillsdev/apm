@@ -84,5 +84,5 @@ const renderApp = (fingerprint: string, projectsLoaded: string[] = []) => {
   );
 };
 
-// ponytail: first paint must not await IndexedDB migration or fingerprint.
+// first paint must not await IndexedDB migration or fingerprint.
 renderApp('');
