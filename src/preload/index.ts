@@ -21,6 +21,8 @@ const api = {
   refreshToken: async () => await ipcRenderer.invoke('refresh-token'),
   setAddToDict: async (value) =>
     await ipcRenderer.invoke('setAddToDict', value),
+  setAuthProcessStrings: async (strings) =>
+    await ipcRenderer.invoke('setAuthProcessStrings', strings),
   setSpellLangs: async (codes) =>
     await ipcRenderer.invoke('setSpellLangs', codes),
   log: async (...args) => await ipcRenderer.invoke('log', ...args),

@@ -2495,6 +2495,55 @@
                <context context-type="sourcefile">DiscussionMenu.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="electronAuth.abortLogin">
+            <source>Abort Login</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">auth-process.ts</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="electronAuth.back">
+            <source>Back</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">auth-process.ts</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="electronAuth.exit">
+            <source>Exit</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">auth-process.ts</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="electronAuth.loginFailed">
+            <source>Login failed</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">auth-process.ts</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="electronAuth.tokenExchangeFailed">
+            <source>Could not complete sign-in (token exchange failed).</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">auth-process.ts</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="electronAuth.tryAgain">
+            <source>Try again</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">auth-process.ts</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="electronAuth.workOffline">
+            <source>Work offline</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">auth-process.ts</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="electronImport.allDataOverwritten">
             <source>All '{name0}' data will be overwritten.</source>
             <target/>

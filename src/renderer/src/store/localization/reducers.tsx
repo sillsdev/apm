@@ -454,6 +454,17 @@ const initialState = {
 			"setSegment": "Set Segment",
 		}
 	}),
+	"electronAuth": new LocalizedStrings({
+		"en": {
+			"abortLogin": "Abort Login",
+			"back": "Back",
+			"exit": "Exit",
+			"loginFailed": "Login failed",
+			"tokenExchangeFailed": "Could not complete sign-in (token exchange failed).",
+			"tryAgain": "Try again",
+			"workOffline": "Work offline",
+		}
+	}),
 	"electronImport": new LocalizedStrings({
 		"en": {
 			"allDataOverwritten": "All '{name0}' data will be overwritten.",
@@ -2277,6 +2288,7 @@ const localizationReducer = function (state = initialState, action: any): ILocal
 				"discussionCard" : new LocalizedStrings(action.payload.data.discussionCard),
 				"discussionList" : new LocalizedStrings(action.payload.data.discussionList),
 				"discussionMenu" : new LocalizedStrings(action.payload.data.discussionMenu),
+				"electronAuth" : new LocalizedStrings(action.payload.data.electronAuth),
 				"electronImport" : new LocalizedStrings(action.payload.data.electronImport),
 				"emailUnverified" : new LocalizedStrings(action.payload.data.emailUnverified),
 				"faithbridge" : new LocalizedStrings(action.payload.data.faithbridge),

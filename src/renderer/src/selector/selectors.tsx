@@ -79,6 +79,9 @@ export const discussionMenuSelector = (state: IState) =>
 export const emailUnverifiedSelector = (state: IState) =>
   localStrings(state as IState, { layout: 'emailUnverified' });
 
+export const electronAuthSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'electronAuth' });
+
 export const faithbridgeSelector = (state: IState) =>
   localStrings(state as IState, { layout: 'faithbridge' });
 
