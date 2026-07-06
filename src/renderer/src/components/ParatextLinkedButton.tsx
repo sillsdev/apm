@@ -78,15 +78,13 @@ function ParatextLinkedButton({ setView }: IProps) {
               gap: 1,
             }}
           >
-            {hasError && (
-              <Typography sx={captionSx}>{addPt(t.notLinked)}</Typography>
-            )}
+            <Typography sx={captionSx}>{addPt(t.notLinked)}</Typography>
             <Button onClick={handleHowTo}>{addPt(t.paratextNotLinked)}</Button>
           </Box>
         ) : isLinked ? (
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <Typography sx={captionSx}>{addPt(t.paratextLinked)}</Typography>
-            {isVerified && <CheckCircleIcon sx={captionSx} />}
+            <CheckCircleIcon sx={captionSx} />
           </Box>
         ) : (
           <Typography sx={captionSx}>
