@@ -426,6 +426,16 @@ export interface IDiscussionMenuStrings extends Localize.LocalizedStringsMethods
     "setSegment": string;
 };
 
+export interface IElectronAuthStrings extends Localize.LocalizedStringsMethods {
+    "abortLogin": string;
+    "back": string;
+    "exit": string;
+    "loginFailed": string;
+    "tokenExchangeFailed": string;
+    "tryAgain": string;
+    "workOffline": string;
+};
+
 export interface IElectronImportStrings extends Localize.LocalizedStringsMethods {
     "allDataOverwritten": string;
     "exportedLost": string;
@@ -2163,6 +2173,7 @@ export interface ILocalizedStrings {
 	discussionCard: IDiscussionCardStrings;
 	discussionList: IDiscussionListStrings;
 	discussionMenu: IDiscussionMenuStrings;
+	electronAuth: IElectronAuthStrings;
 	electronImport: IElectronImportStrings;
 	emailUnverified: IEmailUnverifiedStrings;
 	faithbridge: IFaithbridgeStrings;

@@ -10,6 +10,7 @@ import { createWindow } from './index';
 import path from 'path';
 import { is } from '@electron-toolkit/utils';
 import { setLogingIn } from './loginState.js';
+import { getAuthProcessStrings } from './auth-strings.js';
 
 let win: BrowserWindow | null = null;
 
@@ -41,39 +42,45 @@ export function createAuthWindow(hasUsed: boolean, email: string) {
     setLogingIn(false);
   }
 
-  const menu = Menu.buildFromTemplate([
-    {
-      label: 'Back',
-      submenu: [
-        {
-          label: 'Abort Login',
-          click() {
-            return workOffline();
+  const buildMenu = () => {
+    const s = getAuthProcessStrings();
+    return Menu.buildFromTemplate([
+      {
+        label: s.back,
+        submenu: [
+          {
+            label: s.abortLogin,
+            click() {
+              return workOffline();
+            },
           },
-        },
-        ...(is.dev ? [{ role: 'toggleDevTools' }] : ([] as any)),
-        {
-          label: 'Exit',
-          click() {
-            app.quit();
+          ...(is.dev ? [{ role: 'toggleDevTools' }] : ([] as any)),
+          {
+            label: s.exit,
+            click() {
+              app.quit();
+            },
           },
-        },
-      ],
-    },
-  ]);
-  Menu.setApplicationMenu(menu);
+        ],
+      },
+    ]);
+  };
 
-  // Full userAgent 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36',
-  win
-    .loadURL(getAuthenticationURL(hasUsed, email), {
+  Menu.setApplicationMenu(buildMenu());
+
+  const loadAuthUrl = () => {
+    if (!win) return Promise.resolve();
+    return win.loadURL(getAuthenticationURL(hasUsed, email), {
       userAgent: 'Chrome',
-    })
-    .catch((error) => {
-      if (error.code === 'ERR_NAME_NOT_RESOLVED') {
-        // allow working offline
-        return workOffline();
-      }
     });
+  };
+
+  void loadAuthUrl().catch((error) => {
+    if (error.code === 'ERR_NAME_NOT_RESOLVED') {
+      // allow working offline
+      workOffline();
+    }
+  });
 
   const {
     session: { webRequest },
@@ -91,13 +98,20 @@ export function createAuthWindow(hasUsed: boolean, email: string) {
       destroyAuthWin();
       setLogingIn(false);
     } catch (err) {
+      if (!win) return;
+      const s = getAuthProcessStrings();
       const message = err instanceof Error ? err.message : String(err);
-      void dialog.showMessageBox(win ?? undefined, {
+      const { response } = await dialog.showMessageBox(win, {
         type: 'error',
-        title: 'Login failed',
-        message: 'Could not complete sign-in (token exchange failed).',
+        title: s.loginFailed,
+        message: s.tokenExchangeFailed,
         detail: message,
+        buttons: [s.tryAgain, s.workOffline],
+        defaultId: 0,
+        cancelId: 1,
       });
+      if (response === 0) void loadAuthUrl();
+      else workOffline();
     }
   });
 

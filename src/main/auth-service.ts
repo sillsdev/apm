@@ -11,9 +11,9 @@ const keytarService = 'electron-openid-oauth';
 const keytarAccount = os.userInfo().username;
 const { apiIdentifier, auth0Domain, desktopId } = envVariables;
 
-let accessToken = null;
-let profile = null;
-let refreshToken = null;
+let accessToken: string | null = null;
+let profile: ReturnType<typeof jwtDecode> | null = null;
+let refreshToken: string | null = null;
 
 export function getAccessToken() {
   return accessToken;
@@ -44,19 +44,28 @@ export function getAuthenticationURL(hasUsed, email) {
 
 // ponytail: Chromium net.fetch shares the browser TLS/proxy path; Node axios
 // socket hang up behind corporate SSL inspection on /oauth/token.
+const OAUTH_TOKEN_TIMEOUT_MS = 5000;
 const RETRYABLE = /socket hang up|ECONNRESET|ETIMEDOUT|ENOTFOUND|EAI_AGAIN/i;
 
+function isRetryableTokenError(error: unknown): boolean {
+  if (error instanceof Error && error.name === 'TimeoutError') return true;
+  const message = error instanceof Error ? error.message : String(error);
+  return RETRYABLE.test(message);
+}
+
 async function postOAuthToken(
-  body: Record<string, string>
+  body: Record<string, string>,
+  maxAttempts = 3
 ): Promise<Record<string, string>> {
   const tokenUrl = `https://${auth0Domain}/oauth/token`;
   let lastError: unknown;
-  for (let attempt = 1; attempt <= 3; attempt++) {
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
       const response = await net.fetch(tokenUrl, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify(body),
+        signal: AbortSignal.timeout(OAUTH_TOKEN_TIMEOUT_MS),
       });
       const text = await response.text();
       if (!response.ok) {
@@ -65,8 +74,7 @@ async function postOAuthToken(
       return JSON.parse(text) as Record<string, string>;
     } catch (error) {
       lastError = error;
-      const message = error instanceof Error ? error.message : String(error);
-      if (!RETRYABLE.test(message) || attempt === 3) break;
+      if (!isRetryableTokenError(error) || attempt === maxAttempts) break;
       await new Promise((resolve) => setTimeout(resolve, attempt * 500));
     }
   }
@@ -105,12 +113,16 @@ export async function loadTokens(callbackURL) {
   }
 
   try {
-    const response = await postOAuthToken({
-      grant_type: 'authorization_code',
-      client_id: desktopId,
-      code,
-      redirect_uri: redirectUri,
-    });
+    // Authorization codes are single-use; retry can turn a network error into HTTP 400.
+    const response = await postOAuthToken(
+      {
+        grant_type: 'authorization_code',
+        client_id: desktopId,
+        code,
+        redirect_uri: redirectUri,
+      },
+      1
+    );
 
     accessToken = response.access_token;
     profile = jwtDecode(response.id_token);

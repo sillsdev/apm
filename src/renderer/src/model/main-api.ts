@@ -2,6 +2,16 @@
 // This file mirrors the functions added to `window.electron` in src/preload/preload.js
 import { User } from '@auth0/auth0-react';
 
+export interface IAuthProcessStrings {
+  abortLogin: string;
+  back: string;
+  exit: string;
+  loginFailed: string;
+  tokenExchangeFailed: string;
+  tryAgain: string;
+  workOffline: string;
+}
+
 export interface MainAPI {
   appData: () => Promise<string | undefined>;
   audacityOpen: () => Promise<string[]>;
@@ -17,6 +27,7 @@ export interface MainAPI {
   logout: () => Promise<unknown>;
   refreshToken: () => Promise<unknown>;
   setAddToDict: (value: string) => Promise<void>;
+  setAuthProcessStrings: (strings: IAuthProcessStrings) => Promise<void>;
   setSpellLangs: (codes: string[]) => Promise<unknown>;
   log: (...args: any[]) => Promise<void>;
   temp: () => Promise<string>;

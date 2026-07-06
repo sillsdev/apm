@@ -5,6 +5,7 @@ import icon from '../../resources/icon.png?asset';
 import { appMenu } from './app-menu';
 import { ipcMethods } from './ipcMethods.js';
 import { checkMicrophonePermission } from './checkMicrophonePermission';
+import { setAuthProcessStrings } from './auth-strings.js';
 
 const localString = { addToDict: 'Add to dictionary' };
 
@@ -106,6 +107,10 @@ app.whenReady().then(() => {
 
   ipcMain.handle('setAddToDict', async (_event, str) => {
     localString.addToDict = str;
+  });
+
+  ipcMain.handle('setAuthProcessStrings', async (_event, strings) => {
+    setAuthProcessStrings(strings);
   });
 
   checkMicrophonePermission();
