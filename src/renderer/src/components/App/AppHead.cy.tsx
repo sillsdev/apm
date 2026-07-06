@@ -368,7 +368,7 @@ describe('AppHead', () => {
     cy.get('header', { timeout: 5000 }).should('exist');
     // Verify mobile layout: should have ApmLogo button
     cy.get('header button').first().should('be.visible');
-    // Verify UserMenu is rendered with small prop in mobile view
+    // Verify UserMenu is rendered in mobile view
     cy.get('#userMenu').should('be.visible');
   });
 

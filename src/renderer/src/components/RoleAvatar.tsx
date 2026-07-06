@@ -9,11 +9,10 @@ import { sharedSelector } from '../selector';
 
 interface IProps {
   roleRec: RoleD;
-  small?: boolean;
 }
 
 export function RoleAvatar(props: IProps) {
-  const { roleRec, small } = props;
+  const { roleRec } = props;
   const ts: ISharedStrings = useSelector(sharedSelector);
   const source = useAvatarSource(roleRec.attributes.roleName, roleRec);
 
@@ -21,10 +20,10 @@ export function RoleAvatar(props: IProps) {
     <Avatar
       alt={roleRec.attributes.roleName}
       src={source}
-      sx={avatarSize(small)}
+      sx={avatarSize()}
     />
   ) : roleRec.attributes && roleRec.attributes.roleName !== '' ? (
-    <Avatar sx={avatarSize(small)}>
+    <Avatar sx={avatarSize()}>
       {makeAbbr(localizeRole(roleRec.attributes.roleName, ts))}
     </Avatar>
   ) : (

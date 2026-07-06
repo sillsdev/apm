@@ -45,11 +45,10 @@ const roleStyle = {
 
 interface IProps {
   action: (what: string) => void;
-  small?: boolean;
 }
 
 export function UserMenu(props: IProps) {
-  const { action, small } = props;
+  const { action } = props;
   const users = useOrbitData<User[]>('user');
   const [orgRole] = useGlobal('orgRole'); //verified this is not used in a function 2/18/25
   const [developer] = useGlobal('developer');
@@ -103,7 +102,7 @@ export function UserMenu(props: IProps) {
         aria-haspopup="true"
         onClick={handleClick}
       >
-        <UserAvatar userRec={userRec} small={small} />
+        <UserAvatar userRec={userRec} />
       </IconButton>
       <StyledMenu
         id="custom-user-menu"

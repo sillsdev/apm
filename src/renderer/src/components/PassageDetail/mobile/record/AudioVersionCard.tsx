@@ -299,7 +299,6 @@ export const AudioVersionCard: React.FC<AudioVersionCardProps> = (props) => {
             }}
           >
             <UserAvatar
-              small
               userRec={findRecord(memory, 'user', props.user) as UserD}
             />
           </Box>
