@@ -20,12 +20,15 @@ export const skipAllRemoteQueues = async (
   coordinator: Coordinator | undefined
 ): Promise<void> => {
   if (!coordinator) return;
-  const remote = coordinator.getSource('remote') as JSONAPISource;
-  const datachanges = coordinator.getSource('datachanges') as JSONAPISource;
+  const remote = coordinator.sourceNames.includes('remote')
+    ? (coordinator.getSource('remote') as JSONAPISource)
+    : undefined;
+  const datachanges = coordinator.sourceNames.includes('datachanges')
+    ? (coordinator.getSource('datachanges') as JSONAPISource)
+    : undefined;
   await skipRemoteQueue(remote);
   await skipRemoteQueue(datachanges);
 };
-
 const LOGOUT_QUEUE_WAIT_MS = 10_000;
 
 /** Best-effort drain before logout; always skips stuck queues so logout can proceed. */
