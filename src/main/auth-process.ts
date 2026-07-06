@@ -1,4 +1,4 @@
-import { BrowserWindow, Menu, app } from 'electron';
+import { BrowserWindow, Menu, app, dialog } from 'electron';
 import {
   getAuthenticationURL,
   getGoogleLogOutUrl,
@@ -84,11 +84,21 @@ export function createAuthWindow(hasUsed: boolean, email: string) {
   };
 
   webRequest.onBeforeRequest(filter, async ({ url }) => {
-    await loadTokens(url);
-    setLogingIn(true);
-    createWindow();
-    destroyAuthWin();
-    setLogingIn(false);
+    try {
+      await loadTokens(url);
+      setLogingIn(true);
+      createWindow();
+      destroyAuthWin();
+      setLogingIn(false);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      void dialog.showMessageBox(win ?? undefined, {
+        type: 'error',
+        title: 'Login failed',
+        message: 'Could not complete sign-in (token exchange failed).',
+        detail: message,
+      });
+    }
   });
 
   // win.on('authenticated', () => {

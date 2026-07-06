@@ -1,7 +1,6 @@
 import envVariables from './auth0-variables.json';
 import { jwtDecode } from 'jwt-decode';
-import axios from 'axios';
-import https from 'https';
+import { net } from 'electron';
 import url from 'url';
 import keytar from 'keytar';
 import os from 'os';
@@ -43,36 +42,50 @@ export function getAuthenticationURL(hasUsed, email) {
   );
 }
 
-// TODO: Remove httpsAgent once the Auth0 root certificates are registered
-const httpsAgent = new https.Agent({
-  rejectUnauthorized: false,
-});
+// ponytail: Chromium net.fetch shares the browser TLS/proxy path; Node axios
+// socket hang up behind corporate SSL inspection on /oauth/token.
+const RETRYABLE = /socket hang up|ECONNRESET|ETIMEDOUT|ENOTFOUND|EAI_AGAIN/i;
+
+async function postOAuthToken(
+  body: Record<string, string>
+): Promise<Record<string, string>> {
+  const tokenUrl = `https://${auth0Domain}/oauth/token`;
+  let lastError: unknown;
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      const response = await net.fetch(tokenUrl, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const text = await response.text();
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${text}`);
+      }
+      return JSON.parse(text) as Record<string, string>;
+    } catch (error) {
+      lastError = error;
+      const message = error instanceof Error ? error.message : String(error);
+      if (!RETRYABLE.test(message) || attempt === 3) break;
+      await new Promise((resolve) => setTimeout(resolve, attempt * 500));
+    }
+  }
+  throw lastError;
+}
 
 export async function refreshTokens() {
   const refreshToken = await keytar.getPassword(keytarService, keytarAccount);
 
   if (refreshToken) {
-    const refreshOptions = {
-      method: 'POST',
-      url: `https://${auth0Domain}/oauth/token`,
-      headers: {
-        'content-type': 'application/json',
-        'Accept-Encoding': 'text/html; charset=UTF-8',
-      },
-      data: {
+    try {
+      const response = await postOAuthToken({
         grant_type: 'refresh_token',
         client_id: desktopId,
         refresh_token: refreshToken,
-      },
-      timeout: 5000,
-      httpsAgent,
-    };
+      });
 
-    try {
-      const response = await axios(refreshOptions);
-
-      accessToken = response.data.access_token;
-      profile = jwtDecode(response.data.id_token);
+      accessToken = response.access_token;
+      profile = jwtDecode(response.id_token);
     } catch (error) {
       await logout();
 
@@ -86,38 +99,32 @@ export async function refreshTokens() {
 export async function loadTokens(callbackURL) {
   const urlParts = url.parse(callbackURL, true);
   const query = urlParts.query;
-
-  const exchangeOptions = {
-    grant_type: 'authorization_code',
-    client_id: desktopId,
-    code: query.code,
-    redirect_uri: redirectUri,
-  };
-
-  const options = {
-    method: 'POST',
-    url: `https://${auth0Domain}/oauth/token`,
-    headers: {
-      'content-type': 'application/json',
-      'Accept-Encoding': 'text/html; charset=UTF-8',
-    },
-    data: JSON.stringify(exchangeOptions),
-    httpsAgent,
-  };
+  const code = query.code as string | undefined;
+  if (!code) {
+    throw new Error('loadTokens: missing authorization code in callback URL');
+  }
 
   try {
-    const response = await axios(options);
+    const response = await postOAuthToken({
+      grant_type: 'authorization_code',
+      client_id: desktopId,
+      code,
+      redirect_uri: redirectUri,
+    });
 
-    accessToken = response.data.access_token;
-    profile = jwtDecode(response.data.id_token);
-    refreshToken = response.data.refresh_token;
+    accessToken = response.access_token;
+    profile = jwtDecode(response.id_token);
+    refreshToken = response.refresh_token;
 
     if (refreshToken) {
       await keytar.setPassword(keytarService, keytarAccount, refreshToken);
     }
   } catch (error) {
-    await logout();
-
+    // Do not logout() here — that wipes a valid keytar refresh token on a
+    // transient network failure after Auth0 already issued a code.
+    accessToken = null;
+    profile = null;
+    refreshToken = null;
     throw error;
   }
 }
