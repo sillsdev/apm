@@ -153,7 +153,8 @@ const datachangesQueryError =
         tokenCtx,
         coordinator,
         fingerprint,
-        setOrbitRetries
+        setOrbitRetries,
+        'datachanges'
       );
     }
     return datachangeremote.requestQueue.skip();

@@ -63,24 +63,33 @@ export const handleUnauthorized = (
   tokenCtx: ITokenContext,
   coordinator: Coordinator,
   fingerprint: string,
-  setOrbitRetries: (r: number) => void
+  setOrbitRetries: (r: number) => void,
+  failedSource: 'remote' | 'datachanges' = 'remote'
 ) => {
   const remote = coordinator?.getSource('remote') as JSONAPISource;
   const datachangeremote = coordinator?.getSource(
     'datachanges'
   ) as JSONAPISource;
+  // Resolve to the queue that actually failed. A blocking queryFail strategy
+  // waits on the returned promise to advance THAT source's request queue, so
+  // retrying/skipping the wrong queue leaves the failed task stuck forever.
+  const failed =
+    (failedSource === 'datachanges' ? datachangeremote : remote) ?? remote;
   const token = tokenCtx?.state?.accessToken;
   if (token && remote && !unauthorizedRetryAttempted) {
     unauthorizedRetryAttempted = true;
     syncRemoteAuthHeaders(remote, token, fingerprint);
     syncRemoteAuthHeaders(datachangeremote, token, fingerprint);
-    return remote.requestQueue.retry();
+    return failed.requestQueue.retry();
   }
   unauthorizedRetryAttempted = false;
   setOrbitRetries(OrbitNetworkErrorRetries);
   tokenCtx?.state?.invalidateOnlineSession();
   localStorage.setItem(LocalKey.offlineAdmin, 'false');
-  void skipRemoteQueue(remote);
-  void skipRemoteQueue(datachangeremote);
-  return remote.requestQueue.skip();
+  // Skip the other queue as a side effect; return the failed queue's skip so
+  // the blocking strategy that invoked us resolves and unsticks.
+  void skipRemoteQueue(
+    failedSource === 'datachanges' ? remote : datachangeremote
+  );
+  return failed.requestQueue.skip();
 };
