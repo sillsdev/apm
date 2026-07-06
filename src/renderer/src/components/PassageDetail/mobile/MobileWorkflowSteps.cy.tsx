@@ -124,6 +124,12 @@ const mockCurrentPassage = {
   attributes: { sequencenum: 1, reference: '1:1', book: 'GEN' },
 } as any;
 
+const RACETRACK_STATE_COLOR = {
+  current: 'rgb(51, 51, 51)',
+  complete: 'rgb(168, 168, 168)',
+  incomplete: 'rgb(224, 224, 224)',
+};
+
 const createInitialState = (
   overrides: Partial<GlobalState> = {}
 ): GlobalState => ({
@@ -332,13 +338,17 @@ describe('MobileWorkflowSteps', () => {
 
       cy.get('[data-cy="workflow-step"]')
         .eq(0)
-        .should('have.css', 'background-color', 'rgb(17, 17, 17)');
+        .should('have.css', 'background-color', RACETRACK_STATE_COLOR.current);
       cy.get('[data-cy="workflow-step"]')
         .eq(1)
-        .should('have.css', 'background-color', 'rgb(136, 136, 136)');
+        .should('have.css', 'background-color', RACETRACK_STATE_COLOR.complete);
       cy.get('[data-cy="workflow-step"]')
         .eq(2)
-        .should('have.css', 'background-color', 'rgb(204, 204, 204)');
+        .should(
+          'have.css',
+          'background-color',
+          RACETRACK_STATE_COLOR.incomplete
+        );
     });
 
     it('shows a tip button in the step label area that opens a dialog', () => {
@@ -399,7 +409,12 @@ describe('MobileWorkflowSteps', () => {
     });
 
     it('blocks passage dropdown while recording', () => {
-      mountMobileWorkflowSteps({ isStepProgression: true, recording: true });
+      mountMobileWorkflowSteps({
+        isStepProgression: true,
+        recording: true,
+        section: mockSection,
+        extraMemoryRecords: mockSectionPassageRecords,
+      });
 
       cy.get('[data-cy="passage-dropdown"]').click();
 
@@ -421,7 +436,11 @@ describe('MobileWorkflowSteps', () => {
     });
 
     it('dropdown shows current passage book and reference', () => {
-      mountMobileWorkflowSteps({ isStepProgression: true });
+      mountMobileWorkflowSteps({
+        isStepProgression: true,
+        section: mockSection,
+        extraMemoryRecords: mockSectionPassageRecords,
+      });
 
       cy.get('[data-cy="passage-dropdown"]').should('contain.text', 'GEN 1:1');
     });
@@ -440,21 +459,15 @@ describe('MobileWorkflowSteps', () => {
       cy.get('[role="menuitem"]').eq(0).should('contain.text', 'GEN 1:1');
     });
 
-    it('does not open the dropdown when the section has only one passage', () => {
+    it('hides the dropdown when the section has only one passage', () => {
       mountMobileWorkflowSteps({
         isStepProgression: true,
         section: mockSectionSinglePassage,
         extraMemoryRecords: mockSectionPassageRecordsSingle,
       });
 
-      cy.get('[data-cy="passage-dropdown"]')
-        .should('contain.text', 'GEN 1:1')
-        .find('[data-testid="ArrowDropDownIcon"]')
-        .should('not.exist');
-
-      cy.get('[data-cy="passage-dropdown"]').click();
-
-      cy.get('[role="menu"]').should('not.exist');
+      cy.get('[data-cy="workflow-step"]').should('have.length', 2);
+      cy.get('[data-cy="passage-dropdown"]').should('not.exist');
     });
 
     it('renders the step label as plain text when the current step has no tip', () => {
@@ -507,19 +520,17 @@ describe('MobileWorkflowSteps', () => {
       cy.get('[role="menuitem"]').should('have.length', 2);
     });
 
-    it('does not open the dropdown when there is only one workflow step', () => {
+    it('hides the dropdown when there is only one workflow step', () => {
       mountMobileWorkflowSteps({
         workflow: [{ id: 'step-1', label: 'Record' }],
       });
 
-      cy.get('[data-cy="passage-dropdown"]')
-        .should('contain.text', 'Record')
-        .find('[data-testid="ArrowDropDownIcon"]')
-        .should('not.exist');
-
-      cy.get('[data-cy="passage-dropdown"]').click();
-
-      cy.get('[role="menu"]').should('not.exist');
+      cy.get('[data-cy="passage-dropdown"]').should('not.exist');
+      // The passage reference falls back to the plain label row
+      cy.get('[data-cy="workflow-step-label"]').should(
+        'contain.text',
+        'GEN 1:1'
+      );
     });
 
     it('blocks passage click while recording', () => {
@@ -555,15 +566,19 @@ describe('MobileWorkflowSteps', () => {
       // p-0 sequencenum 0 < current sequencenum 1 → complete
       cy.get('[data-cy="passage-step"]')
         .eq(0)
-        .should('have.css', 'background-color', 'rgb(136, 136, 136)');
+        .should('have.css', 'background-color', RACETRACK_STATE_COLOR.complete);
       // p-1 is current passage
       cy.get('[data-cy="passage-step"]')
         .eq(1)
-        .should('have.css', 'background-color', 'rgb(17, 17, 17)');
+        .should('have.css', 'background-color', RACETRACK_STATE_COLOR.current);
       // p-2 sequencenum 2 > current sequencenum 1 → incomplete
       cy.get('[data-cy="passage-step"]')
         .eq(2)
-        .should('have.css', 'background-color', 'rgb(204, 204, 204)');
+        .should(
+          'have.css',
+          'background-color',
+          RACETRACK_STATE_COLOR.incomplete
+        );
     });
 
     it('step label shows current passage book and reference', () => {

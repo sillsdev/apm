@@ -1,6 +1,6 @@
 import { Box, Button } from '@mui/material';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import { useMemo } from 'react';
 import usePassageDetailContext from '../../../context/usePassageDetailContext';
 import MobileStepComplete from './MobileStepComplete';
@@ -128,11 +128,8 @@ export default function PassageDetailMobileFooter() {
       : ''
     : (nextPassRec?.attributes?.reference ?? '');
 
-  const prevButtonText =
-    prevNavEnabled && prevLabelFull
-      ? prevLabelFull
-      : (t?.previous ?? 'Previous');
-  const nextButtonText = nextLabelFull || (t?.next ?? 'Next');
+  const prevButtonText = t?.previous ?? 'Previous';
+  const nextButtonText = t?.next ?? 'Next';
 
   const handleNavigate = (forward: boolean) => {
     if (isStepProgression) {
@@ -151,8 +148,9 @@ export default function PassageDetailMobileFooter() {
 
   const navButtonSx = {
     flex: 1,
-    minWidth: 'clamp(60px, 16vw, 100px)',
+    minWidth: 0,
     maxWidth: 'clamp(110px, 30vw, 190px)',
+    '@media (max-width:405px)': { px: 1 },
   } as const;
 
   return (
@@ -167,10 +165,13 @@ export default function PassageDetailMobileFooter() {
     >
       <Button
         size="small"
-        startIcon={<ArrowBackIcon fontSize="small" />}
+        startIcon={<ChevronLeftIcon fontSize="small" />}
         onClick={() => handleNavigate(false)}
         disabled={!prevNavEnabled}
-        sx={{ ...navButtonSx, justifyContent: 'center' }}
+        sx={{
+          ...navButtonSx,
+          justifyContent: 'center',
+        }}
       >
         <NavButtonLabel
           text={prevButtonText}
@@ -181,10 +182,13 @@ export default function PassageDetailMobileFooter() {
       {!isBoldWorkflow && <MobileStepComplete />}
       <Button
         size="small"
-        endIcon={<ArrowForwardIcon fontSize="small" />}
+        endIcon={<ChevronRightIcon fontSize="small" />}
         onClick={() => handleNavigate(true)}
         disabled={!nextNavEnabled}
-        sx={{ ...navButtonSx, justifyContent: 'center' }}
+        sx={{
+          ...navButtonSx,
+          justifyContent: 'center',
+        }}
       >
         <NavButtonLabel
           text={nextButtonText}

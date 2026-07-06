@@ -307,8 +307,10 @@ describe('PassageDetailMobileFooter', () => {
 
     mountFooter({ passages, currentPassageId: 'passage-2' });
 
-    cy.contains('button', '1:1').should('be.visible');
-    cy.contains('button', '3:3').should('be.visible');
+    cy.contains('button', 'Previous').should('be.visible');
+    cy.contains('button', 'Next').should('be.visible');
+    cy.get('span[title="1:1"]').should('exist');
+    cy.get('span[title="3:3"]').should('exist');
     cy.get('#mobile-complete').should('exist');
   });
 
@@ -339,7 +341,7 @@ describe('PassageDetailMobileFooter', () => {
     });
 
     cy.clock();
-    cy.contains('button', '3:3').click();
+    cy.contains('button', 'Next').click();
     cy.tick(1000);
 
     cy.get('[data-cy="location"]').should(
@@ -381,8 +383,9 @@ describe('PassageDetailMobileFooter', () => {
     });
 
     cy.contains('button', 'Previous').closest('button').should('be.disabled');
-    cy.contains('button', 'Record').should('be.visible');
-    cy.contains('button', 'Record').click();
+    cy.contains('button', 'Next').should('be.visible');
+    cy.get('span[title="Record"]').should('exist');
+    cy.contains('button', 'Next').click();
     cy.get('@setCurrentStep').should('have.been.calledWith', 'step-2');
   });
 
@@ -417,8 +420,9 @@ describe('PassageDetailMobileFooter', () => {
 
     cy.get('#mobile-complete').should('not.exist');
     cy.contains('button', '2:2').should('not.exist');
-    cy.contains('button', 'Record').should('be.visible');
-    cy.contains('button', 'Record').click();
+    cy.contains('button', 'Next').should('be.visible');
+    cy.get('span[title="Record"]').should('exist');
+    cy.contains('button', 'Next').click();
     cy.get('@setCurrentStep').should('have.been.calledWith', 'step-2');
     cy.get('[data-cy="location"]').should(
       'have.text',
@@ -490,8 +494,9 @@ describe('PassageDetailMobileFooter', () => {
       },
     });
 
-    cy.contains('button', 'Record').should('be.visible').and('not.be.disabled');
-    cy.contains('button', 'Record').click();
+    cy.contains('button', 'Next').should('be.visible').and('not.be.disabled');
+    cy.get('span[title="Record"]').should('exist');
+    cy.contains('button', 'Next').click();
     cy.get('@setCurrentStep').should('have.been.calledWith', 'step-record');
   });
 });
