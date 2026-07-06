@@ -8,6 +8,7 @@ export const AuthApp: React.FC = () => {
     <Auth0Provider
       domain={auth0Domain}
       clientId={webClientId}
+      useRefreshTokens={true}
       cacheLocation={
         (import.meta.env.VITE_AUTH_CACHE as 'localstorage' | 'memory') ||
         'memory'
@@ -21,7 +22,6 @@ export const AuthApp: React.FC = () => {
         redirect_uri: import.meta.env.DEV
           ? window.location.origin
           : import.meta.env.VITE_CALLBACK,
-        useRefreshTokens: true,
       }}
     >
       <TokenChecked />
