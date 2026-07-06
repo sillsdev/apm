@@ -154,25 +154,6 @@ const profileEmailProps = {
   marginBottom: '10px',
 } as SxProps;
 
-const editProfileProps = {
-  color: 'secondary.dark',
-  backgroundColor: 'primary.contrastText',
-  opacity: '100%',
-  width: '120px',
-  '&.Mui-disabled': {
-    color: 'secondary.dark',
-    backgroundColor: 'primary.contrastText',
-    opacity: '50%',
-    padding: '6px',
-  },
-  '&:hover': {
-    borderColor: 'primary.contrastText',
-    backgroundColor: 'primary.contrastText',
-    boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.2)',
-    opacity: '90%',
-  },
-} as SxProps;
-
 const deleteUserProps = {
   color: 'primary.dark',
   backgroundColor: 'primary.contrastText',
@@ -860,9 +841,7 @@ export function ProfileDialog(props: ProfileDialogProps) {
             {((editId && /Add/i.test(editId)) || !userNotComplete()) && (
               <Button
                 disabled={!readOnly || memberEditOfflineBlocked}
-                variant="contained"
                 onClick={onEditClicked}
-                sx={editProfileProps}
               >
                 {tp.edit}
               </Button>
