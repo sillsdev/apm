@@ -20,6 +20,7 @@ import {
   useMyNavigate,
   useWaitForRemoteQueue,
   useMobile,
+  drainQueuesForLogout,
 } from '../../utils';
 import { withBucket } from '../../hoc/withBucket';
 import Busy from '../Busy';
@@ -60,7 +61,10 @@ export const AppHead = (props: IProps) => {
   const remote = coordinator?.getSource('remote') as JSONAPISource;
   const [isOffline] = useGlobal('offline'); //verified this is not used in a function 2/18/25
   const tokenCtx = useContext(TokenContext);
-  const tokenState = tokenCtx?.state ?? { expiresAt: null };
+  const tokenState = tokenCtx?.state ?? {
+    expiresAt: null,
+    authSessionCleared: false,
+  };
   const ctx = useContext(UnsavedContext);
   const { checkSavedFn, startSave, toolsChanged, anySaving } = ctx.state;
   const [cssVars, setCssVars] = useState<React.CSSProperties>(twoIcon);
@@ -122,13 +126,16 @@ export const AppHead = (props: IProps) => {
     if (isElectron && /Logout/i.test(what)) {
       localStorage.removeItem(LocalKey.userId);
       checkSavedFn(() => {
-        waitForRemoteQueue('logout on electron...').then(() => {
-          waitForDataChangesQueue('logout on electron').then(() => {
-            if (getGlobal('offline')) downDone();
-            else if (downloadAlertReason.current === 'cloud' && !isOffline)
-              setDownloadAlert(true);
-            else downDone();
-          });
+        drainQueuesForLogout(
+          waitForRemoteQueue,
+          waitForDataChangesQueue,
+          coordinator,
+          'logout on electron'
+        ).then(() => {
+          if (getGlobal('offline')) downDone();
+          else if (downloadAlertReason.current === 'cloud' && !isOffline)
+            setDownloadAlert(true);
+          else downDone();
         });
       });
       return;
@@ -144,11 +151,12 @@ export const AppHead = (props: IProps) => {
         if (resetRequests) resetRequests().then(() => setView(what));
       } else if (/Logout/i.test(what)) {
         checkSavedFn(() => {
-          waitForRemoteQueue('logout on web...').then(() =>
-            waitForDataChangesQueue('logout on electron').then(() =>
-              setView('Logout')
-            )
-          );
+          drainQueuesForLogout(
+            waitForRemoteQueue,
+            waitForDataChangesQueue,
+            coordinator,
+            'logout on web'
+          ).then(() => setView('Logout'));
         });
       } else checkSavedFn(() => setView(what));
     }
@@ -183,7 +191,11 @@ export const AppHead = (props: IProps) => {
     // the whole "Go Offline" teardown/relaunch flow every time AppHead
     // mounted offline, looping the app through logout -> relaunch forever.
     // Loading.tsx's equivalent check already guards with !offline; mirror it.
-    if (!getGlobal('offline') && tokenState.expiresAt === -1) {
+    if (
+      !getGlobal('offline') &&
+      tokenState.expiresAt === -1 &&
+      !tokenState.authSessionCleared
+    ) {
       handleMenu('Logout');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

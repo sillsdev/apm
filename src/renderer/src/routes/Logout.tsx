@@ -37,9 +37,8 @@ export function Logout() {
     const wasOfflineOnly = offlineOnly;
     if (offlineOnly) setOfflineOnly(false);
     await logoutResets();
-    if (isElectron) {
-      ctx.logout();
-    } else {
+    ctx.logout();
+    if (!isElectron) {
       logout({ returnTo: window.origin } as RedirectLoginOptions);
     }
     if (wasOfflineOnly) localStorage.setItem(LocalKey.offlineAdmin, 'true');
@@ -57,12 +56,7 @@ export function Logout() {
   useEffect(() => {
     setLanguage(localeDefault(isDeveloper));
     fetchLocalization();
-    if (!isElectron) {
-      ctx.logout();
-      logout({ returnTo: window.origin } as RedirectLoginOptions);
-    } else {
-      handleLogout();
-    }
+    handleLogout();
     /* eslint-disable-next-line react-hooks/exhaustive-deps */
   }, []);
 

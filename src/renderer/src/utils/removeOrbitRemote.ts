@@ -4,6 +4,7 @@ import Coordinator from '@orbit/coordinator';
 const remoteStrategies = [
   'remote-query-fail',
   'remote-update-fail',
+  'datachanges-query-fail',
   'remote-request',
   'remote-update',
   'remote-sync',
