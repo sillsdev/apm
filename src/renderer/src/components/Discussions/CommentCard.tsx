@@ -315,7 +315,7 @@ export const CommentCard = (props: IProps) => {
                 gap: 1,
               }}
             >
-              <UserAvatar {...props} userRec={author} small={true} />
+              <UserAvatar {...props} userRec={author} />
               <Box id="author">{author?.attributes?.name}</Box>
               <Box id="datecreated">
                 {dateOrTime(comment.attributes.dateUpdated, lang)}

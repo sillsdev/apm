@@ -65,7 +65,7 @@ export const MobileToolbar = ({
         sx={updateTipOpen && isElectron ? { top: '40px' } : {}}
       />
       {pathname !== '/' && !pathname.startsWith('/access') && (
-        <UserMenu action={handleUserMenu} small={true} />
+        <UserMenu action={handleUserMenu} />
       )}
     </Toolbar>
   );
