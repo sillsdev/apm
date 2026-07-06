@@ -14,7 +14,13 @@ export const AuthApp: React.FC = () => {
       }
       authorizationParams={{
         audience: apiIdentifier,
-        redirect_uri: import.meta.env.VITE_CALLBACK,
+        // In the dev server, return to whatever origin (and port) the app is
+        // actually being served from, so `npm start -- --port N` round-trips
+        // through Auth0 without hardcoding VITE_CALLBACK. Production builds keep
+        // the configured callback. Both must be in Auth0's Allowed Callback URLs.
+        redirect_uri: import.meta.env.DEV
+          ? window.location.origin
+          : import.meta.env.VITE_CALLBACK,
         useRefreshTokens: true,
       }}
     >
