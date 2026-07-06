@@ -729,8 +729,8 @@ async function withTranscriptionFixture(run) {
       names.includes('MarkVerses'),
       'malformed ApmData should fall back to migration sample workflow steps'
     );
-    assert.ok(ptfPath, 'expected a .ptf file');
-    await run(ptfPath);
+    assert.ok(ptfFile, 'expected a .ptf file');
+    await run(path.join(outputDir, ptfFile));
   } finally {
     await fs.rm(rootDir, { recursive: true, force: true });
   }

@@ -30,11 +30,11 @@ test.describe('APM desktop e2e sanity check', () => {
     launched = await launchApp();
   });
 
-  test.afterEach(async ({}, testInfo) => {
+  test.afterEach(async () => {
     if (launched) await closeApp(launched);
     // Team names must be unique, so leaving "Test Team" behind would break
     // #teamCommit (nameInUse) on every subsequent run of this test.
-    if (testInfo.title === TEAM_CREATION_TEST_NAME) {
+    if (test.info().title === TEAM_CREATION_TEST_NAME) {
       await deleteTeamIfExists(TEST_TEAM_NAME, {
         username: TEST_USERNAME,
         password: TEST_PASSWORD,
