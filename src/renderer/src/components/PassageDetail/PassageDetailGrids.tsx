@@ -15,6 +15,7 @@ import PassageDetailRecord from './PassageDetailRecord';
 import PassageDetailItem from './PassageDetailItem';
 import PassageDetailMarkVerses from './PassageDetailMarkVerses';
 import PassageDetailCarefulSpeech from './PassageDetailCarefulSpeech';
+import PassageDetailLwcTranslation from './PassageDetailLwcTranslation';
 import PassageDetailTranscribe from './PassageDetailTranscribe';
 import PassageDetailChooser from './PassageDetailChooser';
 import ConsultantCheck from './ConsultantCheck';
@@ -317,6 +318,7 @@ const PassageDetailGrids = () => {
           tool === ToolSlug.Record ||
           tool === ToolSlug.Verses ||
           tool === ToolSlug.CarefulSpeech ||
+          (tool === ToolSlug.PhraseBackTranslate && isBoldWorkflow) ||
           tool === ToolSlug.Transcribe ||
           tool === ToolSlug.ConsultantCheck ||
           tool === ToolSlug.KeyTerm) && (
@@ -328,6 +330,7 @@ const PassageDetailGrids = () => {
               {tool !== ToolSlug.Transcribe &&
               tool !== ToolSlug.Verses &&
               tool !== ToolSlug.CarefulSpeech &&
+              !(tool === ToolSlug.PhraseBackTranslate && isBoldWorkflow) &&
               tool !== ToolSlug.Record &&
               tool !== ToolSlug.ConsultantCheck ? (
                 <Stack
@@ -371,6 +374,9 @@ const PassageDetailGrids = () => {
                   {tool === ToolSlug.CarefulSpeech && (
                     <PassageDetailCarefulSpeech width={paneWidth} />
                   )}
+                  {tool === ToolSlug.PhraseBackTranslate && isBoldWorkflow && (
+                    <PassageDetailLwcTranslation width={paneWidth} />
+                  )}
                   {tool === ToolSlug.Transcribe && (
                     <PassageDetailTranscribe
                       width={Math.max(
@@ -395,8 +401,8 @@ const PassageDetailGrids = () => {
           </Paper>
         )}
         {(tool === ToolSlug.Community ||
-          tool === ToolSlug.PhraseBackTranslate ||
-          tool === ToolSlug.WholeBackTranslate) && (
+          tool === ToolSlug.WholeBackTranslate ||
+          (tool === ToolSlug.PhraseBackTranslate && !isBoldWorkflow)) && (
           <Grid
             key={currentstep}
             container

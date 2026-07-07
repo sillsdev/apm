@@ -41,4 +41,31 @@ describe('carefulSpeechCompletion', () => {
     expect(completed.has(0)).toBe(true);
     expect(completed.has(1)).toBe(false);
   });
+
+  it('getCompletedClauseIndices tolerates small region drift', () => {
+    const row: IRow = {
+      id: 'r1',
+      artifactType: 'Back translation',
+      sourceVersion: 1,
+      mediafile: {
+        id: 'm1',
+        type: 'mediafile',
+        attributes: {
+          sourceSegments: JSON.stringify({ start: 0.02, end: 10.03 }),
+        },
+        relationships: {
+          artifactType: { data: { id: 'art1', type: 'artifacttype' } },
+          sourceMedia: { data: { id: 'vern1', type: 'mediafile' } },
+        },
+      } as IRow['mediafile'],
+    } as IRow;
+    const completed = getCompletedClauseIndices(
+      regions,
+      [row],
+      'art1',
+      1,
+      'vern1'
+    );
+    expect(completed.has(0)).toBe(true);
+  });
 });

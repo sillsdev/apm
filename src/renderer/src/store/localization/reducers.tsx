@@ -375,6 +375,15 @@ const initialState = {
 			"undo": "Undo",
 		}
 	}),
+	"lwcTranslation": new LocalizedStrings({
+		"en": {
+			"boldOnly": "LWC Translation is only available for BOLD workflow teams.",
+			"clauseIndex": "Clause {0}/{1}",
+			"noClauses": "No clause segments found. Complete the Careful Speech step first.",
+			"prerequisite": "Complete Careful Speech for every clause before starting LWC translation.",
+			"progress": "{0} of {1} clauses recorded",
+		}
+	}),
 	"consultantCheck": new LocalizedStrings({
 		"en": {
 			"checked": "Mark Checked",
@@ -2281,6 +2290,7 @@ const localizationReducer = function (state = initialState, action: any): ILocal
 				"commentEditor" : new LocalizedStrings(action.payload.data.commentEditor),
 				"community" : new LocalizedStrings(action.payload.data.community),
 				"carefulSpeech" : new LocalizedStrings(action.payload.data.carefulSpeech),
+				"lwcTranslation" : new LocalizedStrings(action.payload.data.lwcTranslation),
 				"consultantCheck" : new LocalizedStrings(action.payload.data.consultantCheck),
 				"control" : new LocalizedStrings(action.payload.data.control),
 				"deleteExpansion" : new LocalizedStrings(action.payload.data.deleteExpansion),

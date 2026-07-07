@@ -34,6 +34,7 @@ export enum LocalKey {
   microphoneId = 'microphone-id', // preferred recording input
   mobileView = 'mobileView', // toggle mobile view
   carefulSpeaker = 'carefulSpeaker', // last speaker used for careful speech
+  lwcSpeaker = 'lwcSpeaker', // last speaker used for LWC translation
 }
 
 export const localUserKey = (id: LocalKey): string => {

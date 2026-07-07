@@ -10,6 +10,7 @@ describe('boldDesktopStepComplete', () => {
       ToolSlug.Prompt,
       ToolSlug.Record,
       ToolSlug.CarefulSpeech,
+      ToolSlug.PhraseBackTranslate,
     ]);
   });
 
