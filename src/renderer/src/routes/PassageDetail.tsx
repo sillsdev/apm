@@ -28,14 +28,16 @@ import { HeadHeight } from '../layout';
 import PassageDetailsArtifactsMobile from '../components/PassageDetail/Internalization/PassageDetailsArtifactsMobile';
 import PassageDetailMarkVersesIsMobile from '../components/PassageDetail/mobile/MarkVerses/PassageDetailMarkVersesIsMobile';
 import PassageDetailCarefulSpeech from '../components/PassageDetail/PassageDetailCarefulSpeech';
+import PassageDetailLwcTranslation from '../components/PassageDetail/PassageDetailLwcTranslation';
 import TeamCheckReferenceMobile from '../components/PassageDetail/mobile/TeamCheckReferenceMobile';
 import PassageDetailPrompt from '../components/PassageDetail/Prompt/PassageDetailPrompt';
 
 const NotImplemented = () => 'Not implemented';
 
 const MobileStep = () => {
-  const { currentstep } = useContext(PassageDetailContext)?.state ?? {
+  const { currentstep, isBoldWorkflow } = useContext(PassageDetailContext)?.state ?? {
     currentstep: '',
+    isBoldWorkflow: false,
   };
   const { tool } = useStepTool(currentstep);
   const { paneWidth } = usePaneWidth();
@@ -48,6 +50,8 @@ const MobileStep = () => {
     <PassageDetailMarkVersesIsMobile width={Math.max(0, paneWidth - 40)} />
   ) : tool === ToolSlug.CarefulSpeech ? (
     <PassageDetailCarefulSpeech width={Math.max(0, paneWidth - 40)} />
+  ) : tool === ToolSlug.PhraseBackTranslate && isBoldWorkflow ? (
+    <PassageDetailLwcTranslation width={Math.max(0, paneWidth - 40)} />
   ) : tool === ToolSlug.TeamCheck ? (
     <TeamCheckReferenceMobile width={Math.max(0, paneWidth - 40)} />
   ) : tool === ToolSlug.Prompt ? (

@@ -354,6 +354,14 @@ export interface ICarefulSpeechStrings extends Localize.LocalizedStringsMethods 
     "undo": string;
 };
 
+export interface ILwcTranslationStrings extends Localize.LocalizedStringsMethods {
+    "boldOnly": string;
+    "clauseIndex": string;
+    "noClauses": string;
+    "prerequisite": string;
+    "progress": string;
+};
+
 export interface IConsultantCheckStrings extends Localize.LocalizedStringsMethods {
     "checked": string;
     "compare": string;
@@ -2166,6 +2174,7 @@ export interface ILocalizedStrings {
 	commentEditor: ICommentEditorStrings;
 	community: ICommunityStrings;
 	carefulSpeech: ICarefulSpeechStrings;
+	lwcTranslation: ILwcTranslationStrings;
 	consultantCheck: IConsultantCheckStrings;
 	control: IControlStrings;
 	deleteExpansion: IDeleteExpansionStrings;

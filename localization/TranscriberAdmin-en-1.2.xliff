@@ -2138,6 +2138,41 @@
                <context context-type="sourcefile">CarefulSpeechControls.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="lwcTranslation.boldOnly">
+            <source>LWC Translation is only available for BOLD workflow teams.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">PassageDetailLwcTranslation.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="lwcTranslation.clauseIndex">
+            <source>Clause {0}/{1}</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">LwcTranslationClauseNav.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="lwcTranslation.noClauses">
+            <source>No clause segments found. Complete the Careful Speech step first.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">PassageDetailLwcTranslation.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="lwcTranslation.prerequisite">
+            <source>Complete Careful Speech for every clause before starting LWC translation.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">PassageDetailLwcTranslation.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="lwcTranslation.progress">
+            <source>{0} of {1} clauses recorded</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">LwcTranslationClauseNav.tsx</context>
+            </context-group>
+         </trans-unit>
       	<trans-unit id="consultantCheck.checked">
       		<source>Mark Checked</source>
       		<target/>
