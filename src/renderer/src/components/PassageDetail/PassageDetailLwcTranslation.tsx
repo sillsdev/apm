@@ -294,7 +294,10 @@ export function PassageDetailLwcTranslation({ width }: IProps) {
   ]);
 
   const positionOnClause = useCallback(
-    (index: number, options?: { autoPlay?: boolean; hasRecording?: boolean }) => {
+    (
+      index: number,
+      options?: { autoPlay?: boolean; hasRecording?: boolean }
+    ) => {
       const region = clauseRegions[index];
       if (!region) return;
       setCurrentIndex(index);
@@ -406,6 +409,7 @@ export function PassageDetailLwcTranslation({ width }: IProps) {
   ]);
 
   const afterUploadCb = useCallback(
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     async (_mediaId: string | undefined) => {
       setSavingRecording(false);
       setSessionCompletedIndices((prev) => {
