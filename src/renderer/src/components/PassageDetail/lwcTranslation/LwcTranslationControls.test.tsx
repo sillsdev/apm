@@ -1,4 +1,3 @@
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import React from 'react';
 import { cleanup, render, screen } from '@testing-library/react';
 
@@ -79,6 +78,8 @@ describe('LwcTranslationControls — recorded clause panel', () => {
       <LwcTranslationControls {...baseProps} phase="recordReady" />
     );
     expect(container.querySelector('#lwc-next-clause')).toBeNull();
-    expect(container.querySelector('[data-cy="lwc-docked-record"]')).toBeTruthy();
+    expect(
+      container.querySelector('[data-cy="lwc-docked-record"]')
+    ).toBeTruthy();
   });
 });

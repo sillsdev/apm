@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { MediaFileD } from '../../../model';
-import { getSegments, getSortedRegions, NamedRegions } from '../../../utils/namedSegments';
+import {
+  getSegments,
+  getSortedRegions,
+  NamedRegions,
+} from '../../../utils/namedSegments';
 import { hasClauseRegions } from '../carefulSpeech/carefulSpeechBoundary';
 
 export function useLwcTranslationClauses(mediafile: MediaFileD | undefined) {

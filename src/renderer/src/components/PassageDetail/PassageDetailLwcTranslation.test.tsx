@@ -1,3 +1,4 @@
+import '@testing-library/jest-dom';
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 
@@ -65,12 +66,12 @@ jest.mock('../../context/UnsavedContext', () => ({
 }));
 
 jest.mock('../../selector', () => ({
-  lwcTranslationSelector: jest.fn(),
-  sharedSelector: jest.fn(),
+  lwcTranslationSelector: { name: 'lwcTranslationSelector' },
+  sharedSelector: { name: 'sharedSelector' },
 }));
 jest.mock('react-redux', () => ({
-  useSelector: (sel: unknown) => {
-    if (sel === require('../../selector').sharedSelector) {
+  useSelector: (selector: { name?: string }) => {
+    if (selector.name === 'sharedSelector') {
       return { noAudio: 'No audio' };
     }
     return {
@@ -139,13 +140,17 @@ describe('PassageDetailLwcTranslation', () => {
 
   it('shows prerequisite when careful speech is incomplete', () => {
     render(<PassageDetailLwcTranslation width={400} />);
-    expect(screen.getByText('Complete Careful Speech first')).toBeInTheDocument();
+    expect(
+      screen.getByText('Complete Careful Speech first')
+    ).toBeInTheDocument();
   });
 
   it('shows the guided UI when careful speech is complete', () => {
     mockCarefulSpeechComplete = new Set([0]);
     render(<PassageDetailLwcTranslation width={400} />);
-    expect(document.querySelector('[data-cy="lwc-reference-player"]')).toBeTruthy();
+    expect(
+      document.querySelector('[data-cy="lwc-reference-player"]')
+    ).toBeTruthy();
     expect(document.querySelector('[data-cy="lwc-clause-nav"]')).toBeTruthy();
     expect(document.querySelector('[data-cy="lwc-recorder"]')).toBeTruthy();
   });
@@ -156,6 +161,8 @@ describe('PassageDetailLwcTranslation', () => {
     render(<PassageDetailLwcTranslation width={400} />);
     await waitFor(() => expect(controlsProps?.phase).toBe('recorded'));
     expect(controlsProps?.showRecorder).toBe(true);
-    expect(document.querySelector('[data-cy="lwc-clause-nav-recorded"]')).toBeTruthy();
+    expect(
+      document.querySelector('[data-cy="lwc-clause-nav-recorded"]')
+    ).toBeTruthy();
   });
 });

@@ -35,7 +35,8 @@ import PassageDetailPrompt from '../components/PassageDetail/Prompt/PassageDetai
 const NotImplemented = () => 'Not implemented';
 
 const MobileStep = () => {
-  const { currentstep, isBoldWorkflow } = useContext(PassageDetailContext)?.state ?? {
+  const { currentstep, isBoldWorkflow } = useContext(PassageDetailContext)
+    ?.state ?? {
     currentstep: '',
     isBoldWorkflow: false,
   };
