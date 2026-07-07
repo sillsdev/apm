@@ -146,12 +146,9 @@ export default function LwcTranslationReferencePlayer({
   const handlePlayStatus = useCallback(
     (playing: boolean) => {
       onPlayStatus?.(playing);
-      if (wasPlayingRef.current && !playing) {
-        maybeComplete(durationRef.current);
-      }
       wasPlayingRef.current = playing;
     },
-    [maybeComplete, onPlayStatus]
+    [onPlayStatus]
   );
 
   if (!referenceMediaId) return null;
