@@ -16,6 +16,7 @@ import PassageDetailItem from './PassageDetailItem';
 import PassageDetailMarkVerses from './PassageDetailMarkVerses';
 import PassageDetailCarefulSpeech from './PassageDetailCarefulSpeech';
 import PassageDetailLwcTranslation from './PassageDetailLwcTranslation';
+import PassageDetailLwcTranscription from './PassageDetailLwcTranscription';
 import PassageDetailTranscribe from './PassageDetailTranscribe';
 import PassageDetailChooser from './PassageDetailChooser';
 import ConsultantCheck from './ConsultantCheck';
@@ -39,6 +40,7 @@ import { addPt } from '../../utils/addPt';
 import DiscussionPanel from '../Discussions/DiscussionPanel';
 import { usePaneWidth } from '../usePaneWidth';
 import { showsBoldDesktopStepComplete } from './boldDesktopStepComplete';
+import { isBoldClauseTranscriptionStep } from './boldClauseTranscription';
 
 const KeyTerms = React.lazy(() => import('./Keyterms/KeyTerms'));
 
@@ -126,6 +128,23 @@ const PassageDetailGrids = () => {
     return [ArtifactTypeSlug.PhraseBackTranslation];
   }, [stepSettingsParsed, memory?.keyMap, slugFromId]);
 
+  const artifactSlug = useMemo(() => {
+    if (!artifactId) return null;
+    return slugFromId(artifactId);
+  }, [artifactId, slugFromId]);
+
+  const boldClauseTranscription = isBoldClauseTranscriptionStep(
+    tool ?? '',
+    isBoldWorkflow,
+    artifactSlug
+  );
+
+  const showBoldDesktopStepComplete = showsBoldDesktopStepComplete(
+    tool ?? '',
+    isBoldWorkflow,
+    artifactSlug
+  );
+
   const phraseBackNamedRegion = useMemo(
     () => phraseBackNamedRegionFromSettings(stepSettingsParsed),
     [stepSettingsParsed]
@@ -162,7 +181,8 @@ const PassageDetailGrids = () => {
         {!(
           isMobile &&
           (tool === ToolSlug.PhraseBackTranslate ||
-            tool === ToolSlug.CarefulSpeech)
+            tool === ToolSlug.CarefulSpeech ||
+            boldClauseTranscription)
         ) && (
           <>
             {boldDesktopCenteredHeader ? (
@@ -201,11 +221,7 @@ const PassageDetailGrids = () => {
                   {headerToolLabel}
                 </Box>
                 <Box
-                  id={
-                    showsBoldDesktopStepComplete(tool)
-                      ? 'stepcomplete'
-                      : undefined
-                  }
+                  id={showBoldDesktopStepComplete ? 'stepcomplete' : undefined}
                   sx={{
                     minWidth: 0,
                     display: 'flex',
@@ -213,9 +229,7 @@ const PassageDetailGrids = () => {
                     alignItems: 'center',
                   }}
                 >
-                  {showsBoldDesktopStepComplete(tool) && (
-                    <PassageDetailStepComplete />
-                  )}
+                  {showBoldDesktopStepComplete && <PassageDetailStepComplete />}
                 </Box>
               </Box>
             ) : (
@@ -328,6 +342,7 @@ const PassageDetailGrids = () => {
           >
             <Stack direction="row" spacing={1}>
               {tool !== ToolSlug.Transcribe &&
+              !boldClauseTranscription &&
               tool !== ToolSlug.Verses &&
               tool !== ToolSlug.CarefulSpeech &&
               !(tool === ToolSlug.PhraseBackTranslate && isBoldWorkflow) &&
@@ -377,7 +392,10 @@ const PassageDetailGrids = () => {
                   {tool === ToolSlug.PhraseBackTranslate && isBoldWorkflow && (
                     <PassageDetailLwcTranslation width={paneWidth} />
                   )}
-                  {tool === ToolSlug.Transcribe && (
+                  {boldClauseTranscription && (
+                    <PassageDetailLwcTranscription width={paneWidth} />
+                  )}
+                  {tool === ToolSlug.Transcribe && !boldClauseTranscription && (
                     <PassageDetailTranscribe
                       width={Math.max(
                         0,

@@ -1,6 +1,7 @@
 import {
   firstIncompleteClauseIndex,
   getCompletedClauseIndices,
+  getRecordingForClause,
 } from './carefulSpeechCompletion';
 import { IRegion } from '../../../crud/useWavesurferRegions';
 import { IRow } from '../../../context/PassageDetailContext';
@@ -67,5 +68,52 @@ describe('carefulSpeechCompletion', () => {
       'vern1'
     );
     expect(completed.has(0)).toBe(true);
+  });
+
+  it('prefers the current source version when multiple rows match', () => {
+    const oldRow: IRow = {
+      id: 'old',
+      artifactType: 'Back translation',
+      sourceVersion: 0,
+      mediafile: {
+        id: 'old-mf',
+        type: 'mediafile',
+        attributes: {
+          sourceSegments: JSON.stringify({ start: 0, end: 10 }),
+          transcription: 'stale transcription',
+        },
+        relationships: {
+          artifactType: { data: { id: 'art1', type: 'artifacttype' } },
+          sourceMedia: { data: { id: 'vern1', type: 'mediafile' } },
+        },
+      } as IRow['mediafile'],
+    } as IRow;
+    const currentRow: IRow = {
+      id: 'current',
+      artifactType: 'Back translation',
+      sourceVersion: 1,
+      mediafile: {
+        id: 'current-mf',
+        type: 'mediafile',
+        attributes: {
+          sourceSegments: JSON.stringify({ start: 0, end: 10 }),
+          transcription: '',
+        },
+        relationships: {
+          artifactType: { data: { id: 'art1', type: 'artifacttype' } },
+          sourceMedia: { data: { id: 'vern1', type: 'mediafile' } },
+        },
+      } as IRow['mediafile'],
+    } as IRow;
+
+    expect(
+      getRecordingForClause(
+        [oldRow, currentRow],
+        'art1',
+        1,
+        regions[0],
+        'vern1'
+      )?.id
+    ).toBe('current');
   });
 });

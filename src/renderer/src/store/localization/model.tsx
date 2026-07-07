@@ -354,10 +354,28 @@ export interface ICarefulSpeechStrings extends Localize.LocalizedStringsMethods 
     "undo": string;
 };
 
+export interface ICarefulTranscriptionStrings extends Localize.LocalizedStringsMethods {
+    "clauseIndex": string;
+    "nextClause": string;
+    "noClauses": string;
+    "noRecordingLanguage": string;
+    "prerequisite": string;
+    "progress": string;
+};
+
 export interface ILwcTranslationStrings extends Localize.LocalizedStringsMethods {
     "boldOnly": string;
     "clauseIndex": string;
     "noClauses": string;
+    "prerequisite": string;
+    "progress": string;
+};
+
+export interface ILwcTranscriptionStrings extends Localize.LocalizedStringsMethods {
+    "clauseIndex": string;
+    "nextClause": string;
+    "noClauses": string;
+    "noLwcLanguage": string;
     "prerequisite": string;
     "progress": string;
 };
@@ -2174,7 +2192,9 @@ export interface ILocalizedStrings {
 	commentEditor: ICommentEditorStrings;
 	community: ICommunityStrings;
 	carefulSpeech: ICarefulSpeechStrings;
+	carefulTranscription: ICarefulTranscriptionStrings;
 	lwcTranslation: ILwcTranslationStrings;
+	lwcTranscription: ILwcTranscriptionStrings;
 	consultantCheck: IConsultantCheckStrings;
 	control: IControlStrings;
 	deleteExpansion: IDeleteExpansionStrings;

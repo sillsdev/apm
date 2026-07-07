@@ -2138,6 +2138,48 @@
                <context context-type="sourcefile">CarefulSpeechControls.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="carefulTranscription.clauseIndex">
+            <source>Clause {0}/{1}</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">PassageDetailLwcTranscription.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="carefulTranscription.nextClause">
+            <source>Next Clause</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">BoldClauseTranscriptionEditor.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="carefulTranscription.noClauses">
+            <source>No clause segments found. Complete the Careful Speech step first.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">PassageDetailLwcTranscription.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="carefulTranscription.noRecordingLanguage">
+            <source>Language is not configured for automatic transcription.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">BoldClauseTranscriptionEditor.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="carefulTranscription.prerequisite">
+            <source>Complete Careful Speech for every clause before starting Careful transcription.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">PassageDetailLwcTranscription.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="carefulTranscription.progress">
+            <source>{0} of {1} clauses transcribed</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">PassageDetailLwcTranscription.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="lwcTranslation.boldOnly">
             <source>LWC Translation is only available for BOLD workflow teams.</source>
             <target/>
@@ -2173,7 +2215,49 @@
                <context context-type="sourcefile">LwcTranslationClauseNav.tsx</context>
             </context-group>
          </trans-unit>
-      	<trans-unit id="consultantCheck.checked">
+         <trans-unit id="lwcTranscription.clauseIndex">
+            <source>Clause {0}/{1}</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">PassageDetailLwcTranscription.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="lwcTranscription.nextClause">
+            <source>Next Clause</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">LwcTranscriptionEditor.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="lwcTranscription.noClauses">
+            <source>No clause segments found. Complete the Careful Speech step first.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">PassageDetailLwcTranscription.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="lwcTranscription.noLwcLanguage">
+            <source>LWC language is not configured on the LWC Translation step.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">LwcTranscriptionEditor.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="lwcTranscription.prerequisite">
+            <source>Complete LWC Translation for every clause before starting LWC transcription.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">PassageDetailLwcTranscription.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="lwcTranscription.progress">
+            <source>{0} of {1} clauses transcribed</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">PassageDetailLwcTranscription.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="consultantCheck.checked">
       		<source>Mark Checked</source>
       		<target/>
       		<context-group>

@@ -33,7 +33,7 @@ describe('LwcTranslationClauseNav', () => {
 
   it('renders determinate circular progress', () => {
     render(<LwcTranslationClauseNav {...baseProps} />);
-    const progress = document.querySelector('[data-cy="lwc-clause-progress"]');
+    const progress = document.querySelector('[data-cy="bold-clause-progress"]');
     expect(progress).toBeTruthy();
     const rings = progress?.querySelectorAll('.MuiCircularProgress-root');
     expect(rings?.length).toBe(2);

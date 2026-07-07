@@ -1,4 +1,5 @@
 import { ToolSlug } from '../../crud/toolSlug';
+import { isBoldClauseTranscriptionStep } from './boldClauseTranscription';
 
 export const boldDesktopStepCompleteTools = [
   ToolSlug.Prompt,
@@ -7,5 +8,16 @@ export const boldDesktopStepCompleteTools = [
   ToolSlug.PhraseBackTranslate,
 ];
 
-export const showsBoldDesktopStepComplete = (tool: string) =>
-  boldDesktopStepCompleteTools.includes(tool as ToolSlug);
+export function showsBoldDesktopStepComplete(
+  tool: string,
+  isBoldWorkflow?: boolean,
+  artifactSlug?: string | null
+): boolean {
+  if (boldDesktopStepCompleteTools.includes(tool as ToolSlug)) {
+    return true;
+  }
+  if (isBoldWorkflow && artifactSlug !== undefined) {
+    return isBoldClauseTranscriptionStep(tool, isBoldWorkflow, artifactSlug);
+  }
+  return false;
+}

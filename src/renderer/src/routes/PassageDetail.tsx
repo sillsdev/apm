@@ -15,6 +15,8 @@ import {
   useProjectType,
   useStepTool,
   useUrlContext,
+  useArtifactType,
+  remoteIdGuid,
 } from '../crud';
 import PassageDetailGrids from '../components/PassageDetail/PassageDetailGrids';
 import { useMobile } from '../utils/useMobile';
@@ -25,10 +27,13 @@ import { sharedSelector } from '../selector';
 import PassageDetailRecord from '../components/PassageDetail/PassageDetailRecord';
 import { usePaneWidth } from '../components/usePaneWidth';
 import { HeadHeight } from '../layout';
+import { RecordKeyMap } from '@orbit/records';
 import PassageDetailsArtifactsMobile from '../components/PassageDetail/Internalization/PassageDetailsArtifactsMobile';
 import PassageDetailMarkVersesIsMobile from '../components/PassageDetail/mobile/MarkVerses/PassageDetailMarkVersesIsMobile';
 import PassageDetailCarefulSpeech from '../components/PassageDetail/PassageDetailCarefulSpeech';
 import PassageDetailLwcTranslation from '../components/PassageDetail/PassageDetailLwcTranslation';
+import PassageDetailLwcTranscription from '../components/PassageDetail/PassageDetailLwcTranscription';
+import { isBoldClauseTranscriptionStep } from '../components/PassageDetail/boldClauseTranscription';
 import TeamCheckReferenceMobile from '../components/PassageDetail/mobile/TeamCheckReferenceMobile';
 import PassageDetailPrompt from '../components/PassageDetail/Prompt/PassageDetailPrompt';
 
@@ -40,8 +45,28 @@ const MobileStep = () => {
     currentstep: '',
     isBoldWorkflow: false,
   };
-  const { tool } = useStepTool(currentstep);
+  const { tool, settings } = useStepTool(currentstep);
+  const [memory] = useGlobal('memory');
+  const { slugFromId } = useArtifactType();
   const { paneWidth } = usePaneWidth();
+
+  const artifactSlug = useMemo(() => {
+    const parsed =
+      typeof settings === 'string'
+        ? (JSON.parse(settings || '{}') as { artifactTypeId?: string })
+        : ((settings as { artifactTypeId?: string }) ?? {});
+    const id = parsed?.artifactTypeId;
+    if (!id) return null;
+    const resolved =
+      remoteIdGuid('artifacttype', id, memory?.keyMap as RecordKeyMap) ?? id;
+    return slugFromId(resolved);
+  }, [settings, memory?.keyMap, slugFromId]);
+
+  const boldClauseTranscription = isBoldClauseTranscriptionStep(
+    tool ?? '',
+    isBoldWorkflow,
+    artifactSlug
+  );
 
   return tool === ToolSlug.Record ? (
     <PassageDetailRecord width={Math.max(0, paneWidth - 40)} />
@@ -53,6 +78,8 @@ const MobileStep = () => {
     <PassageDetailCarefulSpeech width={Math.max(0, paneWidth - 40)} />
   ) : tool === ToolSlug.PhraseBackTranslate && isBoldWorkflow ? (
     <PassageDetailLwcTranslation width={Math.max(0, paneWidth - 40)} />
+  ) : boldClauseTranscription ? (
+    <PassageDetailLwcTranscription width={Math.max(0, paneWidth - 40)} />
   ) : tool === ToolSlug.TeamCheck ? (
     <TeamCheckReferenceMobile width={Math.max(0, paneWidth - 40)} />
   ) : tool === ToolSlug.Prompt ? (

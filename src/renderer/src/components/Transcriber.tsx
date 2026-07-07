@@ -124,6 +124,7 @@ import { IAsrState, asrStatesEqual } from '../business/asr/asrState';
 import SelectAsrLanguage from '../business/asr/SelectAsrLanguage';
 import { IFeatures } from './Team/TeamSettings';
 import { useCheckOnline } from '../utils/useCheckOnline';
+import { useMobile } from '../utils/useMobile';
 import { useLocLangName } from '../utils/useLocLangName';
 import IndexedDBSource from '@orbit/indexeddb';
 import JSONAPISource from '@orbit/jsonapi';
@@ -341,6 +342,7 @@ export function Transcriber(props: IProps) {
   );
   const [getName] = useLocLangName();
   const checkOnline = useCheckOnline(tPlayer.recognizeSpeech);
+  const { isMobile } = useMobile();
   const [features, setFeatures] = useState<IFeatures>();
   const [asrProgressVisible, setAsrProgressVisible] = useState(false);
   const [asrLangVisible, setAsrLangVisible] = useState(false);
@@ -1630,7 +1632,12 @@ export function Transcriber(props: IProps) {
             title={tPlayer.recognizeProgress}
             isOpen={asrProgressVisible}
             onOpen={handleAsrProgressVisible}
-            bp={BigDialogBp.sm}
+            bp={isMobile ? BigDialogBp.mobile : BigDialogBp.sm}
+            mobileNoHorizontalScroll={isMobile}
+            mobilePaperWidth={
+              isMobile ? 'min(356px, calc(100vw - 4px))' : undefined
+            }
+            dialogContentSx={{ minWidth: 0, overflowX: 'hidden' }}
           >
             <AsrProgress
               mediaId={playerMediafile?.id ?? ''}
