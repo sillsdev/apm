@@ -360,8 +360,6 @@ export const useOfflineSetup = () => {
             artId: CS,
           },
           { name: 'LwcTranscription', tool: 'transcribe', artId: PBT },
-          { name: 'FreeTranslation', tool: 'wholeBackTranslate' },
-          { name: 'FreeTranscription', tool: 'transcribe', artId: WBT },
         ],
         artIds
       );
