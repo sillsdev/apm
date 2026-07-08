@@ -14,8 +14,14 @@ interface IProps {
 
 export default function PassageDetailPromptMember(props: IProps) {
   const { width } = props;
-  const { rowData, section, currentstep, setPromptPlaybackComplete } =
-    usePassageDetailContext();
+  const {
+    rowData,
+    section,
+    currentstep,
+    setPromptPlaybackComplete,
+    setStepComplete,
+    isBoldWorkflow,
+  } = usePassageDetailContext();
   const { promptMediaId, hasPrompt } = usePromptSectionResource(
     rowData,
     section,
@@ -80,6 +86,9 @@ export default function PassageDetailPromptMember(props: IProps) {
     if (!playbackCompleteRef.current && dur > 0.1 && progress >= dur - 0.1) {
       playbackCompleteRef.current = true;
       setPromptPlaybackComplete(true);
+      if (isBoldWorkflow) {
+        setStepComplete(currentstep, true);
+      }
     }
   };
 
