@@ -228,7 +228,6 @@ jest.mock('../business/voice/SelectVoice', () => ({
 
 const defaultProps = {
   height: 100,
-  width: 400,
   segments: '{}',
   allowRecord: true,
   mediaId: 'existing-media-id',

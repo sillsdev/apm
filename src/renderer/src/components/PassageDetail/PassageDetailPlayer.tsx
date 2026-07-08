@@ -421,7 +421,6 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
         id="audioPlayer"
         allowRecord={false}
         height={PLAYER_HEIGHT}
-        width={width}
         controlsRef={controlsRef}
         applyRegionColor={applyRegionColor}
         onSegmentPlaybackEnd={onSegmentPlaybackEnd}

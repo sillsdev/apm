@@ -474,7 +474,6 @@ export function PassageDetailBoldClauseTranscription({ width }: IProps) {
     >
       <Box sx={{ position: 'relative', width: '100%' }}>
         <ClauseAudioPlayer
-          width={width}
           mediaId={referenceMediaId}
           playKey={referencePlayKey}
           onPlaybackComplete={() => undefined}

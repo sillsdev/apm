@@ -679,7 +679,6 @@ function MediaRecord(props: IProps) {
         allowDeltaVoice={allowDeltaVoice}
         allowDownload={allowDownload}
         oneTryOnly={effectiveOneTryOnly}
-        width={width}
         height={height || 300}
         mediaId={mediaId}
         blob={originalBlob}

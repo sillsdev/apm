@@ -127,7 +127,6 @@ interface IProps {
   alternatePlayer?: boolean;
   oneTryOnly?: boolean;
   height: number;
-  width: number;
   segments: string;
   verses?: string;
   currentSegmentIndex?: number;

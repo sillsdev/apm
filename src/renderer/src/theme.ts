@@ -38,7 +38,7 @@ declare module '@mui/material/styles' {
   }
 }
 
-// Single source of truth for the "contained" action look, shared by the
+// For the "contained" action look, shared by the
 // MuiButton contained variant and any component that mimics it (see the
 // palette `custom.containedBg`/`containedHoverBg` tokens below).
 const CONTAINED_BG = '#333333';
