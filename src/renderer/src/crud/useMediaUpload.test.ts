@@ -349,6 +349,39 @@ describe('useMediaUpload', () => {
     );
   });
 
+  it('rejects when itemComplete bookkeeping throws', async () => {
+    mockOffline = true;
+    createMedia.mockRejectedValue(new Error('create failed'));
+    const afterUploadCb = jest.fn().mockResolvedValue(undefined);
+    const { result } = renderUploadHook({
+      artifactId: null,
+      passageId: 'psg-1',
+      afterUploadCb,
+    });
+    const upload = result.current as (files: File[]) => Promise<void>;
+
+    await expect(
+      completeUpload(upload, [makeFile()], 0, true, { blob: true })
+    ).rejects.toThrow('create failed');
+    expect(afterUploadCb).not.toHaveBeenCalled();
+  });
+
+  it('settles when afterUploadCb throws', async () => {
+    const afterUploadCb = jest
+      .fn()
+      .mockRejectedValue(new Error('parent failed'));
+    const { result } = renderUploadHook({
+      artifactId: null,
+      passageId: 'psg-1',
+      afterUploadCb,
+    });
+    const upload = result.current as (files: File[]) => Promise<void>;
+
+    await completeUpload(upload, [makeFile()], 0, false, undefined);
+
+    expect(afterUploadCb).toHaveBeenCalledWith('');
+  });
+
   it('dispatches uploadComplete action object, not the action creator function', async () => {
     const afterUploadCb = jest.fn().mockResolvedValue(undefined);
     const { result } = renderUploadHook({

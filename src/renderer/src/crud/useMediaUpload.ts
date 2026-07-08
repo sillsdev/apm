@@ -125,31 +125,36 @@ export const useMediaUpload = ({
       }
     };
     if (!getGlobal('offline') && mediaIdRef.current) {
-      pullTableList(
-        'mediafile',
-        Array(mediaIdRef.current),
-        memory,
-        remote,
-        backup,
-        reporter
-      )
-        .then(finishUpload)
-        .catch(() => finishUpload());
-    } else {
-      await finishUpload();
+      try {
+        await pullTableList(
+          'mediafile',
+          Array(mediaIdRef.current),
+          memory,
+          remote,
+          backup,
+          reporter
+        );
+      } catch {
+        // Sync failure still runs upload cleanup.
+      }
     }
+    await finishUpload();
   };
 
   return (files: File[]) =>
-    new Promise<void>((resolve) => {
+    new Promise<void>((resolve, reject) => {
       const uploadCompleteCb = (
         n: number,
         success: boolean,
         data?: unknown
       ) => {
         void (async () => {
-          await itemComplete(n, success, data);
-          resolve();
+          try {
+            await itemComplete(n, success, data);
+            resolve();
+          } catch (err) {
+            reject(err);
+          }
         })();
       };
 

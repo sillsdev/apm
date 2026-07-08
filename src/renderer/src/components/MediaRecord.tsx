@@ -438,6 +438,7 @@ function MediaRecord(props: IProps) {
   const doUpload = useCallback(
     async (blob: Blob, mimeType: string, filetype: string) => {
       setUploading(true);
+      setStatusText(t.saving);
       const files = [
         new File([blob], defaultFilename + '.' + filetype, {
           type: mimeType,
@@ -445,6 +446,7 @@ function MediaRecord(props: IProps) {
       ];
       await uploadMedia(files);
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [defaultFilename, uploadMedia]
   );
 
