@@ -281,25 +281,19 @@ function MediaRecord(props: IProps) {
   }, [allowWave, mimeType, t.compressed, t.uncompressed]);
 
   const myAfterUploadCb = async (mediaId: string) => {
-    try {
-      setUploading(false);
-      setPendingSave(false);
-      if (filechangedRef.current && mediaId) setFilechanged(false);
-      if (!mediaId) {
-        showMessage(ts.NoSaveWoMedia);
-        setStatusText(ts.NoSaveWoMedia);
-        saveCompleted(toolId, ts.NoSaveWoMedia);
-      } else {
-        setStatusText(getCompressedStatusMessage());
-        saveCompleted(toolId);
-      }
-      saveRef.current = false;
-      await afterUploadCb(mediaId);
-    } finally {
-      setConverting(false);
-      setLoading(false);
-      onReady?.();
+    setUploading(false);
+    setPendingSave(false);
+    if (filechangedRef.current && mediaId) setFilechanged(false);
+    if (!mediaId) {
+      showMessage(ts.NoSaveWoMedia);
+      setStatusText(ts.NoSaveWoMedia);
+      saveCompleted(toolId, ts.NoSaveWoMedia);
+    } else {
+      setStatusText(getCompressedStatusMessage());
+      saveCompleted(toolId);
     }
+    saveRef.current = false;
+    await afterUploadCb(mediaId);
   };
 
   const uploadMedia = useMediaUpload({
@@ -452,6 +446,7 @@ function MediaRecord(props: IProps) {
 
   const convertComplete = () => {
     setConverting(false);
+    setLoading(false);
     onReady?.();
   };
 
@@ -504,12 +499,18 @@ function MediaRecord(props: IProps) {
                 showMessage(errorMessage);
                 setConverting(false);
                 doUpload(audioBlob, 'audio/wav', 'wav')
-                  .then(() => onReady?.())
+                  .then(() => {
+                    setLoading(false);
+                    onReady?.();
+                  })
                   .catch(handleSaveFailed);
               });
           } else {
             doUpload(audioBlob, mimeType, filetype)
-              .then(() => onReady?.())
+              .then(() => {
+                setLoading(false);
+                onReady?.();
+              })
               .catch(handleSaveFailed);
           }
           return;

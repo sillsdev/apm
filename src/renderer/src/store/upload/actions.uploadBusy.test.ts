@@ -94,14 +94,24 @@ describe('nextUpload importexportBusy wait', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockedAxios.post.mockResolvedValue(vndResponse);
-    mockedAxios.put = jest.fn();
-    (global as { window?: { api?: unknown } }).window = {
-      api: {
-        exists: jest.fn().mockResolvedValue(false),
-        write: jest.fn(),
-        read: jest.fn(),
-      },
-    };
+
+    const xhrProto = XMLHttpRequest.prototype;
+    jest.spyOn(xhrProto, 'open').mockImplementation(function (
+      this: XMLHttpRequest,
+      _method: string,
+      _url: string | URL
+    ) {
+      return undefined;
+    });
+    jest.spyOn(xhrProto, 'send').mockImplementation(function (
+      this: XMLHttpRequest
+    ) {
+      Object.defineProperty(this, 'status', { value: 200, configurable: true });
+      if (this.onload) this.onload(new ProgressEvent('load'));
+    });
+    jest
+      .spyOn(xhrProto, 'setRequestHeader')
+      .mockImplementation(() => undefined);
   });
 
   afterEach(() => {
