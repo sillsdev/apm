@@ -2065,11 +2065,10 @@ function WSAudioPlayer(props: IProps) {
       </LightTooltip>
     );
 
-  // Tool-managed segment undo (e.g. Mark Verses) shown in the top-right of the
-  // toolbar, where the waveform-edit undo (`recordingUndoNode`) sits for
-  // recording consumers. Distinct from that undo; this delegates to the host's
+  // Tool-managed segment undo (e.g. Mark Verses). Distinct from the recording undo;
+  // this delegates to the host's
   // own undo stack via onSegmentUndo. The two never render together (no
-  // consumer sets both allowRecord and hasSegmentUndo).
+  // consumer should set both allowRecord and hasSegmentUndo).
   const segmentUndoNode = !hideToolbar && hasSegmentUndo && onSegmentUndo && (
     <LightTooltip id="wsSegmentUndoTip" title={t.undoTip}>
       <span>
@@ -2407,8 +2406,6 @@ function WSAudioPlayer(props: IProps) {
               {allowSegment && (
                 <Stack direction="row" spacing={1}>
                   {renderSegmentControls()}
-                  {/* Waveform-edit undo for the collapsed (hideToolbar) layout,
-                      where the top toolbar's `recordingUndoNode` is hidden. */}
                   {hideToolbar && canUndo && !oneShotUsed && (
                     <IconButton
                       id="wsUndo"
@@ -2421,11 +2418,9 @@ function WSAudioPlayer(props: IProps) {
                 </Stack>
               )}
               {/* Segment navigation and loop only make sense for the transcriber
-                  (allowAutoSegment); other consumers (e.g. Mark Verses) do not
-                  show them. Order matches develop: loop, previous, next. */}
+                  (allowAutoSegment) */}
               {allowAutoSegment && !isMobileView && (
                 <>
-                  {/* Separate the Add/Remove segment controls from the loop. */}
                   {allowSegment && <VertDivider id="wsAudioSegDiv" />}
                   <LightTooltip
                     id="wsAudioLoopTip"

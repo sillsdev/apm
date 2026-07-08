@@ -103,8 +103,8 @@ export const isMarkVersesTableTailIncomplete = (
 };
 
 /**
- * Semantic state of a Mark Verses reference cell, independent of the `className`
- * styling string. Drives both styling and edit affordances. String-valued so the
+ * Semantic state of a Mark Verses reference cell.
+ *  Drives both styling and edit affordances. String-valued so the
  * serialized form (`tableSignature`, fixtures) stays human-readable.
  */
 export enum RefStatus {

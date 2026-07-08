@@ -529,7 +529,6 @@ export function useWaveSurferRegions(
           }
         }
       );
-      //was region-update-end
       regionsPlugin.on(
         'region-updated',
         function (r: Region, side?: UpdateSide) {
