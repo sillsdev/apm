@@ -143,6 +143,7 @@ import bookSortJson from '../../assets/akuosort.json';
 import { PlanView } from './PlanView';
 import { addPt } from '../../utils/addPt';
 import { PlanBar } from './PlanBar';
+import { TabAppBar } from '../../control';
 import GraphicPicker from '../GraphicPicker';
 import { MediaUploadControlsRef } from '../../components/MediaUploadContent';
 import { useComputeRef } from '../../components/PassageDetail/Internalization/useComputeRef';
@@ -2219,21 +2220,24 @@ export function ScriptureTable(props: IProps) {
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column' }}>
       {isMobile ? (
-        <>
-          <PlanBar
-            publishingOn={publishingOn}
-            hidePublishing={hidePublishing}
-            handlePublishToggle={handlePublishToggle}
-            data={rowdata}
-            canSetDefault={canSetProjectDefault}
-            filterState={filterState}
-            onFilterChange={onFilterChange}
-            orgSteps={orgSteps}
-            minimumSection={minSection}
-            maximumSection={sheet[sheet.length - 1]?.sectionSeq ?? 0}
-            filtered={filtered}
-            rowInfo={rowinfo}
-          />
+        <TabAppBar
+          bar={
+            <PlanBar
+              publishingOn={publishingOn}
+              hidePublishing={hidePublishing}
+              handlePublishToggle={handlePublishToggle}
+              data={rowdata}
+              canSetDefault={canSetProjectDefault}
+              filterState={filterState}
+              onFilterChange={onFilterChange}
+              orgSteps={orgSteps}
+              minimumSection={minSection}
+              maximumSection={sheet[sheet.length - 1]?.sectionSeq ?? 0}
+              filtered={filtered}
+              rowInfo={rowinfo}
+            />
+          }
+        >
           <PlanView
             rowInfo={rowinfo}
             publishingView={publishingOn && !hidePublishing}
@@ -2245,7 +2249,7 @@ export function ScriptureTable(props: IProps) {
             }}
             handleGraphic={canPublish ? handleGraphic : undefined}
           />
-        </>
+        </TabAppBar>
       ) : (
         <PlanSheet
           {...props}
