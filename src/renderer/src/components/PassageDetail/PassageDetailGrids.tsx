@@ -13,7 +13,7 @@ import TeamCheckReference from './TeamCheckReference';
 import PassageDetailPlayer from './PassageDetailPlayer';
 import PassageDetailRecord from './PassageDetailRecord';
 import PassageDetailItem from './PassageDetailItem';
-import PassageDetailMarkVerses from './PassageDetailMarkVerses';
+import PassageDetailMarkVersesIsMobile from './mobile/MarkVerses/PassageDetailMarkVersesIsMobile';
 import PassageDetailCarefulSpeech from './PassageDetailCarefulSpeech';
 import PassageDetailLwcTranslation from './PassageDetailLwcTranslation';
 import PassageDetailLwcTranscription from './PassageDetailLwcTranscription';
@@ -160,7 +160,20 @@ const PassageDetailGrids = () => {
       ? addPt(t.getString(tool))
       : tool;
   const boldDesktopCenteredHeader = isBoldWorkflow && !isMobile;
-  const MAGIC_NUMBER_THAT_MAKES_IT_FIT = 16;
+  // The step content sits in a Paper of `calc(100% - 32px)`; a player sized to
+  // the full pane would spill past that Paper (the outer Box clips it, cutting
+  // off the waveform's right edge and the controls below). Match the `- 40`
+  // used by the other step players so the player stays inside the Paper.
+  const MAGIC_NUMBER_THAT_MAKES_IT_FIT = 40;
+  // Width for a step's audio player so it fits the pane without clipping the
+  // right-edge controls: pane minus padding and (when shown) the scrollbar.
+  // Pass this to every step player so a new consumer can't forget the fit math.
+  const playerPaneWidth = Math.max(
+    0,
+    paneWidth -
+      MAGIC_NUMBER_THAT_MAKES_IT_FIT -
+      (discussOpen ? 0 : scrollbarWidth)
+  );
   return (
     <Box
       sx={{
@@ -376,7 +389,7 @@ const PassageDetailGrids = () => {
                 <Grid
                   sx={{
                     ...descProps,
-                    width: paneWidth,
+                    width: '100%',
                     maxWidth: paneWidth,
                     minWidth: 0,
                   }}
@@ -384,10 +397,10 @@ const PassageDetailGrids = () => {
                 >
                   <PassageDetailChooser width={paneWidth} />
                   {tool === ToolSlug.Verses && (
-                    <PassageDetailMarkVerses width={paneWidth} />
+                    <PassageDetailMarkVersesIsMobile width={playerPaneWidth} />
                   )}
                   {tool === ToolSlug.CarefulSpeech && (
-                    <PassageDetailCarefulSpeech width={paneWidth} />
+                    <PassageDetailCarefulSpeech width={playerPaneWidth} />
                   )}
                   {tool === ToolSlug.PhraseBackTranslate && isBoldWorkflow && (
                     <PassageDetailLwcTranslation width={paneWidth} />
@@ -397,12 +410,7 @@ const PassageDetailGrids = () => {
                   )}
                   {tool === ToolSlug.Transcribe && !boldClauseTranscription && (
                     <PassageDetailTranscribe
-                      width={Math.max(
-                        0,
-                        paneWidth -
-                          MAGIC_NUMBER_THAT_MAKES_IT_FIT -
-                          (discussOpen ? 0 : scrollbarWidth)
-                      )}
+                      width={playerPaneWidth}
                       artifactTypeId={artifactId}
                     />
                   )}
@@ -410,7 +418,7 @@ const PassageDetailGrids = () => {
                     <PassageDetailRecord width={Math.max(0, paneWidth - 40)} />
                   )}
                   {tool === ToolSlug.ConsultantCheck && (
-                    <ConsultantCheck width={paneWidth} />
+                    <ConsultantCheck width={playerPaneWidth} />
                   )}
                 </Grid>
               )}

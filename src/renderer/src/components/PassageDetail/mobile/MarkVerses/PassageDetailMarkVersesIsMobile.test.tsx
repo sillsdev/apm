@@ -60,12 +60,22 @@ const mockCurrentStep = 'step1';
 const mockSetCurrentStep = jest.fn();
 const mockSetCurrentSegment = jest.fn();
 let mockPlayerAction: ((segment: string, init: boolean) => void) | undefined;
+let mockClearSegments: (() => void | Promise<void>) | undefined;
 const mockRowData: IRow[] = [];
 
 const passageAttributes = {
   sequencenum: 1,
   book: 'LUK',
   reference: '1:1-4',
+  // Parsed range fields that `parseRef` populates in the real app. Several
+  // helpers (isMarkVersesReferenceInPassage, shouldAutoRenumberAfterEdit) read
+  // these directly, so without them every row is flagged OutOfRange — the table
+  // stops renumbering and the Edit dialog opens the start verse as an editable
+  // dropdown instead of read-only text.
+  startChapter: 1,
+  startVerse: 1,
+  endChapter: 1,
+  endVerse: 4,
   title: '',
   state: 'noMedia',
   dateCreated: '2024-05-08T15:37:36.284Z',
@@ -129,9 +139,11 @@ const mockGotoTime = jest.fn().mockResolvedValue(undefined);
 jest.mock('../../PassageDetailPlayer', () => {
   const MockedPassageDetailPlayer = ({
     onSegment,
+    onClearSegments,
     controlsRef,
   }: DetailPlayerProps) => {
     mockPlayerAction = onSegment;
+    mockClearSegments = onClearSegments;
     if (controlsRef) {
       controlsRef.current = {
         gotoTime: mockGotoTime,
@@ -291,7 +303,11 @@ const waitForPassageRowsReady = () =>
   });
 
 const confirmReset = async (user: UserEvent) => {
-  await user.click(screen.getByRole('button', { name: 'Reset' }));
+  // The Reset button now lives in the (mocked) waveform toolbar and drives the
+  // player's onClearSegments callback, which opens the confirm dialog.
+  await act(async () => {
+    await mockClearSegments?.();
+  });
   await user.click(document.getElementById('alertYes')!);
 };
 
@@ -304,6 +320,20 @@ const markVersesTbody = () => {
   if (!tbody) throw new Error('Mark verses table has no tbody');
   return tbody;
 };
+
+/**
+ * Timestamp display format for the Mark Verses table. The table renders segment
+ * limits as either seconds (`8.4`) or mm:ss, and we're still deciding which — so
+ * the format lives in ONE place. To switch, edit `fmtTime` to match
+ * PassageDetailMarkVersesIsMobile.tsx; every limits assertion below follows.
+ */
+const fmtTime = (seconds: number) => seconds.toFixed(1); // ss.s
+// For mm:ss instead, swap the line above for:
+// const fmtTime = (seconds: number) =>
+//   `${Math.floor(seconds / 60)}:${Math.floor(seconds % 60)
+//     .toString()
+//     .padStart(2, '0')}`;
+const lim = (start: number, end: number) => `${fmtTime(start)}-${fmtTime(end)}`;
 
 /**
  * Click the tbody row whose Limits column shows `limitsText` (requires verse
@@ -341,13 +371,11 @@ test('updates timestamp rows when the player emits verse markers', async () => {
   });
 
   await waitFor(() => {
-    expect(
-      within(markVersesTbody()).getByText('0:00-0:10')
-    ).toBeInTheDocument();
+    expect(within(markVersesTbody()).getByText(lim(0, 10))).toBeInTheDocument();
   });
 
-  expect(within(markVersesTbody()).getByText('0:10-0:20')).toBeInTheDocument();
-  expect(within(markVersesTbody()).getByText('0:20-1:09')).toBeInTheDocument();
+  expect(within(markVersesTbody()).getByText(lim(10, 20))).toBeInTheDocument();
+  expect(within(markVersesTbody()).getByText(lim(20, 69))).toBeInTheDocument();
   expect(screen.getByLabelText('verse-reference-1')).toHaveTextContent('1:1');
   expect(screen.getByLabelText('verse-reference-2')).toHaveTextContent('1:2');
   expect(screen.getByLabelText('verse-reference-3')).toHaveTextContent('1:3');
@@ -369,8 +397,8 @@ test('highlights the matching waveform region when a row is edited', async () =>
     );
   });
 
-  await within(markVersesTbody()).findByText('0:10-0:20');
-  await clickMarkVersesRowByLimitsText(user, '0:10-0:20');
+  await within(markVersesTbody()).findByText(lim(10, 20));
+  await clickMarkVersesRowByLimitsText(user, lim(10, 20));
   await user.click(screen.getByRole('button', { name: 'Edit Reference' }));
   await user.click(
     within(editReferenceDialog()).getByRole('checkbox', { name: 'Split Verse' })
@@ -405,9 +433,7 @@ test('verse references are read-only in the table', async () => {
   });
 
   await waitFor(() => {
-    expect(
-      within(markVersesTbody()).getByText('0:00-0:10')
-    ).toBeInTheDocument();
+    expect(within(markVersesTbody()).getByText(lim(0, 10))).toBeInTheDocument();
   });
 
   expect(verseReference(1).tagName).toBe('P');
@@ -431,9 +457,9 @@ test('seeks the waveform when a timestamp row is clicked', async () => {
     );
   });
 
-  await within(markVersesTbody()).findByText('0:10-0:20');
+  await within(markVersesTbody()).findByText(lim(10, 20));
   mockGotoTime.mockClear();
-  await clickMarkVersesRowByLimitsText(user, '0:10-0:20');
+  await clickMarkVersesRowByLimitsText(user, lim(10, 20));
 
   await waitFor(() => {
     expect(mockGotoTime).toHaveBeenCalledWith(10.1, { start: 10, end: 20 });
@@ -456,7 +482,7 @@ test('seeks the waveform when the reference cell is clicked', async () => {
     );
   });
 
-  await within(markVersesTbody()).findByText('0:20-1:09');
+  await within(markVersesTbody()).findByText(lim(20, 69));
   mockGotoTime.mockClear();
   await user.click(screen.getByLabelText('verse-reference-3'));
 
@@ -479,15 +505,15 @@ test('opens and cancels the split verse dialog', async () => {
     );
   });
 
-  await within(markVersesTbody()).findByText('0:00-0:10');
+  await within(markVersesTbody()).findByText(lim(0, 10));
 
-  await clickMarkVersesRowByLimitsText(user, '0:00-0:10');
+  await clickMarkVersesRowByLimitsText(user, lim(0, 10));
   await user.click(screen.getByRole('button', { name: 'Edit Reference' }));
 
   const dialogEl = editReferenceDialog();
   expect(
     within(dialogEl).getByRole('heading', {
-      name: 'Edit Reference for 0:00-0:10',
+      name: `Edit Reference for ${lim(0, 10)}`,
     })
   ).toBeInTheDocument();
   expect(screen.getByLabelText('end verse number')).not.toBeDisabled();
@@ -508,7 +534,7 @@ test('opens and cancels the split verse dialog', async () => {
   );
   expect(
     screen.queryByRole('heading', {
-      name: 'Edit Reference for 0:00-0:10',
+      name: `Edit Reference for ${lim(0, 10)}`,
     })
   ).not.toBeInTheDocument();
 });
@@ -527,9 +553,9 @@ test('disables Save on Edit Reference until the reference changes', async () => 
     );
   });
 
-  await within(markVersesTbody()).findByText('0:00-0:10');
+  await within(markVersesTbody()).findByText(lim(0, 10));
 
-  await clickMarkVersesRowByLimitsText(user, '0:00-0:10');
+  await clickMarkVersesRowByLimitsText(user, lim(0, 10));
   await user.click(screen.getByRole('button', { name: 'Edit Reference' }));
 
   const saveButton = within(editReferenceDialog()).getByRole('button', {
@@ -564,9 +590,9 @@ test('keeps Save disabled when Split Verse is toggled without suffix change', as
     );
   });
 
-  await within(markVersesTbody()).findByText('0:00-0:10');
+  await within(markVersesTbody()).findByText(lim(0, 10));
 
-  await clickMarkVersesRowByLimitsText(user, '0:00-0:10');
+  await clickMarkVersesRowByLimitsText(user, lim(0, 10));
   await user.click(screen.getByRole('button', { name: 'Edit Reference' }));
 
   const saveButton = within(editReferenceDialog()).getByRole('button', {
@@ -599,9 +625,9 @@ test('saves a split verse range and shifts following references up', async () =>
     );
   });
 
-  await within(markVersesTbody()).findByText('0:00-0:10');
+  await within(markVersesTbody()).findByText(lim(0, 10));
 
-  await clickMarkVersesRowByLimitsText(user, '0:00-0:10');
+  await clickMarkVersesRowByLimitsText(user, lim(0, 10));
   await user.click(screen.getByRole('button', { name: 'Edit Reference' }));
   await user.click(
     within(editReferenceDialog()).getByRole('checkbox', { name: 'Split Verse' })
@@ -647,7 +673,7 @@ test('opens split verse unchecked for a numeric range like 1:1-4', async () => {
     expect(screen.getByLabelText('verse-reference-1')).toHaveTextContent('1:1');
   });
 
-  await clickMarkVersesRowByLimitsText(user, '0:00-1:09');
+  await clickMarkVersesRowByLimitsText(user, lim(0, 69));
   await user.click(screen.getByRole('button', { name: 'Edit Reference' }));
   await user.selectOptions(
     within(editReferenceDialog()).getByLabelText('end verse number'),
@@ -681,7 +707,7 @@ test('adds rows when narrowing a wide reference on a single segment', async () =
     expect(screen.getByLabelText('verse-reference-1')).toHaveTextContent('1:1');
   });
 
-  await clickMarkVersesRowByLimitsText(user, '0:00-1:09');
+  await clickMarkVersesRowByLimitsText(user, lim(0, 69));
   await user.click(screen.getByRole('button', { name: 'Edit Reference' }));
   await user.selectOptions(
     within(editReferenceDialog()).getByLabelText('end verse number'),
@@ -726,7 +752,7 @@ test('adds rows when the first row range is narrowed after spanning the passage'
     expect(screen.getByLabelText('verse-reference-4')).toHaveTextContent('1:4');
   });
 
-  await clickMarkVersesRowByLimitsText(user, '0:00-0:10');
+  await clickMarkVersesRowByLimitsText(user, lim(0, 10));
   await user.click(screen.getByRole('button', { name: 'Edit Reference' }));
   await user.selectOptions(
     within(editReferenceDialog()).getByLabelText('end verse number'),
@@ -767,9 +793,9 @@ test('saving an ending verse without split creates a range and shifts following 
     );
   });
 
-  await within(markVersesTbody()).findByText('0:00-0:10');
+  await within(markVersesTbody()).findByText(lim(0, 10));
 
-  await clickMarkVersesRowByLimitsText(user, '0:00-0:10');
+  await clickMarkVersesRowByLimitsText(user, lim(0, 10));
   await user.click(screen.getByRole('button', { name: 'Edit Reference' }));
   await user.selectOptions(
     within(editReferenceDialog()).getByLabelText('end verse number'),
@@ -798,9 +824,9 @@ test('split uses the selected left and right verses rather than the dialog row',
     );
   });
 
-  await within(markVersesTbody()).findByText('0:20-1:09');
+  await within(markVersesTbody()).findByText(lim(20, 69));
 
-  await clickMarkVersesRowByLimitsText(user, '0:20-1:09');
+  await clickMarkVersesRowByLimitsText(user, lim(20, 69));
   await user.click(screen.getByRole('button', { name: 'Edit Reference' }));
   expect(
     within(editReferenceDialog()).getByLabelText('start verse reference')
@@ -835,9 +861,9 @@ test('shows undo after dialog save and restores the previous table', async () =>
     );
   });
 
-  await within(markVersesTbody()).findByText('0:00-0:10');
+  await within(markVersesTbody()).findByText(lim(0, 10));
 
-  await clickMarkVersesRowByLimitsText(user, '0:00-0:10');
+  await clickMarkVersesRowByLimitsText(user, lim(0, 10));
   await user.click(screen.getByRole('button', { name: 'Edit Reference' }));
   await user.click(
     within(editReferenceDialog()).getByRole('checkbox', { name: 'Split Verse' })
@@ -887,9 +913,9 @@ test('reset clears markers and restores the original reference table', async () 
     );
   });
 
-  await within(markVersesTbody()).findByText('0:00-0:10');
+  await within(markVersesTbody()).findByText(lim(0, 10));
 
-  await clickMarkVersesRowByLimitsText(user, '0:10-0:20');
+  await clickMarkVersesRowByLimitsText(user, lim(10, 20));
   await user.click(screen.getByRole('button', { name: 'Edit Reference' }));
   await user.click(
     within(editReferenceDialog()).getByRole('checkbox', { name: 'Split Verse' })
@@ -906,7 +932,7 @@ test('reset clears markers and restores the original reference table', async () 
   await confirmReset(user);
 
   await waitFor(() => {
-    expect(screen.queryByText('0:00-0:10')).not.toBeInTheDocument();
+    expect(screen.queryByText(lim(0, 10))).not.toBeInTheDocument();
   });
 
   expect(verseReference(1)).toHaveTextContent('1:1');

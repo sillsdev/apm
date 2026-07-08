@@ -80,7 +80,6 @@ interface IProps {
   onProgress?: (progress: number) => void;
   onDuration?: (duration: number) => void;
   hideToolbar?: boolean;
-  hideSegmentControls?: boolean;
   hasRecording?: boolean;
   isStopLogic?: boolean;
   showSize?: boolean;
@@ -141,7 +140,6 @@ function MediaRecord(props: IProps) {
     onProgress,
     onDuration,
     hideToolbar,
-    hideSegmentControls,
     width,
     keepItSmall,
     hasRecording,
@@ -697,7 +695,6 @@ function MediaRecord(props: IProps) {
         onDuration={handleWaveformDuration}
         controlsRef={controlsRef}
         hideToolbar={hideToolbar}
-        hideSegmentControls={hideSegmentControls}
         hideControls={hideControls}
         segments={segments}
         reload={gotTheBlob}

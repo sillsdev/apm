@@ -1,4 +1,5 @@
 import {
+  Box,
   Paper,
   Table,
   TableBody,
@@ -6,19 +7,27 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  TextField,
   Typography,
 } from '@mui/material';
-import type { RefObject } from 'react';
+import WarningIcon from '@mui/icons-material/Warning';
+import { useRef, useState, type RefObject } from 'react';
+import { LightTooltip } from '../../../../control/LightTooltip';
 import {
   isMarkVersesTableRowCompleted,
   MARK_VERSES_COMPLETED_RGBA,
   MARK_VERSES_CURRENT_RGBA,
+  RefStatus,
 } from '../../../../utils/markVersesSegmentColors';
 import type { ICell } from './PassageDetailMarkVersesIsMobile';
 
 interface MarkVersesTableIsMobileProps {
   data: ICell[][];
   onRowSelect?: (rowIndex: number) => void;
+  /** Commit a hand-typed reference for the given data-row index. */
+  onReferenceEdit?: (rowIndex: number, value: string) => void;
+  /** Whether the user may hand-edit references inline. */
+  canEdit?: boolean;
   tableRowRefs?: RefObject<(HTMLTableRowElement | null)[]>;
 }
 
@@ -30,10 +39,31 @@ enum ColName {
 export default function MarkVersesTableIsMobile({
   data,
   onRowSelect,
+  onReferenceEdit,
+  canEdit,
   tableRowRefs,
 }: MarkVersesTableIsMobileProps) {
   const rows = data.slice(1);
   const header = data[0] ?? [];
+
+  // Inline reference editing: which data-row index is in edit mode, plus its
+  // draft text. Escape cancels via `cancelEditRef` so the shared blur path can
+  // tell a discard from a commit.
+  const [editingRow, setEditingRow] = useState<number | null>(null);
+  const [draft, setDraft] = useState('');
+  const cancelEditRef = useRef(false);
+
+  const beginEdit = (rowIndex: number, current: string) => {
+    setDraft(current);
+    setEditingRow(rowIndex);
+  };
+
+  const finishEdit = (rowIndex: number) => {
+    const cancelled = cancelEditRef.current;
+    cancelEditRef.current = false;
+    setEditingRow(null);
+    if (!cancelled) onReferenceEdit?.(rowIndex, draft);
+  };
 
   return (
     <TableContainer
@@ -56,6 +86,9 @@ export default function MarkVersesTableIsMobile({
             <TableCell>
               {header[ColName.Limits]?.value ?? 'Start-Stop'}
             </TableCell>
+            {/* Dedicated, always-present warning column so the reference text
+                never shifts whether or not a row carries a warning icon. */}
+            <TableCell padding="none" aria-hidden sx={{ width: 36 }} />
             <TableCell>{header[ColName.Ref]?.value ?? 'Reference'}</TableCell>
           </TableRow>
         </TableHead>
@@ -64,9 +97,15 @@ export default function MarkVersesTableIsMobile({
           {rows.map((row, index) => {
             const limits = row[ColName.Limits] as ICell;
             const reference = row[ColName.Ref] as ICell;
-            const invalid = reference.className?.includes('Err');
+            const invalid = reference.status === RefStatus.Err;
+            const warn = reference.status === RefStatus.Warn;
             const isCurrentRow = (limits.className ?? '').includes('cur');
             const hasLimits = Boolean(limits.value);
+            const rowIndex = index + 1;
+            // Only rows backed by a segment (limits) can have their reference
+            // hand-edited, mirroring the Edit Reference dialog's reach.
+            const editable = Boolean(canEdit && onReferenceEdit && hasLimits);
+            const isEditing = editingRow === rowIndex;
             const rowCompleted = isMarkVersesTableRowCompleted(
               data,
               index + 1,
@@ -118,22 +157,119 @@ export default function MarkVersesTableIsMobile({
                 </TableCell>
 
                 <TableCell
-                  sx={{ backgroundColor: 'inherit', py: 0.75 }}
+                  padding="none"
+                  sx={{
+                    width: 36,
+                    backgroundColor: 'inherit',
+                    py: 0.75,
+                  }}
                   onClick={(event) => {
                     if (!hasLimits) return;
                     event.stopPropagation();
-                    onRowSelect?.(index + 1);
+                    onRowSelect?.(rowIndex);
                   }}
                 >
-                  <Typography
-                    variant="body2"
-                    aria-label={`verse-reference-${index + 1}`}
+                  {/* Fixed-width slot reserved on every row so the warning icon
+                      sits just left of the reference without shifting it. */}
+                  <Box
                     sx={{
-                      color: invalid ? 'error.main' : 'text.primary',
+                      display: 'flex',
+                      justifyContent: 'flex-end',
+                      alignItems: 'center',
+                      width: 28,
                     }}
                   >
-                    {reference.value || '-'}
-                  </Typography>
+                    {warn || invalid ? (
+                      <LightTooltip
+                        id={`verse-reference-warning-tip-${rowIndex}`}
+                        title={reference.warning ?? ''}
+                      >
+                        {/* Wrap the icon in a span so LightTooltip's forwarded
+                            className lands on the span, not the icon (which keeps
+                            its own sx). */}
+                        <Box
+                          component="span"
+                          sx={{
+                            display: 'inline-flex',
+                            lineHeight: 0,
+                            backgroundColor: 'transparent',
+                          }}
+                        >
+                          <WarningIcon
+                            aria-label={`verse-reference-warning-${rowIndex}`}
+                            sx={{
+                              color: 'warning.main',
+                              backgroundColor: 'transparent',
+                            }}
+                          />
+                        </Box>
+                      </LightTooltip>
+                    ) : null}
+                  </Box>
+                </TableCell>
+
+                <TableCell
+                  sx={{ backgroundColor: 'inherit', py: 0.75 }}
+                  onClick={(event) => {
+                    if (isEditing) {
+                      event.stopPropagation();
+                      return;
+                    }
+                    if (editable) {
+                      // Click the reference to type into it directly
+                      event.stopPropagation();
+                      onRowSelect?.(rowIndex);
+                      beginEdit(rowIndex, `${reference.value ?? ''}`);
+                      return;
+                    }
+                    if (!hasLimits) return;
+                    event.stopPropagation();
+                    onRowSelect?.(rowIndex);
+                  }}
+                >
+                  {isEditing ? (
+                    <TextField
+                      value={draft}
+                      onChange={(event) => setDraft(event.target.value)}
+                      onBlur={() => finishEdit(rowIndex)}
+                      autoFocus
+                      variant="standard"
+                      size="small"
+                      fullWidth
+                      inputProps={{
+                        'aria-label': `verse-reference-input-${rowIndex}`,
+                        // onKeyDown must live on the native input (not the
+                        // TextField root) so `currentTarget` is the input and
+                        // `.blur()` actually commits via onBlur. Enter commits,
+                        // Escape cancels.
+                        onKeyDown: (event) => {
+                          if (event.key === 'Enter') {
+                            event.preventDefault();
+                            event.currentTarget.blur();
+                          } else if (event.key === 'Escape') {
+                            event.preventDefault();
+                            cancelEditRef.current = true;
+                            event.currentTarget.blur();
+                          }
+                        },
+                      }}
+                      sx={{
+                        '& input': {
+                          fontSize: (theme) => theme.typography.body2.fontSize,
+                        },
+                      }}
+                    />
+                  ) : (
+                    <Typography
+                      variant="body2"
+                      aria-label={`verse-reference-${rowIndex}`}
+                      sx={{
+                        color: invalid ? 'error.main' : 'text.primary',
+                      }}
+                    >
+                      {reference.value || '-'}
+                    </Typography>
+                  )}
                 </TableCell>
               </TableRow>
             );

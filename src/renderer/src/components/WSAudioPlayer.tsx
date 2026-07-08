@@ -1,5 +1,4 @@
 import {
-  Paper,
   IconButton,
   Typography,
   Divider,
@@ -7,7 +6,6 @@ import {
   Grid,
   ToggleButton,
   Box,
-  SxProps,
   Menu,
   MenuItem,
   Stack,
@@ -25,8 +23,8 @@ import {
 import PlayIcon from '@mui/icons-material/PlayArrow';
 import PauseIcon from '@mui/icons-material/Pause';
 import LoopIcon from '@mui/icons-material/Loop';
-import TimerIcon from '@mui/icons-material/AccessTime';
 import NextSegmentIcon from '@mui/icons-material/ArrowRightAlt';
+import TimerIcon from '@mui/icons-material/AccessTime';
 import UndoIcon from '@mui/icons-material/Undo';
 import MicIcon from '@mui/icons-material/SettingsVoice';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
@@ -46,7 +44,6 @@ import type { IconBaseProps } from 'react-icons/lib';
 import { useWavRecorder } from '../crud/useWavRecorder';
 import { IMarker, useWaveSurfer } from '../crud/useWaveSurfer';
 import { Duration } from '../control/Duration';
-import { GrowingSpacer } from '../control/GrowingSpacer';
 import { LightTooltip } from '../control/LightTooltip';
 import { RecordButton } from '../control/RecordButton';
 import HighlightButton from './PassageDetail/mobile/HighlightButton';
@@ -73,7 +70,7 @@ import {
 } from '../crud/useWavesurferRegions';
 import WSAudioPlayerSegment from './WSAudioPlayerSegment';
 import Confirm from './AlertDialog';
-import { NamedRegions } from '../utils/namedSegments';
+import { getSortedRegions, NamedRegions } from '../utils/namedSegments';
 import {
   audioDownloadSelector,
   sharedSelector,
@@ -110,13 +107,6 @@ const HandScissors = FaHandScissors as unknown as React.FC<IconBaseProps>;
 const VertDivider = (prop: DividerProps) => (
   <Divider orientation="vertical" flexItem sx={{ ml: '5px' }} {...prop} />
 );
-
-const toolbarProp = {
-  flexDirection: 'row',
-  alignItems: 'center',
-  justifyItems: 'flex-start',
-  display: 'flex',
-} as SxProps;
 
 interface IProps {
   id?: string;
@@ -167,7 +157,10 @@ interface IProps {
   onDuration?: (duration: number) => void;
   onInteraction?: () => void;
   onRecording?: (r: boolean) => void;
-  onCurrentSegment?: (currentSegment: IRegion | undefined) => void;
+  onCurrentSegment?: (
+    currentSegment: IRegion | undefined,
+    index?: number
+  ) => void;
   onSegmentPlaybackEnd?: (segment: IRegion) => void;
   forceRegionOnly?: boolean;
   /** When true, user-initiated selection (clicks, prev/next) is ignored. Playhead-driven region-in is not blocked; consumers that must hold the current clause during recording/saving should guard their segment effects separately (e.g. Careful Speech). */
@@ -186,7 +179,6 @@ interface IProps {
   applyRegionColor?: ApplyRegionColor;
   hideToolbar?: boolean;
   hideControls?: boolean;
-  hideSegmentControls?: boolean;
   highlightAutoSegment?: boolean;
   /** Careful Speech / guided flows: emphasize the main play control until used. */
   highlightPlay?: boolean;
@@ -195,6 +187,10 @@ interface IProps {
   onAutoSegment?: () => void;
   /** When set, Clear Segments invokes this instead of only clearing regions. */
   onClearSegments?: () => void | Promise<void>;
+  /** Overrides the disabled state of the segment Reset button (defaults to
+   * "no regions / recording"). Lets a host (e.g. Mark Verses) gate on its own
+   * resettable state. */
+  resetDisabled?: boolean;
   hasRecording?: boolean;
   isStopLogic?: boolean;
   /** When true, hide undo and scissors (region delete) waveform edit tools. */
@@ -229,8 +225,6 @@ export interface WSAudioPlayerControls {
   toggleRecord: () => void;
   prevSegment: () => void;
   nextSegment: () => void;
-  addSegment: () => void;
-  removeNextSegment: () => void;
   undoSegmentChange: () => void;
   resetSegments: () => void;
   deleteRecording: () => void;
@@ -268,6 +262,46 @@ const RIGHT_KEY = 'CTRL+ARROWRIGHT';
  */
 const RECORD_PREVIEW_TIMESLICE_MS = 1000;
 
+/** Distance (seconds) within which the playhead counts as being "at" a segment
+ * boundary. Drives the Add/Remove segment button enablement below. */
+const SEGMENT_BOUNDARY_TOLERANCE_SEC = 0.1;
+
+/**
+ * True when the playhead sits within `tol` of any region boundary (either edge
+ * of any region, or the track start). Used to disable Add so a new split isn't
+ * created on top of an existing boundary.
+ */
+function isProgressNearAnyRegionBoundary(
+  progressSec: number,
+  regions: IRegion[],
+  tol: number
+): boolean {
+  if (Math.abs(progressSec) <= tol) return true;
+  for (const r of regions) {
+    if (Math.abs(progressSec - r.start) <= tol) return true;
+    if (Math.abs(progressSec - r.end) <= tol) return true;
+  }
+  return false;
+}
+
+/**
+ * True when the playhead is within `tol` of an internal join — a boundary shared
+ * between two adjacent regions (a removable one, excluding the outer track
+ * edges). Used to enable Remove.
+ */
+function isProgressNearInternalJoin(
+  progressSec: number,
+  regions: IRegion[],
+  tol: number
+): boolean {
+  if (regions.length < 2) return false;
+  const sorted = [...regions].sort((a, b) => a.start - b.start);
+  for (let i = 0; i < sorted.length - 1; i++) {
+    if (Math.abs(progressSec - sorted[i].end) <= tol) return true;
+  }
+  return false;
+}
+
 function WSAudioPlayer(props: IProps) {
   const {
     blob,
@@ -284,7 +318,6 @@ function WSAudioPlayer(props: IProps) {
     allowDownload,
     oneTryOnly,
     height,
-    width,
     segments,
     verses,
     currentSegmentIndex,
@@ -328,13 +361,13 @@ function WSAudioPlayer(props: IProps) {
     controlsRef,
     applyRegionColor,
     hideToolbar,
-    hideSegmentControls,
     hideControls,
     highlightAutoSegment,
     highlightPlay,
     beforePlay,
     onAutoSegment,
     onClearSegments,
+    resetDisabled,
     hasRecording,
     isStopLogic,
     hideWaveformEditTools,
@@ -380,6 +413,9 @@ function WSAudioPlayer(props: IProps) {
   const loopingRef = useRef(false);
   const [looping, setLoopingx] = useState(false);
   const [hasRegion, setHasRegion] = useState(0);
+  // Sorted region boundaries, kept in sync so the Add/Remove segment buttons can
+  // react to whether the playhead is near an existing boundary.
+  const [regionBounds, setRegionBounds] = useState<IRegion[]>([]);
   const [canUndo, setCanUndo] = useState(false);
   const recordStartPosition = useRef(0);
   const recordOverwritePosition = useRef<number | undefined>(undefined);
@@ -584,7 +620,7 @@ function WSAudioPlayer(props: IProps) {
   ]);
 
   const myOnCurrentSegment = useCallback(
-    (currentSegment: IRegion | undefined) => {
+    (currentSegment: IRegion | undefined, index?: number) => {
       //
       //if (singleRegionOnly && currentSegment) {
       //console.log('singleRegionOnly');
@@ -593,7 +629,7 @@ function WSAudioPlayer(props: IProps) {
       //onPlayStatus && onPlayStatus(true);
       //}
       currentSegmentRef.current = currentSegment;
-      onCurrentSegment && onCurrentSegment(currentSegment);
+      onCurrentSegment && onCurrentSegment(currentSegment, index);
     },
     [onCurrentSegment]
   );
@@ -844,13 +880,10 @@ function WSAudioPlayer(props: IProps) {
     return wsAddRegion();
   }, [notifySegmentInteraction, wsAddRegion]);
 
-  const handleRemoveSplitRegion = useCallback(
-    (next?: boolean) => {
-      notifySegmentInteraction();
-      return wsRemoveSplitRegion(next);
-    },
-    [notifySegmentInteraction, wsRemoveSplitRegion]
-  );
+  const handleRemoveSplitRegion = useCallback(() => {
+    notifySegmentInteraction();
+    return wsRemoveSplitRegion();
+  }, [notifySegmentInteraction, wsRemoveSplitRegion]);
   //#endregion
 
   const handleRefresh = () => {
@@ -1303,7 +1336,9 @@ function WSAudioPlayer(props: IProps) {
   }
   function onWSRegion(count: number, newRegion: boolean) {
     setHasRegion(count);
-    if (onSegmentChange && newRegion) onSegmentChange(wsGetRegions());
+    const regionsJson = wsGetRegions();
+    setRegionBounds(getSortedRegions(regionsJson));
+    if (onSegmentChange && newRegion) onSegmentChange(regionsJson);
   }
   function onWSCanUndo(canUndo: boolean) {
     setCanUndo(canUndo);
@@ -1415,12 +1450,6 @@ function WSAudioPlayer(props: IProps) {
       toggleRecord: handleRecorder,
       prevSegment: handlePrevRegion,
       nextSegment: handleNextRegion,
-      addSegment: () => {
-        if (allowSegment) handleAddRegion();
-      },
-      removeNextSegment: () => {
-        if (allowSegment) handleRemoveSplitRegion(true);
-      },
       undoSegmentChange: handleUndo,
       resetSegments: handleClearRegions,
       deleteRecording: handleClear,
@@ -1456,8 +1485,6 @@ function WSAudioPlayer(props: IProps) {
     handleClearRegions,
     handleClear,
     confirmedDelete,
-    handleAddRegion,
-    handleRemoveSplitRegion,
     wsGoto,
     applyRegionColors,
     wsAutoSegment,
@@ -1738,10 +1765,6 @@ function WSAudioPlayer(props: IProps) {
     () => !ready || playing || recording || duration === 0 || waitingForAI,
     [ready, playing, recording, duration, waitingForAI]
   );
-  const showSegmentUndo = Boolean(
-    isMobileView && hasSegmentUndo && onSegmentUndo
-  );
-
   const renderMoreMenuItems = () =>
     [
       allowRecord === true && allowNoNoise && features?.noNoise && !offline && (
@@ -1900,7 +1923,29 @@ function WSAudioPlayer(props: IProps) {
     </Typography>
   );
 
-  const renderSegmentControls = (opts?: { altRemove?: boolean }) => (
+  // Disable Add when the playhead is on an existing boundary, and enable Remove
+  // only when it's on a removable internal join. Recomputed as the playhead
+  // (`progress`) moves or the regions change.
+  const playheadNearBoundary = useMemo(
+    () =>
+      isProgressNearAnyRegionBoundary(
+        progress,
+        regionBounds,
+        SEGMENT_BOUNDARY_TOLERANCE_SEC
+      ),
+    [progress, regionBounds]
+  );
+  const playheadNearInternalJoin = useMemo(
+    () =>
+      isProgressNearInternalJoin(
+        progress,
+        regionBounds,
+        SEGMENT_BOUNDARY_TOLERANCE_SEC
+      ),
+    [progress, regionBounds]
+  );
+
+  const renderSegmentControls = () => (
     <WSAudioPlayerSegment
       ready={ready}
       onSplit={onSplit}
@@ -1915,9 +1960,9 @@ function WSAudioPlayer(props: IProps) {
       wsAutoSegment={allowAutoSegment ? wsAutoSegment : undefined}
       wsRemoveSplitRegion={handleRemoveSplitRegion}
       wsAddRegion={handleAddRegion}
-      wsClearRegions={handleClearRegions}
+      disableSplit={playheadNearBoundary}
+      removeEnabled={playheadNearInternalJoin}
       setBusy={setBusy}
-      {...opts}
     />
   );
 
@@ -2000,12 +2045,38 @@ function WSAudioPlayer(props: IProps) {
       </LightTooltip>
     );
 
-  const undoNode = !hideWaveformEditTools && canUndo && !oneShotUsed && (
-    <LightTooltip id="wsUndoTip" title={t.undoTip}>
+  // Waveform-edit undo (trim/delete-region): undoes edits on the wavesurfer
+  // itself via the internal `handleUndo`. Only shown in recording/editing
+  // contexts (rendered inside `allowRecord`). Distinct from `segmentUndoNode`,
+  // which delegates to a host tool's own undo stack.
+  const recordingUndoNode = !hideWaveformEditTools &&
+    canUndo &&
+    !oneShotUsed && (
+      <LightTooltip id="wsUndoTip" title={t.undoTip}>
+        <span>
+          <IconButton
+            id="wsUndo"
+            onClick={handleUndo}
+            disabled={recording || waitingForAI}
+          >
+            <UndoIcon />
+          </IconButton>
+        </span>
+      </LightTooltip>
+    );
+
+  // Tool-managed segment undo (e.g. Mark Verses) shown in the top-right of the
+  // toolbar, where the waveform-edit undo (`recordingUndoNode`) sits for
+  // recording consumers. Distinct from that undo; this delegates to the host's
+  // own undo stack via onSegmentUndo. The two never render together (no
+  // consumer sets both allowRecord and hasSegmentUndo).
+  const segmentUndoNode = !hideToolbar && hasSegmentUndo && onSegmentUndo && (
+    <LightTooltip id="wsSegmentUndoTip" title={t.undoTip}>
       <span>
         <IconButton
-          id="wsUndo"
-          onClick={handleUndo}
+          id="wsSegmentUndo"
+          aria-label={t.undoTip}
+          onClick={() => onSegmentUndo?.()}
           disabled={recording || waitingForAI}
         >
           <UndoIcon />
@@ -2103,15 +2174,23 @@ function WSAudioPlayer(props: IProps) {
             disabled={playDisabled}
             highlight={true}
           >
-            <PlayIcon />
+            <PlayIcon fontSize="large" />
           </HighlightButton>
         ) : (
           <IconButton
             id="wsAudioPlay"
             onClick={togglePlayStatus}
             disabled={playDisabled}
+            size="large"
+            sx={{ p: 0 }} // Play button is large to make it more prominent, but get rid of the large padding so spacing looks balanced
           >
-            <>{playing ? <PauseIcon /> : <PlayIcon />}</>
+            <>
+              {playing ? (
+                <PauseIcon fontSize="large" />
+              ) : (
+                <PlayIcon fontSize="large" />
+              )}
+            </>
           </IconButton>
         )}
       </span>
@@ -2182,7 +2261,7 @@ function WSAudioPlayer(props: IProps) {
             <Stack
               direction="row"
               spacing={1}
-              sx={{ display: 'flex', alignItems: 'center' }}
+              sx={{ display: 'flex', alignItems: 'center', minWidth: 0 }}
             >
               {playNode}
               {positionDurationNode}
@@ -2214,27 +2293,27 @@ function WSAudioPlayer(props: IProps) {
       </>
     );
   }
-  if (effectiveMobileView) {
-    return (
-      <Stack
-        direction="column"
-        sx={{
-          ...(dockRecordButton
-            ? {
-                width: '100%',
-                maxWidth: '100%',
-                minWidth: 0,
-                overflowX: 'hidden',
-              }
-            : {
-                height: '100%',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between',
-              }),
-        }}
-      >
-        <Stack>
+  return (
+    <Stack
+      direction="column"
+      sx={{
+        width: '100%',
+        maxWidth: '100%',
+        minWidth: 0,
+        px: 1,
+        boxSizing: 'border-box',
+        overflowX: 'hidden',
+        ...(dockRecordButton
+          ? {}
+          : {
+              height: '100%',
+              justifyContent: 'space-between',
+            }),
+      }}
+      style={style}
+    >
+      <Stack>
+        {!hideToolbar && (
           <Stack
             direction="row"
             spacing={1}
@@ -2243,12 +2322,15 @@ function WSAudioPlayer(props: IProps) {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
+              width: '100%',
+              maxWidth: '100%',
+              minWidth: 0,
             }}
           >
             <Stack
               direction="row"
               spacing={1}
-              sx={{ display: 'flex', alignItems: 'center' }}
+              sx={{ display: 'flex', alignItems: 'center', minWidth: 0 }}
             >
               {playNode}
               {positionDurationNode}
@@ -2258,325 +2340,250 @@ function WSAudioPlayer(props: IProps) {
             <Stack
               direction="row"
               spacing={1}
-              sx={{ display: 'flex', alignItems: 'center' }}
+              sx={{ display: 'flex', alignItems: 'center', minWidth: 0 }}
             >
-              {deleteRegionNode}
-              {undoNode}
-              {moreAndMicMenusNode}
+              {segmentUndoNode}
+              {allowRecord && (
+                <>
+                  {deleteRegionNode}
+                  {recordingUndoNode}
+                  {moreAndMicMenusNode}
+                </>
+              )}
             </Stack>
           </Stack>
+        )}
+
+        {keepItSmall && allowRecord && !oneShotUsed ? (
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: 'row',
+              alignItems: 'stretch',
+              gap: 1,
+              width: '100%',
+              maxWidth: '100%',
+              minWidth: 0,
+            }}
+          >
+            <Box sx={{ flex: 1, minWidth: 0 }}>{waveformNode}</Box>
+            {renderRecordButton({ isSmall: true })}
+          </Box>
+        ) : (
           <Box sx={{ width: '100%', maxWidth: '100%', minWidth: 0 }}>
             {waveformNode}
           </Box>
+        )}
 
-          {(onVersions ||
-            clearRecordingNode ||
-            (handleSave && showWaveformSaveButton)) && (
+        {!hideControls && (
+          <Stack
+            direction="row"
+            spacing={1}
+            useFlexGap
+            flexWrap="wrap"
+            sx={{
+              py: 1,
+              rowGap: 1,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              width: '100%',
+              maxWidth: '100%',
+              minWidth: 0,
+            }}
+          >
             <Stack
               direction="row"
               spacing={1}
-              sx={{ py: 1, display: 'flex', justifyContent: 'space-between' }}
+              useFlexGap
+              flexWrap="wrap"
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                rowGap: 1,
+                minWidth: 0,
+              }}
             >
-              <Box
-                sx={{ display: 'flex', justifyContent: 'flex-start', mt: 1 }}
-              >
-                {onVersions && (
-                  <AltButton
-                    id="pdRecordVersions"
-                    onClick={onVersions}
-                    title={ts.versionHistory}
-                    startIcon={
-                      <VersionsIcon sx={{ width: '14px', height: '14px' }} />
-                    }
+              {allowSegment && (
+                <Stack direction="row" spacing={1}>
+                  {renderSegmentControls()}
+                  {/* Waveform-edit undo for the collapsed (hideToolbar) layout,
+                      where the top toolbar's `recordingUndoNode` is hidden. */}
+                  {hideToolbar && canUndo && !oneShotUsed && (
+                    <IconButton
+                      id="wsUndo"
+                      onClick={handleUndo}
+                      disabled={recording || waitingForAI}
+                    >
+                      <UndoIcon />
+                    </IconButton>
+                  )}
+                </Stack>
+              )}
+              {/* Segment navigation and loop only make sense for the transcriber
+                  (allowAutoSegment); other consumers (e.g. Mark Verses) do not
+                  show them. Order matches develop: loop, previous, next. */}
+              {allowAutoSegment && !isMobileView && (
+                <>
+                  {/* Separate the Add/Remove segment controls from the loop. */}
+                  {allowSegment && <VertDivider id="wsAudioSegDiv" />}
+                  <LightTooltip
+                    id="wsAudioLoopTip"
+                    title={looping ? t.loopon : t.loopoff}
                   >
-                    {ts.versionHistory}
-                  </AltButton>
-                )}
-              </Box>
-
-              <Stack
-                direction="row"
-                spacing={1}
-                sx={{ display: 'flex', alignItems: 'center' }}
-              >
-                {clearRecordingNode}
-                {handleSave && showWaveformSaveButton && (
-                  <PriButton
-                    id="rec-save"
-                    onClick={handleSave}
-                    disabled={isSaveDisabled}
+                    <span>
+                      <ToggleButton
+                        id="wsAudioLoop"
+                        sx={{ mx: 1, p: 0.5 }}
+                        value="loop"
+                        selected={looping}
+                        onChange={handleToggleLoop}
+                        disabled={!hasRegion || waitingForAI}
+                      >
+                        <LoopIcon />
+                      </ToggleButton>
+                    </span>
+                  </LightTooltip>
+                  <LightTooltip
+                    id="wsPrevTip"
+                    title={t.prevRegion.replace(
+                      '{0}',
+                      localizeHotKey(LEFT_KEY)
+                    )}
                   >
-                    {ts.save}
-                  </PriButton>
-                )}
-              </Stack>
+                    <span>
+                      <IconButton
+                        id="wsPrev"
+                        onClick={handlePrevRegion}
+                        disabled={!hasRegion || waitingForAI}
+                      >
+                        <NextSegmentIcon sx={{ transform: 'rotate(180deg)' }} />
+                      </IconButton>
+                    </span>
+                  </LightTooltip>
+                  <LightTooltip
+                    id="wsNextTip"
+                    title={t.nextRegion.replace(
+                      '{0}',
+                      localizeHotKey(RIGHT_KEY)
+                    )}
+                  >
+                    <span>
+                      <IconButton
+                        id="wsNext"
+                        onClick={handleNextRegion}
+                        disabled={!hasRegion || waitingForAI}
+                      >
+                        <NextSegmentIcon />
+                      </IconButton>
+                    </span>
+                  </LightTooltip>
+                </>
+              )}
+              {onVersions && (
+                <AltButton
+                  id="pdRecordVersions"
+                  onClick={onVersions}
+                  title={ts.versionHistory}
+                  startIcon={
+                    <VersionsIcon sx={{ width: '14px', height: '14px' }} />
+                  }
+                >
+                  {ts.versionHistory}
+                </AltButton>
+              )}
+              {allowSpeed && (
+                <>
+                  <VertDivider id="wsAudioDiv6" />
+                  <WSAudioPlayerRate
+                    playbackRate={playbackRate}
+                    setPlaybackRate={setPlaybackRate}
+                    recording={recording}
+                  />
+                </>
+              )}
+              {onSaveProgress && (
+                <>
+                  <VertDivider id="wsAudioDiv7" />
+                  <LightTooltip
+                    id="wsAudioTimestampTip"
+                    title={t.timerTip.replace('{0}', localizeHotKey(TIMER_KEY))}
+                  >
+                    <span>
+                      <IconButton
+                        id="wsAudioTimestamp"
+                        onClick={handleSendProgress}
+                      >
+                        <TimerIcon />
+                      </IconButton>
+                    </span>
+                  </LightTooltip>
+                </>
+              )}
             </Stack>
-          )}
-        </Stack>
-        {allowRecord && !dockRecordButton && (
-          <Box sx={{ width: 'auto' }}>
-            {renderRecordButton({
-              isSmall: true,
-              isMobileView: true,
-              isRecordingRights: false,
-            })}
-          </Box>
-        )}
-        {confirmNode}
-        {voiceDialogNode}
-      </Stack>
-    );
-  }
 
-  return (
-    <Box sx={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
-      <Paper
-        sx={{
-          p: 1,
-          mb: 1,
-          width: '100%',
-          maxWidth: '100%',
-          boxSizing: 'border-box',
-        }}
-      >
+            <Stack
+              direction="row"
+              spacing={1}
+              useFlexGap
+              flexWrap="wrap"
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'flex-end',
+                rowGap: 1,
+                minWidth: 0,
+              }}
+            >
+              {metaData}
+              {clearRecordingNode}
+              {allowSegment && (
+                <AltButton
+                  id="wsSegmentReset"
+                  sx={smallButtonProps}
+                  onClick={handleClearRegions}
+                  disabled={
+                    resetDisabled ?? (recording || waitingForAI || !hasRegion)
+                  }
+                >
+                  {t.resetSegments}
+                </AltButton>
+              )}
+              {handleSave && showWaveformSaveButton && (
+                <PriButton
+                  id="rec-save"
+                  onClick={handleSave}
+                  disabled={isSaveDisabled}
+                >
+                  {ts.save}
+                </PriButton>
+              )}
+            </Stack>
+          </Stack>
+        )}
+      </Stack>
+
+      {allowRecord && !dockRecordButton && !keepItSmall && !hideControls && (
         <Box
           sx={{
             display: 'flex',
-            flexDirection: 'column',
-            whiteSpace: 'nowrap',
+            justifyContent: 'center',
+            alignItems: 'center',
             width: '100%',
-            maxWidth: '100%',
-            minWidth: 0,
-            boxSizing: 'border-box',
-            overflowX: 'hidden',
+            py: 1,
           }}
-          style={style}
         >
-          <>
-            {!hideToolbar && (
-              <Grid
-                container
-                sx={{
-                  ...toolbarProp,
-                  minWidth: 0,
-                  width: '100%',
-                  maxWidth: '100%',
-                  flexWrap: 'nowrap',
-                }}
-              >
-                <Grid sx={{ ml: 1 }}>{playNode}</Grid>
-                <VertDivider id="wsAudioDiv1" />
-                <Grid>{positionDurationNode}</Grid>
-                <VertDivider id="wsAudioDiv2" />
-                {zoomNode}
-                {allowRecord && (
-                  <>
-                    {deleteRegionNode}
-                    {undoNode}
-                    <GrowingSpacer />
-                    {clearRecordingNode}
-                    {moreAndMicMenusNode}
-                  </>
-                )}
-                {allowSegment &&
-                  !hideToolbar &&
-                  !hideSegmentControls &&
-                  renderSegmentControls()}
-              </Grid>
-            )}
-            {keepItSmall && allowRecord && !oneShotUsed ? (
-              <Box
-                sx={{
-                  display: 'flex',
-                  flexDirection: 'row',
-                  alignItems: 'stretch',
-                  gap: 1,
-                  width: '100%',
-                  maxWidth: '100%',
-                  minWidth: 0,
-                }}
-              >
-                <Box sx={{ flex: 1, minWidth: 0 }}>{waveformNode}</Box>
-                {renderRecordButton({ isSmall: true })}
-              </Box>
-            ) : (
-              <>
-                {waveformNode}
-                {justPlayButton || (
-                  <Grid
-                    container
-                    sx={{
-                      ...toolbarProp,
-                      width: width - 5,
-                      maxWidth: width - 5,
-                      minWidth: 0,
-                    }}
-                  >
-                    {allowSegment && hideToolbar && !hideSegmentControls && (
-                      <Stack direction="row" spacing={1}>
-                        {renderSegmentControls({ altRemove: true })}
-                        {showSegmentUndo ? (
-                          <LightTooltip id="wsUndoTip" title={t.undoTip}>
-                            <span>
-                              <IconButton
-                                id="wsUndo"
-                                onClick={() => onSegmentUndo?.()}
-                                disabled={recording || waitingForAI}
-                              >
-                                <UndoIcon />
-                              </IconButton>
-                            </span>
-                          </LightTooltip>
-                        ) : (
-                          canUndo &&
-                          !oneShotUsed && (
-                            <IconButton
-                              id="wsUndo"
-                              onClick={handleUndo}
-                              disabled={recording || waitingForAI}
-                            >
-                              <UndoIcon />
-                            </IconButton>
-                          )
-                        )}
-                      </Stack>
-                    )}
-                    <Grid>
-                      {allowAutoSegment && !isMobileView && (
-                        <LightTooltip
-                          id="wsAudioLoopTip"
-                          title={looping ? t.loopon : t.loopoff}
-                        >
-                          <span>
-                            <ToggleButton
-                              id="wsAudioLoop"
-                              sx={{ mx: 1, p: 0.5 }}
-                              value="loop"
-                              selected={looping}
-                              onChange={handleToggleLoop}
-                              disabled={!hasRegion || waitingForAI}
-                            >
-                              <LoopIcon />
-                            </ToggleButton>
-                          </span>
-                        </LightTooltip>
-                      )}
-                      {allowSegment && (
-                        <>
-                          <LightTooltip
-                            id="wsPrevTip"
-                            title={t.prevRegion.replace(
-                              '{0}',
-                              localizeHotKey(LEFT_KEY)
-                            )}
-                          >
-                            <span>
-                              <IconButton
-                                disabled={!hasRegion || waitingForAI}
-                                id="wsNext"
-                                onClick={handlePrevRegion}
-                              >
-                                <NextSegmentIcon
-                                  sx={{ transform: 'rotate(180deg)' }}
-                                />
-                              </IconButton>
-                            </span>
-                          </LightTooltip>
-                          <LightTooltip
-                            id="wsNextTip"
-                            title={t.nextRegion.replace(
-                              '{0}',
-                              localizeHotKey(RIGHT_KEY)
-                            )}
-                          >
-                            <span>
-                              <IconButton
-                                disabled={!hasRegion || waitingForAI}
-                                id="wsNext"
-                                onClick={handleNextRegion}
-                              >
-                                <NextSegmentIcon />
-                              </IconButton>
-                            </span>
-                          </LightTooltip>
-                        </>
-                      )}
-                    </Grid>
-                    {allowSpeed && (
-                      <>
-                        <VertDivider id="wsAudioDiv6" />
-                        <WSAudioPlayerRate
-                          playbackRate={playbackRate}
-                          setPlaybackRate={setPlaybackRate}
-                          recording={recording}
-                        />
-                      </>
-                    )}
-                    {onSaveProgress && (
-                      <>
-                        <VertDivider id="wsAudioDiv7" />
-                        <Grid>
-                          <LightTooltip
-                            id="wsAudioTimestampTip"
-                            title={t.timerTip.replace(
-                              '{0}',
-                              localizeHotKey(TIMER_KEY)
-                            )}
-                          >
-                            <span>
-                              <IconButton
-                                id="wsAudioTimestamp"
-                                onClick={handleSendProgress}
-                              >
-                                <>
-                                  <TimerIcon />
-                                </>
-                              </IconButton>
-                            </span>
-                          </LightTooltip>
-                        </Grid>
-                        {metaData}
-                      </>
-                    )}
-                    <GrowingSpacer />
-                    {!onSaveProgress && <>{metaData}</>}
-                    {allowSegment && !hideSegmentControls && hideToolbar && (
-                      <AltButton
-                        sx={smallButtonProps}
-                        onClick={handleClearRegions}
-                      >
-                        {t.reset}
-                      </AltButton>
-                    )}
-                  </Grid>
-                )}
-                {allowRecord &&
-                  !oneShotUsed &&
-                  !keepItSmall &&
-                  !hideControls && (
-                    <Box
-                      sx={{
-                        display: 'flex',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        width: '100%',
-                        py: 1,
-                      }}
-                    >
-                      {renderRecordButton({
-                        isSmall: false,
-                        showText: hasRecording ?? false,
-                      })}
-                    </Box>
-                  )}
-              </>
-            )}
-            {confirmNode}
-            {voiceDialogNode}
-          </>
+          {renderRecordButton({
+            isSmall: Boolean(isMobileView),
+            isMobileView: Boolean(isMobileView),
+            isRecordingRights: false,
+            showText: isMobileView ? undefined : (hasRecording ?? false),
+          })}
         </Box>
-      </Paper>
-    </Box>
+      )}
+      {confirmNode}
+      {voiceDialogNode}
+    </Stack>
   );
 }
 

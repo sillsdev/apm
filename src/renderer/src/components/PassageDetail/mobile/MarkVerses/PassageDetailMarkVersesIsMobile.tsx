@@ -6,14 +6,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import {
-  Box,
-  debounce,
-  IconButton,
-  Paper,
-  SxProps,
-  Typography,
-} from '@mui/material';
+import { Box, debounce, Paper, SxProps, Typography } from '@mui/material';
 import { shallowEqual, useSelector } from 'react-redux';
 import { useGlobal } from '../../../../context/useGlobal';
 import usePassageDetailContext from '../../../../context/usePassageDetailContext';
@@ -26,24 +19,14 @@ import { useArtifactType } from '../../../../crud/useArtifactType';
 import { usePlanType } from '../../../../crud/usePlanType';
 import { IRegion } from '../../../../crud/useWavesurferRegions';
 import EditIcon from '@mui/icons-material/Edit';
-import AddIcon from '@mui/icons-material/Add';
-import RemoveIcon from '@mui/icons-material/Remove';
-import UndoIcon from '@mui/icons-material/Undo';
 import {
   ISharedStrings,
   IVerseStrings,
-  IWsAudioPlayerSegmentStrings,
-  IWsAudioPlayerStrings,
   MediaFileD,
   Passage,
 } from '../../../../model';
 import { PassageTypeEnum } from '../../../../model/passageType';
-import {
-  audioPlayerSegmentSelector,
-  sharedSelector,
-  verseSelector,
-  wsAudioPlayerSelector,
-} from '../../../../selector';
+import { sharedSelector, verseSelector } from '../../../../selector';
 import {
   getSegments,
   getSortedRegions,
@@ -53,11 +36,13 @@ import {
 import { prettySegment } from '../../../../utils/prettySegment';
 import { refMatch } from '../../../../utils/refMatch';
 import { useStepPermissions } from '../../../../utils/useStepPermission';
+import { useMobile } from '../../../../utils/useMobile';
 import Confirm from '../../../AlertDialog';
 import { type WSAudioPlayerControls } from '../../../WSAudioPlayer';
 import {
   createMarkVersesApplyRegionColor,
   isMarkVersesTableTailIncomplete,
+  RefStatus,
 } from '../../../../utils/markVersesSegmentColors';
 import {
   editReferenceValuesEqual,
@@ -65,10 +50,10 @@ import {
   getEndingVerseOptions,
   incrementMarkVersesReferenceSuffix,
   markVersesReferenceHasLetterSuffix,
-  nextMarkVersesLetterSuffix,
   normalizeEditReferenceDraft,
   normalizeEditReferenceForSave,
   parseMarkVersesReference,
+  passageRefsToVerseOptions,
 } from '../../../../utils/markVersesPassageVerses';
 import PassageDetailPlayer from '../../PassageDetailPlayer';
 import { useProjectSegmentSave } from '../../Internalization/useProjectSegmentSave';
@@ -77,80 +62,29 @@ import EditReferenceDropdown, {
 } from './EditReferenceDropdown';
 import MarkVersesTableIsMobile from './MarkVersesTableIsMobile';
 import { AltButton } from '../../../../control/AltButton';
-import { LightTooltip } from '../../../../control/LightTooltip';
 import { TabActions } from '../../../../control/TabActions';
 import {
   createMarkVersesUndoStack,
   type MarkVersesSnapshot,
 } from '../../../../utils/markVersesUndoStack';
-import { HotKeyContext } from '../../../../context/HotKeyContext';
-import {
-  ADDREMSEG_KEY,
-  DELREG_KEY,
-} from '../../../../components/WSAudioPlayerSegment';
-import { useMobile } from '../../../../utils/useMobile';
 import { getMarkVersesAutosaveBlockers } from '../../../../utils/markVersesValidation';
+import {
+  shouldAutoRenumberAfterEdit,
+  evaluateMarkVersesReferenceStatus,
+  markVersesSkippedPassageRefs,
+  MarkVersesWarningReason,
+  isValidMarkVersesReference,
+} from '../../../../utils/markVersesEditReference';
 import { verseToolId } from '../../markVersesTool';
 const emptySegments = JSON.stringify({ regions: [] });
-/** Distance (seconds) used for Add (must be away from boundaries) and Remove (must be at a join). */
+/** Tolerance (seconds) when matching a table row to a precise waveform region and when seeking to a segment start. */
 const SEGMENT_BOUNDARY_TOLERANCE_SEC = 0.1;
-/**
- * Before remove-next-boundary, if the playhead is on the right-hand segment, seek back by this amount
- * (tolerance + tolerance) so `currentRegion` is the left segment and the correct join is removed.
- */
-const REMOVE_BOUNDARY_PLAYHEAD_NUDGE_SEC =
-  SEGMENT_BOUNDARY_TOLERANCE_SEC + SEGMENT_BOUNDARY_TOLERANCE_SEC;
-/** Table limits use mm:ss; waveform uses float seconds — allow rounding drift. */
+/** Tolerance when matching a (rounded) table limit to a precise waveform region. */
 const SEGMENT_ROW_MATCH_TOLERANCE_SEC = 0.6;
 const paperProps = { p: 2, m: 'auto', width: 'calc(100% - 32px)' } as SxProps;
 const readOnlys = [true, false];
 const widths = [150, 150];
 const cClass = ['lim', 'ref'];
-
-function isProgressNearAnyRegionBoundary(
-  progressSec: number,
-  regions: IRegion[],
-  minDistanceSec: number
-): boolean {
-  if (Math.abs(progressSec) <= minDistanceSec) return true;
-  if (regions.length === 0) return false;
-  const boundaries = new Set<number>();
-  for (const r of regions) {
-    boundaries.add(r.start);
-    boundaries.add(r.end);
-  }
-  for (const b of boundaries) {
-    if (Math.abs(progressSec - b) <= minDistanceSec) return true;
-  }
-  return false;
-}
-
-/** Closest internal join within `tol` of `progressSec`, if any (tie: smallest distance). */
-function findClosestInternalJoin(
-  progressSec: number,
-  regions: IRegion[],
-  tol: number
-): { join: number; leftSegment: IRegion } | undefined {
-  if (regions.length < 2) return undefined;
-  const sorted = [...regions].sort((a, b) => a.start - b.start);
-  let best: { join: number; leftSegment: IRegion; dist: number } | undefined;
-  for (let i = 0; i < sorted.length - 1; i++) {
-    const join = sorted[i].end;
-    const d = Math.abs(progressSec - join);
-    if (d <= tol && (!best || d < best.dist)) {
-      best = { join, leftSegment: sorted[i], dist: d };
-    }
-  }
-  return best ? { join: best.join, leftSegment: best.leftSegment } : undefined;
-}
-
-function isProgressNearInternalJoin(
-  progressSec: number,
-  regions: IRegion[],
-  tol: number
-): boolean {
-  return findClosestInternalJoin(progressSec, regions, tol) !== undefined;
-}
 
 type IVrs = [string, number[]];
 
@@ -159,6 +93,10 @@ export interface ICell {
   readOnly?: boolean;
   width?: number;
   className?: string;
+  status?: RefStatus;
+  /** Tooltip text shown on the row's warning icon (set for either flagged
+   * `status`, `RefStatus.Warn` or `RefStatus.Err`). */
+  warning?: string;
 }
 
 enum ColName {
@@ -173,6 +111,8 @@ interface IEditReferenceDialogState extends EditReferenceValue {
   limits: string;
   existingSplit: boolean;
   endVerseOptions: ReturnType<typeof getEndingVerseOptions>;
+  /** the whole range is freely editable if the row contains a warning icon (reference is not well-behaved) so a mobile user can correct it*/
+  unrestricted: boolean;
 }
 
 export interface MarkVersesProps {
@@ -193,7 +133,6 @@ export default function PassageDetailMarkVersesIsMobile({
     rowData,
   } = usePassageDetailContext();
   const [memory] = useGlobal('memory');
-  const { isMobile } = useMobile();
   const [, setComplete] = useGlobal('progress');
   const [plan] = useGlobal('plan');
   const [data, setDatax] = useState<ICell[][]>([]);
@@ -209,7 +148,7 @@ export default function PassageDetailMarkVersesIsMobile({
   const undoStackRef = useRef(createMarkVersesUndoStack());
   const [playerResetKey, setPlayerResetKey] = useState(0);
   const [playerProgressSec, setPlayerProgressSec] = useState(0);
-  /** Precise segment JSON from the waveform (table limits round to whole seconds). */
+  /** Precise segment JSON from the waveform (table limits are rounded). */
   const [waveSegmentsJson, setWaveSegmentsJson] = useState('{}');
   const playerControlsRef = useRef<WSAudioPlayerControls | null>(null);
   const markVersesTailOpenRef = useRef(false);
@@ -233,18 +172,10 @@ export default function PassageDetailMarkVersesIsMobile({
   const suppressVerseResyncFromMediaRef = useRef(false);
   const { canDoSectionStep } = useStepPermissions();
   const hasPermission = canDoSectionStep(currentstep, section);
+  const { isMobile } = useMobile();
   const { localizedArtifactType } = useArtifactType();
   const t = useSelector(verseSelector, shallowEqual) as IVerseStrings;
   const ts = useSelector(sharedSelector, shallowEqual) as ISharedStrings;
-  const tp = useSelector(
-    audioPlayerSegmentSelector,
-    shallowEqual
-  ) as IWsAudioPlayerSegmentStrings;
-  const tr = useSelector(
-    wsAudioPlayerSelector,
-    shallowEqual
-  ) as IWsAudioPlayerStrings;
-  const { localizeHotKey } = useContext(HotKeyContext).state;
   const {
     toolChanged,
     toolsChanged,
@@ -280,20 +211,21 @@ export default function PassageDetailMarkVersesIsMobile({
 
   const rowCells = useCallback(
     (row: string[], first = false) =>
-      row.map(
-        (value, index) =>
-          ({
-            value,
-            width: widths[index],
-            readOnly: first || readOnlys[index],
-            className: first
-              ? 'cTitle'
-              : cClass[index] +
-                (index === ColName.Ref && value && !refMatch(value)
-                  ? ' Err'
-                  : ''),
-          }) as ICell
-      ),
+      row.map((value, index) => {
+        const isRef = !first && index === ColName.Ref;
+        const isBadRef = isRef && Boolean(value) && !refMatch(value);
+        return {
+          value,
+          width: widths[index],
+          readOnly: first || readOnlys[index],
+          className: first ? 'cTitle' : cClass[index],
+          status: isRef
+            ? isBadRef
+              ? RefStatus.Err
+              : RefStatus.Valid
+            : undefined,
+        } as ICell;
+      }),
     []
   );
 
@@ -320,6 +252,7 @@ export default function PassageDetailMarkVersesIsMobile({
           row.map((cell) => ({
             value: cell.value ?? '',
             className: cell.className ?? '',
+            status: cell.status ?? '',
             readOnly: cell.readOnly ?? false,
           }))
         )
@@ -486,29 +419,41 @@ export default function PassageDetailMarkVersesIsMobile({
     [getRefs, passage.attributes.book]
   );
 
-  const formatTime = (value: number) => {
-    const minutes = Math.floor(value / 60);
-    const seconds = Math.floor(value - minutes * 60);
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-  };
-
+  // There has been discussion about whether to display timestamps in the table
+  // with mm::ss or ss.s format. Future work to look at the overall app and unify
+  // timestamp formatting, including with Wavesurfer and Disucssions.
+  //
+  // To use mm:ss:
+  // const formatTime = (value: number) =>
+  //   (Math.round(value * 10) / 10).toFixed(1);
+  // const formLim = useCallback(
+  //   ({ start, end }: IRegion) => `${formatTime(start)}-${formatTime(end)}`,
+  //   []
+  // );
+  //   const parseFormattedTime = (value: string) => {
+  //   const trimmed = value.trim();
+  //   if (!trimmed) return NaN;
+  //   if (trimmed.includes(':')) {
+  //     const [minPart, secPart] = trimmed.split(':');
+  //     const minutes = parseInt(minPart, 10);
+  //     const seconds = parseFloat(secPart);
+  //     if (Number.isNaN(minutes) || Number.isNaN(seconds)) return NaN;
+  //     return minutes * 60 + seconds;
+  //   }
+  //   return parseFloat(trimmed);
+  // };
+  //
+  // To use ss.s:
+  const d1 = (d: number) => d.toFixed(1);
+  const formLim = useCallback(
+    ({ start, end }: IRegion) => `${d1(start)}-${d1(end)}`,
+    []
+  );
   const parseFormattedTime = (value: string) => {
     const trimmed = value.trim();
     if (!trimmed) return NaN;
-    if (trimmed.includes(':')) {
-      const [minPart, secPart] = trimmed.split(':');
-      const minutes = parseInt(minPart, 10);
-      const seconds = parseFloat(secPart);
-      if (Number.isNaN(minutes) || Number.isNaN(seconds)) return NaN;
-      return minutes * 60 + seconds;
-    }
     return parseFloat(trimmed);
   };
-
-  const formLim = useCallback(
-    ({ start, end }: IRegion) => `${formatTime(start)}-${formatTime(end)}`,
-    []
-  );
 
   const getSegmentFromRow = useCallback((row?: ICell[]) => {
     if (!row) return undefined;
@@ -525,7 +470,7 @@ export default function PassageDetailMarkVersesIsMobile({
     [waveSegmentsJson]
   );
 
-  /** Prefer waveform bounds — table limits are mm:ss and can round (e.g. 8.4s → 0:08). */
+  /** Prefer waveform bounds — table limits are decimal seconds and can round (e.g. 8.44s → 8.4). */
   const getActiveSegmentForRow = useCallback(
     (rowIndex: number, row?: ICell[]) => {
       if (rowIndex > 0 && waveformRegions[rowIndex - 1]) {
@@ -540,26 +485,6 @@ export default function PassageDetailMarkVersesIsMobile({
     (rowIndex: number, row?: ICell[]) =>
       Boolean(getActiveSegmentForRow(rowIndex, row)),
     [getActiveSegmentForRow]
-  );
-
-  const addBoundaryTooCloseToExisting = useMemo(
-    () =>
-      isProgressNearAnyRegionBoundary(
-        playerProgressSec,
-        waveformRegions,
-        SEGMENT_BOUNDARY_TOLERANCE_SEC
-      ),
-    [playerProgressSec, waveformRegions]
-  );
-
-  const removeBoundaryEnabled = useMemo(
-    () =>
-      isProgressNearInternalJoin(
-        playerProgressSec,
-        waveformRegions,
-        SEGMENT_BOUNDARY_TOLERANCE_SEC
-      ),
-    [playerProgressSec, waveformRegions]
   );
 
   const syncProgressFromPlayer = useCallback(() => {
@@ -645,52 +570,29 @@ export default function PassageDetailMarkVersesIsMobile({
     return { start, end } as IRegion;
   }, []);
 
-  const findRowForPlayhead = useCallback(
-    (tableData: ICell[][], playhead?: number) => {
-      const livePlayhead =
-        playhead ??
-        playerControlsRef.current?.getProgress() ??
-        playerProgressSec;
-      const rowSegs: {
-        idx: number;
-        start: number;
-        end: number;
-      }[] = [];
-      for (let i = 1; i < tableData.length; i++) {
-        const seg = getActiveSegmentForRow(i, tableData[i] as ICell[]);
-        if (seg) rowSegs.push({ idx: i, start: seg.start, end: seg.end });
-      }
-      rowSegs.sort((a, b) => a.start - b.start);
-      for (let i = 0; i < rowSegs.length; i++) {
-        const r = rowSegs[i];
-        const isLast = i === rowSegs.length - 1;
-        const inRegion =
-          livePlayhead >= r.start - 0.01 &&
-          (isLast
-            ? livePlayhead <= r.end + 0.01
-            : livePlayhead < r.end - SEGMENT_BOUNDARY_TOLERANCE_SEC);
-        if (inRegion) return r.idx;
-      }
-      return -1;
-    },
-    [getActiveSegmentForRow, playerProgressSec]
-  );
-
+  /**
+   * The highlighted (yellow) row is a *pure projection* of the waveform's
+   * current region — one source of truth. The waveform owns "which segment is
+   * current" (`useWaveSurferRegions` `currentRegionRef`) and surfaces that
+   * selection as `currentSegmentIndex` (row i ↔ sorted region i-1, since the
+   * table is built one row per sorted region in `handleSegment`). The table
+   * trusts that index instead of re-deriving "current" from the playhead /
+   * rounded time ranges, which was the source of the yellow-highlight drift
+   * between the waveform and this table.
+   */
   const findCurrentTableRowIndex = useCallback(
-    (tableData: ICell[][], preferPlayhead: boolean = false) => {
-      if (preferPlayhead) {
-        const playheadRow = findRowForPlayhead(tableData);
-        if (playheadRow > 0) return playheadRow;
+    (tableData: ICell[][]) => {
+      if (
+        currentSegmentIndex > 0 &&
+        currentSegmentIndex < tableData.length &&
+        rowHasSegment(currentSegmentIndex, tableData[currentSegmentIndex])
+      ) {
+        return currentSegmentIndex;
       }
 
-      const existingHighlight = tableData.findIndex(
-        (row, index) =>
-          index > 0 &&
-          ((row[ColName.Limits] as ICell).className ?? '').includes('cur')
-      );
-
+      // Bootstrap only: before the waveform has reported a current region (e.g.
+      // immediately after load), match the current segment's bounds to a row.
       const target = parseCurrentSegmentRegion(currentSegment);
-
       if (target) {
         for (let i = 1; i < tableData.length; i++) {
           const seg = getActiveSegmentForRow(i, tableData[i]);
@@ -703,64 +605,14 @@ export default function PassageDetailMarkVersesIsMobile({
             return i;
           }
         }
-        let startOnlyMatch = -1;
-        for (let i = 1; i < tableData.length; i++) {
-          const seg = getActiveSegmentForRow(i, tableData[i]);
-          if (!seg) continue;
-          if (
-            Math.abs(seg.start - target.start) <=
-            SEGMENT_ROW_MATCH_TOLERANCE_SEC
-          ) {
-            startOnlyMatch = i;
-          }
-        }
-        if (startOnlyMatch > 0) return startOnlyMatch;
-      } else if (existingHighlight > 0) {
-        return existingHighlight;
       }
 
-      if (
-        currentSegmentIndex > 0 &&
-        currentSegmentIndex < tableData.length &&
-        rowHasSegment(currentSegmentIndex, tableData[currentSegmentIndex])
-      ) {
-        if (!target) return currentSegmentIndex;
-        const rowSeg = getActiveSegmentForRow(
-          currentSegmentIndex,
-          tableData[currentSegmentIndex] as ICell[]
-        );
-        if (
-          rowSeg &&
-          Math.abs(rowSeg.start - target.start) <=
-            SEGMENT_ROW_MATCH_TOLERANCE_SEC &&
-          Math.abs(rowSeg.end - target.end) <= SEGMENT_ROW_MATCH_TOLERANCE_SEC
-        ) {
-          return currentSegmentIndex;
-        }
-      }
-
-      if (existingHighlight > 0) return existingHighlight;
-
-      if (waveformRegions.length > 0) {
-        const sorted = [...waveformRegions].sort((a, b) => a.start - b.start);
-        for (let i = 0; i < sorted.length; i++) {
-          const r = sorted[i];
-          const isLast = i === sorted.length - 1;
-          const inRegion =
-            playerProgressSec >= r.start - 0.01 &&
-            (isLast
-              ? playerProgressSec <= r.end + 0.01
-              : playerProgressSec < r.end - SEGMENT_BOUNDARY_TOLERANCE_SEC);
-          if (inRegion) {
-            const regionIndex = waveformRegions.findIndex(
-              (wr) => wr.start === r.start && wr.end === r.end
-            );
-            if (regionIndex >= 0) return regionIndex + 1;
-          }
-        }
-      }
-
-      return -1;
+      // Otherwise keep whatever is already highlighted.
+      return tableData.findIndex(
+        (row, index) =>
+          index > 0 &&
+          ((row[ColName.Limits] as ICell).className ?? '').includes('cur')
+      );
     },
     [
       currentSegment,
@@ -768,15 +620,12 @@ export default function PassageDetailMarkVersesIsMobile({
       getActiveSegmentForRow,
       rowHasSegment,
       parseCurrentSegmentRegion,
-      playerProgressSec,
-      waveformRegions,
-      findRowForPlayhead,
     ]
   );
 
   const applyActiveRowHighlight = useCallback(
-    (tableData: ICell[][], preferPlayhead: boolean = false) => {
-      const rowIndex = findCurrentTableRowIndex(tableData, preferPlayhead);
+    (tableData: ICell[][]) => {
+      const rowIndex = findCurrentTableRowIndex(tableData);
       if (rowIndex > 0) {
         setActiveRowHighlight(tableData, rowIndex);
       }
@@ -785,13 +634,99 @@ export default function PassageDetailMarkVersesIsMobile({
     [findCurrentTableRowIndex, setActiveRowHighlight]
   );
 
-  const buildReferenceCell = useCallback((value: string, cell: ICell) => {
-    return {
-      ...cell,
-      value,
-      className: `ref${value && !refMatch(value) ? ' Err' : ''}`,
-    };
-  }, []);
+  /** The passage's book code, used for versification range checks. */
+  const book = passage?.attributes?.book ?? '';
+
+  /**
+   * Localized tooltip for a flagged reference.
+   */
+  const referenceWarningMessage = useCallback(
+    (
+      reason: MarkVersesWarningReason | undefined,
+      reference: string,
+      precedingReference: string | undefined,
+      passageRange: string[]
+    ): string | undefined => {
+      switch (reason) {
+        case MarkVersesWarningReason.IllFormatted:
+        case MarkVersesWarningReason.Overlap:
+          return t.badReferences;
+        case MarkVersesWarningReason.OutOfRange:
+          return t.outsideReferences.replace('{0}', reference);
+        case MarkVersesWarningReason.SkipsAhead:
+          return t.missingReferences.replace(
+            '{0}',
+            markVersesSkippedPassageRefs(
+              precedingReference ?? '',
+              reference,
+              passageRange
+            ).join(', ')
+          );
+        default:
+          return undefined;
+      }
+    },
+    [t]
+  );
+
+  const buildReferenceCell = useCallback(
+    (value: string, cell: ICell, warning?: string) => {
+      const illFormatted =
+        Boolean(value) &&
+        !isValidMarkVersesReference(value, passage.attributes?.book ?? '');
+      // Map to a RefStatus (see its enum doc for how Err/Warn render). `warning`
+      // is the tooltip text, shown for either flagged state.
+      const status: ICell['status'] = illFormatted
+        ? RefStatus.Err
+        : warning
+          ? RefStatus.Warn
+          : RefStatus.Valid;
+      return {
+        ...cell,
+        value,
+        warning: warning || undefined,
+        className: 'ref',
+        status,
+      };
+    },
+    []
+  );
+
+  /**
+   * Flag every reference row in place using the shared per-row authority, so a
+   * freshly-loaded table surfaces the same warnings an edit would. Mutates and
+   * returns `tableData`; the header row (index 0) is left untouched.
+   */
+  const annotateReferenceWarnings = useCallback(
+    (tableData: ICell[][], passageRange: string[]): ICell[][] => {
+      const dataRefs = tableData
+        .slice(1)
+        .map((row) => `${(row[ColName.Ref] as ICell)?.value ?? ''}`);
+      tableData.forEach((row, index) => {
+        if (index === 0) return;
+        const cell = row[ColName.Ref] as ICell;
+        const value = `${cell?.value ?? ''}`;
+        const rowIdx = index - 1;
+        const { reason } = evaluateMarkVersesReferenceStatus({
+          newReference: value,
+          tableReferences: dataRefs,
+          rowIndex: rowIdx,
+          passage,
+        });
+        const precedingReference =
+          rowIdx > 0 ? dataRefs[rowIdx - 1] : undefined;
+        const warning = referenceWarningMessage(
+          reason,
+          value,
+          precedingReference,
+          passageRange
+        );
+        row[ColName.Ref] = buildReferenceCell(value, cell, warning);
+      });
+      return tableData;
+    },
+    [book, referenceWarningMessage, buildReferenceCell]
+  );
 
   /** Assign passage refs after the saved range; add rows when the range no longer covers them. */
   const redistributeTableTailAfterSave = useCallback(
@@ -885,17 +820,39 @@ export default function PassageDetailMarkVersesIsMobile({
         passageRefs.current.length > 0
           ? passageRefs.current
           : getPassageRefs(passage);
-      const endVerseOptions = getEndingVerseOptions(
-        passageRange,
-        currentRef.start.chapter,
-        currentRef.start.verse
-      );
+      // Any flagged row (status other than Valid) lets the user fix the whole range,
+      // so both dropdowns offer the full passage verse list rather than
+      // just the slice from the current start onward.
+      const refStatus = (row[ColName.Ref] as ICell)?.status;
+      const unrestricted = Boolean(refStatus) && refStatus !== RefStatus.Valid;
+      const endVerseOptions = unrestricted
+        ? passageRefsToVerseOptions(passageRange)
+        : getEndingVerseOptions(
+            passageRange,
+            currentRef.start.chapter,
+            currentRef.start.verse
+          );
       const defaultEnd =
         endVerseOptions.find(
           (option) =>
             option.chapter === currentRef.end.chapter &&
             option.verse === currentRef.end.verse
         ) ?? endVerseOptions[endVerseOptions.length - 1];
+      // When the range is freely editable the chapter/verse dropdowns can only
+      // show passage verses, so a bad reference whose start falls outside the
+      // passage must open on a real option. Snap it to the matching passage
+      // verse, or the first passage verse when it has no match.
+      const matchedStart = endVerseOptions.find(
+        (option) =>
+          option.chapter === currentRef.start.chapter &&
+          option.verse === currentRef.start.verse
+      );
+      const defaultStart = (unrestricted
+        ? (matchedStart ?? endVerseOptions[0])
+        : undefined) ?? {
+        chapter: currentRef.start.chapter,
+        verse: currentRef.start.verse,
+      };
 
       return {
         rowIndex,
@@ -903,13 +860,14 @@ export default function PassageDetailMarkVersesIsMobile({
         canSplit,
         splitVerse: hasLetterSuffix,
         existingSplit,
+        unrestricted,
         endVerseOptions,
-        startChapter: currentRef.start.chapter,
-        startVerse: currentRef.start.verse,
-        startSuffix: hasLetterSuffix ? currentRef.start.suffix : '',
+        startChapter: defaultStart.chapter,
+        startVerse: defaultStart.verse,
+        startSuffix: hasLetterSuffix ? currentRef.start.verseLetterSuffix : '',
         endChapter: defaultEnd.chapter,
         endVerse: defaultEnd.verse,
-        endSuffix: hasLetterSuffix ? currentRef.end.suffix : '',
+        endSuffix: hasLetterSuffix ? currentRef.end.verseLetterSuffix : '',
       } as IEditReferenceDialogState;
     },
     [getPassageRefs, parseReferenceValue, passage]
@@ -1009,58 +967,72 @@ export default function PassageDetailMarkVersesIsMobile({
     setEditReferenceDialog(undefined);
   };
 
-  const handleSaveSplitVerseDialog = (value: EditReferenceValue) => {
-    if (!editReferenceDialog) return;
+  /**
+   * Apply a new reference string to a data row, shared by the Edit Reference
+   * dialog and inline hand-editing. Decides whether to re-number the tail, flag
+   * the row with a warning, or leave numbering alone, then updates the table,
+   * segments, and change state. Caller is responsible for any UI (e.g. closing
+   * the dialog) and for skipping no-op edits before calling.
+   */
+  const applyReferenceEdit = (startRowIndex: number, newReference: string) => {
+    if (!dataRef.current[startRowIndex]) return;
 
-    const openingValue = normalizeEditReferenceDraft(editReferenceDialog);
-    // Defense in depth: EditReferenceDropdown disables Save via the same helper;
-    // keep both paths on editReferenceValuesEqual so semantics stay aligned.
-    if (editReferenceValuesEqual(value, openingValue)) {
-      setEditReferenceDialog(undefined);
-      return;
-    }
-
-    const saveValue = normalizeEditReferenceForSave(value);
     pushUndoSnapshot();
     const newData = cloneTableData(dataRef.current);
-    const startRowIndex = editReferenceDialog.rowIndex;
     const row = newData[startRowIndex] as ICell[] | undefined;
     if (!row) return;
 
-    const nextReference = formatReferenceValue(saveValue);
-    row[ColName.Ref] = buildReferenceCell(
-      nextReference,
-      row[ColName.Ref] as ICell
-    );
+    // Decide whether this edit re-numbers the tail or leaves numbering alone.
+    // Versification is bound to the passage's book so the chapter-boundary rules
+    // match the rest of the app. Warning flags are applied below by
+    // annotateReferenceWarnings, not decided here.
+    const tableReferences = dataRef.current
+      .slice(1)
+      .map((tableRow) => `${(tableRow[ColName.Ref] as ICell)?.value ?? ''}`);
 
     const passageRange =
       passageRefs.current.length > 0
         ? passageRefs.current
         : getPassageRefs(passage);
-    const startPassageIdx = passageRange.findIndex((ref) => {
-      const parsed = parseReferenceValue(ref);
-      return (
-        parsed?.start.chapter === saveValue.startChapter &&
-        parsed.start.verse === saveValue.startVerse
-      );
-    });
-    const endPassageIdx = passageRange.findIndex((ref) => {
-      const parsed = parseReferenceValue(ref);
-      return (
-        parsed?.start.chapter === saveValue.endChapter &&
-        parsed.start.verse === saveValue.endVerse
-      );
-    });
 
-    const nextLetter =
-      saveValue.splitVerse && saveValue.endSuffix
-        ? nextMarkVersesLetterSuffix(saveValue.endSuffix)
-        : undefined;
-    const leadingRef = nextLetter
-      ? `${saveValue.endChapter}:${saveValue.endVerse}${nextLetter}`
-      : undefined;
+    // Set the edited value; the whole-table warning pass below assigns its
+    // status and tooltip (and re-evaluates every other row).
+    row[ColName.Ref] = buildReferenceCell(
+      newReference,
+      row[ColName.Ref] as ICell
+    );
 
-    if (startPassageIdx >= 0 && endPassageIdx >= 0) {
+    const parsed = parseReferenceValue(newReference);
+    const startPassageIdx = parsed
+      ? passageRange.findIndex((ref) => {
+          const p = parseReferenceValue(ref);
+          return (
+            p?.start.chapter === parsed.start.chapter &&
+            p.start.verse === parsed.start.verse
+          );
+        })
+      : -1;
+    const endPassageIdx = parsed
+      ? passageRange.findIndex((ref) => {
+          const p = parseReferenceValue(ref);
+          return (
+            p?.start.chapter === parsed.end.chapter &&
+            p.start.verse === parsed.end.verse
+          );
+        })
+      : -1;
+
+    // When the edited reference ends mid-split (e.g. `1:3a`), the following row
+    // should lead with the next letter (`1:3b`).
+    const leadingRef = incrementMarkVersesReferenceSuffix(newReference);
+
+    const renumber = shouldAutoRenumberAfterEdit({
+      newReference,
+      tableReferences,
+      rowIndex: startRowIndex - 1,
+      passage,
+    });
+    if (renumber && startPassageIdx >= 0 && endPassageIdx >= 0) {
       redistributeTableTailAfterSave(
         newData,
         startRowIndex,
@@ -1070,6 +1042,7 @@ export default function PassageDetailMarkVersesIsMobile({
       );
     }
 
+    annotateReferenceWarnings(newData, passageRange);
     setActiveRowHighlight(newData, startRowIndex);
     setData(newData);
     setSegments();
@@ -1080,7 +1053,33 @@ export default function PassageDetailMarkVersesIsMobile({
     }
 
     toolChanged(verseToolId);
+  };
+
+  const handleSaveSplitVerseDialog = (value: EditReferenceValue) => {
+    if (!editReferenceDialog) return;
+
+    const openingValue = normalizeEditReferenceDraft(editReferenceDialog);
+    if (editReferenceValuesEqual(value, openingValue)) {
+      setEditReferenceDialog(undefined);
+      return;
+    }
+
+    const saveValue = normalizeEditReferenceForSave(value);
+    applyReferenceEdit(
+      editReferenceDialog.rowIndex,
+      formatReferenceValue(saveValue)
+    );
     setEditReferenceDialog(undefined);
+  };
+
+  /** Commit a reference typed directly into the table's reference cell. */
+  const handleReferenceTextEdit = (rowIndex: number, rawValue: string) => {
+    const row = dataRef.current[rowIndex] as ICell[] | undefined;
+    if (!row) return;
+    const previousReference = `${(row[ColName.Ref] as ICell)?.value ?? ''}`;
+    const newReference = rawValue.trim();
+    if (newReference === previousReference.trim()) return;
+    applyReferenceEdit(rowIndex, newReference);
   };
 
   const resetSegments = (regions: IRegion[]) => {
@@ -1093,6 +1092,17 @@ export default function PassageDetailMarkVersesIsMobile({
 
   const handleSegment = useCallback(
     (segments: string, init: boolean) => {
+      // When the player's built-in segment controls add or remove a boundary
+      // (the region count changes), capture the pre-change state for undo. This
+      // must run before segmentsRef is overwritten below so the snapshot holds
+      // the prior segments. Reference edits and Reset push their own snapshots.
+      const segmentCountChanged =
+        !init &&
+        !resettingSegmentsRef.current &&
+        hasPermission &&
+        getSortedRegions(segments).length !== prevRegionCountRef.current;
+      if (segmentCountChanged) pushUndoSnapshot();
+
       segmentsRef.current = segments;
       setWaveSegmentsJson((prev) => (prev === segments ? prev : segments));
 
@@ -1155,10 +1165,6 @@ export default function PassageDetailMarkVersesIsMobile({
         }
 
         const row = rowCells([formLim(region), nextReference]);
-        const reference = row[ColName.Ref] as ICell;
-        if (!refMatch(nextReference)) {
-          reference.className = nextReference ? 'ref Err' : 'ref';
-        }
         newData.push(row);
       });
 
@@ -1170,6 +1176,10 @@ export default function PassageDetailMarkVersesIsMobile({
         }
       });
 
+      // Ill-formatted refs were already flagged by rowCells; this adds the
+      // out-of-range / overlap / skipped-ahead warnings and their tooltips.
+      annotateReferenceWarnings(newData, autoRefs);
+
       const change =
         numSegments !== regions.length ||
         tableSignature(previousData) !== tableSignature(newData);
@@ -1177,7 +1187,7 @@ export default function PassageDetailMarkVersesIsMobile({
       prevRegionCountRef.current = regions.length;
 
       if (change) {
-        const rowIndex = applyActiveRowHighlight(newData, addedSegment);
+        const rowIndex = applyActiveRowHighlight(newData);
         if (tableSignature(dataRef.current) !== tableSignature(newData)) {
           setData(newData);
         }
@@ -1217,6 +1227,8 @@ export default function PassageDetailMarkVersesIsMobile({
       setData,
       scrollActiveRowIntoView,
       seekToRowSegment,
+      annotateReferenceWarnings,
+      pushUndoSnapshot,
     ]
   );
 
@@ -1353,59 +1365,6 @@ export default function PassageDetailMarkVersesIsMobile({
     restoreUndoSnapshot(snapshot);
   };
 
-  const handleRemoveBoundaryClick = useCallback(async () => {
-    const ctrl = playerControlsRef.current;
-    if (!ctrl?.isReady() || !removeBoundaryEnabled) return;
-
-    const p = ctrl.getProgress();
-    const hit = findClosestInternalJoin(
-      p,
-      waveformRegions,
-      SEGMENT_BOUNDARY_TOLERANCE_SEC
-    );
-    if (!hit) return;
-
-    const { join, leftSegment } = hit;
-    const sorted = [...waveformRegions].sort((a, b) => a.start - b.start);
-    const leftIdx = sorted.findIndex(
-      (r) => Math.abs(r.start - leftSegment.start) < 0.001
-    );
-    const rightEnd =
-      leftIdx >= 0 && leftIdx < sorted.length - 1
-        ? sorted[leftIdx + 1].end
-        : join;
-
-    pushUndoSnapshot();
-
-    if (p >= join - 1e-6) {
-      let target = join - REMOVE_BOUNDARY_PLAYHEAD_NUDGE_SEC;
-      target = Math.max(leftSegment.start + 0.001, target);
-      target = Math.min(target, join - 0.001);
-      await ctrl.gotoTime(target);
-    }
-    ctrl.removeNextSegment();
-    syncProgressFromPlayer();
-
-    if (leftIdx >= 0) {
-      const mergedSegment = {
-        start: leftSegment.start,
-        end: rightEnd,
-      };
-      const tableRowIndex = leftIdx + 1;
-      skipScrollIntoViewRef.current = true;
-      await seekToRowSegment(tableRowIndex);
-      setCurrentSegment(mergedSegment, tableRowIndex);
-      skipScrollIntoViewRef.current = false;
-    }
-  }, [
-    removeBoundaryEnabled,
-    waveformRegions,
-    syncProgressFromPlayer,
-    pushUndoSnapshot,
-    seekToRowSegment,
-    setCurrentSegment,
-  ]);
-
   const persistSegmentsRef = useRef(persistSegments);
   persistSegmentsRef.current = persistSegments;
 
@@ -1480,11 +1439,6 @@ export default function PassageDetailMarkVersesIsMobile({
 
   const handleResetMarkup = () => {
     setResetConfirmOpen(true);
-  };
-
-  const handleAddSegment = () => {
-    pushUndoSnapshot();
-    playerControlsRef.current?.addSegment();
   };
 
   useEffect(() => {
@@ -1588,6 +1542,11 @@ export default function PassageDetailMarkVersesIsMobile({
         flex: 1,
         minHeight: 0,
         overflow: 'hidden',
+        // Constrain the column to the player's width so the table and action
+        // row line up with the waveform's right edge (the player is sized to
+        // `width`, which already accounts for the pane's fit margin/scrollbar).
+        width,
+        maxWidth: '100%',
       }}
     >
       <PassageDetailPlayer
@@ -1602,88 +1561,63 @@ export default function PassageDetailMarkVersesIsMobile({
         applyRegionColor={applyRegionColor}
         onProgress={setPlayerProgressSec}
         onInteraction={syncProgressFromPlayer}
+        onClearSegments={handleResetMarkup}
+        resetDisabled={!hasPermission || !hasResettableState}
+        hasSegmentUndo={undoAvailable}
+        onSegmentUndo={handleUndo}
+        hideZoom
+        showTranscriptionButton={false}
       />
-      <TabActions
+      {/* Inset the action row and table by the same 8px (px:1) the player pads
+          its own content, so their right (and left) edges line up with the
+          waveform and controls above instead of overhanging the right edge. */}
+      <Box
         sx={{
-          mt: 0.5,
-          py: 0,
+          px: 1,
           display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 0.5,
-          flexWrap: 'wrap',
-          flexShrink: 0,
-          width: !isMobile ? 'calc(100% + 32px)' : '100%',
+          flexDirection: 'column',
+          flex: 1,
+          minHeight: 0,
+          overflow: 'hidden',
         }}
       >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0 }}>
-          <LightTooltip
-            id="markVersesSplitTip"
-            title={tp.splitSegment.replace(
-              '{0}',
-              localizeHotKey(ADDREMSEG_KEY)
-            )}
-          >
-            <IconButton
-              onClick={handleAddSegment}
-              disabled={!hasPermission || addBoundaryTooCloseToExisting}
-              size="small"
-              sx={{ pl: '0px !important' }}
-            >
-              <AddIcon fontSize="small" />
-            </IconButton>
-          </LightTooltip>
-          <LightTooltip
-            id="markVersesRemoveBoundaryTip"
-            title={tp.removeSegment.replace('{0}', localizeHotKey(DELREG_KEY))}
-          >
-            <IconButton
-              onClick={() => void handleRemoveBoundaryClick()}
-              disabled={!hasPermission || !removeBoundaryEnabled}
-              size="small"
-            >
-              <RemoveIcon fontSize="small" />
-            </IconButton>
-          </LightTooltip>
-          {undoAvailable && (
-            <LightTooltip id="markVersesUndoTip" title={tr.undoTip}>
-              <IconButton
-                aria-label={tr.undoTip}
-                size="small"
-                onClick={handleUndo}
-              >
-                <UndoIcon fontSize="small" />
-              </IconButton>
-            </LightTooltip>
-          )}
-        </Box>
-        <AltButton
-          onClick={handleEditReference}
-          disabled={!hasPermission || numSegments === 0}
-          sx={{ px: 1.5, py: 0.5 }}
+        <TabActions
+          sx={{
+            mt: 0.5,
+            py: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 0.5,
+            flexWrap: 'wrap',
+            flexShrink: 0,
+            width: '100%',
+          }}
         >
-          <EditIcon sx={{ mr: 0.5 }} fontSize="small" />
-          {editReferenceLabel}
-        </AltButton>
-        <AltButton
-          onClick={handleResetMarkup}
-          disabled={!hasPermission || !hasResettableState}
-          sx={{ px: 1.5, py: 0.5 }}
-        >
-          {resetLabel}
-        </AltButton>
-      </TabActions>
-      <MarkVersesTableIsMobile
-        data={data}
-        onRowSelect={handleSelectRow}
-        tableRowRefs={tableRowRefs}
-      />
+          <AltButton
+            onClick={handleEditReference}
+            disabled={!hasPermission || numSegments === 0}
+            sx={{ px: 1.5, py: 0.5 }}
+          >
+            <EditIcon sx={{ mr: 0.5 }} fontSize="small" />
+            {editReferenceLabel}
+          </AltButton>
+        </TabActions>
+        <MarkVersesTableIsMobile
+          data={data}
+          onRowSelect={handleSelectRow}
+          onReferenceEdit={handleReferenceTextEdit}
+          canEdit={hasPermission && !isMobile}
+          tableRowRefs={tableRowRefs}
+        />
+      </Box>
       {editReferenceDialog && (
         <EditReferenceDropdown
           key={`edit-reference-${editReferenceDialog.rowIndex}-${editReferenceDialog.limits}-${editReferenceDialog.startChapter}-${editReferenceDialog.startVerse}-${editReferenceDialog.endChapter}-${editReferenceDialog.endVerse}`}
           open={Boolean(editReferenceDialog)}
           limits={editReferenceDialog.limits}
           endVerseOptions={editReferenceDialog.endVerseOptions}
+          unrestricted={editReferenceDialog.unrestricted}
           title={`${editReferenceLabel} for`}
           cancelLabel={cancelLabel}
           saveLabel={saveLabel}

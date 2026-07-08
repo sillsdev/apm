@@ -1,6 +1,16 @@
 import { createTheme } from '@mui/material';
 import { getDataGridLocale } from './utils/dataGridLocale';
 
+// MUI has no `variant` on IconButton. Adding it to IconButtonOwnProps lets us
+// pass `variant` in JSX; IconButton spreads props into its ownerState, so the
+// MuiIconButton `variants` matcher below can style each variant. (The prop also
+// lands as a harmless stray attribute on the underlying <button>.)
+declare module '@mui/material/IconButton' {
+  interface IconButtonOwnProps {
+    variant?: 'floating' | 'primary' | 'outlined';
+  }
+}
+
 declare module '@mui/material/styles' {
   interface Palette {
     custom: {
@@ -9,6 +19,10 @@ declare module '@mui/material/styles' {
       racetrackCurrent: string;
       racetrackComplete: string;
       racetrackIncomplete: string;
+      /** Fill for the "contained" action look (dark). */
+      containedBg: string;
+      /** Hover fill for the "contained" action look. */
+      containedHoverBg: string;
     };
   }
   interface PaletteOptions {
@@ -18,9 +32,23 @@ declare module '@mui/material/styles' {
       racetrackCurrent: string;
       racetrackComplete: string;
       racetrackIncomplete: string;
+      containedBg: string;
+      containedHoverBg: string;
     };
   }
 }
+
+// Single source of truth for the "contained" action look, shared by the
+// MuiButton contained variant and any component that mimics it (see the
+// palette `custom.containedBg`/`containedHoverBg` tokens below).
+const CONTAINED_BG = '#333333';
+const CONTAINED_HOVER_BG = '#555555';
+const CONTAINED_DISABLED_BG = '#F0F0F0';
+
+// The subtle drop shadow every themed button carries (see MuiButton root
+// below). Exported so components that need to hand-roll a button
+//  can reuse the exact same value.
+export const BUTTON_SHADOW = '1px 1px 3px #0000001F';
 
 export const createAppTheme = (lang: string) =>
   createTheme(
@@ -38,6 +66,8 @@ export const createAppTheme = (lang: string) =>
           racetrackCurrent: '#333',
           racetrackComplete: '#a8a8a8',
           racetrackIncomplete: '#e0e0e0',
+          containedBg: CONTAINED_BG,
+          containedHoverBg: CONTAINED_HOVER_BG,
         },
       },
       typography: {
@@ -53,6 +83,44 @@ export const createAppTheme = (lang: string) =>
             },
           },
         },
+        MuiIconButton: {
+          variants: [
+            {
+              // Contained "primary action" look, mirroring the MuiButton
+              // contained variant. Filled only while enabled — the disabled
+              // state resets to the plain default so the enabled button draws
+              // attention on its own.
+              props: { variant: 'primary' },
+              style: {
+                backgroundColor: CONTAINED_BG,
+                color: '#FFFFFF',
+                borderRadius: '8px',
+                boxShadow: BUTTON_SHADOW,
+                '&:hover': {
+                  backgroundColor: CONTAINED_HOVER_BG,
+                },
+                '&.Mui-disabled': {
+                  backgroundColor: 'transparent',
+                  color: 'rgba(0, 0, 0, 0.26)',
+                  boxShadow: 'none',
+                },
+              },
+            },
+            {
+              // Soft edge to contrast against white, like MuiButton outlined.
+              props: { variant: 'outlined' },
+              style: {
+                border: '1px solid #0000001F',
+              },
+            },
+            {
+              props: { variant: 'floating' },
+              style: {
+                // TODO
+              },
+            },
+          ],
+        },
         MuiButton: {
           defaultProps: {
             disableElevation: true,
@@ -61,7 +129,7 @@ export const createAppTheme = (lang: string) =>
             root: {
               borderRadius: '8px',
               padding: '8px 16px',
-              boxShadow: '1px 1px 3px #0000001F',
+              boxShadow: BUTTON_SHADOW,
               color: '#000000',
               height: 36,
               background: '#FFFFFF',
@@ -85,13 +153,13 @@ export const createAppTheme = (lang: string) =>
               // Contained buttons are primary buttons
               props: { variant: 'contained' },
               style: {
-                background: '#333333',
+                background: CONTAINED_BG,
                 color: '#FFFFFF',
                 '&:hover': {
-                  background: '#555555',
+                  background: CONTAINED_HOVER_BG,
                 },
                 '&:disabled': {
-                  background: '#F0F0F0',
+                  background: CONTAINED_DISABLED_BG,
                 },
               },
             },

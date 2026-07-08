@@ -187,7 +187,6 @@ export default function ClauseAudioPlayer({
         blob={audioBlob}
         segments="{}"
         allowRecord={false}
-        hideSegmentControls={true}
         hideWaveformEditTools={true}
         allowZoom={true}
         height={160}

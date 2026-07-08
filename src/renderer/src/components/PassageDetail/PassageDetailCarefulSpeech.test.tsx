@@ -280,6 +280,13 @@ describe('PassageDetailCarefulSpeech — review and clear recording', () => {
     mockCompleted = new Set([0, 1, 2, 3, 4, 5, 6, 7]);
     mockStepComplete = true;
     mockRecordingRow = { mediafile: { id: 'rec1' } };
+    // Removing the current clause's recording drops it from the completed set
+    // and clears its recording row — mirror that data change so the
+    // completed-clause effect doesn't re-force phase back to 'recorded'.
+    mockMemoryUpdate.mockImplementation(async () => {
+      mockCompleted = new Set([1, 2, 3, 4, 5, 6, 7]);
+      mockRecordingRow = undefined;
+    });
     await mountAndSettle();
 
     const onClearRecording = controlsProps?.onClearRecording as
@@ -293,7 +300,7 @@ describe('PassageDetailCarefulSpeech — review and clear recording', () => {
     await waitFor(() =>
       expect(mockSetStepComplete).toHaveBeenCalledWith('step1', false)
     );
-    expect(controlsProps?.phase).toBe('recordReady');
+    await waitFor(() => expect(controlsProps?.phase).toBe('recordReady'));
   });
 
   it('review mode: tapping a completed clause does not auto-play it', async () => {

@@ -4,6 +4,7 @@ import { findClauseSplitPoint } from '../utils/clauseSplitSilence';
 import RegionsPlugin, {
   Region,
   RegionParams,
+  UpdateSide,
 } from 'wavesurfer.js/dist/plugins/regions';
 import WaveSurfer from 'wavesurfer.js';
 import { IMarker } from './useWaveSurfer';
@@ -105,7 +106,10 @@ export function useWaveSurferRegions(
   progress: () => number,
   isPlaying: () => boolean,
   setPlaying: (playing: boolean) => void,
-  onCurrentRegion?: (currentRegion: IRegion | undefined) => void,
+  onCurrentRegion?: (
+    currentRegion: IRegion | undefined,
+    index?: number
+  ) => void,
   onStartRegion?: (start: number) => void,
   onRegionPlayEnd?: (region: IRegion) => void,
   onMarkerClick?: (time: number) => void,
@@ -355,8 +359,14 @@ export function useWaveSurferRegions(
       loopingRegionRef.current = r;
       currentRegionRef.current = r;
 
+      // Emit the region's *sorted index* alongside its bounds so downstream
+      // consumers (currentSegmentIndex, the Mark Verses table) can trust the
+      // waveform's exact selection instead of re-deriving it from time ranges.
       onCurrentRegion &&
-        onCurrentRegion(r ? { start: r.start, end: r.end } : undefined);
+        onCurrentRegion(
+          r ? { start: r.start, end: r.end } : undefined,
+          r ? regionIndexInSorted(r) : undefined
+        );
     }
   };
 
@@ -507,48 +517,50 @@ export function useWaveSurferRegions(
         }
       });
       //was region-updated
-      regionsPlugin.on('region-update', function (r: Region) {
-        resizingRef.current = r.resize;
-      });
-      //was region-update-end
-      regionsPlugin.on('region-updated', function (r: Region) {
-        onCurrentRegion && onCurrentRegion({ start: r.start, end: r.end });
-        if (singleRegionRef.current) {
-          if (!loadingRef.current) {
-            waitForIt(
-              'region update end',
-              () => region(r.id) !== undefined,
-              () => false,
-              400
-            ).then(() => {
-              goto(r.start);
-            });
-          }
-        } else if (!updatingRef.current && resizingRef.current) {
-          resizingRef.current = false;
-          const next = findNextRegion(r, false);
-          const prev = findPrevRegion(r);
-          if (prev) {
-            if (prev.end !== r.start) {
-              updateRegion(prev, { end: r.start });
-              goto(r.start);
-            }
-          } else if (r.start !== 0) {
-            updateRegion(r, { start: 0 });
-            goto(0);
-          }
-          if (next) {
-            if (next.start !== r.end) {
-              updateRegion(next, { start: r.end });
-              goto(r.end);
-            }
-          } else if (r.end !== duration()) {
-            updateRegion(r, { end: duration() });
-            goto(duration());
+      regionsPlugin.on(
+        'region-update',
+        function (r: Region, side?: UpdateSide) {
+          resizingRef.current = r.resize;
+          // Live-clamp the boundary as the user drags so regions never visually
+          // overlap: the dragged boundary stops at the neighbor's edge and the
+          // shared neighbor boundary shifts to follow.
+          if (!singleRegionRef.current && r.resize && !updatingRef.current) {
+            constrainResizedRegion(r, side);
           }
         }
-        onRegion(numRegions(), true);
-      });
+      );
+      //was region-update-end
+      regionsPlugin.on(
+        'region-updated',
+        function (r: Region, side?: UpdateSide) {
+          if (singleRegionRef.current) {
+            if (!loadingRef.current) {
+              waitForIt(
+                'region update end',
+                () => region(r.id) !== undefined,
+                () => false,
+                400
+              ).then(() => {
+                goto(r.start);
+              });
+            }
+          } else if (!updatingRef.current && resizingRef.current) {
+            resizingRef.current = false;
+            // Finalize the drag with the same clamp used live, then follow the
+            // playhead to whichever boundary the user just set.
+            const boundary = constrainResizedRegion(r, side);
+            if (boundary !== undefined) goto(boundary);
+          }
+          // Emit the (possibly clamped) final bounds + sorted index so consumers
+          // (currentSegmentIndex, the Mark Verses table) track the exact region.
+          onCurrentRegion &&
+            onCurrentRegion(
+              { start: r.start, end: r.end },
+              regionIndexInSorted(r)
+            );
+          onRegion(numRegions(), true);
+        }
+      );
       // other potentially useful messages
       // ws.on('region-play', function (r: any) {
       //   console.log('region-play', r.start, r.loop);
@@ -714,6 +726,54 @@ export function useWaveSurferRegions(
     updatingRef.current = true;
     r.setOptions(params);
     updatingRef.current = false;
+  };
+
+  /** Smallest segment we allow a boundary drag to leave behind. Keeps a region
+   *  from collapsing (or inverting) when its shared boundary is pushed all the
+   *  way into a neighbor, and stays above the 0.03s load filter in loadRegions. */
+  const MIN_SEGMENT = 0.05;
+
+  /**
+   * Keep resized regions non-overlapping. In multi-region (Mark Verses) mode
+   * the end of one region is always the start of the next, so a boundary is
+   * shared by two regions. When the user drags one boundary we:
+   *   - clamp it so it can't cross the neighbor's far boundary (no overlap) —
+   *     the first/last region's outer edge stays pinned to 0 / duration; and
+   *   - shift the single adjacent neighbor's shared boundary to follow, so the
+   *     two regions stay flush.
+   * `side` is provided by the regions plugin ('start' | 'end') and tells us
+   * which boundary is moving; when absent (defensive) we constrain both.
+   * Returns the boundary time the drag settled on for playhead follow.
+   */
+  const constrainResizedRegion = (r: Region, side?: 'start' | 'end') => {
+    const prev = findPrevRegion(r) as Region | undefined;
+    const next = findNextRegion(r, false) as Region | undefined;
+
+    if (side !== 'end') {
+      // dragging the region's start (or unknown): clamp between the previous
+      // region's start (+gap) and this region's own end (-gap).
+      const upper = r.end - MIN_SEGMENT;
+      const start = prev
+        ? roundToFiveDecimals(
+            Math.max(prev.start + MIN_SEGMENT, Math.min(r.start, upper))
+          )
+        : 0; // first region is pinned to the waveform start
+      if (start !== r.start) updateRegion(r, { start });
+      if (prev && prev.end !== start) updateRegion(prev, { end: start });
+    }
+    if (side !== 'start') {
+      // dragging the region's end (or unknown): clamp between this region's own
+      // start (+gap) and the next region's end (-gap).
+      const lower = r.start + MIN_SEGMENT;
+      const end = next
+        ? roundToFiveDecimals(
+            Math.min(next.end - MIN_SEGMENT, Math.max(r.end, lower))
+          )
+        : duration(); // last region is pinned to the waveform end
+      if (end !== r.end) updateRegion(r, { end });
+      if (next && next.start !== end) updateRegion(next, { start: end });
+    }
+    return side === 'start' ? r.start : r.end;
   };
 
   const getPeaks = (num: number = 512) => {
@@ -1071,7 +1131,7 @@ export function useWaveSurferRegions(
     return ret;
   };
 
-  const wsRemoveSplitRegion = (forceNext?: boolean) => {
+  const wsRemoveSplitRegion = () => {
     const r = currentRegion();
     if (!r) return undefined;
     if (numRegions() === 1) {
@@ -1084,16 +1144,16 @@ export function useWaveSurferRegions(
       newStart: r.start,
       newEnd: r.end,
     };
-    if (forceNext !== true) {
-      const prev = findPrevRegion(r);
-      if (isNear(r.start) && prev) {
-        updateRegion(r, { start: prev.start });
-        ret.newStart = prev.start;
-        prev.remove();
-        setCurrentRegion(r);
-        onRegion(numRegions(), true);
-        return ret;
-      }
+    // If the playhead is near the current region's start, remove that boundary
+    // (merge with the previous region); otherwise remove the next one below.
+    const prev = findPrevRegion(r);
+    if (isNear(r.start) && prev) {
+      updateRegion(r, { start: prev.start });
+      ret.newStart = prev.start;
+      prev.remove();
+      setCurrentRegion(r);
+      onRegion(numRegions(), true);
+      return ret;
     }
     //find next region
     const next = findNextRegion(r, false);

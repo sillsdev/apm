@@ -78,6 +78,12 @@ export interface DetailPlayerProps {
   onInteraction?: () => void;
   /** Careful Speech: reset params, auto-segment, and persist instead of only clearing. */
   onClearSegments?: () => void | Promise<void>;
+  /** Overrides the disabled state of the waveform segment Reset button. */
+  resetDisabled?: boolean;
+  /** When set, show a tool-managed Undo button in the player's top-right
+   * toolbar. Used by Mark Verses for its own undo stack. */
+  hasSegmentUndo?: boolean;
+  onSegmentUndo?: () => void;
   onTranscription?: (transcription: string) => void;
   allowZoomAndSpeed?: boolean;
   allowZoom?: boolean;
@@ -105,6 +111,10 @@ export interface DetailPlayerProps {
   beforePlay?: () => void | Promise<void | boolean>;
   /** When true, waveform region clicks cannot change the selected segment. */
   lockSegmentSelection?: boolean;
+  /** Show the "view transcription" button when a transcription exists. Default true.
+   * Set false where the button isn't wanted (e.g. Mark Verses Mobile). */
+  showTranscriptionButton?: boolean;
+  hideZoom?: boolean;
 }
 
 export function PassageDetailPlayer(props: DetailPlayerProps) {
@@ -125,6 +135,9 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
     onSaveProgress,
     onInteraction,
     onClearSegments,
+    resetDisabled,
+    hasSegmentUndo,
+    onSegmentUndo,
     allowZoomAndSpeed,
     allowZoom: allowZoomProp,
     allowSpeed: allowSpeedProp,
@@ -143,6 +156,8 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
     setPlayingOverride,
     beforePlay,
     lockSegmentSelection,
+    showTranscriptionButton = true,
+    hideZoom,
   } = props;
 
   const allowZoom = allowZoomProp ?? allowZoomAndSpeed ?? false;
@@ -393,7 +408,15 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
   };
 
   return (
-    <Box id="detailplayer" sx={{ width: width }}>
+    <Box
+      id="detailplayer"
+      sx={{
+        width: width,
+        maxWidth: '100%',
+        minWidth: 0,
+        boxSizing: 'border-box',
+      }}
+    >
       <WSAudioPlayer
         id="audioPlayer"
         allowRecord={false}
@@ -414,6 +437,7 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
         busy={pdBusy}
         allowSegment={allowSegment}
         allowAutoSegment={allowAutoSegment}
+        hideZoom={hideZoom}
         defaultRegionParams={defaultSegParams}
         canSetDefaultParams={canSetDefaultParams}
         segments={defaultSegments}
@@ -430,6 +454,9 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
         beforePlay={beforePlay}
         onInteraction={onInteraction}
         onClearSegments={onClearSegments}
+        resetDisabled={resetDisabled}
+        hasSegmentUndo={hasSegmentUndo}
+        onSegmentUndo={onSegmentUndo}
         onCurrentSegment={onCurrentSegment}
         allowZoom={allowZoom}
         allowSpeed={allowSpeed}
@@ -438,7 +465,8 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
         onDuration={onDuration}
         metaData={
           <>
-            {playerMediafile?.attributes?.transcription &&
+            {showTranscriptionButton &&
+            playerMediafile?.attributes?.transcription &&
             tool !== ToolSlug.Transcribe ? (
               <IconButton
                 id="show-transcription"
