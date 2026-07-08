@@ -20,6 +20,7 @@ import { useGlobal } from '../context/useGlobal';
 import { maxZoom } from '../components/WSAudioPlayerZoom';
 import WaveSurfer from 'wavesurfer.js';
 import { NamedRegions, useMobile } from '../utils';
+import { RECORD_PEAKS_PER_SECOND } from './recordPeaksCapture';
 
 const noop = () => {};
 
@@ -91,6 +92,15 @@ export function useWaveSurfer(
   /** Generation of the blobAudioRef commit in the current/last loadBlob. */
   const loadBlobGenerationRef = useRef(0);
   const recordingRef = useRef(false);
+  /** Peaks of existing audio before/after the record position (overdub preview). */
+  const recordPrePeaksRef = useRef<Float32Array>(new Float32Array(0));
+  const recordPostPeaksRef = useRef<Float32Array>(new Float32Array(0));
+  const recordPreSecondsRef = useRef(0);
+  const recordPostSecondsRef = useRef(0);
+  /** True while a cheap peaks-only preview load is in flight — its 'ready' must not run handleReady. */
+  const recordPeaksLoadRef = useRef(false);
+  /** loadGenerationRef at peaks preview load start — stale after wsStopRecord. */
+  const peaksLoadGenerationRef = useRef(0);
   const currentBlobUrlRef = useRef<string | undefined>(undefined);
   const lastWaveformTapTimeRef = useRef(0);
   const lastWaveformTapProgressRef = useRef<number | undefined>(undefined);
@@ -321,6 +331,24 @@ export function useWaveSurfer(
   };
   useEffect(() => {
     const handleReady = () => {
+      // Peaks-only preview loads during recording fire 'ready' too; they carry a
+      // fake buffer and must not run the full ready pipeline (regions/zoom/goto).
+      if (recordingRef.current) {
+        if (recordPeaksLoadRef.current) return;
+        const wsDur = wavesurferRef.current?.getDuration();
+        if (wsDur) setDuration(wsDur);
+        return;
+      }
+      const media = wavesurferRef.current?.getMediaElement();
+      const hasMediaSrc = Boolean(media?.currentSrc);
+      if (
+        !hasMediaSrc &&
+        (peaksLoadGenerationRef.current !== loadGenerationRef.current ||
+          loadBlobGenerationRef.current === loadGenerationRef.current)
+      ) {
+        // Stale or superseded peaks-only load — must not clobber a real blob load.
+        return;
+      }
       setupRegions(wavesurferRef.current as WaveSurfer);
       //recording also sends ready
       if (loadRequests.current > 0) loadRequests.current--;
@@ -551,11 +579,10 @@ export function useWaveSurfer(
   const loadBlob = async (blob?: Blob, position?: number) => {
     const generation = loadGenerationRef.current;
     positionRef.current = position;
-
-    // Revoke previous blob URL if it exists
-    revokeCurrentBlobUrl();
+    const prevBlobUrl = currentBlobUrlRef.current;
 
     if (!blob) {
+      revokeCurrentBlobUrl();
       //this is the only way I found to clear the wavesurfer. Toggle the url to "the other empty" to trigger a reload
       setPlayerUrl(playerUrl === '' ? undefined : '');
       blobAudioRef.current = undefined;
@@ -589,18 +616,29 @@ export function useWaveSurfer(
       // Create blob URL for wavesurfer
       blobUrl = URL.createObjectURL(blob);
       currentBlobUrlRef.current = blobUrl;
-      //setPlayerUrl(blobUrl); //this is slow
-      await wavesurferRef.current?.load(blobUrl); //this works and is the approved way
+      // revoke previous URL only after load succeeds; revoking early aborts
+      // in-flight wavesurfer fetch (BodyStreamBuffer aborted on overdub stop).
+      await wavesurferRef.current?.load(blobUrl);
       if (generation !== loadGenerationRef.current) {
         loadingRef.current = false;
         releaseLoadBlobUrl(blobUrl);
         return;
+      }
+      if (prevBlobUrl && prevBlobUrl !== blobUrl) {
+        URL.revokeObjectURL(prevBlobUrl);
       }
     } catch (error) {
       console.error('Error loading blob:', error);
       loadingRef.current = false;
       // Only revoke this load's URL; a concurrent stop load may own currentBlobUrlRef
       releaseLoadBlobUrl(blobUrl);
+      if (
+        generation !== loadGenerationRef.current &&
+        error instanceof DOMException &&
+        error.name === 'AbortError'
+      ) {
+        return;
+      }
       throw error;
     }
   };
@@ -817,8 +855,113 @@ export function useWaveSurfer(
   const setRecording = (value: boolean) => {
     recordingRef.current = value;
   };
+
+  /** Max-abs peaks (RECORD_PEAKS_PER_SECOND) for [startSec, endSec) of a decoded buffer. */
+  const computeBufferPeaks = (
+    buffer: AudioBuffer,
+    startSec: number,
+    endSec: number
+  ) => {
+    const seconds = Math.max(endSec - startSec, 0);
+    const bucketCount = Math.floor(seconds * RECORD_PEAKS_PER_SECOND);
+    const peaks = new Float32Array(bucketCount);
+    if (bucketCount === 0) return peaks;
+    const { sampleRate, numberOfChannels } = buffer;
+    const samplesPerBucket = sampleRate / RECORD_PEAKS_PER_SECOND;
+    const baseSample = Math.floor(startSec * sampleRate);
+    for (let ch = 0; ch < numberOfChannels; ch++) {
+      const data = buffer.getChannelData(ch);
+      for (let b = 0; b < bucketCount; b++) {
+        const from = baseSample + Math.floor(b * samplesPerBucket);
+        const to = Math.min(
+          baseSample + Math.floor((b + 1) * samplesPerBucket),
+          data.length
+        );
+        let peak = peaks[b];
+        for (let i = from; i < to; i++) {
+          const v = Math.abs(data[i]);
+          if (v > peak) peak = v;
+        }
+        peaks[b] = peak;
+      }
+    }
+    return peaks;
+  };
+
+  /** Precompute peaks around the insert point so live preview is array-splice cheap. */
+  const prepareRecordPeaks = (position: number) => {
+    const buffer = blobAudioRef.current;
+    if (!buffer || buffer.duration <= 0) {
+      recordPrePeaksRef.current = new Float32Array(0);
+      recordPostPeaksRef.current = new Float32Array(0);
+      recordPreSecondsRef.current = 0;
+      recordPostSecondsRef.current = 0;
+      return;
+    }
+    const pos = clamp(position, 0, buffer.duration);
+    recordPrePeaksRef.current = computeBufferPeaks(buffer, 0, pos);
+    recordPostPeaksRef.current = computeBufferPeaks(
+      buffer,
+      pos,
+      buffer.duration
+    );
+    recordPreSecondsRef.current = pos;
+    recordPostSecondsRef.current = buffer.duration - pos;
+  };
+
+  /**
+   * Render live recording peaks: pre + live + post via load('', [peaks], duration).
+   * No fetch/decode — constant cost per refresh (the record plugin's technique).
+   */
+  const wsRecordingPeaks = async (live: Float32Array, liveSeconds: number) => {
+    const ws = wavesurferRef.current;
+    if (!ws || !recordingRef.current || recordPeaksLoadRef.current) return;
+    const pre = recordPrePeaksRef.current;
+    const post = recordPostPeaksRef.current;
+    const combined = new Float32Array(pre.length + live.length + post.length);
+    combined.set(pre, 0);
+    combined.set(live, pre.length);
+    combined.set(post, pre.length + live.length);
+    const total =
+      recordPreSecondsRef.current + liveSeconds + recordPostSecondsRef.current;
+    const generation = loadGenerationRef.current;
+    peaksLoadGenerationRef.current = generation;
+    recordPeaksLoadRef.current = true;
+    try {
+      await ws.load('', [combined], total);
+      if (generation !== loadGenerationRef.current || !recordingRef.current) {
+        return;
+      }
+      setDuration(total);
+      // Keep the cursor at the record position (end of the live section).
+      ws.setTime(recordPreSecondsRef.current + liveSeconds);
+    } catch (error) {
+      // Preview only — losing one frame is harmless; next emit re-renders.
+      console.warn('recording peaks render failed', error);
+    } finally {
+      recordPeaksLoadRef.current = false;
+    }
+  };
+
   const wsStartRecord = () => {
     setUndoBuffer(copyOriginal());
+    prepareRecordPeaks(progressRef.current);
+    // Fully unload the media element before peaks preview loads. wavesurfer's
+    // setSrc('') revokes whatever blob: URL is current and removes the src
+    // attribute but never calls media.load(), so the element keeps using the
+    // now-revoked blob — every setTime seek then refetches it
+    // (net::ERR_FILE_NOT_FOUND spam). Unloading first means revokeSrc sees no
+    // blob (our URL stays valid for bookkeeping) and seeks touch no resource.
+    const media = wavesurferRef.current?.getMediaElement();
+    if (media) {
+      try {
+        media.pause();
+      } catch {
+        /* */
+      }
+      media.removeAttribute('src');
+      media.load();
+    }
     setRecording(true);
   };
   const wsStopRecord = () => {
@@ -827,6 +970,12 @@ export function useWaveSurfer(
     onCanUndo(true);
     setRecording(false);
     isReadyRef.current = false;
+    recordPeaksLoadRef.current = false;
+    peaksLoadGenerationRef.current = loadGenerationRef.current;
+    recordPrePeaksRef.current = new Float32Array(0);
+    recordPostPeaksRef.current = new Float32Array(0);
+    recordPreSecondsRef.current = 0;
+    recordPostSecondsRef.current = 0;
   };
 
   const wsUndo = async () => {
@@ -975,6 +1124,7 @@ export function useWaveSurfer(
     wsRemoveSplitRegion,
     wsStartRecord,
     wsStopRecord,
+    wsRecordingPeaks,
     wsAddMarkers,
     wsSetRegionColor,
     wsRemoveCurrentRegion,

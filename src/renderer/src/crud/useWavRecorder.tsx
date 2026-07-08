@@ -6,6 +6,10 @@ import { logError, Severity } from '../utils';
 import { createWavRecorder } from './WavRecorder';
 import { createAudioMediaRecorder } from './AudioMediaRecorder';
 import {
+  createRecordPeaksCapture,
+  RecordPeaksCapture,
+} from './recordPeaksCapture';
+import {
   getAudioTrackDiagnostics,
   getBlobDiagnostics,
   logAudioDiagnostic,
@@ -101,11 +105,14 @@ export function useWavRecorder(
   onDataAvailable: (blob: Blob) => Promise<void>,
   deviceId?: string,
   echoCancellation: boolean = false,
-  noiseSuppression: boolean = false
+  noiseSuppression: boolean = false,
+  /** Live waveform peaks (cheap render path) — see recordPeaksCapture.ts. */
+  onLivePeaks?: (peaks: Float32Array, seconds: number) => void
 ) {
   const recorderRef = useRef<APMRecorder | undefined>(undefined);
   const useFallbackRef = useRef<boolean | null>(null); // null = not checked yet
   const isRecordingRef = useRef(false);
+  const peaksCaptureRef = useRef<RecordPeaksCapture | undefined>(undefined);
   const recordingStartedAtRef = useRef<number | undefined>(undefined);
   const captureOptions = useMemo(
     () => buildCaptureConstraints(deviceId, echoCancellation, noiseSuppression),
@@ -120,6 +127,8 @@ export function useWavRecorder(
 
   useEffect(() => {
     return () => {
+      peaksCaptureRef.current?.stop();
+      peaksCaptureRef.current = undefined;
       mediaStreamRef.current?.getTracks().forEach((track) => {
         track.stop();
       });
@@ -323,6 +332,13 @@ export function useWavRecorder(
             : undefined,
         });
         isRecordingRef.current = true;
+        if (onLivePeaks && mediaStreamRef.current) {
+          peaksCaptureRef.current?.stop();
+          peaksCaptureRef.current = createRecordPeaksCapture(
+            mediaStreamRef.current,
+            onLivePeaks
+          );
+        }
         onStart();
         return true;
       } catch (error) {
@@ -336,6 +352,8 @@ export function useWavRecorder(
   }
 
   function stopRecording() {
+    peaksCaptureRef.current?.stop();
+    peaksCaptureRef.current = undefined;
     if (isRecordingRef.current && recorderRef.current) {
       recorderRef.current
         .stop()

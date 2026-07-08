@@ -10,12 +10,13 @@ type WsAudioPlayerProps = {
   setBlobReady?: (ready: boolean) => void;
   onBlobReady?: (blob: Blob | undefined) => void;
   isSaveDisabled?: boolean;
+  showWaveformSave?: boolean;
 };
 
 let latestWsProps: WsAudioPlayerProps | undefined;
 
 jest.mock('../utils/typeLimit', () => ({
-  typeLimit: () => 100,
+  typeLimit: () => 1,
 }));
 
 jest.mock('./WSAudioPlayer', () => {
@@ -43,8 +44,6 @@ jest.mock('../crud', () => ({
   }),
   useMediaUpload: () => jest.fn(),
   convertToFormat: jest.fn(),
-  getBlobDiagnostics: jest.fn(() => ({})),
-  logAudioDiagnostic: jest.fn(),
 }));
 
 jest.mock('../hoc/SnackBar', () => ({
@@ -94,6 +93,7 @@ jest.mock('react-redux', () => ({
         compressed: 'Compressed',
         uncompressed: 'Uncompressed',
         loading: 'Loading',
+        processing: 'Processing...',
         compressError: 'Compress error',
         toobig: 'Too big {1}',
         toobigwarn: 'Too big warn {1}',
@@ -175,6 +175,29 @@ describe('MediaRecord save gating', () => {
 
     await waitFor(() => {
       expect(latestWsProps?.isSaveDisabled).toBe(true);
+    });
+  });
+
+  it('shows save but does not enable upload when blob exceeds size limit', async () => {
+    const setCanSave = jest.fn();
+    const hugeBlob = new Blob([new Uint8Array(21 * 1000000)], {
+      type: 'audio/ogg',
+    });
+    render(<MediaRecord {...defaultProps} setCanSave={setCanSave} />);
+
+    await waitFor(() => expect(latestWsProps).toBeDefined());
+
+    act(() => {
+      latestWsProps?.setBlobReady?.(true);
+      latestWsProps?.setChanged?.(true);
+      latestWsProps?.onDuration?.(12);
+      latestWsProps?.onBlobReady?.(hugeBlob);
+    });
+
+    await waitFor(() => {
+      expect(latestWsProps?.showWaveformSave).toBe(true);
+      expect(latestWsProps?.isSaveDisabled).toBe(true);
+      expect(setCanSave).toHaveBeenLastCalledWith(false);
     });
   });
 });

@@ -109,7 +109,7 @@ export const useMediaUpload = ({
         )
       ).id;
     } else mediaIdRef.current = '';
-    const finishUpload = () => {
+    const finishUpload = async () => {
       dispatch(actions.uploadComplete() as any);
       const total = fileList.current?.length ?? 1;
       const ok = mediaIdRef.current ? 1 : 0;
@@ -118,7 +118,11 @@ export const useMediaUpload = ({
           .replace('{0}', String(ok))
           .replace('{1}', String(total))
       );
-      void afterUploadCb(mediaIdRef.current);
+      try {
+        await afterUploadCb(mediaIdRef.current);
+      } catch {
+        // Parent after-upload hook failed; upload itself is finished.
+      }
     };
     if (!getGlobal('offline') && mediaIdRef.current) {
       pullTableList(
@@ -128,87 +132,101 @@ export const useMediaUpload = ({
         remote,
         backup,
         reporter
-      ).then(finishUpload);
+      )
+        .then(finishUpload)
+        .catch(() => finishUpload());
     } else {
-      finishUpload();
+      await finishUpload();
     }
   };
 
-  return async (files: File[]) => {
-    const getPlanId = () =>
-      planId
-        ? remoteIdNum('plan', planId, memory?.keyMap as RecordKeyMap) || planId
-        : remoteIdNum(
-            'plan',
-            getGlobal('plan'),
-            memory?.keyMap as RecordKeyMap
-          ) || getGlobal('plan');
-    const getArtifactId = () =>
-      artifactId === null
-        ? null
-        : remoteIdNum(
-            'artifacttype',
-            artifactId,
-            memory?.keyMap as RecordKeyMap
-          ) || artifactId;
-    const getPassageId = () =>
-      passageId
-        ? remoteIdNum('passage', passageId, memory?.keyMap as RecordKeyMap) ||
-          passageId
-        : '';
-    const getUserId = () =>
-      remoteIdNum('user', user, memory?.keyMap as RecordKeyMap) || user;
-    const getSourceMediaId = () =>
-      remoteIdNum(
-        'mediafile',
-        sourceMediaId || '',
-        memory?.keyMap as RecordKeyMap
-      ) || sourceMediaId;
+  return (files: File[]) =>
+    new Promise<void>((resolve) => {
+      const uploadCompleteCb = (
+        n: number,
+        success: boolean,
+        data?: unknown
+      ) => {
+        void (async () => {
+          await itemComplete(n, success, data);
+          resolve();
+        })();
+      };
 
-    uploadFiles(files);
-    fileList.current = files;
+      const getPlanId = () =>
+        planId
+          ? remoteIdNum('plan', planId, memory?.keyMap as RecordKeyMap) ||
+            planId
+          : remoteIdNum(
+              'plan',
+              getGlobal('plan'),
+              memory?.keyMap as RecordKeyMap
+            ) || getGlobal('plan');
+      const getArtifactId = () =>
+        artifactId === null
+          ? null
+          : remoteIdNum(
+              'artifacttype',
+              artifactId,
+              memory?.keyMap as RecordKeyMap
+            ) || artifactId;
+      const getPassageId = () =>
+        passageId
+          ? remoteIdNum('passage', passageId, memory?.keyMap as RecordKeyMap) ||
+            passageId
+          : '';
+      const getUserId = () =>
+        remoteIdNum('user', user, memory?.keyMap as RecordKeyMap) || user;
+      const getSourceMediaId = () =>
+        remoteIdNum(
+          'mediafile',
+          sourceMediaId || '',
+          memory?.keyMap as RecordKeyMap
+        ) || sourceMediaId;
 
-    const mediafile = {
-      planId: getPlanId(),
-      versionNumber: 1,
-      originalFile: (files[0] as File).name,
-      contentType: getContentType(files[0]?.type, (files[0] as File).name),
-      artifactTypeId: getArtifactId(),
-      passageId: getPassageId(),
-      recordedbyUserId: getUserId(),
-      userId: getUserId(),
-      sourceMediaId: getSourceMediaId(),
-      sourceSegments: sourceSegments ?? '{}',
-      performedBy: performedBy ?? null,
-      topic: topic ?? '',
-      eafUrl: !artifactId
-        ? ts.mediaAttached
-        : localizedArtifactTypeFromId(artifactId), //put psc message here
-    } as MediaFileAttributes & {
-      planId: string;
-      artifactTypeId: string;
-      passageId: string;
-      recordedbyUserId: string;
-      userId: string;
-      sourceMediaId: string;
-    };
-    nextUpload({
-      record: mediafile,
-      files,
-      n: 0,
-      token: accessToken || '',
-      offline: getGlobal('offline'),
-      errorReporter: reporter,
-      uploadType: UploadType.Media,
-      cb: itemComplete,
-      pendingUploadIdToClearOnSuccess,
-      getImportExportBusy: () => Boolean(getGlobal('importexportBusy')),
-      onTerminalFailure: (info) => {
-        showMessage(
-          formatUploadTerminalFailureMessage(t, info),
-          AlertSeverity.Warning
-        );
-      },
+      uploadFiles(files);
+      fileList.current = files;
+
+      const mediafile = {
+        planId: getPlanId(),
+        versionNumber: 1,
+        originalFile: (files[0] as File).name,
+        contentType: getContentType(files[0]?.type, (files[0] as File).name),
+        artifactTypeId: getArtifactId(),
+        passageId: getPassageId(),
+        recordedbyUserId: getUserId(),
+        userId: getUserId(),
+        sourceMediaId: getSourceMediaId(),
+        sourceSegments: sourceSegments ?? '{}',
+        performedBy: performedBy ?? null,
+        topic: topic ?? '',
+        eafUrl: !artifactId
+          ? ts.mediaAttached
+          : localizedArtifactTypeFromId(artifactId), //put psc message here
+      } as MediaFileAttributes & {
+        planId: string;
+        artifactTypeId: string;
+        passageId: string;
+        recordedbyUserId: string;
+        userId: string;
+        sourceMediaId: string;
+      };
+      nextUpload({
+        record: mediafile,
+        files,
+        n: 0,
+        token: accessToken || '',
+        offline: getGlobal('offline'),
+        errorReporter: reporter,
+        uploadType: UploadType.Media,
+        cb: uploadCompleteCb,
+        pendingUploadIdToClearOnSuccess,
+        onTerminalFailure: (info) => {
+          showMessage(
+            formatUploadTerminalFailureMessage(t, info),
+            AlertSeverity.Warning
+          );
+        },
+      });
     });
-  };
 };

@@ -399,6 +399,7 @@ export function PassageDetailRecord(props: IProps) {
         passageId={passageId}
         performedBy={speaker}
         onSpeakerChange={handleNameChange}
+        skipImportExportWait
       />
       <AudacityManager
         item={1}

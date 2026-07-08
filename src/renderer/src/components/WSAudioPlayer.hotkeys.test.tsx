@@ -38,6 +38,7 @@ const waveSurferMock = {
   wsSetHeight: jest.fn(),
   wsStartRecord: jest.fn(),
   wsStopRecord: jest.fn(),
+  wsRecordingPeaks: jest.fn(async () => undefined),
   wsAddMarkers: jest.fn(),
   applyRegionColors: jest.fn(),
 };

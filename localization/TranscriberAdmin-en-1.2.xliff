@@ -6893,6 +6893,13 @@
                <context context-type="sourcefile">passageRecord.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="passageRecord.processing">
+            <source>Processing...</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">MediaRecord.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="passageRecord.save">
             <source>Save</source>
             <target/>

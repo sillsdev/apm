@@ -24,8 +24,6 @@ import {
   useFetchMediaUrl,
   useMediaUpload,
   convertToFormat,
-  getBlobDiagnostics,
-  logAudioDiagnostic,
 } from '../crud';
 import { useSnackBar } from '../hoc/SnackBar';
 import { UnsavedContext } from '../context/UnsavedContext';
@@ -169,6 +167,8 @@ function MediaRecord(props: IProps) {
   );
   const t: IPassageRecordStrings = useSelector(passageRecordSelector);
   const WARNINGLIMIT = 1;
+  /** Recorded WAV bytes/sec: mono 16-bit @ 48kHz (WavRecorder's preferred rate). */
+  const RECORD_WAV_BYTES_PER_SECOND = 96000;
   const [reporter] = useGlobal('errorReporter');
   const { fetchMediaUrl, mediaState } = useFetchMediaUrl(reporter);
   const mediaStateRef = useRef(mediaState);
@@ -203,7 +203,11 @@ function MediaRecord(props: IProps) {
   );
   const [warning, setWarning] = useState('');
   const [waveformDuration, setWaveformDuration] = useState(0);
-  const [waveformNeedsSave, setWaveformNeedsSave] = useState(false);
+  /** Sticky flag: once edits exist, keep Save visible through transient duration/filechanged blips. */
+  const [pendingSave, setPendingSavex] = useState(false);
+  const pendingSaveRef = useRef(false);
+  const [processingRecording, setProcessingRecordingx] = useState(false);
+  const processingRecordingRef = useRef(false);
   const [tooBig, setTooBig] = useState(false);
   const { showMessage } = useSnackBar();
   const [converting, setConverting] = useState(false);
@@ -241,10 +245,30 @@ function MediaRecord(props: IProps) {
     filechangedRef.current = value;
   };
 
+  const setPendingSave = (value: boolean) => {
+    if (value !== pendingSaveRef.current) {
+      setPendingSavex(value);
+      pendingSaveRef.current = value;
+    }
+  };
+
+  const setProcessingRecording = (value: boolean) => {
+    setProcessingRecordingx(value);
+    processingRecordingRef.current = value;
+  };
+
   const handleWaveformDuration = useCallback(
     (duration: number) => {
-      setWaveformDuration(duration);
-      onDuration?.(duration);
+      setWaveformDuration((prev) => {
+        // Only ignore a spurious zero while finalizing a recording stop (peaks race).
+        if (duration <= 0 && processingRecordingRef.current) {
+          return prev;
+        }
+        return duration;
+      });
+      if (duration > 0 || !processingRecordingRef.current) {
+        onDuration?.(duration);
+      }
     },
     [onDuration]
   );
@@ -257,19 +281,25 @@ function MediaRecord(props: IProps) {
   }, [allowWave, mimeType, t.compressed, t.uncompressed]);
 
   const myAfterUploadCb = async (mediaId: string) => {
-    setUploading(false);
-    if (filechangedRef.current && mediaId) setFilechanged(false);
-    if (!mediaId) {
-      showMessage(ts.NoSaveWoMedia);
-      setStatusText(ts.NoSaveWoMedia);
-      saveCompleted(toolId, ts.NoSaveWoMedia);
-    } else {
-      // Restore compressed status message if applicable
-      setStatusText(getCompressedStatusMessage());
-      saveCompleted(toolId);
+    try {
+      setUploading(false);
+      setPendingSave(false);
+      if (filechangedRef.current && mediaId) setFilechanged(false);
+      if (!mediaId) {
+        showMessage(ts.NoSaveWoMedia);
+        setStatusText(ts.NoSaveWoMedia);
+        saveCompleted(toolId, ts.NoSaveWoMedia);
+      } else {
+        setStatusText(getCompressedStatusMessage());
+        saveCompleted(toolId);
+      }
+      saveRef.current = false;
+      await afterUploadCb(mediaId);
+    } finally {
+      setConverting(false);
+      setLoading(false);
+      onReady?.();
     }
-    afterUploadCb(mediaId);
-    saveRef.current = false;
   };
 
   const uploadMedia = useMediaUpload({
@@ -329,32 +359,78 @@ function MediaRecord(props: IProps) {
   }, [mimeType, extensions, mimes]);
 
   useEffect(() => {
-    const needsSave =
-      blobReady &&
-      !tooBig &&
-      filechanged &&
+    if (!recording && filechanged) {
+      setPendingSave(true);
+    }
+  }, [recording, filechanged]);
+
+  const wantsSaveVisible = useMemo(
+    () =>
       waveformDuration > 0 &&
       !converting &&
       !uploading &&
       !recording &&
-      !saveRef.current;
+      (pendingSave || filechanged),
+    [
+      filechanged,
+      waveformDuration,
+      converting,
+      uploading,
+      recording,
+      pendingSave,
+    ]
+  );
+
+  const showProcessingRecordingMessage = useMemo(
+    () =>
+      !recording &&
+      !converting &&
+      !uploading &&
+      (processingRecording ||
+        (wantsSaveVisible && !blobReady && waveformDuration > 0)),
+    [
+      recording,
+      converting,
+      uploading,
+      processingRecording,
+      wantsSaveVisible,
+      blobReady,
+      waveformDuration,
+    ]
+  );
+
+  useEffect(() => {
+    const wantsSave = wantsSaveVisible && !saveRef.current;
+    const needsSave = wantsSave && blobReady && waveformDuration > 0 && !tooBig;
     setCanSave(needsSave);
-    setWaveformNeedsSave(needsSave);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
+    wantsSaveVisible,
     blobReady,
+    processingRecording,
     tooBig,
-    filechanged,
-    waveformDuration,
     converting,
     uploading,
     recording,
     toolsChanged,
+    waveformDuration,
   ]);
 
   useEffect(() => {
     if (setCanCancel) setCanCancel(!converting && !uploading);
   }, [converting, uploading, setCanCancel]);
+
+  // While recording, audioBlob is the previous take (it only refreshes after
+  // stop via onBlobReady). Estimate the eventual WAV size from the live
+  // duration instead so the size warning shows before a long take is wasted;
+  // the exact blob size takes over once recording stops.
+  const effectiveAudioBytes = useMemo(
+    () =>
+      recording
+        ? Math.round(waveformDuration * RECORD_WAV_BYTES_PER_SECOND)
+        : (audioBlob?.size ?? 0),
+    [recording, waveformDuration, audioBlob, RECORD_WAV_BYTES_PER_SECOND]
+  );
 
   const { isMobile: isMobileView } = useMobile();
   const effectiveMobileView = Boolean(forceMobileView) || isMobileView;
@@ -362,20 +438,6 @@ function MediaRecord(props: IProps) {
   const doUpload = useCallback(
     async (blob: Blob, mimeType: string, filetype: string) => {
       setUploading(true);
-      setStatusText(t.saving);
-      logAudioDiagnostic('media-record-upload-prep', {
-        blob: getBlobDiagnostics(blob),
-        upload: {
-          mimeType,
-          filetype,
-          filename: defaultFilename + '.' + filetype,
-        },
-        mediaRecord: {
-          isMobileView,
-          forceMobileView,
-          effectiveMobileView,
-        },
-      });
       const files = [
         new File([blob], defaultFilename + '.' + filetype, {
           type: mimeType,
@@ -383,20 +445,12 @@ function MediaRecord(props: IProps) {
       ];
       await uploadMedia(files);
     },
-    [
-      setStatusText,
-      t.saving,
-      defaultFilename,
-      uploadMedia,
-      isMobileView,
-      forceMobileView,
-      effectiveMobileView,
-    ]
+    [defaultFilename, uploadMedia]
   );
 
   const convertComplete = () => {
     setConverting(false);
-    if (onReady) onReady();
+    onReady?.();
   };
 
   const handleSaveFailed = useCallback(
@@ -404,6 +458,7 @@ function MediaRecord(props: IProps) {
       saveRef.current = false;
       setUploading(false);
       setConverting(false);
+      setLoading(false);
       const message =
         error instanceof Error ? error.message : String(error ?? 'Save failed');
       saveCompleted(toolId, message);
@@ -413,9 +468,9 @@ function MediaRecord(props: IProps) {
   );
   useEffect(() => {
     const limit = sizeLimit * compression;
-    const big = (audioBlob?.size ?? 0) > limit * 1000000;
+    const big = effectiveAudioBytes > limit * 1000000;
     setTooBig(big);
-    if (audioBlob && audioBlob.size > (limit - WARNINGLIMIT) * 1000000)
+    if (effectiveAudioBytes > (limit - WARNINGLIMIT) * 1000000)
       setWarning(
         (big ? t.toobig : t.toobigwarn).replace('{1}', limit.toString())
       );
@@ -426,21 +481,7 @@ function MediaRecord(props: IProps) {
         if (audioBlob && waveformDuration > 0) {
           onSaving && onSaving();
           saveRef.current = true;
-          logAudioDiagnostic('media-record-save-requested', {
-            blob: getBlobDiagnostics(audioBlob),
-            save: {
-              mimeType,
-              filetype,
-              compression,
-              converting: mimeType !== 'audio/wav',
-              saveAsWav: mimeType === 'audio/wav',
-            },
-            mediaRecord: {
-              isMobileView,
-              forceMobileView,
-              effectiveMobileView,
-            },
-          });
+          setLoading(true);
           if (mimeType !== 'audio/wav') {
             // Convert to target format
             setStatusText(t.compressing);
@@ -461,16 +502,12 @@ function MediaRecord(props: IProps) {
                 showMessage(errorMessage);
                 setConverting(false);
                 doUpload(audioBlob, 'audio/wav', 'wav')
-                  .then(() => {
-                    onReady && onReady();
-                  })
+                  .then(() => onReady?.())
                   .catch(handleSaveFailed);
               });
           } else {
             doUpload(audioBlob, mimeType, filetype)
-              .then(() => {
-                onReady && onReady();
-              })
+              .then(() => onReady?.())
               .catch(handleSaveFailed);
           }
           return;
@@ -490,7 +527,7 @@ function MediaRecord(props: IProps) {
     }
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [audioBlob, toolsChanged, mimeType, toolId]);
+  }, [audioBlob, effectiveAudioBytes, toolsChanged, mimeType, toolId]);
 
   const setExtension = (mimeType: string) => {
     if (mimeType) {
@@ -516,11 +553,20 @@ function MediaRecord(props: IProps) {
 
   const reset = () => {
     setFilechanged(false);
+    setPendingSave(false);
     setWaveformDuration(0);
+    setProcessingRecording(false);
     setOriginalBlob(undefined);
     setAudioBlob(undefined);
     clearCompleted(toolId);
   };
+
+  const handleRecordingCleared = useCallback(() => {
+    setPendingSave(false);
+    setBlobReady(true);
+    setProcessingRecording(false);
+    onRecordingCleared?.();
+  }, [onRecordingCleared]);
 
   const gotTheBlob = (b: Blob) => {
     setOriginalBlob(b);
@@ -575,8 +621,7 @@ function MediaRecord(props: IProps) {
       return mediaStateRef.current.url;
     return '';
   };
-  const handleLoadAudio = async (silent: boolean = false) => {
-    if (!silent) showMessage(t.loading);
+  const handleLoadAudio = async () => {
     if (loading || !mediaId) return;
     setLoading(true);
     reset();
@@ -602,7 +647,7 @@ function MediaRecord(props: IProps) {
 
   useEffect(() => {
     if ((preload ?? 0) > 0 && !loading) {
-      handleLoadAudio(true);
+      handleLoadAudio();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [preload]);
@@ -612,8 +657,9 @@ function MediaRecord(props: IProps) {
       reset();
       return;
     }
+    // Skip while saving — mediaId may update when the new mediafile syncs in.
     if (!loading) {
-      handleLoadAudio(true);
+      handleLoadAudio();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mediaId]);
@@ -634,6 +680,7 @@ function MediaRecord(props: IProps) {
         blob={originalBlob}
         onBlobReady={onBlobReady}
         setChanged={setFilechanged}
+        onProcessingRecordingChange={setProcessingRecording}
         setBlobReady={setBlobReady}
         onRecording={myOnRecording}
         onPlayStatus={onPlayStatus}
@@ -661,18 +708,30 @@ function MediaRecord(props: IProps) {
         forceMobileView={forceMobileView}
         handleSave={handleSave}
         onVersions={onVersions}
-        isSaveDisabled={Boolean(isSaveDisabled) || waveformDuration <= 0}
+        isSaveDisabled={
+          Boolean(isSaveDisabled) ||
+          waveformDuration <= 0 ||
+          processingRecording ||
+          tooBig ||
+          (wantsSaveVisible && !blobReady)
+        }
         mediaSaveInProgress={mediaSaveInProgress}
-        showWaveformSave={waveformNeedsSave}
+        showWaveformSave={wantsSaveVisible}
         dockRecordButton={dockRecordButton}
         onDockedRecordButton={onDockedRecordButton}
         showDockedRecordButton={showDockedRecordButton}
-        onRecordingCleared={onRecordingCleared}
+        onRecordingCleared={handleRecordingCleared}
       />
-      {warning && !effectiveMobileView && (
-        <Typography sx={{ m: 2, color: 'warning.dark' }} id="warning">
-          {warning}
+      {showProcessingRecordingMessage ? (
+        <Typography sx={{ m: 2, color: 'text.secondary' }} id="warning">
+          {t.processing}
         </Typography>
+      ) : (
+        warning && (
+          <Typography sx={{ m: 2, color: 'warning.dark' }} id="warning">
+            {warning}
+          </Typography>
+        )
       )}
       {(showSize || metaData) && !effectiveMobileView && (
         <Stack
@@ -681,7 +740,7 @@ function MediaRecord(props: IProps) {
         >
           {showSize && (
             <Typography sx={{ mr: 3 }} id="size">
-              {`${((audioBlob?.size ?? 0) / 1000000 / compression).toFixed(2)}MB`}
+              {`${(effectiveAudioBytes / 1000000 / compression).toFixed(2)}MB`}
             </Typography>
           )}
           {metaData}
