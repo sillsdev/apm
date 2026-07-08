@@ -13,9 +13,7 @@ describe('fillPeaks', () => {
     const initial = new Float32Array([0.1, 0.2]);
     const { peaks, count } = fillPeaks(initial, 2, 2, 0.9);
     expect(count).toBe(2);
-    expect(Array.from(peaks)).toEqual(
-      Array.from(new Float32Array([0.1, 0.2]))
-    );
+    expect(Array.from(peaks)).toEqual(Array.from(new Float32Array([0.1, 0.2])));
   });
 
   it('doubles capacity while preserving existing peaks', () => {
@@ -29,18 +27,19 @@ describe('fillPeaks', () => {
   });
 
   it('grows across multiple doublings (long recording)', () => {
-    let state = { peaks: new Float32Array(4), count: 0 };
+    let peaks: Float32Array = new Float32Array(4);
+    let count = 0;
     // Simulate 10 minutes of recording in 1-second steps
     for (let sec = 1; sec <= 600; sec++) {
-      state = fillPeaks(
-        state.peaks,
-        state.count,
+      ({ peaks, count } = fillPeaks(
+        peaks,
+        count,
         sec * RECORD_PEAKS_PER_SECOND,
         0.3
-      );
+      ));
     }
-    expect(state.count).toBe(600 * RECORD_PEAKS_PER_SECOND);
-    expect(state.peaks.length).toBeGreaterThanOrEqual(state.count);
-    expect(state.peaks[state.count - 1]).toBeCloseTo(0.3);
+    expect(count).toBe(600 * RECORD_PEAKS_PER_SECOND);
+    expect(peaks.length).toBeGreaterThanOrEqual(count);
+    expect(peaks[count - 1]).toBeCloseTo(0.3);
   });
 });
