@@ -217,6 +217,7 @@ const initialState = {
 			"bibleIdExplain": "Explain Bible Id",
 			"biblename": "Name of Bible",
 			"bold": "BOLD (Basic Oral Language Documentation)",
+			"boldProcessInfo": "Setting Step Progression and AI Automatic Transcription.",
 			"cancel": "Cancel",
 			"closeNoSave": "Close without Saving?",
 			"convertPrompt": "Enter the name of the organization that will hold the rights for recordings of the converted voices.",

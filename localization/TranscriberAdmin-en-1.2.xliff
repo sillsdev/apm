@@ -1185,6 +1185,13 @@
                <context context-type="sourcefile">TeamDialog.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="cards.boldProcessInfo">
+            <source>Setting Step Progression and AI Automatic Transcription.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">CommentCard.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="cards.cancel">
             <source>Cancel</source>
             <target/>

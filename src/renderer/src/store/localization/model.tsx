@@ -201,6 +201,7 @@ export interface ICardsStrings extends Localize.LocalizedStringsMethods {
     "bibleIdExplain": string;
     "biblename": string;
     "bold": string;
+    "boldProcessInfo": string;
     "cancel": string;
     "closeNoSave": string;
     "convertPrompt": string;
