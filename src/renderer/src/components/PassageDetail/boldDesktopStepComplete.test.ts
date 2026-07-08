@@ -1,4 +1,5 @@
 import { ToolSlug } from '../../crud/toolSlug';
+import { ArtifactTypeSlug } from '../../crud/artifactTypeSlug';
 import {
   boldDesktopStepCompleteTools,
   showsBoldDesktopStepComplete,
@@ -19,5 +20,35 @@ describe('boldDesktopStepComplete', () => {
     expect(showsBoldDesktopStepComplete(ToolSlug.Record)).toBe(true);
     expect(showsBoldDesktopStepComplete(ToolSlug.CarefulSpeech)).toBe(true);
     expect(showsBoldDesktopStepComplete(ToolSlug.Verses)).toBe(false);
+  });
+
+  it('returns true for BOLD LWC Transcription', () => {
+    expect(
+      showsBoldDesktopStepComplete(
+        ToolSlug.Transcribe,
+        true,
+        ArtifactTypeSlug.PhraseBackTranslation
+      )
+    ).toBe(true);
+  });
+
+  it('returns true for BOLD Careful Transcription', () => {
+    expect(
+      showsBoldDesktopStepComplete(
+        ToolSlug.Transcribe,
+        true,
+        ArtifactTypeSlug.CarefulSpeech
+      )
+    ).toBe(true);
+  });
+
+  it('returns false for non-BOLD transcribe', () => {
+    expect(
+      showsBoldDesktopStepComplete(
+        ToolSlug.Transcribe,
+        false,
+        ArtifactTypeSlug.PhraseBackTranslation
+      )
+    ).toBe(false);
   });
 });

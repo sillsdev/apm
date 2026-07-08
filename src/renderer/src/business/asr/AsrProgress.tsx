@@ -233,11 +233,24 @@ export default function AsrProgress({
   }, []);
 
   return (
-    <Box sx={{ width: '100%' }}>
-      <Stack spacing={1}>
+    <Box
+      sx={{
+        width: '100%',
+        maxWidth: '100%',
+        minWidth: 0,
+        boxSizing: 'border-box',
+      }}
+    >
+      <Stack spacing={1} sx={{ width: '100%', maxWidth: '100%', minWidth: 0 }}>
         <LinearProgress />
-        {working && (
-          <Typography>
+        {(working || Boolean(taskId)) && (
+          <Typography
+            sx={{
+              whiteSpace: 'normal',
+              wordBreak: 'break-word',
+              overflowWrap: 'break-word',
+            }}
+          >
             {t.aiWillContinue.replace(/\{0\}/g, tc.recognizeSpeech)}
           </Typography>
         )}

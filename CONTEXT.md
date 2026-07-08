@@ -109,7 +109,7 @@ A **BOLD-only** workflow step — the name **Careful Speech** appears only in BO
 _Avoid_: Record step; vernacular versioning; LWC Translation; using the name Careful Speech outside BOLD; treating the output as **PBT** or a new vernacular version; requiring a separate manual "done" action once all clauses are recorded; keeping the step marked complete while a clause lacks a recording
 
 **Clause**:
-In BOLD phrase-level steps (Careful Speech, LWC Translation), a numbered unit aligned across the workflow — one time range on the **source recording**, one **Careful Speech artifact**, and (after LWC Translation) one **LWC translation recording**. **Clause boundaries** (the time ranges) are defined once on the source recording and shared across these steps. User-facing label in clause navigation (e.g. "Clause 3/7").
+In BOLD phrase-level steps (Careful Speech, LWC Translation, LWC Transcription), a numbered unit aligned across the workflow — one time range on the **source recording**, one **Careful Speech artifact**, one **LWC translation recording**, and (after LWC Transcription) one **transcription** on that LWC translation recording. **Clause boundaries** (the time ranges) are defined once on the source recording and shared across these steps. User-facing label in clause navigation (e.g. "Clause 3/7").
 _Avoid_: Segment (in BOLD UI when "Clause" is shown); Passage; PBT phrase; separate boundary copies per step or per artifact
 
 **Clause boundaries**:
@@ -188,9 +188,41 @@ _Avoid_: Workflow Navigation; Assignments tab
 The BCP-47 language for the **LWC Translation** step, set in **StepEditor** via the Language Picker when the team configures the BOLD workflow. Not entered during recording in the LWC Translation step itself. Required so downstream **LWC Transcription** can run ASR auto-transcription against the correct language.
 _Avoid_: Vernacular language; per-recording language entry; choosing language in the recorder UI
 
+**ASR lock** (LWC Transcription):
+While **Auto Translation** is running on the current clause, navigation is blocked — left/right clause arrows, **Next Clause**, other workflow steps, and leaving the project or passage. Mirrors **recording lock** (LWC Translation).
+_Avoid_: Allowing clause or workflow navigation mid-ASR
+
+**Navigation save flush** (LWC Transcription):
+When the user changes clause (arrows or **Next Clause**) while **transcription** text has unsaved edits, flush the pending debounced **transcription save** before switching clauses. No navigation lock for typing alone — only during ASR.
+_Avoid_: Fire-and-forget save on navigate; blocking navigation while text is dirty but not yet debounce-saved
+
+**Step complete control** (LWC Transcription):
+On BOLD **desktop**, show `PassageDetailStepComplete` in the header (same as Careful Speech and LWC Translation) — gated by `isBoldWorkflow` + `Transcribe` tool + PBT artifact, not all Transcribe steps globally. Checkbox syncs with auto-complete when every clause is transcribed; manual toggle remains available. Hidden on mobile — completion is automatic there.
+_Avoid_: Adding bare `Transcribe` to all workflows' step-complete UI; legacy Transcriber Complete button in the clause editor; manual-only completion without auto-sync
+
+**Clear transcription** (LWC Transcription):
+To re-run **Auto Translation** or mark a clause incomplete, the user clears **transcription** text in the editor (e.g. select all and delete). Debounced **transcription save** persists the empty string, re-enables Auto Translation, and marks the clause and step incomplete again. No dedicated clear/trash control in v1.
+_Avoid_: Clear button with confirm; dedicated trash control; blocking manual delete in the textarea
+
+**Auto Translation** (LWC Transcription):
+A one-tap control that runs ASR on the current clause's **LWC translation recording** and drafts **transcription** text into the editor. ASR language is resolved automatically from **LWC language** on the upstream **LWC Translation** step — no language picker in this step. If the script requires a sister language for ASR, the existing sister-language prompt appears only when needed. The button is disabled with a clear message when LWC language is not configured. **Disabled** when the current clause already has non-empty **transcription** text — the user must clear the text before running Auto Translation again. Saved ASR output counts as a completed clause transcription (user may edit afterward).
+_Avoid_: Auto Transcription (user-facing copy when Auto Translation is established); language picker in the transcription step; manual-only v1; requiring separate confirmation after ASR before the clause counts as transcribed; overwriting existing transcription without clearing first
+
+**Transcription editor** (LWC Transcription):
+A minimal per-clause editor — audio player, clause navigation, progress ring, plain **transcription** textarea (project font and RTL when configured), **Auto Translation**, debounced **transcription save**, and **Next Clause**. No TaskList, transcriber/editor roles, Reject/Approve, explicit Complete button, passage history panel, or legacy Transcriber chrome. Workflow step completion uses the BOLD auto-complete pattern.
+_Avoid_: Full `Transcriber.tsx` UI per clause; TaskList; editor checking step in this view; transcriptionstate reject/approve in v1
+
+**Transcription save** (LWC Transcription):
+**Transcription** text auto-saves to the clause's LWC translation recording (`mediafile.attributes.transcription`) as the user types — debounced, and on blur or clause navigation. No explicit Save button. An empty saved string marks the clause untranscribed and the step incomplete again.
+_Avoid_: Explicit Save button; save-only-on-Next-Clause; 30-second-only autosave without debounced typing saves
+
+**Playback on entry** (LWC Transcription):
+When the user lands on an **untranscribed** clause (including first entry at the first incomplete clause), the **LWC translation recording** auto-plays. Visiting a clause that already has a **transcription** does not auto-play — review/edit mode loads the saved text without forced replay. Typing and **Auto Translation** are not blocked if the user has not listened. When every clause is transcribed, re-entry opens in **review mode** on clause 1.
+_Avoid_: Auto-play on every visit including review; never auto-playing; requiring listen-before-type gate; opening on last clause when all complete
+
 **LWC Transcription** (step):
-A BOLD workflow step after **LWC Translation** where the user transcribes each **LWC translation recording**. Includes an Auto Translation control that uses ASR (AI) to draft transcriptions, which depends on **LWC language** from the LWC Translation step settings.
-_Avoid_: Careful Transcription; LWC Translation; manual-only transcription without ASR option
+A BOLD workflow step after **LWC Translation** where the user transcribes each **LWC translation recording**. Includes **Auto Translation** for ASR drafting. Requires every clause to have an **LWC translation recording** before the step is available — partial LWC Translation completion is not supported. Shows a prerequisite message (e.g. "Complete LWC Translation first") when upstream work is incomplete. On entry, the step advances to the first clause missing its transcription. The step is **complete** when every clause has a saved, non-empty **transcription** on its LWC translation recording — workflow navigation marks the step complete automatically; no separate manual "done" action. ASR output from Auto Translation counts once saved. Clearing a clause's transcription marks the step **incomplete** again until that clause is re-transcribed. Mobile-first layout with desktop parity — same simplified clause-by-clause UX on both form factors, not the legacy desktop Transcriber grid (`PassageDetailTranscribe`).
+_Avoid_: Careful Transcription; LWC Translation; manual-only transcription without ASR option; legacy Transcriber grid on desktop for BOLD; starting LWC Transcription while LWC Translation is incomplete; requiring explicit ASR confirmation before a clause counts as transcribed; manual step-complete button
 
 **LWC Translation** (step):
 The BOLD user-facing step where the user listens to each **Careful Speech recording** (one per **clause**) and records an **LWC translation recording**. Single-phase flow — no listen pass, because clause boundaries were already set in **Careful Speech** and cannot be changed here. On entry, the step advances to the first clause missing its LWC translation. Requires every clause to have a **Careful Speech recording** before the step is available — partial Careful Speech completion is not supported for now (open product question: noise-only or wordless clauses). The step is **complete** when every clause has an **LWC translation recording**. Mobile-first layout with desktop parity — same simplified clause-by-clause UX on both form factors, not the legacy desktop phrase-back-translate grid.
@@ -199,6 +231,10 @@ _Avoid_: Phrase Back Translate (in BOLD UI copy); Careful Speech step; non-BOLD 
 **Reference audio** (LWC Translation):
 The **Careful Speech recording** for the current clause, played in the top player before the user records the LWC translation. The top player shows one recording at a time — not a segmented waveform. Clauses are presented in the same order they were recorded in **Careful Speech** (clause 1, then 2, …).
 _Avoid_: Source recording; Vernacular; multi-clause waveform with regions
+
+**Reference audio** (LWC Transcription):
+The **LWC translation recording** for the current clause, played in the top player while the user transcribes it. The top player shows one recording at a time — not a segmented waveform. Clauses are presented in the same order as upstream BOLD phrase steps (clause 1, then 2, …).
+_Avoid_: Careful Speech recording; Source recording; Vernacular; multi-clause waveform with regions
 
 **LWC Translation Recording**:
 The audio the user records in the **LWC Translation** step for one clause — spoken in LWC, linked to the corresponding **Careful Speech recording** and clause index. Stored as a PBT artifact; not a new vernacular version. Saves immediately when the user stops recording — no separate Save action.
@@ -216,17 +252,29 @@ _Avoid_: Speaker (Careful Speech); per-phrase speaker; requiring a name before R
 Left and right arrows below the top player flanking the current clause index (e.g. "Clause 1/7"). The **right arrow** advances to the next clause in sequence and may show an existing **LWC translation recording** if that clause is already recorded. The **right arrow** is disabled on the last clause; it highlights once the **current** clause has a recording. The **left arrow** goes to the prior clause and is disabled on the first clause. Distinct from **Next Clause** (LWC Translation).
 _Avoid_: Next Clause (LWC Translation); skipping sequence order; requiring the current clause to be recorded before the right arrow enables
 
+**Clause navigation** (LWC Transcription):
+Left and right arrows below the top player flanking the current clause index (e.g. "Clause 1/7"). The **right arrow** advances to the next clause in sequence and loads that clause's existing **transcription** if present. The **right arrow** is disabled on the last clause; it highlights once the **current** clause has a saved transcription. The **left arrow** goes to the prior clause and is disabled on the first clause. Users may browse clauses freely — no lock. Distinct from **Next Clause** (LWC Transcription).
+_Avoid_: Next Clause (LWC Transcription); requiring the current clause to be transcribed before the right arrow enables; recording lock
+
 **Next Clause** (LWC Translation):
 A button below the recorder that advances to the **first unrecorded** clause. Hidden until the user stops recording; disabled when every clause has an **LWC translation recording**. Unlike the right arrow, it does not visit already-recorded clauses in sequence — it jumps ahead to the next work remaining.
 _Avoid_: Next Clause (Careful Speech recording pass); the right arrow; Next workflow step; showing the button while recording is active
+
+**Next Clause** (LWC Transcription):
+A button below the transcription field that advances to the **first untranscribed** clause. Shown when the **current** clause has a saved transcription; hidden when every clause is transcribed. Unlike the right arrow, it does not visit already-transcribed clauses in sequence — it jumps ahead to the next work remaining.
+_Avoid_: Next Clause (LWC Translation); Next Clause (Careful Speech); the right arrow; Next workflow step
+
+**Step progress indicator** (LWC Transcription):
+A circular indicator in the **clause navigation** row (after the chevrons, with a `completed/total` count inside the ring) showing how many clauses have a saved **transcription** out of the total clause count. Same placement as **LWC Translation** (v1); player-row placement is a possible future polish for both steps.
+_Avoid_: Workflow step completion badge; LWC Translation recording progress; a different layout than LWC Translation without intentional reason
 
 **Recording lock** (LWC Translation):
 While the bottom recorder is actively capturing audio, all navigation is blocked — left/right clause arrows, **Next Clause**, other workflow steps, and leaving the project or passage. The **Next Clause** button is not shown until recording stops.
 _Avoid_: Allowing clause or workflow navigation mid-recording; showing Next Clause during capture
 
 **Step progress indicator** (LWC Translation):
-A circular indicator at the end of the top player row showing how many clauses have an **LWC translation recording** out of the total clause count.
-_Avoid_: Workflow step completion badge; Careful Speech listen-pass progress
+A circular indicator in the **clause navigation** row (after the chevrons, with a `completed/total` count inside the ring) showing how many clauses have an **LWC translation recording** out of the total clause count.
+_Avoid_: Workflow step completion badge; Careful Speech listen-pass progress; duplicating the indicator on the player row in v1
 
 **Recording gate** (LWC Translation):
 The listen-before-record requirement applies only when the user must **make** a new **LWC translation recording** — an unrecorded clause, or a clause whose recording was cleared. The bottom recorder appears after the user has played the current clause's **Careful Speech recording** through to the end. On arrival at an unrecorded clause, **reference audio** auto-plays. Navigating to a clause that already has a recording skips the gate: the saved recording is shown immediately (playable, deletable) and reference audio does not auto-play. Clearing with the trash control returns to the gated state — reference audio auto-plays and the user must listen through before recording.

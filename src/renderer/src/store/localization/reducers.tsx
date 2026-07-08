@@ -375,6 +375,16 @@ const initialState = {
 			"undo": "Undo",
 		}
 	}),
+	"carefulTranscription": new LocalizedStrings({
+		"en": {
+			"clauseIndex": "Clause {0}/{1}",
+			"nextClause": "Next Clause",
+			"noClauses": "No clause segments found. Complete the Careful Speech step first.",
+			"noRecordingLanguage": "Language is not configured for automatic transcription.",
+			"prerequisite": "Complete Careful Speech for every clause before starting Careful transcription.",
+			"progress": "{0} of {1} clauses transcribed",
+		}
+	}),
 	"lwcTranslation": new LocalizedStrings({
 		"en": {
 			"boldOnly": "LWC Translation is only available for BOLD workflow teams.",
@@ -382,6 +392,16 @@ const initialState = {
 			"noClauses": "No clause segments found. Complete the Careful Speech step first.",
 			"prerequisite": "Complete Careful Speech for every clause before starting LWC translation.",
 			"progress": "{0} of {1} clauses recorded",
+		}
+	}),
+	"lwcTranscription": new LocalizedStrings({
+		"en": {
+			"clauseIndex": "Clause {0}/{1}",
+			"nextClause": "Next Clause",
+			"noClauses": "No clause segments found. Complete the Careful Speech step first.",
+			"noLwcLanguage": "LWC language is not configured on the LWC Translation step.",
+			"prerequisite": "Complete LWC Translation for every clause before starting LWC transcription.",
+			"progress": "{0} of {1} clauses transcribed",
 		}
 	}),
 	"consultantCheck": new LocalizedStrings({
@@ -2290,7 +2310,9 @@ const localizationReducer = function (state = initialState, action: any): ILocal
 				"commentEditor" : new LocalizedStrings(action.payload.data.commentEditor),
 				"community" : new LocalizedStrings(action.payload.data.community),
 				"carefulSpeech" : new LocalizedStrings(action.payload.data.carefulSpeech),
+				"carefulTranscription" : new LocalizedStrings(action.payload.data.carefulTranscription),
 				"lwcTranslation" : new LocalizedStrings(action.payload.data.lwcTranslation),
+				"lwcTranscription" : new LocalizedStrings(action.payload.data.lwcTranscription),
 				"consultantCheck" : new LocalizedStrings(action.payload.data.consultantCheck),
 				"control" : new LocalizedStrings(action.payload.data.control),
 				"deleteExpansion" : new LocalizedStrings(action.payload.data.deleteExpansion),

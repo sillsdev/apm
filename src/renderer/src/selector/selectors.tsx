@@ -46,6 +46,12 @@ export const carefulSpeechSelector = (state: IState) =>
 export const lwcTranslationSelector = (state: IState) =>
   localStrings(state as IState, { layout: 'lwcTranslation' });
 
+export const carefulTranscriptionSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'carefulTranscription' });
+
+export const lwcTranscriptionSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'lwcTranscription' });
+
 export const categorySelector = (state: IState) =>
   localStrings(state as IState, { layout: 'category' });
 

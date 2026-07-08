@@ -29,9 +29,7 @@ function regionMatchesClause(
       Math.abs(stored.end - clauseRegion.end) < REGION_TOLERANCE
     );
   }
-  return (
-    prettySegment(storedSeg).trim() === prettySegment(clauseRegion).trim()
-  );
+  return prettySegment(storedSeg).trim() === prettySegment(clauseRegion).trim();
 }
 
 function matchesSourceVersion(
@@ -51,12 +49,15 @@ export function getRecordingForClause(
   clauseRegion: IRegion,
   vernacularMediaId?: string
 ): IRow | undefined {
-  return rowData.find(
+  const matches = rowData.filter(
     (r) =>
       related(r.mediafile, 'artifactType') === recordTypeId &&
       matchesSourceVersion(r, sourceVersion, vernacularMediaId) &&
       regionMatchesClause(r.mediafile?.attributes?.sourceSegments, clauseRegion)
   );
+  if (matches.length === 0) return undefined;
+  const exactVersion = matches.find((r) => r.sourceVersion === sourceVersion);
+  return exactVersion ?? matches[0];
 }
 
 export function getCompletedClauseIndices(

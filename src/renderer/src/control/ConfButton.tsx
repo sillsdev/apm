@@ -7,6 +7,8 @@ export interface IConfButton {
   id?: string;
   disabled?: boolean;
   allowSettings?: boolean;
+  /** When false, the settings (gear) segment is not rendered. Default true. */
+  showSettings?: boolean;
   title?: string;
   onClick?: () => void;
   onSettings?: () => void;
@@ -16,6 +18,7 @@ export default function ConfButton({
   id,
   disabled,
   allowSettings = true,
+  showSettings = true,
   onClick,
   onSettings,
   title,
@@ -46,20 +49,22 @@ export default function ConfButton({
         <Button onClick={handleClick} id={id} title={title} disabled={disabled}>
           {children}
         </Button>
-        <Button
-          size="small"
-          onClick={handleSettings}
-          disabled={disabled && !allowSettings}
-        >
-          <SettingsIcon
-            fontSize="small"
-            sx={{
-              color:
-                disabled && !allowSettings ? 'grey[400]' : 'secondary.light',
-              opacity: 0.7,
-            }}
-          />
-        </Button>
+        {showSettings && (
+          <Button
+            size="small"
+            onClick={handleSettings}
+            disabled={disabled && !allowSettings}
+          >
+            <SettingsIcon
+              fontSize="small"
+              sx={{
+                color:
+                  disabled && !allowSettings ? 'grey[400]' : 'secondary.light',
+                opacity: 0.7,
+              }}
+            />
+          </Button>
+        )}
       </ButtonGroup>
     </React.Fragment>
   );

@@ -1,5 +1,6 @@
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import React from 'react';
+import '@testing-library/jest-dom';
 import { render, screen } from '@testing-library/react';
 
 const mockStepComplete = jest.fn(() => false);
@@ -25,7 +26,11 @@ jest.mock('../../crud', () => {
   );
   return {
     ToolSlug,
-    useStepTool: () => ({ tool: mockTool }),
+    useStepTool: () => ({ tool: mockTool, settings: {} }),
+    useArtifactType: () => ({
+      slugFromId: (id: string) => id,
+    }),
+    remoteIdGuid: (_table: string, id: string) => id,
   };
 });
 
