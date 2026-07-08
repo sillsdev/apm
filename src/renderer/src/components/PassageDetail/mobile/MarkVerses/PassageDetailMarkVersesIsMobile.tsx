@@ -672,8 +672,7 @@ export default function PassageDetailMarkVersesIsMobile({
   const buildReferenceCell = useCallback(
     (value: string, cell: ICell, warning?: string) => {
       const illFormatted =
-        Boolean(value) &&
-        !isValidMarkVersesReference(value, passage.attributes?.book ?? '');
+        Boolean(value) && !isValidMarkVersesReference(value, book);
       // Map to a RefStatus (see its enum doc for how Err/Warn render). `warning`
       // is the tooltip text, shown for either flagged state.
       const status: ICell['status'] = illFormatted
@@ -689,7 +688,7 @@ export default function PassageDetailMarkVersesIsMobile({
         status,
       };
     },
-    []
+    [book]
   );
 
   /**
@@ -725,7 +724,7 @@ export default function PassageDetailMarkVersesIsMobile({
       });
       return tableData;
     },
-    [book, referenceWarningMessage, buildReferenceCell]
+    [passage, referenceWarningMessage, buildReferenceCell]
   );
 
   /** Assign passage refs after the saved range; add rows when the range no longer covers them. */
