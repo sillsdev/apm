@@ -3,7 +3,7 @@
 -- Idempotent: skips rows when a bold step with the same sequencenum already exists.
 --
 -- Prerequisites: at least one row in users (lastmodifiedby), and artifacttypes rows for
--- typename backtranslation, wholebacktranslation, and vernacular (standard seed data).
+-- typename backtranslation, carefulspeech, and vernacular (standard seed data).
 --
 -- Variable: :user_email - email address of the user to associate with created/modified records
 
@@ -120,36 +120,3 @@ SELECT
 WHERE NOT EXISTS (SELECT 1 FROM workflowsteps WHERE process = 'bold' AND sequencenum = 6)
   AND EXISTS (SELECT 1 FROM users LIMIT 1)
   AND EXISTS (SELECT 1 FROM artifacttypes WHERE typename = 'backtranslation');
-
--- Free translation — whole back translate (same tool JSON as other WBT steps).
-INSERT INTO workflowsteps (process, name, sequencenum, tool, permissions, datecreated, dateupdated, lastmodifiedby)
-SELECT
-  'bold',
-  'FreeTranslation',
-  7,
-  '{"tool": "wholeBackTranslate"}'::jsonb,
-  '{}'::jsonb,
-  (now() AT TIME ZONE 'utc'),
-  (now() AT TIME ZONE 'utc'),
-  (SELECT u.id FROM users u WHERE u.email = :'user_email' ORDER BY u.id ASC LIMIT 1)
-WHERE NOT EXISTS (SELECT 1 FROM workflowsteps WHERE process = 'bold' AND sequencenum = 7)
-  AND EXISTS (SELECT 1 FROM users LIMIT 1);
-
--- Free transcription — same as whole-back-translation transcription step (WBT artifact).
-INSERT INTO workflowsteps (process, name, sequencenum, tool, permissions, datecreated, dateupdated, lastmodifiedby)
-SELECT
-  'bold',
-  'FreeTranscription',
-  8,
-  (
-    '{"tool": "transcribe", "settings": "{\"artifactTypeId\": \"'
-    || (SELECT CAST(id AS TEXT) FROM artifacttypes WHERE typename = 'wholebacktranslation' ORDER BY id LIMIT 1)
-    || '\"}"}'
-  )::jsonb,
-  '{}'::jsonb,
-  (now() AT TIME ZONE 'utc'),
-  (now() AT TIME ZONE 'utc'),
-  (SELECT u.id FROM users u WHERE u.email = :'user_email' ORDER BY u.id ASC LIMIT 1)
-WHERE NOT EXISTS (SELECT 1 FROM workflowsteps WHERE process = 'bold' AND sequencenum = 8)
-  AND EXISTS (SELECT 1 FROM users LIMIT 1)
-  AND EXISTS (SELECT 1 FROM artifacttypes WHERE typename = 'wholebacktranslation');
