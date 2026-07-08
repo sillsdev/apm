@@ -160,6 +160,7 @@ interface IProps {
   onBlobReady?: (blob: Blob | undefined) => void;
   setBlobReady?: (ready: boolean) => void;
   setChanged?: (changed: boolean) => void;
+  onProcessingRecordingChange?: (processing: boolean) => void;
   onSaveProgress?: (progress: number) => void; //user initiated
   onDuration?: (duration: number) => void;
   onInteraction?: () => void;
@@ -305,6 +306,7 @@ function WSAudioPlayer(props: IProps) {
     onBlobReady,
     setBlobReady,
     setChanged,
+    onProcessingRecordingChange,
     onSaveProgress,
     onDuration,
     onInteraction,
@@ -433,7 +435,12 @@ function WSAudioPlayer(props: IProps) {
   const moreMenuOpen = Boolean(moreMenuAnchorEl);
   const { isMobile: isMobileView, isMobileWidth } = useMobile();
   const effectiveMobileView = Boolean(forceMobileView) || isMobileView;
+
   const cancelAIRef = useRef(false);
+
+  useEffect(() => {
+    onProcessingRecordingChange?.(processingRecording);
+  }, [processingRecording, onProcessingRecordingChange]);
 
   const { requestAudioAi } = useAudioAi();
   const checkOnline = useCheckOnline(t.reduceNoise);
@@ -445,8 +452,6 @@ function WSAudioPlayer(props: IProps) {
    * waveform doesn't snap back to fit-to-width. Cleared once consumed. */
   const preserveZoomOnReloadRef = useRef<number | undefined>(undefined);
   const insertingRef = useRef(false);
-  /** Bumped when user stops recording so in-flight preview inserts are ignored after await. */
-  const recordPreviewGenerationRef = useRef(0);
   /** True after Stop until final `onRecordStop` finishes — blocks late preview ticks. */
   const recordPreviewSuppressedRef = useRef(false);
   const currentSegmentRef = useRef<IRegion | undefined>(undefined);
@@ -622,6 +627,7 @@ function WSAudioPlayer(props: IProps) {
     wsSetHeight,
     wsStartRecord,
     wsStopRecord,
+    wsRecordingPeaks,
     wsAddMarkers,
     applyRegionColors,
   } = useWaveSurfer(
@@ -656,7 +662,8 @@ function WSAudioPlayer(props: IProps) {
     onRecordDataAvailable,
     selectedMicrophoneId || undefined,
     captureEchoCancellation,
-    captureNoiseSuppression
+    captureNoiseSuppression,
+    onRecordPeaks
   );
 
   const setProcessingRecording = useCallback((value: boolean) => {
@@ -715,7 +722,16 @@ function WSAudioPlayer(props: IProps) {
         recTimerRef.current = setInterval(() => {
           if (!recordingRef.current) return;
           recElapsedRef.current++;
-          setDuration(recBaseDurationRef.current + recElapsedRef.current);
+          // The timer is the pipeline-independent heartbeat (TT-7276); the
+          // peaks pipeline keeps wsDuration() more accurate when it's flowing.
+          // Take the max so long recordings don't drift with setInterval, but
+          // a silent pipeline never freezes the display.
+          setDuration(
+            Math.max(
+              recBaseDurationRef.current + recElapsedRef.current,
+              wsDuration()
+            )
+          );
           setProgress(recBaseProgressRef.current + recElapsedRef.current);
         }, 1000);
       } else {
@@ -725,7 +741,7 @@ function WSAudioPlayer(props: IProps) {
         }
       }
     },
-    [onRecording, setDuration, setProgress]
+    [onRecording, setDuration, setProgress, wsDuration]
   );
 
   const handleRecorder = useCallback(() => {
@@ -765,7 +781,6 @@ function WSAudioPlayer(props: IProps) {
         ? recordStartPosition.current
         : undefined;
     } else {
-      recordPreviewGenerationRef.current += 1;
       recordPreviewSuppressedRef.current = true;
       setProcessingRecording(true);
       recordingStartPendingRef.current = false;
@@ -1170,26 +1185,52 @@ function WSAudioPlayer(props: IProps) {
         );
       } catch (err) {
         // Inserting the take against the live-preview buffer failed
-        // (decode/splice race). The recorded blob is the complete take, so
-        // reload it directly rather than losing the recording and leaving
-        // Save/Play unavailable after Pause (TT-7384).
+        // (decode/splice race or aborted wavesurfer load). Retry with a splice
+        // at recordStartPosition when overdubbing; undefined endposition is only
+        // for a fresh recording (replaces the whole waveform).
         logError(
           Severity.error,
           errorReporter,
           err instanceof Error ? err : new Error(String(err))
         );
-        await wsInsertAudio(
-          blob,
-          undefined,
-          recordStartPosition.current,
-          undefined
-        );
+        try {
+          // Fresh take: endposition undefined replaces the waveform. Adding to existing
+          // audio must splice at recordStartPosition or the original take is discarded.
+          const fallbackEnd = insertingRef.current
+            ? recordStartPosition.current
+            : undefined;
+          await wsInsertAudio(
+            blob,
+            undefined,
+            recordStartPosition.current,
+            fallbackEnd
+          );
+        } catch (fallbackErr) {
+          logError(
+            Severity.error,
+            errorReporter,
+            fallbackErr instanceof Error
+              ? fallbackErr
+              : new Error(String(fallbackErr))
+          );
+        }
       }
       recordOverwritePosition.current = undefined;
-      await handleChanged();
     } finally {
       recordPreviewSuppressedRef.current = false;
       setProcessingRecording(false);
+      // Preview ticks may have already updated the waveform when adding to
+      // existing audio; always sync blob/duration/save even if the final insert
+      // threw (TT-7384).
+      try {
+        await handleChanged();
+      } catch (err) {
+        logError(
+          Severity.error,
+          errorReporter,
+          err instanceof Error ? err : new Error(String(err))
+        );
+      }
     }
   }
 
@@ -1206,48 +1247,28 @@ function WSAudioPlayer(props: IProps) {
     }
   }
 
+  // Live waveform is rendered from precomputed peaks (onRecordPeaks below) —
+  // the record plugin's technique. Preview data ticks no longer decode/splice/
+  // reload the whole take each second (that work grew with recording length and
+  // the waveform could not keep up). The complete take is inserted once, in
+  // onRecordStop; recordOverwritePosition stays at the start position so the
+  // final splice is a pure insert when overdubbing.
   async function onRecordDataAvailable(blob: Blob) {
     if (blob.size <= 0) return;
     if (recordPreviewSuppressedRef.current) return;
-    const previewGen = recordPreviewGenerationRef.current;
-    try {
-      const newPos = await wsInsertAudio(
-        blob,
-        undefined,
-        recordStartPosition.current,
-        recordOverwritePosition.current
-      );
-      if (
-        recordPreviewSuppressedRef.current ||
-        previewGen !== recordPreviewGenerationRef.current
-      ) {
-        return;
-      }
-      // Advance the overwrite position only when overdubbing into existing
-      // audio. For a fresh recording we leave it undefined so the final
-      // onRecordStop insert rebuilds the waveform from the complete take in one
-      // clean load instead of splicing the full take against the rolling
-      // preview buffer (that splice could throw, which skipped handleChanged()
-      // and left Save/Play unavailable after Pause - TT-7384).
-      if (insertingRef.current) recordOverwritePosition.current = newPos;
-    } catch (err) {
-      logError(
-        Severity.error,
-        errorReporter,
-        err instanceof Error ? err : new Error(String(err))
-      );
-    }
+  }
+
+  /** Cheap live render: pre/post peaks around the record point + live mic peaks. */
+  function onRecordPeaks(peaks: Float32Array, seconds: number) {
+    if (recordPreviewSuppressedRef.current) return;
+    void wsRecordingPeaks(peaks, seconds);
   }
 
   function onWSReady(duration: number, loadingAnother: boolean) {
-    // Ignore WS-driven progress while recording; we drive from timer
-    if (recordingRef.current) {
-      const recElapsed = Math.round(duration - recBaseDurationRef.current);
-      if (recElapsed > recElapsedRef.current) {
-        recElapsedRef.current = recElapsed;
-      }
-      return;
-    }
+    // Safety guard: peaks preview loads suppress 'ready' during recording, so
+    // this should not fire mid-recording anymore; if a stray ready arrives,
+    // ignore it — the rec timer drives duration/progress while recording.
+    if (recordingRef.current) return;
     setDuration(duration);
     if (loadingAnother) return;
     setReady(true);
@@ -1293,6 +1314,7 @@ function WSAudioPlayer(props: IProps) {
     loopingRef.current = value;
     setLoopingx(value);
   };
+
   const setPlaybackRate = (value: number) => {
     const newVal = parseFloat(value.toFixed(2));
     playbackRef.current = newVal;
@@ -1326,6 +1348,7 @@ function WSAudioPlayer(props: IProps) {
   ]);
 
   const confirmedDelete = useCallback(() => {
+    setProcessingRecording(false);
     setPlaying(false);
     wsClear();
     setDuration(0);
@@ -1349,6 +1372,7 @@ function WSAudioPlayer(props: IProps) {
     setProgress,
     setReady,
     onRecordingCleared,
+    setProcessingRecording,
   ]);
   const handleActionConfirmed = () => {
     initialPosRef.current = undefined;

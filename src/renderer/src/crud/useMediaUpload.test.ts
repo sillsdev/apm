@@ -173,6 +173,25 @@ describe('useMediaUpload', () => {
     );
   }
 
+  async function completeUpload(
+    upload: (files: File[]) => Promise<void>,
+    files: File[],
+    ...cbArgs: [number, boolean, unknown?]
+  ) {
+    const uploadPromise = upload(files);
+    const { nextUpload } = require('../store');
+    expect(nextUpload).toHaveBeenCalled();
+    const uploadProps = (nextUpload as jest.Mock).mock.calls.at(-1)![0];
+    const cb = uploadProps.cb as (
+      n: number,
+      success: boolean,
+      data?: unknown
+    ) => void | Promise<void>;
+    await cb(...cbArgs);
+    await uploadPromise;
+    return uploadProps;
+  }
+
   it('online success: pullTableList, dispatch UPLOAD_COMPLETE, snackbar, afterUploadCb', async () => {
     mockOffline = false;
     const afterUploadCb = jest.fn().mockResolvedValue(undefined);
@@ -183,20 +202,9 @@ describe('useMediaUpload', () => {
     });
     const upload = result.current as (files: File[]) => Promise<void>;
 
-    const { nextUpload } = require('../store');
     const files = [makeFile()];
 
-    await upload(files);
-
-    expect(nextUpload).toHaveBeenCalled();
-    const uploadProps = (nextUpload as jest.Mock).mock.calls[0][0];
-    const cb = uploadProps.cb as (
-      n: number,
-      success: boolean,
-      data?: { stringId?: string }
-    ) => void | Promise<void>;
-
-    await cb(0, true, { stringId: 'media-1' });
+    await completeUpload(upload, files, 0, true, { stringId: 'media-1' });
 
     expect(pullTableList).toHaveBeenCalledWith(
       'mediafile',
@@ -225,16 +233,7 @@ describe('useMediaUpload', () => {
     });
     const upload = result.current as (files: File[]) => Promise<void>;
 
-    const { nextUpload } = require('../store');
-    await upload([makeFile()]);
-    const uploadProps = (nextUpload as jest.Mock).mock.calls[0][0];
-    const cb = uploadProps.cb as (
-      n: number,
-      success: boolean,
-      data?: unknown
-    ) => void | Promise<void>;
-
-    await cb(0, false, undefined);
+    await completeUpload(upload, [makeFile()], 0, false, undefined);
 
     expect(mockSetOrbitRetries).toHaveBeenCalledWith(
       OrbitNetworkErrorRetries - 1
@@ -256,16 +255,7 @@ describe('useMediaUpload', () => {
     });
     const upload = result.current as (files: File[]) => Promise<void>;
 
-    const { nextUpload } = require('../store');
-    await upload([makeFile()]);
-    const uploadProps = (nextUpload as jest.Mock).mock.calls[0][0];
-    const cb = uploadProps.cb as (
-      n: number,
-      success: boolean,
-      data?: unknown
-    ) => void | Promise<void>;
-
-    await cb(0, true, { blob: true });
+    await completeUpload(upload, [makeFile()], 0, true, { blob: true });
 
     expect(pullTableList).not.toHaveBeenCalled();
     expect(createMedia).toHaveBeenCalledWith(
@@ -298,15 +288,7 @@ describe('useMediaUpload', () => {
     });
     const upload = result.current as (files: File[]) => Promise<void>;
 
-    const { nextUpload } = require('../store');
-    await upload([makeFile()]);
-    const cb = (nextUpload as jest.Mock).mock.calls[0][0].cb as (
-      n: number,
-      success: boolean,
-      data?: unknown
-    ) => void | Promise<void>;
-
-    await cb(0, true, { offline: true });
+    await completeUpload(upload, [makeFile()], 0, true, { offline: true });
 
     expect(createMedia).toHaveBeenCalledWith(
       expect.any(Object),
@@ -330,15 +312,7 @@ describe('useMediaUpload', () => {
     });
     const upload = result.current as (files: File[]) => Promise<void>;
 
-    const { nextUpload } = require('../store');
-    await upload([makeFile()]);
-    const cb = (nextUpload as jest.Mock).mock.calls[0][0].cb as (
-      n: number,
-      success: boolean,
-      data?: unknown
-    ) => void | Promise<void>;
-
-    await cb(0, true, { offline: true });
+    await completeUpload(upload, [makeFile()], 0, true, { offline: true });
 
     expect(createMedia).toHaveBeenCalledWith(
       expect.any(Object),
@@ -362,15 +336,7 @@ describe('useMediaUpload', () => {
     });
     const upload = result.current as (files: File[]) => Promise<void>;
 
-    const { nextUpload } = require('../store');
-    await upload([makeFile()]);
-    const cb = (nextUpload as jest.Mock).mock.calls[0][0].cb as (
-      n: number,
-      success: boolean,
-      data?: unknown
-    ) => void | Promise<void>;
-
-    await cb(0, true, { offline: true });
+    await completeUpload(upload, [makeFile()], 0, true, { offline: true });
 
     expect(createMedia).toHaveBeenCalledWith(
       expect.any(Object),
@@ -383,6 +349,39 @@ describe('useMediaUpload', () => {
     );
   });
 
+  it('rejects when itemComplete bookkeeping throws', async () => {
+    mockOffline = true;
+    createMedia.mockRejectedValue(new Error('create failed'));
+    const afterUploadCb = jest.fn().mockResolvedValue(undefined);
+    const { result } = renderUploadHook({
+      artifactId: null,
+      passageId: 'psg-1',
+      afterUploadCb,
+    });
+    const upload = result.current as (files: File[]) => Promise<void>;
+
+    await expect(
+      completeUpload(upload, [makeFile()], 0, true, { blob: true })
+    ).rejects.toThrow('create failed');
+    expect(afterUploadCb).not.toHaveBeenCalled();
+  });
+
+  it('settles when afterUploadCb throws', async () => {
+    const afterUploadCb = jest
+      .fn()
+      .mockRejectedValue(new Error('parent failed'));
+    const { result } = renderUploadHook({
+      artifactId: null,
+      passageId: 'psg-1',
+      afterUploadCb,
+    });
+    const upload = result.current as (files: File[]) => Promise<void>;
+
+    await completeUpload(upload, [makeFile()], 0, false, undefined);
+
+    expect(afterUploadCb).toHaveBeenCalledWith('');
+  });
+
   it('dispatches uploadComplete action object, not the action creator function', async () => {
     const afterUploadCb = jest.fn().mockResolvedValue(undefined);
     const { result } = renderUploadHook({
@@ -392,15 +391,10 @@ describe('useMediaUpload', () => {
     });
     const upload = result.current as (files: File[]) => Promise<void>;
 
-    const { nextUpload, uploadComplete } = require('../store');
-    await upload([makeFile()]);
-    const cb = (nextUpload as jest.Mock).mock.calls[0][0].cb as (
-      n: number,
-      success: boolean,
-      data?: { stringId?: string }
-    ) => void | Promise<void>;
-
-    await cb(0, true, { stringId: 'media-x' });
+    const { uploadComplete } = require('../store');
+    await completeUpload(upload, [makeFile()], 0, true, {
+      stringId: 'media-x',
+    });
 
     const completeCalls = dispatch.mock.calls.filter(
       (c) => c[0]?.type === UPLOAD_COMPLETE

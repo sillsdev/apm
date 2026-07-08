@@ -30,6 +30,7 @@ import { MediaFileAttributes } from '../../model';
 import { MainAPI } from '../../model/main-api';
 import {
   sleepMs,
+  uploadPutTimeoutMs,
   uploadRetryDelayMs,
   UPLOAD_MAX_ATTEMPTS,
   waitForImportExportIdle,
@@ -147,11 +148,13 @@ export const uploadFile = (
       xhr.onload = null;
       xhr.onerror = null;
       xhr.onabort = null;
+      xhr.ontimeout = null;
       // @ts-ignore allow memory to be released
       xhr = null;
     };
     xhr.open('PUT', data.audioUrl, true);
     xhr.setRequestHeader('Content-Type', data.contentType);
+    xhr.timeout = uploadPutTimeoutMs(file.size);
 
     xhr.onload = () => {
       if (xhr.status < 300) {
@@ -174,11 +177,35 @@ export const uploadFile = (
       }
     };
     xhr.onerror = () => {
+      const httpStatus = xhr.status;
+      const host = (() => {
+        try {
+          return new URL(data.audioUrl).host;
+        } catch {
+          return 'unknown';
+        }
+      })();
+      const statusText = [
+        'upload failed',
+        httpStatus === 0 ? 'network error' : `HTTP ${httpStatus}`,
+        typeof navigator !== 'undefined' && !navigator.onLine
+          ? 'offline'
+          : undefined,
+        `${file.name} (${file.size} bytes)`,
+        host,
+      ]
+        .filter(Boolean)
+        .join('; ');
+      logError(
+        Severity.error,
+        errorReporter,
+        `upload ${file.name}: ${statusText}`
+      );
       cleanup();
       const rej: UploadFileReject = {
-        statusNum: 500,
-        statusText: 'upload failed',
-        httpStatus: undefined,
+        statusNum: httpStatus || 500,
+        statusText,
+        httpStatus: httpStatus || undefined,
       };
       reject(rej);
     };
@@ -188,6 +215,16 @@ export const uploadFile = (
         statusNum: 499,
         statusText: 'upload aborted',
         httpStatus: 499,
+      };
+      reject(rej);
+    };
+    xhr.ontimeout = () => {
+      const timeoutMs = xhr.timeout;
+      cleanup();
+      const rej: UploadFileReject = {
+        statusNum: 408,
+        statusText: `upload timed out after ${timeoutMs}ms`,
+        httpStatus: 408,
       };
       reject(rej);
     };

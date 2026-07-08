@@ -1216,6 +1216,7 @@ const initialState = {
 			"fileName": "Name",
 			"fileType": "File Type",
 			"loading": "Loading...",
+			"processing": "Processing...",
 			"save": "Save",
 			"saving": "Saving...",
 			"title": "Record/Edit Audio",

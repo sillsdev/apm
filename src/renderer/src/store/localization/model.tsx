@@ -1154,6 +1154,7 @@ export interface IPassageRecordStrings extends Localize.LocalizedStringsMethods 
     "fileName": string;
     "fileType": string;
     "loading": string;
+    "processing": string;
     "save": string;
     "saving": string;
     "title": string;

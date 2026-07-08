@@ -82,32 +82,19 @@ const vndResponse = {
         'version-number': 1,
         'original-file': 'test.mp3',
         'content-type': 'audio/mpeg',
-        'audio-url': 'https://s3.example/presigned',
-        'eaf-url': '',
-        'date-created': '2026-01-01T00:00:00.000Z',
-        'source-segments': '{}',
-        'performed-by': null,
-        topic: '',
-        transcription: '',
+        'audio-url': 'https://s3.example.com/test.mp3',
       },
     },
   },
 };
 
-describe('nextUpload import/export busy handling', () => {
-  let dispatch: jest.Mock;
+describe('nextUpload importexportBusy wait', () => {
+  const dispatch = jest.fn();
 
   beforeEach(() => {
     jest.clearAllMocks();
-    dispatch = jest.fn();
-    mockedAxios.post.mockResolvedValue(vndResponse as never);
-    mockedWait.mockImplementation(async (getBusy) => {
-      while (getBusy()) {
-        await Promise.resolve();
-      }
-    });
-    // uploadFile uses XHR; skip PUT by using text/plain non-downloadable - no, mp3 is downloadable
-    // Mock uploadFile path via successful PUT - need to mock XMLHttpRequest
+    mockedAxios.post.mockResolvedValue(vndResponse);
+
     const xhrProto = XMLHttpRequest.prototype;
     jest.spyOn(xhrProto, 'open').mockImplementation(function (
       this: XMLHttpRequest,

@@ -42,6 +42,8 @@ import { BigDialogBp } from '../hoc/BigDialogBp';
 
 interface IProps {
   noBusy?: boolean | undefined;
+  /** When true, do not wait for `importexportBusy` before staging upload (record save may hold it). */
+  skipImportExportWait?: boolean | undefined;
   recordAudio: boolean;
   defaultFilename?: string | undefined;
   isOpen: boolean;
@@ -76,6 +78,7 @@ interface IProps {
 export const Uploader = (props: IProps) => {
   const {
     noBusy,
+    skipImportExportWait,
     mediaId,
     recordAudio,
     defaultFilename,
@@ -335,7 +338,7 @@ export const Uploader = (props: IProps) => {
       // start; later files skip the wait while importexportBusy stays true until
       // finishMessage (set in uploadMedia).
       getImportExportBusy:
-        isFirstFile && importWasBusyRef.current
+        !skipImportExportWait && isFirstFile && importWasBusyRef.current
           ? () => Boolean(getGlobal('importexportBusy'))
           : undefined,
       onTerminalFailure: (info) => {

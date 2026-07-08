@@ -5908,6 +5908,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="passageRecord.processing">
+         <segment>
+            <source>Processing...</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="passageRecord.save">
          <segment>
             <source>Save</source>
