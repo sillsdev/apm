@@ -141,6 +141,8 @@ jest.mock('../../PassageDetailPlayer', () => {
     onSegment,
     onClearSegments,
     controlsRef,
+    hasSegmentUndo,
+    onSegmentUndo,
   }: DetailPlayerProps) => {
     mockPlayerAction = onSegment;
     mockClearSegments = onClearSegments;
@@ -152,7 +154,22 @@ jest.mock('../../PassageDetailPlayer', () => {
         isPlaying: () => false,
       } as any;
     }
-    return <div>PassageDetailPlayer</div>;
+    // Mirror the real player, which renders a segment-undo IconButton
+    // (aria-label = undoTip = 'Undo') whenever hasSegmentUndo is set.
+    return (
+      <div>
+        PassageDetailPlayer
+        {hasSegmentUndo && (
+          <button
+            type="button"
+            aria-label="Undo"
+            onClick={() => onSegmentUndo?.()}
+          >
+            Undo
+          </button>
+        )}
+      </div>
+    );
   };
   MockedPassageDetailPlayer.displayName = 'PassageDetailPlayer';
   return MockedPassageDetailPlayer;
@@ -854,10 +871,14 @@ test('shows undo after dialog save and restores the previous table', async () =>
 
   await waitForPassageRowsReady();
 
+  // Loaded/pre-existing segmentation emits with init=true (see
+  // PassageDetailPlayer.setPlayerSegments). Using init=false here would
+  // misrepresent the initial load as a user segment change and push a spurious
+  // undo snapshot, leaving undo still available after a single undo below.
   act(() => {
     mockPlayerAction?.(
       '{"regions":"[{\\"start\\":0,\\"end\\":10},{\\"start\\":10,\\"end\\":20},{\\"start\\":20,\\"end\\":69}]"}',
-      false
+      true
     );
   });
 
