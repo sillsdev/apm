@@ -1,9 +1,9 @@
-import { useContext, useMemo, useState } from 'react';
+import { MouseEvent, useContext, useMemo, useState } from 'react';
 import { shallowEqual, useSelector } from 'react-redux';
 import { IPlanTabsStrings } from '@model/index';
 import { Menu, MenuItem } from '@mui/material';
 import DropDownIcon from '@mui/icons-material/ArrowDropDown';
-import { AltButton } from '../../control/AltButton';
+import { Button, Typography, SxProps } from '@mui/material';
 import { planTabsSelector } from '../../selector';
 import { useOrganizedBy } from '../../crud/useOrganizedBy';
 import { useShowAssignment } from '../../crud/useShowAssignment';
@@ -11,68 +11,90 @@ import { PlanContext } from '../../context/PlanContext';
 import { PlanTabEnum } from '../PlanTabsEnum';
 import { UnsavedContext } from '../../context/UnsavedContext';
 
+const ellipsisSx: SxProps = {
+  minWidth: 0,
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  whiteSpace: 'nowrap',
+};
+
+interface TabOption {
+  label: string;
+  tab: PlanTabEnum;
+}
+
 export const PlanTabSelect = () => {
   const { checkSavedFn: checkSaved } = useContext(UnsavedContext).state;
-  const [actionMenuItem, setActionMenuItem] = useState<null | HTMLElement>(
-    null
-  );
+  const { flat, tab, setTab } = useContext(PlanContext).state;
   const t: IPlanTabsStrings = useSelector(planTabsSelector, shallowEqual);
   const { getOrganizedBy } = useOrganizedBy();
-  const organizedBy = getOrganizedBy(false);
-  const ctx = useContext(PlanContext);
-  const { flat, tab, setTab } = ctx.state;
   const showAssign = useShowAssignment();
-  const defaultItem = useMemo(
-    () => (flat ? organizedBy : t.sectionsPassages.replace('{0}', organizedBy)),
-    [flat, organizedBy, t]
-  );
-  const options = useMemo(() => {
-    const base = [defaultItem, t.media];
-    return showAssign
-      ? [...base, t.assignments, t.transcriptions]
-      : [...base, t.transcriptions];
-  }, [defaultItem, t.media, t.assignments, t.transcriptions, showAssign]);
-  const handleMenu = (e: any) => setActionMenuItem(e.currentTarget);
-  const handleClose = () => setActionMenuItem(null);
-  const handleChange = (menuIndex: number) => {
-    const tabIndex =
-      showAssign || menuIndex < PlanTabEnum.assignment
-        ? menuIndex
-        : PlanTabEnum.assignment;
-    setTab(tabIndex);
-    handleClose();
-  };
+  const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
 
-  const resolvedTab = tab ?? 0;
-  const optionIndex =
-    !showAssign && resolvedTab === PlanTabEnum.transcription
-      ? PlanTabEnum.assignment
-      : resolvedTab;
+  const organizedBy = getOrganizedBy(false);
+  const sectionLabel = flat
+    ? organizedBy
+    : t.sectionsPassages.replace('{0}', organizedBy);
+
+  // Build the list of tabs to show in the dropdown menu
+  const options: TabOption[] = useMemo(() => {
+    const items: TabOption[] = [
+      { label: sectionLabel, tab: PlanTabEnum.sectionPassage },
+      { label: t.media, tab: PlanTabEnum.media },
+    ];
+    if (showAssign) {
+      items.push({ label: t.assignments, tab: PlanTabEnum.assignment });
+      items.push({ label: t.transcriptions, tab: PlanTabEnum.transcription });
+    } else {
+      items.push({ label: t.transcriptions, tab: PlanTabEnum.assignment });
+    }
+    return items;
+  }, [sectionLabel, t.media, t.assignments, t.transcriptions, showAssign]);
+
+  // Determine which tab is currently selected in the dropdown menu
+  const selectedIndex = useMemo(() => {
+    const found = options.findIndex(
+      (o) => o.tab === (tab ?? PlanTabEnum.sectionPassage)
+    );
+    return found >= 0 ? found : 0;
+  }, [options, tab]);
+
+  const openMenu = (e: MouseEvent<HTMLElement>) =>
+    setMenuAnchor(e.currentTarget);
+  const closeMenu = () => setMenuAnchor(null);
+  const selectTab = (option: TabOption) => {
+    setTab(option.tab);
+    closeMenu();
+  };
 
   return (
     <>
-      <AltButton
+      <Button
         id="planTabSelect"
-        aria-owns={actionMenuItem ? 'action-menu' : undefined}
+        variant="outlined"
+        aria-owns={menuAnchor ? 'action-menu' : undefined}
         aria-label={t.sectionsPassages}
-        onClick={handleMenu}
+        onClick={openMenu}
+        endIcon={<DropDownIcon />}
+        sx={{ minWidth: 'auto' }}
       >
-        {options[optionIndex] ?? options[0]}
-        <DropDownIcon sx={{ ml: 1 }} />
-      </AltButton>
+        <Typography sx={ellipsisSx}>{options[selectedIndex].label}</Typography>
+      </Button>
       <Menu
         id="import-export-menu"
-        anchorEl={actionMenuItem}
-        open={Boolean(actionMenuItem)}
-        onClose={handleClose}
+        anchorEl={menuAnchor}
+        open={Boolean(menuAnchor)}
+        onClose={closeMenu}
+        slotProps={{ paper: { sx: { minWidth: menuAnchor?.offsetWidth } } }}
       >
-        {options.map((v, i) => (
+        {options.map((option) => (
           <MenuItem
-            key={v}
-            id={v}
-            onClick={() => checkSaved(() => handleChange(i))}
+            key={option.label}
+            id={option.label}
+            onClick={() => checkSaved(() => selectTab(option))}
+            sx={{ overflow: 'hidden' }}
           >
-            {v}
+            <Typography sx={ellipsisSx}>{option.label}</Typography>
           </MenuItem>
         ))}
       </Menu>
