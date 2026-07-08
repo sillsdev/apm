@@ -147,7 +147,6 @@ export default function PassageDetailMarkVersesIsMobile({
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
   const undoStackRef = useRef(createMarkVersesUndoStack());
   const [playerResetKey, setPlayerResetKey] = useState(0);
-  const [playerProgressSec, setPlayerProgressSec] = useState(0);
   /** Precise segment JSON from the waveform (table limits are rounded). */
   const [waveSegmentsJson, setWaveSegmentsJson] = useState('{}');
   const playerControlsRef = useRef<WSAudioPlayerControls | null>(null);
@@ -486,22 +485,6 @@ export default function PassageDetailMarkVersesIsMobile({
       Boolean(getActiveSegmentForRow(rowIndex, row)),
     [getActiveSegmentForRow]
   );
-
-  const syncProgressFromPlayer = useCallback(() => {
-    const apply = () => {
-      const c = playerControlsRef.current;
-      if (c?.isReady()) setPlayerProgressSec(c.getProgress());
-    };
-    apply();
-    requestAnimationFrame(apply);
-  }, []);
-
-  useEffect(() => {
-    const ctrl = playerControlsRef.current;
-    if (ctrl?.isReady()) {
-      setPlayerProgressSec(ctrl.getProgress());
-    }
-  }, [waveSegmentsJson, playerResetKey]);
 
   useEffect(() => {
     markVersesTailOpenRef.current = isMarkVersesTableTailIncomplete(
@@ -901,7 +884,6 @@ export default function PassageDetailMarkVersesIsMobile({
             : activeSegment.start;
         await ctrl.gotoTime(seekTime, activeSegment);
         setCurrentSegment(activeSegment, rowIndex);
-        syncProgressFromPlayer();
       }
     },
     [
@@ -911,7 +893,6 @@ export default function PassageDetailMarkVersesIsMobile({
       tableSignature,
       setCurrentSegment,
       setData,
-      syncProgressFromPlayer,
     ]
   );
 
@@ -1558,8 +1539,6 @@ export default function PassageDetailMarkVersesIsMobile({
         allowZoomAndSpeed={true}
         controlsRef={playerControlsRef}
         applyRegionColor={applyRegionColor}
-        onProgress={setPlayerProgressSec}
-        onInteraction={syncProgressFromPlayer}
         onClearSegments={handleResetMarkup}
         resetDisabled={!hasPermission || !hasResettableState}
         hasSegmentUndo={undoAvailable}
