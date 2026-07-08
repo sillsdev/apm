@@ -81,7 +81,7 @@ export function ProjectDialog(props: IProps) {
       ...s,
       type: 'other',
       flat: false,
-      organizedBy: 'section',
+      organizedBy: 'story',
     }));
   }, [isOpen, mode, team, teamWorkflow]);
 
