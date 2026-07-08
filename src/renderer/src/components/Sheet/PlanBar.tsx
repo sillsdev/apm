@@ -1,6 +1,4 @@
 import { MouseEventHandler, useContext } from 'react';
-import { TabAppBar } from '../../control/TabAppBar';
-import { TabActions } from '../../control/TabActions';
 import { GrowingSpacer } from '../../control/GrowingSpacer';
 import { LightTooltip } from '../../control/LightTooltip';
 import { IconButton } from '@mui/material';
@@ -13,6 +11,7 @@ import { shallowEqual, useSelector } from 'react-redux';
 import { planSheetSelector } from '../../selector';
 import PublishOnIcon from '@mui/icons-material/PublicOutlined';
 import PublishOffIcon from '@mui/icons-material/PublicOffOutlined';
+import { Box } from '@mui/material';
 
 interface IProps {
   publishingOn: boolean;
@@ -53,40 +52,43 @@ export const PlanBar = (props: IProps) => {
   const t: IPlanSheetStrings = useSelector(planSheetSelector, shallowEqual);
 
   return (
-    <TabAppBar position="fixed" color="default" mobileBar={true}>
-      <TabActions>
-        <PlanTabSelect />
-        <GrowingSpacer />
-        {data.length > 1 && !offline && !flat && (
-          <LightTooltip
-            sx={{ backgroundColor: 'transparent' }}
-            title={
-              !publishingOn || hidePublishing
-                ? t.showPublishing
-                : t.hidePublishing
-            }
-          >
-            <IconButton onClick={handlePublishToggle}>
-              {!publishingOn || hidePublishing ? (
-                <PublishOnIcon sx={{ color: 'primary.light' }} />
-              ) : (
-                <PublishOffIcon sx={{ color: 'primary.light' }} />
-              )}
-            </IconButton>
-          </LightTooltip>
-        )}
-        <FilterMenu
-          canSetDefault={canSetDefault}
-          state={filterState}
-          onFilterChange={onFilterChange}
-          orgSteps={orgSteps}
-          minimumSection={minimumSection}
-          maximumSection={maximumSection}
-          filtered={filtered}
-          hidePublishing={hidePublishing}
-          disabled={!filtered && rowInfo.length < 2}
-        />
-      </TabActions>
-    </TabAppBar>
+    <Box
+      sx={{
+        display: 'flex',
+        flexDirection: 'row',
+      }}
+    >
+      <PlanTabSelect />
+      <GrowingSpacer />
+      {data.length > 1 && !offline && !flat && (
+        <LightTooltip
+          sx={{ backgroundColor: 'transparent' }}
+          title={
+            !publishingOn || hidePublishing
+              ? t.showPublishing
+              : t.hidePublishing
+          }
+        >
+          <IconButton onClick={handlePublishToggle}>
+            {!publishingOn || hidePublishing ? (
+              <PublishOnIcon sx={{ color: 'primary.light' }} />
+            ) : (
+              <PublishOffIcon sx={{ color: 'primary.light' }} />
+            )}
+          </IconButton>
+        </LightTooltip>
+      )}
+      <FilterMenu
+        canSetDefault={canSetDefault}
+        state={filterState}
+        onFilterChange={onFilterChange}
+        orgSteps={orgSteps}
+        minimumSection={minimumSection}
+        maximumSection={maximumSection}
+        filtered={filtered}
+        hidePublishing={hidePublishing}
+        disabled={!filtered && rowInfo.length < 2}
+      />
+    </Box>
   );
 };
