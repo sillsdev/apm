@@ -177,6 +177,16 @@ describe('PassageDetailLwcTranscription', () => {
       bootstrapped: true,
       hasClauses: true,
     });
+    const { getLwcRecordingRowForClause } = jest.requireMock(
+      './lwcTranscription/lwcTranscriptionCompletion'
+    ) as { getLwcRecordingRowForClause: jest.Mock };
+    getLwcRecordingRowForClause.mockReturnValue({
+      mediafile: {
+        id: 'pbt-mf1',
+        type: 'mediafile',
+        attributes: { transcription: '' },
+      },
+    });
   });
 
   it('shows prerequisite when LWC translation recordings are incomplete', () => {
@@ -242,6 +252,43 @@ describe('PassageDetailLwcTranscription', () => {
     render(<PassageDetailLwcTranscription width={400} />);
     await waitFor(() =>
       expect(mockSetStepComplete).toHaveBeenCalledWith('step1', true)
+    );
+  });
+
+  it('shows the first clause transcription that loads after entry', async () => {
+    // Enter in review mode (all recorded + transcribed) so we land on clause 0.
+    mockLwcRecordingComplete = new Set([0]);
+    mockTranscribed = new Set([0]);
+
+    const { getLwcRecordingRowForClause } = jest.requireMock(
+      './lwcTranscription/lwcTranscriptionCompletion'
+    ) as { getLwcRecordingRowForClause: jest.Mock };
+
+    // First read: the recording row's transcription hasn't loaded yet.
+    getLwcRecordingRowForClause.mockReturnValue({
+      mediafile: {
+        id: 'pbt-mf1',
+        type: 'mediafile',
+        attributes: { transcription: '' },
+      },
+    });
+
+    const { rerender } = render(<PassageDetailLwcTranscription width={400} />);
+    await waitFor(() => expect(editorProps).toBeDefined());
+    expect(editorProps?.text).toBe('');
+
+    // Now the saved transcription for the same clause becomes available.
+    getLwcRecordingRowForClause.mockReturnValue({
+      mediafile: {
+        id: 'pbt-mf1',
+        type: 'mediafile',
+        attributes: { transcription: 'existing transcription' },
+      },
+    });
+    rerender(<PassageDetailLwcTranscription width={400} />);
+
+    await waitFor(() =>
+      expect(editorProps?.text).toBe('existing transcription')
     );
   });
 
