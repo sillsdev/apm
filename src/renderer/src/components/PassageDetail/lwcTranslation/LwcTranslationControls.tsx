@@ -111,42 +111,6 @@ export default function LwcTranslationControls({
 
   return (
     <Box sx={{ width: '100%', px: 1 }} data-cy="lwc-recorder">
-      <Stack
-        direction="row"
-        alignItems="center"
-        justifyContent="space-between"
-        spacing={1}
-        sx={{ mb: 1, pr: 1 }}
-      >
-        <TextField
-          id="lwc-translation-speaker"
-          label={strings.speaker}
-          value={speaker}
-          onChange={(e) => onSpeakerChange(e.target.value)}
-          size="small"
-          inputRef={speakerInputRef}
-          error={highlightSpeaker}
-          sx={{
-            width: '40%',
-            ...(highlightSpeaker
-              ? {
-                  '& .MuiOutlinedInput-root': {
-                    boxShadow: 4,
-                  },
-                }
-              : undefined),
-          }}
-        />
-        {phase === 'recorded' && (
-          <IconButton
-            aria-label={strings.clearRecording}
-            onClick={onClearRecording}
-            id="lwc-clear-recording"
-          >
-            <DeleteIcon />
-          </IconButton>
-        )}
-      </Stack>
       <Stack direction="row" alignItems="center" justifyContent="center">
         <Box sx={{ flex: 1, minWidth: 0 }}>
           <MediaRecord
@@ -181,6 +145,42 @@ export default function LwcTranslationControls({
             onDockedRecordButton={onDockedRecordButton}
           />
         </Box>
+      </Stack>
+      <Stack
+        direction="row"
+        alignItems="center"
+        justifyContent="space-between"
+        spacing={1}
+        sx={{ my: 1, pr: 1 }}
+      >
+        <TextField
+          id="lwc-translation-speaker"
+          label={strings.speaker}
+          value={speaker}
+          onChange={(e) => onSpeakerChange(e.target.value)}
+          size="small"
+          inputRef={speakerInputRef}
+          error={highlightSpeaker}
+          sx={{
+            width: '40%',
+            ...(highlightSpeaker
+              ? {
+                  '& .MuiOutlinedInput-root': {
+                    boxShadow: 4,
+                  },
+                }
+              : undefined),
+          }}
+        />
+        {phase === 'recorded' && (
+          <IconButton
+            aria-label={strings.clearRecording}
+            onClick={onClearRecording}
+            id="lwc-clear-recording"
+          >
+            <DeleteIcon />
+          </IconButton>
+        )}
       </Stack>
       {(showDockedRecordButton || showNextClause) && (
         <Box

@@ -168,7 +168,7 @@ export default function CarefulSpeechControls({
           direction="row"
           spacing={1}
           justifyContent="center"
-          sx={{ py: 1 }}
+          sx={{ pb: 1 }}
         >
           <PriButton
             id="careful-speech-more-clauses"
@@ -195,7 +195,6 @@ export default function CarefulSpeechControls({
           spacing={1}
           justifyContent="center"
           alignItems="center"
-          sx={{ pt: 1 }}
         >
           <PriButton
             id="careful-speech-split"
@@ -246,41 +245,6 @@ export default function CarefulSpeechControls({
       )}
       {showRecorder && (
         <Box>
-          <Stack
-            direction="row"
-            alignItems="center"
-            justifyContent="space-between"
-            spacing={1}
-            sx={{ mb: 1, pr: 1 }}
-          >
-            <TextField
-              id="careful-speech-speaker"
-              label={strings.speaker}
-              value={speaker}
-              onChange={(e) => onSpeakerChange(e.target.value)}
-              size="small"
-              inputRef={speakerInputRef}
-              error={highlightSpeaker}
-              sx={{
-                width: '40%',
-                ...(highlightSpeaker
-                  ? {
-                      '& .MuiOutlinedInput-root': {
-                        boxShadow: 4,
-                      },
-                    }
-                  : undefined),
-              }}
-            />
-            {phase === 'recorded' && (
-              <IconButton
-                aria-label={strings.clearRecording}
-                onClick={onClearRecording}
-              >
-                <DeleteIcon />
-              </IconButton>
-            )}
-          </Stack>
           <Stack direction="row" alignItems="center" justifyContent="center">
             <Box sx={{ flex: 1, minWidth: 0 }}>
               <MediaRecord
@@ -315,6 +279,41 @@ export default function CarefulSpeechControls({
                 onDockedRecordButton={onDockedRecordButton}
               />
             </Box>
+          </Stack>
+          <Stack
+            direction="row"
+            alignItems="center"
+            justifyContent="space-between"
+            spacing={1}
+            sx={{ my: 1, pr: 1 }}
+          >
+            <TextField
+              id="careful-speech-speaker"
+              label={strings.speaker}
+              value={speaker}
+              onChange={(e) => onSpeakerChange(e.target.value)}
+              size="small"
+              inputRef={speakerInputRef}
+              error={highlightSpeaker}
+              sx={{
+                width: '40%',
+                ...(highlightSpeaker
+                  ? {
+                      '& .MuiOutlinedInput-root': {
+                        boxShadow: 4,
+                      },
+                    }
+                  : undefined),
+              }}
+            />
+            {phase === 'recorded' && (
+              <IconButton
+                aria-label={strings.clearRecording}
+                onClick={onClearRecording}
+              >
+                <DeleteIcon />
+              </IconButton>
+            )}
           </Stack>
           {(showDockedRecordButton || showNextClause) && (
             <Box

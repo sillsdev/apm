@@ -2266,43 +2266,49 @@ function WSAudioPlayer(props: IProps) {
             {waveformNode}
           </Box>
 
-          <Stack
-            direction="row"
-            spacing={1}
-            sx={{ py: 1, display: 'flex', justifyContent: 'space-between' }}
-          >
-            <Box sx={{ display: 'flex', justifyContent: 'flex-start', mt: 1 }}>
-              {onVersions && (
-                <AltButton
-                  id="pdRecordVersions"
-                  onClick={onVersions}
-                  title={ts.versionHistory}
-                  startIcon={
-                    <VersionsIcon sx={{ width: '14px', height: '14px' }} />
-                  }
-                >
-                  {ts.versionHistory}
-                </AltButton>
-              )}
-            </Box>
-
+          {(onVersions ||
+            clearRecordingNode ||
+            (handleSave && showWaveformSaveButton)) && (
             <Stack
               direction="row"
               spacing={1}
-              sx={{ display: 'flex', alignItems: 'center' }}
+              sx={{ py: 1, display: 'flex', justifyContent: 'space-between' }}
             >
-              {clearRecordingNode}
-              {handleSave && showWaveformSaveButton && (
-                <PriButton
-                  id="rec-save"
-                  onClick={handleSave}
-                  disabled={isSaveDisabled}
-                >
-                  {ts.save}
-                </PriButton>
-              )}
+              <Box
+                sx={{ display: 'flex', justifyContent: 'flex-start', mt: 1 }}
+              >
+                {onVersions && (
+                  <AltButton
+                    id="pdRecordVersions"
+                    onClick={onVersions}
+                    title={ts.versionHistory}
+                    startIcon={
+                      <VersionsIcon sx={{ width: '14px', height: '14px' }} />
+                    }
+                  >
+                    {ts.versionHistory}
+                  </AltButton>
+                )}
+              </Box>
+
+              <Stack
+                direction="row"
+                spacing={1}
+                sx={{ display: 'flex', alignItems: 'center' }}
+              >
+                {clearRecordingNode}
+                {handleSave && showWaveformSaveButton && (
+                  <PriButton
+                    id="rec-save"
+                    onClick={handleSave}
+                    disabled={isSaveDisabled}
+                  >
+                    {ts.save}
+                  </PriButton>
+                )}
+              </Stack>
             </Stack>
-          </Stack>
+          )}
         </Stack>
         {allowRecord && !dockRecordButton && (
           <Box sx={{ width: 'auto' }}>
