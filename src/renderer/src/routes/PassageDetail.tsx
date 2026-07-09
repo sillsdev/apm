@@ -85,7 +85,16 @@ const artifactSlug = useMemo(() => {
   ) : tool === ToolSlug.PhraseBackTranslate && isBoldWorkflow ? (
     <PassageDetailLwcTranslation width={Math.max(0, paneWidth - 40)} />
   ) : boldClauseTranscription ? (
-    <PassageDetailLwcTranscription width={Math.max(0, paneWidth - 40)} />
+    // Key on currentstep so the shared transcription component remounts when
+    // moving between the adjacent Careful- and LWC-Transcription steps. Desktop
+    // gets this for free via <Paper key={currentstep}> in PassageDetailGrids;
+    // without it here the reused instance carries state (and flushes the prior
+    // step's text onto the new step's artifact), so LWC shows Careful's
+    // transcriptions. (TT-7503)
+    <PassageDetailLwcTranscription
+      key={currentstep}
+      width={Math.max(0, paneWidth - 40)}
+    />
   ) : tool === ToolSlug.TeamCheck ? (
     <TeamCheckReferenceMobile width={Math.max(0, paneWidth - 40)} />
   ) : tool === ToolSlug.Prompt ? (
