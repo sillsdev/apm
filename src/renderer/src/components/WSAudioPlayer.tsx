@@ -120,6 +120,10 @@ interface IProps {
   mediaId?: string;
   allowSegment?: NamedRegions | undefined;
   allowAutoSegment?: boolean;
+  /** When true, hide the generic segment-edit controls (Add/Remove Segment and
+   * Reset) even though segments are shown/colored/navigable. Used by Careful
+   * Speech, which supplies its own Split/Combine controls. */
+  hideSegmentControls?: boolean;
   allowSpeed?: boolean;
   allowDeltaVoice?: boolean;
   /** When false, hide the Download item in the more menu. Default true if omitted. */
@@ -312,6 +316,7 @@ function WSAudioPlayer(props: IProps) {
     mediaId,
     allowSegment,
     allowAutoSegment,
+    hideSegmentControls,
     allowSpeed,
     allowDeltaVoice,
     allowDownload,
@@ -2404,7 +2409,7 @@ function WSAudioPlayer(props: IProps) {
             >
               {allowSegment && (
                 <Stack direction="row" spacing={1}>
-                  {renderSegmentControls()}
+                  {!hideSegmentControls && renderSegmentControls()}
                   {hideToolbar && canUndo && !oneShotUsed && (
                     <IconButton
                       id="wsUndo"
@@ -2531,7 +2536,7 @@ function WSAudioPlayer(props: IProps) {
             >
               {metaData}
               {clearRecordingNode}
-              {allowSegment && (
+              {allowSegment && !hideSegmentControls && (
                 <AltButton
                   id="wsSegmentReset"
                   sx={smallButtonProps}

@@ -62,6 +62,9 @@ export interface DetailPlayerProps {
   allowSegment?: NamedRegions | undefined;
   saveSegments?: SaveSegments | undefined;
   allowAutoSegment?: boolean;
+  /** Hide the generic Add/Remove Segment and Reset controls (Careful Speech
+   * supplies its own Split/Combine controls). */
+  hideSegmentControls?: boolean;
   suggestedSegments?: string;
   forceRegionOnly?: boolean;
   verses?: string;
@@ -121,6 +124,7 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
   const {
     allowSegment,
     allowAutoSegment,
+    hideSegmentControls,
     saveSegments,
     suggestedSegments,
     forceRegionOnly,
@@ -436,6 +440,7 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
         busy={pdBusy}
         allowSegment={allowSegment}
         allowAutoSegment={allowAutoSegment}
+        hideSegmentControls={hideSegmentControls}
         hideZoom={hideZoom}
         defaultRegionParams={defaultSegParams}
         canSetDefaultParams={canSetDefaultParams}
