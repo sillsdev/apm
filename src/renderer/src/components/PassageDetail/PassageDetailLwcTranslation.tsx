@@ -37,6 +37,7 @@ import {
 import { useLwcTranslationClauses } from './lwcTranslation/useLwcTranslationClauses';
 import LwcTranslationClauseNav from './lwcTranslation/LwcTranslationClauseNav';
 import LwcTranslationReferencePlayer from './lwcTranslation/LwcTranslationReferencePlayer';
+import ClauseProgress from './boldClause/ClauseProgress';
 import LwcTranslationControls, {
   LwcTranslationPhase,
 } from './lwcTranslation/LwcTranslationControls';
@@ -539,17 +540,32 @@ export function PassageDetailLwcTranslation({ width }: IProps) {
         width: '100%',
       }}
     >
-      <LwcTranslationReferencePlayer
-        width={width}
-        referenceMediaId={referenceMediaId}
-        playKey={referencePlayKey}
-        onPlaybackComplete={handleReferencePlaybackComplete}
-      />
+      <Box sx={{ position: 'relative', width: '100%' }}>
+        <LwcTranslationReferencePlayer
+          width={width}
+          referenceMediaId={referenceMediaId}
+          playKey={referencePlayKey}
+          onPlaybackComplete={handleReferencePlaybackComplete}
+        />
+        {entryPositioned && (
+          <ClauseProgress
+            completedCount={effectiveLwcCompleted.size}
+            totalClauses={clauseRegions.length}
+            progressLabel={t.progress}
+            sx={{
+              position: 'absolute',
+              top: 8,
+              right: 8,
+              zIndex: 1,
+              pointerEvents: 'none',
+            }}
+          />
+        )}
+      </Box>
       {entryPositioned && (
         <LwcTranslationClauseNav
           currentIndex={currentIndex}
           totalClauses={clauseRegions.length}
-          completedCount={effectiveLwcCompleted.size}
           currentClauseRecorded={currentClauseRecorded}
           navigationDisabled={navigationDisabled}
           onPrev={handlePrevClause}

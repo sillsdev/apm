@@ -6,6 +6,7 @@ let mockLwcRecordingComplete = new Set<number>();
 let mockTranscribed = new Set<number>();
 let editorProps: Record<string, unknown> | undefined;
 let navProps: Record<string, unknown> | undefined;
+let progressProps: Record<string, unknown> | undefined;
 let mockStepSettings = JSON.stringify({ artifactTypeId: 'pbt-id' });
 let mockCurrentStep = 'step1';
 const mockSetStepComplete = jest.fn();
@@ -148,6 +149,19 @@ jest.mock('./boldClause/BoldClauseNav', () => ({
   },
 }));
 
+jest.mock('./boldClause/ClauseProgress', () => ({
+  __esModule: true,
+  default: (props: Record<string, unknown>) => {
+    progressProps = props;
+    return (
+      <div
+        data-cy="clause-progress"
+        data-completed-count={String(props.completedCount)}
+      />
+    );
+  },
+}));
+
 jest.mock('./lwcTranscription/BoldClauseTranscriptionEditor', () => ({
   __esModule: true,
   default: (props: Record<string, unknown>) => {
@@ -166,6 +180,7 @@ describe('PassageDetailLwcTranscription', () => {
     mockCurrentStep = 'step1';
     editorProps = undefined;
     navProps = undefined;
+    progressProps = undefined;
     mockSetStepComplete.mockClear();
     mockStepComplete.mockReset();
     mockStepComplete.mockReturnValue(false);
@@ -314,7 +329,7 @@ describe('PassageDetailLwcTranscription', () => {
 
     const { rerender } = render(<PassageDetailLwcTranscription width={400} />);
     await waitFor(() => {
-      expect(navProps?.completedCount).toBe(11);
+      expect(progressProps?.completedCount).toBe(11);
       expect(navProps?.currentIndex).toBe(11);
     });
 
@@ -324,7 +339,7 @@ describe('PassageDetailLwcTranscription', () => {
     rerender(<PassageDetailLwcTranscription width={400} />);
 
     await waitFor(() => {
-      expect(navProps?.completedCount).toBe(0);
+      expect(progressProps?.completedCount).toBe(0);
       expect(navProps?.currentIndex).toBe(0);
     });
   });

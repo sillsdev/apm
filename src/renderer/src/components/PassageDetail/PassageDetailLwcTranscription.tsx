@@ -30,6 +30,7 @@ import {
 import { useLwcTranslationClauses } from './lwcTranslation/useLwcTranslationClauses';
 import ClauseAudioPlayer from './boldClause/ClauseAudioPlayer';
 import BoldClauseNav from './boldClause/BoldClauseNav';
+import ClauseProgress from './boldClause/ClauseProgress';
 import BoldClauseTranscriptionEditor from './lwcTranscription/BoldClauseTranscriptionEditor';
 import {
   getLwcRecordingRowForClause,
@@ -489,26 +490,41 @@ export function PassageDetailBoldClauseTranscription({ width }: IProps) {
         overflow: 'hidden',
       }}
     >
-      <ClauseAudioPlayer
-        width={width}
-        mediaId={referenceMediaId}
-        playKey={referencePlayKey}
-        onPlaybackComplete={() => undefined}
-        playerId={`${idPrefix}-player`}
-        dataCy={`${idPrefix}-player`}
-        waitLabel={`${idPrefix} media url`}
-      />
+      <Box sx={{ position: 'relative', width: '100%' }}>
+        <ClauseAudioPlayer
+          width={width}
+          mediaId={referenceMediaId}
+          playKey={referencePlayKey}
+          onPlaybackComplete={() => undefined}
+          playerId={`${idPrefix}-player`}
+          dataCy={`${idPrefix}-player`}
+          waitLabel={`${idPrefix} media url`}
+        />
+        {entryPositioned && (
+          <ClauseProgress
+            completedCount={effectiveTranscribed.size}
+            totalClauses={clauseRegions.length}
+            progressLabel={t.progress}
+            sx={{
+              position: 'absolute',
+              top: 8,
+              right: 8,
+              zIndex: 1,
+              pointerEvents: 'none',
+            }}
+          />
+        )}
+      </Box>
       {entryPositioned && (
         <>
           <BoldClauseNav
             currentIndex={currentIndex}
             totalClauses={clauseRegions.length}
-            completedCount={effectiveTranscribed.size}
             currentClauseComplete={currentClauseTranscribed}
             navigationDisabled={navigationDisabled}
             onPrev={handlePrevClause}
             onNext={handleNextClauseArrow}
-            strings={{ clauseIndex: t.clauseIndex, progress: t.progress }}
+            strings={{ clauseIndex: t.clauseIndex }}
             dataCy={`${idPrefix}-clause-nav`}
             prevId={`${idPrefix}-clause-prev`}
             nextId={`${idPrefix}-clause-next`}
