@@ -132,6 +132,8 @@ interface IProps {
   allowAutoSegment?: boolean;
   allowSpeed?: boolean;
   allowDeltaVoice?: boolean;
+  /** When false, hide the Download item in the more menu. Default true if omitted. */
+  allowDownload?: boolean;
   alternatePlayer?: boolean;
   oneTryOnly?: boolean;
   height: number;
@@ -279,6 +281,7 @@ function WSAudioPlayer(props: IProps) {
     allowAutoSegment,
     allowSpeed,
     allowDeltaVoice,
+    allowDownload,
     oneTryOnly,
     height,
     width,
@@ -1841,7 +1844,7 @@ function WSAudioPlayer(props: IProps) {
           </Stack>
         </MenuItem>
       ),
-      myMediaId && (
+      myMediaId && allowDownload !== false && (
         <MenuItem
           key="audio-download"
           disabled={audioDownload.isDisabled}
