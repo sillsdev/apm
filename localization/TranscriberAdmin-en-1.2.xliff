@@ -4945,6 +4945,13 @@
                <context context-type="sourcefile">apphead.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="main.addSectionOrPassage">
+            <source>Add {0} or Passage</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">UserMenu.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="main.admin">
             <source>Admin</source>
             <target/>

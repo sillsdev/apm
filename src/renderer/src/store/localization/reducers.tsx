@@ -890,6 +890,7 @@ const initialState = {
 	"main": new LocalizedStrings({
 		"en": {
 			"about": "About",
+			"addSectionOrPassage": "Add {0} or Passage",
 			"admin": "Admin",
 			"brandedSite": "Access {0} Site",
 			"apiError": "API Error:",

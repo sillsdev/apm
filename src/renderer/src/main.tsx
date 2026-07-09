@@ -72,6 +72,7 @@ const renderApp = (fingerprint: string, projectsLoaded: string[] = []) => {
     playingMediaId: '',
     mobileView:
       localStorage.getItem(localUserKey(LocalKey.mobileView)) === 'true',
+    addStoryOrPassage: false, //session-only, not persisted (cleared on exit)
   };
 
   const root = createRoot(document.getElementById('root') as HTMLElement);

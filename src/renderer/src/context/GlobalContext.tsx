@@ -47,6 +47,7 @@ export interface GlobalState {
   snackMessage: React.JSX.Element; //verified //SnackBar
   offline: boolean;
   mobileView: boolean; //verified //UserMenu - toggle mobile view
+  addStoryOrPassage: boolean; //UserMenu - session-only, bold member can add sections/passages + record prompt
 }
 
 export type GlobalKey = keyof GlobalState;

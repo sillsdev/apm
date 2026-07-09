@@ -67,7 +67,13 @@ const PlanProvider = (props: IProps) => {
   const [isDeveloper] = useGlobal('developer');
   const getPlanType = usePlanType();
   const { setProjectDefault, getProjectDefault } = useProjectDefaults();
-  const { canEditSheet, canPublish } = useProjectPermissions();
+  const { canEditSheet: canEditSheetPerm, canPublish } =
+    useProjectPermissions();
+  const [addStoryOrPassage] = useGlobal('addStoryOrPassage');
+  // Bold-workflow members can add sections/passages when the session-only
+  // "Add {Story} or Passage" flag is set (see UserMenu). The flag can only be
+  // set in a bold context, so no extra workflow guard is needed here.
+  const canEditSheet = canEditSheetPerm || addStoryOrPassage;
   const [state, setState] = useState({
     ...initState,
     mediafiles,
