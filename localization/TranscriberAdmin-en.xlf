@@ -4240,6 +4240,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="main.addSectionOrPassage">
+         <segment>
+            <source>Add {0} or Passage</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="main.admin">
          <segment>
             <source>Admin</source>

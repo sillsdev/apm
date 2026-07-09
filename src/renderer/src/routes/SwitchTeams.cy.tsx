@@ -153,6 +153,7 @@ describe('SwitchTeams', () => {
     snackMessage: (<></>) as React.JSX.Element,
     offline: false,
     mobileView: false,
+    addStoryOrPassage: false,
     ...overrides,
   });
 
@@ -512,6 +513,7 @@ describe('SwitchTeamsGuard', () => {
               snackMessage: (<></>) as React.JSX.Element,
               offline: false,
               mobileView: false,
+              addStoryOrPassage: false,
               ...globalOverrides,
             }}
           >

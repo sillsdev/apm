@@ -840,6 +840,7 @@ export interface ILanguagePickerStrings extends Localize.LocalizedStringsMethods
 
 export interface IMainStrings extends Localize.LocalizedStringsMethods {
     "about": string;
+    "addSectionOrPassage": string;
     "admin": string;
     "brandedSite": string;
     "apiError": string;

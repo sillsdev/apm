@@ -137,6 +137,7 @@ const createInitialState = (memory: Memory): GlobalState => ({
   snackMessage: (<></>) as React.JSX.Element,
   offline: false,
   mobileView: true,
+  addStoryOrPassage: false,
 });
 
 const theme = createTheme({

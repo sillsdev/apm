@@ -77,6 +77,7 @@ describe('PlayButton', () => {
     snackMessage: (<></>) as React.JSX.Element,
     offline: false,
     mobileView: false,
+    addStoryOrPassage: false,
   });
 
   const mountPlayButton = (props: React.ComponentProps<typeof PlayButton>) => {

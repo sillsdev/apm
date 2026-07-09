@@ -68,6 +68,7 @@ describe('FilterContent', () => {
     snackMessage: (<></>) as React.JSX.Element,
     offline: false,
     mobileView: false,
+    addStoryOrPassage: false,
   });
 
   const mockFilterData: FilterData = {

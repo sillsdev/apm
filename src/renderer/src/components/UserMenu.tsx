@@ -28,6 +28,12 @@ import { useOrbitData } from '../hoc/useOrbitData';
 import { shallowEqual, useSelector } from 'react-redux';
 import { mainSelector, sharedSelector } from '../selector';
 import ProfileDialog from './ProfileDialog';
+import { useRole } from '../crud/useRole';
+import { useOrganizedBy } from '../crud';
+import {
+  useTeamWorkflowProcess,
+  BOLD_WORKFLOW_PROCESS,
+} from '../crud/useTeamWorkflowProcess';
 
 const TermsItem = styled(StyledMenuItem)<MenuItemProps>(() => ({
   textAlign: 'center',
@@ -54,6 +60,13 @@ export function UserMenu(props: IProps) {
   const [developer] = useGlobal('developer');
   const [user] = useGlobal('user');
   const [, setMobileView] = useGlobal('mobileView');
+  const [org] = useGlobal('organization');
+  const [addStoryOrPassage, setAddStoryOrPassage] =
+    useGlobal('addStoryOrPassage');
+  const { userIsAdmin } = useRole();
+  const { getOrganizedBy } = useOrganizedBy();
+  const isBoldWorkflow =
+    useTeamWorkflowProcess(org) === BOLD_WORKFLOW_PROCESS;
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const [shift, setShift] = React.useState(false);
   const [userRec, setUserRec] = React.useState<UserD | undefined>(undefined);
@@ -91,6 +104,12 @@ export function UserMenu(props: IProps) {
     const newValue = !isMobileView;
     setMobileView(newValue);
     localStorage.setItem(localUserKey(LocalKey.mobileView), String(newValue));
+    setAnchorEl(null);
+  };
+
+  const handleAddStoryOrPassageToggle = () => {
+    // session-only flag; intentionally not persisted to localStorage
+    setAddStoryOrPassage(!addStoryOrPassage);
     setAnchorEl(null);
   };
 
@@ -140,6 +159,23 @@ export function UserMenu(props: IProps) {
               />
             </ListItemIcon>
             <ListItemText primary={t.mobileView} />
+          </StyledMenuItem>
+        )}
+        {isBoldWorkflow && !userIsAdmin && (
+          <StyledMenuItem
+            id="addStoryOrPassage"
+            onClick={handleAddStoryOrPassageToggle}
+          >
+            <ListItemIcon>
+              <Checkbox
+                checked={addStoryOrPassage}
+                size="small"
+                sx={{ padding: 0 }}
+              />
+            </ListItemIcon>
+            <ListItemText
+              primary={t.addSectionOrPassage.replace('{0}', getOrganizedBy(true))}
+            />
           </StyledMenuItem>
         )}
         {shift && !isElectron && (

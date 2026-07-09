@@ -67,6 +67,7 @@ describe('BurritoUploadDialog', () => {
     snackMessage: (<></>) as React.JSX.Element,
     offline: false,
     mobileView: false,
+    addStoryOrPassage: false,
   });
 
   const mountDialog = (

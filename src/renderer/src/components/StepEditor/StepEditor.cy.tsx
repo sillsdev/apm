@@ -163,6 +163,7 @@ const createInitialState = (memory: Memory): GlobalState => ({
   snackMessage: (<></>) as React.JSX.Element,
   offline: false,
   mobileView: false,
+  addStoryOrPassage: false,
 });
 
 function StepEditorInDialog({ org }: { org: string }) {

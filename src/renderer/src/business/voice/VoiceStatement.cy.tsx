@@ -73,6 +73,7 @@ describe('VoiceStatement', () => {
     snackMessage: (<></>) as React.JSX.Element,
     offline: false,
     mobileView: false,
+    addStoryOrPassage: false,
     ...overrides,
   });
 
