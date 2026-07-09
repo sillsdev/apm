@@ -120,6 +120,7 @@ export function PassageDetailBoldClauseTranscription({ width }: IProps) {
   const entryPositionDoneRef = useRef(false);
   const flushSaveRef = useRef<(() => Promise<void>) | undefined>(undefined);
   const textLoadedForMediaRef = useRef<string | undefined>(undefined);
+  const loadedTranscriptionRef = useRef<string>('');
 
   const mediafile = useMemo(
     () => mediafiles.find((m) => m.id === mediafileId),
@@ -282,16 +283,34 @@ export function PassageDetailBoldClauseTranscription({ width }: IProps) {
     const value = typeof transcription === 'string' ? transcription : '';
     setText(value);
     textLoadedForMediaRef.current = referenceMediaId;
+    loadedTranscriptionRef.current = value;
   }, [recordingRow, referenceMediaId]);
 
   useEffect(() => {
     if (!referenceMediaId) {
       setText('');
+      textLoadedForMediaRef.current = undefined;
+      loadedTranscriptionRef.current = '';
       return;
     }
-    if (textLoadedForMediaRef.current === referenceMediaId) return;
-    loadTextForCurrentClause();
-  }, [referenceMediaId, loadTextForCurrentClause]);
+    if (textLoadedForMediaRef.current !== referenceMediaId) {
+      loadTextForCurrentClause();
+      return;
+    }
+    // Same clause, but the saved transcription may have become available (or
+    // changed) only after our initial read — e.g. when returning to the step
+    // before rowData finished (re)loading, the first clause reads empty and
+    // then the real value arrives. Refresh from the saved value, but only when
+    // the user has no unsaved edits, so in-progress typing is never clobbered.
+    const saved = recordingRow?.mediafile?.attributes?.transcription;
+    const savedValue = typeof saved === 'string' ? saved : '';
+    if (
+      savedValue !== loadedTranscriptionRef.current &&
+      text === loadedTranscriptionRef.current
+    ) {
+      loadTextForCurrentClause();
+    }
+  }, [referenceMediaId, recordingRow, text, loadTextForCurrentClause]);
 
   const positionOnClause = useCallback(
     async (
