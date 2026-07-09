@@ -180,6 +180,7 @@ describe('PassageDetailLwcTranscription', () => {
     mockCurrentStep = 'step1';
     editorProps = undefined;
     navProps = undefined;
+    progressProps = undefined;
     mockSetStepComplete.mockClear();
     mockStepComplete.mockReset();
     mockStepComplete.mockReturnValue(false);
