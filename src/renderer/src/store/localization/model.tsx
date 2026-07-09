@@ -1877,6 +1877,7 @@ export interface IVerseStrings extends Localize.LocalizedStringsMethods {
     "canceling": string;
     "clipboard": string;
     "doneEditingReference": string;
+    "edit": string;
     "editReference": string;
     "issues": string;
     "markVerses": string;

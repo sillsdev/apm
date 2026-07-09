@@ -1,5 +1,6 @@
 import {
   Box,
+  Button,
   Paper,
   Table,
   TableBody,
@@ -11,6 +12,7 @@ import {
   Typography,
 } from '@mui/material';
 import WarningIcon from '@mui/icons-material/Warning';
+import EditIcon from '@mui/icons-material/Edit';
 import { useRef, useState, type RefObject } from 'react';
 import { LightTooltip } from '../../../../control/LightTooltip';
 import {
@@ -28,6 +30,14 @@ interface MarkVersesTableIsMobileProps {
   onReferenceEdit?: (rowIndex: number, value: string) => void;
   /** Whether the user may hand-edit references inline. */
   canEdit?: boolean;
+  /** Open the Edit Reference dialog for the given data-row index. */
+  onEditReference?: (rowIndex: number) => void;
+  /** Whether the Edit Reference button may be shown (respects permissions). */
+  canEditReference?: boolean;
+  /** Localized text shown on the Edit Reference button (e.g. "Edit"). */
+  editLabel?: string;
+  /** Localized label used as the Edit Reference button's tooltip / aria-label. */
+  editReferenceLabel?: string;
   tableRowRefs?: RefObject<(HTMLTableRowElement | null)[]>;
 }
 
@@ -41,6 +51,10 @@ export default function MarkVersesTableIsMobile({
   onRowSelect,
   onReferenceEdit,
   canEdit,
+  onEditReference,
+  canEditReference,
+  editLabel,
+  editReferenceLabel,
   tableRowRefs,
 }: MarkVersesTableIsMobileProps) {
   const rows = data.slice(1);
@@ -83,13 +97,16 @@ export default function MarkVersesTableIsMobile({
       <Table stickyHeader size="small" aria-label="mobile mark verses table">
         <TableHead>
           <TableRow>
-            <TableCell>
+            <TableCell sx={{ pl: 1.5 }}>
               {header[ColName.Limits]?.value ?? 'Start-Stop'}
             </TableCell>
             {/* Dedicated, always-present warning column so the reference text
                 never shifts whether or not a row carries a warning icon. */}
             <TableCell padding="none" aria-hidden sx={{ width: 36 }} />
             <TableCell>{header[ColName.Ref]?.value ?? 'Reference'}</TableCell>
+            {/* Action column: holds the Edit Reference button on the
+                selected row; empty header keeps the columns aligned. */}
+            <TableCell padding="none" aria-hidden sx={{ width: 88 }} />
           </TableRow>
         </TableHead>
 
@@ -136,6 +153,7 @@ export default function MarkVersesTableIsMobile({
                   sx={{
                     whiteSpace: 'nowrap',
                     width: '42%',
+                    pl: 1.5,
                     backgroundColor: 'inherit',
                     py: 0.75,
                   }}
@@ -270,6 +288,63 @@ export default function MarkVersesTableIsMobile({
                       {reference.value || '-'}
                     </Typography>
                   )}
+                </TableCell>
+
+                {/* Edit Reference button — rendered on every row but only
+                    visible on the current (highlighted) row, so the control
+                    sits beside the segment the user is working on. The cell is
+                    always present to keep the column width stable. Its `py`
+                    gives the button breathing room above/below within the row.
+                    Sizing is font-relative (line-height + padding, no fixed
+                    height) so it adapts when the label is localized. */}
+                <TableCell
+                  padding="none"
+                  align="right"
+                  sx={{
+                    width: 88,
+                    backgroundColor: 'inherit',
+                    py: 0.5,
+                    // Keep the button clear of the table's right edge so it
+                    // reads as an action rather than being jammed in the corner.
+                    pr: 2,
+                  }}
+                  onClick={(event) => event.stopPropagation()}
+                >
+                  {isCurrentRow &&
+                  canEditReference &&
+                  onEditReference &&
+                  hasLimits ? (
+                    <LightTooltip
+                      id={`verse-edit-reference-tip-${rowIndex}`}
+                      title={editReferenceLabel ?? ''}
+                    >
+                      <Button
+                        aria-label={`verse-edit-reference-${rowIndex}`}
+                        variant="outlined"
+                        size="small"
+                        startIcon={<EditIcon />}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          onEditReference(rowIndex);
+                        }}
+                        sx={{
+                          minWidth: 0,
+                          // The theme pins small buttons to a fixed 36px height,
+                          // but make this one more compact to fit nicely in the table row
+                          height: 'auto',
+                          minHeight: 0,
+                          px: 1,
+                          py: 0.25,
+                          lineHeight: 1.4,
+                          textTransform: 'none',
+                          '& .MuiButton-startIcon': { mr: 0.25 },
+                          '& .MuiButton-startIcon > svg': { fontSize: 16 },
+                        }}
+                      >
+                        {editLabel ?? 'Edit'}
+                      </Button>
+                    </LightTooltip>
+                  ) : null}
                 </TableCell>
               </TableRow>
             );

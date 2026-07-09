@@ -18,7 +18,6 @@ import { ArtifactTypeSlug } from '../../../../crud/artifactTypeSlug';
 import { useArtifactType } from '../../../../crud/useArtifactType';
 import { usePlanType } from '../../../../crud/usePlanType';
 import { IRegion } from '../../../../crud/useWavesurferRegions';
-import EditIcon from '@mui/icons-material/Edit';
 import {
   ISharedStrings,
   IVerseStrings,
@@ -33,7 +32,6 @@ import {
   NamedRegions,
   updateSegments,
 } from '../../../../utils/namedSegments';
-import { prettySegment } from '../../../../utils/prettySegment';
 import { refMatch } from '../../../../utils/refMatch';
 import { useStepPermissions } from '../../../../utils/useStepPermission';
 import { useMobile } from '../../../../utils/useMobile';
@@ -61,8 +59,6 @@ import EditReferenceDropdown, {
   EditReferenceValue,
 } from './EditReferenceDropdown';
 import MarkVersesTableIsMobile from './MarkVersesTableIsMobile';
-import { AltButton } from '../../../../control/AltButton';
-import { TabActions } from '../../../../control/TabActions';
 import {
   createMarkVersesUndoStack,
   type MarkVersesSnapshot,
@@ -1366,17 +1362,9 @@ export default function PassageDetailMarkVersesIsMobile({
     [scheduleAutosave]
   );
 
-  const handleEditReference = () => {
-    let rowIndex = findHighlightedRowIndex(dataRef.current);
-    if (rowIndex <= 0 && currentSegment.trim()) {
-      rowIndex = dataRef.current.findIndex((row, index) => {
-        if (index === 0) return false;
-        const segment = getSegmentFromRow(row);
-        return (
-          segment && prettySegment(segment).trim() === currentSegment.trim()
-        );
-      });
-    }
+  /** Open the Edit Reference dialog for a specific table row (the in-row
+   * button lives on the currently-selected/highlighted row). */
+  const handleEditReference = (rowIndex: number) => {
     if (rowIndex <= 0) return;
     const row = dataRef.current[rowIndex] as ICell[] | undefined;
     if (!row || !getSegmentFromRow(row)) return;
@@ -1546,9 +1534,9 @@ export default function PassageDetailMarkVersesIsMobile({
         hideZoom
         showTranscriptionButton={false}
       />
-      {/* Inset the action row and table by the same 8px (px:1) the player pads
-          its own content, so their right (and left) edges line up with the
-          waveform and controls above instead of overhanging the right edge. */}
+      {/* Inset the table by the same 8px (px:1) the player pads its own content,
+          so its right (and left) edges line up with the waveform and controls
+          above instead of overhanging the right edge. */}
       <Box
         sx={{
           px: 1,
@@ -1559,33 +1547,15 @@ export default function PassageDetailMarkVersesIsMobile({
           overflow: 'hidden',
         }}
       >
-        <TabActions
-          sx={{
-            mt: 0.5,
-            py: 0,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 0.5,
-            flexWrap: 'wrap',
-            flexShrink: 0,
-            width: '100%',
-          }}
-        >
-          <AltButton
-            onClick={handleEditReference}
-            disabled={!hasPermission || numSegments === 0}
-            sx={{ px: 1.5, py: 0.5 }}
-          >
-            <EditIcon sx={{ mr: 0.5 }} fontSize="small" />
-            {editReferenceLabel}
-          </AltButton>
-        </TabActions>
         <MarkVersesTableIsMobile
           data={data}
           onRowSelect={handleSelectRow}
           onReferenceEdit={handleReferenceTextEdit}
           canEdit={hasPermission && !isMobile}
+          onEditReference={handleEditReference}
+          canEditReference={hasPermission}
+          editLabel={t.edit || 'Edit'}
+          editReferenceLabel={editReferenceLabel}
           tableRowRefs={tableRowRefs}
         />
       </Box>

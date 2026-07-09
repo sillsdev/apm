@@ -11053,6 +11053,13 @@
                <context context-type="sourcefile">PassageDetailMarkVerse.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="verse.edit">
+            <source>Edit</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">MarkVersesTableIsMobile.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="verse.editReference">
             <source>Edit Reference</source>
             <target/>

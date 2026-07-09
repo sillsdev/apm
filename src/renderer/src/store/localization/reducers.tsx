@@ -1982,6 +1982,7 @@ const initialState = {
 			"canceling": "Canceling verse markup",
 			"clipboard": "clipboard",
 			"doneEditingReference": "Done Editing",
+			"edit": "Edit",
 			"editReference": "Edit Reference",
 			"issues": "The verse markup has issues. Do you want to continue?",
 			"markVerses": "Mark Verses",
