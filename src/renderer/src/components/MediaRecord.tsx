@@ -55,6 +55,8 @@ interface IProps {
   metaData?: React.JSX.Element | undefined;
   defaultFilename: string;
   allowDeltaVoice?: boolean | undefined;
+  /** When false, hide the Download item in the recorder's more menu. Default true if omitted. */
+  allowDownload?: boolean;
   setCanSave: (canSave: boolean) => void;
   setCanCancel?: ((canCancel: boolean) => void) | undefined;
   setStatusText: (status: string) => void;
@@ -108,6 +110,7 @@ function MediaRecord(props: IProps) {
     mediaId,
     defaultFilename,
     allowDeltaVoice,
+    allowDownload,
     artifactId,
     passageId,
     planId,
@@ -676,6 +679,7 @@ function MediaRecord(props: IProps) {
         loading={loading}
         allowZoom={allowZoom}
         allowDeltaVoice={allowDeltaVoice}
+        allowDownload={allowDownload}
         oneTryOnly={effectiveOneTryOnly}
         width={width}
         height={height || 300}

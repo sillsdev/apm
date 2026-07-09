@@ -174,6 +174,7 @@ export default function LwcTranslationControls({
             isStopLogic={true}
             noNewVoice={true}
             allowDeltaVoice={true}
+            allowDownload={false}
             allowNoNoise={true}
             hideToolbar
             dockRecordButton

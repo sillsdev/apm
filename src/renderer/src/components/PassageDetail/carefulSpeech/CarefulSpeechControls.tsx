@@ -308,6 +308,7 @@ export default function CarefulSpeechControls({
                 isStopLogic={true}
                 noNewVoice={true}
                 allowDeltaVoice={true}
+                allowDownload={false}
                 allowNoNoise={true}
                 hideToolbar
                 dockRecordButton
