@@ -1,16 +1,14 @@
-import { Box, CircularProgress, IconButton, Typography } from '@mui/material';
+import { Box, IconButton, Typography } from '@mui/material';
 import ChevronLeft from '@mui/icons-material/ChevronLeft';
 import ChevronRight from '@mui/icons-material/ChevronRight';
 
 export interface BoldClauseNavStrings {
   clauseIndex: string;
-  progress: string;
 }
 
 interface Props {
   currentIndex: number;
   totalClauses: number;
-  completedCount: number;
   currentClauseComplete: boolean;
   navigationDisabled: boolean;
   onPrev: () => void;
@@ -21,12 +19,9 @@ interface Props {
   nextId?: string;
 }
 
-const PROGRESS_SIZE = 40;
-
 export default function BoldClauseNav({
   currentIndex,
   totalClauses,
-  completedCount,
   currentClauseComplete,
   navigationDisabled,
   onPrev,
@@ -37,9 +32,6 @@ export default function BoldClauseNav({
   nextId = 'bold-clause-next',
 }: Props) {
   if (totalClauses === 0) return null;
-
-  const progressValue =
-    totalClauses > 0 ? (completedCount / totalClauses) * 100 : 0;
 
   return (
     <Box
@@ -85,60 +77,6 @@ export default function BoldClauseNav({
       >
         <ChevronRight />
       </IconButton>
-      <Box
-        component="span"
-        data-cy="bold-clause-progress"
-        sx={{
-          ml: 1,
-          position: 'relative',
-          display: 'inline-flex',
-          flexShrink: 0,
-        }}
-        aria-label={strings.progress
-          .replace('{0}', String(completedCount))
-          .replace('{1}', String(totalClauses))}
-      >
-        <CircularProgress
-          variant="determinate"
-          value={100}
-          size={PROGRESS_SIZE}
-          thickness={4}
-          aria-hidden
-          sx={{ color: 'grey.300' }}
-        />
-        <CircularProgress
-          variant="determinate"
-          value={progressValue}
-          size={PROGRESS_SIZE}
-          thickness={4}
-          aria-hidden
-          sx={{
-            color: 'primary.main',
-            position: 'absolute',
-            left: 0,
-          }}
-        />
-        <Box
-          sx={{
-            top: 0,
-            left: 0,
-            bottom: 0,
-            right: 0,
-            position: 'absolute',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <Typography
-            variant="caption"
-            component="span"
-            sx={{ fontSize: '0.65rem', fontWeight: 600, lineHeight: 1 }}
-          >
-            {completedCount}/{totalClauses}
-          </Typography>
-        </Box>
-      </Box>
     </Box>
   );
 }

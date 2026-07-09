@@ -6,14 +6,16 @@ import BoldClauseNav from '../boldClause/BoldClauseNav';
 interface Props {
   currentIndex: number;
   totalClauses: number;
-  completedCount: number;
   currentClauseRecorded: boolean;
   navigationDisabled: boolean;
   onPrev: () => void;
   onNext: () => void;
 }
 
-export default function LwcTranslationClauseNav(props: Props) {
+export default function LwcTranslationClauseNav({
+  currentClauseRecorded,
+  ...rest
+}: Props) {
   const t: ILwcTranslationStrings = useSelector(
     lwcTranslationSelector,
     shallowEqual
@@ -21,9 +23,9 @@ export default function LwcTranslationClauseNav(props: Props) {
 
   return (
     <BoldClauseNav
-      {...props}
-      currentClauseComplete={props.currentClauseRecorded}
-      strings={{ clauseIndex: t.clauseIndex, progress: t.progress }}
+      {...rest}
+      currentClauseComplete={currentClauseRecorded}
+      strings={{ clauseIndex: t.clauseIndex }}
       dataCy="lwc-clause-nav"
       prevId="lwc-clause-prev"
       nextId="lwc-clause-next"
