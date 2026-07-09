@@ -245,6 +245,11 @@ export const formatMarkVersesReference = ({
     if (!startSuffixPart && !endSuffixPart) {
       return `${startChapter}:${startVerse}`;
     }
+    // A span whose start and end land on the same subpart (e.g. 1:1a-1:1a) is a
+    // single subpart, not a range — collapse it to `1:1a`.
+    if (startSuffixPart === endSuffixPart) {
+      return `${startChapter}:${startVerse}${startSuffixPart}`;
+    }
     if (startSuffixPart && endSuffixPart) {
       return `${startChapter}:${startVerse}${startSuffixPart}-${endSuffixPart}`;
     }
