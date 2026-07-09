@@ -42,6 +42,11 @@ import {
 
 const paperProps = { p: 2, m: 'auto', width: 'calc(100% - 32px)' } as SxProps;
 
+const messageSx = {
+  overflowWrap: 'break-word',
+  whiteSpace: 'normal',
+} as SxProps;
+
 function parseStepSettings(settings: unknown): Record<string, unknown> | null {
   if (!settings) return null;
   if (typeof settings === 'string') {
@@ -453,7 +458,7 @@ export function PassageDetailBoldClauseTranscription({ width }: IProps) {
   if (!hasClauses) {
     return (
       <Paper sx={paperProps}>
-        <Typography variant="h2" align="center">
+        <Typography variant="h5" align="center" sx={messageSx}>
           {t.noClauses}
         </Typography>
       </Paper>
@@ -463,7 +468,7 @@ export function PassageDetailBoldClauseTranscription({ width }: IProps) {
   if (!allRecordingsComplete) {
     return (
       <Paper sx={paperProps}>
-        <Typography variant="h2" align="center">
+        <Typography variant="h5" align="center" sx={messageSx}>
           {t.prerequisite}
         </Typography>
       </Paper>
