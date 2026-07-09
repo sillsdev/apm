@@ -41,13 +41,7 @@ import {
 } from '../../crud';
 import PublishExpansion from '../PublishExpansion';
 import { UnsavedContext } from '../../context/UnsavedContext';
-import {
-  useUserCanPublish,
-  useJsonParams,
-  waitForIt,
-  LocalKey,
-  localUserKey,
-} from '../../utils';
+import { useUserCanPublish, useJsonParams, waitForIt } from '../../utils';
 import { useOrbitData } from '../../hoc/useOrbitData';
 import { RecordIdentity } from '@orbit/records';
 import TeamSettings from './TeamSettings';
@@ -104,7 +98,6 @@ export function TeamDialog(props: IProps) {
   const { personalTeam } = ctx.state;
   const t: ICardsStrings = useSelector(cardsSelector, shallowEqual);
   const [memory] = useGlobal('memory');
-  const [, setMobileView] = useGlobal('mobileView');
   const [process, setProcess] = useState<string>();
   const [processOptions, setProcessOptions] = useState<OptionType[]>([]);
   const savingRef = useRef(false);
@@ -232,20 +225,6 @@ export function TeamDialog(props: IProps) {
             resetProjectPermissions: resetProjects,
           },
           async () => {
-            if (process === 'bold') {
-              setTimeout(() => {
-                // Show the newly created project in the mobile project view.
-                // teamCreate already selected the new team (LocalKey.team) and its
-                // default project, so we only need to switch on the mobile view
-                // (UserMenu logic) and navigate to the team screen (SwitchTeams logic).
-                setMobileView(true);
-                localStorage.setItem(
-                  localUserKey(LocalKey.mobileView),
-                  String(true)
-                );
-                setView('/team');
-              }, 500);
-            }
             reset();
           }
         );
