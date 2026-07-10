@@ -7,11 +7,12 @@ import {
   useRef,
   useState,
 } from 'react';
-import { Box, Paper, SxProps, Typography } from '@mui/material';
+import { Box, Typography } from '@mui/material';
 import { shallowEqual, useSelector } from 'react-redux';
 import { useGlobal } from '../../context/useGlobal';
 import usePassageDetailContext from '../../context/usePassageDetailContext';
 import PassageDetailPlayer from './PassageDetailPlayer';
+import StepMessage from './boldClause/StepMessage';
 import {
   ArtifactTypeSlug,
   remoteIdGuid,
@@ -62,7 +63,6 @@ import {
 } from './carefulSpeech/carefulSpeechClauseSplit';
 import { LocalKey } from '../../utils/localUserKey';
 
-const paperProps = { p: 2, m: 'auto', width: 'calc(100% - 32px)' } as SxProps;
 const toolId = 'CarefulSpeechTool';
 
 interface IProps {
@@ -1047,23 +1047,11 @@ export function PassageDetailCarefulSpeech({ width }: IProps) {
     recordingPassStarted && showRecorder && !speaker.trim();
 
   if (!isBoldWorkflow) {
-    return (
-      <Paper sx={paperProps}>
-        <Typography variant="h2" align="center">
-          {t.boldOnly}
-        </Typography>
-      </Paper>
-    );
+    return <StepMessage message={t.boldOnly} />;
   }
 
   if (!mediafileId) {
-    return (
-      <Paper sx={paperProps}>
-        <Typography variant="h2" align="center">
-          {ts.noAudio}
-        </Typography>
-      </Paper>
-    );
+    return <StepMessage message={ts.noAudio} />;
   }
 
   return (

@@ -6,7 +6,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import { Box, Paper, SxProps, Typography } from '@mui/material';
+import { Box } from '@mui/material';
 import { RecordKeyMap } from '@orbit/records';
 import { shallowEqual, useSelector } from 'react-redux';
 import { useGlobal } from '../../context/useGlobal';
@@ -31,6 +31,7 @@ import { useLwcTranslationClauses } from './lwcTranslation/useLwcTranslationClau
 import ClauseAudioPlayer from './boldClause/ClauseAudioPlayer';
 import BoldClauseNav from './boldClause/BoldClauseNav';
 import ClauseProgress from './boldClause/ClauseProgress';
+import StepMessage from './boldClause/StepMessage';
 import BoldClauseTranscriptionEditor from './lwcTranscription/BoldClauseTranscriptionEditor';
 import {
   getLwcRecordingRowForClause,
@@ -40,13 +41,6 @@ import {
   configForRecordingArtifact,
   type BoldClauseTranscriptionConfig,
 } from './boldClauseTranscription';
-
-const paperProps = { p: 2, m: 'auto', width: 'calc(100% - 32px)' } as SxProps;
-
-const messageSx = {
-  overflowWrap: 'break-word',
-  whiteSpace: 'normal',
-} as SxProps;
 
 function parseStepSettings(settings: unknown): Record<string, unknown> | null {
   if (!settings) return null;
@@ -457,23 +451,11 @@ export function PassageDetailBoldClauseTranscription({ width }: IProps) {
   }
 
   if (!hasClauses) {
-    return (
-      <Paper sx={paperProps}>
-        <Typography variant="h5" align="center" sx={messageSx}>
-          {t.noClauses}
-        </Typography>
-      </Paper>
-    );
+    return <StepMessage message={t.noClauses} />;
   }
 
   if (!allRecordingsComplete) {
-    return (
-      <Paper sx={paperProps}>
-        <Typography variant="h5" align="center" sx={messageSx}>
-          {t.prerequisite}
-        </Typography>
-      </Paper>
-    );
+    return <StepMessage message={t.prerequisite} />;
   }
 
   return (

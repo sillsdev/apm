@@ -6,7 +6,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import { Box, Paper, SxProps, Typography } from '@mui/material';
+import { Box } from '@mui/material';
 import { shallowEqual, useSelector } from 'react-redux';
 import { useGlobal } from '../../context/useGlobal';
 import usePassageDetailContext from '../../context/usePassageDetailContext';
@@ -38,12 +38,12 @@ import { useLwcTranslationClauses } from './lwcTranslation/useLwcTranslationClau
 import LwcTranslationClauseNav from './lwcTranslation/LwcTranslationClauseNav';
 import LwcTranslationReferencePlayer from './lwcTranslation/LwcTranslationReferencePlayer';
 import ClauseProgress from './boldClause/ClauseProgress';
+import StepMessage from './boldClause/StepMessage';
 import LwcTranslationControls, {
   LwcTranslationPhase,
 } from './lwcTranslation/LwcTranslationControls';
 import { LocalKey } from '../../utils/localUserKey';
 
-const paperProps = { p: 2, m: 'auto', width: 'calc(100% - 32px)' } as SxProps;
 const toolId = 'LwcTranslationTool';
 
 interface IProps {
@@ -490,43 +490,19 @@ export function PassageDetailLwcTranslation({ width }: IProps) {
   const navigationDisabled = phase === 'recording' || savingRecording;
 
   if (!isBoldWorkflow) {
-    return (
-      <Paper sx={paperProps}>
-        <Typography variant="h2" align="center">
-          {t.boldOnly}
-        </Typography>
-      </Paper>
-    );
+    return <StepMessage message={t.boldOnly} />;
   }
 
   if (!mediafileId) {
-    return (
-      <Paper sx={paperProps}>
-        <Typography variant="h2" align="center">
-          {ts.noAudio}
-        </Typography>
-      </Paper>
-    );
+    return <StepMessage message={ts.noAudio} />;
   }
 
   if (!bootstrapped || !hasClauses) {
-    return (
-      <Paper sx={paperProps}>
-        <Typography variant="h2" align="center">
-          {t.noClauses}
-        </Typography>
-      </Paper>
-    );
+    return <StepMessage message={t.noClauses} />;
   }
 
   if (!allCarefulSpeechComplete) {
-    return (
-      <Paper sx={paperProps}>
-        <Typography variant="h2" align="center">
-          {t.prerequisite}
-        </Typography>
-      </Paper>
-    );
+    return <StepMessage message={t.prerequisite} />;
   }
 
   return (
