@@ -8764,12 +8764,6 @@
             <target/>
          </segment>
       </unit>
-      <unit id="transcriber.automaticTranscriptionFailed">
-         <segment>
-            <source>Automatic Transcription Failed</source>
-            <target/>
-         </segment>
-      </unit>
       <unit id="transcriber.chooseSisterLang">
          <segment>
             <source>Choose a sister language</source>
