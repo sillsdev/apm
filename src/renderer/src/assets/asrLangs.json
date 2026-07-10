@@ -236,11 +236,6 @@
       "method": "omnilingual"
     },
     {
-      "language_iso": "afr",
-      "script": "Latn",
-      "method": "whisper"
-    },
-    {
       "language_iso": "agd",
       "script": "Latn",
       "method": "mms"
@@ -481,11 +476,6 @@
       "method": "omnilingual"
     },
     {
-      "language_iso": "amh",
-      "script": "Ethi",
-      "method": "whisper"
-    },
-    {
       "language_iso": "ami",
       "script": "Latn",
       "method": "mms"
@@ -601,11 +591,6 @@
       "method": "mms"
     },
     {
-      "language_iso": "ara",
-      "script": "Arab",
-      "method": "whisper"
-    },
-    {
       "language_iso": "arb",
       "script": "Arab",
       "method": "omnilingual"
@@ -674,11 +659,6 @@
       "language_iso": "asm",
       "script": "Beng",
       "method": "omnilingual"
-    },
-    {
-      "language_iso": "asm",
-      "script": "Beng",
-      "method": "whisper"
     },
     {
       "language_iso": "ast",
@@ -846,11 +826,6 @@
       "method": "omnilingual"
     },
     {
-      "language_iso": "aze",
-      "script": "Latn",
-      "method": "whisper"
-    },
-    {
       "language_iso": "azg",
       "script": "Latn",
       "method": "mms"
@@ -889,11 +864,6 @@
       "language_iso": "bak",
       "script": "Cyrl",
       "method": "omnilingual"
-    },
-    {
-      "language_iso": "bak",
-      "script": "Cyrl",
-      "method": "whisper"
     },
     {
       "language_iso": "bam",
@@ -1156,11 +1126,6 @@
       "method": "omnilingual"
     },
     {
-      "language_iso": "bel",
-      "script": "Cyrl",
-      "method": "whisper"
-    },
-    {
       "language_iso": "bem",
       "script": "Latn",
       "method": "mms"
@@ -1179,11 +1144,6 @@
       "language_iso": "ben",
       "script": "Beng",
       "method": "omnilingual"
-    },
-    {
-      "language_iso": "ben",
-      "script": "Beng",
-      "method": "whisper"
     },
     {
       "language_iso": "bep",
@@ -1656,11 +1616,6 @@
       "method": "omnilingual"
     },
     {
-      "language_iso": "bod",
-      "script": "Tibt",
-      "method": "whisper"
-    },
-    {
       "language_iso": "boj",
       "script": "Latn",
       "method": "mms"
@@ -1699,11 +1654,6 @@
       "language_iso": "bos",
       "script": "Latn",
       "method": "omnilingual"
-    },
-    {
-      "language_iso": "bos",
-      "script": "Latn",
-      "method": "whisper"
     },
     {
       "language_iso": "bou",
@@ -1809,11 +1759,6 @@
       "language_iso": "bre",
       "script": "Latn",
       "method": "omnilingual"
-    },
-    {
-      "language_iso": "bre",
-      "script": "Latn",
-      "method": "whisper"
     },
     {
       "language_iso": "brh",
@@ -1964,11 +1909,6 @@
       "language_iso": "bul",
       "script": "Cyrl",
       "method": "omnilingual"
-    },
-    {
-      "language_iso": "bul",
-      "script": "Cyrl",
-      "method": "whisper"
     },
     {
       "language_iso": "bum",
@@ -2199,11 +2139,6 @@
       "language_iso": "cat",
       "script": "Latn",
       "method": "omnilingual"
-    },
-    {
-      "language_iso": "cat",
-      "script": "Latn",
-      "method": "whisper"
     },
     {
       "language_iso": "cax",
@@ -2976,11 +2911,6 @@
       "method": "omnilingual"
     },
     {
-      "language_iso": "cym",
-      "script": "Latn",
-      "method": "whisper"
-    },
-    {
       "language_iso": "daa",
       "script": "Latn",
       "method": "mms"
@@ -3014,11 +2944,6 @@
       "language_iso": "dan",
       "script": "Latn",
       "method": "omnilingual"
-    },
-    {
-      "language_iso": "dan",
-      "script": "Latn",
-      "method": "whisper"
     },
     {
       "language_iso": "dar",
@@ -3576,11 +3501,6 @@
       "method": "mms"
     },
     {
-      "language_iso": "est",
-      "script": "Latn",
-      "method": "whisper"
-    },
-    {
       "language_iso": "esu",
       "script": "Latn",
       "method": "omnilingual"
@@ -3609,11 +3529,6 @@
       "language_iso": "eus",
       "script": "Latn",
       "method": "omnilingual"
-    },
-    {
-      "language_iso": "eus",
-      "script": "Latn",
-      "method": "whisper"
     },
     {
       "language_iso": "evn",
@@ -3681,11 +3596,6 @@
       "method": "omnilingual"
     },
     {
-      "language_iso": "fao",
-      "script": "Latn",
-      "method": "whisper"
-    },
-    {
       "language_iso": "far",
       "script": "Latn",
       "method": "mms"
@@ -3704,11 +3614,6 @@
       "language_iso": "fas",
       "script": "Arab",
       "method": "omnilingual"
-    },
-    {
-      "language_iso": "fas",
-      "script": "Arab",
-      "method": "whisper"
     },
     {
       "language_iso": "fat",
@@ -3736,11 +3641,6 @@
       "method": "omnilingual"
     },
     {
-      "language_iso": "fil",
-      "script": "Latn",
-      "method": "whisper"
-    },
-    {
       "language_iso": "fin",
       "script": "Latn",
       "method": "mms"
@@ -3749,11 +3649,6 @@
       "language_iso": "fin",
       "script": "Latn",
       "method": "omnilingual"
-    },
-    {
-      "language_iso": "fin",
-      "script": "Latn",
-      "method": "whisper"
     },
     {
       "language_iso": "fip",
@@ -4096,11 +3991,6 @@
       "method": "omnilingual"
     },
     {
-      "language_iso": "glg",
-      "script": "Latn",
-      "method": "whisper"
-    },
-    {
       "language_iso": "glk",
       "script": "Arab",
       "method": "mms"
@@ -4326,11 +4216,6 @@
       "method": "omnilingual"
     },
     {
-      "language_iso": "guj",
-      "script": "Gujr",
-      "method": "whisper"
-    },
-    {
       "language_iso": "guk",
       "script": "Latn",
       "method": "mms"
@@ -4541,11 +4426,6 @@
       "method": "omnilingual"
     },
     {
-      "language_iso": "hat",
-      "script": "Latn",
-      "method": "whisper"
-    },
-    {
       "language_iso": "hau",
       "script": "Latn",
       "method": "mms"
@@ -4556,19 +4436,9 @@
       "method": "omnilingual"
     },
     {
-      "language_iso": "hau",
-      "script": "Latn",
-      "method": "whisper"
-    },
-    {
       "language_iso": "haw",
       "script": "Latn",
       "method": "omnilingual"
-    },
-    {
-      "language_iso": "haw",
-      "script": "Latn",
-      "method": "whisper"
     },
     {
       "language_iso": "hay",
@@ -4599,11 +4469,6 @@
       "language_iso": "heb",
       "script": "Hebr",
       "method": "omnilingual"
-    },
-    {
-      "language_iso": "heb",
-      "script": "Hebr",
-      "method": "whisper"
     },
     {
       "language_iso": "heh",
@@ -4669,11 +4534,6 @@
       "language_iso": "hin",
       "script": "Deva",
       "method": "w2v-bert"
-    },
-    {
-      "language_iso": "hin",
-      "script": "Deva",
-      "method": "whisper"
     },
     {
       "language_iso": "hkk",
@@ -4766,11 +4626,6 @@
       "method": "omnilingual"
     },
     {
-      "language_iso": "hrv",
-      "script": "Latn",
-      "method": "whisper"
-    },
-    {
       "language_iso": "hsb",
       "script": "Latn",
       "method": "mms"
@@ -4829,11 +4684,6 @@
       "language_iso": "hun",
       "script": "Latn",
       "method": "omnilingual"
-    },
-    {
-      "language_iso": "hun",
-      "script": "Latn",
-      "method": "whisper"
     },
     {
       "language_iso": "hus",
@@ -4904,11 +4754,6 @@
       "language_iso": "hye",
       "script": "Armn",
       "method": "omnilingual"
-    },
-    {
-      "language_iso": "hye",
-      "script": "Armn",
-      "method": "whisper"
     },
     {
       "language_iso": "hyw",
@@ -5211,11 +5056,6 @@
       "method": "omnilingual"
     },
     {
-      "language_iso": "isl",
-      "script": "Latn",
-      "method": "whisper"
-    },
-    {
       "language_iso": "iso",
       "script": "Latn",
       "method": "omnilingual"
@@ -5334,11 +5174,6 @@
       "language_iso": "jav",
       "script": "Latn",
       "method": "omnilingual"
-    },
-    {
-      "language_iso": "jav",
-      "script": "Latn",
-      "method": "whisper"
     },
     {
       "language_iso": "jax",
@@ -5536,11 +5371,6 @@
       "method": "omnilingual"
     },
     {
-      "language_iso": "kan",
-      "script": "Knda",
-      "method": "whisper"
-    },
-    {
       "language_iso": "kao",
       "script": "Latn",
       "method": "mms"
@@ -5576,11 +5406,6 @@
       "method": "omnilingual"
     },
     {
-      "language_iso": "kat",
-      "script": "Geor",
-      "method": "whisper"
-    },
-    {
       "language_iso": "kay",
       "script": "Latn",
       "method": "mms"
@@ -5599,11 +5424,6 @@
       "language_iso": "kaz",
       "script": "Cyrl",
       "method": "omnilingual"
-    },
-    {
-      "language_iso": "kaz",
-      "script": "Cyrl",
-      "method": "whisper"
     },
     {
       "language_iso": "kbd",
@@ -5939,11 +5759,6 @@
       "language_iso": "khm",
       "script": "Khmr",
       "method": "omnilingual"
-    },
-    {
-      "language_iso": "khm",
-      "script": "Khmr",
-      "method": "whisper"
     },
     {
       "language_iso": "khq",
@@ -6851,11 +6666,6 @@
       "method": "omnilingual"
     },
     {
-      "language_iso": "lao",
-      "script": "Laoo",
-      "method": "whisper"
-    },
-    {
       "language_iso": "las",
       "script": "Latn",
       "method": "mms"
@@ -6876,11 +6686,6 @@
       "method": "omnilingual"
     },
     {
-      "language_iso": "lat",
-      "script": "Latn",
-      "method": "whisper"
-    },
-    {
       "language_iso": "lav",
       "script": "Latn",
       "method": "mms"
@@ -6889,11 +6694,6 @@
       "language_iso": "lav",
       "script": "Latn",
       "method": "omnilingual"
-    },
-    {
-      "language_iso": "lav",
-      "script": "Latn",
-      "method": "whisper"
     },
     {
       "language_iso": "law",
@@ -7076,11 +6876,6 @@
       "method": "omnilingual"
     },
     {
-      "language_iso": "lin",
-      "script": "Latn",
-      "method": "whisper"
-    },
-    {
       "language_iso": "lip",
       "script": "Latn",
       "method": "mms"
@@ -7114,11 +6909,6 @@
       "language_iso": "lit",
       "script": "Latn",
       "method": "omnilingual"
-    },
-    {
-      "language_iso": "lit",
-      "script": "Latn",
-      "method": "whisper"
     },
     {
       "language_iso": "lje",
@@ -7326,11 +7116,6 @@
       "method": "omnilingual"
     },
     {
-      "language_iso": "ltz",
-      "script": "Latn",
-      "method": "whisper"
-    },
-    {
       "language_iso": "lua",
       "script": "Latn",
       "method": "omnilingual"
@@ -7496,11 +7281,6 @@
       "method": "omnilingual"
     },
     {
-      "language_iso": "mal",
-      "script": "Mlym",
-      "method": "whisper"
-    },
-    {
       "language_iso": "mam",
       "script": "Latn",
       "method": "mms"
@@ -7529,11 +7309,6 @@
       "language_iso": "mar",
       "script": "Deva",
       "method": "omnilingual"
-    },
-    {
-      "language_iso": "mar",
-      "script": "Deva",
-      "method": "whisper"
     },
     {
       "language_iso": "mau",
@@ -8211,11 +7986,6 @@
       "method": "omnilingual"
     },
     {
-      "language_iso": "mkd",
-      "script": "Cyrl",
-      "method": "whisper"
-    },
-    {
       "language_iso": "mkf",
       "script": "Latn",
       "method": "omnilingual"
@@ -8256,11 +8026,6 @@
       "method": "omnilingual"
     },
     {
-      "language_iso": "mlg",
-      "script": "Latn",
-      "method": "whisper"
-    },
-    {
       "language_iso": "mlq",
       "script": "Latn",
       "method": "omnilingual"
@@ -8274,11 +8039,6 @@
       "language_iso": "mlt",
       "script": "Latn",
       "method": "omnilingual"
-    },
-    {
-      "language_iso": "mlt",
-      "script": "Latn",
-      "method": "whisper"
     },
     {
       "language_iso": "mmc",
@@ -8384,11 +8144,6 @@
       "language_iso": "mon",
       "script": "Cyrl",
       "method": "omnilingual"
-    },
-    {
-      "language_iso": "mon",
-      "script": "Cyrl",
-      "method": "whisper"
     },
     {
       "language_iso": "mop",
@@ -8536,11 +8291,6 @@
       "method": "omnilingual"
     },
     {
-      "language_iso": "mri",
-      "script": "Latn",
-      "method": "whisper"
-    },
-    {
       "language_iso": "mrj",
       "script": "Cyrl",
       "method": "omnilingual"
@@ -8564,11 +8314,6 @@
       "language_iso": "mrw",
       "script": "Latn",
       "method": "omnilingual"
-    },
-    {
-      "language_iso": "msa",
-      "script": "Latn",
-      "method": "whisper"
     },
     {
       "language_iso": "msh",
@@ -8814,11 +8559,6 @@
       "language_iso": "mya",
       "script": "Mymr",
       "method": "omnilingual"
-    },
-    {
-      "language_iso": "mya",
-      "script": "Mymr",
-      "method": "whisper"
     },
     {
       "language_iso": "myb",
@@ -9141,11 +8881,6 @@
       "method": "omnilingual"
     },
     {
-      "language_iso": "nep",
-      "script": "Deva",
-      "method": "whisper"
-    },
-    {
       "language_iso": "new",
       "script": "Deva",
       "method": "mms"
@@ -9441,11 +9176,6 @@
       "method": "mms"
     },
     {
-      "language_iso": "nno",
-      "script": "Latn",
-      "method": "whisper"
-    },
-    {
       "language_iso": "nnq",
       "script": "Latn",
       "method": "mms"
@@ -9509,11 +9239,6 @@
       "language_iso": "nog",
       "script": "Cyrl",
       "method": "omnilingual"
-    },
-    {
-      "language_iso": "nor",
-      "script": "Latn",
-      "method": "whisper"
     },
     {
       "language_iso": "not",
@@ -9751,11 +9476,6 @@
       "method": "omnilingual"
     },
     {
-      "language_iso": "oci",
-      "script": "Latn",
-      "method": "whisper"
-    },
-    {
       "language_iso": "odk",
       "script": "Arab",
       "method": "omnilingual"
@@ -9949,11 +9669,6 @@
       "language_iso": "pan",
       "script": "Guru",
       "method": "omnilingual"
-    },
-    {
-      "language_iso": "pan",
-      "script": "Guru",
-      "method": "whisper"
     },
     {
       "language_iso": "pao",
@@ -10424,11 +10139,6 @@
       "language_iso": "pus",
       "script": "Arab",
       "method": "omnilingual"
-    },
-    {
-      "language_iso": "pus",
-      "script": "Arab",
-      "method": "whisper"
     },
     {
       "language_iso": "pwg",
@@ -11016,11 +10726,6 @@
       "method": "omnilingual"
     },
     {
-      "language_iso": "ron",
-      "script": "Latn",
-      "method": "whisper"
-    },
-    {
       "language_iso": "roo",
       "script": "Latn",
       "method": "omnilingual"
@@ -11159,11 +10864,6 @@
       "language_iso": "saj",
       "script": "Latn",
       "method": "omnilingual"
-    },
-    {
-      "language_iso": "san",
-      "script": "Deva",
-      "method": "whisper"
     },
     {
       "language_iso": "saq",
@@ -11456,11 +11156,6 @@
       "method": "omnilingual"
     },
     {
-      "language_iso": "sin",
-      "script": "Sinh",
-      "method": "whisper"
-    },
-    {
       "language_iso": "sip",
       "script": "Tibt",
       "method": "omnilingual"
@@ -11531,11 +11226,6 @@
       "method": "omnilingual"
     },
     {
-      "language_iso": "slk",
-      "script": "Latn",
-      "method": "whisper"
-    },
-    {
       "language_iso": "slu",
       "script": "Latn",
       "method": "mms"
@@ -11554,11 +11244,6 @@
       "language_iso": "slv",
       "script": "Latn",
       "method": "omnilingual"
-    },
-    {
-      "language_iso": "slv",
-      "script": "Latn",
-      "method": "whisper"
     },
     {
       "language_iso": "sml",
@@ -11589,11 +11274,6 @@
       "language_iso": "sna",
       "script": "Latn",
       "method": "omnilingual"
-    },
-    {
-      "language_iso": "sna",
-      "script": "Latn",
-      "method": "whisper"
     },
     {
       "language_iso": "snc",
@@ -11609,11 +11289,6 @@
       "language_iso": "snd",
       "script": "Arab",
       "method": "omnilingual"
-    },
-    {
-      "language_iso": "snd",
-      "script": "input-dependent",
-      "method": "whisper"
     },
     {
       "language_iso": "sne",
@@ -11681,11 +11356,6 @@
       "method": "omnilingual"
     },
     {
-      "language_iso": "som",
-      "script": "Latn",
-      "method": "whisper"
-    },
-    {
       "language_iso": "soy",
       "script": "Latn",
       "method": "mms"
@@ -11741,11 +11411,6 @@
       "method": "mms"
     },
     {
-      "language_iso": "sqi",
-      "script": "Latn",
-      "method": "whisper"
-    },
-    {
       "language_iso": "src",
       "script": "Latn",
       "method": "omnilingual"
@@ -11799,11 +11464,6 @@
       "language_iso": "srp",
       "script": "Cyrl",
       "method": "omnilingual"
-    },
-    {
-      "language_iso": "srp",
-      "script": "Latn",
-      "method": "whisper"
     },
     {
       "language_iso": "srr",
@@ -11891,11 +11551,6 @@
       "method": "omnilingual"
     },
     {
-      "language_iso": "sun",
-      "script": "Latn",
-      "method": "whisper"
-    },
-    {
       "language_iso": "sur",
       "script": "Latn",
       "method": "mms"
@@ -11939,11 +11594,6 @@
       "language_iso": "sva",
       "script": "Geor",
       "method": "omnilingual"
-    },
-    {
-      "language_iso": "swa",
-      "script": "Latn",
-      "method": "whisper"
     },
     {
       "language_iso": "swe",
@@ -12066,11 +11716,6 @@
       "method": "omnilingual"
     },
     {
-      "language_iso": "tam",
-      "script": "Taml",
-      "method": "whisper"
-    },
-    {
       "language_iso": "tan",
       "script": "Latn",
       "method": "omnilingual"
@@ -12119,11 +11764,6 @@
       "language_iso": "tat",
       "script": "Cyrl",
       "method": "omnilingual"
-    },
-    {
-      "language_iso": "tat",
-      "script": "Cyrl",
-      "method": "whisper"
     },
     {
       "language_iso": "tav",
@@ -12301,11 +11941,6 @@
       "method": "omnilingual"
     },
     {
-      "language_iso": "tel",
-      "script": "Telu",
-      "method": "whisper"
-    },
-    {
       "language_iso": "tem",
       "script": "Latn",
       "method": "mms"
@@ -12396,11 +12031,6 @@
       "method": "omnilingual"
     },
     {
-      "language_iso": "tgk",
-      "script": "input-dependent",
-      "method": "whisper"
-    },
-    {
       "language_iso": "tgl",
       "script": "Latn",
       "method": "mms"
@@ -12439,11 +12069,6 @@
       "language_iso": "tha",
       "script": "Thai",
       "method": "omnilingual"
-    },
-    {
-      "language_iso": "tha",
-      "script": "Thai",
-      "method": "whisper"
     },
     {
       "language_iso": "the",
@@ -12956,11 +12581,6 @@
       "method": "omnilingual"
     },
     {
-      "language_iso": "tuk",
-      "script": "Latn",
-      "method": "whisper"
-    },
-    {
       "language_iso": "tul",
       "script": "Latn",
       "method": "omnilingual"
@@ -13271,11 +12891,6 @@
       "method": "omnilingual"
     },
     {
-      "language_iso": "urd",
-      "script": "Arab",
-      "method": "whisper"
-    },
-    {
       "language_iso": "urh",
       "script": "Latn",
       "method": "omnilingual"
@@ -13334,11 +12949,6 @@
       "language_iso": "uzb",
       "script": "Latn",
       "method": "omnilingual"
-    },
-    {
-      "language_iso": "uzb",
-      "script": "input-dependent",
-      "method": "whisper"
     },
     {
       "language_iso": "uzn",
@@ -14081,11 +13691,6 @@
       "method": "omnilingual"
     },
     {
-      "language_iso": "yid",
-      "script": "Hebr",
-      "method": "whisper"
-    },
-    {
       "language_iso": "yka",
       "script": "Latn",
       "method": "mms"
@@ -14114,11 +13719,6 @@
       "language_iso": "yor",
       "script": "Latn",
       "method": "omnilingual"
-    },
-    {
-      "language_iso": "yor",
-      "script": "Latn",
-      "method": "whisper"
     },
     {
       "language_iso": "yre",

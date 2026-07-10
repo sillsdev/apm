@@ -6,7 +6,7 @@ import { IAsrState } from './asrState';
 import { axiosGet, axiosPost } from '../../utils/axios';
 import { AxiosError } from 'axios';
 import { findRecord } from '../../crud/tryFindRecord';
-import { useSnackBar } from '../../hoc/SnackBar';
+import { AlertSeverity, useSnackBar } from '../../hoc/SnackBar';
 import { remoteId } from '../../crud/remoteId';
 import { RecordKeyMap } from '@orbit/records';
 import { useGlobal } from '../../context/useGlobal';
@@ -14,20 +14,33 @@ import { ActionRow, AltButton } from '../../control';
 import {
   ICardsStrings,
   ISharedStrings,
+  IMainStrings,
   ITranscriberStrings,
   MediaFileD,
 } from '../../model';
-import { getSegments, NamedRegions } from '../../utils/namedSegments';
+import {
+  getSegments,
+  NamedRegions,
+  updateSegments,
+} from '../../utils/namedSegments';
 import { shallowEqual, useSelector } from 'react-redux';
 import {
   cardsSelector,
+  mainSelector,
   sharedSelector,
   transcriberSelector,
 } from '../../selector';
+import AeroTaskErrorMessage from './AeroTaskErrorMessage';
+import {
+  aeroTaskErrorParts,
+  axiosErrorMessage,
+  transcriptionPollError,
+} from './aeroTaskError';
 import { Stack, Typography } from '@mui/material';
 import { ignoreVs } from '../../utils/ignoreVs';
 import { infoMsg, logError, Severity } from '../../utils';
 import { useGetAsrSettings } from '../../crud/useGetAsrSettings';
+import { useProjectSegmentSave } from '../../components/PassageDetail/Internalization/useProjectSegmentSave';
 
 export interface VerseTask {
   taskId: string;
@@ -59,6 +72,7 @@ export default function AsrProgress({
   const addingRef = React.useRef(false);
   const [working, setWorking] = React.useState(false);
   const { getAsrSettings } = useGetAsrSettings();
+  const projectSegmentSave = useProjectSegmentSave();
   const [memory] = useGlobal('memory');
   const token = React.useContext(TokenContext)?.state?.accessToken ?? '';
   const { showMessage } = useSnackBar();
@@ -66,10 +80,12 @@ export default function AsrProgress({
   const taskIdRef = React.useRef('');
   const [tasks, setTasks] = React.useState<VerseTask[]>();
   const taskTimer = React.useRef<NodeJS.Timeout | undefined>(undefined);
+  const checkingRef = React.useRef(false);
   const timerDelay = 5000; //5 seconds
   const t: ITranscriberStrings = useSelector(transcriberSelector, shallowEqual);
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
   const tc: ICardsStrings = useSelector(cardsSelector, shallowEqual);
+  const tm: IMainStrings = useSelector(mainSelector, shallowEqual);
   const [errorReporter] = useGlobal('errorReporter');
 
   const getTasks = (mediaRec: MediaFileD | undefined) => {
@@ -111,37 +127,87 @@ export default function AsrProgress({
     addingRef.current = adding;
   };
 
-  const status = (message: string) => {
-    showMessage(message);
+  const status = (
+    message: string | React.JSX.Element,
+    alert?: AlertSeverity
+  ) => {
+    showMessage(message, alert);
     console.log(message);
   };
 
-  const checkTask = async () => {
-    const response: any = await axiosGet(
-      `aero/transcription/${taskIdRef.current}`
+  const showTaskFailure = async (message: string) => {
+    const { summary, details } = aeroTaskErrorParts(
+      message,
+      t.automaticTranscriptionFailed
     );
-    if (response?.transcription) {
-      let verse = '';
-      let nextTask = '';
-      if (tasks) {
-        const ix = tasks.findIndex((t) => t.taskId === taskIdRef.current);
-        if (ix >= 0) {
-          if (typeof tasks[ix]?.verse === 'string')
-            verse = ` \\v ${tasks[ix].verse} `;
-          if (tasks[ix]?.complete) tasks[ix].complete = true;
-          nextTask = ix < tasks.length - 1 ? (tasks[ix + 1]?.taskId ?? '') : '';
-        }
-      }
-      setTranscription(verse + response?.transcription);
-      setTaskId(nextTask);
-    } else if (response?.transcription === '') {
-      status(t.noAsrTranscription);
-      setTaskId('');
-    } else {
-      console.log(`${taskIdRef.current} not done`, response);
-      setWorking(true);
+    logError(Severity.error, errorReporter, new Error(message));
+    await clearTrTasks();
+    status(
+      <AeroTaskErrorMessage
+        summary={summary}
+        details={details}
+        detailsLabel={tm.details}
+      />,
+      AlertSeverity.Error
+    );
+    setTaskId('');
+  };
+
+  const clearTrTasks = async () => {
+    const mediaRec = findRecord(memory, 'mediafile', mediaId) as
+      | MediaFileD
+      | undefined;
+    if (!mediaRec) return;
+    const segments = updateSegments(
+      NamedRegions.TRTask,
+      mediaRec.attributes?.segments ?? '[]',
+      ''
+    );
+    try {
+      await projectSegmentSave({ media: mediaRec, segments });
+    } catch (err) {
+      logError(Severity.error, errorReporter, err as Error);
     }
-    return undefined;
+  };
+
+  const checkTask = async () => {
+    const current = taskIdRef.current;
+    if (!current || checkingRef.current) return;
+    checkingRef.current = true;
+    try {
+      const response: any = await axiosGet(`aero/transcription/${current}`);
+      const pollError = transcriptionPollError(response);
+      if (pollError) {
+        showTaskFailure(pollError);
+        return;
+      }
+      if (response?.transcription) {
+        let verse = '';
+        let nextTask = '';
+        if (tasks) {
+          const ix = tasks.findIndex((t) => t.taskId === current);
+          if (ix >= 0) {
+            if (typeof tasks[ix]?.verse === 'string')
+              verse = ` \\v ${tasks[ix].verse} `;
+            if (tasks[ix]?.complete) tasks[ix].complete = true;
+            nextTask =
+              ix < tasks.length - 1 ? (tasks[ix + 1]?.taskId ?? '') : '';
+          }
+        }
+        setTranscription(verse + response?.transcription);
+        setTaskId(nextTask);
+      } else if (response?.transcription === '') {
+        status(t.noAsrTranscription);
+        setTaskId('');
+      } else {
+        console.log(`${current} not done`, response);
+        setWorking(true);
+      }
+    } catch (errResult: unknown) {
+      showTaskFailure(axiosErrorMessage(errResult));
+    } finally {
+      checkingRef.current = false;
+    }
   };
 
   const launchTimer = () => {
@@ -185,12 +251,25 @@ export default function AsrProgress({
       }
     } catch (errResult: unknown) {
       const error = errResult as AxiosError;
+      const message = axiosErrorMessage(errResult);
+      const { summary, details } = aeroTaskErrorParts(
+        message,
+        t.automaticTranscriptionFailed
+      );
       logError(
         Severity.error,
         errorReporter,
-        infoMsg(error, t.aiAsrFailed + (error as AxiosError).message)
+        infoMsg(error, summary + (details ? `: ${details}` : ''))
       );
-      status(t.aiAsrFailed + (error as AxiosError).message);
+      await clearTrTasks();
+      status(
+        <AeroTaskErrorMessage
+          summary={summary || t.aiAsrFailed}
+          details={details}
+          detailsLabel={tm.details}
+        />,
+        AlertSeverity.Error
+      );
       closing();
     }
   };
