@@ -8,6 +8,7 @@ import {
   nextMarkVersesLetterSuffix,
   parseMarkVersesReference,
   splitVerseSuffix,
+  type ParsedMarkVersesReferencePart,
 } from './markVersesPassageVerses';
 import { PassageD } from '@model/index';
 
@@ -236,6 +237,8 @@ const LETTER_SUFFIX_RANK: Record<string, number> = {
   d: 4,
   e: 5,
 };
+/** Letter subparts indexed by rank-1 (`LETTER_SUFFIXES[0]` === `'a'`). */
+const LETTER_SUFFIXES = ['a', 'b', 'c', 'd', 'e'];
 /** Rank of a missing suffix at the *start* of a span — the verse begins at part `a`. */
 const VERSE_START_SUFFIX_RANK = LETTER_SUFFIX_RANK.a;
 /** Rank of a missing suffix at the *end* of a span — after every letter part. */
@@ -326,10 +329,14 @@ export const isMarkVersesReferenceInPassage = (
 
 /**
  * When `newRef` does not consecutively follow `prevRef`, did its start jump
- * *past* the expected next verse (a forward gap — passage verses are skipped)?
- * Returning false means it sits at or before the expected next verse (an
- * overlap/duplicate) or fills an earlier gap (a backfill).
+ * *past* where coverage should resume (a forward gap — passage verses or
+ * subparts are skipped)? Returning false means it sits at or before that point
+ * (an overlap/duplicate) or fills an earlier gap (a backfill).
  * This function assumes ref is in passage and is well-formed
+ *
+ * The comparison is subpart-aware: a start that skips the *leading subparts* of
+ * the expected verse (e.g. `1:1` -> `1:2b`, which skips `1:2a`) counts as a
+ * forward gap, not just a whole-verse jump.
  */
 const markVersesReferenceSkipsAhead = (
   prevRef: string | undefined,
@@ -347,14 +354,31 @@ const markVersesReferenceSkipsAhead = (
   if (lastVerse === null || lastVerse === undefined) return false;
   if (prevEnd.verse > lastVerse) return false;
 
-  const rollover = prevEnd.verse === lastVerse;
-  const expectedChapter = rollover ? prevEnd.chapter + 1 : prevEnd.chapter;
-  const expectedVerse = rollover ? 1 : prevEnd.verse + 1;
+  // Where coverage should resume. A split verse ending at part `a` is
+  // incomplete (a verse never ends at `a`), so the next expected position is
+  // part `b` of the *same* verse. Any other end — a whole verse, or a complete
+  // split ending at `b`+ — finishes the verse, so the next whole verse
+  // (beginning at part `a`) is expected.
+  const expectedKey =
+    prevEnd.verseLetterSuffix === 'a'
+      ? verseSubpartKey(prevEnd.chapter, prevEnd.verse, 'b', false)
+      : (() => {
+          const rollover = prevEnd.verse === lastVerse;
+          const expectedChapter = rollover
+            ? prevEnd.chapter + 1
+            : prevEnd.chapter;
+          const expectedVerse = rollover ? 1 : prevEnd.verse + 1;
+          return verseSubpartKey(expectedChapter, expectedVerse, '', false);
+        })();
 
-  return (
-    verseOrderKey(next.start.chapter, next.start.verse) >
-    verseOrderKey(expectedChapter, expectedVerse)
+  const nextStartKey = verseSubpartKey(
+    next.start.chapter,
+    next.start.verse,
+    next.start.verseLetterSuffix,
+    false
   );
+
+  return nextStartKey > expectedKey;
 };
 
 /**
@@ -437,19 +461,50 @@ export const markVersesSkippedPassageRefs = (
   // Exclusive lower bound. Without a preceding row the skipped range opens at
   // the start of the passage, so -Infinity keeps every ref before `newRef`.
   let afterKey = Number.NEGATIVE_INFINITY;
+  let prevEnd: ParsedMarkVersesReferencePart | undefined;
   if (isNonEmptyRef(prevRef)) {
     const prev = parseMarkVersesReference(prevRef);
     if (!prev) return [];
+    prevEnd = prev.end;
     afterKey = verseOrderKey(prev.end.chapter, prev.end.verse);
   }
 
+  // Whole passage verses lying strictly between the prior end verse and the new
+  // start verse. `newRef`'s own start verse is excluded here — any leading
+  // subparts it skips are handled below.
   const beforeKey = verseOrderKey(next.start.chapter, next.start.verse);
-  return passageRefs.filter((ref) => {
+  const skipped = passageRefs.filter((ref) => {
     const parsed = parseMarkVersesReference(ref);
     if (!parsed) return false;
     const key = verseOrderKey(parsed.start.chapter, parsed.start.verse);
     return key > afterKey && key < beforeKey;
   });
+
+  // Subpart skips: when `newRef` starts mid-verse (part `b`+), the leading
+  // subparts of that verse are skipped, e.g. `1:1` -> `1:2b` skips `1:2a`. If
+  // the prior row already covered earlier subparts of this same verse, start
+  // just after where it left off (`1:2a` -> `1:2c` skips only `1:2b`).
+  const startSuffix = next.start.verseLetterSuffix;
+  if (startSuffix && startSuffix !== 'a') {
+    let firstMissingRank = VERSE_START_SUFFIX_RANK;
+    if (
+      prevEnd &&
+      prevEnd.chapter === next.start.chapter &&
+      prevEnd.verse === next.start.verse &&
+      prevEnd.verseLetterSuffix
+    ) {
+      firstMissingRank = (LETTER_SUFFIX_RANK[prevEnd.verseLetterSuffix] ?? 0) + 1;
+    }
+    const startRank = LETTER_SUFFIX_RANK[startSuffix] ?? 0;
+    for (let rank = firstMissingRank; rank < startRank; rank += 1) {
+      const letter = LETTER_SUFFIXES[rank - 1];
+      if (letter) {
+        skipped.push(`${next.start.chapter}:${next.start.verse}${letter}`);
+      }
+    }
+  }
+
+  return skipped;
 };
 
 /**

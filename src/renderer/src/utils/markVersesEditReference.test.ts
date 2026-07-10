@@ -49,7 +49,7 @@ const passageStub = (
  * logic.
  *
  * "Re-number" === the redistribute-tail behavior in
- * redistributeTableTailAfterSave (PassageDetailMarkVersesIsMobile).
+ * redistributeTableTailAfterSave (PassageDetailMarkVerses).
  *
  * Versification comes from the real `eng-vrs` table via `getLastVerse`, so the
  * tests reference real books whose chapter shapes exercise the rules:
@@ -546,10 +546,24 @@ describe('evaluateMarkVersesReferenceStatus (per-row warning reason)', () => {
     });
   });
 
-  it('treats a non-consecutive reference that neither overlaps nor skips ahead as valid', () => {
-    // 1:1 -> 1:2b is non-consecutive (a new split verse must start at part a)
-    // but its verse (1:2) neither overlaps the row above (1:1) nor skips ahead.
-    expect(status(['1:1', '1:2b', '1:3'], 1)).toEqual({});
+  it('reports skipsAhead when a split verse starts mid-verse (1:1 -> 1:2b skips 1:2a)', () => {
+    // 1:2b begins verse 2 at part b, skipping part a. A new split verse must
+    // start at part a, so the leading subpart is a forward gap.
+    expect(status(['1:1', '1:2b', '1:3'], 1)).toEqual({
+      reason: MarkVersesWarningReason.SkipsAhead,
+    });
+  });
+
+  it('reports skipsAhead for a mid-verse split range (1:1 -> 1:2b-c skips 1:2a)', () => {
+    expect(status(['1:1', '1:2b-c', '1:3'], 1)).toEqual({
+      reason: MarkVersesWarningReason.SkipsAhead,
+    });
+  });
+
+  it('reports skipsAhead when a split verse skips an interior subpart (1:2a -> 1:2c skips 1:2b)', () => {
+    expect(status(['1:1', '1:2a', '1:2c', '1:3'], 2)).toEqual({
+      reason: MarkVersesWarningReason.SkipsAhead,
+    });
   });
 
   it('reports no reason for a first row that starts the passage', () => {
@@ -619,6 +633,39 @@ describe('markVersesSkippedPassageRefs', () => {
     expect(markVersesSkippedPassageRefs('1:1', 'nope', passage)).toEqual([]);
     // Non-empty but unparseable preceding ref: not treated as "no preceding row".
     expect(markVersesSkippedPassageRefs('bogus', '1:4', passage)).toEqual([]);
+  });
+
+  it('lists a skipped leading subpart when the new start begins mid-verse', () => {
+    // 1:1 -> 1:2b skips part a of verse 2.
+    expect(markVersesSkippedPassageRefs('1:1', '1:2b', passage)).toEqual([
+      '1:2a',
+    ]);
+    // 1:1 -> 1:2b-c: the range's start (1:2b) still skips 1:2a.
+    expect(markVersesSkippedPassageRefs('1:1', '1:2b-c', passage)).toEqual([
+      '1:2a',
+    ]);
+    // 1:1 -> 1:2c skips parts a and b.
+    expect(markVersesSkippedPassageRefs('1:1', '1:2c', passage)).toEqual([
+      '1:2a',
+      '1:2b',
+    ]);
+  });
+
+  it('combines skipped whole verses with a skipped leading subpart', () => {
+    // 1:1 -> 1:4b skips whole verses 1:2, 1:3 and part a of verse 4.
+    expect(markVersesSkippedPassageRefs('1:1', '1:4b', passage)).toEqual([
+      '1:2',
+      '1:3',
+      '1:4a',
+    ]);
+  });
+
+  it('lists only the interior subpart skipped within one verse', () => {
+    // 1:2a -> 1:2c: verse 2 is already covered from part a, so only 1:2b is
+    // skipped.
+    expect(markVersesSkippedPassageRefs('1:2a', '1:2c', passage)).toEqual([
+      '1:2b',
+    ]);
   });
 });
 
