@@ -511,23 +511,37 @@ export function PassageDetailBoldClauseTranscription({ width }: IProps) {
             prevId={`${idPrefix}-clause-prev`}
             nextId={`${idPrefix}-clause-next`}
           />
-          <BoldClauseTranscriptionEditor
-            width={width}
-            mediafile={recordingRow?.mediafile}
-            text={text}
-            onTextChange={setText}
-            memory={memory}
-            user={user}
-            onNextClause={handleNextClause}
-            allClausesComplete={allClausesTranscribed}
-            currentClauseTranscribed={currentClauseTranscribed}
-            navigationDisabled={navigationDisabled}
-            onAsrActiveChange={handleAsrActiveChange}
-            onTranscriptionSaved={handleTranscriptionSaved}
-            flushSaveRef={flushSaveRef}
-            artifactTypeId={recordingArtifactTypeId}
-            transcriptionConfig={transcriptionConfig}
-          />
+          <Box
+            sx={{
+              flex: 1,
+              minHeight: 0,
+              width: '100%',
+              minWidth: 0,
+              maxWidth: '100%',
+              overflowY: 'auto',
+              overflowX: 'hidden',
+              overflowWrap: 'break-word',
+            }}
+            data-cy={`${idPrefix}-scroll`}
+          >
+            <BoldClauseTranscriptionEditor
+              width={width}
+              mediafile={recordingRow?.mediafile}
+              text={text}
+              onTextChange={setText}
+              memory={memory}
+              user={user}
+              onNextClause={handleNextClause}
+              allClausesComplete={allClausesTranscribed}
+              currentClauseTranscribed={currentClauseTranscribed}
+              navigationDisabled={navigationDisabled}
+              onAsrActiveChange={handleAsrActiveChange}
+              onTranscriptionSaved={handleTranscriptionSaved}
+              flushSaveRef={flushSaveRef}
+              artifactTypeId={recordingArtifactTypeId}
+              transcriptionConfig={transcriptionConfig}
+            />
+          </Box>
         </>
       )}
     </Box>

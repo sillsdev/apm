@@ -46,6 +46,8 @@ import {
 import { useGetAsrSettings } from '../../../crud/useGetAsrSettings';
 import { useOrbitData } from '../../../hoc/useOrbitData';
 import { isLangSet } from '../../../utils/langTag';
+import type { TranscribeStepSettingsJson } from '../../../crud/stepSpellCheck';
+import { parseStepLanguageField } from '../../../crud/transcribeStepAsrSettings';
 import type { FontData } from '../../../crud/fontChoice';
 import type { BoldClauseTranscriptionConfig } from '../boldClauseTranscription';
 import { useTranscriptionAutosave } from './useTranscriptionAutosave';
@@ -54,6 +56,21 @@ import { BigDialogBp } from '../../../hoc/BigDialogBp';
 import { useMobile } from '../../../utils/useMobile';
 import { IWsAudioPlayerStrings } from '@model/index';
 import Memory from '@orbit/memory';
+
+function parseStepSettings(settings: unknown): TranscribeStepSettingsJson {
+  if (!settings) return {};
+  if (typeof settings === 'string') {
+    try {
+      return JSON.parse(settings) as TranscribeStepSettingsJson;
+    } catch {
+      return {};
+    }
+  }
+  if (typeof settings === 'object') {
+    return settings as TranscribeStepSettingsJson;
+  }
+  return {};
+}
 
 type TranscriptionStrings =
   | ILwcTranscriptionStrings
@@ -173,18 +190,48 @@ export default function BoldClauseTranscriptionEditor({
     }
   }, [flushSave, flushSaveRef]);
 
+  // Resolve the transcription language and spell-check flag from the workflow
+  // step settings (falling back to the project language for the font/lang),
+  // then hand getFontData a synthetic project record so the textarea gets the
+  // right lang/font and spellCheck. Spell check is driven solely by the step's
+  // `spellCheck` flag: on when the step enables it, off otherwise (TT-7518).
+  // getFontData always returns spellCheck:false, so the step value overrides it.
   useEffect(() => {
     if (!project) return;
-    const rec = findRecord(memory, 'project', project) as Project | undefined;
-    if (!rec) return;
+    const projRec = findRecord(memory, 'project', project) as
+      | Project
+      | undefined;
+    if (!projRec) return;
     let cancelled = false;
+
+    const lgSettings = parseStepSettings(stepSettings);
+    const { bcp47: stepLang } = parseStepLanguageField(lgSettings?.language);
+    const hasStepLanguage = isLangSet(stepLang);
+
+    let langTag = hasStepLanguage ? stepLang : undefined;
+    let defaultFont = lgSettings?.font;
+    let rtl = lgSettings?.rtl ?? false;
+    let defaultFontSize = lgSettings?.fontSize;
+    if (!hasStepLanguage) {
+      langTag = projRec.attributes?.language ?? langTag;
+      defaultFont = defaultFont ?? projRec.attributes?.defaultFont ?? undefined;
+      rtl = projRec.attributes?.rtl ?? rtl;
+      defaultFontSize =
+        defaultFontSize ?? projRec.attributes?.defaultFontSize ?? undefined;
+    }
+
+    const spellCheck = lgSettings?.spellCheck === true;
+
+    const rec = {
+      attributes: { language: langTag, defaultFont, defaultFontSize, rtl },
+    } as Project;
     void getFontData(rec, artifactTypeId ?? 'project').then((data) => {
-      if (!cancelled) setProjData(data);
+      if (!cancelled) setProjData({ ...data, spellCheck });
     });
     return () => {
       cancelled = true;
     };
-  }, [project, memory, artifactTypeId]);
+  }, [project, memory, artifactTypeId, stepSettings]);
 
   const textAreaStyle = useMemo(
     () =>

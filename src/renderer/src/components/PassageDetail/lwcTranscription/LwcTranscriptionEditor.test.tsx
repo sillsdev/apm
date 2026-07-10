@@ -58,6 +58,48 @@ jest.mock('../../../crud/getLwcTranslationAsrSettings', () => ({
     mockUseBoldClauseTranscriptionAsrSettings(),
 }));
 
+// Leaf-mock the ASR settings module: importing the real one pulls in the utils
+// barrel (react-router) which the jsdom test env lacks a TextEncoder for. We
+// only need its pure language-field parser here.
+jest.mock('../../../crud/transcribeStepAsrSettings', () => ({
+  parseStepLanguageField: (value: unknown) => {
+    if (value == null || value === '') {
+      return { languageName: '', bcp47: 'und' };
+    }
+    if (typeof value === 'object') {
+      const obj = value as { languageName?: unknown; bcp47?: unknown };
+      return {
+        languageName: String(obj.languageName ?? ''),
+        bcp47: String(obj.bcp47 ?? 'und'),
+      };
+    }
+    const str = String(value);
+    const trimmed = str.trim();
+    if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+      try {
+        const obj = JSON.parse(trimmed) as {
+          languageName?: unknown;
+          bcp47?: unknown;
+        };
+        return {
+          languageName: String(obj.languageName ?? ''),
+          bcp47: String(obj.bcp47 ?? 'und'),
+        };
+      } catch {
+        // fall through
+      }
+    }
+    const pipe = str.indexOf('|');
+    if (pipe === -1) {
+      return { languageName: '', bcp47: str || 'und' };
+    }
+    return {
+      languageName: str.slice(0, pipe),
+      bcp47: str.slice(pipe + 1) || 'und',
+    };
+  },
+}));
+
 jest.mock('../../../utils/useCheckOnline', () => ({
   useCheckOnline: () => (cb: (online: boolean) => void) => cb(true),
 }));
