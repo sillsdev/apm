@@ -58,6 +58,21 @@ jest.mock('../../../crud/getLwcTranslationAsrSettings', () => ({
     mockUseBoldClauseTranscriptionAsrSettings(),
 }));
 
+// Leaf-mock the ASR settings module: importing the real one pulls in the utils
+// barrel (react-router) which the jsdom test env lacks a TextEncoder for. We
+// only need its pure language-field parser here.
+jest.mock('../../../crud/transcribeStepAsrSettings', () => ({
+  parseStepLanguageField: (value: unknown) => {
+    if (typeof value !== 'string' || !value) {
+      return { languageName: '', bcp47: 'und' };
+    }
+    const [languageName, bcp47] = value.split('|');
+    return { languageName, bcp47: bcp47 || 'und' };
+  },
+}));
+
+jest.mock('../../../../api-variable', () => ({ isElectron: false }));
+
 jest.mock('../../../utils/useCheckOnline', () => ({
   useCheckOnline: () => (cb: (online: boolean) => void) => cb(true),
 }));
