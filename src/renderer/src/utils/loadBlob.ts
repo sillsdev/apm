@@ -33,6 +33,11 @@ export const loadBlob = async (
     .then((blob) => setBlob(url, blob))
     .catch((e) => setBlob(e?.message || e.toString(), undefined));
 };
+const isNonRetryableBlobFetchError = (message: string): boolean =>
+  message.includes('403') ||
+  message.includes('404') ||
+  message.includes('NoSuchKey');
+
 export const loadBlobAsync = async (url: string): Promise<Blob | undefined> => {
   if (!url) return;
   let iTries = 5;
@@ -41,8 +46,17 @@ export const loadBlobAsync = async (url: string): Promise<Blob | undefined> => {
     try {
       if (url.startsWith('http')) {
         const r = await fetch(url);
-        if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
-        return await r.blob();
+        if (!r.ok) {
+          const text = await r.text();
+          throw new Error(
+            text
+              ? `download failed: ${url} with response ${text}`
+              : `${r.status} ${r.statusText}`
+          );
+        }
+        const blob = await r.blob();
+        if (!blob.size) throw new Error('empty download');
+        return blob;
       } else {
         const source = await ipc?.read(
           decodeURIComponent(url.replace(`file://`, ``))
@@ -53,7 +67,7 @@ export const loadBlobAsync = async (url: string): Promise<Blob | undefined> => {
       }
     } catch (errResult: unknown) {
       const err = errResult as Error;
-      if (err.message.includes('403')) throw err;
+      if (isNonRetryableBlobFetchError(err.message)) throw err;
       //wait
       await new Promise((resolve) => setTimeout(resolve, 1000));
       lastErr = err.message;

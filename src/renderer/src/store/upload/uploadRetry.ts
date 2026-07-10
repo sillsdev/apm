@@ -1,6 +1,6 @@
 export const UPLOAD_MAX_ATTEMPTS = 5;
 
-/** Per-attempt S3 PUT timeout from file size (assumes ≥500 KB/s; cap 30 min). */
+/** Per-attempt S3 PUT timeout from file size (ponytail: assumes ≥500 KB/s; cap 30 min). */
 export const uploadPutTimeoutMs = (fileBytes: number): number => {
   const minMs = 5 * 60 * 1000;
   const capMs = 30 * 60 * 1000;
@@ -19,6 +19,25 @@ export const uploadRetryDelayMs = (attemptIndexZeroBased: number): number => {
 
 export const sleepMs = (ms: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, ms));
+
+export async function runWithUploadRetries<T>(
+  runAttempt: (attemptIndexZeroBased: number) => Promise<T>,
+  onRetry?: (error: unknown, attemptIndexZeroBased: number) => void
+): Promise<T> {
+  let lastError: unknown;
+  for (let attempt = 0; attempt < UPLOAD_MAX_ATTEMPTS; attempt++) {
+    try {
+      return await runAttempt(attempt);
+    } catch (error: unknown) {
+      lastError = error;
+      if (attempt < UPLOAD_MAX_ATTEMPTS - 1) {
+        onRetry?.(error, attempt);
+        await sleepMs(uploadRetryDelayMs(attempt));
+      }
+    }
+  }
+  throw lastError ?? new Error('upload failed');
+}
 
 /** First-login ImportTab sync (`importSyncFromElectron`) holds `importexportBusy` until uploads finish. */
 export const IMPORT_EXPORT_BUSY_POLL_MS = 400;

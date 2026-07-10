@@ -1830,6 +1830,7 @@ const initialState = {
 			"aiAsrFailed": "AI transcription failed",
 			"aiAutomaticTranscription": "AI Automatic Transcription",
 			"aiWillContinue": "The AI will continue to work on the transcription even if you close this progress box. Click the {0} button to open the progress box on this workflow step to see the results. Use the settings gear on {0} button to see the transcription using a different language.",
+			"automaticTranscriptionFailed": "Automatic Transcription Failed",
 			"chooseSisterLang": "Choose a sister language",
 			"comment": "Comment",
 			"congratulation": "Congratulations",
