@@ -1,7 +1,6 @@
 import ClauseAudioPlayer from '../boldClause/ClauseAudioPlayer';
 
 interface Props {
-  width: number;
   referenceMediaId: string | undefined;
   playKey: number;
   onPlaybackComplete: () => void;

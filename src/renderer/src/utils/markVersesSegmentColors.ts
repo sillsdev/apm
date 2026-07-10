@@ -101,3 +101,17 @@ export const isMarkVersesTableTailIncomplete = (
     markVersesRowHasLimits(tableData[i]?.[limitsCol]?.value);
   return isMarkVersesTailIncomplete(hasLimits, tableData.length);
 };
+
+/**
+ * Semantic state of a Mark Verses reference cell.
+ *  Drives both styling and edit affordances. String-valued so the
+ * serialized form (`tableSignature`, fixtures) stays human-readable.
+ */
+export enum RefStatus {
+  /** Well-formed and in range (or empty): nothing to flag. */
+  Valid = 'valid',
+  /** Ill-formatted (fails `refMatch`); rendered red. */
+  Err = 'err',
+  /** Well-formed but out of range / breaks consecutive numbering; rendered with a warning icon. */
+  Warn = 'warn',
+}

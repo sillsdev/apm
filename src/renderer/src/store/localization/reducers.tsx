@@ -2250,6 +2250,7 @@ const initialState = {
 			"reduceNoise": "Reduce Noise",
 			"reduceNoiseAi": "Reduce Noise (AI)",
 			"reset": "Clear",
+			"resetSegments": "Reset",
 			"resume": "Resume",
 			"saveSegments": "Save Segments",
 			"seconds": "seconds",

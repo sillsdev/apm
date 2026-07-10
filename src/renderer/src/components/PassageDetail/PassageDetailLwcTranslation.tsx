@@ -518,7 +518,6 @@ export function PassageDetailLwcTranslation({ width }: IProps) {
     >
       <Box sx={{ position: 'relative', width: '100%' }}>
         <LwcTranslationReferencePlayer
-          width={width}
           referenceMediaId={referenceMediaId}
           playKey={referencePlayKey}
           onPlaybackComplete={handleReferencePlaybackComplete}

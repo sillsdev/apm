@@ -140,7 +140,6 @@ export default function LwcTranslationControls({
             allowDeltaVoice={true}
             allowDownload={false}
             allowNoNoise={true}
-            hideToolbar
             dockRecordButton
             showDockedRecordButton={showDockedRecordButton}
             onDockedRecordButton={onDockedRecordButton}

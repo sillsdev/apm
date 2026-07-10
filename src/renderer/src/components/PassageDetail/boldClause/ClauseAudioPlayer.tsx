@@ -9,7 +9,6 @@ import { shallowEqual, useSelector } from 'react-redux';
 import { sharedSelector } from '../../../selector';
 
 interface Props {
-  width: number;
   mediaId: string | undefined;
   playKey: number;
   onPlaybackComplete: () => void;
@@ -20,7 +19,6 @@ interface Props {
 }
 
 export default function ClauseAudioPlayer({
-  width,
   mediaId,
   playKey,
   onPlaybackComplete,
@@ -37,8 +35,6 @@ export default function ClauseAudioPlayer({
   const [audioBlob, setAudioBlob] = useState<Blob | undefined>();
   const [loading, setLoading] = useState(false);
   const controlsRef = useRef<WSAudioPlayerControls | null>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [containerWidth, setContainerWidth] = useState(width);
   const pendingAutoPlayRef = useRef(false);
   const durationRef = useRef(0);
   const completedRef = useRef(false);
@@ -47,18 +43,6 @@ export default function ClauseAudioPlayer({
   useEffect(() => {
     mediaStateRef.current = mediaState;
   }, [mediaState]);
-
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    const updateWidth = () => {
-      setContainerWidth(el.clientWidth > 0 ? el.clientWidth : width);
-    };
-    updateWidth();
-    const observer = new ResizeObserver(updateWidth);
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [width]);
 
   useEffect(() => {
     durationRef.current = 0;
@@ -173,11 +157,8 @@ export default function ClauseAudioPlayer({
 
   if (!mediaId) return null;
 
-  const playerWidth = Math.max(0, containerWidth - 16);
-
   return (
     <Box
-      ref={containerRef}
       sx={{ width: '100%', maxWidth: '100%', minWidth: 0, overflow: 'hidden' }}
       data-cy={dataCy}
     >
@@ -187,11 +168,9 @@ export default function ClauseAudioPlayer({
         blob={audioBlob}
         segments="{}"
         allowRecord={false}
-        hideSegmentControls={true}
         hideWaveformEditTools={true}
         allowZoom={true}
         height={160}
-        width={playerWidth}
         loading={loading}
         controlsRef={controlsRef}
         onDuration={handleDuration}

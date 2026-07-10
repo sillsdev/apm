@@ -102,9 +102,16 @@ export const usePlayerLogic = (props: PlayerLogicProps) => {
     return false;
   };
 
-  const onCurrentSegment = (segment: IRegion | undefined) => {
+  const onCurrentSegment = (
+    segment: IRegion | undefined,
+    sortedIndex?: number
+  ) => {
     let index = 0;
-    if (segment && segmentsRef.current) {
+    if (segment && typeof sortedIndex === 'number' && sortedIndex >= 0) {
+      // The waveform reported the current region's exact sorted position — use
+      // it (1-based; 0 means whole/none) rather than re-deriving from times.
+      index = sortedIndex + 1;
+    } else if (segment && segmentsRef.current) {
       const sorted = parseRegions(segmentsRef.current).regions.sort(
         (a: IRegion, b: IRegion) => a.start - b.start
       );

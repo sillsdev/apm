@@ -10936,6 +10936,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="wsAudioPlayer.resetSegments">
+         <segment>
+            <source>Reset</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="wsAudioPlayer.resume">
          <segment>
             <source>Resume</source>

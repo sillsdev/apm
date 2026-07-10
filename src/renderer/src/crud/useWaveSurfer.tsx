@@ -47,7 +47,10 @@ export function useWaveSurfer(
   height: number,
   singleRegionOnly: boolean = false,
   currentSegmentIndex?: number | undefined,
-  onCurrentRegion?: (currentRegion: IRegion | undefined) => void,
+  onCurrentRegion?: (
+    currentRegion: IRegion | undefined,
+    index?: number
+  ) => void,
   onStartRegion?: (start: number) => void,
   onRegionPlayEnd?: (region: IRegion) => void,
   verses?: string,

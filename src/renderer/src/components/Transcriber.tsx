@@ -1371,9 +1371,13 @@ export function Transcriber(props: IProps) {
               direction="row"
               sx={{ alignItems: 'center', whiteSpace: 'nowrap' }}
             >
-              <Grid id="transcriberplayer">
+              <Grid
+                id="transcriberplayer"
+                size={{ xs: 12 }}
+                sx={{ minWidth: 0, maxWidth: '100%', boxSizing: 'border-box' }}
+              >
                 <PassageDetailPlayer
-                  width={props.defaultWidth}
+                  width={paperStyle.width}
                   position={defaultPosition}
                   allowAutoSegment={true}
                   saveSegments={

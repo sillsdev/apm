@@ -72,24 +72,24 @@ describe('markVersesPassageVerses', () => {
   it('parses same-chapter ranges without treating verse numbers as suffixes', () => {
     const parsed = parseMarkVersesReference('1:24-25');
     expect(parsed).toEqual({
-      start: { chapter: 1, verse: 24, suffix: '' },
-      end: { chapter: 1, verse: 25, suffix: '' },
+      start: { chapter: 1, verse: 24, verseLetterSuffix: '' },
+      end: { chapter: 1, verse: 25, verseLetterSuffix: '' },
     });
     expect(markVersesReferenceHasLetterSuffix(parsed!)).toBe(false);
   });
 
   it('parses split-verse letter suffixes', () => {
     const parsed = parseMarkVersesReference('1:1a-2e');
-    expect(parsed?.start.suffix).toBe('a');
-    expect(parsed?.end.suffix).toBe('e');
+    expect(parsed?.start.verseLetterSuffix).toBe('a');
+    expect(parsed?.end.verseLetterSuffix).toBe('e');
     expect(markVersesReferenceHasLetterSuffix(parsed!)).toBe(true);
   });
 
   it('parses same-verse bare-suffix ranges (e.g. 1:1a-e)', () => {
     const parsed = parseMarkVersesReference('1:1a-e');
     expect(parsed).toEqual({
-      start: { chapter: 1, verse: 1, suffix: 'a' },
-      end: { chapter: 1, verse: 1, suffix: 'e' },
+      start: { chapter: 1, verse: 1, verseLetterSuffix: 'a' },
+      end: { chapter: 1, verse: 1, verseLetterSuffix: 'e' },
     });
     expect(markVersesReferenceHasLetterSuffix(parsed!)).toBe(true);
   });

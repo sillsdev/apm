@@ -238,7 +238,6 @@ export const CommentEditor = (props: IProps) => {
         keepItSmall={true}
         oneTryOnly={false}
         hideToolbar={true}
-        hideSegmentControls={true}
         showSize={false}
       />
     </Box>

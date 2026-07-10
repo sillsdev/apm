@@ -1070,6 +1070,7 @@ export function PassageDetailCarefulSpeech({ width }: IProps) {
           key={`careful-speech-player-${mediafileId}`}
           width={width}
           allowSegment={NamedRegions.Clause}
+          hideSegmentControls={true}
           suggestedSegments={suggestedSegmentsForPlayer}
           forceRegionOnly={true}
           allowAutoSegment={false}

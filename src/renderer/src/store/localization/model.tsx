@@ -2139,6 +2139,7 @@ export interface IWsAudioPlayerStrings extends Localize.LocalizedStringsMethods 
     "reduceNoise": string;
     "reduceNoiseAi": string;
     "reset": string;
+    "resetSegments": string;
     "resume": string;
     "saveSegments": string;
     "seconds": string;
