@@ -21,9 +21,9 @@ import {
   MARK_VERSES_CURRENT_RGBA,
   RefStatus,
 } from '../../../../utils/markVersesSegmentColors';
-import type { ICell } from './PassageDetailMarkVersesIsMobile';
+import type { ICell } from './PassageDetailMarkVerses';
 
-interface MarkVersesTableIsMobileProps {
+interface MarkVersesTableProps {
   data: ICell[][];
   onRowSelect?: (rowIndex: number) => void;
   /** Commit a hand-typed reference for the given data-row index. */
@@ -46,7 +46,7 @@ enum ColName {
   Ref,
 }
 
-export default function MarkVersesTableIsMobile({
+export default function MarkVersesTable({
   data,
   onRowSelect,
   onReferenceEdit,
@@ -56,7 +56,7 @@ export default function MarkVersesTableIsMobile({
   editLabel,
   editReferenceLabel,
   tableRowRefs,
-}: MarkVersesTableIsMobileProps) {
+}: MarkVersesTableProps) {
   const rows = data.slice(1);
   const header = data[0] ?? [];
 
@@ -94,7 +94,7 @@ export default function MarkVersesTableIsMobile({
         mx: 'auto',
       }}
     >
-      <Table stickyHeader size="small" aria-label="mobile mark verses table">
+      <Table stickyHeader size="small" aria-label="mark verses table">
         <TableHead>
           <TableRow>
             <TableCell sx={{ pl: 1.5 }}>

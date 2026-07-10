@@ -22,9 +22,9 @@ import {
 } from '../../../../model';
 import { RoleNames } from '../../../../model/roleNames';
 import { memory } from '../../../../schema';
-import PassageDetailMarkVersesIsMobile, {
+import PassageDetailMarkVerses, {
   MarkVersesProps,
-} from './PassageDetailMarkVersesIsMobile';
+} from './PassageDetailMarkVerses';
 import { DetailPlayerProps } from '../../PassageDetailPlayer';
 
 jest.mock('../../../../context/useGlobal', () => ({
@@ -305,7 +305,7 @@ const runTest = (props: MarkVersesProps) =>
   render(
     <UnsavedProvider>
       <HotKeyProvider>
-        <PassageDetailMarkVersesIsMobile {...props} />
+        <PassageDetailMarkVerses {...props} />
       </HotKeyProvider>
     </UnsavedProvider>
   );
@@ -332,7 +332,7 @@ const editReferenceDialog = () => screen.getByRole('dialog');
 
 /** Table body for the mark-verses grid (prefer direct `tbody` over `rowgroup` ordering). */
 const markVersesTbody = () => {
-  const table = screen.getByRole('table', { name: 'mobile mark verses table' });
+  const table = screen.getByRole('table', { name: 'mark verses table' });
   const tbody = table.querySelector('tbody');
   if (!tbody) throw new Error('Mark verses table has no tbody');
   return tbody;
@@ -342,7 +342,7 @@ const markVersesTbody = () => {
  * Timestamp display format for the Mark Verses table. The table renders segment
  * limits as either seconds (`8.4`) or mm:ss, and we're still deciding which — so
  * the format lives in ONE place. To switch, edit `fmtTime` to match
- * PassageDetailMarkVersesIsMobile.tsx; every limits assertion below follows.
+ * PassageDetailMarkVerses.tsx; every limits assertion below follows.
  */
 const fmtTime = (seconds: number) => seconds.toFixed(1); // ss.s
 // For mm:ss instead, swap the line above for:

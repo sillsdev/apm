@@ -11057,7 +11057,7 @@
             <source>Edit</source>
             <target/>
             <context-group>
-               <context context-type="sourcefile">MarkVersesTableIsMobile.tsx</context>
+               <context context-type="sourcefile">MarkVersesTable.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="verse.editReference">

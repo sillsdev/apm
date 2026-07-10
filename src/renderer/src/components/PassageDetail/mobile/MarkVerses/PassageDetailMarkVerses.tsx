@@ -58,7 +58,7 @@ import { useProjectSegmentSave } from '../../Internalization/useProjectSegmentSa
 import EditReferenceDropdown, {
   EditReferenceValue,
 } from './EditReferenceDropdown';
-import MarkVersesTableIsMobile from './MarkVersesTableIsMobile';
+import MarkVersesTable from './MarkVersesTable';
 import {
   createMarkVersesUndoStack,
   type MarkVersesSnapshot,
@@ -116,9 +116,7 @@ export interface MarkVersesProps {
   width: number;
 }
 
-export default function PassageDetailMarkVersesIsMobile({
-  width,
-}: MarkVersesProps) {
+export default function PassageDetailMarkVerses({ width }: MarkVersesProps) {
   const {
     mediafileId,
     section,
@@ -1503,7 +1501,7 @@ export default function PassageDetailMarkVersesIsMobile({
 
   return (
     <Box
-      id="mark-verses-mobile"
+      id="mark-verses"
       sx={{
         display: 'flex',
         flexDirection: 'column',
@@ -1547,7 +1545,7 @@ export default function PassageDetailMarkVersesIsMobile({
           overflow: 'hidden',
         }}
       >
-        <MarkVersesTableIsMobile
+        <MarkVersesTable
           data={data}
           onRowSelect={handleSelectRow}
           onReferenceEdit={handleReferenceTextEdit}
