@@ -35,6 +35,7 @@ import UploadIcon from '@mui/icons-material/CloudUpload';
 import { Button } from '@mui/material';
 import {
   IAudioDownloadStrings,
+  IMainStrings,
   ISharedStrings,
   IWsAudioPlayerStrings,
 } from '../model';
@@ -47,7 +48,7 @@ import { Duration } from '../control/Duration';
 import { LightTooltip } from '../control/LightTooltip';
 import { RecordButton } from '../control/RecordButton';
 import HighlightButton from './PassageDetail/mobile/HighlightButton';
-import { useSnackBar } from '../hoc/SnackBar';
+import { useSnackBar, AlertSeverity } from '../hoc/SnackBar';
 import { HotKeyContext } from '../context/HotKeyContext';
 import { PriButton } from '../control';
 import WSAudioPlayerZoom, { maxZoom } from './WSAudioPlayerZoom';
@@ -73,12 +74,18 @@ import Confirm from './AlertDialog';
 import { getSortedRegions, NamedRegions } from '../utils/namedSegments';
 import {
   audioDownloadSelector,
+  mainSelector,
   sharedSelector,
   wsAudioPlayerSelector,
 } from '../selector';
 import { shallowEqual, useSelector } from 'react-redux';
 import { AltButton, smallButtonProps } from '../control';
 import { AudioAiFunc, useAudioAi } from '../utils/useAudioAi';
+import AeroTaskErrorMessage from '../business/asr/AeroTaskErrorMessage';
+import {
+  aeroTaskErrorParts,
+  axiosErrorMessage,
+} from '../business/asr/aeroTaskError';
 import { Exception } from '@orbit/core';
 import { useGlobal } from '../context/useGlobal';
 import { AxiosError } from 'axios';
@@ -453,6 +460,7 @@ function WSAudioPlayer(props: IProps) {
   const ta: IAudioDownloadStrings = useSelector(audioDownloadSelector);
 
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
+  const tm: IMainStrings = useSelector(mainSelector, shallowEqual);
   const [style, setStyle] = useState({
     cursor: busy || loading ? 'progress' : 'default',
   });
@@ -1590,23 +1598,29 @@ function WSAudioPlayer(props: IProps) {
     </Box>
   );
 
-  const audioAiMsg = (
+  const audioAiError = (
     func: AudioAiFunc,
     targetVoice?: string,
     error?: Error | AxiosError
   ) => {
-    let msg =
+    const summary =
       t.getString(`${func}Failed`) ??
       t.aiFailed
         .replace('{0}', targetVoice ? ` for ${targetVoice}` : '')
         .replace('{1}', func);
-    if (error instanceof Error) {
-      msg += ` ${error.message}`;
-    }
-    if (error instanceof AxiosError) {
-      msg += ` ${error.response?.data}`;
-    }
-    return msg;
+    const { summary: displaySummary, details } = aeroTaskErrorParts(
+      error ? axiosErrorMessage(error) : '',
+      summary
+    );
+    const logText = details ? `${displaySummary}: ${details}` : displaySummary;
+    const display = (
+      <AeroTaskErrorMessage
+        summary={displaySummary}
+        details={details}
+        detailsLabel={tm.details}
+      />
+    );
+    return { display, logText };
   };
   const applyAudioAi = (func: AudioAiFunc, targetVoice?: string) => {
     checkOnline((online) => {
@@ -1637,9 +1651,13 @@ function WSAudioPlayer(props: IProps) {
                   }
                 } else {
                   if ((file as Error).message !== 'canceled') {
-                    const msg = audioAiMsg(func, targetVoice, file);
-                    showMessage(msg);
-                    logError(Severity.error, errorReporter, msg);
+                    const { display, logText } = audioAiError(
+                      func,
+                      targetVoice,
+                      file
+                    );
+                    showMessage(display, AlertSeverity.Error);
+                    logError(Severity.error, errorReporter, logText);
                   }
                 }
                 doingProcess(false);
@@ -1650,9 +1668,9 @@ function WSAudioPlayer(props: IProps) {
           }
         });
       } catch (error: any) {
-        const msg = audioAiMsg(func, targetVoice, error);
-        logError(Severity.error, errorReporter, msg);
-        showMessage(msg);
+        const { display, logText } = audioAiError(func, targetVoice, error);
+        logError(Severity.error, errorReporter, logText);
+        showMessage(display, AlertSeverity.Error);
         doingProcess(false);
       }
     });

@@ -4,7 +4,6 @@ import logError, { Severity } from './logErrorService';
 import {
   axiosDelete,
   axiosGet,
-  axiosGetStream,
   axiosPostFile,
   axiosSendSignedUrl,
 } from './axios';
@@ -14,13 +13,23 @@ import { useContext, useRef } from 'react';
 import { TokenContext } from '../context/TokenProvider';
 import { loadBlobAsync } from './loadBlob';
 import { MediaFileAttributes } from '../model/mediafile';
+import { runWithUploadRetries } from '../store/upload/uploadRetry';
 
 interface fileTask {
   taskId: string;
   cb: (file: File | Error) => void;
   cancelRef: React.RefObject<boolean>;
+  emptyResultPolls?: number;
+  pollStartedAt?: number;
+  /** GET poll in flight — skip until it returns. */
+  polling?: boolean;
+  /** Poll returned a URL; hold off further ticks until loadBlobAsync finishes. */
+  validating?: boolean;
 }
 const timerDelay = 10000; //10 seconds
+/** S3 URL returned but body still empty — stop after this many poll ticks. */
+const MAX_EMPTY_S3_RESULT_POLLS = 3;
+const S3_POLL_MAX_WAIT_MS = 10 * 60 * 1000;
 
 export enum AudioAiFunc {
   noiseRemoval = 'noiseremoval',
@@ -41,7 +50,6 @@ interface AudioAIResult {
 export const useAudioAi = (): AudioAIResult => {
   const [reporter] = useGlobal('errorReporter');
   const [errorReporter] = useGlobal('errorReporter');
-  const fileList: fileTask[] = [];
   const returnAsS3List: fileTask[] = [];
   const taskTimer = useRef<NodeJS.Timeout | undefined>(undefined);
   const token = useContext(TokenContext)?.state?.accessToken ?? null;
@@ -49,11 +57,7 @@ export const useAudioAi = (): AudioAIResult => {
   const cancelled = new Error('canceled');
 
   const cleanupTimer = (): void => {
-    if (
-      fileList.length === 0 &&
-      returnAsS3List.length === 0 &&
-      taskTimer.current
-    ) {
+    if (returnAsS3List.length === 0 && taskTimer.current) {
       try {
         clearInterval(taskTimer.current);
       } catch (error) {
@@ -63,91 +67,76 @@ export const useAudioAi = (): AudioAIResult => {
     }
   };
 
-  const cleanupFile = (job: fileTask): void => {
-    fileList.splice(fileList.indexOf(job), 1);
-    cleanupTimer();
-  };
-
   const cleanupS3 = (job: fileTask): void => {
-    returnAsS3List.splice(returnAsS3List.indexOf(job), 1);
+    const i = returnAsS3List.indexOf(job);
+    if (i >= 0) returnAsS3List.splice(i, 1);
     cleanupTimer();
   };
 
-  const base64ToFile = (
-    base64Data: string,
-    fileName: string
-  ): File | undefined => {
-    try {
-      const binaryString = atob(base64Data);
-      const len = binaryString.length;
-      const bytes = new Uint8Array(len);
-
-      for (let i = 0; i < len; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
-      }
-
-      const blob = new Blob([bytes], { type: 'audio/wav' });
-      // Create a File object from the Blob
-      const file = new File([blob], fileName, { type: blob.type });
-      return file;
-    } catch (error: unknown) {
-      console.log(error);
-    }
+  const failEmptyS3Result = (task: fileTask): never => {
+    throw new Error('AI result file empty ' + task.taskId);
   };
 
-  const checkFile = async (
-    func: AudioAiFunc,
-    task: fileTask
-  ): Promise<File | undefined> => {
-    const response = await axiosGetStream(`aero/${func}/${task.taskId}`);
-    const data = await response?.json();
-    if (data) {
-      cleanupFile(task);
-      return base64ToFile(data.data, data.fileName ?? task.taskId);
-    }
-    return undefined;
+  const noteEmptyS3Result = (task: fileTask): void => {
+    task.emptyResultPolls = (task.emptyResultPolls ?? 0) + 1;
+    if (task.emptyResultPolls >= MAX_EMPTY_S3_RESULT_POLLS)
+      failEmptyS3Result(task);
   };
 
   const checkAsS3 = async (
     func: AudioAiFunc,
     task: fileTask
   ): Promise<File | undefined> => {
-    const result = await axiosGet(`aero/${func}/s3/${task.taskId}`);
+    if (task.polling || task.validating) return undefined;
+    if (
+      task.pollStartedAt &&
+      new Date().getTime() - task.pollStartedAt > S3_POLL_MAX_WAIT_MS
+    ) {
+      throw new Error('AI result timed out');
+    }
+    task.polling = true;
+    let result: unknown;
+    try {
+      result = await axiosGet(`aero/${func}/s3/${task.taskId}`);
+    } finally {
+      task.polling = false;
+    }
     const response = result as unknown as { message: string };
     if (response?.message) {
-      cleanupS3(task); //prevent from doing this again before we're done here
-      const b = await loadBlobAsync(response?.message);
-      if (token) {
-        const audioBase = response.message.split('?')[0] as string;
-        const filename = audioBase.split('/').pop() as string;
-        deleteS3File(filename);
+      task.validating = true;
+      try {
+        let b: Blob | undefined;
+        try {
+          b = await loadBlobAsync(response?.message);
+        } catch (err: unknown) {
+          const msg = err instanceof Error ? err.message : String(err);
+          if (msg.includes('empty download')) {
+            noteEmptyS3Result(task);
+            return undefined;
+          }
+          throw err;
+        }
+        if (!b?.size) {
+          noteEmptyS3Result(task);
+          return undefined;
+        }
+        cleanupS3(task);
+        if (token) {
+          const audioBase = response.message.split('?')[0] as string;
+          const filename = audioBase.split('/').pop() as string;
+          deleteS3File(filename);
+        }
+        return new File([b], task.taskId + '.wav');
+      } finally {
+        if (returnAsS3List.indexOf(task) >= 0) task.validating = false;
       }
-      if (b) return new File([b], task.taskId + '.wav');
-      else throw new Error('bloberror');
     }
     return undefined;
   };
 
   const checkTasks = async (func: AudioAiFunc): Promise<void> => {
-    fileList.forEach(async (filetask) => {
-      try {
-        if (!filetask.cancelRef.current) {
-          const file = await checkFile(func, filetask);
-          if (file) {
-            filetask.cb(file);
-          }
-        } else {
-          filetask.cb(cancelled);
-          cleanupFile(filetask);
-        }
-      } catch (error: unknown) {
-        logError(Severity.error, errorReporter, error as Error);
-        console.log(error);
-        filetask.cb(error as Error);
-        cleanupFile(filetask);
-      }
-    });
     returnAsS3List.forEach(async (filetask) => {
+      if (filetask.polling || filetask.validating) return;
       try {
         if (!filetask.cancelRef.current) {
           const file = await checkAsS3(func, filetask);
@@ -160,7 +149,6 @@ export const useAudioAi = (): AudioAIResult => {
         }
       } catch (error: unknown) {
         logError(Severity.error, errorReporter, error as Error);
-        console.log(error);
         filetask.cb(error as Error);
         cleanupS3(filetask);
       }
@@ -202,40 +190,49 @@ export const useAudioAi = (): AudioAIResult => {
       token
     );
     const response = result as string;
-    uploadFile(
-      {
-        id: 0,
-        audioUrl: response,
-        contentType: 'audio/wav',
-      } as MediaFileAttributes & { id: number },
-      file,
-      reporter
-    ).then((status) => {
-      if (status.statusNum === 0)
+    runWithUploadRetries(async () => {
+      const status = await uploadFile(
+        {
+          id: 0,
+          audioUrl: response,
+          contentType: 'audio/wav',
+        } as MediaFileAttributes & { id: number },
+        file,
+        reporter
+      );
+      if (status.statusNum !== 0) {
+        throw new Error(status.statusText || 'upload failed');
+      }
+    })
+      .then(() => {
         if (!cancelRef.current)
-          if (!cancelRef.current)
-            axiosSendSignedUrl(`aero/${func}/fromfile`, file.name, targetVoice)
-              .then((nrresponse) => {
-                const response = nrresponse as AxiosResponse;
-                if (response.status === HttpStatusCode.Ok) {
-                  const taskId = response.data ?? '';
-                  returnAsS3List.push({
-                    taskId,
-                    cb,
-                    cancelRef,
-                  });
-                  if (!taskTimer.current) launchTimer(func);
-                } else cb(new Error(response.statusText));
-              })
-              .catch((err) => {
-                logError(Severity.error, errorReporter, err);
-                cb(err as Error);
-              })
-              .finally(() => console.log('done', file.name));
-          //deleteS3File(file.name));
-          else doCancel(func, cb);
+          axiosSendSignedUrl(`aero/${func}/fromfile`, file.name, targetVoice)
+            .then((nrresponse) => {
+              const response = nrresponse as AxiosResponse;
+              if (response.status === HttpStatusCode.Ok) {
+                const taskId = response.data ?? '';
+                returnAsS3List.push({
+                  taskId,
+                  cb,
+                  cancelRef,
+                  emptyResultPolls: 0,
+                  pollStartedAt: Date.now(),
+                });
+                if (!taskTimer.current) launchTimer(func);
+              } else cb(new Error(response.statusText));
+            })
+            .catch((err) => {
+              logError(Severity.error, errorReporter, err);
+              cb(err as Error);
+            });
         else deleteS3File(file.name);
-    });
+      })
+      .catch((err: unknown) => {
+        const rej = err as { statusText?: string };
+        const error = new Error(rej.statusText ?? 'upload failed');
+        logError(Severity.error, errorReporter, error);
+        cb(error);
+      });
   };
 
   const requestAudioAi = async ({
@@ -246,8 +243,9 @@ export const useAudioAi = (): AudioAIResult => {
     cb,
   }: IRequestAudio): Promise<void> => {
     if (getGlobal('offline')) return;
+    const useS3 = file.size > 6000000 || Boolean(targetVoice);
     // larger sizes give Network Error
-    if (file.size > 6000000 || targetVoice)
+    if (useS3)
       s3request(func, cancelRef, file, targetVoice, cb).catch((err) =>
         cb(err as Error)
       );
@@ -258,7 +256,7 @@ export const useAudioAi = (): AudioAIResult => {
           if (cancelRef.current) doCancel(func, cb);
           else if (response.status === HttpStatusCode.Ok) {
             const taskId = response.data ?? '';
-            fileList.push({
+            returnAsS3List.push({
               taskId,
               cb,
               cancelRef,
