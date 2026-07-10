@@ -46,13 +46,8 @@ import {
 import { useGetAsrSettings } from '../../../crud/useGetAsrSettings';
 import { useOrbitData } from '../../../hoc/useOrbitData';
 import { isLangSet } from '../../../utils/langTag';
-import {
-  resolveStepSpellCheck,
-  type TranscribeStepSettingsJson,
-} from '../../../crud/stepSpellCheck';
+import type { TranscribeStepSettingsJson } from '../../../crud/stepSpellCheck';
 import { parseStepLanguageField } from '../../../crud/transcribeStepAsrSettings';
-import { isElectron } from '../../../../api-variable';
-import type { MainAPI } from '@model/main-api';
 import type { FontData } from '../../../crud/fontChoice';
 import type { BoldClauseTranscriptionConfig } from '../boldClauseTranscription';
 import { useTranscriptionAutosave } from './useTranscriptionAutosave';
@@ -61,8 +56,6 @@ import { BigDialogBp } from '../../../hoc/BigDialogBp';
 import { useMobile } from '../../../utils/useMobile';
 import { IWsAudioPlayerStrings } from '@model/index';
 import Memory from '@orbit/memory';
-
-const ipc = window?.api as MainAPI | undefined;
 
 function parseStepSettings(settings: unknown): TranscribeStepSettingsJson {
   if (!settings) return {};
@@ -165,7 +158,6 @@ export default function BoldClauseTranscriptionEditor({
   const [asrOverride, setAsrOverride] = useState<IAsrState | undefined>();
   const [phonetic, setPhonetic] = useState(false);
   const [projData, setProjData] = useState<FontData | null>(null);
-  const [availSpellLangs, setAvailSpellLangs] = useState<string[]>([]);
   const userEditedRef = useRef(false);
 
   const handleTextChange = useCallback(
@@ -198,20 +190,12 @@ export default function BoldClauseTranscriptionEditor({
     }
   }, [flushSave, flushSaveRef]);
 
-  useEffect(() => {
-    if (!isElectron) return;
-    ipc
-      ?.availSpellLangs()
-      .then((list: string[]) => setAvailSpellLangs(list ?? []))
-      .catch(() => setAvailSpellLangs([]));
-  }, []);
-
-  // Resolve the transcription language and spell-check flag from the step
-  // settings (falling back to the project language), then hand getFontData a
-  // synthetic project record so the textarea gets the right lang/font and
-  // spellCheck. This mirrors PassageDetailTranscribe's Transcriber (TT-7518):
-  // getFontData always returns spellCheck:false, so the resolved value must
-  // override it.
+  // Resolve the transcription language and spell-check flag from the workflow
+  // step settings (falling back to the project language for the font/lang),
+  // then hand getFontData a synthetic project record so the textarea gets the
+  // right lang/font and spellCheck. Spell check is driven solely by the step's
+  // `spellCheck` flag: on when the step enables it, off otherwise (TT-7518).
+  // getFontData always returns spellCheck:false, so the step value overrides it.
   useEffect(() => {
     if (!project) return;
     const projRec = findRecord(memory, 'project', project) as
@@ -223,7 +207,6 @@ export default function BoldClauseTranscriptionEditor({
     const lgSettings = parseStepSettings(stepSettings);
     const { bcp47: stepLang } = parseStepLanguageField(lgSettings?.language);
     const hasStepLanguage = isLangSet(stepLang);
-    const artifactSlug = transcriptionConfig.defaultArtifactSlug;
 
     let langTag = hasStepLanguage ? stepLang : undefined;
     let defaultFont = lgSettings?.font;
@@ -237,12 +220,7 @@ export default function BoldClauseTranscriptionEditor({
         defaultFontSize ?? projRec.attributes?.defaultFontSize ?? undefined;
     }
 
-    const spellCheck = resolveStepSpellCheck(
-      lgSettings,
-      artifactSlug,
-      langTag,
-      availSpellLangs
-    );
+    const spellCheck = lgSettings?.spellCheck === true;
 
     const rec = {
       attributes: { language: langTag, defaultFont, defaultFontSize, rtl },
@@ -253,14 +231,7 @@ export default function BoldClauseTranscriptionEditor({
     return () => {
       cancelled = true;
     };
-  }, [
-    project,
-    memory,
-    artifactTypeId,
-    stepSettings,
-    availSpellLangs,
-    transcriptionConfig,
-  ]);
+  }, [project, memory, artifactTypeId, stepSettings]);
 
   const textAreaStyle = useMemo(
     () =>

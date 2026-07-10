@@ -71,8 +71,6 @@ jest.mock('../../../crud/transcribeStepAsrSettings', () => ({
   },
 }));
 
-jest.mock('../../../../api-variable', () => ({ isElectron: false }));
-
 jest.mock('../../../utils/useCheckOnline', () => ({
   useCheckOnline: () => (cb: (online: boolean) => void) => cb(true),
 }));
