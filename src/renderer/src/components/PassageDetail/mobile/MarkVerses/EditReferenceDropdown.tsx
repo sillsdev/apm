@@ -228,20 +228,47 @@ export default function EditReferenceDropdown({
   };
 
   /**
+   * The split-verse letter suffix picker for one endpoint. Rendered inline, to
+   * the right of the verse field, when Split Verse is on (see the layout note on
+   * `renderSuffixSelect`'s callers).
+   */
+  const renderSuffixSelect = (side: 'start' | 'end') => {
+    const isStart = side === 'start';
+    const suffix = isStart ? draft.startSuffix : draft.endSuffix;
+    const suffixLabel = `${side} verse suffix`;
+    return (
+      <NativeSelect
+        value={suffix}
+        onChange={handleSuffixChange(isStart ? 'startSuffix' : 'endSuffix')}
+        inputProps={{ 'aria-label': suffixLabel, title: suffixLabel }}
+        sx={selectSx}
+      >
+        {suffixOptions.map((option) => (
+          <option
+            key={option || `none-${side}`}
+            value={option}
+            style={suffixOptionStyle}
+          >
+            {option || ' '}
+          </option>
+        ))}
+      </NativeSelect>
+    );
+  };
+
+  /**
    * An editable `chapter:verse` endpoint (`unrestricted` mode). The chapter is a
    * dropdown only when the passage spans multiple chapters; the verse is always
    * a dropdown scoped to the chosen chapter. The split-verse suffix (when on)
-   * sits beneath, matching the fixed-start layout.
+   * sits inline to the right of the verse, matching the fixed-start layout.
    */
   const renderEditableEndpoint = (side: 'start' | 'end') => {
     const isStart = side === 'start';
     const chapter = isStart ? draft.startChapter : draft.endChapter;
     const verse = isStart ? draft.startVerse : draft.endVerse;
-    const suffix = isStart ? draft.startSuffix : draft.endSuffix;
     const verseOptions = versesForChapter(chapter);
     const chapterLabel = `${side} chapter number`;
     const verseLabel = `${side} verse number`;
-    const suffixLabel = `${side} verse suffix`;
     return (
       <Box sx={{ textAlign: 'center', minWidth: 96 }}>
         <Box
@@ -295,25 +322,8 @@ export default function EditReferenceDropdown({
               </option>
             ))}
           </NativeSelect>
+          {draft.splitVerse ? renderSuffixSelect(side) : null}
         </Box>
-        {draft.splitVerse ? (
-          <NativeSelect
-            value={suffix}
-            onChange={handleSuffixChange(isStart ? 'startSuffix' : 'endSuffix')}
-            inputProps={{ 'aria-label': suffixLabel, title: suffixLabel }}
-            sx={{ ...selectSx, mt: 0.5 }}
-          >
-            {suffixOptions.map((option) => (
-              <option
-                key={option || `none-${side}`}
-                value={option}
-                style={suffixOptionStyle}
-              >
-                {option || ' '}
-              </option>
-            ))}
-          </NativeSelect>
-        ) : null}
       </Box>
     );
   };
@@ -334,8 +344,8 @@ export default function EditReferenceDropdown({
           sx={{
             display: 'flex',
             justifyContent: 'center',
-            alignItems: 'flex-start',
-            gap: 3,
+            alignItems: 'center',
+            gap: 2,
             mb: 2,
             fontVariantNumeric: 'tabular-nums',
           }}
@@ -344,39 +354,26 @@ export default function EditReferenceDropdown({
             renderEditableEndpoint('start')
           ) : (
             <Box sx={{ textAlign: 'center', minWidth: 96 }}>
-              <Typography
-                component="div"
-                aria-label="start verse reference"
-                sx={{ fontSize: 28, lineHeight: 1.2, py: 0.5 }}
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 0.5,
+                }}
               >
-                {`${draft.startChapter}:${draft.startVerse}`}
-              </Typography>
-              {draft.splitVerse ? (
-                <NativeSelect
-                  value={draft.startSuffix}
-                  onChange={handleSuffixChange('startSuffix')}
-                  inputProps={{
-                    'aria-label': 'start verse suffix',
-                    title: 'start verse suffix',
-                  }}
-                  sx={{ ...selectSx, mt: 0.5 }}
+                <Typography
+                  component="div"
+                  aria-label="start verse reference"
+                  sx={{ fontSize: 28, lineHeight: 1.2, py: 0.5 }}
                 >
-                  {suffixOptions.map((option) => (
-                    <option
-                      key={option || 'none-start'}
-                      value={option}
-                      style={suffixOptionStyle}
-                    >
-                      {option || ' '}
-                    </option>
-                  ))}
-                </NativeSelect>
-              ) : null}
+                  {`${draft.startChapter}:${draft.startVerse}`}
+                </Typography>
+                {draft.splitVerse ? renderSuffixSelect('start') : null}
+              </Box>
             </Box>
           )}
-          <Typography variant="h6" sx={{ mt: 0.75 }}>
-            -
-          </Typography>
+          <Typography variant="h6">-</Typography>
           {unrestricted ? (
             renderEditableEndpoint('end')
           ) : (
@@ -413,28 +410,8 @@ export default function EditReferenceDropdown({
                     </option>
                   ))}
                 </NativeSelect>
+                {draft.splitVerse ? renderSuffixSelect('end') : null}
               </Box>
-              {draft.splitVerse ? (
-                <NativeSelect
-                  value={draft.endSuffix}
-                  onChange={handleSuffixChange('endSuffix')}
-                  inputProps={{
-                    'aria-label': 'end verse suffix',
-                    title: 'end verse suffix',
-                  }}
-                  sx={{ ...selectSx, mt: 0.5 }}
-                >
-                  {suffixOptions.map((option) => (
-                    <option
-                      key={option || 'none-end'}
-                      value={option}
-                      style={suffixOptionStyle}
-                    >
-                      {option || ' '}
-                    </option>
-                  ))}
-                </NativeSelect>
-              ) : null}
             </Box>
           )}
         </Box>
