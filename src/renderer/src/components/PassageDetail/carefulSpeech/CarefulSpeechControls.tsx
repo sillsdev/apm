@@ -274,7 +274,6 @@ export default function CarefulSpeechControls({
                 allowDeltaVoice={true}
                 allowDownload={false}
                 allowNoNoise={true}
-                hideToolbar
                 dockRecordButton
                 showDockedRecordButton={showDockedRecordButton}
                 onDockedRecordButton={onDockedRecordButton}
