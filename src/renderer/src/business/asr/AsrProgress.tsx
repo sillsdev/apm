@@ -136,10 +136,7 @@ export default function AsrProgress({
   };
 
   const showTaskFailure = async (message: string) => {
-    const { summary, details } = aeroTaskErrorParts(
-      message,
-      t.automaticTranscriptionFailed
-    );
+    const { summary, details } = aeroTaskErrorParts(message, t.aiAsrFailed);
     logError(Severity.error, errorReporter, new Error(message));
     await clearTrTasks();
     status(
@@ -252,10 +249,7 @@ export default function AsrProgress({
     } catch (errResult: unknown) {
       const error = errResult as AxiosError;
       const message = axiosErrorMessage(errResult);
-      const { summary, details } = aeroTaskErrorParts(
-        message,
-        t.automaticTranscriptionFailed
-      );
+      const { summary, details } = aeroTaskErrorParts(message, t.aiAsrFailed);
       logError(
         Severity.error,
         errorReporter,

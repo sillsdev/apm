@@ -6,7 +6,7 @@ import {
 import { AxiosError } from 'axios';
 
 describe('aeroTaskErrorParts', () => {
-  const taskFailed = 'Automatic Transcription Failed';
+  const taskFailed = 'AI transcription failed';
 
   it('splits Aero task failed prefix from sqlalchemy detail', () => {
     const msg =
