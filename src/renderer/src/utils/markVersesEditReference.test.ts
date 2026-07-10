@@ -7,6 +7,7 @@ import {
   isWellFormedMarkVersesReference,
   markVersesReferenceConsecutivelyFollows,
   markVersesReferenceStartsPassage,
+  markVersesRenumberLeadingRef,
   markVersesSkippedPassageRefs,
   MarkVersesWarningReason,
   shouldAutoRenumberAfterEdit,
@@ -532,6 +533,19 @@ describe('evaluateMarkVersesReferenceStatus (per-row warning reason)', () => {
     });
   });
 
+  it('does not report overlap for a later subpart of the row above (1:2a -> 1:2b)', () => {
+    // 1:2b continues the split verse begun by 1:2a; distinct subparts of the
+    // same verse are not an overlap.
+    expect(status(['1:1', '1:2a', '1:2b', '1:3'], 2)).toEqual({});
+  });
+
+  it('reports overlap when a subpart duplicates a lettered row above', () => {
+    // 1:2a is already assigned above, so a second 1:2a overlaps.
+    expect(status(['1:1', '1:2a', '1:2a', '1:3'], 2)).toEqual({
+      reason: MarkVersesWarningReason.Overlap,
+    });
+  });
+
   it('treats a non-consecutive reference that neither overlaps nor skips ahead as valid', () => {
     // 1:1 -> 1:2b is non-consecutive (a new split verse must start at part a)
     // but its verse (1:2) neither overlaps the row above (1:1) nor skips ahead.
@@ -855,5 +869,61 @@ describe('markVersesReferenceStartsPassage', () => {
     expect(markVersesReferenceStartsPassage('1:5', passage(1, undefined))).toBe(
       false
     );
+  });
+});
+
+describe('markVersesRenumberLeadingRef', () => {
+  it('continues with part b when the reference ends at part a', () => {
+    // A verse can never end at part a, so the next row must supply part b.
+    expect(markVersesRenumberLeadingRef('1:1a')).toBe('1:1b');
+    expect(markVersesRenumberLeadingRef('1:3a')).toBe('1:3b');
+    // Ending a multi-verse range at part a of the end verse: same rule.
+    expect(markVersesRenumberLeadingRef('1:1b-1:2a')).toBe('1:2b');
+    expect(markVersesRenumberLeadingRef('1:1a-1:2a')).toBe('1:2b');
+    expect(markVersesRenumberLeadingRef('1:1-1:2a')).toBe('1:2b');
+  });
+
+  it('continues with the next letter when the end verse is covered from part a', () => {
+    // The user chose to specify subparts (rather than writing 1:1 to indicate all of verse 1), so a
+    // further part is implied.
+    expect(markVersesRenumberLeadingRef('1:1a-b')).toBe('1:1c');
+    expect(markVersesRenumberLeadingRef('1:1a-c')).toBe('1:1d');
+    expect(markVersesRenumberLeadingRef('1:1a-d')).toBe('1:1e');
+    // A range spanning into a later verse covers that verse from part a.
+    expect(markVersesRenumberLeadingRef('1:1-1:2b')).toBe('1:2c');
+  });
+
+  it('moves to the next verse when a b+ end excludes part a of a single verse', () => {
+    // The letter serves to drop the leading part; verses rarely have parts past b.
+    // So we want to just go on to the next verse
+    expect(markVersesRenumberLeadingRef('1:1b')).toBeUndefined();
+    expect(markVersesRenumberLeadingRef('1:1c')).toBeUndefined();
+    expect(markVersesRenumberLeadingRef('1:1d')).toBeUndefined();
+    expect(markVersesRenumberLeadingRef('1:1b-c')).toBeUndefined();
+    expect(markVersesRenumberLeadingRef('1:1b-d')).toBeUndefined();
+    expect(markVersesRenumberLeadingRef('1:1c-d')).toBeUndefined();
+  });
+
+  it('treats a spanned-into end verse as covered from part a (1:1b-1:2b -> 1:2c)', () => {
+    // The range enters verse 2, so verse 2 counts as covered from part a and
+    // takes the "further part implied" branch. See the helper's doc comment.
+    expect(markVersesRenumberLeadingRef('1:1b-1:2b')).toBe('1:2c');
+  });
+
+  it('does not run past the last subpart (e)', () => {
+    // There is no letter after e, so the tail falls back to the next passage
+    // verse rather than an invalid 1:1f.
+    expect(markVersesRenumberLeadingRef('1:1a-e')).toBeUndefined();
+  });
+
+  it('yields no leading ref for a whole (non-split) verse or range', () => {
+    expect(markVersesRenumberLeadingRef('1:1')).toBeUndefined();
+    expect(markVersesRenumberLeadingRef('1:1-3')).toBeUndefined();
+    expect(markVersesRenumberLeadingRef('1:30-2:2')).toBeUndefined();
+  });
+
+  it('returns undefined for an unparseable reference', () => {
+    expect(markVersesRenumberLeadingRef('foo')).toBeUndefined();
+    expect(markVersesRenumberLeadingRef('')).toBeUndefined();
   });
 });

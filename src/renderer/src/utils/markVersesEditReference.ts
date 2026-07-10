@@ -4,6 +4,7 @@
  */
 import { getLastVerse } from '../business/localParatext/getLastVerse';
 import {
+  incrementMarkVersesReferenceSuffix,
   nextMarkVersesLetterSuffix,
   parseMarkVersesReference,
   splitVerseSuffix,
@@ -147,6 +148,65 @@ export const markVersesReferenceConsecutivelyFollows = (
     return false;
 
   return true;
+};
+
+/**
+ * The reference that should lead the row *after* an edited reference when the
+ * table auto-renumbers, or `undefined` when the following row simply resumes at
+ * the next passage verse.
+ *
+ * Everything hinges on where the reference *ends* inside its end verse:
+ * - No end suffix (a whole verse, `1:1`, or a plain range `1:1-3`): nothing to
+ *   continue, so the tail resumes at the next passage verse.
+ * - Ends at part `a` (`1:1a`, `1:1b-1:2a`): we assume a verse will never end at part `a`
+ *   (because otherwise why would it be given a letter subpart at all)
+ *   so the next row must continue the end verse with part `b` (`1:1b`, `1:2b`).
+ * - Ends at part `b` or later: the answer depends on whether part `a` of the end
+ *   verse is *included* in the range.
+ *   - Included — the range covers the end verse from its start (a single verse
+ *     beginning at `a`, or a range spanning in from an earlier verse). The user
+ *     deliberately stopped short of the whole verse (they'd have written `1:1`
+ *     otherwise), implying a further part exists, so continue with the next
+ *     letter (`1:1a-b` -> `1:1c`, `1:1a-d` -> `1:1e`, `1:1-1:2b` -> `1:2c`).
+ *   - Excluded — a single-verse range beginning at part `b`+ (`1:1b`, `1:1b-c`,
+ *     `1:1c-d`). The letter is just there to drop part `a`; verses rarely have
+ *     parts past `b`, so treat the verse as done and move to the next verse.
+ *
+ * - `1:1b-1:2b` is the case I'm least sure about. The user may have been
+ *     entering the verse in the Edit Reference dialog, and then checked "Split
+ *     verse" in order to enter the 1:1b, but  then we give them letter slots on
+ *     both the reference start and the reference end, so they may have seen the
+ *     entered 2b instead of 2 only because they saw the letter slot and 2b very
+ *     well may be the end of verse 2. But I am probably overthinking this and
+ *     thought it not worth further complicating the code for such a corner
+ *     corner case.
+ */
+export const markVersesRenumberLeadingRef = (
+  newReference: string
+): string | undefined => {
+  const parsed = parseMarkVersesReference(newReference);
+  if (!parsed) return undefined;
+
+  const endSuffix = parsed.end.verseLetterSuffix;
+  if (!endSuffix) return undefined;
+
+  // Where the end verse's coverage begins: at part `a` when the range spans in
+  // from an earlier verse, otherwise at the range's own start suffix.
+  const sameVerse =
+    parsed.start.chapter === parsed.end.chapter &&
+    parsed.start.verse === parsed.end.verse;
+  const endVerseCoverageStartsAtA =
+    !sameVerse ||
+    !parsed.start.verseLetterSuffix ||
+    parsed.start.verseLetterSuffix === 'a';
+
+  // A `b`+ end that excludes part `a` (a single verse starting mid-way) just
+  // drops the leading part; move on to the next verse. Every other case
+  // continues the end verse with the next letter (which
+  // `incrementMarkVersesReferenceSuffix` supplies, or `undefined` past `e`).
+  if (endSuffix !== 'a' && !endVerseCoverageStartsAtA) return undefined;
+
+  return incrementMarkVersesReferenceSuffix(newReference);
 };
 
 /** Every adjacent pair of rows consecutively follows. */
@@ -297,15 +357,41 @@ const markVersesReferenceSkipsAhead = (
   );
 };
 
-/** Two references' verse spans intersect (suffixes ignored, verse granularity). */
+/**
+ * Two references' spans intersect, compared at subpart granularity so distinct
+ * lettered parts of the same verse do not clash. A span's start is ordered at
+ * the beginning of its start verse (part `a` when letterless) and its end after
+ * the whole of its end verse (past part `e` when letterless), so `1:2a` and
+ * `1:2b` do not overlap while `1:2` (the whole verse) overlaps either.
+ */
 const markVersesReferencesOverlap = (refA: string, refB: string): boolean => {
   const a = parseMarkVersesReference(refA);
   const b = parseMarkVersesReference(refB);
   if (!a || !b) return false;
-  const aStart = verseOrderKey(a.start.chapter, a.start.verse);
-  const aEnd = verseOrderKey(a.end.chapter, a.end.verse);
-  const bStart = verseOrderKey(b.start.chapter, b.start.verse);
-  const bEnd = verseOrderKey(b.end.chapter, b.end.verse);
+  const aStart = verseSubpartKey(
+    a.start.chapter,
+    a.start.verse,
+    a.start.verseLetterSuffix,
+    false
+  );
+  const aEnd = verseSubpartKey(
+    a.end.chapter,
+    a.end.verse,
+    a.end.verseLetterSuffix,
+    true
+  );
+  const bStart = verseSubpartKey(
+    b.start.chapter,
+    b.start.verse,
+    b.start.verseLetterSuffix,
+    false
+  );
+  const bEnd = verseSubpartKey(
+    b.end.chapter,
+    b.end.verse,
+    b.end.verseLetterSuffix,
+    true
+  );
   return aStart <= bEnd && bStart <= aEnd;
 };
 

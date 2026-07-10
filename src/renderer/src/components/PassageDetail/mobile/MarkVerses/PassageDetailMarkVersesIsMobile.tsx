@@ -67,6 +67,7 @@ import { getMarkVersesAutosaveBlockers } from '../../../../utils/markVersesValid
 import {
   shouldAutoRenumberAfterEdit,
   evaluateMarkVersesReferenceStatus,
+  markVersesRenumberLeadingRef,
   markVersesSkippedPassageRefs,
   MarkVersesWarningReason,
   isValidMarkVersesReference,
@@ -998,9 +999,8 @@ export default function PassageDetailMarkVersesIsMobile({
         })
       : -1;
 
-    // When the edited reference ends mid-split (e.g. `1:3a`), the following row
-    // should lead with the next letter (`1:3b`).
-    const leadingRef = incrementMarkVersesReferenceSuffix(newReference);
+    // Logic for how we should renumber following split verses
+    const leadingRef = markVersesRenumberLeadingRef(newReference);
 
     const renumber = shouldAutoRenumberAfterEdit({
       newReference,
