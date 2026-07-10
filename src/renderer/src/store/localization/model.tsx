@@ -1735,7 +1735,6 @@ export interface ITranscriberStrings extends Localize.LocalizedStringsMethods {
     "aiAsrFailed": string;
     "aiAutomaticTranscription": string;
     "aiWillContinue": string;
-    "automaticTranscriptionFailed": string;
     "chooseSisterLang": string;
     "comment": string;
     "congratulation": string;

@@ -10226,13 +10226,6 @@
                <context context-type="sourcefile">Transcriber.tsx</context>
             </context-group>
          </trans-unit>
-         <trans-unit id="transcriber.automaticTranscriptionFailed">
-            <source>Automatic Transcription Failed</source>
-            <target/>
-            <context-group>
-               <context context-type="sourcefile">AsrProgress.tsx</context>
-            </context-group>
-         </trans-unit>
          <trans-unit id="transcriber.chooseSisterLang">
             <source>Choose a sister language</source>
             <target/>
