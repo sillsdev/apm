@@ -5,6 +5,7 @@ import { Box } from '@mui/material';
 import AppHead from '../components/App/AppHead';
 import { PlanProvider } from '../context/PlanContext';
 import PlanTabs from '../components/PlanTabs';
+import { HeadHeight } from '../layout';
 import { useUrlContext, useProjectType } from '../crud';
 import { UnsavedContext } from '../context/UnsavedContext';
 import StickyRedirect from '../components/StickyRedirect';
@@ -49,7 +50,7 @@ export const PlanScreen = () => {
     <Box sx={{ width: '100%' }}>
       <AppHead switchTo={false} />
       <PlanProvider>
-        <Box id="PlanScreen" sx={{ display: 'flex', paddingTop: '80px' }}>
+        <Box id="PlanScreen" sx={{ paddingTop: `${HeadHeight}px` }}>
           <PlanTabs checkSaved={checkSavedFn} />
         </Box>
       </PlanProvider>
