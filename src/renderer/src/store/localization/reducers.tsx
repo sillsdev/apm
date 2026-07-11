@@ -933,6 +933,8 @@ const initialState = {
 			"openContent": "Access Open Content",
 			"privacy": "Privacy Policy",
 			"project": "Audio Project",
+			"pwaReload": "Reload",
+			"pwaUpdateReady": "A new version is available.",
 			"orgRole": "Role:",
 			"reliesOn": "{0} relies on other works",
 			"reportIssue": "Report an Issue",

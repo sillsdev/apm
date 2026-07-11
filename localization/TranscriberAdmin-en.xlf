@@ -4498,6 +4498,18 @@
             <target/>
          </segment>
       </unit>
+      <unit id="main.pwaReload">
+         <segment>
+            <source>Reload</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="main.pwaUpdateReady">
+         <segment>
+            <source>A new version is available.</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="main.orgRole">
          <segment>
             <source>Role:</source>

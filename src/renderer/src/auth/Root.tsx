@@ -9,6 +9,7 @@ import { isElectron } from '../../api-variable';
 import { RestoreBackupOnMount } from '../crud/RestoreBackupOnMount';
 import { BootstrapFingerprint } from '../crud/BootstrapFingerprint';
 import { SyncElectronAuthStrings } from '../crud/SyncElectronAuthStrings';
+import PwaUpdatePrompt from '../components/PwaUpdatePrompt';
 
 // Redux store
 const store = configureStore();
@@ -20,6 +21,7 @@ export const Root: React.FC = () => (
       <SyncElectronAuthStrings />
       <RestoreBackupOnMount />
       {isElectron ? <TokenChecked /> : <AuthApp />}
+      {!isElectron && <PwaUpdatePrompt />}
     </Provider>
   </DataProvider>
 );

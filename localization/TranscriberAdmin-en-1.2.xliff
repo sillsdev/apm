@@ -5246,6 +5246,20 @@
                <context context-type="sourcefile">drawer.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="main.pwaReload">
+            <source>Reload</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">PwaUpdatePrompt.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="main.pwaUpdateReady">
+            <source>A new version is available.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">PwaUpdatePrompt.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="main.orgRole">
             <source>Role:</source>
             <target/>

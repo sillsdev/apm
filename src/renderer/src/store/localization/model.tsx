@@ -883,6 +883,8 @@ export interface IMainStrings extends Localize.LocalizedStringsMethods {
     "openContent": string;
     "privacy": string;
     "project": string;
+    "pwaReload": string;
+    "pwaUpdateReady": string;
     "orgRole": string;
     "reliesOn": string;
     "reportIssue": string;
