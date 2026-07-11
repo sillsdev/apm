@@ -289,6 +289,12 @@
             <target>Terjemahan Balik Hentian Singkat</target>
          </segment>
       </unit>
+      <unit id="artifactType.carefulspeech">
+         <segment>
+            <source>Careful speech</source>
+            <target>Ucapan yang jelas</target>
+         </segment>
+      </unit>
       <unit id="artifactType.comment">
          <segment>
             <source>Comment</source>
@@ -657,7 +663,7 @@
       </unit>
       <unit id="audacityManager.tip">
          <segment>
-            <source>If you have an existing Audacity project you want to link to this passage, click BROWSE.  To create a new Audacity project with an automatically created name, click CREATE.</source>
+            <source>If you have an existing Audacity project you want to link to this passage, click BROWSE. To create a new Audacity project with an automatically created name, click CREATE.</source>
             <target>Apabila Anda sudah memiliki proyek Audacity yang akan disambung dengan bagian ini, klik JELAJAHI. Untuk membuat proyek Audacity baru yang akan diberi nama secara otomatis, klik BUAT.</target>
          </segment>
       </unit>
@@ -679,10 +685,286 @@
             <target>Unduh Audio</target>
          </segment>
       </unit>
+      <unit id="burrito.apmData">
+         <segment>
+            <source>APM Data</source>
+            <target>Data APM</target>
+         </segment>
+      </unit>
+      <unit id="burrito.audio">
+         <segment>
+            <source>Audio</source>
+            <target>Audio</target>
+         </segment>
+      </unit>
+      <unit id="burrito.backTranslation">
+         <segment>
+            <source>Back Translation</source>
+            <target>Terjemahan Balik</target>
+         </segment>
+      </unit>
+      <unit id="burrito.books">
+         <segment>
+            <source>Books</source>
+            <target>Buku</target>
+         </segment>
+      </unit>
+      <unit id="burrito.cancelCreation">
+         <segment>
+            <source>Cancel burrito creation</source>
+            <target>Batalkan pembuatan burrito</target>
+         </segment>
+      </unit>
+      <unit id="burrito.create">
+         <segment>
+            <source>Create Burrito</source>
+            <target>Buat Burrito</target>
+         </segment>
+      </unit>
+      <unit id="burrito.createAudio">
+         <segment>
+            <source>Create audio burrito</source>
+            <target>Buat burrito audio</target>
+         </segment>
+      </unit>
+      <unit id="burrito.createText">
+         <segment>
+            <source>Create text burrito</source>
+            <target>Buat burrito teks</target>
+         </segment>
+      </unit>
+      <unit id="burrito.createNotes">
+         <segment>
+            <source>Create notes burrito</source>
+            <target>Buat burrito catatan</target>
+         </segment>
+      </unit>
+      <unit id="burrito.createResources">
+         <segment>
+            <source>Create resources burrito</source>
+            <target>Buat burrito sumber daya</target>
+         </segment>
+      </unit>
+      <unit id="burrito.createIntellectualProperty">
+         <segment>
+            <source>Create intellectual property burrito</source>
+            <target>Buat burrito kekayaan intelektual</target>
+         </segment>
+      </unit>
+      <unit id="burrito.createNavigation">
+         <segment>
+            <source>Create navigation burrito</source>
+            <target>Buat burrito navigasi</target>
+         </segment>
+      </unit>
+      <unit id="burrito.createData">
+         <segment>
+            <source>Create data burrito</source>
+            <target>Buat burrito data</target>
+         </segment>
+      </unit>
+      <unit id="burrito.createOther">
+         <segment>
+            <source>Create {0} burrito</source>
+            <target>Buat burrito {0}</target>
+         </segment>
+      </unit>
+      <unit id="burrito.communityFeedback">
+         <segment>
+            <source>Community Feedback</source>
+            <target>Umpan Balik Komunitas</target>
+         </segment>
+      </unit>
+      <unit id="burrito.contents">
+         <segment>
+            <source>Contents</source>
+            <target>Daftar Isi</target>
+         </segment>
+      </unit>
+      <unit id="burrito.convertToMp3">
+         <segment>
+            <source>Convert to mp3</source>
+            <target>Konversi ke mp3</target>
+         </segment>
+      </unit>
+      <unit id="burrito.deselectAll">
+         <segment>
+            <source>Deselect All</source>
+            <target>Hapus Seleksi Semua</target>
+         </segment>
+      </unit>
+      <unit id="burrito.discussions">
+         <segment>
+            <source>Discussions</source>
+            <target>Diskusi</target>
+         </segment>
+      </unit>
+      <unit id="burrito.enterNewValue">
+         <segment>
+            <source>Please enter the new value for</source>
+            <target>Silakan masukkan nilai baru untuk</target>
+         </segment>
+      </unit>
+      <unit id="burrito.failed">
+         <segment>
+            <source>Failed to create burrito</source>
+            <target>Gagal membuat burrito</target>
+         </segment>
+      </unit>
+      <unit id="burrito.format">
+         <segment>
+            <source>Format</source>
+            <target>Format</target>
+         </segment>
+      </unit>
+      <unit id="burrito.intellectualProperty">
+         <segment>
+            <source>Intellectual Property</source>
+            <target>Kekayaan Intelektual</target>
+         </segment>
+      </unit>
+      <unit id="burrito.navigation">
+         <segment>
+            <source>Navigation</source>
+            <target>Navigasi</target>
+         </segment>
+      </unit>
+      <unit id="burrito.notes">
+         <segment>
+            <source>Notes</source>
+            <target>Catatan</target>
+         </segment>
+      </unit>
+      <unit id="burrito.open">
+         <segment>
+            <source>Open</source>
+            <target>Buka</target>
+         </segment>
+      </unit>
+      <unit id="burrito.preparing">
+         <segment>
+            <source>Preparing burrito...</source>
+            <target>Sedang menyiapkan burrito...</target>
+         </segment>
+      </unit>
+      <unit id="burrito.projects">
+         <segment>
+            <source>Projects</source>
+            <target>Proyek</target>
+         </segment>
+      </unit>
+      <unit id="burrito.resources">
+         <segment>
+            <source>Resources</source>
+            <target>Sumber Daya</target>
+         </segment>
+      </unit>
+      <unit id="burrito.selectAll">
+         <segment>
+            <source>Select All</source>
+            <target>Pilih Semua</target>
+         </segment>
+      </unit>
+      <unit id="burrito.selectedBooks">
+         <segment>
+            <source>Selected Books</source>
+            <target>Buku yang Dipilih</target>
+         </segment>
+      </unit>
+      <unit id="burrito.success">
+         <segment>
+            <source>Burrito created successfully!</source>
+            <target>Burrito berhasil dibuat!</target>
+         </segment>
+      </unit>
+      <unit id="burrito.terms">
+         <segment>
+            <source>Terms</source>
+            <target>Istilah</target>
+         </segment>
+      </unit>
+      <unit id="burrito.text">
+         <segment>
+            <source>Text</source>
+            <target>Teks</target>
+         </segment>
+      </unit>
+      <unit id="burrito.textOutputFormat">
+         <segment>
+            <source>Text output format</source>
+            <target>Format keluaran teks</target>
+         </segment>
+      </unit>
+      <unit id="burrito.textOutputUsfm">
+         <segment>
+            <source>USFM</source>
+            <target>USFM</target>
+         </segment>
+      </unit>
+      <unit id="burrito.textOutputUsj">
+         <segment>
+            <source>USJ</source>
+            <target>USJ</target>
+         </segment>
+      </unit>
+      <unit id="burrito.textOutputUsx">
+         <segment>
+            <source>USX</source>
+            <target>USX</target>
+         </segment>
+      </unit>
+      <unit id="burrito.updateValue">
+         <segment>
+            <source>Update Value</source>
+            <target>Perbarui Nilai</target>
+         </segment>
+      </unit>
+      <unit id="burrito.valueWarning">
+         <segment>
+            <source>Warning: Input contains JSON structural characters (quotes, curly braces, or square brackets)</source>
+            <target>Peringatan: Masukan mengandung karakter struktural JSON (tanda kutip, kurung kurawal, atau kurung siku)</target>
+         </segment>
+      </unit>
+      <unit id="burrito.vernacularAudioMissingTranscriptionListTitle">
+         <segment>
+            <source>Passages missing transcriptions (first {0})</source>
+            <target>Bagian yang tidak memiliki transkripsi (pertama {0})</target>
+         </segment>
+      </unit>
+      <unit id="burrito.vernacularAudioMissingTranscriptionTitle">
+         <segment>
+            <source>Missing transcription(s)</source>
+            <target>Transkripsi yang hilang</target>
+         </segment>
+      </unit>
+      <unit id="burrito.vernacularAudioMissingTranscriptionWarning">
+         <segment>
+            <source>Audio files without transcriptions will make it difficult to associate the audio with the proper section.</source>
+            <target>File audio tanpa transkrip akan menyulitkan untuk mengaitkan audio tersebut dengan bagian yang tepat.</target>
+         </segment>
+      </unit>
+      <unit id="burrito.wrapper">
+         <segment>
+            <source>Wrapper</source>
+            <target>Wrapper</target>
+         </segment>
+      </unit>
       <unit id="cards.add">
          <segment>
             <source>Add</source>
             <target>Tambahkan</target>
+         </segment>
+      </unit>
+      <unit id="cards.addNewProject">
+         <segment>
+            <source>Add New Project...</source>
+            <target>Tambahkan Proyek Baru...</target>
+         </segment>
+      </unit>
+      <unit id="cards.addNewTeam">
+         <segment>
+            <source>Add New Team...</source>
+            <target>Tambahkan Tim Baru...</target>
          </segment>
       </unit>
       <unit id="cards.addTeam">
@@ -727,6 +1009,18 @@
             <target>Nama Alkitab</target>
          </segment>
       </unit>
+      <unit id="cards.bold">
+         <segment>
+            <source>BOLD (Basic Oral Language Documentation)</source>
+            <target>BOLD (Dokumentasi Bahasa Lisan Dasar)</target>
+         </segment>
+      </unit>
+      <unit id="cards.boldProcessInfo">
+         <segment>
+            <source>Setting Step Progression and AI Automatic Transcription.</source>
+            <target>Menetapkan Urutan Langkah dan Transkripsi Otomatis AI.</target>
+         </segment>
+      </unit>
       <unit id="cards.cancel">
          <segment>
             <source>Cancel</source>
@@ -763,22 +1057,16 @@
             <target>Penyalinan Selesai {0}</target>
          </segment>
       </unit>
-      <unit id="cards.copyNew">
+      <unit id="cards.copyProject">
          <segment>
-            <source>Copy project to new team.</source>
-            <target>Salin proyek ke tim baru.</target>
+            <source>Copy project</source>
+            <target>Salin proyek</target>
          </segment>
       </unit>
       <unit id="cards.copyright">
          <segment>
             <source>Copyright</source>
             <target>Hak cipta</target>
-         </segment>
-      </unit>
-      <unit id="cards.copySame">
-         <segment>
-            <source>Copy project to same team.</source>
-            <target>Salin proyek ke tim yang sama.</target>
          </segment>
       </unit>
       <unit id="cards.copyStatus">
@@ -901,6 +1189,18 @@
             <target>Proyek Audio Baru</target>
          </segment>
       </unit>
+      <unit id="cards.newTeam">
+         <segment>
+            <source>new team</source>
+            <target>tim baru</target>
+         </segment>
+      </unit>
+      <unit id="cards.noProjects">
+         <segment>
+            <source>No projects yet.</source>
+            <target>Belum ada proyek.</target>
+         </segment>
+      </unit>
       <unit id="cards.normalize">
          <segment>
             <source>Audio Normalize</source>
@@ -959,6 +1259,12 @@
          <segment>
             <source>Passages Created</source>
             <target>Buat Bagian</target>
+         </segment>
+      </unit>
+      <unit id="cards.personal">
+         <segment>
+            <source>Personal</source>
+            <target>Pribadi</target>
          </segment>
       </unit>
       <unit id="cards.personalProjects">
@@ -1045,6 +1351,12 @@
             <target>Urutkan Proyek</target>
          </segment>
       </unit>
+      <unit id="cards.switchTeams">
+         <segment>
+            <source>Switch Teams</source>
+            <target>Ganti Tim</target>
+         </segment>
+      </unit>
       <unit id="cards.notesHelper">
          <segment>
             <source>Shared explanations, rationales, footnotes, etc.</source>
@@ -1069,6 +1381,12 @@
             <target>Kirim/Terima ({0})</target>
          </segment>
       </unit>
+      <unit id="cards.teams">
+         <segment>
+            <source>Teams</source>
+            <target>Tim</target>
+         </segment>
+      </unit>
       <unit id="cards.teamName">
          <segment>
             <source>Team Name</source>
@@ -1085,6 +1403,12 @@
          <segment>
             <source>Transcribing</source>
             <target>Sedang Ditulis</target>
+         </segment>
+      </unit>
+      <unit id="cards.unassigned">
+         <segment>
+            <source>Unassigned</source>
+            <target>Belum Ditugaskan</target>
          </segment>
       </unit>
       <unit id="cards.uploadProgress">
@@ -1273,6 +1597,12 @@
             <target>Tambahkan '{0}'</target>
          </segment>
       </unit>
+      <unit id="community.autoSegment">
+         <segment>
+            <source>Use {0} for autosegmentation, or tap in the waveform and use + for manual segmentation</source>
+            <target>Gunakan {0} untuk segmentasi otomatis, atau ketuk pada gelombang suara dan gunakan + untuk segmentasi manual</target>
+         </segment>
+      </unit>
       <unit id="community.backTranslationComplete">
          <segment>
             <source>Version {0}: Back translation: {1}</source>
@@ -1295,6 +1625,12 @@
          <segment>
             <source>Do later</source>
             <target>Lakukan nanti</target>
+         </segment>
+      </unit>
+      <unit id="community.listen">
+         <segment>
+            <source>Use {0} to listen to the passage</source>
+            <target>Gunakan {0} untuk mendengarkan bagian tersebut</target>
          </segment>
       </unit>
       <unit id="community.loading">
@@ -1369,6 +1705,18 @@
             <target>Versi {0}: Segmen yang selesai ({2}): {1}</target>
          </segment>
       </unit>
+      <unit id="community.selectSegments">
+         <segment>
+            <source>Select Segments</source>
+            <target>Pilih Segmen</target>
+         </segment>
+      </unit>
+      <unit id="community.selectSpeaker">
+         <segment>
+            <source>Select Speaker</source>
+            <target>Pilih Pembicara</target>
+         </segment>
+      </unit>
       <unit id="community.speaker">
          <segment>
             <source>Speaker</source>
@@ -1403,6 +1751,192 @@
          <segment>
             <source>The recorded permission is used both as a voice sample to change the audio and as a license to use the voice sample in recordings. A suggested script for the recorded permission is given which can be personalized.</source>
             <target>Izin yang direkam digunakan sebagai sampel suara untuk mengubah audio dan sebagai lisensi untuk menggunakan sampel suara dalam rekaman. Saran tulisan permintaan izin dapat dipersonalisasi.</target>
+         </segment>
+      </unit>
+      <unit id="carefulSpeech.allComplete">
+         <segment>
+            <source>All clauses are complete.</source>
+            <target>Semua klausa sudah lengkap.</target>
+         </segment>
+      </unit>
+      <unit id="carefulSpeech.boldOnly">
+         <segment>
+            <source>Careful Speech is only available for BOLD workflow teams.</source>
+            <target>Fitur "Careful Speech" hanya tersedia untuk tim alur kerja BOLD.</target>
+         </segment>
+      </unit>
+      <unit id="carefulSpeech.clause">
+         <segment>
+            <source>Clause: {0}</source>
+            <target>Klausa: {0}</target>
+         </segment>
+      </unit>
+      <unit id="carefulSpeech.clearRecording">
+         <segment>
+            <source>Clear Recording</source>
+            <target>Hapus Rekaman</target>
+         </segment>
+      </unit>
+      <unit id="carefulSpeech.combineWithNextClause">
+         <segment>
+            <source>Combine with Next Clause</source>
+            <target>Gabungkan dengan Klausul Berikutnya</target>
+         </segment>
+      </unit>
+      <unit id="carefulSpeech.fewerClauses">
+         <segment>
+            <source>Fewer Clauses</source>
+            <target>Lebih Sedikit Klausul</target>
+         </segment>
+      </unit>
+      <unit id="carefulSpeech.longer">
+         <segment>
+            <source>Longer</source>
+            <target>Lebih Panjang</target>
+         </segment>
+      </unit>
+      <unit id="carefulSpeech.moreClauses">
+         <segment>
+            <source>More Clauses</source>
+            <target>Lebih Banyak Klausul</target>
+         </segment>
+      </unit>
+      <unit id="carefulSpeech.nextClause">
+         <segment>
+            <source>Next Clause</source>
+            <target>Klausul Berikutnya</target>
+         </segment>
+      </unit>
+      <unit id="carefulSpeech.shorter">
+         <segment>
+            <source>Shorter</source>
+            <target>Lebih Pendek</target>
+         </segment>
+      </unit>
+      <unit id="carefulSpeech.splitClause">
+         <segment>
+            <source>Split Clause</source>
+            <target>Pisahkan Klausul</target>
+         </segment>
+      </unit>
+      <unit id="carefulSpeech.speaker">
+         <segment>
+            <source>Speaker</source>
+            <target>Pembicara</target>
+         </segment>
+      </unit>
+      <unit id="carefulSpeech.startRecording">
+         <segment>
+            <source>Start Recording</source>
+            <target>Mulai Rekaman</target>
+         </segment>
+      </unit>
+      <unit id="carefulSpeech.undo">
+         <segment>
+            <source>Undo</source>
+            <target>Batal</target>
+         </segment>
+      </unit>
+      <unit id="carefulTranscription.clauseIndex">
+         <segment>
+            <source>Clause {0}/{1}</source>
+            <target>Klausul {0}/{1}</target>
+         </segment>
+      </unit>
+      <unit id="carefulTranscription.nextClause">
+         <segment>
+            <source>Next Clause</source>
+            <target>Klausul Berikutnya</target>
+         </segment>
+      </unit>
+      <unit id="carefulTranscription.noClauses">
+         <segment>
+            <source>No clause segments found. Complete the Careful Speech step first.</source>
+            <target>Tidak ditemukan segmen klausul. Selesaikan langkah Careful Speech terlebih dahulu.</target>
+         </segment>
+      </unit>
+      <unit id="carefulTranscription.noRecordingLanguage">
+         <segment>
+            <source>Language is not configured for automatic transcription.</source>
+            <target>Bahasa belum dikonfigurasi untuk transkripsi otomatis.</target>
+         </segment>
+      </unit>
+      <unit id="carefulTranscription.prerequisite">
+         <segment>
+            <source>Complete Careful Speech for every clause before starting Careful transcription.</source>
+            <target>Selesaikan Careful Speech untuk setiap klausul sebelum memulai transkripsi Careful.</target>
+         </segment>
+      </unit>
+      <unit id="carefulTranscription.progress">
+         <segment>
+            <source>{0} of {1} clauses transcribed</source>
+            <target>{0} dari {1} klausa telah ditranskripsikan</target>
+         </segment>
+      </unit>
+      <unit id="lwcTranslation.boldOnly">
+         <segment>
+            <source>LWC Translation is only available for BOLD workflow teams.</source>
+            <target>Terjemahan LWC hanya tersedia untuk tim alur kerja BOLD.</target>
+         </segment>
+      </unit>
+      <unit id="lwcTranslation.clauseIndex">
+         <segment>
+            <source>Clause {0}/{1}</source>
+            <target>Klausa {0}/{1}</target>
+         </segment>
+      </unit>
+      <unit id="lwcTranslation.noClauses">
+         <segment>
+            <source>No clause segments found. Complete the Careful Speech step first.</source>
+            <target>Tidak ditemukan segmen klausa. Selesaikan langkah "Careful Speech" terlebih dahulu.</target>
+         </segment>
+      </unit>
+      <unit id="lwcTranslation.prerequisite">
+         <segment>
+            <source>Complete Careful Speech for every clause before starting LWC translation.</source>
+            <target>Selesaikan langkah "Careful Speech" untuk setiap klausa sebelum memulai terjemahan LWC.</target>
+         </segment>
+      </unit>
+      <unit id="lwcTranslation.progress">
+         <segment>
+            <source>{0} of {1} clauses recorded</source>
+            <target>{0} dari {1} klausa telah direkam</target>
+         </segment>
+      </unit>
+      <unit id="lwcTranscription.clauseIndex">
+         <segment>
+            <source>Clause {0}/{1}</source>
+            <target>Klausa {0}/{1}</target>
+         </segment>
+      </unit>
+      <unit id="lwcTranscription.nextClause">
+         <segment>
+            <source>Next Clause</source>
+            <target>Klausa Berikutnya</target>
+         </segment>
+      </unit>
+      <unit id="lwcTranscription.noClauses">
+         <segment>
+            <source>No clause segments found. Complete the Careful Speech step first.</source>
+            <target>Tidak ditemukan segmen klausa. Selesaikan langkah "Careful Speech" terlebih dahulu.</target>
+         </segment>
+      </unit>
+      <unit id="lwcTranscription.noLwcLanguage">
+         <segment>
+            <source>LWC language is not configured on the LWC Translation step.</source>
+            <target>Bahasa LWC belum dikonfigurasi pada langkah Terjemahan LWC.</target>
+         </segment>
+      </unit>
+      <unit id="lwcTranscription.prerequisite">
+         <segment>
+            <source>Complete LWC Translation for every clause before starting LWC transcription.</source>
+            <target>Selesaikan terjemahan LWC untuk setiap klausa sebelum memulai transkripsi LWC.</target>
+         </segment>
+      </unit>
+      <unit id="lwcTranscription.progress">
+         <segment>
+            <source>{0} of {1} clauses transcribed</source>
+            <target>{0} dari {1} klausa telah ditranskripsikan</target>
          </segment>
       </unit>
       <unit id="consultantCheck.checked">
@@ -1492,7 +2026,7 @@
       <unit id="discuss.howToChange">
          <segment>
             <source>Change instructions for this step on the workflow settings for this step.</source>
-            <target>Ubah instruksi untuk langkah ini di pengaturan alur kerja untuk langkah ini.</target>
+            <target>Ubah petunjuk untuk langkah ini di alur kerja, di bagian pengaturan langkah ini.</target>
          </segment>
       </unit>
       <unit id="discussionCard.addComment">
@@ -1633,6 +2167,12 @@
             <target>Daftar Kategori</target>
          </segment>
       </unit>
+      <unit id="discussionList.close">
+         <segment>
+            <source>Hide Discussion pane</source>
+            <target>Sembunyikan panel Diskusi</target>
+         </segment>
+      </unit>
       <unit id="discussionList.collapse">
          <segment>
             <source>Show/Hide All Comments</source>
@@ -1649,6 +2189,12 @@
          <segment>
             <source>{0} / {1} discussions</source>
             <target>{0} / {1} diskusi</target>
+         </segment>
+      </unit>
+      <unit id="discussionList.open">
+         <segment>
+            <source>Show Discussion pane</source>
+            <target>Tampilkan panel Diskusi</target>
          </segment>
       </unit>
       <unit id="discussionList.saveFirst">
@@ -1699,10 +2245,52 @@
             <target>Tetapkan Segmen</target>
          </segment>
       </unit>
+      <unit id="electronAuth.abortLogin">
+         <segment>
+            <source>Abort Login</source>
+            <target>Batal Masuk</target>
+         </segment>
+      </unit>
+      <unit id="electronAuth.back">
+         <segment>
+            <source>Back</source>
+            <target>Kembali</target>
+         </segment>
+      </unit>
+      <unit id="electronAuth.exit">
+         <segment>
+            <source>Exit</source>
+            <target>Keluar</target>
+         </segment>
+      </unit>
+      <unit id="electronAuth.loginFailed">
+         <segment>
+            <source>Login failed</source>
+            <target>Gagal masuk</target>
+         </segment>
+      </unit>
+      <unit id="electronAuth.tokenExchangeFailed">
+         <segment>
+            <source>Could not complete sign-in (token exchange failed).</source>
+            <target>Tidak dapat menyelesaikan proses masuk (pertukaran token gagal).</target>
+         </segment>
+      </unit>
+      <unit id="electronAuth.tryAgain">
+         <segment>
+            <source>Try again</source>
+            <target>Coba lagi</target>
+         </segment>
+      </unit>
+      <unit id="electronAuth.workOffline">
+         <segment>
+            <source>Work offline</source>
+            <target>Bekerja secara offline</target>
+         </segment>
+      </unit>
       <unit id="electronImport.allDataOverwritten">
          <segment>
-            <source>All {name0} data will be overwritten.</source>
-            <target>Semua data {name0} akan ditimpa.</target>
+            <source>All '{name0}' data will be overwritten.</source>
+            <target>Semua data '{name0}' akan ditimpa.</target>
          </segment>
       </unit>
       <unit id="electronImport.exportedLost">
@@ -1725,7 +2313,7 @@
       </unit>
       <unit id="electronImport.importOldFile">
          <segment>
-            <source>This file was not exported from the latest version.  Reexport your PTF file from the online version.</source>
+            <source>This file was not exported from the latest version. Reexport your PTF file from the online version.</source>
             <target>Berkas tidak diekspor dari versi terbaru. Ekspor kembali berkas PTF Anda dari versi online.</target>
          </segment>
       </unit>
@@ -1749,8 +2337,8 @@
       </unit>
       <unit id="electronImport.lastExported">
          <segment>
-            <source>Current data in audio project {name0} was last exported {date0}.</source>
-            <target>Data saat ini dari proyek audio {name0} diekspor terakhir pada tanggal {date0}.</target>
+            <source>Current data in audio project '{name0}' was last exported {date0}.</source>
+            <target>Data saat ini dalam proyek audio '{name0}' terakhir diekspor pada {date0}.</target>
          </segment>
       </unit>
       <unit id="electronImport.members">
@@ -1761,13 +2349,13 @@
       </unit>
       <unit id="electronImport.neverExported">
          <segment>
-            <source>Current data in audio project {name0} has never been exported to an itf file to preserve changes.</source>
-            <target>Data ini di proyek audio {name0} belum pernah diekspor ke berkas itf untuk mempertahankan perubahan.</target>
+            <source>Current data in audio project '{name0}' has never been exported to an itf file to preserve changes.</source>
+            <target>Data saat ini dalam proyek audio '{name0}' belum pernah diekspor ke berkas ITF untuk mempertahankan perubahan.</target>
          </segment>
       </unit>
       <unit id="electronImport.newerVersion">
          <segment>
-            <source>This file was exported with a newer version of the program.  You should download the latest version before importing!  If you continue, some data may not be imported correctly.</source>
+            <source>This file was exported with a newer version of the program. You should download the latest version before importing! If you continue, some data may not be imported correctly.</source>
             <target>Berkas ini telah diekspor dengan versi program yang lebih baru. Anda harus mengunduh versi terbaru sebelum mengimpor! Kalau tidak, beberapa data mungkin tidak diimpor dengan benar.</target>
          </segment>
       </unit>
@@ -1779,9 +2367,8 @@
       </unit>
       <unit id="electronImport.projectImported">
          <segment>
-            <source>Audio Project {name0} was previously imported with a newer file: {date1} </source>
-            <target>Proyek Audio {name0} pernah diimpor dengan berkas yang lebih baru: {date1}
-            </target>
+            <source>Audio Project '{name0}' was previously imported with a newer file: {date1} </source>
+            <target>Proyek audio '{name0}' sebelumnya telah diimpor dengan berkas yang lebih baru: {date1} </target>
          </segment>
       </unit>
       <unit id="electronImport.ptfError">
@@ -1816,7 +2403,7 @@
       </unit>
       <unit id="emailUnverified.verified">
          <segment>
-            <source>I'm verified!  Carry on!</source>
+            <source>I'm verified! Carry on!</source>
             <target>Saya terverifikasi! Lanjut!</target>
          </segment>
       </unit>
@@ -1886,6 +2473,54 @@
             <target>video</target>
          </segment>
       </unit>
+      <unit id="filterContent.allChapters">
+         <segment>
+            <source>All Chapters of {0}</source>
+            <target>Semua Bab dari {0}</target>
+         </segment>
+      </unit>
+      <unit id="filterContent.allBooks">
+         <segment>
+            <source>All Books</source>
+            <target>Semua Buku</target>
+         </segment>
+      </unit>
+      <unit id="filterContent.audioContent">
+         <segment>
+            <source>Audio Content</source>
+            <target>Konten Audio</target>
+         </segment>
+      </unit>
+      <unit id="filterContent.other">
+         <segment>
+            <source>Other</source>
+            <target>Lainnya</target>
+         </segment>
+      </unit>
+      <unit id="filterContent.title">
+         <segment>
+            <source>Scripture Burrito: {0}</source>
+            <target>Scripture Burrito: {0}</target>
+         </segment>
+      </unit>
+      <unit id="filterContent.transcriptionContent">
+         <segment>
+            <source>Transcription Content</source>
+            <target>Konten Transkripsi</target>
+         </segment>
+      </unit>
+      <unit id="filterContent.subtitle1">
+         <segment>
+            <source>Please select the information you want to import into your team.</source>
+            <target>Silakan pilih informasi yang ingin Anda impor ke tim Anda.</target>
+         </segment>
+      </unit>
+      <unit id="filterContent.subtitle2">
+         <segment>
+            <source>Each selected book will be imported as a separate project.</source>
+            <target>Setiap buku yang dipilih akan diimpor sebagai proyek terpisah.</target>
+         </segment>
+      </unit>
       <unit id="filterMenu.all">
          <segment>
             <source>All</source>
@@ -1932,12 +2567,6 @@
          <segment>
             <source>Resolved</source>
             <target>Selesai</target>
-         </segment>
-      </unit>
-      <unit id="filterMenu.saveFilter">
-         <segment>
-            <source>Save as team default</source>
-            <target>Simpan sebagai default tim</target>
          </segment>
       </unit>
       <unit id="findResource.add">
@@ -2164,8 +2793,8 @@
       </unit>
       <unit id="findResource.querying">
          <segment>
-            <source>Querying...</source>
-            <target>Sedang mencari...</target>
+            <source>Loading...</source>
+            <target>Memuat...</target>
          </segment>
       </unit>
       <unit id="findResource.queryBuilder">
@@ -2262,6 +2891,84 @@
          <segment>
             <source>Audio Bible with verse timing</source>
             <target>Alkitab Audio dengan pengaturan waktu berdasarkan ayat</target>
+         </segment>
+      </unit>
+      <unit id="graphic.graphicDisplay">
+         <segment>
+            <source>Display current graphic</source>
+            <target>Tampilkan grafik saat ini</target>
+         </segment>
+      </unit>
+      <unit id="graphic.graphicSearch">
+         <segment>
+            <source>Search graphics</source>
+            <target>Cari grafik</target>
+         </segment>
+      </unit>
+      <unit id="graphic.graphicSource">
+         <segment>
+            <source>graphic source tabs</source>
+            <target>tab sumber gambar</target>
+         </segment>
+      </unit>
+      <unit id="graphic.keywordSearchHint">
+         <segment>
+            <source>The Keywords search only filters the keyword list. To filter images, select one or more keywords or use the main search.</source>
+            <target>Pencarian Kata Kunci hanya menyaring daftar kata kunci. Untuk menyaring gambar, pilih satu atau lebih kata kunci atau gunakan pencarian utama.</target>
+         </segment>
+      </unit>
+      <unit id="graphic.loadFailure">
+         <segment>
+            <source>Failed to load</source>
+            <target>Gagal dimuat</target>
+         </segment>
+      </unit>
+      <unit id="graphic.noResults">
+         <segment>
+            <source>No matching images found. Try a different search or adjust the filters.</source>
+            <target>Tidak ditemukan gambar yang cocok. Coba pencarian lain atau sesuaikan filter.</target>
+         </segment>
+      </unit>
+      <unit id="graphic.noSelection">
+         <segment>
+            <source>no {0} selected.</source>
+            <target>tidak ada {0} yang dipilih.</target>
+         </segment>
+      </unit>
+      <unit id="graphic.placeHolder">
+         <segment>
+            <source>title and keyword search words</source>
+            <target>kata kunci dan judul pencarian</target>
+         </segment>
+      </unit>
+      <unit id="graphic.setGraphic">
+         <segment>
+            <source>Set as Graphic</source>
+            <target>Tetapkan sebagai Gambar</target>
+         </segment>
+      </unit>
+      <unit id="graphic.tabCurrent">
+         <segment>
+            <source>Current</source>
+            <target>Saat Ini</target>
+         </segment>
+      </unit>
+      <unit id="graphic.tabCustom">
+         <segment>
+            <source>Custom</source>
+            <target>Kustom</target>
+         </segment>
+      </unit>
+      <unit id="graphic.tabBible">
+         <segment>
+            <source>Library</source>
+            <target>Perpustakaan</target>
+         </segment>
+      </unit>
+      <unit id="graphic.title">
+         <segment>
+            <source>Graphic Picker</source>
+            <target>Pemilih Gambar</target>
          </segment>
       </unit>
       <unit id="grid.all">
@@ -2486,6 +3193,24 @@
             <target>Spasi</target>
          </segment>
       </unit>
+      <unit id="import.burritoConvertingBook">
+         <segment>
+            <source>Converting book {0} of {1}: {2}</source>
+            <target>Mengonversi buku {0} dari {1}: {2}</target>
+         </segment>
+      </unit>
+      <unit id="import.burritoPreparingLocal">
+         <segment>
+            <source>Preparing Scripture Burrito locally...</source>
+            <target>Mempersiapkan Scripture Burrito secara lokal...</target>
+         </segment>
+      </unit>
+      <unit id="import.burritoReadingFiles">
+         <segment>
+            <source>Reading files {0} of {1}</source>
+            <target>Membaca file {0} dari {1}</target>
+         </segment>
+      </unit>
       <unit id="import.close">
          <segment>
             <source>Close</source>
@@ -2494,8 +3219,8 @@
       </unit>
       <unit id="import.continue">
          <segment>
-            <source>Continue?</source>
-            <target>Lanjut?</target>
+            <source>Continue</source>
+            <target>Lanjutkan</target>
          </segment>
       </unit>
       <unit id="import.copy">
@@ -2510,10 +3235,28 @@
             <target>Gagal Menyalin</target>
          </segment>
       </unit>
+      <unit id="import.createNewTeam">
+         <segment>
+            <source>Create new team</source>
+            <target>Buat tim baru</target>
+         </segment>
+      </unit>
       <unit id="import.error">
          <segment>
             <source>Import Error</source>
             <target>Kesalahan Impor</target>
+         </segment>
+      </unit>
+      <unit id="import.externalSource">
+         <segment>
+            <source>Create a new project in APM from an external source (.ptf)</source>
+            <target>Buat proyek baru di APM dari sumber eksternal (.ptf)</target>
+         </segment>
+      </unit>
+      <unit id="import.externalSourceBurrito">
+         <segment>
+            <source>Create a new project in APM from a Scripture Burrito</source>
+            <target>Buat proyek baru di APM dari Scripture Burrito</target>
          </segment>
       </unit>
       <unit id="import.family">
@@ -2564,6 +3307,12 @@
             <target>Sedang Impor...</target>
          </segment>
       </unit>
+      <unit id="import.fileProcessing">
+         <segment>
+            <source>Processing file {0} of {1}</source>
+            <target>Memproses berkas {0} dari {1}</target>
+         </segment>
+      </unit>
       <unit id="import.importProject">
          <segment>
             <source>Import Audio Project</source>
@@ -2576,28 +3325,28 @@
             <target>Sedang kirim/terima perubahan</target>
          </segment>
       </unit>
-      <unit id="import.importSyncUp">
-         <segment>
-            <source>Syncing offline changes</source>
-            <target>Sedang kirim/terima perubahan offline</target>
-         </segment>
-      </unit>
       <unit id="import.importSyncDown">
          <segment>
             <source>Syncing online changes</source>
             <target>Sedang kirim/terima perubahan online</target>
          </segment>
       </unit>
+      <unit id="import.importSyncUp">
+         <segment>
+            <source>Syncing offline changes</source>
+            <target>Sedang kirim/terima perubahan offline</target>
+         </segment>
+      </unit>
+      <unit id="import.incrementalImport">
+         <segment>
+            <source>Import Incremental Changes from an offline coworker (.itf)</source>
+            <target>Impor Perubahan Tambahan dari rekan kerja yang sedang offline (.itf)</target>
+         </segment>
+      </unit>
       <unit id="import.invalidITF">
          <segment>
             <source>Not a valid Incremental Transcriber File (ITF).</source>
             <target>Bukan berkas Incremental Transcriber File (ITF) yang sah.</target>
-         </segment>
-      </unit>
-      <unit id="import.unknownError">
-         <segment>
-            <source>If this error occurred while importing offline changes, please close the app immediately and reopen.  If the error persists, contact support.  If you continue to use the app, you will lose offline changes.</source>
-            <target>Jika error ini terjadi saat mengimpor perubahan offline, segera tutup aplikasi APM dan buka kembali. Jika error terus berlanjut, hubungi dukungan teknis. Jika Anda terus menggunakan aplikasi APM, Anda akan kehilangan perubahan offline.</target>
          </segment>
       </unit>
       <unit id="import.invalidProject">
@@ -2612,10 +3361,22 @@
             <target>Bahasa</target>
          </segment>
       </unit>
+      <unit id="import.newTeamChainFailed">
+         <segment>
+            <source>Could not determine the new team after the first import. Import the first file alone, then add the rest to that team.</source>
+            <target>Tidak dapat menentukan tim baru setelah impor pertama. Impor berkas pertama saja, lalu tambahkan sisanya ke tim tersebut.</target>
+         </segment>
+      </unit>
       <unit id="import.noFile">
          <segment>
             <source>Please select file to be uploaded.</source>
             <target>Pilih berkas untuk diunggah.</target>
+         </segment>
+      </unit>
+      <unit id="import.offlineImport">
+         <segment>
+            <source>Import an APM Project File to use offline and sync when online, or a project file from an external source that you will only use offline. Projects from an external source that are not imported while online cannot be synced online.</source>
+            <target>Impor berkas proyek APM untuk digunakan secara offline dan disinkronkan saat online, atau berkas proyek dari sumber eksternal yang hanya akan Anda gunakan secara offline. Proyek dari sumber eksternal yang tidak diimpor saat online tidak dapat disinkronkan secara online.</target>
          </segment>
       </unit>
       <unit id="import.old">
@@ -2662,8 +3423,20 @@
       </unit>
       <unit id="import.projectNotFound">
          <segment>
-            <source>ITF does not contain current audio project.  It contains audio project {0}.</source>
+            <source>ITF does not contain current audio project. It contains audio project {0}.</source>
             <target>ITF tidak mengandung proyek audio ini. ITF mengandung proyek audio {0}.</target>
+         </segment>
+      </unit>
+      <unit id="import.selectImportFileType">
+         <segment>
+            <source>Select import file type:</source>
+            <target>Pilih jenis berkas yang akan diimpor:</target>
+         </segment>
+      </unit>
+      <unit id="import.selectTeam">
+         <segment>
+            <source>Select Team</source>
+            <target>Pilih Tim</target>
          </segment>
       </unit>
       <unit id="import.showHideFilter">
@@ -2696,10 +3469,76 @@
             <target>belum ditugaskan</target>
          </segment>
       </unit>
+      <unit id="import.fileTooLarge">
+         <segment>
+            <source>File exceeds maximum size of {0}</source>
+            <target>Berkas melebihi ukuran maksimum {0}</target>
+         </segment>
+      </unit>
+      <unit id="import.unknownError">
+         <segment>
+            <source>If this error occurred while syncing offline changes, please close the app immediately and reopen. If the error persists, contact support. If you continue to use the app, you will lose offline changes.</source>
+            <target>Jika kesalahan ini terjadi saat menyinkronkan perubahan offline, harap segera tutup aplikasi dan buka kembali. Jika kesalahan masih terjadi, hubungi bagian dukungan. Jika Anda terus menggunakan aplikasi ini, perubahan offline Anda akan hilang.</target>
+         </segment>
+      </unit>
       <unit id="import.username">
          <segment>
             <source>Name</source>
             <target>Nama</target>
+         </segment>
+      </unit>
+      <unit id="scriptureBurritoImport.title">
+         <segment>
+            <source>Import Scripture Burrito</source>
+            <target>Impor Scripture Burrito</target>
+         </segment>
+      </unit>
+      <unit id="scriptureBurritoImport.zipExtractError">
+         <segment>
+            <source>Failed to extract zip file</source>
+            <target>Gagal mengekstrak berkas zip</target>
+         </segment>
+      </unit>
+      <unit id="scriptureBurritoImport.metadataNotFoundError">
+         <segment>
+            <source>metadata.json not found in the selected file/directory</source>
+            <target>metadata.json tidak ditemukan di berkas/direktori yang dipilih</target>
+         </segment>
+      </unit>
+      <unit id="scriptureBurritoImport.invalidWrapperMetadataError">
+         <segment>
+            <source>Invalid format: expected \"scripture burrito wrapper\"</source>
+            <target>Format tidak valid: diharapkan \"scripture burrito wrapper\"</target>
+         </segment>
+      </unit>
+      <unit id="scriptureBurritoImport.subtitle">
+         <segment>
+            <source>Select a Burrito directory or a .zip file to extract and import.</source>
+            <target>Pilih direktori Burrito atau berkas .zip untuk diekstrak dan diimpor.</target>
+         </segment>
+      </unit>
+      <unit id="scriptureBurritoImport.browseDirectory">
+         <segment>
+            <source>Browse Directory</source>
+            <target>Telusuri Direktori</target>
+         </segment>
+      </unit>
+      <unit id="scriptureBurritoImport.browseZipFile">
+         <segment>
+            <source>Browse Zip File</source>
+            <target>Telusuri Berkas Zip</target>
+         </segment>
+      </unit>
+      <unit id="scriptureBurritoImport.selected">
+         <segment>
+            <source>Selected: </source>
+            <target>Telah dipilih: </target>
+         </segment>
+      </unit>
+      <unit id="scriptureBurritoImport.wrapperNotFoundError">
+         <segment>
+            <source>wrapper.json not found in the selected file/directory</source>
+            <target>wrapper.json tidak ditemukan di berkas/direktori yang dipilih</target>
          </segment>
       </unit>
       <unit id="integration.allCriteria">
@@ -3398,6 +4237,12 @@
             <target>Tentang</target>
          </segment>
       </unit>
+      <unit id="main.addSectionOrPassage">
+         <segment>
+            <source>Add {0} or Passage</source>
+            <target>Tambahkan {0} atau Passage</target>
+         </segment>
+      </unit>
       <unit id="main.admin">
          <segment>
             <source>Admin</source>
@@ -3506,6 +4351,12 @@
             <target>Contoh lembar kerja Alkitab yang datar</target>
          </segment>
       </unit>
+      <unit id="main.genericError">
+         <segment>
+            <source>Error: {0}</source>
+            <target>Kesalahan: {0}</target>
+         </segment>
+      </unit>
       <unit id="main.genFlatSample">
          <segment>
             <source>General flat sample spreadsheet</source>
@@ -3568,7 +4419,7 @@
       </unit>
       <unit id="main.inviteError">
          <segment>
-            <source>Invitation not accepted.  You must login with the email that the invitation was sent to.</source>
+            <source>Invitation not accepted. You must login with the email that the invitation was sent to.</source>
             <target>Undangan tidak diterima. Anda harus masuk dengan alamat email yang menerima undangan.</target>
          </segment>
       </unit>
@@ -3600,6 +4451,12 @@
          <segment>
             <source>Audio</source>
             <target>Audio</target>
+         </segment>
+      </unit>
+      <unit id="main.mobileView">
+         <segment>
+            <source>Mobile View</source>
+            <target>Tampilan Seluler</target>
          </segment>
       </unit>
       <unit id="main.myAccount">
@@ -3680,6 +4537,12 @@
             <target>Menyimpan...</target>
          </segment>
       </unit>
+      <unit id="main.scriptureBurrito">
+         <segment>
+            <source>Scripture Burrito</source>
+            <target>Scripture Burrito</target>
+         </segment>
+      </unit>
       <unit id="main.sessionExpireTask">
          <segment>
             <source>Your session will expire in {0} seconds. Would you like to continue?</source>
@@ -3752,6 +4615,12 @@
             <target>Tersedia versi baru: Versi {0} telah dirilis {1}</target>
          </segment>
       </unit>
+      <unit id="main.upload">
+         <segment>
+            <source>Upload</source>
+            <target>Unggah</target>
+         </segment>
+      </unit>
       <unit id="main.version">
          <segment>
             <source>Version: {0} - {1}</source>
@@ -3778,7 +4647,7 @@
       </unit>
       <unit id="mediaActions.delete">
          <segment>
-            <source>Delete</source>
+            <source>Clear</source>
             <target>Hapus</target>
          </segment>
       </unit>
@@ -4008,6 +4877,66 @@
          <segment>
             <source>Passage already attached</source>
             <target>Bagian sudah terlampir</target>
+         </segment>
+      </unit>
+      <unit id="mediaTab.pendingUploadBatchRetry">
+         <segment>
+            <source>Retry all</source>
+            <target>Coba lagi semuanya</target>
+         </segment>
+      </unit>
+      <unit id="mediaTab.pendingUploadDeleteFailed">
+         <segment>
+            <source>The online media record could not be removed (id {0}). Others may still see a broken entry until an administrator cleans it up. Your file is saved locally.</source>
+            <target>Catatan media daring tidak dapat dihapus (id {0}). Pengguna lain mungkin masih melihat entri yang rusak hingga administrator membersihkannya. File Anda disimpan secara lokal.</target>
+         </segment>
+      </unit>
+      <unit id="mediaTab.pendingUploadDismiss">
+         <segment>
+            <source>Remove from list</source>
+            <target>Hapus dari daftar</target>
+         </segment>
+      </unit>
+      <unit id="mediaTab.pendingUploadEmpty">
+         <segment>
+            <source>No pending uploads.</source>
+            <target>Tidak ada unggahan yang tertunda.</target>
+         </segment>
+      </unit>
+      <unit id="mediaTab.pendingUploadMenu">
+         <segment>
+            <source>Pending media uploads</source>
+            <target>Unggahan media yang tertunda</target>
+         </segment>
+      </unit>
+      <unit id="mediaTab.pendingUploadPathLabel">
+         <segment>
+            <source>File saved at: {0}</source>
+            <target>File disimpan di: {0}</target>
+         </segment>
+      </unit>
+      <unit id="mediaTab.pendingUploadQueuedHint">
+         <segment>
+            <source>You can retry from Team → {0} when your connection improves.</source>
+            <target>Anda dapat mencoba lagi dari Tim → {0} saat koneksi Anda membaik.</target>
+         </segment>
+      </unit>
+      <unit id="mediaTab.pendingUploadRetryLater">
+         <segment>
+            <source>Try again when your internet connection is more stable.</source>
+            <target>Coba lagi saat koneksi internet Anda lebih stabil.</target>
+         </segment>
+      </unit>
+      <unit id="mediaTab.pendingUploadRetryOne">
+         <segment>
+            <source>Retry</source>
+            <target>Coba lagi</target>
+         </segment>
+      </unit>
+      <unit id="mediaTab.pendingUploadTitle">
+         <segment>
+            <source>Pending media uploads</source>
+            <target>Unggahan media yang tertunda</target>
          </segment>
       </unit>
       <unit id="mediaTab.planName">
@@ -4356,6 +5285,48 @@
          <segment>
             <source>Upload</source>
             <target>Unggah</target>
+         </segment>
+      </unit>
+      <unit id="mobile.addSegment">
+         <segment>
+            <source>Add segment boundary</source>
+            <target>Tambahkan batas segmen</target>
+         </segment>
+      </unit>
+      <unit id="mobile.next">
+         <segment>
+            <source>Next</source>
+            <target>Berikutnya</target>
+         </segment>
+      </unit>
+      <unit id="mobile.previous">
+         <segment>
+            <source>Previous</source>
+            <target>Sebelumnya</target>
+         </segment>
+      </unit>
+      <unit id="mobile.removeSegment">
+         <segment>
+            <source>Remove next segment boundary</source>
+            <target>Hapus batas segmen berikutnya</target>
+         </segment>
+      </unit>
+      <unit id="mobile.resetBT">
+         <segment>
+            <source>Reset back translation</source>
+            <target>Atur ulang terjemahan balik</target>
+         </segment>
+      </unit>
+      <unit id="mobile.restoreBoundaries">
+         <segment>
+            <source>Restore original segment boundaries</source>
+            <target>Kembalikan batas segmen asli</target>
+         </segment>
+      </unit>
+      <unit id="mobile.segment">
+         <segment>
+            <source>Segment: {0}</source>
+            <target>Segmen: {0}</target>
          </segment>
       </unit>
       <unit id="newProject.audioProduct">
@@ -4916,6 +5887,12 @@
             <target>Sedang dipadatkan...{0}%</target>
          </segment>
       </unit>
+      <unit id="passageRecord.compressError">
+         <segment>
+            <source>Compression failed. Saving uncompressed.</source>
+            <target>Kompresi gagal. Menyimpan dalam format tidak terkompresi.</target>
+         </segment>
+      </unit>
       <unit id="passageRecord.defaultFilename">
          <segment>
             <source>MyRecording</source>
@@ -4934,16 +5911,16 @@
             <target>Jenis Berkas</target>
          </segment>
       </unit>
-      <unit id="passageRecord.loadlatest">
-         <segment>
-            <source>Load Latest Audio</source>
-            <target>Muat Audio Terbaru</target>
-         </segment>
-      </unit>
       <unit id="passageRecord.loading">
          <segment>
             <source>Loading...</source>
             <target>Sedang memuat...</target>
+         </segment>
+      </unit>
+      <unit id="passageRecord.processing">
+         <segment>
+            <source>Processing...</source>
+            <target>Sedang diproses...</target>
          </segment>
       </unit>
       <unit id="passageRecord.save">
@@ -5140,7 +6117,7 @@
       </unit>
       <unit id="permission.adminTip">
          <segment>
-            <source>Do we need this group?  Or just use team admin? People in this group will be able to do any step, even if it is assigned to a group they are not in.</source>
+            <source>Do we need this group? Or just use team admin? People in this group will be able to do any step, even if it is assigned to a group they are not in.</source>
             <target>Apakah kita memerlukan grup ini? Atau cukup gunakan admin tim? Orang-orang dalam grup ini akan dapat melakukan langkah apa pun, bahkan jika ditugaskan ke grup yang bukan milik mereka.</target>
          </segment>
       </unit>
@@ -5152,7 +6129,7 @@
       </unit>
       <unit id="permission.consultantTip">
          <segment>
-            <source>Not sure we need this permission either, because it is unclear what special things consultants do in this software.  Independent Consultant's comments will be visible to all team members.</source>
+            <source>Not sure we need this permission either, because it is unclear what special things consultants do in this software. Independent Consultant's comments will be visible to all team members.</source>
             <target>Kami juga tidak yakin apakah kami memerlukan izin ini, karena tidak jelas apa yang dilakukan oleh konsultan di perangkat lunak ini. Komentar Konsultan Independen akan terlihat oleh semua anggota tim.</target>
          </segment>
       </unit>
@@ -5176,13 +6153,13 @@
       </unit>
       <unit id="permission.mentorTip">
          <segment>
-            <source>Mentor's comments will only be visible to CITs.  Mentors can approve CIT's comments to make them visible to the rest of the team.</source>
+            <source>Mentor's comments will only be visible to CITs. Mentors can approve CIT's comments to make them visible to the rest of the team.</source>
             <target>Catatan dari Mentor hanya terlihat oleh Konsultan Sedang Dilatih. Mentor dapat menyetujui catatan dari Konsultan Sedang Dilatih untuk menampilkannya kepada tim.</target>
          </segment>
       </unit>
       <unit id="permission.nspTip">
          <segment>
-            <source>General Peer Group with no special permissions.  Use to assign discussions to team groups.</source>
+            <source>General Peer Group with no special permissions. Use to assign discussions to team groups.</source>
             <target>Kelompok Rekan Umum tanpa izin khusus. Pakai untuk menugaskan diskusi kepada kelompok rekan.</target>
          </segment>
       </unit>
@@ -5462,6 +6439,60 @@
             <target>Gambar</target>
          </segment>
       </unit>
+      <unit id="planSheet.goToReference">
+         <segment>
+            <source>Go to reference</source>
+            <target>Buka referensi</target>
+         </segment>
+      </unit>
+      <unit id="planSheet.goToReferenceClear">
+         <segment>
+            <source>Clear</source>
+            <target>Hapus</target>
+         </segment>
+      </unit>
+      <unit id="planSheet.goToReferenceDescription">
+         <segment>
+            <source>Enter one of the following:</source>
+            <target>Masukkan salah satu dari berikut ini:</target>
+         </segment>
+      </unit>
+      <unit id="planSheet.goToReferencePassage">
+         <segment>
+            <source>{0} sequence (ex. 3.1)</source>
+            <target>{0} urutan (mis. 3.1)</target>
+         </segment>
+      </unit>
+      <unit id="planSheet.goToReferencePhrase">
+         <segment>
+            <source>{0} title word or phrase</source>
+            <target>{0} kata atau frasa judul</target>
+         </segment>
+      </unit>
+      <unit id="planSheet.goToReferencePublishing">
+         <segment>
+            <source>{0} identifier (ex: M1 S1)</source>
+            <target>{0} pengenal (mis.: M1 S1)</target>
+         </segment>
+      </unit>
+      <unit id="planSheet.goToReferenceScripture">
+         <segment>
+            <source>Verse reference (chapter and verse ex 2:45)</source>
+            <target>Referensi ayat (bab dan ayat, misalnya 2:45)</target>
+         </segment>
+      </unit>
+      <unit id="planSheet.goToReferenceSubmit">
+         <segment>
+            <source>Go</source>
+            <target>Pergi</target>
+         </segment>
+      </unit>
+      <unit id="planSheet.goToReferenceTitle">
+         <segment>
+            <source>Go to reference</source>
+            <target>Pergi ke referensi</target>
+         </segment>
+      </unit>
       <unit id="planSheet.hidePublishing">
          <segment>
             <source>Hide Publishing Information</source>
@@ -5561,7 +6592,19 @@
       <unit id="planSheet.refErr">
          <segment>
             <source>This project contains invalid Books or References and will not sync or publish. (A valid reference would be 3:2-5 or similar.)</source>
-            <target/>
+            <target>Proyek audio ini mengandung acuan yang tidak sah sehingga tidak dapat dikirim/terima atau diterbitkan. (Contoh acuan yang sah: 3:2-5 dsb.)</target>
+         </segment>
+      </unit>
+      <unit id="planSheet.referenceFilteredNoPublishingLabels">
+         <segment>
+            <source>Clear the filter to go to a movement/section label (M/S).</source>
+            <target>Hapus filter untuk pergi ke label gerakan/bagian (M/S).</target>
+         </segment>
+      </unit>
+      <unit id="planSheet.referenceNotFound">
+         <segment>
+            <source>No matching row was found.</source>
+            <target>Tidak ditemukan baris yang cocok.</target>
          </segment>
       </unit>
       <unit id="planSheet.removeFilter">
@@ -5630,6 +6673,12 @@
             <target>Perbarui status terbitan {0} {1}.</target>
          </segment>
       </unit>
+      <unit id="planSheet.unknownBook">
+         <segment>
+            <source>Unknown Book</source>
+            <target>Kitab Tidak Dikenal</target>
+         </segment>
+      </unit>
       <unit id="planSheet.useCtrlV">
          <segment>
             <source>Select a column head and use CTRL-V to append table rows.</source>
@@ -5688,6 +6737,24 @@
          <segment>
             <source>Transcriptions</source>
             <target>Transkripsi</target>
+         </segment>
+      </unit>
+      <unit id="prompt.adminInstructions">
+         <segment>
+            <source>Record a short prompt for this section, then save. Team members will listen before they record.</source>
+            <target>Rekam petunjuk singkat untuk bagian ini, lalu simpan. Anggota tim akan mendengarkannya sebelum merekam.</target>
+         </segment>
+      </unit>
+      <unit id="prompt.offlineCannotAdd">
+         <segment>
+            <source>You must be online to add or replace the prompt recording for this section.</source>
+            <target>Anda harus terhubung ke internet untuk menambahkan atau mengganti rekaman petunjuk untuk bagian ini.</target>
+         </segment>
+      </unit>
+      <unit id="prompt.noAudio">
+         <segment>
+            <source>No prompt has been recorded for this section yet.</source>
+            <target>Belum ada petunjuk yang direkam untuk bagian ini.</target>
          </segment>
       </unit>
       <unit id="profile.add">
@@ -5908,7 +6975,7 @@
       </unit>
       <unit id="profile.syncFrequency">
          <segment>
-            <source>Frequency of data sync in minutes.  0 to turn off sync.</source>
+            <source>Frequency of data sync in minutes. 0 to turn off sync.</source>
             <target>Seringnya sinkronisasi data (menit). 0 untuk menghentikan sinkronisasi.</target>
          </segment>
       </unit>
@@ -6078,6 +7145,12 @@
          <segment>
             <source>Missing Files</source>
             <target>Berkas Tidak Ditemukan</target>
+         </segment>
+      </unit>
+      <unit id="projectDownload.missingFileList">
+         <segment>
+            <source>Show missing file list</source>
+            <target>Tampilkan daftar file yang hilang</target>
          </segment>
       </unit>
       <unit id="projectDownload.projects">
@@ -6284,6 +7357,120 @@
             <target>Versi</target>
          </segment>
       </unit>
+      <unit id="recordButton.record">
+         <segment>
+            <source>RECORD</source>
+            <target>REKAM</target>
+         </segment>
+      </unit>
+      <unit id="recordButton.rerecord">
+         <segment>
+            <source>RERECORD</source>
+            <target>REKAM ULANG</target>
+         </segment>
+      </unit>
+      <unit id="recordButton.resume">
+         <segment>
+            <source>RESUME</source>
+            <target>LANJUTKAN</target>
+         </segment>
+      </unit>
+      <unit id="recordButton.stop">
+         <segment>
+            <source>STOP</source>
+            <target>BERHENTI</target>
+         </segment>
+      </unit>
+      <unit id="recordStepSettings.custom">
+         <segment>
+            <source>Custom</source>
+            <target>Kustom</target>
+         </segment>
+      </unit>
+      <unit id="recordStepSettings.echoCancellation">
+         <segment>
+            <source>Echo cancellation</source>
+            <target>Penghilang gema</target>
+         </segment>
+      </unit>
+      <unit id="recordStepSettings.echoCancellationHelper">
+         <segment>
+            <source>Reduces echo when using speakers. May reduce recording quality. Leave off for a cleaner capture when using headphones or a quiet room.</source>
+            <target>Mengurangi gema saat menggunakan speaker. Dapat mengurangi kualitas rekaman. Matikan fitur ini untuk hasil rekaman yang lebih jernih saat menggunakan headphone atau berada di ruangan yang tenang.</target>
+         </segment>
+      </unit>
+      <unit id="recordStepSettings.fileNameTemplate">
+         <segment>
+            <source>File Name Template</source>
+            <target>Template Nama File</target>
+         </segment>
+      </unit>
+      <unit id="recordStepSettings.general">
+         <segment>
+            <source>General</source>
+            <target>Umum</target>
+         </segment>
+      </unit>
+      <unit id="recordStepSettings.noiseSuppression">
+         <segment>
+            <source>Noise suppression</source>
+            <target>Penekan kebisingan</target>
+         </segment>
+      </unit>
+      <unit id="recordStepSettings.noiseSuppressionHelper">
+         <segment>
+            <source>Reduces background noise. May make speech sound less natural. Leave off for the most faithful capture when the environment is already quiet.</source>
+            <target>Mengurangi kebisingan latar belakang. Dapat membuat suara bicara terdengar kurang alami. Matikan fitur ini untuk hasil rekaman yang paling akurat saat lingkungan sudah tenang.</target>
+         </segment>
+      </unit>
+      <unit id="recordStepSettings.notes">
+         <segment>
+            <source>Notes</source>
+            <target>Catatan</target>
+         </segment>
+      </unit>
+      <unit id="recordStepSettings.saveAsWav">
+         <segment>
+            <source>Save as wav (uncompressed) file.</source>
+            <target>Simpan sebagai file wav (tanpa kompresi).</target>
+         </segment>
+      </unit>
+      <unit id="recordStepSettings.saveAsWavHelper">
+         <segment>
+            <source>These files are large and we suggest you only select this for the final recording.</source>
+            <target>File-file ini berukuran besar dan kami menyarankan Anda hanya memilih opsi ini untuk rekaman akhir.</target>
+         </segment>
+      </unit>
+      <unit id="recordStepSettings.scripture">
+         <segment>
+            <source>Scripture</source>
+            <target>Ayat Alkitab</target>
+         </segment>
+      </unit>
+      <unit id="recordStepSettings.useBookChapterPassage">
+         <segment>
+            <source>Book Chapter Passage</source>
+            <target>Kitab Bab Ayat</target>
+         </segment>
+      </unit>
+      <unit id="recordStepSettings.useReference">
+         <segment>
+            <source>Passage Reference</source>
+            <target>Referensi Bagian</target>
+         </segment>
+      </unit>
+      <unit id="recordStepSettings.useSectionNumberAndPassageNumber">
+         <segment>
+            <source>{0} number and Passage number</source>
+            <target>Nomor {0} dan nomor Bagian</target>
+         </segment>
+      </unit>
+      <unit id="recordStepSettings.useTitle">
+         <segment>
+            <source>Title</source>
+            <target>Judul</target>
+         </segment>
+      </unit>
       <unit id="scriptureTable.alternateName">
          <segment>
             <source>{0} Alternate Name</source>
@@ -6395,13 +7582,13 @@
       <unit id="scriptureTable.setupGeneralBook">
          <segment>
             <source>Go the the Home page and sort the projects to set the book codes.</source>
-            <target/>
+            <target>Untuk menetapkan kode kitab, kembali ke halaman Utama dan urutkan proyek.</target>
          </segment>
       </unit>
       <unit id="scriptureTable.setupScriptureBook">
          <segment>
             <source>Make a selection in the Book column for each passage without one.</source>
-            <target/>
+            <target>Buat pilihan di kolom Kitab untuk setiap bagian yang belum mempunyai pilihan.</target>
          </segment>
       </unit>
       <unit id="scriptureTable.title">
@@ -6656,6 +7843,12 @@
             <target>Tutup</target>
          </segment>
       </unit>
+      <unit id="shared.confirm">
+         <segment>
+            <source>Confirm</source>
+            <target>Konfirmasi</target>
+         </segment>
+      </unit>
       <unit id="shared.consultant">
          <segment>
             <source>Consultant</source>
@@ -6682,13 +7875,13 @@
       </unit>
       <unit id="shared.expiredParatextToken">
          <segment>
-            <source>Your {Pt} login has expired and can't be automatically renewed.  Please log out and login again.</source>
+            <source>Your {Pt} login has expired and can't be automatically renewed. Please log out and login again.</source>
             <target>Login {Pt} Anda telah kedaluwarsa dan tidak dapat diperbarui secara otomatis. Mohon keluar dan masuk kembali.</target>
          </segment>
       </unit>
       <unit id="shared.expiredToken">
          <segment>
-            <source>Your login token has expired and can't be automatically renewed.  Please log out and login again.</source>
+            <source>Your login token has expired and can't be automatically renewed. Please log out and login again.</source>
             <target>Login Anda telah kedaluwarsa dan tidak dapat diperbarui secara otomatis. Mohon keluar dan masuk kembali.</target>
          </segment>
       </unit>
@@ -6726,6 +7919,12 @@
          <segment>
             <source>Launch Audacity</source>
             <target>Buka Audacity</target>
+         </segment>
+      </unit>
+      <unit id="shared.loadFromFile">
+         <segment>
+            <source>Load from file...</source>
+            <target>Muat dari berkas...</target>
          </segment>
       </unit>
       <unit id="shared.loading">
@@ -6792,6 +7991,18 @@
          <segment>
             <source>Unable to save while offline.</source>
             <target>Tidak dapat menyimpan tanpa koneksi internet.</target>
+         </segment>
+      </unit>
+      <unit id="shared.TooBusy">
+         <segment>
+            <source>Unable to start new save while already saving.</source>
+            <target>Tidak dapat memulai penyimpanan baru saat sedang menyimpan.</target>
+         </segment>
+      </unit>
+      <unit id="shared.NoSaveWoMedia">
+         <segment>
+            <source>Save Failed. Please check your internet connection and try again.</source>
+            <target>Penyimpanan Gagal. Silakan periksa koneksi internet Anda dan coba lagi.</target>
          </segment>
       </unit>
       <unit id="shared.notSupported">
@@ -6884,6 +8095,12 @@
             <target>Pilih</target>
          </segment>
       </unit>
+      <unit id="shared.teamDefault">
+         <segment>
+            <source>Save as team default</source>
+            <target>Simpan sebagai default tim</target>
+         </segment>
+      </unit>
       <unit id="shared.teamrole">
          <segment>
             <source>Team Role</source>
@@ -6912,6 +8129,24 @@
          <segment>
             <source>Upload Audio</source>
             <target>Unggah Audio</target>
+         </segment>
+      </unit>
+      <unit id="shared.upload">
+         <segment>
+            <source>Upload</source>
+            <target>Unggah</target>
+         </segment>
+      </unit>
+      <unit id="shared.discardRecording">
+         <segment>
+            <source>Would you like to clear this recording?</source>
+            <target>Apakah Anda ingin menghapus rekaman ini?</target>
+         </segment>
+      </unit>
+      <unit id="shared.useThisVersion">
+         <segment>
+            <source>Use This Version</source>
+            <target>Gunakan Versi Ini</target>
          </segment>
       </unit>
       <unit id="shared.uploadRights">
@@ -7100,6 +8335,12 @@
             <target>Menyimpan...</target>
          </segment>
       </unit>
+      <unit id="stepEditor.settingsFor">
+         <segment>
+            <source>Settings for {0} of {1}</source>
+            <target>Pengaturan untuk {0} dari {1}</target>
+         </segment>
+      </unit>
       <unit id="stepEditor.show">
          <segment>
             <source>Show</source>
@@ -7226,6 +8467,12 @@
             <target>Nomor bagian (terkandung di dalam {0})</target>
          </segment>
       </unit>
+      <unit id="template.reference">
+         <segment>
+            <source>Passage reference</source>
+            <target>Referensi bagian</target>
+         </segment>
+      </unit>
       <unit id="template.renderExportTemplate">
          <segment>
             <source>The {SECT} template works for files exported from {0}.</source>
@@ -7236,6 +8483,12 @@
          <segment>
             <source>Template Codes</source>
             <target>Kode templat</target>
+         </segment>
+      </unit>
+      <unit id="template.title">
+         <segment>
+            <source>Title</source>
+            <target>Judul</target>
          </segment>
       </unit>
       <unit id="toDoTable.action">
@@ -7346,6 +8599,12 @@
             <target>Ya</target>
          </segment>
       </unit>
+      <unit id="tool.carefulSpeech">
+         <segment>
+            <source>Careful speech</source>
+            <target>Ucapan yang hati-hati</target>
+         </segment>
+      </unit>
       <unit id="tool.community">
          <segment>
             <source>Community Test</source>
@@ -7386,6 +8645,12 @@
          <segment>
             <source>{0} Sync</source>
             <target>{0} Kirim/Terima</target>
+         </segment>
+      </unit>
+      <unit id="tool.prompt">
+         <segment>
+            <source>Prompt</source>
+            <target>Prompt</target>
          </segment>
       </unit>
       <unit id="tool.phraseBackTranslate">
@@ -7472,16 +8737,22 @@
             <target>Transkripsi AI gagal</target>
          </segment>
       </unit>
+      <unit id="transcriber.aiAutomaticTranscription">
+         <segment>
+            <source>AI Automatic Transcription</source>
+            <target>Transkripsi Otomatis AI</target>
+         </segment>
+      </unit>
       <unit id="transcriber.aiWillContinue">
          <segment>
             <source>The AI will continue to work on the transcription even if you close this progress box. Click the {0} button to open the progress box on this workflow step to see the results. Use the settings gear on {0} button to see the transcription using a different language.</source>
             <target>AI akan terus bekerja pada transkripsi meskipun Anda menutup kotak progres ini. Klik tombol {0} untuk membuka kotak progres pada langkah alur kerja ini untuk melihat hasilnya. Gunakan roda gigi pengaturan pada tombol {0} untuk melihat transkripsi menggunakan bahasa yang berbeda.</target>
          </segment>
       </unit>
-      <unit id="transcriber.beginRecognize">
+      <unit id="transcriber.chooseSisterLang">
          <segment>
-            <source>Begin Auto Transcription</source>
-            <target>Mulai Transkripsi Secara Otomatis</target>
+            <source>Choose a sister language</source>
+            <target>Pilih bahasa saudara</target>
          </segment>
       </unit>
       <unit id="transcriber.comment">
@@ -7500,6 +8771,12 @@
          <segment>
             <source>Completed</source>
             <target>Selesai</target>
+         </segment>
+      </unit>
+      <unit id="transcriber.findingSisterLang">
+         <segment>
+            <source>Finding supported sister languages…</source>
+            <target>Mencari bahasa saudara yang didukung…</target>
          </segment>
       </unit>
       <unit id="transcriber.historyTip">
@@ -7580,6 +8857,12 @@
             <target>Salin transkripsi dari {0}</target>
          </segment>
       </unit>
+      <unit id="transcriber.recommended">
+         <segment>
+            <source>Recommended</source>
+            <target>Direkomendasikan</target>
+         </segment>
+      </unit>
       <unit id="transcriber.reject">
          <segment>
             <source>Reject</source>
@@ -7596,6 +8879,12 @@
          <segment>
             <source>Started to review</source>
             <target>Sudah mulai periksa</target>
+         </segment>
+      </unit>
+      <unit id="transcriber.run">
+         <segment>
+            <source>Run</source>
+            <target>Jalankan</target>
          </segment>
       </unit>
       <unit id="transcriber.save">
@@ -7628,6 +8917,24 @@
             <target>Skrip atau Logat Bahasa</target>
          </segment>
       </unit>
+      <unit id="transcriber.scriptTranscription">
+         <segment>
+            <source>Script</source>
+            <target>Naskah</target>
+         </segment>
+      </unit>
+      <unit id="transcriber.invalidSisterLang">
+         <segment>
+            <source>This language is not supported for speech recognition. Choose another sister language.</source>
+            <target>Bahasa ini tidak didukung untuk pengenalan ucapan. Pilih bahasa saudara lainnya.</target>
+         </segment>
+      </unit>
+      <unit id="transcriber.sisterLang">
+         <segment>
+            <source>Your language is not supported for speech recognition. To use automatic transcription, choose a closely related language with a similar writing system.</source>
+            <target>Bahasa Anda tidak didukung untuk pengenalan suara. Untuk menggunakan transkripsi otomatis, pilih bahasa yang sangat mirip dengan sistem penulisan yang serupa.</target>
+         </segment>
+      </unit>
       <unit id="transcriber.submit">
          <segment>
             <source>Submit</source>
@@ -7658,6 +8965,12 @@
             <target>Sudah ada transkripsi</target>
          </segment>
       </unit>
+      <unit id="transcriber.transcriptionType">
+         <segment>
+            <source>Transcription type</source>
+            <target>Jenis transkripsi</target>
+         </segment>
+      </unit>
       <unit id="transcriber.transliterate">
          <segment>
             <source>Transliterate to Latin script</source>
@@ -7666,7 +8979,7 @@
       </unit>
       <unit id="transcriber.updateByOther2">
          <segment>
-            <source>Transcription updated by {0}.  Keep their changes? {1}</source>
+            <source>Transcription updated by {0}. Keep their changes? {1}</source>
             <target>Transkripsi diperbarui {0}. Simpan perubahan? {1}</target>
          </segment>
       </unit>
@@ -7758,6 +9071,12 @@
          <segment>
             <source>Cancel</source>
             <target>Batal</target>
+         </segment>
+      </unit>
+      <unit id="transcriptionTab.confirm">
+         <segment>
+            <source>Are you sure you want to cancel the download?</source>
+            <target>Apakah Anda yakin ingin membatalkan pengunduhan?</target>
          </segment>
       </unit>
       <unit id="transcriptionTab.copyTip">
@@ -7876,7 +9195,7 @@
       </unit>
       <unit id="transcriptionTab.exportTooLarge">
          <segment>
-            <source>The audio project cannot be exported.  The export file is too large.</source>
+            <source>The audio project cannot be exported. The export file is too large.</source>
             <target>Proyek audio ini tidak dapat diekspor. Berkas ekspor terlalu besar.</target>
          </segment>
       </unit>
@@ -7918,7 +9237,7 @@
       </unit>
       <unit id="transcriptionTab.offlineData">
          <segment>
-            <source>You have new changes locally that were not included in the PTF export.  Please also export an itf file to capture all changes.</source>
+            <source>You have new changes locally that were not included in the PTF export. Please also export an itf file to capture all changes.</source>
             <target>Ada perubahan lokal (di komputer ini) yang tidak dimasukkan dalam ekspor berkas ptf. Ekspor berkas itf juga supaya semua perubahan dimasukkan.</target>
          </segment>
       </unit>
@@ -8102,6 +9421,12 @@
             <target>Zona Waktu</target>
          </segment>
       </unit>
+      <unit id="verse.autosaveSkipped">
+         <segment>
+            <source>Autosave skipped: {0} issue(s) found.</source>
+            <target>Penyimpanan otomatis dilewati: ditemukan {0} masalah.</target>
+         </segment>
+      </unit>
       <unit id="verse.badReferences">
          <segment>
             <source>ERROR: Markup contains bad references</source>
@@ -8126,6 +9451,18 @@
             <target>papanklip</target>
          </segment>
       </unit>
+      <unit id="verse.doneEditingReference">
+         <segment>
+            <source>Done Editing</source>
+            <target>Selesai Mengedit</target>
+         </segment>
+      </unit>
+      <unit id="verse.editReference">
+         <segment>
+            <source>Edit Reference</source>
+            <target>Edit Referensi</target>
+         </segment>
+      </unit>
       <unit id="verse.issues">
          <segment>
             <source>The verse markup has issues. Do you want to continue?</source>
@@ -8136,6 +9473,12 @@
          <segment>
             <source>Mark Verses</source>
             <target>Tandai Ayat</target>
+         </segment>
+      </unit>
+      <unit id="verse.markupIssuesTitle">
+         <segment>
+            <source>Verse markup issues</source>
+            <target>Masalah penandaan ayat</target>
          </segment>
       </unit>
       <unit id="verse.missingReferences">
@@ -8174,16 +9517,34 @@
             <target>Acuan</target>
          </segment>
       </unit>
+      <unit id="verse.reset">
+         <segment>
+            <source>Reset</source>
+            <target>Atur Ulang</target>
+         </segment>
+      </unit>
       <unit id="verse.saveVerseMarkup">
          <segment>
             <source>Save Verse Markup</source>
             <target>Simpan Markup Ayat</target>
          </segment>
       </unit>
+      <unit id="verse.splitVerse">
+         <segment>
+            <source>Split Verse</source>
+            <target>Pisahkan Ayat</target>
+         </segment>
+      </unit>
       <unit id="verse.startStop">
          <segment>
             <source>Start --&gt; Stop</source>
             <target>Mulai --&gt; Stop</target>
+         </segment>
+      </unit>
+      <unit id="verse.viewIssues">
+         <segment>
+            <source>View issues</source>
+            <target>Lihat masalah</target>
          </segment>
       </unit>
       <unit id="viewMode.audioProject">
@@ -8776,7 +10137,7 @@
       </unit>
       <unit id="welcome.setupTeamTip">
          <segment>
-            <source>Set up the audio project, dividing work into passages that can be assigned to various transcribers and editors.  Transcribers and editors can work online or offline by downloading or importing the audio project.</source>
+            <source>Set up the audio project, dividing work into passages that can be assigned to various transcribers and editors. Transcribers and editors can work online or offline by downloading or importing the audio project.</source>
             <target>Atur proyek audio dan bagikan tugas menjadi beberapa bagian yang akan ditugaskan ke para pengetik dan penyunting. Pengetik dan penyunting dapat bekerja dengan koneksi internet. Untuk bekerta tanpa koneksi internet, pengetik dan penyunting dapat mengunduh atau mengimpor proyek audio.</target>
          </segment>
       </unit>
@@ -8794,7 +10155,7 @@
       </unit>
       <unit id="welcome.teamTip">
          <segment>
-            <source>A audio project has been set up online.  Transcribers and editors can work online, offline by selecting the Offline Available option on the audio project card menu, or offline by importing it.</source>
+            <source>A audio project has been set up online. Transcribers and editors can work online, offline by selecting the Offline Available option on the audio project card menu, or offline by importing it.</source>
             <target>Proyek audio telah disiapkan secara online. Para pengetik dan penyuntik dapat bekerja dengan koneksi internet, ataupun tanpa koneksi dengan memilih opsi Tersedia Tanpa Koneksi Internet pada menu kartu proyek audio, atau offline dengan cara mengimpornya.</target>
          </segment>
       </unit>
@@ -8816,10 +10177,94 @@
             <target>Buat Terjemahan Balik</target>
          </segment>
       </unit>
+      <unit id="workflowSteps.backTranslationTip">
+         <segment>
+            <source>Record a back translation</source>
+            <target>Rekam terjemahan balik</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.carefulSpeech">
+         <segment>
+            <source>Careful speech</source>
+            <target>Ucapan yang jelas</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.carefulSpeechTip">
+         <segment>
+            <source>Record careful speech for each segment.</source>
+            <target>Rekam ucapan yang jelas untuk setiap segmen.</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.carefulTranscription">
+         <segment>
+            <source>Careful transcription</source>
+            <target>Transkripsi yang jelas</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.carefulTranscriptionTip">
+         <segment>
+            <source>Transcribe the careful speech recording for each segment.</source>
+            <target>Transkripsikan rekaman ucapan yang jelas untuk setiap segmen.</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.freeTranscription">
+         <segment>
+            <source>Free transcription</source>
+            <target>Transkripsi bebas</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.freeTranscriptionTip">
+         <segment>
+            <source>Transcribe the free translation recording.</source>
+            <target>Transkripsikan rekaman terjemahan bebas.</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.freeTranslation">
+         <segment>
+            <source>Free translation</source>
+            <target>Terjemahan bebas</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.freeTranslationTip">
+         <segment>
+            <source>Record a free translation of the entire passage in the language of wider communication.</source>
+            <target>Rekam terjemahan bebas dari seluruh bagian teks dalam bahasa komunikasi umum.</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.lwcTranscription">
+         <segment>
+            <source>LWC transcription</source>
+            <target>Transkripsi LWC</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.lwcTranscriptionTip">
+         <segment>
+            <source>Transcribe the LWC translation recording.</source>
+            <target>Transkripsikan rekaman terjemahan LWC.</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.lwcTranslation">
+         <segment>
+            <source>LWC translation</source>
+            <target>Terjemahan LWC</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.lwcTranslationTip">
+         <segment>
+            <source>Listen to each careful speech segment and record a translation in the language of wider communication.</source>
+            <target>Dengarkan setiap segmen ucapan dengan saksama dan rekam terjemahannya dalam bahasa komunikasi umum.</target>
+         </segment>
+      </unit>
       <unit id="workflowSteps.communityTest1">
          <segment>
             <source>Community Test 1</source>
             <target>Pemeriksaan Masyarakat 1</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.communityTest1Tip">
+         <segment>
+            <source>Ask community test questions and record responses</source>
+            <target>Ajukan pertanyaan uji coba kepada komunitas dan rekam jawabannya</target>
          </segment>
       </unit>
       <unit id="workflowSteps.communityTest2">
@@ -8828,10 +10273,22 @@
             <target>Pemeriksaan Masyarakat 2</target>
          </segment>
       </unit>
+      <unit id="workflowSteps.communityTest2Tip">
+         <segment>
+            <source>Ask community test questions and record responses</source>
+            <target>Ajukan pertanyaan uji coba kepada komunitas dan rekam jawabannya</target>
+         </segment>
+      </unit>
       <unit id="workflowSteps.communityTesting">
          <segment>
             <source>Community Test</source>
             <target>Pemeriksaan Masyarakat</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.communityTestingTip">
+         <segment>
+            <source>Ask community test questions and record responses</source>
+            <target>Ajukan pertanyaan uji coba kepada komunitas dan rekam jawabannya</target>
          </segment>
       </unit>
       <unit id="workflowSteps.consultantCheck">
@@ -8840,10 +10297,22 @@
             <target>Pemeriksaan Konsultan</target>
          </segment>
       </unit>
+      <unit id="workflowSteps.consultantCheckTip">
+         <segment>
+            <source>The consultant listens to recorded content and asks questions in discussions.</source>
+            <target>Konsultan mendengarkan rekaman dan mengajukan pertanyaan dalam diskusi.</target>
+         </segment>
+      </unit>
       <unit id="workflowSteps.consultantCheck1">
          <segment>
             <source>First Consultant Check</source>
             <target>Pemeriksaan Konsultan Pertama</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.consultantCheck1Tip">
+         <segment>
+            <source>The consultant listens to recorded content and asks questions in discussions.</source>
+            <target>Konsultan mendengarkan rekaman dan mengajukan pertanyaan dalam diskusi.</target>
          </segment>
       </unit>
       <unit id="workflowSteps.consultantCheck2">
@@ -8852,10 +10321,22 @@
             <target>Pemeriksaan Konsultan Kedua</target>
          </segment>
       </unit>
+      <unit id="workflowSteps.consultantCheck2Tip">
+         <segment>
+            <source>The consultant listens to recorded content and asks questions in discussions.</source>
+            <target>Konsultan mendengarkan rekaman dan mengajukan pertanyaan dalam diskusi.</target>
+         </segment>
+      </unit>
       <unit id="workflowSteps.done">
          <segment>
             <source>Done</source>
             <target>Selesai</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.doneTip">
+         <segment>
+            <source>All steps have been completed for this passage or note</source>
+            <target>Semua langkah untuk bagian teks atau catatan ini telah diselesaikan.</target>
          </segment>
       </unit>
       <unit id="workflowSteps.export">
@@ -8864,10 +10345,22 @@
             <target>Ekspor</target>
          </segment>
       </unit>
+      <unit id="workflowSteps.exportTip">
+         <segment>
+            <source>Export work done to this point if desired.</source>
+            <target>Ekspor hasil kerja yang telah diselesaikan hingga tahap ini jika diinginkan.</target>
+         </segment>
+      </unit>
       <unit id="workflowSteps.finalRecording">
          <segment>
             <source>Studio Record</source>
             <target>Rekaman Studio</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.finalRecordingTip">
+         <segment>
+            <source>Make a final recording in a studio if desired.</source>
+            <target>Lakukan perekaman akhir di studio jika diinginkan.</target>
          </segment>
       </unit>
       <unit id="workflowSteps.finalReview">
@@ -8876,10 +10369,46 @@
             <target>Pemeriksaan Akhir Audio</target>
          </segment>
       </unit>
+      <unit id="workflowSteps.finalReviewTip">
+         <segment>
+            <source>Listen one last time to the results to see if any more changes are needed.</source>
+            <target>Dengarkan hasilnya sekali lagi untuk melihat apakah masih diperlukan perubahan.</target>
+         </segment>
+      </unit>
       <unit id="workflowSteps.finalReviewText">
          <segment>
             <source>Final Text Review</source>
             <target>Pemeriksaan Akhir Tulisan</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.finalReviewTextTip">
+         <segment>
+            <source>Read through the transcription one last time to see if any additional changes are needed.</source>
+            <target>Baca kembali transkripsi ini untuk terakhir kalinya guna memastikan apakah ada perubahan tambahan yang diperlukan.</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.incompleteStepComplete">
+         <segment>
+            <source>Complete</source>
+            <target>Selesai</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.incompleteStepContinue">
+         <segment>
+            <source>Continue</source>
+            <target>Lanjutkan</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.incompleteStepNavigate">
+         <segment>
+            <source>The current step ({0}) is not complete. Are you sure?</source>
+            <target>Langkah saat ini ({0}) belum selesai. Apakah Anda yakin?</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.incompleteStepNavigateTitle">
+         <segment>
+            <source>Step not complete</source>
+            <target>Langkah belum selesai</target>
          </segment>
       </unit>
       <unit id="workflowSteps.internalize">
@@ -8888,10 +10417,22 @@
             <target>Internalisasi</target>
          </segment>
       </unit>
+      <unit id="workflowSteps.internalizeTip">
+         <segment>
+            <source>Review the resources to become able to tell the passage from memory in the target languages.</source>
+            <target>Pelajari kembali sumber-sumber yang ada agar dapat menceritakan bagian tersebut dari ingatan dalam bahasa sasaran.</target>
+         </segment>
+      </unit>
       <unit id="workflowSteps.paratextConsultantCheck">
          <segment>
             <source>Consultant Check in {0}</source>
             <target>Pemeriksaan Konsultan di {0}</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.paratextConsultantCheckTip">
+         <segment>
+            <source>Review the text in another program with more analysis resources.</source>
+            <target>Tinjau teks tersebut di program lain yang memiliki lebih banyak sumber daya analisis.</target>
          </segment>
       </unit>
       <unit id="workflowSteps.paratextPeerReview">
@@ -8900,10 +10441,22 @@
             <target>Pemeriksaan Rekan di {0}</target>
          </segment>
       </unit>
+      <unit id="workflowSteps.paratextPeerReviewTip">
+         <segment>
+            <source>Team reviews the text in another program with more analysis resources.</source>
+            <target>Tim meninjau teks tersebut di program lain yang memiliki lebih banyak sumber daya analisis.</target>
+         </segment>
+      </unit>
       <unit id="workflowSteps.paratextSync">
          <segment>
             <source>Sync to {0}</source>
             <target>Kirim/terima dengan {0}</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.paratextSyncTip">
+         <segment>
+            <source>Sync text to another text translation tool.</source>
+            <target>Sinkronkan teks ke alat terjemahan teks lainnya.</target>
          </segment>
       </unit>
       <unit id="workflowSteps.peerReview">
@@ -8912,10 +10465,22 @@
             <target>Pemeriksaan oleh Rekan</target>
          </segment>
       </unit>
+      <unit id="workflowSteps.peerReviewTip">
+         <segment>
+            <source>Peer review content to this point.</source>
+            <target>Lakukan tinjauan rekan sejawat terhadap konten hingga tahap ini.</target>
+         </segment>
+      </unit>
       <unit id="workflowSteps.phraseBackTranslation">
          <segment>
             <source>Phrase Back Translate</source>
             <target>Terjemahan Balik Frasa</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.phraseBackTranslationTip">
+         <segment>
+            <source>Record a back translation of each phrase of the passage.</source>
+            <target>Rekam terjemahan balik dari setiap frasa dalam teks tersebut.</target>
          </segment>
       </unit>
       <unit id="workflowSteps.pBTTranscribe">
@@ -8924,10 +10489,22 @@
             <target>Ketik TerBal Hentian Singkat</target>
          </segment>
       </unit>
+      <unit id="workflowSteps.pBTTranscribeTip">
+         <segment>
+            <source>Transcribe each of the back translated phrases.</source>
+            <target>Transkripsikan setiap frasa yang telah diterjemahkan balik.</target>
+         </segment>
+      </unit>
       <unit id="workflowSteps.pBTParatextSync">
          <segment>
             <source>Phrase BT {0}</source>
             <target>TerBal Hentian Singkat {0}</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.pBTParatextSyncTip">
+         <segment>
+            <source>Synchronize the back translated text to another tool for analysis and review.</source>
+            <target>Sinkronkan teks terjemahan balik tersebut ke alat lain untuk dianalisis dan ditinjau.</target>
          </segment>
       </unit>
       <unit id="workflowSteps.preliminaryApproval">
@@ -8936,10 +10513,22 @@
             <target>Persetujuan Awal</target>
          </segment>
       </unit>
+      <unit id="workflowSteps.preliminaryApprovalTip">
+         <segment>
+            <source>Get preliminary approval.</source>
+            <target>Dapatkan persetujuan awal.</target>
+         </segment>
+      </unit>
       <unit id="workflowSteps.record">
          <segment>
             <source>Record</source>
             <target>Rekam</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.recordTip">
+         <segment>
+            <source>Record the passage.</source>
+            <target>Rekam teks tersebut.</target>
          </segment>
       </unit>
       <unit id="workflowSteps.retellBackTranslation">
@@ -8948,16 +10537,34 @@
             <target>Terjemahan Balik Cerita Ulang</target>
          </segment>
       </unit>
+      <unit id="workflowSteps.retellBackTranslationTip">
+         <segment>
+            <source>Retell the entire passage in the language understood by the consultant.</source>
+            <target>Ceritakan kembali seluruh teks dalam bahasa yang dipahami oleh konsultan.</target>
+         </segment>
+      </unit>
       <unit id="workflowSteps.retellBTTranscribe">
          <segment>
             <source>Retell BT Transcribe</source>
             <target>Ketik Terjemahan Cerita Ulang</target>
          </segment>
       </unit>
+      <unit id="workflowSteps.retellBTTranscribeTip">
+         <segment>
+            <source>Transcribe the recording of the text being retold in the language of the consultant.</source>
+            <target>Transkripsikan rekaman teks yang diceritakan kembali dalam bahasa konsultan.</target>
+         </segment>
+      </unit>
       <unit id="workflowSteps.review">
          <segment>
             <source>Review Transcription</source>
             <target>Tinjau hasil ketik</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.reviewTip">
+         <segment>
+            <source>Review the transcription to make sure it is accurate.</source>
+            <target>Tinjau transkripsi tersebut untuk memastikan keakuratannya.</target>
          </segment>
       </unit>
       <unit id="workflowSteps.saveFirst">
@@ -8972,10 +10579,22 @@
             <target>Bandingkan</target>
          </segment>
       </unit>
+      <unit id="workflowSteps.teamCheckTip">
+         <segment>
+            <source>Check over the work of another sub team in the translation project.</source>
+            <target>Periksa hasil kerja sub-tim lain dalam proyek terjemahan ini.</target>
+         </segment>
+      </unit>
       <unit id="workflowSteps.termVerify">
          <segment>
             <source>Term Verify</source>
             <target>Verifikasi Tim</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.termVerifyTip">
+         <segment>
+            <source>Make recordings of how terms contained in the passage are being rendered.</source>
+            <target>Rekam cara penerjemahan istilah-istilah yang terdapat dalam bagian teks tersebut.</target>
          </segment>
       </unit>
       <unit id="workflowSteps.teamReview">
@@ -8984,10 +10603,22 @@
             <target>Pemeriksaan Kata Kunci</target>
          </segment>
       </unit>
+      <unit id="workflowSteps.teamReviewTip">
+         <segment>
+            <source>Review how terms were rendered before and how they are rendered this time.</source>
+            <target>Bandingkan cara penerjemahan istilah-istilah tersebut sebelumnya dengan cara penerjemahannya kali ini.</target>
+         </segment>
+      </unit>
       <unit id="workflowSteps.transcribe">
          <segment>
             <source>Transcribe</source>
             <target>Ketik</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.transcribeTip">
+         <segment>
+            <source>Transcribe the recording.</source>
+            <target>Transkripsikan rekaman tersebut.</target>
          </segment>
       </unit>
       <unit id="workflowSteps.unsaved">
@@ -9002,10 +10633,40 @@
             <target>Tandai Ayat</target>
          </segment>
       </unit>
+      <unit id="workflowSteps.markVersesTip">
+         <segment>
+            <source>Listen to the recording and mark where the verse boundaries occur.</source>
+            <target>Dengarkan rekaman tersebut dan tandai di mana letak batas-batas ayat.</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.prompt">
+         <segment>
+            <source>Prompt</source>
+            <target>Petunjuk</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.promptAdminTip">
+         <segment>
+            <source>Record a prompt for this section, save it, then continue to the next step when ready.</source>
+            <target>Rekam petunjuk untuk bagian ini, simpan, lalu lanjutkan ke langkah berikutnya saat sudah siap.</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.promptTip">
+         <segment>
+            <source>Listen to the prompt above. Then, move to the next step.</source>
+            <target>Dengarkan petunjuk di atas. Kemudian, lanjutkan ke langkah berikutnya.</target>
+         </segment>
+      </unit>
       <unit id="workflowSteps.wholeBackTranslate">
          <segment>
             <source>Whole Back Translate</source>
             <target>Terjemahan Balik Utuh</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.wholeBackTranslateTip">
+         <segment>
+            <source>Record the back translation of the entire passage in the language of the consultant.</source>
+            <target>Rekam terjemahan balik dari seluruh teks dalam bahasa konsultan.</target>
          </segment>
       </unit>
       <unit id="workflowSteps.wholeBackTranslation">
@@ -9014,16 +10675,34 @@
             <target>Terjemahan Balik Utuh</target>
          </segment>
       </unit>
+      <unit id="workflowSteps.wholeBackTranslationTip">
+         <segment>
+            <source>Record the back translation of the entire passage in the language of the consultant.</source>
+            <target>Rekam terjemahan balik dari seluruh teks dalam bahasa konsultan.</target>
+         </segment>
+      </unit>
       <unit id="workflowSteps.wBTTranscribe">
          <segment>
             <source>Whole BT Transcribe</source>
             <target>Ketik TerBal Utuh</target>
          </segment>
       </unit>
+      <unit id="workflowSteps.wBTTranscribeTip">
+         <segment>
+            <source>Transcribe the recording of the passage in the language of the consultant.</source>
+            <target>Transkripsikan rekaman teks tersebut dalam bahasa konsultan.</target>
+         </segment>
+      </unit>
       <unit id="workflowSteps.wBTParatextSync">
          <segment>
             <source>Whole BT {0}</source>
             <target>TerBal Utuh {0}</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.wBTParatextSyncTip">
+         <segment>
+            <source>Sync transcription of the back translation to another tool for analysis and review.</source>
+            <target>Sinkronkan transkripsi terjemahan balik ke alat lain untuk analisis dan peninjauan.</target>
          </segment>
       </unit>
       <unit id="workflowSteps.none">
@@ -9052,7 +10731,7 @@
       </unit>
       <unit id="wsAudioPlayer.aiInProgress">
          <segment>
-            <source>AI Service In Progress...  This is a remote service that may take a long time if the recording is large, or if there are other requests ahead of yours.</source>
+            <source>AI Service In Progress... This is a remote service that may take a long time if the recording is large, or if there are other requests ahead of yours.</source>
             <target>Layanan AI Sedang Berlangsung... Ini adalah layanan jarak jauh yang mungkin memerlukan waktu lama jika rekamannya besar, atau jika ada permintaan lain yang mendahului permintaan Anda.</target>
          </segment>
       </unit>
@@ -9074,16 +10753,34 @@
             <target>Konversi Suara {0}</target>
          </segment>
       </unit>
+      <unit id="wsAudioPlayer.clearRecording">
+         <segment>
+            <source>Clear Recording?</source>
+            <target>Hapus Rekaman?</target>
+         </segment>
+      </unit>
+      <unit id="wsAudioPlayer.clearRecordingTip">
+         <segment>
+            <source>Clear Recording</source>
+            <target>Hapus Rekaman</target>
+         </segment>
+      </unit>
+      <unit id="wsAudioPlayer.convertVoiceAi">
+         <segment>
+            <source>Convert Voice (AI)</source>
+            <target>Konversi Suara (AI)</target>
+         </segment>
+      </unit>
       <unit id="wsAudioPlayer.beginningTip">
          <segment>
             <source>Go to Beginning [{0}]</source>
             <target>Ke awal rekaman [{0}]</target>
          </segment>
       </unit>
-      <unit id="wsAudioPlayer.deleteRecording">
+      <unit id="wsAudioPlayer.clear">
          <segment>
-            <source>Delete Entire Recording</source>
-            <target>Hapus Rekaman Secara Keseluruhan</target>
+            <source>Clear</source>
+            <target>Hapus</target>
          </segment>
       </unit>
       <unit id="wsAudioPlayer.deleteRegion">
@@ -9122,6 +10819,18 @@
             <target>Putar berulang-ulang</target>
          </segment>
       </unit>
+      <unit id="wsAudioPlayer.microphone">
+         <segment>
+            <source>Select microphone</source>
+            <target>Pilih mikrofon</target>
+         </segment>
+      </unit>
+      <unit id="wsAudioPlayer.moreOptions">
+         <segment>
+            <source>More Options</source>
+            <target>Opsi Lainnya</target>
+         </segment>
+      </unit>
       <unit id="wsAudioPlayer.nextRegion">
          <segment>
             <source>Next Segment [{0}]</source>
@@ -9143,13 +10852,13 @@
       <unit id="wsAudioPlayer.normalizeFail">
          <segment>
             <source>Normalization failed: {0}</source>
-            <target>Normalisasi gagal: {0}</target>
+            <target>Normalisasi telah gagal: {0}</target>
          </segment>
       </unit>
       <unit id="wsAudioPlayer.normalizeInProgress">
          <segment>
             <source>Audio loudness normalization In Progress...</source>
-            <target>Normalisasi tingkat kebisingan audio sedang berlangsung...</target>
+            <target>Sedang dilakukan Normalisasi volume...</target>
          </segment>
       </unit>
       <unit id="wsAudioPlayer.pauseRecord">
@@ -9212,6 +10921,24 @@
             <target>Kurangi Kebisingan</target>
          </segment>
       </unit>
+      <unit id="wsAudioPlayer.reduceNoiseAi">
+         <segment>
+            <source>Reduce Noise (AI)</source>
+            <target>Kurangi Kebisingan (AI)</target>
+         </segment>
+      </unit>
+      <unit id="wsAudioPlayer.reset">
+         <segment>
+            <source>Clear</source>
+            <target>Hapus</target>
+         </segment>
+      </unit>
+      <unit id="wsAudioPlayer.resetSegments">
+         <segment>
+            <source>Reset</source>
+            <target>Atur Ulang</target>
+         </segment>
+      </unit>
       <unit id="wsAudioPlayer.resume">
          <segment>
             <source>Resume</source>
@@ -9230,10 +10957,22 @@
             <target>detik</target>
          </segment>
       </unit>
+      <unit id="wsAudioPlayer.selectMicrophoneMenu">
+         <segment>
+            <source>Select Microphone</source>
+            <target>Pilih Mikrofon</target>
+         </segment>
+      </unit>
       <unit id="wsAudioPlayer.selectVoice">
          <segment>
             <source>Select Voice</source>
             <target>Pilih Suara</target>
+         </segment>
+      </unit>
+      <unit id="wsAudioPlayer.selectVoiceForConversion">
+         <segment>
+            <source>Select Voice for Conversion</source>
+            <target>Pilih Suara untuk Konversi</target>
          </segment>
       </unit>
       <unit id="wsAudioPlayer.selectVoicePrompt">
@@ -9269,7 +11008,7 @@
       <unit id="wsAudioPlayer.tooQuiet">
          <segment>
             <source>The sample is too quiet.</source>
-            <target>Sampel terlalu pelan.</target>
+            <target>Suara dalam contoh audio ini terlalu kecil.</target>
          </segment>
       </unit>
       <unit id="wsAudioPlayer.undoTip">
@@ -9352,14 +11091,8 @@
       </unit>
       <unit id="wsAudioPlayerSegment.splitSegment">
          <segment>
-            <source>Add/Remove Boundary [Double Click/{0}]</source>
+            <source>Add Boundary [Double Click/{0}]</source>
             <target>Tambahkan/Hapus Batas [Klik 2 kali/{0}]</target>
-         </segment>
-      </unit>
-      <unit id="wsAudioPlayerSegment.teamDefault">
-         <segment>
-            <source>Save as team default</source>
-            <target>Simpan sebagai default tim</target>
          </segment>
       </unit>
       <unit id="wsAudioPlayerZoom.fitToWidth">

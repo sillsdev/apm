@@ -289,6 +289,12 @@
             <target>词语回译</target>
          </segment>
       </unit>
+      <unit id="artifactType.carefulspeech">
+         <segment>
+            <source>Careful speech</source>
+            <target>清晰发音</target>
+         </segment>
+      </unit>
       <unit id="artifactType.comment">
          <segment>
             <source>Comment</source>
@@ -679,10 +685,286 @@
             <target>音频下载</target>
          </segment>
       </unit>
+      <unit id="burrito.apmData">
+         <segment>
+            <source>APM Data</source>
+            <target>APM 数据</target>
+         </segment>
+      </unit>
+      <unit id="burrito.audio">
+         <segment>
+            <source>Audio</source>
+            <target>音频</target>
+         </segment>
+      </unit>
+      <unit id="burrito.backTranslation">
+         <segment>
+            <source>Back Translation</source>
+            <target>反向翻译</target>
+         </segment>
+      </unit>
+      <unit id="burrito.books">
+         <segment>
+            <source>Books</source>
+            <target>书籍</target>
+         </segment>
+      </unit>
+      <unit id="burrito.cancelCreation">
+         <segment>
+            <source>Cancel burrito creation</source>
+            <target>取消制作“Burrito”</target>
+         </segment>
+      </unit>
+      <unit id="burrito.create">
+         <segment>
+            <source>Create Burrito</source>
+            <target>制作“Burrito”</target>
+         </segment>
+      </unit>
+      <unit id="burrito.createAudio">
+         <segment>
+            <source>Create audio burrito</source>
+            <target>制作音频“Burrito”</target>
+         </segment>
+      </unit>
+      <unit id="burrito.createText">
+         <segment>
+            <source>Create text burrito</source>
+            <target>制作文本“Burrito”</target>
+         </segment>
+      </unit>
+      <unit id="burrito.createNotes">
+         <segment>
+            <source>Create notes burrito</source>
+            <target>制作笔记“Burrito”</target>
+         </segment>
+      </unit>
+      <unit id="burrito.createResources">
+         <segment>
+            <source>Create resources burrito</source>
+            <target>制作资源“Burrito”</target>
+         </segment>
+      </unit>
+      <unit id="burrito.createIntellectualProperty">
+         <segment>
+            <source>Create intellectual property burrito</source>
+            <target>制作知识产权“Burrito”</target>
+         </segment>
+      </unit>
+      <unit id="burrito.createNavigation">
+         <segment>
+            <source>Create navigation burrito</source>
+            <target>制作导航“Burrito”</target>
+         </segment>
+      </unit>
+      <unit id="burrito.createData">
+         <segment>
+            <source>Create data burrito</source>
+            <target>制作数据“Burrito”</target>
+         </segment>
+      </unit>
+      <unit id="burrito.createOther">
+         <segment>
+            <source>Create {0} burrito</source>
+            <target>制作 {0} “Burrito”</target>
+         </segment>
+      </unit>
+      <unit id="burrito.communityFeedback">
+         <segment>
+            <source>Community Feedback</source>
+            <target>社区反馈</target>
+         </segment>
+      </unit>
+      <unit id="burrito.contents">
+         <segment>
+            <source>Contents</source>
+            <target>目录</target>
+         </segment>
+      </unit>
+      <unit id="burrito.convertToMp3">
+         <segment>
+            <source>Convert to mp3</source>
+            <target>转换为 mp3</target>
+         </segment>
+      </unit>
+      <unit id="burrito.deselectAll">
+         <segment>
+            <source>Deselect All</source>
+            <target>全选取消</target>
+         </segment>
+      </unit>
+      <unit id="burrito.discussions">
+         <segment>
+            <source>Discussions</source>
+            <target>讨论</target>
+         </segment>
+      </unit>
+      <unit id="burrito.enterNewValue">
+         <segment>
+            <source>Please enter the new value for</source>
+            <target>请输入新值</target>
+         </segment>
+      </unit>
+      <unit id="burrito.failed">
+         <segment>
+            <source>Failed to create burrito</source>
+            <target>创建burrito失败</target>
+         </segment>
+      </unit>
+      <unit id="burrito.format">
+         <segment>
+            <source>Format</source>
+            <target>格式</target>
+         </segment>
+      </unit>
+      <unit id="burrito.intellectualProperty">
+         <segment>
+            <source>Intellectual Property</source>
+            <target>知识产权</target>
+         </segment>
+      </unit>
+      <unit id="burrito.navigation">
+         <segment>
+            <source>Navigation</source>
+            <target>导航</target>
+         </segment>
+      </unit>
+      <unit id="burrito.notes">
+         <segment>
+            <source>Notes</source>
+            <target>备注</target>
+         </segment>
+      </unit>
+      <unit id="burrito.open">
+         <segment>
+            <source>Open</source>
+            <target>打开</target>
+         </segment>
+      </unit>
+      <unit id="burrito.preparing">
+         <segment>
+            <source>Preparing burrito...</source>
+            <target>正在准备burrito...</target>
+         </segment>
+      </unit>
+      <unit id="burrito.projects">
+         <segment>
+            <source>Projects</source>
+            <target>项目</target>
+         </segment>
+      </unit>
+      <unit id="burrito.resources">
+         <segment>
+            <source>Resources</source>
+            <target>资源</target>
+         </segment>
+      </unit>
+      <unit id="burrito.selectAll">
+         <segment>
+            <source>Select All</source>
+            <target>全选</target>
+         </segment>
+      </unit>
+      <unit id="burrito.selectedBooks">
+         <segment>
+            <source>Selected Books</source>
+            <target>已选书籍</target>
+         </segment>
+      </unit>
+      <unit id="burrito.success">
+         <segment>
+            <source>Burrito created successfully!</source>
+            <target>墨西哥卷饼已成功创建！</target>
+         </segment>
+      </unit>
+      <unit id="burrito.terms">
+         <segment>
+            <source>Terms</source>
+            <target>术语</target>
+         </segment>
+      </unit>
+      <unit id="burrito.text">
+         <segment>
+            <source>Text</source>
+            <target>文本</target>
+         </segment>
+      </unit>
+      <unit id="burrito.textOutputFormat">
+         <segment>
+            <source>Text output format</source>
+            <target>文本输出格式</target>
+         </segment>
+      </unit>
+      <unit id="burrito.textOutputUsfm">
+         <segment>
+            <source>USFM</source>
+            <target>USFM</target>
+         </segment>
+      </unit>
+      <unit id="burrito.textOutputUsj">
+         <segment>
+            <source>USJ</source>
+            <target>USJ</target>
+         </segment>
+      </unit>
+      <unit id="burrito.textOutputUsx">
+         <segment>
+            <source>USX</source>
+            <target>USX</target>
+         </segment>
+      </unit>
+      <unit id="burrito.updateValue">
+         <segment>
+            <source>Update Value</source>
+            <target>更新值</target>
+         </segment>
+      </unit>
+      <unit id="burrito.valueWarning">
+         <segment>
+            <source>Warning: Input contains JSON structural characters (quotes, curly braces, or square brackets)</source>
+            <target>警告：输入内容包含 JSON 结构字符（引号、大括号或方括号）</target>
+         </segment>
+      </unit>
+      <unit id="burrito.vernacularAudioMissingTranscriptionListTitle">
+         <segment>
+            <source>Passages missing transcriptions (first {0})</source>
+            <target>部分段落缺少转录内容（第一个 {0}）</target>
+         </segment>
+      </unit>
+      <unit id="burrito.vernacularAudioMissingTranscriptionTitle">
+         <segment>
+            <source>Missing transcription(s)</source>
+            <target>缺少转录内容</target>
+         </segment>
+      </unit>
+      <unit id="burrito.vernacularAudioMissingTranscriptionWarning">
+         <segment>
+            <source>Audio files without transcriptions will make it difficult to associate the audio with the proper section.</source>
+            <target>没有文字转录的音频文件会难以将其与相应的章节对应起来。</target>
+         </segment>
+      </unit>
+      <unit id="burrito.wrapper">
+         <segment>
+            <source>Wrapper</source>
+            <target>封装器</target>
+         </segment>
+      </unit>
       <unit id="cards.add">
          <segment>
             <source>Add</source>
             <target>添加</target>
+         </segment>
+      </unit>
+      <unit id="cards.addNewProject">
+         <segment>
+            <source>Add New Project...</source>
+            <target>添加新项目...</target>
+         </segment>
+      </unit>
+      <unit id="cards.addNewTeam">
+         <segment>
+            <source>Add New Team...</source>
+            <target>添加新团队...</target>
          </segment>
       </unit>
       <unit id="cards.addTeam">
@@ -727,6 +1009,18 @@
             <target>圣经名称</target>
          </segment>
       </unit>
+      <unit id="cards.bold">
+         <segment>
+            <source>BOLD (Basic Oral Language Documentation)</source>
+            <target>BOLD（基础口语语言记录）</target>
+         </segment>
+      </unit>
+      <unit id="cards.boldProcessInfo">
+         <segment>
+            <source>Setting Step Progression and AI Automatic Transcription.</source>
+            <target>设置步骤流程和 AI 自动转录。</target>
+         </segment>
+      </unit>
       <unit id="cards.cancel">
          <segment>
             <source>Cancel</source>
@@ -763,22 +1057,16 @@
             <target>复制完整的 {0}</target>
          </segment>
       </unit>
-      <unit id="cards.copyNew">
+      <unit id="cards.copyProject">
          <segment>
-            <source>Copy project to new team.</source>
-            <target>复制项目到新团队。</target>
+            <source>Copy project</source>
+            <target>复制项目</target>
          </segment>
       </unit>
       <unit id="cards.copyright">
          <segment>
             <source>Copyright</source>
             <target>版权</target>
-         </segment>
-      </unit>
-      <unit id="cards.copySame">
-         <segment>
-            <source>Copy project to same team.</source>
-            <target>复制项目到同一个团队。</target>
          </segment>
       </unit>
       <unit id="cards.copyStatus">
@@ -901,6 +1189,18 @@
             <target>音频方案</target>
          </segment>
       </unit>
+      <unit id="cards.newTeam">
+         <segment>
+            <source>new team</source>
+            <target>新建团队</target>
+         </segment>
+      </unit>
+      <unit id="cards.noProjects">
+         <segment>
+            <source>No projects yet.</source>
+            <target>尚无项目。</target>
+         </segment>
+      </unit>
       <unit id="cards.normalize">
          <segment>
             <source>Audio Normalize</source>
@@ -959,6 +1259,12 @@
          <segment>
             <source>Passages Created</source>
             <target>己创建的片段</target>
+         </segment>
+      </unit>
+      <unit id="cards.personal">
+         <segment>
+            <source>Personal</source>
+            <target>个人</target>
          </segment>
       </unit>
       <unit id="cards.personalProjects">
@@ -1045,6 +1351,12 @@
             <target>排序项目</target>
          </segment>
       </unit>
+      <unit id="cards.switchTeams">
+         <segment>
+            <source>Switch Teams</source>
+            <target>切换团队</target>
+         </segment>
+      </unit>
       <unit id="cards.notesHelper">
          <segment>
             <source>Shared explanations, rationales, footnotes, etc.</source>
@@ -1069,6 +1381,12 @@
             <target>同步 ({0})</target>
          </segment>
       </unit>
+      <unit id="cards.teams">
+         <segment>
+            <source>Teams</source>
+            <target>团队</target>
+         </segment>
+      </unit>
       <unit id="cards.teamName">
          <segment>
             <source>Team Name</source>
@@ -1085,6 +1403,12 @@
          <segment>
             <source>Transcribing</source>
             <target>听写中</target>
+         </segment>
+      </unit>
+      <unit id="cards.unassigned">
+         <segment>
+            <source>Unassigned</source>
+            <target>未分配</target>
          </segment>
       </unit>
       <unit id="cards.uploadProgress">
@@ -1273,6 +1597,12 @@
             <target>添加 {0}</target>
          </segment>
       </unit>
+      <unit id="community.autoSegment">
+         <segment>
+            <source>Use {0} for autosegmentation, or tap in the waveform and use + for manual segmentation</source>
+            <target>使用 {0} 进行自动分段，或在波形上点击并使用 + 进行手动分段</target>
+         </segment>
+      </unit>
       <unit id="community.backTranslationComplete">
          <segment>
             <source>Version {0}: Back translation: {1}</source>
@@ -1295,6 +1625,12 @@
          <segment>
             <source>Do later</source>
             <target>一会再做</target>
+         </segment>
+      </unit>
+      <unit id="community.listen">
+         <segment>
+            <source>Use {0} to listen to the passage</source>
+            <target>使用 {0} 收听该片段</target>
          </segment>
       </unit>
       <unit id="community.loading">
@@ -1372,7 +1708,13 @@
       <unit id="community.selectSegments">
          <segment>
             <source>Select Segments</source>
-            <target/>
+            <target>选择片段</target>
+         </segment>
+      </unit>
+      <unit id="community.selectSpeaker">
+         <segment>
+            <source>Select Speaker</source>
+            <target>选择说话者</target>
          </segment>
       </unit>
       <unit id="community.speaker">
@@ -1409,6 +1751,192 @@
          <segment>
             <source>The recorded permission is used both as a voice sample to change the audio and as a license to use the voice sample in recordings. A suggested script for the recorded permission is given which can be personalized.</source>
             <target>录制的许可既可用作更改音频的语音样本，也可用作在录音中使用语音样本的许可。建议的录音许可脚本可进行个性化设置。</target>
+         </segment>
+      </unit>
+      <unit id="carefulSpeech.allComplete">
+         <segment>
+            <source>All clauses are complete.</source>
+            <target>所有子句均已完成。</target>
+         </segment>
+      </unit>
+      <unit id="carefulSpeech.boldOnly">
+         <segment>
+            <source>Careful Speech is only available for BOLD workflow teams.</source>
+            <target>“谨慎发言”功能仅对 BOLD 工作流团队开放。</target>
+         </segment>
+      </unit>
+      <unit id="carefulSpeech.clause">
+         <segment>
+            <source>Clause: {0}</source>
+            <target>子句：{0}</target>
+         </segment>
+      </unit>
+      <unit id="carefulSpeech.clearRecording">
+         <segment>
+            <source>Clear Recording</source>
+            <target>清除录音</target>
+         </segment>
+      </unit>
+      <unit id="carefulSpeech.combineWithNextClause">
+         <segment>
+            <source>Combine with Next Clause</source>
+            <target>与下一句合并</target>
+         </segment>
+      </unit>
+      <unit id="carefulSpeech.fewerClauses">
+         <segment>
+            <source>Fewer Clauses</source>
+            <target>减少句子数量</target>
+         </segment>
+      </unit>
+      <unit id="carefulSpeech.longer">
+         <segment>
+            <source>Longer</source>
+            <target>延长时长</target>
+         </segment>
+      </unit>
+      <unit id="carefulSpeech.moreClauses">
+         <segment>
+            <source>More Clauses</source>
+            <target>增加句子数量</target>
+         </segment>
+      </unit>
+      <unit id="carefulSpeech.nextClause">
+         <segment>
+            <source>Next Clause</source>
+            <target>下一句</target>
+         </segment>
+      </unit>
+      <unit id="carefulSpeech.shorter">
+         <segment>
+            <source>Shorter</source>
+            <target>缩短时长</target>
+         </segment>
+      </unit>
+      <unit id="carefulSpeech.splitClause">
+         <segment>
+            <source>Split Clause</source>
+            <target>拆分句子</target>
+         </segment>
+      </unit>
+      <unit id="carefulSpeech.speaker">
+         <segment>
+            <source>Speaker</source>
+            <target>发言人</target>
+         </segment>
+      </unit>
+      <unit id="carefulSpeech.startRecording">
+         <segment>
+            <source>Start Recording</source>
+            <target>开始录音</target>
+         </segment>
+      </unit>
+      <unit id="carefulSpeech.undo">
+         <segment>
+            <source>Undo</source>
+            <target>撤销</target>
+         </segment>
+      </unit>
+      <unit id="carefulTranscription.clauseIndex">
+         <segment>
+            <source>Clause {0}/{1}</source>
+            <target>句子 {0}/{1}</target>
+         </segment>
+      </unit>
+      <unit id="carefulTranscription.nextClause">
+         <segment>
+            <source>Next Clause</source>
+            <target>下一句</target>
+         </segment>
+      </unit>
+      <unit id="carefulTranscription.noClauses">
+         <segment>
+            <source>No clause segments found. Complete the Careful Speech step first.</source>
+            <target>未找到句子片段。请先完成“谨慎发言”步骤。</target>
+         </segment>
+      </unit>
+      <unit id="carefulTranscription.noRecordingLanguage">
+         <segment>
+            <source>Language is not configured for automatic transcription.</source>
+            <target>未配置支持自动转录的语言。</target>
+         </segment>
+      </unit>
+      <unit id="carefulTranscription.prerequisite">
+         <segment>
+            <source>Complete Careful Speech for every clause before starting Careful transcription.</source>
+            <target>在开始“谨慎转录”之前，请先为每个句子完成“谨慎发言”步骤。</target>
+         </segment>
+      </unit>
+      <unit id="carefulTranscription.progress">
+         <segment>
+            <source>{0} of {1} clauses transcribed</source>
+            <target>已转录 {0} 个条款（共 {1} 个）</target>
+         </segment>
+      </unit>
+      <unit id="lwcTranslation.boldOnly">
+         <segment>
+            <source>LWC Translation is only available for BOLD workflow teams.</source>
+            <target>LWC 翻译功能仅面向 BOLD 工作流团队开放。</target>
+         </segment>
+      </unit>
+      <unit id="lwcTranslation.clauseIndex">
+         <segment>
+            <source>Clause {0}/{1}</source>
+            <target>条款 {0}/{1}</target>
+         </segment>
+      </unit>
+      <unit id="lwcTranslation.noClauses">
+         <segment>
+            <source>No clause segments found. Complete the Careful Speech step first.</source>
+            <target>未找到条款片段。请先完成“审慎表述”步骤。</target>
+         </segment>
+      </unit>
+      <unit id="lwcTranslation.prerequisite">
+         <segment>
+            <source>Complete Careful Speech for every clause before starting LWC translation.</source>
+            <target>在开始 LWC 翻译之前，请先为每个子句完成“谨慎发言”步骤。</target>
+         </segment>
+      </unit>
+      <unit id="lwcTranslation.progress">
+         <segment>
+            <source>{0} of {1} clauses recorded</source>
+            <target>已录入 {0} 个子句（共 {1} 个）</target>
+         </segment>
+      </unit>
+      <unit id="lwcTranscription.clauseIndex">
+         <segment>
+            <source>Clause {0}/{1}</source>
+            <target>子句 {0}/{1}</target>
+         </segment>
+      </unit>
+      <unit id="lwcTranscription.nextClause">
+         <segment>
+            <source>Next Clause</source>
+            <target>下一个子句</target>
+         </segment>
+      </unit>
+      <unit id="lwcTranscription.noClauses">
+         <segment>
+            <source>No clause segments found. Complete the Careful Speech step first.</source>
+            <target>未找到子句片段。请先完成“谨慎发言”步骤。</target>
+         </segment>
+      </unit>
+      <unit id="lwcTranscription.noLwcLanguage">
+         <segment>
+            <source>LWC language is not configured on the LWC Translation step.</source>
+            <target>LWC 翻译步骤中未配置 LWC 语言。</target>
+         </segment>
+      </unit>
+      <unit id="lwcTranscription.prerequisite">
+         <segment>
+            <source>Complete LWC Translation for every clause before starting LWC transcription.</source>
+            <target>在开始 LWC 转录之前，请先完成每个子句的 LWC 翻译。</target>
+         </segment>
+      </unit>
+      <unit id="lwcTranscription.progress">
+         <segment>
+            <source>{0} of {1} clauses transcribed</source>
+            <target>已转录 {0} 个子句，共 {1} 个</target>
          </segment>
       </unit>
       <unit id="consultantCheck.checked">
@@ -1642,7 +2170,7 @@
       <unit id="discussionList.close">
          <segment>
             <source>Hide Discussion pane</source>
-            <target/>
+            <target>隐藏“讨论”窗格</target>
          </segment>
       </unit>
       <unit id="discussionList.collapse">
@@ -1666,7 +2194,7 @@
       <unit id="discussionList.open">
          <segment>
             <source>Show Discussion pane</source>
-            <target/>
+            <target>显示“讨论”窗格</target>
          </segment>
       </unit>
       <unit id="discussionList.saveFirst">
@@ -1717,10 +2245,52 @@
             <target>设置段</target>
          </segment>
       </unit>
+      <unit id="electronAuth.abortLogin">
+         <segment>
+            <source>Abort Login</source>
+            <target>取消登录</target>
+         </segment>
+      </unit>
+      <unit id="electronAuth.back">
+         <segment>
+            <source>Back</source>
+            <target>返回</target>
+         </segment>
+      </unit>
+      <unit id="electronAuth.exit">
+         <segment>
+            <source>Exit</source>
+            <target>退出</target>
+         </segment>
+      </unit>
+      <unit id="electronAuth.loginFailed">
+         <segment>
+            <source>Login failed</source>
+            <target>登录失败</target>
+         </segment>
+      </unit>
+      <unit id="electronAuth.tokenExchangeFailed">
+         <segment>
+            <source>Could not complete sign-in (token exchange failed).</source>
+            <target>无法完成登录（令牌交换失败）。</target>
+         </segment>
+      </unit>
+      <unit id="electronAuth.tryAgain">
+         <segment>
+            <source>Try again</source>
+            <target>重试</target>
+         </segment>
+      </unit>
+      <unit id="electronAuth.workOffline">
+         <segment>
+            <source>Work offline</source>
+            <target>离线工作</target>
+         </segment>
+      </unit>
       <unit id="electronImport.allDataOverwritten">
          <segment>
-            <source>All {name0} data will be overwritten.</source>
-            <target>完全 {name0} 数据将被刷入</target>
+            <source>All '{name0}' data will be overwritten.</source>
+            <target>所有“{name0}”数据都将被覆盖。</target>
          </segment>
       </unit>
       <unit id="electronImport.exportedLost">
@@ -1767,8 +2337,8 @@
       </unit>
       <unit id="electronImport.lastExported">
          <segment>
-            <source>Current data in audio project {name0} was last exported {date0}.</source>
-            <target>音频项目中的当前数据 {name0} 最近输出 {date0}.</target>
+            <source>Current data in audio project '{name0}' was last exported {date0}.</source>
+            <target>音频项目“{name0}”中的当前数据最后一次导出时间为{date0}。</target>
          </segment>
       </unit>
       <unit id="electronImport.members">
@@ -1779,8 +2349,8 @@
       </unit>
       <unit id="electronImport.neverExported">
          <segment>
-            <source>Current data in audio project {name0} has never been exported to an itf file to preserve changes.</source>
-            <target>音频项目中的当前数据 {name0} 从来没被输出到itf 文件为了保持改变。</target>
+            <source>Current data in audio project '{name0}' has never been exported to an itf file to preserve changes.</source>
+            <target>音频项目“{name0}”中的当前数据从未导出为itf文件以保留更改。</target>
          </segment>
       </unit>
       <unit id="electronImport.newerVersion">
@@ -1797,8 +2367,8 @@
       </unit>
       <unit id="electronImport.projectImported">
          <segment>
-            <source>Audio Project {name0} was previously imported with a newer file: {date1} </source>
-            <target>音频项目 {name0} 以前被输入跟更新的文件： {date1} </target>
+            <source>Audio Project '{name0}' was previously imported with a newer file: {date1} </source>
+            <target>音频项目“{name0}”此前曾使用较新文件导入：{date1} </target>
          </segment>
       </unit>
       <unit id="electronImport.ptfError">
@@ -1903,6 +2473,54 @@
             <target>视频</target>
          </segment>
       </unit>
+      <unit id="filterContent.allChapters">
+         <segment>
+            <source>All Chapters of {0}</source>
+            <target>{0} 的所有章节</target>
+         </segment>
+      </unit>
+      <unit id="filterContent.allBooks">
+         <segment>
+            <source>All Books</source>
+            <target>所有书籍</target>
+         </segment>
+      </unit>
+      <unit id="filterContent.audioContent">
+         <segment>
+            <source>Audio Content</source>
+            <target>音频内容</target>
+         </segment>
+      </unit>
+      <unit id="filterContent.other">
+         <segment>
+            <source>Other</source>
+            <target>其他</target>
+         </segment>
+      </unit>
+      <unit id="filterContent.title">
+         <segment>
+            <source>Scripture Burrito: {0}</source>
+            <target>经文卷饼：{0}</target>
+         </segment>
+      </unit>
+      <unit id="filterContent.transcriptionContent">
+         <segment>
+            <source>Transcription Content</source>
+            <target>转录内容</target>
+         </segment>
+      </unit>
+      <unit id="filterContent.subtitle1">
+         <segment>
+            <source>Please select the information you want to import into your team.</source>
+            <target>请选择您要导入到团队中的信息。</target>
+         </segment>
+      </unit>
+      <unit id="filterContent.subtitle2">
+         <segment>
+            <source>Each selected book will be imported as a separate project.</source>
+            <target>每本选中的书籍都将作为独立项目导入。</target>
+         </segment>
+      </unit>
       <unit id="filterMenu.all">
          <segment>
             <source>All</source>
@@ -1949,12 +2567,6 @@
          <segment>
             <source>Resolved</source>
             <target>已解决</target>
-         </segment>
-      </unit>
-      <unit id="filterMenu.saveFilter">
-         <segment>
-            <source>Save as team default</source>
-            <target>保存为团队默认</target>
          </segment>
       </unit>
       <unit id="findResource.add">
@@ -2181,8 +2793,8 @@
       </unit>
       <unit id="findResource.querying">
          <segment>
-            <source>Querying...</source>
-            <target>查询...</target>
+            <source>Loading...</source>
+            <target>正在加载...</target>
          </segment>
       </unit>
       <unit id="findResource.queryBuilder">
@@ -2279,6 +2891,84 @@
          <segment>
             <source>Audio Bible with verse timing</source>
             <target>带经文计时的有声圣经</target>
+         </segment>
+      </unit>
+      <unit id="graphic.graphicDisplay">
+         <segment>
+            <source>Display current graphic</source>
+            <target>显示当前图示</target>
+         </segment>
+      </unit>
+      <unit id="graphic.graphicSearch">
+         <segment>
+            <source>Search graphics</source>
+            <target>搜索图示</target>
+         </segment>
+      </unit>
+      <unit id="graphic.graphicSource">
+         <segment>
+            <source>graphic source tabs</source>
+            <target>图片来源标签页</target>
+         </segment>
+      </unit>
+      <unit id="graphic.keywordSearchHint">
+         <segment>
+            <source>The Keywords search only filters the keyword list. To filter images, select one or more keywords or use the main search.</source>
+            <target>“关键词”搜索仅对关键词列表进行筛选。若要筛选图片，请选择一个或多个关键词，或使用主搜索功能。</target>
+         </segment>
+      </unit>
+      <unit id="graphic.loadFailure">
+         <segment>
+            <source>Failed to load</source>
+            <target>加载失败</target>
+         </segment>
+      </unit>
+      <unit id="graphic.noResults">
+         <segment>
+            <source>No matching images found. Try a different search or adjust the filters.</source>
+            <target>未找到匹配的图片。请尝试其他搜索或调整筛选条件。</target>
+         </segment>
+      </unit>
+      <unit id="graphic.noSelection">
+         <segment>
+            <source>no {0} selected.</source>
+            <target>未选择 {0}。</target>
+         </segment>
+      </unit>
+      <unit id="graphic.placeHolder">
+         <segment>
+            <source>title and keyword search words</source>
+            <target>标题和关键词搜索词</target>
+         </segment>
+      </unit>
+      <unit id="graphic.setGraphic">
+         <segment>
+            <source>Set as Graphic</source>
+            <target>设为图片</target>
+         </segment>
+      </unit>
+      <unit id="graphic.tabCurrent">
+         <segment>
+            <source>Current</source>
+            <target>当前</target>
+         </segment>
+      </unit>
+      <unit id="graphic.tabCustom">
+         <segment>
+            <source>Custom</source>
+            <target>自定义</target>
+         </segment>
+      </unit>
+      <unit id="graphic.tabBible">
+         <segment>
+            <source>Library</source>
+            <target>图库</target>
+         </segment>
+      </unit>
+      <unit id="graphic.title">
+         <segment>
+            <source>Graphic Picker</source>
+            <target>图片选择器</target>
          </segment>
       </unit>
       <unit id="grid.all">
@@ -2503,6 +3193,24 @@
             <target>空格</target>
          </segment>
       </unit>
+      <unit id="import.burritoConvertingBook">
+         <segment>
+            <source>Converting book {0} of {1}: {2}</source>
+            <target>正在转换第 {0} 本（共 {1} 本）：{2}</target>
+         </segment>
+      </unit>
+      <unit id="import.burritoPreparingLocal">
+         <segment>
+            <source>Preparing Scripture Burrito locally...</source>
+            <target>正在本地准备“经文卷饼”...</target>
+         </segment>
+      </unit>
+      <unit id="import.burritoReadingFiles">
+         <segment>
+            <source>Reading files {0} of {1}</source>
+            <target>正在读取文件 {0}（共 {1} 个）</target>
+         </segment>
+      </unit>
       <unit id="import.close">
          <segment>
             <source>Close</source>
@@ -2511,8 +3219,8 @@
       </unit>
       <unit id="import.continue">
          <segment>
-            <source>Continue?</source>
-            <target>是否继续？</target>
+            <source>Continue</source>
+            <target>继续</target>
          </segment>
       </unit>
       <unit id="import.copy">
@@ -2527,10 +3235,28 @@
             <target>复制失败</target>
          </segment>
       </unit>
+      <unit id="import.createNewTeam">
+         <segment>
+            <source>Create new team</source>
+            <target>创建新团队</target>
+         </segment>
+      </unit>
       <unit id="import.error">
          <segment>
             <source>Import Error</source>
             <target>导入错误</target>
+         </segment>
+      </unit>
+      <unit id="import.externalSource">
+         <segment>
+            <source>Create a new project in APM from an external source (.ptf)</source>
+            <target>从外部源（.ptf）在 APM 中创建新项目</target>
+         </segment>
+      </unit>
+      <unit id="import.externalSourceBurrito">
+         <segment>
+            <source>Create a new project in APM from a Scripture Burrito</source>
+            <target>从 Scripture Burrito 在 APM 中创建新项目</target>
          </segment>
       </unit>
       <unit id="import.family">
@@ -2581,6 +3307,12 @@
             <target>导入进行中...</target>
          </segment>
       </unit>
+      <unit id="import.fileProcessing">
+         <segment>
+            <source>Processing file {0} of {1}</source>
+            <target>正在处理第 {0} 个文件（共 {1} 个）</target>
+         </segment>
+      </unit>
       <unit id="import.importProject">
          <segment>
             <source>Import Audio Project</source>
@@ -2593,28 +3325,28 @@
             <target>同步更改</target>
          </segment>
       </unit>
-      <unit id="import.importSyncUp">
-         <segment>
-            <source>Syncing offline changes</source>
-            <target>同步离线更改</target>
-         </segment>
-      </unit>
       <unit id="import.importSyncDown">
          <segment>
             <source>Syncing online changes</source>
             <target>同步在线更改</target>
          </segment>
       </unit>
+      <unit id="import.importSyncUp">
+         <segment>
+            <source>Syncing offline changes</source>
+            <target>同步离线更改</target>
+         </segment>
+      </unit>
+      <unit id="import.incrementalImport">
+         <segment>
+            <source>Import Incremental Changes from an offline coworker (.itf)</source>
+            <target>从离线同事处导入增量更改（.itf）</target>
+         </segment>
+      </unit>
       <unit id="import.invalidITF">
          <segment>
             <source>Not a valid Incremental Transcriber File (ITF).</source>
             <target>不是有效的增量听写文件 (ITF)。</target>
-         </segment>
-      </unit>
-      <unit id="import.unknownError">
-         <segment>
-            <source>If this error occurred while importing offline changes, please close the app immediately and reopen. If the error persists, contact support. If you continue to use the app, you will lose offline changes.</source>
-            <target>如果在导入离线更改时出现此错误，请立即关闭应用程序并重新打开。 如果错误仍然存在，请联系技术支持。 如果继续使用应用程序，您将丢失离线更改。</target>
          </segment>
       </unit>
       <unit id="import.invalidProject">
@@ -2629,10 +3361,22 @@
             <target>首选语言</target>
          </segment>
       </unit>
+      <unit id="import.newTeamChainFailed">
+         <segment>
+            <source>Could not determine the new team after the first import. Import the first file alone, then add the rest to that team.</source>
+            <target>首次导入后无法确定新团队。请先单独导入第一个文件，然后将其余文件添加到该团队中。</target>
+         </segment>
+      </unit>
       <unit id="import.noFile">
          <segment>
             <source>Please select file to be uploaded.</source>
             <target>请选择要上传的文件。</target>
+         </segment>
+      </unit>
+      <unit id="import.offlineImport">
+         <segment>
+            <source>Import an APM Project File to use offline and sync when online, or a project file from an external source that you will only use offline. Projects from an external source that are not imported while online cannot be synced online.</source>
+            <target>导入 APM 项目文件以便离线使用并在上线时同步，或者从外部来源导入仅用于离线使用的项目文件。来自外部来源且未在在线状态下导入的项目无法在线同步。</target>
          </segment>
       </unit>
       <unit id="import.old">
@@ -2683,6 +3427,18 @@
             <target>ITF 不包含当前音频项目。它包含音频项目 {0}。</target>
          </segment>
       </unit>
+      <unit id="import.selectImportFileType">
+         <segment>
+            <source>Select import file type:</source>
+            <target>选择导入文件类型：</target>
+         </segment>
+      </unit>
+      <unit id="import.selectTeam">
+         <segment>
+            <source>Select Team</source>
+            <target>选择团队</target>
+         </segment>
+      </unit>
       <unit id="import.showHideFilter">
          <segment>
             <source>Show/Hide filter rows</source>
@@ -2713,10 +3469,76 @@
             <target>未分配</target>
          </segment>
       </unit>
+      <unit id="import.fileTooLarge">
+         <segment>
+            <source>File exceeds maximum size of {0}</source>
+            <target>文件大小超过 {0} 的最大限制</target>
+         </segment>
+      </unit>
+      <unit id="import.unknownError">
+         <segment>
+            <source>If this error occurred while syncing offline changes, please close the app immediately and reopen. If the error persists, contact support. If you continue to use the app, you will lose offline changes.</source>
+            <target>如果此错误发生在同步离线更改时，请立即关闭应用并重新打开。如果错误仍然存在，请联系客服。如果您继续使用该应用，离线更改将会丢失。</target>
+         </segment>
+      </unit>
       <unit id="import.username">
          <segment>
             <source>Name</source>
             <target>名称</target>
+         </segment>
+      </unit>
+      <unit id="scriptureBurritoImport.title">
+         <segment>
+            <source>Import Scripture Burrito</source>
+            <target>导入 Scripture Burrito</target>
+         </segment>
+      </unit>
+      <unit id="scriptureBurritoImport.zipExtractError">
+         <segment>
+            <source>Failed to extract zip file</source>
+            <target>无法解压 zip 文件</target>
+         </segment>
+      </unit>
+      <unit id="scriptureBurritoImport.metadataNotFoundError">
+         <segment>
+            <source>metadata.json not found in the selected file/directory</source>
+            <target>在所选文件/目录中未找到 metadata.json</target>
+         </segment>
+      </unit>
+      <unit id="scriptureBurritoImport.invalidWrapperMetadataError">
+         <segment>
+            <source>Invalid format: expected \"scripture burrito wrapper\"</source>
+            <target>格式无效：预期为 \"scripture burrito wrapper\"</target>
+         </segment>
+      </unit>
+      <unit id="scriptureBurritoImport.subtitle">
+         <segment>
+            <source>Select a Burrito directory or a .zip file to extract and import.</source>
+            <target>选择一个 Burrito 目录或 .zip 文件进行解压并导入。</target>
+         </segment>
+      </unit>
+      <unit id="scriptureBurritoImport.browseDirectory">
+         <segment>
+            <source>Browse Directory</source>
+            <target>浏览目录</target>
+         </segment>
+      </unit>
+      <unit id="scriptureBurritoImport.browseZipFile">
+         <segment>
+            <source>Browse Zip File</source>
+            <target>浏览 Zip 文件</target>
+         </segment>
+      </unit>
+      <unit id="scriptureBurritoImport.selected">
+         <segment>
+            <source>Selected: </source>
+            <target>已选中：</target>
+         </segment>
+      </unit>
+      <unit id="scriptureBurritoImport.wrapperNotFoundError">
+         <segment>
+            <source>wrapper.json not found in the selected file/directory</source>
+            <target>在所选文件/目录中未找到 wrapper.json</target>
          </segment>
       </unit>
       <unit id="integration.allCriteria">
@@ -3415,6 +4237,12 @@
             <target>关于</target>
          </segment>
       </unit>
+      <unit id="main.addSectionOrPassage">
+         <segment>
+            <source>Add {0} or Passage</source>
+            <target>添加 {0} 或 Passage</target>
+         </segment>
+      </unit>
       <unit id="main.admin">
          <segment>
             <source>Admin</source>
@@ -3523,6 +4351,12 @@
             <target>圣经平坦样本电子表格</target>
          </segment>
       </unit>
+      <unit id="main.genericError">
+         <segment>
+            <source>Error: {0}</source>
+            <target>错误：{0}</target>
+         </segment>
+      </unit>
       <unit id="main.genFlatSample">
          <segment>
             <source>General flat sample spreadsheet</source>
@@ -3619,6 +4453,12 @@
             <target>音频</target>
          </segment>
       </unit>
+      <unit id="main.mobileView">
+         <segment>
+            <source>Mobile View</source>
+            <target>移动端视图</target>
+         </segment>
+      </unit>
       <unit id="main.myAccount">
          <segment>
             <source>My Account</source>
@@ -3697,6 +4537,12 @@
             <target>保存中...</target>
          </segment>
       </unit>
+      <unit id="main.scriptureBurrito">
+         <segment>
+            <source>Scripture Burrito</source>
+            <target>Scripture Burrito</target>
+         </segment>
+      </unit>
       <unit id="main.sessionExpireTask">
          <segment>
             <source>Your session will expire in {0} seconds. Would you like to continue?</source>
@@ -3769,6 +4615,12 @@
             <target>可用更新版：版本 {0} 已发布 {1}</target>
          </segment>
       </unit>
+      <unit id="main.upload">
+         <segment>
+            <source>Upload</source>
+            <target>上传</target>
+         </segment>
+      </unit>
       <unit id="main.version">
          <segment>
             <source>Version: {0} - {1}</source>
@@ -3795,8 +4647,8 @@
       </unit>
       <unit id="mediaActions.delete">
          <segment>
-            <source>Delete</source>
-            <target>删除</target>
+            <source>Clear</source>
+            <target>清除</target>
          </segment>
       </unit>
       <unit id="mediaActions.detach">
@@ -4025,6 +4877,66 @@
          <segment>
             <source>Passage already attached</source>
             <target>片段已经附加了</target>
+         </segment>
+      </unit>
+      <unit id="mediaTab.pendingUploadBatchRetry">
+         <segment>
+            <source>Retry all</source>
+            <target>全部重试</target>
+         </segment>
+      </unit>
+      <unit id="mediaTab.pendingUploadDeleteFailed">
+         <segment>
+            <source>The online media record could not be removed (id {0}). Others may still see a broken entry until an administrator cleans it up. Your file is saved locally.</source>
+            <target>无法删除该在线媒体记录（ID {0}）。在管理员清理之前，其他人可能仍会看到该条目显示异常。您的文件已保存在本地。</target>
+         </segment>
+      </unit>
+      <unit id="mediaTab.pendingUploadDismiss">
+         <segment>
+            <source>Remove from list</source>
+            <target>从列表中删除</target>
+         </segment>
+      </unit>
+      <unit id="mediaTab.pendingUploadEmpty">
+         <segment>
+            <source>No pending uploads.</source>
+            <target>无待处理上传任务。</target>
+         </segment>
+      </unit>
+      <unit id="mediaTab.pendingUploadMenu">
+         <segment>
+            <source>Pending media uploads</source>
+            <target>待处理的媒体上传</target>
+         </segment>
+      </unit>
+      <unit id="mediaTab.pendingUploadPathLabel">
+         <segment>
+            <source>File saved at: {0}</source>
+            <target>文件保存位置：{0}</target>
+         </segment>
+      </unit>
+      <unit id="mediaTab.pendingUploadQueuedHint">
+         <segment>
+            <source>You can retry from Team → {0} when your connection improves.</source>
+            <target>当网络连接改善后，您可以从“团队”→{0}重新尝试。</target>
+         </segment>
+      </unit>
+      <unit id="mediaTab.pendingUploadRetryLater">
+         <segment>
+            <source>Try again when your internet connection is more stable.</source>
+            <target>请在网络连接更稳定时再试一次。</target>
+         </segment>
+      </unit>
+      <unit id="mediaTab.pendingUploadRetryOne">
+         <segment>
+            <source>Retry</source>
+            <target>重试</target>
+         </segment>
+      </unit>
+      <unit id="mediaTab.pendingUploadTitle">
+         <segment>
+            <source>Pending media uploads</source>
+            <target>待处理的媒体上传</target>
          </segment>
       </unit>
       <unit id="mediaTab.planName">
@@ -4373,6 +5285,48 @@
          <segment>
             <source>Upload</source>
             <target>上传</target>
+         </segment>
+      </unit>
+      <unit id="mobile.addSegment">
+         <segment>
+            <source>Add segment boundary</source>
+            <target>添加片段边界</target>
+         </segment>
+      </unit>
+      <unit id="mobile.next">
+         <segment>
+            <source>Next</source>
+            <target>下一页</target>
+         </segment>
+      </unit>
+      <unit id="mobile.previous">
+         <segment>
+            <source>Previous</source>
+            <target>上一页</target>
+         </segment>
+      </unit>
+      <unit id="mobile.removeSegment">
+         <segment>
+            <source>Remove next segment boundary</source>
+            <target>删除下一个片段边界</target>
+         </segment>
+      </unit>
+      <unit id="mobile.resetBT">
+         <segment>
+            <source>Reset back translation</source>
+            <target>重置反向翻译</target>
+         </segment>
+      </unit>
+      <unit id="mobile.restoreBoundaries">
+         <segment>
+            <source>Restore original segment boundaries</source>
+            <target>恢复原始片段边界</target>
+         </segment>
+      </unit>
+      <unit id="mobile.segment">
+         <segment>
+            <source>Segment: {0}</source>
+            <target>片段：{0}</target>
          </segment>
       </unit>
       <unit id="newProject.audioProduct">
@@ -4933,6 +5887,12 @@
             <target>压缩中...{0}%</target>
          </segment>
       </unit>
+      <unit id="passageRecord.compressError">
+         <segment>
+            <source>Compression failed. Saving uncompressed.</source>
+            <target>压缩失败。正在保存未压缩文件。</target>
+         </segment>
+      </unit>
       <unit id="passageRecord.defaultFilename">
          <segment>
             <source>MyRecording</source>
@@ -4951,16 +5911,16 @@
             <target>文件类型</target>
          </segment>
       </unit>
-      <unit id="passageRecord.loadlatest">
-         <segment>
-            <source>Load Latest Audio</source>
-            <target>家在最新的音频</target>
-         </segment>
-      </unit>
       <unit id="passageRecord.loading">
          <segment>
             <source>Loading...</source>
             <target>加载中...</target>
+         </segment>
+      </unit>
+      <unit id="passageRecord.processing">
+         <segment>
+            <source>Processing...</source>
+            <target>正在处理...</target>
          </segment>
       </unit>
       <unit id="passageRecord.save">
@@ -5479,6 +6439,60 @@
             <target>图形</target>
          </segment>
       </unit>
+      <unit id="planSheet.goToReference">
+         <segment>
+            <source>Go to reference</source>
+            <target>转到参考</target>
+         </segment>
+      </unit>
+      <unit id="planSheet.goToReferenceClear">
+         <segment>
+            <source>Clear</source>
+            <target>清除</target>
+         </segment>
+      </unit>
+      <unit id="planSheet.goToReferenceDescription">
+         <segment>
+            <source>Enter one of the following:</source>
+            <target>请输入以下内容之一：</target>
+         </segment>
+      </unit>
+      <unit id="planSheet.goToReferencePassage">
+         <segment>
+            <source>{0} sequence (ex. 3.1)</source>
+            <target>{0} 序列（例如 3.1）</target>
+         </segment>
+      </unit>
+      <unit id="planSheet.goToReferencePhrase">
+         <segment>
+            <source>{0} title word or phrase</source>
+            <target>{0} 标题单词或短语</target>
+         </segment>
+      </unit>
+      <unit id="planSheet.goToReferencePublishing">
+         <segment>
+            <source>{0} identifier (ex: M1 S1)</source>
+            <target>{0} 标识符（例如：M1 S1）</target>
+         </segment>
+      </unit>
+      <unit id="planSheet.goToReferenceScripture">
+         <segment>
+            <source>Verse reference (chapter and verse ex 2:45)</source>
+            <target>经文参考（章和节，例如 出 2:45）</target>
+         </segment>
+      </unit>
+      <unit id="planSheet.goToReferenceSubmit">
+         <segment>
+            <source>Go</source>
+            <target>前往</target>
+         </segment>
+      </unit>
+      <unit id="planSheet.goToReferenceTitle">
+         <segment>
+            <source>Go to reference</source>
+            <target>前往参考</target>
+         </segment>
+      </unit>
       <unit id="planSheet.hidePublishing">
          <segment>
             <source>Hide Publishing Information</source>
@@ -5578,7 +6592,19 @@
       <unit id="planSheet.refErr">
          <segment>
             <source>This project contains invalid Books or References and will not sync or publish. (A valid reference would be 3:2-5 or similar.)</source>
-            <target/>
+            <target>该项目包含无效的书目或参考文献，因此无法同步或发布。（有效的参考文献格式应为 3:2-5 或类似形式。）</target>
+         </segment>
+      </unit>
+      <unit id="planSheet.referenceFilteredNoPublishingLabels">
+         <segment>
+            <source>Clear the filter to go to a movement/section label (M/S).</source>
+            <target>清除筛选条件以跳转至乐章/段落标签（M/S）。</target>
+         </segment>
+      </unit>
+      <unit id="planSheet.referenceNotFound">
+         <segment>
+            <source>No matching row was found.</source>
+            <target>未找到匹配的行。</target>
          </segment>
       </unit>
       <unit id="planSheet.removeFilter">
@@ -5647,6 +6673,12 @@
             <target>更新 {0} {1} 已发布状态。</target>
          </segment>
       </unit>
+      <unit id="planSheet.unknownBook">
+         <segment>
+            <source>Unknown Book</source>
+            <target>未知书卷</target>
+         </segment>
+      </unit>
       <unit id="planSheet.useCtrlV">
          <segment>
             <source>Select a column head and use CTRL-V to append table rows.</source>
@@ -5705,6 +6737,24 @@
          <segment>
             <source>Transcriptions</source>
             <target>听写</target>
+         </segment>
+      </unit>
+      <unit id="prompt.adminInstructions">
+         <segment>
+            <source>Record a short prompt for this section, then save. Team members will listen before they record.</source>
+            <target>为本段录制一段简短提示音，然后保存。团队成员在录音前会先收听该提示音。</target>
+         </segment>
+      </unit>
+      <unit id="prompt.offlineCannotAdd">
+         <segment>
+            <source>You must be online to add or replace the prompt recording for this section.</source>
+            <target>您必须在线才能为本段添加或替换提示音录音。</target>
+         </segment>
+      </unit>
+      <unit id="prompt.noAudio">
+         <segment>
+            <source>No prompt has been recorded for this section yet.</source>
+            <target>本段尚未录制任何提示音。</target>
          </segment>
       </unit>
       <unit id="profile.add">
@@ -6100,7 +7150,7 @@
       <unit id="projectDownload.missingFileList">
          <segment>
             <source>Show missing file list</source>
-            <target/>
+            <target>显示缺失文件列表</target>
          </segment>
       </unit>
       <unit id="projectDownload.projects">
@@ -6307,6 +7357,120 @@
             <target>版本</target>
          </segment>
       </unit>
+      <unit id="recordButton.record">
+         <segment>
+            <source>RECORD</source>
+            <target>录制</target>
+         </segment>
+      </unit>
+      <unit id="recordButton.rerecord">
+         <segment>
+            <source>RERECORD</source>
+            <target>重新录制</target>
+         </segment>
+      </unit>
+      <unit id="recordButton.resume">
+         <segment>
+            <source>RESUME</source>
+            <target>继续</target>
+         </segment>
+      </unit>
+      <unit id="recordButton.stop">
+         <segment>
+            <source>STOP</source>
+            <target>停止</target>
+         </segment>
+      </unit>
+      <unit id="recordStepSettings.custom">
+         <segment>
+            <source>Custom</source>
+            <target>自定义</target>
+         </segment>
+      </unit>
+      <unit id="recordStepSettings.echoCancellation">
+         <segment>
+            <source>Echo cancellation</source>
+            <target>回声消除</target>
+         </segment>
+      </unit>
+      <unit id="recordStepSettings.echoCancellationHelper">
+         <segment>
+            <source>Reduces echo when using speakers. May reduce recording quality. Leave off for a cleaner capture when using headphones or a quiet room.</source>
+            <target>使用扬声器时可减少回声。可能会降低录音质量。使用耳机或在安静的房间内录音时，请关闭此功能以获得更清晰的录音效果。</target>
+         </segment>
+      </unit>
+      <unit id="recordStepSettings.fileNameTemplate">
+         <segment>
+            <source>File Name Template</source>
+            <target>文件名模板</target>
+         </segment>
+      </unit>
+      <unit id="recordStepSettings.general">
+         <segment>
+            <source>General</source>
+            <target>常规</target>
+         </segment>
+      </unit>
+      <unit id="recordStepSettings.noiseSuppression">
+         <segment>
+            <source>Noise suppression</source>
+            <target>降噪</target>
+         </segment>
+      </unit>
+      <unit id="recordStepSettings.noiseSuppressionHelper">
+         <segment>
+            <source>Reduces background noise. May make speech sound less natural. Leave off for the most faithful capture when the environment is already quiet.</source>
+            <target>可减少背景噪音。可能会使语音听起来不够自然。当环境已经很安静时，请关闭此功能以获得最真实的录音效果。</target>
+         </segment>
+      </unit>
+      <unit id="recordStepSettings.notes">
+         <segment>
+            <source>Notes</source>
+            <target>注意事项</target>
+         </segment>
+      </unit>
+      <unit id="recordStepSettings.saveAsWav">
+         <segment>
+            <source>Save as wav (uncompressed) file.</source>
+            <target>保存为 wav（未压缩）文件。</target>
+         </segment>
+      </unit>
+      <unit id="recordStepSettings.saveAsWavHelper">
+         <segment>
+            <source>These files are large and we suggest you only select this for the final recording.</source>
+            <target>此类文件体积较大，建议仅在最终录音时选择此选项。</target>
+         </segment>
+      </unit>
+      <unit id="recordStepSettings.scripture">
+         <segment>
+            <source>Scripture</source>
+            <target>经文</target>
+         </segment>
+      </unit>
+      <unit id="recordStepSettings.useBookChapterPassage">
+         <segment>
+            <source>Book Chapter Passage</source>
+            <target>书名 章 节</target>
+         </segment>
+      </unit>
+      <unit id="recordStepSettings.useReference">
+         <segment>
+            <source>Passage Reference</source>
+            <target>段落引用</target>
+         </segment>
+      </unit>
+      <unit id="recordStepSettings.useSectionNumberAndPassageNumber">
+         <segment>
+            <source>{0} number and Passage number</source>
+            <target>{0} 编号和段落编号</target>
+         </segment>
+      </unit>
+      <unit id="recordStepSettings.useTitle">
+         <segment>
+            <source>Title</source>
+            <target>标题</target>
+         </segment>
+      </unit>
       <unit id="scriptureTable.alternateName">
          <segment>
             <source>{0} Alternate Name</source>
@@ -6418,13 +7582,13 @@
       <unit id="scriptureTable.setupGeneralBook">
          <segment>
             <source>Go the the Home page and sort the projects to set the book codes.</source>
-            <target/>
+            <target>转到“主页”，对项目进行排序以设置书码。</target>
          </segment>
       </unit>
       <unit id="scriptureTable.setupScriptureBook">
          <segment>
             <source>Make a selection in the Book column for each passage without one.</source>
-            <target/>
+            <target>在“书”列中，为每个未指定书码的经文段落进行选择。</target>
          </segment>
       </unit>
       <unit id="scriptureTable.title">
@@ -6679,6 +7843,12 @@
             <target>关闭</target>
          </segment>
       </unit>
+      <unit id="shared.confirm">
+         <segment>
+            <source>Confirm</source>
+            <target>确认</target>
+         </segment>
+      </unit>
       <unit id="shared.consultant">
          <segment>
             <source>Consultant</source>
@@ -6751,6 +7921,12 @@
             <target>启动 胆敢</target>
          </segment>
       </unit>
+      <unit id="shared.loadFromFile">
+         <segment>
+            <source>Load from file...</source>
+            <target>从文件加载...</target>
+         </segment>
+      </unit>
       <unit id="shared.loading">
          <segment>
             <source>Loading...</source>
@@ -6817,10 +7993,16 @@
             <target>离线时无法保存</target>
          </segment>
       </unit>
+      <unit id="shared.TooBusy">
+         <segment>
+            <source>Unable to start new save while already saving.</source>
+            <target>正在保存时无法开始新的保存操作。</target>
+         </segment>
+      </unit>
       <unit id="shared.NoSaveWoMedia">
          <segment>
-            <source>No media has been saved to the cloud.</source>
-            <target/>
+            <source>Save Failed. Please check your internet connection and try again.</source>
+            <target>保存失败。请检查您的网络连接，然后重试。</target>
          </segment>
       </unit>
       <unit id="shared.notSupported">
@@ -6913,6 +8095,12 @@
             <target>选择</target>
          </segment>
       </unit>
+      <unit id="shared.teamDefault">
+         <segment>
+            <source>Save as team default</source>
+            <target>保存为团队默认设置</target>
+         </segment>
+      </unit>
       <unit id="shared.teamrole">
          <segment>
             <source>Team Role</source>
@@ -6941,6 +8129,24 @@
          <segment>
             <source>Upload Audio</source>
             <target>上传音频</target>
+         </segment>
+      </unit>
+      <unit id="shared.upload">
+         <segment>
+            <source>Upload</source>
+            <target>上传</target>
+         </segment>
+      </unit>
+      <unit id="shared.discardRecording">
+         <segment>
+            <source>Would you like to clear this recording?</source>
+            <target>您要清除此录音吗？</target>
+         </segment>
+      </unit>
+      <unit id="shared.useThisVersion">
+         <segment>
+            <source>Use This Version</source>
+            <target>使用此版本</target>
          </segment>
       </unit>
       <unit id="shared.uploadRights">
@@ -7129,6 +8335,12 @@
             <target>保存中...</target>
          </segment>
       </unit>
+      <unit id="stepEditor.settingsFor">
+         <segment>
+            <source>Settings for {0} of {1}</source>
+            <target>{0}（共 {1}）的设置</target>
+         </segment>
+      </unit>
       <unit id="stepEditor.show">
          <segment>
             <source>Show</source>
@@ -7255,6 +8467,12 @@
             <target>片段号码( {0} 之内)</target>
          </segment>
       </unit>
+      <unit id="template.reference">
+         <segment>
+            <source>Passage reference</source>
+            <target>经文参考</target>
+         </segment>
+      </unit>
       <unit id="template.renderExportTemplate">
          <segment>
             <source>The {SECT} template works for files exported from {0}.</source>
@@ -7265,6 +8483,12 @@
          <segment>
             <source>Template Codes</source>
             <target>模板代码</target>
+         </segment>
+      </unit>
+      <unit id="template.title">
+         <segment>
+            <source>Title</source>
+            <target>标题</target>
          </segment>
       </unit>
       <unit id="toDoTable.action">
@@ -7375,6 +8599,12 @@
             <target>是的</target>
          </segment>
       </unit>
+      <unit id="tool.carefulSpeech">
+         <segment>
+            <source>Careful speech</source>
+            <target>谨慎言辞</target>
+         </segment>
+      </unit>
       <unit id="tool.community">
          <segment>
             <source>Community Test</source>
@@ -7415,6 +8645,12 @@
          <segment>
             <source>{0} Sync</source>
             <target>{0} 同步</target>
+         </segment>
+      </unit>
+      <unit id="tool.prompt">
+         <segment>
+            <source>Prompt</source>
+            <target>提示</target>
          </segment>
       </unit>
       <unit id="tool.phraseBackTranslate">
@@ -7501,16 +8737,22 @@
             <target>人工智能转录失败</target>
          </segment>
       </unit>
+      <unit id="transcriber.aiAutomaticTranscription">
+         <segment>
+            <source>AI Automatic Transcription</source>
+            <target>AI 自动转录</target>
+         </segment>
+      </unit>
       <unit id="transcriber.aiWillContinue">
          <segment>
             <source>The AI will continue to work on the transcription even if you close this progress box. Click the {0} button to open the progress box on this workflow step to see the results. Use the settings gear on {0} button to see the transcription using a different language.</source>
             <target>即使您关闭此进度框，人工智能仍将继续转录工作。单击 {0} 按钮打开此工作流程步骤的进度框，查看结果。使用{0}按钮上的设置齿轮查看使用不同语言进行的转录。</target>
          </segment>
       </unit>
-      <unit id="transcriber.beginRecognize">
+      <unit id="transcriber.chooseSisterLang">
          <segment>
-            <source>Begin Auto Transcription</source>
-            <target>开始自动转录</target>
+            <source>Choose a sister language</source>
+            <target>选择一种相关语言</target>
          </segment>
       </unit>
       <unit id="transcriber.comment">
@@ -7529,6 +8771,12 @@
          <segment>
             <source>Completed</source>
             <target>已完成</target>
+         </segment>
+      </unit>
+      <unit id="transcriber.findingSisterLang">
+         <segment>
+            <source>Finding supported sister languages…</source>
+            <target>正在查找支持的相关语言……</target>
          </segment>
       </unit>
       <unit id="transcriber.historyTip">
@@ -7609,6 +8857,12 @@
             <target>从 {0} 提取转录内容</target>
          </segment>
       </unit>
+      <unit id="transcriber.recommended">
+         <segment>
+            <source>Recommended</source>
+            <target>推荐</target>
+         </segment>
+      </unit>
       <unit id="transcriber.reject">
          <segment>
             <source>Reject</source>
@@ -7625,6 +8879,12 @@
          <segment>
             <source>Started to review</source>
             <target>开始复习</target>
+         </segment>
+      </unit>
+      <unit id="transcriber.run">
+         <segment>
+            <source>Run</source>
+            <target>运行</target>
          </segment>
       </unit>
       <unit id="transcriber.save">
@@ -7657,6 +8917,24 @@
             <target>脚本或方言</target>
          </segment>
       </unit>
+      <unit id="transcriber.scriptTranscription">
+         <segment>
+            <source>Script</source>
+            <target>脚本</target>
+         </segment>
+      </unit>
+      <unit id="transcriber.invalidSisterLang">
+         <segment>
+            <source>This language is not supported for speech recognition. Choose another sister language.</source>
+            <target>此语言不支持语音识别。请选择另一种相关语言。</target>
+         </segment>
+      </unit>
+      <unit id="transcriber.sisterLang">
+         <segment>
+            <source>Your language is not supported for speech recognition. To use automatic transcription, choose a closely related language with a similar writing system.</source>
+            <target>您的语言不支持语音识别。如需使用自动转录功能，请选择一种书写系统相似的、与之密切相关的语言。</target>
+         </segment>
+      </unit>
       <unit id="transcriber.submit">
          <segment>
             <source>Submit</source>
@@ -7685,6 +8963,12 @@
          <segment>
             <source>Transcription already exists</source>
             <target>转录内容已经存在</target>
+         </segment>
+      </unit>
+      <unit id="transcriber.transcriptionType">
+         <segment>
+            <source>Transcription type</source>
+            <target>转录类型</target>
          </segment>
       </unit>
       <unit id="transcriber.transliterate">
@@ -7792,7 +9076,7 @@
       <unit id="transcriptionTab.confirm">
          <segment>
             <source>Are you sure you want to cancel the download?</source>
-            <target/>
+            <target>您确定要取消下载吗？</target>
          </segment>
       </unit>
       <unit id="transcriptionTab.copyTip">
@@ -8137,6 +9421,12 @@
             <target>时区</target>
          </segment>
       </unit>
+      <unit id="verse.autosaveSkipped">
+         <segment>
+            <source>Autosave skipped: {0} issue(s) found.</source>
+            <target>自动保存已跳过：发现 {0} 个问题。</target>
+         </segment>
+      </unit>
       <unit id="verse.badReferences">
          <segment>
             <source>ERROR: Markup contains bad references</source>
@@ -8161,6 +9451,18 @@
             <target>剪贴板</target>
          </segment>
       </unit>
+      <unit id="verse.doneEditingReference">
+         <segment>
+            <source>Done Editing</source>
+            <target>编辑完成</target>
+         </segment>
+      </unit>
+      <unit id="verse.editReference">
+         <segment>
+            <source>Edit Reference</source>
+            <target>编辑参考</target>
+         </segment>
+      </unit>
       <unit id="verse.issues">
          <segment>
             <source>The verse markup has issues. Do you want to continue?</source>
@@ -8171,6 +9473,12 @@
          <segment>
             <source>Mark Verses</source>
             <target>标记诗句</target>
+         </segment>
+      </unit>
+      <unit id="verse.markupIssuesTitle">
+         <segment>
+            <source>Verse markup issues</source>
+            <target>诗节标记问题</target>
          </segment>
       </unit>
       <unit id="verse.missingReferences">
@@ -8209,16 +9517,34 @@
             <target>参考</target>
          </segment>
       </unit>
+      <unit id="verse.reset">
+         <segment>
+            <source>Reset</source>
+            <target>重置</target>
+         </segment>
+      </unit>
       <unit id="verse.saveVerseMarkup">
          <segment>
             <source>Save Verse Markup</source>
             <target>保存诗句标记</target>
          </segment>
       </unit>
+      <unit id="verse.splitVerse">
+         <segment>
+            <source>Split Verse</source>
+            <target>拆分诗节</target>
+         </segment>
+      </unit>
       <unit id="verse.startStop">
          <segment>
             <source>Start --&gt; Stop</source>
             <target>开始 --&gt; 停止</target>
+         </segment>
+      </unit>
+      <unit id="verse.viewIssues">
+         <segment>
+            <source>View issues</source>
+            <target>查看问题</target>
          </segment>
       </unit>
       <unit id="viewMode.audioProject">
@@ -8851,10 +10177,94 @@
             <target>回译</target>
          </segment>
       </unit>
+      <unit id="workflowSteps.backTranslationTip">
+         <segment>
+            <source>Record a back translation</source>
+            <target>录制反向翻译</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.carefulSpeech">
+         <segment>
+            <source>Careful speech</source>
+            <target>清晰语音</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.carefulSpeechTip">
+         <segment>
+            <source>Record careful speech for each segment.</source>
+            <target>为每个片段录制清晰的语音。</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.carefulTranscription">
+         <segment>
+            <source>Careful transcription</source>
+            <target>清晰转录</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.carefulTranscriptionTip">
+         <segment>
+            <source>Transcribe the careful speech recording for each segment.</source>
+            <target>为每个片段的清晰语音录音进行转录。</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.freeTranscription">
+         <segment>
+            <source>Free transcription</source>
+            <target>自由转录</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.freeTranscriptionTip">
+         <segment>
+            <source>Transcribe the free translation recording.</source>
+            <target>转录自由翻译录音。</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.freeTranslation">
+         <segment>
+            <source>Free translation</source>
+            <target>自由翻译</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.freeTranslationTip">
+         <segment>
+            <source>Record a free translation of the entire passage in the language of wider communication.</source>
+            <target>用通用语言录制整段内容的自由翻译。</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.lwcTranscription">
+         <segment>
+            <source>LWC transcription</source>
+            <target>LWC转录</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.lwcTranscriptionTip">
+         <segment>
+            <source>Transcribe the LWC translation recording.</source>
+            <target>转录LWC翻译录音。</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.lwcTranslation">
+         <segment>
+            <source>LWC translation</source>
+            <target>LWC翻译</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.lwcTranslationTip">
+         <segment>
+            <source>Listen to each careful speech segment and record a translation in the language of wider communication.</source>
+            <target>仔细聆听每个语音片段，并用通用语言录制翻译。</target>
+         </segment>
+      </unit>
       <unit id="workflowSteps.communityTest1">
          <segment>
             <source>Community Test 1</source>
             <target>社区测试一</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.communityTest1Tip">
+         <segment>
+            <source>Ask community test questions and record responses</source>
+            <target>向社区提出测试问题并录制回答</target>
          </segment>
       </unit>
       <unit id="workflowSteps.communityTest2">
@@ -8863,10 +10273,22 @@
             <target>社区测试二</target>
          </segment>
       </unit>
+      <unit id="workflowSteps.communityTest2Tip">
+         <segment>
+            <source>Ask community test questions and record responses</source>
+            <target>向社区提出测试问题并录制回答</target>
+         </segment>
+      </unit>
       <unit id="workflowSteps.communityTesting">
          <segment>
             <source>Community Test</source>
             <target>社区测试</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.communityTestingTip">
+         <segment>
+            <source>Ask community test questions and record responses</source>
+            <target>向社区提出测试问题并录制回答</target>
          </segment>
       </unit>
       <unit id="workflowSteps.consultantCheck">
@@ -8875,10 +10297,22 @@
             <target>顾问检查</target>
          </segment>
       </unit>
+      <unit id="workflowSteps.consultantCheckTip">
+         <segment>
+            <source>The consultant listens to recorded content and asks questions in discussions.</source>
+            <target>顾问会收听录音内容，并在讨论中提出问题。</target>
+         </segment>
+      </unit>
       <unit id="workflowSteps.consultantCheck1">
          <segment>
             <source>First Consultant Check</source>
             <target>第一顾问检查</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.consultantCheck1Tip">
+         <segment>
+            <source>The consultant listens to recorded content and asks questions in discussions.</source>
+            <target>顾问会收听录音内容，并在讨论中提出问题。</target>
          </segment>
       </unit>
       <unit id="workflowSteps.consultantCheck2">
@@ -8887,10 +10321,22 @@
             <target>第二顾问检查</target>
          </segment>
       </unit>
+      <unit id="workflowSteps.consultantCheck2Tip">
+         <segment>
+            <source>The consultant listens to recorded content and asks questions in discussions.</source>
+            <target>顾问会收听录音内容，并在讨论中提出问题。</target>
+         </segment>
+      </unit>
       <unit id="workflowSteps.done">
          <segment>
             <source>Done</source>
             <target>完成</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.doneTip">
+         <segment>
+            <source>All steps have been completed for this passage or note</source>
+            <target>该段落或笔记的所有步骤均已完成</target>
          </segment>
       </unit>
       <unit id="workflowSteps.export">
@@ -8899,10 +10345,22 @@
             <target>导出</target>
          </segment>
       </unit>
+      <unit id="workflowSteps.exportTip">
+         <segment>
+            <source>Export work done to this point if desired.</source>
+            <target>如需导出，可导出截至目前的成果。</target>
+         </segment>
+      </unit>
       <unit id="workflowSteps.finalRecording">
          <segment>
             <source>Studio Record</source>
             <target>工作室录音</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.finalRecordingTip">
+         <segment>
+            <source>Make a final recording in a studio if desired.</source>
+            <target>如需在录音棚进行最终录音，请前往录音棚。</target>
          </segment>
       </unit>
       <unit id="workflowSteps.finalReview">
@@ -8911,10 +10369,46 @@
             <target>最终音频复习</target>
          </segment>
       </unit>
+      <unit id="workflowSteps.finalReviewTip">
+         <segment>
+            <source>Listen one last time to the results to see if any more changes are needed.</source>
+            <target>最后再听一遍成果，看看是否还需要进行任何修改。</target>
+         </segment>
+      </unit>
       <unit id="workflowSteps.finalReviewText">
          <segment>
             <source>Final Text Review</source>
             <target>最终文本复习</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.finalReviewTextTip">
+         <segment>
+            <source>Read through the transcription one last time to see if any additional changes are needed.</source>
+            <target>请最后再通读一遍转录文本，看看是否还需要进行其他修改。</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.incompleteStepComplete">
+         <segment>
+            <source>Complete</source>
+            <target>完成</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.incompleteStepContinue">
+         <segment>
+            <source>Continue</source>
+            <target>继续</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.incompleteStepNavigate">
+         <segment>
+            <source>The current step ({0}) is not complete. Are you sure?</source>
+            <target>当前步骤（{0}）尚未完成。确定要继续吗？</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.incompleteStepNavigateTitle">
+         <segment>
+            <source>Step not complete</source>
+            <target>步骤未完成</target>
          </segment>
       </unit>
       <unit id="workflowSteps.internalize">
@@ -8923,10 +10417,22 @@
             <target>内化</target>
          </segment>
       </unit>
+      <unit id="workflowSteps.internalizeTip">
+         <segment>
+            <source>Review the resources to become able to tell the passage from memory in the target languages.</source>
+            <target>复习相关资料，以便能够用目标语言背诵这段文字。</target>
+         </segment>
+      </unit>
       <unit id="workflowSteps.paratextConsultantCheck">
          <segment>
             <source>Consultant Check in {0}</source>
             <target>{0}中的顾问检查</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.paratextConsultantCheckTip">
+         <segment>
+            <source>Review the text in another program with more analysis resources.</source>
+            <target>在另一个具备更多分析功能的程序中复习该文本。</target>
          </segment>
       </unit>
       <unit id="workflowSteps.paratextPeerReview">
@@ -8935,10 +10441,22 @@
             <target>在{0}中进行同行评审</target>
          </segment>
       </unit>
+      <unit id="workflowSteps.paratextPeerReviewTip">
+         <segment>
+            <source>Team reviews the text in another program with more analysis resources.</source>
+            <target>团队在另一个具备更多分析功能的程序中复习该文本。</target>
+         </segment>
+      </unit>
       <unit id="workflowSteps.paratextSync">
          <segment>
             <source>Sync to {0}</source>
             <target>同步到 {0}</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.paratextSyncTip">
+         <segment>
+            <source>Sync text to another text translation tool.</source>
+            <target>将文本同步到另一款文本翻译工具。</target>
          </segment>
       </unit>
       <unit id="workflowSteps.peerReview">
@@ -8947,10 +10465,22 @@
             <target>管理员评论</target>
          </segment>
       </unit>
+      <unit id="workflowSteps.peerReviewTip">
+         <segment>
+            <source>Peer review content to this point.</source>
+            <target>对截至当前的内容进行同行评审。</target>
+         </segment>
+      </unit>
       <unit id="workflowSteps.phraseBackTranslation">
          <segment>
             <source>Phrase Back Translate</source>
             <target>词语回译</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.phraseBackTranslationTip">
+         <segment>
+            <source>Record a back translation of each phrase of the passage.</source>
+            <target>将该段落中的每句话进行反向翻译并记录下来。</target>
          </segment>
       </unit>
       <unit id="workflowSteps.pBTTranscribe">
@@ -8959,10 +10489,22 @@
             <target>词语回译听写</target>
          </segment>
       </unit>
+      <unit id="workflowSteps.pBTTranscribeTip">
+         <segment>
+            <source>Transcribe each of the back translated phrases.</source>
+            <target>将每句反向翻译后的内容转录成文字。</target>
+         </segment>
+      </unit>
       <unit id="workflowSteps.pBTParatextSync">
          <segment>
             <source>Phrase BT {0}</source>
             <target>短语 BT {0}</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.pBTParatextSyncTip">
+         <segment>
+            <source>Synchronize the back translated text to another tool for analysis and review.</source>
+            <target>将反向翻译后的文本同步到另一款工具中，以便进行分析和审核。</target>
          </segment>
       </unit>
       <unit id="workflowSteps.preliminaryApproval">
@@ -8971,10 +10513,22 @@
             <target>初步批准</target>
          </segment>
       </unit>
+      <unit id="workflowSteps.preliminaryApprovalTip">
+         <segment>
+            <source>Get preliminary approval.</source>
+            <target>获得初步批准。</target>
+         </segment>
+      </unit>
       <unit id="workflowSteps.record">
          <segment>
             <source>Record</source>
             <target>录音</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.recordTip">
+         <segment>
+            <source>Record the passage.</source>
+            <target>录制该段落。</target>
          </segment>
       </unit>
       <unit id="workflowSteps.retellBackTranslation">
@@ -8983,16 +10537,34 @@
             <target>复述听写</target>
          </segment>
       </unit>
+      <unit id="workflowSteps.retellBackTranslationTip">
+         <segment>
+            <source>Retell the entire passage in the language understood by the consultant.</source>
+            <target>用顾问能听懂的语言复述整个段落。</target>
+         </segment>
+      </unit>
       <unit id="workflowSteps.retellBTTranscribe">
          <segment>
             <source>Retell BT Transcribe</source>
             <target>复述回译听写</target>
          </segment>
       </unit>
+      <unit id="workflowSteps.retellBTTranscribeTip">
+         <segment>
+            <source>Transcribe the recording of the text being retold in the language of the consultant.</source>
+            <target>将用顾问语言复述的文本录音转录成文字。</target>
+         </segment>
+      </unit>
       <unit id="workflowSteps.review">
          <segment>
             <source>Review Transcription</source>
             <target>复习听写</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.reviewTip">
+         <segment>
+            <source>Review the transcription to make sure it is accurate.</source>
+            <target>审核转录内容，确保其准确无误。</target>
          </segment>
       </unit>
       <unit id="workflowSteps.saveFirst">
@@ -9007,10 +10579,22 @@
             <target>比较</target>
          </segment>
       </unit>
+      <unit id="workflowSteps.teamCheckTip">
+         <segment>
+            <source>Check over the work of another sub team in the translation project.</source>
+            <target>检查翻译项目中另一个子团队的工作。</target>
+         </segment>
+      </unit>
       <unit id="workflowSteps.termVerify">
          <segment>
             <source>Term Verify</source>
             <target>验证词语</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.termVerifyTip">
+         <segment>
+            <source>Make recordings of how terms contained in the passage are being rendered.</source>
+            <target>录制音频，记录文中术语的译法。</target>
          </segment>
       </unit>
       <unit id="workflowSteps.teamReview">
@@ -9019,10 +10603,22 @@
             <target>复习词语</target>
          </segment>
       </unit>
+      <unit id="workflowSteps.teamReviewTip">
+         <segment>
+            <source>Review how terms were rendered before and how they are rendered this time.</source>
+            <target>对比术语以往的译法与本次的译法。</target>
+         </segment>
+      </unit>
       <unit id="workflowSteps.transcribe">
          <segment>
             <source>Transcribe</source>
             <target>听写</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.transcribeTip">
+         <segment>
+            <source>Transcribe the recording.</source>
+            <target>将录音转录成文字。</target>
          </segment>
       </unit>
       <unit id="workflowSteps.unsaved">
@@ -9037,10 +10633,40 @@
             <target>标记诗句</target>
          </segment>
       </unit>
+      <unit id="workflowSteps.markVersesTip">
+         <segment>
+            <source>Listen to the recording and mark where the verse boundaries occur.</source>
+            <target>收听录音，并标注诗节的分界点。</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.prompt">
+         <segment>
+            <source>Prompt</source>
+            <target>提示</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.promptAdminTip">
+         <segment>
+            <source>Record a prompt for this section, save it, then continue to the next step when ready.</source>
+            <target>为本部分录制一段提示音，保存后，准备就绪即可继续下一步。</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.promptTip">
+         <segment>
+            <source>Listen to the prompt above. Then, move to the next step.</source>
+            <target>收听上面的提示音。然后，进入下一步。</target>
+         </segment>
+      </unit>
       <unit id="workflowSteps.wholeBackTranslate">
          <segment>
             <source>Whole Back Translate</source>
             <target>所有回译</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.wholeBackTranslateTip">
+         <segment>
+            <source>Record the back translation of the entire passage in the language of the consultant.</source>
+            <target>将整段文字的回译录制为顾问的语言。</target>
          </segment>
       </unit>
       <unit id="workflowSteps.wholeBackTranslation">
@@ -9049,16 +10675,34 @@
             <target>所有回译</target>
          </segment>
       </unit>
+      <unit id="workflowSteps.wholeBackTranslationTip">
+         <segment>
+            <source>Record the back translation of the entire passage in the language of the consultant.</source>
+            <target>将整段文字的回译录制为顾问的语言。</target>
+         </segment>
+      </unit>
       <unit id="workflowSteps.wBTTranscribe">
          <segment>
             <source>Whole BT Transcribe</source>
             <target>所有回译听写</target>
          </segment>
       </unit>
+      <unit id="workflowSteps.wBTTranscribeTip">
+         <segment>
+            <source>Transcribe the recording of the passage in the language of the consultant.</source>
+            <target>将该段文字的录音转录为顾问的语言。</target>
+         </segment>
+      </unit>
       <unit id="workflowSteps.wBTParatextSync">
          <segment>
             <source>Whole BT {0}</source>
             <target>整个 BT {0}</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.wBTParatextSyncTip">
+         <segment>
+            <source>Sync transcription of the back translation to another tool for analysis and review.</source>
+            <target>将回译的转录文本同步到另一款工具中，以便进行分析和审核。</target>
          </segment>
       </unit>
       <unit id="workflowSteps.none">
@@ -9109,16 +10753,34 @@
             <target>转换语音 {0}</target>
          </segment>
       </unit>
+      <unit id="wsAudioPlayer.clearRecording">
+         <segment>
+            <source>Clear Recording?</source>
+            <target>清除录音？</target>
+         </segment>
+      </unit>
+      <unit id="wsAudioPlayer.clearRecordingTip">
+         <segment>
+            <source>Clear Recording</source>
+            <target>清除录音</target>
+         </segment>
+      </unit>
+      <unit id="wsAudioPlayer.convertVoiceAi">
+         <segment>
+            <source>Convert Voice (AI)</source>
+            <target>语音转换（AI）</target>
+         </segment>
+      </unit>
       <unit id="wsAudioPlayer.beginningTip">
          <segment>
             <source>Go to Beginning [{0}]</source>
             <target>转到开始 [{0}]</target>
          </segment>
       </unit>
-      <unit id="wsAudioPlayer.deleteRecording">
+      <unit id="wsAudioPlayer.clear">
          <segment>
-            <source>Delete Entire Recording</source>
-            <target>删除整个录音</target>
+            <source>Clear</source>
+            <target>清除</target>
          </segment>
       </unit>
       <unit id="wsAudioPlayer.deleteRegion">
@@ -9160,7 +10822,13 @@
       <unit id="wsAudioPlayer.microphone">
          <segment>
             <source>Select microphone</source>
-            <target/>
+            <target>选择麦克风</target>
+         </segment>
+      </unit>
+      <unit id="wsAudioPlayer.moreOptions">
+         <segment>
+            <source>More Options</source>
+            <target>更多选项</target>
          </segment>
       </unit>
       <unit id="wsAudioPlayer.nextRegion">
@@ -9253,6 +10921,24 @@
             <target>减少噪音</target>
          </segment>
       </unit>
+      <unit id="wsAudioPlayer.reduceNoiseAi">
+         <segment>
+            <source>Reduce Noise (AI)</source>
+            <target>降噪（AI）</target>
+         </segment>
+      </unit>
+      <unit id="wsAudioPlayer.reset">
+         <segment>
+            <source>Clear</source>
+            <target>清除</target>
+         </segment>
+      </unit>
+      <unit id="wsAudioPlayer.resetSegments">
+         <segment>
+            <source>Reset</source>
+            <target>重置</target>
+         </segment>
+      </unit>
       <unit id="wsAudioPlayer.resume">
          <segment>
             <source>Resume</source>
@@ -9271,10 +10957,22 @@
             <target>秒</target>
          </segment>
       </unit>
+      <unit id="wsAudioPlayer.selectMicrophoneMenu">
+         <segment>
+            <source>Select Microphone</source>
+            <target>选择麦克风</target>
+         </segment>
+      </unit>
       <unit id="wsAudioPlayer.selectVoice">
          <segment>
             <source>Select Voice</source>
             <target>选择语音</target>
+         </segment>
+      </unit>
+      <unit id="wsAudioPlayer.selectVoiceForConversion">
+         <segment>
+            <source>Select Voice for Conversion</source>
+            <target>选择待转换语音</target>
          </segment>
       </unit>
       <unit id="wsAudioPlayer.selectVoicePrompt">
@@ -9395,12 +11093,6 @@
          <segment>
             <source>Add Boundary [Double Click/{0}]</source>
             <target>加/消除边界 [双击/{0}]</target>
-         </segment>
-      </unit>
-      <unit id="wsAudioPlayerSegment.teamDefault">
-         <segment>
-            <source>Save as team default</source>
-            <target>保存为团队默认</target>
          </segment>
       </unit>
       <unit id="wsAudioPlayerZoom.fitToWidth">

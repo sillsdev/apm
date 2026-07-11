@@ -2,6 +2,7 @@
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
 	xmlns:xlf="urn:oasis:names:tc:xliff:document:2.0"
 	xmlns:xl2="urn:oasis:names:tc:xliff:document:1.2" version="1.0">
+	<!-- Use the current language .xlf as input and the file from crowd-in renamed to xx -->
 	<!-- Step 2. This will capture the same strings as MissingTarget.xsl but also gets the id. -->
 	<!-- The results can be pasted into Excel and will give two columns: the id, and the English -->
 	<!-- The third column in the Excel sheet will be the results given by deep1.com -->
