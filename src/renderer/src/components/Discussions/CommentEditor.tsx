@@ -55,6 +55,7 @@ interface IProps extends IStateProps {
   setCanSaveRecording: (canSave: boolean) => void;
   onTextChange: (txt: string) => void;
   onAudioDraftChange?: (hasDraft: boolean) => void;
+  onRecordingChange?: (recording: boolean) => void;
 }
 export const CommentEditor = (props: IProps) => {
   const {
@@ -70,6 +71,7 @@ export const CommentEditor = (props: IProps) => {
     setCanSaveRecording,
     onTextChange,
     onAudioDraftChange,
+    onRecordingChange,
   } = props;
   const {
     playing,
@@ -164,6 +166,7 @@ export const CommentEditor = (props: IProps) => {
   };
   const onRecording = (r: boolean) => {
     setRecording(r);
+    onRecordingChange?.(r);
     if (r) {
       toolChanged(toolId, true);
     } else if (doRecordRef.current) {
@@ -206,6 +209,8 @@ export const CommentEditor = (props: IProps) => {
     setCanSave(false);
     setCanSaveRecording(false);
     setAudioDraft(false);
+    setRecording(false);
+    onRecordingChange?.(false);
     clearCompleted(toolId);
     clearUnsavedIfEmpty();
   };
