@@ -1,6 +1,28 @@
-import { resolveToolSlug } from './useStepTool';
+import { getToolSettings, resolveToolSlug } from './useStepTool';
 import { ToolSlug } from './toolSlug';
 import { BOLD_WORKFLOW_PROCESS } from './useTeamWorkflowProcess';
+
+describe('getToolSettings', () => {
+  it('stringifies nested object settings (offline WorkAlone)', () => {
+    expect(
+      getToolSettings('{"tool":"transcribe","settings":{"spellCheck":false}}')
+    ).toBe('{"spellCheck":false}');
+  });
+
+  it('returns string settings unchanged', () => {
+    expect(
+      getToolSettings(
+        '{"tool":"transcribe","settings":"{\\"spellCheck\\":false}"}'
+      )
+    ).toBe('{"spellCheck":false}');
+  });
+
+  it('returns empty for missing settings', () => {
+    expect(getToolSettings('{"tool":"transcribe"}')).toBe('');
+    expect(getToolSettings('')).toBe('');
+    expect(getToolSettings(undefined)).toBe('');
+  });
+});
 
 describe('resolveToolSlug', () => {
   it('maps BOLD Prompt step with resource tool to prompt', () => {
