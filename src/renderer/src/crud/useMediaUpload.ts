@@ -88,7 +88,11 @@ export const useMediaUpload = ({
     }
     return num;
   };
-  const itemComplete = async (n: number, success: boolean, data?: any) => {
+  const itemComplete = async (
+    n: number,
+    success: boolean,
+    data?: any
+  ): Promise<void> => {
     if (!success) setOrbitRetries(OrbitNetworkErrorRetries - 1); //notify of possible network issue
     const uploadList = fileList.current;
     if (!uploadList) return; // This should never happen
@@ -141,23 +145,9 @@ export const useMediaUpload = ({
     await finishUpload();
   };
 
-  return (files: File[]) =>
-    new Promise<void>((resolve, reject) => {
-      const uploadCompleteCb = (
-        n: number,
-        success: boolean,
-        data?: unknown
-      ) => {
-        void (async () => {
-          try {
-            await itemComplete(n, success, data);
-            resolve();
-          } catch (err) {
-            reject(err);
-          }
-        })();
-      };
-
+  return (files: File[]): Promise<boolean> => {
+    if (!files.length) return Promise.resolve(false);
+    return new Promise((resolve, reject) => {
       const getPlanId = () =>
         planId
           ? remoteIdNum('plan', planId, memory?.keyMap as RecordKeyMap) ||
@@ -224,7 +214,14 @@ export const useMediaUpload = ({
         offline: getGlobal('offline'),
         errorReporter: reporter,
         uploadType: UploadType.Media,
-        cb: uploadCompleteCb,
+        cb: (n, success, data) => {
+          void itemComplete(n, success, data)
+            .then(() => {
+              if (success) resolve(true);
+              else reject(new Error(t.uploadFailed));
+            })
+            .catch(reject);
+        },
         pendingUploadIdToClearOnSuccess,
         onTerminalFailure: (info) => {
           showMessage(
@@ -234,4 +231,5 @@ export const useMediaUpload = ({
         },
       });
     });
+  };
 };

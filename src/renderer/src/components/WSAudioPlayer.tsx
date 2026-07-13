@@ -35,6 +35,7 @@ import UploadIcon from '@mui/icons-material/CloudUpload';
 import { Button } from '@mui/material';
 import {
   IAudioDownloadStrings,
+  IMainStrings,
   ISharedStrings,
   IWsAudioPlayerStrings,
 } from '../model';
@@ -47,7 +48,7 @@ import { Duration } from '../control/Duration';
 import { LightTooltip } from '../control/LightTooltip';
 import { RecordButton } from '../control/RecordButton';
 import HighlightButton from './PassageDetail/mobile/HighlightButton';
-import { useSnackBar } from '../hoc/SnackBar';
+import { useSnackBar, AlertSeverity } from '../hoc/SnackBar';
 import { HotKeyContext } from '../context/HotKeyContext';
 import { PriButton } from '../control';
 import WSAudioPlayerZoom, { maxZoom } from './WSAudioPlayerZoom';
@@ -73,12 +74,18 @@ import Confirm from './AlertDialog';
 import { getSortedRegions, NamedRegions } from '../utils/namedSegments';
 import {
   audioDownloadSelector,
+  mainSelector,
   sharedSelector,
   wsAudioPlayerSelector,
 } from '../selector';
 import { shallowEqual, useSelector } from 'react-redux';
 import { AltButton, smallButtonProps } from '../control';
 import { AudioAiFunc, useAudioAi } from '../utils/useAudioAi';
+import AeroTaskErrorMessage from '../business/asr/AeroTaskErrorMessage';
+import {
+  aeroTaskErrorParts,
+  axiosErrorMessage,
+} from '../business/asr/aeroTaskError';
 import { Exception } from '@orbit/core';
 import { useGlobal } from '../context/useGlobal';
 import { AxiosError } from 'axios';
@@ -153,6 +160,8 @@ interface IProps {
   onSegmentParamChange?: (params: IRegionParams, teamDefault: boolean) => void;
   onStartRegion?: (position: number) => void;
   onBlobReady?: (blob: Blob | undefined) => void;
+  /** When waveform decode/load fails after a blob is supplied. */
+  onLoadError?: (error: unknown) => void;
   setBlobReady?: (ready: boolean) => void;
   setChanged?: (changed: boolean) => void;
   onProcessingRecordingChange?: (processing: boolean) => void;
@@ -344,6 +353,7 @@ function WSAudioPlayer(props: IProps) {
     onStartRegion,
     onPlayStatus,
     onBlobReady,
+    onLoadError,
     setBlobReady,
     setChanged,
     onProcessingRecordingChange,
@@ -453,6 +463,7 @@ function WSAudioPlayer(props: IProps) {
   const ta: IAudioDownloadStrings = useSelector(audioDownloadSelector);
 
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
+  const tm: IMainStrings = useSelector(mainSelector, shallowEqual);
   const [style, setStyle] = useState({
     cursor: busy || loading ? 'progress' : 'default',
   });
@@ -593,6 +604,16 @@ function WSAudioPlayer(props: IProps) {
     [height, keepItSmall, hideToolbar]
   );
 
+  /** Fetching (loading prop) or decoding an existing-media blob — not a failed/cleared load. */
+  const waveformLoading = useMemo(
+    () =>
+      Boolean(myMediaId) &&
+      !recording &&
+      !waitingForAI &&
+      (Boolean(loading) || (Boolean(blob) && !ready)),
+    [myMediaId, recording, waitingForAI, loading, blob, ready]
+  );
+
   // Memoize tooltip titles to prevent infinite re-renders
   const recordTooltipTitle = useMemo(() => {
     const baseTitle = recording
@@ -677,6 +698,7 @@ function WSAudioPlayer(props: IProps) {
     allowSegment,
     waveformRef,
     onWSReady,
+    onWSLoadError,
     onWSProgress,
     onWSRegion,
     onWSCanUndo,
@@ -788,11 +810,6 @@ function WSAudioPlayer(props: IProps) {
   );
 
   const handleRecorder = useCallback(() => {
-    const blockedWhileExistingMediaLoads =
-      Boolean(myMediaId) &&
-      !readyRef.current &&
-      !recordingRef.current &&
-      !waitingForAI;
     if (
       !allowRecord ||
       playingRef.current ||
@@ -800,7 +817,7 @@ function WSAudioPlayer(props: IProps) {
       oneShotUsed ||
       loading ||
       busy ||
-      blockedWhileExistingMediaLoads
+      waveformLoading
     )
       return false;
     if (!recordingRef.current) {
@@ -848,10 +865,9 @@ function WSAudioPlayer(props: IProps) {
     setPxPerSec,
     setRecording,
     setProcessingRecording,
-    myMediaId,
     loading,
     busy,
-    waitingForAI,
+    waveformLoading,
   ]);
 
   const notifySegmentInteraction = useCallback(() => {
@@ -1047,10 +1063,12 @@ function WSAudioPlayer(props: IProps) {
     setProgress(0);
     setHasRegion(0);
     if (blob) {
-      if (setBusy) setBusy(true); //turned off on ready
+      setReady(false);
+      setBusy && setBusy(true); //turned off on ready
       wsLoad(blob, 0);
     } else {
-      if (setBusy) setBusy(false);
+      setReady(true);
+      setBusy && setBusy(false);
       wsClear(true);
       initialPosRef.current = undefined;
       recordStartPosition.current = 0;
@@ -1304,6 +1322,16 @@ function WSAudioPlayer(props: IProps) {
     void wsRecordingPeaks(peaks, seconds);
   }
 
+  function onWSLoadError(error: unknown) {
+    setReady(true);
+    if (setBusy) setBusy(false);
+    if (onLoadError) {
+      onLoadError(error);
+    } else {
+      showMessage(ts.mediaError, AlertSeverity.Error);
+    }
+  }
+
   function onWSReady(duration: number, loadingAnother: boolean) {
     // Safety guard: peaks preview loads suppress 'ready' during recording, so
     // this should not fire mid-recording anymore; if a stray ready arrives,
@@ -1503,9 +1531,6 @@ function WSAudioPlayer(props: IProps) {
     setBusy && setBusy(inprogress);
     setBlobReady && setBlobReady(!inprogress);
   };
-  const showLoadingWaveform =
-    myMediaId && !ready && !recording && !waitingForAI;
-
   const showAiProgressOverlay = waitingForAI;
 
   const waveformNode = (
@@ -1528,10 +1553,10 @@ function WSAudioPlayer(props: IProps) {
           maxWidth: '100%',
           overflow: 'hidden',
           visibility:
-            showLoadingWaveform || showAiProgressOverlay ? 'hidden' : 'visible',
+            waveformLoading || showAiProgressOverlay ? 'hidden' : 'visible',
         }}
       />
-      {showLoadingWaveform && (
+      {waveformLoading && (
         <Box
           sx={{
             position: 'absolute',
@@ -1590,23 +1615,29 @@ function WSAudioPlayer(props: IProps) {
     </Box>
   );
 
-  const audioAiMsg = (
+  const audioAiError = (
     func: AudioAiFunc,
     targetVoice?: string,
     error?: Error | AxiosError
   ) => {
-    let msg =
+    const summary =
       t.getString(`${func}Failed`) ??
       t.aiFailed
         .replace('{0}', targetVoice ? ` for ${targetVoice}` : '')
         .replace('{1}', func);
-    if (error instanceof Error) {
-      msg += ` ${error.message}`;
-    }
-    if (error instanceof AxiosError) {
-      msg += ` ${error.response?.data}`;
-    }
-    return msg;
+    const { summary: displaySummary, details } = aeroTaskErrorParts(
+      error ? axiosErrorMessage(error) : '',
+      summary
+    );
+    const logText = details ? `${displaySummary}: ${details}` : displaySummary;
+    const display = (
+      <AeroTaskErrorMessage
+        summary={displaySummary}
+        details={details}
+        detailsLabel={tm.details}
+      />
+    );
+    return { display, logText };
   };
   const applyAudioAi = (func: AudioAiFunc, targetVoice?: string) => {
     checkOnline((online) => {
@@ -1637,9 +1668,13 @@ function WSAudioPlayer(props: IProps) {
                   }
                 } else {
                   if ((file as Error).message !== 'canceled') {
-                    const msg = audioAiMsg(func, targetVoice, file);
-                    showMessage(msg);
-                    logError(Severity.error, errorReporter, msg);
+                    const { display, logText } = audioAiError(
+                      func,
+                      targetVoice,
+                      file
+                    );
+                    showMessage(display, AlertSeverity.Error);
+                    logError(Severity.error, errorReporter, logText);
                   }
                 }
                 doingProcess(false);
@@ -1650,9 +1685,9 @@ function WSAudioPlayer(props: IProps) {
           }
         });
       } catch (error: any) {
-        const msg = audioAiMsg(func, targetVoice, error);
-        logError(Severity.error, errorReporter, msg);
-        showMessage(msg);
+        const { display, logText } = audioAiError(func, targetVoice, error);
+        logError(Severity.error, errorReporter, logText);
+        showMessage(display, AlertSeverity.Error);
         doingProcess(false);
       }
     });
@@ -1986,7 +2021,7 @@ function WSAudioPlayer(props: IProps) {
         waitingForAI ||
         Boolean(loading) ||
         Boolean(busy) ||
-        (Boolean(myMediaId) && !ready && !recording && !waitingForAI) ||
+        waveformLoading ||
         (Boolean(oneTryOnly) && oneShotUsed && !recording) ||
         (!allowRecord && !recording)
       }
@@ -2016,8 +2051,7 @@ function WSAudioPlayer(props: IProps) {
       waitingForAI,
       loading,
       busy,
-      myMediaId,
-      ready,
+      waveformLoading,
       oneTryOnly,
       oneShotUsed,
       hasRecording,

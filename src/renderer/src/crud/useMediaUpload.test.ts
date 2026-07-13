@@ -28,8 +28,9 @@ jest.mock('../store', () => ({
 }));
 
 jest.mock('../selector', () => ({
-  mediaTabSelector: (state: { mediaTab: { uploadComplete: string } }) =>
-    state.mediaTab,
+  mediaTabSelector: (state: {
+    mediaTab: { uploadComplete: string; uploadFailed: string };
+  }) => state.mediaTab,
   sharedSelector: (state: { shared: { mediaAttached: string } }) =>
     state.shared,
 }));
@@ -99,6 +100,7 @@ jest.mock('../context/useGlobal', () => ({
 const mockState = {
   mediaTab: {
     uploadComplete: '{0} of {1} files uploaded successfully.',
+    uploadFailed: 'Upload Failed!',
   },
   shared: {
     mediaAttached: 'Media attached',
@@ -174,7 +176,7 @@ describe('useMediaUpload', () => {
   }
 
   async function completeUpload(
-    upload: (files: File[]) => Promise<void>,
+    upload: (files: File[]) => Promise<boolean>,
     files: File[],
     ...cbArgs: [number, boolean, unknown?]
   ) {
@@ -188,8 +190,7 @@ describe('useMediaUpload', () => {
       data?: unknown
     ) => void | Promise<void>;
     await cb(...cbArgs);
-    await uploadPromise;
-    return uploadProps;
+    return uploadPromise;
   }
 
   it('online success: pullTableList, dispatch UPLOAD_COMPLETE, snackbar, afterUploadCb', async () => {
@@ -200,7 +201,7 @@ describe('useMediaUpload', () => {
       passageId: 'psg-1',
       afterUploadCb,
     });
-    const upload = result.current as (files: File[]) => Promise<void>;
+    const upload = result.current as (files: File[]) => Promise<boolean>;
 
     const files = [makeFile()];
 
@@ -231,9 +232,11 @@ describe('useMediaUpload', () => {
       passageId: 'psg-1',
       afterUploadCb,
     });
-    const upload = result.current as (files: File[]) => Promise<void>;
+    const upload = result.current as (files: File[]) => Promise<boolean>;
 
-    await completeUpload(upload, [makeFile()], 0, false, undefined);
+    await expect(
+      completeUpload(upload, [makeFile()], 0, false, undefined)
+    ).rejects.toThrow('Upload Failed!');
 
     expect(mockSetOrbitRetries).toHaveBeenCalledWith(
       OrbitNetworkErrorRetries - 1
@@ -253,7 +256,7 @@ describe('useMediaUpload', () => {
       passageId: 'psg-1',
       afterUploadCb,
     });
-    const upload = result.current as (files: File[]) => Promise<void>;
+    const upload = result.current as (files: File[]) => Promise<boolean>;
 
     await completeUpload(upload, [makeFile()], 0, true, { blob: true });
 
@@ -286,7 +289,7 @@ describe('useMediaUpload', () => {
       passageId: 'psg-1',
       afterUploadCb,
     });
-    const upload = result.current as (files: File[]) => Promise<void>;
+    const upload = result.current as (files: File[]) => Promise<boolean>;
 
     await completeUpload(upload, [makeFile()], 0, true, { offline: true });
 
@@ -310,7 +313,7 @@ describe('useMediaUpload', () => {
       passageId: 'psg-1',
       afterUploadCb,
     });
-    const upload = result.current as (files: File[]) => Promise<void>;
+    const upload = result.current as (files: File[]) => Promise<boolean>;
 
     await completeUpload(upload, [makeFile()], 0, true, { offline: true });
 
@@ -334,7 +337,7 @@ describe('useMediaUpload', () => {
       passageId: 'psg-1',
       afterUploadCb,
     });
-    const upload = result.current as (files: File[]) => Promise<void>;
+    const upload = result.current as (files: File[]) => Promise<boolean>;
 
     await completeUpload(upload, [makeFile()], 0, true, { offline: true });
 
@@ -358,11 +361,24 @@ describe('useMediaUpload', () => {
       passageId: 'psg-1',
       afterUploadCb,
     });
-    const upload = result.current as (files: File[]) => Promise<void>;
+    const upload = result.current as (files: File[]) => Promise<boolean>;
 
     await expect(
       completeUpload(upload, [makeFile()], 0, true, { blob: true })
     ).rejects.toThrow('create failed');
+    expect(afterUploadCb).not.toHaveBeenCalled();
+  });
+
+  it('empty file list resolves false without starting upload', async () => {
+    const afterUploadCb = jest.fn().mockResolvedValue(undefined);
+    const { result } = renderUploadHook({
+      artifactId: null,
+      passageId: 'psg-1',
+      afterUploadCb,
+    });
+    const upload = result.current as (files: File[]) => Promise<boolean>;
+
+    await expect(upload([])).resolves.toBe(false);
     expect(afterUploadCb).not.toHaveBeenCalled();
   });
 
@@ -375,11 +391,13 @@ describe('useMediaUpload', () => {
       passageId: 'psg-1',
       afterUploadCb,
     });
-    const upload = result.current as (files: File[]) => Promise<void>;
+    const upload = result.current as (files: File[]) => Promise<boolean>;
 
-    await completeUpload(upload, [makeFile()], 0, false, undefined);
+    await expect(
+      completeUpload(upload, [makeFile()], 0, true, { stringId: 'media-1' })
+    ).resolves.toBe(true);
 
-    expect(afterUploadCb).toHaveBeenCalledWith('');
+    expect(afterUploadCb).toHaveBeenCalledWith('media-1');
   });
 
   it('dispatches uploadComplete action object, not the action creator function', async () => {
@@ -389,7 +407,7 @@ describe('useMediaUpload', () => {
       passageId: 'psg-1',
       afterUploadCb,
     });
-    const upload = result.current as (files: File[]) => Promise<void>;
+    const upload = result.current as (files: File[]) => Promise<boolean>;
 
     const { uploadComplete } = require('../store');
     await completeUpload(upload, [makeFile()], 0, true, {
