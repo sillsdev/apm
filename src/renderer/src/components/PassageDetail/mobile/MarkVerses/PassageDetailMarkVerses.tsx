@@ -1031,6 +1031,27 @@ export default function PassageDetailMarkVerses({ width }: MarkVersesProps) {
     toolChanged(verseToolId);
   };
 
+  /**
+   * Warn with a toast when a just-applied reference edit has an error or warning
+   * `applyReferenceEdit` has already set the row's status/tooltip — RefStatus.Err
+   * for a bad (ill-formatted) reference, RefStatus.Warn for the out-of-range /
+   * overlap / skipped-verse cases — so surface that same localized message as a
+   * toast (an error for a bad reference, a warning for the softer cases). Both
+   * the inline-typed edit and the Edit Reference dropdown can produce these.
+   */
+  const warnIfEditedReferenceFlagged = (rowIndex: number) => {
+    const editedCell = dataRef.current[rowIndex]?.[ColName.Ref] as
+      | ICell
+      | undefined;
+    const status = editedCell?.status;
+    if (status && status !== RefStatus.Valid) {
+      showMessage(
+        editedCell?.warning || t.badReferences,
+        status === RefStatus.Err ? AlertSeverity.Error : AlertSeverity.Warning
+      );
+    }
+  };
+
   const handleSaveSplitVerseDialog = (value: EditReferenceValue) => {
     if (!editReferenceDialog) return;
 
@@ -1040,11 +1061,10 @@ export default function PassageDetailMarkVerses({ width }: MarkVersesProps) {
       return;
     }
 
+    const { rowIndex } = editReferenceDialog;
     const saveValue = normalizeEditReferenceForSave(value);
-    applyReferenceEdit(
-      editReferenceDialog.rowIndex,
-      formatReferenceValue(saveValue)
-    );
+    applyReferenceEdit(rowIndex, formatReferenceValue(saveValue));
+    warnIfEditedReferenceFlagged(rowIndex);
     setEditReferenceDialog(undefined);
   };
 
@@ -1056,21 +1076,7 @@ export default function PassageDetailMarkVerses({ width }: MarkVersesProps) {
     const newReference = rawValue.trim();
     if (newReference === previousReference.trim()) return;
     applyReferenceEdit(rowIndex, newReference);
-    // Warn with a toast when the user types a
-    // problematic reference. `applyReferenceEdit` has already flagged the row —
-    // RefStatus.Err for a bad (ill-formatted) reference, RefStatus.Warn for the
-    // out-of-range / overlap / skipped-verse cases — each with its localized
-    // tooltip. Surface that same message as a toast 
-    const editedCell = dataRef.current[rowIndex]?.[ColName.Ref] as
-      | ICell
-      | undefined;
-    const status = editedCell?.status;
-    if (status && status !== RefStatus.Valid) {
-      showMessage(
-        editedCell?.warning || t.badReferences,
-        status === RefStatus.Err ? AlertSeverity.Error : AlertSeverity.Warning
-      );
-    }
+    warnIfEditedReferenceFlagged(rowIndex);
   };
 
   const resetSegments = (regions: IRegion[]) => {
