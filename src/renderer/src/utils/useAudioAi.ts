@@ -105,17 +105,7 @@ export const useAudioAi = (): AudioAIResult => {
     if (response?.message) {
       task.validating = true;
       try {
-        let b: Blob | undefined;
-        try {
-          b = await loadBlobAsync(response?.message);
-        } catch (err: unknown) {
-          const msg = err instanceof Error ? err.message : String(err);
-          if (msg.includes('empty download')) {
-            noteEmptyS3Result(task);
-            return undefined;
-          }
-          throw err;
-        }
+        const b = await loadBlobAsync(response?.message);
         if (!b?.size) {
           noteEmptyS3Result(task);
           return undefined;
@@ -243,7 +233,7 @@ export const useAudioAi = (): AudioAIResult => {
     cb,
   }: IRequestAudio): Promise<void> => {
     if (getGlobal('offline')) return;
-    const useS3 = file.size > 6000000 || Boolean(targetVoice);
+    const useS3 = true; // file.size > 6000000 || Boolean(targetVoice);  V2 doesn't work with data in request
     // larger sizes give Network Error
     if (useS3)
       s3request(func, cancelRef, file, targetVoice, cb).catch((err) =>
@@ -260,6 +250,8 @@ export const useAudioAi = (): AudioAIResult => {
               taskId,
               cb,
               cancelRef,
+              emptyResultPolls: 0,
+              pollStartedAt: Date.now(),
             });
             if (!taskTimer.current) launchTimer(func);
           } else if (response.status === HttpStatusCode.PayloadTooLarge) {

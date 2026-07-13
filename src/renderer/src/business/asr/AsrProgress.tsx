@@ -129,10 +129,11 @@ export default function AsrProgress({
 
   const status = (
     message: string | React.JSX.Element,
-    alert?: AlertSeverity
+    alert?: AlertSeverity,
+    logMessage?: string
   ) => {
     showMessage(message, alert);
-    console.log(message);
+    console.log(logMessage ?? (typeof message === 'string' ? message : ''));
   };
 
   const showTaskFailure = async (message: string) => {
@@ -145,7 +146,8 @@ export default function AsrProgress({
         details={details}
         detailsLabel={tm.details}
       />,
-      AlertSeverity.Error
+      AlertSeverity.Error,
+      message
     );
     setTaskId('');
   };
@@ -262,7 +264,8 @@ export default function AsrProgress({
           details={details}
           detailsLabel={tm.details}
         />,
-        AlertSeverity.Error
+        AlertSeverity.Error,
+        message
       );
       closing();
     }
