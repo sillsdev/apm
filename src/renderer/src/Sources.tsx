@@ -450,6 +450,11 @@ export const Sources = async (
   let syncBuffer: Buffer | undefined = undefined;
   let syncFile = '';
   if (!offline && isElectron) {
+    // Go Online clears authId so goRemote is usually true; that skips the
+    // !goRemote restore path, while RestoreBackupOnMount is still racing.
+    // ITFSYNC filters projects by offlineproject in memory — await the same
+    // restorePromise so those records are present.
+    setProjectsLoaded(await restoreBackup(coordinator));
     const fr = await electronExport(
       ExportType.ITFSYNC,
       undefined, //all artifact types

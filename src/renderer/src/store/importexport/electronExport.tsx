@@ -932,9 +932,15 @@ export async function electronExport(
       imported = importedDate;
     } else {
       op = getOfflineProject(projRec.id);
-      // getOfflineProject (useOfflnProjRead.ts) returns {} — not undefined —
-      // when no matching record is found (e.g. it hasn't loaded into local
-      // memory yet on this boot), so op.attributes can itself be undefined.
+      // getOfflineProject (useOfflnProjRead.ts) closes over React Orbit data,
+      // which can still be empty right after restoreBackup fills memory —
+      // fall back to a live memory query for snapshotDate.
+      if (!op?.attributes?.snapshotDate) {
+        const oprecs = memory.cache.query((q) =>
+          q.findRecords('offlineproject')
+        ) as OfflineProject[];
+        op = oprecs.find((o) => related(o, 'project') === projRec.id) ?? op;
+      }
       imported = DateTime.fromISO(
         op?.attributes?.snapshotDate || '1900-01-01T00:00:00.000Z'
       ) as DateTime<true>;
@@ -1024,6 +1030,7 @@ export async function electronExport(
   ) {
     //avoid intermittent errors where projecttype or plan is null
     if (backup) {
+      await backupToMemory({ table: 'offlineproject', backup, memory });
       await backupToMemory({ table: 'project', backup, memory });
       await backupToMemory({ table: 'mediafile', backup, memory });
     }
@@ -1032,9 +1039,14 @@ export async function electronExport(
       q.findRecords('project')
     ) as ProjectD[];
 
-    const offlineprojects = memory.cache.query((q) =>
-      q.findRecords('offlineproject')
+    // Prefer IndexedDB when present — memory may still be empty if restore
+    // has not finished (Go Online race). Fall back to memory otherwise.
+    let offlineprojects = (
+      backup
+        ? await backup.query((q) => q.findRecords('offlineproject'))
+        : memory.cache.query((q) => q.findRecords('offlineproject'))
     ) as OfflineProject[];
+    if (!Array.isArray(offlineprojects)) offlineprojects = [offlineprojects];
     const ids = offlineprojects
       .filter((o) => o?.attributes?.offlineAvailable)
       .map((o) => related(o, 'project')) as string[];
