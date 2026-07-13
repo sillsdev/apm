@@ -333,10 +333,6 @@ export const isMarkVersesReferenceInPassage = (
  * subparts are skipped)? Returning false means it sits at or before that point
  * (an overlap/duplicate) or fills an earlier gap (a backfill).
  * This function assumes ref is in passage and is well-formed
- *
- * The comparison is subpart-aware: a start that skips the *leading subparts* of
- * the expected verse (e.g. `1:1` -> `1:2b`, which skips `1:2a`) counts as a
- * forward gap, not just a whole-verse jump.
  */
 const markVersesReferenceSkipsAhead = (
   prevRef: string | undefined,
@@ -493,7 +489,8 @@ export const markVersesSkippedPassageRefs = (
       prevEnd.verse === next.start.verse &&
       prevEnd.verseLetterSuffix
     ) {
-      firstMissingRank = (LETTER_SUFFIX_RANK[prevEnd.verseLetterSuffix] ?? 0) + 1;
+      firstMissingRank =
+        (LETTER_SUFFIX_RANK[prevEnd.verseLetterSuffix] ?? 0) + 1;
     }
     const startRank = LETTER_SUFFIX_RANK[startSuffix] ?? 0;
     for (let rank = firstMissingRank; rank < startRank; rank += 1) {

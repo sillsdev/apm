@@ -227,11 +227,6 @@ export default function EditReferenceDropdown({
     }));
   };
 
-  /**
-   * The split-verse letter suffix picker for one endpoint. Rendered inline, to
-   * the right of the verse field, when Split Verse is on (see the layout note on
-   * `renderSuffixSelect`'s callers).
-   */
   const renderSuffixSelect = (side: 'start' | 'end') => {
     const isStart = side === 'start';
     const suffix = isStart ? draft.startSuffix : draft.endSuffix;
@@ -259,8 +254,7 @@ export default function EditReferenceDropdown({
   /**
    * An editable `chapter:verse` endpoint (`unrestricted` mode). The chapter is a
    * dropdown only when the passage spans multiple chapters; the verse is always
-   * a dropdown scoped to the chosen chapter. The split-verse suffix (when on)
-   * sits inline to the right of the verse, matching the fixed-start layout.
+   * a dropdown scoped to the chosen chapter.
    */
   const renderEditableEndpoint = (side: 'start' | 'end') => {
     const isStart = side === 'start';
