@@ -36,6 +36,7 @@ import { refMatch } from '../../../../utils/refMatch';
 import { useStepPermissions } from '../../../../utils/useStepPermission';
 import { useMobile } from '../../../../utils/useMobile';
 import Confirm from '../../../AlertDialog';
+import { useSnackBar, AlertSeverity } from '../../../../hoc/SnackBar';
 import { type WSAudioPlayerControls } from '../../../WSAudioPlayer';
 import {
   createMarkVersesApplyRegionColor,
@@ -168,6 +169,7 @@ export default function PassageDetailMarkVerses({ width }: MarkVersesProps) {
   const hasPermission = canDoSectionStep(currentstep, section);
   const { isMobile } = useMobile();
   const { localizedArtifactType } = useArtifactType();
+  const { showMessage } = useSnackBar();
   const t = useSelector(verseSelector, shallowEqual) as IVerseStrings;
   const ts = useSelector(sharedSelector, shallowEqual) as ISharedStrings;
   const {
@@ -1054,6 +1056,21 @@ export default function PassageDetailMarkVerses({ width }: MarkVersesProps) {
     const newReference = rawValue.trim();
     if (newReference === previousReference.trim()) return;
     applyReferenceEdit(rowIndex, newReference);
+    // Warn with a toast when the user types a
+    // problematic reference. `applyReferenceEdit` has already flagged the row —
+    // RefStatus.Err for a bad (ill-formatted) reference, RefStatus.Warn for the
+    // out-of-range / overlap / skipped-verse cases — each with its localized
+    // tooltip. Surface that same message as a toast 
+    const editedCell = dataRef.current[rowIndex]?.[ColName.Ref] as
+      | ICell
+      | undefined;
+    const status = editedCell?.status;
+    if (status && status !== RefStatus.Valid) {
+      showMessage(
+        editedCell?.warning || t.badReferences,
+        status === RefStatus.Err ? AlertSeverity.Error : AlertSeverity.Warning
+      );
+    }
   };
 
   const resetSegments = (regions: IRegion[]) => {
