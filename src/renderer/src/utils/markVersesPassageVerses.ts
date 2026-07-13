@@ -152,8 +152,12 @@ export const parsePassageVerseKey = (
     normalizeRef(ref),
     fallbackChapter
   );
-  if (!parsed) return undefined;
-  return { chapter: parsed.chapter, verse: parsed.verse };
+  if (parsed) return { chapter: parsed.chapter, verse: parsed.verse };
+  // A ranged entry (e.g. `7:4a-b`, the last row of a passage ending mid-verse)
+  // is keyed by its start verse.
+  const range = parseMarkVersesReference(ref);
+  if (range) return { chapter: range.start.chapter, verse: range.start.verse };
+  return undefined;
 };
 
 export const toPassageVerseKey = (chapter: number, verse: number) =>

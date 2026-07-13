@@ -584,6 +584,82 @@ describe('evaluateMarkVersesReferenceStatus (per-row warning reason)', () => {
       reason: MarkVersesWarningReason.OutOfRange,
     });
   });
+
+  describe('passage that starts and ends mid-verse (7:2b-4b)', () => {
+    // Must not flag its first row (`7:2b`) as skipping the earlier part (`7:2a`) — that part
+    // is outside the passage, not missing. The end verse's parts before the end
+    // subpart (`7:4a`) are inside the passage, so the last row covers them as a
+    // range (`7:4a-b`) and is likewise unflagged. These are the rows getRefs
+    // auto-generates for this passage.
+    const midVersePassage = {
+      attributes: { book: longChapter1, reference: '7:2b-4b' },
+    } as unknown as PassageD;
+    const rows = ['7:2b', '7:3', '7:4a-b'];
+    const midVerseStatus = (rowIndex: number) =>
+      evaluateMarkVersesReferenceStatus({
+        newReference: rows[rowIndex],
+        tableReferences: rows,
+        rowIndex,
+        passage: midVersePassage,
+      });
+
+    it('does not flag the first row that starts the passage mid-verse', () => {
+      expect(midVerseStatus(0)).toEqual({});
+    });
+
+    it('does not flag the interior whole-verse row', () => {
+      expect(midVerseStatus(1)).toEqual({});
+    });
+
+    it('does not flag the ranged last row covering the included subparts', () => {
+      expect(midVerseStatus(2)).toEqual({});
+    });
+
+    it('still flags a bare end subpart that skips the earlier part (7:4b)', () => {
+      // Without the a-b range the last row (`7:4b`) leaves `7:4a` — which is in
+      // the passage — skipped.
+      expect(
+        evaluateMarkVersesReferenceStatus({
+          newReference: '7:4b',
+          tableReferences: ['7:2b', '7:3', '7:4b'],
+          rowIndex: 2,
+          passage: midVersePassage,
+        })
+      ).toEqual({ reason: MarkVersesWarningReason.SkipsAhead });
+    });
+  });
+
+  it('flags the whole end verse as out of range when the passage ends mid-verse', () => {
+    // Passage reference 1:1-1:3a: the subpart is only in the reference string,
+    // so 1:3 (all of verse 3) reaches past the passage end and is out of range.
+    const passage = {
+      attributes: {
+        book: longChapter1,
+        reference: '1:1-1:3a',
+        startChapter: 1,
+        startVerse: 1,
+        endChapter: 1,
+        endVerse: 3,
+      },
+    } as unknown as PassageD;
+    expect(
+      evaluateMarkVersesReferenceStatus({
+        newReference: '1:3',
+        tableReferences: ['1:1', '1:2', '1:3'],
+        rowIndex: 2,
+        passage,
+      })
+    ).toEqual({ reason: MarkVersesWarningReason.OutOfRange });
+    // ...while the in-passage subpart 1:3a is accepted (no warning).
+    expect(
+      evaluateMarkVersesReferenceStatus({
+        newReference: '1:3a',
+        tableReferences: ['1:1', '1:2', '1:3a'],
+        rowIndex: 2,
+        passage,
+      })
+    ).toEqual({});
+  });
 });
 
 describe('markVersesSkippedPassageRefs', () => {
@@ -666,6 +742,30 @@ describe('markVersesSkippedPassageRefs', () => {
     expect(markVersesSkippedPassageRefs('1:2a', '1:2c', passage)).toEqual([
       '1:2b',
     ]);
+  });
+
+  describe('passage that begins mid-verse (subpart start bound)', () => {
+    // The passage starts at 7:2b (its first row), so part 7:2a is outside the
+    // passage — never "skipped". passageRefs[0] carries the start subpart.
+    const midVerse = ['7:2b', '7:3', '7:4a-b'];
+
+    it('does not list the pre-passage subpart when the first row skips ahead', () => {
+      // First row 7:2c skips 7:2b only; 7:2a is outside the passage.
+      expect(markVersesSkippedPassageRefs('', '7:2c', midVerse)).toEqual([
+        '7:2b',
+      ]);
+      expect(markVersesSkippedPassageRefs(undefined, '7:2d', midVerse)).toEqual(
+        ['7:2b', '7:2c']
+      );
+    });
+
+    it('still floors at the passage start when the passage begins at part a', () => {
+      // Passage starting at a whole verse keeps part a in play.
+      expect(markVersesSkippedPassageRefs('', '1:1c', ['1:1', '1:2'])).toEqual([
+        '1:1a',
+        '1:1b',
+      ]);
+    });
   });
 });
 
@@ -818,6 +918,51 @@ describe('isMarkVersesReferenceInPassage', () => {
     });
   });
 
+  // In the real app the passage's `reference` string keeps the verse subpart
+  // (e.g. `1:1-1:3a`) while the calculated startVerse/endVerse attributes are
+  // plain numbers with the subpart stripped. The reference must therefore win,
+  // so the passage end is treated consistently with any other subpart.
+  describe('subparts retained in passage reference bounds', () => {
+    const passage = {
+      attributes: {
+        book: longChapter1,
+        reference: '1:1-1:3a',
+        startChapter: 1,
+        startVerse: 1,
+        endChapter: 1,
+        endVerse: 3,
+      },
+    } as unknown as PassageD;
+
+    it('treats the whole end verse and later subparts as outside', () => {
+      // 1:3 (all of verse 3) and 1:3b both reach past the passage end 1:3a.
+      expect(isMarkVersesReferenceInPassage('1:3', passage)).toBe(false);
+      expect(isMarkVersesReferenceInPassage('1:3b', passage)).toBe(false);
+    });
+
+    it('accepts the end subpart and everything before it', () => {
+      expect(isMarkVersesReferenceInPassage('1:3a', passage)).toBe(true);
+      expect(isMarkVersesReferenceInPassage('1:2', passage)).toBe(true);
+    });
+
+    it('honors a subpart on the passage start too', () => {
+      const startPassage = {
+        attributes: { book: longChapter1, reference: '1:2b-1:5' },
+      } as unknown as PassageD;
+      expect(isMarkVersesReferenceInPassage('1:2a', startPassage)).toBe(false);
+      expect(isMarkVersesReferenceInPassage('1:2b', startPassage)).toBe(true);
+    });
+
+    it('parses the short range form (6:1-3a)', () => {
+      const shortForm = {
+        attributes: { book: longChapter1, reference: '6:1-3a' },
+      } as unknown as PassageD;
+      expect(isMarkVersesReferenceInPassage('6:3a', shortForm)).toBe(true);
+      expect(isMarkVersesReferenceInPassage('6:3', shortForm)).toBe(false);
+      expect(isMarkVersesReferenceInPassage('6:3b', shortForm)).toBe(false);
+    });
+  });
+
   describe('corner cases', () => {
     it('rejects an unparseable reference', () => {
       const passage = passageStub(longChapter1, '1:1', '1:3');
@@ -917,60 +1062,103 @@ describe('markVersesReferenceStartsPassage', () => {
       false
     );
   });
+
+  describe('passage that begins mid-verse (subpart start bound)', () => {
+    // Passage 7:2b-4b begins at part b of verse 2; part a belongs to the
+    // previous passage. A row starting at 7:2b therefore begins the passage.
+    const midVerse = {
+      attributes: { book: 'LUK', reference: '7:2b-4b' },
+    } as unknown as PassageD;
+
+    it('accepts a row starting at the passage start subpart', () => {
+      expect(markVersesReferenceStartsPassage('7:2b', midVerse)).toBe(true);
+    });
+
+    it('rejects the whole verse (begins before the start subpart)', () => {
+      expect(markVersesReferenceStartsPassage('7:2', midVerse)).toBe(false);
+      expect(markVersesReferenceStartsPassage('7:2a', midVerse)).toBe(false);
+    });
+
+    it('rejects a later subpart (begins after the start subpart)', () => {
+      expect(markVersesReferenceStartsPassage('7:2c', midVerse)).toBe(false);
+    });
+  });
 });
 
 describe('markVersesRenumberLeadingRef', () => {
+  // A wide passage so the subpart-logic cases turn only on the reference itself;
+  // every continuation they produce (1:1b..e, 1:2b/c, 1:3b) is comfortably in
+  // range. The passage-bounds behavior is exercised separately at the end.
+  const wide = passageStub(longChapter1, '1:1', '1:80');
+
   it('continues with part b when the reference ends at part a', () => {
     // A verse can never end at part a, so the next row must supply part b.
-    expect(markVersesRenumberLeadingRef('1:1a')).toBe('1:1b');
-    expect(markVersesRenumberLeadingRef('1:3a')).toBe('1:3b');
+    expect(markVersesRenumberLeadingRef('1:1a', wide)).toBe('1:1b');
+    expect(markVersesRenumberLeadingRef('1:3a', wide)).toBe('1:3b');
     // Ending a multi-verse range at part a of the end verse: same rule.
-    expect(markVersesRenumberLeadingRef('1:1b-1:2a')).toBe('1:2b');
-    expect(markVersesRenumberLeadingRef('1:1a-1:2a')).toBe('1:2b');
-    expect(markVersesRenumberLeadingRef('1:1-1:2a')).toBe('1:2b');
+    expect(markVersesRenumberLeadingRef('1:1b-1:2a', wide)).toBe('1:2b');
+    expect(markVersesRenumberLeadingRef('1:1a-1:2a', wide)).toBe('1:2b');
+    expect(markVersesRenumberLeadingRef('1:1-1:2a', wide)).toBe('1:2b');
   });
 
   it('continues with the next letter when the end verse is covered from part a', () => {
     // The user chose to specify subparts (rather than writing 1:1 to indicate all of verse 1), so a
     // further part is implied.
-    expect(markVersesRenumberLeadingRef('1:1a-b')).toBe('1:1c');
-    expect(markVersesRenumberLeadingRef('1:1a-c')).toBe('1:1d');
-    expect(markVersesRenumberLeadingRef('1:1a-d')).toBe('1:1e');
+    expect(markVersesRenumberLeadingRef('1:1a-b', wide)).toBe('1:1c');
+    expect(markVersesRenumberLeadingRef('1:1a-c', wide)).toBe('1:1d');
+    expect(markVersesRenumberLeadingRef('1:1a-d', wide)).toBe('1:1e');
     // A range spanning into a later verse covers that verse from part a.
-    expect(markVersesRenumberLeadingRef('1:1-1:2b')).toBe('1:2c');
+    expect(markVersesRenumberLeadingRef('1:1-1:2b', wide)).toBe('1:2c');
   });
 
   it('moves to the next verse when a b+ end excludes part a of a single verse', () => {
     // The letter serves to drop the leading part; verses rarely have parts past b.
     // So we want to just go on to the next verse
-    expect(markVersesRenumberLeadingRef('1:1b')).toBeUndefined();
-    expect(markVersesRenumberLeadingRef('1:1c')).toBeUndefined();
-    expect(markVersesRenumberLeadingRef('1:1d')).toBeUndefined();
-    expect(markVersesRenumberLeadingRef('1:1b-c')).toBeUndefined();
-    expect(markVersesRenumberLeadingRef('1:1b-d')).toBeUndefined();
-    expect(markVersesRenumberLeadingRef('1:1c-d')).toBeUndefined();
+    expect(markVersesRenumberLeadingRef('1:1b', wide)).toBeUndefined();
+    expect(markVersesRenumberLeadingRef('1:1c', wide)).toBeUndefined();
+    expect(markVersesRenumberLeadingRef('1:1d', wide)).toBeUndefined();
+    expect(markVersesRenumberLeadingRef('1:1b-c', wide)).toBeUndefined();
+    expect(markVersesRenumberLeadingRef('1:1b-d', wide)).toBeUndefined();
+    expect(markVersesRenumberLeadingRef('1:1c-d', wide)).toBeUndefined();
   });
 
   it('treats a spanned-into end verse as covered from part a (1:1b-1:2b -> 1:2c)', () => {
     // The range enters verse 2, so verse 2 counts as covered from part a and
     // takes the "further part implied" branch. See the helper's doc comment.
-    expect(markVersesRenumberLeadingRef('1:1b-1:2b')).toBe('1:2c');
+    expect(markVersesRenumberLeadingRef('1:1b-1:2b', wide)).toBe('1:2c');
   });
 
   it('does not run past the last subpart (e)', () => {
     // There is no letter after e, so the tail falls back to the next passage
     // verse rather than an invalid 1:1f.
-    expect(markVersesRenumberLeadingRef('1:1a-e')).toBeUndefined();
+    expect(markVersesRenumberLeadingRef('1:1a-e', wide)).toBeUndefined();
   });
 
   it('yields no leading ref for a whole (non-split) verse or range', () => {
-    expect(markVersesRenumberLeadingRef('1:1')).toBeUndefined();
-    expect(markVersesRenumberLeadingRef('1:1-3')).toBeUndefined();
-    expect(markVersesRenumberLeadingRef('1:30-2:2')).toBeUndefined();
+    expect(markVersesRenumberLeadingRef('1:1', wide)).toBeUndefined();
+    expect(markVersesRenumberLeadingRef('1:1-3', wide)).toBeUndefined();
+    expect(markVersesRenumberLeadingRef('1:30-2:2', wide)).toBeUndefined();
   });
 
   it('returns undefined for an unparseable reference', () => {
-    expect(markVersesRenumberLeadingRef('foo')).toBeUndefined();
-    expect(markVersesRenumberLeadingRef('')).toBeUndefined();
+    expect(markVersesRenumberLeadingRef('foo', wide)).toBeUndefined();
+    expect(markVersesRenumberLeadingRef('', wide)).toBeUndefined();
+  });
+
+  describe('drops a continuation that falls outside the passage', () => {
+    it('does not continue past the passage end subpart', () => {
+      // Passage ends at 9:5b; editing the last row to 9:5a-b would otherwise
+      // imply a 9:5c continuation, but 9:5c is outside the passage — no extra
+      // row.
+      const passage = passageStub(longChapter1, '9:1', '9:5b');
+      expect(markVersesRenumberLeadingRef('9:5a-b', passage)).toBeUndefined();
+    });
+
+    it('keeps a continuation that is still inside the passage', () => {
+      // Whole-verse passage end (9:1-5): verse 5 has room past b, so splitting
+      // the last row into a-b still implies a 9:5c continuation in range.
+      const passage = passageStub(longChapter1, '9:1', '9:5');
+      expect(markVersesRenumberLeadingRef('9:5a-b', passage)).toBe('9:5c');
+    });
   });
 });

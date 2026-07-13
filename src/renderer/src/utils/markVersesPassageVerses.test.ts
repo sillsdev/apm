@@ -31,6 +31,18 @@ describe('markVersesPassageVerses', () => {
     ).toEqual(['1:31', '2:1', '2:2']);
   });
 
+  it('keys a ranged last row by its start verse (7:2b-4b -> ...7:4)', () => {
+    // A passage ending mid-verse auto-generates a ranged final row (`7:4a-b`);
+    // its verse option is still verse 7:4, so the ending dropdown lists it.
+    const midVerse = ['7:2b', '7:3', '7:4a-b'];
+    expect(
+      passageRefsToVerseOptions(midVerse).map((option) => option.key)
+    ).toEqual(['7:2', '7:3', '7:4']);
+    expect(
+      getEndingVerseOptions(midVerse, 7, 3).map((option) => option.key)
+    ).toEqual(['7:3', '7:4']);
+  });
+
   it('formats single-verse and range references', () => {
     expect(
       formatMarkVersesReference({

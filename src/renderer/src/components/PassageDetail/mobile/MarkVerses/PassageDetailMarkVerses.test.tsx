@@ -408,6 +408,34 @@ test('auto-numbers the last verse row with the passage end subpart (6:1-3a)', as
   expect(screen.getByLabelText('verse-reference-3')).toHaveTextContent('6:3a');
 });
 
+test('covers the last verse subparts as a range when the passage ends mid-verse (7:2b-4b)', async () => {
+  // Passage 7:2b-4b starts at part b of verse 2 (part a is the previous
+  // passage) and ends at part b of verse 4. The first row keeps the start
+  // subpart (7:2b), and the last row spans the included subparts (7:4a-b) so
+  // part a is not left uncovered.
+  mockPassage.attributes = {
+    ...passageAttributes,
+    reference: '7:2b-4b',
+    startChapter: 7,
+    startVerse: 2,
+    endChapter: 7,
+    endVerse: 4,
+  } as any;
+
+  runTest({ width: 375 });
+
+  await waitFor(() => {
+    expect(screen.getByLabelText('verse-reference-1')).toHaveTextContent(
+      '7:2b'
+    );
+  });
+
+  expect(screen.getByLabelText('verse-reference-2')).toHaveTextContent('7:3');
+  expect(screen.getByLabelText('verse-reference-3')).toHaveTextContent(
+    '7:4a-b'
+  );
+});
+
 test('updates timestamp rows when the player emits verse markers', async () => {
   runTest({ width: 375 });
 

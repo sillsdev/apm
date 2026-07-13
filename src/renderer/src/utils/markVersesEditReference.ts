@@ -9,6 +9,7 @@ import {
   parseMarkVersesReference,
   splitVerseSuffix,
   type ParsedMarkVersesReferencePart,
+  type VerseNumberAndSuffix,
 } from './markVersesPassageVerses';
 import { PassageD } from '@model/index';
 
@@ -183,7 +184,8 @@ export const markVersesReferenceConsecutivelyFollows = (
  *     corner case.
  */
 export const markVersesRenumberLeadingRef = (
-  newReference: string
+  newReference: string,
+  passage: PassageD
 ): string | undefined => {
   const parsed = parseMarkVersesReference(newReference);
   if (!parsed) return undefined;
@@ -207,7 +209,13 @@ export const markVersesRenumberLeadingRef = (
   // `incrementMarkVersesReferenceSuffix` supplies, or `undefined` past `e`).
   if (endSuffix !== 'a' && !endVerseCoverageStartsAtA) return undefined;
 
-  return incrementMarkVersesReferenceSuffix(newReference);
+  const leadingRef = incrementMarkVersesReferenceSuffix(newReference);
+  if (!leadingRef) return undefined;
+
+  // Only continue while the next subpart is still inside the passage.
+  return isMarkVersesReferenceInPassage(leadingRef, passage)
+    ? leadingRef
+    : undefined;
 };
 
 /** Every adjacent pair of rows consecutively follows. */
@@ -267,11 +275,69 @@ const verseSubpartKey = (
   return verseOrderKey(chapter, verse) * 10 + suffixRank;
 };
 
+interface MarkVersesPassageBound {
+  chapter: number;
+  verse: number;
+  verseLetterSuffix: string;
+}
+
+/**
+ * The passage's start and end positions as subpart-aware bounds. Prefers the
+ * passage's `reference` string: it keeps the verse subpart (e.g. `1:1-1:3a`),
+ * whereas the calculated startVerse/endVerse attributes are plain numbers with
+ * the subpart stripped (an end of `3a` becomes `3`). Reading the subpart from
+ * the reference lets a passage bound be judged consistently with any other
+ * subpart — `1:3` (the whole verse) and `1:3b` both fall outside a passage
+ * ending at `1:3a`. Falls back to the numeric/string attributes (which may
+ * themselves carry a suffix, e.g. `2b`) when the reference is absent or
+ * unparseable. A bound is `undefined` when its chapter or verse is missing.
+ */
+const markVersesPassageBounds = (
+  passage: PassageD
+): { start?: MarkVersesPassageBound; end?: MarkVersesPassageBound } => {
+  const fromRef = passage.attributes.reference
+    ? parseMarkVersesReference(passage.attributes.reference)
+    : undefined;
+  const startChapter =
+    fromRef?.start.chapter ?? passage.attributes.startChapter;
+  const endChapter = fromRef?.end.chapter ?? passage.attributes.endChapter;
+  const startVerse: VerseNumberAndSuffix | undefined = fromRef
+    ? {
+        verseNumber: fromRef.start.verse,
+        verseLetterSuffix: fromRef.start.verseLetterSuffix,
+      }
+    : splitVerseSuffix(passage.attributes.startVerse);
+  const endVerse: VerseNumberAndSuffix | undefined = fromRef
+    ? {
+        verseNumber: fromRef.end.verse,
+        verseLetterSuffix: fromRef.end.verseLetterSuffix,
+      }
+    : splitVerseSuffix(passage.attributes.endVerse);
+  return {
+    start:
+      startChapter && startVerse
+        ? {
+            chapter: startChapter,
+            verse: startVerse.verseNumber,
+            verseLetterSuffix: startVerse.verseLetterSuffix,
+          }
+        : undefined,
+    end:
+      endChapter && endVerse
+        ? {
+            chapter: endChapter,
+            verse: endVerse.verseNumber,
+            verseLetterSuffix: endVerse.verseLetterSuffix,
+          }
+        : undefined,
+  };
+};
+
 /**
  * True when the whole span `ref` covers lies within `passage` — its start is at
  * or after the passage's start verse and its end is at or before the passage's
- * end verse. The passage is contiguous, so its two bounds (`startChapter`/
- * `startVerse` .. `endChapter`/`endVerse`) fully describe it.
+ * end verse. The passage is contiguous, so its two bounds (start .. end) fully
+ * describe it.
  *
  * Comparison is subpart-aware: when a bound carries a letter (`2b`), a subpart
  * outside that part is outside the passage (`1:2a` is before `1:2b`). A bound
@@ -284,30 +350,19 @@ export const isMarkVersesReferenceInPassage = (
   passage: PassageD
 ): boolean => {
   const parsed = parseMarkVersesReference(ref);
-  const passageStartChapter = passage.attributes.startChapter;
-  const passageEndChapter = passage.attributes.endChapter;
-  // startVerse/endVerse may carry a letter suffix (e.g. `2b`); split it out so
-  // the passage bounds are subpart-aware like the reference being tested.
-  const passageStart = splitVerseSuffix(passage.attributes.startVerse);
-  const passageEnd = splitVerseSuffix(passage.attributes.endVerse);
-  if (
-    !parsed ||
-    !passageStartChapter ||
-    !passageEndChapter ||
-    !passageStart ||
-    !passageEnd
-  )
-    return false;
+  const { start: passageStart, end: passageEnd } =
+    markVersesPassageBounds(passage);
+  if (!parsed || !passageStart || !passageEnd) return false;
 
   const lowerBound = verseSubpartKey(
-    passageStartChapter,
-    passageStart.verseNumber,
+    passageStart.chapter,
+    passageStart.verse,
     passageStart.verseLetterSuffix,
     false
   );
   const upperBound = verseSubpartKey(
-    passageEndChapter,
-    passageEnd.verseNumber,
+    passageEnd.chapter,
+    passageEnd.verse,
     passageEnd.verseLetterSuffix,
     true
   );
@@ -483,14 +538,38 @@ export const markVersesSkippedPassageRefs = (
   const startSuffix = next.start.verseLetterSuffix;
   if (startSuffix && startSuffix !== 'a') {
     let firstMissingRank = VERSE_START_SUFFIX_RANK;
+
+    // The passage may itself begin mid-verse (e.g. `7:2b`, because an earlier
+    // part belongs to the previous passage). So when `newRef` begins on the
+    // passage's first verse floor the first missing subpart at the passage
+    // start's subpart — in our example, a first row of `7:2c` skips `7:2b`
+    // only. `passageRefs[0]` is the passage's start verse and
+    // carries that subpart.
+    const passageStart = parseMarkVersesReference(passageRefs[0] ?? '');
+    if (
+      passageStart &&
+      passageStart.start.chapter === next.start.chapter &&
+      passageStart.start.verse === next.start.verse &&
+      passageStart.start.verseLetterSuffix
+    ) {
+      firstMissingRank = Math.max(
+        firstMissingRank,
+        LETTER_SUFFIX_RANK[passageStart.start.verseLetterSuffix] ?? 0
+      );
+    }
+
+    // If the prior row already covered earlier subparts of this same verse,
+    // start just after where it left off (`1:2a` -> `1:2c` skips only `1:2b`).
     if (
       prevEnd &&
       prevEnd.chapter === next.start.chapter &&
       prevEnd.verse === next.start.verse &&
       prevEnd.verseLetterSuffix
     ) {
-      firstMissingRank =
-        (LETTER_SUFFIX_RANK[prevEnd.verseLetterSuffix] ?? 0) + 1;
+      firstMissingRank = Math.max(
+        firstMissingRank,
+        (LETTER_SUFFIX_RANK[prevEnd.verseLetterSuffix] ?? 0) + 1
+      );
     }
     const startRank = LETTER_SUFFIX_RANK[startSuffix] ?? 0;
     for (let rank = firstMissingRank; rank < startRank; rank += 1) {
@@ -566,26 +645,35 @@ export const evaluateMarkVersesReferenceStatus = (
   return {};
 };
 
-/** True when `ref`'s start sits exactly at the passage's start verse. */
+/**
+ * True when `ref`'s start sits exactly at the beginning of the passage's start
+ * bound.
+ *
+ * Comparison is subpart-aware.
+ *
+ * A passage missing its start bound — or an unparseable reference — is never a
+ * match.
+ */
 export const markVersesReferenceStartsPassage = (
   ref: string,
   passage: PassageD
 ): boolean => {
   const parsed = parseMarkVersesReference(ref);
-  const { startChapter, startVerse } = passage.attributes;
-  if (!parsed || startChapter === undefined || startVerse === undefined) {
-    return false;
-  }
-  // The start must land on the *beginning* of the passage's start verse: only a
-  // letterless start or part `a` begins the verse; a later subpart (`b`, `c`, …)
-  // starts mid-verse and does not sit on the passage start.
-  const suffix = parsed.start.verseLetterSuffix;
-  if (suffix && suffix !== 'a') {
-    return false;
-  }
+  const { start: passageStart } = markVersesPassageBounds(passage);
+  if (!parsed || !passageStart) return false;
   return (
-    verseOrderKey(parsed.start.chapter, parsed.start.verse) ===
-    verseOrderKey(startChapter, startVerse)
+    verseSubpartKey(
+      parsed.start.chapter,
+      parsed.start.verse,
+      parsed.start.verseLetterSuffix,
+      false
+    ) ===
+    verseSubpartKey(
+      passageStart.chapter,
+      passageStart.verse,
+      passageStart.verseLetterSuffix,
+      false
+    )
   );
 };
 

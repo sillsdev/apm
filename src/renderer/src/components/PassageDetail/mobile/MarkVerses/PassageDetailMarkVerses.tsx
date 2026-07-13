@@ -316,20 +316,58 @@ export default function PassageDetailMarkVerses({ width }: MarkVersesProps) {
         for (let verse = startVerse; verse <= finalVerse; verse += 1) {
           refs.push(`${startChapter}:${verse}`);
         }
-        return refs;
+      } else {
+        for (
+          let chapter = startChapter;
+          chapter <= finalChapter;
+          chapter += 1
+        ) {
+          const fromVerse = chapter === startChapter ? startVerse : 1;
+          const toVerse =
+            chapter === finalChapter
+              ? finalVerse
+              : (engVrs.get(book) ?? [])[chapter - 1];
+
+          if (!toVerse) continue;
+
+          for (let verse = fromVerse; verse <= toVerse; verse += 1) {
+            refs.push(`${chapter}:${verse}`);
+          }
+        }
       }
 
-      for (let chapter = startChapter; chapter <= finalChapter; chapter += 1) {
-        const fromVerse = chapter === startChapter ? startVerse : 1;
-        const toVerse =
-          chapter === finalChapter
-            ? finalVerse
-            : (engVrs.get(book) ?? [])[chapter - 1];
-
-        if (!toVerse) continue;
-
-        for (let verse = fromVerse; verse <= toVerse; verse += 1) {
-          refs.push(`${chapter}:${verse}`);
+      // `parseRef` drops verse subparts (the end of `6:3a` parses to `3`), so
+      // re-apply the reference's own letter suffixes to the boundary rows. This
+      // keeps auto-numbering consistent with the passage's subparts — the last
+      // generated row for `6:1-3a` is `6:3a`, not `6:3` — and keeps a table
+      // reference like `6:3a` expanding to the same key the passage does.
+      const parsedSuffixes = parseMarkVersesReference(normalized);
+      if (parsedSuffixes && refs.length > 0) {
+        const lastIndex = refs.length - 1;
+        const startSuffix = parsedSuffixes.start.verseLetterSuffix;
+        const endSuffix = parsedSuffixes.end.verseLetterSuffix;
+        if (
+          lastIndex === 0 &&
+          startSuffix &&
+          endSuffix &&
+          startSuffix !== endSuffix
+        ) {
+          // A one-verse span that is itself a subpart range (e.g. `6:3a-c`)
+          // keeps both suffixes on its single row.
+          refs[0] = `${refs[0]}${startSuffix}-${endSuffix}`;
+        } else {
+          if (startSuffix && lastIndex > 0) {
+            refs[0] = `${refs[0]}${startSuffix}`;
+          }
+          if (endSuffix) {
+            // The passage ends mid-verse (e.g. `7:2-4b`). When that end verse
+            // is a row of its own (lastIndex > 0),  the row must cover the
+            // whole included range of the last verse (`7:4a-b`)
+            refs[lastIndex] =
+              lastIndex > 0 && endSuffix !== 'a'
+                ? `${refs[lastIndex]}a-${endSuffix}`
+                : `${refs[lastIndex]}${endSuffix}`;
+          }
         }
       }
 
@@ -1000,7 +1038,7 @@ export default function PassageDetailMarkVerses({ width }: MarkVersesProps) {
       : -1;
 
     // Logic for how we should renumber following split verses
-    const leadingRef = markVersesRenumberLeadingRef(newReference);
+    const leadingRef = markVersesRenumberLeadingRef(newReference, passage);
 
     const renumber = shouldAutoRenumberAfterEdit({
       newReference,
