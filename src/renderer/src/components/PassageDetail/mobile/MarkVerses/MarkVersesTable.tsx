@@ -207,12 +207,22 @@ export default function MarkVersesTable({
                       <LightTooltip
                         id={`verse-reference-warning-tip-${rowIndex}`}
                         title={reference.warning ?? ''}
+                        // On a touch device MUI's default 700ms long-press is
+                        // required before a tooltip opens, so a tap on the
+                        // warning icon never surfaced the message. Opening with
+                        // no delay lets a tap show it (desktop hover is
+                        // unaffected); the longer leave delay keeps it on screen
+                        // long enough to read before it auto-dismisses.
+                        enterTouchDelay={0}
+                        leaveTouchDelay={4000}
                       >
                         {/* Wrap the icon in a span so LightTooltip's forwarded
                             className lands on the span, not the icon (which keeps
-                            its own sx). */}
+                            its own sx). The tap must not also select/seek the
+                            row, so stop it from bubbling to the cell handler. */}
                         <Box
                           component="span"
+                          onClick={(event) => event.stopPropagation()}
                           sx={{
                             display: 'inline-flex',
                             lineHeight: 0,
