@@ -8,7 +8,9 @@ export const orbitReset = async (
 ) => {
   setOrbitRetries(OrbitNetworkErrorRetries);
   try {
-    if (remote?.requestQueue) await remote.requestQueue.retry();
+    const queue = remote?.requestQueue;
+    // retry() throws on an empty queue (currentProcessor is undefined)
+    if (queue && !queue.empty) await queue.retry();
   } catch (error) {
     // This used to be swallowed silently, which hid the root cause behind
     // whatever failed downstream (e.g. the "Go Offline" crash).
