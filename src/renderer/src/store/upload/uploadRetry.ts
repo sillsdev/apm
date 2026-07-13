@@ -20,6 +20,41 @@ export const uploadRetryDelayMs = (attemptIndexZeroBased: number): number => {
 export const sleepMs = (ms: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, ms));
 
+const axiosHttpStatus = (error: unknown): number | undefined => {
+  if (error && typeof error === 'object' && 'response' in error) {
+    const status = (error as { response?: { status?: number } }).response
+      ?.status;
+    if (typeof status === 'number') return status;
+  }
+  return undefined;
+};
+
+const uploadErrorHttpStatus = (error: unknown): number | undefined => {
+  if (error && typeof error === 'object') {
+    const withHttp = error as { httpStatus?: number; statusNum?: number };
+    if (typeof withHttp.httpStatus === 'number') return withHttp.httpStatus;
+    if (
+      typeof withHttp.statusNum === 'number' &&
+      withHttp.statusNum >= 100 &&
+      withHttp.statusNum < 600
+    ) {
+      return withHttp.statusNum;
+    }
+  }
+  return axiosHttpStatus(error);
+};
+
+/** Permanent client/auth failures should not burn through upload retry budget. */
+export const isRetryableUploadError = (error: unknown): boolean => {
+  const status = uploadErrorHttpStatus(error);
+  if (status === undefined) return true;
+  if (status === 0) return true;
+  if (status === 408 || status === 429) return true;
+  if (status >= 500) return true;
+  if (status >= 400 && status < 500) return false;
+  return true;
+};
+
 export async function runWithUploadRetries<T>(
   runAttempt: (attemptIndexZeroBased: number) => Promise<T>,
   onRetry?: (error: unknown, attemptIndexZeroBased: number) => void
@@ -30,6 +65,7 @@ export async function runWithUploadRetries<T>(
       return await runAttempt(attempt);
     } catch (error: unknown) {
       lastError = error;
+      if (!isRetryableUploadError(error)) throw error;
       if (attempt < UPLOAD_MAX_ATTEMPTS - 1) {
         onRetry?.(error, attempt);
         await sleepMs(uploadRetryDelayMs(attempt));

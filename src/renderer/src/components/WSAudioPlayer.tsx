@@ -160,6 +160,8 @@ interface IProps {
   onSegmentParamChange?: (params: IRegionParams, teamDefault: boolean) => void;
   onStartRegion?: (position: number) => void;
   onBlobReady?: (blob: Blob | undefined) => void;
+  /** When waveform decode/load fails after a blob is supplied. */
+  onLoadError?: (error: unknown) => void;
   setBlobReady?: (ready: boolean) => void;
   setChanged?: (changed: boolean) => void;
   onProcessingRecordingChange?: (processing: boolean) => void;
@@ -351,6 +353,7 @@ function WSAudioPlayer(props: IProps) {
     onStartRegion,
     onPlayStatus,
     onBlobReady,
+    onLoadError,
     setBlobReady,
     setChanged,
     onProcessingRecordingChange,
@@ -601,6 +604,16 @@ function WSAudioPlayer(props: IProps) {
     [height, keepItSmall, hideToolbar]
   );
 
+  /** Fetching (loading prop) or decoding an existing-media blob — not a failed/cleared load. */
+  const waveformLoading = useMemo(
+    () =>
+      Boolean(myMediaId) &&
+      !recording &&
+      !waitingForAI &&
+      (Boolean(loading) || (Boolean(blob) && !ready)),
+    [myMediaId, recording, waitingForAI, loading, blob, ready]
+  );
+
   // Memoize tooltip titles to prevent infinite re-renders
   const recordTooltipTitle = useMemo(() => {
     const baseTitle = recording
@@ -685,6 +698,7 @@ function WSAudioPlayer(props: IProps) {
     allowSegment,
     waveformRef,
     onWSReady,
+    onWSLoadError,
     onWSProgress,
     onWSRegion,
     onWSCanUndo,
@@ -796,11 +810,6 @@ function WSAudioPlayer(props: IProps) {
   );
 
   const handleRecorder = useCallback(() => {
-    const blockedWhileExistingMediaLoads =
-      Boolean(myMediaId) &&
-      !readyRef.current &&
-      !recordingRef.current &&
-      !waitingForAI;
     if (
       !allowRecord ||
       playingRef.current ||
@@ -808,7 +817,7 @@ function WSAudioPlayer(props: IProps) {
       oneShotUsed ||
       loading ||
       busy ||
-      blockedWhileExistingMediaLoads
+      waveformLoading
     )
       return false;
     if (!recordingRef.current) {
@@ -856,10 +865,9 @@ function WSAudioPlayer(props: IProps) {
     setPxPerSec,
     setRecording,
     setProcessingRecording,
-    myMediaId,
     loading,
     busy,
-    waitingForAI,
+    waveformLoading,
   ]);
 
   const notifySegmentInteraction = useCallback(() => {
@@ -1055,10 +1063,12 @@ function WSAudioPlayer(props: IProps) {
     setProgress(0);
     setHasRegion(0);
     if (blob) {
-      if (setBusy) setBusy(true); //turned off on ready
+      setReady(false);
+      setBusy && setBusy(true); //turned off on ready
       wsLoad(blob, 0);
     } else {
-      if (setBusy) setBusy(false);
+      setReady(true);
+      setBusy && setBusy(false);
       wsClear(true);
       initialPosRef.current = undefined;
       recordStartPosition.current = 0;
@@ -1312,6 +1322,16 @@ function WSAudioPlayer(props: IProps) {
     void wsRecordingPeaks(peaks, seconds);
   }
 
+  function onWSLoadError(error: unknown) {
+    setReady(true);
+    if (setBusy) setBusy(false);
+    if (onLoadError) {
+      onLoadError(error);
+    } else {
+      showMessage(ts.mediaError, AlertSeverity.Error);
+    }
+  }
+
   function onWSReady(duration: number, loadingAnother: boolean) {
     // Safety guard: peaks preview loads suppress 'ready' during recording, so
     // this should not fire mid-recording anymore; if a stray ready arrives,
@@ -1511,9 +1531,6 @@ function WSAudioPlayer(props: IProps) {
     setBusy && setBusy(inprogress);
     setBlobReady && setBlobReady(!inprogress);
   };
-  const showLoadingWaveform =
-    myMediaId && !ready && !recording && !waitingForAI;
-
   const showAiProgressOverlay = waitingForAI;
 
   const waveformNode = (
@@ -1536,10 +1553,10 @@ function WSAudioPlayer(props: IProps) {
           maxWidth: '100%',
           overflow: 'hidden',
           visibility:
-            showLoadingWaveform || showAiProgressOverlay ? 'hidden' : 'visible',
+            waveformLoading || showAiProgressOverlay ? 'hidden' : 'visible',
         }}
       />
-      {showLoadingWaveform && (
+      {waveformLoading && (
         <Box
           sx={{
             position: 'absolute',
@@ -2004,7 +2021,7 @@ function WSAudioPlayer(props: IProps) {
         waitingForAI ||
         Boolean(loading) ||
         Boolean(busy) ||
-        (Boolean(myMediaId) && !ready && !recording && !waitingForAI) ||
+        waveformLoading ||
         (Boolean(oneTryOnly) && oneShotUsed && !recording) ||
         (!allowRecord && !recording)
       }
@@ -2034,8 +2051,7 @@ function WSAudioPlayer(props: IProps) {
       waitingForAI,
       loading,
       busy,
-      myMediaId,
-      ready,
+      waveformLoading,
       oneTryOnly,
       oneShotUsed,
       hasRecording,

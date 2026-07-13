@@ -37,6 +37,7 @@ export function useWaveSurfer(
   allowSegment: NamedRegions | undefined, //just used for debug logging
   container: any,
   onReady: (duration: number, loadingAnother: boolean) => void,
+  onLoadError: (error: unknown) => void = noop,
   onProgress: (progress: number) => void = noop,
   onRegion: (count: number, newRegion: boolean) => void = noop,
   onCanUndo: (canUndo: boolean) => void = noop,
@@ -71,6 +72,16 @@ export function useWaveSurfer(
     const waiters = loadQueueWaitersRef.current;
     loadQueueWaitersRef.current = [];
     waiters.forEach((resolve) => resolve());
+  };
+  /** Unblock wsLoad waiters and UI when decode/wavesurfer load fails (no 'ready' event). */
+  const failPendingLoad = (error: unknown) => {
+    loadingRef.current = false;
+    isReadyRef.current = false;
+    if (loadRequests.current > 0) {
+      loadRequests.current--;
+    }
+    flushLoadQueueWaiters();
+    onLoadError(error);
   };
   const playingRef = useRef(false);
   const loopingRef = useRef(false);
@@ -596,6 +607,7 @@ export function useWaveSurfer(
     let blobUrl: string | undefined;
     try {
       loadingRef.current = true;
+      isReadyRef.current = false;
       const decoded = await decodeAudioData(
         audioContext(),
         await blob.arrayBuffer()
@@ -665,11 +677,17 @@ export function useWaveSurfer(
         return;
       } else {
         loadRequests.current = 1;
-        await loadBlob(blob, position);
+        try {
+          await loadBlob(blob, position);
+        } catch (error) {
+          failPendingLoad(error);
+        }
       }
     } else if (blobToLoad.current) {
       try {
         await loadBlob(blobToLoad.current, positionToLoad.current);
+      } catch (error) {
+        failPendingLoad(error);
       } finally {
         blobToLoad.current = undefined;
         flushLoadQueueWaiters();
@@ -758,7 +776,11 @@ export function useWaveSurfer(
         blobToLoad.current = undefined;
         positionToLoad.current = undefined;
       }
-      await loadBlob(blob, position);
+      try {
+        await loadBlob(blob, position);
+      } catch (error) {
+        failPendingLoad(error);
+      }
       return;
     }
     return await wsLoad(blob, position);

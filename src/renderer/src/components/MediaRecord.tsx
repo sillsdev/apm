@@ -583,6 +583,14 @@ function MediaRecord(props: IProps) {
     setLoading(false);
     onLoaded && onLoaded();
   };
+  const handleWaveformLoadError = useCallback(
+    () => {
+      blobError(ts.mediaError);
+      setOriginalBlob(undefined);
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [ts.mediaError, showMessage, onLoaded]
+  );
   const getGoodUrl = async () => {
     const TWENTY_MINUTES = 20 * 60 * 1000; // 20 minutes in milliseconds
     const lastFetchedAt = mediaStateFetchedTimeRef.current;
@@ -683,6 +691,7 @@ function MediaRecord(props: IProps) {
         mediaId={mediaId}
         blob={originalBlob}
         onBlobReady={onBlobReady}
+        onLoadError={handleWaveformLoadError}
         setChanged={setFilechanged}
         onProcessingRecordingChange={setProcessingRecording}
         setBlobReady={setBlobReady}

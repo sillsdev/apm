@@ -55,7 +55,6 @@ export const loadBlobAsync = async (url: string): Promise<Blob | undefined> => {
           );
         }
         const blob = await r.blob();
-        if (!blob.size) throw new Error('empty download');
         return blob;
       } else {
         const source = await ipc?.read(

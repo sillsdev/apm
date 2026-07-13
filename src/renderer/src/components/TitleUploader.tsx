@@ -13,7 +13,7 @@ interface IProps {
   finish?: (files: File[]) => void; // when conversion complete
   cancelled: React.RefObject<boolean>;
   uploadType?: UploadType;
-  uploadMethod: (files: File[]) => Promise<void>;
+  uploadMethod: (files: File[]) => Promise<boolean>;
   metadata?: React.JSX.Element;
   onSave?: () => void;
   onFiles?: (files: File[]) => void;

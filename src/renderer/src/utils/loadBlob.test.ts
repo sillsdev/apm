@@ -25,27 +25,19 @@ describe('loadBlobAsync', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
-  it('retries empty HTTP downloads', async () => {
-    jest.useFakeTimers();
-    const fetchMock = jest
-      .fn()
-      .mockResolvedValueOnce({
-        ok: true,
-        blob: async () => new Blob([], { type: 'audio/wav' }),
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        blob: async () => new Blob(['ok'], { type: 'audio/wav' }),
-      });
+  it('returns empty HTTP downloads without retrying', async () => {
+    const fetchMock = jest.fn().mockResolvedValue({
+      ok: true,
+      blob: async () => new Blob([], { type: 'audio/wav' }),
+    });
     global.fetch = fetchMock as typeof fetch;
 
-    const promise = loadBlobAsync('https://bucket.s3.amazonaws.com/ok.wav');
-    await jest.runAllTimersAsync();
-    const blob = await promise;
+    const blob = await loadBlobAsync(
+      'https://bucket.s3.amazonaws.com/empty.wav'
+    );
 
-    expect(blob?.size).toBeGreaterThan(0);
-    expect(fetchMock).toHaveBeenCalledTimes(2);
-    jest.useRealTimers();
+    expect(blob?.size).toBe(0);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
   it('retries transient server errors', async () => {

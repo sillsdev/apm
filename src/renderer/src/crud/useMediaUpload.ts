@@ -147,7 +147,7 @@ export const useMediaUpload = ({
 
   return (files: File[]): Promise<boolean> => {
     if (!files.length) return Promise.resolve(false);
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       const getPlanId = () =>
         planId
           ? remoteIdNum('plan', planId, memory?.keyMap as RecordKeyMap) ||
@@ -215,7 +215,12 @@ export const useMediaUpload = ({
         errorReporter: reporter,
         uploadType: UploadType.Media,
         cb: (n, success, data) => {
-          void itemComplete(n, success, data).then(() => resolve(success));
+          void itemComplete(n, success, data)
+            .then(() => {
+              if (success) resolve(true);
+              else reject(new Error(t.uploadFailed));
+            })
+            .catch(reject);
         },
         pendingUploadIdToClearOnSuccess,
         onTerminalFailure: (info) => {
