@@ -92,6 +92,12 @@ export default function MarkVersesTable({
         width: '100%',
         maxWidth: 800,
         mx: 'auto',
+        // Extra scrollable space below the last row so the user can scroll the
+        // table up until no row is hidden behind the floating Discussions Fab
+        // (position: fixed, bottom-right, ~40px tall, sitting just above the
+        // mobile footer — see DiscussionPanel.tsx). Padding-bottom on the scroll
+        // container is included in the scrollable area, giving that clearance.
+        pb: 7,
       }}
     >
       <Table stickyHeader size="small" aria-label="mark verses table">
