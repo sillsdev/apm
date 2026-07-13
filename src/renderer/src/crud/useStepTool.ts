@@ -12,12 +12,13 @@ export const getTool = (jsonTool?: string) => {
   }
   return '';
 };
+
+/** Offline WorkAlone embeds settings as a nested object; online often as a string. */
 export const getToolSettings = (jsonTool?: string) => {
-  if (jsonTool) {
-    const tool = JSON.parse(jsonTool);
-    return tool.settings || '';
-  }
-  return '';
+  if (!jsonTool) return '';
+  const settings = JSON.parse(jsonTool).settings;
+  if (settings == null || settings === '') return '';
+  return typeof settings === 'string' ? settings : JSON.stringify(settings);
 };
 
 /** Maps legacy BOLD Prompt steps that still use Internalize (`resource`) to `prompt`. */

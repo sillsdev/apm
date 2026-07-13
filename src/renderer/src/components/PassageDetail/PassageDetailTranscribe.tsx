@@ -55,13 +55,12 @@ export function PassageDetailTranscribe({ width, artifactTypeId }: IProps) {
   const { localizedArtifactTypeFromId } = useArtifactType();
   const [memory] = useGlobal('memory');
   const { settings: workflowStepSettingsRaw } = useStepTool(currentstep);
-  const stepSettings = useMemo(
-    () =>
-      !workflowStepSettingsRaw || workflowStepSettingsRaw === ''
-        ? '{}'
-        : workflowStepSettingsRaw,
-    [workflowStepSettingsRaw]
-  );
+  const stepSettings = useMemo(() => {
+    if (!workflowStepSettingsRaw || workflowStepSettingsRaw === '') return '{}';
+    return typeof workflowStepSettingsRaw === 'string'
+      ? workflowStepSettingsRaw
+      : JSON.stringify(workflowStepSettingsRaw);
+  }, [workflowStepSettingsRaw]);
 
   interface IStep {
     id: string;
