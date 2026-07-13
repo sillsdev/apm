@@ -133,8 +133,13 @@ export default function PassageDetailMarkVerses({ width }: MarkVersesProps) {
   const [plan] = useGlobal('plan');
   const [data, setDatax] = useState<ICell[][]>([]);
   const [numSegments, setNumSegments] = useState(0);
-  // Keep this empty by default so `PassageDetailPlayer` loads the *saved* segments
-  // from `media.attributes.segments` (it prefers `suggestedSegments` when non-empty).
+  // Seeded (once per media, see the resync effect below) from the *fresh*
+  // `savedVerseSegmentsJson`. The shared player otherwise reads its segments from
+  // the context `playerMediafile` snapshot, which is NOT refreshed after an
+  // autosave (same mediafileId) — so on a fresh mount (e.g. after toggling
+  // mobile/desktop view, which unmounts one MarkVerses tree and mounts the other)
+  // the waveform would hydrate from STALE pre-split segments and drop the
+  // regions/coloring/split marker the table still shows from memory.
   const [pastedSegments, setPastedSegments] = useState('');
   const [engVrs, setEngVrs] = useState<Map<string, number[]>>(new Map());
   const [editReferenceDialog, setEditReferenceDialog] =
@@ -165,6 +170,9 @@ export default function PassageDetailMarkVerses({ width }: MarkVersesProps) {
   const resettingSegmentsRef = useRef(false);
   /** After local Reset, do not re-apply `savedVerseSegmentsJson` from the media record until save or media change. */
   const suppressVerseResyncFromMediaRef = useRef(false);
+  /** mediafileId the waveform's `suggestedSegments` have been seeded for, so the
+   * seed runs once per media rather than reloading the waveform on every save. */
+  const waveformSeededForMediaRef = useRef<string | undefined>(undefined);
   const { canDoSectionStep } = useStepPermissions();
   const hasPermission = canDoSectionStep(currentstep, section);
   const { isMobile } = useMobile();
@@ -203,6 +211,7 @@ export default function PassageDetailMarkVerses({ width }: MarkVersesProps) {
     setNumSegments(0);
     setPastedSegments('');
     suppressVerseResyncFromMediaRef.current = false;
+    waveformSeededForMediaRef.current = undefined;
   }, [mediafileId]);
 
   const rowCells = useCallback(
@@ -1279,6 +1288,14 @@ export default function PassageDetailMarkVerses({ width }: MarkVersesProps) {
     queueMicrotask(() => {
       handleSegmentRef.current(savedVerseSegmentsJson, true);
     });
+    // Seed the waveform from the same fresh saved segments the table hydrates
+    // from, once per media. Without this the player reloads the stale
+    // context `playerMediafile` snapshot on a fresh mount and loses the
+    // regions/coloring after a mobile/desktop view switch (see `pastedSegments`).
+    if (waveformSeededForMediaRef.current !== mediafileId) {
+      waveformSeededForMediaRef.current = mediafileId;
+      setPastedSegments(savedVerseSegmentsJson);
+    }
   }, [mediafileId, passageRefsKey, savedVerseSegmentsJson]);
 
   const setSegments = useCallback(() => {
