@@ -47,10 +47,14 @@ export const loadBlobAsync = async (url: string): Promise<Blob | undefined> => {
       if (url.startsWith('http')) {
         const r = await fetch(url);
         if (!r.ok) {
+          const safeUrl = url.split('?')[0];
           const text = await r.text();
+          const detail = (text || '').trim();
+          const clipped =
+            detail.length > 500 ? `${detail.slice(0, 500)}…` : detail;
           throw new Error(
-            text
-              ? `download failed: ${url} with response ${text}`
+            clipped
+              ? `download failed: ${safeUrl} (${r.status} ${r.statusText}): ${clipped}`
               : `${r.status} ${r.statusText}`
           );
         }

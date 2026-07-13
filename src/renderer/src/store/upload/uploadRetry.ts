@@ -1,6 +1,6 @@
 export const UPLOAD_MAX_ATTEMPTS = 5;
 
-/** Per-attempt S3 PUT timeout from file size (ponytail: assumes ≥500 KB/s; cap 30 min). */
+/** Per-attempt S3 PUT timeout from file size (assumes ≥500 KB/s; cap 30 min). */
 export const uploadPutTimeoutMs = (fileBytes: number): number => {
   const minMs = 5 * 60 * 1000;
   const capMs = 30 * 60 * 1000;

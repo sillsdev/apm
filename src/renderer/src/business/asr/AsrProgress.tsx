@@ -177,7 +177,7 @@ export default function AsrProgress({
       const response: any = await axiosGet(`aero/transcription/${current}`);
       const pollError = transcriptionPollError(response);
       if (pollError) {
-        showTaskFailure(pollError);
+        await showTaskFailure(pollError);
         return;
       }
       if (response?.transcription) {
@@ -188,7 +188,7 @@ export default function AsrProgress({
           if (ix >= 0) {
             if (typeof tasks[ix]?.verse === 'string')
               verse = ` \\v ${tasks[ix].verse} `;
-            if (tasks[ix]?.complete) tasks[ix].complete = true;
+            tasks[ix].complete = true;
             nextTask =
               ix < tasks.length - 1 ? (tasks[ix + 1]?.taskId ?? '') : '';
           }
@@ -203,7 +203,7 @@ export default function AsrProgress({
         setWorking(true);
       }
     } catch (errResult: unknown) {
-      showTaskFailure(axiosErrorMessage(errResult));
+      await showTaskFailure(axiosErrorMessage(errResult));
     } finally {
       checkingRef.current = false;
     }

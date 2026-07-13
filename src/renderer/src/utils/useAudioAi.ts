@@ -50,14 +50,14 @@ interface AudioAIResult {
 export const useAudioAi = (): AudioAIResult => {
   const [reporter] = useGlobal('errorReporter');
   const [errorReporter] = useGlobal('errorReporter');
-  const returnAsS3List: fileTask[] = [];
+  const returnAsS3List = useRef<fileTask[]>([]);
   const taskTimer = useRef<NodeJS.Timeout | undefined>(undefined);
   const token = useContext(TokenContext)?.state?.accessToken ?? null;
   const getGlobal = useGetGlobal();
   const cancelled = new Error('canceled');
 
   const cleanupTimer = (): void => {
-    if (returnAsS3List.length === 0 && taskTimer.current) {
+    if (returnAsS3List.current.length === 0 && taskTimer.current) {
       try {
         clearInterval(taskTimer.current);
       } catch (error) {
@@ -68,8 +68,8 @@ export const useAudioAi = (): AudioAIResult => {
   };
 
   const cleanupS3 = (job: fileTask): void => {
-    const i = returnAsS3List.indexOf(job);
-    if (i >= 0) returnAsS3List.splice(i, 1);
+    const i = returnAsS3List.current.indexOf(job);
+    if (i >= 0) returnAsS3List.current.splice(i, 1);
     cleanupTimer();
   };
 
@@ -118,14 +118,14 @@ export const useAudioAi = (): AudioAIResult => {
         }
         return new File([b], task.taskId + '.wav');
       } finally {
-        if (returnAsS3List.indexOf(task) >= 0) task.validating = false;
+        if (returnAsS3List.current.indexOf(task) >= 0) task.validating = false;
       }
     }
     return undefined;
   };
 
   const checkTasks = async (func: AudioAiFunc): Promise<void> => {
-    returnAsS3List.forEach(async (filetask) => {
+    returnAsS3List.current.forEach(async (filetask) => {
       if (filetask.polling || filetask.validating) return;
       try {
         if (!filetask.cancelRef.current) {
@@ -201,7 +201,7 @@ export const useAudioAi = (): AudioAIResult => {
               const response = nrresponse as AxiosResponse;
               if (response.status === HttpStatusCode.Ok) {
                 const taskId = response.data ?? '';
-                returnAsS3List.push({
+                returnAsS3List.current.push({
                   taskId,
                   cb,
                   cancelRef,
@@ -246,7 +246,7 @@ export const useAudioAi = (): AudioAIResult => {
           if (cancelRef.current) doCancel(func, cb);
           else if (response.status === HttpStatusCode.Ok) {
             const taskId = response.data ?? '';
-            returnAsS3List.push({
+            returnAsS3List.current.push({
               taskId,
               cb,
               cancelRef,

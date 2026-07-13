@@ -28,8 +28,9 @@ jest.mock('../store', () => ({
 }));
 
 jest.mock('../selector', () => ({
-  mediaTabSelector: (state: { mediaTab: { uploadComplete: string } }) =>
-    state.mediaTab,
+  mediaTabSelector: (state: {
+    mediaTab: { uploadComplete: string; uploadFailed: string };
+  }) => state.mediaTab,
   sharedSelector: (state: { shared: { mediaAttached: string } }) =>
     state.shared,
 }));
@@ -99,6 +100,7 @@ jest.mock('../context/useGlobal', () => ({
 const mockState = {
   mediaTab: {
     uploadComplete: '{0} of {1} files uploaded successfully.',
+    uploadFailed: 'Upload Failed!',
   },
   shared: {
     mediaAttached: 'Media attached',
@@ -188,8 +190,7 @@ describe('useMediaUpload', () => {
       data?: unknown
     ) => void | Promise<void>;
     await cb(...cbArgs);
-    await uploadPromise;
-    return uploadProps;
+    return uploadPromise;
   }
 
   it('online success: pullTableList, dispatch UPLOAD_COMPLETE, snackbar, afterUploadCb', async () => {
@@ -235,7 +236,7 @@ describe('useMediaUpload', () => {
 
     await expect(
       completeUpload(upload, [makeFile()], 0, false, undefined)
-    ).rejects.toThrow('Upload failed');
+    ).rejects.toThrow('Upload Failed!');
 
     expect(mockSetOrbitRetries).toHaveBeenCalledWith(
       OrbitNetworkErrorRetries - 1
