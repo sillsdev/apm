@@ -30,7 +30,6 @@ interface IProps {
   params?: IRegionParams;
   playing: boolean;
   canSetDefault?: boolean;
-  highlightAutoSegment?: boolean;
   onAutoSegment?: () => void;
   /** Playhead is on an existing boundary — disable Add so no split lands on it. */
   disableSplit?: boolean;
@@ -54,7 +53,6 @@ function WSAudioPlayerSegment(props: IProps) {
     disableSplit,
     removeEnabled,
     canSetDefault,
-    highlightAutoSegment,
     onAutoSegment,
     onSplit,
     onParamChange,
@@ -162,7 +160,6 @@ function WSAudioPlayerSegment(props: IProps) {
                     id="wsSegment"
                     onClick={handleAutoSegment}
                     disabled={!ready || playing || busyRef.current}
-                    variant={highlightAutoSegment ? 'primary' : undefined}
                   >
                     <Barcode />
                   </IconButton>
