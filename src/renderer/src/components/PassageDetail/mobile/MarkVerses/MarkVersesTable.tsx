@@ -1,5 +1,6 @@
 import {
   Box,
+  Button,
   Paper,
   Table,
   TableBody,
@@ -11,6 +12,7 @@ import {
   Typography,
 } from '@mui/material';
 import WarningIcon from '@mui/icons-material/Warning';
+import EditIcon from '@mui/icons-material/Edit';
 import { useRef, useState, type RefObject } from 'react';
 import { LightTooltip } from '../../../../control/LightTooltip';
 import {
@@ -19,15 +21,23 @@ import {
   MARK_VERSES_CURRENT_RGBA,
   RefStatus,
 } from '../../../../utils/markVersesSegmentColors';
-import type { ICell } from './PassageDetailMarkVersesIsMobile';
+import type { ICell } from './PassageDetailMarkVerses';
 
-interface MarkVersesTableIsMobileProps {
+interface MarkVersesTableProps {
   data: ICell[][];
   onRowSelect?: (rowIndex: number) => void;
   /** Commit a hand-typed reference for the given data-row index. */
   onReferenceEdit?: (rowIndex: number, value: string) => void;
   /** Whether the user may hand-edit references inline. */
   canEdit?: boolean;
+  /** Open the Edit Reference dialog for the given data-row index. */
+  onEditReference?: (rowIndex: number) => void;
+  /** Whether the Edit Reference button may be shown (respects permissions). */
+  canEditReference?: boolean;
+  /** Localized text shown on the Edit Reference button (e.g. "Edit"). */
+  editLabel?: string;
+  /** Localized label used as the Edit Reference button's tooltip / aria-label. */
+  editReferenceLabel?: string;
   tableRowRefs?: RefObject<(HTMLTableRowElement | null)[]>;
 }
 
@@ -36,13 +46,17 @@ enum ColName {
   Ref,
 }
 
-export default function MarkVersesTableIsMobile({
+export default function MarkVersesTable({
   data,
   onRowSelect,
   onReferenceEdit,
   canEdit,
+  onEditReference,
+  canEditReference,
+  editLabel,
+  editReferenceLabel,
   tableRowRefs,
-}: MarkVersesTableIsMobileProps) {
+}: MarkVersesTableProps) {
   const rows = data.slice(1);
   const header = data[0] ?? [];
 
@@ -78,18 +92,27 @@ export default function MarkVersesTableIsMobile({
         width: '100%',
         maxWidth: 800,
         mx: 'auto',
+        // Extra scrollable space below the last row so the user can scroll the
+        // table up until no row is hidden behind the floating Discussions Fab
+        // (position: fixed, bottom-right, ~40px tall, sitting just above the
+        // mobile footer — see DiscussionPanel.tsx). Padding-bottom on the scroll
+        // container is included in the scrollable area, giving that clearance.
+        pb: 7,
       }}
     >
-      <Table stickyHeader size="small" aria-label="mobile mark verses table">
+      <Table stickyHeader size="small" aria-label="mark verses table">
         <TableHead>
           <TableRow>
-            <TableCell>
+            <TableCell sx={{ pl: 1.5 }}>
               {header[ColName.Limits]?.value ?? 'Start-Stop'}
             </TableCell>
             {/* Dedicated, always-present warning column so the reference text
                 never shifts whether or not a row carries a warning icon. */}
             <TableCell padding="none" aria-hidden sx={{ width: 36 }} />
             <TableCell>{header[ColName.Ref]?.value ?? 'Reference'}</TableCell>
+            {/* Action column: holds the Edit Reference button on the
+                selected row; empty header keeps the columns aligned. */}
+            <TableCell padding="none" aria-hidden sx={{ width: 88 }} />
           </TableRow>
         </TableHead>
 
@@ -136,6 +159,7 @@ export default function MarkVersesTableIsMobile({
                   sx={{
                     whiteSpace: 'nowrap',
                     width: '42%',
+                    pl: 1.5,
                     backgroundColor: 'inherit',
                     py: 0.75,
                   }}
@@ -183,12 +207,22 @@ export default function MarkVersesTableIsMobile({
                       <LightTooltip
                         id={`verse-reference-warning-tip-${rowIndex}`}
                         title={reference.warning ?? ''}
+                        // On a touch device MUI's default 700ms long-press is
+                        // required before a tooltip opens, so a tap on the
+                        // warning icon never surfaced the message. Opening with
+                        // no delay lets a tap show it (desktop hover is
+                        // unaffected); the longer leave delay keeps it on screen
+                        // long enough to read before it auto-dismisses.
+                        enterTouchDelay={0}
+                        leaveTouchDelay={4000}
                       >
                         {/* Wrap the icon in a span so LightTooltip's forwarded
                             className lands on the span, not the icon (which keeps
-                            its own sx). */}
+                            its own sx). The tap must not also select/seek the
+                            row, so stop it from bubbling to the cell handler. */}
                         <Box
                           component="span"
+                          onClick={(event) => event.stopPropagation()}
                           sx={{
                             display: 'inline-flex',
                             lineHeight: 0,
@@ -270,6 +304,63 @@ export default function MarkVersesTableIsMobile({
                       {reference.value || '-'}
                     </Typography>
                   )}
+                </TableCell>
+
+                {/* Edit Reference button — rendered on every row but only
+                    visible on the current (highlighted) row, so the control
+                    sits beside the segment the user is working on. The cell is
+                    always present to keep the column width stable. Its `py`
+                    gives the button breathing room above/below within the row.
+                    Sizing is font-relative (line-height + padding, no fixed
+                    height) so it adapts when the label is localized. */}
+                <TableCell
+                  padding="none"
+                  align="right"
+                  sx={{
+                    width: 88,
+                    backgroundColor: 'inherit',
+                    py: 0.5,
+                    // Keep the button clear of the table's right edge so it
+                    // reads as an action rather than being jammed in the corner.
+                    pr: 2,
+                  }}
+                  onClick={(event) => event.stopPropagation()}
+                >
+                  {isCurrentRow &&
+                  canEditReference &&
+                  onEditReference &&
+                  hasLimits ? (
+                    <LightTooltip
+                      id={`verse-edit-reference-tip-${rowIndex}`}
+                      title={editReferenceLabel ?? ''}
+                    >
+                      <Button
+                        aria-label={`verse-edit-reference-${rowIndex}`}
+                        variant="outlined"
+                        size="small"
+                        startIcon={<EditIcon />}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          onEditReference(rowIndex);
+                        }}
+                        sx={{
+                          minWidth: 0,
+                          // The theme pins small buttons to a fixed 36px height,
+                          // but make this one more compact to fit nicely in the table row
+                          height: 'auto',
+                          minHeight: 0,
+                          px: 1,
+                          py: 0.25,
+                          lineHeight: 1.4,
+                          textTransform: 'none',
+                          '& .MuiButton-startIcon': { mr: 0.25 },
+                          '& .MuiButton-startIcon > svg': { fontSize: 16 },
+                        }}
+                      >
+                        {editLabel ?? 'Edit'}
+                      </Button>
+                    </LightTooltip>
+                  ) : null}
                 </TableCell>
               </TableRow>
             );

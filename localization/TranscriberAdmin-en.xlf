@@ -9472,6 +9472,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="verse.edit">
+         <segment>
+            <source>Edit</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="verse.editReference">
          <segment>
             <source>Edit Reference</source>

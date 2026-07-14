@@ -18,7 +18,6 @@ import { ArtifactTypeSlug } from '../../../../crud/artifactTypeSlug';
 import { useArtifactType } from '../../../../crud/useArtifactType';
 import { usePlanType } from '../../../../crud/usePlanType';
 import { IRegion } from '../../../../crud/useWavesurferRegions';
-import EditIcon from '@mui/icons-material/Edit';
 import {
   ISharedStrings,
   IVerseStrings,
@@ -33,11 +32,11 @@ import {
   NamedRegions,
   updateSegments,
 } from '../../../../utils/namedSegments';
-import { prettySegment } from '../../../../utils/prettySegment';
 import { refMatch } from '../../../../utils/refMatch';
 import { useStepPermissions } from '../../../../utils/useStepPermission';
 import { useMobile } from '../../../../utils/useMobile';
 import Confirm from '../../../AlertDialog';
+import { useSnackBar, AlertSeverity } from '../../../../hoc/SnackBar';
 import { type WSAudioPlayerControls } from '../../../WSAudioPlayer';
 import {
   createMarkVersesApplyRegionColor,
@@ -60,9 +59,7 @@ import { useProjectSegmentSave } from '../../Internalization/useProjectSegmentSa
 import EditReferenceDropdown, {
   EditReferenceValue,
 } from './EditReferenceDropdown';
-import MarkVersesTableIsMobile from './MarkVersesTableIsMobile';
-import { AltButton } from '../../../../control/AltButton';
-import { TabActions } from '../../../../control/TabActions';
+import MarkVersesTable from './MarkVersesTable';
 import {
   createMarkVersesUndoStack,
   type MarkVersesSnapshot,
@@ -71,6 +68,7 @@ import { getMarkVersesAutosaveBlockers } from '../../../../utils/markVersesValid
 import {
   shouldAutoRenumberAfterEdit,
   evaluateMarkVersesReferenceStatus,
+  markVersesRenumberLeadingRef,
   markVersesSkippedPassageRefs,
   MarkVersesWarningReason,
   isValidMarkVersesReference,
@@ -119,9 +117,7 @@ export interface MarkVersesProps {
   width: number;
 }
 
-export default function PassageDetailMarkVersesIsMobile({
-  width,
-}: MarkVersesProps) {
+export default function PassageDetailMarkVerses({ width }: MarkVersesProps) {
   const {
     mediafileId,
     section,
@@ -137,8 +133,13 @@ export default function PassageDetailMarkVersesIsMobile({
   const [plan] = useGlobal('plan');
   const [data, setDatax] = useState<ICell[][]>([]);
   const [numSegments, setNumSegments] = useState(0);
-  // Keep this empty by default so `PassageDetailPlayer` loads the *saved* segments
-  // from `media.attributes.segments` (it prefers `suggestedSegments` when non-empty).
+  // Seeded (once per media, see the resync effect below) from the *fresh*
+  // `savedVerseSegmentsJson`. The shared player otherwise reads its segments from
+  // the context `playerMediafile` snapshot, which is NOT refreshed after an
+  // autosave (same mediafileId) — so on a fresh mount (e.g. after toggling
+  // mobile/desktop view, which unmounts one MarkVerses tree and mounts the other)
+  // the waveform would hydrate from STALE pre-split segments and drop the
+  // regions/coloring/split marker the table still shows from memory.
   const [pastedSegments, setPastedSegments] = useState('');
   const [engVrs, setEngVrs] = useState<Map<string, number[]>>(new Map());
   const [editReferenceDialog, setEditReferenceDialog] =
@@ -169,10 +170,14 @@ export default function PassageDetailMarkVersesIsMobile({
   const resettingSegmentsRef = useRef(false);
   /** After local Reset, do not re-apply `savedVerseSegmentsJson` from the media record until save or media change. */
   const suppressVerseResyncFromMediaRef = useRef(false);
+  /** mediafileId the waveform's `suggestedSegments` have been seeded for, so the
+   * seed runs once per media rather than reloading the waveform on every save. */
+  const waveformSeededForMediaRef = useRef<string | undefined>(undefined);
   const { canDoSectionStep } = useStepPermissions();
   const hasPermission = canDoSectionStep(currentstep, section);
   const { isMobile } = useMobile();
   const { localizedArtifactType } = useArtifactType();
+  const { showMessage } = useSnackBar();
   const t = useSelector(verseSelector, shallowEqual) as IVerseStrings;
   const ts = useSelector(sharedSelector, shallowEqual) as ISharedStrings;
   const {
@@ -206,6 +211,7 @@ export default function PassageDetailMarkVersesIsMobile({
     setNumSegments(0);
     setPastedSegments('');
     suppressVerseResyncFromMediaRef.current = false;
+    waveformSeededForMediaRef.current = undefined;
   }, [mediafileId]);
 
   const rowCells = useCallback(
@@ -319,20 +325,58 @@ export default function PassageDetailMarkVersesIsMobile({
         for (let verse = startVerse; verse <= finalVerse; verse += 1) {
           refs.push(`${startChapter}:${verse}`);
         }
-        return refs;
+      } else {
+        for (
+          let chapter = startChapter;
+          chapter <= finalChapter;
+          chapter += 1
+        ) {
+          const fromVerse = chapter === startChapter ? startVerse : 1;
+          const toVerse =
+            chapter === finalChapter
+              ? finalVerse
+              : (engVrs.get(book) ?? [])[chapter - 1];
+
+          if (!toVerse) continue;
+
+          for (let verse = fromVerse; verse <= toVerse; verse += 1) {
+            refs.push(`${chapter}:${verse}`);
+          }
+        }
       }
 
-      for (let chapter = startChapter; chapter <= finalChapter; chapter += 1) {
-        const fromVerse = chapter === startChapter ? startVerse : 1;
-        const toVerse =
-          chapter === finalChapter
-            ? finalVerse
-            : (engVrs.get(book) ?? [])[chapter - 1];
-
-        if (!toVerse) continue;
-
-        for (let verse = fromVerse; verse <= toVerse; verse += 1) {
-          refs.push(`${chapter}:${verse}`);
+      // `parseRef` drops verse subparts (the end of `6:3a` parses to `3`), so
+      // re-apply the reference's own letter suffixes to the boundary rows. This
+      // keeps auto-numbering consistent with the passage's subparts — the last
+      // generated row for `6:1-3a` is `6:3a`, not `6:3` — and keeps a table
+      // reference like `6:3a` expanding to the same key the passage does.
+      const parsedSuffixes = parseMarkVersesReference(normalized);
+      if (parsedSuffixes && refs.length > 0) {
+        const lastIndex = refs.length - 1;
+        const startSuffix = parsedSuffixes.start.verseLetterSuffix;
+        const endSuffix = parsedSuffixes.end.verseLetterSuffix;
+        if (
+          lastIndex === 0 &&
+          startSuffix &&
+          endSuffix &&
+          startSuffix !== endSuffix
+        ) {
+          // A one-verse span that is itself a subpart range (e.g. `6:3a-c`)
+          // keeps both suffixes on its single row.
+          refs[0] = `${refs[0]}${startSuffix}-${endSuffix}`;
+        } else {
+          if (startSuffix && lastIndex > 0) {
+            refs[0] = `${refs[0]}${startSuffix}`;
+          }
+          if (endSuffix) {
+            // The passage ends mid-verse (e.g. `7:2-4b`). When that end verse
+            // is a row of its own (lastIndex > 0),  the row must cover the
+            // whole included range of the last verse (`7:4a-b`)
+            refs[lastIndex] =
+              lastIndex > 0 && endSuffix !== 'a'
+                ? `${refs[lastIndex]}a-${endSuffix}`
+                : `${refs[lastIndex]}${endSuffix}`;
+          }
         }
       }
 
@@ -1002,9 +1046,8 @@ export default function PassageDetailMarkVersesIsMobile({
         })
       : -1;
 
-    // When the edited reference ends mid-split (e.g. `1:3a`), the following row
-    // should lead with the next letter (`1:3b`).
-    const leadingRef = incrementMarkVersesReferenceSuffix(newReference);
+    // Logic for how we should renumber following split verses
+    const leadingRef = markVersesRenumberLeadingRef(newReference, passage);
 
     const renumber = shouldAutoRenumberAfterEdit({
       newReference,
@@ -1035,6 +1078,27 @@ export default function PassageDetailMarkVersesIsMobile({
     toolChanged(verseToolId);
   };
 
+  /**
+   * Warn with a toast when a just-applied reference edit has an error or warning
+   * `applyReferenceEdit` has already set the row's status/tooltip — RefStatus.Err
+   * for a bad (ill-formatted) reference, RefStatus.Warn for the out-of-range /
+   * overlap / skipped-verse cases — so surface that same localized message as a
+   * toast (an error for a bad reference, a warning for the softer cases). Both
+   * the inline-typed edit and the Edit Reference dropdown can produce these.
+   */
+  const warnIfEditedReferenceFlagged = (rowIndex: number) => {
+    const editedCell = dataRef.current[rowIndex]?.[ColName.Ref] as
+      | ICell
+      | undefined;
+    const status = editedCell?.status;
+    if (status && status !== RefStatus.Valid) {
+      showMessage(
+        editedCell?.warning || t.badReferences,
+        status === RefStatus.Err ? AlertSeverity.Error : AlertSeverity.Warning
+      );
+    }
+  };
+
   const handleSaveSplitVerseDialog = (value: EditReferenceValue) => {
     if (!editReferenceDialog) return;
 
@@ -1044,11 +1108,10 @@ export default function PassageDetailMarkVersesIsMobile({
       return;
     }
 
+    const { rowIndex } = editReferenceDialog;
     const saveValue = normalizeEditReferenceForSave(value);
-    applyReferenceEdit(
-      editReferenceDialog.rowIndex,
-      formatReferenceValue(saveValue)
-    );
+    applyReferenceEdit(rowIndex, formatReferenceValue(saveValue));
+    warnIfEditedReferenceFlagged(rowIndex);
     setEditReferenceDialog(undefined);
   };
 
@@ -1060,6 +1123,7 @@ export default function PassageDetailMarkVersesIsMobile({
     const newReference = rawValue.trim();
     if (newReference === previousReference.trim()) return;
     applyReferenceEdit(rowIndex, newReference);
+    warnIfEditedReferenceFlagged(rowIndex);
   };
 
   const resetSegments = (regions: IRegion[]) => {
@@ -1224,6 +1288,14 @@ export default function PassageDetailMarkVersesIsMobile({
     queueMicrotask(() => {
       handleSegmentRef.current(savedVerseSegmentsJson, true);
     });
+    // Seed the waveform from the same fresh saved segments the table hydrates
+    // from, once per media. Without this the player reloads the stale
+    // context `playerMediafile` snapshot on a fresh mount and loses the
+    // regions/coloring after a mobile/desktop view switch (see `pastedSegments`).
+    if (waveformSeededForMediaRef.current !== mediafileId) {
+      waveformSeededForMediaRef.current = mediafileId;
+      setPastedSegments(savedVerseSegmentsJson);
+    }
   }, [mediafileId, passageRefsKey, savedVerseSegmentsJson]);
 
   const setSegments = useCallback(() => {
@@ -1366,17 +1438,9 @@ export default function PassageDetailMarkVersesIsMobile({
     [scheduleAutosave]
   );
 
-  const handleEditReference = () => {
-    let rowIndex = findHighlightedRowIndex(dataRef.current);
-    if (rowIndex <= 0 && currentSegment.trim()) {
-      rowIndex = dataRef.current.findIndex((row, index) => {
-        if (index === 0) return false;
-        const segment = getSegmentFromRow(row);
-        return (
-          segment && prettySegment(segment).trim() === currentSegment.trim()
-        );
-      });
-    }
+  /** Open the Edit Reference dialog for a specific table row (the in-row
+   * button lives on the currently-selected/highlighted row). */
+  const handleEditReference = (rowIndex: number) => {
     if (rowIndex <= 0) return;
     const row = dataRef.current[rowIndex] as ICell[] | undefined;
     if (!row || !getSegmentFromRow(row)) return;
@@ -1515,7 +1579,7 @@ export default function PassageDetailMarkVersesIsMobile({
 
   return (
     <Box
-      id="mark-verses-mobile"
+      id="mark-verses"
       sx={{
         display: 'flex',
         flexDirection: 'column',
@@ -1546,9 +1610,9 @@ export default function PassageDetailMarkVersesIsMobile({
         hideZoom
         showTranscriptionButton={false}
       />
-      {/* Inset the action row and table by the same 8px (px:1) the player pads
-          its own content, so their right (and left) edges line up with the
-          waveform and controls above instead of overhanging the right edge. */}
+      {/* Inset the table by the same 8px (px:1) the player pads its own content,
+          so its right (and left) edges line up with the waveform and controls
+          above instead of overhanging the right edge. */}
       <Box
         sx={{
           px: 1,
@@ -1559,33 +1623,15 @@ export default function PassageDetailMarkVersesIsMobile({
           overflow: 'hidden',
         }}
       >
-        <TabActions
-          sx={{
-            mt: 0.5,
-            py: 0,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 0.5,
-            flexWrap: 'wrap',
-            flexShrink: 0,
-            width: '100%',
-          }}
-        >
-          <AltButton
-            onClick={handleEditReference}
-            disabled={!hasPermission || numSegments === 0}
-            sx={{ px: 1.5, py: 0.5 }}
-          >
-            <EditIcon sx={{ mr: 0.5 }} fontSize="small" />
-            {editReferenceLabel}
-          </AltButton>
-        </TabActions>
-        <MarkVersesTableIsMobile
+        <MarkVersesTable
           data={data}
           onRowSelect={handleSelectRow}
           onReferenceEdit={handleReferenceTextEdit}
           canEdit={hasPermission && !isMobile}
+          onEditReference={handleEditReference}
+          canEditReference={hasPermission}
+          editLabel={t.edit || 'Edit'}
+          editReferenceLabel={editReferenceLabel}
           tableRowRefs={tableRowRefs}
         />
       </Box>

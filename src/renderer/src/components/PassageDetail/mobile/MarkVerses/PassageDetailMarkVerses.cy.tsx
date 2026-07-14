@@ -1,7 +1,7 @@
 import React from 'react';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
-import MarkVersesTableIsMobile from './MarkVersesTableIsMobile';
-import type { ICell } from './PassageDetailMarkVersesIsMobile';
+import MarkVersesTable from './MarkVersesTable';
+import type { ICell } from './PassageDetailMarkVerses';
 import { RefStatus } from '../../../../utils/markVersesSegmentColors';
 
 const sampleData: ICell[][] = [
@@ -22,12 +22,12 @@ const sampleData: ICell[][] = [
 const mountTable = () => {
   cy.mount(
     <ThemeProvider theme={createTheme()}>
-      <MarkVersesTableIsMobile data={sampleData} />
+      <MarkVersesTable data={sampleData} />
     </ThemeProvider>
   );
 };
 
-describe('MarkVersesTableIsMobile', () => {
+describe('MarkVersesTable', () => {
   it('renders marker timestamps in a mobile table', () => {
     mountTable();
 
@@ -58,7 +58,7 @@ describe('MarkVersesTableIsMobile', () => {
     ];
     cy.mount(
       <ThemeProvider theme={createTheme()}>
-        <MarkVersesTableIsMobile data={dataWithoutLimits} />
+        <MarkVersesTable data={dataWithoutLimits} />
       </ThemeProvider>
     );
 

@@ -17,7 +17,6 @@ import { useSnackBar } from '../hoc/SnackBar';
 import { audioPlayerSegmentSelector } from '../selector';
 import { useGlobal } from '../context/useGlobal';
 import { useMobile } from '../utils/useMobile';
-import HighlightButton from './PassageDetail/mobile/HighlightButton';
 
 export const ADDREMSEG_KEY = 'CTRL+ALT+Y';
 export const DELREG_KEY = 'CTRL+ARROWDOWN';
@@ -159,25 +158,14 @@ function WSAudioPlayerSegment(props: IProps) {
                 title={t.autoSegment.replace('[{0}]', '')}
               >
                 <span>
-                  {highlightAutoSegment ? (
-                    <HighlightButton
-                      id="wsSegment"
-                      ariaLabel={t.autoSegment.replace('[{0}]', '')}
-                      onClick={handleAutoSegment}
-                      disabled={!ready || playing || busyRef.current}
-                      highlight={true}
-                    >
-                      <Barcode />
-                    </HighlightButton>
-                  ) : (
-                    <IconButton
-                      id="wsSegment"
-                      onClick={handleAutoSegment}
-                      disabled={!ready || playing || busyRef.current}
-                    >
-                      <Barcode />
-                    </IconButton>
-                  )}
+                  <IconButton
+                    id="wsSegment"
+                    onClick={handleAutoSegment}
+                    disabled={!ready || playing || busyRef.current}
+                    variant={highlightAutoSegment ? 'primary' : undefined}
+                  >
+                    <Barcode />
+                  </IconButton>
                 </span>
               </LightTooltip>
               {(!isMobileView || isDeveloper) && (

@@ -13,7 +13,7 @@ import TeamCheckReference from './TeamCheckReference';
 import PassageDetailPlayer from './PassageDetailPlayer';
 import PassageDetailRecord from './PassageDetailRecord';
 import PassageDetailItem from './PassageDetailItem';
-import PassageDetailMarkVersesIsMobile from './mobile/MarkVerses/PassageDetailMarkVersesIsMobile';
+import PassageDetailMarkVerses from './mobile/MarkVerses/PassageDetailMarkVerses';
 import PassageDetailCarefulSpeech from './PassageDetailCarefulSpeech';
 import PassageDetailLwcTranslation from './PassageDetailLwcTranslation';
 import PassageDetailLwcTranscription from './PassageDetailLwcTranscription';
@@ -397,7 +397,7 @@ const PassageDetailGrids = () => {
                 >
                   <PassageDetailChooser width={paneWidth} />
                   {tool === ToolSlug.Verses && (
-                    <PassageDetailMarkVersesIsMobile width={playerPaneWidth} />
+                    <PassageDetailMarkVerses width={playerPaneWidth} />
                   )}
                   {tool === ToolSlug.CarefulSpeech && (
                     <PassageDetailCarefulSpeech width={playerPaneWidth} />

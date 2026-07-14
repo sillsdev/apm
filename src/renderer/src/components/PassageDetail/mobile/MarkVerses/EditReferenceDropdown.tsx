@@ -227,11 +227,10 @@ export default function EditReferenceDropdown({
     }));
   };
 
-  /**
+  /*
    * An editable `chapter:verse` endpoint (`unrestricted` mode). The chapter is a
    * dropdown only when the passage spans multiple chapters; the verse is always
-   * a dropdown scoped to the chosen chapter. The split-verse suffix (when on)
-   * sits beneath, matching the fixed-start layout.
+   * a dropdown scoped to the chosen chapter.
    */
   const renderEditableEndpoint = (side: 'start' | 'end') => {
     const isStart = side === 'start';

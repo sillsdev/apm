@@ -152,8 +152,12 @@ export const parsePassageVerseKey = (
     normalizeRef(ref),
     fallbackChapter
   );
-  if (!parsed) return undefined;
-  return { chapter: parsed.chapter, verse: parsed.verse };
+  if (parsed) return { chapter: parsed.chapter, verse: parsed.verse };
+  // A ranged entry (e.g. `7:4a-b`, the last row of a passage ending mid-verse)
+  // is keyed by its start verse.
+  const range = parseMarkVersesReference(ref);
+  if (range) return { chapter: range.start.chapter, verse: range.start.verse };
+  return undefined;
 };
 
 export const toPassageVerseKey = (chapter: number, verse: number) =>
@@ -244,6 +248,11 @@ export const formatMarkVersesReference = ({
   if (sameVerse) {
     if (!startSuffixPart && !endSuffixPart) {
       return `${startChapter}:${startVerse}`;
+    }
+    // A span whose start and end land on the same subpart (e.g. 1:1a-1:1a) is a
+    // single subpart, not a range — collapse it to `1:1a`.
+    if (startSuffixPart === endSuffixPart) {
+      return `${startChapter}:${startVerse}${startSuffixPart}`;
     }
     if (startSuffixPart && endSuffixPart) {
       return `${startChapter}:${startVerse}${startSuffixPart}-${endSuffixPart}`;

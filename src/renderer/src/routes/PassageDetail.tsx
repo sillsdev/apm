@@ -29,7 +29,7 @@ import { usePaneWidth } from '../components/usePaneWidth';
 import { HeadHeight } from '../layout';
 import { RecordKeyMap } from '@orbit/records';
 import PassageDetailsArtifactsMobile from '../components/PassageDetail/Internalization/PassageDetailsArtifactsMobile';
-import PassageDetailMarkVersesIsMobile from '../components/PassageDetail/mobile/MarkVerses/PassageDetailMarkVersesIsMobile';
+import PassageDetailMarkVerses from '../components/PassageDetail/mobile/MarkVerses/PassageDetailMarkVerses';
 import PassageDetailCarefulSpeech from '../components/PassageDetail/PassageDetailCarefulSpeech';
 import PassageDetailLwcTranslation from '../components/PassageDetail/PassageDetailLwcTranslation';
 import PassageDetailLwcTranscription from '../components/PassageDetail/PassageDetailLwcTranscription';
@@ -79,7 +79,7 @@ const artifactSlug = useMemo(() => {
   ) : tool === ToolSlug.Resource ? (
     <PassageDetailsArtifactsMobile />
   ) : tool === ToolSlug.Verses ? (
-    <PassageDetailMarkVersesIsMobile width={Math.max(0, paneWidth - 40)} />
+    <PassageDetailMarkVerses width={Math.max(0, paneWidth - 40)} />
   ) : tool === ToolSlug.CarefulSpeech ? (
     <PassageDetailCarefulSpeech width={Math.max(0, paneWidth - 40)} />
   ) : tool === ToolSlug.PhraseBackTranslate && isBoldWorkflow ? (
