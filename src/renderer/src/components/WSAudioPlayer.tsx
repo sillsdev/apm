@@ -47,7 +47,6 @@ import { IMarker, useWaveSurfer } from '../crud/useWaveSurfer';
 import { Duration } from '../control/Duration';
 import { LightTooltip } from '../control/LightTooltip';
 import { RecordButton } from '../control/RecordButton';
-import HighlightButton from './PassageDetail/mobile/HighlightButton';
 import { useSnackBar, AlertSeverity } from '../hoc/SnackBar';
 import { HotKeyContext } from '../context/HotKeyContext';
 import { PriButton } from '../control';
@@ -2200,36 +2199,28 @@ function WSAudioPlayer(props: IProps) {
       </LightTooltip>
     );
   const playDisabled = duration === 0 || recording || waitingForAI;
+  const highlightPlayNow = highlightPlay && !playing;
   const playNode = (
     <LightTooltip id="wsAudioPlayTip" title={playTooltipTitle}>
       <span>
-        {highlightPlay && !playing ? (
-          <HighlightButton
-            id="wsAudioPlay"
-            ariaLabel={playTooltipTitle}
-            onClick={togglePlayStatus}
-            disabled={playDisabled}
-            highlight={true}
-          >
+        <IconButton
+          id="wsAudioPlay"
+          aria-label={playTooltipTitle}
+          onClick={togglePlayStatus}
+          disabled={playDisabled}
+          variant={highlightPlayNow ? 'primary' : undefined}
+          // The play button is large to make it more
+          // prominent, but drop the large padding and constrain the size when highlighted,
+          // so spacing looks balanced.
+          size={highlightPlayNow ? undefined : 'large'}
+          sx={highlightPlayNow ? { width: 40, height: 40, p: 0 } : { p: 0 }}
+        >
+          {playing ? (
+            <PauseIcon fontSize="large" />
+          ) : (
             <PlayIcon fontSize="large" />
-          </HighlightButton>
-        ) : (
-          <IconButton
-            id="wsAudioPlay"
-            onClick={togglePlayStatus}
-            disabled={playDisabled}
-            size="large"
-            sx={{ p: 0 }} // Play button is large to make it more prominent, but get rid of the large padding so spacing looks balanced
-          >
-            <>
-              {playing ? (
-                <PauseIcon fontSize="large" />
-              ) : (
-                <PlayIcon fontSize="large" />
-              )}
-            </>
-          </IconButton>
-        )}
+          )}
+        </IconButton>
       </span>
     </LightTooltip>
   );
