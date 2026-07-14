@@ -190,7 +190,6 @@ interface IProps {
   applyRegionColor?: ApplyRegionColor;
   hideToolbar?: boolean;
   hideControls?: boolean;
-  highlightAutoSegment?: boolean;
   /** Careful Speech / guided flows: emphasize the main play control until used. */
   highlightPlay?: boolean;
   /** Invoked before starting playback. Return false to skip default play handling. */
@@ -375,7 +374,6 @@ function WSAudioPlayer(props: IProps) {
     applyRegionColor,
     hideToolbar,
     hideControls,
-    highlightAutoSegment,
     highlightPlay,
     beforePlay,
     onAutoSegment,
@@ -1993,7 +1991,6 @@ function WSAudioPlayer(props: IProps) {
       currentNumRegions={hasRegion}
       params={defaultRegionParams}
       canSetDefault={canSetDefaultParams}
-      highlightAutoSegment={highlightAutoSegment}
       onAutoSegment={onAutoSegment}
       wsAutoSegment={allowAutoSegment ? wsAutoSegment : undefined}
       wsRemoveSplitRegion={handleRemoveSplitRegion}
