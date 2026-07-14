@@ -2276,7 +2276,7 @@ const initialState = {
 			"autoSegment": "Auto Segment [{0}]",
 			"close": "Close",
 			"removeAll": "Clear Segments",
-			"removeSegment": "Remove Next Boundary [{0}]",
+			"removeSegment": "Remove Boundary [{0}]",
 			"segmentLength": "Minimum Segment Length (sec)",
 			"segmentNumber": "{0} segments",
 			"segmentsCreated": "{0} segments created",

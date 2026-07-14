@@ -12916,7 +12916,7 @@
             </context-group>
          </trans-unit>
          <trans-unit id="wsAudioPlayerSegment.removeSegment">
-            <source>Remove Next Boundary [{0}]</source>
+            <source>Remove Boundary [{0}]</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">wsAudioPlayer.tsx</context>

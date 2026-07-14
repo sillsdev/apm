@@ -11070,7 +11070,7 @@
       </unit>
       <unit id="wsAudioPlayerSegment.removeSegment">
          <segment>
-            <source>Remove Next Boundary [{0}]</source>
+            <source>Remove Boundary [{0}]</source>
             <target/>
          </segment>
       </unit>
