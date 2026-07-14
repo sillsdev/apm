@@ -75,6 +75,7 @@ export function TeamSettings(props: IProps) {
   const ctx = React.useContext(TeamContext);
   const [permissions, setPermissions] = useState(true);
   const [voiceVisible, setVoiceVisible] = useState(false);
+  const [, setOrg] = useGlobal('organization');
   const [offline] = useGlobal('offline'); //verified this is not used in a function 2/18/25
   const { personalTeam } = ctx.state;
   const t: ICardsStrings = useSelector(cardsSelector, shallowEqual);
@@ -86,6 +87,15 @@ export function TeamSettings(props: IProps) {
   const [workflowProgression, setWorkflowProgression] = useState(
     values?.workflowProgression ?? WorkflowProgression.Passage
   );
+
+  useEffect(() => {
+    setOrg(team?.id ?? '');
+    return () => {
+      setOrg('');
+    };
+    // DO NOT ADD SETORG!
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [team?.id]);
 
   useEffect(() => {
     setWorkflowProgression(

@@ -35,6 +35,7 @@ function normalizedSpeakerName(raw: string | undefined | null): string | null {
 
 interface IProps {
   name: string;
+  planId?: string;
   noNewVoice?: boolean | undefined;
   onChange?: ((name: string) => void) | undefined;
   onRights?: ((hasRights: boolean) => void) | undefined;
@@ -45,6 +46,7 @@ interface IProps {
 
 export function SpeakerName({
   name,
+  planId,
   noNewVoice,
   onChange,
   onRights,
@@ -399,6 +401,7 @@ export function SpeakerName({
                 {recordingRequired ? t.voiceRights : t.releaseRights}
               </Typography>
               <ProvideRights
+                planId={planId}
                 speaker={value?.name || ''}
                 recordType={ArtifactTypeSlug.IntellectualProperty}
                 onRights={handleRightsChange}

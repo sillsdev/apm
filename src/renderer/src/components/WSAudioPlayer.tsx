@@ -124,6 +124,7 @@ interface IProps {
   allowZoom?: boolean;
   hideZoom?: boolean;
   mediaId?: string;
+  planId?: string;
   allowSegment?: NamedRegions | undefined;
   allowAutoSegment?: boolean;
   /** When true, hide the generic segment-edit controls (Add/Remove Segment and
@@ -321,6 +322,7 @@ function WSAudioPlayer(props: IProps) {
     allowZoom,
     hideZoom,
     mediaId,
+    planId,
     allowSegment,
     allowAutoSegment,
     hideSegmentControls,
@@ -1750,6 +1752,7 @@ function WSAudioPlayer(props: IProps) {
       dialogContentSx={{ minWidth: 0, overflowX: 'hidden' }}
     >
       <SelectVoice
+        planId={planId}
         noNewVoice={noNewVoice && duration > 0}
         onlySettings={duration === 0}
         onOpen={handleCloseVoice}

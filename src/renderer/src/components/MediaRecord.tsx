@@ -689,6 +689,7 @@ function MediaRecord(props: IProps) {
         oneTryOnly={effectiveOneTryOnly}
         height={height || 300}
         mediaId={mediaId}
+        planId={planId}
         blob={originalBlob}
         onBlobReady={onBlobReady}
         onLoadError={handleWaveformLoadError}

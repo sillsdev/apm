@@ -62,6 +62,7 @@ interface IProps {
   importList?: File[] | undefined;
   artifactState?: { id?: string | null } | undefined;
   passageId?: string | undefined;
+  planId?: string | undefined;
   sourceMediaId?: string | undefined;
   sourceSegments?: string | undefined;
   performedBy?: string | undefined;
@@ -91,6 +92,7 @@ export const Uploader = (props: IProps) => {
     importList,
     artifactState,
     passageId,
+    planId,
     sourceMediaId,
     sourceSegments,
     performedBy,
@@ -456,8 +458,10 @@ export const Uploader = (props: IProps) => {
       const psg = findRecord(memory, 'passage', passageId);
       const section = findRecord(memory, 'section', related(psg, 'section'));
       planIdRef.current = related(section, 'plan');
+    } else if (planId) {
+      planIdRef.current = planId;
     } else if (plan !== '') planIdRef.current = plan;
-  }, [plan, passageId, memory]);
+  }, [plan, planId, passageId, memory]);
 
   if (recordAudio && !defaultFilename && isDeveloper)
     throw new Error('defaultFilename is required');
@@ -467,6 +471,7 @@ export const Uploader = (props: IProps) => {
         <PassageRecordDlg
           artifactId={artifactState?.id ?? VernacularTag}
           passageId={passageId}
+          planId={planIdRef.current}
           visible={isOpen}
           onVisible={onOpen}
           mediaId={mediaId ?? ''}
