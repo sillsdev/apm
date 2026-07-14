@@ -284,6 +284,7 @@ export const DiscussionCard = (props: IProps) => {
   const [canSaveRecording, setCanSaveRecording] = useState(false);
   const canSaveRecordingRef = useRef(false);
   const [hasAudioDraft, setHasAudioDraft] = useState(false);
+  const [commentIsRecording, setCommentIsRecording] = useState(false);
   const { userIsAdmin } = useRole();
 
   useEffect(() => {
@@ -369,6 +370,7 @@ export const DiscussionCard = (props: IProps) => {
     setComment('');
     commentText.current = '';
     setHasAudioDraft(false);
+    setCommentIsRecording(false);
     setMoveTo(undefined);
   };
 
@@ -794,7 +796,7 @@ export const DiscussionCard = (props: IProps) => {
 
   const handleSave = async () => {
     //if there is an audio comment, start the upload
-    if (cardSavingRef.current) return;
+    if (cardSavingRef.current || commentIsRecording) return;
     cardSavingRef.current = true;
     const hasPendingAudio =
       (canSaveRecording || hasAudioDraft) && !commentMediaId.current;
@@ -831,6 +833,7 @@ export const DiscussionCard = (props: IProps) => {
     commentText.current = '';
     commentMediaId.current = '';
     setHasAudioDraft(false);
+    setCommentIsRecording(false);
     onAddComplete && onAddComplete('');
     setEditing(false);
     setChanged(false);
@@ -999,6 +1002,7 @@ export const DiscussionCard = (props: IProps) => {
                     refresh={refresh}
                     setCanSaveRecording={setCanSaveRecording}
                     onAudioDraftChange={setHasAudioDraft}
+                    onRecordingChange={setCommentIsRecording}
                     fileName={fileName(editSubject, '')}
                     afterUploadCb={afterUploadCb}
                     passageId={passageId}
@@ -1014,6 +1018,7 @@ export const DiscussionCard = (props: IProps) => {
                     disabled={
                       cardSavingRef.current ||
                       segSavingRef.current ||
+                      commentIsRecording ||
                       !mediafileId ||
                       editSubject === '' ||
                       !(
