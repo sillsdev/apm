@@ -2067,8 +2067,7 @@ function WSAudioPlayer(props: IProps) {
 
   const deleteRegionNode = !hideWaveformEditTools &&
     hasRegion !== 0 &&
-    !oneShotUsed &&
-    !isMobileView && (
+    !oneShotUsed && (
       <LightTooltip id="wsAudioDeleteRegionTip" title={t.deleteRegion}>
         <span>
           <IconButton
