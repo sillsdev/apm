@@ -59,11 +59,13 @@ interface IProps {
   recordType: ArtifactTypeSlug;
   onRights?: ((hasRights: boolean) => void) | undefined;
   team?: string | undefined;
+  planId?: string | undefined;
   recordingRequired?: boolean | undefined;
 }
 
 export function ProvideRights(props: IProps) {
-  const { speaker, recordType, onRights, team, recordingRequired } = props;
+  const { speaker, recordType, onRights, team, planId, recordingRequired } =
+    props;
   const [user] = useGlobal('user');
   const [organizationId] = useGlobal('organization');
   const [busy] = useGlobal('importexportBusy'); //verified this is not used in a function 2/18/25
@@ -181,7 +183,7 @@ export function ProvideRights(props: IProps) {
     if (mediaId) {
       let orgId = team || organizationId;
       if (!orgId) {
-        const planRec = findRecord(memory, 'plan', getGlobal('plan'));
+        const planRec = findRecord(memory, 'plan', planId || getGlobal('plan'));
         const projRec = findRecord(
           memory,
           'project',
@@ -285,6 +287,7 @@ export function ProvideRights(props: IProps) {
         statusProps={statusProps}
         speaker={speaker}
         team={team}
+        planId={planId}
         state={state}
         recordingRequired={recordingRequired}
         handleUpload={handleUpload}
@@ -319,6 +322,7 @@ export function ProvideRights(props: IProps) {
         cancelled={cancelled}
         artifactState={artifactState}
         performedBy={speaker}
+        planId={planId}
         uploadType={UploadType.IntellectualProperty}
       />
     </div>

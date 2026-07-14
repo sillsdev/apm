@@ -50,6 +50,7 @@ interface IProps {
   artifactId: string | null;
   afterUploadCb: (mediaId: string | undefined) => Promise<void>;
   passageId: string | undefined;
+  planId?: string | undefined;
   metaData?: React.JSX.Element | undefined;
   defaultFilename: string;
   ready?: (() => boolean) | undefined;
@@ -67,6 +68,7 @@ function PassageRecordDlg(props: IProps) {
     artifactId,
     afterUploadCb,
     passageId,
+    planId,
     defaultFilename,
     onCancel,
     ready,
@@ -161,6 +163,7 @@ function PassageRecordDlg(props: IProps) {
       <DialogContent id="recDlgContent" ref={dialogRef}>
         {!busy && (
           <SpeakerName
+            planId={planId}
             name={speaker || ''}
             onRights={handleRights}
             onChange={handleSpeaker}
@@ -172,6 +175,7 @@ function PassageRecordDlg(props: IProps) {
           toolId={myToolId}
           artifactId={artifactId}
           passageId={passageId}
+          planId={planId}
           afterUploadCb={afterUploadCb}
           mediaId={mediaId}
           onSaving={onSaving}

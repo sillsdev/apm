@@ -10840,12 +10840,6 @@
             <target/>
          </segment>
       </unit>
-      <unit id="wsAudioPlayer.microphone">
-         <segment>
-            <source>Select microphone</source>
-            <target/>
-         </segment>
-      </unit>
       <unit id="wsAudioPlayer.moreOptions">
          <segment>
             <source>More Options</source>

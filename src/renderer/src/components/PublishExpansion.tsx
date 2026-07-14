@@ -80,9 +80,14 @@ export function PublishExpansion(props: IProps) {
   const languageRef = useRef<ILanguage>(initLang);
   const { getPublishingData } = useBible();
   const { getBibleMediaPlan } = useBibleMedia();
-  const [mediaplan, setMediaplan] = useState('');
+  const [mediaplan, setMediaplanx] = useState('');
+  const mediaplanRef = useRef('');
   const { showMessage } = useSnackBar();
 
+  const setMediaplan = (plan: string) => {
+    setMediaplanx(plan);
+    mediaplanRef.current = plan;
+  };
   const setLanguage = (language: ILanguage, init?: boolean) => {
     languageRef.current = language;
     setLanguagex(language);
@@ -97,11 +102,16 @@ export function PublishExpansion(props: IProps) {
       setValue(pubDataLangProps, JSON.stringify(language), init);
     }
   };
-  useEffect(() => {
-    getBibleMediaPlan().then((plan) => {
-      setMediaplan(plan?.id ?? '');
-    });
+  const loadBibleMediaPlan = useCallback(async () => {
+    const plan = await getBibleMediaPlan();
+    const planId = plan?.id ?? '';
+    setMediaplan(planId);
+    return planId;
   }, [getBibleMediaPlan]);
+
+  useEffect(() => {
+    void loadBibleMediaPlan();
+  }, [loadBibleMediaPlan]);
 
   useEffect(() => {
     if (bible) {
@@ -203,14 +213,16 @@ export function PublishExpansion(props: IProps) {
     return sameNameRec.length === 0 ? '' : t.bibleidexists;
   };
 
-  const handleCanRecord = useCallback(() => {
+  const handleCanRecord = useCallback(async () => {
+    const planId = mediaplanRef.current || (await loadBibleMediaPlan());
+    if (!planId) return false;
     const canRecord = projects.some(
       (p) => related(p, 'organization') === team?.id
     );
     if (!canRecord) showMessage(t.projectRequired);
     return canRecord;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projects, team]);
+  }, [loadBibleMediaPlan, projects, team]);
 
   return (
     <Box sx={{ width: '100%', my: 1 }}>

@@ -5,6 +5,7 @@ import '@testing-library/jest-dom';
 import MediaRecord from './MediaRecord';
 
 type WsAudioPlayerProps = {
+  planId?: string;
   setChanged?: (changed: boolean) => void;
   onDuration?: (duration: number) => void;
   setBlobReady?: (ready: boolean) => void;
@@ -128,6 +129,14 @@ describe('MediaRecord save gating', () => {
 
   afterEach(() => {
     cleanup();
+  });
+
+  it('passes planId through to WSAudioPlayer', async () => {
+    render(<MediaRecord {...defaultProps} planId="plan-1" />);
+
+    await waitFor(() => {
+      expect(latestWsProps?.planId).toBe('plan-1');
+    });
   });
 
   it('does not enable save when duration is zero even if waveform is dirty', async () => {

@@ -139,7 +139,7 @@ interface IProps {
   onLangChange?: (lang: ILanguage) => void;
   useplan?: string;
   helper?: string;
-  canRecord?: () => boolean;
+  canRecord?: () => boolean | Promise<boolean>;
   onRecording?: (recording: boolean) => void;
   onMediaIdChange: (mediaId: string) => void;
   disabled?: boolean;
@@ -167,7 +167,6 @@ export default function MediaTitle(props: IProps) {
     passageId,
   } = props;
   const [canSaveRecording, setCanSaveRecording] = useState(false);
-  const canSaveRef = useRef(false);
   const [curText, setCurTextx] = useState(title ?? '');
   const curTextRef = useRef(curText);
   const isFocusedRef = useRef(false);
@@ -207,7 +206,7 @@ export default function MediaTitle(props: IProps) {
 
   useEffect(() => {
     if (saveRequested(toolId) && !saving.current) {
-      if (canSaveRef.current) handleOk();
+      if (canSaveRecording) handleOk();
       else {
         saveCompleted(toolId);
       }
@@ -246,6 +245,7 @@ export default function MediaTitle(props: IProps) {
     }
     setRecording(r);
     onRecording && onRecording(r);
+    setCanSaveRecording(true);
   };
 
   const handleTextChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -285,10 +285,13 @@ export default function MediaTitle(props: IProps) {
     // Update the global playing media ID so other players can stop
     setPlayingMediaId(newPlaying ? mediaId : '');
   };
-  const handleRecord = (e: any) => {
+  const handleRecord = async (e: any) => {
     e.stopPropagation();
-    if (canRecord && !canRecord()) {
-      return;
+    if (canRecord) {
+      const allowed = await canRecord();
+      if (!allowed) {
+        return;
+      }
     }
     setPlaying(false);
     setStartRecord(true);
@@ -350,8 +353,8 @@ export default function MediaTitle(props: IProps) {
     setShowRecorder(false);
     setStatusText('');
     saving.current = false;
-    setCanSaveRecording(false);
     onMyRecording(false);
+    setCanSaveRecording(false);
     toolChanged(toolId, false);
     toolChanged(recToolId, false);
   };
@@ -446,7 +449,8 @@ export default function MediaTitle(props: IProps) {
   };
 
   const handleNoClose = () => {
-    showMessage(t.unsavedChanges);
+    if (canSaveRecording) showMessage(t.unsavedChanges);
+    else setShowRecorder(false);
   };
 
   return (

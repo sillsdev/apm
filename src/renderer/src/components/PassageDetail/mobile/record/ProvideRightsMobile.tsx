@@ -45,13 +45,14 @@ interface IProps {
   teamRec: Organization;
   toolId: string;
   team: string | undefined;
+  planId?: string | undefined;
   defaultFilename: string;
   artifactState: { id: string | null };
   setSaving: React.Dispatch<React.SetStateAction<boolean>>;
   setStatusText: React.Dispatch<React.SetStateAction<string>>;
   setResetMedia: React.Dispatch<React.SetStateAction<boolean>>;
   resetMedia: boolean;
-  afterUploadCb: (url: string, filename: string) => void;
+  afterUploadCb: (url: string, filename: string) => void | Promise<void>;
   handleSetCanSave: (canSave: boolean) => void;
 }
 
@@ -89,10 +90,11 @@ const ProvideRightsMobile = (props: IProps) => {
         toolId={props.toolId}
         defaultFilename={props.defaultFilename}
         afterUploadCb={async (mediaId) => {
-          props.afterUploadCb(mediaId || '', props.defaultFilename);
+          await props.afterUploadCb(mediaId || '', props.defaultFilename);
         }}
         artifactId={props.artifactState.id}
         passageId={undefined}
+        planId={props.planId}
         performedBy={props.speaker}
         allowWave={false}
         allowDeltaVoice={false}
