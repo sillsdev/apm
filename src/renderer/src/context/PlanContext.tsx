@@ -69,8 +69,11 @@ const PlanProvider = (props: IProps) => {
   const [isDeveloper] = useGlobal('developer');
   const getPlanType = usePlanType();
   const { setProjectDefault, getProjectDefault } = useProjectDefaults();
-  const { canEditSheet: canEditSheetPerm, canPublish } =
-    useProjectPermissions();
+  const {
+    canEditSheet: canEditSheetPerm,
+    canEditSheetBase,
+    canPublish,
+  } = useProjectPermissions();
   const [addStoryOrPassage] = useGlobal('addStoryOrPassage');
   // Bold-workflow members can add sections/passages when the session-only
   // "Add {Story} or Passage" flag is set (see UserMenu). The flag can only be
@@ -82,7 +85,7 @@ const PlanProvider = (props: IProps) => {
   const structuralOffline = isOffline && !offlineOnly;
   const canEditSheet =
     canEditSheetPerm || (addStoryOrPassage && !structuralOffline);
-  const canEditAudio = canEditSheetPerm || addStoryOrPassage;
+  const canEditAudio = canEditSheetBase || addStoryOrPassage;
   const [state, setState] = useState({
     ...initState,
     mediafiles,
