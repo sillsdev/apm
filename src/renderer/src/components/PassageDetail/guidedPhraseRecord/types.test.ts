@@ -1,10 +1,7 @@
 import { NamedRegions } from '../../../utils/namedSegments';
 import { LocalKey } from '../../../utils/localUserKey';
 import { ArtifactTypeSlug } from '../../../crud/artifactTypeSlug';
-import {
-  CAREFUL_SPEECH_CONFIG,
-  phraseBackTranslateConfig,
-} from './types';
+import { CAREFUL_SPEECH_CONFIG, phraseBackTranslateConfig } from './types';
 
 describe('guidedPhraseRecord config', () => {
   it('Careful Speech uses clause regions and boundary tools', () => {

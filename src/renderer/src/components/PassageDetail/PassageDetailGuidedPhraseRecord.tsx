@@ -13,13 +13,8 @@ import { useGlobal } from '../../context/useGlobal';
 import usePassageDetailContext from '../../context/usePassageDetailContext';
 import PassageDetailPlayer from './PassageDetailPlayer';
 import StepMessage from './boldClause/StepMessage';
-import {
-  ArtifactTypeSlug,
-  remoteIdGuid,
-  useArtifactType,
-  useStepTool,
-} from '../../crud';
-import { getSortedRegions, NamedRegions } from '../../utils/namedSegments';
+import { remoteIdGuid, useArtifactType, useStepTool } from '../../crud';
+import { getSortedRegions } from '../../utils/namedSegments';
 import { IRegion } from '../../crud/useWavesurferRegions';
 import { WSAudioPlayerControls } from '../WSAudioPlayer';
 import { useOrbitData } from '../../hoc/useOrbitData';
@@ -64,7 +59,7 @@ import {
 import {
   type GuidedPhraseRecordConfig,
   type IGuidedPhraseRecordControlStrings,
-} from './guidedPhraseRecord/types';
+} from '../../components/PassageDetail/guidedPhraseRecord/types';
 
 interface IProps {
   width: number;
@@ -295,12 +290,13 @@ export function PassageDetailGuidedPhraseRecord({
           )
         : undefined,
     [
+      currentRegion,
       rowData,
       artifactTypeId,
       currentVersion,
-      currentRegion,
       mediafileId,
       config.singleSegmentMode,
+      currentIndex,
     ]
   );
 
@@ -374,10 +370,13 @@ export function PassageDetailGuidedPhraseRecord({
     applyColors,
   ]);
 
-  const handleSpeakerChange = useCallback((value: string) => {
-    setSpeaker(value);
-    localStorage.setItem(config.speakerLocalKey, value);
-  }, [config.speakerLocalKey]);
+  const handleSpeakerChange = useCallback(
+    (value: string) => {
+      setSpeaker(value);
+      localStorage.setItem(config.speakerLocalKey, value);
+    },
+    [config.speakerLocalKey]
+  );
 
   useEffect(() => {
     if (!currentRegion) return;
@@ -680,12 +679,7 @@ export function PassageDetailGuidedPhraseRecord({
       await persistClauseSegments(json);
       applyColors();
     },
-    [
-      setClauseSegString,
-      persistClauseSegments,
-      phraseSegParams,
-      applyColors,
-    ]
+    [setClauseSegString, persistClauseSegments, phraseSegParams, applyColors]
   );
 
   const markClauseHeard = useCallback((index: number) => {

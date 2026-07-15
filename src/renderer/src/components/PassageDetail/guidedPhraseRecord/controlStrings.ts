@@ -1,7 +1,7 @@
 import { shallowEqual, useSelector } from 'react-redux';
 import { carefulSpeechSelector } from '../../../selector';
 import { ICarefulSpeechStrings } from '../../../model';
-import type { IGuidedPhraseRecordControlStrings } from './types';
+import type { IGuidedPhraseRecordControlStrings } from '../guidedPhraseRecord/types';
 
 export function mapCarefulSpeechStrings(
   strings: ICarefulSpeechStrings
