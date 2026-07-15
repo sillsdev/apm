@@ -84,16 +84,16 @@ const ctx: {
 // ---- mocks ------------------------------------------------------------------
 jest.mock('../../context/usePassageDetailContext', () => () => ctx);
 
-jest.mock('./carefulSpeech/useCarefulSpeechSegments', () => ({
-  useCarefulSpeechSegments: () => ({
-    clauseSegString: '[]',
-    setClauseSegString: jest.fn(),
+jest.mock('./carefulSpeech/useGuidedPhraseSegments', () => ({
+  useGuidedPhraseSegments: () => ({
+    phraseSegString: '[]',
+    setPhraseSegString: jest.fn(),
     bootstrapped: true,
     ensureSegments: jest.fn().mockResolvedValue(true),
     resetForMediafile: jest.fn(),
     resegmentWithParams: jest.fn().mockResolvedValue(false),
     resetToDefaultSegments: jest.fn().mockResolvedValue(false),
-    persistClauseSegments: jest.fn().mockResolvedValue(undefined),
+    persistPhraseSegments: jest.fn().mockResolvedValue(undefined),
   }),
 }));
 
@@ -132,6 +132,16 @@ jest.mock('react-redux', () => ({
   useSelector: () => ({
     boldOnly: 'BOLD only',
     allComplete: 'All clauses recorded',
+    clause: 'Clause: {0}',
+    clearRecording: 'Clear',
+    combineWithNextClause: 'Combine',
+    fewerClauses: 'Fewer',
+    moreClauses: 'More',
+    nextClause: 'Next',
+    splitClause: 'Split',
+    speaker: 'Speaker',
+    startRecording: 'Start',
+    undo: 'Undo',
   }),
   shallowEqual: jest.fn(),
 }));

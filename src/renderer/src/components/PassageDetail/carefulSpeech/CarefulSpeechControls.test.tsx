@@ -31,23 +31,21 @@ jest.mock('../../../control', () => ({
   ),
 }));
 
-jest.mock('../../../selector', () => ({ carefulSpeechSelector: jest.fn() }));
-jest.mock('react-redux', () => ({
-  useSelector: () => ({
-    startRecording: 'Start Recording',
-    nextClause: 'Next Clause',
-    clause: 'Clause: {0}',
-    speaker: 'Speaker',
-    moreClauses: 'More Clauses',
-    fewerClauses: 'Fewer Clauses',
-    combineWithNextClause: 'Combine with Next Clause',
-    splitClause: 'Split Clause',
-    undo: 'Undo',
-  }),
-  shallowEqual: jest.fn(),
-}));
-
 import CarefulSpeechControls from './CarefulSpeechControls';
+
+const controlStrings = {
+  allComplete: 'All clauses are complete.',
+  unitLabel: 'Clause: {0}',
+  clearRecording: 'Clear Recording',
+  combineWithNext: 'Combine with Next Clause',
+  fewerUnits: 'Fewer Clauses',
+  moreUnits: 'More Clauses',
+  nextUnit: 'Next Clause',
+  splitUnit: 'Split Clause',
+  speaker: 'Speaker',
+  startRecording: 'Start Recording',
+  undo: 'Undo',
+};
 
 const baseProps: React.ComponentProps<typeof CarefulSpeechControls> = {
   width: 360,
@@ -85,6 +83,8 @@ const baseProps: React.ComponentProps<typeof CarefulSpeechControls> = {
   setCanSave: () => {},
   setStatusText: () => {},
   showRecorder: true,
+  strings: controlStrings,
+  showBoundaryTools: true,
 };
 
 afterEach(() => {

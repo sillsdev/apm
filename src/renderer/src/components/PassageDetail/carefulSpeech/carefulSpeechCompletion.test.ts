@@ -116,4 +116,32 @@ describe('carefulSpeechCompletion', () => {
       )?.id
     ).toBe('current');
   });
+
+  it('matches legacy Retell recordings with empty sourceSegments in single-segment mode', () => {
+    const row: IRow = {
+      id: 'r1',
+      artifactType: 'Retell',
+      sourceVersion: 1,
+      mediafile: {
+        id: 'm1',
+        type: 'mediafile',
+        attributes: {
+          sourceSegments: '{}',
+        },
+        relationships: {
+          artifactType: { data: { id: 'art1', type: 'artifacttype' } },
+        },
+      } as IRow['mediafile'],
+    } as IRow;
+    const completed = getCompletedClauseIndices(
+      regions,
+      [row],
+      'art1',
+      1,
+      undefined,
+      true
+    );
+    expect(completed.has(0)).toBe(true);
+    expect(completed.has(1)).toBe(false);
+  });
 });

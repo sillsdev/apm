@@ -43,6 +43,9 @@ export const cardsSelector = (state: IState) =>
 export const carefulSpeechSelector = (state: IState) =>
   localStrings(state as IState, { layout: 'carefulSpeech' });
 
+export const phraseBackTranslationGuidedSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'phraseBackTranslationGuided' });
+
 export const lwcTranslationSelector = (state: IState) =>
   localStrings(state as IState, { layout: 'lwcTranslation' });
 

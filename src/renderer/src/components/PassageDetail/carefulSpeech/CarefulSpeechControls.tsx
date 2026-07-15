@@ -13,9 +13,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { ICarefulSpeechStrings } from '@model/index';
-import { shallowEqual, useSelector } from 'react-redux';
-import { carefulSpeechSelector } from '../../../selector';
+import type { IGuidedPhraseRecordControlStrings } from '../guidedPhraseRecord/types';
 
 export type CarefulSpeechPhase =
   | 'bootstrapping'
@@ -67,6 +65,9 @@ interface Props {
   setCanSave: (v: boolean) => void;
   setStatusText: (t: string) => void;
   showRecorder: boolean;
+  strings: IGuidedPhraseRecordControlStrings;
+  showBoundaryTools: boolean;
+  controlIdPrefix?: string;
 }
 
 export default function CarefulSpeechControls({
@@ -109,11 +110,10 @@ export default function CarefulSpeechControls({
   setCanSave,
   setStatusText,
   showRecorder,
+  strings,
+  showBoundaryTools,
+  controlIdPrefix = 'careful-speech',
 }: Props) {
-  const strings: ICarefulSpeechStrings = useSelector(
-    carefulSpeechSelector,
-    shallowEqual
-  );
   const speakerInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -127,8 +127,8 @@ export default function CarefulSpeechControls({
     [recordingPassStarted]
   );
   const showMoreFewer = useMemo(
-    () => listenPass && phase !== 'bootstrapping',
-    [listenPass, phase]
+    () => showBoundaryTools && listenPass && phase !== 'bootstrapping',
+    [showBoundaryTools, listenPass, phase]
   );
   const showStartButton = useMemo(
     () => listenPass && phase !== 'bootstrapping',
@@ -139,8 +139,8 @@ export default function CarefulSpeechControls({
     [showStartButton, allClausesHeard]
   );
   const showCombineRow = useMemo(
-    () => recordingPassStarted,
-    [recordingPassStarted]
+    () => showBoundaryTools && recordingPassStarted,
+    [showBoundaryTools, recordingPassStarted]
   );
   const showNextClause = useMemo(() => phase === 'recorded', [phase]);
   const showDockedRecordButton = useMemo(
@@ -171,21 +171,21 @@ export default function CarefulSpeechControls({
           sx={{ pb: 1 }}
         >
           <PriButton
-            id="careful-speech-more-clauses"
+            id={`${controlIdPrefix}-more-clauses`}
             onClick={onMoreClauses}
             variant="outlined"
             color="inherit"
           >
-            {strings.moreClauses}
+            {strings.moreUnits}
           </PriButton>
           <PriButton
-            id="careful-speech-fewer-clauses"
+            id={`${controlIdPrefix}-fewer-clauses`}
             disabled={!canFewerClauses}
             onClick={onFewerClauses}
             variant="outlined"
             color="inherit"
           >
-            {strings.fewerClauses}
+            {strings.fewerUnits}
           </PriButton>
         </Stack>
       )}
@@ -197,28 +197,28 @@ export default function CarefulSpeechControls({
           alignItems="center"
         >
           <PriButton
-            id="careful-speech-split"
+            id={`${controlIdPrefix}-split`}
             disabled={!canSplitClause || phase === 'recording'}
             onClick={onSplitClause}
             variant="outlined"
             color="inherit"
             sx={{ px: '8px', py: '2px' }}
           >
-            {strings.splitClause}
+            {strings.splitUnit}
           </PriButton>
           <PriButton
-            id="careful-speech-combine"
+            id={`${controlIdPrefix}-combine`}
             disabled={!canCombineWithNext || phase === 'recording'}
             onClick={onCombineWithNext}
             variant="outlined"
             color="inherit"
             sx={{ px: '8px', py: '2px' }}
           >
-            {strings.combineWithNextClause}
+            {strings.combineWithNext}
           </PriButton>
           {showUndoCombine && (
             <IconButton
-              id="careful-speech-undo-combine"
+              id={`${controlIdPrefix}-undo-combine`}
               aria-label={strings.undo}
               onClick={onUndoCombine}
               size="small"
@@ -229,12 +229,12 @@ export default function CarefulSpeechControls({
         </Stack>
       )}
       <Typography variant="body2" align="center" sx={{ py: 2 }}>
-        {strings.clause.replace('{0}', formatClauseRange(currentRegion))}
+        {strings.unitLabel.replace('{0}', formatClauseRange(currentRegion))}
       </Typography>
       {showStartButton && (
         <Box sx={{ display: 'flex', justifyContent: 'center', pb: 1 }}>
           <PriButton
-            id="careful-speech-start"
+            id={`${controlIdPrefix}-start`}
             onClick={onStartRecording}
             disabled={phase === 'playing'}
             variant={highlightStart ? 'contained' : 'outlined'}
@@ -288,7 +288,7 @@ export default function CarefulSpeechControls({
             sx={{ my: 1, pr: 1 }}
           >
             <TextField
-              id="careful-speech-speaker"
+              id={`${controlIdPrefix}-speaker`}
               label={strings.speaker}
               value={speaker}
               onChange={(e) => onSpeakerChange(e.target.value)}
@@ -318,16 +318,16 @@ export default function CarefulSpeechControls({
           {(showDockedRecordButton || showNextClause) && (
             <Box
               sx={{ display: 'flex', justifyContent: 'center', pt: 1 }}
-              data-cy="careful-speech-docked-record"
+              data-cy={`${controlIdPrefix}-docked-record`}
             >
               {showNextClause ? (
                 <PriButton
-                  id="careful-speech-next"
+                  id={`${controlIdPrefix}-next`}
                   onClick={onNextClause}
                   disabled={allClausesComplete || savingRecording}
                   sx={primaryHighlightSx}
                 >
-                  {strings.nextClause} &gt;
+                  {strings.nextUnit} &gt;
                 </PriButton>
               ) : (
                 dockedRecordButton

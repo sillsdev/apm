@@ -12,7 +12,7 @@ export function regionsJsonFromList(
   });
 }
 
-export function hasClauseRegions(segmentsJson: string): boolean {
+export function hasPhraseRegions(segmentsJson: string): boolean {
   try {
     const parsed = JSON.parse(segmentsJson) as { regions?: IRegion[] };
     return Array.isArray(parsed.regions) && parsed.regions.length > 0;
@@ -20,3 +20,6 @@ export function hasClauseRegions(segmentsJson: string): boolean {
     return false;
   }
 }
+
+/** @deprecated Prefer hasPhraseRegions — kept for BOLD clause naming at call sites. */
+export const hasClauseRegions = hasPhraseRegions;

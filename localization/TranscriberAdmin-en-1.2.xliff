@@ -2264,6 +2264,83 @@
                <context context-type="sourcefile">PassageDetailLwcTranscription.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="phraseBackTranslationGuided.allComplete">
+            <source>All segments are complete.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">PassageDetailPhraseBackTranslate.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="phraseBackTranslationGuided.clearRecording">
+            <source>Clear Recording</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">CarefulSpeechControls.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="phraseBackTranslationGuided.combineWithNextSegment">
+            <source>Combine with Next Segment</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">CarefulSpeechControls.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="phraseBackTranslationGuided.fewerSegments">
+            <source>Fewer Segments</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">CarefulSpeechControls.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="phraseBackTranslationGuided.moreSegments">
+            <source>More Segments</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">CarefulSpeechControls.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="phraseBackTranslationGuided.nextSegment">
+            <source>Next Segment</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">CarefulSpeechControls.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="phraseBackTranslationGuided.segment">
+            <source>Segment: {0}</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">CarefulSpeechControls.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="phraseBackTranslationGuided.speaker">
+            <source>Speaker</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">CarefulSpeechControls.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="phraseBackTranslationGuided.splitSegment">
+            <source>Split Segment</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">CarefulSpeechControls.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="phraseBackTranslationGuided.startRecording">
+            <source>Start Recording</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">CarefulSpeechControls.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="phraseBackTranslationGuided.undo">
+            <source>Undo</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">CarefulSpeechControls.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="consultantCheck.checked">
       		<source>Mark Checked</source>
       		<target/>

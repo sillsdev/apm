@@ -381,6 +381,20 @@ export interface ILwcTranscriptionStrings extends Localize.LocalizedStringsMetho
     "progress": string;
 };
 
+export interface IPhraseBackTranslationGuidedStrings extends Localize.LocalizedStringsMethods {
+    "allComplete": string;
+    "clearRecording": string;
+    "combineWithNextSegment": string;
+    "fewerSegments": string;
+    "moreSegments": string;
+    "nextSegment": string;
+    "segment": string;
+    "speaker": string;
+    "splitSegment": string;
+    "startRecording": string;
+    "undo": string;
+};
+
 export interface IConsultantCheckStrings extends Localize.LocalizedStringsMethods {
     "checked": string;
     "compare": string;
@@ -2201,6 +2215,7 @@ export interface ILocalizedStrings {
 	carefulTranscription: ICarefulTranscriptionStrings;
 	lwcTranslation: ILwcTranslationStrings;
 	lwcTranscription: ILwcTranscriptionStrings;
+	phraseBackTranslationGuided: IPhraseBackTranslationGuidedStrings;
 	consultantCheck: IConsultantCheckStrings;
 	control: IControlStrings;
 	deleteExpansion: IDeleteExpansionStrings;

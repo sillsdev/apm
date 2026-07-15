@@ -5,6 +5,18 @@ import { prettySegment } from '../../../utils/prettySegment';
 
 const REGION_TOLERANCE = 0.05;
 
+function isEmptySourceSegments(seg: string | undefined): boolean {
+  if (!seg) return true;
+  const trimmed = seg.trim();
+  if (trimmed === '' || trimmed === '{}') return true;
+  try {
+    const parsed = JSON.parse(trimmed) as { start?: number; end?: number };
+    return parsed?.start === undefined && parsed?.end === undefined;
+  } catch {
+    return false;
+  }
+}
+
 function parseStoredRegion(seg: string | undefined): IRegion | undefined {
   if (!seg) return undefined;
   try {
@@ -20,8 +32,16 @@ function parseStoredRegion(seg: string | undefined): IRegion | undefined {
 
 function regionMatchesClause(
   storedSeg: string | undefined,
-  clauseRegion: IRegion
+  clauseRegion: IRegion,
+  options?: { singleSegmentMode?: boolean; clauseIndex?: number }
 ): boolean {
+  if (
+    options?.singleSegmentMode &&
+    options.clauseIndex === 0 &&
+    isEmptySourceSegments(storedSeg)
+  ) {
+    return true;
+  }
   const stored = parseStoredRegion(storedSeg);
   if (stored) {
     return (
@@ -47,13 +67,19 @@ export function getRecordingForClause(
   recordTypeId: string,
   sourceVersion: number,
   clauseRegion: IRegion,
-  vernacularMediaId?: string
+  vernacularMediaId?: string,
+  singleSegmentMode?: boolean,
+  clauseIndex?: number
 ): IRow | undefined {
   const matches = rowData.filter(
     (r) =>
       related(r.mediafile, 'artifactType') === recordTypeId &&
       matchesSourceVersion(r, sourceVersion, vernacularMediaId) &&
-      regionMatchesClause(r.mediafile?.attributes?.sourceSegments, clauseRegion)
+      regionMatchesClause(
+        r.mediafile?.attributes?.sourceSegments,
+        clauseRegion,
+        { singleSegmentMode, clauseIndex }
+      )
   );
   if (matches.length === 0) return undefined;
   const exactVersion = matches.find((r) => r.sourceVersion === sourceVersion);
@@ -65,7 +91,8 @@ export function getCompletedClauseIndices(
   rowData: IRow[],
   recordTypeId: string,
   sourceVersion: number,
-  vernacularMediaId?: string
+  vernacularMediaId?: string,
+  singleSegmentMode?: boolean
 ): Set<number> {
   const completed = new Set<number>();
   clauseRegions.forEach((region, index) => {
@@ -75,7 +102,9 @@ export function getCompletedClauseIndices(
         recordTypeId,
         sourceVersion,
         region,
-        vernacularMediaId
+        vernacularMediaId,
+        singleSegmentMode,
+        index
       )
     ) {
       completed.add(index);
