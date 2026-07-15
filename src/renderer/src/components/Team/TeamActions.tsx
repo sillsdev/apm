@@ -26,6 +26,8 @@ const TeamActions = () => {
   const {
     t,
     offline,
+    connected,
+    offlineOnly,
     isDeveloper,
     userIsSharedContentAdmin,
     isDeleting,
@@ -57,7 +59,7 @@ const TeamActions = () => {
 
   return (
     <RootBox>
-      {(!offline || isDeveloper) && (
+      {((!offline && connected) || offlineOnly) && (
         <AltButton id="TeamActAdd" sx={{ mb: 2 }} onClick={handleAddClick}>
           {t.addTeam}
         </AltButton>
