@@ -74,11 +74,12 @@ export const useNotes = () => {
       .filter(
         (p) =>
           related(p, 'section') === sectionId &&
-          passageTypeFromRef(p.attributes.reference, false) ===
+          (p.attributes?.reference ?? '').length > 0 &&
+          passageTypeFromRef(p.attributes?.reference, false) ===
             PassageTypeEnum.PASSAGE
       )
       .sort(bySeq)
-      .map((p) => p.attributes.reference);
+      .map((p) => p.attributes?.reference ?? '');
   };
   const decSeq = (i: Passage, j: Passage) => {
     return (
@@ -97,9 +98,10 @@ export const useNotes = () => {
       .sort(decSeq)
       .find(
         (p) =>
-          passageTypeFromRef(p.attributes.reference, false) ===
+          passageTypeFromRef(p.attributes?.reference, false) ===
             PassageTypeEnum.PASSAGE &&
-          p.attributes.sequencenum < passage.attributes.sequencenum
+          (p.attributes?.sequencenum ?? 0) <
+            (passage.attributes?.sequencenum ?? 0)
       );
     let result = '';
     if (notePassage?.attributes) {
