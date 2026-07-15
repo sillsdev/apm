@@ -373,6 +373,26 @@ describe('ProjectsScreen', () => {
     cy.get('#ProjectActAdd').should('not.exist');
   });
 
+  it('should not show "Add New Project..." button when offline, even if isAdmin returns true', () => {
+    const teamId = 'test-team-id';
+    mountWithTeam(teamId, {
+      isAdmin: (team: any) => team?.id === teamId,
+      initialState: createInitialState({ offline: true }),
+    });
+
+    cy.get('#ProjectActAdd').should('not.exist');
+  });
+
+  it('should show "Add New Project..." button when offlineOnly, and isAdmin returns true', () => {
+    const teamId = 'test-team-id';
+    mountWithTeam(teamId, {
+      isAdmin: (team: any) => team?.id === teamId,
+      initialState: createInitialState({ offline: true, offlineOnly: true }),
+    });
+
+    cy.get('#ProjectActAdd').should('be.visible');
+  });
+
   it('should show "Switch Teams" button', () => {
     mountWithTeam();
 

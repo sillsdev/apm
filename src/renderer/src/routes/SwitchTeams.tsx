@@ -183,6 +183,8 @@ const FloatingActions = () => {
   const {
     t,
     offline,
+    connected,
+    offlineOnly,
     isDeveloper,
     userIsSharedContentAdmin,
     isDeleting,
@@ -231,7 +233,7 @@ const FloatingActions = () => {
               gap: 2,
             }}
           >
-            {(!offline || isDeveloper) && (
+            {((!offline && connected) || offlineOnly) && (
               <Button
                 id="TeamActAdd"
                 data-testid="add-team-button"
