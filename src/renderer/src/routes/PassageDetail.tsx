@@ -31,6 +31,7 @@ import { RecordKeyMap } from '@orbit/records';
 import PassageDetailsArtifactsMobile from '../components/PassageDetail/Internalization/PassageDetailsArtifactsMobile';
 import PassageDetailMarkVerses from '../components/PassageDetail/mobile/MarkVerses/PassageDetailMarkVerses';
 import PassageDetailCarefulSpeech from '../components/PassageDetail/PassageDetailCarefulSpeech';
+import PassageDetailPhraseBackTranslate from '../components/PassageDetail/PassageDetailPhraseBackTranslate';
 import PassageDetailLwcTranslation from '../components/PassageDetail/PassageDetailLwcTranslation';
 import PassageDetailLwcTranscription from '../components/PassageDetail/PassageDetailLwcTranscription';
 import { isBoldClauseTranscriptionStep } from '../components/PassageDetail/boldClauseTranscription';
@@ -50,17 +51,19 @@ const MobileStep = () => {
   const { slugFromId } = useArtifactType();
   const { paneWidth } = usePaneWidth();
 
-const artifactSlug = useMemo(() => {
-  const parsed =
-    typeof settings === 'string'
-      ? (() => {
-          try {
-            return JSON.parse(settings || '{}') as { artifactTypeId?: string };
-          } catch {
-            return {} as { artifactTypeId?: string };
-          }
-        })()
-      : ((settings as { artifactTypeId?: string }) ?? {});
+  const artifactSlug = useMemo(() => {
+    const parsed =
+      typeof settings === 'string'
+        ? (() => {
+            try {
+              return JSON.parse(settings || '{}') as {
+                artifactTypeId?: string;
+              };
+            } catch {
+              return {} as { artifactTypeId?: string };
+            }
+          })()
+        : ((settings as { artifactTypeId?: string }) ?? {});
     const id = parsed?.artifactTypeId;
     if (!id) return null;
     const resolved =
@@ -84,6 +87,8 @@ const artifactSlug = useMemo(() => {
     <PassageDetailCarefulSpeech width={Math.max(0, paneWidth - 40)} />
   ) : tool === ToolSlug.PhraseBackTranslate && isBoldWorkflow ? (
     <PassageDetailLwcTranslation width={Math.max(0, paneWidth - 40)} />
+  ) : tool === ToolSlug.PhraseBackTranslate && !isBoldWorkflow ? (
+    <PassageDetailPhraseBackTranslate width={Math.max(0, paneWidth - 40)} />
   ) : boldClauseTranscription ? (
     // Key on currentstep so the shared transcription component remounts when
     // moving between the adjacent Careful- and LWC-Transcription steps. Desktop

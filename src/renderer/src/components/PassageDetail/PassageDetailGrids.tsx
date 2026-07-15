@@ -15,6 +15,7 @@ import PassageDetailRecord from './PassageDetailRecord';
 import PassageDetailItem from './PassageDetailItem';
 import PassageDetailMarkVerses from './mobile/MarkVerses/PassageDetailMarkVerses';
 import PassageDetailCarefulSpeech from './PassageDetailCarefulSpeech';
+import PassageDetailPhraseBackTranslate from './PassageDetailPhraseBackTranslate';
 import PassageDetailLwcTranslation from './PassageDetailLwcTranslation';
 import PassageDetailLwcTranscription from './PassageDetailLwcTranscription';
 import PassageDetailTranscribe from './PassageDetailTranscribe';
@@ -29,7 +30,7 @@ import {
   useStepTool,
 } from '../../crud';
 import { Plan, IToolStrings } from '../../model';
-import { NamedRegions, useMobile } from '../../utils';
+import { useMobile } from '../../utils';
 import { useSelector, shallowEqual } from 'react-redux';
 import { toolSelector } from '../../selector';
 import Busy from '../Busy';
@@ -43,20 +44,6 @@ import { showsBoldDesktopStepComplete } from './boldDesktopStepComplete';
 import { isBoldClauseTranscriptionStep } from './boldClauseTranscription';
 
 const KeyTerms = React.lazy(() => import('./Keyterms/KeyTerms'));
-
-function phraseBackNamedRegionFromSettings(
-  parsed: Record<string, unknown> | null
-): NamedRegions {
-  if (!parsed) return NamedRegions.BackTranslation;
-  const nr = parsed.namedRegion;
-  if (
-    typeof nr === 'string' &&
-    (Object.values(NamedRegions) as string[]).includes(nr)
-  ) {
-    return nr as NamedRegions;
-  }
-  return NamedRegions.BackTranslation;
-}
 
 function parseStepSettings(settings: unknown): Record<string, unknown> | null {
   if (!settings) return null;
@@ -115,19 +102,6 @@ const PassageDetailGrids = () => {
     ArtifactTypeSlug.WholeBackTranslation,
   ]);
 
-  const phraseBackArtifactSlugs = useMemo((): ArtifactTypeSlug[] => {
-    const id = stepSettingsParsed?.artifactTypeId as string | undefined;
-    if (id) {
-      const resolved =
-        (memory?.keyMap &&
-          remoteIdGuid('artifacttype', id, memory.keyMap as RecordKeyMap)) ??
-        id;
-      const slug = slugFromId(resolved) as ArtifactTypeSlug;
-      if (slug && slug !== ArtifactTypeSlug.Vernacular) return [slug];
-    }
-    return [ArtifactTypeSlug.PhraseBackTranslation];
-  }, [stepSettingsParsed, memory?.keyMap, slugFromId]);
-
   const artifactSlug = useMemo(() => {
     if (!artifactId) return null;
     return slugFromId(artifactId);
@@ -143,11 +117,6 @@ const PassageDetailGrids = () => {
     tool ?? '',
     isBoldWorkflow,
     artifactSlug
-  );
-
-  const phraseBackNamedRegion = useMemo(
-    () => phraseBackNamedRegionFromSettings(stepSettingsParsed),
-    [stepSettingsParsed]
   );
 
   const plans = useMemo(() => {
@@ -345,7 +314,7 @@ const PassageDetailGrids = () => {
           tool === ToolSlug.Record ||
           tool === ToolSlug.Verses ||
           tool === ToolSlug.CarefulSpeech ||
-          (tool === ToolSlug.PhraseBackTranslate && isBoldWorkflow) ||
+          tool === ToolSlug.PhraseBackTranslate ||
           tool === ToolSlug.Transcribe ||
           tool === ToolSlug.ConsultantCheck ||
           tool === ToolSlug.KeyTerm) && (
@@ -358,7 +327,7 @@ const PassageDetailGrids = () => {
               !boldClauseTranscription &&
               tool !== ToolSlug.Verses &&
               tool !== ToolSlug.CarefulSpeech &&
-              !(tool === ToolSlug.PhraseBackTranslate && isBoldWorkflow) &&
+              tool !== ToolSlug.PhraseBackTranslate &&
               tool !== ToolSlug.Record &&
               tool !== ToolSlug.ConsultantCheck ? (
                 <Stack
@@ -405,6 +374,9 @@ const PassageDetailGrids = () => {
                   {tool === ToolSlug.PhraseBackTranslate && isBoldWorkflow && (
                     <PassageDetailLwcTranslation width={paneWidth} />
                   )}
+                  {tool === ToolSlug.PhraseBackTranslate && !isBoldWorkflow && (
+                    <PassageDetailPhraseBackTranslate width={playerPaneWidth} />
+                  )}
                   {boldClauseTranscription && (
                     <PassageDetailLwcTranscription width={paneWidth} />
                   )}
@@ -427,8 +399,7 @@ const PassageDetailGrids = () => {
           </Paper>
         )}
         {(tool === ToolSlug.Community ||
-          tool === ToolSlug.WholeBackTranslate ||
-          (tool === ToolSlug.PhraseBackTranslate && !isBoldWorkflow)) && (
+          tool === ToolSlug.WholeBackTranslate) && (
           <Grid
             key={currentstep}
             container
@@ -441,16 +412,10 @@ const PassageDetailGrids = () => {
                 slugs={
                   tool === ToolSlug.Community
                     ? communitySlugs
-                    : tool === ToolSlug.PhraseBackTranslate
-                      ? phraseBackArtifactSlugs
-                      : wholeBackTranslationSlugs
+                    : wholeBackTranslationSlugs
                 }
                 showTopic={tool === ToolSlug.Community}
-                segments={
-                  tool === ToolSlug.PhraseBackTranslate
-                    ? phraseBackNamedRegion
-                    : undefined
-                }
+                segments={undefined}
               />
             </Grid>
           </Grid>

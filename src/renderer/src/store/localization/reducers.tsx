@@ -405,6 +405,21 @@ const initialState = {
 			"progress": "{0} of {1} clauses transcribed",
 		}
 	}),
+	"phraseBackTranslationGuided": new LocalizedStrings({
+		"en": {
+			"allComplete": "All segments are complete.",
+			"clearRecording": "Clear Recording",
+			"combineWithNextSegment": "Combine with Next Segment",
+			"fewerSegments": "Fewer Segments",
+			"moreSegments": "More Segments",
+			"nextSegment": "Next Segment",
+			"segment": "Segment: {0}",
+			"speaker": "Speaker",
+			"splitSegment": "Split Segment",
+			"startRecording": "Start Recording",
+			"undo": "Undo",
+		}
+	}),
 	"consultantCheck": new LocalizedStrings({
 		"en": {
 			"checked": "Mark Checked",
@@ -2319,6 +2334,7 @@ const localizationReducer = function (state = initialState, action: any): ILocal
 				"carefulTranscription" : new LocalizedStrings(action.payload.data.carefulTranscription),
 				"lwcTranslation" : new LocalizedStrings(action.payload.data.lwcTranslation),
 				"lwcTranscription" : new LocalizedStrings(action.payload.data.lwcTranscription),
+				"phraseBackTranslationGuided" : new LocalizedStrings(action.payload.data.phraseBackTranslationGuided),
 				"consultantCheck" : new LocalizedStrings(action.payload.data.consultantCheck),
 				"control" : new LocalizedStrings(action.payload.data.control),
 				"deleteExpansion" : new LocalizedStrings(action.payload.data.deleteExpansion),

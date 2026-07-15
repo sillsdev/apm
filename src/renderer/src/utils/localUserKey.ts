@@ -34,6 +34,7 @@ export enum LocalKey {
   microphoneId = 'microphone-id', // preferred recording input
   mobileView = 'mobileView', // toggle mobile view
   carefulSpeaker = 'carefulSpeaker', // last speaker used for careful speech
+  phraseBackSpeaker = 'phraseBackSpeaker', // last speaker used for phrase back translation
   lwcSpeaker = 'lwcSpeaker', // last speaker used for LWC translation
 }
 
