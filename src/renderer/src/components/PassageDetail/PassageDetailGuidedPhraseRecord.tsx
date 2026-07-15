@@ -939,7 +939,7 @@ export function PassageDetailGuidedPhraseRecord({
     const updated = mergeClauseWithNext(clauseRegions, currentIndex);
     if (!updated) return;
     setCombineUndo(clauseSegString);
-    const json = regionsJsonFromList(updated);
+    const json = regionsJsonFromList(updated, phraseSegParams);
     setClauseSegString(json);
     await persistClauseSegments(json);
     playerControlsRef.current?.loadRegionsJson?.(json);
@@ -950,6 +950,7 @@ export function PassageDetailGuidedPhraseRecord({
     clauseRegions,
     completedIndices,
     clauseSegString,
+    phraseSegParams,
     setClauseSegString,
     persistClauseSegments,
     applyColors,

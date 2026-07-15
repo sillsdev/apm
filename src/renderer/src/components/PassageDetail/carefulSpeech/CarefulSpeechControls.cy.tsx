@@ -1,38 +1,25 @@
 import React from 'react';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
-import { Provider } from 'react-redux';
-import { legacy_createStore as createStore, combineReducers } from 'redux';
-import LocalizedStrings from 'react-localization';
 import CarefulSpeechControls from './CarefulSpeechControls';
 
-const mockCarefulSpeechStrings = new LocalizedStrings({
-  en: {
-    startRecording: 'Start Recording',
-    nextClause: 'Next Clause',
-    clause: 'Clause: {0}',
-    speaker: 'Speaker',
-    moreClauses: 'More Clauses',
-    fewerClauses: 'Fewer Clauses',
-    combineWithNextClause: 'Combine with Next Clause',
-    splitClause: 'Split Clause',
-    undo: 'Undo',
-  },
-});
+const controlStrings = {
+  allComplete: 'All clauses are complete.',
+  unitLabel: 'Clause: {0}',
+  clearRecording: 'Clear Recording',
+  combineWithNext: 'Combine with Next Clause',
+  fewerUnits: 'Fewer Clauses',
+  moreUnits: 'More Clauses',
+  nextUnit: 'Next Clause',
+  splitUnit: 'Split Clause',
+  speaker: 'Speaker',
+  startRecording: 'Start Recording',
+  undo: 'Undo',
+};
 
-const mockStringsReducer = () => ({
-  loaded: true,
-  lang: 'en',
-  carefulSpeech: mockCarefulSpeechStrings,
-});
-
-const mockStore = createStore(
-  combineReducers({
-    strings: mockStringsReducer,
-  })
-);
-
-const baseProps = {
+const baseProps: React.ComponentProps<typeof CarefulSpeechControls> = {
   width: 360,
+  phase: 'readyToRecord',
+  recordingPassStarted: false,
   currentRegion: { start: 0, end: 10, label: '' },
   speaker: '',
   onSpeakerChange: () => {},
@@ -65,17 +52,17 @@ const baseProps = {
   setCanSave: () => {},
   setStatusText: () => {},
   showRecorder: false,
+  strings: controlStrings,
+  showBoundaryTools: true,
 };
 
 function mountControls(
   props: React.ComponentProps<typeof CarefulSpeechControls>
 ) {
   cy.mount(
-    <Provider store={mockStore}>
-      <ThemeProvider theme={createTheme()}>
-        <CarefulSpeechControls {...props} />
-      </ThemeProvider>
-    </Provider>
+    <ThemeProvider theme={createTheme()}>
+      <CarefulSpeechControls {...props} />
+    </ThemeProvider>
   );
 }
 
@@ -102,10 +89,8 @@ describe('CarefulSpeechControls', () => {
 
     cy.get('#careful-speech-split').should('be.visible');
     cy.get('#careful-speech-combine').should('be.visible');
-    cy.contains(mockCarefulSpeechStrings.splitClause).should('be.visible');
-    cy.contains(mockCarefulSpeechStrings.combineWithNextClause).should(
-      'be.visible'
-    );
+    cy.contains(controlStrings.splitUnit).should('be.visible');
+    cy.contains(controlStrings.combineWithNext).should('be.visible');
   });
 
   // MediaRecord pulls PassageDetailContext and WSAudioPlayer; covered in app E2E/manual.
