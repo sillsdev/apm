@@ -30,6 +30,7 @@ import MicIcon from '@mui/icons-material/SettingsVoice';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import SettingsIcon from '@mui/icons-material/Settings';
 import VersionsIcon from '@mui/icons-material/List';
+import DeleteIcon from '@mui/icons-material/DeleteOutline';
 import NormalizeIcon from '../control/NormalizeIcon';
 import UploadIcon from '@mui/icons-material/CloudUpload';
 import { Button } from '@mui/material';
@@ -2181,8 +2182,9 @@ function WSAudioPlayer(props: IProps) {
     !dockRecordButton && (
       <LightTooltip id="wsAudioClearTip" title={t.clearRecordingTip}>
         <span>
-          <AltButton
+          <IconButton
             id="wsAudioClear"
+            aria-label={t.clearRecordingTip}
             onClick={() => handleClear()}
             disabled={
               recording ||
@@ -2190,10 +2192,9 @@ function WSAudioPlayer(props: IProps) {
               waitingForAI ||
               Boolean(mediaSaveInProgress)
             }
-            sx={smallButtonProps}
           >
-            {t.reset}
-          </AltButton>
+            <DeleteIcon />
+          </IconButton>
         </span>
       </LightTooltip>
     );

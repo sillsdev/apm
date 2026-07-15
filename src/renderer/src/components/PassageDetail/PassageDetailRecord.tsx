@@ -380,7 +380,7 @@ export function PassageDetailRecord(props: IProps) {
           </>
         }
         onVersions={
-          hasExistingVersion && vernacularVersionCount > 1
+          !isBoldWorkflow && hasExistingVersion && vernacularVersionCount > 1
             ? handleVersions
             : undefined
         }
