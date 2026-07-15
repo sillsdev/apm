@@ -1,7 +1,8 @@
 import { useContext, useMemo, useState } from 'react';
 import { LocalKey, localUserKey } from '../../utils/localUserKey';
 import { useMobile } from '../../utils';
-import { useGlobal } from '../../context/useGlobal';
+import { useGetGlobal, useGlobal } from '../../context/useGlobal';
+import { UnsavedContext } from '../../context/UnsavedContext';
 import { IconButton, Menu, MenuItem, Stack, Typography } from '@mui/material';
 import SettingsIcon from '@mui/icons-material/Settings';
 import UsersIcon from '@mui/icons-material/People';
@@ -39,6 +40,8 @@ export const OrgHead = () => {
   const [workflowVisible, setWorkflowVisible] = useState(false);
   const { isMobile, isMobileView } = useMobile();
   const commitTeamSettings = useCommitTeamSettings();
+  const { startSave, waitForSave } = useContext(UnsavedContext).state;
+  const getGlobal = useGetGlobal();
   const { pathname } = useLocation();
   const isTeamScreen = pathname.includes('/team');
   const isSwitchTeamsScreen = pathname.includes('/switch-teams');
@@ -111,6 +114,13 @@ export const OrgHead = () => {
   const handleWorkflow = () => {
     setWorkflowVisible(true);
     handleSettingsMenuClose();
+  };
+
+  const handleWorkflowClose = (isOpen: boolean) => {
+    if (getGlobal('changed')) {
+      startSave();
+      waitForSave(() => setWorkflowVisible(isOpen), 500);
+    } else setWorkflowVisible(isOpen);
   };
 
   const handleCommitSettings = async (
@@ -248,7 +258,7 @@ export const OrgHead = () => {
                 )
           }
           isOpen={workflowVisible}
-          onOpen={setWorkflowVisible}
+          onOpen={handleWorkflowClose}
           bp={isMobile ? BigDialogBp.mobile : BigDialogBp.md}
         >
           <StepEditor
