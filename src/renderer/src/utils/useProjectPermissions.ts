@@ -9,8 +9,13 @@ import { useOrbitData } from '../hoc/useOrbitData';
 export const useProjectPermissions = (
   team?: string,
   proj?: string
-): { canEditSheet: boolean; canPublish: boolean } => {
+): {
+  canEditSheet: boolean;
+  canEditSheetBase: boolean;
+  canPublish: boolean;
+} => {
   const [canEditSheet, setCanEditSheet] = useState(false);
+  const [canEditSheetBase, setCanEditSheetBase] = useState(false);
   const [canPublish, setCanPublish] = useState(false);
   const [isOffline] = useGlobal('offline'); //verified this is not used in a function 2/18/25
   const [offlineOnly] = useGlobal('offlineOnly');
@@ -39,14 +44,14 @@ export const useProjectPermissions = (
     const editgroup = related(projectRec, 'editsheetgroup');
     const edituser = related(projectRec, 'editsheetuser');
 
-    setCanEditSheet(
-      (!(isOffline && !offlineOnly) &&
-        (isAdmin ||
-          (Boolean(editgroup) &&
-            myGroups.findIndex((g) => g.id === editgroup) > -1) ||
-          (Boolean(edituser) && edituser === user))) ??
-        false
-    );
+    const editSheetBase =
+      isAdmin ||
+      (Boolean(editgroup) &&
+        myGroups.findIndex((g) => g.id === editgroup) > -1) ||
+      (Boolean(edituser) && edituser === user);
+
+    setCanEditSheetBase(editSheetBase ?? false);
+    setCanEditSheet((!(isOffline && !offlineOnly) && editSheetBase) ?? false);
 
     const publishgroup = related(projectRec, 'publishgroup');
     const publishuser = related(projectRec, 'publishuser');
@@ -60,5 +65,5 @@ export const useProjectPermissions = (
     );
   }, [projectRec, myGroups, isAdmin, user, isOffline, offlineOnly]);
 
-  return { canEditSheet, canPublish };
+  return { canEditSheet, canEditSheetBase, canPublish };
 };

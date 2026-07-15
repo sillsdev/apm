@@ -71,7 +71,7 @@ export function AudioTab() {
   const { showMessage } = useSnackBar();
   const [data, setData] = useState(Array<IRow>());
   const [pdata, setPData] = useState(Array<IPRow>());
-  const { sectionArr, shared, publishingOn, canEditSheet, canPublish } =
+  const { sectionArr, shared, publishingOn, canEditAudio, canPublish } =
     useContext(PlanContext).state;
   const sectionMap = new Map<number, string>(sectionArr);
   const [attachVisible, setAttachVisible] = useState(false);
@@ -341,7 +341,7 @@ export function AudioTab() {
       <Box width="100%">
         <TabAppBar position="fixed" color="default">
           <TabActions>
-            {canEditSheet && (
+            {canEditAudio && (
               <>
                 <AltButton
                   id="audUpload"
@@ -394,7 +394,7 @@ export function AudioTab() {
               playItem={playItem}
               setPlayItem={setPlayItem}
               onAttach={onAttach}
-              readonly={!canEditSheet}
+              readonly={!canEditAudio}
               sectionArr={sectionArr}
               shared={shared}
               canSetDestination={!isOffline && canPublish}

@@ -186,6 +186,7 @@ describe('PlanView', () => {
     publishingOn: true,
     hidePublishing: true,
     canEditSheet: false,
+    canEditAudio: false,
     canPublish: false,
     sectionArr: [],
     setSectionArr: cy.stub(),
