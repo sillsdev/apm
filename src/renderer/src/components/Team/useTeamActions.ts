@@ -18,6 +18,8 @@ export function useTeamActions() {
   const { teamCreate, isDeleting } = ctx.state;
   const [, setBusy] = useGlobal('remoteBusy');
   const [offline] = useGlobal('offline');
+  const [connected] = useGlobal('connected');
+  const [offlineOnly] = useGlobal('offlineOnly');
   const [isDeveloper] = useGlobal('developer');
   const { userIsSharedContentAdmin } = useRole();
   const tokenctx = useContext(TokenContext).state;
@@ -83,6 +85,8 @@ export function useTeamActions() {
     t,
     ts,
     offline,
+    connected,
+    offlineOnly,
     isDeveloper,
     userIsSharedContentAdmin,
     isDeleting,

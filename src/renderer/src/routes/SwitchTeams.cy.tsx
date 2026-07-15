@@ -259,6 +259,24 @@ describe('SwitchTeams', () => {
     cy.get('[role="dialog"]').should('be.visible');
   });
 
+  it('should not show "Add Team" button when offline', () => {
+    mountSwitchTeams(createInitialState({ offline: true }));
+
+    cy.get('#TeamActAdd').should('not.exist');
+  });
+
+  it('should not show "Add Team" button when offline even in developer mode', () => {
+    mountSwitchTeams(createInitialState({ offline: true, developer: true }));
+
+    cy.get('#TeamActAdd').should('not.exist');
+  });
+
+  it('should show "Add Team" button when offlineOnly', () => {
+    mountSwitchTeams(createInitialState({ offline: true, offlineOnly: true }));
+
+    cy.get('#TeamActAdd').should('be.visible');
+  });
+
   it('should show Import button when offline', () => {
     mountSwitchTeams(createInitialState({ offline: true }));
 
