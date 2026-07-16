@@ -68,6 +68,7 @@ export interface MediaUpload {
       'performed-by': string | null;
       topic: string;
       transcription: string | null;
+      'language-bcp47': string | null;
     };
     relationships: {
       'last-modified-by-user': {

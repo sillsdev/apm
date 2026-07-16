@@ -29,6 +29,7 @@ describe('guidedPhraseRecord config', () => {
     expect(config.showSegmentResetInRecordingPass).toBe(true);
     expect(config.multiLevelSegmentUndo).toBe(true);
     expect(config.sequentialUnitNavAroundRecord).toBe(true);
+    expect(config.persistSegments).toBe(true);
   });
 
   it('Retell BT is single-segment without boundary tools', () => {
@@ -42,6 +43,7 @@ describe('guidedPhraseRecord config', () => {
     expect(config.showPlayerSegmentControls).toBe(false);
     expect(config.multiLevelSegmentUndo).toBe(false);
     expect(config.sequentialUnitNavAroundRecord).toBe(false);
+    expect(config.persistSegments).toBe(false);
   });
 
   it('buildFilenamePostfix adds segment suffix after the first unit', () => {

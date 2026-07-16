@@ -3,7 +3,6 @@ import {
   ActivityStates,
   ISharedStrings,
   MediaFile,
-  MediaFileD,
   PassageD,
 } from '../../model';
 import { Grid, Typography, Box, BoxProps, styled } from '@mui/material';
@@ -21,6 +20,8 @@ import { useArtifactType } from '../../crud/useArtifactType';
 import { UnsavedContext } from '../../context/UnsavedContext';
 import { useStepPermissions } from '../../utils/useStepPermission';
 import { useGlobal } from '../../context/useGlobal';
+import { parseStepLanguageField } from '../../crud/transcribeStepAsrSettings';
+import { related } from '../../crud/related';
 
 const TranscriberContainer = styled(Box)<BoxProps>(() => ({
   zIndex: 1,
@@ -189,21 +190,31 @@ export function PassageDetailTranscribe({ width, artifactTypeId }: IProps) {
     setState((s) => ({ ...s, playerMediafile }));
   };
 
-  const media = useMemo(
-    () => findRecord(memory, 'mediafile', mediafileId) as MediaFileD,
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [mediafileId]
-  );
-
   const hasBtRecordings = useMemo(() => {
     if (!artifactTypeId) return true; // we're not transcribing back translations
     const btType = localizedArtifactTypeFromId(artifactTypeId);
-    const version = media?.attributes?.versionNumber ?? 1;
-    return rowData.some(
-      (r) => r.artifactType === btType && r.sourceVersion === version
-    );
+    const primaryBcp = parseStepLanguageField(
+      (() => {
+        try {
+          return (JSON.parse(stepSettings) as { language?: unknown }).language;
+        } catch {
+          return undefined;
+        }
+      })()
+    ).bcp47;
+    return rowData.some((r) => {
+      if (r.artifactType !== btType) return false;
+      if (related(r.mediafile, 'sourceMedia') !== mediafileId) return false;
+      if (primaryBcp && primaryBcp !== 'und') {
+        const rowBcp = parseStepLanguageField(
+          r.mediafile.attributes?.languagebcp47
+        ).bcp47;
+        if (rowBcp !== primaryBcp) return false;
+      }
+      return true;
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rowData]);
+  }, [rowData, artifactTypeId, mediafileId, stepSettings]);
   const MAGIC_NUMBER_THAT_MAKES_IT_FIT = 20;
   return Boolean(mediafileId) && hasBtRecordings ? (
     <TranscriberProvider

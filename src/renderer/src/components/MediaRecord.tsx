@@ -45,6 +45,7 @@ interface IProps {
   sourceSegments?: string | undefined;
   performedBy?: string | undefined;
   topic?: string | undefined;
+  languagebcp47?: string | undefined;
   keepItSmall?: boolean | undefined;
   afterUploadCb: (mediaId: string | undefined) => Promise<void>;
   onReady?: (() => void) | undefined;
@@ -117,6 +118,7 @@ function MediaRecord(props: IProps) {
     sourceSegments,
     performedBy,
     topic,
+    languagebcp47,
     afterUploadCb,
     setCanSave,
     setCanCancel,
@@ -305,6 +307,7 @@ function MediaRecord(props: IProps) {
     performedBy,
     planId,
     topic,
+    languagebcp47,
     afterUploadCb: myAfterUploadCb,
   });
 

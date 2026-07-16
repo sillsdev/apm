@@ -15,6 +15,8 @@ export interface IGuidedPhraseRecordControlStrings {
   speaker: string;
   startRecording: string;
   undo: string;
+  /** Shown when Phrase BT step has no language configured. */
+  noStepLanguage?: string;
   /** Phrase BT Reset confirm when recordings exist. */
   resetConfirmRecordings?: string;
   /** Phrase BT Reset confirm when only boundaries changed. */
@@ -41,6 +43,8 @@ export interface GuidedPhraseRecordConfig {
   multiLevelSegmentUndo: boolean;
   /** Prev/next segment arrows flanking Record instead of first-incomplete Next. */
   sequentialUnitNavAroundRecord: boolean;
+  /** Persist segment map on vernacular named regions (false for Retell). */
+  persistSegments: boolean;
   /** Filename postfix for a unit at `unitIndex` (0-based) on `sourceVersion`. */
   buildFilenamePostfix: (unitIndex: number, sourceVersion: number) => string;
 }
@@ -51,6 +55,7 @@ const carefulSpeechBoundaryDefaults = {
   showSegmentResetInRecordingPass: false,
   multiLevelSegmentUndo: false,
   sequentialUnitNavAroundRecord: false,
+  persistSegments: true,
 } as const;
 
 export const CAREFUL_SPEECH_CONFIG: GuidedPhraseRecordConfig = {
@@ -87,6 +92,7 @@ export function phraseBackTranslateConfig(
     showSegmentResetInRecordingPass: phraseBoundaryTools,
     multiLevelSegmentUndo: phraseBoundaryTools,
     sequentialUnitNavAroundRecord: phraseBoundaryTools,
+    persistSegments: phraseBoundaryTools,
     buildFilenamePostfix: (unitIndex, sourceVersion) => {
       const base = `${artifactSlug}${unitIndex + 1}_v${sourceVersion}`;
       if (unitIndex > 0) return `${base}s${unitIndex}`;

@@ -58,6 +58,7 @@ interface Props {
   artifactId: string | null;
   sourceMediaId: string;
   sourceSegments: string;
+  languagebcp47?: string;
   defaultFilename: string;
   recordingMediaId?: string;
   afterUploadCb: (mediaId: string | undefined) => Promise<void>;
@@ -109,6 +110,7 @@ export default function CarefulSpeechControls({
   artifactId,
   sourceMediaId,
   sourceSegments,
+  languagebcp47,
   defaultFilename,
   recordingMediaId,
   afterUploadCb,
@@ -276,6 +278,7 @@ export default function CarefulSpeechControls({
                 passageId={passageId}
                 sourceMediaId={sourceMediaId}
                 sourceSegments={sourceSegments}
+                languagebcp47={languagebcp47}
                 artifactId={artifactId}
                 performedBy={speaker}
                 defaultFilename={defaultFilename}

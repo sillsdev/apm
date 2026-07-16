@@ -1978,6 +1978,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="phraseBackTranslationGuided.noStepLanguage">
+         <segment>
+            <source>Configure a language for this Phrase Back Translation step in Step Editor before recording.</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="phraseBackTranslationGuided.resetConfirmBoundaries">
          <segment>
             <source>Resetting will restore segment boundaries to how they were when you opened this step. Continue?</source>
@@ -1986,7 +1992,7 @@
       </unit>
       <unit id="phraseBackTranslationGuided.resetConfirmRecordings">
          <segment>
-            <source>Resetting will delete all back-translation recordings for this passage and restore segment boundaries to how they were when you opened this step. Continue?</source>
+            <source>Resetting will delete back-translation recordings for this language on the current vernacular recording and restore segment boundaries to how they were when you opened this step. Continue?</source>
             <target/>
          </segment>
       </unit>
@@ -2041,6 +2047,12 @@
       <unit id="consultantCheck.furtherReview">
          <segment>
             <source>Review More</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="consultantCheck.language">
+         <segment>
+            <source>Language</source>
             <target/>
          </segment>
       </unit>
@@ -8368,6 +8380,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="stepEditor.duplicatePhraseBtLanguage">
+         <segment>
+            <source>Another step already uses this language for the same artifact type.</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="stepEditor.hide">
          <segment>
             <source>Hide</source>
@@ -8377,6 +8395,12 @@
       <unit id="stepEditor.inProgress">
          <segment>
             <source>In progress...</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="stepEditor.languageRequired">
+         <segment>
+            <source>Language is required for this step.</source>
             <target/>
          </segment>
       </unit>

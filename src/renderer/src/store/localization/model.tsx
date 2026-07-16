@@ -388,6 +388,7 @@ export interface IPhraseBackTranslationGuidedStrings extends Localize.LocalizedS
     "fewerSegments": string;
     "moreSegments": string;
     "nextSegment": string;
+    "noStepLanguage": string;
     "resetConfirmBoundaries": string;
     "resetConfirmRecordings": string;
     "segment": string;
@@ -402,6 +403,7 @@ export interface IConsultantCheckStrings extends Localize.LocalizedStringsMethod
     "compare": string;
     "compareItems": string;
     "furtherReview": string;
+    "language": string;
     "noMedia": string;
     "noTranscription": string;
     "transcription": string;
@@ -1648,8 +1650,10 @@ export interface IStepEditorStrings extends Localize.LocalizedStringsMethods {
     "add": string;
     "backtranslation": string;
     "changes": string;
+    "duplicatePhraseBtLanguage": string;
     "hide": string;
     "inProgress": string;
+    "languageRequired": string;
     "lastStep": string;
     "name": string;
     "nextStep": string;

@@ -3,6 +3,10 @@ import {
   getCompletedClauseIndices,
   getRecordingForClause,
 } from './carefulSpeechCompletion';
+import {
+  matchesGuidedOutputRow,
+  pickLatestGuidedOutputRow,
+} from './matchesGuidedOutputRow';
 import { IRegion } from '../../../crud/useWavesurferRegions';
 import { IRow } from '../../../context/PassageDetailContext';
 
@@ -10,6 +14,46 @@ const regions: IRegion[] = [
   { start: 0, end: 10, label: '' },
   { start: 10, end: 20, label: '' },
 ];
+
+function makeRow(
+  overrides: Partial<IRow> & {
+    id: string;
+    sourceMediaId?: string;
+    sourceSegments?: string;
+    languagebcp47?: string;
+    dateCreated?: string;
+  }
+): IRow {
+  const {
+    id,
+    sourceMediaId,
+    sourceSegments = JSON.stringify({ start: 0, end: 10 }),
+    languagebcp47,
+    dateCreated,
+    ...rest
+  } = overrides;
+  return {
+    id,
+    artifactType: 'Back translation',
+    sourceVersion: 1,
+    mediafile: {
+      id: `${id}-mf`,
+      type: 'mediafile',
+      attributes: {
+        sourceSegments,
+        ...(languagebcp47 != null ? { languagebcp47 } : {}),
+        ...(dateCreated != null ? { dateCreated } : {}),
+      },
+      relationships: {
+        artifactType: { data: { id: 'art1', type: 'artifacttype' } },
+        ...(sourceMediaId
+          ? { sourceMedia: { data: { id: sourceMediaId, type: 'mediafile' } } }
+          : {}),
+      },
+    } as IRow['mediafile'],
+    ...rest,
+  } as IRow;
+}
 
 describe('carefulSpeechCompletion', () => {
   it('firstIncompleteClauseIndex skips completed', () => {
@@ -22,44 +66,25 @@ describe('carefulSpeechCompletion', () => {
     expect(firstIncompleteClauseIndex(regions, completed)).toBe(2);
   });
 
-  it('getCompletedClauseIndices matches sourceSegments', () => {
-    const row: IRow = {
-      id: 'r1',
-      artifactType: 'Careful speech',
-      sourceVersion: 1,
-      mediafile: {
-        id: 'm1',
-        type: 'mediafile',
-        attributes: {
-          sourceSegments: JSON.stringify({ start: 0, end: 10 }),
-        },
-        relationships: {
-          artifactType: { data: { id: 'art1', type: 'artifacttype' } },
-        },
-      } as IRow['mediafile'],
-    } as IRow;
-    const completed = getCompletedClauseIndices(regions, [row], 'art1', 1);
+  it('getCompletedClauseIndices matches sourceSegments with sourceMedia', () => {
+    const row = makeRow({ id: 'r1', sourceMediaId: 'vern1' });
+    const completed = getCompletedClauseIndices(
+      regions,
+      [row],
+      'art1',
+      1,
+      'vern1'
+    );
     expect(completed.has(0)).toBe(true);
     expect(completed.has(1)).toBe(false);
   });
 
   it('getCompletedClauseIndices tolerates small region drift', () => {
-    const row: IRow = {
+    const row = makeRow({
       id: 'r1',
-      artifactType: 'Back translation',
-      sourceVersion: 1,
-      mediafile: {
-        id: 'm1',
-        type: 'mediafile',
-        attributes: {
-          sourceSegments: JSON.stringify({ start: 0.02, end: 10.03 }),
-        },
-        relationships: {
-          artifactType: { data: { id: 'art1', type: 'artifacttype' } },
-          sourceMedia: { data: { id: 'vern1', type: 'mediafile' } },
-        },
-      } as IRow['mediafile'],
-    } as IRow;
+      sourceMediaId: 'vern1',
+      sourceSegments: JSON.stringify({ start: 0.02, end: 10.03 }),
+    });
     const completed = getCompletedClauseIndices(
       regions,
       [row],
@@ -70,75 +95,100 @@ describe('carefulSpeechCompletion', () => {
     expect(completed.has(0)).toBe(true);
   });
 
-  it('prefers the current source version when multiple rows match', () => {
-    const oldRow: IRow = {
-      id: 'old',
-      artifactType: 'Back translation',
-      sourceVersion: 0,
-      mediafile: {
-        id: 'old-mf',
-        type: 'mediafile',
-        attributes: {
-          sourceSegments: JSON.stringify({ start: 0, end: 10 }),
-          transcription: 'stale transcription',
-        },
-        relationships: {
-          artifactType: { data: { id: 'art1', type: 'artifacttype' } },
-          sourceMedia: { data: { id: 'vern1', type: 'mediafile' } },
-        },
-      } as IRow['mediafile'],
-    } as IRow;
-    const currentRow: IRow = {
-      id: 'current',
-      artifactType: 'Back translation',
+  it('does not match a row that only shares sourceVersion with a different sourceMedia', () => {
+    const otherVern = makeRow({
+      id: 'other',
       sourceVersion: 1,
-      mediafile: {
-        id: 'current-mf',
-        type: 'mediafile',
-        attributes: {
-          sourceSegments: JSON.stringify({ start: 0, end: 10 }),
-          transcription: '',
-        },
-        relationships: {
-          artifactType: { data: { id: 'art1', type: 'artifacttype' } },
-          sourceMedia: { data: { id: 'vern1', type: 'mediafile' } },
-        },
-      } as IRow['mediafile'],
-    } as IRow;
-
+      sourceMediaId: 'other-vern',
+    });
     expect(
       getRecordingForClause(
-        [oldRow, currentRow],
+        [otherVern],
+        'art1',
+        1,
+        regions[0],
+        'vern1'
+      )
+    ).toBeUndefined();
+    expect(
+      matchesGuidedOutputRow(otherVern, {
+        artifactTypeId: 'art1',
+        vernacularMediaId: 'vern1',
+      })
+    ).toBe(false);
+  });
+
+  it('matches a row linked to the current vernacular via sourceMedia', () => {
+    const row = makeRow({
+      id: 'current',
+      sourceVersion: 0,
+      sourceMediaId: 'vern1',
+    });
+    expect(
+      getRecordingForClause([row], 'art1', 1, regions[0], 'vern1')?.id
+    ).toBe('current');
+  });
+
+  it('picks the most recently created take among matching duplicates', () => {
+    const older = makeRow({
+      id: 'old',
+      sourceMediaId: 'vern1',
+      dateCreated: '2020-01-01T00:00:00.000Z',
+    });
+    const newer = makeRow({
+      id: 'new',
+      sourceMediaId: 'vern1',
+      dateCreated: '2024-06-01T00:00:00.000Z',
+    });
+    expect(
+      getRecordingForClause(
+        [older, newer],
         'art1',
         1,
         regions[0],
         'vern1'
       )?.id
-    ).toBe('current');
+    ).toBe('new');
+    expect(pickLatestGuidedOutputRow([older, newer])?.id).toBe('new');
+  });
+
+  it('filters by languagebcp47 when languageBcp47 is set', () => {
+    const fr = makeRow({
+      id: 'fr',
+      sourceMediaId: 'vern1',
+      languagebcp47: 'French|fr',
+    });
+    const en = makeRow({
+      id: 'en',
+      sourceMediaId: 'vern1',
+      languagebcp47: 'English|en',
+    });
+    expect(
+      getRecordingForClause(
+        [fr, en],
+        'art1',
+        1,
+        regions[0],
+        'vern1',
+        false,
+        0,
+        'en'
+      )?.id
+    ).toBe('en');
   });
 
   it('matches legacy Retell recordings with empty sourceSegments in single-segment mode', () => {
-    const row: IRow = {
+    const row = makeRow({
       id: 'r1',
-      artifactType: 'Retell',
-      sourceVersion: 1,
-      mediafile: {
-        id: 'm1',
-        type: 'mediafile',
-        attributes: {
-          sourceSegments: '{}',
-        },
-        relationships: {
-          artifactType: { data: { id: 'art1', type: 'artifacttype' } },
-        },
-      } as IRow['mediafile'],
-    } as IRow;
+      sourceMediaId: 'vern1',
+      sourceSegments: '{}',
+    });
     const completed = getCompletedClauseIndices(
       regions,
       [row],
       'art1',
       1,
-      undefined,
+      'vern1',
       true
     );
     expect(completed.has(0)).toBe(true);

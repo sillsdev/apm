@@ -38,6 +38,7 @@ import BigDialog from '../../hoc/BigDialog';
 import { BigDialogBp } from '../../hoc/BigDialogBp';
 import { TranscribeStepSettings } from './TranscribeStepSettings';
 import { ParatextStepSettings } from './ParatextStepSettings';
+import { PhraseBackTranslateStepSettings } from './PhraseBackTranslateStepSettings';
 import { stepEditorSelector, workflowStepsSelector } from '../../selector';
 import { RecordKeyMap } from '@orbit/records';
 import { VertListDnd } from '../../hoc/VertListDnd';
@@ -106,6 +107,7 @@ export const StepEditor = ({ process, org }: IProps) => {
     ToolSlug.Paratext,
     ToolSlug.Discuss,
     ToolSlug.Record,
+    ToolSlug.PhraseBackTranslate,
   ];
   const mxSeq = useMemo(() => {
     let max = 0;
@@ -496,6 +498,7 @@ export const StepEditor = ({ process, org }: IProps) => {
       case ToolSlug.Record:
       case ToolSlug.Transcribe:
       case ToolSlug.Paratext:
+      case ToolSlug.PhraseBackTranslate:
         if (json)
           return se.settingsFor
             .replace('{0}', st.getString(tool as keyof typeof se))
@@ -636,6 +639,23 @@ export const StepEditor = ({ process, org }: IProps) => {
             toolSettings={(rows[toolSettingsRow] as IStepRow).settings}
             onChange={handleSettingsChange}
             onClose={() => setToolSettingsOpen(false)}
+          />
+        </BigDialog>
+      )}
+      {toolSettingsRow > -1 && (
+        <BigDialog
+          title={localizedTool((rows[toolSettingsRow] as IStepRow).tool)}
+          isOpen={
+            (rows[toolSettingsRow] as IStepRow).tool ===
+            ToolSlug.PhraseBackTranslate
+          }
+          onOpen={setToolSettingsOpen}
+          bp={BigDialogBp.sm}
+        >
+          <PhraseBackTranslateStepSettings
+            toolSettings={(rows[toolSettingsRow] as IStepRow).settings}
+            onChange={handleSettingsChange}
+            stepId={(rows[toolSettingsRow] as IStepRow).id}
           />
         </BigDialog>
       )}

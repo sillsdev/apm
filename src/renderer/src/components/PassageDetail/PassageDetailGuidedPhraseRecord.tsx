@@ -43,6 +43,13 @@ import {
   getRecordingForClause,
 } from './carefulSpeech/carefulSpeechCompletion';
 import {
+  matchesGuidedOutputRow,
+  phraseBtBoundaryRegionName,
+} from './carefulSpeech/matchesGuidedOutputRow';
+import { planLegacyPhraseBtClaim } from './carefulSpeech/claimLegacyPhraseBt';
+import { parseStepLanguageField } from '../../crud/transcribeStepAsrSettings';
+import { UpdateRecord } from '../../model/baseModel';
+import {
   createCarefulSpeechApplyRegionColor,
   type ICarefulSpeechColorStatus,
 } from '../../utils/carefulSpeechSegmentColors';
@@ -93,6 +100,7 @@ export function PassageDetailGuidedPhraseRecord({
 }: IProps) {
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
   const [memory] = useGlobal('memory');
+  const [user] = useGlobal('user');
   const [plan] = useGlobal('plan');
   const [offline] = useGlobal('offline');
   const mediafiles = useOrbitData<MediaFileD[]>('mediafile');
@@ -117,6 +125,17 @@ export function PassageDetailGuidedPhraseRecord({
     stepComplete,
   } = usePassageDetailContext();
   const { settings } = useStepTool(currentstep);
+  const stepSettings = useMemo((): Record<string, unknown> => {
+    if (!settings) return {};
+    if (typeof settings === 'string') {
+      try {
+        return JSON.parse(settings || '{}') as Record<string, unknown>;
+      } catch {
+        return {};
+      }
+    }
+    return settings as Record<string, unknown>;
+  }, [settings]);
   const { canDoSectionStep } = useStepPermissions();
   const { startSave, waitForSave } = useContext(UnsavedContext).state;
 
@@ -188,27 +207,115 @@ export function PassageDetailGuidedPhraseRecord({
   );
 
   const artifactTypeId = useMemo((): string => {
-    const id = (settings as { artifactTypeId?: string })?.artifactTypeId;
+    const id = stepSettings.artifactTypeId as string | undefined;
     if (id) {
       return (
         remoteIdGuid('artifacttype', id, memory?.keyMap as RecordKeyMap) ?? id
       );
     }
     return getTypeId(config.defaultArtifactSlug) ?? '';
-  }, [settings, memory?.keyMap, getTypeId, config.defaultArtifactSlug]);
+  }, [stepSettings, memory?.keyMap, getTypeId, config.defaultArtifactSlug]);
+
+  const stepLanguageBcp47 = useMemo(() => {
+    if (config.requireBoldWorkflow) return undefined;
+    const { bcp47 } = parseStepLanguageField(stepSettings.language);
+    return bcp47 !== 'und' ? bcp47 : undefined;
+  }, [config.requireBoldWorkflow, stepSettings.language]);
+
+  const stepLanguageField = useMemo(() => {
+    if (config.requireBoldWorkflow) return undefined;
+    const raw = stepSettings.language;
+    if (raw == null || raw === '') return undefined;
+    const { bcp47 } = parseStepLanguageField(raw);
+    return bcp47 !== 'und' ? String(raw) : undefined;
+  }, [config.requireBoldWorkflow, stepSettings.language]);
 
   const currentVersion = mediafile?.attributes?.versionNumber ?? 0;
 
   const hasAnyOutputRecordings = useMemo(
     () =>
-      rowData.some(
-        (r) =>
-          related(r.mediafile, 'artifactType') === artifactTypeId &&
-          (r.sourceVersion === currentVersion ||
-            related(r.mediafile, 'sourceMedia') === mediafileId)
+      rowData.some((r) =>
+        matchesGuidedOutputRow(r, {
+          artifactTypeId,
+          vernacularMediaId: mediafileId,
+          languageBcp47: stepLanguageBcp47,
+        })
       ),
-    [rowData, artifactTypeId, currentVersion, mediafileId]
+    [rowData, artifactTypeId, mediafileId, stepLanguageBcp47]
   );
+
+  const claimRanRef = useRef(false);
+  useEffect(() => {
+    if (
+      config.requireBoldWorkflow ||
+      !stepLanguageBcp47 ||
+      !stepLanguageField ||
+      !mediafile ||
+      !artifactTypeId ||
+      claimRanRef.current
+    ) {
+      return;
+    }
+    claimRanRef.current = true;
+    const { languageName } = parseStepLanguageField(stepLanguageField);
+    const plan = planLegacyPhraseBtClaim({
+      languageName,
+      languageBcp47: stepLanguageBcp47,
+      artifactTypeId,
+      vernacularMedia: [mediafile],
+      outputMedia: rowData
+        .filter((r) => related(r.mediafile, 'artifactType') === artifactTypeId)
+        .map((r) => r.mediafile),
+    });
+    if (plan.languageUpdates.size === 0 && plan.segmentUpdates.size === 0) {
+      return;
+    }
+    void memory
+      .update((t) => {
+        const ops = [];
+        for (const [id, languagebcp47] of plan.languageUpdates) {
+          const m = rowData.find((r) => r.mediafile.id === id)?.mediafile;
+          if (!m) continue;
+          ops.push(
+            ...UpdateRecord(
+              t,
+              {
+                type: 'mediafile',
+                id,
+                attributes: { ...m.attributes, languagebcp47 },
+              } as MediaFileD,
+              user
+            )
+          );
+        }
+        for (const [id, segments] of plan.segmentUpdates) {
+          if (id !== mediafile.id) continue;
+          ops.push(
+            ...UpdateRecord(
+              t,
+              {
+                type: 'mediafile',
+                id,
+                attributes: { ...mediafile.attributes, segments },
+              } as MediaFileD,
+              user
+            )
+          );
+        }
+        return ops;
+      })
+      .then(() => forceRefresh());
+  }, [
+    config.requireBoldWorkflow,
+    stepLanguageBcp47,
+    stepLanguageField,
+    mediafile,
+    artifactTypeId,
+    rowData,
+    memory,
+    user,
+    forceRefresh,
+  ]);
 
   const verseSegString = useMemo(() => {
     if (!config.constrainAutoSegmentWithVerses || !mediafile) return undefined;
@@ -229,8 +336,16 @@ export function PassageDetailGuidedPhraseRecord({
     resetToDefaultSegments,
     persistPhraseSegments: persistClauseSegments,
   } = useGuidedPhraseSegments(mediafile, playerControlsRef, {
-    namedRegion: config.namedRegion,
+    namedRegion:
+      stepLanguageBcp47 && config.persistSegments && !config.requireBoldWorkflow
+        ? phraseBtBoundaryRegionName(stepLanguageBcp47)
+        : config.namedRegion,
+    fallbackNamedRegion:
+      stepLanguageBcp47 && config.persistSegments && !config.requireBoldWorkflow
+        ? NamedRegions.BackTranslation
+        : undefined,
     singleSegmentMode: config.singleSegmentMode,
+    persistSegments: config.persistSegments,
     constrainAutoSegmentWithVerses: config.constrainAutoSegmentWithVerses,
     shouldReseedFromVerses:
       config.constrainAutoSegmentWithVerses && !hasAnyOutputRecordings,
@@ -260,7 +375,8 @@ export function PassageDetailGuidedPhraseRecord({
         artifactTypeId,
         currentVersion,
         mediafileId,
-        config.singleSegmentMode
+        config.singleSegmentMode,
+        stepLanguageBcp47
       ),
     [
       clauseRegions,
@@ -269,6 +385,7 @@ export function PassageDetailGuidedPhraseRecord({
       currentVersion,
       mediafileId,
       config.singleSegmentMode,
+      stepLanguageBcp47,
     ]
   );
 
@@ -322,7 +439,8 @@ export function PassageDetailGuidedPhraseRecord({
             currentRegion,
             mediafileId,
             config.singleSegmentMode,
-            currentIndex
+            currentIndex,
+            stepLanguageBcp47
           )
         : undefined,
     [
@@ -333,6 +451,7 @@ export function PassageDetailGuidedPhraseRecord({
       mediafileId,
       config.singleSegmentMode,
       currentIndex,
+      stepLanguageBcp47,
     ]
   );
 
@@ -652,7 +771,8 @@ export function PassageDetailGuidedPhraseRecord({
         artifactTypeId,
         currentVersion,
         mediafileId,
-        config.singleSegmentMode
+        config.singleSegmentMode,
+        stepLanguageBcp47
       );
       const firstIdx = firstIncompleteClauseIndex(clauseRegions, completed);
       if (firstIdx >= clauseRegions.length) {
@@ -724,6 +844,7 @@ export function PassageDetailGuidedPhraseRecord({
     applyColors,
     bumpSuppressClauseAutoPlay,
     playCurrentClause,
+    stepLanguageBcp47,
   ]);
 
   const handleSegment = useCallback(
@@ -969,11 +1090,12 @@ export function PassageDetailGuidedPhraseRecord({
   const performStepBaselineReset = useCallback(async () => {
     const baseline = baselineSegRef.current;
     if (!baseline) return;
-    const toDelete = rowData.filter(
-      (r) =>
-        related(r.mediafile, 'artifactType') === artifactTypeId &&
-        (r.sourceVersion === currentVersion ||
-          related(r.mediafile, 'sourceMedia') === mediafileId)
+    const toDelete = rowData.filter((r) =>
+      matchesGuidedOutputRow(r, {
+        artifactTypeId,
+        vernacularMediaId: mediafileId,
+        languageBcp47: stepLanguageBcp47,
+      })
     );
     if (toDelete.length > 0) {
       await memory.update((t) =>
@@ -1009,8 +1131,8 @@ export function PassageDetailGuidedPhraseRecord({
   }, [
     rowData,
     artifactTypeId,
-    currentVersion,
     mediafileId,
+    stepLanguageBcp47,
     memory,
     clearSegmentUndo,
     setClauseSegString,
@@ -1352,6 +1474,17 @@ export function PassageDetailGuidedPhraseRecord({
     return <StepMessage message={workflowGateMessage ?? ''} />;
   }
 
+  if (!config.requireBoldWorkflow && !stepLanguageBcp47) {
+    return (
+      <StepMessage
+        message={
+          controlStrings.noStepLanguage ??
+          'Configure a language for this Phrase Back Translation step in Step Editor before recording.'
+        }
+      />
+    );
+  }
+
   if (!mediafileId) {
     return <StepMessage message={ts.noAudio} />;
   }
@@ -1457,6 +1590,7 @@ export function PassageDetailGuidedPhraseRecord({
           artifactId={artifactTypeId}
           sourceMediaId={mediafileId}
           sourceSegments={JSON.stringify(currentRegion ?? {})}
+          languagebcp47={stepLanguageField}
           defaultFilename={defaultFilename}
           recordingMediaId={recordingRow?.mediafile?.id}
           afterUploadCb={afterUploadCb}
