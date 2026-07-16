@@ -2010,7 +2010,7 @@
       </unit>
       <unit id="phraseBackTranslationGuided.splitSegment">
          <segment>
-            <source>Split Segment</source>
+            <source>Split</source>
             <target/>
          </segment>
       </unit>
