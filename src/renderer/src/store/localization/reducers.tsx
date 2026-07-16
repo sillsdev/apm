@@ -418,7 +418,7 @@ const initialState = {
 			"resetConfirmRecordings": "Resetting will delete back-translation recordings for this language on the current vernacular recording and restore segment boundaries to how they were when you opened this step. Continue?",
 			"segment": "Segment: {0}",
 			"speaker": "Speaker",
-			"splitSegment": "Split Segment",
+			"splitSegment": "Split",
 			"startRecording": "Start Recording",
 			"undo": "Undo",
 		}

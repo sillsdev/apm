@@ -2342,7 +2342,7 @@
             </context-group>
          </trans-unit>
          <trans-unit id="phraseBackTranslationGuided.splitSegment">
-            <source>Split Segment</source>
+            <source>Split</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">CarefulSpeechControls.tsx</context>
