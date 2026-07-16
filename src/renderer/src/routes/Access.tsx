@@ -337,8 +337,8 @@ export function Access() {
           localStorage.getItem(LocalKey.loggedIn) === 'true' &&
           whichUsers === 'online' &&
           Boolean(
-            localStorage.getItem(LocalKey.onlineUserId) ??
-              localStorage.getItem(LocalKey.userId)
+            localStorage.getItem(LocalKey.onlineUserId) ||
+            localStorage.getItem(LocalKey.userId)
           ) &&
           !localStorage.getItem(LocalKey.goingOnline) &&
           !reloginRef.current
