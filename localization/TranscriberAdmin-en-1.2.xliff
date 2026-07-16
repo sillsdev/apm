@@ -2306,6 +2306,27 @@
                <context context-type="sourcefile">CarefulSpeechControls.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="phraseBackTranslationGuided.noStepLanguage">
+            <source>Configure a language for this Phrase Back Translation step in Step Editor before recording.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">PassageDetailGuidedPhraseRecord.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="phraseBackTranslationGuided.resetConfirmBoundaries">
+            <source>Resetting will restore segment boundaries to how they were when you opened this step. Continue?</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">PassageDetailGuidedPhraseRecord.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="phraseBackTranslationGuided.resetConfirmRecordings">
+            <source>Resetting will delete back-translation recordings for this language on the current vernacular recording and restore segment boundaries to how they were when you opened this step. Continue?</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">PassageDetailGuidedPhraseRecord.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="phraseBackTranslationGuided.segment">
             <source>Segment: {0}</source>
             <target/>
@@ -2369,6 +2390,13 @@
       			<context context-type="sourcefile">ConsultantCheck.tsx</context>
       		</context-group>
       	</trans-unit>
+         <trans-unit id="consultantCheck.language">
+            <source>Language</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">ConsultantCheckReview.tsx</context>
+            </context-group>
+         </trans-unit>
       	<trans-unit id="consultantCheck.noMedia">
       		<source>No Media Available</source>
       		<target/>
@@ -9750,6 +9778,13 @@
                <context context-type="sourcefile">StepName.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="stepEditor.duplicatePhraseBtLanguage">
+            <source>Another step already uses this language for the same artifact type.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">PhraseBackTranslateStepSettings.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="stepEditor.hide">
             <source>Hide</source>
             <target/>
@@ -9762,6 +9797,13 @@
             <target/>
             <context-group>
                <context context-type="sourcefile">StepItem.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="stepEditor.languageRequired">
+            <source>Language is required for this step.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">PhraseBackTranslateStepSettings.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="stepEditor.lastStep">

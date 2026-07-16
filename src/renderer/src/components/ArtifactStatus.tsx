@@ -13,6 +13,7 @@ import {
 import { getSortedRegions } from '../utils/namedSegments';
 import { IRow } from '../context/PassageDetailContext';
 import { StyledBox } from '../control/StyledBox';
+import { matchesGuidedOutputRow } from './PassageDetail/carefulSpeech/matchesGuidedOutputRow';
 
 interface ArtifactStatusProps {
   recordType: ArtifactTypeSlug;
@@ -20,6 +21,8 @@ interface ArtifactStatusProps {
   rowData: IRow[];
   segments: string;
   width?: number;
+  vernacularMediaId?: string;
+  languageBcp47?: string;
 }
 
 export default function ArtifactStatus({
@@ -28,6 +31,8 @@ export default function ArtifactStatus({
   rowData,
   segments,
   width,
+  vernacularMediaId,
+  languageBcp47,
 }: ArtifactStatusProps) {
   const { getTypeId } = useArtifactType();
   const [segsComp, setSegsComp] = useState('');
@@ -44,14 +49,24 @@ export default function ArtifactStatus({
   useEffect(() => {
     const segs = getSortedRegions(segments);
     const validSegs = new Set(segs?.map((s) => prettySegment(s).trim()));
-    const mediaRec = rowData.filter(
-      (r) => related(r.mediafile, 'artifactType') === recordTypeId
-    );
-    const curVer = mediaRec.filter((r) => r.sourceVersion === currentVersion);
+    const mediaRec = rowData.filter((r) => {
+      if (vernacularMediaId) {
+        return matchesGuidedOutputRow(r, {
+          artifactTypeId: recordTypeId ?? '',
+          vernacularMediaId,
+          languageBcp47,
+        });
+      }
+      return (
+        related(r.mediafile, 'artifactType') === recordTypeId &&
+        r.sourceVersion === currentVersion
+      );
+    });
+    const curVer = mediaRec;
     if (segs.length === 0 && curVer.length === 1) {
       validSegs.add(
         prettySegment(curVer[0]?.mediafile?.attributes?.sourceSegments).trim()
-      ); // add the segment to the set if no segments defined
+      );
     }
     if (curVer.length !== curVersionCount) setCurVersionCount(curVer.length);
     const newSegsset = new Set(
@@ -70,7 +85,15 @@ export default function ArtifactStatus({
     const newProgress = `${newUniqueSegs}/${segs?.length || 1}`;
     if (newProgress !== segProgress) setSegProgress(newProgress);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rowData, recordType, currentVersion, segments]);
+  }, [
+    rowData,
+    recordType,
+    currentVersion,
+    segments,
+    vernacularMediaId,
+    languageBcp47,
+    recordTypeId,
+  ]);
 
   return isPhraseSegmentArtifact(recordType) ? (
     <StyledBox width={width} sx={{ overflowX: 'auto' }}>

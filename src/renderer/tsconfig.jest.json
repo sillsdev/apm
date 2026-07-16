@@ -3,10 +3,10 @@
   "exclude": ["**/cypress.d.ts", "**/cypress", "**/*.cy.ts*"],
   "compilerOptions": {
     "types": [
-      "@types/jest",
+      "jest",
       "@testing-library/jest-dom",
-      "@types/react",
-      "@types/react-dom",
+      "react",
+      "react-dom",
       "node"
     ],
     "module": "commonjs",

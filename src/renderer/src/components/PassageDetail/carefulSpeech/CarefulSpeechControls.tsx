@@ -1,6 +1,8 @@
 import { Box, IconButton, Stack, TextField, Typography } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/DeleteOutline';
 import UndoIcon from '@mui/icons-material/Undo';
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import { PriButton } from '../../../control';
 import MediaRecord from '../../MediaRecord';
 import { formatClauseRange } from './carefulSpeechFormat';
@@ -56,6 +58,7 @@ interface Props {
   artifactId: string | null;
   sourceMediaId: string;
   sourceSegments: string;
+  languagebcp47?: string;
   defaultFilename: string;
   recordingMediaId?: string;
   afterUploadCb: (mediaId: string | undefined) => Promise<void>;
@@ -68,6 +71,12 @@ interface Props {
   strings: IGuidedPhraseRecordControlStrings;
   showBoundaryTools: boolean;
   controlIdPrefix?: string;
+  /** Phrase BT: prev/next flanking Record; hide first-incomplete Next. */
+  sequentialUnitNavAroundRecord?: boolean;
+  onPrevUnit?: () => void;
+  onNextUnitSequential?: () => void;
+  canPrevUnit?: boolean;
+  canNextUnit?: boolean;
 }
 
 export default function CarefulSpeechControls({
@@ -101,6 +110,7 @@ export default function CarefulSpeechControls({
   artifactId,
   sourceMediaId,
   sourceSegments,
+  languagebcp47,
   defaultFilename,
   recordingMediaId,
   afterUploadCb,
@@ -113,6 +123,11 @@ export default function CarefulSpeechControls({
   strings,
   showBoundaryTools,
   controlIdPrefix = 'careful-speech',
+  sequentialUnitNavAroundRecord = false,
+  onPrevUnit,
+  onNextUnitSequential,
+  canPrevUnit = false,
+  canNextUnit = false,
 }: Props) {
   const speakerInputRef = useRef<HTMLInputElement>(null);
 
@@ -142,14 +157,25 @@ export default function CarefulSpeechControls({
     () => showBoundaryTools && recordingPassStarted,
     [showBoundaryTools, recordingPassStarted]
   );
-  const showNextClause = useMemo(() => phase === 'recorded', [phase]);
+  const showNextClause = useMemo(
+    () => phase === 'recorded' && !sequentialUnitNavAroundRecord,
+    [phase, sequentialUnitNavAroundRecord]
+  );
   const showDockedRecordButton = useMemo(
     () =>
       recordingPassStarted &&
       showRecorder &&
-      phase !== 'recorded' &&
-      phase !== 'bootstrapping',
-    [recordingPassStarted, showRecorder, phase]
+      phase !== 'bootstrapping' &&
+      (sequentialUnitNavAroundRecord || phase !== 'recorded'),
+    [recordingPassStarted, showRecorder, phase, sequentialUnitNavAroundRecord]
+  );
+  const showRecordNavRow = useMemo(
+    () => showDockedRecordButton || showNextClause,
+    [showDockedRecordButton, showNextClause]
+  );
+  const navLocked = useMemo(
+    () => phase === 'recording' || savingRecording,
+    [phase, savingRecording]
   );
   const [dockedRecordButton, setDockedRecordButton] =
     useState<ReactNode | null>(null);
@@ -252,6 +278,7 @@ export default function CarefulSpeechControls({
                 passageId={passageId}
                 sourceMediaId={sourceMediaId}
                 sourceSegments={sourceSegments}
+                languagebcp47={languagebcp47}
                 artifactId={artifactId}
                 performedBy={speaker}
                 defaultFilename={defaultFilename}
@@ -315,11 +342,28 @@ export default function CarefulSpeechControls({
               </IconButton>
             )}
           </Stack>
-          {(showDockedRecordButton || showNextClause) && (
+          {showRecordNavRow && (
             <Box
-              sx={{ display: 'flex', justifyContent: 'center', pt: 1 }}
+              sx={{
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                gap: 2,
+                pt: 1,
+              }}
               data-cy={`${controlIdPrefix}-docked-record`}
             >
+              {sequentialUnitNavAroundRecord && (
+                <IconButton
+                  id={`${controlIdPrefix}-prev-unit`}
+                  aria-label="Previous segment"
+                  onClick={onPrevUnit}
+                  disabled={!canPrevUnit || navLocked}
+                  size="small"
+                >
+                  <ChevronLeftIcon />
+                </IconButton>
+              )}
               {showNextClause ? (
                 <PriButton
                   id={`${controlIdPrefix}-next`}
@@ -330,7 +374,18 @@ export default function CarefulSpeechControls({
                   {strings.nextUnit} &gt;
                 </PriButton>
               ) : (
-                dockedRecordButton
+                <Box>{dockedRecordButton}</Box>
+              )}
+              {sequentialUnitNavAroundRecord && (
+                <IconButton
+                  id={`${controlIdPrefix}-next-unit`}
+                  aria-label="Next segment"
+                  onClick={onNextUnitSequential}
+                  disabled={!canNextUnit || navLocked}
+                  size="small"
+                >
+                  <ChevronRightIcon />
+                </IconButton>
               )}
             </Box>
           )}

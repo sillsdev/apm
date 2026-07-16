@@ -29,6 +29,8 @@ interface IProps {
   sourceSegments?: string | undefined;
   performedBy?: string | undefined;
   topic?: string | undefined;
+  /** Copied onto mediafile.attributes.languagebcp47 (e.g. `English|en`). */
+  languagebcp47?: string | undefined;
   afterUploadCb: (mediaId: string) => Promise<void>;
   /** When retrying a queued failed upload, pass id to clear the queue entry after success. */
   pendingUploadIdToClearOnSuccess?: string;
@@ -41,6 +43,7 @@ export const useMediaUpload = ({
   performedBy,
   planId,
   topic,
+  languagebcp47,
   afterUploadCb,
   pendingUploadIdToClearOnSuccess,
 }: IProps) => {
@@ -195,6 +198,7 @@ export const useMediaUpload = ({
         sourceSegments: sourceSegments ?? '{}',
         performedBy: performedBy ?? null,
         topic: topic ?? '',
+        languagebcp47: languagebcp47 ?? '',
         eafUrl: !artifactId
           ? ts.mediaAttached
           : localizedArtifactTypeFromId(artifactId), //put psc message here

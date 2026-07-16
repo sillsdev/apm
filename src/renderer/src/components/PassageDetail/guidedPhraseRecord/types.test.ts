@@ -1,3 +1,4 @@
+import { describe, expect, it } from '@jest/globals';
 import { NamedRegions } from '../../../utils/namedSegments';
 import { LocalKey } from '../../../utils/localUserKey';
 import { ArtifactTypeSlug } from '../../../crud/artifactTypeSlug';
@@ -8,6 +9,10 @@ describe('guidedPhraseRecord config', () => {
     expect(CAREFUL_SPEECH_CONFIG.namedRegion).toBe(NamedRegions.Clause);
     expect(CAREFUL_SPEECH_CONFIG.showBoundaryTools).toBe(true);
     expect(CAREFUL_SPEECH_CONFIG.requireBoldWorkflow).toBe(true);
+    expect(CAREFUL_SPEECH_CONFIG.constrainAutoSegmentWithVerses).toBe(false);
+    expect(CAREFUL_SPEECH_CONFIG.showPlayerSegmentControls).toBe(false);
+    expect(CAREFUL_SPEECH_CONFIG.multiLevelSegmentUndo).toBe(false);
+    expect(CAREFUL_SPEECH_CONFIG.sequentialUnitNavAroundRecord).toBe(false);
   });
 
   it('PBT uses BT regions with boundary tools', () => {
@@ -19,6 +24,12 @@ describe('guidedPhraseRecord config', () => {
     expect(config.singleSegmentMode).toBe(false);
     expect(config.showBoundaryTools).toBe(true);
     expect(config.speakerLocalKey).toBe(LocalKey.phraseBackSpeaker);
+    expect(config.constrainAutoSegmentWithVerses).toBe(true);
+    expect(config.showPlayerSegmentControls).toBe(true);
+    expect(config.showSegmentResetInRecordingPass).toBe(true);
+    expect(config.multiLevelSegmentUndo).toBe(true);
+    expect(config.sequentialUnitNavAroundRecord).toBe(true);
+    expect(config.persistSegments).toBe(true);
   });
 
   it('Retell BT is single-segment without boundary tools', () => {
@@ -28,6 +39,11 @@ describe('guidedPhraseRecord config', () => {
     );
     expect(config.singleSegmentMode).toBe(true);
     expect(config.showBoundaryTools).toBe(false);
+    expect(config.constrainAutoSegmentWithVerses).toBe(false);
+    expect(config.showPlayerSegmentControls).toBe(false);
+    expect(config.multiLevelSegmentUndo).toBe(false);
+    expect(config.sequentialUnitNavAroundRecord).toBe(false);
+    expect(config.persistSegments).toBe(false);
   });
 
   it('buildFilenamePostfix adds segment suffix after the first unit', () => {

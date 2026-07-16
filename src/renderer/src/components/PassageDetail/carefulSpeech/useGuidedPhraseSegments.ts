@@ -11,13 +11,26 @@ import {
   updateSegments,
 } from '../../../utils/namedSegments';
 import { boldDefaultSegParams } from './boldCarefulSpeechSegParams';
-import { hasPhraseRegions, regionsJsonFromList } from './carefulSpeechBoundary';
+import {
+  hasPhraseRegions,
+  regionBoundariesEqual,
+  regionsJsonFromList,
+} from './carefulSpeechBoundary';
 import { MediaFileD } from '../../../model';
 import { useProjectSegmentSave } from '../Internalization/useProjectSegmentSave';
 
 export interface GuidedPhraseSegmentsOptions {
-  namedRegion: NamedRegions;
+  /** Named-region bucket key (may be `BT:en`, not only NamedRegions enum). */
+  namedRegion: string;
+  /** When empty, try this bucket (e.g. legacy `BT`). */
+  fallbackNamedRegion?: string;
   singleSegmentMode?: boolean;
+  /** When false (Retell), never read/write vernacular named regions. */
+  persistSegments?: boolean;
+  /** Merge Mark Verses into auto-segment when reseeding. */
+  constrainAutoSegmentWithVerses?: boolean;
+  /** When true with constrain, re-auto-segment empty or verse-identical BT. */
+  shouldReseedFromVerses?: boolean;
 }
 
 export function useGuidedPhraseSegments(
@@ -25,7 +38,14 @@ export function useGuidedPhraseSegments(
   controlsRef: React.RefObject<WSAudioPlayerControls | null>,
   options: GuidedPhraseSegmentsOptions
 ) {
-  const { namedRegion, singleSegmentMode = false } = options;
+  const {
+    namedRegion,
+    fallbackNamedRegion,
+    singleSegmentMode = false,
+    persistSegments = true,
+    constrainAutoSegmentWithVerses = false,
+    shouldReseedFromVerses = false,
+  } = options;
   const projectSegmentSave = useProjectSegmentSave();
   const [phraseSegString, setPhraseSegString] = useState('{}');
   const [bootstrapped, setBootstrapped] = useState(false);
@@ -34,25 +54,39 @@ export function useGuidedPhraseSegments(
 
   const persistSegmentBucket = useCallback(
     async (
-      name: NamedRegions,
+      name: string,
       regionJson: string,
       baseSegments?: string
     ): Promise<string | undefined> => {
-      if (!mediafile) return undefined;
+      if (!persistSegments || !mediafile) return undefined;
       const prev = baseSegments ?? mediafile.attributes?.segments ?? '[]';
       const segments = updateSegments(name, prev, regionJson);
       await projectSegmentSave({ media: mediafile, segments });
       return segments;
     },
-    [mediafile, projectSegmentSave]
+    [mediafile, projectSegmentSave, persistSegments]
+  );
+
+  const readRegionJson = useCallback(
+    (allSegs: string): string => {
+      const primary = getSegments(namedRegion, allSegs);
+      if (hasPhraseRegions(primary)) return primary;
+      if (fallbackNamedRegion) {
+        const fallback = getSegments(fallbackNamedRegion, allSegs);
+        if (hasPhraseRegions(fallback)) return fallback;
+      }
+      return primary;
+    },
+    [namedRegion, fallbackNamedRegion]
   );
 
   const hydrateFromMediafile = useCallback(() => {
     if (!mediafile) return;
+    if (!persistSegments && singleSegmentMode) return;
     const allSegs = mediafile.attributes?.segments ?? '[]';
-    const regionJson = getSegments(namedRegion, allSegs);
+    const regionJson = readRegionJson(allSegs);
     if (hasPhraseRegions(regionJson)) setPhraseSegString(regionJson);
-  }, [mediafile, namedRegion]);
+  }, [mediafile, persistSegments, singleSegmentMode, readRegionJson]);
 
   const resetForMediafile = useCallback(
     (mediafileId: string | undefined) => {
@@ -83,6 +117,19 @@ export function useGuidedPhraseSegments(
     return regionsJsonFromList([region], boldDefaultSegParams);
   }, [controlsRef]);
 
+  const needsVerseReseed = useCallback(
+    (regionJson: string, allSegs: string): boolean => {
+      if (!constrainAutoSegmentWithVerses || !shouldReseedFromVerses) {
+        return false;
+      }
+      if (!hasPhraseRegions(regionJson)) return true;
+      const verseJson = getSegments(NamedRegions.Verse, allSegs);
+      if (!hasPhraseRegions(verseJson)) return false;
+      return regionBoundariesEqual(regionJson, verseJson);
+    },
+    [constrainAutoSegmentWithVerses, shouldReseedFromVerses]
+  );
+
   /** Returns true when phrase regions exist on the player (created or loaded from storage). */
   const ensureSegments = useCallback(async (): Promise<boolean> => {
     const ctrl = controlsRef.current;
@@ -98,10 +145,21 @@ export function useGuidedPhraseSegments(
 
     bootstrapInProgress.current = true;
     try {
-      let allSegs = mediafile.attributes?.segments ?? '[]';
-      let regionJson = getSegments(namedRegion, allSegs);
+      if (!persistSegments && singleSegmentMode) {
+        const single = createSingleSegmentJson();
+        if (!single) return false;
+        loadRegionsOnPlayer(single);
+        setPhraseSegString(single);
+        setBootstrapped(true);
+        ctrl.applyRegionColors?.();
+        return true;
+      }
 
-      if (!hasPhraseRegions(regionJson)) {
+      let allSegs = mediafile.attributes?.segments ?? '[]';
+      let regionJson = readRegionJson(allSegs);
+      const reseed = needsVerseReseed(regionJson, allSegs);
+
+      if (!hasPhraseRegions(regionJson) || reseed) {
         if (singleSegmentMode) {
           const single = createSingleSegmentJson();
           if (!single) return false;
@@ -144,9 +202,12 @@ export function useGuidedPhraseSegments(
     phraseSegString,
     namedRegion,
     singleSegmentMode,
+    persistSegments,
     persistSegmentBucket,
     loadRegionsOnPlayer,
     createSingleSegmentJson,
+    needsVerseReseed,
+    readRegionJson,
   ]);
 
   const resegmentWithParams = useCallback(
@@ -185,6 +246,12 @@ export function useGuidedPhraseSegments(
     if (singleSegmentMode) {
       const single = createSingleSegmentJson();
       if (!single || !mediafile) return Promise.resolve(false);
+      if (!persistSegments) {
+        setPhraseSegString(single);
+        loadRegionsOnPlayer(single);
+        setBootstrapped(true);
+        return Promise.resolve(single);
+      }
       return persistSegmentBucket(namedRegion, single).then((saved) => {
         if (!saved) return false;
         setPhraseSegString(single);
@@ -198,6 +265,7 @@ export function useGuidedPhraseSegments(
     singleSegmentMode,
     createSingleSegmentJson,
     mediafile,
+    persistSegments,
     persistSegmentBucket,
     namedRegion,
     loadRegionsOnPlayer,
@@ -222,18 +290,7 @@ export function useCarefulSpeechSegments(
   mediafile: MediaFileD | undefined,
   controlsRef: React.RefObject<WSAudioPlayerControls | null>
 ) {
-  const result = useGuidedPhraseSegments(mediafile, controlsRef, {
+  return useGuidedPhraseSegments(mediafile, controlsRef, {
     namedRegion: NamedRegions.Clause,
-    singleSegmentMode: false,
   });
-  return {
-    clauseSegString: result.phraseSegString,
-    setClauseSegString: result.setPhraseSegString,
-    bootstrapped: result.bootstrapped,
-    ensureSegments: result.ensureSegments,
-    resetForMediafile: result.resetForMediafile,
-    resegmentWithParams: result.resegmentWithParams,
-    resetToDefaultSegments: result.resetToDefaultSegments,
-    persistClauseSegments: result.persistPhraseSegments,
-  };
 }

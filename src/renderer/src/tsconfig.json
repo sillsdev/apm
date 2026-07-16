@@ -4,5 +4,13 @@
     "lib": ["esnext", "dom"]
   },
   "include": ["**/*.ts*", "../cypress.d.ts", "../api-variable.tsx"],
+  "exclude": [
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "**/*.pacttest.ts",
+    "**/*.pacttest.tsx",
+    "**/*.cy.ts",
+    "**/*.cy.tsx"
+  ],
   "extends": "../tsconfig.json"
 }

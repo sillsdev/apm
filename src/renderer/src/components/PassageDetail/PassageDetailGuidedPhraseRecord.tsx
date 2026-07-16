@@ -14,7 +14,11 @@ import usePassageDetailContext from '../../context/usePassageDetailContext';
 import PassageDetailPlayer from './PassageDetailPlayer';
 import StepMessage from './boldClause/StepMessage';
 import { remoteIdGuid, useArtifactType, useStepTool } from '../../crud';
-import { getSortedRegions } from '../../utils/namedSegments';
+import {
+  getSegments,
+  getSortedRegions,
+  NamedRegions,
+} from '../../utils/namedSegments';
 import { IRegion } from '../../crud/useWavesurferRegions';
 import { WSAudioPlayerControls } from '../WSAudioPlayer';
 import { useOrbitData } from '../../hoc/useOrbitData';
@@ -29,6 +33,8 @@ import { useGuidedPhraseSegments } from './carefulSpeech/useGuidedPhraseSegments
 import {
   CLAUSE_BOUNDARY_THRESHOLD_SEC,
   hasPhraseRegions,
+  preservesRecordedBoundaries,
+  regionBoundariesEqual,
   regionsJsonFromList,
 } from './carefulSpeech/carefulSpeechBoundary';
 import {
@@ -36,6 +42,13 @@ import {
   getCompletedClauseIndices,
   getRecordingForClause,
 } from './carefulSpeech/carefulSpeechCompletion';
+import {
+  matchesGuidedOutputRow,
+  phraseBtBoundaryRegionName,
+  parseMediaLanguageField,
+} from './carefulSpeech/matchesGuidedOutputRow';
+import { planLegacyPhraseBtClaim } from './carefulSpeech/claimLegacyPhraseBt';
+import { UpdateRecord } from '../../model/baseModel';
 import {
   createCarefulSpeechApplyRegionColor,
   type ICarefulSpeechColorStatus,
@@ -60,6 +73,8 @@ import {
   type GuidedPhraseRecordConfig,
   type IGuidedPhraseRecordControlStrings,
 } from '../../components/PassageDetail/guidedPhraseRecord/types';
+import { createPhraseSegmentUndoStack } from '../../utils/phraseSegmentUndoStack';
+import Confirm from '../AlertDialog';
 
 interface IProps {
   width: number;
@@ -85,6 +100,7 @@ export function PassageDetailGuidedPhraseRecord({
 }: IProps) {
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
   const [memory] = useGlobal('memory');
+  const [user] = useGlobal('user');
   const [plan] = useGlobal('plan');
   const [offline] = useGlobal('offline');
   const mediafiles = useOrbitData<MediaFileD[]>('mediafile');
@@ -109,6 +125,17 @@ export function PassageDetailGuidedPhraseRecord({
     stepComplete,
   } = usePassageDetailContext();
   const { settings } = useStepTool(currentstep);
+  const stepSettings = useMemo((): Record<string, unknown> => {
+    if (!settings) return {};
+    if (typeof settings === 'string') {
+      try {
+        return JSON.parse(settings || '{}') as Record<string, unknown>;
+      } catch {
+        return {};
+      }
+    }
+    return settings as Record<string, unknown>;
+  }, [settings]);
   const { canDoSectionStep } = useStepPermissions();
   const { startSave, waitForSave } = useContext(UnsavedContext).state;
 
@@ -168,6 +195,11 @@ export function PassageDetailGuidedPhraseRecord({
   const [heardIndices, setHeardIndices] = useState<number[]>([]);
   const [currentClausePlayed, setCurrentClausePlayed] = useState(false);
   const [combineUndo, setCombineUndo] = useState<string | null>(null);
+  const [segmentUndoCan, setSegmentUndoCan] = useState(false);
+  const [resetConfirmText, setResetConfirmText] = useState<string | null>(null);
+  const [baselineSeg, setBaselineSeg] = useState<string | null>(null);
+  const segmentUndoStackRef = useRef(createPhraseSegmentUndoStack());
+  const baselineSegRef = useRef<string | null>(null);
 
   const mediafile = useMemo(
     () => mediafiles.find((m) => m.id === mediafileId),
@@ -175,14 +207,124 @@ export function PassageDetailGuidedPhraseRecord({
   );
 
   const artifactTypeId = useMemo((): string => {
-    const id = (settings as { artifactTypeId?: string })?.artifactTypeId;
+    const id = stepSettings.artifactTypeId as string | undefined;
     if (id) {
       return (
         remoteIdGuid('artifacttype', id, memory?.keyMap as RecordKeyMap) ?? id
       );
     }
     return getTypeId(config.defaultArtifactSlug) ?? '';
-  }, [settings, memory?.keyMap, getTypeId, config.defaultArtifactSlug]);
+  }, [stepSettings, memory?.keyMap, getTypeId, config.defaultArtifactSlug]);
+
+  const stepLanguageBcp47 = useMemo(() => {
+    if (config.requireBoldWorkflow) return undefined;
+    const { bcp47 } = parseMediaLanguageField(stepSettings.language);
+    return bcp47 !== 'und' ? bcp47 : undefined;
+  }, [config.requireBoldWorkflow, stepSettings.language]);
+
+  const stepLanguageField = useMemo(() => {
+    if (config.requireBoldWorkflow) return undefined;
+    const raw = stepSettings.language;
+    if (raw == null || raw === '') return undefined;
+    const { bcp47 } = parseMediaLanguageField(raw);
+    return bcp47 !== 'und' ? String(raw) : undefined;
+  }, [config.requireBoldWorkflow, stepSettings.language]);
+
+  const currentVersion = mediafile?.attributes?.versionNumber ?? 0;
+
+  const hasAnyOutputRecordings = useMemo(
+    () =>
+      rowData.some((r) =>
+        matchesGuidedOutputRow(r, {
+          artifactTypeId,
+          vernacularMediaId: mediafileId,
+          languageBcp47: stepLanguageBcp47,
+        })
+      ),
+    [rowData, artifactTypeId, mediafileId, stepLanguageBcp47]
+  );
+
+  const claimRanRef = useRef(false);
+  useEffect(() => {
+    if (
+      config.requireBoldWorkflow ||
+      !stepLanguageBcp47 ||
+      !stepLanguageField ||
+      !mediafile ||
+      !artifactTypeId ||
+      claimRanRef.current
+    ) {
+      return;
+    }
+    claimRanRef.current = true;
+    const { languageName } = parseMediaLanguageField(stepLanguageField);
+    const plan = planLegacyPhraseBtClaim({
+      languageName,
+      languageBcp47: stepLanguageBcp47,
+      artifactTypeId,
+      vernacularMedia: [mediafile],
+      outputMedia: rowData
+        .filter((r) => related(r.mediafile, 'artifactType') === artifactTypeId)
+        .map((r) => r.mediafile),
+    });
+    if (plan.languageUpdates.size === 0 && plan.segmentUpdates.size === 0) {
+      return;
+    }
+    void memory
+      .update((t) => {
+        const ops = [];
+        for (const [id, languagebcp47] of plan.languageUpdates) {
+          const m = rowData.find((r) => r.mediafile.id === id)?.mediafile;
+          if (!m) continue;
+          ops.push(
+            ...UpdateRecord(
+              t,
+              {
+                type: 'mediafile',
+                id,
+                attributes: { ...m.attributes, languagebcp47 },
+              } as MediaFileD,
+              user
+            )
+          );
+        }
+        for (const [id, segments] of plan.segmentUpdates) {
+          if (id !== mediafile.id) continue;
+          ops.push(
+            ...UpdateRecord(
+              t,
+              {
+                type: 'mediafile',
+                id,
+                attributes: { ...mediafile.attributes, segments },
+              } as MediaFileD,
+              user
+            )
+          );
+        }
+        return ops;
+      })
+      .then(() => forceRefresh());
+  }, [
+    config.requireBoldWorkflow,
+    stepLanguageBcp47,
+    stepLanguageField,
+    mediafile,
+    artifactTypeId,
+    rowData,
+    memory,
+    user,
+    forceRefresh,
+  ]);
+
+  const verseSegString = useMemo(() => {
+    if (!config.constrainAutoSegmentWithVerses || !mediafile) return undefined;
+    const verseJson = getSegments(
+      NamedRegions.Verse,
+      mediafile.attributes?.segments ?? '[]'
+    );
+    return hasPhraseRegions(verseJson) ? verseJson : undefined;
+  }, [config.constrainAutoSegmentWithVerses, mediafile]);
 
   const {
     phraseSegString: clauseSegString,
@@ -194,8 +336,19 @@ export function PassageDetailGuidedPhraseRecord({
     resetToDefaultSegments,
     persistPhraseSegments: persistClauseSegments,
   } = useGuidedPhraseSegments(mediafile, playerControlsRef, {
-    namedRegion: config.namedRegion,
+    namedRegion:
+      stepLanguageBcp47 && config.persistSegments && !config.requireBoldWorkflow
+        ? phraseBtBoundaryRegionName(stepLanguageBcp47)
+        : config.namedRegion,
+    fallbackNamedRegion:
+      stepLanguageBcp47 && config.persistSegments && !config.requireBoldWorkflow
+        ? NamedRegions.BackTranslation
+        : undefined,
     singleSegmentMode: config.singleSegmentMode,
+    persistSegments: config.persistSegments,
+    constrainAutoSegmentWithVerses: config.constrainAutoSegmentWithVerses,
+    shouldReseedFromVerses:
+      config.constrainAutoSegmentWithVerses && !hasAnyOutputRecordings,
   });
 
   const clauseRegions = useMemo(
@@ -214,8 +367,6 @@ export function PassageDetailGuidedPhraseRecord({
     return clauseSegString;
   }, [clauseSegString]);
 
-  const currentVersion = mediafile?.attributes?.versionNumber ?? 0;
-
   const completedIndices = useMemo(
     () =>
       getCompletedClauseIndices(
@@ -224,7 +375,8 @@ export function PassageDetailGuidedPhraseRecord({
         artifactTypeId,
         currentVersion,
         mediafileId,
-        config.singleSegmentMode
+        config.singleSegmentMode,
+        stepLanguageBcp47
       ),
     [
       clauseRegions,
@@ -233,6 +385,7 @@ export function PassageDetailGuidedPhraseRecord({
       currentVersion,
       mediafileId,
       config.singleSegmentMode,
+      stepLanguageBcp47,
     ]
   );
 
@@ -286,7 +439,8 @@ export function PassageDetailGuidedPhraseRecord({
             currentRegion,
             mediafileId,
             config.singleSegmentMode,
-            currentIndex
+            currentIndex,
+            stepLanguageBcp47
           )
         : undefined,
     [
@@ -297,6 +451,7 @@ export function PassageDetailGuidedPhraseRecord({
       mediafileId,
       config.singleSegmentMode,
       currentIndex,
+      stepLanguageBcp47,
     ]
   );
 
@@ -439,6 +594,18 @@ export function PassageDetailGuidedPhraseRecord({
     [clauseRegions, currentIndex]
   );
 
+  const pushSegmentUndo = useCallback(() => {
+    if (!config.multiLevelSegmentUndo) return;
+    if (!hasPhraseRegions(clauseSegString)) return;
+    segmentUndoStackRef.current.push(clauseSegString);
+    setSegmentUndoCan(segmentUndoStackRef.current.canUndo());
+  }, [config.multiLevelSegmentUndo, clauseSegString]);
+
+  const clearSegmentUndo = useCallback(() => {
+    segmentUndoStackRef.current.clear();
+    setSegmentUndoCan(false);
+  }, []);
+
   const resetListenProgress = useCallback(() => {
     setHeardIndices([]);
     setCurrentIndex(0);
@@ -530,6 +697,9 @@ export function PassageDetailGuidedPhraseRecord({
     setHeardIndices([]);
     setCurrentClausePlayed(false);
     setCombineUndo(null);
+    clearSegmentUndo();
+    baselineSegRef.current = null;
+    setBaselineSeg(null);
     setShowRecorder(false);
     entryPauseDoneRef.current = false;
     initialPositionDoneRef.current = false;
@@ -575,6 +745,15 @@ export function PassageDetailGuidedPhraseRecord({
   }, [mediafileId, ensureSegments, applyColors, stepEnabled]);
 
   useEffect(() => {
+    if (!bootstrapped || !hasPhraseRegions(clauseSegString)) return;
+    if (baselineSegRef.current === null) {
+      baselineSegRef.current = clauseSegString;
+      setBaselineSeg(clauseSegString);
+      clearSegmentUndo();
+    }
+  }, [bootstrapped, clauseSegString, clearSegmentUndo]);
+
+  useEffect(() => {
     if (!bootstrapped || !stepEnabled || !allowSourcePlayer) {
       return;
     }
@@ -592,7 +771,8 @@ export function PassageDetailGuidedPhraseRecord({
         artifactTypeId,
         currentVersion,
         mediafileId,
-        config.singleSegmentMode
+        config.singleSegmentMode,
+        stepLanguageBcp47
       );
       const firstIdx = firstIncompleteClauseIndex(clauseRegions, completed);
       if (firstIdx >= clauseRegions.length) {
@@ -664,6 +844,7 @@ export function PassageDetailGuidedPhraseRecord({
     applyColors,
     bumpSuppressClauseAutoPlay,
     playCurrentClause,
+    stepLanguageBcp47,
   ]);
 
   const handleSegment = useCallback(
@@ -672,14 +853,35 @@ export function PassageDetailGuidedPhraseRecord({
         setClauseSegString(seg);
         return;
       }
+      if (recordingActiveRef.current || savingRecording) return;
       const regions = getSortedRegions(seg);
       if (regions.length === 0) return;
+      if (
+        recordingPassStarted &&
+        !preservesRecordedBoundaries(clauseRegions, regions, completedIndices)
+      ) {
+        playerControlsRef.current?.loadRegionsJson?.(clauseSegString);
+        return;
+      }
       const json = regionsJsonFromList(regions, phraseSegParams);
+      if (regionBoundariesEqual(json, clauseSegString)) return;
+      pushSegmentUndo();
       setClauseSegString(json);
       await persistClauseSegments(json);
       applyColors();
     },
-    [setClauseSegString, persistClauseSegments, phraseSegParams, applyColors]
+    [
+      setClauseSegString,
+      persistClauseSegments,
+      phraseSegParams,
+      applyColors,
+      savingRecording,
+      recordingPassStarted,
+      clauseRegions,
+      completedIndices,
+      clauseSegString,
+      pushSegmentUndo,
+    ]
   );
 
   const markClauseHeard = useCallback((index: number) => {
@@ -851,6 +1053,7 @@ export function PassageDetailGuidedPhraseRecord({
 
   const handleMoreClauses = useCallback(async () => {
     if (recordingPassStarted) return;
+    pushSegmentUndo();
     const nextParams = applyMoreClauses(phraseSegParams, changeLength);
     setPhraseSegParams(nextParams);
     setChangeLength(!changeLength);
@@ -863,10 +1066,12 @@ export function PassageDetailGuidedPhraseRecord({
     changeLength,
     resegmentWithParams,
     applyResegmentResult,
+    pushSegmentUndo,
   ]);
 
   const handleFewerClauses = useCallback(async () => {
     if (recordingPassStarted) return;
+    pushSegmentUndo();
     const nextParams = applyFewerClauses(phraseSegParams, changeLength);
     setPhraseSegParams(nextParams);
     setChangeLength(!changeLength);
@@ -879,19 +1084,102 @@ export function PassageDetailGuidedPhraseRecord({
     changeLength,
     resegmentWithParams,
     applyResegmentResult,
+    pushSegmentUndo,
+  ]);
+
+  const performStepBaselineReset = useCallback(async () => {
+    const baseline = baselineSegRef.current;
+    if (!baseline) return;
+    const toDelete = rowData.filter((r) =>
+      matchesGuidedOutputRow(r, {
+        artifactTypeId,
+        vernacularMediaId: mediafileId,
+        languageBcp47: stepLanguageBcp47,
+      })
+    );
+    if (toDelete.length > 0) {
+      await memory.update((t) =>
+        toDelete.map((r) =>
+          t.removeRecord({ type: 'mediafile', id: r.mediafile.id })
+        )
+      );
+    }
+    clearSegmentUndo();
+    setCombineUndo(null);
+    setClauseSegString(baseline);
+    await persistClauseSegments(baseline);
+    playerControlsRef.current?.loadRegionsJson?.(baseline);
+    setRecordingPassStarted(false);
+    recordingPassStartedRef.current = false;
+    setShowRecorder(false);
+    setHeardIndices([]);
+    setCurrentClausePlayed(false);
+    setCurrentIndex(0);
+    setPhase('readyToRecord');
+    const regions = getSortedRegions(baseline);
+    if (regions[0]) {
+      bumpSuppressClauseAutoPlay(4);
+      setCurrentSegment(regions[0], 0);
+      await snapToClauseStart(0);
+    }
+    setHighlightPlayButton(true);
+    if (stepComplete(currentstep)) {
+      await setStepComplete(currentstep, false);
+    }
+    forceRefresh();
+    applyColors();
+  }, [
+    rowData,
+    artifactTypeId,
+    mediafileId,
+    stepLanguageBcp47,
+    memory,
+    clearSegmentUndo,
+    setClauseSegString,
+    persistClauseSegments,
+    bumpSuppressClauseAutoPlay,
+    setCurrentSegment,
+    snapToClauseStart,
+    stepComplete,
+    currentstep,
+    setStepComplete,
+    forceRefresh,
+    applyColors,
   ]);
 
   const handleClearSegments = useCallback(async () => {
+    if (config.showSegmentResetInRecordingPass) {
+      if (!recordingPassStarted) return;
+      const baseline = baselineSegRef.current;
+      if (!baseline) return;
+      const boundariesChanged = !regionBoundariesEqual(
+        baseline,
+        clauseSegString
+      );
+      if (!boundariesChanged && !hasAnyOutputRecordings) return;
+      const text = hasAnyOutputRecordings
+        ? (controlStrings.resetConfirmRecordings ??
+          'Resetting will delete all recordings and restore segment boundaries. Continue?')
+        : (controlStrings.resetConfirmBoundaries ??
+          'Resetting will restore segment boundaries. Continue?');
+      setResetConfirmText(text);
+      return;
+    }
     if (recordingPassStarted) return;
     setPhraseSegParams(boldDefaultSegParams);
     setShowRecorder(false);
     const ok = await resetToDefaultSegments();
     await applyResegmentResult(ok);
   }, [
+    config.showSegmentResetInRecordingPass,
     recordingPassStarted,
+    clauseSegString,
+    hasAnyOutputRecordings,
+    controlStrings.resetConfirmRecordings,
+    controlStrings.resetConfirmBoundaries,
+    setPhraseSegParams,
     resetToDefaultSegments,
     applyResegmentResult,
-    setPhraseSegParams,
   ]);
 
   const handleSplitClause = useCallback(async () => {
@@ -908,7 +1196,11 @@ export function PassageDetailGuidedPhraseRecord({
     }
     const updated = splitClauseAt(clauseRegions, currentIndex, splitPoint!);
     if (!updated) return;
-    setCombineUndo(clauseSegString);
+    if (config.multiLevelSegmentUndo) {
+      pushSegmentUndo();
+    } else {
+      setCombineUndo(clauseSegString);
+    }
     const json = regionsJsonFromList(updated, phraseSegParams);
     setClauseSegString(json);
     await persistClauseSegments(json);
@@ -930,6 +1222,8 @@ export function PassageDetailGuidedPhraseRecord({
     applyColors,
     setCurrentSegment,
     playCurrentClause,
+    config.multiLevelSegmentUndo,
+    pushSegmentUndo,
   ]);
 
   const handleCombineWithNext = useCallback(async () => {
@@ -938,7 +1232,11 @@ export function PassageDetailGuidedPhraseRecord({
     }
     const updated = mergeClauseWithNext(clauseRegions, currentIndex);
     if (!updated) return;
-    setCombineUndo(clauseSegString);
+    if (config.multiLevelSegmentUndo) {
+      pushSegmentUndo();
+    } else {
+      setCombineUndo(clauseSegString);
+    }
     const json = regionsJsonFromList(updated, phraseSegParams);
     setClauseSegString(json);
     await persistClauseSegments(json);
@@ -955,6 +1253,8 @@ export function PassageDetailGuidedPhraseRecord({
     persistClauseSegments,
     applyColors,
     playCurrentClause,
+    config.multiLevelSegmentUndo,
+    pushSegmentUndo,
   ]);
 
   const handleUndoCombine = useCallback(async () => {
@@ -972,6 +1272,92 @@ export function PassageDetailGuidedPhraseRecord({
     applyColors,
     playCurrentClause,
     currentIndex,
+  ]);
+
+  const handleSegmentUndo = useCallback(async () => {
+    const prev = segmentUndoStackRef.current.pop();
+    setSegmentUndoCan(segmentUndoStackRef.current.canUndo());
+    if (!prev) return;
+    setClauseSegString(prev);
+    await persistClauseSegments(prev);
+    playerControlsRef.current?.loadRegionsJson?.(prev);
+    if (!recordingPassStarted) {
+      await applyResegmentResult(prev);
+    } else {
+      applyColors();
+      const regions = getSortedRegions(prev);
+      const idx = Math.min(currentIndex, Math.max(0, regions.length - 1));
+      setCurrentIndex(idx);
+      if (regions[idx]) {
+        setCurrentSegment(regions[idx], idx);
+        void playCurrentClause(idx, regions[idx]);
+      }
+    }
+  }, [
+    setClauseSegString,
+    persistClauseSegments,
+    recordingPassStarted,
+    applyResegmentResult,
+    applyColors,
+    currentIndex,
+    setCurrentSegment,
+    playCurrentClause,
+  ]);
+
+  const handlePrevUnit = useCallback(() => {
+    if (savingRecording || recordingActiveRef.current) return;
+    if (currentIndex <= 0) return;
+    const next = currentIndex - 1;
+    setCurrentIndex(next);
+    setCurrentSegment(clauseRegions[next], next);
+    setCurrentClausePlayed(false);
+    setPhase(
+      completedIndices.has(next)
+        ? 'recorded'
+        : ('readyToRecord' as CarefulSpeechPhase)
+    );
+    setShowRecorder(true);
+    if (completedIndices.has(next)) {
+      void snapToClauseStart(next);
+    } else {
+      void playCurrentClause(next);
+    }
+  }, [
+    savingRecording,
+    currentIndex,
+    clauseRegions,
+    setCurrentSegment,
+    completedIndices,
+    snapToClauseStart,
+    playCurrentClause,
+  ]);
+
+  const handleNextUnitSequential = useCallback(() => {
+    if (savingRecording || recordingActiveRef.current) return;
+    if (currentIndex >= clauseRegions.length - 1) return;
+    const next = currentIndex + 1;
+    setCurrentIndex(next);
+    setCurrentSegment(clauseRegions[next], next);
+    setCurrentClausePlayed(false);
+    setPhase(
+      completedIndices.has(next)
+        ? 'recorded'
+        : ('readyToRecord' as CarefulSpeechPhase)
+    );
+    setShowRecorder(true);
+    if (completedIndices.has(next)) {
+      void snapToClauseStart(next);
+    } else {
+      void playCurrentClause(next);
+    }
+  }, [
+    savingRecording,
+    currentIndex,
+    clauseRegions,
+    setCurrentSegment,
+    completedIndices,
+    snapToClauseStart,
+    playCurrentClause,
   ]);
 
   const handleStartRecording = useCallback(() => {
@@ -1088,6 +1474,17 @@ export function PassageDetailGuidedPhraseRecord({
     return <StepMessage message={workflowGateMessage ?? ''} />;
   }
 
+  if (!config.requireBoldWorkflow && !stepLanguageBcp47) {
+    return (
+      <StepMessage
+        message={
+          controlStrings.noStepLanguage ??
+          'Configure a language for this Phrase Back Translation step in Step Editor before recording.'
+        }
+      />
+    );
+  }
+
   if (!mediafileId) {
     return <StepMessage message={ts.noAudio} />;
   }
@@ -1108,8 +1505,14 @@ export function PassageDetailGuidedPhraseRecord({
           key={`${config.containerId}-player-${mediafileId}`}
           width={width}
           allowSegment={config.namedRegion}
-          hideSegmentControls={true}
+          hideSegmentControls={!config.showPlayerSegmentControls}
+          hideSegmentReset={
+            config.showSegmentResetInRecordingPass
+              ? !recordingPassStarted
+              : true
+          }
           suggestedSegments={suggestedSegmentsForPlayer}
+          verses={verseSegString}
           forceRegionOnly={true}
           allowAutoSegment={false}
           autoPlayOnSegmentLocate={false}
@@ -1118,6 +1521,22 @@ export function PassageDetailGuidedPhraseRecord({
           defaultSegParams={phraseSegParams}
           onSegment={handleSegment}
           onClearSegments={handleClearSegments}
+          resetDisabled={
+            config.showSegmentResetInRecordingPass
+              ? !recordingPassStarted ||
+                (baselineSeg !== null &&
+                  regionBoundariesEqual(baselineSeg, clauseSegString) &&
+                  !hasAnyOutputRecordings)
+              : undefined
+          }
+          hasSegmentUndo={
+            config.multiLevelSegmentUndo ? segmentUndoCan : undefined
+          }
+          onSegmentUndo={
+            config.multiLevelSegmentUndo
+              ? () => void handleSegmentUndo()
+              : undefined
+          }
           controlsRef={playerControlsRef}
           applyRegionColor={applyRegionColor}
           onSegmentPlaybackEnd={onSegmentPlaybackEnd}
@@ -1153,7 +1572,9 @@ export function PassageDetailGuidedPhraseRecord({
             clauseRegions,
             completedIndices
           )}
-          showUndoCombine={combineUndo !== null}
+          showUndoCombine={
+            combineUndo !== null && !config.multiLevelSegmentUndo
+          }
           onStartRecording={handleStartRecording}
           onNextClause={() => void handleNextClause()}
           onClearRecording={() => void handleClearRecording()}
@@ -1169,6 +1590,7 @@ export function PassageDetailGuidedPhraseRecord({
           artifactId={artifactTypeId}
           sourceMediaId={mediafileId}
           sourceSegments={JSON.stringify(currentRegion ?? {})}
+          languagebcp47={stepLanguageField}
           defaultFilename={defaultFilename}
           recordingMediaId={recordingRow?.mediafile?.id}
           afterUploadCb={afterUploadCb}
@@ -1197,12 +1619,27 @@ export function PassageDetailGuidedPhraseRecord({
           strings={controlStrings}
           showBoundaryTools={config.showBoundaryTools}
           controlIdPrefix={config.containerId}
+          sequentialUnitNavAroundRecord={config.sequentialUnitNavAroundRecord}
+          onPrevUnit={handlePrevUnit}
+          onNextUnitSequential={handleNextUnitSequential}
+          canPrevUnit={currentIndex > 0}
+          canNextUnit={currentIndex < clauseRegions.length - 1}
         />
       )}
       {statusText && (
         <Typography variant="caption" align="center">
           {statusText}
         </Typography>
+      )}
+      {resetConfirmText && (
+        <Confirm
+          text={resetConfirmText}
+          yesResponse={() => {
+            setResetConfirmText(null);
+            void performStepBaselineReset();
+          }}
+          noResponse={() => setResetConfirmText(null)}
+        />
       )}
     </Box>
   );

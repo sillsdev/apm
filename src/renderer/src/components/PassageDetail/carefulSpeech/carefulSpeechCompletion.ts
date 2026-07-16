@@ -1,7 +1,10 @@
-import { related } from '../../../crud/related';
 import { IRegion } from '../../../crud/useWavesurferRegions';
 import { IRow } from '../../../context/PassageDetailContext';
 import { prettySegment } from '../../../utils/prettySegment';
+import {
+  matchesGuidedOutputRow,
+  pickLatestGuidedOutputRow,
+} from './matchesGuidedOutputRow';
 
 const REGION_TOLERANCE = 0.05;
 
@@ -52,16 +55,6 @@ function regionMatchesClause(
   return prettySegment(storedSeg).trim() === prettySegment(clauseRegion).trim();
 }
 
-function matchesSourceVersion(
-  row: IRow,
-  sourceVersion: number,
-  vernacularMediaId?: string
-): boolean {
-  if (row.sourceVersion === sourceVersion) return true;
-  if (!vernacularMediaId) return false;
-  return related(row.mediafile, 'sourceMedia') === vernacularMediaId;
-}
-
 export function getRecordingForClause(
   rowData: IRow[],
   recordTypeId: string,
@@ -69,21 +62,24 @@ export function getRecordingForClause(
   clauseRegion: IRegion,
   vernacularMediaId?: string,
   singleSegmentMode?: boolean,
-  clauseIndex?: number
+  clauseIndex?: number,
+  languageBcp47?: string
 ): IRow | undefined {
+  void sourceVersion;
   const matches = rowData.filter(
     (r) =>
-      related(r.mediafile, 'artifactType') === recordTypeId &&
-      matchesSourceVersion(r, sourceVersion, vernacularMediaId) &&
+      matchesGuidedOutputRow(r, {
+        artifactTypeId: recordTypeId,
+        vernacularMediaId,
+        languageBcp47,
+      }) &&
       regionMatchesClause(
         r.mediafile?.attributes?.sourceSegments,
         clauseRegion,
         { singleSegmentMode, clauseIndex }
       )
   );
-  if (matches.length === 0) return undefined;
-  const exactVersion = matches.find((r) => r.sourceVersion === sourceVersion);
-  return exactVersion ?? matches[0];
+  return pickLatestGuidedOutputRow(matches);
 }
 
 export function getCompletedClauseIndices(
@@ -92,7 +88,8 @@ export function getCompletedClauseIndices(
   recordTypeId: string,
   sourceVersion: number,
   vernacularMediaId?: string,
-  singleSegmentMode?: boolean
+  singleSegmentMode?: boolean,
+  languageBcp47?: string
 ): Set<number> {
   const completed = new Set<number>();
   clauseRegions.forEach((region, index) => {
@@ -104,7 +101,8 @@ export function getCompletedClauseIndices(
         region,
         vernacularMediaId,
         singleSegmentMode,
-        index
+        index,
+        languageBcp47
       )
     ) {
       completed.add(index);
