@@ -21,12 +21,11 @@ import {
 
 const suffixOptions = ['', 'a', 'b', 'c', 'd', 'e'];
 const selectSx = {
-  minWidth: 56,
+  width: 'auto',
   '& .MuiNativeSelect-select': {
     fontSize: '1.25rem',
     lineHeight: 1.2,
     textAlign: 'center',
-    pr: 2.5,
     py: 0.5,
   },
   '& .MuiNativeSelect-icon': {
