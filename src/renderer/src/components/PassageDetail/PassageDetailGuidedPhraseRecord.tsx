@@ -45,9 +45,9 @@ import {
 import {
   matchesGuidedOutputRow,
   phraseBtBoundaryRegionName,
+  parseMediaLanguageField,
 } from './carefulSpeech/matchesGuidedOutputRow';
 import { planLegacyPhraseBtClaim } from './carefulSpeech/claimLegacyPhraseBt';
-import { parseStepLanguageField } from '../../crud/transcribeStepAsrSettings';
 import { UpdateRecord } from '../../model/baseModel';
 import {
   createCarefulSpeechApplyRegionColor,
@@ -218,7 +218,7 @@ export function PassageDetailGuidedPhraseRecord({
 
   const stepLanguageBcp47 = useMemo(() => {
     if (config.requireBoldWorkflow) return undefined;
-    const { bcp47 } = parseStepLanguageField(stepSettings.language);
+    const { bcp47 } = parseMediaLanguageField(stepSettings.language);
     return bcp47 !== 'und' ? bcp47 : undefined;
   }, [config.requireBoldWorkflow, stepSettings.language]);
 
@@ -226,7 +226,7 @@ export function PassageDetailGuidedPhraseRecord({
     if (config.requireBoldWorkflow) return undefined;
     const raw = stepSettings.language;
     if (raw == null || raw === '') return undefined;
-    const { bcp47 } = parseStepLanguageField(raw);
+    const { bcp47 } = parseMediaLanguageField(raw);
     return bcp47 !== 'und' ? String(raw) : undefined;
   }, [config.requireBoldWorkflow, stepSettings.language]);
 
@@ -257,7 +257,7 @@ export function PassageDetailGuidedPhraseRecord({
       return;
     }
     claimRanRef.current = true;
-    const { languageName } = parseStepLanguageField(stepLanguageField);
+    const { languageName } = parseMediaLanguageField(stepLanguageField);
     const plan = planLegacyPhraseBtClaim({
       languageName,
       languageBcp47: stepLanguageBcp47,

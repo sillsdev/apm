@@ -14,16 +14,36 @@ export interface IGuidedOutputMatchOpts {
 }
 
 /** Parse `Name|bcp47` (or bare bcp47) without pulling StepEditor/ASR deps. */
-export function parseMediaLanguageBcp47(value: unknown): string {
-  if (value == null || value === '') return 'und';
+export function parseMediaLanguageField(value: unknown): {
+  languageName: string;
+  bcp47: string;
+} {
+  if (value == null || value === '') return { languageName: '', bcp47: 'und' };
   if (typeof value === 'object') {
-    const obj = value as { bcp47?: unknown };
-    return String(obj.bcp47 ?? 'und') || 'und';
+    const obj = value as { languageName?: unknown; bcp47?: unknown };
+    return {
+      languageName: String(obj.languageName ?? ''),
+      bcp47: String(obj.bcp47 ?? 'und') || 'und',
+    };
   }
-  const str = String(value);
+  const str = String(value).trim();
+  if (str.startsWith('{') && str.endsWith('}')) {
+    try {
+      return parseMediaLanguageField(JSON.parse(str));
+    } catch {
+      /* fall through */
+    }
+  }
   const pipe = str.indexOf('|');
-  if (pipe === -1) return str || 'und';
-  return str.slice(pipe + 1) || 'und';
+  if (pipe === -1) return { languageName: '', bcp47: str || 'und' };
+  return {
+    languageName: str.slice(0, pipe),
+    bcp47: str.slice(pipe + 1) || 'und',
+  };
+}
+
+export function parseMediaLanguageBcp47(value: unknown): string {
+  return parseMediaLanguageField(value).bcp47;
 }
 
 export function formatMediaLanguageField(
