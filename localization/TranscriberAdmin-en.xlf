@@ -1978,6 +1978,18 @@
             <target/>
          </segment>
       </unit>
+      <unit id="phraseBackTranslationGuided.resetConfirmBoundaries">
+         <segment>
+            <source>Resetting will restore segment boundaries to how they were when you opened this step. Continue?</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="phraseBackTranslationGuided.resetConfirmRecordings">
+         <segment>
+            <source>Resetting will delete all back-translation recordings for this passage and restore segment boundaries to how they were when you opened this step. Continue?</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="phraseBackTranslationGuided.segment">
          <segment>
             <source>Segment: {0}</source>

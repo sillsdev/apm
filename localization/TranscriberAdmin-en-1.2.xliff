@@ -2306,6 +2306,20 @@
                <context context-type="sourcefile">CarefulSpeechControls.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="phraseBackTranslationGuided.resetConfirmBoundaries">
+            <source>Resetting will restore segment boundaries to how they were when you opened this step. Continue?</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">PassageDetailGuidedPhraseRecord.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="phraseBackTranslationGuided.resetConfirmRecordings">
+            <source>Resetting will delete all back-translation recordings for this passage and restore segment boundaries to how they were when you opened this step. Continue?</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">PassageDetailGuidedPhraseRecord.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="phraseBackTranslationGuided.segment">
             <source>Segment: {0}</source>
             <target/>

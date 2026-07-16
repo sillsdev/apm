@@ -413,6 +413,8 @@ const initialState = {
 			"fewerSegments": "Fewer Segments",
 			"moreSegments": "More Segments",
 			"nextSegment": "Next Segment",
+			"resetConfirmBoundaries": "Resetting will restore segment boundaries to how they were when you opened this step. Continue?",
+			"resetConfirmRecordings": "Resetting will delete all back-translation recordings for this passage and restore segment boundaries to how they were when you opened this step. Continue?",
 			"segment": "Segment: {0}",
 			"speaker": "Speaker",
 			"splitSegment": "Split Segment",

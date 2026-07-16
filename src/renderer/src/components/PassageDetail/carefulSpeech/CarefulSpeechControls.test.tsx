@@ -1,5 +1,6 @@
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import React from 'react';
+import { describe, expect, it, afterEach, jest } from '@jest/globals';
 import { cleanup, render } from '@testing-library/react';
 
 // MediaRecord pulls PassageDetailContext + WSAudioPlayer; stub it so we can
@@ -128,5 +129,19 @@ describe('CarefulSpeechControls — Next Clause completion state', () => {
     ) as HTMLButtonElement | null;
     expect(next).toBeTruthy();
     expect(next?.disabled).toBe(true);
+  });
+
+  it('hides Next Clause when sequential unit nav is enabled', () => {
+    const { container } = render(
+      <CarefulSpeechControls
+        {...baseProps}
+        sequentialUnitNavAroundRecord
+        canPrevUnit
+        canNextUnit
+      />
+    );
+    expect(container.querySelector('#careful-speech-next')).toBeNull();
+    expect(container.querySelector('#careful-speech-prev-unit')).toBeTruthy();
+    expect(container.querySelector('#careful-speech-next-unit')).toBeTruthy();
   });
 });

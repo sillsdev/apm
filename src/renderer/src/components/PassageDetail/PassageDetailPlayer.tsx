@@ -83,6 +83,8 @@ export interface DetailPlayerProps {
   onClearSegments?: () => void | Promise<void>;
   /** Overrides the disabled state of the waveform segment Reset button. */
   resetDisabled?: boolean;
+  /** Hide Reset while still showing +/− (Phrase BT listen pass). */
+  hideSegmentReset?: boolean;
   /** When set, show a tool-managed Undo button in the player's top-right
    * toolbar. Used by Mark Verses for its own undo stack. */
   hasSegmentUndo?: boolean;
@@ -140,6 +142,7 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
     onInteraction,
     onClearSegments,
     resetDisabled,
+    hideSegmentReset,
     hasSegmentUndo,
     onSegmentUndo,
     allowZoomAndSpeed,
@@ -459,6 +462,7 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
         onInteraction={onInteraction}
         onClearSegments={onClearSegments}
         resetDisabled={resetDisabled}
+        hideSegmentReset={hideSegmentReset}
         hasSegmentUndo={hasSegmentUndo}
         onSegmentUndo={onSegmentUndo}
         onCurrentSegment={onCurrentSegment}

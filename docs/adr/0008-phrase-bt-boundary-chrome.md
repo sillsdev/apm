@@ -1,0 +1,3 @@
+# Phrase BT boundary chrome diverges from Careful Speech
+
+Non-BOLD **Phrase Back Translation** shares the guided listen/recording shell with BOLD **Careful Speech**, but its boundary UX is intentionally different: verse-constrained auto-segment seeding from Mark Verses, player **+ / − / Undo**, recording-pass **Reset** to the step-open baseline (with confirm and delete-all PBTs), and sequential prev/next flanking Record. Careful Speech keeps Split/Combine with one-level undo and no Mark Verses constraint. Diverging via config flags on the shared shell avoids forking the whole step while keeping Careful Speech stable.

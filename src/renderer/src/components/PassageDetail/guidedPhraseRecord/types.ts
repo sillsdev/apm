@@ -15,6 +15,10 @@ export interface IGuidedPhraseRecordControlStrings {
   speaker: string;
   startRecording: string;
   undo: string;
+  /** Phrase BT Reset confirm when recordings exist. */
+  resetConfirmRecordings?: string;
+  /** Phrase BT Reset confirm when only boundaries changed. */
+  resetConfirmBoundaries?: string;
 }
 
 export interface GuidedPhraseRecordConfig {
@@ -27,9 +31,27 @@ export interface GuidedPhraseRecordConfig {
   containerId: string;
   /** When true, show boldOnly-style gate instead of the step UI. */
   requireBoldWorkflow: boolean;
+  /** Merge Mark Verses into auto-segment (initial seed and More/Less). */
+  constrainAutoSegmentWithVerses: boolean;
+  /** Show player +/− under the reference waveform. */
+  showPlayerSegmentControls: boolean;
+  /** Show Reset under the waveform during the recording pass only. */
+  showSegmentResetInRecordingPass: boolean;
+  /** Multi-level segment undo under the waveform (vs one-level Split/Combine undo). */
+  multiLevelSegmentUndo: boolean;
+  /** Prev/next segment arrows flanking Record instead of first-incomplete Next. */
+  sequentialUnitNavAroundRecord: boolean;
   /** Filename postfix for a unit at `unitIndex` (0-based) on `sourceVersion`. */
   buildFilenamePostfix: (unitIndex: number, sourceVersion: number) => string;
 }
+
+const carefulSpeechBoundaryDefaults = {
+  constrainAutoSegmentWithVerses: false,
+  showPlayerSegmentControls: false,
+  showSegmentResetInRecordingPass: false,
+  multiLevelSegmentUndo: false,
+  sequentialUnitNavAroundRecord: false,
+} as const;
 
 export const CAREFUL_SPEECH_CONFIG: GuidedPhraseRecordConfig = {
   namedRegion: NamedRegions.Clause,
@@ -40,6 +62,7 @@ export const CAREFUL_SPEECH_CONFIG: GuidedPhraseRecordConfig = {
   speakerLocalKey: LocalKey.carefulSpeaker,
   containerId: 'careful-speech',
   requireBoldWorkflow: true,
+  ...carefulSpeechBoundaryDefaults,
   buildFilenamePostfix: (unitIndex, sourceVersion) =>
     `carefulspeech${unitIndex + 1}_v${sourceVersion}`,
 };
@@ -49,15 +72,21 @@ export function phraseBackTranslateConfig(
   namedRegion: NamedRegions
 ): GuidedPhraseRecordConfig {
   const singleSegmentMode = artifactSlug === ArtifactTypeSlug.Retell;
+  const phraseBoundaryTools = !singleSegmentMode;
   return {
     namedRegion,
     defaultArtifactSlug: artifactSlug,
     mediaRecordToolId: 'PhraseBackTranslateTool',
     singleSegmentMode,
-    showBoundaryTools: !singleSegmentMode,
+    showBoundaryTools: phraseBoundaryTools,
     speakerLocalKey: LocalKey.phraseBackSpeaker,
     containerId: 'phrase-back-translate',
     requireBoldWorkflow: false,
+    constrainAutoSegmentWithVerses: phraseBoundaryTools,
+    showPlayerSegmentControls: phraseBoundaryTools,
+    showSegmentResetInRecordingPass: phraseBoundaryTools,
+    multiLevelSegmentUndo: phraseBoundaryTools,
+    sequentialUnitNavAroundRecord: phraseBoundaryTools,
     buildFilenamePostfix: (unitIndex, sourceVersion) => {
       const base = `${artifactSlug}${unitIndex + 1}_v${sourceVersion}`;
       if (unitIndex > 0) return `${base}s${unitIndex}`;

@@ -47,6 +47,8 @@ function mapPhraseBackGuidedStrings(
     speaker: strings.speaker,
     startRecording: strings.startRecording,
     undo: strings.undo,
+    resetConfirmRecordings: strings.resetConfirmRecordings,
+    resetConfirmBoundaries: strings.resetConfirmBoundaries,
   };
 }
 

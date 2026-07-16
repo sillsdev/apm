@@ -203,6 +203,8 @@ interface IProps {
    * "no regions / recording"). Lets a host (e.g. Mark Verses) gate on its own
    * resettable state. */
   resetDisabled?: boolean;
+  /** Hide Reset while still showing +/− (Phrase BT listen pass). */
+  hideSegmentReset?: boolean;
   hasRecording?: boolean;
   isStopLogic?: boolean;
   /** When true, hide undo and scissors (region delete) waveform edit tools. */
@@ -382,6 +384,7 @@ function WSAudioPlayer(props: IProps) {
     onAutoSegment,
     onClearSegments,
     resetDisabled,
+    hideSegmentReset,
     hasRecording,
     isStopLogic,
     hideWaveformEditTools,
@@ -2370,7 +2373,7 @@ function WSAudioPlayer(props: IProps) {
               spacing={1}
               sx={{ display: 'flex', alignItems: 'center', minWidth: 0 }}
             >
-              {segmentUndoNode}
+              {hideSegmentControls && segmentUndoNode}
               {allowRecord && (
                 <>
                   {deleteRegionNode}
@@ -2433,8 +2436,9 @@ function WSAudioPlayer(props: IProps) {
               }}
             >
               {allowSegment && (
-                <Stack direction="row" spacing={1}>
+                <Stack direction="row" spacing={1} alignItems="center">
                   {!hideSegmentControls && renderSegmentControls()}
+                  {!hideSegmentControls && segmentUndoNode}
                   {hideToolbar && canUndo && !oneShotUsed && (
                     <IconButton
                       id="wsUndo"
@@ -2561,7 +2565,7 @@ function WSAudioPlayer(props: IProps) {
             >
               {metaData}
               {clearRecordingNode}
-              {allowSegment && !hideSegmentControls && (
+              {allowSegment && !hideSegmentControls && !hideSegmentReset && (
                 <AltButton
                   id="wsSegmentReset"
                   sx={smallButtonProps}

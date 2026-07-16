@@ -52,6 +52,10 @@
   "typescript.updateImportsOnFileMove.enabled": "always",
   "typescript.tsconfig": {
     "src/renderer/src/**/*.cy.tsx": "./src/renderer/tsconfig.cypress.json",
-    "src/renderer/src/**/*.cy.ts": "./src/renderer/tsconfig.cypress.json"
+    "src/renderer/src/**/*.cy.ts": "./src/renderer/tsconfig.cypress.json",
+    "src/renderer/src/**/*.test.ts": "./src/renderer/tsconfig.jest.json",
+    "src/renderer/src/**/*.test.tsx": "./src/renderer/tsconfig.jest.json",
+    "src/renderer/src/**/*.pacttest.ts": "./src/renderer/tsconfig.jest.json",
+    "src/renderer/src/**/*.pacttest.tsx": "./src/renderer/tsconfig.jest.json"
   }
 }
