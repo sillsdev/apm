@@ -333,6 +333,26 @@ export function Access() {
             }
             if (selectedUser === '' && loggedIn) setSelectedUser('unknownUser');
           });
+        } else if (
+          localStorage.getItem(LocalKey.loggedIn) === 'true' &&
+          whichUsers === 'online' &&
+          Boolean(
+            localStorage.getItem(LocalKey.onlineUserId) ??
+              localStorage.getItem(LocalKey.userId)
+          ) &&
+          !localStorage.getItem(LocalKey.goingOnline) &&
+          !reloginRef.current
+        ) {
+          // Cold start: the main process only holds the auth session in
+          // memory, so getProfile() is null until ipc.login() runs — which
+          // used to happen only when the user clicked their own name here,
+          // even though localStorage knows exactly who was logged in.
+          // Continue automatically instead (same path as that click):
+          // ipc.login() silently refreshes tokens from the stored refresh
+          // token and only shows the auth window if that fails. Loading
+          // then restores the last route (localUserKey(LocalKey.url)).
+          reloginRef.current = true;
+          handleGoOnline();
         }
       });
     }
