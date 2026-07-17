@@ -338,7 +338,7 @@ export default function EditReferenceDropdown({
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
-            gap: 2,
+            gap: 0.5,
             mb: 2,
             fontVariantNumeric: 'tabular-nums',
           }}
