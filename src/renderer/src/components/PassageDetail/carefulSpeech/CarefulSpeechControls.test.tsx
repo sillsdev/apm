@@ -144,4 +144,49 @@ describe('CarefulSpeechControls — Next Clause completion state', () => {
     expect(container.querySelector('#careful-speech-prev-unit')).toBeTruthy();
     expect(container.querySelector('#careful-speech-next-unit')).toBeTruthy();
   });
+
+  it('highlights sequential next after save completes on a recorded segment', () => {
+    const { container } = render(
+      <CarefulSpeechControls
+        {...baseProps}
+        phase="recorded"
+        sequentialUnitNavAroundRecord
+        canNextUnit
+        savingRecording={false}
+      />
+    );
+    const next = container.querySelector('#careful-speech-next-unit');
+    expect(next).toBeTruthy();
+    expect(next?.getAttribute('data-highlighted')).toBe('true');
+  });
+
+  it('does not highlight sequential next on an unrecorded segment', () => {
+    const { container } = render(
+      <CarefulSpeechControls
+        {...baseProps}
+        phase="readyToRecord"
+        sequentialUnitNavAroundRecord
+        canNextUnit
+        savingRecording={false}
+      />
+    );
+    const next = container.querySelector('#careful-speech-next-unit');
+    expect(next).toBeTruthy();
+    expect(next?.getAttribute('data-highlighted')).toBeNull();
+  });
+
+  it('does not highlight sequential next while save is in progress', () => {
+    const { container } = render(
+      <CarefulSpeechControls
+        {...baseProps}
+        phase="recorded"
+        sequentialUnitNavAroundRecord
+        canNextUnit
+        savingRecording
+      />
+    );
+    const next = container.querySelector('#careful-speech-next-unit');
+    expect(next).toBeTruthy();
+    expect(next?.getAttribute('data-highlighted')).toBeNull();
+  });
 });

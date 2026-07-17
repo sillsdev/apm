@@ -8914,6 +8914,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="transcriber.missingSegmentRecordings">
+         <segment>
+            <source>Some Phrase Back Translation segments are missing recordings. Complete recording for every segment before starting transcription.</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="transcriber.needsNewRecording">
          <segment>
             <source>Rejected recording</source>

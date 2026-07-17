@@ -1763,6 +1763,7 @@ export interface ITranscriberStrings extends Localize.LocalizedStringsMethods {
     "historyTip": string;
     "incomplete": string;
     "invalidReference": string;
+    "missingSegmentRecordings": string;
     "needsNewRecording": string;
     "needsNewTranscription": string;
     "noAsrTranscription": string;

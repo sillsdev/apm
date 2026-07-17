@@ -177,6 +177,20 @@ export default function CarefulSpeechControls({
     () => phase === 'recording' || savingRecording,
     [phase, savingRecording]
   );
+  /** After save settles on a completed segment, nudge the user to advance. */
+  const highlightNextUnit = useMemo(
+    () =>
+      sequentialUnitNavAroundRecord &&
+      phase === 'recorded' &&
+      !savingRecording &&
+      canNextUnit,
+    [
+      sequentialUnitNavAroundRecord,
+      phase,
+      savingRecording,
+      canNextUnit,
+    ]
+  );
   const [dockedRecordButton, setDockedRecordButton] =
     useState<ReactNode | null>(null);
   const onDockedRecordButton = useCallback((node: ReactNode | null) => {
@@ -383,6 +397,16 @@ export default function CarefulSpeechControls({
                   onClick={onNextUnitSequential}
                   disabled={!canNextUnit || navLocked}
                   size="small"
+                  data-highlighted={highlightNextUnit ? 'true' : undefined}
+                  sx={
+                    highlightNextUnit
+                      ? {
+                          bgcolor: 'primary.main',
+                          color: 'primary.contrastText',
+                          '&:hover': { bgcolor: 'primary.dark' },
+                        }
+                      : undefined
+                  }
                 >
                   <ChevronRightIcon />
                 </IconButton>

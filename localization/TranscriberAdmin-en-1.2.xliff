@@ -10401,6 +10401,13 @@
                <context context-type="sourcefile">Transcriber.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="transcriber.missingSegmentRecordings">
+            <source>Some Phrase Back Translation segments are missing recordings. Complete recording for every segment before starting transcription.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">PassageDetailTranscribe.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="transcriber.needsNewRecording">
             <source>Rejected recording</source>
             <target/>

@@ -19,6 +19,8 @@ interface IProps {
   toolSettings: string;
   onChange: (toolSettings: string) => void;
   stepId?: string;
+  /** Current team — duplicate language check stays within this org. */
+  organizationId?: string;
 }
 
 const emptyLanguage = (): ILanguage => ({
@@ -33,6 +35,7 @@ export const PhraseBackTranslateStepSettings = ({
   toolSettings,
   onChange,
   stepId,
+  organizationId,
 }: IProps) => {
   const se: IStepEditorStrings = useSelector(stepEditorSelector, shallowEqual);
   const { getTypeId } = useArtifactType();
@@ -84,6 +87,7 @@ export const PhraseBackTranslateStepSettings = ({
         stepId,
         artifactTypeId: nextArt,
         languageBcp47: bcp47,
+        organizationId,
         keyMap: memory?.keyMap as RecordKeyMap,
       })
     ) {
