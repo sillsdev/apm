@@ -94,6 +94,20 @@ export const PhraseBackTranslateStepSettings = ({
     onChange(JSON.stringify(payload));
   };
 
+  // Language fires onChange once on mount with its current value. Ignore that
+  // echo (and any later no-op sync) so reopening saved settings cannot rewrite
+  // toolSettings and fight the toolSettings→lgState effect (TT-7553).
+  const handleLanguageChange = (val: ILanguage) => {
+    if (
+      lgState.bcp47 === val.bcp47 &&
+      lgState.languageName === val.languageName
+    ) {
+      return;
+    }
+    setLgState(val);
+    emit(artifactTypeId, val);
+  };
+
   return (
     <Stack spacing={2} sx={{ minWidth: 280 }}>
       <SelectArtifactType
@@ -108,10 +122,7 @@ export const PhraseBackTranslateStepSettings = ({
       />
       <Language
         {...lgState}
-        onChange={(val) => {
-          setLgState(val);
-          emit(artifactTypeId, val);
-        }}
+        onChange={handleLanguageChange}
         hideFont
         required
       />
