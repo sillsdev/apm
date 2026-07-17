@@ -543,7 +543,7 @@ describe('PlanView', () => {
     ).should('not.exist');
   });
 
-  it('should call handlePublish when publish is confirmed', () => {
+  it('should disable the publish button and not call handlePublish when canPublish is false', () => {
     const section = createMockSection({
       passageType: PassageTypeEnum.PASSAGE as any,
     });
@@ -568,9 +568,8 @@ describe('PlanView', () => {
     )
       .first()
       .closest('button')
-      .click();
-    cy.get('button#alertYes', { timeout: 5000 }).click();
-    cy.wrap(mockHandlePublish).should('have.been.calledWith', 0);
+      .should('be.disabled');
+    cy.wrap(mockHandlePublish).should('not.have.been.called');
   });
 
   it('should show PublishOnIcon (PublicOutlinedIcon) when item is not published', () => {
@@ -665,7 +664,7 @@ describe('PlanView', () => {
     cy.get('svg[data-testid="PublicOutlinedIcon"]').should('not.exist');
   });
 
-  it('should call handlePublish with correct index for multiple passages', () => {
+  it('should disable all publish buttons for multiple passages when canPublish is false', () => {
     const passage1 = createMockSection({
       passageType: 'PASS' as any,
       published: [],
@@ -705,25 +704,14 @@ describe('PlanView', () => {
       'svg[data-testid="PublicOutlinedIcon"], svg[data-testid="PublicOffOutlinedIcon"]'
     ).should('have.length', 3);
 
-    // Click the second button (index 1)
+    // Every publish button should be disabled since canPublish is false
     cy.get(
       'svg[data-testid="PublicOutlinedIcon"], svg[data-testid="PublicOffOutlinedIcon"]'
-    )
-      .eq(1)
-      .closest('button')
-      .click();
-    cy.get('button#alertYes', { timeout: 5000 }).click();
-    cy.wrap(mockHandlePublish).should('have.been.calledWith', 1);
+    ).each(($icon) => {
+      cy.wrap($icon).closest('button').should('be.disabled');
+    });
 
-    // Click the third button (index 2)
-    cy.get(
-      'svg[data-testid="PublicOutlinedIcon"], svg[data-testid="PublicOffOutlinedIcon"]'
-    )
-      .eq(2)
-      .closest('button')
-      .click();
-    cy.get('button#alertYes', { timeout: 5000 }).click();
-    cy.wrap(mockHandlePublish).should('have.been.calledWith', 2);
+    cy.wrap(mockHandlePublish).should('not.have.been.called');
   });
 
   it('should not show publish button for non-PASS passage types', () => {
