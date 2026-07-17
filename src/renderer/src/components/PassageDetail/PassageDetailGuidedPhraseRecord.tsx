@@ -192,6 +192,9 @@ export function PassageDetailGuidedPhraseRecord({
   // clause; this lets the recording effect swallow that single +1 advance while
   // still treating any non-adjacent jump as a genuine user tap (TT-7360).
   const pendingOvershootSwallowRef = useRef(false);
+  /** Indices saved this session whose rowData may not have caught up yet (TT-7552). */
+  const optimisticCompletedRef = useRef<Set<number>>(new Set());
+  const currentIndexRef = useRef(0);
   const [heardIndices, setHeardIndices] = useState<number[]>([]);
   const [currentClausePlayed, setCurrentClausePlayed] = useState(false);
   const [combineUndo, setCombineUndo] = useState<string | null>(null);
@@ -484,12 +487,27 @@ export function PassageDetailGuidedPhraseRecord({
   carefulSpeechStatusRef.current = {
     currentIndex,
     isCompleted: (i) =>
-      recordingPassStarted ? completedIndices.has(i) : heardSet.has(i),
+      recordingPassStarted
+        ? completedIndices.has(i) || optimisticCompletedRef.current.has(i)
+        : heardSet.has(i),
   };
+  currentIndexRef.current = currentIndex;
 
   const applyColors = useCallback(() => {
     playerControlsRef.current?.applyRegionColors?.();
   }, []);
+
+  // Drop optimistic flags once rowData confirms those clauses.
+  useEffect(() => {
+    let changed = false;
+    for (const i of [...optimisticCompletedRef.current]) {
+      if (completedIndices.has(i)) {
+        optimisticCompletedRef.current.delete(i);
+        changed = true;
+      }
+    }
+    if (changed) applyColors();
+  }, [completedIndices, applyColors]);
 
   const bumpSuppressClauseAutoPlay = useCallback((count = 1) => {
     suppressClauseAutoPlayRef.current += count;
@@ -694,6 +712,7 @@ export function PassageDetailGuidedPhraseRecord({
     recordingActiveRef.current = false;
     setSavingRecording(false);
     pendingOvershootSwallowRef.current = false;
+    optimisticCompletedRef.current.clear();
     setHeardIndices([]);
     setCurrentClausePlayed(false);
     setCombineUndo(null);
@@ -970,6 +989,8 @@ export function PassageDetailGuidedPhraseRecord({
         playerControlsRef.current.setPlay(false);
       }
       if (indexChanged) {
+        // TT-7552: clear prior take from MediaRecord when changing segments.
+        setResetMedia(true);
         setCurrentIndex(idx);
         setCurrentSegment(clauseRegions[idx], idx);
       }
@@ -1002,6 +1023,8 @@ export function PassageDetailGuidedPhraseRecord({
     // Genuine navigation (user tap) — cancel any armed swallow and play it.
     pendingOvershootSwallowRef.current = false;
 
+    // TT-7552: clear prior take so Segment N+1 starts empty (same as Next Clause).
+    setResetMedia(true);
     setCurrentIndex(idx);
     setCurrentSegment(clauseRegions[idx], idx);
     setShowRecorder(true);
@@ -1111,6 +1134,7 @@ export function PassageDetailGuidedPhraseRecord({
     playerControlsRef.current?.loadRegionsJson?.(baseline);
     setRecordingPassStarted(false);
     recordingPassStartedRef.current = false;
+    optimisticCompletedRef.current.clear();
     setShowRecorder(false);
     setHeardIndices([]);
     setCurrentClausePlayed(false);
@@ -1308,6 +1332,7 @@ export function PassageDetailGuidedPhraseRecord({
     if (savingRecording || recordingActiveRef.current) return;
     if (currentIndex <= 0) return;
     const next = currentIndex - 1;
+    setResetMedia(true);
     setCurrentIndex(next);
     setCurrentSegment(clauseRegions[next], next);
     setCurrentClausePlayed(false);
@@ -1336,6 +1361,7 @@ export function PassageDetailGuidedPhraseRecord({
     if (savingRecording || recordingActiveRef.current) return;
     if (currentIndex >= clauseRegions.length - 1) return;
     const next = currentIndex + 1;
+    setResetMedia(true);
     setCurrentIndex(next);
     setCurrentSegment(clauseRegions[next], next);
     setCurrentClausePlayed(false);
@@ -1429,6 +1455,8 @@ export function PassageDetailGuidedPhraseRecord({
   const afterUploadCb = useCallback(
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     async (_mediaId: string | undefined) => {
+      // Color green immediately; rowData/forceRefresh often lag the upload (TT-7552).
+      optimisticCompletedRef.current.add(currentIndexRef.current);
       setSavingRecording(false);
       forceRefresh();
       setPhase('recorded');
@@ -1443,6 +1471,7 @@ export function PassageDetailGuidedPhraseRecord({
     await memory.update((t) =>
       t.removeRecord({ type: 'mediafile', id: recordingRow.mediafile.id })
     );
+    optimisticCompletedRef.current.delete(currentIndexRef.current);
     forceRefresh();
     if (stepComplete(currentstep)) {
       await setStepComplete(currentstep, false);
@@ -1597,6 +1626,9 @@ export function PassageDetailGuidedPhraseRecord({
           onRecording={(active) => {
             if (active) {
               recordingActiveRef.current = true;
+              // TT-7552: a deliberate take cancels the post-park overshoot swallow
+              // so tapping the next segment is treated as real navigation.
+              pendingOvershootSwallowRef.current = false;
               setRecording(true);
               setPhase('recording');
               return;

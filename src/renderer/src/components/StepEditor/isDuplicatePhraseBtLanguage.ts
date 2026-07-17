@@ -1,5 +1,8 @@
 import { RecordKeyMap } from '@orbit/records';
-import { getTool, getToolSettings, remoteIdGuid, ToolSlug } from '../../crud';
+import { getTool, getToolSettings } from '../../crud/useStepTool';
+import { remoteIdGuid } from '../../crud/remoteId';
+import { ToolSlug } from '../../crud/toolSlug';
+import { related } from '../../crud/related';
 import { parseStepLanguageField } from '../../crud/transcribeStepAsrSettings';
 import { OrgWorkflowStepD } from '../../model';
 
@@ -9,6 +12,8 @@ export function isDuplicatePhraseBtLanguage(
     stepId?: string;
     artifactTypeId: string;
     languageBcp47: string;
+    /** When set, only compare against Phrase BT steps for this team. */
+    organizationId?: string;
     keyMap?: RecordKeyMap;
   }
 ): boolean {
@@ -19,6 +24,12 @@ export function isDuplicatePhraseBtLanguage(
     : opts.artifactTypeId;
   return steps.some((step) => {
     if (opts.stepId && step.id === opts.stepId) return false;
+    if (
+      opts.organizationId &&
+      related(step, 'organization') !== opts.organizationId
+    ) {
+      return false;
+    }
     if (getTool(step.attributes?.tool) !== ToolSlug.PhraseBackTranslate) {
       return false;
     }

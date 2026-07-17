@@ -2,6 +2,7 @@ import React from 'react';
 import { act, cleanup, render, waitFor } from '@testing-library/react';
 import { IRegion } from '../../crud/useWavesurferRegions';
 import { CLAUSE_BOUNDARY_THRESHOLD_SEC } from './carefulSpeech/carefulSpeechBoundary';
+import { CAREFUL_SPEECH_COMPLETED_RGBA, CAREFUL_SPEECH_PENDING_RGBA } from '../../utils/carefulSpeechSegmentColors';
 
 /**
  * Behavioural spec for the Careful Speech orchestration (TT-7360).
@@ -120,9 +121,6 @@ jest.mock('../../crud', () => ({
 jest.mock('../../crud/related', () => ({ related: () => 'p1' }));
 jest.mock('../../utils/useStepPermission', () => ({
   useStepPermissions: () => ({ canDoSectionStep: () => true }),
-}));
-jest.mock('../../utils/carefulSpeechSegmentColors', () => ({
-  createCarefulSpeechApplyRegionColor: () => () => {},
 }));
 jest.mock('../../utils/passageDefaultFilename', () => ({
   passageDefaultFilename: () => 'file.ogg',
@@ -419,6 +417,71 @@ describe('PassageDetailCarefulSpeech — recording segment lock (TT-7437)', () =
     });
 
     expect(ctx.setRecording).toHaveBeenCalledWith(true);
+  });
+});
+
+describe('PassageDetailCarefulSpeech — segment change after take (TT-7552)', () => {
+  it('after saving a take, tapping the next clause advances and resets the recorder', async () => {
+    mockCompleted = new Set([0, 1]); // auto-play clause 2
+    const { rerender } = await mountAndSettle();
+    await firePlaybackEnd(2); // park on clause 2 (arms overshoot swallow)
+
+    await act(async () => {
+      (controlsProps?.onRecording as (active: boolean) => void)(true);
+      (controlsProps?.onRecording as (active: boolean) => void)(false);
+    });
+    await act(async () => {
+      await (
+        controlsProps?.afterUploadCb as (
+          mediaId: string | undefined
+        ) => Promise<void>
+      )('media-new');
+    });
+    mockCompleted = new Set([0, 1, 2]);
+    expect(controlsProps?.resetMedia).toBe(false);
+
+    stubControls.setPlay.mockClear();
+    stubControls.gotoTime.mockClear();
+
+    // User taps the next clause on the waveform (adjacent — same path as overshoot).
+    await moveEngineToClause(3, rerender);
+
+    await waitFor(() =>
+      expect(stubControls.gotoTime).toHaveBeenCalledWith(seekFor(3), regions[3])
+    );
+    await waitFor(() => expect(controlsProps?.resetMedia).toBe(true));
+  });
+
+  it('marks the just-saved clause completed for coloring before rowData catches up', async () => {
+    mockCompleted = new Set([0, 1]); // auto-play clause 2; rowData still lacks clause 2 after save
+    await mountAndSettle();
+    await firePlaybackEnd(2);
+
+    const applyRegionColor = () =>
+      (
+        playerProps?.applyRegionColor as
+          | ((role: string, index: number, count: number) => string)
+          | undefined
+      )?.('base', 2, 8);
+
+    expect(applyRegionColor()).toBe(CAREFUL_SPEECH_PENDING_RGBA);
+
+    await act(async () => {
+      (controlsProps?.onRecording as (active: boolean) => void)(true);
+      (controlsProps?.onRecording as (active: boolean) => void)(false);
+    });
+    await act(async () => {
+      await (
+        controlsProps?.afterUploadCb as (
+          mediaId: string | undefined
+        ) => Promise<void>
+      )('media-new');
+    });
+
+    // rowData / mockCompleted intentionally still omit clause 2 — coloring must
+    // still treat it as done so green shows when advancing (TT-7552).
+    expect(applyRegionColor()).toBe(CAREFUL_SPEECH_COMPLETED_RGBA);
+    expect(stubControls.applyRegionColors).toHaveBeenCalled();
   });
 });
 

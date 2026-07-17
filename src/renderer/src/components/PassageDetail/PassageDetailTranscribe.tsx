@@ -2,14 +2,16 @@ import { useContext, useMemo } from 'react';
 import {
   ActivityStates,
   ISharedStrings,
+  ITranscriberStrings,
   MediaFile,
+  MediaFileD,
   PassageD,
 } from '../../model';
 import { Grid, Typography, Box, BoxProps, styled } from '@mui/material';
 import { TranscriberProvider } from '../../context/TranscriberContext';
 import Transcriber from '../../components/Transcriber';
 import usePassageDetailContext from '../../context/usePassageDetailContext';
-import { sharedSelector } from '../../selector';
+import { sharedSelector, transcriberSelector } from '../../selector';
 import { shallowEqual, useSelector } from 'react-redux';
 import TaskList, { TaskTableWidth } from '../TaskList';
 import { getStepComplete, ToolSlug, useStepTool } from '../../crud';
@@ -17,11 +19,28 @@ import { findRecord } from '../../crud/tryFindRecord';
 import { JSONParse } from '../../utils';
 import { PassageDetailContext } from '../../context/PassageDetailContext';
 import { useArtifactType } from '../../crud/useArtifactType';
+import {
+  ArtifactTypeSlug,
+  isPhraseSegmentArtifact,
+} from '../../crud/artifactTypeSlug';
 import { UnsavedContext } from '../../context/UnsavedContext';
 import { useStepPermissions } from '../../utils/useStepPermission';
 import { useGlobal } from '../../context/useGlobal';
 import { parseStepLanguageField } from '../../crud/transcribeStepAsrSettings';
 import { related } from '../../crud/related';
+import { useOrbitData } from '../../hoc/useOrbitData';
+import {
+  getSegments,
+  getSortedRegions,
+  NamedRegions,
+} from '../../utils/namedSegments';
+import { hasPhraseRegions } from './carefulSpeech/carefulSpeechBoundary';
+import {
+  parseMediaLanguageField,
+  phraseBtBoundaryRegionName,
+} from './carefulSpeech/matchesGuidedOutputRow';
+import { hasIncompletePhraseSegmentRecordings } from './phraseSegmentRecordingComplete';
+import StepMessage from './boldClause/StepMessage';
 
 const TranscriberContainer = styled(Box)<BoxProps>(() => ({
   zIndex: 1,
@@ -32,7 +51,6 @@ const TranscriberContainer = styled(Box)<BoxProps>(() => ({
 interface IProps {
   width: number;
   artifactTypeId: string | null;
-  onFilter?: (filtered: boolean) => void;
 }
 
 export function PassageDetailTranscribe({ width, artifactTypeId }: IProps) {
@@ -53,8 +71,10 @@ export function PassageDetailTranscribe({ width, artifactTypeId }: IProps) {
   const { canDoSectionStep } = useStepPermissions();
   const hasPermission = canDoSectionStep(currentstep, section);
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
-  const { localizedArtifactTypeFromId } = useArtifactType();
+  const t: ITranscriberStrings = useSelector(transcriberSelector, shallowEqual);
+  const { localizedArtifactTypeFromId, slugFromId } = useArtifactType();
   const [memory] = useGlobal('memory');
+  const mediafiles = useOrbitData<MediaFileD[]>('mediafile');
   const { settings: workflowStepSettingsRaw } = useStepTool(currentstep);
   const stepSettings = useMemo(() => {
     if (!workflowStepSettingsRaw || workflowStepSettingsRaw === '') return '{}';
@@ -190,6 +210,71 @@ export function PassageDetailTranscribe({ width, artifactTypeId }: IProps) {
     setState((s) => ({ ...s, playerMediafile }));
   };
 
+  const stepLanguageBcp47 = useMemo(() => {
+    const { bcp47 } = parseMediaLanguageField(
+      (() => {
+        try {
+          return (JSON.parse(stepSettings) as { language?: unknown }).language;
+        } catch {
+          return undefined;
+        }
+      })()
+    );
+    return bcp47 !== 'und' ? bcp47 : undefined;
+  }, [stepSettings]);
+
+  const phraseArtifactSlug = useMemo(() => {
+    if (!artifactTypeId) return null;
+    const slug = slugFromId(artifactTypeId) as ArtifactTypeSlug;
+    return isPhraseSegmentArtifact(slug) ? slug : null;
+  }, [artifactTypeId, slugFromId]);
+
+  const mediafile = useMemo(
+    () => mediafiles.find((m) => m.id === mediafileId),
+    [mediafiles, mediafileId]
+  );
+
+  const phraseRegions = useMemo(() => {
+    if (!phraseArtifactSlug || !mediafile) return [];
+    const allSegs = mediafile.attributes?.segments ?? '[]';
+    const namedRegion =
+      phraseArtifactSlug === ArtifactTypeSlug.CarefulSpeech
+        ? NamedRegions.Clause
+        : stepLanguageBcp47
+          ? phraseBtBoundaryRegionName(stepLanguageBcp47)
+          : NamedRegions.BackTranslation;
+    const primary = getSegments(namedRegion, allSegs);
+    if (hasPhraseRegions(primary)) return getSortedRegions(primary);
+    if (
+      phraseArtifactSlug === ArtifactTypeSlug.PhraseBackTranslation &&
+      stepLanguageBcp47
+    ) {
+      const fallback = getSegments(NamedRegions.BackTranslation, allSegs);
+      if (hasPhraseRegions(fallback)) return getSortedRegions(fallback);
+    }
+    return [];
+  }, [phraseArtifactSlug, mediafile, stepLanguageBcp47]);
+
+  const missingPhraseSegmentRecordings = useMemo(() => {
+    if (!phraseArtifactSlug || !artifactTypeId) return false;
+    return hasIncompletePhraseSegmentRecordings(
+      phraseRegions,
+      rowData,
+      artifactTypeId,
+      mediafile?.attributes?.versionNumber ?? 0,
+      mediafileId,
+      stepLanguageBcp47
+    );
+  }, [
+    phraseArtifactSlug,
+    artifactTypeId,
+    phraseRegions,
+    rowData,
+    mediafile,
+    mediafileId,
+    stepLanguageBcp47,
+  ]);
+
   const hasBtRecordings = useMemo(() => {
     if (!artifactTypeId) return true; // we're not transcribing back translations
     const btType = localizedArtifactTypeFromId(artifactTypeId);
@@ -216,6 +301,11 @@ export function PassageDetailTranscribe({ width, artifactTypeId }: IProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rowData, artifactTypeId, mediafileId, stepSettings]);
   const MAGIC_NUMBER_THAT_MAKES_IT_FIT = 20;
+
+  if (missingPhraseSegmentRecordings) {
+    return <StepMessage message={t.missingSegmentRecordings} />;
+  }
+
   return Boolean(mediafileId) && hasBtRecordings ? (
     <TranscriberProvider
       artifactTypeId={artifactTypeId}

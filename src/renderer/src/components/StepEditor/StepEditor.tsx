@@ -656,6 +656,7 @@ export const StepEditor = ({ process, org }: IProps) => {
             toolSettings={(rows[toolSettingsRow] as IStepRow).settings}
             onChange={handleSettingsChange}
             stepId={(rows[toolSettingsRow] as IStepRow).id}
+            organizationId={org}
           />
         </BigDialog>
       )}

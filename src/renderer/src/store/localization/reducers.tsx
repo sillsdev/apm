@@ -1861,6 +1861,7 @@ const initialState = {
 			"historyTip": "History [{0}]",
 			"incomplete": "Incomplete transcription",
 			"invalidReference": "Book or Reference is invalid.",
+			"missingSegmentRecordings": "Some Phrase Back Translation segments are missing recordings. Complete recording for every segment before starting transcription.",
 			"needsNewRecording": "Rejected recording",
 			"needsNewTranscription": "Rejected transcription",
 			"noAsrTranscription": "No transcription!",
