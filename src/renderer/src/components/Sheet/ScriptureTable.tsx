@@ -1860,6 +1860,7 @@ export function ScriptureTable(props: IProps) {
       doForceDataChanges.current = true;
     }
     setUpdate(false);
+    setTimeout(() => startSave(), 1000);
   };
 
   const onPublishing = async (update: boolean) => {
