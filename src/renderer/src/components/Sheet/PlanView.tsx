@@ -42,7 +42,7 @@ export function PlanView(props: IProps) {
   const { rowInfo, publishingView, handlePublish, handleGraphic } = props;
   const { prjId } = useParams();
   const ctx = useContext(PlanContext);
-  const { shared, publishingOn } = ctx.state;
+  const { shared, publishingOn, canPublish } = ctx.state;
   const [srcMediaId, setSrcMediaId] = useState<string | undefined>(undefined);
   const [view, setView] = useState('');
   const [confirmPublish, setConfirmPublish] = useState(false);
@@ -141,6 +141,7 @@ export function PlanView(props: IProps) {
                 <Button
                   variant="outlined"
                   onClick={() => onPublish(i)}
+                  disabled={!canPublish}
                   sx={{
                     color: 'primary.light',
                     minWidth: 'auto',

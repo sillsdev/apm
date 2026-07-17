@@ -304,7 +304,7 @@ const UnsavedProvider = (props: PropsWithChildren) => {
     setAlertOpen(false);
     startClear();
     forceClearPending();
-    finishConfirmed(savedMethod, 18);
+    finishConfirmed(savedMethod, 200);
   };
 
   const finishConfirmed = (
@@ -322,7 +322,7 @@ const UnsavedProvider = (props: PropsWithChildren) => {
     showMessage(t.saving);
     startSave();
     setAlertOpen(false);
-    finishConfirmed(savedMethod, 18);
+    finishConfirmed(savedMethod, 200);
   };
 
   return (
