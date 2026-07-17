@@ -398,7 +398,8 @@ export const PassageDataTable = (props: IProps) => {
                   slotProps={{
                     input: {
                       sx: { py: 1 },
-                      placeholder: passage?.attributes.reference ?? t.reference,
+                      placeholder:
+                        passage?.attributes?.reference ?? t?.reference,
                     },
                   }}
                   sx={{ width: isSmallScreen ? '100%' : '400px' }}
