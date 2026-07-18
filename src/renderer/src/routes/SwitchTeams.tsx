@@ -26,6 +26,7 @@ import { useGlobal } from '../context/useGlobal';
 import { useTeamActions } from '../components/Team/useTeamActions';
 import { SharedContentCreatorDialog } from '../components/Team/SharedContentCreatorDialog';
 import StickyRedirect from '../components/StickyRedirect';
+import { useIsPapLike } from '../utils/useIsPapLike';
 
 interface ISettingsButtonProps {
   label: string;
@@ -404,16 +405,8 @@ export const SwitchTeamsGuard: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const ctx = React.useContext(TeamContext);
-  const { teams, personalTeam, teamDirectoryReady } = ctx.state;
-  const [isOffline] = useGlobal('offline');
-  const [offlineOnly] = useGlobal('offlineOnly');
-  // When offline && !offlineOnly, getTeams() may be empty because shared teams
-  // without local projects are filtered out — not the same as true PAP-only.
-  const isPapLike =
-    Boolean(personalTeam) &&
-    teams.length === 0 &&
-    teamDirectoryReady &&
-    (!isOffline || offlineOnly);
+  const { personalTeam } = ctx.state;
+  const isPapLike = useIsPapLike();
 
   React.useEffect(() => {
     if (!isPapLike || !personalTeam) return;

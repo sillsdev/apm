@@ -16,6 +16,7 @@ import { remoteId, defaultWorkflow, useTeamWorkflowProcess } from '../crud';
 import { UnsavedContext } from '../context/UnsavedContext';
 import BigDialog from '../hoc/BigDialog';
 import { StepEditor } from '../components/StepEditor';
+import { useIsPapLike } from '../utils/useIsPapLike';
 
 interface ProjectBoxProps extends BoxProps {
   isMobile?: boolean;
@@ -32,14 +33,8 @@ export const ProjectsScreenInner: React.FC = () => {
   const navigate = useMyNavigate();
   const teamId = localStorage.getItem(localUserKey(LocalKey.team));
   const ctx = React.useContext(TeamContext);
-  const {
-    teamProjects,
-    personalProjects,
-    personalTeam,
-    teams,
-    teamDirectoryReady,
-    isAdmin,
-  } = ctx.state;
+  const { teamProjects, personalProjects, personalTeam, teams, isAdmin } =
+    ctx.state;
   const t: ICardsStrings = useSelector(cardsSelector, shallowEqual);
   const { pathname } = useLocation();
   const [plan] = useGlobal('plan');
@@ -74,11 +69,7 @@ export const ProjectsScreenInner: React.FC = () => {
   }, []);
 
   const isPersonal = teamId === personalTeam;
-  const isPapLike =
-    Boolean(personalTeam) &&
-    isPersonal &&
-    teams.length === 0 &&
-    teamDirectoryReady;
+  const isPapLike = useIsPapLike() && isPersonal;
   const projects = React.useMemo(
     () => (isPersonal ? personalProjects : teamId ? teamProjects(teamId) : []),
     [isPersonal, personalProjects, teamId, teamProjects]
