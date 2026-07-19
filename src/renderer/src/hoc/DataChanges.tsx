@@ -25,8 +25,10 @@ import { useBibleMedia } from '../crud/useBibleMedia';
 import { useDispatch } from 'react-redux';
 import { useOrbitData } from './useOrbitData';
 import { doDataChanges } from './doDataChanges';
+import { useRenderProfiler, perfRecordMs } from '../utils/perf';
 
 export function DataChanges(props: PropsWithChildren) {
+  useRenderProfiler('DataChanges');
   const { children } = props;
   const dispatch = useDispatch();
   const setLanguage = (lang: string) =>
@@ -94,6 +96,7 @@ export function DataChanges(props: PropsWithChildren) {
   }, [remote, ctx, loadComplete, connected, firstRun, userDataDelay]);
 
   const updateBusy = useCallback(() => {
+    const t0 = performance.now();
     const checkBusy =
       getGlobal('user') === '' ||
       (remote && remote.requestQueue.length !== 0) ||
@@ -108,10 +111,12 @@ export function DataChanges(props: PropsWithChildren) {
     } else if (checkBusy !== getGlobal('remoteBusy')) {
       setBusy(checkBusy);
     }
+    perfRecordMs('DataChanges.updateBusy', performance.now() - t0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [remote, user]);
 
   const updateData = async () => {
+    const t0 = performance.now();
     if (
       !doingChanges.current &&
       !getGlobal('remoteBusy') &&
@@ -143,6 +148,7 @@ export function DataChanges(props: PropsWithChildren) {
           await doSanityCheck(getGlobal('projectsLoaded')[ix] as string);
       }
       doingChanges.current = false; //attempt to prevent double calls
+      perfRecordMs('DataChanges.updateData', performance.now() - t0);
     }
   };
 

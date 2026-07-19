@@ -8,6 +8,7 @@ import React, {
 } from 'react';
 // see: https://upmostly.com/tutorials/how-to-use-the-usecontext-hook-in-react
 import { useGetGlobal, useGlobal } from '../context/useGlobal';
+import { useRenderProfiler } from '../utils/perf';
 import { useParams } from 'react-router-dom';
 import { shallowEqual } from 'react-redux';
 import {
@@ -243,6 +244,7 @@ interface IProps {
   children: React.ReactElement;
 }
 const PassageDetailProvider = (props: IProps) => {
+  useRenderProfiler('PassageDetailProvider');
   const passages = useOrbitData<Passage[]>('passage');
   const sections = useOrbitData<Section[]>('section');
   const mediafiles = useOrbitData<MediaFileD[]>('mediafile');

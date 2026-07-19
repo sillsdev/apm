@@ -34,6 +34,7 @@ import {
   useTeamWorkflowProcess,
   BOLD_WORKFLOW_PROCESS,
 } from '../crud/useTeamWorkflowProcess';
+import { useRenderProfiler, useWhyRender } from '../utils/perf';
 
 const TermsItem = styled(StyledMenuItem)<MenuItemProps>(() => ({
   textAlign: 'center',
@@ -54,6 +55,7 @@ interface IProps {
 }
 
 export function UserMenu(props: IProps) {
+  useRenderProfiler('UserMenu');
   const { action } = props;
   const users = useOrbitData<User[]>('user');
   const [orgRole] = useGlobal('orgRole'); //verified this is not used in a function 2/18/25
@@ -74,6 +76,19 @@ export function UserMenu(props: IProps) {
   const { isMobileView, isMobileWidth } = useMobile();
   const t: IMainStrings = useSelector(mainSelector, shallowEqual);
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
+  useWhyRender('UserMenu', {
+    users,
+    user,
+    org,
+    orgRole,
+    isBoldWorkflow,
+    userIsAdmin,
+    addStoryOrPassage,
+    anchorEl,
+    userRec,
+    t,
+    ts,
+  });
 
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {
     setShift(event.shiftKey);

@@ -23,6 +23,7 @@ export * from './relMouseCoords';
 export * from './resetData';
 export * from './sort';
 export * from './toCamel';
+export * from './perf';
 export * from './uiLang';
 export * from './updateXml';
 export * from './useInterval';

@@ -1,4 +1,5 @@
 import React, { useState, ReactNode } from 'react';
+import { useRenderProfiler } from '../utils/perf';
 import Coordinator from '@orbit/coordinator';
 import Memory from '@orbit/memory';
 import { AlertSeverity } from '../hoc/SnackBar';
@@ -73,6 +74,7 @@ interface GlobalProps {
 }
 
 const GlobalProvider: React.FC<GlobalProps> = ({ init, children }) => {
+  useRenderProfiler('GlobalProvider');
   const [globalState, setGlobalState] = useState<GlobalState>(init);
 
   return (

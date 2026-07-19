@@ -9,6 +9,7 @@ import {
 } from '../../crud';
 import { useGlobal } from '../../context/useGlobal';
 import usePassageDetailContext from '../../context/usePassageDetailContext';
+import { useRenderProfiler } from '../../utils/perf';
 import { NamedRegions } from '../../utils/namedSegments';
 import PassageDetailGuidedPhraseRecord from './PassageDetailGuidedPhraseRecord';
 import {
@@ -58,6 +59,7 @@ interface IProps {
 }
 
 export function PassageDetailPhraseBackTranslate({ width }: IProps) {
+  useRenderProfiler('PassageDetailPhraseBackTranslate');
   const [memory] = useGlobal('memory');
   const { currentstep } = usePassageDetailContext();
   const { settings } = useStepTool(currentstep);
