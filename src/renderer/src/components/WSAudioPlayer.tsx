@@ -607,14 +607,14 @@ function WSAudioPlayer(props: IProps) {
     [height, keepItSmall, hideToolbar]
   );
 
-  /** Fetching (loading prop) or decoding an existing-media blob — not a failed/cleared load. */
+  /** Fetching (loading prop) or waiting for wavesurfer ready with existing media. */
   const waveformLoading = useMemo(
     () =>
       Boolean(myMediaId) &&
       !recording &&
       !waitingForAI &&
-      (Boolean(loading) || (Boolean(blob) && !ready)),
-    [myMediaId, recording, waitingForAI, loading, blob, ready]
+      (Boolean(loading) || !ready),
+    [myMediaId, recording, waitingForAI, loading, ready]
   );
 
   // Memoize tooltip titles to prevent infinite re-renders
@@ -1061,6 +1061,15 @@ function WSAudioPlayer(props: IProps) {
     onSaveProgressRef.current = onSaveProgress;
   }, [onSaveProgress]);
 
+  // Mark not-ready before paint when a blob arrives so the overlay does not
+  // gap between gotTheBlob clearing `loading` and wavesurfer firing ready.
+  useLayoutEffect(() => {
+    if (blob) {
+      setReady(false);
+      setBlobReady && setBlobReady(false);
+    }
+  }, [blob, setBlobReady]);
+
   useEffect(() => {
     setDuration(0);
     setProgress(0);
@@ -1327,6 +1336,7 @@ function WSAudioPlayer(props: IProps) {
 
   function onWSLoadError(error: unknown) {
     setReady(true);
+    setBlobReady && setBlobReady(true);
     if (setBusy) setBusy(false);
     if (onLoadError) {
       onLoadError(error);
@@ -1343,6 +1353,7 @@ function WSAudioPlayer(props: IProps) {
     setDuration(duration);
     if (loadingAnother) return;
     setReady(true);
+    setBlobReady && setBlobReady(true);
     if (!recordingRef.current) {
       // After an edit reload (snip/undo) restore the prior zoom instead of
       // snapping to fit-to-width. Only restore when it was zoomed in past fit.

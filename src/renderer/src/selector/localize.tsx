@@ -37,6 +37,14 @@ export const localStrings = (state: IState, props: IStringsSelectorProps) => {
     Object.getPrototypeOf(source),
     Object.getOwnPropertyDescriptors(source)
   );
+  // Enumerable lang so useSelector(..., shallowEqual) sees a change even when
+  // LocalizedStrings getters on the old snapshot already return the new language
+  // (setLanguage mutates the shared source that accessors close over).
+  Object.defineProperty(value, 'lang', {
+    value: lang,
+    enumerable: true,
+    configurable: true,
+  });
 
   snapshotCache.set(props.layout, { source, lang, value });
   return value;

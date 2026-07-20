@@ -577,13 +577,23 @@ function MediaRecord(props: IProps) {
 
   const gotTheBlob = (b: Blob) => {
     setOriginalBlob(b);
-    setLoading(false);
+    // Keep loading true until wavesurfer reports ready (setBlobReady(true)).
+    // Clearing here left Record looking idle while the waveform decoded.
+    setBlobReady(false);
     onLoaded && onLoaded();
     setAudioBlob(b);
   };
+
+  useEffect(() => {
+    if (loading && blobReady && originalBlob) {
+      setLoading(false);
+      setStatusText('');
+    }
+  }, [loading, blobReady, originalBlob, setStatusText]);
   const blobError = (urlorError: string) => {
     showMessage(urlorError);
     setLoading(false);
+    setStatusText('');
     onLoaded && onLoaded();
   };
   const handleWaveformLoadError = useCallback(
@@ -639,6 +649,7 @@ function MediaRecord(props: IProps) {
   const handleLoadAudio = async () => {
     if (loading || !mediaId) return;
     setLoading(true);
+    setStatusText(ts.loading);
     reset();
 
     try {

@@ -18,6 +18,7 @@ import { Badge, Box, Fab, Grid } from '@mui/material';
 import { PassageDetailContext } from '../../context/PassageDetailContext';
 import DiscussionList from './DiscussionList';
 import DiscussIcon from '../../control/DiscussIcon';
+import { LightTooltip } from '../../control/LightTooltip';
 import { useOrbitData } from '../../hoc/useOrbitData';
 import { useDiscussionCount } from '../../crud/useDiscussionCount';
 import { discussionListSelector } from '../../selector';
@@ -127,18 +128,18 @@ export default function DiscussionPanel() {
       >
         {discussionCount > 0 ? (
           <Badge badgeContent={discussionCount} color="primary">
-            <Fab
-              size="small"
-              onClick={() => setDiscussOpen(true)}
-              title={t.open}
-            >
-              <DiscussIcon width={40} height={40} />
-            </Fab>
+            <LightTooltip title={t.open}>
+              <Fab size="small" onClick={() => setDiscussOpen(true)}>
+                <DiscussIcon width={40} height={40} />
+              </Fab>
+            </LightTooltip>
           </Badge>
         ) : (
-          <Fab size="small" onClick={() => setDiscussOpen(true)} title={t.open}>
-            <DiscussIcon width={40} height={40} />
-          </Fab>
+          <LightTooltip title={t.open}>
+            <Fab size="small" onClick={() => setDiscussOpen(true)}>
+              <DiscussIcon width={40} height={40} />
+            </Fab>
+          </LightTooltip>
         )}
       </Box>
     ))
