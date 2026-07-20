@@ -12,6 +12,7 @@ export * from './media';
 export * from './offlineError';
 export * from './orgWorkflowStepsUtils';
 export * from './passage';
+export * from './passagesForSection';
 export * from './related';
 export * from './remoteId';
 export * from './saveNewSection';

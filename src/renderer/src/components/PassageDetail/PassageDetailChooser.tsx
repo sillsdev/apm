@@ -1,13 +1,13 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useGlobal } from '../../context/useGlobal';
-import { IPassageChooserStrings, PassageD } from '../../model';
+import { IPassageChooserStrings } from '../../model';
 import { Typography, Tabs, Tab, SxProps, Box } from '@mui/material';
 import usePassageDetailContext from '../../context/usePassageDetailContext';
 import {
-  related,
   passageRefText,
   remoteId,
   useSharedResRead,
+  passagesForSection,
 } from '../../crud';
 import { rememberCurrentPassage } from '../../utils';
 import { useSelector, shallowEqual } from 'react-redux';
@@ -80,11 +80,9 @@ export const PassageDetailChooser = ({ width, sx }: IProps) => {
   };
 
   useEffect(() => {
-    // Next line doesn't work in desktop app
-    // const passages = related(section, 'passages') as Passage[];
-    const passages = (
-      memory.cache.query((q) => q.findRecords('passage')) as PassageD[]
-    ).filter((p) => related(p, 'section') === section?.id);
+    // Prefer querying passages by section relation (offline desktop may lack
+    // section.relationships.passages).
+    const passages = passagesForSection(memory, section?.id);
     let newCount = 0;
     marks.current = [];
     passages
