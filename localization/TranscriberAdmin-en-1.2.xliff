@@ -2222,6 +2222,13 @@
                <context context-type="sourcefile">LwcTranslationClauseNav.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="lwcTranslation.waitForPlayback">
+            <source>Recording controls will appear after playback finishes.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">LwcTranslationControls.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="lwcTranscription.clauseIndex">
             <source>Clause {0}/{1}</source>
             <target/>

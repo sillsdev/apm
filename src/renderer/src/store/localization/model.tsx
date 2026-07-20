@@ -370,6 +370,7 @@ export interface ILwcTranslationStrings extends Localize.LocalizedStringsMethods
     "noClauses": string;
     "prerequisite": string;
     "progress": string;
+    "waitForPlayback": string;
 };
 
 export interface ILwcTranscriptionStrings extends Localize.LocalizedStringsMethods {

@@ -1,10 +1,14 @@
 import { Box, IconButton, Stack, TextField } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/DeleteOutline';
 import { PriButton } from '../../../control';
+import Guidance from '../../../control/Guidance';
 import MediaRecord from '../../MediaRecord';
-import { ICarefulSpeechStrings } from '@model/index';
+import { ICarefulSpeechStrings, ILwcTranslationStrings } from '@model/index';
 import { shallowEqual, useSelector } from 'react-redux';
-import { carefulSpeechSelector } from '../../../selector';
+import {
+  carefulSpeechSelector,
+  lwcTranslationSelector,
+} from '../../../selector';
 import {
   useCallback,
   useEffect,
@@ -84,6 +88,10 @@ export default function LwcTranslationControls({
     carefulSpeechSelector,
     shallowEqual
   );
+  const t: ILwcTranslationStrings = useSelector(
+    lwcTranslationSelector,
+    shallowEqual
+  );
   const speakerInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -107,7 +115,14 @@ export default function LwcTranslationControls({
     return () => onDockedRecordButton(null);
   }, [onDockedRecordButton]);
 
-  if (!showRecorder) return null;
+  if (!showRecorder) {
+    if (phase === 'playing') {
+      return (
+        <Guidance data-cy="lwc-wait-playback">{t.waitForPlayback}</Guidance>
+      );
+    }
+    return null;
+  }
 
   return (
     <Box sx={{ width: '100%', px: 1 }} data-cy="lwc-recorder">

@@ -29,7 +29,7 @@ import {
   Typography,
 } from '@mui/material';
 import DropDownIcon from '@mui/icons-material/ArrowDropDown';
-import { AltButton, iconMargin } from '../control';
+import { AltButton, iconMargin, LightTooltip } from '../control';
 import { useSnackBar } from '../hoc/SnackBar';
 import Confirm from './AlertDialog';
 import AssignSection from './AssignSection';
@@ -146,17 +146,31 @@ export function AssignmentTable() {
     const section = sections.find((s) => s.id === sectionId);
     const schemeId = related(section, 'organizationScheme');
     const scheme = schemes.find((s) => s.id === schemeId);
+    const name = scheme?.attributes?.name ?? '';
+    const schemeSx = {
+      whiteSpace: 'normal',
+      wordBreak: 'break-word',
+      maxWidth: '100%',
+      textAlign: 'left',
+      justifyContent: 'flex-start',
+      height: 'auto',
+      py: 0.5,
+    } as const;
     if (!schemeId) {
       return (
-        <Typography component="span">
-          {scheme?.attributes?.name ?? ''}
-        </Typography>
+        <LightTooltip title={name}>
+          <Typography component="span" sx={schemeSx}>
+            {name}
+          </Typography>
+        </LightTooltip>
       );
     }
     return (
-      <Button onClick={handleView(schemeId)}>
-        {scheme?.attributes?.name ?? ''}
-      </Button>
+      <LightTooltip title={name}>
+        <Button onClick={handleView(schemeId)} sx={schemeSx}>
+          {name}
+        </Button>
+      </LightTooltip>
     );
   };
   const getNameCell = (params: GridRenderCellParams) => {
@@ -202,7 +216,9 @@ export function AssignmentTable() {
             {
               field: 'scheme',
               headerName: isPermission ? ts.scheme : ts.scheme2,
-              width: 200,
+              width: 280,
+              minWidth: 200,
+              cellClassName: 'word-wrap',
               renderCell: getSchemeName,
             },
             sortCol,
@@ -218,7 +234,9 @@ export function AssignmentTable() {
             {
               field: 'scheme',
               headerName: isPermission ? ts.scheme : ts.scheme2,
-              width: 200,
+              width: 280,
+              minWidth: 200,
+              cellClassName: 'word-wrap',
               renderCell: getSchemeName,
             },
             sortCol,

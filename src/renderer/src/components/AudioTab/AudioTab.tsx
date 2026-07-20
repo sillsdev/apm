@@ -378,7 +378,7 @@ export function AudioTab() {
               )}
           </TabActions>
         </TabAppBar>
-        <PaddedBox>
+        <PaddedBox sx={{ px: 2 }}>
           {autoMatch && (
             <Box sx={{ mb: 2 }}>
               <Template

@@ -393,6 +393,7 @@ const initialState = {
 			"noClauses": "No clause segments found. Complete the Careful Speech step first.",
 			"prerequisite": "Complete Careful Speech for every clause before starting LWC translation.",
 			"progress": "{0} of {1} clauses recorded",
+			"waitForPlayback": "Recording controls will appear after playback finishes.",
 		}
 	}),
 	"lwcTranscription": new LocalizedStrings({
