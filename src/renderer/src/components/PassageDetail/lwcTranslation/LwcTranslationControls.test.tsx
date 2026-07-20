@@ -24,12 +24,28 @@ jest.mock('../../../control', () => ({
   ),
 }));
 
-jest.mock('../../../selector', () => ({ carefulSpeechSelector: jest.fn() }));
+jest.mock('../../../control/Guidance', () => ({
+  __esModule: true,
+  default: ({
+    children,
+    ...rest
+  }: {
+    children: React.ReactNode;
+    'data-cy'?: string;
+  }) => <p data-cy={rest['data-cy']}>{children}</p>,
+}));
+
+jest.mock('../../../selector', () => ({
+  carefulSpeechSelector: jest.fn(),
+  lwcTranslationSelector: jest.fn(),
+}));
 jest.mock('react-redux', () => ({
   useSelector: () => ({
     nextClause: 'Next Clause',
     speaker: 'Speaker',
     clearRecording: 'Clear recording',
+    waitForPlayback:
+      'Recording controls will appear after playback finishes.',
   }),
   shallowEqual: jest.fn(),
 }));
@@ -81,5 +97,21 @@ describe('LwcTranslationControls — recorded clause panel', () => {
     expect(
       container.querySelector('[data-cy="lwc-docked-record"]')
     ).toBeTruthy();
+  });
+
+  it('shows wait-for-playback help while clause audio is playing (TT-7540)', () => {
+    render(
+      <LwcTranslationControls
+        {...baseProps}
+        phase="playing"
+        showRecorder={false}
+      />
+    );
+    expect(
+      screen.getByText(
+        'Recording controls will appear after playback finishes.'
+      )
+    ).toBeTruthy();
+    expect(screen.queryByTestId('media-record')).toBeNull();
   });
 });

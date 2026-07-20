@@ -1751,6 +1751,7 @@ function WSAudioPlayer(props: IProps) {
       description={
         <Typography
           sx={{
+            width: '100%',
             overflowWrap: 'break-word',
             wordBreak: 'break-word',
           }}

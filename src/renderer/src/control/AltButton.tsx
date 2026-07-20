@@ -19,7 +19,7 @@ export const AltButton = ({
       m: 1,
       overflow: 'hidden',
       whiteSpace: 'nowrap',
-      justifyContent: 'flex-start',
+      justifyContent: 'center',
       ...(dark
         ? {
             color: 'common.black',

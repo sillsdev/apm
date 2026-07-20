@@ -256,7 +256,12 @@ export function BigDialog({
             >
               <Typography
                 variant={titleVariant ?? 'h6'}
-                sx={{ overflowWrap: 'break-word' }}
+                title={title}
+                sx={{
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
               >
                 {title}
               </Typography>
