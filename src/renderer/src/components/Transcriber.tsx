@@ -1440,6 +1440,7 @@ export function Transcriber(props: IProps) {
                               id="asrButton"
                               onClick={handleTranscribe}
                               onSettings={openAsrLanguageSettings}
+                              showSettings={false}
                               disabled={role !== 'transcriber'}
                             >
                               {!hasTranscription &&

@@ -52,7 +52,7 @@ import {
   parseStepLanguageField,
   type TranscribeStepSettings as ITranscribeStepSettings,
 } from '../../crud/transcribeStepAsrSettings';
-import { IAsrState } from '../../business/asr/asrState';
+import { IAsrState, normalizeAsrState } from '../../business/asr/asrState';
 import { getPreferredAsrMethod } from '../../business/asr/asrLanguages';
 import { useSnackBar } from '../../hoc/SnackBar';
 
@@ -297,7 +297,25 @@ export const TranscribeStepSettings = ({
       setInitialValue(json.artifactTypeId);
       const { languageName, bcp47 } = parseStepLanguageField(json?.language);
       const slug = slugFromId(json.artifactTypeId);
-      const sisterLang = parseStepLanguageField(json?.sisterlanguage);
+      let sisterLang = parseStepLanguageField(json?.sisterlanguage);
+      // Seed empty sister UI from org ASR when vernacular needs a sister language
+      // (e.g. Review step opened after Transcribe saved org ASR but before peers synced).
+      if (
+        !isLangSet(sisterLang.bcp47) &&
+        slug === ArtifactTypeSlug.Vernacular &&
+        org
+      ) {
+        const vernacular = readVernacularFromOrg();
+        if (needsSisterLanguage(vernacular?.bcp47 ?? 'und')) {
+          const orgAsr = normalizeAsrState(getOrgDefault(orgDefaultAsr, org));
+          if (isLangSet(orgAsr?.language?.bcp47)) {
+            sisterLang = {
+              languageName: orgAsr.language.languageName ?? '',
+              bcp47: orgAsr.language.bcp47 ?? 'und',
+            };
+          }
+        }
+      }
       const spellCheck = resolveStepSpellCheck(
         json,
         slug,
@@ -459,8 +477,16 @@ export const TranscribeStepSettings = ({
 
   const sisterSelectRoman = useMemo(() => {
     const json = JSONParse(toolSettings || '{}') as Record<string, unknown>;
-    return json?.selectRoman === true || json?.selectRoman === 'true';
-  }, [toolSettings]);
+    if (json && Object.prototype.hasOwnProperty.call(json, 'selectRoman')) {
+      return json.selectRoman === true || json.selectRoman === 'true';
+    }
+    // When sister UI was seeded from org ASR, also adopt its transliterate flag.
+    if (currentSlug === ArtifactTypeSlug.Vernacular && org) {
+      const orgAsr = normalizeAsrState(getOrgDefault(orgDefaultAsr, org));
+      return orgAsr?.selectRoman === true;
+    }
+    return false;
+  }, [toolSettings, currentSlug, org, getOrgDefault]);
 
   const sisterAsr: IAsrState = useMemo(
     () => ({
