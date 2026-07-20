@@ -12,11 +12,17 @@ import { ArtifactTypeSlug } from './artifactTypeSlug';
 import { ToolSlug } from './toolSlug';
 import { orgDefaultAsr, orgDefaultLangProps } from './useOrgDefaults';
 import { isLangSet } from '../utils/langTag';
+import { JSONParse } from '../utils/jsonParse';
 
 export type SlugFromIdFn = (id: string) => string;
 export type GetOrgDefaultFn = (label: string, orgId?: string) => unknown;
 
 export type TranscribeStepSettings = Record<string, unknown>;
+
+export interface IStepSettingsRow {
+  tool: string;
+  settings: string;
+}
 
 export interface IStepLanguageInfo {
   languageName: string;
@@ -97,6 +103,76 @@ export function artifactUsesOrgVernacularLanguage(
     slug === ArtifactTypeSlug.QandA ||
     slug === ArtifactTypeSlug.Retell
   );
+}
+
+/**
+ * True when a Transcribe tool step is vernacular (including empty artifactTypeId).
+ * Used to sync sister-language settings across Transcribe / Review Transcription.
+ */
+export function isVernacularTranscribeStep(
+  tool: string,
+  settings: TranscribeStepSettings | string | undefined,
+  slugFromId: SlugFromIdFn
+): boolean {
+  if (tool !== ToolSlug.Transcribe) return false;
+  const parsed =
+    typeof settings === 'string'
+      ? (JSONParse(settings || '{}') as TranscribeStepSettings)
+      : (settings ?? {});
+  return (
+    artifactTypeSlugFromSettings(parsed, slugFromId) ===
+    ArtifactTypeSlug.Vernacular
+  );
+}
+
+/**
+ * Copies sisterlanguage (+ selectRoman) from a vernacular Transcribe step onto
+ * peer vernacular Transcribe steps so Review Transcription shows the same choice.
+ */
+export function withPropagatedVernacularSisterSettings<
+  T extends IStepSettingsRow,
+>(
+  rows: T[],
+  sourceIndex: number,
+  sourceSettings: string,
+  slugFromId: SlugFromIdFn
+): T[] {
+  const source = rows[sourceIndex];
+  if (!source) return rows;
+
+  if (!isVernacularTranscribeStep(source.tool, sourceSettings, slugFromId)) {
+    return rows.map((r, i) =>
+      i === sourceIndex ? { ...r, settings: sourceSettings } : r
+    );
+  }
+
+  const src = JSONParse(sourceSettings || '{}') as TranscribeStepSettings;
+  const sisterlanguage = src.sisterlanguage;
+  const selectRoman = src.selectRoman;
+
+  return rows.map((r, i) => {
+    if (i === sourceIndex) {
+      return { ...r, settings: sourceSettings };
+    }
+    if (!isVernacularTranscribeStep(r.tool, r.settings, slugFromId)) {
+      return r;
+    }
+    const peer = JSONParse(r.settings || '{}') as TranscribeStepSettings;
+    if (
+      peer.sisterlanguage === sisterlanguage &&
+      peer.selectRoman === selectRoman
+    ) {
+      return r;
+    }
+    return {
+      ...r,
+      settings: JSON.stringify({
+        ...peer,
+        sisterlanguage,
+        selectRoman,
+      }),
+    };
+  });
 }
 
 export function hasTranscribeStepLanguageSettings(

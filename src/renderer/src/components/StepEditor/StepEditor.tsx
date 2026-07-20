@@ -30,7 +30,10 @@ import {
   getToolSettings,
   remoteIdGuid,
 } from '../../crud';
-import { parseStepLanguageField } from '../../crud/transcribeStepAsrSettings';
+import {
+  parseStepLanguageField,
+  withPropagatedVernacularSisterSettings,
+} from '../../crud/transcribeStepAsrSettings';
 import { AddRecord, ReplaceRelatedRecord } from '../../model/baseModel';
 import { useSnackBar } from '../../hoc/SnackBar';
 import { UnsavedContext } from '../../context/UnsavedContext';
@@ -240,10 +243,15 @@ export const StepEditor = ({ process, org }: IProps) => {
   };
 
   const handleSettingsChange = (settings: string) => {
-    setRows(
-      rows.map((r, i) =>
-        i === toolSettingsRow
-          ? { ...r, settings, prettySettings: prettySettings(r.tool, settings) }
+    setRows((prev) =>
+      withPropagatedVernacularSisterSettings(
+        prev,
+        toolSettingsRow,
+        settings,
+        slugFromId
+      ).map((r, i) =>
+        r.settings !== prev[i]?.settings
+          ? { ...r, prettySettings: prettySettings(r.tool, r.settings) }
           : r
       )
     );

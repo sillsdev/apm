@@ -14,8 +14,10 @@ import {
   buildWorkflowAsrStateFromSettings,
   formatStepLanguageField,
   hasTranscribeStepLanguageSettings,
+  isVernacularTranscribeStep,
   parseStepLanguageField,
   sisterBcpFromSettings,
+  withPropagatedVernacularSisterSettings,
 } from './transcribeStepAsrSettings';
 import { AsrTarget } from '../business/asr/AsrTarget';
 import { orgDefaultAsr, orgDefaultLangProps } from './useOrgDefaults';
@@ -475,5 +477,126 @@ describe('buildVernacularAsrState project language override', () => {
     expect(state.language.font).toBe('pf');
     // sister + transliterate were configured for the org default language.
     expect(state.selectRoman).toBe(false);
+  });
+});
+
+describe('isVernacularTranscribeStep', () => {
+  const slugFromId = (id: string) =>
+    id === 'wbt'
+      ? ArtifactTypeSlug.WholeBackTranslation
+      : id === 'qa'
+        ? ArtifactTypeSlug.QandA
+        : ArtifactTypeSlug.Vernacular;
+
+  it('treats Transcribe with empty artifactTypeId as vernacular', () => {
+    expect(isVernacularTranscribeStep(ToolSlug.Transcribe, '{}', slugFromId)).toBe(
+      true
+    );
+  });
+
+  it('treats Transcribe with vernacular artifact as vernacular', () => {
+    expect(
+      isVernacularTranscribeStep(
+        ToolSlug.Transcribe,
+        JSON.stringify({ artifactTypeId: 'vern' }),
+        slugFromId
+      )
+    ).toBe(true);
+  });
+
+  it('rejects Q&A and non-Transcribe tools', () => {
+    expect(
+      isVernacularTranscribeStep(
+        ToolSlug.Transcribe,
+        JSON.stringify({ artifactTypeId: 'qa' }),
+        slugFromId
+      )
+    ).toBe(false);
+    expect(
+      isVernacularTranscribeStep(
+        ToolSlug.Record,
+        JSON.stringify({ artifactTypeId: 'vern' }),
+        slugFromId
+      )
+    ).toBe(false);
+  });
+});
+
+describe('withPropagatedVernacularSisterSettings (TT-7420)', () => {
+  const slugFromId = (id: string) =>
+    id === 'wbt'
+      ? ArtifactTypeSlug.WholeBackTranslation
+      : ArtifactTypeSlug.Vernacular;
+
+  const rows = [
+    {
+      tool: ToolSlug.Transcribe,
+      settings: JSON.stringify({ artifactTypeId: 'vern' }),
+    },
+    {
+      tool: ToolSlug.Transcribe,
+      settings: JSON.stringify({
+        artifactTypeId: 'vern',
+        sisterlanguage: 'Old|xx',
+      }),
+    },
+    {
+      tool: ToolSlug.Transcribe,
+      settings: JSON.stringify({
+        artifactTypeId: 'wbt',
+        language: 'French|fr',
+      }),
+    },
+  ];
+
+  it('copies sisterlanguage and selectRoman to peer vernacular Transcribe steps', () => {
+    const sourceSettings = JSON.stringify({
+      artifactTypeId: 'vern',
+      sisterlanguage: formatStepLanguageField({
+        languageName: 'Tamil',
+        bcp47: 'ta',
+      }),
+      selectRoman: true,
+    });
+    const next = withPropagatedVernacularSisterSettings(
+      rows,
+      0,
+      sourceSettings,
+      slugFromId
+    );
+    expect(next[0].settings).toBe(sourceSettings);
+    expect(JSON.parse(next[1].settings)).toMatchObject({
+      artifactTypeId: 'vern',
+      sisterlanguage: 'Tamil|ta',
+      selectRoman: true,
+    });
+    // Whole Back Translation keeps its own language settings.
+    expect(JSON.parse(next[2].settings)).toEqual({
+      artifactTypeId: 'wbt',
+      language: 'French|fr',
+    });
+  });
+
+  it('does not propagate when the source step is not vernacular', () => {
+    const sourceSettings = JSON.stringify({
+      artifactTypeId: 'wbt',
+      language: 'French|fr',
+      sisterlanguage: 'English|en',
+      selectRoman: true,
+    });
+    const wbtRows = [
+      { tool: ToolSlug.Transcribe, settings: sourceSettings },
+      {
+        tool: ToolSlug.Transcribe,
+        settings: JSON.stringify({ artifactTypeId: 'vern' }),
+      },
+    ];
+    const next = withPropagatedVernacularSisterSettings(
+      wbtRows,
+      0,
+      sourceSettings,
+      slugFromId
+    );
+    expect(next[1].settings).toBe(wbtRows[1].settings);
   });
 });
