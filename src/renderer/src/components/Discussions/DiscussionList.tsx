@@ -47,6 +47,7 @@ import SortMenu, { ISortState } from './SortMenu';
 import { discussionListSelector } from '../../selector';
 import { useOrbitData } from '../../hoc/useOrbitData';
 import CloseIcon from '@mui/icons-material/Close';
+import { LightTooltip } from '../../control/LightTooltip';
 
 const StyledPaper = styled(Paper)<PaperProps>(({ theme }) => ({
   backgroundColor: theme.palette.secondary.light,
@@ -565,32 +566,39 @@ export function DiscussionList({ onClose }: DiscussionListProps) {
               teamDefault={teamDefault}
               setTeamDefault={canSetTeamDefault ? setTeamDefault : undefined}
             />
-            <IconButton
-              id="addDiscussion"
-              sx={actionButtonProps}
-              title={t.add}
-              onClick={handleAddDiscussion}
-              disabled={adding || isMediaMissing()}
-            >
-              <AddIcon />
-            </IconButton>
-            <IconButton
-              id="collapseDiscussion"
-              sx={actionButtonProps}
-              title={t.collapse}
-              onClick={handleToggleCollapse}
-            >
-              {collapsed ? <ShowIcon /> : <HideIcon />}
-            </IconButton>
-            <IconButton
-              id="closeDiscussion"
-              sx={actionButtonProps}
-              title={t.close}
-              onClick={onClose}
-              disabled={anyChanged || adding}
-            >
-              <CloseIcon />
-            </IconButton>
+            <LightTooltip title={t.add}>
+              <span>
+                <IconButton
+                  id="addDiscussion"
+                  sx={actionButtonProps}
+                  onClick={handleAddDiscussion}
+                  disabled={adding || isMediaMissing()}
+                >
+                  <AddIcon />
+                </IconButton>
+              </span>
+            </LightTooltip>
+            <LightTooltip title={t.collapse}>
+              <IconButton
+                id="collapseDiscussion"
+                sx={actionButtonProps}
+                onClick={handleToggleCollapse}
+              >
+                {collapsed ? <ShowIcon /> : <HideIcon />}
+              </IconButton>
+            </LightTooltip>
+            <LightTooltip title={t.close}>
+              <span>
+                <IconButton
+                  id="closeDiscussion"
+                  sx={actionButtonProps}
+                  onClick={onClose}
+                  disabled={anyChanged || adding}
+                >
+                  <CloseIcon />
+                </IconButton>
+              </span>
+            </LightTooltip>
           </Box>
         </Box>
         <StyledPaper ref={formRef} id="DiscussionList" style={rootWidthStyle}>

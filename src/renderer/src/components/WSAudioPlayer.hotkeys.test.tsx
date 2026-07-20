@@ -276,4 +276,34 @@ describe('WSAudioPlayer record hotkeys', () => {
 
     expect(mockUnsubscribe).toHaveBeenCalledWith(RECORD_KEY);
   });
+
+  it('shows loading overlay when mediaId is set and loading', () => {
+    const { getByText, container } = render(
+      <WSAudioPlayer {...defaultProps} loading={true} />
+    );
+
+    expect(getByText('Loading')).toBeTruthy();
+    expect(
+      container.querySelector('#wsAudioWaveform')?.getAttribute('style')
+    ).toMatch(/visibility:\s*hidden/);
+  });
+
+  it('keeps loading overlay until wavesurfer ready after blob arrives', () => {
+    const blob = new Blob([new Uint8Array([1, 2, 3])], { type: 'audio/wav' });
+    const { getByText, queryByText, rerender } = render(
+      <WSAudioPlayer {...defaultProps} loading={false} blob={blob} />
+    );
+
+    // loading cleared but ready still false until onWSReady
+    expect(getByText('Loading')).toBeTruthy();
+
+    act(() => {
+      capturedOnWSReady?.(10, false);
+    });
+    rerender(
+      <WSAudioPlayer {...defaultProps} loading={false} blob={blob} />
+    );
+
+    expect(queryByText('Loading')).toBeNull();
+  });
 });

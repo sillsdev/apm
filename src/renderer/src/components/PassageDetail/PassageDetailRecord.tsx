@@ -185,10 +185,12 @@ export function PassageDetailRecord(props: IProps) {
       hasExisting && recordPreloadInitiatedRef.current !== mediafileId;
     if (shouldAutoPreload) {
       recordPreloadInitiatedRef.current = mediafileId;
+      setStatusText(ts.loading);
       handleReload();
     }
     setHasExistingVersion(hasExisting);
-  }, [mediafileId, recorderState]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mediafileId, recorderState, ts.loading]);
 
   const passageId = useMemo(
     () => related(sharedResource, 'passage') ?? passage.id,
