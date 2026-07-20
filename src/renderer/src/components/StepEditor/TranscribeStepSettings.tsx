@@ -516,15 +516,29 @@ export const TranscribeStepSettings = ({
         initialValue={initialValue}
       />
       {currentSlug === ArtifactTypeSlug.Vernacular ? (
-        <Language
-          key={`vernacular-${vernacularLanguage?.bcp47 ?? 'und'}`}
-          {...vernacularLanguage}
-          onChange={handleVernacularLanguageChange}
-          hideFont
-          required={true}
-          disabled={false}
-          sx={{ ml: 1 }}
-        />
+        <>
+          <Language
+            key={`vernacular-${vernacularLanguage?.bcp47 ?? 'und'}`}
+            {...vernacularLanguage}
+            onChange={handleVernacularLanguageChange}
+            hideFont
+            hideSpelling
+            required={true}
+            disabled={false}
+            sx={{ ml: 1 }}
+          />
+          <FormControlLabel
+            sx={{ ml: 1, display: 'block' }}
+            control={
+              <Checkbox
+                id="transcribe-step-spellCheck"
+                checked={lgState.spellCheck}
+                onChange={(e) => handleSpellCheckOnlyChange(e.target.checked)}
+              />
+            }
+            label={t.spellCheck}
+          />
+        </>
       ) : (
         <>
           {hasLang && (
