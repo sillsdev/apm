@@ -233,6 +233,8 @@ export default function BoldClauseTranscriptionEditor({
     };
   }, [project, memory, artifactTypeId, stepSettings]);
 
+  // Cap growth so long transcriptions scroll inside the field (TT-7516),
+  // matching Transcriber's fixed-height + overflow pattern.
   const textAreaStyle = useMemo(
     () =>
       ({
@@ -240,6 +242,9 @@ export default function BoldClauseTranscriptionEditor({
         maxWidth: '100%',
         boxSizing: 'border-box',
         minHeight: 120,
+        maxHeight: 240,
+        overflowY: 'auto',
+        resize: 'none',
         fontFamily: projData?.fontFamily,
         fontSize: projData?.fontSize,
         direction: projData?.fontDir,
