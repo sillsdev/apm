@@ -1576,8 +1576,8 @@ function WSAudioPlayer(props: IProps) {
       {showAiProgressOverlay && (
         <Box
           sx={{
-            position: 'absolute',
-            inset: 0,
+            // In-flow so short Media Titles heights (e.g. 80px slot) can grow
+            // and do not clip #ai-cancel under overflow:hidden (TT-7537).
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
@@ -1588,6 +1588,7 @@ function WSAudioPlayer(props: IProps) {
             minWidth: 0,
             boxSizing: 'border-box',
             px: 2,
+            py: 1,
             pointerEvents: 'auto',
           }}
         >
