@@ -31,6 +31,7 @@ import CarefulSpeechControls, {
   CarefulSpeechPhase,
 } from './carefulSpeech/CarefulSpeechControls';
 import { useGuidedPhraseSegments } from './carefulSpeech/useGuidedPhraseSegments';
+import { resolveSegmentSpeaker } from './carefulSpeech/resolveSegmentSpeaker';
 import {
   CLAUSE_BOUNDARY_THRESHOLD_SEC,
   hasPhraseRegions,
@@ -564,6 +565,16 @@ export function PassageDetailGuidedPhraseRecord({
     },
     [config.speakerLocalKey]
   );
+
+  // TT-7440: existing take keeps its performedBy; new takes use last localStorage speaker
+  useEffect(() => {
+    setSpeaker(
+      resolveSegmentSpeaker(
+        recordingRow?.mediafile?.attributes?.performedBy,
+        config.speakerLocalKey
+      )
+    );
+  }, [recordingRow, currentIndex, config.speakerLocalKey]);
 
   useEffect(() => {
     if (!currentRegion) return;
