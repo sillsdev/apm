@@ -422,41 +422,4 @@ describe('useMediaUpload', () => {
     expect(uploadComplete).toHaveBeenCalled();
     expect(typeof completeCalls[0][0]).toBe('object');
   });
-
-  it('uses latest performedBy/topic at upload time even if upload fn was captured earlier (TT-6646)', async () => {
-    const afterUploadCb = jest.fn().mockResolvedValue(undefined);
-    const { renderHook, act } = require('@testing-library/react');
-    const { useMediaUpload } = require('./useMediaUpload');
-    const { result, rerender } = renderHook(
-      (props: { performedBy?: string; topic?: string }) =>
-        useMediaUpload({
-          artifactId: 'art-1',
-          passageId: 'psg-1',
-          performedBy: props.performedBy,
-          topic: props.topic,
-          afterUploadCb,
-        }),
-      { initialProps: { performedBy: '', topic: '' } }
-    );
-    const staleUpload = result.current as (files: File[]) => Promise<boolean>;
-
-    act(() => {
-      rerender({ performedBy: 'Dharma', topic: 'Community Q1' });
-    });
-
-    const uploadPromise = staleUpload([makeFile()]);
-    const { nextUpload } = require('../store');
-    expect(nextUpload).toHaveBeenCalled();
-    const uploadProps = (nextUpload as jest.Mock).mock.calls.at(-1)![0];
-    expect(uploadProps.record.performedBy).toBe('Dharma');
-    expect(uploadProps.record.topic).toBe('Community Q1');
-
-    const cb = uploadProps.cb as (
-      n: number,
-      success: boolean,
-      data?: unknown
-    ) => void | Promise<void>;
-    await cb(0, true, { stringId: 'media-1' });
-    await expect(uploadPromise).resolves.toBe(true);
-  });
 });

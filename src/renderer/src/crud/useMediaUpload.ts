@@ -63,13 +63,6 @@ export const useMediaUpload = ({
   const accessToken = useContext(TokenContext)?.state?.accessToken ?? null;
   const fileList = useRef<File[] | undefined>(undefined);
   const mediaIdRef = useRef('');
-  // TT-6646: MediaRecord's save effect omits performedBy/topic from deps, so
-  // a stale uploadMedia closure can run after the user typed speaker/topic.
-  // Read these at upload time, not from the render that created the callback.
-  const performedByRef = useRef(performedBy);
-  const topicRef = useRef(topic);
-  performedByRef.current = performedBy;
-  topicRef.current = topic;
   const { createMedia } = useOfflnMediafileCreate();
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
   const t = useSelector(mediaTabSelector, shallowEqual);
@@ -203,8 +196,8 @@ export const useMediaUpload = ({
         userId: getUserId(),
         sourceMediaId: getSourceMediaId(),
         sourceSegments: sourceSegments ?? '{}',
-        performedBy: performedByRef.current ?? null,
-        topic: topicRef.current ?? '',
+        performedBy: performedBy ?? null,
+        topic: topic ?? '',
         languagebcp47: languagebcp47 ?? '',
         eafUrl: !artifactId
           ? ts.mediaAttached
