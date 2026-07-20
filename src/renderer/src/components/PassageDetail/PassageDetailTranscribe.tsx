@@ -11,6 +11,7 @@ import { Grid, Typography, Box, BoxProps, styled } from '@mui/material';
 import { TranscriberProvider } from '../../context/TranscriberContext';
 import Transcriber from '../../components/Transcriber';
 import usePassageDetailContext from '../../context/usePassageDetailContext';
+import { useRenderProfiler, useWhyRender } from '../../utils/perf';
 import { sharedSelector, transcriberSelector } from '../../selector';
 import { shallowEqual, useSelector } from 'react-redux';
 import TaskList, { TaskTableWidth } from '../TaskList';
@@ -54,6 +55,7 @@ interface IProps {
 }
 
 export function PassageDetailTranscribe({ width, artifactTypeId }: IProps) {
+  useRenderProfiler('PassageDetailTranscribe');
   const {
     mediafileId,
     section,
@@ -66,6 +68,15 @@ export function PassageDetailTranscribe({ width, artifactTypeId }: IProps) {
     psgCompleted,
     passage,
   } = usePassageDetailContext();
+  useWhyRender('PassageDetailTranscribe', {
+    mediafileId,
+    section,
+    currentstep,
+    orgWorkflowSteps,
+    rowData,
+    psgCompleted,
+    passage,
+  });
   const { waitForSave } = useContext(UnsavedContext).state;
   const { setState } = useContext(PassageDetailContext);
   const { canDoSectionStep } = useStepPermissions();

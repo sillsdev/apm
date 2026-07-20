@@ -8,9 +8,11 @@ import { useSelector, shallowEqual } from 'react-redux';
 import { IState } from './model';
 import { createAppTheme } from './theme';
 import { useMemo } from 'react';
+import { useRenderProfiler } from './utils/perf';
 export { HeadHeight } from './layout';
 
 function App(): React.JSX.Element {
+  useRenderProfiler('App');
   const lang = useSelector((state: IState) => state.strings.lang, shallowEqual);
 
   const theme = useMemo(() => createAppTheme(lang), [lang]);

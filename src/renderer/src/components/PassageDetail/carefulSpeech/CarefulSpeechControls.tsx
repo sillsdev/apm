@@ -16,6 +16,7 @@ import {
   type ReactNode,
 } from 'react';
 import type { IGuidedPhraseRecordControlStrings } from '../guidedPhraseRecord/types';
+import { useRenderProfiler, useWhyRender } from '../../../utils/perf';
 
 export type CarefulSpeechPhase =
   | 'bootstrapping'
@@ -129,6 +130,20 @@ export default function CarefulSpeechControls({
   canPrevUnit = false,
   canNextUnit = false,
 }: Props) {
+  useRenderProfiler('CarefulSpeechControls');
+  useWhyRender('CarefulSpeechControls', {
+    phase,
+    currentRegion,
+    recordingPassStarted,
+    allClausesHeard,
+    allClausesComplete,
+    highlightSpeaker,
+    allowRecord,
+    savingRecording,
+    resetMedia,
+    recordingMediaId,
+    sourceSegments,
+  });
   const speakerInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {

@@ -11,6 +11,7 @@ import { Box, Typography } from '@mui/material';
 import { shallowEqual, useSelector } from 'react-redux';
 import { useGlobal } from '../../context/useGlobal';
 import usePassageDetailContext from '../../context/usePassageDetailContext';
+import { useRenderProfiler, useWhyRender } from '../../utils/perf';
 import PassageDetailPlayer from './PassageDetailPlayer';
 import StepMessage from './boldClause/StepMessage';
 import { remoteIdGuid, useArtifactType, useStepTool } from '../../crud';
@@ -98,6 +99,7 @@ export function PassageDetailGuidedPhraseRecord({
   controlStrings,
   workflowGateMessage,
 }: IProps) {
+  useRenderProfiler('PassageDetailGuidedPhraseRecord');
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
   const [memory] = useGlobal('memory');
   const [user] = useGlobal('user');
@@ -124,6 +126,18 @@ export function PassageDetailGuidedPhraseRecord({
     setStepComplete,
     stepComplete,
   } = usePassageDetailContext();
+  useWhyRender('PassageDetailGuidedPhraseRecord', {
+    passage,
+    playerMediafile,
+    mediafileId,
+    rowData,
+    currentstep,
+    currentSegmentIndex,
+    isBoldWorkflow,
+    stepComplete,
+    carefulSpeechSegParams,
+    mediafiles,
+  });
   const { settings } = useStepTool(currentstep);
   const stepSettings = useMemo((): Record<string, unknown> => {
     if (!settings) return {};

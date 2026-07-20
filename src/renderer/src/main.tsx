@@ -5,6 +5,7 @@ import '../src/index.css';
 import { coordinator, memory } from '../src/schema';
 import Bugsnag from '@bugsnag/js';
 import { LocalKey, localUserKey, Online } from '../src/utils';
+import '../src/utils/perf'; // registers window.aptPerf + long-task observer early
 import { isElectron, OrbitNetworkErrorRetries } from '../api-variable';
 import { GlobalProvider } from '../src/context/GlobalContext';
 import bugsnagClient from '../src/auth/bugsnagClient';

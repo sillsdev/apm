@@ -70,6 +70,7 @@ import {
   RecordTransformBuilder,
 } from '@orbit/records';
 import { useOrbitData } from '../hoc/useOrbitData';
+import { useRenderProfiler, useWhyRender } from '../utils/perf';
 import { ReplaceRelatedRecord, UpdateLastModifiedBy } from '../model/baseModel';
 import { projDefBook, useProjectDefaults } from '../crud/useProjectDefaults';
 import { pad3 } from '../utils/pad3';
@@ -154,6 +155,7 @@ interface IProps {
 }
 
 const TeamProvider = (props: IProps) => {
+  useRenderProfiler('TeamProvider');
   const projects = useOrbitData<ProjectD[]>('project');
   const plans = useOrbitData<PlanD[]>('plan');
   const planTypes = useOrbitData<PlanTypeD[]>('plantype');
@@ -428,6 +430,23 @@ const TeamProvider = (props: IProps) => {
 
     return projects.filter((p) => grpIds.includes(related(p, 'group')));
   }, [projects, groupMemberships, user]);
+
+  useWhyRender('TeamProvider', {
+    projects,
+    plans,
+    planTypes,
+    organizations,
+    orgMembers,
+    groupMemberships,
+    sections,
+    passages,
+    userProjects,
+    personalTeam: state.personalTeam,
+    personalProjects: state.personalProjects,
+    teams: state.teams,
+    importOpen,
+    importProject,
+  });
 
   // cache plan sort values to avoid recalculating
   const planSortMap = new Map<string, string>();

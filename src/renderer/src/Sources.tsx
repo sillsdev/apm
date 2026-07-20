@@ -244,7 +244,18 @@ interface SourcesReturn {
   goRemote: boolean;
 }
 
-export const Sources = async (
+// Module-level reentrancy guard: two Sources() runs must never overlap. Each
+// call deactivates/reactivates the coordinator and recreates the remote source;
+// overlapping runs race on coordinator.deactivate() and can close the backup
+// IndexedDB under an in-flight memory->backup sync ("IndexedDB database is not
+// yet open"), which hangs the loading screen. A spurious second call (e.g. a
+// /loading remount firing fetchOrbitData again) now reuses the in-flight
+// promise instead of tearing the coordinator down under the first run. The
+// guard clears on completion so the next sequential login still runs fresh.
+// Mirrors restoreBackup's restorePromise pattern.
+let sourcesPromise: Promise<SourcesReturn> | null = null;
+
+const sourcesImpl = async (
   coordinator: Coordinator,
   tokenCtx: ITokenContext,
   fingerprint: string,
@@ -536,4 +547,14 @@ export const Sources = async (
     await updateConsultantWorkflowStep(token, memory, user);
   }
   return { syncBuffer, syncFile, goRemote };
+};
+
+export const Sources = (
+  ...args: Parameters<typeof sourcesImpl>
+): Promise<SourcesReturn> => {
+  if (sourcesPromise) return sourcesPromise; // dedupe concurrent invocations
+  sourcesPromise = sourcesImpl(...args).finally(() => {
+    sourcesPromise = null; // allow the next (sequential) login to run fresh
+  });
+  return sourcesPromise;
 };

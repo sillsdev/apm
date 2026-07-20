@@ -6,6 +6,7 @@ import { related } from '../../crud/related';
 import { ArtifactTypeSlug } from '../../crud/artifactTypeSlug';
 import { IRow } from '../../context/PassageDetailContext';
 import usePassageDetailContext from '../../context/usePassageDetailContext';
+import { useRenderProfiler, useWhyRender } from '../../utils/perf';
 import {
   FormControl,
   IconButton,
@@ -71,7 +72,9 @@ export default function ConsultantCheckReview({
   onPlayer,
   playId,
 }: IProps) {
+  useRenderProfiler('ConsultantCheckReview');
   const { rowData, mediafileId } = usePassageDetailContext();
+  useWhyRender('ConsultantCheckReview', { item, playId, rowData, mediafileId });
   const [allMedia, setAllMedia] = useState<MediaFileD[]>([]);
   const [segments, setSegments] = useState('');
   const [selectedLang, setSelectedLang] = useState<string>('');
