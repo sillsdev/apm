@@ -33,19 +33,18 @@ const sectionsPassagesLabel = planTabsFixture.sectionsPassages.replace(
   organizedByDefault
 );
 
-// Mock memory — must match DataProvider so useOrbitData sees organizations (cypress-testing-takeaways: data-driven providers, not import stubs).
-const createMockMemory = (organizations: any[] = []) =>
-  ({
+// Mock memory — must match DataProvider so useOrbitData sees organizations
+// (cypress-testing-takeaways: data-driven providers, not import stubs).
+// useOrbitData reads records via memory.cache.query (not liveQuery.query), so
+// route cache.query through the same findRecords the live query uses.
+const createMockMemory = (organizations: any[] = []) => {
+  const findRecords = (type: string) =>
+    type === 'organization' ? organizations : [];
+  return {
     cache: {
-      query: () => [],
+      query: (queryBuildFn: (q: any) => any) => queryBuildFn({ findRecords }),
       liveQuery: (queryBuildFn: (q: any) => any) => {
-        const q = {
-          findRecords: (type: string) => {
-            if (type === 'organization') return organizations;
-            return [];
-          },
-        };
-        const records = queryBuildFn(q);
+        const records = queryBuildFn({ findRecords });
         return {
           subscribe: () => () => {},
           query: () => records,
@@ -53,7 +52,8 @@ const createMockMemory = (organizations: any[] = []) =>
       },
     },
     update: () => {},
-  }) as unknown as Memory;
+  } as unknown as Memory;
+};
 
 let currentTestMemory: Memory = createMockMemory();
 
