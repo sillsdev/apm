@@ -30,6 +30,11 @@ npm run cy:run-ct
 npm run cy:open-ct
 npm run cy:run-ct -- --spec=**/PlanTabSelect.cy.tsx --browser chrome
 
+# Multiple specs: quote the whole --spec value and comma-separate globs.
+# Do NOT append a second --browser (the cy:run-ct script already sets it);
+# a duplicate flag can abort the run before any test executes.
+npm run cy:run-ct -- --spec "**/PlanBar.cy.tsx,**/PlanTabSelect.cy.tsx"
+
 # E2e (start the app first: npm start in another terminal)
 npm run cy:run-local
 npm run cy:open-local
@@ -37,6 +42,21 @@ npm run cy:open-local
 
 Docker CT uses the same config file. E2e needs the app at `http://localhost:3000`
 and a reachable dev API (`VITE_HOST`).
+
+To narrow the Docker run to specific specs, set `CYPRESS_SPEC` (comma-separated
+globs); unset runs the full `specPattern`. The `cypress` service command appends
+`--spec` only when the var is non-empty:
+
+```powershell
+# PowerShell
+$env:CYPRESS_SPEC="**/PlanBar.cy.tsx,**/PlanTabSelect.cy.tsx"; npm run cy:docker
+$env:CYPRESS_SPEC=$null   # clear to run everything again
+```
+
+```bash
+# bash/zsh
+CYPRESS_SPEC="**/PlanBar.cy.tsx,**/PlanTabSelect.cy.tsx" npm run cy:docker
+```
 
 `cy.loginByAuth0()` visits `/access/online-cloud`, completes Auth0 via `cy.origin()`,
 and caches the session when `VITE_AUTH_CACHE=localstorage`.
@@ -46,6 +66,11 @@ and caches the session when `VITE_AUTH_CACHE=localstorage`.
 - Avoid stubbing ESM imports in Cypress CT; prefer data-driven setup via providers.
 - Build the full provider stack: `GlobalProvider`, Redux store, `OrbitContext`,
   and any feature contexts (e.g. `PassageDetailContext`, `UnsavedContext`).
+- `useOrbitData` reads records via `memory.cache.query((q) => q.findRecords(type))`
+  (and subscribes to `cache.liveQuery` only for change notifications). Mock
+  memory must therefore serve data from **`cache.query`**, not just
+  `liveQuery.query()`. Route both through one shared `findRecords` so a mock
+  can't pass via the live-query path while `cache.query` returns `[]`.
 - For permission logic (`useStepPermissions`), drive outcomes with real mock records and relationships.
 - Localization selectors need `LocalizedStrings` in the correct `strings` slice keys.
 - Use stable DOM selectors (ids/data-cy) for assertions.

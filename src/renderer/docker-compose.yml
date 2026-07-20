@@ -42,14 +42,20 @@ services:
         condition: service_healthy
     environment:
       - CYPRESS_baseUrl=http://app:3000
+      # Passed through from the host shell. When set, the command below adds
+      # `--spec "<value>"`; when empty, Cypress runs the full specPattern.
+      - CYPRESS_SPEC=${CYPRESS_SPEC:-}
     working_dir: /e2e
     volumes:
       - .:/e2e
       - /e2e/node_modules
-    command: >
-      cypress run
-        --component
-        --config-file cypress/config/local.config.ts
+    # Force a shell entrypoint so ${CYPRESS_SPEC:+...} is evaluated in the
+    # container (the $$ escapes docker-compose's own interpolation).
+    entrypoint: ['sh', '-c']
+    command:
+      - >
+        cypress run --component --config-file cypress/config/local.config.ts
+        $${CYPRESS_SPEC:+--spec "$$CYPRESS_SPEC"}
     networks:
       - cypress-net
 
