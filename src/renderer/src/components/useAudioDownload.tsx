@@ -5,13 +5,13 @@ import {
   remoteIdGuid,
   useFetchMediaUrl,
   MediaSt,
-  mediaFileName,
 } from '../crud';
-import { loadBlob, removeExtension } from '../utils';
+import { loadBlob } from '../utils';
 import { useSnackBar } from '../hoc/SnackBar';
 import { useSelector } from 'react-redux';
 import { sharedSelector } from '../selector';
 import { RecordKeyMap } from '@orbit/records';
+import { downloadMediaFileName } from './downloadMediaFileName';
 
 export interface AudioDownloadApi {
   startDownload: (event?: React.MouseEvent<HTMLElement>) => void;
@@ -69,10 +69,7 @@ export function useAudioDownload(mediaId: string): AudioDownloadApi {
       const mediaRec = memory.cache.query((q) =>
         q.findRecord({ type: 'mediafile', id })
       ) as MediaFileD;
-      const fullName = mediaFileName(mediaRec) || `media-${id}`;
-      const { name, ext } = removeExtension(fullName);
-      const version = mediaRec?.attributes?.versionNumber || '1';
-      setAudName(`${name}-ver${version}.${ext}`);
+      setAudName(downloadMediaFileName(mediaRec, id));
       if (id !== mediaState.id) {
         fetchMediaUrl({ id });
       }
@@ -119,13 +116,7 @@ export function useAudioDownload(mediaId: string): AudioDownloadApi {
   }, [blobUrl, audName]);
 
   const hiddenAnchor = blobUrl ? (
-    <a
-      ref={audAnchor}
-      href={blobUrl}
-      download={audName}
-      target="_blank"
-      rel="noopener noreferrer"
-    />
+    <a ref={audAnchor} href={blobUrl} download={audName} />
   ) : null;
 
   return { startDownload, isDisabled, hiddenAnchor };
