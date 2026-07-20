@@ -155,14 +155,17 @@ jest.mock('../../../control/WebFontStyles', () => ({
   StyledTextAreaAutosize: ({
     value,
     onChange,
+    overrides,
   }: {
     value: string;
     onChange: (e: { target: { value: string } }) => void;
+    overrides?: React.CSSProperties;
   }) => (
     <textarea
       data-cy="lwc-transcription-text"
       value={value}
       onChange={onChange}
+      style={overrides}
     />
   ),
 }));
@@ -304,5 +307,20 @@ describe('BoldClauseTranscriptionEditor', () => {
     expect(
       screen.getByRole('button', { name: 'settings' })
     ).toBeInTheDocument();
+  });
+
+  it('caps transcription field height so long text scrolls inside (TT-7516)', () => {
+    render(
+      <BoldClauseTranscriptionEditor
+        {...baseProps}
+        text={'line\n'.repeat(80)}
+      />
+    );
+    const el = document.querySelector(
+      '[data-cy="lwc-transcription-text"]'
+    ) as HTMLTextAreaElement;
+    expect(el).toBeTruthy();
+    expect(el.style.maxHeight).toBe('240px');
+    expect(el.style.overflowY).toBe('auto');
   });
 });
