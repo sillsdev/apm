@@ -19,6 +19,10 @@ jest.mock('../../../context/usePassageDetailContext', () => ({
   default: () => ({ currentstep: 'step1' }),
 }));
 
+let mockStepSettings: Record<string, unknown> = {
+  artifactTypeId: 'pbt-type-id',
+};
+
 jest.mock('../../../crud', () => ({
   orgDefaultFeatures: 'features',
   useOrgDefaults: () => ({
@@ -33,7 +37,7 @@ jest.mock('../../../crud', () => ({
     fontConfig: { custom: { families: [''], urls: [''] } },
   }),
   findRecord: jest.fn(() => ({ id: 'proj1', type: 'project' })),
-  useStepTool: () => ({ settings: { artifactTypeId: 'pbt-type-id' } }),
+  useStepTool: () => ({ settings: mockStepSettings }),
 }));
 
 jest.mock('../../../hoc/useOrbitData', () => ({
@@ -48,7 +52,10 @@ jest.mock('../../../crud/useGetAsrSettings', () => ({
 }));
 
 const mockUseBoldClauseTranscriptionAsrSettings = jest.fn(() => ({
-  asrSettings: { target: 'language' },
+  asrSettings: {
+    target: 'language',
+    language: { bcp47: 'ta', languageName: 'Tamil' },
+  },
   asrIsoReady: true,
   needsSisterLanguage: () => false,
 }));
@@ -56,6 +63,20 @@ const mockUseBoldClauseTranscriptionAsrSettings = jest.fn(() => ({
 jest.mock('../../../crud/getLwcTranslationAsrSettings', () => ({
   useBoldClauseTranscriptionAsrSettings: () =>
     mockUseBoldClauseTranscriptionAsrSettings(),
+}));
+
+jest.mock('../../../utils/useLocLangName', () => ({
+  useLocLangName: () => [
+    (bcp47: string) => {
+      const names: Record<string, string> = {
+        ta: 'Tamil',
+        en: 'English',
+        kn: 'Kannada',
+      };
+      return names[bcp47] ?? '';
+    },
+    jest.fn(),
+  ],
 }));
 
 // Leaf-mock the ASR settings module: importing the real one pulls in the utils
@@ -131,11 +152,12 @@ jest.mock('react-redux', () => ({
     if (selector.name === 'wsAudioPlayerSelector') {
       return {
         recognizeProgress: 'Auto Transcription in Progress',
+        recognizeSpeech: 'Auto Transcription {0}',
         recognizeSpeechSettings: 'Speech Settings',
       };
     }
     if (selector.name === 'sharedSelector') {
-      return { mustBeOnline: 'Must be online' };
+      return { mustBeOnline: 'Must be online', ai: 'AI' };
     }
     if (selector.name === 'carefulTranscriptionSelector') {
       return {
@@ -183,6 +205,18 @@ jest.mock('../../../control', () => ({
     <button type="button" id={id} disabled={disabled}>
       {children}
     </button>
+  ),
+  LightTooltip: ({
+    title,
+    children,
+  }: {
+    title: React.ReactNode;
+    children: React.ReactNode;
+  }) => (
+    <div>
+      <div data-testid="asr-tooltip">{title}</div>
+      {children}
+    </div>
   ),
 }));
 
@@ -267,8 +301,12 @@ const baseProps: React.ComponentProps<typeof BoldClauseTranscriptionEditor> = {
 
 describe('BoldClauseTranscriptionEditor', () => {
   beforeEach(() => {
+    mockStepSettings = { artifactTypeId: 'pbt-type-id' };
     mockUseBoldClauseTranscriptionAsrSettings.mockReturnValue({
-      asrSettings: { target: 'language' },
+      asrSettings: {
+        target: 'language',
+        language: { bcp47: 'ta', languageName: 'Tamil' },
+      },
       asrIsoReady: true,
       needsSisterLanguage: () => false,
     });
@@ -295,7 +333,10 @@ describe('BoldClauseTranscriptionEditor', () => {
 
   it('shows language settings gear when ASR language is not ready', () => {
     mockUseBoldClauseTranscriptionAsrSettings.mockReturnValueOnce({
-      asrSettings: { target: 'language' },
+      asrSettings: {
+        target: 'language',
+        language: { bcp47: 'ta', languageName: 'Tamil' },
+      },
       asrIsoReady: false,
       needsSisterLanguage: () => false,
     });
@@ -322,5 +363,37 @@ describe('BoldClauseTranscriptionEditor', () => {
     expect(el).toBeTruthy();
     expect(el.style.maxHeight).toBe('240px');
     expect(el.style.overflowY).toBe('auto');
+  });
+
+  it('shows ASR language in tooltip on AI Automatic Transcription button (TT-7514)', () => {
+    mockStepSettings = {
+      artifactTypeId: 'pbt-type-id',
+      language: 'Tamil|ta',
+    };
+    render(<BoldClauseTranscriptionEditor {...baseProps} text="" />);
+    const tip = screen.getByTestId('asr-tooltip');
+    expect(tip).toHaveTextContent(/Auto Transcription/);
+    expect(tip).toHaveTextContent(/Tamil/);
+    expect(tip).toHaveTextContent(/AI/);
+  });
+
+  it('shows primary and sister language in tooltip when sister is used for ASR (TT-7514)', () => {
+    mockStepSettings = {
+      artifactTypeId: 'pbt-type-id',
+      language: 'Kannada|kn',
+      sisterlanguage: 'English|en',
+    };
+    mockUseBoldClauseTranscriptionAsrSettings.mockReturnValue({
+      asrSettings: {
+        target: 'language',
+        language: { bcp47: 'en', languageName: 'English' },
+      },
+      asrIsoReady: true,
+      needsSisterLanguage: () => false,
+    });
+    render(<BoldClauseTranscriptionEditor {...baseProps} text="" />);
+    const tip = screen.getByTestId('asr-tooltip');
+    expect(tip).toHaveTextContent(/Kannada/);
+    expect(tip).toHaveTextContent(/English/);
   });
 });
