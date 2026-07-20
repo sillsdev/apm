@@ -30,6 +30,7 @@ export default function PassageDetailMobileDetail({
   const {
     currentstep,
     section,
+    discussionSize,
     promptDockedRecordButton,
     promptDockedRecordFooterVersion,
   } = usePassageDetailContext();
@@ -87,10 +88,24 @@ export default function PassageDetailMobileDetail({
                 display: 'flex',
                 alignItems: 'flex-start',
                 gap: 5,
+                width: '100%',
+                minWidth: 0,
+                overflow: 'hidden',
               }}
+              data-cy="discussion-side-by-side"
             >
-              <Box sx={{ flex: 1, minWidth: 0 }}>{recordContent}</Box>
-              <Box sx={{ minWidth: 0 }}>
+              <Box sx={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
+                {recordContent}
+              </Box>
+              <Box
+                sx={{
+                  width: discussionSize.width,
+                  flexShrink: 0,
+                  minWidth: 0,
+                  overflow: 'hidden',
+                }}
+                data-cy="discussion-side-column"
+              >
                 <DiscussionPanel />
               </Box>
             </Box>

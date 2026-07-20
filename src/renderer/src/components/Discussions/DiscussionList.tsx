@@ -73,7 +73,7 @@ interface DiscussionListProps {
 }
 
 export function DiscussionList({ onClose }: DiscussionListProps) {
-  const { isMobile } = useMobile();
+  const { isMobile, isMobileWidth } = useMobile();
   const discussions = useOrbitData<DiscussionD[]>('discussion');
   const mediafiles = useOrbitData<MediaFileD[]>('mediafile');
   const users = useOrbitData<User[]>('user');
@@ -123,7 +123,7 @@ export function DiscussionList({ onClose }: DiscussionListProps) {
 
   const rootWidthStyle = useMemo(
     () =>
-      isMobile
+      isMobileWidth
         ? {
             width: '100%',
             maxWidth: '100%',
@@ -135,7 +135,7 @@ export function DiscussionList({ onClose }: DiscussionListProps) {
             maxHeight: `${discussionSize.height - 120}px`,
             boxSizing: 'border-box' as const,
           },
-    [discussionSize.height, isMobile]
+    [discussionSize.height, isMobileWidth]
   );
   const { userIsAdmin } = useRole();
   const defaultFilterState: IFilterState = {
