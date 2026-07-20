@@ -32,7 +32,7 @@ const discussionFabBottomDetailMobile =
   'calc(8px + 1px + 4px + 40px + 2px + env(safe-area-inset-bottom, 0px))';
 
 export default function DiscussionPanel() {
-  const { isMobile } = useMobile();
+  const { isMobile, isMobileWidth } = useMobile();
   const ctx = useContext(PassageDetailContext);
   const {
     discussionSize,
@@ -75,7 +75,9 @@ export default function DiscussionPanel() {
     return () => window.removeEventListener('resize', updateLayout);
   }, []);
 
-  const panelWidth = isMobile
+  // Use viewport width (not mobile-view toggle) so desktop Mobile view side-by-side
+  // keeps a fixed discussion column instead of width 100% over the waveform (TT-7373).
+  const panelWidth = isMobileWidth
     ? Math.min(discussionSize.width, windowWidth)
     : Math.min(discussionSize.width, Math.max(0, windowWidth - scrollbarWidth));
   const getDiscussionCount = useDiscussionCount({
@@ -95,13 +97,13 @@ export default function DiscussionPanel() {
         size={{ xs: 12 }}
         container
         sx={{
-          // Mobile content area is narrower than window (layout padding); fill parent, don’t use innerWidth.
-          width: isMobile ? '100%' : panelWidth,
+          // Narrow viewport: fill parent. Wide (incl. mobile-view toggle): fixed panelWidth.
+          width: isMobileWidth ? '100%' : panelWidth,
           maxWidth: '100%',
           minWidth: 0,
           boxSizing: 'border-box',
           justifyContent: 'center',
-          ...(isMobile
+          ...(isMobileWidth
             ? {}
             : {
                 marginRight: `${scrollbarWidth}px`,

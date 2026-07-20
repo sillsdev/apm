@@ -85,6 +85,10 @@ import { RecordOperation, RecordTransformBuilder } from '@orbit/records';
 import { useGroupOrUser } from '../../crud/useGroupOrUser';
 import SelectArtifactCategory from '../../components/Sheet/SelectArtifactCategory';
 import { ArtCatScr } from '../../components/Sheet/ArtCatScr';
+import {
+  discussionCardTopicItemProps,
+  discussionCardTopicProps,
+} from './discussionCardTopicStyles';
 
 const DiscussionCardRoot = styled(Box)<BoxProps>(() => ({
   width: '100%',
@@ -147,19 +151,14 @@ const SmallButton = styled(IconButton)<IconButtonProps>(({ theme }) => ({
   color: theme.palette.background.paper,
 }));
 
-const topicProps = { mr: 2, alignSelf: 'center' } as SxProps;
-const topicItemProps = {
-  overflow: 'hidden',
-  display: 'flex',
-  flexDirection: 'row',
-} as SxProps;
 const titleProps = {
   display: 'flex',
   flexDirection: 'row',
   justifyContent: 'space-between',
   flexGrow: 1,
-  flexShrink: 0,
+  flexShrink: 1,
   width: '100%',
+  minWidth: 0,
 } as SxProps;
 const titleCtrlProps = { display: 'flex', flexDirection: 'row' } as SxProps;
 const cardFlowProps = {
@@ -1047,7 +1046,7 @@ export const DiscussionCard = (props: IProps) => {
               </EditContainer>
             ) : (
               <Box sx={titleProps}>
-                <Box sx={topicItemProps}>
+                <Box sx={discussionCardTopicItemProps}>
                   {myRegion &&
                     related(discussion, 'mediafile') === mediafileId && (
                       <IconButton
@@ -1074,7 +1073,7 @@ export const DiscussionCard = (props: IProps) => {
                   <Typography
                     variant="h6"
                     component="h2"
-                    sx={topicProps}
+                    sx={discussionCardTopicProps}
                     title={discussionDescription()}
                   >
                     {discussion.attributes?.subject}
