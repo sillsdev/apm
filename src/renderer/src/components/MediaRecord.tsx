@@ -585,7 +585,7 @@ function MediaRecord(props: IProps) {
   };
 
   useEffect(() => {
-    if (loading && blobReady && originalBlob) {
+    if (loading && blobReady && originalBlob && !saveRef.current) {
       setLoading(false);
       setStatusText('');
     }
