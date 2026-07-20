@@ -50,6 +50,10 @@ import SelectSections from './SelectSections';
 import ResourceData from './ResourceData';
 import { MarkDownType, UriLinkType } from '../../MediaUpload';
 import {
+  canSaveResourceEdit,
+  descriptionRequiredForResource,
+} from './resourceArtifactName';
+import {
   Badge,
   Box,
   Stack,
@@ -157,6 +161,7 @@ export function PassageDetailArtifactsMobile() {
     SectionResourceD | undefined
   >();
   const [allowEditSave, setAllowEditSave] = useState(false);
+  const [resourceReady, setResourceReady] = useState(true);
   const [artifactState] = useState<{ id?: string | null }>({});
   // const [artifactTypeId, setArtifactTypeId] = useState<string>();
   const [uploadType, setUploadType] = useState<UploadType>(UploadType.Resource);
@@ -363,7 +368,6 @@ export function PassageDetailArtifactsMobile() {
       (r) => related(r, 'mediafile') === id
     ) as SectionResourceD;
     setEditResource(secRes);
-    setAllowEditSave(true);
     resourceTypeRef.current = related(secRes, 'passage')
       ? ResourceTypeEnum.passageResource
       : ResourceTypeEnum.sectionResource;
@@ -372,12 +376,21 @@ export function PassageDetailArtifactsMobile() {
     catIdRef.current = mf ? related(mf, 'artifactCategory') : undefined;
     mediaRef.current = mf as MediaFileD;
     const ct = mediaContentType(mf);
+    textRef.current = mf?.attributes?.originalFile ?? '';
     setUploadType(
       ct === MarkDownType
         ? UploadType.MarkDown
         : ct === UriLinkType
           ? UploadType.Link
           : UploadType.Resource
+    );
+    setAllowEditSave(
+      canSaveResourceEdit({
+        contentType: ct,
+        description: descriptionRef.current,
+        text: textRef.current ?? '',
+        isUrl,
+      })
     );
   };
   const resetEdit = () => {
@@ -449,26 +462,38 @@ export function PassageDetailArtifactsMobile() {
   const handleEditCancel = () => {
     resetEdit();
   };
+  const syncResourceReady = (type: UploadType, desc: string) => {
+    if (descriptionRequiredForResource(undefined, type)) {
+      setResourceReady(Boolean(desc.trim()));
+    } else {
+      setResourceReady(true);
+    }
+  };
+
   const handleAction = (what: string) => {
     artifactState.id = resourceType ?? null;
     resourceTypeRef.current = ResourceTypeEnum.sectionResource;
     if (what === 'upload') {
       mediaRef.current = undefined;
       setUploadType(UploadType.Resource);
+      syncResourceReady(UploadType.Resource, descriptionRef.current);
       setRecordAudio(false);
       setUploadVisible(true);
     } else if (what === 'scripture') {
       setAudioScriptureVisible(true);
     } else if (what === 'link') {
       setUploadType(UploadType.Link);
+      syncResourceReady(UploadType.Link, descriptionRef.current);
       setRecordAudio(false);
       setUploadVisible(true);
     } else if (what === 'record') {
       setUploadType(UploadType.Resource);
+      syncResourceReady(UploadType.Resource, descriptionRef.current);
       setRecordAudio(true);
       setUploadVisible(true);
     } else if (what === 'text') {
       setUploadType(UploadType.MarkDown);
+      syncResourceReady(UploadType.MarkDown, descriptionRef.current);
       setRecordAudio(false);
       setUploadVisible(true);
     } else if (what === 'shared') {
@@ -484,11 +509,11 @@ export function PassageDetailArtifactsMobile() {
   ) => {
     setInitDescription(query);
     descriptionRef.current = query;
-    if (audioUrl) {
-      setUploadType(UploadType.FaithbridgeLink);
-    } else {
-      setUploadType(UploadType.MarkDown);
-    }
+    const nextType = audioUrl
+      ? UploadType.FaithbridgeLink
+      : UploadType.MarkDown;
+    setUploadType(nextType);
+    syncResourceReady(nextType, query);
     setMarkdownValue(audioUrl ? `${audioUrl}||${transcript}` : transcript);
     setRecordAudio(false);
     setAIGenerated(true);
@@ -709,19 +734,14 @@ export function PassageDetailArtifactsMobile() {
   const handleTextChange = (text: string) => {
     textRef.current = text;
     const ct = mediaContentType(mediaRef.current);
-    if (ct === MarkDownType) {
-      const newAllow = text.trim() !== '';
-      if (allowEditSave !== newAllow) {
-        setAllowEditSave(newAllow);
-      }
-      return;
-    }
-    const validUrl = isUrl(text);
-    if (ct === UriLinkType) {
-      if (allowEditSave !== validUrl) {
-        setAllowEditSave(validUrl);
-      }
-    }
+    setAllowEditSave(
+      canSaveResourceEdit({
+        contentType: ct,
+        description: descriptionRef.current,
+        text,
+        isUrl,
+      })
+    );
   };
 
   useEffect(() => {
@@ -755,6 +775,19 @@ export function PassageDetailArtifactsMobile() {
 
   const handleDescription = (desc: string) => {
     descriptionRef.current = desc;
+    const ct = mediaContentType(mediaRef.current);
+    if (editResource) {
+      setAllowEditSave(
+        canSaveResourceEdit({
+          contentType: ct,
+          description: desc,
+          text: textRef.current ?? '',
+          isUrl,
+        })
+      );
+    } else if (descriptionRequiredForResource(undefined, uploadType)) {
+      setResourceReady(Boolean(desc.trim()));
+    }
   };
 
   const handlePassRes = (newValue: ResourceTypeEnum) => {
@@ -762,12 +795,14 @@ export function PassageDetailArtifactsMobile() {
     if (isProjectResource()) {
       artifactState.id = projResourceType ?? null;
       setUploadType(UploadType.ProjectResource);
+      syncResourceReady(UploadType.ProjectResource, descriptionRef.current);
     } else if (
       artifactState.id === projResourceType ||
       uploadType === UploadType.ProjectResource
     ) {
       artifactState.id = resourceType ?? null;
       setUploadType(UploadType.Resource);
+      syncResourceReady(UploadType.Resource, descriptionRef.current);
     }
   };
 
@@ -891,7 +926,7 @@ export function PassageDetailArtifactsMobile() {
         cancelReset={resetEdit}
         artifactState={artifactState}
         uploadType={uploadType}
-        ready={() => true}
+        ready={() => resourceReady}
         onNonAudio={handleNonAudio}
         performedBy={performedBy}
         onSpeakerChange={(value) => setPerformedBy(value)}

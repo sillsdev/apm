@@ -63,10 +63,16 @@ const mockSectionPassageRecords = {
   'passage:p-1': {
     id: 'p-1',
     attributes: { sequencenum: 1, reference: '1:1', book: 'GEN' },
+    relationships: {
+      section: { data: { type: 'section', id: 'section-1' } },
+    },
   },
   'passage:p-2': {
     id: 'p-2',
     attributes: { sequencenum: 2, reference: '1:2', book: 'GEN' },
+    relationships: {
+      section: { data: { type: 'section', id: 'section-1' } },
+    },
   },
 };
 
@@ -75,24 +81,23 @@ const mockSectionPassageRecordsWithPrior = {
   'passage:p-0': {
     id: 'p-0',
     attributes: { sequencenum: 0, reference: '1:0', book: 'GEN' },
+    relationships: {
+      section: { data: { type: 'section', id: 'section-1' } },
+    },
   },
   ...mockSectionPassageRecords,
 };
 
 const mockSectionWithThreePassages = {
   id: 'section-1',
-  relationships: {
-    passages: {
-      data: [
-        { type: 'passage', id: 'p-0' },
-        { type: 'passage', id: 'p-1' },
-        { type: 'passage', id: 'p-2' },
-      ],
-    },
-  },
 } as any;
 
-// Section whose passages relationship points to the records above
+// Section without relationships.passages (offline Work Alone) — passages found via query
+const mockSectionOfflineNoPassagesRel = {
+  id: 'section-1',
+} as any;
+
+// Section whose passages relationship points to the records above (legacy shape; unused by query)
 const mockSection = {
   id: 'section-1',
   relationships: {
@@ -108,11 +113,6 @@ const mockSection = {
 // Section with only the current passage (single dropdown option)
 const mockSectionSinglePassage = {
   id: 'section-1',
-  relationships: {
-    passages: {
-      data: [{ type: 'passage', id: 'p-1' }],
-    },
-  },
 } as any;
 
 const mockSectionPassageRecordsSingle = {
@@ -493,6 +493,16 @@ describe('MobileWorkflowSteps', () => {
       });
 
       cy.get('[data-cy="passage-step"]').should('have.length', 2);
+    });
+
+    it('finds passages by section relation when offline section has no passages relationship (TT-7023)', () => {
+      mountMobileWorkflowSteps({
+        section: mockSectionOfflineNoPassagesRel,
+        extraMemoryRecords: mockSectionPassageRecords,
+      });
+
+      cy.get('[data-cy="passage-step"]').should('have.length', 2);
+      cy.get('[data-cy="passage-step"]').eq(0).should('contain.text', 'GEN 1:1');
     });
 
     it('shows a tip button left of the dropdown that opens a dialog', () => {

@@ -150,6 +150,7 @@ export default function FindTabs({
     isSmallScreen &&
     (value === faithBridgeTabIndex ||
       value === bibleBrainTabIndex ||
+      value === createTabIndex ||
       (aquifer && value === aquiferTabIndex));
 
   return (
@@ -290,7 +291,10 @@ export default function FindTabs({
         <CustomTabPanel
           value={value}
           index={createTabIndex}
-          contentSx={researchTabPanelContentSx}
+          contentSx={
+            isSmallScreen ? { px: 0, py: 0 } : researchTabPanelContentSx
+          }
+          fillParent={value === createTabIndex ? isSmallScreen : undefined}
         >
           <CreateAiRes
             resources={resources}

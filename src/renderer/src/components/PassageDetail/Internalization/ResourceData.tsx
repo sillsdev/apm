@@ -30,6 +30,7 @@ import { MarkDownEdit } from '../../../control/MarkDownEdit';
 import { mediaContentType } from '../../../utils/contentType';
 import { MarkDownView } from '../../../control/MarkDownView';
 import { ArtCatScr } from '../../../components/Sheet/ArtCatScr';
+import { descriptionRequiredForResource } from './resourceArtifactName';
 
 interface IProps {
   media?: MediaFileD | undefined;
@@ -75,6 +76,10 @@ export function ResourceData(props: IProps) {
     shallowEqual
   );
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
+  const descriptionRequired = descriptionRequiredForResource(
+    mediaContentType(media),
+    uploadType
+  );
 
   useEffect(() => setDescription(initDescription), [initDescription]);
 
@@ -120,7 +125,8 @@ export function ResourceData(props: IProps) {
             label={ts.description}
             value={description || ''}
             onChange={handleChangeDescription}
-            required={false}
+            required={descriptionRequired}
+            error={descriptionRequired && !(description || '').trim()}
             fullWidth={true}
           />
         </Grid>
