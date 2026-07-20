@@ -1,5 +1,5 @@
 import { Box, Paper, Stack, SxProps, Typography } from '@mui/material';
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import DiscussionPanel from '../../components/Discussions/DiscussionPanel';
 import PassageDetailMobileLayout from './PassageDetailMobileLayout';
 import MobileWorkflowSteps from './mobile/MobileWorkflowSteps';
@@ -33,8 +33,11 @@ export default function PassageDetailMobileDetail({
     discussionSize,
     promptDockedRecordButton,
     promptDockedRecordFooterVersion,
+    setDiscussOpen,
   } = usePassageDetailContext();
   const { tool } = useStepTool(currentstep);
+  // Desktop omits DiscussionPanel for Internalize (Resource); match that on mobile (TT-7281).
+  const showDiscussion = tool !== ToolSlug.Resource;
   const markVersesLayout = tool === ToolSlug.Verses;
   const contentSx = useMemo(
     () => ({
@@ -73,6 +76,12 @@ export default function PassageDetailMobileDetail({
       </Box>
     ) : undefined;
 
+  useEffect(() => {
+    if (tool === ToolSlug.Resource) {
+      setDiscussOpen(false);
+    }
+  }, [tool, setDiscussOpen]);
+
   return (
     <PassageDetailMobileLayout
       header={<MobileWorkflowSteps />}
@@ -82,7 +91,7 @@ export default function PassageDetailMobileDetail({
     >
       {!showNoAudioPlaceholder ? (
         <>
-          {showSideBySide ? (
+          {showSideBySide && showDiscussion ? (
             <Box
               sx={{
                 display: 'flex',
@@ -138,9 +147,11 @@ export default function PassageDetailMobileDetail({
               >
                 {recordContent}
               </Box>
-              <Box sx={{ width: '100%', minWidth: 0 }}>
-                <DiscussionPanel />
-              </Box>
+              {showDiscussion && (
+                <Box sx={{ width: '100%', minWidth: 0 }}>
+                  <DiscussionPanel />
+                </Box>
+              )}
             </Stack>
           )}
         </>

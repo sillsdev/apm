@@ -4,6 +4,8 @@ import '@testing-library/jest-dom';
 import { render } from '@testing-library/react';
 
 const discussionSize = { width: 450, height: 900 };
+const mockSetDiscussOpen = jest.fn();
+const mockUseStepTool = jest.fn();
 
 jest.mock('../../context/usePassageDetailContext', () => () => ({
   currentstep: 'step-1',
@@ -11,6 +13,7 @@ jest.mock('../../context/usePassageDetailContext', () => () => ({
   discussionSize,
   promptDockedRecordButton: null,
   promptDockedRecordFooterVersion: 0,
+  setDiscussOpen: mockSetDiscussOpen,
 }));
 
 jest.mock('../../crud', () => {
@@ -19,7 +22,7 @@ jest.mock('../../crud', () => {
   >('../../crud/toolSlug');
   return {
     ToolSlug: Slug,
-    useStepTool: () => ({ tool: Slug.Record, settings: {} }),
+    useStepTool: (...args: unknown[]) => mockUseStepTool(...args),
   };
 });
 
@@ -49,9 +52,15 @@ jest.mock('../Discussions/DiscussionPanel', () => ({
   default: () => <div data-cy="discussion-panel">Discussion</div>,
 }));
 
+import { ToolSlug } from '../../crud';
 import PassageDetailMobileDetail from './PassageDetailMobileDetail';
 
 describe('PassageDetailMobileDetail (TT-7373)', () => {
+  beforeEach(() => {
+    mockSetDiscussOpen.mockClear();
+    mockUseStepTool.mockReturnValue({ tool: ToolSlug.Record, settings: {} });
+  });
+
   it('uses a fixed discussion column width when side-by-side', () => {
     const { container } = render(
       <PassageDetailMobileDetail
@@ -97,5 +106,26 @@ describe('PassageDetailMobileDetail (TT-7373)', () => {
     expect(
       container.querySelector('[data-cy="discussion-panel"]')
     ).toBeTruthy();
+  });
+
+  it('does not render discussion-panel for Resource tool (TT-7281)', () => {
+    mockUseStepTool.mockReturnValue({ tool: ToolSlug.Resource, settings: {} });
+
+    const { container } = render(
+      <PassageDetailMobileDetail
+        showNoAudioPlaceholder={false}
+        showSideBySide={false}
+        recordContent={<div data-cy="record-content">Artifacts</div>}
+        noAudioText="No audio"
+      />
+    );
+
+    expect(
+      container.querySelector('[data-cy="record-content"]')
+    ).toBeTruthy();
+    expect(
+      container.querySelector('[data-cy="discussion-panel"]')
+    ).toBeNull();
+    expect(mockSetDiscussOpen).toHaveBeenCalledWith(false);
   });
 });
