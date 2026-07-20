@@ -70,7 +70,7 @@ describe('resolveStepSpellCheck', () => {
     ).toBe(true);
   });
 
-  test('defaults back translation to false without dictionary', () => {
+  test('defaults back translation to true even without dictionary (Desktop)', () => {
     expect(
       resolveStepSpellCheck(
         {},
@@ -78,7 +78,15 @@ describe('resolveStepSpellCheck', () => {
         'de',
         avail
       )
-    ).toBe(false);
+    ).toBe(true);
+    expect(
+      resolveStepSpellCheck(
+        {},
+        ArtifactTypeSlug.PhraseBackTranslation,
+        'und',
+        avail
+      )
+    ).toBe(true);
   });
 
   test('defaults back translation to true when checker languages are unavailable', () => {
@@ -99,7 +107,7 @@ describe('defaultSpellCheckForArtifact', () => {
     expect(
       defaultSpellCheckForArtifact(
         ArtifactTypeSlug.PhraseBackTranslation,
-        'en',
+        'de',
         ['en-US']
       )
     ).toBe(true);

@@ -26,8 +26,8 @@ export function hasSpellCheckerDictionary(
 /** Default spell check when step settings omit `spellCheck`. */
 export function defaultSpellCheckForArtifact(
   artifactTypeSlug: ArtifactTypeSlug | string | undefined,
-  bcp47: string | undefined,
-  availLangs?: string[]
+  _bcp47?: string,
+  _availLangs?: string[]
 ): boolean {
   if (!artifactTypeSlug || artifactTypeSlug === ArtifactTypeSlug.Vernacular) {
     return false;
@@ -39,9 +39,9 @@ export function defaultSpellCheckForArtifact(
     artifactTypeSlug === ArtifactTypeSlug.PhraseBackTranslation ||
     artifactTypeSlug === ArtifactTypeSlug.WholeBackTranslation
   ) {
-    // When checker languages are unknown (e.g. getArtTypeFontData), default on.
-    if (!availLangs?.length) return true;
-    return hasSpellCheckerDictionary(bcp47, availLangs);
+    // Match Web and offline workflow seeding: PBT/WBT default on.
+    // Dictionary availability should not hide the step checkbox on Desktop.
+    return true;
   }
   return false;
 }

@@ -1515,7 +1515,7 @@ export function Transcriber(props: IProps) {
                     <Settings />
                   </IconButton>
                 </LightTooltip>
-                {isElectron && <Spelling />}
+                {isElectron && projData?.spellCheck === true && <Spelling />}
               </Box>
               <Box sx={{ display: 'flex', alignItems: 'center' }}>
                 <LastEdit
