@@ -34,7 +34,7 @@ import ProjectDownloadAlert from '../ProjectDownloadAlert';
 import { useSnackBar } from '../../hoc/SnackBar';
 import PolicyDialog from '../PolicyDialog';
 import JSONAPISource from '@orbit/jsonapi';
-import { MobileToolbar } from './MobileToolbar';
+import { AppToolbar } from './AppToolbar';
 
 type ResetRequests = () => Promise<void>;
 
@@ -310,7 +310,7 @@ export const AppHead = (props: IProps) => {
         {(!busy && !saving && !dataChangeCount) || complete !== 0 || (
           <LinearProgress id="busy" variant="indeterminate" sx={{ mx: -1.5 }} />
         )}
-        <MobileToolbar
+        <AppToolbar
           isDetail={isDetail}
           planUrl={planUrl}
           navigate={navigate}
