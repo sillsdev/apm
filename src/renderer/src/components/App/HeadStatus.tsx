@@ -1,71 +1,74 @@
 import { useEffect, useState } from 'react';
-import { Button, IconButton, Tooltip } from '@mui/material';
-import CloudOffIcon from '@mui/icons-material/CloudOff';
-import CloudOnIcon from '@mui/icons-material/Cloud';
-import SystemUpdateIcon from '@mui/icons-material/SystemUpdateAlt';
-import ExitToAppIcon from '@mui/icons-material/ExitToApp';
 import { shallowEqual, useSelector } from 'react-redux';
+import { useLocation } from 'react-router-dom';
+import { Button, IconButton, Tooltip } from '@mui/material';
+import CloudOnIcon from '@mui/icons-material/Cloud';
+import CloudOffIcon from '@mui/icons-material/CloudOff';
+import ExitToAppIcon from '@mui/icons-material/ExitToApp';
+import SystemUpdateIcon from '@mui/icons-material/SystemUpdateAlt';
 import { DateTime } from 'luxon';
-import { IMainStrings, ISharedStrings, IState } from '../../model';
-import { useGlobal, useGetGlobal } from '../../context/useGlobal';
+import { MainAPI } from '@model/main-api';
 import { isElectron } from '../../../api-variable';
-import { LocalKey } from '../../utils/localUserKey';
-import { Online } from '../../utils/useCheckOnline';
+import packageJson from '../../../package.json';
+import { IMainStrings, ISharedStrings, IState } from '../../model';
+import { OfflineProject } from '../../model/offlineProject';
+import { useGlobal, useGetGlobal } from '../../context/useGlobal';
 import { mainSelector, sharedSelector } from '../../selector';
 import { AlertSeverity, useSnackBar } from '../../hoc/SnackBar';
 import { useOrbitData } from '../../hoc/useOrbitData';
-import { OfflineProject } from '../../model/offlineProject';
-import { usePlan } from '../../crud/usePlan';
-import { type DownloadAlertReason } from './AppHead';
-import { useOfflnProjRead } from '../../crud/useOfflnProjRead';
-import { useVProjectRead } from '../../crud/useVProjectRead';
 import { useLoadProjectData } from '../../crud/useLoadProjectData';
 import { useOfflineAvailToggle } from '../../crud/useOfflineAvailToggle';
-import { useLocation } from 'react-router-dom';
+import { useOfflnProjRead } from '../../crud/useOfflnProjRead';
+import { usePlan } from '../../crud/usePlan';
+import { useVProjectRead } from '../../crud/useVProjectRead';
 import { axiosPost } from '../../utils/axios';
-import packageJson from '../../../package.json';
-import { useMounted } from '../../utils/useMounted';
-import logError, { Severity } from '../../utils/logErrorService';
 import { infoMsg } from '../../utils/infoMsg';
-import { MainAPI } from '@model/main-api';
+import { LocalKey } from '../../utils/localUserKey';
+import logError, { Severity } from '../../utils/logErrorService';
+import { Online } from '../../utils/useCheckOnline';
+import { useMounted } from '../../utils/useMounted';
+
 const ipc = window?.api as MainAPI;
 
-interface IProps {
-  handleMenu: (what: string, reason: DownloadAlertReason | null) => void;
+interface HeadStatusProps {
+  handleMenu: (what: string, cloud: boolean) => void;
   onVersion: (version: string) => void;
   onLatestVersion: (version: string) => void;
-  onUpdateTipOpen: (open: boolean) => void;
 }
 
-export const HeadStatus = (props: IProps) => {
-  const { handleMenu, onVersion, onLatestVersion, onUpdateTipOpen } = props;
-  const { pathname } = useLocation();
-  const orbitStatus = useSelector((state: IState) => state.orbit.status);
-  const [connected, setConnected] = useGlobal('connected'); //verified this is not used in a function 2/18/25
+export default function HeadStatus({
+  handleMenu,
+  onVersion,
+  onLatestVersion,
+}: HeadStatusProps) {
   const getGlobal = useGetGlobal();
+  const [errorReporter] = useGlobal('errorReporter');
+  const isMounted = useMounted('headstatus');
+  const { showMessage } = useSnackBar();
+  const lang = useSelector((state: IState) => state.strings.lang);
+  const t: IMainStrings = useSelector(mainSelector, shallowEqual);
+  const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
+
+  // Checks for online or offline status
+
+  const orbitStatus = useSelector((state: IState) => state.orbit.status);
+  const [connected, setConnected] = useGlobal('connected');
+  const [isOffline] = useGlobal('offline');
+  const [isOfflineOnly] = useGlobal('offlineOnly');
+  const [plan] = useGlobal('plan');
   const offlineProjects = useOrbitData<OfflineProject[]>('offlineproject');
   const [hasOfflineProjects, setHasOfflineProjects] = useState(false);
-  const [isOffline] = useGlobal('offline'); //verified this is not used in a function 2/18/25
-  const [isOfflineOnly] = useGlobal('offlineOnly'); //verified this is not used in a function 2/18/25
-  const [errorReporter] = useGlobal('errorReporter');
-  const lang = useSelector((state: IState) => state.strings.lang);
-  const [plan] = useGlobal('plan'); //verified this is not used in a function 2/18/25
   const { getPlan } = usePlan();
-  const [version, setVersion] = useState('');
-  const [updates] = useState(
-    (localStorage.getItem('updates') || 'true') === 'true'
-  );
-  const [latestVersion, setLatestVersion] = useGlobal('latestVersion'); //verified this is not used in a function 2/18/25
-  const [latestRelease, setLatestRelease] = useGlobal('releaseDate'); //verified this is not used in a function 2/18/25
-  const [updateTipOpen, setUpdateTipOpen] = useState(false);
-  const isMounted = useMounted('headstatus');
   const offlineProjectRead = useOfflnProjRead();
   const vProject = useVProjectRead();
   const LoadData = useLoadProjectData();
   const offlineAvailToggle = useOfflineAvailToggle();
-  const { showMessage } = useSnackBar();
-  const t: IMainStrings = useSelector(mainSelector, shallowEqual);
-  const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
+
+  useEffect(() => {
+    const value = offlineProjects.some((p) => p?.attributes?.offlineAvailable);
+    if (value !== hasOfflineProjects) setHasOfflineProjects(value);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [offlineProjects]);
 
   const cloudAction = () => {
     localStorage.setItem(
@@ -77,7 +80,7 @@ export const HeadStatus = (props: IProps) => {
         : 'online-local'
     );
     localStorage.setItem(LocalKey.plan, getGlobal('plan'));
-    handleMenu('Logout', !getGlobal('offline') ? 'cloud' : null);
+    handleMenu('Logout', !getGlobal('offline'));
   };
 
   const handleSetOnline = (cb?: () => void) => {
@@ -93,12 +96,6 @@ export const HeadStatus = (props: IProps) => {
       cb && cb();
     });
   };
-
-  useEffect(() => {
-    const value = offlineProjects.some((p) => p?.attributes?.offlineAvailable);
-    if (value !== hasOfflineProjects) setHasOfflineProjects(value);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [offlineProjects]);
 
   const handleCloud = () => {
     handleSetOnline(() => {
@@ -136,7 +133,22 @@ export const HeadStatus = (props: IProps) => {
     });
   };
 
+  // Checks for new versions or updates
+
+  const { pathname } = useLocation();
+  const [version, setVersion] = useState('');
+  const [updates] = useState(
+    (localStorage.getItem('updates') || 'true') === 'true'
+  );
+  const [latestVersion, setLatestVersion] = useGlobal('latestVersion');
+  const [latestRelease, setLatestRelease] = useGlobal('releaseDate');
+  const [updateTipOpen, setUpdateTipOpen] = useState(false);
+
+  // Clicking the update icon closes the tip
+  const closeUpdateTip = () => setUpdateTipOpen(false);
+
   const handleDownloadClick = () => {
+    closeUpdateTip();
     if (ipc)
       ipc?.openExternal(
         'https://software.sil.org/audioprojectmanager/download/'
@@ -201,19 +213,17 @@ export const HeadStatus = (props: IProps) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [updates, version, lang]);
 
+  // A new screen gets a fresh chance to show the tip
   useEffect(() => {
     setUpdateTipOpen(pathname === '/');
   }, [pathname]);
 
-  const handleUpdateOpen = () => {
-    setUpdateTipOpen(true);
-    onUpdateTipOpen(true);
-  };
-  const handleUpdateClose = () => {
-    const isOpen = pathname === '/';
-    setUpdateTipOpen(isOpen);
-    onUpdateTipOpen(isOpen);
-  };
+  // Clicking anywhere on the screen closes the tip
+  useEffect(() => {
+    if (!updateTipOpen) return;
+    document.addEventListener('pointerdown', closeUpdateTip);
+    return () => document.removeEventListener('pointerdown', closeUpdateTip);
+  }, [updateTipOpen]);
 
   return (
     <>
@@ -247,8 +257,9 @@ export const HeadStatus = (props: IProps) => {
             arrow
             placement="bottom-end"
             open={updateTipOpen}
-            onOpen={handleUpdateOpen}
-            onClose={handleUpdateClose}
+            disableHoverListener
+            disableFocusListener
+            disableTouchListener
             title={t.updateAvailable
               .replace('{0}', latestVersion)
               .replace('{1}', latestRelease)}
@@ -265,14 +276,16 @@ export const HeadStatus = (props: IProps) => {
           <Tooltip
             arrow
             open={updateTipOpen}
-            onOpen={handleUpdateOpen}
-            onClose={handleUpdateClose}
+            disableHoverListener
+            disableFocusListener
+            disableTouchListener
             title={t.updateAvailable
               .replace('{0}', latestVersion)
               .replace('{1}', latestRelease)}
           >
             <IconButton
               id="systemUpdate"
+              onClick={closeUpdateTip}
               href="https://www.audioprojectmanager.org"
             >
               <ExitToAppIcon color="primary" />
@@ -281,4 +294,4 @@ export const HeadStatus = (props: IProps) => {
         )}
     </>
   );
-};
+}
