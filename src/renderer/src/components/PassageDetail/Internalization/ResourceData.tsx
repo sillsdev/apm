@@ -138,6 +138,7 @@ export function ResourceData(props: IProps) {
             required={catRequired}
             scripture={ArtCatScr.highlight}
             type={ArtifactCategoryType.Resource}
+            autocomplete
           />
         </Grid>
       </Grid>
@@ -153,12 +154,18 @@ export function ResourceData(props: IProps) {
             <FormControlLabel
               value={'section'}
               control={<Radio />}
-              label={sectDesc ?? getOrganizedBy(true)}
+              label={t.currentResource.replace(
+                '{0}',
+                sectDesc ?? getOrganizedBy(true)
+              )}
             />
             <FormControlLabel
               value={'passage'}
               control={<Radio />}
-              label={passDesc ?? t.passageResource}
+              label={t.currentResource.replace(
+                '{0}',
+                passDesc ?? t.passageResource
+              )}
             />
             {allowProject &&
               ![
@@ -171,7 +178,7 @@ export function ResourceData(props: IProps) {
                   control={<Radio />}
                   label={t.uploadProject.replace(
                     '{0}',
-                    getOrganizedBy(false).toLocaleLowerCase()
+                    getOrganizedBy(false)
                   )}
                 />
               )}

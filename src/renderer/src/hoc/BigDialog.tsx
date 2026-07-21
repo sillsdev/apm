@@ -183,6 +183,8 @@ interface IProps {
   onSave?: (() => void) | undefined;
   bp?: BigDialogBp | undefined;
   setCloseRequested?: ((close: boolean) => void) | undefined;
+  /** When true, clicking the backdrop does not close the dialog. */
+  disableBackdropClose?: boolean | undefined;
 }
 
 export function BigDialog({
@@ -205,13 +207,20 @@ export function BigDialog({
   onSave,
   bp,
   setCloseRequested,
+  disableBackdropClose,
 }: IProps) {
   const [isExportBusy] = useGlobal('importexportBusy'); //verified this is not used in a function 2/18/25
   const [enableOffsite, setEnableOffsite] = useGlobal('enableOffsite');
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
   const { showMessage } = useSnackBar();
   const getGlobal = useGetGlobal();
-  const handleClose = () => {
+  const handleClose = (
+    _event?: object,
+    reason?: 'backdropClick' | 'escapeKeyDown'
+  ) => {
+    if (disableBackdropClose && reason === 'backdropClick') {
+      return;
+    }
     if (getGlobal('importexportBusy')) {
       showMessage(ts.wait);
       return;
