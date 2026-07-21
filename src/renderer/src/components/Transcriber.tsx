@@ -863,7 +863,7 @@ export function Transcriber(props: IProps) {
       if (onReject) onReject(media.attributes.transcriptionstate);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [passage.id, user]
+    [passage.id, user, onReject]
   );
 
   const handleRejectCancel = () => setRejectVisible(false);
@@ -925,7 +925,7 @@ export function Transcriber(props: IProps) {
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [errorReporter, hasChecking, noParatext, state]
+    [errorReporter, hasChecking, noParatext, state, setComplete]
   );
 
   const stateRole: { [key: string]: string } = {

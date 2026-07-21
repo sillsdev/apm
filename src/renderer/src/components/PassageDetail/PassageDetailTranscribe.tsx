@@ -5,7 +5,6 @@ import {
   ITranscriberStrings,
   MediaFile,
   MediaFileD,
-  PassageD,
 } from '../../model';
 import { Grid, Typography, Box, BoxProps, styled } from '@mui/material';
 import { TranscriberProvider } from '../../context/TranscriberContext';
@@ -15,8 +14,7 @@ import { useRenderProfiler, useWhyRender } from '../../utils/perf';
 import { sharedSelector, transcriberSelector } from '../../selector';
 import { shallowEqual, useSelector } from 'react-redux';
 import TaskList, { TaskTableWidth } from '../TaskList';
-import { getStepComplete, ToolSlug, useStepTool } from '../../crud';
-import { findRecord } from '../../crud/tryFindRecord';
+import { ToolSlug, useStepTool } from '../../crud';
 import { JSONParse } from '../../utils';
 import { PassageDetailContext } from '../../context/PassageDetailContext';
 import { useArtifactType } from '../../crud/useArtifactType';
@@ -26,7 +24,6 @@ import {
 } from '../../crud/artifactTypeSlug';
 import { UnsavedContext } from '../../context/UnsavedContext';
 import { useStepPermissions } from '../../utils/useStepPermission';
-import { useGlobal } from '../../context/useGlobal';
 import { parseStepLanguageField } from '../../crud/transcribeStepAsrSettings';
 import { related } from '../../crud/related';
 import { useOrbitData } from '../../hoc/useOrbitData';
@@ -84,7 +81,6 @@ export function PassageDetailTranscribe({ width, artifactTypeId }: IProps) {
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
   const t: ITranscriberStrings = useSelector(transcriberSelector, shallowEqual);
   const { localizedArtifactTypeFromId, slugFromId } = useArtifactType();
-  const [memory] = useGlobal('memory');
   const mediafiles = useOrbitData<MediaFileD[]>('mediafile');
   const { settings: workflowStepSettingsRaw } = useStepTool(currentstep);
   const stepSettings = useMemo(() => {
@@ -177,19 +173,16 @@ export function PassageDetailTranscribe({ width, artifactTypeId }: IProps) {
   }, [currentstep, vernacularSteps, stepSettings, hasChecking, hasPermission]);
 
   const handleComplete = (complete: boolean) => {
-    const pasRec = findRecord(memory, 'passage', passage.id) as PassageD;
-    const psgCompleted = getStepComplete(pasRec);
     waitForSave(undefined, 200).finally(async () => {
-      await setStepComplete(currentstep, complete, psgCompleted);
+      await setStepComplete(currentstep, complete);
       //if we're now complete, go to the next step or passage
       if (complete) gotoNextStep();
     });
   };
 
   const uncompletedSteps = async () => {
-    await setStepComplete(currentstep, false, psgCompleted);
-    if (hasChecking && nextStep)
-      await setStepComplete(nextStep, false, psgCompleted);
+    await setStepComplete(currentstep, false);
+    if (hasChecking && nextStep) await setStepComplete(nextStep, false);
     if (curRole === 'editor' && prevStep) setCurrentStep(prevStep || '');
   };
 
@@ -205,14 +198,14 @@ export function PassageDetailTranscribe({ width, artifactTypeId }: IProps) {
         // only for vernacular
         const recordStep = parsedSteps.find((s) => s.tool === ToolSlug.Record);
         if (recordStep) {
-          await setStepComplete(recordStep.id, false, psgCompleted);
+          await setStepComplete(recordStep.id, false);
           setCurrentStep(recordStep.id);
           return;
         }
       }
     }
     if (curRole === 'editor' && prevStep) {
-      await setStepComplete(prevStep, false, psgCompleted);
+      await setStepComplete(prevStep, false);
       setCurrentStep(prevStep);
     }
   };
