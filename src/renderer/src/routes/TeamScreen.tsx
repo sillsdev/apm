@@ -1,31 +1,32 @@
 import { useState, useEffect, useContext, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
-import { useGlobal } from '../context/useGlobal';
-import { LocalKey, localUserKey, useHome, useMobile } from '../utils';
-import { Box, Grid } from '@mui/material';
-import AppHead from '../components/App/AppHead';
-import { TeamProvider } from '../context/TeamContext';
-import { TeamProjects } from '../components/Team';
-import StickyRedirect from '../components/StickyRedirect';
-import { findRecord, related, remoteId } from '../crud';
-import TeamActions from '../components/Team/TeamActions';
-import { UnsavedContext } from '../context/UnsavedContext';
+import { Grid } from '@mui/material';
 import { RecordKeyMap } from '@orbit/records';
 import { PlanD } from '../model';
+import { useGlobal } from '../context/useGlobal';
+import { TeamProvider } from '../context/TeamContext';
+import { UnsavedContext } from '../context/UnsavedContext';
+import { findRecord, related, remoteId } from '../crud';
+import { LocalKey, localUserKey, useHome, useMobile } from '../utils';
+import AppHead from '../components/App/AppHead';
+import AppLayout from '../components/App/AppLayout';
+import StickyRedirect from '../components/StickyRedirect';
+import { TeamProjects } from '../components/Team';
+import TeamActions from '../components/Team/TeamActions';
 import ProjectsScreen from './ProjectsScreen';
 
-export const TeamScreen = () => {
+export default function TeamScreen() {
   const { pathname } = useLocation();
-  const [isOffline] = useGlobal('offline'); //verified this is not used in a function 2/18/25
-  const [project, setProject] = useGlobal('project'); //verified this is not used in a function 2/18/25
-  const [projType] = useGlobal('projType'); //verified this is not used in a function 2/18/25
   const [memory] = useGlobal('memory');
-  const [plan] = useGlobal('plan'); //verified this is not used in a function 2/18/25
-  const [home, setHome] = useGlobal('home'); //verified this is not used in a function 2/18/25
-  const [view, setView] = useState('');
+  const [isOffline] = useGlobal('offline');
+  const [project, setProject] = useGlobal('project');
+  const [projType] = useGlobal('projType');
+  const [plan] = useGlobal('plan');
+  const [home, setHome] = useGlobal('home');
   const { startClear } = useContext(UnsavedContext).state;
   const { resetProject } = useHome();
   const { isMobile } = useMobile();
+  const [view, setView] = useState('');
   const loaded = useRef(false);
 
   useEffect(() => {
@@ -73,16 +74,18 @@ export const TeamScreen = () => {
     return <StickyRedirect to={view} />;
   }
 
-  return !isMobile ? (
-    <Box sx={{ width: '100%' }}>
-      <TeamProvider>
-        <>
+  if (isMobile) {
+    return <ProjectsScreen />;
+  }
+
+  return (
+    <TeamProvider>
+      <AppLayout
+        header={
           <AppHead sx={{ borderBottom: '1px solid', borderColor: 'divider' }} />
-          <Grid
-            container
-            id="TeamScreen"
-            sx={{ display: 'flex', paddingTop: '80px' }}
-          >
+        }
+        content={
+          <Grid container id="TeamScreen">
             <Grid size={{ xs: 6, md: 3, lg: 2 }}>
               <TeamActions />
             </Grid>
@@ -90,12 +93,8 @@ export const TeamScreen = () => {
               <TeamProjects />
             </Grid>
           </Grid>
-        </>
-      </TeamProvider>
-    </Box>
-  ) : (
-    <ProjectsScreen />
+        }
+      />
+    </TeamProvider>
   );
-};
-
-export default TeamScreen;
+}
