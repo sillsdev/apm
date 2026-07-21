@@ -423,7 +423,6 @@ export function AudioTab() {
         </PaddedBox>
       </Box>
       <Uploader
-        recordAudio={false}
         isOpen={uploadVisible}
         onOpen={setUploadVisible}
         showMessage={showMessage}

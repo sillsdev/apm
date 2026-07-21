@@ -312,7 +312,6 @@ export function ProvideRights(props: IProps) {
       />
       <Uploader
         noBusy={false}
-        recordAudio={false}
         importList={importList}
         isOpen={uploadVisible}
         onOpen={handleUploadVisible}

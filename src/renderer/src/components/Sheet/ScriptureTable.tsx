@@ -2298,7 +2298,6 @@ export function ScriptureTable(props: IProps) {
         />
       )}
       <Uploader
-        recordAudio={false}
         defaultFilename={defaultFilename}
         mediaId={uploadItem.current?.mediaId?.id || ''}
         importList={importList as File[]}

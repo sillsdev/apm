@@ -390,7 +390,6 @@ export function PassageDetailRecord(props: IProps) {
       />
 
       <Uploader
-        recordAudio={false}
         importList={importList}
         isOpen={uploadVisible}
         onOpen={handleUploadVisible}
