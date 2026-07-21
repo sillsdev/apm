@@ -7,7 +7,6 @@ import {
   formatStepLanguageField,
   parseStepLanguageField,
 } from '../../crud/transcribeStepAsrSettings';
-import SelectArtifactType from '../Sheet/SelectArtifactType';
 import { Language, ILanguage } from '../../control';
 import { stepEditorSelector } from '../../selector';
 import { IStepEditorStrings, OrgWorkflowStepD } from '../../model';
@@ -41,10 +40,8 @@ export const PhraseBackTranslateStepSettings = ({
   const { getTypeId } = useArtifactType();
   const [memory] = useGlobal('memory');
   const orgSteps = useOrbitData<OrgWorkflowStepD[]>('orgworkflowstep');
-  const artifacts = [
-    ArtifactTypeSlug.PhraseBackTranslation,
-    ArtifactTypeSlug.Retell,
-  ];
+  // Artifact type is fixed by the workflow step preset (Phrase BT vs Retell BT),
+  // not chosen in this dialog — TT-7555.
   const [artifactTypeId, setArtifactTypeId] = useState<string>(
     () => getTypeId(ArtifactTypeSlug.PhraseBackTranslation) ?? ''
   );
@@ -114,16 +111,6 @@ export const PhraseBackTranslateStepSettings = ({
 
   return (
     <Stack spacing={2} sx={{ minWidth: 280 }}>
-      <SelectArtifactType
-        onTypeChange={(id) => {
-          const next =
-            id ?? getTypeId(ArtifactTypeSlug.PhraseBackTranslation) ?? '';
-          setArtifactTypeId(next);
-          emit(next, lgState);
-        }}
-        limit={artifacts}
-        initialValue={artifactTypeId}
-      />
       <Language
         {...lgState}
         onChange={handleLanguageChange}

@@ -1,6 +1,7 @@
 /**
  * TT-7553: reopening Phrase Back Translate step settings after a language was
  * saved must not thrash parent toolSettings via Language's mount/sync onChange.
+ * TT-7555: artifact type is not choosable here (no Community Test Retell dropdown).
  */
 jest.mock('react-redux', () => ({
   useSelector: jest.fn(),
@@ -146,12 +147,19 @@ const savedSettings = JSON.stringify({
   language: 'Tamil|ta',
 });
 
+const savedRetellSettings = JSON.stringify({
+  artifactTypeId: 'type-retell',
+  language: 'Kom|bkm',
+});
+
 function ReopenHarness({
   onChangeSpy,
+  initialSettings = savedSettings,
 }: {
   onChangeSpy: jest.Mock<(settings: string) => void>;
+  initialSettings?: string;
 }) {
-  const [settings, setSettings] = useState(savedSettings);
+  const [settings, setSettings] = useState(initialSettings);
   return (
     <PhraseBackTranslateStepSettings
       toolSettings={settings}
@@ -176,6 +184,18 @@ describe('PhraseBackTranslateStepSettings', () => {
           },
         })
     );
+  });
+
+  it('does not show an artifact type dropdown (TT-7555)', () => {
+    render(
+      <PhraseBackTranslateStepSettings
+        toolSettings={savedSettings}
+        onChange={jest.fn()}
+        stepId="step-1"
+      />
+    );
+    expect(screen.queryByTestId('select-artifact-type')).toBeNull();
+    expect(screen.getByTestId('language-mock')).toBeTruthy();
   });
 
   it('does not thrash toolSettings when reopening with a saved language (TT-7553)', async () => {
@@ -222,6 +242,33 @@ describe('PhraseBackTranslateStepSettings', () => {
       expect(onChangeSpy).toHaveBeenCalled();
       const last = onChangeSpy.mock.calls.at(-1)?.[0] as string;
       expect(JSON.parse(last).language).toBe('English|en');
+    });
+  });
+
+  it('preserves Retell artifact type when changing language (TT-7555)', async () => {
+    const onChangeSpy = jest.fn();
+    render(
+      <ReopenHarness
+        onChangeSpy={onChangeSpy}
+        initialSettings={savedRetellSettings}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('language-mock')).toBeTruthy();
+    });
+    onChangeSpy.mockClear();
+
+    fireEvent.click(screen.getByTestId('pick-english'));
+
+    await waitFor(() => {
+      expect(onChangeSpy).toHaveBeenCalled();
+      const last = JSON.parse(onChangeSpy.mock.calls.at(-1)?.[0] as string) as {
+        artifactTypeId?: string;
+        language?: string;
+      };
+      expect(last.artifactTypeId).toBe('type-retell');
+      expect(last.language).toBe('English|en');
     });
   });
 });
