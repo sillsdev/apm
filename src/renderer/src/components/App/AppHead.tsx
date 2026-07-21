@@ -34,7 +34,7 @@ import ProjectDownloadAlert from '../ProjectDownloadAlert';
 import { useSnackBar } from '../../hoc/SnackBar';
 import PolicyDialog from '../PolicyDialog';
 import JSONAPISource from '@orbit/jsonapi';
-import { AppToolbar } from './AppToolbar';
+import AppToolbar from './AppToolbar';
 
 type ResetRequests = () => Promise<void>;
 
@@ -43,8 +43,6 @@ interface IProps {
   sx?: SxProps;
   position?: AppBarProps['position'];
 }
-
-export type DownloadAlertReason = 'cloud';
 
 export const AppHead = (props: IProps) => {
   const { resetRequests, sx, position = 'fixed' } = props;
@@ -81,8 +79,7 @@ export const AppHead = (props: IProps) => {
   const [, setLatestVersion] = useState('');
   const [complete] = useGlobal('progress'); //verified this is not used in a function 2/18/25
   const [downloadAlert, setDownloadAlert] = useState(false);
-  const downloadAlertReason = useRef<DownloadAlertReason | null>(null);
-  const [updateTipOpen, setUpdateTipOpen] = useState(false);
+  const fromCloud = useRef(false);
   const [showTerms, setShowTerms] = useState('');
   const waitForRemoteQueue = useWaitForRemoteQueue();
   const waitForDataChangesQueue = useWaitForRemoteQueue('datachanges');
@@ -128,8 +125,7 @@ export const AppHead = (props: IProps) => {
           'logout on electron'
         ).then(() => {
           if (getGlobal('offline')) downDone();
-          else if (downloadAlertReason.current === 'cloud' && !isOffline)
-            setDownloadAlert(true);
+          else if (fromCloud.current && !isOffline) setDownloadAlert(true);
           else downDone();
         });
       });
@@ -157,11 +153,8 @@ export const AppHead = (props: IProps) => {
     }
   };
 
-  const handleMenu = (
-    what: string,
-    reason: DownloadAlertReason | null = null
-  ) => {
-    downloadAlertReason.current = reason;
+  const handleMenu = (what: string, cloud = false) => {
+    fromCloud.current = cloud;
     if (/\/team/i.test(pathname)) {
       setProject('');
       setPlan('');
@@ -202,7 +195,7 @@ export const AppHead = (props: IProps) => {
     if (doingDone.current) return;
     doingDone.current = true;
     setDownloadAlert(false);
-    downloadAlertReason.current = null;
+    fromCloud.current = false;
     if (cancel && !doExit) {
       const userId = localStorage.getItem(LocalKey.onlineUserId);
       if (userId) localStorage.setItem(LocalKey.userId, userId);
@@ -258,8 +251,7 @@ export const AppHead = (props: IProps) => {
     if (exitAlert)
       if (!isChanged) {
         if (isMounted()) {
-          if (downloadAlertReason.current === 'cloud' && !isOffline)
-            setDownloadAlert(true);
+          if (fromCloud.current && !isOffline) setDownloadAlert(true);
           else downDone();
         }
       } else startSave();
@@ -268,7 +260,6 @@ export const AppHead = (props: IProps) => {
 
   useEffect(() => {
     logError(Severity.info, errorReporter, pathname);
-    setUpdateTipOpen(pathname === '/');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname]);
 
@@ -319,9 +310,7 @@ export const AppHead = (props: IProps) => {
           handleMenu={handleMenu}
           setVersion={setVersion}
           setLatestVersion={setLatestVersion}
-          setUpdateTipOpen={setUpdateTipOpen}
           isOffline={isOffline}
-          updateTipOpen={updateTipOpen}
           pathname={pathname}
           handleUserMenu={handleUserMenu}
         />
