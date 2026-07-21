@@ -160,9 +160,7 @@ export default function BoldClauseTranscriptionEditor({
     const primary = parseStepLanguageField(step.language);
     const sister = parseStepLanguageField(step.sisterlanguage);
     const asrBcp = asrSettings?.language?.bcp47;
-    const primaryBcp = isLangSet(primary.bcp47)
-      ? primary.bcp47
-      : asrBcp;
+    const primaryBcp = isLangSet(primary.bcp47) ? primary.bcp47 : asrBcp;
     const primaryName = primaryBcp
       ? getName(primaryBcp) ||
         primary.languageName ||
@@ -172,7 +170,7 @@ export default function BoldClauseTranscriptionEditor({
       isLangSet(sister.bcp47) &&
       isLangSet(asrBcp) &&
       asrBcp === sister.bcp47 &&
-      asrBcp !== primary.bcp47;
+      asrBcp !== primaryBcp;
     let langPart = primaryName?.trim()
       ? `\u2039 ${primaryName.trim()} \u203A`
       : '';
@@ -385,9 +383,7 @@ export default function BoldClauseTranscriptionEditor({
         {features?.aiTranscribe && !offline && (
           <Box sx={{ display: 'flex', justifyContent: 'flex-start' }}>
             <LightTooltip
-              title={
-                <Badge badgeContent={ts.ai}>{asrTip ?? ''}</Badge>
-              }
+              title={<Badge badgeContent={ts.ai}>{asrTip ?? ''}</Badge>}
             >
               <span>
                 <AsrButton
