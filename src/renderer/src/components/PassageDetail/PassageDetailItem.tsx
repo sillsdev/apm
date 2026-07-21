@@ -598,7 +598,6 @@ export function PassageDetailItem(props: IProps) {
       </Paper>
       <Uploader
         noBusy={true}
-        recordAudio={false}
         importList={importList ?? []}
         isOpen={uploadVisible}
         onOpen={handleUploadVisible}
