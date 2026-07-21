@@ -1,18 +1,16 @@
 import { useContext } from 'react';
 import { Toolbar, IconButton } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import { isElectron } from '../../../api-variable';
 import { UnsavedContext } from '../../context/UnsavedContext';
-import HelpMenu from '../HelpMenu';
-import UserMenu from '../UserMenu';
 import { GrowingSpacer } from '../../control';
+import { ApmLogo } from '../../control/ApmLogo';
 import { LocalKey } from '../../utils';
 import { useHome } from '../../utils/useHome';
-import { HeadStatus } from './HeadStatus';
-import { OrgHead } from './OrgHead';
-import { ApmLogo } from '../../control/ApmLogo';
-import { type DownloadAlertReason } from './AppHead';
+import HelpMenu from '../HelpMenu';
+import UserMenu from '../UserMenu';
 import DetailTitle from './DetailTitle';
+import HeadStatus from './HeadStatus';
+import { OrgHead } from './OrgHead';
 
 interface AppToolbarProps {
   isDetail: boolean;
@@ -20,12 +18,10 @@ interface AppToolbarProps {
   navigate: (path: string) => void;
   isMobile: boolean;
   isMobileWidth: boolean;
-  handleMenu: (what: string, reason?: DownloadAlertReason | null) => void;
+  handleMenu: (what: string, cloud?: boolean) => void;
   setVersion: (version: string) => void;
   setLatestVersion: (version: string) => void;
-  setUpdateTipOpen: (open: boolean) => void;
   isOffline: boolean;
-  updateTipOpen: boolean;
   pathname: string;
   handleUserMenu: (what: string) => void;
 }
@@ -39,9 +35,7 @@ export default function AppToolbar({
   handleMenu,
   setVersion,
   setLatestVersion,
-  setUpdateTipOpen,
   isOffline,
-  updateTipOpen,
   pathname,
   handleUserMenu,
 }: AppToolbarProps) {
@@ -85,13 +79,9 @@ export default function AppToolbar({
           handleMenu={handleMenu}
           onVersion={setVersion}
           onLatestVersion={setLatestVersion}
-          onUpdateTipOpen={setUpdateTipOpen}
         />
       )}
-      <HelpMenu
-        online={!isOffline}
-        sx={updateTipOpen && isElectron ? { top: '40px' } : {}}
-      />
+      <HelpMenu online={!isOffline} />
       {pathname !== '/' && !pathname.startsWith('/access') && (
         <UserMenu action={handleUserMenu} />
       )}
