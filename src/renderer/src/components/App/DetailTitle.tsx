@@ -7,7 +7,7 @@ import { passageRefText } from '../../crud';
 import { IState, PassageD, ProjectD } from '../../model';
 import { useSelector } from 'react-redux';
 
-export default function MobileDetailTitle() {
+export default function DetailTitle() {
   const { pasId } = useParams();
   const passages = useOrbitData<PassageD[]>('passage');
   const projects = useOrbitData<ProjectD[]>('project');
