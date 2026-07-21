@@ -1068,6 +1068,7 @@ function WSAudioPlayer(props: IProps) {
       setReady(false);
       setBlobReady && setBlobReady(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [blob, setBlobReady]);
 
   useEffect(() => {
