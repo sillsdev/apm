@@ -178,7 +178,7 @@ const initState = {
   setStepComplete: async (
     _stepId: string,
     _complete: boolean,
-    _psgCompleted?: any[]
+    _psgCompleted?: StepComplete[]
   ): Promise<void> => {},
   setStepCompleteTo: async (_stepId: string) => {},
   gotoNextStep: () => {},
@@ -646,7 +646,7 @@ const PassageDetailProvider = (props: IProps) => {
   const setStepComplete = async (
     stepid: string,
     complete: boolean,
-    psgCompleted?: any[]
+    psgCompleted?: StepComplete[]
   ) => {
     if (stepid === '') return;
     const completed = psgCompleted ?? [...state.psgCompleted];
