@@ -427,7 +427,9 @@ export function Access() {
     getGlobal('offlineOnly') ||
     (isElectron && selectedUser !== '')
   ) {
-    setTimeout(() => navigate('/loading'), 200);
+    // replace so neither /access nor /loading lingers in history — a back
+    // traversal into either re-runs bootstrap and discards in-memory work.
+    setTimeout(() => navigate('/loading', { replace: true }), 200);
   } else if (/Logout/i.test(view)) {
     navigate('/logout');
   } else if (whichUsers === '') {

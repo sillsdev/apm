@@ -353,13 +353,19 @@ export function Loading() {
                 fromUrl = `/plan/${m[1]}/0`;
               }
               loadDone(projectId, planId || '');
-              navigate(fromUrl || '/team');
+              // replace so /loading is removed from history — otherwise a
+              // back-traversal (Electron/OS back gesture, mouse button) returns
+              // here and re-runs the whole bootstrap, discarding in-memory work
+              // such as an unsaved recording. /loading is transient; you should
+              // never be able to navigate back into it.
+              navigate(fromUrl || '/team', { replace: true });
             });
           }
         }
       }
     }
-    if (!waitToNavigate) navigate(fromUrl || '/team');
+    // replace: see note above — /loading must not remain in the history stack.
+    if (!waitToNavigate) navigate(fromUrl || '/team', { replace: true });
   };
 
   useEffect(() => {

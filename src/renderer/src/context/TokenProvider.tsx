@@ -34,7 +34,6 @@ const initState = {
   invalidateOnlineSession: () => {},
   resetExpiresAt: () => {},
   authenticated: () => false,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   setAuthSession: (_profile: User | undefined, _accessToken: string) => {},
 };
 
@@ -80,12 +79,18 @@ function TokenProvider(props: IProps) {
   });
   const expiresAtRef = useRef<number | null>(null);
   const skipAuthRestoreRef = useRef(false);
+  // True from the moment the user clicks "Continue" (or any refresh starts)
+  // until the refresh settles. While set, the expiry watchdog is suspended so
+  // the old, about-to-expire token can't trip auto-logout before the new token
+  // arrives — which was tearing down in-progress saves (e.g. recording edits).
+  const refreshingRef = useRef(false);
   const getGlobal = useGetGlobal();
   const webTokenOptions = {
     authorizationParams: { audience: apiIdentifier },
   };
   const setAuthSession = (profile: User | undefined, accessToken: string) => {
     skipAuthRestoreRef.current = false;
+    refreshingRef.current = false;
     if (accessToken) {
       const decodedToken = jwtDecode(accessToken) as IToken;
       expiresAtRef.current = decodedToken.exp;
@@ -161,6 +166,14 @@ function TokenProvider(props: IProps) {
 
   const resetExpiresAt = () => {
     if (getGlobal('offline')) return;
+    // A refresh is now in flight. Suspend the expiry watchdog until it settles
+    // so the old, about-to-expire token can't trip auto-logout before the new
+    // token lands. Set here (not just in the Continue handler) so every refresh
+    // path — Continue, Electron mount, ErrorPage — is covered uniformly.
+    // setAuthSession (success) and handleLogOut (failure) both clear it; because
+    // a successful clear always installs a fresh token, an early clear by an
+    // overlapping refresh is harmless (the watchdog resumes on a valid token).
+    refreshingRef.current = true;
     if (isElectron) {
       ipc
         ?.refreshToken()
@@ -202,6 +215,7 @@ function TokenProvider(props: IProps) {
   }, []);
 
   const handleLogOut = () => {
+    refreshingRef.current = false;
     setState((state) => ({ ...state, expiresAt: -1 }));
     view.current = 'loggedOut';
     localStorage.removeItem(LocalKey.loggedIn);
@@ -219,6 +233,10 @@ function TokenProvider(props: IProps) {
   };
 
   const checkTokenExpired = () => {
+    // A refresh is in flight (user clicked Continue). Don't act on the stale
+    // expiry: reopening the modal here would reset view.current to '' and let
+    // the auto-logout effect fire before the new token lands.
+    if (refreshingRef.current) return;
     if (!getGlobal('offline')) {
       if ((expiresAtRef.current ?? 0) > 0) {
         const secondsLeft = timeUntilExpire();
@@ -250,17 +268,21 @@ function TokenProvider(props: IProps) {
     if (value < 0) {
       handleLogOut();
     } else {
+      // resetExpiresAt() sets refreshingRef to suspend the expiry watchdog until
+      // the refresh settles. (This replaces the old `expiresAt + 10` bump, which
+      // never worked: the watchdog reads expiresAtRef, not state.expiresAt.)
       resetExpiresAt();
-      setState((state) => ({
-        ...state,
-        expiresAt: state?.expiresAt ? state.expiresAt + 10 : 0,
-      })); // allow time for refresh
       view.current = 'Continue';
     }
   };
 
   React.useEffect(() => {
-    if (modalOpen && view.current === '' && secondsToExpire < Expires) {
+    if (
+      modalOpen &&
+      view.current === '' &&
+      secondsToExpire < Expires &&
+      !refreshingRef.current
+    ) {
       handleLogOut();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
