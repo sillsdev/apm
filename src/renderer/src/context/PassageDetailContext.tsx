@@ -436,11 +436,14 @@ const PassageDetailProvider = (props: IProps) => {
     });
   };
 
-  const setDiscussOpen = (discussOpen: boolean) => {
+  const setDiscussOpen = useCallback((discussOpen: boolean) => {
     setState((state: ICtxState) => {
+      if (state.discussOpen === discussOpen) {
+        return state;
+      }
       return { ...state, discussOpen };
     });
-  };
+  }, []);
 
   const setPromptPlaybackComplete = useCallback(
     (promptPlaybackComplete: boolean) => {
