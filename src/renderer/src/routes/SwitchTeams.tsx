@@ -463,7 +463,7 @@ export const SwitchTeams: React.FC = () => {
     <Box sx={{ width: '100%' }}>
       <TeamProvider>
         <>
-          <AppHead />
+          <AppHead sx={{ borderBottom: '1px solid', borderColor: 'divider' }} />
           <SwitchTeamsGuard>
             <SettingsProvider>
               <MainTeamsLayout />

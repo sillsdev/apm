@@ -77,7 +77,7 @@ export const TeamScreen = () => {
     <Box sx={{ width: '100%' }}>
       <TeamProvider>
         <>
-          <AppHead />
+          <AppHead sx={{ borderBottom: '1px solid', borderColor: 'divider' }} />
           <Grid
             container
             id="TeamScreen"

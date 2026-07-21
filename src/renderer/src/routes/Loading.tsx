@@ -463,7 +463,7 @@ export function Loading() {
 
   return (
     <Box sx={{ width: '100%' }}>
-      <AppHead />
+      <AppHead sx={{ borderBottom: '1px solid', borderColor: 'divider' }} />
       <Box sx={centerProps}>
         <ApmSplash
           message={inviteError || orbitErrorMsg || undefined}

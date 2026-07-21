@@ -220,7 +220,7 @@ export const ProjectsScreenInner: React.FC = () => {
         flexDirection: 'column',
       }}
     >
-      <AppHead />
+      <AppHead sx={{ borderBottom: '1px solid', borderColor: 'divider' }} />
       <ProjectsBox
         id="ProjectsScreen"
         isMobile={isMobile}
