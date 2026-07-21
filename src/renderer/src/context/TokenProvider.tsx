@@ -166,6 +166,14 @@ function TokenProvider(props: IProps) {
 
   const resetExpiresAt = () => {
     if (getGlobal('offline')) return;
+    // A refresh is now in flight. Suspend the expiry watchdog until it settles
+    // so the old, about-to-expire token can't trip auto-logout before the new
+    // token lands. Set here (not just in the Continue handler) so every refresh
+    // path — Continue, Electron mount, ErrorPage — is covered uniformly.
+    // setAuthSession (success) and handleLogOut (failure) both clear it; because
+    // a successful clear always installs a fresh token, an early clear by an
+    // overlapping refresh is harmless (the watchdog resumes on a valid token).
+    refreshingRef.current = true;
     if (isElectron) {
       ipc
         ?.refreshToken()
@@ -260,11 +268,9 @@ function TokenProvider(props: IProps) {
     if (value < 0) {
       handleLogOut();
     } else {
-      // Suspend the expiry watchdog until the refresh settles (setAuthSession
-      // on success, handleLogOut on failure both clear this). This replaces the
-      // old `expiresAt + 10` bump, which never worked: the watchdog reads
-      // expiresAtRef, not state.expiresAt, so bumping state bought no time.
-      refreshingRef.current = true;
+      // resetExpiresAt() sets refreshingRef to suspend the expiry watchdog until
+      // the refresh settles. (This replaces the old `expiresAt + 10` bump, which
+      // never worked: the watchdog reads expiresAtRef, not state.expiresAt.)
       resetExpiresAt();
       view.current = 'Continue';
     }
