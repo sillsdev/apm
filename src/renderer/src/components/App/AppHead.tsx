@@ -1,9 +1,15 @@
-import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useGetGlobal, useGlobal } from '../../context/useGlobal';
 import { useLocation } from 'react-router-dom';
-import { IState, IViewModeStrings } from '../../model';
-import { shallowEqual, useSelector } from 'react-redux';
-import { AppBar, LinearProgress, Box } from '@mui/material';
+import { IState } from '../../model';
+import { useSelector } from 'react-redux';
+import {
+  AppBar,
+  AppBarProps,
+  LinearProgress,
+  Box,
+  SxProps,
+} from '@mui/material';
 import { isElectron } from '../../../api-variable';
 import { TokenContext } from '../../context/TokenProvider';
 import { UnsavedContext } from '../../context/UnsavedContext';
@@ -28,31 +34,25 @@ import ProjectDownloadAlert from '../ProjectDownloadAlert';
 import { useSnackBar } from '../../hoc/SnackBar';
 import PolicyDialog from '../PolicyDialog';
 import JSONAPISource from '@orbit/jsonapi';
-import { viewModeSelector } from '../../selector';
-import { DesktopToolbar } from './DesktopToolbar';
 import { MobileToolbar } from './MobileToolbar';
-
-const twoIcon = { minWidth: `calc(${48 * 2}px)` } as React.CSSProperties;
-const threeIcon = { minWidth: `calc(${48 * 3}px)` } as React.CSSProperties;
 
 type ResetRequests = () => Promise<void>;
 
 interface IProps {
   resetRequests?: ResetRequests;
-  switchTo?: boolean;
+  sx?: SxProps;
+  position?: AppBarProps['position'];
 }
 
 export type DownloadAlertReason = 'cloud';
 
 export const AppHead = (props: IProps) => {
-  const { resetRequests, switchTo } = props;
+  const { resetRequests, sx, position = 'fixed' } = props;
   const orbitStatus = useSelector((state: IState) => state.orbit.status);
   const orbitErrorMsg = useSelector((state: IState) => state.orbit.message);
   const { pathname } = useLocation();
   const navigate = useMyNavigate();
   const { isMobileView, isMobileWidth } = useMobile();
-  const [home] = useGlobal('home'); //verified this is not used in a function 2/18/25
-  const [orgRole] = useGlobal('orgRole'); //verified this is not used in a function 2/18/25
   const [errorReporter] = useGlobal('errorReporter');
   const [coordinator] = useGlobal('coordinator');
   const [user] = useGlobal('user');
@@ -67,7 +67,6 @@ export const AppHead = (props: IProps) => {
   };
   const ctx = useContext(UnsavedContext);
   const { checkSavedFn, startSave, toolsChanged, anySaving } = ctx.state;
-  const [cssVars, setCssVars] = useState<React.CSSProperties>(twoIcon);
   const [view, setView] = useState('');
   const [busy] = useGlobal('remoteBusy'); //verified this is not used in a function 2/18/25
   const [dataChangeCount] = useGlobal('dataChangeCount'); //verified this is not used in a function 2/18/25
@@ -77,8 +76,9 @@ export const AppHead = (props: IProps) => {
   const [doExit, setDoExit] = useState(false);
   const [exitAlert, setExitAlert] = useState(false);
   const isMounted = useMounted('apphead');
-  const [version, setVersion] = useState('');
-  const [latestVersion, setLatestVersion] = useState('');
+  // only reported upward to HeadStatus; nothing in AppHead reads them anymore
+  const [, setVersion] = useState('');
+  const [, setLatestVersion] = useState('');
   const [complete] = useGlobal('progress'); //verified this is not used in a function 2/18/25
   const [downloadAlert, setDownloadAlert] = useState(false);
   const downloadAlertReason = useRef<DownloadAlertReason | null>(null);
@@ -90,13 +90,8 @@ export const AppHead = (props: IProps) => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const saving = useMemo(() => anySaving(), [toolsChanged]);
   const { showMessage } = useSnackBar();
-  const tv: IViewModeStrings = useSelector(viewModeSelector, shallowEqual);
 
   const isDetail = useMemo(() => pathname.startsWith('/detail'), [pathname]);
-  const isPlanSheet = useMemo(
-    () => /^\/plan\/[^/]+\/0(\/|$)/.test(pathname),
-    [pathname]
-  );
   const planUrl = useMemo(() => {
     const fromUrl = localStorage.getItem(localUserKey(LocalKey.url));
     if (!fromUrl) return null;
@@ -272,15 +267,6 @@ export const AppHead = (props: IProps) => {
   }, [exitAlert, isChanged]);
 
   useEffect(() => {
-    setCssVars(
-      latestVersion !== '' && latestVersion !== version && isElectron
-        ? threeIcon
-        : twoIcon
-    );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [remote, latestVersion]);
-
-  useEffect(() => {
     logError(Severity.info, errorReporter, pathname);
     setUpdateTipOpen(pathname === '/');
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -302,20 +288,16 @@ export const AppHead = (props: IProps) => {
   if (view === 'Privacy') navigate('/privacy');
 
   const isMobile = isMobileView || isMobileWidth;
-  const drawBorderBottom = !(isMobile && (isDetail || isPlanSheet));
 
   return (
     <AppBar
-      position="fixed"
+      position={position}
       sx={{
         width: '100%',
         display: 'flex',
         px: 1.5,
         backgroundColor: 'custom.headerBackground',
-        ...(drawBorderBottom && {
-          borderBottom: '1px solid',
-          borderColor: 'divider',
-        }),
+        ...sx,
       }}
       color="inherit"
     >
@@ -328,39 +310,21 @@ export const AppHead = (props: IProps) => {
         {(!busy && !saving && !dataChangeCount) || complete !== 0 || (
           <LinearProgress id="busy" variant="indeterminate" sx={{ mx: -1.5 }} />
         )}
-
-        {isMobile ? (
-          <MobileToolbar
-            isDetail={isDetail}
-            planUrl={planUrl}
-            navigate={navigate}
-            isMobileWidth={isMobileWidth}
-            handleMenu={handleMenu}
-            setVersion={setVersion}
-            setLatestVersion={setLatestVersion}
-            setUpdateTipOpen={setUpdateTipOpen}
-            isOffline={isOffline}
-            updateTipOpen={updateTipOpen}
-            pathname={pathname}
-            handleUserMenu={handleUserMenu}
-          />
-        ) : (
-          <DesktopToolbar
-            switchTo={switchTo}
-            home={home}
-            orgRole={orgRole}
-            cssVars={cssVars}
-            pathname={pathname}
-            handleMenu={handleMenu}
-            setVersion={setVersion}
-            setLatestVersion={setLatestVersion}
-            setUpdateTipOpen={setUpdateTipOpen}
-            isOffline={isOffline}
-            updateTipOpen={updateTipOpen}
-            handleUserMenu={handleUserMenu}
-            tv={tv}
-          />
-        )}
+        <MobileToolbar
+          isDetail={isDetail}
+          planUrl={planUrl}
+          navigate={navigate}
+          isMobile={isMobile}
+          isMobileWidth={isMobileWidth}
+          handleMenu={handleMenu}
+          setVersion={setVersion}
+          setLatestVersion={setLatestVersion}
+          setUpdateTipOpen={setUpdateTipOpen}
+          isOffline={isOffline}
+          updateTipOpen={updateTipOpen}
+          pathname={pathname}
+          handleUserMenu={handleUserMenu}
+        />
         {importexportBusy && !downloadAlert && <Busy />}
         {downloadAlert && <ProjectDownloadAlert cb={downDone} />}
         <PolicyDialog
