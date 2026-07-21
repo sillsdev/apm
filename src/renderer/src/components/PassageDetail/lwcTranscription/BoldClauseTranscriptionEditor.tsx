@@ -7,10 +7,10 @@ import {
   type CSSProperties,
   type MutableRefObject,
 } from 'react';
-import { Box, Stack } from '@mui/material';
+import { Badge, Box, Stack } from '@mui/material';
 import { shallowEqual, useSelector } from 'react-redux';
 import { StyledTextAreaAutosize } from '../../../control/WebFontStyles';
-import { PriButton } from '../../../control';
+import { LightTooltip, PriButton } from '../../../control';
 import AsrButton from '../../../control/ConfButton';
 import TranscriptionLogo from '../../../control/TranscriptionLogo';
 import AsrProgress from '../../../business/asr/AsrProgress';
@@ -46,6 +46,7 @@ import {
 import { useGetAsrSettings } from '../../../crud/useGetAsrSettings';
 import { useOrbitData } from '../../../hoc/useOrbitData';
 import { isLangSet } from '../../../utils/langTag';
+import { useLocLangName } from '../../../utils/useLocLangName';
 import type { TranscribeStepSettingsJson } from '../../../crud/stepSpellCheck';
 import { parseStepLanguageField } from '../../../crud/transcribeStepAsrSettings';
 import type { FontData } from '../../../crud/fontChoice';
@@ -145,6 +146,7 @@ export default function BoldClauseTranscriptionEditor({
   const { showMessage } = useSnackBar();
   const { isMobile } = useMobile();
   const checkOnline = useCheckOnline(tr.run);
+  const [getName] = useLocLangName();
   const { currentstep } = usePassageDetailContext();
   const { settings: stepSettings } = useStepTool(currentstep);
   const { asrSettings, asrIsoReady, needsSisterLanguage } =
@@ -153,6 +155,37 @@ export default function BoldClauseTranscriptionEditor({
       transcriptionConfig.defaultArtifactSlug,
       stepSettings
     );
+  const asrTip = useMemo(() => {
+    const step = parseStepSettings(stepSettings);
+    const primary = parseStepLanguageField(step.language);
+    const sister = parseStepLanguageField(step.sisterlanguage);
+    const asrBcp = asrSettings?.language?.bcp47;
+    const primaryBcp = isLangSet(primary.bcp47) ? primary.bcp47 : asrBcp;
+    const primaryName = primaryBcp
+      ? getName(primaryBcp) ||
+        primary.languageName ||
+        asrSettings?.language?.languageName
+      : asrSettings?.language?.languageName;
+    const usingSister =
+      isLangSet(sister.bcp47) &&
+      isLangSet(asrBcp) &&
+      asrBcp === sister.bcp47 &&
+      asrBcp !== primaryBcp;
+    let langPart = primaryName?.trim()
+      ? `\u2039 ${primaryName.trim()} \u203A`
+      : '';
+    if (usingSister) {
+      const sisterName =
+        getName(sister.bcp47) ||
+        sister.languageName ||
+        asrSettings?.language?.languageName;
+      if (sisterName?.trim()) {
+        langPart += `${langPart ? ' ' : ''}\u2039 ${sisterName.trim()} \u203A`;
+      }
+    }
+    return (tPlayer.recognizeSpeech + '\u00A0\u00A0').replace('{0}', langPart);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [asrSettings, stepSettings, tPlayer.recognizeSpeech]);
   const [asrVisible, setAsrVisible] = useState(false);
   const [asrLangVisible, setAsrLangVisible] = useState(false);
   const [asrOverride, setAsrOverride] = useState<IAsrState | undefined>();
@@ -349,19 +382,25 @@ export default function BoldClauseTranscriptionEditor({
       <Stack spacing={1} sx={{ width: '100%', maxWidth: '100%', minWidth: 0 }}>
         {features?.aiTranscribe && !offline && (
           <Box sx={{ display: 'flex', justifyContent: 'flex-start' }}>
-            <AsrButton
-              id={`${idPrefix}-asr`}
-              onClick={handleAutoTranslation}
-              onSettings={openAsrLanguageSettings}
-              showSettings={needsLanguagePicker}
-              disabled={runAsrDisabled}
+            <LightTooltip
+              title={<Badge badgeContent={ts.ai}>{asrTip ?? ''}</Badge>}
             >
-              <TranscriptionLogo
-                disabled={runAsrDisabled}
-                sx={{ height: 18, width: 18, mr: 1 }}
-              />
-              {tr.aiAutomaticTranscription}
-            </AsrButton>
+              <span>
+                <AsrButton
+                  id={`${idPrefix}-asr`}
+                  onClick={handleAutoTranslation}
+                  onSettings={openAsrLanguageSettings}
+                  showSettings={needsLanguagePicker}
+                  disabled={runAsrDisabled}
+                >
+                  <TranscriptionLogo
+                    disabled={runAsrDisabled}
+                    sx={{ height: 18, width: 18, mr: 1 }}
+                  />
+                  {tr.aiAutomaticTranscription}
+                </AsrButton>
+              </span>
+            </LightTooltip>
           </Box>
         )}
         <StyledTextAreaAutosize

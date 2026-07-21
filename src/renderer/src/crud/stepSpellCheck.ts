@@ -3,6 +3,7 @@ import { ArtifactTypeSlug } from './artifactTypeSlug';
 export interface TranscribeStepSettingsJson {
   artifactTypeId?: string;
   language?: string;
+  sisterlanguage?: string;
   font?: string;
   rtl?: boolean;
   spellCheck?: boolean;
