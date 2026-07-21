@@ -63,7 +63,7 @@ export default function AppToolbar({
 
   const handleBack = () => navigate(planUrl || '/team');
 
-  // On desktop, clicking the logo or back button should check for any unsaved changes
+  // Clicking the logo or back button should check for any unsaved changes
   const checkSavedAndGoHome = () => checkSavedFn(() => handleHome());
   const checkSavedAndGoBack = () => checkSavedFn(() => handleBack());
 
