@@ -41,7 +41,7 @@ const StatusMessage = styled(Typography)<TypographyProps>(({ theme }) => ({
   gutterBottom: 'true',
 }));
 
-const RecordDialog = styled(Dialog)(() => ({
+const RecordDialog = styled(Dialog)(({ theme }) => ({
   flexGrow: 1,
   '& .MuiDialog-paper': {
     width: audioDlgWidth,
@@ -50,6 +50,9 @@ const RecordDialog = styled(Dialog)(() => ({
     height: audioDlgHeight,
     minHeight: audioDlgHeight,
     maxHeight: audioDlgHeight,
+  },
+  '& #uploadCancel, & #uploadSave': {
+    margin: theme.spacing(1),
   },
 }));
 
@@ -268,7 +271,7 @@ function PassageRecordDlg(props: IProps) {
               disabled={
                 busy || (ready && !ready()) || !canSave || !hasRights
               }
-              sx={{ minWidth: '96px' }}
+              sx={{ m: 1, minWidth: '96px' }}
             >
               {saveText || recordStrings.save}
             </PriButton>
