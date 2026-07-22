@@ -15,11 +15,17 @@ import { IndexedDBSource } from '@orbit/indexeddb';
 import { UploadType } from '../components/UploadType';
 import { RecordKeyMap } from '@orbit/records';
 import { getContentType } from '../utils/contentType';
-import { ISharedStrings, MediaFileAttributes, MediaFileD } from '../model';
+import {
+  ArtifactTypeD,
+  ISharedStrings,
+  MediaFileAttributes,
+  MediaFileD,
+} from '../model';
 import { AlertSeverity, useSnackBar } from '../hoc/SnackBar';
 import { mediaTabSelector, sharedSelector } from '../selector';
 import { OrbitNetworkErrorRetries } from '../../api-variable';
 import { formatUploadTerminalFailureMessage } from '../store/upload/uploadTerminalMessages';
+import { perfTrace } from '../utils/perf';
 
 interface IProps {
   artifactId: string | null;
@@ -105,6 +111,11 @@ export const useMediaUpload = ({
     success: boolean,
     data?: any
   ): Promise<void> => {
+    perfTrace('UP.itemComplete', {
+      success,
+      stringId: data?.stringId ?? '(none)',
+      offlinePath: !data?.stringId && success && !!data,
+    });
     if (!success) setOrbitRetries(OrbitNetworkErrorRetries - 1); //notify of possible network issue
     const uploadList = fileList.current;
     if (!uploadList) return; // This should never happen
@@ -113,6 +124,7 @@ export const useMediaUpload = ({
     } else if (success && data) {
       // offlineOnly
       const num = getLatestVersion();
+      perfTrace('UP.createMedia', { version: num, sourceMediaId });
       mediaIdRef.current = (
         await createMedia(
           data,
@@ -135,13 +147,16 @@ export const useMediaUpload = ({
           .replace('{1}', String(total))
       );
       try {
+        perfTrace('UP.afterUploadCb-start', { mediaId: mediaIdRef.current });
         await afterUploadCb(mediaIdRef.current);
+        perfTrace('UP.afterUploadCb-done', { mediaId: mediaIdRef.current });
       } catch {
         // Parent after-upload hook failed; upload itself is finished.
       }
     };
     if (!getGlobal('offline') && mediaIdRef.current) {
       try {
+        perfTrace('UP.pull-start', { mediaId: mediaIdRef.current });
         await pullTableList(
           'mediafile',
           Array(mediaIdRef.current),
@@ -150,6 +165,7 @@ export const useMediaUpload = ({
           backup,
           reporter
         );
+        perfTrace('UP.pull-done', { mediaId: mediaIdRef.current });
       } catch {
         // Sync failure still runs upload cleanup.
       }
@@ -169,14 +185,41 @@ export const useMediaUpload = ({
               getGlobal('plan'),
               memory?.keyMap as RecordKeyMap
             ) || getGlobal('plan');
-      const getArtifactId = () =>
-        artifactId === null
-          ? null
-          : remoteIdNum(
-              'artifacttype',
-              artifactId,
-              memory?.keyMap as RecordKeyMap
-            ) || artifactId;
+      const getArtifactId = () => {
+        if (artifactId === null) return null;
+        // Normal case: the artifacttype has a server id in the keyMap.
+        const direct = remoteIdNum(
+          'artifacttype',
+          artifactId,
+          memory?.keyMap as RecordKeyMap
+        );
+        if (!Number.isNaN(direct)) return direct;
+        // TT-7557: offlineSetup (makeArtifactTypeRecs) creates artifacttypes
+        // locally with only a typename and no remote id, and steps can end up
+        // referencing that local-only record. Posting its GUID as the FK makes
+        // the API reject the mediafile with 422 ("Failed to convert '<guid>'
+        // ... to Int32"), which then retries in a storm. Resolve to the
+        // server-synced artifacttype of the same typename (which carries a
+        // remoteId) so we always send an integer FK.
+        const local = memory.cache.query((q) =>
+          q.findRecord({ type: 'artifacttype', id: artifactId })
+        ) as ArtifactTypeD | undefined;
+        const typename = local?.attributes?.typename;
+        if (typename) {
+          const synced = (
+            memory.cache.query((q) =>
+              q.findRecords('artifacttype')
+            ) as ArtifactTypeD[]
+          ).find(
+            (a) => a.attributes?.typename === typename && a.keys?.remoteId
+          );
+          if (synced?.keys?.remoteId) return parseInt(synced.keys.remoteId, 10);
+        }
+        // Still unresolved: fall back to the GUID (offline/create path handles
+        // it; online, the upload guard below rejects with a clear message
+        // instead of silently 422-looping).
+        return artifactId;
+      };
       const getPassageId = () =>
         passageId
           ? remoteIdNum('passage', passageId, memory?.keyMap as RecordKeyMap) ||
@@ -191,6 +234,13 @@ export const useMediaUpload = ({
           memory?.keyMap as RecordKeyMap
         ) || sourceMediaId;
 
+      perfTrace('UP.uploadMedia-enter', {
+        filename: (files[0] as File)?.name,
+        artifactId,
+        sourceMediaId,
+        sourceSegments,
+        languagebcp47,
+      });
       uploadFiles(files);
       fileList.current = files;
 
@@ -219,6 +269,84 @@ export const useMediaUpload = ({
         userId: string;
         sourceMediaId: string;
       };
+      // A relationship id that is NOT all-digits is an unresolved local GUID —
+      // the server can't map it to an integer PK and rejects the POST with 422.
+      const stillGuid = (v: unknown) =>
+        typeof v === 'string' && v !== '' && !/^\d+$/.test(v);
+      // When artifactType stays a GUID, does the in-memory record still carry
+      // its own keys.remoteId? If yes -> the keyMap simply wasn't rebuilt on
+      // restore (fix = repopulate keyMap). If undefined -> the record is truly
+      // local-only (fix = ensure it gets a remote id before upload).
+      let artifactTypeRecordKeyRemoteId: string | undefined | null = null;
+      let artifactTypeTable: Array<{
+        id: string;
+        typename?: string;
+        remoteId?: string;
+      }> = [];
+      if (artifactId) {
+        try {
+          const at = memory.cache.query((q) =>
+            q.findRecord({ type: 'artifacttype', id: artifactId })
+          ) as
+            | { attributes?: { typename?: string }; keys?: { remoteId?: string } }
+            | undefined;
+          artifactTypeRecordKeyRemoteId = at?.keys?.remoteId ?? '(no keys.remoteId)';
+          const all = memory.cache.query((q) =>
+            q.findRecords('artifacttype')
+          ) as Array<{
+            id: string;
+            attributes?: { typename?: string };
+            keys?: { remoteId?: string };
+          }>;
+          const wanted = at?.attributes?.typename;
+          artifactTypeTable = all
+            .filter((a) => a.attributes?.typename === wanted)
+            .map((a) => ({
+              id: a.id,
+              typename: a.attributes?.typename,
+              remoteId: a.keys?.remoteId,
+            }));
+        } catch {
+          artifactTypeRecordKeyRemoteId = '(record not found)';
+        }
+      }
+      perfTrace('UP.resolved-fks', {
+        planId: mediafile.planId,
+        artifactTypeId: mediafile.artifactTypeId,
+        passageId: mediafile.passageId,
+        sourceMediaId: mediafile.sourceMediaId,
+        recordedbyUserId: mediafile.recordedbyUserId,
+        artifactTypeRecordKeyRemoteId,
+        artifactTypeTable,
+        unresolvedGuids: [
+          ['plan', mediafile.planId],
+          ['artifactType', mediafile.artifactTypeId],
+          ['passage', mediafile.passageId],
+          ['sourceMedia', mediafile.sourceMediaId],
+          ['recordedbyUser', mediafile.recordedbyUserId],
+        ]
+          .filter(([, v]) => stillGuid(v))
+          .map(([k]) => k),
+      });
+      // Fail fast instead of 422-looping: an online POST with an unresolved
+      // GUID relationship id (e.g. artifact-type never got a server id) is
+      // guaranteed to be rejected and retried UPLOAD_MAX_ATTEMPTS times. Reject
+      // once with a clear, greppable message.
+      if (!getGlobal('offline')) {
+        const badFk = [
+          ['plan', mediafile.planId],
+          ['artifactType', mediafile.artifactTypeId],
+          ['passage', mediafile.passageId],
+          ['sourceMedia', mediafile.sourceMediaId],
+          ['recordedbyUser', mediafile.recordedbyUserId],
+        ].find(([, v]) => stillGuid(v));
+        if (badFk) {
+          const msg = `Cannot upload: ${badFk[0]} has no server id yet (${badFk[1]}). It has not finished syncing.`;
+          showMessage(msg, AlertSeverity.Warning);
+          reject(new Error(msg));
+          return;
+        }
+      }
       nextUpload({
         record: mediafile,
         files,
@@ -228,6 +356,7 @@ export const useMediaUpload = ({
         errorReporter: reporter,
         uploadType: UploadType.Media,
         cb: (n, success, data) => {
+          perfTrace('UP.nextUpload-cb', { n, success });
           void itemComplete(n, success, data)
             .then(() => {
               if (success) resolve(true);

@@ -35,6 +35,7 @@ import { JSONParse } from '../utils';
 import { UploadType } from './UploadType';
 import { shallowEqual, useSelector } from 'react-redux';
 import { passageRecordSelector, sharedSelector } from '../selector';
+import { perfTrace } from '../utils/perf';
 
 interface IProps {
   toolId: string;
@@ -284,6 +285,7 @@ function MediaRecord(props: IProps) {
   }, [allowWave, mimeType, t.compressed, t.uncompressed]);
 
   const myAfterUploadCb = async (mediaId: string) => {
+    perfTrace('MR.myAfterUploadCb-start', { toolId, mediaId: mediaId || '(none)' });
     setUploading(false);
     setPendingSave(false);
     if (filechangedRef.current && mediaId) setFilechanged(false);
@@ -297,6 +299,7 @@ function MediaRecord(props: IProps) {
     }
     saveRef.current = false;
     await afterUploadCb(mediaId);
+    perfTrace('MR.myAfterUploadCb-done', { toolId });
   };
 
   const uploadMedia = useMediaUpload({
@@ -312,10 +315,13 @@ function MediaRecord(props: IProps) {
   });
 
   useEffect(() => {
+    perfTrace('MR.mount-reset', { toolId });
     setConverting(false);
     setUploading(false);
     saveRef.current = false;
     setAudioBlob(undefined);
+    return () => perfTrace('MR.unmount', { toolId });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -435,6 +441,12 @@ function MediaRecord(props: IProps) {
 
   const doUpload = useCallback(
     async (blob: Blob, mimeType: string, filetype: string) => {
+      perfTrace('MR.doUpload-start', {
+        toolId,
+        filename: defaultFilename + '.' + filetype,
+        bytes: blob.size,
+        mimeType,
+      });
       setUploading(true);
       setStatusText(t.saving);
       const files = [
@@ -443,12 +455,14 @@ function MediaRecord(props: IProps) {
         }),
       ];
       await uploadMedia(files);
+      perfTrace('MR.doUpload-resolved', { toolId });
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [defaultFilename, uploadMedia]
   );
 
   const convertComplete = () => {
+    perfTrace('MR.convertComplete', { toolId });
     setConverting(false);
     setLoading(false);
     onReady?.();
@@ -456,12 +470,13 @@ function MediaRecord(props: IProps) {
 
   const handleSaveFailed = useCallback(
     (error: unknown) => {
+      const message =
+        error instanceof Error ? error.message : String(error ?? 'Save failed');
+      perfTrace('MR.handleSaveFailed', { toolId, message });
       saveRef.current = false;
       setUploading(false);
       setConverting(false);
       setLoading(false);
-      const message =
-        error instanceof Error ? error.message : String(error ?? 'Save failed');
       saveCompleted(toolId, message);
       onReady?.();
     },
@@ -478,6 +493,14 @@ function MediaRecord(props: IProps) {
     else setWarning('');
 
     if (saveRequested(toolId)) {
+      perfTrace('MR.save-effect', {
+        toolId,
+        saveRef: saveRef.current,
+        hasBlob: !!audioBlob,
+        blobBytes: audioBlob?.size ?? 0,
+        dur: waveformDuration,
+        mimeType,
+      });
       if (!saveRef.current) {
         if (audioBlob && waveformDuration > 0) {
           onSaving && onSaving();
@@ -487,15 +510,24 @@ function MediaRecord(props: IProps) {
             // Convert to target format
             setStatusText(t.compressing);
             setConverting(true);
+            perfTrace('MR.convert-start', { toolId, mimeType });
             convertToFormat(audioBlob, mimeType)
-              .then((convert_blob) =>
-                doUpload(convert_blob, mimeType, filetype)
+              .then((convert_blob) => {
+                perfTrace('MR.convert-done', {
+                  toolId,
+                  outBytes: convert_blob?.size ?? 0,
+                });
+                return doUpload(convert_blob, mimeType, filetype)
                   .then(() => {
                     convertComplete();
                   })
-                  .catch(handleSaveFailed)
-              )
+                  .catch(handleSaveFailed);
+              })
               .catch((error) => {
+                perfTrace('MR.convert-failed', {
+                  toolId,
+                  message: error instanceof Error ? error.message : String(error),
+                });
                 // If conversion fails, show error and save as WAV instead
                 const errorMessage =
                   t.compressError +
@@ -552,6 +584,7 @@ function MediaRecord(props: IProps) {
   }
   useEffect(() => {
     if (doReset) {
+      perfTrace('MR.doReset', { toolId });
       reset();
       setDoReset && setDoReset(false);
     }
@@ -559,6 +592,7 @@ function MediaRecord(props: IProps) {
   }, [doReset]);
 
   const reset = () => {
+    perfTrace('MR.reset', { toolId });
     setFilechanged(false);
     setPendingSave(false);
     setWaveformDuration(0);

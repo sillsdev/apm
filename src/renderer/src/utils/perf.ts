@@ -122,6 +122,76 @@ export const perfTime = <T>(label: string, fn: () => T): T => {
   }
 };
 
+// ── Chronological trace (for ordering / race diagnosis) ─────────────────────
+// The aggregate stats above answer "how often / how slow". A race needs the
+// opposite: the exact ORDER of async milestones and the gaps between them.
+// perfTrace appends to a ring buffer you dump with `aptPerf.trace()`.
+
+interface TraceEvent {
+  seq: number;
+  tMs: number; // perf clock at capture
+  label: string;
+  data?: Record<string, unknown>;
+}
+
+const TRACE_MAX = 1000;
+const traceBuf: TraceEvent[] = [];
+let traceSeq = 0;
+
+/**
+ * Append one ordered milestone to the trace buffer. No-op when disabled.
+ * Also mirrors to the console (grouped/greppable) so it interleaves with the
+ * app's existing diagnostics in real time — critical for spotting a step that
+ * fires twice, out of order, or never completes.
+ */
+export const perfTrace = (
+  label: string,
+  data?: Record<string, unknown>
+): void => {
+  if (!enabled) return;
+  const evt: TraceEvent = { seq: ++traceSeq, tMs: now(), label, data };
+  traceBuf.push(evt);
+  if (traceBuf.length > TRACE_MAX) traceBuf.shift();
+  const dataStr = data ? ' ' + JSON.stringify(data) : '';
+
+  console.log(
+    `%c[aptTrace #${evt.seq} @${fmt(evt.tMs)}ms] ${label}${dataStr}`,
+    'color:#0a7'
+  );
+};
+
+const traceReport = (): string => {
+  if (!traceBuf.length) return '[aptTrace] (empty — reproduce the issue first)';
+  const first = traceBuf[0]!.tMs;
+  const lines = traceBuf.map((e, i) => {
+    const rel = fmt(e.tMs - first);
+    const delta = i > 0 ? fmt(e.tMs - traceBuf[i - 1]!.tMs) : 0;
+    const dataStr = e.data ? '  ' + JSON.stringify(e.data) : '';
+    return `#${e.seq}  +${rel}ms  (Δ${delta}ms)  ${e.label}${dataStr}`;
+  });
+  const text =
+    `# aptTrace — ${traceBuf.length} events (chronological)\n` +
+    lines.join('\n') +
+    '\n';
+
+  console.log(text);
+  try {
+    (navigator as any)?.clipboard?.writeText?.(text);
+
+    console.log('%c[aptTrace] trace copied to clipboard', 'color:green');
+  } catch {
+    /* clipboard unavailable */
+  }
+  return text;
+};
+
+const traceReset = () => {
+  traceBuf.length = 0;
+  traceSeq = 0;
+
+  console.log('[aptTrace] trace cleared');
+};
+
 // ── Hooks ───────────────────────────────────────────────────────────────────
 
 /**
@@ -436,8 +506,11 @@ if (typeof window !== 'undefined') {
     report,
     reset,
     auto,
+    trace: traceReport,
+    traceReset,
     enabled: () => enabled,
     _registry: registry,
+    _trace: traceBuf,
   };
 }
 

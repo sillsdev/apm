@@ -11,7 +11,7 @@ import { Box, Typography } from '@mui/material';
 import { shallowEqual, useSelector } from 'react-redux';
 import { useGlobal } from '../../context/useGlobal';
 import usePassageDetailContext from '../../context/usePassageDetailContext';
-import { useRenderProfiler, useWhyRender } from '../../utils/perf';
+import { useRenderProfiler, useWhyRender, perfTrace } from '../../utils/perf';
 import PassageDetailPlayer from './PassageDetailPlayer';
 import StepMessage from './boldClause/StepMessage';
 import { remoteIdGuid, useArtifactType, useStepTool } from '../../crud';
@@ -916,7 +916,9 @@ export function PassageDetailGuidedPhraseRecord({
       if (regionBoundariesEqual(json, clauseSegString)) return;
       pushSegmentUndo();
       setClauseSegString(json);
+      perfTrace('GP.persistClauseSegments-start', { regions: regions.length });
       await persistClauseSegments(json);
+      perfTrace('GP.persistClauseSegments-done', {});
       applyColors();
     },
     [
@@ -1485,6 +1487,10 @@ export function PassageDetailGuidedPhraseRecord({
   const afterUploadCb = useCallback(
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     async (_mediaId: string | undefined) => {
+      perfTrace('GP.afterUploadCb', {
+        mediaId: _mediaId || '(none)',
+        index: currentIndexRef.current,
+      });
       // Color green immediately; rowData/forceRefresh often lag the upload (TT-7552).
       optimisticCompletedRef.current.add(currentIndexRef.current);
       setSavingRecording(false);
@@ -1498,6 +1504,10 @@ export function PassageDetailGuidedPhraseRecord({
 
   const handleClearRecording = useCallback(async () => {
     if (!recordingRow?.mediafile?.id) return;
+    perfTrace('GP.handleClearRecording', {
+      mediafileId: recordingRow.mediafile.id,
+      index: currentIndexRef.current,
+    });
     await memory.update((t) =>
       t.removeRecord({ type: 'mediafile', id: recordingRow.mediafile.id })
     );
