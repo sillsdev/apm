@@ -71,7 +71,10 @@ function WSAudioPlayerZoom(props: IProps) {
 
   const handleZoomIn = () => {
     if (!readyRef.current) return false;
-    setZoom(Math.min(zoomRef.current * 2, maxZoom));
+    // Short clips often fit at > maxZoom; capping at maxZoom would zoom OUT.
+    const next = Math.min(zoomRef.current * 2, maxZoom);
+    if (next <= zoomRef.current) return false;
+    setZoom(next);
     return true;
   };
   const handleZoomOut = () => {
@@ -109,7 +112,7 @@ function WSAudioPlayerZoom(props: IProps) {
                 <IconButton
                   id="wsZoomIn"
                   onClick={handleZoomIn}
-                  disabled={!ready || zoom === maxZoom || zoom === 0}
+                  disabled={!ready || zoom >= maxZoom || zoom === 0}
                 >
                   <ZoomInIcon />
                 </IconButton>

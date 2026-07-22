@@ -21,6 +21,7 @@ import { maxZoom } from '../components/WSAudioPlayerZoom';
 import WaveSurfer from 'wavesurfer.js';
 import { NamedRegions, useMobile } from '../utils';
 import { RECORD_PEAKS_PER_SECOND } from './recordPeaksCapture';
+import { waveformHeightForZoom } from './waveformZoomHeight';
 
 const noop = () => {};
 
@@ -96,7 +97,6 @@ export function useWaveSurfer(
   const audioContextRef = useRef<AudioContext | undefined>(undefined);
   const fillpxRef = useRef(0);
   const [playerUrl, setPlayerUrl] = useState<string | undefined>();
-  const [actualPxPerSec, setActualPxPerSec] = useState(0);
   const blobRef = useRef<Blob | undefined>(undefined);
   const blobAudioRef = useRef<AudioBuffer | undefined>(undefined);
   const positionRef = useRef<number | undefined>(undefined);
@@ -336,7 +336,6 @@ export function useWaveSurfer(
       const containerWidth = container.current?.clientWidth || 0; // Get the width of the waveform container in pixels.
       // Calculate the actual pixels per second
       const pxPerSec = containerWidth / durationRef.current;
-      setActualPxPerSec(pxPerSec);
       fillpxRef.current = Math.round(pxPerSec * 10) / 10;
       onZoom && onZoom(fillpxRef.current);
     } else {
@@ -478,11 +477,10 @@ export function useWaveSurfer(
       if (onZoom) {
         wavesurfer.on('zoom', function (px: number) {
           onZoom(px);
-          if (px > actualPxPerSec) {
-            wavesurfer.setOptions({
-              height: height - 40,
-            });
-          }
+          // Restore height on fit/zoom-out; never collapse short players to 0
+          wavesurfer.setOptions({
+            height: waveformHeightForZoom(height, px, fillpxRef.current),
+          });
         });
       }
       if (blobToLoad.current) {
