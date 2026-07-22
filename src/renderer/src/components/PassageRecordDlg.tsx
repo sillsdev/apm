@@ -51,6 +51,20 @@ const RecordDialog = styled(Dialog)(({ theme }) => ({
     minHeight: audioDlgHeight,
     maxHeight: audioDlgHeight,
   },
+  // Tighten vertical chrome so record mode (speaker + player + metadata)
+  // fits without scrolling on typical laptop heights.
+  '& .MuiDialogTitle-root': {
+    paddingTop: theme.spacing(1.5),
+    paddingBottom: theme.spacing(0.5),
+  },
+  '& .MuiDialogContent-root': {
+    paddingTop: theme.spacing(1),
+    paddingBottom: theme.spacing(1),
+  },
+  '& .MuiDialogActions-root': {
+    paddingTop: theme.spacing(0.5),
+    paddingBottom: theme.spacing(1),
+  },
   '& #uploadCancel, & #uploadSave': {
     margin: theme.spacing(1),
   },
@@ -248,7 +262,7 @@ function PassageRecordDlg(props: IProps) {
               setCanCancel={setCanCancel}
               setStatusText={setStatusText}
               width={dialogWidth}
-              height={200}
+              height={160}
               allowZoom={true}
               allowNoNoise={true}
               allowDeltaVoice={true}
