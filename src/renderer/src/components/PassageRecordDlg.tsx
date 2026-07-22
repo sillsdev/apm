@@ -246,28 +246,40 @@ function PassageRecordDlg(props: IProps) {
               />
             )}
             {busy && <Busy />}
-            <MediaRecord
-              toolId={myToolId}
-              artifactId={artifactId}
-              passageId={passageId}
-              planId={planId}
-              afterUploadCb={afterUploadCb}
-              mediaId={mediaId}
-              onSaving={() => setBusy(true)}
-              onReady={() => setBusy(false)}
-              defaultFilename={defaultFilename}
-              allowRecord={hasRights}
-              allowWave={allowWave}
-              setCanSave={setCanSave}
-              setCanCancel={setCanCancel}
-              setStatusText={setStatusText}
-              width={dialogWidth}
-              height={160}
-              allowZoom={true}
-              allowNoNoise={true}
-              allowDeltaVoice={true}
-              onRecording={setRecording}
-            />
+            {/* Content-sized wrapper so WSAudioPlayer's height:100% cannot
+                cause vertical growth. */}
+            <Box
+              sx={{
+                flex: '0 0 auto',
+                height: 'fit-content',
+                width: '100%',
+                maxWidth: '100%',
+                alignSelf: 'flex-start',
+              }}
+            >
+              <MediaRecord
+                toolId={myToolId}
+                artifactId={artifactId}
+                passageId={passageId}
+                planId={planId}
+                afterUploadCb={afterUploadCb}
+                mediaId={mediaId}
+                onSaving={() => setBusy(true)}
+                onReady={() => setBusy(false)}
+                defaultFilename={defaultFilename}
+                allowRecord={hasRights}
+                allowWave={allowWave}
+                setCanSave={setCanSave}
+                setCanCancel={setCanCancel}
+                setStatusText={setStatusText}
+                width={dialogWidth}
+                height={160}
+                allowZoom={true}
+                allowNoNoise={true}
+                allowDeltaVoice={true}
+                onRecording={setRecording}
+              />
+            </Box>
             {metaData}
           </DialogContent>
           <DialogActions>
