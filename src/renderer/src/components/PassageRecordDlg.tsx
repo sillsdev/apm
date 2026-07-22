@@ -289,7 +289,12 @@ function PassageRecordDlg(props: IProps) {
           metaData={metaData}
           ready={ready}
           speaker={speaker}
-          onSpeaker={onSpeaker}
+          // Only Media uploads gate the drop zone on speaker rights (and show
+          // SpeakerName). Resource/ProjectResource must leave onSpeaker unset
+          // so hasRights stays true and the file drop target is clickable.
+          onSpeaker={
+            uploadType === UploadType.Media ? onSpeaker : undefined
+          }
           team={team}
           inValue={inValue}
           onNonAudio={onNonAudio}
