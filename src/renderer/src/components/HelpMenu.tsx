@@ -88,7 +88,14 @@ export function HelpMenu(props: IProps) {
     const localPath = loc
       ? path.join(folder, 'help', name)
       : await dataPath(name, PathType.ZIP);
-    if (!loc) await ipc?.downloadFile(url, localPath);
+    if (!loc) {
+      const err = await ipc?.downloadFile(url, localPath);
+      if (err || !(await ipc?.exists(localPath))) {
+        showMessage(`Failed to download ${name}`);
+        setAnchorEl(null);
+        return;
+      }
+    }
     launch(localPath, false);
     setAnchorEl(null);
     if (action) action('Download');
