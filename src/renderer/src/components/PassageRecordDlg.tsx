@@ -32,7 +32,7 @@ import { AltButton, PriButton } from '../control';
 import Busy from './Busy';
 
 const audioDlgWidth = 'min(680px, calc(100vw - 32px))';
-const audioDlgHeight = 'min(660px, calc(100dvh - 32px))';
+const audioDlgHeight = 'min(700px, calc(100dvh - 32px))';
 
 const StatusMessage = styled(Typography)<TypographyProps>(({ theme }) => ({
   marginRight: theme.spacing(2),
