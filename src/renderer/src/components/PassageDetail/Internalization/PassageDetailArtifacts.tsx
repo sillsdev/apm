@@ -102,6 +102,7 @@ import { usePassageRef } from './usePassageRef';
 import { MarkDownView } from '../../../control/MarkDownView';
 import { UploadType } from '../../UploadType';
 import { ResourceTypeEnum } from './ResourceTypeEnum';
+import { AddResourceAction } from './AddResourceAction';
 
 const MediaContainer = styled(Box)<BoxProps>(({ theme }) => ({
   marginRight: theme.spacing(2),
@@ -492,28 +493,28 @@ export function PassageDetailArtifacts() {
     }
   };
 
-  const handleAction = (what: string) => {
+  const handleAction = (what: AddResourceAction) => {
     artifactState.id = resourceType ?? null;
     resourceTypeRef.current = ResourceTypeEnum.sectionResource;
-    if (what === 'audio') {
+    if (what === AddResourceAction.Audio) {
       mediaRef.current = undefined;
       setUploadType(UploadType.Resource);
       syncResourceReady(UploadType.Resource, descriptionRef.current);
       setAudioUploadOrRecord(true);
       setUploadVisible(true);
-    } else if (what === 'scripture') {
+    } else if (what === AddResourceAction.Scripture) {
       setAudioScriptureVisible(true);
-    } else if (what === 'link') {
+    } else if (what === AddResourceAction.Link) {
       setUploadType(UploadType.Link);
       syncResourceReady(UploadType.Link, descriptionRef.current);
       setAudioUploadOrRecord(false);
       setUploadVisible(true);
-    } else if (what === 'text') {
+    } else if (what === AddResourceAction.Text) {
       setUploadType(UploadType.MarkDown);
       syncResourceReady(UploadType.MarkDown, descriptionRef.current);
       setAudioUploadOrRecord(false);
       setUploadVisible(true);
-    } else if (what === 'shared') {
+    } else if (what === AddResourceAction.Shared) {
       resourceTypeRef.current = ResourceTypeEnum.sectionResource;
       setSharedResourceVisible(true);
     }
