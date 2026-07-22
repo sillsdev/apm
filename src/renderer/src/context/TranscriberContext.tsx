@@ -35,6 +35,7 @@ import { useDispatch } from 'react-redux';
 import { InitializedRecord, RecordKeyMap } from '@orbit/records';
 import { useOrbitData } from '../hoc/useOrbitData';
 import { PassageDetailContext } from './PassageDetailContext';
+import { filterMediaByStepLanguage } from '../components/PassageDetail/carefulSpeech/matchesGuidedOutputRow';
 
 export interface IRowData {
   planName: string;
@@ -127,9 +128,15 @@ interface IProps {
   children: React.ReactElement;
   artifactTypeId?: string | null | undefined;
   curRole?: string;
+  /**
+   * Primary step LWC (bcp47). When set (and not `und`), TaskList only
+   * includes media stamped with that language — used by PBT Transcribe.
+   * Sister language is ASR-only and must not be passed here.
+   */
+  languageBcp47?: string;
 }
 const TranscriberProvider = (props: IProps) => {
-  const { artifactTypeId, curRole } = props;
+  const { artifactTypeId, curRole, languageBcp47 } = props;
   const [isDetail] = useState(artifactTypeId !== undefined);
   const passages = useOrbitData<Passage[]>('passage');
   const sections = useOrbitData<Section[]>('section');
@@ -167,12 +174,15 @@ const TranscriberProvider = (props: IProps) => {
 
   useEffect(() => {
     if (devPlan && mediafiles.length > 0) {
-      const m = getMediaInPlans([devPlan], mediafiles, artifactId, true);
+      const m = filterMediaByStepLanguage(
+        getMediaInPlans([devPlan], mediafiles, artifactId, true),
+        languageBcp47
+      );
       setPlanMedia(m);
       planMediaRef.current = m;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mediafiles, devPlan, artifactId]);
+  }, [mediafiles, devPlan, artifactId, languageBcp47]);
 
   const setRows = (rowData: IRowData[]) => {
     setState((state: ICtxState) => {

@@ -314,6 +314,7 @@ export function PassageDetailTranscribe({ width, artifactTypeId }: IProps) {
     <TranscriberProvider
       artifactTypeId={artifactTypeId}
       curRole={curRole as string}
+      languageBcp47={artifactTypeId ? stepLanguageBcp47 : undefined}
     >
       <Grid
         container

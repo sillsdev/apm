@@ -63,6 +63,27 @@ export function isLanguageFilterActive(languageBcp47?: string): boolean {
 }
 
 /**
+ * Whether mediafile language matches step LWC.
+ * When the filter is inactive (`undefined` / `und`), all media match.
+ */
+export function mediaMatchesStepLanguage(
+  mediafile: MediaFileD | undefined,
+  languageBcp47?: string
+): boolean {
+  if (!isLanguageFilterActive(languageBcp47)) return true;
+  return mediaLanguageBcp47(mediafile) === languageBcp47;
+}
+
+/** Keep only media stamped with the step LWC (no-op when filter inactive). */
+export function filterMediaByStepLanguage<T extends MediaFileD>(
+  media: T[],
+  languageBcp47?: string
+): T[] {
+  if (!isLanguageFilterActive(languageBcp47)) return media;
+  return media.filter((m) => mediaMatchesStepLanguage(m, languageBcp47));
+}
+
+/**
  * Shared scope for Phrase BT / Retell / Careful Speech guided outputs:
  * artifact type + current vernacular sourceMedia (+ optional language).
  * Never qualifies on sourceVersion alone.
@@ -79,13 +100,7 @@ export function matchesGuidedOutputRow(
       return false;
     }
   }
-  if (isLanguageFilterActive(opts.languageBcp47)) {
-    const rowBcp = mediaLanguageBcp47(row.mediafile);
-    if (rowBcp !== opts.languageBcp47) {
-      return false;
-    }
-  }
-  return true;
+  return mediaMatchesStepLanguage(row.mediafile, opts.languageBcp47);
 }
 
 export function pickLatestGuidedOutputRow(matches: IRow[]): IRow | undefined {
