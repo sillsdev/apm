@@ -31,7 +31,9 @@ import EditNoteIcon from '@mui/icons-material/EditNote';
 import {
   DialogMode,
   ICardsStrings,
+  IImportStrings,
   IProjButtonsStrings,
+  ISharedStrings,
   IState,
   ITranscriptionTabStrings,
   IVProjectStrings,
@@ -62,7 +64,7 @@ import {
 } from '../../crud';
 import { localizeProjectTag } from '../../utils/localizeProjectTag';
 import OfflineIcon from '@mui/icons-material/OfflinePin';
-import { useDataChanges, useHome, useJsonParams } from '../../utils';
+import { useDataChanges, useHome, useJsonParams, useMobile } from '../../utils';
 import { CopyProjectProps } from '../../store';
 import { TokenContext } from '../../context/TokenProvider';
 import { useSnackBar } from '../../hoc/SnackBar';
@@ -84,6 +86,7 @@ import {
   cardsSelector,
   importSelector,
   projButtonsSelector,
+  sharedSelector,
   transcriptionTabSelector,
   vProjectSelector,
 } from '../../selector';
@@ -187,6 +190,7 @@ export const ProjectCard = (props: IProps) => {
   const [openCopyDialog, setOpenCopyDialog] = useState(false);
   const [selectedTeamId, setSelectedTeamId] = useState<string>('');
   const { getProjectDefault } = useProjectDefaults();
+  const { isMobileWidth } = useMobile();
   const t: ICardsStrings = useSelector(cardsSelector, shallowEqual);
   const tt: ITranscriptionTabStrings = useSelector(
     transcriptionTabSelector,
@@ -210,7 +214,8 @@ export const ProjectCard = (props: IProps) => {
     related(project, 'project')
   );
   const teams = useAdminTeams();
-  const tImport: any = useSelector(importSelector, shallowEqual);
+  const tImport: IImportStrings = useSelector(importSelector, shallowEqual);
+  const tShared: ISharedStrings = useSelector(sharedSelector, shallowEqual);
 
   useEffect(() => {
     if (open !== '') doOpen(open);
@@ -278,12 +283,20 @@ export const ProjectCard = (props: IProps) => {
         setOpenProject(true);
         break;
       case 'integration':
+        if (isMobileWidth) {
+          showMessage(tShared.notSupported);
+          break;
+        }
         setOpenIntegration(true);
         break;
       case 'delete':
         setDeleteItem(project);
         break;
       case 'category':
+        if (isMobileWidth) {
+          showMessage(tShared.notSupported);
+          break;
+        }
         setOpenCategory(true);
         break;
       case 'copyproject':
@@ -293,6 +306,10 @@ export const ProjectCard = (props: IProps) => {
       case 'export':
       case 'reports':
       case 'offlineAvail':
+        if (isMobileWidth) {
+          showMessage(tShared.notSupported);
+          break;
+        }
         LoadAndGo(what);
     }
     setOpen('');
