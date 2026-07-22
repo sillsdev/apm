@@ -16,7 +16,11 @@ export const tryDownload = async (url: string): Promise<TryDownloadResult> => {
     try {
       ipc?.createFolder(path.dirname(local.localname));
       console.log('downloading', local.localname, url);
-      await ipc?.downloadFile(url, local.localname);
+      const err = await ipc?.downloadFile(url, local.localname);
+      if (err) {
+        console.log('error', err);
+        return { ok: false, path: url };
+      }
       if (await ipc?.exists(local.localname)) {
         return { ok: true, path: local.localname };
       }

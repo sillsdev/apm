@@ -336,7 +336,8 @@ export const useBurritoNavigation = (teamId: string) => {
         await dataPath(content, PathType.MEDIA, local);
         const mediaName = local.localname;
         if (!(await ipc?.exists(mediaName))) {
-          await ipc?.downloadFile(content, mediaName);
+          const err = await ipc?.downloadFile(content, mediaName);
+          if (err || !(await ipc?.exists(mediaName))) return false;
         }
         await ipc?.copyFile(mediaName, destPath);
         return true;

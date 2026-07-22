@@ -411,7 +411,11 @@ export function ipcMethods(): void {
       await downloadFile(url, localFile);
       return;
     } catch (err) {
-      return JSON.stringify(err);
+      const e = err as Error & { code?: string };
+      return JSON.stringify({
+        message: e?.message ?? String(err),
+        ...(e?.code ? { code: e.code } : {}),
+      });
     }
   });
 
