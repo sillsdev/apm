@@ -125,7 +125,14 @@ export const SelectArtifactCategory = (props: IProps) => {
       setCategory(existing.id);
       return;
     }
-    if (!allowNew || committingRef.current) return;
+    if (!allowNew) {
+      // New categories aren't allowed and the typed text matches no existing
+      // category, so revert the field to the committed value instead of
+      // leaving an unsaved name showing.
+      setInputVal(currentName);
+      return;
+    }
+    if (committingRef.current) return;
     committingRef.current = true;
     try {
       const newId = await addNewArtifactCategory(name, type);
@@ -160,14 +167,16 @@ export const SelectArtifactCategory = (props: IProps) => {
         onChange={(_e, v) => resolveCommit(v)}
         onBlur={() => resolveCommit(inputVal)}
         sx={textFieldProps}
-        renderOption={(liProps, option) => {
+        renderOption={(liProps, option, { index }) => {
           const cat = artifactCategorys.find((c) => c.category === option);
           const isScr =
             scripture === ArtCatScr.highlight &&
             cat &&
             scriptureTypeCategory(cat.slug);
           return (
-            <li {...liProps} key={cat?.id ?? option}>
+            // Include the render index so two categories that share a localized
+            // name can't collide on the same React key.
+            <li {...liProps} key={`${cat?.id ?? option}-${index}`}>
               {option}
               {isScr && (
                 <LightTooltip title={t.scriptureHighlight}>

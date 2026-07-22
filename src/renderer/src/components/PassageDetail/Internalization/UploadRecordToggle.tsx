@@ -29,7 +29,8 @@ export function UploadRecordToggle({
         justifyContent: 'center',
         flexShrink: 0,
         px: 3,
-        py: 1,
+        pt: 0,
+        pb: 0.5,
       }}
     >
       <ToggleButtonGroup
