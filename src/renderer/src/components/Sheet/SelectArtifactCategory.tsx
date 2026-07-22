@@ -186,16 +186,43 @@ export const SelectArtifactCategory = (props: IProps) => {
             </li>
           );
         }}
-        renderInput={(params) => (
-          <TextField
-            {...params}
-            id={idIn || 'artifact-category'}
-            label={t.artifactCategory}
-            required={required}
-            variant="filled"
-            fullWidth
-          />
-        )}
+        renderInput={(params) => {
+          // The dropdown options carry the scripture-highlight info icon in
+          // renderOption, but the collapsed field needs it too so the icon
+          // stays visible once a scripture category is selected.
+          const selectedCat = artifactCategorys.find(
+            (c) => c.id === categoryId
+          );
+          const showScrIcon =
+            scripture === ArtCatScr.highlight &&
+            !!selectedCat &&
+            scriptureTypeCategory(selectedCat.slug);
+          return (
+            <TextField
+              {...params}
+              id={idIn || 'artifact-category'}
+              label={t.artifactCategory}
+              required={required}
+              variant="filled"
+              fullWidth
+              slotProps={{
+                input: {
+                  ...params.InputProps,
+                  endAdornment: (
+                    <>
+                      {showScrIcon && (
+                        <LightTooltip title={t.scriptureHighlight}>
+                          <InfoIcon fontSize="small" sx={{ mr: 0.5 }} />
+                        </LightTooltip>
+                      )}
+                      {params.InputProps?.endAdornment}
+                    </>
+                  ),
+                },
+              }}
+            />
+          );
+        }}
       />
     </StyledBox>
   );
