@@ -191,6 +191,7 @@ export const FaithbridgeIframe = ({
     if (error) {
       console.log('Faithbridge error:', error);
       if (/404/.test(error || '')) showMessage(t.noInfo, AlertSeverity.Warning);
+      setFetching(false);
       if (refresh < 5) setRefresh(refresh + 1);
       else {
         logError(Severity.error, errorReporter, error);
