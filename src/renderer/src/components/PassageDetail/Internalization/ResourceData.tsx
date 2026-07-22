@@ -149,7 +149,6 @@ export function ResourceData(props: IProps) {
             required={catRequired}
             scripture={ArtCatScr.highlight}
             type={ArtifactCategoryType.Resource}
-            autocomplete
           />
         </Grid>
       </Grid>

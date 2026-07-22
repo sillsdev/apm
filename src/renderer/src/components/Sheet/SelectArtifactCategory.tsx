@@ -13,12 +13,10 @@ import {
   useArtifactCategory,
 } from '../../crud/useArtifactCategory';
 import { ArtifactCategory, ISelectArtifactCategoryStrings } from '../../model';
-import AddIcon from '@mui/icons-material/Add';
 import InfoIcon from '@mui/icons-material/Info';
 import { shallowEqual, useSelector } from 'react-redux';
-import { LightTooltip, StyledMenuItem } from '../../control';
+import { LightTooltip } from '../../control';
 import { selectArtifactCategory } from '../../selector';
-import { NewArtifactCategory } from './NewArtifactCategory';
 import { useOrbitData } from '../../hoc/useOrbitData';
 import { useGlobal } from '../../context/useGlobal';
 import { ArtCatScr } from './ArtCatScr';
@@ -32,9 +30,6 @@ interface IProps {
   scripture?: ArtCatScr | undefined;
   type: ArtifactCategoryType;
   disabled?: boolean | undefined;
-  /** Render a free-solo Autocomplete (type to filter existing or add a new
-   *  category) instead of the Select + "add new" menu item. */
-  autocomplete?: boolean | undefined;
 }
 
 const StyledBox = styled(Box)<BoxProps>(() => ({
@@ -51,8 +46,6 @@ const textFieldProps = {
   maxWidth: '400px',
   minWidth: '200px',
 } as SxProps;
-const menuProps = { width: 300 } as SxProps;
-const smallTextProps = { fontSize: 'small' } as SxProps;
 
 export const SelectArtifactCategory = (props: IProps) => {
   const {
@@ -64,13 +57,10 @@ export const SelectArtifactCategory = (props: IProps) => {
     scripture,
     type,
     disabled,
-    // TODO should they all be autocomplete?
-    autocomplete,
   } = props;
   const artifactCategories =
     useOrbitData<ArtifactCategory[]>('artifactcategory');
   const [categoryId, setCategoryId] = useState(initCategory);
-  const [showNew, setShowNew] = useState(false);
   const [org] = useGlobal('organization');
   const t: ISelectArtifactCategoryStrings = useSelector(
     selectArtifactCategory,
@@ -114,33 +104,13 @@ export const SelectArtifactCategory = (props: IProps) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [artifactCategories, scripture, org, type]);
 
-  const categoryAdded = (newId: string) => {
-    getCategorys().then((cats) => {
-      setArtifactCategorys(cats);
-      setCategoryId(newId);
-      onCategoryChange && onCategoryChange(newId);
-    });
-    cancelNewCategory();
-  };
-  const cancelNewCategory = () => {
-    setShowNew(false);
-  };
-
-  const handleArtifactCategoryChange = (e: any) => {
-    if (e.target.value === t.addNewCategory) setShowNew(true);
-    else {
-      setCategoryId(e.target.value);
-      onCategoryChange && onCategoryChange(e.target.value);
-    }
-  };
-
   const setCategory = (id: string) => {
     setCategoryId(id);
     onCategoryChange && onCategoryChange(id);
   };
 
-  // Resolve a chosen/typed category name to an id for the Autocomplete path,
-  // creating a new category when the name doesn't match an existing one.
+  // Resolve a chosen/typed category name to an id, creating a new category
+  // when the name doesn't match an existing one.
   const resolveCommit = async (raw: string | null) => {
     const name = (raw ?? '').trim();
     if (name.toLowerCase() === currentName.trim().toLowerCase()) return;
@@ -176,125 +146,48 @@ export const SelectArtifactCategory = (props: IProps) => {
 
   return (
     <StyledBox>
-      {autocomplete ? (
-        <Autocomplete
-          freeSolo
-          size="small"
-          disabled={disabled ?? false}
-          options={artifactCategorys
-            .map((c) => c.category)
-            .filter(Boolean)
-            .sort((a, b) => (a < b ? -1 : 1))}
-          value={currentName || null}
-          inputValue={inputVal}
-          onInputChange={(_e, v) => setInputVal(v)}
-          onChange={(_e, v) => resolveCommit(v)}
-          onBlur={() => resolveCommit(inputVal)}
-          sx={textFieldProps}
-          renderOption={(liProps, option) => {
-            const cat = artifactCategorys.find((c) => c.category === option);
-            const isScr =
-              scripture === ArtCatScr.highlight &&
-              cat &&
-              scriptureTypeCategory(cat.slug);
-            return (
-              <li {...liProps} key={cat?.id ?? option}>
-                {option}
-                {isScr && (
-                  <LightTooltip title={t.scriptureHighlight}>
-                    <InfoIcon fontSize="small" sx={{ ml: 1 }} />
-                  </LightTooltip>
-                )}
-              </li>
-            );
-          }}
-          renderInput={(params) => (
-            <TextField
-              {...params}
-              id={idIn || 'artifact-category'}
-              label={t.artifactCategory}
-              required={required}
-              variant="filled"
-              fullWidth
-            />
-          )}
-        />
-      ) : (
-        <TextField
-          id={idIn || 'artifact-category'}
-          select
-          label={t.artifactCategory}
-          sx={textFieldProps}
-          value={
-            artifactCategorys.map((c) => c.id).includes(categoryId)
-              ? categoryId
-              : ''
-          }
-          onChange={handleArtifactCategoryChange}
-          disabled={disabled ?? false}
-          slotProps={{
-            select: {
-              MenuProps: {
-                sx: menuProps,
-              },
-            },
-            input: {
-              sx: smallTextProps,
-            },
-            inputLabel: {
-              sx: smallTextProps,
-            },
-          }}
-          margin="normal"
-          variant="filled"
-          required={required}
-        >
-          {artifactCategorys
-            .sort((i, j) => (i.category < j.category ? -1 : 1))
-            .map((option: IArtifactCategory) => (
-              <StyledMenuItem key={option.id} value={option.id}>
-                {option.category + '\u00A0\u00A0'}
-                {scripture === ArtCatScr.highlight ? (
-                  scriptureTypeCategory(option.slug) ? (
-                    <LightTooltip title={t.scriptureHighlight}>
-                      <InfoIcon />
-                    </LightTooltip>
-                  ) : (
-                    <></>
-                  )
-                ) : (
-                  <></>
-                )}
-              </StyledMenuItem>
-            ))
-            .concat(
-              // if not populated yet
-              initCategory !== '' &&
-                artifactCategorys.length > 0 &&
-                artifactCategorys.findIndex(
-                  (v: IArtifactCategory) => v.id === initCategory
-                ) === -1 ? (
-                <StyledMenuItem key={initCategory} value={initCategory}>
-                  <></>
-                </StyledMenuItem>
-              ) : allowNew ? (
-                <StyledMenuItem key={t.addNewCategory} value={t.addNewCategory}>
-                  {t.addNewCategory + '\u00A0\u00A0'}
-                  <AddIcon />
-                </StyledMenuItem>
-              ) : (
-                <div key={'noNew'}></div>
-              )
-            )}
-        </TextField>
-      )}
-      {showNew && (
-        <NewArtifactCategory
-          type={type}
-          onAdded={categoryAdded}
-          onCancelled={cancelNewCategory}
-        />
-      )}
+      <Autocomplete
+        freeSolo
+        size="small"
+        disabled={disabled ?? false}
+        options={artifactCategorys
+          .map((c) => c.category)
+          .filter(Boolean)
+          .sort((a, b) => (a < b ? -1 : 1))}
+        value={currentName || null}
+        inputValue={inputVal}
+        onInputChange={(_e, v) => setInputVal(v)}
+        onChange={(_e, v) => resolveCommit(v)}
+        onBlur={() => resolveCommit(inputVal)}
+        sx={textFieldProps}
+        renderOption={(liProps, option) => {
+          const cat = artifactCategorys.find((c) => c.category === option);
+          const isScr =
+            scripture === ArtCatScr.highlight &&
+            cat &&
+            scriptureTypeCategory(cat.slug);
+          return (
+            <li {...liProps} key={cat?.id ?? option}>
+              {option}
+              {isScr && (
+                <LightTooltip title={t.scriptureHighlight}>
+                  <InfoIcon fontSize="small" sx={{ ml: 1 }} />
+                </LightTooltip>
+              )}
+            </li>
+          );
+        }}
+        renderInput={(params) => (
+          <TextField
+            {...params}
+            id={idIn || 'artifact-category'}
+            label={t.artifactCategory}
+            required={required}
+            variant="filled"
+            fullWidth
+          />
+        )}
+      />
     </StyledBox>
   );
 };

@@ -189,11 +189,10 @@ export function PassageDetailArtifacts() {
   );
   const projIdentRef = useRef<RecordIdentity[]>([]);
   const projMediaRef = useRef<MediaFileD | undefined>(undefined);
-  // TODO check on this
   // True when the general-resource wizard was entered by adding a new audio
   // resource ("Add Audio Resource"); false when configuring/editing an existing
   // one ("Edit Audio Resource").
-  const wizardAddRef = useRef<boolean>(false);
+  const isAddingAudioResourceRef = useRef<boolean>(false);
   const [allResources, setAllResources] = useState(false);
   const { showMessage } = useSnackBar();
   const [confirm, setConfirm] = useState('');
@@ -384,7 +383,7 @@ export function PassageDetailArtifacts() {
     // simple edit dialog (mockup: "use Edit to also configure the General Resource").
     if (mf && related(mf, 'artifactType') === projResourceType) {
       resourceTypeRef.current = ResourceTypeEnum.projectResource;
-      wizardAddRef.current = false;
+      isAddingAudioResourceRef.current = false;
       handleSelectProjectResource(mf);
       return;
     }
@@ -668,7 +667,7 @@ export function PassageDetailArtifacts() {
         }
       }
       if (projRes.length === 1) {
-        wizardAddRef.current = true;
+        isAddingAudioResourceRef.current = true;
         setProjResSetup(projRes);
       }
       resetEdit();
@@ -1014,14 +1013,14 @@ export function PassageDetailArtifacts() {
       >
         <SelectProjectResource
           onSelect={(m) => {
-            wizardAddRef.current = false;
+            isAddingAudioResourceRef.current = false;
             handleSelectProjectResource(m);
           }}
           onOpen={handleProjectResourceVisible}
         />
       </BigDialog>
       <BigDialog
-        title={wizardAddRef.current ? t.addAudioResource : t.editAudioResource}
+        title={isAddingAudioResourceRef.current ? t.addAudioResource : t.editAudioResource}
         description={
           <Typography sx={{ color: 'text.secondary' }}>
             {t.selectPassagesSub}
