@@ -45,8 +45,17 @@ export interface GuidedPhraseRecordConfig {
   sequentialUnitNavAroundRecord: boolean;
   /** Persist segment map on vernacular named regions (false for Retell). */
   persistSegments: boolean;
-  /** Filename postfix for a unit at `unitIndex` (0-based) on `sourceVersion`. */
-  buildFilenamePostfix: (unitIndex: number, sourceVersion: number) => string;
+  /**
+   * Filename postfix for a unit at `unitIndex` (0-based) on `sourceVersion`.
+   * `languageBcp47` (the step LWC) disambiguates per-language recordings so
+   * two languages of the same passage/version/segment do not collide on the
+   * same S3 key. Ignored by single-language configs (e.g. Careful Speech).
+   */
+  buildFilenamePostfix: (
+    unitIndex: number,
+    sourceVersion: number,
+    languageBcp47?: string
+  ) => string;
 }
 
 const carefulSpeechBoundaryDefaults = {
@@ -93,10 +102,18 @@ export function phraseBackTranslateConfig(
     multiLevelSegmentUndo: phraseBoundaryTools,
     sequentialUnitNavAroundRecord: phraseBoundaryTools,
     persistSegments: phraseBoundaryTools,
-    buildFilenamePostfix: (unitIndex, sourceVersion) => {
+    buildFilenamePostfix: (unitIndex, sourceVersion, languageBcp47) => {
       const base = `${artifactSlug}${unitIndex + 1}_v${sourceVersion}`;
-      if (unitIndex > 0) return `${base}s${unitIndex}`;
-      return base;
+      const seg = unitIndex > 0 ? `${base}s${unitIndex}` : base;
+      // TT-7557: Phrase BT / Retell are recorded once per language against the
+      // same vernacular source. Without the language in the S3 key, English and
+      // French of the same passage/version/segment produce identical filenames,
+      // so whichever uploads last overwrites the other's audio (English rows
+      // then play the French audio). Append the step LWC to keep keys distinct.
+      // Single-language projects (no active language filter) keep legacy names.
+      return languageBcp47 && languageBcp47 !== 'und'
+        ? `${seg}_${languageBcp47}`
+        : seg;
     },
   };
 }

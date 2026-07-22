@@ -54,4 +54,35 @@ describe('guidedPhraseRecord config', () => {
     expect(config.buildFilenamePostfix(0, 2)).toBe('backtranslation1_v2');
     expect(config.buildFilenamePostfix(1, 2)).toBe('backtranslation2_v2s1');
   });
+
+  it('buildFilenamePostfix appends the step language so languages do not collide (TT-7557)', () => {
+    const config = phraseBackTranslateConfig(
+      ArtifactTypeSlug.PhraseBackTranslation,
+      NamedRegions.BackTranslation
+    );
+    // Same passage/version/segment in two languages -> distinct S3 keys.
+    expect(config.buildFilenamePostfix(0, 1, 'en')).toBe(
+      'backtranslation1_v1_en'
+    );
+    expect(config.buildFilenamePostfix(0, 1, 'fr')).toBe(
+      'backtranslation1_v1_fr'
+    );
+    expect(config.buildFilenamePostfix(1, 1, 'fr')).toBe(
+      'backtranslation2_v1s1_fr'
+    );
+  });
+
+  it('buildFilenamePostfix keeps legacy names when no language filter is active', () => {
+    const config = phraseBackTranslateConfig(
+      ArtifactTypeSlug.PhraseBackTranslation,
+      NamedRegions.BackTranslation
+    );
+    expect(config.buildFilenamePostfix(0, 1)).toBe('backtranslation1_v1');
+    expect(config.buildFilenamePostfix(0, 1, undefined)).toBe(
+      'backtranslation1_v1'
+    );
+    expect(config.buildFilenamePostfix(0, 1, 'und')).toBe(
+      'backtranslation1_v1'
+    );
+  });
 });
