@@ -161,7 +161,9 @@ function MediaRecord(props: IProps) {
   } = props;
   const context = usePassageDetailContext();
   const simplified = Boolean(context?.isBoldWorkflow);
-  const effectiveOneTryOnly = oneTryOnly || simplified;
+  // Respect an explicit oneTryOnly={false} (discussion comments). Only default
+  // to BOLD one-shot when the caller omits the prop (e.g. PassageDetailRecord).
+  const effectiveOneTryOnly = oneTryOnly ?? simplified;
   const effectiveIsStopLogic = isStopLogic || simplified;
   const { settings: toolSettings } = useStepTool(context?.currentstep || '');
   const captureAudioProcessing = useMemo(

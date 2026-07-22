@@ -129,7 +129,12 @@ export function useWaveSurfer(
     return plugin;
   }, []);
 
-  const timelinePlugin = useMemo(() => Timeline.create({}), []);
+  // Timeline defaults to 20px and sits below the wave; skip it in short
+  // players (discussion comments) so the canvas isn't clipped away.
+  const timelinePlugin = useMemo(
+    () => (height >= 60 ? Timeline.create({}) : undefined),
+    [height]
+  );
   const zoomPlugin = useMemo(() => {
     if (!onZoom) return undefined;
     return ZoomPlugin.create({
@@ -139,8 +144,10 @@ export function useWaveSurfer(
   }, [onZoom]);
 
   const plugins = useMemo(() => {
-    if (zoomPlugin) return [timelinePlugin, regionsPlugin, zoomPlugin];
-    else return [timelinePlugin, regionsPlugin];
+    const list: (RegionsPlugin | Timeline | ZoomPlugin)[] = [regionsPlugin];
+    if (zoomPlugin) list.push(zoomPlugin);
+    if (timelinePlugin) list.push(timelinePlugin);
+    return list;
   }, [timelinePlugin, regionsPlugin, zoomPlugin]);
 
   // Create a stable configuration object
@@ -624,8 +631,6 @@ export function useWaveSurfer(
           blobAudioRef.current?.length / blobAudioRef.current?.sampleRate ||
           0
       );
-      //await wavesurferRef.current?.loadBlob(blob); // -- this says it is no longer supported but it works
-
       // Create blob URL for wavesurfer
       blobUrl = URL.createObjectURL(blob);
       currentBlobUrlRef.current = blobUrl;
