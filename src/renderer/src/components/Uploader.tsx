@@ -160,6 +160,7 @@ export const Uploader = (props: IProps) => {
 
   const afterUploadCb = async (mediaId: string | undefined) => {
     if (mediaId) {
+      if (beforeUpload) await beforeUpload();
       successCount.current = 1;
       mediaIdRef.current = [mediaId];
     } else successCount.current = 0;
