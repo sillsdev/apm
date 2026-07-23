@@ -51,7 +51,7 @@ import {
   isElectron,
   OrbitNetworkErrorRetries,
 } from '../../api-variable';
-import AppHead from '../components/App/AppHead';
+import AppLayout from '../components/App/AppLayout';
 import { useOfflnProjRead } from '../crud/useOfflnProjRead';
 import ImportTab from '../components/ImportTab';
 import { jwtDecode } from 'jwt-decode';
@@ -468,8 +468,7 @@ export function Loading() {
   if (view !== '') navigate(view);
 
   return (
-    <Box sx={{ width: '100%' }}>
-      <AppHead />
+    <AppLayout>
       <Box sx={centerProps}>
         <ApmSplash
           message={inviteError || orbitErrorMsg || undefined}
@@ -505,7 +504,7 @@ export function Loading() {
           }
         />
       </Box>
-    </Box>
+    </AppLayout>
   );
 }
 
