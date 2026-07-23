@@ -19,10 +19,20 @@ export const isUnauthorized = (ex: unknown): boolean => {
   return false;
 };
 
-export const isFetchNetworkError = (ex: unknown): boolean =>
-  ex instanceof NetworkError ||
-  (ex instanceof Error &&
-    (ex.message === 'Failed to fetch' || ex.message === 'Network Error'));
+export const isFetchNetworkError = (ex: unknown): boolean => {
+  if (ex instanceof NetworkError) return true;
+  if (!(ex instanceof Error)) return false;
+  const msg = ex.message || '';
+  const name = ex.name || '';
+  // Chrome: Failed to fetch; Firefox: NetworkError when…; Safari: Load failed;
+  // axios: Network Error
+  return (
+    msg === 'Failed to fetch' ||
+    /^load failed$/i.test(msg) ||
+    /network/i.test(msg) ||
+    /network/i.test(name)
+  );
+};
 
 /** axios / fetch timeout shapes */
 export const isTimeoutError = (ex: unknown): boolean => {
@@ -40,7 +50,16 @@ export const isTimeoutError = (ex: unknown): boolean => {
 /** 408 + gateway blips that are often transient on GETs */
 const RETRYABLE_STATUS = new Set([408, 502, 503, 504]);
 
+export const isRetryableHttpStatus = (status: number): boolean =>
+  RETRYABLE_STATUS.has(status);
+
 export const isRetryableError = (ex: unknown): boolean =>
   isFetchNetworkError(ex) ||
   isTimeoutError(ex) ||
   RETRYABLE_STATUS.has(getHttpStatus(ex) ?? -1);
+
+/** Turn a fetch Response with a retryable status into a throw so withNetworkRetry can retry */
+export const retryableHttpError = (status: number): Error =>
+  Object.assign(new Error(`HTTP ${status}`), {
+    response: { status },
+  });

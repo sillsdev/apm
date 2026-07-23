@@ -8,10 +8,19 @@ import { withNetworkRetry } from './networkRetry';
 import { NetworkError } from '@orbit/jsonapi';
 
 describe('isFetchNetworkError', () => {
-  it('matches Failed to fetch / Network Error / NetworkError', () => {
+  it('matches Chrome / Firefox / Safari / axios / Orbit network errors', () => {
     expect(isFetchNetworkError(new Error('Failed to fetch'))).toBe(true);
     expect(isFetchNetworkError(new Error('Network Error'))).toBe(true);
+    expect(
+      isFetchNetworkError(
+        new Error('NetworkError when attempting to fetch resource.')
+      )
+    ).toBe(true);
+    expect(isFetchNetworkError(new Error('Load failed'))).toBe(true);
     expect(isFetchNetworkError(new NetworkError({} as any))).toBe(true);
+    const named = new Error('something');
+    named.name = 'NetworkError';
+    expect(isFetchNetworkError(named)).toBe(true);
     expect(isFetchNetworkError(new Error('API Error: 500'))).toBe(false);
     expect(isFetchNetworkError('Failed to fetch')).toBe(false);
   });
@@ -89,6 +98,26 @@ describe('withNetworkRetry', () => {
       .mockResolvedValue('ok');
     await expect(withNetworkRetry(fn, 3, 1)).resolves.toBe('ok');
     expect(fn).toHaveBeenCalledTimes(2);
+  });
+
+  it('retries fetch Response gateway statuses then succeeds', async () => {
+    const bad503 = { status: 503, ok: false };
+    const bad504 = { status: 504, ok: false };
+    const ok = { status: 200, ok: true };
+    const fn = jest
+      .fn()
+      .mockResolvedValueOnce(bad503)
+      .mockResolvedValueOnce(bad504)
+      .mockResolvedValue(ok);
+    await expect(withNetworkRetry(fn, 3, 1)).resolves.toBe(ok);
+    expect(fn).toHaveBeenCalledTimes(3);
+  });
+
+  it('does not retry fetch Response 404', async () => {
+    const notFound = { status: 404, ok: false };
+    const fn = jest.fn().mockResolvedValue(notFound);
+    await expect(withNetworkRetry(fn, 3, 1)).resolves.toBe(notFound);
+    expect(fn).toHaveBeenCalledTimes(1);
   });
 
   it('throws after exhausting network retries', async () => {
