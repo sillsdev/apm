@@ -50,6 +50,7 @@ jest.mock('../schema', () => ({
 let mockUser: string | null = 'user-123';
 let mockHasPermission = true;
 let mockRef = 'MAT 1:1-5';
+let mockIsMobileWidth = false;
 
 // Mock dependencies
 jest.mock('../utils', () => ({
@@ -63,6 +64,11 @@ jest.mock('../utils', () => ({
     (_severity: number, _reporter: any, _error: Error | string) => {}
   ),
   Severity: { error: 1 },
+  useMobile: () => ({
+    isMobile: mockIsMobileWidth,
+    isMobileView: false,
+    isMobileWidth: mockIsMobileWidth,
+  }),
 }));
 
 jest.mock(
@@ -245,6 +251,7 @@ describe('FaithbridgeIframe', () => {
     mockGenerateUUID.mockReturnValue('mock-uuid-123');
     mockHasPermission = true;
     mockRef = 'MAT 1:1-5';
+    mockIsMobileWidth = false;
   });
 
   describe('initialization', () => {
@@ -334,6 +341,20 @@ describe('FaithbridgeIframe', () => {
         <FaithbridgeIframe onMarkdown={mockOnMarkdown} onClose={mockOnClose} />
       );
 
+      expect(
+        screen.queryByText('Add Content as Resource')
+      ).not.toBeInTheDocument();
+    });
+
+    it('should hide audio checkbox and Add Content when isMobileWidth is true', () => {
+      mockIsMobileWidth = true;
+
+      wrapper(
+        <FaithbridgeIframe onMarkdown={mockOnMarkdown} onClose={mockOnClose} />
+      );
+
+      expect(screen.getByText('New Chat')).toBeInTheDocument();
+      expect(screen.queryByText('Request Audio')).not.toBeInTheDocument();
       expect(
         screen.queryByText('Add Content as Resource')
       ).not.toBeInTheDocument();

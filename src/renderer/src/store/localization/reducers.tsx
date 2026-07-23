@@ -1165,7 +1165,7 @@ const initialState = {
 			"editResource": "Edit Resource",
 			"find": "Find",
 			"findResource": "Find Resource for {0}",
-			"findResourceDesc": "These controls can be used to find or create (using artificial intelligence -- AI) resources for internalizing the passage, section, chapter, or book.",
+			"findResourceDesc": "Create (using artificial intelligence -- AI) resources for internalizing scripture.",
 			"generalResources": "General Resources",
 			"keywords": "Keywords",
 			"language": "Language",

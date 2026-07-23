@@ -5676,7 +5676,7 @@
       </unit>
       <unit id="passageDetailArtifacts.findResourceDesc">
          <segment>
-            <source>These controls can be used to find or create (using artificial intelligence -- AI) resources for internalizing the passage, section, chapter, or book.</source>
+            <source>Create (using artificial intelligence -- AI) resources for internalizing scripture.</source>
             <target/>
          </segment>
       </unit>
