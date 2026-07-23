@@ -184,7 +184,12 @@ function PassageRecordDlg(props: IProps) {
     if (!busy) onVisible(false);
   };
 
-  const requestClose = () => {
+  const requestClose = (
+    _event?: object,
+    reason?: 'backdropClick' | 'escapeKeyDown'
+  ) => {
+    // outside click should not close dialog
+    if (reason === 'backdropClick') return;
     if (mode === 'record') {
       handleCancel();
     } else {
