@@ -40,12 +40,13 @@ type ResetRequests = () => Promise<void>;
 interface IProps {
   resetRequests?: ResetRequests;
   switchTo?: boolean;
+  drawBottomBorder?: boolean;
 }
 
 export type DownloadAlertReason = 'cloud';
 
 export const AppHead = (props: IProps) => {
-  const { resetRequests, switchTo } = props;
+  const { resetRequests, switchTo, drawBottomBorder = true } = props;
   const orbitStatus = useSelector((state: IState) => state.orbit.status);
   const orbitErrorMsg = useSelector((state: IState) => state.orbit.message);
   const { pathname } = useLocation();
@@ -93,10 +94,7 @@ export const AppHead = (props: IProps) => {
   const tv: IViewModeStrings = useSelector(viewModeSelector, shallowEqual);
 
   const isDetail = useMemo(() => pathname.startsWith('/detail'), [pathname]);
-  const isPlanSheet = useMemo(
-    () => /^\/plan\/[^/]+\/0(\/|$)/.test(pathname),
-    [pathname]
-  );
+
   const planUrl = useMemo(() => {
     const fromUrl = localStorage.getItem(localUserKey(LocalKey.url));
     if (!fromUrl) return null;
@@ -302,7 +300,6 @@ export const AppHead = (props: IProps) => {
   if (view === 'Privacy') navigate('/privacy');
 
   const isMobile = isMobileView || isMobileWidth;
-  const drawBorderBottom = !(isMobile && (isDetail || isPlanSheet));
 
   return (
     <AppBar
@@ -312,7 +309,7 @@ export const AppHead = (props: IProps) => {
         display: 'flex',
         px: 1.5,
         backgroundColor: 'custom.headerBackground',
-        ...(drawBorderBottom && {
+        ...(drawBottomBorder && {
           borderBottom: '1px solid',
           borderColor: 'divider',
         }),
