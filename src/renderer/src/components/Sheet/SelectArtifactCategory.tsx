@@ -6,7 +6,7 @@ import {
   SxProps,
   TextField,
 } from '@mui/material';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type MutableRefObject } from 'react';
 import {
   ArtifactCategoryType,
   IArtifactCategory,
@@ -30,6 +30,11 @@ interface IProps {
   scripture?: ArtCatScr | undefined;
   type: ArtifactCategoryType;
   disabled?: boolean | undefined;
+  // When provided, the parent gets a `commit()` here to run at form submission:
+  // it resolves the current input to a category id (creating a new category
+  // when the typed name matches none) and returns it. New categories are then
+  // created on commit rather than on blur.
+  commitRef?: MutableRefObject<(() => Promise<string>) | null> | undefined;
 }
 
 const StyledBox = styled(Box)<BoxProps>(() => ({
@@ -57,6 +62,7 @@ export const SelectArtifactCategory = (props: IProps) => {
     scripture,
     type,
     disabled,
+    commitRef,
   } = props;
   const artifactCategories =
     useOrbitData<ArtifactCategory[]>('artifactcategory');
@@ -109,9 +115,11 @@ export const SelectArtifactCategory = (props: IProps) => {
     onCategoryChange && onCategoryChange(id);
   };
 
-  // Resolve a chosen/typed category name to an id, creating a new category
-  // when the name doesn't match an existing one.
-  const resolveCommit = async (raw: string | null) => {
+  // Resolve a chosen/typed category name to an existing category id. Called on
+  // blur and on change. Deliberately does NOT create new categories — that is
+  // deferred to commit() (form submission) so navigating away without saving
+  // never leaves an orphaned category behind.
+  const resolveExisting = (raw: string | null) => {
     const name = (raw ?? '').trim();
     if (name.toLowerCase() === currentName.trim().toLowerCase()) return;
     if (!name) {
@@ -132,7 +140,30 @@ export const SelectArtifactCategory = (props: IProps) => {
       setInputVal(currentName);
       return;
     }
-    if (committingRef.current) return;
+    // allowNew + a new name: keep the typed text as-is and wait for commit().
+  };
+
+  // Resolve the current input to a category id, creating a new category when
+  // the typed name matches none. Intended to run at form submission via
+  // commitRef. Returns the resolved id (empty string when the field is blank).
+  const commit = async (): Promise<string> => {
+    const name = inputVal.trim();
+    if (!name) {
+      setCategory('');
+      return '';
+    }
+    const existing = artifactCategorys.find(
+      (c) => c.category.trim().toLowerCase() === name.toLowerCase()
+    );
+    if (existing) {
+      setCategory(existing.id);
+      return existing.id;
+    }
+    if (!allowNew) {
+      setInputVal(currentName);
+      return categoryId;
+    }
+    if (committingRef.current) return categoryId;
     committingRef.current = true;
     try {
       const newId = await addNewArtifactCategory(name, type);
@@ -140,16 +171,31 @@ export const SelectArtifactCategory = (props: IProps) => {
       setArtifactCategorys(cats);
       if (newId && newId !== 'duplicate') {
         setCategory(newId);
-      } else {
-        const dup = cats.find(
-          (c) => c.category.trim().toLowerCase() === name.toLowerCase()
-        );
-        if (dup) setCategory(dup.id);
+        return newId;
       }
+      const dup = cats.find(
+        (c) => c.category.trim().toLowerCase() === name.toLowerCase()
+      );
+      if (dup) {
+        setCategory(dup.id);
+        return dup.id;
+      }
+      return categoryId;
     } finally {
       committingRef.current = false;
     }
   };
+
+  // Expose commit() to the parent form. No dependency array: re-assign every
+  // render so the closure stays current; clear on unmount so a stale commit is
+  // never invoked once the field is gone.
+  useEffect(() => {
+    if (!commitRef) return;
+    commitRef.current = commit;
+    return () => {
+      commitRef.current = null;
+    };
+  });
 
   return (
     <StyledBox>
@@ -164,8 +210,8 @@ export const SelectArtifactCategory = (props: IProps) => {
         value={currentName || null}
         inputValue={inputVal}
         onInputChange={(_e, v) => setInputVal(v)}
-        onChange={(_e, v) => resolveCommit(v)}
-        onBlur={() => resolveCommit(inputVal)}
+        onChange={(_e, v) => resolveExisting(v)}
+        onBlur={() => resolveExisting(inputVal)}
         sx={textFieldProps}
         renderOption={(liProps, option, { index }) => {
           const cat = artifactCategorys.find((c) => c.category === option);

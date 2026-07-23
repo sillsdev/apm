@@ -9,7 +9,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, type MutableRefObject } from 'react';
 import { shallowEqual, useSelector } from 'react-redux';
 import { ArtifactCategoryType, useOrganizedBy } from '../../../crud';
 import {
@@ -45,6 +45,9 @@ interface IProps {
   allowProject: boolean;
   catRequired: boolean;
   catAllowNew?: boolean | undefined;
+  // Forwarded to SelectArtifactCategory so the parent form can create a new
+  // category at submission (rather than on blur).
+  catCommitRef?: MutableRefObject<(() => Promise<string>) | null> | undefined;
   sectDesc?: string | undefined;
   passDesc?: string | undefined;
   wrapPreviewOverflow?: boolean;
@@ -66,6 +69,7 @@ export function ResourceData(props: IProps) {
     uploadType,
     onTextChange,
     wrapPreviewOverflow,
+    catCommitRef,
   } = props;
   const [description, setDescription] = useState(initDescription);
   const { getOrganizedBy } = useOrganizedBy();
@@ -149,6 +153,7 @@ export function ResourceData(props: IProps) {
             required={catRequired}
             scripture={ArtCatScr.highlight}
             type={ArtifactCategoryType.Resource}
+            commitRef={catCommitRef}
           />
         </Grid>
       </Grid>

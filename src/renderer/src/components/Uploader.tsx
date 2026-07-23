@@ -54,6 +54,10 @@ interface IProps {
     | ((planId: string, mediaRemoteIds?: string[]) => Promise<void>)
     | undefined; // logic when upload complete
   metaData?: React.JSX.Element | undefined; // component embeded in dialog
+  // Awaited once when the upload starts, before any media is created. Lets the
+  // embedded metaData commit deferred edits (e.g. create a new artifact
+  // category) so `finish` sees the resolved ids.
+  beforeUpload?: (() => Promise<void>) | undefined;
   ready?: (() => boolean) | undefined; // if false control is disabled
   // createProject?: (name: string) => Promise<string>;
   cancelled: React.RefObject<boolean>;
@@ -107,7 +111,7 @@ export const Uploader = (props: IProps) => {
     finish,
     uploadDialogBp,
   } = props;
-  const { metaData, ready } = props;
+  const { metaData, ready, beforeUpload } = props;
   const [isDeveloper] = useGlobal('developer');
   const t: IMediaTabStrings = useSelector(mediaTabSelector, shallowEqual);
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
@@ -393,6 +397,9 @@ export const Uploader = (props: IProps) => {
       showMessage(t.selectFiles);
       return;
     }
+    // Commit any deferred metaData edits (e.g. create a newly typed artifact
+    // category) before media records are created so `finish` sees final ids.
+    if (beforeUpload) await beforeUpload();
     if (
       uploadType &&
       ![

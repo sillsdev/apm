@@ -182,6 +182,11 @@ export function PassageDetailArtifacts() {
   const mediaRef = useRef<MediaFileD | undefined>(undefined);
   const textRef = useRef<string | undefined>(undefined);
   const catIdRef = useRef<string | undefined>(undefined);
+  // commit() handles for the two SelectArtifactCategory instances (edit dialog
+  // vs. the add/upload dialog). Kept separate so one dialog unmounting never
+  // clears the other's handle. Called at save to create a new category.
+  const editCatCommitRef = useRef<(() => Promise<string>) | null>(null);
+  const addCatCommitRef = useRef<(() => Promise<string>) | null>(null);
   const descriptionRef = useRef<string>('');
 
   const resourceTypeRef = useRef<ResourceTypeEnum>(
@@ -429,6 +434,12 @@ export function PassageDetailArtifacts() {
     if (!v) resetEdit();
   };
   const handleEditSave = async () => {
+    // Create the category now (at save) if the user typed a new one; on blur it
+    // was only resolved against existing categories.
+    if (editCatCommitRef.current) {
+      const catId = await editCatCommitRef.current();
+      catIdRef.current = catId;
+    }
     if (editResource) {
       UpdateSectionResource({
         ...editResource,
@@ -945,6 +956,10 @@ export function PassageDetailArtifacts() {
         showMessage={showMessage}
         multiple={true}
         finish={afterUpload}
+        beforeUpload={async () => {
+          if (addCatCommitRef.current)
+            catIdRef.current = await addCatCommitRef.current();
+        }}
         cancelled={cancelled}
         cancelReset={resetEdit}
         artifactState={artifactState}
@@ -962,6 +977,7 @@ export function PassageDetailArtifacts() {
             catAllowNew={true} //if they can upload they can add cat
             initCategory=""
             onCategoryChange={handleCategory}
+            catCommitRef={addCatCommitRef}
             initDescription={initDescription}
             onDescriptionChange={handleDescription}
             catRequired={false}
@@ -1072,6 +1088,7 @@ export function PassageDetailArtifacts() {
           catAllowNew={true}
           initCategory={catIdRef.current || ''}
           onCategoryChange={handleCategory}
+          catCommitRef={editCatCommitRef}
           initDescription={descriptionRef.current}
           onDescriptionChange={handleDescription}
           catRequired={false}

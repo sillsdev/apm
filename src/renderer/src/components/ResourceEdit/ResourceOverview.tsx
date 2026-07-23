@@ -90,6 +90,9 @@ export default function ResourceOverview(props: IProps) {
 
   const [isDeveloper] = useGlobal('developer');
   const recording = useRef(false);
+  // commit() handle for the category field; called at save so a newly typed
+  // category is created on submission rather than on blur.
+  const catCommitRef = useRef<(() => Promise<string>) | null>(null);
   const { getOrgDefault, setOrgDefault, canSetOrgDefault } = useOrgDefaults();
   const [findNote, setFindNote] = React.useState(false);
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
@@ -161,8 +164,13 @@ export default function ResourceOverview(props: IProps) {
     if (onCancel) onCancel();
   };
 
-  const handleAdd = () => {
-    onCommit(state);
+  const handleAdd = async () => {
+    // Create the category now (at save) if the user typed a new one; on blur it
+    // was only resolved against existing categories.
+    const category = catCommitRef.current
+      ? await catCommitRef.current()
+      : state.category;
+    onCommit({ ...state, category });
   };
 
   const handleLanguageChange = (val: ILanguage) => {
@@ -209,7 +217,11 @@ export default function ResourceOverview(props: IProps) {
           <ResourceTitle state={state} setState={updateTitleState} />
         )}
         <ResourceDescription state={state} setState={updateState} />
-        <ResourceCategory state={state} setState={updateState} />
+        <ResourceCategory
+          state={state}
+          setState={updateState}
+          commitRef={catCommitRef}
+        />
         <ResourceKeywords state={state} setState={updateState} />
         {!isNote ? (
           <>
@@ -261,7 +273,7 @@ export default function ResourceOverview(props: IProps) {
         {dialogmode !== Mode.view && (
           <PriButton
             id="resSave"
-            onClick={handleAdd}
+            onClick={() => handleAdd()}
             disabled={
               title === '' ||
               (bcp47 === 'und' && !isNote) ||

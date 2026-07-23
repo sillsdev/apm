@@ -250,6 +250,9 @@ export const DiscussionCard = (props: IProps) => {
   const [myChanged, setMyChanged] = useState(false);
   const segSavingRef = useRef(false);
   const cardSavingRef = useRef(false);
+  // commit() handle for the category field; called at save so a newly typed
+  // category is created on submission rather than on blur.
+  const catCommitRef = useRef<(() => Promise<string>) | null>(null);
   const [showMove, setShowMove] = useState(false);
   const [moveTo, setMoveTo] = useState<string>();
   const waitForRemoteQueue = useWaitForRemoteQueue();
@@ -729,6 +732,11 @@ export const DiscussionCard = (props: IProps) => {
     //we should only get here with no subject if they've clicked off the screen and then told us to save with no subject
     discussion.attributes.subject =
       editSubject.length > 0 ? editSubject : tdcs.topic;
+    // Create the category now (at save) if the user typed a new one; on blur it
+    // was only resolved against existing categories.
+    const catId = catCommitRef.current
+      ? await catCommitRef.current()
+      : editCategory;
     const ops: RecordOperation[] = [];
     const t = new RecordTransformBuilder();
     if (!discussion.id) {
@@ -770,7 +778,7 @@ export const DiscussionCard = (props: IProps) => {
         discussion,
         'artifactCategory',
         'artifactcategory',
-        editCategory,
+        catId,
         user
       ),
       ...UpdateRelatedRecord(
@@ -988,6 +996,7 @@ export const DiscussionCard = (props: IProps) => {
                   id={`category-${discussion.id}`}
                   initCategory={editCategory}
                   onCategoryChange={onCategoryChange}
+                  commitRef={catCommitRef}
                   allowNew={userIsAdmin && (!offline || offlineOnly)}
                   required={false}
                   scripture={ArtCatScr.hide}
