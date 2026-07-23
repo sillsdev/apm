@@ -252,7 +252,8 @@ function PassageRecordDlg(props: IProps) {
             )}
             {busy && <Busy />}
             {/* Content-sized wrapper so WSAudioPlayer's height:100% cannot
-                cause vertical growth. */}
+                cause vertical growth. May be unnecessary since this dialog
+                is not shown on actually mobile screens, but leaving it just in case*/}
             <Box
               sx={{
                 flex: '0 0 auto',
