@@ -31,11 +31,13 @@ import {
   isOrbitQueueCancelled,
   orbitErr,
   orbitInfo,
+  withNetworkRetry,
+} from '../utils';
+import {
   isUnauthorized,
   isFetchNetworkError,
   isRetryableError,
-  withNetworkRetry,
-} from '../utils';
+} from '../utils/httpError';
 import {
   related,
   GetUser,

@@ -14,9 +14,9 @@ import {
   Severity,
   isOrbitQueueCancelled,
   orbitErr,
-  isUnauthorized,
   handleUnauthorized,
 } from '../../utils';
+import { isUnauthorized } from '../../utils/httpError';
 import { OfflineProject, Plan, VProject } from '../../model';
 import { ITokenContext } from '../../context/TokenProvider';
 import { AlertSeverity } from '../../hoc/SnackBar';

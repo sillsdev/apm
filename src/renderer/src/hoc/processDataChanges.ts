@@ -10,7 +10,8 @@ import Coordinator from '@orbit/coordinator';
 import Memory from '@orbit/memory';
 import JSONAPISource from '@orbit/jsonapi';
 import { ChangeList, DataChange } from '../model/dataChange';
-import { logError, Severity, isRetryableError } from '../utils';
+import { logError, Severity } from '../utils';
+import { isRetryableError } from '../utils/httpError';
 import {
   AcceptInvitation,
   findRecord,

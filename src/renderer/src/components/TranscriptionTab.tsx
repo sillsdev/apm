@@ -56,7 +56,8 @@ import {
 } from '../crud';
 import { useOfflnProjRead } from '../crud/useOfflnProjRead';
 import IndexedDBSource from '@orbit/indexeddb';
-import { dateOrTime, isUnauthorized } from '../utils';
+import { dateOrTime } from '../utils';
+import { isUnauthorized } from '../utils/httpError';
 import { SelectExportType } from '../control';
 import AudioExportMenu from './AudioExportMenu';
 import { DateTime } from 'luxon';

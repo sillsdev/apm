@@ -18,8 +18,8 @@ import {
   Severity,
   createPathFolder,
   removeExtension,
-  isUnauthorized,
 } from '../../utils';
+import { isUnauthorized } from '../../utils/httpError';
 import { DateTime } from 'luxon';
 import _ from 'lodash';
 import { typeLimit } from '../../utils/typeLimit';

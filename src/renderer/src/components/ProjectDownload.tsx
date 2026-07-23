@@ -24,8 +24,8 @@ import {
   logError,
   PathType,
   Severity,
-  isUnauthorized,
 } from '../utils';
+import { isUnauthorized } from '../utils/httpError';
 import { RecordOperation } from '@orbit/records';
 import IndexedDBSource from '@orbit/indexeddb';
 import { useSelector } from 'react-redux';

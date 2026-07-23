@@ -33,12 +33,11 @@ import {
   LocalKey,
   orbitErr,
   orbitRetry,
-  isUnauthorized,
-  isFetchNetworkError,
   handleUnauthorized,
   resetUnauthorizedRetry,
   skipRemoteQueue,
 } from './utils';
+import { isUnauthorized, isFetchNetworkError } from './utils/httpError';
 import { removeOrbitRemote } from './utils/removeOrbitRemote';
 import { electronExport } from './store/importexport/electronExport';
 import { restoreBackup } from './crud/restoreBackup';

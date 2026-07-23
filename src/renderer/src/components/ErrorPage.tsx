@@ -16,8 +16,8 @@ import {
   forceLogin,
   useMyNavigate,
   LocalKey,
-  isUnauthorized,
 } from '../utils';
+import { isUnauthorized } from '../utils/httpError';
 import { PriButton } from '../control';
 import { TokenContext } from '../context/TokenProvider';
 import { mainSelector } from '../selector';
