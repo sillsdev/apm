@@ -6,7 +6,11 @@ import {
 import Coordinator from '@orbit/coordinator';
 import Memory from '@orbit/memory';
 import JSONAPISource from '@orbit/jsonapi';
-import { API_CONFIG, isElectron } from '../../api-variable';
+import {
+  API_CONFIG,
+  isElectron,
+  OrbitNetworkErrorRetries,
+} from '../../api-variable';
 import {
   IFetchNowProps,
   offlineProjectUpdateSnapshot,
@@ -17,7 +21,10 @@ import { currentDateTime, localUserKey, LocalKey } from '../utils';
 import { OfflineProject, PassageStateChangeD, Plan, VProject } from '../model';
 import IndexedDBSource from '@orbit/indexeddb';
 import * as actions from '../store';
-import { processDataChanges } from './processDataChanges';
+import {
+  DATA_CHANGES_NETWORK_ABORT,
+  processDataChanges,
+} from './processDataChanges';
 
 export const doDataChanges = async (
   token: string,
@@ -30,7 +37,8 @@ export const doDataChanges = async (
   setLanguage: typeof actions.setLanguage,
   setDataChangeCount: (value: number) => void,
   fetchUrl?: (props: IFetchNowProps) => Promise<string | undefined>,
-  notPastTime?: string
+  notPastTime?: string,
+  setOrbitRetries?: (r: number) => void
 ) => {
   const memory = coordinator?.getSource('memory') as Memory;
   const remote = coordinator?.getSource('remote') as JSONAPISource; //to check busy
@@ -60,8 +68,17 @@ export const doDataChanges = async (
   const api = API_CONFIG.host + '/api/datachanges/v' + version.toString() + '/';
   let start = 1;
   let tries = 5;
+  let networkAbort = false;
+
+  const noteNetworkAbort = () => {
+    networkAbort = true;
+    // same signal as remote-query-fail / useMediaUpload — DataChanges will AmIOnline
+    setOrbitRetries?.(OrbitNetworkErrorRetries - 1);
+  };
+
   if (isElectron) {
     for (let ix = 0; ix < projectsLoaded.length; ix++) {
+      if (networkAbort) break;
       const p = projectsLoaded[ix] as string;
       const op = getOfflineProject(p);
       if (
@@ -93,10 +110,15 @@ export const doDataChanges = async (
             setDataChangeCount,
             fetchUrl,
           });
+          if (startNext === DATA_CHANGES_NETWORK_ABORT) {
+            noteNetworkAbort();
+            break;
+          }
           if (startNext === start) tries--;
           else start = startNext;
         }
 
+        if (networkAbort) break;
         if (startNext === -1)
           await updateSnapshotDate(p, nextTime, startNext + 1); //done
         else if (startNext > 0)
@@ -105,29 +127,35 @@ export const doDataChanges = async (
       }
     }
   }
-  startNext = parseInt(localStorage.getItem(userNextStartKey) || '0', 10);
-  start = 1;
-  tries = 5;
-  while (startNext >= 0 && tries > 0) {
-    startNext = await processDataChanges({
-      token,
-      api: `${api}${startNext}/since/${lastTime}?origin=${fingerprint}`,
-      params: undefined,
-      started: start,
-      coordinator,
-      user,
-      errorReporter,
-      setLanguage,
-      setDataChangeCount,
-      fetchUrl,
-    });
-    if (startNext === start) tries--;
-    else start = startNext;
+  if (!networkAbort) {
+    startNext = parseInt(localStorage.getItem(userNextStartKey) || '0', 10);
+    start = 1;
+    tries = 5;
+    while (startNext >= 0 && tries > 0) {
+      startNext = await processDataChanges({
+        token,
+        api: `${api}${startNext}/since/${lastTime}?origin=${fingerprint}`,
+        params: undefined,
+        started: start,
+        coordinator,
+        user,
+        errorReporter,
+        setLanguage,
+        setDataChangeCount,
+        fetchUrl,
+      });
+      if (startNext === DATA_CHANGES_NETWORK_ABORT) {
+        noteNetworkAbort();
+        break;
+      }
+      if (startNext === start) tries--;
+      else start = startNext;
+    }
   }
   if (startNext === -1) localStorage.setItem(userLastTimeKey, nextTime);
-  if (startNext !== -2)
+  if (startNext !== -2 && startNext !== DATA_CHANGES_NETWORK_ABORT)
     localStorage.setItem(userNextStartKey, (startNext + 1).toString());
-  else {
+  else if (startNext === -2) {
     if (version === 6) {
       const operations: RecordOperation[] = [];
       //clean up abandoned pscs

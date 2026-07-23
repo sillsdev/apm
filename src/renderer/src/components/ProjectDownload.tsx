@@ -24,6 +24,7 @@ import {
   logError,
   PathType,
   Severity,
+  isUnauthorized,
 } from '../utils';
 import { RecordOperation } from '@orbit/records';
 import IndexedDBSource from '@orbit/indexeddb';
@@ -81,7 +82,7 @@ export const ProjectDownload = (props: IProps) => {
   const backup = coordinator?.getSource('backup') as IndexedDBSource;
   const getGlobal = useGetGlobal();
   const translateError = (err: IAxiosStatus): string => {
-    if (err.errStatus === 401) return ts.expiredToken;
+    if (isUnauthorized(err)) return ts.expiredToken;
     if (err.errMsg.includes('RangeError')) return t.exportTooLarge;
     return err.errMsg;
   };

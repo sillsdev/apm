@@ -5281,6 +5281,13 @@
                <context context-type="sourcefile">drawer.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="main.loadDataOffline">
+            <source>Unable to complete loading while offline. Check your internet connection and try again.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">loadData.ts</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="main.loadingTranscriber">
             <source>Loading {0}</source>
             <target/>

@@ -30,6 +30,11 @@ import {
   useDataChanges,
   isOrbitQueueCancelled,
   orbitErr,
+  orbitInfo,
+  isUnauthorized,
+  isFetchNetworkError,
+  isRetryableError,
+  withNetworkRetry,
 } from '../utils';
 import {
   related,
@@ -372,12 +377,13 @@ export function Loading() {
     const finishRemoteLoad = () => {
       const tokData = profile || { sub: '' };
       localStorage.removeItem(LocalKey.goingOnline);
-      remote
-        .query((q) =>
+      withNetworkRetry(() =>
+        remote.query((q) =>
           q
             .findRecords('user')
             .filter({ attribute: 'auth0Id', value: tokData.sub })
         )
+      )
         .then((result) => {
           let users: UserD[] = result as any;
           if (!Array.isArray(users)) users = [users];
@@ -387,18 +393,31 @@ export function Loading() {
             user?.attributes?.email?.toLowerCase() || 'neverhere'
           ).then(() => {
             setCompleted(10);
-            LoadData(coordinator, setCompleted, doOrbitError).then(() => {
-              LoadComplete();
+            LoadData(
+              coordinator,
+              setCompleted,
+              doOrbitError,
+              t.loadDataOffline,
+              setOrbitRetries
+            ).then((ok) => {
+              if (ok) LoadComplete();
             });
           });
         })
         .catch((ex: unknown) => {
           const apiEx = ex as IApiError;
-          if (apiEx?.response?.status === 401) {
+          if (isUnauthorized(ex)) {
             handleAuthFailure();
             return;
           }
           if (isOrbitQueueCancelled(ex)) return;
+          if (isRetryableError(ex)) {
+            setOrbitRetries(OrbitNetworkErrorRetries - 1);
+            if (isFetchNetworkError(ex)) {
+              doOrbitError(orbitInfo(null, t.loadDataOffline));
+              return;
+            }
+          }
           if (apiEx?.response?.status != null) {
             doOrbitError(apiEx);
           } else {

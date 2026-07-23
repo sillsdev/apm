@@ -16,6 +16,7 @@ import {
   forceLogin,
   useMyNavigate,
   LocalKey,
+  isUnauthorized,
 } from '../utils';
 import { PriButton } from '../control';
 import { TokenContext } from '../context/TokenProvider';
@@ -145,7 +146,7 @@ export const ModalMessage = (props: ModalProps) => {
           </Accordion>
         )}
         <ModalActionsDiv>
-          {orbitStatus !== 401 && (
+          {!isUnauthorized(orbitStatus) && (
             <PriButton id="errCont" onClick={cleanUpAndGo('')}>
               {t.continue}
             </PriButton>
