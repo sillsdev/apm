@@ -19,6 +19,7 @@ import {
   createPathFolder,
   removeExtension,
 } from '../../utils';
+import { isUnauthorized } from '../../utils/httpError';
 import { DateTime } from 'luxon';
 import _ from 'lodash';
 import { typeLimit } from '../../utils/typeLimit';
@@ -524,11 +525,11 @@ export const nextUpload =
         } catch (err) {
           const ax = err as AxiosError;
           const st = ax.response?.status;
-          if (st === 401 || st === 403) {
+          if (isUnauthorized(st) || st === 403) {
             await finalizeTerminalFailure(
               undefined,
               false,
-              st,
+              st ?? 500, // default to 500 if status is undefined
               `Upload ${name} failed.`
             );
             return;

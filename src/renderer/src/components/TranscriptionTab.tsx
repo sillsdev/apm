@@ -57,6 +57,7 @@ import {
 import { useOfflnProjRead } from '../crud/useOfflnProjRead';
 import IndexedDBSource from '@orbit/indexeddb';
 import { dateOrTime } from '../utils';
+import { isUnauthorized } from '../utils/httpError';
 import { SelectExportType } from '../control';
 import AudioExportMenu from './AudioExportMenu';
 import { DateTime } from 'luxon';
@@ -211,7 +212,7 @@ export function TranscriptionTab(props: IProps) {
   }, [flat, planColumn]);
 
   const translateError = (err: IAxiosStatus): string => {
-    if (err.errStatus === 401) return ts.expiredToken;
+    if (isUnauthorized(err)) return ts.expiredToken;
     if (err.errMsg.includes('RangeError')) return t.exportTooLarge;
     return err.errMsg;
   };

@@ -9,7 +9,10 @@ import { VwChecksum, PlanD, ProjectD } from '../model';
 import * as actions from '../store';
 import { TokenContext } from '../context/TokenProvider';
 import { API_CONFIG } from '../../api-variable';
-import { processDataChanges } from '../hoc/processDataChanges';
+import {
+  processDataChanges,
+  DATA_CHANGES_NETWORK_ABORT,
+} from '../hoc/processDataChanges';
 import { useGetGlobal, useGlobal } from '../context/useGlobal';
 
 export const useSanityCheck = (setLanguage: typeof actions.setLanguage) => {
@@ -52,6 +55,7 @@ export const useSanityCheck = (setLanguage: typeof actions.setLanguage) => {
           fetchUrl: undefined,
           cb,
         });
+        if (startNext === DATA_CHANGES_NETWORK_ABORT) break;
         if (startNext === start) tries--;
         else start = startNext;
       }

@@ -942,6 +942,7 @@ const initialState = {
 			"integrations": "Integrations",
 			"inviteError": "Invitation not accepted.  You must login with the email that the invitation was sent to.",
 			"loadingTable": "Busy...please wait.",
+			"loadDataOffline": "Unable to complete loading while offline. Check your internet connection and try again.",
 			"loadingTranscriber": "Loading {0}",
 			"logout": "Log Out",
 			"logos": "Access Logos Resources",

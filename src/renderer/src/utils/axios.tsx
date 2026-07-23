@@ -1,6 +1,7 @@
 import Axios, { AxiosResponse, HttpStatusCode } from 'axios';
 import { getFingerprint } from '.';
 import { API_CONFIG } from '../../api-variable';
+import { withNetworkRetry } from './networkRetry';
 
 export const axiosGetStream = async (
   api: string
@@ -27,35 +28,6 @@ export const axiosDelete = async (
       : {},
   });
 };
-const fetchWithRetry = async (
-  api: string,
-  params?: URLSearchParams,
-  token?: string | null,
-  retries = 3,
-  backoff = 300
-): Promise<unknown> => {
-  for (let i = 0; i < retries; i++) {
-    try {
-      const response = await Axios.get(api, {
-        params: params,
-        headers: token
-          ? {
-              Authorization: 'Bearer ' + token,
-            }
-          : {},
-      });
-      return response.data;
-    } catch (error) {
-      if (i < retries - 1) {
-        await new Promise((resolve) =>
-          setTimeout(resolve, backoff * Math.pow(2, i))
-        );
-      } else {
-        throw error;
-      }
-    }
-  }
-};
 
 export const axiosGet = async (
   api: string,
@@ -63,7 +35,17 @@ export const axiosGet = async (
   token?: string | null
 ): Promise<unknown> => {
   if (!api.startsWith(API_CONFIG.host)) api = API_CONFIG.host + '/api/' + api;
-  return await fetchWithRetry(api, params, token);
+  return await withNetworkRetry(async () => {
+    const response = await Axios.get(api, {
+      params: params,
+      headers: token
+        ? {
+            Authorization: 'Bearer ' + token,
+          }
+        : {},
+    });
+    return response.data;
+  });
 };
 
 export const axiosPost = async (

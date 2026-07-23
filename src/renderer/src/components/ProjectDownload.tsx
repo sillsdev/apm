@@ -25,6 +25,7 @@ import {
   PathType,
   Severity,
 } from '../utils';
+import { isUnauthorized } from '../utils/httpError';
 import { RecordOperation } from '@orbit/records';
 import IndexedDBSource from '@orbit/indexeddb';
 import { useSelector } from 'react-redux';
@@ -81,7 +82,7 @@ export const ProjectDownload = (props: IProps) => {
   const backup = coordinator?.getSource('backup') as IndexedDBSource;
   const getGlobal = useGetGlobal();
   const translateError = (err: IAxiosStatus): string => {
-    if (err.errStatus === 401) return ts.expiredToken;
+    if (isUnauthorized(err)) return ts.expiredToken;
     if (err.errMsg.includes('RangeError')) return t.exportTooLarge;
     return err.errMsg;
   };

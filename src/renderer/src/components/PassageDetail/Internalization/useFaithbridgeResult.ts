@@ -1,4 +1,5 @@
 import React, { useReducer, useCallback } from 'react';
+import { withNetworkRetry } from '../../../utils/networkRetry';
 
 interface FaithbridgeSourceOrigin {
   service: string;
@@ -97,12 +98,9 @@ export const useFaithbridgeResult = (reset?: number) => {
           includeAudio: includeAudio ? 'true' : 'false',
         });
 
-        let response: Response | null = null;
-        let retryCount = 0;
-
-        while (retryCount < 5) {
-          try {
-            response = await fetch(
+        const response = await withNetworkRetry(
+          () =>
+            fetch(
               `https://faithbridge.multilingualai.com/apmResult?${params}`,
               {
                 method: 'GET',
@@ -110,21 +108,13 @@ export const useFaithbridgeResult = (reset?: number) => {
                   'Content-Type': 'application/json',
                 },
               }
-            );
-            if (response?.ok) break; // Exit loop if successful
-          } catch (error) {
-            if (
-              error instanceof Error &&
-              !/network/i.test(error?.message || error?.name)
-            )
-              throw error; // Only retry on network errors
-            if (retryCount >= 3) throw error; // Throw error after 3 retries
-          }
-          retryCount++;
-        }
+            ),
+          5,
+          100
+        );
 
-        if (!response?.ok) {
-          throw new Error(`HTTP error! status: ${response?.status}`);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
         }
 
         const data: FaithbridgeData = await response.json();

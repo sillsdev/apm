@@ -18,7 +18,6 @@ import IndexedDBSource from '@orbit/indexeddb';
 import IndexedDBBucket from '@orbit/indexeddb-bucket';
 import JSONAPISource from '@orbit/jsonapi';
 import { RecordOperation, RecordTransform } from '@orbit/records';
-import { NetworkError } from '@orbit/jsonapi';
 import { Bucket } from '@orbit/core';
 import Memory from '@orbit/memory';
 import { ITokenContext } from './context/TokenProvider';
@@ -34,11 +33,11 @@ import {
   LocalKey,
   orbitErr,
   orbitRetry,
-  getHttpStatus,
   handleUnauthorized,
   resetUnauthorizedRetry,
   skipRemoteQueue,
 } from './utils';
+import { isUnauthorized, isFetchNetworkError } from './utils/httpError';
 import { removeOrbitRemote } from './utils/removeOrbitRemote';
 import { electronExport } from './store/importexport/electronExport';
 import { restoreBackup } from './crud/restoreBackup';
@@ -69,12 +68,6 @@ interface QueryStratErrProps {
   fingerprint: string;
   setOrbitRetries: (r: number) => void;
 }
-const networkError = (ex: unknown): boolean =>
-  ex instanceof NetworkError ||
-  (ex instanceof Error &&
-    (ex.message === 'Failed to fetch' || ex.message === 'Network Error'));
-
-const isUnauthorized = (ex: unknown): boolean => getHttpStatus(ex) === 401;
 
 const addRemoteLinkStrategies = (coordinator: Coordinator) => {
   if (!coordinator.strategyNames.includes('remote-request'))
@@ -128,7 +121,7 @@ const queryError =
         fingerprint,
         setOrbitRetries
       );
-    } else if (networkError(ex)) {
+    } else if (isFetchNetworkError(ex)) {
       orbitError(ex as IApiError);
       //signal to datachanges that we've had a network error
       setOrbitRetries(OrbitNetworkErrorRetries - 1);
@@ -156,6 +149,9 @@ const datachangesQueryError =
         setOrbitRetries,
         'datachanges'
       );
+    } else if (isFetchNetworkError(ex)) {
+      //signal to datachanges that we've had a network error
+      setOrbitRetries(OrbitNetworkErrorRetries - 1);
     }
     return datachangeremote.requestQueue.skip();
   };
@@ -181,7 +177,7 @@ const updateError =
         fingerprint,
         setOrbitRetries
       );
-    } else if (networkError(ex)) {
+    } else if (isFetchNetworkError(ex)) {
       if (orbitRetries > 0) {
         setOrbitRetries(orbitRetries - 1);
         // When network errors are encountered, try again in 3s

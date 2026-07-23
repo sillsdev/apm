@@ -891,6 +891,7 @@ export interface IMainStrings extends Localize.LocalizedStringsMethods {
     "integrations": string;
     "inviteError": string;
     "loadingTable": string;
+    "loadDataOffline": string;
     "loadingTranscriber": string;
     "logout": string;
     "logos": string;

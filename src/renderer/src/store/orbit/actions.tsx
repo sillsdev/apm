@@ -14,9 +14,9 @@ import {
   Severity,
   isOrbitQueueCancelled,
   orbitErr,
-  getHttpStatus,
   handleUnauthorized,
 } from '../../utils';
+import { isUnauthorized } from '../../utils/httpError';
 import { OfflineProject, Plan, VProject } from '../../model';
 import { ITokenContext } from '../../context/TokenProvider';
 import { AlertSeverity } from '../../hoc/SnackBar';
@@ -113,13 +113,12 @@ export const fetchOrbitData =
         dispatch({ type: FETCH_ORBIT_DATA, payload: fr });
       })
       .catch((ex: unknown) => {
-        const status = getHttpStatus(ex);
         if (isOrbitQueueCancelled(ex)) return;
         dispatch({
           type: FETCH_ORBIT_DATA,
           payload: fetchOrbitDataFailed(),
         });
-        if (status === 401) {
+        if (isUnauthorized(ex)) {
           // This used to just `return` here, leaving orbitFetchResults unset
           // and the loading screen waiting forever. handleUnauthorized is the
           // same retry-once-then-invalidate-session recovery used by the
