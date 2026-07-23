@@ -1,9 +1,7 @@
 import { useContext, useEffect, useMemo, useState } from 'react';
 import { useGlobal } from '../context/useGlobal';
 import { useLocation, useParams } from 'react-router-dom';
-import { Box } from '@mui/material';
-
-import AppHead from '../components/App/AppHead';
+import AppLayout from '../components/App/AppLayout';
 import {
   PassageDetailContext,
   PassageDetailProvider,
@@ -26,7 +24,6 @@ import { shallowEqual, useSelector } from 'react-redux';
 import { sharedSelector } from '../selector';
 import PassageDetailRecord from '../components/PassageDetail/PassageDetailRecord';
 import { usePaneWidth } from '../components/usePaneWidth';
-import { HeadHeight } from '../layout';
 import { RecordKeyMap } from '@orbit/records';
 import PassageDetailsArtifactsMobile from '../components/PassageDetail/Internalization/PassageDetailsArtifactsMobile';
 import PassageDetailMarkVerses from '../components/PassageDetail/mobile/MarkVerses/PassageDetailMarkVerses';
@@ -167,58 +164,14 @@ export const PassageDetail = () => {
     /* eslint-disable-next-line react-hooks/exhaustive-deps */
   }, []);
 
-  // Lock document scroll on mobile so only the inner content region scrolls;
-  // this prevents MobileWorkflowSteps being scrolled under the AppBar.
-  useEffect(() => {
-    if (!isMobile) return;
-    const { body } = document;
-    const html = document.documentElement;
-    const prevBody = body.style.overflow;
-    const prevHtml = html.style.overflow;
-    body.style.overflow = 'hidden';
-    html.style.overflow = 'hidden';
-    return () => {
-      body.style.overflow = prevBody;
-      html.style.overflow = prevHtml;
-    };
-  }, [isMobile]);
-
   if (view !== '' && view !== pathname) return <StickyRedirect to={view} />;
 
   return (
-    <Box
-      sx={{
-        flexGrow: 1,
-        minWidth: 0,
-        minHeight: '536px',
-        width: '100%',
-        maxWidth: '100%',
-        overflow: 'hidden',
-      }}
-    >
-      <AppHead switchTo={true} drawBottomBorder={false} />
+    <AppLayout appHeadProps={{ switchTo: true, drawBottomBorder: false }}>
       <PassageDetailProvider>
-        {isMobile ? (
-          <Box
-            sx={{
-              // AppHead is position:fixed — offset in-flow content like PassageDetailGrids does,
-              // otherwise mobile layout height calc(100dvh - HeadHeight) leaves a gap at the bottom.
-              pt: `${HeadHeight}px`,
-              backgroundColor: 'custom.headerBackground',
-              width: '100%',
-              flex: 1,
-              minHeight: 0,
-              display: 'flex',
-              flexDirection: 'column',
-            }}
-          >
-            <MobileDetail />
-          </Box>
-        ) : (
-          <PassageDetailGrids />
-        )}
+        {isMobile ? <MobileDetail /> : <PassageDetailGrids />}
       </PassageDetailProvider>
-    </Box>
+    </AppLayout>
   );
 };
 export default PassageDetail;
