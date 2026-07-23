@@ -196,7 +196,7 @@ export const PassageDetail = () => {
         overflow: 'hidden',
       }}
     >
-      <AppHead switchTo={true} />
+      <AppHead switchTo={true} drawBottomBorder={false} />
       <PassageDetailProvider>
         {isMobile ? (
           <Box

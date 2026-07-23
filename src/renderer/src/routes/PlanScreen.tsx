@@ -47,7 +47,7 @@ export const PlanScreen = () => {
 
   return (
     <Box sx={{ width: '100%' }}>
-      <AppHead switchTo={false} />
+      <AppHead switchTo={false} drawBottomBorder={false} />
       <PlanProvider>
         <Box id="PlanScreen" sx={{ display: 'flex', paddingTop: '80px' }}>
           <PlanTabs checkSaved={checkSavedFn} />

@@ -1,10 +1,11 @@
 import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { useGetGlobal, useGlobal } from '../../context/useGlobal';
 import { useLocation } from 'react-router-dom';
-import { IState, IViewModeStrings } from '../../model';
 import { shallowEqual, useSelector } from 'react-redux';
 import { AppBar, LinearProgress, Box } from '@mui/material';
+import JSONAPISource from '@orbit/jsonapi';
 import { isElectron } from '../../../api-variable';
+import { IState, IViewModeStrings } from '../../model';
+import { useGetGlobal, useGlobal } from '../../context/useGlobal';
 import { TokenContext } from '../../context/TokenProvider';
 import { UnsavedContext } from '../../context/UnsavedContext';
 import {
@@ -23,12 +24,11 @@ import {
   drainQueuesForLogout,
 } from '../../utils';
 import { withBucket } from '../../hoc/withBucket';
+import { useSnackBar } from '../../hoc/SnackBar';
+import { viewModeSelector } from '../../selector';
 import Busy from '../Busy';
 import ProjectDownloadAlert from '../ProjectDownloadAlert';
-import { useSnackBar } from '../../hoc/SnackBar';
 import PolicyDialog from '../PolicyDialog';
-import JSONAPISource from '@orbit/jsonapi';
-import { viewModeSelector } from '../../selector';
 import { DesktopToolbar } from './DesktopToolbar';
 import { MobileToolbar } from './MobileToolbar';
 
@@ -36,16 +36,19 @@ const twoIcon = { minWidth: `calc(${48 * 2}px)` } as React.CSSProperties;
 const threeIcon = { minWidth: `calc(${48 * 3}px)` } as React.CSSProperties;
 
 type ResetRequests = () => Promise<void>;
-
-interface IProps {
-  resetRequests?: ResetRequests;
-  switchTo?: boolean;
-}
-
 export type DownloadAlertReason = 'cloud';
 
-export const AppHead = (props: IProps) => {
-  const { resetRequests, switchTo } = props;
+interface AppHeadProps {
+  resetRequests?: ResetRequests;
+  switchTo?: boolean;
+  drawBottomBorder?: boolean;
+}
+
+export function AppHead({
+  resetRequests,
+  switchTo,
+  drawBottomBorder = true,
+}: AppHeadProps) {
   const orbitStatus = useSelector((state: IState) => state.orbit.status);
   const orbitErrorMsg = useSelector((state: IState) => state.orbit.message);
   const { pathname } = useLocation();
@@ -93,10 +96,7 @@ export const AppHead = (props: IProps) => {
   const tv: IViewModeStrings = useSelector(viewModeSelector, shallowEqual);
 
   const isDetail = useMemo(() => pathname.startsWith('/detail'), [pathname]);
-  const isPlanSheet = useMemo(
-    () => /^\/plan\/[^/]+\/0(\/|$)/.test(pathname),
-    [pathname]
-  );
+
   const planUrl = useMemo(() => {
     const fromUrl = localStorage.getItem(localUserKey(LocalKey.url));
     if (!fromUrl) return null;
@@ -302,7 +302,6 @@ export const AppHead = (props: IProps) => {
   if (view === 'Privacy') navigate('/privacy');
 
   const isMobile = isMobileView || isMobileWidth;
-  const drawBorderBottom = !(isMobile && (isDetail || isPlanSheet));
 
   return (
     <AppBar
@@ -312,7 +311,7 @@ export const AppHead = (props: IProps) => {
         display: 'flex',
         px: 1.5,
         backgroundColor: 'custom.headerBackground',
-        ...(drawBorderBottom && {
+        ...(drawBottomBorder && {
           borderBottom: '1px solid',
           borderColor: 'divider',
         }),
@@ -371,7 +370,7 @@ export const AppHead = (props: IProps) => {
       </>
     </AppBar>
   );
-};
+}
 
 const AppHeadWithBucket = withBucket(AppHead);
 AppHeadWithBucket.displayName = 'AppHead';
