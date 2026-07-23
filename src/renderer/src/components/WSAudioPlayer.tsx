@@ -2348,9 +2348,7 @@ function WSAudioPlayer(props: IProps) {
         px: 1,
         boxSizing: 'border-box',
         overflowX: 'hidden',
-        // Pin the record button to the bottom only in full-height mobile
-        // panes
-        ...(dockRecordButton || !effectiveMobileView
+        ...(dockRecordButton
           ? {}
           : {
               height: '100%',
