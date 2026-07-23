@@ -2,9 +2,9 @@ import React, { useState, useContext, useMemo, Suspense } from 'react';
 import { useGlobal } from '../../context/useGlobal';
 import { Grid, Paper, Box, SxProps, Stack } from '@mui/material';
 
-import { HeadHeight } from '../../layout';
 import { PassageDetailContext } from '../../context/PassageDetailContext';
 import { WorkflowSteps } from './WorkflowSteps';
+import PassageDetailLayout from './PassageDetailLayout';
 import PassageDetailSectionPassage from './PassageDetailSectionPassage';
 import PassageDetailStepComplete from './PassageDetailStepComplete';
 import PassageDetailArtifacts from './Internalization/PassageDetailArtifacts';
@@ -143,142 +143,134 @@ const PassageDetailGrids = () => {
       MAGIC_NUMBER_THAT_MAKES_IT_FIT -
       (discussOpen ? 0 : scrollbarWidth)
   );
+  const showHeader = !(
+    isMobile &&
+    (tool === ToolSlug.PhraseBackTranslate ||
+      tool === ToolSlug.CarefulSpeech ||
+      boldClauseTranscription)
+  );
+  const headerContent = (
+    <>
+      {boldDesktopCenteredHeader ? (
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: 'minmax(0,1fr) auto minmax(0,1fr)',
+            alignItems: 'center',
+            columnGap: 1,
+            flexGrow: 1,
+            minWidth: 0,
+            width: '100%',
+          }}
+        >
+          <Box
+            sx={{
+              alignItems: 'center',
+              minWidth: 0,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            }}
+          >
+            <PassageDetailSectionPassage />
+          </Box>
+          <Box
+            id="tool"
+            sx={{
+              alignItems: 'center',
+              minWidth: 0,
+              flexShrink: 0,
+              whiteSpace: 'nowrap',
+              justifySelf: 'center',
+              textAlign: 'center',
+            }}
+          >
+            {headerToolLabel}
+          </Box>
+          <Box
+            id={showBoldDesktopStepComplete ? 'stepcomplete' : undefined}
+            sx={{
+              minWidth: 0,
+              display: 'flex',
+              justifyContent: 'flex-end',
+              alignItems: 'center',
+            }}
+          >
+            {showBoldDesktopStepComplete && <PassageDetailStepComplete />}
+          </Box>
+        </Box>
+      ) : (
+        <Grid
+          container
+          direction="row"
+          sx={{
+            alignItems: 'center',
+            flexGrow: 1,
+            minWidth: 0,
+            flexWrap: 'wrap',
+            gap: 1,
+          }}
+        >
+          <Grid
+            sx={{ ...rowProps, minWidth: 0, flexShrink: 1 }}
+            size={{ xs: 'auto' }}
+          >
+            <PassageDetailSectionPassage />
+          </Grid>
+          <Grid
+            id="tool"
+            sx={{
+              alignItems: 'center',
+              minWidth: 0,
+              flexShrink: 1,
+              whiteSpace: 'nowrap',
+              ml: 'auto',
+            }}
+            size={{ xs: 'auto' }}
+          >
+            {headerToolLabel}
+          </Grid>
+          {!isBoldWorkflow && (
+            <Grid
+              id="stepcomplete"
+              sx={{
+                display: 'flex',
+                justifyContent: 'flex-end',
+                minWidth: 0,
+                flexShrink: 0,
+                ml: 'auto',
+              }}
+              size={{ xs: 'auto' }}
+            >
+              <PassageDetailStepComplete />
+            </Grid>
+          )}
+        </Grid>
+      )}
+      <Box sx={{ ...descProps, width: '100%' }}>
+        <WorkflowSteps />
+      </Box>
+    </>
+  );
+
   return (
-    <Box
-      sx={{
-        display: 'flex',
-        flexDirection: 'row',
-        paddingTop: `${HeadHeight}px`,
-        width: '100%',
-        maxWidth: '100%',
-        minWidth: 0,
-        overflow: 'hidden',
-      }}
+    <PassageDetailLayout
+      header={showHeader ? headerContent : null}
+      headerSx={
+        showHeader
+          ? {
+              backgroundColor: 'background.default',
+              borderBottom: '1px solid',
+              borderColor: 'divider',
+            }
+          : undefined
+      }
+      contentSx={{ display: 'flex', flexDirection: 'row', maxWidth: '100%' }}
     >
       <Grid
         container
         direction="row"
         sx={{ ...rowProps, minWidth: 0, flexWrap: 'wrap' }}
       >
-        {!(
-          isMobile &&
-          (tool === ToolSlug.PhraseBackTranslate ||
-            tool === ToolSlug.CarefulSpeech ||
-            boldClauseTranscription)
-        ) && (
-          <>
-            <Box
-              sx={{
-                position: 'sticky',
-                top: 0,
-                zIndex: (theme) => theme.zIndex.appBar,
-                backgroundColor: 'background.default',
-                borderBottom: '1px solid',
-                borderColor: 'divider',
-                width: '100%',
-              }}
-            >
-              {boldDesktopCenteredHeader ? (
-                <Box
-                  sx={{
-                    display: 'grid',
-                    gridTemplateColumns: 'minmax(0,1fr) auto minmax(0,1fr)',
-                    alignItems: 'center',
-                    columnGap: 1,
-                    flexGrow: 1,
-                    minWidth: 0,
-                    width: '100%',
-                  }}
-                >
-                  <Box
-                    sx={{
-                      alignItems: 'center',
-                      minWidth: 0,
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                    }}
-                  >
-                    <PassageDetailSectionPassage />
-                  </Box>
-                  <Box
-                    id="tool"
-                    sx={{
-                      alignItems: 'center',
-                      minWidth: 0,
-                      flexShrink: 0,
-                      whiteSpace: 'nowrap',
-                      justifySelf: 'center',
-                      textAlign: 'center',
-                    }}
-                  >
-                    {headerToolLabel}
-                  </Box>
-                  <Box
-                    id={showBoldDesktopStepComplete ? 'stepcomplete' : undefined}
-                    sx={{
-                      minWidth: 0,
-                      display: 'flex',
-                      justifyContent: 'flex-end',
-                      alignItems: 'center',
-                    }}
-                  >
-                    {showBoldDesktopStepComplete && <PassageDetailStepComplete />}
-                  </Box>
-                </Box>
-              ) : (
-                <Grid
-                  container
-                  direction="row"
-                  sx={{
-                    alignItems: 'center',
-                    flexGrow: 1,
-                    minWidth: 0,
-                    flexWrap: 'wrap',
-                    gap: 1,
-                  }}
-                >
-                  <Grid
-                    sx={{ ...rowProps, minWidth: 0, flexShrink: 1 }}
-                    size={{ xs: 'auto' }}
-                  >
-                    <PassageDetailSectionPassage />
-                  </Grid>
-                  <Grid
-                    id="tool"
-                    sx={{
-                      alignItems: 'center',
-                      minWidth: 0,
-                      flexShrink: 1,
-                      whiteSpace: 'nowrap',
-                      ml: 'auto',
-                    }}
-                    size={{ xs: 'auto' }}
-                  >
-                    {headerToolLabel}
-                  </Grid>
-                  {!isBoldWorkflow && (
-                    <Grid
-                      id="stepcomplete"
-                      sx={{
-                        display: 'flex',
-                        justifyContent: 'flex-end',
-                        minWidth: 0,
-                        flexShrink: 0,
-                        ml: 'auto',
-                      }}
-                      size={{ xs: 'auto' }}
-                    >
-                      <PassageDetailStepComplete />
-                    </Grid>
-                  )}
-                </Grid>
-              )}
-              <Box sx={{ ...descProps, width: '100%' }}>
-                <WorkflowSteps />
-              </Box>
-            </Box>
-          </>
-        )}
         {tool === ToolSlug.Resource && (
           <Grid
             container
@@ -439,7 +431,7 @@ const PassageDetailGrids = () => {
           </Grid>
         )}
       </Grid>
-    </Box>
+    </PassageDetailLayout>
   );
 };
 
