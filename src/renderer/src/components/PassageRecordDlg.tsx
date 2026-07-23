@@ -95,6 +95,7 @@ interface IProps {
   onNonAudio?: ((nonAudio: boolean) => void) | undefined;
 }
 
+// TODO rename
 function PassageRecordDlg(props: IProps) {
   const {
     visible,
