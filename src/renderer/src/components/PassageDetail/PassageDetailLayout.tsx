@@ -40,6 +40,9 @@ export default function PassageDetailLayout({
           minHeight: 0,
           overflowX: 'hidden',
           overflowY: 'auto',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'flex-start',
           ...contentSx,
         }}
       >
