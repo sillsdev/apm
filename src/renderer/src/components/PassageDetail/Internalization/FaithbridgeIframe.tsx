@@ -26,6 +26,7 @@ import { axiosGet } from '../../../utils/axios';
 import { TokenContext } from '../../../context/TokenProvider';
 import { AquiferContent } from './FindAquifer';
 import { usePassageRef } from './usePassageRef';
+import { useMobile } from '../../../utils';
 
 interface IFaithbridgeIframeProps {
   onMarkdown: (query: string, audioUrl: string, transcript: string) => void;
@@ -62,6 +63,7 @@ export const FaithbridgeIframe = ({
   const { showMessage } = useSnackBar();
   const { passageRef } = usePassageRef();
   const onlineTimer = React.useRef<NodeJS.Timeout | null>(null);
+  const { isMobileWidth } = useMobile();
   const token = useContext(TokenContext)?.state?.accessToken ?? '';
 
   const getNewChat = () => {
@@ -218,7 +220,7 @@ export const FaithbridgeIframe = ({
       {loading && !fixedFooterLayout && <div>{t.loading}</div>}
       <Box sx={{ pb: fixedFooterLayout ? '4px' : 0, width: '100%' }}>
         <ActionRow>
-          {!offlineOnly && !isOffline && (
+          {!offlineOnly && !isOffline && !isMobileWidth && (
             <FormControlLabel
               control={
                 <Checkbox
@@ -248,7 +250,7 @@ export const FaithbridgeIframe = ({
           >
             {t.newChat}
           </AltButton>
-          {hasPermission && (!isOffline || offlineOnly) ? (
+          {hasPermission && (!isOffline || offlineOnly) && !isMobileWidth ? (
             <Stack sx={{ justifyContent: 'center', alignItems: 'center' }}>
               <PriButton disabled={fetching} onClick={handleAddContent}>
                 {t.addContent.replace('{0}', audio ? t.audio : t.text)}

@@ -241,7 +241,6 @@ export function BigDialog({
               display: 'flex',
               alignItems: 'center',
               gap: 1,
-              minWidth: 0,
               flex: 1,
             }}
           >
@@ -250,7 +249,6 @@ export function BigDialog({
               sx={{
                 display: 'flex',
                 flexDirection: 'column',
-                minWidth: 0,
                 flex: 1,
               }}
             >
@@ -265,7 +263,6 @@ export function BigDialog({
               >
                 {title}
               </Typography>
-              {description}
             </Box>
           </Box>
           <GrowingSpacer />
@@ -277,6 +274,7 @@ export function BigDialog({
             <div />
           )}
         </Box>
+        {description}
       </DialogTitle>
       <DialogContent sx={dialogContentSx}>{children}</DialogContent>
       {(showBottomCloseButton || onCancel || onSave) && (
