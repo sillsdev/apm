@@ -2,8 +2,8 @@ import { useState, useEffect, useContext, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useGlobal } from '../context/useGlobal';
 import { LocalKey, localUserKey, useHome, useMobile } from '../utils';
-import { Box, Grid } from '@mui/material';
-import AppHead from '../components/App/AppHead';
+import { Grid } from '@mui/material';
+import AppLayout from '../components/App/AppLayout';
 import { TeamProvider } from '../context/TeamContext';
 import { TeamProjects } from '../components/Team';
 import StickyRedirect from '../components/StickyRedirect';
@@ -74,25 +74,18 @@ export const TeamScreen = () => {
   }
 
   return !isMobile ? (
-    <Box sx={{ width: '100%' }}>
-      <TeamProvider>
-        <>
-          <AppHead />
-          <Grid
-            container
-            id="TeamScreen"
-            sx={{ display: 'flex', paddingTop: '80px' }}
-          >
-            <Grid size={{ xs: 6, md: 3, lg: 2 }}>
-              <TeamActions />
-            </Grid>
-            <Grid size={{ xs: 12, md: 9, lg: 10 }}>
-              <TeamProjects />
-            </Grid>
+    <TeamProvider>
+      <AppLayout>
+        <Grid container id="TeamScreen" sx={{ display: 'flex' }}>
+          <Grid size={{ xs: 6, md: 3, lg: 2 }}>
+            <TeamActions />
           </Grid>
-        </>
-      </TeamProvider>
-    </Box>
+          <Grid size={{ xs: 12, md: 9, lg: 10 }}>
+            <TeamProjects />
+          </Grid>
+        </Grid>
+      </AppLayout>
+    </TeamProvider>
   ) : (
     <ProjectsScreen />
   );
