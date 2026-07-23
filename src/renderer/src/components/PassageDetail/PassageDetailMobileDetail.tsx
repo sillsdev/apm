@@ -1,7 +1,7 @@
 import { Box, Paper, Stack, SxProps, Typography } from '@mui/material';
 import { useEffect, useMemo } from 'react';
 import DiscussionPanel from '../../components/Discussions/DiscussionPanel';
-import PassageDetailMobileLayout from './PassageDetailMobileLayout';
+import PassageDetailLayout from './PassageDetailLayout';
 import MobileWorkflowSteps from './mobile/MobileWorkflowSteps';
 import PassageDetailMobileFooter from './mobile/PassageDetailMobileFooter';
 import usePassageDetailContext from '../../context/usePassageDetailContext';
@@ -83,11 +83,30 @@ export default function PassageDetailMobileDetail({
   }, [tool, setDiscussOpen]);
 
   return (
-    <PassageDetailMobileLayout
+    <PassageDetailLayout
       header={<MobileWorkflowSteps />}
+      headerSx={{
+        backgroundColor: 'custom.headerBackground',
+        borderBottom: '1px solid',
+        borderColor: 'divider',
+      }}
       footer={<PassageDetailMobileFooter />}
+      footerSx={{
+        backgroundColor: 'custom.headerBackground',
+        borderTop: '1px solid',
+        borderColor: 'divider',
+        px: 1.5,
+        py: 1,
+      }}
       footerAbove={promptRecordFooter}
-      contentSx={contentSx}
+      footerAboveSx={{ backgroundColor: 'background.default', px: 1, py: 0.5 }}
+      contentSx={{
+        backgroundColor: 'background.default',
+        px: 1.5,
+        pt: 1.5,
+        pb: 1.5,
+        ...contentSx,
+      }}
     >
       {!showNoAudioPlaceholder ? (
         <>
@@ -162,6 +181,6 @@ export default function PassageDetailMobileDetail({
           </Typography>
         </Paper>
       )}
-    </PassageDetailMobileLayout>
+    </PassageDetailLayout>
   );
 }
