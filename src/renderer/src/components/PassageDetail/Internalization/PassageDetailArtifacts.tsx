@@ -185,9 +185,14 @@ export function PassageDetailArtifacts() {
   const catIdRef = useRef<string | undefined>(undefined);
   const descriptionRef = useRef<string>('');
 
-  const resourceTypeRef = useRef<ResourceTypeEnum>(
+  const [resourceKind, setResourceKindx] = useState(
     ResourceTypeEnum.sectionResource
   );
+  const resourceKindRef = useRef(resourceKind);
+  const setResourceKind = (kind: ResourceTypeEnum) => {
+    resourceKindRef.current = kind;
+    setResourceKindx(kind);
+  };
   const projIdentRef = useRef<RecordIdentity[]>([]);
   const projMediaRef = useRef<MediaFileD | undefined>(undefined);
   // True when the general-resource wizard was entered by adding a new audio
@@ -244,9 +249,9 @@ export function PassageDetailArtifacts() {
   const handleNonAudio = (value: boolean) => setNonAudio(value);
 
   const isPassageResource = () =>
-    resourceTypeRef.current === ResourceTypeEnum.passageResource;
+    resourceKindRef.current === ResourceTypeEnum.passageResource;
   const isProjectResource = () =>
-    resourceTypeRef.current === ResourceTypeEnum.projectResource;
+    resourceKindRef.current === ResourceTypeEnum.projectResource;
 
   const projResourceType = useMemo(() => {
     const resourceType = artifactTypes.find(
@@ -383,15 +388,17 @@ export function PassageDetailArtifacts() {
     // General (project) resources are reconfigured through the wizard, not the
     // simple edit dialog (mockup: "use Edit to also configure the General Resource").
     if (mf && related(mf, 'artifactType') === projResourceType) {
-      resourceTypeRef.current = ResourceTypeEnum.projectResource;
+      setResourceKind(ResourceTypeEnum.projectResource);
       isAddingAudioResourceRef.current = false;
       handleSelectProjectResource(mf);
       return;
     }
     setEditResource(secRes);
-    resourceTypeRef.current = related(secRes, 'passage')
-      ? ResourceTypeEnum.passageResource
-      : ResourceTypeEnum.sectionResource;
+    setResourceKind(
+      related(secRes, 'passage')
+        ? ResourceTypeEnum.passageResource
+        : ResourceTypeEnum.sectionResource
+    );
     descriptionRef.current = secRes?.attributes.description || '';
     catIdRef.current = mf ? related(mf, 'artifactCategory') : undefined;
     mediaRef.current = mf as MediaFileD;
@@ -418,7 +425,7 @@ export function PassageDetailArtifacts() {
     setEditResource(undefined);
     catIdRef.current = undefined;
     descriptionRef.current = '';
-    resourceTypeRef.current = ResourceTypeEnum.sectionResource;
+    setResourceKind(ResourceTypeEnum.sectionResource);
     setUploadVisible(false);
     setMarkdownValue('');
     setInitDescription('');
@@ -495,7 +502,7 @@ export function PassageDetailArtifacts() {
 
   const handleAction = (what: AddResourceAction) => {
     artifactState.id = resourceType ?? null;
-    resourceTypeRef.current = ResourceTypeEnum.sectionResource;
+    setResourceKind(ResourceTypeEnum.sectionResource);
     if (what === AddResourceAction.Audio) {
       mediaRef.current = undefined;
       setUploadType(UploadType.Resource);
@@ -515,7 +522,7 @@ export function PassageDetailArtifacts() {
       setAudioUploadOrRecord(false);
       setUploadVisible(true);
     } else if (what === AddResourceAction.Shared) {
-      resourceTypeRef.current = ResourceTypeEnum.sectionResource;
+      setResourceKind(ResourceTypeEnum.sectionResource);
       setSharedResourceVisible(true);
     }
   };
@@ -822,8 +829,8 @@ export function PassageDetailArtifacts() {
   };
 
   const handlePassRes = (newValue: ResourceTypeEnum) => {
-    resourceTypeRef.current = newValue;
-    if (isProjectResource()) {
+    setResourceKind(newValue);
+    if (newValue === ResourceTypeEnum.projectResource) {
       artifactState.id = projResourceType ?? null;
       setUploadType(UploadType.ProjectResource);
       syncResourceReady(UploadType.ProjectResource, descriptionRef.current);
@@ -966,7 +973,7 @@ export function PassageDetailArtifacts() {
             initDescription={initDescription}
             onDescriptionChange={handleDescription}
             catRequired={false}
-            initPassRes={isPassageResource()}
+            resourceKind={resourceKind}
             onPassResChange={handlePassRes}
             allowProject={!nonAudio}
             sectDesc={sectDesc}
@@ -990,7 +997,7 @@ export function PassageDetailArtifacts() {
       <BigDialog
         title={t.sharedResource.replace(
           '{0}',
-          resourceTypeRef.current === ResourceTypeEnum.sectionResource
+          resourceKind === ResourceTypeEnum.sectionResource
             ? getOrganizedBy(true)
             : t.passageResource
         )}
@@ -1000,8 +1007,8 @@ export function PassageDetailArtifacts() {
       >
         <SelectSharedResource
           sourcePassages={resourceSourcePassages}
-          scope={resourceTypeRef.current}
-          onScope={(val) => (resourceTypeRef.current = val)}
+          scope={resourceKind}
+          onScope={setResourceKind}
           onSelect={handleSelectShared}
           onOpen={handleSharedResourceVisible}
         />
@@ -1076,7 +1083,7 @@ export function PassageDetailArtifacts() {
           initDescription={descriptionRef.current}
           onDescriptionChange={handleDescription}
           catRequired={false}
-          initPassRes={Boolean(resourceTypeRef.current)}
+          resourceKind={resourceKind}
           onPassResChange={handlePassRes}
           allowProject={false}
           onTextChange={handleTextChange}

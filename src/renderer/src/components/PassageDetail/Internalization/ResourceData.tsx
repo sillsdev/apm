@@ -32,12 +32,29 @@ import { MarkDownView } from '../../../control/MarkDownView';
 import { ArtCatScr } from '../../../components/Sheet/ArtCatScr';
 import { descriptionRequiredForResource } from './resourceArtifactName';
 
+type ResourceKindRadio = 'section' | 'passage' | 'general';
+
+const resourceKindToRadio = (kind: ResourceTypeEnum): ResourceKindRadio =>
+  kind === ResourceTypeEnum.projectResource
+    ? 'general'
+    : kind === ResourceTypeEnum.passageResource
+      ? 'passage'
+      : 'section';
+
+const radioToResourceKind = (value: string): ResourceTypeEnum =>
+  value === 'section'
+    ? ResourceTypeEnum.sectionResource
+    : value === 'passage'
+      ? ResourceTypeEnum.passageResource
+      : ResourceTypeEnum.projectResource;
+
 interface IProps {
   media?: MediaFileD | undefined;
   uploadType?: UploadType | undefined;
   initCategory: string;
   initDescription: string;
-  initPassRes: boolean;
+  /** Controlled resource scope; parent owns this so radios stay in sync on remount. */
+  resourceKind?: ResourceTypeEnum | undefined;
   onCategoryChange: (artifactCategoryId: string) => void;
   onDescriptionChange: (desc: string) => void;
   onPassResChange?: ((value: ResourceTypeEnum) => void) | undefined;
@@ -53,7 +70,7 @@ export function ResourceData(props: IProps) {
   const {
     initCategory,
     initDescription,
-    initPassRes,
+    resourceKind = ResourceTypeEnum.sectionResource,
     onCategoryChange,
     onDescriptionChange,
     onPassResChange,
@@ -69,13 +86,6 @@ export function ResourceData(props: IProps) {
   } = props;
   const [description, setDescription] = useState(initDescription);
   const { getOrganizedBy } = useOrganizedBy();
-  const resourceKindFromProps = () =>
-    uploadType === UploadType.ProjectResource
-      ? 'general'
-      : initPassRes
-        ? 'passage'
-        : 'section';
-  const [value, setValue] = useState(resourceKindFromProps);
   const [text, setText] = useState(media?.attributes?.originalFile ?? '');
   const t: IPassageDetailArtifactsStrings = useSelector(
     passageDetailArtifactsSelector,
@@ -89,22 +99,8 @@ export function ResourceData(props: IProps) {
 
   useEffect(() => setDescription(initDescription), [initDescription]);
 
-  useEffect(() => {
-    setValue(resourceKindFromProps());
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [uploadType, initPassRes]);
-
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = (event.target as HTMLInputElement).value;
-    setValue(newValue);
-    onPassResChange &&
-      onPassResChange(
-        newValue === 'section'
-          ? ResourceTypeEnum.sectionResource
-          : newValue === 'passage'
-            ? ResourceTypeEnum.passageResource
-            : ResourceTypeEnum.projectResource
-      );
+    onPassResChange?.(radioToResourceKind(event.target.value));
   };
   const handleChangeDescription = (e: any) => {
     e.persist();
@@ -157,7 +153,7 @@ export function ResourceData(props: IProps) {
           <FormLabel id="resourcekind">{t.tip1a}</FormLabel>
           <RadioGroup
             aria-labelledby="resourcekind"
-            value={value}
+            value={resourceKindToRadio(resourceKind)}
             onChange={handleChange}
             name="radio-buttons-group"
           >
