@@ -1,6 +1,6 @@
 import React from 'react';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
-import PassageDetailMobileLayout from '../PassageDetailMobileLayout';
+import PassageDetailLayout from './PassageDetailLayout';
 
 const mountLayout = ({
   withFooterAbove = false,
@@ -12,7 +12,7 @@ const mountLayout = ({
   const theme = createTheme();
   cy.mount(
     <ThemeProvider theme={theme}>
-      <PassageDetailMobileLayout
+      <PassageDetailLayout
         header={<div data-cy="layout-header">Header</div>}
         footer={<div data-cy="layout-footer">Footer</div>}
         footerAbove={
@@ -23,12 +23,12 @@ const mountLayout = ({
         contentSx={contentSx}
       >
         <div>Content body</div>
-      </PassageDetailMobileLayout>
+      </PassageDetailLayout>
     </ThemeProvider>
   );
 };
 
-describe('PassageDetailMobileLayout', () => {
+describe('PassageDetailLayout', () => {
   it('renders header, content, and footer', () => {
     mountLayout();
 
