@@ -6,7 +6,7 @@ import {
   SxProps,
   TextField,
 } from '@mui/material';
-import { useEffect, useRef, useState, type MutableRefObject } from 'react';
+import { useEffect, useRef, useState, type RefObject } from 'react';
 import {
   ArtifactCategoryType,
   IArtifactCategory,
@@ -34,7 +34,7 @@ interface IProps {
   // it resolves the current input to a category id (creating a new category
   // when the typed name matches none) and returns it. New categories are then
   // created on commit rather than on blur.
-  commitRef?: MutableRefObject<(() => Promise<string>) | null> | undefined;
+  commitRef?: RefObject<(() => Promise<string>) | null> | undefined;
 }
 
 const StyledBox = styled(Box)<BoxProps>(() => ({

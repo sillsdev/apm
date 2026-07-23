@@ -1,11 +1,11 @@
-import type { MutableRefObject } from 'react';
+import type { RefObject } from 'react';
 import { IResourceState } from '.';
 import SelectArtifactCategory from '../Sheet/SelectArtifactCategory';
 import { ArtifactCategoryType } from '../../crud';
 
 interface IProps extends IResourceState {
   // Forwarded so the wizard can create a new category at save (not on blur).
-  commitRef?: MutableRefObject<(() => Promise<string>) | null> | undefined;
+  commitRef?: RefObject<(() => Promise<string>) | null> | undefined;
 }
 
 export const ResourceCategory = (props: IProps) => {

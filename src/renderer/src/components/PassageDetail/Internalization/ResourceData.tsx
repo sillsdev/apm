@@ -9,7 +9,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import React, { useEffect, useState, type MutableRefObject } from 'react';
+import React, { useEffect, useState, type RefObject } from 'react';
 import { shallowEqual, useSelector } from 'react-redux';
 import { ArtifactCategoryType, useOrganizedBy } from '../../../crud';
 import {
@@ -47,7 +47,7 @@ interface IProps {
   catAllowNew?: boolean | undefined;
   // Forwarded to SelectArtifactCategory so the parent form can create a new
   // category at submission (rather than on blur).
-  catCommitRef?: MutableRefObject<(() => Promise<string>) | null> | undefined;
+  catCommitRef?: RefObject<(() => Promise<string>) | null> | undefined;
   sectDesc?: string | undefined;
   passDesc?: string | undefined;
   wrapPreviewOverflow?: boolean;
