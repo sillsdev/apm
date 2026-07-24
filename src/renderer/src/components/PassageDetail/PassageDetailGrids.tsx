@@ -1,10 +1,10 @@
 import React, { useState, useContext, useMemo, Suspense } from 'react';
 import { useGlobal } from '../../context/useGlobal';
-import { Grid, Paper, Box, SxProps, Stack } from '@mui/material';
+import { Paper, Box, SxProps, Stack } from '@mui/material';
 
-import { HeadHeight } from '../../layout';
 import { PassageDetailContext } from '../../context/PassageDetailContext';
 import { WorkflowSteps } from './WorkflowSteps';
+import PassageDetailLayout from './PassageDetailLayout';
 import PassageDetailSectionPassage from './PassageDetailSectionPassage';
 import PassageDetailStepComplete from './PassageDetailStepComplete';
 import PassageDetailArtifacts from './Internalization/PassageDetailArtifacts';
@@ -58,8 +58,32 @@ function parseStepSettings(settings: unknown): Record<string, unknown> | null {
   return null;
 }
 
-const descProps = { overflow: 'hidden', textOverflow: 'ellipsis' } as SxProps;
-const rowProps = { alignItems: 'center', whiteSpace: 'nowrap' } as SxProps;
+const clipProps = { overflow: 'hidden', textOverflow: 'ellipsis' } as SxProps;
+
+// Tools whose step content renders inside the shared Paper alongside the
+// discussion panel.
+const paperTools = [
+  ToolSlug.Discuss,
+  ToolSlug.TeamCheck,
+  ToolSlug.Record,
+  ToolSlug.Verses,
+  ToolSlug.CarefulSpeech,
+  ToolSlug.PhraseBackTranslate,
+  ToolSlug.Transcribe,
+  ToolSlug.ConsultantCheck,
+  ToolSlug.KeyTerm,
+] as string[];
+
+// Of those, the ones that size their own player/editor and must be clipped to
+// the pane rather than allowed to push the Paper wider.
+const clippedPaperTools = [
+  ToolSlug.Record,
+  ToolSlug.Verses,
+  ToolSlug.CarefulSpeech,
+  ToolSlug.PhraseBackTranslate,
+  ToolSlug.Transcribe,
+  ToolSlug.ConsultantCheck,
+] as string[];
 
 const PassageDetailGrids = () => {
   const [plan] = useGlobal('plan'); //will be constant here
@@ -143,303 +167,214 @@ const PassageDetailGrids = () => {
       MAGIC_NUMBER_THAT_MAKES_IT_FIT -
       (discussOpen ? 0 : scrollbarWidth)
   );
-  return (
-    <Box
-      sx={{
-        display: 'flex',
-        flexDirection: 'row',
-        paddingTop: `${HeadHeight}px`,
-        width: '100%',
-        maxWidth: '100%',
-        minWidth: 0,
-        overflow: 'hidden',
-      }}
-    >
-      <Grid
-        container
-        direction="row"
-        sx={{ ...rowProps, minWidth: 0, flexWrap: 'wrap' }}
-      >
-        {!(
-          isMobile &&
-          (tool === ToolSlug.PhraseBackTranslate ||
-            tool === ToolSlug.CarefulSpeech ||
-            boldClauseTranscription)
-        ) && (
-          <>
+  // Same fit math for steps that render their own full-width control instead of
+  // a player, so they can't overflow the Paper either.
+  const fittedPaneWidth = Math.max(
+    0,
+    paneWidth - MAGIC_NUMBER_THAT_MAKES_IT_FIT
+  );
+  const showsStepPaper = paperTools.includes(tool ?? '');
+  const clipsStepContent = clippedPaperTools.includes(tool ?? '');
+  const showsStepPlayer =
+    tool === ToolSlug.Discuss ||
+    tool === ToolSlug.TeamCheck ||
+    (tool === ToolSlug.KeyTerm && Boolean(mediafileId));
+  const showHeader = !(
+    isMobile &&
+    (tool === ToolSlug.PhraseBackTranslate ||
+      tool === ToolSlug.CarefulSpeech ||
+      boldClauseTranscription)
+  );
+  const headerContent = (
+    <>
+      {boldDesktopCenteredHeader ? (
+        // Equal-basis side items keep the tool label centered on the pane
+        // regardless of how wide the passage reference or step-complete get.
+        <Stack
+          direction="row"
+          spacing={1}
+          sx={{ alignItems: 'center', minWidth: 0, width: '100%' }}
+        >
+          <Box sx={{ ...clipProps, flex: '1 1 0', minWidth: 0 }}>
+            <PassageDetailSectionPassage />
+          </Box>
+          <Box
+            id="tool"
+            sx={{ flexShrink: 0, whiteSpace: 'nowrap', textAlign: 'center' }}
+          >
+            {headerToolLabel}
+          </Box>
+          <Box
+            id={showBoldDesktopStepComplete ? 'stepcomplete' : undefined}
+            sx={{
+              display: 'flex',
+              flex: '1 1 0',
+              minWidth: 0,
+              justifyContent: 'flex-end',
+            }}
+          >
+            {showBoldDesktopStepComplete && <PassageDetailStepComplete />}
+          </Box>
+        </Stack>
+      ) : (
+        <Box
+          sx={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            alignItems: 'center',
+            gap: 1,
+            minWidth: 0,
+            width: '100%',
+          }}
+        >
+          <Box sx={{ ...clipProps, minWidth: 0, whiteSpace: 'nowrap' }}>
+            <PassageDetailSectionPassage />
+          </Box>
+          <Box id="tool" sx={{ minWidth: 0, whiteSpace: 'nowrap', ml: 'auto' }}>
+            {headerToolLabel}
+          </Box>
+          {!isBoldWorkflow && (
             <Box
+              id="stepcomplete"
+              sx={{ display: 'flex', flexShrink: 0, ml: 'auto' }}
+            >
+              <PassageDetailStepComplete />
+            </Box>
+          )}
+        </Box>
+      )}
+      <Box sx={{ ...clipProps, width: '100%' }}>
+        <WorkflowSteps />
+      </Box>
+    </>
+  );
+
+  return (
+    <PassageDetailLayout
+      header={showHeader ? headerContent : null}
+      headerSx={
+        showHeader
+          ? {
+              backgroundColor: 'background.default',
+              borderBottom: '1px solid',
+              borderColor: 'divider',
+            }
+          : undefined
+      }
+      contentSx={{ maxWidth: '100%' }}
+    >
+      {tool === ToolSlug.Resource && (
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', minWidth: 0 }}>
+          <PassageDetailChooser width={width - 24} sx={{ pl: 2 }} />
+          <PassageDetailArtifacts />
+        </Box>
+      )}
+      {tool === ToolSlug.Prompt && (
+        <Box sx={{ minWidth: 0, px: 2 }}>
+          <PassageDetailPrompt width={fittedPaneWidth} />
+        </Box>
+      )}
+      {tool === ToolSlug.Paratext && (
+        <Stack sx={{ minWidth: 0 }}>
+          <PassageDetailChooser width={width - 24} sx={{ pl: 2 }} />
+          <PassageDetailParatextIntegration />
+        </Stack>
+      )}
+      {showsStepPaper && (
+        <Paper
+          key={currentstep}
+          sx={{ p: 0, mx: 'auto', width: `calc(100% - 32px)` }}
+        >
+          <Stack direction="row" spacing={1}>
+            <Stack
               sx={{
-                position: 'sticky',
-                top: 0,
-                zIndex: (theme) => theme.zIndex.appBar,
-                backgroundColor: 'background.default',
-                borderBottom: '1px solid',
-                borderColor: 'divider',
+                ...(clipsStepContent ? clipProps : {}),
                 width: '100%',
+                maxWidth: paneWidth,
+                minWidth: 0,
               }}
             >
-              {boldDesktopCenteredHeader ? (
-                <Box
-                  sx={{
-                    display: 'grid',
-                    gridTemplateColumns: 'minmax(0,1fr) auto minmax(0,1fr)',
-                    alignItems: 'center',
-                    columnGap: 1,
-                    flexGrow: 1,
-                    minWidth: 0,
-                    width: '100%',
-                  }}
-                >
-                  <Box
-                    sx={{
-                      alignItems: 'center',
-                      minWidth: 0,
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                    }}
-                  >
-                    <PassageDetailSectionPassage />
-                  </Box>
-                  <Box
-                    id="tool"
-                    sx={{
-                      alignItems: 'center',
-                      minWidth: 0,
-                      flexShrink: 0,
-                      whiteSpace: 'nowrap',
-                      justifySelf: 'center',
-                      textAlign: 'center',
-                    }}
-                  >
-                    {headerToolLabel}
-                  </Box>
-                  <Box
-                    id={showBoldDesktopStepComplete ? 'stepcomplete' : undefined}
-                    sx={{
-                      minWidth: 0,
-                      display: 'flex',
-                      justifyContent: 'flex-end',
-                      alignItems: 'center',
-                    }}
-                  >
-                    {showBoldDesktopStepComplete && <PassageDetailStepComplete />}
-                  </Box>
-                </Box>
-              ) : (
-                <Grid
-                  container
-                  direction="row"
-                  sx={{
-                    alignItems: 'center',
-                    flexGrow: 1,
-                    minWidth: 0,
-                    flexWrap: 'wrap',
-                    gap: 1,
-                  }}
-                >
-                  <Grid
-                    sx={{ ...rowProps, minWidth: 0, flexShrink: 1 }}
-                    size={{ xs: 'auto' }}
-                  >
-                    <PassageDetailSectionPassage />
-                  </Grid>
-                  <Grid
-                    id="tool"
-                    sx={{
-                      alignItems: 'center',
-                      minWidth: 0,
-                      flexShrink: 1,
-                      whiteSpace: 'nowrap',
-                      ml: 'auto',
-                    }}
-                    size={{ xs: 'auto' }}
-                  >
-                    {headerToolLabel}
-                  </Grid>
-                  {!isBoldWorkflow && (
-                    <Grid
-                      id="stepcomplete"
-                      sx={{
-                        display: 'flex',
-                        justifyContent: 'flex-end',
-                        minWidth: 0,
-                        flexShrink: 0,
-                        ml: 'auto',
-                      }}
-                      size={{ xs: 'auto' }}
-                    >
-                      <PassageDetailStepComplete />
-                    </Grid>
-                  )}
-                </Grid>
-              )}
-              <Box sx={{ ...descProps, width: '100%' }}>
-                <WorkflowSteps />
-              </Box>
-            </Box>
-          </>
-        )}
-        {tool === ToolSlug.Resource && (
-          <Grid
-            container
-            direction="row"
-            sx={{ ...rowProps, minWidth: 0, flexWrap: 'wrap' }}
-          >
-            <Grid size={{ xs: 12 }} sx={{ minWidth: 0 }}>
-              <Grid container sx={{ minWidth: 0 }}>
-                <PassageDetailChooser width={width - 24} sx={{ pl: 2 }} />
-                <PassageDetailArtifacts />
-              </Grid>
-            </Grid>
-          </Grid>
-        )}
-        {tool === ToolSlug.Prompt && (
-          <Grid
-            container
-            direction="row"
-            sx={{ ...rowProps, minWidth: 0, flexWrap: 'wrap', px: 2 }}
-          >
-            <Grid size={{ xs: 12 }} sx={{ minWidth: 0, width: '100%' }}>
-              <PassageDetailPrompt width={Math.max(0, paneWidth - 40)} />
-            </Grid>
-          </Grid>
-        )}
-        {tool === ToolSlug.Paratext && (
-          <Stack sx={{ width: '100%', minWidth: 0 }}>
-            <PassageDetailChooser width={width - 24} sx={{ pl: 2 }} />
-            <PassageDetailParatextIntegration />
-          </Stack>
-        )}
-        {(tool === ToolSlug.Discuss ||
-          tool === ToolSlug.TeamCheck ||
-          tool === ToolSlug.Record ||
-          tool === ToolSlug.Verses ||
-          tool === ToolSlug.CarefulSpeech ||
-          tool === ToolSlug.PhraseBackTranslate ||
-          tool === ToolSlug.Transcribe ||
-          tool === ToolSlug.ConsultantCheck ||
-          tool === ToolSlug.KeyTerm) && (
-          <Paper
-            key={currentstep}
-            sx={{ p: 0, margin: 'auto', width: `calc(100% - 32px)` }}
-          >
-            <Stack direction="row" spacing={1}>
-              {tool !== ToolSlug.Transcribe &&
-              !boldClauseTranscription &&
-              tool !== ToolSlug.Verses &&
-              tool !== ToolSlug.CarefulSpeech &&
-              tool !== ToolSlug.PhraseBackTranslate &&
-              tool !== ToolSlug.Record &&
-              tool !== ToolSlug.ConsultantCheck ? (
-                <Stack
-                  direction="column"
-                  sx={{ width: '100%', minWidth: 0, maxWidth: paneWidth }}
-                >
-                  <PassageDetailChooser width={paneWidth} />
-                  {(tool !== ToolSlug.KeyTerm || mediafileId) && (
-                    <PassageDetailPlayer
-                      width={Math.max(0, paneWidth - 40)}
-                      allowZoomAndSpeed={true}
-                    />
-                  )}
-                  {tool === ToolSlug.TeamCheck && <TeamCheckReference />}
-                  {tool === ToolSlug.KeyTerm && (
-                    <Suspense fallback={<Busy />}>
-                      <KeyTerms width={paneWidth} />
-                    </Suspense>
-                  )}
-                  {tool === ToolSlug.Discuss && (
-                    <PassageDetailDiscuss
-                      width={paneWidth}
-                      currentStep={currentstep}
-                    />
-                  )}
-                </Stack>
-              ) : (
-                <Grid
-                  sx={{
-                    ...descProps,
-                    width: '100%',
-                    maxWidth: paneWidth,
-                    minWidth: 0,
-                  }}
-                  size={{ xs: 12 }}
-                >
-                  <PassageDetailChooser width={paneWidth} />
-                  {tool === ToolSlug.Verses && (
-                    <PassageDetailMarkVerses width={playerPaneWidth} />
-                  )}
-                  {tool === ToolSlug.CarefulSpeech && (
-                    <PassageDetailCarefulSpeech width={playerPaneWidth} />
-                  )}
-                  {tool === ToolSlug.PhraseBackTranslate && isBoldWorkflow && (
-                    <PassageDetailLwcTranslation width={paneWidth} />
-                  )}
-                  {tool === ToolSlug.PhraseBackTranslate && !isBoldWorkflow && (
-                    <PassageDetailPhraseBackTranslate width={playerPaneWidth} />
-                  )}
-                  {boldClauseTranscription && (
-                    <PassageDetailLwcTranscription width={paneWidth} />
-                  )}
-                  {tool === ToolSlug.Transcribe && !boldClauseTranscription && (
-                    <PassageDetailTranscribe
-                      width={playerPaneWidth}
-                      artifactTypeId={artifactId}
-                    />
-                  )}
-                  {tool === ToolSlug.Record && (
-                    <PassageDetailRecord width={Math.max(0, paneWidth - 40)} />
-                  )}
-                  {tool === ToolSlug.ConsultantCheck && (
-                    <ConsultantCheck width={playerPaneWidth} />
-                  )}
-                </Grid>
-              )}
-              <DiscussionPanel />
-            </Stack>
-          </Paper>
-        )}
-        {(tool === ToolSlug.Community ||
-          tool === ToolSlug.WholeBackTranslate) && (
-          <Grid
-            key={currentstep}
-            container
-            direction="row"
-            sx={{ ...rowProps, minWidth: 0, flexWrap: 'wrap' }}
-          >
-            <Grid size={{ xs: 12 }} sx={{ minWidth: 0 }}>
-              <PassageDetailItem
-                width={width}
-                slugs={
-                  tool === ToolSlug.Community
-                    ? communitySlugs
-                    : wholeBackTranslationSlugs
-                }
-                showTopic={tool === ToolSlug.Community}
-                segments={undefined}
-              />
-            </Grid>
-          </Grid>
-        )}
-
-        {(tool === ToolSlug.Export || tool === ToolSlug.Done) && (
-          <Grid container sx={{ minWidth: 0 }}>
-            <Grid size={{ xs: 12 }} sx={{ minWidth: 0 }}>
-              <PassageDetailChooser width={width - 16} />
-              {tool === ToolSlug.Export && (
-                <TranscriptionTab
-                  projectPlans={plans}
-                  floatTop
-                  step={currentstep}
-                  orgSteps={orgWorkflowSteps}
-                  sectionArr={sectionArr}
+              <PassageDetailChooser width={paneWidth} />
+              {showsStepPlayer && (
+                <PassageDetailPlayer
+                  width={fittedPaneWidth}
+                  allowZoomAndSpeed={true}
                 />
               )}
-            </Grid>
-          </Grid>
-        )}
-      </Grid>
-    </Box>
+              {tool === ToolSlug.TeamCheck && <TeamCheckReference />}
+              {tool === ToolSlug.KeyTerm && (
+                <Suspense fallback={<Busy />}>
+                  <KeyTerms width={paneWidth} />
+                </Suspense>
+              )}
+              {tool === ToolSlug.Discuss && (
+                <PassageDetailDiscuss
+                  width={paneWidth}
+                  currentStep={currentstep}
+                />
+              )}
+              {tool === ToolSlug.Verses && (
+                <PassageDetailMarkVerses width={playerPaneWidth} />
+              )}
+              {tool === ToolSlug.CarefulSpeech && (
+                <PassageDetailCarefulSpeech width={playerPaneWidth} />
+              )}
+              {tool === ToolSlug.PhraseBackTranslate && isBoldWorkflow && (
+                <PassageDetailLwcTranslation width={paneWidth} />
+              )}
+              {tool === ToolSlug.PhraseBackTranslate && !isBoldWorkflow && (
+                <PassageDetailPhraseBackTranslate width={playerPaneWidth} />
+              )}
+              {boldClauseTranscription && (
+                <PassageDetailLwcTranscription width={paneWidth} />
+              )}
+              {tool === ToolSlug.Transcribe && !boldClauseTranscription && (
+                <PassageDetailTranscribe
+                  width={playerPaneWidth}
+                  artifactTypeId={artifactId}
+                />
+              )}
+              {tool === ToolSlug.Record && (
+                <PassageDetailRecord width={fittedPaneWidth} />
+              )}
+              {tool === ToolSlug.ConsultantCheck && (
+                <ConsultantCheck width={playerPaneWidth} />
+              )}
+            </Stack>
+            <DiscussionPanel />
+          </Stack>
+        </Paper>
+      )}
+      {(tool === ToolSlug.Community ||
+        tool === ToolSlug.WholeBackTranslate) && (
+        <Box key={currentstep} sx={{ minWidth: 0 }}>
+          <PassageDetailItem
+            width={width}
+            slugs={
+              tool === ToolSlug.Community
+                ? communitySlugs
+                : wholeBackTranslationSlugs
+            }
+            showTopic={tool === ToolSlug.Community}
+            segments={undefined}
+          />
+        </Box>
+      )}
+      {(tool === ToolSlug.Export || tool === ToolSlug.Done) && (
+        <Box sx={{ minWidth: 0 }}>
+          <PassageDetailChooser width={width - 16} />
+          {tool === ToolSlug.Export && (
+            <TranscriptionTab
+              projectPlans={plans}
+              floatTop
+              step={currentstep}
+              orgSteps={orgWorkflowSteps}
+              sectionArr={sectionArr}
+            />
+          )}
+        </Box>
+      )}
+    </PassageDetailLayout>
   );
 };
 

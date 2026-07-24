@@ -18,7 +18,7 @@ import { BigDialogBp } from '../hoc/BigDialogBp';
 import ImportTab from '../components/ImportTab';
 import AddIcon from '@mui/icons-material/Add';
 import SettingsIcon from '@mui/icons-material/Settings';
-import AppHead from '../components/App/AppHead';
+import AppLayout from '../components/App/AppLayout';
 import { useTheme, alpha } from '@mui/material/styles';
 import { TeamProvider } from '../context/TeamContext';
 import { TeamContext } from '../context/TeamContext';
@@ -436,7 +436,6 @@ const MainTeamsLayout: React.FC = () => {
       <Box
         id="TeamsScreen"
         sx={{
-          paddingTop: '80px',
           px: 2,
           pb: 4,
           maxWidth: 500,
@@ -455,34 +454,28 @@ const MainTeamsLayout: React.FC = () => {
 
 export const SwitchTeams: React.FC = () => {
   return (
-    <Box sx={{ width: '100%' }}>
-      <TeamProvider>
-        <>
-          <AppHead />
-          <SwitchTeamsGuard>
-            <SettingsProvider>
-              <MainTeamsLayout />
-            </SettingsProvider>
-          </SwitchTeamsGuard>
-        </>
-      </TeamProvider>
-    </Box>
+    <TeamProvider>
+      <AppLayout>
+        <SwitchTeamsGuard>
+          <SettingsProvider>
+            <MainTeamsLayout />
+          </SettingsProvider>
+        </SwitchTeamsGuard>
+      </AppLayout>
+    </TeamProvider>
   );
 };
 
 /** Same UI as the route without the PAP-like redirect; CT uses empty orbit data so `teams` stays []. */
 export const SwitchTeamsUnguarded: React.FC = () => {
   return (
-    <Box sx={{ width: '100%' }}>
-      <TeamProvider>
-        <>
-          <AppHead />
-          <SettingsProvider>
-            <MainTeamsLayout />
-          </SettingsProvider>
-        </>
-      </TeamProvider>
-    </Box>
+    <TeamProvider>
+      <AppLayout>
+        <SettingsProvider>
+          <MainTeamsLayout />
+        </SettingsProvider>
+      </AppLayout>
+    </TeamProvider>
   );
 };
 

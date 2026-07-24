@@ -28,7 +28,7 @@ import {
   measureScrollbarWidth,
 } from '../../utils/getScrollbarWidth';
 
-/** Sits just above PassageDetailMobileLayout footer: border + pt + compact row + pb + safe area, plus small gap. */
+/** Sits just above PassageDetailLayout footer: border + pt + compact row + pb + safe area, plus small gap. */
 const discussionFabBottomDetailMobile =
   'calc(8px + 1px + 4px + 40px + 2px + env(safe-area-inset-bottom, 0px))';
 

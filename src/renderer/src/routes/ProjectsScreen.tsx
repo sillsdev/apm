@@ -1,6 +1,6 @@
 import React from 'react';
 import { Box, Typography, Button, Grid, BoxProps, styled } from '@mui/material';
-import AppHead from '../components/App/AppHead';
+import AppLayout from '../components/App/AppLayout';
 import { TeamProvider, TeamContext, TeamIdType } from '../context/TeamContext';
 import { useLocation } from 'react-router-dom';
 import { ProjectCard } from '../components/Team/ProjectCard';
@@ -203,20 +203,11 @@ export const ProjectsScreenInner: React.FC = () => {
   }
 
   return (
-    <Box
-      sx={{
-        width: '100%',
-        minHeight: '100dvh',
-        display: 'flex',
-        flexDirection: 'column',
-      }}
-    >
-      <AppHead />
+    <AppLayout>
       <ProjectsBox
         id="ProjectsScreen"
         isMobile={isMobile}
         sx={{
-          paddingTop: '80px',
           px: 2,
           pb: 8,
           display: 'flex',
@@ -309,7 +300,7 @@ export const ProjectsScreenInner: React.FC = () => {
           team={isPersonal ? undefined : thisTeam?.id}
         />
       )}
-    </Box>
+    </AppLayout>
   );
 };
 

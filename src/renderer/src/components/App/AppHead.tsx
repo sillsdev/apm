@@ -38,16 +38,18 @@ const threeIcon = { minWidth: `calc(${48 * 3}px)` } as React.CSSProperties;
 type ResetRequests = () => Promise<void>;
 export type DownloadAlertReason = 'cloud';
 
-interface AppHeadProps {
+export interface AppHeadProps {
   resetRequests?: ResetRequests;
   switchTo?: boolean;
   drawBottomBorder?: boolean;
+  position?: 'fixed' | 'sticky' | 'static';
 }
 
 export function AppHead({
   resetRequests,
   switchTo,
   drawBottomBorder = true,
+  position = 'fixed',
 }: AppHeadProps) {
   const orbitStatus = useSelector((state: IState) => state.orbit.status);
   const orbitErrorMsg = useSelector((state: IState) => state.orbit.message);
@@ -305,7 +307,7 @@ export function AppHead({
 
   return (
     <AppBar
-      position="fixed"
+      position={position}
       sx={{
         width: '100%',
         display: 'flex',

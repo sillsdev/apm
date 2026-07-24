@@ -37,7 +37,7 @@ jest.mock('../../utils/useStepPermission', () => ({
   }),
 }));
 
-jest.mock('./PassageDetailMobileLayout', () => ({
+jest.mock('./PassageDetailLayout', () => ({
   __esModule: true,
   default: ({ children }: { children: React.ReactNode }) => (
     <div data-cy="mobile-layout">{children}</div>
@@ -79,9 +79,7 @@ describe('PassageDetailMobileDetail (TT-7373)', () => {
     ) as HTMLElement;
     expect(column).toBeTruthy();
     expect(column).toHaveStyle({ width: '450px' });
-    expect(
-      container.querySelector('[data-cy="record-content"]')
-    ).toBeTruthy();
+    expect(container.querySelector('[data-cy="record-content"]')).toBeTruthy();
     expect(
       container.querySelector('[data-cy="discussion-panel"]')
     ).toBeTruthy();
@@ -100,9 +98,7 @@ describe('PassageDetailMobileDetail (TT-7373)', () => {
     expect(
       container.querySelector('[data-cy="discussion-side-by-side"]')
     ).toBeNull();
-    expect(
-      container.querySelector('[data-cy="record-content"]')
-    ).toBeTruthy();
+    expect(container.querySelector('[data-cy="record-content"]')).toBeTruthy();
     expect(
       container.querySelector('[data-cy="discussion-panel"]')
     ).toBeTruthy();
@@ -120,12 +116,8 @@ describe('PassageDetailMobileDetail (TT-7373)', () => {
       />
     );
 
-    expect(
-      container.querySelector('[data-cy="record-content"]')
-    ).toBeTruthy();
-    expect(
-      container.querySelector('[data-cy="discussion-panel"]')
-    ).toBeNull();
+    expect(container.querySelector('[data-cy="record-content"]')).toBeTruthy();
+    expect(container.querySelector('[data-cy="discussion-panel"]')).toBeNull();
     expect(mockSetDiscussOpen).toHaveBeenCalledWith(false);
   });
 });

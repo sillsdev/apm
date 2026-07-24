@@ -35,7 +35,7 @@ import ImportTab from '../components/ImportTab';
 import Confirm from '../components/AlertDialog';
 import UserList from '../control/UserList';
 import { useSnackBar } from '../hoc/SnackBar';
-import AppHead from '../components/App/AppHead';
+import AppLayout from '../components/App/AppLayout';
 import { AltButton, PriButton, UserListItem } from '../control';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import UserListMode from '../control/userListMode';
@@ -441,8 +441,7 @@ export function Access() {
   };
 
   return (
-    <Box sx={{ width: '100%' }}>
-      <AppHead />
+    <AppLayout>
       {isElectron && (
         <Box sx={{ display: 'block' }}>
           <SectionHead>Hello I am under the AppHead</SectionHead>
@@ -588,7 +587,7 @@ export function Access() {
           text={''}
         />
       )}
-    </Box>
+    </AppLayout>
   );
 }
 
