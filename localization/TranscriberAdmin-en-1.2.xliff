@@ -5281,6 +5281,13 @@
                <context context-type="sourcefile">drawer.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="main.loadDataOffline">
+            <source>Unable to complete loading while offline. Check your internet connection and try again.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">loadData.ts</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="main.loadingTranscriber">
             <source>Loading {0}</source>
             <target/>
@@ -6493,6 +6500,41 @@
                <context context-type="sourcefile">AddResource.tsx</context>
             </context-group>
          </trans-unit>
+      	<trans-unit id="passageDetailArtifacts.addAudio">
+      		<source>Audio...</source>
+      		<target/>
+      		<context-group>
+      			<context context-type="sourcefile">AddResource.tsx</context>
+      		</context-group>
+      	</trans-unit>
+      	<trans-unit id="passageDetailArtifacts.addAudioResource">
+      		<source>Add Audio Resource</source>
+      		<target/>
+      		<context-group>
+      			<context context-type="sourcefile">AddResource.tsx</context>
+      		</context-group>
+      	</trans-unit>
+      	<trans-unit id="passageDetailArtifacts.addLinked">
+      		<source>Linked Resource...</source>
+      		<target/>
+      		<context-group>
+      			<context context-type="sourcefile">AddResource.tsx</context>
+      		</context-group>
+      	</trans-unit>
+      	<trans-unit id="passageDetailArtifacts.addText">
+      		<source>Text...</source>
+      		<target/>
+      		<context-group>
+      			<context context-type="sourcefile">AddResource.tsx</context>
+      		</context-group>
+      	</trans-unit>
+      	<trans-unit id="passageDetailArtifacts.addUrl">
+      		<source>URL...</source>
+      		<target/>
+      		<context-group>
+      			<context context-type="sourcefile">AddResource.tsx</context>
+      		</context-group>
+      	</trans-unit>
       	<trans-unit id="passageDetailArtifacts.allLevel">
       		<source>All {0}</source>
       		<target/>
@@ -6577,11 +6619,25 @@
       			<context context-type="sourcefile">PassageMedia.tsx</context>
       		</context-group>
       	</trans-unit>
+      	<trans-unit id="passageDetailArtifacts.confirmClose">
+      		<source>Do you want to close this dialog? Your changes will be discarded.</source>
+      		<target/>
+      		<context-group>
+      			<context context-type="sourcefile">PassageMedia.tsx</context>
+      		</context-group>
+      	</trans-unit>
       	<trans-unit id="passageDetailArtifacts.createResources">
       		<source>Create Resources</source>
       		<target/>
       		<context-group>
       			<context context-type="sourcefile">PassageMedia.tsx</context>
+      		</context-group>
+      	</trans-unit>
+      	<trans-unit id="passageDetailArtifacts.currentResource">
+      		<source>Current {0}</source>
+      		<target/>
+      		<context-group>
+      			<context context-type="sourcefile">ResourceData.tsx</context>
       		</context-group>
       	</trans-unit>
       	<trans-unit id="passageDetailArtifacts.deleteConfirm">
@@ -6593,6 +6649,20 @@
       	</trans-unit>
       	<trans-unit id="passageDetailArtifacts.description">
       		<source>Description</source>
+      		<target/>
+      		<context-group>
+      			<context context-type="sourcefile">PassageMedia.tsx</context>
+      		</context-group>
+      	</trans-unit>
+      	<trans-unit id="passageDetailArtifacts.discardAndClose">
+      		<source>Discard and Close</source>
+      		<target/>
+      		<context-group>
+      			<context context-type="sourcefile">PassageMedia.tsx</context>
+      		</context-group>
+      	</trans-unit>
+      	<trans-unit id="passageDetailArtifacts.editAudioResource">
+      		<source>Edit Audio Resource</source>
       		<target/>
       		<context-group>
       			<context context-type="sourcefile">PassageMedia.tsx</context>
@@ -6633,6 +6703,13 @@
       			<context context-type="sourcefile">AddResource.tsx</context>
       		</context-group>
       	</trans-unit>
+      	<trans-unit id="passageDetailArtifacts.keepOpen">
+      		<source>Keep Open</source>
+      		<target/>
+      		<context-group>
+      			<context context-type="sourcefile">PassageMedia.tsx</context>
+      		</context-group>
+      	</trans-unit>
       	<trans-unit id="passageDetailArtifacts.keywords">
       		<source>Keywords</source>
       		<target/>
@@ -6668,6 +6745,13 @@
                <context context-type="sourcefile">AddResource.tsx</context>
             </context-group>
          </trans-unit>
+      	<trans-unit id="passageDetailArtifacts.next">
+      		<source>Next</source>
+      		<target/>
+      		<context-group>
+      			<context context-type="sourcefile">PassageMedia.tsx</context>
+      		</context-group>
+      	</trans-unit>
       	<trans-unit id="passageDetailArtifacts.no">
       		<source>No</source>
       		<target/>
@@ -6712,13 +6796,6 @@
       	</trans-unit>
       	<trans-unit id="passageDetailArtifacts.pasteNoChange">
       		<source>Nothing changed! Perhaps no references matched?</source>
-      		<target/>
-      		<context-group>
-      			<context context-type="sourcefile">AddResource.tsx</context>
-      		</context-group>
-      	</trans-unit>
-      	<trans-unit id="passageDetailArtifacts.projectResourcePassage">
-      		<source>Select {0} and Passages</source>
       		<target/>
       		<context-group>
       			<context context-type="sourcefile">AddResource.tsx</context>
@@ -6792,6 +6869,13 @@
       		<target/>
       		<context-group>
       			<context context-type="sourcefile">AddResource.tsx</context>
+      		</context-group>
+      	</trans-unit>
+      	<trans-unit id="passageDetailArtifacts.selectPassagesSub">
+      		<source>Select this resource's passages.</source>
+      		<target/>
+      		<context-group>
+      			<context context-type="sourcefile">PassageMedia.tsx</context>
       		</context-group>
       	</trans-unit>
       	<trans-unit id="passageDetailArtifacts.sharedResource">
@@ -6879,7 +6963,7 @@
       		</context-group>
       	</trans-unit>
       	<trans-unit id="passageDetailArtifacts.tip1a">
-      		<source>Resources for:</source>
+      		<source>Available for:</source>
       		<target/>
       		<context-group>
       			<context context-type="sourcefile">PassageMedia.tsx</context>
@@ -6914,10 +6998,17 @@
             </context-group>
          </trans-unit>
       	<trans-unit id="passageDetailArtifacts.uploadProject">
-      		<source>General - to be used by multiple {0} or passages. (Uploaded files will only appear under Configure General.)</source>
+      		<source>Multiple {0} or Passages (General Resource)</source>
       		<target/>
       		<context-group>
       			<context context-type="sourcefile">PassageMedia.tsx</context>
+      		</context-group>
+      	</trans-unit>
+      	<trans-unit id="passageDetailArtifacts.uploadTab">
+      		<source>Upload</source>
+      		<target/>
+      		<context-group>
+      			<context context-type="sourcefile">AddResource.tsx</context>
       		</context-group>
       	</trans-unit>
       	<trans-unit id="passageDetailArtifacts.verseLevel">

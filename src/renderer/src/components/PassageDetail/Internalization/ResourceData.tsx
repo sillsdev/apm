@@ -69,7 +69,13 @@ export function ResourceData(props: IProps) {
   } = props;
   const [description, setDescription] = useState(initDescription);
   const { getOrganizedBy } = useOrganizedBy();
-  const [value, setValue] = useState(initPassRes ? 'passage' : 'section');
+  const resourceKindFromProps = () =>
+    uploadType === UploadType.ProjectResource
+      ? 'general'
+      : initPassRes
+        ? 'passage'
+        : 'section';
+  const [value, setValue] = useState(resourceKindFromProps);
   const [text, setText] = useState(media?.attributes?.originalFile ?? '');
   const t: IPassageDetailArtifactsStrings = useSelector(
     passageDetailArtifactsSelector,
@@ -82,6 +88,11 @@ export function ResourceData(props: IProps) {
   );
 
   useEffect(() => setDescription(initDescription), [initDescription]);
+
+  useEffect(() => {
+    setValue(resourceKindFromProps());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [uploadType, initPassRes]);
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = (event.target as HTMLInputElement).value;
@@ -153,12 +164,18 @@ export function ResourceData(props: IProps) {
             <FormControlLabel
               value={'section'}
               control={<Radio />}
-              label={sectDesc ?? getOrganizedBy(true)}
+              label={t.currentResource.replace(
+                '{0}',
+                sectDesc ?? getOrganizedBy(true)
+              )}
             />
             <FormControlLabel
               value={'passage'}
               control={<Radio />}
-              label={passDesc ?? t.passageResource}
+              label={t.currentResource.replace(
+                '{0}',
+                passDesc ?? t.passageResource
+              )}
             />
             {allowProject &&
               ![
@@ -171,7 +188,7 @@ export function ResourceData(props: IProps) {
                   control={<Radio />}
                   label={t.uploadProject.replace(
                     '{0}',
-                    getOrganizedBy(false).toLocaleLowerCase()
+                    getOrganizedBy(false)
                   )}
                 />
               )}

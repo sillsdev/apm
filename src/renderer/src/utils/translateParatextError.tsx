@@ -1,5 +1,6 @@
 import { ISharedStrings } from '../model';
 import { IAxiosStatus } from '../store/AxiosStatus';
+import { isUnauthorized } from './httpError';
 import { addPt } from './addPt';
 
 const myPt = (s: string): string => addPt(s, '{Pt}');
@@ -51,7 +52,7 @@ export const translateParatextError = (
   err: IAxiosStatus,
   t: ISharedStrings
 ): string | React.JSX.Element => {
-  if (err.errStatus === 401) return t.expiredToken;
+  if (isUnauthorized(err)) return t.expiredToken;
   if (err.errStatus === 400) return myPt(t.invalidParatextLogin);
   if (err.errStatus === 500) {
     if (

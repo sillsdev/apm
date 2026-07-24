@@ -8,6 +8,8 @@ export * from './exitElectronApp';
 export * from './fileJson';
 export * from './forceLogin';
 export * from './infoMsg';
+export * from './httpError';
+export * from './networkRetry';
 export * from './removeOrbitRemote';
 export * from './insertAtCursor';
 export * from './launch';

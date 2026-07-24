@@ -65,10 +65,10 @@ export function UserMenu(props: IProps) {
   const [org] = useGlobal('organization');
   const [addStoryOrPassage, setAddStoryOrPassage] =
     useGlobal('addStoryOrPassage');
+  const [isDeveloper] = useGlobal('developer');
   const { userIsAdmin } = useRole();
   const { getOrganizedBy } = useOrganizedBy();
-  const isBoldWorkflow =
-    useTeamWorkflowProcess(org) === BOLD_WORKFLOW_PROCESS;
+  const isBoldWorkflow = useTeamWorkflowProcess(org) === BOLD_WORKFLOW_PROCESS;
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const [shift, setShift] = React.useState(false);
   const [userRec, setUserRec] = React.useState<UserD | undefined>(undefined);
@@ -164,7 +164,7 @@ export function UserMenu(props: IProps) {
           </ListItemIcon>
           <ListItemText primary={t.myAccount} />
         </StyledMenuItem>
-        {!isMobileWidth && (
+        {!isMobileWidth && isDeveloper && (
           <StyledMenuItem id="mobileView" onClick={handleMobileViewToggle}>
             <ListItemIcon>
               <Checkbox
@@ -189,7 +189,10 @@ export function UserMenu(props: IProps) {
               />
             </ListItemIcon>
             <ListItemText
-              primary={t.addSectionOrPassage.replace('{0}', getOrganizedBy(true))}
+              primary={t.addSectionOrPassage.replace(
+                '{0}',
+                getOrganizedBy(true)
+              )}
             />
           </StyledMenuItem>
         )}

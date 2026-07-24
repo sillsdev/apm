@@ -44,7 +44,8 @@ interface IProps {
   noBusy?: boolean | undefined;
   /** When true, do not wait for `importexportBusy` before staging upload (record save may hold it). */
   skipImportExportWait?: boolean | undefined;
-  recordAudio: boolean;
+  /** Show the combined Add Audio Resource dialog with Upload and Record modes. */
+  audioUploadOrRecord?: boolean | undefined;
   defaultFilename?: string | undefined;
   isOpen: boolean;
   onOpen: (visible: boolean) => void;
@@ -81,7 +82,7 @@ export const Uploader = (props: IProps) => {
     noBusy,
     skipImportExportWait,
     mediaId,
-    recordAudio,
+    audioUploadOrRecord,
     defaultFilename,
     isOpen,
     onOpen,
@@ -463,11 +464,14 @@ export const Uploader = (props: IProps) => {
     } else if (plan !== '') planIdRef.current = plan;
   }, [plan, planId, passageId, memory]);
 
-  if (recordAudio && !defaultFilename && isDeveloper)
+  if (audioUploadOrRecord && !defaultFilename && isDeveloper)
     throw new Error('defaultFilename is required');
+
+  const hasImport = Boolean(importList && importList.length > 0);
+
   return (
     <Box sx={{ width: '100%' }}>
-      {recordAudio && ready && (!importList || importList.length === 0) && (
+      {audioUploadOrRecord && !hasImport && (
         <PassageRecordDlg
           artifactId={artifactState?.id ?? VernacularTag}
           passageId={passageId}
@@ -484,9 +488,14 @@ export const Uploader = (props: IProps) => {
           speaker={performedBy}
           onSpeaker={handleSpeakerChange}
           team={team}
+          uploadType={uploadType || UploadType.Media}
+          uploadMethod={uploadMedia}
+          multiple={multiple}
+          inValue={inValue}
+          onNonAudio={onNonAudio}
         />
       )}
-      {!recordAudio && (!importList || importList.length === 0) && (
+      {!audioUploadOrRecord && !hasImport && (
         <MediaUpload
           visible={isOpen}
           onVisible={onOpen}

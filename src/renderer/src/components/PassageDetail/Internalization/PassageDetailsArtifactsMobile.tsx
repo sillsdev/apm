@@ -166,7 +166,9 @@ export function PassageDetailArtifactsMobile() {
   // const [artifactTypeId, setArtifactTypeId] = useState<string>();
   const [uploadType, setUploadType] = useState<UploadType>(UploadType.Resource);
   const [initDescription, setInitDescription] = useState<string>('');
-  const [recordAudio, setRecordAudio] = useState<boolean>(false);
+  const [audioUploadOrRecord, setAudioUploadOrRecord] =
+    useState<boolean>(false);
+  const [editAudio, setEditAudio] = useState<boolean>(false);
   const mediaRef = useRef<MediaFileD | undefined>(undefined);
   const textRef = useRef<string | undefined>(undefined);
   const catIdRef = useRef<string | undefined>(undefined);
@@ -177,6 +179,10 @@ export function PassageDetailArtifactsMobile() {
   );
   const projIdentRef = useRef<RecordIdentity[]>([]);
   const projMediaRef = useRef<MediaFileD | undefined>(undefined);
+  // True when the general-resource wizard was entered by adding a new audio
+  // resource (title "Add Audio Resource"); false when configuring/editing an
+  // existing one ("Edit Audio Resource").
+  const isAddingAudioResourceRef = useRef<boolean>(false);
   const [allResources, setAllResources] = useState(false);
   const { showMessage } = useSnackBar();
   const [confirm, setConfirm] = useState('');
@@ -367,16 +373,27 @@ export function PassageDetailArtifactsMobile() {
     const secRes = sectionResources.find(
       (r) => related(r, 'mediafile') === id
     ) as SectionResourceD;
+    const mf = mediafiles.find((m) => m.id === related(secRes, 'mediafile')) as
+      | MediaFileD
+      | undefined;
+    // General (project) resources are reconfigured through the wizard, not the
+    // simple edit dialog (mockup: "use Edit to also configure the General Resource").
+    if (mf && related(mf, 'artifactType') === projResourceType) {
+      resourceTypeRef.current = ResourceTypeEnum.projectResource;
+      isAddingAudioResourceRef.current = false;
+      handleSelectProjectResource(mf);
+      return;
+    }
     setEditResource(secRes);
     resourceTypeRef.current = related(secRes, 'passage')
       ? ResourceTypeEnum.passageResource
       : ResourceTypeEnum.sectionResource;
     descriptionRef.current = secRes?.attributes.description || '';
-    const mf = mediafiles.find((m) => m.id === related(secRes, 'mediafile'));
     catIdRef.current = mf ? related(mf, 'artifactCategory') : undefined;
     mediaRef.current = mf as MediaFileD;
     const ct = mediaContentType(mf);
     textRef.current = mf?.attributes?.originalFile ?? '';
+    setEditAudio(ct.startsWith('audio'));
     setUploadType(
       ct === MarkDownType
         ? UploadType.MarkDown
@@ -402,6 +419,8 @@ export function PassageDetailArtifactsMobile() {
     setMarkdownValue('');
     setInitDescription('');
     setAIGenerated(false);
+    setAudioUploadOrRecord(false);
+    setEditAudio(false);
   };
   const handleEditResourceVisible = (v: boolean) => {
     if (!v) resetEdit();
@@ -473,28 +492,23 @@ export function PassageDetailArtifactsMobile() {
   const handleAction = (what: string) => {
     artifactState.id = resourceType ?? null;
     resourceTypeRef.current = ResourceTypeEnum.sectionResource;
-    if (what === 'upload') {
+    if (what === 'audio') {
       mediaRef.current = undefined;
       setUploadType(UploadType.Resource);
       syncResourceReady(UploadType.Resource, descriptionRef.current);
-      setRecordAudio(false);
+      setAudioUploadOrRecord(true);
       setUploadVisible(true);
     } else if (what === 'scripture') {
       setAudioScriptureVisible(true);
     } else if (what === 'link') {
       setUploadType(UploadType.Link);
       syncResourceReady(UploadType.Link, descriptionRef.current);
-      setRecordAudio(false);
-      setUploadVisible(true);
-    } else if (what === 'record') {
-      setUploadType(UploadType.Resource);
-      syncResourceReady(UploadType.Resource, descriptionRef.current);
-      setRecordAudio(true);
+      setAudioUploadOrRecord(false);
       setUploadVisible(true);
     } else if (what === 'text') {
       setUploadType(UploadType.MarkDown);
       syncResourceReady(UploadType.MarkDown, descriptionRef.current);
-      setRecordAudio(false);
+      setAudioUploadOrRecord(false);
       setUploadVisible(true);
     } else if (what === 'shared') {
       resourceTypeRef.current = ResourceTypeEnum.sectionResource;
@@ -515,7 +529,7 @@ export function PassageDetailArtifactsMobile() {
     setUploadType(nextType);
     syncResourceReady(nextType, query);
     setMarkdownValue(audioUrl ? `${audioUrl}||${transcript}` : transcript);
-    setRecordAudio(false);
+    setAudioUploadOrRecord(false);
     setAIGenerated(true);
     setUploadVisible(true);
   };
@@ -643,7 +657,10 @@ export function PassageDetailArtifactsMobile() {
           projRes.push(findRecord(memory, 'mediafile', id) as MediaFileD);
         }
       }
-      if (projRes.length === 1) setProjResSetup(projRes);
+      if (projRes.length === 1) {
+        isAddingAudioResourceRef.current = true;
+        setProjResSetup(projRes);
+      }
       resetEdit();
     }
   };
@@ -915,10 +932,9 @@ export function PassageDetailArtifactsMobile() {
         </VertListDnd>
       </Box>
       <Uploader
-        recordAudio={recordAudio}
+        audioUploadOrRecord={audioUploadOrRecord}
         isOpen={uploadVisible}
         onOpen={handleUploadVisible}
-        uploadDialogBp={recordAudio ? BigDialogBp.sm : BigDialogBp.mobile}
         showMessage={showMessage}
         multiple={true}
         finish={afterUpload}
@@ -1004,14 +1020,23 @@ export function PassageDetailArtifactsMobile() {
         onOpen={handleProjectResourceVisible}
       >
         <SelectProjectResource
-          onSelect={handleSelectProjectResource}
+          onSelect={(m) => {
+            isAddingAudioResourceRef.current = false;
+            handleSelectProjectResource(m);
+          }}
           onOpen={handleProjectResourceVisible}
         />
       </BigDialog>
       <BigDialog
-        title={t.projectResourcePassage.replace('{0}', getOrganizedBy(false))}
+        title={isAddingAudioResourceRef.current ? t.addAudioResource : t.editAudioResource}
+        description={
+          <Typography sx={{ color: 'text.secondary' }}>
+            {t.selectPassagesSub}
+          </Typography>
+        }
         isOpen={projResPassageVisible}
         onOpen={handleProjResPassageVisible}
+        disableBackdropClose
       >
         {projResPassageVisible ? (
           <SelectSections
@@ -1028,6 +1053,7 @@ export function PassageDetailArtifactsMobile() {
         isOpen={projResWizVisible}
         onOpen={handleProjResWizVisible}
         bp={BigDialogBp.md}
+        disableBackdropClose
       >
         {projResWizVisible ? (
           <ProjectResourceConfigure
@@ -1041,7 +1067,7 @@ export function PassageDetailArtifactsMobile() {
         )}
       </BigDialog>
       <BigDialog
-        title={t.editResource}
+        title={editAudio ? t.editAudioResource : t.editResource}
         isOpen={Boolean(editResource)}
         onOpen={handleEditResourceVisible}
         onSave={allowEditSave ? handleEditSave : undefined}

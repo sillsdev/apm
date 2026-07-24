@@ -40,6 +40,7 @@ export function DataChanges(props: PropsWithChildren) {
   const [loadComplete] = useGlobal('loadComplete');
   const [, setBusy] = useGlobal('remoteBusy');
   const [, setDataChangeCount] = useGlobal('dataChangeCount');
+  const [, setOrbitRetries] = useGlobal('orbitRetries');
   const [connected] = useGlobal('connected'); //verified this is not used in a function 2/18/25
   const [user] = useGlobal('user');
   const [fingerprint] = useGlobal('fingerprint');
@@ -137,7 +138,9 @@ export function DataChanges(props: PropsWithChildren) {
         user,
         setLanguage,
         setDataChangeCount,
-        isElectron ? fetchUrl : undefined
+        isElectron ? fetchUrl : undefined,
+        undefined,
+        setOrbitRetries
       );
       if (check) {
         //make sure we have a bible media project and plan downloaded

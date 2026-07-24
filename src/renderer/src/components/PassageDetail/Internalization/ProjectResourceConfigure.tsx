@@ -47,6 +47,7 @@ import {
 } from '../../../control';
 import { RecordIdentity, RecordTransformBuilder } from '@orbit/records';
 import { useOrbitData } from '../../../hoc/useOrbitData';
+import Confirm from '../../AlertDialog';
 
 const NotTable = 420;
 
@@ -145,9 +146,9 @@ export const ProjectResourceConfigure = (props: IProps) => {
     saveCompleted,
     clearRequested,
     clearCompleted,
-    checkSavedFn,
   } = useContext(UnsavedContext).state;
   const savingRef = useRef(false);
+  const [showConfirmClose, setShowConfirmClose] = useState(false);
   const canceling = useRef(false);
   const projectResourceSave = useProjectResourceSave();
   const projectSegmentSave = useProjectSegmentSave();
@@ -303,16 +304,28 @@ export const ProjectResourceConfigure = (props: IProps) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [toolsChanged]);
 
+  const doClose = () => {
+    toolChanged(wizToolId, false);
+    onOpen && onOpen(false);
+  };
+
   const handleCancel = () => {
     if (savingRef.current) {
       showMessage(t.canceling);
       canceling.current = true;
       return;
     }
-    checkSavedFn(() => {
-      toolChanged(wizToolId, false);
-      onOpen && onOpen(false);
-    });
+    // Prompt before discarding unsaved configuration; otherwise close directly.
+    if (isChanged(wizToolId)) {
+      setShowConfirmClose(true);
+      return;
+    }
+    doClose();
+  };
+
+  const handleDiscardClose = () => {
+    setShowConfirmClose(false);
+    doClose();
   };
 
   const handleCopy = () => {
@@ -575,6 +588,16 @@ export const ProjectResourceConfigure = (props: IProps) => {
           {ts.cancel}
         </AltButton>
       </ActionRow>
+      {showConfirmClose && (
+        <Confirm
+          text={t.confirmClose}
+          no={t.keepOpen}
+          yes={t.discardAndClose}
+          noResponse={() => setShowConfirmClose(false)}
+          yesResponse={handleDiscardClose}
+          noOnLeft
+        />
+      )}
     </Box>
   );
 };

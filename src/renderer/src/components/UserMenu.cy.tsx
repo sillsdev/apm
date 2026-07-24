@@ -166,7 +166,10 @@ describe('UserMenu', () => {
   });
 
   it('should display mobile view menu item with unchecked checkbox when mobileView is false', () => {
-    const initialState = createInitialState({ mobileView: false });
+    const initialState = createInitialState({
+      mobileView: false,
+      developer: true,
+    });
     mountUserMenu(initialState);
 
     cy.get('#userMenu').click();
@@ -186,6 +189,7 @@ describe('UserMenu', () => {
 
     const initialState = createInitialState({
       mobileView: true,
+      developer: true,
       user: 'test-user-id',
     });
     mountUserMenu(initialState);
@@ -210,6 +214,7 @@ describe('UserMenu', () => {
 
     const initialState = createInitialState({
       mobileView: false,
+      developer: true,
       user: 'test-user-id',
     });
     mountUserMenu(initialState);
@@ -242,7 +247,10 @@ describe('UserMenu', () => {
   });
 
   it('should persist mobileView to localStorage when toggled', () => {
-    const initialState = createInitialState({ mobileView: false });
+    const initialState = createInitialState({
+      mobileView: false,
+      developer: true,
+    });
     mountUserMenu(initialState);
 
     cy.get('#userMenu').click();
@@ -264,6 +272,7 @@ describe('UserMenu', () => {
 
     const initialState = createInitialState({
       mobileView: false,
+      developer: true,
       user: 'test-user-id',
     });
     mountUserMenu(initialState);
@@ -277,11 +286,27 @@ describe('UserMenu', () => {
     });
   });
 
+  it('should not display mobile view menu item when not a developer', () => {
+    const initialState = createInitialState({
+      mobileView: false,
+      developer: false,
+    });
+    mountUserMenu(initialState);
+
+    cy.get('#userMenu').click();
+    cy.get('#mobileView').should('not.exist');
+    cy.contains('My Account').should('be.visible');
+  });
+
   it('should not display mobile view menu item when on mobile device', () => {
     // Set viewport to mobile size (below 'sm' breakpoint which is 600px)
     cy.viewport(400, 800);
 
-    const initialState = createInitialState({ mobileView: false });
+    // developer true so absence is due to mobile width, not the developer gate
+    const initialState = createInitialState({
+      mobileView: false,
+      developer: true,
+    });
     mountUserMenu(initialState);
 
     cy.get('#userMenu').click();

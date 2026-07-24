@@ -11,6 +11,7 @@ import Memory from '@orbit/memory';
 import JSONAPISource from '@orbit/jsonapi';
 import { ChangeList, DataChange } from '../model/dataChange';
 import { logError, Severity } from '../utils';
+import { isRetryableError } from '../utils/httpError';
 import {
   AcceptInvitation,
   findRecord,
@@ -26,6 +27,9 @@ import * as actions from '../store';
 import { ReplaceRelatedRecord } from '../model/baseModel';
 import { pullRemoteToMemory } from '../crud/syncToMemory';
 import { axiosGet } from '../utils/axios';
+
+/** Returned when axios retries are exhausted — callers must stop the sync pass */
+export const DATA_CHANGES_NETWORK_ABORT = -3;
 
 export const processDataChanges = async (pdc: {
   token: string | null;
@@ -356,6 +360,8 @@ export const processDataChanges = async (pdc: {
       const s = e.response.data.errors[0].detail?.toString();
       if (s.startsWith('Project not')) return -2;
     }
+    // axiosGet already retried; don't let doDataChanges/useSanityCheck hammer again
+    if (isRetryableError(e)) return DATA_CHANGES_NETWORK_ABORT;
     return started;
   }
 };
