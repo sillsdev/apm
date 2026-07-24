@@ -68,7 +68,7 @@ export const useUserCanPublish = (): UserCanPublishResult => {
       }
       if (paratext_canPublishStatus) {
         if (paratext_canPublishStatus.errStatus) {
-          //showMessage(translateParatextError(paratext_canPublishStatus, ts));
+          //showMessage(translateParatextError(paratext_canPublishStatus, ts, organizedBy));
           console.error(paratext_canPublishStatus.errMsg);
         } else if (paratext_canPublishStatus.complete) {
           const u = users.find((u) => u.id === user);
