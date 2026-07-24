@@ -6930,19 +6930,19 @@
       </unit>
       <unit id="prompt.adminInstructions">
          <segment>
-            <source>Record a short prompt for this section, then save. Team members will listen before they record.</source>
+            <source>Record a short prompt for this {0}, then save. Team members will listen before they record.</source>
             <target/>
          </segment>
       </unit>
       <unit id="prompt.offlineCannotAdd">
          <segment>
-            <source>You must be online to add or replace the prompt recording for this section.</source>
+            <source>You must be online to add or replace the prompt recording for this {0}.</source>
             <target/>
          </segment>
       </unit>
       <unit id="prompt.noAudio">
          <segment>
-            <source>No prompt has been recorded for this section yet.</source>
+            <source>No prompt has been recorded for this {0} yet.</source>
             <target/>
          </segment>
       </unit>
@@ -8004,7 +8004,7 @@
       </unit>
       <unit id="shared.BookNotSet">
          <segment>
-            <source>Book was not set for Section {0} Passage {1}</source>
+            <source>Book was not set for {0} {1} Passage {2}</source>
             <target/>
          </segment>
       </unit>
@@ -10860,7 +10860,7 @@
       </unit>
       <unit id="workflowSteps.promptAdminTip">
          <segment>
-            <source>Record a prompt for this section, save it, then continue to the next step when ready.</source>
+            <source>Record a prompt for this {0}, save it, then continue to the next step when ready.</source>
             <target/>
          </segment>
       </unit>

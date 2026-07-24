@@ -61,6 +61,7 @@ import {
   resolveStepSpellCheck,
   pullTableList,
   orgDefaultFeatures,
+  useOrganizedBy,
 } from '../crud';
 import { MainAPI } from '@model/main-api';
 import { useGetAsrSettings } from '../crud/useGetAsrSettings';
@@ -350,6 +351,7 @@ export function Transcriber(props: IProps) {
   const [asrOverride, setAsrOverride] = useState<IAsrState | undefined>(
     undefined
   );
+  const { getOrganizedBy } = useOrganizedBy();
   const remote = coordinator?.getSource('remote') as JSONAPISource;
   const backup = coordinator?.getSource('backup') as IndexedDBSource;
   const [boxHeight, setBoxHeight] = useState(
@@ -654,7 +656,13 @@ export function Transcriber(props: IProps) {
 
   useEffect(() => {
     if (paratext_textStatus?.errStatus) {
-      showMessage(translateParatextError(paratext_textStatus, sharedStr));
+      showMessage(
+        translateParatextError(
+          paratext_textStatus,
+          sharedStr,
+          getOrganizedBy(true)
+        )
+      );
       resetParatextText();
     } else if (!paratext_textStatus?.complete && paratext_textStatus?.statusMsg)
       showMessage(paratext_textStatus?.statusMsg);

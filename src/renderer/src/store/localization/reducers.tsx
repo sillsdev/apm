@@ -1426,9 +1426,9 @@ const initialState = {
 	}),
 	"prompt": new LocalizedStrings({
 		"en": {
-			"adminInstructions": "Record a short prompt for this section, then save. Team members will listen before they record.",
-			"offlineCannotAdd": "You must be online to add or replace the prompt recording for this section.",
-			"noAudio": "No prompt has been recorded for this section yet.",
+			"adminInstructions": "Record a short prompt for this {0}, then save. Team members will listen before they record.",
+			"offlineCannotAdd": "You must be online to add or replace the prompt recording for this {0}.",
+			"noAudio": "No prompt has been recorded for this {0} yet.",
 		}
 	}),
 	"profile": new LocalizedStrings({
@@ -1665,7 +1665,7 @@ const initialState = {
 			"admin": "Admin",
 			"ai": "AI",
 			"bookNotInParatext": "Passage {0}.{1}: {Pt} project does not contain book {2}.",
-			"BookNotSet": "Book was not set for Section {0} Passage {1}",
+			"BookNotSet": "Book was not set for {0} {1} Passage {2}",
 			"cancel": "Cancel",
 			"cantCopy": "Unable to copy to clipboard",
 			"clipboardCopy": "Copy to clipboard",
@@ -2237,7 +2237,7 @@ const initialState = {
 			"markVerses": "Mark Verses",
 			"markVersesTip": "Listen to the recording and mark where the verse boundaries occur.",
 			"prompt": "Prompt",
-			"promptAdminTip": "Record a prompt for this section, save it, then continue to the next step when ready.",
+			"promptAdminTip": "Record a prompt for this {0}, save it, then continue to the next step when ready.",
 			"promptTip": "Listen to the prompt above. Then, move to the next step.",
 			"wholeBackTranslate": "Whole Back Translate",
 			"wholeBackTranslateTip": "Record the back translation of the entire passage in the language of the consultant.",

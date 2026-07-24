@@ -8084,21 +8084,21 @@
             </context-group>
          </trans-unit>
          <trans-unit id="prompt.adminInstructions">
-            <source>Record a short prompt for this section, then save. Team members will listen before they record.</source>
+            <source>Record a short prompt for this {0}, then save. Team members will listen before they record.</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">PassageDetailPromptAdmin.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="prompt.offlineCannotAdd">
-            <source>You must be online to add or replace the prompt recording for this section.</source>
+            <source>You must be online to add or replace the prompt recording for this {0}.</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">PassageDetailPromptAdmin.tsx</context>
             </context-group>
          </trans-unit>
          <trans-unit id="prompt.noAudio">
-            <source>No prompt has been recorded for this section yet.</source>
+            <source>No prompt has been recorded for this {0} yet.</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">PassageDetailPromptMember.tsx</context>
@@ -9337,7 +9337,7 @@
             </context-group>
          </trans-unit>
          <trans-unit id="shared.BookNotSet">
-            <source>Book was not set for Section {0} Passage {1}</source>
+            <source>Book was not set for {0} {1} Passage {2}</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">integration.tsx</context>
@@ -12671,7 +12671,7 @@
             </context-group>
          </trans-unit>
          <trans-unit id="workflowSteps.promptAdminTip">
-            <source>Record a prompt for this section, save it, then continue to the next step when ready.</source>
+            <source>Record a prompt for this {0}, save it, then continue to the next step when ready.</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">MobileWorkflowSteps.tsx</context>
