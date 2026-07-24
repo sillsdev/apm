@@ -7,7 +7,8 @@ const myPt = (s: string): string => addPt(s, '{Pt}');
 
 const translateParatextReferenceError = (
   errMsg: string,
-  t: ISharedStrings
+  t: ISharedStrings,
+  organizedBy: string
 ): React.JSX.Element => {
   const errs = errMsg.split('||');
   const localizedErr: React.JSX.Element[] = [];
@@ -19,7 +20,9 @@ const translateParatextReferenceError = (
     let str = '';
     switch (parts[0]) {
       case 'Empty Book':
-        str = t.BookNotSet.replace('{0}', sect).replace('{1}', pass);
+        str = t.BookNotSet.replace('{0}', organizedBy)
+          .replace('{1}', sect)
+          .replace('{2}', pass);
         break;
       case 'Missing Book':
         str = myPt(t.bookNotInParatext)
@@ -50,7 +53,8 @@ const translateParatextReferenceError = (
 };
 export const translateParatextError = (
   err: IAxiosStatus,
-  t: ISharedStrings
+  t: ISharedStrings,
+  organizedBy: string
 ): string | React.JSX.Element => {
   if (isUnauthorized(err)) return t.expiredToken;
   if (err.errStatus === 400) return myPt(t.invalidParatextLogin);
@@ -66,14 +70,15 @@ export const translateParatextError = (
       return myPt(t.expiredParatextToken);
     if (err.errMsg.includes('logged in')) return myPt(t.invalidParatextLogin);
   }
-  return translateParatextErr(err.errMsg, t);
+  return translateParatextErr(err.errMsg, t, organizedBy);
 };
 export const translateParatextErr = (
   errMsg: string,
-  t: ISharedStrings
+  t: ISharedStrings,
+  organizedBy: string
 ): string | React.JSX.Element => {
   if (errMsg.includes('ReferenceError')) {
-    return translateParatextReferenceError(errMsg, t);
+    return translateParatextReferenceError(errMsg, t, organizedBy);
   }
   if (errMsg.includes('no range')) return myPt(t.referenceNotFound);
   if (errMsg.includes('does not contain the book')) return myPt(t.bookNotFound);

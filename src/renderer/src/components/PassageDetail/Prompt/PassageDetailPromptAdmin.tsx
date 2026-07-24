@@ -14,6 +14,7 @@ import {
   MediaSt,
   remoteIdGuid,
   useArtifactType,
+  useOrganizedBy,
 } from '../../../crud';
 import { ReplaceRelatedRecord } from '../../../model/baseModel';
 import {
@@ -44,6 +45,8 @@ export default function PassageDetailPromptAdmin(props: IProps) {
   const [memory] = useGlobal('memory');
   const [offline] = useGlobal('offline');
   const [offlineOnly] = useGlobal('offlineOnly');
+  const { getOrganizedBy } = useOrganizedBy();
+  const [organizedBy] = useState(getOrganizedBy(true));
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
   const promptStrings: IPromptStrings = useSelector(
     promptSelector,
@@ -266,7 +269,7 @@ export default function PassageDetailPromptAdmin(props: IProps) {
           color="text.secondary"
           sx={{ mt: 2, px: 1, width: '100%', alignSelf: 'stretch' }}
         >
-          {promptStrings.offlineCannotAdd}
+          {promptStrings.offlineCannotAdd.replace('{0}', organizedBy)}
         </Typography>
       )}
       {canEdit && !promptAddBlocked && (
@@ -275,7 +278,7 @@ export default function PassageDetailPromptAdmin(props: IProps) {
           align="center"
           sx={{ mt: 2, px: 1, width: '100%', alignSelf: 'stretch' }}
         >
-          {promptStrings.adminInstructions}
+          {promptStrings.adminInstructions.replace('{0}', organizedBy)}
         </Typography>
       )}
     </Stack>

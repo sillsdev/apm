@@ -30,7 +30,7 @@ import {
   useOrgDefaults,
   WorkflowProgression,
 } from '../../../crud/useOrgDefaults';
-import { ToolSlug, useStepTool } from '../../../crud';
+import { ToolSlug, useOrganizedBy, useStepTool } from '../../../crud';
 import { useRole } from '../../../crud/useRole';
 import { useStepPermissions } from '../../../utils/useStepPermission';
 
@@ -54,6 +54,8 @@ export default function MobileWorkflowSteps() {
   const { canDoSectionStep, permissionsOn } = useStepPermissions();
   const showPromptAdmin =
     userIsAdmin || (permissionsOn && canDoSectionStep(currentstep, section));
+  const { getOrganizedBy } = useOrganizedBy();
+  const [organizedBy] = useState(getOrganizedBy(true));
   const [memory] = useGlobal('memory');
   const passageNavigate = usePassageNavigate(
     () => {},
@@ -103,13 +105,13 @@ export default function MobileWorkflowSteps() {
   const currentTip = useMemo(() => {
     if (!currentLabel) return '';
     if (tool === ToolSlug.Prompt && showPromptAdmin) {
-      return t.promptAdminTip;
+      return t.promptAdminTip.replace('{0}', organizedBy);
     }
     const tipKey = toCamel(currentLabel + 'Tip');
     return Object.prototype.hasOwnProperty.call(t, tipKey)
       ? t.getString(tipKey)
       : '';
-  }, [currentLabel, t, tool, showPromptAdmin]);
+  }, [currentLabel, t, tool, showPromptAdmin, organizedBy]);
 
   const passageRef = (p?: PassageD) =>
     [p?.attributes?.book, p?.attributes?.reference].filter(Boolean).join(' ');

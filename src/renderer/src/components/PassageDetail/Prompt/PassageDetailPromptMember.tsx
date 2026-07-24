@@ -7,6 +7,7 @@ import usePassageDetailContext from '../../../context/usePassageDetailContext';
 import { promptSelector, workflowStepsSelector } from '../../../selector';
 import { IWorkflowStepsStrings, IPromptStrings } from '../../../model';
 import { usePromptSectionResource } from './usePromptSectionResource';
+import { useOrganizedBy } from '../../../crud/useOrganizedBy';
 
 interface IProps {
   width: number;
@@ -40,6 +41,8 @@ export default function PassageDetailPromptMember(props: IProps) {
   const playbackCompleteRef = useRef(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [playerWidth, setPlayerWidth] = useState(width);
+  const { getOrganizedBy } = useOrganizedBy();
+  const [organizedBy] = useState(getOrganizedBy(true));
 
   const playerMediafile = useMemo(
     () => rowData.find((r) => r.id === promptMediaId)?.mediafile,
@@ -96,7 +99,7 @@ export default function PassageDetailPromptMember(props: IProps) {
     return (
       <Box sx={{ width: '100%', py: 4, px: 2 }}>
         <Typography variant="h3" align="center">
-          {t.noAudio}
+          {t.noAudio.replace('{0}', organizedBy)}
         </Typography>
       </Box>
     );
