@@ -204,16 +204,34 @@ export const SelectArtifactCategory = (props: IProps) => {
     };
   });
 
+  // Options are the localized category names, deduplicated so a name can never
+  // appear twice. New-category creation already blocks duplicate localized
+  // names (useArtifactCategory.isDuplicateCategory), but two distinct category
+  // slugs can still collapse to the same localized string (e.g. created under
+  // different languages), so we enforce uniqueness here at the point of use.
+  // Keeping the first occurrence matches how resolveExisting/commit resolve a
+  // typed name to an id (first case-insensitive match).
+  const categoryOptions = (() => {
+    const seen = new Set<string>();
+    const names: string[] = [];
+    artifactCategorys.forEach((c) => {
+      const name = c.category;
+      if (!name) return;
+      const key = name.trim().toLowerCase();
+      if (seen.has(key)) return;
+      seen.add(key);
+      names.push(name);
+    });
+    return names.sort((a, b) => (a < b ? -1 : 1));
+  })();
+
   return (
     <StyledBox>
       <Autocomplete
         freeSolo
         size="small"
         disabled={disabled ?? false}
-        options={artifactCategorys
-          .map((c) => c.category)
-          .filter(Boolean)
-          .sort((a, b) => (a < b ? -1 : 1))}
+        options={categoryOptions}
         value={currentName || null}
         inputValue={inputVal}
         onInputChange={(_e, v, reason) => {
@@ -234,16 +252,16 @@ export const SelectArtifactCategory = (props: IProps) => {
         onChange={(_e, v) => resolveExisting(v)}
         onBlur={() => resolveExisting(inputVal)}
         sx={textFieldProps}
-        renderOption={(liProps, option, { index }) => {
+        renderOption={(liProps, option) => {
           const cat = artifactCategorys.find((c) => c.category === option);
           const isScr =
             scripture === ArtCatScr.highlight &&
             cat &&
             scriptureTypeCategory(cat.slug);
           return (
-            // Include the render index so two categories that share a localized
-            // name can't collide on the same React key.
-            <li {...liProps} key={`${cat?.id ?? option}-${index}`}>
+            // categoryOptions is deduplicated by name, so the category id (or
+            // the option string as a fallback) is already a unique React key.
+            <li {...liProps} key={cat?.id ?? option}>
               {option}
               {isScr && (
                 <LightTooltip title={t.scriptureHighlight}>
