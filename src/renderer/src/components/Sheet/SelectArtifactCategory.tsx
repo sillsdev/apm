@@ -155,6 +155,15 @@ export const SelectArtifactCategory = (props: IProps) => {
   // commitRef. Returns the resolved id (empty string when the field is blank).
   const commit = async (): Promise<string> => {
     const name = inputVal.trim();
+    // Field unchanged from the committed category — keep its id as-is rather
+    // than re-resolving by name. Re-resolving could silently drop the category
+    // (when its localized name is filtered out of the options and the field
+    // therefore shows blank) or switch it to a different id (when two slugs
+    // share the same localized name). The empty === empty case also preserves
+    // such a filtered-out category on an untouched save.
+    if (name.toLowerCase() === currentName.trim().toLowerCase()) {
+      return categoryId;
+    }
     if (!name) {
       setCategory('');
       return '';
