@@ -278,6 +278,7 @@ export function IntegrationPanel(props: IProps) {
   const getTranscription = useTranscription(false, ActivityStates.Approved);
   const intSave = React.useRef('');
   const { getOrganizedBy } = useOrganizedBy();
+  const [organizedBy] = useState(getOrganizedBy(true));
   const { getProjectDefault, setProjectDefault } = useProjectDefaults();
   const getGlobal = useGetGlobal();
   const [exportNumbers, setExportNumbers] = useState(
@@ -304,7 +305,7 @@ export function IntegrationPanel(props: IProps) {
   };
 
   const TranslateSyncError = (err: IAxiosStatus): React.JSX.Element => {
-    return <span>{translateParatextError(err, ts)}</span>;
+    return <span>{translateParatextError(err, ts, organizedBy)}</span>;
   };
 
   const getProject = () => {
@@ -459,7 +460,7 @@ export function IntegrationPanel(props: IProps) {
     });
     resetCount();
     if (!isMounted())
-      showMessage(translateParatextErr(err, ts) || t.syncComplete);
+      showMessage(translateParatextErr(err, ts, organizedBy) || t.syncComplete);
     if (setStepComplete && currentstep && !err) {
       await setStepComplete(currentstep, true);
       if (!isMounted() && gotoNextStep) gotoNextStep();
@@ -476,7 +477,11 @@ export function IntegrationPanel(props: IProps) {
           ? paratext_projects.length > 0
             ? selectMsg
             : formatWithLanguage(t.noProject)
-          : (translateParatextError(paratext_projectsStatus, ts) as string)
+          : (translateParatextError(
+              paratext_projectsStatus,
+              ts,
+              organizedBy
+            ) as string)
         : addPt(t.projectsPending)
       : t.offline;
   };
@@ -637,9 +642,11 @@ export function IntegrationPanel(props: IProps) {
       if (!isMounted())
         showTitledMessage(
           t.countError,
-          translateParatextError(paratext_countStatus, ts)
+          translateParatextError(paratext_countStatus, ts, organizedBy)
         );
-      setCountMsg(translateParatextError(paratext_countStatus, ts));
+      setCountMsg(
+        translateParatextError(paratext_countStatus, ts, organizedBy)
+      );
     } else if (paratext_countStatus.complete) {
       setCount(paratext_count);
       resetCount();
@@ -654,7 +661,7 @@ export function IntegrationPanel(props: IProps) {
       } else if (paratext_usernameStatus.errStatus && isMounted())
         showTitledMessage(
           t.usernameError,
-          translateParatextError(paratext_usernameStatus, ts)
+          translateParatextError(paratext_usernameStatus, ts, organizedBy)
         );
 
       setHasParatext(paratext_username !== '');
@@ -706,7 +713,7 @@ export function IntegrationPanel(props: IProps) {
         if (paratext_projectsStatus.errStatus && isMounted()) {
           showTitledMessage(
             t.projectError,
-            translateParatextError(paratext_projectsStatus, ts)
+            translateParatextError(paratext_projectsStatus, ts, organizedBy)
           );
         } else if (paratext_projectsStatus.complete) {
           findConnectedProject();
@@ -775,7 +782,7 @@ export function IntegrationPanel(props: IProps) {
               value="exportNumbers"
             />
           }
-          label={t.exportSectionNumbers.replace('{0}', getOrganizedBy(true))}
+          label={t.exportSectionNumbers.replace('{0}', organizedBy)}
         />
       )}
       <Accordion id="int-online" defaultExpanded={!local} disabled={local}>
