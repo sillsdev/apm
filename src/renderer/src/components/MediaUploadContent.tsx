@@ -135,6 +135,13 @@ interface IProps {
   saveText?: string | undefined;
   controlsRef?: React.RefObject<MediaUploadControlsRef>;
   onSaveDisabled?: ((disabled: boolean) => void) | undefined;
+  /** When true, render `DialogContent`/`DialogActions` without the wrapping Box
+   *  so they are direct children of a shared Dialog paper (MUI flex handles the
+   *  scroll region + pinned actions, matching the record body).
+   *  TODO future work: I would like to see if we can get rid of the wrapper altogether,
+   * but don't have time to check all the usages now. */
+
+  noWrapper?: boolean | undefined;
 }
 
 function MediaUploadContent(props: IProps) {
@@ -157,6 +164,7 @@ function MediaUploadContent(props: IProps) {
     saveText,
     controlsRef,
     onSaveDisabled,
+    noWrapper,
   } = props;
   const [name, setName] = useState('');
   const [files, setFilesx] = useState<File[]>([]);
@@ -363,10 +371,8 @@ function MediaUploadContent(props: IProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [uploadType]);
 
-  return (
-    <Box
-      sx={{ display: 'flex', flexDirection: 'column', alignItems: 'stretch' }}
-    >
+  const body = (
+    <>
       <DialogContent>
         <DialogContentText>
           {(text[uploadType] as string).replace('{0}', speaker || '')}
@@ -424,11 +430,22 @@ function MediaUploadContent(props: IProps) {
             variant="contained"
             color="primary"
             disabled={saveDisabled}
+            sx={{ minWidth: '96px' }}
           >
             {saveText || t.upload}
           </Button>
         </DialogActions>
       )}
+    </>
+  );
+
+  return noWrapper ? (
+    body
+  ) : (
+    <Box
+      sx={{ display: 'flex', flexDirection: 'column', alignItems: 'stretch' }}
+    >
+      {body}
     </Box>
   );
 }

@@ -1,26 +1,38 @@
-import { useState, useEffect, useContext, useRef, useCallback } from 'react';
-import { useGlobal } from '../context/useGlobal';
-import { shallowEqual, useSelector } from 'react-redux';
-import { IPassageRecordStrings } from '../model';
-import { getRefWidth } from '../utils/getRefWidth';
+import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import {
+  Box,
   Dialog,
   DialogActions,
   DialogContent,
-  DialogProps,
   DialogTitle,
+  IconButton,
   styled,
   Typography,
   TypographyProps,
 } from '@mui/material';
+import CloseIcon from '@mui/icons-material/Close';
+import MediaUploadContent from './MediaUploadContent';
+import { shallowEqual, useSelector } from 'react-redux';
+import {
+  IPassageDetailArtifactsStrings,
+  IPassageRecordStrings,
+} from '../model';
+import { passageRecordSelector, resourceSelector } from '../selector';
+import UploadRecordToggle, {
+  AudioAddMode,
+} from './PassageDetail/Internalization/UploadRecordToggle';
+import { UploadType } from './UploadType';
+import { useGlobal } from '../context/useGlobal';
+import { getRefWidth } from '../utils/getRefWidth';
 import { useFetchMediaUrl } from '../crud';
 import MediaRecord from './MediaRecord';
 import { UnsavedContext } from '../context/UnsavedContext';
 import SpeakerName from './SpeakerName';
 import { AltButton, PriButton } from '../control';
-import { passageRecordSelector } from '../selector';
 import Busy from './Busy';
-import { useMobile } from '../utils';
+
+const audioDlgWidth = 'min(680px, calc(100vw - 32px))';
+const audioDlgHeight = 'min(700px, calc(100dvh - 32px))';
 
 const StatusMessage = styled(Typography)<TypographyProps>(({ theme }) => ({
   marginRight: theme.spacing(2),
@@ -29,23 +41,39 @@ const StatusMessage = styled(Typography)<TypographyProps>(({ theme }) => ({
   gutterBottom: 'true',
 }));
 
-interface RecordDialogProps extends DialogProps {
-  isMobileView?: boolean;
-}
-const RecordDialog = styled(Dialog, {
-  shouldForwardProp: (prop) => prop !== 'isMobileView',
-})<RecordDialogProps>(({ isMobileView }) => ({
+const RecordDialog = styled(Dialog)(({ theme }) => ({
   flexGrow: 1,
   '& .MuiDialog-paper': {
-    maxWidth: '90%',
-    minWidth: !isMobileView ? '90%' : 0,
+    width: audioDlgWidth,
+    maxWidth: audioDlgWidth,
+    minWidth: 0,
+    height: audioDlgHeight,
+    minHeight: audioDlgHeight,
+    maxHeight: audioDlgHeight,
+  },
+  // Tighten vertical chrome so record mode (speaker + player + metadata)
+  // fits without scrolling on typical laptop heights.
+  '& .MuiDialogTitle-root': {
+    paddingTop: theme.spacing(1.5),
+    paddingBottom: theme.spacing(0.5),
+  },
+  '& .MuiDialogContent-root': {
+    paddingTop: theme.spacing(1),
+    paddingBottom: theme.spacing(1),
+  },
+  '& .MuiDialogActions-root': {
+    paddingTop: theme.spacing(0.5),
+    paddingBottom: theme.spacing(1),
+  },
+  '& #uploadCancel, & #uploadSave': {
+    margin: theme.spacing(1),
   },
 }));
 
 interface IProps {
   visible: boolean;
   onVisible: (visible: boolean) => void;
-  onCancel?: (() => void) | undefined;
+  onCancel: () => void;
   mediaId: string;
   artifactId: string | null;
   afterUploadCb: (mediaId: string | undefined) => Promise<void>;
@@ -58,8 +86,15 @@ interface IProps {
   speaker?: string | undefined;
   onSpeaker?: ((speaker: string) => void) | undefined;
   team?: string | undefined;
+  uploadType: UploadType;
+  uploadMethod:
+    | ((files: File[]) => void | boolean | Promise<void | boolean>)
+    | undefined;
+  multiple?: boolean | undefined;
+  inValue?: string | undefined;
+  onNonAudio?: ((nonAudio: boolean) => void) | undefined;
 }
-//This is only used now for recording a new resource
+
 function PassageRecordDlg(props: IProps) {
   const {
     visible,
@@ -77,47 +112,58 @@ function PassageRecordDlg(props: IProps) {
     speaker,
     onSpeaker,
     team,
+    uploadType,
+    uploadMethod,
+    multiple,
+    inValue,
+    onNonAudio,
   } = props;
+  const resourceStrings: IPassageDetailArtifactsStrings = useSelector(
+    resourceSelector,
+    shallowEqual
+  );
+  const recordStrings: IPassageRecordStrings = useSelector(
+    passageRecordSelector,
+    shallowEqual
+  );
   const [reporter] = useGlobal('errorReporter');
-  const [busy, setBusy] = useState(false);
   const { fetchMediaUrl, mediaState } = useFetchMediaUrl(reporter);
+  const { startSave } = useContext(UnsavedContext).state;
+  const [mode, setMode] = useState<AudioAddMode>('upload');
+  const [busy, setBusy] = useState(false);
   const [statusText, setStatusText] = useState('');
   const [canSave, setCanSave] = useState(false);
   const [canCancel, setCanCancel] = useState(false);
   const [hasRights, setHasRights] = useState(false);
   const [recording, setRecording] = useState(false);
-  const [dialogWidth, setDialogWidth] = useState<number>(0);
+  const [dialogWidth, setDialogWidth] = useState(0);
   const dialogRef = useRef<HTMLDivElement | null>(null);
-  const { startSave } = useContext(UnsavedContext).state;
-  const t: IPassageRecordStrings = useSelector(
-    passageRecordSelector,
-    shallowEqual
-  );
-
   const myToolId = 'PassageRecordDlg';
 
-  const onSaving = () => {
-    setBusy(true);
-  };
-
-  const onReady = () => {
-    setBusy(false);
-  };
-
-  const close = () => {
-    //reset();
-    onVisible(false);
-  };
-
-  const handleRights = (hasRights: boolean) => setHasRights(hasRights);
-  const handleSpeaker = (speaker: string) => {
-    onSpeaker && onSpeaker(speaker);
-  };
+  useEffect(() => {
+    if (visible) {
+      setMode('upload');
+      setRecording(false);
+    }
+  }, [visible]);
 
   useEffect(() => {
-    if (mediaId !== mediaState.id) fetchMediaUrl({ id: mediaId });
+    if (mode === 'record') {
+      setBusy(false);
+      setStatusText('');
+      setCanSave(false);
+      setCanCancel(false);
+      setHasRights(false);
+      setRecording(false);
+    }
+  }, [mode]);
+
+  useEffect(() => {
+    if (mode === 'record' && mediaId !== mediaState.id) {
+      fetchMediaUrl({ id: mediaId });
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mediaId]);
+  }, [mode, mediaId]);
 
   useEffect(() => setBusy(false), [visible]);
 
@@ -126,91 +172,166 @@ function PassageRecordDlg(props: IProps) {
   }, []);
 
   useEffect(() => {
+    if (mode !== 'record') return;
     updateDialogWidth();
     window.addEventListener('resize', updateDialogWidth);
     return () => window.removeEventListener('resize', updateDialogWidth);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [visible, dialogRef.current]);
+  }, [mode, visible, updateDialogWidth]);
 
-  const handleSave = () => {
-    startSave(myToolId);
-  };
   const handleCancel = () => {
-    if (recording) {
-      return; // Prevent closing while recording
-    }
-    if (onCancel) {
+    if (recording) return;
+    onCancel();
+    if (!busy) onVisible(false);
+  };
+
+  const requestClose = (
+    _event?: object,
+    reason?: 'backdropClick' | 'escapeKeyDown'
+  ) => {
+    // outside click should not close dialog
+    if (reason === 'backdropClick') return;
+    if (mode === 'record') {
+      handleCancel();
+    } else {
       onCancel();
     }
-    if (!busy) close();
   };
 
-  const onRecording = (isRecording: boolean) => {
-    setRecording(isRecording);
+  const handleMode = (nextMode: AudioAddMode) => {
+    if (recording && nextMode === 'upload') return;
+    setMode(nextMode);
   };
 
-  const { isMobile: isMobileView } = useMobile();
+  const handleSpeaker = (nextSpeaker: string) => {
+    onSpeaker?.(nextSpeaker);
+  };
+
+  const saveText =
+    uploadType === UploadType.ProjectResource
+      ? resourceStrings.next
+      : undefined;
 
   return (
     <RecordDialog
       open={visible}
-      onClose={handleCancel}
-      aria-labelledby="recDlg"
+      onClose={requestClose}
+      aria-labelledby="addAudioDlg"
       disableEnforceFocus
-      isMobileView={isMobileView}
     >
-      <DialogTitle id="recDlg">{t.title}</DialogTitle>
-      <DialogContent id="recDlgContent" ref={dialogRef}>
-        {!busy && (
-          <SpeakerName
-            planId={planId}
-            name={speaker || ''}
-            onRights={handleRights}
-            onChange={handleSpeaker}
-            team={team}
-          />
-        )}
-        {busy && <Busy />}
-        <MediaRecord
-          toolId={myToolId}
-          artifactId={artifactId}
-          passageId={passageId}
-          planId={planId}
-          afterUploadCb={afterUploadCb}
-          mediaId={mediaId}
-          onSaving={onSaving}
-          onReady={onReady}
-          defaultFilename={defaultFilename}
-          allowRecord={hasRights}
-          allowWave={allowWave}
-          setCanSave={setCanSave}
-          setCanCancel={setCanCancel}
-          setStatusText={setStatusText}
-          width={dialogWidth}
-          allowZoom={true}
-          allowNoNoise={true}
-          allowDeltaVoice={true}
-          onRecording={onRecording}
+      <DialogTitle
+        id="addAudioDlg"
+        sx={{ display: 'flex', alignItems: 'center' }}
+      >
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+          {resourceStrings.addAudioResource}
+        </Box>
+        <IconButton
+          id="addAudioClose"
+          onClick={requestClose}
+          sx={{ alignSelf: 'flex-start' }}
+        >
+          <CloseIcon />
+        </IconButton>
+      </DialogTitle>
+      <UploadRecordToggle
+        mode={mode}
+        onMode={handleMode}
+        disableUpload={recording}
+      />
+      {mode === 'record' ? (
+        <>
+          <DialogContent id="recDlgContent" ref={dialogRef}>
+            {!busy && (
+              <SpeakerName
+                planId={planId}
+                name={speaker || ''}
+                onRights={setHasRights}
+                onChange={handleSpeaker}
+                team={team}
+              />
+            )}
+            {busy && <Busy />}
+            {/* Content-sized wrapper so WSAudioPlayer's height:100% cannot
+                cause vertical growth. May be unnecessary since this dialog
+                is not shown on actually mobile screens, but leaving it just in case*/}
+            <Box
+              sx={{
+                flex: '0 0 auto',
+                height: 'fit-content',
+                width: '100%',
+                maxWidth: '100%',
+                alignSelf: 'flex-start',
+              }}
+            >
+              <MediaRecord
+                toolId={myToolId}
+                artifactId={artifactId}
+                passageId={passageId}
+                planId={planId}
+                afterUploadCb={afterUploadCb}
+                mediaId={mediaId}
+                onSaving={() => setBusy(true)}
+                onReady={() => setBusy(false)}
+                defaultFilename={defaultFilename}
+                allowRecord={hasRights}
+                allowWave={allowWave}
+                setCanSave={setCanSave}
+                setCanCancel={setCanCancel}
+                setStatusText={setStatusText}
+                width={dialogWidth}
+                height={160}
+                allowZoom={true}
+                allowNoNoise={true}
+                allowDeltaVoice={true}
+                onRecording={setRecording}
+              />
+            </Box>
+            {metaData}
+          </DialogContent>
+          <DialogActions>
+            <StatusMessage variant="caption">{statusText}</StatusMessage>
+            <AltButton
+              id="rec-cancel"
+              onClick={handleCancel}
+              disabled={!canCancel || recording}
+            >
+              {recordStrings.cancel}
+            </AltButton>
+            <PriButton
+              id="rec-save"
+              onClick={() => startSave(myToolId)}
+              disabled={
+                busy || (ready && !ready()) || !canSave || !hasRights
+              }
+              sx={{ m: 1, minWidth: '96px' }}
+            >
+              {saveText || recordStrings.save}
+            </PriButton>
+          </DialogActions>
+        </>
+      ) : (
+        <MediaUploadContent
+          noWrapper
+          onVisible={onVisible}
+          uploadType={uploadType}
+          saveText={saveText}
+          multiple={multiple}
+          uploadMethod={uploadMethod}
+          cancelMethod={onCancel}
+          metaData={metaData}
+          ready={ready}
+          speaker={speaker}
+          // Only Media uploads gate the drop zone on speaker rights (and show
+          // SpeakerName). Resource/ProjectResource must leave onSpeaker unset
+          // so hasRights stays true and the file drop target is clickable.
+          onSpeaker={
+            uploadType === UploadType.Media ? onSpeaker : undefined
+          }
+          team={team}
+          inValue={inValue}
+          onNonAudio={onNonAudio}
         />
-        {metaData}
-      </DialogContent>
-      <DialogActions>
-        <StatusMessage variant="caption">{statusText}</StatusMessage>
-        <AltButton
-          id="rec-cancel"
-          onClick={handleCancel}
-          disabled={!canCancel || recording}
-        >
-          {t.cancel}
-        </AltButton>
-        <PriButton
-          id="rec-save"
-          onClick={handleSave}
-          disabled={busy || (ready && !ready()) || !canSave || !hasRights}
-        >
-          {t.save}
-        </PriButton>
-      </DialogActions>
+      )}
     </RecordDialog>
   );
 }

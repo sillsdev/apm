@@ -60,22 +60,19 @@ export const AddResource = (props: IProps) => {
         open={Boolean(anchorEl)}
         onClose={handle('Close')}
       >
-        <StyledMenuItem id="uploadResource" onClick={handle('upload')}>
-          <ListItemText>{t.upload}</ListItemText>
-        </StyledMenuItem>
-        <StyledMenuItem id="linkResource" onClick={handle('link')}>
-          <ListItemText>{t.linkResource}</ListItemText>
-        </StyledMenuItem>
-        <StyledMenuItem id="recordResource" onClick={handle('record')}>
-          <ListItemText>{t.recordResource}</ListItemText>
+        <StyledMenuItem id="audioResource" onClick={handle('audio')}>
+          <ListItemText>{t.addAudio}</ListItemText>
         </StyledMenuItem>
         <StyledMenuItem id="textResource" onClick={handle('text')}>
-          <ListItemText>{t.textResource}</ListItemText>
+          <ListItemText>{t.addText}</ListItemText>
+        </StyledMenuItem>
+        <StyledMenuItem id="urlResource" onClick={handle('link')}>
+          <ListItemText>{t.addUrl}</ListItemText>
         </StyledMenuItem>
         {!offline && !offlineOnly && (
-          <StyledMenuItem id="sharedResource" onClick={handle('shared')}>
+          <StyledMenuItem id="linkedResource" onClick={handle('shared')}>
             <ListItemText>
-              {t.sharedResource}
+              {t.addLinked}
               {'\u00A0'}
               <LightTooltip title={t.tip1b}>
                 <InfoIcon />
