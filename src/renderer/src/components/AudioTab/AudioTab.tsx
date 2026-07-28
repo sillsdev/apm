@@ -88,7 +88,7 @@ export function AudioTab() {
   const [uploadMedia, setUploadMedia] = useState<string>();
   const inProcess = React.useRef<boolean>(false);
   const [speaker, setSpeaker] = useState('');
-  const [attachPassage, detachPassage] = useMediaAttach();
+  const { attachPassage, detachPassage } = useMediaAttach();
   const [refresh, setRefresh] = useState(0);
   const cloudSync = useRef(false);
 
@@ -188,7 +188,7 @@ export function AudioTab() {
     } else {
       const passId = data[mRow].passId;
       if (passId && passId !== '') {
-        detachPassage(passId, data[mRow].sectionId, plan, mediaId);
+        detachPassage(passId, data[mRow].sectionId, plan, mediaId, false);
       } else {
         showMessage(t.noPassageAttached.replace('{0}', data[mRow].fileName));
       }

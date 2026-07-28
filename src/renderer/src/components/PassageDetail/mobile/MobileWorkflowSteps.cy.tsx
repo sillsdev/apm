@@ -185,11 +185,23 @@ const mockWorkflowStepsStrings = new LocalizedStrings({
   },
 });
 
+const mockVProjectStrings = new LocalizedStrings({
+  en: {
+    sections: 'Section/Sections',
+    sets: 'Set/Sets',
+    stories: 'Story/Stories',
+    scenes: 'Scene/Scenes',
+    pericopes: 'Pericope/Pericopes',
+    movements: 'Movement/Movements',
+  },
+});
+
 const mockStringsReducer = () => ({
   loaded: true,
   lang: 'en',
   shared: mockSharedStrings,
   workflowSteps: mockWorkflowStepsStrings,
+  vProject: mockVProjectStrings,
 });
 
 const mockStore = createStore(
@@ -502,7 +514,9 @@ describe('MobileWorkflowSteps', () => {
       });
 
       cy.get('[data-cy="passage-step"]').should('have.length', 2);
-      cy.get('[data-cy="passage-step"]').eq(0).should('contain.text', 'GEN 1:1');
+      cy.get('[data-cy="passage-step"]')
+        .eq(0)
+        .should('contain.text', 'GEN 1:1');
     });
 
     it('shows a tip button left of the dropdown that opens a dialog', () => {

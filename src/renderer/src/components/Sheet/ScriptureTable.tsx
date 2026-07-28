@@ -293,7 +293,7 @@ export function ScriptureTable(props: IProps) {
   const { getPlan } = usePlan();
   const localSave = useWfLocalSave({ setComplete });
   const onlineSave = useWfOnlineSave({ setComplete });
-  const [detachPassage] = useMediaAttach();
+  const { detachPassage } = useMediaAttach();
   const checkOnline = useCheckOnline('ScriptureTable');
   const [speaker, setSpeaker] = useState('');
   const { myGroups } = usePeerGroups();
@@ -940,7 +940,8 @@ export function ScriptureTable(props: IProps) {
             ws.passage?.id || '',
             related(ws.passage, 'section'),
             plan,
-            (attached[ix] as MediaFileD).id
+            (attached[ix] as MediaFileD).id,
+            true
           );
         }
       }

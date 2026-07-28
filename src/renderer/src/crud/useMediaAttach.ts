@@ -25,7 +25,7 @@ export const useMediaAttach = () => {
   const doOrbitError = actions.doOrbitError;
   const { IsVernacularMedia, localizedArtifactTypeFromId } = useArtifactType();
 
-  const attach = async (
+  const attachPassage = async (
     passage: string,
     section: string,
     plan: string,
@@ -82,11 +82,12 @@ export const useMediaAttach = () => {
   };
 
   //this is only called for vernacular
-  const detach = async (
+  const detachPassage = async (
     passage: string,
     section: string,
     plan: string,
-    mediaId: string
+    mediaId: string,
+    deleting: boolean
   ) => {
     const tb = new RecordTransformBuilder();
     const ops: RecordOperation[] = [];
@@ -94,29 +95,29 @@ export const useMediaAttach = () => {
     const mediaRec = memory?.cache.query((q) =>
       q.findRecord(mediaRecId)
     ) as MediaFileD;
-
-    AddPassageStateChangeToOps(
-      tb,
-      ops,
-      passage,
-      mediaRec?.attributes?.versionNumber === 1 ? ActivityStates.NoMedia : '',
-      ts.mediaDetached,
-      user,
-      memory
-    );
-
+    if (!deleting) {
+      AddPassageStateChangeToOps(
+        tb,
+        ops,
+        passage,
+        mediaRec?.attributes?.versionNumber === 1 ? ActivityStates.NoMedia : '',
+        ts.mediaDetached,
+        user,
+        memory
+      );
+      const passRecId = { type: 'passage', id: passage };
+      ops.push(...UpdateLastModifiedBy(tb, passRecId, user));
+      UpdateRelatedPassageOps(section, plan, user, tb, ops);
+    }
     ops.push(
       tb.replaceAttribute(mediaRecId, 'versionNumber', 1).toOperation(),
       ...ReplaceRelatedRecord(tb, mediaRecId, 'passage', 'passage', null)
     );
-    const passRecId = { type: 'passage', id: passage };
-    ops.push(...UpdateLastModifiedBy(tb, passRecId, user));
-    UpdateRelatedPassageOps(section, plan, user, tb, ops);
 
     await memory.update(ops).catch((err: Error) => {
       dispatch(doOrbitError(orbitErr(err, 'detach passage')) as any);
     });
   };
 
-  return [attach, detach];
+  return { attachPassage, detachPassage };
 };
