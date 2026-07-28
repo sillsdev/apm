@@ -14,9 +14,11 @@ import {
   buildWorkflowAsrStateFromSettings,
   formatStepLanguageField,
   hasTranscribeStepLanguageSettings,
+  isVernacularLanguageTranscribeStep,
   isVernacularTranscribeStep,
   parseStepLanguageField,
   sisterBcpFromSettings,
+  withInheritedVernacularSisterSettings,
   withPropagatedVernacularSisterSettings,
 } from './transcribeStepAsrSettings';
 import { AsrTarget } from '../business/asr/AsrTarget';
@@ -489,9 +491,9 @@ describe('isVernacularTranscribeStep', () => {
         : ArtifactTypeSlug.Vernacular;
 
   it('treats Transcribe with empty artifactTypeId as vernacular', () => {
-    expect(isVernacularTranscribeStep(ToolSlug.Transcribe, '{}', slugFromId)).toBe(
-      true
-    );
+    expect(
+      isVernacularTranscribeStep(ToolSlug.Transcribe, '{}', slugFromId)
+    ).toBe(true);
   });
 
   it('treats Transcribe with vernacular artifact as vernacular', () => {
@@ -522,11 +524,140 @@ describe('isVernacularTranscribeStep', () => {
   });
 });
 
+describe('isOrgVernacularLanguageTranscribeStep', () => {
+  const slugFromId = (id: string) =>
+    id === 'qa'
+      ? ArtifactTypeSlug.QandA
+      : id === 'retell'
+        ? ArtifactTypeSlug.Retell
+        : id === 'wbt'
+          ? ArtifactTypeSlug.WholeBackTranslation
+          : ArtifactTypeSlug.Vernacular;
+
+  it('includes vernacular, Q&A, and Retell Transcribe steps', () => {
+    expect(
+      isVernacularLanguageTranscribeStep(
+        ToolSlug.Transcribe,
+        JSON.stringify({ artifactTypeId: 'vern' }),
+        slugFromId
+      )
+    ).toBe(true);
+    expect(
+      isVernacularLanguageTranscribeStep(
+        ToolSlug.Transcribe,
+        JSON.stringify({ artifactTypeId: 'qa' }),
+        slugFromId
+      )
+    ).toBe(true);
+    expect(
+      isVernacularLanguageTranscribeStep(
+        ToolSlug.Transcribe,
+        JSON.stringify({ artifactTypeId: 'retell' }),
+        slugFromId
+      )
+    ).toBe(true);
+  });
+
+  it('rejects WBT and non-Transcribe tools', () => {
+    expect(
+      isVernacularLanguageTranscribeStep(
+        ToolSlug.Transcribe,
+        JSON.stringify({ artifactTypeId: 'wbt' }),
+        slugFromId
+      )
+    ).toBe(false);
+    expect(
+      isVernacularLanguageTranscribeStep(
+        ToolSlug.Record,
+        JSON.stringify({ artifactTypeId: 'qa' }),
+        slugFromId
+      )
+    ).toBe(false);
+  });
+});
+
+describe('withInheritedVernacularSisterSettings', () => {
+  const slugFromId = (id: string) =>
+    id === 'qa'
+      ? ArtifactTypeSlug.QandA
+      : id === 'retell'
+        ? ArtifactTypeSlug.Retell
+        : id === 'wbt'
+          ? ArtifactTypeSlug.WholeBackTranslation
+          : ArtifactTypeSlug.Vernacular;
+
+  const orgSteps = [
+    {
+      attributes: {
+        tool: JSON.stringify({
+          tool: ToolSlug.Transcribe,
+          settings: JSON.stringify({
+            artifactTypeId: 'vern',
+            sisterlanguage: formatStepLanguageField({
+              languageName: 'English',
+              bcp47: 'en',
+            }),
+            selectRoman: true,
+          }),
+        }),
+      },
+    },
+  ];
+
+  it('copies vernacular sister onto Q&A settings when missing', () => {
+    const next = withInheritedVernacularSisterSettings(
+      { artifactTypeId: 'qa' },
+      orgSteps,
+      slugFromId
+    );
+    expect(next.sisterlanguage).toBe('English|en');
+    expect(next.selectRoman).toBe(true);
+  });
+
+  it('copies vernacular sister onto Retell settings when missing', () => {
+    const next = withInheritedVernacularSisterSettings(
+      { artifactTypeId: 'retell' },
+      orgSteps,
+      slugFromId
+    );
+    expect(next.sisterlanguage).toBe('English|en');
+    expect(next.selectRoman).toBe(true);
+  });
+
+  it('keeps an existing Q&A sisterlanguage', () => {
+    const next = withInheritedVernacularSisterSettings(
+      {
+        artifactTypeId: 'qa',
+        sisterlanguage: formatStepLanguageField({
+          languageName: 'Spanish',
+          bcp47: 'es',
+        }),
+      },
+      orgSteps,
+      slugFromId
+    );
+    expect(next.sisterlanguage).toBe('Spanish|es');
+  });
+
+  it('does not inherit for WBT steps', () => {
+    const next = withInheritedVernacularSisterSettings(
+      { artifactTypeId: 'wbt', language: 'French|fr' },
+      orgSteps,
+      slugFromId
+    );
+    expect(next.sisterlanguage).toBeUndefined();
+  });
+});
+
 describe('withPropagatedVernacularSisterSettings (TT-7420)', () => {
   const slugFromId = (id: string) =>
     id === 'wbt'
       ? ArtifactTypeSlug.WholeBackTranslation
-      : ArtifactTypeSlug.Vernacular;
+      : id === 'qa'
+        ? ArtifactTypeSlug.QandA
+        : id === 'retell'
+          ? ArtifactTypeSlug.Retell
+          : ArtifactTypeSlug.Vernacular;
 
   const rows = [
     {
@@ -546,6 +677,14 @@ describe('withPropagatedVernacularSisterSettings (TT-7420)', () => {
         artifactTypeId: 'wbt',
         language: 'French|fr',
       }),
+    },
+    {
+      tool: ToolSlug.Transcribe,
+      settings: JSON.stringify({ artifactTypeId: 'qa' }),
+    },
+    {
+      tool: ToolSlug.Transcribe,
+      settings: JSON.stringify({ artifactTypeId: 'retell' }),
     },
   ];
 
@@ -574,6 +713,17 @@ describe('withPropagatedVernacularSisterSettings (TT-7420)', () => {
     expect(JSON.parse(next[2].settings)).toEqual({
       artifactTypeId: 'wbt',
       language: 'French|fr',
+    });
+    // Community Test Q&A / Retell share vernacular sister ASR.
+    expect(JSON.parse(next[3].settings)).toMatchObject({
+      artifactTypeId: 'qa',
+      sisterlanguage: 'Tamil|ta',
+      selectRoman: true,
+    });
+    expect(JSON.parse(next[4].settings)).toMatchObject({
+      artifactTypeId: 'retell',
+      sisterlanguage: 'Tamil|ta',
+      selectRoman: true,
     });
   });
 
