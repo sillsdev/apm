@@ -250,8 +250,8 @@ export const SelectArtifactCategory = (props: IProps) => {
             cat &&
             scriptureTypeCategory(cat.slug);
           return (
-            // Include the render index so two categories that share a localized
-            // name can't collide on the same React key.
+            // We already prevent duplicate categories, but include the render index just a fallback in case somehow two
+            // categories end up with the same localized name in this particular language (shouldn't happen?)
             <li {...liProps} key={`${cat?.id ?? option}-${index}`}>
               {option}
               {isScr && (
