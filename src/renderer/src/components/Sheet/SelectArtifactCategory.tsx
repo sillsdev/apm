@@ -35,12 +35,11 @@ interface IProps {
   // when the typed name matches none) and returns it. New categories are then
   // created on commit rather than on blur.
   commitRef?: RefObject<(() => Promise<string>) | null> | undefined;
-  // Fires as the user types when the field holds a brand-new (allowNew) name
-  // that matches no existing category. Because a new name isn't committed to a
-  // category id until commit() runs at save, parents that gate their Save
-  // button on a "changed" flag would otherwise never enable it for a
+  // Fires as the user types in an allowNew field, i.e. whenever the field holds
+  // text that only commit() will resolve to a category id. Parents that gate
+  // their Save button on a "changed" flag would otherwise never enable it for a
   // new-category-only edit; they use this to mark themselves dirty.
-  onNewDraft?: ((hasDraft: boolean) => void) | undefined;
+  onNewDraft?: (() => void) | undefined;
 }
 
 const StyledBox = styled(Box)<BoxProps>(() => ({
@@ -227,18 +226,12 @@ export const SelectArtifactCategory = (props: IProps) => {
         inputValue={inputVal}
         onInputChange={(_e, v, reason) => {
           setInputVal(v);
-          // Only react to real keystrokes, not the programmatic 'reset' MUI
-          // fires when the committed value changes.
-          if (reason !== 'input' || !onNewDraft) return;
-          const name = v.trim();
-          const hasDraft =
-            !!allowNew &&
-            name !== '' &&
-            name.toLowerCase() !== currentName.trim().toLowerCase() &&
-            !artifactCategorys.some(
-              (c) => c.category.trim().toLowerCase() === name.toLowerCase()
-            );
-          onNewDraft(hasDraft);
+          // A typed name isn't resolved to an id until commit(), so
+          // onCategoryChange won't fire; tell the parent it's dirty so Save can
+          // enable. Only real keystrokes count, not the programmatic 'reset' MUI
+          // fires when the committed value changes; and without allowNew a typed
+          // name is reverted on blur, so nothing was really edited.
+          if (reason === 'input' && allowNew) onNewDraft?.();
         }}
         onChange={(_e, v) => resolveExisting(v)}
         onBlur={() => resolveExisting(inputVal)}

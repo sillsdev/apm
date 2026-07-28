@@ -731,9 +731,7 @@ export const DiscussionCard = (props: IProps) => {
   // A brand-new typed category is only committed to an id at save, so it never
   // fires onCategoryChange; mark the discussion changed so Save can enable when
   // a new category is the only edit.
-  const onCategoryNewDraft = (hasDraft: boolean) => {
-    if (hasDraft) setChanged(true);
-  };
+  const onCategoryNewDraft = () => setChanged(true);
   const saveDiscussion = async () => {
     //we should only get here with no subject if they've clicked off the screen and then told us to save with no subject
     discussion.attributes.subject =
