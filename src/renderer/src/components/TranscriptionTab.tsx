@@ -29,6 +29,7 @@ import {
   TabAppBar,
   PriButton,
   AltButton,
+  FillColumn,
 } from '../control';
 import { useSnackBar } from '../hoc/SnackBar';
 import TranscriptionShow from './TranscriptionShow';
@@ -81,7 +82,6 @@ import {
 } from '@mui/x-data-grid';
 import { ExportActionCell } from './ExportActionCell';
 import { TranscriptionViewCell } from './TranscriptionViewCell';
-import Box from '@mui/material/Box';
 import Alert from '@mui/material/Alert';
 import { TreeDataGrid } from './TreeDataGrid';
 import { debounce } from '@mui/material';
@@ -644,12 +644,13 @@ export function TranscriptionTab(props: IProps) {
   ];
 
   return (
-    <Box ref={boxRef} id="TranscriptionTab" sx={{ display: 'flex' }}>
-      <div>
+    <FillColumn ref={boxRef} id="TranscriptionTab">
+      <FillColumn flex>
         <TabAppBar
-          position="fixed"
+          position="static"
           highBar={planColumn || floatTop}
           color="default"
+          sx={{ flexShrink: 0 }}
         >
           <TabActions>
             {(planColumn || floatTop) && (
@@ -734,7 +735,7 @@ export function TranscriptionTab(props: IProps) {
             sx={{ '& .word-wrap': { wordWrap: 'break-spaces' } }}
           />
         </PaddedBox>
-      </div>
+      </FillColumn>
 
       {passageId !== '' && (
         <TranscriptionShow
@@ -751,7 +752,7 @@ export function TranscriptionTab(props: IProps) {
       )}
       <a ref={exportAnchor} href={exportUrl} download={exportName} />
       <a ref={eafAnchor} href={dataUrl} download={dataName} />
-    </Box>
+    </FillColumn>
   );
 }
 

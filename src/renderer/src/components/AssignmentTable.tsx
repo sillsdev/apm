@@ -20,14 +20,7 @@ import {
   SectionD,
 } from '../model';
 import { RecordIdentity } from '@orbit/records';
-import {
-  Button,
-  debounce,
-  Menu,
-  MenuItem,
-  styled,
-  Typography,
-} from '@mui/material';
+import { Button, debounce, Menu, MenuItem, Typography } from '@mui/material';
 import DropDownIcon from '@mui/icons-material/ArrowDropDown';
 import { AltButton, iconMargin, LightTooltip } from '../control';
 import { useSnackBar } from '../hoc/SnackBar';
@@ -44,7 +37,13 @@ import {
   useOrgDefaults,
   orgDefaultPermissions,
 } from '../crud';
-import { TabAppBar, TabActions, PaddedBox, GrowingSpacer } from '../control';
+import {
+  TabAppBar,
+  TabActions,
+  PaddedBox,
+  GrowingSpacer,
+  FillColumn,
+} from '../control';
 import { ReplaceRelatedRecord, UpdateLastModifiedBy } from '../model/baseModel';
 import { PlanContext } from '../context/PlanContext';
 import { useOrbitData } from '../hoc/useOrbitData';
@@ -67,12 +66,11 @@ import { TreeDataGrid } from './TreeDataGrid';
 import { pad2 } from '../utils/pad2';
 import { resolveSelectedSections } from './resolveSectionForRecId';
 
-const AssignmentDiv = styled('div')(() => ({
-  display: 'flex',
+const assignmentHideProps = {
   '& tr > td > div > span.MuiButtonBase-root:nth-of-type(3)': {
     visibility: 'hidden',
   },
-}));
+} as const;
 
 interface IRow {
   id: number;
@@ -498,9 +496,9 @@ export function AssignmentTable() {
   const columnVisibilityModel: GridColumnVisibilityModel = { sort: false };
 
   return (
-    <AssignmentDiv ref={boxRef} id="AssignmentTable">
-      <div>
-        <TabAppBar position="fixed" color="default">
+    <FillColumn ref={boxRef} id="AssignmentTable" sx={assignmentHideProps}>
+      <FillColumn flex>
+        <TabAppBar position="static" color="default" sx={{ flexShrink: 0 }}>
           <TabActions>
             {userIsAdmin && (
               <>
@@ -544,7 +542,7 @@ export function AssignmentTable() {
             sx={{ '& .word-wrap': { wordWrap: 'break-spaces' } }}
           />
         </PaddedBox>
-      </div>
+      </FillColumn>
       <Menu
         id="assign-menu"
         anchorEl={assignMenu}
@@ -589,7 +587,7 @@ export function AssignmentTable() {
       ) : (
         <></>
       )}
-    </AssignmentDiv>
+    </FillColumn>
   );
 }
 

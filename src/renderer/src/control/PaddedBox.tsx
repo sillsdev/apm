@@ -1,6 +1,8 @@
 import { styled } from '@mui/material';
-import { ActionHeight } from '.';
 
 export const PaddedBox = styled('div')(({ theme }) => ({
-  paddingTop: `calc(${ActionHeight}px + ${theme.spacing(2)})`,
+  paddingTop: theme.spacing(2),
+  flex: 1,
+  minHeight: 0,
+  overflow: 'auto',
 }));

@@ -25,6 +25,7 @@ import {
   PaddedBox,
   TabActions,
   TabAppBar,
+  FillColumn,
 } from '../../control';
 import { useSnackBar } from '../../hoc/SnackBar';
 import BigDialog from '../../hoc/BigDialog';
@@ -337,9 +338,9 @@ export function AudioTab() {
   );
 
   return (
-    <Box sx={{ display: 'flex' }}>
-      <Box width="100%">
-        <TabAppBar position="fixed" color="default">
+    <FillColumn>
+      <FillColumn flex>
+        <TabAppBar position="static" color="default" sx={{ flexShrink: 0 }}>
           <TabActions>
             {canEditAudio && (
               <>
@@ -421,7 +422,7 @@ export function AudioTab() {
             )}
           </Box>
         </PaddedBox>
-      </Box>
+      </FillColumn>
       <Uploader
         isOpen={uploadVisible}
         onOpen={setUploadVisible}
@@ -432,7 +433,7 @@ export function AudioTab() {
         performedBy={speaker}
         onSpeakerChange={handleNameChange}
       />
-    </Box>
+    </FillColumn>
   );
 }
 

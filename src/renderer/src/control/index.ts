@@ -21,6 +21,8 @@ export * from './GrowingSpacer';
 export * from './TabBox';
 export * from './TabAppBar';
 export * from './PaddedBox';
+export * from './FillColumn';
+export * from './VertScrollBox';
 export * from './TabActions';
 export * from './PriButton';
 export * from './AltButton';

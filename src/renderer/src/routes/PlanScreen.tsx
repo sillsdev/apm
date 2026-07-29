@@ -1,13 +1,13 @@
 import React from 'react';
 import { useGlobal } from '../context/useGlobal';
 import { useParams, useLocation } from 'react-router-dom';
-import { Box } from '@mui/material';
 import AppLayout from '../components/App/AppLayout';
 import { PlanProvider } from '../context/PlanContext';
 import PlanTabs from '../components/PlanTabs';
 import { useUrlContext, useProjectType } from '../crud';
 import { UnsavedContext } from '../context/UnsavedContext';
 import StickyRedirect from '../components/StickyRedirect';
+import { FillColumn } from '../control';
 
 export const PlanScreen = () => {
   const { pathname } = useLocation();
@@ -48,9 +48,9 @@ export const PlanScreen = () => {
   return (
     <AppLayout appHeadProps={{ switchTo: false, drawBottomBorder: false }}>
       <PlanProvider>
-        <Box id="PlanScreen" sx={{ display: 'flex' }}>
+        <FillColumn id="PlanScreen" sx={{ overflow: 'hidden' }}>
           <PlanTabs checkSaved={checkSavedFn} />
-        </Box>
+        </FillColumn>
       </PlanProvider>
     </AppLayout>
   );
