@@ -149,6 +149,10 @@ import { SaveSegments } from './PassageDetail/SaveSegments';
 //import useRenderingTrace from '../utils/useRenderingTrace';
 
 const HISTORY_KEY = 'F7,CTRL+7';
+// Space under the textarea for Reject/Save/Submit (+ padding).
+const ACTION_ROW_HEIGHT = 80;
+// ~3 lines at large/xx-large; prefer this over fitting the action buttons.
+const MIN_TEXT_BOX_HEIGHT = 120;
 const ipc = window?.api as MainAPI | undefined;
 
 interface IProps {
@@ -354,8 +358,12 @@ export function Transcriber(props: IProps) {
   const { getOrganizedBy } = useOrganizedBy();
   const remote = coordinator?.getSource('remote') as JSONAPISource;
   const backup = coordinator?.getSource('backup') as IndexedDBSource;
-  const [boxHeight, setBoxHeight] = useState(
-    discussionSize.height - (PLAYER_HEIGHT + 220) - chooserSize - 100
+  // Leave room for Reject/Save/Submit under the textarea; never go below ~3 lines.
+  const [boxHeight, setBoxHeight] = useState(() =>
+    Math.max(
+      discussionSize.height - PLAYER_HEIGHT - chooserSize - ACTION_ROW_HEIGHT,
+      MIN_TEXT_BOX_HEIGHT
+    )
   );
   const [style, setStyle] = useState({
     cursor: 'default',
@@ -546,8 +554,11 @@ export function Transcriber(props: IProps) {
   }, [toolsChanged]);
 
   useEffect(() => {
-    let newBoxHeight = discussionSize.height - PLAYER_HEIGHT - chooserSize - 40;
+    let newBoxHeight =
+      discussionSize.height - PLAYER_HEIGHT - chooserSize - ACTION_ROW_HEIGHT;
     if (defaultWidth < 700) newBoxHeight -= 40;
+    // Prefer keeping ~3 lines of text over fitting the action buttons.
+    newBoxHeight = Math.max(newBoxHeight, MIN_TEXT_BOX_HEIGHT);
     if (newBoxHeight !== boxHeight) setBoxHeight(newBoxHeight);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [discussionSize, chooserSize, defaultWidth]);
