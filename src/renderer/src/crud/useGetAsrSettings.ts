@@ -33,6 +33,7 @@ import {
   buildWorkflowAsrStateFromSettings,
   hasTranscribeStepLanguageSettings,
   transcribeSettingsNeedSisterLanguage,
+  withInheritedVernacularSisterSettings,
   type TranscribeStepSettings,
 } from './transcribeStepAsrSettings';
 
@@ -45,6 +46,7 @@ export {
   buildWorkflowAsrStateFromSettings,
   parseStepLanguageField,
   formatStepLanguageField,
+  withInheritedVernacularSisterSettings,
 } from './transcribeStepAsrSettings';
 export type {
   SlugFromIdFn,
@@ -187,6 +189,10 @@ export function useGetAsrSettings(team?: OrganizationD) {
   const parseStepSettings = (settingsJson: string | undefined) =>
     JSONParse(settingsJson ?? '{}') as TranscribeStepSettings;
 
+  /** Step settings with vernacular sister inherited for Q&A / Retell when missing. */
+  const resolveStepSettings = (settings: TranscribeStepSettings) =>
+    withInheritedVernacularSisterSettings(settings, orgSteps, slugFromId);
+
   const getArtIdFromSettings = (settings: TranscribeStepSettings) => {
     return String(settings?.artifactTypeId ?? '');
   };
@@ -199,14 +205,8 @@ export function useGetAsrSettings(team?: OrganizationD) {
       projectLang
     );
 
-  const getWorkflowAsrState = () => {
-    const step = orgSteps.find((s) => s.id === currentstep);
-    const json = JSONParse(step?.attributes?.tool ?? '{}') as Record<
-      string,
-      string
-    >;
-    const settings = parseStepSettings(json?.settings);
-    return buildWorkflowAsrStateFromSettings(
+  const getWorkflowAsrState = (settings: TranscribeStepSettings) =>
+    buildWorkflowAsrStateFromSettings(
       settings,
       slugFromId,
       getOrgDefault,
@@ -214,7 +214,6 @@ export function useGetAsrSettings(team?: OrganizationD) {
       asrDefault,
       projectLang
     );
-  };
 
   const getAsrSettings = () => {
     const step = orgSteps.find((s) => s.id === currentstep);
@@ -222,7 +221,7 @@ export function useGetAsrSettings(team?: OrganizationD) {
       string,
       string
     >;
-    const settings = parseStepSettings(json?.settings);
+    const settings = resolveStepSettings(parseStepSettings(json?.settings));
     const slug = artifactTypeSlugFromSettings(settings, slugFromId);
 
     // A per-project ASR config (saved on Run) takes precedence over the
@@ -247,7 +246,7 @@ export function useGetAsrSettings(team?: OrganizationD) {
     if (!artId) {
       return getVernacularAsrState(settings);
     }
-    return getWorkflowAsrState();
+    return getWorkflowAsrState(settings);
   };
 
   /**
@@ -305,7 +304,7 @@ export function useGetAsrSettings(team?: OrganizationD) {
       string,
       string
     >;
-    const settings = parseStepSettings(json?.settings);
+    const settings = resolveStepSettings(parseStepSettings(json?.settings));
     return hasTranscribeStepLanguageSettings(
       json.tool,
       settings,
@@ -321,7 +320,7 @@ export function useGetAsrSettings(team?: OrganizationD) {
       string,
       string
     >;
-    const settings = parseStepSettings(json?.settings);
+    const settings = resolveStepSettings(parseStepSettings(json?.settings));
     return transcribeSettingsNeedSisterLanguage(
       settings,
       slugFromId,

@@ -105,6 +105,14 @@ export function artifactUsesOrgVernacularLanguage(
   );
 }
 
+function parseToolSettings(
+  settings: TranscribeStepSettings | string | undefined
+): TranscribeStepSettings {
+  return typeof settings === 'string'
+    ? (JSONParse(settings || '{}') as TranscribeStepSettings)
+    : (settings ?? {});
+}
+
 /**
  * True when a Transcribe tool step is vernacular (including empty artifactTypeId).
  * Used to sync sister-language settings across Transcribe / Review Transcription.
@@ -115,19 +123,31 @@ export function isVernacularTranscribeStep(
   slugFromId: SlugFromIdFn
 ): boolean {
   if (tool !== ToolSlug.Transcribe) return false;
-  const parsed =
-    typeof settings === 'string'
-      ? (JSONParse(settings || '{}') as TranscribeStepSettings)
-      : (settings ?? {});
   return (
-    artifactTypeSlugFromSettings(parsed, slugFromId) ===
+    artifactTypeSlugFromSettings(parseToolSettings(settings), slugFromId) ===
     ArtifactTypeSlug.Vernacular
   );
 }
 
 /**
- * Copies sisterlanguage (+ selectRoman) from a vernacular Transcribe step onto
- * peer vernacular Transcribe steps so Review Transcription shows the same choice.
+ * Vernacular, Community Test Q&A, and Community Test Retell Transcribe steps
+ * share the org vernacular language (and its ASR sister).
+ */
+export function isVernacularLanguageTranscribeStep(
+  tool: string,
+  settings: TranscribeStepSettings | string | undefined,
+  slugFromId: SlugFromIdFn
+): boolean {
+  if (tool !== ToolSlug.Transcribe) return false;
+  return artifactUsesOrgVernacularLanguage(
+    artifactTypeSlugFromSettings(parseToolSettings(settings), slugFromId)
+  );
+}
+
+/**
+ * Copies sisterlanguage (+ selectRoman) from a vernacular-language Transcribe
+ * step onto peer vernacular / Q&A / Retell Transcribe steps so they share the
+ * same ASR sister choice.
  */
 export function withPropagatedVernacularSisterSettings<
   T extends IStepSettingsRow,
@@ -140,7 +160,9 @@ export function withPropagatedVernacularSisterSettings<
   const source = rows[sourceIndex];
   if (!source) return rows;
 
-  if (!isVernacularTranscribeStep(source.tool, sourceSettings, slugFromId)) {
+  if (
+    !isVernacularLanguageTranscribeStep(source.tool, sourceSettings, slugFromId)
+  ) {
     return rows.map((r, i) =>
       i === sourceIndex ? { ...r, settings: sourceSettings } : r
     );
@@ -154,7 +176,7 @@ export function withPropagatedVernacularSisterSettings<
     if (i === sourceIndex) {
       return { ...r, settings: sourceSettings };
     }
-    if (!isVernacularTranscribeStep(r.tool, r.settings, slugFromId)) {
+    if (!isVernacularLanguageTranscribeStep(r.tool, r.settings, slugFromId)) {
       return r;
     }
     const peer = JSONParse(r.settings || '{}') as TranscribeStepSettings;
@@ -173,6 +195,44 @@ export function withPropagatedVernacularSisterSettings<
       }),
     };
   });
+}
+
+export interface IOrgStepToolRow {
+  attributes?: { tool?: string };
+}
+
+/**
+ * For Community Test Q&A / Retell (and any vernacular-language Transcribe step
+ * missing sisterlanguage), copy sisterlanguage + selectRoman from a peer
+ * vernacular Transcribe step so auto transcription uses the vernacular sister.
+ */
+export function withInheritedVernacularSisterSettings(
+  settings: TranscribeStepSettings,
+  orgSteps: IOrgStepToolRow[],
+  slugFromId: SlugFromIdFn
+): TranscribeStepSettings {
+  const slug = artifactTypeSlugFromSettings(settings, slugFromId);
+  if (!artifactUsesOrgVernacularLanguage(slug)) return settings;
+  if (isLangSet(sisterBcpFromSettings(settings))) return settings;
+
+  for (const step of orgSteps) {
+    const json = JSONParse(step?.attributes?.tool ?? '{}') as {
+      tool?: string;
+      settings?: string;
+    };
+    if (!isVernacularTranscribeStep(json.tool ?? '', json.settings, slugFromId))
+      continue;
+    const peer = parseToolSettings(json.settings);
+    if (!isLangSet(sisterBcpFromSettings(peer))) continue;
+    return {
+      ...settings,
+      sisterlanguage: peer.sisterlanguage,
+      ...(peer.selectRoman !== undefined
+        ? { selectRoman: peer.selectRoman }
+        : {}),
+    };
+  }
+  return settings;
 }
 
 export function hasTranscribeStepLanguageSettings(
