@@ -6,7 +6,7 @@ import {
   SxProps,
   TextField,
 } from '@mui/material';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type RefObject } from 'react';
 import {
   ArtifactCategoryType,
   IArtifactCategory,
@@ -30,6 +30,16 @@ interface IProps {
   scripture?: ArtCatScr | undefined;
   type: ArtifactCategoryType;
   disabled?: boolean | undefined;
+  // When provided, the parent gets a `commit()` here to run at form submission:
+  // it resolves the current input to a category id (creating a new category
+  // when the typed name matches none) and returns it. New categories are then
+  // created on commit rather than on blur.
+  commitRef?: RefObject<(() => Promise<string>) | null> | undefined;
+  // Fires as the user types in an allowNew field, i.e. whenever the field holds
+  // text that only commit() will resolve to a category id. Parents that gate
+  // their Save button on a "changed" flag would otherwise never enable it for a
+  // new-category-only edit; they use this to mark themselves dirty.
+  onNewDraft?: (() => void) | undefined;
 }
 
 const StyledBox = styled(Box)<BoxProps>(() => ({
@@ -57,6 +67,8 @@ export const SelectArtifactCategory = (props: IProps) => {
     scripture,
     type,
     disabled,
+    commitRef,
+    onNewDraft,
   } = props;
   const artifactCategories =
     useOrbitData<ArtifactCategory[]>('artifactcategory');
@@ -109,9 +121,11 @@ export const SelectArtifactCategory = (props: IProps) => {
     onCategoryChange && onCategoryChange(id);
   };
 
-  // Resolve a chosen/typed category name to an id, creating a new category
-  // when the name doesn't match an existing one.
-  const resolveCommit = async (raw: string | null) => {
+  // Resolve a chosen/typed category name to an existing category id. Called on
+  // blur and on change. Deliberately does NOT create new categories — that is
+  // deferred to commit() (form submission) so navigating away without saving
+  // never leaves an orphaned category behind.
+  const resolveExisting = (raw: string | null) => {
     const name = (raw ?? '').trim();
     if (name.toLowerCase() === currentName.trim().toLowerCase()) return;
     if (!name) {
@@ -132,7 +146,39 @@ export const SelectArtifactCategory = (props: IProps) => {
       setInputVal(currentName);
       return;
     }
-    if (committingRef.current) return;
+    // allowNew + a new name: keep the typed text as-is and wait for commit().
+  };
+
+  // Resolve the current input to a category id, creating a new category when
+  // the typed name matches none. Intended to run at form submission via
+  // commitRef. Returns the resolved id (empty string when the field is blank).
+  const commit = async (): Promise<string> => {
+    const name = inputVal.trim();
+    // Field unchanged from the committed category — keep its id as-is rather
+    // than re-resolving by name. Re-resolving could silently drop the category
+    // (when its localized name is filtered out of the options and the field
+    // therefore shows blank) or switch it to a different id (when two slugs
+    // share the same localized name). The empty === empty case also preserves
+    // such a filtered-out category on an untouched save.
+    if (name.toLowerCase() === currentName.trim().toLowerCase()) {
+      return categoryId;
+    }
+    if (!name) {
+      setCategory('');
+      return '';
+    }
+    const existing = artifactCategorys.find(
+      (c) => c.category.trim().toLowerCase() === name.toLowerCase()
+    );
+    if (existing) {
+      setCategory(existing.id);
+      return existing.id;
+    }
+    if (!allowNew) {
+      setInputVal(currentName);
+      return categoryId;
+    }
+    if (committingRef.current) return categoryId;
     committingRef.current = true;
     try {
       const newId = await addNewArtifactCategory(name, type);
@@ -140,16 +186,31 @@ export const SelectArtifactCategory = (props: IProps) => {
       setArtifactCategorys(cats);
       if (newId && newId !== 'duplicate') {
         setCategory(newId);
-      } else {
-        const dup = cats.find(
-          (c) => c.category.trim().toLowerCase() === name.toLowerCase()
-        );
-        if (dup) setCategory(dup.id);
+        return newId;
       }
+      const dup = cats.find(
+        (c) => c.category.trim().toLowerCase() === name.toLowerCase()
+      );
+      if (dup) {
+        setCategory(dup.id);
+        return dup.id;
+      }
+      return categoryId;
     } finally {
       committingRef.current = false;
     }
   };
+
+  // Expose commit() to the parent form. No dependency array: re-assign every
+  // render so the closure stays current; clear on unmount so a stale commit is
+  // never invoked once the field is gone.
+  useEffect(() => {
+    if (!commitRef) return;
+    commitRef.current = commit;
+    return () => {
+      commitRef.current = null;
+    };
+  });
 
   return (
     <StyledBox>
@@ -163,9 +224,17 @@ export const SelectArtifactCategory = (props: IProps) => {
           .sort((a, b) => (a < b ? -1 : 1))}
         value={currentName || null}
         inputValue={inputVal}
-        onInputChange={(_e, v) => setInputVal(v)}
-        onChange={(_e, v) => resolveCommit(v)}
-        onBlur={() => resolveCommit(inputVal)}
+        onInputChange={(_e, v, reason) => {
+          setInputVal(v);
+          // A typed name isn't resolved to an id until commit(), so
+          // onCategoryChange won't fire; tell the parent it's dirty so Save can
+          // enable. Only real keystrokes count, not the programmatic 'reset' MUI
+          // fires when the committed value changes; and without allowNew a typed
+          // name is reverted on blur, so nothing was really edited.
+          if (reason === 'input' && allowNew) onNewDraft?.();
+        }}
+        onChange={(_e, v) => resolveExisting(v)}
+        onBlur={() => resolveExisting(inputVal)}
         sx={textFieldProps}
         renderOption={(liProps, option, { index }) => {
           const cat = artifactCategorys.find((c) => c.category === option);
@@ -174,8 +243,8 @@ export const SelectArtifactCategory = (props: IProps) => {
             cat &&
             scriptureTypeCategory(cat.slug);
           return (
-            // Include the render index so two categories that share a localized
-            // name can't collide on the same React key.
+            // We already prevent duplicate categories, but include the render index just a fallback in case somehow two
+            // categories end up with the same localized name in this particular language (shouldn't happen?)
             <li {...liProps} key={`${cat?.id ?? option}-${index}`}>
               {option}
               {isScr && (
