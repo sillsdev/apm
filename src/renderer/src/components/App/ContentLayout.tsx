@@ -1,6 +1,6 @@
 import { Box, SxProps } from '@mui/material';
 
-interface PlanScreenLayoutProps {
+interface ContentLayoutProps {
   header: React.ReactNode;
   children: React.ReactNode;
   footer?: React.ReactNode;
@@ -9,14 +9,20 @@ interface PlanScreenLayoutProps {
   contentSx?: SxProps;
   footerSx?: SxProps;
   footerAboveSx?: SxProps;
+  contentRef?: React.Ref<HTMLDivElement>;
 }
 
-export default function PlanScreenLayout({
+export default function ContentLayout({
   header,
   children,
+  footer,
+  footerAbove,
   headerSx,
   contentSx,
-}: PlanScreenLayoutProps) {
+  footerSx,
+  footerAboveSx,
+  contentRef,
+}: ContentLayoutProps) {
   return (
     <Box
       sx={{
@@ -30,6 +36,7 @@ export default function PlanScreenLayout({
     >
       <Box sx={{ flexShrink: 0, minWidth: 0, ...headerSx }}>{header}</Box>
       <Box
+        ref={contentRef}
         sx={{
           flex: 1,
           minWidth: 0,
@@ -44,6 +51,14 @@ export default function PlanScreenLayout({
       >
         {children}
       </Box>
+      {footerAbove && (
+        <Box sx={{ flexShrink: 0, minWidth: 0, ...footerAboveSx }}>
+          {footerAbove}
+        </Box>
+      )}
+      {footer && (
+        <Box sx={{ flexShrink: 0, minWidth: 0, ...footerSx }}>{footer}</Box>
+      )}
     </Box>
   );
 }
