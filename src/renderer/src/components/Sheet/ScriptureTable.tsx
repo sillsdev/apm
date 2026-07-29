@@ -2219,7 +2219,9 @@ export function ScriptureTable(props: IProps) {
   };
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+    <Box
+      sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}
+    >
       {isMobile ? (
         <>
           <PlanBar
