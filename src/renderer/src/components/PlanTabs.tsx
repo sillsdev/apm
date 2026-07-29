@@ -34,6 +34,7 @@ import { planTabsSelector } from '../selector';
 import { PlanTabEnum } from './PlanTabsEnum';
 import { grey } from '@mui/material/colors';
 import { PlanTabSelect } from './Sheet/PlanTabSelect';
+import PlanScreenLayout from './PlanScreenLayout';
 
 interface IProps {
   checkSaved: (method: () => void) => void;
@@ -106,29 +107,18 @@ const ScrollableTabsButtonAuto = (props: IProps) => {
   return isMobile && tab === PlanTabEnum.sectionPassage ? (
     <ScriptureTable {...props} colNames={colNames} />
   ) : (
-    <Box
-      sx={{
-        flexGrow: 1,
-        width: '100%',
-        backgroundColor: 'background.paper',
-        flexDirection: 'column',
-      }}
-    >
-      <AppBar
-        position="fixed"
-        color="default"
-        sx={{
-          top: `${HeadHeight}px`,
-          height: `${TabHeight}px`,
-          left: 0,
-          width: '100%',
-        }}
-      >
-        {isMobile ? (
-          <Box>
-            <PlanTabSelect />
-          </Box>
-        ) : (
+    <PlanScreenLayout
+      header={
+        <AppBar
+          position="fixed"
+          color="default"
+          sx={{
+            top: `${HeadHeight}px`,
+            height: `${TabHeight}px`,
+            left: 0,
+            width: '100%',
+          }}
+        >
           <Tabs
             value={tab ?? 0}
             onChange={(e: any, v: number) =>
@@ -190,8 +180,9 @@ const ScrollableTabsButtonAuto = (props: IProps) => {
               }
             />
           </Tabs>
-        )}
-      </AppBar>
+        </AppBar>
+      }
+    >
       <Box sx={{ pt: `${TabHeight}px` }}>
         {tab === PlanTabEnum.sectionPassage && (
           <ScriptureTable {...props} colNames={colNames} />
@@ -208,7 +199,7 @@ const ScrollableTabsButtonAuto = (props: IProps) => {
           />
         )}
       </Box>
-    </Box>
+    </PlanScreenLayout>
   );
 };
 
