@@ -93,6 +93,7 @@ const SheetMargin = 10;
 
 const ContentDiv = styled('div')(({ theme }) => ({
   paddingTop: theme.spacing(1),
+  position: 'relative',
   flex: 1,
   minHeight: 0,
   overflow: 'auto',
@@ -836,9 +837,9 @@ export function PlanSheet(props: IProps) {
   };
 
   const setRowsPerPage = () => {
-    rowsPerPage.current = Math.ceil(
-      (document.documentElement.clientHeight - ActionHeight - 200) / 42
-    );
+    const root = sheetRef.current as HTMLDivElement | undefined;
+    const viewH = root?.clientHeight ?? document.documentElement.clientHeight;
+    rowsPerPage.current = Math.ceil(viewH / 42);
   };
 
   const handleRowsPerPage = debounce(() => {

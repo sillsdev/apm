@@ -1,6 +1,6 @@
 import { Box, BoxProps } from '@mui/material';
 
-export interface FillColumnProps extends BoxProps {
+export interface FillColumnProps extends Omit<BoxProps, 'flex'> {
   /** Use flex:1 instead of height:100% for nested panels. */
   flex?: boolean;
 }
@@ -8,6 +8,7 @@ export interface FillColumnProps extends BoxProps {
 /**
  * Column that fills its parent and lets a child (e.g. VertScrollBox / PaddedBox)
  * own scrolling. Keeps plan-tab layout consistent after AppLayout.
+ * Requires React 19+ (custom `flex` prop must not be forwarded to the DOM).
  */
 export const FillColumn = ({
   children,

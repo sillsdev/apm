@@ -234,7 +234,6 @@ export const TranscribeStepSettings = ({
       spellCheck,
       changed: false,
     }));
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { spellCheck: _omit, ...rest } = json;
     emitSettingsChange(JSON.stringify({ ...rest, artifactTypeId }));
   };
