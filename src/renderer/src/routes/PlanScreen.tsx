@@ -1,7 +1,6 @@
 import React from 'react';
 import { useGlobal } from '../context/useGlobal';
 import { useParams, useLocation } from 'react-router-dom';
-import { Box } from '@mui/material';
 import AppLayout from '../components/App/AppLayout';
 import { PlanProvider } from '../context/PlanContext';
 import PlanTabs from '../components/PlanTabs';
@@ -48,9 +47,7 @@ export const PlanScreen = () => {
   return (
     <AppLayout appHeadProps={{ switchTo: false, drawBottomBorder: false }}>
       <PlanProvider>
-        <Box id="PlanScreen" sx={{ display: 'flex' }}>
-          <PlanTabs checkSaved={checkSavedFn} />
-        </Box>
+        <PlanTabs checkSaved={checkSavedFn} />
       </PlanProvider>
     </AppLayout>
   );
