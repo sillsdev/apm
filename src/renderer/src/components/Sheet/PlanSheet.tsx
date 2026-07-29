@@ -20,7 +20,6 @@ import {
   SheetLevel,
 } from '../../model';
 import {
-  Box,
   Button,
   Dialog,
   DialogActions,
@@ -50,6 +49,7 @@ import {
   PriButton,
   iconMargin,
   LightTooltip,
+  FillColumn,
 } from '../../control';
 import 'react-datasheet/lib/react-datasheet.css';
 import {
@@ -92,7 +92,11 @@ export const SectionSeqCol = 0;
 const SheetMargin = 10;
 
 const ContentDiv = styled('div')(({ theme }) => ({
-  paddingTop: `calc(${ActionHeight}px + ${theme.spacing(2)})`,
+  paddingTop: theme.spacing(1),
+  position: 'relative',
+  flex: 1,
+  minHeight: 0,
+  overflow: 'auto',
   '& .data-grid-container .data-grid .cell': {
     verticalAlign: 'middle',
     textAlign: 'left',
@@ -507,23 +511,22 @@ export function PlanSheet(props: IProps) {
   };
 
   const sheetScroll = () => {
-    if (sheetRef.current && currentRowRef.current) {
+    const root = sheetRef.current as HTMLDivElement | undefined;
+    if (root && currentRowRef.current) {
       const tbodyNodes = bodyChildren();
       const tbodyRef =
         tbodyNodes && (tbodyNodes[currentRowRef.current] as HTMLDivElement);
+      const top = root.scrollTop;
+      const viewH = root.clientHeight;
       //only scroll if it's not already visible
-      if (tbodyRef && tbodyRef.offsetTop < document.documentElement.scrollTop) {
-        window.scrollTo(0, tbodyRef.offsetTop - 10);
+      if (tbodyRef && tbodyRef.offsetTop < top) {
+        root.scrollTo(0, tbodyRef.offsetTop - 10);
       } else if (
         tbodyRef &&
-        tbodyRef.offsetTop >
-          document.documentElement.scrollTop +
-            document.documentElement.clientHeight -
-            ActionHeight -
-            200
+        tbodyRef.offsetTop > top + viewH - ActionHeight - 200
       ) {
         const adjust = Math.min(rowsPerPage.current, currentRowRef.current);
-        window.scrollTo(0, tbodyRef.offsetTop + 10 - adjust * 20);
+        root.scrollTo(0, tbodyRef.offsetTop + 10 - adjust * 20);
       }
     }
     return false;
@@ -834,9 +837,9 @@ export function PlanSheet(props: IProps) {
   };
 
   const setRowsPerPage = () => {
-    rowsPerPage.current = Math.ceil(
-      (document.documentElement.clientHeight - ActionHeight - 200) / 42
-    );
+    const root = sheetRef.current as HTMLDivElement | undefined;
+    const viewH = root?.clientHeight ?? document.documentElement.clientHeight;
+    rowsPerPage.current = Math.ceil(viewH / 42);
   };
 
   const handleRowsPerPage = debounce(() => {
@@ -857,14 +860,15 @@ export function PlanSheet(props: IProps) {
   useEffect(() => {
     setRowsPerPage();
     window.addEventListener('resize', handleRowsPerPage);
-    window.addEventListener('scroll', scrolled);
+    const root = sheetRef.current as HTMLDivElement | null;
+    root?.addEventListener('scroll', scrolled);
     const keys = [{ key: DOWN_ARROW, cb: sheetScroll }];
     keys.forEach((k) => subscribe(k.key, k.cb));
 
     return () => {
       keys.forEach((k) => unsubscribe(k.key));
       window.removeEventListener('resize', handleRowsPerPage);
-      window.removeEventListener('scroll', scrolled);
+      root?.removeEventListener('scroll', scrolled);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -1065,8 +1069,9 @@ export function PlanSheet(props: IProps) {
 
   useEffect(() => {
     const tbodyNodes = bodyChildren();
-    if (tbodyNodes) {
-      const currentOff = document.documentElement.scrollTop;
+    const root = sheetRef.current as HTMLDivElement | undefined;
+    if (tbodyNodes && root) {
+      const currentOff = root.scrollTop;
       let bottom = 1;
       let top = tbodyNodes.length - 1;
       while (bottom < top) {
@@ -1077,7 +1082,9 @@ export function PlanSheet(props: IProps) {
           top = mid;
         }
       }
-      if (bottom !== curTop) setCurTop(bottom);
+      if (bottom !== curTop) {
+        setCurTop(bottom);
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data.length, scrollCount]);
@@ -1111,229 +1118,220 @@ export function PlanSheet(props: IProps) {
     [emptyRow, curTop]
   );
   return (
-    <Box sx={{ display: 'flex' }}>
-      <div>
-        <TabAppBar position="fixed" color="default">
-          <TabActions>
-            {!readonly && (
-              <>
-                <AddSectionPassageButtons
-                  inlinePassages={inlinePassages}
-                  numRows={rowInfo.length}
-                  canEditSheet={canEditSheet}
-                  readonly={anyRecording}
-                  isSection={dataRowisSection}
-                  isPassage={isPassageType(currentRow - 1)}
-                  mouseposition={position}
-                  handleNoContextMenu={handleNoContextMenu}
-                  sectionSequenceNumber={currentWholeRowSectionNum}
-                  passageSequenceNumber={currentWholeRowPassageNum}
-                  onDisableFilter={filtered ? disableFilter : undefined}
-                  showIcon={showIcon(
-                    filtered,
-                    offline && !offlineOnly,
-                    currentRow - 1
-                  )}
-                  onAction={(what: ExtraIcon) => onAction(currentRow - 1, what)}
-                  disablePublishingRows={disablePublishingRows}
-                />
-                {canEditSheet && (
-                  <ProjButtons
-                    {...props}
-                    noCopy={pasting || filtered}
-                    noPaste={pasting || anyRecording || readonly || filtered}
-                    noReseq={
-                      pasting ||
-                      data.length < 2 ||
-                      anyRecording ||
-                      !canEditSheet ||
-                      filtered ||
-                      !hidePublishing
-                    }
-                    noImExport={anyRecording || pasting}
-                    noIntegrate={anyRecording || pasting || data.length < 2}
-                    onCopy={handleSheetCopy}
-                    onPaste={handleTablePaste}
-                    onReseq={handleResequence}
-                  />
+    <FillColumn>
+      <TabAppBar position="static" color="default" sx={{ flexShrink: 0 }}>
+        <TabActions>
+          {!readonly && (
+            <>
+              <AddSectionPassageButtons
+                inlinePassages={inlinePassages}
+                numRows={rowInfo.length}
+                canEditSheet={canEditSheet}
+                readonly={anyRecording}
+                isSection={dataRowisSection}
+                isPassage={isPassageType(currentRow - 1)}
+                mouseposition={position}
+                handleNoContextMenu={handleNoContextMenu}
+                sectionSequenceNumber={currentWholeRowSectionNum}
+                passageSequenceNumber={currentWholeRowPassageNum}
+                onDisableFilter={filtered ? disableFilter : undefined}
+                showIcon={showIcon(
+                  filtered,
+                  offline && !offlineOnly,
+                  currentRow - 1
                 )}
-              </>
-            )}
-
-            <GrowingSpacer />
-            {data.length > 1 &&
-              !offline &&
-              !inlinePassages &&
-              !anyRecording && (
-                <LightTooltip
-                  sx={{ backgroundColor: 'transparent' }}
-                  title={
-                    !publishingOn || hidePublishing
-                      ? t.showPublishing
-                      : t.hidePublishing
+                onAction={(what: ExtraIcon) => onAction(currentRow - 1, what)}
+                disablePublishingRows={disablePublishingRows}
+              />
+              {canEditSheet && (
+                <ProjButtons
+                  {...props}
+                  noCopy={pasting || filtered}
+                  noPaste={pasting || anyRecording || readonly || filtered}
+                  noReseq={
+                    pasting ||
+                    data.length < 2 ||
+                    anyRecording ||
+                    !canEditSheet ||
+                    filtered ||
+                    !hidePublishing
                   }
-                >
-                  <IconButton onClick={handlePublishToggle}>
-                    {!publishingOn || hidePublishing ? (
-                      <PublishOnIcon sx={{ color: 'primary.light' }} />
-                    ) : (
-                      <PublishOffIcon sx={{ color: 'primary.light' }} />
-                    )}
-                  </IconButton>
-                </LightTooltip>
+                  noImExport={anyRecording || pasting}
+                  noIntegrate={anyRecording || pasting || data.length < 2}
+                  onCopy={handleSheetCopy}
+                  onPaste={handleTablePaste}
+                  onReseq={handleResequence}
+                />
               )}
-            <FilterMenu
-              canSetDefault={canSetDefault}
-              state={filterState}
-              onFilterChange={onFilterChange}
-              orgSteps={orgSteps}
-              minimumSection={minimumSection}
-              maximumSection={maximumSection}
-              filtered={filtered}
-              hidePublishing={hidePublishing}
-              disabled={!filtered && (rowInfo.length < 2 || anyRecording)}
-            />
+            </>
+          )}
+
+          <GrowingSpacer />
+          {data.length > 1 && !offline && !inlinePassages && !anyRecording && (
             <LightTooltip
               sx={{ backgroundColor: 'transparent' }}
-              title={t.goToReference}
+              title={
+                !publishingOn || hidePublishing
+                  ? t.showPublishing
+                  : t.hidePublishing
+              }
             >
-              <IconButton
-                aria-label={t.goToReference}
-                onClick={() => setGoToOpen(true)}
-                disabled={rowInfo.length < 2}
-              >
-                <SearchIcon sx={{ color: 'primary.light' }} />
+              <IconButton onClick={handlePublishToggle}>
+                {!publishingOn || hidePublishing ? (
+                  <PublishOnIcon sx={{ color: 'primary.light' }} />
+                ) : (
+                  <PublishOffIcon sx={{ color: 'primary.light' }} />
+                )}
               </IconButton>
             </LightTooltip>
-            {!readonly && (
-              <>
-                <PriButton
-                  id="planSheetSave"
-                  key="save"
-                  aria-label={t.save}
-                  color={connected ? 'primary' : 'secondary'}
-                  onClick={handleSave}
-                  disabled={saving || !changed || preventSave}
-                >
-                  {t.save}
-                  <SaveIcon sx={iconMargin} className="small-icon" />
-                </PriButton>
-              </>
-            )}
-          </TabActions>
-        </TabAppBar>
-        <Dialog
-          open={goToOpen}
-          onClose={() => setGoToOpen(false)}
-          maxWidth="sm"
-        >
-          <DialogTitle>{t.goToReferenceTitle}</DialogTitle>
-          <DialogContent>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-              <>
-                {t.goToReferenceDescription}
-                <ul>
-                  {scripture && <li>{t.goToReferenceScripture}</li>}
-                  <li>
-                    {(publishingOn && !hidePublishing
-                      ? t.goToReferencePublishing
-                      : t.goToReferencePassage
-                    ).replace('{0}', organizedBy)}
-                  </li>
-                  <li>{t.goToReferencePhrase.replace('{0}', organizedBy)}</li>
-                </ul>
-              </>
-            </Typography>
-            <TextField
-              autoFocus
-              inputRef={goToInputRef}
-              fullWidth
-              margin="dense"
-              value={goToQuery}
-              onChange={(e) => setGoToQuery(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  handleGoToSubmit();
-                }
-              }}
-              slotProps={{
-                input: {
-                  endAdornment: goToQuery ? (
-                    <InputAdornment position="end">
-                      <IconButton
-                        aria-label={t.goToReferenceClear}
-                        edge="end"
-                        size="small"
-                        onMouseDown={(e) => e.preventDefault()}
-                        onClick={() => setGoToQuery('')}
-                      >
-                        <ClearIcon fontSize="small" />
-                      </IconButton>
-                    </InputAdornment>
-                  ) : undefined,
-                },
-              }}
-            />
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setGoToOpen(false)}>{ts.cancel}</Button>
-            <Button variant="contained" onClick={handleGoToSubmit}>
-              {t.goToReferenceSubmit}
-            </Button>
-          </DialogActions>
-        </Dialog>
-        <ContentDiv id="PlanSheet" ref={sheetRef}>
-          {warning && (
-            <WarningDiv
-              onClick={handleWarningClick}
-              onKeyDown={handleWarningKeyDown}
-              role="button"
-              tabIndex={0}
+          )}
+          <FilterMenu
+            canSetDefault={canSetDefault}
+            state={filterState}
+            onFilterChange={onFilterChange}
+            orgSteps={orgSteps}
+            minimumSection={minimumSection}
+            maximumSection={maximumSection}
+            filtered={filtered}
+            hidePublishing={hidePublishing}
+            disabled={!filtered && (rowInfo.length < 2 || anyRecording)}
+          />
+          <LightTooltip
+            sx={{ backgroundColor: 'transparent' }}
+            title={t.goToReference}
+          >
+            <IconButton
+              aria-label={t.goToReference}
+              onClick={() => setGoToOpen(true)}
+              disabled={rowInfo.length < 2}
             >
-              {warning}
-            </WarningDiv>
+              <SearchIcon sx={{ color: 'primary.light' }} />
+            </IconButton>
+          </LightTooltip>
+          {!readonly && (
+            <>
+              <PriButton
+                id="planSheetSave"
+                key="save"
+                aria-label={t.save}
+                color={connected ? 'primary' : 'secondary'}
+                onClick={handleSave}
+                disabled={saving || !changed || preventSave}
+              >
+                {t.save}
+                <SaveIcon sx={iconMargin} className="small-icon" />
+              </PriButton>
+            </>
           )}
-          <DataSheet
-            data={curData(data)}
-            valueRenderer={handleValueRender}
-            dataRenderer={handleDataRender}
-            onContextMenu={handleContextMenu}
-            onCellsChanged={handleCellsChanged}
-            parsePaste={parsePaste}
-            onSelect={handleSelect}
+        </TabActions>
+      </TabAppBar>
+      <Dialog open={goToOpen} onClose={() => setGoToOpen(false)} maxWidth="sm">
+        <DialogTitle>{t.goToReferenceTitle}</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+            <>
+              {t.goToReferenceDescription}
+              <ul>
+                {scripture && <li>{t.goToReferenceScripture}</li>}
+                <li>
+                  {(publishingOn && !hidePublishing
+                    ? t.goToReferencePublishing
+                    : t.goToReferencePassage
+                  ).replace('{0}', organizedBy)}
+                </li>
+                <li>{t.goToReferencePhrase.replace('{0}', organizedBy)}</li>
+              </ul>
+            </>
+          </Typography>
+          <TextField
+            autoFocus
+            inputRef={goToInputRef}
+            fullWidth
+            margin="dense"
+            value={goToQuery}
+            onChange={(e) => setGoToQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                handleGoToSubmit();
+              }
+            }}
+            slotProps={{
+              input: {
+                endAdornment: goToQuery ? (
+                  <InputAdornment position="end">
+                    <IconButton
+                      aria-label={t.goToReferenceClear}
+                      edge="end"
+                      size="small"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => setGoToQuery('')}
+                    >
+                      <ClearIcon fontSize="small" />
+                    </IconButton>
+                  </InputAdornment>
+                ) : undefined,
+              },
+            }}
           />
-          {confirmAction !== '' ? (
-            <Confirm
-              text={t.confirm
-                .replace('{0}', confirmAction)
-                .replace('{1}', check.length.toString())}
-              yesResponse={handleActionConfirmed}
-              noResponse={handleActionRefused}
-            />
-          ) : (
-            <></>
-          )}
-          {confirmPublish && (
-            <ConfirmPublishDialog
-              context="plan"
-              isMovement={isMovement(currentRowRef.current - 1)}
-              yesResponse={publishConfirm}
-              noResponse={publishRefused}
-              current={currentRowPublishLevel}
-              sharedProject={shared}
-              hasPublishing={publishingOn}
-              passageType={rowInfo[currentRowRef.current - 1]?.passageType}
-            />
-          )}
-          <MediaPlayer
-            srcMediaId={srcMediaId}
-            onEnded={playEnded}
-            requestPlay={mediaPlaying}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setGoToOpen(false)}>{ts.cancel}</Button>
+          <Button variant="contained" onClick={handleGoToSubmit}>
+            {t.goToReferenceSubmit}
+          </Button>
+        </DialogActions>
+      </Dialog>
+      <ContentDiv id="PlanSheet" ref={sheetRef}>
+        {warning && (
+          <WarningDiv
+            onClick={handleWarningClick}
+            onKeyDown={handleWarningKeyDown}
+            role="button"
+            tabIndex={0}
+          >
+            {warning}
+          </WarningDiv>
+        )}
+        <DataSheet
+          data={curData(data)}
+          valueRenderer={handleValueRender}
+          dataRenderer={handleDataRender}
+          onContextMenu={handleContextMenu}
+          onCellsChanged={handleCellsChanged}
+          parsePaste={parsePaste}
+          onSelect={handleSelect}
+        />
+        {confirmAction !== '' ? (
+          <Confirm
+            text={t.confirm
+              .replace('{0}', confirmAction)
+              .replace('{1}', check.length.toString())}
+            yesResponse={handleActionConfirmed}
+            noResponse={handleActionRefused}
           />
-        </ContentDiv>
-      </div>
-    </Box>
+        ) : (
+          <></>
+        )}
+        {confirmPublish && (
+          <ConfirmPublishDialog
+            context="plan"
+            isMovement={isMovement(currentRowRef.current - 1)}
+            yesResponse={publishConfirm}
+            noResponse={publishRefused}
+            current={currentRowPublishLevel}
+            sharedProject={shared}
+            hasPublishing={publishingOn}
+            passageType={rowInfo[currentRowRef.current - 1]?.passageType}
+          />
+        )}
+        <MediaPlayer
+          srcMediaId={srcMediaId}
+          onEnded={playEnded}
+          requestPlay={mediaPlaying}
+        />
+      </ContentDiv>
+    </FillColumn>
   );
 }
 

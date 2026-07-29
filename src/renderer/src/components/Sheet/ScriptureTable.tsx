@@ -43,6 +43,7 @@ import JSONAPISource from '@orbit/jsonapi';
 import { Badge, Box, Typography } from '@mui/material';
 import { useSnackBar } from '../../hoc/SnackBar';
 import PlanSheet, { ICell, ICellChange } from './PlanSheet';
+import { FillColumn } from '../../control';
 import {
   remoteIdNum,
   related,
@@ -2219,7 +2220,7 @@ export function ScriptureTable(props: IProps) {
   };
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+    <FillColumn>
       {isMobile ? (
         <>
           <PlanBar
@@ -2424,7 +2425,7 @@ export function ScriptureTable(props: IProps) {
           noResponse={onPublishingReject}
         />
       )}
-    </Box>
+    </FillColumn>
   );
 }
 

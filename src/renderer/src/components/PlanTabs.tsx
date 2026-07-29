@@ -25,9 +25,8 @@ import {
   useSectionCounts,
   useShowAssignment,
 } from '../crud';
-import { HeadHeight } from '../layout';
 import { useMobile } from '../utils';
-import { TabHeight } from '../control';
+import { FillColumn } from '../control';
 import { useOrbitData } from '../hoc/useOrbitData';
 import { shallowEqual, useSelector } from 'react-redux';
 import { planTabsSelector } from '../selector';
@@ -106,24 +105,14 @@ const ScrollableTabsButtonAuto = (props: IProps) => {
   return isMobile && tab === PlanTabEnum.sectionPassage ? (
     <ScriptureTable {...props} colNames={colNames} />
   ) : (
-    <Box
+    <FillColumn
       sx={{
-        flexGrow: 1,
-        width: '100%',
+        overflow: 'hidden',
         backgroundColor: 'background.paper',
-        flexDirection: 'column',
+        flexGrow: 1,
       }}
     >
-      <AppBar
-        position="fixed"
-        color="default"
-        sx={{
-          top: `${HeadHeight}px`,
-          height: `${TabHeight}px`,
-          left: 0,
-          width: '100%',
-        }}
-      >
+      <AppBar position="static" color="default" sx={{ flexShrink: 0 }}>
         {isMobile ? (
           <Box>
             <PlanTabSelect />
@@ -192,7 +181,7 @@ const ScrollableTabsButtonAuto = (props: IProps) => {
           </Tabs>
         )}
       </AppBar>
-      <Box sx={{ pt: `${TabHeight}px` }}>
+      <FillColumn flex sx={{ overflow: 'hidden' }}>
         {tab === PlanTabEnum.sectionPassage && (
           <ScriptureTable {...props} colNames={colNames} />
         )}
@@ -207,8 +196,8 @@ const ScrollableTabsButtonAuto = (props: IProps) => {
             planColumn={true}
           />
         )}
-      </Box>
-    </Box>
+      </FillColumn>
+    </FillColumn>
   );
 };
 
