@@ -92,6 +92,10 @@ import { PassageTypeEnum } from '../../../model/passageType';
 import { VertListDnd } from '../../../hoc/VertListDnd';
 import usePassageDetailContext from '../../../context/usePassageDetailContext';
 import { LaunchLink } from '../../../control/LaunchLink';
+import {
+  getProjectResourceAssignments,
+  removeUnselectedProjectResourceAssignments,
+} from './projectResourceAssignments';
 import FindTabs from './FindTabs';
 import { storedCompareKey } from '../../../utils/storedCompareKey';
 import { mediaContentType } from '../../../utils/contentType';
@@ -384,12 +388,22 @@ export function PassageDetailArtifacts() {
     const mf = mediafiles.find((m) => m.id === related(secRes, 'mediafile')) as
       | MediaFileD
       | undefined;
+    const sourceMedia = mediafiles.find(
+      (m) => m.id === related(mf, 'sourceMedia')
+    );
+    const projectMedia =
+      mf && related(mf, 'artifactType') === projResourceType
+        ? mf
+        : sourceMedia &&
+            related(sourceMedia, 'artifactType') === projResourceType
+          ? sourceMedia
+          : undefined;
     // General (project) resources are reconfigured through the wizard, not the
     // simple edit dialog (mockup: "use Edit to also configure the General Resource").
-    if (mf && related(mf, 'artifactType') === projResourceType) {
+    if (projectMedia) {
       resourceTypeRef.current = ResourceTypeEnum.projectResource;
       isAddingAudioResourceRef.current = false;
-      handleSelectProjectResource(mf);
+      handleSelectProjectResource(projectMedia);
       return;
     }
     setEditResource(secRes);
@@ -768,6 +782,13 @@ export function PassageDetailArtifacts() {
       cnt += 1;
       setComplete(Math.min((cnt * 100) / total, 100));
     }
+    await removeUnselectedProjectResourceAssignments({
+      memory,
+      sourceMedia: projMediaRef.current,
+      selectedItems: items,
+      mediafiles,
+      sectionResources,
+    });
     // Ensure setComplete(0) is always called after processing
     setComplete(0);
   };
@@ -1045,12 +1066,17 @@ export function PassageDetailArtifacts() {
         isOpen={projResPassageVisible}
         onOpen={handleProjResPassageVisible}
         disableBackdropClose
+        showTopCloseButton={false}
       >
         {projResPassageVisible ? (
           <SelectSections
-            title={mediaFileName(projMediaRef.current) ?? ''}
-            visual={visual}
+            initialItems={getProjectResourceAssignments(
+              projMediaRef.current,
+              mediafiles,
+              sectionResources
+            )}
             onSelect={handleSelectProjectResourcePassage}
+            onCancel={() => handleProjResPassageVisible(false)}
           />
         ) : (
           <></>

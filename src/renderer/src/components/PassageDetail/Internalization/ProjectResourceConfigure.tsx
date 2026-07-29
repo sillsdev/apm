@@ -48,6 +48,7 @@ import {
 import { RecordIdentity, RecordTransformBuilder } from '@orbit/records';
 import { useOrbitData } from '../../../hoc/useOrbitData';
 import Confirm from '../../AlertDialog';
+import { removeUnselectedProjectResourceAssignments } from './projectResourceAssignments';
 
 const NotTable = 420;
 
@@ -267,6 +268,13 @@ export const ProjectResourceConfigure = (props: IProps) => {
           }
           setComplete(Math.min((ix * 100) / total, 100));
         }
+        await removeUnselectedProjectResourceAssignments({
+          memory,
+          sourceMedia: media,
+          selectedItems: items,
+          mediafiles,
+          sectionResources,
+        });
         projectSegmentSave({
           media,
           segments: updateSegments(
