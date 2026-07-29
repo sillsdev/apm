@@ -5680,6 +5680,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="passageDetailArtifacts.confirmCloseTitle">
+         <segment>
+            <source>Confirm Close</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="passageDetailArtifacts.createResources">
          <segment>
             <source>Create Resources</source>

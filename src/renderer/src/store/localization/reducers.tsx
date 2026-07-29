@@ -1166,6 +1166,7 @@ const initialState = {
 			"completed": "Completed",
 			"configure": "Configure General",
 			"confirmClose": "Do you want to close this dialog? Your changes will be discarded.",
+			"confirmCloseTitle": "Confirm Close",
 			"createResources": "Create Resources",
 			"currentResource": "Current {0}",
 			"deleteConfirm": "Delete Resource?",

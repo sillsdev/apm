@@ -1107,6 +1107,7 @@ export interface IPassageDetailArtifactsStrings extends Localize.LocalizedString
     "completed": string;
     "configure": string;
     "confirmClose": string;
+    "confirmCloseTitle": string;
     "createResources": string;
     "currentResource": string;
     "deleteConfirm": string;

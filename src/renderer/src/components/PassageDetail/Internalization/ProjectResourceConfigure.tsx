@@ -598,12 +598,12 @@ export const ProjectResourceConfigure = (props: IProps) => {
       </ActionRow>
       {showConfirmClose && (
         <Confirm
+          title={t.confirmCloseTitle}
           text={t.confirmClose}
           no={t.keepOpen}
           yes={t.discardAndClose}
           noResponse={() => setShowConfirmClose(false)}
           yesResponse={handleDiscardClose}
-          noOnLeft
         />
       )}
     </Box>
