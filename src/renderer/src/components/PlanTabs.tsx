@@ -12,7 +12,7 @@ import {
   levGenColNames,
   MediaFileD,
 } from '../model';
-import { AppBar, Tabs, Tab, Box } from '@mui/material';
+import { Tabs, Tab, Box } from '@mui/material';
 import ScriptureTable from './Sheet/ScriptureTable';
 import AudioTab from '../components/AudioTab/AudioTab';
 import AssignmentTable from './AssignmentTable';
@@ -25,16 +25,13 @@ import {
   useSectionCounts,
   useShowAssignment,
 } from '../crud';
-import { HeadHeight } from '../layout';
 import { useMobile } from '../utils';
-import { TabHeight } from '../control';
 import { useOrbitData } from '../hoc/useOrbitData';
 import { shallowEqual, useSelector } from 'react-redux';
 import { planTabsSelector } from '../selector';
 import { PlanTabEnum } from './PlanTabsEnum';
 import { grey } from '@mui/material/colors';
-import { PlanTabSelect } from './Sheet/PlanTabSelect';
-import PlanScreenLayout from './PlanScreenLayout';
+import ContentLayout from './App/ContentLayout';
 
 interface IProps {
   checkSaved: (method: () => void) => void;
@@ -107,16 +104,14 @@ const ScrollableTabsButtonAuto = (props: IProps) => {
   return isMobile && tab === PlanTabEnum.sectionPassage ? (
     <ScriptureTable {...props} colNames={colNames} />
   ) : (
-    <PlanScreenLayout
+    <ContentLayout
       header={
-        <AppBar
-          position="fixed"
-          color="default"
+        <Box
           sx={{
-            top: `${HeadHeight}px`,
-            height: `${TabHeight}px`,
-            left: 0,
             width: '100%',
+            display: 'flex',
+            justifyContent: 'center',
+            backgroundColor: 'custom.headerBackground',
           }}
         >
           <Tabs
@@ -180,10 +175,12 @@ const ScrollableTabsButtonAuto = (props: IProps) => {
               }
             />
           </Tabs>
-        </AppBar>
+        </Box>
       }
     >
-      <Box sx={{ pt: `${TabHeight}px` }}>
+      <Box
+        sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}
+      >
         {tab === PlanTabEnum.sectionPassage && (
           <ScriptureTable {...props} colNames={colNames} />
         )}
@@ -199,7 +196,7 @@ const ScrollableTabsButtonAuto = (props: IProps) => {
           />
         )}
       </Box>
-    </PlanScreenLayout>
+    </ContentLayout>
   );
 };
 
