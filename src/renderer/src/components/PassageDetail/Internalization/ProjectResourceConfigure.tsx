@@ -262,13 +262,17 @@ export const ProjectResourceConfigure = (props: IProps) => {
           }
           setComplete(Math.min((ix * 100) / total, 100));
         }
-        await removeUnselectedProjectResourceAssignments({
-          memory,
-          sourceMedia: media,
-          selectedItems: items,
-          mediafiles,
-          sectionResources,
-        });
+        // A cancelled save never wrote the new assignments, so leave the
+        // existing ones alone rather than deleting the unselected ones.
+        if (!canceling.current) {
+          await removeUnselectedProjectResourceAssignments({
+            memory,
+            sourceMedia: media,
+            selectedItems: items,
+            mediafiles,
+            sectionResources,
+          });
+        }
         projectSegmentSave({
           media,
           segments: updateSegments(
