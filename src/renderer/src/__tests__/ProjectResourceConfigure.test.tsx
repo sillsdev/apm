@@ -382,6 +382,10 @@ describe('ProjectResourceConfigure', () => {
     runTest(props);
     const sheetElement = screen.getByTestId('proj-res-sheet');
     expect(sheetElement).toBeInTheDocument();
+    expect(sheetElement.querySelector('table')).toHaveAttribute(
+      'variant',
+      'striped'
+    );
     const tbody = sheetElement.querySelector('tbody');
     expect(tbody).toBeEmptyDOMElement();
   });

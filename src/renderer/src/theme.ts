@@ -11,6 +11,15 @@ declare module '@mui/material/IconButton' {
   }
 }
 
+// MUI Table also has no `variant` prop. As with IconButton above, Table includes
+// arbitrary props in ownerState, allowing the MuiTable variant matcher to use
+// this value. It is also forwarded to the underlying <table>.
+declare module '@mui/material/Table' {
+  interface TableOwnProps {
+    variant?: 'striped';
+  }
+}
+
 declare module '@mui/material/styles' {
   interface Palette {
     custom: {
@@ -82,6 +91,18 @@ export const createAppTheme = (lang: string) =>
               boxShadow: 'none',
             },
           },
+        },
+        MuiTable: {
+          variants: [
+            {
+              props: { variant: 'striped' },
+              style: ({ theme }) => ({
+                '& > tbody > tr:nth-of-type(even)': {
+                  backgroundColor: theme.palette.action.hover,
+                },
+              }),
+            },
+          ],
         },
         MuiIconButton: {
           variants: [

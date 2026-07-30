@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useGlobal } from '../../../context/useGlobal';
 import { useSelector, shallowEqual } from 'react-redux';
 import { passageDetailArtifactsSelector } from '../../../selector';
@@ -18,12 +18,15 @@ import {
   Paper,
   PaperProps,
   styled,
+  Table,
+  TableBody,
+  TableCell,
+  TableRow,
 } from '@mui/material';
 import { findRecord, useOrganizedBy, usePlanType } from '../../../crud';
 import { sharedSelector } from '../../../selector';
 import { RecordIdentity } from '@orbit/records';
 import { useOrbitData } from '../../../hoc/useOrbitData';
-import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import DoneAllIcon from '@mui/icons-material/DoneAll';
 import {
   ActionRow,
@@ -83,8 +86,6 @@ export function SelectSections(props: IProps) {
     });
   };
   const planType = usePlanType();
-  const boxRef = useRef<HTMLDivElement>(null);
-  const [tableHeight, setTableHeight] = useState<number>(300);
 
   useEffect(() => {
     setDimensions();
@@ -119,11 +120,6 @@ export function SelectSections(props: IProps) {
         organizedBy: getOrganizedBy(true),
       })
     );
-    if (boxRef.current) {
-      const height =
-        boxRef.current.parentNode?.parentNode?.parentElement?.clientHeight;
-      setTableHeight((height ?? 300) - 250);
-    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [plan, passages, sections, allBookData, isFlat]);
 
@@ -181,62 +177,9 @@ export function SelectSections(props: IProps) {
     onSelect?.(results);
   };
 
-  const columns: GridColDef<IRow>[] = [
-    {
-      field: 'selected',
-      headerName: '',
-      width: 52,
-      sortable: false,
-      filterable: false,
-      disableColumnMenu: true,
-      display: 'flex',
-      align: 'center',
-      cellClassName: 'select-cell',
-      renderCell: ({ row }) => {
-        if (row.kind === 'section') {
-          const isSelected = selected.has(`section:${row.recId}`);
-          return (
-            <IconButton
-              aria-label={`Select all passages in ${row.name}`}
-              aria-pressed={isSelected}
-              onClick={() => toggleSection(row.recId)}
-              size="small"
-              sx={{ p: 0.5, color: 'text.primary' }}
-            >
-              <DoneAllIcon fontSize="small" />
-            </IconButton>
-          );
-        }
-        return (
-          <Checkbox
-            aria-label={row.name}
-            checked={selected.has(`passage:${row.recId}`)}
-            onChange={() => togglePassage(row.recId, row.parentId)}
-            size="small"
-            sx={{
-              p: 0.5,
-              color: 'text.primary',
-              '&.Mui-checked': { color: 'text.primary' },
-            }}
-          />
-        );
-      },
-    },
-    {
-      field: 'name',
-      headerName: '',
-      flex: 1,
-      minWidth: 240,
-      sortable: false,
-      cellClassName: ({ row }) =>
-        row.kind === 'passage' ? 'passage-row' : '',
-    },
-  ];
-
   return (
     <Box
       id="SelectSections"
-      ref={boxRef}
       sx={{ pt: 2, display: 'flex', flexDirection: 'column', height: '100%' }}
     >
       <StyledPaper
@@ -244,31 +187,57 @@ export function SelectSections(props: IProps) {
         style={heightStyle}
         sx={{ flex: 1, minHeight: 0 }}
       >
-        <DataGrid
-          columns={columns}
-          rows={data}
-          disableColumnResize
-          disableRowSelectionOnClick
-          hideFooter
-          columnHeaderHeight={0}
-          rowHeight={40}
-          getRowClassName={({ indexRelativeToCurrentPage }) =>
-            indexRelativeToCurrentPage % 2 === 0 ? 'even-row' : 'odd-row'
-          }
-          sx={{
-            border: 0,
-            maxHeight: tableHeight,
-            '& .MuiDataGrid-cell': { borderBottom: 0 },
-            '& .select-cell': {
-              px: 0.5,
-              borderRight: 1,
-              borderColor: 'divider',
-            },
-            '& .even-row': { backgroundColor: 'background.paper' },
-            '& .odd-row': { backgroundColor: 'action.hover' },
-            '& .passage-row': { pl: 1 },
-          }}
-        />
+        <Table size="small" variant="striped" sx={{ tableLayout: 'fixed' }}>
+          <TableBody>
+            {data.map((row) => (
+              <TableRow key={row.id} sx={{ height: 40 }}>
+                <TableCell
+                  align="center"
+                  sx={{
+                    width: 52,
+                    p: 0.5,
+                    borderRight: 1,
+                    borderBottom: 0,
+                    borderColor: 'divider',
+                  }}
+                >
+                  {row.kind === 'section' ? (
+                    <IconButton
+                      aria-label={`Select all passages in ${row.name}`}
+                      aria-pressed={selected.has(`section:${row.recId}`)}
+                      onClick={() => toggleSection(row.recId)}
+                      size="small"
+                      sx={{ p: 0.5, color: 'text.primary' }}
+                    >
+                      <DoneAllIcon fontSize="small" />
+                    </IconButton>
+                  ) : (
+                    <Checkbox
+                      aria-label={row.name}
+                      checked={selected.has(`passage:${row.recId}`)}
+                      onChange={() => togglePassage(row.recId, row.parentId)}
+                      size="small"
+                      sx={{
+                        p: 0.5,
+                        color: 'text.primary',
+                        '&.Mui-checked': { color: 'text.primary' },
+                      }}
+                    />
+                  )}
+                </TableCell>
+                <TableCell
+                  sx={{
+                    minWidth: 240,
+                    pl: row.kind === 'passage' ? 2 : 1,
+                    borderBottom: 0,
+                  }}
+                >
+                  {row.name}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       </StyledPaper>
       <ActionRow>
         <GrowingSpacer />

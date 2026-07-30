@@ -1,4 +1,11 @@
-import { useState, useEffect, useRef, useContext, ChangeEvent } from 'react';
+import {
+  useState,
+  useEffect,
+  useRef,
+  useContext,
+  ChangeEvent,
+  ReactNode,
+} from 'react';
 import { useGlobal } from '../../../context/useGlobal';
 import {
   Section,
@@ -14,6 +21,8 @@ import {
   Paper,
   PaperProps,
   Stack,
+  Table,
+  TableBody,
   TextField,
   debounce,
   styled,
@@ -65,37 +74,56 @@ const StyledPaper = styled(Paper)<PaperProps>(({ theme }) => ({
   flexDirection: 'column',
 }));
 
-const StyledTable = styled('div')(({ theme }) => ({
-  padding: theme.spacing(2),
-  '& .data-grid .cell': {
-    height: '48px',
-  },
-  '& .cTitle': {
-    fontWeight: 'bold',
-  },
-  '& .lim': {
-    verticalAlign: 'inherit !important',
-    '& .value-viewer': {
-      textAlign: 'center',
-    },
-  },
-  '& .ref': {
-    verticalAlign: 'inherit !important',
-  },
-  '& .des': {
-    verticalAlign: 'inherit !important',
-    '& .value-viewer': {
-      textAlign: 'left',
-    },
-  },
-}));
-
 interface ICell {
   value: any;
   readOnly?: boolean;
   width?: number;
   className?: string;
 }
+
+interface ISheetRendererProps {
+  className: string;
+  children: ReactNode;
+}
+
+const ProjectResourceTable = ({
+  className,
+  children,
+}: ISheetRendererProps) => (
+  <Table
+    className={className}
+    variant="striped"
+    sx={{
+      width: 'auto',
+      '& .cell': {
+        height: 48,
+      },
+      '& > tbody > tr:not(:first-of-type) > .cell.read-only': {
+        backgroundColor: 'transparent',
+      },
+      '& .cTitle': {
+        fontWeight: 'bold',
+      },
+      '& .lim': {
+        verticalAlign: 'inherit !important',
+        '& .value-viewer': {
+          textAlign: 'center',
+        },
+      },
+      '& .ref': {
+        verticalAlign: 'inherit !important',
+      },
+      '& .des': {
+        verticalAlign: 'inherit !important',
+        '& .value-viewer': {
+          textAlign: 'left',
+        },
+      },
+    }}
+  >
+    <TableBody>{children}</TableBody>
+  </Table>
+);
 
 interface ICellChange {
   cell: any;
@@ -557,24 +585,28 @@ export const ProjectResourceConfigure = (props: IProps) => {
         suggestedSegments={pastedSegments}
       />
       <StyledPaper id="proj-res-sheet" style={heightStyle}>
-        <StyledTable id="proj-res-sheet">
-          <Stack direction="row" spacing={1} data-testid="proj-res-sheet">
-            <DataSheet
-              data={data}
-              valueRenderer={handleValueRenderer}
-              onCellsChanged={handleCellsChanged}
-              parsePaste={handleParsePaste}
+        <Stack
+          direction="row"
+          spacing={1}
+          data-testid="proj-res-sheet"
+          sx={{ p: 2 }}
+        >
+          <DataSheet
+            data={data}
+            valueRenderer={handleValueRenderer}
+            onCellsChanged={handleCellsChanged}
+            parsePaste={handleParsePaste}
+            sheetRenderer={ProjectResourceTable}
+          />
+          <LightTooltip title={t.suffixTip}>
+            <TextField
+              label={t.suffix}
+              variant="outlined"
+              value={suffix}
+              onChange={handleSuffix}
             />
-            <LightTooltip title={t.suffixTip}>
-              <TextField
-                label={t.suffix}
-                variant="outlined"
-                value={suffix}
-                onChange={handleSuffix}
-              />
-            </LightTooltip>
-          </Stack>
-        </StyledTable>
+          </LightTooltip>
+        </Stack>
       </StyledPaper>
       <ActionRow>
         <AltButton
