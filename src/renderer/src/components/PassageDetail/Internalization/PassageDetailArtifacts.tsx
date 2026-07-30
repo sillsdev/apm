@@ -36,7 +36,6 @@ import {
   useArtifactCategory,
   IArtifactCategory,
   ArtifactCategoryType,
-  mediaFileName,
   usePlanType,
   usePlan,
 } from '../../../crud';
@@ -1108,6 +1107,7 @@ export function PassageDetailArtifacts() {
               sectionResources,
               resourceType
             )}
+            visual={visual}
             onSelect={handleSelectProjectResourcePassage}
             onCancel={() => handleProjResPassageVisible(false)}
           />
