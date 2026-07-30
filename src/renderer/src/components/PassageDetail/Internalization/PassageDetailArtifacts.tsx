@@ -74,6 +74,7 @@ import {
   removeExtension,
   isVisual,
   isUrl,
+  useMobile,
 } from '../../../utils';
 import { useOrbitData } from '../../../hoc/useOrbitData';
 import {
@@ -859,6 +860,7 @@ export function PassageDetailArtifacts() {
   };
 
   const [hasProjRes, setHasProjRes] = useState(false);
+  const { isMobileWidth } = useMobile();
 
   useEffect(() => {
     getProjectResources().then((res) => setHasProjRes(res.length > 0));
@@ -896,7 +898,7 @@ export function PassageDetailArtifacts() {
               <Grid>
                 <AddResource action={handleAction} />
               </Grid>
-              {hasProjRes && (
+              {hasProjRes && !isMobileWidth && (
                 <Grid>
                   <AltButton onClick={() => setProjectResourceVisible(true)}>
                     {t.configure}
