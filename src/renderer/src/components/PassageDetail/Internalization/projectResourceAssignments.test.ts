@@ -16,7 +16,11 @@ const source = {
   relationships: {},
 } as MediaFileD;
 
-const passageMedia = (id: string, passageId: string) =>
+const passageMedia = (
+  id: string,
+  passageId: string,
+  artifactTypeId = 'resource-type'
+) =>
   ({
     type: 'mediafile',
     id,
@@ -24,6 +28,7 @@ const passageMedia = (id: string, passageId: string) =>
     relationships: {
       sourceMedia: relationship('mediafile', source.id),
       passage: relationship('passage', passageId),
+      artifactType: relationship('artifacttype', artifactTypeId),
     },
   }) as MediaFileD;
 
@@ -88,5 +93,36 @@ describe('project resource assignments', () => {
     expect(removeRecord).toHaveBeenCalledTimes(2);
     expect(removeRecord).toHaveBeenCalledWith(removedResource);
     expect(removeRecord).toHaveBeenCalledWith(removed);
+  });
+
+  it('leaves media derived for another artifact type alone', async () => {
+    const backTranslation = passageMedia(
+      'back-translation',
+      'passage-2',
+      'back-translation-type'
+    );
+    const removeRecord = jest.fn((record) => ({ op: 'removeRecord', record }));
+    const memory = {
+      update: jest.fn(async (callback) => callback({ removeRecord })),
+    } as unknown as Memory;
+
+    await removeUnselectedProjectResourceAssignments({
+      memory,
+      sourceMedia: source,
+      selectedItems: [],
+      mediafiles: [source, backTranslation],
+      sectionResources: [],
+      resourceTypeId: 'resource-type',
+    });
+
+    expect(removeRecord).not.toHaveBeenCalled();
+    expect(
+      getProjectResourceAssignments(
+        source,
+        [source, backTranslation],
+        [],
+        'resource-type'
+      )
+    ).toEqual([]);
   });
 });

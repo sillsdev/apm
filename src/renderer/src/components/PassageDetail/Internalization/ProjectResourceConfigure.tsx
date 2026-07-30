@@ -102,12 +102,14 @@ interface IProps {
   width: number;
   media: MediaFileD | undefined;
   items: RecordIdentity[];
+  /** Artifact type id of a derived resource copy (`resource` slug). */
+  resourceTypeId?: string | null;
   onOpen?: (open: boolean) => void;
   bookData?: BookName[];
 }
 
 export const ProjectResourceConfigure = (props: IProps) => {
-  const { width, media, items, onOpen } = props;
+  const { width, media, items, resourceTypeId, onOpen } = props;
   const mediafiles = useOrbitData<MediaFileD[]>('mediafile');
   const sectionResources = useOrbitData<SectionResource[]>('sectionresource');
   const [memory] = useGlobal('memory');
@@ -271,6 +273,7 @@ export const ProjectResourceConfigure = (props: IProps) => {
             selectedItems: items,
             mediafiles,
             sectionResources,
+            resourceTypeId,
           });
         }
         projectSegmentSave({

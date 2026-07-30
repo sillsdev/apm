@@ -13,6 +13,25 @@ const identityKey = (identity: RecordIdentity) =>
   `${identity.type}:${identity.id}`;
 
 /**
+ * Copies of a general resource made for a passage/section.
+ *
+ * `sourceMedia` alone is not enough: back translations, consultant check
+ * recordings and offline copies also point at their source through it, so the
+ * artifact type of the derived copy (`resource`, see `useProjectResourceSave`)
+ * must match as well when the caller knows it.
+ */
+const derivedResourceMedia = (
+  sourceMedia: MediaFile,
+  mediafiles: MediaFile[],
+  resourceTypeId?: string | null
+) =>
+  mediafiles.filter(
+    (media) =>
+      related(media, 'sourceMedia') === sourceMedia.id &&
+      (!resourceTypeId || related(media, 'artifactType') === resourceTypeId)
+  );
+
+/**
  * Resolves which passages/sections a project-resource media file is already
  * assigned to.
  *
@@ -26,13 +45,13 @@ const identityKey = (identity: RecordIdentity) =>
 export const getProjectResourceAssignments = (
   sourceMedia: MediaFile | undefined,
   mediafiles: MediaFile[],
-  sectionResources: SectionResource[]
+  sectionResources: SectionResource[],
+  resourceTypeId?: string | null
 ) => {
   if (!sourceMedia) return [];
 
-  return mediafiles
-    .filter((media) => related(media, 'sourceMedia') === sourceMedia.id)
-    .flatMap((media) => {
+  return derivedResourceMedia(sourceMedia, mediafiles, resourceTypeId).flatMap(
+    (media) => {
       const passageId = related(media, 'passage');
       if (passageId) return [{ type: 'passage', id: passageId }];
 
@@ -41,7 +60,8 @@ export const getProjectResourceAssignments = (
       );
       const sectionId = related(sectionResource, 'section');
       return sectionId ? [{ type: 'section', id: sectionId }] : [];
-    }) as RecordIdentity[];
+    }
+  ) as RecordIdentity[];
 };
 
 interface RemoveAssignmentsProps {
@@ -50,6 +70,8 @@ interface RemoveAssignmentsProps {
   selectedItems: RecordIdentity[];
   mediafiles: MediaFile[];
   sectionResources: SectionResource[];
+  /** Artifact type id of a derived resource copy (`resource` slug). */
+  resourceTypeId?: string | null;
 }
 
 /**
@@ -66,12 +88,15 @@ export const removeUnselectedProjectResourceAssignments = async ({
   selectedItems,
   mediafiles,
   sectionResources,
+  resourceTypeId,
 }: RemoveAssignmentsProps) => {
   if (!sourceMedia) return;
 
   const selected = new Set(selectedItems.map(identityKey));
-  const derivedMedia = mediafiles.filter(
-    (media) => related(media, 'sourceMedia') === sourceMedia.id
+  const derivedMedia = derivedResourceMedia(
+    sourceMedia,
+    mediafiles,
+    resourceTypeId
   );
   const records: Array<MediaFileD | SectionResourceD> = [];
   derivedMedia.forEach((media) => {

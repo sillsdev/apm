@@ -803,6 +803,7 @@ export function PassageDetailArtifacts() {
       selectedItems: items,
       mediafiles,
       sectionResources,
+      resourceTypeId: resourceType,
     });
     // Ensure setComplete(0) is always called after processing
     setComplete(0);
@@ -1097,7 +1098,8 @@ export function PassageDetailArtifacts() {
             initialItems={getProjectResourceAssignments(
               projMediaRef.current,
               mediafiles,
-              sectionResources
+              sectionResources,
+              resourceType
             )}
             onSelect={handleSelectProjectResourcePassage}
             onCancel={() => handleProjResPassageVisible(false)}
@@ -1118,6 +1120,7 @@ export function PassageDetailArtifacts() {
             width={800}
             media={projMediaRef.current}
             items={projIdentRef.current}
+            resourceTypeId={resourceType}
             onOpen={handleProjResWizVisible}
           />
         ) : (
