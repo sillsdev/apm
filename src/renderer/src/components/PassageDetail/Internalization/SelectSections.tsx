@@ -134,45 +134,58 @@ export function SelectSections(props: IProps) {
     );
   }, [initialSelectionKey]);
 
+  /** `passage:<id>` keys of each section's passage rows, by section id. */
+  const passageKeysBySection = useMemo(() => {
+    const keys = new Map<string, string[]>();
+    data.forEach((row) => {
+      if (row.kind !== 'passage') return;
+      const sectionKeys = keys.get(row.parentId) ?? [];
+      sectionKeys.push(`passage:${row.recId}`);
+      keys.set(row.parentId, sectionKeys);
+    });
+    return keys;
+  }, [data]);
+
+  /**
+   * A section's own selection is independent of its passages: this button bulk
+   * toggles the passage rows (its label says so), and only stands in for the
+   * section itself when there are no passage rows (flat plans, TT-6936).
+   * A section-level assignment coming from `initialItems` is left alone so that
+   * ticking passages cannot silently delete it.
+   */
   const toggleSection = (sectionId: string) => {
     setSelected((current) => {
       const next = new Set(current);
-      const sectionKey = `section:${sectionId}`;
-      const passageKeys = data
-        .filter((row) => row.parentId === sectionId)
-        .map((row) => `passage:${row.recId}`);
-      if (next.has(sectionKey)) {
-        next.delete(sectionKey);
-        passageKeys.forEach((key) => next.delete(key));
-      } else {
-        next.add(sectionKey);
-        passageKeys.forEach((key) => next.add(key));
+      const passageKeys = passageKeysBySection.get(sectionId) ?? [];
+      if (passageKeys.length === 0) {
+        const sectionKey = `section:${sectionId}`;
+        if (next.has(sectionKey)) next.delete(sectionKey);
+        else next.add(sectionKey);
+        return next;
       }
+      const allSelected = passageKeys.every((key) => next.has(key));
+      passageKeys.forEach((key) =>
+        allSelected ? next.delete(key) : next.add(key)
+      );
       return next;
     });
   };
 
-  const togglePassage = (passageId: string, sectionId: string) => {
+  const togglePassage = (passageId: string) => {
     setSelected((current) => {
       const next = new Set(current);
       const passageKey = `passage:${passageId}`;
       if (next.has(passageKey)) next.delete(passageKey);
       else next.add(passageKey);
-
-      const passageKeys = data
-        .filter((row) => row.parentId === sectionId)
-        .map((row) => `passage:${row.recId}`);
-      const sectionKey = `section:${sectionId}`;
-      if (
-        passageKeys.length > 0 &&
-        passageKeys.every((key) => next.has(key))
-      ) {
-        next.add(sectionKey);
-      } else {
-        next.delete(sectionKey);
-      }
       return next;
     });
+  };
+
+  const isSectionSelected = (sectionId: string) => {
+    const passageKeys = passageKeysBySection.get(sectionId) ?? [];
+    return passageKeys.length === 0
+      ? selected.has(`section:${sectionId}`)
+      : passageKeys.every((key) => selected.has(key));
   };
 
   const handleSelected = () => {
@@ -195,7 +208,7 @@ export function SelectSections(props: IProps) {
       cellClassName: 'select-cell',
       renderCell: ({ row }) => {
         if (row.kind === 'section') {
-          const isSelected = selected.has(`section:${row.recId}`);
+          const isSelected = isSectionSelected(row.recId);
           return (
             <IconButton
               aria-label={`Select all passages in ${row.name}`}
@@ -212,7 +225,7 @@ export function SelectSections(props: IProps) {
           <Checkbox
             aria-label={row.name}
             checked={selected.has(`passage:${row.recId}`)}
-            onChange={() => togglePassage(row.recId, row.parentId)}
+            onChange={() => togglePassage(row.recId)}
             size="small"
             sx={{
               p: 0.5,
