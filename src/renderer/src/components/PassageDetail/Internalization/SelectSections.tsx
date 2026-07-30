@@ -226,7 +226,10 @@ export function SelectSections(props: IProps) {
               aria-pressed={isSelected}
               onClick={() => toggleSection(row.recId)}
               size="small"
-              sx={{ p: 0.5, color: 'text.primary' }}
+              sx={{
+                p: 0.5,
+                color: isSelected ? 'primary.main' : 'text.primary',
+              }}
             >
               <DoneAllIcon fontSize="small" />
             </IconButton>
