@@ -1207,6 +1207,7 @@ const initialState = {
 			"resource": "Resource",
 			"resources": "Resources",
 			"resourcesDeleted": " ({0} resources will be deleted.)",
+			"selectAllPassages": "Select all passages in {0}",
 			"selectBook": "Select Book",
 			"selectOne": "Only the first selected note is used",
 			"selectPassagesSub": "Select this resource's passages.",

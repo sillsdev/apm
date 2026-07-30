@@ -6913,6 +6913,13 @@
       			<context context-type="sourcefile">AddResource.tsx</context>
       		</context-group>
       	</trans-unit>
+      	<trans-unit id="passageDetailArtifacts.selectAllPassages">
+      		<source>Select all passages in {0}</source>
+      		<target/>
+      		<context-group>
+      			<context context-type="sourcefile">SelectSections.tsx</context>
+      		</context-group>
+      	</trans-unit>
       	<trans-unit id="passageDetailArtifacts.selectBook">
       		<source>Select Book</source>
       		<target/>

@@ -219,7 +219,7 @@ export function SelectSections(props: IProps) {
           const isSelected = isSectionSelected(row.recId);
           return (
             <IconButton
-              aria-label={`Select all passages in ${row.name}`}
+              aria-label={ta.selectAllPassages.replace('{0}', row.name)}
               aria-pressed={isSelected}
               onClick={() => toggleSection(row.recId)}
               size="small"
