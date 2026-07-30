@@ -51,7 +51,11 @@ type IRow = SelectSectionRow;
 
 interface IProps {
   initialItems?: RecordIdentity[];
-  onSelect?: (items: RecordIdentity[]) => void;
+  /**
+   * `candidates` is every identity offered by the dialog; the caller needs it to
+   * limit cleanup of unselected assignments to what the user could actually see.
+   */
+  onSelect?: (items: RecordIdentity[], candidates: RecordIdentity[]) => void;
   onCancel?: () => void;
 }
 
@@ -189,10 +193,17 @@ export function SelectSections(props: IProps) {
   };
 
   const handleSelected = () => {
-    const results = data
-      .filter((row) => selected.has(`${row.kind}:${row.recId}`))
-      .map((row) => ({ type: row.kind, id: row.recId })) as RecordIdentity[];
-    onSelect?.(results);
+    const identities = (rows: IRow[]) =>
+      rows.map((row) => ({
+        type: row.kind,
+        id: row.recId,
+      })) as RecordIdentity[];
+    onSelect?.(
+      identities(
+        data.filter((row) => selected.has(`${row.kind}:${row.recId}`))
+      ),
+      identities(data)
+    );
   };
 
   const columns: GridColDef<IRow>[] = [

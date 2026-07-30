@@ -72,6 +72,13 @@ interface RemoveAssignmentsProps {
   sectionResources: SectionResource[];
   /** Artifact type id of a derived resource copy (`resource` slug). */
   resourceTypeId?: string | null;
+  /**
+   * Every identity the selection dialog offered. Assignments outside this set
+   * were never shown to the user (another plan, a passage type the dialog
+   * filters out, passages in a flat plan) so they must not be deleted.
+   * Omit to consider every derived copy a candidate.
+   */
+  candidateItems?: RecordIdentity[];
 }
 
 /**
@@ -79,8 +86,9 @@ interface RemoveAssignmentsProps {
  * unchecked.
  *
  * After new selections are saved, any prior derived mediafile for `sourceMedia`
- * whose passage/section is not in `selectedItems` is removed from Orbit memory
- * (SectionResource first when present, then the mediafile).
+ * whose passage/section was offered by the dialog but is not in `selectedItems`
+ * is removed from Orbit memory (SectionResource first when present, then the
+ * mediafile).
  */
 export const removeUnselectedProjectResourceAssignments = async ({
   memory,
@@ -89,10 +97,12 @@ export const removeUnselectedProjectResourceAssignments = async ({
   mediafiles,
   sectionResources,
   resourceTypeId,
+  candidateItems,
 }: RemoveAssignmentsProps) => {
   if (!sourceMedia) return;
 
   const selected = new Set(selectedItems.map(identityKey));
+  const candidates = candidateItems && new Set(candidateItems.map(identityKey));
   const derivedMedia = derivedResourceMedia(
     sourceMedia,
     mediafiles,
@@ -111,7 +121,10 @@ export const removeUnselectedProjectResourceAssignments = async ({
         ? { type: 'section', id: sectionId }
         : undefined;
 
-    if (!assignment || selected.has(identityKey(assignment))) return;
+    if (!assignment) return;
+    const key = identityKey(assignment);
+    if (selected.has(key)) return;
+    if (candidates && !candidates.has(key)) return;
     if (sectionResource) records.push(sectionResource);
     records.push(media as MediaFileD);
   });

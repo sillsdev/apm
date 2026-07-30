@@ -202,6 +202,8 @@ export function PassageDetailArtifacts() {
     ResourceTypeEnum.sectionResource
   );
   const projIdentRef = useRef<RecordIdentity[]>([]);
+  /** Every passage/section the selection dialog offered; scopes cleanup. */
+  const projCandidateRef = useRef<RecordIdentity[]>([]);
   const projMediaRef = useRef<MediaFileD | undefined>(undefined);
   // True when the general-resource wizard was entered by adding a new audio
   // resource ("Add Audio Resource"); false when configuring/editing an existing
@@ -804,6 +806,7 @@ export function PassageDetailArtifacts() {
       mediafiles,
       sectionResources,
       resourceTypeId: resourceType,
+      candidateItems: projCandidateRef.current,
     });
     // Ensure setComplete(0) is always called after processing
     setComplete(0);
@@ -836,8 +839,12 @@ export function PassageDetailArtifacts() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projResSetup]);
 
-  const handleSelectProjectResourcePassage = (items: RecordIdentity[]) => {
+  const handleSelectProjectResourcePassage = (
+    items: RecordIdentity[],
+    candidates: RecordIdentity[]
+  ) => {
     projIdentRef.current = items;
+    projCandidateRef.current = candidates;
     if (isVisual(projMediaRef.current)) {
       writeVisualResource(items).then(() => {
         setProjResPassageVisible(false);
@@ -1120,6 +1127,7 @@ export function PassageDetailArtifacts() {
             width={800}
             media={projMediaRef.current}
             items={projIdentRef.current}
+            candidateItems={projCandidateRef.current}
             resourceTypeId={resourceType}
             onOpen={handleProjResWizVisible}
           />

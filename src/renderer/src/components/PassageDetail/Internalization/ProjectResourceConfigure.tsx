@@ -102,6 +102,8 @@ interface IProps {
   width: number;
   media: MediaFileD | undefined;
   items: RecordIdentity[];
+  /** Passages/sections the selection dialog offered; scopes cleanup. */
+  candidateItems?: RecordIdentity[];
   /** Artifact type id of a derived resource copy (`resource` slug). */
   resourceTypeId?: string | null;
   onOpen?: (open: boolean) => void;
@@ -109,7 +111,7 @@ interface IProps {
 }
 
 export const ProjectResourceConfigure = (props: IProps) => {
-  const { width, media, items, resourceTypeId, onOpen } = props;
+  const { width, media, items, candidateItems, resourceTypeId, onOpen } = props;
   const mediafiles = useOrbitData<MediaFileD[]>('mediafile');
   const sectionResources = useOrbitData<SectionResource[]>('sectionresource');
   const [memory] = useGlobal('memory');
@@ -274,6 +276,7 @@ export const ProjectResourceConfigure = (props: IProps) => {
             mediafiles,
             sectionResources,
             resourceTypeId,
+            candidateItems,
           });
         }
         projectSegmentSave({

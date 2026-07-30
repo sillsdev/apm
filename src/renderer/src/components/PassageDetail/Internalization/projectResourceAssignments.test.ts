@@ -125,4 +125,25 @@ describe('project resource assignments', () => {
       )
     ).toEqual([]);
   });
+
+  it('leaves assignments the dialog never offered alone', async () => {
+    const offered = passageMedia('offered-media', 'passage-1');
+    const notOffered = passageMedia('other-plan-media', 'passage-9');
+    const removeRecord = jest.fn((record) => ({ op: 'removeRecord', record }));
+    const memory = {
+      update: jest.fn(async (callback) => callback({ removeRecord })),
+    } as unknown as Memory;
+
+    await removeUnselectedProjectResourceAssignments({
+      memory,
+      sourceMedia: source,
+      selectedItems: [],
+      mediafiles: [source, offered, notOffered],
+      sectionResources: [],
+      candidateItems: [{ type: 'passage', id: 'passage-1' }],
+    });
+
+    expect(removeRecord).toHaveBeenCalledTimes(1);
+    expect(removeRecord).toHaveBeenCalledWith(offered);
+  });
 });
