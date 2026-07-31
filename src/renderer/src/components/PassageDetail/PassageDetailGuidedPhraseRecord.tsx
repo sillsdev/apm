@@ -1276,6 +1276,7 @@ export function PassageDetailGuidedPhraseRecord({
   ]);
 
   const handleCombineWithNext = useCallback(async () => {
+    if (savingRecording) return;
     if (!canCombineWithNext(currentIndex, clauseRegions, completedIndices)) {
       return;
     }
@@ -1296,6 +1297,7 @@ export function PassageDetailGuidedPhraseRecord({
     currentIndex,
     clauseRegions,
     completedIndices,
+    savingRecording,
     clauseSegString,
     phraseSegParams,
     setClauseSegString,

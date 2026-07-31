@@ -263,7 +263,9 @@ export default function CarefulSpeechControls({
           </PriButton>
           <PriButton
             id={`${controlIdPrefix}-combine`}
-            disabled={!canCombineWithNext || phase === 'recording'}
+            disabled={
+              !canCombineWithNext || phase === 'recording' || savingRecording
+            }
             onClick={onCombineWithNext}
             variant="outlined"
             color="inherit"
