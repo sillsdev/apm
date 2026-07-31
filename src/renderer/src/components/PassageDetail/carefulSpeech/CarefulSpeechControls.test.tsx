@@ -157,6 +157,21 @@ describe('CarefulSpeechControls — Next Clause completion state', () => {
     expect(split?.disabled).toBe(true);
   });
 
+  it('Undo Combine is disabled while the recording upload is in progress', () => {
+    const { container } = render(
+      <CarefulSpeechControls
+        {...baseProps}
+        showUndoCombine
+        savingRecording
+      />
+    );
+    const undo = container.querySelector(
+      '#careful-speech-undo-combine'
+    ) as HTMLButtonElement | null;
+    expect(undo).toBeTruthy();
+    expect(undo?.disabled).toBe(true);
+  });
+
   it('hides Next Clause when sequential unit nav is enabled', () => {
     const { container } = render(
       <CarefulSpeechControls

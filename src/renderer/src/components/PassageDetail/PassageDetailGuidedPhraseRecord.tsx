@@ -1311,6 +1311,7 @@ export function PassageDetailGuidedPhraseRecord({
   ]);
 
   const handleUndoCombine = useCallback(async () => {
+    if (savingRecording) return;
     if (!combineUndo) return;
     setClauseSegString(combineUndo);
     await persistClauseSegments(combineUndo);
@@ -1320,6 +1321,7 @@ export function PassageDetailGuidedPhraseRecord({
     void playCurrentClause(currentIndex);
   }, [
     combineUndo,
+    savingRecording,
     setClauseSegString,
     persistClauseSegments,
     applyColors,

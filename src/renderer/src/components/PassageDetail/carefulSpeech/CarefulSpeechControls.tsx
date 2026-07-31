@@ -278,6 +278,7 @@ export default function CarefulSpeechControls({
               id={`${controlIdPrefix}-undo-combine`}
               aria-label={strings.undo}
               onClick={onUndoCombine}
+              disabled={savingRecording}
               size="small"
             >
               <UndoIcon />
