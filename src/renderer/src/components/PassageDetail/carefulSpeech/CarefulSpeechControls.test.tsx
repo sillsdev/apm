@@ -146,6 +146,17 @@ describe('CarefulSpeechControls — Next Clause completion state', () => {
     expect(combine?.disabled).toBe(true);
   });
 
+  it('Split Clause is disabled while the recording upload is in progress', () => {
+    const { container } = render(
+      <CarefulSpeechControls {...baseProps} canSplitClause savingRecording />
+    );
+    const split = container.querySelector(
+      '#careful-speech-split'
+    ) as HTMLButtonElement | null;
+    expect(split).toBeTruthy();
+    expect(split?.disabled).toBe(true);
+  });
+
   it('hides Next Clause when sequential unit nav is enabled', () => {
     const { container } = render(
       <CarefulSpeechControls

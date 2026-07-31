@@ -1232,6 +1232,7 @@ export function PassageDetailGuidedPhraseRecord({
   ]);
 
   const handleSplitClause = useCallback(async () => {
+    if (savingRecording) return;
     const region = clauseRegions[currentIndex];
     if (!region) return;
     const splitPoint = playerControlsRef.current?.findClauseSplitPoint?.(
@@ -1264,6 +1265,7 @@ export function PassageDetailGuidedPhraseRecord({
     currentIndex,
     clauseRegions,
     completedIndices,
+    savingRecording,
     clauseSegString,
     phraseSegParams,
     setClauseSegString,

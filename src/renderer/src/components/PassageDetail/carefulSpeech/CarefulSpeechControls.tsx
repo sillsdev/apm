@@ -253,7 +253,7 @@ export default function CarefulSpeechControls({
         >
           <PriButton
             id={`${controlIdPrefix}-split`}
-            disabled={!canSplitClause || phase === 'recording'}
+            disabled={!canSplitClause || phase === 'recording' || savingRecording}
             onClick={onSplitClause}
             variant="outlined"
             color="inherit"
