@@ -47,6 +47,7 @@ import {
   useOrgDefaults,
 } from '../../crud/useOrgDefaults';
 import {
+  artifactUsesOrgVernacularLanguage,
   buildVernacularAsrState,
   formatStepLanguageField,
   parseStepLanguageField,
@@ -185,10 +186,11 @@ export const TranscribeStepSettings = ({
     (settingsJson: string) => {
       if (!org) return;
       const settings = JSONParse(settingsJson) as ITranscribeStepSettings;
-      if (
-        slugFromId(String(settings.artifactTypeId ?? '')) !==
-        ArtifactTypeSlug.Vernacular
-      ) {
+      const slug = slugFromId(
+        String(settings.artifactTypeId ?? '')
+      ) as ArtifactTypeSlug;
+      // Empty artifactTypeId is vernacular; Q&A/Retell also sync org ASR.
+      if (settings.artifactTypeId && !artifactUsesOrgVernacularLanguage(slug)) {
         return;
       }
       const asrState = buildVernacularAsrState(
@@ -234,7 +236,6 @@ export const TranscribeStepSettings = ({
       spellCheck,
       changed: false,
     }));
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { spellCheck: _omit, ...rest } = json;
     emitSettingsChange(JSON.stringify({ ...rest, artifactTypeId }));
   };
@@ -298,11 +299,12 @@ export const TranscribeStepSettings = ({
       const { languageName, bcp47 } = parseStepLanguageField(json?.language);
       const slug = slugFromId(json.artifactTypeId);
       let sisterLang = parseStepLanguageField(json?.sisterlanguage);
-      // Seed empty sister UI from org ASR when vernacular needs a sister language
-      // (e.g. Review step opened after Transcribe saved org ASR but before peers synced).
+      // Seed empty sister UI from org ASR when vernacular (or Q&A/Retell) needs a
+      // sister language (e.g. Review step opened after Transcribe saved org ASR
+      // but before peers synced).
       if (
         !isLangSet(sisterLang.bcp47) &&
-        slug === ArtifactTypeSlug.Vernacular &&
+        artifactUsesOrgVernacularLanguage(slug as ArtifactTypeSlug) &&
         org
       ) {
         const vernacular = readVernacularFromOrg();
@@ -380,8 +382,12 @@ export const TranscribeStepSettings = ({
   };
 
   useEffect(() => {
-    if (!isOpen || currentSlug !== ArtifactTypeSlug.Vernacular) return;
-    vernacularPickerInit.current = true;
+    if (
+      !isOpen ||
+      !artifactUsesOrgVernacularLanguage(currentSlug as ArtifactTypeSlug)
+    )
+      return;
+    vernacularPickerInit.current = currentSlug === ArtifactTypeSlug.Vernacular;
     setVernacularLanguage(readVernacularFromOrg());
     // readVernacularFromOrg is recreated every render (getOrgDefault is not
     // memoized); depending on it here would re-run this effect on every render,
@@ -390,7 +396,7 @@ export const TranscribeStepSettings = ({
   }, [isOpen, currentSlug, org]);
 
   const primaryBcp47 = useMemo(() => {
-    if (currentSlug === ArtifactTypeSlug.Vernacular)
+    if (artifactUsesOrgVernacularLanguage(currentSlug as ArtifactTypeSlug))
       return vernacularLanguage?.bcp47 ?? 'und';
     if (hasLang) return lgState.bcp47 ?? 'und';
     return 'und';
@@ -401,7 +407,7 @@ export const TranscribeStepSettings = ({
   }, [primaryBcp47]);
 
   const primaryLanguageName = useMemo(() => {
-    if (currentSlug === ArtifactTypeSlug.Vernacular)
+    if (artifactUsesOrgVernacularLanguage(currentSlug as ArtifactTypeSlug))
       return vernacularLanguage?.languageName ?? '';
     if (hasLang) return lgState.languageName ?? '';
     return '';
@@ -481,7 +487,10 @@ export const TranscribeStepSettings = ({
       return json.selectRoman === true || json.selectRoman === 'true';
     }
     // When sister UI was seeded from org ASR, also adopt its transliterate flag.
-    if (currentSlug === ArtifactTypeSlug.Vernacular && org) {
+    if (
+      artifactUsesOrgVernacularLanguage(currentSlug as ArtifactTypeSlug) &&
+      org
+    ) {
       const orgAsr = normalizeAsrState(getOrgDefault(orgDefaultAsr, org));
       return orgAsr?.selectRoman === true;
     }
