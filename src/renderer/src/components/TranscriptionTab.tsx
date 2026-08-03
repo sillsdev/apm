@@ -22,7 +22,7 @@ import {
   RoleD,
 } from '../model';
 import { IAxiosStatus } from '../store/AxiosStatus';
-import { GrowingSpacer, PriButton, AltButton } from '../control';
+import { GrowingSpacer } from '../control';
 import { useSnackBar } from '../hoc/SnackBar';
 import TranscriptionShow from './TranscriptionShow';
 import { TokenContext } from '../context/TokenProvider';
@@ -51,7 +51,6 @@ import { useOfflnProjRead } from '../crud/useOfflnProjRead';
 import IndexedDBSource from '@orbit/indexeddb';
 import { dateOrTime } from '../utils';
 import { isUnauthorized } from '../utils/httpError';
-import { SelectExportType } from '../control';
 import AudioExportMenu from './AudioExportMenu';
 import { DateTime } from 'luxon';
 import { isPublishingTitle } from '../control/passageTypeFromRef';
@@ -79,6 +78,8 @@ import Alert from '@mui/material/Alert';
 import { TreeDataGrid } from './TreeDataGrid';
 import { debounce } from '@mui/material';
 import ContentLayout from './App/ContentLayout';
+import { Button, Menu, MenuItem } from '@mui/material';
+import DropDownIcon from '@mui/icons-material/ArrowDropDown';
 
 interface IRow {
   id: number;
@@ -175,6 +176,9 @@ export function TranscriptionTab(props: IProps) {
   ]);
   const [artifactType, setArtifactType] = useState<ArtifactTypeSlug>(
     artifactTypes[0] as ArtifactTypeSlug
+  );
+  const [exportTypeAnchor, setExportTypeAnchor] = useState<null | HTMLElement>(
+    null
   );
   const getTranscription = useTranscription(true);
   const getGlobal = useGetGlobal();
@@ -351,6 +355,15 @@ export function TranscriptionTab(props: IProps) {
 
   const handleBackup = () => {
     doProjectExport(ExportType.FULLBACKUP);
+  };
+
+  const handleExportTypeMenu = (event: React.MouseEvent<HTMLElement>) => {
+    setExportTypeAnchor(event.currentTarget);
+  };
+
+  const handleExportType = (slug?: ArtifactTypeSlug) => () => {
+    setExportTypeAnchor(null);
+    if (slug) setArtifactType(slug);
   };
 
   const handleSelect = (passageId: string) => () => {
@@ -640,16 +653,9 @@ export function TranscriptionTab(props: IProps) {
   return (
     <ContentLayout
       header={
-        <Box
-          sx={{
-            width: '100%',
-            display: 'flex',
-            justifyContent: 'center',
-            backgroundColor: 'custom.headerBackground',
-          }}
-        >
+        <>
           {(planColumn || floatTop) && (
-            <AltButton
+            <Button
               id="transExp"
               key="export"
               aria-label={t.exportProject}
@@ -658,9 +664,8 @@ export function TranscriptionTab(props: IProps) {
               disabled={busy}
             >
               {t.exportProject}
-            </AltButton>
+            </Button>
           )}
-
           {step && (
             <AudioExportMenu
               key="audioexport"
@@ -671,40 +676,65 @@ export function TranscriptionTab(props: IProps) {
             />
           )}
           {planColumn && offline && projects.length > 1 && (
-            <PriButton
+            <Button
               id="transBackup"
               key="backup"
               aria-label={t.electronBackup}
               onClick={handleBackup}
               title={t.electronBackup}
-              sx={{
-                m: 1,
-                overflow: 'hidden',
-                whiteSpace: 'nowrap',
-                justifyContent: 'flex-start',
-              }}
             >
               {t.electronBackup}
-            </PriButton>
+            </Button>
           )}
           <GrowingSpacer />
-          <AltButton
-            id="transCopy"
-            key="copy"
-            aria-label={t.copyTranscriptions}
-            onClick={handleCopyPlan}
-            title={t.copyTip}
-          >
-            {t.copyTranscriptions +
-              (localizedArtifact ? ' (' + localizedArtifact + ')' : '')}
-          </AltButton>
-          <SelectExportType
-            exportType={artifactType}
-            exportTypes={artifactTypes}
-            setExportType={setArtifactType}
-          />
-        </Box>
+          <Box sx={{ display: 'flex', gap: 1.5 }}>
+            <Button
+              id="transCopy"
+              key="copy"
+              aria-label={t.copyTranscriptions}
+              onClick={handleCopyPlan}
+              title={t.copyTip}
+            >
+              {t.copyTranscriptions +
+                (localizedArtifact ? ' (' + localizedArtifact + ')' : '')}
+            </Button>
+            <Button
+              id="select-export-type"
+              key="exportType"
+              aria-controls="select-export-type-menu"
+              aria-haspopup="true"
+              aria-owns={
+                exportTypeAnchor ? 'select-export-type-menu' : undefined
+              }
+              onClick={handleExportTypeMenu}
+              endIcon={<DropDownIcon />}
+            >
+              {localizedArtifactType(artifactType)}
+            </Button>
+            <Menu
+              id="select-export-type-menu"
+              anchorEl={exportTypeAnchor}
+              keepMounted
+              open={Boolean(exportTypeAnchor)}
+              onClose={handleExportType()}
+            >
+              {artifactTypes.map((slug) => (
+                <MenuItem
+                  id={`exp-${slug}`}
+                  key={slug}
+                  selected={slug === artifactType}
+                  aria-hidden={!exportTypeAnchor}
+                  onClick={handleExportType(slug)}
+                >
+                  {localizedArtifactType(slug)}
+                </MenuItem>
+              ))}
+            </Menu>
+          </Box>
+        </>
       }
+      drawBottomBorder={true}
+      contentSx={{ p: 1.5 }}
     >
       <Box ref={boxRef} id="TranscriptionTab" sx={{ display: 'flex' }}>
         {alertOpen && (
@@ -730,7 +760,6 @@ export function TranscriptionTab(props: IProps) {
           }}
           sx={{ '& .word-wrap': { wordWrap: 'break-spaces' } }}
         />
-
         {passageId !== '' && (
           <TranscriptionShow
             id={passageId}
