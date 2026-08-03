@@ -21,6 +21,7 @@ import {
 } from '../model';
 import { RecordIdentity } from '@orbit/records';
 import {
+  Box,
   Button,
   debounce,
   Menu,
@@ -44,7 +45,6 @@ import {
   useOrgDefaults,
   orgDefaultPermissions,
 } from '../crud';
-import { TabAppBar, TabActions, PaddedBox, GrowingSpacer } from '../control';
 import { ReplaceRelatedRecord, UpdateLastModifiedBy } from '../model/baseModel';
 import { PlanContext } from '../context/PlanContext';
 import { useOrbitData } from '../hoc/useOrbitData';
@@ -66,6 +66,7 @@ import {
 import { TreeDataGrid } from './TreeDataGrid';
 import { pad2 } from '../utils/pad2';
 import { resolveSelectedSections } from './resolveSectionForRecId';
+import ContentLayout from './App/ContentLayout';
 
 const AssignmentDiv = styled('div')(() => ({
   display: 'flex',
@@ -498,98 +499,103 @@ export function AssignmentTable() {
   const columnVisibilityModel: GridColumnVisibilityModel = { sort: false };
 
   return (
-    <AssignmentDiv ref={boxRef} id="AssignmentTable">
-      <div>
-        <TabAppBar position="fixed" color="default">
-          <TabActions>
-            {userIsAdmin && (
-              <>
-                <AltButton
-                  id="assignAdd"
-                  key="assign"
-                  aria-label={t.assignSec}
-                  onClick={handleMenu}
-                >
-                  {isPermission ? t.assignSec : t.assignSec2}
-                  <DropDownIcon sx={iconMargin} />
-                </AltButton>
-                <AltButton
-                  id="assignRem"
-                  key="remove"
-                  aria-label={t.removeSec}
-                  onClick={handleRemoveAssignments}
-                >
-                  {isPermission ? t.removeSec : t.removeSec2}
-                </AltButton>
-              </>
-            )}
-            <GrowingSpacer />
-          </TabActions>
-        </TabAppBar>
-        <PaddedBox>
-          <TreeDataGrid
-            columns={columns}
-            rows={data}
-            checkboxSelection
-            disableRowSelectionOnClick
-            rowSelectionModel={selectedRows}
-            onRowSelectionModelChange={handleRowSelectionChange}
-            recIdName="recId"
-            expanded={setOpenSections}
-            disableColumnSorting
-            initialState={{
-              sorting: { sortModel },
-              columns: { columnVisibilityModel },
-            }}
-            sx={{ '& .word-wrap': { wordWrap: 'break-spaces' } }}
-          />
-        </PaddedBox>
-      </div>
-      <Menu
-        id="assign-menu"
-        anchorEl={assignMenu}
-        open={Boolean(assignMenu)}
-        onClose={handleClose}
-      >
-        {orgSchemes
-          .filter(
-            (s) =>
-              related(s, 'organization') === org &&
-              Boolean(s?.attributes?.name?.trim())
-          )
-          .sort(sortSchemes)
-          .map((scheme) => (
-            <MenuItem
-              key={scheme.id}
-              onClick={handleAssignSection(scheme.id)}
-              id={'assign-' + scheme.id}
-            >
-              {scheme.attributes?.name}
-            </MenuItem>
-          ))}
-        <MenuItem id="add-assign" onClick={handleAssignSection('')}>
-          {isPermission ? t.addScheme : t.addScheme2}
-        </MenuItem>
-      </Menu>
-      <AssignSection
-        sections={selectedSections}
-        scheme={assignSectionVisible}
-        visible={assignSectionVisible != null}
-        closeMethod={handleCloseAssignSection}
-        refresh={() => setRefresh((n) => n + 1)}
-        readOnly={readOnly}
-        inChange={hasAssignmentChange(assignSectionVisible)}
-      />
-      {confirmAction !== '' ? (
-        <Confirm
-          text={confirmAction}
-          yesResponse={handleRemoveAssignmentsConfirmed}
-          noResponse={handleRemoveAssignmentsRefused}
+    <ContentLayout
+      header={
+        <Box
+          sx={{
+            width: '100%',
+            display: 'flex',
+            justifyContent: 'center',
+            backgroundColor: 'custom.headerBackground',
+          }}
+        >
+          {userIsAdmin && (
+            <>
+              <AltButton
+                id="assignAdd"
+                key="assign"
+                aria-label={t.assignSec}
+                onClick={handleMenu}
+              >
+                {isPermission ? t.assignSec : t.assignSec2}
+                <DropDownIcon sx={iconMargin} />
+              </AltButton>
+              <AltButton
+                id="assignRem"
+                key="remove"
+                aria-label={t.removeSec}
+                onClick={handleRemoveAssignments}
+              >
+                {isPermission ? t.removeSec : t.removeSec2}
+              </AltButton>
+            </>
+          )}
+        </Box>
+      }
+    >
+      <AssignmentDiv ref={boxRef} id="AssignmentTable">
+        <TreeDataGrid
+          columns={columns}
+          rows={data}
+          checkboxSelection
+          disableRowSelectionOnClick
+          rowSelectionModel={selectedRows}
+          onRowSelectionModelChange={handleRowSelectionChange}
+          recIdName="recId"
+          expanded={setOpenSections}
+          disableColumnSorting
+          initialState={{
+            sorting: { sortModel },
+            columns: { columnVisibilityModel },
+          }}
+          sx={{ '& .word-wrap': { wordWrap: 'break-spaces' } }}
         />
-      ) : (
-        <></>
-      )}
-    </AssignmentDiv>
+        <Menu
+          id="assign-menu"
+          anchorEl={assignMenu}
+          open={Boolean(assignMenu)}
+          onClose={handleClose}
+        >
+          {orgSchemes
+            .filter(
+              (s) =>
+                related(s, 'organization') === org &&
+                Boolean(s?.attributes?.name?.trim())
+            )
+            .sort(sortSchemes)
+            .map((scheme) => (
+              <MenuItem
+                key={scheme.id}
+                onClick={handleAssignSection(scheme.id)}
+                id={'assign-' + scheme.id}
+              >
+                {scheme.attributes?.name}
+              </MenuItem>
+            ))}
+          <MenuItem id="add-assign" onClick={handleAssignSection('')}>
+            {isPermission ? t.addScheme : t.addScheme2}
+          </MenuItem>
+        </Menu>
+        <AssignSection
+          sections={selectedSections}
+          scheme={assignSectionVisible}
+          visible={assignSectionVisible != null}
+          closeMethod={handleCloseAssignSection}
+          refresh={() => setRefresh((n) => n + 1)}
+          readOnly={readOnly}
+          inChange={hasAssignmentChange(assignSectionVisible)}
+        />
+        {confirmAction !== '' ? (
+          <Confirm
+            text={confirmAction}
+            yesResponse={handleRemoveAssignmentsConfirmed}
+            noResponse={handleRemoveAssignmentsRefused}
+          />
+        ) : (
+          <></>
+        )}
+      </AssignmentDiv>
+    </ContentLayout>
   );
 }
 
