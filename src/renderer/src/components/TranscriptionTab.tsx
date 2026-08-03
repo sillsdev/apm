@@ -659,6 +659,7 @@ export function TranscriptionTab(props: IProps) {
               id="transExp"
               key="export"
               aria-label={t.exportProject}
+              variant="outlined"
               onClick={handleProjectExport}
               title={t.exportProject}
               disabled={busy}
@@ -680,6 +681,7 @@ export function TranscriptionTab(props: IProps) {
               id="transBackup"
               key="backup"
               aria-label={t.electronBackup}
+              variant="outlined"
               onClick={handleBackup}
               title={t.electronBackup}
             >
@@ -692,6 +694,7 @@ export function TranscriptionTab(props: IProps) {
               id="transCopy"
               key="copy"
               aria-label={t.copyTranscriptions}
+              variant="outlined"
               onClick={handleCopyPlan}
               title={t.copyTip}
             >
@@ -706,6 +709,7 @@ export function TranscriptionTab(props: IProps) {
               aria-owns={
                 exportTypeAnchor ? 'select-export-type-menu' : undefined
               }
+              variant="outlined"
               onClick={handleExportTypeMenu}
               endIcon={<DropDownIcon />}
             >
