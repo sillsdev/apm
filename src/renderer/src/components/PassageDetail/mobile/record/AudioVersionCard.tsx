@@ -94,7 +94,7 @@ export const AudioVersionCard: React.FC<AudioVersionCardProps> = (props) => {
   const allowDownload = props.allowDownload !== false;
 
   return (
-    <Stack direction="row" alignItems="center" sx={{ my: 1, gap: 0.5 }}>
+    <Stack direction="row" alignItems="center">
       <Box
         data-cy="audio-version-card"
         sx={{

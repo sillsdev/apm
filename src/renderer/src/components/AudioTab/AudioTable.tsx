@@ -7,7 +7,7 @@ import {
   MediaFileD,
   SectionArray,
 } from '../../model';
-import { Box } from '@mui/material';
+import { Box, Stack } from '@mui/material';
 import TranscriptionShow from '../TranscriptionShow';
 import MediaPlayer from '../MediaPlayer';
 import Confirm from '../AlertDialog';
@@ -238,48 +238,50 @@ export const AudioTable = (props: IProps) => {
         minHeight: { xs: 0, sm: '20rem' },
       }}
     >
-      {sortedData.map((row) => {
-        const canDelete = !readonly && !row.readyToShare;
-        return (
-          <AudioVersionCard
-            key={row.id}
-            {...row}
-            isSelected={versionPickMode && row.id === selectedId}
-            setIsSelected={setSelectedId}
-            onSelectCard={
-              versionPickMode ? () => setSelectedId(row.id) : undefined
-            }
-            lang={lang}
-            handleSelect={handleSelect}
-            playItem={playItem}
-            mediaPlaying={mediaPlaying}
-            showSelectionRadio={showVersionRadio}
-            onShowTranscription={handleShowTranscription(row.id)}
-            expandedFileNameId={expandedFileNameMediaId}
-            setExpandedFileNameId={setExpandedFileNameMediaId}
-            expandFileNameForMedia={expandFileNameForMedia}
-            allowPlay={isElectron || canCreate}
-            allowDownload={!onAttach || isElectron || canCreate}
-            showMediaSheetMetadata={Boolean(onAttach)}
-            sectionLabel={organizedBy}
-            showAttachControl={sheetAttach}
-            attached={Boolean(row.passId)}
-            onAttachToggle={
-              onAttach ? () => onAttach([row.index], !row.passId) : undefined
-            }
-            canDeleteMedia={canDelete}
-            onRequestDelete={
-              canDelete ? () => handleConfirmAction(row.id) : undefined
-            }
-            showPublishControl={showPublishing}
-            publishDisabled={(row.passId || '') === '' || !canSetDestination}
-            onPublishClick={handleChangeReadyToShare(row.id)}
-            publishStatusIcon={publishStatus(
-              getPublishTo(row.publishTo, hasPublishing, shared, true)
-            )}
-          />
-        );
-      })}
+      <Stack spacing={1.5}>
+        {sortedData.map((row) => {
+          const canDelete = !readonly && !row.readyToShare;
+          return (
+            <AudioVersionCard
+              key={row.id}
+              {...row}
+              isSelected={versionPickMode && row.id === selectedId}
+              setIsSelected={setSelectedId}
+              onSelectCard={
+                versionPickMode ? () => setSelectedId(row.id) : undefined
+              }
+              lang={lang}
+              handleSelect={handleSelect}
+              playItem={playItem}
+              mediaPlaying={mediaPlaying}
+              showSelectionRadio={showVersionRadio}
+              onShowTranscription={handleShowTranscription(row.id)}
+              expandedFileNameId={expandedFileNameMediaId}
+              setExpandedFileNameId={setExpandedFileNameMediaId}
+              expandFileNameForMedia={expandFileNameForMedia}
+              allowPlay={isElectron || canCreate}
+              allowDownload={!onAttach || isElectron || canCreate}
+              showMediaSheetMetadata={Boolean(onAttach)}
+              sectionLabel={organizedBy}
+              showAttachControl={sheetAttach}
+              attached={Boolean(row.passId)}
+              onAttachToggle={
+                onAttach ? () => onAttach([row.index], !row.passId) : undefined
+              }
+              canDeleteMedia={canDelete}
+              onRequestDelete={
+                canDelete ? () => handleConfirmAction(row.id) : undefined
+              }
+              showPublishControl={showPublishing}
+              publishDisabled={(row.passId || '') === '' || !canSetDestination}
+              onPublishClick={handleChangeReadyToShare(row.id)}
+              publishStatusIcon={publishStatus(
+                getPublishTo(row.publishTo, hasPublishing, shared, true)
+              )}
+            />
+          );
+        })}
+      </Stack>
       {publishItem !== -1 && (
         <ConfirmPublishDialog
           context="media"
