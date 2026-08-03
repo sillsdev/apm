@@ -106,76 +106,65 @@ const ScrollableTabsButtonAuto = (props: IProps) => {
   ) : (
     <ContentLayout
       header={
-        <Box
-          sx={{
-            width: '100%',
-            display: 'flex',
-            justifyContent: 'center',
-            backgroundColor: 'custom.headerBackground',
-          }}
+        <Tabs
+          value={tab ?? 0}
+          onChange={(e: any, v: number) => checkSaved(() => handleChange(e, v))}
+          indicatorColor="primary"
+          textColor="primary"
+          variant="scrollable"
+          scrollButtons="auto"
         >
-          <Tabs
-            value={tab ?? 0}
-            onChange={(e: any, v: number) =>
-              checkSaved(() => handleChange(e, v))
+          <Tab
+            id="secPass"
+            label={
+              flat
+                ? organizedBy
+                : t.sectionsPassages.replace('{0}', organizedBy)
             }
-            indicatorColor="primary"
-            textColor="primary"
-            variant="scrollable"
-            scrollButtons="auto"
-          >
-            <Tab
-              id="secPass"
-              label={
-                flat
-                  ? organizedBy
-                  : t.sectionsPassages.replace('{0}', organizedBy)
-              }
-            />
-            <Tab
-              id="audio"
-              label={
-                <Title
-                  text={t.media}
-                  status={statusMessage(
-                    t.mediaStatus,
-                    (attached ?? []).length,
-                    (planMedia ?? []).length
-                  )}
-                />
-              }
-            />
-            {showAssign && (
-              <Tab
-                id="assignments"
-                label={
-                  <Title
-                    text={t.assignments}
-                    status={statusMessage(
-                      t.sectionStatus.replace('{0}', organizedBy),
-                      (assigned ?? []).length,
-                      (planSectionIds ?? []).length
-                    )}
-                  />
-                }
-                disabled={isOffline}
+          />
+          <Tab
+            id="audio"
+            label={
+              <Title
+                text={t.media}
+                status={statusMessage(
+                  t.mediaStatus,
+                  (attached ?? []).length,
+                  (planMedia ?? []).length
+                )}
               />
-            )}
+            }
+          />
+          {showAssign && (
             <Tab
-              id="transcriptions"
+              id="assignments"
               label={
                 <Title
-                  text={t.transcriptions}
+                  text={t.assignments}
                   status={statusMessage(
-                    t.passageStatus,
-                    (trans ?? []).length,
-                    (planPassages ?? []).length
+                    t.sectionStatus.replace('{0}', organizedBy),
+                    (assigned ?? []).length,
+                    (planSectionIds ?? []).length
                   )}
                 />
               }
+              disabled={isOffline}
             />
-          </Tabs>
-        </Box>
+          )}
+          <Tab
+            id="transcriptions"
+            label={
+              <Title
+                text={t.transcriptions}
+                status={statusMessage(
+                  t.passageStatus,
+                  (trans ?? []).length,
+                  (planPassages ?? []).length
+                )}
+              />
+            }
+          />
+        </Tabs>
       }
     >
       <Box
