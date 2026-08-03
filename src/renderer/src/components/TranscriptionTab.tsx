@@ -22,14 +22,7 @@ import {
   RoleD,
 } from '../model';
 import { IAxiosStatus } from '../store/AxiosStatus';
-import {
-  GrowingSpacer,
-  PaddedBox,
-  TabActions,
-  TabAppBar,
-  PriButton,
-  AltButton,
-} from '../control';
+import { GrowingSpacer, PriButton, AltButton } from '../control';
 import { useSnackBar } from '../hoc/SnackBar';
 import TranscriptionShow from './TranscriptionShow';
 import { TokenContext } from '../context/TokenProvider';
@@ -85,6 +78,7 @@ import Box from '@mui/material/Box';
 import Alert from '@mui/material/Alert';
 import { TreeDataGrid } from './TreeDataGrid';
 import { debounce } from '@mui/material';
+import ContentLayout from './App/ContentLayout';
 
 interface IRow {
   id: number;
@@ -644,71 +638,75 @@ export function TranscriptionTab(props: IProps) {
   ];
 
   return (
-    <Box ref={boxRef} id="TranscriptionTab" sx={{ display: 'flex' }}>
-      <div>
-        <TabAppBar
-          position="fixed"
-          highBar={planColumn || floatTop}
-          color="default"
+    <ContentLayout
+      header={
+        <Box
+          sx={{
+            width: '100%',
+            display: 'flex',
+            justifyContent: 'center',
+            backgroundColor: 'custom.headerBackground',
+          }}
         >
-          <TabActions>
-            {(planColumn || floatTop) && (
-              <AltButton
-                id="transExp"
-                key="export"
-                aria-label={t.exportProject}
-                onClick={handleProjectExport}
-                title={t.exportProject}
-                disabled={busy}
-              >
-                {t.exportProject}
-              </AltButton>
-            )}
-
-            {step && (
-              <AudioExportMenu
-                key="audioexport"
-                action={handleAudioExportMenu}
-                localizedArtifact={localizedArtifact}
-                isScripture={isScripture}
-                disabled={!ready}
-              />
-            )}
-            {planColumn && offline && projects.length > 1 && (
-              <PriButton
-                id="transBackup"
-                key="backup"
-                aria-label={t.electronBackup}
-                onClick={handleBackup}
-                title={t.electronBackup}
-                sx={{
-                  m: 1,
-                  overflow: 'hidden',
-                  whiteSpace: 'nowrap',
-                  justifyContent: 'flex-start',
-                }}
-              >
-                {t.electronBackup}
-              </PriButton>
-            )}
-            <GrowingSpacer />
+          {(planColumn || floatTop) && (
             <AltButton
-              id="transCopy"
-              key="copy"
-              aria-label={t.copyTranscriptions}
-              onClick={handleCopyPlan}
-              title={t.copyTip}
+              id="transExp"
+              key="export"
+              aria-label={t.exportProject}
+              onClick={handleProjectExport}
+              title={t.exportProject}
+              disabled={busy}
             >
-              {t.copyTranscriptions +
-                (localizedArtifact ? ' (' + localizedArtifact + ')' : '')}
+              {t.exportProject}
             </AltButton>
-            <SelectExportType
-              exportType={artifactType}
-              exportTypes={artifactTypes}
-              setExportType={setArtifactType}
+          )}
+
+          {step && (
+            <AudioExportMenu
+              key="audioexport"
+              action={handleAudioExportMenu}
+              localizedArtifact={localizedArtifact}
+              isScripture={isScripture}
+              disabled={!ready}
             />
-          </TabActions>
-        </TabAppBar>
+          )}
+          {planColumn && offline && projects.length > 1 && (
+            <PriButton
+              id="transBackup"
+              key="backup"
+              aria-label={t.electronBackup}
+              onClick={handleBackup}
+              title={t.electronBackup}
+              sx={{
+                m: 1,
+                overflow: 'hidden',
+                whiteSpace: 'nowrap',
+                justifyContent: 'flex-start',
+              }}
+            >
+              {t.electronBackup}
+            </PriButton>
+          )}
+          <GrowingSpacer />
+          <AltButton
+            id="transCopy"
+            key="copy"
+            aria-label={t.copyTranscriptions}
+            onClick={handleCopyPlan}
+            title={t.copyTip}
+          >
+            {t.copyTranscriptions +
+              (localizedArtifact ? ' (' + localizedArtifact + ')' : '')}
+          </AltButton>
+          <SelectExportType
+            exportType={artifactType}
+            exportTypes={artifactTypes}
+            setExportType={setArtifactType}
+          />
+        </Box>
+      }
+    >
+      <Box ref={boxRef} id="TranscriptionTab" sx={{ display: 'flex' }}>
         {alertOpen && (
           <Alert
             severity="warning"
@@ -719,39 +717,37 @@ export function TranscriptionTab(props: IProps) {
             {t.offlineData}
           </Alert>
         )}
-        <PaddedBox sx={{ pl: 2 }}>
-          <TreeDataGrid
-            columns={columns}
-            rows={data}
-            recIdName="recId"
-            expanded={setOpenSections}
-            columnVisibilityModel={columnVisibilityModel}
-            onColumnVisibilityModelChange={setColumnVisibilityModel}
-            disableColumnSorting
-            initialState={{
-              sorting: { sortModel },
-            }}
-            sx={{ '& .word-wrap': { wordWrap: 'break-spaces' } }}
-          />
-        </PaddedBox>
-      </div>
+        <TreeDataGrid
+          columns={columns}
+          rows={data}
+          recIdName="recId"
+          expanded={setOpenSections}
+          columnVisibilityModel={columnVisibilityModel}
+          onColumnVisibilityModelChange={setColumnVisibilityModel}
+          disableColumnSorting
+          initialState={{
+            sorting: { sortModel },
+          }}
+          sx={{ '& .word-wrap': { wordWrap: 'break-spaces' } }}
+        />
 
-      {passageId !== '' && (
-        <TranscriptionShow
-          id={passageId}
-          visible={passageId !== ''}
-          closeMethod={handleCloseTranscription}
-          exportId={exportId}
-        />
-      )}
-      {openExport && (
-        <WhichExportDlg
-          {...{ project, openExport, setOpenExport, doProjectExport }}
-        />
-      )}
-      <a ref={exportAnchor} href={exportUrl} download={exportName} />
-      <a ref={eafAnchor} href={dataUrl} download={dataName} />
-    </Box>
+        {passageId !== '' && (
+          <TranscriptionShow
+            id={passageId}
+            visible={passageId !== ''}
+            closeMethod={handleCloseTranscription}
+            exportId={exportId}
+          />
+        )}
+        {openExport && (
+          <WhichExportDlg
+            {...{ project, openExport, setOpenExport, doProjectExport }}
+          />
+        )}
+        <a ref={exportAnchor} href={exportUrl} download={exportName} />
+        <a ref={eafAnchor} href={dataUrl} download={dataName} />
+      </Box>
+    </ContentLayout>
   );
 }
 
