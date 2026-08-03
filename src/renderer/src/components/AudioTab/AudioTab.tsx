@@ -19,13 +19,7 @@ import {
 import JSONAPISource from '@orbit/jsonapi';
 import { Box } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
-import {
-  AltButton,
-  GrowingSpacer,
-  PaddedBox,
-  TabActions,
-  TabAppBar,
-} from '../../control';
+import { AltButton, GrowingSpacer } from '../../control';
 import { useSnackBar } from '../../hoc/SnackBar';
 import BigDialog from '../../hoc/BigDialog';
 import AudioTable from './AudioTable';
@@ -50,6 +44,7 @@ import { IPassageData, getPassages } from './getPassages';
 import { useOrbitData } from '../../hoc/useOrbitData';
 import { RecordKeyMap, RecordTransformBuilder } from '@orbit/records';
 import { PlanContext } from '../../context/PlanContext';
+import ContentLayout from '../App/ContentLayout';
 
 export function AudioTab() {
   const passages = useOrbitData<PassageD[]>('passage');
@@ -337,90 +332,96 @@ export function AudioTab() {
   );
 
   return (
-    <Box sx={{ display: 'flex' }}>
-      <Box width="100%">
-        <TabAppBar position="fixed" color="default">
-          <TabActions>
-            {canEditAudio && (
-              <>
-                <AltButton
-                  id="audUpload"
-                  key="upload"
-                  aria-label={ts.uploadMediaPlural}
-                  onClick={handleUpload}
-                >
-                  {ts.uploadMediaPlural}
-                  <AddIcon sx={{ ml: 1 }} />
-                </AltButton>
-                <AltButton
-                  id="audMatch"
-                  key={t.autoMatch}
-                  aria-label={t.autoMatch}
-                  onClick={handleAutoMatch}
-                >
-                  {t.autoMatch}
-                </AltButton>
-              </>
-            )}
-            <GrowingSpacer />
-            {complete !== 0 &&
-              complete !== 100 &&
-              !cloudSync.current &&
-              !uploadVisible &&
-              !cancelled.current && (
-                <AltButton
-                  id="uploadCancel"
-                  aria-label={ts.cancel}
-                  onClick={handleUploadCancel}
-                >
-                  {ts.cancel}
-                </AltButton>
-              )}
-          </TabActions>
-        </TabAppBar>
-        <PaddedBox sx={{ px: 2 }}>
-          {autoMatch && (
-            <Box sx={{ mb: 2 }}>
-              <Template
-                matchMap={matchMap}
-                options={{ data, pdata, attachMap } as IMatchData}
-              />
-            </Box>
-          )}
-          <Box sx={{ display: 'flex', flexDirection: 'row' }}>
-            <AudioTable
-              data={data}
-              setRefresh={handleRefresh}
-              playItem={playItem}
-              setPlayItem={setPlayItem}
-              onAttach={onAttach}
-              readonly={!canEditAudio}
-              sectionArr={sectionArr}
-              shared={shared}
-              canSetDestination={!isOffline && canPublish}
-              hasPublishing={publishingOn}
-            />
-            {attachVisible && (
-              <BigDialog
-                title={t.choosePassage}
-                isOpen={attachVisible || false}
-                onOpen={setAttachVisible}
-                onCancel={handleAttachCancel}
+    <ContentLayout
+      header={
+        <Box
+          sx={{
+            width: '100%',
+            display: 'flex',
+            justifyContent: 'center',
+            backgroundColor: 'custom.headerBackground',
+          }}
+        >
+          {canEditAudio && (
+            <>
+              <AltButton
+                id="audUpload"
+                key="upload"
+                aria-label={ts.uploadMediaPlural}
+                onClick={handleUpload}
               >
-                <PassageChooser
-                  data={pdata}
-                  row={mcheck}
-                  doAttach={doAttach}
-                  visible={attachVisible}
-                  setVisible={setAttachVisible}
-                  uploadMedia={uploadMedia}
-                  setUploadMedia={setUploadMedia}
-                  mediaRow={mediaRow}
-                />
-              </BigDialog>
+                {ts.uploadMediaPlural}
+                <AddIcon sx={{ ml: 1 }} />
+              </AltButton>
+              <AltButton
+                id="audMatch"
+                key={t.autoMatch}
+                aria-label={t.autoMatch}
+                onClick={handleAutoMatch}
+              >
+                {t.autoMatch}
+              </AltButton>
+            </>
+          )}
+          <GrowingSpacer />
+          {complete !== 0 &&
+            complete !== 100 &&
+            !cloudSync.current &&
+            !uploadVisible &&
+            !cancelled.current && (
+              <AltButton
+                id="uploadCancel"
+                aria-label={ts.cancel}
+                onClick={handleUploadCancel}
+              >
+                {ts.cancel}
+              </AltButton>
             )}
+        </Box>
+      }
+    >
+      <Box width="100%">
+        {autoMatch && (
+          <Box sx={{ mb: 2 }}>
+            <Template
+              matchMap={matchMap}
+              options={{ data, pdata, attachMap } as IMatchData}
+            />
           </Box>
-        </PaddedBox>
+        )}
+        <Box sx={{ display: 'flex', flexDirection: 'row' }}>
+          <AudioTable
+            data={data}
+            setRefresh={handleRefresh}
+            playItem={playItem}
+            setPlayItem={setPlayItem}
+            onAttach={onAttach}
+            readonly={!canEditAudio}
+            sectionArr={sectionArr}
+            shared={shared}
+            canSetDestination={!isOffline && canPublish}
+            hasPublishing={publishingOn}
+          />
+          {attachVisible && (
+            <BigDialog
+              title={t.choosePassage}
+              isOpen={attachVisible || false}
+              onOpen={setAttachVisible}
+              onCancel={handleAttachCancel}
+            >
+              <PassageChooser
+                data={pdata}
+                row={mcheck}
+                doAttach={doAttach}
+                visible={attachVisible}
+                setVisible={setAttachVisible}
+                uploadMedia={uploadMedia}
+                setUploadMedia={setUploadMedia}
+                mediaRow={mediaRow}
+              />
+            </BigDialog>
+          )}
+        </Box>
       </Box>
       <Uploader
         isOpen={uploadVisible}
@@ -432,7 +433,7 @@ export function AudioTab() {
         performedBy={speaker}
         onSpeakerChange={handleNameChange}
       />
-    </Box>
+    </ContentLayout>
   );
 }
 
