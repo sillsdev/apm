@@ -30,7 +30,7 @@ import {
   Typography,
 } from '@mui/material';
 import DropDownIcon from '@mui/icons-material/ArrowDropDown';
-import { AltButton, iconMargin, LightTooltip } from '../control';
+import { GrowingSpacer, LightTooltip } from '../control';
 import { useSnackBar } from '../hoc/SnackBar';
 import Confirm from './AlertDialog';
 import AssignSection from './AssignSection';
@@ -501,37 +501,35 @@ export function AssignmentTable() {
   return (
     <ContentLayout
       header={
-        <Box
-          sx={{
-            width: '100%',
-            display: 'flex',
-            justifyContent: 'center',
-            backgroundColor: 'custom.headerBackground',
-          }}
-        >
+        <>
           {userIsAdmin && (
-            <>
-              <AltButton
+            <Box sx={{ display: 'flex', gap: 1.5 }}>
+              <Button
                 id="assignAdd"
                 key="assign"
                 aria-label={t.assignSec}
+                variant="outlined"
                 onClick={handleMenu}
+                endIcon={<DropDownIcon />}
               >
                 {isPermission ? t.assignSec : t.assignSec2}
-                <DropDownIcon sx={iconMargin} />
-              </AltButton>
-              <AltButton
+              </Button>
+              <Button
                 id="assignRem"
                 key="remove"
                 aria-label={t.removeSec}
+                variant="outlined"
                 onClick={handleRemoveAssignments}
               >
                 {isPermission ? t.removeSec : t.removeSec2}
-              </AltButton>
-            </>
+              </Button>
+            </Box>
           )}
-        </Box>
+          <GrowingSpacer />
+        </>
       }
+      drawBottomBorder={true}
+      contentSx={{ p: 1.5 }}
     >
       <AssignmentDiv ref={boxRef} id="AssignmentTable">
         <TreeDataGrid
