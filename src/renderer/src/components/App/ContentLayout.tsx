@@ -6,6 +6,7 @@ interface ContentLayoutProps {
   footer?: React.ReactNode;
   footerAbove?: React.ReactNode;
   headerSx?: SxProps;
+  drawBottomBorder?: boolean;
   contentSx?: SxProps;
   footerSx?: SxProps;
   footerAboveSx?: SxProps;
@@ -18,6 +19,7 @@ export default function ContentLayout({
   footer,
   footerAbove,
   headerSx,
+  drawBottomBorder = false,
   contentSx,
   footerSx,
   footerAboveSx,
@@ -26,26 +28,43 @@ export default function ContentLayout({
   return (
     <Box
       sx={{
+        display: 'flex',
+        flexDirection: 'column',
         width: '100%',
         minWidth: 0,
         height: '100%',
         minHeight: 0,
-        display: 'flex',
-        flexDirection: 'column',
       }}
     >
-      <Box sx={{ flexShrink: 0, minWidth: 0, ...headerSx }}>{header}</Box>
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          flexShrink: 0,
+          minWidth: 0,
+          px: 1.5,
+          pb: 1.5,
+          backgroundColor: 'custom.headerBackground',
+          ...(drawBottomBorder && {
+            borderBottom: '1px solid',
+            borderColor: 'divider',
+          }),
+          ...headerSx,
+        }}
+      >
+        {header}
+      </Box>
       <Box
         ref={contentRef}
         sx={{
+          display: 'flex',
+          flexDirection: 'column',
           flex: 1,
           minWidth: 0,
           minHeight: 0,
           overflowX: 'hidden',
           overflowY: 'auto',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'flex-start',
           ...contentSx,
         }}
       >
