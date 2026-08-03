@@ -1,5 +1,7 @@
 import React from 'react';
-import { IRow } from '../../../../components/AudioTab';
+import { FaPaperclip, FaUnlink } from 'react-icons/fa';
+import type { IconBaseProps } from 'react-icons/lib';
+import { shallowEqual, useSelector } from 'react-redux';
 import {
   Box,
   Button,
@@ -8,31 +10,29 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
-import DescriptionOutlined from '@mui/icons-material/DescriptionOutlined';
 import DeleteIcon from '@mui/icons-material/DeleteOutline';
-import { FaPaperclip, FaUnlink } from 'react-icons/fa';
-import type { IconBaseProps } from 'react-icons/lib';
-import UserAvatar from '../../../../components/UserAvatar';
-import { findRecord, related } from '../../../../crud';
-import { useTranscription } from '../../../../crud/useTranscription';
+import DescriptionOutlined from '@mui/icons-material/DescriptionOutlined';
+import PauseIcon from '@mui/icons-material/Pause';
+import PlayIcon from '@mui/icons-material/PlayArrowOutlined';
 import {
   IMediaActionsStrings,
   IMediaTabStrings,
   ITranscriptionShowStrings,
   UserD,
 } from '@model/index';
+import { useGlobal } from '../../../../context/useGlobal';
 import { dateOrTime } from '../../../../utils/index';
-import { AudioDownload } from '../../../../components/AudioDownload';
-import PlayIcon from '@mui/icons-material/PlayArrowOutlined';
-import PauseIcon from '@mui/icons-material/Pause';
-import { shallowEqual, useSelector } from 'react-redux';
+import { findRecord, related } from '../../../../crud';
+import { useTranscription } from '../../../../crud/useTranscription';
 import {
   mediaActionsSelector,
   mediaTabSelector,
   transcriptionShowSelector,
 } from '../../../../selector/selectors';
-import { useGlobal } from '../../../../context/useGlobal';
 import { WrapTitle } from '../../../../control/WrapTitle';
+import { AudioDownload } from '../../../../components/AudioDownload';
+import { IRow } from '../../../../components/AudioTab';
+import UserAvatar from '../../../../components/UserAvatar';
 
 const Paperclip = FaPaperclip as unknown as React.FC<IconBaseProps>;
 const Unlink = FaUnlink as unknown as React.FC<IconBaseProps>;

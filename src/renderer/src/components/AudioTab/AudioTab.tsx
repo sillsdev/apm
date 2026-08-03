@@ -1,11 +1,10 @@
-import React, {
-  useState,
-  useEffect,
-  useRef,
-  useContext,
-  useCallback,
-} from 'react';
-import { shallowEqual } from 'react-redux';
+import { useState, useEffect, useRef, useContext, useCallback } from 'react';
+import { useSelector, shallowEqual } from 'react-redux';
+import { Box, Button } from '@mui/material';
+import AddIcon from '@mui/icons-material/Add';
+import JSONAPISource from '@orbit/jsonapi';
+import Memory from '@orbit/memory';
+import { RecordKeyMap, RecordTransformBuilder } from '@orbit/records';
 import {
   IState,
   MediaFile,
@@ -16,36 +15,29 @@ import {
   PassageD,
   SectionD,
 } from '../../model';
-import JSONAPISource from '@orbit/jsonapi';
-import { Box } from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
-import { GrowingSpacer } from '../../control';
-import { useSnackBar } from '../../hoc/SnackBar';
-import BigDialog from '../../hoc/BigDialog';
-import AudioTable from './AudioTable';
-import Uploader from '../Uploader';
+import { PlanContext } from '../../context/PlanContext';
+import { UnsavedContext } from '../../context/UnsavedContext';
+import { useGlobal } from '../../context/useGlobal';
 import {
   getMediaInPlans,
   usePlan,
   remoteIdGuid,
   VernacularTag,
 } from '../../crud';
-import { useGlobal } from '../../context/useGlobal';
 import { useMediaAttach } from '../../crud/useMediaAttach';
-import Memory from '@orbit/memory';
+import BigDialog from '../../hoc/BigDialog';
+import { useSnackBar } from '../../hoc/SnackBar';
+import { useOrbitData } from '../../hoc/useOrbitData';
+import { mediaTabSelector, sharedSelector } from '../../selector';
+import { GrowingSpacer } from '../../control';
+import ContentLayout from '../App/ContentLayout';
+import Uploader from '../Uploader';
+import { getMedia, IAttachMap, IGetMedia, IPRow, IRow } from '.';
+import AudioTable from './AudioTable';
+import { IPassageData, getPassages } from './getPassages';
+import { IMatchData, makeMatchMap } from './makeRefMap';
 import PassageChooser from './PassageChooser';
 import Template from './Template';
-import { getMedia, IAttachMap, IGetMedia, IPRow, IRow } from '.';
-import { IMatchData, makeMatchMap } from './makeRefMap';
-import { UnsavedContext } from '../../context/UnsavedContext';
-import { useSelector } from 'react-redux';
-import { mediaTabSelector, sharedSelector } from '../../selector';
-import { IPassageData, getPassages } from './getPassages';
-import { useOrbitData } from '../../hoc/useOrbitData';
-import { RecordKeyMap, RecordTransformBuilder } from '@orbit/records';
-import { PlanContext } from '../../context/PlanContext';
-import ContentLayout from '../App/ContentLayout';
-import { Button } from '@mui/material';
 
 export function AudioTab() {
   const passages = useOrbitData<PassageD[]>('passage');
@@ -58,7 +50,7 @@ export function AudioTab() {
   const [coordinator] = useGlobal('coordinator');
   const memory = coordinator?.getSource('memory') as Memory;
   const remote = coordinator?.getSource('remote') as JSONAPISource;
-  const requests = React.useRef(0);
+  const requests = useRef(0);
   const { getPlan } = usePlan();
   const [planRec] = useState(getPlan(plan) || ({} as Plan));
   const [isOffline] = useGlobal('offline'); //verified this is not used in a function 2/18/25
@@ -82,7 +74,7 @@ export function AudioTab() {
   const [attachMap, setAttachMap] = useState<IAttachMap>({});
   const [planMedia, setPlanMedia] = useState<MediaFile[]>([]);
   const [uploadMedia, setUploadMedia] = useState<string>();
-  const inProcess = React.useRef<boolean>(false);
+  const inProcess = useRef<boolean>(false);
   const [speaker, setSpeaker] = useState('');
   const { attachPassage, detachPassage } = useMediaAttach();
   const [refresh, setRefresh] = useState(0);

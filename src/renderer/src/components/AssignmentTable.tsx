@@ -6,8 +6,25 @@ import {
   MouseEventHandler,
   useRef,
 } from 'react';
-import { useGlobal } from '../context/useGlobal';
-import { shallowEqual } from 'react-redux';
+import { useSelector, shallowEqual } from 'react-redux';
+import {
+  Box,
+  Button,
+  debounce,
+  Menu,
+  MenuItem,
+  styled,
+  Typography,
+} from '@mui/material';
+import DropDownIcon from '@mui/icons-material/ArrowDropDown';
+import {
+  GridColumnVisibilityModel,
+  GridRenderCellParams,
+  type GridColDef,
+  type GridRowSelectionModel,
+  type GridSortModel,
+} from '@mui/x-data-grid';
+import { RecordIdentity } from '@orbit/records';
 import {
   IState,
   PassageD,
@@ -19,21 +36,11 @@ import {
   MediaFileD,
   SectionD,
 } from '../model';
-import { RecordIdentity } from '@orbit/records';
-import {
-  Box,
-  Button,
-  debounce,
-  Menu,
-  MenuItem,
-  styled,
-  Typography,
-} from '@mui/material';
-import DropDownIcon from '@mui/icons-material/ArrowDropDown';
-import { GrowingSpacer, LightTooltip } from '../control';
-import { useSnackBar } from '../hoc/SnackBar';
-import Confirm from './AlertDialog';
-import AssignSection from './AssignSection';
+import { ReplaceRelatedRecord, UpdateLastModifiedBy } from '../model/baseModel';
+import { OrganizationSchemeD } from '../model/organizationScheme';
+import { PlanContext } from '../context/PlanContext';
+import { useGlobal } from '../context/useGlobal';
+import { pad2 } from '../utils/pad2';
 import {
   related,
   sectionDescription,
@@ -45,28 +52,20 @@ import {
   useOrgDefaults,
   orgDefaultPermissions,
 } from '../crud';
-import { ReplaceRelatedRecord, UpdateLastModifiedBy } from '../model/baseModel';
-import { PlanContext } from '../context/PlanContext';
+import { useSnackBar } from '../hoc/SnackBar';
 import { useOrbitData } from '../hoc/useOrbitData';
-import { useSelector } from 'react-redux';
 import {
   activitySelector,
   assignmentSelector,
   sharedSelector,
 } from '../selector';
-import { GetReference } from './AudioTab/GetReference';
-import { OrganizationSchemeD } from '../model/organizationScheme';
-import {
-  GridColumnVisibilityModel,
-  GridRenderCellParams,
-  type GridColDef,
-  type GridRowSelectionModel,
-  type GridSortModel,
-} from '@mui/x-data-grid';
-import { TreeDataGrid } from './TreeDataGrid';
-import { pad2 } from '../utils/pad2';
-import { resolveSelectedSections } from './resolveSectionForRecId';
+import { GrowingSpacer, LightTooltip } from '../control';
 import ContentLayout from './App/ContentLayout';
+import { GetReference } from './AudioTab/GetReference';
+import Confirm from './AlertDialog';
+import AssignSection from './AssignSection';
+import { resolveSelectedSections } from './resolveSectionForRecId';
+import { TreeDataGrid } from './TreeDataGrid';
 
 const AssignmentDiv = styled('div')(() => ({
   display: 'flex',

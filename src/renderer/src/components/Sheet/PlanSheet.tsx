@@ -9,16 +9,7 @@ import {
   useCallback,
   KeyboardEventHandler,
 } from 'react';
-import { useGetGlobal, useGlobal } from '../../context/useGlobal';
-import {
-  IPlanSheetStrings,
-  ISharedStrings,
-  BookNameMap,
-  OptionType,
-  ISheet,
-  OrgWorkflowStep,
-  SheetLevel,
-} from '../../model';
+import { useSelector, shallowEqual } from 'react-redux';
 import {
   Box,
   Button,
@@ -34,21 +25,27 @@ import {
   styled,
 } from '@mui/material';
 import ClearIcon from '@mui/icons-material/Clear';
-import SaveIcon from '@mui/icons-material/Save';
 import PublishOffIcon from '@mui/icons-material/PublicOffOutlined';
 import PublishOnIcon from '@mui/icons-material/PublicOutlined';
+import SaveIcon from '@mui/icons-material/Save';
 import SearchIcon from '@mui/icons-material/Search';
-import { useSnackBar } from '../../hoc/SnackBar';
+import { RecordKeyMap } from '@orbit/records';
 import DataSheet from 'react-datasheet';
-import Confirm from '../AlertDialog';
-import {
-  AddSectionPassageButtons,
-  ProjButtons,
-  ActionHeight,
-  GrowingSpacer,
-  LightTooltip,
-} from '../../control';
 import 'react-datasheet/lib/react-datasheet.css';
+import {
+  IPlanSheetStrings,
+  ISharedStrings,
+  BookNameMap,
+  OptionType,
+  ISheet,
+  OrgWorkflowStep,
+  SheetLevel,
+} from '../../model';
+import { PassageTypeEnum } from '../../model/passageType';
+import { HotKeyContext } from '../../context/HotKeyContext';
+import { PlanContext } from '../../context/PlanContext';
+import { UnsavedContext } from '../../context/UnsavedContext';
+import { useGetGlobal, useGlobal } from '../../context/useGlobal';
 import {
   cleanClipboard,
   localUserKey,
@@ -65,24 +62,27 @@ import {
   remoteIdGuid,
   usePublishDestination,
 } from '../../crud';
-import MediaPlayer from '../MediaPlayer';
-import { PlanContext } from '../../context/PlanContext';
-import { HotKeyContext } from '../../context/HotKeyContext';
-import { UnsavedContext } from '../../context/UnsavedContext';
-import FilterMenu, { ISTFilterState } from './filterMenu';
-import { planSheetSelector, sharedSelector } from '../../selector';
-import { useSelector, shallowEqual } from 'react-redux';
-import { PassageTypeEnum } from '../../model/passageType';
-import { rowTypes } from './rowTypes';
-import { useRefErrTest } from './useRefErrTest';
-import { ExtraIcon } from '.';
-import { usePlanSheetFill } from './usePlanSheetFill';
-import { useShowIcon } from './useShowIcon';
-import { RecordKeyMap } from '@orbit/records';
-import ConfirmPublishDialog from '../ConfirmPublishDialog';
-import { findPlanSheetRowFromReferenceQuery } from './findPlanSheetRowFromReferenceQuery';
 import { useOrganizedBy } from '../../crud/useOrganizedBy';
+import { useSnackBar } from '../../hoc/SnackBar';
+import { planSheetSelector, sharedSelector } from '../../selector';
+import {
+  AddSectionPassageButtons,
+  ProjButtons,
+  ActionHeight,
+  GrowingSpacer,
+  LightTooltip,
+} from '../../control';
+import Confirm from '../AlertDialog';
 import ContentLayout from '../App/ContentLayout';
+import ConfirmPublishDialog from '../ConfirmPublishDialog';
+import MediaPlayer from '../MediaPlayer';
+import { ExtraIcon } from '.';
+import FilterMenu, { ISTFilterState } from './filterMenu';
+import { findPlanSheetRowFromReferenceQuery } from './findPlanSheetRowFromReferenceQuery';
+import { rowTypes } from './rowTypes';
+import { usePlanSheetFill } from './usePlanSheetFill';
+import { useRefErrTest } from './useRefErrTest';
+import { useShowIcon } from './useShowIcon';
 
 const DOWN_ARROW = 'ARROWDOWN';
 export const SectionSeqCol = 0;

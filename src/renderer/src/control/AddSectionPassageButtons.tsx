@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { IPlanSheetStrings } from '../model';
+import { useState } from 'react';
+import { shallowEqual, useSelector } from 'react-redux';
 import {
   Button,
   ListItemIcon,
@@ -9,9 +9,11 @@ import {
   styled,
 } from '@mui/material';
 import DropDownIcon from '@mui/icons-material/ArrowDropDown';
+import { IPlanSheetStrings } from '../model';
+import { useCanPublish } from '../utils';
 import { useOrganizedBy } from '../crud';
 import { planSheetSelector } from '../selector';
-import { shallowEqual, useSelector } from 'react-redux';
+import { ExtraIcon } from '../components/Sheet';
 import {
   AddNoteIcon,
   AddPublishingIcon,
@@ -21,8 +23,6 @@ import {
   PassageEndIcon,
   SectionEndIcon,
 } from './PlanIcons';
-import { ExtraIcon } from '../components/Sheet';
-import { useCanPublish } from '../utils';
 
 const StyledMenuIcon = styled(ListItemIcon)<ListItemIconProps>(({ theme }) => ({
   paddingRight: theme.spacing(2),
@@ -66,7 +66,7 @@ export const AddSectionPassageButtons = (props: IProps) => {
     onAction,
     disablePublishingRows,
   } = props;
-  const [actionMenuItem, setActionMenuItem] = React.useState<any>(undefined);
+  const [actionMenuItem, setActionMenuItem] = useState<any>(undefined);
   const { getOrganizedBy } = useOrganizedBy();
   const [organizedBy] = useState(getOrganizedBy(true));
   const { canAddPublishing } = useCanPublish();

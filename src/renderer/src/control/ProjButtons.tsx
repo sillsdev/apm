@@ -1,25 +1,25 @@
 import React, { useState, useEffect } from 'react';
-import { useGlobal } from '../context/useGlobal';
+import { shallowEqual, useSelector } from 'react-redux';
+import { Button, Menu, MenuItem } from '@mui/material';
+import DropDownIcon from '@mui/icons-material/ArrowDropDown';
 import {
   IPlanSheetStrings,
   IProjButtonsStrings,
   ISharedStrings,
 } from '../model';
-import { Button, Menu, MenuItem } from '@mui/material';
-import DropDownIcon from '@mui/icons-material/ArrowDropDown';
-import BigDialog from '../hoc/BigDialog';
-import IntegrationTab from '../components/Integration';
-import ExportTab from '../components/TranscriptionTab';
-import ImportTab from '../components/ImportTab';
-import { useProjectPlans, usePlan } from '../crud';
 import { PlanContext } from '../context/PlanContext';
+import { useGlobal } from '../context/useGlobal';
 import { addPt } from '../utils/addPt';
-import { shallowEqual, useSelector } from 'react-redux';
+import { useProjectPlans, usePlan } from '../crud';
+import BigDialog from '../hoc/BigDialog';
 import {
   planSheetSelector,
   projButtonsSelector,
   sharedSelector,
 } from '../selector';
+import ImportTab from '../components/ImportTab';
+import IntegrationTab from '../components/Integration';
+import ExportTab from '../components/TranscriptionTab';
 
 interface IProps {
   noCopy?: boolean;

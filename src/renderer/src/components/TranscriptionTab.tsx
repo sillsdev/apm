@@ -1,6 +1,18 @@
-import React, { useState, useEffect, useMemo, useContext, useRef } from 'react';
-import { useGetGlobal, useGlobal } from '../context/useGlobal';
-import * as actions from '../store';
+import { useState, useEffect, useMemo, useContext, useRef } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { useParams } from 'react-router-dom';
+import { Button, debounce, Menu, MenuItem } from '@mui/material';
+import Alert from '@mui/material/Alert';
+import Box from '@mui/material/Box';
+import DropDownIcon from '@mui/icons-material/ArrowDropDown';
+import {
+  GridRowId,
+  type GridColDef,
+  type GridColumnVisibilityModel,
+  type GridSortModel,
+} from '@mui/x-data-grid';
+import IndexedDBSource from '@orbit/indexeddb';
+import { DateTime } from 'luxon';
 import {
   IState,
   Passage,
@@ -21,11 +33,10 @@ import {
   UserD,
   RoleD,
 } from '../model';
-import { IAxiosStatus } from '../store/AxiosStatus';
-import { GrowingSpacer } from '../control';
-import { useSnackBar } from '../hoc/SnackBar';
-import TranscriptionShow from './TranscriptionShow';
 import { TokenContext } from '../context/TokenProvider';
+import { useGetGlobal, useGlobal } from '../context/useGlobal';
+import { dateOrTime } from '../utils';
+import { isUnauthorized } from '../utils/httpError';
 import {
   related,
   sectionCompare,
@@ -48,38 +59,25 @@ import {
   useSharedResRead,
 } from '../crud';
 import { useOfflnProjRead } from '../crud/useOfflnProjRead';
-import IndexedDBSource from '@orbit/indexeddb';
-import { dateOrTime } from '../utils';
-import { isUnauthorized } from '../utils/httpError';
-import AudioExportMenu from './AudioExportMenu';
-import { DateTime } from 'luxon';
-import { isPublishingTitle } from '../control/passageTypeFromRef';
+import { useSnackBar } from '../hoc/SnackBar';
 import { useOrbitData } from '../hoc/useOrbitData';
-import { useSelector } from 'react-redux';
+import * as actions from '../store';
+import { IAxiosStatus } from '../store/AxiosStatus';
 import {
   activitySelector,
   sharedSelector,
   transcriptionTabSelector,
 } from '../selector';
-import { useDispatch } from 'react-redux';
+import { GrowingSpacer } from '../control';
+import { isPublishingTitle } from '../control/passageTypeFromRef';
+import ContentLayout from './App/ContentLayout';
 import { getSection } from './AudioTab/getSection';
-import { WhichExportDlg } from './WhichExportDlg';
-import { useParams } from 'react-router-dom';
-import {
-  GridRowId,
-  type GridColDef,
-  type GridColumnVisibilityModel,
-  type GridSortModel,
-} from '@mui/x-data-grid';
+import AudioExportMenu from './AudioExportMenu';
 import { ExportActionCell } from './ExportActionCell';
 import { TranscriptionViewCell } from './TranscriptionViewCell';
-import Box from '@mui/material/Box';
-import Alert from '@mui/material/Alert';
+import TranscriptionShow from './TranscriptionShow';
 import { TreeDataGrid } from './TreeDataGrid';
-import { debounce } from '@mui/material';
-import ContentLayout from './App/ContentLayout';
-import { Button, Menu, MenuItem } from '@mui/material';
-import DropDownIcon from '@mui/icons-material/ArrowDropDown';
+import { WhichExportDlg } from './WhichExportDlg';
 
 interface IRow {
   id: number;
@@ -148,10 +146,10 @@ export function TranscriptionTab(props: IProps) {
   const [openSections, setOpenSections] = useState<string[]>([]);
   const [alertOpen, setAlertOpen] = useState(false);
   const [passageId, setPassageId] = useState('');
-  const eafAnchor = React.useRef<HTMLAnchorElement>(null);
+  const eafAnchor = useRef<HTMLAnchorElement>(null);
   const [dataUrl, setDataUrl] = useState<string | undefined>();
   const [dataName, setDataName] = useState('');
-  const exportAnchor = React.useRef<HTMLAnchorElement>(null);
+  const exportAnchor = useRef<HTMLAnchorElement>(null);
   const [exportUrl, setExportUrl] = useState<string | undefined>();
   const [exportName, setExportName] = useState('');
   const [columnVisibilityModel, setColumnVisibilityModel] =

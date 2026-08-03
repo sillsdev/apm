@@ -1,29 +1,29 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useGlobal } from '../../context/useGlobal';
 import { shallowEqual, useSelector } from 'react-redux';
+import { Box, Stack } from '@mui/material';
+import type { GridSortModel } from '@mui/x-data-grid';
+import { isElectron } from '../../../api-variable';
 import {
   IState,
   IMediaTabStrings,
   MediaFileD,
   SectionArray,
 } from '../../model';
-import { Box, Stack } from '@mui/material';
-import TranscriptionShow from '../TranscriptionShow';
-import MediaPlayer from '../MediaPlayer';
-import Confirm from '../AlertDialog';
+import { UpdateRecord } from '../../model/baseModel';
+import { useGlobal } from '../../context/useGlobal';
+import { useDataChanges, useWaitForRemoteQueue, doSort } from '../../utils';
 import {
   PublishDestinationEnum,
   useOrganizedBy,
   usePublishDestination,
 } from '../../crud';
-import { useDataChanges, useWaitForRemoteQueue, doSort } from '../../utils';
-import { IRow } from '.';
-import { UpdateRecord } from '../../model/baseModel';
 import { mediaTabSelector } from '../../selector';
-import ConfirmPublishDialog from '../ConfirmPublishDialog';
-import type { GridSortModel } from '@mui/x-data-grid';
 import { AudioVersionCard } from '../../components/PassageDetail/mobile/record/AudioVersionCard';
-import { isElectron } from '../../../api-variable';
+import Confirm from '../AlertDialog';
+import ConfirmPublishDialog from '../ConfirmPublishDialog';
+import MediaPlayer from '../MediaPlayer';
+import TranscriptionShow from '../TranscriptionShow';
+import { IRow } from '.';
 
 interface IProps {
   data: IRow[];
@@ -41,6 +41,7 @@ interface IProps {
   /** Version dialog: show radio + selection highlight */
   showVersionRadio?: boolean;
 }
+
 export const AudioTable = (props: IProps) => {
   const { data: initialData, setRefresh } = props;
   const {
