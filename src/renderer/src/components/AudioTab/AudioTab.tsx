@@ -19,7 +19,7 @@ import {
 import JSONAPISource from '@orbit/jsonapi';
 import { Box } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
-import { AltButton, GrowingSpacer } from '../../control';
+import { GrowingSpacer } from '../../control';
 import { useSnackBar } from '../../hoc/SnackBar';
 import BigDialog from '../../hoc/BigDialog';
 import AudioTable from './AudioTable';
@@ -45,6 +45,7 @@ import { useOrbitData } from '../../hoc/useOrbitData';
 import { RecordKeyMap, RecordTransformBuilder } from '@orbit/records';
 import { PlanContext } from '../../context/PlanContext';
 import ContentLayout from '../App/ContentLayout';
+import { Button } from '@mui/material';
 
 export function AudioTab() {
   const passages = useOrbitData<PassageD[]>('passage');
@@ -334,34 +335,29 @@ export function AudioTab() {
   return (
     <ContentLayout
       header={
-        <Box
-          sx={{
-            width: '100%',
-            display: 'flex',
-            justifyContent: 'center',
-            backgroundColor: 'custom.headerBackground',
-          }}
-        >
+        <>
           {canEditAudio && (
-            <>
-              <AltButton
+            <Box sx={{ display: 'flex', gap: 1.5 }}>
+              <Button
                 id="audUpload"
                 key="upload"
                 aria-label={ts.uploadMediaPlural}
+                variant="outlined"
                 onClick={handleUpload}
+                endIcon={<AddIcon />}
               >
                 {ts.uploadMediaPlural}
-                <AddIcon sx={{ ml: 1 }} />
-              </AltButton>
-              <AltButton
+              </Button>
+              <Button
                 id="audMatch"
                 key={t.autoMatch}
                 aria-label={t.autoMatch}
+                variant="outlined"
                 onClick={handleAutoMatch}
               >
                 {t.autoMatch}
-              </AltButton>
-            </>
+              </Button>
+            </Box>
           )}
           <GrowingSpacer />
           {complete !== 0 &&
@@ -369,16 +365,19 @@ export function AudioTab() {
             !cloudSync.current &&
             !uploadVisible &&
             !cancelled.current && (
-              <AltButton
+              <Button
                 id="uploadCancel"
                 aria-label={ts.cancel}
+                variant="outlined"
                 onClick={handleUploadCancel}
               >
                 {ts.cancel}
-              </AltButton>
+              </Button>
             )}
-        </Box>
+        </>
       }
+      drawBottomBorder={true}
+      contentSx={{ p: 1.5 }}
     >
       <Box width="100%">
         {autoMatch && (
