@@ -46,8 +46,6 @@ import {
   ProjButtons,
   ActionHeight,
   GrowingSpacer,
-  PriButton,
-  iconMargin,
   LightTooltip,
 } from '../../control';
 import 'react-datasheet/lib/react-datasheet.css';
@@ -1111,19 +1109,10 @@ export function PlanSheet(props: IProps) {
   );
   return (
     <ContentLayout
-      contentRef={scrollRef}
-      contentSx={{ position: 'relative' }}
       header={
-        <Box
-          sx={{
-            width: '100%',
-            display: 'flex',
-            justifyContent: 'center',
-            backgroundColor: 'custom.headerBackground',
-          }}
-        >
+        <>
           {!readonly && (
-            <>
+            <Box sx={{ display: 'flex', gap: 1.5 }}>
               <AddSectionPassageButtons
                 inlinePassages={inlinePassages}
                 numRows={rowInfo.length}
@@ -1164,68 +1153,73 @@ export function PlanSheet(props: IProps) {
                   onReseq={handleResequence}
                 />
               )}
-            </>
+            </Box>
           )}
-
           <GrowingSpacer />
-          {data.length > 1 && !offline && !inlinePassages && !anyRecording && (
+          <Box sx={{ display: 'flex', gap: 1.5 }}>
+            {data.length > 1 &&
+              !offline &&
+              !inlinePassages &&
+              !anyRecording && (
+                <LightTooltip
+                  sx={{ backgroundColor: 'transparent' }}
+                  title={
+                    !publishingOn || hidePublishing
+                      ? t.showPublishing
+                      : t.hidePublishing
+                  }
+                >
+                  <IconButton onClick={handlePublishToggle}>
+                    {!publishingOn || hidePublishing ? (
+                      <PublishOnIcon sx={{ color: 'primary.light' }} />
+                    ) : (
+                      <PublishOffIcon sx={{ color: 'primary.light' }} />
+                    )}
+                  </IconButton>
+                </LightTooltip>
+              )}
+            <FilterMenu
+              canSetDefault={canSetDefault}
+              state={filterState}
+              onFilterChange={onFilterChange}
+              orgSteps={orgSteps}
+              minimumSection={minimumSection}
+              maximumSection={maximumSection}
+              filtered={filtered}
+              hidePublishing={hidePublishing}
+              disabled={!filtered && (rowInfo.length < 2 || anyRecording)}
+            />
             <LightTooltip
               sx={{ backgroundColor: 'transparent' }}
-              title={
-                !publishingOn || hidePublishing
-                  ? t.showPublishing
-                  : t.hidePublishing
-              }
+              title={t.goToReference}
             >
-              <IconButton onClick={handlePublishToggle}>
-                {!publishingOn || hidePublishing ? (
-                  <PublishOnIcon sx={{ color: 'primary.light' }} />
-                ) : (
-                  <PublishOffIcon sx={{ color: 'primary.light' }} />
-                )}
+              <IconButton
+                aria-label={t.goToReference}
+                onClick={() => setGoToOpen(true)}
+                disabled={rowInfo.length < 2}
+              >
+                <SearchIcon sx={{ color: 'primary.light' }} />
               </IconButton>
             </LightTooltip>
-          )}
-          <FilterMenu
-            canSetDefault={canSetDefault}
-            state={filterState}
-            onFilterChange={onFilterChange}
-            orgSteps={orgSteps}
-            minimumSection={minimumSection}
-            maximumSection={maximumSection}
-            filtered={filtered}
-            hidePublishing={hidePublishing}
-            disabled={!filtered && (rowInfo.length < 2 || anyRecording)}
-          />
-          <LightTooltip
-            sx={{ backgroundColor: 'transparent' }}
-            title={t.goToReference}
-          >
-            <IconButton
-              aria-label={t.goToReference}
-              onClick={() => setGoToOpen(true)}
-              disabled={rowInfo.length < 2}
-            >
-              <SearchIcon sx={{ color: 'primary.light' }} />
-            </IconButton>
-          </LightTooltip>
-          {!readonly && (
-            <>
-              <PriButton
+            {!readonly && (
+              <Button
                 id="planSheetSave"
                 key="save"
                 aria-label={t.save}
+                variant="outlined"
                 color={connected ? 'primary' : 'secondary'}
                 onClick={handleSave}
                 disabled={saving || !changed || preventSave}
+                startIcon={<SaveIcon />}
               >
                 {t.save}
-                <SaveIcon sx={iconMargin} className="small-icon" />
-              </PriButton>
-            </>
-          )}
-        </Box>
+              </Button>
+            )}
+          </Box>
+        </>
       }
+      contentSx={{ position: 'relative', p: 1.5 }}
+      contentRef={scrollRef}
     >
       <Dialog open={goToOpen} onClose={() => setGoToOpen(false)} maxWidth="sm">
         <DialogTitle>{t.goToReferenceTitle}</DialogTitle>

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { IPlanSheetStrings } from '../model';
 import {
+  Button,
   ListItemIcon,
   ListItemIconProps,
   Menu,
@@ -8,7 +9,6 @@ import {
   styled,
 } from '@mui/material';
 import DropDownIcon from '@mui/icons-material/ArrowDropDown';
-import { iconMargin, AltButton } from '../control';
 import { useOrganizedBy } from '../crud';
 import { planSheetSelector } from '../selector';
 import { shallowEqual, useSelector } from 'react-redux';
@@ -90,27 +90,29 @@ export const AddSectionPassageButtons = (props: IProps) => {
     <>
       {canEditSheet && (
         <>
-          <AltButton
+          <Button
             id="planSheetAddSec"
             key="addSection"
+            variant="outlined"
             aria-label={t.addSection}
             onClick={handleMenu}
             disabled={readonly}
+            endIcon={<DropDownIcon />}
           >
             {t.addSection.replace('{0}', organizedBy)}
-            <DropDownIcon sx={iconMargin} />
-          </AltButton>
+          </Button>
           {!inlinePassages && (
-            <AltButton
+            <Button
               id="planSheetAddPass"
               key="addPassage"
+              variant="outlined"
               aria-label={t.addPassage}
               onClick={handleMenu}
               disabled={numRows < 2 || readonly}
+              endIcon={<DropDownIcon />}
             >
               {t.addPassage}
-              <DropDownIcon sx={iconMargin} />
-            </AltButton>
+            </Button>
           )}
           {/*Section Button Menu */}
           <Menu
