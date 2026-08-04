@@ -45,7 +45,7 @@ export const PlanScreen = () => {
   if (view !== '' && view !== pathname) return <StickyRedirect to={view} />;
 
   return (
-    <AppLayout appHeadProps={{ switchTo: false, drawBottomBorder: false }}>
+    <AppLayout appHeadProps={{ drawBottomBorder: false }}>
       <PlanProvider>
         <PlanTabs checkSaved={checkSavedFn} />
       </PlanProvider>
