@@ -29,6 +29,7 @@ import {
   VernacularTag,
 } from '../crud';
 import { mediaFileName } from '../crud/media';
+import { mediaMatchesStepLanguage } from '../components/PassageDetail/carefulSpeech/matchesGuidedOutputRow';
 import StickyRedirect from '../components/StickyRedirect';
 import { useSelector } from 'react-redux';
 import { useDispatch } from 'react-redux';
@@ -127,9 +128,11 @@ interface IProps {
   children: React.ReactElement;
   artifactTypeId?: string | null | undefined;
   curRole?: string;
+  /** Step language. When set (and not `und`), only media tagged with it become tasks. */
+  stepLanguageBcp47?: string;
 }
 const TranscriberProvider = (props: IProps) => {
-  const { artifactTypeId, curRole } = props;
+  const { artifactTypeId, curRole, stepLanguageBcp47 } = props;
   const [isDetail] = useState(artifactTypeId !== undefined);
   const passages = useOrbitData<Passage[]>('passage');
   const sections = useOrbitData<Section[]>('section');
@@ -167,12 +170,13 @@ const TranscriberProvider = (props: IProps) => {
 
   useEffect(() => {
     if (devPlan && mediafiles.length > 0) {
-      const m = getMediaInPlans([devPlan], mediafiles, artifactId, true);
+      const m = getMediaInPlans([devPlan], mediafiles, artifactId, true).filter(
+        (mf) => mediaMatchesStepLanguage(mf, stepLanguageBcp47)
+      );
       setPlanMedia(m);
       planMediaRef.current = m;
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mediafiles, devPlan, artifactId]);
+  }, [mediafiles, devPlan, artifactId, stepLanguageBcp47]);
 
   const setRows = (rowData: IRowData[]) => {
     setState((state: ICtxState) => {

@@ -62,6 +62,15 @@ export function isLanguageFilterActive(languageBcp47?: string): boolean {
   return Boolean(languageBcp47 && languageBcp47 !== 'und');
 }
 
+/** True when a mediafile belongs to a step scoped to `stepLanguageBcp47`. */
+export function mediaMatchesStepLanguage(
+  mediafile: MediaFileD | undefined,
+  stepLanguageBcp47?: string
+): boolean {
+  if (!isLanguageFilterActive(stepLanguageBcp47)) return true;
+  return mediaLanguageBcp47(mediafile) === stepLanguageBcp47;
+}
+
 /**
  * Shared scope for Phrase BT / Retell / Careful Speech guided outputs:
  * artifact type + current vernacular sourceMedia (+ optional language).
@@ -79,13 +88,7 @@ export function matchesGuidedOutputRow(
       return false;
     }
   }
-  if (isLanguageFilterActive(opts.languageBcp47)) {
-    const rowBcp = mediaLanguageBcp47(row.mediafile);
-    if (rowBcp !== opts.languageBcp47) {
-      return false;
-    }
-  }
-  return true;
+  return mediaMatchesStepLanguage(row.mediafile, opts.languageBcp47);
 }
 
 export function pickLatestGuidedOutputRow(matches: IRow[]): IRow | undefined {
