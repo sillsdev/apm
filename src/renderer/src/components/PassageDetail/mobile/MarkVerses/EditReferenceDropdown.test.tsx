@@ -1,6 +1,6 @@
 import '@testing-library/jest-dom';
-import { render, screen, within } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { render, screen, waitFor, within } from '@testing-library/react';
+import userEvent, { type UserEvent } from '@testing-library/user-event';
 import EditReferenceDropdown, {
   type EditReferenceValue,
 } from './EditReferenceDropdown';
@@ -8,6 +8,14 @@ import {
   type PassageVerseOption,
   toPassageVerseKey,
 } from '../../../../utils/markVersesPassageVerses';
+
+jest.mock('../../../../utils/useMobile', () => ({
+  useMobile: () => ({
+    isMobile: false,
+    isMobileView: false,
+    isMobileWidth: false,
+  }),
+}));
 
 const option = (chapter: number, verse: number): PassageVerseOption => ({
   chapter,
@@ -65,67 +73,106 @@ const renderDialog = (
 
 const dialog = () => screen.getByRole('dialog');
 
-const optionValues = (select: HTMLElement) =>
-  within(select)
+/** Open a MUI Select and return its menu option data-values. */
+const optionValues = async (user: UserEvent, label: string) => {
+  await user.click(within(dialog()).getByLabelText(label));
+  const listbox = await screen.findByRole('listbox');
+  const values = within(listbox)
     .getAllByRole('option')
-    .map((o) => (o as HTMLOptionElement).value);
+    .map((el) => el.getAttribute('data-value') ?? '');
+  await user.keyboard('{Escape}');
+  await waitFor(() => {
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+  });
+  return values;
+};
+
+/** Choose a MUI Select option by its data-value. */
+const selectByLabel = async (
+  user: UserEvent,
+  label: string,
+  value: string
+) => {
+  await user.click(within(dialog()).getByLabelText(label));
+  const listbox = await screen.findByRole('listbox');
+  const match = within(listbox)
+    .getAllByRole('option')
+    .find(
+      (el) =>
+        el.getAttribute('data-value') === value || el.textContent === value
+    );
+  if (!match) {
+    throw new Error(`No option matching "${value}" for "${label}"`);
+  }
+  await user.click(match);
+  await waitFor(() => {
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+  });
+};
 
 describe('EditReferenceDropdown unrestricted with multiple chapters', () => {
-  test('renders discrete chapter and verse dropdowns for both endpoints', () => {
+  test('renders discrete chapter and verse dropdowns for both endpoints', async () => {
+    const user = userEvent.setup();
     renderDialog();
 
-    const startChapter = within(dialog()).getByLabelText(
-      'start chapter number'
-    );
-    const endChapter = within(dialog()).getByLabelText('end chapter number');
-    expect(optionValues(startChapter)).toEqual(['1', '2']);
-    expect(optionValues(endChapter)).toEqual(['1', '2']);
-    expect((startChapter as HTMLSelectElement).value).toBe('1');
-    expect((endChapter as HTMLSelectElement).value).toBe('2');
+    expect(await optionValues(user, 'start chapter number')).toEqual([
+      '1',
+      '2',
+    ]);
+    expect(await optionValues(user, 'end chapter number')).toEqual(['1', '2']);
+    expect(
+      within(dialog()).getByLabelText('start chapter number')
+    ).toHaveTextContent('1');
+    expect(
+      within(dialog()).getByLabelText('end chapter number')
+    ).toHaveTextContent('2');
   });
 
-  test('verse options are scoped to the selected chapter', () => {
+  test('verse options are scoped to the selected chapter', async () => {
+    const user = userEvent.setup();
     renderDialog();
 
     // Start chapter 1 -> verses 78,79,80.
-    expect(
-      optionValues(within(dialog()).getByLabelText('start verse number'))
-    ).toEqual(['78', '79', '80']);
+    expect(await optionValues(user, 'start verse number')).toEqual([
+      '78',
+      '79',
+      '80',
+    ]);
     // End chapter 2 -> verses 1..5.
-    expect(
-      optionValues(within(dialog()).getByLabelText('end verse number'))
-    ).toEqual(['1', '2', '3', '4', '5']);
+    expect(await optionValues(user, 'end verse number')).toEqual([
+      '1',
+      '2',
+      '3',
+      '4',
+      '5',
+    ]);
   });
 
   test('changing the start chapter re-scopes and clamps the start verse', async () => {
     const user = userEvent.setup();
     renderDialog();
 
-    await user.selectOptions(
-      within(dialog()).getByLabelText('start chapter number'),
-      '2'
-    );
+    await selectByLabel(user, 'start chapter number', '2');
 
-    const startVerse = within(dialog()).getByLabelText(
-      'start verse number'
-    ) as HTMLSelectElement;
-    expect(optionValues(startVerse)).toEqual(['1', '2', '3', '4', '5']);
+    expect(await optionValues(user, 'start verse number')).toEqual([
+      '1',
+      '2',
+      '3',
+      '4',
+      '5',
+    ]);
     // 78 is not a verse of chapter 2, so the verse clamps to the chapter's first.
-    expect(startVerse.value).toBe('1');
+    expect(
+      within(dialog()).getByLabelText('start verse number')
+    ).toHaveTextContent('1');
   });
 
   test('saves the edited chapter:verse - chapter:verse reference', async () => {
     const user = userEvent.setup();
     const { onSave } = renderDialog();
 
-    await user.selectOptions(
-      within(dialog()).getByLabelText('start verse number'),
-      '79'
-    );
-    await user.selectOptions(
-      within(dialog()).getByLabelText('end verse number'),
-      '3'
-    );
+    await selectByLabel(user, 'start verse number', '79');
+    await selectByLabel(user, 'end verse number', '3');
     await user.click(within(dialog()).getByRole('button', { name: 'Save' }));
 
     expect(onSave).toHaveBeenCalledTimes(1);
@@ -141,7 +188,8 @@ describe('EditReferenceDropdown unrestricted with multiple chapters', () => {
 });
 
 describe('EditReferenceDropdown unrestricted with a single chapter', () => {
-  test('shows the chapter as fixed text, verses as dropdowns', () => {
+  test('shows the chapter as fixed text, verses as dropdowns', async () => {
+    const user = userEvent.setup();
     renderDialog({
       endVerseOptions: singleChapterOptions,
       value: {
@@ -159,12 +207,18 @@ describe('EditReferenceDropdown unrestricted with a single chapter', () => {
     expect(
       within(dialog()).queryByLabelText('end chapter number')
     ).not.toBeInTheDocument();
-    expect(
-      optionValues(within(dialog()).getByLabelText('start verse number'))
-    ).toEqual(['1', '2', '3', '4']);
-    expect(
-      optionValues(within(dialog()).getByLabelText('end verse number'))
-    ).toEqual(['1', '2', '3', '4']);
+    expect(await optionValues(user, 'start verse number')).toEqual([
+      '1',
+      '2',
+      '3',
+      '4',
+    ]);
+    expect(await optionValues(user, 'end verse number')).toEqual([
+      '1',
+      '2',
+      '3',
+      '4',
+    ]);
   });
 });
 

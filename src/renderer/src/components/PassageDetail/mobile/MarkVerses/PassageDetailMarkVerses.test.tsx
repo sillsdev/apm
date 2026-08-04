@@ -32,6 +32,15 @@ jest.mock('../../../../context/useGlobal', () => ({
   useGetGlobal: jest.fn(),
 }));
 
+// Force the MUI Select path in EditReferenceDropdown (not the mobile wheel).
+jest.mock('../../../../utils/useMobile', () => ({
+  useMobile: () => ({
+    isMobile: false,
+    isMobileView: false,
+    isMobileWidth: false,
+  }),
+}));
+
 interface IRow {
   id: string;
   sequenceNum: number;
@@ -331,6 +340,31 @@ const confirmReset = async (user: UserEvent) => {
 
 const editReferenceDialog = () => screen.getByRole('dialog');
 
+/** Choose a MUI Select option by aria-label and data-value. */
+const selectByLabel = async (
+  user: UserEvent,
+  label: string,
+  value: string
+) => {
+  await user.click(within(editReferenceDialog()).getByLabelText(label));
+  const listbox = await screen.findByRole('listbox');
+  // Match data-value (e.g. "1:2") or visible label (e.g. "2"), same as
+  // the old native selectOptions(string) behavior.
+  const match = within(listbox)
+    .getAllByRole('option')
+    .find(
+      (el) =>
+        el.getAttribute('data-value') === value || el.textContent === value
+    );
+  if (!match) {
+    throw new Error(`No option matching "${value}" for "${label}"`);
+  }
+  await user.click(match);
+  await waitFor(() => {
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+  });
+};
+
 /**
  * Click the in-row "Edit Reference" button. It now renders as a compact icon
  * button inside the current table row (visible text "Edit"), so its accessible
@@ -483,10 +517,7 @@ test('highlights the matching waveform region when a row is edited', async () =>
   await user.click(
     within(editReferenceDialog()).getByRole('checkbox', { name: 'Split Verse' })
   );
-  await user.selectOptions(
-    within(editReferenceDialog()).getByLabelText('start verse suffix'),
-    'a'
-  );
+  await selectByLabel(user, 'start verse suffix', 'a');
   await user.click(
     within(editReferenceDialog()).getByRole('button', { name: 'Save' })
   );
@@ -604,8 +635,20 @@ test('opens and cancels the split verse dialog', async () => {
   expect(screen.getByLabelText('start verse reference')).toHaveTextContent(
     '1:1'
   );
-  expect(screen.getAllByRole('option', { name: '4' })).toHaveLength(1);
-  expect(screen.queryAllByRole('option', { name: '5' })).toHaveLength(0);
+  await user.click(
+    within(editReferenceDialog()).getByLabelText('end verse number')
+  );
+  const endVerseListbox = await screen.findByRole('listbox');
+  expect(
+    within(endVerseListbox).getAllByRole('option', { name: '4' })
+  ).toHaveLength(1);
+  expect(
+    within(endVerseListbox).queryAllByRole('option', { name: '5' })
+  ).toHaveLength(0);
+  await user.keyboard('{Escape}');
+  await waitFor(() => {
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+  });
   expect(screen.queryByLabelText('start verse suffix')).not.toBeInTheDocument();
   expect(screen.queryByLabelText('end verse suffix')).not.toBeInTheDocument();
 
@@ -643,16 +686,10 @@ test('disables Save on Edit Reference until the reference changes', async () => 
   });
   expect(saveButton).toBeDisabled();
 
-  await user.selectOptions(
-    within(editReferenceDialog()).getByLabelText('end verse number'),
-    '2'
-  );
+  await selectByLabel(user, 'end verse number', '2');
   expect(saveButton).not.toBeDisabled();
 
-  await user.selectOptions(
-    within(editReferenceDialog()).getByLabelText('end verse number'),
-    '1'
-  );
+  await selectByLabel(user, 'end verse number', '1');
   expect(saveButton).toBeDisabled();
 });
 
@@ -715,18 +752,9 @@ test('saves a split verse range and shifts following references up', async () =>
   expect(
     within(editReferenceDialog()).getByLabelText('end verse number')
   ).not.toBeDisabled();
-  await user.selectOptions(
-    within(editReferenceDialog()).getByLabelText('end verse number'),
-    '2'
-  );
-  await user.selectOptions(
-    within(editReferenceDialog()).getByLabelText('start verse suffix'),
-    'a'
-  );
-  await user.selectOptions(
-    within(editReferenceDialog()).getByLabelText('end verse suffix'),
-    'e'
-  );
+  await selectByLabel(user, 'end verse number', '2');
+  await selectByLabel(user, 'start verse suffix', 'a');
+  await selectByLabel(user, 'end verse suffix', 'e');
   await user.click(
     within(editReferenceDialog()).getByRole('button', { name: 'Save' })
   );
@@ -755,10 +783,7 @@ test('opens split verse unchecked for a numeric range like 1:1-4', async () => {
 
   await clickMarkVersesRowByLimitsText(user, lim(0, 69));
   await clickEditReference(user);
-  await user.selectOptions(
-    within(editReferenceDialog()).getByLabelText('end verse number'),
-    '4'
-  );
+  await selectByLabel(user, 'end verse number', '4');
   await user.click(
     within(editReferenceDialog()).getByRole('button', { name: 'Save' })
   );
@@ -789,10 +814,7 @@ test('adds rows when narrowing a wide reference on a single segment', async () =
 
   await clickMarkVersesRowByLimitsText(user, lim(0, 69));
   await clickEditReference(user);
-  await user.selectOptions(
-    within(editReferenceDialog()).getByLabelText('end verse number'),
-    '4'
-  );
+  await selectByLabel(user, 'end verse number', '4');
   await user.click(
     within(editReferenceDialog()).getByRole('button', { name: 'Save' })
   );
@@ -800,10 +822,7 @@ test('adds rows when narrowing a wide reference on a single segment', async () =
   expect(screen.getByLabelText('verse-reference-1')).toHaveTextContent('1:1-4');
 
   await clickEditReference(user);
-  await user.selectOptions(
-    within(editReferenceDialog()).getByLabelText('end verse number'),
-    '1'
-  );
+  await selectByLabel(user, 'end verse number', '1');
   await user.click(
     within(editReferenceDialog()).getByRole('button', { name: 'Save' })
   );
@@ -834,10 +853,7 @@ test('adds rows when the first row range is narrowed after spanning the passage'
 
   await clickMarkVersesRowByLimitsText(user, lim(0, 10));
   await clickEditReference(user);
-  await user.selectOptions(
-    within(editReferenceDialog()).getByLabelText('end verse number'),
-    '4'
-  );
+  await selectByLabel(user, 'end verse number', '4');
   await user.click(
     within(editReferenceDialog()).getByRole('button', { name: 'Save' })
   );
@@ -845,10 +861,7 @@ test('adds rows when the first row range is narrowed after spanning the passage'
   expect(screen.getByLabelText('verse-reference-1')).toHaveTextContent('1:1-4');
 
   await clickEditReference(user);
-  await user.selectOptions(
-    within(editReferenceDialog()).getByLabelText('end verse number'),
-    '1'
-  );
+  await selectByLabel(user, 'end verse number', '1');
   await user.click(
     within(editReferenceDialog()).getByRole('button', { name: 'Save' })
   );
@@ -877,10 +890,7 @@ test('saving an ending verse without split creates a range and shifts following 
 
   await clickMarkVersesRowByLimitsText(user, lim(0, 10));
   await clickEditReference(user);
-  await user.selectOptions(
-    within(editReferenceDialog()).getByLabelText('end verse number'),
-    '2'
-  );
+  await selectByLabel(user, 'end verse number', '2');
   await user.click(
     within(editReferenceDialog()).getByRole('button', { name: 'Save' })
   );
@@ -914,10 +924,7 @@ test('split uses the selected left and right verses rather than the dialog row',
   await user.click(
     within(editReferenceDialog()).getByRole('checkbox', { name: 'Split Verse' })
   );
-  await user.selectOptions(
-    within(editReferenceDialog()).getByLabelText('end verse number'),
-    '4'
-  );
+  await selectByLabel(user, 'end verse number', '4');
   await user.click(
     within(editReferenceDialog()).getByRole('button', { name: 'Save' })
   );
@@ -952,18 +959,9 @@ test('shows undo after dialog save and restores the previous table', async () =>
   await user.click(
     within(editReferenceDialog()).getByRole('checkbox', { name: 'Split Verse' })
   );
-  await user.selectOptions(
-    within(editReferenceDialog()).getByLabelText('end verse number'),
-    '2'
-  );
-  await user.selectOptions(
-    within(editReferenceDialog()).getByLabelText('start verse suffix'),
-    'a'
-  );
-  await user.selectOptions(
-    within(editReferenceDialog()).getByLabelText('end verse suffix'),
-    'e'
-  );
+  await selectByLabel(user, 'end verse number', '2');
+  await selectByLabel(user, 'start verse suffix', 'a');
+  await selectByLabel(user, 'end verse suffix', 'e');
   await user.click(
     within(editReferenceDialog()).getByRole('button', { name: 'Save' })
   );
@@ -1004,10 +1002,7 @@ test('reset clears markers and restores the original reference table', async () 
   await user.click(
     within(editReferenceDialog()).getByRole('checkbox', { name: 'Split Verse' })
   );
-  await user.selectOptions(
-    within(editReferenceDialog()).getByLabelText('start verse suffix'),
-    'b'
-  );
+  await selectByLabel(user, 'start verse suffix', 'b');
   await user.click(
     within(editReferenceDialog()).getByRole('button', { name: 'Save' })
   );
