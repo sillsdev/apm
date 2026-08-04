@@ -152,8 +152,22 @@ jest.mock('../utils', () => ({
 }));
 
 jest.mock('../control', () => ({
-  AltButton: ({ children }: { children?: React.ReactNode }) => (
-    <button type="button">{children}</button>
+  AltButton: ({
+    children,
+    id,
+    onClick,
+    title,
+    disabled,
+  }: {
+    children?: React.ReactNode;
+    id?: string;
+    onClick?: () => void;
+    title?: string;
+    disabled?: boolean;
+  }) => (
+    <button type="button" id={id} onClick={onClick} title={title} disabled={disabled}>
+      {children}
+    </button>
   ),
   PriButton: ({ children }: { children?: React.ReactNode }) => (
     <button type="button">{children}</button>
@@ -305,5 +319,41 @@ describe('WSAudioPlayer record hotkeys', () => {
     );
 
     expect(queryByText('Loading')).toBeNull();
+  });
+
+  it('renders clear as a trash icon button, not a Clear text button', () => {
+    const blob = new Blob([new Uint8Array([1, 2, 3])], { type: 'audio/wav' });
+    const { container } = render(
+      <WSAudioPlayer {...defaultProps} loading={false} blob={blob} />
+    );
+
+    act(() => {
+      capturedOnWSReady?.(10, false);
+    });
+
+    const clearBtn = container.querySelector('#wsAudioClear');
+    expect(clearBtn).toBeTruthy();
+    expect(clearBtn?.getAttribute('aria-label')).toBe('Clear');
+    expect(clearBtn?.querySelector('svg')).toBeTruthy();
+    // Old control was an AltButton whose visible label was the reset/Clear string.
+    expect(clearBtn?.textContent?.replace(/\s/g, '')).toBe('');
+  });
+
+  it('shows Versions only when onVersions is provided', () => {
+    const { container, rerender } = render(
+      <WSAudioPlayer {...defaultProps} loading={false} />
+    );
+
+    expect(container.querySelector('#pdRecordVersions')).toBeNull();
+
+    rerender(
+      <WSAudioPlayer
+        {...defaultProps}
+        loading={false}
+        onVersions={jest.fn()}
+      />
+    );
+
+    expect(container.querySelector('#pdRecordVersions')).toBeTruthy();
   });
 });

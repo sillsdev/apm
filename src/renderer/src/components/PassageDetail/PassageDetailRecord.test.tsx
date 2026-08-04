@@ -10,7 +10,11 @@ const mockMemoryUpdate = jest.fn().mockResolvedValue(undefined);
 let capturedMediaRecordProps: {
   afterUploadCb: (mediaId: string | undefined) => Promise<void>;
   onRecordingCleared?: () => void | Promise<void>;
+  onVersions?: () => void;
+  trackState?: (state: { id: string; status: string }) => void;
 } | null = null;
+
+let vernacularVersionCount = 1;
 
 const passageDetailCtx = {
   passage: { id: 'p1', type: 'passage' },
@@ -35,6 +39,8 @@ jest.mock('../MediaRecord', () => ({
   default: (props: {
     afterUploadCb: (mediaId: string | undefined) => Promise<void>;
     onRecordingCleared?: () => void | Promise<void>;
+    onVersions?: () => void;
+    trackState?: (state: { id: string; status: string }) => void;
   }) => {
     capturedMediaRecordProps = props;
     return <div data-testid="media-record" />;
@@ -47,7 +53,7 @@ jest.mock('../../hoc/BigDialog', () => () => null);
 jest.mock('../AudioTab/VersionDlg', () => () => null);
 jest.mock('../SpeakerName', () => () => null);
 jest.mock('../AudioTab/usePassageVersionAudioRows', () => ({
-  usePassageVernacularVersionCount: () => 1,
+  usePassageVernacularVersionCount: () => vernacularVersionCount,
 }));
 jest.mock('../../control', () => ({
   AltButton: () => null,
@@ -150,12 +156,22 @@ describe('PassageDetailRecord BOLD step completion', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     capturedMediaRecordProps = null;
+    vernacularVersionCount = 1;
     passageDetailCtx.isBoldWorkflow = true;
     passageDetailCtx.mediafileId = 'mf1';
     passageDetailCtx.currentstep = 'step-record';
   });
 
   const renderRecord = () => render(<PassageDetailRecord width={400} />);
+
+  const markExistingVersionFetched = async () => {
+    await act(async () => {
+      capturedMediaRecordProps!.trackState?.({
+        id: 'mf1',
+        status: 'FETCHED',
+      });
+    });
+  };
 
   it('auto-completes and advances after successful save when BOLD', async () => {
     renderRecord();
@@ -210,5 +226,20 @@ describe('PassageDetailRecord BOLD step completion', () => {
     passageDetailCtx.isBoldWorkflow = false;
     renderRecord();
     expect(capturedMediaRecordProps?.onRecordingCleared).toBeUndefined();
+  });
+
+  it('does not pass onVersions when BOLD even with multiple vernacular versions', async () => {
+    vernacularVersionCount = 3;
+    renderRecord();
+    await markExistingVersionFetched();
+    expect(capturedMediaRecordProps?.onVersions).toBeUndefined();
+  });
+
+  it('passes onVersions when not BOLD with multiple vernacular versions', async () => {
+    passageDetailCtx.isBoldWorkflow = false;
+    vernacularVersionCount = 3;
+    renderRecord();
+    await markExistingVersionFetched();
+    expect(capturedMediaRecordProps?.onVersions).toBeDefined();
   });
 });
