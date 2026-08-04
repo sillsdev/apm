@@ -1218,6 +1218,7 @@ export function PlanSheet(props: IProps) {
           </Box>
         </>
       }
+      drawBottomBorder={true}
       contentSx={{ position: 'relative', p: 1.5 }}
       contentRef={scrollRef}
     >
