@@ -1,13 +1,14 @@
-import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { useSelector } from 'react-redux';
 import { useLocation } from 'react-router-dom';
-import { shallowEqual, useSelector } from 'react-redux';
-import { AppBar, LinearProgress, Box } from '@mui/material';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import { AppBar, LinearProgress, Box, IconButton } from '@mui/material';
 import JSONAPISource from '@orbit/jsonapi';
 import { isElectron } from '../../../api-variable';
-import { IState, IViewModeStrings } from '../../model';
-import { useGetGlobal, useGlobal } from '../../context/useGlobal';
+import { IState } from '../../model';
 import { TokenContext } from '../../context/TokenProvider';
 import { UnsavedContext } from '../../context/UnsavedContext';
+import { useGetGlobal, useGlobal } from '../../context/useGlobal';
 import {
   resetData,
   exitElectronApp,
@@ -23,48 +24,59 @@ import {
   useMobile,
   drainQueuesForLogout,
 } from '../../utils';
-import { withBucket } from '../../hoc/withBucket';
 import { useSnackBar } from '../../hoc/SnackBar';
-import { viewModeSelector } from '../../selector';
+import { withBucket } from '../../hoc/withBucket';
+import { ApmLogo } from '../../control/ApmLogo';
 import Busy from '../Busy';
-import ProjectDownloadAlert from '../ProjectDownloadAlert';
+import HelpMenu from '../HelpMenu';
 import PolicyDialog from '../PolicyDialog';
-import { DesktopToolbar } from './DesktopToolbar';
-import { MobileToolbar } from './MobileToolbar';
-
-const twoIcon = { minWidth: `calc(${48 * 2}px)` } as React.CSSProperties;
-const threeIcon = { minWidth: `calc(${48 * 3}px)` } as React.CSSProperties;
+import ProjectDownloadAlert from '../ProjectDownloadAlert';
+import UserMenu from '../UserMenu';
+import DetailTitle from './DetailTitle';
+import { HeadStatus } from './HeadStatus';
+import { OrgHead } from './OrgHead';
 
 type ResetRequests = () => Promise<void>;
 export type DownloadAlertReason = 'cloud';
 
+const isPreAuthPath = (path: string) =>
+  path === '/' || path.startsWith('/access/');
+
 export interface AppHeadProps {
   resetRequests?: ResetRequests;
-  switchTo?: boolean;
   drawBottomBorder?: boolean;
-  position?: 'fixed' | 'sticky' | 'static';
+  position?: 'fixed' | 'sticky' | 'relative';
 }
 
 export function AppHead({
   resetRequests,
-  switchTo,
   drawBottomBorder = true,
   position = 'fixed',
 }: AppHeadProps) {
-  const orbitStatus = useSelector((state: IState) => state.orbit.status);
-  const orbitErrorMsg = useSelector((state: IState) => state.orbit.message);
+  // Routing
   const { pathname } = useLocation();
   const navigate = useMyNavigate();
-  const { isMobileView, isMobileWidth } = useMobile();
-  const [home] = useGlobal('home'); //verified this is not used in a function 2/18/25
-  const [orgRole] = useGlobal('orgRole'); //verified this is not used in a function 2/18/25
-  const [errorReporter] = useGlobal('errorReporter');
+
+  // Redux state
+  const orbitStatus = useSelector((state: IState) => state.orbit.status);
+  const orbitErrorMsg = useSelector((state: IState) => state.orbit.message);
+
+  // Global state
   const [coordinator] = useGlobal('coordinator');
+  const remote = coordinator?.getSource('remote') as JSONAPISource;
   const [user] = useGlobal('user');
+  const [errorReporter] = useGlobal('errorReporter');
   const [, setProject] = useGlobal('project');
   const [, setPlan] = useGlobal('plan'); //verified this is not used in a function 2/18/25
-  const remote = coordinator?.getSource('remote') as JSONAPISource;
   const [isOffline] = useGlobal('offline'); //verified this is not used in a function 2/18/25
+  const [busy] = useGlobal('remoteBusy'); //verified this is not used in a function 2/18/25
+  const [dataChangeCount] = useGlobal('dataChangeCount'); //verified this is not used in a function 2/18/25
+  const [importexportBusy] = useGlobal('importexportBusy'); //verified this is not used in a function 2/18/25
+  const [isChanged] = useGlobal('changed'); //verified this is only used in a useEffect
+  const [complete] = useGlobal('progress'); //verified this is not used in a function 2/18/25
+  const getGlobal = useGetGlobal();
+
+  // Context
   const tokenCtx = useContext(TokenContext);
   const tokenState = tokenCtx?.state ?? {
     expiresAt: null,
@@ -72,32 +84,35 @@ export function AppHead({
   };
   const ctx = useContext(UnsavedContext);
   const { checkSavedFn, startSave, toolsChanged, anySaving } = ctx.state;
-  const [cssVars, setCssVars] = useState<React.CSSProperties>(twoIcon);
-  const [view, setView] = useState('');
-  const [busy] = useGlobal('remoteBusy'); //verified this is not used in a function 2/18/25
-  const [dataChangeCount] = useGlobal('dataChangeCount'); //verified this is not used in a function 2/18/25
-  const [importexportBusy] = useGlobal('importexportBusy'); //verified this is not used in a function 2/18/25
-  const [isChanged] = useGlobal('changed'); //verified this is only used in a useEffect
-  const getGlobal = useGetGlobal();
-  const [doExit, setDoExit] = useState(false);
-  const [exitAlert, setExitAlert] = useState(false);
+
+  // Other hooks
+  const { isMobileWidth } = useMobile();
+  const { showMessage } = useSnackBar();
   const isMounted = useMounted('apphead');
-  const [version, setVersion] = useState('');
-  const [latestVersion, setLatestVersion] = useState('');
-  const [complete] = useGlobal('progress'); //verified this is not used in a function 2/18/25
-  const [downloadAlert, setDownloadAlert] = useState(false);
-  const downloadAlertReason = useRef<DownloadAlertReason | null>(null);
-  const [updateTipOpen, setUpdateTipOpen] = useState(false);
-  const [showTerms, setShowTerms] = useState('');
   const waitForRemoteQueue = useWaitForRemoteQueue();
   const waitForDataChangesQueue = useWaitForRemoteQueue('datachanges');
 
+  // Local state
+  const [view, setView] = useState('');
+  const [doExit, setDoExit] = useState(false);
+  const [exitAlert, setExitAlert] = useState(false);
+  const [downloadAlert, setDownloadAlert] = useState(false);
+  const [updateTipOpen, setUpdateTipOpen] = useState(false);
+  const [showTerms, setShowTerms] = useState('');
+  const downloadAlertReason = useRef<DownloadAlertReason | null>(null);
+  const doingDone = useRef(false);
+
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const saving = useMemo(() => anySaving(), [toolsChanged]);
-  const { showMessage } = useSnackBar();
-  const tv: IViewModeStrings = useSelector(viewModeSelector, shallowEqual);
 
   const isDetail = useMemo(() => pathname.startsWith('/detail'), [pathname]);
+
+  const progressVariant = useMemo(() => {
+    if (complete !== 0 && complete !== 100) return 'determinate' as const;
+    if (complete === 0 && (busy || saving || dataChangeCount))
+      return 'indeterminate' as const;
+    return undefined;
+  }, [complete, busy, saving, dataChangeCount]);
 
   const planUrl = useMemo(() => {
     const fromUrl = localStorage.getItem(localUserKey(LocalKey.url));
@@ -109,6 +124,24 @@ export function AppHead({
     return `/plan/${m[2]}/0`;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname]);
+
+  const downDone = (cancel?: boolean) => {
+    if (doingDone.current) return;
+    doingDone.current = true;
+    setDownloadAlert(false);
+    downloadAlertReason.current = null;
+    if (cancel && !doExit) {
+      const userId = localStorage.getItem(LocalKey.onlineUserId);
+      if (userId) localStorage.setItem(LocalKey.userId, userId);
+      return;
+    }
+    // This used to call exitApp(), which just quits with nothing to bring
+    // the app back — the user is left staring at a closed app after
+    // confirming "Go Offline". relaunchApp() quits and restarts, so it
+    // reopens straight into the newly-offline session.
+    if (localStorage.getItem(LocalKey.userId)) relaunchApp();
+    else setView('Logout');
+  };
 
   const handleUserMenuAction = (
     what: string,
@@ -187,45 +220,8 @@ export function AppHead({
     handleMenu(what);
   };
 
-  useEffect(() => {
-    // expiresAt is legitimately -1 while genuinely offline (no online token
-    // to expire) — this used to fire Logout unconditionally, which re-ran
-    // the whole "Go Offline" teardown/relaunch flow every time AppHead
-    // mounted offline, looping the app through logout -> relaunch forever.
-    // Loading.tsx's equivalent check already guards with !offline; mirror it.
-    if (
-      !getGlobal('offline') &&
-      tokenState.expiresAt === -1 &&
-      !tokenState.authSessionCleared
-    ) {
-      handleMenu('Logout');
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tokenState]);
-
-  const doingDone = useRef(false);
-
-  const downDone = (cancel?: boolean) => {
-    if (doingDone.current) return;
-    doingDone.current = true;
-    setDownloadAlert(false);
-    downloadAlertReason.current = null;
-    if (cancel && !doExit) {
-      const userId = localStorage.getItem(LocalKey.onlineUserId);
-      if (userId) localStorage.setItem(LocalKey.userId, userId);
-      return;
-    }
-    // This used to call exitApp(), which just quits with nothing to bring
-    // the app back — the user is left staring at a closed app after
-    // confirming "Go Offline". relaunchApp() quits and restarts, so it
-    // reopens straight into the newly-offline session.
-    if (localStorage.getItem(LocalKey.userId)) relaunchApp();
-    else setView('Logout');
-  };
-
   const handleUnload = (e: any) => {
-    if (pathname === '/') return true;
-    if (pathname.startsWith('/access')) return true;
+    if (isPreAuthPath(pathname)) return true;
     if (!exitAlert && isElectron && isMounted() && !doingDone.current) {
       setDoExit(true);
       setExitAlert(true);
@@ -243,15 +239,29 @@ export function AppHead({
     return undefined;
   };
 
+  const handleTermsClose = () => setShowTerms('');
+
+  useEffect(() => {
+    // expiresAt is legitimately -1 while genuinely offline (no online token
+    // to expire) — this used to fire Logout unconditionally, which re-ran
+    // the whole "Go Offline" teardown/relaunch flow every time AppHead
+    // mounted offline, looping the app through logout -> relaunch forever.
+    // Loading.tsx's equivalent check already guards with !offline; mirror it.
+    if (
+      !getGlobal('offline') &&
+      tokenState.expiresAt === -1 &&
+      !tokenState.authSessionCleared
+    ) {
+      handleMenu('Logout');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tokenState]);
+
   useEffect(() => {
     window.addEventListener('beforeunload', handleUnload);
     if (!user) {
       //are we here from a deeplink?
-      if (
-        pathname !== '/' &&
-        !pathname.startsWith('/access') &&
-        pathname !== '/loading'
-      ) {
+      if (!isPreAuthPath(pathname) && pathname !== '/loading') {
         setView('Access');
       }
     }
@@ -274,15 +284,6 @@ export function AppHead({
   }, [exitAlert, isChanged]);
 
   useEffect(() => {
-    setCssVars(
-      latestVersion !== '' && latestVersion !== version && isElectron
-        ? threeIcon
-        : twoIcon
-    );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [remote, latestVersion]);
-
-  useEffect(() => {
     logError(Severity.info, errorReporter, pathname);
     setUpdateTipOpen(pathname === '/');
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -295,81 +296,98 @@ export function AppHead({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orbitStatus, orbitErrorMsg]);
 
-  const handleTermsClose = () => setShowTerms('');
-
   if (view === 'Error') navigate('/error');
   if (view === 'Logout') setTimeout(() => navigate('/logout'), 500);
   if (view === 'Access') setTimeout(() => navigate('/'), 200);
   if (view === 'Terms') navigate('/terms');
   if (view === 'Privacy') navigate('/privacy');
 
-  const isMobile = isMobileView || isMobileWidth;
-
   return (
     <AppBar
       position={position}
+      color="inherit"
       sx={{
-        width: '100%',
-        display: 'flex',
-        px: 1.5,
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+        p: 1.5,
         backgroundColor: 'custom.headerBackground',
         ...(drawBottomBorder && {
           borderBottom: '1px solid',
           borderColor: 'divider',
         }),
       }}
-      color="inherit"
     >
-      <>
-        {complete === 0 || complete === 100 || (
-          <Box sx={{ mx: -1.5 }}>
-            <LinearProgress id="prog" variant="determinate" value={complete} />
-          </Box>
-        )}
-        {(!busy && !saving && !dataChangeCount) || complete !== 0 || (
-          <LinearProgress id="busy" variant="indeterminate" sx={{ mx: -1.5 }} />
-        )}
-
-        {isMobile ? (
-          <MobileToolbar
-            isDetail={isDetail}
-            planUrl={planUrl}
-            navigate={navigate}
-            isMobileWidth={isMobileWidth}
-            handleMenu={handleMenu}
-            setVersion={setVersion}
-            setLatestVersion={setLatestVersion}
-            setUpdateTipOpen={setUpdateTipOpen}
-            isOffline={isOffline}
-            updateTipOpen={updateTipOpen}
-            pathname={pathname}
-            handleUserMenu={handleUserMenu}
-          />
-        ) : (
-          <DesktopToolbar
-            switchTo={switchTo}
-            home={home}
-            orgRole={orgRole}
-            cssVars={cssVars}
-            pathname={pathname}
-            handleMenu={handleMenu}
-            setVersion={setVersion}
-            setLatestVersion={setLatestVersion}
-            setUpdateTipOpen={setUpdateTipOpen}
-            isOffline={isOffline}
-            updateTipOpen={updateTipOpen}
-            handleUserMenu={handleUserMenu}
-            tv={tv}
-          />
-        )}
-        {importexportBusy && !downloadAlert && <Busy />}
-        {downloadAlert && <ProjectDownloadAlert cb={downDone} />}
-        <PolicyDialog
-          isOpen={Boolean(showTerms)}
-          content={showTerms}
-          onClose={handleTermsClose}
+      {progressVariant && (
+        <LinearProgress
+          variant={progressVariant}
+          value={complete}
+          sx={{ position: 'absolute', top: 0, left: 0, right: 0 }}
         />
-      </>
+      )}
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          gap: (theme) => theme.layout.gap,
+          width: '100%',
+          minWidth: 0,
+        }}
+      >
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: (theme) => theme.layout.gap,
+            flex: '1 1 auto',
+            minWidth: 0,
+          }}
+        >
+          {!isDetail ? (
+            <IconButton
+              onClick={() => navigate('/team')}
+              sx={{ flexShrink: 0, p: 0 }}
+            >
+              <ApmLogo sx={{ width: '40px', height: '40px' }} />
+            </IconButton>
+          ) : (
+            <IconButton
+              onClick={() => navigate(planUrl || '/team')}
+              sx={{ flexShrink: 0 }}
+            >
+              <ArrowBackIcon />
+            </IconButton>
+          )}
+          {isDetail ? <DetailTitle /> : <OrgHead />}
+        </Box>
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: (theme) => theme.layout.gap,
+            flexShrink: 0,
+          }}
+        >
+          {!isMobileWidth && (
+            <HeadStatus
+              handleMenu={handleMenu}
+              onUpdateTipOpen={setUpdateTipOpen}
+            />
+          )}
+          <HelpMenu
+            online={!isOffline}
+            sx={updateTipOpen && isElectron ? { top: '40px' } : {}}
+          />
+          {!isPreAuthPath(pathname) && <UserMenu action={handleUserMenu} />}
+        </Box>
+      </Box>
+      {importexportBusy && !downloadAlert && <Busy />}
+      {downloadAlert && <ProjectDownloadAlert cb={downDone} />}
+      <PolicyDialog
+        isOpen={Boolean(showTerms)}
+        content={showTerms}
+        onClose={handleTermsClose}
+      />
     </AppBar>
   );
 }
