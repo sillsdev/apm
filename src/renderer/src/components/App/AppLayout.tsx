@@ -16,7 +16,7 @@ export default function AppLayout({ appHeadProps, children }: AppLayoutProps) {
       }}
     >
       <Box sx={{ flexShrink: 0 }}>
-        <AppHead {...appHeadProps} position="static" />
+        <AppHead {...appHeadProps} position="relative" />
       </Box>
       <Box sx={{ flex: 1, minHeight: 0, overflow: 'auto' }}>{children}</Box>
     </Box>
