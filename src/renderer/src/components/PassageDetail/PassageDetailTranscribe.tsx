@@ -215,6 +215,11 @@ export function PassageDetailTranscribe({ width, artifactTypeId }: IProps) {
   };
 
   const stepLanguageBcp47 = useMemo(() => {
+    // Claude says:
+    // Vernacular steps transcribe in the org vernacular, not a step language, and
+    // their media carry no languagebcp47 — honoring a leftover `language` value
+    // here would scope them to nothing.
+    if (!artifactTypeId) return undefined;
     const { bcp47 } = parseMediaLanguageField(
       (() => {
         try {
@@ -225,7 +230,7 @@ export function PassageDetailTranscribe({ width, artifactTypeId }: IProps) {
       })()
     );
     return bcp47 !== 'und' ? bcp47 : undefined;
-  }, [stepSettings]);
+  }, [stepSettings, artifactTypeId]);
 
   const phraseArtifactSlug = useMemo(() => {
     if (!artifactTypeId) return null;
