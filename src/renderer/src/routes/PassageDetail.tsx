@@ -167,7 +167,7 @@ export const PassageDetail = () => {
   if (view !== '' && view !== pathname) return <StickyRedirect to={view} />;
 
   return (
-    <AppLayout appHeadProps={{ switchTo: true, drawBottomBorder: false }}>
+    <AppLayout appHeadProps={{ drawBottomBorder: false }}>
       <PassageDetailProvider>
         {isMobile ? <MobileDetail /> : <PassageDetailGrids />}
       </PassageDetailProvider>
