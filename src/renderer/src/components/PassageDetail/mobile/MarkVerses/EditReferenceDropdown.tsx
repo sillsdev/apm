@@ -57,6 +57,16 @@ const labelSx = {
   py: 0.5,
 };
 
+/**
+ * Match wheel option/highlight text to labelSx (1.1rem, normal weight).
+ * Library defaults are 0.875rem options and 1rem / weight 500 for the highlight.
+ */
+const wheelFontSx = {
+  fontSize: '1.1rem',
+  fontWeight: 400,
+  fontFamily: 'inherit',
+};
+
 /** Narrow width for a single wheel column in the horizontal reference row. */
 const wheelColumnSx = {
   width: 44,
@@ -66,6 +76,9 @@ const wheelColumnSx = {
   '& [data-rwp-wrapper]': {
     width: '100%',
   },
+  '& [data-rwp-option]': wheelFontSx,
+  '& [data-rwp-highlight-wrapper]': wheelFontSx,
+  '& [data-rwp-highlight-item]': wheelFontSx,
 };
 const wheelSuffixColumnSx = {
   ...wheelColumnSx,
@@ -76,10 +89,13 @@ const wheelVerseColumnSx = {
   width: 52,
 };
 
-/** Compact wheel sizing so the dialog stays short. */
+/**
+ * Mid-height cylinder — taller than the original compact 8/28, shorter than 16/32.
+ * visibleCount must be a multiple of 4 (library constraint).
+ */
 const wheelPickerProps = {
-  visibleCount: 8 as const,
-  optionItemHeight: 28,
+  visibleCount: 12 as const,
+  optionItemHeight: 30,
 };
 
 interface PickerOption {
