@@ -13,18 +13,28 @@ const mediaWithLanguage = (languagebcp47?: string) =>
 
 describe('mediaMatchesStepLanguage', () => {
   it('keeps everything when the step has no language', () => {
-    expect(mediaMatchesStepLanguage(mediaWithLanguage('French|fr'), undefined)).toBe(true);
-    expect(mediaMatchesStepLanguage(mediaWithLanguage('French|fr'), '')).toBe(true);
-    expect(mediaMatchesStepLanguage(mediaWithLanguage('French|fr'), 'und')).toBe(true);
+    expect(
+      mediaMatchesStepLanguage(mediaWithLanguage('French|fr'), undefined)
+    ).toBe(true);
+    expect(mediaMatchesStepLanguage(mediaWithLanguage('French|fr'), '')).toBe(
+      true
+    );
+    expect(
+      mediaMatchesStepLanguage(mediaWithLanguage('French|fr'), 'und')
+    ).toBe(true);
   });
 
   it('keeps media tagged with the step language', () => {
-    expect(mediaMatchesStepLanguage(mediaWithLanguage('French|fr'), 'fr')).toBe(true);
+    expect(mediaMatchesStepLanguage(mediaWithLanguage('French|fr'), 'fr')).toBe(
+      true
+    );
     expect(mediaMatchesStepLanguage(mediaWithLanguage('fr'), 'fr')).toBe(true);
   });
 
   it('drops media tagged with another language', () => {
-    expect(mediaMatchesStepLanguage(mediaWithLanguage('English|en'), 'fr')).toBe(false);
+    expect(
+      mediaMatchesStepLanguage(mediaWithLanguage('English|en'), 'fr')
+    ).toBe(false);
   });
 
   it('drops untagged media when the step has a language', () => {
