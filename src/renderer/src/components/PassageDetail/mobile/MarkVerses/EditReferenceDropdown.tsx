@@ -91,10 +91,14 @@ const wheelColumnWidth = (options: { label: ReactNode }[]) => {
   return `calc(${maxChars}ch + 12px)`;
 };
 
-/** Content-sized column; overrides library width:100% / flex:1 growth. */
+/**
+ * Content-sized column; overrides library width:100% / flex:1 growth.
+ * fontSize on the column itself so `ch` in wheelColumnWidth matches option text.
+ */
 const wheelColumnSx = {
   flex: '0 0 auto',
   maxWidth: '100%',
+  ...wheelFontSx,
   '& [data-rwp-wrapper]': {
     width: '100%',
   },
@@ -331,15 +335,26 @@ export default function EditReferenceDropdown({
         value: option.value,
         label: option.label,
       }));
+      // Remount when the option set changes so the cylinder re-centers after
+      // chapter switches clamp/re-scope the verse list.
+      const optionsKey = wheelOptions.map((option) => option.value).join('|');
+      const selected = options.find((option) => option.value === pickerValue);
+      const valueText =
+        typeof selected?.label === 'string' ||
+        typeof selected?.label === 'number'
+          ? String(selected.label).replace(/\u00A0/g, ' ')
+          : pickerValue || 'none';
       return (
         <Box
           sx={{ ...wheelColumnSx, width: wheelColumnWidth(options) }}
           aria-label={ariaLabel}
+          aria-valuetext={valueText}
           title={ariaLabel}
           role="group"
         >
           <WheelPickerWrapper>
             <WheelPicker
+              key={`${ariaLabel}:${optionsKey}`}
               options={wheelOptions}
               value={pickerValue}
               onValueChange={onChange}
