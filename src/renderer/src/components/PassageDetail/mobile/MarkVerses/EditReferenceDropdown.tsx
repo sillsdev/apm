@@ -67,26 +67,60 @@ const wheelFontSx = {
   fontFamily: 'inherit',
 };
 
-/** Narrow width for a single wheel column in the horizontal reference row. */
+/**
+ * Wheel options are absolutely positioned, so columns have no intrinsic width.
+ * Size each column from its longest label (+ padding) and never grow.
+ */
+const wheelColumnWidth = (options: { label: ReactNode }[]) => {
+  const maxChars = Math.max(
+    2, // At least ~2 character widths (e.g. "12", "a ") so it's not too hard to scroll
+    ...options.map((option) => {
+      if (
+        typeof option.label === 'string' ||
+        typeof option.label === 'number'
+      ) {
+        return (
+          String(option.label)
+            .replace(/\u00A0/g, ' ')
+            .trim().length || 1
+        );
+      }
+      return 1;
+    })
+  );
+  return `calc(${maxChars}ch + 12px)`;
+};
+
+/** Content-sized column; overrides library width:100% / flex:1 growth. */
 const wheelColumnSx = {
-  width: 44,
-  minWidth: 0,
-  flex: '0 1 auto',
-  // Library wrapper defaults to width:100%; constrain it to the column.
+  flex: '0 0 auto',
+  maxWidth: '100%',
   '& [data-rwp-wrapper]': {
     width: '100%',
   },
-  '& [data-rwp-option]': wheelFontSx,
-  '& [data-rwp-highlight-wrapper]': wheelFontSx,
-  '& [data-rwp-highlight-item]': wheelFontSx,
-};
-const wheelSuffixColumnSx = {
-  ...wheelColumnSx,
-  width: 36,
-};
-const wheelVerseColumnSx = {
-  ...wheelColumnSx,
-  width: 52,
+  '& [data-rwp]': {
+    flex: '0 0 auto',
+    width: '100%',
+  },
+  // Unselected 3D options: muted/faded vs the selected highlight.
+  '& [data-rwp-option]': {
+    ...wheelFontSx,
+    color: 'text.secondary',
+    opacity: 0.45,
+  },
+  '& [data-rwp-highlight-wrapper]': {
+    ...wheelFontSx,
+    color: 'text.primary',
+    // Hairlines frame the selection (iOS-style).
+    borderTop: '1px solid',
+    borderBottom: '1px solid',
+    borderColor: 'grey.400',
+    bgcolor: 'transparent',
+  },
+  '& [data-rwp-highlight-item]': {
+    ...wheelFontSx,
+    color: 'text.primary',
+  },
 };
 
 /**
@@ -108,10 +142,6 @@ interface ValuePickerProps {
   options: PickerOption[];
   onChange: (value: string) => void;
   ariaLabel: string;
-  /** When true, use the slightly narrower suffix column on mobile. */
-  narrow?: boolean;
-  /** When true, use the slightly wider verse column on mobile. */
-  wide?: boolean;
   selectSx?: typeof selectSx;
 }
 
@@ -294,8 +324,6 @@ export default function EditReferenceDropdown({
     options,
     onChange,
     ariaLabel,
-    narrow,
-    wide,
     selectSx: pickerSelectSx = selectSx,
   }: ValuePickerProps) => {
     if (isMobileWidth) {
@@ -303,14 +331,9 @@ export default function EditReferenceDropdown({
         value: option.value,
         label: option.label,
       }));
-      const columnSx = narrow
-        ? wheelSuffixColumnSx
-        : wide
-          ? wheelVerseColumnSx
-          : wheelColumnSx;
       return (
         <Box
-          sx={columnSx}
+          sx={{ ...wheelColumnSx, width: wheelColumnWidth(options) }}
           aria-label={ariaLabel}
           title={ariaLabel}
           role="group"
@@ -366,7 +389,6 @@ export default function EditReferenceDropdown({
       })),
       onChange: handleSuffixChange(isStart ? 'startSuffix' : 'endSuffix'),
       ariaLabel: suffixLabel,
-      narrow: true,
     });
   };
 
@@ -419,7 +441,6 @@ export default function EditReferenceDropdown({
               ? handleStartVerseNumberChange
               : handleEndVerseNumberChange,
             ariaLabel: verseLabel,
-            wide: true,
             selectSx: verseSelectSx,
           })}
           {draft.splitVerse ? renderSuffixSelect(side) : null}
@@ -473,7 +494,9 @@ export default function EditReferenceDropdown({
               </Box>
             </Box>
           )}
-          <Typography variant="h6">-</Typography>
+          <Typography variant="h6" sx={{ mx: 1 }}>
+            -
+          </Typography>
           {unrestricted ? (
             renderEditableEndpoint('end')
           ) : (
@@ -487,9 +510,7 @@ export default function EditReferenceDropdown({
                 }}
               >
                 {showChapterPrefix ? (
-                  <Typography sx={labelSx}>
-                    {`${draft.endChapter}:`}
-                  </Typography>
+                  <Typography sx={labelSx}>{`${draft.endChapter}:`}</Typography>
                 ) : null}
                 {renderValuePicker({
                   value: endSelectValue,
@@ -499,7 +520,6 @@ export default function EditReferenceDropdown({
                   })),
                   onChange: handleEndVerseChange,
                   ariaLabel: 'end verse number',
-                  wide: true,
                   selectSx: verseSelectSx,
                 })}
                 {draft.splitVerse ? renderSuffixSelect('end') : null}

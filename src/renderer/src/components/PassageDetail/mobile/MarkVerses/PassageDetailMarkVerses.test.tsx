@@ -341,11 +341,7 @@ const confirmReset = async (user: UserEvent) => {
 const editReferenceDialog = () => screen.getByRole('dialog');
 
 /** Choose a MUI Select option by aria-label and data-value. */
-const selectByLabel = async (
-  user: UserEvent,
-  label: string,
-  value: string
-) => {
+const selectByLabel = async (user: UserEvent, label: string, value: string) => {
   await user.click(within(editReferenceDialog()).getByLabelText(label));
   const listbox = await screen.findByRole('listbox');
   // Match data-value (e.g. "1:2") or visible label (e.g. "2"), same as

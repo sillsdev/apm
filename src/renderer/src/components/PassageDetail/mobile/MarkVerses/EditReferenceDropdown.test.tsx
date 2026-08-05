@@ -88,11 +88,7 @@ const optionValues = async (user: UserEvent, label: string) => {
 };
 
 /** Choose a MUI Select option by its data-value. */
-const selectByLabel = async (
-  user: UserEvent,
-  label: string,
-  value: string
-) => {
+const selectByLabel = async (user: UserEvent, label: string, value: string) => {
   await user.click(within(dialog()).getByLabelText(label));
   const listbox = await screen.findByRole('listbox');
   const match = within(listbox)
