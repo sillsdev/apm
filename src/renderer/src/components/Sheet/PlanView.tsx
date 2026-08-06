@@ -92,8 +92,6 @@ export function PlanView(props: IProps) {
         display: 'flex',
         flexDirection: 'row',
         gap: '1rem',
-        padding: '0 1.5rem',
-        paddingTop: `calc(${ActionHeight}px + 16px)`,
       }}
     >
       {rowInfo.map((row, i) => {
@@ -114,7 +112,6 @@ export function PlanView(props: IProps) {
                 alignItems: 'center',
                 gap: '1rem',
                 width: '100%',
-                mt: '1rem',
               }}
             >
               {publishingView && (
