@@ -14,7 +14,7 @@ import { PassageCard } from './PassageCard';
 import StickyRedirect from '../StickyRedirect';
 import { useParams } from 'react-router-dom';
 import { GraphicAvatar } from './GraphicAvatar';
-import { ActionHeight, GrowingSpacer } from '../../control';
+import { GrowingSpacer } from '../../control';
 import {
   isPersonalTeam,
   PublishDestinationEnum,
