@@ -27,7 +27,6 @@ import {
 import { useSnackBar } from '../../hoc/SnackBar';
 import { withBucket } from '../../hoc/withBucket';
 import { ApmLogo } from '../../control/ApmLogo';
-import Busy from '../Busy';
 import HelpMenu from '../HelpMenu';
 import PolicyDialog from '../PolicyDialog';
 import ProjectDownloadAlert from '../ProjectDownloadAlert';
@@ -46,22 +45,21 @@ export interface AppHeadProps {
   resetRequests?: ResetRequests;
   drawBottomBorder?: boolean;
   position?: 'fixed' | 'sticky' | 'relative';
+  onDownloadAlert?: (open: boolean) => void;
 }
 
 export function AppHead({
   resetRequests,
   drawBottomBorder = true,
   position = 'fixed',
+  onDownloadAlert,
 }: AppHeadProps) {
-  // Routing
   const { pathname } = useLocation();
   const navigate = useMyNavigate();
 
-  // Redux state
   const orbitStatus = useSelector((state: IState) => state.orbit.status);
   const orbitErrorMsg = useSelector((state: IState) => state.orbit.message);
 
-  // Global state
   const [coordinator] = useGlobal('coordinator');
   const remote = coordinator?.getSource('remote') as JSONAPISource;
   const [user] = useGlobal('user');
@@ -71,12 +69,10 @@ export function AppHead({
   const [isOffline] = useGlobal('offline'); //verified this is not used in a function 2/18/25
   const [busy] = useGlobal('remoteBusy'); //verified this is not used in a function 2/18/25
   const [dataChangeCount] = useGlobal('dataChangeCount'); //verified this is not used in a function 2/18/25
-  const [importexportBusy] = useGlobal('importexportBusy'); //verified this is not used in a function 2/18/25
   const [isChanged] = useGlobal('changed'); //verified this is only used in a useEffect
   const [complete] = useGlobal('progress'); //verified this is not used in a function 2/18/25
   const getGlobal = useGetGlobal();
 
-  // Context
   const tokenCtx = useContext(TokenContext);
   const tokenState = tokenCtx?.state ?? {
     expiresAt: null,
@@ -85,14 +81,12 @@ export function AppHead({
   const ctx = useContext(UnsavedContext);
   const { checkSavedFn, startSave, toolsChanged, anySaving } = ctx.state;
 
-  // Other hooks
   const { isMobileWidth } = useMobile();
   const { showMessage } = useSnackBar();
   const isMounted = useMounted('apphead');
   const waitForRemoteQueue = useWaitForRemoteQueue();
   const waitForDataChangesQueue = useWaitForRemoteQueue('datachanges');
 
-  // Local state
   const [view, setView] = useState('');
   const [doExit, setDoExit] = useState(false);
   const [exitAlert, setExitAlert] = useState(false);
@@ -284,6 +278,12 @@ export function AppHead({
   }, [exitAlert, isChanged]);
 
   useEffect(() => {
+    onDownloadAlert?.(downloadAlert);
+    return () => onDownloadAlert?.(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [downloadAlert]);
+
+  useEffect(() => {
     logError(Severity.info, errorReporter, pathname);
     setUpdateTipOpen(pathname === '/');
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -381,7 +381,6 @@ export function AppHead({
           {!isPreAuthPath(pathname) && <UserMenu action={handleUserMenu} />}
         </Box>
       </Box>
-      {importexportBusy && !downloadAlert && <Busy />}
       {downloadAlert && <ProjectDownloadAlert cb={downDone} />}
       <PolicyDialog
         isOpen={Boolean(showTerms)}
