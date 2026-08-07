@@ -19,8 +19,6 @@ export * from './SelectExportType';
 export * from './LogoImg';
 export * from './GrowingSpacer';
 export * from './TabBox';
-export * from './TabAppBar';
-export * from './PaddedBox';
 export * from './TabActions';
 export * from './PriButton';
 export * from './AltButton';
