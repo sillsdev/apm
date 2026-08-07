@@ -8,8 +8,10 @@ import {
   legacy_createStore as createStore,
 } from 'redux';
 import { thunk } from 'redux-thunk';
+import { ThemeProvider } from '@mui/material/styles';
 import Coordinator from '@orbit/coordinator';
 import Memory from '@orbit/memory';
+import { createAppTheme } from '../theme';
 import { BurritoBooks } from './BurritoBooks';
 import { GlobalProvider } from '../context/GlobalContext';
 import { UnsavedProvider } from '../context/UnsavedContext';
@@ -214,6 +216,8 @@ const mockOrbitReducer = () => ({
   fetchResults: undefined,
 });
 
+const appTheme = createAppTheme('en');
+
 const mockStore = createStore(
   combineReducers({
     strings: mockStringsReducer,
@@ -290,24 +294,26 @@ describe('BurritoBooks', () => {
   ) => {
     const memory = initialState.memory as Memory;
     cy.mount(
-      <MemoryRouter initialEntries={[initialEntry]}>
-        <Provider store={mockStore}>
-          <GlobalProvider init={initialState}>
-            <DataProvider dataStore={memory}>
-              <UnsavedProvider>
-                <TokenContext.Provider value={mockTokenContextValue as never}>
-                  <Routes>
-                    <Route
-                      path="/burrito/:teamId/books"
-                      element={<BurritoBooks />}
-                    />
-                  </Routes>
-                </TokenContext.Provider>
-              </UnsavedProvider>
-            </DataProvider>
-          </GlobalProvider>
-        </Provider>
-      </MemoryRouter>
+      <ThemeProvider theme={appTheme}>
+        <MemoryRouter initialEntries={[initialEntry]}>
+          <Provider store={mockStore}>
+            <GlobalProvider init={initialState}>
+              <DataProvider dataStore={memory}>
+                <UnsavedProvider>
+                  <TokenContext.Provider value={mockTokenContextValue as never}>
+                    <Routes>
+                      <Route
+                        path="/burrito/:teamId/books"
+                        element={<BurritoBooks />}
+                      />
+                    </Routes>
+                  </TokenContext.Provider>
+                </UnsavedProvider>
+              </DataProvider>
+            </GlobalProvider>
+          </Provider>
+        </MemoryRouter>
+      </ThemeProvider>
     );
   };
 
