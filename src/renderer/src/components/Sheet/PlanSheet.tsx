@@ -68,7 +68,6 @@ import { planSheetSelector, sharedSelector } from '../../selector';
 import {
   AddSectionPassageButtons,
   ProjButtons,
-  ActionHeight,
   GrowingSpacer,
   LightTooltip,
 } from '../../control';
@@ -514,8 +513,7 @@ export function PlanSheet(props: IProps) {
         scroller.scrollTo(0, tbodyRef.offsetTop - 10);
       } else if (
         tbodyRef &&
-        tbodyRef.offsetTop >
-          scroller.scrollTop + scroller.clientHeight - ActionHeight - 200
+        tbodyRef.offsetTop > scroller.scrollTop + scroller.clientHeight - 200
       ) {
         const adjust = Math.min(rowsPerPage.current, currentRowRef.current);
         scroller.scrollTo(0, tbodyRef.offsetTop + 10 - adjust * 20);
@@ -831,7 +829,7 @@ export function PlanSheet(props: IProps) {
   const setRowsPerPage = () => {
     const height =
       scrollRef.current?.clientHeight ?? document.documentElement.clientHeight;
-    rowsPerPage.current = Math.ceil((height - ActionHeight - 200) / 42);
+    rowsPerPage.current = Math.ceil((height - 200) / 42);
   };
 
   const handleRowsPerPage = debounce(() => {
