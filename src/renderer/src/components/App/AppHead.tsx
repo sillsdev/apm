@@ -1,11 +1,11 @@
 import { useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { useSelector } from 'react-redux';
+import { shallowEqual, useSelector } from 'react-redux';
 import { useLocation } from 'react-router-dom';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { AppBar, LinearProgress, Box, IconButton } from '@mui/material';
 import JSONAPISource from '@orbit/jsonapi';
 import { isElectron } from '../../../api-variable';
-import { IState } from '../../model';
+import { IState, IViewModeStrings } from '../../model';
 import { TokenContext } from '../../context/TokenProvider';
 import { UnsavedContext } from '../../context/UnsavedContext';
 import { useGetGlobal, useGlobal } from '../../context/useGlobal';
@@ -20,12 +20,14 @@ import {
   Severity,
   relaunchApp,
   useMyNavigate,
+  useHome,
   useWaitForRemoteQueue,
   useMobile,
   drainQueuesForLogout,
 } from '../../utils';
 import { useSnackBar } from '../../hoc/SnackBar';
 import { withBucket } from '../../hoc/withBucket';
+import { viewModeSelector } from '../../selector';
 import { ApmLogo } from '../../control/ApmLogo';
 import HelpMenu from '../HelpMenu';
 import PolicyDialog from '../PolicyDialog';
@@ -57,6 +59,7 @@ export function AppHead({
   const { pathname } = useLocation();
   const navigate = useMyNavigate();
 
+  const tv: IViewModeStrings = useSelector(viewModeSelector, shallowEqual);
   const orbitStatus = useSelector((state: IState) => state.orbit.status);
   const orbitErrorMsg = useSelector((state: IState) => state.orbit.message);
 
@@ -80,6 +83,7 @@ export function AppHead({
   };
   const ctx = useContext(UnsavedContext);
   const { checkSavedFn, startSave, toolsChanged, anySaving } = ctx.state;
+  const { goHome } = useHome();
 
   const { isMobileWidth } = useMobile();
   const { showMessage } = useSnackBar();
@@ -214,6 +218,22 @@ export function AppHead({
     handleMenu(what);
   };
 
+  // Clicking the APM logo leaves whatever project the user is in and returns
+  // them to the team screen. Leaving a project is more than a navigation:
+  //   1. checkSavedFn asks about unsaved edits first, and runs the rest only
+  //      once the user has chosen to save or discard them.
+  //   2. `mode` and `selected-plan` are where we remember what the user had
+  //      open. They must be forgotten now, because TeamScreen treats a
+  //      leftover `selected-plan` as "resume this plan" — so the next project
+  //      card they click would send them back into the plan they just left.
+  //   3. goHome() clears the project/plan/role globals and navigates to /team.
+  const handleLogoHome = () =>
+    checkSavedFn(() => {
+      localStorage.removeItem('mode');
+      localStorage.removeItem(LocalKey.plan);
+      goHome();
+    });
+
   const handleUnload = (e: any) => {
     if (isPreAuthPath(pathname)) return true;
     if (!exitAlert && isElectron && isMounted() && !doingDone.current) {
@@ -345,7 +365,8 @@ export function AppHead({
         >
           {!isDetail ? (
             <IconButton
-              onClick={() => navigate('/team')}
+              aria-label={tv.home}
+              onClick={handleLogoHome}
               sx={{ flexShrink: 0, p: 0 }}
             >
               <ApmLogo sx={{ width: '40px', height: '40px' }} />
