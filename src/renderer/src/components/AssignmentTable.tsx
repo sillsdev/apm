@@ -52,6 +52,7 @@ import {
   useOrgDefaults,
   orgDefaultPermissions,
 } from '../crud';
+import { useMobile } from '../utils';
 import { useSnackBar } from '../hoc/SnackBar';
 import { useOrbitData } from '../hoc/useOrbitData';
 import {
@@ -62,6 +63,7 @@ import {
 import { GrowingSpacer, LightTooltip } from '../control';
 import ContentLayout from './App/ContentLayout';
 import { GetReference } from './AudioTab/GetReference';
+import { PlanTabSelect } from './Sheet/PlanTabSelect';
 import Confirm from './AlertDialog';
 import AssignSection from './AssignSection';
 import { resolveSelectedSections } from './resolveSectionForRecId';
@@ -106,6 +108,7 @@ export function AssignmentTable() {
   const [plan] = useGlobal('plan'); //will be constant here
   const [org] = useGlobal('organization');
   const { showMessage } = useSnackBar();
+  const { isMobile } = useMobile();
   const ctx = useContext(PlanContext);
   const { flat, sectionArr } = ctx.state;
   const [data, setData] = useState(Array<IRow>());
@@ -501,28 +504,32 @@ export function AssignmentTable() {
     <ContentLayout
       header={
         <>
-          {userIsAdmin && (
-            <Box sx={{ display: 'flex', gap: 1.5 }}>
-              <Button
-                id="assignAdd"
-                key="assign"
-                aria-label={t.assignSec}
-                variant="outlined"
-                onClick={handleMenu}
-                endIcon={<DropDownIcon />}
-              >
-                {isPermission ? t.assignSec : t.assignSec2}
-              </Button>
-              <Button
-                id="assignRem"
-                key="remove"
-                aria-label={t.removeSec}
-                variant="outlined"
-                onClick={handleRemoveAssignments}
-              >
-                {isPermission ? t.removeSec : t.removeSec2}
-              </Button>
-            </Box>
+          {isMobile ? (
+            <PlanTabSelect />
+          ) : (
+            userIsAdmin && (
+              <Box sx={{ display: 'flex', gap: 1.5 }}>
+                <Button
+                  id="assignAdd"
+                  key="assign"
+                  aria-label={t.assignSec}
+                  variant="outlined"
+                  onClick={handleMenu}
+                  endIcon={<DropDownIcon />}
+                >
+                  {isPermission ? t.assignSec : t.assignSec2}
+                </Button>
+                <Button
+                  id="assignRem"
+                  key="remove"
+                  aria-label={t.removeSec}
+                  variant="outlined"
+                  onClick={handleRemoveAssignments}
+                >
+                  {isPermission ? t.removeSec : t.removeSec2}
+                </Button>
+              </Box>
+            )
           )}
           <GrowingSpacer />
         </>
@@ -534,7 +541,7 @@ export function AssignmentTable() {
         <TreeDataGrid
           columns={columns}
           rows={data}
-          checkboxSelection
+          checkboxSelection={!isMobile}
           disableRowSelectionOnClick
           rowSelectionModel={selectedRows}
           onRowSelectionModelChange={handleRowSelectionChange}

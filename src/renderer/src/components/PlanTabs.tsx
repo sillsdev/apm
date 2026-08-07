@@ -101,9 +101,12 @@ const ScrollableTabsButtonAuto = (props: IProps) => {
   if (tab !== undefined && tab.toString() !== tabNm)
     return <StickyRedirect to={`/plan/${prjId}/${tab}`} />;
 
-  return isMobile && tab === PlanTabEnum.sectionPassage ? (
-    <ScriptureTable {...props} colNames={colNames} />
-  ) : (
+  if (isMobile && tab === PlanTabEnum.sectionPassage)
+    return <ScriptureTable {...props} colNames={colNames} />;
+  if (isMobile && showAssign && tab === PlanTabEnum.assignment)
+    return <AssignmentTable />;
+
+  return (
     <ContentLayout
       header={
         <Tabs
