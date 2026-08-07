@@ -1,14 +1,16 @@
-import busyImage from '../assets/progress.gif';
-import { Box, styled } from '@mui/material';
+import { Box, CircularProgress } from '@mui/material';
 
-const BusyImg = styled('img')(() => ({ width: '120px', margin: 'auto' }));
-
-export const Busy = () => {
+export default function Busy() {
   return (
-    <Box sx={{ display: 'flex', height: '100vh' }}>
-      <BusyImg className="busyImg" src={busyImage} alt="busy" />
+    <Box
+      sx={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: '100%',
+      }}
+    >
+      <CircularProgress size={50} />
     </Box>
   );
-};
-
-export default Busy;
+}
