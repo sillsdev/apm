@@ -38,3 +38,4 @@ export * from './TeamPaper';
 export * from './TemplateEditor';
 export * from './smallBtnProps';
 export * from './WrapTitle';
+export * from './layoutSx';
