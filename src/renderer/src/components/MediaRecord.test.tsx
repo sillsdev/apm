@@ -225,21 +225,27 @@ describe('MediaRecord save gating', () => {
     });
   });
 
-  // I have not carefully reviewed these tests
-  // TT-7583: parents auto-save on every rising edge of canSave. A failed upload
-  // leaves filechanged set, so re-enabling save here retried the same doomed
-  // take forever (finalizeTerminalFailure + error snackbar on a loop).
-  it('does not re-enable save after an upload failure', async () => {
-    const setCanSave = jest.fn();
+  /** Drives a take through a terminal upload failure. */
+  const failASave = async (
+    setCanSave: jest.Mock,
+    onSaveRejected?: jest.Mock,
+    order?: string[]
+  ) => {
     mockSaveRequested = () => true;
     mockUploadMedia = jest.fn(async () => {
+      order?.push('upload');
       // Mirrors nextUpload's terminal failure: afterUploadCb with no mediaId,
       // then the upload promise rejects.
       await capturedAfterUploadCb?.('');
       throw new Error('upload failed');
     });
-    const blob = new Blob([new Uint8Array(1000)], { type: 'audio/ogg' });
-    render(<MediaRecord {...defaultProps} setCanSave={setCanSave} />);
+    render(
+      <MediaRecord
+        {...defaultProps}
+        setCanSave={setCanSave}
+        onSaveRejected={onSaveRejected}
+      />
+    );
 
     await waitFor(() => expect(latestWsProps).toBeDefined());
 
@@ -247,58 +253,62 @@ describe('MediaRecord save gating', () => {
       latestWsProps?.setBlobReady?.(true);
       latestWsProps?.setChanged?.(true);
       latestWsProps?.onDuration?.(12);
-      latestWsProps?.onBlobReady?.(blob);
+      latestWsProps?.onBlobReady?.(
+        new Blob([new Uint8Array(1000)], { type: 'audio/ogg' })
+      );
     });
 
     await waitFor(() => expect(mockUploadMedia).toHaveBeenCalled());
-    const callsWhileUploading = setCanSave.mock.calls.length;
     await act(async () => {
       await new Promise((resolve) => setTimeout(resolve, 0));
     });
+  };
 
-    const callsAfterFailure = setCanSave.mock.calls.slice(callsWhileUploading);
-    expect(callsAfterFailure.some(([canSave]) => canSave === true)).toBe(false);
-    expect(setCanSave).toHaveBeenLastCalledWith(false);
+  // TT-7583: parents that auto-save do so on every rising edge of canSave, and
+  // a failed upload leaves the take dirty, so canSave goes false→true again.
+  // MediaRecord reports the rejection instead of latching canSave off, which
+  // would strand the take on screens whose Save button reads canSave.
+  it('reports a rejected save to the parent', async () => {
+    const onSaveRejected = jest.fn();
+    await failASave(jest.fn(), onSaveRejected);
+
+    expect(onSaveRejected).toHaveBeenCalled();
   });
 
-  it('re-enables save for a new take after an upload failure', async () => {
+  it('reports the rejection before save becomes available again', async () => {
+    const order: string[] = [];
+    const setCanSave = jest.fn((v: boolean) => {
+      if (v) order.push('canSave:true');
+    });
+    const onSaveRejected = jest.fn(() => order.push('rejected'));
+
+    await failASave(setCanSave, onSaveRejected, order);
+
+    // Ignore the arming edge that started this save; only what follows matters.
+    const afterUpload = order.slice(order.indexOf('upload'));
+    const rejected = afterUpload.indexOf('rejected');
+    const rearmed = afterUpload.indexOf('canSave:true');
+
+    // Auto-save parents act on the rising edge, so they must already know the
+    // take was rejected by the time one arrives.
+    expect(rejected).toBeGreaterThan(-1);
+    expect(rearmed === -1 || rearmed > rejected).toBe(true);
+  });
+
+  it('keeps save available so the same take can be retried', async () => {
     const setCanSave = jest.fn();
-    mockSaveRequested = () => true;
-    mockUploadMedia = jest.fn(async () => {
-      await capturedAfterUploadCb?.('');
-      throw new Error('upload failed');
-    });
-    const blob = new Blob([new Uint8Array(1000)], { type: 'audio/ogg' });
-    render(<MediaRecord {...defaultProps} setCanSave={setCanSave} />);
+    await failASave(setCanSave);
 
-    await waitFor(() => expect(latestWsProps).toBeDefined());
-
-    act(() => {
-      latestWsProps?.setBlobReady?.(true);
-      latestWsProps?.setChanged?.(true);
-      latestWsProps?.onDuration?.(12);
-      latestWsProps?.onBlobReady?.(blob);
-    });
-
-    await waitFor(() => expect(mockUploadMedia).toHaveBeenCalled());
-    await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 0));
-    });
-    expect(setCanSave).toHaveBeenLastCalledWith(false);
-
-    // saveCompleted has cleared the request by now.
+    // saveCompleted has cleared the request; the take is still in the waveform.
     mockSaveRequested = () => false;
-
-    // A fresh take arrives (WSAudioPlayer's handleChanged after Record/stop).
     act(() => {
-      latestWsProps?.onBlobReady?.(
-        new Blob([new Uint8Array(2000)], { type: 'audio/ogg' })
-      );
-      latestWsProps?.setBlobReady?.(true);
       latestWsProps?.setChanged?.(true);
-      latestWsProps?.onDuration?.(14);
     });
 
+    // Screens with a manual Save button (PassageDetailRecord, PassageRecordDlg,
+    // TitleRecord) gate it on canSave, and PassageDetailRecord also feeds
+    // toolChanged from it. Latching it off after a transient failure would
+    // leave no way to retry and no unsaved-changes warning.
     await waitFor(() => expect(setCanSave).toHaveBeenLastCalledWith(true));
   });
 });

@@ -590,8 +590,16 @@ export function PassageDetailGuidedPhraseRecord({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentRegion, currentIndex]);
 
+  // TT-7583: this step auto-saves on every rising edge of canSave. A failed
+  // upload leaves the take dirty, so canSave goes false→true again and we used
+  // to retry the same doomed take forever (finalizeTerminalFailure + error
+  // snackbar on a loop). MediaRecord tells us the attempt was rejected; hold
+  // off until the user records again rather than latching canSave off, which
+  // would break the manual Save button on every other recording screen.
+  const saveRejectedRef = useRef(false);
+
   useEffect(() => {
-    if (canSave) {
+    if (canSave && !saveRejectedRef.current) {
       setSavingRecording(true);
       startSave(toolId);
     }
@@ -1651,6 +1659,8 @@ export function PassageDetailGuidedPhraseRecord({
           onRecording={(active) => {
             if (active) {
               recordingActiveRef.current = true;
+              // A new take supersedes any earlier rejected save (TT-7583).
+              saveRejectedRef.current = false;
               // TT-7552: a deliberate take cancels the post-park overshoot swallow
               // so tapping the next segment is treated as real navigation.
               pendingOvershootSwallowRef.current = false;
@@ -1671,6 +1681,10 @@ export function PassageDetailGuidedPhraseRecord({
           resetMedia={resetMedia}
           setResetMedia={setResetMedia}
           setCanSave={setCanSave}
+          onSaveRejected={() => {
+            saveRejectedRef.current = true;
+            setSavingRecording(false);
+          }}
           setStatusText={setStatusText}
           showRecorder={showRecorder}
           strings={controlStrings}

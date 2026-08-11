@@ -19,7 +19,6 @@ import {
   createPathFolder,
   removeExtension,
 } from '../../utils';
-import { isUnauthorized } from '../../utils/httpError';
 import { DateTime } from 'luxon';
 import _ from 'lodash';
 import { typeLimit } from '../../utils/typeLimit';
@@ -525,11 +524,12 @@ export const nextUpload =
         } catch (err) {
           const ax = err as AxiosError;
           const st = ax.response?.status;
-          if (isUnauthorized(st) || st === 403) {
+          if (st && st >= 400 && st < 500) {
+            // 400s block client side error
             await finalizeTerminalFailure(
               undefined,
               false,
-              st ?? 500, // default to 500 if status is undefined
+              st,
               `Upload ${name} failed.`
             );
             return;
@@ -538,11 +538,15 @@ export const nextUpload =
             await sleepMs(uploadRetryDelayMs(attempt));
             continue;
           }
+          // we get here after the 5 tries. No status means we never reached the
+          // server
           await finalizeTerminalFailure(
             undefined,
             false,
-            st ?? 500,
-            `Upload ${name} failed.`
+            st ?? 0,
+            st
+              ? `Upload ${name} failed.`
+              : `Upload ${name} failed: network error`
           );
           return;
         }
