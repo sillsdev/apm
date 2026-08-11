@@ -8,6 +8,7 @@ import { useGlobal } from '../../context/useGlobal';
 import { PlanContext } from '../../context/PlanContext';
 import { planSheetSelector } from '../../selector';
 import { LightTooltip } from '../../control/LightTooltip';
+import { spreadSx, rowSx, rigidSx } from '../../control';
 import FilterMenu, { ISTFilterState } from './filterMenu';
 import { PlanTabSelect } from './PlanTabSelect';
 
@@ -50,23 +51,9 @@ export const PlanBar = (props: IProps) => {
   const t: IPlanSheetStrings = useSelector(planSheetSelector, shallowEqual);
 
   return (
-    <Box
-      sx={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        gap: (theme) => theme.layout.gap,
-        width: '100%',
-      }}
-    >
+    <Box sx={spreadSx}>
       <PlanTabSelect />
-      <Box
-        sx={{
-          display: 'flex',
-          gap: (theme) => theme.layout.gap,
-          flexShrink: 0,
-        }}
-      >
+      <Box sx={[rowSx, rigidSx]}>
         {data.length > 1 && !offline && !flat && (
           <LightTooltip
             title={

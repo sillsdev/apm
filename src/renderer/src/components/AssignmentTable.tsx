@@ -60,7 +60,7 @@ import {
   assignmentSelector,
   sharedSelector,
 } from '../selector';
-import { GrowingSpacer, LightTooltip } from '../control';
+import { LightTooltip, spreadSx, rowSx } from '../control';
 import ContentLayout from './App/ContentLayout';
 import { GetReference } from './AudioTab/GetReference';
 import { PlanTabSelect } from './Sheet/PlanTabSelect';
@@ -503,12 +503,12 @@ export function AssignmentTable() {
   return (
     <ContentLayout
       header={
-        <>
+        <Box sx={spreadSx}>
           {isMobile ? (
             <PlanTabSelect />
           ) : (
             userIsAdmin && (
-              <Box sx={{ display: 'flex', gap: 1.5 }}>
+              <Box sx={rowSx}>
                 <Button
                   id="assignAdd"
                   key="assign"
@@ -531,8 +531,7 @@ export function AssignmentTable() {
               </Box>
             )
           )}
-          <GrowingSpacer />
-        </>
+        </Box>
       }
       drawBottomBorder={true}
       contentSx={{ p: 1.5 }}
