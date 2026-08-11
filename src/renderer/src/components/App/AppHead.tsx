@@ -327,17 +327,17 @@ export function AppHead({
     <AppBar
       position={position}
       color="inherit"
-      sx={{
+      sx={(theme) => ({
         flexDirection: 'row',
         justifyContent: 'center',
         alignItems: 'center',
-        p: 1.5,
+        p: theme.layout.gap,
         backgroundColor: 'custom.headerBackground',
         ...(drawBottomBorder && {
           borderBottom: '1px solid',
           borderColor: 'divider',
         }),
-      }}
+      })}
     >
       {progressVariant && (
         <LinearProgress

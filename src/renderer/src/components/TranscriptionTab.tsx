@@ -737,7 +737,7 @@ export function TranscriptionTab(props: IProps) {
         </Box>
       }
       drawBottomBorder={true}
-      contentSx={{ p: 1.5 }}
+      contentSx={(theme) => ({ p: theme.layout.gap })}
     >
       <Box ref={boxRef} id="TranscriptionTab" sx={{ display: 'flex' }}>
         {alertOpen && (

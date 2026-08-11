@@ -534,7 +534,7 @@ export function AssignmentTable() {
         </Box>
       }
       drawBottomBorder={true}
-      contentSx={{ p: 1.5 }}
+      contentSx={(theme) => ({ p: theme.layout.gap })}
     >
       <AssignmentDiv ref={boxRef} id="AssignmentTable">
         <TreeDataGrid

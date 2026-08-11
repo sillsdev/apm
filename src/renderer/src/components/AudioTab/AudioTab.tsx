@@ -368,7 +368,7 @@ export function AudioTab() {
         </Box>
       }
       drawBottomBorder={true}
-      contentSx={{ p: 1.5 }}
+      contentSx={(theme) => ({ p: theme.layout.gap })}
     >
       <Box width="100%">
         {autoMatch && (

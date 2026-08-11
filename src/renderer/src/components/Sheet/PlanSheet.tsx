@@ -1217,7 +1217,7 @@ export function PlanSheet(props: IProps) {
         </Box>
       }
       drawBottomBorder={true}
-      contentSx={{ position: 'relative', p: 1.5 }}
+      contentSx={(theme) => ({ p: theme.layout.gap, position: 'relative' })}
       contentRef={scrollRef}
     >
       <Dialog open={goToOpen} onClose={() => setGoToOpen(false)} maxWidth="sm">
