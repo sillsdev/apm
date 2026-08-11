@@ -225,6 +225,11 @@ function MediaRecord(props: IProps) {
     clearCompleted,
   } = useContext(UnsavedContext).state;
   const saveRef = useRef(false);
+  // TT-7583: set when a save attempt fails. Parents auto-save on every rising
+  // edge of canSave (see PassageDetailGuidedPhraseRecord), and a failed upload
+  // leaves filechanged set, so canSave went false→true again and retried the
+  // same doomed take forever. Cleared when new audio arrives or on reset.
+  const saveFailedRef = useRef(false);
   const mediaSaveInProgress = saveRequested(toolId) || uploading || converting;
   const extensions = useMemo(
     () => ['mp3', 'mp3', 'webm', 'mka', 'm4a', 'wav', 'ogg'],
@@ -290,10 +295,12 @@ function MediaRecord(props: IProps) {
     setPendingSave(false);
     if (filechangedRef.current && mediaId) setFilechanged(false);
     if (!mediaId) {
+      saveFailedRef.current = true;
       showMessage(ts.NoSaveWoMedia);
       setStatusText(ts.NoSaveWoMedia);
       saveCompleted(toolId, ts.NoSaveWoMedia);
     } else {
+      saveFailedRef.current = false;
       setStatusText(getCompressedStatusMessage());
       saveCompleted(toolId);
     }
@@ -401,7 +408,12 @@ function MediaRecord(props: IProps) {
 
   useEffect(() => {
     const wantsSave = wantsSaveVisible && !saveRef.current;
-    const needsSave = wantsSave && blobReady && waveformDuration > 0 && !tooBig;
+    const needsSave =
+      wantsSave &&
+      blobReady &&
+      waveformDuration > 0 &&
+      !tooBig &&
+      !saveFailedRef.current;
     setCanSave(needsSave);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
@@ -459,6 +471,7 @@ function MediaRecord(props: IProps) {
   const handleSaveFailed = useCallback(
     (error: unknown) => {
       saveRef.current = false;
+      saveFailedRef.current = true;
       setUploading(false);
       setConverting(false);
       setLoading(false);
@@ -546,6 +559,9 @@ function MediaRecord(props: IProps) {
   };
 
   function onBlobReady(blob: Blob | undefined) {
+    // New/edited audio content — a prior save failure no longer applies, so let
+    // the auto-save arm again for this take (TT-7583).
+    saveFailedRef.current = false;
     setAudioBlob(blob);
   }
   function myOnRecording(r: boolean) {
@@ -561,6 +577,7 @@ function MediaRecord(props: IProps) {
   }, [doReset]);
 
   const reset = () => {
+    saveFailedRef.current = false;
     setFilechanged(false);
     setPendingSave(false);
     setWaveformDuration(0);

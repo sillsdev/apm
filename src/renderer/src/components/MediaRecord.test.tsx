@@ -15,6 +15,11 @@ type WsAudioPlayerProps = {
 };
 
 let latestWsProps: WsAudioPlayerProps | undefined;
+let mockSaveRequested: () => boolean;
+let mockUploadMedia: jest.Mock;
+let mockConvertToFormat: jest.Mock;
+/** MediaRecord's own myAfterUploadCb, captured from the useMediaUpload props. */
+let capturedAfterUploadCb: ((mediaId: string) => Promise<void>) | undefined;
 
 jest.mock('../utils/typeLimit', () => ({
   typeLimit: () => 1,
@@ -43,8 +48,14 @@ jest.mock('../crud', () => ({
     fetchMediaUrl: jest.fn(),
     mediaState: { status: 0, id: '', url: '', error: null },
   }),
-  useMediaUpload: () => jest.fn(),
-  convertToFormat: jest.fn(),
+  useMediaUpload: (props: {
+    afterUploadCb: (mediaId: string) => Promise<void>;
+  }) => {
+    capturedAfterUploadCb = props.afterUploadCb;
+    return (files: File[]) => mockUploadMedia(files);
+  },
+  convertToFormat: (blob: Blob, mimeType: string) =>
+    mockConvertToFormat(blob, mimeType),
 }));
 
 jest.mock('../hoc/SnackBar', () => ({
@@ -57,7 +68,7 @@ jest.mock('../context/UnsavedContext', () => {
     UnsavedContext: React.createContext({
       state: {
         toolsChanged: 0,
-        saveRequested: () => false,
+        saveRequested: () => mockSaveRequested(),
         saveCompleted: jest.fn(),
         clearRequested: () => false,
         clearCompleted: jest.fn(),
@@ -124,7 +135,11 @@ const defaultProps = {
 describe('MediaRecord save gating', () => {
   beforeEach(() => {
     latestWsProps = undefined;
+    capturedAfterUploadCb = undefined;
     jest.clearAllMocks();
+    mockSaveRequested = () => false;
+    mockUploadMedia = jest.fn().mockResolvedValue(undefined);
+    mockConvertToFormat = jest.fn((blob: Blob) => Promise.resolve(blob));
   });
 
   afterEach(() => {
@@ -208,5 +223,82 @@ describe('MediaRecord save gating', () => {
       expect(latestWsProps?.isSaveDisabled).toBe(true);
       expect(setCanSave).toHaveBeenLastCalledWith(false);
     });
+  });
+
+  // I have not carefully reviewed these tests
+  // TT-7583: parents auto-save on every rising edge of canSave. A failed upload
+  // leaves filechanged set, so re-enabling save here retried the same doomed
+  // take forever (finalizeTerminalFailure + error snackbar on a loop).
+  it('does not re-enable save after an upload failure', async () => {
+    const setCanSave = jest.fn();
+    mockSaveRequested = () => true;
+    mockUploadMedia = jest.fn(async () => {
+      // Mirrors nextUpload's terminal failure: afterUploadCb with no mediaId,
+      // then the upload promise rejects.
+      await capturedAfterUploadCb?.('');
+      throw new Error('upload failed');
+    });
+    const blob = new Blob([new Uint8Array(1000)], { type: 'audio/ogg' });
+    render(<MediaRecord {...defaultProps} setCanSave={setCanSave} />);
+
+    await waitFor(() => expect(latestWsProps).toBeDefined());
+
+    act(() => {
+      latestWsProps?.setBlobReady?.(true);
+      latestWsProps?.setChanged?.(true);
+      latestWsProps?.onDuration?.(12);
+      latestWsProps?.onBlobReady?.(blob);
+    });
+
+    await waitFor(() => expect(mockUploadMedia).toHaveBeenCalled());
+    const callsWhileUploading = setCanSave.mock.calls.length;
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+
+    const callsAfterFailure = setCanSave.mock.calls.slice(callsWhileUploading);
+    expect(callsAfterFailure.some(([canSave]) => canSave === true)).toBe(false);
+    expect(setCanSave).toHaveBeenLastCalledWith(false);
+  });
+
+  it('re-enables save for a new take after an upload failure', async () => {
+    const setCanSave = jest.fn();
+    mockSaveRequested = () => true;
+    mockUploadMedia = jest.fn(async () => {
+      await capturedAfterUploadCb?.('');
+      throw new Error('upload failed');
+    });
+    const blob = new Blob([new Uint8Array(1000)], { type: 'audio/ogg' });
+    render(<MediaRecord {...defaultProps} setCanSave={setCanSave} />);
+
+    await waitFor(() => expect(latestWsProps).toBeDefined());
+
+    act(() => {
+      latestWsProps?.setBlobReady?.(true);
+      latestWsProps?.setChanged?.(true);
+      latestWsProps?.onDuration?.(12);
+      latestWsProps?.onBlobReady?.(blob);
+    });
+
+    await waitFor(() => expect(mockUploadMedia).toHaveBeenCalled());
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+    expect(setCanSave).toHaveBeenLastCalledWith(false);
+
+    // saveCompleted has cleared the request by now.
+    mockSaveRequested = () => false;
+
+    // A fresh take arrives (WSAudioPlayer's handleChanged after Record/stop).
+    act(() => {
+      latestWsProps?.onBlobReady?.(
+        new Blob([new Uint8Array(2000)], { type: 'audio/ogg' })
+      );
+      latestWsProps?.setBlobReady?.(true);
+      latestWsProps?.setChanged?.(true);
+      latestWsProps?.onDuration?.(14);
+    });
+
+    await waitFor(() => expect(setCanSave).toHaveBeenLastCalledWith(true));
   });
 });
