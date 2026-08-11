@@ -1,4 +1,5 @@
 import { createTheme } from '@mui/material';
+import { ResponsiveStyleValue } from '@mui/system';
 import { getDataGridLocale } from './utils/dataGridLocale';
 
 // MUI has no `variant` on IconButton. Adding it to IconButtonOwnProps lets us
@@ -36,6 +37,17 @@ declare module '@mui/material/styles' {
       containedHoverBg: string;
     };
   }
+
+  interface Theme {
+    layout: {
+      gap: ResponsiveStyleValue<number>;
+    };
+  }
+  interface ThemeOptions {
+    layout?: {
+      gap: ResponsiveStyleValue<number>;
+    };
+  }
 }
 
 // For the "contained" action look, shared by the
@@ -49,6 +61,11 @@ const CONTAINED_DISABLED_BG = '#F0F0F0';
 // below). Exported so components that need to hand-roll a button
 //  can reuse the exact same value.
 export const BUTTON_SHADOW = '1px 1px 3px #0000001F';
+
+// The standard gap between adjacent layout blocks, tightened below `sm` where
+// horizontal room is scarce. These are theme *spacing multiples*, not px — sx
+// resolves the token and then applies theme.spacing(), so 1.5 renders as 12px.
+const LAYOUT_GAP: ResponsiveStyleValue<number> = { xs: 1, sm: 1.5 };
 
 export const createAppTheme = (lang: string) =>
   createTheme(
@@ -69,6 +86,9 @@ export const createAppTheme = (lang: string) =>
           containedBg: CONTAINED_BG,
           containedHoverBg: CONTAINED_HOVER_BG,
         },
+      },
+      layout: {
+        gap: LAYOUT_GAP,
       },
       typography: {
         button: {

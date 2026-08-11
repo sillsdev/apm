@@ -7,7 +7,6 @@ import PlanTabs from '../components/PlanTabs';
 import { useUrlContext, useProjectType } from '../crud';
 import { UnsavedContext } from '../context/UnsavedContext';
 import StickyRedirect from '../components/StickyRedirect';
-import { FillColumn } from '../control';
 
 export const PlanScreen = () => {
   const { pathname } = useLocation();
@@ -46,11 +45,9 @@ export const PlanScreen = () => {
   if (view !== '' && view !== pathname) return <StickyRedirect to={view} />;
 
   return (
-    <AppLayout appHeadProps={{ switchTo: false, drawBottomBorder: false }}>
+    <AppLayout appHeadProps={{ drawBottomBorder: false }}>
       <PlanProvider>
-        <FillColumn id="PlanScreen" sx={{ overflow: 'hidden' }}>
-          <PlanTabs checkSaved={checkSavedFn} />
-        </FillColumn>
+        <PlanTabs checkSaved={checkSavedFn} />
       </PlanProvider>
     </AppLayout>
   );

@@ -8,10 +8,14 @@ import React, {
   ReactNode,
   MouseEventHandler,
 } from 'react';
-import { useGetGlobal, useGlobal } from '../../context/useGlobal';
 import { shallowEqual, useDispatch, useSelector } from 'react-redux';
 import { useParams } from 'react-router-dom';
-
+import { Badge, Box, Typography } from '@mui/material';
+import JSONAPISource from '@orbit/jsonapi';
+import Memory from '@orbit/memory';
+import { RecordIdentity, RecordKeyMap } from '@orbit/records';
+import { debounce } from 'lodash';
+import bookSortJson from '../../assets/akuosort.json';
 import {
   IState,
   Section,
@@ -37,13 +41,13 @@ import {
   BookSeq,
   IGraphicStrings,
 } from '../../model';
+import { UpdateRecord } from '../../model/baseModel';
+import { OrganizationSchemeStepD } from '../../model/organizationSchemeStep';
+import { PassageTypeEnum } from '../../model/passageType';
 import * as actions from '../../store';
-import Memory from '@orbit/memory';
-import JSONAPISource from '@orbit/jsonapi';
-import { Badge, Box, Typography } from '@mui/material';
-import { useSnackBar } from '../../hoc/SnackBar';
-import PlanSheet, { ICell, ICellChange } from './PlanSheet';
-import { FillColumn } from '../../control';
+import { PlanContext } from '../../context/PlanContext';
+import { UnsavedContext } from '../../context/UnsavedContext';
+import { useGetGlobal, useGlobal } from '../../context/useGlobal';
 import {
   remoteIdNum,
   related,
@@ -65,6 +69,14 @@ import {
   useNotes,
   useShowAssignment,
 } from '../../crud';
+import { useGraphicCreate } from '../../crud/useGraphicCreate';
+import { useMediaAttach } from '../../crud/useMediaAttach';
+import {
+  projDefBook,
+  projDefFilterParam,
+  projDefFirstMovement,
+  useProjectDefaults,
+} from '../../crud/useProjectDefaults';
 import {
   lookupBook,
   waitForIt,
@@ -76,6 +88,44 @@ import {
   useMobile,
   refNumPat,
 } from '../../utils';
+import { addPt } from '../../utils/addPt';
+import { passageDefaultFilename } from '../../utils/passageDefaultFilename';
+import {
+  CompressedImages,
+  IGraphicInfo,
+  Rights,
+  ApmDim,
+} from '../../utils/useCompression';
+import { getLastVerse } from '../../business/localParatext/getLastVerse';
+import {
+  isPublishingTitle,
+  passageTypeFromRef,
+} from '../../control/passageTypeFromRef';
+import BigDialog from '../../hoc/BigDialog';
+import { useSnackBar } from '../../hoc/SnackBar';
+import { useOrbitData } from '../../hoc/useOrbitData';
+import {
+  graphicStringsSelector,
+  planSheetSelector,
+  scriptureTableSelector,
+  sharedResourceSelector,
+  sharedSelector,
+  workflowStepsSelector,
+} from '../../selector';
+import { MediaUploadControlsRef } from '../../components/MediaUploadContent';
+import { useComputeRef } from '../../components/PassageDetail/Internalization/useComputeRef';
+import Confirm from '../AlertDialog';
+import ContentLayout from '../App/ContentLayout';
+import AssignSection from '../AssignSection';
+import VersionDlg from '../AudioTab/VersionDlg';
+import GraphicPicker from '../GraphicPicker';
+import GraphicRights from '../GraphicRights';
+import { GraphicUploader } from '../GraphicUploader';
+import { usePeerGroups } from '../Peers/usePeerGroups';
+import ResourceTabs from '../ResourceEdit/ResourceTabs';
+import StickyRedirect from '../StickyRedirect';
+import Uploader from '../Uploader';
+import { UploadType } from '../UploadType';
 import {
   isSectionRow,
   isPassageRow,
@@ -93,60 +143,11 @@ import {
   nextNum,
   getMinSection,
 } from '.';
-import { debounce } from 'lodash';
-import AssignSection from '../AssignSection';
-import StickyRedirect from '../StickyRedirect';
-import Uploader from '../Uploader';
-import { useMediaAttach } from '../../crud/useMediaAttach';
-import { UpdateRecord } from '../../model/baseModel';
-import { PlanContext } from '../../context/PlanContext';
-import BigDialog from '../../hoc/BigDialog';
-import VersionDlg from '../AudioTab/VersionDlg';
-import ResourceTabs from '../ResourceEdit/ResourceTabs';
-import { passageDefaultFilename } from '../../utils/passageDefaultFilename';
-import { UnsavedContext } from '../../context/UnsavedContext';
 import { ISTFilterState } from './filterMenu';
-import {
-  projDefBook,
-  projDefFilterParam,
-  projDefFirstMovement,
-  useProjectDefaults,
-} from '../../crud/useProjectDefaults';
-import {
-  graphicStringsSelector,
-  planSheetSelector,
-  scriptureTableSelector,
-  sharedResourceSelector,
-  sharedSelector,
-  workflowStepsSelector,
-} from '../../selector';
-import { PassageTypeEnum } from '../../model/passageType';
-import { passageTypeFromRef } from '../../control/passageTypeFromRef';
-import { isPublishingTitle } from '../../control/passageTypeFromRef';
-import { UploadType } from '../UploadType';
-import { useGraphicCreate } from '../../crud/useGraphicCreate';
-import {
-  CompressedImages,
-  IGraphicInfo,
-  Rights,
-  ApmDim,
-} from '../../utils/useCompression';
-import { GraphicUploader } from '../GraphicUploader';
-import Confirm from '../AlertDialog';
 import { getDefaultName } from './getDefaultName';
-import GraphicRights from '../GraphicRights';
-import { useOrbitData } from '../../hoc/useOrbitData';
-import { RecordIdentity, RecordKeyMap } from '@orbit/records';
-import { getLastVerse } from '../../business/localParatext/getLastVerse';
-import { OrganizationSchemeStepD } from '../../model/organizationSchemeStep';
-import { usePeerGroups } from '../Peers/usePeerGroups';
-import bookSortJson from '../../assets/akuosort.json';
-import { PlanView } from './PlanView';
-import { addPt } from '../../utils/addPt';
 import { PlanBar } from './PlanBar';
-import GraphicPicker from '../GraphicPicker';
-import { MediaUploadControlsRef } from '../../components/MediaUploadContent';
-import { useComputeRef } from '../../components/PassageDetail/Internalization/useComputeRef';
+import PlanSheet, { ICell, ICellChange } from './PlanSheet';
+import { PlanView } from './PlanView';
 
 const SaveWait = 500;
 
@@ -2220,23 +2221,36 @@ export function ScriptureTable(props: IProps) {
   };
 
   return (
-    <FillColumn>
+    <Box
+      sx={{
+        flex: 1,
+        minHeight: 0,
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100%',
+      }}
+    >
       {isMobile ? (
-        <>
-          <PlanBar
-            publishingOn={publishingOn}
-            hidePublishing={hidePublishing}
-            handlePublishToggle={handlePublishToggle}
-            data={rowdata}
-            canSetDefault={canSetProjectDefault}
-            filterState={filterState}
-            onFilterChange={onFilterChange}
-            orgSteps={orgSteps}
-            minimumSection={minSection}
-            maximumSection={sheet[sheet.length - 1]?.sectionSeq ?? 0}
-            filtered={filtered}
-            rowInfo={rowinfo}
-          />
+        <ContentLayout
+          header={
+            <PlanBar
+              publishingOn={publishingOn}
+              hidePublishing={hidePublishing}
+              handlePublishToggle={handlePublishToggle}
+              data={rowdata}
+              canSetDefault={canSetProjectDefault}
+              filterState={filterState}
+              onFilterChange={onFilterChange}
+              orgSteps={orgSteps}
+              minimumSection={minSection}
+              maximumSection={sheet[sheet.length - 1]?.sectionSeq ?? 0}
+              filtered={filtered}
+              rowInfo={rowinfo}
+            />
+          }
+          drawBottomBorder={true}
+          contentSx={{ p: 1.5 }}
+        >
           <PlanView
             rowInfo={rowinfo}
             publishingView={publishingOn && !hidePublishing}
@@ -2248,7 +2262,7 @@ export function ScriptureTable(props: IProps) {
             }}
             handleGraphic={canPublish ? handleGraphic : undefined}
           />
-        </>
+        </ContentLayout>
       ) : (
         <PlanSheet
           {...props}
@@ -2425,7 +2439,7 @@ export function ScriptureTable(props: IProps) {
           noResponse={onPublishingReject}
         />
       )}
-    </FillColumn>
+    </Box>
   );
 }
 

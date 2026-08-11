@@ -1,6 +1,18 @@
-import React, { useState, useEffect, useMemo, useContext, useRef } from 'react';
-import { useGetGlobal, useGlobal } from '../context/useGlobal';
-import * as actions from '../store';
+import { useState, useEffect, useMemo, useContext, useRef } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { useParams } from 'react-router-dom';
+import { Button, debounce, Menu, MenuItem } from '@mui/material';
+import Alert from '@mui/material/Alert';
+import Box from '@mui/material/Box';
+import DropDownIcon from '@mui/icons-material/ArrowDropDown';
+import {
+  GridRowId,
+  type GridColDef,
+  type GridColumnVisibilityModel,
+  type GridSortModel,
+} from '@mui/x-data-grid';
+import IndexedDBSource from '@orbit/indexeddb';
+import { DateTime } from 'luxon';
 import {
   IState,
   Passage,
@@ -21,19 +33,10 @@ import {
   UserD,
   RoleD,
 } from '../model';
-import { IAxiosStatus } from '../store/AxiosStatus';
-import {
-  GrowingSpacer,
-  PaddedBox,
-  TabActions,
-  TabAppBar,
-  PriButton,
-  AltButton,
-  FillColumn,
-} from '../control';
-import { useSnackBar } from '../hoc/SnackBar';
-import TranscriptionShow from './TranscriptionShow';
 import { TokenContext } from '../context/TokenProvider';
+import { useGetGlobal, useGlobal } from '../context/useGlobal';
+import { dateOrTime } from '../utils';
+import { isUnauthorized } from '../utils/httpError';
 import {
   related,
   sectionCompare,
@@ -56,35 +59,25 @@ import {
   useSharedResRead,
 } from '../crud';
 import { useOfflnProjRead } from '../crud/useOfflnProjRead';
-import IndexedDBSource from '@orbit/indexeddb';
-import { dateOrTime } from '../utils';
-import { isUnauthorized } from '../utils/httpError';
-import { SelectExportType } from '../control';
-import AudioExportMenu from './AudioExportMenu';
-import { DateTime } from 'luxon';
-import { isPublishingTitle } from '../control/passageTypeFromRef';
+import { useSnackBar } from '../hoc/SnackBar';
 import { useOrbitData } from '../hoc/useOrbitData';
-import { useSelector } from 'react-redux';
+import * as actions from '../store';
+import { IAxiosStatus } from '../store/AxiosStatus';
 import {
   activitySelector,
   sharedSelector,
   transcriptionTabSelector,
 } from '../selector';
-import { useDispatch } from 'react-redux';
+import { GrowingSpacer } from '../control';
+import { isPublishingTitle } from '../control/passageTypeFromRef';
+import ContentLayout from './App/ContentLayout';
 import { getSection } from './AudioTab/getSection';
-import { WhichExportDlg } from './WhichExportDlg';
-import { useParams } from 'react-router-dom';
-import {
-  GridRowId,
-  type GridColDef,
-  type GridColumnVisibilityModel,
-  type GridSortModel,
-} from '@mui/x-data-grid';
+import AudioExportMenu from './AudioExportMenu';
 import { ExportActionCell } from './ExportActionCell';
 import { TranscriptionViewCell } from './TranscriptionViewCell';
-import Alert from '@mui/material/Alert';
+import TranscriptionShow from './TranscriptionShow';
 import { TreeDataGrid } from './TreeDataGrid';
-import { debounce } from '@mui/material';
+import { WhichExportDlg } from './WhichExportDlg';
 
 interface IRow {
   id: number;
@@ -153,10 +146,10 @@ export function TranscriptionTab(props: IProps) {
   const [openSections, setOpenSections] = useState<string[]>([]);
   const [alertOpen, setAlertOpen] = useState(false);
   const [passageId, setPassageId] = useState('');
-  const eafAnchor = React.useRef<HTMLAnchorElement>(null);
+  const eafAnchor = useRef<HTMLAnchorElement>(null);
   const [dataUrl, setDataUrl] = useState<string | undefined>();
   const [dataName, setDataName] = useState('');
-  const exportAnchor = React.useRef<HTMLAnchorElement>(null);
+  const exportAnchor = useRef<HTMLAnchorElement>(null);
   const [exportUrl, setExportUrl] = useState<string | undefined>();
   const [exportName, setExportName] = useState('');
   const [columnVisibilityModel, setColumnVisibilityModel] =
@@ -181,6 +174,9 @@ export function TranscriptionTab(props: IProps) {
   ]);
   const [artifactType, setArtifactType] = useState<ArtifactTypeSlug>(
     artifactTypes[0] as ArtifactTypeSlug
+  );
+  const [exportTypeAnchor, setExportTypeAnchor] = useState<null | HTMLElement>(
+    null
   );
   const getTranscription = useTranscription(true);
   const getGlobal = useGetGlobal();
@@ -357,6 +353,15 @@ export function TranscriptionTab(props: IProps) {
 
   const handleBackup = () => {
     doProjectExport(ExportType.FULLBACKUP);
+  };
+
+  const handleExportTypeMenu = (event: React.MouseEvent<HTMLElement>) => {
+    setExportTypeAnchor(event.currentTarget);
+  };
+
+  const handleExportType = (slug?: ArtifactTypeSlug) => () => {
+    setExportTypeAnchor(null);
+    if (slug) setArtifactType(slug);
   };
 
   const handleSelect = (passageId: string) => () => {
@@ -644,72 +649,96 @@ export function TranscriptionTab(props: IProps) {
   ];
 
   return (
-    <FillColumn ref={boxRef} id="TranscriptionTab">
-      <FillColumn flex>
-        <TabAppBar
-          position="static"
-          highBar={planColumn || floatTop}
-          color="default"
-          sx={{ flexShrink: 0 }}
-        >
-          <TabActions>
-            {(planColumn || floatTop) && (
-              <AltButton
-                id="transExp"
-                key="export"
-                aria-label={t.exportProject}
-                onClick={handleProjectExport}
-                title={t.exportProject}
-                disabled={busy}
-              >
-                {t.exportProject}
-              </AltButton>
-            )}
-
-            {step && (
-              <AudioExportMenu
-                key="audioexport"
-                action={handleAudioExportMenu}
-                localizedArtifact={localizedArtifact}
-                isScripture={isScripture}
-                disabled={!ready}
-              />
-            )}
-            {planColumn && offline && projects.length > 1 && (
-              <PriButton
-                id="transBackup"
-                key="backup"
-                aria-label={t.electronBackup}
-                onClick={handleBackup}
-                title={t.electronBackup}
-                sx={{
-                  m: 1,
-                  overflow: 'hidden',
-                  whiteSpace: 'nowrap',
-                  justifyContent: 'flex-start',
-                }}
-              >
-                {t.electronBackup}
-              </PriButton>
-            )}
-            <GrowingSpacer />
-            <AltButton
+    <ContentLayout
+      header={
+        <>
+          {(planColumn || floatTop) && (
+            <Button
+              id="transExp"
+              key="export"
+              aria-label={t.exportProject}
+              variant="outlined"
+              onClick={handleProjectExport}
+              title={t.exportProject}
+              disabled={busy}
+            >
+              {t.exportProject}
+            </Button>
+          )}
+          {step && (
+            <AudioExportMenu
+              key="audioexport"
+              action={handleAudioExportMenu}
+              localizedArtifact={localizedArtifact}
+              isScripture={isScripture}
+              disabled={!ready}
+            />
+          )}
+          {planColumn && offline && projects.length > 1 && (
+            <Button
+              id="transBackup"
+              key="backup"
+              aria-label={t.electronBackup}
+              variant="outlined"
+              onClick={handleBackup}
+              title={t.electronBackup}
+            >
+              {t.electronBackup}
+            </Button>
+          )}
+          <GrowingSpacer />
+          <Box sx={{ display: 'flex', gap: 1.5 }}>
+            <Button
               id="transCopy"
               key="copy"
               aria-label={t.copyTranscriptions}
+              variant="outlined"
               onClick={handleCopyPlan}
               title={t.copyTip}
             >
               {t.copyTranscriptions +
                 (localizedArtifact ? ' (' + localizedArtifact + ')' : '')}
-            </AltButton>
-            <SelectExportType
-              exportType={artifactType}
-              exportTypes={artifactTypes}
-              setExportType={setArtifactType}
-            />
-          </TabActions>
-        </TabAppBar>
+            </Button>
+            <Button
+              id="select-export-type"
+              key="exportType"
+              aria-controls="select-export-type-menu"
+              aria-haspopup="true"
+              aria-owns={
+                exportTypeAnchor ? 'select-export-type-menu' : undefined
+              }
+              variant="outlined"
+              onClick={handleExportTypeMenu}
+              endIcon={<DropDownIcon />}
+            >
+              {localizedArtifactType(artifactType)}
+            </Button>
+            <Menu
+              id="select-export-type-menu"
+              anchorEl={exportTypeAnchor}
+              keepMounted
+              open={Boolean(exportTypeAnchor)}
+              onClose={handleExportType()}
+            >
+              {artifactTypes.map((slug) => (
+                <MenuItem
+                  id={`exp-${slug}`}
+                  key={slug}
+                  selected={slug === artifactType}
+                  aria-hidden={!exportTypeAnchor}
+                  onClick={handleExportType(slug)}
+                >
+                  {localizedArtifactType(slug)}
+                </MenuItem>
+              ))}
+            </Menu>
+          </Box>
+        </>
+      }
+      drawBottomBorder={true}
+      contentSx={{ p: 1.5 }}
+    >
+      <Box ref={boxRef} id="TranscriptionTab" sx={{ display: 'flex' }}>
         {alertOpen && (
           <Alert
             severity="warning"
@@ -720,39 +749,36 @@ export function TranscriptionTab(props: IProps) {
             {t.offlineData}
           </Alert>
         )}
-        <PaddedBox sx={{ pl: 2 }}>
-          <TreeDataGrid
-            columns={columns}
-            rows={data}
-            recIdName="recId"
-            expanded={setOpenSections}
-            columnVisibilityModel={columnVisibilityModel}
-            onColumnVisibilityModelChange={setColumnVisibilityModel}
-            disableColumnSorting
-            initialState={{
-              sorting: { sortModel },
-            }}
-            sx={{ '& .word-wrap': { wordWrap: 'break-spaces' } }}
+        <TreeDataGrid
+          columns={columns}
+          rows={data}
+          recIdName="recId"
+          expanded={setOpenSections}
+          columnVisibilityModel={columnVisibilityModel}
+          onColumnVisibilityModelChange={setColumnVisibilityModel}
+          disableColumnSorting
+          initialState={{
+            sorting: { sortModel },
+          }}
+          sx={{ '& .word-wrap': { wordWrap: 'break-spaces' } }}
+        />
+        {passageId !== '' && (
+          <TranscriptionShow
+            id={passageId}
+            visible={passageId !== ''}
+            closeMethod={handleCloseTranscription}
+            exportId={exportId}
           />
-        </PaddedBox>
-      </FillColumn>
-
-      {passageId !== '' && (
-        <TranscriptionShow
-          id={passageId}
-          visible={passageId !== ''}
-          closeMethod={handleCloseTranscription}
-          exportId={exportId}
-        />
-      )}
-      {openExport && (
-        <WhichExportDlg
-          {...{ project, openExport, setOpenExport, doProjectExport }}
-        />
-      )}
-      <a ref={exportAnchor} href={exportUrl} download={exportName} />
-      <a ref={eafAnchor} href={dataUrl} download={dataName} />
-    </FillColumn>
+        )}
+        {openExport && (
+          <WhichExportDlg
+            {...{ project, openExport, setOpenExport, doProjectExport }}
+          />
+        )}
+        <a ref={exportAnchor} href={exportUrl} download={exportName} />
+        <a ref={eafAnchor} href={dataUrl} download={dataName} />
+      </Box>
+    </ContentLayout>
   );
 }
 

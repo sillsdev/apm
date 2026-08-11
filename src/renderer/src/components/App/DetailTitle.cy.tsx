@@ -8,7 +8,7 @@ import bugsnagClient from '../../auth/bugsnagClient';
 import { GlobalProvider, GlobalState } from '../../context/GlobalContext';
 import DataProvider from '../../hoc/DataProvider';
 import { BookName, PassageD, ProjectD } from '../../model';
-import MobileDetailTitle from './MobileDetailTitle';
+import DetailTitle from './DetailTitle';
 
 const createMockMemory = (
   passages: PassageD[] = [],
@@ -86,7 +86,7 @@ const createInitialState = (
   ...overrides,
 });
 
-const mountMobileDetailTitle = ({
+const mountDetailTitle = ({
   pasId,
   passages = [],
   projects = [],
@@ -109,7 +109,7 @@ const mountMobileDetailTitle = ({
         <DataProvider dataStore={memory}>
           <MemoryRouter initialEntries={[`/passage/${pasId}`]}>
             <Routes>
-              <Route path="/passage/:pasId" element={<MobileDetailTitle />} />
+              <Route path="/passage/:pasId" element={<DetailTitle />} />
             </Routes>
           </MemoryRouter>
         </DataProvider>
@@ -118,7 +118,7 @@ const mountMobileDetailTitle = ({
   );
 };
 
-describe('MobileDetailTitle', () => {
+describe('DetailTitle', () => {
   it('should render passage reference and project name', () => {
     const pasId = 'passage-1';
     const passages = [
@@ -149,7 +149,7 @@ describe('MobileDetailTitle', () => {
       } as BookName,
     ];
 
-    mountMobileDetailTitle({
+    mountDetailTitle({
       pasId,
       passages,
       projects,
@@ -184,7 +184,7 @@ describe('MobileDetailTitle', () => {
       } as BookName,
     ];
 
-    mountMobileDetailTitle({
+    mountDetailTitle({
       pasId,
       passages,
       bookData,
@@ -194,7 +194,7 @@ describe('MobileDetailTitle', () => {
   });
 
   it('should show empty reference when passage is missing', () => {
-    mountMobileDetailTitle({
+    mountDetailTitle({
       pasId: 'missing-passage',
     });
 
@@ -215,7 +215,7 @@ describe('MobileDetailTitle', () => {
       } as PassageD,
     ];
 
-    mountMobileDetailTitle({
+    mountDetailTitle({
       pasId,
       passages,
       projectId: 'missing-project',

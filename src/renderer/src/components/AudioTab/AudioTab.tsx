@@ -1,11 +1,10 @@
-import React, {
-  useState,
-  useEffect,
-  useRef,
-  useContext,
-  useCallback,
-} from 'react';
-import { shallowEqual } from 'react-redux';
+import { useState, useEffect, useRef, useContext, useCallback } from 'react';
+import { useSelector, shallowEqual } from 'react-redux';
+import { Box, Button } from '@mui/material';
+import AddIcon from '@mui/icons-material/Add';
+import JSONAPISource from '@orbit/jsonapi';
+import Memory from '@orbit/memory';
+import { RecordKeyMap, RecordTransformBuilder } from '@orbit/records';
 import {
   IState,
   MediaFile,
@@ -16,41 +15,29 @@ import {
   PassageD,
   SectionD,
 } from '../../model';
-import JSONAPISource from '@orbit/jsonapi';
-import { Box } from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
-import {
-  AltButton,
-  GrowingSpacer,
-  PaddedBox,
-  TabActions,
-  TabAppBar,
-  FillColumn,
-} from '../../control';
-import { useSnackBar } from '../../hoc/SnackBar';
-import BigDialog from '../../hoc/BigDialog';
-import AudioTable from './AudioTable';
-import Uploader from '../Uploader';
+import { PlanContext } from '../../context/PlanContext';
+import { UnsavedContext } from '../../context/UnsavedContext';
+import { useGlobal } from '../../context/useGlobal';
 import {
   getMediaInPlans,
   usePlan,
   remoteIdGuid,
   VernacularTag,
 } from '../../crud';
-import { useGlobal } from '../../context/useGlobal';
 import { useMediaAttach } from '../../crud/useMediaAttach';
-import Memory from '@orbit/memory';
+import BigDialog from '../../hoc/BigDialog';
+import { useSnackBar } from '../../hoc/SnackBar';
+import { useOrbitData } from '../../hoc/useOrbitData';
+import { mediaTabSelector, sharedSelector } from '../../selector';
+import { GrowingSpacer } from '../../control';
+import ContentLayout from '../App/ContentLayout';
+import Uploader from '../Uploader';
+import { getMedia, IAttachMap, IGetMedia, IPRow, IRow } from '.';
+import AudioTable from './AudioTable';
+import { IPassageData, getPassages } from './getPassages';
+import { IMatchData, makeMatchMap } from './makeRefMap';
 import PassageChooser from './PassageChooser';
 import Template from './Template';
-import { getMedia, IAttachMap, IGetMedia, IPRow, IRow } from '.';
-import { IMatchData, makeMatchMap } from './makeRefMap';
-import { UnsavedContext } from '../../context/UnsavedContext';
-import { useSelector } from 'react-redux';
-import { mediaTabSelector, sharedSelector } from '../../selector';
-import { IPassageData, getPassages } from './getPassages';
-import { useOrbitData } from '../../hoc/useOrbitData';
-import { RecordKeyMap, RecordTransformBuilder } from '@orbit/records';
-import { PlanContext } from '../../context/PlanContext';
 
 export function AudioTab() {
   const passages = useOrbitData<PassageD[]>('passage');
@@ -63,7 +50,7 @@ export function AudioTab() {
   const [coordinator] = useGlobal('coordinator');
   const memory = coordinator?.getSource('memory') as Memory;
   const remote = coordinator?.getSource('remote') as JSONAPISource;
-  const requests = React.useRef(0);
+  const requests = useRef(0);
   const { getPlan } = usePlan();
   const [planRec] = useState(getPlan(plan) || ({} as Plan));
   const [isOffline] = useGlobal('offline'); //verified this is not used in a function 2/18/25
@@ -87,7 +74,7 @@ export function AudioTab() {
   const [attachMap, setAttachMap] = useState<IAttachMap>({});
   const [planMedia, setPlanMedia] = useState<MediaFile[]>([]);
   const [uploadMedia, setUploadMedia] = useState<string>();
-  const inProcess = React.useRef<boolean>(false);
+  const inProcess = useRef<boolean>(false);
   const [speaker, setSpeaker] = useState('');
   const { attachPassage, detachPassage } = useMediaAttach();
   const [refresh, setRefresh] = useState(0);
@@ -338,91 +325,95 @@ export function AudioTab() {
   );
 
   return (
-    <FillColumn>
-      <FillColumn flex>
-        <TabAppBar position="static" color="default" sx={{ flexShrink: 0 }}>
-          <TabActions>
-            {canEditAudio && (
-              <>
-                <AltButton
-                  id="audUpload"
-                  key="upload"
-                  aria-label={ts.uploadMediaPlural}
-                  onClick={handleUpload}
-                >
-                  {ts.uploadMediaPlural}
-                  <AddIcon sx={{ ml: 1 }} />
-                </AltButton>
-                <AltButton
-                  id="audMatch"
-                  key={t.autoMatch}
-                  aria-label={t.autoMatch}
-                  onClick={handleAutoMatch}
-                >
-                  {t.autoMatch}
-                </AltButton>
-              </>
-            )}
-            <GrowingSpacer />
-            {complete !== 0 &&
-              complete !== 100 &&
-              !cloudSync.current &&
-              !uploadVisible &&
-              !cancelled.current && (
-                <AltButton
-                  id="uploadCancel"
-                  aria-label={ts.cancel}
-                  onClick={handleUploadCancel}
-                >
-                  {ts.cancel}
-                </AltButton>
-              )}
-          </TabActions>
-        </TabAppBar>
-        <PaddedBox sx={{ px: 2 }}>
-          {autoMatch && (
-            <Box sx={{ mb: 2 }}>
-              <Template
-                matchMap={matchMap}
-                options={{ data, pdata, attachMap } as IMatchData}
-              />
+    <ContentLayout
+      header={
+        <>
+          {canEditAudio && (
+            <Box sx={{ display: 'flex', gap: 1.5 }}>
+              <Button
+                id="audUpload"
+                key="upload"
+                aria-label={ts.uploadMediaPlural}
+                variant="outlined"
+                onClick={handleUpload}
+                endIcon={<AddIcon />}
+              >
+                {ts.uploadMediaPlural}
+              </Button>
+              <Button
+                id="audMatch"
+                key={t.autoMatch}
+                aria-label={t.autoMatch}
+                variant="outlined"
+                onClick={handleAutoMatch}
+              >
+                {t.autoMatch}
+              </Button>
             </Box>
           )}
-          <Box sx={{ display: 'flex', flexDirection: 'row' }}>
-            <AudioTable
-              data={data}
-              setRefresh={handleRefresh}
-              playItem={playItem}
-              setPlayItem={setPlayItem}
-              onAttach={onAttach}
-              readonly={!canEditAudio}
-              sectionArr={sectionArr}
-              shared={shared}
-              canSetDestination={!isOffline && canPublish}
-              hasPublishing={publishingOn}
-            />
-            {attachVisible && (
-              <BigDialog
-                title={t.choosePassage}
-                isOpen={attachVisible || false}
-                onOpen={setAttachVisible}
-                onCancel={handleAttachCancel}
+          <GrowingSpacer />
+          {complete !== 0 &&
+            complete !== 100 &&
+            !cloudSync.current &&
+            !uploadVisible &&
+            !cancelled.current && (
+              <Button
+                id="uploadCancel"
+                aria-label={ts.cancel}
+                variant="outlined"
+                onClick={handleUploadCancel}
               >
-                <PassageChooser
-                  data={pdata}
-                  row={mcheck}
-                  doAttach={doAttach}
-                  visible={attachVisible}
-                  setVisible={setAttachVisible}
-                  uploadMedia={uploadMedia}
-                  setUploadMedia={setUploadMedia}
-                  mediaRow={mediaRow}
-                />
-              </BigDialog>
+                {ts.cancel}
+              </Button>
             )}
+        </>
+      }
+      drawBottomBorder={true}
+      contentSx={{ p: 1.5 }}
+    >
+      <Box width="100%">
+        {autoMatch && (
+          <Box sx={{ mb: 2 }}>
+            <Template
+              matchMap={matchMap}
+              options={{ data, pdata, attachMap } as IMatchData}
+            />
           </Box>
-        </PaddedBox>
-      </FillColumn>
+        )}
+        <Box sx={{ display: 'flex', flexDirection: 'row' }}>
+          <AudioTable
+            data={data}
+            setRefresh={handleRefresh}
+            playItem={playItem}
+            setPlayItem={setPlayItem}
+            onAttach={onAttach}
+            readonly={!canEditAudio}
+            sectionArr={sectionArr}
+            shared={shared}
+            canSetDestination={!isOffline && canPublish}
+            hasPublishing={publishingOn}
+          />
+          {attachVisible && (
+            <BigDialog
+              title={t.choosePassage}
+              isOpen={attachVisible || false}
+              onOpen={setAttachVisible}
+              onCancel={handleAttachCancel}
+            >
+              <PassageChooser
+                data={pdata}
+                row={mcheck}
+                doAttach={doAttach}
+                visible={attachVisible}
+                setVisible={setAttachVisible}
+                uploadMedia={uploadMedia}
+                setUploadMedia={setUploadMedia}
+                mediaRow={mediaRow}
+              />
+            </BigDialog>
+          )}
+        </Box>
+      </Box>
       <Uploader
         isOpen={uploadVisible}
         onOpen={setUploadVisible}
@@ -433,7 +424,7 @@ export function AudioTab() {
         performedBy={speaker}
         onSpeakerChange={handleNameChange}
       />
-    </FillColumn>
+    </ContentLayout>
   );
 }
 

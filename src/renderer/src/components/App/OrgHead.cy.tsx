@@ -415,7 +415,10 @@ describe('OrgHead', () => {
     );
   };
 
-  it('should render the organization name when organization exists', () => {
+  it('should render the organization name on mobile when organization exists', () => {
+    // The team screen only names the org on mobile; desktop shows the product
+    // name (see the isMobile guard in OrgHead).
+    cy.viewport(375, 667);
     const orgId = 'test-org-id';
     const orgName = 'Test Organization';
     const orgData = createMockOrganization(orgId, orgName);
@@ -439,9 +442,10 @@ describe('OrgHead', () => {
     cy.contains('Audio Project Manager').should('be.visible');
   });
 
-  it('should show settings and members buttons when on team screen and user is admin', () => {
-    // Set desktop viewport to ensure settings button is visible
-    cy.viewport(1024, 768);
+  it('should show settings and members buttons on mobile team screen when user is admin', () => {
+    // showTeamActions = isTeamScreen && isMobile, so these buttons are a
+    // mobile-only affordance; desktop gets them from TeamActions instead.
+    cy.viewport(375, 667);
     const orgId = 'test-org-id';
     const orgName = 'Test Organization';
     const orgData = createMockOrganization(orgId, orgName);
@@ -456,7 +460,8 @@ describe('OrgHead', () => {
     cy.get('button svg').should('have.length.at.least', 2);
   });
 
-  it('should show only members button (not settings) when on team screen and user is not admin', () => {
+  it('should show only members button (not settings) on mobile team screen when user is not admin', () => {
+    cy.viewport(375, 667);
     const orgId = 'test-org-id';
     const orgName = 'Test Organization';
     const orgData = createMockOrganization(orgId, orgName);
@@ -498,8 +503,8 @@ describe('OrgHead', () => {
   });
 
   it('should open TeamDialog when settings button is clicked (admin only)', () => {
-    // Set desktop viewport to ensure menu items are visible
-    cy.viewport(1024, 768);
+    // Settings button only renders on mobile (showTeamActions)
+    cy.viewport(375, 667);
     const orgId = 'test-org-id';
     const orgName = 'Test Organization';
     const orgData = createMockOrganization(orgId, orgName);
@@ -519,6 +524,7 @@ describe('OrgHead', () => {
   });
 
   it('should open members dialog when members button is clicked (admin)', () => {
+    cy.viewport(375, 667);
     const orgId = 'test-org-id';
     const orgName = 'Test Organization';
     const orgData = createMockOrganization(orgId, orgName);
@@ -535,6 +541,7 @@ describe('OrgHead', () => {
   });
 
   it('should open members dialog when members button is clicked (non-admin)', () => {
+    cy.viewport(375, 667);
     const orgId = 'test-org-id';
     const orgName = 'Test Organization';
     const orgData = createMockOrganization(orgId, orgName);
@@ -550,8 +557,8 @@ describe('OrgHead', () => {
   });
 
   it('should close TeamDialog when editOpen is set to false (admin only)', () => {
-    // Set desktop viewport to ensure menu items are visible
-    cy.viewport(1024, 768);
+    // Settings button only renders on mobile (showTeamActions)
+    cy.viewport(375, 667);
     const orgId = 'test-org-id';
     const orgName = 'Test Organization';
     const orgData = createMockOrganization(orgId, orgName);
@@ -579,6 +586,8 @@ describe('OrgHead', () => {
   });
 
   it('should handle organization name with long text and ellipsis', () => {
+    // The org name only renders on mobile
+    cy.viewport(375, 667);
     const orgId = 'test-org-id';
     const longOrgName = 'A'.repeat(200); // Very long name
     const orgData = createMockOrganization(orgId, longOrgName);
@@ -619,10 +628,12 @@ describe('OrgHead', () => {
 
     mountOrgHead(createInitialState(), ['/team'], orgId, orgData);
 
-    // Same flexbox truncation styling applies on desktop width.
-    cy.contains(orgName).should('be.visible');
-    cy.contains(orgName)
-      .should('have.css', 'white-space', 'nowrap')
+    // At desktop width the team screen shows the product name, not the org
+    // name — but the same flexbox truncation styling applies to that label.
+    cy.contains(orgName).should('not.exist');
+    cy.contains('Audio Project Manager')
+      .should('be.visible')
+      .and('have.css', 'white-space', 'nowrap')
       .and('have.css', 'text-overflow', 'ellipsis')
       .and('have.css', 'min-width', '0px');
   });
@@ -643,6 +654,8 @@ describe('OrgHead', () => {
   });
 
   it('should remove leading > and trailing < characters from organization names', () => {
+    // cleanOrgName only feeds the header on mobile
+    cy.viewport(375, 667);
     const orgId = 'test-org-id';
     // Test with name that starts with >
     const orgNameWithPrefix = '>Test Organization';
@@ -693,6 +706,7 @@ describe('OrgHead', () => {
   });
 
   it('should not show members button for personal projects', () => {
+    cy.viewport(375, 667);
     const orgId = 'test-org-id';
     const orgName = 'Personal Project';
     const orgData = createMockOrganization(orgId, orgName);
@@ -707,6 +721,7 @@ describe('OrgHead', () => {
   });
 
   it('should show members button for non-personal projects', () => {
+    cy.viewport(375, 667);
     const orgId = 'test-org-id';
     const orgName = 'Team Organization';
     const orgData = createMockOrganization(orgId, orgName);
@@ -840,23 +855,6 @@ describe('OrgHead', () => {
       // Should display the project name
       cy.contains(projectName).should('be.visible');
     });
-  });
-
-  it('should show first two menu items on desktop width', () => {
-    // Set desktop viewport (above 'sm' breakpoint)
-    cy.viewport(1024, 768);
-    const orgId = 'test-org-id';
-    const orgName = 'Test Organization';
-    const orgData = createMockOrganization(orgId, orgName);
-
-    mountOrgHead(createInitialState(), ['/team'], orgId, orgData, true);
-
-    // Open the settings menu
-    cy.get('button').first().click();
-    cy.get('[role="menu"]').should('be.visible');
-
-    cy.contains('Team Settings').should('be.visible');
-    cy.get('#orgHeadEditWorkflow').should('be.visible');
   });
 
   it('should show team settings menu on mobile width when online admin', () => {

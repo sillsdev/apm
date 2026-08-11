@@ -1,29 +1,29 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useGlobal } from '../../context/useGlobal';
 import { shallowEqual, useSelector } from 'react-redux';
+import { Box, Stack } from '@mui/material';
+import type { GridSortModel } from '@mui/x-data-grid';
+import { isElectron } from '../../../api-variable';
 import {
   IState,
   IMediaTabStrings,
   MediaFileD,
   SectionArray,
 } from '../../model';
-import { Box } from '@mui/material';
-import TranscriptionShow from '../TranscriptionShow';
-import MediaPlayer from '../MediaPlayer';
-import Confirm from '../AlertDialog';
+import { UpdateRecord } from '../../model/baseModel';
+import { useGlobal } from '../../context/useGlobal';
+import { useDataChanges, useWaitForRemoteQueue, doSort } from '../../utils';
 import {
   PublishDestinationEnum,
   useOrganizedBy,
   usePublishDestination,
 } from '../../crud';
-import { useDataChanges, useWaitForRemoteQueue, doSort } from '../../utils';
-import { IRow } from '.';
-import { UpdateRecord } from '../../model/baseModel';
 import { mediaTabSelector } from '../../selector';
-import ConfirmPublishDialog from '../ConfirmPublishDialog';
-import type { GridSortModel } from '@mui/x-data-grid';
 import { AudioVersionCard } from '../../components/PassageDetail/mobile/record/AudioVersionCard';
-import { isElectron } from '../../../api-variable';
+import Confirm from '../AlertDialog';
+import ConfirmPublishDialog from '../ConfirmPublishDialog';
+import MediaPlayer from '../MediaPlayer';
+import TranscriptionShow from '../TranscriptionShow';
+import { IRow } from '.';
 
 interface IProps {
   data: IRow[];
@@ -41,6 +41,7 @@ interface IProps {
   /** Version dialog: show radio + selection highlight */
   showVersionRadio?: boolean;
 }
+
 export const AudioTable = (props: IProps) => {
   const { data: initialData, setRefresh } = props;
   const {
@@ -238,48 +239,50 @@ export const AudioTable = (props: IProps) => {
         minHeight: { xs: 0, sm: '20rem' },
       }}
     >
-      {sortedData.map((row) => {
-        const canDelete = !readonly && !row.readyToShare;
-        return (
-          <AudioVersionCard
-            key={row.id}
-            {...row}
-            isSelected={versionPickMode && row.id === selectedId}
-            setIsSelected={setSelectedId}
-            onSelectCard={
-              versionPickMode ? () => setSelectedId(row.id) : undefined
-            }
-            lang={lang}
-            handleSelect={handleSelect}
-            playItem={playItem}
-            mediaPlaying={mediaPlaying}
-            showSelectionRadio={showVersionRadio}
-            onShowTranscription={handleShowTranscription(row.id)}
-            expandedFileNameId={expandedFileNameMediaId}
-            setExpandedFileNameId={setExpandedFileNameMediaId}
-            expandFileNameForMedia={expandFileNameForMedia}
-            allowPlay={isElectron || canCreate}
-            allowDownload={!onAttach || isElectron || canCreate}
-            showMediaSheetMetadata={Boolean(onAttach)}
-            sectionLabel={organizedBy}
-            showAttachControl={sheetAttach}
-            attached={Boolean(row.passId)}
-            onAttachToggle={
-              onAttach ? () => onAttach([row.index], !row.passId) : undefined
-            }
-            canDeleteMedia={canDelete}
-            onRequestDelete={
-              canDelete ? () => handleConfirmAction(row.id) : undefined
-            }
-            showPublishControl={showPublishing}
-            publishDisabled={(row.passId || '') === '' || !canSetDestination}
-            onPublishClick={handleChangeReadyToShare(row.id)}
-            publishStatusIcon={publishStatus(
-              getPublishTo(row.publishTo, hasPublishing, shared, true)
-            )}
-          />
-        );
-      })}
+      <Stack spacing={1.5}>
+        {sortedData.map((row) => {
+          const canDelete = !readonly && !row.readyToShare;
+          return (
+            <AudioVersionCard
+              key={row.id}
+              {...row}
+              isSelected={versionPickMode && row.id === selectedId}
+              setIsSelected={setSelectedId}
+              onSelectCard={
+                versionPickMode ? () => setSelectedId(row.id) : undefined
+              }
+              lang={lang}
+              handleSelect={handleSelect}
+              playItem={playItem}
+              mediaPlaying={mediaPlaying}
+              showSelectionRadio={showVersionRadio}
+              onShowTranscription={handleShowTranscription(row.id)}
+              expandedFileNameId={expandedFileNameMediaId}
+              setExpandedFileNameId={setExpandedFileNameMediaId}
+              expandFileNameForMedia={expandFileNameForMedia}
+              allowPlay={isElectron || canCreate}
+              allowDownload={!onAttach || isElectron || canCreate}
+              showMediaSheetMetadata={Boolean(onAttach)}
+              sectionLabel={organizedBy}
+              showAttachControl={sheetAttach}
+              attached={Boolean(row.passId)}
+              onAttachToggle={
+                onAttach ? () => onAttach([row.index], !row.passId) : undefined
+              }
+              canDeleteMedia={canDelete}
+              onRequestDelete={
+                canDelete ? () => handleConfirmAction(row.id) : undefined
+              }
+              showPublishControl={showPublishing}
+              publishDisabled={(row.passId || '') === '' || !canSetDestination}
+              onPublishClick={handleChangeReadyToShare(row.id)}
+              publishStatusIcon={publishStatus(
+                getPublishTo(row.publishTo, hasPublishing, shared, true)
+              )}
+            />
+          );
+        })}
+      </Stack>
       {publishItem !== -1 && (
         <ConfirmPublishDialog
           context="media"

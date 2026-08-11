@@ -39,8 +39,18 @@ import './commands';
 import { installRecordingMocks } from './recordingMocks';
 
 import { mount } from 'cypress/react';
+import { ThemeProvider } from '@mui/material/styles';
+import { createAppTheme } from '../../src/theme';
 
-Cypress.Commands.add('mount', mount);
+// Every component test renders under the real app theme, exactly as the app
+// does. Components read custom theme keys the MUI default theme does not have
+// (e.g. `theme.layout.gap` in AppHead/OrgHead/PlanBar), so a bare mount would
+// blow up with "Cannot read properties of undefined".
+const appTheme = createAppTheme('en');
+
+Cypress.Commands.add('mount', (component, options) =>
+  mount(<ThemeProvider theme={appTheme}>{component}</ThemeProvider>, options)
+);
 
 Cypress.Commands.add(
   'installRecordingMocks',

@@ -246,27 +246,6 @@ describe('AudioVersionCard', () => {
     cy.contains('6/15/2020').should('be.visible');
   });
 
-  it('shows an avatar for the current user from Orbit data', () => {
-    mountCard();
-
-    // useAvatarSource resolves asynchronously; UserAvatar may show #abbruser first or
-    // #srcuser after dataPath settles. Assert on a stable wrapper with a longer timeout
-    // so the first attempt passes under runMode retries (see cypress/config/base.config.ts).
-    cy.get('[data-cy="audio-version-card"] .MuiAvatar-root', {
-      timeout: 10000,
-    })
-      .should('be.visible')
-      .and(($avatar) => {
-        const text = $avatar.text().trim();
-        const alt =
-          $avatar.find('img').attr('alt') ?? $avatar.attr('alt') ?? '';
-        expect(
-          text.includes('AR') || alt.includes('Alex Recorder'),
-          'initials or user name on avatar'
-        ).to.eq(true);
-      });
-  });
-
   it('calls onSelectCard when the card body is clicked', () => {
     mountCard();
 

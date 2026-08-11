@@ -1,12 +1,12 @@
 import { useContext, useMemo, useState } from 'react';
 import { shallowEqual, useSelector } from 'react-redux';
 import { IPlanTabsStrings } from '@model/index';
-import { Menu, MenuItem } from '@mui/material';
+import { Button, Menu, MenuItem } from '@mui/material';
 import DropDownIcon from '@mui/icons-material/ArrowDropDown';
-import { AltButton } from '../../control/AltButton';
 import { planTabsSelector } from '../../selector';
 import { useOrganizedBy } from '../../crud/useOrganizedBy';
 import { useShowAssignment } from '../../crud/useShowAssignment';
+import { useMobile } from '../../utils';
 import { PlanContext } from '../../context/PlanContext';
 import { PlanTabEnum } from '../PlanTabsEnum';
 import { UnsavedContext } from '../../context/UnsavedContext';
@@ -22,57 +22,71 @@ export const PlanTabSelect = () => {
   const ctx = useContext(PlanContext);
   const { flat, tab, setTab } = ctx.state;
   const showAssign = useShowAssignment();
+  const { isMobile } = useMobile();
   const defaultItem = useMemo(
     () => (flat ? organizedBy : t.sectionsPassages.replace('{0}', organizedBy)),
     [flat, organizedBy, t]
   );
+
   const options = useMemo(() => {
-    const base = [defaultItem, t.media];
+    const sectionPassage = {
+      label: defaultItem,
+      tab: PlanTabEnum.sectionPassage,
+    };
+    const assignments = { label: t.assignments, tab: PlanTabEnum.assignment };
+    if (isMobile)
+      return showAssign ? [sectionPassage, assignments] : [sectionPassage];
+    const base = [sectionPassage, { label: t.media, tab: PlanTabEnum.media }];
     return showAssign
-      ? [...base, t.assignments, t.transcriptions]
-      : [...base, t.transcriptions];
-  }, [defaultItem, t.media, t.assignments, t.transcriptions, showAssign]);
+      ? [
+          ...base,
+          assignments,
+          { label: t.transcriptions, tab: PlanTabEnum.transcription },
+        ]
+      : [...base, { label: t.transcriptions, tab: PlanTabEnum.assignment }];
+  }, [
+    defaultItem,
+    t.media,
+    t.assignments,
+    t.transcriptions,
+    showAssign,
+    isMobile,
+  ]);
   const handleMenu = (e: any) => setActionMenuItem(e.currentTarget);
   const handleClose = () => setActionMenuItem(null);
-  const handleChange = (menuIndex: number) => {
-    const tabIndex =
-      showAssign || menuIndex < PlanTabEnum.assignment
-        ? menuIndex
-        : PlanTabEnum.assignment;
+  const handleChange = (tabIndex: PlanTabEnum) => {
     setTab(tabIndex);
     handleClose();
   };
 
   const resolvedTab = tab ?? 0;
-  const optionIndex =
-    !showAssign && resolvedTab === PlanTabEnum.transcription
-      ? PlanTabEnum.assignment
-      : resolvedTab;
+  const selected = options.find((o) => o.tab === resolvedTab);
 
   return (
     <>
-      <AltButton
+      <Button
         id="planTabSelect"
         aria-owns={actionMenuItem ? 'action-menu' : undefined}
         aria-label={t.sectionsPassages}
+        variant="outlined"
         onClick={handleMenu}
+        endIcon={<DropDownIcon />}
       >
-        {options[optionIndex] ?? options[0]}
-        <DropDownIcon sx={{ ml: 1 }} />
-      </AltButton>
+        {(selected ?? options[0]).label}
+      </Button>
       <Menu
         id="import-export-menu"
         anchorEl={actionMenuItem}
         open={Boolean(actionMenuItem)}
         onClose={handleClose}
       >
-        {options.map((v, i) => (
+        {options.map((o) => (
           <MenuItem
-            key={v}
-            id={v}
-            onClick={() => checkSaved(() => handleChange(i))}
+            key={o.label}
+            id={o.label}
+            onClick={() => checkSaved(() => handleChange(o.tab))}
           >
-            {v}
+            {o.label}
           </MenuItem>
         ))}
       </Menu>

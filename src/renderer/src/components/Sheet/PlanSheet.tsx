@@ -9,17 +9,9 @@ import {
   useCallback,
   KeyboardEventHandler,
 } from 'react';
-import { useGetGlobal, useGlobal } from '../../context/useGlobal';
+import { useSelector, shallowEqual } from 'react-redux';
 import {
-  IPlanSheetStrings,
-  ISharedStrings,
-  BookNameMap,
-  OptionType,
-  ISheet,
-  OrgWorkflowStep,
-  SheetLevel,
-} from '../../model';
-import {
+  Box,
   Button,
   Dialog,
   DialogActions,
@@ -33,25 +25,27 @@ import {
   styled,
 } from '@mui/material';
 import ClearIcon from '@mui/icons-material/Clear';
-import SaveIcon from '@mui/icons-material/Save';
 import PublishOffIcon from '@mui/icons-material/PublicOffOutlined';
 import PublishOnIcon from '@mui/icons-material/PublicOutlined';
+import SaveIcon from '@mui/icons-material/Save';
 import SearchIcon from '@mui/icons-material/Search';
-import { useSnackBar } from '../../hoc/SnackBar';
+import { RecordKeyMap } from '@orbit/records';
 import DataSheet from 'react-datasheet';
-import Confirm from '../AlertDialog';
-import {
-  AddSectionPassageButtons,
-  ProjButtons,
-  TabActions,
-  ActionHeight,
-  GrowingSpacer,
-  PriButton,
-  iconMargin,
-  LightTooltip,
-  FillColumn,
-} from '../../control';
 import 'react-datasheet/lib/react-datasheet.css';
+import {
+  IPlanSheetStrings,
+  ISharedStrings,
+  BookNameMap,
+  OptionType,
+  ISheet,
+  OrgWorkflowStep,
+  SheetLevel,
+} from '../../model';
+import { PassageTypeEnum } from '../../model/passageType';
+import { HotKeyContext } from '../../context/HotKeyContext';
+import { PlanContext } from '../../context/PlanContext';
+import { UnsavedContext } from '../../context/UnsavedContext';
+import { useGetGlobal, useGlobal } from '../../context/useGlobal';
 import {
   cleanClipboard,
   localUserKey,
@@ -68,35 +62,32 @@ import {
   remoteIdGuid,
   usePublishDestination,
 } from '../../crud';
-import MediaPlayer from '../MediaPlayer';
-import { PlanContext } from '../../context/PlanContext';
-import { TabAppBar } from '../../control';
-import { HotKeyContext } from '../../context/HotKeyContext';
-import { UnsavedContext } from '../../context/UnsavedContext';
-import FilterMenu, { ISTFilterState } from './filterMenu';
-import { planSheetSelector, sharedSelector } from '../../selector';
-import { useSelector, shallowEqual } from 'react-redux';
-import { PassageTypeEnum } from '../../model/passageType';
-import { rowTypes } from './rowTypes';
-import { useRefErrTest } from './useRefErrTest';
-import { ExtraIcon } from '.';
-import { usePlanSheetFill } from './usePlanSheetFill';
-import { useShowIcon } from './useShowIcon';
-import { RecordKeyMap } from '@orbit/records';
-import ConfirmPublishDialog from '../ConfirmPublishDialog';
-import { findPlanSheetRowFromReferenceQuery } from './findPlanSheetRowFromReferenceQuery';
 import { useOrganizedBy } from '../../crud/useOrganizedBy';
+import { useSnackBar } from '../../hoc/SnackBar';
+import { planSheetSelector, sharedSelector } from '../../selector';
+import {
+  AddSectionPassageButtons,
+  ProjButtons,
+  GrowingSpacer,
+  LightTooltip,
+} from '../../control';
+import Confirm from '../AlertDialog';
+import ContentLayout from '../App/ContentLayout';
+import ConfirmPublishDialog from '../ConfirmPublishDialog';
+import MediaPlayer from '../MediaPlayer';
+import { ExtraIcon } from '.';
+import FilterMenu, { ISTFilterState } from './filterMenu';
+import { findPlanSheetRowFromReferenceQuery } from './findPlanSheetRowFromReferenceQuery';
+import { rowTypes } from './rowTypes';
+import { usePlanSheetFill } from './usePlanSheetFill';
+import { useRefErrTest } from './useRefErrTest';
+import { useShowIcon } from './useShowIcon';
 
 const DOWN_ARROW = 'ARROWDOWN';
 export const SectionSeqCol = 0;
 const SheetMargin = 10;
 
 const ContentDiv = styled('div')(({ theme }) => ({
-  paddingTop: theme.spacing(1),
-  position: 'relative',
-  flex: 1,
-  minHeight: 0,
-  overflow: 'auto',
   '& .data-grid-container .data-grid .cell': {
     verticalAlign: 'middle',
     textAlign: 'left',
@@ -313,6 +304,7 @@ export function PlanSheet(props: IProps) {
   const [currentRow, setCurrentRowx] = useState(-1);
   const [active, setActive] = useState(-1); // used for action menu to display
   const sheetRef = useRef<any>(undefined);
+  const scrollRef = useRef<HTMLDivElement>(null); //the scrolling content region
   const {
     startSave,
     toolsChanged,
@@ -511,22 +503,20 @@ export function PlanSheet(props: IProps) {
   };
 
   const sheetScroll = () => {
-    const root = sheetRef.current as HTMLDivElement | undefined;
-    if (root && currentRowRef.current) {
+    const scroller = scrollRef.current;
+    if (scroller && sheetRef.current && currentRowRef.current) {
       const tbodyNodes = bodyChildren();
       const tbodyRef =
         tbodyNodes && (tbodyNodes[currentRowRef.current] as HTMLDivElement);
-      const top = root.scrollTop;
-      const viewH = root.clientHeight;
       //only scroll if it's not already visible
-      if (tbodyRef && tbodyRef.offsetTop < top) {
-        root.scrollTo(0, tbodyRef.offsetTop - 10);
+      if (tbodyRef && tbodyRef.offsetTop < scroller.scrollTop) {
+        scroller.scrollTo(0, tbodyRef.offsetTop - 10);
       } else if (
         tbodyRef &&
-        tbodyRef.offsetTop > top + viewH - ActionHeight - 200
+        tbodyRef.offsetTop > scroller.scrollTop + scroller.clientHeight - 200
       ) {
         const adjust = Math.min(rowsPerPage.current, currentRowRef.current);
-        root.scrollTo(0, tbodyRef.offsetTop + 10 - adjust * 20);
+        scroller.scrollTo(0, tbodyRef.offsetTop + 10 - adjust * 20);
       }
     }
     return false;
@@ -837,9 +827,9 @@ export function PlanSheet(props: IProps) {
   };
 
   const setRowsPerPage = () => {
-    const root = sheetRef.current as HTMLDivElement | undefined;
-    const viewH = root?.clientHeight ?? document.documentElement.clientHeight;
-    rowsPerPage.current = Math.ceil(viewH / 42);
+    const height =
+      scrollRef.current?.clientHeight ?? document.documentElement.clientHeight;
+    rowsPerPage.current = Math.ceil((height - 200) / 42);
   };
 
   const handleRowsPerPage = debounce(() => {
@@ -859,16 +849,17 @@ export function PlanSheet(props: IProps) {
 
   useEffect(() => {
     setRowsPerPage();
+    //scroll events don't bubble, so listen on the scrolling region itself
+    const scroller = scrollRef.current;
     window.addEventListener('resize', handleRowsPerPage);
-    const root = sheetRef.current as HTMLDivElement | null;
-    root?.addEventListener('scroll', scrolled);
+    scroller?.addEventListener('scroll', scrolled);
     const keys = [{ key: DOWN_ARROW, cb: sheetScroll }];
     keys.forEach((k) => subscribe(k.key, k.cb));
 
     return () => {
       keys.forEach((k) => unsubscribe(k.key));
       window.removeEventListener('resize', handleRowsPerPage);
-      root?.removeEventListener('scroll', scrolled);
+      scroller?.removeEventListener('scroll', scrolled);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -1069,9 +1060,8 @@ export function PlanSheet(props: IProps) {
 
   useEffect(() => {
     const tbodyNodes = bodyChildren();
-    const root = sheetRef.current as HTMLDivElement | undefined;
-    if (tbodyNodes && root) {
-      const currentOff = root.scrollTop;
+    if (tbodyNodes) {
+      const currentOff = scrollRef.current?.scrollTop ?? 0;
       let bottom = 1;
       let top = tbodyNodes.length - 1;
       while (bottom < top) {
@@ -1082,9 +1072,7 @@ export function PlanSheet(props: IProps) {
           top = mid;
         }
       }
-      if (bottom !== curTop) {
-        setCurTop(bottom);
-      }
+      if (bottom !== curTop) setCurTop(bottom);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data.length, scrollCount]);
@@ -1118,11 +1106,11 @@ export function PlanSheet(props: IProps) {
     [emptyRow, curTop]
   );
   return (
-    <FillColumn>
-      <TabAppBar position="static" color="default" sx={{ flexShrink: 0 }}>
-        <TabActions>
+    <ContentLayout
+      header={
+        <>
           {!readonly && (
-            <>
+            <Box sx={{ display: 'flex', gap: 1.5 }}>
               <AddSectionPassageButtons
                 inlinePassages={inlinePassages}
                 numRows={rowInfo.length}
@@ -1163,68 +1151,75 @@ export function PlanSheet(props: IProps) {
                   onReseq={handleResequence}
                 />
               )}
-            </>
+            </Box>
           )}
-
           <GrowingSpacer />
-          {data.length > 1 && !offline && !inlinePassages && !anyRecording && (
+          <Box sx={{ display: 'flex', gap: 1.5 }}>
+            {data.length > 1 &&
+              !offline &&
+              !inlinePassages &&
+              !anyRecording && (
+                <LightTooltip
+                  sx={{ backgroundColor: 'transparent' }}
+                  title={
+                    !publishingOn || hidePublishing
+                      ? t.showPublishing
+                      : t.hidePublishing
+                  }
+                >
+                  <IconButton onClick={handlePublishToggle}>
+                    {!publishingOn || hidePublishing ? (
+                      <PublishOnIcon sx={{ color: 'primary.light' }} />
+                    ) : (
+                      <PublishOffIcon sx={{ color: 'primary.light' }} />
+                    )}
+                  </IconButton>
+                </LightTooltip>
+              )}
+            <FilterMenu
+              canSetDefault={canSetDefault}
+              state={filterState}
+              onFilterChange={onFilterChange}
+              orgSteps={orgSteps}
+              minimumSection={minimumSection}
+              maximumSection={maximumSection}
+              filtered={filtered}
+              hidePublishing={hidePublishing}
+              disabled={!filtered && (rowInfo.length < 2 || anyRecording)}
+            />
             <LightTooltip
               sx={{ backgroundColor: 'transparent' }}
-              title={
-                !publishingOn || hidePublishing
-                  ? t.showPublishing
-                  : t.hidePublishing
-              }
+              title={t.goToReference}
             >
-              <IconButton onClick={handlePublishToggle}>
-                {!publishingOn || hidePublishing ? (
-                  <PublishOnIcon sx={{ color: 'primary.light' }} />
-                ) : (
-                  <PublishOffIcon sx={{ color: 'primary.light' }} />
-                )}
+              <IconButton
+                aria-label={t.goToReference}
+                onClick={() => setGoToOpen(true)}
+                disabled={rowInfo.length < 2}
+              >
+                <SearchIcon sx={{ color: 'primary.light' }} />
               </IconButton>
             </LightTooltip>
-          )}
-          <FilterMenu
-            canSetDefault={canSetDefault}
-            state={filterState}
-            onFilterChange={onFilterChange}
-            orgSteps={orgSteps}
-            minimumSection={minimumSection}
-            maximumSection={maximumSection}
-            filtered={filtered}
-            hidePublishing={hidePublishing}
-            disabled={!filtered && (rowInfo.length < 2 || anyRecording)}
-          />
-          <LightTooltip
-            sx={{ backgroundColor: 'transparent' }}
-            title={t.goToReference}
-          >
-            <IconButton
-              aria-label={t.goToReference}
-              onClick={() => setGoToOpen(true)}
-              disabled={rowInfo.length < 2}
-            >
-              <SearchIcon sx={{ color: 'primary.light' }} />
-            </IconButton>
-          </LightTooltip>
-          {!readonly && (
-            <>
-              <PriButton
+            {!readonly && (
+              <Button
                 id="planSheetSave"
                 key="save"
                 aria-label={t.save}
+                variant="outlined"
                 color={connected ? 'primary' : 'secondary'}
                 onClick={handleSave}
                 disabled={saving || !changed || preventSave}
+                startIcon={<SaveIcon />}
               >
                 {t.save}
-                <SaveIcon sx={iconMargin} className="small-icon" />
-              </PriButton>
-            </>
-          )}
-        </TabActions>
-      </TabAppBar>
+              </Button>
+            )}
+          </Box>
+        </>
+      }
+      drawBottomBorder={true}
+      contentSx={{ position: 'relative', p: 1.5 }}
+      contentRef={scrollRef}
+    >
       <Dialog open={goToOpen} onClose={() => setGoToOpen(false)} maxWidth="sm">
         <DialogTitle>{t.goToReferenceTitle}</DialogTitle>
         <DialogContent>
@@ -1331,7 +1326,7 @@ export function PlanSheet(props: IProps) {
           requestPlay={mediaPlaying}
         />
       </ContentDiv>
-    </FillColumn>
+    </ContentLayout>
   );
 }
 
