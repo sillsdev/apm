@@ -7,9 +7,6 @@ import {
   DialogContent,
   DialogTitle,
   FormControlLabel,
-  MenuItem,
-  Select,
-  type SelectChangeEvent,
   Typography,
 } from '@mui/material';
 import type { ChangeEvent, ReactNode } from 'react';
@@ -26,31 +23,9 @@ import {
   type PassageVerseOption,
   toPassageVerseKey,
 } from '../../../../utils/markVersesPassageVerses';
-import { useMobile } from '../../../../utils/useMobile';
 
 const suffixOptions = ['', 'a', 'b', 'c', 'd', 'e'];
-const selectSx = {
-  width: 'auto',
-  minWidth: 0,
-  '& .MuiSelect-select': {
-    fontSize: '1.25rem',
-    lineHeight: 1.2,
-    textAlign: 'center',
-    py: 0.5,
-  },
-  '& .MuiSelect-icon': {
-    fontSize: '1.25rem',
-    right: 0,
-  },
-};
-const verseSelectSx = {
-  ...selectSx,
-  '& .MuiSelect-select': {
-    ...selectSx['& .MuiSelect-select'],
-    fontSize: '1.1rem',
-  },
-};
-/** Match readonly chapter/verse labels to editable Select size. */
+/** Match readonly chapter/verse labels to the wheel option size. */
 const labelSx = {
   fontSize: '1.1rem',
   lineHeight: 1.2,
@@ -146,7 +121,6 @@ interface ValuePickerProps {
   options: PickerOption[];
   onChange: (value: string) => void;
   ariaLabel: string;
-  selectSx?: typeof selectSx;
 }
 
 export interface EditReferenceValue {
@@ -194,7 +168,6 @@ export default function EditReferenceDropdown({
   onCancel,
   onSave,
 }: EditReferenceDropdownProps) {
-  const { isMobileWidth } = useMobile();
   const [draft, setDraft] = useState<EditReferenceValue>(value);
   const [initialSnapshot, setInitialSnapshot] =
     useState<EditReferenceValue>(value);
@@ -320,74 +293,44 @@ export default function EditReferenceDropdown({
   };
 
   /**
-   * Mobile: iOS-style wheel. Otherwise: MUI Select.
-   * Drop the mobile branch (and the style.css import) if we abandon the wheel.
+   * iOS-style wheel
    */
   const renderValuePicker = ({
     value: pickerValue,
     options,
     onChange,
     ariaLabel,
-    selectSx: pickerSelectSx = selectSx,
   }: ValuePickerProps) => {
-    if (isMobileWidth) {
-      const wheelOptions: WheelPickerOption[] = options.map((option) => ({
-        value: option.value,
-        label: option.label,
-      }));
-      // Remount when the option set changes so the cylinder re-centers after
-      // chapter switches clamp/re-scope the verse list.
-      const optionsKey = wheelOptions.map((option) => option.value).join('|');
-      const selected = options.find((option) => option.value === pickerValue);
-      const valueText =
-        typeof selected?.label === 'string' ||
-        typeof selected?.label === 'number'
-          ? String(selected.label).replace(/\u00A0/g, ' ')
-          : pickerValue || 'none';
-      return (
-        <Box
-          sx={{ ...wheelColumnSx, width: wheelColumnWidth(options) }}
-          aria-label={ariaLabel}
-          aria-valuetext={valueText}
-          title={ariaLabel}
-          role="group"
-        >
-          <WheelPickerWrapper>
-            <WheelPicker
-              key={`${ariaLabel}:${optionsKey}`}
-              options={wheelOptions}
-              value={pickerValue}
-              onValueChange={onChange}
-              {...wheelPickerProps}
-            />
-          </WheelPickerWrapper>
-        </Box>
-      );
-    }
-
-    const handleSelectChange = (event: SelectChangeEvent<string>) => {
-      onChange(event.target.value);
-    };
-
+    const wheelOptions: WheelPickerOption[] = options.map((option) => ({
+      value: option.value,
+      label: option.label,
+    }));
+    // Remount when the option set changes so the cylinder re-centers after
+    // chapter switches clamp/re-scope the verse list.
+    const optionsKey = wheelOptions.map((option) => option.value).join('|');
+    const selected = options.find((option) => option.value === pickerValue);
+    const valueText =
+      typeof selected?.label === 'string' || typeof selected?.label === 'number'
+        ? String(selected.label).replace(/\u00A0/g, ' ')
+        : pickerValue || 'none';
     return (
-      <Select
-        variant="standard"
-        displayEmpty
-        value={pickerValue}
-        onChange={handleSelectChange}
-        inputProps={{ 'aria-label': ariaLabel, title: ariaLabel }}
-        sx={pickerSelectSx}
+      <Box
+        sx={{ ...wheelColumnSx, width: wheelColumnWidth(options) }}
+        aria-label={ariaLabel}
+        aria-valuetext={valueText}
+        title={ariaLabel}
+        role="group"
       >
-        {options.map((option) => (
-          <MenuItem
-            key={option.value === '' ? `empty-${ariaLabel}` : option.value}
-            value={option.value}
-            sx={{ fontSize: '1.1rem', justifyContent: 'center' }}
-          >
-            {option.label}
-          </MenuItem>
-        ))}
-      </Select>
+        <WheelPickerWrapper>
+          <WheelPicker
+            key={`${ariaLabel}:${optionsKey}`}
+            options={wheelOptions}
+            value={pickerValue}
+            onValueChange={onChange}
+            {...wheelPickerProps}
+          />
+        </WheelPickerWrapper>
+      </Box>
     );
   };
 
@@ -420,7 +363,7 @@ export default function EditReferenceDropdown({
     const chapterLabel = `${side} chapter number`;
     const verseLabel = `${side} verse number`;
     return (
-      <Box sx={{ textAlign: 'center', minWidth: isMobileWidth ? 0 : 96 }}>
+      <Box sx={{ textAlign: 'center', minWidth: 0 }}>
         <Box
           sx={{
             display: 'flex',
@@ -440,7 +383,6 @@ export default function EditReferenceDropdown({
                 ? handleStartChapterChange
                 : handleEndChapterChange,
               ariaLabel: chapterLabel,
-              selectSx: verseSelectSx,
             })
           ) : (
             <Typography sx={labelSx}>{chapter}</Typography>
@@ -456,7 +398,6 @@ export default function EditReferenceDropdown({
               ? handleStartVerseNumberChange
               : handleEndVerseNumberChange,
             ariaLabel: verseLabel,
-            selectSx: verseSelectSx,
           })}
           {draft.splitVerse ? renderSuffixSelect(side) : null}
         </Box>
@@ -489,7 +430,7 @@ export default function EditReferenceDropdown({
           {unrestricted ? (
             renderEditableEndpoint('start')
           ) : (
-            <Box sx={{ textAlign: 'center', minWidth: isMobileWidth ? 0 : 96 }}>
+            <Box sx={{ textAlign: 'center', minWidth: 0 }}>
               <Box
                 sx={{
                   display: 'flex',
@@ -515,7 +456,7 @@ export default function EditReferenceDropdown({
           {unrestricted ? (
             renderEditableEndpoint('end')
           ) : (
-            <Box sx={{ textAlign: 'center', minWidth: isMobileWidth ? 0 : 96 }}>
+            <Box sx={{ textAlign: 'center', minWidth: 0 }}>
               <Box
                 sx={{
                   display: 'flex',
@@ -535,7 +476,6 @@ export default function EditReferenceDropdown({
                   })),
                   onChange: handleEndVerseChange,
                   ariaLabel: 'end verse number',
-                  selectSx: verseSelectSx,
                 })}
                 {draft.splitVerse ? renderSuffixSelect('end') : null}
               </Box>

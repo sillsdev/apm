@@ -1,5 +1,5 @@
 import '@testing-library/jest-dom';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent, { type UserEvent } from '@testing-library/user-event';
 import EditReferenceDropdown, {
   type EditReferenceValue,
@@ -9,17 +9,7 @@ import {
   toPassageVerseKey,
 } from '../../../../utils/markVersesPassageVerses';
 
-const mockUseMobile = jest.fn(() => ({
-  isMobile: false,
-  isMobileView: false,
-  isMobileWidth: false,
-}));
-
-jest.mock('../../../../utils/useMobile', () => ({
-  useMobile: () => mockUseMobile(),
-}));
-
-/** Stub the wheel as a native select so mobile-path tests stay deterministic. */
+/** Stub the wheel as a native select so the picker tests stay deterministic. */
 jest.mock('@ncdai/react-wheel-picker', () => ({
   WheelPickerWrapper: ({ children }: { children: React.ReactNode }) => (
     <div data-testid="wheel-wrapper">{children}</div>
@@ -106,107 +96,54 @@ const renderDialog = (
 
 const dialog = () => screen.getByRole('dialog');
 
-/** Open a MUI Select and return its menu option data-values. */
-const optionValues = async (user: UserEvent, label: string) => {
-  await user.click(within(dialog()).getByLabelText(label));
-  const listbox = await screen.findByRole('listbox');
-  const values = within(listbox)
-    .getAllByRole('option')
-    .map((el) => el.getAttribute('data-value') ?? '');
-  await user.keyboard('{Escape}');
-  await waitFor(() => {
-    expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
-  });
-  return values;
-};
-
-/** Choose a MUI Select option by its data-value. */
-const selectByLabel = async (user: UserEvent, label: string, value: string) => {
-  await user.click(within(dialog()).getByLabelText(label));
-  const listbox = await screen.findByRole('listbox');
-  const match = within(listbox)
-    .getAllByRole('option')
-    .find(
-      (el) =>
-        el.getAttribute('data-value') === value || el.textContent === value
-    );
-  if (!match) {
-    throw new Error(`No option matching "${value}" for "${label}"`);
-  }
-  await user.click(match);
-  await waitFor(() => {
-    expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
-  });
-};
-
-/** Native-select option values inside a mobile wheel group. */
-const wheelOptionValues = (label: string) => {
+/** The stub select backing the wheel with this aria-label. */
+const wheel = (label: string) => {
   const group = within(dialog()).getByRole('group', { name: label });
-  return within(group).getByTestId('wheel-select').querySelectorAll('option');
+  return within(group).getByTestId('wheel-select');
 };
 
+/** The option values offered by a wheel, in order. */
+const optionValues = (label: string) =>
+  [...wheel(label).querySelectorAll('option')].map((el) => el.value);
+
+/** Spin a wheel to one of its option values. */
 const selectWheelByLabel = async (
   user: UserEvent,
   label: string,
   value: string
 ) => {
-  const group = within(dialog()).getByRole('group', { name: label });
-  await user.selectOptions(within(group).getByTestId('wheel-select'), value);
+  await user.selectOptions(wheel(label), value);
 };
 
-beforeEach(() => {
-  mockUseMobile.mockReturnValue({
-    isMobile: false,
-    isMobileView: false,
-    isMobileWidth: false,
-  });
-});
-
 describe('EditReferenceDropdown unrestricted with multiple chapters', () => {
-  test('renders discrete chapter and verse dropdowns for both endpoints', async () => {
-    const user = userEvent.setup();
+  test('renders discrete chapter and verse wheels for both endpoints', () => {
     renderDialog();
 
-    expect(await optionValues(user, 'start chapter number')).toEqual([
-      '1',
-      '2',
-    ]);
-    expect(await optionValues(user, 'end chapter number')).toEqual(['1', '2']);
+    expect(optionValues('start chapter number')).toEqual(['1', '2']);
+    expect(optionValues('end chapter number')).toEqual(['1', '2']);
+    expect(wheel('start chapter number')).toHaveValue('1');
+    expect(wheel('end chapter number')).toHaveValue('2');
     expect(
-      within(dialog()).getByLabelText('start chapter number')
-    ).toHaveTextContent('1');
-    expect(
-      within(dialog()).getByLabelText('end chapter number')
-    ).toHaveTextContent('2');
+      within(dialog()).getByRole('group', { name: 'start chapter number' })
+    ).toHaveAttribute('aria-valuetext', '1');
   });
 
-  test('verse options are scoped to the selected chapter', async () => {
-    const user = userEvent.setup();
+  test('verse options are scoped to the selected chapter', () => {
     renderDialog();
 
     // Start chapter 1 -> verses 78,79,80.
-    expect(await optionValues(user, 'start verse number')).toEqual([
-      '78',
-      '79',
-      '80',
-    ]);
+    expect(optionValues('start verse number')).toEqual(['78', '79', '80']);
     // End chapter 2 -> verses 1..5.
-    expect(await optionValues(user, 'end verse number')).toEqual([
-      '1',
-      '2',
-      '3',
-      '4',
-      '5',
-    ]);
+    expect(optionValues('end verse number')).toEqual(['1', '2', '3', '4', '5']);
   });
 
   test('changing the start chapter re-scopes and clamps the start verse', async () => {
     const user = userEvent.setup();
     renderDialog();
 
-    await selectByLabel(user, 'start chapter number', '2');
+    await selectWheelByLabel(user, 'start chapter number', '2');
 
-    expect(await optionValues(user, 'start verse number')).toEqual([
+    expect(optionValues('start verse number')).toEqual([
       '1',
       '2',
       '3',
@@ -214,17 +151,18 @@ describe('EditReferenceDropdown unrestricted with multiple chapters', () => {
       '5',
     ]);
     // 78 is not a verse of chapter 2, so the verse clamps to the chapter's first.
+    expect(wheel('start verse number')).toHaveValue('1');
     expect(
-      within(dialog()).getByLabelText('start verse number')
-    ).toHaveTextContent('1');
+      within(dialog()).getByRole('group', { name: 'start verse number' })
+    ).toHaveAttribute('aria-valuetext', '1');
   });
 
   test('saves the edited chapter:verse - chapter:verse reference', async () => {
     const user = userEvent.setup();
     const { onSave } = renderDialog();
 
-    await selectByLabel(user, 'start verse number', '79');
-    await selectByLabel(user, 'end verse number', '3');
+    await selectWheelByLabel(user, 'start verse number', '79');
+    await selectWheelByLabel(user, 'end verse number', '3');
     await user.click(within(dialog()).getByRole('button', { name: 'Save' }));
 
     expect(onSave).toHaveBeenCalledTimes(1);
@@ -240,8 +178,7 @@ describe('EditReferenceDropdown unrestricted with multiple chapters', () => {
 });
 
 describe('EditReferenceDropdown unrestricted with a single chapter', () => {
-  test('shows the chapter as fixed text, verses as dropdowns', async () => {
-    const user = userEvent.setup();
+  test('shows the chapter as fixed text, verses as wheels', () => {
     renderDialog({
       endVerseOptions: singleChapterOptions,
       value: {
@@ -259,18 +196,8 @@ describe('EditReferenceDropdown unrestricted with a single chapter', () => {
     expect(
       within(dialog()).queryByLabelText('end chapter number')
     ).not.toBeInTheDocument();
-    expect(await optionValues(user, 'start verse number')).toEqual([
-      '1',
-      '2',
-      '3',
-      '4',
-    ]);
-    expect(await optionValues(user, 'end verse number')).toEqual([
-      '1',
-      '2',
-      '3',
-      '4',
-    ]);
+    expect(optionValues('start verse number')).toEqual(['1', '2', '3', '4']);
+    expect(optionValues('end verse number')).toEqual(['1', '2', '3', '4']);
   });
 });
 
@@ -297,69 +224,5 @@ describe('EditReferenceDropdown with a fixed start (unrestricted off)', () => {
     expect(
       within(dialog()).getByLabelText('end verse number')
     ).toBeInTheDocument();
-  });
-});
-
-describe('EditReferenceDropdown mobile wheel path', () => {
-  beforeEach(() => {
-    mockUseMobile.mockReturnValue({
-      isMobile: true,
-      isMobileView: true,
-      isMobileWidth: true,
-    });
-  });
-
-  test('renders wheel groups with the current values and option lists', () => {
-    renderDialog();
-
-    const startChapter = within(dialog()).getByRole('group', {
-      name: 'start chapter number',
-    });
-    expect(startChapter).toHaveAttribute('aria-valuetext', '1');
-    expect(within(startChapter).getByTestId('wheel-select')).toHaveValue('1');
-    expect(
-      [...wheelOptionValues('start verse number')].map((el) => el.value)
-    ).toEqual(['78', '79', '80']);
-    expect(
-      [...wheelOptionValues('end verse number')].map((el) => el.value)
-    ).toEqual(['1', '2', '3', '4', '5']);
-  });
-
-  test('changing the start chapter re-scopes and clamps the start verse wheel', async () => {
-    const user = userEvent.setup();
-    renderDialog();
-
-    await selectWheelByLabel(user, 'start chapter number', '2');
-
-    const startVerse = within(dialog()).getByRole('group', {
-      name: 'start verse number',
-    });
-    expect(
-      [
-        ...within(startVerse)
-          .getByTestId('wheel-select')
-          .querySelectorAll('option'),
-      ].map((el) => el.value)
-    ).toEqual(['1', '2', '3', '4', '5']);
-    expect(within(startVerse).getByTestId('wheel-select')).toHaveValue('1');
-    expect(startVerse).toHaveAttribute('aria-valuetext', '1');
-  });
-
-  test('saves after editing via wheels', async () => {
-    const user = userEvent.setup();
-    const { onSave } = renderDialog();
-
-    await selectWheelByLabel(user, 'start verse number', '79');
-    await selectWheelByLabel(user, 'end verse number', '3');
-    await user.click(within(dialog()).getByRole('button', { name: 'Save' }));
-
-    expect(onSave).toHaveBeenCalledWith(
-      expect.objectContaining({
-        startChapter: 1,
-        startVerse: 79,
-        endChapter: 2,
-        endVerse: 3,
-      })
-    );
   });
 });

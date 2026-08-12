@@ -32,13 +32,46 @@ jest.mock('../../../../context/useGlobal', () => ({
   useGetGlobal: jest.fn(),
 }));
 
-// Force the MUI Select path in EditReferenceDropdown (not the mobile wheel).
 jest.mock('../../../../utils/useMobile', () => ({
   useMobile: () => ({
     isMobile: false,
     isMobileView: false,
     isMobileWidth: false,
   }),
+}));
+
+/**
+ * Stub EditReferenceDropdown's wheel as a native select so reference edits stay
+ * deterministic (the real wheel is scroll/pointer driven).
+ */
+jest.mock('@ncdai/react-wheel-picker', () => ({
+  WheelPickerWrapper: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="wheel-wrapper">{children}</div>
+  ),
+  WheelPicker: ({
+    options,
+    value,
+    onValueChange,
+  }: {
+    options: { value: string; label: React.ReactNode }[];
+    value: string;
+    onValueChange: (next: string) => void;
+  }) => (
+    <select
+      data-testid="wheel-select"
+      value={value}
+      onChange={(event) => onValueChange(event.target.value)}
+    >
+      {options.map((option) => (
+        <option
+          key={option.value === '' ? 'empty' : option.value}
+          value={option.value}
+        >
+          {option.label}
+        </option>
+      ))}
+    </select>
+  ),
 }));
 
 interface IRow {
@@ -340,25 +373,24 @@ const confirmReset = async (user: UserEvent) => {
 
 const editReferenceDialog = () => screen.getByRole('dialog');
 
-/** Choose a MUI Select option by aria-label and data-value. */
+/** The stub select backing the wheel with this aria-label. */
+const wheelByLabel = (label: string) => {
+  const group = within(editReferenceDialog()).getByRole('group', {
+    name: label,
+  });
+  return within(group).getByTestId('wheel-select');
+};
+
+/** Spin a wheel by aria-label to an option value (e.g. "1:2") or label ("2"). */
 const selectByLabel = async (user: UserEvent, label: string, value: string) => {
-  await user.click(within(editReferenceDialog()).getByLabelText(label));
-  const listbox = await screen.findByRole('listbox');
-  // Match data-value (e.g. "1:2") or visible label (e.g. "2"), same as
-  // the old native selectOptions(string) behavior.
-  const match = within(listbox)
-    .getAllByRole('option')
-    .find(
-      (el) =>
-        el.getAttribute('data-value') === value || el.textContent === value
-    );
+  const select = wheelByLabel(label);
+  const match = [...select.querySelectorAll('option')].find(
+    (el) => el.value === value || el.textContent === value
+  );
   if (!match) {
     throw new Error(`No option matching "${value}" for "${label}"`);
   }
-  await user.click(match);
-  await waitFor(() => {
-    expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
-  });
+  await user.selectOptions(select, match);
 };
 
 /**
@@ -631,20 +663,11 @@ test('opens and cancels the split verse dialog', async () => {
   expect(screen.getByLabelText('start verse reference')).toHaveTextContent(
     '1:1'
   );
-  await user.click(
-    within(editReferenceDialog()).getByLabelText('end verse number')
-  );
-  const endVerseListbox = await screen.findByRole('listbox');
-  expect(
-    within(endVerseListbox).getAllByRole('option', { name: '4' })
-  ).toHaveLength(1);
-  expect(
-    within(endVerseListbox).queryAllByRole('option', { name: '5' })
-  ).toHaveLength(0);
-  await user.keyboard('{Escape}');
-  await waitFor(() => {
-    expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
-  });
+  const endVerseLabels = [
+    ...wheelByLabel('end verse number').querySelectorAll('option'),
+  ].map((el) => el.textContent);
+  expect(endVerseLabels.filter((label) => label === '4')).toHaveLength(1);
+  expect(endVerseLabels.filter((label) => label === '5')).toHaveLength(0);
   expect(screen.queryByLabelText('start verse suffix')).not.toBeInTheDocument();
   expect(screen.queryByLabelText('end verse suffix')).not.toBeInTheDocument();
 
