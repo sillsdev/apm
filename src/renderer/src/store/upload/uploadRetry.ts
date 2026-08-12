@@ -47,6 +47,12 @@ const uploadErrorHttpStatus = (error: unknown): number | undefined => {
 /** Permanent client/auth failures should not burn through upload retry budget. */
 export const isRetryableUploadError = (error: unknown): boolean => {
   const status = uploadErrorHttpStatus(error);
+  return isRetryableUploadStatus(status);
+};
+
+export const isRetryableUploadStatus = (
+  status: number | undefined
+): boolean => {
   if (status === undefined) return true;
   if (status === 0) return true;
   if (status === 408 || status === 429) return true;

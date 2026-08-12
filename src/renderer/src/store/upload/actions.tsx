@@ -323,7 +323,7 @@ export const nextUpload =
     const completeCB = (
       success: boolean,
       data: MediaFileAttributes | undefined,
-      statusNum: number,
+      statusNum: number | undefined,
       statusText: string
     ): void => {
       if (success) {
@@ -463,7 +463,7 @@ export const nextUpload =
       const finalizeTerminalFailure = async (
         remoteId: number | undefined,
         postSucceeded: boolean,
-        statusNum: number,
+        statusNum: number | undefined,
         statusText: string
       ): Promise<void> => {
         let cloudRowDeleted = !postSucceeded || remoteId === undefined;
@@ -524,13 +524,12 @@ export const nextUpload =
         } catch (err) {
           const ax = err as AxiosError;
           const st = ax.response?.status;
-          if (st && st >= 400 && st < 500) {
-            // 400s block client side error
+          if (!isRetryableUploadStatus(st)) {
             await finalizeTerminalFailure(
               undefined,
               false,
-              st,
-              `Upload ${name} failed.`
+              st!,
+              `Upload ${name} failed: ${ax.message}`
             );
             return;
           }
@@ -538,12 +537,12 @@ export const nextUpload =
             await sleepMs(uploadRetryDelayMs(attempt));
             continue;
           }
-          // we get here after the 5 tries. No status means we never reached the
+          // we get here after the 5 tries. Undefined status means we never reached the
           // server
           await finalizeTerminalFailure(
             undefined,
             false,
-            st ?? 0,
+            st,
             st
               ? `Upload ${name} failed.`
               : `Upload ${name} failed: network error`
