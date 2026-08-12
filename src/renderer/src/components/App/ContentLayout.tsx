@@ -1,15 +1,18 @@
-import { Box, SxProps } from '@mui/material';
+import { Box, SxProps, Theme } from '@mui/material';
+
+// Normalize sx (object | callback | array | undefined) to an array so it can be spread after base styles
+const asSxArray = (sx?: SxProps<Theme>) => (Array.isArray(sx) ? sx : [sx]);
 
 interface ContentLayoutProps {
   header: React.ReactNode;
   children: React.ReactNode;
   footer?: React.ReactNode;
   footerAbove?: React.ReactNode;
-  headerSx?: SxProps;
+  headerSx?: SxProps<Theme>;
   drawBottomBorder?: boolean;
-  contentSx?: SxProps;
-  footerSx?: SxProps;
-  footerAboveSx?: SxProps;
+  contentSx?: SxProps<Theme>;
+  footerSx?: SxProps<Theme>;
+  footerAboveSx?: SxProps<Theme>;
   contentRef?: React.Ref<HTMLDivElement>;
 }
 
@@ -37,46 +40,52 @@ export default function ContentLayout({
       }}
     >
       <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          flexShrink: 0,
-          minWidth: 0,
-          px: 1.5,
-          pb: 1.5,
-          backgroundColor: 'custom.headerBackground',
-          ...(drawBottomBorder && {
-            borderBottom: '1px solid',
-            borderColor: 'divider',
+        sx={[
+          (theme) => ({
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            flexShrink: 0,
+            minWidth: 0,
+            px: theme.layout.gap,
+            pb: theme.layout.gap,
+            backgroundColor: 'custom.headerBackground',
+            ...(drawBottomBorder && {
+              borderBottom: '1px solid',
+              borderColor: 'divider',
+            }),
           }),
-          ...headerSx,
-        }}
+          ...asSxArray(headerSx),
+        ]}
       >
         {header}
       </Box>
       <Box
         ref={contentRef}
-        sx={{
-          display: 'flex',
-          flexDirection: 'column',
-          flex: 1,
-          minWidth: 0,
-          minHeight: 0,
-          overflowX: 'hidden',
-          overflowY: 'auto',
-          ...contentSx,
-        }}
+        sx={[
+          {
+            display: 'flex',
+            flexDirection: 'column',
+            flex: 1,
+            minWidth: 0,
+            minHeight: 0,
+            overflowX: 'hidden',
+            overflowY: 'auto',
+          },
+          ...asSxArray(contentSx),
+        ]}
       >
         {children}
       </Box>
       {footerAbove && (
-        <Box sx={{ flexShrink: 0, minWidth: 0, ...footerAboveSx }}>
+        <Box sx={[{ flexShrink: 0, minWidth: 0 }, ...asSxArray(footerAboveSx)]}>
           {footerAbove}
         </Box>
       )}
       {footer && (
-        <Box sx={{ flexShrink: 0, minWidth: 0, ...footerSx }}>{footer}</Box>
+        <Box sx={[{ flexShrink: 0, minWidth: 0 }, ...asSxArray(footerSx)]}>
+          {footer}
+        </Box>
       )}
     </Box>
   );

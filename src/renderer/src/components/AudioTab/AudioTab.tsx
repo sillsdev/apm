@@ -29,7 +29,7 @@ import BigDialog from '../../hoc/BigDialog';
 import { useSnackBar } from '../../hoc/SnackBar';
 import { useOrbitData } from '../../hoc/useOrbitData';
 import { mediaTabSelector, sharedSelector } from '../../selector';
-import { GrowingSpacer } from '../../control';
+import { spreadSx, rowSx } from '../../control';
 import ContentLayout from '../App/ContentLayout';
 import Uploader from '../Uploader';
 import { getMedia, IAttachMap, IGetMedia, IPRow, IRow } from '.';
@@ -327,9 +327,9 @@ export function AudioTab() {
   return (
     <ContentLayout
       header={
-        <>
+        <Box sx={spreadSx}>
           {canEditAudio && (
-            <Box sx={{ display: 'flex', gap: 1.5 }}>
+            <Box sx={rowSx}>
               <Button
                 id="audUpload"
                 key="upload"
@@ -351,7 +351,6 @@ export function AudioTab() {
               </Button>
             </Box>
           )}
-          <GrowingSpacer />
           {complete !== 0 &&
             complete !== 100 &&
             !cloudSync.current &&
@@ -366,10 +365,10 @@ export function AudioTab() {
                 {ts.cancel}
               </Button>
             )}
-        </>
+        </Box>
       }
       drawBottomBorder={true}
-      contentSx={{ p: 1.5 }}
+      contentSx={(theme) => ({ p: theme.layout.gap })}
     >
       <Box width="100%">
         {autoMatch && (

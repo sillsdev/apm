@@ -20,6 +20,7 @@ import BigDialog from '../../hoc/BigDialog';
 import { BigDialogBp } from '../../hoc/BigDialogBp';
 import { useOrbitData } from '../../hoc/useOrbitData';
 import { cardsSelector } from '../../selector';
+import { rowSx } from '../../control';
 import Confirm from '../AlertDialog';
 import GroupTabs from '../GroupTabs';
 import { StepEditor } from '../StepEditor';
@@ -167,15 +168,7 @@ export const OrgHead = () => {
   const handleDeleteRefused = () => setDeleteItem(undefined);
 
   return (
-    <Box
-      sx={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: (theme) => theme.layout.gap,
-        flex: '1 1 auto',
-        minWidth: 0,
-      }}
-    >
+    <Box sx={[rowSx, { alignItems: 'center' }]}>
       <Typography
         noWrap
         sx={{
