@@ -111,6 +111,7 @@ const mockUnsavedState = {
   saveCompleted: () => {},
   clearCompleted: () => {},
   waitForSave: async () => {},
+  forceClearPending: () => {},
   anySaving: () => false as const,
   saveRequested: () => false as const,
   clearRequested: () => false as const,
