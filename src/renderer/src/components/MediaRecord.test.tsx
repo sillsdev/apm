@@ -275,6 +275,25 @@ describe('MediaRecord save gating', () => {
     expect(onSaveRejected).toHaveBeenCalled();
   });
 
+  // The upload never starts on this path, so it does not go through
+  // myAfterUploadCb/handleSaveFailed — it needs its own notification or an
+  // auto-save parent would keep re-requesting (TT-7583).
+  it('reports a save requested with no audio to the parent', async () => {
+    const onSaveRejected = jest.fn();
+    mockSaveRequested = () => true;
+    render(<MediaRecord {...defaultProps} onSaveRejected={onSaveRejected} />);
+
+    await waitFor(() => expect(latestWsProps).toBeDefined());
+
+    // Save requested while the waveform holds nothing to upload.
+    act(() => {
+      latestWsProps?.setChanged?.(true);
+    });
+
+    await waitFor(() => expect(onSaveRejected).toHaveBeenCalled());
+    expect(mockUploadMedia).not.toHaveBeenCalled();
+  });
+
   it('reports the rejection before save becomes available again', async () => {
     const order: string[] = [];
     const setCanSave = jest.fn((v: boolean) => {

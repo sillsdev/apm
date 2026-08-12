@@ -537,6 +537,10 @@ function MediaRecord(props: IProps) {
           }
           return;
         } else {
+          // Save was requested with nothing to upload — a rejection like any
+          // other, so auto-save parents must hear about it or they would keep
+          // re-requesting on the next rising edge (TT-7583).
+          onSaveRejected?.();
           showMessage(ts.NoSaveWoMedia);
           setStatusText(ts.NoSaveWoMedia);
           saveCompleted(toolId, ts.NoSaveWoMedia);
