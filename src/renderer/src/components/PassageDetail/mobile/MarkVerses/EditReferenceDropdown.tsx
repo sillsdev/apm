@@ -293,7 +293,15 @@ export default function EditReferenceDropdown({
   };
 
   /**
-   * iOS-style wheel
+   * One iOS-style wheel column.
+   *
+   * ARIA stops at the label here. The focusable, arrow-key-driven element is the
+   * library's own internal `[data-rwp]` div, which accepts no props from us, so
+   * there is no element we control that could carry the current value: an
+   * `aria-valuetext` on this wrapper would sit on a `role="group"`, where screen
+   * readers ignore it. Announcing the value would mean reaching into the
+   * library's DOM after render, which isn't worth an effect — if the library
+   * grows real ARIA support, drop the wrapper's role and use it.
    */
   const renderValuePicker = ({
     value: pickerValue,
@@ -308,16 +316,10 @@ export default function EditReferenceDropdown({
     // Remount when the option set changes so the cylinder re-centers after
     // chapter switches clamp/re-scope the verse list.
     const optionsKey = wheelOptions.map((option) => option.value).join('|');
-    const selected = options.find((option) => option.value === pickerValue);
-    const valueText =
-      typeof selected?.label === 'string' || typeof selected?.label === 'number'
-        ? String(selected.label).replace(/\u00A0/g, ' ')
-        : pickerValue || 'none';
     return (
       <Box
         sx={{ ...wheelColumnSx, width: wheelColumnWidth(options) }}
         aria-label={ariaLabel}
-        aria-valuetext={valueText}
         title={ariaLabel}
         role="group"
       >
@@ -359,6 +361,10 @@ export default function EditReferenceDropdown({
     const isStart = side === 'start';
     const chapter = isStart ? draft.startChapter : draft.endChapter;
     const verse = isStart ? draft.startVerse : draft.endVerse;
+    // Only passage verses are offered, so a reference that falls outside the
+    // passage can't be re-picked. The caller snaps such an endpoint onto a real
+    // passage verse before opening, which is what forces the user onto a good
+    // value.
     const verseOptions = versesForChapter(chapter);
     const chapterLabel = `${side} chapter number`;
     const verseLabel = `${side} verse number`;

@@ -123,9 +123,6 @@ describe('EditReferenceDropdown unrestricted with multiple chapters', () => {
     expect(optionValues('end chapter number')).toEqual(['1', '2']);
     expect(wheel('start chapter number')).toHaveValue('1');
     expect(wheel('end chapter number')).toHaveValue('2');
-    expect(
-      within(dialog()).getByRole('group', { name: 'start chapter number' })
-    ).toHaveAttribute('aria-valuetext', '1');
   });
 
   test('verse options are scoped to the selected chapter', () => {
@@ -152,9 +149,17 @@ describe('EditReferenceDropdown unrestricted with multiple chapters', () => {
     ]);
     // 78 is not a verse of chapter 2, so the verse clamps to the chapter's first.
     expect(wheel('start verse number')).toHaveValue('1');
-    expect(
-      within(dialog()).getByRole('group', { name: 'start verse number' })
-    ).toHaveAttribute('aria-valuetext', '1');
+  });
+
+  test('never offers a verse outside the passage', () => {
+    // 77 precedes the passage (1:78 - 2:5). Callers snap such a reference onto a
+    // real passage verse before opening; the wheel must not offer it either way,
+    // so a bad reference can only be corrected, never re-picked.
+    renderDialog({
+      value: { ...baseValue, startChapter: 1, startVerse: 77 },
+    });
+
+    expect(optionValues('start verse number')).toEqual(['78', '79', '80']);
   });
 
   test('saves the edited chapter:verse - chapter:verse reference', async () => {

@@ -32,6 +32,8 @@ jest.mock('../../../../context/useGlobal', () => ({
   useGetGlobal: jest.fn(),
 }));
 
+// PassageDetailMarkVerses reads isMobile for its edit affordances; pin it so the
+// jsdom default doesn't drift.
 jest.mock('../../../../utils/useMobile', () => ({
   useMobile: () => ({
     isMobile: false,
@@ -655,7 +657,7 @@ test('opens and cancels the split verse dialog', async () => {
       name: `Edit Reference for ${lim(0, 10)}`,
     })
   ).toBeInTheDocument();
-  expect(screen.getByLabelText('end verse number')).not.toBeDisabled();
+  expect(wheelByLabel('end verse number')).not.toBeDisabled();
   expect(
     within(editReferenceDialog()).getByRole('checkbox', { name: 'Split Verse' })
   ).not.toBeChecked();
@@ -768,9 +770,7 @@ test('saves a split verse range and shifts following references up', async () =>
   await user.click(
     within(editReferenceDialog()).getByRole('checkbox', { name: 'Split Verse' })
   );
-  expect(
-    within(editReferenceDialog()).getByLabelText('end verse number')
-  ).not.toBeDisabled();
+  expect(wheelByLabel('end verse number')).not.toBeDisabled();
   await selectByLabel(user, 'end verse number', '2');
   await selectByLabel(user, 'start verse suffix', 'a');
   await selectByLabel(user, 'end verse suffix', 'e');
