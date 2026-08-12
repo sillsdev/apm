@@ -300,7 +300,7 @@ const PassageDetailProvider = (props: IProps) => {
   const mediaPosition = useRef<number | undefined>(undefined);
   const currentSegmentRef = useRef<IRegion | undefined>(undefined);
   const currentSegmentIndexRef = useRef(-1);
-  const { startSave, startClear, waitForSave } =
+  const { startSave, startClear, waitForSave, forceClearPending } =
     useContext(UnsavedContext).state;
   const highlightRef = useRef<number | undefined>(undefined);
   const refreshRef = useRef<number>(0);
@@ -332,6 +332,11 @@ const PassageDetailProvider = (props: IProps) => {
     const step = state.orgWorkflowSteps.find((s) => s.id === stepId);
     const tool = getTool(step?.attributes?.tool) as ToolSlug;
     setCurrentSegment(undefined, 0);
+    // Clear discussion locate without handleHighlightDiscussion — that helper
+    // no-ops while settingSegmentRef is set (mid-locate/play), which is exactly
+    // when step switches hang after the compass button.
+    highlightRef.current = undefined;
+    settingSegmentRef.current = false;
 
     setState((state: ICtxState) => {
       return {
@@ -345,6 +350,7 @@ const PassageDetailProvider = (props: IProps) => {
         playItem: '',
         commentPlayId: '',
         oldVernacularPlayItem: '',
+        highlightDiscussion: undefined,
       };
     });
 
@@ -405,20 +411,31 @@ const PassageDetailProvider = (props: IProps) => {
     });
   };
 
+  const finishStepConfirm = (target: string) => {
+    attemptSetCurrentStep(target);
+    setConfirm('');
+  };
+
   const handleConfirmStep = () => {
+    const target = confirm;
     startSave();
-    waitForSave(() => {
-      attemptSetCurrentStep(confirm);
+    waitForSave(() => finishStepConfirm(target), 400).catch((err) => {
+      showMessage(err?.message ?? String(err));
       setConfirm('');
-    }, 400);
+    });
   };
 
   const handleRefuseStep = () => {
+    const target = confirm;
+    // Match UnsavedContext.handleSaveRefused: mounted tools may clear, but
+    // force-clear so unmounted tools cannot block step navigation.
     startClear();
-    waitForSave(() => {
-      attemptSetCurrentStep(confirm);
-      setConfirm('');
-    }, 400);
+    forceClearPending();
+    waitForSave(() => finishStepConfirm(target), 200).catch((err) => {
+      showMessage(err?.message ?? String(err));
+      forceClearPending();
+      finishStepConfirm(target);
+    });
   };
 
   const setDiscussionSize = (discussionSize: {

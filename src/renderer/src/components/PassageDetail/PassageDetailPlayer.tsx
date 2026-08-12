@@ -184,6 +184,9 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
   } = useContext(UnsavedContext).state;
   const t: IWsAudioPlayerStrings = useSelector(playerSelector, shallowEqual);
   const toolId = 'ArtifactSegments';
+  /** True while applying a discussion-locate region so WSAudioPlayer's follow-up
+   * onSegmentChange is treated as init (not a user edit that marks tools dirty). */
+  const locatingRef = useRef(false);
   const [requestPlay, setRequestPlay] = useState<RequestPlay>({
     play: undefined,
     regionOnly: false,
@@ -344,6 +347,7 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
   };
 
   const setPlayerSegments = (segments: string) => {
+    locatingRef.current = true;
     if (
       !allowSegment ||
       !segmentsRef.current ||
@@ -351,6 +355,8 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
     ) {
       setDefaultSegments(segments);
       onSegment && onSegment(segments, true);
+    } else {
+      locatingRef.current = false;
     }
     //TT 6149 but I wonder why this was here? if (!playingRef.current) {
     const segs = parseRegions(segments) as IRegions | undefined;
@@ -363,12 +369,25 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
       });
     }
     //}
+    // Clear locate flag after WSAudioPlayer has had a chance to emit
+    // onSegmentChange from setDefaultSegments (same tick / setTimeout(0) is
+    // too early — region load runs in an effect after paint).
+    if (locatingRef.current) {
+      setTimeout(() => {
+        locatingRef.current = false;
+      }, 100);
+    }
   };
 
   const onSegmentChange = (segments: string) => {
     segmentsRef.current = segments;
     setDefaultSegments(segments); //now we'll notice if we reset them in SetPlayerSegments
-    onSegment && onSegment(segments, false);
+    const fromLocate = locatingRef.current;
+    onSegment && onSegment(segments, fromLocate);
+    if (fromLocate) {
+      locatingRef.current = false;
+      return;
+    }
     if (allowSegment && saveSegments !== undefined) {
       const currentMedia = mediarecs.find((m) => m.id === playerMediafile?.id);
       const saved = getSegments(
