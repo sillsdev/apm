@@ -231,8 +231,15 @@ export function PassageDetailLwcTranslation({ width }: IProps) {
     currentVersion,
   ]);
 
+  // TT-7583: this step auto-saves on every rising edge of canSave. A failed
+  // upload leaves the take dirty, so canSave goes false→true again and we used
+  // to retry the same doomed take forever. MediaRecord tells us the attempt was
+  // rejected; hold off until the user records again. Mirrors the guard in
+  // PassageDetailGuidedPhraseRecord.
+  const saveRejectedRef = useRef(false);
+
   useEffect(() => {
-    if (canSave) {
+    if (canSave && !saveRejectedRef.current) {
       setSavingRecording(true);
       startSave(toolId);
     }
@@ -458,6 +465,8 @@ export function PassageDetailLwcTranslation({ width }: IProps) {
     (active: boolean) => {
       if (active) {
         recordingActiveRef.current = true;
+        // A new take supersedes any earlier rejected save (TT-7583).
+        saveRejectedRef.current = false;
         setRecording(true);
         setPhase('recording');
         return;
@@ -573,6 +582,10 @@ export function PassageDetailLwcTranslation({ width }: IProps) {
           resetMedia={resetMedia}
           setResetMedia={setResetMedia}
           setCanSave={setCanSave}
+          onSaveRejected={() => {
+            saveRejectedRef.current = true;
+            setSavingRecording(false);
+          }}
           setStatusText={() => {}}
           showRecorder={showRecorder}
         />
