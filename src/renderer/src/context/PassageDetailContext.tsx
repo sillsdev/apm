@@ -412,30 +412,39 @@ const PassageDetailProvider = (props: IProps) => {
   };
 
   const finishStepConfirm = (target: string) => {
-    attemptSetCurrentStep(target);
-    setConfirm('');
+    try {
+      attemptSetCurrentStep(target);
+    } finally {
+      setConfirm('');
+    }
   };
 
   const handleConfirmStep = () => {
     const target = confirm;
     startSave();
-    waitForSave(() => finishStepConfirm(target), 400).catch((err) => {
-      showMessage(err?.message ?? String(err));
-      setConfirm('');
-    });
+    // Do not pass finishStepConfirm into waitForSave — its blanket catch turns
+    // callback throws into 'Timed Out' and would re-run navigation below.
+    void waitForSave(undefined, 400).then(
+      () => finishStepConfirm(target),
+      (err) => {
+        showMessage(err?.message || String(err));
+        setConfirm('');
+      }
+    );
   };
 
   const handleRefuseStep = () => {
     const target = confirm;
-    // Match UnsavedContext.handleSaveRefused: mounted tools may clear, but
-    // force-clear so unmounted tools cannot block step navigation.
+    // forceClearPending on wait failure for orphaned tools (unmounted after mid-play step switch).
     startClear();
-    forceClearPending();
-    waitForSave(() => finishStepConfirm(target), 200).catch((err) => {
-      showMessage(err?.message ?? String(err));
-      forceClearPending();
-      finishStepConfirm(target);
-    });
+    void waitForSave(undefined, 15).then(
+      () => finishStepConfirm(target),
+      (err) => {
+        showMessage(err?.message || String(err));
+        forceClearPending();
+        finishStepConfirm(target);
+      }
+    );
   };
 
   const setDiscussionSize = (discussionSize: {
