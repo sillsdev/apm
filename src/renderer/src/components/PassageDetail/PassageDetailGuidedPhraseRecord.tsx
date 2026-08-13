@@ -1734,10 +1734,13 @@ export function PassageDetailGuidedPhraseRecord({
             saveRejectedRef.current = true;
             setSaveRejected(true);
             setSavingRecording(false);
-            // Not every rejection reaches afterUploadCb — a failure before the
-            // upload starts (conversion, staging) only lands here — so undo the
-            // optimistic green from this path too (TT-7583).
+            // Upload failures route through afterUploadCb('') as well, but
+            // MediaRecord's save-requested-with-no-audio branch only lands here.
+            // Undo the optimistic green and restore a recordable phase from this
+            // path too, or that branch leaves the clause looking saved with the
+            // Record button hidden and Retry the only way out (TT-7583).
             optimisticCompletedRef.current.delete(currentIndexRef.current);
+            setPhase('recordReady');
             applyColors();
           }}
           setStatusText={setStatusText}

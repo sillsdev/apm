@@ -311,6 +311,11 @@ export function PassageDetailLwcTranslation({ width }: IProps) {
     const syncStepComplete = async () => {
       const isComplete = stepComplete(currentstep);
       if (allClausesComplete) {
+        // handleRecording counts the clause the moment recording stops, so this
+        // can be true before the upload lands. Marking the step complete now
+        // would race the rejection rollback that undoes it (TT-7583) — wait for
+        // the save to settle and let the effect re-run.
+        if (savingRecording) return;
         if (!isComplete) {
           try {
             await waitForSave(undefined, 200);
@@ -332,6 +337,8 @@ export function PassageDetailLwcTranslation({ width }: IProps) {
     allCarefulSpeechComplete,
     hasClauses,
     currentstep,
+    // so the deferred check above re-runs once the save settles
+    savingRecording,
   ]);
 
   const positionOnClause = useCallback(
@@ -630,8 +637,9 @@ export function PassageDetailLwcTranslation({ width }: IProps) {
             setSaveRejected(true);
             setSavingRecording(false);
             // handleRecording already counted this clause as done when recording
-            // stopped, and not every rejection reaches afterUploadCb — a failure
-            // before the upload starts only lands here — so undo it (TT-7583).
+            // stopped. Upload failures route through afterUploadCb('') as well,
+            // but MediaRecord's save-requested-with-no-audio branch only lands
+            // here, so undo it from this path too (TT-7583).
             setSessionCompletedIndices((prev) => {
               const next = new Set(prev);
               next.delete(currentIndex);
