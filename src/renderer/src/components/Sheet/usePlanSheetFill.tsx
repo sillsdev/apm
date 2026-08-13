@@ -57,11 +57,9 @@ type IRow = (string | number)[];
 const pointer = { cursor: 'pointer' };
 
 export interface IFillProps {
-  currentRow: number;
   srcMediaId: string;
   mediaPlaying: boolean;
   check: number[];
-  active: number;
   filtered: boolean;
   anyRecording: boolean;
 }
@@ -756,7 +754,6 @@ export const usePlanSheetFill = ({
     check: number[];
     movement: boolean;
     book: boolean;
-    active: number;
     filtered: boolean;
     readonly: boolean;
   }
@@ -769,7 +766,6 @@ export const usePlanSheetFill = ({
     row,
     check,
     book,
-    active,
     filtered,
     readonly,
   }: ExtrasCellProps) =>
@@ -806,7 +802,6 @@ export const usePlanSheetFill = ({
               canDelete={
                 (userIsAdmin || canEditSheet) && (!offline || offlineOnly)
               }
-              active={active - 1 === rowIndex}
               onDisableFilter={filtered ? disableFilter : undefined}
               showIcon={showIcon(filtered, offline && !offlineOnly, rowIndex)}
               onAction={onAction}
@@ -818,14 +813,7 @@ export const usePlanSheetFill = ({
         } as ICell);
 
   const eachRow =
-    ({
-      srcMediaId,
-      mediaPlaying,
-      check,
-      active,
-      filtered,
-      anyRecording,
-    }: IFillProps) =>
+    ({ srcMediaId, mediaPlaying, check, filtered, anyRecording }: IFillProps) =>
     (row: IRow, rowIndex: number) => {
       const refCol = colSlugs.indexOf('reference');
       const section = isSectionType(rowIndex);
@@ -915,7 +903,6 @@ export const usePlanSheetFill = ({
           check,
           movement,
           book,
-          active,
           filtered,
           readonly:
             sharedOffline || anyRecording || (!canEditSheet && !canPublish),

@@ -56,6 +56,7 @@ const PlanProvider = (props: IProps) => {
   const mediafiles = useOrbitData<MediaFileD[]>('mediafile');
   const discussions = useOrbitData<DiscussionD[]>('discussion');
   const groupmemberships = useOrbitData<GroupMembershipD[]>('groupmembership');
+  const projects = useOrbitData<ProjectD[]>('project');
   const [memory] = useGlobal('memory');
   const [plan] = useGlobal('plan'); //will be constant here
   const [project] = useGlobal('project'); //will be constant here
@@ -97,13 +98,19 @@ const PlanProvider = (props: IProps) => {
     setState((state) => ({ ...state, tab }));
   };
 
+  const defaultParams = projects.find((p) => p.id === project)?.attributes
+    ?.defaultParams;
+
   useEffect(() => {
     const map = getProjectDefault(projDefSectionMap) as
       | SectionArray
       | undefined;
-    setSectionArrState(map?.length ? map : EMPTY_SECTION_ARR);
+    const next = map?.length ? map : EMPTY_SECTION_ARR;
+    setSectionArrState((prev) =>
+      JSON.stringify(prev) === JSON.stringify(next) ? prev : next
+    );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [project]);
+  }, [project, defaultParams]);
 
   const setSectionArr = useCallback(
     (newArr: SectionArray) => {
@@ -112,16 +119,13 @@ const PlanProvider = (props: IProps) => {
         if (JSON.stringify(prev) === JSON.stringify(next)) return prev;
         return next;
       });
-      // Persist outside the updater. Clear when empty so we don't rewrite [].
+      // Persist outside the updater. Empty map stays [] (do not delete the key).
       const prev = getProjectDefault(projDefSectionMap) as
         | SectionArray
         | undefined;
       const prevNorm = prev?.length ? prev : EMPTY_SECTION_ARR;
       if (JSON.stringify(prevNorm) === JSON.stringify(next)) return;
-      setProjectDefault(
-        projDefSectionMap,
-        next === EMPTY_SECTION_ARR ? undefined : next
-      );
+      setProjectDefault(projDefSectionMap, next);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     []

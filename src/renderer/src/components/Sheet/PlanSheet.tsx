@@ -81,6 +81,7 @@ import { ExtraIcon } from '.';
 import FilterMenu, { ISTFilterState } from './filterMenu';
 import { findPlanSheetRowFromReferenceQuery } from './findPlanSheetRowFromReferenceQuery';
 import { rowTypes } from './rowTypes';
+import { PlanSheetRowCtx } from './PlanActionMenu';
 import { usePlanSheetFill } from './usePlanSheetFill';
 import { useRefErrTest } from './useRefErrTest';
 import { useShowIcon } from './useShowIcon';
@@ -104,6 +105,20 @@ const sheetWindow = (curTop: number, pageSize: number, dataLen: number) => {
     first = Math.max(1, dataLen - n - over);
   }
   return { first, last };
+};
+
+/** Absolute data row at the scroller's visible top (header excluded). */
+const curTopFromViewport = (
+  scrollerTop: number,
+  firstDataRowTop: number,
+  windowFirst: number,
+  rh: number
+) =>
+  Math.max(1, windowFirst + Math.floor((scrollerTop - firstDataRowTop) / rh));
+
+const EMPTY_SEL: DataSheet.Selection = {
+  start: {} as DataSheet.Location,
+  end: {} as DataSheet.Location,
 };
 
 const ContentDiv = styled('div')(({ theme }) => ({
@@ -327,10 +342,10 @@ export function PlanSheet(props: IProps) {
   const windowFirstRef = useRef(1);
   const windowLastRef = useRef(1);
   const prevWindowFirstRef = useRef(1);
-  // Ignore DataSheet onSelect while/after we rewrite `selected` for a window.
-  const ignoreSelectUntilRef = useRef(0);
   // After scrollIntoView / setCurTop-for-nav, ignore scrollTop→curTop briefly.
   const ignoreScrollCurTopRef = useRef(false);
+  const ignoreScrollTimerRef = useRef(0);
+  const sheetScrollRafRef = useRef(0);
   const rowHeightRef = useRef(0);
   const [rowHeight, setRowHeightx] = useState(0); // locked after first measure
   const pageSizeRef = useRef(1);
@@ -347,9 +362,11 @@ export function PlanSheet(props: IProps) {
     setPageSizex(next);
   };
   const [currentRow, setCurrentRowx] = useState(-1);
-  const [selected, setSelected] = useState<DataSheet.Selection>({
-    start: {} as DataSheet.Location,
-    end: {} as DataSheet.Location,
+  const [absSel, setAbsSel] = useState({
+    startI: -1,
+    endI: -1,
+    startJ: 0,
+    endJ: 0,
   });
   const [active, setActive] = useState(-1); // used for action menu to display
   const sheetRef = useRef<any>(undefined);
@@ -560,7 +577,9 @@ export function PlanSheet(props: IProps) {
   };
 
   const releaseScrollCurTopIgnore = () => {
-    window.setTimeout(() => {
+    window.clearTimeout(ignoreScrollTimerRef.current);
+    ignoreScrollTimerRef.current = window.setTimeout(() => {
+      ignoreScrollTimerRef.current = 0;
       ignoreScrollCurTopRef.current = false;
     }, 200);
   };
@@ -614,8 +633,15 @@ export function PlanSheet(props: IProps) {
       });
       releaseScrollCurTopIgnore();
     };
-    if (remounted) requestAnimationFrame(() => requestAnimationFrame(intoView));
-    else intoView();
+    window.cancelAnimationFrame(sheetScrollRafRef.current);
+    if (remounted) {
+      sheetScrollRafRef.current = requestAnimationFrame(() => {
+        sheetScrollRafRef.current = requestAnimationFrame(() => {
+          sheetScrollRafRef.current = 0;
+          intoView();
+        });
+      });
+    } else intoView();
     return false;
   };
   const sheetScrollRef = useRef(sheetScroll);
@@ -651,45 +677,67 @@ export function PlanSheet(props: IProps) {
     if (row === currentRowRef.current && row === currentRow) return;
     currentRowRef.current = row;
     startRowRef.current = row;
+    const j = selectColRef.current;
+    setAbsSel({ startI: row, endI: row, startJ: j, endJ: j });
     scheduleCommitCurrentRow.clear();
-    commitCurrentRowNow(); // scrolls into view; window effect remaps selection
+    commitCurrentRowNow();
   };
 
   const handleSelect = (loc: DataSheet.Selection) => {
-    // Window remaps / controlled-selected echoes must not move the row or scroll.
-    if (performance.now() < ignoreSelectUntilRef.current) return;
-
     const sheetEnd = loc.end?.i;
     if (sheetEnd === undefined) return;
 
-    // Up from the first visible row hits the header. Scroll; curTop follows.
+    // Sheet index 0 is the header: paste-target at the top, scroll-up when windowed.
     if (sheetEnd === 0) {
-      const scroller = scrollRef.current;
-      const rh = rowHeightRef.current;
-      if (scroller && rh && windowFirstRef.current > 1) {
-        scroller.scrollTo(
-          0,
-          Math.max(0, scroller.scrollTop - rh * overscanOf(pageSizeRef.current))
-        );
+      if (windowFirstRef.current > 1) {
+        const scroller = scrollRef.current;
+        const rh = rowHeightRef.current;
+        if (scroller && rh) {
+          scroller.scrollTo(
+            0,
+            Math.max(
+              0,
+              scroller.scrollTop - rh * overscanOf(pageSizeRef.current)
+            )
+          );
+        }
+        return;
       }
+      // True header (windowFirst === 1): whole-plan paste via parsePaste.
+      if (currentRowRef.current === 0 && startRowRef.current === 0) return;
+      currentRowRef.current = 0;
+      startRowRef.current = 0;
+      const j = loc.end?.j ?? 0;
+      selectColRef.current = j;
+      setAbsSel({ startI: 0, endI: 0, startJ: j, endJ: j });
+      setCurrentRowx((prev) => (prev === 0 ? prev : 0));
+      scheduleCommitCurrentRow();
       return;
     }
 
     const absEnd = sheetToAbs(sheetEnd);
     const absStart = sheetToAbs(loc.start?.i ?? sheetEnd);
-    // Ignore selects outside the mounted window (stale/corrupt indices).
     if (absEnd < windowFirstRef.current || absEnd >= windowLastRef.current) {
       return;
     }
-    // Same absolute row — do not sheetScroll (that loops on resize/window remap).
-    if (absEnd === currentRowRef.current && absStart === startRowRef.current) {
-      return;
-    }
+    const endJ = loc.end?.j ?? 0;
+    const startJ = loc.start?.j ?? endJ;
+    const sameAnchor =
+      absEnd === currentRowRef.current && absStart === startRowRef.current;
     currentRowRef.current = absEnd;
     startRowRef.current = absStart;
-    selectColRef.current = loc.end?.j ?? 0;
-    setSelected(loc);
-    sheetScroll(); // current row must stay on screen
+    selectColRef.current = endJ;
+    setAbsSel((prev) =>
+      prev.startI === absStart &&
+      prev.endI === absEnd &&
+      prev.startJ === startJ &&
+      prev.endJ === endJ
+        ? prev
+        : { startI: absStart, endI: absEnd, startJ, endJ }
+    );
+    if (sameAnchor) return;
+    setCurrentRowx((prev) => (prev === absEnd ? prev : absEnd));
+    queueMicrotask(() => sheetScrollRef.current());
     scheduleCommitCurrentRow();
   };
 
@@ -829,6 +877,7 @@ export function PlanSheet(props: IProps) {
 
   const parsePaste = (clipBoard: string) => {
     if (readonly) return Array<Array<string>>();
+    // Header selected at top of sheet (handleSelect sets currentRowRef to 0).
     if (currentRowRef.current === 0) {
       setPasting(true);
       showMessage(t.pasting);
@@ -971,7 +1020,20 @@ export function PlanSheet(props: IProps) {
         const rh = rowHeightRef.current;
         const scroller = scrollRef.current;
         if (!rh || !scroller) return;
-        const next = Math.max(1, Math.floor(scroller.scrollTop / rh));
+        const table = sheetRef.current?.querySelector(
+          'table.data-grid'
+        ) as HTMLTableElement | null;
+        const firstData = table?.rows?.[1];
+        // Padding and WarningDiv sit above the grid; measure the first mounted
+        // data row against the scroller instead of assuming scrollTop/rh.
+        const next = firstData
+          ? curTopFromViewport(
+              scroller.getBoundingClientRect().top,
+              firstData.getBoundingClientRect().top,
+              windowFirstRef.current,
+              rh
+            )
+          : Math.max(1, Math.floor(scroller.scrollTop / rh));
         setCurTop((t) => (t === next ? t : next));
       }, 100),
     []
@@ -991,6 +1053,8 @@ export function PlanSheet(props: IProps) {
       scroller?.removeEventListener('scroll', scrolled);
       handleRowsPerPage.clear();
       scrolled.clear();
+      window.clearTimeout(ignoreScrollTimerRef.current);
+      window.cancelAnimationFrame(sheetScrollRafRef.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -1091,12 +1155,11 @@ export function PlanSheet(props: IProps) {
     } else {
       // Do not pass currentRow into fill / deps: rebuilding cell data on
       // every arrow key remounts the grid and loops through DataSheet onSelect.
+      // PlanActionMenu open/close uses PlanSheetRowCtx instead.
       const data = planSheetFill({
-        currentRow: -1,
         srcMediaId,
         mediaPlaying,
         check,
-        active,
         filtered,
         anyRecording,
       });
@@ -1120,6 +1183,10 @@ export function PlanSheet(props: IProps) {
     firstMovement,
     sectionArr,
   ]);
+
+  useEffect(() => {
+    if (active > 0 && active !== currentRow) setActive(-1);
+  }, [active, currentRow]);
 
   useEffect(() => {
     //if I set playing when I set the mediaId, it plays a bit of the old
@@ -1189,12 +1256,13 @@ export function PlanSheet(props: IProps) {
     return [data[0], ...data.slice(windowFirst, windowLast)] as any[][];
   }, [data, windowFirst, windowLast]);
 
-  // First paint with rows: measure once. Do not depend on window bounds.
+  // First paint with rows: measure once. Do not depend on window bounds
+  // (visibleData.length chasing pageSize oscillates with the scrollbar).
   useLayoutEffect(() => {
     if (data.length <= 1) return;
     syncViewport(rowHeightRef.current === 0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data.length, visibleData.length]);
+  }, [data.length]);
 
   const topPad = rowHeight > 0 ? (windowFirst - 1) * rowHeight : 0;
   const bottomPad =
@@ -1215,33 +1283,31 @@ export function PlanSheet(props: IProps) {
     );
   }, [windowFirst, topPad]);
 
-  // Remap or clear DataSheet selection when the scroll window moves.
-  // Never change currentRowRef here — scrolling must not move the current row.
-  useEffect(() => {
-    const abs = currentRowRef.current;
-    const j = selectColRef.current;
-    const empty = {
-      start: {} as DataSheet.Location,
-      end: {} as DataSheet.Location,
-    };
-    // Suppress onSelect→sheetScroll echoes from this controlled update (resize
-    // grows windowLast and was causing the sheet to scroll by itself).
-    ignoreSelectUntilRef.current = performance.now() + 150;
-    const inWindow = abs >= 1 && abs >= windowFirst && abs < windowLast;
-    if (!inWindow) {
-      setSelected((prev) =>
-        prev.end?.i === undefined || Object.keys(prev.end).length === 0
-          ? prev
-          : empty
-      );
-    } else {
-      const sheetI = abs - windowFirst + 1;
-      setSelected((prev) => {
-        if (prev.end?.i === sheetI && prev.end?.j === j) return prev;
-        return { start: { i: sheetI, j }, end: { i: sheetI, j } };
-      });
+  const clearActive = useCallback(() => setActive(-1), []);
+  const rowCtx = useMemo(
+    () => ({ currentRow, activeRow: active, clearActive }),
+    [currentRow, active, clearActive]
+  );
+
+  const selected = useMemo((): DataSheet.Selection => {
+    const { startI, endI, startJ, endJ } = absSel;
+    if (endI < 0 && startI < 0) return EMPTY_SEL;
+    if (startI === 0 && endI === 0) {
+      return { start: { i: 0, j: startJ }, end: { i: 0, j: endJ } };
     }
-  }, [windowFirst, windowLast]);
+    const lo = Math.min(startI, endI);
+    const hi = Math.max(startI, endI);
+    if (hi < windowFirst || lo >= windowLast) return EMPTY_SEL;
+    const toSheet = (abs: number) => {
+      if (abs <= 0) return 0;
+      const clamped = Math.min(Math.max(abs, windowFirst), windowLast - 1);
+      return clamped - windowFirst + 1;
+    };
+    return {
+      start: { i: toSheet(startI), j: startJ },
+      end: { i: toSheet(endI), j: endJ },
+    };
+  }, [absSel, windowFirst, windowLast]);
 
   return (
     <ContentLayout
@@ -1426,16 +1492,18 @@ export function PlanSheet(props: IProps) {
           </WarningDiv>
         )}
         <div aria-hidden style={{ height: topPad, overflowAnchor: 'none' }} />
-        <DataSheet
-          data={visibleData}
-          selected={selected}
-          valueRenderer={handleValueRender}
-          dataRenderer={handleDataRender}
-          onContextMenu={handleContextMenu}
-          onCellsChanged={handleCellsChanged}
-          parsePaste={parsePaste}
-          onSelect={handleSelect}
-        />
+        <PlanSheetRowCtx.Provider value={rowCtx}>
+          <DataSheet
+            data={visibleData}
+            selected={selected}
+            valueRenderer={handleValueRender}
+            dataRenderer={handleDataRender}
+            onContextMenu={handleContextMenu}
+            onCellsChanged={handleCellsChanged}
+            parsePaste={parsePaste}
+            onSelect={handleSelect}
+          />
+        </PlanSheetRowCtx.Provider>
         <div
           aria-hidden
           style={{ height: bottomPad, overflowAnchor: 'none' }}
