@@ -29,7 +29,7 @@ import {
   VernacularTag,
 } from '../crud';
 import { mediaFileName } from '../crud/media';
-import { mediaMatchesStepLanguage } from '../components/PassageDetail/carefulSpeech/matchesGuidedOutputRow';
+import { mediaMatchesStepLanguage } from '../utils/mediaLanguage';
 import StickyRedirect from '../components/StickyRedirect';
 import { useSelector } from 'react-redux';
 import { useDispatch } from 'react-redux';
