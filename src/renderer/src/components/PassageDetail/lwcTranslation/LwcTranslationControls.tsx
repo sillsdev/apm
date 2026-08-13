@@ -54,12 +54,6 @@ interface Props {
   setCanSave: (v: boolean) => void;
   /** Passed through to MediaRecord; see its prop docs (TT-7583). */
   onSaveRejected?: () => void;
-  /**
-   * A take whose save was rejected. It is still discardable even though the
-   * phase is back to recordReady, so it keeps the clear button available
-   * (TT-7583).
-   */
-  saveRejected?: boolean;
   setStatusText: (t: string) => void;
   showRecorder: boolean;
 }
@@ -90,7 +84,6 @@ export default function LwcTranslationControls({
   setResetMedia,
   setCanSave,
   onSaveRejected,
-  saveRejected,
   setStatusText,
   showRecorder,
 }: Props) {
@@ -198,7 +191,7 @@ export default function LwcTranslationControls({
               : undefined),
           }}
         />
-        {(phase === 'recorded' || saveRejected) && (
+        {phase === 'recorded' && (
           <IconButton
             aria-label={strings.clearRecording}
             onClick={onClearRecording}

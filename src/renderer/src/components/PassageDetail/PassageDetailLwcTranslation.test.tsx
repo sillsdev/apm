@@ -279,13 +279,14 @@ describe('PassageDetailLwcTranslation — rejected save (TT-7583)', () => {
     expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull();
   });
 
-  it('keeps the take discardable while the message is up', async () => {
+  it('keeps the take discardable but not re-recordable', async () => {
     await recordAndRejectSave();
 
-    // The take is unsaved but still in the recorder, so the clear button has to
-    // stay available even though the phase went back to recordReady.
-    expect(controlsProps?.saveRejected).toBe(true);
-    expect(controlsProps?.phase).toBe('recordReady');
+    // 'recorded' is what shows the clear button and hides Record: discarding the
+    // take is the deliberate way back to recording, so a stray tap cannot
+    // silently overwrite audio that is not stored yet.
+    expect(controlsProps?.phase).toBe('recorded');
+    expect(controlsProps?.allowRecord).toBe(false);
   });
 
   it('clearing the failed take drops the message and the completion', async () => {
@@ -331,13 +332,9 @@ describe('PassageDetailLwcTranslation — rejected save (TT-7583)', () => {
       (controlsProps?.onSaveRejected as () => void)();
     });
 
-    // Nothing was stored, so that optimistic marking has to come back off.
+    // Nothing was stored, so that optimistic marking has to come back off — the
+    // step must not be complete and Next Clause must not be blocked as done.
     expect(controlsProps?.allClausesComplete).toBe(false);
-    expect(
-      document.querySelector('[data-cy="lwc-clause-nav-recorded"]')
-    ).toBeNull();
-    // ...and the clause must be recordable again, not just retryable.
-    expect(controlsProps?.allowRecord).toBe(true);
   });
 
   it('does not count the clause as recorded when the upload returns no media id', async () => {
@@ -356,7 +353,6 @@ describe('PassageDetailLwcTranslation — rejected save (TT-7583)', () => {
     });
 
     expect(controlsProps?.allClausesComplete).toBe(false);
-    expect(controlsProps?.allowRecord).toBe(true);
   });
 
   it('still counts the clause as recorded on a successful upload', async () => {

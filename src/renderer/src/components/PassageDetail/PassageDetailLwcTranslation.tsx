@@ -469,9 +469,10 @@ export function PassageDetailLwcTranslation({ width }: IProps) {
         return next;
       });
       forceRefresh();
-      // Back to a recordable state so the take can be re-recorded, not just
-      // retried from the failure message.
-      setPhase(mediaId ? 'recorded' : 'recordReady');
+      // Stays 'recorded' either way: the take still exists, it just is not
+      // stored. That keeps Record disabled and the clear button available, so
+      // discarding the take is the deliberate way back to recording (TT-7583).
+      setPhase('recorded');
       setResetMedia(false);
     },
     [forceRefresh, currentIndex]
@@ -645,9 +646,7 @@ export function PassageDetailLwcTranslation({ width }: IProps) {
               next.delete(currentIndex);
               return next;
             });
-            setPhase('recordReady');
           }}
-          saveRejected={saveRejected}
           setStatusText={() => {}}
           showRecorder={showRecorder}
         />

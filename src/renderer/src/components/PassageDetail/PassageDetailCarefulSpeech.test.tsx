@@ -624,13 +624,14 @@ describe('PassageDetailCarefulSpeech — rejected save (TT-7583)', () => {
     expect(controlsProps?.savingRecording).toBe(false);
   });
 
-  it('keeps the take discardable while the message is up', async () => {
+  it('keeps the take discardable but not re-recordable', async () => {
     await recordAndRejectSave();
 
-    // The take is unsaved but still in the recorder, so the clear button has to
-    // stay available even though the phase went back to recordReady.
-    expect(controlsProps?.saveRejected).toBe(true);
-    expect(controlsProps?.phase).toBe('recordReady');
+    // 'recorded' is what shows the clear button and hides Record: discarding the
+    // take is the deliberate way back to recording, so a stray tap cannot
+    // silently overwrite audio that is not stored yet.
+    expect(controlsProps?.phase).toBe('recorded');
+    expect(controlsProps?.allowRecord).toBe(false);
   });
 
   it('clearing a failed take resets the recorder even with no mediafile', async () => {
