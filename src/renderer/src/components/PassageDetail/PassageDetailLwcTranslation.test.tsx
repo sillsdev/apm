@@ -1,10 +1,19 @@
 import '@testing-library/jest-dom';
 import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from '@testing-library/react';
 
 let mockCarefulSpeechComplete = new Set<number>();
 let mockLwcComplete = new Set<number>();
+let mockClauseRegions = [{ start: 0, end: 5, label: '' }];
 let controlsProps: Record<string, unknown> | undefined;
+let referenceProps: Record<string, unknown> | undefined;
+const mockStartSave = jest.fn();
 
 jest.mock('../../context/useGlobal', () => ({
   useGlobal: jest.fn((key: string) => {
@@ -60,7 +69,7 @@ jest.mock('../../context/UnsavedContext', () => ({
   UnsavedContext: React.createContext({
     state: {
       waitForSave: jest.fn().mockResolvedValue(undefined),
-      startSave: jest.fn(),
+      startSave: (...args: unknown[]) => mockStartSave(...args),
     },
   }),
 }));
@@ -68,11 +77,19 @@ jest.mock('../../context/UnsavedContext', () => ({
 jest.mock('../../selector', () => ({
   lwcTranslationSelector: { name: 'lwcTranslationSelector' },
   sharedSelector: { name: 'sharedSelector' },
+  mediaTabSelector: { name: 'mediaTabSelector' },
+  mediaTitleSelector: { name: 'mediaTitleSelector' },
 }));
 jest.mock('react-redux', () => ({
   useSelector: (selector: { name?: string }) => {
     if (selector.name === 'sharedSelector') {
       return { noAudio: 'No audio' };
+    }
+    if (selector.name === 'mediaTabSelector') {
+      return { pendingUploadRetryOne: 'Retry' };
+    }
+    if (selector.name === 'mediaTitleSelector') {
+      return { uploadFailed: 'Upload Failed!' };
     }
     return {
       boldOnly: 'BOLD only',
@@ -87,7 +104,7 @@ jest.mock('react-redux', () => ({
 
 jest.mock('./lwcTranslation/useLwcTranslationClauses', () => ({
   useLwcTranslationClauses: jest.fn(() => ({
-    clauseRegions: [{ start: 0, end: 5, label: '' }],
+    clauseRegions: mockClauseRegions,
     bootstrapped: true,
     hasClauses: true,
   })),
@@ -99,12 +116,23 @@ jest.mock('./carefulSpeech/carefulSpeechCompletion', () => ({
       typeId === 'cs-id' ? mockCarefulSpeechComplete : mockLwcComplete
   ),
   getRecordingForClause: jest.fn(() => undefined),
-  firstIncompleteClauseIndex: jest.fn(() => 0),
+  // Mirror the real helper so clause navigation actually advances.
+  firstIncompleteClauseIndex: jest.fn(
+    (regions: unknown[], completed: Set<number>) => {
+      for (let i = 0; i < regions.length; i += 1) {
+        if (!completed.has(i)) return i;
+      }
+      return regions.length;
+    }
+  ),
 }));
 
 jest.mock('./lwcTranslation/LwcTranslationReferencePlayer', () => ({
   __esModule: true,
-  default: () => <div data-cy="lwc-reference-player" />,
+  default: (props: Record<string, unknown>) => {
+    referenceProps = props;
+    return <div data-cy="lwc-reference-player" />;
+  },
 }));
 
 jest.mock('./lwcTranslation/LwcTranslationClauseNav', () => ({
@@ -135,7 +163,9 @@ describe('PassageDetailLwcTranslation', () => {
   beforeEach(() => {
     mockCarefulSpeechComplete = new Set<number>();
     mockLwcComplete = new Set<number>();
+    mockClauseRegions = [{ start: 0, end: 5, label: '' }];
     controlsProps = undefined;
+    referenceProps = undefined;
   });
 
   it('shows prerequisite when careful speech is incomplete', () => {
@@ -164,5 +194,183 @@ describe('PassageDetailLwcTranslation', () => {
     expect(
       document.querySelector('[data-cy="lwc-clause-nav-recorded"]')
     ).toBeTruthy();
+  });
+});
+
+describe('PassageDetailLwcTranslation — rejected save (TT-7583)', () => {
+  beforeEach(() => {
+    mockCarefulSpeechComplete = new Set([0]);
+    mockLwcComplete = new Set<number>();
+    mockClauseRegions = [{ start: 0, end: 5, label: '' }];
+    controlsProps = undefined;
+    referenceProps = undefined;
+    mockStartSave.mockClear();
+  });
+
+  // Play the reference clause through, which is what reveals the recorder.
+  const openRecorder = async () => {
+    render(<PassageDetailLwcTranslation width={400} />);
+    await waitFor(() => expect(referenceProps).toBeDefined());
+    await act(async () => {
+      (referenceProps?.onPlaybackComplete as () => void)();
+    });
+    await waitFor(() => expect(controlsProps?.showRecorder).toBe(true));
+  };
+
+  // Record a take and request its auto-save, then have MediaRecord reject it.
+  const recordAndRejectSave = async () => {
+    await openRecorder();
+
+    await act(async () => {
+      (controlsProps?.onRecording as (active: boolean) => void)(true);
+      (controlsProps?.onRecording as (active: boolean) => void)(false);
+    });
+    await act(async () => {
+      (controlsProps?.setCanSave as (v: boolean) => void)(true);
+    });
+    await act(async () => {
+      (controlsProps?.onSaveRejected as () => void)();
+    });
+  };
+
+  it('shows the save failure message with a Retry button', async () => {
+    await recordAndRejectSave();
+
+    expect(screen.getByText('Upload Failed!')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Retry' })).toBeEnabled();
+    expect(controlsProps?.savingRecording).toBe(false);
+  });
+
+  it('does not re-request the doomed save on the next rising edge', async () => {
+    await recordAndRejectSave();
+    mockStartSave.mockClear();
+
+    // canSave falls and rises again because the take is still dirty.
+    await act(async () => {
+      (controlsProps?.setCanSave as (v: boolean) => void)(false);
+    });
+    await act(async () => {
+      (controlsProps?.setCanSave as (v: boolean) => void)(true);
+    });
+
+    expect(mockStartSave).not.toHaveBeenCalled();
+  });
+
+  it('Retry requests the save again and clears the message', async () => {
+    await recordAndRejectSave();
+    mockStartSave.mockClear();
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
+    });
+
+    expect(mockStartSave).toHaveBeenCalledWith('LwcTranslationTool');
+    expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull();
+    expect(controlsProps?.savingRecording).toBe(true);
+  });
+
+  it('clears the message when a new take starts', async () => {
+    await recordAndRejectSave();
+
+    await act(async () => {
+      (controlsProps?.onRecording as (active: boolean) => void)(true);
+    });
+
+    expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull();
+  });
+
+  it('keeps the take discardable but not re-recordable', async () => {
+    await recordAndRejectSave();
+
+    // 'recorded' is what shows the clear button and hides Record: discarding the
+    // take is the deliberate way back to recording, so a stray tap cannot
+    // silently overwrite audio that is not stored yet.
+    expect(controlsProps?.phase).toBe('recorded');
+    expect(controlsProps?.allowRecord).toBe(false);
+  });
+
+  it('clearing the failed take drops the message and the completion', async () => {
+    await recordAndRejectSave();
+
+    await act(async () => {
+      (controlsProps?.onClearRecording as () => void)();
+    });
+
+    expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull();
+    expect(controlsProps?.allClausesComplete).toBe(false);
+    expect(controlsProps?.resetMedia).toBe(true);
+  });
+
+  it('drops the message when the user moves to another clause', async () => {
+    // Two clauses so Next Clause actually moves off the failed one.
+    mockClauseRegions = [
+      { start: 0, end: 5, label: '' },
+      { start: 5, end: 9, label: '' },
+    ];
+    mockCarefulSpeechComplete = new Set([0, 1]);
+    await recordAndRejectSave();
+    expect(screen.getByText('Upload Failed!')).toBeInTheDocument();
+
+    await act(async () => {
+      (controlsProps?.onNextClause as () => void)();
+    });
+
+    // The take it referred to is gone, so a Retry here could only fail.
+    expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull();
+  });
+
+  it('stops counting the clause as recorded, so the step is not complete', async () => {
+    await openRecorder();
+    await act(async () => {
+      (controlsProps?.onRecording as (active: boolean) => void)(true);
+      (controlsProps?.onRecording as (active: boolean) => void)(false);
+    });
+    // Stopping the take marks it done optimistically.
+    expect(controlsProps?.allClausesComplete).toBe(true);
+
+    await act(async () => {
+      (controlsProps?.onSaveRejected as () => void)();
+    });
+
+    // Nothing was stored, so that optimistic marking has to come back off — the
+    // step must not be complete and Next Clause must not be blocked as done.
+    expect(controlsProps?.allClausesComplete).toBe(false);
+  });
+
+  it('does not count the clause as recorded when the upload returns no media id', async () => {
+    await openRecorder();
+    await act(async () => {
+      (controlsProps?.onRecording as (active: boolean) => void)(true);
+      (controlsProps?.onRecording as (active: boolean) => void)(false);
+    });
+
+    await act(async () => {
+      await (
+        controlsProps?.afterUploadCb as (
+          mediaId: string | undefined
+        ) => Promise<void>
+      )('');
+    });
+
+    expect(controlsProps?.allClausesComplete).toBe(false);
+  });
+
+  it('still counts the clause as recorded on a successful upload', async () => {
+    await openRecorder();
+    await act(async () => {
+      (controlsProps?.onRecording as (active: boolean) => void)(true);
+      (controlsProps?.onRecording as (active: boolean) => void)(false);
+    });
+
+    await act(async () => {
+      await (
+        controlsProps?.afterUploadCb as (
+          mediaId: string | undefined
+        ) => Promise<void>
+      )('media-new');
+    });
+
+    expect(controlsProps?.allClausesComplete).toBe(true);
+    expect(controlsProps?.phase).toBe('recorded');
   });
 });

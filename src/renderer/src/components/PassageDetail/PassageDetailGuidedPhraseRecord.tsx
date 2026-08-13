@@ -7,7 +7,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import { Box, Typography } from '@mui/material';
+import { Alert, Box, Button, Typography } from '@mui/material';
 import { shallowEqual, useSelector } from 'react-redux';
 import { useGlobal } from '../../context/useGlobal';
 import usePassageDetailContext from '../../context/usePassageDetailContext';
@@ -23,7 +23,12 @@ import {
 import { IRegion } from '../../crud/useWavesurferRegions';
 import { WSAudioPlayerControls } from '../WSAudioPlayer';
 import { useOrbitData } from '../../hoc/useOrbitData';
-import { ISharedStrings, MediaFileD } from '../../model';
+import {
+  IMediaTabStrings,
+  IMediaTitleStrings,
+  ISharedStrings,
+  MediaFileD,
+} from '../../model';
 import { passageDefaultFilename } from '../../utils/passageDefaultFilename';
 import { related } from '../../crud/related';
 import { RecordKeyMap } from '@orbit/records';
@@ -56,7 +61,11 @@ import {
   type ICarefulSpeechColorStatus,
 } from '../../utils/carefulSpeechSegmentColors';
 import { useStepPermissions } from '../../utils/useStepPermission';
-import { sharedSelector } from '../../selector';
+import {
+  mediaTabSelector,
+  mediaTitleSelector,
+  sharedSelector,
+} from '../../selector';
 import { UnsavedContext } from '../../context/UnsavedContext';
 import {
   applyFewerClauses,
@@ -102,6 +111,8 @@ export function PassageDetailGuidedPhraseRecord({
 }: IProps) {
   useRenderProfiler('PassageDetailGuidedPhraseRecord');
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
+  const tm: IMediaTabStrings = useSelector(mediaTabSelector, shallowEqual);
+  const tt: IMediaTitleStrings = useSelector(mediaTitleSelector, shallowEqual);
   const [memory] = useGlobal('memory');
   const [user] = useGlobal('user');
   const [plan] = useGlobal('plan');
@@ -193,6 +204,8 @@ export function PassageDetailGuidedPhraseRecord({
   const [statusText, setStatusText] = useState('');
   const [canSave, setCanSave] = useState(false);
   const [savingRecording, setSavingRecording] = useState(false);
+  // Mirrors saveRejectedRef for render: shows the failure message + Retry.
+  const [saveRejected, setSaveRejected] = useState(false);
   // Mirror of savingRecording, set synchronously wherever the state is toggled.
   // The clause-boundary guards read this ref rather than the state value so a
   // save that begins before React commits the disabling render is still seen by
@@ -596,14 +609,43 @@ export function PassageDetailGuidedPhraseRecord({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentRegion, currentIndex]);
 
+  // TT-7583: this step auto-saves on every rising edge of canSave. A failed
+  // upload leaves the take dirty, so canSave goes false→true again and we used
+  // to retry the same doomed take forever (finalizeTerminalFailure + error
+  // snackbar on a loop). MediaRecord tells us the attempt was rejected; hold
+  // off until the user records again rather than latching canSave off, which
+  // would break the manual Save button on every other recording screen.
+  const saveRejectedRef = useRef(false);
+
   useEffect(() => {
-    if (canSave) {
+    if (canSave && !saveRejectedRef.current) {
       savingRecordingRef.current = true;
       setSavingRecording(true);
       startSave(toolId);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canSave]);
+
+  // The take is still dirty after a rejection, so asking for the save again is
+  // all it takes to re-upload it (TT-7583).
+  const handleRetrySave = useCallback(() => {
+    saveRejectedRef.current = false;
+    setSaveRejected(false);
+    savingRecordingRef.current = true;
+    setSavingRecording(true);
+    startSave(toolId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [toolId]);
+
+  // The failure message belongs to the clause whose take failed. Navigating away
+  // clears MediaRecord's blob, so a Retry from another clause would only hit the
+  // no-audio branch — drop the message with the take it referred to (TT-7583).
+  // Keyed on the index rather than the navigation handlers because every clause
+  // move funnels through it.
+  useEffect(() => {
+    saveRejectedRef.current = false;
+    setSaveRejected(false);
+  }, [currentIndex]);
 
   const snapToClauseStart = useCallback(
     async (index: number) => {
@@ -744,6 +786,8 @@ export function PassageDetailGuidedPhraseRecord({
     recordingActiveRef.current = false;
     savingRecordingRef.current = false;
     setSavingRecording(false);
+    saveRejectedRef.current = false;
+    setSaveRejected(false);
     pendingOvershootSwallowRef.current = false;
     optimisticCompletedRef.current.clear();
     setHeardIndices([]);
@@ -1491,14 +1535,23 @@ export function PassageDetailGuidedPhraseRecord({
   ]);
 
   const afterUploadCb = useCallback(
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    async (_mediaId: string | undefined) => {
-      // Color green immediately; rowData/forceRefresh often lag the upload (TT-7552).
-      optimisticCompletedRef.current.add(currentIndexRef.current);
+    async (mediaId: string | undefined) => {
+      // Color green immediately; rowData/forceRefresh often lag the upload
+      // (TT-7552). Only on a real upload though — a terminal failure still calls
+      // us, with no mediaId, and painting that green tells the user their take
+      // was stored when it was not (TT-7583).
+      if (mediaId) {
+        optimisticCompletedRef.current.add(currentIndexRef.current);
+      } else {
+        optimisticCompletedRef.current.delete(currentIndexRef.current);
+      }
+      // Stays 'recorded' either way: the take still exists, it just is not
+      // stored. That keeps Record disabled and the clear button available, so
+      // discarding the take is the deliberate way back to recording (TT-7583).
+      setPhase('recorded');
       savingRecordingRef.current = false;
       setSavingRecording(false);
       forceRefresh();
-      setPhase('recorded');
       setResetMedia(false);
       applyColors();
     },
@@ -1506,15 +1559,24 @@ export function PassageDetailGuidedPhraseRecord({
   );
 
   const handleClearRecording = useCallback(async () => {
-    if (!recordingRow?.mediafile?.id) return;
-    await memory.update((t) =>
-      t.removeRecord({ type: 'mediafile', id: recordingRow.mediafile.id })
-    );
-    optimisticCompletedRef.current.delete(currentIndexRef.current);
-    forceRefresh();
-    if (stepComplete(currentstep)) {
-      await setStepComplete(currentstep, false);
+    // Deleting the take retires the failed save with it, so the message and the
+    // latch must both go (TT-7583).
+    saveRejectedRef.current = false;
+    setSaveRejected(false);
+    // A take whose upload failed has no mediafile to remove, but it is still
+    // sitting unsaved in the recorder — discarding it is the whole point of the
+    // button in that state, so only the removal is conditional (TT-7583).
+    const mediaId = recordingRow?.mediafile?.id;
+    if (mediaId) {
+      await memory.update((t) =>
+        t.removeRecord({ type: 'mediafile', id: mediaId })
+      );
+      forceRefresh();
+      if (stepComplete(currentstep)) {
+        await setStepComplete(currentstep, false);
+      }
     }
+    optimisticCompletedRef.current.delete(currentIndexRef.current);
     setPhase('recordReady');
     setCurrentClausePlayed(true);
     setResetMedia(true);
@@ -1671,6 +1733,9 @@ export function PassageDetailGuidedPhraseRecord({
           onRecording={(active) => {
             if (active) {
               recordingActiveRef.current = true;
+              // A new take supersedes any earlier rejected save (TT-7583).
+              saveRejectedRef.current = false;
+              setSaveRejected(false);
               // TT-7552: a deliberate take cancels the post-park overshoot swallow
               // so tapping the next segment is treated as real navigation.
               pendingOvershootSwallowRef.current = false;
@@ -1692,6 +1757,17 @@ export function PassageDetailGuidedPhraseRecord({
           resetMedia={resetMedia}
           setResetMedia={setResetMedia}
           setCanSave={setCanSave}
+          onSaveRejected={() => {
+            saveRejectedRef.current = true;
+            setSaveRejected(true);
+            savingRecordingRef.current = false;
+            setSavingRecording(false);
+            // Upload failures route through afterUploadCb('') as well, but
+            // MediaRecord's save-requested-with-no-audio branch only lands here,
+            // so undo the optimistic green from this path too (TT-7583).
+            optimisticCompletedRef.current.delete(currentIndexRef.current);
+            applyColors();
+          }}
           setStatusText={setStatusText}
           showRecorder={showRecorder}
           strings={controlStrings}
@@ -1704,10 +1780,31 @@ export function PassageDetailGuidedPhraseRecord({
           canNextUnit={currentIndex < clauseRegions.length - 1}
         />
       )}
-      {statusText && (
-        <Typography variant="caption" align="center">
-          {statusText}
-        </Typography>
+      {saveRejected ? (
+        <Alert
+          severity="error"
+          variant="filled"
+          sx={{ alignSelf: 'center', alignItems: 'center', m: 2 }}
+          action={
+            <Button
+              id={`${config.containerId}-retry-save`}
+              color="inherit"
+              size="small"
+              disabled={savingRecording}
+              onClick={handleRetrySave}
+            >
+              {tm.pendingUploadRetryOne}
+            </Button>
+          }
+        >
+          {tt.uploadFailed}
+        </Alert>
+      ) : (
+        statusText && (
+          <Typography variant="caption" align="center">
+            {statusText}
+          </Typography>
+        )
       )}
       {resetConfirmText && (
         <Confirm

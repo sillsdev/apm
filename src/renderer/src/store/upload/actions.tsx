@@ -19,7 +19,6 @@ import {
   createPathFolder,
   removeExtension,
 } from '../../utils';
-import { isUnauthorized } from '../../utils/httpError';
 import { DateTime } from 'luxon';
 import _ from 'lodash';
 import { typeLimit } from '../../utils/typeLimit';
@@ -35,6 +34,7 @@ import {
   uploadRetryDelayMs,
   UPLOAD_MAX_ATTEMPTS,
   waitForImportExportIdle,
+  isRetryableUploadStatus,
 } from './uploadRetry';
 import {
   appendPendingMediaUpload,
@@ -324,7 +324,7 @@ export const nextUpload =
     const completeCB = (
       success: boolean,
       data: MediaFileAttributes | undefined,
-      statusNum: number,
+      statusNum: number | undefined,
       statusText: string
     ): void => {
       if (success) {
@@ -337,7 +337,9 @@ export const nextUpload =
         dispatch({
           payload: {
             current: n,
-            error: `upload ${name}: (${statusNum}) ${statusText}`,
+            // statusNum is undefined when the request never reached the server,
+            // so don't render a literal "(undefined)" at the user (TT-7583).
+            error: `upload ${name}: (${statusNum ?? 'no response'}) ${statusText}`,
           },
           type: UPLOAD_ITEM_FAILED,
         });
@@ -464,7 +466,7 @@ export const nextUpload =
       const finalizeTerminalFailure = async (
         remoteId: number | undefined,
         postSucceeded: boolean,
-        statusNum: number,
+        statusNum: number | undefined,
         statusText: string
       ): Promise<void> => {
         let cloudRowDeleted = !postSucceeded || remoteId === undefined;
@@ -525,12 +527,12 @@ export const nextUpload =
         } catch (err) {
           const ax = err as AxiosError;
           const st = ax.response?.status;
-          if (isUnauthorized(st) || st === 403) {
+          if (!isRetryableUploadStatus(st)) {
             await finalizeTerminalFailure(
               undefined,
               false,
-              st ?? 500, // default to 500 if status is undefined
-              `Upload ${name} failed.`
+              st!,
+              `Upload ${name} failed: ${ax.message}`
             );
             return;
           }
@@ -538,11 +540,15 @@ export const nextUpload =
             await sleepMs(uploadRetryDelayMs(attempt));
             continue;
           }
+          // we get here after the 5 tries. Undefined status means we never reached the
+          // server
           await finalizeTerminalFailure(
             undefined,
             false,
-            st ?? 500,
-            `Upload ${name} failed.`
+            st,
+            st
+              ? `Upload ${name} failed.`
+              : `Upload ${name} failed: network error`
           );
           return;
         }

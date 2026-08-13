@@ -67,6 +67,8 @@ interface Props {
   resetMedia: boolean;
   setResetMedia: (v: boolean) => void;
   setCanSave: (v: boolean) => void;
+  /** Passed through to MediaRecord; see its prop docs (TT-7583). */
+  onSaveRejected?: () => void;
   setStatusText: (t: string) => void;
   showRecorder: boolean;
   strings: IGuidedPhraseRecordControlStrings;
@@ -119,6 +121,7 @@ export default function CarefulSpeechControls({
   resetMedia,
   setResetMedia,
   setCanSave,
+  onSaveRejected,
   setStatusText,
   showRecorder,
   strings,
@@ -320,6 +323,7 @@ export default function CarefulSpeechControls({
                 onSaving={onSaving}
                 onReady={onSaveSettled}
                 setCanSave={setCanSave}
+                onSaveRejected={onSaveRejected}
                 setStatusText={setStatusText}
                 doReset={resetMedia}
                 setDoReset={setResetMedia}
