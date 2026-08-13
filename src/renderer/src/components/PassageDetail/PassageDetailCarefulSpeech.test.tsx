@@ -1,5 +1,12 @@
 import React from 'react';
-import { act, cleanup, render, waitFor } from '@testing-library/react';
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from '@testing-library/react';
 import { IRegion } from '../../crud/useWavesurferRegions';
 import { CLAUSE_BOUNDARY_THRESHOLD_SEC } from './carefulSpeech/carefulSpeechBoundary';
 import { CAREFUL_SPEECH_COMPLETED_RGBA, CAREFUL_SPEECH_PENDING_RGBA } from '../../utils/carefulSpeechSegmentColors';
@@ -39,6 +46,7 @@ let mockRecordingRow:
 
 const mockSetStepComplete = jest.fn().mockResolvedValue(undefined);
 const mockWaitForSave = jest.fn().mockResolvedValue(undefined);
+const mockStartSave = jest.fn();
 const mockMemoryUpdate = jest.fn().mockResolvedValue(undefined);
 
 const stubControls = {
@@ -125,7 +133,12 @@ jest.mock('../../utils/useStepPermission', () => ({
 jest.mock('../../utils/passageDefaultFilename', () => ({
   passageDefaultFilename: () => 'file.ogg',
 }));
-jest.mock('../../selector', () => ({ carefulSpeechSelector: jest.fn() }));
+jest.mock('../../selector', () => ({
+  carefulSpeechSelector: jest.fn(),
+  sharedSelector: jest.fn(),
+  mediaTabSelector: jest.fn(),
+  mediaTitleSelector: jest.fn(),
+}));
 jest.mock('react-redux', () => ({
   useSelector: () => ({
     boldOnly: 'BOLD only',
@@ -140,6 +153,9 @@ jest.mock('react-redux', () => ({
     speaker: 'Speaker',
     startRecording: 'Start',
     undo: 'Undo',
+    // mediaTitle + mediaTab strings the save-failure banner reads
+    uploadFailed: 'Upload Failed!',
+    pendingUploadRetryOne: 'Retry',
   }),
   shallowEqual: jest.fn(),
 }));
@@ -153,7 +169,7 @@ jest.mock('../../context/UnsavedContext', () => {
   const ReactActual = jest.requireActual<typeof import('react')>('react');
   return {
     UnsavedContext: ReactActual.createContext({
-      state: { startSave: jest.fn(), waitForSave: mockWaitForSave },
+      state: { startSave: mockStartSave, waitForSave: mockWaitForSave },
     }),
   };
 });
@@ -538,5 +554,61 @@ describe('PassageDetailCarefulSpeech — save in progress (TT-7439)', () => {
 
     expect(controlsProps?.savingRecording).toBe(false);
     expect(playerProps?.lockSegmentSelection).toBe(false);
+  });
+});
+
+describe('PassageDetailCarefulSpeech — rejected save (TT-7583)', () => {
+  // Record a take and request its auto-save, then have MediaRecord reject it.
+  const recordAndRejectSave = async () => {
+    mockCompleted = new Set([0, 1]);
+    await mountAndSettle();
+    await firePlaybackEnd(2);
+
+    await act(async () => {
+      (controlsProps?.onRecording as (active: boolean) => void)(true);
+      (controlsProps?.onRecording as (active: boolean) => void)(false);
+    });
+    await act(async () => {
+      (controlsProps?.setCanSave as (v: boolean) => void)(true);
+    });
+    await act(async () => {
+      (controlsProps?.onSaveRejected as () => void)();
+      await (
+        controlsProps?.afterUploadCb as (
+          mediaId: string | undefined
+        ) => Promise<void>
+      )('');
+    });
+  };
+
+  it('shows the save failure message with a Retry button', async () => {
+    await recordAndRejectSave();
+
+    expect(screen.getByText('Upload Failed!')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Retry' })).toBeEnabled();
+    expect(controlsProps?.savingRecording).toBe(false);
+  });
+
+  it('Retry requests the save again and clears the message', async () => {
+    await recordAndRejectSave();
+    mockStartSave.mockClear();
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
+    });
+
+    expect(mockStartSave).toHaveBeenCalledWith('CarefulSpeechTool');
+    expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull();
+    expect(controlsProps?.savingRecording).toBe(true);
+  });
+
+  it('clears the message when a new take starts', async () => {
+    await recordAndRejectSave();
+
+    await act(async () => {
+      (controlsProps?.onRecording as (active: boolean) => void)(true);
+    });
+
+    expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull();
   });
 });

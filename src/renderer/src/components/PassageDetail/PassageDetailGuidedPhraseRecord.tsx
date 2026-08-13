@@ -7,7 +7,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import { Box, Typography } from '@mui/material';
+import { Alert, Box, Button, Typography } from '@mui/material';
 import { shallowEqual, useSelector } from 'react-redux';
 import { useGlobal } from '../../context/useGlobal';
 import usePassageDetailContext from '../../context/usePassageDetailContext';
@@ -23,7 +23,12 @@ import {
 import { IRegion } from '../../crud/useWavesurferRegions';
 import { WSAudioPlayerControls } from '../WSAudioPlayer';
 import { useOrbitData } from '../../hoc/useOrbitData';
-import { ISharedStrings, MediaFileD } from '../../model';
+import {
+  IMediaTabStrings,
+  IMediaTitleStrings,
+  ISharedStrings,
+  MediaFileD,
+} from '../../model';
 import { passageDefaultFilename } from '../../utils/passageDefaultFilename';
 import { related } from '../../crud/related';
 import { RecordKeyMap } from '@orbit/records';
@@ -56,7 +61,11 @@ import {
   type ICarefulSpeechColorStatus,
 } from '../../utils/carefulSpeechSegmentColors';
 import { useStepPermissions } from '../../utils/useStepPermission';
-import { sharedSelector } from '../../selector';
+import {
+  mediaTabSelector,
+  mediaTitleSelector,
+  sharedSelector,
+} from '../../selector';
 import { UnsavedContext } from '../../context/UnsavedContext';
 import {
   applyFewerClauses,
@@ -102,6 +111,8 @@ export function PassageDetailGuidedPhraseRecord({
 }: IProps) {
   useRenderProfiler('PassageDetailGuidedPhraseRecord');
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
+  const tm: IMediaTabStrings = useSelector(mediaTabSelector, shallowEqual);
+  const tt: IMediaTitleStrings = useSelector(mediaTitleSelector, shallowEqual);
   const [memory] = useGlobal('memory');
   const [user] = useGlobal('user');
   const [plan] = useGlobal('plan');
@@ -193,6 +204,8 @@ export function PassageDetailGuidedPhraseRecord({
   const [statusText, setStatusText] = useState('');
   const [canSave, setCanSave] = useState(false);
   const [savingRecording, setSavingRecording] = useState(false);
+  // Mirrors saveRejectedRef for render: shows the failure message + Retry.
+  const [saveRejected, setSaveRejected] = useState(false);
   const [recordingPassStarted, setRecordingPassStarted] = useState(false);
   // Mirror of recordingPassStarted set synchronously at the call sites below.
   // region-out can fire before React commits the state-update render, leaving
@@ -606,6 +619,16 @@ export function PassageDetailGuidedPhraseRecord({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canSave]);
 
+  // The take is still dirty after a rejection, so asking for the save again is
+  // all it takes to re-upload it (TT-7583).
+  const handleRetrySave = useCallback(() => {
+    saveRejectedRef.current = false;
+    setSaveRejected(false);
+    setSavingRecording(true);
+    startSave(toolId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [toolId]);
+
   const snapToClauseStart = useCallback(
     async (index: number) => {
       const ctrl = playerControlsRef.current;
@@ -744,6 +767,8 @@ export function PassageDetailGuidedPhraseRecord({
     recordingPassStartedRef.current = false;
     recordingActiveRef.current = false;
     setSavingRecording(false);
+    saveRejectedRef.current = false;
+    setSaveRejected(false);
     pendingOvershootSwallowRef.current = false;
     optimisticCompletedRef.current.clear();
     setHeardIndices([]);
@@ -1661,6 +1686,7 @@ export function PassageDetailGuidedPhraseRecord({
               recordingActiveRef.current = true;
               // A new take supersedes any earlier rejected save (TT-7583).
               saveRejectedRef.current = false;
+              setSaveRejected(false);
               // TT-7552: a deliberate take cancels the post-park overshoot swallow
               // so tapping the next segment is treated as real navigation.
               pendingOvershootSwallowRef.current = false;
@@ -1683,6 +1709,7 @@ export function PassageDetailGuidedPhraseRecord({
           setCanSave={setCanSave}
           onSaveRejected={() => {
             saveRejectedRef.current = true;
+            setSaveRejected(true);
             setSavingRecording(false);
           }}
           setStatusText={setStatusText}
@@ -1697,10 +1724,31 @@ export function PassageDetailGuidedPhraseRecord({
           canNextUnit={currentIndex < clauseRegions.length - 1}
         />
       )}
-      {statusText && (
-        <Typography variant="caption" align="center">
-          {statusText}
-        </Typography>
+      {saveRejected ? (
+        <Alert
+          severity="error"
+          variant="filled"
+          sx={{ alignSelf: 'center', alignItems: 'center', m: 2 }}
+          action={
+            <Button
+              id={`${config.containerId}-retry-save`}
+              color="inherit"
+              size="small"
+              disabled={savingRecording}
+              onClick={handleRetrySave}
+            >
+              {tm.pendingUploadRetryOne}
+            </Button>
+          }
+        >
+          {tt.uploadFailed}
+        </Alert>
+      ) : (
+        statusText && (
+          <Typography variant="caption" align="center">
+            {statusText}
+          </Typography>
+        )
       )}
       {resetConfirmText && (
         <Confirm
