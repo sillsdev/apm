@@ -24,10 +24,7 @@ import {
 } from '../../crud/artifactTypeSlug';
 import { UnsavedContext } from '../../context/UnsavedContext';
 import { useStepPermissions } from '../../utils/useStepPermission';
-import {
-  artifactUsesOrgVernacularLanguage,
-  parseStepLanguageField,
-} from '../../crud/transcribeStepAsrSettings';
+import { artifactUsesOrgVernacularLanguage } from '../../crud/transcribeStepAsrSettings';
 import { related } from '../../crud/related';
 import { useOrbitData } from '../../hoc/useOrbitData';
 import {
@@ -37,6 +34,7 @@ import {
 } from '../../utils/namedSegments';
 import { hasPhraseRegions } from './carefulSpeech/carefulSpeechBoundary';
 import {
+  mediaMatchesStepLanguage,
   parseMediaLanguageField,
   phraseBtBoundaryRegionName,
 } from './carefulSpeech/matchesGuidedOutputRow';
@@ -296,28 +294,16 @@ export function PassageDetailTranscribe({ width, artifactTypeId }: IProps) {
   const hasBtRecordings = useMemo(() => {
     if (!artifactTypeId) return true; // we're not transcribing back translations
     const btType = localizedArtifactTypeFromId(artifactTypeId);
-    const primaryBcp = parseStepLanguageField(
-      (() => {
-        try {
-          return (JSON.parse(stepSettings) as { language?: unknown }).language;
-        } catch {
-          return undefined;
-        }
-      })()
-    ).bcp47;
+    // Scope with the same step language the task list uses, so steps exempt from
+    // language scoping (vernacular / Q&A / Retell) aren't hidden by a leftover
+    // `language` setting.
     return rowData.some((r) => {
       if (r.artifactType !== btType) return false;
       if (related(r.mediafile, 'sourceMedia') !== mediafileId) return false;
-      if (primaryBcp && primaryBcp !== 'und') {
-        const rowBcp = parseStepLanguageField(
-          r.mediafile.attributes?.languagebcp47
-        ).bcp47;
-        if (rowBcp !== primaryBcp) return false;
-      }
-      return true;
+      return mediaMatchesStepLanguage(r.mediafile, stepLanguageBcp47);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rowData, artifactTypeId, mediafileId, stepSettings]);
+  }, [rowData, artifactTypeId, mediafileId, stepLanguageBcp47]);
   const MAGIC_NUMBER_THAT_MAKES_IT_FIT = 20;
 
   if (missingPhraseSegmentRecordings) {
