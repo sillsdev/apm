@@ -12,3 +12,4 @@ Non-BOLD **Phrase Back Translation** (and **Retell Back Translation**) must supp
 
 - ADR 0008’s Reset “delete-all PBTs” means all PBTs **for this vernacular + this Phrase BT language**, not every PBT on the passage
 - BOLD **LWC Translation** keeps shared **`clause`** boundaries; may still stamp **LWC language** on recordings without per-language clause maps
+- Language scoping is an **allowlist** — Transcribe only scopes media by step language for `isPhraseSegmentArtifact` types (Phrase BT, Careful Speech), the only ones that stamp `languagebcp47` on their takes. **Whole Back Translation** is recorded by `PassageDetailItem`, which never stamps a language, and vernacular / Q&A / Retell use the org vernacular — a Transcribe step's `language` is their ASR / font / spell-check language only, so scoping their task lists by it would match nothing

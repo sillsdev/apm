@@ -53,13 +53,16 @@ export function formatMediaLanguageField(
   return `${languageName}|${bcp47 || 'und'}`;
 }
 
+/** bcp47 tags are case-insensitive, so lowercase them before comparing. */
+const normalizeBcp47 = (bcp47: string): string => bcp47.toLowerCase();
+
 function mediaLanguageBcp47(mediafile: MediaFileD | undefined): string {
   return parseMediaLanguageBcp47(mediafile?.attributes?.languagebcp47);
 }
 
 /** True when step language should filter guided outputs. */
 export function isLanguageFilterActive(languageBcp47?: string): boolean {
-  return Boolean(languageBcp47 && languageBcp47 !== 'und');
+  return Boolean(languageBcp47 && normalizeBcp47(languageBcp47) !== 'und');
 }
 
 /** True when a mediafile belongs to a step scoped to `stepLanguageBcp47`. */
@@ -68,7 +71,10 @@ export function mediaMatchesStepLanguage(
   stepLanguageBcp47?: string
 ): boolean {
   if (!isLanguageFilterActive(stepLanguageBcp47)) return true;
-  return mediaLanguageBcp47(mediafile) === stepLanguageBcp47;
+  return (
+    normalizeBcp47(mediaLanguageBcp47(mediafile)) ===
+    normalizeBcp47(stepLanguageBcp47 as string)
+  );
 }
 
 /**

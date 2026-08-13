@@ -24,7 +24,6 @@ import {
 } from '../../crud/artifactTypeSlug';
 import { UnsavedContext } from '../../context/UnsavedContext';
 import { useStepPermissions } from '../../utils/useStepPermission';
-import { artifactUsesOrgVernacularLanguage } from '../../crud/transcribeStepAsrSettings';
 import { related } from '../../crud/related';
 import { useOrbitData } from '../../hoc/useOrbitData';
 import {
@@ -216,15 +215,9 @@ export function PassageDetailTranscribe({ width, artifactTypeId }: IProps) {
   };
 
   const stepLanguageBcp47 = useMemo(() => {
-    // Claude says:
-    // Vernacular / Q&A / Retell steps transcribe in the org vernacular, not a step
-    // language, and their media carry no languagebcp47 — honoring a leftover
-    // `language` value here would scope them to nothing.
     if (!artifactTypeId) return undefined;
     if (
-      artifactUsesOrgVernacularLanguage(
-        slugFromId(artifactTypeId) as ArtifactTypeSlug
-      )
+      !isPhraseSegmentArtifact(slugFromId(artifactTypeId) as ArtifactTypeSlug)
     )
       return undefined;
     const { bcp47 } = parseMediaLanguageField(
