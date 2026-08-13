@@ -131,6 +131,43 @@ describe('CarefulSpeechControls — Next Clause completion state', () => {
     expect(next?.disabled).toBe(true);
   });
 
+  it('Combine with Next Clause is disabled while the recording upload is in progress', () => {
+    const { container } = render(
+      <CarefulSpeechControls
+        {...baseProps}
+        canCombineWithNext
+        savingRecording
+      />
+    );
+    const combine = container.querySelector(
+      '#careful-speech-combine'
+    ) as HTMLButtonElement | null;
+    expect(combine).toBeTruthy();
+    expect(combine?.disabled).toBe(true);
+  });
+
+  it('Split Clause is disabled while the recording upload is in progress', () => {
+    const { container } = render(
+      <CarefulSpeechControls {...baseProps} canSplitClause savingRecording />
+    );
+    const split = container.querySelector(
+      '#careful-speech-split'
+    ) as HTMLButtonElement | null;
+    expect(split).toBeTruthy();
+    expect(split?.disabled).toBe(true);
+  });
+
+  it('Undo Combine is disabled while the recording upload is in progress', () => {
+    const { container } = render(
+      <CarefulSpeechControls {...baseProps} showUndoCombine savingRecording />
+    );
+    const undo = container.querySelector(
+      '#careful-speech-undo-combine'
+    ) as HTMLButtonElement | null;
+    expect(undo).toBeTruthy();
+    expect(undo?.disabled).toBe(true);
+  });
+
   it('hides Next Clause when sequential unit nav is enabled', () => {
     const { container } = render(
       <CarefulSpeechControls

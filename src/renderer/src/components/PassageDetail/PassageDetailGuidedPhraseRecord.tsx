@@ -206,6 +206,12 @@ export function PassageDetailGuidedPhraseRecord({
   const [savingRecording, setSavingRecording] = useState(false);
   // Mirrors saveRejectedRef for render: shows the failure message + Retry.
   const [saveRejected, setSaveRejected] = useState(false);
+  // Mirror of savingRecording, set synchronously wherever the state is toggled.
+  // The clause-boundary guards read this ref rather than the state value so a
+  // save that begins before React commits the disabling render is still seen by
+  // an in-flight callback closure (state would be captured stale). See the
+  // savingRecording toggles below (TT-7427).
+  const savingRecordingRef = useRef(false);
   const [recordingPassStarted, setRecordingPassStarted] = useState(false);
   // Mirror of recordingPassStarted set synchronously at the call sites below.
   // region-out can fire before React commits the state-update render, leaving
@@ -613,6 +619,7 @@ export function PassageDetailGuidedPhraseRecord({
 
   useEffect(() => {
     if (canSave && !saveRejectedRef.current) {
+      savingRecordingRef.current = true;
       setSavingRecording(true);
       startSave(toolId);
     }
@@ -624,6 +631,7 @@ export function PassageDetailGuidedPhraseRecord({
   const handleRetrySave = useCallback(() => {
     saveRejectedRef.current = false;
     setSaveRejected(false);
+    savingRecordingRef.current = true;
     setSavingRecording(true);
     startSave(toolId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -776,6 +784,7 @@ export function PassageDetailGuidedPhraseRecord({
     setRecordingPassStarted(false);
     recordingPassStartedRef.current = false;
     recordingActiveRef.current = false;
+    savingRecordingRef.current = false;
     setSavingRecording(false);
     saveRejectedRef.current = false;
     setSaveRejected(false);
@@ -1275,6 +1284,7 @@ export function PassageDetailGuidedPhraseRecord({
   ]);
 
   const handleSplitClause = useCallback(async () => {
+    if (savingRecordingRef.current) return;
     const region = clauseRegions[currentIndex];
     if (!region) return;
     const splitPoint = playerControlsRef.current?.findClauseSplitPoint?.(
@@ -1319,6 +1329,7 @@ export function PassageDetailGuidedPhraseRecord({
   ]);
 
   const handleCombineWithNext = useCallback(async () => {
+    if (savingRecordingRef.current) return;
     if (!canCombineWithNext(currentIndex, clauseRegions, completedIndices)) {
       return;
     }
@@ -1350,6 +1361,7 @@ export function PassageDetailGuidedPhraseRecord({
   ]);
 
   const handleUndoCombine = useCallback(async () => {
+    if (savingRecordingRef.current) return;
     if (!combineUndo) return;
     setClauseSegString(combineUndo);
     await persistClauseSegments(combineUndo);
@@ -1367,6 +1379,8 @@ export function PassageDetailGuidedPhraseRecord({
   ]);
 
   const handleSegmentUndo = useCallback(async () => {
+    // Guard before pop() so a blocked undo doesn't consume a stack entry.
+    if (savingRecordingRef.current) return;
     const prev = segmentUndoStackRef.current.pop();
     setSegmentUndoCan(segmentUndoStackRef.current.canUndo());
     if (!prev) return;
@@ -1535,6 +1549,7 @@ export function PassageDetailGuidedPhraseRecord({
       // stored. That keeps Record disabled and the clear button available, so
       // discarding the take is the deliberate way back to recording (TT-7583).
       setPhase('recorded');
+      savingRecordingRef.current = false;
       setSavingRecording(false);
       forceRefresh();
       setResetMedia(false);
@@ -1698,8 +1713,14 @@ export function PassageDetailGuidedPhraseRecord({
           highlightSpeaker={highlightSpeaker}
           allowRecord={allowRecord}
           savingRecording={savingRecording}
-          onSaving={() => setSavingRecording(true)}
-          onSaveSettled={() => setSavingRecording(false)}
+          onSaving={() => {
+            savingRecordingRef.current = true;
+            setSavingRecording(true);
+          }}
+          onSaveSettled={() => {
+            savingRecordingRef.current = false;
+            setSavingRecording(false);
+          }}
           toolId={toolId}
           passageId={related(playerMediafile, 'passage') ?? passage?.id}
           artifactId={artifactTypeId}
@@ -1727,6 +1748,7 @@ export function PassageDetailGuidedPhraseRecord({
             setRecording(false);
             if (!showRecorder) return;
             if (!wasRecording) {
+              savingRecordingRef.current = false;
               setSavingRecording(false);
               return;
             }
@@ -1738,6 +1760,7 @@ export function PassageDetailGuidedPhraseRecord({
           onSaveRejected={() => {
             saveRejectedRef.current = true;
             setSaveRejected(true);
+            savingRecordingRef.current = false;
             setSavingRecording(false);
             // Upload failures route through afterUploadCb('') as well, but
             // MediaRecord's save-requested-with-no-audio branch only lands here,
