@@ -93,7 +93,7 @@ export class AlignmentBuilder {
 export const createAudioAlignment = () => {
   return new AlignmentBuilder()
     .withDocument('vtt-timecode', 'ephesians_example_with_footnotes.mp3')
-    .withDocument('u23003')
+    .withDocument('usfm-scripture-reference')
     .withRecord([['00:00.000 --> 00:01.927'], ['en+ulb.EPH:0']])
     .withRecord([['00:01.927 --> 00:03.756'], ['en+ulb.EPH 1:0']])
     .withRecord([['00:03.756 --> 04:23.239'], ['en+ulb.EPH 1']])

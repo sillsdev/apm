@@ -184,6 +184,9 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
   } = useContext(UnsavedContext).state;
   const t: IWsAudioPlayerStrings = useSelector(playerSelector, shallowEqual);
   const toolId = 'ArtifactSegments';
+  /** Segments string last applied by discussion locate; matching onSegmentChange
+   * emissions are treated as init (not user edits). Cleared on match or unmount. */
+  const pendingLocateSegmentsRef = useRef<string | undefined>(undefined);
   const [requestPlay, setRequestPlay] = useState<RequestPlay>({
     play: undefined,
     regionOnly: false,
@@ -349,6 +352,9 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
       !segmentsRef.current ||
       segmentsRef.current.indexOf('},{') === -1
     ) {
+      // Remember what locate applied so the waveform's later onSegmentChange
+      // can be recognized without a wall-clock heuristic.
+      pendingLocateSegmentsRef.current = segments;
       setDefaultSegments(segments);
       onSegment && onSegment(segments, true);
     }
@@ -368,7 +374,10 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
   const onSegmentChange = (segments: string) => {
     segmentsRef.current = segments;
     setDefaultSegments(segments); //now we'll notice if we reset them in SetPlayerSegments
-    onSegment && onSegment(segments, false);
+    const fromLocate = pendingLocateSegmentsRef.current === segments;
+    if (fromLocate) pendingLocateSegmentsRef.current = undefined;
+    onSegment && onSegment(segments, fromLocate);
+    if (fromLocate) return;
     if (allowSegment && saveSegments !== undefined) {
       const currentMedia = mediarecs.find((m) => m.id === playerMediafile?.id);
       const saved = getSegments(
@@ -387,6 +396,7 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
     setupLocate(setPlayerSegments);
     return () => {
       setupLocate();
+      pendingLocateSegmentsRef.current = undefined;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentstep, allowSegment]);

@@ -300,7 +300,7 @@ const PassageDetailProvider = (props: IProps) => {
   const mediaPosition = useRef<number | undefined>(undefined);
   const currentSegmentRef = useRef<IRegion | undefined>(undefined);
   const currentSegmentIndexRef = useRef(-1);
-  const { startSave, startClear, waitForSave } =
+  const { startSave, startClear, waitForSave, forceClearPending } =
     useContext(UnsavedContext).state;
   const highlightRef = useRef<number | undefined>(undefined);
   const refreshRef = useRef<number>(0);
@@ -332,6 +332,11 @@ const PassageDetailProvider = (props: IProps) => {
     const step = state.orgWorkflowSteps.find((s) => s.id === stepId);
     const tool = getTool(step?.attributes?.tool) as ToolSlug;
     setCurrentSegment(undefined, 0);
+    // Clear discussion locate without handleHighlightDiscussion — that helper
+    // no-ops while settingSegmentRef is set (mid-locate/play), which is exactly
+    // when step switches hang after the compass button.
+    highlightRef.current = undefined;
+    settingSegmentRef.current = false;
 
     setState((state: ICtxState) => {
       return {
@@ -345,6 +350,7 @@ const PassageDetailProvider = (props: IProps) => {
         playItem: '',
         commentPlayId: '',
         oldVernacularPlayItem: '',
+        highlightDiscussion: undefined,
       };
     });
 
@@ -405,20 +411,40 @@ const PassageDetailProvider = (props: IProps) => {
     });
   };
 
-  const handleConfirmStep = () => {
-    startSave();
-    waitForSave(() => {
-      attemptSetCurrentStep(confirm);
+  const finishStepConfirm = (target: string) => {
+    try {
+      attemptSetCurrentStep(target);
+    } finally {
       setConfirm('');
-    }, 400);
+    }
+  };
+
+  const handleConfirmStep = () => {
+    const target = confirm;
+    startSave();
+    // Do not pass finishStepConfirm into waitForSave — its blanket catch turns
+    // callback throws into 'Timed Out' and would re-run navigation below.
+    void waitForSave(undefined, 400).then(
+      () => finishStepConfirm(target),
+      (err) => {
+        showMessage(err?.message || String(err));
+        setConfirm('');
+      }
+    );
   };
 
   const handleRefuseStep = () => {
+    const target = confirm;
+    // forceClearPending on wait failure for orphaned tools (unmounted after mid-play step switch).
     startClear();
-    waitForSave(() => {
-      attemptSetCurrentStep(confirm);
-      setConfirm('');
-    }, 400);
+    void waitForSave(undefined, 15).then(
+      () => finishStepConfirm(target),
+      (err) => {
+        showMessage(err?.message || String(err));
+        forceClearPending();
+        finishStepConfirm(target);
+      }
+    );
   };
 
   const setDiscussionSize = (discussionSize: {

@@ -68,7 +68,7 @@ import {
   sharedSelector,
   transcriptionTabSelector,
 } from '../selector';
-import { GrowingSpacer } from '../control';
+import { spreadSx, rowSx } from '../control';
 import { isPublishingTitle } from '../control/passageTypeFromRef';
 import ContentLayout from './App/ContentLayout';
 import { getSection } from './AudioTab/getSection';
@@ -651,43 +651,44 @@ export function TranscriptionTab(props: IProps) {
   return (
     <ContentLayout
       header={
-        <>
-          {(planColumn || floatTop) && (
-            <Button
-              id="transExp"
-              key="export"
-              aria-label={t.exportProject}
-              variant="outlined"
-              onClick={handleProjectExport}
-              title={t.exportProject}
-              disabled={busy}
-            >
-              {t.exportProject}
-            </Button>
-          )}
-          {step && (
-            <AudioExportMenu
-              key="audioexport"
-              action={handleAudioExportMenu}
-              localizedArtifact={localizedArtifact}
-              isScripture={isScripture}
-              disabled={!ready}
-            />
-          )}
-          {planColumn && offline && projects.length > 1 && (
-            <Button
-              id="transBackup"
-              key="backup"
-              aria-label={t.electronBackup}
-              variant="outlined"
-              onClick={handleBackup}
-              title={t.electronBackup}
-            >
-              {t.electronBackup}
-            </Button>
-          )}
-          <GrowingSpacer />
-          <Box sx={{ display: 'flex', gap: 1.5 }}>
+        <Box sx={spreadSx}>
+          <Box sx={rowSx}>
+            {(planColumn || floatTop) && (
+              <Button
+                id="transExp"
+                key="export"
+                aria-label={t.exportProject}
+                variant="outlined"
+                onClick={handleProjectExport}
+                title={t.exportProject}
+                disabled={busy}
+              >
+                {t.exportProject}
+              </Button>
+            )}
+            {step && (
+              <AudioExportMenu
+                key="audioexport"
+                action={handleAudioExportMenu}
+                localizedArtifact={localizedArtifact}
+                isScripture={isScripture}
+                disabled={!ready}
+              />
+            )}
+            {planColumn && offline && projects.length > 1 && (
+              <Button
+                id="transBackup"
+                key="backup"
+                aria-label={t.electronBackup}
+                variant="outlined"
+                onClick={handleBackup}
+                title={t.electronBackup}
+              >
+                {t.electronBackup}
+              </Button>
+            )}
+          </Box>
+          <Box sx={rowSx}>
             <Button
               id="transCopy"
               key="copy"
@@ -733,10 +734,10 @@ export function TranscriptionTab(props: IProps) {
               ))}
             </Menu>
           </Box>
-        </>
+        </Box>
       }
       drawBottomBorder={true}
-      contentSx={{ p: 1.5 }}
+      contentSx={(theme) => ({ p: theme.layout.gap })}
     >
       <Box ref={boxRef} id="TranscriptionTab" sx={{ display: 'flex' }}>
         {alertOpen && (

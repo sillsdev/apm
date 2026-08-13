@@ -68,8 +68,9 @@ import { planSheetSelector, sharedSelector } from '../../selector';
 import {
   AddSectionPassageButtons,
   ProjButtons,
-  GrowingSpacer,
   LightTooltip,
+  spreadSx,
+  rowSx,
 } from '../../control';
 import Confirm from '../AlertDialog';
 import ContentLayout from '../App/ContentLayout';
@@ -1108,9 +1109,9 @@ export function PlanSheet(props: IProps) {
   return (
     <ContentLayout
       header={
-        <>
+        <Box sx={spreadSx}>
           {!readonly && (
-            <Box sx={{ display: 'flex', gap: 1.5 }}>
+            <Box sx={rowSx}>
               <AddSectionPassageButtons
                 inlinePassages={inlinePassages}
                 numRows={rowInfo.length}
@@ -1153,8 +1154,7 @@ export function PlanSheet(props: IProps) {
               )}
             </Box>
           )}
-          <GrowingSpacer />
-          <Box sx={{ display: 'flex', gap: 1.5 }}>
+          <Box sx={rowSx}>
             {data.length > 1 &&
               !offline &&
               !inlinePassages &&
@@ -1214,10 +1214,10 @@ export function PlanSheet(props: IProps) {
               </Button>
             )}
           </Box>
-        </>
+        </Box>
       }
       drawBottomBorder={true}
-      contentSx={{ position: 'relative', p: 1.5 }}
+      contentSx={(theme) => ({ p: theme.layout.gap, position: 'relative' })}
       contentRef={scrollRef}
     >
       <Dialog open={goToOpen} onClose={() => setGoToOpen(false)} maxWidth="sm">

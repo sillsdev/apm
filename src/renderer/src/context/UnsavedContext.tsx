@@ -35,6 +35,8 @@ const initState = {
     resolvedMethod: (() => any) | undefined,
     waitCount: number
   ) => {},
+  /** Drop all pending tool change/save flags (e.g. discard / unmounted tools). */
+  forceClearPending: () => {},
   anySaving: (butMyTooId?: string) => false,
   saveRequested: (toolId: string) => false,
   clearRequested: (toolId: string) => false,
@@ -338,6 +340,7 @@ const UnsavedProvider = (props: PropsWithChildren) => {
           saveCompleted,
           clearCompleted,
           waitForSave,
+          forceClearPending,
           anySaving,
           toolChanged,
           saveRequested,

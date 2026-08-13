@@ -7,11 +7,16 @@ import {
   DialogContent,
   DialogTitle,
   FormControlLabel,
-  NativeSelect,
   Typography,
 } from '@mui/material';
-import type { ChangeEvent } from 'react';
+import type { ChangeEvent, ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  WheelPicker,
+  WheelPickerWrapper,
+  type WheelPickerOption,
+} from '@ncdai/react-wheel-picker';
+import '@ncdai/react-wheel-picker/style.css';
 import {
   editReferenceValuesEqual,
   normalizeEditReferenceDraft,
@@ -20,32 +25,103 @@ import {
 } from '../../../../utils/markVersesPassageVerses';
 
 const suffixOptions = ['', 'a', 'b', 'c', 'd', 'e'];
-const selectSx = {
-  width: 'auto',
-  '& .MuiNativeSelect-select': {
-    fontSize: '1.25rem',
-    lineHeight: 1.2,
-    textAlign: 'center',
-    py: 0.5,
-  },
-  '& .MuiNativeSelect-icon': {
-    fontSize: '1.25rem',
-    right: 0,
-  },
-};
-const verseSelectSx = {
-  ...selectSx,
-  '& .MuiNativeSelect-select': {
-    ...selectSx['& .MuiNativeSelect-select'],
-    fontSize: '1.1rem',
-  },
-};
-const suffixOptionStyle = {
+/** Match readonly chapter/verse labels to the wheel option size. */
+const labelSx = {
   fontSize: '1.1rem',
+  lineHeight: 1.2,
+  py: 0.5,
 };
-const verseOptionStyle = {
-  fontSize: '1rem',
+
+/**
+ * Match wheel option/highlight text to labelSx (1.1rem, normal weight).
+ * Library defaults are 0.875rem options and 1rem / weight 500 for the highlight.
+ */
+const wheelFontSx = {
+  fontSize: '1.1rem',
+  fontWeight: 400,
+  fontFamily: 'inherit',
 };
+
+/**
+ * Wheel options are absolutely positioned, so columns have no intrinsic width.
+ * Size each column from its longest label (+ padding) and never grow.
+ */
+const wheelColumnWidth = (options: { label: ReactNode }[]) => {
+  const maxChars = Math.max(
+    2, // At least ~2 character widths (e.g. "12", "a ") so it's not too hard to scroll
+    ...options.map((option) => {
+      if (
+        typeof option.label === 'string' ||
+        typeof option.label === 'number'
+      ) {
+        return (
+          String(option.label)
+            .replace(/\u00A0/g, ' ')
+            .trim().length || 1
+        );
+      }
+      return 1;
+    })
+  );
+  return `calc(${maxChars}ch + 12px)`;
+};
+
+/**
+ * Content-sized column; overrides library width:100% / flex:1 growth.
+ * fontSize on the column itself so `ch` in wheelColumnWidth matches option text.
+ */
+const wheelColumnSx = {
+  flex: '0 0 auto',
+  maxWidth: '100%',
+  ...wheelFontSx,
+  '& [data-rwp-wrapper]': {
+    width: '100%',
+  },
+  '& [data-rwp]': {
+    flex: '0 0 auto',
+    width: '100%',
+  },
+  // Unselected 3D options: muted/faded vs the selected highlight.
+  '& [data-rwp-option]': {
+    ...wheelFontSx,
+    color: 'text.secondary',
+    opacity: 0.45,
+  },
+  '& [data-rwp-highlight-wrapper]': {
+    ...wheelFontSx,
+    color: 'text.primary',
+    // Hairlines frame the selection (iOS-style).
+    borderTop: '1px solid',
+    borderBottom: '1px solid',
+    borderColor: 'grey.400',
+    bgcolor: 'transparent',
+  },
+  '& [data-rwp-highlight-item]': {
+    ...wheelFontSx,
+    color: 'text.primary',
+  },
+};
+
+/**
+ * Mid-height cylinder — taller than the original compact 8/28, shorter than 16/32.
+ * visibleCount must be a multiple of 4 (library constraint).
+ */
+const wheelPickerProps = {
+  visibleCount: 12 as const,
+  optionItemHeight: 30,
+};
+
+interface PickerOption {
+  value: string;
+  label: ReactNode;
+}
+
+interface ValuePickerProps {
+  value: string;
+  options: PickerOption[];
+  onChange: (value: string) => void;
+  ariaLabel: string;
+}
 
 export interface EditReferenceValue {
   splitVerse: boolean;
@@ -162,19 +238,17 @@ export default function EditReferenceDropdown({
   };
 
   const handleSuffixChange =
-    (key: 'startSuffix' | 'endSuffix') =>
-    (event: ChangeEvent<HTMLSelectElement>) => {
-      const nextSuffix = event.target.value.toLowerCase();
+    (key: 'startSuffix' | 'endSuffix') => (nextSuffix: string) => {
       setDraft((current) => ({
         ...current,
-        [key]: nextSuffix,
+        [key]: nextSuffix.toLowerCase(),
       }));
     };
 
   // Changing a chapter may leave the current verse out of that chapter's range;
   // fall back to the chapter's first verse so the endpoint stays valid.
-  const handleStartChapterChange = (event: ChangeEvent<HTMLSelectElement>) => {
-    const chapter = Number(event.target.value);
+  const handleStartChapterChange = (next: string) => {
+    const chapter = Number(next);
     const verses = versesForChapter(chapter);
     setDraft((current) => ({
       ...current,
@@ -185,15 +259,12 @@ export default function EditReferenceDropdown({
     }));
   };
 
-  const handleStartVerseNumberChange = (
-    event: ChangeEvent<HTMLSelectElement>
-  ) => {
-    const verse = Number(event.target.value);
-    setDraft((current) => ({ ...current, startVerse: verse }));
+  const handleStartVerseNumberChange = (next: string) => {
+    setDraft((current) => ({ ...current, startVerse: Number(next) }));
   };
 
-  const handleEndChapterChange = (event: ChangeEvent<HTMLSelectElement>) => {
-    const chapter = Number(event.target.value);
+  const handleEndChapterChange = (next: string) => {
+    const chapter = Number(next);
     const verses = versesForChapter(chapter);
     setDraft((current) => ({
       ...current,
@@ -204,19 +275,14 @@ export default function EditReferenceDropdown({
     }));
   };
 
-  const handleEndVerseNumberChange = (
-    event: ChangeEvent<HTMLSelectElement>
-  ) => {
-    const verse = Number(event.target.value);
-    setDraft((current) => ({ ...current, endVerse: verse }));
+  const handleEndVerseNumberChange = (next: string) => {
+    setDraft((current) => ({ ...current, endVerse: Number(next) }));
   };
 
   // Restricted end: the combined chapter:verse dropdown keyed on the passage
   // verse list.
-  const handleEndVerseChange = (event: ChangeEvent<HTMLSelectElement>) => {
-    const selected = resolvedEndOptions.find(
-      (option) => option.key === event.target.value
-    );
+  const handleEndVerseChange = (next: string) => {
+    const selected = resolvedEndOptions.find((option) => option.key === next);
     if (!selected) return;
 
     setDraft((current) => ({
@@ -226,28 +292,64 @@ export default function EditReferenceDropdown({
     }));
   };
 
+  /**
+   * One iOS-style wheel column.
+   *
+   * ARIA stops at the label here. The focusable, arrow-key-driven element is the
+   * library's own internal `[data-rwp]` div, which accepts no props from us, so
+   * there is no element we control that could carry the current value: an
+   * `aria-valuetext` on this wrapper would sit on a `role="group"`, where screen
+   * readers ignore it. Announcing the value would mean reaching into the
+   * library's DOM after render, which isn't worth an effect — if the library
+   * grows real ARIA support, drop the wrapper's role and use it.
+   */
+  const renderValuePicker = ({
+    value: pickerValue,
+    options,
+    onChange,
+    ariaLabel,
+  }: ValuePickerProps) => {
+    const wheelOptions: WheelPickerOption[] = options.map((option) => ({
+      value: option.value,
+      label: option.label,
+    }));
+    // Remount when the option set changes so the cylinder re-centers after
+    // chapter switches clamp/re-scope the verse list.
+    const optionsKey = wheelOptions.map((option) => option.value).join('|');
+    return (
+      <Box
+        sx={{ ...wheelColumnSx, width: wheelColumnWidth(options) }}
+        aria-label={ariaLabel}
+        title={ariaLabel}
+        role="group"
+      >
+        <WheelPickerWrapper>
+          <WheelPicker
+            key={`${ariaLabel}:${optionsKey}`}
+            options={wheelOptions}
+            value={pickerValue}
+            onValueChange={onChange}
+            {...wheelPickerProps}
+          />
+        </WheelPickerWrapper>
+      </Box>
+    );
+  };
+
   const renderSuffixSelect = (side: 'start' | 'end') => {
     const isStart = side === 'start';
     const suffix = isStart ? draft.startSuffix : draft.endSuffix;
     const suffixLabel = `${side} verse suffix`;
-    return (
-      <NativeSelect
-        value={suffix}
-        onChange={handleSuffixChange(isStart ? 'startSuffix' : 'endSuffix')}
-        inputProps={{ 'aria-label': suffixLabel, title: suffixLabel }}
-        sx={selectSx}
-      >
-        {suffixOptions.map((option) => (
-          <option
-            key={option || `none-${side}`}
-            value={option}
-            style={suffixOptionStyle}
-          >
-            {option || ' '}
-          </option>
-        ))}
-      </NativeSelect>
-    );
+    return renderValuePicker({
+      value: suffix,
+      options: suffixOptions.map((option) => ({
+        value: option,
+        // Non-breaking space so the empty (no suffix) choice stays tappable.
+        label: option || '\u00A0',
+      })),
+      onChange: handleSuffixChange(isStart ? 'startSuffix' : 'endSuffix'),
+      ariaLabel: suffixLabel,
+    });
   };
 
   /**
@@ -259,11 +361,15 @@ export default function EditReferenceDropdown({
     const isStart = side === 'start';
     const chapter = isStart ? draft.startChapter : draft.endChapter;
     const verse = isStart ? draft.startVerse : draft.endVerse;
+    // Only passage verses are offered, so a reference that falls outside the
+    // passage can't be re-picked. The caller snaps such an endpoint onto a real
+    // passage verse before opening, which is what forces the user onto a good
+    // value.
     const verseOptions = versesForChapter(chapter);
     const chapterLabel = `${side} chapter number`;
     const verseLabel = `${side} verse number`;
     return (
-      <Box sx={{ textAlign: 'center', minWidth: 96 }}>
+      <Box sx={{ textAlign: 'center', minWidth: 0 }}>
         <Box
           sx={{
             display: 'flex',
@@ -273,48 +379,32 @@ export default function EditReferenceDropdown({
           }}
         >
           {hasMultipleChapters ? (
-            <NativeSelect
-              value={String(chapter)}
-              onChange={
-                isStart ? handleStartChapterChange : handleEndChapterChange
-              }
-              inputProps={{ 'aria-label': chapterLabel, title: chapterLabel }}
-              sx={verseSelectSx}
-            >
-              {chapterOptions.map((option) => (
-                <option
-                  key={`${side}-chapter-${option}`}
-                  value={String(option)}
-                  style={verseOptionStyle}
-                >
-                  {option}
-                </option>
-              ))}
-            </NativeSelect>
+            renderValuePicker({
+              value: String(chapter),
+              options: chapterOptions.map((option) => ({
+                value: String(option),
+                label: String(option),
+              })),
+              onChange: isStart
+                ? handleStartChapterChange
+                : handleEndChapterChange,
+              ariaLabel: chapterLabel,
+            })
           ) : (
-            <Typography sx={{ fontSize: 24 }}>{chapter}</Typography>
+            <Typography sx={labelSx}>{chapter}</Typography>
           )}
-          <Typography sx={{ fontSize: 24 }}>:</Typography>
-          <NativeSelect
-            value={String(verse)}
-            onChange={
-              isStart
-                ? handleStartVerseNumberChange
-                : handleEndVerseNumberChange
-            }
-            inputProps={{ 'aria-label': verseLabel, title: verseLabel }}
-            sx={verseSelectSx}
-          >
-            {verseOptions.map((option) => (
-              <option
-                key={`${side}-verse-${option}`}
-                value={String(option)}
-                style={verseOptionStyle}
-              >
-                {option}
-              </option>
-            ))}
-          </NativeSelect>
+          <Typography sx={labelSx}>:</Typography>
+          {renderValuePicker({
+            value: String(verse),
+            options: verseOptions.map((option) => ({
+              value: String(option),
+              label: String(option),
+            })),
+            onChange: isStart
+              ? handleStartVerseNumberChange
+              : handleEndVerseNumberChange,
+            ariaLabel: verseLabel,
+          })}
           {draft.splitVerse ? renderSuffixSelect(side) : null}
         </Box>
       </Box>
@@ -346,7 +436,7 @@ export default function EditReferenceDropdown({
           {unrestricted ? (
             renderEditableEndpoint('start')
           ) : (
-            <Box sx={{ textAlign: 'center', minWidth: 96 }}>
+            <Box sx={{ textAlign: 'center', minWidth: 0 }}>
               <Box
                 sx={{
                   display: 'flex',
@@ -358,7 +448,7 @@ export default function EditReferenceDropdown({
                 <Typography
                   component="div"
                   aria-label="start verse reference"
-                  sx={{ fontSize: 28, lineHeight: 1.2, py: 0.5 }}
+                  sx={labelSx}
                 >
                   {`${draft.startChapter}:${draft.startVerse}`}
                 </Typography>
@@ -366,11 +456,13 @@ export default function EditReferenceDropdown({
               </Box>
             </Box>
           )}
-          <Typography variant="h6">-</Typography>
+          <Typography variant="h6" sx={{ mx: 1 }}>
+            -
+          </Typography>
           {unrestricted ? (
             renderEditableEndpoint('end')
           ) : (
-            <Box sx={{ textAlign: 'center', minWidth: 96 }}>
+            <Box sx={{ textAlign: 'center', minWidth: 0 }}>
               <Box
                 sx={{
                   display: 'flex',
@@ -380,29 +472,17 @@ export default function EditReferenceDropdown({
                 }}
               >
                 {showChapterPrefix ? (
-                  <Typography sx={{ fontSize: 24 }}>
-                    {`${draft.endChapter}:`}
-                  </Typography>
+                  <Typography sx={labelSx}>{`${draft.endChapter}:`}</Typography>
                 ) : null}
-                <NativeSelect
-                  value={endSelectValue}
-                  onChange={handleEndVerseChange}
-                  inputProps={{
-                    'aria-label': 'end verse number',
-                    title: 'end verse number',
-                  }}
-                  sx={verseSelectSx}
-                >
-                  {resolvedEndOptions.map((option) => (
-                    <option
-                      key={`end-verse-${option.key}`}
-                      value={option.key}
-                      style={verseOptionStyle}
-                    >
-                      {option.verse}
-                    </option>
-                  ))}
-                </NativeSelect>
+                {renderValuePicker({
+                  value: endSelectValue,
+                  options: resolvedEndOptions.map((option) => ({
+                    value: option.key,
+                    label: String(option.verse),
+                  })),
+                  onChange: handleEndVerseChange,
+                  ariaLabel: 'end verse number',
+                })}
                 {draft.splitVerse ? renderSuffixSelect('end') : null}
               </Box>
             </Box>

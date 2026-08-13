@@ -65,17 +65,18 @@ export const parseRegions = (regionstr: string) => {
   return segs as IRegions;
 };
 
+// fixed peach shades cycle
 const segmentPalette = [
-  [244, 67, 54],
-  [33, 150, 243],
-  [76, 175, 80],
-  [255, 152, 0],
-  [156, 39, 176],
-  [0, 188, 212],
-  [233, 30, 99],
-  [139, 195, 74],
-  [255, 87, 34],
-  [63, 81, 181],
+  [255, 224, 200],
+  [255, 190, 145],
+  [245, 155, 110],
+  [255, 210, 175],
+  [235, 140, 100],
+  [255, 200, 160],
+  [240, 170, 125],
+  [255, 175, 130],
+  [230, 150, 115],
+  [255, 230, 210],
 ];
 
 export const getSegmentRegionColor = (index: number, alpha: number = 0.28) => {

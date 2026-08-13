@@ -5,7 +5,7 @@ export interface AudioAlignment {
   roles: ['timecode', 'text-reference'];
   documents: [
     { scheme: 'vtt-timecode'; docid: 'ephesians_example_with_footnotes.mp3' },
-    { scheme: 'u23003' },
+    { scheme: 'usfm-scripture-reference' },
   ];
   records: [
     { references: [['00:00.000 --> 00:01.927'], ['en+ulb.EPH:0']] },

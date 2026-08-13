@@ -29,6 +29,7 @@ import { useSnackBar } from '../../hoc/SnackBar';
 import { withBucket } from '../../hoc/withBucket';
 import { viewModeSelector } from '../../selector';
 import { ApmLogo } from '../../control/ApmLogo';
+import { spreadSx, rowSx, flexibleSx, rigidSx } from '../../control';
 import HelpMenu from '../HelpMenu';
 import PolicyDialog from '../PolicyDialog';
 import ProjectDownloadAlert from '../ProjectDownloadAlert';
@@ -326,17 +327,17 @@ export function AppHead({
     <AppBar
       position={position}
       color="inherit"
-      sx={{
+      sx={(theme) => ({
         flexDirection: 'row',
         justifyContent: 'center',
         alignItems: 'center',
-        p: 1.5,
+        p: theme.layout.gap,
         backgroundColor: 'custom.headerBackground',
         ...(drawBottomBorder && {
           borderBottom: '1px solid',
           borderColor: 'divider',
         }),
-      }}
+      })}
     >
       {progressVariant && (
         <LinearProgress
@@ -345,24 +346,8 @@ export function AppHead({
           sx={{ position: 'absolute', top: 0, left: 0, right: 0 }}
         />
       )}
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          gap: (theme) => theme.layout.gap,
-          width: '100%',
-          minWidth: 0,
-        }}
-      >
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: (theme) => theme.layout.gap,
-            flex: '1 1 auto',
-            minWidth: 0,
-          }}
-        >
+      <Box sx={spreadSx}>
+        <Box sx={[rowSx, flexibleSx]}>
           {!isDetail ? (
             <IconButton
               aria-label={tv.home}
@@ -381,14 +366,7 @@ export function AppHead({
           )}
           {isDetail ? <DetailTitle /> : <OrgHead />}
         </Box>
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: (theme) => theme.layout.gap,
-            flexShrink: 0,
-          }}
-        >
+        <Box sx={[rowSx, rigidSx]}>
           {!isMobileWidth && (
             <HeadStatus
               handleMenu={handleMenu}
