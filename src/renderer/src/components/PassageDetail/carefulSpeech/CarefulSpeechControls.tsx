@@ -69,6 +69,12 @@ interface Props {
   setCanSave: (v: boolean) => void;
   /** Passed through to MediaRecord; see its prop docs (TT-7583). */
   onSaveRejected?: () => void;
+  /**
+   * A take whose save was rejected. It is still discardable even though the
+   * phase is back to recordReady, so it keeps the clear button available
+   * (TT-7583).
+   */
+  saveRejected?: boolean;
   setStatusText: (t: string) => void;
   showRecorder: boolean;
   strings: IGuidedPhraseRecordControlStrings;
@@ -122,6 +128,7 @@ export default function CarefulSpeechControls({
   setResetMedia,
   setCanSave,
   onSaveRejected,
+  saveRejected,
   setStatusText,
   showRecorder,
   strings,
@@ -361,7 +368,7 @@ export default function CarefulSpeechControls({
                   : undefined),
               }}
             />
-            {phase === 'recorded' && (
+            {(phase === 'recorded' || saveRejected) && (
               <IconButton
                 aria-label={strings.clearRecording}
                 onClick={onClearRecording}

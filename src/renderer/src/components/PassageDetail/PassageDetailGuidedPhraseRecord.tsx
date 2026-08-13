@@ -1544,19 +1544,24 @@ export function PassageDetailGuidedPhraseRecord({
   );
 
   const handleClearRecording = useCallback(async () => {
-    if (!recordingRow?.mediafile?.id) return;
     // Deleting the take retires the failed save with it, so the message and the
     // latch must both go (TT-7583).
     saveRejectedRef.current = false;
     setSaveRejected(false);
-    await memory.update((t) =>
-      t.removeRecord({ type: 'mediafile', id: recordingRow.mediafile.id })
-    );
-    optimisticCompletedRef.current.delete(currentIndexRef.current);
-    forceRefresh();
-    if (stepComplete(currentstep)) {
-      await setStepComplete(currentstep, false);
+    // A take whose upload failed has no mediafile to remove, but it is still
+    // sitting unsaved in the recorder — discarding it is the whole point of the
+    // button in that state, so only the removal is conditional (TT-7583).
+    const mediaId = recordingRow?.mediafile?.id;
+    if (mediaId) {
+      await memory.update((t) =>
+        t.removeRecord({ type: 'mediafile', id: mediaId })
+      );
+      forceRefresh();
+      if (stepComplete(currentstep)) {
+        await setStepComplete(currentstep, false);
+      }
     }
+    optimisticCompletedRef.current.delete(currentIndexRef.current);
     setPhase('recordReady');
     setCurrentClausePlayed(true);
     setResetMedia(true);
@@ -1743,6 +1748,7 @@ export function PassageDetailGuidedPhraseRecord({
             setPhase('recordReady');
             applyColors();
           }}
+          saveRejected={saveRejected}
           setStatusText={setStatusText}
           showRecorder={showRecorder}
           strings={controlStrings}

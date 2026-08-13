@@ -647,6 +647,7 @@ export function PassageDetailLwcTranslation({ width }: IProps) {
             });
             setPhase('recordReady');
           }}
+          saveRejected={saveRejected}
           setStatusText={() => {}}
           showRecorder={showRecorder}
         />

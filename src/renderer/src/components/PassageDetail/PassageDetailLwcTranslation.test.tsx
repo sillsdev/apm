@@ -279,6 +279,27 @@ describe('PassageDetailLwcTranslation — rejected save (TT-7583)', () => {
     expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull();
   });
 
+  it('keeps the take discardable while the message is up', async () => {
+    await recordAndRejectSave();
+
+    // The take is unsaved but still in the recorder, so the clear button has to
+    // stay available even though the phase went back to recordReady.
+    expect(controlsProps?.saveRejected).toBe(true);
+    expect(controlsProps?.phase).toBe('recordReady');
+  });
+
+  it('clearing the failed take drops the message and the completion', async () => {
+    await recordAndRejectSave();
+
+    await act(async () => {
+      (controlsProps?.onClearRecording as () => void)();
+    });
+
+    expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull();
+    expect(controlsProps?.allClausesComplete).toBe(false);
+    expect(controlsProps?.resetMedia).toBe(true);
+  });
+
   it('drops the message when the user moves to another clause', async () => {
     // Two clauses so Next Clause actually moves off the failed one.
     mockClauseRegions = [

@@ -624,6 +624,27 @@ describe('PassageDetailCarefulSpeech — rejected save (TT-7583)', () => {
     expect(controlsProps?.savingRecording).toBe(false);
   });
 
+  it('keeps the take discardable while the message is up', async () => {
+    await recordAndRejectSave();
+
+    // The take is unsaved but still in the recorder, so the clear button has to
+    // stay available even though the phase went back to recordReady.
+    expect(controlsProps?.saveRejected).toBe(true);
+    expect(controlsProps?.phase).toBe('recordReady');
+  });
+
+  it('clearing a failed take resets the recorder even with no mediafile', async () => {
+    mockRecordingRow = undefined; // nothing was stored, so nothing to remove
+    await recordAndRejectSave();
+
+    await act(async () => {
+      (controlsProps?.onClearRecording as () => void)();
+    });
+
+    expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull();
+    await waitFor(() => expect(controlsProps?.resetMedia).toBe(true));
+  });
+
   it('drops the message when the user moves to another clause', async () => {
     const { rerender } = await recordAndRejectSave();
     expect(screen.getByText('Upload Failed!')).toBeInTheDocument();
