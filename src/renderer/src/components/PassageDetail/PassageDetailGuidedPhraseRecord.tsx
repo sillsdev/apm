@@ -1335,6 +1335,8 @@ export function PassageDetailGuidedPhraseRecord({
   ]);
 
   const handleSegmentUndo = useCallback(async () => {
+    // Guard before pop() so a blocked undo doesn't consume a stack entry.
+    if (savingRecordingRef.current) return;
     const prev = segmentUndoStackRef.current.pop();
     setSegmentUndoCan(segmentUndoStackRef.current.canUndo());
     if (!prev) return;
