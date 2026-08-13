@@ -1,10 +1,17 @@
 import '@testing-library/jest-dom';
 import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from '@testing-library/react';
 
 let mockCarefulSpeechComplete = new Set<number>();
 let mockLwcComplete = new Set<number>();
 let controlsProps: Record<string, unknown> | undefined;
+const mockStartSave = jest.fn();
 
 jest.mock('../../context/useGlobal', () => ({
   useGlobal: jest.fn((key: string) => {
@@ -60,7 +67,7 @@ jest.mock('../../context/UnsavedContext', () => ({
   UnsavedContext: React.createContext({
     state: {
       waitForSave: jest.fn().mockResolvedValue(undefined),
-      startSave: jest.fn(),
+      startSave: (...args: unknown[]) => mockStartSave(...args),
     },
   }),
 }));
@@ -68,11 +75,19 @@ jest.mock('../../context/UnsavedContext', () => ({
 jest.mock('../../selector', () => ({
   lwcTranslationSelector: { name: 'lwcTranslationSelector' },
   sharedSelector: { name: 'sharedSelector' },
+  mediaTabSelector: { name: 'mediaTabSelector' },
+  mediaTitleSelector: { name: 'mediaTitleSelector' },
 }));
 jest.mock('react-redux', () => ({
   useSelector: (selector: { name?: string }) => {
     if (selector.name === 'sharedSelector') {
       return { noAudio: 'No audio' };
+    }
+    if (selector.name === 'mediaTabSelector') {
+      return { pendingUploadRetryOne: 'Retry' };
+    }
+    if (selector.name === 'mediaTitleSelector') {
+      return { uploadFailed: 'Upload Failed!' };
     }
     return {
       boldOnly: 'BOLD only',
@@ -164,5 +179,77 @@ describe('PassageDetailLwcTranslation', () => {
     expect(
       document.querySelector('[data-cy="lwc-clause-nav-recorded"]')
     ).toBeTruthy();
+  });
+});
+
+describe('PassageDetailLwcTranslation — rejected save (TT-7583)', () => {
+  beforeEach(() => {
+    mockCarefulSpeechComplete = new Set([0]);
+    mockLwcComplete = new Set<number>();
+    controlsProps = undefined;
+    mockStartSave.mockClear();
+  });
+
+  // Record a take and request its auto-save, then have MediaRecord reject it.
+  const recordAndRejectSave = async () => {
+    render(<PassageDetailLwcTranslation width={400} />);
+    await waitFor(() => expect(controlsProps).toBeDefined());
+
+    await act(async () => {
+      (controlsProps?.onRecording as (active: boolean) => void)(true);
+      (controlsProps?.onRecording as (active: boolean) => void)(false);
+    });
+    await act(async () => {
+      (controlsProps?.setCanSave as (v: boolean) => void)(true);
+    });
+    await act(async () => {
+      (controlsProps?.onSaveRejected as () => void)();
+    });
+  };
+
+  it('shows the save failure message with a Retry button', async () => {
+    await recordAndRejectSave();
+
+    expect(screen.getByText('Upload Failed!')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Retry' })).toBeEnabled();
+    expect(controlsProps?.savingRecording).toBe(false);
+  });
+
+  it('does not re-request the doomed save on the next rising edge', async () => {
+    await recordAndRejectSave();
+    mockStartSave.mockClear();
+
+    // canSave falls and rises again because the take is still dirty.
+    await act(async () => {
+      (controlsProps?.setCanSave as (v: boolean) => void)(false);
+    });
+    await act(async () => {
+      (controlsProps?.setCanSave as (v: boolean) => void)(true);
+    });
+
+    expect(mockStartSave).not.toHaveBeenCalled();
+  });
+
+  it('Retry requests the save again and clears the message', async () => {
+    await recordAndRejectSave();
+    mockStartSave.mockClear();
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
+    });
+
+    expect(mockStartSave).toHaveBeenCalledWith('LwcTranslationTool');
+    expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull();
+    expect(controlsProps?.savingRecording).toBe(true);
+  });
+
+  it('clears the message when a new take starts', async () => {
+    await recordAndRejectSave();
+
+    await act(async () => {
+      (controlsProps?.onRecording as (active: boolean) => void)(true);
+    });
+
+    expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull();
   });
 });

@@ -6,7 +6,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import { Box } from '@mui/material';
+import { Alert, Box, Button } from '@mui/material';
 import { shallowEqual, useSelector } from 'react-redux';
 import { useGlobal } from '../../context/useGlobal';
 import usePassageDetailContext from '../../context/usePassageDetailContext';
@@ -20,6 +20,8 @@ import {
 import { useOrbitData } from '../../hoc/useOrbitData';
 import {
   ILwcTranslationStrings,
+  IMediaTabStrings,
+  IMediaTitleStrings,
   ISharedStrings,
   MediaFileD,
 } from '../../model';
@@ -27,7 +29,12 @@ import { IRow } from '../../context/PassageDetailContext';
 import { passageDefaultFilename } from '../../utils/passageDefaultFilename';
 import { RecordKeyMap } from '@orbit/records';
 import { useStepPermissions } from '../../utils/useStepPermission';
-import { lwcTranslationSelector, sharedSelector } from '../../selector';
+import {
+  lwcTranslationSelector,
+  mediaTabSelector,
+  mediaTitleSelector,
+  sharedSelector,
+} from '../../selector';
 import { UnsavedContext } from '../../context/UnsavedContext';
 import {
   firstIncompleteClauseIndex,
@@ -66,6 +73,8 @@ export function PassageDetailLwcTranslation({ width }: IProps) {
     shallowEqual
   );
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
+  const tm: IMediaTabStrings = useSelector(mediaTabSelector, shallowEqual);
+  const tt: IMediaTitleStrings = useSelector(mediaTitleSelector, shallowEqual);
   const [memory] = useGlobal('memory');
   const [plan] = useGlobal('plan');
   const [offline] = useGlobal('offline');
@@ -97,6 +106,8 @@ export function PassageDetailLwcTranslation({ width }: IProps) {
   const [resetMedia, setResetMedia] = useState(false);
   const [canSave, setCanSave] = useState(false);
   const [savingRecording, setSavingRecording] = useState(false);
+  // Mirrors saveRejectedRef for render: shows the failure message + Retry.
+  const [saveRejected, setSaveRejected] = useState(false);
   const [currentClausePlayed, setCurrentClausePlayed] = useState(false);
   const [referencePlayKey, setReferencePlayKey] = useState(0);
   const [entryPositioned, setEntryPositioned] = useState(false);
@@ -246,6 +257,16 @@ export function PassageDetailLwcTranslation({ width }: IProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canSave]);
 
+  // The take is still dirty after a rejection, so asking for the save again is
+  // all it takes to re-upload it (TT-7583).
+  const handleRetrySave = useCallback(() => {
+    saveRejectedRef.current = false;
+    setSaveRejected(false);
+    setSavingRecording(true);
+    startSave(toolId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     entryPositionDoneRef.current = false;
     setEntryPositioned(false);
@@ -256,6 +277,8 @@ export function PassageDetailLwcTranslation({ width }: IProps) {
     setSessionCompletedIndices(new Set());
     recordingActiveRef.current = false;
     setSavingRecording(false);
+    saveRejectedRef.current = false;
+    setSaveRejected(false);
     setCanSave(false);
   }, [mediafileId]);
 
@@ -467,6 +490,7 @@ export function PassageDetailLwcTranslation({ width }: IProps) {
         recordingActiveRef.current = true;
         // A new take supersedes any earlier rejected save (TT-7583).
         saveRejectedRef.current = false;
+        setSaveRejected(false);
         setRecording(true);
         setPhase('recording');
         return;
@@ -584,11 +608,32 @@ export function PassageDetailLwcTranslation({ width }: IProps) {
           setCanSave={setCanSave}
           onSaveRejected={() => {
             saveRejectedRef.current = true;
+            setSaveRejected(true);
             setSavingRecording(false);
           }}
           setStatusText={() => {}}
           showRecorder={showRecorder}
         />
+      )}
+      {saveRejected && (
+        <Alert
+          severity="error"
+          variant="filled"
+          sx={{ alignSelf: 'center', alignItems: 'center', m: 2 }}
+          action={
+            <Button
+              id="lwc-translation-retry-save"
+              color="inherit"
+              size="small"
+              disabled={savingRecording}
+              onClick={handleRetrySave}
+            >
+              {tm.pendingUploadRetryOne}
+            </Button>
+          }
+        >
+          {tt.uploadFailed}
+        </Alert>
       )}
     </Box>
   );
