@@ -39,3 +39,4 @@ export * from './TemplateEditor';
 export * from './smallBtnProps';
 export * from './WrapTitle';
 export * from './layoutSx';
+export * from './Button';
