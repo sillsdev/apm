@@ -1526,6 +1526,10 @@ export function PassageDetailGuidedPhraseRecord({
 
   const handleClearRecording = useCallback(async () => {
     if (!recordingRow?.mediafile?.id) return;
+    // Deleting the take retires the failed save with it, so the message and the
+    // latch must both go (TT-7583).
+    saveRejectedRef.current = false;
+    setSaveRejected(false);
     await memory.update((t) =>
       t.removeRecord({ type: 'mediafile', id: recordingRow.mediafile.id })
     );

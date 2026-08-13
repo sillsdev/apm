@@ -337,7 +337,9 @@ export const nextUpload =
         dispatch({
           payload: {
             current: n,
-            error: `upload ${name}: (${statusNum}) ${statusText}`,
+            // statusNum is undefined when the request never reached the server,
+            // so don't render a literal "(undefined)" at the user (TT-7583).
+            error: `upload ${name}: (${statusNum ?? 'no response'}) ${statusText}`,
           },
           type: UPLOAD_ITEM_FAILED,
         });

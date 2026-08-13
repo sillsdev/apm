@@ -456,6 +456,10 @@ export function PassageDetailLwcTranslation({ width }: IProps) {
   );
 
   const handleClearRecording = useCallback(async () => {
+    // Deleting the take retires the failed save with it, so the message and the
+    // latch must both go (TT-7583).
+    saveRejectedRef.current = false;
+    setSaveRejected(false);
     const mediaId = lwcRecordingRow?.mediafile?.id;
     if (mediaId) {
       await memory.update((t) =>
