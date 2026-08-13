@@ -9,7 +9,10 @@ import {
 } from '@testing-library/react';
 import { IRegion } from '../../crud/useWavesurferRegions';
 import { CLAUSE_BOUNDARY_THRESHOLD_SEC } from './carefulSpeech/carefulSpeechBoundary';
-import { CAREFUL_SPEECH_COMPLETED_RGBA, CAREFUL_SPEECH_PENDING_RGBA } from '../../utils/carefulSpeechSegmentColors';
+import {
+  CAREFUL_SPEECH_COMPLETED_RGBA,
+  CAREFUL_SPEECH_PENDING_RGBA,
+} from '../../utils/carefulSpeechSegmentColors';
 
 /**
  * Behavioural spec for the Careful Speech orchestration (TT-7360).
