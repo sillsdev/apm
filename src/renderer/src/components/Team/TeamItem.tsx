@@ -15,7 +15,7 @@ import TeamDialog, { ITeamDialog } from './TeamDialog';
 import { useRole, defaultWorkflow, useTeamWorkflowProcess } from '../../crud';
 import Confirm from '../AlertDialog';
 import { UnsavedContext } from '../../context/UnsavedContext';
-import { TeamPaper, TeamHeadDiv, TeamName, AltButton } from '../../control';
+import { TeamPaper, TeamHeadDiv, TeamName, Button } from '../../control';
 import { RecordIdentity } from '@orbit/records';
 import { ProjectSort } from './ProjectDialog/ProjectSort';
 import SortIcon from '@mui/icons-material/Sort';
@@ -124,26 +124,35 @@ export const TeamItem = (props: IProps) => {
                 <SortIcon />
               </IconButton>
             )}
-            <AltButton id="teamMembers" onClick={handleMembers(team)}>
+            <Button
+              id="teamMembers"
+              variant="contained"
+              color="secondary"
+              onClick={handleMembers(team)}
+            >
               {t.members.replace('{0}', teamMembers(team.id).toString())}
-            </AltButton>
+            </Button>
             {canModify && (
-              <AltButton
+              <Button
                 id="editWorkflow"
+                variant="contained"
+                color="secondary"
                 onClick={handleEditWorkflow}
                 disabled={busy}
               >
                 {t.editWorkflow.replace('{0}', '')}
-              </AltButton>
+              </Button>
             )}
             {canModify && (
-              <AltButton
+              <Button
                 id="teamSettings"
+                variant="contained"
+                color="secondary"
                 onClick={handleSettings()}
                 disabled={busy}
               >
                 {t.settings}
-              </AltButton>
+              </Button>
             )}
           </Grid>
         </Grid>

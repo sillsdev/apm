@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { shallowEqual, useSelector } from 'react-redux';
 import { DialogMode } from '../../model';
 import TeamDialog from './TeamDialog';
-import { AltButton } from '../../control';
+import { Button } from '../../control';
 import AddIcon from '@mui/icons-material/Add';
 import ImportTab from '../ImportTab';
 import { BigDialogBp } from '../../hoc/BigDialogBp';
@@ -60,16 +60,30 @@ const TeamActions = () => {
   return (
     <RootBox>
       {((!offline && connected) || offlineOnly) && (
-        <AltButton id="TeamActAdd" sx={{ mb: 2 }} onClick={handleAddClick}>
+        <Button
+          id="TeamActAdd"
+          variant="contained"
+          color="secondary"
+          sx={{ mb: 2 }}
+          onClick={handleAddClick}
+        >
           {t.addTeam}
-        </AltButton>
+        </Button>
       )}
-      <AltButton id="teamActImport" sx={{ mb: 2 }} onClick={handleImportClick}>
+      <Button
+        id="teamActImport"
+        variant="contained"
+        color="secondary"
+        sx={{ mb: 2 }}
+        onClick={handleImportClick}
+      >
         {t.import}
-      </AltButton>
+      </Button>
       {isElectron && !offline && (
-        <AltButton
+        <Button
           id="teamActPendingUploads"
+          variant="contained"
+          color="secondary"
           sx={{ mb: 2 }}
           onClick={() => setPendingOpen(true)}
         >
@@ -80,21 +94,29 @@ const TeamActions = () => {
           >
             <span>{mt.pendingUploadMenu}</span>
           </Badge>
-        </AltButton>
+        </Button>
       )}
       {!offline && userIsSharedContentAdmin && (
-        <AltButton
+        <Button
           id="contentCreator"
+          variant="contained"
+          color="secondary"
           sx={{ mb: 2 }}
           onClick={handleContentClick}
         >
           <AddIcon fontSize="small" />
-        </AltButton>
+        </Button>
       )}
       {isDeveloper && (
-        <AltButton id="Error" sx={{ mt: 2 }} onClick={() => navigate('/error')}>
+        <Button
+          id="Error"
+          variant="contained"
+          color="secondary"
+          sx={{ mt: 2 }}
+          onClick={() => navigate('/error')}
+        >
           Error
-        </AltButton>
+        </Button>
       )}
       <TeamDialog
         mode={DialogMode.add}

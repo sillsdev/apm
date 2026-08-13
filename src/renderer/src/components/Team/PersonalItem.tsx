@@ -8,7 +8,7 @@ import { ProjectCard, AddCard, TeamDialog, ITeamDialog } from '.';
 import { StepEditor } from '../StepEditor';
 import { defaultWorkflow, useBible } from '../../crud';
 import { UnsavedContext } from '../../context/UnsavedContext';
-import { TeamPaper, TeamHeadDiv, TeamName, AltButton } from '../../control';
+import { TeamPaper, TeamHeadDiv, TeamName, Button } from '../../control';
 import DialogMode from '../../model/dialogMode';
 import { useOrbitData } from '../../hoc/useOrbitData';
 import { ICardsStrings, OrganizationD } from '../../model';
@@ -102,18 +102,25 @@ export const PersonalItem = () => {
                 </IconButton>
               )}
             {canModify(isOffline, offlineOnly, connected) && (
-              <AltButton id="editWorkflow" onClick={handleEditWorkflow}>
+              <Button
+                id="editWorkflow"
+                variant="contained"
+                color="secondary"
+                onClick={handleEditWorkflow}
+              >
                 {t.editWorkflow.replace('{0}', '')}
-              </AltButton>
+              </Button>
             )}
             {canModify(isOffline, offlineOnly, connected) && (
-              <AltButton
+              <Button
                 id="teamSettings"
+                variant="contained"
+                color="secondary"
                 onClick={handleSettings}
                 disabled={busy}
               >
                 {t.settings}
-              </AltButton>
+              </Button>
             )}
           </Grid>
         </Grid>
