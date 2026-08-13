@@ -231,7 +231,7 @@ export const useBurritoAudio = (teamId: string) => {
           alignmentGroups.push({
             documents: [
               { scheme: 'vtt-timecode', docid },
-              { scheme: 'u23003' },
+              { scheme: 'usfm-scripture-reference' },
             ],
             records: alignmentRecords,
           });
@@ -404,7 +404,8 @@ export const useBurritoAudio = (teamId: string) => {
         parseRef(firstP);
         const pt = passageTypeFromRef(firstP.attributes.reference, false);
         if (pt === PassageTypeEnum.CHAPTERNUMBER) {
-          sectionChapter = chnumChapterFromRef(firstP.attributes.reference) ?? 1;
+          sectionChapter =
+            chnumChapterFromRef(firstP.attributes.reference) ?? 1;
         } else {
           sectionChapter = firstP.attributes.startChapter || 1;
         }
