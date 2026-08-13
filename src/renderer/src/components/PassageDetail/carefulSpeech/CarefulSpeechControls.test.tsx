@@ -159,11 +159,7 @@ describe('CarefulSpeechControls — Next Clause completion state', () => {
 
   it('Undo Combine is disabled while the recording upload is in progress', () => {
     const { container } = render(
-      <CarefulSpeechControls
-        {...baseProps}
-        showUndoCombine
-        savingRecording
-      />
+      <CarefulSpeechControls {...baseProps} showUndoCombine savingRecording />
     );
     const undo = container.querySelector(
       '#careful-speech-undo-combine'
