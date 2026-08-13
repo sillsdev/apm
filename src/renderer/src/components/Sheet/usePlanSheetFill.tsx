@@ -23,7 +23,13 @@ import { Avatar, Badge, Typography } from '@mui/material';
 import PlanPublishActions from './PlanPublishActions';
 import PlanAudioActions from './PlanAudioActions';
 import { RefRender } from '../../control/RefRender';
-import { useContext, useCallback, useMemo, ReactElement } from 'react';
+import {
+  useContext,
+  useCallback,
+  useMemo,
+  useEffect,
+  ReactElement,
+} from 'react';
 import TaskAvatar from '../TaskAvatar';
 import { PassageTypeEnum } from '../../model/passageType';
 import PlanActionMenu from './PlanActionMenu';
@@ -209,7 +215,8 @@ export const usePlanSheetFill = ({
   );
 
   const ActivateCell: ICellEditor = (props: any) => {
-    doSetActive();
+    // setState during render loops under React 18 — defer.
+    queueMicrotask(() => doSetActive());
     props.onRevert();
     return <></>;
   };
@@ -812,7 +819,6 @@ export const usePlanSheetFill = ({
 
   const eachRow =
     ({
-      currentRow,
       srcMediaId,
       mediaPlaying,
       check,
@@ -827,8 +833,7 @@ export const usePlanSheetFill = ({
       const movement = isMovement(rowIndex);
       const beta = isBeta(rowIndex);
       const book = isBook(rowIndex) || isAltBook(rowIndex);
-      const iscurrent: string =
-        currentRow === rowIndex + 1 ? ' currentrow ' : '';
+      // currentrow highlight is applied in PlanSheet via DOM, not className
       const srPassageId = related(
         (rowInfo[rowIndex] as ISheet).sharedResource,
         'passage'
@@ -841,13 +846,11 @@ export const usePlanSheetFill = ({
         srPassageId != null &&
         srPassageId !== rowPassageId;
       const sharedOffline = sharedRes && getGlobal('offline');
-      const calcClassName =
-        iscurrent +
-        (section
-          ? 'set' +
-            (passage ? 'p' : '') +
-            (movement ? ' movement' : book ? ' bk' : '')
-          : 'pass');
+      const calcClassName = section
+        ? 'set' +
+          (passage ? 'p' : '') +
+          (movement ? ' movement' : book ? ' bk' : '')
+        : 'pass';
       const sheetRow = [
         stepCell({
           passage,
@@ -921,17 +924,24 @@ export const usePlanSheetFill = ({
       return sheetRow;
     };
 
-  if (rowData.length > 0 && rowInfo.length > 0) {
-    if (!filtered) {
-      if (!hidePublishing) {
-        setSectionArr(
-          getPubRefs({ rowInfo, rowData, passageSeqCol, firstMovement })
-        );
-      } else {
-        setSectionArr([]);
-      }
+  useEffect(() => {
+    if (rowData.length === 0 || rowInfo.length === 0 || filtered) return;
+    if (hidePublishing) {
+      setSectionArr([]);
+      return;
     }
-  }
+    setSectionArr(
+      getPubRefs({ rowInfo, rowData, passageSeqCol, firstMovement })
+    );
+  }, [
+    rowData,
+    rowInfo,
+    filtered,
+    hidePublishing,
+    passageSeqCol,
+    firstMovement,
+    setSectionArr,
+  ]);
 
   return (props: IFillProps) => {
     const data = titleRow(columns);
