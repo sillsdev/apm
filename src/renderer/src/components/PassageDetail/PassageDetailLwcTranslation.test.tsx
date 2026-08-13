@@ -11,6 +11,7 @@ import {
 let mockCarefulSpeechComplete = new Set<number>();
 let mockLwcComplete = new Set<number>();
 let controlsProps: Record<string, unknown> | undefined;
+let referenceProps: Record<string, unknown> | undefined;
 const mockStartSave = jest.fn();
 
 jest.mock('../../context/useGlobal', () => ({
@@ -119,7 +120,10 @@ jest.mock('./carefulSpeech/carefulSpeechCompletion', () => ({
 
 jest.mock('./lwcTranslation/LwcTranslationReferencePlayer', () => ({
   __esModule: true,
-  default: () => <div data-cy="lwc-reference-player" />,
+  default: (props: Record<string, unknown>) => {
+    referenceProps = props;
+    return <div data-cy="lwc-reference-player" />;
+  },
 }));
 
 jest.mock('./lwcTranslation/LwcTranslationClauseNav', () => ({
@@ -190,10 +194,19 @@ describe('PassageDetailLwcTranslation — rejected save (TT-7583)', () => {
     mockStartSave.mockClear();
   });
 
+  // Play the reference clause through, which is what reveals the recorder.
+  const openRecorder = async () => {
+    render(<PassageDetailLwcTranslation width={400} />);
+    await waitFor(() => expect(referenceProps).toBeDefined());
+    await act(async () => {
+      (referenceProps?.onPlaybackComplete as () => void)();
+    });
+    await waitFor(() => expect(controlsProps?.showRecorder).toBe(true));
+  };
+
   // Record a take and request its auto-save, then have MediaRecord reject it.
   const recordAndRejectSave = async () => {
-    render(<PassageDetailLwcTranslation width={400} />);
-    await waitFor(() => expect(controlsProps).toBeDefined());
+    await openRecorder();
 
     await act(async () => {
       (controlsProps?.onRecording as (active: boolean) => void)(true);
@@ -251,5 +264,65 @@ describe('PassageDetailLwcTranslation — rejected save (TT-7583)', () => {
     });
 
     expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull();
+  });
+
+  it('stops counting the clause as recorded, so the step is not complete', async () => {
+    await openRecorder();
+    await act(async () => {
+      (controlsProps?.onRecording as (active: boolean) => void)(true);
+      (controlsProps?.onRecording as (active: boolean) => void)(false);
+    });
+    // Stopping the take marks it done optimistically.
+    expect(controlsProps?.allClausesComplete).toBe(true);
+
+    await act(async () => {
+      (controlsProps?.onSaveRejected as () => void)();
+    });
+
+    // Nothing was stored, so that optimistic marking has to come back off.
+    expect(controlsProps?.allClausesComplete).toBe(false);
+    expect(
+      document.querySelector('[data-cy="lwc-clause-nav-recorded"]')
+    ).toBeNull();
+    // ...and the clause must be recordable again, not just retryable.
+    expect(controlsProps?.allowRecord).toBe(true);
+  });
+
+  it('does not count the clause as recorded when the upload returns no media id', async () => {
+    await openRecorder();
+    await act(async () => {
+      (controlsProps?.onRecording as (active: boolean) => void)(true);
+      (controlsProps?.onRecording as (active: boolean) => void)(false);
+    });
+
+    await act(async () => {
+      await (
+        controlsProps?.afterUploadCb as (
+          mediaId: string | undefined
+        ) => Promise<void>
+      )('');
+    });
+
+    expect(controlsProps?.allClausesComplete).toBe(false);
+    expect(controlsProps?.allowRecord).toBe(true);
+  });
+
+  it('still counts the clause as recorded on a successful upload', async () => {
+    await openRecorder();
+    await act(async () => {
+      (controlsProps?.onRecording as (active: boolean) => void)(true);
+      (controlsProps?.onRecording as (active: boolean) => void)(false);
+    });
+
+    await act(async () => {
+      await (
+        controlsProps?.afterUploadCb as (
+          mediaId: string | undefined
+        ) => Promise<void>
+      )('media-new');
+    });
+
+    expect(controlsProps?.allClausesComplete).toBe(true);
+    expect(controlsProps?.phase).toBe('recorded');
   });
 });

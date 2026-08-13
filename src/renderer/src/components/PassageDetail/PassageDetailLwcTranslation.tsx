@@ -440,16 +440,21 @@ export function PassageDetailLwcTranslation({ width }: IProps) {
   ]);
 
   const afterUploadCb = useCallback(
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    async (_mediaId: string | undefined) => {
+    async (mediaId: string | undefined) => {
       setSavingRecording(false);
+      // A terminal failure still calls us, with no mediaId. Counting the clause
+      // as done there would show it complete — and mark the whole step complete
+      // — for audio that was never stored (TT-7583).
       setSessionCompletedIndices((prev) => {
         const next = new Set(prev);
-        next.add(currentIndex);
+        if (mediaId) next.add(currentIndex);
+        else next.delete(currentIndex);
         return next;
       });
       forceRefresh();
-      setPhase('recorded');
+      // Back to a recordable state so the take can be re-recorded, not just
+      // retried from the failure message.
+      setPhase(mediaId ? 'recorded' : 'recordReady');
       setResetMedia(false);
     },
     [forceRefresh, currentIndex]
@@ -614,6 +619,15 @@ export function PassageDetailLwcTranslation({ width }: IProps) {
             saveRejectedRef.current = true;
             setSaveRejected(true);
             setSavingRecording(false);
+            // handleRecording already counted this clause as done when recording
+            // stopped, and not every rejection reaches afterUploadCb — a failure
+            // before the upload starts only lands here — so undo it (TT-7583).
+            setSessionCompletedIndices((prev) => {
+              const next = new Set(prev);
+              next.delete(currentIndex);
+              return next;
+            });
+            setPhase('recordReady');
           }}
           setStatusText={() => {}}
           showRecorder={showRecorder}

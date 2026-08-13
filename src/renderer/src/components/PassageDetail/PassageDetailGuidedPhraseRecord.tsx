@@ -1511,13 +1511,22 @@ export function PassageDetailGuidedPhraseRecord({
   ]);
 
   const afterUploadCb = useCallback(
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    async (_mediaId: string | undefined) => {
-      // Color green immediately; rowData/forceRefresh often lag the upload (TT-7552).
-      optimisticCompletedRef.current.add(currentIndexRef.current);
+    async (mediaId: string | undefined) => {
+      // Color green immediately; rowData/forceRefresh often lag the upload
+      // (TT-7552). Only on a real upload though — a terminal failure still calls
+      // us, with no mediaId, and painting that green tells the user their take
+      // was stored when it was not (TT-7583).
+      if (mediaId) {
+        optimisticCompletedRef.current.add(currentIndexRef.current);
+        setPhase('recorded');
+      } else {
+        optimisticCompletedRef.current.delete(currentIndexRef.current);
+        // Back to a recordable state so the take can be re-recorded, not just
+        // retried from the failure message.
+        setPhase('recordReady');
+      }
       setSavingRecording(false);
       forceRefresh();
-      setPhase('recorded');
       setResetMedia(false);
       applyColors();
     },
@@ -1715,6 +1724,11 @@ export function PassageDetailGuidedPhraseRecord({
             saveRejectedRef.current = true;
             setSaveRejected(true);
             setSavingRecording(false);
+            // Not every rejection reaches afterUploadCb — a failure before the
+            // upload starts (conversion, staging) only lands here — so undo the
+            // optimistic green from this path too (TT-7583).
+            optimisticCompletedRef.current.delete(currentIndexRef.current);
+            applyColors();
           }}
           setStatusText={setStatusText}
           showRecorder={showRecorder}

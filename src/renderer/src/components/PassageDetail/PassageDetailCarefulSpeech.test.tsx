@@ -502,6 +502,37 @@ describe('PassageDetailCarefulSpeech — segment change after take (TT-7552)', (
     expect(applyRegionColor()).toBe(CAREFUL_SPEECH_COMPLETED_RGBA);
     expect(stubControls.applyRegionColors).toHaveBeenCalled();
   });
+
+  it('does not mark the clause completed when the upload returns no media id', async () => {
+    mockCompleted = new Set([0, 1]);
+    await mountAndSettle();
+    await firePlaybackEnd(2);
+
+    const applyRegionColor = () =>
+      (
+        playerProps?.applyRegionColor as
+          | ((role: string, index: number, count: number) => string)
+          | undefined
+      )?.('base', 2, 8);
+
+    expect(applyRegionColor()).toBe(CAREFUL_SPEECH_PENDING_RGBA);
+
+    await act(async () => {
+      (controlsProps?.onRecording as (active: boolean) => void)(true);
+      (controlsProps?.onRecording as (active: boolean) => void)(false);
+    });
+    await act(async () => {
+      await (
+        controlsProps?.afterUploadCb as (
+          mediaId: string | undefined
+        ) => Promise<void>
+      )(undefined);
+    });
+
+    // Nothing was stored, so the clause must stay pending rather than showing
+    // the user a green segment for audio that was lost (TT-7583).
+    expect(applyRegionColor()).toBe(CAREFUL_SPEECH_PENDING_RGBA);
+  });
 });
 
 describe('PassageDetailCarefulSpeech — save in progress (TT-7439)', () => {
