@@ -193,6 +193,12 @@ export function PassageDetailGuidedPhraseRecord({
   const [statusText, setStatusText] = useState('');
   const [canSave, setCanSave] = useState(false);
   const [savingRecording, setSavingRecording] = useState(false);
+  // Mirror of savingRecording, set synchronously wherever the state is toggled.
+  // The clause-boundary guards read this ref rather than the state value so a
+  // save that begins before React commits the disabling render is still seen by
+  // an in-flight callback closure (state would be captured stale). See the
+  // savingRecording toggles below (TT-7427).
+  const savingRecordingRef = useRef(false);
   const [recordingPassStarted, setRecordingPassStarted] = useState(false);
   // Mirror of recordingPassStarted set synchronously at the call sites below.
   // region-out can fire before React commits the state-update render, leaving
@@ -592,6 +598,7 @@ export function PassageDetailGuidedPhraseRecord({
 
   useEffect(() => {
     if (canSave) {
+      savingRecordingRef.current = true;
       setSavingRecording(true);
       startSave(toolId);
     }
@@ -735,6 +742,7 @@ export function PassageDetailGuidedPhraseRecord({
     setRecordingPassStarted(false);
     recordingPassStartedRef.current = false;
     recordingActiveRef.current = false;
+    savingRecordingRef.current = false;
     setSavingRecording(false);
     pendingOvershootSwallowRef.current = false;
     optimisticCompletedRef.current.clear();
@@ -1232,6 +1240,7 @@ export function PassageDetailGuidedPhraseRecord({
   ]);
 
   const handleSplitClause = useCallback(async () => {
+    if (savingRecordingRef.current) return;
     const region = clauseRegions[currentIndex];
     if (!region) return;
     const splitPoint = playerControlsRef.current?.findClauseSplitPoint?.(
@@ -1276,6 +1285,7 @@ export function PassageDetailGuidedPhraseRecord({
   ]);
 
   const handleCombineWithNext = useCallback(async () => {
+    if (savingRecordingRef.current) return;
     if (!canCombineWithNext(currentIndex, clauseRegions, completedIndices)) {
       return;
     }
@@ -1307,6 +1317,7 @@ export function PassageDetailGuidedPhraseRecord({
   ]);
 
   const handleUndoCombine = useCallback(async () => {
+    if (savingRecordingRef.current) return;
     if (!combineUndo) return;
     setClauseSegString(combineUndo);
     await persistClauseSegments(combineUndo);
@@ -1324,6 +1335,8 @@ export function PassageDetailGuidedPhraseRecord({
   ]);
 
   const handleSegmentUndo = useCallback(async () => {
+    // Guard before pop() so a blocked undo doesn't consume a stack entry.
+    if (savingRecordingRef.current) return;
     const prev = segmentUndoStackRef.current.pop();
     setSegmentUndoCan(segmentUndoStackRef.current.canUndo());
     if (!prev) return;
@@ -1482,6 +1495,7 @@ export function PassageDetailGuidedPhraseRecord({
     async (_mediaId: string | undefined) => {
       // Color green immediately; rowData/forceRefresh often lag the upload (TT-7552).
       optimisticCompletedRef.current.add(currentIndexRef.current);
+      savingRecordingRef.current = false;
       setSavingRecording(false);
       forceRefresh();
       setPhase('recorded');
@@ -1637,8 +1651,14 @@ export function PassageDetailGuidedPhraseRecord({
           highlightSpeaker={highlightSpeaker}
           allowRecord={allowRecord}
           savingRecording={savingRecording}
-          onSaving={() => setSavingRecording(true)}
-          onSaveSettled={() => setSavingRecording(false)}
+          onSaving={() => {
+            savingRecordingRef.current = true;
+            setSavingRecording(true);
+          }}
+          onSaveSettled={() => {
+            savingRecordingRef.current = false;
+            setSavingRecording(false);
+          }}
           toolId={toolId}
           passageId={related(playerMediafile, 'passage') ?? passage?.id}
           artifactId={artifactTypeId}
@@ -1663,6 +1683,7 @@ export function PassageDetailGuidedPhraseRecord({
             setRecording(false);
             if (!showRecorder) return;
             if (!wasRecording) {
+              savingRecordingRef.current = false;
               setSavingRecording(false);
               return;
             }

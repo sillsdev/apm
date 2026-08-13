@@ -199,12 +199,7 @@ export default function CarefulSpeechControls({
       phase === 'recorded' &&
       !savingRecording &&
       canNextUnit,
-    [
-      sequentialUnitNavAroundRecord,
-      phase,
-      savingRecording,
-      canNextUnit,
-    ]
+    [sequentialUnitNavAroundRecord, phase, savingRecording, canNextUnit]
   );
   const [dockedRecordButton, setDockedRecordButton] =
     useState<ReactNode | null>(null);
@@ -253,7 +248,9 @@ export default function CarefulSpeechControls({
         >
           <PriButton
             id={`${controlIdPrefix}-split`}
-            disabled={!canSplitClause || phase === 'recording'}
+            disabled={
+              !canSplitClause || phase === 'recording' || savingRecording
+            }
             onClick={onSplitClause}
             variant="outlined"
             color="inherit"
@@ -263,7 +260,9 @@ export default function CarefulSpeechControls({
           </PriButton>
           <PriButton
             id={`${controlIdPrefix}-combine`}
-            disabled={!canCombineWithNext || phase === 'recording'}
+            disabled={
+              !canCombineWithNext || phase === 'recording' || savingRecording
+            }
             onClick={onCombineWithNext}
             variant="outlined"
             color="inherit"
@@ -276,6 +275,7 @@ export default function CarefulSpeechControls({
               id={`${controlIdPrefix}-undo-combine`}
               aria-label={strings.undo}
               onClick={onUndoCombine}
+              disabled={savingRecording}
               size="small"
             >
               <UndoIcon />
