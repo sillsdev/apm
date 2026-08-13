@@ -10,6 +10,7 @@ import {
 
 let mockCarefulSpeechComplete = new Set<number>();
 let mockLwcComplete = new Set<number>();
+let mockClauseRegions = [{ start: 0, end: 5, label: '' }];
 let controlsProps: Record<string, unknown> | undefined;
 let referenceProps: Record<string, unknown> | undefined;
 const mockStartSave = jest.fn();
@@ -103,7 +104,7 @@ jest.mock('react-redux', () => ({
 
 jest.mock('./lwcTranslation/useLwcTranslationClauses', () => ({
   useLwcTranslationClauses: jest.fn(() => ({
-    clauseRegions: [{ start: 0, end: 5, label: '' }],
+    clauseRegions: mockClauseRegions,
     bootstrapped: true,
     hasClauses: true,
   })),
@@ -115,7 +116,15 @@ jest.mock('./carefulSpeech/carefulSpeechCompletion', () => ({
       typeId === 'cs-id' ? mockCarefulSpeechComplete : mockLwcComplete
   ),
   getRecordingForClause: jest.fn(() => undefined),
-  firstIncompleteClauseIndex: jest.fn(() => 0),
+  // Mirror the real helper so clause navigation actually advances.
+  firstIncompleteClauseIndex: jest.fn(
+    (regions: unknown[], completed: Set<number>) => {
+      for (let i = 0; i < regions.length; i += 1) {
+        if (!completed.has(i)) return i;
+      }
+      return regions.length;
+    }
+  ),
 }));
 
 jest.mock('./lwcTranslation/LwcTranslationReferencePlayer', () => ({
@@ -154,7 +163,9 @@ describe('PassageDetailLwcTranslation', () => {
   beforeEach(() => {
     mockCarefulSpeechComplete = new Set<number>();
     mockLwcComplete = new Set<number>();
+    mockClauseRegions = [{ start: 0, end: 5, label: '' }];
     controlsProps = undefined;
+    referenceProps = undefined;
   });
 
   it('shows prerequisite when careful speech is incomplete', () => {
@@ -190,7 +201,9 @@ describe('PassageDetailLwcTranslation — rejected save (TT-7583)', () => {
   beforeEach(() => {
     mockCarefulSpeechComplete = new Set([0]);
     mockLwcComplete = new Set<number>();
+    mockClauseRegions = [{ start: 0, end: 5, label: '' }];
     controlsProps = undefined;
+    referenceProps = undefined;
     mockStartSave.mockClear();
   });
 
@@ -263,6 +276,24 @@ describe('PassageDetailLwcTranslation — rejected save (TT-7583)', () => {
       (controlsProps?.onRecording as (active: boolean) => void)(true);
     });
 
+    expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull();
+  });
+
+  it('drops the message when the user moves to another clause', async () => {
+    // Two clauses so Next Clause actually moves off the failed one.
+    mockClauseRegions = [
+      { start: 0, end: 5, label: '' },
+      { start: 5, end: 9, label: '' },
+    ];
+    mockCarefulSpeechComplete = new Set([0, 1]);
+    await recordAndRejectSave();
+    expect(screen.getByText('Upload Failed!')).toBeInTheDocument();
+
+    await act(async () => {
+      (controlsProps?.onNextClause as () => void)();
+    });
+
+    // The take it referred to is gone, so a Retry here could only fail.
     expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull();
   });
 

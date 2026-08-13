@@ -629,6 +629,16 @@ export function PassageDetailGuidedPhraseRecord({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [toolId]);
 
+  // The failure message belongs to the clause whose take failed. Navigating away
+  // clears MediaRecord's blob, so a Retry from another clause would only hit the
+  // no-audio branch — drop the message with the take it referred to (TT-7583).
+  // Keyed on the index rather than the navigation handlers because every clause
+  // move funnels through it.
+  useEffect(() => {
+    saveRejectedRef.current = false;
+    setSaveRejected(false);
+  }, [currentIndex]);
+
   const snapToClauseStart = useCallback(
     async (index: number) => {
       const ctrl = playerControlsRef.current;

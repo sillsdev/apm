@@ -595,7 +595,7 @@ describe('PassageDetailCarefulSpeech — rejected save (TT-7583)', () => {
   // Record a take and request its auto-save, then have MediaRecord reject it.
   const recordAndRejectSave = async () => {
     mockCompleted = new Set([0, 1]);
-    await mountAndSettle();
+    const utils = await mountAndSettle();
     await firePlaybackEnd(2);
 
     await act(async () => {
@@ -613,6 +613,7 @@ describe('PassageDetailCarefulSpeech — rejected save (TT-7583)', () => {
         ) => Promise<void>
       )('');
     });
+    return utils;
   };
 
   it('shows the save failure message with a Retry button', async () => {
@@ -621,6 +622,16 @@ describe('PassageDetailCarefulSpeech — rejected save (TT-7583)', () => {
     expect(screen.getByText('Upload Failed!')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Retry' })).toBeEnabled();
     expect(controlsProps?.savingRecording).toBe(false);
+  });
+
+  it('drops the message when the user moves to another clause', async () => {
+    const { rerender } = await recordAndRejectSave();
+    expect(screen.getByText('Upload Failed!')).toBeInTheDocument();
+
+    await moveEngineToClause(3, rerender);
+
+    // The take it referred to is gone, so a Retry here could only fail.
+    expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull();
   });
 
   it('Retry requests the save again and clears the message', async () => {
