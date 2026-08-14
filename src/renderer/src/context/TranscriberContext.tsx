@@ -28,6 +28,7 @@ import {
   findRecord,
   VernacularTag,
   mediaPassageIdForTranscribe,
+  filterMediaForPassage,
 } from '../crud';
 import { mediaFileName } from '../crud/media';
 import { mediaMatchesStepLanguage } from '../utils/mediaLanguage';
@@ -418,8 +419,9 @@ const TranscriberProvider = (props: IProps) => {
         remoteIdGuid('passage', pasId, memory?.keyMap as RecordKeyMap) || pasId;
       const passRec = findRecord(memory, 'passage', psg) as PassageD | undefined;
       const mediaPsg = mediaPassageIdForTranscribe(passRec, memory) || psg;
-      passageMediaRef.current = planMediaRef.current.filter(
-        (m) => related(m, 'passage') === mediaPsg
+      passageMediaRef.current = filterMediaForPassage(
+        planMediaRef.current,
+        mediaPsg
       );
     } else passageMediaRef.current = planMediaRef.current;
 
