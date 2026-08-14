@@ -2,12 +2,12 @@ import { ActivityStates } from '../model/activityStates';
 import { ArtifactTypeSlug } from './artifactTypeSlug';
 
 const nextByState: { [key: string]: string } = {
-  incomplete: ActivityStates.Transcribed,
-  transcribing: ActivityStates.Transcribed,
-  reviewing: ActivityStates.Approved,
-  transcribeReady: ActivityStates.Transcribed,
-  transcribed: ActivityStates.Approved,
-  needsNewTranscription: ActivityStates.Transcribed,
+  [ActivityStates.Incomplete]: ActivityStates.Transcribed,
+  [ActivityStates.Transcribing]: ActivityStates.Transcribed,
+  [ActivityStates.Reviewing]: ActivityStates.Approved,
+  [ActivityStates.TranscribeReady]: ActivityStates.Transcribed,
+  [ActivityStates.Transcribed]: ActivityStates.Approved,
+  [ActivityStates.NeedsNewTranscription]: ActivityStates.Transcribed,
 };
 
 /** Prefer the project record type when the global is empty or stale. */
