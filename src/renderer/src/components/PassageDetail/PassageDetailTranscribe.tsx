@@ -20,6 +20,7 @@ import { PassageDetailContext } from '../../context/PassageDetailContext';
 import { useArtifactType } from '../../crud/useArtifactType';
 import {
   ArtifactTypeSlug,
+  artifactStampsStepLanguage,
   isPhraseSegmentArtifact,
 } from '../../crud/artifactTypeSlug';
 import { UnsavedContext } from '../../context/UnsavedContext';
@@ -216,8 +217,12 @@ export function PassageDetailTranscribe({ width, artifactTypeId }: IProps) {
 
   const stepLanguageBcp47 = useMemo(() => {
     if (!artifactTypeId) return undefined;
+    // Only artifacts that stamp `languagebcp47` on their takes may be scoped by
+    // step language — notably not Careful Speech, whose takes are untagged.
     if (
-      !isPhraseSegmentArtifact(slugFromId(artifactTypeId) as ArtifactTypeSlug)
+      !artifactStampsStepLanguage(
+        slugFromId(artifactTypeId) as ArtifactTypeSlug
+      )
     )
       return undefined;
     const { bcp47 } = parseMediaLanguageField(
