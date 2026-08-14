@@ -48,21 +48,3 @@ export function nextTranscriptionState(opts: {
   }
   return nextState;
 }
-
-export function nextTranscriptionStateForProject(opts: {
-  state: string;
-  hasChecking: boolean;
-  globalProjType?: string;
-  recordProjType?: string;
-  artifactTypeSlug?: string;
-}): string | undefined {
-  const projType = resolvedProjectType(
-    opts.globalProjType,
-    opts.recordProjType
-  );
-  return nextTranscriptionState({
-    state: opts.state,
-    hasChecking: opts.hasChecking,
-    noParatext: isNoParatextWorkflow(projType, opts.artifactTypeSlug),
-  });
-}

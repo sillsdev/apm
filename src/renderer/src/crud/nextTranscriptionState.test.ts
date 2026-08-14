@@ -3,7 +3,6 @@ import { ArtifactTypeSlug } from './artifactTypeSlug';
 import {
   isNoParatextWorkflow,
   nextTranscriptionState,
-  nextTranscriptionStateForProject,
   resolvedProjectType,
 } from './nextTranscriptionState';
 
@@ -49,42 +48,6 @@ describe('resolvedProjectType (TT-5244)', () => {
   });
 });
 
-describe('nextTranscriptionStateForProject (TT-5244)', () => {
-  it('reaches approved for Scripture even when global projType is empty', () => {
-    expect(
-      nextTranscriptionStateForProject({
-        state: ActivityStates.Reviewing,
-        hasChecking: true,
-        globalProjType: '',
-        recordProjType: 'Scripture',
-      })
-    ).toBe(ActivityStates.Approved);
-  });
-
-  it('keeps the done shortcut for non-Scripture projects', () => {
-    expect(
-      nextTranscriptionStateForProject({
-        state: ActivityStates.Reviewing,
-        hasChecking: true,
-        globalProjType: 'generic',
-        recordProjType: 'generic',
-      })
-    ).toBe(ActivityStates.Done);
-  });
-
-  it('keeps the done shortcut for Retell artifacts', () => {
-    expect(
-      nextTranscriptionStateForProject({
-        state: ActivityStates.Reviewing,
-        hasChecking: true,
-        globalProjType: 'Scripture',
-        recordProjType: 'Scripture',
-        artifactTypeSlug: ArtifactTypeSlug.Retell,
-      })
-    ).toBe(ActivityStates.Done);
-  });
-});
-
 describe('isNoParatextWorkflow', () => {
   it('is false for Scripture', () => {
     expect(isNoParatextWorkflow('Scripture')).toBe(false);
@@ -92,5 +55,11 @@ describe('isNoParatextWorkflow', () => {
 
   it('is true for empty type', () => {
     expect(isNoParatextWorkflow('')).toBe(true);
+  });
+
+  it('is true for Retell artifacts even in a Scripture project', () => {
+    expect(isNoParatextWorkflow('Scripture', ArtifactTypeSlug.Retell)).toBe(
+      true
+    );
   });
 });
