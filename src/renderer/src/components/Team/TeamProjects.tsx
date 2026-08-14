@@ -1,12 +1,13 @@
 import React from 'react';
-import { useGlobal } from '../../context/useGlobal';
-import { Grid } from '@mui/material';
+import { Box } from '@mui/material';
 import { TeamContext } from '../../context/TeamContext';
-import { TeamItem } from '.';
-import PersonalItem from './PersonalItem';
-import ImportTab from '../ImportTab';
+import { useGlobal } from '../../context/useGlobal';
 import { related } from '../../crud';
 import { usePlan } from '../../crud/usePlan';
+import ImportTab from '../ImportTab';
+import { TeamItem } from '.';
+import { CardSizeProvider } from './CardSize';
+import PersonalItem from './PersonalItem';
 
 export const TeamProjects = () => {
   const [offline] = useGlobal('offline'); //verified this is not used in a function 2/18/25
@@ -18,14 +19,22 @@ export const TeamProjects = () => {
 
   return (
     <>
-      <Grid container>
-        {(personalProjects.length > 0 || !offline || offlineOnly) && (
-          <PersonalItem key={1} />
-        )}
-        {teams.map((i) => {
-          return <TeamItem key={i.id} team={i} />;
-        })}
-      </Grid>
+      <CardSizeProvider>
+        <Box
+          sx={(theme) => ({
+            display: 'flex',
+            flexDirection: 'column',
+            gap: theme.layout.gap,
+          })}
+        >
+          {(personalProjects.length > 0 || !offline || offlineOnly) && (
+            <PersonalItem key={1} />
+          )}
+          {teams.map((i) => {
+            return <TeamItem key={i.id} team={i} />;
+          })}
+        </Box>
+      </CardSizeProvider>
       {importOpen && (
         <ImportTab
           isOpen={importOpen}
