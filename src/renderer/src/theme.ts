@@ -2,6 +2,12 @@ import { createTheme } from '@mui/material';
 import { ResponsiveStyleValue } from '@mui/system';
 import { getDataGridLocale } from './utils/dataGridLocale';
 
+declare module '@mui/material/IconButton' {
+  interface IconButtonOwnProps {
+    variant?: 'floating' | 'primary' | 'outlined';
+  }
+}
+
 declare module '@mui/material/styles' {
   interface Palette {
     custom: {
@@ -257,6 +263,49 @@ export const createAppTheme = (lang: string) =>
                   backgroundColor: colors.lightBgActive,
                   color: colors.lightText,
                   borderColor: colors.lightBorder,
+                },
+              },
+            },
+          ],
+        },
+        MuiIconButton: {
+          variants: [
+            {
+              props: { variant: 'primary' },
+              style: {
+                backgroundColor: colors.darkBg,
+                color: colors.darkText,
+                border: '1px solid transparent',
+                borderColor: colors.darkBorder,
+                borderRadius: '8px',
+                '&:hover': {
+                  backgroundColor: colors.darkBgHover,
+                  color: colors.darkText,
+                  borderColor: colors.darkBorder,
+                },
+                '&:active': {
+                  backgroundColor: colors.darkBgActive,
+                  color: colors.darkText,
+                  borderColor: colors.darkBorder,
+                },
+                '&.Mui-disabled': {
+                  backgroundColor: 'transparent',
+                  color: colors.disabledText,
+                  borderColor: 'transparent',
+                },
+              },
+            },
+            {
+              props: { variant: 'outlined' },
+              style: {
+                border: `1px solid ${colors.lightBorder}`,
+                borderRadius: '8px',
+                boxShadow: SUBTLE_SHADOW,
+                '&:hover': {
+                  backgroundColor: colors.lightBgHover,
+                },
+                '&:active': {
+                  backgroundColor: colors.lightBgActive,
                 },
               },
             },
