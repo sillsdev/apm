@@ -27,6 +27,7 @@ import {
   getMediaInPlans,
   findRecord,
   VernacularTag,
+  mediaPassageIdForTranscribe,
 } from '../crud';
 import { mediaFileName } from '../crud/media';
 import { mediaMatchesStepLanguage } from '../utils/mediaLanguage';
@@ -415,8 +416,10 @@ const TranscriberProvider = (props: IProps) => {
     if (pasId) {
       const psg =
         remoteIdGuid('passage', pasId, memory?.keyMap as RecordKeyMap) || pasId;
+      const passRec = findRecord(memory, 'passage', psg) as PassageD | undefined;
+      const mediaPsg = mediaPassageIdForTranscribe(passRec, memory) || psg;
       passageMediaRef.current = planMediaRef.current.filter(
-        (m) => related(m, 'passage') === psg
+        (m) => related(m, 'passage') === mediaPsg
       );
     } else passageMediaRef.current = planMediaRef.current;
 
@@ -445,7 +448,11 @@ const TranscriberProvider = (props: IProps) => {
               pasId ?? '',
               memory?.keyMap as RecordKeyMap
             ) || pasId;
-          const p = rowList.filter((r) => r.passage.id === psg);
+          const passRec = findRecord(memory, 'passage', psg) as
+            | PassageD
+            | undefined;
+          const mediaPsg = mediaPassageIdForTranscribe(passRec, memory) || psg;
+          const p = rowList.filter((r) => r.passage.id === mediaPsg);
           if (p.length > 0) mediaId = (p[0] as IRowData).mediafile.id;
         }
         transSelected =
@@ -481,9 +488,13 @@ const TranscriberProvider = (props: IProps) => {
             pasId ?? '',
             memory?.keyMap as RecordKeyMap
           ) || pasId;
+        const passRec = findRecord(memory, 'passage', psg) as
+          | PassageD
+          | undefined;
+        const mediaPsg = mediaPassageIdForTranscribe(passRec, memory) || psg;
         let pick: string | undefined;
-        if (isDetail && curRole === 'transcriber' && psg) {
-          pick = firstPassageTranscriberTaskId(rowList, psg);
+        if (isDetail && curRole === 'transcriber' && mediaPsg) {
+          pick = firstPassageTranscriberTaskId(rowList, mediaPsg);
         }
         if (!pick) {
           pick = firstRealTaskMediaId(rowList);
