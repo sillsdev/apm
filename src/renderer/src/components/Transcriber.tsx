@@ -910,7 +910,7 @@ export function Transcriber(props: IProps) {
     async () => {
       const nextState = nextTranscriptionState({
         state,
-        hasChecking,
+        hasChecking: !!hasChecking,
         noParatext,
       });
       if (nextState) {
