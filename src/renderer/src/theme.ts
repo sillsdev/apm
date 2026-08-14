@@ -2,16 +2,6 @@ import { createTheme } from '@mui/material';
 import { ResponsiveStyleValue } from '@mui/system';
 import { getDataGridLocale } from './utils/dataGridLocale';
 
-// MUI has no `variant` on IconButton. Adding it to IconButtonOwnProps lets us
-// pass `variant` in JSX; IconButton spreads props into its ownerState, so the
-// MuiIconButton `variants` matcher below can style each variant. (The prop also
-// lands as a harmless stray attribute on the underlying <button>.)
-declare module '@mui/material/IconButton' {
-  interface IconButtonOwnProps {
-    variant?: 'floating' | 'primary' | 'outlined';
-  }
-}
-
 declare module '@mui/material/styles' {
   interface Palette {
     custom: {
@@ -20,10 +10,6 @@ declare module '@mui/material/styles' {
       racetrackCurrent: string;
       racetrackComplete: string;
       racetrackIncomplete: string;
-      /** Fill for the "contained" action look (dark). */
-      containedBg: string;
-      /** Hover fill for the "contained" action look. */
-      containedHoverBg: string;
     };
   }
   interface PaletteOptions {
@@ -33,11 +19,8 @@ declare module '@mui/material/styles' {
       racetrackCurrent: string;
       racetrackComplete: string;
       racetrackIncomplete: string;
-      containedBg: string;
-      containedHoverBg: string;
     };
   }
-
   interface Theme {
     layout: {
       gap: ResponsiveStyleValue<number>;
@@ -50,41 +33,59 @@ declare module '@mui/material/styles' {
   }
 }
 
-// For the "contained" action look, shared by the
-// MuiButton contained variant and any component that mimics it (see the
-// palette `custom.containedBg`/`containedHoverBg` tokens below).
-const CONTAINED_BG = '#333333';
-const CONTAINED_HOVER_BG = '#555555';
-const CONTAINED_DISABLED_BG = '#F0F0F0';
-
-// The subtle drop shadow every themed button carries (see MuiButton root
-// below). Exported so components that need to hand-roll a button
-//  can reuse the exact same value.
-export const BUTTON_SHADOW = '1px 1px 3px #0000001F';
-
-// The standard gap between adjacent layout blocks, tightened below `sm` where
-// horizontal room is scarce. These are theme *spacing multiples*, not px — sx
-// resolves the token and then applies theme.spacing(), so 1.5 renders as 12px.
 const LAYOUT_GAP: ResponsiveStyleValue<number> = { xs: 1, sm: 1.5 };
+
+const colors = {
+  primary: '#135cb9',
+  secondary: '#00a7e1',
+
+  // Custom palette
+  currentRegion: '#66ff0080',
+  headerBackground: '#eeeeee',
+  racetrackCurrent: '#333333',
+  racetrackComplete: '#a8a8a8',
+  racetrackIncomplete: '#e0e0e0',
+
+  // Light buttons (text / outlined / contained secondary)
+  lightBg: '#ffffff',
+  lightBgRest: '#f6f8fa',
+  lightBgHover: '#eff2f5',
+  lightBgActive: '#e6eaef',
+  lightText: '#25292e',
+  lightBorder: '#d1d9e0',
+
+  // Dark buttons (contained primary)
+  darkBg: '#3d3d3d',
+  darkBgHover: '#474747',
+  darkBgActive: '#525252',
+  darkText: '#f0f0f0',
+  darkBorder: '#595959',
+
+  // Disabled
+  disabledText: '#818b98',
+  disabledBorder: '#818b981a',
+
+  shadow: '#1f23280a',
+} as const;
+
+const SUBTLE_SHADOW = `0 1px 0 0 ${colors.shadow}`;
 
 export const createAppTheme = (lang: string) =>
   createTheme(
     {
       palette: {
         primary: {
-          main: '#135CB9',
+          main: colors.primary,
         },
         secondary: {
-          main: '#00A7E1',
+          main: colors.secondary,
         },
         custom: {
-          currentRegion: '#66FF0080',
-          headerBackground: '#EEEEEE',
-          racetrackCurrent: '#333',
-          racetrackComplete: '#a8a8a8',
-          racetrackIncomplete: '#e0e0e0',
-          containedBg: CONTAINED_BG,
-          containedHoverBg: CONTAINED_HOVER_BG,
+          currentRegion: colors.currentRegion,
+          headerBackground: colors.headerBackground,
+          racetrackCurrent: colors.racetrackCurrent,
+          racetrackComplete: colors.racetrackComplete,
+          racetrackIncomplete: colors.racetrackIncomplete,
         },
       },
       layout: {
@@ -103,83 +104,156 @@ export const createAppTheme = (lang: string) =>
             },
           },
         },
-        MuiIconButton: {
+        MuiButton: {
+          defaultProps: {
+            disableElevation: true,
+            variant: 'outlined',
+          },
+          styleOverrides: {
+            root: {
+              borderRadius: '8px',
+            },
+            sizeSmall: {
+              padding: '4px 12px',
+              height: 28,
+            },
+            sizeMedium: {
+              padding: '8px 16px',
+              height: 36,
+            },
+            sizeLarge: {
+              padding: '10px 20px',
+              height: 44,
+            },
+          },
           variants: [
             {
-              // Contained "primary action" look, mirroring the MuiButton
-              // contained variant. Filled only while enabled — the disabled
-              // state resets to the plain default so the enabled button draws
-              // attention on its own.
-              props: { variant: 'primary' },
+              props: { variant: 'text', color: 'primary' },
               style: {
-                backgroundColor: CONTAINED_BG,
-                color: '#FFFFFF',
-                borderRadius: '8px',
-                boxShadow: BUTTON_SHADOW,
+                backgroundColor: colors.lightBg,
+                color: colors.lightText,
                 '&:hover': {
-                  backgroundColor: CONTAINED_HOVER_BG,
+                  backgroundColor: colors.lightBgHover,
+                  color: colors.lightText,
+                  borderColor: colors.lightBorder,
+                  boxShadow: SUBTLE_SHADOW,
                 },
+                '&:active': {
+                  backgroundColor: colors.lightBgActive,
+                  color: colors.lightText,
+                  borderColor: colors.lightBorder,
+                },
+              },
+            },
+            {
+              props: { variant: 'text', color: 'secondary' },
+              style: {
+                backgroundColor: colors.lightBg,
+                color: colors.lightText,
+                '&:hover': {
+                  backgroundColor: colors.lightBgHover,
+                  color: colors.lightText,
+                  borderColor: colors.lightBorder,
+                  boxShadow: SUBTLE_SHADOW,
+                },
+                '&:active': {
+                  backgroundColor: colors.lightBgActive,
+                  color: colors.lightText,
+                  borderColor: colors.lightBorder,
+                },
+              },
+            },
+            {
+              props: { variant: 'outlined', color: 'primary' },
+              style: {
+                backgroundColor: colors.lightBg,
+                color: colors.lightText,
+                border: '1px solid transparent',
+                borderColor: colors.lightBorder,
+                boxShadow: SUBTLE_SHADOW,
+                '&:hover': {
+                  backgroundColor: colors.lightBgHover,
+                  color: colors.lightText,
+                  borderColor: colors.lightBorder,
+                  boxShadow: SUBTLE_SHADOW,
+                },
+                '&:active': {
+                  backgroundColor: colors.lightBgActive,
+                  color: colors.lightText,
+                  borderColor: colors.lightBorder,
+                },
+              },
+            },
+            {
+              props: { variant: 'outlined', color: 'secondary' },
+              style: {
+                backgroundColor: colors.lightBg,
+                color: colors.lightText,
+                border: '1px solid transparent',
+                borderColor: colors.lightBorder,
+                boxShadow: SUBTLE_SHADOW,
+                '&:hover': {
+                  backgroundColor: colors.lightBgHover,
+                  color: colors.lightText,
+                  borderColor: colors.lightBorder,
+                  boxShadow: SUBTLE_SHADOW,
+                },
+                '&:active': {
+                  backgroundColor: colors.lightBgActive,
+                  color: colors.lightText,
+                  borderColor: colors.lightBorder,
+                },
+              },
+            },
+            {
+              props: { variant: 'contained' },
+              style: {
+                border: '1px solid transparent',
                 '&.Mui-disabled': {
-                  backgroundColor: 'transparent',
-                  color: 'rgba(0, 0, 0, 0.26)',
+                  backgroundColor: colors.lightBgHover,
+                  color: colors.disabledText,
+                  borderColor: colors.disabledBorder,
                   boxShadow: 'none',
                 },
               },
             },
             {
-              // Soft edge to contrast against white, like MuiButton outlined.
-              props: { variant: 'outlined' },
+              props: { variant: 'contained', color: 'primary' },
               style: {
-                border: '1px solid #0000001F',
-              },
-            },
-            {
-              props: { variant: 'floating' },
-              style: {
-                // TODO
-              },
-            },
-          ],
-        },
-        MuiButton: {
-          defaultProps: {
-            disableElevation: true,
-          },
-          styleOverrides: {
-            root: {
-              borderRadius: '8px',
-              padding: '8px 16px',
-              boxShadow: BUTTON_SHADOW,
-              color: '#000000',
-              height: 36,
-              background: '#FFFFFF',
-              '&:hover': {
-                background: '#E2E2E2',
-              },
-              '&:disabled': {
-                background: '#F0F0F0',
-              },
-            },
-          },
-          variants: [
-            {
-              // Outlined buttons get a soft edge to contrast against white
-              props: { variant: 'outlined' },
-              style: {
-                border: '1px solid #0000001F',
-              },
-            },
-            {
-              // Contained buttons are primary buttons
-              props: { variant: 'contained' },
-              style: {
-                background: CONTAINED_BG,
-                color: '#FFFFFF',
+                backgroundColor: colors.darkBg,
+                color: colors.darkText,
+                borderColor: colors.darkBorder,
+                boxShadow: 'none',
                 '&:hover': {
-                  background: CONTAINED_HOVER_BG,
+                  backgroundColor: colors.darkBgHover,
+                  color: colors.darkText,
+                  borderColor: colors.darkBorder,
+                  boxShadow: 'none',
                 },
-                '&:disabled': {
-                  background: CONTAINED_DISABLED_BG,
+                '&:active': {
+                  backgroundColor: colors.darkBgActive,
+                  color: colors.darkText,
+                  borderColor: colors.darkBorder,
+                },
+              },
+            },
+            {
+              props: { variant: 'contained', color: 'secondary' },
+              style: {
+                backgroundColor: colors.lightBgRest,
+                color: colors.lightText,
+                borderColor: colors.lightBorder,
+                boxShadow: SUBTLE_SHADOW,
+                '&:hover': {
+                  backgroundColor: colors.lightBgHover,
+                  color: colors.lightText,
+                  borderColor: colors.lightBorder,
+                  boxShadow: SUBTLE_SHADOW,
+                },
+                '&:active': {
+                  backgroundColor: colors.lightBgActive,
+                  color: colors.lightText,
+                  borderColor: colors.lightBorder,
                 },
               },
             },
