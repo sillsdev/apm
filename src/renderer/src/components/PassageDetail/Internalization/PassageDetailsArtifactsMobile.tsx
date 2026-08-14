@@ -610,8 +610,7 @@ export function PassageDetailArtifactsMobile() {
     const newIndexes = arrayMove(indexes, oldIndex, newIndex) as number[];
     for (let i = 0; i < newIndexes.length; i += 1) {
       const secResRec = sectionResources.find(
-        (r) =>
-          related(r, 'mediafile') === (rowData[newIndexes[i] ?? 0] as IRow).id
+        (r) => related(r, 'mediafile') === rowData[newIndexes[i]].id
       );
       if (secResRec && secResRec.attributes?.sequenceNum !== i) {
         UpdateSectionResource({
@@ -620,9 +619,12 @@ export function PassageDetailArtifactsMobile() {
         });
       }
     }
-    const newRows = rowData
-      .map((r, i) => (listFilter(r) ? rowData[newIndexes[i] ?? 0] : r))
-      .filter((r) => r !== undefined);
+    // newIndexes is indexed by display (filtered) position, so track that
+    // separately from the rowData position while rebuilding the list.
+    let displayIndex = 0;
+    const newRows = rowData.map((r) =>
+      listFilter(r) ? rowData[newIndexes[displayIndex++]] : r
+    );
     forceRefresh(newRows);
   };
 
