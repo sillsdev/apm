@@ -2,6 +2,8 @@ import { UploadType } from '../../components/UploadType';
 import {
   appendPendingMediaUpload,
   loadPendingMediaUploads,
+  removePendingMediaUpload,
+  subscribePendingMediaUploads,
   type PendingUploadMediaRecord,
   updatePendingMediaUpload,
 } from './pendingMediaUploads';
@@ -93,5 +95,30 @@ describe('pendingMediaUploads', () => {
 
     expect(loadPendingMediaUploads()).toHaveLength(2);
     expect(localStorage.getItem(STORAGE_KEY)).toBeTruthy();
+  });
+
+  it('subscribePendingMediaUploads notifies on change until unsubscribed', () => {
+    const onChange = jest.fn();
+    const unsubscribe = subscribePendingMediaUploads(onChange);
+
+    const created = appendPendingMediaUpload({
+      localAbsolutePath: '/a/file.mp3',
+      fileSize: 100,
+      uploadType: UploadType.Media,
+      record: baseRecord,
+    });
+    expect(onChange).toHaveBeenCalledTimes(1);
+
+    removePendingMediaUpload(created.id);
+    expect(onChange).toHaveBeenCalledTimes(2);
+
+    unsubscribe();
+    appendPendingMediaUpload({
+      localAbsolutePath: '/b/file.mp3',
+      fileSize: 100,
+      uploadType: UploadType.Media,
+      record: baseRecord,
+    });
+    expect(onChange).toHaveBeenCalledTimes(2);
   });
 });
