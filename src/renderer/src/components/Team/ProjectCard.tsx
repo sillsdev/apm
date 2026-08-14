@@ -1,32 +1,27 @@
-import React, { useContext, useMemo, useState, useEffect } from 'react';
-import { useGetGlobal, useGlobal } from '../../context/useGlobal';
-import { useDispatch, useSelector } from 'react-redux';
-import { shallowEqual } from 'react-redux';
+import { useContext, useMemo, useState, useEffect } from 'react';
+import { useDispatch, useSelector, shallowEqual } from 'react-redux';
+import { RecordKeyMap } from '@orbit/records';
 import {
-  Card,
-  CardActions,
-  CardContent,
-  Typography,
-  Chip,
-  styled,
-  CardProps,
-  CardContentProps,
   Box,
-  ChipProps,
+  Card,
+  CardActionArea,
+  Chip,
   Dialog,
-  DialogTitle,
-  DialogContent,
   DialogActions,
+  DialogContent,
+  DialogTitle,
+  Grid,
   Tooltip,
+  Typography,
 } from '@mui/material';
-import * as actions from '../../store';
+import EditNoteIcon from '@mui/icons-material/EditNote';
+import EditSquareIcon from '@mui/icons-material/EditSquare';
+import FormatBoldIcon from '@mui/icons-material/FormatBold';
 import ScriptureIcon from '@mui/icons-material/MenuBook';
-import StoryIcon from '@mui/icons-material/RecordVoiceOver';
-import { BsPencilSquare } from 'react-icons/bs';
-import type { IconBaseProps } from 'react-icons';
+import OfflineIcon from '@mui/icons-material/OfflinePin';
 import ShareIcon from '@mui/icons-material/OfflineShare';
 import PublishedWithChangesIcon from '@mui/icons-material/PublishedWithChanges';
-import EditNoteIcon from '@mui/icons-material/EditNote';
+import StoryIcon from '@mui/icons-material/RecordVoiceOver';
 import {
   DialogMode,
   ICardsStrings,
@@ -42,13 +37,20 @@ import {
   SectionD,
   VProjectD,
 } from '../../model';
+import { UpdateRecord } from '../../model/baseModel';
+import * as actions from '../../store';
+import { CopyProjectProps } from '../../store';
+import {
+  cardsSelector,
+  importSelector,
+  projButtonsSelector,
+  sharedSelector,
+  transcriptionTabSelector,
+  vProjectSelector,
+} from '../../selector';
 import { TeamContext } from '../../context/TeamContext';
-import ProjectMenu from './ProjectMenu';
-import BigDialog from '../../hoc/BigDialog';
-import IntegrationTab from '../Integration';
-import ExportTab from '../TranscriptionTab';
-import Confirm from '../AlertDialog';
-import { ProjectDialog } from './ProjectDialog';
+import { TokenContext } from '../../context/TokenProvider';
+import { useGetGlobal, useGlobal } from '../../context/useGlobal';
 import {
   usePlan,
   useProjectPlans,
@@ -61,77 +63,29 @@ import {
   BOLD_WORKFLOW_PROCESS,
   useTeamWorkflowProcess,
 } from '../../crud';
-import { localizeProjectTag } from '../../utils/localizeProjectTag';
-import OfflineIcon from '@mui/icons-material/OfflinePin';
-import { useDataChanges, useHome, useJsonParams, useMobile } from '../../utils';
-import { CopyProjectProps } from '../../store';
-import { TokenContext } from '../../context/TokenProvider';
-import { AlertSeverity, useSnackBar } from '../../hoc/SnackBar';
-import CategoryTabs from './CategoryTabs';
-import { RecordKeyMap } from '@orbit/records';
 import {
   projDefBook,
   projDefSectionMap,
   projDefStory,
   useProjectDefaults,
 } from '../../crud/useProjectDefaults';
+import BigDialog from '../../hoc/BigDialog';
+import { useSnackBar } from '../../hoc/SnackBar';
 import { useOrbitData } from '../../hoc/useOrbitData';
-import { UpdateRecord } from '../../model/baseModel';
+import { useDataChanges, useHome, useJsonParams, useMobile } from '../../utils';
+import { localizeProjectTag } from '../../utils/localizeProjectTag';
 import { useProjectPermissions } from '../../utils/useProjectPermissions';
-import { IProjectDialog } from './ProjectDialog/projectDialogTypes';
+import Confirm from '../AlertDialog';
 import { TeamSelector } from '../ImportTab';
+import IntegrationTab from '../Integration';
+import ExportTab from '../TranscriptionTab';
 import { useAdminTeams } from '../useAdminTeams';
-import {
-  cardsSelector,
-  importSelector,
-  projButtonsSelector,
-  sharedSelector,
-  transcriptionTabSelector,
-  vProjectSelector,
-} from '../../selector';
+import CategoryTabs from './CategoryTabs';
+import ProjectMenu from './ProjectMenu';
+import { ProjectDialog } from './ProjectDialog';
+import { IProjectDialog } from './ProjectDialog/projectDialogTypes';
+import { useCardHeight, useMeasureCardHeight } from './useCardSize';
 import { Button } from '../../control/Button';
-
-const PencilSquare = BsPencilSquare as unknown as React.FC<IconBaseProps>;
-
-const ProjectCardRoot = styled('div')(() => ({
-  display: 'flex',
-  '&:hover button': {
-    color: 'white',
-  },
-  '& .MuiTypography-root': {
-    cursor: 'default ',
-  },
-  '& .MuiCardContent-root': {
-    maxWidth: '243px',
-  },
-  cursor: 'pointer',
-}));
-
-const StyledCard = styled(Card)<CardProps>(({ theme }) => ({
-  minWidth: 275,
-  margin: theme.spacing(1),
-  backgroundColor: theme.palette.primary.light,
-}));
-
-const StyledCardContent = styled(CardContent)<CardContentProps>(
-  ({ theme }) => ({
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'flex-start',
-    color: theme.palette.primary.contrastText,
-  })
-);
-
-const FirstLineDiv = styled('div')(() => ({
-  width: '100%',
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-}));
-
-const StyledChip = styled(Chip)<ChipProps>(({ theme }) => ({
-  backgroundColor: theme.palette.grey[400],
-}));
 
 interface IProps {
   project: VProjectD;
@@ -139,7 +93,7 @@ interface IProps {
 
 export const ProjectCard = (props: IProps) => {
   const { project } = props;
-  const ctx = React.useContext(TeamContext);
+  const ctx = useContext(TeamContext);
   const {
     loadProject,
     setProjectParams,
@@ -214,6 +168,8 @@ export const ProjectCard = (props: IProps) => {
     related(project, 'project')
   );
   const teams = useAdminTeams();
+  const cardHeight = useCardHeight();
+  const contentRef = useMeasureCardHeight(project.id);
   const tImport: IImportStrings = useSelector(importSelector, shallowEqual);
   const tShared: ISharedStrings = useSelector(sharedSelector, shallowEqual);
 
@@ -235,24 +191,24 @@ export const ProjectCard = (props: IProps) => {
 
   useEffect(() => {
     if (copying && copyStatus) {
-      if (copyStatus.errStatus) {
-        showMessage(
-          copyStatus.errMsg || copyStatus.statusMsg,
-          AlertSeverity.Error
-        );
-        copyComplete();
-        setCopying(false);
-        setBusy(false);
-      } else if (copyStatus.complete) {
-        showMessage(tt.downloading.replace('{0}', copyStatus.statusMsg ?? ''));
-        forceDataChanges().finally(() => {
-          setBusy(false);
+      if (copyStatus.errStatus || copyStatus.complete) {
+        if (copyStatus.complete) {
           showMessage(
-            t.copyComplete.replace('{0}', copyStatus.statusMsg ?? '')
+            tt.downloading.replace('{0}', copyStatus.statusMsg ?? '')
           );
+          forceDataChanges().finally(() => {
+            setBusy(false);
+            showMessage(
+              t.copyComplete.replace('{0}', copyStatus.statusMsg ?? '')
+            );
+            copyComplete();
+            setCopying(false);
+          });
+        } else {
+          showMessage(copyStatus.errMsg ?? copyStatus.statusMsg);
           copyComplete();
           setCopying(false);
-        });
+        }
       } else showMessage(copyStatus.statusMsg);
     }
     /* eslint-disable-next-line react-hooks/exhaustive-deps */
@@ -499,108 +455,181 @@ export const ProjectCard = (props: IProps) => {
   const teamWorkflow = useTeamWorkflowProcess(orgId);
   const showBoldCardMark = teamWorkflow === BOLD_WORKFLOW_PROCESS;
 
+  const showOffline = Boolean(
+    offlineProjectRead(project).attributes?.offlineAvailable
+  );
+  const showEditSheet = canEditSheet && !isAdmin;
+  const showPublish = canPublish && !isAdmin;
+  const showStatusRow = showOffline || showEditSheet || showPublish;
+
   return (
-    <ProjectCardRoot>
-      <StyledCard id={`card-${project.id}`} onClick={handleSelect(project)}>
-        <StyledCardContent>
-          <FirstLineDiv>
+    <>
+      <Grid size={{ xs: 12, sm: 6, md: 4, lg: 2.4 }}>
+        <Card
+          id={`card-${project.id}`}
+          sx={{
+            position: 'relative',
+            display: 'flex',
+            alignItems: 'stretch',
+            justifyContent: 'center',
+            height: '100%',
+            minHeight: cardHeight,
+            bgcolor: 'primary.light',
+            color: 'primary.contrastText',
+          }}
+        >
+          <CardActionArea
+            onClick={handleSelect(project)}
+            sx={{
+              display: 'flex',
+              alignItems: 'stretch',
+              justifyContent: 'center',
+              height: '100%',
+              p: 1.5,
+            }}
+          >
             <Box
+              ref={contentRef}
               sx={{
                 display: 'flex',
-                alignItems: 'center',
-                flex: 1,
-                minWidth: 0,
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+                gap: 1,
+                width: '100%',
+                height: '100%',
               }}
             >
-              {showBoldCardMark ? (
-                <Typography
-                  component="span"
+              <Box
+                sx={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 1,
+                  width: '100%',
+                }}
+              >
+                <Box
                   sx={{
-                    fontWeight: 700,
-                    fontSize: '1.35rem',
-                    lineHeight: 1,
-                    mr: 0.25,
-                  }}
-                  aria-hidden
-                >
-                  B
-                </Typography>
-              ) : (project?.attributes?.type || '').toLowerCase() ===
-                'scripture' ? (
-                <ScriptureIcon />
-              ) : isStory ? (
-                <StoryIcon />
-              ) : (
-                <PencilSquare />
-              )}
-              {project.attributes.isPublic && <ShareIcon />}
-              {'\u00A0 '}
-              <Tooltip title={project?.attributes?.name ?? ''}>
-                <Typography
-                  variant="h6"
-                  component="h2"
-                  noWrap
-                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1,
                     minWidth: 0,
-                    flex: 1,
+                    pr: '40px',
                   }}
                 >
-                  {project?.attributes?.name}
-                </Typography>
-              </Tooltip>
-            </Box>
-            <Box sx={{ flexShrink: 0 }}>
-              <ProjectMenu
-                action={handleProjectAction}
-                project={project}
-                inProject={false}
-                isAdmin={isAdmin}
-                isPersonal={personalProjects.includes(project)}
-                canPublish={canPublish}
-              />
-            </Box>
-          </FirstLineDiv>
-          <Typography sx={{ mb: 2 }}>{projectDescription(project)}</Typography>
-          <Typography variant="body2" component="p">
-            {t.language.replace('{0}', projectLanguage(project))}
-          </Typography>
-          <Typography variant="body2" component="p">
-            {sectionCount !== '<na>' && sectionCount}
-          </Typography>
-        </StyledCardContent>
-        {project?.attributes?.tags && (
-          <CardActions>
-            <>
-              {offlineProjectRead(project).attributes?.offlineAvailable && (
-                <Box sx={{ display: 'flex', color: 'primary.contrastText' }}>
-                  <OfflineIcon />
-                  {'\u00A0'}
-                  <Typography>{t.offline}</Typography>
+                  {showBoldCardMark ? (
+                    <FormatBoldIcon />
+                  ) : (project?.attributes?.type || '').toLowerCase() ===
+                    'scripture' ? (
+                    <ScriptureIcon sx={{ p: 0.5 }} />
+                  ) : isStory ? (
+                    <StoryIcon sx={{ p: 0.5 }} />
+                  ) : (
+                    <EditSquareIcon sx={{ p: 0.5 }} />
+                  )}
+                  {project.attributes.isPublic && <ShareIcon />}
+                  <Tooltip title={project?.attributes?.name ?? ''}>
+                    <Typography noWrap sx={{ fontSize: 'large' }}>
+                      {project?.attributes?.name}
+                    </Typography>
+                  </Tooltip>
+                </Box>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 0.5,
+                    px: 0.5,
+                  }}
+                >
+                  <Tooltip title={projectDescription(project)}>
+                    <Typography noWrap>
+                      {projectDescription(project)}
+                    </Typography>
+                  </Tooltip>
+                  <Typography noWrap sx={{ fontSize: 'small' }}>
+                    {t.language.replace('{0}', projectLanguage(project))}
+                  </Typography>
+                  <Typography noWrap sx={{ fontSize: 'small' }}>
+                    {sectionCount !== '<na>' && sectionCount}
+                  </Typography>
+                </Box>
+              </Box>
+              <Box
+                sx={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: 0.5,
+                  minWidth: 0,
+                  px: 0.5,
+                }}
+              >
+                {Object.keys(project?.attributes?.tags ?? {})
+                  .filter((t) => project?.attributes?.tags[t])
+                  .map((t) => (
+                    <Chip
+                      key={t}
+                      size="small"
+                      sx={{
+                        backgroundColor: 'primary.dark',
+                        color: 'primary.contrastText',
+                      }}
+                      label={localizeProjectTag(t, vProjectStrings)}
+                    />
+                  ))}
+              </Box>
+              {showStatusRow && (
+                <Box
+                  sx={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    gap: 0.5,
+                    width: '100%',
+                    minWidth: 0,
+                  }}
+                >
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 0.5,
+                      minWidth: 0,
+                    }}
+                  >
+                    {showOffline && (
+                      <>
+                        <OfflineIcon sx={{ p: 0.5 }} />
+                        <Typography noWrap>{t.offline}</Typography>
+                      </>
+                    )}
+                  </Box>
+                  <Box sx={{ display: 'flex', gap: 0.5, minWidth: 0 }}>
+                    {showEditSheet && <EditNoteIcon sx={{ p: 0.5 }} />}
+                    {showPublish && (
+                      <PublishedWithChangesIcon sx={{ p: 0.5 }} />
+                    )}
+                  </Box>
                 </Box>
               )}
-              {Object.keys(project?.attributes?.tags)
-                .filter((t) => project?.attributes?.tags[t])
-                .map((t) => (
-                  <StyledChip
-                    key={t}
-                    size="small"
-                    label={localizeProjectTag(t, vProjectStrings)}
-                  />
-                ))}
-              {canEditSheet && !isAdmin && (
-                <EditNoteIcon
-                  sx={{ display: 'flex', color: 'primary.contrastText' }}
-                />
-              )}
-              {canPublish && !isAdmin && (
-                <PublishedWithChangesIcon
-                  sx={{ display: 'flex', color: 'primary.contrastText' }}
-                />
-              )}
-            </>
-          </CardActions>
-        )}
-      </StyledCard>
+            </Box>
+          </CardActionArea>
+          <Box
+            sx={(theme) => ({
+              position: 'absolute',
+              top: theme.spacing(1.5),
+              right: theme.spacing(1.5),
+            })}
+          >
+            <ProjectMenu
+              action={handleProjectAction}
+              project={project}
+              inProject={false}
+              isAdmin={isAdmin}
+              isPersonal={personalProjects.includes(project)}
+              canPublish={canPublish}
+            />
+          </Box>
+        </Card>
+      </Grid>
       <ProjectDialog
         mode={DialogMode.edit}
         values={projectValues(project)}
@@ -689,6 +718,6 @@ export const ProjectCard = (props: IProps) => {
           </Button>
         </DialogActions>
       </Dialog>
-    </ProjectCardRoot>
+    </>
   );
 };
