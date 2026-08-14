@@ -1,36 +1,36 @@
-import React, { useEffect, useState } from 'react';
-import { useGlobal } from '../../context/useGlobal';
+import { useEffect, useState } from 'react';
+import { shallowEqual, useSelector } from 'react-redux';
 import { useLocation } from 'react-router-dom';
+import { IconButton, ListItemIcon, ListItemText } from '@mui/material';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import DeleteIcon from '@mui/icons-material/Delete';
+import EditIcon from '@mui/icons-material/Edit';
+import ExportIcon from '@mui/icons-material/CloudDownload';
+import FilterIcon from '@mui/icons-material/FilterList';
+import ImportIcon from '@mui/icons-material/CloudUpload';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
+import CheckedIcon from '@mui/icons-material/RadioButtonChecked';
+import UncheckedIcon from '@mui/icons-material/RadioButtonUnchecked';
+import SettingsIcon from '@mui/icons-material/Settings';
+// import ReportIcon from '@mui/icons-material/Assessment';
+import { isElectron } from '../../../api-variable';
+import { useGlobal } from '../../context/useGlobal';
+import { StyledMenu, StyledMenuItem } from '../../control';
+import ParatextLogo from '../../control/ParatextLogo';
+import { useOfflnProjRead, ArtifactTypeSlug, useProjectType } from '../../crud';
 import {
   ICardsStrings,
   IProjButtonsStrings,
   IToDoTableStrings,
   VProject,
 } from '../../model';
-import { IconButton, ListItemIcon, ListItemText } from '@mui/material';
-import MoreVertIcon from '@mui/icons-material/MoreVert';
-import SettingsIcon from '@mui/icons-material/Settings';
-import ContentCopyIcon from '@mui/icons-material/ContentCopy';
-import ParatextLogo from '../../control/ParatextLogo';
-import ImportIcon from '@mui/icons-material/CloudUpload';
-import ExportIcon from '@mui/icons-material/CloudDownload';
-// import ReportIcon from '@mui/icons-material/Assessment';
-import DeleteIcon from '@mui/icons-material/Delete';
-import EditIcon from '@mui/icons-material/Edit';
-import FilterIcon from '@mui/icons-material/FilterList';
-import UncheckedIcon from '@mui/icons-material/RadioButtonUnchecked';
-import CheckedIcon from '@mui/icons-material/RadioButtonChecked';
-import { isElectron } from '../../../api-variable';
-import { useOfflnProjRead, ArtifactTypeSlug, useProjectType } from '../../crud';
-import { StyledMenu, StyledMenuItem } from '../../control';
 import {
   cardsSelector,
   projButtonsSelector,
   toDoTableSelector,
 } from '../../selector';
-import { shallowEqual, useSelector } from 'react-redux';
-import { addPt } from '../../utils/addPt';
 import { useMobile } from '../../utils';
+import { addPt } from '../../utils/addPt';
 
 interface IProps {
   inProject?: boolean;
@@ -43,7 +43,7 @@ interface IProps {
   canPublish: boolean;
 }
 
-export function ProjectMenu(props: IProps) {
+export default function ProjectMenu(props: IProps) {
   const {
     inProject,
     isAdmin,
@@ -57,7 +57,7 @@ export function ProjectMenu(props: IProps) {
   const [offlineOnly] = useGlobal('offlineOnly'); //will be constant here
   const [isDeveloper] = useGlobal('developer');
   const { pathname } = useLocation();
-  const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const offlineProjectRead = useOfflnProjRead();
   const [projType, setProjType] = useState('');
   const t: ICardsStrings = useSelector(cardsSelector, shallowEqual);
@@ -91,13 +91,14 @@ export function ProjectMenu(props: IProps) {
   const offlineProject = offlineProjectRead(project);
 
   return (
-    <div>
+    <>
       <IconButton
         id="projectMenu"
         aria-controls="customized-menu"
         aria-haspopup="true"
-        sx={{ color: 'primary.light' }}
         onClick={handleClick}
+        color="inherit"
+        sx={{ p: 0.5 }}
       >
         <MoreVertIcon />
       </IconButton>
@@ -203,8 +204,6 @@ export function ProjectMenu(props: IProps) {
           )
         )}
       </StyledMenu>
-    </div>
+    </>
   );
 }
-
-export default ProjectMenu;
