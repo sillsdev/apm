@@ -56,6 +56,7 @@ export * from './useMediaCounts';
 export * from './useSectionCounts';
 export * from './useAddToOrgAndGroup';
 export * from './useProjectType';
+export * from './nextTranscriptionState';
 export * from './useFetchMediaUrl';
 export * from './useAudacityProjCreate';
 export * from './useAudacityProjRead';

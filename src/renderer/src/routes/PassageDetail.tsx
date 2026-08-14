@@ -154,9 +154,9 @@ export const PassageDetail = () => {
 
   useEffect(() => {
     const projectId = setUrlContext(prjId ?? '');
-    if (user && projType === '') {
+    if (user) {
       const tmp = setProjectType(projectId);
-      if (!tmp) {
+      if (projType === '' && !tmp) {
         // If user is set but we don't have this project, go to the team screen
         setView('/team');
       }

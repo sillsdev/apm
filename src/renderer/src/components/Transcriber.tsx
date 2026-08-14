@@ -62,6 +62,10 @@ import {
   pullTableList,
   orgDefaultFeatures,
   useOrganizedBy,
+  useProjectType,
+  isNoParatextWorkflow,
+  nextTranscriptionState,
+  resolvedProjectType,
 } from '../crud';
 import { MainAPI } from '@model/main-api';
 import { useGetAsrSettings } from '../crud/useGetAsrSettings';
@@ -260,6 +264,7 @@ export function Transcriber(props: IProps) {
   const [offlineOnly] = useGlobal('offlineOnly'); //will be constant here
   const [project] = useGlobal('project'); //will be constant here
   const [projType] = useGlobal('projType'); //verified this is not used in a function 2/18/25
+  const { getProjType } = useProjectType();
   const [user] = useGlobal('user');
   const [organization] = useGlobal('organization');
   const [coordinator] = useGlobal('coordinator');
@@ -759,10 +764,9 @@ export function Transcriber(props: IProps) {
 
     loadProjData();
 
-    const ptCheck =
-      [ArtifactTypeSlug.Retell, ArtifactTypeSlug.QandA].includes(
-        (artifactTypeSlug || '') as ArtifactTypeSlug
-      ) || projType.toLowerCase() !== 'scripture';
+    const recordType = project ? getProjType(project) : '';
+    const resolvedType = resolvedProjectType(projType, recordType);
+    const ptCheck = isNoParatextWorkflow(resolvedType, artifactTypeSlug);
     if (ptCheck !== noParatext) setNoParatext(ptCheck);
     /* eslint-disable-next-line react-hooks/exhaustive-deps */
   }, [
@@ -897,15 +901,6 @@ export function Transcriber(props: IProps) {
   );
   const handleAddNoteCancel = () => setAddNoteVisible(false);
 
-  const next: { [key: string]: string } = {
-    incomplete: ActivityStates.Transcribed,
-    transcribing: ActivityStates.Transcribed,
-    reviewing: ActivityStates.Approved,
-    transcribeReady: ActivityStates.Transcribed,
-    transcribed: ActivityStates.Approved,
-    needsNewTranscription: ActivityStates.Transcribed,
-  };
-
   const forcePosition = (position: number) => {
     setDefaultPosition(playedSecsRef.current || 0);
     setDefaultPosition(position);
@@ -913,12 +908,12 @@ export function Transcriber(props: IProps) {
 
   const handleSubmit = useCallback(
     async () => {
-      if (Object.prototype.hasOwnProperty.call(next, state)) {
-        let nextState = next[state];
-        if (nextState === ActivityStates.Transcribed && !hasChecking)
-          nextState = ActivityStates.Approved;
-        if (nextState === ActivityStates.Approved && noParatext)
-          nextState = ActivityStates.Done;
+      const nextState = nextTranscriptionState({
+        state,
+        hasChecking,
+        noParatext,
+      });
+      if (nextState) {
         await save(
           nextState || ActivityStates.TranscribeReady,
           0,
