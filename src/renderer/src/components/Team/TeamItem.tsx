@@ -1,26 +1,27 @@
-import React, { useContext, useState, useMemo } from 'react';
-import { useGetGlobal, useGlobal } from '../../context/useGlobal';
-import { Grid, IconButton } from '@mui/material';
-import GroupIcon from '@mui/icons-material/Group';
-import { DialogMode, ICardsStrings, OrganizationD } from '../../model';
+import { useContext, useState, useMemo } from 'react';
 import { shallowEqual, useSelector } from 'react-redux';
+import { IconButton } from '@mui/material';
+import GroupIcon from '@mui/icons-material/Group';
+import SortIcon from '@mui/icons-material/Sort';
+import { RecordIdentity } from '@orbit/records';
+import { DialogMode, ICardsStrings, OrganizationD } from '../../model';
 import { cardsSelector } from '../../selector';
 import { TeamContext } from '../../context/TeamContext';
+import { UnsavedContext } from '../../context/UnsavedContext';
+import { useGetGlobal, useGlobal } from '../../context/useGlobal';
+import { useRole, defaultWorkflow, useTeamWorkflowProcess } from '../../crud';
+import { useCommitTeamSettings } from '../../crud/useCommitTeamSettings';
 import BigDialog from '../../hoc/BigDialog';
 import { BigDialogBp } from '../../hoc/BigDialogBp';
-import { StepEditor } from '../StepEditor';
-import GroupTabs from '../GroupTabs';
-import { ProjectCard, AddCard } from '.';
-import TeamDialog, { ITeamDialog } from './TeamDialog';
-import { useRole, defaultWorkflow, useTeamWorkflowProcess } from '../../crud';
-import Confirm from '../AlertDialog';
-import { UnsavedContext } from '../../context/UnsavedContext';
-import { TeamPaper, TeamHeadDiv, TeamName, Button } from '../../control';
-import { RecordIdentity } from '@orbit/records';
-import { ProjectSort } from './ProjectDialog/ProjectSort';
-import SortIcon from '@mui/icons-material/Sort';
+import { Button } from '../../control';
 import { LocalKey, localUserKey } from '../../utils/localUserKey';
-import { useCommitTeamSettings } from '../../crud/useCommitTeamSettings';
+import Confirm from '../AlertDialog';
+import GroupTabs from '../GroupTabs';
+import { StepEditor } from '../StepEditor';
+import { ProjectCard, AddCard } from '.';
+import { ProjectSort } from './ProjectDialog/ProjectSort';
+import TeamDialog, { ITeamDialog } from './TeamDialog';
+import TeamPanel from './TeamPanel';
 
 interface IProps {
   team: OrganizationD;
@@ -36,7 +37,7 @@ export const TeamItem = (props: IProps) => {
   const [editOpen, setEditOpen] = useState(false);
   const [showWorkflow, setShowWorkflow] = useState(false);
   const [deleteItem, setDeleteItem] = useState<RecordIdentity>();
-  const ctx = React.useContext(TeamContext);
+  const ctx = useContext(TeamContext);
   const { teamProjects, teamMembers, teamDelete, isAdmin } = ctx.state;
   const t: ICardsStrings = useSelector(cardsSelector, shallowEqual);
   const [openMember, setOpenMember] = useState(false);
@@ -102,23 +103,13 @@ export const TeamItem = (props: IProps) => {
   }, [offline, team, offlineOnly, isAdmin, connected]);
 
   return (
-    <TeamPaper id="TeamItem">
-      <TeamHeadDiv>
-        <Grid
-          container
-          direction={'row'}
-          sx={{ justifyContent: 'space-between' }}
-        >
-          <Grid size={{ xs: 12, md: 4, lg: 7, xl: 8 }}>
-            <TeamName variant="h5">
-              <GroupIcon sx={{ pr: 1 }} />
-              {team?.attributes?.name}
-            </TeamName>
-          </Grid>
-          <Grid
-            size={{ xs: 12, md: 8, lg: 5, xl: 4 }}
-            sx={{ display: 'flex', justifyContent: 'flex-end' }}
-          >
+    <>
+      <TeamPanel
+        id="TeamItem"
+        icon={<GroupIcon />}
+        title={team?.attributes?.name}
+        actions={
+          <>
             {userIsAdmin && hasMoreThanOneProject && canModify && (
               <IconButton onClick={() => setSortVisible(true)}>
                 <SortIcon />
@@ -154,9 +145,14 @@ export const TeamItem = (props: IProps) => {
                 {t.settings}
               </Button>
             )}
-          </Grid>
-        </Grid>
-      </TeamHeadDiv>
+          </>
+        }
+      >
+        {teamProjects(team.id).map((i) => {
+          return <ProjectCard key={i.id} project={i} />;
+        })}
+        {canModify && <AddCard team={team} />}
+      </TeamPanel>
       {editOpen && (
         <TeamDialog
           mode={DialogMode.edit}
@@ -199,12 +195,6 @@ export const TeamItem = (props: IProps) => {
           noResponse={handleDeleteRefused}
         />
       )}
-      <Grid container sx={{ px: 2 }}>
-        {teamProjects(team.id).map((i) => {
-          return <ProjectCard key={i.id} project={i} />;
-        })}
-        {canModify && <AddCard team={team} />}
-      </Grid>
-    </TeamPaper>
+    </>
   );
 };
