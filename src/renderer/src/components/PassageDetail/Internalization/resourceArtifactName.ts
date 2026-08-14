@@ -16,7 +16,11 @@ export function descriptionRequiredForResource(
   uploadType?: UploadType,
   originalFile?: string
 ): boolean {
-  if (isHttpUrl(originalFile)) {
+  // Markdown resources keep their body text in originalFile, so a body that opens
+  // with a link must not be mistaken for a link-style resource (TT-6658).
+  const isMarkDown =
+    contentType === MarkDownType || uploadType === UploadType.MarkDown;
+  if (!isMarkDown && isHttpUrl(originalFile)) {
     return true;
   }
   if (
