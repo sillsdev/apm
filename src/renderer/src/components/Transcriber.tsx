@@ -764,7 +764,10 @@ export function Transcriber(props: IProps) {
 
     loadProjData();
 
-    const recordType = project ? getProjType(project) : '';
+    const projRec = findRecord(memory, 'project', project) as
+      | Project
+      | undefined;
+    const recordType = projRec ? getProjType(project) : '';
     const resolvedType = resolvedProjectType(projType, recordType);
     const ptCheck = isNoParatextWorkflow(resolvedType, artifactTypeSlug);
     if (ptCheck !== noParatext) setNoParatext(ptCheck);
