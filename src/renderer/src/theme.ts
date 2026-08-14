@@ -5,6 +5,7 @@ import { getDataGridLocale } from './utils/dataGridLocale';
 declare module '@mui/material/styles' {
   interface Palette {
     custom: {
+      black: string;
       currentRegion: string;
       headerBackground: string;
       racetrackCurrent: string;
@@ -14,6 +15,7 @@ declare module '@mui/material/styles' {
   }
   interface PaletteOptions {
     custom?: {
+      black: string;
       currentRegion: string;
       headerBackground: string;
       racetrackCurrent: string;
@@ -37,7 +39,7 @@ const LAYOUT_GAP: ResponsiveStyleValue<number> = { xs: 1, sm: 1.5 };
 
 const colors = {
   primary: '#135cb9',
-  secondary: '#00a7e1',
+  secondary: '#90a828',
 
   // Custom palette
   currentRegion: '#66ff0080',
@@ -81,6 +83,7 @@ export const createAppTheme = (lang: string) =>
           main: colors.secondary,
         },
         custom: {
+          black: colors.darkBg,
           currentRegion: colors.currentRegion,
           headerBackground: colors.headerBackground,
           racetrackCurrent: colors.racetrackCurrent,

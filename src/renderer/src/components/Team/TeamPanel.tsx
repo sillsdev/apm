@@ -32,7 +32,7 @@ export default function TeamPanel({
     >
       <Box sx={[spreadSx, (theme) => ({ pb: theme.layout.gap })]}>
         <Box sx={[rowSx, flexibleSx, { alignItems: 'center' }]}>
-          <Box sx={{ display: 'flex', p: 1, color: 'action.active' }}>
+          <Box sx={{ display: 'flex', p: 1, color: 'custom.black' }}>
             {icon}
           </Box>
           <Typography noWrap sx={{ fontSize: 'large' }}>
