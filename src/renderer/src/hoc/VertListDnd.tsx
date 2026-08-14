@@ -42,6 +42,8 @@ export interface VertListDndProps extends PropsWithChildren {
    * sliders on resource cards remain usable (used by mobile passage artifacts).
    */
   dragHandleRegion?: 'full' | 'top-half';
+  /** When true, items cannot be dragged (TT-6618). */
+  isDragDisabled?: boolean;
   itemSpacing?: number;
   listPaddingX?: number;
   itemPaddingX?: number;
@@ -54,6 +56,7 @@ export const VertListDnd = ({
   dragHandle,
   lockHorizontal,
   dragHandleRegion = 'full',
+  isDragDisabled = false,
   itemSpacing = 1,
   listPaddingX,
   itemPaddingX,
@@ -77,7 +80,7 @@ export const VertListDnd = ({
 
   const onDragEnd = (result: DropResult) => {
     // dropped outside the list
-    if (!result.destination) {
+    if (isDragDisabled || !result.destination) {
       return;
     }
     const newItems = reorder(
@@ -134,14 +137,23 @@ export const VertListDnd = ({
             }}
           >
             {items.map((item, index) => (
-              <Draggable key={item.id} draggableId={item.id} index={index}>
+              <Draggable
+                key={item.id}
+                draggableId={item.id}
+                index={index}
+                isDragDisabled={isDragDisabled}
+              >
                 {(provided, snapshot) => {
                   const handleProps =
-                    dragHandleRegion === 'full' && provided.dragHandleProps
+                    !isDragDisabled &&
+                    dragHandleRegion === 'full' &&
+                    provided.dragHandleProps
                       ? provided.dragHandleProps
                       : {};
                   const gutterProps =
-                    useLeadingDragGutter && provided.dragHandleProps
+                    !isDragDisabled &&
+                    useLeadingDragGutter &&
+                    provided.dragHandleProps
                       ? provided.dragHandleProps
                       : {};
 
@@ -174,7 +186,7 @@ export const VertListDnd = ({
                           : {}),
                       }}
                     >
-                      {useLeadingDragGutter ? (
+                      {useLeadingDragGutter && !isDragDisabled ? (
                         <>
                           <Box
                             data-cy="vert-list-dnd-drag-handle"

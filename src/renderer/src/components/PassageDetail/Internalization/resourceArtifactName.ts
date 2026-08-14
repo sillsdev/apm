@@ -6,11 +6,19 @@ const UriLinkType = 'text/uri-list';
 const MarkDownType = 'text/markdown';
 const FaithbridgeType = 'audio/mpeg/s3link';
 
-/** Faith Bridge, Audio Scripture (uri-list), and UriLink need a user-visible description. */
+function isHttpUrl(value?: string): boolean {
+  return /^https?:\/\//i.test((value ?? '').trim());
+}
+
+/** Faith Bridge, Audio Scripture (uri-list), UriLink, and URL originalFiles need a description. */
 export function descriptionRequiredForResource(
   contentType?: string,
-  uploadType?: UploadType
+  uploadType?: UploadType,
+  originalFile?: string
 ): boolean {
+  if (isHttpUrl(originalFile)) {
+    return true;
+  }
   if (
     uploadType === UploadType.Link ||
     uploadType === UploadType.FaithbridgeLink
@@ -31,7 +39,8 @@ export function resourceArtifactName(
 ): string {
   const desc = (description ?? '').trim();
   if (desc) return desc;
-  if (descriptionRequiredForResource(contentType)) return '';
+  if (descriptionRequiredForResource(contentType, undefined, originalFile))
+    return '';
   return removeExtension(originalFile || '').name;
 }
 
@@ -40,11 +49,12 @@ export function canSaveResourceEdit(opts: {
   contentType: string;
   description: string;
   text?: string;
+  originalFile?: string;
   isUrl: (value: string) => boolean;
 }): boolean {
-  const { contentType, description, text = '', isUrl } = opts;
+  const { contentType, description, text = '', originalFile, isUrl } = opts;
   if (
-    descriptionRequiredForResource(contentType) &&
+    descriptionRequiredForResource(contentType, undefined, originalFile) &&
     !(description ?? '').trim()
   ) {
     return false;

@@ -219,6 +219,10 @@ export function PassageDetailArtifacts() {
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
   const { canDoSectionStep } = useStepPermissions();
   const hasPermission = canDoSectionStep(currentstep, section);
+  const modifiable = useMemo(
+    () => hasPermission && (!offline || offlineOnly),
+    [hasPermission, offline, offlineOnly]
+  );
   const [biblebrainClose, setBiblebrainClose] = useState(false);
   const getGlobal = useGetGlobal();
   const handleLink = useHandleLink({ passage, setLink });
@@ -415,6 +419,7 @@ export function PassageDetailArtifacts() {
         contentType: ct,
         description: descriptionRef.current,
         text: textRef.current ?? '',
+        originalFile: mf?.attributes?.originalFile,
         isUrl,
       })
     );
@@ -600,6 +605,7 @@ export function PassageDetailArtifacts() {
     oldIndex: number;
     newIndex: number;
   }) => {
+    if (!modifiable) return;
     if (oldIndex === newIndex) return;
     const indexes = Array<number>();
     rowData.forEach((r, i) => {
@@ -781,6 +787,7 @@ export function PassageDetailArtifacts() {
         contentType: ct,
         description: descriptionRef.current,
         text,
+        originalFile: mediaRef.current?.attributes?.originalFile,
         isUrl,
       })
     );
@@ -824,6 +831,7 @@ export function PassageDetailArtifacts() {
           contentType: ct,
           description: desc,
           text: textRef.current ?? '',
+          originalFile: mediaRef.current?.attributes?.originalFile,
           isUrl,
         })
       );
@@ -871,11 +879,6 @@ export function PassageDetailArtifacts() {
     () => planType(plan)?.scripture,
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [plan]
-  );
-
-  const modifiable = useMemo(
-    () => hasPermission && (!offline || offlineOnly),
-    [hasPermission, offline, offlineOnly]
   );
 
   return (
@@ -933,8 +936,13 @@ export function PassageDetailArtifacts() {
           )}
         </Grid>
       </Stack>
-      <SortableHeader />
-      <VertListDnd key={`sort-${sortKey}`} onDrop={onSortEnd} dragHandle>
+      <SortableHeader showDragHandle={modifiable} />
+      <VertListDnd
+        key={`sort-${sortKey}`}
+        onDrop={onSortEnd}
+        dragHandle
+        isDragDisabled={!modifiable}
+      >
         {selectedRows.map((value, index) => (
           <SortableItem
             key={`item-${index}`}
@@ -948,6 +956,7 @@ export function PassageDetailArtifacts() {
             onDone={handleDone}
             onDelete={modifiable ? handleDelete : undefined}
             onEdit={modifiable ? handleEdit : undefined}
+            showDragHandle={modifiable}
           />
         ))}
       </VertListDnd>

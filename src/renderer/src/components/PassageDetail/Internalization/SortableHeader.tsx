@@ -3,12 +3,17 @@ import { IPassageDetailArtifactsStrings } from '../../../model';
 import { TableRow } from '.';
 import { passageDetailArtifactsSelector } from '../../../selector';
 
-export const SortableHeader = () => {
+export const SortableHeader = ({
+  showDragHandle,
+}: {
+  showDragHandle?: boolean;
+}) => {
   const t: IPassageDetailArtifactsStrings = useSelector(
     passageDetailArtifactsSelector
   );
   return (
     <TableRow
+      showDragHandle={showDragHandle}
       value={
         {
           playItem: t.action,

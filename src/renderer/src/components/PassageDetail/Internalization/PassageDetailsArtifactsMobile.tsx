@@ -208,6 +208,10 @@ export function PassageDetailArtifactsMobile() {
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
   const { canDoSectionStep } = useStepPermissions();
   const hasPermission = canDoSectionStep(currentstep, section);
+  const modifiable = useMemo(
+    () => hasPermission && (!offline || offlineOnly),
+    [hasPermission, offline, offlineOnly]
+  );
   const [biblebrainClose, setBiblebrainClose] = useState(false);
   const getGlobal = useGetGlobal();
   const handleLink = useHandleLink({ passage, setLink });
@@ -411,6 +415,7 @@ export function PassageDetailArtifactsMobile() {
         contentType: ct,
         description: descriptionRef.current,
         text: textRef.current ?? '',
+        originalFile: mf?.attributes?.originalFile,
         isUrl,
       })
     );
@@ -596,6 +601,7 @@ export function PassageDetailArtifactsMobile() {
     oldIndex: number;
     newIndex: number;
   }) => {
+    if (!modifiable) return;
     if (oldIndex === newIndex) return;
     const indexes = Array<number>();
     rowData.forEach((r, i) => {
@@ -767,6 +773,7 @@ export function PassageDetailArtifactsMobile() {
         contentType: ct,
         description: descriptionRef.current,
         text,
+        originalFile: mediaRef.current?.attributes?.originalFile,
         isUrl,
       })
     );
@@ -810,6 +817,7 @@ export function PassageDetailArtifactsMobile() {
           contentType: ct,
           description: desc,
           text: textRef.current ?? '',
+          originalFile: mediaRef.current?.attributes?.originalFile,
           isUrl,
         })
       );
@@ -850,11 +858,6 @@ export function PassageDetailArtifactsMobile() {
     () => planType(plan)?.scripture,
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [plan]
-  );
-
-  const modifiable = useMemo(
-    () => hasPermission && (!offline || offlineOnly),
-    [hasPermission, offline, offlineOnly]
   );
 
   return (
@@ -903,6 +906,7 @@ export function PassageDetailArtifactsMobile() {
           itemSpacing={0.25}
           listPaddingX={0}
           itemPaddingX={0}
+          isDragDisabled={!modifiable}
         >
           {selectedRows.map((value) => (
             <Box key={`item-${value.id}`} sx={{ width: '100%' }}>

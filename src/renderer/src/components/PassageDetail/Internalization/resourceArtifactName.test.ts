@@ -29,6 +29,16 @@ describe('descriptionRequiredForResource', () => {
       descriptionRequiredForResource('audio/mpeg', UploadType.Resource)
     ).toBe(false);
   });
+
+  it('requires description when originalFile is an http(s) URL (TT-6658)', () => {
+    expect(
+      descriptionRequiredForResource(
+        'audio/mpeg',
+        UploadType.Resource,
+        'https://live.bible.is/bible/ENGESV/MAT/1'
+      )
+    ).toBe(true);
+  });
 });
 
 describe('resourceArtifactName', () => {
@@ -55,6 +65,16 @@ describe('resourceArtifactName', () => {
     expect(resourceArtifactName('', 'recording.mp3', 'audio/mpeg')).toBe(
       'recording'
     );
+  });
+
+  it('does not fall back to a Bible Brain URL when description is empty (TT-6658)', () => {
+    expect(
+      resourceArtifactName(
+        '',
+        'https://live.bible.is/bible/ENGESV/MAT/1',
+        'audio/mpeg'
+      )
+    ).toBe('');
   });
 });
 
@@ -99,6 +119,17 @@ describe('canSaveResourceEdit', () => {
         contentType: MarkDownType,
         description: 'ignored',
         text: '',
+        isUrl,
+      })
+    ).toBe(false);
+  });
+
+  it('blocks save when Bible Brain originalFile is a URL and description is empty (TT-6658)', () => {
+    expect(
+      canSaveResourceEdit({
+        contentType: 'audio/mpeg',
+        description: '',
+        originalFile: 'https://live.bible.is/bible/ENGESV/MAT/1',
         isUrl,
       })
     ).toBe(false);
