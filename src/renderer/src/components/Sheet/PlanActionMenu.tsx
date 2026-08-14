@@ -32,6 +32,7 @@ import { ExtraIcon } from '.';
 export const PlanSheetRowCtx = React.createContext({
   currentRow: -1,
   activeRow: -1,
+  sheetCurrentI: -1,
   clearActive: () => {},
 });
 

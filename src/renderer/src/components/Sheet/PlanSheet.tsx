@@ -116,9 +116,20 @@ const curTopFromViewport = (
 ) =>
   Math.max(1, windowFirst + Math.floor((scrollerTop - firstDataRowTop) / rh));
 
-const EMPTY_SEL: DataSheet.Selection = {
-  start: {} as DataSheet.Location,
-  end: {} as DataSheet.Location,
+/** Stable DataSheet row type — must not change identity or the grid remounts mid-drag. */
+const SheetRow = ({
+  row,
+  children,
+}: {
+  row: number;
+  children?: React.ReactNode;
+}) => {
+  const { sheetCurrentI } = useContext(PlanSheetRowCtx);
+  return (
+    <tr className={row === sheetCurrentI ? 'current-row' : undefined}>
+      {children}
+    </tr>
+  );
 };
 
 const ContentDiv = styled('div')(({ theme }) => ({
@@ -139,8 +150,7 @@ const ContentDiv = styled('div')(({ theme }) => ({
   '& .data-grid-container .data-grid .cell.setpErr': {
     backgroundColor: theme.palette.warning.main,
   },
-  // Whole-row highlight from DataSheet's selected cell — no DOM class scans.
-  '& .data-grid-container .data-grid tr:has(.cell.selected) .cell': {
+  '& .data-grid-container .data-grid tr.current-row .cell': {
     borderStyle: 'double',
     borderColor: theme.palette.primary.light,
   },
@@ -584,38 +594,47 @@ export function PlanSheet(props: IProps) {
     }, 200);
   };
 
-  /** Slide virtual window so `row` stays mountable. */
-  const pinWindowToRow = (row: number) => {
+  /** Slide virtual window only if `row` is not mounted. Do not recenter. */
+  const pinWindowToRow = (row: number): false | 'start' | 'end' => {
     if (row < 1) return false;
-    const n = pageSizeRef.current;
     const first = windowFirstRef.current;
     const last = windowLastRef.current;
-    const over = overscanOf(n);
-    const nearEdge =
-      row < first ||
-      row >= last ||
-      row >= last - over ||
-      (first > 1 && row <= first + over);
-    if (!nearEdge) return false;
+    if (row >= first && row < last) return false;
+    const n = pageSizeRef.current;
     const desiredTop = Math.min(
       Math.max(1, data.length - n),
-      Math.max(1, row - Math.floor(n / 2))
+      row < first ? row : Math.max(1, row - n + 1)
     );
-    if (desiredTop === curTop) return false;
+    const edge = row < first ? 'start' : 'end';
+    if (desiredTop === curTop) return edge;
     ignoreScrollCurTopRef.current = true;
     setCurTop(desiredTop);
-    return true;
+    return edge;
   };
 
-  /** Scroll so absolute data row is in the viewport (does not change current row). */
+  /** Scroll the scroller only if the row is clipped. `force` after a remount. */
+  const alignRowInScroller = (
+    scroller: HTMLElement,
+    el: HTMLElement,
+    force?: 'start' | 'end'
+  ) => {
+    const er = el.getBoundingClientRect();
+    const sr = scroller.getBoundingClientRect();
+    if (force === 'start' || er.top < sr.top) {
+      scroller.scrollTop += er.top - sr.top;
+    } else if (force === 'end' || er.bottom > sr.bottom) {
+      scroller.scrollTop += er.bottom - sr.bottom;
+    }
+  };
+
+  /** Keep absolute data row in view. No scroll while it is fully visible. */
   const sheetScroll = () => {
     const scroller = scrollRef.current;
     const row = currentRowRef.current;
     if (!scroller || row < 1) return false;
 
-    ignoreScrollCurTopRef.current = true;
-
     if (row <= 1) {
+      ignoreScrollCurTopRef.current = true;
       if (curTop !== 1) setCurTop(1);
       if (scroller.scrollTop !== 0) scroller.scrollTo(0, 0);
       releaseScrollCurTopIgnore();
@@ -623,22 +642,20 @@ export function PlanSheet(props: IProps) {
     }
 
     const remounted = pinWindowToRow(row);
-    const intoView = () => {
+    const intoView = (force?: 'start' | 'end') => {
       const table = sheetRef.current?.querySelector(
         'table.data-grid'
       ) as HTMLTableElement | null;
-      table?.rows?.[absToSheet(row)]?.scrollIntoView({
-        block: 'nearest',
-        inline: 'nearest',
-      });
-      releaseScrollCurTopIgnore();
+      const el = table?.rows?.[absToSheet(row)] as HTMLElement | undefined;
+      if (el) alignRowInScroller(scroller, el, force);
+      if (remounted) releaseScrollCurTopIgnore();
     };
     window.cancelAnimationFrame(sheetScrollRafRef.current);
     if (remounted) {
       sheetScrollRafRef.current = requestAnimationFrame(() => {
         sheetScrollRafRef.current = requestAnimationFrame(() => {
           sheetScrollRafRef.current = 0;
-          intoView();
+          intoView(remounted);
         });
       });
     } else intoView();
@@ -715,29 +732,53 @@ export function PlanSheet(props: IProps) {
       return;
     }
 
-    const absEnd = sheetToAbs(sheetEnd);
-    const absStart = sheetToAbs(loc.start?.i ?? sheetEnd);
-    if (absEnd < windowFirstRef.current || absEnd >= windowLastRef.current) {
+    const absLocEnd = sheetToAbs(sheetEnd);
+    const absLocStart = sheetToAbs(loc.start?.i ?? sheetEnd);
+    if (
+      absLocEnd < windowFirstRef.current ||
+      absLocEnd >= windowLastRef.current
+    ) {
       return;
     }
     const endJ = loc.end?.j ?? 0;
     const startJ = loc.start?.j ?? endJ;
+    const isPoint = loc.start?.i === loc.end?.i && startJ === endJ;
+    // DataSheet `end` is the moving cell (drag / shift). Keep our original
+    // click as the range anchor — after we put focus in selected.start,
+    // loc.start is no longer the anchor.
+    const freezeAnchor =
+      !isPoint &&
+      startRowRef.current >= 1 &&
+      startRowRef.current !== currentRowRef.current;
+    const absFocus = absLocEnd;
+    const absAnchor = isPoint
+      ? absFocus
+      : freezeAnchor
+        ? startRowRef.current
+        : absLocStart;
+    const focusJ = endJ;
     const sameAnchor =
-      absEnd === currentRowRef.current && absStart === startRowRef.current;
-    currentRowRef.current = absEnd;
-    startRowRef.current = absStart;
-    selectColRef.current = endJ;
-    setAbsSel((prev) =>
-      prev.startI === absStart &&
-      prev.endI === absEnd &&
-      prev.startJ === startJ &&
-      prev.endJ === endJ
+      absFocus === currentRowRef.current && absAnchor === startRowRef.current;
+    currentRowRef.current = absFocus;
+    startRowRef.current = absAnchor;
+    selectColRef.current = focusJ;
+    setAbsSel((prev) => {
+      const next = {
+        startI: absAnchor,
+        endI: absFocus,
+        startJ: freezeAnchor ? prev.startJ : startJ,
+        endJ: focusJ,
+      };
+      return prev.startI === next.startI &&
+        prev.endI === next.endI &&
+        prev.startJ === next.startJ &&
+        prev.endJ === next.endJ
         ? prev
-        : { startI: absStart, endI: absEnd, startJ, endJ }
-    );
+        : next;
+    });
     if (sameAnchor) return;
-    setCurrentRowx((prev) => (prev === absEnd ? prev : absEnd));
-    queueMicrotask(() => sheetScrollRef.current());
+    setCurrentRowx((prev) => (prev === absFocus ? prev : absFocus));
+    if (isPoint) queueMicrotask(() => sheetScrollRef.current());
     scheduleCommitCurrentRow();
   };
 
@@ -1284,28 +1325,34 @@ export function PlanSheet(props: IProps) {
   }, [windowFirst, topPad]);
 
   const clearActive = useCallback(() => setActive(-1), []);
+  const sheetCurrentI = useMemo(() => {
+    if (currentRow === 0) return windowFirst === 1 ? 0 : -1;
+    if (currentRow < windowFirst || currentRow >= windowLast) return -1;
+    return currentRow - windowFirst + 1;
+  }, [currentRow, windowFirst, windowLast]);
   const rowCtx = useMemo(
-    () => ({ currentRow, activeRow: active, clearActive }),
-    [currentRow, active, clearActive]
+    () => ({ currentRow, activeRow: active, sheetCurrentI, clearActive }),
+    [currentRow, active, sheetCurrentI, clearActive]
   );
 
-  const selected = useMemo((): DataSheet.Selection => {
+  const selected = useMemo((): DataSheet.Selection | null => {
     const { startI, endI, startJ, endJ } = absSel;
-    if (endI < 0 && startI < 0) return EMPTY_SEL;
+    if (endI < 0 && startI < 0) return null;
     if (startI === 0 && endI === 0) {
       return { start: { i: 0, j: startJ }, end: { i: 0, j: endJ } };
     }
     const lo = Math.min(startI, endI);
     const hi = Math.max(startI, endI);
-    if (hi < windowFirst || lo >= windowLast) return EMPTY_SEL;
+    if (hi < windowFirst || lo >= windowLast) return null;
     const toSheet = (abs: number) => {
       if (abs <= 0) return 0;
       const clamped = Math.min(Math.max(abs, windowFirst), windowLast - 1);
       return clamped - windowFirst + 1;
     };
     return {
-      start: { i: toSheet(startI), j: startJ },
-      end: { i: toSheet(endI), j: endJ },
+      // DataSheet treats `start` as the current cell (arrows, Enter, typing).
+      start: { i: toSheet(endI), j: endJ },
+      end: { i: toSheet(startI), j: startJ },
     };
   }, [absSel, windowFirst, windowLast]);
 
@@ -1496,6 +1543,7 @@ export function PlanSheet(props: IProps) {
           <DataSheet
             data={visibleData}
             selected={selected}
+            rowRenderer={SheetRow}
             valueRenderer={handleValueRender}
             dataRenderer={handleDataRender}
             onContextMenu={handleContextMenu}
