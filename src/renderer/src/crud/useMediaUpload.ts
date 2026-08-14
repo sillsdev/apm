@@ -20,6 +20,7 @@ import { AlertSeverity, useSnackBar } from '../hoc/SnackBar';
 import { mediaTabSelector, sharedSelector } from '../selector';
 import { OrbitNetworkErrorRetries } from '../../api-variable';
 import { formatUploadTerminalFailureMessage } from '../store/upload/uploadTerminalMessages';
+import { suggestsConnectionProblem } from '../store/upload/uploadRetry';
 
 interface IProps {
   artifactId: string | null;
@@ -103,9 +104,11 @@ export const useMediaUpload = ({
   const itemComplete = async (
     n: number,
     success: boolean,
-    data?: any
+    data?: any,
+    failure?: actions.UploadFailureInfo
   ): Promise<void> => {
-    if (!success) setOrbitRetries(OrbitNetworkErrorRetries - 1); //notify of possible network issue
+    if (!success && suggestsConnectionProblem(failure))
+      setOrbitRetries(OrbitNetworkErrorRetries - 1); //notify of possible network issue
     const uploadList = fileList.current;
     if (!uploadList) return; // This should never happen
     if (data?.stringId) {
@@ -227,8 +230,8 @@ export const useMediaUpload = ({
         offline: getGlobal('offline'),
         errorReporter: reporter,
         uploadType: UploadType.Media,
-        cb: (n, success, data) => {
-          void itemComplete(n, success, data)
+        cb: (n, success, data, failure) => {
+          void itemComplete(n, success, data, failure)
             .then(() => {
               if (success) resolve(true);
               else reject(new Error(t.uploadFailed));

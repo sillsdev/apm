@@ -35,7 +35,12 @@ import {
   UPLOAD_MAX_ATTEMPTS,
   waitForImportExportIdle,
   isRetryableUploadStatus,
+  uploadFailureReasonFromStatus,
+  UploadFailureReason,
+  type UploadFailureInfo,
 } from './uploadRetry';
+
+export type { UploadFailureInfo, UploadFailureReason } from './uploadRetry';
 import {
   appendPendingMediaUpload,
   PendingUploadRecord,
@@ -250,7 +255,12 @@ export interface NextUploadProps {
   offline: boolean;
   errorReporter: typeof bugsnagClient;
   uploadType: UploadType;
-  cb?: (n: number, success: boolean, data?: MediaFileAttributes) => void;
+  cb?: (
+    n: number,
+    success: boolean,
+    data?: MediaFileAttributes,
+    failure?: UploadFailureInfo
+  ) => void;
   onTerminalFailure?: (info: UploadTerminalFailureInfo) => void;
   /** When retrying from the pending queue, pass the entry id to remove after a successful upload. */
   pendingUploadIdToClearOnSuccess?: string;
@@ -276,7 +286,12 @@ export const nextUpload =
   }: NextUploadProps) =>
   (dispatch: Dispatch) => {
     dispatch({ payload: n, type: UPLOAD_ITEM_PENDING });
-    const sendError = (n: number, message: string, mediaid?: number): void => {
+    const sendError = (
+      n: number,
+      message: string,
+      reason: UploadFailureReason,
+      mediaid?: number
+    ): void => {
       dispatch({
         payload: {
           current: n,
@@ -285,7 +300,8 @@ export const nextUpload =
         },
         type: UPLOAD_ITEM_FAILED,
       });
-      if (cb) cb(n, false);
+      // These never reached the network, so they carry no status.
+      if (cb) cb(n, false, undefined, { reason });
     };
     const { name, size, type } = files[n] as File;
     const isDownloadable = !isNotDownloadable(type);
@@ -296,11 +312,15 @@ export const nextUpload =
       isDownloadable &&
       !acceptExtPat.test(record.originalFile.split('?')[0] || '')
     ) {
-      sendError(n, `${name}:unsupported`);
+      sendError(n, `${name}:unsupported`, UploadFailureReason.UnsupportedType);
       return;
     }
     if (size > typeLimit(uploadType) * 1000000) {
-      sendError(n, `${name}:toobig:${(size / 1000000).toFixed(2)}`);
+      sendError(
+        n,
+        `${name}:toobig:${(size / 1000000).toFixed(2)}`,
+        UploadFailureReason.TooBig
+      );
       return;
     }
     if (offline) {
@@ -317,7 +337,11 @@ export const nextUpload =
             errorReporter,
             infoMsg(err as Error, `failed getting name: ${name}`)
           );
-          sendError(n, `${name} failed local write`);
+          sendError(
+            n,
+            `${name} failed local write`,
+            UploadFailureReason.LocalWriteFailed
+          );
         }
       return;
     }
@@ -343,7 +367,11 @@ export const nextUpload =
           },
           type: UPLOAD_ITEM_FAILED,
         });
-        if (cb) cb(n, false, data);
+        if (cb)
+          cb(n, false, data, {
+            reason: uploadFailureReasonFromStatus(statusNum),
+            statusNum,
+          });
       }
     };
 
@@ -458,7 +486,11 @@ export const nextUpload =
             errorReporter,
             infoMsg(err as Error, `local staging failed: ${name}`)
           );
-          sendError(n, `${name}: local save failed`);
+          sendError(
+            n,
+            `${name}: local save failed`,
+            UploadFailureReason.LocalWriteFailed
+          );
           return;
         }
       }
