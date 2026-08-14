@@ -449,7 +449,9 @@ const TranscriberProvider = (props: IProps) => {
               'passage',
               pasId ?? '',
               memory?.keyMap as RecordKeyMap
-            ) || pasId;
+            ) ||
+            pasId ||
+            '';
           const passRec = findRecord(memory, 'passage', psg) as
             | PassageD
             | undefined;
@@ -489,7 +491,9 @@ const TranscriberProvider = (props: IProps) => {
             'passage',
             pasId ?? '',
             memory?.keyMap as RecordKeyMap
-          ) || pasId;
+          ) ||
+          pasId ||
+          '';
         const passRec = findRecord(memory, 'passage', psg) as
           | PassageD
           | undefined;
