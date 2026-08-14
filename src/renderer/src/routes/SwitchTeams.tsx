@@ -234,7 +234,7 @@ const FloatingActions = () => {
               gap: 2,
             }}
           >
-            {((!offline && connected) || offlineOnly) && (
+            {!offline && connected && (
               <Button
                 id="TeamActAdd"
                 data-testid="add-team-button"
