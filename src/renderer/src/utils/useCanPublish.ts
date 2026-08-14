@@ -93,14 +93,7 @@ export const useUserCanPublish = (): UserCanPublishResult => {
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    isOffline,
-    canUserPublish,
-    accessToken,
-    paratext_canPublishStatus,
-    paratext_canPublish,
-    user,
-  ]);
+  }, [paratext_canPublishStatus]);
   return { canUserPublish };
 };
 
