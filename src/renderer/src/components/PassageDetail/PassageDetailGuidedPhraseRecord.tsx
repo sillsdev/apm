@@ -118,6 +118,7 @@ export function PassageDetailGuidedPhraseRecord({
   const [plan] = useGlobal('plan');
   const [offline] = useGlobal('offline');
   const mediafiles = useOrbitData<MediaFileD[]>('mediafile');
+  const [connected] = useGlobal('connected');
   const { getTypeId } = useArtifactType();
   const {
     passage,
@@ -617,6 +618,7 @@ export function PassageDetailGuidedPhraseRecord({
   // would break the manual Save button on every other recording screen.
   const saveRejectedRef = useRef(false);
 
+  const previousConnectedRef = useRef(connected);
   useEffect(() => {
     if (canSave && !saveRejectedRef.current) {
       savingRecordingRef.current = true;
@@ -646,6 +648,14 @@ export function PassageDetailGuidedPhraseRecord({
     saveRejectedRef.current = false;
     setSaveRejected(false);
   }, [currentIndex]);
+
+  useEffect(() => {
+    const reconnected = !previousConnectedRef.current && connected;
+    previousConnectedRef.current = connected;
+    if (reconnected && saveRejectedRef.current && !savingRecordingRef.current) {
+      handleRetrySave();
+    }
+  }, [connected, handleRetrySave]);
 
   const snapToClauseStart = useCallback(
     async (index: number) => {
