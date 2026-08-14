@@ -185,7 +185,6 @@ const FloatingActions = () => {
     t,
     offline,
     connected,
-    offlineOnly,
     isDeveloper,
     userIsSharedContentAdmin,
     isDeleting,
