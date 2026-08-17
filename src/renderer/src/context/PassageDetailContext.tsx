@@ -292,7 +292,7 @@ const PassageDetailProvider = (props: IProps) => {
     undefined
   );
   const filteredOrgSteps = useFilteredSteps();
-  const { localizedArtifactType, getTypeId } = useArtifactType();
+  const { localizedArtifactType, localIdFromSlug } = useArtifactType();
   const { localizedArtifactCategory } = useArtifactCategory();
   const { localizedWorkStep } = useOrgWorkflowSteps();
   const mediaStart = useRef<number | undefined>(undefined);
@@ -817,7 +817,7 @@ const PassageDetailProvider = (props: IProps) => {
   })();
 
   const getProjectResources = async () => {
-    const typeId = getTypeId(ArtifactTypeSlug.ProjectResource);
+    const typeId = localIdFromSlug(ArtifactTypeSlug.ProjectResource);
     return mediafiles.filter(
       (m) =>
         related(m, 'plan') === plan && related(m, 'artifactType') === typeId

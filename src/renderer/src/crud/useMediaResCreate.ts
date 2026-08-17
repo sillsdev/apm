@@ -13,7 +13,7 @@ export const useMediaResCreate = (passage: RecordIdentity, stepId: string) => {
   const [memory] = useGlobal('memory');
   const [user] = useGlobal('user');
   const [plan] = useGlobal('plan'); //will be constant here
-  const { getTypeId } = useArtifactType();
+  const { localIdFromSlug } = useArtifactType();
 
   return async (res: Resource, artifactCategoryId?: string) => {
     const attr = res.attributes;
@@ -62,7 +62,7 @@ export const useMediaResCreate = (passage: RecordIdentity, stepId: string) => {
         mediaRec as RecordIdentity,
         'artifactType',
         'artifacttype',
-        getTypeId(ArtifactTypeSlug.SharedResource)
+        localIdFromSlug(ArtifactTypeSlug.SharedResource)
       )
     );
     if (artifactCategoryId)

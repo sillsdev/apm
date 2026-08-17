@@ -1,6 +1,7 @@
 import { useRef, useContext, useEffect } from 'react';
 import { useGetGlobal, useGlobal } from '../context/useGlobal';
 import {
+  ArtifactTypeSlug,
   pullTableList,
   related,
   remoteIdNum,
@@ -22,7 +23,8 @@ import { OrbitNetworkErrorRetries } from '../../api-variable';
 import { formatUploadTerminalFailureMessage } from '../store/upload/uploadTerminalMessages';
 
 interface IProps {
-  artifactId: string | null;
+  /** The artifact type to tag the upload with (null = Vernacular). */
+  artifactTypeSlug: ArtifactTypeSlug | null;
   passageId: string | undefined;
   planId?: string | undefined;
   sourceMediaId?: string | undefined;
@@ -36,7 +38,7 @@ interface IProps {
   pendingUploadIdToClearOnSuccess?: string;
 }
 export const useMediaUpload = ({
-  artifactId,
+  artifactTypeSlug,
   passageId,
   sourceMediaId,
   sourceSegments,
@@ -75,12 +77,17 @@ export const useMediaUpload = ({
   const { createMedia } = useOfflnMediafileCreate();
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
   const t = useSelector(mediaTabSelector, shallowEqual);
-  const { localizedArtifactTypeFromId } = useArtifactType();
+  const { localIdFromSlug, remoteIdNumFromSlug, localizedArtifactType } =
+    useArtifactType();
+  // Vernacular is represented as null throughout; treat the Vernacular slug the
+  // same so callers can pass either.
+  const isVernacular =
+    !artifactTypeSlug || artifactTypeSlug === ArtifactTypeSlug.Vernacular;
   const [, setOrbitRetries] = useGlobal('orbitRetries'); //verified this is not used in a function 2/18/25
   const getLatestVersion = () => {
     let num = 1;
     const psgId = passageId || '';
-    if (psgId && !artifactId) {
+    if (psgId && isVernacular) {
       const mediaFiles = (
         memory.cache.query((q) => q.findRecords('mediafile')) as MediaFileD[]
       )
@@ -113,13 +120,14 @@ export const useMediaUpload = ({
     } else if (success && data) {
       // offlineOnly
       const num = getLatestVersion();
+      const localArtifactId = localIdFromSlug(artifactTypeSlug);
       mediaIdRef.current = (
         await createMedia(
           data,
           num,
           (uploadList[n] as File).size,
           passageId ?? '',
-          artifactId,
+          localArtifactId,
           sourceMediaId ?? '',
           user
         )
@@ -169,14 +177,12 @@ export const useMediaUpload = ({
               getGlobal('plan'),
               memory?.keyMap as RecordKeyMap
             ) || getGlobal('plan');
-      const getArtifactId = () =>
-        artifactId === null
-          ? null
-          : remoteIdNum(
-              'artifacttype',
-              artifactId,
-              memory?.keyMap as RecordKeyMap
-            ) || artifactId;
+      const getArtifactId = () => {
+        if (isVernacular) return null;
+        // Enhance: if remoteIdNumFromSlug fails (something went pretty wrong, we got a bad slug or something)
+        // this could silently misclassify file as vernacular.
+        return remoteIdNumFromSlug(artifactTypeSlug as ArtifactTypeSlug) || '';
+      };
       const getPassageId = () =>
         passageId
           ? remoteIdNum('passage', passageId, memory?.keyMap as RecordKeyMap) ||
@@ -208,9 +214,9 @@ export const useMediaUpload = ({
         performedBy: performedByRef.current ?? null,
         topic: topicRef.current ?? '',
         languagebcp47: languagebcp47 ?? '',
-        eafUrl: !artifactId
+        eafUrl: isVernacular
           ? ts.mediaAttached
-          : localizedArtifactTypeFromId(artifactId), //put psc message here
+          : localizedArtifactType(artifactTypeSlug as ArtifactTypeSlug), //put psc message here
       } as MediaFileAttributes & {
         planId: string;
         artifactTypeId: string;

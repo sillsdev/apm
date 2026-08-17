@@ -158,11 +158,11 @@ const TranscriberProvider = (props: IProps) => {
     allBookData,
     isDetail,
   });
-  const { getTypeId } = useArtifactType();
+  const { localIdFromSlug } = useArtifactType();
 
   const artifactId = useMemo(
-    () => (slug ? getTypeId(slug) : (artifactTypeId ?? VernacularTag)),
-    [slug, artifactTypeId, getTypeId]
+    () => (slug ? localIdFromSlug(slug) : (artifactTypeId ?? VernacularTag)),
+    [slug, artifactTypeId, localIdFromSlug]
   );
 
   useEffect(() => {
