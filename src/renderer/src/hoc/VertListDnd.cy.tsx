@@ -69,4 +69,16 @@ describe('VertListDnd', () => {
       'grab'
     );
   });
+
+  it('does not expose a drag handle when isDragDisabled (TT-6618)', () => {
+    cy.mount(
+      <VertListDnd dragHandle dragHandleRegion="top-half" isDragDisabled>
+        <div data-cy="row-0">Alpha</div>
+        <div data-cy="row-1">Beta</div>
+      </VertListDnd>
+    );
+
+    cy.get('[data-cy="vert-list-dnd-drag-handle"]').should('not.exist');
+    cy.get('[data-rbd-drag-handle-draggable-id]').should('not.exist');
+  });
 });

@@ -29,6 +29,34 @@ describe('descriptionRequiredForResource', () => {
       descriptionRequiredForResource('audio/mpeg', UploadType.Resource)
     ).toBe(false);
   });
+
+  it('requires description when originalFile is an http(s) URL (TT-6658)', () => {
+    expect(
+      descriptionRequiredForResource(
+        'audio/mpeg',
+        UploadType.Resource,
+        'https://live.bible.is/bible/ENGESV/MAT/1'
+      )
+    ).toBe(true);
+  });
+
+  it('does not require description for a markdown body that starts with a URL (TT-6658)', () => {
+    // Markdown keeps its body text in originalFile, not a file name or URL.
+    expect(
+      descriptionRequiredForResource(
+        MarkDownType,
+        UploadType.MarkDown,
+        'https://example.com/see-this\n\nmore notes'
+      )
+    ).toBe(false);
+    expect(
+      descriptionRequiredForResource(
+        MarkDownType,
+        undefined,
+        'https://example.com/see-this'
+      )
+    ).toBe(false);
+  });
 });
 
 describe('resourceArtifactName', () => {
@@ -55,6 +83,16 @@ describe('resourceArtifactName', () => {
     expect(resourceArtifactName('', 'recording.mp3', 'audio/mpeg')).toBe(
       'recording'
     );
+  });
+
+  it('does not fall back to a Bible Brain URL when description is empty (TT-6658)', () => {
+    expect(
+      resourceArtifactName(
+        '',
+        'https://live.bible.is/bible/ENGESV/MAT/1',
+        'audio/mpeg'
+      )
+    ).toBe('');
   });
 });
 
@@ -99,6 +137,29 @@ describe('canSaveResourceEdit', () => {
         contentType: MarkDownType,
         description: 'ignored',
         text: '',
+        isUrl,
+      })
+    ).toBe(false);
+  });
+
+  it('allows markdown save without description when the body starts with a URL (TT-6658)', () => {
+    expect(
+      canSaveResourceEdit({
+        contentType: MarkDownType,
+        description: '',
+        text: 'https://example.com/see-this',
+        originalFile: 'https://example.com/see-this',
+        isUrl,
+      })
+    ).toBe(true);
+  });
+
+  it('blocks save when Bible Brain originalFile is a URL and description is empty (TT-6658)', () => {
+    expect(
+      canSaveResourceEdit({
+        contentType: 'audio/mpeg',
+        description: '',
+        originalFile: 'https://live.bible.is/bible/ENGESV/MAT/1',
         isUrl,
       })
     ).toBe(false);

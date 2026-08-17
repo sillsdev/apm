@@ -219,6 +219,10 @@ export function PassageDetailArtifacts() {
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
   const { canDoSectionStep } = useStepPermissions();
   const hasPermission = canDoSectionStep(currentstep, section);
+  const modifiable = useMemo(
+    () => hasPermission && (!offline || offlineOnly),
+    [hasPermission, offline, offlineOnly]
+  );
   const [biblebrainClose, setBiblebrainClose] = useState(false);
   const getGlobal = useGetGlobal();
   const handleLink = useHandleLink({ passage, setLink });
@@ -415,6 +419,7 @@ export function PassageDetailArtifacts() {
         contentType: ct,
         description: descriptionRef.current,
         text: textRef.current ?? '',
+        originalFile: mf?.attributes?.originalFile,
         isUrl,
       })
     );
@@ -600,6 +605,7 @@ export function PassageDetailArtifacts() {
     oldIndex: number;
     newIndex: number;
   }) => {
+    if (!modifiable) return;
     if (oldIndex === newIndex) return;
     const indexes = Array<number>();
     rowData.forEach((r, i) => {
@@ -608,8 +614,7 @@ export function PassageDetailArtifacts() {
     const newIndexes = arrayMove(indexes, oldIndex, newIndex) as number[];
     for (let i = 0; i < newIndexes.length; i += 1) {
       const secResRec = sectionResources.find(
-        (r) =>
-          related(r, 'mediafile') === (rowData[newIndexes[i] ?? 0] as IRow).id
+        (r) => related(r, 'mediafile') === rowData[newIndexes[i]].id
       );
       if (secResRec && secResRec.attributes?.sequenceNum !== i) {
         UpdateSectionResource({
@@ -618,9 +623,12 @@ export function PassageDetailArtifacts() {
         });
       }
     }
-    const newRows = rowData
-      .map((r, i) => (listFilter(r) ? rowData[newIndexes[i] ?? 0] : r))
-      .filter((r) => r !== undefined);
+    // newIndexes is indexed by display (filtered) position, so track that
+    // separately from the rowData position while rebuilding the list.
+    let displayIndex = 0;
+    const newRows = rowData.map((r) =>
+      listFilter(r) ? rowData[newIndexes[displayIndex++]] : r
+    );
     forceRefresh(newRows);
   };
 
@@ -781,6 +789,7 @@ export function PassageDetailArtifacts() {
         contentType: ct,
         description: descriptionRef.current,
         text,
+        originalFile: mediaRef.current?.attributes?.originalFile,
         isUrl,
       })
     );
@@ -824,6 +833,7 @@ export function PassageDetailArtifacts() {
           contentType: ct,
           description: desc,
           text: textRef.current ?? '',
+          originalFile: mediaRef.current?.attributes?.originalFile,
           isUrl,
         })
       );
@@ -871,11 +881,6 @@ export function PassageDetailArtifacts() {
     () => planType(plan)?.scripture,
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [plan]
-  );
-
-  const modifiable = useMemo(
-    () => hasPermission && (!offline || offlineOnly),
-    [hasPermission, offline, offlineOnly]
   );
 
   return (
@@ -933,8 +938,13 @@ export function PassageDetailArtifacts() {
           )}
         </Grid>
       </Stack>
-      <SortableHeader />
-      <VertListDnd key={`sort-${sortKey}`} onDrop={onSortEnd} dragHandle>
+      <SortableHeader showDragHandle={modifiable} />
+      <VertListDnd
+        key={`sort-${sortKey}`}
+        onDrop={onSortEnd}
+        dragHandle
+        isDragDisabled={!modifiable}
+      >
         {selectedRows.map((value, index) => (
           <SortableItem
             key={`item-${index}`}
@@ -948,6 +958,7 @@ export function PassageDetailArtifacts() {
             onDone={handleDone}
             onDelete={modifiable ? handleDelete : undefined}
             onEdit={modifiable ? handleEdit : undefined}
+            showDragHandle={modifiable}
           />
         ))}
       </VertListDnd>
