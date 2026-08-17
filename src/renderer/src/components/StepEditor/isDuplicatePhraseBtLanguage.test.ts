@@ -13,10 +13,6 @@ jest.mock('../../crud/useStepTool', () => ({
   },
 }));
 
-jest.mock('../../crud/remoteId', () => ({
-  remoteIdGuid: (_t: string, id: string) => id,
-}));
-
 jest.mock('../../crud/related', () => ({
   related: (
     rec: {
@@ -31,7 +27,8 @@ jest.mock('../../crud/related', () => ({
 
 jest.mock('../../crud/transcribeStepAsrSettings', () => ({
   parseStepLanguageField: (value: unknown) => {
-    if (value == null || value === '') return { languageName: '', bcp47: 'und' };
+    if (value == null || value === '')
+      return { languageName: '', bcp47: 'und' };
     const str = String(value);
     const pipe = str.indexOf('|');
     if (pipe === -1) return { languageName: '', bcp47: str || 'und' };
@@ -65,6 +62,12 @@ function pbtStep(
   } as OrgWorkflowStepD;
 }
 
+// The production slugFromId is slug-tolerant and resolves legacy ids; mirror
+// that here so both slug data and a legacy id normalize to the same slug.
+const identity = (id: string) => id;
+const idOrSlugToSlug = (id: string) =>
+  id === 'art-pbt-legacy' ? 'backtranslation' : id;
+
 describe('isDuplicatePhraseBtLanguage', () => {
   it('ignores Phrase BT steps that belong to another organization', () => {
     const steps = [
@@ -78,6 +81,7 @@ describe('isDuplicatePhraseBtLanguage', () => {
         artifactTypeId: 'art-pbt',
         languageBcp47: 'en',
         organizationId: 'org-a',
+        slugFromId: identity,
       })
     ).toBe(false);
   });
@@ -94,6 +98,25 @@ describe('isDuplicatePhraseBtLanguage', () => {
         artifactTypeId: 'art-pbt',
         languageBcp47: 'en',
         organizationId: 'org-a',
+        slugFromId: identity,
+      })
+    ).toBe(true);
+  });
+
+  it('detects a duplicate across a legacy-id step and a slug step (TT-7583)', () => {
+    const steps = [
+      // New step holds the slug; sibling still holds a legacy id.
+      pbtStep('mine', 'org-a', 'English|en', 'backtranslation'),
+      pbtStep('sibling', 'org-a', 'English|en', 'art-pbt-legacy'),
+    ];
+
+    expect(
+      isDuplicatePhraseBtLanguage(steps, {
+        stepId: 'mine',
+        artifactTypeId: 'backtranslation',
+        languageBcp47: 'en',
+        organizationId: 'org-a',
+        slugFromId: idOrSlugToSlug,
       })
     ).toBe(true);
   });

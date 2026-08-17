@@ -21,17 +21,23 @@ jest.mock('../../hoc/useOrbitData', () => ({
   useOrbitData: jest.fn(() => []),
 }));
 
-jest.mock('../../crud', () => ({
-  ArtifactTypeSlug: jest.requireActual('../../crud/artifactTypeSlug')
-    .ArtifactTypeSlug,
-  useArtifactType: () => ({
-    getTypeId: (slug: string) => `type-${slug}`,
-    getArtifactTypes: () => [
-      { id: 'type-phraseBackTranslation', type: 'Phrase Back Translation' },
-      { id: 'type-retell', type: 'Community Test' },
-    ],
-  }),
-}));
+jest.mock('../../crud', () => {
+  const actual = jest.requireActual('../../crud/artifactTypeSlug');
+  return {
+    ArtifactTypeSlug: actual.ArtifactTypeSlug,
+    // Slug-tolerant, and maps the legacy ids used by the fixtures below.
+    useArtifactType: () => ({
+      slugFromId: (id: string | null) => {
+        if (!id) return actual.ArtifactTypeSlug.Vernacular;
+        if (actual.isArtifactTypeSlug(id)) return id;
+        if (id === 'type-retell') return actual.ArtifactTypeSlug.Retell;
+        if (id === 'type-phraseBackTranslation')
+          return actual.ArtifactTypeSlug.PhraseBackTranslation;
+        return actual.ArtifactTypeSlug.Vernacular;
+      },
+    }),
+  };
+});
 
 jest.mock('../../crud/transcribeStepAsrSettings', () => ({
   formatStepLanguageField: (lang: { languageName?: string; bcp47?: string }) =>
@@ -245,6 +251,7 @@ describe('PhraseBackTranslateStepSettings', () => {
     });
   });
 
+  // A legacy id in saved settings is normalized to its slug on read/emit.
   it('preserves Retell artifact type when changing language (TT-7555)', async () => {
     const onChangeSpy = jest.fn();
     render(
@@ -267,7 +274,7 @@ describe('PhraseBackTranslateStepSettings', () => {
         artifactTypeId?: string;
         language?: string;
       };
-      expect(last.artifactTypeId).toBe('type-retell');
+      expect(last.artifactTypeId).toBe('retell');
       expect(last.language).toBe('English|en');
     });
   });

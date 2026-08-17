@@ -123,7 +123,7 @@ jest.mock('../selector', () => ({
 
 const defaultProps = {
   toolId: 'record-tool',
-  artifactId: 'vernacular',
+  artifactTypeSlug: null,
   passageId: 'passage-1',
   afterUploadCb: jest.fn(),
   defaultFilename: 'recording',

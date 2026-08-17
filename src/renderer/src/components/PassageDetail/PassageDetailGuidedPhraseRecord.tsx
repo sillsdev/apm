@@ -118,7 +118,8 @@ export function PassageDetailGuidedPhraseRecord({
   const [plan] = useGlobal('plan');
   const [offline] = useGlobal('offline');
   const mediafiles = useOrbitData<MediaFileD[]>('mediafile');
-  const { getTypeId } = useArtifactType();
+  // TODO look at this one
+  const { localIdFromSlug, slugFromId } = useArtifactType();
   const {
     passage,
     playerMediafile,
@@ -250,8 +251,13 @@ export function PassageDetailGuidedPhraseRecord({
         remoteIdGuid('artifacttype', id, memory?.keyMap as RecordKeyMap) ?? id
       );
     }
-    return getTypeId(config.defaultArtifactSlug) ?? '';
-  }, [stepSettings, memory?.keyMap, getTypeId, config.defaultArtifactSlug]);
+    return localIdFromSlug(config.defaultArtifactSlug) ?? '';
+  }, [
+    stepSettings,
+    memory?.keyMap,
+    localIdFromSlug,
+    config.defaultArtifactSlug,
+  ]);
 
   const stepLanguageBcp47 = useMemo(() => {
     if (config.requireBoldWorkflow) return undefined;
@@ -1723,7 +1729,7 @@ export function PassageDetailGuidedPhraseRecord({
           }}
           toolId={toolId}
           passageId={related(playerMediafile, 'passage') ?? passage?.id}
-          artifactId={artifactTypeId}
+          artifactTypeSlug={slugFromId(artifactTypeId)}
           sourceMediaId={mediafileId}
           sourceSegments={JSON.stringify(currentRegion ?? {})}
           languagebcp47={stepLanguageField}

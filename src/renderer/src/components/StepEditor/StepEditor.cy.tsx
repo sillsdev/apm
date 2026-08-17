@@ -44,7 +44,7 @@ const createWorkflowStepMemory = (
     keys: { remoteId: `remote-${s.id}` },
   }));
 
-  /** Orbit-style terminal: supports `.filter(fn)` and `.filter({ attribute, value })` (see useArtifactType getTypeId). */
+  /** Orbit-style terminal: supports `.filter(fn)` and `.filter({ attribute, value })` (see useArtifactType localIdFromSlug). */
   const artifactTypeRecords = (_records: unknown[] = []) => {
     const records = _records;
     return {

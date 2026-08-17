@@ -2,6 +2,7 @@
 import React from 'react';
 import { describe, expect, it, afterEach, jest } from '@jest/globals';
 import { cleanup, render } from '@testing-library/react';
+import { ArtifactTypeSlug } from '../../../crud/artifactTypeSlug';
 
 // MediaRecord pulls PassageDetailContext + WSAudioPlayer; stub it so we can
 // render the recorder section (which contains the Next Clause button) in
@@ -73,7 +74,7 @@ const baseProps: React.ComponentProps<typeof CarefulSpeechControls> = {
   allowRecord: false,
   toolId: 'CarefulSpeechTool',
   passageId: 'p1',
-  artifactId: 'art1',
+  artifactTypeSlug: ArtifactTypeSlug.CarefulSpeech,
   sourceMediaId: 'mf1',
   sourceSegments: '{}',
   defaultFilename: 'test.ogg',

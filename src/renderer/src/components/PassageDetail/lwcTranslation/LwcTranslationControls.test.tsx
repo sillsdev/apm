@@ -1,5 +1,6 @@
 import React from 'react';
 import { cleanup, render, screen } from '@testing-library/react';
+import { ArtifactTypeSlug } from '../../../crud/artifactTypeSlug';
 
 jest.mock('../../MediaRecord', () => ({
   __esModule: true,
@@ -64,7 +65,7 @@ const baseProps: React.ComponentProps<typeof LwcTranslationControls> = {
   allowRecord: false,
   toolId: 'LwcTranslationTool',
   passageId: 'p1',
-  artifactId: 'art1',
+  artifactTypeSlug: ArtifactTypeSlug.PhraseBackTranslation,
   sourceMediaId: 'mf1',
   sourceSegments: '{}',
   defaultFilename: 'test.ogg',

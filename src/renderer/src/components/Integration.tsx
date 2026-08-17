@@ -274,7 +274,7 @@ export function IntegrationPanel(props: IProps) {
     ArtifactTypeSlug.PhraseBackTranslation,
   ]);
   const [exportType, setExportType] = useState(exportTypes[0]);
-  const { getTypeId } = useArtifactType();
+  const { localIdFromSlug, remoteIdNumFromSlug } = useArtifactType();
   const getTranscription = useTranscription(false, ActivityStates.Approved);
   const intSave = React.useRef('');
   const { getOrganizedBy } = useOrganizedBy();
@@ -409,13 +409,7 @@ export function IntegrationPanel(props: IProps) {
   const handleSync = () => {
     if (stopPlayer) stopPlayer();
     setSyncing(true);
-    const typeId = getTypeId(exportType)
-      ? remoteIdNum(
-          'artifacttype',
-          getTypeId(exportType) || '',
-          memory?.keyMap as RecordKeyMap
-        )
-      : 0;
+    const typeId = remoteIdNumFromSlug(exportType) ?? 0;
     if (passage !== undefined) {
       //from detail screen so just do passage
       syncPassage(
@@ -455,7 +449,7 @@ export function IntegrationPanel(props: IProps) {
       passage,
       exportNumbers,
       sectionArr,
-      artifactId: getTypeId(exportType),
+      artifactId: localIdFromSlug(exportType),
       getTranscription,
     });
     resetCount();
@@ -621,7 +615,7 @@ export function IntegrationPanel(props: IProps) {
           memory,
           errorReporter,
           t,
-          getTypeId(exportType),
+          localIdFromSlug(exportType),
           passage?.id
         );
     }, 500);

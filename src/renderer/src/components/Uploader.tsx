@@ -11,6 +11,7 @@ import {
 import MediaUpload, { FaithbridgeType } from './MediaUpload';
 import { typeLimit } from '../utils/typeLimit';
 import {
+  ArtifactTypeSlug,
   findRecord,
   pullTableList,
   related,
@@ -481,7 +482,9 @@ export const Uploader = (props: IProps) => {
       {audioUploadOrRecord && !hasImport && (
         <PassageRecordDlg
           artifactTypeSlug={
-            artifactState?.id ? slugFromId(artifactState.id) : null
+            artifactState?.id
+              ? slugFromId(artifactState.id)
+              : ArtifactTypeSlug.Vernacular
           }
           passageId={passageId}
           planId={planIdRef.current}

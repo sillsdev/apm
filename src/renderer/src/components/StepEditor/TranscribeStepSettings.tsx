@@ -101,7 +101,9 @@ export const TranscribeStepSettings = ({
     ArtifactTypeSlug.QandA,
     ArtifactTypeSlug.Retell,
   ];
-  const [initialValue, setInitialValue] = useState<string | null>(null);
+  const [initialValue, setInitialValue] = useState<ArtifactTypeSlug | null>(
+    null
+  );
   const [lgState, setLgState] = useState<LangState>({ ...initLang });
   const [availSpellLangs, setAvailSpellLangs] = useState<string[]>([]);
   const { slugFromId } = useArtifactType();
@@ -219,25 +221,27 @@ export const TranscribeStepSettings = ({
     [onChange, syncOrgAsrIfVernacular]
   );
 
-  const handleSelect = (artifactTypeId: string | null) => {
+  const handleSelect = (artifactTypeSlug: ArtifactTypeSlug | null) => {
     const json = JSONParse(toolSettings) as Record<string, unknown>;
     const [, bcp47] = (json?.language as string | undefined)?.split('|') ?? [
       '',
       'und',
     ];
     const spellCheck = defaultSpellCheckForArtifact(
-      slugFromId(artifactTypeId),
+      slugFromId(artifactTypeSlug),
       isLangSet(bcp47) ? bcp47 : undefined,
       availSpellLangs
     );
     setLgState((state) => ({
       ...state,
-      artId: artifactTypeId ?? '',
+      artId: artifactTypeSlug ?? '',
       spellCheck,
       changed: false,
     }));
     const { spellCheck: _omit, ...rest } = json;
-    emitSettingsChange(JSON.stringify({ ...rest, artifactTypeId }));
+    emitSettingsChange(
+      JSON.stringify({ ...rest, artifactTypeId: artifactTypeSlug })
+    );
   };
 
   const handleSpellCheckOnlyChange = (spellCheck: boolean) => {
@@ -295,9 +299,9 @@ export const TranscribeStepSettings = ({
   useEffect(() => {
     if (toolSettings) {
       const json = JSON.parse(toolSettings);
-      setInitialValue(json.artifactTypeId);
-      const { languageName, bcp47 } = parseStepLanguageField(json?.language);
       const slug = slugFromId(json.artifactTypeId);
+      setInitialValue(slug);
+      const { languageName, bcp47 } = parseStepLanguageField(json?.language);
       let sisterLang = parseStepLanguageField(json?.sisterlanguage);
       // Seed empty sister UI from org ASR when vernacular (or Q&A/Retell) needs a
       // sister language (e.g. Review step opened after Transcribe saved org ASR
@@ -326,7 +330,7 @@ export const TranscribeStepSettings = ({
       );
       setLgState((state) => ({
         ...state,
-        artId: json.artifactTypeId,
+        artId: slug,
         languageName,
         bcp47,
         font: json.font,

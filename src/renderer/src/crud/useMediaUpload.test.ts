@@ -51,6 +51,7 @@ jest.mock('./index', () => {
   const pullTableList = jest.fn(() => Promise.resolve());
   const createMedia = jest.fn().mockResolvedValue({ id: 'created-id' });
   return {
+    ArtifactTypeSlug: jest.requireActual('./artifactTypeSlug').ArtifactTypeSlug,
     pullTableList,
     related: jest.requireActual('./related').related,
     /** Avoid real keyMap: pass through local ids for plan/passage/user/media */
@@ -58,7 +59,11 @@ jest.mock('./index', () => {
       (_table: string, localId: string | undefined) => localId ?? ''
     ),
     useArtifactType: () => ({
-      localizedArtifactTypeFromId: jest.fn(() => 'artifact-label'),
+      // Any non-vernacular slug resolves to the local id 'art-1'.
+      localIdFromSlug: jest.fn((slug: string) => (slug ? 'art-1' : null)),
+      // ...and to the remote id 101 at the API boundary.
+      remoteIdNumFromSlug: jest.fn((slug: string) => (slug ? 101 : undefined)),
+      localizedArtifactType: jest.fn(() => 'artifact-label'),
     }),
     useOfflnMediafileCreate: () => ({
       createMedia,
@@ -158,7 +163,7 @@ describe('useMediaUpload', () => {
   });
 
   function renderUploadHook(props: {
-    artifactId: string | null;
+    artifactTypeSlug: string | null;
     passageId: string | undefined;
     planId?: string;
     afterUploadCb: jest.Mock;
@@ -167,7 +172,7 @@ describe('useMediaUpload', () => {
     const { useMediaUpload } = require('./useMediaUpload');
     return renderHook(() =>
       useMediaUpload({
-        artifactId: props.artifactId,
+        artifactTypeSlug: props.artifactTypeSlug,
         passageId: props.passageId,
         planId: props.planId,
         afterUploadCb: props.afterUploadCb,
@@ -197,7 +202,7 @@ describe('useMediaUpload', () => {
     mockOffline = false;
     const afterUploadCb = jest.fn().mockResolvedValue(undefined);
     const { result } = renderUploadHook({
-      artifactId: null,
+      artifactTypeSlug: null,
       passageId: 'psg-1',
       afterUploadCb,
     });
@@ -228,7 +233,7 @@ describe('useMediaUpload', () => {
   it('failure path: orbit retries, 0 of 1 snackbar, empty media id, no pullTableList', async () => {
     const afterUploadCb = jest.fn().mockResolvedValue(undefined);
     const { result } = renderUploadHook({
-      artifactId: null,
+      artifactTypeSlug: null,
       passageId: 'psg-1',
       afterUploadCb,
     });
@@ -252,7 +257,7 @@ describe('useMediaUpload', () => {
     mockOffline = true;
     const afterUploadCb = jest.fn().mockResolvedValue(undefined);
     const { result } = renderUploadHook({
-      artifactId: null,
+      artifactTypeSlug: null,
       passageId: 'psg-1',
       afterUploadCb,
     });
@@ -285,7 +290,7 @@ describe('useMediaUpload', () => {
     ];
     const afterUploadCb = jest.fn().mockResolvedValue(undefined);
     const { result } = renderUploadHook({
-      artifactId: null,
+      artifactTypeSlug: null,
       passageId: 'psg-1',
       afterUploadCb,
     });
@@ -309,7 +314,7 @@ describe('useMediaUpload', () => {
     mockMediaFiles = [];
     const afterUploadCb = jest.fn().mockResolvedValue(undefined);
     const { result } = renderUploadHook({
-      artifactId: null,
+      artifactTypeSlug: null,
       passageId: 'psg-1',
       afterUploadCb,
     });
@@ -333,7 +338,7 @@ describe('useMediaUpload', () => {
     mockMediaFiles = [vernacularMedia('m1', 'psg-1', 5)];
     const afterUploadCb = jest.fn().mockResolvedValue(undefined);
     const { result } = renderUploadHook({
-      artifactId: 'art-1',
+      artifactTypeSlug: 'comment',
       passageId: 'psg-1',
       afterUploadCb,
     });
@@ -357,7 +362,7 @@ describe('useMediaUpload', () => {
     createMedia.mockRejectedValue(new Error('create failed'));
     const afterUploadCb = jest.fn().mockResolvedValue(undefined);
     const { result } = renderUploadHook({
-      artifactId: null,
+      artifactTypeSlug: null,
       passageId: 'psg-1',
       afterUploadCb,
     });
@@ -372,7 +377,7 @@ describe('useMediaUpload', () => {
   it('empty file list resolves false without starting upload', async () => {
     const afterUploadCb = jest.fn().mockResolvedValue(undefined);
     const { result } = renderUploadHook({
-      artifactId: null,
+      artifactTypeSlug: null,
       passageId: 'psg-1',
       afterUploadCb,
     });
@@ -387,7 +392,7 @@ describe('useMediaUpload', () => {
       .fn()
       .mockRejectedValue(new Error('parent failed'));
     const { result } = renderUploadHook({
-      artifactId: null,
+      artifactTypeSlug: null,
       passageId: 'psg-1',
       afterUploadCb,
     });
@@ -403,7 +408,7 @@ describe('useMediaUpload', () => {
   it('dispatches uploadComplete action object, not the action creator function', async () => {
     const afterUploadCb = jest.fn().mockResolvedValue(undefined);
     const { result } = renderUploadHook({
-      artifactId: null,
+      artifactTypeSlug: null,
       passageId: 'psg-1',
       afterUploadCb,
     });
@@ -430,7 +435,7 @@ describe('useMediaUpload', () => {
     const { result, rerender } = renderHook(
       (props: { performedBy?: string; topic?: string }) =>
         useMediaUpload({
-          artifactId: 'art-1',
+          artifactTypeSlug: 'comment',
           passageId: 'psg-1',
           performedBy: props.performedBy,
           topic: props.topic,

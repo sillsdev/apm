@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Stack, Typography } from '@mui/material';
 import { shallowEqual, useSelector } from 'react-redux';
-import { RecordKeyMap } from '@orbit/records';
 import { ArtifactTypeSlug, useArtifactType } from '../../crud';
 import {
   formatStepLanguageField,
@@ -11,7 +10,6 @@ import { Language, ILanguage } from '../../control';
 import { stepEditorSelector } from '../../selector';
 import { IStepEditorStrings, OrgWorkflowStepD } from '../../model';
 import { useOrbitData } from '../../hoc/useOrbitData';
-import { useGlobal } from '../../context/useGlobal';
 import { isDuplicatePhraseBtLanguage } from './isDuplicatePhraseBtLanguage';
 
 interface IProps {
@@ -37,13 +35,13 @@ export const PhraseBackTranslateStepSettings = ({
   organizationId,
 }: IProps) => {
   const se: IStepEditorStrings = useSelector(stepEditorSelector, shallowEqual);
-  const { getTypeId } = useArtifactType();
-  const [memory] = useGlobal('memory');
+  const { slugFromId } = useArtifactType();
   const orgSteps = useOrbitData<OrgWorkflowStepD[]>('orgworkflowstep');
   // Artifact type is fixed by the workflow step preset (Phrase BT vs Retell BT),
-  // not chosen in this dialog — TT-7555.
+  // not chosen in this dialog — TT-7555. Stored as a slug; converted to an id
+  // only at the DB boundary.
   const [artifactTypeId, setArtifactTypeId] = useState<string>(
-    () => getTypeId(ArtifactTypeSlug.PhraseBackTranslation) ?? ''
+    ArtifactTypeSlug.PhraseBackTranslation
   );
   const [lgState, setLgState] = useState<ILanguage>(emptyLanguage());
   const [error, setError] = useState('');
@@ -53,7 +51,8 @@ export const PhraseBackTranslateStepSettings = ({
     try {
       const json = JSON.parse(toolSettings) as Record<string, unknown>;
       if (json.artifactTypeId) {
-        setArtifactTypeId(String(json.artifactTypeId));
+        // Tolerates settings that still hold an id from before the slug switch.
+        setArtifactTypeId(slugFromId(String(json.artifactTypeId)));
       }
       const parsed = parseStepLanguageField(json.language);
       setLgState({
@@ -64,6 +63,7 @@ export const PhraseBackTranslateStepSettings = ({
     } catch {
       /* ignore */
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [toolSettings]);
 
   const teamSteps = useMemo(() => orgSteps, [orgSteps]);
@@ -85,7 +85,7 @@ export const PhraseBackTranslateStepSettings = ({
         artifactTypeId: nextArt,
         languageBcp47: bcp47,
         organizationId,
-        keyMap: memory?.keyMap as RecordKeyMap,
+        slugFromId,
       })
     ) {
       setError(se.duplicatePhraseBtLanguage);

@@ -279,7 +279,7 @@ const mountMediaRecord = (
 
   const defaults: React.ComponentProps<typeof MediaRecord> = {
     toolId: 'record-tool',
-    artifactId: 'vernacular',
+    artifactTypeSlug: null,
     passageId: 'passage-1',
     afterUploadCb: cy.stub().as('afterUploadCb'),
     defaultFilename: 'recording',

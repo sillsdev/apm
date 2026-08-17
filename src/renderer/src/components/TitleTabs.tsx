@@ -177,7 +177,10 @@ const TitleTabs = (props: IProps) => {
   };
 
   const uploadMedia = useMediaUpload({
-    artifactTypeSlug: passageId !== undefined ? null : ArtifactTypeSlug.Title,
+    artifactTypeSlug:
+      passageId !== undefined
+        ? ArtifactTypeSlug.Vernacular
+        : ArtifactTypeSlug.Title,
     passageId,
     planId: myPlanId,
     afterUploadCb,

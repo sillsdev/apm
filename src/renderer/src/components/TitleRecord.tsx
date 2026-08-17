@@ -59,7 +59,9 @@ export default function TitleRecord(props: IProps) {
         passageId={passageId}
         planId={planId}
         artifactTypeSlug={
-          passageId !== undefined ? null : ArtifactTypeSlug.Title
+          passageId !== undefined
+            ? ArtifactTypeSlug.Vernacular
+            : ArtifactTypeSlug.Title
         }
         onRecording={onMyRecording}
         defaultFilename={defaultFilename}

@@ -6,6 +6,7 @@ import Coordinator from '@orbit/coordinator';
 import Memory from '@orbit/memory';
 
 import bugsnagClient from '../../../../auth/bugsnagClient';
+import { ArtifactTypeSlug } from '../../../../crud';
 import { GlobalProvider, GlobalState } from '../../../../context/GlobalContext';
 import { IOrbitContext } from '../../../../hoc/OrbitContext';
 import { OrbitContext } from '../../../../hoc/OrbitContextProvider';
@@ -269,7 +270,7 @@ describe('ProvideRightsMobile', () => {
       toolId: 'RightsTool',
       team: 'org-1',
       defaultFilename: 'rights.wav',
-      artifactState: { id: 'art-1' },
+      artifactTypeSlug: ArtifactTypeSlug.IntellectualProperty,
       setSaving: cy.stub().as('setSaving'),
       setStatusText: cy.stub().as('setStatusText'),
       setResetMedia: cy.stub().as('setResetMedia'),

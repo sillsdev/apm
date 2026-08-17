@@ -205,7 +205,7 @@ export const useMediaUpload = ({
         versionNumber: 1,
         originalFile: (files[0] as File).name,
         contentType: getContentType(files[0]?.type, (files[0] as File).name),
-        artifactTypeId: getArtifactId(),
+        artifactTypeId: getArtifactId(), // TODO is there really any benefit to doing this as a lazy arrow function? If not make it more straightforward
         passageId: getPassageId(),
         recordedbyUserId: getUserId(),
         userId: getUserId(),
