@@ -2,6 +2,7 @@ import { useGlobal } from '../context/useGlobal';
 import { PlanD, ProjectD, VProjectD } from '../model';
 import { related, useTypeId } from '.';
 import { ReplaceRelatedRecord, UpdateRecord } from '../model/baseModel';
+import { jsonBoolean } from '../control/normalizeLanguage';
 
 export const useVProjectUpdate = () => {
   const [memory] = useGlobal('memory');
@@ -43,11 +44,13 @@ export const useVProjectUpdate = () => {
             uilanguagebcp47,
             language,
             languageName,
-            isPublic,
-            spellCheck,
+            // Coerced for the same reason as in useVProjectCreate: the schema
+            // declares booleans and these can arrive from free-form JSON.
+            isPublic: jsonBoolean(isPublic),
+            spellCheck: jsonBoolean(spellCheck),
             defaultFont,
             defaultFontSize,
-            rtl,
+            rtl: jsonBoolean(rtl),
             defaultParams,
           },
         } as ProjectD,

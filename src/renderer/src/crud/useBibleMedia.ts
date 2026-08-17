@@ -40,7 +40,11 @@ export const useBibleMedia = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const getBibleMediaPlan = useCallback(async () => {
+  // May resolve undefined: the BibleMedia plan doesn't exist until it has been
+  // created/synced, so callers must guard.
+  const getBibleMediaPlan = useCallback(async (): Promise<
+    PlanD | undefined
+  > => {
     let plans = memory?.cache.query((q) =>
       q.findRecords('plan').filter({ attribute: 'name', value: 'BibleMedia' })
     ) as PlanD[];

@@ -4,6 +4,7 @@ import { Organization, OrganizationD, RoleNames } from '../model';
 import { UpdateAttribute } from '../model/baseModel';
 import { findRecord } from './tryFindRecord';
 import { useJsonParams } from '../utils';
+import { normalizeLanguage } from '../control/normalizeLanguage';
 
 export const orgDefaultWorkflowProgression = 'WorkflowProgression';
 /**
@@ -37,7 +38,11 @@ export const useOrgDefaults = () => {
   const [offline] = useGlobal('offline'); //verified this is not used in a function 2/18/25
   const { getParam, setParam } = useJsonParams();
   const getDefault = (label: string, org: Organization | OrganizationD) => {
-    return getParam(label, org.attributes?.defaultParams);
+    const value = getParam(label, org.attributes?.defaultParams);
+    // defaultParams is free-form JSON, so a stored language may carry
+    // string-encoded booleans ('false'). Coerce here rather than at each of the
+    // many callers that cast the result to ILanguage.
+    return label === orgDefaultLangProps ? normalizeLanguage(value) : value;
   };
   const getOrgDefault = (label: string, orgIn?: string) => {
     const org = findRecord(

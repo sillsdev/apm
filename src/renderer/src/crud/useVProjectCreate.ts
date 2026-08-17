@@ -9,6 +9,7 @@ import {
 } from '../utils';
 import JSONAPISource from '@orbit/jsonapi';
 import { AddRecord, ReplaceRelatedRecord } from '../model/baseModel';
+import { jsonBoolean } from '../control/normalizeLanguage';
 import { InitializedRecord } from '@orbit/records';
 import { recToMemory } from './syncToMemory';
 
@@ -64,11 +65,14 @@ export const useVProjectCreate = () => {
         uilanguagebcp47: localeDefault(isDeveloper),
         language,
         languageName,
-        isPublic,
-        spellCheck,
+        // The dialog seeds these from free-form JSON defaults, so coerce them:
+        // the schema declares booleans and orbit rejects the whole operation for
+        // a string-encoded one.
+        isPublic: jsonBoolean(isPublic),
+        spellCheck: jsonBoolean(spellCheck),
         defaultFont,
         defaultFontSize,
-        rtl,
+        rtl: jsonBoolean(rtl),
         allowClaim: true,
         dateCreated: currentDateTime(),
         dateUpdated: currentDateTime(),

@@ -14,6 +14,7 @@ import {
 } from '../../crud';
 import SelectArtifactType from '../Sheet/SelectArtifactType';
 import { ILanguage, Language } from '../../control';
+import { jsonBoolean } from '../../control/normalizeLanguage';
 import { JSONParse, isLangSet } from '../../utils';
 import { isElectron } from '../../../api-variable';
 import { MainAPI } from '@model/main-api';
@@ -330,7 +331,7 @@ export const TranscribeStepSettings = ({
         languageName,
         bcp47,
         font: json.font,
-        rtl: json.rtl,
+        rtl: jsonBoolean(json.rtl),
         spellCheck,
         changed: false,
       }));

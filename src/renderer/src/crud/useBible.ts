@@ -9,6 +9,7 @@ import {
 import related from './related';
 import { findRecord } from './tryFindRecord';
 import { useJsonParams } from '../utils';
+import { normalizeLanguage } from '../control/normalizeLanguage';
 
 export const pubDataCopyright = 'copyright';
 export const pubDataLangProps = 'langProps';
@@ -143,7 +144,10 @@ export const useBible = () => {
 
   const getPublishingData = (label: string, bible?: Bible) => {
     if (!bible) return undefined;
-    return getParam(label, bible.attributes?.publishingData);
+    const value = getParam(label, bible.attributes?.publishingData);
+    // See getDefault in useOrgDefaults: publishingData is free-form JSON, so a
+    // stored language may carry string-encoded booleans.
+    return label === pubDataLangProps ? normalizeLanguage(value) : value;
   };
   const setPublishingData = (label: string, value: any, bible: Bible) => {
     bible.attributes.publishingData =
