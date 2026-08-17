@@ -1039,8 +1039,14 @@ export const copyProject =
             Authorization: 'Bearer ' + token,
           },
         });
+        const body = response.data as {
+          status?: number;
+          message?: string;
+          fileURL?: string;
+          id?: number;
+        };
         if (
-          isGatewayTimeout(response.data.status) &&
+          isGatewayTimeout(body.status) &&
           gatewayTimeoutRetries < GATEWAY_TIMEOUT_MAX_RETRIES
         ) {
           gatewayTimeoutRetries++;
@@ -1053,19 +1059,20 @@ export const copyProject =
           continue;
         }
         gatewayTimeoutRetries = 0;
-        start = response.data.id;
-        returnstatus = response.data.status;
-        status = response.data.message;
-        newproject = response.data.fileURL as string;
-        dispatch({
-          payload: `${pendingmsg} ${status}`,
-          type: COPY_PENDING,
-        });
-        url = `${API_CONFIG.host}/api/offlineData/project/copydata/${orgid}/${projectid}/${newproject}/${start}`;
+        start = body.id ?? start;
+        returnstatus = body.status ?? returnstatus;
+        status = body.message ?? '';
+        if (body.fileURL) newproject = body.fileURL;
 
-        if (returnstatus !== 200 || start === -1) {
-          break;
+        if (returnstatus === 200 && start !== -1) {
+          dispatch({
+            payload: `${pendingmsg} ${status}`,
+            type: COPY_PENDING,
+          });
+          url = `${API_CONFIG.host}/api/offlineData/project/copydata/${orgid}/${projectid}/${newproject}/${start}`;
+          continue;
         }
+        break;
       } catch (reason: unknown) {
         const httpStatus = axiosErrorStatus(reason);
         if (
@@ -1081,17 +1088,19 @@ export const copyProject =
           await sleep(gatewayTimeoutDelayMs(gatewayTimeoutRetries - 1));
           continue;
         }
-        logError(
-          Severity.error,
-          errorReporter,
-          'copy error' +
-            (reason instanceof Error ? reason.message : String(reason))
-        );
+        const data = Axios.isAxiosError(reason)
+          ? (reason.response?.data as
+              | { status?: number; message?: string; fileURL?: string }
+              | undefined)
+          : undefined;
+        if (data?.fileURL) newproject = String(data.fileURL);
+        const errNo = data?.status ?? httpStatus ?? -1;
+        const errMsg =
+          data?.message ??
+          (reason instanceof Error ? reason.message : String(reason));
+        logError(Severity.error, errorReporter, 'copy error' + errMsg);
         dispatch({
-          payload: errorStatus(
-            httpStatus ?? -1,
-            reason instanceof Error ? reason.message : String(reason)
-          ),
+          payload: errorStatus(errNo, errMsg),
           type: COPY_ERROR,
         });
         if (newproject) {
@@ -1100,7 +1109,7 @@ export const copyProject =
         return;
       }
     }
-    if (start === -1)
+    if (returnstatus === 200 && start === -1)
       dispatch({
         payload: {
           status: completemsg.replace('{0}', status),
@@ -1109,7 +1118,7 @@ export const copyProject =
         type: COPY_SUCCESS,
       });
     else {
-      logError(Severity.error, errorReporter, 'import error' + returnstatus);
+      logError(Severity.error, errorReporter, 'copy error' + returnstatus);
       dispatch({
         payload: errorStatus(returnstatus, status),
         type: COPY_ERROR,
