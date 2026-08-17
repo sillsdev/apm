@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
 import { Box, Grid, Typography, useTheme } from '@mui/material';
-import { spreadSx, rowSx, flexibleSx } from '../../control';
+import { spreadSx, rowSx } from '../../control';
 
 interface IProps {
   id: string;
