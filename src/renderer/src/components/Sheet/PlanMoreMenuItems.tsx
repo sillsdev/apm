@@ -31,7 +31,6 @@ interface IProps {
   readonly: boolean;
   canAssign: boolean;
   canDelete: boolean;
-  active: boolean;
   organizedBy: string;
   sectionSequenceNumber: string;
   passageSequenceNumber: string;
