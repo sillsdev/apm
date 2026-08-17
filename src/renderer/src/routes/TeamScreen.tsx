@@ -12,6 +12,7 @@ import { useGlobal } from '../context/useGlobal';
 import { findRecord, related, remoteId } from '../crud';
 import { PlanD } from '../model';
 import { LocalKey, localUserKey, useHome, useMobile } from '../utils';
+import { flexibleSx } from '../control';
 import ProjectsScreen from './ProjectsScreen';
 
 export const TeamScreen = () => {
@@ -85,23 +86,27 @@ export const TeamScreen = () => {
           })}
         >
           <Box
-            sx={(theme) => ({
-              flexShrink: 0,
-              py: theme.layout.gap,
-              pl: theme.layout.gap,
-            })}
+            sx={[
+              flexibleSx,
+              (theme) => ({
+                maxWidth: 250,
+                py: theme.layout.gap,
+                pl: theme.layout.gap,
+              }),
+            ]}
           >
             <TeamActions />
           </Box>
           <Divider orientation="vertical" flexItem />
           <Box
-            sx={(theme) => ({
-              flex: 1,
-              minWidth: 0,
-              overflow: 'auto',
-              py: theme.layout.gap,
-              pr: theme.layout.gap,
-            })}
+            sx={[
+              flexibleSx,
+              (theme) => ({
+                overflow: 'auto',
+                py: theme.layout.gap,
+                pr: theme.layout.gap,
+              }),
+            ]}
           >
             <TeamProjects />
           </Box>
