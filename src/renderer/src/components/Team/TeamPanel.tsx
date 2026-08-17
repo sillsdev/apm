@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
 import { Box, Grid, Typography, useTheme } from '@mui/material';
-import { spreadSx, rowSx, flexibleSx, rigidSx } from '../../control';
+import { spreadSx, rowSx, flexibleSx } from '../../control';
 
 interface IProps {
   id: string;
@@ -31,15 +31,15 @@ export default function TeamPanel({
       })}
     >
       <Box sx={[spreadSx, (theme) => ({ pb: theme.layout.gap })]}>
-        <Box sx={[rowSx, flexibleSx, { alignItems: 'center' }]}>
-          <Box sx={{ display: 'flex', p: 1, color: 'action.active' }}>
+        <Box sx={[rowSx, { alignItems: 'center' }]}>
+          <Box sx={{ display: 'flex', p: 1, color: 'custom.black' }}>
             {icon}
           </Box>
           <Typography noWrap sx={{ fontSize: 'large' }}>
             {title}
           </Typography>
         </Box>
-        <Box sx={[rowSx, rigidSx, { alignItems: 'center' }]}>{actions}</Box>
+        <Box sx={[rowSx, { alignItems: 'center' }]}>{actions}</Box>
       </Box>
       <Grid container spacing={theme.layout.gap}>
         {children}
