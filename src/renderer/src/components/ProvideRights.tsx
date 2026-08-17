@@ -95,7 +95,7 @@ export function ProvideRights(props: IProps) {
     clearCompleted,
   } = useContext(UnsavedContext).state;
 
-  const { getTypeId } = useArtifactType();
+  const { localIdFromSlug } = useArtifactType();
   const { showMessage } = useSnackBar();
   const cancelled = useRef(false);
   const updateRecord = useUpdateRecord();
@@ -129,8 +129,8 @@ export function ProvideRights(props: IProps) {
   }, [canSave]);
 
   const recordTypeId = useMemo(
-    () => getTypeId(recordType),
-    [recordType, getTypeId]
+    () => localIdFromSlug(recordType),
+    [recordType, localIdFromSlug]
   );
 
   const artifactState = useMemo(() => ({ id: recordTypeId }), [recordTypeId]);
@@ -301,7 +301,7 @@ export function ProvideRights(props: IProps) {
         statusText={statusText}
         teamRec={teamRec}
         defaultFilename={defaultFilename}
-        artifactState={artifactState}
+        artifactTypeSlug={recordType}
         setSaving={setSaving}
         setStatusText={setStatusText}
         setResetMedia={setResetMedia}

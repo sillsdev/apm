@@ -4,13 +4,12 @@ import { ActionRow, AltButton, PriButton } from './StepEditor';
 import { ISharedStrings } from '../model';
 import { shallowEqual, useSelector } from 'react-redux';
 import { sharedSelector } from '../selector';
-import { VernacularTag } from '../crud';
+import { ArtifactTypeSlug } from '../crud';
 import { useRef, useState, useEffect, useCallback } from 'react';
 import { getRefWidth } from '../utils/getRefWidth';
 
 interface IProps {
   recToolId: string;
-  titleId: string;
   passageId: string | undefined;
   planId: string | undefined;
   defaultFilename: string;
@@ -27,7 +26,6 @@ interface IProps {
 export default function TitleRecord(props: IProps) {
   const {
     recToolId,
-    titleId,
     passageId,
     planId,
     defaultFilename,
@@ -60,7 +58,9 @@ export default function TitleRecord(props: IProps) {
         toolId={recToolId}
         passageId={passageId}
         planId={planId}
-        artifactId={passageId !== undefined ? VernacularTag : titleId}
+        artifactTypeSlug={
+          passageId !== undefined ? null : ArtifactTypeSlug.Title
+        }
         onRecording={onMyRecording}
         defaultFilename={defaultFilename}
         allowWave={false}

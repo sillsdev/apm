@@ -79,7 +79,7 @@ export function PassageDetailLwcTranslation({ width }: IProps) {
   const [plan] = useGlobal('plan');
   const [offline] = useGlobal('offline');
   const mediafiles = useOrbitData<MediaFileD[]>('mediafile');
-  const { getTypeId } = useArtifactType();
+  const { localIdFromSlug, slugFromId } = useArtifactType();
   const {
     passage,
     mediafileId,
@@ -126,8 +126,8 @@ export function PassageDetailLwcTranslation({ width }: IProps) {
     useLwcTranslationClauses(mediafile);
 
   const carefulSpeechTypeId = useMemo(
-    () => getTypeId(ArtifactTypeSlug.CarefulSpeech) ?? '',
-    [getTypeId]
+    () => localIdFromSlug(ArtifactTypeSlug.CarefulSpeech) ?? '',
+    [localIdFromSlug]
   );
 
   const lwcArtifactTypeId = useMemo((): string => {
@@ -137,8 +137,8 @@ export function PassageDetailLwcTranslation({ width }: IProps) {
         remoteIdGuid('artifacttype', id, memory?.keyMap as RecordKeyMap) ?? id
       );
     }
-    return getTypeId(ArtifactTypeSlug.PhraseBackTranslation) ?? '';
-  }, [settings, memory?.keyMap, getTypeId]);
+    return localIdFromSlug(ArtifactTypeSlug.PhraseBackTranslation) ?? '';
+  }, [settings, memory?.keyMap, localIdFromSlug]);
 
   const currentVersion = mediafile?.attributes?.versionNumber ?? 0;
   const currentRegion = clauseRegions[currentIndex];
@@ -623,7 +623,7 @@ export function PassageDetailLwcTranslation({ width }: IProps) {
           onSaveSettled={() => setSavingRecording(false)}
           toolId={toolId}
           passageId={related(mediafile, 'passage') ?? passage?.id}
-          artifactId={lwcArtifactTypeId}
+          artifactTypeSlug={slugFromId(lwcArtifactTypeId)}
           sourceMediaId={mediafileId}
           sourceSegments={JSON.stringify(currentRegion ?? {})}
           defaultFilename={defaultFilename}

@@ -55,8 +55,10 @@ jest.mock('../../crud', () => ({
   remoteIdGuid: jest.fn((_t: string, id: string) => id),
   related: jest.fn(() => undefined),
   useArtifactType: () => ({
-    getTypeId: (slug: string) =>
+    localIdFromSlug: (slug: string) =>
       slug === 'carefulspeech' ? 'cs-id' : 'pbt-id',
+    slugFromId: (id: string) =>
+      id === 'cs-id' ? 'carefulspeech' : 'backtranslation',
   }),
   useStepTool: () => ({ settings: { artifactTypeId: 'pbt-id' } }),
 }));

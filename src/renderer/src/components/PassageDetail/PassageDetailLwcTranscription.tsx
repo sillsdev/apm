@@ -76,7 +76,7 @@ export function PassageDetailBoldClauseTranscription({ width }: IProps) {
   const [memory] = useGlobal('memory');
   const [user] = useGlobal('user');
   const mediafiles = useOrbitData<MediaFileD[]>('mediafile');
-  const { slugFromId, getTypeId } = useArtifactType();
+  const { slugFromId, localIdFromSlug } = useArtifactType();
   const {
     mediafileId,
     rowData,
@@ -138,9 +138,14 @@ export function PassageDetailBoldClauseTranscription({ width }: IProps) {
       );
     }
     return transcriptionConfig?.defaultArtifactSlug
-      ? (getTypeId(transcriptionConfig.defaultArtifactSlug) ?? '')
+      ? (localIdFromSlug(transcriptionConfig.defaultArtifactSlug) ?? '')
       : '';
-  }, [stepSettingsParsed, memory?.keyMap, transcriptionConfig, getTypeId]);
+  }, [
+    stepSettingsParsed,
+    memory?.keyMap,
+    transcriptionConfig,
+    localIdFromSlug,
+  ]);
 
   const currentVersion = mediafile?.attributes?.versionNumber ?? 0;
   const currentRegion = clauseRegions[currentIndex];

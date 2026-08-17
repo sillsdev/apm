@@ -5,6 +5,7 @@ import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import { PriButton } from '../../../control';
 import MediaRecord from '../../MediaRecord';
+import { ArtifactTypeSlug } from '../../../crud';
 import { formatClauseRange } from './carefulSpeechFormat';
 import { IRegion } from '../../../crud/useWavesurferRegions';
 import {
@@ -56,7 +57,7 @@ interface Props {
   onSaveSettled?: () => void;
   toolId: string;
   passageId: string | undefined;
-  artifactId: string | null;
+  artifactTypeSlug: ArtifactTypeSlug | null;
   sourceMediaId: string;
   sourceSegments: string;
   languagebcp47?: string;
@@ -110,7 +111,7 @@ export default function CarefulSpeechControls({
   onSaveSettled,
   toolId,
   passageId,
-  artifactId,
+  artifactTypeSlug,
   sourceMediaId,
   sourceSegments,
   languagebcp47,
@@ -311,7 +312,7 @@ export default function CarefulSpeechControls({
                 sourceMediaId={sourceMediaId}
                 sourceSegments={sourceSegments}
                 languagebcp47={languagebcp47}
-                artifactId={artifactId}
+                artifactTypeSlug={artifactTypeSlug}
                 performedBy={speaker}
                 defaultFilename={defaultFilename}
                 mediaId={recordingMediaId}

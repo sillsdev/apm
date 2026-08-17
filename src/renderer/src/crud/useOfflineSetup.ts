@@ -21,7 +21,7 @@ import {
   StandardRecordNormalizer,
 } from '@orbit/records';
 import IndexedDBSource from '@orbit/indexeddb';
-import { ArtifactTypeSlug, useArtifactType } from '.';
+import { ArtifactTypeSlug } from '.';
 import PassageType, { PassageTypeD } from '../model/passageType';
 import { requestedSchema } from '../schema';
 import { NamedRegions } from '../utils';
@@ -30,7 +30,6 @@ export const useOfflineSetup = () => {
   const [memory] = useGlobal('memory');
   const [coordinator] = useGlobal('coordinator');
   const backup = coordinator?.getSource('backup') as IndexedDBSource;
-  const { getTypeId } = useArtifactType();
   const rn = memory
     ? new StandardRecordNormalizer({ schema: memory?.schema })
     : null;
@@ -197,16 +196,12 @@ export const useOfflineSetup = () => {
       q.findRecords('workflowstep')
     )) as WorkflowStep[];
     const offlineRecs = allRecs.filter((r) => !r?.keys?.remoteId);
-    const WBT = getTypeId(
-      ArtifactTypeSlug.WholeBackTranslation,
-      true
-    ) as string;
-    const PBT = getTypeId(
-      ArtifactTypeSlug.PhraseBackTranslation,
-      true
-    ) as string;
-    const RBT = getTypeId(ArtifactTypeSlug.Retell, true) as string;
-    const CS = getTypeId(ArtifactTypeSlug.CarefulSpeech, true) as string;
+    // Step settings identify their artifact type by slug (converted to an id
+    // only at the DB boundary), so seed the offline workflow steps with slugs.
+    const WBT = ArtifactTypeSlug.WholeBackTranslation as string;
+    const PBT = ArtifactTypeSlug.PhraseBackTranslation as string;
+    const RBT = ArtifactTypeSlug.Retell as string;
+    const CS = ArtifactTypeSlug.CarefulSpeech as string;
     const artIds = { pbt: PBT, wbt: WBT, cs: CS };
     // console.log('WBT', WBT, 'PBT', PBT);
     if (offlineRecs.length === 0) {
@@ -422,15 +417,15 @@ export const useOfflineSetup = () => {
     if (offlineRecs.length === 0) {
       const t = new RecordTransformBuilder();
       const ops = [
-        'activity',
-        'backtranslation',
-        'carefulspeech',
-        'comment',
-        'qanda',
-        'resource',
-        'retell',
-        'sharedresource',
-        'projectresource',
+        ArtifactTypeSlug.Activity,
+        ArtifactTypeSlug.PhraseBackTranslation,
+        ArtifactTypeSlug.CarefulSpeech,
+        ArtifactTypeSlug.Comment,
+        ArtifactTypeSlug.QandA,
+        ArtifactTypeSlug.Resource,
+        ArtifactTypeSlug.Retell,
+        ArtifactTypeSlug.SharedResource,
+        ArtifactTypeSlug.ProjectResource,
       ].map((n) => {
         let rec = {
           type: 'artifacttype',
@@ -446,7 +441,10 @@ export const useOfflineSetup = () => {
     }
     if (offlineRecs.length < 10) {
       const t = new RecordTransformBuilder();
-      const ops = ['intellectualproperty', 'wholebacktranslation'].map((n) => {
+      const ops = [
+        ArtifactTypeSlug.IntellectualProperty,
+        ArtifactTypeSlug.WholeBackTranslation,
+      ].map((n) => {
         let rec = {
           type: 'artifacttype',
           attributes: {
@@ -468,7 +466,10 @@ export const useOfflineSetup = () => {
     const offlineRecs = allRecs.filter((r) => !r?.keys?.remoteId);
     if (offlineRecs.length < 10) {
       const t = new RecordTransformBuilder();
-      const ops = ['intellectualproperty', 'wholebacktranslation'].map((n) => {
+      const ops = [
+        ArtifactTypeSlug.IntellectualProperty,
+        ArtifactTypeSlug.WholeBackTranslation,
+      ].map((n) => {
         let rec = {
           type: 'artifacttype',
           attributes: {
@@ -490,16 +491,18 @@ export const useOfflineSetup = () => {
     const offlineRecs = allRecs.filter((r) => !r?.keys?.remoteId);
     if (offlineRecs.length < 10) {
       const t = new RecordTransformBuilder();
-      const ops = ['title', 'graphic'].map((n) => {
-        let rec = {
-          type: 'artifacttype',
-          attributes: {
-            typename: n,
-          },
-        } as ArtifactType;
-        rec = rn?.normalizeRecord(rec) as ArtifactTypeD;
-        return t.addRecord(rec);
-      });
+      const ops = [ArtifactTypeSlug.Title, ArtifactTypeSlug.Graphic].map(
+        (n) => {
+          let rec = {
+            type: 'artifacttype',
+            attributes: {
+              typename: n,
+            },
+          } as ArtifactType;
+          rec = rn?.normalizeRecord(rec) as ArtifactTypeD;
+          return t.addRecord(rec);
+        }
+      );
       await backup.sync(() => ops);
       await memory.sync(() => ops);
     }

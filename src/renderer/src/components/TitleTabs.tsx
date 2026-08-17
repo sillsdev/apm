@@ -16,13 +16,7 @@ import { mediaTitleSelector } from '../selector';
 import { useTitleSave } from './useTitleSave';
 import { UnsavedContext } from '../context/UnsavedContext';
 import { useSnackBar } from '../hoc/SnackBar';
-import {
-  ArtifactTypeSlug,
-  useArtifactType,
-  useMediaUpload,
-  VernacularTag,
-} from '../crud';
-import { useGlobal } from '../context/useGlobal';
+import { ArtifactTypeSlug, useMediaUpload } from '../crud';
 
 const StatusMessage = styled(Typography)<TypographyProps>(({ theme }) => ({
   marginRight: theme.spacing(2),
@@ -76,14 +70,6 @@ const TitleTabs = (props: IProps) => {
     // isChanged,
   } = useContext(UnsavedContext).state;
   const { showMessage } = useSnackBar();
-  const [offlineOnly] = useGlobal('offlineOnly'); //will be constant here
-  const { getTypeId } = useArtifactType();
-
-  const TitleId = useMemo(() => {
-    return getTypeId(ArtifactTypeSlug.Title) as string;
-    //return remoteId('artifacttype', id, memory?.keyMap as RecordKeyMap) || id;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [offlineOnly]);
 
   const toolId = useMemo(() => 'MediaTitle-' + titlekey, [titlekey]);
   const recToolId = useMemo(() => toolId + 'rec', [toolId]);
@@ -191,7 +177,7 @@ const TitleTabs = (props: IProps) => {
   };
 
   const uploadMedia = useMediaUpload({
-    artifactId: passageId !== undefined ? VernacularTag : TitleId,
+    artifactTypeSlug: passageId !== undefined ? null : ArtifactTypeSlug.Title,
     passageId,
     planId: myPlanId,
     afterUploadCb,
@@ -216,7 +202,6 @@ const TitleTabs = (props: IProps) => {
         <TitleRecord
           passageId={passageId}
           planId={myPlanId}
-          titleId={TitleId}
           defaultFilename={defaultFilename}
           recToolId={recToolId}
           onMyRecording={handleMyRecording}

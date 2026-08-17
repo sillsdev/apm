@@ -5,14 +5,20 @@ import {
   SectionResourceD,
   SectionResourceUser,
 } from '../../../model';
-import { related, VernacularTag } from '../../../crud';
+import { ArtifactTypeSlug, related, VernacularTag } from '../../../crud';
 import { IRow } from '../../../context/PassageDetailContext';
 import { isVisual } from '../../../utils';
 import { mediaContentType } from '../../../utils/contentType';
 import { resourceArtifactName } from './resourceArtifactName';
 
 const isResource = (typeSlug: string) =>
-  ['resource', 'sharedresource', 'airesource'].indexOf(typeSlug) !== -1;
+  (
+    [
+      ArtifactTypeSlug.Resource,
+      ArtifactTypeSlug.SharedResource,
+      ArtifactTypeSlug.AIResource,
+    ] as string[]
+  ).indexOf(typeSlug) !== -1;
 
 interface DataProps {
   artifactTypes: ArtifactType[];
@@ -48,10 +54,10 @@ export const oneMediaRow = ({
   const artifactType = artifactTypes.find((t) => t.id === typId);
   let typeNameSlug = artifactType?.attributes?.typename || '';
   if (
-    typeNameSlug === 'resource' &&
+    typeNameSlug === ArtifactTypeSlug.Resource &&
     media?.attributes.eafUrl?.includes(AIGenerated)
   )
-    typeNameSlug = 'airesource';
+    typeNameSlug = ArtifactTypeSlug.AIResource;
   const catId = related(media, 'artifactCategory');
   const category = categories.find((c) => c.id === catId);
   const catNameSlug = category?.attributes?.categoryname || '';
@@ -80,9 +86,10 @@ export const oneMediaRow = ({
     resource: r,
     isResource: isResource(typeNameSlug),
     passageId: (r ? related(r, 'passage') : related(media, 'passage')) || '',
-    isComment: typeNameSlug === 'comment',
-    isKeyTerm: typeNameSlug === 'keyterm',
-    isVernacular: typeNameSlug === '' || typeNameSlug === 'vernacular',
+    isComment: typeNameSlug === ArtifactTypeSlug.Comment,
+    isKeyTerm: typeNameSlug === ArtifactTypeSlug.KeyTerm,
+    isVernacular:
+      typeNameSlug === '' || typeNameSlug === ArtifactTypeSlug.Vernacular,
     isText: isVisual(media),
     sourceVersion: sourceversion,
   });

@@ -47,7 +47,7 @@ jest.mock('../../crud', () => ({
   },
   remoteIdGuid: jest.fn((_t: string, id: string) => id),
   useArtifactType: () => ({
-    getTypeId: (slug: string) =>
+    localIdFromSlug: (slug: string) =>
       slug === 'backtranslation' ? 'pbt-id' : 'cs-id',
     slugFromId: (id: string) =>
       id === 'pbt-id'

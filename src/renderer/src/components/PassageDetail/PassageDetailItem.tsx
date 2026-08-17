@@ -127,7 +127,7 @@ export function PassageDetailItem(props: IProps) {
   const { toolChanged, startSave, saveCompleted, saveRequested } =
     useContext(UnsavedContext).state;
 
-  const { getTypeId, localizedArtifactType } = useArtifactType();
+  const { localIdFromSlug, localizedArtifactType } = useArtifactType();
   const { showMessage } = useSnackBar();
   const [recordType, setRecordType] = useState<ArtifactTypeSlug>(
     slugs[0] as ArtifactTypeSlug
@@ -226,8 +226,8 @@ export function PassageDetailItem(props: IProps) {
   }, [segString, recordType, currentSegment]);
 
   const recordTypeId = useMemo(
-    () => getTypeId(recordType),
-    [recordType, getTypeId]
+    () => localIdFromSlug(recordType),
+    [recordType, localIdFromSlug]
   );
 
   const artifactState = useMemo(() => ({ id: recordTypeId }), [recordTypeId]);
@@ -497,7 +497,7 @@ export function PassageDetailItem(props: IProps) {
                     }
                     allowRecord={allowRecord}
                     sourceMediaId={mediafileId}
-                    artifactId={recordTypeId}
+                    artifactTypeSlug={recordType}
                     performedBy={speaker}
                     topic={topic}
                     afterUploadCb={afterUploadCb}

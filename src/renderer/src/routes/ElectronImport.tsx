@@ -56,7 +56,7 @@ export const useElectronImport = () => {
   const zipRef = useRef<string | undefined>(undefined);
   const t = useSelector(stringSelector, shallowEqual) as IElectronImportStrings;
   const backup = coordinator?.getSource('backup') as IndexedDBSource;
-  const { getTypeId } = useArtifactType();
+  const { localIdFromSlug } = useArtifactType();
 
   const invalidReturn = {
     fileName: '',
@@ -326,7 +326,7 @@ export const useElectronImport = () => {
         offlineOnly: isOfflinePtf.current,
         AddProjectLoaded,
         reportError,
-        getTypeId,
+        localIdFromSlug,
         pendingmsg: t.importPending,
         completemsg: t.importComplete,
         oldfilemsg: t.importOldFile,

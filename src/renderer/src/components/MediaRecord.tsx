@@ -19,6 +19,7 @@ import {
   waitForIt,
 } from '../utils';
 import {
+  ArtifactTypeSlug,
   IMediaState,
   MediaSt,
   useFetchMediaUrl,
@@ -38,7 +39,7 @@ import { passageRecordSelector, sharedSelector } from '../selector';
 
 interface IProps {
   toolId: string;
-  artifactId: string | null;
+  artifactTypeSlug: ArtifactTypeSlug | null;
   passageId: string | undefined;
   planId?: string | undefined;
   sourceMediaId?: string | undefined;
@@ -120,7 +121,7 @@ function MediaRecord(props: IProps) {
     defaultFilename,
     allowDeltaVoice,
     allowDownload,
-    artifactId,
+    artifactTypeSlug,
     passageId,
     planId,
     sourceMediaId,
@@ -316,7 +317,7 @@ function MediaRecord(props: IProps) {
   };
 
   const uploadMedia = useMediaUpload({
-    artifactId,
+    artifactTypeSlug,
     passageId,
     sourceMediaId,
     sourceSegments,

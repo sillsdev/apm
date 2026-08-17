@@ -13,7 +13,6 @@ import {
   IMediaState,
   MediaSt,
   remoteIdGuid,
-  useArtifactType,
   useOrganizedBy,
 } from '../../../crud';
 import { ReplaceRelatedRecord } from '../../../model/baseModel';
@@ -52,7 +51,6 @@ export default function PassageDetailPromptAdmin(props: IProps) {
     promptSelector,
     shallowEqual
   );
-  const { getTypeId } = useArtifactType();
   const {
     rowData,
     section,
@@ -81,11 +79,6 @@ export default function PassageDetailPromptAdmin(props: IProps) {
   const sectionResourceRef = useRef<SectionResourceD | null>(null);
   /** Prevents preload ↔ trackState update loops; reset when promptMediaId changes. */
   const recordPreloadInitiatedRef = useRef<string | null>(null);
-
-  const resourceArtifactId = useMemo(
-    () => getTypeId(ArtifactTypeSlug.Resource) || '',
-    [getTypeId]
-  );
 
   const canEdit = canAlwaysDoStep() || canDoSectionStep(currentstep, section);
   const promptAddBlocked = offline || offlineOnly;
@@ -235,7 +228,7 @@ export default function PassageDetailPromptAdmin(props: IProps) {
       <Box ref={playerContainerRef} sx={{ width: '100%', minWidth: 0 }}>
         <MediaRecord
           toolId={toolId}
-          artifactId={resourceArtifactId}
+          artifactTypeSlug={ArtifactTypeSlug.Resource}
           passageId={undefined}
           afterUploadCb={afterUploadCb}
           mediaId={promptMediaId}

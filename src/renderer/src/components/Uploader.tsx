@@ -17,7 +17,6 @@ import {
   remoteIdNum,
   useArtifactType,
   useOfflnMediafileCreate,
-  VernacularTag,
 } from '../crud';
 import { TokenContext } from '../context/TokenProvider';
 import Memory from '@orbit/memory';
@@ -140,7 +139,7 @@ export const Uploader = (props: IProps) => {
   const { createMedia } = useOfflnMediafileCreate();
   const [, setComplete] = useGlobal('progress');
   const [errMsgs] = useState<string[]>([]);
-  const { localizedArtifactTypeFromId } = useArtifactType();
+  const { localizedArtifactTypeFromId, slugFromId } = useArtifactType();
   const getGlobal = useGetGlobal();
   /** True if import/export was busy when the current batch started (before we set busy). */
   const importWasBusyRef = useRef(false);
@@ -481,7 +480,9 @@ export const Uploader = (props: IProps) => {
     <Box sx={{ width: '100%' }}>
       {audioUploadOrRecord && !hasImport && (
         <PassageRecordDlg
-          artifactId={artifactState?.id ?? VernacularTag}
+          artifactTypeSlug={
+            artifactState?.id ? slugFromId(artifactState.id) : null
+          }
           passageId={passageId}
           planId={planIdRef.current}
           visible={isOpen}

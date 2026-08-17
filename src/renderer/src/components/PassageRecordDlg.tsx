@@ -24,7 +24,7 @@ import UploadRecordToggle, {
 import { UploadType } from './UploadType';
 import { useGlobal } from '../context/useGlobal';
 import { getRefWidth } from '../utils/getRefWidth';
-import { useFetchMediaUrl } from '../crud';
+import { ArtifactTypeSlug, useFetchMediaUrl } from '../crud';
 import MediaRecord from './MediaRecord';
 import { UnsavedContext } from '../context/UnsavedContext';
 import SpeakerName from './SpeakerName';
@@ -75,7 +75,7 @@ interface IProps {
   onVisible: (visible: boolean) => void;
   onCancel: () => void;
   mediaId: string;
-  artifactId: string | null;
+  artifactTypeSlug: ArtifactTypeSlug | null;
   afterUploadCb: (mediaId: string | undefined) => Promise<void>;
   passageId: string | undefined;
   planId?: string | undefined;
@@ -100,7 +100,7 @@ function PassageRecordDlg(props: IProps) {
     visible,
     onVisible,
     mediaId,
-    artifactId,
+    artifactTypeSlug,
     afterUploadCb,
     passageId,
     planId,
@@ -265,7 +265,7 @@ function PassageRecordDlg(props: IProps) {
             >
               <MediaRecord
                 toolId={myToolId}
-                artifactId={artifactId}
+                artifactTypeSlug={artifactTypeSlug}
                 passageId={passageId}
                 planId={planId}
                 afterUploadCb={afterUploadCb}

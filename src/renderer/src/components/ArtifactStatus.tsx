@@ -34,7 +34,7 @@ export default function ArtifactStatus({
   vernacularMediaId,
   languageBcp47,
 }: ArtifactStatusProps) {
-  const { getTypeId } = useArtifactType();
+  const { localIdFromSlug } = useArtifactType();
   const [segsComp, setSegsComp] = useState('');
   const [segProgress, setSegProgress] = useState('');
   const [curVersionCount, setCurVersionCount] = useState(0);
@@ -42,8 +42,8 @@ export default function ArtifactStatus({
   const t: ICommunityStrings = useSelector(communitySelector, shallowEqual);
 
   const recordTypeId = useMemo(
-    () => getTypeId(recordType),
-    [recordType, getTypeId]
+    () => localIdFromSlug(recordType),
+    [recordType, localIdFromSlug]
   );
 
   useEffect(() => {

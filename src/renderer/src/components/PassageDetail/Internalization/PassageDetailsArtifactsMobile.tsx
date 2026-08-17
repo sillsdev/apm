@@ -40,6 +40,7 @@ import {
   mediaFileName,
   usePlanType,
   usePlan,
+  ArtifactTypeSlug,
 } from '../../../crud';
 import BigDialog from '../../../hoc/BigDialog';
 import { BigDialogBp } from '../../../hoc/BigDialogBp';
@@ -249,7 +250,7 @@ export function PassageDetailArtifactsMobile() {
   const projResourceType = useMemo(() => {
     const resourceType = artifactTypes.find(
       (t) =>
-        t.attributes?.typename === 'projectresource' &&
+        t.attributes?.typename === ArtifactTypeSlug.ProjectResource &&
         Boolean(t?.keys?.remoteId) === !offlineOnly
     );
     return resourceType?.id;
