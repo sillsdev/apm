@@ -444,7 +444,6 @@ export function Access() {
     <AppLayout>
       {isElectron && (
         <Box sx={{ display: 'block' }}>
-          <SectionHead>Hello I am under the AppHead</SectionHead>
           <Box
             sx={{
               display: 'flex',
