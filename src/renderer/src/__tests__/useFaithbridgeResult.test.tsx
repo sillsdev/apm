@@ -236,7 +236,7 @@ describe('useFaithbridgeResult', () => {
         await result.current.fetchResult('chat123', 'user456');
       });
 
-      expect(mockFetch).toHaveBeenCalledTimes(5);
+      expect(mockFetch).toHaveBeenCalledTimes(1);
 
       expect(result.current).toEqual({
         data: null,
@@ -247,7 +247,7 @@ describe('useFaithbridgeResult', () => {
     });
 
     it('should handle network errors', async () => {
-      const networkError = new Error('Network error');
+      const networkError = new Error('Failed to fetch');
       mockFetch.mockRejectedValue(networkError);
 
       const { result } = renderHook(() => useFaithbridgeResult());
@@ -256,12 +256,12 @@ describe('useFaithbridgeResult', () => {
         await result.current.fetchResult('chat123', 'user456');
       });
 
-      expect(mockFetch).toHaveBeenCalledTimes(4);
+      expect(mockFetch).toHaveBeenCalledTimes(5);
 
       expect(result.current).toEqual({
         data: null,
         loading: false,
-        error: 'Network error',
+        error: 'Failed to fetch',
         fetchResult: expect.any(Function),
       });
     });

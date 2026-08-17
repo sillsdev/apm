@@ -13,7 +13,7 @@ import {
   LocalKey,
 } from '../utils';
 import { isElectron } from '../../api-variable';
-import AppHead from '../components/App/AppHead';
+import AppLayout from '../components/App/AppLayout';
 import MemorySource from '@orbit/memory';
 import ImportTab from '../components/ImportTab';
 import OfflineIcon from '@mui/icons-material/CloudOff';
@@ -106,7 +106,6 @@ export function Welcome(props: IProps) {
   const { search } = useLocation();
   const navigate = useMyNavigate();
   const offlineSetup = useOfflineSetup();
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [, setBusy] = useGlobal('importexportBusy');
   const [user, setUser] = useGlobal('user');
   const [isDeveloper] = useGlobal('developer');
@@ -315,72 +314,82 @@ export function Welcome(props: IProps) {
   }
 
   return (
-    <RootBox>
-      <AppHead {...props} />
-      <Typography sx={sectionHeadProps}>Filler</Typography>
+    <AppLayout>
+      <RootBox>
+        <Typography sx={sectionHeadProps}>Filler</Typography>
 
-      {isElectron && (
-        <Box
-          sx={{
-            p: 3,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            width: '100%',
-          }}
-        >
-          <Typography id="welcome" sx={sectionHeadProps}>
-            {t.title}
-          </Typography>
-          <Grid container spacing={3}>
-            <Grid size={{ xs: 8 }}>
-              <ChoiceHead
-                title={t.setupTeam}
-                prose={t.setupTeamTip}
-                keyFactorTitle={t.keyFactor}
-                factors={setupFactors}
-                factorDecorate={factorDecorate}
-              />
+        {isElectron && (
+          <Box
+            sx={{
+              p: 3,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              width: '100%',
+            }}
+          >
+            <Typography id="welcome" sx={sectionHeadProps}>
+              {t.title}
+            </Typography>
+            <Grid container spacing={3}>
+              <Grid size={{ xs: 8 }}>
+                <ChoiceHead
+                  title={t.setupTeam}
+                  prose={t.setupTeamTip}
+                  keyFactorTitle={t.keyFactor}
+                  factors={setupFactors}
+                  factorDecorate={factorDecorate}
+                />
+              </Grid>
+              <Grid size={{ xs: 4 }} sx={actionProps}>
+                <OnlineButton id="adminonline" onClick={handleGoOnlineCloud} />
+              </Grid>
+              <Grid size={{ xs: 8 }}>
+                <ChoiceHead
+                  title={t.team}
+                  prose={t.teamTip}
+                  keyFactorTitle={t.keyFactor}
+                  factors={teamFactors}
+                />
+              </Grid>
+              <Grid size={{ xs: 4 }} sx={actionProps}>
+                <OnlineButton id="teamonline" onClick={handleGoOnlineTeam} />
+                {hasOfflineProjects && hasOnlineUsers && (
+                  <OfflineButton
+                    id="teamoffline"
+                    onClick={handleGoOnlineLocal}
+                  />
+                )}
+                <OfflineButton
+                  id="teamimport"
+                  onClick={handleImport}
+                  txt={t.import}
+                />
+              </Grid>
+              <Grid size={{ xs: 8 }}>
+                <ChoiceHead
+                  title={t.alone}
+                  prose={''}
+                  keyFactorTitle={t.keyFactor}
+                  factors={aloneFactors}
+                />
+              </Grid>
+              <Grid size={{ xs: 4 }} sx={actionProps}>
+                <OnlineButton id="aloneonline" onClick={handleQuickOnline} />
+                <OfflineButton id="aloneoffline" onClick={handleQuickOffline} />
+              </Grid>
             </Grid>
-            <Grid size={{ xs: 4 }} sx={actionProps}>
-              <OnlineButton id="adminonline" onClick={handleGoOnlineCloud} />
-            </Grid>
-            <Grid size={{ xs: 8 }}>
-              <ChoiceHead
-                title={t.team}
-                prose={t.teamTip}
-                keyFactorTitle={t.keyFactor}
-                factors={teamFactors}
-              />
-            </Grid>
-            <Grid size={{ xs: 4 }} sx={actionProps}>
-              <OnlineButton id="teamonline" onClick={handleGoOnlineTeam} />
-              {hasOfflineProjects && hasOnlineUsers && (
-                <OfflineButton id="teamoffline" onClick={handleGoOnlineLocal} />
-              )}
-              <OfflineButton
-                id="teamimport"
-                onClick={handleImport}
-                txt={t.import}
-              />
-            </Grid>
-            <Grid size={{ xs: 8 }}>
-              <ChoiceHead
-                title={t.alone}
-                prose={''}
-                keyFactorTitle={t.keyFactor}
-                factors={aloneFactors}
-              />
-            </Grid>
-            <Grid size={{ xs: 4 }} sx={actionProps}>
-              <OnlineButton id="aloneonline" onClick={handleQuickOnline} />
-              <OfflineButton id="aloneoffline" onClick={handleQuickOffline} />
-            </Grid>
-          </Grid>
-        </Box>
-      )}
-      {importOpen && <ImportTab isOpen={importOpen} onOpen={setImportOpen} />}
-    </RootBox>
+          </Box>
+        )}
+        {importOpen && (
+          <ImportTab
+            isOpen={importOpen}
+            onOpen={setImportOpen}
+            offerPtf={!isElectron}
+          />
+        )}
+      </RootBox>
+    </AppLayout>
   );
 }
 

@@ -1,6 +1,8 @@
 import { MediaFile, Passage, Section, BookName } from '../../model';
 import { mediaFileName, PublishLevelEnum, related } from '../../crud';
-import { IRow } from '.';
+import { passageBook } from '../../crud/passage';
+import { normalizeReference } from '../../utils/sort';
+import { IRow, pad } from '.';
 import { GetReference } from './GetReference';
 import { getSection } from './getSection';
 import { formatTime } from '../../control/formatTime';
@@ -13,7 +15,6 @@ export interface IGetMedia {
   playItem: string;
   allBookData: BookName[];
   sectionMap: Map<number, string>;
-  isPassageDate: boolean;
 }
 
 export const mediaRow = (f: MediaFile, data: IGetMedia) => {
@@ -24,11 +25,11 @@ export const mediaRow = (f: MediaFile, data: IGetMedia) => {
   const passage = showId ? passages.filter((p) => p.id === showId) : [];
   const sectionId = related(passage[0], 'section');
   const section = sections.filter((s) => s.id === sectionId);
-  const passdt = passage[0]?.attributes?.dateUpdated || '';
-  const meddt = f?.attributes?.dateUpdated || '';
-  const lastdt = meddt > passdt ? meddt : passdt;
-  const updateddt = showId && data.isPassageDate ? lastdt : meddt;
-
+  const passageRef = passage[0]?.attributes?.reference ?? '';
+  // Build referenceString matching PassageReference logic: include book name for numeric references
+  // Then normalize with zero-padding for proper string sorting
+  const book = passage[0] ? passageBook(passage[0], allBookData) : '';
+  const referenceString = `${pad(passage[0]?.attributes?.sequencenum ?? 0)} ${normalizeReference(book || '', passageRef)}`;
   return {
     planid: related(f, 'plan'),
     passId: showId,
@@ -41,14 +42,15 @@ export const mediaRow = (f: MediaFile, data: IGetMedia) => {
     reference: (
       <GetReference passage={passage} bookData={allBookData} flat={false} />
     ),
+    referenceString, // String version for sorting (includes sequence number)
     duration: formatTime(f?.attributes?.duration ?? 0),
     size:
       Math.round(((f?.attributes?.filesize ?? 0) / 1024 / 1024) * 10) / 10.0,
     version: f?.attributes?.versionNumber?.toString() ?? '',
-    date: updateddt,
+    date: f?.attributes?.dateCreated || '',
     readyToShare: f?.attributes?.readyToShare ?? false,
     publishTo: f?.attributes?.publishTo ?? PublishLevelEnum.None,
-    passageType: passageTypeFromRef(passage[0]?.attributes?.reference ?? ''),
+    passageType: passageTypeFromRef(passageRef),
     user: related(f, 'recordedbyUser'),
   } as IRow;
 };

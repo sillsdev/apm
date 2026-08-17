@@ -1,4 +1,5 @@
 import React, { useState, ReactNode } from 'react';
+import { useRenderProfiler } from '../utils/perf';
 import Coordinator from '@orbit/coordinator';
 import Memory from '@orbit/memory';
 import { AlertSeverity } from '../hoc/SnackBar';
@@ -15,13 +16,13 @@ export interface GlobalState {
   memory: Memory;
 
   //effectively constant
-  lang: string; //profile
   latestVersion: string;
   loadComplete: boolean; //Loading
   offlineOnly: boolean; //errorPage, access, logout
   organization: string; //Loading
   releaseDate: string;
   user: string; //loading, profile, welcome, logout
+  // language is now managed by redux and can be accessed with useSelector((state: IState) => state.strings.lang)
 
   //modified during execution
   alertOpen: boolean; //verified
@@ -44,8 +45,10 @@ export interface GlobalState {
   remoteBusy: boolean; //verified //datachanges, unsavedcontext, teamactions,consultantcheck, audiotable
   saveResult: string | undefined; //verified //PassageDetailContext, UnsavedContext
   snackAlert: AlertSeverity | undefined; //verified //SnackBar
-  snackMessage: JSX.Element; //verified //SnackBar
+  snackMessage: React.JSX.Element; //verified //SnackBar
   offline: boolean;
+  mobileView: boolean; //verified //UserMenu - toggle mobile view
+  addStoryOrPassage: boolean; //UserMenu - session-only, bold member can add sections/passages + record prompt
 }
 
 export type GlobalKey = keyof GlobalState;
@@ -56,7 +59,14 @@ export interface GlobalCtxType {
   setGlobalState: React.Dispatch<React.SetStateAction<GlobalState>>;
 }
 
-const GlobalContext = React.createContext<GlobalCtxType | undefined>(undefined);
+// Default wrapper object (not `undefined`) so consumers can safely destructure
+// `globalState`/`setGlobalState` during a transient default-context render (e.g.
+// HMR/Fast Refresh) instead of throwing. `useGlobal` already guards
+// `globalState === undefined` and returns an empty result in that case.
+const GlobalContext = React.createContext<GlobalCtxType | undefined>({
+  globalState: undefined as unknown as GlobalState,
+  setGlobalState: () => {},
+});
 
 interface GlobalProps {
   init: GlobalState;
@@ -64,6 +74,7 @@ interface GlobalProps {
 }
 
 const GlobalProvider: React.FC<GlobalProps> = ({ init, children }) => {
+  useRenderProfiler('GlobalProvider');
   const [globalState, setGlobalState] = useState<GlobalState>(init);
 
   return (

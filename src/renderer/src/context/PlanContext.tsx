@@ -2,10 +2,7 @@
 import React, { useEffect, useState } from 'react';
 // see: https://upmostly.com/tutorials/how-to-use-the-usecontext-hook-in-react
 import { useGlobal } from '../context/useGlobal';
-import { shallowEqual } from 'react-redux';
 import {
-  IMainStrings,
-  IProjButtonsStrings,
   ProjectD,
   DiscussionD,
   MediaFileD,
@@ -17,17 +14,13 @@ import {
   useProjectDefaults,
 } from '../crud/useProjectDefaults';
 import { useOrbitData } from '../hoc/useOrbitData';
-import { useSelector } from 'react-redux';
-import { projButtonsSelector } from '../selector';
 import { LocalKey, localUserKey } from '../utils';
 import { useProjectPermissions } from '../utils/useProjectPermissions';
 import { SectionArray } from '../model/SectionArray';
 export interface IRowData {}
 
 const initState = {
-  t: {} as IMainStrings,
   connected: false,
-  projButtonStr: {} as IProjButtonsStrings,
   mediafiles: [] as MediaFileD[],
   discussions: [] as DiscussionD[],
   groupmemberships: [] as GroupMembershipD[],
@@ -37,6 +30,7 @@ const initState = {
   publishingOn: true,
   hidePublishing: true,
   canEditSheet: false,
+  canEditAudio: false,
   canPublish: false,
   sectionArr: [] as SectionArray,
   setSectionArr: (_sectionArr: SectionArray) => {},
@@ -53,7 +47,10 @@ interface IContext {
   setState: React.Dispatch<React.SetStateAction<ICtxState>>;
 }
 
-const PlanContext = React.createContext({} as IContext);
+const PlanContext = React.createContext({
+  state: initState as ICtxState,
+  setState: () => {},
+} as IContext);
 
 interface IProps {
   children: React.ReactElement;
@@ -63,22 +60,34 @@ const PlanProvider = (props: IProps) => {
   const mediafiles = useOrbitData<MediaFileD[]>('mediafile');
   const discussions = useOrbitData<DiscussionD[]>('discussion');
   const groupmemberships = useOrbitData<GroupMembershipD[]>('groupmembership');
-  const projButtonStr: IProjButtonsStrings = useSelector(
-    projButtonsSelector,
-    shallowEqual
-  );
   const [memory] = useGlobal('memory');
   const [plan] = useGlobal('plan'); //will be constant here
   const [project] = useGlobal('project'); //will be constant here
   const [connected] = useGlobal('connected'); //verified this is not used in a function 2/18/25
   const [isOffline] = useGlobal('offline'); //verified this is not used in a function 2/18/25
+  const [offlineOnly] = useGlobal('offlineOnly');
   const [isDeveloper] = useGlobal('developer');
   const getPlanType = usePlanType();
   const { setProjectDefault, getProjectDefault } = useProjectDefaults();
-  const { canEditSheet, canPublish } = useProjectPermissions();
+  const {
+    canEditSheet: canEditSheetPerm,
+    canEditSheetBase,
+    canPublish,
+  } = useProjectPermissions();
+  const [addStoryOrPassage] = useGlobal('addStoryOrPassage');
+  // Bold-workflow members can add sections/passages when the session-only
+  // "Add {Story} or Passage" flag is set (see UserMenu). The flag can only be
+  // set in a bold context, so no extra workflow guard is needed here.
+  // Structural sheet edits (adding/moving sections & passages) still require
+  // connectivity to the server, same as admins/sheet-editors -- see TT-7521.
+  // Audio upload/delete is safe to allow offline (it queues for later sync),
+  // so canEditAudio intentionally does not apply that restriction.
+  const structuralOffline = isOffline && !offlineOnly;
+  const canEditSheet =
+    canEditSheetPerm || (addStoryOrPassage && !structuralOffline);
+  const canEditAudio = canEditSheetBase || addStoryOrPassage;
   const [state, setState] = useState({
     ...initState,
-    projButtonStr,
     mediafiles,
     discussions,
     groupmemberships,
@@ -165,6 +174,7 @@ const PlanProvider = (props: IProps) => {
           setSectionArr,
           connected,
           canEditSheet,
+          canEditAudio,
           canPublish,
           togglePublishing,
           setCanAddPublishing,

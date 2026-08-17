@@ -44,6 +44,7 @@ function TranscribeAddNote(props: IProps) {
     setInProcess(true);
 
     if (pscIn) {
+      // eslint-disable-next-line react-hooks/immutability
       pscIn.attributes.comments = comment;
       if (editMethod) editMethod(pscIn);
     } else if (comment !== '') {

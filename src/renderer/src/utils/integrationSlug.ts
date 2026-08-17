@@ -6,9 +6,9 @@ export const integrationSlug = (
 ): string => {
   const type =
     exportType === ArtifactTypeSlug.PhraseBackTranslation
-      ? 'backtranslation'
+      ? ArtifactTypeSlug.PhraseBackTranslation
       : exportType === ArtifactTypeSlug.WholeBackTranslation
-        ? 'wholebacktranslation'
+        ? ArtifactTypeSlug.WholeBackTranslation
         : '';
   return 'paratext' + (offline ? 'Local' : '') + type;
 };

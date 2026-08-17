@@ -1,17 +1,23 @@
 import * as React from 'react';
 import { useGlobal } from '../context/useGlobal';
-import { ICommunityStrings, MediaFileD } from '../model';
+import { ICommunityStrings, ISharedStrings, MediaFileD } from '../model';
 import TextField from '@mui/material/TextField';
 import Autocomplete, { createFilterOptions } from '@mui/material/Autocomplete';
+import SupportAgentIcon from '@mui/icons-material/SupportAgent';
+import Button from '@mui/material/Button';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
 import IntellectualProperty from '../model/intellectualProperty';
-import BigDialog from '../hoc/BigDialog';
 import ProvideRights from './ProvideRights';
-import { communitySelector } from '../selector';
+import { communitySelector, sharedSelector } from '../selector';
 import { shallowEqual, useSelector } from 'react-redux';
 import { ArtifactTypeSlug, findRecord, related } from '../crud';
-import { Typography } from '@mui/material';
+import { Typography, Stack } from '@mui/material';
 import { useOrbitData } from '../hoc/useOrbitData';
 import { useSnackBar } from '../hoc/SnackBar';
+import { useMobile } from '../utils/index';
 
 interface NameOptionType {
   inputValue?: string;
@@ -20,8 +26,16 @@ interface NameOptionType {
 
 const filter = createFilterOptions<NameOptionType>();
 
+/** Non-empty trimmed name, or null if the value is missing / whitespace-only. */
+function normalizedSpeakerName(raw: string | undefined | null): string | null {
+  if (raw == null) return null;
+  const t = raw.trim();
+  return t.length === 0 ? null : t;
+}
+
 interface IProps {
   name: string;
+  planId?: string;
   noNewVoice?: boolean | undefined;
   onChange?: ((name: string) => void) | undefined;
   onRights?: ((hasRights: boolean) => void) | undefined;
@@ -32,6 +46,7 @@ interface IProps {
 
 export function SpeakerName({
   name,
+  planId,
   noNewVoice,
   onChange,
   onRights,
@@ -42,12 +57,39 @@ export function SpeakerName({
   const ipRecs = useOrbitData<IntellectualProperty[]>('intellectualproperty');
   const [value, setValue] = React.useState<NameOptionType | null>({ name });
   const valueRef = React.useRef<string>('');
-  const [speakers, setSpeakers] = React.useState<NameOptionType[]>([]);
-  const [showDialog, setShowDialog] = React.useState(false);
+  const [showSelectDialog, setShowSelectDialog] = React.useState(false);
   const [organization] = useGlobal('organization');
   const { showMessage } = useSnackBar();
   const [memory] = useGlobal('memory');
   const t: ICommunityStrings = useSelector(communitySelector, shallowEqual);
+  const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
+  const [hasNoRights, setHasNoRights] = React.useState(false);
+
+  const speakers = React.useMemo((): NameOptionType[] => {
+    const orgId = team || organization;
+    const orgIp = ipRecs.filter((r) => related(r, 'organization') === orgId);
+
+    const newSpeakers: NameOptionType[] = [];
+    if (recordingRequired) {
+      orgIp.forEach((r) => {
+        const mediaRec = findRecord(
+          memory,
+          'mediafile',
+          related(r, 'releaseMediafile')
+        ) as MediaFileD;
+        if (mediaRec?.attributes?.transcription) {
+          newSpeakers.push({ name: r.attributes.rightsHolder });
+        }
+      });
+    } else {
+      newSpeakers.push(
+        ...orgIp.map((r) => ({ name: r.attributes.rightsHolder }))
+      );
+    }
+
+    newSpeakers.sort((a, b) => a.name.localeCompare(b.name));
+    return newSpeakers;
+  }, [ipRecs, team, organization, recordingRequired, memory]);
 
   const handleRights = () => {
     onRights && onRights(false);
@@ -56,18 +98,14 @@ export function SpeakerName({
       onChange?.(name);
       return;
     }
-    setShowDialog(true);
+    setHasNoRights(true);
   };
 
   const nameReset = () => {
     valueRef.current = '';
     onChange && onChange('');
     onRights && onRights(false);
-  };
-
-  const handleCancelRights = () => {
-    setShowDialog(false);
-    nameReset();
+    setHasNoRights(false);
   };
 
   const getOptionLabel = (option: string | NameOptionType) => {
@@ -85,7 +123,8 @@ export function SpeakerName({
 
   const handleRightsChange = (hasRights: boolean) => {
     onRights && onRights(hasRights);
-    setShowDialog(false);
+    setHasNoRights(false);
+    setShowSelectDialog(false);
   };
 
   const handleNameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -93,36 +132,105 @@ export function SpeakerName({
     onRights && onRights(false);
   };
 
-  const inList = (name: string) => speakers.find((s) => s.name === name);
+  const inList = (name: string) => {
+    const normalized = normalizedSpeakerName(name);
+    if (!normalized) return undefined;
+    const n = normalized.toLocaleLowerCase();
+    return speakers.find((s) => {
+      const sn = normalizedSpeakerName(s.name);
+      return sn != null && sn.toLocaleLowerCase() === n;
+    });
+  };
 
   const handleChoice = (newValue: string | NameOptionType | null) => {
     if (newValue === null) {
       nameReset();
     } else if (typeof newValue === 'string') {
-      valueRef.current = newValue;
-      setValue({
-        name: newValue,
-      });
-      onChange && onChange(newValue);
-      if (inList(newValue)) {
+      const n = normalizedSpeakerName(newValue);
+      if (!n) {
+        nameReset();
+        return;
+      }
+      valueRef.current = n;
+      setValue({ name: n });
+      onChange && onChange(n);
+      if (inList(n)) {
         onRights && onRights(true);
+        setHasNoRights(false);
       } else handleRights();
     } else if (newValue && newValue.inputValue) {
-      // Create a new value from the user input
-      valueRef.current = newValue.inputValue;
-      setValue({
-        name: newValue.inputValue,
-      });
-      onChange && onChange(newValue.inputValue);
-      if (inList(newValue.inputValue)) {
+      const n = normalizedSpeakerName(newValue.inputValue);
+      if (!n) {
+        nameReset();
+        return;
+      }
+      valueRef.current = n;
+      setValue({ name: n });
+      onChange && onChange(n);
+      if (inList(n)) {
         onRights && onRights(true);
+        setHasNoRights(false);
       } else handleRights();
     } else {
       setValue(newValue);
       if (newValue) {
-        valueRef.current = newValue.name;
-        onChange && onChange(newValue?.name || '');
+        const n = normalizedSpeakerName(newValue.name);
+        if (!n) {
+          nameReset();
+          return;
+        }
+        valueRef.current = n;
+        onChange && onChange(n);
         onRights && onRights(true);
+        setHasNoRights(false);
+      }
+    }
+  };
+
+  const handleChoiceMobile = (newValue: string | NameOptionType | null) => {
+    if (newValue === null) {
+      nameReset();
+      setHasNoRights(false);
+    } else if (typeof newValue === 'string') {
+      const n = normalizedSpeakerName(newValue);
+      if (!n) {
+        nameReset();
+        setHasNoRights(false);
+        return;
+      }
+      valueRef.current = n;
+      setValue({ name: n });
+      onChange && onChange(n);
+      if (inList(n)) {
+        setHasNoRights(false);
+        setShowSelectDialog(false);
+      } else {
+        setHasNoRights(true);
+      }
+    } else if (newValue && newValue.inputValue) {
+      const n = normalizedSpeakerName(newValue.inputValue);
+      if (!n) {
+        nameReset();
+        setHasNoRights(false);
+        return;
+      }
+      valueRef.current = n;
+      setValue({ name: n });
+      onChange && onChange(n);
+      setHasNoRights(true);
+    } else {
+      setValue(newValue);
+      if (newValue) {
+        const n = normalizedSpeakerName(newValue.name);
+        if (!n) {
+          nameReset();
+          setHasNoRights(false);
+          return;
+        }
+        valueRef.current = n;
+        onChange && onChange(n);
+        setHasNoRights(false);
+        setShowSelectDialog(false);
       }
     }
   };
@@ -137,34 +245,6 @@ export function SpeakerName({
   };
 
   React.useEffect(() => {
-    const newSpeakers = new Array<NameOptionType>();
-    const orgId = team || organization;
-    const orgIp = ipRecs.filter((r) => related(r, 'organization') === orgId);
-    if (recordingRequired) {
-      orgIp.forEach((r) => {
-        const mediaRec = findRecord(
-          memory,
-          'mediafile',
-          related(r, 'releaseMediafile')
-        ) as MediaFileD;
-        if (mediaRec?.attributes?.transcription) {
-          newSpeakers.push({ name: r.attributes.rightsHolder });
-        }
-      });
-    } else {
-      newSpeakers.push(
-        ...orgIp.map((r) => ({ name: r.attributes.rightsHolder }))
-      );
-    }
-    setSpeakers(
-      newSpeakers.sort((a, b) =>
-        getOptionLabel(a).localeCompare(getOptionLabel(b))
-      )
-    );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ipRecs, team, organization, recordingRequired]);
-
-  React.useEffect(() => {
     if (inList(name)) {
       onRights && onRights(true);
     }
@@ -176,81 +256,165 @@ export function SpeakerName({
     if (value?.name !== newName) setValue({ name: newName });
   }, [name, value?.name]);
 
+  const handleOpenSelectDialog = () => {
+    setShowSelectDialog(true);
+  };
+
+  const handleCloseSelectDialog = () => {
+    setShowSelectDialog(false);
+  };
+
+  const handleSelectAndClose = (newValue: string | NameOptionType | null) => {
+    // Desktop: keep the dialog open when the user is adding a new speaker
+    // so we can show ProvideRights inline.
+    if (newValue === null) {
+      nameReset();
+      return;
+    }
+    const rawName =
+      typeof newValue === 'string'
+        ? newValue
+        : newValue.inputValue
+          ? newValue.inputValue
+          : newValue.name;
+
+    const nextName = normalizedSpeakerName(rawName);
+    // If empty, keep dialog open (don't launch rights).
+    if (!nextName) {
+      nameReset();
+      setValue({ name: '' });
+      return;
+    }
+
+    valueRef.current = nextName;
+    setValue({ name: nextName });
+    onChange && onChange(nextName);
+
+    if (inList(nextName)) {
+      onRights && onRights(true);
+      setHasNoRights(false);
+      setShowSelectDialog(false);
+    } else {
+      onRights && onRights(false);
+      setHasNoRights(true);
+      // keep dialog open
+    }
+  };
+
+  const buttonText = name?.trim() !== '' ? name : t.selectSpeaker + '...';
+
+  const { isMobile: isMobileView } = useMobile();
+
   return (
     <>
-      <Autocomplete
-        value={value}
-        onChange={(event, newValue) => handleChoice(newValue)}
-        onClose={handleLeave}
-        {...(disabled !== undefined && { disabled })}
-        filterOptions={(options, params) => {
-          const filtered = filter(options, params);
-
-          const { inputValue } = params;
-          // Suggest the creation of a new value
-          const isExisting = options.some(
-            (option) => inputValue === option.name
-          );
-          if (inputValue !== '' && !isExisting) {
-            filtered.push({
-              inputValue,
-              name: t.addSpeaker.replace('{0}', inputValue),
-            });
-          }
-
-          return filtered;
+      <Button
+        variant={name?.trim() !== '' ? 'outlined' : 'contained'}
+        onClick={handleOpenSelectDialog}
+        disabled={disabled}
+        sx={{
+          minWidth: isMobileView ? 100 : 200,
+          justifyContent: 'flex-start',
         }}
-        selectOnFocus
-        clearOnBlur
-        handleHomeEndKeys
-        id="speaker-name"
-        options={speakers}
-        getOptionLabel={getOptionLabel}
-        renderOption={(props, option) => (
-          <li {...props} key={option.name}>
-            {option.name}
-          </li>
-        )}
-        sx={{ width: 300, marginTop: '5px' }}
-        freeSolo
-        renderInput={(params) => {
-          const { size, InputLabelProps, ...restParams } = params;
-          const { className, ...restInputLabelProps } = InputLabelProps || {};
-          return (
-            <TextField
-              required
-              {...restParams}
-              {...(size && { size })}
-              slotProps={{
-                inputLabel: {
-                  ...restInputLabelProps,
-                  ...(className && { className }),
-                },
-              }}
-              label={t.speaker}
-              onChange={handleNameChange}
-            />
-          );
-        }}
-      />
-      <BigDialog
-        title={t.provideRights}
-        isOpen={showDialog}
-        onOpen={handleCancelRights}
       >
-        <>
-          <Typography>
-            {recordingRequired ? t.voiceRights : t.releaseRights}
-          </Typography>
-          <ProvideRights
-            speaker={value?.name || ''}
-            recordType={ArtifactTypeSlug.IntellectualProperty}
-            onRights={handleRightsChange}
-            team={team}
-            recordingRequired={recordingRequired}
+        <Stack direction="row" spacing={1} alignItems="center">
+          <SupportAgentIcon />
+          <span>{buttonText}</span>
+        </Stack>
+      </Button>
+      <Dialog
+        open={showSelectDialog}
+        onClose={handleCloseSelectDialog}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>
+          <Stack direction="row" spacing={1} alignItems="center">
+            <SupportAgentIcon />
+            <span>{t.selectSpeaker}</span>
+          </Stack>
+        </DialogTitle>
+        <DialogContent>
+          <Autocomplete
+            value={value}
+            onChange={(event, newValue) =>
+              isMobileView
+                ? handleChoiceMobile(newValue)
+                : handleSelectAndClose(newValue)
+            }
+            onClose={handleLeave}
+            filterOptions={(options, params) => {
+              const filtered = filter(options, params);
+
+              const { inputValue } = params;
+              const trimmed = normalizedSpeakerName(inputValue);
+              const isExisting =
+                trimmed != null &&
+                options.some(
+                  (option) => normalizedSpeakerName(option.name) === trimmed
+                );
+              if (trimmed && !isExisting) {
+                filtered.push({
+                  inputValue: trimmed,
+                  name: t.addSpeaker.replace('{0}', trimmed),
+                });
+              }
+
+              return filtered;
+            }}
+            selectOnFocus
+            clearOnBlur
+            handleHomeEndKeys
+            id="speaker-name"
+            options={speakers}
+            getOptionLabel={getOptionLabel}
+            renderOption={(props, option, state) => (
+              <li {...props} key={`spkr-opt-${state.index}`}>
+                {option.name}
+              </li>
+            )}
+            sx={{ width: '100%', marginTop: '5px' }}
+            freeSolo
+            renderInput={(params) => {
+              const { size, InputLabelProps, ...restParams } = params;
+              const { className, ...restInputLabelProps } =
+                InputLabelProps || {};
+              return (
+                <TextField
+                  required
+                  {...restParams}
+                  {...(size && { size })}
+                  slotProps={{
+                    inputLabel: {
+                      ...restInputLabelProps,
+                      ...(className && { className }),
+                    },
+                  }}
+                  label={t.speaker}
+                  onChange={handleNameChange}
+                />
+              );
+            }}
           />
-        </>
-      </BigDialog>
+          {hasNoRights && (
+            <>
+              <Typography sx={{ my: 2 }}>
+                {recordingRequired ? t.voiceRights : t.releaseRights}
+              </Typography>
+              <ProvideRights
+                planId={planId}
+                speaker={value?.name || ''}
+                recordType={ArtifactTypeSlug.IntellectualProperty}
+                onRights={handleRightsChange}
+                team={team}
+                recordingRequired={recordingRequired}
+              />
+            </>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseSelectDialog}>{ts.cancel}</Button>
+        </DialogActions>
+      </Dialog>
     </>
   );
 }

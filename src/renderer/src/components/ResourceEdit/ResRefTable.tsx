@@ -69,7 +69,7 @@ export default function ReferenceTable({
   const bookSuggestions = useSelector(
     (state: IState) => state.books.suggestions
   );
-  const suggestionRef = useRef<Array<OptionType>>();
+  const suggestionRef = useRef<Array<OptionType> | undefined>(undefined);
   const preventSave = useRef<boolean>(false);
   const t: IResourceStrings = useSelector(sharedResourceSelector, shallowEqual);
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
@@ -306,7 +306,9 @@ export default function ReferenceTable({
         />
       </Content>
       <ActionRow>
-        <AltButton onClick={handleCancel}>{ts.cancel}</AltButton>
+        <AltButton onClick={handleCancel}>
+          {changed ? ts.cancel : ts.close}
+        </AltButton>
         {onCommit && (
           <PriButton
             onClick={handleSave}

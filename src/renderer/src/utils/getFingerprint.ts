@@ -1,8 +1,20 @@
-import Fingerprint2 from 'fingerprintjs2';
+import Fingerprint from '@fingerprintjs/fingerprintjs';
+
+let fingerprintPromise: Promise<string> | null = null;
 
 export const getFingerprint = async (): Promise<string> => {
-  const components = await Fingerprint2.getPromise({});
-  return Fingerprint2.x64hash128(components.map((c) => c.value).join(''), 31);
+  if (!fingerprintPromise) {
+    fingerprintPromise = (async () => {
+      const fp = await Fingerprint.load();
+      const result = await fp.get();
+      return result.visitorId;
+    })().catch((error) => {
+      fingerprintPromise = null;
+      throw error;
+    });
+  }
+
+  return fingerprintPromise;
 };
 
 export const getFingerprintArray = async (): Promise<string[]> => [

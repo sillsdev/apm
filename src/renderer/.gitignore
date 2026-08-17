@@ -38,6 +38,7 @@ buildDate.json
 /public/fonts
 /public/electronExtensions.js
 env-config/env-files*.zip
+screenshots
 
 npm-debug.log*
 yarn-debug.log*

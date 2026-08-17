@@ -4,13 +4,10 @@ import {
   styled,
   Box,
   BoxProps,
-  Divider,
-  Stack,
-  FormControlLabel,
   Checkbox,
-  Badge,
+  Divider,
+  FormControlLabel,
 } from '@mui/material';
-import InfoIcon from '@mui/icons-material/Info';
 import {
   ISharedStrings,
   ITranscriberStrings,
@@ -18,10 +15,17 @@ import {
 } from '../../model';
 import { shallowEqual, useSelector } from 'react-redux';
 import { sharedSelector, transcriberSelector } from '../../selector';
-import { AsrAlphabet, IAsrState } from './AsrAlphabet';
-import { useMmsLangs } from './useMmsLangs';
+import { AsrSettings } from './AsrSettings';
+import { IAsrState } from './asrState';
+import {
+  getPreferredAsrMethod,
+  isoFromBcp47,
+  needsSisterLanguage,
+} from './asrLanguages';
 import { useGetAsrSettings } from '../../crud/useGetAsrSettings';
+import { useRecommendAsrLanguage } from './useRecommendAsrLanguage';
 import { useCheckOnline } from '../../utils/useCheckOnline';
+import { isLangSet } from '../../utils/langTag';
 import { useSnackBar } from '../../hoc/SnackBar';
 import { AsrTarget } from './AsrTarget';
 
@@ -34,58 +38,53 @@ const StyledBox = styled(Box)<BoxProps>(() => ({
 
 interface ISelectAsrLanguage {
   team?: OrganizationD;
-  refresh?: () => void;
-  onOpen: (cancal?: boolean, force?: boolean) => void;
-  canBegin?: boolean;
+  /**
+   * cancel=true dismisses; otherwise returns the run-time ASR override.
+   * setAsTeamDefault requests persisting the choice as the org (team) default
+   * instead of the project default.
+   */
+  onClose: (
+    cancel: boolean,
+    asrState?: IAsrState,
+    setAsTeamDefault?: boolean
+  ) => void;
 }
 
 export default function SelectAsrLanguage({
   team,
-  refresh,
-  onOpen,
-  canBegin,
+  onClose,
 }: ISelectAsrLanguage) {
   const [asrState, setAsrState] = React.useState<IAsrState>();
-  const [asrStateIn, setAsrStateIn] = React.useState<IAsrState>();
-  const mmsLangs = useMmsLangs();
+  const [vernacularBcp47, setVernacularBcp47] = React.useState('und');
+  const [setAsTeamDefault, setSetAsTeamDefault] = React.useState(false);
   const t: ITranscriberStrings = useSelector(transcriberSelector, shallowEqual);
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
-  const { getAsrSettings, saveAsrSettings, getArtId } = useGetAsrSettings(team);
-  const checkOnline = useCheckOnline(t.beginRecognize);
+  const {
+    getAsrSettings,
+    getVernacularLanguage,
+    getCachedSisterRecommendations,
+    saveSisterRecommendations,
+    canSetTeamAsrDefault,
+  } = useGetAsrSettings(team);
+  const { suggestions, loading, error, fetchRecommendations, seedSuggestions } =
+    useRecommendAsrLanguage();
+  const checkOnline = useCheckOnline(t.run);
   const { showMessage } = useSnackBar();
+  const showTeamDefault = canSetTeamAsrDefault();
 
-  const handlePhonetic = () => {
-    if (asrState)
-      setAsrState({
-        ...asrState,
-        target:
-          asrState.target === AsrTarget.phonetic
-            ? AsrTarget.alphabet
-            : AsrTarget.phonetic,
-      });
-  };
-
-  const handleSave = () => {
+  const handleRun = () => {
     checkOnline((online) => {
       if (!online) {
         showMessage(ts.mustBeOnline);
         return;
       }
-      if (asrState) {
-        saveAsrSettings(asrState);
-        refresh?.();
-      }
-      onOpen(
-        false,
-        asrStateIn?.language.bcp47 !== asrState?.language.bcp47 ||
-          asrStateIn?.selectRoman !== asrState?.selectRoman
-      );
+      onClose(false, asrState, showTeamDefault && setAsTeamDefault);
     });
   };
 
   React.useEffect(() => {
     const asr = getAsrSettings();
-    const defaultAsr = {
+    setAsrState({
       target: asr?.target ?? AsrTarget.alphabet,
       language: asr?.language ?? {
         bcp47: 'und',
@@ -94,56 +93,64 @@ export default function SelectAsrLanguage({
         rtl: false,
         spellCheck: false,
       },
-      mmsIso: asr?.mmsIso ?? 'eng',
+      asrIso: asr?.asrIso ?? 'eng',
+      method:
+        asr?.method ?? getPreferredAsrMethod(asr?.asrIso ?? 'eng') ?? 'whisper',
       dialect: asr?.dialect,
       selectRoman: asr?.selectRoman ?? false,
-    };
-    setAsrState({ ...defaultAsr } as IAsrState);
-    setAsrStateIn({ ...defaultAsr } as IAsrState);
+    } as IAsrState);
+    const vernacular = getVernacularLanguage();
+    const bcp47 = vernacular?.bcp47 ?? 'und';
+    setVernacularBcp47(bcp47);
+    if (needsSisterLanguage(bcp47)) {
+      // Reuse the org-cached recommendations when the project matches the org;
+      // only query the service when there's no usable cache (e.g. project differs).
+      const cached = getCachedSisterRecommendations();
+      if (cached) seedSuggestions(cached);
+      // Persist results so a project whose language differs from the org only
+      // queries the recommendation service once (saveSisterRecommendations is a
+      // no-op when the project matches the org).
+      else fetchRecommendations(isoFromBcp47(bcp47), saveSisterRecommendations);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
     <StyledBox sx={{ minWidth: 120 }}>
-      <Stack>
-        <AsrAlphabet
-          state={asrState ?? ({} as IAsrState)}
-          setState={setAsrState}
-          mmsLangs={mmsLangs}
+      {asrState && (
+        <AsrSettings
+          asr={asrState}
+          setAsr={setAsrState}
+          vernacularBcp47={vernacularBcp47}
+          suggestions={suggestions}
+          loading={loading}
+          error={error}
         />
-        {!getArtId() && (
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={asrState?.target === AsrTarget.phonetic}
-                onClick={handlePhonetic}
-              />
-            }
-            label={
-              <Badge
-                badgeContent={<InfoIcon color={'info'} fontSize="small" />}
-                title={t.phoneticTip}
-              >
-                {t.phonetic}
-              </Badge>
-            }
-            sx={{ ml: 2 }}
-          />
-        )}
-      </Stack>
+      )}
+      {showTeamDefault && (
+        <FormControlLabel
+          sx={{ ml: 1 }}
+          control={
+            <Checkbox
+              checked={setAsTeamDefault}
+              onChange={(_e, checked) => setSetAsTeamDefault(checked)}
+            />
+          }
+          label={ts.teamDefault}
+        />
+      )}
       <Divider sx={{ pt: 2 }} />
       <ActionRow>
-        <AltButton onClick={() => onOpen(true)}>{ts.cancel}</AltButton>
+        <AltButton onClick={() => onClose(true)}>{ts.cancel}</AltButton>
         <PriButton
-          onClick={handleSave}
+          onClick={handleRun}
           disabled={
             !asrState?.target ||
             (asrState?.target === AsrTarget.alphabet &&
-              (asrState?.language?.bcp47 === undefined ||
-                asrState?.language?.bcp47 === 'und'))
+              !isLangSet(asrState?.language?.bcp47))
           }
         >
-          {canBegin ? t.beginRecognize : ts.save}
+          {t.run}
         </PriButton>
       </ActionRow>
     </StyledBox>

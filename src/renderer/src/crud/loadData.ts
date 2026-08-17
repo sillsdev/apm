@@ -27,14 +27,20 @@ import {
   GroupMembershipD,
   OrganizationMembershipD,
 } from '../model';
-import { orbitInfo } from '../utils/infoMsg';
 import ProjData from '../model/projData';
 import Coordinator from '@orbit/coordinator';
 import { getFingerprint } from '../utils/getFingerprint';
 import { currentDateTime } from '../utils/currentDateTime';
-import { orbitErr } from '../utils/infoMsg';
+import { orbitInfo, orbitErr } from '../utils/infoMsg';
+import {
+  isUnauthorized,
+  isFetchNetworkError,
+  isRetryableError,
+} from '../utils/httpError';
 import { ReplaceRelatedRecord } from '../model/baseModel';
 import PassageType from '../model/passageType';
+import { withNetworkRetry } from '../utils/networkRetry';
+import { OrbitNetworkErrorRetries } from '../../api-variable';
 
 const saveOfflineProject = async (
   project: ProjectD,
@@ -357,7 +363,9 @@ async function cleanUpMemberships(memory: Memory, backup: IndexedDBSource) {
 export async function LoadData(
   coordinator: Coordinator,
   setCompleted: (valud: number) => void,
-  orbitError: (ex: IApiError) => void
+  orbitError: (ex: IApiError) => void,
+  offlineMsg: string,
+  setOrbitRetries: (r: number) => void
 ): Promise<boolean> {
   const memory = coordinator?.getSource('memory') as Memory;
   const remote = coordinator?.getSource('remote') as JSONAPISource;
@@ -366,6 +374,7 @@ export async function LoadData(
   const ser = getDocSerializer(memory);
   //const { checkIt } = usePassageType();
 
+  let proceed = false;
   try {
     let start = 0;
     setCompleted(15);
@@ -373,26 +382,28 @@ export async function LoadData(
     const tables: ResourceDocument[] = [];
     do {
       const stat = statInit();
-      const transform: OrgData[] = (await remote.query(
-        // eslint-disable-next-line no-loop-func
-        (q) =>
-          q.findRecords('orgdata').filter(
+      const transform: OrgData[] = (await withNetworkRetry(
+        () =>
+          remote.query(
+            (q) =>
+              q.findRecords('orgdata').filter(
+                {
+                  attribute: 'json',
+                  value: `{version: ${backup.schema.version}}`,
+                },
+                { attribute: 'start-index', value: start }
+              ),
             {
-              attribute: 'json',
-              value: `{version: ${backup.schema.version}}`,
-            },
-            { attribute: 'start-index', value: start }
-          ),
-        {
-          label: 'Get Data',
-          sources: {
-            remote: {
-              settings: {
-                timeout: 35000,
+              label: 'Get Data',
+              sources: {
+                remote: {
+                  settings: {
+                    timeout: 35000,
+                  },
+                },
               },
-            },
-          },
-        }
+            }
+          ) as Promise<OrgData[]>
       )) as any;
       stat.apiEnd = new Date().getTime();
 
@@ -432,11 +443,29 @@ export async function LoadData(
     statReport(stats);
 
     await cleanUpMemberships(memory, backup);
+    proceed = true;
   } catch (rejected: any) {
-    orbitError(orbitErr(rejected, 'load data rejected'));
+    // 401: remote-query-fail already ran handleUnauthorized — don't paint a 500 on top
+    if (isUnauthorized(rejected)) {
+      // stay on splash; session invalidation / retry is in flight
+    } else if (isRetryableError(rejected)) {
+      // withNetworkRetry exhausted — let datachanges know to check online status
+      setOrbitRetries(OrbitNetworkErrorRetries - 1);
+      if (isFetchNetworkError(rejected)) {
+        // Severity.info — Loading splash shows the message; no contact your developer modal
+        orbitError(orbitInfo(null, offlineMsg));
+        // stay on splash (do not LoadComplete)
+      } else {
+        orbitError(orbitErr(rejected, 'load data rejected'));
+        proceed = true; // modal; Continue still works after LoadComplete
+      }
+    } else {
+      orbitError(orbitErr(rejected, 'load data rejected'));
+      proceed = true; // modal; Continue still works after LoadComplete
+    }
   }
   setCompleted(100);
-  return false;
+  return proceed;
 }
 export async function LoadProjectData(
   project: string,
@@ -446,7 +475,9 @@ export async function LoadProjectData(
   projectsLoaded: string[],
   AddProjectLoaded: (proj: string) => void,
   setBusy: (v: boolean) => void,
-  orbitError: (ex: IApiError) => void
+  orbitError: (ex: IApiError) => void,
+  offlineMsg: string,
+  setOrbitRetries: (r: number) => void
 ): Promise<boolean> {
   const memory = coordinator?.getSource('memory') as Memory;
   const remote = coordinator?.getSource('remote') as JSONAPISource;
@@ -473,27 +504,29 @@ export async function LoadProjectData(
     const tables: ResourceDocument[] = [];
     do {
       const stat = statInit();
-      const transform: ProjData[] = (await remote.query(
-        // eslint-disable-next-line no-loop-func
-        (q) =>
-          q.findRecords('projdata').filter(
+      const transform: ProjData[] = (await withNetworkRetry(
+        () =>
+          remote.query(
+            (q) =>
+              q.findRecords('projdata').filter(
+                {
+                  attribute: 'json',
+                  value: `{version: ${backup.schema.version}}`,
+                },
+                { attribute: 'start-index', value: start },
+                { attribute: 'project-id', value: projectid }
+              ),
             {
-              attribute: 'json',
-              value: `{version: ${backup.schema.version}}`,
-            },
-            { attribute: 'start-index', value: start },
-            { attribute: 'project-id', value: projectid }
-          ),
-        {
-          label: 'Get Project Data',
-          sources: {
-            remote: {
-              settings: {
-                timeout: 35000,
+              label: 'Get Project Data',
+              sources: {
+                remote: {
+                  settings: {
+                    timeout: 35000,
+                  },
+                },
               },
-            },
-          },
-        }
+            }
+          ) as Promise<ProjData[]>
       )) as any;
       stat.apiEnd = new Date().getTime();
 
@@ -547,8 +580,21 @@ export async function LoadProjectData(
     (stats[stats.length - 1] as IStat).prcEnd = new Date().getTime();
     statReport(stats);
   } catch (rejected: any) {
-    orbitError(orbitErr(rejected, 'load project data rejected'));
-    error = true;
+    if (isUnauthorized(rejected)) {
+      // remote-query-fail already ran handleUnauthorized
+      error = true;
+    } else if (isRetryableError(rejected)) {
+      setOrbitRetries(OrbitNetworkErrorRetries - 1);
+      if (isFetchNetworkError(rejected)) {
+        orbitError(orbitInfo(null, offlineMsg));
+      } else {
+        orbitError(orbitErr(rejected, 'load project data rejected'));
+      }
+      error = true;
+    } else {
+      orbitError(orbitErr(rejected, 'load project data rejected'));
+      error = true;
+    }
   } finally {
     setBusy(false);
   }

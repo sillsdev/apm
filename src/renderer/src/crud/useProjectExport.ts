@@ -35,7 +35,7 @@ export const useProjectExport = (props: IProps) => {
   const [, setBusy] = useGlobal('importexportBusy');
   const [errorReporter] = useGlobal('errorReporter');
   const { localizedArtifactTypeFromId } = useArtifactType();
-  const token = useContext(TokenContext).state.accessToken;
+  const token = useContext(TokenContext)?.state?.accessToken ?? null;
   const getOfflineProject = useOfflnProjRead();
 
   return (exportType: ExportType, projectId: string) => {

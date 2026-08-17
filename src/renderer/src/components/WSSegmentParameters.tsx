@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/refs */
 import {
   Box,
   Typography,
@@ -11,7 +12,7 @@ import {
   Checkbox,
 } from '@mui/material';
 import { PropsWithChildren, useEffect, useRef, useState } from 'react';
-import { IWsAudioPlayerSegmentStrings } from '../model';
+import { ISharedStrings, IWsAudioPlayerSegmentStrings } from '../model';
 import CloseIcon from '@mui/icons-material/Close';
 import Paper from '@mui/material/Paper';
 import { default as DraggableBar, DraggableProps } from 'react-draggable';
@@ -20,7 +21,7 @@ import { AltButton } from '../control/AltButton';
 import { GrowingSpacer } from '../control/GrowingSpacer';
 import { IosSlider } from '../control/IosSlider';
 import { PriButton } from '../control/PriButton';
-import { wsAudioPlayerSegmentSelector } from '../selector';
+import { sharedSelector, wsAudioPlayerSegmentSelector } from '../selector';
 import { shallowEqual, useSelector } from 'react-redux';
 
 const btnProp = { m: 1 } as SxProps;
@@ -67,6 +68,7 @@ function WSSegmentParameters(props: IProps) {
     wsAudioPlayerSegmentSelector,
     shallowEqual
   );
+  const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
 
   useEffect(() => {
     setNumRegions(currentNumRegions);
@@ -115,13 +117,16 @@ function WSSegmentParameters(props: IProps) {
     if (onOpen) onOpen(false);
   };
 
+  const paperRef = useRef<HTMLDivElement>(null);
+
   function PaperComponent(props: any) {
     return (
       <Draggable
+        nodeRef={paperRef}
         handle="#draggable-dialog-title"
         cancel={'[class*="MuiDialogContent-root"]'}
       >
-        <Paper {...props} />
+        <Paper ref={paperRef} {...props} />
       </Draggable>
     );
   }
@@ -227,7 +232,7 @@ function WSSegmentParameters(props: IProps) {
                 value="teamDefault"
               />
             }
-            label={t.teamDefault}
+            label={ts.teamDefault}
           />
         )}
       </DialogActions>

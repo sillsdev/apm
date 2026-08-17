@@ -1,10 +1,10 @@
 import { shallowEqual, useSelector } from 'react-redux';
 import { IMediaUploadStrings } from '../model';
 import { mediaUploadSelector } from '../selector';
-import { API_CONFIG } from '../../api-variable';
 import BigDialog from '../hoc/BigDialog';
 import { BigDialogBp } from '../hoc/BigDialogBp';
 import MediaUploadContent from './MediaUploadContent';
+import { useMobile } from '../utils';
 import { FaithBridge } from '../assets/brands';
 import { UploadType } from './UploadType';
 
@@ -13,30 +13,18 @@ export const MarkDownType = 'text/markdown';
 export const Mp3Type = 'audio/mpeg';
 export const FaithbridgeType = 'audio/mpeg/s3link';
 
-const PROJECTRESOURCE_SIZELIMIT = 50;
-const NO_SIZELIMIT = 10000;
-
-export const SIZELIMIT = (uploadType: UploadType) => {
-  switch (uploadType) {
-    case UploadType.ProjectResource:
-      return PROJECTRESOURCE_SIZELIMIT;
-    case UploadType.ITF:
-    case UploadType.PTF:
-    case UploadType.FaithbridgeLink:
-      return NO_SIZELIMIT;
-    default:
-      return parseInt(API_CONFIG.sizeLimit);
-  }
-};
 interface IProps {
   visible: boolean;
   onVisible: (v: boolean) => void;
+  bp?: BigDialogBp;
   uploadType: UploadType;
-  uploadMethod?: ((files: File[]) => void) | undefined;
+  uploadMethod?:
+    | ((files: File[]) => void | boolean | Promise<void | boolean>)
+    | undefined;
   multiple?: boolean | undefined;
   cancelMethod?: (() => void) | undefined;
   cancelLabel?: string | undefined;
-  metaData?: JSX.Element | undefined;
+  metaData?: React.JSX.Element | undefined;
   ready?: (() => boolean) | undefined;
   speaker?: string | undefined;
   onSpeaker?: ((speaker: string) => void) | undefined;
@@ -51,6 +39,7 @@ function MediaUpload(props: IProps) {
   const {
     visible,
     onVisible,
+    bp,
     uploadType,
     multiple,
     uploadMethod,
@@ -66,6 +55,7 @@ function MediaUpload(props: IProps) {
     onValue,
     onNonAudio,
   } = props;
+  const { isMobile } = useMobile();
   const t: IMediaUploadStrings = useSelector(mediaUploadSelector, shallowEqual);
   const title = [
     t.title,
@@ -92,7 +82,7 @@ function MediaUpload(props: IProps) {
       isOpen={visible}
       onOpen={handleCancel}
       title={title[uploadType] ?? ''}
-      bp={BigDialogBp.sm}
+      bp={isMobile ? BigDialogBp.mobile : (bp ?? BigDialogBp.sm)}
     >
       <MediaUploadContent
         onVisible={onVisible}

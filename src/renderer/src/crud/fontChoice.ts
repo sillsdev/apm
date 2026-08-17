@@ -3,6 +3,12 @@ import { getFamily, getRtl } from 'mui-language-picker';
 import Memory from '@orbit/memory';
 import { findRecord } from './tryFindRecord';
 import { LocalKey } from '../utils';
+import { parseStepLanguageField } from './transcribeStepAsrSettings';
+import {
+  resolveStepSpellCheck,
+  TranscribeStepSettingsJson,
+} from './stepSpellCheck';
+import { ArtifactTypeSlug } from './artifactTypeSlug';
 
 export interface IFontConfig {
   custom: {
@@ -36,21 +42,26 @@ export const getFontUrl = (fontFamily: string) => {
 
 const getFontKey = (key: string) => `${LocalKey.fontData}-${key}`;
 
-export const loadFontData = (exportId: string): FontData | undefined => {
+export interface StoredFontData {
+  fontSize?: string;
+}
+
+export const loadFontData = (exportId: string): StoredFontData | undefined => {
   const lastFont = localStorage.getItem(getFontKey(exportId));
   return lastFont ? JSON.parse(lastFont) : undefined;
 };
 
 export const saveFontData = async (data: FontData, exportId: string) => {
-  localStorage.setItem(getFontKey(exportId), JSON.stringify(data));
+  localStorage.setItem(
+    getFontKey(exportId),
+    JSON.stringify({ fontSize: data.fontSize })
+  );
 };
 
 export const getFontData = async (r: Project, artifactId?: string | null) => {
-  // fontSize and spellCheck are set from last usage
   const lastFontData = loadFontData(artifactId ?? 'project');
 
   const langTag = r?.attributes?.language;
-  const spellCheck = lastFontData?.spellCheck ?? r?.attributes?.spellCheck;
   const fontFamily = r?.attributes?.defaultFont
     ? r.attributes.defaultFont.split(',')[0].replace(/ /g, '')
     : 'CharisSIL';
@@ -61,7 +72,7 @@ export const getFontData = async (r: Project, artifactId?: string | null) => {
 
   const data: FontData = {
     langTag,
-    spellCheck,
+    spellCheck: false,
     fontFamily,
     fontSize,
     fontDir,
@@ -86,15 +97,20 @@ export const getArtTypeFontData = (
     'artifacttype',
     exportId
   ) as ArtifactTypeD;
-  let stepSettings = { language: 'English|en', font: 'CharisSIL' };
+  let stepSettings: TranscribeStepSettingsJson = {
+    language: 'English|en',
+    font: 'CharisSIL',
+  };
 
   orgSteps?.find((s) => {
     const toolData = JSON.parse(s.attributes?.tool || '{}');
     if (toolData?.settings) {
       const settings = JSON.parse(toolData.settings);
+      // Settings identify the type by slug (typename); tolerate legacy ids.
       if (
+        settings?.artifactTypeId === artifactType?.attributes?.typename ||
         settings?.artifactTypeId ===
-        (artifactType?.keys?.remoteId ?? artifactType?.id)
+          (artifactType?.keys?.remoteId ?? artifactType?.id)
       ) {
         stepSettings = settings;
         return true;
@@ -102,17 +118,19 @@ export const getArtTypeFontData = (
     }
     return false;
   });
-  const [, langTag] = stepSettings?.language?.split('|') ?? [];
+  const { bcp47: langTag } = parseStepLanguageField(stepSettings?.language);
   const fontDir = getRtl(langTag) ? 'rtl' : 'ltr';
   const fontFamily = stepSettings?.font || 'CharisSIL';
   const url = getFontUrl(fontFamily);
 
-  // fontSize and spellCheck are set from last usage
   const lastFontData = loadFontData(exportId);
+  const artSlug = (artifactType?.attributes?.typename ??
+    ArtifactTypeSlug.Vernacular) as ArtifactTypeSlug;
+  const spellCheck = resolveStepSpellCheck(stepSettings, artSlug, langTag);
 
   const data: FontData = {
     langTag,
-    spellCheck: lastFontData?.spellCheck ?? false,
+    spellCheck,
     fontFamily,
     fontSize: lastFontData?.fontSize ?? 'large',
     fontDir,

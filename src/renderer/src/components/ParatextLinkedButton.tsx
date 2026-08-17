@@ -1,47 +1,37 @@
-import React from 'react';
-import { Typography, TypographyProps, styled } from '@mui/material';
+import React, { useState } from 'react';
+import { shallowEqual, useSelector } from 'react-redux';
+import { Box, Button, Typography } from '@mui/material';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { IState, IProfileStrings } from '../model';
-import Confirm from './AlertDialog';
-import { AltButton } from '../control/AltButton';
-import { useSelector } from 'react-redux';
 import { profileSelector } from '../selector';
 import { useHasParatext } from '../utils';
 import { useGlobal } from '../context/useGlobal';
 import { addPt } from '../utils/addPt';
-import CheckIcon from '@mui/icons-material/Check';
+import Confirm from './AlertDialog';
 
-interface StyledCaptionProps extends TypographyProps {
-  isCaption?: boolean;
-  notLinked?: boolean;
-}
-const StyledCaption = styled(Typography, {
-  shouldForwardProp: (prop) => prop !== 'notLinked' && prop !== 'isCaption',
-})<StyledCaptionProps>(({ isCaption, notLinked, theme }) => ({
-  ...(isCaption && {
-    display: 'table',
-    width: '100%',
-    textAlign: 'center',
-    marginTop: '13%',
-    color: 'white', //primary.contrastText does not work for some reason
-    opacity: '65%',
-  }),
-  ...(notLinked && {
-    fontWeight: 'bold',
-    paddingTop: theme.spacing(2),
-  }),
-}));
+const captionSx = {
+  textAlign: 'center',
+  color: 'white',
+  opacity: 0.65,
+} as const;
 
 interface IProps {
   setView: React.Dispatch<React.SetStateAction<string>>;
 }
 
-export const ParatextLinkedButton = (props: IProps) => {
-  const { setView } = props;
-  const [isOffline] = useGlobal('offline'); //verified this is not used in a function 2/18/25
+function ParatextLinkedButton({ setView }: IProps) {
+  const [isOffline] = useGlobal('offline'); // Verified this is not used in a function 2/18/25
   const { hasParatext, ptPath } = useHasParatext();
-  const t: IProfileStrings = useSelector(profileSelector);
-  const status = useSelector((state: IState) => state.paratext.usernameStatus);
-  const [howToLink, setHowToLink] = React.useState(false);
+  const t: IProfileStrings = useSelector(profileSelector, shallowEqual);
+  const status = useSelector((state: IState) => state.paratext.usernameStatus); // Online Paratext username check
+  const [howToLink, setHowToLink] = useState(false);
+
+  // Status message from the online Paratext username check
+  const statusMsg = status?.statusMsg ?? '';
+  // Error status from the online Paratext username check, if any
+  const errStatus = status?.errStatus;
+  // Whether the online Paratext username check completed successfully
+  const complete = Boolean(status?.complete);
 
   const handleHowTo = () => {
     setHowToLink(true);
@@ -55,56 +45,53 @@ export const ParatextLinkedButton = (props: IProps) => {
     setHowToLink(false);
   };
 
+  // Whether the online username check reported an error (always false when offline)
+  const hasError = Boolean(errStatus);
+
+  // Whether the user still needs to set up Paratext linking (either because the
+  // online username check failed or because there is no local Paratext path)
+  const needsSetup = hasError || (isOffline && !ptPath);
+
+  // Whether the user is linked and verified by the online check (always false when offline)
+  const isVerified = hasParatext && complete;
+
+  // Whether the user appears to be linked at all (either verified by the online
+  // check or has a local Paratext path)
+  const isLinked = isVerified || Boolean(ptPath);
+
   return (
     <>
-      {status?.errStatus ? (
-        <StyledCaption
-          isCaption
-          notLinked
-          sx={{
-            color: 'primary.contrastText',
-            fontSize: '13px',
-            fontWeight: 'normal',
-          }}
-        >
-          {addPt(t.notLinked)}
-        </StyledCaption>
-      ) : (
-        <></>
-      )}
-      <StyledCaption isCaption={Boolean(!status?.errStatus)}>
-        {status?.errStatus || 0 || (isOffline && !ptPath) ? (
-          <>
-            <AltButton
-              id="paraButton"
-              key="paratext"
-              sx={{
-                color: 'primary.contrastText',
-                borderColor: 'primary.contrastText',
-                textTransform: 'capitalize',
-                transition: 'opacity 0.2s ease-in-out',
-                opacity: '100%',
-                '&:hover': {
-                  opacity: '80%',
-                  borderColor: 'primary.contrastText',
-                },
-              }}
-              onClick={handleHowTo}
-            >
-              {addPt(t.paratextNotLinked)}
-            </AltButton>
-            {/* <Button variant="outlined" onClick={handleHowTo}>{addPt(t.paratextNotLinked)}</Button> */}
-          </>
-        ) : (hasParatext && status?.complete) || ptPath ? (
-          addPt(t.paratextLinked)
+      <Box
+        sx={{
+          mt: 4,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+        }}
+      >
+        {needsSetup ? (
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: 1,
+            }}
+          >
+            <Typography sx={captionSx}>{addPt(t.notLinked)}</Typography>
+            <Button onClick={handleHowTo}>{addPt(t.paratextNotLinked)}</Button>
+          </Box>
+        ) : isLinked ? (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Typography sx={captionSx}>{addPt(t.paratextLinked)}</Typography>
+            <CheckCircleIcon sx={captionSx} />
+          </Box>
         ) : (
-          status?.statusMsg || addPt(t.checkingParatext)
+          <Typography sx={captionSx}>
+            {statusMsg || addPt(t.checkingParatext)}
+          </Typography>
         )}
-        {hasParatext && status?.complete && (
-          <CheckIcon sx={{ position: 'relative', top: '+5px' }} />
-        )}
-        {/* //(hasParatext)  && status?.complete ||  ptPath && */}
-      </StyledCaption>
+      </Box>
 
       {howToLink && (
         <Confirm
@@ -120,6 +107,6 @@ export const ParatextLinkedButton = (props: IProps) => {
       )}
     </>
   );
-};
+}
 
 export default ParatextLinkedButton;

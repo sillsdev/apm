@@ -16,6 +16,12 @@ export default tseslint.config(
       '**/*.d.ts',
       '**/*.cjs',
       '**/notarize.js',
+      '**/coverage',
+      '**/__snapshots__',
+      '**/cypress',
+      '**/*.cy.ts*',
+      '**/.eslintrc.js',
+      '**/wallaby.js',
     ],
   },
   tseslint.configs.recommended,
@@ -39,10 +45,29 @@ export default tseslint.config(
       ...eslintPluginReactRefresh.configs.vite.rules,
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/explicit-function-return-type': 'off',
+      '@typescript-eslint/no-unused-vars': [
+        'warn',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_',
+          destructuredArrayIgnorePattern: '^_',
+        },
+      ],
       'jsdoc/require-returns': 'off',
       'jsdoc/require-returns-type': 'off',
       'no-unused-vars': 'off',
       'no-case-declarations': 'off',
+      'react-hooks/set-state-in-effect': 'off',
+      // 'react-hooks/immutability': 'off',  // we want this error to be shown and escaped each time we use it
+      // 'react-hooks/refs': 'off', // we want this error to be shown and escaped each time we use it
+      'react-hooks/globals': 'off',
+    },
+  },
+  {
+    files: ['migration/**/*.{js,mjs}'],
+    rules: {
+      '@typescript-eslint/explicit-function-return-type': 'off',
     },
   },
   eslintConfigPrettier

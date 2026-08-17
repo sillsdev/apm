@@ -55,7 +55,7 @@ export const SelectProjectResource = (props: IProps) => {
     shallowEqual
   );
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
-  const media = useRef<MediaFileD[]>();
+  const media = useRef<MediaFileD[] | undefined>(undefined);
   const getGlobal = useGetGlobal();
 
   const handleSelect = (m: MediaFileD) => {

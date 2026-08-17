@@ -18,7 +18,7 @@ export const TaskAvatar = ({
   if (!assigned?.id) return <></>;
   if (assigned?.type === 'user') {
     const userRec = getUserRec(assigned.id);
-    return <UserAvatar userRec={userRec} small={true} />;
+    return <UserAvatar userRec={userRec} />;
   }
   const groupRec = findRecord(memory, 'group', assigned.id) as GroupD;
   const groupAbbr = makeAbbr(groupRec?.attributes?.name || groupRec?.id || '');

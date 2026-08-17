@@ -74,11 +74,12 @@ export const useNotes = () => {
       .filter(
         (p) =>
           related(p, 'section') === sectionId &&
-          passageTypeFromRef(p.attributes.reference, false) ===
+          (p.attributes?.reference ?? '').length > 0 &&
+          passageTypeFromRef(p.attributes?.reference, false) ===
             PassageTypeEnum.PASSAGE
       )
       .sort(bySeq)
-      .map((p) => p.attributes.reference);
+      .map((p) => p.attributes?.reference ?? '');
   };
   const decSeq = (i: Passage, j: Passage) => {
     return (
@@ -90,16 +91,17 @@ export const useNotes = () => {
     const secRec = findRecord(memory, 'section', sectionId) as SectionD;
     if (secRec?.attributes?.level === SheetLevel.Movement)
       return `${shortBook(passage.attributes.book)} ${computeMovementRef(
-        passage
+        sectionId
       )}`;
     const notePassage = passages
       .filter((p) => related(p, 'section') === sectionId)
       .sort(decSeq)
       .find(
         (p) =>
-          passageTypeFromRef(p.attributes.reference, false) ===
+          passageTypeFromRef(p.attributes?.reference, false) ===
             PassageTypeEnum.PASSAGE &&
-          p.attributes.sequencenum < passage.attributes.sequencenum
+          (p.attributes?.sequencenum ?? 0) <
+            (passage.attributes?.sequencenum ?? 0)
       );
     let result = '';
     if (notePassage?.attributes) {
@@ -109,7 +111,7 @@ export const useNotes = () => {
     }
     return (
       result ||
-      `${shortBook(passage.attributes.book)} ${computeSectionRef(passage)}` ||
+      `${shortBook(passage.attributes.book)} ${computeSectionRef(sectionId)}` ||
       shortBook(passage.attributes.book)
     );
   };

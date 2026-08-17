@@ -9,9 +9,7 @@ import { MenuItem, MenuList, TextField } from '@mui/material';
 import AssignIcon from '@mui/icons-material/PeopleAltOutlined';
 import DeleteIcon from '@mui/icons-material/DeleteOutline';
 import AddIcon from '@mui/icons-material/LibraryAddOutlined';
-import MicIcon from '@mui/icons-material/Mic';
-import { isElectron } from '../../../api-variable';
-import { AudacityLogo } from '../../control';
+
 import {
   AddNoteIcon,
   InsertMovementIcon,
@@ -21,7 +19,6 @@ import {
   MoveUpIcon,
 } from '../../control/PlanIcons';
 import { ExtraIcon } from '.';
-import { PassageTypeEnum } from '../../model/passageType';
 
 interface IProps {
   open: boolean;
@@ -39,9 +36,7 @@ interface IProps {
   sectionSequenceNumber: string;
   passageSequenceNumber: string;
   onPlayStatus: (mediaId: string) => void;
-  onRecord: (i: number) => void;
   onUpload: (i: number) => () => void;
-  onAudacity: (i: number) => () => void;
   onAssign: (where: number[]) => () => void;
   onDelete: (i: number) => () => void;
   onFirstMovement: (rowIndex: number, fm: number) => void;
@@ -65,7 +60,6 @@ export const PlanMoreMenuItems = memo(
       psgType,
       readonly,
       onUpload,
-      onAudacity,
       onAssign,
       onDelete,
       onFirstMovement,
@@ -74,8 +68,6 @@ export const PlanMoreMenuItems = memo(
       organizedBy,
       sectionSequenceNumber,
       passageSequenceNumber,
-      onPlayStatus,
-      onRecord,
       onDisableFilter,
       showIcon,
       onAction,
@@ -88,11 +80,6 @@ export const PlanMoreMenuItems = memo(
     React.useEffect(() => {
       setFM(firstMovement);
     }, [firstMovement]);
-
-    const handleRecord = (index: number) => () => {
-      onPlayStatus('');
-      onRecord(index);
-    };
 
     function handleListKeyDown(event: React.KeyboardEvent) {
       onKey(event);
@@ -260,26 +247,7 @@ export const PlanMoreMenuItems = memo(
             <AddIcon sx={{ color: 'primary.light' }} />
           </MenuItem>
         )}
-        {isPassage &&
-          psgType !== PassageTypeEnum.CHAPTERNUMBER &&
-          showIcon(ExtraIcon.VernacularRecord) && (
-            <MenuItem
-              id="planActRec"
-              onClick={handleRecord(rowIndex)}
-              title={t.recordAudio}
-            >
-              <MicIcon sx={{ color: 'primary.light' }} />
-            </MenuItem>
-          )}
-        {isElectron && isPassage && showIcon(ExtraIcon.VernacularRecord) && (
-          <MenuItem
-            id="planActAud"
-            title={ts.launchAudacity}
-            onClick={onAudacity(rowIndex)}
-          >
-            <AudacityLogo />
-          </MenuItem>
-        )}
+
         {canDelete && !readonly && showIcon(ExtraIcon.Delete) && (
           <MenuItem
             id="planActDel"

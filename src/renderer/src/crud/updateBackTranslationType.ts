@@ -5,6 +5,7 @@ import { ArtifactType, MediaFileD } from '../model';
 import { UpdateRelatedRecord } from '../model/baseModel';
 import { logError, Severity } from '../utils';
 import { axiosGet } from '../utils/axios';
+import { ArtifactTypeSlug } from './artifactTypeSlug';
 
 export const updateBackTranslationType = async (
   memory: MemorySource,
@@ -30,16 +31,16 @@ export const updateBackTranslationType = async (
       q.findRecords('artifacttype')
     ) as ArtifactType[];
     const bt = artifacttypes.find(
-      (a) => a.attributes.typename === 'backtranslation'
+      (a) => a.attributes.typename === ArtifactTypeSlug.PhraseBackTranslation
     );
     let wbt = artifacttypes.find(
-      (a) => a.attributes.typename === 'wholebacktranslation'
+      (a) => a.attributes.typename === ArtifactTypeSlug.WholeBackTranslation
     );
 
     if (!bt || !wbt) {
       await offlineSetup();
       wbt = artifacttypes.find(
-        (a) => a.attributes.typename === 'wholebacktranslation'
+        (a) => a.attributes.typename === ArtifactTypeSlug.WholeBackTranslation
       );
       if (!wbt) {
         logError(

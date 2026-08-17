@@ -27,6 +27,7 @@ import { StyledDialogTitle } from '../../StyledDialogTitle';
 import Tags from '../../../control/Tags';
 import { AltActionBar } from '../../../components/AltActionBar';
 import { initProjectState, IProjectDialog } from './projectDialogTypes';
+import { BOLD_WORKFLOW_PROCESS, useTeamWorkflowProcess } from '../../../crud';
 
 interface IProps extends IDialog<IProjectDialog> {
   nameInUse?: (newName: string) => boolean;
@@ -40,6 +41,8 @@ const tabProps = {
 export function ProjectDialog(props: IProps) {
   const { mode, values, isOpen, onOpen, onCommit, onCancel, nameInUse, team } =
     props;
+  // User cannot change the language while dialog is open, so for now it should be okay if this component does not
+  // respond to changes in the language setting until the dialog is reopened.
   const t: IVProjectStrings = useSelector(vProjectSelector, shallowEqual);
   const initState = { ...initProjectState };
   initState.organizedBy = 'section';
@@ -49,6 +52,8 @@ export function ProjectDialog(props: IProps) {
   const { name, type, bcp47 } = state;
   const [basicTab, setBasicTab] = useState(true);
   const addingRef = React.useRef(false);
+  const wasOpenRef = React.useRef(false);
+  const teamWorkflow = useTeamWorkflowProcess(team);
 
   const initTags = useMemo(
     () => ({
@@ -60,11 +65,25 @@ export function ProjectDialog(props: IProps) {
   );
 
   useEffect(() => {
-    setState(!values ? { ...initState } : { ...values });
-    setOriginalState(!values ? { ...initState } : { ...values });
-    if (isOpen) addingRef.current = false;
+    if (isOpen && !wasOpenRef.current) {
+      setState(!values ? { ...initState } : { ...values });
+      setOriginalState(!values ? { ...initState } : { ...values });
+      addingRef.current = false;
+    }
+    wasOpenRef.current = isOpen;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [values, isOpen]);
+  }, [isOpen, values]);
+
+  useEffect(() => {
+    if (!isOpen || mode !== Mode.add || !team) return;
+    if (teamWorkflow !== BOLD_WORKFLOW_PROCESS) return;
+    setState((s) => ({
+      ...s,
+      type: 'other',
+      flat: false,
+      organizedBy: 'story',
+    }));
+  }, [isOpen, mode, team, teamWorkflow]);
 
   const handleClose = () => {
     if (onOpen) onOpen(false);
@@ -76,7 +95,7 @@ export function ProjectDialog(props: IProps) {
       addingRef.current = true;
 
       if (onOpen) onOpen(false);
-      onCommit(state);
+      onCommit({ ...state, name: state.name.trim() });
     }
   };
 
@@ -149,13 +168,22 @@ export function ProjectDialog(props: IProps) {
               />
               <ProjectDescription state={state} setState={setState} />
             </Box>
-            <ProjectType type={type} onChange={handleTypeChange} />
-            <ProjectStory state={state} setState={setState} />
+            {teamWorkflow !== BOLD_WORKFLOW_PROCESS && (
+              <>
+                <ProjectType
+                  type={type}
+                  onChange={handleTypeChange}
+                  team={team}
+                />
+                <ProjectStory state={state} setState={setState} />
+              </>
+            )}
             <Stack sx={{ pt: 1, pb: 2 }}>
               <Language
                 {...state}
                 onChange={handleLanguageChange}
                 direction="row"
+                hideSpelling
                 sx={{ pt: 0 }}
               />
             </Stack>
@@ -186,8 +214,8 @@ export function ProjectDialog(props: IProps) {
         primaryLabel={mode === Mode.add ? t.add : t.save}
         primaryOnClick={handleAdd}
         primaryDisabled={
-          (nameInUse && nameInUse(name)) ||
-          name === '' ||
+          (nameInUse && nameInUse(name.trim())) ||
+          !name.trim() ||
           bcp47 === 'und' ||
           type === '' ||
           (mode !== Mode.add && shallowEqual(state, originalState))

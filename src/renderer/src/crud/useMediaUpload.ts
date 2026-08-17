@@ -1,6 +1,7 @@
-import { useRef, useContext } from 'react';
+import { useRef, useContext, useEffect } from 'react';
 import { useGetGlobal, useGlobal } from '../context/useGlobal';
 import {
+  ArtifactTypeSlug,
   pullTableList,
   related,
   remoteIdNum,
@@ -16,35 +17,44 @@ import { UploadType } from '../components/UploadType';
 import { RecordKeyMap } from '@orbit/records';
 import { getContentType } from '../utils/contentType';
 import { ISharedStrings, MediaFileAttributes, MediaFileD } from '../model';
-import { sharedSelector } from '../selector';
+import { AlertSeverity, useSnackBar } from '../hoc/SnackBar';
+import { mediaTabSelector, sharedSelector } from '../selector';
 import { OrbitNetworkErrorRetries } from '../../api-variable';
+import { formatUploadTerminalFailureMessage } from '../store/upload/uploadTerminalMessages';
 
 interface IProps {
-  artifactId: string | null;
+  /** The artifact type to tag the upload with (null = Vernacular). */
+  artifactTypeSlug: ArtifactTypeSlug | null;
   passageId: string | undefined;
   planId?: string | undefined;
   sourceMediaId?: string | undefined;
   sourceSegments?: string | undefined;
   performedBy?: string | undefined;
   topic?: string | undefined;
+  /** Copied onto mediafile.attributes.languagebcp47 (e.g. `English|en`). */
+  languagebcp47?: string | undefined;
   afterUploadCb: (mediaId: string) => Promise<void>;
+  /** When retrying a queued failed upload, pass id to clear the queue entry after success. */
+  pendingUploadIdToClearOnSuccess?: string;
 }
 export const useMediaUpload = ({
-  artifactId,
+  artifactTypeSlug,
   passageId,
   sourceMediaId,
   sourceSegments,
   performedBy,
   planId,
   topic,
+  languagebcp47,
   afterUploadCb,
+  pendingUploadIdToClearOnSuccess,
 }: IProps) => {
   const dispatch = useDispatch();
   const uploadFiles = (files: File[]) =>
     dispatch(actions.uploadFiles(files) as any);
   const nextUpload = (props: actions.NextUploadProps) =>
     dispatch(actions.nextUpload(props) as any);
-  const uploadComplete = () => dispatch(actions.uploadComplete as any);
+  const { showMessage } = useSnackBar();
   const [reporter] = useGlobal('errorReporter');
   const [memory] = useGlobal('memory');
   const [coordinator] = useGlobal('coordinator');
@@ -52,17 +62,32 @@ export const useMediaUpload = ({
   const backup = coordinator?.getSource('backup') as IndexedDBSource;
   const getGlobal = useGetGlobal();
   const [user] = useGlobal('user');
-  const { accessToken } = useContext(TokenContext).state;
-  const fileList = useRef<File[]>();
+  const accessToken = useContext(TokenContext)?.state?.accessToken ?? null;
+  const fileList = useRef<File[] | undefined>(undefined);
   const mediaIdRef = useRef('');
+  // TT-6646: MediaRecord's save effect omits performedBy/topic from deps, so
+  // a stale uploadMedia closure can run after the user typed speaker/topic.
+  // Keep latest values in refs (updated in an effect — not during render).
+  const performedByRef = useRef(performedBy);
+  const topicRef = useRef(topic);
+  useEffect(() => {
+    performedByRef.current = performedBy;
+    topicRef.current = topic;
+  }, [performedBy, topic]);
   const { createMedia } = useOfflnMediafileCreate();
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
-  const { localizedArtifactTypeFromId } = useArtifactType();
+  const t = useSelector(mediaTabSelector, shallowEqual);
+  const { localIdFromSlug, remoteIdNumFromSlug, localizedArtifactType } =
+    useArtifactType();
+  // Vernacular is represented as null throughout; treat the Vernacular slug the
+  // same so callers can pass either.
+  const isVernacular =
+    !artifactTypeSlug || artifactTypeSlug === ArtifactTypeSlug.Vernacular;
   const [, setOrbitRetries] = useGlobal('orbitRetries'); //verified this is not used in a function 2/18/25
   const getLatestVersion = () => {
     let num = 1;
     const psgId = passageId || '';
-    if (psgId && !artifactId) {
+    if (psgId && isVernacular) {
       const mediaFiles = (
         memory.cache.query((q) => q.findRecords('mediafile')) as MediaFileD[]
       )
@@ -82,7 +107,11 @@ export const useMediaUpload = ({
     }
     return num;
   };
-  const itemComplete = async (n: number, success: boolean, data?: any) => {
+  const itemComplete = async (
+    n: number,
+    success: boolean,
+    data?: any
+  ): Promise<void> => {
     if (!success) setOrbitRetries(OrbitNetworkErrorRetries - 1); //notify of possible network issue
     const uploadList = fileList.current;
     if (!uploadList) return; // This should never happen
@@ -91,103 +120,135 @@ export const useMediaUpload = ({
     } else if (success && data) {
       // offlineOnly
       const num = getLatestVersion();
+      const localArtifactId = localIdFromSlug(artifactTypeSlug);
       mediaIdRef.current = (
         await createMedia(
           data,
           num,
           (uploadList[n] as File).size,
           passageId ?? '',
-          artifactId,
+          localArtifactId,
           sourceMediaId ?? '',
           user
         )
       ).id;
     } else mediaIdRef.current = '';
+    const finishUpload = async () => {
+      dispatch(actions.uploadComplete() as any);
+      const total = fileList.current?.length ?? 1;
+      const ok = mediaIdRef.current ? 1 : 0;
+      showMessage(
+        t.uploadComplete
+          .replace('{0}', String(ok))
+          .replace('{1}', String(total))
+      );
+      try {
+        await afterUploadCb(mediaIdRef.current);
+      } catch {
+        // Parent after-upload hook failed; upload itself is finished.
+      }
+    };
     if (!getGlobal('offline') && mediaIdRef.current) {
-      pullTableList(
-        'mediafile',
-        Array(mediaIdRef.current),
-        memory,
-        remote,
-        backup,
-        reporter
-      ).then(() => {
-        uploadComplete();
-        afterUploadCb(mediaIdRef.current);
-      });
-    } else {
-      uploadComplete();
-      afterUploadCb(mediaIdRef.current);
+      try {
+        await pullTableList(
+          'mediafile',
+          Array(mediaIdRef.current),
+          memory,
+          remote,
+          backup,
+          reporter
+        );
+      } catch {
+        // Sync failure still runs upload cleanup.
+      }
     }
+    await finishUpload();
   };
 
-  return async (files: File[]) => {
-    const getPlanId = () =>
-      planId
-        ? remoteIdNum('plan', planId, memory?.keyMap as RecordKeyMap) || planId
-        : remoteIdNum(
-            'plan',
-            getGlobal('plan'),
-            memory?.keyMap as RecordKeyMap
-          ) || getGlobal('plan');
-    const getArtifactId = () =>
-      artifactId === null
-        ? null
-        : remoteIdNum(
-            'artifacttype',
-            artifactId,
-            memory?.keyMap as RecordKeyMap
-          ) || artifactId;
-    const getPassageId = () =>
-      passageId
-        ? remoteIdNum('passage', passageId, memory?.keyMap as RecordKeyMap) ||
-          passageId
-        : '';
-    const getUserId = () =>
-      remoteIdNum('user', user, memory?.keyMap as RecordKeyMap) || user;
-    const getSourceMediaId = () =>
-      remoteIdNum(
-        'mediafile',
-        sourceMediaId || '',
-        memory?.keyMap as RecordKeyMap
-      ) || sourceMediaId;
+  return (files: File[]): Promise<boolean> => {
+    if (!files.length) return Promise.resolve(false);
+    return new Promise((resolve, reject) => {
+      const getPlanId = () =>
+        planId
+          ? remoteIdNum('plan', planId, memory?.keyMap as RecordKeyMap) ||
+            planId
+          : remoteIdNum(
+              'plan',
+              getGlobal('plan'),
+              memory?.keyMap as RecordKeyMap
+            ) || getGlobal('plan');
+      const getArtifactId = () => {
+        if (isVernacular) return null;
+        // Enhance: if remoteIdNumFromSlug fails (something went pretty wrong, we got a bad slug or something)
+        // this could silently misclassify file as vernacular.
+        return remoteIdNumFromSlug(artifactTypeSlug as ArtifactTypeSlug) || '';
+      };
+      const getPassageId = () =>
+        passageId
+          ? remoteIdNum('passage', passageId, memory?.keyMap as RecordKeyMap) ||
+            passageId
+          : '';
+      const getUserId = () =>
+        remoteIdNum('user', user, memory?.keyMap as RecordKeyMap) || user;
+      const getSourceMediaId = () =>
+        remoteIdNum(
+          'mediafile',
+          sourceMediaId || '',
+          memory?.keyMap as RecordKeyMap
+        ) || sourceMediaId;
 
-    uploadFiles(files);
-    fileList.current = files;
+      uploadFiles(files);
+      fileList.current = files;
 
-    const mediafile = {
-      planId: getPlanId(),
-      versionNumber: 1,
-      originalFile: (files[0] as File).name,
-      contentType: getContentType(files[0]?.type, (files[0] as File).name),
-      artifactTypeId: getArtifactId(),
-      passageId: getPassageId(),
-      recordedbyUserId: getUserId(),
-      userId: getUserId(),
-      sourceMediaId: getSourceMediaId(),
-      sourceSegments: sourceSegments ?? '{}',
-      performedBy: performedBy ?? null,
-      topic: topic ?? '',
-      eafUrl: !artifactId
-        ? ts.mediaAttached
-        : localizedArtifactTypeFromId(artifactId), //put psc message here
-    } as MediaFileAttributes & {
-      planId: string;
-      artifactTypeId: string;
-      passageId: string;
-      recordedbyUserId: string;
-      userId: string;
-      sourceMediaId: string;
-    };
-    nextUpload({
-      record: mediafile,
-      files,
-      n: 0,
-      token: accessToken || '',
-      offline: getGlobal('offline'),
-      errorReporter: reporter,
-      uploadType: UploadType.Media,
-      cb: itemComplete,
+      const mediafile = {
+        planId: getPlanId(),
+        versionNumber: 1,
+        originalFile: (files[0] as File).name,
+        contentType: getContentType(files[0]?.type, (files[0] as File).name),
+        artifactTypeId: getArtifactId(), // TODO is there really any benefit to doing this as a lazy arrow function? If not make it more straightforward
+        passageId: getPassageId(),
+        recordedbyUserId: getUserId(),
+        userId: getUserId(),
+        sourceMediaId: getSourceMediaId(),
+        sourceSegments: sourceSegments ?? '{}',
+        performedBy: performedByRef.current ?? null,
+        topic: topicRef.current ?? '',
+        languagebcp47: languagebcp47 ?? '',
+        eafUrl: isVernacular
+          ? ts.mediaAttached
+          : localizedArtifactType(artifactTypeSlug as ArtifactTypeSlug), //put psc message here
+      } as MediaFileAttributes & {
+        planId: string;
+        artifactTypeId: string;
+        passageId: string;
+        recordedbyUserId: string;
+        userId: string;
+        sourceMediaId: string;
+      };
+      nextUpload({
+        record: mediafile,
+        files,
+        n: 0,
+        token: accessToken || '',
+        offline: getGlobal('offline'),
+        errorReporter: reporter,
+        uploadType: UploadType.Media,
+        cb: (n, success, data) => {
+          void itemComplete(n, success, data)
+            .then(() => {
+              if (success) resolve(true);
+              else reject(new Error(t.uploadFailed));
+            })
+            .catch(reject);
+        },
+        pendingUploadIdToClearOnSuccess,
+        onTerminalFailure: (info) => {
+          showMessage(
+            formatUploadTerminalFailureMessage(t, info),
+            AlertSeverity.Warning
+          );
+        },
+      });
     });
   };
 };

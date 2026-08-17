@@ -19,7 +19,9 @@ import { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArtifactTypeSlug,
   IRegionParams,
+  isPhraseSegmentArtifact,
   related,
+  remoteIdGuid,
   useArtifactType,
   useFetchMediaUrl,
   useOrgDefaults,
@@ -49,6 +51,7 @@ import { useOrbitData } from '../../hoc/useOrbitData';
 import { useStepPermissions } from '../../utils/useStepPermission';
 import { btDefaultSegParams } from './btDefaultSegParams';
 import DiscussionPanel from '../../components/Discussions/DiscussionPanel';
+import { RecordKeyMap, RecordTransformBuilder } from '@orbit/records';
 
 const PlayerRow = styled('div')(() => ({
   width: '100%',
@@ -124,13 +127,16 @@ export function PassageDetailItem(props: IProps) {
   const { toolChanged, startSave, saveCompleted, saveRequested } =
     useContext(UnsavedContext).state;
 
-  const { getTypeId, localizedArtifactType } = useArtifactType();
+  const { localIdFromSlug, localizedArtifactType } = useArtifactType();
   const { showMessage } = useSnackBar();
   const [recordType, setRecordType] = useState<ArtifactTypeSlug>(
     slugs[0] as ArtifactTypeSlug
   );
   const [currentVersion, setCurrentVersion] = useState(1);
   const [segString, setSegString] = useState('{}');
+  const [allowRecord, setAllowRecord] = useState(
+    !isPhraseSegmentArtifact(slugs[0] as ArtifactTypeSlug)
+  );
   const [verses, setVerses] = useState('');
   const cancelled = useRef(false);
   const { canDoSectionStep } = useStepPermissions();
@@ -148,7 +154,6 @@ export function PassageDetailItem(props: IProps) {
     let newPaneWidth = width - 16;
     if (discussOpen) newPaneWidth -= discussionSize.width;
     setPaneWidth(newPaneWidth);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [discussionSize, width, discussOpen]);
 
   const setUploadVisible = (value: boolean) => {
@@ -186,38 +191,43 @@ export function PassageDetailItem(props: IProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mediafileId, mediaState.id]);
 
+  const segmentRegion = segments ?? NamedRegions.BackTranslation;
+
   const hasBtRecordings = useMemo(() => {
     const mediaRec = mediafiles.find((m) => m.id === mediafileId);
-    const btType = localizedArtifactType(
-      ArtifactTypeSlug.PhraseBackTranslation
-    );
     const version = mediaRec?.attributes.versionNumber;
+    const typeNames = slugs.map((s) => localizedArtifactType(s));
     return rowData.some(
-      (r) => r.artifactType === btType && r.sourceVersion === version
+      (r) => typeNames.includes(r.artifactType) && r.sourceVersion === version
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rowData, mediafileId, mediafiles]);
+  }, [rowData, mediafileId, mediafiles, slugs, localizedArtifactType]);
 
   useEffect(() => {
     const mediaRec = mediafiles.find((m) => m.id === mediafileId);
     const defaultSegments = mediaRec?.attributes?.segments ?? '{}';
-    const newSegString = getSegments(
-      NamedRegions.BackTranslation,
-      defaultSegments
-    );
-    if (segString !== newSegString) {
-      setSegString(newSegString);
-      if (hasBtRecordings)
-        showMessage(t.segmentsChanged, AlertSeverity.Warning);
+    if (segments) {
+      const newSegString = getSegments(segmentRegion, defaultSegments);
+      if (segString !== newSegString) {
+        setSegString(newSegString);
+        if (hasBtRecordings)
+          showMessage(t.segmentsChanged, AlertSeverity.Warning);
+      }
     }
     setVerses(getSegments(NamedRegions.Verse, defaultSegments));
     setCurrentVersion(mediaRec?.attributes?.versionNumber || 0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mediafileId, mediafiles, hasBtRecordings]);
+  }, [mediafileId, mediafiles, hasBtRecordings, segmentRegion, segments]);
+
+  useEffect(() => {
+    if (isPhraseSegmentArtifact(recordType))
+      setAllowRecord(Boolean(currentSegment) && (segString || '{}') !== '{}');
+    else setAllowRecord(true);
+  }, [segString, recordType, currentSegment]);
 
   const recordTypeId = useMemo(
-    () => getTypeId(recordType),
-    [recordType, getTypeId]
+    () => localIdFromSlug(recordType),
+    [recordType, localIdFromSlug]
   );
 
   const artifactState = useMemo(() => ({ id: recordTypeId }), [recordTypeId]);
@@ -262,6 +272,17 @@ export function PassageDetailItem(props: IProps) {
 
   const afterUpload = async (planId: string, mediaRemoteIds?: string[]) => {
     if (mediaRemoteIds && mediaRemoteIds[0]) {
+      if (cancelled.current) {
+        const id =
+          remoteIdGuid(
+            'mediafile',
+            mediaRemoteIds[0],
+            memory?.keyMap as RecordKeyMap
+          ) || mediaRemoteIds[0];
+        await memory.update((tr: RecordTransformBuilder) =>
+          tr.removeRecord({ type: 'mediafile', id }).toOperation()
+        );
+      }
       setStatusText('');
       setTopic('');
       saveCompleted(toolId);
@@ -274,6 +295,7 @@ export function PassageDetailItem(props: IProps) {
       saveCompleted(toolId, ts.NoSaveWoMedia);
       showMessage(ts.NoSaveWoMedia);
     }
+    cancelled.current = false;
   };
 
   //from recorder
@@ -372,13 +394,14 @@ export function PassageDetailItem(props: IProps) {
                   }
                   defaultSegParams={segParams}
                   suggestedSegments={segString}
+                  forceRegionOnly={!oneTryOnly}
                   verses={verses}
                   canSetDefaultParams={editStep && canSetOrgDefault}
                   onSegmentParamChange={
                     editStep ? onSegmentParamChange : undefined
                   }
                   metaData={
-                    recordType === ArtifactTypeSlug.PhraseBackTranslation &&
+                    isPhraseSegmentArtifact(recordType) &&
                     segString === '{}' ? (
                       <Typography
                         variant="h6"
@@ -399,20 +422,19 @@ export function PassageDetailItem(props: IProps) {
                       width={paneWidth}
                     />
                   </Box>
-                  <Box sx={rowProp}>
-                    <Button
-                      sx={buttonProp}
-                      id="pdRecordUpload"
-                      onClick={handleUpload}
-                      title={ts.uploadMediaSingular}
-                    >
-                      <AddIcon />
-                      {ts.uploadMediaSingular}
-                    </Button>
-                    <GrowingSpacer />
-                    {currentSegment &&
-                      segString !== '{}' &&
-                      ArtifactTypeSlug.PhraseBackTranslation === recordType && (
+                  {allowRecord && (
+                    <Box sx={rowProp}>
+                      <Button
+                        sx={buttonProp}
+                        id="pdRecordUpload"
+                        onClick={handleUpload}
+                        title={ts.uploadMediaSingular}
+                      >
+                        <AddIcon />
+                        {ts.uploadMediaSingular}
+                      </Button>
+                      <GrowingSpacer />
+                      {isPhraseSegmentArtifact(recordType) && (
                         <TextField
                           sx={ctlProps}
                           id="segment"
@@ -421,7 +443,8 @@ export function PassageDetailItem(props: IProps) {
                           label={t.segment}
                         />
                       )}
-                  </Box>
+                    </Box>
+                  )}
                   <Box sx={rowProp}>
                     <Typography sx={statusProps}>{t.record}</Typography>
                     {slugs.length > 1 && (
@@ -468,18 +491,18 @@ export function PassageDetailItem(props: IProps) {
                     toolId={toolId}
                     passageId={related(sharedResource, 'passage') ?? passage.id}
                     sourceSegments={
-                      ArtifactTypeSlug.PhraseBackTranslation === recordType
+                      isPhraseSegmentArtifact(recordType)
                         ? JSON.stringify(getCurrentSegment())
                         : '{}'
                     }
+                    allowRecord={allowRecord}
                     sourceMediaId={mediafileId}
-                    artifactId={recordTypeId}
+                    artifactTypeSlug={recordType}
                     performedBy={speaker}
                     topic={topic}
                     afterUploadCb={afterUploadCb}
                     defaultFilename={defaultFilename}
                     allowWave={false}
-                    showFilename={false}
                     setCanSave={handleSetCanSave}
                     setStatusText={setStatusText}
                     doReset={resetMedia}
@@ -504,8 +527,7 @@ export function PassageDetailItem(props: IProps) {
                       onClick={handleSave}
                       disabled={
                         !canSave ||
-                        (ArtifactTypeSlug.PhraseBackTranslation ===
-                          recordType &&
+                        (isPhraseSegmentArtifact(recordType) &&
                           (segString || '{}') === '{}')
                       }
                     >
@@ -576,7 +598,6 @@ export function PassageDetailItem(props: IProps) {
       </Paper>
       <Uploader
         noBusy={true}
-        recordAudio={false}
         importList={importList ?? []}
         isOpen={uploadVisible}
         onOpen={handleUploadVisible}

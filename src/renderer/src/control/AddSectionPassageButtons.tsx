@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { IPlanSheetStrings } from '../model';
+import { useState } from 'react';
+import { shallowEqual, useSelector } from 'react-redux';
 import {
+  Button,
   ListItemIcon,
   ListItemIconProps,
   Menu,
@@ -8,10 +9,11 @@ import {
   styled,
 } from '@mui/material';
 import DropDownIcon from '@mui/icons-material/ArrowDropDown';
-import { iconMargin, AltButton } from '../control';
+import { IPlanSheetStrings } from '../model';
+import { useCanPublish } from '../utils';
 import { useOrganizedBy } from '../crud';
 import { planSheetSelector } from '../selector';
-import { shallowEqual, useSelector } from 'react-redux';
+import { ExtraIcon } from '../components/Sheet';
 import {
   AddNoteIcon,
   AddPublishingIcon,
@@ -21,8 +23,6 @@ import {
   PassageEndIcon,
   SectionEndIcon,
 } from './PlanIcons';
-import { ExtraIcon } from '../components/Sheet';
-import { useCanPublish } from '../utils';
 
 const StyledMenuIcon = styled(ListItemIcon)<ListItemIconProps>(({ theme }) => ({
   paddingRight: theme.spacing(2),
@@ -47,6 +47,7 @@ interface IProps {
   handleNoContextMenu: () => void;
   showIcon: (icon: ExtraIcon) => boolean;
   onAction: (what: ExtraIcon) => void;
+  disablePublishingRows?: boolean;
 }
 
 export const AddSectionPassageButtons = (props: IProps) => {
@@ -63,8 +64,9 @@ export const AddSectionPassageButtons = (props: IProps) => {
     handleNoContextMenu,
     showIcon,
     onAction,
+    disablePublishingRows,
   } = props;
-  const [actionMenuItem, setActionMenuItem] = React.useState<any>(undefined);
+  const [actionMenuItem, setActionMenuItem] = useState<any>(undefined);
   const { getOrganizedBy } = useOrganizedBy();
   const [organizedBy] = useState(getOrganizedBy(true));
   const { canAddPublishing } = useCanPublish();
@@ -88,27 +90,29 @@ export const AddSectionPassageButtons = (props: IProps) => {
     <>
       {canEditSheet && (
         <>
-          <AltButton
+          <Button
             id="planSheetAddSec"
             key="addSection"
+            variant="outlined"
             aria-label={t.addSection}
             onClick={handleMenu}
             disabled={readonly}
+            endIcon={<DropDownIcon />}
           >
             {t.addSection.replace('{0}', organizedBy)}
-            <DropDownIcon sx={iconMargin} />
-          </AltButton>
+          </Button>
           {!inlinePassages && (
-            <AltButton
+            <Button
               id="planSheetAddPass"
               key="addPassage"
+              variant="outlined"
               aria-label={t.addPassage}
               onClick={handleMenu}
               disabled={numRows < 2 || readonly}
+              endIcon={<DropDownIcon />}
             >
               {t.addPassage}
-              <DropDownIcon sx={iconMargin} />
-            </AltButton>
+            </Button>
           )}
           {/*Section Button Menu */}
           <Menu
@@ -165,6 +169,7 @@ export const AddSectionPassageButtons = (props: IProps) => {
               <MenuItem
                 id="publishing"
                 onClick={handleAction(ExtraIcon.Publishing)}
+                disabled={disablePublishingRows}
               >
                 <StyledMenuIcon>
                   <AddPublishingIcon />
@@ -237,7 +242,11 @@ export const AddSectionPassageButtons = (props: IProps) => {
         </>
       )}
       {!canEditSheet && showIcon(ExtraIcon.Publishing) && canAddPublishing && (
-        <MenuItem id="publishing" onClick={handleAction(ExtraIcon.Publishing)}>
+        <MenuItem
+          id="publishing"
+          onClick={handleAction(ExtraIcon.Publishing)}
+          disabled={disablePublishingRows}
+        >
           <StyledMenuIcon>
             <AddPublishingIcon />
           </StyledMenuIcon>

@@ -7,6 +7,7 @@ import {
   GetGlobalType,
 } from './GlobalContext';
 import { debounce } from 'lodash';
+import { perfRecordGlobalSet } from '../utils/perf';
 
 const changes = {} as GlobalState;
 
@@ -28,6 +29,7 @@ export const useGlobal = <K extends GlobalKey>(
 
   const setter = (val: GlobalState[K]) => {
     if (val === (changes[prop] ?? globalState[prop])) return; // ignore set to same value
+    perfRecordGlobalSet(prop as string); // instrumentation: track cascade drivers
     changes[prop] = val; // keep track of all changes
     handleChange(); // post them as react can handle them
   };
@@ -38,6 +40,8 @@ export const useGetGlobal = (): GetGlobalType => {
   const { globalState } = useContext(GlobalContext) as GlobalCtxType;
   return (prop) => {
     // console.log(`useGetGlobal ${prop} is ${changes[prop]}`);
-    return changes[prop] ?? globalState[prop];
+    // globalState may be undefined during a transient default-context render
+    // (e.g. HMR before the provider mounts); optional chaining avoids throwing.
+    return changes[prop] ?? globalState?.[prop];
   };
 };

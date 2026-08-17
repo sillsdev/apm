@@ -1,11 +1,14 @@
 import {
   Autocomplete,
+  Box,
   FormControl,
   FormLabel,
   Grid,
   IconButton,
   Stack,
   TextField,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import RefreshIcon from '@mui/icons-material/Refresh';
@@ -34,7 +37,12 @@ import ClearIcon from '@mui/icons-material/Clear';
 import { PassageTypeEnum } from '../../../model/passageType';
 import { passageTypeFromRef } from '../../../control/passageTypeFromRef';
 import { useGlobal } from '../../../context/useGlobal';
-import { useNotes, usePlanType, useSharedResRead } from '../../../crud';
+import {
+  related,
+  useNotes,
+  usePlanType,
+  useSharedResRead,
+} from '../../../crud';
 
 interface CreateAiResProps {
   resources: BibleResource[];
@@ -67,6 +75,8 @@ export default function CreateAiRes({ resources, onTab }: CreateAiResProps) {
     shallowEqual
   );
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
+  const theme = useTheme();
+  const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
 
   const scopeOptions = useMemo(
     () => [
@@ -136,13 +146,14 @@ export default function CreateAiRes({ resources, onTab }: CreateAiResProps) {
         ref = curNoteRef(passage);
       }
     }
+    const sectionId = related(passage, 'section') as string;
     if (scope === scopeOptions[scopeI.section]) {
-      ref = `${book} ${computeSectionRef(passage)}`;
+      ref = `${book} ${computeSectionRef(sectionId)}`;
     } else if (scope === scopeOptions[scopeI.chapter]) {
-      const chapter = parseInt(computeSectionRef(passage) ?? '1');
+      const chapter = parseInt(computeSectionRef(sectionId) ?? '1');
       ref = `${book} ${chapter}`;
     } else if (scope === scopeOptions[scopeI.movement]) {
-      ref = `${book} ${computeMovementRef(passage)}`;
+      ref = `${book} ${computeMovementRef(sectionId)}`;
     } else if (scope === scopeOptions[scopeI.book]) {
       ref = t.biblicalBook.replace('{0}', book);
     } else if (terms.includes(scope)) {
@@ -211,7 +222,21 @@ export default function CreateAiRes({ resources, onTab }: CreateAiResProps) {
     computeQuery(type, scope);
   };
 
-  return (
+  const convertFooter = (
+    <Grid
+      container
+      spacing={2}
+      sx={{ justifyContent: 'center', flexShrink: 0, py: 1 }}
+    >
+      <Grid>
+        <AltButton onClick={() => setLink('https://ttsmp3.com//')}>
+          {t.convert}
+        </AltButton>
+      </Grid>
+    </Grid>
+  );
+
+  const mainForm = (
     <Grid container>
       <FormControl
         component={'fieldset'}
@@ -219,27 +244,27 @@ export default function CreateAiRes({ resources, onTab }: CreateAiResProps) {
       >
         <FormLabel component={'legend'}>{t.queryBuilder}</FormLabel>
         <Grid container spacing={2} sx={{ my: 1, justifyContent: 'center' }}>
-          <Grid>
+          <Grid size={{ xs: 12, sm: 'auto' }}>
             <Autocomplete
               disablePortal
               id="buildType"
               options={typeOpts}
               value={typeOpts.find((item) => item.value === type) ?? null}
               onChange={handleTypeChange}
-              sx={{ width: 180 }}
+              sx={{ width: { xs: '100%', sm: 180 } }}
               renderInput={(params) => (
                 <TextField {...params} label={t?.getString(type) ?? type} />
               )}
             />
           </Grid>
-          <Grid>
+          <Grid size={{ xs: 12, sm: 'auto' }}>
             <Autocomplete
               disablePortal
               id="buildScope"
               options={scopeOpts}
               value={scopeOpts.find((item) => item.value === scope) ?? null}
               onChange={handleScopeChange}
-              sx={{ width: 300 }}
+              sx={{ width: { xs: '100%', sm: 300 } }}
               renderInput={(params) => (
                 <TextField {...params} label={t.scope} />
               )}
@@ -293,14 +318,38 @@ export default function CreateAiRes({ resources, onTab }: CreateAiResProps) {
             ))}
         </Grid>
       </FormControl>
-      <Grid container spacing={2} sx={{ justifyContent: 'center' }}>
-        <Grid>
-          <AltButton onClick={() => setLink('https://ttsmp3.com//')}>
-            {t.convert}
-          </AltButton>
-        </Grid>
-      </Grid>
+      {!isSmallScreen ? convertFooter : null}
       <LaunchLink url={link} reset={() => setLink('')} />
     </Grid>
   );
+
+  if (isSmallScreen) {
+    return (
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          flex: 1,
+          minHeight: 0,
+          height: '100%',
+          width: '100%',
+        }}
+      >
+        <Box
+          sx={{
+            position: 'relative',
+            flex: '1 1 0px',
+            minHeight: 0,
+            width: '100%',
+            overflow: 'auto',
+          }}
+        >
+          {mainForm}
+        </Box>
+        {convertFooter}
+      </Box>
+    );
+  }
+
+  return mainForm;
 }

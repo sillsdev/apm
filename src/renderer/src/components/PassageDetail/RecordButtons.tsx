@@ -1,11 +1,10 @@
 import { ButtonGroup, ButtonGroupProps, styled } from '@mui/material';
 import AddIcon from '@mui/icons-material/LibraryAddOutlined';
 import VersionsIcon from '@mui/icons-material/List';
-import AudioFileIcon from '@mui/icons-material/AudioFileOutlined';
 import { AltButton, AudacityLogo } from '../../control';
 import { shallowEqual, useSelector } from 'react-redux';
-import { passageRecordSelector, sharedSelector } from '../../selector';
-import { IPassageRecordStrings, ISharedStrings } from '../../model';
+import { sharedSelector } from '../../selector';
+import { ISharedStrings } from '../../model';
 
 const StyledButtonGroup = styled(ButtonGroup)<ButtonGroupProps>(() => ({
   '& button': {
@@ -15,28 +14,28 @@ const StyledButtonGroup = styled(ButtonGroup)<ButtonGroupProps>(() => ({
 
 interface IProps {
   onVersions?: () => void;
-  onReload?: () => void;
   onUpload?: () => void;
   onAudacity?: () => void;
+  /** When false, hide the version history button (e.g. mobile passage record). */
+  showVersions?: boolean;
+  /** When false, hide the upload button (e.g. upload is inline with speaker on mobile). */
+  showUpload?: boolean;
 }
 
 export const RecordButtons = ({
   onVersions,
   onUpload,
-  onReload,
   onAudacity,
+  showVersions = true,
+  showUpload = true,
 }: IProps) => {
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
-  const t: IPassageRecordStrings = useSelector(
-    passageRecordSelector,
-    shallowEqual
-  );
 
   const IconSize = { width: '14px', height: '14px' };
 
   return (
     <StyledButtonGroup size="small" sx={{ my: 1 }}>
-      {onVersions && (
+      {showVersions && onVersions && (
         <AltButton
           id="pdRecordVersions"
           onClick={onVersions}
@@ -46,24 +45,17 @@ export const RecordButtons = ({
           {ts.versionHistory}
         </AltButton>
       )}
-      {onReload && (
+      {showUpload && (
         <AltButton
-          id="pdRecordReload"
-          onClick={onReload}
-          startIcon={<AudioFileIcon sx={IconSize} />}
+          id="pdRecordUpload"
+          onClick={onUpload}
+          title={ts.uploadMediaSingular}
+          startIcon={<AddIcon sx={IconSize} />}
+          disabled={!onUpload}
         >
-          {t.loadlatest}
+          {ts.uploadMediaSingular}
         </AltButton>
       )}
-      <AltButton
-        id="pdRecordUpload"
-        onClick={onUpload}
-        title={ts.uploadMediaSingular}
-        startIcon={<AddIcon sx={IconSize} />}
-        disabled={!onUpload}
-      >
-        {ts.uploadMediaSingular}
-      </AltButton>
       {onAudacity && (
         <AltButton
           id="pdAudacity"

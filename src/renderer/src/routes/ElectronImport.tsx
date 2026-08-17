@@ -31,7 +31,7 @@ export interface IImportData {
   fileName: string;
   projectName: string;
   valid: boolean;
-  warnMsg: string | JSX.Element;
+  warnMsg: string | React.JSX.Element;
   errMsg: string;
   exportDate: string;
 }
@@ -44,7 +44,7 @@ const stringSelector = (state: IState) =>
 
 export const useElectronImport = () => {
   const [coordinator] = useGlobal('coordinator');
-  const token = useContext(TokenContext).state.accessToken;
+  const token = useContext(TokenContext)?.state?.accessToken ?? null;
   const [errorReporter] = useGlobal('errorReporter');
   const offlineSetup = useOfflineSetup();
   const [user] = useGlobal('user');
@@ -53,10 +53,10 @@ export const useElectronImport = () => {
   const { showTitledMessage } = useSnackBar();
   const getOfflineProject = useOfflnProjRead();
   const AddProjectLoaded = useProjectsLoaded();
-  const zipRef = useRef<string>();
+  const zipRef = useRef<string | undefined>(undefined);
   const t = useSelector(stringSelector, shallowEqual) as IElectronImportStrings;
   const backup = coordinator?.getSource('backup') as IndexedDBSource;
-  const { getTypeId } = useArtifactType();
+  const { localIdFromSlug } = useArtifactType();
 
   const invalidReturn = {
     fileName: '',
@@ -99,7 +99,9 @@ export const useElectronImport = () => {
     project: string
   ): Promise<IImportData> => {
     if (!isElectron) return invalidReturn;
-    const filePaths = await ipc?.importOpen();
+    const filePaths = await ipc?.importOpen([
+      { name: 'ptf', extensions: ['ptf'] },
+    ]);
     if (!filePaths || filePaths.length === 0) {
       zipRef.current = undefined;
       //they didn't pick a file
@@ -324,7 +326,7 @@ export const useElectronImport = () => {
         offlineOnly: isOfflinePtf.current,
         AddProjectLoaded,
         reportError,
-        getTypeId,
+        localIdFromSlug,
         pendingmsg: t.importPending,
         completemsg: t.importComplete,
         oldfilemsg: t.importOldFile,

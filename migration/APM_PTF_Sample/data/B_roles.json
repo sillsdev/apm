@@ -1,0 +1,18 @@
+{"data": [
+    {
+        "type": "roles",
+        "attributes": {
+            "org-role": true,
+            "role-name": "Admin"
+        },
+        "id": "e4283577-f08e-4396-aae8-bba3122c52ff"
+    },
+    {
+        "type": "roles",
+        "attributes": {
+            "org-role": true,
+            "role-name": "Member"
+        },
+        "id": "dbc87f54-7567-4cd7-a301-d643dd6a8a34"
+    }
+]}

@@ -1,7 +1,8 @@
 import { SxProps } from '@mui/material';
 
-const smallProps = { width: '24px', height: '24px' } as SxProps;
-const mediumProps = { width: '48px', height: '48px' } as SxProps;
+const avatarProps = {
+  width: { xs: '24px', sm: '32px' },
+  height: { xs: '24px', sm: '32px' },
+} as SxProps;
 
-export const avatarSize = (small?: boolean) =>
-  small ? smallProps : mediumProps;
+export const avatarSize = () => avatarProps;

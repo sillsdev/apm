@@ -13,6 +13,8 @@ interface StepPermissionResult {
   canDoVernacular: (sectionId: string) => boolean;
   canDoSectionStep: (stepId: string, section: SectionD) => boolean;
   canAlwaysDoStep: () => boolean;
+  /** True when org default `permissions` is enabled (step assignments apply). */
+  permissionsOn: boolean;
 }
 
 export const useStepPermissions = (): StepPermissionResult => {
@@ -79,5 +81,10 @@ export const useStepPermissions = (): StepPermissionResult => {
     if (!step?.id) return false;
     return canDoStep(step.id, sectionId);
   };
-  return { canDoVernacular, canDoSectionStep, canAlwaysDoStep };
+  return {
+    canDoVernacular,
+    canDoSectionStep,
+    canAlwaysDoStep,
+    permissionsOn,
+  };
 };

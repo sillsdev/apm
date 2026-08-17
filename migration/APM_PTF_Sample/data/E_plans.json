@@ -1,0 +1,36 @@
+{"data": [{
+    "type": "plans",
+    "attributes": {
+        "name": "Language",
+        "flat": false,
+        "tags": "{}",
+        "organized-by": "",
+        "slug": "Langua",
+        "date-created": "2025-11-11T20:01:51.860Z",
+        "date-updated": "2025-11-11T21:51:28.011Z",
+        "section-count": 1
+    },
+    "relationships": {
+        "lastModifiedByUser": {"data": {
+            "type": "user",
+            "id": "5b1295fe-04e4-40b2-a2db-1f0d259f43db"
+        }},
+        "plantype": {"data": {
+            "type": "plantype",
+            "id": "cffc9a3e-860d-496d-8303-02f792ee4bcf"
+        }},
+        "project": {"data": {
+            "type": "project",
+            "id": "954660c8-b788-46ff-8608-05a3c28b3de0"
+        }},
+        "sections": {"data": [{
+            "type": "section",
+            "id": "ad3aaf48-47da-4a97-bdc0-c469144a7931"
+        }]},
+        "mediafiles": {"data": [{
+            "type": "mediafile",
+            "id": "af8676c3-9cc1-45af-8dee-5c95f751a740"
+        }]}
+    },
+    "id": "21c35309-8073-422c-a172-3013fd077ab1"
+}]}

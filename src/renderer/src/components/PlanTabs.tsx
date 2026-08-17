@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect } from 'react';
 import { useGetGlobal, useGlobal } from '../context/useGlobal';
 import { useParams } from 'react-router-dom';
 import {
@@ -11,9 +11,8 @@ import {
   levScrColNames,
   levGenColNames,
   MediaFileD,
-  OrganizationD,
 } from '../model';
-import { AppBar, Tabs, Tab, Box } from '@mui/material';
+import { Tabs, Tab, Box } from '@mui/material';
 import ScriptureTable from './Sheet/ScriptureTable';
 import AudioTab from '../components/AudioTab/AudioTab';
 import AssignmentTable from './AssignmentTable';
@@ -24,15 +23,15 @@ import {
   useOrganizedBy,
   useMediaCounts,
   useSectionCounts,
-  isPersonalTeam,
+  useShowAssignment,
 } from '../crud';
-import { HeadHeight } from '../App';
-import { TabHeight } from '../control';
+import { useMobile } from '../utils';
 import { useOrbitData } from '../hoc/useOrbitData';
 import { shallowEqual, useSelector } from 'react-redux';
 import { planTabsSelector } from '../selector';
 import { PlanTabEnum } from './PlanTabsEnum';
 import { grey } from '@mui/material/colors';
+import ContentLayout from './App/ContentLayout';
 
 interface IProps {
   checkSaved: (method: () => void) => void;
@@ -47,8 +46,8 @@ const ScrollableTabsButtonAuto = (props: IProps) => {
   const ctx = React.useContext(PlanContext);
   const { flat, scripture, sectionArr, tab, setTab } = ctx.state;
   const [isOffline] = useGlobal('offline'); //verified this is not used in a function 2/18/25
-  const [offlineOnly] = useGlobal('offlineOnly'); //will be constant here
   const [plan] = useGlobal('plan'); //will be constant here
+  const { isMobile } = useMobile();
   const getGlobal = useGetGlobal();
   const { prjId, tabNm } = useParams();
   const { getOrganizedBy } = useOrganizedBy();
@@ -58,13 +57,7 @@ const ScrollableTabsButtonAuto = (props: IProps) => {
     sections,
     passages
   );
-  const [team] = useGlobal('organization');
-  const teams = useOrbitData<OrganizationD[]>('organization');
-
-  const showAssign = useMemo(
-    () => !isPersonalTeam(team, teams) && !offlineOnly,
-    [team, teams, offlineOnly]
-  );
+  const showAssign = useShowAssignment();
 
   const colNames = React.useMemo(() => {
     return scripture && flat
@@ -108,25 +101,14 @@ const ScrollableTabsButtonAuto = (props: IProps) => {
   if (tab !== undefined && tab.toString() !== tabNm)
     return <StickyRedirect to={`/plan/${prjId}/${tab}`} />;
 
+  if (isMobile && tab === PlanTabEnum.sectionPassage)
+    return <ScriptureTable {...props} colNames={colNames} />;
+  if (isMobile && showAssign && tab === PlanTabEnum.assignment)
+    return <AssignmentTable />;
+
   return (
-    <Box
-      sx={{
-        flexGrow: 1,
-        width: '100%',
-        backgroundColor: 'background.paper',
-        flexDirection: 'column',
-      }}
-    >
-      <AppBar
-        position="fixed"
-        color="default"
-        sx={{
-          top: `${HeadHeight}px`,
-          height: `${TabHeight}px`,
-          left: 0,
-          width: '100%',
-        }}
-      >
+    <ContentLayout
+      header={
         <Tabs
           value={tab ?? 0}
           onChange={(e: any, v: number) => checkSaved(() => handleChange(e, v))}
@@ -186,8 +168,11 @@ const ScrollableTabsButtonAuto = (props: IProps) => {
             }
           />
         </Tabs>
-      </AppBar>
-      <Box sx={{ pt: `${TabHeight}px` }}>
+      }
+    >
+      <Box
+        sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}
+      >
         {tab === PlanTabEnum.sectionPassage && (
           <ScriptureTable {...props} colNames={colNames} />
         )}
@@ -203,7 +188,7 @@ const ScrollableTabsButtonAuto = (props: IProps) => {
           />
         )}
       </Box>
-    </Box>
+    </ContentLayout>
   );
 };
 

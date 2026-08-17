@@ -7,7 +7,6 @@ import {
   IParatextState,
   IImportExportState,
   IAuthState,
-  IConvertBlobState,
 } from '.';
 
 export interface IState {
@@ -22,5 +21,4 @@ export interface IState {
   paratext: IParatextState;
   importexport: IImportExportState;
   auth: IAuthState;
-  convertBlob: IConvertBlobState;
 }

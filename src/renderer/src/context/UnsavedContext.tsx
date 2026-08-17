@@ -6,7 +6,7 @@ import { IMainStrings } from '../model';
 import { waitForIt } from '../utils/waitForIt';
 import { useSnackBar } from '../hoc/SnackBar';
 import Confirm from '../components/AlertDialog';
-import { useSelector } from 'react-redux';
+import { shallowEqual, useSelector } from 'react-redux';
 import { mainSelector } from '../selector';
 
 export interface IRowData {}
@@ -24,7 +24,6 @@ const initState = {
   checkSavedFn: (method: () => void) => {
     return;
   },
-  t: {} as IMainStrings,
   handleSaveConfirmed: () => {},
   handleSaveRefused: () => {},
   toolChanged: (toolId: string, changed?: boolean, toolErr?: string) => {},
@@ -36,6 +35,8 @@ const initState = {
     resolvedMethod: (() => any) | undefined,
     waitCount: number
   ) => {},
+  /** Drop all pending tool change/save flags (e.g. discard / unmounted tools). */
+  forceClearPending: () => {},
   anySaving: (butMyTooId?: string) => false,
   saveRequested: (toolId: string) => false,
   clearRequested: (toolId: string) => false,
@@ -50,19 +51,21 @@ interface IContext {
   setState: React.Dispatch<React.SetStateAction<ICtxState>>;
 }
 
-const UnsavedContext = React.createContext({} as IContext);
+const UnsavedContext = React.createContext({
+  state: initState as ICtxState,
+  setState: () => {},
+} as IContext);
 
 const UnsavedProvider = (props: PropsWithChildren) => {
-  const t: IMainStrings = useSelector(mainSelector);
+  const t: IMainStrings = useSelector(mainSelector, shallowEqual);
   const [, setBusy] = useGlobal('remoteBusy');
   const [alertOpen, setAlertOpen] = useGlobal('alertOpen'); //global because planSheet checks it //verified this is not used in a function 2/18/25
-  const saveConfirm = React.useRef<() => any>();
+  const saveConfirm = React.useRef<(() => any) | undefined>(undefined);
   const { showMessage } = useSnackBar();
   const [state, setState] = useState({
     ...initState,
-    t,
   });
-  const saveErr = useRef<string>();
+  const saveErr = useRef<string | undefined>(undefined);
   const [saveResult, setSaveResult] = useGlobal('saveResult'); //verified this is not used in a function 2/18/25
   const [, setChangedx] = useGlobal('changed');
   const changedRef = useRef(false);
@@ -157,6 +160,17 @@ const UnsavedProvider = (props: PropsWithChildren) => {
     setComplete(0);
     setSaveResult(saveErr.current);
     saveErr.current = '';
+  };
+
+  const forceClearPending = () => {
+    if (Object.keys(toolsChangedRef.current).length === 0) return;
+    toolsChangedRef.current = {};
+    setToolsChanged({});
+    setChanged(false);
+    setBusy(false);
+    setComplete(0);
+    saveErr.current = '';
+    setSaveResult('');
   };
 
   const saveError = () => saveErr.current || '';
@@ -291,7 +305,8 @@ const UnsavedProvider = (props: PropsWithChildren) => {
     saveConfirm.current = undefined;
     setAlertOpen(false);
     startClear();
-    finishConfirmed(savedMethod, 18);
+    forceClearPending();
+    finishConfirmed(savedMethod, 200);
   };
 
   const finishConfirmed = (
@@ -309,7 +324,7 @@ const UnsavedProvider = (props: PropsWithChildren) => {
     showMessage(t.saving);
     startSave();
     setAlertOpen(false);
-    finishConfirmed(savedMethod, 18);
+    finishConfirmed(savedMethod, 200);
   };
 
   return (
@@ -325,6 +340,7 @@ const UnsavedProvider = (props: PropsWithChildren) => {
           saveCompleted,
           clearCompleted,
           waitForSave,
+          forceClearPending,
           anySaving,
           toolChanged,
           saveRequested,

@@ -70,12 +70,9 @@ export const localSync = async ({
       const passage = passages.find((p) => p.id === passageId);
       if (passage)
         ready.push({
-          passage: passage,
+          passage,
           mediaId: pr.id,
-          transcription: getTranscription(passage.id, artifactId).replace(
-            '\n',
-            ' '
-          ),
+          transcription: getTranscription(passage.id, artifactId),
         });
     }
   });
@@ -91,7 +88,6 @@ export const localSync = async ({
         chapChg[k] = [r];
       }
     }
-    parseRef(r.passage);
     const { startChapter, endChapter } = r.passage.attributes;
     if (startChapter !== endChapter && r.transcription.indexOf('\\c') !== -1) {
       const k =

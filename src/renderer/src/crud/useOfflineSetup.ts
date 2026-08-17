@@ -21,15 +21,15 @@ import {
   StandardRecordNormalizer,
 } from '@orbit/records';
 import IndexedDBSource from '@orbit/indexeddb';
-import { ArtifactTypeSlug, useArtifactType } from '.';
+import { ArtifactTypeSlug } from '.';
 import PassageType, { PassageTypeD } from '../model/passageType';
 import { requestedSchema } from '../schema';
+import { NamedRegions } from '../utils';
 
 export const useOfflineSetup = () => {
   const [memory] = useGlobal('memory');
   const [coordinator] = useGlobal('coordinator');
   const backup = coordinator?.getSource('backup') as IndexedDBSource;
-  const { getTypeId } = useArtifactType();
   const rn = memory
     ? new StandardRecordNormalizer({ schema: memory?.schema })
     : null;
@@ -138,14 +138,42 @@ export const useOfflineSetup = () => {
     name: string;
     tool: string;
     artId?: string;
+    namedRegion?: string;
+    spellCheck?: boolean;
   }
 
-  const makeWorkflowProcessSteps = async (process: string, steps: ISteps[]) => {
+  const transcribeSpellCheckDefault = (
+    step: ISteps,
+    pbtId: string,
+    wbtId: string,
+    csId: string
+  ): boolean | undefined => {
+    if (step.tool !== 'transcribe') return undefined;
+    if (step.spellCheck != null) return step.spellCheck;
+    if (!step.artId) return false;
+    if (step.artId === csId) return false;
+    if (step.artId === pbtId || step.artId === wbtId) return true;
+    return false;
+  };
+
+  const makeWorkflowProcessSteps = async (
+    process: string,
+    steps: ISteps[],
+    artIds?: { pbt: string; wbt: string; cs: string }
+  ) => {
     const t = new RecordTransformBuilder();
     const ops = steps.map((step, ix) => {
-      const toolSettings = step.artId
-        ? `, "settings":{"artifactTypeId": "${step.artId}"}`
-        : '';
+      const settings: Record<string, string | boolean> = {};
+      if (step.artId) settings.artifactTypeId = step.artId;
+      if (step.namedRegion) settings.namedRegion = step.namedRegion;
+      const spellDefault =
+        artIds &&
+        transcribeSpellCheckDefault(step, artIds.pbt, artIds.wbt, artIds.cs);
+      if (spellDefault != null) settings.spellCheck = spellDefault;
+      const toolSettings =
+        Object.keys(settings).length > 0
+          ? `, "settings":${JSON.stringify(settings)}`
+          : '';
       let rec = {
         type: 'workflowstep',
         attributes: {
@@ -168,127 +196,186 @@ export const useOfflineSetup = () => {
       q.findRecords('workflowstep')
     )) as WorkflowStep[];
     const offlineRecs = allRecs.filter((r) => !r?.keys?.remoteId);
-    const WBT = getTypeId(
-      ArtifactTypeSlug.WholeBackTranslation,
-      true
-    ) as string;
-    const PBT = getTypeId(
-      ArtifactTypeSlug.PhraseBackTranslation,
-      true
-    ) as string;
-    const RBT = getTypeId(ArtifactTypeSlug.Retell, true) as string;
+    // Step settings identify their artifact type by slug (converted to an id
+    // only at the DB boundary), so seed the offline workflow steps with slugs.
+    const WBT = ArtifactTypeSlug.WholeBackTranslation as string;
+    const PBT = ArtifactTypeSlug.PhraseBackTranslation as string;
+    const RBT = ArtifactTypeSlug.Retell as string;
+    const CS = ArtifactTypeSlug.CarefulSpeech as string;
+    const artIds = { pbt: PBT, wbt: WBT, cs: CS };
     // console.log('WBT', WBT, 'PBT', PBT);
     if (offlineRecs.length === 0) {
-      await makeWorkflowProcessSteps('OBT', [
-        { name: 'Internalize', tool: 'resource' },
-        { name: 'Record', tool: 'record' },
-        { name: 'TermIdentify', tool: 'keyterm' },
-        { name: 'MarkVerses', tool: 'verses' },
-        { name: 'Transcribe', tool: 'transcribe' },
-        { name: 'Review', tool: 'transcribe' },
-        { name: 'ParatextSync', tool: 'paratext' },
-        { name: 'ParatextPeerReview', tool: 'discuss' },
-        { name: 'CommunityTesting', tool: 'community' },
-        { name: 'PhraseBackTranslation', tool: 'phraseBackTranslate' },
-        { name: 'PBTTranscribe', tool: 'transcribe', artId: PBT },
-        { name: 'PBTParatextSync', tool: 'paratext', artId: PBT },
-        { name: 'ConsultantCheck', tool: 'consultantCheck' },
-        { name: 'FinalReview', tool: 'record' },
-        { name: 'FinalReviewText', tool: 'transcribe' },
-        { name: 'Export', tool: 'export' },
-        { name: 'Done', tool: 'done' },
-      ]);
+      await makeWorkflowProcessSteps(
+        'OBT',
+        [
+          { name: 'Internalize', tool: 'resource' },
+          { name: 'Record', tool: 'record' },
+          { name: 'TermIdentify', tool: 'keyterm' },
+          { name: 'MarkVerses', tool: 'verses' },
+          { name: 'Transcribe', tool: 'transcribe' },
+          { name: 'Review', tool: 'transcribe' },
+          { name: 'ParatextSync', tool: 'paratext' },
+          { name: 'ParatextPeerReview', tool: 'discuss' },
+          { name: 'CommunityTesting', tool: 'community' },
+          { name: 'PhraseBackTranslation', tool: 'phraseBackTranslate' },
+          { name: 'PBTTranscribe', tool: 'transcribe', artId: PBT },
+          { name: 'PBTParatextSync', tool: 'paratext', artId: PBT },
+          { name: 'ConsultantCheck', tool: 'consultantCheck' },
+          { name: 'FinalReview', tool: 'record' },
+          { name: 'FinalReviewText', tool: 'transcribe' },
+          { name: 'Export', tool: 'export' },
+          { name: 'Done', tool: 'done' },
+        ],
+        artIds
+      );
 
-      await makeWorkflowProcessSteps('OBTs', [
-        { name: 'Record', tool: 'record' },
-        { name: 'Export', tool: 'export' },
-      ]);
+      await makeWorkflowProcessSteps(
+        'OBTs',
+        [
+          { name: 'Record', tool: 'record' },
+          { name: 'Export', tool: 'export' },
+        ],
+        artIds
+      );
 
-      await makeWorkflowProcessSteps('OBTr', [
-        { name: 'Internalize', tool: 'resource' },
-        { name: 'Record', tool: 'record' },
-        { name: 'TeamCheck', tool: 'teamCheck' },
-        { name: 'PeerReview', tool: 'teamCheck' },
-        { name: 'CommunityTesting', tool: 'community' },
-        { name: 'WholeBackTranslation', tool: 'wholeBackTranslate' },
-        { name: 'PhraseBackTranslation', tool: 'phraseBackTranslate' },
-        { name: 'ConsultantCheck', tool: 'consultantCheck' },
-        { name: 'Export', tool: 'export' },
-        { name: 'Done', tool: 'done' },
-      ]);
+      await makeWorkflowProcessSteps(
+        'OBTr',
+        [
+          { name: 'Internalize', tool: 'resource' },
+          { name: 'Record', tool: 'record' },
+          { name: 'TeamCheck', tool: 'teamCheck' },
+          { name: 'PeerReview', tool: 'teamCheck' },
+          { name: 'CommunityTesting', tool: 'community' },
+          { name: 'WholeBackTranslation', tool: 'wholeBackTranslate' },
+          { name: 'PhraseBackTranslation', tool: 'phraseBackTranslate' },
+          { name: 'ConsultantCheck', tool: 'consultantCheck' },
+          { name: 'Export', tool: 'export' },
+          { name: 'Done', tool: 'done' },
+        ],
+        artIds
+      );
 
-      await makeWorkflowProcessSteps('OBTo', [
-        { name: 'Internalize', tool: 'resource' },
-        { name: 'Record', tool: 'record' },
-        { name: 'TermIdentify', tool: 'keyterm' },
-        { name: 'PeerReview', tool: 'teamCheck' },
-        { name: 'PhraseBackTranslation', tool: 'phraseBackTranslate' },
-        { name: 'ConsultantCheck1', tool: 'consultantCheck' },
-        { name: 'CommunityTesting', tool: 'community' },
-        {
-          name: 'RetellBackTranslation',
-          tool: 'phraseBackTranslate',
-          artId: RBT,
-        },
-        { name: 'PhraseBackTranslation', tool: 'phraseBackTranslate' },
-        { name: 'PBTTranscribe', tool: 'transcribe', artId: PBT },
-        { name: 'RetellTranscribe', tool: 'paratext', artId: RBT },
-        { name: 'ConsultantCheck2', tool: 'consultantCheck' },
-        { name: 'FinalReview', tool: 'discuss' },
-        { name: 'FinalRecording', tool: 'discuss' },
-        { name: 'Export', tool: 'export' },
-        { name: 'Done', tool: 'done' },
-      ]);
+      await makeWorkflowProcessSteps(
+        'OBTo',
+        [
+          { name: 'Internalize', tool: 'resource' },
+          { name: 'Record', tool: 'record' },
+          { name: 'TermIdentify', tool: 'keyterm' },
+          { name: 'PeerReview', tool: 'teamCheck' },
+          { name: 'PhraseBackTranslation', tool: 'phraseBackTranslate' },
+          { name: 'ConsultantCheck1', tool: 'consultantCheck' },
+          { name: 'CommunityTesting', tool: 'community' },
+          {
+            name: 'RetellBackTranslation',
+            tool: 'phraseBackTranslate',
+            artId: RBT,
+          },
+          { name: 'PhraseBackTranslation', tool: 'phraseBackTranslate' },
+          { name: 'PBTTranscribe', tool: 'transcribe', artId: PBT },
+          { name: 'RetellTranscribe', tool: 'paratext', artId: RBT },
+          { name: 'ConsultantCheck2', tool: 'consultantCheck' },
+          { name: 'FinalReview', tool: 'discuss' },
+          { name: 'FinalRecording', tool: 'discuss' },
+          { name: 'Export', tool: 'export' },
+          { name: 'Done', tool: 'done' },
+        ],
+        artIds
+      );
 
-      await makeWorkflowProcessSteps('OBS', [
-        { name: 'Internalize', tool: 'resource' },
-        { name: 'Record', tool: 'record' },
-        { name: 'TeamCheck', tool: 'teamCheck' },
-        { name: 'PeerReview', tool: 'teamCheck' },
-        { name: 'CommunityTest1', tool: 'community' },
-        { name: 'CommunityTest2', tool: 'community' },
-        { name: 'BackTranslation', tool: 'phraseBackTranslate' },
-        { name: 'ConsultantCheck', tool: 'consultantCheck' },
-        { name: 'PreliminaryApproval', tool: 'export' },
-        { name: 'FinalReview', tool: 'discuss' },
-        { name: 'FinalRecording', tool: 'discuss' },
-        { name: 'Export', tool: 'export' },
-        { name: 'Done', tool: 'done' },
-      ]);
+      await makeWorkflowProcessSteps(
+        'OBS',
+        [
+          { name: 'Internalize', tool: 'resource' },
+          { name: 'Record', tool: 'record' },
+          { name: 'TeamCheck', tool: 'teamCheck' },
+          { name: 'PeerReview', tool: 'teamCheck' },
+          { name: 'CommunityTest1', tool: 'community' },
+          { name: 'CommunityTest2', tool: 'community' },
+          { name: 'BackTranslation', tool: 'phraseBackTranslate' },
+          { name: 'ConsultantCheck', tool: 'consultantCheck' },
+          { name: 'PreliminaryApproval', tool: 'export' },
+          { name: 'FinalReview', tool: 'discuss' },
+          { name: 'FinalRecording', tool: 'discuss' },
+          { name: 'Export', tool: 'export' },
+          { name: 'Done', tool: 'done' },
+        ],
+        artIds
+      );
 
-      await makeWorkflowProcessSteps('draft', [
-        { name: 'Internalize', tool: 'resource' },
-        { name: 'Record', tool: 'record' },
-        { name: 'TeamCheck', tool: 'teamCheck' },
-        { name: 'MarkVerses', tool: 'verses' },
-        { name: 'Transcribe', tool: 'transcribe' },
-        { name: 'Review', tool: 'transcribe' },
-        { name: 'ParatextSync', tool: 'paratext' },
-        { name: 'Done', tool: 'done' },
-      ]);
+      await makeWorkflowProcessSteps(
+        'draft',
+        [
+          { name: 'Internalize', tool: 'resource' },
+          { name: 'Record', tool: 'record' },
+          { name: 'TeamCheck', tool: 'teamCheck' },
+          { name: 'MarkVerses', tool: 'verses' },
+          { name: 'Transcribe', tool: 'transcribe' },
+          { name: 'Review', tool: 'transcribe' },
+          { name: 'ParatextSync', tool: 'paratext' },
+          { name: 'Done', tool: 'done' },
+        ],
+        artIds
+      );
 
-      await makeWorkflowProcessSteps('transcriber', [
-        { name: 'Record', tool: 'record' },
-        { name: 'MarkVerses', tool: 'verses' },
-        { name: 'Transcribe', tool: 'transcribe' },
-        { name: 'ParatextSync', tool: 'paratext' },
-        { name: 'Export', tool: 'export' },
-        { name: 'Done', tool: 'done' },
-      ]);
+      await makeWorkflowProcessSteps(
+        'transcriber',
+        [
+          { name: 'Record', tool: 'record' },
+          { name: 'MarkVerses', tool: 'verses' },
+          { name: 'Transcribe', tool: 'transcribe' },
+          { name: 'ParatextSync', tool: 'paratext' },
+          { name: 'Export', tool: 'export' },
+          { name: 'Done', tool: 'done' },
+        ],
+        artIds
+      );
+    }
+    if (
+      offlineRecs.filter((w) => w.attributes.process === 'bold').length === 0
+    ) {
+      await makeWorkflowProcessSteps(
+        'bold',
+        [
+          { name: 'Prompt', tool: 'prompt' },
+          { name: 'Record', tool: 'record' },
+          {
+            name: 'CarefulSpeech',
+            tool: 'carefulSpeech',
+            artId: CS,
+          },
+          {
+            name: 'LwcTranslation',
+            tool: 'phraseBackTranslate',
+            artId: PBT,
+            namedRegion: NamedRegions.BackTranslation,
+          },
+          {
+            name: 'CarefulTranscription',
+            tool: 'transcribe',
+            artId: CS,
+          },
+          { name: 'LwcTranscription', tool: 'transcribe', artId: PBT },
+        ],
+        artIds
+      );
     }
     if (
       offlineRecs.filter((w) => w.attributes.process === 'Render').length === 0
     ) {
-      await makeWorkflowProcessSteps('Render', [
-        { name: 'Transcribe', tool: 'transcribe' },
-        { name: 'ParatextSync', tool: 'paratext' },
-        { name: 'WholeBackTranslation', tool: 'wholeBackTranslate' },
-        { name: 'WBTTranscribe', tool: 'transcribe', artId: WBT },
-        { name: 'WBTParatextSync', tool: 'paratext', artId: WBT },
-        { name: 'PhraseBackTranslation', tool: 'phraseBackTranslate' },
-        { name: 'PBTTranscribe', tool: 'transcribe', artId: PBT },
-        { name: 'PBTParatextSync', tool: 'paratext', artId: PBT },
-      ]);
+      await makeWorkflowProcessSteps(
+        'Render',
+        [
+          { name: 'Transcribe', tool: 'transcribe' },
+          { name: 'ParatextSync', tool: 'paratext' },
+          { name: 'WholeBackTranslation', tool: 'wholeBackTranslate' },
+          { name: 'WBTTranscribe', tool: 'transcribe', artId: WBT },
+          { name: 'WBTParatextSync', tool: 'paratext', artId: WBT },
+          { name: 'PhraseBackTranslation', tool: 'phraseBackTranslate' },
+          { name: 'PBTTranscribe', tool: 'transcribe', artId: PBT },
+          { name: 'PBTParatextSync', tool: 'paratext', artId: PBT },
+        ],
+        artIds
+      );
     }
   };
 
@@ -330,14 +417,15 @@ export const useOfflineSetup = () => {
     if (offlineRecs.length === 0) {
       const t = new RecordTransformBuilder();
       const ops = [
-        'activity',
-        'backtranslation',
-        'comment',
-        'qanda',
-        'resource',
-        'retell',
-        'sharedresource',
-        'projectresource',
+        ArtifactTypeSlug.Activity,
+        ArtifactTypeSlug.PhraseBackTranslation,
+        ArtifactTypeSlug.CarefulSpeech,
+        ArtifactTypeSlug.Comment,
+        ArtifactTypeSlug.QandA,
+        ArtifactTypeSlug.Resource,
+        ArtifactTypeSlug.Retell,
+        ArtifactTypeSlug.SharedResource,
+        ArtifactTypeSlug.ProjectResource,
       ].map((n) => {
         let rec = {
           type: 'artifacttype',
@@ -353,7 +441,10 @@ export const useOfflineSetup = () => {
     }
     if (offlineRecs.length < 10) {
       const t = new RecordTransformBuilder();
-      const ops = ['intellectualproperty', 'wholebacktranslation'].map((n) => {
+      const ops = [
+        ArtifactTypeSlug.IntellectualProperty,
+        ArtifactTypeSlug.WholeBackTranslation,
+      ].map((n) => {
         let rec = {
           type: 'artifacttype',
           attributes: {
@@ -375,7 +466,10 @@ export const useOfflineSetup = () => {
     const offlineRecs = allRecs.filter((r) => !r?.keys?.remoteId);
     if (offlineRecs.length < 10) {
       const t = new RecordTransformBuilder();
-      const ops = ['intellectualproperty', 'wholebacktranslation'].map((n) => {
+      const ops = [
+        ArtifactTypeSlug.IntellectualProperty,
+        ArtifactTypeSlug.WholeBackTranslation,
+      ].map((n) => {
         let rec = {
           type: 'artifacttype',
           attributes: {
@@ -397,16 +491,18 @@ export const useOfflineSetup = () => {
     const offlineRecs = allRecs.filter((r) => !r?.keys?.remoteId);
     if (offlineRecs.length < 10) {
       const t = new RecordTransformBuilder();
-      const ops = ['title', 'graphic'].map((n) => {
-        let rec = {
-          type: 'artifacttype',
-          attributes: {
-            typename: n,
-          },
-        } as ArtifactType;
-        rec = rn?.normalizeRecord(rec) as ArtifactTypeD;
-        return t.addRecord(rec);
-      });
+      const ops = [ArtifactTypeSlug.Title, ArtifactTypeSlug.Graphic].map(
+        (n) => {
+          let rec = {
+            type: 'artifacttype',
+            attributes: {
+              typename: n,
+            },
+          } as ArtifactType;
+          rec = rn?.normalizeRecord(rec) as ArtifactTypeD;
+          return t.addRecord(rec);
+        }
+      );
       await backup.sync(() => ops);
       await memory.sync(() => ops);
     }

@@ -16,7 +16,7 @@ export const useHasParatext = (): { hasParatext: boolean; ptPath: string } => {
   const [ptPath, setPtPath] = useState('');
   const [hasParatext, setHasParatext] = useState(false);
   const [isOffline] = useGlobal('offline'); //verified this is not used in a function 2/18/25
-  const { accessToken } = useContext(TokenContext).state;
+  const accessToken = useContext(TokenContext)?.state?.accessToken ?? null;
   const [errorReporter] = useGlobal('errorReporter');
   const paratext_username = useSelector(
     (state: IState) => state.paratext.username

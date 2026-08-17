@@ -10,7 +10,7 @@ export interface AudioAlignment {
           scheme: 'vtt-timecode';
           docid: '42LUK/024/ENGSEB2-LUK-24_13-35v1.mp3';
         },
-        { scheme: 'u23003' },
+        { scheme: 'usfm-scripture-reference' },
       ];
       records: [
         { references: [['00:03.756 --> 00:05.604'], ['LUK 24:13-15']] },
@@ -27,7 +27,7 @@ export interface AudioAlignment {
           scheme: 'vtt-timecode';
           docid: '42LUK/024/ENGSEB2-LUK-24_36-53v1.mp3';
         },
-        { scheme: 'u23003' },
+        { scheme: 'usfm-scripture-reference' },
       ];
       records: [
         { references: [['00:03.756 --> 00:05.604'], ['LUK 24:36-37']] },
@@ -44,7 +44,7 @@ export interface AudioAlignment {
           scheme: 'vtt-timecode';
           docid: '42LUK/024/ENGSEB2-LUK-Audio Note- hearts burningv1.mp3';
         },
-        { scheme: 'u23003' },
+        { scheme: 'usfm-scripture-reference' },
       ];
       records: [{ references: [['00:16.671 --> 00:28.805'], ['LUK 24:53!f']] }];
     },

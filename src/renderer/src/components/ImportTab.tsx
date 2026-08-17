@@ -1,5 +1,6 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import { useEffect, useState, useContext, useRef, useMemo } from 'react';
+import { flushSync } from 'react-dom';
 import { TokenContext } from '../context/TokenProvider';
 import { errorStatus, IAxiosStatus } from '../store/AxiosStatus';
 import {
@@ -16,6 +17,7 @@ import {
   localizeActivityState,
   IActivityStateStrings,
   IApiError,
+  OrganizationD,
 } from '../model';
 import Confirm from './AlertDialog';
 import {
@@ -31,6 +33,14 @@ import {
   DialogActions,
   styled,
   SxProps,
+  RadioGroup,
+  Radio,
+  FormControlLabel,
+  FormControl,
+  TextField,
+  MenuItem,
+  CircularProgress,
+  Box,
 } from '@mui/material';
 import Memory from '@orbit/memory';
 import JSONAPISource from '@orbit/jsonapi';
@@ -38,7 +48,7 @@ import { shallowEqual } from 'react-redux';
 import * as actions from '../store';
 import MediaUpload from './MediaUpload';
 import { UploadType } from './UploadType';
-import { useSnackBar } from '../hoc/SnackBar';
+import { useSnackBar, AlertSeverity } from '../hoc/SnackBar';
 import { useElectronImport } from '../routes/ElectronImport';
 import { useGlobal } from '../context/useGlobal';
 import {
@@ -49,7 +59,7 @@ import {
   passageDescText,
 } from '../crud';
 import { isElectron } from '../../api-variable';
-import { HeadHeight } from '../App';
+import { HeadHeight } from '../layout';
 import {
   localUserKey,
   LocalKey,
@@ -65,7 +75,8 @@ import { useSelector } from 'react-redux';
 import { activitySelector, importSelector, sharedSelector } from '../selector';
 import { useDispatch } from 'react-redux';
 import {
-  ImportProjectFromElectronProps,
+  ImportProjectITFFromElectronProps,
+  ImportProjectFromExternalProps,
   ImportProjectToElectronProps,
   ImportSyncFromElectronProps,
 } from '../store';
@@ -76,6 +87,19 @@ import {
   type GridColumnVisibilityModel,
   type GridSortModel,
 } from '@mui/x-data-grid';
+import { useAdminTeams } from './useAdminTeams';
+import BurritoUploadDialog from './BurritoUpload';
+import { MainAPI } from '@model/main-api';
+import {
+  buildStructure,
+  WrapperStructure,
+} from '../utils/parseBurritoMetadata';
+import { convertWrapperToPTFs } from '../utils/burritoConversion';
+import FilterContent from './FilterContent';
+import { preprocessTextTranslationBurritoToUsfm } from '../burrito/preprocessTextTranslationBurritoToUsfm';
+import { readItfEmbeddedProject } from '../utils/readItfEmbeddedProject';
+
+const ipc = window?.api as MainAPI;
 
 const headerProps = {
   display: 'flex',
@@ -83,11 +107,63 @@ const headerProps = {
   justifyContent: 'center',
 } as SxProps;
 
+/** Successful import/sync puts a JSON change report in errMsg; hide raw JSON and malformed fragments in titles/messages. */
+function userVisibleImportErrMsg(errMsg: string | undefined): string {
+  const raw = errMsg?.trim() ?? '';
+  if (!raw) return '';
+  if (tryParseJSON(raw) !== false) return '';
+  const lead = raw.trimStart();
+  if (lead.startsWith('[') || lead.startsWith('{')) return '';
+  return raw;
+}
+
+interface ITeamSelectorProps {
+  selectedTeamId: string;
+  onTeamChange: (teamId: string) => void;
+  label?: string;
+  includeNewTeam?: boolean;
+  teams: OrganizationD[];
+  selectLabel?: string;
+  createNewLabel?: string;
+}
+
+export const TeamSelector = (props: ITeamSelectorProps) => {
+  const {
+    selectedTeamId,
+    onTeamChange,
+    label,
+    includeNewTeam = true,
+    teams,
+    selectLabel,
+    createNewLabel,
+  } = props;
+  return (
+    <FormControl fullWidth sx={{ mt: 2, mb: 2 }}>
+      <TextField
+        select
+        label={label || selectLabel}
+        value={selectedTeamId}
+        onChange={(e) => onTeamChange(e.target.value)}
+        variant="outlined"
+      >
+        {includeNewTeam && (
+          <MenuItem value="new">{createNewLabel || 'Create New Team'}</MenuItem>
+        )}
+        {teams.map((team) => (
+          <MenuItem key={team.id} value={team.id}>
+            {team.attributes.name}
+          </MenuItem>
+        ))}
+      </TextField>
+    </FormControl>
+  );
+};
+
 const StyledDialog = styled(Dialog)<DialogProps>(({ theme }) => ({
   '& .MuiDialog-paper': {
     maxWidth: '90%',
     minWidth: '600px',
-    minHeight: '80%',
+    maxHeight: '85%',
   },
   '& .MuiTable-root': {
     tableLayout: 'auto',
@@ -120,10 +196,12 @@ interface IProps {
   syncBuffer?: Buffer | undefined;
   syncFile?: string | undefined;
   isOpen: boolean;
+  offerPtf: boolean;
   onOpen: (val: boolean) => void;
 }
 export function ImportTab(props: IProps) {
-  const { isOpen, onOpen, project, planName, syncBuffer, syncFile } = props;
+  const { isOpen, onOpen, project, planName, syncBuffer, syncFile, offerPtf } =
+    props;
   const t: IImportStrings = useSelector(importSelector, shallowEqual);
   const ta: IActivityStateStrings = useSelector(activitySelector, shallowEqual);
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
@@ -139,11 +217,15 @@ export function ImportTab(props: IProps) {
   const importComplete = () => dispatch(actions.importComplete() as any);
   const importProjectToElectron = (props: ImportProjectToElectronProps) =>
     dispatch(actions.importProjectToElectron(props) as any);
-  const importProjectFromElectron = (props: ImportProjectFromElectronProps) =>
-    dispatch(actions.importProjectFromElectron(props) as any);
+  const importProjectITFFromElectron = (
+    props: ImportProjectITFFromElectronProps
+  ) => dispatch(actions.importProjectITFFromElectron(props) as any);
+  const importProjectFromExternal = (props: ImportProjectFromExternalProps) =>
+    dispatch(actions.importFromExternal(props) as any);
   const importSyncFromElectron = (props: ImportSyncFromElectronProps) =>
     dispatch(actions.importSyncFromElectron(props) as any);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
+  const locale = useSelector((state: IState) => state.strings.lang);
   const [, setBusy] = useGlobal('importexportBusy');
   const importingRef = useRef(false);
   const [coordinator] = useGlobal('coordinator');
@@ -152,18 +234,46 @@ export function ImportTab(props: IProps) {
   const [errorReporter] = useGlobal('errorReporter');
   const [user] = useGlobal('user');
   const [isOffline] = useGlobal('offline'); //verified this is not used in a function 2/18/25
-  const token = useContext(TokenContext).state.accessToken;
+  const token = useContext(TokenContext)?.state?.accessToken ?? null;
   const { showMessage } = useSnackBar();
   const [changeData, setChangeDatax] = useState(Array<IRow>());
   const changeDataRef = useRef(changeData);
   const [importTitle, setImportTitle] = useState('');
-  const [confirmAction, setConfirmAction] = useState<string | JSX.Element>('');
+  const [confirmAction, setConfirmAction] = useState<
+    string | React.JSX.Element
+  >('');
   const [fileName, setFileName] = useState<string>('');
   const [importProject, setImportProject] = useState<string>('');
   const [uploadVisible, setUploadVisible] = useState(false);
+  const [filterVisible, setFilterVisible] = useState(false);
+  const [filterData, setFilterData] = useState<WrapperStructure>({
+    label: '',
+    books: [],
+  });
+  const [selectedImportType, setSelectedImportType] = useState<UploadType>(
+    UploadType.PTF
+  );
+  const [burritoPrepareProgress, setBurritoPrepareProgress] = useState<
+    | {
+        phase: 'convert';
+        bookIndex: number;
+        bookTotal: number;
+        bookLabel: string;
+      }
+    | {
+        phase: 'read';
+        fileIndex: number;
+        fileTotal: number;
+      }
+    | null
+  >(null);
+  const [showImportTypeSelection, setShowImportTypeSelection] = useState(false);
+  const [selectedTeamId, setSelectedTeamId] = useState<string>('new');
+  const teams = useAdminTeams();
   const { getOrganizedBy } = useOrganizedBy();
   const forceDataChanges = useDataChanges();
   const { handleElectronImport, getElectronImportData } = useElectronImport();
+  const getImportFileRef = useRef(false);
   const headerRow = () =>
     t.plan +
     '\t' +
@@ -197,6 +307,28 @@ export function ImportTab(props: IProps) {
         showMessage(t.copyfail);
       });
   };
+
+  const onFilterVisible = (visible: boolean) => {
+    setFilterVisible(visible);
+  };
+  const uploadCancel = () => {
+    setUploadVisible(false);
+    handleClose();
+  };
+  const filterSubmit = (data: WrapperStructure | null) => {
+    if (data) {
+      setFilterData(data);
+    }
+    if (filterResolveRef.current) {
+      filterResolveRef.current(data);
+      filterResolveRef.current = null; // Clean up
+    }
+    onFilterVisible(false);
+  };
+  const filterResolveRef = useRef<
+    ((data: WrapperStructure | null) => void) | null
+  >(null);
+
   const columns: GridColDef<IRow>[] = [
     { field: 'plan', headerName: t.plan, width: 200 },
     { field: 'section', headerName: getOrganizedBy(true), width: 100 },
@@ -235,30 +367,34 @@ export function ImportTab(props: IProps) {
     setChangeDatax(data);
   };
   useEffect(() => {
-    const electronImport = async () => {
-      const importData = await getElectronImportData(project || '');
-      if (importData.valid) {
-        setFileName(importData.fileName);
-        setImportProject(importData.projectName);
-        if (importData.warnMsg) {
-          setConfirmAction(importData.warnMsg);
-        } else {
-          //no warning...so set confirmed
-          handleActionConfirmed();
-        }
-      } else handleActionRefused();
-    };
-
     setImportTitle('');
     setChangeData([]);
-    if (isElectron) {
-      if (syncFile && syncBuffer) uploadSyncITF(syncBuffer, syncFile);
-      //or do I want isLoggedIn...or are they the same???
-      //if offline they should actually get to choose between replacing the project, or uploading someone else's changes...TODO
-      else if (isOffline) electronImport();
-      else setUploadVisible(true); //I'm online so allow upload of ITF
-    } else setUploadVisible(true);
+    if (isElectron && syncFile && syncBuffer) {
+      uploadSyncITF(syncBuffer, syncFile);
+    } // Need to ask user if they want to import PTF or ITF
+    else if (offerPtf) setShowImportTypeSelection(true);
+    else {
+      setSelectedImportType(isOffline ? UploadType.PTF : UploadType.ITF);
+      if (!getImportFileRef.current)
+        getImportFile(isOffline ? UploadType.PTF : UploadType.ITF);
+    }
   }, []);
+
+  const getImportFile = async (type: UploadType) => {
+    setShowImportTypeSelection(false);
+    if (type === UploadType.PTF && isOffline) {
+      // For offline PTF, we use electronImport which uses the Electron file picker
+      getImportFileRef.current = true;
+      await electronImport();
+      getImportFileRef.current = false;
+    } else {
+      setUploadVisible(true);
+    }
+  };
+
+  const handleImportTypeSelected = () => {
+    getImportFile(selectedImportType);
+  };
 
   const setImporting = (importing: boolean, errMsg?: string) => {
     importingRef.current = importing;
@@ -282,27 +418,111 @@ export function ImportTab(props: IProps) {
     handleClose();
   };
 
-  const uploadITF = (files: File[]) => {
+  const electronImport = async () => {
+    const importData = await getElectronImportData(project || '');
+    if (importData.valid) {
+      setFileName(importData.fileName);
+      setImportProject(importData.projectName);
+      if (importData.warnMsg) {
+        setConfirmAction(importData.warnMsg);
+      } else {
+        //no warning...so set confirmed
+        handleActionConfirmed();
+      }
+    } else handleActionRefused();
+  };
+
+  const handleFileUpload = (
+    files: File[],
+    importAction: (props: any) => void,
+    props: Record<string, any>
+  ) => {
     if (!files || files.length === 0) {
       showMessage(t.noFile);
-    } else {
-      if (project) {
-        setImporting(true);
-        importProjectFromElectron({
-          files,
-          projectid: remoteIdNum(
-            'project',
-            project,
+      return;
+    }
+    setImporting(true);
+    importAction({
+      files,
+      ...props,
+    });
+    setUploadVisible(false);
+  };
+
+  const uploadPTFOnline = (files: File[]) => {
+    const teamIdNum =
+      selectedTeamId === 'new'
+        ? 0
+        : remoteIdNum(
+            'organization',
+            selectedTeamId,
             memory?.keyMap as RecordKeyMap
-          ),
-          token,
+          );
+    handleFileUpload(files, importProjectFromExternal, {
+      teamId: teamIdNum,
+      token,
+      errorReporter,
+      pendingmsg: t.importPending,
+      fileProcessingMsg: t.fileProcessing,
+      completemsg: t.importComplete,
+      newTeamChainFailed: t.newTeamChainFailed,
+    });
+  };
+
+  const uploadITF = async (files: File[]) => {
+    if (!files || files.length === 0) {
+      showMessage(t.noFile);
+      return false;
+    }
+
+    // Home/Welcome import has no `project` prop → sync endpoint can succeed without a
+    // 406-style error. Preflight the ITF to ensure it references a project present in memory.
+    if (!project && memory) {
+      try {
+        const embedded = await readItfEmbeddedProject(files[0]);
+        if (!embedded) {
+          showMessage(t.invalidITF, AlertSeverity.Error);
+          return false;
+        }
+
+        const projects = memory.cache.query((q) => q.findRecords('project')) as
+          | Project[]
+          | undefined;
+
+        const embeddedGuid =
+          remoteIdGuid('project', embedded.id, memory.keyMap as RecordKeyMap) ||
+          embedded.id;
+
+        const found = projects?.some((p) => p.id === embeddedGuid);
+        if (!found) {
+          const display = embedded.name || embedded.id;
+          showMessage(
+            t.projectNotFound.replace('{0}', display),
+            AlertSeverity.Error
+          );
+          return false;
+        }
+      } catch (err) {
+        logError(
+          Severity.error,
           errorReporter,
-          pendingmsg: t.importPending,
-          completemsg: t.importComplete,
-        });
+          err instanceof Error ? err : String(err)
+        );
+        showMessage(t.invalidITF, AlertSeverity.Error);
+        return false;
       }
     }
-    setUploadVisible(false);
+
+    handleFileUpload(files, importProjectITFFromElectron, {
+      projectid: project
+        ? remoteIdNum('project', project, memory?.keyMap as RecordKeyMap)
+        : 0,
+      token,
+      errorReporter,
+      pendingmsg: t.importPending,
+      completemsg: t.importComplete,
+    });
+    return true;
   };
   const uploadSyncITF = (buffer: Buffer, fileName: string) => {
     setImportTitle(t.importSyncUp);
@@ -317,9 +537,125 @@ export function ImportTab(props: IProps) {
     });
   };
 
-  const uploadCancel = () => {
-    setUploadVisible(false);
-    handleClose();
+  const getFilterConfirmation = (
+    struct: WrapperStructure
+  ): Promise<WrapperStructure | null> => {
+    return new Promise((resolve) => {
+      setFilterData(struct);
+      onFilterVisible(true);
+      filterResolveRef.current = resolve; // Store resolve function
+    });
+  };
+
+  const uploadBurrito = async (directories: string[], isZip: boolean) => {
+    const teamIdNum =
+      selectedTeamId === 'new'
+        ? 0
+        : remoteIdNum(
+            'organization',
+            selectedTeamId,
+            memory?.keyMap as RecordKeyMap
+          );
+    try {
+      const ptfPaths = (
+        await Promise.all(
+          directories.flatMap(async (dir): Promise<string[]> => {
+            const struct = await buildStructure(dir, locale);
+
+            setFilterData(struct);
+            setFilterVisible(true);
+            const filteredConfirmed = await getFilterConfirmation(struct);
+            if (!filteredConfirmed) {
+              return [];
+            }
+            const books = filteredConfirmed.books;
+            if (books.length === 0) {
+              return [];
+            }
+
+            // Renderer-only: ensure `textTranslation` contains `text/usfm` so the
+            // Node migration script can populate `mediafile.transcription`.
+            await preprocessTextTranslationBurritoToUsfm(dir);
+
+            flushSync(() => {
+              setBurritoPrepareProgress({
+                phase: 'convert',
+                bookIndex: 1,
+                bookTotal: books.length,
+                bookLabel: books[0]?.label ?? '',
+              });
+            });
+            const ptfPaths = await convertWrapperToPTFs(
+              filteredConfirmed,
+              dir,
+              (p) => {
+                if (p.kind === 'book') {
+                  setBurritoPrepareProgress({
+                    phase: 'convert',
+                    bookIndex: p.index,
+                    bookTotal: p.total,
+                    bookLabel: p.bookLabel,
+                  });
+                }
+              }
+            );
+            if (isZip) {
+              await ipc.deleteFolder(dir);
+            }
+            return ptfPaths;
+          })
+        )
+      ).flat();
+
+      if (ptfPaths.length === 0) {
+        setBurritoPrepareProgress(null);
+        showMessage(t.noFile);
+        return;
+      }
+
+      flushSync(() => {
+        setBurritoPrepareProgress({
+          phase: 'read',
+          fileIndex: 1,
+          fileTotal: ptfPaths.length,
+        });
+      });
+
+      const ptfs = await Promise.all(
+        ptfPaths.map(async (filePath, idx) => {
+          setBurritoPrepareProgress({
+            phase: 'read',
+            fileIndex: idx + 1,
+            fileTotal: ptfPaths.length,
+          });
+          const content = await ipc.read(filePath);
+          const fileName = filePath.split(/[/\\]/).pop() || 'unknown';
+          const buffer = new Uint8Array(content as Uint8Array);
+          return new File([buffer], fileName);
+        })
+      );
+
+      setBurritoPrepareProgress(null);
+      handleFileUpload(ptfs, importProjectFromExternal, {
+        teamId: teamIdNum,
+        token,
+        errorReporter,
+        pendingmsg: t.importPending,
+        fileProcessingMsg: t.fileProcessing,
+        completemsg: t.importComplete,
+        newTeamChainFailed: t.newTeamChainFailed,
+      });
+
+      for (const ptfPath of ptfPaths) {
+        await ipc.delete(ptfPath);
+      }
+    } catch (err) {
+      setBurritoPrepareProgress(null);
+      showMessage(
+        err instanceof Error ? err.message : t.unknownError,
+        AlertSeverity.Error
+      );
+    }
   };
 
   const translateError = (err: IAxiosStatus): string => {
@@ -345,6 +681,8 @@ export function ImportTab(props: IProps) {
         return t.invalidITF + ' ' + err.errMsg;
       case 450:
         return t.invalidProject;
+      case 413:
+        return t.fileTooLarge.replace('{0}', err.errMsg);
     }
     return t.unknownError + ' ' + err.errMsg;
   };
@@ -707,8 +1045,11 @@ export function ImportTab(props: IProps) {
           //import completed ok but might have message
           const chdata = getChangeData(importStatus.errMsg);
           setChangeData([...changeData].concat(chdata));
+          const syncExtra = userVisibleImportErrMsg(importStatus.errMsg);
           setImportTitle(
-            chdata.length > 0 ? t.onlineChangeReport : t.importSyncDown
+            chdata.length > 0
+              ? t.onlineChangeReport
+              : t.importSyncDown + ' ' + syncExtra
           );
           if (remote) forceDataChanges().then(() => setImporting(false));
           else {
@@ -722,7 +1063,6 @@ export function ImportTab(props: IProps) {
         handleClose();
       }
     }
-    /* eslint-disable-next-line react-hooks/exhaustive-deps */
   }, [importStatus]);
 
   const handleClose = () => {
@@ -736,10 +1076,8 @@ export function ImportTab(props: IProps) {
 
   const statusMsg = (status: IAxiosStatus | undefined) => {
     if (!status || status.statusMsg === 'Import Complete') return '';
-    return (
-      status?.statusMsg +
-      (status?.errMsg && status?.errMsg !== '[]' ? ': ' + status?.errMsg : '')
-    );
+    const extra = userVisibleImportErrMsg(status.errMsg);
+    return status.statusMsg + (extra ? ': ' + extra : '');
   };
 
   return (
@@ -757,59 +1095,199 @@ export function ImportTab(props: IProps) {
         <div>
           <Typography variant="h5">{importTitle}</Typography>
           <br />
-          <Typography variant="subtitle2" sx={headerProps}>
-            {fileName}
-          </Typography>
-          <Typography variant="h4" sx={headerProps}>
-            {importProject}
-          </Typography>
-          <br />
-          <Typography variant="body1" sx={headerProps}>
-            {statusMsg(importStatus)}
-          </Typography>
-          {changeData.length > 0 && (
-            <ActionRow>
-              <AltButton
-                id="importCopy"
-                key="copy"
-                aria-label={t.copy}
-                onClick={handleCopy}
-                title={t.copy}
-              >
-                {t.copy}
-              </AltButton>
-            </ActionRow>
+          {!showImportTypeSelection && (
+            <>
+              <Typography variant="subtitle2" sx={headerProps}>
+                {fileName}
+              </Typography>
+              <Typography variant="h4" sx={headerProps}>
+                {importProject}
+              </Typography>
+              <br />
+              <Typography variant="body1" sx={headerProps}>
+                {statusMsg(importStatus)}
+              </Typography>
+              {changeData.length > 0 && (
+                <ActionRow>
+                  <AltButton
+                    id="importCopy"
+                    key="copy"
+                    aria-label={t.copy}
+                    onClick={handleCopy}
+                    title={t.copy}
+                  >
+                    {t.copy}
+                  </AltButton>
+                </ActionRow>
+              )}
+              {changeData.length > 0 && (
+                <DataGrid
+                  columns={columns}
+                  rows={sortedRows}
+                  disableColumnSorting
+                  disableRowSelectionOnClick
+                  initialState={{
+                    columns: { columnVisibilityModel },
+                  }}
+                />
+              )}
+              {!importStatus || (
+                <ProgressBar position="fixed" color="inherit">
+                  <LinearProgress variant="indeterminate" />
+                </ProgressBar>
+              )}
+            </>
           )}
-          {changeData.length > 0 && (
-            <DataGrid
-              columns={columns}
-              rows={sortedRows}
-              disableColumnSorting
-              disableRowSelectionOnClick
-              initialState={{
-                columns: { columnVisibilityModel },
-              }}
+          {showImportTypeSelection && (
+            <FormControl component="fieldset" sx={{ mt: 1, mb: 2 }}>
+              <Typography variant="subtitle1" sx={{ mb: 2 }}>
+                {t.selectImportFileType}
+              </Typography>
+              <RadioGroup
+                value={selectedImportType}
+                onChange={(e) =>
+                  setSelectedImportType(parseInt(e.target.value) as UploadType)
+                }
+              >
+                <FormControlLabel
+                  value={UploadType.PTF}
+                  control={<Radio />}
+                  label={!isOffline ? t.externalSource : t.offlineImport}
+                />
+                {selectedImportType === UploadType.PTF && !isOffline && (
+                  <TeamSelector
+                    selectedTeamId={selectedTeamId}
+                    onTeamChange={setSelectedTeamId}
+                    teams={teams}
+                    selectLabel={t.selectTeam}
+                    createNewLabel={t.createNewTeam}
+                  />
+                )}
+                {isElectron && (
+                  <>
+                    <FormControlLabel
+                      value={UploadType.Burrito}
+                      control={<Radio />}
+                      label={
+                        !isOffline ? t.externalSourceBurrito : t.offlineImport
+                      }
+                    />
+
+                    {selectedImportType === UploadType.Burrito &&
+                      !isOffline && (
+                        <TeamSelector
+                          selectedTeamId={selectedTeamId}
+                          onTeamChange={setSelectedTeamId}
+                          teams={teams}
+                          selectLabel={t.selectTeam}
+                          createNewLabel={t.createNewTeam}
+                        />
+                      )}
+                  </>
+                )}
+                <FormControlLabel
+                  value={UploadType.ITF}
+                  control={<Radio />}
+                  label={t.incrementalImport}
+                />
+              </RadioGroup>
+            </FormControl>
+          )}
+
+          {uploadVisible && selectedImportType !== UploadType.Burrito && (
+            <MediaUpload
+              visible={uploadVisible}
+              onVisible={setUploadVisible}
+              uploadType={selectedImportType}
+              uploadMethod={
+                selectedImportType === UploadType.PTF
+                  ? uploadPTFOnline
+                  : uploadITF
+              }
+              cancelMethod={uploadCancel}
             />
           )}
-          {!importStatus || (
-            <ProgressBar position="fixed" color="inherit">
-              <LinearProgress variant="indeterminate" />
-            </ProgressBar>
+          {uploadVisible && selectedImportType === UploadType.Burrito && (
+            <BurritoUploadDialog
+              open={selectedImportType === UploadType.Burrito}
+              onSubmit={(dirPath, isZip) => uploadBurrito([dirPath], isZip)}
+              onCancel={uploadCancel}
+            />
           )}
-          <MediaUpload
-            visible={uploadVisible}
-            onVisible={setUploadVisible}
-            uploadType={UploadType.ITF}
-            uploadMethod={uploadITF}
-            cancelMethod={uploadCancel}
-          />
+          {burritoPrepareProgress !== null && (
+            <Dialog
+              open
+              disableEscapeKeyDown
+              maxWidth="sm"
+              fullWidth
+              PaperProps={{
+                sx: { zIndex: (theme) => theme.zIndex.modal + 2 },
+              }}
+            >
+              <DialogTitle>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                  <CircularProgress size={22} thickness={5} />
+                  {t.burritoPreparingLocal}
+                </Box>
+              </DialogTitle>
+              <DialogContent>
+                <LinearProgress
+                  variant="determinate"
+                  value={
+                    burritoPrepareProgress.phase === 'convert'
+                      ? burritoPrepareProgress.bookTotal > 0
+                        ? (burritoPrepareProgress.bookIndex /
+                            burritoPrepareProgress.bookTotal) *
+                          100
+                        : 0
+                      : burritoPrepareProgress.fileTotal > 0
+                        ? (burritoPrepareProgress.fileIndex /
+                            burritoPrepareProgress.fileTotal) *
+                          100
+                        : 0
+                  }
+                />
+                <Typography variant="body2" sx={{ mt: 2 }}>
+                  {burritoPrepareProgress.phase === 'convert'
+                    ? t.burritoConvertingBook
+                        .replace(
+                          '{0}',
+                          String(burritoPrepareProgress.bookIndex)
+                        )
+                        .replace(
+                          '{1}',
+                          String(burritoPrepareProgress.bookTotal)
+                        )
+                        .replace('{2}', burritoPrepareProgress.bookLabel)
+                    : t.burritoReadingFiles
+                        .replace(
+                          '{0}',
+                          String(burritoPrepareProgress.fileIndex)
+                        )
+                        .replace(
+                          '{1}',
+                          String(burritoPrepareProgress.fileTotal)
+                        )}
+                </Typography>
+              </DialogContent>
+            </Dialog>
+          )}
+          {filterVisible && (
+            <FilterContent
+              filterVisible={filterVisible}
+              onFilterVisible={onFilterVisible}
+              filterSubmit={filterSubmit}
+              filterData={filterData}
+              uploadCancel={uploadCancel}
+            />
+          )}
           {confirmAction === '' || (
             <Confirm
               jsx={
                 isString(confirmAction) ? (
                   <span></span>
                 ) : (
-                  (confirmAction as JSX.Element)
+                  (confirmAction as React.JSX.Element)
                 )
               }
               text={
@@ -827,18 +1305,29 @@ export function ImportTab(props: IProps) {
           pb: 2,
           display: 'flex',
           flexDirection: 'row',
-          justifyContent: 'flex-start',
+          justifyContent: 'flex-end',
         }}
       >
         <Button
           id="importClose"
           onClick={handleClose}
-          variant="contained"
+          variant="outlined"
           color="primary"
           disabled={importStatus !== undefined}
         >
           {t.close}
         </Button>
+        {showImportTypeSelection && (
+          <Button
+            id="importContinue"
+            onClick={handleImportTypeSelected}
+            variant="contained"
+            color="primary"
+            autoFocus
+          >
+            {t.continue}
+          </Button>
+        )}
       </DialogActions>
     </StyledDialog>
   );

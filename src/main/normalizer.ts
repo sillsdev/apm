@@ -1,15 +1,13 @@
 /* eslint-disable @typescript-eslint/no-unsafe-function-type */
 'use strict';
-import ffmpegPath from 'ffmpeg-static';
 import { path as ffprobePath } from 'ffprobe-static';
 import * as child from 'child_process';
 import * as path from 'path';
 import * as fs from 'fs';
+import { getFfmpegPath } from './ffmpegBin';
 
 const localProbe = ffprobePath?.replace('app.asar', 'app.asar.unpacked');
-const localFfmpeg = ffmpegPath
-  ? ffmpegPath.replace('app.asar', 'app.asar.unpacked')
-  : 'ffmpeg'; // fallback to system ffmpeg if ffmpegPath is undefined
+const localFfmpeg = getFfmpegPath();
 
 interface ChildProcessSuccessMessage {
   stdout: string;

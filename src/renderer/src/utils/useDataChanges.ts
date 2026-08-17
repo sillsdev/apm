@@ -11,7 +11,7 @@ import { orbitReset } from '../crud/orbitReset';
 import JSONAPISource from '@orbit/jsonapi';
 
 export const useDataChanges = () => {
-  const { accessToken } = useContext(TokenContext).state;
+  const accessToken = useContext(TokenContext)?.state?.accessToken ?? null;
   const [errorReporter] = useGlobal('errorReporter');
   const [fingerprint] = useGlobal('fingerprint');
   const [coordinator] = useGlobal('coordinator');
@@ -42,7 +42,8 @@ export const useDataChanges = () => {
       setLanguage,
       setDataChangeCount,
       undefined, //isElectron ? fetchUrl : undefined,
-      notPastTime
+      notPastTime,
+      setOrbitRetries
     );
   };
 };

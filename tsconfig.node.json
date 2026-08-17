@@ -9,6 +9,8 @@
   ],
   "compilerOptions": {
     "composite": true,
-    "types": ["electron-vite/node"]
+    "types": ["electron-vite/node"],
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true
   }
 }

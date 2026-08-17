@@ -29,12 +29,7 @@ export function TitleEdit({
 }: IProps) {
   const [planId] = useGlobal('plan'); //will be constant here
   const [memory] = useGlobal('memory');
-  const [titlex, setTitle] = useState(title || '');
-  const [titleMediafile, setTitleMediafile] = useState('');
-
-  useEffect(() => {
-    setTitle(title);
-  }, [title]);
+  const [titleMediafile, setTitleMediafile] = useState(mediaId || '');
 
   useEffect(() => {
     setTitleMediafile(mediaId);
@@ -42,7 +37,6 @@ export function TitleEdit({
 
   const handleChangeTitle = (value: string) => {
     onTextChange(value);
-    setTitle(value);
     return '';
   };
 
@@ -53,13 +47,13 @@ export function TitleEdit({
 
   return (
     <>
-      {readonly && !showpublish && ((<>{titlex}</>) as ReactElement)}
+      {readonly && !showpublish && ((<>{title}</>) as ReactElement)}
       {(!readonly || showpublish) && (
         <MediaTitle
           titlekey={`title-${ws.sectionSeq}_${ws.passageSeq}`}
           label={'\uFEFF'} // zero-width space
           mediaId={titleMediafile}
-          title={titlex}
+          title={title}
           defaultFilename={getDefaultName(ws, 'title', memory, planId)}
           onTextChange={handleChangeTitle}
           onRecording={onRecording}

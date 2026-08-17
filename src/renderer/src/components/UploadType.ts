@@ -10,4 +10,5 @@ export enum UploadType {
   Link = 8,
   MarkDown = 9,
   FaithbridgeLink = 10,
+  Burrito = 11,
 }

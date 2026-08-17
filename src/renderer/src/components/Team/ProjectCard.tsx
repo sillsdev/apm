@@ -1,6 +1,7 @@
 import React, { useContext, useMemo, useState, useEffect } from 'react';
 import { useGetGlobal, useGlobal } from '../../context/useGlobal';
 import { useDispatch, useSelector } from 'react-redux';
+import { shallowEqual } from 'react-redux';
 import {
   Card,
   CardActions,
@@ -12,6 +13,12 @@ import {
   CardContentProps,
   Box,
   ChipProps,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  Tooltip,
 } from '@mui/material';
 import * as actions from '../../store';
 import ScriptureIcon from '@mui/icons-material/MenuBook';
@@ -23,7 +30,13 @@ import PublishedWithChangesIcon from '@mui/icons-material/PublishedWithChanges';
 import EditNoteIcon from '@mui/icons-material/EditNote';
 import {
   DialogMode,
+  ICardsStrings,
+  IImportStrings,
+  IProjButtonsStrings,
+  ISharedStrings,
   IState,
+  ITranscriptionTabStrings,
+  IVProjectStrings,
   ProjectD,
   Section,
   SectionArray,
@@ -46,11 +59,13 @@ import {
   related,
   useRole,
   remoteIdNum,
+  BOLD_WORKFLOW_PROCESS,
+  useTeamWorkflowProcess,
 } from '../../crud';
 import { localizeProjectTag } from '../../utils/localizeProjectTag';
 import OfflineIcon from '@mui/icons-material/OfflinePin';
-import { useHome, useJsonParams } from '../../utils';
-import { copyComplete, CopyProjectProps } from '../../store';
+import { useDataChanges, useHome, useJsonParams, useMobile } from '../../utils';
+import { CopyProjectProps } from '../../store';
 import { TokenContext } from '../../context/TokenProvider';
 import { useSnackBar } from '../../hoc/SnackBar';
 import CategoryTabs from './CategoryTabs';
@@ -65,6 +80,16 @@ import { useOrbitData } from '../../hoc/useOrbitData';
 import { UpdateRecord } from '../../model/baseModel';
 import { useProjectPermissions } from '../../utils/useProjectPermissions';
 import { IProjectDialog } from './ProjectDialog/projectDialogTypes';
+import { TeamSelector } from '../ImportTab';
+import { useAdminTeams } from '../useAdminTeams';
+import {
+  cardsSelector,
+  importSelector,
+  projButtonsSelector,
+  sharedSelector,
+  transcriptionTabSelector,
+  vProjectSelector,
+} from '../../selector';
 
 const PencilSquare = BsPencilSquare as unknown as React.FC<IconBaseProps>;
 
@@ -123,21 +148,24 @@ export const ProjectCard = (props: IProps) => {
     projectLanguage,
     projectUpdate,
     projectDelete,
-    cardStrings,
-    vProjectStrings,
-    projButtonStrings,
     personalProjects,
     doImport,
   } = ctx.state;
+  const vProjectStrings: IVProjectStrings = useSelector(
+    vProjectSelector,
+    shallowEqual
+  );
   const dispatch = useDispatch();
+  const forceDataChanges = useDataChanges();
 
   const copyProject = (props: CopyProjectProps) =>
     dispatch(actions.copyProject(props) as any);
   const copyStatus = useSelector(
     (state: IState) => state.importexport.importexportStatus
   );
+  const copyComplete = () => dispatch(actions.copyComplete() as any);
   const [copying, setCopying] = useState(false);
-  const { accessToken } = useContext(TokenContext).state;
+  const accessToken = useContext(TokenContext)?.state?.accessToken ?? null;
   const [errorReporter] = useGlobal('errorReporter');
   const [memory] = useGlobal('memory');
   const { showMessage } = useSnackBar();
@@ -159,9 +187,19 @@ export const ProjectCard = (props: IProps) => {
   const [deleteItem, setDeleteItem] = useState<VProjectD>();
   const [open, setOpen] = useState('');
   const [isAdmin, setIsAdmin] = useState(false);
+  const [openCopyDialog, setOpenCopyDialog] = useState(false);
+  const [selectedTeamId, setSelectedTeamId] = useState<string>('');
   const { getProjectDefault } = useProjectDefaults();
-  const t = cardStrings;
-  const tpb = projButtonStrings;
+  const { isMobileWidth } = useMobile();
+  const t: ICardsStrings = useSelector(cardsSelector, shallowEqual);
+  const tt: ITranscriptionTabStrings = useSelector(
+    transcriptionTabSelector,
+    shallowEqual
+  );
+  const tpb: IProjButtonsStrings = useSelector(
+    projButtonsSelector,
+    shallowEqual
+  );
   const { userIsOrgAdmin } = useRole();
   const { leaveHome } = useHome();
   const { getParam, setParam } = useJsonParams();
@@ -171,11 +209,13 @@ export const ProjectCard = (props: IProps) => {
     loadProject(project);
     leaveHome();
   };
-
   const { canPublish, canEditSheet } = useProjectPermissions(
     related(project, 'organization'),
     related(project, 'project')
   );
+  const teams = useAdminTeams();
+  const tImport: IImportStrings = useSelector(importSelector, shallowEqual);
+  const tShared: ISharedStrings = useSelector(sharedSelector, shallowEqual);
 
   useEffect(() => {
     if (open !== '') doOpen(open);
@@ -196,10 +236,23 @@ export const ProjectCard = (props: IProps) => {
   useEffect(() => {
     if (copying && copyStatus) {
       if (copyStatus.errStatus || copyStatus.complete) {
-        copyComplete();
-        setCopying(false);
-        setBusy(false);
-        showMessage(copyStatus.errMsg ?? copyStatus.statusMsg);
+        if (copyStatus.complete) {
+          showMessage(
+            tt.downloading.replace('{0}', copyStatus.statusMsg ?? '')
+          );
+          forceDataChanges().finally(() => {
+            setBusy(false);
+            showMessage(
+              t.copyComplete.replace('{0}', copyStatus.statusMsg ?? '')
+            );
+            copyComplete();
+            setCopying(false);
+          });
+        } else {
+          showMessage(copyStatus.errMsg ?? copyStatus.statusMsg);
+          copyComplete();
+          setCopying(false);
+        }
       } else showMessage(copyStatus.statusMsg);
     }
     /* eslint-disable-next-line react-hooks/exhaustive-deps */
@@ -230,34 +283,33 @@ export const ProjectCard = (props: IProps) => {
         setOpenProject(true);
         break;
       case 'integration':
+        if (isMobileWidth) {
+          showMessage(tShared.notSupported);
+          break;
+        }
         setOpenIntegration(true);
         break;
       case 'delete':
         setDeleteItem(project);
         break;
       case 'category':
+        if (isMobileWidth) {
+          showMessage(tShared.notSupported);
+          break;
+        }
         setOpenCategory(true);
         break;
-      case 'copysame':
-      case 'copynew':
-        setCopying(true);
-        copyProject({
-          projectid: remoteIdNum(
-            'project',
-            getGlobal('project'),
-            memory?.keyMap as RecordKeyMap
-          ),
-          sameorg: what === 'copysame',
-          token: accessToken,
-          errorReporter: errorReporter,
-          pendingmsg: t.copyStatus,
-          completemsg: t.copyComplete,
-        });
+      case 'copyproject':
+        setOpenCopyDialog(true);
         break;
       case 'import':
       case 'export':
       case 'reports':
       case 'offlineAvail':
+        if (isMobileWidth) {
+          showMessage(tShared.notSupported);
+          break;
+        }
         LoadAndGo(what);
     }
     setOpen('');
@@ -358,6 +410,41 @@ export const ProjectCard = (props: IProps) => {
     setDeleteItem(undefined);
   };
 
+  const handleCopyConfirm = () => {
+    setOpenCopyDialog(false);
+    setCopying(true);
+    setBusy(true);
+    const teamName =
+      selectedTeamId === 'new'
+        ? t.newTeam
+        : teams.find((t) => t.id === selectedTeamId)?.attributes.name || '';
+    copyProject({
+      projectid: remoteIdNum(
+        'project',
+        getGlobal('project'),
+        memory?.keyMap as RecordKeyMap
+      ),
+      orgid:
+        selectedTeamId === 'new'
+          ? 0
+          : remoteIdNum(
+              'organization',
+              selectedTeamId,
+              memory?.keyMap as RecordKeyMap
+            ),
+      token: accessToken,
+      errorReporter: errorReporter,
+      pendingmsg: t.copyStatus.replace('{0}', teamName),
+      completemsg: '{0}',
+    });
+    setSelectedTeamId('');
+  };
+
+  const handleCopyCancel = () => {
+    setOpenCopyDialog(false);
+    setSelectedTeamId('');
+  };
+
   const isStory = useMemo(
     () =>
       (getProjectDefault(
@@ -408,22 +495,38 @@ export const ProjectCard = (props: IProps) => {
     [project]
   );
 
+  const orgId = related(project, 'organization') as string;
+  const teamWorkflow = useTeamWorkflowProcess(orgId);
+  const showBoldCardMark = teamWorkflow === BOLD_WORKFLOW_PROCESS;
+
   return (
     <ProjectCardRoot>
       <StyledCard id={`card-${project.id}`} onClick={handleSelect(project)}>
         <StyledCardContent>
           <FirstLineDiv>
-            <Typography
-              variant="h6"
-              component="h2"
+            <Box
               sx={{
                 display: 'flex',
                 alignItems: 'center',
-                textAlign: 'center',
+                flex: 1,
+                minWidth: 0,
               }}
             >
-              {(project?.attributes?.type || '').toLowerCase() ===
-              'scripture' ? (
+              {showBoldCardMark ? (
+                <Typography
+                  component="span"
+                  sx={{
+                    fontWeight: 700,
+                    fontSize: '1.35rem',
+                    lineHeight: 1,
+                    mr: 0.25,
+                  }}
+                  aria-hidden
+                >
+                  B
+                </Typography>
+              ) : (project?.attributes?.type || '').toLowerCase() ===
+                'scripture' ? (
                 <ScriptureIcon />
               ) : isStory ? (
                 <StoryIcon />
@@ -432,16 +535,30 @@ export const ProjectCard = (props: IProps) => {
               )}
               {project.attributes.isPublic && <ShareIcon />}
               {'\u00A0 '}
-              {project?.attributes?.name}
-            </Typography>
-            <ProjectMenu
-              action={handleProjectAction}
-              project={project}
-              inProject={false}
-              isAdmin={isAdmin}
-              isPersonal={personalProjects.includes(project)}
-              canPublish={canPublish}
-            />
+              <Tooltip title={project?.attributes?.name ?? ''}>
+                <Typography
+                  variant="h6"
+                  component="h2"
+                  noWrap
+                  sx={{
+                    minWidth: 0,
+                    flex: 1,
+                  }}
+                >
+                  {project?.attributes?.name}
+                </Typography>
+              </Tooltip>
+            </Box>
+            <Box sx={{ flexShrink: 0 }}>
+              <ProjectMenu
+                action={handleProjectAction}
+                project={project}
+                inProject={false}
+                isAdmin={isAdmin}
+                isPersonal={personalProjects.includes(project)}
+                canPublish={canPublish}
+              />
+            </Box>
           </FirstLineDiv>
           <Typography sx={{ mb: 2 }}>{projectDescription(project)}</Typography>
           <Typography variant="body2" component="p">
@@ -496,11 +613,15 @@ export const ProjectCard = (props: IProps) => {
         isOpen={openIntegration}
         onOpen={setOpenIntegration}
       >
-        <IntegrationTab
-          isPermitted={true}
-          projectId={related(project, 'project')}
-          planId={project.id}
-        />
+        {openIntegration ? (
+          <IntegrationTab
+            isPermitted={true}
+            projectId={related(project, 'project')}
+            planId={project.id}
+          />
+        ) : (
+          <></>
+        )}
       </BigDialog>
       <BigDialog
         title={tpb.exportTitle.replace('{0}', getPlanName(project.id))}
@@ -545,6 +666,29 @@ export const ProjectCard = (props: IProps) => {
           noResponse={handleDeleteRefused}
         />
       )}
+      <Dialog open={openCopyDialog} onClose={handleCopyCancel}>
+        <DialogTitle>{t.copyProject}</DialogTitle>
+        <DialogContent>
+          <TeamSelector
+            selectedTeamId={selectedTeamId}
+            onTeamChange={setSelectedTeamId}
+            teams={teams}
+            includeNewTeam={true}
+            selectLabel={tImport?.selectTeam}
+            createNewLabel={tImport?.createNewTeam}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCopyCancel}>{t.cancel}</Button>
+          <Button
+            onClick={handleCopyConfirm}
+            variant="contained"
+            disabled={copying || selectedTeamId === ''}
+          >
+            {t.copyProject}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </ProjectCardRoot>
   );
 };

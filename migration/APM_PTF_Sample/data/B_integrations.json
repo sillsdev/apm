@@ -1,0 +1,17 @@
+{"data": [
+    {
+        "type": "integrations",
+        "attributes": {"name": "paratext"},
+        "id": "45d4e7d9-c2a0-40c5-888d-ca762b2f895d"
+    },
+    {
+        "type": "integrations",
+        "attributes": {"name": "paratextbacktranslation"},
+        "id": "9c618800-b41f-4661-a0a2-75f1905c7c91"
+    },
+    {
+        "type": "integrations",
+        "attributes": {"name": "paratextwholebacktranslation"},
+        "id": "34e45012-d367-46c1-83ca-1b0f3d9e1b1d"
+    }
+]}

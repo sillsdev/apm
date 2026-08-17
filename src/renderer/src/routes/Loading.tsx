@@ -28,7 +28,16 @@ import {
   forceLogin,
   useMyNavigate,
   useDataChanges,
+  isOrbitQueueCancelled,
+  orbitErr,
+  orbitInfo,
+  withNetworkRetry,
 } from '../utils';
+import {
+  isUnauthorized,
+  isFetchNetworkError,
+  isRetryableError,
+} from '../utils/httpError';
 import {
   related,
   GetUser,
@@ -44,8 +53,12 @@ import {
   findRecord,
 } from '../crud';
 import { useSnackBar } from '../hoc/SnackBar';
-import { API_CONFIG, isElectron } from '../../api-variable';
-import AppHead from '../components/App/AppHead';
+import {
+  API_CONFIG,
+  isElectron,
+  OrbitNetworkErrorRetries,
+} from '../../api-variable';
+import AppLayout from '../components/App/AppLayout';
 import { useOfflnProjRead } from '../crud/useOfflnProjRead';
 import ImportTab from '../components/ImportTab';
 import { jwtDecode } from 'jwt-decode';
@@ -62,6 +75,7 @@ export function Loading() {
   const orbitFetchResults = useSelector(
     (state: IState) => state.orbit.fetchResults
   );
+  const orbitErrorMsg = useSelector((state: IState) => state.orbit.message);
   const t: IMainStrings = useSelector(mainSelector, shallowEqual);
   const dispatch = useDispatch();
   const fetchLocalization = () => dispatch(action.fetchLocalization() as any);
@@ -81,8 +95,8 @@ export function Loading() {
   const [offline] = useGlobal('offline'); //verified this is not used in a function 2/18/25
   const [fingerprint] = useGlobal('fingerprint');
   const [user, setUser] = useGlobal('user');
-  const [, setLang] = useGlobal('lang');
   const [orbitRetries, setOrbitRetries] = useGlobal('orbitRetries'); //verified this is not used in a function 2/18/25
+  const [, setRemoteBusy] = useGlobal('remoteBusy');
   const [errorReporter] = useGlobal('errorReporter');
   const [, setProjectsLoaded] = useGlobal('projectsLoaded');
   const [loadComplete, setLoadComplete] = useGlobal('loadComplete');
@@ -109,8 +123,28 @@ export function Loading() {
   const [view, setView] = useState('');
   const [inviteError, setInviteError] = useState('');
   const mounted = useRef(0);
+  const authFailureHandled = useRef(false);
   const getGlobal = useGetGlobal();
   const forceDataChanges = useDataChanges();
+  const { expiresAt } = tokenCtx.state;
+
+  const handleAuthFailure = () => {
+    // invalidateOnlineSession() now calls forceLogin() itself; guard against
+    // calling it twice since on web it triggers an actual page redirect.
+    localStorage.removeItem(LocalKey.goingOnline);
+    setCompleted(0);
+    setRemoteBusy(false);
+    setUser('');
+    setOrbitRetries(OrbitNetworkErrorRetries);
+    const alreadyInvalidated = tokenCtx.state.expiresAt === -1;
+    if (!alreadyInvalidated) {
+      tokenCtx.state.invalidateOnlineSession();
+    }
+    if (isElectron) {
+      navigate('/access/online');
+    }
+  };
+
   //remote is passed in because it wasn't always available in global
   const InviteUser = async (newremote: JSONAPISource, userEmail: string) => {
     const inviteId = localStorage.getItem('inviteId');
@@ -181,8 +215,8 @@ export function Loading() {
   };
   useEffect(() => {
     if (mounted.current > 0) return;
+    if (!offline && (!accessToken || !authenticated())) return;
     mounted.current += 1;
-    if (!offline && !authenticated()) return;
     if (!offline) {
       const decodedToken = jwtDecode(accessToken || '') as IToken;
       setExpireAt(decodedToken.exp);
@@ -199,14 +233,13 @@ export function Loading() {
       setUser,
       setProjectsLoaded,
       setOrbitRetries,
-      setLang,
       getOfflineProject,
       offlineSetup,
       showMessage,
       forceDataChanges,
     });
     /* eslint-disable-next-line react-hooks/exhaustive-deps */
-  }, []);
+  }, [accessToken, offline]);
 
   useEffect(() => {
     if (orbitFetchResults) {
@@ -251,6 +284,7 @@ export function Loading() {
       setProject(projectId);
       const orgId = related(projRec, 'organization') as string;
       setOrganization(orgId);
+      localStorage.setItem(localUserKey(LocalKey.team), orgId);
       setMyOrgRole(orgId);
       setProjectType(projectId);
       setPlan(planId);
@@ -265,16 +299,26 @@ export function Loading() {
     if (localStorage.getItem('inviteError')) {
       return;
     }
-    const user = localStorage.getItem(LocalKey.userId) as string;
-    const userRec: User = GetUser(memory, user);
-    if (
-      !userRec?.attributes?.givenName ||
-      !userRec?.attributes?.timezone ||
-      !userRec?.attributes?.locale ||
-      !uiLanguages.includes(userRec?.attributes?.locale)
-    ) {
-      setView('/createProfile');
-      return;
+    // Sources.tsx only refreshes the user's own profile fields from the
+    // server when !offline (see its "Activating remote for user" block) —
+    // when genuinely offline (e.g. right after "Go Offline" relaunches),
+    // memory only has whatever the local backup restored, which isn't
+    // guaranteed to include givenName/timezone/locale even for a real,
+    // already-completed profile. Checking completeness against unverified
+    // local data here incorrectly bounced a returning offline user to
+    // /createProfile instead of resuming where they left off.
+    if (!getGlobal('offline')) {
+      const user = localStorage.getItem(LocalKey.userId) as string;
+      const userRec: User = GetUser(memory, user);
+      if (
+        !userRec?.attributes?.givenName ||
+        !userRec?.attributes?.timezone ||
+        !userRec?.attributes?.locale ||
+        !uiLanguages.includes(userRec?.attributes?.locale)
+      ) {
+        setView('/createProfile');
+        return;
+      }
     }
     let fromUrl = getGotoUrl();
     let waitToNavigate = false;
@@ -316,25 +360,32 @@ export function Loading() {
                 fromUrl = `/plan/${m[1]}/0`;
               }
               loadDone(projectId, planId || '');
-              navigate(fromUrl || '/team');
+              // replace so /loading is removed from history — otherwise a
+              // back-traversal (Electron/OS back gesture, mouse button) returns
+              // here and re-runs the whole bootstrap, discarding in-memory work
+              // such as an unsaved recording. /loading is transient; you should
+              // never be able to navigate back into it.
+              navigate(fromUrl || '/team', { replace: true });
             });
           }
         }
       }
     }
-    if (!waitToNavigate) navigate(fromUrl || '/team');
+    // replace: see note above — /loading must not remain in the history stack.
+    if (!waitToNavigate) navigate(fromUrl || '/team', { replace: true });
   };
 
   useEffect(() => {
     const finishRemoteLoad = () => {
       const tokData = profile || { sub: '' };
-      localStorage.removeItem('goingOnline');
-      remote
-        .query((q) =>
+      localStorage.removeItem(LocalKey.goingOnline);
+      withNetworkRetry(() =>
+        remote.query((q) =>
           q
             .findRecords('user')
             .filter({ attribute: 'auth0Id', value: tokData.sub })
         )
+      )
         .then((result) => {
           let users: UserD[] = result as any;
           if (!Array.isArray(users)) users = [users];
@@ -344,15 +395,43 @@ export function Loading() {
             user?.attributes?.email?.toLowerCase() || 'neverhere'
           ).then(() => {
             setCompleted(10);
-            LoadData(coordinator, setCompleted, doOrbitError).then(() => {
-              LoadComplete();
+            LoadData(
+              coordinator,
+              setCompleted,
+              doOrbitError,
+              t.loadDataOffline,
+              setOrbitRetries
+            ).then((ok) => {
+              if (ok) LoadComplete();
             });
           });
+        })
+        .catch((ex: unknown) => {
+          const apiEx = ex as IApiError;
+          if (isUnauthorized(ex)) {
+            handleAuthFailure();
+            return;
+          }
+          if (isOrbitQueueCancelled(ex)) return;
+          if (isRetryableError(ex)) {
+            setOrbitRetries(OrbitNetworkErrorRetries - 1);
+            if (isFetchNetworkError(ex)) {
+              doOrbitError(orbitInfo(null, t.loadDataOffline));
+              return;
+            }
+          }
+          if (apiEx?.response?.status != null) {
+            doOrbitError(apiEx);
+          } else {
+            doOrbitError(
+              orbitErr(ex instanceof Error ? ex : null, 'fetch user')
+            );
+          }
         });
     };
     const processBackup = async () => {
       //sync was either not needed, or is done
-      if (syncComplete && orbitFetchResults) {
+      if (syncComplete && orbitFetchResults && !orbitErrorMsg) {
         if (orbitFetchResults.goRemote) {
           localStorage.setItem(localUserKey(LocalKey.time), currentDateTime());
           if (isElectron) finishRemoteLoad();
@@ -369,7 +448,7 @@ export function Loading() {
     };
     processBackup();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [syncComplete, orbitFetchResults]);
+  }, [syncComplete, orbitFetchResults, orbitErrorMsg]);
   const continueWithCurrentUser = () => {
     localStorage.removeItem('inviteError');
     localStorage.removeItem('inviteId');
@@ -381,17 +460,48 @@ export function Loading() {
     setView('/logout');
   };
 
-  if (!offline && !authenticated()) navigate('/');
+  useEffect(() => {
+    if (orbitErrorMsg) {
+      setRemoteBusy(false);
+      setCompleted(0);
+    }
+  }, [orbitErrorMsg, setCompleted, setRemoteBusy]);
+
+  useEffect(() => {
+    if ((expiresAt ?? 0) > 0) {
+      authFailureHandled.current = false;
+    }
+  }, [expiresAt]);
+
+  useEffect(() => {
+    if (
+      !offline &&
+      expiresAt === -1 &&
+      !authFailureHandled.current &&
+      isElectron
+    ) {
+      authFailureHandled.current = true;
+      handleAuthFailure();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [offline, expiresAt]);
+
   if (view !== '') navigate(view);
 
   return (
-    <Box sx={{ width: '100%' }}>
-      <AppHead />
+    <AppLayout>
       <Box sx={centerProps}>
         <ApmSplash
-          message={inviteError}
+          message={inviteError || orbitErrorMsg || undefined}
           component={
             <>
+              {orbitErrorMsg && (
+                <Box sx={centerProps}>
+                  <AltButton id="loadErrLogout" onClick={logoutAndTryAgain}>
+                    {t.logout}
+                  </AltButton>
+                </Box>
+              )}
               {loadComplete && inviteError && (
                 <Box sx={centerProps}>
                   <PriButton id="errCont" onClick={continueWithCurrentUser}>
@@ -408,13 +518,14 @@ export function Loading() {
                   syncFile={orbitFetchResults?.syncFile}
                   isOpen={importOpen}
                   onOpen={setImportOpen}
+                  offerPtf={false}
                 />
               )}
             </>
           }
         />
       </Box>
-    </Box>
+    </AppLayout>
   );
 }
 

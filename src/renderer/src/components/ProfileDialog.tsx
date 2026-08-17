@@ -154,25 +154,6 @@ const profileEmailProps = {
   marginBottom: '10px',
 } as SxProps;
 
-const editProfileProps = {
-  color: 'secondary.dark',
-  backgroundColor: 'primary.contrastText',
-  opacity: '100%',
-  width: '120px',
-  '&.Mui-disabled': {
-    color: 'secondary.dark',
-    backgroundColor: 'primary.contrastText',
-    opacity: '50%',
-    padding: '6px',
-  },
-  '&:hover': {
-    borderColor: 'primary.contrastText',
-    backgroundColor: 'primary.contrastText',
-    boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.2)',
-    opacity: '90%',
-  },
-} as SxProps;
-
 const deleteUserProps = {
   color: 'primary.dark',
   backgroundColor: 'primary.contrastText',
@@ -288,7 +269,6 @@ export function ProfileDialog(props: ProfileDialogProps) {
   const [memory] = useGlobal('memory');
   const [organization] = useGlobal('organization');
   const [user, setUser] = useGlobal('user');
-  const [, setLang] = useGlobal('lang');
   const [offlineOnly] = useGlobal('offlineOnly'); //will be constant here
   const [isDeveloper] = useGlobal('developer');
   const navigate = useMyNavigate();
@@ -503,7 +483,6 @@ export function ProfileDialog(props: ProfileDialogProps) {
             }
           }
         });
-      setLang(locale);
       const mbrRec = getMbrRoleRec(
         'organization',
         organization,
@@ -790,7 +769,21 @@ export function ProfileDialog(props: ProfileDialogProps) {
 
   useEffect(() => setReadOnly(mode === 'viewMyAccount'), [mode]);
 
+  useEffect(() => {
+    if (mode !== 'editMember' || !editId || /Add/i.test(editId)) return;
+    if (isOffline && !offlineOnly) setReadOnly(true);
+    else setReadOnly(false);
+  }, [mode, editId, isOffline, offlineOnly, open]);
+
+  const memberEditOfflineBlocked =
+    mode === 'editMember' &&
+    !!editId &&
+    !/Add/i.test(editId) &&
+    isOffline &&
+    !offlineOnly;
+
   const onEditClicked = () => {
+    if (memberEditOfflineBlocked) return;
     setReadOnly(false);
   };
 
@@ -817,15 +810,13 @@ export function ProfileDialog(props: ProfileDialogProps) {
             : undefined
         }
       >
-        {editId && /Add/i.test(editId) ? (
-          <Typography variant="h6">{tp.addMember}</Typography>
-        ) : userNotComplete() ? (
-          <Typography variant="h6">{tp.completeProfile}</Typography>
-        ) : editId ? (
-          <Typography variant="h6">{tp.editMember}</Typography>
-        ) : (
-          <Typography variant="h6">{t.myAccount}</Typography>
-        )}
+        {editId && /Add/i.test(editId)
+          ? tp.addMember
+          : userNotComplete()
+            ? tp.completeProfile
+            : editId
+              ? tp.editMember
+              : t.myAccount}
       </StyledDialogTitle>
       <DialogContent id="profileContent" sx={profileContentProps}>
         <Box id="profilePanel" sx={profilePanelProps}>
@@ -849,10 +840,8 @@ export function ProfileDialog(props: ProfileDialogProps) {
             <Caption sx={profileEmailProps}>{email || ''}</Caption>
             {((editId && /Add/i.test(editId)) || !userNotComplete()) && (
               <Button
-                disabled={!readOnly}
-                variant="contained"
+                disabled={!readOnly || memberEditOfflineBlocked}
                 onClick={onEditClicked}
-                sx={editProfileProps}
               >
                 {tp.edit}
               </Button>

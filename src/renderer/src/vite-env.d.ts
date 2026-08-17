@@ -1,4 +1,5 @@
 /// <reference types="vite/client" />
+/// <reference types="vite-plugin-pwa/client" />
 import 'redux-thunk/extend-redux';
 
 declare module '*.svg' {

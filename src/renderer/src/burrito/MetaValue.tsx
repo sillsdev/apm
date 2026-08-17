@@ -6,6 +6,9 @@ import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
+import { shallowEqual, useSelector } from 'react-redux';
+import { burritoSelector, sharedSelector } from '../selector';
+import { IBurritoStrings, ISharedStrings } from '@model/index';
 
 interface MetaValueProps {
   idKey: string;
@@ -24,6 +27,8 @@ export default function MetaValue({
 }: MetaValueProps) {
   const [open, setOpen] = React.useState(isOpen);
   const [newValue, setNewValue] = React.useState(value);
+  const t: IBurritoStrings = useSelector(burritoSelector, shallowEqual);
+  const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
 
   const handleClose = () => {
     setOpen(false);
@@ -47,18 +52,20 @@ export default function MetaValue({
     <Dialog
       open={open}
       onClose={handleClose}
-      PaperProps={{
-        component: 'form',
-        onSubmit: (event: React.FormEvent<HTMLFormElement>) => {
-          event.preventDefault();
-          onConfirm(idKey, newValue);
-          handleClose();
+      slotProps={{
+        paper: {
+          component: 'form',
+          onSubmit: (event: React.FormEvent<HTMLFormElement>) => {
+            event.preventDefault();
+            onConfirm(idKey, newValue);
+            handleClose();
+          },
         },
       }}
     >
-      <DialogTitle>Update Value</DialogTitle>
+      <DialogTitle>{t.updateValue}</DialogTitle>
       <DialogContent>
-        <DialogContentText>Please enter the new value for</DialogContentText>
+        <DialogContentText>{t.enterNewValue}</DialogContentText>
         <TextField
           autoFocus
           margin="dense"
@@ -72,18 +79,14 @@ export default function MetaValue({
           multiline
           variant="standard"
           error={containsJsonChars(newValue)}
-          helperText={
-            containsJsonChars(newValue)
-              ? 'Warning: Input contains JSON structural characters (quotes, curly braces, or square brackets)'
-              : ''
-          }
+          helperText={containsJsonChars(newValue) ? t.valueWarning : ''}
           sx={{ width: '500px' }}
         />
       </DialogContent>
       <DialogActions>
-        <Button onClick={handleClose}>Cancel</Button>
+        <Button onClick={handleClose}>{ts.cancel}</Button>
         <Button type="submit" disabled={containsJsonChars(newValue)}>
-          Confirm
+          {ts.confirm}
         </Button>
       </DialogActions>
     </Dialog>

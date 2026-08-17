@@ -39,11 +39,16 @@ module.exports = {
     '@typescript-eslint/no-explicit-any': 'off',
     '@typescript-eslint/explicit-function-return-type': 'off',
     'no-only-tests/no-only-tests': 'error',
-    '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
+    '@typescript-eslint/no-unused-vars': [
+      'warn',
+      {
+        argsIgnorePattern: '^_',
+        varsIgnorePattern: '^_',
+        caughtErrorsIgnorePattern: '^_',
+        destructuredArrayIgnorePattern: '^_',
+      },
+    ],
     complexity: ['warn', 15],
-    'linebreak-style': ['error', 'unix'],
-    quotes: ['error', 'single'],
-    semi: ['error', 'never'],
     'import/default': 'off',
     '@typescript-eslint/no-require-imports': 'off',
     'cypress/unsafe-to-chain-command': 'off',
@@ -51,5 +56,9 @@ module.exports = {
     'jsdoc/require-returns-type': 'off',
     'no-unused-vars': 'off',
     'no-case-declarations': 'off',
+    'react-hooks/set-state-in-effect': 'off',
+    // 'react-hooks/immutability': 'off',  // we want this error to be shown and escaped each time we use it
+    // 'react-hooks/refs': 'off', // we want this error to be shown and escaped each time we use it
+    'react-hooks/globals': 'off',
   },
 };

@@ -8,9 +8,18 @@ import MemorySource from '@orbit/memory';
 import IndexedDBSource from '@orbit/indexeddb';
 import bugsnagClient from '../auth/bugsnagClient';
 
+let restorePromise: Promise<string[]> | null = null;
+
 export async function restoreBackup(
   coordinator?: Coordinator
 ): Promise<string[]> {
+  if (!restorePromise) {
+    restorePromise = restoreBackupOnce(coordinator);
+  }
+  return restorePromise;
+}
+
+async function restoreBackupOnce(coordinator?: Coordinator): Promise<string[]> {
   const myMemory = memory ?? (coordinator?.getSource('memory') as MemorySource);
   const myBackup =
     backup ?? (coordinator?.getSource('backup') as IndexedDBSource);
@@ -21,6 +30,7 @@ export async function restoreBackup(
       () => {
         return (
           schema.version === myBackup.schema.version &&
+          Boolean(myBackup?.cache?.isDBOpen) &&
           (localStorage.getItem(LocalKey.migration) ?? '') !== 'WAIT'
         );
       },

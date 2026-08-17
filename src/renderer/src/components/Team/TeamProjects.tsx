@@ -34,6 +34,7 @@ export const TeamProjects = () => {
           project={
             importProject ? related(importProject, 'project') : undefined
           } //actual project id...not plan id
+          offerPtf={false}
         />
       )}
     </>

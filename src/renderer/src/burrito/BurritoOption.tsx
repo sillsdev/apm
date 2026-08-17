@@ -8,7 +8,9 @@ import {
   ListItemText,
 } from '@mui/material';
 import { useEffect, useState } from 'react';
-import { OptionType } from '../model';
+import { IBurritoStrings, OptionType } from '../model';
+import { shallowEqual, useSelector } from 'react-redux';
+import { burritoSelector } from '../selector';
 
 interface IProps {
   options: OptionType[];
@@ -18,6 +20,7 @@ interface IProps {
 
 export const BurritoOption = ({ options, value, onChange }: IProps) => {
   const [checked, setChecked] = useState<string[]>(value);
+  const t: IBurritoStrings = useSelector(burritoSelector, shallowEqual);
 
   useEffect(() => {
     setChecked(value);
@@ -79,7 +82,7 @@ export const BurritoOption = ({ options, value, onChange }: IProps) => {
         <ListItemButton role={undefined} onClick={handleAllToggle} dense>
           <ListItemText
             id="all-toggle"
-            primary={checked.length > 0 ? 'Deselect All' : 'Select All'}
+            primary={checked.length > 0 ? t.deselectAll : t.selectAll}
           />
         </ListItemButton>
       </ListItem>

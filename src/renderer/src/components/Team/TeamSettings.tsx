@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import {
   DialogMode,
+  ICardsStrings,
   ISharedStrings,
   Organization,
-  OrganizationD,
 } from '../../model';
 import {
   Accordion,
@@ -28,13 +28,13 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import BigDialog from '../../hoc/BigDialog';
 import { BigDialogBp } from '../../hoc/BigDialogBp';
 import SelectSponsor from '../../business/voice/SelectSponsor';
-import SelectAsrLanguage from '../../business/asr/SelectAsrLanguage';
 import { shallowEqual, useSelector } from 'react-redux';
-import { sharedSelector } from '../../selector';
+import { cardsSelector, sharedSelector } from '../../selector';
 import { useGlobal } from '../../context/useGlobal';
 import {
   orgDefaultPermissions,
   orgDefaultWorkflowProgression,
+  WorkflowProgression,
 } from '../../crud';
 import { isElectron } from '../../../api-variable';
 
@@ -75,32 +75,44 @@ export function TeamSettings(props: IProps) {
   const ctx = React.useContext(TeamContext);
   const [permissions, setPermissions] = useState(true);
   const [voiceVisible, setVoiceVisible] = useState(false);
-  const [asrLangVisible, setAsrLangVisible] = useState(false);
+  const [, setOrg] = useGlobal('organization');
   const [offline] = useGlobal('offline'); //verified this is not used in a function 2/18/25
-  const { cardStrings, personalTeam } = ctx.state;
-  const t = cardStrings;
+  const { personalTeam } = ctx.state;
+  const t: ICardsStrings = useSelector(cardsSelector, shallowEqual);
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
   const workflowOptions = [
     t.workflowProgressionPassage,
     t.workflowProgressionStep,
   ];
   const [workflowProgression, setWorkflowProgression] = useState(
-    values?.workflowProgression ?? t.workflowProgressionPassage
+    values?.workflowProgression ?? WorkflowProgression.Passage
   );
 
   useEffect(() => {
-    setWorkflowProgression(
-      values?.workflowProgression ?? t.workflowProgressionPassage
-    );
+    setOrg(team?.id ?? '');
+    return () => {
+      setOrg('');
+    };
+    // DO NOT ADD SETORG!
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [team?.id]);
+
+  useEffect(() => {
+    setWorkflowProgression(
+      values?.workflowProgression ?? WorkflowProgression.Passage
+    );
   }, [values?.workflowProgression]);
 
   useEffect(() => {
     setPermissions(values?.permissions);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [values?.permissions]);
 
-  const setProgression = (val: string) => {
+  const setProgression = (label: string) => {
+    // map localized label back to the stable key
+    const val =
+      label === t.workflowProgressionStep
+        ? WorkflowProgression.Step
+        : WorkflowProgression.Passage;
     setWorkflowProgression(val);
     setValue(orgDefaultWorkflowProgression, val);
   };
@@ -142,7 +154,11 @@ export function TeamSettings(props: IProps) {
             )}
             <Options
               label={t.workflowProgression}
-              defaultValue={workflowProgression}
+              defaultValue={
+                workflowProgression === WorkflowProgression.Step
+                  ? t.workflowProgressionStep
+                  : t.workflowProgressionPassage
+              }
               options={workflowOptions}
               onChange={setProgression}
             />
@@ -207,14 +223,6 @@ export function TeamSettings(props: IProps) {
                       <Badge badgeContent={ts.ai}>{t.recognizeSpeech}</Badge>
                     }
                   />
-                  {mode !== DialogMode.add && (
-                    <IconButton
-                      onClick={() => setAsrLangVisible(true)}
-                      disabled={!values?.features?.[FeatureSlug.AiTranscribe]}
-                    >
-                      <SettingsIcon />
-                    </IconButton>
-                  )}
                 </Stack>
               )}
               {isElectron && (
@@ -248,22 +256,6 @@ export function TeamSettings(props: IProps) {
           team={team}
           refresh={handleRefresh}
           onOpen={() => setVoiceVisible(false)}
-        />
-      </BigDialog>
-      <BigDialog
-        title={t.recognizeSpeechSettings}
-        description={
-          <Typography variant="body2" sx={{ maxWidth: 500 }}>
-            {t.recognizePrompt}
-          </Typography>
-        }
-        isOpen={asrLangVisible}
-        onOpen={() => setAsrLangVisible(false)}
-      >
-        <SelectAsrLanguage
-          team={team as OrganizationD}
-          refresh={handleRefresh}
-          onOpen={() => setAsrLangVisible(false)}
         />
       </BigDialog>
     </Box>

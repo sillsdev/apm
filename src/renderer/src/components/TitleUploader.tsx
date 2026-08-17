@@ -11,10 +11,10 @@ interface IProps {
   onOpen: (visible: boolean) => void;
   hasRights?: boolean; // required for upload
   finish?: (files: File[]) => void; // when conversion complete
-  cancelled: React.MutableRefObject<boolean>;
+  cancelled: React.RefObject<boolean>;
   uploadType?: UploadType;
-  uploadMethod: (files: File[]) => Promise<void>;
-  metadata?: JSX.Element;
+  uploadMethod: (files: File[]) => Promise<boolean>;
+  metadata?: React.JSX.Element;
   onSave?: () => void;
   onFiles?: (files: File[]) => void;
 }
@@ -34,6 +34,7 @@ export function TitleUploader(props: IProps) {
 
   const uploadCancel = () => {
     onOpen(false);
+    // eslint-disable-next-line react-hooks/immutability
     if (cancelled) cancelled.current = true;
     restoreScroll();
   };

@@ -12,12 +12,12 @@ import MediaTitle from '../../control/MediaTitle';
 import Colorful, { ColorfulProps } from '@uiw/react-color-colorful';
 import { useSelector, shallowEqual } from 'react-redux';
 import {
-  ApmDim,
   CompressedImages,
-  GraphicUploader,
   IGraphicInfo,
   Rights,
-} from '../GraphicUploader';
+  ApmDim,
+} from '../../utils/useCompression';
+import { GraphicUploader } from '../GraphicUploader';
 import GraphicRights from '../GraphicRights';
 import { useGlobal } from '../../context/useGlobal';
 import { useOrbitData } from '../../hoc/useOrbitData';

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext, useRef } from 'react';
 import { useGlobal, useGetGlobal } from '../context/useGlobal';
 import { useLocation } from 'react-router-dom';
 import { useAuth0, RedirectLoginOptions } from '@auth0/auth0-react';
@@ -35,7 +35,7 @@ import ImportTab from '../components/ImportTab';
 import Confirm from '../components/AlertDialog';
 import UserList from '../control/UserList';
 import { useSnackBar } from '../hoc/SnackBar';
-import AppHead from '../components/App/AppHead';
+import AppLayout from '../components/App/AppLayout';
 import { AltButton, PriButton, UserListItem } from '../control';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import UserListMode from '../control/userListMode';
@@ -102,16 +102,18 @@ export function Access() {
     dispatch(action.setLanguage(lang) as any);
   const { pathname } = useLocation();
   const navigate = useMyNavigate();
-  const { loginWithRedirect, isAuthenticated } = useAuth0();
+  const { loginWithRedirect, isAuthenticated, isLoading } = useAuth0();
   //might need to add this to dependancy arrays?
   const [offline, setOffline] = useGlobal('offline'); //verified this is not used in a function 2/18/25
   const [isDeveloper] = useGlobal('developer');
   const [user] = useGlobal('user');
 
   const [, setOfflineOnly] = useGlobal('offlineOnly');
+  const [, setRemoteBusy] = useGlobal('remoteBusy');
+  const [, setCompleted] = useGlobal('progress');
   const getGlobal = useGetGlobal();
   const tokenCtx = useContext(TokenContext);
-  const { logout, accessToken, expiresAt } = tokenCtx.state;
+  const { logout, accessToken, expiresAt, authSessionCleared } = tokenCtx.state;
   const [importOpen, setImportOpen] = useState(false);
   const [view, setView] = useState('');
   const [curUser, setCurUser] = useState<UserD>();
@@ -128,6 +130,7 @@ export function Access() {
   );
   const [goOnlineConfirmation, setGoOnlineConfirmation] =
     useState<React.MouseEvent<HTMLElement>>();
+  const reloginRef = useRef(false);
   const checkOnline = useCheckOnline('Access');
   const handleModeChange = (mode: ListMode) => {
     setListMode(mode);
@@ -274,8 +277,8 @@ export function Access() {
     resetProject();
     checkOnline(() => {}, true);
 
-    if (!tokenCtx.state.authenticated() && !isAuthenticated) {
-      if (!offline && !isElectron) {
+    if (!tokenCtx.state.authenticated() && !offline && !isElectron) {
+      if (!isAuthenticated) {
         const hasUsed = localStorage.key(0) !== null;
         if (hasUsed) {
           loginWithRedirect();
@@ -286,6 +289,15 @@ export function Access() {
               : ({ login_hint: 'signUp' } as RedirectLoginOptions);
           loginWithRedirect(opts);
         }
+      } else if (
+        authSessionCleared &&
+        !accessToken &&
+        expiresAt === -1 &&
+        !isLoading
+      ) {
+        // Auth0 still authenticated after local session was cleared (e.g. 401).
+        // Not the post-callback window before getAccessTokenSilently resolves.
+        tokenCtx.state.invalidateOnlineSession();
       }
     }
     if (user && expiresAt !== -1) {
@@ -294,19 +306,19 @@ export function Access() {
       } else {
         waitForIt(
           'check if token is set',
-          () => accessToken !== undefined,
+          () => Boolean(accessToken),
           () => false,
           200
         ).then(() => {
-          if (!localStorage.getItem('goingOnline')) {
-            localStorage.setItem('goingOnline', 'true');
+          if (!localStorage.getItem(LocalKey.goingOnline)) {
+            localStorage.setItem(LocalKey.goingOnline, 'true');
             handleGoOnline();
           }
         });
       }
     }
     /* eslint-disable-next-line react-hooks/exhaustive-deps */
-  }, [accessToken]);
+  }, [accessToken, isAuthenticated, offline, expiresAt, isLoading]);
 
   useEffect(() => {
     if (isElectron && selectedUser === '') {
@@ -321,6 +333,26 @@ export function Access() {
             }
             if (selectedUser === '' && loggedIn) setSelectedUser('unknownUser');
           });
+        } else if (
+          localStorage.getItem(LocalKey.loggedIn) === 'true' &&
+          whichUsers === 'online' &&
+          Boolean(
+            localStorage.getItem(LocalKey.onlineUserId) ||
+            localStorage.getItem(LocalKey.userId)
+          ) &&
+          !localStorage.getItem(LocalKey.goingOnline) &&
+          !reloginRef.current
+        ) {
+          // Cold start: the main process only holds the auth session in
+          // memory, so getProfile() is null until ipc.login() runs — which
+          // used to happen only when the user clicked their own name here,
+          // even though localStorage knows exactly who was logged in.
+          // Continue automatically instead (same path as that click):
+          // ipc.login() silently refreshes tokens from the stored refresh
+          // token and only shows the auth window if that fails. Loading
+          // then restores the last route (localUserKey(LocalKey.url)).
+          reloginRef.current = true;
+          handleGoOnline();
         }
       });
     }
@@ -358,6 +390,34 @@ export function Access() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [curUser]);
 
+  useEffect(() => {
+    if (expiresAt === -1) {
+      if (!offline) {
+        setSelectedUser('');
+      }
+      localStorage.removeItem(LocalKey.goingOnline);
+      reloginRef.current = false;
+      setRemoteBusy(false);
+      setCompleted(0);
+    }
+  }, [expiresAt, offline, setRemoteBusy, setCompleted]);
+
+  useEffect(() => {
+    if (
+      isElectron &&
+      !offline &&
+      whichUsers.startsWith('online') &&
+      expiresAt === -1 &&
+      !tokenCtx.state.authenticated() &&
+      !localStorage.getItem(LocalKey.goingOnline) &&
+      !reloginRef.current
+    ) {
+      reloginRef.current = true;
+      handleGoOnline();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [expiresAt, whichUsers, offline]);
+
   if (tokenCtx.state.accessToken && !tokenCtx.state.email_verified) {
     if (localStorage.getItem(LocalKey.loggedIn) === 'true')
       navigate('/emailunverified');
@@ -367,7 +427,9 @@ export function Access() {
     getGlobal('offlineOnly') ||
     (isElectron && selectedUser !== '')
   ) {
-    setTimeout(() => navigate('/loading'), 200);
+    // replace so neither /access nor /loading lingers in history — a back
+    // traversal into either re-runs bootstrap and discards in-memory work.
+    setTimeout(() => navigate('/loading', { replace: true }), 200);
   } else if (/Logout/i.test(view)) {
     navigate('/logout');
   } else if (whichUsers === '') {
@@ -379,8 +441,7 @@ export function Access() {
   };
 
   return (
-    <Box sx={{ width: '100%' }}>
-      <AppHead />
+    <AppLayout>
       {isElectron && (
         <Box sx={{ display: 'block' }}>
           <SectionHead>Hello I am under the AppHead</SectionHead>
@@ -509,7 +570,11 @@ export function Access() {
             </ContainerBox>
           )}
           {importOpen && (
-            <ImportTab isOpen={importOpen} onOpen={setImportOpen} />
+            <ImportTab
+              isOpen={importOpen}
+              onOpen={setImportOpen}
+              offerPtf={false}
+            />
           )}
         </Box>
       )}
@@ -522,7 +587,7 @@ export function Access() {
           text={''}
         />
       )}
-    </Box>
+    </AppLayout>
   );
 }
 

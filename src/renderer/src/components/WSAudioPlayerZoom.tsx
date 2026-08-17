@@ -31,6 +31,7 @@ function WSAudioPlayerZoom(props: IProps) {
 
   const t: IWsAudioPlayerZoomStrings = useSelector(audioPlayerZoomSelector);
   const readyRef = useRef(ready);
+  const prevFillPxRef = useRef<number | undefined>(undefined);
 
   const ZOOMIN_KEY = 'CTRL+1';
   const ZOOMOUT_KEY = 'CTRL+3';
@@ -51,14 +52,29 @@ function WSAudioPlayerZoom(props: IProps) {
     if (tellParent) onZoom(value);
   };
   useEffect(() => {
-    setZoom(fillPx);
     setZoomMin(fillPx);
+    // fillPx is the fit-to-width minimum. When it changes (resize, or duration
+    // change after a snip), only pull the zoom up if the current zoom is now
+    // below that minimum. Otherwise keep the user's zoom so editing audio
+    // doesn't reset how far they were zoomed in.
+    // On mount, curPx effect sets zoom; avoid overwriting with fillPx so menu reopen keeps zoom.
+    if (
+      prevFillPxRef.current !== undefined &&
+      prevFillPxRef.current !== fillPx &&
+      zoomRef.current < fillPx
+    ) {
+      setZoom(fillPx);
+    }
+    prevFillPxRef.current = fillPx;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fillPx]);
 
   const handleZoomIn = () => {
     if (!readyRef.current) return false;
-    setZoom(Math.min(zoomRef.current * 2, maxZoom));
+    // Short clips often fit at > maxZoom; capping at maxZoom would zoom OUT.
+    const next = Math.min(zoomRef.current * 2, maxZoom);
+    if (next <= zoomRef.current) return false;
+    setZoom(next);
     return true;
   };
   const handleZoomOut = () => {
@@ -79,12 +95,10 @@ function WSAudioPlayerZoom(props: IProps) {
     ];
     keys.forEach((k) => subscribe(k.key, k.cb));
     return () => {
-      // eslint-disable-next-line react-hooks/exhaustive-deps
       keys.forEach((k) => unsubscribe(k.key));
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
   return (
     <GrowingDiv>
       <ToolbarGrid container>
@@ -98,7 +112,7 @@ function WSAudioPlayerZoom(props: IProps) {
                 <IconButton
                   id="wsZoomIn"
                   onClick={handleZoomIn}
-                  disabled={!ready || zoom === maxZoom || zoom === 0}
+                  disabled={!ready || zoom >= maxZoom || zoom === 0}
                 >
                   <ZoomInIcon />
                 </IconButton>

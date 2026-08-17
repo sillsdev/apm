@@ -1,4 +1,12 @@
-import { useContext, useMemo } from 'react';
+import {
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+import { useLocation } from 'react-router-dom';
 import { shallowEqual, useSelector } from 'react-redux';
 import {
   DiscussionD,
@@ -10,11 +18,22 @@ import { Badge, Box, Fab, Grid } from '@mui/material';
 import { PassageDetailContext } from '../../context/PassageDetailContext';
 import DiscussionList from './DiscussionList';
 import DiscussIcon from '../../control/DiscussIcon';
+import { LightTooltip } from '../../control/LightTooltip';
 import { useOrbitData } from '../../hoc/useOrbitData';
 import { useDiscussionCount } from '../../crud/useDiscussionCount';
 import { discussionListSelector } from '../../selector';
+import { useMobile } from '../../utils/useMobile';
+import {
+  documentHasVerticalScrollbar,
+  measureScrollbarWidth,
+} from '../../utils/getScrollbarWidth';
+
+/** Sits just above PassageDetailLayout footer: border + pt + compact row + pb + safe area, plus small gap. */
+const discussionFabBottomDetailMobile =
+  'calc(8px + 1px + 4px + 40px + 2px + env(safe-area-inset-bottom, 0px))';
 
 export default function DiscussionPanel() {
+  const { isMobile, isMobileWidth } = useMobile();
   const ctx = useContext(PassageDetailContext);
   const {
     discussionSize,
@@ -24,6 +43,8 @@ export default function DiscussionPanel() {
     currentstep,
     setDiscussOpen,
   } = ctx.state;
+  const { pathname } = useLocation();
+  const isDetail = pathname.startsWith('/detail');
   const discussions = useOrbitData<DiscussionD[]>('discussion');
   const mediafiles = useOrbitData<MediaFileD[]>('mediafile');
   const groupmemberships = useOrbitData<GroupMembership[]>('groupmembership');
@@ -31,6 +52,35 @@ export default function DiscussionPanel() {
     discussionListSelector,
     shallowEqual
   );
+  const [windowWidth, setWindowWidth] = useState(
+    typeof window === 'undefined' ? discussionSize.width : window.innerWidth
+  );
+  const [scrollbarWidth, setScrollbarWidth] = useState(0);
+  const cachedScrollbarWidthRef = useRef(0);
+  useLayoutEffect(() => {
+    if (typeof document !== 'undefined') {
+      cachedScrollbarWidthRef.current = measureScrollbarWidth();
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const updateLayout = () => {
+      setWindowWidth(window.innerWidth);
+      setScrollbarWidth(
+        documentHasVerticalScrollbar() ? cachedScrollbarWidthRef.current : 0
+      );
+    };
+    updateLayout();
+    window.addEventListener('resize', updateLayout);
+    return () => window.removeEventListener('resize', updateLayout);
+  }, []);
+
+  // Use viewport width (not mobile-view toggle) so desktop Mobile view side-by-side
+  // keeps a fixed discussion column instead of width 100% over the waveform (TT-7373).
+  const panelWidth = isMobileWidth
+    ? Math.min(discussionSize.width, windowWidth)
+    : Math.min(discussionSize.width, Math.max(0, windowWidth - scrollbarWidth));
   const getDiscussionCount = useDiscussionCount({
     mediafiles,
     discussions,
@@ -47,28 +97,51 @@ export default function DiscussionPanel() {
       <Grid
         size={{ xs: 12 }}
         container
-        sx={{ width: discussionSize.width, justifyContent: 'center' }}
+        sx={{
+          // Narrow viewport: fill parent. Wide (incl. mobile-view toggle): fixed panelWidth.
+          width: isMobileWidth ? '100%' : panelWidth,
+          maxWidth: '100%',
+          minWidth: 0,
+          boxSizing: 'border-box',
+          justifyContent: 'center',
+          ...(isMobileWidth
+            ? {}
+            : {
+                marginRight: `${scrollbarWidth}px`,
+              }),
+        }}
       >
-        <Grid container direction="column">
+        <Grid container direction="column" sx={{ minWidth: 0, width: '100%' }}>
           <DiscussionList onClose={() => setDiscussOpen(false)} />
         </Grid>
       </Grid>
     ) : (
-      <Box sx={{ position: 'fixed', bottom: 10, right: 10, zIndex: 1000 }}>
+      <Box
+        sx={{
+          position: 'fixed',
+          bottom: isDetail
+            ? isMobile
+              ? discussionFabBottomDetailMobile
+              : 50
+            : 10,
+          right: 10,
+          zIndex: 1000,
+        }}
+      >
         {discussionCount > 0 ? (
           <Badge badgeContent={discussionCount} color="primary">
-            <Fab
-              size="small"
-              onClick={() => setDiscussOpen(true)}
-              title={t.open}
-            >
-              <DiscussIcon width={40} height={40} />
-            </Fab>
+            <LightTooltip title={t.open}>
+              <Fab size="small" onClick={() => setDiscussOpen(true)}>
+                <DiscussIcon width={40} height={40} />
+              </Fab>
+            </LightTooltip>
           </Badge>
         ) : (
-          <Fab size="small" onClick={() => setDiscussOpen(true)} title={t.open}>
-            <DiscussIcon width={40} height={40} />
-          </Fab>
+          <LightTooltip title={t.open}>
+            <Fab size="small" onClick={() => setDiscussOpen(true)}>
+              <DiscussIcon width={40} height={40} />
+            </Fab>
+          </LightTooltip>
         )}
       </Box>
     ))

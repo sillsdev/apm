@@ -15,6 +15,10 @@ import {
 import ProjectDownload from './ProjectDownload';
 import { dataPath, LocalKey, PathType } from '../utils';
 import {
+  isSuccessfulMediaFetch,
+  shouldCloseMissingFilesDialog,
+} from '../utils/missingDownloadCompletion';
+import {
   related,
   useProjectPlans,
   getDownloadableMediaInPlans,
@@ -119,6 +123,7 @@ export const ProjectDownloadAlert = (props: IProps) => {
   const [organizedByPl, setOrganizedByPl] = React.useState('');
   const [downAmt, setDownAmt] = React.useState('missing');
   const [showMissingFiles, setShowMissingFiles] = React.useState(false);
+  const [downloadIncomplete, setDownloadIncomplete] = React.useState(false);
   const projectPlans = useProjectPlans();
   const fetchUrl = useFetchUrlNow();
 
@@ -154,8 +159,10 @@ export const ProjectDownloadAlert = (props: IProps) => {
     m.media.attributes.contentType !== MarkDownType &&
     m.media.attributes.contentType !== UriLinkType;
 
-  const getNeedyRemoteIds = async () => {
-    if (downloadingRef.current) return [];
+  const getNeedyRemoteIds = async (opts?: { force?: boolean }) => {
+    if (downloadingRef.current && !opts?.force) {
+      return { projectIds: [] as string[], missingIds: [] as string[] };
+    }
     const ops = offlineProjects.filter(
       (op) => op?.attributes?.offlineAvailable
     );
@@ -262,22 +269,23 @@ export const ProjectDownloadAlert = (props: IProps) => {
     }
     setMissingIds(newMissingIds);
     setFilteredIds(newFilteredIds);
+    // Default radio is "missing"; seed size from missing bytes, not full project.
     if (downloadSize !== missingSize) {
-      const newSize = Array.from(needyProject).reduce(
-        (p, c) => p + (limits.get(c)?.total || 0),
-        0
-      );
-      setDownloadSize(newSize);
-      sizeRef.current = newSize;
+      setDownloadSize(missingSize);
+      sizeRef.current = missingSize;
     }
 
-    return Array.from(needyProject);
+    return {
+      projectIds: Array.from(needyProject),
+      missingIds: newMissingIds,
+    };
   };
 
   const handleClose = (cancel?: boolean) => () => {
     setAlert(false);
     setDownloading(false);
     setProgress(0);
+    setDownloadIncomplete(false);
     cb(cancel);
   };
 
@@ -291,6 +299,7 @@ export const ProjectDownloadAlert = (props: IProps) => {
       handleClose(false)();
       return;
     }
+    setDownloadIncomplete(false);
     setDownloading(true);
     if (downAmt === 'project') {
       setDownloadOpen(true);
@@ -304,24 +313,48 @@ export const ProjectDownloadAlert = (props: IProps) => {
       }
       handleClose()();
     } else if (downAmt === 'missing') {
+      const ids = [...missingIds];
       let n = 0;
-      for (const id of missingIds) {
+      for (const id of ids) {
         if (cancelRef.current) break;
-        await fetchUrl({ id, cancelled: () => false });
+        try {
+          const path = await fetchUrl({
+            id,
+            cancelled: () => cancelRef.current,
+          });
+          if (!isSuccessfulMediaFetch(path, ts.expiredToken)) {
+            console.warn('missing file download failed', id, path);
+          }
+        } catch (e) {
+          console.warn('missing file download error', id, e);
+        }
         n++;
-        setProgress((n / missingIds.length) * 100);
+        setProgress(ids.length > 0 ? (n / ids.length) * 100 : 100);
       }
-      handleClose()();
+      if (cancelRef.current) {
+        handleClose(true)();
+        return;
+      }
+      // Re-scan disk; only close when nothing remains missing (TT-6932).
+      const scan = await getNeedyRemoteIds({ force: true });
+      setNeedyIds(scan.projectIds);
+      setDownloading(false);
+      setProgress(0);
+      if (shouldCloseMissingFilesDialog(scan.missingIds.length)) {
+        handleClose(false)();
+      } else {
+        setDownloadIncomplete(true);
+      }
     }
   };
 
   React.useEffect(() => {
-    if (isElectron && tokenCtx.state.accessToken && !downloadingRef.current) {
-      getNeedyRemoteIds().then((projRemIds) => {
+    if (isElectron && tokenCtx?.state?.accessToken && !downloadingRef.current) {
+      getNeedyRemoteIds().then((scan) => {
         if (sizeRef.current === 0) {
           handleClose(false)();
-        } else if (projRemIds.length > 0) {
-          setNeedyIds(projRemIds);
+        } else if (scan.projectIds.length > 0) {
+          setNeedyIds(scan.projectIds);
           setAlert(true);
         } else cb();
       });
@@ -332,7 +365,6 @@ export const ProjectDownloadAlert = (props: IProps) => {
   const mb = (bytes: number) =>
     bytes > 0 ? Math.ceil(bytes / 1024 / 1024 + 0.5) : 0;
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   const sizeMb = useMemo(() => mb(downloadSize), [downloadSize]);
 
   const szOfVal = (proj: string, value: string) => {
@@ -378,6 +410,11 @@ export const ProjectDownloadAlert = (props: IProps) => {
         >
           <Box>
             <DialogContent>
+              {downloadIncomplete && (
+                <Typography color="error" sx={{ mb: 1, fontSize: 'small' }}>
+                  {ts.mediaError} ({missingIds.length})
+                </Typography>
+              )}
               {progress > 0 && (
                 <Stack
                   sx={{ display: 'flex', alignItems: 'center', mb: 1 }}

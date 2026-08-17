@@ -2,6 +2,16 @@
 // This file mirrors the functions added to `window.electron` in src/preload/preload.js
 import { User } from '@auth0/auth0-react';
 
+export interface IAuthProcessStrings {
+  abortLogin: string;
+  back: string;
+  exit: string;
+  loginFailed: string;
+  tokenExchangeFailed: string;
+  tryAgain: string;
+  workOffline: string;
+}
+
 export interface MainAPI {
   appData: () => Promise<string | undefined>;
   audacityOpen: () => Promise<string[]>;
@@ -17,13 +27,17 @@ export interface MainAPI {
   logout: () => Promise<unknown>;
   refreshToken: () => Promise<unknown>;
   setAddToDict: (value: string) => Promise<void>;
+  setAuthProcessStrings: (strings: IAuthProcessStrings) => Promise<void>;
   setSpellLangs: (codes: string[]) => Promise<unknown>;
   log: (...args: any[]) => Promise<void>;
   temp: () => Promise<string>;
   exitApp: () => Promise<unknown>;
   relaunchApp: () => Promise<unknown>;
   closeApp: () => Promise<unknown>;
-  importOpen: () => Promise<string[] | undefined>;
+  importOpen: (
+    filters: { name: string; extensions: string[] }[]
+  ) => Promise<string[] | undefined>;
+  openDirectoryDialog: () => Promise<string[] | undefined>;
   execPath: () => Promise<string>;
   md5File: (filePath: string) => Promise<string>;
   isWindows: () => Promise<boolean>;
@@ -40,6 +54,7 @@ export interface MainAPI {
   ) => Promise<unknown>;
   append: (filePath: string, data: unknown) => Promise<unknown>;
   delete: (filePath: string) => Promise<unknown>;
+  deleteFolder: (folder: string) => Promise<unknown>;
   copyFile: (from: string, to: string) => Promise<unknown>;
   times: (
     filePath: string,
@@ -95,6 +110,7 @@ export interface MainAPI {
   zipStreamEntryData: (zip: string, name: string) => Promise<Uint8Array>;
   zipStreamEntryText: (zip: string, name: string) => Promise<string>;
   zipStreamClose: (zip: string) => Promise<void>;
+  zipFolder: (sourceDir: string, outFile: string) => Promise<void>;
   writeBuffer: (
     filePath: string,
     blob: ArrayBuffer | Uint8Array
@@ -104,4 +120,41 @@ export interface MainAPI {
   downloadStat: (token: string) => Promise<string>;
   downloadClose: (token: string) => Promise<void>;
   normalize: (input: string, output?: string) => Promise<unknown>;
+  convertToMp3: (input: string, output: string) => Promise<unknown>;
+  /** Runs `migration/05-burrito-to-ptf.js` to build a Scripture Burrito wrapper (audio) into a PTF. */
+  burritoToPtf: (payload: BurritoToPtfPayload) => Promise<BurritoToPtfResult>;
+}
+
+export interface BurritoToPtfPayload {
+  wrapperDirPath: string;
+  /** Bible book id (e.g. RUT, LUK) matching the audio burrito scope keys. */
+  bookId: string;
+  /** Output directory for the generated `.ptf` file. */
+  outputDir: string;
+  /** Options passed to the migration script (JSON-serializable). */
+  options?: BurritoToPtfOptions;
+}
+
+export interface BurritoToPtfOptions {
+  include?: {
+    /** Include audio mediafiles and embed `media/*`. Default true when omitted. */
+    audio?: boolean;
+    /** Include transcription from USFM (sister textTranslation burrito). Default true when omitted. */
+    transcription?: boolean;
+  };
+  /**
+   * Selected chapter numbers (strings) for this book; include `__other__` for non-numeric references.
+   * Omit or `undefined` = all chapters; empty array = no passages.
+   */
+  chapters?: string[];
+  sister?: {
+    /** `metadata.type.flavorType.flavor.name` for the sister burrito that holds USFM text. */
+    transcriptionFlavorName?: string;
+  };
+}
+
+export interface BurritoToPtfResult {
+  ok: boolean;
+  ptfPath?: string;
+  error?: string;
 }

@@ -11,7 +11,7 @@ interface IProps {
 }
 export function ExternalLink(props: IProps) {
   const { register, finish } = props;
-  const externalRef = useRef<any>();
+  const externalRef = useRef<any>(undefined);
   const [externalUrl, setExternalUrl] = useState<string>('#');
   const getGlobal = useGetGlobal();
 

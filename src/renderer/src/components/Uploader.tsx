@@ -8,15 +8,16 @@ import {
   MediaFileAttributes,
   MediaFileD,
 } from '../model';
-import MediaUpload, { FaithbridgeType, SIZELIMIT } from './MediaUpload';
+import MediaUpload, { FaithbridgeType } from './MediaUpload';
+import { typeLimit } from '../utils/typeLimit';
 import {
+  ArtifactTypeSlug,
   findRecord,
   pullTableList,
   related,
   remoteIdNum,
   useArtifactType,
   useOfflnMediafileCreate,
-  VernacularTag,
 } from '../crud';
 import { TokenContext } from '../context/TokenProvider';
 import Memory from '@orbit/memory';
@@ -34,28 +35,39 @@ import { RecordKeyMap } from '@orbit/records';
 import { AlertSeverity } from '../hoc/SnackBar';
 import { getContentType } from '../utils/contentType';
 import { OrbitNetworkErrorRetries } from '../../api-variable';
+import { formatUploadTerminalFailureMessage } from '../store/upload/uploadTerminalMessages';
 import { UploadType } from './UploadType';
 import { Box } from '@mui/material';
+import { BigDialogBp } from '../hoc/BigDialogBp';
 
 interface IProps {
   noBusy?: boolean | undefined;
-  recordAudio: boolean;
-  allowWave?: boolean | undefined;
+  /** When true, do not wait for `importexportBusy` before staging upload (record save may hold it). */
+  skipImportExportWait?: boolean | undefined;
+  /** Show the combined Add Audio Resource dialog with Upload and Record modes. */
+  audioUploadOrRecord?: boolean | undefined;
   defaultFilename?: string | undefined;
   isOpen: boolean;
   onOpen: (visible: boolean) => void;
-  showMessage: (msg: string | JSX.Element, alert?: AlertSeverity) => void;
-  finish?: ((planId: string, mediaRemoteIds?: string[]) => void) | undefined; // logic when upload complete
-  metaData?: JSX.Element | undefined; // component embeded in dialog
+  showMessage: (msg: string | React.JSX.Element, alert?: AlertSeverity) => void;
+  finish?:
+    | ((planId: string, mediaRemoteIds?: string[]) => Promise<void>)
+    | undefined; // logic when upload complete
+  metaData?: React.JSX.Element | undefined; // component embeded in dialog
+  // Awaited once when the upload starts, before any media is created. Lets the
+  // embedded metaData commit deferred edits (e.g. create a new artifact
+  // category) so `finish` sees the resolved ids.
+  beforeUpload?: (() => Promise<void>) | undefined;
   ready?: (() => boolean) | undefined; // if false control is disabled
   // createProject?: (name: string) => Promise<string>;
-  cancelled: React.MutableRefObject<boolean>;
+  cancelled: React.RefObject<boolean>;
   cancelReset?: (() => void) | undefined; // reset the cancelled state
   multiple?: boolean | undefined;
   mediaId?: string | undefined;
   importList?: File[] | undefined;
   artifactState?: { id?: string | null } | undefined;
   passageId?: string | undefined;
+  planId?: string | undefined;
   sourceMediaId?: string | undefined;
   sourceSegments?: string | undefined;
   performedBy?: string | undefined;
@@ -66,14 +78,15 @@ interface IProps {
   inValue?: string | undefined; // used when adding Aquifer markdown
   team?: string | undefined; // used when adding a card to check speakers
   onNonAudio?: ((nonAudio: boolean) => void) | undefined;
+  uploadDialogBp?: BigDialogBp;
 }
 
 export const Uploader = (props: IProps) => {
   const {
     noBusy,
+    skipImportExportWait,
     mediaId,
-    recordAudio,
-    allowWave,
+    audioUploadOrRecord,
     defaultFilename,
     isOpen,
     onOpen,
@@ -84,6 +97,7 @@ export const Uploader = (props: IProps) => {
     importList,
     artifactState,
     passageId,
+    planId,
     sourceMediaId,
     sourceSegments,
     performedBy,
@@ -95,8 +109,10 @@ export const Uploader = (props: IProps) => {
     team,
     onNonAudio,
     finish,
+    uploadDialogBp,
   } = props;
-  const { metaData, ready } = props;
+  const { metaData, ready, beforeUpload } = props;
+  const [isDeveloper] = useGlobal('developer');
   const t: IMediaTabStrings = useSelector(mediaTabSelector, shallowEqual);
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
   const uploadError = useSelector((state: IState) => state.upload.errmsg);
@@ -117,15 +133,17 @@ export const Uploader = (props: IProps) => {
   const [user] = useGlobal('user');
   const planIdRef = useRef<string>(plan);
   const successCount = useRef<number>(0);
-  const fileList = useRef<File[]>();
+  const fileList = useRef<File[] | undefined>(undefined);
   const ctx = useContext(TokenContext).state;
   const mediaIdRef = useRef<string[]>([]);
   const artifactTypeRef = useRef<string>('');
   const { createMedia } = useOfflnMediafileCreate();
   const [, setComplete] = useGlobal('progress');
   const [errMsgs] = useState<string[]>([]);
-  const { localizedArtifactTypeFromId } = useArtifactType();
+  const { localizedArtifactTypeFromId, slugFromId } = useArtifactType();
   const getGlobal = useGetGlobal();
+  /** True if import/export was busy when the current batch started (before we set busy). */
+  const importWasBusyRef = useRef(false);
 
   const handleSpeakerChange = (speaker: string) => {
     onSpeakerChange && onSpeakerChange(speaker);
@@ -142,6 +160,7 @@ export const Uploader = (props: IProps) => {
 
   const afterUploadCb = async (mediaId: string | undefined) => {
     if (mediaId) {
+      if (beforeUpload) await beforeUpload();
       successCount.current = 1;
       mediaIdRef.current = [mediaId];
     } else successCount.current = 0;
@@ -154,7 +173,7 @@ export const Uploader = (props: IProps) => {
     while (err) err = errMsgs.pop();
   };
 
-  const finishMessage = () => {
+  const finishMessage = async () => {
     console.log('finishMessage', successCount.current);
     //wait for any error messages to show up
     setTimeout(() => {
@@ -178,7 +197,7 @@ export const Uploader = (props: IProps) => {
       setComplete(0);
       setBusy(false);
       cancelled.current = successCount.current <= 0;
-      finish && finish(planIdRef.current, mediaIdRef.current);
+      if (finish) finish(planIdRef.current, mediaIdRef.current);
     }, 1000);
   };
 
@@ -313,6 +332,7 @@ export const Uploader = (props: IProps) => {
       recordedbyUserId: string;
       sourceMediaId: string;
     };
+    const isFirstFile = currentlyLoading === 0;
     nextUpload({
       record: mediafile,
       files: uploadList,
@@ -322,6 +342,19 @@ export const Uploader = (props: IProps) => {
       errorReporter,
       uploadType: uploadType ?? UploadType.Media,
       cb: itemComplete,
+      // First file waits only for import/export that was already in progress at batch
+      // start; later files skip the wait while importexportBusy stays true until
+      // finishMessage (set in uploadMedia).
+      getImportExportBusy:
+        !skipImportExportWait && isFirstFile && importWasBusyRef.current
+          ? () => Boolean(getGlobal('importexportBusy'))
+          : undefined,
+      onTerminalFailure: (info) => {
+        showMessage(
+          formatUploadTerminalFailureMessage(t, info),
+          AlertSeverity.Warning
+        );
+      },
     });
   };
   const preUpload = async (files: File[]) => {
@@ -365,7 +398,9 @@ export const Uploader = (props: IProps) => {
       showMessage(t.selectFiles);
       return;
     }
-    if (!noBusy) setBusy(true);
+    // Commit any deferred metaData edits (e.g. create a newly typed artifact
+    // category) before media records are created so `finish` sees final ids.
+    if (beforeUpload) await beforeUpload();
     if (
       uploadType &&
       ![
@@ -380,6 +415,8 @@ export const Uploader = (props: IProps) => {
     fileList.current = files;
     mediaIdRef.current = new Array<string>();
     artifactTypeRef.current = artifactState?.id || '';
+    importWasBusyRef.current = Boolean(getGlobal('importexportBusy'));
+    if (!noBusy) setBusy(true);
     doUpload(0);
   };
 
@@ -410,7 +447,7 @@ export const Uploader = (props: IProps) => {
               uploadError.indexOf('toobig:') + 'toobig:'.length
             )
           )
-          .replace('{2}', SIZELIMIT(uploadType ?? UploadType.Media).toString());
+          .replace('{2}', typeLimit(uploadType ?? UploadType.Media).toString());
       }
       errMsgs.push(msg);
       setBusy(false);
@@ -430,15 +467,27 @@ export const Uploader = (props: IProps) => {
       const psg = findRecord(memory, 'passage', passageId);
       const section = findRecord(memory, 'section', related(psg, 'section'));
       planIdRef.current = related(section, 'plan');
+    } else if (planId) {
+      planIdRef.current = planId;
     } else if (plan !== '') planIdRef.current = plan;
-  }, [plan, passageId, memory]);
+  }, [plan, planId, passageId, memory]);
+
+  if (audioUploadOrRecord && !defaultFilename && isDeveloper)
+    throw new Error('defaultFilename is required');
+
+  const hasImport = Boolean(importList && importList.length > 0);
 
   return (
     <Box sx={{ width: '100%' }}>
-      {recordAudio && ready && (!importList || importList.length === 0) && (
+      {audioUploadOrRecord && !hasImport && (
         <PassageRecordDlg
-          artifactId={artifactState?.id ?? VernacularTag}
+          artifactTypeSlug={
+            artifactState?.id
+              ? slugFromId(artifactState.id)
+              : ArtifactTypeSlug.Vernacular
+          }
           passageId={passageId}
+          planId={planIdRef.current}
           visible={isOpen}
           onVisible={onOpen}
           mediaId={mediaId ?? ''}
@@ -446,17 +495,23 @@ export const Uploader = (props: IProps) => {
           onCancel={uploadCancel}
           metaData={metaData}
           ready={ready}
-          defaultFilename={defaultFilename}
-          allowWave={allowWave}
+          defaultFilename={defaultFilename ?? 'resource'}
+          allowWave={false}
           speaker={performedBy}
           onSpeaker={handleSpeakerChange}
           team={team}
+          uploadType={uploadType || UploadType.Media}
+          uploadMethod={uploadMedia}
+          multiple={multiple}
+          inValue={inValue}
+          onNonAudio={onNonAudio}
         />
       )}
-      {!recordAudio && (!importList || importList.length === 0) && (
+      {!audioUploadOrRecord && !hasImport && (
         <MediaUpload
           visible={isOpen}
           onVisible={onOpen}
+          bp={uploadDialogBp}
           uploadType={uploadType || UploadType.Media}
           multiple={multiple}
           uploadMethod={uploadMedia}

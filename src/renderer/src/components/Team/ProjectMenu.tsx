@@ -30,6 +30,7 @@ import {
 } from '../../selector';
 import { shallowEqual, useSelector } from 'react-redux';
 import { addPt } from '../../utils/addPt';
+import { useMobile } from '../../utils';
 
 interface IProps {
   inProject?: boolean;
@@ -60,7 +61,7 @@ export function ProjectMenu(props: IProps) {
   const offlineProjectRead = useOfflnProjRead();
   const [projType, setProjType] = useState('');
   const t: ICardsStrings = useSelector(cardsSelector, shallowEqual);
-  const [shift, setShift] = React.useState(false);
+  const { isMobile } = useMobile();
   const tpb: IProjButtonsStrings = useSelector(
     projButtonsSelector,
     shallowEqual
@@ -75,7 +76,6 @@ export function ProjectMenu(props: IProps) {
 
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {
     event.stopPropagation();
-    setShift(event.shiftKey);
     setAnchorEl(event.currentTarget);
     if (stopPlayer) stopPlayer();
   };
@@ -87,8 +87,6 @@ export function ProjectMenu(props: IProps) {
       action(what);
     }
   };
-
-  useEffect(() => {});
 
   const offlineProject = offlineProjectRead(project);
 
@@ -110,7 +108,7 @@ export function ProjectMenu(props: IProps) {
         open={Boolean(anchorEl)}
         onClose={handle('Close')}
       >
-        {!inProject && isAdmin && (!isOffline || offlineOnly) && (
+        {!isMobile && !inProject && isAdmin && (!isOffline || offlineOnly) && (
           <StyledMenuItem id="projMenuSettings" onClick={handle('settings')}>
             <ListItemIcon>
               <SettingsIcon />
@@ -118,20 +116,12 @@ export function ProjectMenu(props: IProps) {
             <ListItemText primary={t.settings} />
           </StyledMenuItem>
         )}
-        {shift && !inProject && isAdmin && !isOffline && (
-          <StyledMenuItem id="projMenuCopySameOrg" onClick={handle('copysame')}>
+        {!isMobile && !inProject && isAdmin && !isOffline && (
+          <StyledMenuItem id="projMenuCopy" onClick={handle('copyproject')}>
             <ListItemIcon>
               <ContentCopyIcon />
             </ListItemIcon>
-            <ListItemText primary={t.copySame} />
-          </StyledMenuItem>
-        )}
-        {shift && !inProject && isAdmin && !isOffline && (
-          <StyledMenuItem id="projMenuCopyNewOrg" onClick={handle('copynew')}>
-            <ListItemIcon>
-              <ContentCopyIcon />
-            </ListItemIcon>
-            <ListItemText primary={t.copyNew} />
+            <ListItemText primary={t.copyProject} />
           </StyledMenuItem>
         )}
         {isElectron && !isOffline && !justFilter && isDeveloper && (
@@ -155,6 +145,7 @@ export function ProjectMenu(props: IProps) {
           </StyledMenuItem>
         )} */}
         {!justFilter &&
+          !isMobile &&
           pathname &&
           projType.toLowerCase() === 'scripture' &&
           pathname.indexOf(ArtifactTypeSlug.Retell) === -1 &&
@@ -166,7 +157,7 @@ export function ProjectMenu(props: IProps) {
               <ListItemText primary={addPt(tpb.integrations)} />
             </StyledMenuItem>
           )}
-        {!inProject && (!isOffline || offlineOnly) && isAdmin && (
+        {!isMobile && !inProject && (!isOffline || offlineOnly) && isAdmin && (
           <StyledMenuItem id="projMenuCat" onClick={handle('category')}>
             <ListItemIcon>
               <EditIcon />
@@ -176,7 +167,7 @@ export function ProjectMenu(props: IProps) {
             />
           </StyledMenuItem>
         )}
-        {!justFilter && isAdmin && !inProject && (
+        {!isMobile && !justFilter && isAdmin && !inProject && (
           <StyledMenuItem id="projMenuImp" onClick={handle('import')}>
             <ListItemIcon>
               <ImportIcon />
@@ -201,7 +192,8 @@ export function ProjectMenu(props: IProps) {
           </StyledMenuItem>
         ) : (
           (!isOffline || offlineOnly) &&
-          isAdmin && (
+          isAdmin &&
+          !isMobile && (
             <StyledMenuItem id="projMenuDel" onClick={handle('delete')}>
               <ListItemIcon>
                 <DeleteIcon />

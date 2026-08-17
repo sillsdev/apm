@@ -9,7 +9,9 @@ import {
   styled,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
-import { VProject, DialogMode } from '../../model';
+import { VProject, DialogMode, ICardsStrings } from '../../model';
+import { shallowEqual, useSelector } from 'react-redux';
+import { cardsSelector } from '../../selector';
 import { ProjectDialog } from './ProjectDialog';
 import { ILanguage } from '../../control';
 import { initLang } from '../../control/initLang';
@@ -52,13 +54,12 @@ export const AddCard = (props: IProps) => {
   const ctx = React.useContext(TeamContext);
   const {
     projectCreate,
-    cardStrings,
     teamProjects,
     personalProjects,
     loadProject,
     generalBook,
   } = ctx.state;
-  const t = cardStrings;
+  const t: ICardsStrings = useSelector(cardsSelector, shallowEqual);
 
   const { leaveHome } = useHome();
   const { getOrgDefault, setOrgDefault } = useOrgDefaults();
@@ -125,7 +126,10 @@ export const AddCard = (props: IProps) => {
 
   const nameInUse = (newName: string) => {
     const projects = team ? teamProjects(team.id) : personalProjects;
-    const sameNameRec = projects.filter((p) => p?.attributes?.name === newName);
+    const trimmed = newName.trim();
+    const sameNameRec = projects.filter(
+      (p) => (p?.attributes?.name ?? '').trim() === trimmed
+    );
     return sameNameRec.length > 0;
   };
 

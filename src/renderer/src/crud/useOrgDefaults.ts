@@ -1,11 +1,19 @@
 import { useMemo } from 'react';
 import { useGlobal } from '../context/useGlobal';
 import { Organization, OrganizationD, RoleNames } from '../model';
-import { UpdateRecord } from '../model/baseModel';
+import { UpdateAttribute } from '../model/baseModel';
 import { findRecord } from './tryFindRecord';
 import { useJsonParams } from '../utils';
 
 export const orgDefaultWorkflowProgression = 'WorkflowProgression';
+/**
+ * Persisted values for {@link orgDefaultWorkflowProgression}. The string values
+ * are stored verbatim in org defaults, so they must not change.
+ */
+export enum WorkflowProgression {
+  Passage = 'passage',
+  Step = 'step',
+}
 export const orgDefaultDiscussionFilter = 'discussionFilter';
 export const orgDefaultConsCheckComp = 'ConsultantCheckCompare';
 export const orgDefaultSortTag = 'ktSort';
@@ -15,6 +23,7 @@ export const orgDefaultResKw = 'ResKw';
 export const orgDefaultLangProps = 'langProps';
 export const orgDefaultFeatures = 'features';
 export const orgDefaultVoices = 'voices';
+/** Legacy org ASR; read fallback and written from Vernacular transcribe step settings. */
 export const orgDefaultAsr = 'asr';
 export const orgDefaultPermissions = 'permissions';
 export const orgDefaultProjSort = 'projSort';
@@ -51,7 +60,15 @@ export const useOrgDefaults = () => {
     ) as OrganizationD;
     if (!org) return; // no defaults on Personal Team
     setDefault(label, value, org);
-    memory.update((t) => UpdateRecord(t, org, user));
+    memory.update((t) =>
+      UpdateAttribute(
+        t,
+        org,
+        'defaultParams',
+        org.attributes.defaultParams,
+        user
+      )
+    );
   };
   const canSetOrgDefault = useMemo(
     () => orgRole === RoleNames.Admin && (offlineOnly || !offline),

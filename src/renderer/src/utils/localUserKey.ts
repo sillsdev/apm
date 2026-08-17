@@ -1,6 +1,7 @@
 import { isElectron } from '../../api-variable';
 
 export enum LocalKey {
+  team = 'team', // last team selected
   time = 'lastTime', //datachanges last done
   url = 'fromUrl', //last place specific user was so we can go back there
   deeplink = 'deeplink', //specific path was requested in browser url - we may not know the user.  Do NOT use LocalUserKey with deeplink
@@ -31,6 +32,10 @@ export enum LocalKey {
   mode = 'mode', // last mode (online-cloud or online-local)
   fontData = 'fontData', // last font data
   microphoneId = 'microphone-id', // preferred recording input
+  mobileView = 'mobileView', // toggle mobile view
+  carefulSpeaker = 'carefulSpeaker', // last speaker used for careful speech
+  phraseBackSpeaker = 'phraseBackSpeaker', // last speaker used for phrase back translation
+  lwcSpeaker = 'lwcSpeaker', // last speaker used for LWC translation
 }
 
 export const localUserKey = (id: LocalKey): string => {

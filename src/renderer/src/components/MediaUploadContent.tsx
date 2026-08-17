@@ -1,7 +1,8 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { shallowEqual, useSelector } from 'react-redux';
 import { IMediaUploadStrings } from '../model';
 import {
+  Box,
   Button,
   DialogActions,
   DialogContent,
@@ -16,12 +17,9 @@ import { mediaUploadSelector } from '../selector';
 import { LinkEdit } from '../control/LinkEdit';
 import { MarkDownEdit } from '../control/MarkDownEdit';
 import { isUrl } from '../utils';
-import {
-  FaithbridgeType,
-  MarkDownType,
-  SIZELIMIT,
-  UriLinkType,
-} from './MediaUpload';
+import { filterFilesBySizeLimit } from '../utils/filterFilesBySizeLimit';
+import { typeLimit } from '../utils/typeLimit';
+import { FaithbridgeType, MarkDownType, UriLinkType } from './MediaUpload';
 import { UploadType } from './UploadType';
 import { FileDrop } from 'react-file-drop';
 
@@ -52,10 +50,11 @@ interface ITargetProps {
   acceptmime: string;
   multiple?: boolean;
   handleFiles: (files: FileList | undefined) => void;
+  inputRef?: React.RefObject<HTMLInputElement | null>;
 }
 
 const DropTarget = (targetProps: ITargetProps) => {
-  const { name, multiple, acceptextension, acceptmime, handleFiles } =
+  const { name, multiple, acceptextension, acceptmime, handleFiles, inputRef } =
     targetProps;
   const t: IMediaUploadStrings = useSelector(mediaUploadSelector, shallowEqual);
 
@@ -81,6 +80,7 @@ const DropTarget = (targetProps: ITargetProps) => {
           : name}
       </MyLabel>
       <HiddenInput
+        ref={inputRef}
         id="upload"
         type="file"
         accept={acceptextension}
@@ -98,6 +98,7 @@ const DropTarget = (targetProps: ITargetProps) => {
           : name}
       </MyLabel>
       <HiddenInput
+        ref={inputRef}
         id="upload"
         type="file"
         accept={acceptmime}
@@ -108,14 +109,21 @@ const DropTarget = (targetProps: ITargetProps) => {
   );
 };
 
+export interface MediaUploadControlsRef {
+  handleAddOrSave: (() => void) | null;
+  handleCancel: (() => void) | null;
+}
+
 interface IProps {
   onVisible: (v: boolean) => void;
   uploadType: UploadType;
-  uploadMethod?: ((files: File[]) => void) | undefined;
+  uploadMethod?:
+    | ((files: File[]) => void | boolean | Promise<void | boolean>)
+    | undefined;
   multiple?: boolean | undefined;
   cancelMethod?: (() => void) | undefined;
   cancelLabel?: string | undefined;
-  metaData?: JSX.Element | undefined;
+  metaData?: React.JSX.Element | undefined;
   ready?: (() => boolean) | undefined;
   speaker?: string | undefined;
   onSpeaker?: ((speaker: string) => void) | undefined;
@@ -125,6 +133,15 @@ interface IProps {
   onValue?: ((value: string) => void) | undefined;
   onNonAudio?: ((nonAudio: boolean) => void) | undefined;
   saveText?: string | undefined;
+  controlsRef?: React.RefObject<MediaUploadControlsRef>;
+  onSaveDisabled?: ((disabled: boolean) => void) | undefined;
+  /** When true, render `DialogContent`/`DialogActions` without the wrapping Box
+   *  so they are direct children of a shared Dialog paper (MUI flex handles the
+   *  scroll region + pinned actions, matching the record body).
+   *  TODO future work: I would like to see if we can get rid of the wrapper altogether,
+   * but don't have time to check all the usages now. */
+
+  noWrapper?: boolean | undefined;
 }
 
 function MediaUploadContent(props: IProps) {
@@ -145,14 +162,17 @@ function MediaUploadContent(props: IProps) {
     onValue,
     onNonAudio,
     saveText,
+    controlsRef,
+    onSaveDisabled,
+    noWrapper,
   } = props;
   const [name, setName] = useState('');
   const [files, setFilesx] = useState<File[]>([]);
   const filesRef = useRef(files);
   const { showMessage } = useSnackBar();
   const [acceptextension, setAcceptExtension] = useState('');
-  const [sizeLimit, setSizeLimit] = useState(0);
   const [acceptmime, setAcceptMime] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [hasRights, setHasRight] = useState(!onSpeaker || Boolean(speaker));
   const [progress, setProgress] = useState(false);
   const t: IMediaUploadStrings = useSelector(mediaUploadSelector, shallowEqual);
@@ -170,12 +190,23 @@ function MediaUploadContent(props: IProps) {
     t.faithbridgeTitle,
   ];
 
-  const handleAddOrSave = () => {
-    if (uploadMethod && files) {
-      setProgress(true);
-      uploadMethod(files);
+  const handleAddOrSave = async () => {
+    if (!uploadMethod || !files) return;
+
+    setProgress(true);
+    try {
+      const started = await Promise.resolve(uploadMethod(files));
+      // If the upload method indicates “nothing started” (e.g. async validation failed),
+      // keep the file selected and re-enable the dialog.
+      if (started === false) {
+        setProgress(false);
+        return;
+      }
+      // Historical behavior: clear selection after initiating an upload.
+      handleFiles(undefined);
+    } catch {
+      setProgress(false);
     }
-    handleFiles(undefined);
   };
   const handleCancel = () => {
     handleFiles(undefined);
@@ -183,6 +214,29 @@ function MediaUploadContent(props: IProps) {
       cancelMethod();
     }
     onVisible(false);
+  };
+  const saveDisabled = useMemo(
+    () =>
+      (ready && !ready()) ||
+      !files ||
+      files.length === 0 ||
+      (files[0] as File).name.trim() === '' ||
+      !hasRights ||
+      (uploadType === UploadType.Link && !isUrl((files[0] as File).name)) ||
+      progress,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [ready, files, hasRights, uploadType, isUrl, progress]
+  );
+
+  useEffect(() => {
+    onSaveDisabled?.(saveDisabled);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [saveDisabled]);
+
+  const clearFileInput = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
   const setFiles = (f: File[]) => {
     filesRef.current = f;
@@ -197,20 +251,15 @@ function MediaUploadContent(props: IProps) {
         : files.length.toString() + ' files selected';
   };
   const checkSizes = (files: File[], sizelimit: number) => {
-    const smallenoughfiles = Array.from(
-      files.filter((s) => s.size <= sizelimit * 1000000)
-    );
-    if (smallenoughfiles.length < files.length) {
-      const rejectedFiles = Array.from(files).filter(
-        (s) => s.size > sizelimit * 1000000
-      );
+    const { accepted, rejected } = filterFilesBySizeLimit(files, sizelimit);
+    if (rejected.length > 0) {
       showMessage(
         t.toobig
-          .replace('{0}', rejectedFiles.map((f) => f.name).join(', '))
+          .replace('{0}', rejected.map((f) => f.name).join(', '))
           .replace('{1}', sizelimit.toString())
       );
     }
-    return smallenoughfiles;
+    return accepted;
   };
   const handleFiles = (files: FileList | undefined) => {
     if (files) {
@@ -235,12 +284,16 @@ function MediaUploadContent(props: IProps) {
       }
       const nonAudio = goodFiles.some((f) => !f?.type.includes('audio'));
       if (onNonAudio) onNonAudio(nonAudio);
-      goodFiles = checkSizes(goodFiles, sizeLimit);
+      goodFiles = checkSizes(goodFiles, typeLimit(uploadType));
       setName(fileName(goodFiles));
       setFiles(goodFiles);
+      if (goodFiles.length === 0) {
+        clearFileInput();
+      }
     } else {
       setFiles([]);
       setName('');
+      clearFileInput();
     }
   };
 
@@ -254,6 +307,14 @@ function MediaUploadContent(props: IProps) {
     setFiles([{ name: newValue, size: newValue.length, type } as File]);
     onValue && onValue(newValue);
   };
+
+  useEffect(() => {
+    if (controlsRef !== undefined) {
+      controlsRef.current.handleAddOrSave = handleAddOrSave;
+      controlsRef.current.handleCancel = handleCancel;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [handleAddOrSave, handleCancel]);
 
   useEffect(() => setProgress(false), []);
 
@@ -300,8 +361,8 @@ function MediaUploadContent(props: IProps) {
         'image/png, image/jpeg, image/jpeg, image/webp',
       ].map((s) => s)[uploadType] as string
     );
-    const size = SIZELIMIT(uploadType);
-    setSizeLimit(size);
+    const size = typeLimit(uploadType);
+    clearFileInput();
     if (filesRef.current.length > 0) {
       const goodFiles = checkSizes(filesRef.current, size);
       setName(fileName(goodFiles));
@@ -310,7 +371,7 @@ function MediaUploadContent(props: IProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [uploadType]);
 
-  return (
+  const body = (
     <>
       <DialogContent>
         <DialogContentText>
@@ -337,6 +398,7 @@ function MediaUploadContent(props: IProps) {
                 acceptextension={acceptextension}
                 acceptmime={acceptmime}
                 multiple={multiple ?? false}
+                inputRef={fileInputRef}
               />
             ) : (
               <MyLabel>{'\u00A0'}</MyLabel>
@@ -352,35 +414,39 @@ function MediaUploadContent(props: IProps) {
         {metaData}
         {progress && <LinearProgress variant="indeterminate" />}
       </DialogContent>
-      <DialogActions>
-        <Button
-          id="uploadCancel"
-          onClick={handleCancel}
-          variant="outlined"
-          color="primary"
-        >
-          {cancelLabel || t.cancel}
-        </Button>
-        <Button
-          id="uploadSave"
-          onClick={handleAddOrSave}
-          variant="contained"
-          color="primary"
-          disabled={
-            (ready && !ready()) ||
-            !files ||
-            files.length === 0 ||
-            (files[0] as File).name.trim() === '' ||
-            !hasRights ||
-            (uploadType === UploadType.Link &&
-              !isUrl((files[0] as File).name)) ||
-            progress
-          }
-        >
-          {saveText || t.upload}
-        </Button>
-      </DialogActions>
+      {!controlsRef && (
+        <DialogActions>
+          <Button
+            id="uploadCancel"
+            onClick={handleCancel}
+            variant="outlined"
+            color="primary"
+          >
+            {cancelLabel || t.cancel}
+          </Button>
+          <Button
+            id="uploadSave"
+            onClick={handleAddOrSave}
+            variant="contained"
+            color="primary"
+            disabled={saveDisabled}
+            sx={{ minWidth: '96px' }}
+          >
+            {saveText || t.upload}
+          </Button>
+        </DialogActions>
+      )}
     </>
+  );
+
+  return noWrapper ? (
+    body
+  ) : (
+    <Box
+      sx={{ display: 'flex', flexDirection: 'column', alignItems: 'stretch' }}
+    >
+      {body}
+    </Box>
   );
 }
 

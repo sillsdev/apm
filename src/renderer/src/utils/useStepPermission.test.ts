@@ -178,14 +178,14 @@ describe('useStepPermissions', () => {
   test('canDoVernacular checks org default permissions', () => {
     mockUserIsAdmin = false;
     renderHook(() => useStepPermissions());
-    expect(mockGetOrgDefault).toBeCalledWith('permissions');
+    expect(mockGetOrgDefault).toHaveBeenCalledWith('permissions');
   });
 
   test('canDoVernacular returns true if no org default permissions', () => {
     mockUserIsAdmin = false;
     mockGetOrgDefault.mockReturnValue(undefined);
     const { result } = renderHook(() => useStepPermissions());
-    expect(mockGetOrgDefault).toBeCalledWith('permissions');
+    expect(mockGetOrgDefault).toHaveBeenCalledWith('permissions');
     expect(result.current.canDoVernacular('test-section-id')).toBe(true);
   });
 
@@ -193,7 +193,7 @@ describe('useStepPermissions', () => {
     mockUserIsAdmin = false;
     mockGetOrgDefault.mockReturnValue(false);
     const { result } = renderHook(() => useStepPermissions());
-    expect(mockGetOrgDefault).toBeCalledWith('permissions');
+    expect(mockGetOrgDefault).toHaveBeenCalledWith('permissions');
     expect(result.current.canDoVernacular('test-section-id')).toBe(true);
   });
 
@@ -201,7 +201,7 @@ describe('useStepPermissions', () => {
     mockUserIsAdmin = false;
     mockGetOrgDefault.mockReturnValue(true);
     const { result } = renderHook(() => useStepPermissions());
-    expect(mockGetOrgDefault).toBeCalledWith('permissions');
+    expect(mockGetOrgDefault).toHaveBeenCalledWith('permissions');
     expect(result.current.canDoVernacular('test-section-id')).toBe(false);
   });
 

@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 
 import { IRegion } from '../crud/useWavesurferRegions';
-import WSAudioPlayer from './WSAudioPlayer';
+import WSAudioPlayer, { WSAudioPlayerControls } from './WSAudioPlayer';
 import { MediaFile } from '../model';
 import { NamedRegions } from '../utils/namedSegments';
 import { RequestPlay, usePlayerLogic } from '../business/player/usePlayerLogic';
@@ -20,6 +20,7 @@ export interface HiddenPlayerProps {
   currentSegment?: IRegion;
   setCurrentSegment?: (segment: IRegion | undefined, index: number) => void;
   playerMediafile?: MediaFile;
+  controlsRef?: React.RefObject<WSAudioPlayerControls | null>;
 }
 
 export function HiddenPlayer(props: HiddenPlayerProps) {
@@ -36,6 +37,7 @@ export function HiddenPlayer(props: HiddenPlayerProps) {
     currentSegmentIndex,
     setCurrentSegment,
     playerMediafile,
+    controlsRef,
   } = props;
 
   const [requestPlay, setRequestPlay] = useState<RequestPlay>({
@@ -48,7 +50,7 @@ export function HiddenPlayer(props: HiddenPlayerProps) {
   const [defaultSegments, setDefaultSegments] = useState('{}');
   const segmentsRef = useRef('');
   const playingRef = useRef(playing);
-  const mediafileRef = useRef<MediaFile>();
+  const mediafileRef = useRef<MediaFile | undefined>(undefined);
   const durationRef = useRef(0);
 
   const { onPlayStatus, onCurrentSegment } = usePlayerLogic({
@@ -74,7 +76,6 @@ export function HiddenPlayer(props: HiddenPlayerProps) {
         id="hiddenPlayer"
         allowRecord={false}
         height={150}
-        width={300}
         blob={audioBlob}
         initialposition={initialposition}
         setInitialPosition={setInitialPosition}
@@ -88,6 +89,7 @@ export function HiddenPlayer(props: HiddenPlayerProps) {
         onCurrentSegment={onCurrentSegment}
         onProgress={onProgress}
         onDuration={onDuration}
+        controlsRef={controlsRef}
       />
     </div>
   );

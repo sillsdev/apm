@@ -1,0 +1,5 @@
+---
+description: How to add and consume localization strings in this repo (XLIFF source of truth, regeneration pipeline, component usage)
+---
+
+@docs/ai/localization.md

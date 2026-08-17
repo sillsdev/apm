@@ -1,4 +1,4 @@
-import Axios, { AxiosError } from 'axios';
+import Axios, { HttpStatusCode } from 'axios';
 import path from 'path-browserify';
 import {
   Comment,
@@ -71,6 +71,24 @@ import {
 import { requestedSchema } from '../../schema';
 import { MainAPI } from '@model/main-api';
 const ipc = window?.api as MainAPI;
+
+const MULTIPART_THRESHOLD = 100 * 1024 * 1024; // 100 MB
+const MAX_FILE_SIZE = 50 * 1024 * 1024 * 1024; // 50 GB
+const PART_SIZE = 64 * 1024 * 1024; // 64 MB
+const MAX_CONCURRENT_PARTS = 4;
+const MAX_TOTAL_PARTS = 10000; //s3 limit
+
+interface MultipartInitiateResponse {
+  uploadId: string;
+  key: string;
+  filename: string;
+  parts: string[];
+}
+
+interface UploadedPart {
+  partNumber: number;
+  etag: string;
+}
 
 export const exportComplete = () => (dispatch: any) => {
   dispatch({
@@ -188,6 +206,7 @@ export const exportProject =
       let start = 0;
       let laststart = 0;
       let laststartCount = 0;
+      let gatewayTimeoutRetries = 0;
       do {
         if (isCancelled && isCancelled()) {
           dispatch({
@@ -224,67 +243,84 @@ export const exportProject =
           }
         }
 
-        await axiosPost(
-          `offlineData/project/export/${exportType}/${remProjectId}/${start}`,
-          bodyFormData,
-          token
-        )
-          // eslint-disable-next-line no-loop-func
-          .then((result) => {
-            const response = result as { data: FileResponse };
-            const fr = response.data as FileResponse;
-            start = Number(fr.id);
-            switch (start) {
-              case -1:
+        try {
+          const result = (await axiosPost(
+            `offlineData/project/export/${exportType}/${remProjectId}/${start}`,
+            bodyFormData,
+            token
+          )) as { data: FileResponse };
+          gatewayTimeoutRetries = 0;
+          const fr = result.data as FileResponse;
+          start = Number(fr.id);
+          switch (start) {
+            case -1:
+              dispatch({
+                payload: result.data,
+                type: EXPORT_SUCCESS,
+              });
+              break;
+            case -2:
+              dispatch({
+                payload: errorStatus(undefined, fr.message),
+                type: EXPORT_ERROR,
+              });
+              break;
+            default:
+              if (start === laststart) laststartCount++;
+              else {
+                laststartCount = 0;
+                laststart = start;
+              }
+              if (laststartCount > 20) {
                 dispatch({
-                  payload: response.data,
-                  type: EXPORT_SUCCESS,
+                  payload: writingmsg,
+                  type: EXPORT_PENDING,
                 });
-                break;
-              case -2:
+              } else {
+                const pct = Math.min(
+                  Math.round((start / ((numberOfMedia + 15) * 1.5)) * 100),
+                  90
+                );
                 dispatch({
-                  payload: errorStatus(undefined, fr.message),
-                  type: EXPORT_ERROR,
+                  payload: pendingmsg.replace('{0}', pct.toString()),
+                  type: EXPORT_PENDING,
                 });
-                break;
-              default:
-                if (start === laststart) laststartCount++;
-                else {
-                  laststartCount = 0;
-                  laststart = start;
-                }
-                if (laststartCount > 20) {
-                  dispatch({
-                    payload: writingmsg,
-                    type: EXPORT_PENDING,
-                  });
-                } else {
-                  const pct = Math.min(
-                    Math.round((start / (numberOfMedia + 15)) * 100),
-                    90
-                  );
-                  dispatch({
-                    payload: pendingmsg.replace('{0}', pct.toString()),
-                    type: EXPORT_PENDING,
-                  });
-                }
-            }
-          })
-          // eslint-disable-next-line no-loop-func
-          .catch((err: AxiosError) => {
+              }
+          }
+        } catch (err: unknown) {
+          const status = axiosErrorStatus(err);
+          if (
+            isGatewayTimeout(status) &&
+            gatewayTimeoutRetries < GATEWAY_TIMEOUT_MAX_RETRIES
+          ) {
+            gatewayTimeoutRetries++;
             logError(
-              Severity.error,
+              Severity.retry,
               errorReporter,
-              'Export Failed:' + (err.message || err.toString())
+              `export gateway timeout (504), retry ${gatewayTimeoutRetries}/${GATEWAY_TIMEOUT_MAX_RETRIES}`
             );
-            start = -1;
-            dispatch({
-              payload: errStatus(err),
-              type: EXPORT_ERROR,
-            });
+            await sleep(gatewayTimeoutDelayMs(gatewayTimeoutRetries - 1));
+            continue;
+          }
+          logError(
+            Severity.error,
+            errorReporter,
+            'Export Failed:' +
+              (err instanceof Error ? err.message : String(err))
+          );
+          start = -1;
+          dispatch({
+            payload: Axios.isAxiosError(err)
+              ? errStatus(err)
+              : errorStatus(
+                  -1,
+                  err instanceof Error ? err.message : String(err)
+                ),
+            type: EXPORT_ERROR,
           });
+        }
         if (start > -1) {
-          await new Promise((r) => setTimeout(r, 3000));
+          await new Promise((r) => setTimeout(r, 6000));
         }
       } while (start > -1);
     }
@@ -295,8 +331,629 @@ export const importComplete = () => (dispatch: any) => {
     type: IMPORT_COMPLETE,
   });
 };
-const partialMessage = (msg: string, partialMsg: string) =>
-  (msg.length > 0 ? ',' : '') + partialMsg.substring(1, partialMsg.length - 2);
+/**
+ * Each PUT response `message` is a JSON array string. We peel one `[` / `]` pair and
+ * concatenate the inner slices with commas into a valid `[...]` on the final 200.
+ */
+const partialMessage = (msg: string, partialMsg: string | undefined | null) => {
+  const trimmed = (partialMsg ?? '').trim();
+  if (trimmed.length < 2) return '';
+  const inner =
+    trimmed.startsWith('[') && trimmed.endsWith(']')
+      ? trimmed.slice(1, -1).trim()
+      : trimmed;
+  if (inner.length === 0) return '';
+  return (msg.length > 0 ? ',' : '') + inner;
+};
+
+/** Numeric remote id used in `/copyfromfile/{teamId}/...` after a new team is created. */
+const coerceToPositiveOrgRemoteId = (value: unknown): number | undefined => {
+  if (typeof value === 'number' && Number.isFinite(value) && value > 0) {
+    return Math.trunc(value);
+  }
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (/^\d+$/.test(trimmed)) {
+      const parsed = parseInt(trimmed, 10);
+      if (Number.isFinite(parsed) && parsed > 0) {
+        return Math.trunc(parsed);
+      }
+    }
+  }
+  return undefined;
+};
+
+const safeJsonParseUnknown = (raw: string | undefined | null): unknown => {
+  if (raw == null || typeof raw !== 'string') return undefined;
+  const t = raw.trim();
+  if (t.length === 0) return undefined;
+  try {
+    return JSON.parse(t);
+  } catch {
+    return undefined;
+  }
+};
+
+const getNestedRecord = (
+  obj: Record<string, unknown>,
+  key: string
+): Record<string, unknown> | undefined => {
+  const v = obj[key];
+  return v && typeof v === 'object'
+    ? (v as Record<string, unknown>)
+    : undefined;
+};
+
+const organizationIdFromImportResource = (
+  item: unknown
+): number | undefined => {
+  if (!item || typeof item !== 'object') return undefined;
+  const rec = item as Record<string, unknown>;
+  if (rec.type === 'organization' && rec.id != null) {
+    return coerceToPositiveOrgRemoteId(rec.id);
+  }
+  const imported = rec.imported as Record<string, unknown> | undefined;
+  const data = imported?.data as Record<string, unknown> | undefined;
+  if (data?.type === 'organization' && data.id != null) {
+    return coerceToPositiveOrgRemoteId(data.id);
+  }
+  if (data?.type === 'project') {
+    const rel = data.relationships as Record<string, unknown> | undefined;
+    const orgLink = rel?.organization as Record<string, unknown> | undefined;
+    const orgData = orgLink?.data as Record<string, unknown> | undefined;
+    if (orgData?.id != null) {
+      return coerceToPositiveOrgRemoteId(orgData.id);
+    }
+  }
+  return undefined;
+};
+
+const organizationIdFromParsedPayload = (
+  parsed: unknown
+): number | undefined => {
+  if (parsed == null) return undefined;
+  if (Array.isArray(parsed)) {
+    for (const el of parsed) {
+      const n = organizationIdFromImportResource(el);
+      if (n != null) return n;
+    }
+    return undefined;
+  }
+  if (typeof parsed === 'object') {
+    return organizationIdFromImportResource(parsed);
+  }
+  return undefined;
+};
+
+/**
+ * Server shape varies (PascalCase vs camelCase, id on body vs inside JSON `message`).
+ * Used to chain multi-file imports into the team created by the first file.
+ */
+const extractOrganizationRemoteIdFromImportResponse = (
+  responseBody: unknown,
+  assembledMessage: string,
+  lastMessageFragment: string | undefined | null
+): number | undefined => {
+  if (responseBody && typeof responseBody === 'object') {
+    const d = responseBody as Record<string, unknown>;
+    const candidates: unknown[] = [
+      d.Id,
+      d.id,
+      d.OrganizationId,
+      d.organizationId,
+    ];
+    for (const nestKey of ['Data', 'data', 'Result', 'result']) {
+      const nest = getNestedRecord(d, nestKey);
+      if (nest) {
+        candidates.push(
+          nest.Id,
+          nest.id,
+          nest.OrganizationId,
+          nest.organizationId
+        );
+      }
+    }
+    for (const c of candidates) {
+      const n = coerceToPositiveOrgRemoteId(c);
+      if (n != null) return n;
+    }
+  }
+  for (const raw of [assembledMessage, lastMessageFragment ?? '']) {
+    const parsed = safeJsonParseUnknown(raw);
+    const fromPayload = organizationIdFromParsedPayload(parsed);
+    if (fromPayload != null) return fromPayload;
+  }
+  return undefined;
+};
+
+interface ProcessImportFileParams {
+  filename: string;
+  file: Blob | File;
+  itf: boolean;
+  getProcessUrl: (filename: string, fileURL: string) => string;
+  getInitialStart: () => string;
+  token: string | null;
+  errorReporter: any;
+  pendingmsg: string;
+  completemsg: string;
+  dispatch: any;
+  /** When true, upload/process still runs but `IMPORT_SUCCESS` is not dispatched (use for multi-file batch). */
+  suppressSuccessDispatch?: boolean;
+}
+
+export interface ProcessImportFileResult {
+  organizationRemoteId?: number;
+}
+
+const singlePutUpload = (
+  file: Blob,
+  fileURL: string,
+  contentType: string
+): Promise<void> => {
+  return new Promise<void>((resolve, reject) => {
+    let xhr = new XMLHttpRequest();
+    const cleanup = () => {
+      xhr.onload = null;
+      xhr.onerror = null;
+      xhr.onabort = null;
+      // @ts-ignore allow memory release
+      xhr = null;
+    };
+    xhr.open('PUT', fileURL, true);
+    xhr.setRequestHeader('Content-Type', contentType);
+
+    xhr.onload = () => {
+      if (xhr.status < 300) {
+        cleanup();
+        resolve();
+      } else {
+        const msg = xhr.responseText;
+        cleanup();
+        reject(new Error(msg));
+      }
+    };
+    xhr.onerror = () => {
+      cleanup();
+      reject(new Error('Upload failed'));
+    };
+    xhr.onabort = () => {
+      cleanup();
+      reject(new Error('Upload aborted'));
+    };
+    xhr.send(file.slice());
+  });
+};
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const GATEWAY_TIMEOUT_MAX_RETRIES = 5;
+
+const axiosErrorStatus = (err: unknown): number | undefined =>
+  Axios.isAxiosError(err) ? err.response?.status : undefined;
+
+const isGatewayTimeout = (status: number | undefined | null) =>
+  status === HttpStatusCode.GatewayTimeout;
+
+const gatewayTimeoutDelayMs = (attemptIndexZeroBased: number): number => {
+  const base = 1000;
+  const cap = 30000;
+  const exp = Math.min(cap, base * 2 ** attemptIndexZeroBased);
+  const jitter = Math.floor(Math.random() * 500);
+  return exp + jitter;
+};
+
+const isRetryableStatus = (status: number) =>
+  status === 0 || status >= 500 || status === 429;
+const isExpiredUrlError = (err: unknown) => {
+  const msg = err instanceof Error ? err.message.toLowerCase() : '';
+  return (
+    msg.includes('expired') ||
+    msg.includes('signature') ||
+    msg.includes('authorization') ||
+    msg.includes('forbidden') ||
+    msg.includes('403')
+  );
+};
+const tryUploadPart = (
+  file: Blob,
+  partNumber: number,
+  url: string
+): Promise<UploadedPart> => {
+  return new Promise<UploadedPart>((resolve, reject) => {
+    const start = (partNumber - 1) * PART_SIZE;
+    const end = Math.min(start + PART_SIZE, file.size);
+    const slice = file.slice(start, end);
+
+    const xhr = new XMLHttpRequest();
+    xhr.open('PUT', url, true);
+    xhr.send(slice);
+
+    xhr.onload = () => {
+      if (xhr.status < 300) {
+        const etag = xhr.getResponseHeader('ETag') ?? '';
+        resolve({ partNumber, etag });
+      } else {
+        reject(new Error(`Part ${partNumber} upload failed: ${xhr.status}`));
+      }
+    };
+    xhr.onerror = () => {
+      reject(new Error(`Part ${partNumber} upload failed`));
+    };
+  });
+};
+const getPartUrl = async (
+  filename: string,
+  partNumber: number,
+  uploadId: string,
+  token: string | null
+): Promise<string> => {
+  const response = await Axios.post(
+    `${API_CONFIG.host}/api/s3Files/multipart/part`,
+    {
+      uploadId: uploadId,
+      filename: filename,
+      folder: 'imports',
+      partNumber: partNumber,
+    },
+    { headers: { Authorization: 'Bearer ' + token } }
+  );
+  return response.data.url;
+};
+
+const uploadPart = async (
+  filename: string,
+  uploadId: string,
+  file: Blob,
+  partNumber: number,
+  url: string,
+  token: string | null,
+  maxAttempts = 5
+): Promise<UploadedPart> => {
+  let lastError: unknown;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      return await tryUploadPart(file, partNumber, url);
+    } catch (err: any) {
+      lastError = err;
+
+      const message = err instanceof Error ? err.message : String(err);
+      const statusMatch = message.match(/:\s*(\d{3})$/);
+      const status = statusMatch ? Number(statusMatch[1]) : NaN;
+
+      if (isExpiredUrlError(err)) {
+        url = await getPartUrl(filename, partNumber, uploadId, token);
+      } else if (!Number.isNaN(status) && !isRetryableStatus(status)) {
+        throw err;
+      }
+
+      if (attempt === maxAttempts) {
+        throw lastError;
+      }
+
+      const baseDelay = 250;
+      const delay = baseDelay * 2 ** (attempt - 1) + Math.random() * baseDelay;
+      await sleep(delay);
+    }
+  }
+
+  throw lastError;
+};
+const singlepartUpload = async (
+  file: Blob,
+  filename: string,
+  token: string | null
+): Promise<string> => {
+  const url = `${API_CONFIG.host}/api/offlineData/project/import/${filename}`;
+  const response = await Axios.get(url, {
+    headers: { Authorization: 'Bearer ' + token },
+  });
+  await singlePutUpload(file, response.data.fileURL, response.data.contentType);
+  return response.data.message; //filename
+};
+
+const multipartUpload = async (
+  file: Blob,
+  filename: string,
+  token: string | null
+): Promise<string> => {
+  const totalParts = Math.ceil(file.size / PART_SIZE);
+  if (totalParts > MAX_TOTAL_PARTS) {
+    //this is 640GB which we will never reach
+    throw new Error(
+      `File exceeds maximum size of ${(MAX_TOTAL_PARTS * PART_SIZE) / (1024 * 1024 * 1024)} GB`
+    );
+  }
+  const authHeaders = { Authorization: 'Bearer ' + token };
+
+  const initResponse = await Axios.post(
+    `${API_CONFIG.host}/api/s3Files/multipart/initiate`,
+    {
+      filename,
+      folder: 'imports',
+      contentType: (file as File).type || 'application/octet-stream',
+      parts: totalParts,
+    },
+    { headers: authHeaders }
+  );
+  const {
+    uploadId,
+    key,
+    filename: uploadedFilename,
+    parts,
+  } = initResponse.data as MultipartInitiateResponse;
+  try {
+    const uploaded: UploadedPart[] = [];
+    let idx = 0;
+    while (idx < parts.length) {
+      const batch = parts.slice(idx, idx + MAX_CONCURRENT_PARTS);
+      const results = await Promise.all(
+        batch.map((p, i) =>
+          uploadPart(uploadedFilename, uploadId, file, idx + 1 + i, p, token)
+        )
+      );
+      uploaded.push(...results);
+      idx += MAX_CONCURRENT_PARTS;
+    }
+
+    await Axios.post(
+      `${API_CONFIG.host}/api/s3Files/multipart/complete`,
+      {
+        uploadId,
+        key,
+        parts: uploaded.sort((a, b) => a.partNumber - b.partNumber),
+      },
+      { headers: authHeaders }
+    );
+    return uploadedFilename;
+  } catch (err) {
+    try {
+      await Axios.post(
+        `${API_CONFIG.host}/api/s3Files/multipart/abort`,
+        { uploadId, key },
+        { headers: authHeaders }
+      );
+    } catch {
+      /* swallow abort error so it doesn't mask the original */
+    }
+    throw err;
+  }
+};
+
+const processImportFile = async ({
+  filename,
+  file,
+  itf,
+  getProcessUrl,
+  getInitialStart,
+  token,
+  errorReporter,
+  pendingmsg,
+  completemsg,
+  dispatch,
+  suppressSuccessDispatch = false,
+}: ProcessImportFileParams): Promise<ProcessImportFileResult> => {
+  if (file.size > MAX_FILE_SIZE) {
+    const err = new Error(`${MAX_FILE_SIZE / (1024 * 1024 * 1024)} GB`);
+    logError(Severity.error, errorReporter, err.message);
+    dispatch({
+      payload: errorStatus(413, err.message),
+      type: IMPORT_ERROR,
+    });
+    return {};
+  }
+
+  let uploadedFilename: string;
+
+  try {
+    if (file.size >= MULTIPART_THRESHOLD) {
+      uploadedFilename = await multipartUpload(file, filename, token);
+    } else {
+      uploadedFilename = await singlepartUpload(file, filename, token);
+    }
+  } catch (err: any) {
+    logError(
+      Severity.error,
+      errorReporter,
+      `upload ${filename}: ${err.message || err}`
+    );
+    dispatch({
+      payload: errorStatus(-1, err.message || err.toString()),
+      type: IMPORT_ERROR,
+    });
+    throw err;
+  }
+
+  dispatch({
+    payload: pendingmsg,
+    type: IMPORT_PENDING,
+  });
+
+  let start = getInitialStart();
+  let msg = '';
+  let mapKey = '';
+  let gatewayTimeoutRetries = 0;
+  while (true) {
+    try {
+      const processUrl = getProcessUrl(uploadedFilename, mapKey);
+      const putresponse = await Axios.put(processUrl + start, null, {
+        headers: {
+          Authorization: 'Bearer ' + token,
+        },
+      });
+      if (putresponse.data.status === 200) {
+        gatewayTimeoutRetries = 0;
+        const fullMsg =
+          msg.length > 0
+            ? '[' + msg + partialMessage(msg, putresponse.data.message) + ']'
+            : putresponse.data.message;
+        const organizationRemoteId =
+          extractOrganizationRemoteIdFromImportResponse(
+            putresponse.data,
+            typeof fullMsg === 'string' ? fullMsg : String(fullMsg ?? ''),
+            putresponse.data.message
+          );
+        if (!suppressSuccessDispatch) {
+          dispatch({
+            payload: {
+              status: completemsg,
+              msg: fullMsg,
+            },
+            type: IMPORT_SUCCESS,
+          });
+        }
+        await cleanupCopyProject(mapKey, token);
+        return { organizationRemoteId };
+      } else if (putresponse.data.status === HttpStatusCode.PartialContent) {
+        gatewayTimeoutRetries = 0;
+        start = putresponse.data.startindex;
+        mapKey = putresponse.data.fileURL;
+        if (itf) msg += partialMessage(msg, putresponse.data.message);
+        else
+          dispatch({
+            payload: pendingmsg + ' ' + putresponse.data.message,
+            type: IMPORT_PENDING,
+          });
+      } else if (
+        isGatewayTimeout(putresponse.data.status) &&
+        gatewayTimeoutRetries < GATEWAY_TIMEOUT_MAX_RETRIES
+      ) {
+        gatewayTimeoutRetries++;
+        logError(
+          Severity.retry,
+          errorReporter,
+          `import gateway timeout (504), retry ${gatewayTimeoutRetries}/${GATEWAY_TIMEOUT_MAX_RETRIES}`
+        );
+        await sleep(gatewayTimeoutDelayMs(gatewayTimeoutRetries - 1));
+        continue;
+      } else {
+        logError(
+          Severity.error,
+          errorReporter,
+          'import error' + putresponse.data.message
+        );
+        dispatch({
+          payload: errorStatus(
+            putresponse.data.status,
+            putresponse.data.message
+          ),
+          type: IMPORT_ERROR,
+        });
+        await cleanupCopyProject(mapKey, token);
+        throw new Error(putresponse.data.message);
+      }
+    } catch (reason: any) {
+      const status = axiosErrorStatus(reason);
+      if (
+        isGatewayTimeout(status) &&
+        gatewayTimeoutRetries < GATEWAY_TIMEOUT_MAX_RETRIES
+      ) {
+        gatewayTimeoutRetries++;
+        logError(
+          Severity.retry,
+          errorReporter,
+          `import gateway timeout (504), retry ${gatewayTimeoutRetries}/${GATEWAY_TIMEOUT_MAX_RETRIES}`
+        );
+        await sleep(gatewayTimeoutDelayMs(gatewayTimeoutRetries - 1));
+        continue;
+      } else {
+        logError(Severity.error, errorReporter, 'import error' + reason);
+        dispatch({
+          payload: errorStatus(-1, reason.toString()),
+          type: IMPORT_ERROR,
+        });
+        await cleanupCopyProject(mapKey, token);
+        throw reason;
+      }
+    }
+  }
+};
+
+export interface ImportProjectFromExternalProps {
+  files: File[];
+  teamId?: number;
+  token: string | null;
+  errorReporter: any;
+  pendingmsg: string;
+  /**
+   * Message template used when importing multiple files.
+   * Should include `{0}` for current file index (1-based) and `{1}` for total.
+   */
+  fileProcessingMsg: string;
+  completemsg: string;
+  /** Shown when creating a new team from multiple files but the first import response lacks an organization id. */
+  newTeamChainFailed: string;
+}
+export const importFromExternal =
+  ({
+    files,
+    teamId,
+    token,
+    errorReporter,
+    pendingmsg,
+    fileProcessingMsg,
+    completemsg,
+    newTeamChainFailed,
+  }: ImportProjectFromExternalProps) =>
+  async (dispatch: any) => {
+    if (!files?.length) {
+      return;
+    }
+    const total = files.length;
+    const isNewTeam = (teamId ?? 0) === 0;
+    let effectiveTeamId = teamId ?? 0;
+    for (let i = 0; i < total; i++) {
+      const file = files[i];
+      const isLast = i === total - 1;
+      const msg =
+        total > 1
+          ? (fileProcessingMsg || pendingmsg)
+              .replace('{0}', (i + 1).toString())
+              .replace('{1}', total.toString())
+          : pendingmsg;
+      dispatch({
+        payload: msg,
+        type: IMPORT_PENDING,
+      });
+      try {
+        const result = await processImportFile({
+          filename: file.name,
+          file,
+          itf: false,
+          getProcessUrl: (filename, mapKey) => {
+            const encodedFilename = encodeURIComponent(filename);
+            const tid = effectiveTeamId;
+            return mapKey !== ''
+              ? `${API_CONFIG.host}/api/offlineData/project/copyfromfile/${tid}/${encodedFilename}/${mapKey}/`
+              : `${API_CONFIG.host}/api/offlineData/project/copyfromfile/${tid}/${encodedFilename}/`;
+          },
+          getInitialStart: () => '',
+          token,
+          errorReporter,
+          pendingmsg: msg,
+          completemsg,
+          dispatch,
+          suppressSuccessDispatch: !isLast,
+        });
+        if (isNewTeam && i === 0 && total > 1) {
+          if (result.organizationRemoteId == null) {
+            logError(
+              Severity.error,
+              errorReporter,
+              'import: could not read new team id from first import response'
+            );
+            dispatch({
+              payload: errorStatus(-1, newTeamChainFailed),
+              type: IMPORT_ERROR,
+            });
+            return;
+          }
+          effectiveTeamId = result.organizationRemoteId;
+        }
+      } catch {
+        return;
+      }
+    }
+  };
 
 const importFromElectron =
   (
@@ -313,128 +970,51 @@ const importFromElectron =
       payload: pendingmsg.replace('{0}', '1'),
       type: IMPORT_PENDING,
     });
-    let url = API_CONFIG.host + '/api/offlineData/project/import/' + filename;
-    Axios.get(url, {
-      headers: {
-        Authorization: 'Bearer ' + token,
+    processImportFile({
+      filename,
+      file,
+      itf: true,
+      getProcessUrl: (uploadedFilename) => {
+        if (projectid === 0) {
+          return `${API_CONFIG.host}/api/offlineData/sync/${uploadedFilename}/`;
+        }
+        //import the itf into the project
+        return `${API_CONFIG.host}/api/offlineData/project/import/${projectid}/${uploadedFilename}/`;
       },
-    })
-      .then((response) => {
-        const filename = response.data.message;
-        let xhr = new XMLHttpRequest();
-        const cleanup = () => {
-          xhr.onload = null;
-          xhr.onerror = null;
-          xhr.onabort = null;
-          // @ts-ignore allow memory release
-          xhr = null;
-        };
-        /* FUTURE TODO Limit is 5G, but it's recommended to use a multipart upload > 100M */
-        xhr.open('PUT', response.data.fileURL, true);
-        xhr.setRequestHeader('Content-Type', response.data.contentType);
-        xhr.send(file.slice());
-        xhr.onload = async () => {
-          if (xhr.status < 300) {
-            cleanup();
-            dispatch({
-              payload: pendingmsg.replace('{0}', '20'),
-              type: IMPORT_PENDING,
-            });
-            let start = '0';
-            let msg = '';
-            if (projectid === 0) {
-              url = `${API_CONFIG.host}/api/offlineData/sync/${filename}/`;
-              start = '0/0';
-            } else
-              url = `${API_CONFIG.host}/api/offlineData/project/import/${projectid}/${filename}/`;
-            do {
-              try {
-                /* tell it to process the file now */
-                const putresponse = await Axios.put(url + start, null, {
-                  headers: {
-                    Authorization: 'Bearer ' + token,
-                  },
-                });
-                if (putresponse.data.status === 200) {
-                  dispatch({
-                    payload: {
-                      status: completemsg,
-                      msg:
-                        msg.length > 0
-                          ? '[' +
-                            msg +
-                            partialMessage(msg, putresponse.data.message) +
-                            ']'
-                          : putresponse.data.message,
-                    },
-                    type: IMPORT_SUCCESS,
-                  });
-                  break;
-                } else if (putresponse.data.status === 206) {
-                  start = putresponse.data.startindex;
-                  msg += partialMessage(msg, putresponse.data.message);
-                } else {
-                  logError(
-                    Severity.error,
-                    errorReporter,
-                    'import error' + putresponse.data.message
-                  );
-                  dispatch({
-                    payload: errorStatus(
-                      putresponse.data.status,
-                      putresponse.data.message
-                    ),
-                    type: IMPORT_ERROR,
-                  });
-                  break;
-                }
-              } catch (reason: any) {
-                logError(
-                  Severity.error,
-                  errorReporter,
-                  'import error' + reason
-                );
-                dispatch({
-                  payload: errorStatus(-1, reason.toString()),
-                  type: IMPORT_ERROR,
-                });
-                break;
-              }
-            } while (start !== '0' && start !== '0/0');
-          } else {
-            logError(
-              Severity.error,
-              errorReporter,
-              `upload ${filename}: ${xhr.responseText}`
-            );
-            dispatch({
-              payload: errorStatus(xhr.status, xhr.responseText),
-              type: IMPORT_ERROR,
-            });
-            cleanup();
-          }
-        };
-      })
-      .catch((reason) => {
-        logError(Severity.error, errorReporter, `Import Error: ${reason}`);
-        dispatch({
-          payload: errorStatus(-1, reason.toString()),
-          type: IMPORT_ERROR,
-        });
-      });
+      getInitialStart: () => (projectid === 0 ? '0/0' : '0'),
+      token,
+      errorReporter,
+      pendingmsg,
+      completemsg,
+      dispatch,
+    });
   };
 export interface CopyProjectProps {
   projectid: number;
-  sameorg: boolean;
+  orgid: number;
   token: string | null;
   errorReporter: any;
   pendingmsg: string;
   completemsg: string;
 }
+export const cleanupCopyProject = async (
+  mapKey: string,
+  token: string | null
+) => {
+  if (mapKey) {
+    const url = `${API_CONFIG.host}/api/offlineData/project/copyp/${mapKey}`;
+    await Axios.put(url, null, {
+      headers: {
+        Authorization: 'Bearer ' + token,
+      },
+    });
+  }
+};
+
 export const copyProject =
   ({
     projectid,
-    sameorg,
+    orgid,
     token,
     errorReporter,
     pendingmsg,
@@ -443,29 +1023,83 @@ export const copyProject =
   async (dispatch: any) => {
     let newproject = '';
     dispatch({
-      payload: pendingmsg.replace('{0}', 'same ' + sameorg.toString()),
+      payload: pendingmsg.replace('{0}', ''),
       type: COPY_PENDING,
     });
     let start = 0;
-    let url = `${API_CONFIG.host}/api/offlineData/project/copyp/${sameorg}/${projectid}/${start}`;
+    let url = `${API_CONFIG.host}/api/offlineData/project/copydata/${orgid}/${projectid}`;
 
     let returnstatus = 0;
-    do {
-      const response = await Axios.put(url, null, {
-        headers: {
-          Authorization: 'Bearer ' + token,
-        },
-      });
-      start = response.data.id;
-      returnstatus = response.data.status;
-      const status = response.data.message;
-      newproject = response.data.fileURL as string;
-      dispatch({
-        payload: pendingmsg.replace('{0}', status),
-        type: COPY_PENDING,
-      });
-      url = `${API_CONFIG.host}/api/offlineData/project/copyp/${projectid}/${start}/${newproject}`;
-    } while (returnstatus === 200 && start !== -1);
+    let status = '';
+    let gatewayTimeoutRetries = 0;
+    while (true) {
+      try {
+        const response = await Axios.put(url, null, {
+          headers: {
+            Authorization: 'Bearer ' + token,
+          },
+        });
+        if (
+          isGatewayTimeout(response.data.status) &&
+          gatewayTimeoutRetries < GATEWAY_TIMEOUT_MAX_RETRIES
+        ) {
+          gatewayTimeoutRetries++;
+          logError(
+            Severity.retry,
+            errorReporter,
+            `copy gateway timeout (504), retry ${gatewayTimeoutRetries}/${GATEWAY_TIMEOUT_MAX_RETRIES}`
+          );
+          await sleep(gatewayTimeoutDelayMs(gatewayTimeoutRetries - 1));
+          continue;
+        }
+        gatewayTimeoutRetries = 0;
+        start = response.data.id;
+        returnstatus = response.data.status;
+        status = response.data.message;
+        newproject = response.data.fileURL as string;
+        dispatch({
+          payload: `${pendingmsg} ${status}`,
+          type: COPY_PENDING,
+        });
+        url = `${API_CONFIG.host}/api/offlineData/project/copydata/${orgid}/${projectid}/${newproject}/${start}`;
+
+        if (returnstatus !== 200 || start === -1) {
+          break;
+        }
+      } catch (reason: unknown) {
+        const httpStatus = axiosErrorStatus(reason);
+        if (
+          isGatewayTimeout(httpStatus) &&
+          gatewayTimeoutRetries < GATEWAY_TIMEOUT_MAX_RETRIES
+        ) {
+          gatewayTimeoutRetries++;
+          logError(
+            Severity.retry,
+            errorReporter,
+            `copy gateway timeout (504), retry ${gatewayTimeoutRetries}/${GATEWAY_TIMEOUT_MAX_RETRIES}`
+          );
+          await sleep(gatewayTimeoutDelayMs(gatewayTimeoutRetries - 1));
+          continue;
+        }
+        logError(
+          Severity.error,
+          errorReporter,
+          'copy error' +
+            (reason instanceof Error ? reason.message : String(reason))
+        );
+        dispatch({
+          payload: errorStatus(
+            httpStatus ?? -1,
+            reason instanceof Error ? reason.message : String(reason)
+          ),
+          type: COPY_ERROR,
+        });
+        if (newproject) {
+          await cleanupCopyProject(newproject, token);
+        }
+        return;
+      }
+    }
     if (start === -1)
       dispatch({
         payload: {
@@ -483,12 +1117,7 @@ export const copyProject =
     }
     //clean it up
     if (newproject) {
-      url = `${API_CONFIG.host}/api/offlineData/project/copyp/${newproject}`;
-      await Axios.put(url, null, {
-        headers: {
-          Authorization: 'Bearer ' + token,
-        },
-      });
+      await cleanupCopyProject(newproject, token);
     }
   };
 export const copyComplete = () => (dispatch: any) => {
@@ -530,7 +1159,7 @@ export const importSyncFromElectron =
     );
   };
 
-export interface ImportProjectFromElectronProps {
+export interface ImportProjectITFFromElectronProps {
   files: File[];
   projectid: number;
   token: string | null;
@@ -539,7 +1168,7 @@ export interface ImportProjectFromElectronProps {
   completemsg: string;
 }
 
-export const importProjectFromElectron =
+export const importProjectITFFromElectron =
   ({
     files,
     projectid,
@@ -547,7 +1176,7 @@ export const importProjectFromElectron =
     errorReporter,
     pendingmsg,
     completemsg,
-  }: ImportProjectFromElectronProps) =>
+  }: ImportProjectITFFromElectronProps) =>
   (dispatch: any) => {
     dispatch(
       importFromElectron(
@@ -570,7 +1199,7 @@ export interface ImportProjectToElectronProps {
   offlineOnly: boolean;
   AddProjectLoaded: (project: string) => void;
   reportError: (ex: IApiError) => void;
-  getTypeId: (slug: string) => string | null;
+  localIdFromSlug: (slug: string) => string | null;
   pendingmsg: string;
   completemsg: string;
   oldfilemsg: string;
@@ -588,7 +1217,7 @@ export const importProjectToElectron =
     coordinator,
     AddProjectLoaded,
     reportError,
-    getTypeId,
+    localIdFromSlug,
     pendingmsg,
     completemsg,
     oldfilemsg,
@@ -730,7 +1359,7 @@ export const importProjectToElectron =
           (m) =>
             planids.includes(related(m, 'plan')) &&
             related(m, 'artifacttype') !==
-              getTypeId(ArtifactTypeSlug.IntellectualProperty)
+              localIdFromSlug(ArtifactTypeSlug.IntellectualProperty)
         )
         .map((m) => m.id);
       const discussionids = (

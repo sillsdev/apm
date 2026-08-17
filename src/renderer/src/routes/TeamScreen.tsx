@@ -1,9 +1,9 @@
 import { useState, useEffect, useContext, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useGlobal } from '../context/useGlobal';
-import { LocalKey, localUserKey, useHome } from '../utils';
-import { Box, Grid } from '@mui/material';
-import AppHead from '../components/App/AppHead';
+import { LocalKey, localUserKey, useHome, useMobile } from '../utils';
+import { Grid } from '@mui/material';
+import AppLayout from '../components/App/AppLayout';
 import { TeamProvider } from '../context/TeamContext';
 import { TeamProjects } from '../components/Team';
 import StickyRedirect from '../components/StickyRedirect';
@@ -12,6 +12,7 @@ import TeamActions from '../components/Team/TeamActions';
 import { UnsavedContext } from '../context/UnsavedContext';
 import { RecordKeyMap } from '@orbit/records';
 import { PlanD } from '../model';
+import ProjectsScreen from './ProjectsScreen';
 
 export const TeamScreen = () => {
   const { pathname } = useLocation();
@@ -24,6 +25,7 @@ export const TeamScreen = () => {
   const [view, setView] = useState('');
   const { startClear } = useContext(UnsavedContext).state;
   const { resetProject } = useHome();
+  const { isMobile } = useMobile();
   const loaded = useRef(false);
 
   useEffect(() => {
@@ -71,15 +73,10 @@ export const TeamScreen = () => {
     return <StickyRedirect to={view} />;
   }
 
-  return (
-    <Box sx={{ width: '100%' }}>
-      <AppHead />
-      <TeamProvider>
-        <Grid
-          container
-          id="TeamScreen"
-          sx={{ display: 'flex', paddingTop: '80px' }}
-        >
+  return !isMobile ? (
+    <TeamProvider>
+      <AppLayout>
+        <Grid container id="TeamScreen" sx={{ display: 'flex' }}>
           <Grid size={{ xs: 6, md: 3, lg: 2 }}>
             <TeamActions />
           </Grid>
@@ -87,8 +84,10 @@ export const TeamScreen = () => {
             <TeamProjects />
           </Grid>
         </Grid>
-      </TeamProvider>
-    </Box>
+      </AppLayout>
+    </TeamProvider>
+  ) : (
+    <ProjectsScreen />
   );
 };
 

@@ -179,7 +179,12 @@ function AudacityManager(props: IProps) {
       } else {
         const mediaRelativePath = getMediaUrl(mediaId);
         // The next line adds the local path to the relative file name.
-        mediaName = await tryDownload(mediaRelativePath);
+        const downloaded = await tryDownload(mediaRelativePath);
+        mediaName = downloaded.path;
+        if (!downloaded.ok) {
+          showMessage(t.checkDownload);
+          return;
+        }
       }
       if (mediaName.startsWith('http')) {
         showMessage(t.checkDownload);

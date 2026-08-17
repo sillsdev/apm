@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Fragment } from 'react';
 import { useGlobal } from '../context/useGlobal';
 import {
   Snackbar as MuiSnackbar,
@@ -21,7 +21,7 @@ const Alert = (props: AlertProps) => {
 // moved to ./useSnackBar
 
 interface IProps {
-  children: JSX.Element;
+  children: React.JSX.Element;
 }
 const BarBox = styled(Box)<BoxProps>(() => ({
   '& .MuiPaper-root': {
@@ -30,7 +30,7 @@ const BarBox = styled(Box)<BoxProps>(() => ({
 }));
 
 interface ISBProps {
-  message: JSX.Element;
+  message: React.JSX.Element;
 }
 
 function SimpleSnackbar(props: ISBProps) {
@@ -45,8 +45,9 @@ function SimpleSnackbar(props: ISBProps) {
   };
 
   useEffect(() => {
-    if ((message?.type === 'span') !== open) {
-      setOpen(!open);
+    const hasMessage = !!message && message.type !== Fragment;
+    if (hasMessage !== open) {
+      setOpen(hasMessage);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [message]);

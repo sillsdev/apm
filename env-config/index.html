@@ -4,6 +4,18 @@
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>%VITE_SITE_TITLE%</title>
+
+        <!-- PWA head tags. The manifest <link> is injected automatically by
+             vite-plugin-pwa at build time; these are the tags it does not manage
+             and must survive index.html regeneration (env-config/indexTemplate.cjs). -->
+        <meta name="theme-color" content="#1976d2" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta
+            name="apple-mobile-web-app-status-bar-style"
+            content="default"
+        />
         <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP -->
         <meta
             http-equiv="Content-Security-Policy"

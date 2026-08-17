@@ -28,6 +28,10 @@ describe('mapWrapperToTreeData', () => {
             label: 'version: 0.0.1',
           },
           {
+            id: 'meta|defaultLocale',
+            label: 'defaultLocale: en',
+          },
+          {
             id: 'meta|name',
             label: 'name',
             children: [
@@ -38,22 +42,26 @@ describe('mapWrapperToTreeData', () => {
             ],
           },
           {
-            id: 'meta|abbreviation',
-            label: 'abbreviation',
-            children: [
-              {
-                id: 'meta|abbreviation|en',
-                label: 'en: TEST',
-              },
-            ],
-          },
-          {
             id: 'meta|description',
             label: 'description',
             children: [
               {
                 id: 'meta|description|en',
                 label: 'en: Test description',
+              },
+            ],
+          },
+          {
+            id: 'meta|dateCreated',
+            label: 'dateCreated: ' + wrapper.meta.dateCreated,
+          },
+          {
+            id: 'meta|abbreviation',
+            label: 'abbreviation',
+            children: [
+              {
+                id: 'meta|abbreviation|en',
+                label: 'en: TEST',
               },
             ],
           },
@@ -70,10 +78,6 @@ describe('mapWrapperToTreeData', () => {
                 label: 'version: 1.0.0',
               },
             ],
-          },
-          {
-            id: 'meta|dateCreated',
-            label: 'dateCreated: ' + wrapper.meta.dateCreated,
           },
         ],
       },
@@ -128,6 +132,10 @@ describe('mapWrapperToTreeData', () => {
             label: 'version: 0.0.1',
           },
           {
+            id: 'meta|defaultLocale',
+            label: 'defaultLocale: en',
+          },
+          {
             id: 'meta|name',
             label: 'name',
             children: [
@@ -138,22 +146,26 @@ describe('mapWrapperToTreeData', () => {
             ],
           },
           {
-            id: 'meta|abbreviation',
-            label: 'abbreviation',
-            children: [
-              {
-                id: 'meta|abbreviation|en',
-                label: 'en: TEST',
-              },
-            ],
-          },
-          {
             id: 'meta|description',
             label: 'description',
             children: [
               {
                 id: 'meta|description|en',
                 label: 'en: Test description',
+              },
+            ],
+          },
+          {
+            id: 'meta|dateCreated',
+            label: 'dateCreated: ' + wrapper.meta.dateCreated,
+          },
+          {
+            id: 'meta|abbreviation',
+            label: 'abbreviation',
+            children: [
+              {
+                id: 'meta|abbreviation|en',
+                label: 'en: TEST',
               },
             ],
           },
@@ -170,10 +182,6 @@ describe('mapWrapperToTreeData', () => {
                 label: 'version: 1.0.0',
               },
             ],
-          },
-          {
-            id: 'meta|dateCreated',
-            label: 'dateCreated: ' + wrapper.meta.dateCreated,
           },
         ],
       },

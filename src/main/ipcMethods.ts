@@ -2,16 +2,34 @@ import { app, ipcMain, session, dialog, BrowserWindow, shell } from 'electron';
 import { createWindow } from './index';
 import { createAuthWindow, createLogoutWindow } from './auth-process.js';
 import { refreshTokens, getProfile, getAccessToken } from './auth-service.js';
-import fs from 'fs-extra';
+import { getLogingIn, setLogingIn } from './loginState.js';
+import * as fs from 'fs-extra';
 import StreamZip from 'node-stream-zip';
 import AdmZip from 'adm-zip';
 import { downloadFile, downloadStatus, downloadClose } from './downloadFile.js';
 import { generateUUID } from './generateUUID.js';
 import convert from 'xml-js';
-import ChildProcess from 'child_process';
+import { exec, fork } from 'child_process';
 // execa is an ESM module so we included source to make it work
 import { execa } from 'execa';
 import md5File from 'md5-file';
+import path from 'path';
+
+function getBurritoToPtfScriptPath(): string {
+  const candidates = [
+    path.join(process.cwd(), 'migration', '05-burrito-to-ptf.js'),
+    process.resourcesPath
+      ? path.join(process.resourcesPath, 'migration', '05-burrito-to-ptf.js')
+      : '',
+    path.join(__dirname, '..', '..', 'migration', '05-burrito-to-ptf.js'),
+  ].filter(Boolean);
+  for (const p of candidates) {
+    if (fs.existsSync(p)) {
+      return p;
+    }
+  }
+  throw new Error('burrito migration script 05-burrito-to-ptf.js not found');
+}
 
 export function ipcMethods(): void {
   ipcMain.handle('availSpellLangs', async () => {
@@ -59,7 +77,7 @@ export function ipcMethods(): void {
     const cmd = platformMap.get(process.platform);
     return new Promise((resolve, reject) => {
       if (!cmd) reject(new Error('Command not found'));
-      ChildProcess.exec(cmd as string, (err, stdout) => {
+      exec(cmd as string, (err, stdout) => {
         if (err) reject(err);
 
         resolve(stdout.toLowerCase().indexOf(name.toLowerCase()) > -1);
@@ -92,7 +110,12 @@ export function ipcMethods(): void {
   });
 
   ipcMain.handle('relaunchApp', async () => {
+    // app.relaunch() only arms a relaunch for whenever the app next exits —
+    // it does not exit by itself, so without this the renderer's "Go
+    // Offline" flow (which calls this expecting an actual restart) would
+    // just leave the current instance running.
     app.relaunch();
+    app.exit();
   });
 
   ipcMain.handle('closeApp', async () => {
@@ -151,6 +174,10 @@ export function ipcMethods(): void {
     return await fs.unlink(filePath);
   });
 
+  ipcMain.handle('deleteFolder', async (_event, folder) => {
+    if (fs.existsSync(folder)) return await fs.rm(folder, { recursive: true });
+  });
+
   ipcMain.handle('copyFile', async (_event, from, to) => {
     return await fs.copyFile(from, to);
   });
@@ -175,12 +202,18 @@ export function ipcMethods(): void {
     return null;
   });
 
-  ipcMain.handle('importOpen', async () => {
+  ipcMain.handle('importOpen', async (_event, filters) => {
     const options = {
-      filters: [{ name: 'ptf', extensions: ['ptf'] }],
+      filters,
       properties: ['openFile'],
     };
     return dialog.showOpenDialogSync(options as any);
+  });
+
+  ipcMain.handle('openDirectoryDialog', async () => {
+    return dialog.showOpenDialogSync({
+      properties: ['openDirectory'],
+    });
   });
 
   ipcMain.handle('audacityOpen', async () => {
@@ -301,6 +334,16 @@ export function ipcMethods(): void {
     }
   });
 
+  ipcMain.handle('zipFolder', async (_event, sourceDir, outFile) => {
+    if (!fs.existsSync(sourceDir)) {
+      throw new Error('Source directory does not exist');
+    }
+
+    const zip = new AdmZip();
+    zip.addLocalFolder(sourceDir);
+    zip.writeZip(outFile);
+  });
+
   ipcMain.handle('writeBuffer', async (_event, filePath, arrayBuffer) => {
     if (process.platform === 'win32') {
       filePath = filePath.replace(/\//g, '\\');
@@ -315,25 +358,28 @@ export function ipcMethods(): void {
     }
   });
 
-  let isLogingIn = false;
   let isLogOut = false;
 
   app.on('window-all-closed', () => {
-    if (process.platform !== 'darwin' && !isLogingIn) {
+    if (process.platform !== 'darwin' && !getLogingIn()) {
       app.quit();
     }
   });
 
   ipcMain.handle('login', async (_event, hasUsed, email) => {
-    isLogingIn = true;
+    setLogingIn(true);
     isLogOut = false;
     try {
       await refreshTokens();
-      isLogingIn = false;
-      return createWindow();
+      createWindow();
     } catch {
-      isLogingIn = false;
       createAuthWindow(hasUsed, email);
+    } finally {
+      // Stay true until createWindow()/createAuthWindow() has actually
+      // closed the old window(s) and opened the replacement — resetting
+      // this before that finishes is what let window-all-closed's app.quit()
+      // fire mid-handoff (e.g. re-authenticating after "Go Offline").
+      setLogingIn(false);
     }
   });
 
@@ -353,7 +399,7 @@ export function ipcMethods(): void {
   });
 
   ipcMain.handle('logout', async () => {
-    isLogingIn = false;
+    setLogingIn(false);
     isLogOut = true;
     createLogoutWindow();
   });
@@ -365,7 +411,11 @@ export function ipcMethods(): void {
       await downloadFile(url, localFile);
       return;
     } catch (err) {
-      return JSON.stringify(err);
+      const e = err as Error & { code?: string };
+      return JSON.stringify({
+        message: e?.message ?? String(err),
+        ...(e?.code ? { code: e.code } : {}),
+      });
     }
   });
 
@@ -409,6 +459,98 @@ export function ipcMethods(): void {
         },
         verbose: true,
       });
+      return;
+    } catch (error) {
+      console.error(error);
+      return JSON.stringify(error);
+    }
+  });
+
+  ipcMain.handle('burritoToPtf', async (_event, payload) => {
+    try {
+      const scriptPath = getBurritoToPtfScriptPath();
+      const migrationDir = path.dirname(scriptPath);
+      const optionsJson = JSON.stringify(payload.options ?? {});
+      const args = [
+        '--input',
+        payload.wrapperDirPath,
+        '--output',
+        payload.outputDir,
+        '--book',
+        payload.bookId,
+        '--options',
+        optionsJson,
+        '--json-result',
+      ];
+      const result = await new Promise<{
+        stdout: string;
+        stderr: string;
+        code: number | null;
+      }>((resolve, reject) => {
+        const appNodeModules = path.join(app.getAppPath(), 'node_modules');
+        const nodePath = process.env.NODE_PATH
+          ? `${appNodeModules}${path.delimiter}${process.env.NODE_PATH}`
+          : appNodeModules;
+        const child = fork(scriptPath, args, {
+          cwd: migrationDir,
+          silent: true,
+          // fork defaults to process.execPath (Electron); run the script as Node, not a second GUI app
+          // Migration lives in extraResources (outside app.asar); NODE_PATH lets require() see app deps.
+          env: {
+            ...process.env,
+            ELECTRON_RUN_AS_NODE: '1',
+            NODE_PATH: nodePath,
+          },
+        });
+        let stdout = '';
+        let stderr = '';
+        child.stdout?.on('data', (d: Buffer) => {
+          stdout += d.toString();
+        });
+        child.stderr?.on('data', (d: Buffer) => {
+          stderr += d.toString();
+        });
+        child.on('error', reject);
+        child.on('exit', (code) => {
+          resolve({ stdout, stderr, code });
+        });
+      });
+      if (result.code !== 0) {
+        return {
+          ok: false,
+          error:
+            result.stderr ||
+            result.stdout ||
+            `burrito-to-ptf exited with code ${result.code}`,
+        };
+      }
+      const lines = result.stdout.trim().split('\n');
+      const jsonLine = [...lines]
+        .reverse()
+        .find((l) => l.startsWith('JSON_RESULT:'));
+      if (!jsonLine) {
+        return {
+          ok: false,
+          error: `No JSON_RESULT in migration output: ${result.stdout.slice(-500)}`,
+        };
+      }
+      const parsed = JSON.parse(jsonLine.slice('JSON_RESULT:'.length)) as {
+        ptfPath?: string;
+      };
+      return { ok: true, ptfPath: parsed.ptfPath };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      return { ok: false, error: message };
+    }
+  });
+  ipcMain.handle('convertToMp3', async (_event, input, output) => {
+    if (process.platform === 'win32') {
+      input = input.replace(/\//g, '\\');
+      output = output.replace(/\//g, '\\');
+    }
+    const { convertToMp3 } = await import('./audioToMp3');
+    try {
+      await convertToMp3(input, output);
       return;
     } catch (error) {
       console.error(error);

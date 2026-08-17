@@ -292,6 +292,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="artifactType.carefulspeech">
+         <segment>
+            <source>Careful speech</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="artifactType.comment">
          <segment>
             <source>Comment</source>
@@ -682,9 +688,285 @@
             <target/>
          </segment>
       </unit>
+      <unit id="burrito.apmData">
+         <segment>
+            <source>APM Data</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="burrito.audio">
+         <segment>
+            <source>Audio</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="burrito.backTranslation">
+         <segment>
+            <source>Back Translation</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="burrito.books">
+         <segment>
+            <source>Books</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="burrito.cancelCreation">
+         <segment>
+            <source>Cancel burrito creation</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="burrito.create">
+         <segment>
+            <source>Create Burrito</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="burrito.createAudio">
+         <segment>
+            <source>Create audio burrito</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="burrito.createText">
+         <segment>
+            <source>Create text burrito</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="burrito.createNotes">
+         <segment>
+            <source>Create notes burrito</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="burrito.createResources">
+         <segment>
+            <source>Create resources burrito</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="burrito.createIntellectualProperty">
+         <segment>
+            <source>Create intellectual property burrito</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="burrito.createNavigation">
+         <segment>
+            <source>Create navigation burrito</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="burrito.createData">
+         <segment>
+            <source>Create data burrito</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="burrito.createOther">
+         <segment>
+            <source>Create {0} burrito</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="burrito.communityFeedback">
+         <segment>
+            <source>Community Feedback</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="burrito.contents">
+         <segment>
+            <source>Contents</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="burrito.convertToMp3">
+         <segment>
+            <source>Convert to mp3</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="burrito.deselectAll">
+         <segment>
+            <source>Deselect All</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="burrito.discussions">
+         <segment>
+            <source>Discussions</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="burrito.enterNewValue">
+         <segment>
+            <source>Please enter the new value for</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="burrito.failed">
+         <segment>
+            <source>Failed to create burrito</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="burrito.format">
+         <segment>
+            <source>Format</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="burrito.intellectualProperty">
+         <segment>
+            <source>Intellectual Property</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="burrito.navigation">
+         <segment>
+            <source>Navigation</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="burrito.notes">
+         <segment>
+            <source>Notes</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="burrito.open">
+         <segment>
+            <source>Open</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="burrito.preparing">
+         <segment>
+            <source>Preparing burrito...</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="burrito.projects">
+         <segment>
+            <source>Projects</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="burrito.resources">
+         <segment>
+            <source>Resources</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="burrito.selectAll">
+         <segment>
+            <source>Select All</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="burrito.selectedBooks">
+         <segment>
+            <source>Selected Books</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="burrito.success">
+         <segment>
+            <source>Burrito created successfully!</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="burrito.terms">
+         <segment>
+            <source>Terms</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="burrito.text">
+         <segment>
+            <source>Text</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="burrito.textOutputFormat">
+         <segment>
+            <source>Text output format</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="burrito.textOutputUsfm">
+         <segment>
+            <source>USFM</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="burrito.textOutputUsj">
+         <segment>
+            <source>USJ</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="burrito.textOutputUsx">
+         <segment>
+            <source>USX</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="burrito.updateValue">
+         <segment>
+            <source>Update Value</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="burrito.valueWarning">
+         <segment>
+            <source>Warning: Input contains JSON structural characters (quotes, curly braces, or square brackets)</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="burrito.vernacularAudioMissingTranscriptionListTitle">
+         <segment>
+            <source>Passages missing transcriptions (first {0})</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="burrito.vernacularAudioMissingTranscriptionTitle">
+         <segment>
+            <source>Missing transcription(s)</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="burrito.vernacularAudioMissingTranscriptionWarning">
+         <segment>
+            <source>Audio files without transcriptions will make it difficult to associate the audio with the proper section.</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="burrito.wrapper">
+         <segment>
+            <source>Wrapper</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="cards.add">
          <segment>
             <source>Add</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="cards.addNewProject">
+         <segment>
+            <source>Add New Project...</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="cards.addNewTeam">
+         <segment>
+            <source>Add New Team...</source>
             <target/>
          </segment>
       </unit>
@@ -730,6 +1012,18 @@
             <target/>
          </segment>
       </unit>
+      <unit id="cards.bold">
+         <segment>
+            <source>BOLD (Basic Oral Language Documentation)</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="cards.boldProcessInfo">
+         <segment>
+            <source>Setting Step Progression and AI Automatic Transcription.</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="cards.cancel">
          <segment>
             <source>Cancel</source>
@@ -766,21 +1060,15 @@
             <target/>
          </segment>
       </unit>
-      <unit id="cards.copyNew">
+      <unit id="cards.copyProject">
          <segment>
-            <source>Copy project to new team.</source>
+            <source>Copy project</source>
             <target/>
          </segment>
       </unit>
       <unit id="cards.copyright">
          <segment>
             <source>Copyright</source>
-            <target/>
-         </segment>
-      </unit>
-      <unit id="cards.copySame">
-         <segment>
-            <source>Copy project to same team.</source>
             <target/>
          </segment>
       </unit>
@@ -904,6 +1192,18 @@
             <target/>
          </segment>
       </unit>
+      <unit id="cards.newTeam">
+         <segment>
+            <source>new team</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="cards.noProjects">
+         <segment>
+            <source>No projects yet.</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="cards.normalize">
          <segment>
             <source>Audio Normalize</source>
@@ -961,6 +1261,12 @@
       <unit id="cards.passagesCreated">
          <segment>
             <source>Passages Created</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="cards.personal">
+         <segment>
+            <source>Personal</source>
             <target/>
          </segment>
       </unit>
@@ -1048,6 +1354,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="cards.switchTeams">
+         <segment>
+            <source>Switch Teams</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="cards.notesHelper">
          <segment>
             <source>Shared explanations, rationales, footnotes, etc.</source>
@@ -1072,6 +1384,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="cards.teams">
+         <segment>
+            <source>Teams</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="cards.teamName">
          <segment>
             <source>Team Name</source>
@@ -1087,6 +1405,12 @@
       <unit id="cards.transcriber">
          <segment>
             <source>Transcribing</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="cards.unassigned">
+         <segment>
+            <source>Unassigned</source>
             <target/>
          </segment>
       </unit>
@@ -1276,6 +1600,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="community.autoSegment">
+         <segment>
+            <source>Use {0} for autosegmentation, or tap in the waveform and use + for manual segmentation</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="community.backTranslationComplete">
          <segment>
             <source>Version {0}: Back translation: {1}</source>
@@ -1297,6 +1627,12 @@
       <unit id="community.later">
          <segment>
             <source>Do later</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="community.listen">
+         <segment>
+            <source>Use {0} to listen to the passage</source>
             <target/>
          </segment>
       </unit>
@@ -1378,6 +1714,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="community.selectSpeaker">
+         <segment>
+            <source>Select Speaker</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="community.speaker">
          <segment>
             <source>Speaker</source>
@@ -1414,6 +1756,282 @@
             <target/>
          </segment>
       </unit>
+      <unit id="carefulSpeech.allComplete">
+         <segment>
+            <source>All clauses are complete.</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="carefulSpeech.boldOnly">
+         <segment>
+            <source>Careful Speech is only available for BOLD workflow teams.</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="carefulSpeech.clause">
+         <segment>
+            <source>Clause: {0}</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="carefulSpeech.clearRecording">
+         <segment>
+            <source>Clear Recording</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="carefulSpeech.combineWithNextClause">
+         <segment>
+            <source>Combine with Next Clause</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="carefulSpeech.fewerClauses">
+         <segment>
+            <source>Fewer Clauses</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="carefulSpeech.longer">
+         <segment>
+            <source>Longer</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="carefulSpeech.moreClauses">
+         <segment>
+            <source>More Clauses</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="carefulSpeech.nextClause">
+         <segment>
+            <source>Next Clause</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="carefulSpeech.shorter">
+         <segment>
+            <source>Shorter</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="carefulSpeech.splitClause">
+         <segment>
+            <source>Split Clause</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="carefulSpeech.speaker">
+         <segment>
+            <source>Speaker</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="carefulSpeech.startRecording">
+         <segment>
+            <source>Start Recording</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="carefulSpeech.undo">
+         <segment>
+            <source>Undo</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="carefulTranscription.clauseIndex">
+         <segment>
+            <source>Clause {0}/{1}</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="carefulTranscription.nextClause">
+         <segment>
+            <source>Next Clause</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="carefulTranscription.noClauses">
+         <segment>
+            <source>No clause segments found. Complete the Careful Speech step first.</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="carefulTranscription.noRecordingLanguage">
+         <segment>
+            <source>Language is not configured for automatic transcription.</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="carefulTranscription.prerequisite">
+         <segment>
+            <source>Complete Careful Speech for every clause before starting Careful transcription.</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="carefulTranscription.progress">
+         <segment>
+            <source>{0} of {1} clauses transcribed</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="lwcTranslation.boldOnly">
+         <segment>
+            <source>LWC Translation is only available for BOLD workflow teams.</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="lwcTranslation.clauseIndex">
+         <segment>
+            <source>Clause {0}/{1}</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="lwcTranslation.noClauses">
+         <segment>
+            <source>No clause segments found. Complete the Careful Speech step first.</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="lwcTranslation.prerequisite">
+         <segment>
+            <source>Complete Careful Speech for every clause before starting LWC translation.</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="lwcTranslation.progress">
+         <segment>
+            <source>{0} of {1} clauses recorded</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="lwcTranslation.waitForPlayback">
+         <segment>
+            <source>Recording controls will appear after playback finishes.</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="lwcTranscription.clauseIndex">
+         <segment>
+            <source>Clause {0}/{1}</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="lwcTranscription.nextClause">
+         <segment>
+            <source>Next Clause</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="lwcTranscription.noClauses">
+         <segment>
+            <source>No clause segments found. Complete the Careful Speech step first.</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="lwcTranscription.noLwcLanguage">
+         <segment>
+            <source>LWC language is not configured on the LWC Translation step.</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="lwcTranscription.prerequisite">
+         <segment>
+            <source>Complete LWC Translation for every clause before starting LWC transcription.</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="lwcTranscription.progress">
+         <segment>
+            <source>{0} of {1} clauses transcribed</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="phraseBackTranslationGuided.allComplete">
+         <segment>
+            <source>All segments are complete.</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="phraseBackTranslationGuided.clearRecording">
+         <segment>
+            <source>Clear Recording</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="phraseBackTranslationGuided.combineWithNextSegment">
+         <segment>
+            <source>Combine with Next Segment</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="phraseBackTranslationGuided.fewerSegments">
+         <segment>
+            <source>Fewer Segments</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="phraseBackTranslationGuided.moreSegments">
+         <segment>
+            <source>More Segments</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="phraseBackTranslationGuided.nextSegment">
+         <segment>
+            <source>Next Segment</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="phraseBackTranslationGuided.noStepLanguage">
+         <segment>
+            <source>Configure a language for this Phrase Back Translation step in Step Editor before recording.</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="phraseBackTranslationGuided.resetConfirmBoundaries">
+         <segment>
+            <source>Resetting will restore segment boundaries to how they were when you opened this step. Continue?</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="phraseBackTranslationGuided.resetConfirmRecordings">
+         <segment>
+            <source>Resetting will delete back-translation recordings for this language on the current vernacular recording and restore segment boundaries to how they were when you opened this step. Continue?</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="phraseBackTranslationGuided.segment">
+         <segment>
+            <source>Segment: {0}</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="phraseBackTranslationGuided.speaker">
+         <segment>
+            <source>Speaker</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="phraseBackTranslationGuided.splitSegment">
+         <segment>
+            <source>Split</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="phraseBackTranslationGuided.startRecording">
+         <segment>
+            <source>Start Recording</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="phraseBackTranslationGuided.undo">
+         <segment>
+            <source>Undo</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="consultantCheck.checked">
          <segment>
             <source>Mark Checked</source>
@@ -1435,6 +2053,12 @@
       <unit id="consultantCheck.furtherReview">
          <segment>
             <source>Review More</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="consultantCheck.language">
+         <segment>
+            <source>Language</source>
             <target/>
          </segment>
       </unit>
@@ -1720,9 +2344,51 @@
             <target/>
          </segment>
       </unit>
+      <unit id="electronAuth.abortLogin">
+         <segment>
+            <source>Abort Login</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="electronAuth.back">
+         <segment>
+            <source>Back</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="electronAuth.exit">
+         <segment>
+            <source>Exit</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="electronAuth.loginFailed">
+         <segment>
+            <source>Login failed</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="electronAuth.tokenExchangeFailed">
+         <segment>
+            <source>Could not complete sign-in (token exchange failed).</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="electronAuth.tryAgain">
+         <segment>
+            <source>Try again</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="electronAuth.workOffline">
+         <segment>
+            <source>Work offline</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="electronImport.allDataOverwritten">
          <segment>
-            <source>All {name0} data will be overwritten.</source>
+            <source>All '{name0}' data will be overwritten.</source>
             <target/>
          </segment>
       </unit>
@@ -1770,7 +2436,7 @@
       </unit>
       <unit id="electronImport.lastExported">
          <segment>
-            <source>Current data in audio project {name0} was last exported {date0}.</source>
+            <source>Current data in audio project '{name0}' was last exported {date0}.</source>
             <target/>
          </segment>
       </unit>
@@ -1782,7 +2448,7 @@
       </unit>
       <unit id="electronImport.neverExported">
          <segment>
-            <source>Current data in audio project {name0} has never been exported to an itf file to preserve changes.</source>
+            <source>Current data in audio project '{name0}' has never been exported to an itf file to preserve changes.</source>
             <target/>
          </segment>
       </unit>
@@ -1800,7 +2466,7 @@
       </unit>
       <unit id="electronImport.projectImported">
          <segment>
-            <source>Audio Project {name0} was previously imported with a newer file: {date1} </source>
+            <source>Audio Project '{name0}' was previously imported with a newer file: {date1} </source>
             <target/>
          </segment>
       </unit>
@@ -1906,6 +2572,54 @@
             <target/>
          </segment>
       </unit>
+      <unit id="filterContent.allChapters">
+         <segment>
+            <source>All Chapters of {0}</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="filterContent.allBooks">
+         <segment>
+            <source>All Books</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="filterContent.audioContent">
+         <segment>
+            <source>Audio Content</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="filterContent.other">
+         <segment>
+            <source>Other</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="filterContent.title">
+         <segment>
+            <source>Scripture Burrito: {0}</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="filterContent.transcriptionContent">
+         <segment>
+            <source>Transcription Content</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="filterContent.subtitle1">
+         <segment>
+            <source>Please select the information you want to import into your team.</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="filterContent.subtitle2">
+         <segment>
+            <source>Each selected book will be imported as a separate project.</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="filterMenu.all">
          <segment>
             <source>All</source>
@@ -1951,12 +2665,6 @@
       <unit id="filterMenu.resolved">
          <segment>
             <source>Resolved</source>
-            <target/>
-         </segment>
-      </unit>
-      <unit id="filterMenu.saveFilter">
-         <segment>
-            <source>Save as team default</source>
             <target/>
          </segment>
       </unit>
@@ -2184,7 +2892,7 @@
       </unit>
       <unit id="findResource.querying">
          <segment>
-            <source>Querying...</source>
+            <source>Loading...</source>
             <target/>
          </segment>
       </unit>
@@ -2281,6 +2989,84 @@
       <unit id="findResource.withTiming">
          <segment>
             <source>Audio Bible with verse timing</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="graphic.graphicDisplay">
+         <segment>
+            <source>Display current graphic</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="graphic.graphicSearch">
+         <segment>
+            <source>Search graphics</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="graphic.graphicSource">
+         <segment>
+            <source>graphic source tabs</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="graphic.keywordSearchHint">
+         <segment>
+            <source>The Keywords search only filters the keyword list. To filter images, select one or more keywords or use the main search.</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="graphic.loadFailure">
+         <segment>
+            <source>Failed to load</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="graphic.noResults">
+         <segment>
+            <source>No matching images found. Try a different search or adjust the filters.</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="graphic.noSelection">
+         <segment>
+            <source>no {0} selected.</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="graphic.placeHolder">
+         <segment>
+            <source>title and keyword search words</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="graphic.setGraphic">
+         <segment>
+            <source>Set as Graphic</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="graphic.tabCurrent">
+         <segment>
+            <source>Current</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="graphic.tabCustom">
+         <segment>
+            <source>Custom</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="graphic.tabBible">
+         <segment>
+            <source>Library</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="graphic.title">
+         <segment>
+            <source>Graphic Picker</source>
             <target/>
          </segment>
       </unit>
@@ -2506,6 +3292,24 @@
             <target/>
          </segment>
       </unit>
+      <unit id="import.burritoConvertingBook">
+         <segment>
+            <source>Converting book {0} of {1}: {2}</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="import.burritoPreparingLocal">
+         <segment>
+            <source>Preparing Scripture Burrito locally...</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="import.burritoReadingFiles">
+         <segment>
+            <source>Reading files {0} of {1}</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="import.close">
          <segment>
             <source>Close</source>
@@ -2514,7 +3318,7 @@
       </unit>
       <unit id="import.continue">
          <segment>
-            <source>Continue?</source>
+            <source>Continue</source>
             <target/>
          </segment>
       </unit>
@@ -2530,9 +3334,27 @@
             <target/>
          </segment>
       </unit>
+      <unit id="import.createNewTeam">
+         <segment>
+            <source>Create new team</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="import.error">
          <segment>
             <source>Import Error</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="import.externalSource">
+         <segment>
+            <source>Create a new project in APM from an external source (.ptf)</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="import.externalSourceBurrito">
+         <segment>
+            <source>Create a new project in APM from a Scripture Burrito</source>
             <target/>
          </segment>
       </unit>
@@ -2584,6 +3406,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="import.fileProcessing">
+         <segment>
+            <source>Processing file {0} of {1}</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="import.importProject">
          <segment>
             <source>Import Audio Project</source>
@@ -2596,27 +3424,27 @@
             <target/>
          </segment>
       </unit>
-      <unit id="import.importSyncUp">
-         <segment>
-            <source>Syncing offline changes</source>
-            <target/>
-         </segment>
-      </unit>
       <unit id="import.importSyncDown">
          <segment>
             <source>Syncing online changes</source>
             <target/>
          </segment>
       </unit>
-      <unit id="import.invalidITF">
+      <unit id="import.importSyncUp">
          <segment>
-            <source>Not a valid Incremental Transcriber File (ITF).</source>
+            <source>Syncing offline changes</source>
             <target/>
          </segment>
       </unit>
-      <unit id="import.unknownError">
+      <unit id="import.incrementalImport">
          <segment>
-            <source>If this error occurred while importing offline changes, please close the app immediately and reopen.  If the error persists, contact support.  If you continue to use the app, you will lose offline changes.</source>
+            <source>Import Incremental Changes from an offline coworker (.itf)</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="import.invalidITF">
+         <segment>
+            <source>Not a valid Incremental Transcriber File (ITF).</source>
             <target/>
          </segment>
       </unit>
@@ -2632,9 +3460,21 @@
             <target/>
          </segment>
       </unit>
+      <unit id="import.newTeamChainFailed">
+         <segment>
+            <source>Could not determine the new team after the first import. Import the first file alone, then add the rest to that team.</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="import.noFile">
          <segment>
             <source>Please select file to be uploaded.</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="import.offlineImport">
+         <segment>
+            <source>Import an APM Project File to use offline and sync when online, or a project file from an external source that you will only use offline.  Projects from an external source that are not imported while online cannot be synced online.</source>
             <target/>
          </segment>
       </unit>
@@ -2686,6 +3526,18 @@
             <target/>
          </segment>
       </unit>
+      <unit id="import.selectImportFileType">
+         <segment>
+            <source>Select import file type:</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="import.selectTeam">
+         <segment>
+            <source>Select Team</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="import.showHideFilter">
          <segment>
             <source>Show/Hide filter rows</source>
@@ -2716,9 +3568,75 @@
             <target/>
          </segment>
       </unit>
+      <unit id="import.fileTooLarge">
+         <segment>
+            <source>File exceeds maximum size of {0}</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="import.unknownError">
+         <segment>
+            <source>If this error occurred while syncing offline changes, please close the app immediately and reopen.  If the error persists, contact support.  If you continue to use the app, you will lose offline changes.</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="import.username">
          <segment>
             <source>Name</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="scriptureBurritoImport.title">
+         <segment>
+            <source>Import Scripture Burrito</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="scriptureBurritoImport.zipExtractError">
+         <segment>
+            <source>Failed to extract zip file</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="scriptureBurritoImport.metadataNotFoundError">
+         <segment>
+            <source>metadata.json not found in the selected file/directory</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="scriptureBurritoImport.invalidWrapperMetadataError">
+         <segment>
+            <source>Invalid format: expected \"scripture burrito wrapper\"</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="scriptureBurritoImport.subtitle">
+         <segment>
+            <source>Select a Burrito directory or a .zip file to extract and import.</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="scriptureBurritoImport.browseDirectory">
+         <segment>
+            <source>Browse Directory</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="scriptureBurritoImport.browseZipFile">
+         <segment>
+            <source>Browse Zip File</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="scriptureBurritoImport.selected">
+         <segment>
+            <source>Selected: </source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="scriptureBurritoImport.wrapperNotFoundError">
+         <segment>
+            <source>wrapper.json not found in the selected file/directory</source>
             <target/>
          </segment>
       </unit>
@@ -3418,6 +4336,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="main.addSectionOrPassage">
+         <segment>
+            <source>Add {0} or Passage</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="main.admin">
          <segment>
             <source>Admin</source>
@@ -3526,6 +4450,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="main.genericError">
+         <segment>
+            <source>Error: {0}</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="main.genFlatSample">
          <segment>
             <source>General flat sample spreadsheet</source>
@@ -3598,6 +4528,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="main.loadDataOffline">
+         <segment>
+            <source>Unable to complete loading while offline. Check your internet connection and try again.</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="main.loadingTranscriber">
          <segment>
             <source>Loading {0}</source>
@@ -3619,6 +4555,12 @@
       <unit id="main.media">
          <segment>
             <source>Audio</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="main.mobileView">
+         <segment>
+            <source>Mobile View</source>
             <target/>
          </segment>
       </unit>
@@ -3655,6 +4597,18 @@
       <unit id="main.project">
          <segment>
             <source>Audio Project</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="main.pwaReload">
+         <segment>
+            <source>Reload</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="main.pwaUpdateReady">
+         <segment>
+            <source>A new version is available.</source>
             <target/>
          </segment>
       </unit>
@@ -3697,6 +4651,12 @@
       <unit id="main.saving">
          <segment>
             <source>Saving...</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="main.scriptureBurrito">
+         <segment>
+            <source>Scripture Burrito</source>
             <target/>
          </segment>
       </unit>
@@ -3772,6 +4732,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="main.upload">
+         <segment>
+            <source>Upload</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="main.version">
          <segment>
             <source>Version: {0} - {1}</source>
@@ -3798,7 +4764,7 @@
       </unit>
       <unit id="mediaActions.delete">
          <segment>
-            <source>Delete</source>
+            <source>Clear</source>
             <target/>
          </segment>
       </unit>
@@ -4027,6 +4993,66 @@
       <unit id="mediaTab.passageAttached">
          <segment>
             <source>Passage already attached</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="mediaTab.pendingUploadBatchRetry">
+         <segment>
+            <source>Retry all</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="mediaTab.pendingUploadDeleteFailed">
+         <segment>
+            <source>The online media record could not be removed (id {0}). Others may still see a broken entry until an administrator cleans it up. Your file is saved locally.</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="mediaTab.pendingUploadDismiss">
+         <segment>
+            <source>Remove from list</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="mediaTab.pendingUploadEmpty">
+         <segment>
+            <source>No pending uploads.</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="mediaTab.pendingUploadMenu">
+         <segment>
+            <source>Pending media uploads</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="mediaTab.pendingUploadPathLabel">
+         <segment>
+            <source>File saved at: {0}</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="mediaTab.pendingUploadQueuedHint">
+         <segment>
+            <source>You can retry from Team → {0} when your connection improves.</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="mediaTab.pendingUploadRetryLater">
+         <segment>
+            <source>Try again when your internet connection is more stable.</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="mediaTab.pendingUploadRetryOne">
+         <segment>
+            <source>Retry</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="mediaTab.pendingUploadTitle">
+         <segment>
+            <source>Pending media uploads</source>
             <target/>
          </segment>
       </unit>
@@ -4378,6 +5404,48 @@
             <target/>
          </segment>
       </unit>
+      <unit id="mobile.addSegment">
+         <segment>
+            <source>Add segment boundary</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="mobile.next">
+         <segment>
+            <source>Next</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="mobile.previous">
+         <segment>
+            <source>Previous</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="mobile.removeSegment">
+         <segment>
+            <source>Remove next segment boundary</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="mobile.resetBT">
+         <segment>
+            <source>Reset back translation</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="mobile.restoreBoundaries">
+         <segment>
+            <source>Restore original segment boundaries</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="mobile.segment">
+         <segment>
+            <source>Segment: {0}</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="newProject.audioProduct">
          <segment>
             <source>Audio Product</source>
@@ -4504,6 +5572,36 @@
             <target/>
          </segment>
       </unit>
+      <unit id="passageDetailArtifacts.addAudio">
+         <segment>
+            <source>Audio...</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="passageDetailArtifacts.addAudioResource">
+         <segment>
+            <source>Add Audio Resource</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="passageDetailArtifacts.addLinked">
+         <segment>
+            <source>Linked Resource...</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="passageDetailArtifacts.addText">
+         <segment>
+            <source>Text...</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="passageDetailArtifacts.addUrl">
+         <segment>
+            <source>URL...</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="passageDetailArtifacts.allLevel">
          <segment>
             <source>All {0}</source>
@@ -4576,9 +5674,21 @@
             <target/>
          </segment>
       </unit>
+      <unit id="passageDetailArtifacts.confirmClose">
+         <segment>
+            <source>Do you want to close this dialog? Your changes will be discarded.</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="passageDetailArtifacts.createResources">
          <segment>
             <source>Create Resources</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="passageDetailArtifacts.currentResource">
+         <segment>
+            <source>Current {0}</source>
             <target/>
          </segment>
       </unit>
@@ -4591,6 +5701,18 @@
       <unit id="passageDetailArtifacts.description">
          <segment>
             <source>Description</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="passageDetailArtifacts.discardAndClose">
+         <segment>
+            <source>Discard and Close</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="passageDetailArtifacts.editAudioResource">
+         <segment>
+            <source>Edit Audio Resource</source>
             <target/>
          </segment>
       </unit>
@@ -4614,13 +5736,19 @@
       </unit>
       <unit id="passageDetailArtifacts.findResourceDesc">
          <segment>
-            <source>These controls can be used to find or create (using artificial intelligence -- AI) resources for internalizing the passage, section, chapter, or book.</source>
+            <source>Create (using artificial intelligence -- AI) resources for internalizing scripture.</source>
             <target/>
          </segment>
       </unit>
       <unit id="passageDetailArtifacts.generalResources">
          <segment>
             <source>General Resources</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="passageDetailArtifacts.keepOpen">
+         <segment>
+            <source>Keep Open</source>
             <target/>
          </segment>
       </unit>
@@ -4651,6 +5779,12 @@
       <unit id="passageDetailArtifacts.movementResource">
          <segment>
             <source>Movement</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="passageDetailArtifacts.next">
+         <segment>
+            <source>Next</source>
             <target/>
          </segment>
       </unit>
@@ -4693,12 +5827,6 @@
       <unit id="passageDetailArtifacts.pasteNoChange">
          <segment>
             <source>Nothing changed! Perhaps no references matched?</source>
-            <target/>
-         </segment>
-      </unit>
-      <unit id="passageDetailArtifacts.projectResourcePassage">
-         <segment>
-            <source>Select {0} and Passages</source>
             <target/>
          </segment>
       </unit>
@@ -4759,6 +5887,12 @@
       <unit id="passageDetailArtifacts.selectOne">
          <segment>
             <source>Only the first selected note is used</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="passageDetailArtifacts.selectPassagesSub">
+         <segment>
+            <source>Select this resource's passages.</source>
             <target/>
          </segment>
       </unit>
@@ -4836,7 +5970,7 @@
       </unit>
       <unit id="passageDetailArtifacts.tip1a">
          <segment>
-            <source>Resources for:</source>
+            <source>Available for:</source>
             <target/>
          </segment>
       </unit>
@@ -4866,7 +6000,13 @@
       </unit>
       <unit id="passageDetailArtifacts.uploadProject">
          <segment>
-            <source>General - to be used by multiple {0} or passages. (Uploaded files will only appear under Configure General.)</source>
+            <source>Multiple {0} or Passages (General Resource)</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="passageDetailArtifacts.uploadTab">
+         <segment>
+            <source>Upload</source>
             <target/>
          </segment>
       </unit>
@@ -4936,6 +6076,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="passageRecord.compressError">
+         <segment>
+            <source>Compression failed.  Saving uncompressed.</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="passageRecord.defaultFilename">
          <segment>
             <source>MyRecording</source>
@@ -4954,15 +6100,15 @@
             <target/>
          </segment>
       </unit>
-      <unit id="passageRecord.loadlatest">
-         <segment>
-            <source>Load Latest Audio</source>
-            <target/>
-         </segment>
-      </unit>
       <unit id="passageRecord.loading">
          <segment>
             <source>Loading...</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="passageRecord.processing">
+         <segment>
+            <source>Processing...</source>
             <target/>
          </segment>
       </unit>
@@ -5482,6 +6628,60 @@
             <target/>
          </segment>
       </unit>
+      <unit id="planSheet.goToReference">
+         <segment>
+            <source>Go to reference</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="planSheet.goToReferenceClear">
+         <segment>
+            <source>Clear</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="planSheet.goToReferenceDescription">
+         <segment>
+            <source>Enter one of the following:</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="planSheet.goToReferencePassage">
+         <segment>
+            <source>{0} sequence (ex. 3.1)</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="planSheet.goToReferencePhrase">
+         <segment>
+            <source>{0} title word or phrase</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="planSheet.goToReferencePublishing">
+         <segment>
+            <source>{0} identifier (ex: M1 S1)</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="planSheet.goToReferenceScripture">
+         <segment>
+            <source>Verse reference (chapter and verse ex 2:45)</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="planSheet.goToReferenceSubmit">
+         <segment>
+            <source>Go</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="planSheet.goToReferenceTitle">
+         <segment>
+            <source>Go to reference</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="planSheet.hidePublishing">
          <segment>
             <source>Hide Publishing Information</source>
@@ -5584,6 +6784,18 @@
             <target/>
          </segment>
       </unit>
+      <unit id="planSheet.referenceFilteredNoPublishingLabels">
+         <segment>
+            <source>Clear the filter to go to a movement/section label (M/S).</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="planSheet.referenceNotFound">
+         <segment>
+            <source>No matching row was found.</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="planSheet.removeFilter">
          <segment>
             <source>Filter must be cleared to enable publishing.</source>
@@ -5650,6 +6862,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="planSheet.unknownBook">
+         <segment>
+            <source>Unknown Book</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="planSheet.useCtrlV">
          <segment>
             <source>Select a column head and use CTRL-V to append table rows.</source>
@@ -5707,6 +6925,24 @@
       <unit id="planTabs.transcriptions">
          <segment>
             <source>Transcriptions</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="prompt.adminInstructions">
+         <segment>
+            <source>Record a short prompt for this {0}, then save. Team members will listen before they record.</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="prompt.offlineCannotAdd">
+         <segment>
+            <source>You must be online to add or replace the prompt recording for this {0}.</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="prompt.noAudio">
+         <segment>
+            <source>No prompt has been recorded for this {0} yet.</source>
             <target/>
          </segment>
       </unit>
@@ -6310,6 +7546,120 @@
             <target/>
          </segment>
       </unit>
+      <unit id="recordButton.record">
+         <segment>
+            <source>RECORD</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="recordButton.rerecord">
+         <segment>
+            <source>RERECORD</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="recordButton.resume">
+         <segment>
+            <source>RESUME</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="recordButton.stop">
+         <segment>
+            <source>STOP</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="recordStepSettings.custom">
+         <segment>
+            <source>Custom</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="recordStepSettings.echoCancellation">
+         <segment>
+            <source>Echo cancellation</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="recordStepSettings.echoCancellationHelper">
+         <segment>
+            <source>Reduces echo when using speakers. May reduce recording quality. Leave off for a cleaner capture when using headphones or a quiet room.</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="recordStepSettings.fileNameTemplate">
+         <segment>
+            <source>File Name Template</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="recordStepSettings.general">
+         <segment>
+            <source>General</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="recordStepSettings.noiseSuppression">
+         <segment>
+            <source>Noise suppression</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="recordStepSettings.noiseSuppressionHelper">
+         <segment>
+            <source>Reduces background noise. May make speech sound less natural. Leave off for the most faithful capture when the environment is already quiet.</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="recordStepSettings.notes">
+         <segment>
+            <source>Notes</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="recordStepSettings.saveAsWav">
+         <segment>
+            <source>Save as wav (uncompressed) file.</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="recordStepSettings.saveAsWavHelper">
+         <segment>
+            <source>These files are large and we suggest you only select this for the final recording.</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="recordStepSettings.scripture">
+         <segment>
+            <source>Scripture</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="recordStepSettings.useBookChapterPassage">
+         <segment>
+            <source>Book Chapter Passage</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="recordStepSettings.useReference">
+         <segment>
+            <source>Passage Reference</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="recordStepSettings.useSectionNumberAndPassageNumber">
+         <segment>
+            <source>{0} number and Passage number</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="recordStepSettings.useTitle">
+         <segment>
+            <source>Title</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="scriptureTable.alternateName">
          <segment>
             <source>{0} Alternate Name</source>
@@ -6654,7 +8004,7 @@
       </unit>
       <unit id="shared.BookNotSet">
          <segment>
-            <source>Book was not set for Section {0} Passage {1}</source>
+            <source>Book was not set for {0} {1} Passage {2}</source>
             <target/>
          </segment>
       </unit>
@@ -6679,6 +8029,12 @@
       <unit id="shared.close">
          <segment>
             <source>Close</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="shared.confirm">
+         <segment>
+            <source>Confirm</source>
             <target/>
          </segment>
       </unit>
@@ -6754,6 +8110,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="shared.loadFromFile">
+         <segment>
+            <source>Load from file...</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="shared.loading">
          <segment>
             <source>Loading...</source>
@@ -6820,9 +8182,15 @@
             <target/>
          </segment>
       </unit>
+      <unit id="shared.TooBusy">
+         <segment>
+            <source>Unable to start new save while already saving.</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="shared.NoSaveWoMedia">
          <segment>
-            <source>No media has been saved to the cloud.</source>
+            <source>Save Failed. Please check your internet connection and try again.</source>
             <target/>
          </segment>
       </unit>
@@ -6916,6 +8284,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="shared.teamDefault">
+         <segment>
+            <source>Save as team default</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="shared.teamrole">
          <segment>
             <source>Team Role</source>
@@ -6943,6 +8317,24 @@
       <unit id="shared.uploadMediaSingular">
          <segment>
             <source>Upload Audio</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="shared.upload">
+         <segment>
+            <source>Upload</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="shared.discardRecording">
+         <segment>
+            <source>Would you like to clear this recording?</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="shared.useThisVersion">
+         <segment>
+            <source>Use This Version</source>
             <target/>
          </segment>
       </unit>
@@ -7072,6 +8464,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="stepEditor.duplicatePhraseBtLanguage">
+         <segment>
+            <source>Another step already uses this language for the same artifact type.</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="stepEditor.hide">
          <segment>
             <source>Hide</source>
@@ -7081,6 +8479,12 @@
       <unit id="stepEditor.inProgress">
          <segment>
             <source>In progress...</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="stepEditor.languageRequired">
+         <segment>
+            <source>Language is required for this step.</source>
             <target/>
          </segment>
       </unit>
@@ -7129,6 +8533,12 @@
       <unit id="stepEditor.saving">
          <segment>
             <source>Saving ...</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="stepEditor.settingsFor">
+         <segment>
+            <source>Settings for {0} of {1}</source>
             <target/>
          </segment>
       </unit>
@@ -7258,6 +8668,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="template.reference">
+         <segment>
+            <source>Passage reference</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="template.renderExportTemplate">
          <segment>
             <source>The {SECT} template works for files exported from {0}.</source>
@@ -7267,6 +8683,12 @@
       <unit id="template.templateCodes">
          <segment>
             <source>Template Codes</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="template.title">
+         <segment>
+            <source>Title</source>
             <target/>
          </segment>
       </unit>
@@ -7378,6 +8800,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="tool.carefulSpeech">
+         <segment>
+            <source>Careful speech</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="tool.community">
          <segment>
             <source>Community Test</source>
@@ -7417,6 +8845,12 @@
       <unit id="tool.paratext">
          <segment>
             <source>{0} Sync</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="tool.prompt">
+         <segment>
+            <source>Prompt</source>
             <target/>
          </segment>
       </unit>
@@ -7504,15 +8938,21 @@
             <target/>
          </segment>
       </unit>
+      <unit id="transcriber.aiAutomaticTranscription">
+         <segment>
+            <source>AI Automatic Transcription</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="transcriber.aiWillContinue">
          <segment>
             <source>The AI will continue to work on the transcription even if you close this progress box. Click the {0} button to open the progress box on this workflow step to see the results. Use the settings gear on {0} button to see the transcription using a different language.</source>
             <target/>
          </segment>
       </unit>
-      <unit id="transcriber.beginRecognize">
+      <unit id="transcriber.chooseSisterLang">
          <segment>
-            <source>Begin Auto Transcription</source>
+            <source>Choose a sister language</source>
             <target/>
          </segment>
       </unit>
@@ -7534,6 +8974,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="transcriber.findingSisterLang">
+         <segment>
+            <source>Finding supported sister languages…</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="transcriber.historyTip">
          <segment>
             <source>History [{0}]</source>
@@ -7549,6 +8995,12 @@
       <unit id="transcriber.invalidReference">
          <segment>
             <source>Book or Reference is invalid.</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="transcriber.missingSegmentRecordings">
+         <segment>
+            <source>Some Phrase Back Translation segments are missing recordings. Complete recording for every segment before starting transcription.</source>
             <target/>
          </segment>
       </unit>
@@ -7612,6 +9064,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="transcriber.recommended">
+         <segment>
+            <source>Recommended</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="transcriber.reject">
          <segment>
             <source>Reject</source>
@@ -7627,6 +9085,12 @@
       <unit id="transcriber.reviewing">
          <segment>
             <source>Started to review</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="transcriber.run">
+         <segment>
+            <source>Run</source>
             <target/>
          </segment>
       </unit>
@@ -7660,6 +9124,24 @@
             <target/>
          </segment>
       </unit>
+      <unit id="transcriber.scriptTranscription">
+         <segment>
+            <source>Script</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="transcriber.invalidSisterLang">
+         <segment>
+            <source>This language is not supported for speech recognition. Choose another sister language.</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="transcriber.sisterLang">
+         <segment>
+            <source>Your language is not supported for speech recognition. To use automatic transcription, choose a closely related language with a similar writing system.</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="transcriber.submit">
          <segment>
             <source>Submit</source>
@@ -7687,6 +9169,12 @@
       <unit id="transcriber.transcriptionExists">
          <segment>
             <source>Transcription already exists</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="transcriber.transcriptionType">
+         <segment>
+            <source>Transcription type</source>
             <target/>
          </segment>
       </unit>
@@ -8140,6 +9628,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="verse.autosaveSkipped">
+         <segment>
+            <source>Autosave skipped: {0} issue(s) found.</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="verse.badReferences">
          <segment>
             <source>ERROR: Markup contains bad references</source>
@@ -8164,6 +9658,24 @@
             <target/>
          </segment>
       </unit>
+      <unit id="verse.doneEditingReference">
+         <segment>
+            <source>Done Editing</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="verse.edit">
+         <segment>
+            <source>Edit</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="verse.editReference">
+         <segment>
+            <source>Edit Reference</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="verse.issues">
          <segment>
             <source>The verse markup has issues. Do you want to continue?</source>
@@ -8173,6 +9685,12 @@
       <unit id="verse.markVerses">
          <segment>
             <source>Mark Verses</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="verse.markupIssuesTitle">
+         <segment>
+            <source>Verse markup issues</source>
             <target/>
          </segment>
       </unit>
@@ -8212,15 +9730,33 @@
             <target/>
          </segment>
       </unit>
+      <unit id="verse.reset">
+         <segment>
+            <source>Reset</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="verse.saveVerseMarkup">
          <segment>
             <source>Save Verse Markup</source>
             <target/>
          </segment>
       </unit>
+      <unit id="verse.splitVerse">
+         <segment>
+            <source>Split Verse</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="verse.startStop">
          <segment>
             <source>Start --&gt; Stop</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="verse.viewIssues">
+         <segment>
+            <source>View issues</source>
             <target/>
          </segment>
       </unit>
@@ -8854,9 +10390,93 @@
             <target/>
          </segment>
       </unit>
+      <unit id="workflowSteps.backTranslationTip">
+         <segment>
+            <source>Record a back translation</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.carefulSpeech">
+         <segment>
+            <source>Careful speech</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.carefulSpeechTip">
+         <segment>
+            <source>Record careful speech for each segment.</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.carefulTranscription">
+         <segment>
+            <source>Careful transcription</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.carefulTranscriptionTip">
+         <segment>
+            <source>Transcribe the careful speech recording for each segment.</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.freeTranscription">
+         <segment>
+            <source>Free transcription</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.freeTranscriptionTip">
+         <segment>
+            <source>Transcribe the free translation recording.</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.freeTranslation">
+         <segment>
+            <source>Free translation</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.freeTranslationTip">
+         <segment>
+            <source>Record a free translation of the entire passage in the language of wider communication.</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.lwcTranscription">
+         <segment>
+            <source>LWC transcription</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.lwcTranscriptionTip">
+         <segment>
+            <source>Transcribe the LWC translation recording.</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.lwcTranslation">
+         <segment>
+            <source>LWC translation</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.lwcTranslationTip">
+         <segment>
+            <source>Listen to each careful speech segment and record a translation in the language of wider communication.</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="workflowSteps.communityTest1">
          <segment>
             <source>Community Test 1</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.communityTest1Tip">
+         <segment>
+            <source>Ask community test questions and record responses</source>
             <target/>
          </segment>
       </unit>
@@ -8866,9 +10486,21 @@
             <target/>
          </segment>
       </unit>
+      <unit id="workflowSteps.communityTest2Tip">
+         <segment>
+            <source>Ask community test questions and record responses</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="workflowSteps.communityTesting">
          <segment>
             <source>Community Test</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.communityTestingTip">
+         <segment>
+            <source>Ask community test questions and record responses</source>
             <target/>
          </segment>
       </unit>
@@ -8878,9 +10510,21 @@
             <target/>
          </segment>
       </unit>
+      <unit id="workflowSteps.consultantCheckTip">
+         <segment>
+            <source>The consultant listens to recorded content and asks questions in discussions.</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="workflowSteps.consultantCheck1">
          <segment>
             <source>First Consultant Check</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.consultantCheck1Tip">
+         <segment>
+            <source>The consultant listens to recorded content and asks questions in discussions.</source>
             <target/>
          </segment>
       </unit>
@@ -8890,9 +10534,21 @@
             <target/>
          </segment>
       </unit>
+      <unit id="workflowSteps.consultantCheck2Tip">
+         <segment>
+            <source>The consultant listens to recorded content and asks questions in discussions.</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="workflowSteps.done">
          <segment>
             <source>Done</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.doneTip">
+         <segment>
+            <source>All steps have been completed for this passage or note</source>
             <target/>
          </segment>
       </unit>
@@ -8902,9 +10558,21 @@
             <target/>
          </segment>
       </unit>
+      <unit id="workflowSteps.exportTip">
+         <segment>
+            <source>Export work done to this point if desired.</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="workflowSteps.finalRecording">
          <segment>
             <source>Studio Record</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.finalRecordingTip">
+         <segment>
+            <source>Make a final recording in a studio if desired.</source>
             <target/>
          </segment>
       </unit>
@@ -8914,9 +10582,45 @@
             <target/>
          </segment>
       </unit>
+      <unit id="workflowSteps.finalReviewTip">
+         <segment>
+            <source>Listen one last time to the results to see if any more changes are needed.</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="workflowSteps.finalReviewText">
          <segment>
             <source>Final Text Review</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.finalReviewTextTip">
+         <segment>
+            <source>Read through the transcription one last time to see if any additional changes are needed.</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.incompleteStepComplete">
+         <segment>
+            <source>Complete</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.incompleteStepContinue">
+         <segment>
+            <source>Continue</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.incompleteStepNavigate">
+         <segment>
+            <source>The current step ({0}) is not complete. Are you sure?</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.incompleteStepNavigateTitle">
+         <segment>
+            <source>Step not complete</source>
             <target/>
          </segment>
       </unit>
@@ -8926,9 +10630,21 @@
             <target/>
          </segment>
       </unit>
+      <unit id="workflowSteps.internalizeTip">
+         <segment>
+            <source>Review the resources to become able to tell the passage from memory in the target languages.</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="workflowSteps.paratextConsultantCheck">
          <segment>
             <source>Consultant Check in {0}</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.paratextConsultantCheckTip">
+         <segment>
+            <source>Review the text in another program with more analysis resources.</source>
             <target/>
          </segment>
       </unit>
@@ -8938,9 +10654,21 @@
             <target/>
          </segment>
       </unit>
+      <unit id="workflowSteps.paratextPeerReviewTip">
+         <segment>
+            <source>Team reviews the text in another program with more analysis resources.</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="workflowSteps.paratextSync">
          <segment>
             <source>Sync to {0}</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.paratextSyncTip">
+         <segment>
+            <source>Sync text to another text translation tool.</source>
             <target/>
          </segment>
       </unit>
@@ -8950,9 +10678,21 @@
             <target/>
          </segment>
       </unit>
+      <unit id="workflowSteps.peerReviewTip">
+         <segment>
+            <source>Peer review content to this point.</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="workflowSteps.phraseBackTranslation">
          <segment>
             <source>Phrase Back Translate</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.phraseBackTranslationTip">
+         <segment>
+            <source>Record a back translation of each phrase of the passage.</source>
             <target/>
          </segment>
       </unit>
@@ -8962,9 +10702,21 @@
             <target/>
          </segment>
       </unit>
+      <unit id="workflowSteps.pBTTranscribeTip">
+         <segment>
+            <source>Transcribe each of the back translated phrases.</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="workflowSteps.pBTParatextSync">
          <segment>
             <source>Phrase BT {0}</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.pBTParatextSyncTip">
+         <segment>
+            <source>Synchronize the back translated text to another tool for analysis and review.</source>
             <target/>
          </segment>
       </unit>
@@ -8974,9 +10726,21 @@
             <target/>
          </segment>
       </unit>
+      <unit id="workflowSteps.preliminaryApprovalTip">
+         <segment>
+            <source>Get preliminary approval.</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="workflowSteps.record">
          <segment>
             <source>Record</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.recordTip">
+         <segment>
+            <source>Record the passage.</source>
             <target/>
          </segment>
       </unit>
@@ -8986,15 +10750,33 @@
             <target/>
          </segment>
       </unit>
+      <unit id="workflowSteps.retellBackTranslationTip">
+         <segment>
+            <source>Retell the entire passage in the language understood by the consultant.</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="workflowSteps.retellBTTranscribe">
          <segment>
             <source>Retell BT Transcribe</source>
             <target/>
          </segment>
       </unit>
+      <unit id="workflowSteps.retellBTTranscribeTip">
+         <segment>
+            <source>Transcribe the recording of the text being retold in the language of the consultant.</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="workflowSteps.review">
          <segment>
             <source>Review Transcription</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.reviewTip">
+         <segment>
+            <source>Review the transcription to make sure it is accurate.</source>
             <target/>
          </segment>
       </unit>
@@ -9010,9 +10792,21 @@
             <target/>
          </segment>
       </unit>
+      <unit id="workflowSteps.teamCheckTip">
+         <segment>
+            <source>Check over the work of another sub team in the translation project.</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="workflowSteps.termVerify">
          <segment>
             <source>Term Verify</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.termVerifyTip">
+         <segment>
+            <source>Make recordings of how terms contained in the passage are being rendered.</source>
             <target/>
          </segment>
       </unit>
@@ -9022,9 +10816,21 @@
             <target/>
          </segment>
       </unit>
+      <unit id="workflowSteps.teamReviewTip">
+         <segment>
+            <source>Review how terms were rendered before and how they are rendered this time.</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="workflowSteps.transcribe">
          <segment>
             <source>Transcribe</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.transcribeTip">
+         <segment>
+            <source>Transcribe the recording.</source>
             <target/>
          </segment>
       </unit>
@@ -9040,9 +10846,39 @@
             <target/>
          </segment>
       </unit>
+      <unit id="workflowSteps.markVersesTip">
+         <segment>
+            <source>Listen to the recording and mark where the verse boundaries occur.</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.prompt">
+         <segment>
+            <source>Prompt</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.promptAdminTip">
+         <segment>
+            <source>Record a prompt for this {0}, save it, then continue to the next step when ready.</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.promptTip">
+         <segment>
+            <source>Listen to the prompt above. Then, move to the next step.</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="workflowSteps.wholeBackTranslate">
          <segment>
             <source>Whole Back Translate</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.wholeBackTranslateTip">
+         <segment>
+            <source>Record the back translation of the entire passage in the language of the consultant.</source>
             <target/>
          </segment>
       </unit>
@@ -9052,15 +10888,33 @@
             <target/>
          </segment>
       </unit>
+      <unit id="workflowSteps.wholeBackTranslationTip">
+         <segment>
+            <source>Record the back translation of the entire passage in the language of the consultant.</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="workflowSteps.wBTTranscribe">
          <segment>
             <source>Whole BT Transcribe</source>
             <target/>
          </segment>
       </unit>
+      <unit id="workflowSteps.wBTTranscribeTip">
+         <segment>
+            <source>Transcribe the recording of the passage in the language of the consultant.</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="workflowSteps.wBTParatextSync">
          <segment>
             <source>Whole BT {0}</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.wBTParatextSyncTip">
+         <segment>
+            <source>Sync transcription of the back translation to another tool for analysis and review.</source>
             <target/>
          </segment>
       </unit>
@@ -9112,15 +10966,33 @@
             <target/>
          </segment>
       </unit>
+      <unit id="wsAudioPlayer.clearRecording">
+         <segment>
+            <source>Clear Recording?</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="wsAudioPlayer.clearRecordingTip">
+         <segment>
+            <source>Clear Recording</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="wsAudioPlayer.convertVoiceAi">
+         <segment>
+            <source>Convert Voice (AI)</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="wsAudioPlayer.beginningTip">
          <segment>
             <source>Go to Beginning [{0}]</source>
             <target/>
          </segment>
       </unit>
-      <unit id="wsAudioPlayer.deleteRecording">
+      <unit id="wsAudioPlayer.clear">
          <segment>
-            <source>Delete Entire Recording</source>
+            <source>Clear</source>
             <target/>
          </segment>
       </unit>
@@ -9160,9 +11032,9 @@
             <target/>
          </segment>
       </unit>
-      <unit id="wsAudioPlayer.microphone">
+      <unit id="wsAudioPlayer.moreOptions">
          <segment>
-            <source>Select microphone</source>
+            <source>More Options</source>
             <target/>
          </segment>
       </unit>
@@ -9256,6 +11128,24 @@
             <target/>
          </segment>
       </unit>
+      <unit id="wsAudioPlayer.reduceNoiseAi">
+         <segment>
+            <source>Reduce Noise (AI)</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="wsAudioPlayer.reset">
+         <segment>
+            <source>Clear</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="wsAudioPlayer.resetSegments">
+         <segment>
+            <source>Reset</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="wsAudioPlayer.resume">
          <segment>
             <source>Resume</source>
@@ -9274,9 +11164,21 @@
             <target/>
          </segment>
       </unit>
+      <unit id="wsAudioPlayer.selectMicrophoneMenu">
+         <segment>
+            <source>Select Microphone</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="wsAudioPlayer.selectVoice">
          <segment>
             <source>Select Voice</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="wsAudioPlayer.selectVoiceForConversion">
+         <segment>
+            <source>Select Voice for Conversion</source>
             <target/>
          </segment>
       </unit>
@@ -9354,7 +11256,7 @@
       </unit>
       <unit id="wsAudioPlayerSegment.removeSegment">
          <segment>
-            <source>Remove Next Boundary [{0}]</source>
+            <source>Remove Boundary [{0}]</source>
             <target/>
          </segment>
       </unit>
@@ -9397,12 +11299,6 @@
       <unit id="wsAudioPlayerSegment.splitSegment">
          <segment>
             <source>Add Boundary [Double Click/{0}]</source>
-            <target/>
-         </segment>
-      </unit>
-      <unit id="wsAudioPlayerSegment.teamDefault">
-         <segment>
-            <source>Save as team default</source>
             <target/>
          </segment>
       </unit>

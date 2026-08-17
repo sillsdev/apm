@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/immutability */
 import { useState } from 'react';
 import { IState, OptionType, IToolStrings } from '../model';
 import localStrings from '../selector/localize';
@@ -7,6 +8,7 @@ import { addPt } from '../utils/addPt';
 
 const toolSlugs = [
   ToolSlug.Resource,
+  ToolSlug.Prompt,
   ToolSlug.Record,
   ToolSlug.KeyTerm,
   ToolSlug.TeamCheck,
@@ -15,6 +17,7 @@ const toolSlugs = [
   ToolSlug.Verses,
   ToolSlug.Transcribe,
   ToolSlug.PhraseBackTranslate,
+  ToolSlug.CarefulSpeech,
   ToolSlug.WholeBackTranslate,
   ToolSlug.Paratext,
   ToolSlug.ConsultantCheck,

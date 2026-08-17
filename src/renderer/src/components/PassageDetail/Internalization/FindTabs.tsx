@@ -1,7 +1,16 @@
 import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
 import Box from '@mui/material/Box';
-import { Badge } from '@mui/material';
+import {
+  Badge,
+  FormControl,
+  MenuItem,
+  Select,
+  SelectChangeEvent,
+  SxProps,
+  useMediaQuery,
+  useTheme,
+} from '@mui/material';
 import FindOther from './FindOther';
 import CreateAiRes from './CreateAiRes';
 import usePassageDetailContext from '../../../context/usePassageDetailContext';
@@ -12,8 +21,9 @@ import { IFindResourceStrings, ISharedStrings } from '../../../model';
 import { shallowEqual, useSelector } from 'react-redux';
 import { findResourceSelector, sharedSelector } from '../../../selector';
 import FindAquifer from './FindAquifer';
+import FindBibleBrain from './FindBibleBrain';
 import FaithbridgeIframe from './FaithbridgeIframe';
-import { Aquifer, FaithBridge } from '../../../assets/brands';
+import { Aquifer, FaithBridge, BibleBrain } from '../../../assets/brands';
 import { useHandleLink } from './addLinkKind';
 
 export interface OptionProps {
@@ -25,10 +35,12 @@ interface TabPanelProps {
   children?: ReactNode;
   index: number;
   value: number;
+  contentSx?: SxProps;
+  fillParent?: boolean;
 }
 
 function CustomTabPanel(props: TabPanelProps) {
-  const { children, value, index, ...other } = props;
+  const { children, value, index, contentSx, fillParent, ...other } = props;
 
   return (
     <div
@@ -37,8 +49,37 @@ function CustomTabPanel(props: TabPanelProps) {
       id={`simple-tabpanel-${index}`}
       aria-labelledby={`simple-tab-${index}`}
       {...other}
+      style={
+        fillParent
+          ? {
+              flex: 1,
+              minHeight: 0,
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden',
+            }
+          : undefined
+      }
     >
-      {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
+      {value === index && (
+        <Box
+          sx={{
+            p: 3,
+            ...contentSx,
+            ...(fillParent
+              ? {
+                  flex: 1,
+                  minHeight: 0,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  overflow: 'hidden',
+                }
+              : {}),
+          }}
+        >
+          {children}
+        </Box>
+      )}
     </div>
   );
 }
@@ -72,6 +113,16 @@ export default function FindTabs({
     shallowEqual
   );
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
+  const theme = useTheme();
+  const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
+  const researchTabPanelContentSx: SxProps | undefined = isSmallScreen
+    ? { px: 0 }
+    : undefined;
+  const bibleBrainTabIndex = 0;
+  const faithBridgeTabIndex = 1;
+  const createTabIndex = 2;
+  const aquiferTabIndex = 3;
+  const findOtherTabIndex = aquifer ? 4 : 3;
 
   useEffect(() => {
     import('../../../assets/bible-resource').then((module) => {
@@ -81,55 +132,195 @@ export default function FindTabs({
 
   useEffect(() => {
     setAquifer(canAdd);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canAdd]);
 
   const handleChange = (event: SyntheticEvent, newValue: number) => {
     setValue(newValue);
   };
 
+  const handleSelectChange = (event: SelectChangeEvent<number>) => {
+    setValue(Number(event.target.value));
+  };
+
+  const handleSetTab = (tab: number) => {
+    setValue(tab);
+  };
+
+  const fixedFooterTabOverflowHidden =
+    isSmallScreen &&
+    (value === faithBridgeTabIndex ||
+      value === bibleBrainTabIndex ||
+      value === createTabIndex ||
+      (aquifer && value === aquiferTabIndex));
+
   return (
-    <Box sx={{ width: '100%' }}>
-      <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-        <Tabs
-          value={value}
-          onChange={handleChange}
-          aria-label="basic tabs example"
-        >
-          <Tab
-            label={<Badge badgeContent={ts.ai}>{FaithBridge}</Badge>}
-            {...a11yProps(0)}
-          />
-          <Tab
-            label={<Badge badgeContent={ts.ai}>{t.create}</Badge>}
-            {...a11yProps(1)}
-          />
-          {aquifer && (
+    <Box
+      sx={{
+        width: '100%',
+        ...(isSmallScreen
+          ? {
+              display: 'flex',
+              flexDirection: 'column',
+              flex: 1,
+              minHeight: 0,
+              maxHeight: '100%',
+              overflow: 'hidden',
+            }
+          : {}),
+      }}
+    >
+      <Box sx={{ borderBottom: 1, borderColor: 'divider', flexShrink: 0 }}>
+        {isSmallScreen ? (
+          <FormControl fullWidth size="small" sx={{ my: 1 }}>
+            <Select<number>
+              value={value}
+              onChange={handleSelectChange}
+              displayEmpty
+              aria-label={t.findResource}
+              sx={{ fontSize: (theme) => theme.typography.h6.fontSize }}
+            >
+              <MenuItem
+                value={bibleBrainTabIndex}
+                sx={{ fontSize: (theme) => theme.typography.h6.fontSize }}
+              >
+                {BibleBrain}
+              </MenuItem>
+              <MenuItem
+                value={faithBridgeTabIndex}
+                sx={{ fontSize: (theme) => theme.typography.h6.fontSize }}
+              >
+                {`${FaithBridge} (${ts.ai})`}
+              </MenuItem>
+              <MenuItem
+                value={createTabIndex}
+                sx={{ fontSize: (theme) => theme.typography.h6.fontSize }}
+              >
+                {`${t.create} (${ts.ai})`}
+              </MenuItem>
+              {aquifer && (
+                <MenuItem
+                  value={aquiferTabIndex}
+                  sx={{ fontSize: (theme) => theme.typography.h6.fontSize }}
+                >
+                  {t.findBrandedContent.replace('{0}', Aquifer)}
+                </MenuItem>
+              )}
+              <MenuItem
+                value={findOtherTabIndex}
+                sx={{ fontSize: (theme) => theme.typography.h6.fontSize }}
+              >
+                {aquifer ? t.findOther : t.findResource}
+              </MenuItem>
+            </Select>
+          </FormControl>
+        ) : (
+          <Tabs
+            value={value}
+            onChange={handleChange}
+            aria-label="basic tabs example"
+          >
+            <Tab label={BibleBrain} {...a11yProps(bibleBrainTabIndex)} />
             <Tab
-              label={t.findBrandedContent.replace('{0}', Aquifer)}
-              {...a11yProps(2)}
+              label={<Badge badgeContent={ts.ai}>{FaithBridge}</Badge>}
+              {...a11yProps(faithBridgeTabIndex)}
             />
-          )}
-          <Tab
-            label={aquifer ? t.findOther : t.findResource}
-            {...a11yProps(aquifer ? 3 : 2)}
-          />
-        </Tabs>
+            <Tab
+              label={<Badge badgeContent={ts.ai}>{t.create}</Badge>}
+              {...a11yProps(createTabIndex)}
+            />
+            {aquifer && (
+              <Tab
+                label={t.findBrandedContent.replace('{0}', Aquifer)}
+                {...a11yProps(aquiferTabIndex)}
+              />
+            )}
+            <Tab
+              label={aquifer ? t.findOther : t.findResource}
+              {...a11yProps(findOtherTabIndex)}
+            />
+          </Tabs>
+        )}
       </Box>
-      <CustomTabPanel value={value} index={0}>
-        <FaithbridgeIframe onMarkdown={onMarkdown} onClose={onClose} />
-      </CustomTabPanel>
-      <CustomTabPanel value={value} index={1}>
-        <CreateAiRes resources={resources} onTab={() => setValue(0)} />
-      </CustomTabPanel>
-      {aquifer && (
-        <CustomTabPanel value={value} index={2}>
-          <FindAquifer onClose={onClose} />
+      <Box
+        sx={
+          isSmallScreen
+            ? {
+                flex: 1,
+                minHeight: 0,
+                display: 'flex',
+                flexDirection: 'column',
+                overflowY: fixedFooterTabOverflowHidden ? 'hidden' : 'auto',
+                overflowX: fixedFooterTabOverflowHidden
+                  ? 'hidden'
+                  : aquifer && value === aquiferTabIndex
+                    ? 'auto'
+                    : 'hidden',
+              }
+            : {}
+        }
+      >
+        <CustomTabPanel
+          value={value}
+          index={bibleBrainTabIndex}
+          contentSx={
+            isSmallScreen ? { px: 0, py: 0 } : researchTabPanelContentSx
+          }
+          fillParent={value === bibleBrainTabIndex ? isSmallScreen : undefined}
+        >
+          <FindBibleBrain
+            handleLink={handleLink}
+            onClose={onClose}
+            closeRequested={false}
+            fixedFooterLayout={isSmallScreen}
+          />
         </CustomTabPanel>
-      )}
-      <CustomTabPanel value={value} index={aquifer ? 3 : 2}>
-        <FindOther handleLink={handleLink} resources={resources} />
-      </CustomTabPanel>
+        <CustomTabPanel
+          value={value}
+          index={faithBridgeTabIndex}
+          contentSx={
+            isSmallScreen ? { px: 0, py: 0 } : researchTabPanelContentSx
+          }
+          fillParent={value === faithBridgeTabIndex ? isSmallScreen : undefined}
+        >
+          <FaithbridgeIframe
+            onMarkdown={onMarkdown}
+            onClose={onClose}
+            fixedFooterLayout={isSmallScreen}
+          />
+        </CustomTabPanel>
+        <CustomTabPanel
+          value={value}
+          index={createTabIndex}
+          contentSx={
+            isSmallScreen ? { px: 0, py: 0 } : researchTabPanelContentSx
+          }
+          fillParent={value === createTabIndex ? isSmallScreen : undefined}
+        >
+          <CreateAiRes
+            resources={resources}
+            onTab={() => handleSetTab(faithBridgeTabIndex)}
+          />
+        </CustomTabPanel>
+        {aquifer && (
+          <CustomTabPanel
+            value={value}
+            index={aquiferTabIndex}
+            contentSx={
+              isSmallScreen ? { px: 0, py: 0 } : researchTabPanelContentSx
+            }
+            fillParent={value === aquiferTabIndex ? isSmallScreen : undefined}
+          >
+            <FindAquifer onClose={onClose} />
+          </CustomTabPanel>
+        )}
+        <CustomTabPanel
+          value={value}
+          index={findOtherTabIndex}
+          contentSx={researchTabPanelContentSx}
+        >
+          <FindOther handleLink={handleLink} resources={resources} />
+        </CustomTabPanel>
+      </Box>
       <LaunchLink url={link} reset={() => setLink('')} />
     </Box>
   );

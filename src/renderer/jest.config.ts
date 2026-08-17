@@ -52,6 +52,8 @@ export const config: JestConfigWithTsJest = {
     '\\.(jpg|jpeg|png|gif|webp|svg)$': '<rootDir>/__mocks__/fileMock.ts', // Mock image files
     '^../api-variable$': '<rootDir>/__mocks__/api-variable.tsx', // Mock api-variable
     '^../../api-variable$': '<rootDir>/__mocks__/api-variable.tsx', // Mock api-variable
+    '^@model/(.*)$': '<rootDir>/src/model/$1', // Mock model imports
+    '^burrito/(.*)$': '<rootDir>/src/burrito/$1', // Mock burrito imports
   },
 };
 

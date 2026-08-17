@@ -117,7 +117,7 @@ const KeyTerms = ({ width }: IProps) => {
     const excl = getOrgDefault(orgDefaultKtExcludeTag) as ExcludeArray;
     if (excl) initExcluded(excl);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [passage.id]);
+  }, [passage?.id ?? 0]);
 
   return (
     <>

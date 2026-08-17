@@ -1,13 +1,13 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useGlobal } from '../../context/useGlobal';
-import { IPassageChooserStrings, PassageD } from '../../model';
-import { Typography, Tabs, Tab, SxProps } from '@mui/material';
+import { IPassageChooserStrings } from '../../model';
+import { Typography, Tabs, Tab, SxProps, Box } from '@mui/material';
 import usePassageDetailContext from '../../context/usePassageDetailContext';
 import {
-  related,
   passageRefText,
   remoteId,
   useSharedResRead,
+  passagesForSection,
 } from '../../crud';
 import { rememberCurrentPassage } from '../../utils';
 import { useSelector, shallowEqual } from 'react-redux';
@@ -35,17 +35,28 @@ interface IProps {
 
 export const PassageDetailChooser = ({ width, sx }: IProps) => {
   const [memory] = useGlobal('memory');
-  const { passage, section, prjId, allBookData, chooserSize, setChooserSize } =
-    usePassageDetailContext();
+  const {
+    passage,
+    section,
+    prjId,
+    allBookData,
+    chooserSize,
+    setChooserSize,
+    setCurrentStep,
+    isNavigationBlocked,
+  } = usePassageDetailContext();
   const [passageCount, setPassageCount] = useState(0);
   const [value, setValue] = useState(0);
   const marks = useRef<Array<Mark>>([]);
   const [view, setView] = useState('');
-  const { setCurrentStep } = usePassageDetailContext();
   const { getSharedResource } = useSharedResRead();
-  const passageNavigate = usePassageNavigate(() => {
-    setView('');
-  }, setCurrentStep);
+  const passageNavigate = usePassageNavigate(
+    () => {
+      setView('');
+    },
+    setCurrentStep,
+    isNavigationBlocked
+  );
 
   const t = useSelector(
     passageChooserSelector,
@@ -53,6 +64,7 @@ export const PassageDetailChooser = ({ width, sx }: IProps) => {
   ) as IPassageChooserStrings;
 
   const handleChange = (event: React.SyntheticEvent, newValue: any) => {
+    if (isNavigationBlocked()) return;
     if (typeof newValue === 'number') {
       if (newValue !== value) {
         const selId = marks.current[newValue]?.id;
@@ -68,11 +80,9 @@ export const PassageDetailChooser = ({ width, sx }: IProps) => {
   };
 
   useEffect(() => {
-    // Next line doesn't work in desktop app
-    // const passages = related(section, 'passages') as Passage[];
-    const passages = (
-      memory.cache.query((q) => q.findRecords('passage')) as PassageD[]
-    ).filter((p) => related(p, 'section') === section?.id);
+    // Prefer querying passages by section relation (offline desktop may lack
+    // section.relationships.passages).
+    const passages = passagesForSection(memory, section?.id);
     let newCount = 0;
     marks.current = [];
     passages
@@ -129,24 +139,54 @@ export const PassageDetailChooser = ({ width, sx }: IProps) => {
     passageNavigate(view);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view]);
-
+  const SCROLL_BUTTONS_WIDTH = 48;
   return passageCount > 1 ? (
-    <StyledBox width={width} sx={{ ...sx, alignItems: 'center' }}>
-      <Typography sx={{ pr: 2 }}>{t.passages}</Typography>
-      <Tabs
-        value={value || 0}
-        onChange={handleChange}
-        variant="scrollable"
-        scrollButtons
-        allowScrollButtonsMobile
-        aria-label="scrollable passage tabs"
+    <StyledBox
+      width={Math.max(0, width - SCROLL_BUTTONS_WIDTH)} //leave space for scroll buttons
+      sx={{
+        ...sx,
+        alignItems: 'center',
+        gap: 0,
+      }}
+    >
+      <Typography sx={{ pr: 1, flexShrink: 0, whiteSpace: 'nowrap' }}>
+        {t.passages}
+      </Typography>
+      <Box
+        sx={{
+          flex: '1 1 auto',
+          minWidth: 0,
+          position: 'relative',
+        }}
       >
-        {marks.current
-          .sort((i, j) => i.value - j.value)
-          .map((m) => (
-            <Tab key={m.value} label={m.label} />
-          ))}
-      </Tabs>
+        <Tabs
+          value={value || 0}
+          onChange={handleChange}
+          variant="scrollable"
+          scrollButtons="auto"
+          allowScrollButtonsMobile
+          aria-label="scrollable passage tabs"
+          sx={{
+            minWidth: 0,
+            width: '100%',
+            position: 'relative',
+            '& .MuiTabs-flexContainer': {
+              flexWrap: 'nowrap',
+            },
+            '& .MuiTabs-scrollButtons': {
+              '&.Mui-disabled': {
+                display: 'none',
+              },
+            },
+          }}
+        >
+          {marks.current
+            .sort((i, j) => i.value - j.value)
+            .map((m) => (
+              <Tab key={m.value} label={m.label} />
+            ))}
+        </Tabs>
+      </Box>
     </StyledBox>
   ) : (
     <></>

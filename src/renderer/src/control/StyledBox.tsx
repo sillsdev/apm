@@ -10,4 +10,7 @@ export const StyledBox = styled(Box, {
   display: 'flex',
   flexDirection: 'row',
   width: `${width}px`,
+  maxWidth: `${width}px`,
+  minWidth: 0,
+  overflow: 'hidden',
 }));

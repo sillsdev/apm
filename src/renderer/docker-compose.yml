@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  # Vite development server
+  app:
+    build:
+      context: ../..
+      dockerfile: src/renderer/Dockerfile
+    ports:
+      - '3000:3000'
+    volumes:
+      - ../..:/app
+      - /app/node_modules
+      - /app/src/renderer/node_modules
+    environment:
+      - NODE_ENV=development
+    command: sh -c "set -e; cd /app && npm run stamp && npm run devs && cd /app/src/renderer && npm start"
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'wget',
+          '--no-verbose',
+          '--tries=1',
+          '--spider',
+          'http://localhost:3000',
+        ]
+      interval: 3s
+      timeout: 5s
+      retries: 20
+      start_period: 40s
+    networks:
+      - cypress-net
+
+  # Cypress tests
+  cypress:
+    build:
+      context: .
+      dockerfile: Dockerfile.cypress
+    depends_on:
+      app:
+        condition: service_healthy
+    environment:
+      - CYPRESS_baseUrl=http://app:3000
+      # Passed through from the host shell. When set, the command below adds
+      # `--spec "<value>"`; when empty, Cypress runs the full specPattern.
+      - CYPRESS_SPEC=${CYPRESS_SPEC:-}
+    working_dir: /e2e
+    volumes:
+      - .:/e2e
+      - /e2e/node_modules
+    # Force a shell entrypoint so ${CYPRESS_SPEC:+...} is evaluated in the
+    # container (the $$ escapes docker-compose's own interpolation).
+    entrypoint: ['sh', '-c']
+    command:
+      - >
+        cypress run --component --config-file cypress/config/local.config.ts
+        $${CYPRESS_SPEC:+--spec "$$CYPRESS_SPEC"}
+    networks:
+      - cypress-net
+
+networks:
+  cypress-net:
+    driver: bridge

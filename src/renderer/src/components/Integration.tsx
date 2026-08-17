@@ -64,6 +64,7 @@ import {
   useCheckOnline,
   integrationSlug,
   useDataChanges,
+  useMounted,
 } from '../utils';
 import { localSync } from '../business/localParatext/localSync';
 import { TokenContext } from '../context/TokenProvider';
@@ -249,10 +250,10 @@ export function IntegrationPanel(props: IProps) {
   const [offline] = useGlobal('offline'); //verified this is not used in a function 2/18/25
   const [offlineOnly] = useGlobal('offlineOnly'); //will be constant here
   const [local, setLocal] = useState(offline || offlineOnly);
-  const { accessToken } = useContext(TokenContext).state;
+  const accessToken = useContext(TokenContext)?.state?.accessToken ?? null;
   const forceDataChanges = useDataChanges();
   const [count, setCount] = useState(-1);
-  const [countMsg, setCountMsg] = useState<string | JSX.Element>();
+  const [countMsg, setCountMsg] = useState<string | React.JSX.Element>();
 
   const [paratextIntegration, setParatextIntegration] = useState('');
   const [coordinator] = useGlobal('coordinator');
@@ -261,6 +262,7 @@ export function IntegrationPanel(props: IProps) {
 
   const [errorReporter] = useGlobal('errorReporter');
   const { showMessage, showTitledMessage } = useSnackBar();
+  const isMounted = useMounted('integration');
   const [busy] = useGlobal('remoteBusy'); //verified this is not used in a function 2/18/25
   const [ptPath, setPtPath] = useState('');
   const syncing = React.useRef<boolean>(false);
@@ -272,10 +274,11 @@ export function IntegrationPanel(props: IProps) {
     ArtifactTypeSlug.PhraseBackTranslation,
   ]);
   const [exportType, setExportType] = useState(exportTypes[0]);
-  const { getTypeId } = useArtifactType();
+  const { localIdFromSlug, remoteIdNumFromSlug } = useArtifactType();
   const getTranscription = useTranscription(false, ActivityStates.Approved);
   const intSave = React.useRef('');
   const { getOrganizedBy } = useOrganizedBy();
+  const [organizedBy] = useState(getOrganizedBy(true));
   const { getProjectDefault, setProjectDefault } = useProjectDefaults();
   const getGlobal = useGetGlobal();
   const [exportNumbers, setExportNumbers] = useState(
@@ -301,8 +304,8 @@ export function IntegrationPanel(props: IProps) {
     setProjectDefault(projDefExportNumbers, JSON.stringify(checked));
   };
 
-  const TranslateSyncError = (err: IAxiosStatus): JSX.Element => {
-    return <span>{translateParatextError(err, ts)}</span>;
+  const TranslateSyncError = (err: IAxiosStatus): React.JSX.Element => {
+    return <span>{translateParatextError(err, ts, organizedBy)}</span>;
   };
 
   const getProject = () => {
@@ -406,13 +409,7 @@ export function IntegrationPanel(props: IProps) {
   const handleSync = () => {
     if (stopPlayer) stopPlayer();
     setSyncing(true);
-    const typeId = getTypeId(exportType)
-      ? remoteIdNum(
-          'artifacttype',
-          getTypeId(exportType) || '',
-          memory?.keyMap as RecordKeyMap
-        )
-      : 0;
+    const typeId = remoteIdNumFromSlug(exportType) ?? 0;
     if (passage !== undefined) {
       //from detail screen so just do passage
       syncPassage(
@@ -452,14 +449,15 @@ export function IntegrationPanel(props: IProps) {
       passage,
       exportNumbers,
       sectionArr,
-      artifactId: getTypeId(exportType),
+      artifactId: localIdFromSlug(exportType),
       getTranscription,
     });
-    showMessage(translateParatextErr(err, ts) || t.syncComplete);
     resetCount();
+    if (!isMounted())
+      showMessage(translateParatextErr(err, ts, organizedBy) || t.syncComplete);
     if (setStepComplete && currentstep && !err) {
       await setStepComplete(currentstep, true);
-      if (gotoNextStep) gotoNextStep();
+      if (!isMounted() && gotoNextStep) gotoNextStep();
     }
     setSyncing(false);
   };
@@ -473,7 +471,11 @@ export function IntegrationPanel(props: IProps) {
           ? paratext_projects.length > 0
             ? selectMsg
             : formatWithLanguage(t.noProject)
-          : (translateParatextError(paratext_projectsStatus, ts) as string)
+          : (translateParatextError(
+              paratext_projectsStatus,
+              ts,
+              organizedBy
+            ) as string)
         : addPt(t.projectsPending)
       : t.offline;
   };
@@ -570,6 +572,16 @@ export function IntegrationPanel(props: IProps) {
   }, []);
 
   useEffect(() => {
+    return () => {
+      resetUserName();
+      resetProjects();
+      resetCount();
+      resetSync();
+    };
+    /* eslint-disable-next-line react-hooks/exhaustive-deps */
+  }, []);
+
+  useEffect(() => {
     setHasParatext(false);
     resetUserName();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -603,7 +615,7 @@ export function IntegrationPanel(props: IProps) {
           memory,
           errorReporter,
           t,
-          getTypeId(exportType),
+          localIdFromSlug(exportType),
           passage?.id
         );
     }, 500);
@@ -619,17 +631,19 @@ export function IntegrationPanel(props: IProps) {
   }, [integrations, exportType]);
 
   useEffect(() => {
-    if (paratext_countStatus) {
-      if (paratext_countStatus.errStatus) {
+    if (!paratext_countStatus) return;
+    if (paratext_countStatus.errStatus) {
+      if (!isMounted())
         showTitledMessage(
           t.countError,
-          translateParatextError(paratext_countStatus, ts)
+          translateParatextError(paratext_countStatus, ts, organizedBy)
         );
-        setCountMsg(translateParatextError(paratext_countStatus, ts));
-      } else if (paratext_countStatus.complete) {
-        setCount(paratext_count);
-        resetCount();
-      }
+      setCountMsg(
+        translateParatextError(paratext_countStatus, ts, organizedBy)
+      );
+    } else if (paratext_countStatus.complete) {
+      setCount(paratext_count);
+      resetCount();
     }
     /* eslint-disable-next-line react-hooks/exhaustive-deps */
   }, [paratext_countStatus]);
@@ -638,10 +652,10 @@ export function IntegrationPanel(props: IProps) {
     if (!local) {
       if (!paratext_usernameStatus) {
         getUserName(accessToken || '', errorReporter, t.usernamePending);
-      } else if (paratext_usernameStatus.errStatus)
+      } else if (paratext_usernameStatus.errStatus && isMounted())
         showTitledMessage(
           t.usernameError,
-          translateParatextError(paratext_usernameStatus, ts)
+          translateParatextError(paratext_usernameStatus, ts, organizedBy)
         );
 
       setHasParatext(paratext_username !== '');
@@ -690,10 +704,10 @@ export function IntegrationPanel(props: IProps) {
           );
         }
       } else {
-        if (paratext_projectsStatus.errStatus) {
+        if (paratext_projectsStatus.errStatus && isMounted()) {
           showTitledMessage(
             t.projectError,
-            translateParatextError(paratext_projectsStatus, ts)
+            translateParatextError(paratext_projectsStatus, ts, organizedBy)
           );
         } else if (paratext_projectsStatus.complete) {
           findConnectedProject();
@@ -711,25 +725,25 @@ export function IntegrationPanel(props: IProps) {
   }, [projectintegrations, paratext_projects, paratextIntegration, project]);
 
   useEffect(() => {
-    if (paratext_syncStatus) {
-      if (paratext_syncStatus.errStatus) {
+    if (!paratext_syncStatus) return;
+    if (paratext_syncStatus.errStatus) {
+      if (isMounted())
         showTitledMessage(t.syncError, TranslateSyncError(paratext_syncStatus));
-        resetSync();
-        setSyncing(false);
-      } else if (paratext_syncStatus.statusMsg !== '') {
-        showMessage(paratext_syncStatus.statusMsg);
-      }
-      if (paratext_syncStatus.complete) {
-        if (!paratext_syncStatus.errStatus) setCount(0); //force this to 0 now...if wrong...will reset eventually with new count
-        resetCount();
-        resetSync();
-        setSyncing(false);
-        forceDataChanges();
-        if (setStepComplete && currentstep && !paratext_syncStatus.errStatus) {
-          setStepComplete(currentstep, true).then(() => {
-            if (gotoNextStep) gotoNextStep();
-          });
-        }
+      resetSync();
+      setSyncing(false);
+    } else if (paratext_syncStatus.statusMsg !== '' && isMounted()) {
+      showMessage(paratext_syncStatus.statusMsg);
+    }
+    if (paratext_syncStatus.complete) {
+      if (!paratext_syncStatus.errStatus) setCount(0); //force this to 0 now...if wrong...will reset eventually with new count
+      resetCount();
+      resetSync();
+      setSyncing(false);
+      forceDataChanges();
+      if (setStepComplete && currentstep && !paratext_syncStatus.errStatus) {
+        setStepComplete(currentstep, true).then(() => {
+          if (gotoNextStep) gotoNextStep();
+        });
       }
     }
     /* eslint-disable-next-line react-hooks/exhaustive-deps */
@@ -747,7 +761,6 @@ export function IntegrationPanel(props: IProps) {
     } else {
       setHasPermission(false);
     }
-    /* eslint-disable-next-line react-hooks/exhaustive-deps */
   }, [ptProj, paratext_projects]);
   const pRef = React.useRef<HTMLDivElement>(null);
 
@@ -763,7 +776,7 @@ export function IntegrationPanel(props: IProps) {
               value="exportNumbers"
             />
           }
-          label={t.exportSectionNumbers.replace('{0}', getOrganizedBy(true))}
+          label={t.exportSectionNumbers.replace('{0}', organizedBy)}
         />
       )}
       <Accordion id="int-online" defaultExpanded={!local} disabled={local}>
@@ -832,13 +845,15 @@ export function IntegrationPanel(props: IProps) {
                         : ''
                     }
                     onChange={handleParatextProjectChange}
-                    SelectProps={{
-                      MenuProps: {
-                        sx: menuProps,
+                    slotProps={{
+                      select: {
+                        MenuProps: {
+                          sx: menuProps,
+                        },
                       },
+                      input: { sx: formText },
+                      inputLabel: { sx: formText },
                     }}
-                    InputProps={{ sx: formText }}
-                    InputLabelProps={{ sx: formText }}
                     margin="normal"
                     variant="filled"
                     required={true}
@@ -1015,13 +1030,15 @@ export function IntegrationPanel(props: IProps) {
                         : ''
                     }
                     onChange={handleParatextProjectChange}
-                    SelectProps={{
-                      MenuProps: {
-                        sx: menuProps,
+                    slotProps={{
+                      select: {
+                        MenuProps: {
+                          sx: menuProps,
+                        },
                       },
+                      input: { sx: formText },
+                      inputLabel: { sx: formText },
                     }}
-                    InputProps={{ sx: formText }}
-                    InputLabelProps={{ sx: formText }}
                     margin="normal"
                     variant="filled"
                     required={true}

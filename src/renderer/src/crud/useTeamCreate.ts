@@ -9,13 +9,19 @@ import {
   GroupMembershipD,
   GroupD,
 } from '../model';
-import { useCheckOnline, cleanFileName } from '../utils';
+import {
+  useCheckOnline,
+  cleanFileName,
+  localUserKey,
+  LocalKey,
+} from '../utils';
 import {
   offlineError,
   useArtifactCategory,
   useOrgWorkflowSteps,
   useProjectType,
   useRole,
+  waitForRemoteId,
 } from '.';
 import { useSnackBar } from '../hoc/SnackBar';
 import Memory from '@orbit/memory';
@@ -26,6 +32,7 @@ import { shallowEqual, useSelector } from 'react-redux';
 import { sharedSelector } from '../selector';
 import {
   RecordIdentity,
+  RecordKeyMap,
   RecordOperation,
   RecordTransformBuilder,
 } from '@orbit/records';
@@ -56,6 +63,9 @@ export const useTeamCreate = () => {
 
   const orgRoleId = useMemo(() => getRoleId(RoleNames.Admin), [getRoleId]);
 
+  // Creates the all-users group (if needed) and the org membership. These only
+  // depend on the organization id. The group membership is created separately
+  // (GroupMemberRelated) after the group has a remote id.
   const OrgRelated = (t: RecordTransformBuilder, orgRec: OrganizationD) => {
     const opArray: RecordOperation[] = [];
 
@@ -63,12 +73,9 @@ export const useTeamCreate = () => {
       type: 'organizationmembership',
       attributes: {},
     } as OrganizationMembershipD;
-    const groupMbr: GroupMembershipD = {
-      type: 'groupmembership',
-      attributes: {},
-    } as GroupMembershipD;
 
     let allUsersGroup = allUsersRec(orgRec.id);
+    const isNewGroup = !allUsersGroup;
     if (!allUsersGroup) {
       const group: GroupD = {
         type: 'group',
@@ -100,21 +107,25 @@ export const useTeamCreate = () => {
         ...ReplaceRelatedRecord(t, orgMember, 'role', 'role', orgRoleId),
       ]
     );
-    opArray.push(
-      ...[
-        ...AddRecord(t, groupMbr, user, memory),
-        ...ReplaceRelatedRecord(t, groupMbr, 'user', 'user', user),
-        ...ReplaceRelatedRecord(
-          t,
-          groupMbr,
-          'group',
-          'group',
-          allUsersGroup?.id
-        ),
-        ...ReplaceRelatedRecord(t, groupMbr, 'role', 'role', orgRoleId),
-      ]
-    );
-    return opArray;
+    return { opArray, allUsersGroup: allUsersGroup as GroupD, isNewGroup };
+  };
+
+  // Creates the group membership. Must run after the all-users group has a
+  // remote id so the 'group' relationship doesn't serialize as null.
+  const GroupMemberRelated = (
+    t: RecordTransformBuilder,
+    allUsersGroup: GroupD
+  ): RecordOperation[] => {
+    const groupMbr: GroupMembershipD = {
+      type: 'groupmembership',
+      attributes: {},
+    } as GroupMembershipD;
+    return [
+      ...AddRecord(t, groupMbr, user, memory),
+      ...ReplaceRelatedRecord(t, groupMbr, 'user', 'user', user),
+      ...ReplaceRelatedRecord(t, groupMbr, 'group', 'group', allUsersGroup?.id),
+      ...ReplaceRelatedRecord(t, groupMbr, 'role', 'role', orgRoleId),
+    ];
   };
 
   interface ICreateOrgProps {
@@ -126,7 +137,7 @@ export const useTeamCreate = () => {
     const { orgRec, process } = props;
 
     const t = new RecordTransformBuilder();
-    const opArray: RecordOperation[] = [
+    const orgOps: RecordOperation[] = [
       ...AddRecord(t, orgRec, user, memory),
       ...ReplaceRelatedRecord(
         t,
@@ -136,13 +147,44 @@ export const useTeamCreate = () => {
         user
       ),
     ];
-    opArray.push(...OrgRelated(t, orgRec as OrganizationD));
-    opArray.push(...AddOrgNoteCategoryOps(t, orgRec.id));
-    opArray.push(...CreateOrgWorkflowSteps(t, process, orgRec.id as string));
+    await memory.update(orgOps);
+    // The all-users group's owner, the memberships, note categories and
+    // workflow steps all reference this organization. Wait for its remote id
+    // before creating them; otherwise the dependent records serialize the
+    // organization relationship as null on the server (e.g. group owner null).
+    if (!offlineOnly)
+      await waitForRemoteId(
+        { type: 'organization', id: orgRec.id as string },
+        memory?.keyMap as RecordKeyMap
+      );
+    console.log('createOrg: remote id found', orgRec.id);
+    const tb = new RecordTransformBuilder();
+    const {
+      opArray: relatedOps,
+      allUsersGroup,
+      isNewGroup,
+    } = OrgRelated(tb, orgRec as OrganizationD);
+    const opArray: RecordOperation[] = [...relatedOps];
+    opArray.push(...AddOrgNoteCategoryOps(tb, orgRec.id));
+    CreateOrgWorkflowSteps(tb, process, orgRec.id as string, opArray);
     await memory.update(opArray);
+
+    // The group membership references the all-users group. If we just created
+    // that group, wait for its remote id before creating the membership so the
+    // 'group' relationship isn't serialized as null on the server.
+    if (!offlineOnly && isNewGroup)
+      await waitForRemoteId(
+        { type: 'group', id: allUsersGroup.id as string },
+        memory?.keyMap as RecordKeyMap
+      );
+
+    const tbMbr = new RecordTransformBuilder();
+    await memory.update(GroupMemberRelated(tbMbr, allUsersGroup));
+
     // the next line prevents shutting off busy until all workflow steps are created
     if (!offlineOnly) await teamApiPull(orgRec.id as string); // Update slug value
     setOrganization(orgRec.id as string);
+    localStorage.setItem(localUserKey(LocalKey.team), orgRec.id as string);
     setOrgRole(RoleNames.Admin);
     setDefaultProj(orgRec.id as string, memory, (pid: string) => {
       setProject(pid);

@@ -2,13 +2,14 @@ import React, { useEffect } from 'react';
 import { useGlobal } from '../context/useGlobal';
 import { IMainStrings, ISharedStrings, User, UserD } from '../model';
 import {
-  Button,
+  IconButton,
   ListItemIcon,
   ListItemText,
   Typography,
   Divider,
   styled,
   MenuItemProps,
+  Checkbox,
 } from '@mui/material';
 import ExitIcon from '@mui/icons-material/ExitToApp';
 import AccountIcon from '@mui/icons-material/AccountCircle';
@@ -16,11 +17,24 @@ import ClearIcon from '@mui/icons-material/Clear';
 import { StyledMenu, StyledMenuItem } from '../control/StyledMenu';
 import UserAvatar from './UserAvatar';
 import { isElectron } from '../../api-variable';
-import { localizeRole, restoreScroll } from '../utils';
+import {
+  localizeRole,
+  restoreScroll,
+  LocalKey,
+  localUserKey,
+  useMobile,
+} from '../utils';
 import { useOrbitData } from '../hoc/useOrbitData';
 import { shallowEqual, useSelector } from 'react-redux';
 import { mainSelector, sharedSelector } from '../selector';
 import ProfileDialog from './ProfileDialog';
+import { useRole } from '../crud/useRole';
+import { useOrganizedBy } from '../crud';
+import {
+  useTeamWorkflowProcess,
+  BOLD_WORKFLOW_PROCESS,
+} from '../crud/useTeamWorkflowProcess';
+import { useRenderProfiler, useWhyRender } from '../utils/perf';
 
 const TermsItem = styled(StyledMenuItem)<MenuItemProps>(() => ({
   textAlign: 'center',
@@ -41,17 +55,40 @@ interface IProps {
 }
 
 export function UserMenu(props: IProps) {
+  useRenderProfiler('UserMenu');
   const { action } = props;
   const users = useOrbitData<User[]>('user');
   const [orgRole] = useGlobal('orgRole'); //verified this is not used in a function 2/18/25
   const [developer] = useGlobal('developer');
   const [user] = useGlobal('user');
+  const [, setMobileView] = useGlobal('mobileView');
+  const [org] = useGlobal('organization');
+  const [addStoryOrPassage, setAddStoryOrPassage] =
+    useGlobal('addStoryOrPassage');
+  const [isDeveloper] = useGlobal('developer');
+  const { userIsAdmin } = useRole();
+  const { getOrganizedBy } = useOrganizedBy();
+  const isBoldWorkflow = useTeamWorkflowProcess(org) === BOLD_WORKFLOW_PROCESS;
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const [shift, setShift] = React.useState(false);
   const [userRec, setUserRec] = React.useState<UserD | undefined>(undefined);
   const [profileOpen, setProfileOpen] = React.useState(false);
+  const { isMobileView, isMobileWidth } = useMobile();
   const t: IMainStrings = useSelector(mainSelector, shallowEqual);
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
+  useWhyRender('UserMenu', {
+    users,
+    user,
+    org,
+    orgRole,
+    isBoldWorkflow,
+    userIsAdmin,
+    addStoryOrPassage,
+    anchorEl,
+    userRec,
+    t,
+    ts,
+  });
 
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {
     setShift(event.shiftKey);
@@ -78,16 +115,30 @@ export function UserMenu(props: IProps) {
     if (action) action(what);
   };
 
+  const handleMobileViewToggle = () => {
+    const newValue = !isMobileView;
+    setMobileView(newValue);
+    localStorage.setItem(localUserKey(LocalKey.mobileView), String(newValue));
+    setAnchorEl(null);
+  };
+
+  const handleAddStoryOrPassageToggle = () => {
+    // session-only flag; intentionally not persisted to localStorage
+    setAddStoryOrPassage(!addStoryOrPassage);
+    setAnchorEl(null);
+  };
+
   return (
     <div>
-      <Button
+      <IconButton
         id="userMenu"
         aria-controls="custom-user-menu"
         aria-haspopup="true"
         onClick={handleClick}
+        sx={{ p: { sm: 0.5 } }}
       >
         <UserAvatar userRec={userRec} />
-      </Button>
+      </IconButton>
       <StyledMenu
         id="custom-user-menu"
         anchorEl={anchorEl}
@@ -114,6 +165,38 @@ export function UserMenu(props: IProps) {
           </ListItemIcon>
           <ListItemText primary={t.myAccount} />
         </StyledMenuItem>
+        {!isMobileWidth && isDeveloper && (
+          <StyledMenuItem id="mobileView" onClick={handleMobileViewToggle}>
+            <ListItemIcon>
+              <Checkbox
+                checked={isMobileView}
+                size="small"
+                sx={{ padding: 0 }}
+              />
+            </ListItemIcon>
+            <ListItemText primary={t.mobileView} />
+          </StyledMenuItem>
+        )}
+        {isBoldWorkflow && !userIsAdmin && (
+          <StyledMenuItem
+            id="addStoryOrPassage"
+            onClick={handleAddStoryOrPassageToggle}
+          >
+            <ListItemIcon>
+              <Checkbox
+                checked={addStoryOrPassage}
+                size="small"
+                sx={{ padding: 0 }}
+              />
+            </ListItemIcon>
+            <ListItemText
+              primary={t.addSectionOrPassage.replace(
+                '{0}',
+                getOrganizedBy(true)
+              )}
+            />
+          </StyledMenuItem>
+        )}
         {shift && !isElectron && (
           <StyledMenuItem id="clearCache" onClick={handleAction('Clear')}>
             <ListItemIcon>

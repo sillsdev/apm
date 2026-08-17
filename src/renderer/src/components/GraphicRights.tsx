@@ -6,7 +6,7 @@ import { Graphic, IMediaTabStrings } from '../model';
 import { shallowEqual, useSelector } from 'react-redux';
 import { mediaTabSelector } from '../selector';
 import { useOrbitData } from '../hoc/useOrbitData';
-import { Rights } from './GraphicUploader';
+import { Rights } from '../utils/useCompression';
 import { useGlobal } from '../context/useGlobal';
 import { related } from '../crud';
 import { JSONParse } from '../utils';
@@ -22,6 +22,8 @@ interface IProps {
   value: string;
   teamId?: string;
   onChange: (value: string) => void;
+  /** When set, called with the current input text as the user types (Autocomplete input). */
+  onInputValueChange?: (value: string) => void;
 }
 
 export function GraphicRights(props: IProps) {
@@ -29,7 +31,9 @@ export function GraphicRights(props: IProps) {
   const [organization] = useGlobal('organization');
   const org = props.teamId ?? organization;
   const graphics = useOrbitData<Graphic[]>('graphic');
-  const [value, setValuex] = React.useState<RightsHolderOption | null>(null);
+  const [value, setValuex] = React.useState<RightsHolderOption | null>(() => ({
+    title: props.value ?? '',
+  }));
   const valueRef = React.useRef<string>('');
   const [confirm, setConfirm] = React.useState('');
 
@@ -81,10 +85,6 @@ export function GraphicRights(props: IProps) {
       );
   }, [graphics, org]);
 
-  const handleValueChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    valueRef.current = event.target.value;
-  };
-
   const handleChoice = (newValue: string | RightsHolderOption | null) => {
     if (typeof newValue === 'string') {
       setValue({
@@ -116,6 +116,9 @@ export function GraphicRights(props: IProps) {
   };
 
   React.useEffect(() => {
+    // Live draft mode: parent may stop updating `value` on each keystroke to avoid
+    // Autocomplete + props sync loops; internal state owns the field until commit.
+    if (props.onInputValueChange) return;
     if (value?.title !== props.value && value?.inputValue !== props.value)
       setValue({ title: props.value });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -126,6 +129,10 @@ export function GraphicRights(props: IProps) {
       <Autocomplete
         value={value}
         onChange={(event, newValue) => handleChoice(newValue)}
+        onInputChange={(_event, newInputValue) => {
+          valueRef.current = newInputValue;
+          props.onInputValueChange?.(newInputValue);
+        }}
         onClose={handleLeave}
         filterOptions={(options, params) => {
           const filtered = filter(options, params);
@@ -162,12 +169,7 @@ export function GraphicRights(props: IProps) {
         sx={{ width: 500, p: 1 }}
         freeSolo
         renderInput={(params) => (
-          <TextField
-            required
-            {...params}
-            label={t.graphicRightsTitle}
-            onChange={handleValueChange}
-          />
+          <TextField required {...params} label={t.graphicRightsTitle} />
         )}
       />
       {confirm !== '' && (

@@ -34,8 +34,26 @@ export const audioPlayerSegmentSelector = (state: IState) =>
 export const audioPlayerZoomSelector = (state: IState) =>
   localStrings(state as IState, { layout: 'wsAudioPlayerZoom' });
 
+export const burritoSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'burrito' });
+
 export const cardsSelector = (state: IState) =>
   localStrings(state as IState, { layout: 'cards' });
+
+export const carefulSpeechSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'carefulSpeech' });
+
+export const phraseBackTranslationGuidedSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'phraseBackTranslationGuided' });
+
+export const lwcTranslationSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'lwcTranslation' });
+
+export const carefulTranscriptionSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'carefulTranscription' });
+
+export const lwcTranscriptionSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'lwcTranscription' });
 
 export const categorySelector = (state: IState) =>
   localStrings(state as IState, { layout: 'category' });
@@ -73,14 +91,23 @@ export const discussionMenuSelector = (state: IState) =>
 export const emailUnverifiedSelector = (state: IState) =>
   localStrings(state as IState, { layout: 'emailUnverified' });
 
+export const electronAuthSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'electronAuth' });
+
 export const faithbridgeSelector = (state: IState) =>
   localStrings(state as IState, { layout: 'faithbridge' });
+
+export const filterContentSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'filterContent' });
 
 export const filterMenuSelector = (state: IState) =>
   localStrings(state as IState, { layout: 'filterMenu' });
 
 export const findResourceSelector = (state: IState) =>
   localStrings(state as IState, { layout: 'findResource' });
+
+export const graphicStringsSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'graphic' });
 
 export const gridSelector = (state: IState) =>
   localStrings(state as IState, { layout: 'grid' });
@@ -119,6 +146,9 @@ export const mediaTabSelector = (state: IState) =>
 
 export const mainSelector = (state: IState) =>
   localStrings(state as IState, { layout: 'main' });
+
+export const mobileSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'mobile' });
 
 export const newProjectSelector = (state: IState) =>
   localStrings(state as IState, { layout: 'newProject' });
@@ -189,6 +219,9 @@ export const sharedResourceSelector = (state: IState) =>
 export const projButtonsSelector = (state: IState) =>
   localStrings(state as IState, { layout: 'projButtons' });
 
+export const scriptureBurritoImportSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'scriptureBurritoImport' });
+
 export const scriptureTableFilterMenuSelector = (state: IState) =>
   localStrings(state as IState, { layout: 'scriptureTableFilter' });
 
@@ -200,6 +233,12 @@ export const sharedSelector = (state: IState) =>
 
 export const sharedResSelector = (state: IState) =>
   localStrings(state as IState, { layout: 'sharedResource' });
+
+export const recordButtonSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'recordButton' });
+
+export const recordStepSettingsSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'recordStepSettings' });
 
 export const sortMenuSelector = (state: IState) =>
   localStrings(state as IState, { layout: 'sortMenu' });
@@ -272,6 +311,9 @@ export const welcomeSelector = (state: IState) =>
 
 export const workflowStepsSelector = (state: IState) =>
   localStrings(state as IState, { layout: 'workflowSteps' });
+
+export const promptSelector = (state: IState) =>
+  localStrings(state as IState, { layout: 'prompt' });
 
 export const wsAudioPlayerSegmentSelector = (state: IState) =>
   localStrings(state as IState, { layout: 'wsAudioPlayerSegment' });

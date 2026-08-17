@@ -17,6 +17,7 @@ export const useLoadProjectData = () => {
   const [offlineOnly] = useGlobal('offlineOnly'); //will be constant here
   const [, setBusy] = useGlobal('importexportBusy');
   const [, setCompleted] = useGlobal('progress');
+  const [, setOrbitRetries] = useGlobal('orbitRetries');
   const AddProjectLoaded = useProjectsLoaded();
   const { showMessage } = useSnackBar();
   const checkOnline = useCheckOnline('LoadProjectData');
@@ -26,16 +27,19 @@ export const useLoadProjectData = () => {
       if (cb) cb();
       return;
     }
+    const projectsLoaded = getGlobal('projectsLoaded');
     checkOnline((online) => {
       LoadProjectData(
         projectId,
         coordinator,
         setCompleted,
         online && !getGlobal('offline'),
-        getGlobal('projectsLoaded'),
+        projectsLoaded,
         AddProjectLoaded,
         setBusy,
-        doOrbitError
+        doOrbitError,
+        t.loadDataOffline,
+        setOrbitRetries
       )
         .then(() => {
           if (cb) cb();

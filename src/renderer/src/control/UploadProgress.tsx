@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/refs */
 import { useEffect, useRef } from 'react';
 import { IUploadProgressStrings } from '../model';
 import { uploadProgressSelector } from '../selector';

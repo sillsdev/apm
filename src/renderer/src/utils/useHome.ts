@@ -34,7 +34,8 @@ export const useHome = (): HomeResult => {
     if (getGlobal('home')) setHome(false);
   };
   const checkHome = (to: To): void => {
-    const gohome = !to || to === '/' || to === '/team';
+    const gohome =
+      !to || to === '/' || to === '/team' || to === '/switch-teams';
     if (getGlobal('home') !== gohome) setHome(gohome);
   };
 

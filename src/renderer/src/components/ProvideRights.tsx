@@ -4,14 +4,7 @@ import {
   MediaFileD,
   Organization,
 } from '../model';
-import {
-  Button,
-  Paper,
-  Typography,
-  Box,
-  SxProps,
-  LinearProgress,
-} from '@mui/material';
+import { SxProps } from '@mui/material/styles';
 import {
   useContext,
   useEffect,
@@ -34,12 +27,9 @@ import {
 import Memory from '@orbit/memory';
 import { useSnackBar } from '../hoc/SnackBar';
 import { cleanFileName } from '../utils';
-import MediaRecord from './MediaRecord';
 import { useGetGlobal, useGlobal } from '../context/useGlobal';
 import { UnsavedContext } from '../context/UnsavedContext';
 import Uploader from './Uploader';
-import AddIcon from '@mui/icons-material/LibraryAddOutlined';
-import { GrowingSpacer, PriButton } from '../control';
 import { communitySelector, sharedSelector } from '../selector';
 import { shallowEqual, useSelector } from 'react-redux';
 import { AddRecord, ReplaceRelatedRecord } from '../model/baseModel';
@@ -48,15 +38,15 @@ import { UploadType } from './UploadType';
 import {
   RecordIdentity,
   RecordKeyMap,
+  RecordTransformBuilder,
   UninitializedRecord,
 } from '@orbit/records';
 import React from 'react';
-import { VoiceStatement } from '../business/voice/VoiceStatement';
 import { IVoicePerm } from '../business/voice/PersonalizeVoicePermission';
+import ProvideRightsMobile from './PassageDetail/mobile/record/ProvideRightsMobile';
 
 const paperProps = { p: 2, m: 'auto', width: `calc(100% - 32px)` } as SxProps;
 const rowProp = { display: 'flex', p: 2 };
-const buttonProp = { mx: 1 } as SxProps;
 const statusProps = {
   mr: 2,
   alignSelf: 'center',
@@ -69,11 +59,13 @@ interface IProps {
   recordType: ArtifactTypeSlug;
   onRights?: ((hasRights: boolean) => void) | undefined;
   team?: string | undefined;
+  planId?: string | undefined;
   recordingRequired?: boolean | undefined;
 }
 
 export function ProvideRights(props: IProps) {
-  const { speaker, recordType, onRights, team, recordingRequired } = props;
+  const { speaker, recordType, onRights, team, planId, recordingRequired } =
+    props;
   const [user] = useGlobal('user');
   const [organizationId] = useGlobal('organization');
   const [busy] = useGlobal('importexportBusy'); //verified this is not used in a function 2/18/25
@@ -89,7 +81,7 @@ export function ProvideRights(props: IProps) {
   const uploadVisibleRef = useRef(false);
   const [resetMedia, setResetMedia] = useState(false);
   const [statement, setStatement] = useState<string>('');
-  const [saving, setSaving] = useState(false);
+  const [, setSaving] = useState(false);
   const [paperWidth, setPaperWidth] = useState<number>(0);
   const paperRef = useRef<HTMLDivElement>(null);
   const getGlobal = useGetGlobal();
@@ -103,7 +95,7 @@ export function ProvideRights(props: IProps) {
     clearCompleted,
   } = useContext(UnsavedContext).state;
 
-  const { getTypeId } = useArtifactType();
+  const { localIdFromSlug } = useArtifactType();
   const { showMessage } = useSnackBar();
   const cancelled = useRef(false);
   const updateRecord = useUpdateRecord();
@@ -137,8 +129,8 @@ export function ProvideRights(props: IProps) {
   }, [canSave]);
 
   const recordTypeId = useMemo(
-    () => getTypeId(recordType),
-    [recordType, getTypeId]
+    () => localIdFromSlug(recordType),
+    [recordType, localIdFromSlug]
   );
 
   const artifactState = useMemo(() => ({ id: recordTypeId }), [recordTypeId]);
@@ -188,10 +180,10 @@ export function ProvideRights(props: IProps) {
   };
 
   const afterUploadCb = async (mediaId: string | undefined) => {
-    if (mediaId && !cancelled.current) {
+    if (mediaId) {
       let orgId = team || organizationId;
       if (!orgId) {
-        const planRec = findRecord(memory, 'plan', getGlobal('plan'));
+        const planRec = findRecord(memory, 'plan', planId || getGlobal('plan'));
         const projRec = findRecord(
           memory,
           'project',
@@ -199,41 +191,47 @@ export function ProvideRights(props: IProps) {
         );
         orgId = related(projRec, 'organization');
       }
-      mediaId =
+      const id =
         remoteIdGuid('mediafile', mediaId, memory?.keyMap as RecordKeyMap) ??
         mediaId;
-      if (statement) {
-        const mediaRec = findRecord(memory, 'mediafile', mediaId) as MediaFileD;
-        updateRecord({
-          ...mediaRec,
-          attributes: { ...mediaRec.attributes, transcription: statement },
-        } as MediaFileD);
+      if (cancelled.current && id) {
+        await memory.update((tr: RecordTransformBuilder) =>
+          tr.removeRecord({ type: 'mediafile', id }).toOperation()
+        );
+      } else {
+        if (statement) {
+          const mediaRec = findRecord(memory, 'mediafile', id) as MediaFileD;
+          updateRecord({
+            ...mediaRec,
+            attributes: { ...mediaRec.attributes, transcription: statement },
+          } as MediaFileD);
+        }
+        const ip = {
+          type: 'intellectualproperty',
+          attributes: {
+            rightsHolder: speaker,
+            notes: JSON.stringify(state),
+          },
+        } as IntellectualProperty & UninitializedRecord;
+        await memory.update((t) => [
+          ...AddRecord(t, ip, user, memory),
+          ...ReplaceRelatedRecord(
+            t,
+            ip as RecordIdentity,
+            'releaseMediafile',
+            'mediafile',
+            id
+          ),
+          ...ReplaceRelatedRecord(
+            t,
+            ip as RecordIdentity,
+            'organization',
+            'organization',
+            orgId
+          ),
+        ]);
+        onRights && onRights(true);
       }
-      const ip = {
-        type: 'intellectualproperty',
-        attributes: {
-          rightsHolder: speaker,
-          notes: JSON.stringify(state),
-        },
-      } as IntellectualProperty & UninitializedRecord;
-      await memory.update((t) => [
-        ...AddRecord(t, ip, user, memory),
-        ...ReplaceRelatedRecord(
-          t,
-          ip as RecordIdentity,
-          'releaseMediafile',
-          'mediafile',
-          mediaId
-        ),
-        ...ReplaceRelatedRecord(
-          t,
-          ip as RecordIdentity,
-          'organization',
-          'organization',
-          orgId
-        ),
-      ]);
-      onRights && onRights(true);
       if (importList) {
         setImportList(undefined);
         setUploadVisible(false);
@@ -246,6 +244,7 @@ export function ProvideRights(props: IProps) {
       saveCompleted(toolId, ts.NoSaveWoMedia);
     }
     setSaving(false);
+    cancelled.current = false;
   };
 
   const afterUpload = async (planId: string, mediaRemoteIds?: string[]) => {
@@ -281,79 +280,38 @@ export function ProvideRights(props: IProps) {
 
   return (
     <div>
-      <Paper id="provideRights" ref={paperRef} sx={paperProps}>
-        {!recordingRequired && (
-          <Box sx={rowProp}>
-            <Button
-              sx={buttonProp}
-              id="spkr-upload"
-              onClick={handleUpload}
-              title={ts.uploadRights}
-            >
-              <AddIcon />
-              {ts.uploadRights}
-            </Button>
-          </Box>
-        )}
-        <VoiceStatement
-          voice={speaker}
-          team={teamRec}
-          state={state}
-          saving={saving}
-          setState={setState}
-          setStatement={handleStatement}
-        />
-        <MediaRecord
-          toolId={toolId}
-          defaultFilename={defaultFilename}
-          afterUploadCb={afterUploadCb}
-          artifactId={artifactState.id}
-          passageId={undefined}
-          performedBy={speaker}
-          allowWave={false}
-          showFilename={false}
-          allowDeltaVoice={false}
-          allowNoNoise={false}
-          setCanSave={handleSetCanSave}
-          setStatusText={setStatusText}
-          doReset={resetMedia}
-          setDoReset={setResetMedia}
-          height={200}
-          width={paperWidth - 20 || 500}
-          onSaving={() => setSaving(true)}
-        />
-        <Box sx={rowProp}>
-          {!recordingRequired && (
-            <Button id="spkr-later" onClick={handleLater}>
-              {t.later}
-            </Button>
-          )}
-          <Typography variant="caption" sx={statusProps}>
-            {statusText}
-          </Typography>
-          <GrowingSpacer />
-          <PriButton
-            id="spkr-save"
-            sx={buttonProp}
-            onClick={handleSave}
-            disabled={!canSave || state?.valid === false}
-          >
-            {ts.save}
-          </PriButton>
-        </Box>
-        {busy && (
-          <Box sx={{ display: 'flex', flexGrow: 1, alignItems: 'center' }}>
-            <Typography>{`${t.loading}\u00A0`}</Typography>
-            <LinearProgress
-              variant="indeterminate"
-              sx={{ display: 'flex', flexGrow: 1 }}
-            />
-          </Box>
-        )}
-      </Paper>
+      <ProvideRightsMobile
+        paperRef={paperRef}
+        paperProps={paperProps}
+        rowProp={rowProp}
+        statusProps={statusProps}
+        speaker={speaker}
+        team={team}
+        planId={planId}
+        state={state}
+        recordingRequired={recordingRequired}
+        handleUpload={handleUpload}
+        handleLater={handleLater}
+        handleSave={handleSave}
+        canSave={canSave}
+        busy={busy}
+        setState={setState}
+        handleStatement={handleStatement}
+        toolId={toolId}
+        statusText={statusText}
+        teamRec={teamRec}
+        defaultFilename={defaultFilename}
+        artifactTypeSlug={recordType}
+        setSaving={setSaving}
+        setStatusText={setStatusText}
+        setResetMedia={setResetMedia}
+        resetMedia={resetMedia}
+        afterUploadCb={(mediaId) => afterUploadCb(mediaId)}
+        handleSetCanSave={handleSetCanSave}
+        paperWidth={paperWidth}
+      />
       <Uploader
         noBusy={false}
-        recordAudio={false}
         importList={importList}
         isOpen={uploadVisible}
         onOpen={handleUploadVisible}
@@ -363,6 +321,7 @@ export function ProvideRights(props: IProps) {
         cancelled={cancelled}
         artifactState={artifactState}
         performedBy={speaker}
+        planId={planId}
         uploadType={UploadType.IntellectualProperty}
       />
     </div>

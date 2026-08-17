@@ -1,7 +1,14 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import React, { useState, useEffect, useRef, useContext } from 'react';
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useContext,
+  useCallback,
+} from 'react';
 // see: https://upmostly.com/tutorials/how-to-use-the-usecontext-hook-in-react
 import { useGetGlobal, useGlobal } from '../context/useGlobal';
+import { useRenderProfiler } from '../utils/perf';
 import { useParams } from 'react-router-dom';
 import { shallowEqual } from 'react-redux';
 import {
@@ -19,7 +26,6 @@ import {
   SectionResourceUser,
   ArtifactType,
   ArtifactCategory,
-  WorkflowStep,
   IWorkflowStepsStrings,
   IPassageDetailStepCompleteStrings,
   StepComplete,
@@ -34,7 +40,10 @@ import { getAllMediaRecs } from '../crud/media';
 import { getStepComplete } from '../crud/getStepComplete';
 import { getTool } from '../crud/useStepTool';
 import { nextPasId } from '../crud/nextPasId';
-import { orgDefaultWorkflowProgression } from '../crud/useOrgDefaults';
+import {
+  orgDefaultWorkflowProgression,
+  WorkflowProgression,
+} from '../crud/useOrgDefaults';
 import { related } from '../crud/related';
 import { remoteId, remoteIdGuid } from '../crud/remoteId';
 import { useArtifactCategory } from '../crud/useArtifactCategory';
@@ -43,10 +52,15 @@ import { BlobStatus, useFetchMediaBlob } from '../crud/useFetchMediaBlob';
 import { useFilteredSteps } from '../crud/useFilteredSteps';
 import { useOrgDefaults } from '../crud/useOrgDefaults';
 import { useOrgWorkflowSteps } from '../crud/useOrgWorkflowSteps';
+import {
+  BOLD_WORKFLOW_PROCESS,
+  useTeamWorkflowProcess,
+} from '../crud/useTeamWorkflowProcess';
 import StickyRedirect from '../components/StickyRedirect';
 import {
   infoMsg,
   logError,
+  needsStepNavigationConfirm,
   prettySegment,
   rememberCurrentPassage,
   Severity,
@@ -61,9 +75,10 @@ import {
   resourceRows,
 } from '../components/PassageDetail/Internalization';
 import Confirm from '../components/AlertDialog';
+import StepNavigationConfirmDialog from '../components/PassageDetail/StepNavigationConfirmDialog';
 import { getNextStep } from '../crud/getNextStep';
 import { UnsavedContext } from './UnsavedContext';
-import { IRegion } from '../crud/useWavesurferRegions';
+import { IRegion, IRegionParams } from '../crud/useWavesurferRegions';
 import { UpdateLastModifiedBy } from '../model/baseModel';
 import { IMarker } from '../crud/useWaveSurfer';
 import { useSelector } from 'react-redux';
@@ -87,6 +102,8 @@ import { usePassageNavigate } from '../components/PassageDetail/usePassageNaviga
 import { useProjectPermissions } from '../utils/useProjectPermissions';
 import { PlayInPlayer } from './PlayInPlayer';
 import { SectionArray } from '@model/SectionArray';
+import { boldDefaultSegParams } from '../components/PassageDetail/carefulSpeech/boldCarefulSpeechSegParams';
+import { isPassageNavigationBlocked } from './passageDetailNavigationBlocked';
 
 export interface IRow {
   id: string;
@@ -98,7 +115,7 @@ export interface IRow {
   artifactType: string;
   artifactCategory: string;
   done: boolean;
-  editAction: JSX.Element | null;
+  editAction: React.JSX.Element | null;
   resource: SectionResourceD | null;
   passageId: string;
   isVernacular: boolean;
@@ -149,7 +166,6 @@ const initState = {
   oldVernacularPlaying: false,
   handleOldVernacularPlayEnd: () => {},
   rowData: Array<IRow>(),
-  sharedStr: {} as ISharedStrings,
 
   loading: false,
   audioBlob: undefined as Blob | undefined,
@@ -162,7 +178,7 @@ const initState = {
   setStepComplete: async (
     _stepId: string,
     _complete: boolean,
-    _psgCompleted?: any[]
+    _psgCompleted?: StepComplete[]
   ): Promise<void> => {},
   setStepCompleteTo: async (_stepId: string) => {},
   gotoNextStep: () => {},
@@ -185,7 +201,7 @@ const initState = {
   setRecording: (_recording: boolean) => {},
   commentRecording: false,
   setCommentRecording: (_commentRecording: boolean) => {},
-  wfStr: {} as IWorkflowStepsStrings,
+  isNavigationBlocked: () => false,
   handleItemPlayEnd: () => {},
   handleItemTogglePlay: () => {},
   handleCommentPlayEnd: () => {},
@@ -202,6 +218,14 @@ const initState = {
   canPublish: false,
   discussOpen: false,
   setDiscussOpen: (_discussOpen: boolean) => {},
+  isBoldWorkflow: false,
+  promptPlaybackComplete: false,
+  setPromptPlaybackComplete: (_complete: boolean) => {},
+  promptDockedRecordButton: null as React.ReactNode | null,
+  setPromptDockedRecordButton: (_node: React.ReactNode | null) => {},
+  promptDockedRecordFooterVersion: 0,
+  carefulSpeechSegParams: boldDefaultSegParams,
+  setCarefulSpeechSegParams: (_params: IRegionParams) => {},
 };
 
 export type ICtxState = typeof initState;
@@ -211,12 +235,16 @@ interface IContext {
   setState: React.Dispatch<React.SetStateAction<ICtxState>>;
 }
 
-const PassageDetailContext = React.createContext({} as IContext);
+const PassageDetailContext = React.createContext({
+  state: initState as ICtxState,
+  setState: () => {},
+} as IContext);
 
 interface IProps {
   children: React.ReactElement;
 }
 const PassageDetailProvider = (props: IProps) => {
+  useRenderProfiler('PassageDetailProvider');
   const passages = useOrbitData<Passage[]>('passage');
   const sections = useOrbitData<Section[]>('section');
   const mediafiles = useOrbitData<MediaFileD[]>('mediafile');
@@ -226,8 +254,6 @@ const PassageDetailProvider = (props: IProps) => {
     'sectionresourceuser'
   );
   const sectionResources = useOrbitData<SectionResourceD[]>('sectionresource');
-  const orgWorkflowSteps = useOrbitData<OrgWorkflowStep[]>('orgworkflowstep');
-  const workflowSteps = useOrbitData<WorkflowStep[]>('workflowstep');
   const wfStr: IWorkflowStepsStrings = useSelector(
     workflowStepsSelector,
     shallowEqual
@@ -250,6 +276,7 @@ const PassageDetailProvider = (props: IProps) => {
   const [errorReporter] = useGlobal('errorReporter');
   const [saveResult, setSaveResult] = useGlobal('saveResult'); //verified this is not used in a function 2/18/25
   const [confirm, setConfirm] = useState('');
+  const [incompleteNavTarget, setIncompleteNavTarget] = useState('');
   const view = React.useRef('');
   const { showMessage } = useSnackBar();
   const [plan] = useGlobal('plan'); //will be constant here
@@ -257,45 +284,59 @@ const PassageDetailProvider = (props: IProps) => {
   const [state, setState] = useState({
     ...initState,
     allBookData,
-    wfStr,
     prjId: prjId ?? '',
   });
   const [blobState, fetchBlob] = useFetchMediaBlob();
   const fetching = useRef('');
-  const segmentsCb = useRef<(segments: string) => void>();
-  const getFilteredSteps = useFilteredSteps();
-  const { localizedArtifactType, getTypeId } = useArtifactType();
+  const segmentsCb = useRef<((segments: string) => void) | undefined>(
+    undefined
+  );
+  const filteredOrgSteps = useFilteredSteps();
+  const { localizedArtifactType, localIdFromSlug } = useArtifactType();
   const { localizedArtifactCategory } = useArtifactCategory();
   const { localizedWorkStep } = useOrgWorkflowSteps();
-  const getStepsBusy = useRef<boolean>(false);
-  const mediaStart = useRef<number | undefined>();
-  const mediaEnd = useRef<number | undefined>();
-  const mediaPosition = useRef<number | undefined>();
-  const currentSegmentRef = useRef<IRegion | undefined>();
-  const { startSave, startClear, waitForSave } =
+  const mediaStart = useRef<number | undefined>(undefined);
+  const mediaEnd = useRef<number | undefined>(undefined);
+  const mediaPosition = useRef<number | undefined>(undefined);
+  const currentSegmentRef = useRef<IRegion | undefined>(undefined);
+  const currentSegmentIndexRef = useRef(-1);
+  const { startSave, startClear, waitForSave, forceClearPending } =
     useContext(UnsavedContext).state;
-  const highlightRef = useRef<number>();
+  const highlightRef = useRef<number | undefined>(undefined);
   const refreshRef = useRef<number>(0);
+  const recordingRef = useRef(false);
+  const commentRecordingRef = useRef(false);
   const settingSegmentRef = useRef(false);
-  const inPlayerRef = useRef<string>();
+  const inPlayerRef = useRef<string | undefined>(undefined);
   const { getOrgDefault } = useOrgDefaults();
   const getGlobal = useGetGlobal();
   const { canPublish } = useProjectPermissions();
+  const teamWorkflowProcess = useTeamWorkflowProcess(org);
+  const isBoldWorkflow = teamWorkflowProcess === BOLD_WORKFLOW_PROCESS;
 
-  const setCurrentStep = (stepId: string) => {
-    if (getGlobal('changed')) {
-      setConfirm(stepId);
-    } else {
-      handleSetCurrentStep(stepId);
-    }
+  const stepComplete = (stepid: string) => {
+    stepid =
+      remoteId('orgworkflowstep', stepid, memory?.keyMap as RecordKeyMap) ||
+      stepid;
+    const step = state.psgCompleted.find((s) => s.stepid === stepid);
+    return Boolean(step?.complete);
   };
 
-  const passageNavigate = usePassageNavigate(() => {}, setCurrentStep);
+  const isNavigationBlocked = () =>
+    isPassageNavigationBlocked(
+      recordingRef.current,
+      commentRecordingRef.current
+    );
 
   const handleSetCurrentStep = (stepId: string) => {
     const step = state.orgWorkflowSteps.find((s) => s.id === stepId);
     const tool = getTool(step?.attributes?.tool) as ToolSlug;
     setCurrentSegment(undefined, 0);
+    // Clear discussion locate without handleHighlightDiscussion — that helper
+    // no-ops while settingSegmentRef is set (mid-locate/play), which is exactly
+    // when step switches hang after the compass button.
+    highlightRef.current = undefined;
+    settingSegmentRef.current = false;
 
     setState((state: ICtxState) => {
       return {
@@ -309,6 +350,7 @@ const PassageDetailProvider = (props: IProps) => {
         playItem: '',
         commentPlayId: '',
         oldVernacularPlayItem: '',
+        highlightDiscussion: undefined,
       };
     });
 
@@ -324,6 +366,30 @@ const PassageDetailProvider = (props: IProps) => {
     }
     segmentsCb.current = undefined;
   };
+
+  const attemptSetCurrentStep = (stepId: string) => {
+    if (isNavigationBlocked()) return;
+    if (needsStepNavigationConfirm(state.currentstep, stepId, stepComplete)) {
+      setIncompleteNavTarget(stepId);
+      return;
+    }
+    handleSetCurrentStep(stepId);
+  };
+
+  const setCurrentStep = (stepId: string) => {
+    if (isNavigationBlocked()) return;
+    if (getGlobal('changed')) {
+      setConfirm(stepId);
+    } else {
+      attemptSetCurrentStep(stepId);
+    }
+  };
+
+  const passageNavigate = usePassageNavigate(
+    () => {},
+    setCurrentStep,
+    isNavigationBlocked
+  );
 
   const forceRefresh = (rowData?: IRow[]) => {
     refreshRef.current = refreshRef.current + 1;
@@ -345,20 +411,40 @@ const PassageDetailProvider = (props: IProps) => {
     });
   };
 
-  const handleConfirmStep = () => {
-    startSave();
-    waitForSave(() => {
-      handleSetCurrentStep(confirm);
+  const finishStepConfirm = (target: string) => {
+    try {
+      attemptSetCurrentStep(target);
+    } finally {
       setConfirm('');
-    }, 400);
+    }
+  };
+
+  const handleConfirmStep = () => {
+    const target = confirm;
+    startSave();
+    // Do not pass finishStepConfirm into waitForSave — its blanket catch turns
+    // callback throws into 'Timed Out' and would re-run navigation below.
+    void waitForSave(undefined, 400).then(
+      () => finishStepConfirm(target),
+      (err) => {
+        showMessage(err?.message || String(err));
+        setConfirm('');
+      }
+    );
   };
 
   const handleRefuseStep = () => {
+    const target = confirm;
+    // forceClearPending on wait failure for orphaned tools (unmounted after mid-play step switch).
     startClear();
-    waitForSave(() => {
-      handleSetCurrentStep(confirm);
-      setConfirm('');
-    }, 400);
+    void waitForSave(undefined, 15).then(
+      () => finishStepConfirm(target),
+      (err) => {
+        showMessage(err?.message || String(err));
+        forceClearPending();
+        finishStepConfirm(target);
+      }
+    );
   };
 
   const setDiscussionSize = (discussionSize: {
@@ -376,13 +462,41 @@ const PassageDetailProvider = (props: IProps) => {
     });
   };
 
-  const setDiscussOpen = (discussOpen: boolean) => {
+  const setDiscussOpen = useCallback((discussOpen: boolean) => {
     setState((state: ICtxState) => {
+      if (state.discussOpen === discussOpen) {
+        return state;
+      }
       return { ...state, discussOpen };
     });
-  };
+  }, []);
+
+  const setPromptPlaybackComplete = useCallback(
+    (promptPlaybackComplete: boolean) => {
+      setState((state: ICtxState) => {
+        if (state.promptPlaybackComplete === promptPlaybackComplete) {
+          return state;
+        }
+        return { ...state, promptPlaybackComplete };
+      });
+    },
+    []
+  );
+
+  const promptDockedRecordButtonRef = useRef<React.ReactNode | null>(null);
+  const [promptDockedRecordFooterVersion, setPromptDockedRecordFooterVersion] =
+    useState(0);
+
+  const setPromptDockedRecordButton = useCallback(
+    (node: React.ReactNode | null) => {
+      promptDockedRecordButtonRef.current = node;
+      setPromptDockedRecordFooterVersion((v) => v + 1);
+    },
+    []
+  );
 
   const setRecording = (recording: boolean) => {
+    recordingRef.current = recording;
     setState((state: ICtxState) => {
       return {
         ...state,
@@ -395,6 +509,7 @@ const PassageDetailProvider = (props: IProps) => {
     });
   };
   const setCommentRecording = (commentRecording: boolean) => {
+    commentRecordingRef.current = commentRecording;
     setState((state: ICtxState) => {
       return {
         ...state,
@@ -425,6 +540,7 @@ const PassageDetailProvider = (props: IProps) => {
       });
     else
       setState((state: ICtxState) => {
+        if (!state.playing) return state;
         return {
           ...state,
           playing,
@@ -507,6 +623,12 @@ const PassageDetailProvider = (props: IProps) => {
     });
   };
 
+  const setCarefulSpeechSegParams = (params: IRegionParams) => {
+    setState((state: ICtxState) => {
+      return { ...state, carefulSpeechSegParams: params };
+    });
+  };
+
   const setDiscussionMarkers = (discussionMarkers: IMarker[]) => {
     setState((state: ICtxState) => {
       return { ...state, discussionMarkers };
@@ -532,17 +654,11 @@ const PassageDetailProvider = (props: IProps) => {
       });
     } else settingSegmentRef.current = false;
   };
-  const stepComplete = (stepid: string) => {
-    stepid =
-      remoteId('orgworkflowstep', stepid, memory?.keyMap as RecordKeyMap) ||
-      stepid;
-    const step = state.psgCompleted.find((s) => s.stepid === stepid);
-    return Boolean(step?.complete);
-  };
 
   const gotoNextStep = () => {
     const gotoNextPassage =
-      getOrgDefault(orgDefaultWorkflowProgression) !== 'step';
+      !isBoldWorkflow &&
+      getOrgDefault(orgDefaultWorkflowProgression) !== WorkflowProgression.Step;
     const nextpsg = gotoNextPassage
       ? nextPasId(state.section, state.passage.id, memory)
       : undefined;
@@ -556,7 +672,7 @@ const PassageDetailProvider = (props: IProps) => {
   const setStepComplete = async (
     stepid: string,
     complete: boolean,
-    psgCompleted?: any[]
+    psgCompleted?: StepComplete[]
   ) => {
     if (stepid === '') return;
     const completed = psgCompleted ?? [...state.psgCompleted];
@@ -667,8 +783,41 @@ const PassageDetailProvider = (props: IProps) => {
     await memory.update(ops);
     setState((state: ICtxState) => ({ ...state, psgCompleted: completed }));
   };
+
+  const handleIncompleteNavCancel = () => {
+    setIncompleteNavTarget('');
+  };
+
+  const handleIncompleteNavContinue = () => {
+    if (isNavigationBlocked()) return;
+    const target = incompleteNavTarget;
+    setIncompleteNavTarget('');
+    if (target) handleSetCurrentStep(target);
+  };
+
+  const handleIncompleteNavComplete = () => {
+    if (isNavigationBlocked()) return;
+    const target = incompleteNavTarget;
+    const fromStep = state.currentstep;
+    setIncompleteNavTarget('');
+    if (!target || !fromStep) return;
+    void waitForSave(async () => {
+      await setStepComplete(fromStep, true);
+      handleSetCurrentStep(target);
+    }, 200);
+  };
+
+  const incompleteNavMessage = (() => {
+    if (!incompleteNavTarget) return '';
+    const step = state.orgWorkflowSteps.find((s) => s.id === state.currentstep);
+    const label = step
+      ? localizedWorkStep(step.attributes.name)
+      : state.currentstep;
+    return wfStr.incompleteStepNavigate.replace('{0}', label);
+  })();
+
   const getProjectResources = async () => {
-    const typeId = getTypeId(ArtifactTypeSlug.ProjectResource);
+    const typeId = localIdFromSlug(ArtifactTypeSlug.ProjectResource);
     return mediafiles.filter(
       (m) =>
         related(m, 'plan') === plan && related(m, 'artifactType') === typeId
@@ -849,8 +998,12 @@ const PassageDetailProvider = (props: IProps) => {
       handleHighlightDiscussion(undefined);
       settingSegmentRef.current = false;
     }
-    if (currentSegmentRef.current !== segment) {
+    if (
+      currentSegmentRef.current !== segment ||
+      currentSegmentIndexRef.current !== currentSegmentIndex
+    ) {
       currentSegmentRef.current = segment;
+      currentSegmentIndexRef.current = currentSegmentIndex;
       setState((state: ICtxState) => ({
         ...state,
         currentSegment: prettySegment(segment),
@@ -905,28 +1058,25 @@ const PassageDetailProvider = (props: IProps) => {
               psgCompleted: [...complete],
             };
           });
-        } else if (
-          state.psgCompleted.length !== complete.length ||
-          !state.psgCompleted
-            .sort(stepCmp)
-            .every((c, i) => shallowEqual(c, complete[i]))
-        ) {
-          setState((state: ICtxState) => ({
-            ...state,
-            psgCompleted: [...complete],
-          }));
+        } else {
+          const sortedPrev = [...state.psgCompleted].sort(stepCmp);
+          const sortedNew = [...complete].sort(stepCmp);
+          const sameAsOrbit =
+            sortedPrev.length === sortedNew.length &&
+            sortedPrev.every((c, i) => shallowEqual(c, sortedNew[i]));
+          if (!sameAsOrbit) {
+            setState((state: ICtxState) => ({
+              ...state,
+              psgCompleted: [...complete],
+            }));
+          }
         }
       }
     }
-  }, [
-    memory,
-    pasId,
-    passages,
-    sections,
-    state.passage.id,
-    state.psgCompleted,
-    state.section.id,
-  ]);
+    // Intentionally omit state.psgCompleted from deps: this effect writes psgCompleted;
+    // listing it retriggers every sync and causes "Maximum update depth exceeded".
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- sync from orbit only; see comment above
+  }, [memory, pasId, passages, sections, state.passage.id, state.section.id]);
 
   useEffect(() => {
     if (!booksLoaded) {
@@ -1029,15 +1179,15 @@ const PassageDetailProvider = (props: IProps) => {
       const i = state.selected
         ? newData.findIndex((r) => r.mediafile.id === state.selected)
         : state.index;
+      const willSetSelected =
+        state.tool !== ToolSlug.Resource &&
+        state.tool !== ToolSlug.Transcribe &&
+        mediafileId !== state.playerMediafile?.id;
       setState((state: ICtxState) => {
         return { ...state, rowData: newData, index: i, mediafileId };
       });
 
-      if (
-        state.tool !== ToolSlug.Resource &&
-        state.tool !== ToolSlug.Transcribe &&
-        mediafileId !== state.playerMediafile?.id
-      ) {
+      if (willSetSelected) {
         setSelected(mediafileId, PlayInPlayer.yes, newData);
       }
     });
@@ -1060,19 +1210,11 @@ const PassageDetailProvider = (props: IProps) => {
   }, [state.playItem]);
 
   useEffect(() => {
-    if (plan && org && !getStepsBusy.current) {
-      getStepsBusy.current = true;
-
-      getFilteredSteps((wf) => {
-        setState((state: ICtxState) => ({
-          ...state,
-          orgWorkflowSteps: wf,
-        }));
-        getStepsBusy.current = false;
-      });
+    if (state.orgWorkflowSteps !== filteredOrgSteps) {
+      setState((state) => ({ ...state, orgWorkflowSteps: filteredOrgSteps }));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [plan, orgWorkflowSteps, workflowSteps, org]);
+  }, [filteredOrgSteps]);
 
   useEffect(() => {
     const wf: SimpleWf[] = state.orgWorkflowSteps.map((s) => ({
@@ -1080,14 +1222,13 @@ const PassageDetailProvider = (props: IProps) => {
       label: s.attributes.name,
     }));
     setState((state: ICtxState) => ({ ...state, workflow: wf }));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.orgWorkflowSteps]);
 
   useEffect(() => {
     if (state.currentstep === '' && state.orgWorkflowSteps.length > 0) {
       const next = getNextStep(state);
       if (state.currentstep !== next) {
-        setCurrentStep(
+        handleSetCurrentStep(
           next || (state.orgWorkflowSteps[0] as OrgWorkflowStepD).id
         );
       }
@@ -1130,6 +1271,7 @@ const PassageDetailProvider = (props: IProps) => {
           gotoNextStep,
           setRecording,
           setCommentRecording,
+          isNavigationBlocked,
           setMediaSelected,
           toggleDone,
           handleItemPlayEnd,
@@ -1141,8 +1283,14 @@ const PassageDetailProvider = (props: IProps) => {
           handleHighlightDiscussion,
           forceRefresh,
           setDiscussOpen,
+          setPromptPlaybackComplete,
+          setPromptDockedRecordButton,
+          promptDockedRecordButton: promptDockedRecordButtonRef.current,
+          promptDockedRecordFooterVersion,
+          isBoldWorkflow,
           sectionArr: (getProjectDefault(projDefSectionMap) ??
             []) as SectionArray,
+          setCarefulSpeechSegParams,
         },
         setState,
       }}
@@ -1164,6 +1312,13 @@ const PassageDetailProvider = (props: IProps) => {
           noResponse={handleRefuseStep}
         />
       )}
+      <StepNavigationConfirmDialog
+        open={incompleteNavTarget !== ''}
+        message={incompleteNavMessage}
+        onCancel={handleIncompleteNavCancel}
+        onComplete={handleIncompleteNavComplete}
+        onContinue={handleIncompleteNavContinue}
+      />
     </PassageDetailContext.Provider>
   );
 };

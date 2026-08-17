@@ -1,5 +1,6 @@
 export enum ToolSlug {
   Resource = 'resource',
+  Prompt = 'prompt',
   Record = 'record',
   KeyTerm = 'keyterm',
   TeamCheck = 'teamCheck',
@@ -7,10 +8,20 @@ export enum ToolSlug {
   Verses = 'verses',
   Transcribe = 'transcribe',
   PhraseBackTranslate = 'phraseBackTranslate',
+  CarefulSpeech = 'carefulSpeech',
   WholeBackTranslate = 'wholeBackTranslate',
   ConsultantCheck = 'consultantCheck',
   Paratext = 'paratext',
   Community = 'community',
   Export = 'export',
   Done = 'done',
+}
+
+/** Steps whose main UI is still valid when there is no vernacular audio yet (recording, internalization/resources). */
+export function toolAllowsEmptyVernacularAudio(tool: string): boolean {
+  return (
+    tool === ToolSlug.Record ||
+    tool === ToolSlug.Resource ||
+    tool === ToolSlug.Prompt
+  );
 }

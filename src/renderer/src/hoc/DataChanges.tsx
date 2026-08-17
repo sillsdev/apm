@@ -25,8 +25,10 @@ import { useBibleMedia } from '../crud/useBibleMedia';
 import { useDispatch } from 'react-redux';
 import { useOrbitData } from './useOrbitData';
 import { doDataChanges } from './doDataChanges';
+import { useRenderProfiler, perfRecordMs } from '../utils/perf';
 
 export function DataChanges(props: PropsWithChildren) {
+  useRenderProfiler('DataChanges');
   const { children } = props;
   const dispatch = useDispatch();
   const setLanguage = (lang: string) =>
@@ -38,12 +40,14 @@ export function DataChanges(props: PropsWithChildren) {
   const [loadComplete] = useGlobal('loadComplete');
   const [, setBusy] = useGlobal('remoteBusy');
   const [, setDataChangeCount] = useGlobal('dataChangeCount');
+  const [, setOrbitRetries] = useGlobal('orbitRetries');
   const [connected] = useGlobal('connected'); //verified this is not used in a function 2/18/25
   const [user] = useGlobal('user');
   const [fingerprint] = useGlobal('fingerprint');
   const [errorReporter] = useGlobal('errorReporter');
-  const ctx = useContext(TokenContext).state;
-  const { authenticated } = ctx;
+  const tokenContext = useContext(TokenContext);
+  const ctx = tokenContext?.state;
+  const authenticated = ctx?.authenticated || (() => false);
   const [busyDelay, setBusyDelay] = useState<number | null>(null);
   const [dataDelay, setDataDelay] = useState<number | null>(null);
   const [firstRun, setFirstRun] = useState(true);
@@ -93,6 +97,7 @@ export function DataChanges(props: PropsWithChildren) {
   }, [remote, ctx, loadComplete, connected, firstRun, userDataDelay]);
 
   const updateBusy = useCallback(() => {
+    const t0 = performance.now();
     const checkBusy =
       getGlobal('user') === '' ||
       (remote && remote.requestQueue.length !== 0) ||
@@ -107,10 +112,12 @@ export function DataChanges(props: PropsWithChildren) {
     } else if (checkBusy !== getGlobal('remoteBusy')) {
       setBusy(checkBusy);
     }
+    perfRecordMs('DataChanges.updateBusy', performance.now() - t0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [remote, user]);
 
   const updateData = async () => {
+    const t0 = performance.now();
     if (
       !doingChanges.current &&
       !getGlobal('remoteBusy') &&
@@ -122,7 +129,7 @@ export function DataChanges(props: PropsWithChildren) {
       const check = firstRun;
       setFirstRun(false);
       await doDataChanges(
-        ctx.accessToken || '',
+        ctx?.accessToken || '',
         coordinator,
         fingerprint,
         getGlobal('projectsLoaded'),
@@ -131,7 +138,9 @@ export function DataChanges(props: PropsWithChildren) {
         user,
         setLanguage,
         setDataChangeCount,
-        isElectron ? fetchUrl : undefined
+        isElectron ? fetchUrl : undefined,
+        undefined,
+        setOrbitRetries
       );
       if (check) {
         //make sure we have a bible media project and plan downloaded
@@ -142,6 +151,7 @@ export function DataChanges(props: PropsWithChildren) {
           await doSanityCheck(getGlobal('projectsLoaded')[ix] as string);
       }
       doingChanges.current = false; //attempt to prevent double calls
+      perfRecordMs('DataChanges.updateData', performance.now() - t0);
     }
   };
 
@@ -170,6 +180,6 @@ export function DataChanges(props: PropsWithChildren) {
   useInterval(updateData, (dataDelay ?? 0) <= 0 ? null : dataDelay);
   useInterval(backupElectron, defaultBackupDelay);
   // render the children component.
-  return children as JSX.Element;
+  return children as React.JSX.Element;
 }
 export default DataChanges;

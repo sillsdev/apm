@@ -1,17 +1,10 @@
-export interface Burrito {
-  id: string;
-  path: string;
-  role: string;
-}
-
-interface Alignment {
-  source: string;
-  target: string;
-  path: string;
-  description: {
-    en: string;
-  };
-}
+import {
+  Alignment,
+  BurritoEntry,
+  BurritoWrapper,
+  Contents,
+  WrapperMeta,
+} from './types';
 
 interface RequiredParams {
   name: string;
@@ -21,45 +14,17 @@ interface RequiredParams {
 interface OptionalParams {
   version?: string;
   abbreviation?: string;
+  description?: string;
+  defaultLocale?: string;
   dateCreated?: string;
   comments?: string;
   genName?: string;
   genVersion?: string;
-  burritos?: Burrito[];
+  burritos?: BurritoEntry[];
   alignments?: Alignment[];
 }
 
 type WrapperParams = RequiredParams & OptionalParams;
-
-interface Meta {
-  version: string;
-  name: {
-    en: string;
-  };
-  abbreviation?: {
-    en: string;
-  };
-  description: {
-    en: string;
-  };
-  generator?: {
-    name: string;
-    version?: string;
-  };
-  dateCreated?: string;
-  comments?: string;
-}
-
-interface Contents {
-  burritos: Burrito[];
-  alignments?: Alignment[];
-}
-
-export interface BurritoWrapper {
-  format: string;
-  meta: Meta;
-  contents: Contents;
-}
 
 /**
  * Creates a burrito wrapper object with the specified parameters
@@ -71,6 +36,7 @@ export function wrapperBuilder({
   name,
   abbreviation,
   description,
+  defaultLocale = 'en',
   dateCreated = new Date().toISOString().split('T')[0],
   comments = '',
   genName,
@@ -80,21 +46,24 @@ export function wrapperBuilder({
 }: WrapperParams): BurritoWrapper {
   const meta = {
     version: version || '0.0.1',
+    defaultLocale,
     name: {
-      en: name,
+      [defaultLocale]: name,
     },
-  } as Meta;
+    description: {
+      [defaultLocale]: description,
+    },
+    dateCreated: dateCreated || new Date().toISOString().split('T')[0],
+  } as WrapperMeta;
   if (abbreviation) {
-    meta.abbreviation = { en: abbreviation };
+    meta.abbreviation = { [defaultLocale]: abbreviation };
   }
-  meta.description = { en: description };
   if (genName) {
     meta.generator = { name: genName };
     if (genVersion) {
       meta.generator.version = genVersion;
     }
   }
-  meta.dateCreated = dateCreated || new Date().toISOString().split('T')[0];
   if (comments) {
     meta.comments = comments;
   }

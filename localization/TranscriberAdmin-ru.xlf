@@ -289,6 +289,12 @@
             <target>Обратный перевод фразы</target>
          </segment>
       </unit>
+      <unit id="artifactType.carefulspeech">
+         <segment>
+            <source>Careful speech</source>
+            <target>Четкая речь</target>
+         </segment>
+      </unit>
       <unit id="artifactType.comment">
          <segment>
             <source>Comment</source>
@@ -679,10 +685,286 @@
             <target>Скачать аудио</target>
          </segment>
       </unit>
+      <unit id="burrito.apmData">
+         <segment>
+            <source>APM Data</source>
+            <target>Данные APM</target>
+         </segment>
+      </unit>
+      <unit id="burrito.audio">
+         <segment>
+            <source>Audio</source>
+            <target>Аудио</target>
+         </segment>
+      </unit>
+      <unit id="burrito.backTranslation">
+         <segment>
+            <source>Back Translation</source>
+            <target>Обратный перевод</target>
+         </segment>
+      </unit>
+      <unit id="burrito.books">
+         <segment>
+            <source>Books</source>
+            <target>Книги</target>
+         </segment>
+      </unit>
+      <unit id="burrito.cancelCreation">
+         <segment>
+            <source>Cancel burrito creation</source>
+            <target>Отменить создание «буррито»</target>
+         </segment>
+      </unit>
+      <unit id="burrito.create">
+         <segment>
+            <source>Create Burrito</source>
+            <target>Создать «буррито»</target>
+         </segment>
+      </unit>
+      <unit id="burrito.createAudio">
+         <segment>
+            <source>Create audio burrito</source>
+            <target>Создать аудио-«буррито»</target>
+         </segment>
+      </unit>
+      <unit id="burrito.createText">
+         <segment>
+            <source>Create text burrito</source>
+            <target>Создать текстовое «буррито»</target>
+         </segment>
+      </unit>
+      <unit id="burrito.createNotes">
+         <segment>
+            <source>Create notes burrito</source>
+            <target>Создать «буррито» с заметками</target>
+         </segment>
+      </unit>
+      <unit id="burrito.createResources">
+         <segment>
+            <source>Create resources burrito</source>
+            <target>Создать «буррито» с ресурсами</target>
+         </segment>
+      </unit>
+      <unit id="burrito.createIntellectualProperty">
+         <segment>
+            <source>Create intellectual property burrito</source>
+            <target>Создать «буррито» с интеллектуальной собственностью</target>
+         </segment>
+      </unit>
+      <unit id="burrito.createNavigation">
+         <segment>
+            <source>Create navigation burrito</source>
+            <target>Создать «буррито» с навигацией</target>
+         </segment>
+      </unit>
+      <unit id="burrito.createData">
+         <segment>
+            <source>Create data burrito</source>
+            <target>Создать «буррито» с данными</target>
+         </segment>
+      </unit>
+      <unit id="burrito.createOther">
+         <segment>
+            <source>Create {0} burrito</source>
+            <target>Создать {0} «буррито»</target>
+         </segment>
+      </unit>
+      <unit id="burrito.communityFeedback">
+         <segment>
+            <source>Community Feedback</source>
+            <target>Отзывы сообщества</target>
+         </segment>
+      </unit>
+      <unit id="burrito.contents">
+         <segment>
+            <source>Contents</source>
+            <target>Содержание</target>
+         </segment>
+      </unit>
+      <unit id="burrito.convertToMp3">
+         <segment>
+            <source>Convert to mp3</source>
+            <target>Конвертировать в mp3</target>
+         </segment>
+      </unit>
+      <unit id="burrito.deselectAll">
+         <segment>
+            <source>Deselect All</source>
+            <target>Отменить выбор всего</target>
+         </segment>
+      </unit>
+      <unit id="burrito.discussions">
+         <segment>
+            <source>Discussions</source>
+            <target>Обсуждения</target>
+         </segment>
+      </unit>
+      <unit id="burrito.enterNewValue">
+         <segment>
+            <source>Please enter the new value for</source>
+            <target>Введите, пожалуйста, новое значение для</target>
+         </segment>
+      </unit>
+      <unit id="burrito.failed">
+         <segment>
+            <source>Failed to create burrito</source>
+            <target>Не удалось создать буррито</target>
+         </segment>
+      </unit>
+      <unit id="burrito.format">
+         <segment>
+            <source>Format</source>
+            <target>Формат</target>
+         </segment>
+      </unit>
+      <unit id="burrito.intellectualProperty">
+         <segment>
+            <source>Intellectual Property</source>
+            <target>Интеллектуальная собственность</target>
+         </segment>
+      </unit>
+      <unit id="burrito.navigation">
+         <segment>
+            <source>Navigation</source>
+            <target>Навигация</target>
+         </segment>
+      </unit>
+      <unit id="burrito.notes">
+         <segment>
+            <source>Notes</source>
+            <target>Примечания</target>
+         </segment>
+      </unit>
+      <unit id="burrito.open">
+         <segment>
+            <source>Open</source>
+            <target>Открыть</target>
+         </segment>
+      </unit>
+      <unit id="burrito.preparing">
+         <segment>
+            <source>Preparing burrito...</source>
+            <target>Подготовка буррито...</target>
+         </segment>
+      </unit>
+      <unit id="burrito.projects">
+         <segment>
+            <source>Projects</source>
+            <target>Проекты</target>
+         </segment>
+      </unit>
+      <unit id="burrito.resources">
+         <segment>
+            <source>Resources</source>
+            <target>Ресурсы</target>
+         </segment>
+      </unit>
+      <unit id="burrito.selectAll">
+         <segment>
+            <source>Select All</source>
+            <target>Выбрать всё</target>
+         </segment>
+      </unit>
+      <unit id="burrito.selectedBooks">
+         <segment>
+            <source>Selected Books</source>
+            <target>Выбранные книги</target>
+         </segment>
+      </unit>
+      <unit id="burrito.success">
+         <segment>
+            <source>Burrito created successfully!</source>
+            <target>Буррито успешно создано!</target>
+         </segment>
+      </unit>
+      <unit id="burrito.terms">
+         <segment>
+            <source>Terms</source>
+            <target>Термины</target>
+         </segment>
+      </unit>
+      <unit id="burrito.text">
+         <segment>
+            <source>Text</source>
+            <target>Текст</target>
+         </segment>
+      </unit>
+      <unit id="burrito.textOutputFormat">
+         <segment>
+            <source>Text output format</source>
+            <target>Формат вывода текста</target>
+         </segment>
+      </unit>
+      <unit id="burrito.textOutputUsfm">
+         <segment>
+            <source>USFM</source>
+            <target>USFM</target>
+         </segment>
+      </unit>
+      <unit id="burrito.textOutputUsj">
+         <segment>
+            <source>USJ</source>
+            <target>USJ</target>
+         </segment>
+      </unit>
+      <unit id="burrito.textOutputUsx">
+         <segment>
+            <source>USX</source>
+            <target>USX</target>
+         </segment>
+      </unit>
+      <unit id="burrito.updateValue">
+         <segment>
+            <source>Update Value</source>
+            <target>Обновить значение</target>
+         </segment>
+      </unit>
+      <unit id="burrito.valueWarning">
+         <segment>
+            <source>Warning: Input contains JSON structural characters (quotes, curly braces, or square brackets)</source>
+            <target>Предупреждение: входные данные содержат символы, характерные для структуры JSON (кавычки, фигурные скобки или квадратные скобки)</target>
+         </segment>
+      </unit>
+      <unit id="burrito.vernacularAudioMissingTranscriptionListTitle">
+         <segment>
+            <source>Passages missing transcriptions (first {0})</source>
+            <target>В отрывках отсутствуют транскрипции (первый {0})</target>
+         </segment>
+      </unit>
+      <unit id="burrito.vernacularAudioMissingTranscriptionTitle">
+         <segment>
+            <source>Missing transcription(s)</source>
+            <target>Отсутствуют транскрипции</target>
+         </segment>
+      </unit>
+      <unit id="burrito.vernacularAudioMissingTranscriptionWarning">
+         <segment>
+            <source>Audio files without transcriptions will make it difficult to associate the audio with the proper section.</source>
+            <target>Аудиофайлы без транскрипций затруднят сопоставление аудиозаписей с соответствующими разделами.</target>
+         </segment>
+      </unit>
+      <unit id="burrito.wrapper">
+         <segment>
+            <source>Wrapper</source>
+            <target>Оболочка</target>
+         </segment>
+      </unit>
       <unit id="cards.add">
          <segment>
             <source>Add</source>
             <target>Добавить</target>
+         </segment>
+      </unit>
+      <unit id="cards.addNewProject">
+         <segment>
+            <source>Add New Project...</source>
+            <target>Добавить новый проект...</target>
+         </segment>
+      </unit>
+      <unit id="cards.addNewTeam">
+         <segment>
+            <source>Add New Team...</source>
+            <target>Добавить новую команду...</target>
          </segment>
       </unit>
       <unit id="cards.addTeam">
@@ -727,6 +1009,18 @@
             <target>Название Библии</target>
          </segment>
       </unit>
+      <unit id="cards.bold">
+         <segment>
+            <source>BOLD (Basic Oral Language Documentation)</source>
+            <target>BOLD (Базовая документация устной речи)</target>
+         </segment>
+      </unit>
+      <unit id="cards.boldProcessInfo">
+         <segment>
+            <source>Setting Step Progression and AI Automatic Transcription.</source>
+            <target>Настройка последовательности шагов и автоматической транскрипции с помощью ИИ.</target>
+         </segment>
+      </unit>
       <unit id="cards.cancel">
          <segment>
             <source>Cancel</source>
@@ -763,22 +1057,16 @@
             <target>Копирование завершено {0}</target>
          </segment>
       </unit>
-      <unit id="cards.copyNew">
+      <unit id="cards.copyProject">
          <segment>
-            <source>Copy project to new team.</source>
-            <target>Копирование проекта в новую команду.</target>
+            <source>Copy project</source>
+            <target>Копировать проект</target>
          </segment>
       </unit>
       <unit id="cards.copyright">
          <segment>
             <source>Copyright</source>
             <target>Авторское право</target>
-         </segment>
-      </unit>
-      <unit id="cards.copySame">
-         <segment>
-            <source>Copy project to same team.</source>
-            <target>Скопировать проект в ту же команду.</target>
          </segment>
       </unit>
       <unit id="cards.copyStatus">
@@ -901,6 +1189,18 @@
             <target>Новый аудио проект</target>
          </segment>
       </unit>
+      <unit id="cards.newTeam">
+         <segment>
+            <source>new team</source>
+            <target>новая команда</target>
+         </segment>
+      </unit>
+      <unit id="cards.noProjects">
+         <segment>
+            <source>No projects yet.</source>
+            <target>Пока нет проектов.</target>
+         </segment>
+      </unit>
       <unit id="cards.normalize">
          <segment>
             <source>Audio Normalize</source>
@@ -959,6 +1259,12 @@
          <segment>
             <source>Passages Created</source>
             <target>Отрывки созданы</target>
+         </segment>
+      </unit>
+      <unit id="cards.personal">
+         <segment>
+            <source>Personal</source>
+            <target>Личный</target>
          </segment>
       </unit>
       <unit id="cards.personalProjects">
@@ -1045,6 +1351,12 @@
             <target>Сортировка проектов</target>
          </segment>
       </unit>
+      <unit id="cards.switchTeams">
+         <segment>
+            <source>Switch Teams</source>
+            <target>Переключить команды</target>
+         </segment>
+      </unit>
       <unit id="cards.notesHelper">
          <segment>
             <source>Shared explanations, rationales, footnotes, etc.</source>
@@ -1069,6 +1381,12 @@
             <target>Синхронизация ({0})</target>
          </segment>
       </unit>
+      <unit id="cards.teams">
+         <segment>
+            <source>Teams</source>
+            <target>Команды</target>
+         </segment>
+      </unit>
       <unit id="cards.teamName">
          <segment>
             <source>Team Name</source>
@@ -1085,6 +1403,12 @@
          <segment>
             <source>Transcribing</source>
             <target>Расшифровка</target>
+         </segment>
+      </unit>
+      <unit id="cards.unassigned">
+         <segment>
+            <source>Unassigned</source>
+            <target>Не присвоены</target>
          </segment>
       </unit>
       <unit id="cards.uploadProgress">
@@ -1273,6 +1597,12 @@
             <target>Добавить '{0}'</target>
          </segment>
       </unit>
+      <unit id="community.autoSegment">
+         <segment>
+            <source>Use {0} for autosegmentation, or tap in the waveform and use + for manual segmentation</source>
+            <target>Используйте {0} для автоматической сегментации или нажмите на графике сигнала и используйте + для ручной сегментации</target>
+         </segment>
+      </unit>
       <unit id="community.backTranslationComplete">
          <segment>
             <source>Version {0}: Back translation: {1}</source>
@@ -1295,6 +1625,12 @@
          <segment>
             <source>Do later</source>
             <target>Сделать позже</target>
+         </segment>
+      </unit>
+      <unit id="community.listen">
+         <segment>
+            <source>Use {0} to listen to the passage</source>
+            <target>Используйте {0}, чтобы прослушать фрагмент</target>
          </segment>
       </unit>
       <unit id="community.loading">
@@ -1372,7 +1708,13 @@
       <unit id="community.selectSegments">
          <segment>
             <source>Select Segments</source>
-            <target/>
+            <target>Выбрать сегменты</target>
+         </segment>
+      </unit>
+      <unit id="community.selectSpeaker">
+         <segment>
+            <source>Select Speaker</source>
+            <target>Выбрать говорящего</target>
          </segment>
       </unit>
       <unit id="community.speaker">
@@ -1409,6 +1751,192 @@
          <segment>
             <source>The recorded permission is used both as a voice sample to change the audio and as a license to use the voice sample in recordings. A suggested script for the recorded permission is given which can be personalized.</source>
             <target>Записанное разрешение используется как в качестве образца голоса для изменения звука, так и в качестве лицензии на использование образца голоса в записях. Предлагается сценарий разрешения на запись, который можно персонализировать.</target>
+         </segment>
+      </unit>
+      <unit id="carefulSpeech.allComplete">
+         <segment>
+            <source>All clauses are complete.</source>
+            <target>Все предложения завершены.</target>
+         </segment>
+      </unit>
+      <unit id="carefulSpeech.boldOnly">
+         <segment>
+            <source>Careful Speech is only available for BOLD workflow teams.</source>
+            <target>Функция «Тщательная речь» доступна только для команд, работающих по рабочему процессу BOLD.</target>
+         </segment>
+      </unit>
+      <unit id="carefulSpeech.clause">
+         <segment>
+            <source>Clause: {0}</source>
+            <target>Предложение: {0}</target>
+         </segment>
+      </unit>
+      <unit id="carefulSpeech.clearRecording">
+         <segment>
+            <source>Clear Recording</source>
+            <target>Очистить запись</target>
+         </segment>
+      </unit>
+      <unit id="carefulSpeech.combineWithNextClause">
+         <segment>
+            <source>Combine with Next Clause</source>
+            <target>Объединить со следующим предложением</target>
+         </segment>
+      </unit>
+      <unit id="carefulSpeech.fewerClauses">
+         <segment>
+            <source>Fewer Clauses</source>
+            <target>Меньше предложений</target>
+         </segment>
+      </unit>
+      <unit id="carefulSpeech.longer">
+         <segment>
+            <source>Longer</source>
+            <target>Длиннее</target>
+         </segment>
+      </unit>
+      <unit id="carefulSpeech.moreClauses">
+         <segment>
+            <source>More Clauses</source>
+            <target>Больше предложений</target>
+         </segment>
+      </unit>
+      <unit id="carefulSpeech.nextClause">
+         <segment>
+            <source>Next Clause</source>
+            <target>Следующее предложение</target>
+         </segment>
+      </unit>
+      <unit id="carefulSpeech.shorter">
+         <segment>
+            <source>Shorter</source>
+            <target>Короче</target>
+         </segment>
+      </unit>
+      <unit id="carefulSpeech.splitClause">
+         <segment>
+            <source>Split Clause</source>
+            <target>Разделить предложение</target>
+         </segment>
+      </unit>
+      <unit id="carefulSpeech.speaker">
+         <segment>
+            <source>Speaker</source>
+            <target>Говорящий</target>
+         </segment>
+      </unit>
+      <unit id="carefulSpeech.startRecording">
+         <segment>
+            <source>Start Recording</source>
+            <target>Начать запись</target>
+         </segment>
+      </unit>
+      <unit id="carefulSpeech.undo">
+         <segment>
+            <source>Undo</source>
+            <target>Отменить</target>
+         </segment>
+      </unit>
+      <unit id="carefulTranscription.clauseIndex">
+         <segment>
+            <source>Clause {0}/{1}</source>
+            <target>Предложение {0}/{1}</target>
+         </segment>
+      </unit>
+      <unit id="carefulTranscription.nextClause">
+         <segment>
+            <source>Next Clause</source>
+            <target>Следующее предложение</target>
+         </segment>
+      </unit>
+      <unit id="carefulTranscription.noClauses">
+         <segment>
+            <source>No clause segments found. Complete the Careful Speech step first.</source>
+            <target>Сегменты предложений не найдены. Сначала завершите этап «Тщательная речь».</target>
+         </segment>
+      </unit>
+      <unit id="carefulTranscription.noRecordingLanguage">
+         <segment>
+            <source>Language is not configured for automatic transcription.</source>
+            <target>Язык не настроен для автоматической транскрипции.</target>
+         </segment>
+      </unit>
+      <unit id="carefulTranscription.prerequisite">
+         <segment>
+            <source>Complete Careful Speech for every clause before starting Careful transcription.</source>
+            <target>Завершите этап «Тщательная речь» для каждого предложения, прежде чем приступать к тщательной транскрипции.</target>
+         </segment>
+      </unit>
+      <unit id="carefulTranscription.progress">
+         <segment>
+            <source>{0} of {1} clauses transcribed</source>
+            <target>{0} из {1} предложений транскрибировано</target>
+         </segment>
+      </unit>
+      <unit id="lwcTranslation.boldOnly">
+         <segment>
+            <source>LWC Translation is only available for BOLD workflow teams.</source>
+            <target>Функция перевода LWC доступна только для команд, работающих по рабочему процессу BOLD.</target>
+         </segment>
+      </unit>
+      <unit id="lwcTranslation.clauseIndex">
+         <segment>
+            <source>Clause {0}/{1}</source>
+            <target>Предложение {0}/{1}</target>
+         </segment>
+      </unit>
+      <unit id="lwcTranslation.noClauses">
+         <segment>
+            <source>No clause segments found. Complete the Careful Speech step first.</source>
+            <target>Сегменты предложения не найдены. Сначала выполните этап «Тщательная речь».</target>
+         </segment>
+      </unit>
+      <unit id="lwcTranslation.prerequisite">
+         <segment>
+            <source>Complete Careful Speech for every clause before starting LWC translation.</source>
+            <target>Перед началом перевода LWC выполните этап «Тщательная речь» для каждого предложения.</target>
+         </segment>
+      </unit>
+      <unit id="lwcTranslation.progress">
+         <segment>
+            <source>{0} of {1} clauses recorded</source>
+            <target>Записано {0} из {1} предложений</target>
+         </segment>
+      </unit>
+      <unit id="lwcTranscription.clauseIndex">
+         <segment>
+            <source>Clause {0}/{1}</source>
+            <target>Предложение {0}/{1}</target>
+         </segment>
+      </unit>
+      <unit id="lwcTranscription.nextClause">
+         <segment>
+            <source>Next Clause</source>
+            <target>Следующее предложение</target>
+         </segment>
+      </unit>
+      <unit id="lwcTranscription.noClauses">
+         <segment>
+            <source>No clause segments found. Complete the Careful Speech step first.</source>
+            <target>Сегменты предложения не найдены. Сначала выполните этап «Тщательная речь».</target>
+         </segment>
+      </unit>
+      <unit id="lwcTranscription.noLwcLanguage">
+         <segment>
+            <source>LWC language is not configured on the LWC Translation step.</source>
+            <target>Язык LWC не настроен на этапе «Перевод LWC».</target>
+         </segment>
+      </unit>
+      <unit id="lwcTranscription.prerequisite">
+         <segment>
+            <source>Complete LWC Translation for every clause before starting LWC transcription.</source>
+            <target>Перед началом транскрипции LWC необходимо завершить перевод LWC для каждого предложения.</target>
+         </segment>
+      </unit>
+      <unit id="lwcTranscription.progress">
+         <segment>
+            <source>{0} of {1} clauses transcribed</source>
+            <target>{0} из {1} предложений транскрибировано</target>
          </segment>
       </unit>
       <unit id="consultantCheck.checked">
@@ -1642,7 +2170,7 @@
       <unit id="discussionList.close">
          <segment>
             <source>Hide Discussion pane</source>
-            <target/>
+            <target>Скрыть панель обсуждения</target>
          </segment>
       </unit>
       <unit id="discussionList.collapse">
@@ -1666,7 +2194,7 @@
       <unit id="discussionList.open">
          <segment>
             <source>Show Discussion pane</source>
-            <target/>
+            <target>Показать панель обсуждения</target>
          </segment>
       </unit>
       <unit id="discussionList.saveFirst">
@@ -1717,10 +2245,52 @@
             <target>Установить сегмент</target>
          </segment>
       </unit>
+      <unit id="electronAuth.abortLogin">
+         <segment>
+            <source>Abort Login</source>
+            <target>Отменить вход</target>
+         </segment>
+      </unit>
+      <unit id="electronAuth.back">
+         <segment>
+            <source>Back</source>
+            <target>Назад</target>
+         </segment>
+      </unit>
+      <unit id="electronAuth.exit">
+         <segment>
+            <source>Exit</source>
+            <target>Выход</target>
+         </segment>
+      </unit>
+      <unit id="electronAuth.loginFailed">
+         <segment>
+            <source>Login failed</source>
+            <target>Ошибка входа</target>
+         </segment>
+      </unit>
+      <unit id="electronAuth.tokenExchangeFailed">
+         <segment>
+            <source>Could not complete sign-in (token exchange failed).</source>
+            <target>Не удалось завершить вход (ошибка обмена токенами).</target>
+         </segment>
+      </unit>
+      <unit id="electronAuth.tryAgain">
+         <segment>
+            <source>Try again</source>
+            <target>Попробуйте ещё раз</target>
+         </segment>
+      </unit>
+      <unit id="electronAuth.workOffline">
+         <segment>
+            <source>Work offline</source>
+            <target>Работать в автономном режиме</target>
+         </segment>
+      </unit>
       <unit id="electronImport.allDataOverwritten">
          <segment>
-            <source>All {name0} data will be overwritten.</source>
-            <target>Все данные {name0} будут перезаписаны.</target>
+            <source>All '{name0}' data will be overwritten.</source>
+            <target>Все данные «{name0}» будут перезаписаны.</target>
          </segment>
       </unit>
       <unit id="electronImport.exportedLost">
@@ -1767,8 +2337,8 @@
       </unit>
       <unit id="electronImport.lastExported">
          <segment>
-            <source>Current data in audio project {name0} was last exported {date0}.</source>
-            <target>Текущие данные проекта {name0} были экспортированы {date0}.</target>
+            <source>Current data in audio project '{name0}' was last exported {date0}.</source>
+            <target>Текущие данные в аудиопроекте «{name0}» в последний раз экспортировались {date0}.</target>
          </segment>
       </unit>
       <unit id="electronImport.members">
@@ -1779,8 +2349,8 @@
       </unit>
       <unit id="electronImport.neverExported">
          <segment>
-            <source>Current data in audio project {name0} has never been exported to an itf file to preserve changes.</source>
-            <target>Текущие данные в проекте {name0} никогда не были экспортированы в файл itf</target>
+            <source>Current data in audio project '{name0}' has never been exported to an itf file to preserve changes.</source>
+            <target>Текущие данные в аудиопроекте «{name0}» никогда не экспортировались в файл ITF для сохранения изменений.</target>
          </segment>
       </unit>
       <unit id="electronImport.newerVersion">
@@ -1797,8 +2367,8 @@
       </unit>
       <unit id="electronImport.projectImported">
          <segment>
-            <source>Audio Project {name0} was previously imported with a newer file: {date1} </source>
-            <target>Ранее проект {name0} был импортирован с более свежего файла: {date1} </target>
+            <source>Audio Project '{name0}' was previously imported with a newer file: {date1} </source>
+            <target>Аудиопроект «{name0}» ранее был импортирован с помощью более новой версии файла: {date1} </target>
          </segment>
       </unit>
       <unit id="electronImport.ptfError">
@@ -1903,6 +2473,54 @@
             <target>видео</target>
          </segment>
       </unit>
+      <unit id="filterContent.allChapters">
+         <segment>
+            <source>All Chapters of {0}</source>
+            <target>Все главы {0}</target>
+         </segment>
+      </unit>
+      <unit id="filterContent.allBooks">
+         <segment>
+            <source>All Books</source>
+            <target>Все книги</target>
+         </segment>
+      </unit>
+      <unit id="filterContent.audioContent">
+         <segment>
+            <source>Audio Content</source>
+            <target>Аудиоконтент</target>
+         </segment>
+      </unit>
+      <unit id="filterContent.other">
+         <segment>
+            <source>Other</source>
+            <target>Другое</target>
+         </segment>
+      </unit>
+      <unit id="filterContent.title">
+         <segment>
+            <source>Scripture Burrito: {0}</source>
+            <target>Scripture Burrito: {0}</target>
+         </segment>
+      </unit>
+      <unit id="filterContent.transcriptionContent">
+         <segment>
+            <source>Transcription Content</source>
+            <target>Контент транскрипции</target>
+         </segment>
+      </unit>
+      <unit id="filterContent.subtitle1">
+         <segment>
+            <source>Please select the information you want to import into your team.</source>
+            <target>Выберите информацию, которую хотите импортировать в свою команду.</target>
+         </segment>
+      </unit>
+      <unit id="filterContent.subtitle2">
+         <segment>
+            <source>Each selected book will be imported as a separate project.</source>
+            <target>Каждая выбранная книга будет импортирована как отдельный проект.</target>
+         </segment>
+      </unit>
       <unit id="filterMenu.all">
          <segment>
             <source>All</source>
@@ -1949,12 +2567,6 @@
          <segment>
             <source>Resolved</source>
             <target>Решено</target>
-         </segment>
-      </unit>
-      <unit id="filterMenu.saveFilter">
-         <segment>
-            <source>Save as team default</source>
-            <target>Сохранить по умолчанию для команды</target>
          </segment>
       </unit>
       <unit id="findResource.add">
@@ -2181,8 +2793,8 @@
       </unit>
       <unit id="findResource.querying">
          <segment>
-            <source>Querying...</source>
-            <target>Запрос...</target>
+            <source>Loading...</source>
+            <target>Загрузка...</target>
          </segment>
       </unit>
       <unit id="findResource.queryBuilder">
@@ -2279,6 +2891,84 @@
          <segment>
             <source>Audio Bible with verse timing</source>
             <target>Аудио Библия с синхронизацией стихов</target>
+         </segment>
+      </unit>
+      <unit id="graphic.graphicDisplay">
+         <segment>
+            <source>Display current graphic</source>
+            <target>Показать текущую иллюстрацию</target>
+         </segment>
+      </unit>
+      <unit id="graphic.graphicSearch">
+         <segment>
+            <source>Search graphics</source>
+            <target>Поиск иллюстраций</target>
+         </segment>
+      </unit>
+      <unit id="graphic.graphicSource">
+         <segment>
+            <source>graphic source tabs</source>
+            <target>Вкладки источников графики</target>
+         </segment>
+      </unit>
+      <unit id="graphic.keywordSearchHint">
+         <segment>
+            <source>The Keywords search only filters the keyword list. To filter images, select one or more keywords or use the main search.</source>
+            <target>Поиск по ключевым словам фильтрует только список ключевых слов. Чтобы отфильтровать изображения, выберите одно или несколько ключевых слов или воспользуйтесь основным поиском.</target>
+         </segment>
+      </unit>
+      <unit id="graphic.loadFailure">
+         <segment>
+            <source>Failed to load</source>
+            <target>Не удалось загрузить</target>
+         </segment>
+      </unit>
+      <unit id="graphic.noResults">
+         <segment>
+            <source>No matching images found. Try a different search or adjust the filters.</source>
+            <target>Соответствующих изображений не найдено. Попробуйте другой поиск или настройте фильтры.</target>
+         </segment>
+      </unit>
+      <unit id="graphic.noSelection">
+         <segment>
+            <source>no {0} selected.</source>
+            <target>{0} не выбрано.</target>
+         </segment>
+      </unit>
+      <unit id="graphic.placeHolder">
+         <segment>
+            <source>title and keyword search words</source>
+            <target>Слова для поиска по названию и ключевым словам</target>
+         </segment>
+      </unit>
+      <unit id="graphic.setGraphic">
+         <segment>
+            <source>Set as Graphic</source>
+            <target>Установить как изображение</target>
+         </segment>
+      </unit>
+      <unit id="graphic.tabCurrent">
+         <segment>
+            <source>Current</source>
+            <target>Текущее</target>
+         </segment>
+      </unit>
+      <unit id="graphic.tabCustom">
+         <segment>
+            <source>Custom</source>
+            <target>Пользовательское</target>
+         </segment>
+      </unit>
+      <unit id="graphic.tabBible">
+         <segment>
+            <source>Library</source>
+            <target>Библиотека</target>
+         </segment>
+      </unit>
+      <unit id="graphic.title">
+         <segment>
+            <source>Graphic Picker</source>
+            <target>Выбор изображения</target>
          </segment>
       </unit>
       <unit id="grid.all">
@@ -2503,6 +3193,24 @@
             <target>Пробел</target>
          </segment>
       </unit>
+      <unit id="import.burritoConvertingBook">
+         <segment>
+            <source>Converting book {0} of {1}: {2}</source>
+            <target>Преобразование книги {0} из {1}: {2}</target>
+         </segment>
+      </unit>
+      <unit id="import.burritoPreparingLocal">
+         <segment>
+            <source>Preparing Scripture Burrito locally...</source>
+            <target>Подготовка «Скриптурного буррито» локально...</target>
+         </segment>
+      </unit>
+      <unit id="import.burritoReadingFiles">
+         <segment>
+            <source>Reading files {0} of {1}</source>
+            <target>Чтение файлов {0} из {1}</target>
+         </segment>
+      </unit>
       <unit id="import.close">
          <segment>
             <source>Close</source>
@@ -2511,8 +3219,8 @@
       </unit>
       <unit id="import.continue">
          <segment>
-            <source>Continue?</source>
-            <target>Продолжить?</target>
+            <source>Continue</source>
+            <target>Продолжить</target>
          </segment>
       </unit>
       <unit id="import.copy">
@@ -2527,10 +3235,28 @@
             <target>Ошибка копирования</target>
          </segment>
       </unit>
+      <unit id="import.createNewTeam">
+         <segment>
+            <source>Create new team</source>
+            <target>Создать новую команду</target>
+         </segment>
+      </unit>
       <unit id="import.error">
          <segment>
             <source>Import Error</source>
             <target>Ошибка Импорта</target>
+         </segment>
+      </unit>
+      <unit id="import.externalSource">
+         <segment>
+            <source>Create a new project in APM from an external source (.ptf)</source>
+            <target>Создать новый проект в APM из внешнего источника (.ptf)</target>
+         </segment>
+      </unit>
+      <unit id="import.externalSourceBurrito">
+         <segment>
+            <source>Create a new project in APM from a Scripture Burrito</source>
+            <target>Создать новый проект в APM из файла Scripture Burrito</target>
          </segment>
       </unit>
       <unit id="import.family">
@@ -2581,6 +3307,12 @@
             <target>Идет импорт...</target>
          </segment>
       </unit>
+      <unit id="import.fileProcessing">
+         <segment>
+            <source>Processing file {0} of {1}</source>
+            <target>Обработка файла {0} из {1}</target>
+         </segment>
+      </unit>
       <unit id="import.importProject">
          <segment>
             <source>Import Audio Project</source>
@@ -2593,28 +3325,28 @@
             <target>Синхронизация изменений</target>
          </segment>
       </unit>
-      <unit id="import.importSyncUp">
-         <segment>
-            <source>Syncing offline changes</source>
-            <target>Синхронизация изменений в автономном режиме</target>
-         </segment>
-      </unit>
       <unit id="import.importSyncDown">
          <segment>
             <source>Syncing online changes</source>
             <target>Синхронизация онлайн-изменений</target>
          </segment>
       </unit>
+      <unit id="import.importSyncUp">
+         <segment>
+            <source>Syncing offline changes</source>
+            <target>Синхронизация изменений в автономном режиме</target>
+         </segment>
+      </unit>
+      <unit id="import.incrementalImport">
+         <segment>
+            <source>Import Incremental Changes from an offline coworker (.itf)</source>
+            <target>Импорт инкрементальных изменений от коллеги, работающего в автономном режиме (.itf)</target>
+         </segment>
+      </unit>
       <unit id="import.invalidITF">
          <segment>
             <source>Not a valid Incremental Transcriber File (ITF).</source>
             <target>Недопустимый Файл Транскриптора (ITF).</target>
-         </segment>
-      </unit>
-      <unit id="import.unknownError">
-         <segment>
-            <source>If this error occurred while importing offline changes, please close the app immediately and reopen. If the error persists, contact support. If you continue to use the app, you will lose offline changes.</source>
-            <target>Если эта ошибка возникла при импорте изменений в автономном режиме, пожалуйста, немедленно закройте приложение и откройте его снова. Если ошибка не исчезла, обратитесь в службу поддержки. Если вы продолжите использовать приложение, вы потеряете изменения, сделанные в автономном режиме.</target>
          </segment>
       </unit>
       <unit id="import.invalidProject">
@@ -2629,10 +3361,22 @@
             <target>Предпочитаемый язык</target>
          </segment>
       </unit>
+      <unit id="import.newTeamChainFailed">
+         <segment>
+            <source>Could not determine the new team after the first import. Import the first file alone, then add the rest to that team.</source>
+            <target>Не удалось определить новую команду после первого импорта. Сначала импортируйте первый файл отдельно, а затем добавьте остальные файлы в эту команду.</target>
+         </segment>
+      </unit>
       <unit id="import.noFile">
          <segment>
             <source>Please select file to be uploaded.</source>
             <target>Пожалуйста, выберите файл для загрузки.</target>
+         </segment>
+      </unit>
+      <unit id="import.offlineImport">
+         <segment>
+            <source>Import an APM Project File to use offline and sync when online, or a project file from an external source that you will only use offline. Projects from an external source that are not imported while online cannot be synced online.</source>
+            <target>Импортируйте файл проекта APM для использования в автономном режиме и синхронизации при подключении к сети, либо файл проекта из внешнего источника, который вы будете использовать только в автономном режиме. Проекты из внешнего источника, не импортированные при подключении к сети, не могут быть синхронизированы в режиме онлайн.</target>
          </segment>
       </unit>
       <unit id="import.old">
@@ -2683,6 +3427,18 @@
             <target>ITF не содержит текущий проект. Он содержит проект {0}.</target>
          </segment>
       </unit>
+      <unit id="import.selectImportFileType">
+         <segment>
+            <source>Select import file type:</source>
+            <target>Выберите тип импортируемого файла:</target>
+         </segment>
+      </unit>
+      <unit id="import.selectTeam">
+         <segment>
+            <source>Select Team</source>
+            <target>Выберите «Команда»</target>
+         </segment>
+      </unit>
       <unit id="import.showHideFilter">
          <segment>
             <source>Show/Hide filter rows</source>
@@ -2713,10 +3469,76 @@
             <target>не назначено</target>
          </segment>
       </unit>
+      <unit id="import.fileTooLarge">
+         <segment>
+            <source>File exceeds maximum size of {0}</source>
+            <target>Размер файла превышает максимальный размер {0}</target>
+         </segment>
+      </unit>
+      <unit id="import.unknownError">
+         <segment>
+            <source>If this error occurred while syncing offline changes, please close the app immediately and reopen. If the error persists, contact support. If you continue to use the app, you will lose offline changes.</source>
+            <target>Если эта ошибка возникла при синхронизации изменений, внесенных в автономном режиме, немедленно закройте приложение и запустите его заново. Если ошибка не устраняется, обратитесь в службу поддержки. Если вы продолжите использовать приложение, изменения, внесенные в автономном режиме, будут утеряны.</target>
+         </segment>
+      </unit>
       <unit id="import.username">
          <segment>
             <source>Name</source>
             <target>Имя</target>
+         </segment>
+      </unit>
+      <unit id="scriptureBurritoImport.title">
+         <segment>
+            <source>Import Scripture Burrito</source>
+            <target>Импорт Scripture Burrito</target>
+         </segment>
+      </unit>
+      <unit id="scriptureBurritoImport.zipExtractError">
+         <segment>
+            <source>Failed to extract zip file</source>
+            <target>Не удалось распаковать ZIP-файл</target>
+         </segment>
+      </unit>
+      <unit id="scriptureBurritoImport.metadataNotFoundError">
+         <segment>
+            <source>metadata.json not found in the selected file/directory</source>
+            <target>Файл metadata.json не найден в выбранном файле/каталоге</target>
+         </segment>
+      </unit>
+      <unit id="scriptureBurritoImport.invalidWrapperMetadataError">
+         <segment>
+            <source>Invalid format: expected \"scripture burrito wrapper\"</source>
+            <target>Недопустимый формат: ожидалось «scripture burrito wrapper»</target>
+         </segment>
+      </unit>
+      <unit id="scriptureBurritoImport.subtitle">
+         <segment>
+            <source>Select a Burrito directory or a .zip file to extract and import.</source>
+            <target>Выберите каталог Burrito или файл .zip для извлечения и импорта.</target>
+         </segment>
+      </unit>
+      <unit id="scriptureBurritoImport.browseDirectory">
+         <segment>
+            <source>Browse Directory</source>
+            <target>Выбрать каталог</target>
+         </segment>
+      </unit>
+      <unit id="scriptureBurritoImport.browseZipFile">
+         <segment>
+            <source>Browse Zip File</source>
+            <target>Выбрать файл .zip</target>
+         </segment>
+      </unit>
+      <unit id="scriptureBurritoImport.selected">
+         <segment>
+            <source>Selected: </source>
+            <target>Выбрано: </target>
+         </segment>
+      </unit>
+      <unit id="scriptureBurritoImport.wrapperNotFoundError">
+         <segment>
+            <source>wrapper.json not found in the selected file/directory</source>
+            <target>Файл wrapper.json не найден в выбранном файле/каталоге</target>
          </segment>
       </unit>
       <unit id="integration.allCriteria">
@@ -3415,6 +4237,12 @@
             <target>О программе</target>
          </segment>
       </unit>
+      <unit id="main.addSectionOrPassage">
+         <segment>
+            <source>Add {0} or Passage</source>
+            <target>Добавить {0} или отрывок</target>
+         </segment>
+      </unit>
       <unit id="main.admin">
          <segment>
             <source>Admin</source>
@@ -3523,6 +4351,12 @@
             <target>Шаблон таблицы с Писанием</target>
          </segment>
       </unit>
+      <unit id="main.genericError">
+         <segment>
+            <source>Error: {0}</source>
+            <target>Ошибка: {0}</target>
+         </segment>
+      </unit>
       <unit id="main.genFlatSample">
          <segment>
             <source>General flat sample spreadsheet</source>
@@ -3619,6 +4453,12 @@
             <target>Аудио</target>
          </segment>
       </unit>
+      <unit id="main.mobileView">
+         <segment>
+            <source>Mobile View</source>
+            <target>Мобильный вид</target>
+         </segment>
+      </unit>
       <unit id="main.myAccount">
          <segment>
             <source>My Account</source>
@@ -3697,6 +4537,12 @@
             <target>Сохранение...</target>
          </segment>
       </unit>
+      <unit id="main.scriptureBurrito">
+         <segment>
+            <source>Scripture Burrito</source>
+            <target>Scripture Burrito</target>
+         </segment>
+      </unit>
       <unit id="main.sessionExpireTask">
          <segment>
             <source>Your session will expire in {0} seconds. Would you like to continue?</source>
@@ -3769,6 +4615,12 @@
             <target>Доступно обновление: версия {0} была выпущена {1}</target>
          </segment>
       </unit>
+      <unit id="main.upload">
+         <segment>
+            <source>Upload</source>
+            <target>Загрузить</target>
+         </segment>
+      </unit>
       <unit id="main.version">
          <segment>
             <source>Version: {0} - {1}</source>
@@ -3795,8 +4647,8 @@
       </unit>
       <unit id="mediaActions.delete">
          <segment>
-            <source>Delete</source>
-            <target>Удалить</target>
+            <source>Clear</source>
+            <target>Очистить</target>
          </segment>
       </unit>
       <unit id="mediaActions.detach">
@@ -4025,6 +4877,66 @@
          <segment>
             <source>Passage already attached</source>
             <target>Отрывок уже прикреплен</target>
+         </segment>
+      </unit>
+      <unit id="mediaTab.pendingUploadBatchRetry">
+         <segment>
+            <source>Retry all</source>
+            <target>Повторить все</target>
+         </segment>
+      </unit>
+      <unit id="mediaTab.pendingUploadDeleteFailed">
+         <segment>
+            <source>The online media record could not be removed (id {0}). Others may still see a broken entry until an administrator cleans it up. Your file is saved locally.</source>
+            <target>Не удалось удалить запись онлайн-медиа (id {0}). Другие пользователи могут по-прежнему видеть поврежденную запись, пока администратор не удалит её. Ваш файл сохранен локально.</target>
+         </segment>
+      </unit>
+      <unit id="mediaTab.pendingUploadDismiss">
+         <segment>
+            <source>Remove from list</source>
+            <target>Удалить из списка</target>
+         </segment>
+      </unit>
+      <unit id="mediaTab.pendingUploadEmpty">
+         <segment>
+            <source>No pending uploads.</source>
+            <target>Нет ожидающих загрузок.</target>
+         </segment>
+      </unit>
+      <unit id="mediaTab.pendingUploadMenu">
+         <segment>
+            <source>Pending media uploads</source>
+            <target>Ожидающие загрузки медиафайлов</target>
+         </segment>
+      </unit>
+      <unit id="mediaTab.pendingUploadPathLabel">
+         <segment>
+            <source>File saved at: {0}</source>
+            <target>Файл сохранен по адресу: {0}</target>
+         </segment>
+      </unit>
+      <unit id="mediaTab.pendingUploadQueuedHint">
+         <segment>
+            <source>You can retry from Team → {0} when your connection improves.</source>
+            <target>Вы можете повторить попытку в разделе «Команда» → {0}, когда качество соединения улучшится.</target>
+         </segment>
+      </unit>
+      <unit id="mediaTab.pendingUploadRetryLater">
+         <segment>
+            <source>Try again when your internet connection is more stable.</source>
+            <target>Попробуйте ещё раз, когда интернет-соединение станет более стабильным.</target>
+         </segment>
+      </unit>
+      <unit id="mediaTab.pendingUploadRetryOne">
+         <segment>
+            <source>Retry</source>
+            <target>Повторить</target>
+         </segment>
+      </unit>
+      <unit id="mediaTab.pendingUploadTitle">
+         <segment>
+            <source>Pending media uploads</source>
+            <target>Ожидающие загрузки медиафайлов</target>
          </segment>
       </unit>
       <unit id="mediaTab.planName">
@@ -4373,6 +5285,48 @@
          <segment>
             <source>Upload</source>
             <target>Загрузить</target>
+         </segment>
+      </unit>
+      <unit id="mobile.addSegment">
+         <segment>
+            <source>Add segment boundary</source>
+            <target>Добавить границу сегмента</target>
+         </segment>
+      </unit>
+      <unit id="mobile.next">
+         <segment>
+            <source>Next</source>
+            <target>Далее</target>
+         </segment>
+      </unit>
+      <unit id="mobile.previous">
+         <segment>
+            <source>Previous</source>
+            <target>Назад</target>
+         </segment>
+      </unit>
+      <unit id="mobile.removeSegment">
+         <segment>
+            <source>Remove next segment boundary</source>
+            <target>Удалить границу следующего сегмента</target>
+         </segment>
+      </unit>
+      <unit id="mobile.resetBT">
+         <segment>
+            <source>Reset back translation</source>
+            <target>Сбросить обратный перевод</target>
+         </segment>
+      </unit>
+      <unit id="mobile.restoreBoundaries">
+         <segment>
+            <source>Restore original segment boundaries</source>
+            <target>Восстановить исходные границы сегментов</target>
+         </segment>
+      </unit>
+      <unit id="mobile.segment">
+         <segment>
+            <source>Segment: {0}</source>
+            <target>Сегмент: {0}</target>
          </segment>
       </unit>
       <unit id="newProject.audioProduct">
@@ -4933,6 +5887,12 @@
             <target>Сжатие...{0}%</target>
          </segment>
       </unit>
+      <unit id="passageRecord.compressError">
+         <segment>
+            <source>Compression failed. Saving uncompressed.</source>
+            <target>Сбой сжатия. Сохраняется в несжатом виде.</target>
+         </segment>
+      </unit>
       <unit id="passageRecord.defaultFilename">
          <segment>
             <source>MyRecording</source>
@@ -4951,16 +5911,16 @@
             <target>Тип файла</target>
          </segment>
       </unit>
-      <unit id="passageRecord.loadlatest">
-         <segment>
-            <source>Load Latest Audio</source>
-            <target>Загрузить последнее аудио</target>
-         </segment>
-      </unit>
       <unit id="passageRecord.loading">
          <segment>
             <source>Loading...</source>
             <target>Загрузка...</target>
+         </segment>
+      </unit>
+      <unit id="passageRecord.processing">
+         <segment>
+            <source>Processing...</source>
+            <target>Обработка...</target>
          </segment>
       </unit>
       <unit id="passageRecord.save">
@@ -5479,6 +6439,60 @@
             <target>Графика</target>
          </segment>
       </unit>
+      <unit id="planSheet.goToReference">
+         <segment>
+            <source>Go to reference</source>
+            <target>Перейти к справочной информации</target>
+         </segment>
+      </unit>
+      <unit id="planSheet.goToReferenceClear">
+         <segment>
+            <source>Clear</source>
+            <target>Очистить</target>
+         </segment>
+      </unit>
+      <unit id="planSheet.goToReferenceDescription">
+         <segment>
+            <source>Enter one of the following:</source>
+            <target>Введите одно из следующих:</target>
+         </segment>
+      </unit>
+      <unit id="planSheet.goToReferencePassage">
+         <segment>
+            <source>{0} sequence (ex. 3.1)</source>
+            <target>{0} последовательность (например, 3.1)</target>
+         </segment>
+      </unit>
+      <unit id="planSheet.goToReferencePhrase">
+         <segment>
+            <source>{0} title word or phrase</source>
+            <target>{0} слово или фраза из названия</target>
+         </segment>
+      </unit>
+      <unit id="planSheet.goToReferencePublishing">
+         <segment>
+            <source>{0} identifier (ex: M1 S1)</source>
+            <target>{0} идентификатор (например: M1 S1)</target>
+         </segment>
+      </unit>
+      <unit id="planSheet.goToReferenceScripture">
+         <segment>
+            <source>Verse reference (chapter and verse ex 2:45)</source>
+            <target>Ссылка на стих (глава и стих, например, Исх. 2:45)</target>
+         </segment>
+      </unit>
+      <unit id="planSheet.goToReferenceSubmit">
+         <segment>
+            <source>Go</source>
+            <target>Перейти</target>
+         </segment>
+      </unit>
+      <unit id="planSheet.goToReferenceTitle">
+         <segment>
+            <source>Go to reference</source>
+            <target>Перейти к ссылке</target>
+         </segment>
+      </unit>
       <unit id="planSheet.hidePublishing">
          <segment>
             <source>Hide Publishing Information</source>
@@ -5578,7 +6592,19 @@
       <unit id="planSheet.refErr">
          <segment>
             <source>This project contains invalid Books or References and will not sync or publish. (A valid reference would be 3:2-5 or similar.)</source>
-            <target/>
+            <target>Этот проект содержит недопустимые коды книг или ссылки, поэтому его синхронизация или публикация невозможны. (Допустимая ссылка может выглядеть, например, так: 3:2-5.)</target>
+         </segment>
+      </unit>
+      <unit id="planSheet.referenceFilteredNoPublishingLabels">
+         <segment>
+            <source>Clear the filter to go to a movement/section label (M/S).</source>
+            <target>Сбросить фильтр, чтобы перейти к метке движения/раздела (M/S).</target>
+         </segment>
+      </unit>
+      <unit id="planSheet.referenceNotFound">
+         <segment>
+            <source>No matching row was found.</source>
+            <target>Соответствующих записей не найдено.</target>
          </segment>
       </unit>
       <unit id="planSheet.removeFilter">
@@ -5647,6 +6673,12 @@
             <target>Обновить статус опубликованного {0} {1}.</target>
          </segment>
       </unit>
+      <unit id="planSheet.unknownBook">
+         <segment>
+            <source>Unknown Book</source>
+            <target>Неизвестная книга</target>
+         </segment>
+      </unit>
       <unit id="planSheet.useCtrlV">
          <segment>
             <source>Select a column head and use CTRL-V to append table rows.</source>
@@ -5705,6 +6737,24 @@
          <segment>
             <source>Transcriptions</source>
             <target>Транскрипции</target>
+         </segment>
+      </unit>
+      <unit id="prompt.adminInstructions">
+         <segment>
+            <source>Record a short prompt for this section, then save. Team members will listen before they record.</source>
+            <target>Запишите краткую подсказку для этого раздела, затем сохраните. Члены команды прослушают её перед записью.</target>
+         </segment>
+      </unit>
+      <unit id="prompt.offlineCannotAdd">
+         <segment>
+            <source>You must be online to add or replace the prompt recording for this section.</source>
+            <target>Для добавления или замены записи подсказки для этого раздела необходимо быть в сети.</target>
+         </segment>
+      </unit>
+      <unit id="prompt.noAudio">
+         <segment>
+            <source>No prompt has been recorded for this section yet.</source>
+            <target>Подсказка для этого раздела ещё не записана.</target>
          </segment>
       </unit>
       <unit id="profile.add">
@@ -6100,7 +7150,7 @@
       <unit id="projectDownload.missingFileList">
          <segment>
             <source>Show missing file list</source>
-            <target/>
+            <target>Показать список отсутствующих файлов</target>
          </segment>
       </unit>
       <unit id="projectDownload.projects">
@@ -6307,6 +7357,120 @@
             <target>Версии</target>
          </segment>
       </unit>
+      <unit id="recordButton.record">
+         <segment>
+            <source>RECORD</source>
+            <target>ЗАПИСАТЬ</target>
+         </segment>
+      </unit>
+      <unit id="recordButton.rerecord">
+         <segment>
+            <source>RERECORD</source>
+            <target>ПЕРЕЗАПИСАТЬ</target>
+         </segment>
+      </unit>
+      <unit id="recordButton.resume">
+         <segment>
+            <source>RESUME</source>
+            <target>ВОЗОБНОВИТЬ</target>
+         </segment>
+      </unit>
+      <unit id="recordButton.stop">
+         <segment>
+            <source>STOP</source>
+            <target>ОСТАНОВИТЬ</target>
+         </segment>
+      </unit>
+      <unit id="recordStepSettings.custom">
+         <segment>
+            <source>Custom</source>
+            <target>Пользовательские настройки</target>
+         </segment>
+      </unit>
+      <unit id="recordStepSettings.echoCancellation">
+         <segment>
+            <source>Echo cancellation</source>
+            <target>Подавление эха</target>
+         </segment>
+      </unit>
+      <unit id="recordStepSettings.echoCancellationHelper">
+         <segment>
+            <source>Reduces echo when using speakers. May reduce recording quality. Leave off for a cleaner capture when using headphones or a quiet room.</source>
+            <target>Уменьшает эхо при использовании динамиков. Может снизить качество записи. Отключите эту функцию для получения более чистого звука при использовании наушников или в тихой комнате.</target>
+         </segment>
+      </unit>
+      <unit id="recordStepSettings.fileNameTemplate">
+         <segment>
+            <source>File Name Template</source>
+            <target>Шаблон имени файла</target>
+         </segment>
+      </unit>
+      <unit id="recordStepSettings.general">
+         <segment>
+            <source>General</source>
+            <target>Общие настройки</target>
+         </segment>
+      </unit>
+      <unit id="recordStepSettings.noiseSuppression">
+         <segment>
+            <source>Noise suppression</source>
+            <target>Подавление шума</target>
+         </segment>
+      </unit>
+      <unit id="recordStepSettings.noiseSuppressionHelper">
+         <segment>
+            <source>Reduces background noise. May make speech sound less natural. Leave off for the most faithful capture when the environment is already quiet.</source>
+            <target>Уменьшает фоновый шум. Может сделать речь менее естественной. Отключите эту функцию для получения наиболее точной записи, если окружающая обстановка и так тихая.</target>
+         </segment>
+      </unit>
+      <unit id="recordStepSettings.notes">
+         <segment>
+            <source>Notes</source>
+            <target>Примечания</target>
+         </segment>
+      </unit>
+      <unit id="recordStepSettings.saveAsWav">
+         <segment>
+            <source>Save as wav (uncompressed) file.</source>
+            <target>Сохраняйте в формате wav (без сжатия).</target>
+         </segment>
+      </unit>
+      <unit id="recordStepSettings.saveAsWavHelper">
+         <segment>
+            <source>These files are large and we suggest you only select this for the final recording.</source>
+            <target>Эти файлы имеют большой размер, поэтому мы рекомендуем выбирать этот формат только для окончательной записи.</target>
+         </segment>
+      </unit>
+      <unit id="recordStepSettings.scripture">
+         <segment>
+            <source>Scripture</source>
+            <target>Священное Писание</target>
+         </segment>
+      </unit>
+      <unit id="recordStepSettings.useBookChapterPassage">
+         <segment>
+            <source>Book Chapter Passage</source>
+            <target>Книга Глава Отрывок</target>
+         </segment>
+      </unit>
+      <unit id="recordStepSettings.useReference">
+         <segment>
+            <source>Passage Reference</source>
+            <target>Ссылка на отрывок</target>
+         </segment>
+      </unit>
+      <unit id="recordStepSettings.useSectionNumberAndPassageNumber">
+         <segment>
+            <source>{0} number and Passage number</source>
+            <target>Номер {0} и номер отрывка</target>
+         </segment>
+      </unit>
+      <unit id="recordStepSettings.useTitle">
+         <segment>
+            <source>Title</source>
+            <target>Название</target>
+         </segment>
+      </unit>
       <unit id="scriptureTable.alternateName">
          <segment>
             <source>{0} Alternate Name</source>
@@ -6418,13 +7582,13 @@
       <unit id="scriptureTable.setupGeneralBook">
          <segment>
             <source>Go the the Home page and sort the projects to set the book codes.</source>
-            <target/>
+            <target>Перейдите на главную страницу и отсортируйте проекты, чтобы установить коды книг.</target>
          </segment>
       </unit>
       <unit id="scriptureTable.setupScriptureBook">
          <segment>
             <source>Make a selection in the Book column for each passage without one.</source>
-            <target/>
+            <target>Сделайте выбор в столбце «Книга» для каждого отрывка, у которого отсутствует код.</target>
          </segment>
       </unit>
       <unit id="scriptureTable.title">
@@ -6679,6 +7843,12 @@
             <target>Закрыть</target>
          </segment>
       </unit>
+      <unit id="shared.confirm">
+         <segment>
+            <source>Confirm</source>
+            <target>Подтвердить</target>
+         </segment>
+      </unit>
       <unit id="shared.consultant">
          <segment>
             <source>Consultant</source>
@@ -6751,6 +7921,12 @@
             <target>Запустить Audacity</target>
          </segment>
       </unit>
+      <unit id="shared.loadFromFile">
+         <segment>
+            <source>Load from file...</source>
+            <target>Загрузить из файла...</target>
+         </segment>
+      </unit>
       <unit id="shared.loading">
          <segment>
             <source>Loading...</source>
@@ -6817,10 +7993,16 @@
             <target>Невозможно сохранить в режиме офлайн.</target>
          </segment>
       </unit>
+      <unit id="shared.TooBusy">
+         <segment>
+            <source>Unable to start new save while already saving.</source>
+            <target>Невозможно начать новое сохранение, пока уже идет сохранение.</target>
+         </segment>
+      </unit>
       <unit id="shared.NoSaveWoMedia">
          <segment>
-            <source>No media has been saved to the cloud.</source>
-            <target/>
+            <source>Save Failed. Please check your internet connection and try again.</source>
+            <target>Сохранение не удалось. Проверьте подключение к Интернету и попробуйте ещё раз.</target>
          </segment>
       </unit>
       <unit id="shared.notSupported">
@@ -6913,6 +8095,12 @@
             <target>Выбрать</target>
          </segment>
       </unit>
+      <unit id="shared.teamDefault">
+         <segment>
+            <source>Save as team default</source>
+            <target>Сохранить как стандартное для команды</target>
+         </segment>
+      </unit>
       <unit id="shared.teamrole">
          <segment>
             <source>Team Role</source>
@@ -6941,6 +8129,24 @@
          <segment>
             <source>Upload Audio</source>
             <target>Загрузить аудио</target>
+         </segment>
+      </unit>
+      <unit id="shared.upload">
+         <segment>
+            <source>Upload</source>
+            <target>Загрузить</target>
+         </segment>
+      </unit>
+      <unit id="shared.discardRecording">
+         <segment>
+            <source>Would you like to clear this recording?</source>
+            <target>Хотите удалить эту запись?</target>
+         </segment>
+      </unit>
+      <unit id="shared.useThisVersion">
+         <segment>
+            <source>Use This Version</source>
+            <target>Использовать эту версию</target>
          </segment>
       </unit>
       <unit id="shared.uploadRights">
@@ -7129,6 +8335,12 @@
             <target>Сохранение ...</target>
          </segment>
       </unit>
+      <unit id="stepEditor.settingsFor">
+         <segment>
+            <source>Settings for {0} of {1}</source>
+            <target>Настройки для {0} из {1}</target>
+         </segment>
+      </unit>
       <unit id="stepEditor.show">
          <segment>
             <source>Show</source>
@@ -7255,6 +8467,12 @@
             <target>Номер отрывка (в {0})</target>
          </segment>
       </unit>
+      <unit id="template.reference">
+         <segment>
+            <source>Passage reference</source>
+            <target>Ссылка на отрывок</target>
+         </segment>
+      </unit>
       <unit id="template.renderExportTemplate">
          <segment>
             <source>The {SECT} template works for files exported from {0}.</source>
@@ -7265,6 +8483,12 @@
          <segment>
             <source>Template Codes</source>
             <target>Коды шаблонов</target>
+         </segment>
+      </unit>
+      <unit id="template.title">
+         <segment>
+            <source>Title</source>
+            <target>Название</target>
          </segment>
       </unit>
       <unit id="toDoTable.action">
@@ -7375,6 +8599,12 @@
             <target>Да</target>
          </segment>
       </unit>
+      <unit id="tool.carefulSpeech">
+         <segment>
+            <source>Careful speech</source>
+            <target>Внимательная речь</target>
+         </segment>
+      </unit>
       <unit id="tool.community">
          <segment>
             <source>Community Test</source>
@@ -7415,6 +8645,12 @@
          <segment>
             <source>{0} Sync</source>
             <target>{0} Синхронизация</target>
+         </segment>
+      </unit>
+      <unit id="tool.prompt">
+         <segment>
+            <source>Prompt</source>
+            <target>Подсказка</target>
          </segment>
       </unit>
       <unit id="tool.phraseBackTranslate">
@@ -7501,16 +8737,22 @@
             <target>Не удалось выполнить транскрипцию AI</target>
          </segment>
       </unit>
+      <unit id="transcriber.aiAutomaticTranscription">
+         <segment>
+            <source>AI Automatic Transcription</source>
+            <target>Автоматическая транскрипция с помощью ИИ</target>
+         </segment>
+      </unit>
       <unit id="transcriber.aiWillContinue">
          <segment>
             <source>The AI will continue to work on the transcription even if you close this progress box. Click the {0} button to open the progress box on this workflow step to see the results. Use the settings gear on {0} button to see the transcription using a different language.</source>
             <target>ИИ продолжит работу над транскрипцией, даже если вы закроете это окно выполнения. Нажмите кнопку {0}, чтобы открыть окно выполнения на этом шаге рабочего процесса и посмотреть результаты. Используйте шестеренку настроек на кнопке {0}, чтобы просмотреть транскрипцию на другом языке.</target>
          </segment>
       </unit>
-      <unit id="transcriber.beginRecognize">
+      <unit id="transcriber.chooseSisterLang">
          <segment>
-            <source>Begin Auto Transcription</source>
-            <target>Начать автоматическую транскрипцию</target>
+            <source>Choose a sister language</source>
+            <target>Выберите родственный язык</target>
          </segment>
       </unit>
       <unit id="transcriber.comment">
@@ -7529,6 +8771,12 @@
          <segment>
             <source>Completed</source>
             <target>Завершён</target>
+         </segment>
+      </unit>
+      <unit id="transcriber.findingSisterLang">
+         <segment>
+            <source>Finding supported sister languages…</source>
+            <target>Поиск поддерживаемых родственных языков…</target>
          </segment>
       </unit>
       <unit id="transcriber.historyTip">
@@ -7609,6 +8857,12 @@
             <target>Извлечь транскрипцию из {0}</target>
          </segment>
       </unit>
+      <unit id="transcriber.recommended">
+         <segment>
+            <source>Recommended</source>
+            <target>Рекомендуется</target>
+         </segment>
+      </unit>
       <unit id="transcriber.reject">
          <segment>
             <source>Reject</source>
@@ -7625,6 +8879,12 @@
          <segment>
             <source>Started to review</source>
             <target>Начата проверка</target>
+         </segment>
+      </unit>
+      <unit id="transcriber.run">
+         <segment>
+            <source>Run</source>
+            <target>Запустить</target>
          </segment>
       </unit>
       <unit id="transcriber.save">
@@ -7657,6 +8917,24 @@
             <target>Скрипт или диалект</target>
          </segment>
       </unit>
+      <unit id="transcriber.scriptTranscription">
+         <segment>
+            <source>Script</source>
+            <target>Сценарий</target>
+         </segment>
+      </unit>
+      <unit id="transcriber.invalidSisterLang">
+         <segment>
+            <source>This language is not supported for speech recognition. Choose another sister language.</source>
+            <target>Этот язык не поддерживается для распознавания речи. Выберите другой родственный язык.</target>
+         </segment>
+      </unit>
+      <unit id="transcriber.sisterLang">
+         <segment>
+            <source>Your language is not supported for speech recognition. To use automatic transcription, choose a closely related language with a similar writing system.</source>
+            <target>Ваш язык не поддерживается для распознавания речи. Чтобы воспользоваться автоматической транскрипцией, выберите близкородственный язык с похожей системой письма.</target>
+         </segment>
+      </unit>
       <unit id="transcriber.submit">
          <segment>
             <source>Submit</source>
@@ -7685,6 +8963,12 @@
          <segment>
             <source>Transcription already exists</source>
             <target>Транскрипция уже существует</target>
+         </segment>
+      </unit>
+      <unit id="transcriber.transcriptionType">
+         <segment>
+            <source>Transcription type</source>
+            <target>Тип транскрипции</target>
          </segment>
       </unit>
       <unit id="transcriber.transliterate">
@@ -7792,7 +9076,7 @@
       <unit id="transcriptionTab.confirm">
          <segment>
             <source>Are you sure you want to cancel the download?</source>
-            <target/>
+            <target>Вы действительно хотите отменить загрузку?</target>
          </segment>
       </unit>
       <unit id="transcriptionTab.copyTip">
@@ -8137,6 +9421,12 @@
             <target>Часовой пояс</target>
          </segment>
       </unit>
+      <unit id="verse.autosaveSkipped">
+         <segment>
+            <source>Autosave skipped: {0} issue(s) found.</source>
+            <target>Автосохранение пропущено: обнаружено {0} проблем.</target>
+         </segment>
+      </unit>
       <unit id="verse.badReferences">
          <segment>
             <source>ERROR: Markup contains bad references</source>
@@ -8161,6 +9451,18 @@
             <target>буфер обмена</target>
          </segment>
       </unit>
+      <unit id="verse.doneEditingReference">
+         <segment>
+            <source>Done Editing</source>
+            <target>Редактирование завершено</target>
+         </segment>
+      </unit>
+      <unit id="verse.editReference">
+         <segment>
+            <source>Edit Reference</source>
+            <target>Редактировать ссылку</target>
+         </segment>
+      </unit>
       <unit id="verse.issues">
          <segment>
             <source>The verse markup has issues. Do you want to continue?</source>
@@ -8171,6 +9473,12 @@
          <segment>
             <source>Mark Verses</source>
             <target>Разметка стихов</target>
+         </segment>
+      </unit>
+      <unit id="verse.markupIssuesTitle">
+         <segment>
+            <source>Verse markup issues</source>
+            <target>Проблемы с разметкой стихов</target>
          </segment>
       </unit>
       <unit id="verse.missingReferences">
@@ -8209,16 +9517,34 @@
             <target>Ссылка</target>
          </segment>
       </unit>
+      <unit id="verse.reset">
+         <segment>
+            <source>Reset</source>
+            <target>Сбросить</target>
+         </segment>
+      </unit>
       <unit id="verse.saveVerseMarkup">
          <segment>
             <source>Save Verse Markup</source>
             <target>Сохранить разметку стиха</target>
          </segment>
       </unit>
+      <unit id="verse.splitVerse">
+         <segment>
+            <source>Split Verse</source>
+            <target>Разделить стих</target>
+         </segment>
+      </unit>
       <unit id="verse.startStop">
          <segment>
             <source>Start --&gt; Stop</source>
             <target>Начать --&gt; Остановить</target>
+         </segment>
+      </unit>
+      <unit id="verse.viewIssues">
+         <segment>
+            <source>View issues</source>
+            <target>Просмотреть проблемы</target>
          </segment>
       </unit>
       <unit id="viewMode.audioProject">
@@ -8851,10 +10177,94 @@
             <target>Обратный перевод</target>
          </segment>
       </unit>
+      <unit id="workflowSteps.backTranslationTip">
+         <segment>
+            <source>Record a back translation</source>
+            <target>Записать обратный перевод</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.carefulSpeech">
+         <segment>
+            <source>Careful speech</source>
+            <target>Четкая речь</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.carefulSpeechTip">
+         <segment>
+            <source>Record careful speech for each segment.</source>
+            <target>Запишите четкую речь для каждого сегмента.</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.carefulTranscription">
+         <segment>
+            <source>Careful transcription</source>
+            <target>Четкая транскрипция</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.carefulTranscriptionTip">
+         <segment>
+            <source>Transcribe the careful speech recording for each segment.</source>
+            <target>Сделайте транскрипцию записи четкой речи для каждого сегмента.</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.freeTranscription">
+         <segment>
+            <source>Free transcription</source>
+            <target>Свободная транскрипция</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.freeTranscriptionTip">
+         <segment>
+            <source>Transcribe the free translation recording.</source>
+            <target>Сделайте транскрипцию записи свободного перевода.</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.freeTranslation">
+         <segment>
+            <source>Free translation</source>
+            <target>Свободный перевод</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.freeTranslationTip">
+         <segment>
+            <source>Record a free translation of the entire passage in the language of wider communication.</source>
+            <target>Запишите свободный перевод всего отрывка на языке широкого общения.</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.lwcTranscription">
+         <segment>
+            <source>LWC transcription</source>
+            <target>Транскрипция LWC</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.lwcTranscriptionTip">
+         <segment>
+            <source>Transcribe the LWC translation recording.</source>
+            <target>Сделайте транскрипцию записи перевода LWC.</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.lwcTranslation">
+         <segment>
+            <source>LWC translation</source>
+            <target>Перевод LWC</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.lwcTranslationTip">
+         <segment>
+            <source>Listen to each careful speech segment and record a translation in the language of wider communication.</source>
+            <target>Прослушайте каждый отдельный сегмент речи и запишите перевод на языке широкого общения.</target>
+         </segment>
+      </unit>
       <unit id="workflowSteps.communityTest1">
          <segment>
             <source>Community Test 1</source>
             <target>Тест 1 сообщества</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.communityTest1Tip">
+         <segment>
+            <source>Ask community test questions and record responses</source>
+            <target>Задавайте тестовые вопросы сообществу и записывайте ответы</target>
          </segment>
       </unit>
       <unit id="workflowSteps.communityTest2">
@@ -8863,10 +10273,22 @@
             <target>Тест 2 сообщества</target>
          </segment>
       </unit>
+      <unit id="workflowSteps.communityTest2Tip">
+         <segment>
+            <source>Ask community test questions and record responses</source>
+            <target>Задавайте тестовые вопросы сообществу и записывайте ответы</target>
+         </segment>
+      </unit>
       <unit id="workflowSteps.communityTesting">
          <segment>
             <source>Community Test</source>
             <target>Тест сообщества</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.communityTestingTip">
+         <segment>
+            <source>Ask community test questions and record responses</source>
+            <target>Задавайте тестовые вопросы сообществу и записывайте ответы</target>
          </segment>
       </unit>
       <unit id="workflowSteps.consultantCheck">
@@ -8875,10 +10297,22 @@
             <target>Проверка консультанта</target>
          </segment>
       </unit>
+      <unit id="workflowSteps.consultantCheckTip">
+         <segment>
+            <source>The consultant listens to recorded content and asks questions in discussions.</source>
+            <target>Консультант прослушивает записанный материал и задает вопросы в ходе обсуждений.</target>
+         </segment>
+      </unit>
       <unit id="workflowSteps.consultantCheck1">
          <segment>
             <source>First Consultant Check</source>
             <target>Проверка первого консультанта</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.consultantCheck1Tip">
+         <segment>
+            <source>The consultant listens to recorded content and asks questions in discussions.</source>
+            <target>Консультант прослушивает записанный материал и задает вопросы в ходе обсуждений.</target>
          </segment>
       </unit>
       <unit id="workflowSteps.consultantCheck2">
@@ -8887,10 +10321,22 @@
             <target>Проверка второго консультанта</target>
          </segment>
       </unit>
+      <unit id="workflowSteps.consultantCheck2Tip">
+         <segment>
+            <source>The consultant listens to recorded content and asks questions in discussions.</source>
+            <target>Консультант прослушивает записанный материал и задает вопросы в ходе обсуждений.</target>
+         </segment>
+      </unit>
       <unit id="workflowSteps.done">
          <segment>
             <source>Done</source>
             <target>Готово</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.doneTip">
+         <segment>
+            <source>All steps have been completed for this passage or note</source>
+            <target>Все этапы работы над этим отрывком или заметкой завершены.</target>
          </segment>
       </unit>
       <unit id="workflowSteps.export">
@@ -8899,10 +10345,22 @@
             <target>Экспорт</target>
          </segment>
       </unit>
+      <unit id="workflowSteps.exportTip">
+         <segment>
+            <source>Export work done to this point if desired.</source>
+            <target>При желании экспортируйте выполненную на данный момент работу.</target>
+         </segment>
+      </unit>
       <unit id="workflowSteps.finalRecording">
          <segment>
             <source>Studio Record</source>
             <target>Студийная запись</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.finalRecordingTip">
+         <segment>
+            <source>Make a final recording in a studio if desired.</source>
+            <target>При желании сделайте окончательную запись в студии.</target>
          </segment>
       </unit>
       <unit id="workflowSteps.finalReview">
@@ -8911,10 +10369,46 @@
             <target>Окончательная аудиорецензия</target>
          </segment>
       </unit>
+      <unit id="workflowSteps.finalReviewTip">
+         <segment>
+            <source>Listen one last time to the results to see if any more changes are needed.</source>
+            <target>Прослушайте результат ещё раз, чтобы определить, требуются ли какие-либо дополнительные изменения.</target>
+         </segment>
+      </unit>
       <unit id="workflowSteps.finalReviewText">
          <segment>
             <source>Final Text Review</source>
             <target>Окончательная проверка текста</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.finalReviewTextTip">
+         <segment>
+            <source>Read through the transcription one last time to see if any additional changes are needed.</source>
+            <target>Прочитайте стенограмму ещё раз, чтобы проверить, не требуются ли дополнительные изменения.</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.incompleteStepComplete">
+         <segment>
+            <source>Complete</source>
+            <target>Завершить</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.incompleteStepContinue">
+         <segment>
+            <source>Continue</source>
+            <target>Продолжить</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.incompleteStepNavigate">
+         <segment>
+            <source>The current step ({0}) is not complete. Are you sure?</source>
+            <target>Текущий шаг ({0}) не завершён. Вы уверены?</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.incompleteStepNavigateTitle">
+         <segment>
+            <source>Step not complete</source>
+            <target>Шаг не завершён</target>
          </segment>
       </unit>
       <unit id="workflowSteps.internalize">
@@ -8923,10 +10417,22 @@
             <target>Подстрочник</target>
          </segment>
       </unit>
+      <unit id="workflowSteps.internalizeTip">
+         <segment>
+            <source>Review the resources to become able to tell the passage from memory in the target languages.</source>
+            <target>Изучите материалы, чтобы научиться воспроизводить этот отрывок по памяти на языках перевода.</target>
+         </segment>
+      </unit>
       <unit id="workflowSteps.paratextConsultantCheck">
          <segment>
             <source>Consultant Check in {0}</source>
             <target>Проверка консультанта в {0}</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.paratextConsultantCheckTip">
+         <segment>
+            <source>Review the text in another program with more analysis resources.</source>
+            <target>Просмотрите текст в другой программе с более широкими возможностями анализа.</target>
          </segment>
       </unit>
       <unit id="workflowSteps.paratextPeerReview">
@@ -8935,10 +10441,22 @@
             <target>Рецензирование коллегами в {0}</target>
          </segment>
       </unit>
+      <unit id="workflowSteps.paratextPeerReviewTip">
+         <segment>
+            <source>Team reviews the text in another program with more analysis resources.</source>
+            <target>Команда проверяет текст в другой программе с более широкими возможностями анализа.</target>
+         </segment>
+      </unit>
       <unit id="workflowSteps.paratextSync">
          <segment>
             <source>Sync to {0}</source>
             <target>Синхронизировать с {0}</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.paratextSyncTip">
+         <segment>
+            <source>Sync text to another text translation tool.</source>
+            <target>Синхронизируйте текст с другим инструментом перевода текстов.</target>
          </segment>
       </unit>
       <unit id="workflowSteps.peerReview">
@@ -8947,10 +10465,22 @@
             <target>Рецензент</target>
          </segment>
       </unit>
+      <unit id="workflowSteps.peerReviewTip">
+         <segment>
+            <source>Peer review content to this point.</source>
+            <target>Проведите экспертную оценку содержания до этого момента.</target>
+         </segment>
+      </unit>
       <unit id="workflowSteps.phraseBackTranslation">
          <segment>
             <source>Phrase Back Translate</source>
             <target>Обратный перевод фраз</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.phraseBackTranslationTip">
+         <segment>
+            <source>Record a back translation of each phrase of the passage.</source>
+            <target>Запишите обратный перевод каждой фразы отрывка.</target>
          </segment>
       </unit>
       <unit id="workflowSteps.pBTTranscribe">
@@ -8959,10 +10489,22 @@
             <target>Обратный перевод фразы Транскрибировать</target>
          </segment>
       </unit>
+      <unit id="workflowSteps.pBTTranscribeTip">
+         <segment>
+            <source>Transcribe each of the back translated phrases.</source>
+            <target>Сделайте стенограмму каждой из переведённых фраз.</target>
+         </segment>
+      </unit>
       <unit id="workflowSteps.pBTParatextSync">
          <segment>
             <source>Phrase BT {0}</source>
             <target>Фраза BT {0}</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.pBTParatextSyncTip">
+         <segment>
+            <source>Synchronize the back translated text to another tool for analysis and review.</source>
+            <target>Синхронизируйте текст обратного перевода с другим инструментом для анализа и проверки.</target>
          </segment>
       </unit>
       <unit id="workflowSteps.preliminaryApproval">
@@ -8971,10 +10513,22 @@
             <target>Предварительное утверждение</target>
          </segment>
       </unit>
+      <unit id="workflowSteps.preliminaryApprovalTip">
+         <segment>
+            <source>Get preliminary approval.</source>
+            <target>Получите предварительное одобрение.</target>
+         </segment>
+      </unit>
       <unit id="workflowSteps.record">
          <segment>
             <source>Record</source>
             <target>Запись</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.recordTip">
+         <segment>
+            <source>Record the passage.</source>
+            <target>Запишите отрывок.</target>
          </segment>
       </unit>
       <unit id="workflowSteps.retellBackTranslation">
@@ -8983,16 +10537,34 @@
             <target>Пересказ Обратный перевод</target>
          </segment>
       </unit>
+      <unit id="workflowSteps.retellBackTranslationTip">
+         <segment>
+            <source>Retell the entire passage in the language understood by the consultant.</source>
+            <target>Перескажите весь отрывок на языке, понятном консультанту.</target>
+         </segment>
+      </unit>
       <unit id="workflowSteps.retellBTTranscribe">
          <segment>
             <source>Retell BT Transcribe</source>
             <target>Пересказ BT Транскрипция</target>
          </segment>
       </unit>
+      <unit id="workflowSteps.retellBTTranscribeTip">
+         <segment>
+            <source>Transcribe the recording of the text being retold in the language of the consultant.</source>
+            <target>Сделайте стенограмму записи пересказанного текста на языке консультанта.</target>
+         </segment>
+      </unit>
       <unit id="workflowSteps.review">
          <segment>
             <source>Review Transcription</source>
             <target>Обзорная транскрипция</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.reviewTip">
+         <segment>
+            <source>Review the transcription to make sure it is accurate.</source>
+            <target>Проверьте стенограмму, чтобы убедиться в её точности.</target>
          </segment>
       </unit>
       <unit id="workflowSteps.saveFirst">
@@ -9007,10 +10579,22 @@
             <target>Сравнить</target>
          </segment>
       </unit>
+      <unit id="workflowSteps.teamCheckTip">
+         <segment>
+            <source>Check over the work of another sub team in the translation project.</source>
+            <target>Проверьте работу другой подгруппы в рамках проекта по переводу.</target>
+         </segment>
+      </unit>
       <unit id="workflowSteps.termVerify">
          <segment>
             <source>Term Verify</source>
             <target>Проверка термина</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.termVerifyTip">
+         <segment>
+            <source>Make recordings of how terms contained in the passage are being rendered.</source>
+            <target>Сделайте аудиозаписи того, как переводятся термины, содержащиеся в отрывке.</target>
          </segment>
       </unit>
       <unit id="workflowSteps.teamReview">
@@ -9019,10 +10603,22 @@
             <target>Проверка термина</target>
          </segment>
       </unit>
+      <unit id="workflowSteps.teamReviewTip">
+         <segment>
+            <source>Review how terms were rendered before and how they are rendered this time.</source>
+            <target>Сравните, как эти термины переводились ранее и как они переводятся в этот раз.</target>
+         </segment>
+      </unit>
       <unit id="workflowSteps.transcribe">
          <segment>
             <source>Transcribe</source>
             <target>Транскрибировать</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.transcribeTip">
+         <segment>
+            <source>Transcribe the recording.</source>
+            <target>Расшифруйте аудиозапись.</target>
          </segment>
       </unit>
       <unit id="workflowSteps.unsaved">
@@ -9037,10 +10633,40 @@
             <target>Отметить стихи</target>
          </segment>
       </unit>
+      <unit id="workflowSteps.markVersesTip">
+         <segment>
+            <source>Listen to the recording and mark where the verse boundaries occur.</source>
+            <target>Прослушайте аудиозапись и отметьте места, где проходят границы стихов.</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.prompt">
+         <segment>
+            <source>Prompt</source>
+            <target>Подсказка</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.promptAdminTip">
+         <segment>
+            <source>Record a prompt for this section, save it, then continue to the next step when ready.</source>
+            <target>Запишите подсказку для этого раздела, сохраните её, а затем, когда будете готовы, перейдите к следующему шагу.</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.promptTip">
+         <segment>
+            <source>Listen to the prompt above. Then, move to the next step.</source>
+            <target>Прослушайте приведённую выше подсказку. Затем перейдите к следующему шагу.</target>
+         </segment>
+      </unit>
       <unit id="workflowSteps.wholeBackTranslate">
          <segment>
             <source>Whole Back Translate</source>
             <target>Обратный перевод целиком</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.wholeBackTranslateTip">
+         <segment>
+            <source>Record the back translation of the entire passage in the language of the consultant.</source>
+            <target>Запишите обратный перевод всего отрывка на языке консультанта.</target>
          </segment>
       </unit>
       <unit id="workflowSteps.wholeBackTranslation">
@@ -9049,16 +10675,34 @@
             <target>Весь обратный перевод</target>
          </segment>
       </unit>
+      <unit id="workflowSteps.wholeBackTranslationTip">
+         <segment>
+            <source>Record the back translation of the entire passage in the language of the consultant.</source>
+            <target>Запишите обратный перевод всего отрывка на языке консультанта.</target>
+         </segment>
+      </unit>
       <unit id="workflowSteps.wBTTranscribe">
          <segment>
             <source>Whole BT Transcribe</source>
             <target>Обратный перевод целиком Транскрибировать</target>
          </segment>
       </unit>
+      <unit id="workflowSteps.wBTTranscribeTip">
+         <segment>
+            <source>Transcribe the recording of the passage in the language of the consultant.</source>
+            <target>Оформите стенограмму записи отрывка на языке консультанта.</target>
+         </segment>
+      </unit>
       <unit id="workflowSteps.wBTParatextSync">
          <segment>
             <source>Whole BT {0}</source>
             <target>Целый BT {0}</target>
+         </segment>
+      </unit>
+      <unit id="workflowSteps.wBTParatextSyncTip">
+         <segment>
+            <source>Sync transcription of the back translation to another tool for analysis and review.</source>
+            <target>Синхронизируйте стенограмму обратного перевода с другим инструментом для анализа и проверки.</target>
          </segment>
       </unit>
       <unit id="workflowSteps.none">
@@ -9109,16 +10753,34 @@
             <target>Преобразование голоса {0}</target>
          </segment>
       </unit>
+      <unit id="wsAudioPlayer.clearRecording">
+         <segment>
+            <source>Clear Recording?</source>
+            <target>Очистить запись?</target>
+         </segment>
+      </unit>
+      <unit id="wsAudioPlayer.clearRecordingTip">
+         <segment>
+            <source>Clear Recording</source>
+            <target>Очистить запись</target>
+         </segment>
+      </unit>
+      <unit id="wsAudioPlayer.convertVoiceAi">
+         <segment>
+            <source>Convert Voice (AI)</source>
+            <target>Преобразовать речь (ИИ)</target>
+         </segment>
+      </unit>
       <unit id="wsAudioPlayer.beginningTip">
          <segment>
             <source>Go to Beginning [{0}]</source>
             <target>В начало [{0}]</target>
          </segment>
       </unit>
-      <unit id="wsAudioPlayer.deleteRecording">
+      <unit id="wsAudioPlayer.clear">
          <segment>
-            <source>Delete Entire Recording</source>
-            <target>Удалить всю запись</target>
+            <source>Clear</source>
+            <target>Очистить</target>
          </segment>
       </unit>
       <unit id="wsAudioPlayer.deleteRegion">
@@ -9160,7 +10822,13 @@
       <unit id="wsAudioPlayer.microphone">
          <segment>
             <source>Select microphone</source>
-            <target/>
+            <target>Выбрать микрофон</target>
+         </segment>
+      </unit>
+      <unit id="wsAudioPlayer.moreOptions">
+         <segment>
+            <source>More Options</source>
+            <target>Дополнительные параметры</target>
          </segment>
       </unit>
       <unit id="wsAudioPlayer.nextRegion">
@@ -9253,6 +10921,24 @@
             <target>Уменьшить шум</target>
          </segment>
       </unit>
+      <unit id="wsAudioPlayer.reduceNoiseAi">
+         <segment>
+            <source>Reduce Noise (AI)</source>
+            <target>Уменьшить шум (ИИ)</target>
+         </segment>
+      </unit>
+      <unit id="wsAudioPlayer.reset">
+         <segment>
+            <source>Clear</source>
+            <target>Очистить</target>
+         </segment>
+      </unit>
+      <unit id="wsAudioPlayer.resetSegments">
+         <segment>
+            <source>Reset</source>
+            <target>Сбросить</target>
+         </segment>
+      </unit>
       <unit id="wsAudioPlayer.resume">
          <segment>
             <source>Resume</source>
@@ -9271,10 +10957,22 @@
             <target>секунды</target>
          </segment>
       </unit>
+      <unit id="wsAudioPlayer.selectMicrophoneMenu">
+         <segment>
+            <source>Select Microphone</source>
+            <target>Выбрать микрофон</target>
+         </segment>
+      </unit>
       <unit id="wsAudioPlayer.selectVoice">
          <segment>
             <source>Select Voice</source>
             <target>Выбрать голос</target>
+         </segment>
+      </unit>
+      <unit id="wsAudioPlayer.selectVoiceForConversion">
+         <segment>
+            <source>Select Voice for Conversion</source>
+            <target>Выбрать голос для преобразования</target>
          </segment>
       </unit>
       <unit id="wsAudioPlayer.selectVoicePrompt">
@@ -9395,12 +11093,6 @@
          <segment>
             <source>Add Boundary [Double Click/{0}]</source>
             <target>Добавить/Удалить границу [Двойной клик /{0}]</target>
-         </segment>
-      </unit>
-      <unit id="wsAudioPlayerSegment.teamDefault">
-         <segment>
-            <source>Save as team default</source>
-            <target>Сохранить как команду по умолчанию</target>
          </segment>
       </unit>
       <unit id="wsAudioPlayerZoom.fitToWidth">

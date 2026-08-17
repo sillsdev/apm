@@ -31,10 +31,16 @@ describe('BurritoBuilder', () => {
 
   it('should add id authority', () => {
     const burrito = new BurritoBuilder()
-      .withIdAuthority('dbl', 'The Digital Bible Library')
+      .withIdAuthority(
+        'dbl',
+        'https://www.thedigitalbiblelibrary.org',
+        'The Digital Bible Library'
+      )
       .build();
 
-    expect(burrito?.idAuthorities?.dbl?.id).toBe('dbl');
+    expect(burrito?.idAuthorities?.dbl?.id).toBe(
+      'https://www.thedigitalbiblelibrary.org'
+    );
     expect(burrito?.idAuthorities?.dbl?.name.en).toBe(
       'The Digital Bible Library'
     );
@@ -50,25 +56,11 @@ describe('BurritoBuilder', () => {
   it('should add flavor configuration', () => {
     const burrito = new BurritoBuilder()
       .withFlavor({
-        performance: ['multipleVoice'],
-        formats: {
-          format1: {
-            compression: 'mp3',
-            trackConfiguration: '2/0 (Stereo)',
-            bitRate: 128000,
-            bitDepth: 16,
-            samplingRate: 44100,
-          },
-        },
+        name: 'audioTranslation',
       })
       .build();
 
-    expect(burrito?.type?.flavorType?.flavor?.performance).toContain(
-      'multipleVoice'
-    );
-    expect(
-      burrito?.type?.flavorType?.flavor?.formats?.format1?.compression
-    ).toBe('mp3');
+    expect(burrito?.type?.flavorType?.flavor?.name).toBe('audioTranslation');
   });
 
   it('should add agency', () => {
@@ -152,9 +144,7 @@ describe('BurritoBuilder', () => {
       'The Digital Bible Library'
     );
     expect(burrito?.languages?.[0]?.tag).toBe('en');
-    expect(burrito?.type?.flavorType?.flavor?.performance).toContain(
-      'multipleVoice'
-    );
+    expect(burrito?.type?.flavorType?.flavor?.name).toBe('audioTranslation');
     expect(burrito?.agencies?.[0]?.roles).toContain('rightsHolder');
     expect(burrito?.targetAreas?.[0]?.code).toBe('US');
     expect(burrito?.localizedNames?.['book-gen']?.abbr.en).toBe('Gn');

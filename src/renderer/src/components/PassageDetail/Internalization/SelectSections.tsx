@@ -4,12 +4,9 @@ import { useSelector, shallowEqual } from 'react-redux';
 import { passageDetailArtifactsSelector } from '../../../selector';
 import {
   IState,
-  Passage,
   PassageD,
-  Section,
   SectionD,
   Plan,
-  BookName,
   IPassageDetailArtifactsStrings,
   ISharedStrings,
   SectionArray,
@@ -23,21 +20,9 @@ import {
   styled,
   Typography,
 } from '@mui/material';
-import {
-  related,
-  sectionNumber,
-  sectionCompare,
-  passageCompare,
-  passageDescText,
-  useOrganizedBy,
-  findRecord,
-  usePlanType,
-  sectionRef,
-} from '../../../crud';
+import { useOrganizedBy, findRecord, usePlanType } from '../../../crud';
 import { sharedSelector } from '../../../selector';
 import { eqSet } from '../../../utils';
-import { passageTypeFromRef } from '../../../control/passageTypeFromRef';
-import { PassageTypeEnum } from '../../../model/passageType';
 import { RecordIdentity } from '@orbit/records';
 import { useOrbitData } from '../../../hoc/useOrbitData';
 import {
@@ -51,6 +36,11 @@ import {
   GridSortModel,
 } from '@mui/x-data-grid';
 import { TreeDataGrid } from '../../../components/TreeDataGrid';
+import {
+  buildSelectSectionRows,
+  selectSectionRowType,
+  SelectSectionRow,
+} from './buildSelectSectionRows';
 
 const StyledPaper = styled(Paper)<PaperProps>(({ theme }) => ({
   backgroundColor: theme.palette.background.default,
@@ -62,30 +52,7 @@ const StyledPaper = styled(Paper)<PaperProps>(({ theme }) => ({
   paddingTop: theme.spacing(2),
 }));
 
-interface IRow {
-  id: number;
-  recId: string;
-  name: string;
-  passages: string;
-  parentId: string;
-}
-
-/* build the section name = sequence + name */
-const getSection = (
-  section: Section,
-  passages: Passage[],
-  sectionMap: Map<number, string>,
-  bookData: BookName[]
-) => {
-  const name =
-    sectionRef(section, passages, bookData) ?? section?.attributes?.name ?? '';
-  return sectionNumber(section, sectionMap) + '.\u00A0\u00A0' + name;
-};
-
-/* build the passage name = sequence + book + reference */
-const getReference = (passage: Passage, bookData: BookName[] = []) => {
-  return passageDescText(passage, bookData);
-};
+type IRow = SelectSectionRow;
 
 interface IProps {
   title: string;
@@ -105,6 +72,8 @@ export function SelectSections(props: IProps) {
     maxHeight: `${window.innerHeight - 200}px`,
   });
   const { getOrganizedBy } = useOrganizedBy();
+  // User cannot change the language while dialog is open, so for now it should be okay if this component does not
+  // respond to changes in the language setting until the dialog is reopened.
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
   const ta: IPassageDetailArtifactsStrings = useSelector(
     passageDetailArtifactsSelector,
@@ -183,47 +152,16 @@ export function SelectSections(props: IProps) {
   const getSections = (
     passages: PassageD[],
     sections: SectionD[],
-    bookData: BookName[]
+    bookData: typeof allBookData
   ) => {
-    const rowData: IRow[] = [];
-    let id = 1;
-    sections
-      .filter((s) => related(s, 'plan') === planRec?.id && s.attributes)
-      .sort(sectionCompare)
-      .forEach((section) => {
-        const sectionpassages = passages
-          .filter(
-            (ps) =>
-              related(ps, 'section') === section.id &&
-              passageTypeFromRef(ps.attributes?.reference, isFlat) ===
-                PassageTypeEnum.PASSAGE
-          )
-          .sort(passageCompare);
-        const passageCount = sectionpassages.length;
-        // Show all sections regardless of passage count (including empty sections)
-        // This ensures users can see and select all sections in their plan
-        rowData.push({
-          id: id++,
-          recId: section.id,
-          name: getSection(section, sectionpassages, sectionMap, bookData),
-          passages: passageCount.toString(),
-          parentId: '',
-        });
-        sectionpassages.forEach((passage: Passage) => {
-          rowData.push({
-            id: id++,
-            recId: passage.id,
-            name: `\u00A0\u00A0\u00A0${sectionNumber(section, sectionMap)}.${getReference(
-              passage,
-              bookData
-            )}`,
-            passages: '',
-            parentId: isFlat || passageCount === 1 ? '' : section.id,
-          } as IRow);
-        });
-      });
-
-    return rowData as Array<IRow>;
+    return buildSelectSectionRows({
+      passages,
+      sections,
+      bookData,
+      planId: planRec?.id,
+      isFlat: Boolean(isFlat),
+      sectionMap,
+    });
   };
 
   useEffect(() => {
@@ -234,7 +172,7 @@ export function SelectSections(props: IProps) {
       setTableHeight((height ?? 300) - 250);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [plan, passages, sections, allBookData, openSections]);
+  }, [plan, passages, sections, allBookData, openSections, isFlat]);
 
   const handleRowSelectionChange = (newSelection: GridRowSelectionModel) => {
     let chks = Array.from(newSelection.ids).map(
@@ -270,10 +208,7 @@ export function SelectSections(props: IProps) {
       .map((c) => {
         const n = parseInt(c as string);
         return {
-          type:
-            data[n].parentId === '' && !isFlat && parseInt(data[n].passages) > 1
-              ? 'section'
-              : 'passage',
+          type: selectSectionRowType(data[n], Boolean(isFlat)),
           id: data[n].recId,
         };
       }) as RecordIdentity[];

@@ -5,6 +5,7 @@ import {
   createBrowserRouter,
   RouterProvider,
 } from 'react-router-dom';
+import { ErrorPage } from '../components/ErrorPage';
 import Logout from './Logout';
 import Loading from './Loading';
 import CreateProfile from './CreateProfile';
@@ -20,12 +21,13 @@ import { privacyContent } from './privacyContent';
 import { default as Detail } from './PassageDetail';
 import { default as Auth } from '../hoc/PrivateRoute';
 import { isElectron } from '../../api-variable';
-import { ErrorPage } from '../components/ErrorPage';
 import { ScriptureBurrito } from './ScriptureBurrito';
-import { BurritoStep } from './BurritoStep';
-import { BurritoBooks } from './BurritoBooks';
-import { BurritoContents } from './BurritoContents';
-import { BurritoWrapper } from './BurritoWrapper';
+import { BurritoStep } from '../burrito/BurritoStep';
+import { BurritoBooks } from '../burrito/BurritoBooks';
+import { BurritoContents } from '../burrito/BurritoContents';
+import { BurritoWrapper } from '../burrito/BurritoWrapper';
+import { BurritoFormat } from '../burrito/BurritoFormat';
+import SwitchTeams from './SwitchTeams';
 
 const routes = createRoutesFromElements([
   <Route key="error" errorElement={<ErrorPage />}>
@@ -70,6 +72,11 @@ const routes = createRoutesFromElements([
       element={<Auth el={<BurritoWrapper />} />}
     />
     <Route
+      key="burrito-format"
+      path="/burrito/:teamId/format"
+      element={<Auth el={<BurritoFormat />} />}
+    />
+    <Route
       key="burrito-step"
       path="/burrito/:teamId/:step"
       element={<Auth el={<BurritoStep />} />}
@@ -83,6 +90,11 @@ const routes = createRoutesFromElements([
       key="plan"
       path="/plan/:prjId/:tabNm"
       element={<Auth el={<Plan />} />}
+    />
+    <Route
+      key="switch-teams"
+      path="/switch-teams"
+      element={<Auth el={<SwitchTeams />} />}
     />
     <Route
       key="work-detail"

@@ -19,6 +19,7 @@ import {
   ICommentCardStrings,
   MediaFileD,
   IMediaActionsStrings,
+  IState,
   UserD,
 } from '../../model';
 import Confirm from '../AlertDialog';
@@ -117,7 +118,7 @@ export const CommentCard = (props: IProps) => {
   const users = useOrbitData<UserD[]>('user');
   const t: ICommentCardStrings = useSelector(commentCardSelector, shallowEqual);
   const [author, setAuthor] = useState<UserD>();
-  const [lang] = useGlobal('lang');
+  const lang = useSelector((state: IState) => state.strings.lang);
   const [user] = useGlobal('user');
   const [memory] = useGlobal('memory');
   const savingRef = useRef(false);
@@ -299,6 +300,16 @@ export const CommentCard = (props: IProps) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [comment, users]);
 
+  // Own-comment gate: compare session user to relationship ids directly.
+  // Looking up `author` via the users table can drift after Paratext sync
+  // when comment attribution lands on a linked identity (TT-7478).
+  const canManageComment =
+    mediaId !== commentPlayId &&
+    !oldVernVer &&
+    (related(comment, 'creatorUser') === user ||
+      related(comment, 'lastModifiedByUser') === user ||
+      getMentorAuthor(comment.attributes?.visible ?? '') === user);
+
   return (
     <StyledWrapper>
       <BoxBorderRow>
@@ -314,7 +325,7 @@ export const CommentCard = (props: IProps) => {
                 gap: 1,
               }}
             >
-              <UserAvatar {...props} userRec={author} small={true} />
+              <UserAvatar {...props} userRec={author} />
               <Box id="author">{author?.attributes?.name}</Box>
               <Box id="datecreated">
                 {dateOrTime(comment.attributes.dateUpdated, lang)}
@@ -345,9 +356,7 @@ export const CommentCard = (props: IProps) => {
                   </FormLabel>
                 )
               ))}
-            {mediaId !== commentPlayId &&
-              author?.id === user &&
-              !oldVernVer && (
+            {canManageComment && (
                 <Box>
                   <DiscussionMenu
                     action={handleCommentAction}

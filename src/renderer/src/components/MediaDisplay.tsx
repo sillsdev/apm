@@ -16,7 +16,7 @@ export function MediaDisplay(props: IProps) {
   const { srcMediaId, finish } = props;
   const [reporter] = useGlobal('errorReporter');
   const { fetchMediaUrl, mediaState } = useFetchMediaUrl(reporter);
-  const launch = useRef<LaunchFn>();
+  const launch = useRef<LaunchFn | undefined>(undefined);
   const { showMessage } = useSnackBar();
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
 

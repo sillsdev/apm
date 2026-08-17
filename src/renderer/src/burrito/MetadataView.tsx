@@ -1,12 +1,11 @@
 import { RichTreeView } from '@mui/x-tree-view';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
-import type { BurritoWrapper } from './data/wrapperBuilder';
+import type { Burrito, BurritoWrapper } from './data/types';
 import { mapWrapperToTreeData } from './data/treeData';
 import type { TreeData } from './data/treeData';
 import React, { useState, useEffect } from 'react';
 import MetaValue from './MetaValue';
-import type { Burrito } from './data/burritoBuilder';
 
 interface MetadataViewProps {
   wrapper: BurritoWrapper | Burrito;

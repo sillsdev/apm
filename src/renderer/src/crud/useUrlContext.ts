@@ -2,6 +2,7 @@ import { remoteIdGuid } from './remoteId';
 import { useGetGlobal, useGlobal } from '../context/useGlobal';
 import { usePlan, useVProjectRead, related, useProjectType, useRole } from '.';
 import { RecordKeyMap } from '@orbit/records';
+import { LocalKey, localUserKey } from '../utils/localUserKey';
 
 export const useUrlContext = () => {
   const [memory] = useGlobal('memory');
@@ -29,7 +30,10 @@ export const useUrlContext = () => {
       const projectId = related(planRec, 'project');
       const team = vProject(planRec);
       const orgId = related(team, 'organization');
-      if (orgId !== organization) setOrganization(orgId);
+      if (orgId !== organization) {
+        setOrganization(orgId);
+        localStorage.setItem(localUserKey(LocalKey.team), orgId);
+      }
       setMyOrgRole(orgId); //do this even if the org hasn't changed because this gets reset more often
       if (projectId !== getGlobal('project')) setProject(projectId);
       setProjectType(projectId);

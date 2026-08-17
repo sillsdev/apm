@@ -1,0 +1,614 @@
+import React, { useCallback, useMemo, useRef } from 'react';
+import path from 'path-browserify';
+import { BurritoBuilder } from './data/burritoBuilder';
+import { BurritoLocalizedNames } from './data/types';
+import { useGlobal } from '../context/useGlobal';
+import {
+  remoteId,
+  useBible,
+  pubDataCopyright,
+  useOrgDefaults,
+  related,
+} from '../crud';
+import { projDefBook, useProjectDefaults } from '../crud/useProjectDefaults';
+import { useNum2BookCode } from '../utils/useNum2BookCode';
+import { projectDefaultToBurritoBookKey } from './akuoBookToUsfm';
+import { useOrbitData } from '../hoc/useOrbitData';
+import {
+  BibleD,
+  IBurritoStrings,
+  IState,
+  OrganizationBibleD,
+  OrganizationD,
+  MediaFileD,
+  PassageD,
+  PlanD,
+  ProjectD,
+  SectionD,
+  UserD,
+} from '../model';
+import { RecordKeyMap } from '@orbit/records';
+import { burritoBooks, burritoProjects } from './BurritoBooks';
+import { shallowEqual, useDispatch, useSelector } from 'react-redux';
+import * as actions from '../store';
+import dataPath, { PathType } from '../utils/dataPath';
+import cleanFileName from '../utils/cleanFileName';
+import { burritoContents } from './BurritoContents';
+import { burritoFormat } from './burritoFormatParams';
+import { BurritoType } from './BurritoType';
+import { burritoWrapper } from './BurritoWrapper';
+import { pad2 } from '../utils/pad2';
+import CodeNum from '../assets/code-num.json';
+import { useBurritoAudio } from './useBurritoAudio';
+import { useBurritoNavigation } from './useBurritoNavigation';
+import { useBurritoApmData } from './useBurritoApmData';
+import { useBurritoIntellectualProperty } from './useBurritoIntellectualProperty';
+import { PassageTypeEnum } from '../model/passageType';
+import { ArtifactTypeSlug } from '../crud/artifactTypeSlug';
+import packageJson from '../../package.json';
+const version = packageJson.version;
+const productName = packageJson.build.productName;
+import { MainAPI } from '@model/main-api';
+import { useBurritoText } from './useBurritoText';
+import { burritoSelector } from '../selector';
+import { firstMissingTranscriptionRefsForVernacularAudio } from './vernacularAudioWarnings';
+const ipc = window?.api as MainAPI;
+const WRAPPER_FILENAME = 'wrapper.json';
+const METADATA_FILENAME = 'metadata.json';
+
+export interface CreateBurritoProgress {
+  current: number;
+  total: number;
+  phase: string;
+  currentBook: string;
+  partIndex: number;
+  bookIndex: number;
+  booksInPart: number;
+  partProgress: number;
+  overallProgress: number;
+}
+
+export const useCreateBurrito = (teamId: string) => {
+  const cancelRef = useRef(false);
+  const [progress, setProgress] = React.useState<CreateBurritoProgress | null>(
+    null
+  );
+  const [isCreating, setIsCreating] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
+  const [result, setResult] = React.useState<'success' | 'cancelled' | null>(
+    null
+  );
+  const [memory] = useGlobal('memory');
+  const [userId] = useGlobal('user');
+  const users = useOrbitData<UserD[]>('user');
+  const teams = useOrbitData<OrganizationD[]>('organization');
+  const teamBibles = useOrbitData<OrganizationBibleD[]>('organizationbible');
+  const bibles = useOrbitData<BibleD[]>('bible');
+  const projects = useOrbitData<ProjectD[]>('project');
+  const plans = useOrbitData<PlanD[]>('plan');
+  const sections = useOrbitData<SectionD[]>('section');
+  const passages = useOrbitData<PassageD[]>('passage');
+  const mediafiles = useOrbitData<MediaFileD[]>('mediafile');
+  const { getOrgDefault } = useOrgDefaults();
+  const { getProjectDefault } = useProjectDefaults();
+  const num2BookCode = useNum2BookCode();
+  const lang = useSelector((state: IState) => state.strings.lang);
+  const allBookData = useSelector((state: IState) => state.books.bookData);
+  const booksLoaded = useSelector((state: IState) => state.books.loaded);
+  const dispatch = useDispatch();
+  const fetchBooks = (lang: string) =>
+    dispatch(actions.fetchBooks(lang) as any);
+  const { getPublishingData } = useBible();
+  const burritoAudio = useBurritoAudio(teamId);
+  const burritoText = useBurritoText(teamId);
+  const burritoNavigation = useBurritoNavigation(teamId);
+  const burritoApmData = useBurritoApmData(memory);
+  const burritoIntellectualProperty = useBurritoIntellectualProperty(
+    memory,
+    teamId
+  );
+  const t: IBurritoStrings = useSelector(burritoSelector, shallowEqual);
+
+  const bookData = (book: string) => allBookData.find((b) => b.code === book);
+
+  React.useEffect(() => {
+    if (!booksLoaded) {
+      fetchBooks(lang);
+    }
+    /* eslint-disable-next-line react-hooks/exhaustive-deps */
+  }, [lang, booksLoaded]);
+
+  const bible = React.useMemo(() => {
+    const teamBibleRec = teamBibles.find(
+      (t) => related(t, 'organization') === teamId
+    );
+    const bibleId = related(teamBibleRec, 'bible');
+    return bibles.find((b) => b.id === bibleId);
+  }, [teamBibles, bibles, teamId]);
+
+  const books: string[] = React.useMemo(
+    () => (getOrgDefault(burritoBooks, teamId) || []) as string[],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [teamId]
+  );
+
+  const cleanName = (name: string) => {
+    const m = name.match(/^[^A-Za-z]*([A-Za-z0-9 ]+)[^A-Za-z0-9]*$/);
+    return m ? m[1] : name;
+  };
+
+  const getMetadata = (languages: string[]) => {
+    const userRec = users.find((user) => user.id === userId);
+    const teamRec = teams.find((team) => team.id === teamId);
+    const teamRemId =
+      remoteId('organization', teamId, memory.keyMap as RecordKeyMap) || teamId;
+    const revision = (
+      (getOrgDefault('burritoRevision', teamId) as string) || '1'
+    ).trim();
+    const localizedNames = {} as BurritoLocalizedNames;
+    books.forEach((book) => {
+      const bookInfo = bookData(book);
+      localizedNames[`book-${book}`.toLowerCase()] = {
+        abbr: { [lang]: bookInfo?.abbr || book },
+        short: { [lang]: bookInfo?.short || book },
+        long: { [lang]: bookInfo?.long || book },
+      };
+    });
+    const copyright = getPublishingData(pubDataCopyright, bible) as string;
+    const metaData = new BurritoBuilder()
+      .withMeta({
+        generator: {
+          softwareName: productName.trim(),
+          softwareVersion: version.trim(),
+          userName: (userRec?.attributes.name || 'Unknown User').trim(),
+        },
+        comments: [
+          `Generated by Audio Project Manager from ${(
+            teamRec?.attributes.name || 'Unknown Team'
+          ).trim()}`,
+        ],
+      })
+      .withIdAuthority(
+        'apm',
+        'https://www.audioprojectmanager.org',
+        productName.trim()
+      )
+      .withIdentification({
+        primary: {
+          apm: {
+            [teamRemId]: {
+              revision: revision,
+              timestamp: new Date().toISOString(),
+            },
+          } as Record<string, { revision: string; timestamp: string }>,
+        },
+        name: {
+          en: (
+            cleanName(bible?.attributes.bibleName || '') ||
+            cleanName(teamRec?.attributes.name || '') ||
+            'Unknown Bible'
+          ).trim(),
+        },
+        description: { en: (bible?.attributes.description || '').trim() },
+        abbreviation: {
+          en: (
+            bible?.attributes.bibleId || `${bible?.attributes.iso}New`
+          ).trim(),
+        },
+      })
+      .withAgency({
+        id: `apm::${teamRemId}`,
+        roles: ['rightsHolder'],
+        name: {
+          en: (
+            cleanName(teamRec?.attributes.name || '') || 'Unknown Team'
+          ).trim(),
+        },
+      })
+      .withTargetArea('US', 'United States')
+      .withLocalizedNames(localizedNames)
+      .withCopyright({
+        shortStatements: [
+          {
+            statement: `<p>${(copyright || '').trim()}</p>`,
+            mimetype: 'text/html',
+            lang: 'en',
+          },
+        ],
+      })
+      .build();
+    metaData.languages = languages.map((l) => {
+      const [lang, name] = l.split('|');
+      return { tag: lang, name: { en: name.trim() } };
+    });
+    return metaData;
+  };
+
+  const getSections = useCallback(() => {
+    const projIds: string[] = (getOrgDefault(burritoProjects, teamId) ||
+      []) as string[];
+    const langs: Set<string> = new Set();
+    const sectIds: Map<string, string[]> = new Map();
+    projects
+      .filter((p) => projIds.includes(p.id))
+      .forEach((proj) => {
+        langs.add(
+          `${proj.attributes.language}|${proj.attributes.languageName}`
+        );
+        const planRec = plans.find((p) => related(p, 'project') === proj.id);
+        const sectionRecs = sections.filter(
+          (s) => related(s, 'plan') === planRec?.id
+        );
+        sectionRecs.forEach((section) => {
+          const sectBook =
+            passages.find(
+              (p) =>
+                related(p, 'section') === section.id &&
+                Boolean(p.attributes.book)
+            )?.attributes?.book || '';
+          const resolvedBook =
+            sectBook ||
+            projectDefaultToBurritoBookKey(
+              (getProjectDefault(projDefBook, proj) as string) ?? 'B01',
+              num2BookCode
+            ) ||
+            '';
+          if (resolvedBook) {
+            const curIds = sectIds.get(resolvedBook) || [];
+            sectIds.set(resolvedBook, [...curIds, section.id]);
+          }
+        });
+      });
+    return {
+      languages: Array.from(langs).sort(),
+      bkSecIds: Array.from(sectIds),
+    };
+  }, [
+    getOrgDefault,
+    getProjectDefault,
+    num2BookCode,
+    teamId,
+    projects,
+    plans,
+    sections,
+    passages,
+  ]);
+
+  const defaultBurritoName = useMemo(() => {
+    if (!teamId) return '';
+    const teamRec = teams.find((t) => t.id === teamId);
+    const name = cleanFileName(teamRec?.attributes.name || '')
+      .trim()
+      .replace(/\s/g, '-');
+    const len = teamId.length;
+    const unique =
+      teamRec?.keys?.remoteId ||
+      (len > 4 ? teamId.substring(len - 4, len) : '');
+    return name + unique;
+  }, [teamId, teams]);
+
+  const myName = (name: string, part?: string) =>
+    part
+      ? path.join(
+          PathType.BURRITO,
+          bible?.attributes?.bibleId || defaultBurritoName || '',
+          part.toLowerCase().replaceAll(' ', ''),
+          name
+        )
+      : path.join(
+          PathType.BURRITO,
+          bible?.attributes?.bibleId || defaultBurritoName || '',
+          name
+        );
+
+  const sectionSort = (a: SectionD, b: SectionD) =>
+    a.attributes.sequencenum - b.attributes.sequencenum;
+
+  const cancel = useCallback(() => {
+    cancelRef.current = true;
+  }, []);
+
+  const resultReset = useCallback(() => {
+    setResult(null);
+  }, []);
+
+  const createPart = async (
+    part: string,
+    partIndex: number,
+    totalParts: number,
+    languages: string[],
+    bkSecIds: [string, string[]][],
+    onBookComplete: (
+      partIndex: number,
+      bookIndex: number,
+      book: string,
+      booksInPart: number
+    ) => void
+  ) => {
+    const metaName = await dataPath(
+      myName(METADATA_FILENAME, part),
+      PathType.BURRITO
+    );
+    const preLen = metaName.indexOf(METADATA_FILENAME);
+    const convertToMp3 =
+      (
+        getOrgDefault(burritoFormat, teamId) as
+          | { convertToMp3?: boolean }
+          | undefined
+      )?.convertToMp3 === true;
+    await ipc?.createFolder(path.dirname(metaName));
+    let metaData = getMetadata(languages);
+
+    await ipc?.write(metaName, JSON.stringify(metaData, null, 2));
+    const codeNum = new Map(CodeNum as [string, number][]);
+    const projIds: string[] = (getOrgDefault(burritoProjects, teamId) ||
+      []) as string[];
+    const apmDataProjects = projects.filter((p) => projIds.includes(p.id));
+
+    if (part === BurritoType.ApmData) {
+      let projectIndex = 0;
+      for (const proj of apmDataProjects) {
+        if (cancelRef.current) return;
+        const projectFolder = cleanFileName(proj.attributes.name || proj.id);
+        const projectPath = await dataPath(
+          myName(projectFolder, part),
+          PathType.BURRITO
+        );
+        await ipc?.createFolder(projectPath);
+        metaData = await burritoApmData({
+          metadata: metaData,
+          project: proj,
+          projectPath,
+          preLen,
+        });
+        if (cancelRef.current) return;
+        projectIndex++;
+        onBookComplete(
+          partIndex,
+          projectIndex,
+          proj.attributes.name,
+          apmDataProjects.length
+        );
+      }
+    } else if (part === BurritoType.IntellectualProperty) {
+      if (cancelRef.current) return;
+      const partPath = path.dirname(metaName);
+      metaData = await burritoIntellectualProperty({
+        metadata: metaData,
+        partPath,
+        preLen,
+        apmDataProjects,
+      });
+      if (cancelRef.current) return;
+      onBookComplete(partIndex, 1, '', 1);
+    } else {
+      let bookIndex = 0;
+      for (const book of books) {
+        if (cancelRef.current) return;
+        // create the book folder
+        const bookFolder = pad2(codeNum.get(book) ?? 99) + book;
+        const bookPath = await dataPath(
+          myName(bookFolder, part),
+          PathType.BURRITO
+        );
+        await ipc?.createFolder(bookPath);
+        const bookSectIds = bkSecIds.find((b) => b[0] === book)?.[1] || [];
+        const bookSecs = sections
+          .filter((s) => bookSectIds.includes(s.id))
+          .sort(sectionSort);
+        if (part === BurritoType.Audio) {
+          metaData = await burritoAudio({
+            metadata: metaData,
+            bible: bible as BibleD,
+            book,
+            bookPath,
+            preLen,
+            sections: bookSecs,
+            convertToMp3,
+          });
+        }
+        if (part === BurritoType.Notes) {
+          metaData = await burritoAudio({
+            metadata: metaData,
+            bible: bible as BibleD,
+            book,
+            bookPath,
+            preLen,
+            sections: bookSecs,
+            passageTypeFilter: PassageTypeEnum.NOTE,
+            flavorTypeName: 'x-notes',
+            convertToMp3,
+          });
+        }
+        if (part === BurritoType.Resources) {
+          metaData = await burritoAudio({
+            metadata: metaData,
+            bible: bible as BibleD,
+            book,
+            bookPath,
+            preLen,
+            sections: bookSecs,
+            passageTypeFilter: null,
+            flavorTypeName: 'x-resources',
+            artifactTypeFilter: [
+              ArtifactTypeSlug.Resource,
+              ArtifactTypeSlug.SharedResource,
+              ArtifactTypeSlug.ProjectResource,
+              ArtifactTypeSlug.AIResource,
+            ],
+            convertToMp3,
+          });
+        }
+        if (part === BurritoType.Text) {
+          metaData = await burritoText({
+            metadata: metaData,
+            book,
+            bookPath,
+            preLen,
+            sections: bookSecs,
+          });
+        }
+        if (part === BurritoType.Navigation) {
+          metaData = await burritoNavigation({
+            metadata: metaData,
+            bible: bible as BibleD,
+            book,
+            bookPath,
+            preLen,
+            sections: bookSecs,
+            convertToMp3,
+          });
+        }
+        if (cancelRef.current) return;
+        bookIndex++;
+        onBookComplete(partIndex, bookIndex, book, books.length);
+      }
+    }
+    await ipc?.write(metaName, JSON.stringify(metaData, null, 2));
+  };
+
+  const getWrapperPath = async () => {
+    return await dataPath(myName(WRAPPER_FILENAME), PathType.BURRITO);
+  };
+
+  const getResultPath = async () => {
+    return path.dirname(await getWrapperPath());
+  };
+
+  const createBurrito = async () => {
+    cancelRef.current = false;
+    setIsCreating(true);
+    setError(null);
+    setProgress(null);
+    setResult(null);
+
+    try {
+      const wrapper = getOrgDefault(burritoWrapper, teamId);
+      if (wrapper) {
+        if (cancelRef.current) throw new Error('Cancelled');
+        const wrapperPath = await getWrapperPath();
+        await ipc?.deleteFolder(path.dirname(wrapperPath));
+        await ipc?.createFolder(path.dirname(wrapperPath));
+        await ipc?.write(wrapperPath, JSON.stringify(wrapper, null, 2));
+      }
+      const content = (getOrgDefault(burritoContents, teamId) ??
+        []) as string[];
+      const { languages, bkSecIds } = getSections();
+      const projIds: string[] = (getOrgDefault(burritoProjects, teamId) ||
+        []) as string[];
+      const apmDataProjects = projects.filter((p) => projIds.includes(p.id));
+      const totalUnits = content.reduce(
+        (sum, part) =>
+          sum +
+          (part === BurritoType.ApmData
+            ? apmDataProjects.length
+            : part === BurritoType.IntellectualProperty
+              ? 1
+              : books.length),
+        0
+      );
+      let completedUnits = 0;
+
+      for (let partIndex = 0; partIndex < content.length; partIndex++) {
+        if (cancelRef.current) throw new Error('Cancelled');
+        const part = content[partIndex];
+        const phase =
+          part === BurritoType.Audio
+            ? t.createAudio
+            : part === BurritoType.Text
+              ? t.createText
+              : part === BurritoType.Notes
+                ? t.createNotes
+                : part === BurritoType.Resources
+                  ? t.createResources
+                  : part === BurritoType.IntellectualProperty
+                    ? t.createIntellectualProperty
+                    : part === BurritoType.Navigation
+                      ? t.createNavigation
+                      : part === BurritoType.ApmData
+                        ? t.createData
+                        : t.createOther.replace('{0}', part.toLowerCase());
+
+        await createPart(
+          part,
+          partIndex,
+          content.length,
+          languages,
+          bkSecIds,
+          (pIndex, bookIndex, currentBook, booksInPart) => {
+            completedUnits++;
+            const partProgress =
+              booksInPart > 0 ? (bookIndex / booksInPart) * 100 : 100;
+            const overallProgress =
+              totalUnits > 0 ? (completedUnits / totalUnits) * 100 : 100;
+            setProgress({
+              current: completedUnits,
+              total: totalUnits,
+              phase,
+              currentBook,
+              partIndex: pIndex,
+              bookIndex,
+              booksInPart,
+              partProgress,
+              overallProgress,
+            });
+          }
+        );
+      }
+      setResult('success');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : t.failed;
+      setError(message);
+      setResult(message === 'Cancelled' ? 'cancelled' : null);
+    } finally {
+      setIsCreating(false);
+      setProgress(null);
+    }
+  };
+
+  const preflightVernacularAudioMissingTranscriptions = useCallback(() => {
+    const content = (getOrgDefault(burritoContents, teamId) ?? []) as string[];
+    if (!content.includes(BurritoType.Audio)) return [];
+
+    const { bkSecIds } = getSections();
+    const versions = parseInt(
+      (getOrgDefault('burritoVersions', teamId) || '1') as string
+    );
+
+    const allSecs: SectionD[] = [];
+    for (const book of books) {
+      const bookSectIds = bkSecIds.find((b) => b[0] === book)?.[1] || [];
+      const bookSecs = sections
+        .filter((s) => bookSectIds.includes(s.id))
+        .sort(sectionSort);
+      allSecs.push(...bookSecs);
+    }
+
+    return firstMissingTranscriptionRefsForVernacularAudio({
+      sections: allSecs,
+      passages,
+      mediafiles,
+      versions: isNaN(versions) ? 1 : versions,
+    });
+  }, [
+    books,
+    getOrgDefault,
+    getSections,
+    mediafiles,
+    passages,
+    sections,
+    teamId,
+  ]);
+
+  return {
+    createBurrito,
+    preflightVernacularAudioMissingTranscriptions,
+    progress,
+    isCreating,
+    error,
+    result,
+    resultReset,
+    cancel,
+    getResultPath,
+  };
+};

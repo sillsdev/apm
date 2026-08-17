@@ -22,7 +22,10 @@ interface IContext {
   setState: React.Dispatch<React.SetStateAction<ICtxState>>;
 }
 
-const HotKeyContext = React.createContext({} as IContext);
+const HotKeyContext = React.createContext({
+  state: initState as ICtxState,
+  setState: () => {},
+} as IContext);
 interface hotKeyInfo {
   key: string;
   ctrl?: boolean;

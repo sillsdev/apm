@@ -6,11 +6,13 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
+  useTheme,
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import DialogActions, { DialogActionsProps } from '@mui/material/DialogActions';
 import { shallowEqual, useSelector } from 'react-redux';
 import { alertSelector } from '../selector';
+import { useMobile } from '../utils/useMobile';
 
 // see: https://mui.com/material-ui/customization/how-to-customize/
 interface StyledActionsProps extends DialogActionsProps {
@@ -28,7 +30,7 @@ const StyledDialogActions = styled(DialogActions, {
 interface IProps {
   title?: string;
   text: string;
-  jsx?: JSX.Element;
+  jsx?: React.JSX.Element;
   no?: string;
   yes?: string;
   noResponse: () => void;
@@ -51,6 +53,8 @@ function AlertDialog(props: IProps) {
   } = props;
   const t: IAlertStrings = useSelector(alertSelector, shallowEqual);
   const [open, setOpen] = useState(true);
+  const { isMobile } = useMobile();
+  const theme = useTheme();
 
   const handleClose = () => {
     if (noResponse !== null) {
@@ -78,6 +82,19 @@ function AlertDialog(props: IProps) {
       aria-labelledby="alertDlg"
       aria-describedby="alertDesc"
       disableEnforceFocus
+      sx={
+        isMobile
+          ? {
+              '& .MuiDialog-paper': {
+                maxWidth: `calc(100vw - ${theme.spacing(4)})`,
+                width: '100%',
+                minWidth: 0,
+                maxHeight: `calc(100dvh - ${theme.spacing(4)})`,
+                boxSizing: 'border-box',
+              },
+            }
+          : undefined
+      }
     >
       <DialogTitle id="alertDlg">
         {title || (isDelete ? t.delete : t.confirmation)}

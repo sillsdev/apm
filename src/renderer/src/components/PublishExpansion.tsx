@@ -17,6 +17,7 @@ import {
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import InfoIcon from '@mui/icons-material/Info';
 import { ILanguage, LightTooltip } from '../control';
+import { isLangSet } from '../utils';
 import {
   related,
   useOrgDefaults,
@@ -79,18 +80,18 @@ export function PublishExpansion(props: IProps) {
   const languageRef = useRef<ILanguage>(initLang);
   const { getPublishingData } = useBible();
   const { getBibleMediaPlan } = useBibleMedia();
-  const [mediaplan, setMediaplan] = useState('');
+  const [mediaplan, setMediaplanx] = useState('');
+  const mediaplanRef = useRef('');
   const { showMessage } = useSnackBar();
 
+  const setMediaplan = (plan: string) => {
+    setMediaplanx(plan);
+    mediaplanRef.current = plan;
+  };
   const setLanguage = (language: ILanguage, init?: boolean) => {
     languageRef.current = language;
     setLanguagex(language);
-    if (
-      init &&
-      !bible?.attributes?.iso &&
-      language?.bcp47 &&
-      language?.bcp47 !== 'und'
-    ) {
+    if (init && !bible?.attributes?.iso && isLangSet(language?.bcp47)) {
       setValue('iso', language?.bcp47, init);
       setValue('languageName', language?.languageName, init);
       setValue(pubDataLangProps, JSON.stringify(language), init);
@@ -101,12 +102,16 @@ export function PublishExpansion(props: IProps) {
       setValue(pubDataLangProps, JSON.stringify(language), init);
     }
   };
-  useEffect(() => {
-    getBibleMediaPlan().then((plan) => {
-      setMediaplan(plan?.id ?? '');
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  const loadBibleMediaPlan = useCallback(async () => {
+    const plan = await getBibleMediaPlan();
+    const planId = plan?.id ?? '';
+    setMediaplan(planId);
+    return planId;
   }, [getBibleMediaPlan]);
+
+  useEffect(() => {
+    void loadBibleMediaPlan();
+  }, [loadBibleMediaPlan]);
 
   useEffect(() => {
     if (bible) {
@@ -208,14 +213,16 @@ export function PublishExpansion(props: IProps) {
     return sameNameRec.length === 0 ? '' : t.bibleidexists;
   };
 
-  const handleCanRecord = useCallback(() => {
+  const handleCanRecord = useCallback(async () => {
+    const planId = mediaplanRef.current || (await loadBibleMediaPlan());
+    if (!planId) return false;
     const canRecord = projects.some(
       (p) => related(p, 'organization') === team?.id
     );
     if (!canRecord) showMessage(t.projectRequired);
     return canRecord;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projects, team]);
+  }, [loadBibleMediaPlan, projects, team]);
 
   return (
     <Box sx={{ width: '100%', my: 1 }}>

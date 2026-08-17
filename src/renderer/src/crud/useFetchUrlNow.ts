@@ -4,6 +4,7 @@ import { isElectron } from '../../api-variable';
 import { TokenContext } from '../context/TokenProvider';
 
 import { tryDownload } from '../utils/tryDownload';
+import { isUnauthorized } from '../utils/httpError';
 import { useSelector, shallowEqual } from 'react-redux';
 import { ISharedStrings } from '../model';
 import { sharedSelector } from '../selector';
@@ -17,7 +18,7 @@ export interface IFetchNowProps {
   noDownload?: boolean;
 }
 export const useFetchUrlNow = () => {
-  const { accessToken } = useContext(TokenContext).state;
+  const accessToken = useContext(TokenContext)?.state?.accessToken ?? null;
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
 
   const fetchUrl = async (props: IFetchNowProps): Promise<string> => {
@@ -32,13 +33,12 @@ export const useFetchUrlNow = () => {
       if (!attr || cancelled()) return '';
       const audioUrl = attr['audio-url'] as string;
       if (isElectron && !noDownload) {
-        return await tryDownload(audioUrl);
+        const downloaded = await tryDownload(audioUrl);
+        return downloaded.ok ? downloaded.path : audioUrl;
       } else return audioUrl;
     } catch (errorResult: unknown) {
       const error = errorResult as { errStatus: number } & AxiosError;
-      if (error.errStatus === 401) return ts.expiredToken;
-      const err = error as AxiosError;
-      if (err.status === 401) return ts.expiredToken;
+      if (isUnauthorized(error)) return ts.expiredToken;
       if (errStatus(error).errMsg.includes('transient')) {
         return await fetchUrl(props);
       } else throw error;

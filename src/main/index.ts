@@ -5,6 +5,7 @@ import icon from '../../resources/icon.png?asset';
 import { appMenu } from './app-menu';
 import { ipcMethods } from './ipcMethods.js';
 import { checkMicrophonePermission } from './checkMicrophonePermission';
+import { setAuthProcessStrings } from './auth-strings.js';
 
 const localString = { addToDict: 'Add to dictionary' };
 
@@ -108,6 +109,10 @@ app.whenReady().then(() => {
     localString.addToDict = str;
   });
 
+  ipcMain.handle('setAuthProcessStrings', async (_event, strings) => {
+    setAuthProcessStrings(strings);
+  });
+
   checkMicrophonePermission();
 
   createWindow();
@@ -119,14 +124,15 @@ app.whenReady().then(() => {
   });
 });
 
-// Quit when all windows are closed, except on macOS. There, it's common
-// for applications and their menu bar to stay active until the user quits
-// explicitly with Cmd + Q.
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit();
-  }
-});
+// Quit when all windows are closed, except on macOS (there, it's common for
+// applications and their menu bar to stay active until the user quits
+// explicitly with Cmd + Q). This used to be a second, unconditional
+// 'window-all-closed' handler registered here — since `app` is a plain
+// EventEmitter, both it and ipcMethods.ts's handler would have fired on
+// every occurrence, and this one (registered first, since ipcMethods() runs
+// after it below) would call app.quit() unconditionally regardless of what
+// ipcMethods.ts's getLogingIn() guard decided. There must be exactly one
+// handler for this event; it now lives solely in ipcMethods.ts.
 
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and require them here.

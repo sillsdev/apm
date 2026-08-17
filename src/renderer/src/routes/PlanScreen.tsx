@@ -1,8 +1,7 @@
 import React from 'react';
 import { useGlobal } from '../context/useGlobal';
 import { useParams, useLocation } from 'react-router-dom';
-import { Box } from '@mui/material';
-import AppHead from '../components/App/AppHead';
+import AppLayout from '../components/App/AppLayout';
 import { PlanProvider } from '../context/PlanContext';
 import PlanTabs from '../components/PlanTabs';
 import { useUrlContext, useProjectType } from '../crud';
@@ -46,14 +45,11 @@ export const PlanScreen = () => {
   if (view !== '' && view !== pathname) return <StickyRedirect to={view} />;
 
   return (
-    <Box sx={{ width: '100%' }}>
-      <AppHead switchTo={false} />
+    <AppLayout appHeadProps={{ drawBottomBorder: false }}>
       <PlanProvider>
-        <Box id="PlanScreen" sx={{ display: 'flex', paddingTop: '80px' }}>
-          <PlanTabs checkSaved={checkSavedFn} />
-        </Box>
+        <PlanTabs checkSaved={checkSavedFn} />
       </PlanProvider>
-    </Box>
+    </AppLayout>
   );
 };
 

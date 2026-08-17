@@ -21,21 +21,23 @@ describe('AlignmentBuilder', () => {
   });
 
   it('should add a document without docid', () => {
-    const alignment = new AlignmentBuilder().withDocument('u23003').build();
+    const alignment = new AlignmentBuilder()
+      .withDocument('usfm-scripture-reference')
+      .build();
 
-    expect(alignment.documents?.[0]?.scheme).toBe('u23003');
+    expect(alignment.documents?.[0]?.scheme).toBe('usfm-scripture-reference');
     expect(alignment.documents?.[0]?.docid).toBeUndefined();
   });
 
   it('should add multiple documents', () => {
     const alignment = new AlignmentBuilder()
       .withDocument('vtt-timecode', 'test.mp3')
-      .withDocument('u23003')
+      .withDocument('usfm-scripture-reference')
       .build();
 
     expect(alignment.documents).toHaveLength(2);
     expect(alignment.documents?.[0]?.scheme).toBe('vtt-timecode');
-    expect(alignment.documents?.[1]?.scheme).toBe('u23003');
+    expect(alignment.documents?.[1]?.scheme).toBe('usfm-scripture-reference');
   });
 
   it('should add a record', () => {
@@ -97,7 +99,7 @@ describe('AlignmentBuilder', () => {
     expect(alignment.documents?.[0]?.docid).toBe(
       'ephesians_example_with_footnotes.mp3'
     );
-    expect(alignment.documents?.[1]?.scheme).toBe('u23003');
+    expect(alignment.documents?.[1]?.scheme).toBe('usfm-scripture-reference');
     expect(alignment.records).toHaveLength(9);
     expect(alignment.records?.[0]?.references[0][0]).toBe(
       '00:00.000 --> 00:01.927'
@@ -124,7 +126,7 @@ describe('AlignmentBuilder', () => {
   it('should create a group-based alignment like audioAlignment2', () => {
     const group1Docs = [
       { scheme: 'vtt-timecode', docid: '42LUK/024/ENGSEB2-LUK-24_13-35v1.mp3' },
-      { scheme: 'u23003' },
+      { scheme: 'usfm-scripture-reference' },
     ];
     const group1Records = [
       {
@@ -148,7 +150,7 @@ describe('AlignmentBuilder', () => {
     ];
     const group2Docs = [
       { scheme: 'vtt-timecode', docid: '42LUK/024/ENGSEB2-LUK-24_36-53v1.mp3' },
-      { scheme: 'u23003' },
+      { scheme: 'usfm-scripture-reference' },
     ];
     const group2Records = [
       {
@@ -175,7 +177,7 @@ describe('AlignmentBuilder', () => {
         scheme: 'vtt-timecode',
         docid: '42LUK/024/ENGSEB2-LUK-Audio Note- hearts burningv1.mp3',
       },
-      { scheme: 'u23003' },
+      { scheme: 'usfm-scripture-reference' },
     ];
     const group3Records = [
       {

@@ -17,12 +17,7 @@ import {
   OrganizationMembership,
   VProject,
   VProjectD,
-  ICardsStrings,
-  IVProjectStrings,
-  ILanguagePickerStrings,
   ISharedStrings,
-  IProjButtonsStrings,
-  INewProjectStrings,
   BookNameMap,
   BookName,
   RoleNames,
@@ -58,17 +53,16 @@ import {
   orgDefaultProjSort,
   remoteIdGuid,
 } from '../crud';
-import {
-  cardsSelector,
-  controlSelector,
-  newProjectSelector,
-  pickerSelector,
-  projButtonsSelector,
-  sharedSelector,
-  vProjectSelector,
-} from '../selector';
+import { controlSelector, sharedSelector } from '../selector';
 import { useDispatch } from 'react-redux';
-import { logError, pad2, Severity, useHome } from '../utils';
+import {
+  LocalKey,
+  localUserKey,
+  logError,
+  pad2,
+  Severity,
+  useHome,
+} from '../utils';
 import {
   RecordIdentity,
   RecordKeyMap,
@@ -76,6 +70,7 @@ import {
   RecordTransformBuilder,
 } from '@orbit/records';
 import { useOrbitData } from '../hoc/useOrbitData';
+import { useRenderProfiler, useWhyRender } from '../utils/perf';
 import { ReplaceRelatedRecord, UpdateLastModifiedBy } from '../model/baseModel';
 import { projDefBook, useProjectDefaults } from '../crud/useProjectDefaults';
 import { pad3 } from '../utils/pad3';
@@ -92,7 +87,6 @@ export type TeamIdType = OrganizationD | null;
 
 const initState = {
   lang: 'en',
-  ts: {} as ISharedStrings,
   resetOrbitError: (() => {}) as typeof actions.resetOrbitError,
   bookSuggestions: Array<OptionType>(),
   bookMap: {} as BookNameMap,
@@ -100,6 +94,8 @@ const initState = {
   planTypes: Array<PlanType>(),
   isDeleting: false,
   teams: Array<OrganizationD>(),
+  /** True once orbit has returned org or membership rows (teams list is not just pre-load empty). */
+  teamDirectoryReady: false,
   personalTeam: '',
   personalProjects: Array<VProjectD>(),
   teamProjects: (teamId: string) => Array<VProjectD>(),
@@ -130,17 +126,11 @@ const initState = {
     book: string | undefined,
     setComplete?: (amt: number) => void
   ) => {},
-  cardStrings: {} as ICardsStrings,
-  sharedStrings: {} as ISharedStrings,
-  vProjectStrings: {} as IVProjectStrings,
-  pickerStrings: {} as ILanguagePickerStrings,
-  projButtonStrings: {} as IProjButtonsStrings,
-  newProjectStrings: {} as INewProjectStrings,
   importOpen: false,
   setImportOpen: (val: boolean) => {},
   importProject: undefined as any,
   doImport: (p: VProject | undefined = undefined) => {},
-  resetProjectPermissions: (team: string) => {},
+  resetProjectPermissions: async (team: string) => {},
   generalBook: (team?: string) => '000',
   updateGeneralBooks: async (arr: SortArr) => {},
   checkScriptureBooks: (projects: VProjectD[]) => {},
@@ -155,13 +145,17 @@ interface IContext {
   setState: React.Dispatch<React.SetStateAction<ICtxState>>;
 }
 
-const TeamContext = React.createContext({} as IContext);
+const TeamContext = React.createContext({
+  state: initState as ICtxState,
+  setState: () => {},
+} as IContext);
 
 interface IProps {
   children: React.ReactElement;
 }
 
 const TeamProvider = (props: IProps) => {
+  useRenderProfiler('TeamProvider');
   const projects = useOrbitData<ProjectD[]>('project');
   const plans = useOrbitData<PlanD[]>('plan');
   const planTypes = useOrbitData<PlanTypeD[]>('plantype');
@@ -172,23 +166,10 @@ const TeamProvider = (props: IProps) => {
   const groupMemberships = useOrbitData<GroupMembership[]>('groupmembership');
   const sections = useOrbitData<SectionD[]>('section');
   const passages = useOrbitData<PassageD[]>('passage');
-  const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
-  const sharedStrings = ts;
-  const cardStrings: ICardsStrings = useSelector(cardsSelector, shallowEqual);
-  const vProjectStrings: IVProjectStrings = useSelector(
-    vProjectSelector,
-    shallowEqual
-  );
-  const pickerStrings: ILanguagePickerStrings = useSelector(
-    pickerSelector,
-    shallowEqual
-  );
-  const projButtonStrings: IProjButtonsStrings = useSelector(
-    projButtonsSelector,
-    shallowEqual
-  );
-  const newProjectStrings: INewProjectStrings = useSelector(
-    newProjectSelector,
+  // Shared strings are still needed inside the provider (e.g. useFlatAdd);
+  // string layouts consumed by components are read via selectors there.
+  const sharedStrings: ISharedStrings = useSelector(
+    sharedSelector,
     shallowEqual
   );
   const lang = useSelector((state: IState) => state.strings.lang);
@@ -214,13 +195,6 @@ const TeamProvider = (props: IProps) => {
   const [state, setState] = useState({
     ...initState,
     lang,
-    cardStrings,
-    sharedStrings,
-    vProjectStrings,
-    pickerStrings,
-    projButtonStrings,
-    newProjectStrings,
-    ts,
     resetOrbitError,
   });
   const controlStrings = useSelector(controlSelector, shallowEqual);
@@ -251,6 +225,7 @@ const TeamProvider = (props: IProps) => {
     const vproj = plan?.type === 'plan' ? vProject(plan) : plan;
     const orgId = related(vproj, 'organization');
     setOrganization(orgId);
+    localStorage.setItem(localUserKey(LocalKey.team), orgId);
     setMyOrgRole(orgId);
     setProject(projectId);
     setProjectType(projectId);
@@ -278,6 +253,7 @@ const TeamProvider = (props: IProps) => {
   };
 
   const isAdmin = (org: OrganizationD) => {
+    if (isPersonalTeam(org.id, organizations)) return true;
     const role = getMyOrgRole(org.id);
     return role === RoleNames.Admin;
   };
@@ -455,6 +431,23 @@ const TeamProvider = (props: IProps) => {
     return projects.filter((p) => grpIds.includes(related(p, 'group')));
   }, [projects, groupMemberships, user]);
 
+  useWhyRender('TeamProvider', {
+    projects,
+    plans,
+    planTypes,
+    organizations,
+    orgMembers,
+    groupMemberships,
+    sections,
+    passages,
+    userProjects,
+    personalTeam: state.personalTeam,
+    personalProjects: state.personalProjects,
+    teams: state.teams,
+    importOpen,
+    importProject,
+  });
+
   // cache plan sort values to avoid recalculating
   const planSortMap = new Map<string, string>();
   const noPlan = 'Zxx';
@@ -471,15 +464,7 @@ const TeamProvider = (props: IProps) => {
     const key =
       sortKey ?? (getProjectDefault(projDefBook, proj) as string | undefined);
     if (key) planSortMap.set(p.id, key);
-    else {
-      logError(
-        Severity.info,
-        errorReporter,
-        'No sort book sort key found for: ' +
-          p?.attributes?.name +
-          '. sorting by name'
-      );
-    }
+
     //I suggest prepending the sort order to the plan slug
     return key ?? p?.attributes?.name ?? noPlan;
   };
@@ -597,6 +582,10 @@ const TeamProvider = (props: IProps) => {
   const teamDelete = async (team: RecordIdentity) => {
     setState((state) => ({ ...state, isDeleting: true }));
     await orbitTeamDelete(team.id);
+    const selectedTeamId = localStorage.getItem(localUserKey(LocalKey.team));
+    if (selectedTeamId === team.id) {
+      localStorage.removeItem(localUserKey(LocalKey.team));
+    }
     setState((state) => ({ ...state, isDeleting: false }));
   };
 
@@ -661,9 +650,19 @@ const TeamProvider = (props: IProps) => {
       });
     }
     const teams = getTeams();
-    if (JSON.stringify(teams) !== JSON.stringify(state.teams)) {
-      setState((state) => ({ ...state, teams }));
-    }
+    const teamsChanged = JSON.stringify(teams) !== JSON.stringify(state.teams);
+    const directoryNowReady = organizations.length > 0 || orgMembers.length > 0;
+    setState((state) => {
+      const nextReady = state.teamDirectoryReady || directoryNowReady;
+      if (!teamsChanged && nextReady === state.teamDirectoryReady) {
+        return state;
+      }
+      return {
+        ...state,
+        ...(teamsChanged ? { teams } : {}),
+        teamDirectoryReady: nextReady,
+      };
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [organizations, orgMembers, user, isOffline]);
 

@@ -6,9 +6,16 @@ import { useTeamCreate, isPersonalTeam, remoteIdNum, defaultWorkflow } from '.';
 import related from './related';
 import { RecordKeyMap } from '@orbit/records';
 
+// Dedupe concurrent/remounted personal-team resolution+creation across
+// TeamProvider mounts. Without this, two mounts racing before the first-created
+// team is visible each run getPersonalId()->newPersonal() and spawn duplicate
+// personal teams (the ">… Personal<" orgs). Module-level so it spans hook
+// instances; cleared on completion so a later sequential login resolves fresh.
+let personalIdInFlight: Promise<string> | null = null;
+
 export const useNewTeamId = () => {
   const [memory] = useGlobal('memory');
-  const teamRef = React.useRef<string>();
+  const teamRef = React.useRef<string | undefined>(undefined);
   const orbitTeamCreate = useTeamCreate();
   const getGlobal = useGetGlobal();
 
@@ -62,25 +69,32 @@ export const useNewTeamId = () => {
     }
   };
 
-  return async (teamIdType: string | undefined) => {
-    let teamId: string;
-    if (teamIdType) {
-      teamId = teamIdType;
-    } else {
-      const testId = await getPersonalId();
-      if (testId) {
-        teamId = testId;
-      } else if (!getGlobal('offline') || getGlobal('offlineOnly')) {
-        await newPersonal();
-        await waitForIt(
-          'create new team',
-          () => teamRef.current !== undefined,
-          () => false,
-          100
-        );
-        teamId = teamRef.current as string;
-      } else teamId = '';
+  const resolvePersonalId = async (): Promise<string> => {
+    const testId = await getPersonalId();
+    if (testId) return testId;
+    if (!getGlobal('offline') || getGlobal('offlineOnly')) {
+      await newPersonal();
+      await waitForIt(
+        'create new team',
+        () => teamRef.current !== undefined,
+        () => false,
+        100
+      );
+      return teamRef.current as string;
     }
-    return teamId;
+    return '';
+  };
+
+  return async (teamIdType: string | undefined): Promise<string> => {
+    if (teamIdType) return teamIdType;
+    // Concurrent/remounted callers share one in-flight resolution so the
+    // check-then-create path can't run twice and create duplicate personal
+    // teams. Cleared on settle so a later sequential login resolves fresh.
+    if (!personalIdInFlight) {
+      personalIdInFlight = resolvePersonalId().finally(() => {
+        personalIdInFlight = null;
+      });
+    }
+    return personalIdInFlight;
   };
 };

@@ -38,6 +38,8 @@ import {
   ArtifactCategoryType,
   mediaFileName,
   usePlanType,
+  usePlan,
+  ArtifactTypeSlug,
 } from '../../../crud';
 import BigDialog from '../../../hoc/BigDialog';
 import { BigDialogBp } from '../../../hoc/BigDialogBp';
@@ -48,6 +50,10 @@ import SelectSections from './SelectSections';
 import ResourceData from './ResourceData';
 import { MarkDownType, UriLinkType } from '../../MediaUpload';
 import LimitedMediaPlayer from '../../LimitedMediaPlayer';
+import {
+  canSaveResourceEdit,
+  descriptionRequiredForResource,
+} from './resourceArtifactName';
 import {
   Badge,
   Box,
@@ -69,11 +75,13 @@ import {
   removeExtension,
   isVisual,
   isUrl,
+  useMobile,
 } from '../../../utils';
 import { useOrbitData } from '../../../hoc/useOrbitData';
 import {
   RecordIdentity,
   RecordKeyMap,
+  RecordOperation,
   RecordTransformBuilder,
 } from '@orbit/records';
 import { shallowEqual, useSelector } from 'react-redux';
@@ -165,21 +173,33 @@ export function PassageDetailArtifacts() {
     SectionResourceD | undefined
   >();
   const [allowEditSave, setAllowEditSave] = useState(false);
+  const [resourceReady, setResourceReady] = useState(true);
   const [artifactState] = useState<{ id?: string | null }>({});
   // const [artifactTypeId, setArtifactTypeId] = useState<string>();
   const [uploadType, setUploadType] = useState<UploadType>(UploadType.Resource);
   const [initDescription, setInitDescription] = useState<string>('');
-  const [recordAudio, setRecordAudio] = useState<boolean>(false);
-  const mediaRef = useRef<MediaFileD>();
-  const textRef = useRef<string>();
-  const catIdRef = useRef<string>();
+  const [audioUploadOrRecord, setAudioUploadOrRecord] =
+    useState<boolean>(false);
+  const [editAudio, setEditAudio] = useState<boolean>(false);
+  const mediaRef = useRef<MediaFileD | undefined>(undefined);
+  const textRef = useRef<string | undefined>(undefined);
+  const catIdRef = useRef<string | undefined>(undefined);
+  // commit() handles for the two SelectArtifactCategory instances (edit dialog
+  // vs. the add/upload dialog). Kept separate so one dialog unmounting never
+  // clears the other's handle. Called at save to create a new category.
+  const editCatCommitRef = useRef<(() => Promise<string>) | null>(null);
+  const addCatCommitRef = useRef<(() => Promise<string>) | null>(null);
   const descriptionRef = useRef<string>('');
 
   const resourceTypeRef = useRef<ResourceTypeEnum>(
     ResourceTypeEnum.sectionResource
   );
   const projIdentRef = useRef<RecordIdentity[]>([]);
-  const projMediaRef = useRef<MediaFileD>();
+  const projMediaRef = useRef<MediaFileD | undefined>(undefined);
+  // True when the general-resource wizard was entered by adding a new audio
+  // resource ("Add Audio Resource"); false when configuring/editing an existing
+  // one ("Edit Audio Resource").
+  const isAddingAudioResourceRef = useRef<boolean>(false);
   const [allResources, setAllResources] = useState(false);
   const { showMessage } = useSnackBar();
   const [confirm, setConfirm] = useState('');
@@ -192,6 +212,7 @@ export function PassageDetailArtifacts() {
   const { removeKey } = storedCompareKey(passage, section);
   const [plan] = useGlobal('plan'); //will be constant here
   const planType = usePlanType();
+  const { getPlan } = usePlan();
   const t: IPassageDetailArtifactsStrings = useSelector(
     passageDetailArtifactsSelector,
     shallowEqual
@@ -203,6 +224,11 @@ export function PassageDetailArtifacts() {
   const getGlobal = useGetGlobal();
   const handleLink = useHandleLink({ passage, setLink });
   const { passageRef } = usePassageRef();
+
+  const planRec = plan ? getPlan(plan) : null;
+  const filename = planRec?.attributes?.slug
+    ? `${planRec.attributes.slug}resource`
+    : 'resource';
 
   const resourceType = useMemo(() => {
     const resourceType = artifactTypes.find(
@@ -231,7 +257,7 @@ export function PassageDetailArtifacts() {
   const projResourceType = useMemo(() => {
     const resourceType = artifactTypes.find(
       (t) =>
-        t.attributes?.typename === 'projectresource' &&
+        t.attributes?.typename === ArtifactTypeSlug.ProjectResource &&
         Boolean(t?.keys?.remoteId) === !offlineOnly
     );
     return resourceType?.id;
@@ -357,22 +383,41 @@ export function PassageDetailArtifacts() {
     const secRes = sectionResources.find(
       (r) => related(r, 'mediafile') === id
     ) as SectionResourceD;
+    const mf = mediafiles.find((m) => m.id === related(secRes, 'mediafile')) as
+      | MediaFileD
+      | undefined;
+    // General (project) resources are reconfigured through the wizard, not the
+    // simple edit dialog (mockup: "use Edit to also configure the General Resource").
+    if (mf && related(mf, 'artifactType') === projResourceType) {
+      resourceTypeRef.current = ResourceTypeEnum.projectResource;
+      isAddingAudioResourceRef.current = false;
+      handleSelectProjectResource(mf);
+      return;
+    }
     setEditResource(secRes);
-    setAllowEditSave(true);
     resourceTypeRef.current = related(secRes, 'passage')
       ? ResourceTypeEnum.passageResource
       : ResourceTypeEnum.sectionResource;
     descriptionRef.current = secRes?.attributes.description || '';
-    const mf = mediafiles.find((m) => m.id === related(secRes, 'mediafile'));
     catIdRef.current = mf ? related(mf, 'artifactCategory') : undefined;
     mediaRef.current = mf as MediaFileD;
     const ct = mediaContentType(mf);
+    textRef.current = mf?.attributes?.originalFile ?? '';
+    setEditAudio(ct.startsWith('audio'));
     setUploadType(
       ct === MarkDownType
         ? UploadType.MarkDown
         : ct === UriLinkType
           ? UploadType.Link
           : UploadType.Resource
+    );
+    setAllowEditSave(
+      canSaveResourceEdit({
+        contentType: ct,
+        description: descriptionRef.current,
+        text: textRef.current ?? '',
+        isUrl,
+      })
     );
   };
   const resetEdit = () => {
@@ -384,11 +429,19 @@ export function PassageDetailArtifacts() {
     setMarkdownValue('');
     setInitDescription('');
     setAIGenerated(false);
+    setAudioUploadOrRecord(false);
+    setEditAudio(false);
   };
   const handleEditResourceVisible = (v: boolean) => {
     if (!v) resetEdit();
   };
   const handleEditSave = async () => {
+    // Create the category now (at save) if the user typed a new one; on blur it
+    // was only resolved against existing categories.
+    if (editCatCommitRef.current) {
+      const catId = await editCatCommitRef.current();
+      catIdRef.current = catId;
+    }
     if (editResource) {
       UpdateSectionResource({
         ...editResource,
@@ -444,27 +497,34 @@ export function PassageDetailArtifacts() {
   const handleEditCancel = () => {
     resetEdit();
   };
+  const syncResourceReady = (type: UploadType, desc: string) => {
+    if (descriptionRequiredForResource(undefined, type)) {
+      setResourceReady(Boolean(desc.trim()));
+    } else {
+      setResourceReady(true);
+    }
+  };
+
   const handleAction = (what: string) => {
     artifactState.id = resourceType ?? null;
     resourceTypeRef.current = ResourceTypeEnum.sectionResource;
-    if (what === 'upload') {
+    if (what === 'audio') {
       mediaRef.current = undefined;
       setUploadType(UploadType.Resource);
-      setRecordAudio(false);
+      syncResourceReady(UploadType.Resource, descriptionRef.current);
+      setAudioUploadOrRecord(true);
       setUploadVisible(true);
     } else if (what === 'scripture') {
       setAudioScriptureVisible(true);
     } else if (what === 'link') {
       setUploadType(UploadType.Link);
-      setRecordAudio(false);
-      setUploadVisible(true);
-    } else if (what === 'record') {
-      setUploadType(UploadType.Resource);
-      setRecordAudio(true);
+      syncResourceReady(UploadType.Link, descriptionRef.current);
+      setAudioUploadOrRecord(false);
       setUploadVisible(true);
     } else if (what === 'text') {
       setUploadType(UploadType.MarkDown);
-      setRecordAudio(false);
+      syncResourceReady(UploadType.MarkDown, descriptionRef.current);
+      setAudioUploadOrRecord(false);
       setUploadVisible(true);
     } else if (what === 'shared') {
       resourceTypeRef.current = ResourceTypeEnum.sectionResource;
@@ -479,13 +539,13 @@ export function PassageDetailArtifacts() {
   ) => {
     setInitDescription(query);
     descriptionRef.current = query;
-    if (audioUrl) {
-      setUploadType(UploadType.FaithbridgeLink);
-    } else {
-      setUploadType(UploadType.MarkDown);
-    }
+    const nextType = audioUrl
+      ? UploadType.FaithbridgeLink
+      : UploadType.MarkDown;
+    setUploadType(nextType);
+    syncResourceReady(nextType, query);
     setMarkdownValue(audioUrl ? `${audioUrl}||${transcript}` : transcript);
-    setRecordAudio(false);
+    setAudioUploadOrRecord(false);
     setAIGenerated(true);
     setUploadVisible(true);
   };
@@ -568,6 +628,8 @@ export function PassageDetailArtifacts() {
   const afterUpload = async (planId: string, mediaRemoteIds?: string[]) => {
     let cnt = rowData.length;
     const projRes = new Array<MediaFileD>();
+    const removeMedia = new Array<RecordOperation>();
+    const tr = new RecordTransformBuilder();
     if (mediaRemoteIds && mediaRemoteIds.length > 0) {
       for (const remId of mediaRemoteIds) {
         cnt += 1;
@@ -575,6 +637,10 @@ export function PassageDetailArtifacts() {
           remoteIdGuid('mediafile', remId, memory?.keyMap as RecordKeyMap) ||
           remId;
         const mediaRecId = { type: 'mediafile', id };
+        if (cancelled.current) {
+          removeMedia.push(tr.removeRecord(mediaRecId).toOperation());
+          continue;
+        }
         if (descriptionRef.current) {
           await memory.update((t) => [
             t.replaceAttribute(mediaRecId, 'topic', descriptionRef.current),
@@ -613,9 +679,16 @@ export function PassageDetailArtifacts() {
           projRes.push(findRecord(memory, 'mediafile', id) as MediaFileD);
         }
       }
-      if (projRes.length === 1) setProjResSetup(projRes);
+      if (projRes.length === 1) {
+        isAddingAudioResourceRef.current = true;
+        setProjResSetup(projRes);
+      }
       resetEdit();
     }
+    if (removeMedia.length > 0) {
+      await memory.update(removeMedia);
+    }
+    cancelled.current = false;
   };
 
   const resourceSourcePassages = useMemo(() => {
@@ -704,19 +777,14 @@ export function PassageDetailArtifacts() {
   const handleTextChange = (text: string) => {
     textRef.current = text;
     const ct = mediaContentType(mediaRef.current);
-    if (ct === MarkDownType) {
-      const newAllow = text.trim() !== '';
-      if (allowEditSave !== newAllow) {
-        setAllowEditSave(newAllow);
-      }
-      return;
-    }
-    const validUrl = isUrl(text);
-    if (ct === UriLinkType) {
-      if (allowEditSave !== validUrl) {
-        setAllowEditSave(validUrl);
-      }
-    }
+    setAllowEditSave(
+      canSaveResourceEdit({
+        contentType: ct,
+        description: descriptionRef.current,
+        text,
+        isUrl,
+      })
+    );
   };
 
   useEffect(() => {
@@ -750,6 +818,19 @@ export function PassageDetailArtifacts() {
 
   const handleDescription = (desc: string) => {
     descriptionRef.current = desc;
+    const ct = mediaContentType(mediaRef.current);
+    if (editResource) {
+      setAllowEditSave(
+        canSaveResourceEdit({
+          contentType: ct,
+          description: desc,
+          text: textRef.current ?? '',
+          isUrl,
+        })
+      );
+    } else if (descriptionRequiredForResource(undefined, uploadType)) {
+      setResourceReady(Boolean(desc.trim()));
+    }
   };
 
   const handlePassRes = (newValue: ResourceTypeEnum) => {
@@ -757,12 +838,14 @@ export function PassageDetailArtifacts() {
     if (isProjectResource()) {
       artifactState.id = projResourceType ?? null;
       setUploadType(UploadType.ProjectResource);
+      syncResourceReady(UploadType.ProjectResource, descriptionRef.current);
     } else if (
       artifactState.id === projResourceType ||
       uploadType === UploadType.ProjectResource
     ) {
       artifactState.id = resourceType ?? null;
       setUploadType(UploadType.Resource);
+      syncResourceReady(UploadType.Resource, descriptionRef.current);
     }
   };
 
@@ -778,6 +861,7 @@ export function PassageDetailArtifacts() {
   };
 
   const [hasProjRes, setHasProjRes] = useState(false);
+  const { isMobileWidth } = useMobile();
 
   useEffect(() => {
     getProjectResources().then((res) => setHasProjRes(res.length > 0));
@@ -815,7 +899,7 @@ export function PassageDetailArtifacts() {
               <Grid>
                 <AddResource action={handleAction} />
               </Grid>
-              {hasProjRes && (
+              {hasProjRes && !isMobileWidth && (
                 <Grid>
                   <AltButton onClick={() => setProjectResourceVisible(true)}>
                     {t.configure}
@@ -869,28 +953,34 @@ export function PassageDetailArtifacts() {
         ))}
       </VertListDnd>
       <Uploader
-        recordAudio={recordAudio}
+        audioUploadOrRecord={audioUploadOrRecord}
         isOpen={uploadVisible}
         onOpen={handleUploadVisible}
         showMessage={showMessage}
         multiple={true}
         finish={afterUpload}
+        beforeUpload={async () => {
+          if (addCatCommitRef.current)
+            catIdRef.current = await addCatCommitRef.current();
+        }}
         cancelled={cancelled}
         cancelReset={resetEdit}
         artifactState={artifactState}
         uploadType={uploadType}
-        ready={() => true}
+        ready={() => resourceReady}
         onNonAudio={handleNonAudio}
         performedBy={performedBy}
         onSpeakerChange={(value) => setPerformedBy(value)}
         inValue={markdownValue}
         eafUrl={aiGenerated ? AIGenerated : ''}
+        defaultFilename={filename}
         metaData={
           <ResourceData
             uploadType={uploadType}
             catAllowNew={true} //if they can upload they can add cat
             initCategory=""
             onCategoryChange={handleCategory}
+            catCommitRef={addCatCommitRef}
             initDescription={initDescription}
             onDescriptionChange={handleDescription}
             catRequired={false}
@@ -941,14 +1031,23 @@ export function PassageDetailArtifacts() {
         onOpen={handleProjectResourceVisible}
       >
         <SelectProjectResource
-          onSelect={handleSelectProjectResource}
+          onSelect={(m) => {
+            isAddingAudioResourceRef.current = false;
+            handleSelectProjectResource(m);
+          }}
           onOpen={handleProjectResourceVisible}
         />
       </BigDialog>
       <BigDialog
-        title={t.projectResourcePassage.replace('{0}', getOrganizedBy(false))}
+        title={isAddingAudioResourceRef.current ? t.addAudioResource : t.editAudioResource}
+        description={
+          <Typography sx={{ color: 'text.secondary' }}>
+            {t.selectPassagesSub}
+          </Typography>
+        }
         isOpen={projResPassageVisible}
         onOpen={handleProjResPassageVisible}
+        disableBackdropClose
       >
         {projResPassageVisible ? (
           <SelectSections
@@ -965,6 +1064,7 @@ export function PassageDetailArtifacts() {
         isOpen={projResWizVisible}
         onOpen={handleProjResWizVisible}
         bp={BigDialogBp.md}
+        disableBackdropClose
       >
         {projResWizVisible ? (
           <ProjectResourceConfigure
@@ -978,7 +1078,7 @@ export function PassageDetailArtifacts() {
         )}
       </BigDialog>
       <BigDialog
-        title={t.editResource}
+        title={editAudio ? t.editAudioResource : t.editResource}
         isOpen={Boolean(editResource)}
         onOpen={handleEditResourceVisible}
         onSave={allowEditSave ? handleEditSave : undefined}
@@ -991,6 +1091,7 @@ export function PassageDetailArtifacts() {
           catAllowNew={true}
           initCategory={catIdRef.current || ''}
           onCategoryChange={handleCategory}
+          catCommitRef={editCatCommitRef}
           initDescription={descriptionRef.current}
           onDescriptionChange={handleDescription}
           catRequired={false}

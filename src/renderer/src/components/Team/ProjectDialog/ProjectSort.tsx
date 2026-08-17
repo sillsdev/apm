@@ -34,7 +34,7 @@ export function ProjectSort({ teamId, onClose }: IProps) {
   const [, setBusy] = useGlobal('remoteBusy');
   const { getOrgDefault, setOrgDefault } = useOrgDefaults();
   const [sortKey, setSortKey] = React.useState<SortArr>([]);
-  const defSort = React.useRef<SortArr>();
+  const defSort = React.useRef<SortArr | undefined>(undefined);
   const cancel = React.useRef(true);
   const [changed, setChanged] = React.useState(false);
   const [memory] = useGlobal('memory');

@@ -5,15 +5,16 @@ import { LocalKey, localUserKey, useMyNavigate } from '../../utils';
 
 export const usePassageNavigate = (
   cb: () => void,
-  setCurrentStep: (step: string) => void
+  setCurrentStep: (step: string) => void,
+  isNavigationBlocked: () => boolean
 ) => {
   const { pathname } = useLocation();
   const navigate = useMyNavigate();
-  //const { setCurrentStep } = usePassageDetailContext();
   const { checkSavedFn } = useContext(UnsavedContext).state;
 
   return (view: string) => {
     if (view && view !== pathname) {
+      if (isNavigationBlocked()) return;
       checkSavedFn(() => {
         if (!view.endsWith('null'))
           localStorage.setItem(localUserKey(LocalKey.url), view);

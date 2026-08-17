@@ -9,14 +9,17 @@ import { VwChecksum, PlanD, ProjectD } from '../model';
 import * as actions from '../store';
 import { TokenContext } from '../context/TokenProvider';
 import { API_CONFIG } from '../../api-variable';
-import { processDataChanges } from '../hoc/processDataChanges';
+import {
+  processDataChanges,
+  DATA_CHANGES_NETWORK_ABORT,
+} from '../hoc/processDataChanges';
 import { useGetGlobal, useGlobal } from '../context/useGlobal';
 
 export const useSanityCheck = (setLanguage: typeof actions.setLanguage) => {
   const [coordinator] = useGlobal('coordinator');
   const memory = coordinator?.getSource('memory') as Memory;
   const remote = coordinator?.getSource('datachanges') as JSONAPISource;
-  const token = useContext(TokenContext).state.accessToken;
+  const token = useContext(TokenContext)?.state?.accessToken || '';
   const [errorReporter] = useGlobal('errorReporter');
   const getGlobal = useGetGlobal();
 
@@ -52,6 +55,7 @@ export const useSanityCheck = (setLanguage: typeof actions.setLanguage) => {
           fetchUrl: undefined,
           cb,
         });
+        if (startNext === DATA_CHANGES_NETWORK_ABORT) break;
         if (startNext === start) tries--;
         else start = startNext;
       }
@@ -379,7 +383,7 @@ export const useSanityCheck = (setLanguage: typeof actions.setLanguage) => {
     const project = findRecord(memory, 'project', projectId) as ProjectD;
     let plan: PlanD;
     const remoteProjectId = project?.keys?.remoteId ?? '';
-    if (!getGlobal('offline') && project?.keys?.remoteId) {
+    if (token && !getGlobal('offline') && project?.keys?.remoteId) {
       const tables = staticFiles
         .concat(updateableFiles)
         .sort((i, j) => (i.sort <= j.sort ? -1 : 1))

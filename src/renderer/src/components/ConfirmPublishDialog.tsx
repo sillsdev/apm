@@ -1,8 +1,12 @@
 import { useMemo, useState } from 'react';
+import { useGlobal } from '../context/useGlobal';
 import {
   IAlertStrings,
+  IMediaTabStrings,
+  IPlanSheetStrings,
   IPublishLevelStrings,
   IPublishToStrings,
+  IPassageTypeStrings,
   ISharedStrings,
 } from '../model';
 import {
@@ -24,25 +28,30 @@ import DialogActions from '@mui/material/DialogActions';
 import { shallowEqual, useSelector } from 'react-redux';
 import {
   alertSelector,
+  mediaTabSelector,
+  passageTypeSelector,
+  planSheetSelector,
   publishLevelSelector,
   publishToSelector,
   sharedSelector,
 } from '../selector';
-import { PublishLevelEnum, usePublishDestination } from '../crud';
+import {
+  PublishLevelEnum,
+  useBible,
+  useOrganizedBy,
+  usePublishDestination,
+} from '../crud';
 import ShowLink from '../control/ShowLink';
 import { PublishDestinationEnum } from '../crud';
 import { PassageTypeEnum } from '../model/passageType';
 import { Akuo, Aquifer, ObtHelps } from '../assets/brands';
 
 interface IProps {
-  title: string;
-  propagateLabel: string;
-  description: string;
-  noPropagateDescription: string;
+  context: 'plan' | 'media';
+  isMovement?: boolean;
   current: PublishDestinationEnum[];
   sharedProject: boolean;
   hasPublishing: boolean;
-  hasBible: boolean;
   noDefaults?: boolean;
   passageType?: PassageTypeEnum;
   noResponse: () => void;
@@ -51,13 +60,10 @@ interface IProps {
 
 function ConfirmPublishDialog(props: IProps) {
   const {
-    title,
-    propagateLabel,
-    description,
-    noPropagateDescription,
+    context,
+    isMovement,
     sharedProject,
     hasPublishing,
-    hasBible,
     yesResponse,
     noResponse,
     current,
@@ -65,14 +71,37 @@ function ConfirmPublishDialog(props: IProps) {
     passageType,
   } = props;
 
-  const t: IAlertStrings = useSelector(alertSelector, shallowEqual);
-  const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
+  const alertStrings: IAlertStrings = useSelector(alertSelector, shallowEqual);
+  const mediaStrings: IMediaTabStrings = useSelector(
+    mediaTabSelector,
+    shallowEqual
+  );
+  const planSheetStrings: IPlanSheetStrings = useSelector(
+    planSheetSelector,
+    shallowEqual
+  );
+  const passageTypeStrings: IPassageTypeStrings = useSelector(
+    passageTypeSelector,
+    shallowEqual
+  );
+  const sharedStrings: ISharedStrings = useSelector(
+    sharedSelector,
+    shallowEqual
+  );
   const l: IPublishLevelStrings = useSelector(
     publishLevelSelector,
     shallowEqual
   );
   const { getDefaults } = usePublishDestination();
   const p: IPublishToStrings = useSelector(publishToSelector, shallowEqual);
+  const { getOrganizedBy } = useOrganizedBy();
+  const [org] = useGlobal('organization');
+  const { getOrgBible } = useBible();
+  const hasBible = useMemo(() => {
+    if (!org) return false;
+    const bible = getOrgBible(org);
+    return (bible?.attributes.bibleName ?? '') !== '';
+  }, [getOrgBible, org]);
   const [open, setOpen] = useState(true);
   const [propagate, setPropagate] = useState(true);
   const [value, setValuex] = useState(
@@ -93,6 +122,85 @@ function ConfirmPublishDialog(props: IProps) {
   const [akuoValue, setAkuoValue] = useState<PublishLevelEnum>(
     calcAkuoValue(value)
   );
+  const usePlanLabels = context === 'plan';
+  const organizedLabel = getOrganizedBy(true);
+  const organizedPluralLabel = getOrganizedBy(false);
+  const isMovementRow = Boolean(isMovement);
+  const dialogTitle = useMemo(() => {
+    if (!usePlanLabels) return mediaStrings.publish;
+    return planSheetStrings.confirmPublish.replace(
+      '{0}',
+      isMovementRow ? passageTypeStrings.MOVE : organizedLabel
+    );
+  }, [
+    usePlanLabels,
+    mediaStrings.publish,
+    planSheetStrings.confirmPublish,
+    passageTypeStrings.MOVE,
+    isMovementRow,
+    organizedLabel,
+  ]);
+  const propagateLabel = useMemo(() => {
+    if (!usePlanLabels) return '';
+    return planSheetStrings.propagate
+      .replaceAll(
+        '{0}',
+        isMovementRow
+          ? organizedPluralLabel.toLocaleLowerCase()
+          : sharedStrings.passages.toLocaleLowerCase()
+      )
+      .replaceAll(
+        '{1}',
+        isMovementRow
+          ? planSheetStrings.movement.toLocaleLowerCase()
+          : organizedLabel.toLocaleLowerCase()
+      );
+  }, [
+    usePlanLabels,
+    planSheetStrings.propagate,
+    planSheetStrings.movement,
+    sharedStrings.passages,
+    isMovementRow,
+    organizedLabel,
+    organizedPluralLabel,
+  ]);
+  const description = useMemo(() => {
+    if (!usePlanLabels) return '';
+    return isMovementRow
+      ? planSheetStrings.confirmPublishMovement.replaceAll(
+          '{0}',
+          organizedPluralLabel.toLocaleLowerCase()
+        )
+      : planSheetStrings.confirmPublishSection.replaceAll(
+          '{0}',
+          organizedLabel.toLocaleLowerCase()
+        );
+  }, [
+    usePlanLabels,
+    planSheetStrings.confirmPublishMovement,
+    planSheetStrings.confirmPublishSection,
+    isMovementRow,
+    organizedLabel,
+    organizedPluralLabel,
+  ]);
+  const noPropagateDescription = useMemo(() => {
+    if (!usePlanLabels) return '';
+    return isMovementRow
+      ? planSheetStrings.confirmPublishMovementNoPropagate
+          .replaceAll('{0}', organizedPluralLabel.toLocaleLowerCase())
+          .replaceAll('{1}', Akuo)
+      : planSheetStrings.confirmPublishSectionNoPropagate.replaceAll(
+          '{0}',
+          organizedLabel.toLocaleLowerCase()
+        );
+  }, [
+    usePlanLabels,
+    planSheetStrings.confirmPublishMovementNoPropagate,
+    planSheetStrings.confirmPublishSectionNoPropagate,
+    isMovementRow,
+    organizedLabel,
+    organizedPluralLabel,
+  ]);
   const setValue = (val: PublishDestinationEnum[]) => {
     setValuex(val);
     setAkuoValue(calcAkuoValue(val));
@@ -228,7 +336,7 @@ function ConfirmPublishDialog(props: IProps) {
       aria-describedby="confirmPublishDesc"
       disableEnforceFocus
     >
-      <DialogTitle id="alertDlg">{title}</DialogTitle>
+      <DialogTitle id="alertDlg">{dialogTitle}</DialogTitle>
       <DialogContent>
         <DialogContent id="alertJsx">
           {hasPublishing && !hasBible && (
@@ -324,7 +432,9 @@ function ConfirmPublishDialog(props: IProps) {
             )}
           </FormControl>
         </DialogContent>
-        <DialogContentText id="alertDesc">{t.areYouSure}</DialogContentText>
+        <DialogContentText id="alertDesc">
+          {alertStrings.areYouSure}
+        </DialogContentText>
       </DialogContent>
       <DialogActions>
         <Button
@@ -333,7 +443,7 @@ function ConfirmPublishDialog(props: IProps) {
           color="primary"
           disabled={doingIt}
         >
-          {value === current ? ts.cancel : t.no}
+          {value === current ? sharedStrings.cancel : alertStrings.no}
         </Button>
         <Button
           id="alertYes"
@@ -343,7 +453,7 @@ function ConfirmPublishDialog(props: IProps) {
           disabled={value === current || (!hasBible && needsBibleId) || doingIt}
           autoFocus
         >
-          {t.yes}
+          {alertStrings.yes}
         </Button>
       </DialogActions>
     </Dialog>

@@ -7,73 +7,78 @@ import React, {
   useContext,
 } from 'react';
 import { useGlobal } from '../context/useGlobal';
-import { IState, IPassageRecordStrings, ISharedStrings } from '../model';
-import * as actions from '../store';
+import { IPassageRecordStrings, ISharedStrings } from '../model';
+import { Stack, Paper, Typography } from '@mui/material';
+import WSAudioPlayer, { WSAudioPlayerControls } from './WSAudioPlayer';
 import {
-  Stack,
-  Button,
-  Checkbox,
-  FormControlLabel,
-  Paper,
-  SxProps,
-  TextField,
-  Typography,
-} from '@mui/material';
-import WSAudioPlayer from './WSAudioPlayer';
-import {
-  generateUUID,
+  infoMsg,
   loadBlobAsync,
+  logError,
+  Severity,
+  useMobile,
   waitForIt,
-  cleanFileName,
 } from '../utils';
 import {
+  ArtifactTypeSlug,
   IMediaState,
   MediaSt,
   useFetchMediaUrl,
   useMediaUpload,
-  convertToWebM,
+  convertToFormat,
 } from '../crud';
 import { useSnackBar } from '../hoc/SnackBar';
 import { UnsavedContext } from '../context/UnsavedContext';
-import { SIZELIMIT } from './MediaUpload';
+import { typeLimit } from '../utils/typeLimit';
+import usePassageDetailContext from '../context/usePassageDetailContext';
+import { useStepTool } from '../crud/useStepTool';
+import { parseRecordCaptureAudioProcessing } from '../crud/useWavRecorder';
+import { JSONParse } from '../utils';
 import { UploadType } from './UploadType';
-import AudioFileIcon from '@mui/icons-material/AudioFileOutlined';
 import { shallowEqual, useSelector } from 'react-redux';
 import { passageRecordSelector, sharedSelector } from '../selector';
-import { useDispatch } from 'react-redux';
-const controlProps = { m: 1 } as SxProps;
 
 interface IProps {
   toolId: string;
-  artifactId: string | null;
+  artifactTypeSlug: ArtifactTypeSlug | null;
   passageId: string | undefined;
   planId?: string | undefined;
   sourceMediaId?: string | undefined;
   sourceSegments?: string | undefined;
   performedBy?: string | undefined;
   topic?: string | undefined;
+  languagebcp47?: string | undefined;
+  keepItSmall?: boolean | undefined;
   afterUploadCb: (mediaId: string | undefined) => Promise<void>;
   onReady?: (() => void) | undefined;
   onSaving?: (() => void) | undefined;
   onRecording?: ((r: boolean) => void) | undefined;
   onPlayStatus?: ((p: boolean) => void) | undefined;
   mediaId?: string | undefined;
-  metaData?: JSX.Element | undefined;
-  defaultFilename?: string | undefined;
+  metaData?: React.JSX.Element | undefined;
+  defaultFilename: string;
   allowDeltaVoice?: boolean | undefined;
+  /** When false, hide the Download item in the recorder's more menu. Default true if omitted. */
+  allowDownload?: boolean;
   setCanSave: (canSave: boolean) => void;
+  /**
+   * Called when a save attempt is rejected — the upload failed or finished
+   * without a mediaId. May fire more than once for a single failed save, so
+   * handlers must be idempotent. Parents that auto-save on the rising edge of
+   * canSave use this to stop retrying the same doomed take (TT-7583); canSave
+   * itself stays true so screens with a manual Save button keep their retry
+   * path.
+   */
+  onSaveRejected?: (() => void) | undefined;
   setCanCancel?: ((canCancel: boolean) => void) | undefined;
   setStatusText: (status: string) => void;
   cancelMethod?: (() => void) | undefined;
   allowRecord?: boolean | undefined;
   oneTryOnly?: boolean | undefined;
   allowWave?: boolean | undefined;
-  showFilename?: boolean | undefined;
   height?: number;
   width: number;
   doReset?: boolean | undefined;
   setDoReset?: ((r: boolean) => void) | undefined;
-  showLoad?: boolean | undefined;
   preload?: number | undefined;
   onLoaded?: (() => void) | undefined;
   autoStart?: boolean | undefined;
@@ -81,6 +86,27 @@ interface IProps {
   noNewVoice?: boolean | undefined;
   allowNoNoise?: boolean;
   allowZoom?: boolean;
+  controlsRef?: React.RefObject<WSAudioPlayerControls | null>;
+  hideControls?: boolean;
+  onProgress?: (progress: number) => void;
+  onDuration?: (duration: number) => void;
+  hideToolbar?: boolean;
+  hasRecording?: boolean;
+  isStopLogic?: boolean;
+  showSize?: boolean;
+  handleUpload?: () => void;
+  isRecordingRights?: boolean;
+  rightsLeftActions?: React.JSX.Element;
+  /** Force mobile layout (used by rights UI to match mobile experience on desktop). */
+  forceMobileView?: boolean;
+  onVersions?: () => void;
+  handleSave?: () => void;
+  isSaveDisabled?: boolean;
+  dockRecordButton?: boolean;
+  onDockedRecordButton?: (node: React.ReactNode | null) => void;
+  /** When true, show the docked record button even if allowRecord is false (button may be disabled). */
+  showDockedRecordButton?: boolean;
+  onRecordingCleared?: () => void;
 }
 export const DEFAULT_COMPRESSED_MIME = 'audio/ogg;codecs=opus';
 
@@ -94,13 +120,15 @@ function MediaRecord(props: IProps) {
     mediaId,
     defaultFilename,
     allowDeltaVoice,
-    artifactId,
+    allowDownload,
+    artifactTypeSlug,
     passageId,
     planId,
     sourceMediaId,
     sourceSegments,
     performedBy,
     topic,
+    languagebcp47,
     afterUploadCb,
     setCanSave,
     setCanCancel,
@@ -108,41 +136,59 @@ function MediaRecord(props: IProps) {
     allowRecord,
     oneTryOnly,
     allowWave,
-    showFilename,
     autoStart,
     doReset,
     setDoReset,
     height,
     metaData,
-    showLoad,
     preload,
     onLoaded,
     trackState,
     noNewVoice,
     allowNoNoise,
     allowZoom,
+    controlsRef,
+    hideControls,
+    onProgress,
+    onDuration,
+    hideToolbar,
     width,
+    keepItSmall,
+    hasRecording,
+    isStopLogic,
+    showSize = true,
+    handleUpload,
+    isRecordingRights,
+    rightsLeftActions,
+    forceMobileView,
+    handleSave,
+    onVersions,
+    isSaveDisabled,
+    dockRecordButton,
+    onDockedRecordButton,
+    showDockedRecordButton,
+    onRecordingCleared,
+    onSaveRejected,
   } = props;
+  const context = usePassageDetailContext();
+  const simplified = Boolean(context?.isBoldWorkflow);
+  // Respect an explicit oneTryOnly={false} (discussion comments). Only default
+  // to BOLD one-shot when the caller omits the prop (e.g. PassageDetailRecord).
+  const effectiveOneTryOnly = oneTryOnly ?? simplified;
+  const effectiveIsStopLogic = isStopLogic || simplified;
+  const { settings: toolSettings } = useStepTool(context?.currentstep || '');
+  const captureAudioProcessing = useMemo(
+    () => parseRecordCaptureAudioProcessing(toolSettings),
+    [toolSettings]
+  );
   const t: IPassageRecordStrings = useSelector(passageRecordSelector);
-  const convert_status = useSelector(
-    (state: IState) => state.convertBlob.statusmsg
-  );
-  const convert_complete = useSelector(
-    (state: IState) => state.convertBlob.complete
-  );
-  const convert_blob = useSelector((state: IState) => state.convertBlob.blob);
-  const convert_guid = useSelector((state: IState) => state.convertBlob.guid);
-  const dispatch = useDispatch();
-  const convertBlob = (audioBlob: Blob, mimeType: string, guid: string) =>
-    dispatch(actions.convertBlob(audioBlob, mimeType, guid) as any);
-  const resetConvertBlob = () => dispatch(actions.resetConvertBlob() as any);
   const WARNINGLIMIT = 1;
+  /** Recorded WAV bytes/sec: mono 16-bit @ 48kHz (WavRecorder's preferred rate). */
+  const RECORD_WAV_BYTES_PER_SECOND = 96000;
   const [reporter] = useGlobal('errorReporter');
   const { fetchMediaUrl, mediaState } = useFetchMediaUrl(reporter);
   const mediaStateRef = useRef(mediaState);
   const mediaStateFetchedTimeRef = useRef<number>(0);
-  const [name, setName] = useState(t.defaultFilename);
-  const [userHasSetName, setUserHasSetName] = useState(false);
   const [filetype, setFiletype] = useState('');
   const [originalBlob, setOriginalBlob] = useState<Blob>();
   const [audioBlob, setAudioBlob] = useState<Blob>();
@@ -151,9 +197,33 @@ function MediaRecord(props: IProps) {
   const filechangedRef = useRef(false);
   const [recording, setRecording] = useState(false);
   const [blobReady, setBlobReady] = useState(true);
-  const [mimeType, setMimeType] = useState(DEFAULT_COMPRESSED_MIME);
-  const [compression, setCompression] = useState(20);
+  // Determine MIME type from tool settings
+  const getMimeTypeFromSettings = useCallback(() => {
+    if (allowWave && toolSettings) {
+      try {
+        const settings = JSONParse(toolSettings) as { saveAsWav?: boolean };
+        if (settings.saveAsWav) {
+          return 'audio/wav';
+        }
+      } catch {
+        // If parsing fails, use default
+      }
+    }
+    return DEFAULT_COMPRESSED_MIME;
+  }, [toolSettings, allowWave]);
+
+  const initialMimeType = getMimeTypeFromSettings();
+  const [mimeType, setMimeType] = useState(initialMimeType);
+  const [compression, setCompression] = useState(
+    initialMimeType === 'audio/wav' ? 1 : 20
+  );
   const [warning, setWarning] = useState('');
+  const [waveformDuration, setWaveformDuration] = useState(0);
+  /** Sticky flag: once edits exist, keep Save visible through transient duration/filechanged blips. */
+  const [pendingSave, setPendingSavex] = useState(false);
+  const pendingSaveRef = useRef(false);
+  const [processingRecording, setProcessingRecordingx] = useState(false);
+  const processingRecordingRef = useRef(false);
   const [tooBig, setTooBig] = useState(false);
   const { showMessage } = useSnackBar();
   const [converting, setConverting] = useState(false);
@@ -166,12 +236,12 @@ function MediaRecord(props: IProps) {
     clearCompleted,
   } = useContext(UnsavedContext).state;
   const saveRef = useRef(false);
-  const guidRef = useRef('');
+  const mediaSaveInProgress = saveRequested(toolId) || uploading || converting;
   const extensions = useMemo(
     () => ['mp3', 'mp3', 'webm', 'mka', 'm4a', 'wav', 'ogg'],
     []
   );
-  const sizeLimit = SIZELIMIT(UploadType.Media);
+  const sizeLimit = typeLimit(UploadType.Media);
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
 
   const mimes = useMemo(
@@ -191,29 +261,70 @@ function MediaRecord(props: IProps) {
     filechangedRef.current = value;
   };
 
+  const setPendingSave = (value: boolean) => {
+    if (value !== pendingSaveRef.current) {
+      setPendingSavex(value);
+      pendingSaveRef.current = value;
+    }
+  };
+
+  const setProcessingRecording = (value: boolean) => {
+    setProcessingRecordingx(value);
+    processingRecordingRef.current = value;
+  };
+
+  const handleWaveformDuration = useCallback(
+    (duration: number) => {
+      setWaveformDuration((prev) => {
+        // Only ignore a spurious zero while finalizing a recording stop (peaks race).
+        if (duration <= 0 && processingRecordingRef.current) {
+          return prev;
+        }
+        return duration;
+      });
+      if (duration > 0 || !processingRecordingRef.current) {
+        onDuration?.(duration);
+      }
+    },
+    [onDuration]
+  );
+
+  const getCompressedStatusMessage = useCallback(() => {
+    if (allowWave) {
+      return mimeType !== 'audio/wav' ? t.compressed : t.uncompressed;
+    }
+    return '';
+  }, [allowWave, mimeType, t.compressed, t.uncompressed]);
+
   const myAfterUploadCb = async (mediaId: string) => {
+    // Notify before any setState: canSave goes true again on the next commit,
+    // and auto-save parents must already know this take was rejected or they
+    // would retry it on that rising edge (TT-7583).
+    if (!mediaId) onSaveRejected?.();
     setUploading(false);
+    setPendingSave(false);
     if (filechangedRef.current && mediaId) setFilechanged(false);
     if (!mediaId) {
       showMessage(ts.NoSaveWoMedia);
       setStatusText(ts.NoSaveWoMedia);
       saveCompleted(toolId, ts.NoSaveWoMedia);
     } else {
-      setStatusText('');
+      setStatusText(getCompressedStatusMessage());
       saveCompleted(toolId);
     }
-    afterUploadCb(mediaId);
     saveRef.current = false;
+    await afterUploadCb(mediaId);
   };
 
   const uploadMedia = useMediaUpload({
-    artifactId,
+    artifactTypeSlug,
     passageId,
     sourceMediaId,
     sourceSegments,
     performedBy,
     planId,
     topic,
+    languagebcp47,
     afterUploadCb: myAfterUploadCb,
   });
 
@@ -239,94 +350,147 @@ function MediaRecord(props: IProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mediaState]);
 
+  // Update MIME type when tool settings change
+  useEffect(() => {
+    const newMimeType = getMimeTypeFromSettings();
+    setMimeType(newMimeType);
+    setCompression(newMimeType === 'audio/wav' ? 1 : 20);
+    // Show status message if allowWave is true but using compressed format
+    // Only update if not currently showing a temporary status (saving, compressing, etc.)
+    if (!uploading && !converting && !saveRef.current) {
+      setStatusText(getCompressedStatusMessage());
+    }
+  }, [
+    getMimeTypeFromSettings,
+    setStatusText,
+    uploading,
+    converting,
+    getCompressedStatusMessage,
+  ]);
+
   useEffect(() => {
     setExtension(mimeType);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mimeType, extensions, mimes]);
 
   useEffect(() => {
-    if (!userHasSetName) {
-      if (defaultFilename) setName(defaultFilename);
-      else setName(t.defaultFilename);
+    if (!recording && filechanged) {
+      setPendingSave(true);
     }
-  }, [userHasSetName, defaultFilename, t.defaultFilename]);
+  }, [recording, filechanged]);
+
+  const wantsSaveVisible = useMemo(
+    () =>
+      waveformDuration > 0 &&
+      !converting &&
+      !uploading &&
+      !recording &&
+      (pendingSave || filechanged),
+    [
+      filechanged,
+      waveformDuration,
+      converting,
+      uploading,
+      recording,
+      pendingSave,
+    ]
+  );
+
+  const showProcessingRecordingMessage = useMemo(
+    () =>
+      !recording &&
+      !converting &&
+      !uploading &&
+      (processingRecording ||
+        (wantsSaveVisible && !blobReady && waveformDuration > 0)),
+    [
+      recording,
+      converting,
+      uploading,
+      processingRecording,
+      wantsSaveVisible,
+      blobReady,
+      waveformDuration,
+    ]
+  );
 
   useEffect(() => {
-    setCanSave(
-      blobReady &&
-        !tooBig &&
-        name !== '' &&
-        filechanged &&
-        !converting &&
-        !uploading &&
-        !recording &&
-        !saveRef.current
-    );
+    const wantsSave = wantsSaveVisible && !saveRef.current;
+    const needsSave = wantsSave && blobReady && waveformDuration > 0 && !tooBig;
+    setCanSave(needsSave);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
+    wantsSaveVisible,
     blobReady,
+    processingRecording,
     tooBig,
-    name,
-    filechanged,
     converting,
     uploading,
     recording,
     toolsChanged,
+    waveformDuration,
   ]);
 
   useEffect(() => {
     if (setCanCancel) setCanCancel(!converting && !uploading);
   }, [converting, uploading, setCanCancel]);
 
+  // While recording, audioBlob is the previous take (it only refreshes after
+  // stop via onBlobReady). Estimate the eventual WAV size from the live
+  // duration instead so the size warning shows before a long take is wasted;
+  // the exact blob size takes over once recording stops.
+  const effectiveAudioBytes = useMemo(
+    () =>
+      recording
+        ? Math.round(waveformDuration * RECORD_WAV_BYTES_PER_SECOND)
+        : (audioBlob?.size ?? 0),
+    [recording, waveformDuration, audioBlob, RECORD_WAV_BYTES_PER_SECOND]
+  );
+
+  const { isMobile: isMobileView } = useMobile();
+  const effectiveMobileView = Boolean(forceMobileView) || isMobileView;
+
   const doUpload = useCallback(
-    async (blob: Blob) => {
+    async (blob: Blob, mimeType: string, filetype: string) => {
       setUploading(true);
       setStatusText(t.saving);
       const files = [
-        new File([blob], name + '.' + filetype, {
+        new File([blob], defaultFilename + '.' + filetype, {
           type: mimeType,
         }),
       ];
       await uploadMedia(files);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [name, filetype, mimeType, uploadMedia]
+    [defaultFilename, uploadMedia]
   );
 
-  useEffect(() => {
-    //was it me who asked for this?
-    if (convert_guid === guidRef.current) {
-      if (convert_status) {
-        const progress = parseInt(convert_status);
-        if (isNaN(progress)) {
-          showMessage(convert_status);
-        } else {
-          setStatusText(t.compressing.replace('{0}', progress.toString()));
-        }
-      }
-      if (convert_complete) {
-        if (convert_blob)
-          doUpload(convert_blob).then(() => {
-            convertComplete();
-          });
-        else {
-          convertComplete();
-        }
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [convert_status, convert_complete, convert_blob]);
-
   const convertComplete = () => {
-    resetConvertBlob();
     setConverting(false);
-    if (onReady) onReady();
+    setLoading(false);
+    onReady?.();
   };
+
+  const handleSaveFailed = useCallback(
+    (error: unknown) => {
+      saveRef.current = false;
+      // Before the setState calls below, for the reason in myAfterUploadCb.
+      onSaveRejected?.();
+      setUploading(false);
+      setConverting(false);
+      setLoading(false);
+      const message =
+        error instanceof Error ? error.message : String(error ?? 'Save failed');
+      saveCompleted(toolId, message);
+      onReady?.();
+    },
+    [toolId, saveCompleted, onReady, onSaveRejected]
+  );
   useEffect(() => {
     const limit = sizeLimit * compression;
-    const big = (audioBlob?.size ?? 0) > limit * 1000000;
+    const big = effectiveAudioBytes > limit * 1000000;
     setTooBig(big);
-    if (audioBlob && audioBlob.size > (limit - WARNINGLIMIT) * 1000000)
+    if (effectiveAudioBytes > (limit - WARNINGLIMIT) * 1000000)
       setWarning(
         (big ? t.toobig : t.toobigwarn).replace('{1}', limit.toString())
       );
@@ -334,34 +498,53 @@ function MediaRecord(props: IProps) {
 
     if (saveRequested(toolId)) {
       if (!saveRef.current) {
-        if (audioBlob) {
+        if (audioBlob && waveformDuration > 0) {
           onSaving && onSaving();
           saveRef.current = true;
+          setLoading(true);
           if (mimeType !== 'audio/wav') {
+            // Convert to target format
+            setStatusText(t.compressing);
             setConverting(true);
-            if (mimeType === 'audio/ogg;codecs=opus') {
-              guidRef.current = generateUUID();
-              waitForIt(
-                'previous convert',
-                () => convert_guid === '',
-                () => false,
-                300
-              ).then(() => convertBlob(audioBlob, mimeType, guidRef.current));
-            } else {
-              convertToWebM(audioBlob).then((convert_blob) =>
-                doUpload(convert_blob).then(() => {
-                  convertComplete();
-                })
-              );
-            }
+            convertToFormat(audioBlob, mimeType)
+              .then((convert_blob) =>
+                doUpload(convert_blob, mimeType, filetype)
+                  .then(() => {
+                    convertComplete();
+                  })
+                  .catch(handleSaveFailed)
+              )
+              .catch((error) => {
+                // If conversion fails, show error and save as WAV instead
+                const errorMessage =
+                  t.compressError +
+                  (error instanceof Error ? '    ' + error.message : '');
+                showMessage(errorMessage);
+                setConverting(false);
+                doUpload(audioBlob, 'audio/wav', 'wav')
+                  .then(() => {
+                    setLoading(false);
+                    onReady?.();
+                  })
+                  .catch(handleSaveFailed);
+              });
           } else {
-            doUpload(audioBlob).then(() => {
-              onReady && onReady();
-            });
+            doUpload(audioBlob, mimeType, filetype)
+              .then(() => {
+                setLoading(false);
+                onReady?.();
+              })
+              .catch(handleSaveFailed);
           }
           return;
         } else {
-          saveCompleted(toolId);
+          // Save was requested with nothing to upload — a rejection like any
+          // other, so auto-save parents must hear about it or they would keep
+          // re-requesting on the next rising edge (TT-7583).
+          onSaveRejected?.();
+          showMessage(ts.NoSaveWoMedia);
+          setStatusText(ts.NoSaveWoMedia);
+          saveCompleted(toolId, ts.NoSaveWoMedia);
           onReady && onReady();
         }
       }
@@ -374,7 +557,7 @@ function MediaRecord(props: IProps) {
     }
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [audioBlob, toolsChanged, mimeType, convert_guid, toolId]);
+  }, [audioBlob, effectiveAudioBytes, toolsChanged, mimeType, toolId]);
 
   const setExtension = (mimeType: string) => {
     if (mimeType) {
@@ -385,7 +568,6 @@ function MediaRecord(props: IProps) {
 
   function onBlobReady(blob: Blob | undefined) {
     setAudioBlob(blob);
-    setFilechanged(true);
   }
   function myOnRecording(r: boolean) {
     setRecording(r);
@@ -400,43 +582,51 @@ function MediaRecord(props: IProps) {
   }, [doReset]);
 
   const reset = () => {
-    setMimeType(DEFAULT_COMPRESSED_MIME);
-    setCompression(20);
-    setUserHasSetName(false);
     setFilechanged(false);
+    setPendingSave(false);
+    setWaveformDuration(0);
+    setProcessingRecording(false);
     setOriginalBlob(undefined);
     setAudioBlob(undefined);
     clearCompleted(toolId);
   };
 
-  const handleCompressChanged = (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    if (event.currentTarget.checked) {
-      setMimeType(DEFAULT_COMPRESSED_MIME);
-      setCompression(20);
-    } else {
-      setMimeType('audio/wav');
-      setCompression(1);
-    }
-  };
+  const handleRecordingCleared = useCallback(() => {
+    setPendingSave(false);
+    setBlobReady(true);
+    setProcessingRecording(false);
+    onRecordingCleared?.();
+  }, [onRecordingCleared]);
 
-  const handleChangeFileName = (e: any) => {
-    e.persist();
-    setName(cleanFileName(e.target.value));
-    setUserHasSetName(true);
-  };
   const gotTheBlob = (b: Blob) => {
     setOriginalBlob(b);
-    setLoading(false);
+    // Keep loading true until wavesurfer reports ready (setBlobReady(true)).
+    // Clearing here left Record looking idle while the waveform decoded.
+    setBlobReady(false);
     onLoaded && onLoaded();
     setAudioBlob(b);
   };
+
+  useEffect(() => {
+    if (loading && blobReady && originalBlob && !saveRef.current) {
+      setLoading(false);
+      setStatusText('');
+    }
+  }, [loading, blobReady, originalBlob, setStatusText]);
   const blobError = (urlorError: string) => {
     showMessage(urlorError);
     setLoading(false);
+    setStatusText('');
     onLoaded && onLoaded();
   };
+  const handleWaveformLoadError = useCallback(
+    () => {
+      blobError(ts.mediaError);
+      setOriginalBlob(undefined);
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [ts.mediaError, showMessage, onLoaded]
+  );
   const getGoodUrl = async () => {
     const TWENTY_MINUTES = 20 * 60 * 1000; // 20 minutes in milliseconds
     const lastFetchedAt = mediaStateFetchedTimeRef.current;
@@ -480,29 +670,28 @@ function MediaRecord(props: IProps) {
     return '';
   };
   const handleLoadAudio = async () => {
-    showMessage(t.loading);
     if (loading || !mediaId) return;
     setLoading(true);
+    setStatusText(ts.loading);
     reset();
 
-    const url = await getGoodUrl();
-
-    if (url) {
-      try {
-        const blob = await loadBlobAsync(url);
-        if (blob) gotTheBlob(blob);
-        else blobError('Failed to load blob');
-      } catch (error) {
-        blobError(
-          error instanceof Error ? error.message : 'Failed to load blob'
-        );
+    try {
+      const url = await getGoodUrl();
+      if (!url) {
+        blobError(mediaStateRef.current.error || ts.mediaError);
+        return;
       }
-    } else {
-      blobError(mediaStateRef.current.error || 'Failed to fetch media URL');
+      const blob = await loadBlobAsync(url);
+      if (blob) gotTheBlob(blob);
+      else blobError(ts.mediaError);
+    } catch (error) {
+      logError(
+        Severity.error,
+        reporter,
+        infoMsg(error as Error, 'media load failed')
+      );
+      blobError(ts.mediaError);
     }
-
-    if (defaultFilename) setName(defaultFilename);
-    else setName(t.defaultFilename);
   };
 
   useEffect(() => {
@@ -512,74 +701,120 @@ function MediaRecord(props: IProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [preload]);
 
+  useEffect(() => {
+    if (!mediaId) {
+      reset();
+      return;
+    }
+    // Skip while saving — mediaId may update when the new mediafile syncs in.
+    if (!loading) {
+      handleLoadAudio();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mediaId]);
+
   const segments = '{}';
-  const showLoadButton =
-    showLoad &&
-    mediaId &&
-    mediaState.status === MediaSt.FETCHED &&
-    mediaState.id === mediaId;
-  return (
-    <Paper id="mediaRecord" sx={{ width: width }}>
-      {showLoadButton && (
-        <Button id="rec-load" variant="outlined" onClick={handleLoadAudio}>
-          <AudioFileIcon />
-          {t.loadlatest}
-        </Button>
-      )}
+
+  const content = (
+    <>
       <WSAudioPlayer
         allowRecord={allowRecord !== false}
+        loading={loading}
         allowZoom={allowZoom}
         allowDeltaVoice={allowDeltaVoice}
-        oneTryOnly={oneTryOnly}
-        width={width - 20}
+        allowDownload={allowDownload}
+        oneTryOnly={effectiveOneTryOnly}
         height={height || 300}
+        mediaId={mediaId}
+        planId={planId}
         blob={originalBlob}
         onBlobReady={onBlobReady}
+        onLoadError={handleWaveformLoadError}
         setChanged={setFilechanged}
+        onProcessingRecordingChange={setProcessingRecording}
         setBlobReady={setBlobReady}
         onRecording={myOnRecording}
         onPlayStatus={onPlayStatus}
         doReset={doReset}
         autoStart={autoStart}
+        onProgress={onProgress}
+        onDuration={handleWaveformDuration}
+        controlsRef={controlsRef}
+        hideToolbar={hideToolbar}
+        hideControls={hideControls}
         segments={segments}
         reload={gotTheBlob}
         noNewVoice={noNewVoice}
         allowNoNoise={allowNoNoise}
+        captureEchoCancellation={captureAudioProcessing.echoCancellation}
+        captureNoiseSuppression={captureAudioProcessing.noiseSuppression}
+        keepItSmall={keepItSmall}
+        hasRecording={hasRecording ?? false}
+        isStopLogic={effectiveIsStopLogic}
+        hideWaveformEditTools={simplified}
+        isRecordingRights={isRecordingRights}
+        handleUpload={handleUpload}
+        rightsLeftActions={rightsLeftActions}
+        forceMobileView={forceMobileView}
+        handleSave={handleSave}
+        onVersions={onVersions}
+        isSaveDisabled={
+          Boolean(isSaveDisabled) ||
+          waveformDuration <= 0 ||
+          processingRecording ||
+          tooBig ||
+          (wantsSaveVisible && !blobReady)
+        }
+        mediaSaveInProgress={mediaSaveInProgress}
+        showWaveformSave={wantsSaveVisible}
+        dockRecordButton={dockRecordButton}
+        onDockedRecordButton={onDockedRecordButton}
+        showDockedRecordButton={showDockedRecordButton}
+        onRecordingCleared={handleRecordingCleared}
       />
-      {warning && (
-        <Typography sx={{ m: 2, color: 'warning.dark' }} id="warning">
-          {warning}
+      {showProcessingRecordingMessage ? (
+        <Typography sx={{ m: 2, color: 'text.secondary' }} id="warning">
+          {t.processing}
         </Typography>
+      ) : (
+        warning && (
+          <Typography sx={{ m: 2, color: 'warning.dark' }} id="warning">
+            {warning}
+          </Typography>
+        )
       )}
-      <Stack direction="row" sx={{ alignItems: 'center' }}>
-        {showFilename && (
-          <TextField
-            sx={controlProps}
-            id="filename"
-            label={t.fileName}
-            value={name}
-            onChange={handleChangeFileName}
-            required={true}
-            fullWidth={true}
-          />
-        )}
-        <Typography sx={{ mr: 3 }} id="size">
-          {`${((audioBlob?.size ?? 0) / 1000000 / compression).toFixed(2)}MB`}
-        </Typography>
-        {allowWave && (
-          <FormControlLabel
-            control={
-              <Checkbox
-                defaultChecked
-                size="small"
-                onChange={handleCompressChanged}
-              />
-            }
-            label={t.compressed}
-          />
-        )}
-        {metaData}
-      </Stack>
+      {(showSize || metaData) && !effectiveMobileView && (
+        <Stack
+          direction="row"
+          sx={{ alignItems: 'center', justifyContent: 'flex-end' }}
+        >
+          {showSize && (
+            <Typography sx={{ mr: 3 }} id="size">
+              {`${(effectiveAudioBytes / 1000000 / compression).toFixed(2)}MB`}
+            </Typography>
+          )}
+          {metaData}
+        </Stack>
+      )}
+    </>
+  );
+
+  if (!showSize && !metaData) {
+    return content;
+  }
+
+  return effectiveMobileView ? (
+    content
+  ) : (
+    <Paper
+      id="mediaRecord"
+      sx={{
+        width: width, // isMobileView is false here
+        maxWidth: width,
+        minWidth: 0,
+      }}
+    >
+      {content}
     </Paper>
   );
 }

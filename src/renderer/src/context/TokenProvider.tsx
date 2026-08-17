@@ -7,10 +7,19 @@ import { DateTime } from 'luxon';
 import { jwtDecode } from 'jwt-decode';
 import { useGetGlobal, useGlobal } from '../context/useGlobal';
 import { useUpdateOrbitToken } from '../crud';
-import { LocalKey, logError, Severity, useInterval } from '../utils';
+import {
+  LocalKey,
+  forceLogin,
+  logError,
+  Severity,
+  useInterval,
+} from '../utils';
+import { removeOrbitRemote } from '../utils/removeOrbitRemote';
 import { isElectron } from '../../api-variable';
 import { useProjectDefaults } from '../crud/useProjectDefaults';
 import { MainAPI } from '@model/main-api';
+import envVariables from '../auth/auth0-variables.json';
+const { apiIdentifier } = envVariables;
 const ipc = window?.api as MainAPI;
 
 const Expires = 0; // Set to 7110 to test 1:30 token
@@ -20,10 +29,11 @@ const initState = {
   profile: undefined as User | undefined,
   expiresAt: 0 as number | null,
   email_verified: false as boolean | undefined,
+  authSessionCleared: false as boolean,
   logout: () => {},
+  invalidateOnlineSession: () => {},
   resetExpiresAt: () => {},
   authenticated: () => false,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   setAuthSession: (_profile: User | undefined, _accessToken: string) => {},
 };
 
@@ -34,10 +44,13 @@ export interface ITokenContext {
   setState: React.Dispatch<React.SetStateAction<ICtxState>>;
 }
 
-const TokenContext = React.createContext({} as ITokenContext);
+const TokenContext = React.createContext({
+  state: initState as ICtxState,
+  setState: () => {},
+} as ITokenContext);
 
 interface IProps {
-  children: JSX.Element;
+  children: React.JSX.Element;
 }
 
 function TokenProvider(props: IProps) {
@@ -45,6 +58,7 @@ function TokenProvider(props: IProps) {
   const {
     getAccessTokenSilently,
     loginWithRedirect,
+    logout: auth0Logout,
     user,
     isLoading,
     isAuthenticated,
@@ -53,6 +67,7 @@ function TokenProvider(props: IProps) {
   const [modalOpen, setModalOpen] = React.useState(false);
   const [secondsToExpire, setSecondsToExpire] = React.useState(0);
   const [errorReporter] = useGlobal('errorReporter');
+  const [coordinator] = useGlobal('coordinator');
   const updateOrbitToken = useUpdateOrbitToken();
   const view = React.useRef<any>('');
   const { getLocalDefault } = useProjectDefaults();
@@ -63,8 +78,19 @@ function TokenProvider(props: IProps) {
     ...initState,
   });
   const expiresAtRef = useRef<number | null>(null);
+  const skipAuthRestoreRef = useRef(false);
+  // True from the moment the user clicks "Continue" (or any refresh starts)
+  // until the refresh settles. While set, the expiry watchdog is suspended so
+  // the old, about-to-expire token can't trip auto-logout before the new token
+  // arrives — which was tearing down in-progress saves (e.g. recording edits).
+  const refreshingRef = useRef(false);
   const getGlobal = useGetGlobal();
+  const webTokenOptions = {
+    authorizationParams: { audience: apiIdentifier },
+  };
   const setAuthSession = (profile: User | undefined, accessToken: string) => {
+    skipAuthRestoreRef.current = false;
+    refreshingRef.current = false;
     if (accessToken) {
       const decodedToken = jwtDecode(accessToken) as IToken;
       expiresAtRef.current = decodedToken.exp;
@@ -77,16 +103,22 @@ function TokenProvider(props: IProps) {
       profile,
       expiresAt: expiresAtRef.current,
       email_verified: profile?.email_verified,
+      authSessionCleared: false,
     }));
     localStorage.setItem(LocalKey.loggedIn, 'true');
+    updateOrbitToken(accessToken);
   };
 
   React.useEffect(() => {
     //this is only called on web
-    if (isAuthenticated && user) {
-      getAccessTokenSilently()
+    if (!isAuthenticated) {
+      skipAuthRestoreRef.current = false;
+      return;
+    }
+    if (skipAuthRestoreRef.current) return;
+    if (user) {
+      getAccessTokenSilently(webTokenOptions)
         .then((token) => {
-          updateOrbitToken(token);
           setAuthSession(user, token);
         })
         .catch(() => {
@@ -98,12 +130,32 @@ function TokenProvider(props: IProps) {
   }, [isAuthenticated, user]);
 
   const logout = () => {
+    skipAuthRestoreRef.current = true;
+    expiresAtRef.current = null;
+    localStorage.removeItem(LocalKey.loggedIn);
     setState((state) => ({
       ...state,
       accessToken: null,
       profile: undefined,
-      expiresAt: 0,
+      expiresAt: -1,
+      email_verified: false,
+      authSessionCleared: true,
     }));
+  };
+
+  // The single place a rejected/expired session gets torn down. Every caller
+  // used to also call forceLogin() itself (Sources.tsx, Loading.tsx) — folded
+  // in here so there's one canonical "invalidate + force login" sequence.
+  const invalidateOnlineSession = () => {
+    void removeOrbitRemote(coordinator);
+    logout();
+    forceLogin();
+    localStorage.removeItem(LocalKey.goingOnline);
+    if (isElectron) {
+      void ipc?.logout();
+    } else {
+      auth0Logout({ returnTo: window.location.origin } as RedirectLoginOptions);
+    }
   };
 
   const authenticated = () => {
@@ -114,13 +166,20 @@ function TokenProvider(props: IProps) {
 
   const resetExpiresAt = () => {
     if (getGlobal('offline')) return;
+    // A refresh is now in flight. Suspend the expiry watchdog until it settles
+    // so the old, about-to-expire token can't trip auto-logout before the new
+    // token lands. Set here (not just in the Continue handler) so every refresh
+    // path — Continue, Electron mount, ErrorPage — is covered uniformly.
+    // setAuthSession (success) and handleLogOut (failure) both clear it; because
+    // a successful clear always installs a fresh token, an early clear by an
+    // overlapping refresh is harmless (the watchdog resumes on a valid token).
+    refreshingRef.current = true;
     if (isElectron) {
       ipc
         ?.refreshToken()
         .then(async () => {
           const myUser = await ipc?.getProfile();
           const myToken = (await ipc?.getToken()) as string;
-          updateOrbitToken(myToken);
           setAuthSession(myUser, myToken);
         })
         .catch((e: Error) => {
@@ -130,17 +189,11 @@ function TokenProvider(props: IProps) {
           logError(Severity.error, errorReporter, e);
         });
     } else {
-      getAccessTokenSilently()
+      getAccessTokenSilently(webTokenOptions)
         .then((token) => {
-          updateOrbitToken(token);
           setAuthSession(user, token);
         })
         .catch((e: any) => {
-          console.log(
-            'token error',
-            JSON.stringify(e),
-            window?.location?.pathname
-          );
           if (e.error === 'login_required' && window?.location?.pathname) {
             localStorage.setItem(LocalKey.deeplink, window?.location?.pathname);
           }
@@ -152,7 +205,8 @@ function TokenProvider(props: IProps) {
   };
 
   React.useEffect(() => {
-    if (!getGlobal('offline')) {
+    // Web token restore is handled by the auth0Effect above.
+    if (!getGlobal('offline') && isElectron) {
       if (localStorage.getItem(LocalKey.loggedIn) === 'true') {
         resetExpiresAt();
       }
@@ -161,6 +215,7 @@ function TokenProvider(props: IProps) {
   }, []);
 
   const handleLogOut = () => {
+    refreshingRef.current = false;
     setState((state) => ({ ...state, expiresAt: -1 }));
     view.current = 'loggedOut';
     localStorage.removeItem(LocalKey.loggedIn);
@@ -178,18 +233,26 @@ function TokenProvider(props: IProps) {
   };
 
   const checkTokenExpired = () => {
+    // A refresh is in flight (user clicked Continue). Don't act on the stale
+    // expiry: reopening the modal here would reset view.current to '' and let
+    // the auto-logout effect fire before the new token lands.
+    if (refreshingRef.current) return;
     if (!getGlobal('offline')) {
       if ((expiresAtRef.current ?? 0) > 0) {
         const secondsLeft = timeUntilExpire();
         if (secondsLeft < Expires + 30) {
           setSecondsToExpire(secondsLeft);
           if (!modalOpen) {
+            view.current = '';
             setModalOpen(true);
           } else {
             view.current = '';
           }
         } else {
-          if (modalOpen) setModalOpen(false);
+          if (modalOpen) {
+            view.current = '';
+            setModalOpen(false);
+          }
         }
       }
     }
@@ -197,22 +260,33 @@ function TokenProvider(props: IProps) {
 
   useInterval(
     checkTokenExpired,
-    state?.expiresAt && !getGlobal('offline') ? 5000 : null
+    (state?.expiresAt ?? 0) > 0 && !getGlobal('offline') ? 5000 : null
   );
 
   const handleClose = (value: number) => {
     setModalOpen(false);
     if (value < 0) {
-      view.current = 'Logout';
+      handleLogOut();
     } else {
+      // resetExpiresAt() sets refreshingRef to suspend the expiry watchdog until
+      // the refresh settles. (This replaces the old `expiresAt + 10` bump, which
+      // never worked: the watchdog reads expiresAtRef, not state.expiresAt.)
       resetExpiresAt();
-      setState((state) => ({
-        ...state,
-        expiresAt: state?.expiresAt ? state.expiresAt + 10 : 0,
-      })); // allow time for refresh
       view.current = 'Continue';
     }
   };
+
+  React.useEffect(() => {
+    if (
+      modalOpen &&
+      view.current === '' &&
+      secondsToExpire < Expires &&
+      !refreshingRef.current
+    ) {
+      handleLogOut();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [modalOpen, secondsToExpire]);
 
   if (isLoading && !isElectron) {
     return <Busy />;
@@ -227,22 +301,6 @@ function TokenProvider(props: IProps) {
     return <Busy />;
   }
 
-  if (modalOpen && view.current === '') {
-    if (secondsToExpire < Expires) {
-      handleLogOut();
-    }
-    return (
-      <TokenDialog
-        seconds={secondsToExpire}
-        open={modalOpen}
-        onClose={handleClose}
-      />
-    );
-  } else if (view.current === 'Logout') {
-    handleLogOut();
-  }
-
-  // If there is no error just render the children component.
   return (
     <TokenContext.Provider
       value={{
@@ -250,6 +308,7 @@ function TokenProvider(props: IProps) {
           ...state,
           setAuthSession,
           logout,
+          invalidateOnlineSession,
           authenticated,
           resetExpiresAt,
         },
@@ -257,6 +316,11 @@ function TokenProvider(props: IProps) {
       }}
     >
       {children}
+      <TokenDialog
+        seconds={secondsToExpire}
+        open={modalOpen && view.current === ''}
+        onClose={handleClose}
+      />
     </TokenContext.Provider>
   );
 }

@@ -1,81 +1,17 @@
-import React, { useRef, useState } from 'react';
-import { ITemplateStrings } from '../../model';
-import {
-  Divider,
-  IconButton,
-  Dialog,
-  DialogTitle,
-  List,
-  ListItemText,
-  ListItemIcon,
-  SxProps,
-  ListItemButton,
-  TextField,
-  InputAdornment,
-} from '@mui/material';
+import { useState, useEffect } from 'react';
+import { Box, IconButton } from '@mui/material';
 import DoneIcon from '@mui/icons-material/Done';
-import InfoIcon from '@mui/icons-material/Info';
-import { useOrganizedBy } from '../../crud';
+import { TemplateEditor } from '../../control';
+import { TemplateCode, SECT_TEMPLATE } from '../../control/TemplateEditorUtils';
 import { IMatchData } from './makeRefMap';
 import { templateSelector } from '../../selector';
+import { ITemplateStrings } from '../../model';
 import { shallowEqual, useSelector } from 'react-redux';
-import { addPt } from '../../utils/addPt';
 import { Render } from '../../assets/brands';
 
 interface IstrMap {
   [key: string]: string;
 }
-
-const iconProps = { p: 1 } as SxProps;
-
-interface InfoDialogProps {
-  open: boolean;
-  onClose: () => void;
-  onClick: (template: string) => void;
-  organizedBy: string;
-}
-
-const InfoDialog = (props: InfoDialogProps) => {
-  const { onClose, onClick, open, organizedBy } = props;
-  const t: ITemplateStrings = useSelector(templateSelector, shallowEqual);
-
-  const pattern: IstrMap = {
-    BOOK: addPt(t.book),
-    BOOKNAME: t.bookname,
-    SECT: organizedBy,
-    PASS: t.passage.replace('{0}', organizedBy),
-    CHAP: t.chapter,
-    BEG: t.beginning,
-    END: t.end,
-  };
-
-  const handleClose = () => {
-    onClose();
-  };
-
-  const handleListItemClick = (index: number) => {
-    onClick(Object.keys(pattern)[index]);
-  };
-
-  return (
-    <Dialog
-      onClose={handleClose}
-      open={open}
-      aria-labelledby="templDlg"
-      disableEnforceFocus
-    >
-      <DialogTitle id="templDlg">{t.templateCodes}</DialogTitle>
-      <List>
-        {Object.keys(pattern).map((pat, index) => (
-          <ListItemButton key={pat} onClick={() => handleListItemClick(index)}>
-            <ListItemIcon>{`{${pat}}`}</ListItemIcon>
-            <ListItemText primary={pattern[pat]} />
-          </ListItemButton>
-        ))}
-      </List>
-    </Dialog>
-  );
-};
 
 export interface ITemplateProps {
   matchMap: (pat: string, options: IMatchData) => void;
@@ -84,38 +20,27 @@ export interface ITemplateProps {
 
 export function Template(props: ITemplateProps) {
   const { matchMap, options } = props;
-  const [template, setTemplatex] = useState<string>();
-  const [templateInfo, setTemplateInfo] = useState(false);
-  const templateRef = useRef<HTMLDivElement>(null);
-  const { getOrganizedBy } = useOrganizedBy();
-  const [organizedBy] = useState(getOrganizedBy(true));
-  const t: ITemplateStrings = useSelector(templateSelector, shallowEqual);
+  const [template, setTemplate] = useState<string>('');
+  const tTemplate: ITemplateStrings = useSelector(
+    templateSelector,
+    shallowEqual
+  );
 
-  const setTemplate = (t: string) => {
-    setTemplatex(t);
-    localStorage.setItem('template', t);
-  };
-  const handleTemplateChange = (e: any) => {
-    setTemplate(e.target.value);
-  };
-
-  const handleTemplateInfo = () => {
-    setTemplateInfo(!templateInfo);
-  };
-
-  const handleClose = () => {
-    setTemplateInfo(false);
-  };
-  const handleClick = (newpart: string) => {
-    setTemplate(template + `{${newpart}}`);
-    if (templateRef.current) {
-      const el = templateRef.current?.firstChild as HTMLLabelElement;
-      const attrs = el.attributes as any;
-      if (attrs['data-shrink'].nodeValue === 'false') {
-        el.style.translate = '12px 7px';
-        el.style.transform = 'scale(75%)';
+  useEffect(() => {
+    if (!template) {
+      const lastTemplate = localStorage.getItem('template');
+      if (lastTemplate) {
+        setTemplate(lastTemplate);
+      } else {
+        setTemplate(SECT_TEMPLATE);
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleTemplateChange = (value: string) => {
+    setTemplate(value);
+    localStorage.setItem('template', value);
   };
 
   const handleApply = () => {
@@ -138,92 +63,45 @@ export function Template(props: ITemplateProps) {
       for (const t of terms) {
         sPat = sPat.replace('{' + t + '}', rex[t]);
       }
-    matchMap(sPat, { ...options, terms });
+    matchMap(sPat, { ...options, terms } as IMatchData);
   };
 
-  React.useEffect(() => {
-    if (!template) {
-      const lastTemplate = localStorage.getItem('template');
-      if (lastTemplate) {
-        setTemplate(lastTemplate);
-      } else {
-        setTemplate('{SECT}');
-        // const planRecs = memory?.cache.query((q) =>
-        //   q.findRecords('plan')
-        // ) as Plan[];
-        // const myPlan = planRecs.filter((p) => p.id === plan);
-        // if (myPlan.length > 0) {
-        //   const planTypeRec = memory?.cache.query((q) =>
-        //     q.findRecord({
-        //       type: 'plantype',
-        //       id: related(myPlan[0], 'plantype'),
-        //     })
-        //   ) as PlanType;
-        //   setTemplate(
-        //     planTypeRec?.attributes?.name.toLocaleLowerCase() !== 'other'
-        //       ? '{BOOK}-{CHAP}-{BEG}-{END}'
-        //       : '{CHAP}-{BEG}-{END}'
-        //   );
-        // }
-      }
-    }
-    /* eslint-disable-next-line react-hooks/exhaustive-deps */
-  }, []);
-
   return (
-    <>
-      <TextField
-        ref={templateRef}
-        label={t.autoMatchTemplate}
-        variant="filled"
-        sx={{ mx: 2, width: '600px' }}
-        value={template ?? ''}
-        onChange={handleTemplateChange}
-        helperText={
-          template === '{SECT}'
-            ? t.renderExportTemplate.replace('{0}', Render)
-            : undefined
-        }
-        InputProps={{
-          endAdornment: (
-            <InputAdornment position="end">
-              {
-                <>
-                  <IconButton
-                    id="templApply"
-                    sx={iconProps}
-                    aria-label={t.apply}
-                    onClick={handleApply}
-                    title={t.apply}
-                  >
-                    <DoneIcon />
-                  </IconButton>
-                  <Divider
-                    orientation="vertical"
-                    sx={{ height: '28px', m: '4px' }}
-                  />
-                  <IconButton
-                    id="templCodes"
-                    color="primary"
-                    sx={iconProps}
-                    onClick={handleTemplateInfo}
-                    title={t.templateCodes}
-                  >
-                    <InfoIcon />
-                  </IconButton>
-                </>
-              }
-            </InputAdornment>
-          ),
-        }}
-      />
-      <InfoDialog
-        open={templateInfo}
-        onClose={handleClose}
-        onClick={handleClick}
-        organizedBy={organizedBy}
-      />
-    </>
+    <Box sx={{ display: 'flex', alignItems: 'flex-start' }}>
+      <Box sx={{ flex: 1, maxWidth: '600px' }}>
+        <TemplateEditor
+          value={template}
+          onChange={handleTemplateChange}
+          validCodes={[
+            TemplateCode.BOOK,
+            TemplateCode.BOOKNAME,
+            TemplateCode.SECT,
+            TemplateCode.PASS,
+            TemplateCode.CHAP,
+            TemplateCode.BEG,
+            TemplateCode.END,
+          ]}
+          showLabel={true}
+          id="audioTabTemplate"
+        />
+        {template === SECT_TEMPLATE && (
+          <Box sx={{ mt: 0.5, ml: 1.5, fontSize: '0.75rem' }}>
+            {tTemplate.renderExportTemplate.replace('{0}', Render)}
+          </Box>
+        )}
+      </Box>
+      <Box sx={{ ml: 1, display: 'flex', alignItems: 'center' }}>
+        <IconButton
+          id="templApply"
+          sx={{ p: 1 }}
+          aria-label={tTemplate.apply}
+          onClick={handleApply}
+          title={tTemplate.apply}
+        >
+          <DoneIcon />
+        </IconButton>
+      </Box>
+    </Box>
   );
 }
 export default Template;

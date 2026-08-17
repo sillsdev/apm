@@ -1,0 +1,176 @@
+import {
+  Box,
+  Card,
+  Checkbox,
+  IconButton,
+  SxProps,
+  Typography,
+} from '@mui/material';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import EditIcon from '@mui/icons-material/Edit';
+import { IRow } from '../../../../context/PassageDetailContext';
+import { SectionResourceD } from '../../../../model';
+import LimitedMediaPlayer from '../../../LimitedMediaPlayer';
+import { useMobile } from '../../../../utils/useMobile';
+import { useMemo } from 'react';
+import { WrapTitle } from '../../../../control/WrapTitle';
+
+// This card is used for audio resources in the mobile list.
+// It is selected when the media content type starts with "audio/"
+// (for example mp3, m4a, wav, ogg).
+
+interface IProps {
+  row: IRow;
+  isPlaying: boolean;
+  onPlay: (id: string) => void;
+  expandedId?: string | null;
+  setExpandedId: (id: string | null) => void;
+  onDone?: (id: string, res: SectionResourceD | null) => void;
+  onEdit?: (id: string) => void;
+  onDelete?: (id: string) => void;
+  onEnded?: () => void;
+  subtitle?: string;
+  limits?: {
+    start?: number;
+    end?: number;
+  };
+  sx?: SxProps;
+}
+
+export function AudioResourceCard({
+  row,
+  isPlaying,
+  onPlay,
+  expandedId,
+  setExpandedId,
+  onDone,
+  onEdit,
+  onDelete,
+  onEnded,
+  subtitle = 'Scripture',
+  limits,
+  sx,
+}: IProps) {
+  const { isMobileWidth } = useMobile();
+
+  const handleDoneToggle = () => {
+    if (onDone) {
+      onDone(row.id, row.resource);
+    }
+  };
+
+  const statusColor = useMemo(
+    () => (row.done ? 'grey.400' : 'grey.700'),
+    [row.done]
+  );
+
+  return (
+    <Card
+      elevation={0}
+      sx={{
+        width: '100%',
+        minHeight: 'clamp(7.5rem, 16vw, 9rem)',
+        boxSizing: 'border-box',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-between',
+        border: '2px solid',
+        borderColor: statusColor,
+        borderRadius: 2,
+        backgroundColor: 'background.paper',
+        p: 1,
+        ...sx,
+      }}
+    >
+      <Box
+        sx={{
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+          minHeight: 0,
+        }}
+      >
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            gap: 1,
+          }}
+        >
+          <Box sx={{ minWidth: 0, overflow: 'hidden' }}>
+            <WrapTitle
+              id={row.id}
+              expandedId={expandedId}
+              setExpandedId={setExpandedId}
+              typographyProps={{
+                variant: 'h6',
+                sx: {
+                  lineHeight: 1.25,
+                  color: statusColor,
+                  fontWeight: undefined,
+                },
+              }}
+            >
+              {row.artifactName}
+            </WrapTitle>
+          </Box>
+          <Checkbox
+            checked={Boolean(row.done)}
+            onChange={handleDoneToggle}
+            size="small"
+            sx={{ mt: -0.5, mr: -0.5 }}
+            slotProps={{
+              input: {
+                'aria-label': `Mark ${row.artifactName} complete`,
+              },
+            }}
+          />
+        </Box>
+        <Typography variant="h6" sx={{ lineHeight: 1.25, color: statusColor }}>
+          {subtitle}
+        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          {/* Audio playback UI for audio/* resource files. */}
+          <Box sx={{ flex: 1, minWidth: 0, pr: 2 }}>
+            <LimitedMediaPlayer
+              srcMediaId={row.id}
+              requestPlay={isPlaying}
+              onEnded={onEnded ?? (() => {})}
+              onTogglePlay={() => onPlay(row.id)}
+              controls
+              limits={limits ?? {}}
+              noClose
+              noRestart
+              noSkipBack
+              playButtonSize="large"
+              noContainer
+            />
+          </Box>
+          {onEdit && !isMobileWidth && (
+            <IconButton
+              size="small"
+              onClick={() => onEdit(row.id)}
+              aria-label={`Edit ${row.artifactName}`}
+              sx={{ p: 0.25 }}
+            >
+              <EditIcon fontSize="medium" />
+            </IconButton>
+          )}
+          {onDelete && !isMobileWidth && (
+            <IconButton
+              size="small"
+              onClick={() => onDelete(row.id)}
+              aria-label={`Delete ${row.artifactName}`}
+              sx={{ p: 0.25 }}
+            >
+              <DeleteOutlineIcon fontSize="medium" />
+            </IconButton>
+          )}
+        </Box>
+      </Box>
+    </Card>
+  );
+}
+
+export default AudioResourceCard;

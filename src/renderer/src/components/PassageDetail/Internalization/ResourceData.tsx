@@ -1,15 +1,15 @@
 import {
-  Box,
   FormControl,
   FormControlLabel,
   FormLabel,
+  Grid,
   Radio,
   RadioGroup,
   Stack,
   TextField,
   Typography,
 } from '@mui/material';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, type RefObject } from 'react';
 import { shallowEqual, useSelector } from 'react-redux';
 import { ArtifactCategoryType, useOrganizedBy } from '../../../crud';
 import {
@@ -30,6 +30,7 @@ import { MarkDownEdit } from '../../../control/MarkDownEdit';
 import { mediaContentType } from '../../../utils/contentType';
 import { MarkDownView } from '../../../control/MarkDownView';
 import { ArtCatScr } from '../../../components/Sheet/ArtCatScr';
+import { descriptionRequiredForResource } from './resourceArtifactName';
 
 interface IProps {
   media?: MediaFileD | undefined;
@@ -44,8 +45,12 @@ interface IProps {
   allowProject: boolean;
   catRequired: boolean;
   catAllowNew?: boolean | undefined;
+  // Forwarded to SelectArtifactCategory so the parent form can create a new
+  // category at submission (rather than on blur).
+  catCommitRef?: RefObject<(() => Promise<string>) | null> | undefined;
   sectDesc?: string | undefined;
   passDesc?: string | undefined;
+  wrapPreviewOverflow?: boolean;
 }
 export function ResourceData(props: IProps) {
   const {
@@ -63,18 +68,35 @@ export function ResourceData(props: IProps) {
     media,
     uploadType,
     onTextChange,
+    wrapPreviewOverflow,
+    catCommitRef,
   } = props;
   const [description, setDescription] = useState(initDescription);
   const { getOrganizedBy } = useOrganizedBy();
-  const [value, setValue] = useState(initPassRes ? 'passage' : 'section');
+  const resourceKindFromProps = () =>
+    uploadType === UploadType.ProjectResource
+      ? 'general'
+      : initPassRes
+        ? 'passage'
+        : 'section';
+  const [value, setValue] = useState(resourceKindFromProps);
   const [text, setText] = useState(media?.attributes?.originalFile ?? '');
   const t: IPassageDetailArtifactsStrings = useSelector(
     passageDetailArtifactsSelector,
     shallowEqual
   );
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
+  const descriptionRequired = descriptionRequiredForResource(
+    mediaContentType(media),
+    uploadType
+  );
 
   useEffect(() => setDescription(initDescription), [initDescription]);
+
+  useEffect(() => {
+    setValue(resourceKindFromProps());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [uploadType, initPassRes]);
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = (event.target as HTMLInputElement).value;
@@ -105,26 +127,36 @@ export function ResourceData(props: IProps) {
         <LinkEdit inValue={text} onValue={handleTextChange} />
       )}
       {mediaContentType(media) === MarkDownType && (
-        <MarkDownEdit inValue={text} onValue={handleTextChange} />
-      )}
-      <Box sx={{ pt: 1 }}>
-        <TextField
-          id="filename"
-          label={ts.description}
-          value={description || ''}
-          onChange={handleChangeDescription}
-          required={false}
-          fullWidth={true}
+        <MarkDownEdit
+          inValue={text}
+          onValue={handleTextChange}
+          wrapPreviewOverflow={wrapPreviewOverflow}
         />
-      </Box>
-      <SelectArtifactCategory
-        allowNew={catAllowNew}
-        initCategory={initCategory || ''}
-        onCategoryChange={onCategoryChange}
-        required={catRequired}
-        scripture={ArtCatScr.highlight}
-        type={ArtifactCategoryType.Resource}
-      />
+      )}
+      <Grid container spacing={2} sx={{ pt: 1 }}>
+        <Grid size={{ xs: 12, sm: 6 }}>
+          <TextField
+            id="description"
+            label={ts.description}
+            value={description || ''}
+            onChange={handleChangeDescription}
+            required={descriptionRequired}
+            error={descriptionRequired && !(description || '').trim()}
+            fullWidth={true}
+          />
+        </Grid>
+        <Grid size={{ xs: 12, sm: 6 }}>
+          <SelectArtifactCategory
+            allowNew={catAllowNew}
+            initCategory={initCategory || ''}
+            onCategoryChange={onCategoryChange}
+            required={catRequired}
+            scripture={ArtCatScr.highlight}
+            type={ArtifactCategoryType.Resource}
+            commitRef={catCommitRef}
+          />
+        </Grid>
+      </Grid>
       {onPassResChange && (
         <FormControl>
           <FormLabel id="resourcekind">{t.tip1a}</FormLabel>
@@ -137,12 +169,18 @@ export function ResourceData(props: IProps) {
             <FormControlLabel
               value={'section'}
               control={<Radio />}
-              label={sectDesc ?? getOrganizedBy(true)}
+              label={t.currentResource.replace(
+                '{0}',
+                sectDesc ?? getOrganizedBy(true)
+              )}
             />
             <FormControlLabel
               value={'passage'}
               control={<Radio />}
-              label={passDesc ?? t.passageResource}
+              label={t.currentResource.replace(
+                '{0}',
+                passDesc ?? t.passageResource
+              )}
             />
             {allowProject &&
               ![
@@ -155,7 +193,7 @@ export function ResourceData(props: IProps) {
                   control={<Radio />}
                   label={t.uploadProject.replace(
                     '{0}',
-                    getOrganizedBy(false).toLocaleLowerCase()
+                    getOrganizedBy(false)
                   )}
                 />
               )}

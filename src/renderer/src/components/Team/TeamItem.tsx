@@ -2,7 +2,9 @@ import React, { useContext, useState, useMemo } from 'react';
 import { useGetGlobal, useGlobal } from '../../context/useGlobal';
 import { Grid, IconButton } from '@mui/material';
 import GroupIcon from '@mui/icons-material/Group';
-import { DialogMode, OrganizationD } from '../../model';
+import { DialogMode, ICardsStrings, OrganizationD } from '../../model';
+import { shallowEqual, useSelector } from 'react-redux';
+import { cardsSelector } from '../../selector';
 import { TeamContext } from '../../context/TeamContext';
 import BigDialog from '../../hoc/BigDialog';
 import { BigDialogBp } from '../../hoc/BigDialogBp';
@@ -10,13 +12,15 @@ import { StepEditor } from '../StepEditor';
 import GroupTabs from '../GroupTabs';
 import { ProjectCard, AddCard } from '.';
 import TeamDialog, { ITeamDialog } from './TeamDialog';
-import { useRole, defaultWorkflow, useBible } from '../../crud';
+import { useRole, defaultWorkflow, useTeamWorkflowProcess } from '../../crud';
 import Confirm from '../AlertDialog';
 import { UnsavedContext } from '../../context/UnsavedContext';
 import { TeamPaper, TeamHeadDiv, TeamName, AltButton } from '../../control';
 import { RecordIdentity } from '@orbit/records';
 import { ProjectSort } from './ProjectDialog/ProjectSort';
 import SortIcon from '@mui/icons-material/Sort';
+import { LocalKey, localUserKey } from '../../utils/localUserKey';
+import { useCommitTeamSettings } from '../../crud/useCommitTeamSettings';
 
 interface IProps {
   team: OrganizationD;
@@ -26,28 +30,25 @@ export const TeamItem = (props: IProps) => {
   const { team } = props;
   const [offline] = useGlobal('offline'); //verified this is not used in a function 2/18/25
   const [offlineOnly] = useGlobal('offlineOnly'); //will be constant here
+  const [connected] = useGlobal('connected');
   const [, setOrganization] = useGlobal('organization');
   const [busy] = useGlobal('remoteBusy'); //verified this is not used in a function 2/18/25
   const [editOpen, setEditOpen] = useState(false);
   const [showWorkflow, setShowWorkflow] = useState(false);
   const [deleteItem, setDeleteItem] = useState<RecordIdentity>();
   const ctx = React.useContext(TeamContext);
-  const {
-    teamProjects,
-    teamMembers,
-    teamUpdate,
-    teamDelete,
-    isAdmin,
-    resetProjectPermissions,
-  } = ctx.state;
-  const t = ctx.state.cardStrings;
-  const { createBible, updateBible } = useBible();
+  const { teamProjects, teamMembers, teamDelete, isAdmin } = ctx.state;
+  const t: ICardsStrings = useSelector(cardsSelector, shallowEqual);
   const [openMember, setOpenMember] = useState(false);
   const { setMyOrgRole, userIsOrgAdmin } = useRole();
+  const teamWorkflow = useTeamWorkflowProcess(team.id);
+  const stepEditorProcess = teamWorkflow ?? defaultWorkflow;
   const { startSave, waitForSave } = useContext(UnsavedContext).state;
   const [sortVisible, setSortVisible] = useState(false);
   const getGlobal = useGetGlobal();
+  const commitTeamSettings = useCommitTeamSettings();
   const handleMembers = (team: OrganizationD) => () => {
+    localStorage.setItem(localUserKey(LocalKey.team), team.id);
     setOrganization(team.id);
     setMyOrgRole(team.id);
     setOpenMember(true);
@@ -70,25 +71,7 @@ export const TeamItem = (props: IProps) => {
     values: ITeamDialog,
     cb?: (id: string) => Promise<void>
   ) => {
-    if (values.bible)
-      if (!values.bible.id) {
-        await createBible(
-          values.bible,
-          values.bibleMediafile,
-          values.isoMediafile,
-          values.team.id
-        );
-      } else
-        await updateBible(
-          values.bible,
-          values.bibleMediafile,
-          values.isoMediafile,
-          values.team.id
-        );
-
-    teamUpdate(values.team);
-    if (values.resetProjectPermissions) await resetProjectPermissions(team.id);
-    cb && (await cb(values.team.id));
+    await commitTeamSettings(values, cb);
     setEditOpen(false);
   };
 
@@ -115,8 +98,8 @@ export const TeamItem = (props: IProps) => {
   };
 
   const canModify = useMemo(() => {
-    return (!offline && isAdmin(team)) || offlineOnly;
-  }, [offline, team, offlineOnly, isAdmin]);
+    return (!offline && connected && isAdmin(team)) || offlineOnly;
+  }, [offline, team, offlineOnly, isAdmin, connected]);
 
   return (
     <TeamPaper id="TeamItem">
@@ -191,7 +174,7 @@ export const TeamItem = (props: IProps) => {
         isOpen={showWorkflow}
         onOpen={handleWorkflow}
       >
-        <StepEditor process={defaultWorkflow} org={team.id} />
+        <StepEditor process={stepEditorProcess} org={team.id} />
       </BigDialog>
       <BigDialog
         title={t.sortProjects}

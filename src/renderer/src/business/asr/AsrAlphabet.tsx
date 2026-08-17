@@ -1,41 +1,23 @@
 import React from 'react';
-import {
-  Stack,
-  Typography,
-  Checkbox,
-  FormControlLabel,
-  MenuItem,
-  Select,
-  FormControl,
-  InputLabel,
-} from '@mui/material';
+import { Stack, Typography, Checkbox, FormControlLabel } from '@mui/material';
 import { ILanguage, Language } from '../../control/Language';
-import { getLangTag, LangTag } from 'mui-language-picker';
-import { mmsAsrDetail } from './mmsAsrDetail';
+import { getLangTag } from 'mui-language-picker';
+import { asrScriptDetail } from './asrScriptDetail';
 import scriptNameData from '../../assets/scriptName';
-import { MmsLang } from '../../model/mmsLang';
 import { ITranscriberStrings } from '../../model';
 import { transcriberSelector } from '../../selector';
 import { shallowEqual, useSelector } from 'react-redux';
 import { AsrTarget } from './AsrTarget';
-
-export interface IAsrState {
-  target: string;
-  language: ILanguage;
-  mmsIso: string;
-  dialect: string | undefined;
-  selectRoman?: boolean;
-}
+import { asrLanguageFilter, preferredAsrMethodFromBcp47 } from './asrLanguages';
+import { IAsrState } from './asrState';
 
 interface IAsrAlphabet {
   state: IAsrState;
   setState: React.Dispatch<React.SetStateAction<IAsrState | undefined>>;
-  mmsLangs: Map<string, MmsLang[]>;
 }
 
-export const AsrAlphabet = ({ state, setState, mmsLangs }: IAsrAlphabet) => {
-  const [langTag, setLangTag] = React.useState<LangTag | undefined>();
-  const [mmsLangMat, setMmsLangMat] = React.useState<MmsLang[]>();
+export const AsrAlphabet = ({ state, setState }: IAsrAlphabet) => {
+  const [scriptDetail, setScriptDetail] = React.useState('');
   const [showRoman, setShowRoman] = React.useState(false);
   const init = React.useRef(true);
   const t: ITranscriberStrings = useSelector(transcriberSelector, shallowEqual);
@@ -44,45 +26,38 @@ export const AsrAlphabet = ({ state, setState, mmsLangs }: IAsrAlphabet) => {
   );
 
   React.useEffect(() => {
-    const newLangTag = getLangTag(state?.language?.bcp47);
-    setLangTag(newLangTag);
-    const newMatch = mmsLangs.get(newLangTag?.iso639_3 ?? 'und');
-    setMmsLangMat(newMatch);
-    setShowRoman(
-      newMatch?.some(
-        (mmsLang) =>
-          mmsAsrDetail({ mmsLang, langTag: newLangTag, scriptName })?.showRoman
-      ) ?? false
-    );
+    const bcp47 = state?.language?.bcp47 ?? 'und';
+    const newLangTag = getLangTag(bcp47);
+    const { detail, showRoman } = asrScriptDetail({
+      langTag: newLangTag,
+      scriptName,
+    });
+    setScriptDetail(detail);
+    setShowRoman(showRoman);
+    const method = preferredAsrMethodFromBcp47(bcp47);
+    if (method && method !== state.method) {
+      setState((prev) => (prev ? { ...prev, method } : prev));
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state, mmsLangs]);
-
-  const handleChange = (event: any) => {
-    setState({ ...state, dialect: event.target.value });
-  };
-
-  const handleFilter = (code: string) => {
-    const langTag = getLangTag(code);
-    if (['Zxxx', 'Sgnw', 'Brai'].includes(langTag?.script ?? '')) return false;
-    if (langTag?.tag?.split('-')?.[0] === 'zh') return true;
-    return mmsLangs.has(langTag?.iso639_3 ?? 'und');
-  };
+  }, [state?.language?.bcp47]);
 
   const setLang = (language: ILanguage) => {
     if (init.current) {
       init.current = false;
       return;
     }
-    let dialect: string | undefined = undefined;
     const langTag = getLangTag(language?.bcp47 ?? 'und');
-    let mmsIso = langTag?.iso639_3 ?? 'und';
-    if (langTag?.tag === 'zh-CN') mmsIso = 'cmn';
-    const mmsLangMat = mmsLangs.get(mmsIso);
-    if ((mmsLangMat?.length ?? 0) > 1) {
-      dialect = mmsLangMat?.[0]?.mms_asr_code ?? '';
-    }
-    const selectRoman = false;
-    setState({ ...state, language, mmsIso, dialect, selectRoman });
+    let asrIso = langTag?.iso639_3 ?? 'und';
+    if (langTag?.tag === 'zh-CN') asrIso = 'cmn';
+    const method = preferredAsrMethodFromBcp47(language?.bcp47 ?? 'und');
+    setState({
+      ...state,
+      language,
+      asrIso,
+      method,
+      dialect: undefined,
+      selectRoman: false,
+    });
   };
 
   const handleRoman = (_event: any, checked: boolean) => {
@@ -94,43 +69,12 @@ export const AsrAlphabet = ({ state, setState, mmsLangs }: IAsrAlphabet) => {
       <Language
         {...state.language}
         onChange={setLang}
-        filter={handleFilter}
+        filter={asrLanguageFilter}
         hideSpelling={true}
         hideFont={true}
       />
       <Stack direction="column">
-        {mmsLangMat?.length === 1 ? (
-          <Typography>
-            {
-              mmsAsrDetail({ mmsLang: mmsLangMat[0], langTag, scriptName })
-                ?.detail
-            }
-          </Typography>
-        ) : (mmsLangMat?.length ?? 0) > 1 ? (
-          <FormControl sx={{ m: 1, minWidth: 200 }}>
-            <InputLabel id="dialect-select-label">
-              {t.scriptOrDialect}
-            </InputLabel>
-            <Select
-              labelId={'dialect-select-label'}
-              id={'dialect-select'}
-              value={state.dialect}
-              label={t.scriptOrDialect}
-              onChange={handleChange}
-            >
-              {mmsLangMat?.map((mmsLang) => (
-                <MenuItem
-                  key={mmsLang?.mms_asr_code}
-                  value={mmsLang?.mms_asr_code ?? ''}
-                >
-                  {mmsAsrDetail({ mmsLang, langTag, scriptName })?.detail}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        ) : (
-          <></>
-        )}
+        {scriptDetail ? <Typography>{scriptDetail}</Typography> : <></>}
         {showRoman && (
           <FormControlLabel
             control={

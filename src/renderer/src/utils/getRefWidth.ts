@@ -7,8 +7,10 @@ import { RefObject } from 'react';
  * @param ref - React ref object pointing to a DOM element
  * @returns The content width in pixels, or 0 if ref is null
  */
-export const getRefWidth = (ref: RefObject<HTMLElement>): number => {
-  if (!ref.current) {
+export const getRefWidth = (
+  ref: RefObject<HTMLElement | null> | undefined
+): number => {
+  if (!ref?.current) {
     return 0;
   }
 

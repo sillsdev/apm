@@ -22,7 +22,16 @@ export const backupToMemory = async ({
   )) as InitializedRecord[];
   if (!Array.isArray(tblRecs)) tblRecs = [tblRecs];
   try {
-    await memory.sync((t) => tblRecs.map((r) => t.addRecord(r)));
+    // After restoreBackup, records may already be in memory — addRecord would
+    // throw (sjh: although we've never seen this happen). Prefer update when present so ITFSYNC's refill is idempotent.
+    await memory.sync((t) =>
+      tblRecs.map((r) => {
+        const id = { type: r.type, id: r.id as string };
+        return memory.cache.getRecordSync(id)
+          ? t.updateRecord(r)
+          : t.addRecord(r);
+      })
+    );
   } catch (e) {
     console.log(table, e);
     throw e;

@@ -5,6 +5,22 @@ import '@testing-library/jest-dom';
 import { MetadataView } from './MetadataView';
 import { wrapperBuilder } from './data/wrapperBuilder';
 
+jest.mock('../selector', () => ({
+  burritoSelector: jest.fn(),
+  sharedSelector: jest.fn(),
+}));
+
+jest.mock('react-redux', () => ({
+  useSelector: () => ({
+    updateValue: 'Update Value',
+    enterNewValue: 'Enter New Value',
+    valueWarning: 'Value cannot contain JSON characters',
+    cancel: 'Cancel',
+    confirm: 'Confirm',
+  }),
+  shallowEqual: jest.fn(),
+}));
+
 describe('MetadataView', () => {
   it('renders wrapper data in tree view', () => {
     const wrapper = wrapperBuilder({

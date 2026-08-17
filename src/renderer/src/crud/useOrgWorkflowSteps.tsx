@@ -1,6 +1,9 @@
 import { useRef } from 'react';
 import { useGlobal, useGetGlobal } from '../context/useGlobal';
-import { related } from '.';
+import {
+  filterAndSortOrgWorkflowSteps,
+  filterVisibleOrgWorkflowSteps,
+} from './orgWorkflowStepsUtils';
 import {
   IWorkflowStepsStrings,
   OrgWorkflowStep,
@@ -19,6 +22,7 @@ import {
 } from '@orbit/records';
 import { addPt } from '../utils/addPt';
 import { useOrbitData } from '../hoc/useOrbitData';
+import { useNewTime } from '../utils/useNewTime';
 
 export const defaultWorkflow = 'draft';
 
@@ -39,6 +43,7 @@ export const useOrgWorkflowSteps = () => {
   const waitForRemoteQueue = useWaitForRemoteQueue();
   const getGlobal = useGetGlobal();
   const creatingRef = useRef(false);
+  const [newTime, setTime] = useNewTime();
 
   const localizedWorkStep = (val: string) => {
     return addPt((t as ISwitches)[toCamel(val)] ?? '') || val;
@@ -54,7 +59,7 @@ export const useOrgWorkflowSteps = () => {
     }
   };
 
-  const AddOrgWFToOps = async (
+  const AddOrgWFToOps = (
     tb: RecordTransformBuilder,
     wf: WorkflowStepD,
     org: string,
@@ -72,7 +77,7 @@ export const useOrgWorkflowSteps = () => {
         ...wf.attributes,
       },
     } as OrgWorkflowStep;
-    ops.push(...AddRecord(tb, wfs, user, memory));
+    ops.push(...AddRecord(tb, wfs, user, memory, newTime()));
     ops.push(
       ...ReplaceRelatedRecord(
         tb,
@@ -83,7 +88,6 @@ export const useOrgWorkflowSteps = () => {
       )
     );
   };
-
   const QueryOrgWorkflowSteps = async (process: string, org: string) => {
     /* wait for new workflow steps remote id to fill in */
     await waitForRemoteQueue('waiting for workflow update');
@@ -97,20 +101,19 @@ export const useOrgWorkflowSteps = () => {
         q.findRecords('orgworkflowstep')
       )) as OrgWorkflowStepD[];
     }
-    return orgworkflowsteps
-      .filter(
-        (s) =>
-          (process === 'ANY' || s.attributes.process === process) &&
-          related(s, 'organization') === org &&
-          Boolean(s.keys?.remoteId) !== getGlobal('offlineOnly')
-      )
-      .sort((i, j) => i.attributes.sequencenum - j.attributes.sequencenum);
+    return filterAndSortOrgWorkflowSteps(
+      orgworkflowsteps,
+      process,
+      org,
+      getGlobal('offlineOnly')
+    );
   };
 
   const CreateOrgWorkflowSteps = (
     tb: RecordTransformBuilder,
     process: string,
-    org: string
+    org: string,
+    opArray: RecordOperation[]
   ) => {
     const offlineOnly = getGlobal('offlineOnly');
     const processSteps = workflowsteps
@@ -120,10 +123,9 @@ export const useOrgWorkflowSteps = () => {
           Boolean(s?.keys?.remoteId) !== offlineOnly
       )
       .sort((a, b) => a.attributes.sequencenum - b.attributes.sequencenum);
-    const opArray: RecordOperation[] = [];
+    setTime();
     for (let stepIndex = 0; stepIndex < processSteps.length; stepIndex++)
       AddOrgWFToOps(tb, processSteps[stepIndex] as WorkflowStepD, org, opArray);
-    return opArray;
   };
 
   interface IGetSteps {
@@ -162,7 +164,7 @@ export const useOrgWorkflowSteps = () => {
     //     org
     //   );
     // }
-    return orgsteps.filter((s) => showAll || s.attributes.sequencenum >= 0);
+    return filterVisibleOrgWorkflowSteps(orgsteps, showAll);
   };
 
   return {

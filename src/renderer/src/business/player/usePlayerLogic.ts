@@ -26,10 +26,10 @@ interface PlayerLogicProps {
   setRequestPlay: (request: RequestPlay) => void;
   setInitialPosition: (position: number | undefined) => void;
   playerMediafile?: MediaFile | undefined;
-  mediafileRef: React.MutableRefObject<MediaFile | undefined>;
-  segmentsRef: React.MutableRefObject<string>;
-  durationRef: React.MutableRefObject<number>;
-  playingRef: React.MutableRefObject<boolean | undefined>;
+  mediafileRef: React.RefObject<MediaFile | undefined>;
+  segmentsRef: React.RefObject<string>;
+  durationRef: React.RefObject<number>;
+  playingRef: React.RefObject<boolean | undefined>;
   onSegment?: ((segments: string, whole: boolean) => void) | undefined;
 }
 
@@ -55,7 +55,10 @@ export const usePlayerLogic = (props: PlayerLogicProps) => {
   const loadSegments = () => {
     const segs = mediafileRef.current?.attributes?.segments || '{}';
     if (allowSegment) {
-      segmentsRef.current = getSegments(allowSegment, segs);
+      segmentsRef.current =
+        suggestedSegments && suggestedSegments.length > 0
+          ? suggestedSegments
+          : getSegments(allowSegment, segs);
       setSegmentToWhole();
     }
     setDefaultSegments(segmentsRef.current);
@@ -70,7 +73,7 @@ export const usePlayerLogic = (props: PlayerLogicProps) => {
 
   useEffect(() => {
     if (allowSegment)
-      if (suggestedSegments) {
+      if (suggestedSegments && segmentsRef.current !== suggestedSegments) {
         segmentsRef.current = suggestedSegments;
         setDefaultSegments(segmentsRef.current);
         onSegment && onSegment(segmentsRef.current, true);
@@ -90,7 +93,8 @@ export const usePlayerLogic = (props: PlayerLogicProps) => {
         | IRegions
         | undefined;
       //might be "[]"
-      if ((segs?.regions?.length ?? 0) < 3) {
+      //why was this 3?
+      if ((segs?.regions?.length ?? 0) < 2) {
         setCurrentSegment({ start: 0, end: durationRef.current }, -1);
         return true;
       }
@@ -98,16 +102,36 @@ export const usePlayerLogic = (props: PlayerLogicProps) => {
     return false;
   };
 
-  const onCurrentSegment = (segment: IRegion | undefined) => {
+  const onCurrentSegment = (
+    segment: IRegion | undefined,
+    sortedIndex?: number
+  ) => {
     let index = 0;
-    if (segment && segmentsRef.current) {
-      const segs = parseRegions(segmentsRef.current);
+    if (segment && typeof sortedIndex === 'number' && sortedIndex >= 0) {
+      // The waveform reported the current region's exact sorted position — use
+      // it (1-based; 0 means whole/none) rather than re-deriving from times.
+      index = sortedIndex + 1;
+    } else if (segment && segmentsRef.current) {
+      const sorted = parseRegions(segmentsRef.current).regions.sort(
+        (a: IRegion, b: IRegion) => a.start - b.start
+      );
+      const matchTol = 0.6;
       index =
-        segs.regions
-          .sort((a: IRegion, b: IRegion) => a.start - b.start)
-          .findIndex(
-            (r: IRegion) => r.start <= segment?.start && r.end >= segment?.end
+        sorted.findIndex(
+          (r: IRegion) =>
+            Math.abs(r.start - segment.start) <= matchTol &&
+            Math.abs(r.end - segment.end) <= matchTol
+        ) + 1;
+      if (index <= 0) {
+        index =
+          sorted.findIndex(
+            (r: IRegion, i: number) =>
+              segment.start >= r.start - 0.01 &&
+              (i === sorted.length - 1
+                ? segment.start <= r.end + 0.01
+                : segment.start < r.end - 0.01)
           ) + 1;
+      }
     } else {
       if (setSegmentToWhole()) return;
     }

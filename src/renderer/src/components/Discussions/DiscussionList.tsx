@@ -11,6 +11,7 @@ import {
   useTheme,
 } from '@mui/material';
 import { useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { useMobile } from '../../utils/useMobile';
 import { shallowEqual, useSelector } from 'react-redux';
 import { PassageDetailContext } from '../../context/PassageDetailContext';
 import {
@@ -46,6 +47,7 @@ import SortMenu, { ISortState } from './SortMenu';
 import { discussionListSelector } from '../../selector';
 import { useOrbitData } from '../../hoc/useOrbitData';
 import CloseIcon from '@mui/icons-material/Close';
+import { LightTooltip } from '../../control/LightTooltip';
 
 const StyledPaper = styled(Paper)<PaperProps>(({ theme }) => ({
   backgroundColor: theme.palette.secondary.light,
@@ -72,6 +74,7 @@ interface DiscussionListProps {
 }
 
 export function DiscussionList({ onClose }: DiscussionListProps) {
+  const { isMobile, isMobileWidth } = useMobile();
   const discussions = useOrbitData<DiscussionD[]>('discussion');
   const mediafiles = useOrbitData<MediaFileD[]>('mediafile');
   const users = useOrbitData<User[]>('user');
@@ -104,7 +107,6 @@ export function DiscussionList({ onClose }: DiscussionListProps) {
     return (currentSegmentIndex >= 0 ? currentSegment : undefined) ?? '';
   };
   const currentSegmentRef = useRef(getCurrentSegment());
-  const discussionSizeRef = useRef(discussionSize);
   const { toolsChanged, isChanged, startSave, startClear, clearCompleted } =
     useContext(UnsavedContext).state;
   const t: IDiscussionListStrings = useSelector(
@@ -120,10 +122,22 @@ export function DiscussionList({ onClose }: DiscussionListProps) {
     return playerMediafile?.id ?? '';
   }, [playerMediafile]);
 
-  const [rootWidthStyle, setRootWidthStyle] = useState({
-    width: `${discussionSizeRef.current?.width - 64}px`, //leave room for scroll bar
-    maxHeight: `${discussionSizeRef.current?.height - 120}px`,
-  });
+  const rootWidthStyle = useMemo(
+    () =>
+      isMobileWidth
+        ? {
+            width: '100%',
+            maxWidth: '100%',
+            maxHeight: `${discussionSize.height - 120}px`,
+            boxSizing: 'border-box' as const,
+          }
+        : {
+            width: '100%',
+            maxHeight: `${discussionSize.height - 120}px`,
+            boxSizing: 'border-box' as const,
+          },
+    [discussionSize.height, isMobileWidth]
+  );
   const { userIsAdmin } = useRole();
   const defaultFilterState: IFilterState = {
     forYou: false,
@@ -152,6 +166,7 @@ export function DiscussionList({ onClose }: DiscussionListProps) {
   const [confirmAction, setConfirmAction] = useState<string>('');
   const discussionOrg = useDiscussionOrg();
   const anyChangedRef = useRef(false);
+  const [anyChanged, setAnyChanged] = useState(false);
   const enum WaitSave {
     add = 'add',
     collapse = 'collapse',
@@ -160,7 +175,7 @@ export function DiscussionList({ onClose }: DiscussionListProps) {
     sort = 'sort',
     changePassage = 'leave passage',
   }
-  const formRef = useRef<any>();
+  const formRef = useRef<any>(undefined);
   const [highlightedRef, setHighlightedRef] = useState<any>();
   const [highlightNew, setHighlightNew] = useState('');
   const { getOrgDefault, setOrgDefault } = useOrgDefaults();
@@ -176,14 +191,6 @@ export function DiscussionList({ onClose }: DiscussionListProps) {
     addingRef.current = adding;
     setAddingx(adding);
   };
-
-  useEffect(() => {
-    discussionSizeRef.current = discussionSize;
-    setRootWidthStyle({
-      width: `${discussionSizeRef.current?.width - 64}px`, // space for scroll bar
-      maxHeight: `${discussionSizeRef.current?.height - 120}px`,
-    });
-  }, [discussionSize]);
 
   useEffect(
     () => setCanSetTeamDefault(userIsAdmin && !isOffline),
@@ -243,7 +250,6 @@ export function DiscussionList({ onClose }: DiscussionListProps) {
     return getMediaInPlans([planId], mediafiles, VernacularTag, true).map(
       (r) => r.id
     );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [planId, mediafiles]);
 
   const discussionSort = (x: Discussion, y: Discussion) => {
@@ -374,7 +380,6 @@ export function DiscussionList({ onClose }: DiscussionListProps) {
 
   useEffect(() => {
     setAdding(false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentstep, passage]);
 
   const nextState = (what: string) => {
@@ -438,9 +443,9 @@ export function DiscussionList({ onClose }: DiscussionListProps) {
   useEffect(() => {
     const myIds = displayDiscussions.map((d) => d.id);
     myIds.push(NewDiscussionToolId);
-    anyChangedRef.current = Object.keys(toolsChanged).some((t) =>
-      myIds.includes(t)
-    );
+    const changed = Object.keys(toolsChanged).some((t) => myIds.includes(t));
+    anyChangedRef.current = changed;
+    setAnyChanged(changed);
   }, [toolsChanged, displayDiscussions]);
 
   const checkChanged = (whatNext: string) => {
@@ -507,14 +512,47 @@ export function DiscussionList({ onClose }: DiscussionListProps) {
   );
 
   return (
-    <StyledPaper id="DiscussionListHeader">
+    <StyledPaper
+      id="DiscussionListHeader"
+      sx={{
+        width: '100%',
+        maxWidth: '100%',
+        minWidth: 0,
+        boxSizing: 'border-box',
+      }}
+    >
       <>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', p: 1 }}>
-          <div>
-            <Title variant="h6">{t.title}</Title>
-            <Typography>{filterStatus}</Typography>
-          </div>
-          <div>
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'flex-start',
+            gap: 0.5,
+            p: 1,
+            width: '100%',
+            minWidth: 0,
+            boxSizing: 'border-box',
+          }}
+        >
+          <Box
+            sx={{ minWidth: 0, flex: '1 1 auto', overflow: 'hidden', pr: 0.5 }}
+          >
+            <Title variant={isMobile ? 'subtitle1' : 'h6'} component="div">
+              {t.title}
+            </Title>
+            <Typography variant="body2" sx={{ wordBreak: 'break-word' }}>
+              {filterStatus}
+            </Typography>
+          </Box>
+          <Box
+            sx={{
+              flex: '0 0 auto',
+              display: 'flex',
+              flexWrap: 'wrap',
+              justifyContent: 'flex-end',
+              rowGap: 0.25,
+            }}
+          >
             <SortMenu
               state={sortState}
               action={handleSortAction}
@@ -528,33 +566,40 @@ export function DiscussionList({ onClose }: DiscussionListProps) {
               teamDefault={teamDefault}
               setTeamDefault={canSetTeamDefault ? setTeamDefault : undefined}
             />
-            <IconButton
-              id="addDiscussion"
-              sx={actionButtonProps}
-              title={t.add}
-              onClick={handleAddDiscussion}
-              disabled={adding || isMediaMissing()}
-            >
-              <AddIcon />
-            </IconButton>
-            <IconButton
-              id="collapseDiscussion"
-              sx={actionButtonProps}
-              title={t.collapse}
-              onClick={handleToggleCollapse}
-            >
-              {collapsed ? <ShowIcon /> : <HideIcon />}
-            </IconButton>
-            <IconButton
-              id="closeDiscussion"
-              sx={actionButtonProps}
-              title={t.close}
-              onClick={onClose}
-              disabled={anyChangedRef.current || adding}
-            >
-              <CloseIcon />
-            </IconButton>
-          </div>
+            <LightTooltip title={t.add}>
+              <span>
+                <IconButton
+                  id="addDiscussion"
+                  sx={actionButtonProps}
+                  onClick={handleAddDiscussion}
+                  disabled={adding || isMediaMissing()}
+                >
+                  <AddIcon />
+                </IconButton>
+              </span>
+            </LightTooltip>
+            <LightTooltip title={t.collapse}>
+              <IconButton
+                id="collapseDiscussion"
+                sx={actionButtonProps}
+                onClick={handleToggleCollapse}
+              >
+                {collapsed ? <ShowIcon /> : <HideIcon />}
+              </IconButton>
+            </LightTooltip>
+            <LightTooltip title={t.close}>
+              <span>
+                <IconButton
+                  id="closeDiscussion"
+                  sx={actionButtonProps}
+                  onClick={onClose}
+                  disabled={anyChanged || adding}
+                >
+                  <CloseIcon />
+                </IconButton>
+              </span>
+            </LightTooltip>
+          </Box>
         </Box>
         <StyledPaper ref={formRef} id="DiscussionList" style={rootWidthStyle}>
           <Grid container>

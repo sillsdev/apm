@@ -1,0 +1,28 @@
+{"data": [{
+    "type": "sections",
+    "attributes": {
+        "sequencenum": 1,
+        "name": "",
+        "state": "",
+        "level": 3,
+        "published": false,
+        "publish-to": "{\"PublishDestinationSetByUser\":\"true\"}",
+        "date-created": "2025-11-11T21:51:27.965Z",
+        "date-updated": "2025-11-11T21:51:27.965Z"
+    },
+    "relationships": {
+        "lastModifiedByUser": {"data": {
+            "type": "user",
+            "id": "5b1295fe-04e4-40b2-a2db-1f0d259f43db"
+        }},
+        "plan": {"data": {
+            "type": "plan",
+            "id": "21c35309-8073-422c-a172-3013fd077ab1"
+        }},
+        "passages": {"data": [{
+            "type": "passage",
+            "id": "5ff22606-0617-49c9-a1dd-26c0dc3a09c6"
+        }]}
+    },
+    "id": "ad3aaf48-47da-4a97-bdc0-c469144a7931"
+}]}

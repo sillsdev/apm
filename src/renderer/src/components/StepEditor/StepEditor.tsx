@@ -1,4 +1,11 @@
-import { useContext, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import {
   IStepEditorStrings,
   OrgWorkflowStep,
@@ -23,6 +30,10 @@ import {
   getToolSettings,
   remoteIdGuid,
 } from '../../crud';
+import {
+  parseStepLanguageField,
+  withPropagatedVernacularSisterSettings,
+} from '../../crud/transcribeStepAsrSettings';
 import { AddRecord, ReplaceRelatedRecord } from '../../model/baseModel';
 import { useSnackBar } from '../../hoc/SnackBar';
 import { UnsavedContext } from '../../context/UnsavedContext';
@@ -30,10 +41,12 @@ import BigDialog from '../../hoc/BigDialog';
 import { BigDialogBp } from '../../hoc/BigDialogBp';
 import { TranscribeStepSettings } from './TranscribeStepSettings';
 import { ParatextStepSettings } from './ParatextStepSettings';
+import { PhraseBackTranslateStepSettings } from './PhraseBackTranslateStepSettings';
 import { stepEditorSelector, workflowStepsSelector } from '../../selector';
 import { RecordKeyMap } from '@orbit/records';
 import { VertListDnd } from '../../hoc/VertListDnd';
 import { DiscussStepSettings } from './DiscussStepSettings';
+import { RecordStepSettings } from './RecordStepSettings';
 
 export interface IStepRow {
   id: string;
@@ -59,6 +72,7 @@ interface IProps {
 export const StepEditor = ({ process, org }: IProps) => {
   const [sortKey, setSortKey] = useState(0);
   const [rows, setRows] = useState<IStepRow[]>([]);
+  const [stepsLoaded, setStepsLoaded] = useState(false);
   const [showAll, setShowAll] = useState(false);
   const se: IStepEditorStrings = useSelector(stepEditorSelector, shallowEqual);
   const st: IWorkflowStepsStrings = useSelector(
@@ -83,12 +97,20 @@ export const StepEditor = ({ process, org }: IProps) => {
   const { localizedTool } = useTools();
   const { localizedArtifactTypeFromId, slugFromId } = useArtifactType();
   const [toolSettingsRow, setToolSettingsRow] = useState(-1);
-  const toolRef = useRef<number>();
+  const toolRef = useRef<number | undefined>(undefined);
+  // Signature of each existing step as it was last loaded/saved, keyed by id.
+  // Used to skip writing steps that were not actually changed (including
+  // sequence changes from rearranging).
+  const baselineRef = useRef<Map<string, string>>(new Map());
   const focusIndex = useRef<number>(0);
+  const scrollNewStepIntoViewRef = useRef(false);
+  const listEndAnchorRef = useRef<HTMLDivElement | null>(null);
   const settingsTools = [
     ToolSlug.Transcribe,
     ToolSlug.Paratext,
     ToolSlug.Discuss,
+    ToolSlug.Record,
+    ToolSlug.PhraseBackTranslate,
   ];
   const mxSeq = useMemo(() => {
     let max = 0;
@@ -100,12 +122,10 @@ export const StepEditor = ({ process, org }: IProps) => {
 
   const visible = useMemo(() => {
     return rows.filter((r) => r.seq >= 0).length;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rows]);
 
   const hidden = useMemo(() => {
     return rows.filter((r) => r.seq < 0).length;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rows]);
 
   const hiddenMessage = useMemo(
@@ -117,6 +137,17 @@ export const StepEditor = ({ process, org }: IProps) => {
   const getOrgNames = (exceptId?: string) => {
     return rows.filter((r) => r.id !== exceptId).map((r) => r.name);
   };
+
+  // Captures the persisted fields of a row so two rows can be compared for
+  // real changes. Both sides go through the same transforms (localized name,
+  // camel tool, stringified tool/settings), so unchanged steps match exactly.
+  const rowSignature = (row: IStepRow) =>
+    JSON.stringify({
+      name: row.name,
+      seq: row.seq,
+      tool: row.tool,
+      settings: row.settings,
+    });
 
   const mangleName = (
     name: string,
@@ -170,7 +201,8 @@ export const StepEditor = ({ process, org }: IProps) => {
 
   const setToolSettingsOpen = (open: boolean) => {
     if (!open) setToolSettingsRow(-1);
-    if (toolRef.current) {
+    if (toolRef.current !== undefined) {
+      focusIndex.current = toolRef.current;
       const settings = (rows[toolRef.current as number] as IStepRow).settings
         ? JSON.parse((rows[toolRef.current as number] as IStepRow).settings)
         : {};
@@ -189,7 +221,7 @@ export const StepEditor = ({ process, org }: IProps) => {
           }`
         : '';
       const lang = settings?.language
-        ? ` ${settings.language?.split('|')[0]}`
+        ? ` ${parseStepLanguageField(settings.language).languageName}`
         : '';
       let name =
         localizedTool((rows[toolRef.current as number] as IStepRow).tool) +
@@ -211,10 +243,15 @@ export const StepEditor = ({ process, org }: IProps) => {
   };
 
   const handleSettingsChange = (settings: string) => {
-    setRows(
-      rows.map((r, i) =>
-        i === toolSettingsRow
-          ? { ...r, settings, prettySettings: prettySettings(r.tool, settings) }
+    setRows((prev) =>
+      withPropagatedVernacularSisterSettings(
+        prev,
+        toolSettingsRow,
+        settings,
+        slugFromId
+      ).map((r, i) =>
+        r.settings !== prev[i]?.settings
+          ? { ...r, prettySettings: prettySettings(r.tool, r.settings) }
           : r
       )
     );
@@ -222,6 +259,7 @@ export const StepEditor = ({ process, org }: IProps) => {
   };
 
   const handleToolChange = (tool: string, index: number) => {
+    focusIndex.current = index;
     if (settingsTools.includes(tool as ToolSlug)) toolRef.current = index;
     setToolSettingsRow(index); //bring up Settings editor
     let name = (rows[index] as IStepRow).name;
@@ -274,6 +312,8 @@ export const StepEditor = ({ process, org }: IProps) => {
   };
 
   const handleAdd = async () => {
+    focusIndex.current = rows.length;
+    scrollNewStepIntoViewRef.current = true;
     const name = mangleName(se.nextStep, getOrgNames());
     const tool = ToolSlug.Discuss;
     setRows([
@@ -307,6 +347,12 @@ export const StepEditor = ({ process, org }: IProps) => {
         settings: row.settings,
       });
       if (id) {
+        const baseline = baselineRef.current.get(id);
+        if (baseline !== undefined && baseline === rowSignature(row)) {
+          // Step is unchanged (name, sequence, tool and settings all match
+          // what was loaded) — skip the write.
+          continue;
+        }
         const recId = { type: 'orgworkflowstep', id };
         const rec = memory.cache.query((q) => q.findRecord(recId)) as
           | OrgWorkflowStep
@@ -374,6 +420,9 @@ export const StepEditor = ({ process, org }: IProps) => {
         count += 1;
       }
     }
+    rows.forEach((row) => {
+      if (row.id) baselineRef.current.set(row.id, rowSignature(row));
+    });
     showMessage(se.changes.replace('{0}', count.toString()));
     saving.current = false;
   };
@@ -385,8 +434,11 @@ export const StepEditor = ({ process, org }: IProps) => {
   }, [toolsChanged]);
 
   useEffect(() => {
+    let cancelled = false;
+    setStepsLoaded(false);
     GetOrgWorkflowSteps({ process: 'ANY', org, showAll: true }).then(
       (orgSteps) => {
+        if (cancelled) return;
         const newRows = Array<IStepRow>();
         orgSteps.forEach((s) => {
           const tool = getTool(s.attributes?.tool);
@@ -402,9 +454,17 @@ export const StepEditor = ({ process, org }: IProps) => {
             rIdx: newRows.length,
           });
         });
-        setRows(newRows.sort((i, j) => i.seq - j.seq));
+        const sorted = newRows.sort((i, j) => i.seq - j.seq);
+        baselineRef.current = new Map(
+          sorted.filter((r) => r.id).map((r) => [r.id, rowSignature(r)])
+        );
+        setRows(sorted);
+        setStepsLoaded(true);
       }
     );
+    return () => {
+      cancelled = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [org]);
 
@@ -412,20 +472,57 @@ export const StepEditor = ({ process, org }: IProps) => {
     setSortKey((sortKey) => sortKey + 1);
   }, [rows, showAll]);
 
+  useLayoutEffect(() => {
+    if (!scrollNewStepIntoViewRef.current) return;
+    const el = listEndAnchorRef.current;
+    if (!el) return;
+    scrollNewStepIntoViewRef.current = false;
+    const scrollParent = (() => {
+      let p: HTMLElement | null = el.parentElement;
+      while (p) {
+        const oy = getComputedStyle(p).overflowY;
+        if (oy === 'auto' || oy === 'scroll') return p;
+        p = p.parentElement;
+      }
+      return null;
+    })();
+    if (scrollParent) {
+      const pad = 8;
+      const spRect = scrollParent.getBoundingClientRect();
+      const elRect = el.getBoundingClientRect();
+      if (elRect.bottom > spRect.bottom - pad) {
+        scrollParent.scrollTop += elRect.bottom - spRect.bottom + pad;
+      } else if (elRect.top < spRect.top + pad) {
+        scrollParent.scrollTop += elRect.top - spRect.top - pad;
+      }
+    } else {
+      el.scrollIntoView({ block: 'nearest', behavior: 'auto' });
+    }
+  }, [sortKey]);
+
   const prettySettings = (tool: string, settings: string) => {
     const json = settings ? JSON.parse(settings) : undefined;
     switch (tool as ToolSlug) {
+      case ToolSlug.Record:
       case ToolSlug.Transcribe:
       case ToolSlug.Paratext:
+      case ToolSlug.PhraseBackTranslate:
         if (json)
-          return localizedArtifactTypeFromId(
-            remoteIdGuid(
-              'artifacttype',
-              json.artifactTypeId,
-              memory?.keyMap as RecordKeyMap
-            ) ?? json.artifactTypeId
-          );
-        return localizedArtifactTypeFromId(VernacularTag);
+          return se.settingsFor
+            .replace('{0}', st.getString(tool as keyof typeof se))
+            .replace(
+              '{1}',
+              localizedArtifactTypeFromId(
+                remoteIdGuid(
+                  'artifacttype',
+                  json.artifactTypeId,
+                  memory?.keyMap as RecordKeyMap
+                ) ?? json.artifactTypeId
+              )
+            );
+        return se.settingsFor
+          .replace('{0}', st.getString(tool as keyof typeof se))
+          .replace('{1}', localizedArtifactTypeFromId(VernacularTag));
       default:
         return '';
     }
@@ -433,8 +530,24 @@ export const StepEditor = ({ process, org }: IProps) => {
 
   return (
     <div>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-        <Button id="wk-step-add" onClick={handleAdd} variant="contained">
+      <Box
+        sx={(theme) => ({
+          display: 'flex',
+          justifyContent: 'space-between',
+          position: 'sticky',
+          top: 0,
+          zIndex: 1,
+          bgcolor: theme.palette.background.paper,
+          pb: 1,
+          borderBottom: `1px solid ${theme.palette.divider}`,
+        })}
+      >
+        <Button
+          id="wk-step-add"
+          onClick={handleAdd}
+          variant="contained"
+          disabled={!stepsLoaded}
+        >
           {se.add}
         </Button>
         <div title={hiddenMessage}>
@@ -469,6 +582,12 @@ export const StepEditor = ({ process, org }: IProps) => {
             />
           ))}
       </VertListDnd>
+      <Box
+        ref={listEndAnchorRef}
+        id="wk-step-list-end-anchor"
+        aria-hidden
+        sx={{ height: 1, width: '100%', flexShrink: 0 }}
+      />
       {toolSettingsRow > -1 && (
         <BigDialog
           title={localizedTool((rows[toolSettingsRow] as IStepRow).tool)}
@@ -479,6 +598,10 @@ export const StepEditor = ({ process, org }: IProps) => {
           bp={BigDialogBp.sm}
         >
           <TranscribeStepSettings
+            org={org}
+            isOpen={
+              (rows[toolSettingsRow] as IStepRow).tool === ToolSlug.Transcribe
+            }
             toolSettings={(rows[toolSettingsRow] as IStepRow).settings}
             onChange={handleSettingsChange}
           />
@@ -510,6 +633,38 @@ export const StepEditor = ({ process, org }: IProps) => {
             toolSettings={(rows[toolSettingsRow] as IStepRow).settings}
             onChange={handleSettingsChange}
             onClose={() => setToolSettingsOpen(false)}
+          />
+        </BigDialog>
+      )}
+      {toolSettingsRow > -1 && (
+        <BigDialog
+          title={localizedTool((rows[toolSettingsRow] as IStepRow).tool)}
+          isOpen={(rows[toolSettingsRow] as IStepRow).tool === ToolSlug.Record}
+          onOpen={setToolSettingsOpen}
+          bp={BigDialogBp.sm}
+        >
+          <RecordStepSettings
+            toolSettings={(rows[toolSettingsRow] as IStepRow).settings}
+            onChange={handleSettingsChange}
+            onClose={() => setToolSettingsOpen(false)}
+          />
+        </BigDialog>
+      )}
+      {toolSettingsRow > -1 && (
+        <BigDialog
+          title={localizedTool((rows[toolSettingsRow] as IStepRow).tool)}
+          isOpen={
+            (rows[toolSettingsRow] as IStepRow).tool ===
+            ToolSlug.PhraseBackTranslate
+          }
+          onOpen={setToolSettingsOpen}
+          bp={BigDialogBp.sm}
+        >
+          <PhraseBackTranslateStepSettings
+            toolSettings={(rows[toolSettingsRow] as IStepRow).settings}
+            onChange={handleSettingsChange}
+            stepId={(rows[toolSettingsRow] as IStepRow).id}
+            organizationId={org}
           />
         </BigDialog>
       )}

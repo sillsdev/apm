@@ -81,12 +81,12 @@ export default function KeyTermTable({
   const bodyRef = React.useRef<HTMLTableSectionElement>(null);
   const [bodyHeight, setBodyHeight] = React.useState(window.innerHeight);
   const [targetText, setTargetText] = React.useState('');
-  const rowRef = React.useRef<IKeyTermRow>();
+  const rowRef = React.useRef<IKeyTermRow | undefined>(undefined);
   const [canSaveRecording, setCanSaveRecording] = React.useState(false);
   const [mediaId, setMediaId] = React.useState<string>();
   const [confirm, setConfirm] = React.useState<string>();
   const { passage } = useContext(PassageDetailContext).state;
-  const deleteId = React.useRef<string>();
+  const deleteId = React.useRef<string | undefined>(undefined);
   const [adding, setAdding] = React.useState<number[]>([]);
   const { saveCompleted } = React.useContext(UnsavedContext).state;
   const { canDoSectionStep } = useStepPermissions();

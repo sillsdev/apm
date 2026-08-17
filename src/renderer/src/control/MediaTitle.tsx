@@ -139,7 +139,7 @@ interface IProps {
   onLangChange?: (lang: ILanguage) => void;
   useplan?: string;
   helper?: string;
-  canRecord?: () => boolean;
+  canRecord?: () => boolean | Promise<boolean>;
   onRecording?: (recording: boolean) => void;
   onMediaIdChange: (mediaId: string) => void;
   disabled?: boolean;
@@ -167,8 +167,10 @@ export default function MediaTitle(props: IProps) {
     passageId,
   } = props;
   const [canSaveRecording, setCanSaveRecording] = useState(false);
-  const canSaveRef = useRef(false);
-  const [curText, setCurText] = useState(title ?? '');
+  const [curText, setCurTextx] = useState(title ?? '');
+  const curTextRef = useRef(curText);
+  const isFocusedRef = useRef(false);
+  const prevTitleKeyRef = useRef(titlekey);
   const [startRecord, setStartRecord] = useState(false);
   const [statusText, setStatusText] = useState('');
   const [helperText, setHelperText] = useState('');
@@ -177,7 +179,7 @@ export default function MediaTitle(props: IProps) {
   const [recording, setRecording] = useState(false);
   const [playing, setPlaying] = useState(false);
   const [srcMediaId, setSrcMediaId] = useState('');
-  const langEl = useRef<any>();
+  const langEl = useRef<any>(undefined);
   const t: IMediaTitleStrings = useSelector(mediaTitleSelector, shallowEqual);
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
   const saving = useRef(false);
@@ -196,12 +198,15 @@ export default function MediaTitle(props: IProps) {
 
   // Track playing media globally to coordinate playback (only one plays at a time)
   const [playingMediaId, setPlayingMediaId] = useGlobal('playingMediaId');
-
+  const setCurText = (text: string) => {
+    setCurTextx(text);
+    curTextRef.current = text;
+  };
   useEffect(() => setHelperText(helper ?? ''), [helper]);
 
   useEffect(() => {
     if (saveRequested(toolId) && !saving.current) {
-      if (canSaveRef.current) handleOk();
+      if (canSaveRecording) handleOk();
       else {
         saveCompleted(toolId);
       }
@@ -216,9 +221,16 @@ export default function MediaTitle(props: IProps) {
   const recToolId = useMemo(() => toolId + 'rec', [toolId]);
 
   useEffect(() => {
-    setCurText(title ?? '');
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [title]);
+    if (prevTitleKeyRef.current !== titlekey) {
+      prevTitleKeyRef.current = titlekey;
+      isFocusedRef.current = false;
+      setCurText(title ?? '');
+      return;
+    }
+    if (!isFocusedRef.current) {
+      setCurText(title ?? '');
+    }
+  }, [title, titlekey]);
 
   useEffect(() => {
     langRef.current = language;
@@ -233,6 +245,7 @@ export default function MediaTitle(props: IProps) {
     }
     setRecording(r);
     onRecording && onRecording(r);
+    setCanSaveRecording(true);
   };
 
   const handleTextChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -240,9 +253,23 @@ export default function MediaTitle(props: IProps) {
       showMessage(t.recording);
       return;
     }
-    setCurText(e.target.value);
-    if (onTextChange && e.target.value !== title) {
-      const err = onTextChange(e.target.value);
+    const value = e.target.value;
+    setCurText(value);
+    if (onTextChange) {
+      const err = onTextChange(value);
+      setHelperText(err);
+    }
+  };
+
+  const handleFocus = () => {
+    isFocusedRef.current = true;
+  };
+
+  const handleBlur = () => {
+    isFocusedRef.current = false;
+    const value = curTextRef.current;
+    if (onTextChange && value.trim() !== (title ?? '')) {
+      const err = onTextChange(value.trim());
       setHelperText(err);
     }
   };
@@ -258,10 +285,13 @@ export default function MediaTitle(props: IProps) {
     // Update the global playing media ID so other players can stop
     setPlayingMediaId(newPlaying ? mediaId : '');
   };
-  const handleRecord = (e: any) => {
+  const handleRecord = async (e: any) => {
     e.stopPropagation();
-    if (canRecord && !canRecord()) {
-      return;
+    if (canRecord) {
+      const allowed = await canRecord();
+      if (!allowed) {
+        return;
+      }
     }
     setPlaying(false);
     setStartRecord(true);
@@ -323,8 +353,8 @@ export default function MediaTitle(props: IProps) {
     setShowRecorder(false);
     setStatusText('');
     saving.current = false;
-    setCanSaveRecording(false);
     onMyRecording(false);
+    setCanSaveRecording(false);
     toolChanged(toolId, false);
     toolChanged(recToolId, false);
   };
@@ -334,6 +364,7 @@ export default function MediaTitle(props: IProps) {
     if (playingMediaId !== mediaId && playing) {
       setPlaying(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [playingMediaId, mediaId]);
 
   useEffect(() => {
@@ -347,7 +378,6 @@ export default function MediaTitle(props: IProps) {
         setStartRecord(false);
         setShowRecorder(true);
       });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [startRecord, playing]);
 
   const handleMouseDownSave = (event: MouseEvent<HTMLButtonElement>) => {
@@ -374,6 +404,8 @@ export default function MediaTitle(props: IProps) {
         value={curText}
         onClick={language ? handleLangPick : undefined}
         onChange={handleTextChange}
+        onFocus={handleFocus}
+        onBlur={handleBlur}
         onKeyDown={handleKeyDown}
         helperText={helperText}
         size="small"
@@ -400,6 +432,8 @@ export default function MediaTitle(props: IProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [
       curText,
+      title,
+      titlekey,
       recording,
       mediaId,
       canSaveRecording,
@@ -415,7 +449,8 @@ export default function MediaTitle(props: IProps) {
   };
 
   const handleNoClose = () => {
-    showMessage(t.unsavedChanges);
+    if (canSaveRecording) showMessage(t.unsavedChanges);
+    else setShowRecorder(false);
   };
 
   return (

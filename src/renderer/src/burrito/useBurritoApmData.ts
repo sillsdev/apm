@@ -1,0 +1,83 @@
+import path from 'path-browserify';
+import { Burrito, BurritoIngredients } from './data/types';
+import { ProjectD } from '../model';
+import { MainAPI } from '@model/main-api';
+import { getProjectDataFiles } from '../store/importexport/projectDataExport';
+import Memory from '@orbit/memory';
+import { projDefBook, useProjectDefaults } from '../crud/useProjectDefaults';
+import { useNum2BookCode } from '../utils/useNum2BookCode';
+import {
+  projectDefaultToBurritoBookKey,
+  burritoCurrentScopeForProject,
+} from './akuoBookToUsfm';
+
+const ipc = window?.api as MainAPI;
+
+interface Props {
+  metadata: Burrito;
+  project: ProjectD;
+  projectPath: string;
+  preLen: number;
+}
+
+/**
+ * Creates an ApmData burrito for a project containing the PTF-style data folder
+ * (data/*.json files matching the structure used in PTF export).
+ */
+export const useBurritoApmData = (memory: Memory) => {
+  const { getProjectDefault } = useProjectDefaults();
+  const num2BookCode = useNum2BookCode();
+
+  const getBookCode = (project: ProjectD) =>
+    projectDefaultToBurritoBookKey(
+      (getProjectDefault(projDefBook, project) as string) ?? 'B01',
+      num2BookCode
+    );
+
+  return async ({
+    metadata,
+    project,
+    projectPath,
+    preLen,
+  }: Props): Promise<Burrito> => {
+    const dataFiles = await getProjectDataFiles(memory, project);
+    const ingredients: BurritoIngredients = {};
+    const bookCode = getBookCode(project);
+    const dataDir = path.join(projectPath, 'data');
+    await ipc?.createFolder(dataDir);
+
+    for (const [filename, content] of Object.entries(dataFiles)) {
+      const filePath = path.join(projectPath, filename);
+      await ipc?.write(filePath, content);
+
+      const relPath = filePath.substring(preLen);
+      const md5 = await ipc?.md5File(filePath);
+      ingredients[relPath] = {
+        checksum: { md5 },
+        mimeType: 'application/json',
+        size: content.length,
+        ...(bookCode ? { scope: { [bookCode]: [] } } : {}),
+      };
+    }
+
+    metadata.ingredients = { ...metadata.ingredients, ...ingredients };
+    const bookScope = burritoCurrentScopeForProject(
+      project,
+      getProjectDefault,
+      num2BookCode
+    );
+    if (Object.keys(bookScope).length && metadata.type?.flavorType) {
+      metadata.type.flavorType.currentScope = {
+        ...metadata.type.flavorType.currentScope,
+        ...bookScope,
+      };
+    }
+    if (metadata.type?.flavorType) {
+      metadata.type.flavorType.name = 'scripture';
+      if (metadata.type.flavorType.flavor) {
+        metadata.type.flavorType.flavor.name = 'x-apmdata';
+      }
+    }
+    return metadata;
+  };
+};

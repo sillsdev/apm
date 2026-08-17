@@ -1,24 +1,26 @@
 import { useGlobal } from '../../context/useGlobal';
-import { Badge, Box, Button, IconButton, Typography } from '@mui/material';
-import { useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { Box, Button, IconButton } from '@mui/material';
+import {
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  type RefObject,
+} from 'react';
 import { UnsavedContext } from '../../context/UnsavedContext';
 import {
+  ApplyRegionColor,
+  IRegion,
   IRegionParams,
   IRegions,
   parseRegions,
 } from '../../crud/useWavesurferRegions';
-import WSAudioPlayer from '../WSAudioPlayer';
+import WSAudioPlayer, { type WSAudioPlayerControls } from '../WSAudioPlayer';
 import { useSelector, shallowEqual } from 'react-redux';
-import {
-  ISharedStrings,
-  IWsAudioPlayerStrings,
-  MediaFile,
-  MediaFileD,
-  OrganizationD,
-  OrgWorkflowStepD,
-} from '../../model';
+import { IWsAudioPlayerStrings, MediaFile, MediaFileD } from '../../model';
 import { UpdateRecord } from '../../model/baseModel';
-import { playerSelector, sharedSelector } from '../../selector';
+import { playerSelector } from '../../selector';
 import {
   getSegments,
   NamedRegions,
@@ -32,33 +34,39 @@ import {
   RequestPlay,
   usePlayerLogic,
 } from '../../business/player/usePlayerLogic';
-import TranscriptionLogo from '../../control/TranscriptionLogo';
-import { useOrgDefaults, orgDefaultFeatures } from '../../crud/useOrgDefaults';
-import BigDialog from '../../hoc/BigDialog';
-import { BigDialogBp } from '../../hoc/BigDialogBp';
-import SelectAsrLanguage from '../../business/asr/SelectAsrLanguage';
-import AsrButton from '../../control/ConfButton';
-import { IFeatures } from '../Team/TeamSettings';
-import AsrProgress from '../../business/asr/AsrProgress';
-import { useGetAsrSettings } from '../../crud/useGetAsrSettings';
-import { LightTooltip } from '../StepEditor';
+import { smallButtonProps } from '../StepEditor';
 import { useOrbitData } from '../../hoc/useOrbitData';
-import { pullTableList, ToolSlug, useStepTool } from '../../crud';
-import IndexedDBSource from '@orbit/indexeddb';
-import JSONAPISource from '@orbit/jsonapi';
-import { useCheckOnline } from '../../utils/useCheckOnline';
-import { useSnackBar } from '../../hoc/SnackBar';
-import { useLocLangName } from '../../utils/useLocLangName';
+import { ToolSlug, useStepTool } from '../../crud';
 import { SaveSegments } from './SaveSegments';
-import { AsrTarget } from '../../business/asr/AsrTarget';
-
+import { IMarker } from '../../crud/useWaveSurfer';
 export const PLAYER_HEIGHT = 120 + 80;
+
+export interface IPlayerState {
+  loading: boolean;
+  pdBusy: boolean;
+  setPDBusy: (busy: boolean) => void;
+  audioBlob?: Blob;
+  setupLocate: (callback?: (segments: string) => void) => void;
+  playing: boolean;
+  setPlaying: (playing: boolean) => void;
+  currentstep?: string;
+  currentSegmentIndex?: number;
+  setCurrentSegment?: (region: IRegion | undefined, index: number) => void;
+  discussionMarkers?: IMarker[];
+  handleHighlightDiscussion?: (time: number | undefined) => void;
+  playerMediafile?: MediaFile;
+  forceRefresh?: () => void;
+}
 
 export interface DetailPlayerProps {
   allowSegment?: NamedRegions | undefined;
   saveSegments?: SaveSegments | undefined;
   allowAutoSegment?: boolean;
+  /** Hide the generic Add/Remove Segment and Reset controls (Careful Speech
+   * supplies its own Split/Combine controls). */
+  hideSegmentControls?: boolean;
   suggestedSegments?: string;
+  forceRegionOnly?: boolean;
   verses?: string;
   defaultSegParams?: IRegionParams;
   canSetDefaultParams?: boolean;
@@ -67,48 +75,102 @@ export interface DetailPlayerProps {
     | ((params: IRegionParams, teamDefault: boolean) => void)
     | undefined;
   onStartRegion?: (position: number) => void;
+  onDuration?: (duration: number) => void;
   onProgress?: (progress: number) => void;
   onSaveProgress?: (progress: number) => void;
   onInteraction?: () => void;
+  /** Careful Speech: reset params, auto-segment, and persist instead of only clearing. */
+  onClearSegments?: () => void | Promise<void>;
+  /** Overrides the disabled state of the waveform segment Reset button. */
+  resetDisabled?: boolean;
+  /** Hide Reset while still showing +/− (Phrase BT listen pass). */
+  hideSegmentReset?: boolean;
+  /** When set, show a tool-managed Undo button in the player's top-right
+   * toolbar. Used by Mark Verses for its own undo stack. */
+  hasSegmentUndo?: boolean;
+  onSegmentUndo?: () => void;
   onTranscription?: (transcription: string) => void;
   allowZoomAndSpeed?: boolean;
+  allowZoom?: boolean;
+  allowSpeed?: boolean;
   position?: number;
   width: number;
   parentToolId?: string;
   role?: string;
-  hasTranscription?: boolean;
-  contentVerses?: string[];
   metaData?: React.ReactNode;
+  /** When set, exposes waveform imperative controls (e.g. add segment at playhead). */
+  controlsRef?: RefObject<WSAudioPlayerControls | null>;
+  /** Tool-specific waveform region coloring (Mark Verses, Careful Speech, etc.). */
+  applyRegionColor?: ApplyRegionColor;
+  onSegmentPlaybackEnd?: (region: IRegion) => void;
+  /** Called when waveform play/pause changes (in addition to internal player logic). */
+  onPlayStatusNotify?: (playing: boolean) => void;
+  highlightPlay?: boolean;
+  playerState?: IPlayerState;
+  /** When false, locating a segment does not start playback. Default true. */
+  autoPlayOnSegmentLocate?: boolean;
+  /** When set, overrides PassageDetailContext `playing` for this player. */
+  playing?: boolean;
+  setPlayingOverride?: (playing: boolean) => void;
+  /** Invoked before starting playback. Return false to skip default play handling. */
+  beforePlay?: () => void | Promise<void | boolean>;
+  /** When true, waveform region clicks cannot change the selected segment. */
+  lockSegmentSelection?: boolean;
+  /** Show the "view transcription" button when a transcription exists. Default true.
+   * Set false where the button isn't wanted (e.g. Mark Verses Mobile). */
+  showTranscriptionButton?: boolean;
+  hideZoom?: boolean;
 }
 
 export function PassageDetailPlayer(props: DetailPlayerProps) {
   const {
     allowSegment,
     allowAutoSegment,
+    hideSegmentControls,
     saveSegments,
     suggestedSegments,
+    forceRegionOnly,
     verses,
     defaultSegParams,
     canSetDefaultParams,
     onSegment,
     onSegmentParamChange,
     onStartRegion,
+    onDuration: onDurationProp,
     onProgress,
     onSaveProgress,
     onInteraction,
-    onTranscription,
+    onClearSegments,
+    resetDisabled,
+    hideSegmentReset,
+    hasSegmentUndo,
+    onSegmentUndo,
     allowZoomAndSpeed,
+    allowZoom: allowZoomProp,
+    allowSpeed: allowSpeedProp,
     position,
     width,
     parentToolId,
-    role,
-    hasTranscription,
-    contentVerses,
     metaData,
+    controlsRef,
+    applyRegionColor,
+    onSegmentPlaybackEnd,
+    onPlayStatusNotify,
+    highlightPlay,
+    playerState,
+    autoPlayOnSegmentLocate = true,
+    playing: playingOverride,
+    setPlayingOverride,
+    beforePlay,
+    lockSegmentSelection,
+    showTranscriptionButton = true,
+    hideZoom,
   } = props;
 
+  const allowZoom = allowZoomProp ?? allowZoomAndSpeed ?? false;
+  const allowSpeed = allowSpeedProp ?? allowZoomAndSpeed ?? false;
+
   const [memory] = useGlobal('memory');
-  const [offline] = useGlobal('offline'); //verified this is not used in a function 2/18/25
   const [user] = useGlobal('user');
   const {
     toolChanged,
@@ -121,15 +183,17 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
     saveCompleted,
   } = useContext(UnsavedContext).state;
   const t: IWsAudioPlayerStrings = useSelector(playerSelector, shallowEqual);
-  const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
   const toolId = 'ArtifactSegments';
+  /** Segments string last applied by discussion locate; matching onSegmentChange
+   * emissions are treated as init (not user edits). Cleared on match or unmount. */
+  const pendingLocateSegmentsRef = useRef<string | undefined>(undefined);
   const [requestPlay, setRequestPlay] = useState<RequestPlay>({
     play: undefined,
     regionOnly: false,
     request: new Date(),
   });
   const [initialposition, setInitialPosition] = useState<number | undefined>(0);
-  const {
+  let {
     loading,
     pdBusy,
     setPDBusy,
@@ -146,35 +210,51 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
     forceRefresh,
   } = usePassageDetailContext();
 
+  if (playerState) {
+    loading = playerState.loading;
+    pdBusy = playerState.pdBusy;
+    setPDBusy = playerState.setPDBusy;
+    audioBlob = playerState.audioBlob;
+    setupLocate = playerState.setupLocate;
+    playing = playerState.playing;
+    setPlaying = playerState.setPlaying;
+    if (playerState.currentstep !== undefined)
+      currentstep = playerState.currentstep;
+    if (playerState.currentSegmentIndex !== undefined)
+      currentSegmentIndex = playerState.currentSegmentIndex;
+    if (playerState.setCurrentSegment)
+      setCurrentSegment = playerState.setCurrentSegment;
+    if (playerState.discussionMarkers)
+      discussionMarkers = playerState.discussionMarkers;
+    if (playerState.handleHighlightDiscussion)
+      handleHighlightDiscussion = playerState.handleHighlightDiscussion;
+    if (playerState.playerMediafile)
+      playerMediafile = playerState.playerMediafile;
+    if (playerState.forceRefresh) forceRefresh = playerState.forceRefresh;
+  }
+
+  if (playingOverride !== undefined) {
+    playing = playingOverride;
+  }
+  if (setPlayingOverride) {
+    setPlaying = setPlayingOverride;
+  }
+
   const [defaultSegments, setDefaultSegments] = useState('{}');
   const [showTranscriptionId, setShowTranscriptionId] = useState('');
-  const [coordinator] = useGlobal('coordinator');
-  const remote = coordinator?.getSource('remote') as JSONAPISource;
-  const backup = coordinator?.getSource('backup') as IndexedDBSource;
-  const [reporter] = useGlobal('errorReporter');
   const segmentsRef = useRef('');
   const playingRef = useRef(playing);
   const savingRef = useRef(false);
-  const mediafileRef = useRef<MediaFile>();
+  const mediafileRef = useRef<MediaFile | undefined>(undefined);
   const durationRef = useRef(0);
-  const { getOrgDefault } = useOrgDefaults();
-  const [org] = useGlobal('organization');
-  const { getAsrSettings } = useGetAsrSettings();
-  const teams = useOrbitData<OrganizationD[]>('organization');
-  const orgSteps = useOrbitData<OrgWorkflowStepD[]>('orgworkflowstep');
   const mediarecs = useOrbitData<MediaFileD[]>('mediafile');
-  const [asrLangVisible, setAsrLangVisible] = useState(false);
-  const [phonetic, setPhonetic] = useState(false);
-  const [forceAi, setForceAi] = useState<boolean>();
+  const { tool } = useStepTool(currentstep ?? '');
 
-  const [features, setFeatures] = useState<IFeatures>();
-  const [asrProgressVisble, setAsrProgressVisble] = useState(false);
-  const checkOnline = useCheckOnline(t.recognizeSpeech);
-  const { showMessage } = useSnackBar();
-  const [getName] = useLocLangName();
-  const { tool } = useStepTool(currentstep);
-
-  const { onPlayStatus, onCurrentSegment, setSegmentToWhole } = usePlayerLogic({
+  const {
+    onPlayStatus: onPlayStatusInternal,
+    onCurrentSegment,
+    setSegmentToWhole,
+  } = usePlayerLogic({
     allowSegment,
     suggestedSegments,
     position,
@@ -191,6 +271,14 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
     playingRef,
     onSegment,
   });
+
+  const onPlayStatus = useCallback(
+    (playingNow: boolean) => {
+      onPlayStatusInternal(playingNow);
+      onPlayStatusNotify?.(playingNow);
+    },
+    [onPlayStatusInternal, onPlayStatusNotify]
+  );
 
   const writeSegments = async () => {
     if (!savingRef.current) {
@@ -229,36 +317,9 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
     }
   };
 
-  const onPullTasks = (remoteId: string) => {
-    pullTableList(
-      'mediafile',
-      Array(remoteId),
-      memory,
-      remote,
-      backup,
-      reporter
-    )
-      .then(() => {
-        forceRefresh();
-      })
-      .finally(() => {
-        setSegmentToWhole();
-      });
-  };
-
-  const hasAiTasks = useMemo(() => {
-    const mediaRec = mediarecs.find((m) => m.id === playerMediafile?.id);
-    return (
-      getSegments(
-        NamedRegions.TRTask,
-        mediaRec?.attributes?.segments || '{}'
-      ) !== '{}'
-    );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [playerMediafile, mediarecs]);
-
   const onDuration = (duration: number) => {
     durationRef.current = duration;
+    if (onDurationProp) onDurationProp(duration);
     if (
       mediafileRef.current &&
       !mediafileRef.current.attributes.sourceSegments &&
@@ -279,7 +340,7 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
           )
         )
         .then(() => {
-          forceRefresh();
+          if (forceRefresh) forceRefresh();
         });
     }
     setSegmentToWhole();
@@ -291,12 +352,15 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
       !segmentsRef.current ||
       segmentsRef.current.indexOf('},{') === -1
     ) {
+      // Remember what locate applied so the waveform's later onSegmentChange
+      // can be recognized without a wall-clock heuristic.
+      pendingLocateSegmentsRef.current = segments;
       setDefaultSegments(segments);
       onSegment && onSegment(segments, true);
     }
     //TT 6149 but I wonder why this was here? if (!playingRef.current) {
     const segs = parseRegions(segments) as IRegions | undefined;
-    if ((segs?.regions?.length ?? 0) > 0) {
+    if (autoPlayOnSegmentLocate && (segs?.regions?.length ?? 0) > 0) {
       setInitialPosition(segs?.regions[0]?.start ?? 0);
       setRequestPlay({
         play: true,
@@ -310,10 +374,19 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
   const onSegmentChange = (segments: string) => {
     segmentsRef.current = segments;
     setDefaultSegments(segments); //now we'll notice if we reset them in SetPlayerSegments
-    onSegment && onSegment(segments, false);
+    const fromLocate = pendingLocateSegmentsRef.current === segments;
+    if (fromLocate) pendingLocateSegmentsRef.current = undefined;
+    onSegment && onSegment(segments, fromLocate);
+    if (fromLocate) return;
     if (allowSegment && saveSegments !== undefined) {
-      //if I have a parentToolId it will save the segments
-      toolChanged(parentToolId ?? toolId);
+      const currentMedia = mediarecs.find((m) => m.id === playerMediafile?.id);
+      const saved = getSegments(
+        allowSegment,
+        currentMedia?.attributes?.segments ?? '{}'
+      );
+      if (segments !== saved) {
+        toolChanged(parentToolId ?? toolId);
+      }
     } else {
       //not saving segments...so don't update changed
     }
@@ -323,6 +396,7 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
     setupLocate(setPlayerSegments);
     return () => {
       setupLocate();
+      pendingLocateSegmentsRef.current = undefined;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentstep, allowSegment]);
@@ -350,77 +424,37 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
     setShowTranscriptionId('');
   };
 
-  const asrTip = useMemo(() => {
-    const asr = getAsrSettings();
-    return (t.recognizeSpeech + '\u00A0\u00A0').replace(
-      '{0}',
-      asr?.language?.languageName?.trim()
-        ? `\u2039 ${
-            getName(asr?.language.bcp47) || asr?.language?.languageName
-          } \u203A`
-        : ''
-    );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [teams, orgSteps]);
-
-  const handleAsrSettings = () => {
-    checkOnline((online) => {
-      if (!online) {
-        showMessage(ts.mustBeOnline);
-        return;
-      }
-      setAsrLangVisible(true);
-    });
-  };
-
-  const handleTranscribe = (forceAi?: boolean) => {
-    checkOnline((online) => {
-      if (!online) {
-        showMessage(ts.mustBeOnline);
-        return;
-      }
-      const asr = getAsrSettings();
-      if (asr?.mmsIso === undefined || asr?.mmsIso === 'und') {
-        setAsrLangVisible(true);
-        return;
-      }
-      setPhonetic(asr?.target === AsrTarget.phonetic);
-      setForceAi(forceAi);
-      setTimeout(() => {
-        setAsrLangVisible(false);
-        setAsrProgressVisble(true);
-      }, 200);
-    });
-  };
-
-  useEffect(() => {
-    if (org) {
-      setFeatures(getOrgDefault(orgDefaultFeatures) as IFeatures);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [org]);
-
-  const handleAsrProgressVisible = (v: boolean) => {
-    setAsrProgressVisble(v);
-  };
-
   return (
-    <Box id="detailplayer" sx={{ width: width }}>
+    <Box
+      id="detailplayer"
+      sx={{
+        width: width,
+        maxWidth: '100%',
+        minWidth: 0,
+        boxSizing: 'border-box',
+      }}
+    >
       <WSAudioPlayer
         id="audioPlayer"
         allowRecord={false}
         height={PLAYER_HEIGHT}
-        width={width}
+        controlsRef={controlsRef}
+        applyRegionColor={applyRegionColor}
+        onSegmentPlaybackEnd={onSegmentPlaybackEnd}
         blob={audioBlob}
         initialposition={initialposition}
         setInitialPosition={setInitialPosition}
         isPlaying={requestPlay.play}
         regionOnly={requestPlay.regionOnly}
+        forceRegionOnly={forceRegionOnly}
+        lockSegmentSelection={lockSegmentSelection}
         request={requestPlay.request}
         loading={loading}
         busy={pdBusy}
         allowSegment={allowSegment}
         allowAutoSegment={allowAutoSegment}
+        hideSegmentControls={hideSegmentControls}
+        hideZoom={hideZoom}
         defaultRegionParams={defaultSegParams}
         canSetDefaultParams={canSetDefaultParams}
         segments={defaultSegments}
@@ -433,16 +467,24 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
         onSegmentParamChange={onSegmentParamChange}
         onStartRegion={onStartRegion}
         onPlayStatus={onPlayStatus}
+        highlightPlay={highlightPlay}
+        beforePlay={beforePlay}
         onInteraction={onInteraction}
+        onClearSegments={onClearSegments}
+        resetDisabled={resetDisabled}
+        hideSegmentReset={hideSegmentReset}
+        hasSegmentUndo={hasSegmentUndo}
+        onSegmentUndo={onSegmentUndo}
         onCurrentSegment={onCurrentSegment}
-        allowZoom={allowZoomAndSpeed}
-        allowSpeed={allowZoomAndSpeed}
+        allowZoom={allowZoom}
+        allowSpeed={allowSpeed}
         onProgress={onProgress}
         onSaveProgress={onSaveProgress}
         onDuration={onDuration}
         metaData={
           <>
-            {playerMediafile?.attributes?.transcription &&
+            {showTranscriptionButton &&
+            playerMediafile?.attributes?.transcription &&
             tool !== ToolSlug.Transcribe ? (
               <IconButton
                 id="show-transcription"
@@ -453,36 +495,6 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
             ) : (
               <></>
             )}
-            {features?.aiTranscribe && !offline && onTranscription && role && (
-              <LightTooltip
-                title={<Badge badgeContent={ts.ai}>{asrTip ?? ''}</Badge>}
-              >
-                <span>
-                  <AsrButton
-                    id="asrButton"
-                    onClick={handleTranscribe}
-                    onSettings={handleAsrSettings}
-                    disabled={role !== 'transcriber'}
-                  >
-                    {!hasTranscription &&
-                    hasAiTasks &&
-                    role === 'transcriber' ? (
-                      <Badge variant="dot" color="primary">
-                        <TranscriptionLogo
-                          disabled={role !== 'transcriber'}
-                          sx={{ height: 18, width: 18 }}
-                        />
-                      </Badge>
-                    ) : (
-                      <TranscriptionLogo
-                        disabled={role !== 'transcriber'}
-                        sx={{ height: 18, width: 18 }}
-                      />
-                    )}
-                  </AsrButton>
-                </span>
-              </LightTooltip>
-            )}
             {saveSegments === SaveSegments.showSaveButton ? (
               <Button
                 id="segment-save"
@@ -490,6 +502,7 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
                 variant="contained"
                 color="primary"
                 disabled={!isChanged(toolId)}
+                sx={smallButtonProps}
               >
                 {t.saveSegments}
               </Button>
@@ -506,43 +519,6 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
           visible={showTranscriptionId !== ''}
           closeMethod={handleCloseTranscription}
         />
-      )}
-      {asrLangVisible && onTranscription && (
-        <BigDialog
-          title={t.recognizeSpeechSettings}
-          description={
-            <Typography variant="body2" sx={{ maxWidth: 500 }}>
-              {t.recognizePrompt}
-            </Typography>
-          }
-          isOpen={asrLangVisible}
-          onOpen={() => setAsrLangVisible(false)}
-        >
-          <SelectAsrLanguage
-            onOpen={(cancel, forceAi) =>
-              cancel ? setAsrLangVisible(false) : handleTranscribe(forceAi)
-            }
-            canBegin={true}
-          />
-        </BigDialog>
-      )}
-      {asrProgressVisble && onTranscription && (
-        <BigDialog
-          title={t.recognizeProgress}
-          isOpen={asrProgressVisble}
-          onOpen={handleAsrProgressVisible}
-          bp={BigDialogBp.sm}
-        >
-          <AsrProgress
-            mediaId={playerMediafile?.id ?? ''}
-            phonetic={phonetic}
-            force={forceAi}
-            contentVerses={contentVerses}
-            setTranscription={onTranscription}
-            onPullTasks={onPullTasks}
-            onClose={() => handleAsrProgressVisible(false)}
-          />
-        </BigDialog>
       )}
     </Box>
   );

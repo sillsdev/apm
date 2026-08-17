@@ -3,19 +3,27 @@ import {
   ORBIT_ERROR,
   ORBIT_RETRY,
   IApiError,
+  IFetchResults,
   RESET_ORBIT_ERROR,
   ORBIT_SAVING,
   FETCH_ORBIT_DATA_COMPLETE,
 } from './types';
 import Coordinator from '@orbit/coordinator';
 import { Sources } from '../../Sources';
-import { Severity } from '../../utils';
+import {
+  Severity,
+  isOrbitQueueCancelled,
+  orbitErr,
+  handleUnauthorized,
+} from '../../utils';
+import { isUnauthorized } from '../../utils/httpError';
 import { OfflineProject, Plan, VProject } from '../../model';
 import { ITokenContext } from '../../context/TokenProvider';
 import { AlertSeverity } from '../../hoc/SnackBar';
 
 export const orbitError = (ex: IApiError) => {
-  return ex.response.status !== Severity.retry
+  const status = ex?.response?.status;
+  return status !== Severity.retry
     ? {
         type: ORBIT_ERROR,
         payload: ex,
@@ -58,12 +66,17 @@ export interface IFetchOrbitData {
   setUser: (id: string) => void;
   setProjectsLoaded: (value: string[]) => void;
   setOrbitRetries: (r: number) => void;
-  setLang: (locale: string) => void;
   getOfflineProject: (plan: Plan | VProject | string) => OfflineProject;
   offlineSetup: () => Promise<void>;
-  showMessage: (msg: string | JSX.Element, alert?: AlertSeverity) => void;
+  showMessage: (msg: string | React.JSX.Element, alert?: AlertSeverity) => void;
   forceDataChanges: () => Promise<void>;
 }
+
+const fetchOrbitDataFailed = (): IFetchResults => ({
+  syncBuffer: undefined as unknown as Buffer,
+  syncFile: '',
+  goRemote: false,
+});
 
 export const fetchOrbitData =
   ({
@@ -75,7 +88,6 @@ export const fetchOrbitData =
     setUser,
     setProjectsLoaded,
     setOrbitRetries,
-    setLang,
     getOfflineProject,
     offlineSetup,
     showMessage,
@@ -92,12 +104,61 @@ export const fetchOrbitData =
       setProjectsLoaded,
       (ex: IApiError) => dispatch(orbitError(ex)),
       setOrbitRetries,
-      setLang,
       getOfflineProject,
       offlineSetup,
       showMessage,
       forceDataChanges
-    ).then((fr) => {
-      dispatch({ type: FETCH_ORBIT_DATA, payload: fr });
-    });
+    )
+      .then((fr) => {
+        dispatch({ type: FETCH_ORBIT_DATA, payload: fr });
+      })
+      .catch((ex: unknown) => {
+        if (isOrbitQueueCancelled(ex)) return;
+        dispatch({
+          type: FETCH_ORBIT_DATA,
+          payload: fetchOrbitDataFailed(),
+        });
+        if (isUnauthorized(ex)) {
+          // This used to just `return` here, leaving orbitFetchResults unset
+          // and the loading screen waiting forever. handleUnauthorized is the
+          // same retry-once-then-invalidate-session recovery used by the
+          // query/update failure strategies inside Sources() — this is a
+          // safety net for when this promise rejects before those strategies
+          // fire.
+          //
+          // It is NOT a guaranteed no-op if they already ran: tokenCtx here
+          // is a snapshot captured once (useContext in Loading.tsx) and
+          // threaded through the whole async call, so tokenCtx.state never
+          // reflects invalidateOnlineSession()'s setState — accessToken
+          // still reads as the old, stale (already-rejected) value, not
+          // null. Sources.tsx's unauthorizedRetryAttempted flag is also
+          // reset to false right before invalidateOnlineSession() runs (so a
+          // genuinely later 401 still gets its own retry), so calling this
+          // again immediately after a full retry->invalidate cycle already
+          // completed can re-arm the retry branch with a token already
+          // proven bad, triggering one extra wasted retry/invalidate round
+          // (extra forceLogin()/ipc.logout() or auth0Logout() calls). Low
+          // severity — everything invalidateOnlineSession() does is
+          // idempotent-ish — but worth knowing if this ever needs tightening.
+          void Promise.resolve(
+            handleUnauthorized(
+              tokenCtx,
+              coordinator,
+              fingerprint,
+              setOrbitRetries
+            )
+          ).catch(() => {}); // no msg if fails
+          return;
+        }
+        const apiEx = ex as IApiError;
+        if (apiEx?.response?.status != null) {
+          dispatch(orbitError(apiEx));
+        } else {
+          dispatch(
+            orbitError(
+              orbitErr(ex instanceof Error ? ex : null, 'fetch orbit data')
+            )
+          );
+        }
+      });
   };

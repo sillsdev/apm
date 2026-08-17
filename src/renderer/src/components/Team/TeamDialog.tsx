@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useRef, useState } from 'react';
+import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useGlobal } from '../../context/useGlobal';
 import Confirm from '../AlertDialog';
 import {
@@ -15,10 +15,14 @@ import {
   OrganizationD,
   IDialog,
   DialogMode,
+  ICardsStrings,
   OptionType,
   WorkflowStep,
   BibleD,
+  ProjectD,
 } from '../../model';
+import { shallowEqual, useSelector } from 'react-redux';
+import { cardsSelector } from '../../selector';
 import DeleteExpansion from '../DeleteExpansion';
 import { TeamContext } from '../../context/TeamContext';
 import {
@@ -27,6 +31,7 @@ import {
   orgDefaultLangProps,
   orgDefaultPermissions,
   orgDefaultWorkflowProgression,
+  WorkflowProgression,
   pubDataCopyright,
   pubDataLangProps,
   pubDataNoteLabel,
@@ -46,6 +51,7 @@ import StickyRedirect from '../StickyRedirect';
 import { useLocation } from 'react-router-dom';
 import { isElectron } from '../../../api-variable';
 import BurritoLogo from '../../control/BurritoLogo';
+import { useSnackBar, AlertSeverity } from '../../hoc/SnackBar';
 
 interface IFeatures {
   [key: string]: any;
@@ -71,6 +77,7 @@ export function TeamDialog(props: IProps) {
   const { pathname } = useLocation();
   const bibles = useOrbitData<BibleD[]>('bible');
   const organizations = useOrbitData<OrganizationD[]>('organization');
+  const projects = useOrbitData<ProjectD[]>('project');
   const [name, setName] = React.useState('');
   const [iso, setIso] = React.useState('');
   const [bible, setBible] = React.useState<BibleD | undefined>(values?.bible);
@@ -88,10 +95,9 @@ export function TeamDialog(props: IProps) {
   const { setParam } = useJsonParams();
   const [changed, setChanged] = React.useState(false);
   const ctx = React.useContext(TeamContext);
-  const { cardStrings, personalTeam } = ctx.state;
-  const t = cardStrings;
+  const { personalTeam } = ctx.state;
+  const t: ICardsStrings = useSelector(cardsSelector, shallowEqual);
   const [memory] = useGlobal('memory');
-  const [isDeveloper] = useGlobal('developer');
   const [process, setProcess] = useState<string>();
   const [processOptions, setProcessOptions] = useState<OptionType[]>([]);
   const savingRef = useRef(false);
@@ -104,9 +110,16 @@ export function TeamDialog(props: IProps) {
     useContext(UnsavedContext).state;
   const { getBible, getBibleOwner, getOrgBible } = useBible();
   const { canUserPublish } = useUserCanPublish();
+  const { showMessage } = useSnackBar();
 
-  const [workflowProgression, setWorkflowProgression] = useState(
-    t.workflowProgressionPassage
+  const teamHasProject = useMemo(() => {
+    const teamId = values?.team?.id;
+    if (!teamId) return false;
+    return projects.some((p) => related(p, 'organization') === teamId);
+  }, [projects, values?.team?.id]);
+
+  const [workflowProgression, setWorkflowProgression] = useState<string>(
+    WorkflowProgression.Passage
   );
   const [permissions, setPermissions] = useState(false);
   const [savedPermission, setSavedPermission] = useState(false);
@@ -125,7 +138,7 @@ export function TeamDialog(props: IProps) {
     setBible(undefined);
     setDescription('');
     setPublishingData('');
-    setWorkflowProgression(t.workflowProgressionPassage);
+    setWorkflowProgression(WorkflowProgression.Passage);
     setPermissions(false);
     setFeatures({});
     onOpen && onOpen(false);
@@ -171,9 +184,7 @@ export function TeamDialog(props: IProps) {
             : ({ attributes: {} } as OrganizationD);
         let df = setParam(
           orgDefaultWorkflowProgression,
-          workflowProgression === t.workflowProgressionStep
-            ? 'step'
-            : 'passage',
+          workflowProgression,
           current.attributes?.defaultParams ?? defaultParams
         );
         df = setParam(orgDefaultFeatures, features, df);
@@ -182,7 +193,7 @@ export function TeamDialog(props: IProps) {
           ...current,
           attributes: {
             ...current.attributes,
-            name,
+            name: name.trim(),
             defaultParams: df,
           },
         } as OrganizationD;
@@ -301,11 +312,20 @@ export function TeamDialog(props: IProps) {
 
   const handleProcess = (e: any) => {
     setProcess(e.target.value);
+    if (e.target.value?.toLowerCase() === 'bold') {
+      showMessage(t.boldProcessInfo, AlertSeverity.Info);
+      setWorkflowProgression(WorkflowProgression.Step);
+      setFeatures({ ...features, aiTranscribe: true });
+    }
   };
 
   const nameInUse = (newName: string): boolean => {
-    if (newName === values?.team.attributes.name) return false;
-    return Boolean(organizations.find((o) => o?.attributes?.name === newName));
+    const trimmed = newName.trim();
+    if (trimmed === '') return false;
+    if (trimmed === (values?.team?.attributes?.name ?? '').trim()) return false;
+    return Boolean(
+      organizations.find((o) => (o?.attributes?.name ?? '').trim() === trimmed)
+    );
   };
 
   useEffect(() => {
@@ -316,9 +336,9 @@ export function TeamDialog(props: IProps) {
         if (values?.team) {
           const wfp = getDefault(orgDefaultWorkflowProgression, values.team);
           setWorkflowProgression(
-            wfp === 'step'
-              ? t.workflowProgressionStep
-              : t.workflowProgressionPassage
+            wfp === WorkflowProgression.Step
+              ? WorkflowProgression.Step
+              : WorkflowProgression.Passage
           );
           setFeatures(getDefault(orgDefaultFeatures, values.team) as IFeatures);
           const permission =
@@ -406,7 +426,9 @@ export function TeamDialog(props: IProps) {
               id="teamName"
               label={t.teamName}
               value={name}
-              helperText={!saving && name && nameInUse(name) && t.nameInUse}
+              helperText={
+                !saving && name.trim() && nameInUse(name) && t.nameInUse
+              }
               required
               onChange={handleChange}
               fullWidth
@@ -466,10 +488,11 @@ export function TeamDialog(props: IProps) {
           )}
         </DialogContent>
         <DialogActions>
-          {isElectron && isDeveloper && (
+          {isElectron && (
             <Button
               id="burrito"
               onClick={() => setView(`/burrito/${values?.team.id}`)}
+              disabled={!teamHasProject}
             >
               <BurritoLogo />
             </Button>
@@ -491,7 +514,7 @@ export function TeamDialog(props: IProps) {
               disabled ||
               recording ||
               saving ||
-              name === '' ||
+              !name.trim() ||
               nameInUse(name) ||
               !changed ||
               (bibleIdError !== '' && bibleId.length > 0)

@@ -21,6 +21,7 @@ import { useOrbitData } from '../../hoc/useOrbitData';
 import { IVoicePerm } from './PersonalizeVoicePermission';
 
 interface ISelectVoice {
+  planId?: string;
   noNewVoice?: boolean;
   onlySettings?: boolean;
   onOpen: () => void;
@@ -29,6 +30,7 @@ interface ISelectVoice {
 }
 
 export default function SelectVoice({
+  planId,
   noNewVoice,
   onlySettings = false,
   onOpen,
@@ -80,22 +82,25 @@ export default function SelectVoice({
   };
 
   return (
-    <Stack sx={{ minWidth: 120, pt: 2 }} spacing={2}>
+    <Stack sx={{ minWidth: 0, width: '100%', pt: 2 }} spacing={2}>
       <SpeakerName
+        planId={planId}
         name={voice ?? ''}
         noNewVoice={noNewVoice}
         onChange={handleSetVoice}
         onRights={(hasRights) => setRights(hasRights)}
         recordingRequired
       />
-      <Typography>{statement}</Typography>
+      <Typography sx={{ overflowWrap: 'break-word', wordBreak: 'break-word' }}>
+        {statement}
+      </Typography>
       <Divider sx={{ m: 1 }} />
-      <ActionRow>
+      <ActionRow sx={{ flexWrap: 'wrap', gap: 1, minWidth: 0 }}>
         <AltButton onClick={onOpen}>
           {onlySettings ? ts.close : ts.cancel}
         </AltButton>
         {!onlySettings && (
-          <PriButton onClick={begin} disabled={!voice || !rights}>
+          <PriButton onClick={begin} disabled={!voice?.trim() || !rights}>
             {t.convert}
           </PriButton>
         )}

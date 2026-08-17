@@ -1,5 +1,4 @@
 import { cleanup } from '@testing-library/react';
-import '@testing-library/jest-dom/extend-expect';
 import { ISheet, IwsKind, IMediaShare, SheetLevel, PassageD } from '../model';
 import { workSheet } from '../components/Sheet/workSheet';
 import { PassageTypeEnum } from '../model/passageType';

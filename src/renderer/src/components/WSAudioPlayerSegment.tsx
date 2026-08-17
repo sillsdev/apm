@@ -6,9 +6,8 @@ import { ToolbarGrid } from '../control/ToolbarGrid';
 import { IWsAudioPlayerSegmentStrings } from '../model';
 import { IoMdBarcode } from 'react-icons/io';
 import type { IconBaseProps } from 'react-icons';
-import RemoveOneIcon from '@mui/icons-material/Clear';
+import RemoveIcon from '@mui/icons-material/Remove';
 import SettingsIcon from '@mui/icons-material/Settings';
-import ClearIcon from '@mui/icons-material/Delete';
 import { HotKeyContext } from '../context/HotKeyContext';
 import AddIcon from '@mui/icons-material/Add';
 import { IRegionChange, IRegionParams } from '../crud/useWavesurferRegions';
@@ -16,6 +15,11 @@ import { useSelector } from 'react-redux';
 import WSSegmentParameters from './WSSegmentParameters';
 import { useSnackBar } from '../hoc/SnackBar';
 import { audioPlayerSegmentSelector } from '../selector';
+import { useGlobal } from '../context/useGlobal';
+import { useMobile } from '../utils/useMobile';
+
+export const ADDREMSEG_KEY = 'CTRL+ALT+Y';
+export const DELREG_KEY = 'CTRL+ARROWDOWN';
 
 const Barcode = IoMdBarcode as unknown as React.FC<IconBaseProps>;
 
@@ -26,12 +30,16 @@ interface IProps {
   params?: IRegionParams;
   playing: boolean;
   canSetDefault?: boolean;
+  onAutoSegment?: () => void;
+  /** Playhead is on an existing boundary — disable Add so no split lands on it. */
+  disableSplit?: boolean;
+  /** Playhead is on a removable internal join — enable Remove. */
+  removeEnabled?: boolean;
   onSplit: (split: IRegionChange) => void;
   onParamChange?: (params: IRegionParams, teamDefault: boolean) => void;
   wsAutoSegment?: (loop: boolean | undefined, params: IRegionParams) => number;
-  wsRemoveSplitRegion: (next?: boolean) => IRegionChange | undefined;
+  wsRemoveSplitRegion: () => IRegionChange | undefined;
   wsAddRegion: () => IRegionChange | undefined;
-  wsClearRegions: () => void;
   setBusy?: (value: boolean) => void;
 }
 
@@ -42,13 +50,15 @@ function WSAudioPlayerSegment(props: IProps) {
     currentNumRegions,
     params,
     playing,
+    disableSplit,
+    removeEnabled,
     canSetDefault,
+    onAutoSegment,
     onSplit,
     onParamChange,
     wsAutoSegment,
     wsRemoveSplitRegion,
     wsAddRegion,
-    wsClearRegions,
     setBusy,
   } = props;
   const t: IWsAudioPlayerSegmentStrings = useSelector(
@@ -61,11 +71,11 @@ function WSAudioPlayerSegment(props: IProps) {
   });
   const busyRef = useRef(false);
   const [showSettings, setShowSettings] = useState(false);
+  const { isMobileView } = useMobile();
+  const [isDeveloper] = useGlobal('developer');
   const { subscribe, unsubscribe, localizeHotKey } =
     useContext(HotKeyContext).state;
   const { showMessage } = useSnackBar();
-  const DELREG_KEY = 'CTRL+ALT+X';
-  const ADDREMSEG_KEY = 'CTRL+ARROWDOWN';
   const readyRef = useRef(ready);
 
   useEffect(() => {
@@ -76,7 +86,6 @@ function WSAudioPlayerSegment(props: IProps) {
     keys.forEach((k) => subscribe(k.key, k.cb));
 
     return () => {
-      // eslint-disable-next-line react-hooks/exhaustive-deps
       keys.forEach((k) => unsubscribe(k.key));
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -105,6 +114,7 @@ function WSAudioPlayerSegment(props: IProps) {
     const numRegions = (wsAutoSegment && wsAutoSegment(loop, segParams)) ?? 0;
     showMessage(t.segmentsCreated.replace('{0}', numRegions.toString()));
     setSegmenting(false);
+    onAutoSegment?.();
     return true;
   };
   const handleShowSettings = () => {
@@ -121,15 +131,9 @@ function WSAudioPlayerSegment(props: IProps) {
   const handleRemoveNextSplit = () => {
     if (!readyRef.current) return false;
     if (setBusy) setBusy(true);
-    const result = wsRemoveSplitRegion(true);
+    // Remove the boundary nearest the playhead (relative to the current region).
+    const result = wsRemoveSplitRegion();
     if (result && onSplit) onSplit(result);
-    if (setBusy) setBusy(false);
-    return true;
-  };
-  const handleClearSegments = () => {
-    if (!readyRef.current) return false;
-    if (setBusy) setBusy(true);
-    wsClearRegions();
     if (setBusy) setBusy(false);
     return true;
   };
@@ -161,17 +165,19 @@ function WSAudioPlayerSegment(props: IProps) {
                   </IconButton>
                 </span>
               </LightTooltip>
-              <LightTooltip id="wsSettingsTip" title={t.segmentSettings}>
-                <span>
-                  <IconButton
-                    id="wsSegmentSettings"
-                    onClick={handleShowSettings}
-                    disabled={playing}
-                  >
-                    <SettingsIcon fontSize="small" />
-                  </IconButton>
-                </span>
-              </LightTooltip>
+              {(!isMobileView || isDeveloper) && (
+                <LightTooltip id="wsSettingsTip" title={t.segmentSettings}>
+                  <span>
+                    <IconButton
+                      id="wsSegmentSettings"
+                      onClick={handleShowSettings}
+                      disabled={playing}
+                    >
+                      <SettingsIcon fontSize="small" />
+                    </IconButton>
+                  </span>
+                </LightTooltip>
+              )}
               <WSSegmentParameters
                 loop={loop}
                 params={segParams}
@@ -185,7 +191,6 @@ function WSAudioPlayerSegment(props: IProps) {
               />
             </>
           )}
-
           <LightTooltip
             id="wsSplitTip"
             title={t.splitSegment.replace('{0}', localizeHotKey(ADDREMSEG_KEY))}
@@ -194,7 +199,8 @@ function WSAudioPlayerSegment(props: IProps) {
               <IconButton
                 id="wsSplit"
                 onClick={handleSplit}
-                disabled={!ready || busyRef.current}
+                disabled={!ready || busyRef.current || disableSplit}
+                variant="primary"
               >
                 <AddIcon />
               </IconButton>
@@ -208,20 +214,17 @@ function WSAudioPlayerSegment(props: IProps) {
               <IconButton
                 id="wsJoin"
                 onClick={handleRemoveNextSplit}
-                disabled={!ready || busyRef.current || currentNumRegions === 0}
+                disabled={
+                  !ready ||
+                  busyRef.current ||
+                  currentNumRegions === 0 ||
+                  !removeEnabled
+                }
+                // A little breathing room so the solid-background Add button
+                // isn't crowding Remove when it's enabled.
+                sx={{ ml: '6px' }}
               >
-                <RemoveOneIcon />
-              </IconButton>
-            </span>
-          </LightTooltip>
-          <LightTooltip id="wsDeleteTip" title={t.removeAll}>
-            <span>
-              <IconButton
-                id="wsSegmentClear"
-                onClick={handleClearSegments}
-                disabled={!ready || busyRef.current || currentNumRegions === 0}
-              >
-                <ClearIcon fontSize="small" />
+                <RemoveIcon />
               </IconButton>
             </span>
           </LightTooltip>

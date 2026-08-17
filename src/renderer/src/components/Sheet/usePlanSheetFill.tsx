@@ -5,7 +5,6 @@ import {
   IViewModeStrings,
   IwsKind,
   OptionType,
-  OrganizationD,
 } from '../../model';
 import { ICell, ICellChange } from './PlanSheet';
 import { planSheetSelector, viewModeSelector } from '../../selector';
@@ -16,7 +15,7 @@ import {
   ArtifactTypeSlug,
   useArtifactType,
   findRecord,
-  isPersonalTeam,
+  useShowAssignment,
 } from '../../crud';
 import { rowTypes } from './rowTypes';
 import { StageReport } from '../../control';
@@ -41,13 +40,12 @@ import { getPubRefs } from './getPubRefs';
 import { PublishButton } from './PublishButton';
 import { NoteIcon } from '../../control/PlanIcons';
 import { OrganizationSchemeD } from '../../model/organizationScheme';
-import { useOrbitData } from '../../hoc/useOrbitData';
 import {
   isPublishingTitle,
   passageTypeFromRef,
 } from '../../control/passageTypeFromRef';
 
-type ICellEditor = (props: any) => JSX.Element;
+type ICellEditor = (props: any) => React.JSX.Element;
 type IRow = (string | number)[];
 
 const pointer = { cursor: 'pointer' };
@@ -79,8 +77,6 @@ interface IProps {
   onHistory: (rowIndex: number) => () => void;
   onSetPreventSave: (val: boolean) => void;
   onDelete: (rowIndex: number) => () => void;
-  onAudacity: (rowIndex: number) => () => void;
-  onRecord: (rowIndex: number) => void;
   onUpload: (rowIndex: number) => () => void;
   onGraphic: (rowIndex: number) => void;
   onAssign: (where: number[]) => () => void;
@@ -111,8 +107,6 @@ interface IProps {
  * @param {Function} props.onHistory - A callback function for handling history.
  * @param {Function} props.onSetPreventSave - A callback function for setting prevent save.
  * @param {Function} props.onDelete - A callback function for handling delete.
- * @param {Function} props.onAudacity - A callback function for launching audacity.
- * @param {Function} props.onRecord - A callback function for handling record.
  * @param {Function} props.onUpload - A callback function for handling upload.
  * @param {Function} props.onGraphic - A callback function for handling adding a graphic.
  * @param {Function} props.onAssign - A callback function for handling assign.
@@ -141,8 +135,6 @@ export const usePlanSheetFill = ({
   onHistory,
   onSetPreventSave,
   onDelete,
-  onAudacity,
-  onRecord,
   onUpload,
   onGraphic,
   onAssign,
@@ -163,13 +155,7 @@ export const usePlanSheetFill = ({
   const [offline] = useGlobal('offline'); //verified this is not used in a function 2/18/25
   const [offlineOnly] = useGlobal('offlineOnly'); //will be constant here
   const { userIsAdmin } = useRole();
-  const [team] = useGlobal('organization');
-  const teams = useOrbitData<OrganizationD[]>('organization');
-
-  const showAssign = useMemo(
-    () => !isPersonalTeam(team, teams) && !offlineOnly,
-    [teams, team, offlineOnly]
-  );
+  const showAssign = useShowAssignment();
 
   const refErrTest = useRefErrTest();
   const { getOrganizedBy } = useOrganizedBy();
@@ -225,7 +211,6 @@ export const usePlanSheetFill = ({
   const ActivateCell: ICellEditor = (props: any) => {
     doSetActive();
     props.onRevert();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     return <></>;
   };
 
@@ -628,13 +613,16 @@ export const usePlanSheetFill = ({
           className: calcClassName,
         };
       }
-      if (cellIndex === bookCol && passage)
+      if (cellIndex === bookCol && passage) {
+        const isNote =
+          (rowInfo[rowIndex] as ISheet).passageType === PassageTypeEnum.NOTE;
         return {
           value: e,
           readOnly: !canEditSheet,
-          className: 'book ' + (!e ? 'refErr ' : '') + calcClassName,
+          className: 'book ' + (!e && !isNote ? 'refErr ' : '') + calcClassName,
           dataEditor: bookEditor,
         };
+      }
       if (
         cellIndex === titleCol &&
         !passage &&
@@ -802,8 +790,6 @@ export const usePlanSheetFill = ({
               readonly={check.length > 0}
               onDelete={onDelete}
               onPlayStatus={onPlayStatus}
-              onAudacity={onAudacity}
-              onRecord={onRecord}
               onUpload={onUpload}
               onAssign={onAssign}
               onFirstMovement={onFirstMovement}
@@ -843,12 +829,17 @@ export const usePlanSheetFill = ({
       const book = isBook(rowIndex) || isAltBook(rowIndex);
       const iscurrent: string =
         currentRow === rowIndex + 1 ? ' currentrow ' : '';
+      const srPassageId = related(
+        (rowInfo[rowIndex] as ISheet).sharedResource,
+        'passage'
+      );
+      const rowPassageId = (rowInfo[rowIndex] as ISheet).passage?.id;
       const sharedRes =
         passage &&
         Boolean((rowInfo[rowIndex] as ISheet).sharedResource) &&
-        Boolean((rowInfo[rowIndex] as ISheet).passage) &&
-        related((rowInfo[rowIndex] as ISheet).sharedResource, 'passage') !==
-          (rowInfo[rowIndex] as ISheet).passage?.id;
+        Boolean(rowPassageId) &&
+        srPassageId != null &&
+        srPassageId !== rowPassageId;
       const sharedOffline = sharedRes && getGlobal('offline');
       const calcClassName =
         iscurrent +

@@ -60,7 +60,12 @@ import {
 } from '../../crud/useArtifactCategory';
 import { LightTooltip, StageReport } from '../../control';
 import { PassageDetailContext } from '../../context/PassageDetailContext';
-import { removeExtension, startEnd, useWaitForRemoteQueue } from '../../utils';
+import {
+  removeExtension,
+  startEnd,
+  useWaitForRemoteQueue,
+  waitForIt,
+} from '../../utils';
 import { useOrgWorkflowSteps } from '../../crud/useOrgWorkflowSteps';
 import { NewDiscussionToolId, NewCommentToolId } from './DiscussionList';
 import { SaveInfo, UnsavedContext } from '../../context/UnsavedContext';
@@ -80,6 +85,10 @@ import { RecordOperation, RecordTransformBuilder } from '@orbit/records';
 import { useGroupOrUser } from '../../crud/useGroupOrUser';
 import SelectArtifactCategory from '../../components/Sheet/SelectArtifactCategory';
 import { ArtCatScr } from '../../components/Sheet/ArtCatScr';
+import {
+  discussionCardTopicItemProps,
+  discussionCardTopicProps,
+} from './discussionCardTopicStyles';
 
 const DiscussionCardRoot = styled(Box)<BoxProps>(() => ({
   width: '100%',
@@ -142,19 +151,14 @@ const SmallButton = styled(IconButton)<IconButtonProps>(({ theme }) => ({
   color: theme.palette.background.paper,
 }));
 
-const topicProps = { mr: 2, alignSelf: 'center' } as SxProps;
-const topicItemProps = {
-  overflow: 'hidden',
-  display: 'flex',
-  flexDirection: 'row',
-} as SxProps;
 const titleProps = {
   display: 'flex',
   flexDirection: 'row',
   justifyContent: 'space-between',
   flexGrow: 1,
-  flexShrink: 0,
+  flexShrink: 1,
   width: '100%',
+  minWidth: 0,
 } as SxProps;
 const titleCtrlProps = { display: 'flex', flexDirection: 'row' } as SxProps;
 const cardFlowProps = {
@@ -246,6 +250,9 @@ export const DiscussionCard = (props: IProps) => {
   const [myChanged, setMyChanged] = useState(false);
   const segSavingRef = useRef(false);
   const cardSavingRef = useRef(false);
+  // commit() handle for the category field; called at save so a newly typed
+  // category is created on submission rather than on blur.
+  const catCommitRef = useRef<(() => Promise<string>) | null>(null);
   const [showMove, setShowMove] = useState(false);
   const [moveTo, setMoveTo] = useState<string>();
   const waitForRemoteQueue = useWaitForRemoteQueue();
@@ -272,12 +279,19 @@ export const DiscussionCard = (props: IProps) => {
   const [editCard, setEditCard] = useState(false);
   const { localizedArtifactCategory } = useArtifactCategory();
   const { localizedWorkStepFromId } = useOrgWorkflowSteps();
-  const cardRef = useRef<any>();
+  const cardRef = useRef<any>(undefined);
   const commentText = useRef('');
   const [comment, setComment] = useState('');
-  const commentMediaId = useRef<string | undefined>();
+  const commentMediaId = useRef<string | undefined>(undefined);
   const [canSaveRecording, setCanSaveRecording] = useState(false);
+  const canSaveRecordingRef = useRef(false);
+  const [hasAudioDraft, setHasAudioDraft] = useState(false);
+  const [commentIsRecording, setCommentIsRecording] = useState(false);
   const { userIsAdmin } = useRole();
+
+  useEffect(() => {
+    canSaveRecordingRef.current = canSaveRecording;
+  }, [canSaveRecording]);
 
   const CommentAuthor = (comment: CommentD) =>
     getMentorAuthor(comment.attributes.visible) ??
@@ -357,6 +371,8 @@ export const DiscussionCard = (props: IProps) => {
     setEditCategory('');
     setComment('');
     commentText.current = '';
+    setHasAudioDraft(false);
+    setCommentIsRecording(false);
     setMoveTo(undefined);
   };
 
@@ -712,10 +728,19 @@ export const DiscussionCard = (props: IProps) => {
       setChanged(true);
     }
   };
+  // A brand-new typed category is only committed to an id at save, so it never
+  // fires onCategoryChange; mark the discussion changed so Save can enable when
+  // a new category is the only edit.
+  const onCategoryNewDraft = () => setChanged(true);
   const saveDiscussion = async () => {
     //we should only get here with no subject if they've clicked off the screen and then told us to save with no subject
     discussion.attributes.subject =
       editSubject.length > 0 ? editSubject : tdcs.topic;
+    // Create the category now (at save) if the user typed a new one; on blur it
+    // was only resolved against existing categories.
+    const catId = catCommitRef.current
+      ? await catCommitRef.current()
+      : editCategory;
     const ops: RecordOperation[] = [];
     const t = new RecordTransformBuilder();
     if (!discussion.id) {
@@ -757,7 +782,7 @@ export const DiscussionCard = (props: IProps) => {
         discussion,
         'artifactCategory',
         'artifactcategory',
-        editCategory,
+        catId,
         user
       ),
       ...UpdateRelatedRecord(
@@ -782,9 +807,26 @@ export const DiscussionCard = (props: IProps) => {
 
   const handleSave = async () => {
     //if there is an audio comment, start the upload
-    if (cardSavingRef.current) return;
+    if (cardSavingRef.current || commentIsRecording) return;
     cardSavingRef.current = true;
-    if (canSaveRecording && !commentMediaId.current) {
+    const hasPendingAudio =
+      (canSaveRecording || hasAudioDraft) && !commentMediaId.current;
+    if (hasPendingAudio) {
+      // hasAudioDraft is set on pause before canSaveRecording; MediaRecord
+      // completes save immediately if startSave runs without a blob.
+      if (hasAudioDraft && !canSaveRecordingRef.current) {
+        try {
+          await waitForIt(
+            'audio comment blob ready',
+            () => canSaveRecordingRef.current,
+            () => false,
+            30
+          );
+        } catch {
+          cardSavingRef.current = false;
+          return;
+        }
+      }
       startSave(NewCommentToolId);
       //we'll do the rest in afterUpload
       return;
@@ -801,6 +843,8 @@ export const DiscussionCard = (props: IProps) => {
     cardSavingRef.current = true;
     commentText.current = '';
     commentMediaId.current = '';
+    setHasAudioDraft(false);
+    setCommentIsRecording(false);
     onAddComplete && onAddComplete('');
     setEditing(false);
     setChanged(false);
@@ -956,6 +1000,8 @@ export const DiscussionCard = (props: IProps) => {
                   id={`category-${discussion.id}`}
                   initCategory={editCategory}
                   onCategoryChange={onCategoryChange}
+                  onNewDraft={onCategoryNewDraft}
+                  commitRef={catCommitRef}
                   allowNew={userIsAdmin && (!offline || offlineOnly)}
                   required={false}
                   scripture={ArtCatScr.hide}
@@ -968,6 +1014,8 @@ export const DiscussionCard = (props: IProps) => {
                     comment={commentText.current}
                     refresh={refresh}
                     setCanSaveRecording={setCanSaveRecording}
+                    onAudioDraftChange={setHasAudioDraft}
+                    onRecordingChange={setCommentIsRecording}
                     fileName={fileName(editSubject, '')}
                     afterUploadCb={afterUploadCb}
                     passageId={passageId}
@@ -983,12 +1031,22 @@ export const DiscussionCard = (props: IProps) => {
                     disabled={
                       cardSavingRef.current ||
                       segSavingRef.current ||
+                      commentIsRecording ||
                       !mediafileId ||
                       editSubject === '' ||
-                      !(canSaveRecording || myComments.length > 0 || comment)
+                      !(
+                        canSaveRecording ||
+                        hasAudioDraft ||
+                        myComments.length > 0 ||
+                        comment
+                      )
                     }
                   >
-                    {discussion.id ? ts.save : t.addComment}
+                    {onAddComplete
+                      ? t.addComment
+                      : discussion.id
+                        ? ts.save
+                        : t.addComment}
                   </Button>
                   <Button
                     id={`cancel-${discussion.id}`}
@@ -1002,7 +1060,7 @@ export const DiscussionCard = (props: IProps) => {
               </EditContainer>
             ) : (
               <Box sx={titleProps}>
-                <Box sx={topicItemProps}>
+                <Box sx={discussionCardTopicItemProps}>
                   {myRegion &&
                     related(discussion, 'mediafile') === mediafileId && (
                       <IconButton
@@ -1029,7 +1087,7 @@ export const DiscussionCard = (props: IProps) => {
                   <Typography
                     variant="h6"
                     component="h2"
-                    sx={topicProps}
+                    sx={discussionCardTopicProps}
                     title={discussionDescription()}
                   >
                     {discussion.attributes?.subject}

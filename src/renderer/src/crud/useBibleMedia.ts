@@ -1,9 +1,13 @@
+import { useCallback } from 'react';
 import { useGlobal } from '../context/useGlobal';
 import { OrganizationD, PlanD, ProjectD } from '../model';
 
 export const useBibleMedia = () => {
   const [memory] = useGlobal('memory');
-  const getBibleMediaTeam = async () => {
+  // Memoized so consumers can list these in effect deps without re-firing every
+  // render. memory is a stable global, so it's intentionally left out of the
+  // dependency lists (matching the repo convention).
+  const getBibleMediaTeam = useCallback(async () => {
     let orgs = memory?.cache.query((q) =>
       q
         .findRecords('organization')
@@ -17,8 +21,9 @@ export const useBibleMedia = () => {
       );
     }
     return orgs[0];
-  };
-  const getBibleMediaProject = async () => {
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const getBibleMediaProject = useCallback(async () => {
     let projects = memory?.cache.query((q) =>
       q
         .findRecords('project')
@@ -32,9 +37,10 @@ export const useBibleMedia = () => {
       )) as ProjectD[];
     }
     return projects[0];
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  const getBibleMediaPlan = async () => {
+  const getBibleMediaPlan = useCallback(async () => {
     let plans = memory?.cache.query((q) =>
       q.findRecords('plan').filter({ attribute: 'name', value: 'BibleMedia' })
     ) as PlanD[];
@@ -45,7 +51,8 @@ export const useBibleMedia = () => {
       );
     }
     return plans[0];
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   return {
     getBibleMediaTeam,
     getBibleMediaProject,

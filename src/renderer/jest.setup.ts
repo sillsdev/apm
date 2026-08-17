@@ -65,6 +65,8 @@ beforeAll(() => {
         'Warning: The current testing environment is not configured to support act'
       ) ||
         args[0].includes('Warning: An update to') ||
+        args[0].includes('An update to') ||
+        args[0].includes('was not wrapped in act') ||
         args[0].includes('Warning: `ReactDOMTestUtils.act` is deprecated'))
     ) {
       return;

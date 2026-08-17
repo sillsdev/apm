@@ -789,6 +789,49 @@ test('one section and one passage with step gives output', () => {
   ]);
 });
 
+test('passage assignee from organizationSchemeStep', () => {
+  const s1WithScheme = {
+    ...s1,
+    relationships: {
+      ...s1.relationships,
+      organizationScheme: {
+        data: { type: 'organizationscheme', id: 'scheme1' },
+      },
+    },
+  } as SectionD;
+  const schemeStep = {
+    type: 'organizationschemestep',
+    id: 'oss1',
+    attributes: {
+      dateCreated: '2021-09-14',
+      dateUpdated: '2021-09-15',
+      lastModifiedBy: 1,
+    },
+    relationships: {
+      organizationscheme: {
+        data: { type: 'organizationscheme', id: 'scheme1' },
+      },
+      orgWorkflowStep: { data: { type: 'orgworkflowstep', id: 'owf1' } },
+      user: { data: { type: 'user', id: 'u2' } },
+      group: {},
+      lastModifiedByUser: { data: { type: 'user', id: 'u0' } },
+    },
+  };
+  const sheet = getSheet({
+    ...gsDefaults,
+    plan: 'pl1',
+    sections: [s1WithScheme],
+    passages: [pa1],
+    orgWorkflowSteps: owf,
+    organizationSchemeSteps: [schemeStep],
+  } as any);
+  expect(sheet[1].assign).toEqual({ type: 'user', id: 'u2' });
+  expect(sheet[0].scheme).toEqual({
+    type: 'organizationscheme',
+    id: 'scheme1',
+  });
+});
+
 test('two flat sections with steps gives output', () => {
   const stepStatus =
     '{"completed": [{"name": "Internalize", "stepid": "1", "complete": true}, {"name": "Record", "stepid": "2", "complete": true}, {"name": "TeamCheck", "stepid": "3", "complete": true}]}';

@@ -36,4 +36,5 @@ export const API_CONFIG = {
   snagId: import.meta.env.VITE_SNAGID ?? '',
   videoTraining: import.meta.env.VITE_VIDEO_TRAINING ?? '',
   walkThru: import.meta.env.VITE_WALK_THRU ?? '',
+  graphicApiBase: import.meta.env.VITE_GRAPHIC_API_BASE ?? '',
 };

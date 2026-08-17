@@ -21,6 +21,8 @@ const api = {
   refreshToken: async () => await ipcRenderer.invoke('refresh-token'),
   setAddToDict: async (value) =>
     await ipcRenderer.invoke('setAddToDict', value),
+  setAuthProcessStrings: async (strings) =>
+    await ipcRenderer.invoke('setAuthProcessStrings', strings),
   setSpellLangs: async (codes) =>
     await ipcRenderer.invoke('setSpellLangs', codes),
   log: async (...args) => await ipcRenderer.invoke('log', ...args),
@@ -28,7 +30,10 @@ const api = {
   exitApp: async () => await ipcRenderer.invoke('exitApp'),
   relaunchApp: async () => await ipcRenderer.invoke('relaunchApp'),
   closeApp: async () => await ipcRenderer.invoke('closeApp'),
-  importOpen: async () => await ipcRenderer.invoke('importOpen'),
+  importOpen: async (filters) =>
+    await ipcRenderer.invoke('importOpen', filters),
+  openDirectoryDialog: async () =>
+    await ipcRenderer.invoke('openDirectoryDialog'),
   execPath: async () => await ipcRenderer.invoke('execPath'),
   md5File: async (filePath) => await ipcRenderer.invoke('md5File', filePath),
   isWindows: async () => await ipcRenderer.invoke('isWindows'),
@@ -46,6 +51,8 @@ const api = {
   append: async (filePath, data) =>
     await ipcRenderer.invoke('append', filePath, data),
   delete: async (filePath) => await ipcRenderer.invoke('delete', filePath),
+  deleteFolder: async (folder) =>
+    await ipcRenderer.invoke('deleteFolder', folder),
   copyFile: async (from, to) => await ipcRenderer.invoke('copyFile', from, to),
   times: async (filePath, create, modify) =>
     await ipcRenderer.invoke('times', filePath, create, modify),
@@ -89,6 +96,8 @@ const api = {
     await ipcRenderer.invoke('zipStreamEntryText', zip, name),
   zipStreamClose: async (zip) =>
     await ipcRenderer.invoke('zipStreamClose', zip),
+  zipFolder: async (sourceDir, outFile) =>
+    await ipcRenderer.invoke('zipFolder', sourceDir, outFile),
   writeBuffer: async (filePath, blob) =>
     await ipcRenderer.invoke('writeBuffer', filePath, blob),
   downloadFile: async (url, localFile) =>
@@ -101,6 +110,10 @@ const api = {
     await ipcRenderer.invoke('downloadClose', token),
   normalize: async (input, output) =>
     await ipcRenderer.invoke('normalize', input, output),
+  burritoToPtf: async (payload) =>
+    await ipcRenderer.invoke('burritoToPtf', payload),
+  convertToMp3: async (input, output) =>
+    await ipcRenderer.invoke('convertToMp3', input, output),
 } as MainAPI;
 
 // Use `contextBridge` APIs to expose Electron APIs to
