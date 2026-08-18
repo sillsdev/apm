@@ -30,6 +30,14 @@ describe('waveformPeaks', () => {
     expect(Math.max(...peaks[0]!)).toBe(1);
   });
 
+  it('covers the last sample when maxLength is less than buffer length', () => {
+    const data = new Float32Array(8000);
+    data[7999] = 1;
+    const peaks = waveformPeaks(fakeBuffer([data]), 6000);
+    expect(peaks[0]).toHaveLength(6000);
+    expect(Math.max(...peaks[0]!)).toBe(1);
+  });
+
   it('returns a placeholder for an empty buffer', () => {
     const peaks = waveformPeaks(fakeBuffer([new Float32Array(0)]));
     expect(peaks).toHaveLength(1);

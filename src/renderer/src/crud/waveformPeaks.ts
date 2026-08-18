@@ -2,17 +2,21 @@
 export const WAVEFORM_PEAKS_MAX = 8000;
 
 /**
- * Downsampled max-abs peaks for `wavesurfer.load(url, peaks, duration)`.
- * Passing peaks skips WaveSurfer's fetch+decode of the blob URL (a second
- * ~200MB copy that cancels the media element's load on large files).
+ * Downsampled max-abs peaks covering the full buffer.
+ * sampleSize is fractional so every source sample falls in a bucket — unlike
+ * wavesurfer exportPeaks, which uses Math.round(length/maxLength) and can
+ * leave a tail unsampled when the channel is already downsampled.
  */
-export function waveformPeaks(buffer: AudioBuffer): Float32Array[] {
+export function waveformPeaks(
+  buffer: AudioBuffer,
+  maxLength: number = WAVEFORM_PEAKS_MAX
+): Float32Array[] {
   const channels = Math.max(buffer.numberOfChannels, 1);
   const srcLen = buffer.length;
   if (srcLen <= 0) {
     return Array.from({ length: channels }, () => new Float32Array(1));
   }
-  const length = Math.min(WAVEFORM_PEAKS_MAX, srcLen);
+  const length = Math.min(Math.max(1, maxLength), srcLen);
   const sampleSize = srcLen / length;
   const peaks: Float32Array[] = [];
   for (let ch = 0; ch < channels; ch++) {

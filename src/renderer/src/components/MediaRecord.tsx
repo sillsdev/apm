@@ -613,15 +613,21 @@ function MediaRecord(props: IProps) {
       setStatusText('');
     }
   }, [loading, blobReady, originalBlob, setStatusText]);
-  const blobError = (urlorError: string) => {
-    showMessage(urlorError);
+  const stopLoading = () => {
     setLoading(false);
     setStatusText('');
     onLoaded && onLoaded();
   };
+  const blobError = (urlorError: string) => {
+    showMessage(urlorError);
+    stopLoading();
+  };
   const handleWaveformLoadError = useCallback(
     (error?: unknown) => {
-      if (isAudioLoadAbort(error)) return;
+      if (isAudioLoadAbort(error)) {
+        stopLoading();
+        return;
+      }
       blobError(ts.mediaError);
       setOriginalBlob(undefined);
     },

@@ -108,6 +108,8 @@ export function useWaveSurfer(
   const loadGenerationRef = useRef(0);
   /** Generation of the blobAudioRef commit in the current/last loadBlob. */
   const loadBlobGenerationRef = useRef(0);
+  /** Set to loadGeneration immediately before ws.load(blobUrl, peaks); consumed on 'ready'. */
+  const blobLoadTokenRef = useRef<number | undefined>(undefined);
   const recordingRef = useRef(false);
   /** Peaks of existing audio before/after the record position (overdub preview). */
   const recordPrePeaksRef = useRef<Float32Array>(new Float32Array(0));
@@ -116,8 +118,6 @@ export function useWaveSurfer(
   const recordPostSecondsRef = useRef(0);
   /** True while a cheap peaks-only preview load is in flight — its 'ready' must not run handleReady. */
   const recordPeaksLoadRef = useRef(false);
-  /** loadGenerationRef at peaks preview load start — stale after wsStopRecord. */
-  const peaksLoadGenerationRef = useRef(0);
   const currentBlobUrlRef = useRef<string | undefined>(undefined);
   const lastWaveformTapTimeRef = useRef(0);
   const lastWaveformTapProgressRef = useRef<number | undefined>(undefined);
@@ -307,7 +307,8 @@ export function useWaveSurfer(
     verses,
     hasSegmentUndo,
     applyRegionColor,
-    lockSegmentSelection
+    lockSegmentSelection,
+    () => blobAudioRef.current
   );
 
   const setPlayingx = (value: boolean, regionOnly: boolean) => {
@@ -367,19 +368,15 @@ export function useWaveSurfer(
         if (wsDur) setDuration(wsDur);
         return;
       }
-      const media = wavesurferRef.current?.getMediaElement();
       if (
-        shouldIgnorePeaksReady({
-          currentSrc: media?.currentSrc,
-          srcAttr: media?.getAttribute('src'),
-          peaksGeneration: peaksLoadGenerationRef.current,
-          loadGeneration: loadGenerationRef.current,
-          blobGeneration: loadBlobGenerationRef.current,
-        })
+        shouldIgnorePeaksReady(
+          blobLoadTokenRef.current,
+          loadGenerationRef.current
+        )
       ) {
-        // Stale or superseded peaks-only load — must not clobber a real blob load.
         return;
       }
+      blobLoadTokenRef.current = undefined;
       setupRegions(wavesurferRef.current as WaveSurfer);
       //recording also sends ready
       if (loadRequests.current > 0) loadRequests.current--;
@@ -646,6 +643,7 @@ export function useWaveSurfer(
       setDuration(duration);
       blobUrl = URL.createObjectURL(blob);
       currentBlobUrlRef.current = blobUrl;
+      blobLoadTokenRef.current = generation;
       // Peaks+duration skip WaveSurfer's fetch+decode of the blob URL. That
       // extra copy of a large file cancels the media element's load (toast +
       // waveform cleared). Revoke the previous URL only after this load.
@@ -656,6 +654,9 @@ export function useWaveSurfer(
       );
       if (generation !== loadGenerationRef.current) {
         loadingRef.current = false;
+        if (blobLoadTokenRef.current === generation) {
+          blobLoadTokenRef.current = undefined;
+        }
         releaseLoadBlobUrl(blobUrl);
         return;
       }
@@ -665,6 +666,9 @@ export function useWaveSurfer(
     } catch (error) {
       console.error('Error loading blob:', error);
       loadingRef.current = false;
+      if (blobLoadTokenRef.current === generation) {
+        blobLoadTokenRef.current = undefined;
+      }
       // Only revoke this load's URL; a concurrent stop load may own currentBlobUrlRef
       releaseLoadBlobUrl(blobUrl);
       if (generation !== loadGenerationRef.current && isAudioLoadAbort(error)) {
@@ -965,12 +969,10 @@ export function useWaveSurfer(
     combined.set(post, pre.length + live.length);
     const total =
       recordPreSecondsRef.current + liveSeconds + recordPostSecondsRef.current;
-    const generation = loadGenerationRef.current;
-    peaksLoadGenerationRef.current = generation;
     recordPeaksLoadRef.current = true;
     try {
       await ws.load('', [combined], total);
-      if (generation !== loadGenerationRef.current || !recordingRef.current) {
+      if (!recordingRef.current) {
         return;
       }
       setDuration(total);
@@ -1011,8 +1013,6 @@ export function useWaveSurfer(
     onCanUndo(true);
     setRecording(false);
     isReadyRef.current = false;
-    recordPeaksLoadRef.current = false;
-    peaksLoadGenerationRef.current = loadGenerationRef.current;
     recordPrePeaksRef.current = new Float32Array(0);
     recordPostPeaksRef.current = new Float32Array(0);
     recordPreSecondsRef.current = 0;

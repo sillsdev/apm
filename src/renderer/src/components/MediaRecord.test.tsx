@@ -6,10 +6,12 @@ import MediaRecord from './MediaRecord';
 
 type WsAudioPlayerProps = {
   planId?: string;
+  loading?: boolean;
   setChanged?: (changed: boolean) => void;
   onDuration?: (duration: number) => void;
   setBlobReady?: (ready: boolean) => void;
   onBlobReady?: (blob: Blob | undefined) => void;
+  onLoadError?: (error: unknown) => void;
   isSaveDisabled?: boolean;
   showWaveformSave?: boolean;
 };
@@ -144,6 +146,22 @@ describe('MediaRecord save gating', () => {
 
   afterEach(() => {
     cleanup();
+  });
+
+  it('clears loading on abort without treating it as a missing file', async () => {
+    const setStatusText = jest.fn();
+    render(<MediaRecord {...defaultProps} setStatusText={setStatusText} />);
+
+    await waitFor(() => expect(latestWsProps?.onLoadError).toBeDefined());
+
+    act(() => {
+      latestWsProps?.onLoadError?.(new DOMException('aborted', 'AbortError'));
+    });
+
+    await waitFor(() => {
+      expect(setStatusText).toHaveBeenCalledWith('');
+      expect(latestWsProps?.loading).toBe(false);
+    });
   });
 
   it('passes planId through to WSAudioPlayer', async () => {
