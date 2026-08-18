@@ -61,6 +61,7 @@ import {
   type ICarefulSpeechColorStatus,
 } from '../../utils/carefulSpeechSegmentColors';
 import { useStepPermissions } from '../../utils/useStepPermission';
+import { isLinkedNote } from '../../crud/isLinkedNote';
 import {
   mediaTabSelector,
   mediaTitleSelector,
@@ -122,6 +123,7 @@ export function PassageDetailGuidedPhraseRecord({
   const { getTypeId } = useArtifactType();
   const {
     passage,
+    sharedResource,
     playerMediafile,
     mediafileId,
     rowData,
@@ -494,8 +496,10 @@ export function PassageDetailGuidedPhraseRecord({
   );
 
   const editStep = useMemo(
-    () => canDoSectionStep(currentstep, section),
-    [canDoSectionStep, currentstep, section]
+    () =>
+      canDoSectionStep(currentstep, section) &&
+      !isLinkedNote(passage, sharedResource),
+    [canDoSectionStep, currentstep, section, passage, sharedResource]
   );
 
   const defaultFilename = useMemo(() => {

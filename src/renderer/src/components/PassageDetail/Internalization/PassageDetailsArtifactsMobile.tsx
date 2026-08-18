@@ -95,6 +95,7 @@ import FindTabs from './FindTabs';
 import { storedCompareKey } from '../../../utils/storedCompareKey';
 import { mediaContentType } from '../../../utils/contentType';
 import { useStepPermissions } from '../../../utils/useStepPermission';
+import { isLinkedNote } from '../../../crud/isLinkedNote';
 import FindBibleBrain from './FindBibleBrain';
 import { useHandleLink } from './addLinkKind';
 import { usePassageRef } from './usePassageRef';
@@ -129,6 +130,7 @@ export function PassageDetailArtifactsMobile() {
     forceRefresh,
     handleItemPlayEnd,
     getProjectResources,
+    sharedResource,
   } = usePassageDetailContext();
   const { getOrganizedBy } = useOrganizedBy();
   const { AddSectionResource } = useSecResCreate(section);
@@ -207,7 +209,9 @@ export function PassageDetailArtifactsMobile() {
   );
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
   const { canDoSectionStep } = useStepPermissions();
-  const hasPermission = canDoSectionStep(currentstep, section);
+  const hasPermission =
+    canDoSectionStep(currentstep, section) &&
+    !isLinkedNote(passage, sharedResource);
   const modifiable = useMemo(
     () => hasPermission && (!offline || offlineOnly),
     [hasPermission, offline, offlineOnly]

@@ -45,6 +45,7 @@ import {
   WorkflowProgression,
 } from '../crud/useOrgDefaults';
 import { related } from '../crud/related';
+import { isLinkedNote } from '../crud/isLinkedNote';
 import { remoteId, remoteIdGuid } from '../crud/remoteId';
 import { useArtifactCategory } from '../crud/useArtifactCategory';
 import { useArtifactType } from '../crud/useArtifactType';
@@ -219,6 +220,7 @@ const initState = {
   discussOpen: false,
   setDiscussOpen: (_discussOpen: boolean) => {},
   isBoldWorkflow: false,
+  linkedNoteReadOnly: false,
   promptPlaybackComplete: false,
   setPromptPlaybackComplete: (_complete: boolean) => {},
   promptDockedRecordButton: null as React.ReactNode | null,
@@ -1046,15 +1048,17 @@ const PassageDetailProvider = (props: IProps) => {
       if (s) {
         if (p.id !== state.passage.id || s.id !== state.section.id) {
           setState((state: ICtxState) => {
+            const sharedResource = findRecord(
+              memory,
+              'sharedresource',
+              related(p, 'sharedResource')
+            ) as SharedResourceD;
             return {
               ...state,
               passage: p as PassageD,
               section: s as SectionD,
-              sharedResource: findRecord(
-                memory,
-                'sharedresource',
-                related(p, 'sharedResource')
-              ) as SharedResourceD,
+              sharedResource,
+              linkedNoteReadOnly: isLinkedNote(p as PassageD, sharedResource),
               psgCompleted: [...complete],
             };
           });

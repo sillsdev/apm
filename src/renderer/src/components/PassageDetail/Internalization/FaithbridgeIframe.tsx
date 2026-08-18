@@ -21,6 +21,7 @@ import { RecordKeyMap } from '@orbit/records';
 import { FaithBridge } from '../../../assets/brands';
 import { Typography } from '@mui/material';
 import { useStepPermissions } from '../../../utils/useStepPermission';
+import { isLinkedNote } from '../../../crud/isLinkedNote';
 import { AlertSeverity, useSnackBar } from '../../../hoc/SnackBar';
 import { axiosGet } from '../../../utils/axios';
 import { TokenContext } from '../../../context/TokenProvider';
@@ -50,7 +51,8 @@ export const FaithbridgeIframe = ({
   const checkOnline = useCheckOnline(FaithBridge);
   const [audio, setAudio] = useState(!offlineOnly && !isOffline);
   const [urlParams, setUrlParams] = useState<URLSearchParams | null>(null);
-  const { passage, currentstep, section } = usePassageDetailContext();
+  const { passage, currentstep, section, sharedResource } =
+    usePassageDetailContext();
   const t: IFaithbridgeStrings = useSelector(faithbridgeSelector, shallowEqual);
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
   const [apiReset, setApiReset] = useState(0);
@@ -59,7 +61,9 @@ export const FaithbridgeIframe = ({
   const [refresh, setRefresh] = useState(0);
   const [onlineMsg, setOnlineMsg] = useState<string | null>(null);
   const { canDoSectionStep } = useStepPermissions();
-  const hasPermission = canDoSectionStep(currentstep, section);
+  const hasPermission =
+    canDoSectionStep(currentstep, section) &&
+    !isLinkedNote(passage, sharedResource);
   const { showMessage } = useSnackBar();
   const { passageRef } = usePassageRef();
   const onlineTimer = React.useRef<NodeJS.Timeout | null>(null);

@@ -11,6 +11,7 @@ import { passageDetailStepCompleteSelector } from '../../selector';
 import { shallowEqual, useSelector } from 'react-redux';
 import { useLocation } from 'react-router-dom';
 import { useStepPermissions } from '../../utils/useStepPermission';
+import { isLinkedNote } from '../../crud/isLinkedNote';
 import {
   ToolSlug,
   useStepTool,
@@ -38,6 +39,8 @@ export const PassageDetailStepComplete = () => {
     isBoldWorkflow,
     mediafileId,
     isNavigationBlocked,
+    passage,
+    sharedResource,
   } = usePassageDetailContext();
   const { tool, settings } = useStepTool(currentstep);
   const { isMobile } = useMobile();
@@ -63,7 +66,9 @@ export const PassageDetailStepComplete = () => {
     useContext(UnsavedContext).state;
   const { showMessage } = useSnackBar();
 
-  const hasPermission = canDoSectionStep(currentstep, section);
+  const hasPermission =
+    canDoSectionStep(currentstep, section) &&
+    !isLinkedNote(passage, sharedResource);
 
   const complete = useMemo(
     () => stepComplete(currentstep),

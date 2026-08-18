@@ -31,6 +31,7 @@ import ConsultantCheckCompare from './ConsultantCheckCompare';
 import MediaPlayer from '../MediaPlayer';
 import { useSnackBar } from '../../hoc/SnackBar';
 import { useStepPermissions } from '../../utils/useStepPermission';
+import { isLinkedNote } from '../../crud/isLinkedNote';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -74,9 +75,12 @@ export function ConsultantCheck({ width }: IProps) {
     currentstep,
     passage,
     section,
+    sharedResource,
   } = usePassageDetailContext();
   const { canDoSectionStep } = useStepPermissions();
-  const hasPermission = canDoSectionStep(currentstep, section);
+  const hasPermission =
+    canDoSectionStep(currentstep, section) &&
+    !isLinkedNote(passage, sharedResource);
   const [memory] = useGlobal('memory');
   const [checkItems, setCheckItems] = useState<ArtifactTypeSlug[]>([]);
   const [approved, setApproved] = useState<ArtifactTypeSlug[]>([]);

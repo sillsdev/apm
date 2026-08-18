@@ -11,7 +11,7 @@ export const usePassageUpdate = () => {
     passage: PassageD,
     sectionId?: string,
     passageType?: string,
-    sharedResourceId?: string
+    sharedResourceId?: string | null
   ) => {
     const t = new RecordTransformBuilder();
     const ops = [...UpdateRecord(t, passage, user)];
@@ -31,7 +31,7 @@ export const usePassageUpdate = () => {
         )
       );
     }
-    if (sharedResourceId) {
+    if (sharedResourceId !== undefined) {
       ops.push(
         ...ReplaceRelatedRecord(
           t,

@@ -3,6 +3,8 @@ import { rowTypes } from './rowTypes';
 import { ISheet } from '../../model';
 import { useStepPermissions } from '../../utils/useStepPermission';
 import { related } from '../../crud/related';
+import { isLinkedNote } from '../../crud/isLinkedNote';
+import { isLinkedNote } from '../../crud/isLinkedNote';
 
 interface IExtraMap {
   [key: number]: boolean;
@@ -117,7 +119,12 @@ export const useShowIcon = ({
             rowInfo[rowIndex]?.sectionId?.id ??
               related(rowInfo[rowIndex]?.passage, 'section') ??
               ''
-          ) && isPassageType(rowIndex),
+          ) &&
+          isPassageType(rowIndex) &&
+          !isLinkedNote(
+            rowInfo[rowIndex]?.passage,
+            rowInfo[rowIndex]?.sharedResource
+          ),
         [ExtraIcon.Delete]: canEditSheet,
       };
       return (
