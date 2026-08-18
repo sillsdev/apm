@@ -25,6 +25,7 @@ import {
 } from '../../crud/artifactTypeSlug';
 import { UnsavedContext } from '../../context/UnsavedContext';
 import { useStepPermissions } from '../../utils/useStepPermission';
+import { isLinkedNote } from '../../crud/isLinkedNote';
 import { related } from '../../crud/related';
 import { useOrbitData } from '../../hoc/useOrbitData';
 import {
@@ -65,6 +66,7 @@ export function PassageDetailTranscribe({ width, artifactTypeId }: IProps) {
     rowData,
     psgCompleted,
     passage,
+    sharedResource,
   } = usePassageDetailContext();
   useWhyRender('PassageDetailTranscribe', {
     mediafileId,
@@ -78,7 +80,9 @@ export function PassageDetailTranscribe({ width, artifactTypeId }: IProps) {
   const { waitForSave } = useContext(UnsavedContext).state;
   const { setState } = useContext(PassageDetailContext);
   const { canDoSectionStep } = useStepPermissions();
-  const hasPermission = canDoSectionStep(currentstep, section);
+  const hasPermission =
+    canDoSectionStep(currentstep, section) &&
+    !isLinkedNote(passage, sharedResource);
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
   const t: ITranscriberStrings = useSelector(transcriberSelector, shallowEqual);
   const { localizedArtifactTypeFromId, slugFromId } = useArtifactType();

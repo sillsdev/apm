@@ -72,6 +72,8 @@ interface IProps extends IDialog<IResourceDialog> {
   nameInUse?: (newName: string) => boolean;
   onDelete?: () => void;
   onLink?: (link: SharedResourceD) => Promise<void>;
+  onUnlink?: () => Promise<void> | void;
+  contentReadOnly?: boolean;
 }
 
 export default function ResourceOverview(props: IProps) {
@@ -86,6 +88,8 @@ export default function ResourceOverview(props: IProps) {
     onCancel,
     onDelete,
     onLink,
+    onUnlink,
+    contentReadOnly,
   } = props;
 
   const [isDeveloper] = useGlobal('developer');
@@ -129,16 +133,18 @@ export default function ResourceOverview(props: IProps) {
   const { title, bcp47, keywords } = state;
 
   const updateTitleState = useMemo(
-    () => (dialogmode !== Mode.view ? setState : undefined),
-    [dialogmode]
+    () => (contentReadOnly || dialogmode === Mode.view ? undefined : setState),
+    [dialogmode, contentReadOnly]
   );
 
   const updateState = useMemo(
     () =>
-      dialogmode === Mode.view || dialogmode === DialogModePartial.titleOnly
+      contentReadOnly ||
+      dialogmode === Mode.view ||
+      dialogmode === DialogModePartial.titleOnly
         ? undefined
         : setState,
-    [dialogmode]
+    [dialogmode, contentReadOnly]
   );
 
   useEffect(() => {
@@ -232,6 +238,7 @@ export default function ResourceOverview(props: IProps) {
               hideSpelling
               hideFont
               disabled={
+                contentReadOnly ||
                 dialogmode === Mode.view ||
                 dialogmode === DialogModePartial.titleOnly
               }
@@ -247,6 +254,7 @@ export default function ResourceOverview(props: IProps) {
           <>
             <LightTooltip title={t.findNote}>
               <IconButton
+                id="findNote"
                 onClick={handleFind}
                 disabled={
                   dialogmode === Mode.view ||
@@ -267,10 +275,18 @@ export default function ResourceOverview(props: IProps) {
             <GrowingDiv />
           </>
         )}
+        {contentReadOnly &&
+          onUnlink &&
+          dialogmode !== Mode.view &&
+          dialogmode !== DialogModePartial.titleOnly && (
+            <AltButton id="unlinkNote" onClick={() => onUnlink()}>
+              {t.unlinkNote}
+            </AltButton>
+          )}
         <AltButton id="resCancel" onClick={handleClose}>
           {dialogmode === Mode.add ? ts.cancel : ts.close}
         </AltButton>
-        {dialogmode !== Mode.view && (
+        {dialogmode !== Mode.view && !contentReadOnly && (
           <PriButton
             id="resSave"
             onClick={() => handleAdd()}

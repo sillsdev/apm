@@ -76,6 +76,7 @@ export const NoteTitle = (props: IResourceState) => {
         onRecording={onRecording}
         useplan={planId}
         onMediaIdChange={handleChangeTitleMedia}
+        disabled={!setState}
       />
     </div>
   );

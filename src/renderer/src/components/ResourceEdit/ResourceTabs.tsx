@@ -28,6 +28,7 @@ import {
   useGraphicCreate,
   getVernacularMediaRec,
 } from '../../crud';
+import { isLinkedNote } from '../../crud/isLinkedNote';
 import { useMemo } from 'react';
 import { useGlobal } from '../../context/useGlobal';
 import { useSnackBar } from '../../hoc/SnackBar';
@@ -81,7 +82,7 @@ interface IProps {
   ws: ISheet | undefined;
   hasPublishing: boolean;
   onOpen: () => void;
-  onUpdRef: (id: string, val: string, sr: SharedResourceD) => void;
+  onUpdRef: (id: string, val: string, sr?: SharedResourceD) => void;
 }
 
 export function ResourceTabs({ passId, ws, onOpen, onUpdRef }: IProps) {
@@ -313,6 +314,15 @@ export function ResourceTabs({ passId, ws, onOpen, onUpdRef }: IProps) {
     }
   };
 
+  const handleUnlink = async () => {
+    const passage = ws?.passage;
+    if (passage) {
+      await updatePassage(passage, undefined, undefined, null);
+      onUpdRef(passage.id, passage.attributes.reference, undefined);
+      onOpen && onOpen();
+    }
+  };
+
   const handleLink = async (sr: SharedResourceD) => {
     const passage = ws?.passage;
     if (passage) {
@@ -358,12 +368,14 @@ export function ResourceTabs({ passId, ws, onOpen, onUpdRef }: IProps) {
           onCommit={handleCommit}
           onDelete={handleDelete}
           onLink={handleLink}
+          onUnlink={handleUnlink}
+          contentReadOnly={isLinkedNote(ws?.passage, sharedResRec as SharedResourceD)}
         />
       </TabPanel>
       <TabPanel value={value} index={1}>
         <ResourceRefs
           mode={
-            readOnly
+            readOnly || isLinkedNote(ws?.passage, sharedResRec as SharedResourceD)
               ? DialogMode.view
               : values
                 ? DialogMode.edit

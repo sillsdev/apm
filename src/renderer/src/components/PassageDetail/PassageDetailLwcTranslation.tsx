@@ -29,6 +29,7 @@ import { IRow } from '../../context/PassageDetailContext';
 import { passageDefaultFilename } from '../../utils/passageDefaultFilename';
 import { RecordKeyMap } from '@orbit/records';
 import { useStepPermissions } from '../../utils/useStepPermission';
+import { isLinkedNote } from '../../crud/isLinkedNote';
 import {
   lwcTranslationSelector,
   mediaTabSelector,
@@ -82,6 +83,7 @@ export function PassageDetailLwcTranslation({ width }: IProps) {
   const { getTypeId } = useArtifactType();
   const {
     passage,
+    sharedResource,
     mediafileId,
     rowData,
     currentstep,
@@ -218,8 +220,10 @@ export function PassageDetailLwcTranslation({ width }: IProps) {
     effectiveLwcCompleted.has(currentIndex) || phase === 'recorded';
 
   const editStep = useMemo(
-    () => canDoSectionStep(currentstep, section),
-    [canDoSectionStep, currentstep, section]
+    () =>
+      canDoSectionStep(currentstep, section) &&
+      !isLinkedNote(passage, sharedResource),
+    [canDoSectionStep, currentstep, section, passage, sharedResource]
   );
 
   const defaultFilename = useMemo(() => {

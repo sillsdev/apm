@@ -1534,7 +1534,7 @@ const initialState = {
 			"book": "Book",
 			"bookSelect": "Select Book",
 			"byWord": "By Word",
-			"changes": "Changes made will affect source and all shared locations.",
+			"changes": "Edit this note in the project where it was created. Changes there apply to all linked locations.",
 			"delete": "Delete",
 			"deleteConfirm": "Delete {0}",
 			"description": "Description",
@@ -1552,6 +1552,7 @@ const initialState = {
 			"source": "Linked Note Source: ",
 			"terms": "Terms of use",
 			"title": "Title",
+			"unlinkNote": "Unlink",
 			"versions": "Versions",
 		}
 	}),
