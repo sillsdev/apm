@@ -58,7 +58,7 @@ const TeamActions = () => {
 
   return (
     <RootBox>
-      {(!offline && connected) && (
+      {!offline && connected && (
         <AltButton id="TeamActAdd" sx={{ mb: 2 }} onClick={handleAddClick}>
           {t.addTeam}
         </AltButton>

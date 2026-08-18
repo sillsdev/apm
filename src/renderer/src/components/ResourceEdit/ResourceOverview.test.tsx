@@ -91,7 +91,11 @@ jest.mock('./ResourceTerms', () => ({
 jest.mock('./ResourceLink', () => ({
   ResourceLink: () => <div data-testid="link" />,
 }));
-jest.mock('./SelectNote', () => () => <div data-testid="select-note" />);
+jest.mock('./SelectNote', () => {
+  const MockSelectNote = () => <div data-testid="select-note" />;
+  MockSelectNote.displayName = 'MockSelectNote';
+  return MockSelectNote;
+});
 jest.mock('./ResourceRefs', () => ({ __esModule: true, default: () => null }));
 jest.mock('../../utils', () => ({}));
 
