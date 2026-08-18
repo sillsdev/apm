@@ -71,7 +71,7 @@ import {
   useProjectDefaults,
 } from '../../crud/useProjectDefaults';
 import BigDialog from '../../hoc/BigDialog';
-import { useSnackBar } from '../../hoc/SnackBar';
+import { AlertSeverity, useSnackBar } from '../../hoc/SnackBar';
 import { useOrbitData } from '../../hoc/useOrbitData';
 import { useDataChanges, useHome, useJsonParams, useMobile } from '../../utils';
 import { localizeProjectTag } from '../../utils/localizeProjectTag';

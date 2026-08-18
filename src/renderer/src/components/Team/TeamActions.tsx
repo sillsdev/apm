@@ -22,6 +22,7 @@ export default function TeamActions() {
     t,
     offline,
     connected,
+    offlineOnly,
     isDeveloper,
     userIsSharedContentAdmin,
     isDeleting,
