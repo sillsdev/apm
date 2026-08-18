@@ -65,14 +65,18 @@ jest.mock('../../hoc/BigDialog', () => () => null);
 jest.mock('../AudioTab/VersionDlg', () => () => null);
 jest.mock('../SpeakerName', () => {
   const ReactActual = jest.requireActual<typeof import('react')>('react');
+  const MockSpeakerName = (props: {
+    onRights?: (hasRights: boolean) => void;
+  }) => {
+    ReactActual.useEffect(() => {
+      props.onRights?.(true);
+    }, []);
+    return null;
+  };
+  MockSpeakerName.displayName = 'MockSpeakerName';
   return {
     __esModule: true,
-    default: (props: { onRights?: (hasRights: boolean) => void }) => {
-      ReactActual.useEffect(() => {
-        props.onRights?.(true);
-      }, []);
-      return null;
-    },
+    default: MockSpeakerName,
   };
 });
 jest.mock('../AudioTab/usePassageVersionAudioRows', () => ({
