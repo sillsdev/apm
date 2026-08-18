@@ -1,7 +1,7 @@
 import { useState, useContext, useCallback, useEffect, useMemo } from 'react';
 import { shallowEqual, useSelector } from 'react-redux';
 import { useLocation } from 'react-router-dom';
-import { Box, Typography, Grid, BoxProps, styled } from '@mui/material';
+import { Box, Typography, Grid } from '@mui/material';
 import { DialogMode, ICardsStrings, VProject } from '../model';
 import { cardsSelector } from '../selector';
 import AppLayout from '../components/App/AppLayout';
@@ -15,20 +15,9 @@ import { Button } from '../control';
 import { remoteId, defaultWorkflow, useTeamWorkflowProcess } from '../crud';
 import { projDefBook, projDefStory } from '../crud/useProjectDefaults';
 import BigDialog from '../hoc/BigDialog';
-import { LocalKey, localUserKey, useJsonParams, useMobile } from '../utils';
+import { LocalKey, localUserKey, useJsonParams } from '../utils';
 import { useIsPapLike } from '../utils/useIsPapLike';
 import { useMyNavigate } from '../utils/useMyNavigate';
-
-interface ProjectBoxProps extends BoxProps {
-  isMobile?: boolean;
-}
-const ProjectsBox = styled(Box)<ProjectBoxProps>(({ theme, isMobile }) => ({
-  ...(isMobile && {
-    '& #projectMenu': {
-      color: theme.palette.common.white,
-    },
-  }),
-}));
 
 export const ProjectsScreenInner = () => {
   const navigate = useMyNavigate();
@@ -47,7 +36,6 @@ export const ProjectsScreenInner = () => {
   const unsavedCtx = useContext(UnsavedContext);
   const { startClear, startSave, waitForSave } = unsavedCtx.state;
   const getGlobal = useGetGlobal();
-  const { isMobile } = useMobile();
 
   const handleSwitchTeams = useCallback(() => {
     localStorage.removeItem(LocalKey.plan);
@@ -205,9 +193,8 @@ export const ProjectsScreenInner = () => {
 
   return (
     <AppLayout>
-      <ProjectsBox
+      <Box
         id="ProjectsScreen"
-        isMobile={isMobile}
         sx={{
           px: 2,
           pb: 8,
@@ -230,7 +217,7 @@ export const ProjectsScreenInner = () => {
         </Grid>
         {/* spacer to ensure content isn't hidden behind floating actions */}
         <Box sx={{ height: 120 }} />
-      </ProjectsBox>
+      </Box>
       <Box
         sx={{
           position: 'fixed',
