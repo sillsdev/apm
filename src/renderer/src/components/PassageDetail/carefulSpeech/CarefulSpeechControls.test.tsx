@@ -227,3 +227,55 @@ describe('CarefulSpeechControls — Next Clause completion state', () => {
     expect(next?.getAttribute('data-highlighted')).toBeNull();
   });
 });
+
+describe('CarefulSpeechControls linked note play-only (TT-5873)', () => {
+  it('keeps playback and segment nav while hiding record and edit controls', () => {
+    const { container, queryByLabelText, queryByText } = render(
+      <CarefulSpeechControls
+        {...baseProps}
+        readOnly
+        sequentialUnitNavAroundRecord
+        canPrevUnit
+        canNextUnit
+        recordingPassStarted
+        phase="recorded"
+        showRecorder
+      />
+    );
+    expect(container.querySelector('[data-testid="media-record"]')).toBeTruthy();
+    expect(container.querySelector('#careful-speech-prev-unit')).toBeTruthy();
+    expect(container.querySelector('#careful-speech-next-unit')).toBeTruthy();
+    expect(queryByText('Start Recording')).toBeNull();
+    expect(queryByLabelText('Clear Recording')).toBeNull();
+    const speaker = container.querySelector(
+      '#careful-speech-speaker'
+    ) as HTMLInputElement | null;
+    expect(speaker).toBeTruthy();
+    expect(speaker?.disabled).toBe(true);
+  });
+
+  it('hides Start Recording when read-only', () => {
+    const { queryByText } = render(
+      <CarefulSpeechControls
+        {...baseProps}
+        readOnly
+        recordingPassStarted={false}
+        phase="readyToRecord"
+        showRecorder={false}
+      />
+    );
+    expect(queryByText('Start Recording')).toBeNull();
+  });
+
+  it('still allows recording on an owned note', () => {
+    const { queryByText } = render(
+      <CarefulSpeechControls
+        {...baseProps}
+        recordingPassStarted={false}
+        phase="readyToRecord"
+        showRecorder={false}
+      />
+    );
+    expect(queryByText(/Start Recording/)).toBeTruthy();
+  });
+});

@@ -1691,7 +1691,7 @@ export function PassageDetailGuidedPhraseRecord({
           allowZoom={true}
         />
       )}
-      {editStep && bootstrapped && (
+      {bootstrapped && (
         <CarefulSpeechControls
           width={width}
           phase={phase}
@@ -1725,7 +1725,7 @@ export function PassageDetailGuidedPhraseRecord({
           allClausesHeard={allClausesHeard}
           allClausesComplete={allClausesComplete}
           highlightSpeaker={highlightSpeaker}
-          allowRecord={allowRecord}
+          allowRecord={allowRecord && editStep}
           savingRecording={savingRecording}
           onSaving={() => {
             savingRecordingRef.current = true;
@@ -1785,7 +1785,8 @@ export function PassageDetailGuidedPhraseRecord({
           setStatusText={setStatusText}
           showRecorder={showRecorder}
           strings={controlStrings}
-          showBoundaryTools={config.showBoundaryTools}
+          showBoundaryTools={config.showBoundaryTools && editStep}
+          readOnly={!editStep}
           controlIdPrefix={config.containerId}
           sequentialUnitNavAroundRecord={config.sequentialUnitNavAroundRecord}
           onPrevUnit={handlePrevUnit}

@@ -15,6 +15,7 @@ export * from './passage';
 export * from './passagesForSection';
 export * from './related';
 export * from './isLinkedNote';
+export * from './mediaPassageIdForTranscribe';
 export * from './remoteId';
 export * from './saveNewSection';
 export * from './section';
