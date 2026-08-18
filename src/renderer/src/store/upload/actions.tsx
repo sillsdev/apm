@@ -209,7 +209,9 @@ export const uploadFile = (
       );
       cleanup();
       const rej: UploadFileReject = {
-        statusNum: httpStatus || 500,
+        // 0 (not 500) when we never got a response: the caller classifies this as
+        // UploadFailureReason.NoResponse, and 500 would claim we reached the server.
+        statusNum: httpStatus || 0,
         statusText,
         httpStatus: httpStatus || undefined,
       };
@@ -361,9 +363,9 @@ export const nextUpload =
         dispatch({
           payload: {
             current: n,
-            // statusNum is undefined when the request never reached the server,
-            // so don't render a literal "(undefined)" at the user (TT-7583).
-            error: `upload ${name}: (${statusNum ?? 'no response'}) ${statusText}`,
+            // statusNum is undefined (POST) or 0 (PUT) when the request never
+            // reached the server; don't render that at the user (TT-7583).
+            error: `upload ${name}: (${statusNum || 'no response'}) ${statusText}`,
           },
           type: UPLOAD_ITEM_FAILED,
         });
