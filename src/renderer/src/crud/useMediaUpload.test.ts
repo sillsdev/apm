@@ -2,7 +2,6 @@
 import React from 'react';
 import type { MediaFileD } from '../model';
 import { UPLOAD_COMPLETE } from '../store/upload/types';
-import { UploadFailureReason } from '../store/upload/uploadRetry';
 import { OrbitNetworkErrorRetries } from '../../api-variable';
 
 jest.mock('react-redux', () => ({
@@ -179,7 +178,7 @@ describe('useMediaUpload', () => {
   async function completeUpload(
     upload: (files: File[]) => Promise<boolean>,
     files: File[],
-    ...cbArgs: [number, boolean, unknown?, unknown?]
+    ...cbArgs: [number, boolean, unknown?]
   ) {
     const uploadPromise = upload(files);
     const { nextUpload } = require('../store');
@@ -188,8 +187,7 @@ describe('useMediaUpload', () => {
     const cb = uploadProps.cb as (
       n: number,
       success: boolean,
-      data?: unknown,
-      failure?: unknown
+      data?: unknown
     ) => void | Promise<void>;
     await cb(...cbArgs);
     return uploadPromise;
@@ -227,7 +225,7 @@ describe('useMediaUpload', () => {
     expect(afterUploadCb).toHaveBeenCalledWith('media-1');
   });
 
-  it('failure path with no failure info: no orbit retries, 0 of 1 snackbar, empty media id, no pullTableList', async () => {
+  it('failure path: orbit retries, 0 of 1 snackbar, empty media id, no pullTableList', async () => {
     const afterUploadCb = jest.fn().mockResolvedValue(undefined);
     const { result } = renderUploadHook({
       artifactId: null,
@@ -240,67 +238,15 @@ describe('useMediaUpload', () => {
       completeUpload(upload, [makeFile()], 0, false, undefined)
     ).rejects.toThrow('Upload Failed!');
 
-    expect(mockSetOrbitRetries).not.toHaveBeenCalled();
+    expect(mockSetOrbitRetries).toHaveBeenCalledWith(
+      OrbitNetworkErrorRetries - 1
+    );
     expect(pullTableList).not.toHaveBeenCalled();
     expect(mockShowMessage).toHaveBeenCalledWith(
       '0 of 1 files uploaded successfully.'
     );
     expect(afterUploadCb).toHaveBeenCalledWith('');
   });
-
-  it.each([[UploadFailureReason.NoResponse], [UploadFailureReason.Timeout]])(
-    '%s failure notifies of a possible connection problem',
-    async (reason) => {
-      const afterUploadCb = jest.fn().mockResolvedValue(undefined);
-      const { result } = renderUploadHook({
-        artifactId: null,
-        passageId: 'psg-1',
-        afterUploadCb,
-      });
-      const upload = result.current as (files: File[]) => Promise<boolean>;
-
-      await expect(
-        completeUpload(upload, [makeFile()], 0, false, undefined, { reason })
-      ).rejects.toThrow('Upload Failed!');
-
-      expect(mockSetOrbitRetries).toHaveBeenCalledWith(
-        OrbitNetworkErrorRetries - 1
-      );
-    }
-  );
-
-  it.each([
-    [UploadFailureReason.Rejected, 403],
-    [UploadFailureReason.ServerError, 500],
-    [UploadFailureReason.UnsupportedType, undefined],
-    [UploadFailureReason.TooBig, undefined],
-    [UploadFailureReason.LocalWriteFailed, undefined],
-  ])(
-    '%s failure does not notify of a connection problem',
-    async (reason, statusNum) => {
-      const afterUploadCb = jest.fn().mockResolvedValue(undefined);
-      const { result } = renderUploadHook({
-        artifactId: null,
-        passageId: 'psg-1',
-        afterUploadCb,
-      });
-      const upload = result.current as (files: File[]) => Promise<boolean>;
-
-      await expect(
-        completeUpload(upload, [makeFile()], 0, false, undefined, {
-          reason,
-          statusNum,
-        })
-      ).rejects.toThrow('Upload Failed!');
-
-      expect(mockSetOrbitRetries).not.toHaveBeenCalled();
-      // the rest of the failure cleanup still runs
-      expect(mockShowMessage).toHaveBeenCalledWith(
-        '0 of 1 files uploaded successfully.'
-      );
-      expect(afterUploadCb).toHaveBeenCalledWith('');
-    }
-  );
 
   it('offline success: createMedia, snackbar, afterUploadCb with created id, no pullTableList', async () => {
     mockOffline = true;

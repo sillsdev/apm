@@ -25,8 +25,7 @@ import JSONAPISource from '@orbit/jsonapi';
 import PassageRecordDlg from './PassageRecordDlg';
 import { restoreScroll } from '../utils';
 import { shallowEqual, useSelector } from 'react-redux';
-import { NextUploadProps, UploadFailureInfo } from '../store';
-import { suggestsConnectionProblem } from '../store/upload/uploadRetry';
+import { NextUploadProps } from '../store';
 import { useDispatch } from 'react-redux';
 import { mediaTabSelector, sharedSelector } from '../selector';
 import { passageDefaultSuffix } from '../utils/passageDefaultFilename';
@@ -245,15 +244,9 @@ export const Uploader = (props: IProps) => {
     }
     return num;
   };
-  const itemComplete = async (
-    n: number,
-    success: boolean,
-    data?: any,
-    failure?: UploadFailureInfo
-  ) => {
+  const itemComplete = async (n: number, success: boolean, data?: any) => {
     if (success) successCount.current += 1;
-    else if (suggestsConnectionProblem(failure))
-      setOrbitRetries(OrbitNetworkErrorRetries - 1); //notify of possible network issue
+    else setOrbitRetries(OrbitNetworkErrorRetries - 1); //notify of possible network issue
     const uploadList = fileList.current;
     if (!uploadList) return; // This should never happen
     if (data?.stringId) mediaIdRef.current.push(data?.stringId);
