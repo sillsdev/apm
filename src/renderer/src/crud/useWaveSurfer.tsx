@@ -16,6 +16,9 @@ import {
 } from './useWavesurferRegions';
 import { decodeAudioData } from '../utils/decodeAudioData';
 import { audioBufferToWavBlob } from '../utils/audioBufferToWavBlob';
+import { isAudioLoadAbort } from '../utils/isAudioLoadAbort';
+import { waveformPeaks } from './waveformPeaks';
+import { shouldIgnorePeaksReady } from './wavesurferReady';
 import { useGlobal } from '../context/useGlobal';
 import { maxZoom } from '../components/WSAudioPlayerZoom';
 import WaveSurfer from 'wavesurfer.js';
@@ -244,7 +247,12 @@ export function useWaveSurfer(
       wavesurferRef.current?.pause();
     }
     if (progress() !== pos) {
-      wavesurferRef.current?.setTime(pos);
+      try {
+        wavesurferRef.current?.setTime(pos);
+      } catch {
+        // Peaks+duration ready fires before the media element has metadata;
+        // setting currentTime then throws InvalidStateError in some browsers.
+      }
     }
     pushProgressImmediate(pos);
     applyRegionAtPosition(pos, targetRegion);
@@ -360,11 +368,14 @@ export function useWaveSurfer(
         return;
       }
       const media = wavesurferRef.current?.getMediaElement();
-      const hasMediaSrc = Boolean(media?.currentSrc);
       if (
-        !hasMediaSrc &&
-        (peaksLoadGenerationRef.current !== loadGenerationRef.current ||
-          loadBlobGenerationRef.current === loadGenerationRef.current)
+        shouldIgnorePeaksReady({
+          currentSrc: media?.currentSrc,
+          srcAttr: media?.getAttribute('src'),
+          peaksGeneration: peaksLoadGenerationRef.current,
+          loadGeneration: loadGenerationRef.current,
+          blobGeneration: loadBlobGenerationRef.current,
+        })
       ) {
         // Stale or superseded peaks-only load — must not clobber a real blob load.
         return;
@@ -595,7 +606,12 @@ export function useWaveSurfer(
     }
   };
 
-  const loadBlob = async (blob?: Blob, position?: number) => {
+  const loadBlob = async (
+    blob?: Blob,
+    position?: number,
+    decodedBuffer?: AudioBuffer
+  ) => {
+    if (blob) loadGenerationRef.current += 1;
     const generation = loadGenerationRef.current;
     positionRef.current = position;
     const prevBlobUrl = currentBlobUrlRef.current;
@@ -613,10 +629,9 @@ export function useWaveSurfer(
     try {
       loadingRef.current = true;
       isReadyRef.current = false;
-      const decoded = await decodeAudioData(
-        audioContext(),
-        await blob.arrayBuffer()
-      );
+      const decoded =
+        decodedBuffer ??
+        (await decodeAudioData(audioContext(), await blob.arrayBuffer()));
       if (generation !== loadGenerationRef.current) {
         loadingRef.current = false;
         return;
@@ -626,17 +641,19 @@ export function useWaveSurfer(
       loadBlobGenerationRef.current = generation;
       blobRef.current = blob;
 
-      setDuration(
-        blobAudioRef.current?.duration ||
-          blobAudioRef.current?.length / blobAudioRef.current?.sampleRate ||
-          0
-      );
-      // Create blob URL for wavesurfer
+      const duration =
+        decoded.duration || decoded.length / decoded.sampleRate || 0;
+      setDuration(duration);
       blobUrl = URL.createObjectURL(blob);
       currentBlobUrlRef.current = blobUrl;
-      // revoke previous URL only after load succeeds; revoking early aborts
-      // in-flight wavesurfer fetch (BodyStreamBuffer aborted on overdub stop).
-      await wavesurferRef.current?.load(blobUrl);
+      // Peaks+duration skip WaveSurfer's fetch+decode of the blob URL. That
+      // extra copy of a large file cancels the media element's load (toast +
+      // waveform cleared). Revoke the previous URL only after this load.
+      await wavesurferRef.current?.load(
+        blobUrl,
+        waveformPeaks(decoded),
+        duration
+      );
       if (generation !== loadGenerationRef.current) {
         loadingRef.current = false;
         releaseLoadBlobUrl(blobUrl);
@@ -650,11 +667,7 @@ export function useWaveSurfer(
       loadingRef.current = false;
       // Only revoke this load's URL; a concurrent stop load may own currentBlobUrlRef
       releaseLoadBlobUrl(blobUrl);
-      if (
-        generation !== loadGenerationRef.current &&
-        error instanceof DOMException &&
-        error.name === 'AbortError'
-      ) {
+      if (generation !== loadGenerationRef.current && isAudioLoadAbort(error)) {
         return;
       }
       throw error;
@@ -780,7 +793,7 @@ export function useWaveSurfer(
         positionToLoad.current = undefined;
       }
       try {
-        await loadBlob(blob, position);
+        await loadBlob(blob, position, audioBuffer);
       } catch (error) {
         failPendingLoad(error);
       }
