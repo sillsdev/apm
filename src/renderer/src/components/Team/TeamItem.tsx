@@ -115,19 +115,12 @@ export const TeamItem = (props: IProps) => {
                 <SortIcon />
               </IconButton>
             )}
-            <Button
-              id="teamMembers"
-              variant="contained"
-              color="secondary"
-              onClick={handleMembers(team)}
-            >
+            <Button id="teamMembers" onClick={handleMembers(team)}>
               {t.members.replace('{0}', teamMembers(team.id).toString())}
             </Button>
             {canModify && (
               <Button
                 id="editWorkflow"
-                variant="contained"
-                color="secondary"
                 onClick={handleEditWorkflow}
                 disabled={busy}
               >
@@ -137,8 +130,6 @@ export const TeamItem = (props: IProps) => {
             {canModify && (
               <Button
                 id="teamSettings"
-                variant="contained"
-                color="secondary"
                 onClick={handleSettings()}
                 disabled={busy}
               >

@@ -60,21 +60,11 @@ export default function TeamActions() {
       })}
     >
       {((!offline && connected) || offlineOnly) && (
-        <Button
-          id="TeamActAdd"
-          variant="contained"
-          color="secondary"
-          onClick={handleAddClick}
-        >
+        <Button id="TeamActAdd" onClick={handleAddClick}>
           {t.addTeam}
         </Button>
       )}
-      <Button
-        id="teamActImport"
-        variant="contained"
-        color="secondary"
-        onClick={handleImportClick}
-      >
+      <Button id="teamActImport" onClick={handleImportClick}>
         {t.import}
       </Button>
       {isElectron && !offline && (
@@ -85,8 +75,6 @@ export default function TeamActions() {
         >
           <Button
             id="teamActPendingUploads"
-            variant="contained"
-            color="secondary"
             onClick={() => setPendingOpen(true)}
             sx={{ width: '100%' }}
           >
@@ -97,8 +85,6 @@ export default function TeamActions() {
       {!offline && userIsSharedContentAdmin && (
         <Button
           id="contentCreator"
-          variant="contained"
-          color="secondary"
           onClick={handleContentClick}
           disableTypography
         >
@@ -106,12 +92,7 @@ export default function TeamActions() {
         </Button>
       )}
       {isDeveloper && (
-        <Button
-          id="Error"
-          variant="contained"
-          color="secondary"
-          onClick={() => navigate('/error')}
-        >
+        <Button id="Error" onClick={() => navigate('/error')}>
           Error
         </Button>
       )}
