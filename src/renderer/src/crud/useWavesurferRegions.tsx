@@ -833,7 +833,10 @@ export function useWaveSurferRegions(
         });
         start = end;
       } else {
-        if (!fromVerses(start)) {
+        // A too-short gap is absorbed into the previous region, but the first
+        // gap has no previous region to absorb it, so result[-1] threw
+        // (TT-7583). Skipping leaves `start` put: the gap joins the next region.
+        if (result.length > 0 && !fromVerses(start)) {
           //fix the last one to use end
           result[result.length - 1].end = end;
           start = end;
@@ -929,10 +932,13 @@ export function useWaveSurferRegions(
       }
     }
     if (sRegions.length > 0) {
+      // In the odd case we have a clip shorter than the minimum, still keep the one
+      // segment rather than cause other errors
       if (
+        sRegions.length > 1 &&
         sRegions[sRegions.length - 1].end -
           sRegions[sRegions.length - 1].start <
-        minRegionLenSeconds
+          minRegionLenSeconds
       )
         sRegions.splice(-1, 1); //remove the last region if it's too short
       sRegions[sRegions.length - 1].end = duration();
