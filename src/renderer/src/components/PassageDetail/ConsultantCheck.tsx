@@ -328,7 +328,11 @@ export function ConsultantCheck({ width }: IProps) {
               </>
             )}
             {approved.includes(item) ? (
-              <AltButton data-testid="alt-button" onClick={handleChecked(item)}>
+              <AltButton
+                data-testid="alt-button"
+                onClick={handleChecked(item)}
+                disabled={!hasPermission}
+              >
                 {t.furtherReview}
               </AltButton>
             ) : (
