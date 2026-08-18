@@ -220,7 +220,6 @@ const initState = {
   discussOpen: false,
   setDiscussOpen: (_discussOpen: boolean) => {},
   isBoldWorkflow: false,
-  linkedNoteReadOnly: false,
   promptPlaybackComplete: false,
   setPromptPlaybackComplete: (_complete: boolean) => {},
   promptDockedRecordButton: null as React.ReactNode | null,
@@ -1058,7 +1057,6 @@ const PassageDetailProvider = (props: IProps) => {
               passage: p as PassageD,
               section: s as SectionD,
               sharedResource,
-              linkedNoteReadOnly: isLinkedNote(p as PassageD, sharedResource),
               psgCompleted: [...complete],
             };
           });
