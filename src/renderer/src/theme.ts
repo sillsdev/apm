@@ -78,6 +78,17 @@ const colors = {
 
 const SUBTLE_SHADOW = `0 1px 0 0 ${colors.shadow}`;
 
+// Lets a container change the color of the light buttons inside it
+const LIGHT_BUTTON_BG_VAR = '--apm-light-button-bg';
+// The container's color if it set one, otherwise the usual light button color
+const LIGHT_BUTTON_BG = `var(${LIGHT_BUTTON_BG_VAR}, ${colors.lightBgRest})`;
+
+// Grey background (header, etc.); buttons on it turn white so they stand out
+export const tintedSurfaceSx = {
+  backgroundColor: colors.headerBackground,
+  [LIGHT_BUTTON_BG_VAR]: colors.lightBg,
+};
+
 export const createAppTheme = (lang: string) =>
   createTheme(
     {
@@ -250,7 +261,7 @@ export const createAppTheme = (lang: string) =>
             {
               props: { variant: 'contained', color: 'secondary' },
               style: {
-                backgroundColor: colors.lightBgRest,
+                backgroundColor: LIGHT_BUTTON_BG,
                 color: colors.lightText,
                 borderColor: colors.lightBorder,
                 boxShadow: SUBTLE_SHADOW,

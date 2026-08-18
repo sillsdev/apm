@@ -37,6 +37,7 @@ import UserMenu from '../UserMenu';
 import DetailTitle from './DetailTitle';
 import { HeadStatus } from './HeadStatus';
 import { OrgHead } from './OrgHead';
+import { tintedSurfaceSx } from '../../theme';
 
 type ResetRequests = () => Promise<void>;
 export type DownloadAlertReason = 'cloud';
@@ -332,7 +333,7 @@ export function AppHead({
         justifyContent: 'center',
         alignItems: 'center',
         p: theme.layout.gap,
-        backgroundColor: 'custom.headerBackground',
+        ...tintedSurfaceSx,
         ...(drawBottomBorder && {
           borderBottom: '1px solid',
           borderColor: 'divider',

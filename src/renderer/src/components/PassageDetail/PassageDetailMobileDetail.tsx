@@ -8,6 +8,7 @@ import usePassageDetailContext from '../../context/usePassageDetailContext';
 import { useStepTool, ToolSlug } from '../../crud';
 import { useRole } from '../../crud/useRole';
 import { useStepPermissions } from '../../utils/useStepPermission';
+import { tintedSurfaceSx } from '../../theme';
 
 interface Props {
   /** When true, show the no-audio message instead of step content (Discuss, playback, etc.). */
@@ -86,13 +87,13 @@ export default function PassageDetailMobileDetail({
     <PassageDetailLayout
       header={<MobileWorkflowSteps />}
       headerSx={{
-        backgroundColor: 'custom.headerBackground',
+        ...tintedSurfaceSx,
         borderBottom: '1px solid',
         borderColor: 'divider',
       }}
       footer={<PassageDetailMobileFooter />}
       footerSx={{
-        backgroundColor: 'custom.headerBackground',
+        ...tintedSurfaceSx,
         borderTop: '1px solid',
         borderColor: 'divider',
         px: 1.5,

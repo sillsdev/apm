@@ -1,4 +1,5 @@
 import { Box, SxProps, Theme } from '@mui/material';
+import { tintedSurfaceSx } from '../../theme';
 
 // Normalize sx (object | callback | array | undefined) to an array so it can be spread after base styles
 const asSxArray = (sx?: SxProps<Theme>) => (Array.isArray(sx) ? sx : [sx]);
@@ -49,7 +50,7 @@ export default function ContentLayout({
             minWidth: 0,
             px: theme.layout.gap,
             pb: theme.layout.gap,
-            backgroundColor: 'custom.headerBackground',
+            ...tintedSurfaceSx,
             ...(drawBottomBorder && {
               borderBottom: '1px solid',
               borderColor: 'divider',
