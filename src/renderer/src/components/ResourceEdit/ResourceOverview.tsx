@@ -133,8 +133,7 @@ export default function ResourceOverview(props: IProps) {
   const { title, bcp47, keywords } = state;
 
   const updateTitleState = useMemo(
-    () =>
-      contentReadOnly || dialogmode === Mode.view ? undefined : setState,
+    () => (contentReadOnly || dialogmode === Mode.view ? undefined : setState),
     [dialogmode, contentReadOnly]
   );
 
@@ -276,11 +275,14 @@ export default function ResourceOverview(props: IProps) {
             <GrowingDiv />
           </>
         )}
-        {contentReadOnly && onUnlink && (
-          <AltButton id="unlinkNote" onClick={() => onUnlink()}>
-            {t.unlinkNote}
-          </AltButton>
-        )}
+        {contentReadOnly &&
+          onUnlink &&
+          dialogmode !== Mode.view &&
+          dialogmode !== DialogModePartial.titleOnly && (
+            <AltButton id="unlinkNote" onClick={() => onUnlink()}>
+              {t.unlinkNote}
+            </AltButton>
+          )}
         <AltButton id="resCancel" onClick={handleClose}>
           {dialogmode === Mode.add ? ts.cancel : ts.close}
         </AltButton>
