@@ -45,7 +45,6 @@ import {
   WorkflowProgression,
 } from '../crud/useOrgDefaults';
 import { related } from '../crud/related';
-import { isLinkedNote } from '../crud/isLinkedNote';
 import { remoteId, remoteIdGuid } from '../crud/remoteId';
 import { useArtifactCategory } from '../crud/useArtifactCategory';
 import { useArtifactType } from '../crud/useArtifactType';
