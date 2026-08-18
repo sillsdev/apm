@@ -652,7 +652,10 @@ export function ScriptureTable(props: IProps) {
     const index = sheet.findIndex((s) => s?.passage?.id === id);
     if (index < 0) return;
     const passageRow = { ...sheet[index] };
-    if (passageRow.reference === val && passageRow.sharedResource?.id === sr?.id)
+    if (
+      passageRow.reference === val &&
+      passageRow.sharedResource?.id === sr?.id
+    )
       return;
     if (updateRef.current) return;
     setUpdate(true);
