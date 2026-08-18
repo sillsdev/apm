@@ -1,22 +1,23 @@
-import React from 'react';
-import { Box, Typography, Button, Grid, BoxProps, styled } from '@mui/material';
-import AppLayout from '../components/App/AppLayout';
-import { TeamProvider, TeamContext, TeamIdType } from '../context/TeamContext';
-import { useLocation } from 'react-router-dom';
-import { ProjectCard } from '../components/Team/ProjectCard';
-import { DialogMode, ICardsStrings, VProject } from '../model';
+import { useState, useContext, useCallback, useEffect, useMemo } from 'react';
 import { shallowEqual, useSelector } from 'react-redux';
+import { useLocation } from 'react-router-dom';
+import { Box, Typography, Grid, BoxProps, styled } from '@mui/material';
+import { DialogMode, ICardsStrings, VProject } from '../model';
 import { cardsSelector } from '../selector';
-import { ProjectDialog } from '../components/Team/ProjectDialog';
-import { useMyNavigate } from '../utils/useMyNavigate';
-import { LocalKey, localUserKey, useJsonParams, useMobile } from '../utils';
-import { projDefBook, projDefStory } from '../crud/useProjectDefaults';
-import { useGlobal, useGetGlobal } from '../context/useGlobal';
-import { remoteId, defaultWorkflow, useTeamWorkflowProcess } from '../crud';
-import { UnsavedContext } from '../context/UnsavedContext';
-import BigDialog from '../hoc/BigDialog';
+import AppLayout from '../components/App/AppLayout';
 import { StepEditor } from '../components/StepEditor';
+import { ProjectCard } from '../components/Team/ProjectCard';
+import { ProjectDialog } from '../components/Team/ProjectDialog';
+import { TeamProvider, TeamContext, TeamIdType } from '../context/TeamContext';
+import { UnsavedContext } from '../context/UnsavedContext';
+import { useGlobal, useGetGlobal } from '../context/useGlobal';
+import { Button } from '../control';
+import { remoteId, defaultWorkflow, useTeamWorkflowProcess } from '../crud';
+import { projDefBook, projDefStory } from '../crud/useProjectDefaults';
+import BigDialog from '../hoc/BigDialog';
+import { LocalKey, localUserKey, useJsonParams, useMobile } from '../utils';
 import { useIsPapLike } from '../utils/useIsPapLike';
+import { useMyNavigate } from '../utils/useMyNavigate';
 
 interface ProjectBoxProps extends BoxProps {
   isMobile?: boolean;
@@ -29,10 +30,10 @@ const ProjectsBox = styled(Box)<ProjectBoxProps>(({ theme, isMobile }) => ({
   }),
 }));
 
-export const ProjectsScreenInner: React.FC = () => {
+export const ProjectsScreenInner = () => {
   const navigate = useMyNavigate();
   const teamId = localStorage.getItem(localUserKey(LocalKey.team));
-  const ctx = React.useContext(TeamContext);
+  const ctx = useContext(TeamContext);
   const { teamProjects, personalProjects, personalTeam, teams, isAdmin } =
     ctx.state;
   const t: ICardsStrings = useSelector(cardsSelector, shallowEqual);
@@ -43,25 +44,25 @@ export const ProjectsScreenInner: React.FC = () => {
   const [connected] = useGlobal('connected');
   const [isOffline] = useGlobal('offline');
   const [offlineOnly] = useGlobal('offlineOnly');
-  const unsavedCtx = React.useContext(UnsavedContext);
+  const unsavedCtx = useContext(UnsavedContext);
   const { startClear, startSave, waitForSave } = unsavedCtx.state;
   const getGlobal = useGetGlobal();
   const { isMobile } = useMobile();
 
-  const handleSwitchTeams = React.useCallback(() => {
+  const handleSwitchTeams = useCallback(() => {
     localStorage.removeItem(LocalKey.plan);
     navigate('/switch-teams');
   }, [navigate]);
 
   // Missing teamId: always open picker; SwitchTeamsGuard redirects true PAP-like users back to /team
-  React.useEffect(() => {
+  useEffect(() => {
     const currentId = localStorage.getItem(localUserKey(LocalKey.team));
     if (currentId) return;
     if (!personalTeam) return;
     handleSwitchTeams();
   }, [personalTeam, handleSwitchTeams]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     startClear();
     setHome(true);
     // we intentionally do not reset project/plan here; selection will set them
@@ -70,12 +71,12 @@ export const ProjectsScreenInner: React.FC = () => {
 
   const isPersonal = teamId === personalTeam;
   const isPapLike = useIsPapLike() && isPersonal;
-  const projects = React.useMemo(
+  const projects = useMemo(
     () => (isPersonal ? personalProjects : teamId ? teamProjects(teamId) : []),
     [isPersonal, personalProjects, teamId, teamProjects]
   );
 
-  const thisTeam = React.useMemo(() => {
+  const thisTeam = useMemo(() => {
     if (isPersonal)
       return {
         id: personalTeam,
@@ -89,11 +90,11 @@ export const ProjectsScreenInner: React.FC = () => {
   const workflowEditProcess = teamWorkflowProcess ?? defaultWorkflow;
 
   // New project dialog state
-  const [addOpen, setAddOpen] = React.useState(false);
+  const [addOpen, setAddOpen] = useState(false);
   const handleAddProject = () => setAddOpen(true);
 
   // Edit workflow dialog state
-  const [showWorkflow, setShowWorkflow] = React.useState(false);
+  const [showWorkflow, setShowWorkflow] = useState(false);
   const handleWorkflowOpen = (isOpen: boolean) => {
     if (getGlobal('changed')) {
       startSave();
@@ -102,7 +103,7 @@ export const ProjectsScreenInner: React.FC = () => {
   };
 
   // duplicate name check for add dialog
-  const nameInUse = React.useCallback(
+  const nameInUse = useCallback(
     (newName: string) => {
       const trimmedName = newName.trim();
       if (trimmedName === '') return false;
@@ -175,7 +176,7 @@ export const ProjectsScreenInner: React.FC = () => {
   };
 
   // Navigate to plan page only after user explicitly leaves home (card click triggers leaveHome)
-  React.useEffect(() => {
+  useEffect(() => {
     if (!plan) return; // no selection yet
     if (home) return; // still in home state (e.g., menu action opened dialog)
     // We no longer require current pathname to be /projects because plan might be set just as navigation fires
@@ -189,7 +190,7 @@ export const ProjectsScreenInner: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [plan, pathname, home]);
 
-  const showAddButton = React.useMemo(() => {
+  const showAddButton = useMemo(() => {
     const canAdd =
       ((!isOffline && connected) || offlineOnly) &&
       thisTeam &&
@@ -255,24 +256,13 @@ export const ProjectsScreenInner: React.FC = () => {
             <Button
               id="ProjectActAdd"
               data-testid="add-project-button"
-              variant="outlined"
               onClick={handleAddProject}
-              sx={(theme) => ({
-                bgcolor: theme.palette.common.white,
-              })}
             >
               {t.addNewProject || 'Add New Project...'}
             </Button>
           )}
           {!isPapLike && (
-            <Button
-              id="ProjectActSwitch"
-              variant="outlined"
-              onClick={handleSwitchTeams}
-              sx={(theme) => ({
-                bgcolor: theme.palette.common.white,
-              })}
-            >
+            <Button id="ProjectActSwitch" onClick={handleSwitchTeams}>
               {t.switchTeams || 'Switch Teams'}
             </Button>
           )}
@@ -304,7 +294,7 @@ export const ProjectsScreenInner: React.FC = () => {
   );
 };
 
-export const ProjectsScreen: React.FC = () => (
+export const ProjectsScreen = () => (
   <TeamProvider>
     <ProjectsScreenInner />
   </TeamProvider>
