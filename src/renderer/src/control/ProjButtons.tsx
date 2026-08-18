@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { shallowEqual, useSelector } from 'react-redux';
-import { Button, Menu, MenuItem } from '@mui/material';
+import { Menu, MenuItem } from '@mui/material';
 import DropDownIcon from '@mui/icons-material/ArrowDropDown';
 import {
   IPlanSheetStrings,
@@ -20,6 +20,7 @@ import {
 import ImportTab from '../components/ImportTab';
 import IntegrationTab from '../components/Integration';
 import ExportTab from '../components/TranscriptionTab';
+import { Button } from './Button';
 
 interface IProps {
   noCopy?: boolean;
@@ -89,7 +90,6 @@ export const ProjButtons = (props: IProps) => {
       <Button
         id="projButton"
         key="importExport"
-        variant="outlined"
         aria-owns={actionMenuItem !== '' ? 'action-menu' : undefined}
         aria-label={t.importExport}
         disabled={noImExport}

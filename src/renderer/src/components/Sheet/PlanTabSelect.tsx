@@ -1,15 +1,16 @@
 import { useContext, useMemo, useState } from 'react';
 import { shallowEqual, useSelector } from 'react-redux';
-import { IPlanTabsStrings } from '@model/index';
-import { Button, Menu, MenuItem } from '@mui/material';
+import { Menu, MenuItem } from '@mui/material';
 import DropDownIcon from '@mui/icons-material/ArrowDropDown';
+import { IPlanTabsStrings } from '@model/index';
 import { planTabsSelector } from '../../selector';
+import { PlanContext } from '../../context/PlanContext';
+import { UnsavedContext } from '../../context/UnsavedContext';
 import { useOrganizedBy } from '../../crud/useOrganizedBy';
 import { useShowAssignment } from '../../crud/useShowAssignment';
 import { useMobile } from '../../utils';
-import { PlanContext } from '../../context/PlanContext';
+import { Button } from '../../control';
 import { PlanTabEnum } from '../PlanTabsEnum';
-import { UnsavedContext } from '../../context/UnsavedContext';
 
 export const PlanTabSelect = () => {
   const { checkSavedFn: checkSaved } = useContext(UnsavedContext).state;
@@ -68,7 +69,6 @@ export const PlanTabSelect = () => {
         id="planTabSelect"
         aria-owns={actionMenuItem ? 'action-menu' : undefined}
         aria-label={t.sectionsPassages}
-        variant="outlined"
         onClick={handleMenu}
         endIcon={<DropDownIcon />}
       >

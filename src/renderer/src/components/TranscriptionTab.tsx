@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useContext, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useParams } from 'react-router-dom';
-import { Button, debounce, Menu, MenuItem } from '@mui/material';
+import { debounce, Menu, MenuItem } from '@mui/material';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import DropDownIcon from '@mui/icons-material/ArrowDropDown';
@@ -68,7 +68,7 @@ import {
   sharedSelector,
   transcriptionTabSelector,
 } from '../selector';
-import { spreadSx, rowSx } from '../control';
+import { Button, spreadSx, rowSx } from '../control';
 import { isPublishingTitle } from '../control/passageTypeFromRef';
 import ContentLayout from './App/ContentLayout';
 import { getSection } from './AudioTab/getSection';
@@ -658,7 +658,6 @@ export function TranscriptionTab(props: IProps) {
                 id="transExp"
                 key="export"
                 aria-label={t.exportProject}
-                variant="outlined"
                 onClick={handleProjectExport}
                 title={t.exportProject}
                 disabled={busy}
@@ -680,7 +679,6 @@ export function TranscriptionTab(props: IProps) {
                 id="transBackup"
                 key="backup"
                 aria-label={t.electronBackup}
-                variant="outlined"
                 onClick={handleBackup}
                 title={t.electronBackup}
               >
@@ -693,7 +691,6 @@ export function TranscriptionTab(props: IProps) {
               id="transCopy"
               key="copy"
               aria-label={t.copyTranscriptions}
-              variant="outlined"
               onClick={handleCopyPlan}
               title={t.copyTip}
             >
@@ -708,7 +705,6 @@ export function TranscriptionTab(props: IProps) {
               aria-owns={
                 exportTypeAnchor ? 'select-export-type-menu' : undefined
               }
-              variant="outlined"
               onClick={handleExportTypeMenu}
               endIcon={<DropDownIcon />}
             >

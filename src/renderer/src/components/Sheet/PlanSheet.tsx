@@ -13,7 +13,6 @@ import {
 import { useSelector, shallowEqual } from 'react-redux';
 import {
   Box,
-  Button,
   Dialog,
   DialogActions,
   DialogContent,
@@ -68,6 +67,7 @@ import { useSnackBar } from '../../hoc/SnackBar';
 import { planSheetSelector, sharedSelector } from '../../selector';
 import {
   AddSectionPassageButtons,
+  Button,
   ProjButtons,
   LightTooltip,
   spreadSx,
@@ -1454,7 +1454,6 @@ export function PlanSheet(props: IProps) {
                 id="planSheetSave"
                 key="save"
                 aria-label={t.save}
-                variant="outlined"
                 color={connected ? 'primary' : 'secondary'}
                 onClick={handleSave}
                 disabled={saving || !changed || preventSave}
@@ -1522,9 +1521,7 @@ export function PlanSheet(props: IProps) {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setGoToOpen(false)}>{ts.cancel}</Button>
-          <Button variant="contained" onClick={handleGoToSubmit}>
-            {t.goToReferenceSubmit}
-          </Button>
+          <Button onClick={handleGoToSubmit}>{t.goToReferenceSubmit}</Button>
         </DialogActions>
       </Dialog>
       <ContentDiv id="PlanSheet" ref={sheetRef}>

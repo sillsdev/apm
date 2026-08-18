@@ -9,7 +9,6 @@ import {
 import { useSelector, shallowEqual } from 'react-redux';
 import {
   Box,
-  Button,
   debounce,
   Menu,
   MenuItem,
@@ -60,7 +59,7 @@ import {
   assignmentSelector,
   sharedSelector,
 } from '../selector';
-import { LightTooltip, spreadSx, rowSx } from '../control';
+import { Button, LightTooltip, spreadSx, rowSx } from '../control';
 import ContentLayout from './App/ContentLayout';
 import { GetReference } from './AudioTab/GetReference';
 import { PlanTabSelect } from './Sheet/PlanTabSelect';
@@ -513,7 +512,6 @@ export function AssignmentTable() {
                   id="assignAdd"
                   key="assign"
                   aria-label={t.assignSec}
-                  variant="outlined"
                   onClick={handleMenu}
                   endIcon={<DropDownIcon />}
                 >
@@ -523,7 +521,6 @@ export function AssignmentTable() {
                   id="assignRem"
                   key="remove"
                   aria-label={t.removeSec}
-                  variant="outlined"
                   onClick={handleRemoveAssignments}
                 >
                   {isPermission ? t.removeSec : t.removeSec2}

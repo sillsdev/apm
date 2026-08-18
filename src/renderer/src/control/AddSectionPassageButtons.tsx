@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { shallowEqual, useSelector } from 'react-redux';
 import {
-  Button,
   ListItemIcon,
   ListItemIconProps,
   Menu,
@@ -23,6 +22,7 @@ import {
   PassageEndIcon,
   SectionEndIcon,
 } from './PlanIcons';
+import { Button } from './Button';
 
 const StyledMenuIcon = styled(ListItemIcon)<ListItemIconProps>(({ theme }) => ({
   paddingRight: theme.spacing(2),
@@ -93,7 +93,6 @@ export const AddSectionPassageButtons = (props: IProps) => {
           <Button
             id="planSheetAddSec"
             key="addSection"
-            variant="outlined"
             aria-label={t.addSection}
             onClick={handleMenu}
             disabled={readonly}
@@ -105,7 +104,6 @@ export const AddSectionPassageButtons = (props: IProps) => {
             <Button
               id="planSheetAddPass"
               key="addPassage"
-              variant="outlined"
               aria-label={t.addPassage}
               onClick={handleMenu}
               disabled={numRows < 2 || readonly}

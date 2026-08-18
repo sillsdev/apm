@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useContext, useCallback } from 'react';
 import { useSelector, shallowEqual } from 'react-redux';
-import { Box, Button } from '@mui/material';
+import { Box } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import JSONAPISource from '@orbit/jsonapi';
 import Memory from '@orbit/memory';
@@ -29,7 +29,7 @@ import BigDialog from '../../hoc/BigDialog';
 import { useSnackBar } from '../../hoc/SnackBar';
 import { useOrbitData } from '../../hoc/useOrbitData';
 import { mediaTabSelector, sharedSelector } from '../../selector';
-import { spreadSx, rowSx } from '../../control';
+import { Button, spreadSx, rowSx } from '../../control';
 import ContentLayout from '../App/ContentLayout';
 import Uploader from '../Uploader';
 import { getMedia, IAttachMap, IGetMedia, IPRow, IRow } from '.';
@@ -334,7 +334,6 @@ export function AudioTab() {
                 id="audUpload"
                 key="upload"
                 aria-label={ts.uploadMediaPlural}
-                variant="outlined"
                 onClick={handleUpload}
                 endIcon={<AddIcon />}
               >
@@ -344,7 +343,6 @@ export function AudioTab() {
                 id="audMatch"
                 key={t.autoMatch}
                 aria-label={t.autoMatch}
-                variant="outlined"
                 onClick={handleAutoMatch}
               >
                 {t.autoMatch}
@@ -359,7 +357,6 @@ export function AudioTab() {
               <Button
                 id="uploadCancel"
                 aria-label={ts.cancel}
-                variant="outlined"
                 onClick={handleUploadCancel}
               >
                 {ts.cancel}
