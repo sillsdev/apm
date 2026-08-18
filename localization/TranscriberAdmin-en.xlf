@@ -7434,7 +7434,7 @@
       </unit>
       <unit id="resource.changes">
          <segment>
-            <source>Changes made will affect source and all shared locations.</source>
+            <source>Edit this note in the project where it was created. Changes there apply to all linked locations.</source>
             <target/>
          </segment>
       </unit>
@@ -7537,6 +7537,12 @@
       <unit id="resource.title">
          <segment>
             <source>Title</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="resource.unlinkNote">
+         <segment>
+            <source>Unlink</source>
             <target/>
          </segment>
       </unit>

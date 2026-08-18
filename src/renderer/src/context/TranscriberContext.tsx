@@ -27,8 +27,12 @@ import {
   getMediaInPlans,
   findRecord,
   VernacularTag,
+  mediaPassageIdForTranscribe,
+  filterMediaForPassage,
+  transcribeMediaForPassage,
 } from '../crud';
 import { mediaFileName } from '../crud/media';
+import { mediaMatchesStepLanguage } from '../utils/mediaLanguage';
 import StickyRedirect from '../components/StickyRedirect';
 import { useSelector } from 'react-redux';
 import { useDispatch } from 'react-redux';
@@ -127,9 +131,11 @@ interface IProps {
   children: React.ReactElement;
   artifactTypeId?: string | null | undefined;
   curRole?: string;
+  /** Step language. When set (and not `und`), only media tagged with it become tasks. */
+  stepLanguageBcp47?: string;
 }
 const TranscriberProvider = (props: IProps) => {
-  const { artifactTypeId, curRole } = props;
+  const { artifactTypeId, curRole, stepLanguageBcp47 } = props;
   const [isDetail] = useState(artifactTypeId !== undefined);
   const passages = useOrbitData<Passage[]>('passage');
   const sections = useOrbitData<Section[]>('section');
@@ -165,14 +171,39 @@ const TranscriberProvider = (props: IProps) => {
     [slug, artifactTypeId, getTypeId]
   );
 
+  const mediaPassageIdFromRoute = (routePasId?: string) => {
+    const psg =
+      remoteIdGuid(
+        'passage',
+        routePasId ?? '',
+        memory?.keyMap as RecordKeyMap
+      ) ||
+      routePasId ||
+      '';
+    const passRec = findRecord(memory, 'passage', psg) as PassageD | undefined;
+    return mediaPassageIdForTranscribe(passRec, memory) || psg;
+  };
+
   useEffect(() => {
-    if (devPlan && mediafiles.length > 0) {
-      const m = getMediaInPlans([devPlan], mediafiles, artifactId, true);
-      setPlanMedia(m);
-      planMediaRef.current = m;
+    if (mediafiles.length === 0) return;
+    let m: MediaFileD[] = [];
+    if (pasId) {
+      m = transcribeMediaForPassage(
+        mediafiles,
+        mediaPassageIdFromRoute(pasId),
+        artifactId,
+        true
+      );
+    } else if (devPlan) {
+      m = getMediaInPlans([devPlan], mediafiles, artifactId, true);
+    } else {
+      return;
     }
+    m = m.filter((mf) => mediaMatchesStepLanguage(mf, stepLanguageBcp47));
+    setPlanMedia(m);
+    planMediaRef.current = m;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mediafiles, devPlan, artifactId]);
+  }, [mediafiles, devPlan, artifactId, stepLanguageBcp47, pasId, memory]);
 
   const setRows = (rowData: IRowData[]) => {
     setState((state: ICtxState) => {
@@ -409,10 +440,9 @@ const TranscriberProvider = (props: IProps) => {
     const playItem = state.playItem;
     const rowList: IRowData[] = [];
     if (pasId) {
-      const psg =
-        remoteIdGuid('passage', pasId, memory?.keyMap as RecordKeyMap) || pasId;
-      passageMediaRef.current = planMediaRef.current.filter(
-        (m) => related(m, 'passage') === psg
+      passageMediaRef.current = filterMediaForPassage(
+        planMediaRef.current,
+        mediaPassageIdFromRoute(pasId)
       );
     } else passageMediaRef.current = planMediaRef.current;
 
@@ -435,13 +465,8 @@ const TranscriberProvider = (props: IProps) => {
         let mediaId = medId;
         if (!mediaId) {
           //vernacular so should just be one
-          const psg =
-            remoteIdGuid(
-              'passage',
-              pasId ?? '',
-              memory?.keyMap as RecordKeyMap
-            ) || pasId;
-          const p = rowList.filter((r) => r.passage.id === psg);
+          const mediaPsg = mediaPassageIdFromRoute(pasId);
+          const p = rowList.filter((r) => r.passage.id === mediaPsg);
           if (p.length > 0) mediaId = (p[0] as IRowData).mediafile.id;
         }
         transSelected =
@@ -471,15 +496,10 @@ const TranscriberProvider = (props: IProps) => {
         }
       }
       if (transSelected === '') {
-        const psg =
-          remoteIdGuid(
-            'passage',
-            pasId ?? '',
-            memory?.keyMap as RecordKeyMap
-          ) || pasId;
+        const mediaPsg = mediaPassageIdFromRoute(pasId);
         let pick: string | undefined;
-        if (isDetail && curRole === 'transcriber' && psg) {
-          pick = firstPassageTranscriberTaskId(rowList, psg);
+        if (isDetail && curRole === 'transcriber' && mediaPsg) {
+          pick = firstPassageTranscriberTaskId(rowList, mediaPsg);
         }
         if (!pick) {
           pick = firstRealTaskMediaId(rowList);

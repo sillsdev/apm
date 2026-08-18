@@ -1,7 +1,7 @@
 import React from 'react';
 import { ExportType, ITranscriptionTabStrings } from '../model';
-import { ListItemText } from '@mui/material';
-import { AltButton, StyledMenu, StyledMenuItem } from '../control';
+import { Button, ListItemText } from '@mui/material';
+import { StyledMenu, StyledMenuItem } from '../control';
 import { transcriptionTabSelector } from '../selector';
 import { shallowEqual, useSelector } from 'react-redux';
 
@@ -38,16 +38,17 @@ export function AudioExportMenu(props: IProps) {
 
   return (
     <>
-      <AltButton
+      <Button
         id="audio-export"
         aria-controls="audio-export-menu"
         aria-haspopup="true"
         aria-owns={anchorEl ? 'audio-export-menu' : undefined}
+        variant="outlined"
         onClick={handleClick}
         disabled={disabled}
       >
         {t.audioExport}
-      </AltButton>
+      </Button>
       <StyledMenu
         id="audio-export-menu"
         anchorEl={anchorEl}

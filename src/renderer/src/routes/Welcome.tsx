@@ -92,9 +92,7 @@ const HelpTip = () => {
   );
 };
 
-interface IProps {}
-
-export function Welcome(props: IProps) {
+export function Welcome() {
   const importStatus = useSelector(
     (state: IState) => state.importexport.importexportStatus
   );
@@ -316,8 +314,6 @@ export function Welcome(props: IProps) {
   return (
     <AppLayout>
       <RootBox>
-        <Typography sx={sectionHeadProps}>Filler</Typography>
-
         {isElectron && (
           <Box
             sx={{

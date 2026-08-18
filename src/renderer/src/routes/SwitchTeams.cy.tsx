@@ -271,10 +271,10 @@ describe('SwitchTeams', () => {
     cy.get('#TeamActAdd').should('not.exist');
   });
 
-  it('should show "Add Team" button when offlineOnly', () => {
+  it('should not show "Add Team" button when offlineOnly (TT-7573 Work Alone)', () => {
     mountSwitchTeams(createInitialState({ offline: true, offlineOnly: true }));
 
-    cy.get('#TeamActAdd').should('be.visible');
+    cy.get('#TeamActAdd').should('not.exist');
   });
 
   it('should show Import button when offline', () => {

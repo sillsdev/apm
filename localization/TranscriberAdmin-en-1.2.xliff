@@ -8672,10 +8672,10 @@
       		</context-group>
       	</trans-unit>
       	<trans-unit id="resource.changes">
-      		<source>Changes made will affect source and all shared locations.</source>
+      		<source>Edit this note in the project where it was created. Changes there apply to all linked locations.</source>
       		<target/>
       		<context-group>
-      			<context context-type="sourcefile">Access.tsx</context>
+      			<context context-type="sourcefile">NoteTitle.tsx</context>
       		</context-group>
       	</trans-unit>
       	<trans-unit id="resource.delete">
@@ -8792,6 +8792,13 @@
       	</trans-unit>
       	<trans-unit id="resource.title">
       		<source>Title</source>
+      		<target/>
+      		<context-group>
+      			<context context-type="sourcefile">ResourceOverview.tsx</context>
+      		</context-group>
+      	</trans-unit>
+      	<trans-unit id="resource.unlinkNote">
+      		<source>Unlink</source>
       		<target/>
       		<context-group>
       			<context context-type="sourcefile">ResourceOverview.tsx</context>

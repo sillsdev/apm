@@ -88,7 +88,8 @@ export function ResourceData(props: IProps) {
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
   const descriptionRequired = descriptionRequiredForResource(
     mediaContentType(media),
-    uploadType
+    uploadType,
+    media?.attributes?.originalFile
   );
 
   useEffect(() => setDescription(initDescription), [initDescription]);

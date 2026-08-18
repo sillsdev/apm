@@ -59,6 +59,15 @@ interface IProps {
   /** When false, hide the Download item in the recorder's more menu. Default true if omitted. */
   allowDownload?: boolean;
   setCanSave: (canSave: boolean) => void;
+  /**
+   * Called when a save attempt is rejected — the upload failed or finished
+   * without a mediaId. May fire more than once for a single failed save, so
+   * handlers must be idempotent. Parents that auto-save on the rising edge of
+   * canSave use this to stop retrying the same doomed take (TT-7583); canSave
+   * itself stays true so screens with a manual Save button keep their retry
+   * path.
+   */
+  onSaveRejected?: (() => void) | undefined;
   setCanCancel?: ((canCancel: boolean) => void) | undefined;
   setStatusText: (status: string) => void;
   cancelMethod?: (() => void) | undefined;
@@ -158,6 +167,7 @@ function MediaRecord(props: IProps) {
     onDockedRecordButton,
     showDockedRecordButton,
     onRecordingCleared,
+    onSaveRejected,
   } = props;
   const context = usePassageDetailContext();
   const simplified = Boolean(context?.isBoldWorkflow);
@@ -286,6 +296,10 @@ function MediaRecord(props: IProps) {
   }, [allowWave, mimeType, t.compressed, t.uncompressed]);
 
   const myAfterUploadCb = async (mediaId: string) => {
+    // Notify before any setState: canSave goes true again on the next commit,
+    // and auto-save parents must already know this take was rejected or they
+    // would retry it on that rising edge (TT-7583).
+    if (!mediaId) onSaveRejected?.();
     setUploading(false);
     setPendingSave(false);
     if (filechangedRef.current && mediaId) setFilechanged(false);
@@ -459,6 +473,8 @@ function MediaRecord(props: IProps) {
   const handleSaveFailed = useCallback(
     (error: unknown) => {
       saveRef.current = false;
+      // Before the setState calls below, for the reason in myAfterUploadCb.
+      onSaveRejected?.();
       setUploading(false);
       setConverting(false);
       setLoading(false);
@@ -467,7 +483,7 @@ function MediaRecord(props: IProps) {
       saveCompleted(toolId, message);
       onReady?.();
     },
-    [toolId, saveCompleted, onReady]
+    [toolId, saveCompleted, onReady, onSaveRejected]
   );
   useEffect(() => {
     const limit = sizeLimit * compression;
@@ -521,6 +537,10 @@ function MediaRecord(props: IProps) {
           }
           return;
         } else {
+          // Save was requested with nothing to upload — a rejection like any
+          // other, so auto-save parents must hear about it or they would keep
+          // re-requesting on the next rising edge (TT-7583).
+          onSaveRejected?.();
           showMessage(ts.NoSaveWoMedia);
           setStatusText(ts.NoSaveWoMedia);
           saveCompleted(toolId, ts.NoSaveWoMedia);

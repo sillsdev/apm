@@ -20,11 +20,12 @@ import { PassageDetailContext } from '../../context/PassageDetailContext';
 import { useArtifactType } from '../../crud/useArtifactType';
 import {
   ArtifactTypeSlug,
+  artifactStampsStepLanguage,
   isPhraseSegmentArtifact,
 } from '../../crud/artifactTypeSlug';
 import { UnsavedContext } from '../../context/UnsavedContext';
 import { useStepPermissions } from '../../utils/useStepPermission';
-import { parseStepLanguageField } from '../../crud/transcribeStepAsrSettings';
+import { isLinkedNote } from '../../crud/isLinkedNote';
 import { related } from '../../crud/related';
 import { useOrbitData } from '../../hoc/useOrbitData';
 import {
@@ -34,6 +35,7 @@ import {
 } from '../../utils/namedSegments';
 import { hasPhraseRegions } from './carefulSpeech/carefulSpeechBoundary';
 import {
+  mediaMatchesStepLanguage,
   parseMediaLanguageField,
   phraseBtBoundaryRegionName,
 } from './carefulSpeech/matchesGuidedOutputRow';
@@ -64,6 +66,7 @@ export function PassageDetailTranscribe({ width, artifactTypeId }: IProps) {
     rowData,
     psgCompleted,
     passage,
+    sharedResource,
   } = usePassageDetailContext();
   useWhyRender('PassageDetailTranscribe', {
     mediafileId,
@@ -77,7 +80,9 @@ export function PassageDetailTranscribe({ width, artifactTypeId }: IProps) {
   const { waitForSave } = useContext(UnsavedContext).state;
   const { setState } = useContext(PassageDetailContext);
   const { canDoSectionStep } = useStepPermissions();
-  const hasPermission = canDoSectionStep(currentstep, section);
+  const hasPermission =
+    canDoSectionStep(currentstep, section) &&
+    !isLinkedNote(passage, sharedResource);
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
   const t: ITranscriberStrings = useSelector(transcriberSelector, shallowEqual);
   const { localizedArtifactTypeFromId, slugFromId } = useArtifactType();
@@ -215,6 +220,15 @@ export function PassageDetailTranscribe({ width, artifactTypeId }: IProps) {
   };
 
   const stepLanguageBcp47 = useMemo(() => {
+    if (!artifactTypeId) return undefined;
+    // Only artifacts that stamp `languagebcp47` on their takes may be scoped by
+    // step language — notably not Careful Speech, whose takes are untagged.
+    if (
+      !artifactStampsStepLanguage(
+        slugFromId(artifactTypeId) as ArtifactTypeSlug
+      )
+    )
+      return undefined;
     const { bcp47 } = parseMediaLanguageField(
       (() => {
         try {
@@ -225,7 +239,7 @@ export function PassageDetailTranscribe({ width, artifactTypeId }: IProps) {
       })()
     );
     return bcp47 !== 'und' ? bcp47 : undefined;
-  }, [stepSettings]);
+  }, [stepSettings, artifactTypeId, slugFromId]);
 
   const phraseArtifactSlug = useMemo(() => {
     if (!artifactTypeId) return null;
@@ -282,28 +296,16 @@ export function PassageDetailTranscribe({ width, artifactTypeId }: IProps) {
   const hasBtRecordings = useMemo(() => {
     if (!artifactTypeId) return true; // we're not transcribing back translations
     const btType = localizedArtifactTypeFromId(artifactTypeId);
-    const primaryBcp = parseStepLanguageField(
-      (() => {
-        try {
-          return (JSON.parse(stepSettings) as { language?: unknown }).language;
-        } catch {
-          return undefined;
-        }
-      })()
-    ).bcp47;
+    // Scope with the same step language the task list uses, so steps exempt from
+    // language scoping (vernacular / Q&A / Retell) aren't hidden by a leftover
+    // `language` setting.
     return rowData.some((r) => {
       if (r.artifactType !== btType) return false;
       if (related(r.mediafile, 'sourceMedia') !== mediafileId) return false;
-      if (primaryBcp && primaryBcp !== 'und') {
-        const rowBcp = parseStepLanguageField(
-          r.mediafile.attributes?.languagebcp47
-        ).bcp47;
-        if (rowBcp !== primaryBcp) return false;
-      }
-      return true;
+      return mediaMatchesStepLanguage(r.mediafile, stepLanguageBcp47);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rowData, artifactTypeId, mediafileId, stepSettings]);
+  }, [rowData, artifactTypeId, mediafileId, stepLanguageBcp47]);
   const MAGIC_NUMBER_THAT_MAKES_IT_FIT = 20;
 
   if (missingPhraseSegmentRecordings) {
@@ -314,6 +316,7 @@ export function PassageDetailTranscribe({ width, artifactTypeId }: IProps) {
     <TranscriberProvider
       artifactTypeId={artifactTypeId}
       curRole={curRole as string}
+      stepLanguageBcp47={stepLanguageBcp47}
     >
       <Grid
         container

@@ -44,6 +44,7 @@ import {
   RecordTransformBuilder,
 } from '@orbit/records';
 import { useStepPermissions } from '../../utils/useStepPermission';
+import { isLinkedNote } from '../../crud/isLinkedNote';
 
 interface IProps {
   ready?: () => boolean;
@@ -293,7 +294,9 @@ export function PassageDetailRecord(props: IProps) {
     setRecording(recording);
   };
 
-  const canVern = canDoVernacular(related(passage, 'section'));
+  const canVern =
+    canDoVernacular(related(passage, 'section')) &&
+    !isLinkedNote(passage, sharedResource);
 
   return (
     <Stack sx={{ width: props.width, maxWidth: props.width, minWidth: 0 }}>

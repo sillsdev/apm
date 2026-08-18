@@ -67,6 +67,8 @@ interface Props {
   resetMedia: boolean;
   setResetMedia: (v: boolean) => void;
   setCanSave: (v: boolean) => void;
+  /** Passed through to MediaRecord; see its prop docs (TT-7583). */
+  onSaveRejected?: () => void;
   setStatusText: (t: string) => void;
   showRecorder: boolean;
   strings: IGuidedPhraseRecordControlStrings;
@@ -78,6 +80,8 @@ interface Props {
   onNextUnitSequential?: () => void;
   canPrevUnit?: boolean;
   canNextUnit?: boolean;
+  /** Linked notes: play existing takes, do not record or edit. */
+  readOnly?: boolean;
 }
 
 export default function CarefulSpeechControls({
@@ -119,6 +123,7 @@ export default function CarefulSpeechControls({
   resetMedia,
   setResetMedia,
   setCanSave,
+  onSaveRejected,
   setStatusText,
   showRecorder,
   strings,
@@ -129,6 +134,7 @@ export default function CarefulSpeechControls({
   onNextUnitSequential,
   canPrevUnit = false,
   canNextUnit = false,
+  readOnly = false,
 }: Props) {
   useRenderProfiler('CarefulSpeechControls');
   useWhyRender('CarefulSpeechControls', {
@@ -157,20 +163,21 @@ export default function CarefulSpeechControls({
     [recordingPassStarted]
   );
   const showMoreFewer = useMemo(
-    () => showBoundaryTools && listenPass && phase !== 'bootstrapping',
-    [showBoundaryTools, listenPass, phase]
+    () =>
+      showBoundaryTools && !readOnly && listenPass && phase !== 'bootstrapping',
+    [showBoundaryTools, readOnly, listenPass, phase]
   );
   const showStartButton = useMemo(
-    () => listenPass && phase !== 'bootstrapping',
-    [listenPass, phase]
+    () => !readOnly && listenPass && phase !== 'bootstrapping',
+    [readOnly, listenPass, phase]
   );
   const highlightStart = useMemo(
     () => showStartButton && allClausesHeard,
     [showStartButton, allClausesHeard]
   );
   const showCombineRow = useMemo(
-    () => showBoundaryTools && recordingPassStarted,
-    [showBoundaryTools, recordingPassStarted]
+    () => showBoundaryTools && !readOnly && recordingPassStarted,
+    [showBoundaryTools, readOnly, recordingPassStarted]
   );
   const showNextClause = useMemo(
     () => phase === 'recorded' && !sequentialUnitNavAroundRecord,
@@ -320,6 +327,7 @@ export default function CarefulSpeechControls({
                 onSaving={onSaving}
                 onReady={onSaveSettled}
                 setCanSave={setCanSave}
+                onSaveRejected={onSaveRejected}
                 setStatusText={setStatusText}
                 doReset={resetMedia}
                 setDoReset={setResetMedia}
@@ -331,7 +339,7 @@ export default function CarefulSpeechControls({
                 allowDownload={false}
                 allowNoNoise={true}
                 dockRecordButton
-                showDockedRecordButton={showDockedRecordButton}
+                showDockedRecordButton={showDockedRecordButton && !readOnly}
                 onDockedRecordButton={onDockedRecordButton}
               />
             </Box>
@@ -349,6 +357,7 @@ export default function CarefulSpeechControls({
               value={speaker}
               onChange={(e) => onSpeakerChange(e.target.value)}
               size="small"
+              disabled={readOnly}
               inputRef={speakerInputRef}
               error={highlightSpeaker}
               sx={{
@@ -362,7 +371,7 @@ export default function CarefulSpeechControls({
                   : undefined),
               }}
             />
-            {phase === 'recorded' && (
+            {phase === 'recorded' && !readOnly && (
               <IconButton
                 aria-label={strings.clearRecording}
                 onClick={onClearRecording}
