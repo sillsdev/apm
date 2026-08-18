@@ -48,6 +48,8 @@ import {
   removePendingMediaUpload,
   updatePendingMediaUpload,
 } from './pendingMediaUploads';
+// TEMPORARY (TT-7583 manual test) — remove with fakeUploadFailure.ts
+import { fakeUploadFailureStatus } from './fakeUploadFailure';
 
 const ipc = window?.api as MainAPI;
 
@@ -149,6 +151,18 @@ export const uploadFile = (
   errorReporter: typeof bugsnagClient
 ): Promise<{ statusNum: number; statusText: string }> => {
   return new Promise((resolve, reject) => {
+    // TEMPORARY (TT-7583 manual test) — remove with fakeUploadFailure.ts
+    const faked = fakeUploadFailureStatus('put');
+    if (faked !== undefined) {
+      const rej: UploadFileReject = {
+        statusNum: faked,
+        statusText:
+          faked === 0 ? 'FAKE upload failed; network error' : 'FAKE upload',
+        httpStatus: faked || undefined,
+      };
+      reject(rej);
+      return;
+    }
     let xhr = new XMLHttpRequest();
     const cleanup = (): void => {
       xhr.onload = null;
@@ -545,6 +559,14 @@ export const nextUpload =
       let json: unknown;
       for (let attempt = 0; attempt < UPLOAD_MAX_ATTEMPTS; attempt++) {
         try {
+          // TEMPORARY (TT-7583 manual test) — remove with fakeUploadFailure.ts
+          const fakedPost = fakeUploadFailureStatus('post');
+          if (fakedPost !== undefined) {
+            throw {
+              response: fakedPost ? { status: fakedPost } : undefined,
+              message: 'FAKE post failure',
+            };
+          }
           const response = await Axios.post(
             API_CONFIG.host + '/api/mediafiles',
             vndRecord,
