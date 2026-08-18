@@ -28,6 +28,7 @@ import {
 import { useSnackBar } from '../hoc/SnackBar';
 import { UnsavedContext } from '../context/UnsavedContext';
 import { typeLimit } from '../utils/typeLimit';
+import { isAudioLoadAbort } from '../utils/isAudioLoadAbort';
 import usePassageDetailContext from '../context/usePassageDetailContext';
 import { useStepTool } from '../crud/useStepTool';
 import { parseRecordCaptureAudioProcessing } from '../crud/useWavRecorder';
@@ -612,14 +613,21 @@ function MediaRecord(props: IProps) {
       setStatusText('');
     }
   }, [loading, blobReady, originalBlob, setStatusText]);
-  const blobError = (urlorError: string) => {
-    showMessage(urlorError);
+  const stopLoading = () => {
     setLoading(false);
     setStatusText('');
     onLoaded && onLoaded();
   };
+  const blobError = (urlorError: string) => {
+    showMessage(urlorError);
+    stopLoading();
+  };
   const handleWaveformLoadError = useCallback(
-    () => {
+    (error?: unknown) => {
+      if (isAudioLoadAbort(error)) {
+        stopLoading();
+        return;
+      }
       blobError(ts.mediaError);
       setOriginalBlob(undefined);
     },

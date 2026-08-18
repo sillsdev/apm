@@ -190,7 +190,6 @@ export function PassageDetailRecord(props: IProps) {
       handleReload();
     }
     setHasExistingVersion(hasExisting);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mediafileId, recorderState, ts.loading]);
 
   const passageId = useMemo(
