@@ -627,16 +627,29 @@ export function PlanSheet(props: IProps) {
 
     if (row <= 1) {
       ignoreScrollCurTopRef.current = true;
+      // rows[1] is the first *mounted* row (windowFirst), not absolute row 1.
+      const remounted = windowFirstRef.current > 1;
       if (curTop !== 1) setCurTop(1);
       if (scroller.scrollTop !== 0) scroller.scrollTop = 0;
-      const table = sheetRef.current?.querySelector(
-        'table.data-grid'
-      ) as HTMLTableElement | null;
-      const first = table?.rows?.[1] as HTMLElement | undefined;
-      const clip = sheetClip();
-      // Align in an ancestor only if row 1 is clipped — do not reset AppLayout to 0.
-      if (first && clip && clip !== scroller) alignRowInScroller(clip, first);
-      releaseScrollCurTopIgnore();
+      const intoView = () => {
+        const table = sheetRef.current?.querySelector(
+          'table.data-grid'
+        ) as HTMLTableElement | null;
+        const first = table?.rows?.[1] as HTMLElement | undefined;
+        const clip = sheetClip();
+        // Align in an ancestor only if row 1 is clipped — do not reset AppLayout to 0.
+        if (first && clip && clip !== scroller) alignRowInScroller(clip, first);
+        releaseScrollCurTopIgnore();
+      };
+      window.cancelAnimationFrame(sheetScrollRafRef.current);
+      if (remounted) {
+        sheetScrollRafRef.current = requestAnimationFrame(() => {
+          sheetScrollRafRef.current = requestAnimationFrame(() => {
+            sheetScrollRafRef.current = 0;
+            intoView();
+          });
+        });
+      } else intoView();
       return false;
     }
 
@@ -1066,7 +1079,7 @@ export function PlanSheet(props: IProps) {
         ) as HTMLTableElement | null;
         const firstData = table?.rows?.[1];
         const clip = sheetClip();
-        const { top: clipTop } = visibleClip(scroller);
+        const { top: clipTop } = visibleClip(scroller, 0, window.innerHeight);
         // Padding and WarningDiv sit above the grid; measure the first mounted
         // data row against the visible clip (inner scroller or AppLayout).
         const next = firstData

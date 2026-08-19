@@ -40,8 +40,8 @@ const overflowsY = (el: HTMLElement) => el.scrollHeight > el.clientHeight + 1;
 /** Visible clip: top from every Y-clip; height from overflowing scrollers only. */
 export const visibleClip = (
   el: HTMLElement | null,
-  viewportTop = 0,
-  viewportBottom = 0
+  viewportTop: number,
+  viewportBottom: number
 ) => {
   let top = viewportTop;
   let bottom = viewportBottom;
