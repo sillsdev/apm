@@ -28,6 +28,7 @@ import {
 } from './isSectionPassageUpdated';
 import { usePassageType } from '../../crud/usePassageType';
 import { usePublishDestination } from '../../crud/usePublishDestination';
+import { useDataChanges } from '../../utils/useDataChanges';
 
 interface IProps {
   setComplete: (val: number) => void;
@@ -41,6 +42,7 @@ export const useWfLocalSave = (props: IProps) => {
   const [offlineOnly] = useGlobal('offlineOnly'); //will be constant here
   const { getPassageTypeRec, checkIt } = usePassageType();
   const { setPublishTo, isPublished } = usePublishDestination();
+  const forceDataChanges = useDataChanges();
   return async (
     sheet: ISheet[],
     sections: SectionD[],
@@ -49,6 +51,7 @@ export const useWfLocalSave = (props: IProps) => {
   ) => {
     let lastSec = { id: 'never here' } as RecordIdentity;
     const numRecs = sheet.length;
+    let forceUpdate = false;
     for (let rIdx = 0; rIdx < numRecs; rIdx += 1) {
       // if numRecs >= 200, status set in caller
       if ((offlineOnly || numRecs < 200) && rIdx % 20 === 0) {
@@ -61,6 +64,9 @@ export const useWfLocalSave = (props: IProps) => {
           if (!isSectionAdding(item) && !item.deleted) {
             const itemId = item?.sectionId?.id || '';
             const curSec = sections.filter((s) => s.id === itemId)[0];
+            forceUpdate =
+              forceUpdate ||
+              curSec.attributes.publishTo !== setPublishTo(item.published);
             const secRec: SectionD = {
               ...curSec,
               attributes: {
@@ -211,6 +217,9 @@ export const useWfLocalSave = (props: IProps) => {
           await memory.update(ops);
         }
       }
+    }
+    if (forceUpdate) {
+      await forceDataChanges();
     }
     checkIt('WFLocalSave');
   };
