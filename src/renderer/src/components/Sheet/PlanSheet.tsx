@@ -85,36 +85,17 @@ import { PlanSheetRowCtx } from './PlanActionMenu';
 import { usePlanSheetFill } from './usePlanSheetFill';
 import { useRefErrTest } from './useRefErrTest';
 import { useShowIcon } from './useShowIcon';
+import {
+  clipTopForCurTop,
+  curTopFromViewport,
+  overflowScrollParent,
+  overscanOf,
+  pageSizeForView,
+  sheetWindow,
+} from './sheetWindow';
 
 const DOWN_ARROW = 'ARROWDOWN';
 export const SectionSeqCol = 0;
-
-const overscanOf = (pageSize: number) =>
-  Math.max(1, Math.floor((pageSize || 1) / 2));
-
-/** Mounted data-row range (absolute indices, header excluded). */
-const sheetWindow = (curTop: number, pageSize: number, dataLen: number) => {
-  if (dataLen <= 1) return { first: 1, last: 1 };
-  const n = pageSize || 1;
-  const over = overscanOf(n);
-  const top = Math.max(curTop, 1);
-  let last = Math.min(dataLen, top + n + over);
-  let first = Math.max(1, top - over);
-  if (last >= dataLen) {
-    last = dataLen;
-    first = Math.max(1, dataLen - n - over);
-  }
-  return { first, last };
-};
-
-/** Absolute data row at the scroller's visible top (header excluded). */
-const curTopFromViewport = (
-  scrollerTop: number,
-  firstDataRowTop: number,
-  windowFirst: number,
-  rh: number
-) =>
-  Math.max(1, windowFirst + Math.floor((scrollerTop - firstDataRowTop) / rh));
 
 /** Stable DataSheet row type — must not change identity or the grid remounts mid-drag. */
 const SheetRow = ({
@@ -573,7 +554,11 @@ export function PlanSheet(props: IProps) {
   const absToSheet = (absI: number) =>
     absI <= 0 ? absI : absI - windowFirstRef.current + 1;
 
+  const sheetClip = () =>
+    overflowScrollParent(scrollRef.current) ?? scrollRef.current;
+
   const syncViewport = (remeasure = false) => {
+    const scroller = scrollRef.current;
     const table = sheetRef.current?.querySelector(
       'table.data-grid'
     ) as HTMLTableElement | null;
@@ -581,9 +566,30 @@ export function PlanSheet(props: IProps) {
       (!remeasure && rowHeightRef.current) ||
       table?.rows?.[1]?.offsetHeight ||
       0;
-    const height = scrollRef.current?.clientHeight ?? 0;
     if (h > 0) setRowHeight(h);
-    if (h > 0 && height > 0) setPageSize(Math.ceil(height / h));
+    if (!scroller || h <= 0) return;
+    const scrollerTop = scroller.getBoundingClientRect().top;
+    let n = pageSizeForView(
+      h,
+      scroller.clientHeight,
+      scroller.scrollHeight,
+      scrollerTop,
+      window.innerHeight
+    );
+    const lastRow = table?.rows?.[table.rows.length - 1];
+    const mounted = Math.max(0, (table?.rows.length ?? 1) - 1);
+    const total = Math.max(0, data.length - 1);
+    if (lastRow && mounted < total) {
+      const clip = overflowScrollParent(scroller);
+      const clipBottom = clip
+        ? clip.getBoundingClientRect().bottom
+        : window.innerHeight;
+      const gap =
+        Math.min(clipBottom, window.innerHeight) -
+        lastRow.getBoundingClientRect().bottom;
+      if (gap > h) n += Math.ceil(gap / h);
+    }
+    setPageSize(Math.min(n, Math.max(1, total || n)));
   };
 
   const releaseScrollCurTopIgnore = () => {
@@ -636,7 +642,8 @@ export function PlanSheet(props: IProps) {
     if (row <= 1) {
       ignoreScrollCurTopRef.current = true;
       if (curTop !== 1) setCurTop(1);
-      if (scroller.scrollTop !== 0) scroller.scrollTo(0, 0);
+      const clip = sheetClip();
+      if (clip && clip.scrollTop !== 0) clip.scrollTo(0, 0);
       releaseScrollCurTopIgnore();
       return false;
     }
@@ -647,7 +654,8 @@ export function PlanSheet(props: IProps) {
         'table.data-grid'
       ) as HTMLTableElement | null;
       const el = table?.rows?.[absToSheet(row)] as HTMLElement | undefined;
-      if (el) alignRowInScroller(scroller, el, force);
+      const clip = sheetClip();
+      if (el && clip) alignRowInScroller(clip, el, force);
       if (remounted) releaseScrollCurTopIgnore();
     };
     window.cancelAnimationFrame(sheetScrollRafRef.current);
@@ -707,15 +715,12 @@ export function PlanSheet(props: IProps) {
     // Sheet index 0 is the header: paste-target at the top, scroll-up when windowed.
     if (sheetEnd === 0) {
       if (windowFirstRef.current > 1) {
-        const scroller = scrollRef.current;
+        const clip = sheetClip();
         const rh = rowHeightRef.current;
-        if (scroller && rh) {
-          scroller.scrollTo(
+        if (clip && rh) {
+          clip.scrollTo(
             0,
-            Math.max(
-              0,
-              scroller.scrollTop - rh * overscanOf(pageSizeRef.current)
-            )
+            Math.max(0, clip.scrollTop - rh * overscanOf(pageSizeRef.current))
           );
         }
         return;
@@ -1065,16 +1070,24 @@ export function PlanSheet(props: IProps) {
           'table.data-grid'
         ) as HTMLTableElement | null;
         const firstData = table?.rows?.[1];
+        const clip = overflowScrollParent(scroller);
+        const clipTop = clipTopForCurTop(
+          clip ? clip.getBoundingClientRect().top : 0,
+          scroller.getBoundingClientRect().top
+        );
         // Padding and WarningDiv sit above the grid; measure the first mounted
-        // data row against the scroller instead of assuming scrollTop/rh.
+        // data row against the visible clip (inner scroller or AppLayout).
         const next = firstData
           ? curTopFromViewport(
-              scroller.getBoundingClientRect().top,
+              clipTop,
               firstData.getBoundingClientRect().top,
               windowFirstRef.current,
               rh
             )
-          : Math.max(1, Math.floor(scroller.scrollTop / rh));
+          : Math.max(
+              1,
+              Math.floor((clip ? clip.scrollTop : scroller.scrollTop) / rh)
+            );
         setCurTop((t) => (t === next ? t : next));
       }, 100),
     []
@@ -1084,14 +1097,21 @@ export function PlanSheet(props: IProps) {
     syncViewport();
     const scroller = scrollRef.current;
     window.addEventListener('resize', handleRowsPerPage);
-    scroller?.addEventListener('scroll', scrolled);
+    // Capture so AppLayout (or any ancestor) scrolling still moves the window.
+    window.addEventListener('scroll', scrolled, true);
+    const ro =
+      typeof ResizeObserver !== 'undefined' && scroller
+        ? new ResizeObserver(() => handleRowsPerPage())
+        : undefined;
+    if (scroller && ro) ro.observe(scroller);
     const onDown = () => sheetScrollRef.current();
     subscribe(DOWN_ARROW, onDown);
 
     return () => {
       unsubscribe(DOWN_ARROW);
       window.removeEventListener('resize', handleRowsPerPage);
-      scroller?.removeEventListener('scroll', scrolled);
+      window.removeEventListener('scroll', scrolled, true);
+      ro?.disconnect();
       handleRowsPerPage.clear();
       scrolled.clear();
       window.clearTimeout(ignoreScrollTimerRef.current);
@@ -1297,13 +1317,12 @@ export function PlanSheet(props: IProps) {
     return [data[0], ...data.slice(windowFirst, windowLast)] as any[][];
   }, [data, windowFirst, windowLast]);
 
-  // First paint with rows: measure once. Do not depend on window bounds
-  // (visibleData.length chasing pageSize oscillates with the scrollbar).
+  // Measure after rows exist and when rowHeight first locks (spacers appear).
   useLayoutEffect(() => {
     if (data.length <= 1) return;
     syncViewport(rowHeightRef.current === 0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data.length]);
+  }, [data.length, rowHeight]);
 
   const topPad = rowHeight > 0 ? (windowFirst - 1) * rowHeight : 0;
   const bottomPad =
@@ -1318,9 +1337,10 @@ export function PlanSheet(props: IProps) {
     prevWindowFirstRef.current = windowFirst;
     if (!scroller || !rh || prev === windowFirst) return;
     if (!ignoreScrollCurTopRef.current) return;
-    scroller.scrollTop = Math.max(
+    const clip = overflowScrollParent(scroller) ?? scroller;
+    clip.scrollTop = Math.max(
       topPad,
-      scroller.scrollTop + (windowFirst - prev) * rh
+      clip.scrollTop + (windowFirst - prev) * rh
     );
   }, [windowFirst, topPad]);
 
