@@ -1,7 +1,7 @@
 export const overscanOf = (pageSize: number) =>
   Math.max(1, Math.floor((pageSize || 1) / 2));
 
-/** Mounted data-row range (absolute indices, header excluded). */
+/** Mounted data-row window as [first, last) slice bounds into the `data` array (index 0 is the header). */
 export const sheetWindow = (
   curTop: number,
   pageSize: number,

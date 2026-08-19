@@ -557,8 +557,7 @@ export function PlanSheet(props: IProps) {
   const absToSheet = (absI: number) =>
     absI <= 0 ? absI : absI - windowFirstRef.current + 1;
 
-  const sheetClip = () =>
-    overflowScrollParent(scrollRef.current) ?? scrollRef.current;
+  const sheetClip = (el: HTMLElement) => overflowScrollParent(el) ?? el;
 
   const syncViewport = (remeasure = false) => {
     const scroller = scrollRef.current;
@@ -636,9 +635,9 @@ export function PlanSheet(props: IProps) {
           'table.data-grid'
         ) as HTMLTableElement | null;
         const first = table?.rows?.[1] as HTMLElement | undefined;
-        const clip = sheetClip();
+        const clip = sheetClip(scroller);
         // Align in an ancestor only if row 1 is clipped — do not reset AppLayout to 0.
-        if (first && clip && clip !== scroller) alignRowInScroller(clip, first);
+        if (first && clip !== scroller) alignRowInScroller(clip, first);
         releaseScrollCurTopIgnore();
       };
       window.cancelAnimationFrame(sheetScrollRafRef.current);
@@ -659,8 +658,7 @@ export function PlanSheet(props: IProps) {
         'table.data-grid'
       ) as HTMLTableElement | null;
       const el = table?.rows?.[absToSheet(row)] as HTMLElement | undefined;
-      const clip = sheetClip();
-      if (el && clip) alignRowInScroller(clip, el, force);
+      if (el) alignRowInScroller(sheetClip(scroller), el, force);
       if (remounted) releaseScrollCurTopIgnore();
     };
     window.cancelAnimationFrame(sheetScrollRafRef.current);
@@ -723,13 +721,11 @@ export function PlanSheet(props: IProps) {
         const rh = rowHeightRef.current;
         const scroller = scrollRef.current;
         if (scroller && rh) {
-          const target = sheetClip();
-          if (target) {
-            target.scrollTop = Math.max(
-              0,
-              target.scrollTop - rh * overscanOf(pageSizeRef.current)
-            );
-          }
+          const target = sheetClip(scroller);
+          target.scrollTop = Math.max(
+            0,
+            target.scrollTop - rh * overscanOf(pageSizeRef.current)
+          );
         }
         return;
       }
@@ -1078,7 +1074,7 @@ export function PlanSheet(props: IProps) {
           'table.data-grid'
         ) as HTMLTableElement | null;
         const firstData = table?.rows?.[1];
-        const clip = sheetClip();
+        const clip = sheetClip(scroller);
         const { top: clipTop } = visibleClip(scroller, 0, window.innerHeight);
         // Padding and WarningDiv sit above the grid; measure the first mounted
         // data row against the visible clip (inner scroller or AppLayout).
@@ -1343,7 +1339,7 @@ export function PlanSheet(props: IProps) {
     prevWindowFirstRef.current = windowFirst;
     if (!scroller || !rh || prev === windowFirst) return;
     if (!ignoreScrollCurTopRef.current) return;
-    const clip = sheetClip();
+    const clip = sheetClip(scroller);
     const pad = topPadElRef.current;
     const floor = scrollTopFloorForPad(
       clip.scrollTop,
