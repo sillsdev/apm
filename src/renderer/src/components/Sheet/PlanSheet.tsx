@@ -86,12 +86,14 @@ import { usePlanSheetFill } from './usePlanSheetFill';
 import { useRefErrTest } from './useRefErrTest';
 import { useShowIcon } from './useShowIcon';
 import {
-  clipTopForCurTop,
   curTopFromViewport,
+  isSheetScrollTarget,
   overflowScrollParent,
   overscanOf,
   pageSizeForView,
+  scrollTopFloorForPad,
   sheetWindow,
+  visibleClipTop,
 } from './sheetWindow';
 
 const DOWN_ARROW = 'ARROWDOWN';
@@ -337,6 +339,7 @@ export function PlanSheet(props: IProps) {
   const ignoreScrollCurTopRef = useRef(false);
   const ignoreScrollTimerRef = useRef(0);
   const sheetScrollRafRef = useRef(0);
+  const topPadElRef = useRef<HTMLDivElement>(null);
   const rowHeightRef = useRef(0);
   const [rowHeight, setRowHeightx] = useState(0); // locked after first measure
   const pageSizeRef = useRef(1);
@@ -1071,10 +1074,7 @@ export function PlanSheet(props: IProps) {
         ) as HTMLTableElement | null;
         const firstData = table?.rows?.[1];
         const clip = overflowScrollParent(scroller);
-        const clipTop = clipTopForCurTop(
-          clip ? clip.getBoundingClientRect().top : 0,
-          scroller.getBoundingClientRect().top
-        );
+        const clipTop = visibleClipTop(scroller);
         // Padding and WarningDiv sit above the grid; measure the first mounted
         // data row against the visible clip (inner scroller or AppLayout).
         const next = firstData
@@ -1097,8 +1097,12 @@ export function PlanSheet(props: IProps) {
     syncViewport();
     const scroller = scrollRef.current;
     window.addEventListener('resize', handleRowsPerPage);
-    // Capture so AppLayout (or any ancestor) scrolling still moves the window.
-    window.addEventListener('scroll', scrolled, true);
+    const onScroll = (e: Event) => {
+      if (!isSheetScrollTarget(scrollRef.current, e.target)) return;
+      scrolled();
+    };
+    // Capture: AppLayout (or any ancestor) can be the element that actually scrolls.
+    window.addEventListener('scroll', onScroll, true);
     const ro =
       typeof ResizeObserver !== 'undefined' && scroller
         ? new ResizeObserver(() => handleRowsPerPage())
@@ -1110,7 +1114,7 @@ export function PlanSheet(props: IProps) {
     return () => {
       unsubscribe(DOWN_ARROW);
       window.removeEventListener('resize', handleRowsPerPage);
-      window.removeEventListener('scroll', scrolled, true);
+      window.removeEventListener('scroll', onScroll, true);
       ro?.disconnect();
       handleRowsPerPage.clear();
       scrolled.clear();
@@ -1338,8 +1342,15 @@ export function PlanSheet(props: IProps) {
     if (!scroller || !rh || prev === windowFirst) return;
     if (!ignoreScrollCurTopRef.current) return;
     const clip = overflowScrollParent(scroller) ?? scroller;
+    const pad = topPadElRef.current;
+    const floor = scrollTopFloorForPad(
+      clip.scrollTop,
+      clip.getBoundingClientRect().top,
+      pad?.getBoundingClientRect().bottom ?? 0,
+      pad?.offsetHeight ?? 0
+    );
     clip.scrollTop = Math.max(
-      topPad,
+      floor,
       clip.scrollTop + (windowFirst - prev) * rh
     );
   }, [windowFirst, topPad]);
@@ -1558,7 +1569,11 @@ export function PlanSheet(props: IProps) {
             {warning}
           </WarningDiv>
         )}
-        <div aria-hidden style={{ height: topPad, overflowAnchor: 'none' }} />
+        <div
+          aria-hidden
+          ref={topPadElRef}
+          style={{ height: topPad, overflowAnchor: 'none' }}
+        />
         <PlanSheetRowCtx.Provider value={rowCtx}>
           <DataSheet
             data={visibleData}
