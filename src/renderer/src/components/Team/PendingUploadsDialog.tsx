@@ -6,6 +6,7 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  LinearProgress,
   List,
   ListItem,
   ListItemText,
@@ -32,8 +33,10 @@ import { IndexedDBSource } from '@orbit/indexeddb';
 import Memory from '@orbit/memory';
 import { MediaFileAttributes } from '../../model';
 import { Online } from '../../utils';
-
-const ipc = window?.api as MainAPI;
+import {
+  retryProgressLabel,
+  shouldShowRetryAll,
+} from './pendingUploadsDialogHelpers';
 
 interface IProps {
   open: boolean;
@@ -60,6 +63,12 @@ export function PendingUploadsDialog(props: IProps) {
   const retryQueueRef = useRef<PendingUploadRecord[]>([]);
   /** Synchronous guard while waiting for Online() (before React flushes busy). */
   const retryClaimedRef = useRef(false);
+  const retryTotalRef = useRef(0);
+  const retryDoneRef = useRef(0);
+  const [retryProgress, setRetryProgress] = useState({
+    completed: 0,
+    total: 0,
+  });
 
   const retryDisabled = busy || !connected || offline;
 
@@ -99,6 +108,7 @@ export function PendingUploadsDialog(props: IProps) {
   );
 
   async function dispatchOne(entry: PendingUploadRecord): Promise<void> {
+    const ipc = window?.api as MainAPI | undefined;
     const finishOrContinue = () => {
       refresh();
       const next = retryQueueRef.current.shift();
@@ -157,6 +167,20 @@ export function PendingUploadsDialog(props: IProps) {
               reporter
             );
           }
+          if (success) {
+            retryDoneRef.current += 1;
+            setRetryProgress({
+              completed: retryDoneRef.current,
+              total: retryTotalRef.current,
+            });
+            showMessage(
+              retryProgressLabel(
+                t.uploadComplete,
+                retryDoneRef.current,
+                retryTotalRef.current || 1
+              )
+            );
+          }
           finishOrContinue();
         },
       }) as never
@@ -170,6 +194,9 @@ export function PendingUploadsDialog(props: IProps) {
       return;
     }
     retryClaimedRef.current = true;
+    retryTotalRef.current = 1;
+    retryDoneRef.current = 0;
+    setRetryProgress({ completed: 0, total: 1 });
     setBusy(true);
     retryQueueRef.current = [];
     assertCanRetry(() => void dispatchOne(entry), releaseRetryClaim);
@@ -184,6 +211,9 @@ export function PendingUploadsDialog(props: IProps) {
     const all = loadPendingMediaUploads();
     if (all.length === 0) return;
     retryClaimedRef.current = true;
+    retryTotalRef.current = all.length;
+    retryDoneRef.current = 0;
+    setRetryProgress({ completed: 0, total: all.length });
     setBusy(true);
     retryQueueRef.current = all.slice(1);
     assertCanRetry(() => void dispatchOne(all[0]), releaseRetryClaim);
@@ -201,6 +231,29 @@ export function PendingUploadsDialog(props: IProps) {
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
       <DialogTitle>{t.pendingUploadTitle}</DialogTitle>
       <DialogContent>
+        {busy && (
+          <Box sx={{ mb: 1 }} data-testid="pending-upload-progress">
+            <LinearProgress
+              variant={
+                retryProgress.total > 1 ? 'determinate' : 'indeterminate'
+              }
+              value={
+                retryProgress.total > 0
+                  ? (retryProgress.completed / retryProgress.total) * 100
+                  : 0
+              }
+            />
+            {retryProgress.total > 1 && (
+              <Typography variant="caption">
+                {retryProgressLabel(
+                  t.uploadComplete,
+                  retryProgress.completed,
+                  retryProgress.total
+                )}
+              </Typography>
+            )}
+          </Box>
+        )}
         {items.length === 0 ? (
           <Typography>{t.pendingUploadEmpty}</Typography>
         ) : (
@@ -255,13 +308,15 @@ export function PendingUploadsDialog(props: IProps) {
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>{ts.close}</Button>
-        <Button
-          variant="contained"
-          disabled={retryDisabled || items.length === 0}
-          onClick={handleRetryAll}
-        >
-          {t.pendingUploadBatchRetry}
-        </Button>
+        {shouldShowRetryAll(items.length) && (
+          <Button
+            variant="contained"
+            disabled={retryDisabled || items.length === 0}
+            onClick={handleRetryAll}
+          >
+            {t.pendingUploadBatchRetry}
+          </Button>
+        )}
       </DialogActions>
     </Dialog>
   );
