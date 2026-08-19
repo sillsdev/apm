@@ -2,7 +2,13 @@
  * TT-7553: reopening Phrase Back Translate step settings after a language was
  * saved must not thrash parent toolSettings via Language's mount/sync onChange.
  * TT-7555: artifact type is not choosable here (no Community Test Retell dropdown).
+ * TT-7583: the artifact type written to settings must be the remote id.
  */
+
+/** Swapped per test; read lazily by the useGlobal mock below. */
+let mockKeyMap:
+  | { idToKey: (...args: string[]) => string | undefined }
+  | undefined;
 jest.mock('react-redux', () => ({
   useSelector: jest.fn(),
   shallowEqual: jest.fn(),
@@ -14,7 +20,7 @@ jest.mock('../../selector', () => ({
 }));
 
 jest.mock('../../context/useGlobal', () => ({
-  useGlobal: jest.fn(() => [{ keyMap: undefined }, jest.fn()]),
+  useGlobal: jest.fn(() => [{ keyMap: mockKeyMap }, jest.fn()]),
 }));
 
 jest.mock('../../hoc/useOrbitData', () => ({
@@ -175,6 +181,7 @@ function ReopenHarness({
 describe('PhraseBackTranslateStepSettings', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockKeyMap = undefined;
     mockUseSelector.mockImplementation(
       (sel: (state: { stepEditor: Record<string, string> }) => unknown) =>
         sel({
@@ -269,6 +276,57 @@ describe('PhraseBackTranslateStepSettings', () => {
       };
       expect(last.artifactTypeId).toBe('type-retell');
       expect(last.language).toBe('English|en');
+    });
+  });
+
+  it('seeds a new step with the remote artifact type id, not the local one (TT-7583)', async () => {
+    // getTypeId is mocked as `type-${slug}`; PhraseBackTranslation is
+    // 'backtranslation'.
+    mockKeyMap = {
+      idToKey: (table: string, key: string, localId: string) =>
+        table === 'artifacttype' &&
+        key === 'remoteId' &&
+        localId === 'type-backtranslation'
+          ? '77'
+          : undefined,
+    };
+    const onChangeSpy = jest.fn();
+    render(<ReopenHarness onChangeSpy={onChangeSpy} initialSettings="" />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('language-mock')).toBeTruthy();
+    });
+
+    fireEvent.click(screen.getByTestId('pick-english'));
+
+    await waitFor(() => {
+      expect(onChangeSpy).toHaveBeenCalled();
+      const last = JSON.parse(onChangeSpy.mock.calls.at(-1)?.[0] as string) as {
+        artifactTypeId?: string;
+        language?: string;
+      };
+      expect(last.artifactTypeId).toBe('77');
+      expect(last.language).toBe('English|en');
+    });
+  });
+
+  it('keeps the local artifact type id when there is no remote mapping (offline)', async () => {
+    mockKeyMap = { idToKey: () => undefined };
+    const onChangeSpy = jest.fn();
+    render(<ReopenHarness onChangeSpy={onChangeSpy} initialSettings="" />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('language-mock')).toBeTruthy();
+    });
+
+    fireEvent.click(screen.getByTestId('pick-english'));
+
+    await waitFor(() => {
+      expect(onChangeSpy).toHaveBeenCalled();
+      const last = JSON.parse(onChangeSpy.mock.calls.at(-1)?.[0] as string) as {
+        artifactTypeId?: string;
+      };
+      expect(last.artifactTypeId).toBe('type-backtranslation');
     });
   });
 });

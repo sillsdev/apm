@@ -170,6 +170,12 @@ export function useGuidedPhraseSegments(
           );
           regionJson = ctrl.getRegionsJson?.() ?? '{}';
           if (!hasPhraseRegions(regionJson) && (count ?? 0) <= 0) {
+            // Claude's suggestion for possible future implementation: auto-segment can legitimately yield nothing (e.g. audio
+            // the silence math can't split), and returning false leaves the
+            // 250ms bootstrap poll in PassageDetailGuidedPhraseRecord spinning
+            // forever. Consider falling back to createSingleSegmentJson() here
+            // when getDuration() > 0, and returning false only while the player
+            // has no audio loaded yet.
             return false;
           }
           const toSave = regionsJsonFromList(

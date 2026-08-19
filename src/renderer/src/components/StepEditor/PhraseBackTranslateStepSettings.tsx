@@ -3,6 +3,7 @@ import { Stack, Typography } from '@mui/material';
 import { shallowEqual, useSelector } from 'react-redux';
 import { RecordKeyMap } from '@orbit/records';
 import { ArtifactTypeSlug, useArtifactType } from '../../crud';
+import { remoteId } from '../../crud/remoteId';
 import {
   formatStepLanguageField,
   parseStepLanguageField,
@@ -42,9 +43,18 @@ export const PhraseBackTranslateStepSettings = ({
   const orgSteps = useOrbitData<OrgWorkflowStepD[]>('orgworkflowstep');
   // Artifact type is fixed by the workflow step preset (Phrase BT vs Retell BT),
   // not chosen in this dialog — TT-7555.
-  const [artifactTypeId, setArtifactTypeId] = useState<string>(
-    () => getTypeId(ArtifactTypeSlug.PhraseBackTranslation) ?? ''
-  );
+  // Step settings store the *remote* artifact type id (every reader decodes with
+  // remoteIdGuid, and SelectArtifactType hands the other step-settings dialogs
+  // remote ids), so translate the local id getTypeId returns. Offline-only types
+  // have no remote id — keep the local id there — TT-7583.
+  const [artifactTypeId, setArtifactTypeId] = useState<string>(() => {
+    const localId = getTypeId(ArtifactTypeSlug.PhraseBackTranslation) ?? '';
+    if (!localId) return '';
+    return (
+      remoteId('artifacttype', localId, memory?.keyMap as RecordKeyMap) ??
+      localId
+    );
+  });
   const [lgState, setLgState] = useState<ILanguage>(emptyLanguage());
   const [error, setError] = useState('');
 

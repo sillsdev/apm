@@ -834,7 +834,10 @@ export function useWaveSurferRegions(
         });
         start = end;
       } else {
-        if (!fromVerses(start)) {
+        // A too-short gap is absorbed into the previous region, but the first
+        // gap has no previous region to absorb it, so result[-1] threw
+        // (TT-7583). Skipping leaves `start` put: the gap joins the next region.
+        if (result.length > 0 && !fromVerses(start)) {
           //fix the last one to use end
           result[result.length - 1].end = end;
           start = end;

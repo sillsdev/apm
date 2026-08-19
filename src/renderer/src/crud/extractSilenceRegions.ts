@@ -93,14 +93,16 @@ export function extractSilenceRegions(
     }
   }
   if (sRegions.length > 0) {
+    // In the odd case we have a clip shorter than the minimum, still keep the one
+    // segment rather than cause other errors — returning nothing leaves callers
+    // (e.g. the guided phrase bootstrap) with no segments to save — TT-7583.
     if (
+      sRegions.length > 1 &&
       sRegions[sRegions.length - 1].end - sRegions[sRegions.length - 1].start <
-      minRegionLenSeconds
+        minRegionLenSeconds
     )
       sRegions.splice(-1, 1);
-    if (sRegions.length > 0) {
-      sRegions[sRegions.length - 1].end = durationSec;
-    }
+    sRegions[sRegions.length - 1].end = durationSec;
   }
 
   return sRegions;
