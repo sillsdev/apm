@@ -16,6 +16,8 @@ jest.mock('../../auth/bugsnagClient', () => ({}));
 jest.mock('./pendingMediaUploads', () => ({
   appendPendingMediaUpload: jest.fn(),
   removePendingMediaUpload: jest.fn(),
+  removeMatchingPendingUploads: jest.fn(),
+  updatePendingMediaUpload: jest.fn(),
 }));
 jest.mock('../../utils', () => ({
   dataPath: jest.fn(),

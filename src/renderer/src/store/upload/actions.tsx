@@ -40,6 +40,7 @@ import {
   appendPendingMediaUpload,
   PendingUploadRecord,
   PendingUploadMediaRecord,
+  removeMatchingPendingUploads,
   removePendingMediaUpload,
   updatePendingMediaUpload,
 } from './pendingMediaUploads';
@@ -276,6 +277,7 @@ export const nextUpload =
   }: NextUploadProps) =>
   (dispatch: Dispatch) => {
     dispatch({ payload: n, type: UPLOAD_ITEM_PENDING });
+    let pendingIdToClear = pendingUploadIdToClearOnSuccess;
     const sendError = (n: number, message: string, mediaid?: number): void => {
       dispatch({
         payload: {
@@ -329,9 +331,16 @@ export const nextUpload =
     ): void => {
       if (success) {
         dispatch({ payload: n, type: UPLOAD_ITEM_SUCCEEDED });
-        if (pendingUploadIdToClearOnSuccess) {
-          removePendingMediaUpload(pendingUploadIdToClearOnSuccess);
+        if (pendingIdToClear) {
+          removePendingMediaUpload(pendingIdToClear);
         }
+        const pendingRec = record as PendingUploadMediaRecord;
+        removeMatchingPendingUploads({
+          planId: pendingRec.planId,
+          passageId: pendingRec.passageId,
+          artifactTypeId: pendingRec.artifactTypeId,
+          originalFile: pendingRec.originalFile,
+        });
         if (cb) cb(n, true, data);
       } else {
         dispatch({
@@ -463,6 +472,20 @@ export const nextUpload =
         }
       }
 
+      if (localAbsolutePath) {
+        const queuePatch = {
+          localAbsolutePath,
+          fileSize: size,
+          uploadType,
+          record: snapshotForPending(),
+        };
+        const pendingRecord = pendingIdToClear
+          ? (updatePendingMediaUpload(pendingIdToClear, queuePatch) ??
+            appendPendingMediaUpload(queuePatch))
+          : appendPendingMediaUpload(queuePatch);
+        pendingIdToClear = pendingRecord.id;
+      }
+
       const finalizeTerminalFailure = async (
         remoteId: number | undefined,
         postSucceeded: boolean,
@@ -492,9 +515,9 @@ export const nextUpload =
           uploadType,
           record: snapshotForPending(),
         };
-        const pendingRecord = pendingUploadIdToClearOnSuccess
+        const pendingRecord = pendingIdToClear
           ? (updatePendingMediaUpload(
-              pendingUploadIdToClearOnSuccess,
+              pendingIdToClear,
               queuePatch
             ) ?? appendPendingMediaUpload(queuePatch))
           : appendPendingMediaUpload(queuePatch);
