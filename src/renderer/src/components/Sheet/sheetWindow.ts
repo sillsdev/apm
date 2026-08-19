@@ -20,7 +20,6 @@ export const sheetWindow = (
   return { first, last };
 };
 
-/** Absolute data row at the visible top (header excluded). */
 export const curTopFromViewport = (
   clipTop: number,
   firstDataRowTop: number,
@@ -28,68 +27,45 @@ export const curTopFromViewport = (
   rh: number
 ) => Math.max(1, windowFirst + Math.floor((clipTop - firstDataRowTop) / rh));
 
-/**
- * How many rows fit in the visible sheet. If the sheet scroller is sized by
- * its content (no inner overflow), use remaining window space so paste/save
- * cannot lock pageSize to the first short window.
- */
-export const pageSizeForView = (
-  rowHeight: number,
-  clientHeight: number,
-  scrollHeight: number,
-  scrollerTop: number,
-  viewBottom: number
+export const pageSizeForView = (rowHeight: number, clipHeight: number) =>
+  rowHeight <= 0
+    ? 1
+    : Math.max(1, Math.ceil(Math.max(0, clipHeight) / rowHeight));
+
+const clipsY = (oy: string) =>
+  oy === 'auto' || oy === 'scroll' || oy === 'hidden';
+
+const overflowsY = (el: HTMLElement) => el.scrollHeight > el.clientHeight + 1;
+
+/** Visible clip: top from every Y-clip; height from overflowing scrollers only. */
+export const visibleClip = (
+  el: HTMLElement | null,
+  viewportTop = 0,
+  viewportBottom = 0
 ) => {
-  if (rowHeight <= 0) return 1;
-  const room = Math.max(0, viewBottom - scrollerTop);
-  const innerScrolls = scrollHeight > clientHeight + 1;
-  const height = innerScrolls ? clientHeight : Math.max(clientHeight, room);
-  return Math.max(1, Math.ceil(height / rowHeight));
-};
-
-/** Visible top used to map scroll position → curTop. */
-export const clipTopForCurTop = (clipTop: number, scrollerTop: number) =>
-  Math.max(clipTop, scrollerTop);
-
-const clipsY = (overflowY: string) =>
-  overflowY === 'auto' || overflowY === 'scroll' || overflowY === 'hidden';
-
-/**
- * Top of the on-screen intersection of every Y-clipping ancestor (and the
- * viewport). Unlike overflowScrollParent, this does not stop at the innermost
- * overflowing box — AppLayout and the sheet scroller can overflow together.
- */
-export const visibleClipTop = (el: HTMLElement | null, viewportTop = 0) => {
   let top = viewportTop;
-  let p: HTMLElement | null = el;
-  while (p) {
-    if (clipsY(getComputedStyle(p).overflowY)) {
-      top = Math.max(top, p.getBoundingClientRect().top);
+  let bottom = viewportBottom;
+  for (let p = el; p; p = p.parentElement) {
+    const oy = getComputedStyle(p).overflowY;
+    if (!clipsY(oy)) continue;
+    const r = p.getBoundingClientRect();
+    top = Math.max(top, r.top);
+    if ((oy === 'auto' || oy === 'scroll') && overflowsY(p)) {
+      bottom = Math.min(bottom, r.bottom);
     }
-    p = p.parentElement;
   }
-  return top;
+  return { top, height: Math.max(0, bottom - top) };
 };
 
-/** Innermost overflowing ancestor — the element to scrollTo, not the visible clip. */
-export const overflowScrollParent = (
-  el: HTMLElement | null
-): HTMLElement | null => {
-  let p: HTMLElement | null = el;
-  while (p) {
+/** Innermost overflowing ancestor (scroll target), else null. */
+export const overflowScrollParent = (el: HTMLElement | null) => {
+  for (let p = el; p; p = p.parentElement) {
     const oy = getComputedStyle(p).overflowY;
-    if (
-      (oy === 'auto' || oy === 'scroll') &&
-      p.scrollHeight > p.clientHeight + 1
-    ) {
-      return p;
-    }
-    p = p.parentElement;
+    if ((oy === 'auto' || oy === 'scroll') && overflowsY(p)) return p;
   }
   return null;
 };
 
-/** True when `target` is the sheet scroller or an ancestor that can move it. */
 export const isSheetScrollTarget = (
   sheetEl: HTMLElement | null,
   target: EventTarget | null
@@ -100,11 +76,7 @@ export const isSheetScrollTarget = (
   return target === sheetEl || target.contains(sheetEl);
 };
 
-/**
- * Minimum clip.scrollTop so the sheet top spacer stays above the clip viewport.
- * `padHeight === 0` → 0 (no spacer). Otherwise convert pad bottom into the
- * clip's content coordinates so an ancestor scroller is not floored at raw topPad.
- */
+/** Min clip.scrollTop so the sheet spacer stays above the clip viewport. */
 export const scrollTopFloorForPad = (
   clipScrollTop: number,
   clipTop: number,

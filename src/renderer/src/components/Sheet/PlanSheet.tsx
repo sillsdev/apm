@@ -93,7 +93,7 @@ import {
   pageSizeForView,
   scrollTopFloorForPad,
   sheetWindow,
-  visibleClipTop,
+  visibleClip,
 } from './sheetWindow';
 
 const DOWN_ARROW = 'ARROWDOWN';
@@ -571,28 +571,11 @@ export function PlanSheet(props: IProps) {
       0;
     if (h > 0) setRowHeight(h);
     if (!scroller || h <= 0) return;
-    const scrollerTop = scroller.getBoundingClientRect().top;
-    let n = pageSizeForView(
-      h,
-      scroller.clientHeight,
-      scroller.scrollHeight,
-      scrollerTop,
-      window.innerHeight
-    );
-    const lastRow = table?.rows?.[table.rows.length - 1];
-    const mounted = Math.max(0, (table?.rows.length ?? 1) - 1);
+    const { height: clipHeight } = visibleClip(scroller, 0, window.innerHeight);
     const total = Math.max(0, data.length - 1);
-    if (lastRow && mounted < total) {
-      const clip = overflowScrollParent(scroller);
-      const clipBottom = clip
-        ? clip.getBoundingClientRect().bottom
-        : window.innerHeight;
-      const gap =
-        Math.min(clipBottom, window.innerHeight) -
-        lastRow.getBoundingClientRect().bottom;
-      if (gap > h) n += Math.ceil(gap / h);
-    }
-    setPageSize(Math.min(n, Math.max(1, total || n)));
+    setPageSize(
+      Math.min(pageSizeForView(h, clipHeight), Math.max(1, total || 1))
+    );
   };
 
   const releaseScrollCurTopIgnore = () => {
@@ -645,8 +628,14 @@ export function PlanSheet(props: IProps) {
     if (row <= 1) {
       ignoreScrollCurTopRef.current = true;
       if (curTop !== 1) setCurTop(1);
+      if (scroller.scrollTop !== 0) scroller.scrollTop = 0;
+      const table = sheetRef.current?.querySelector(
+        'table.data-grid'
+      ) as HTMLTableElement | null;
+      const first = table?.rows?.[1] as HTMLElement | undefined;
       const clip = sheetClip();
-      if (clip && clip.scrollTop !== 0) clip.scrollTo(0, 0);
+      // Align in an ancestor only if row 1 is clipped — do not reset AppLayout to 0.
+      if (first && clip && clip !== scroller) alignRowInScroller(clip, first);
       releaseScrollCurTopIgnore();
       return false;
     }
@@ -718,13 +707,16 @@ export function PlanSheet(props: IProps) {
     // Sheet index 0 is the header: paste-target at the top, scroll-up when windowed.
     if (sheetEnd === 0) {
       if (windowFirstRef.current > 1) {
-        const clip = sheetClip();
         const rh = rowHeightRef.current;
-        if (clip && rh) {
-          clip.scrollTo(
-            0,
-            Math.max(0, clip.scrollTop - rh * overscanOf(pageSizeRef.current))
-          );
+        const scroller = scrollRef.current;
+        if (scroller && rh) {
+          const target = sheetClip();
+          if (target) {
+            target.scrollTop = Math.max(
+              0,
+              target.scrollTop - rh * overscanOf(pageSizeRef.current)
+            );
+          }
         }
         return;
       }
@@ -1073,8 +1065,8 @@ export function PlanSheet(props: IProps) {
           'table.data-grid'
         ) as HTMLTableElement | null;
         const firstData = table?.rows?.[1];
-        const clip = overflowScrollParent(scroller);
-        const clipTop = visibleClipTop(scroller);
+        const clip = sheetClip();
+        const { top: clipTop } = visibleClip(scroller);
         // Padding and WarningDiv sit above the grid; measure the first mounted
         // data row against the visible clip (inner scroller or AppLayout).
         const next = firstData
@@ -1084,10 +1076,7 @@ export function PlanSheet(props: IProps) {
               windowFirstRef.current,
               rh
             )
-          : Math.max(
-              1,
-              Math.floor((clip ? clip.scrollTop : scroller.scrollTop) / rh)
-            );
+          : Math.max(1, Math.floor(clip.scrollTop / rh));
         setCurTop((t) => (t === next ? t : next));
       }, 100),
     []
@@ -1341,7 +1330,7 @@ export function PlanSheet(props: IProps) {
     prevWindowFirstRef.current = windowFirst;
     if (!scroller || !rh || prev === windowFirst) return;
     if (!ignoreScrollCurTopRef.current) return;
-    const clip = overflowScrollParent(scroller) ?? scroller;
+    const clip = sheetClip();
     const pad = topPadElRef.current;
     const floor = scrollTopFloorForPad(
       clip.scrollTop,
