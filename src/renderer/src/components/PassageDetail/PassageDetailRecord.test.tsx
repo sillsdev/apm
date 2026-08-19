@@ -1,6 +1,6 @@
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import React from 'react';
-import { act, render } from '@testing-library/react';
+import { act, render, waitFor } from '@testing-library/react';
 import { RecordTransformBuilder } from '@orbit/records';
 
 const mockSetStepComplete = jest.fn().mockResolvedValue(undefined);
@@ -10,11 +10,28 @@ const mockMemoryUpdate = jest.fn().mockResolvedValue(undefined);
 let capturedMediaRecordProps: {
   afterUploadCb: (mediaId: string | undefined) => Promise<void>;
   onRecordingCleared?: () => void | Promise<void>;
+  allowRecord?: boolean;
 } | null = null;
+
+const linkedSharedResource = {
+  id: 'sr1',
+  type: 'sharedresource',
+  relationships: {
+    passage: { data: { type: 'passage', id: 'source-p' } },
+  },
+};
+
+const sourceOwnedSharedResource = {
+  id: 'sr1',
+  type: 'sharedresource',
+  relationships: {
+    passage: { data: { type: 'passage', id: 'p1' } },
+  },
+};
 
 const passageDetailCtx = {
   passage: { id: 'p1', type: 'passage' },
-  sharedResource: undefined,
+  sharedResource: undefined as unknown,
   mediafileId: 'mf1',
   chooserSize: 0,
   recording: false,
@@ -35,6 +52,7 @@ jest.mock('../MediaRecord', () => ({
   default: (props: {
     afterUploadCb: (mediaId: string | undefined) => Promise<void>;
     onRecordingCleared?: () => void | Promise<void>;
+    allowRecord?: boolean;
   }) => {
     capturedMediaRecordProps = props;
     return <div data-testid="media-record" />;
@@ -45,12 +63,28 @@ jest.mock('../Uploader', () => () => null);
 jest.mock('../Sheet/AudacityManager', () => () => null);
 jest.mock('../../hoc/BigDialog', () => () => null);
 jest.mock('../AudioTab/VersionDlg', () => () => null);
-jest.mock('../SpeakerName', () => () => null);
+jest.mock('../SpeakerName', () => {
+  const ReactActual = jest.requireActual<typeof import('react')>('react');
+  const MockSpeakerName = (props: {
+    onRights?: (hasRights: boolean) => void;
+  }) => {
+    ReactActual.useEffect(() => {
+      props.onRights?.(true);
+    }, []);
+    return null;
+  };
+  MockSpeakerName.displayName = 'MockSpeakerName';
+  return {
+    __esModule: true,
+    default: MockSpeakerName,
+  };
+});
 jest.mock('../AudioTab/usePassageVersionAudioRows', () => ({
   usePassageVernacularVersionCount: () => 1,
 }));
 jest.mock('../../control', () => ({
-  AltButton: () => null,
+  AltButton: (props: { id?: string; children?: React.ReactNode }) =>
+    props.id ? <button id={props.id}>{props.children}</button> : null,
   PriButton: () => null,
 }));
 
@@ -146,6 +180,8 @@ jest.mock('../../hoc/SnackBar', () => ({
 
 import { PassageDetailRecord } from './PassageDetailRecord';
 
+const renderRecord = () => render(<PassageDetailRecord width={400} />);
+
 describe('PassageDetailRecord BOLD step completion', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -153,9 +189,8 @@ describe('PassageDetailRecord BOLD step completion', () => {
     passageDetailCtx.isBoldWorkflow = true;
     passageDetailCtx.mediafileId = 'mf1';
     passageDetailCtx.currentstep = 'step-record';
+    passageDetailCtx.sharedResource = undefined;
   });
-
-  const renderRecord = () => render(<PassageDetailRecord width={400} />);
 
   it('auto-completes and advances after successful save when BOLD', async () => {
     renderRecord();
@@ -210,5 +245,39 @@ describe('PassageDetailRecord BOLD step completion', () => {
     passageDetailCtx.isBoldWorkflow = false;
     renderRecord();
     expect(capturedMediaRecordProps?.onRecordingCleared).toBeUndefined();
+  });
+});
+
+describe('PassageDetailRecord linked note play-only (TT-5873)', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    capturedMediaRecordProps = null;
+    passageDetailCtx.isBoldWorkflow = true;
+    passageDetailCtx.mediafileId = 'mf1';
+    passageDetailCtx.currentstep = 'step-record';
+    passageDetailCtx.sharedResource = undefined;
+  });
+
+  it('keeps Load File and recording enabled on the source note', async () => {
+    passageDetailCtx.sharedResource = sourceOwnedSharedResource;
+    renderRecord();
+
+    await waitFor(() => {
+      expect(document.getElementById('pdRecordLoadFile')).not.toBeNull();
+      expect(capturedMediaRecordProps?.allowRecord).toBe(true);
+    });
+    expect(document.querySelector('[data-testid="media-record"]')).not.toBeNull();
+  });
+
+  it('disables Load File and recording on a linked note while keeping playback', async () => {
+    passageDetailCtx.sharedResource = linkedSharedResource;
+    renderRecord();
+
+    await waitFor(() => {
+      expect(capturedMediaRecordProps).not.toBeNull();
+    });
+    expect(document.getElementById('pdRecordLoadFile')).toBeNull();
+    expect(capturedMediaRecordProps?.allowRecord).toBe(false);
+    expect(document.querySelector('[data-testid="media-record"]')).not.toBeNull();
   });
 });

@@ -96,7 +96,9 @@ jest.mock('../../context/usePassageDetailContext', () => () => ({
   setStepComplete: mockSetStepComplete,
   gotoNextStep: jest.fn(),
   currentstep: mockCurrentStep,
-  passage: { attributes: { stepComplete: mockPassageStepComplete } },
+  passage: { id: 'p1', attributes: { stepComplete: mockPassageStepComplete } },
+  section: { id: 's1' },
+  sharedResource: undefined,
 }));
 jest.mock('../MediaPlayer', () => {
   const MockMediaPlayer = () => <div>MediaPlayer</div>;

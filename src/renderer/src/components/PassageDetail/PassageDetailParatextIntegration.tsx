@@ -17,6 +17,7 @@ import { shallowEqual, useSelector } from 'react-redux';
 import { sharedSelector } from '../../selector';
 import { ISharedStrings } from '../../model';
 import { useStepPermissions } from '../../utils/useStepPermission';
+import { isLinkedNote } from '../../crud/isLinkedNote';
 
 const paperProps = { p: 2, m: 'auto', width: `calc(100% - 32px)` } as SxProps;
 
@@ -28,13 +29,16 @@ export default function PassageDetailParatextIntegration() {
     sectionArr,
     gotoNextStep,
     setStepComplete,
+    sharedResource,
   } = usePassageDetailContext();
   const [memory] = useGlobal('memory');
   const [plan] = useGlobal('plan'); //will be constant here
   const { slugFromId } = useArtifactType();
   const planType = usePlanType();
   const { canDoSectionStep } = useStepPermissions();
-  const hasPermission = canDoSectionStep(currentstep, section);
+  const hasPermission =
+    canDoSectionStep(currentstep, section) &&
+    !isLinkedNote(passage, sharedResource);
   const { settings } = useStepTool(currentstep);
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
 

@@ -1046,15 +1046,16 @@ const PassageDetailProvider = (props: IProps) => {
       if (s) {
         if (p.id !== state.passage.id || s.id !== state.section.id) {
           setState((state: ICtxState) => {
+            const sharedResource = findRecord(
+              memory,
+              'sharedresource',
+              related(p, 'sharedResource')
+            ) as SharedResourceD;
             return {
               ...state,
               passage: p as PassageD,
               section: s as SectionD,
-              sharedResource: findRecord(
-                memory,
-                'sharedresource',
-                related(p, 'sharedResource')
-              ) as SharedResourceD,
+              sharedResource,
               psgCompleted: [...complete],
             };
           });

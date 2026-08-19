@@ -22,6 +22,7 @@ import Confirm from '../../AlertDialog';
 import AddIcon from '@mui/icons-material/Add';
 import { useCallback, useContext } from 'react';
 import { useStepPermissions } from '../../../utils/useStepPermission';
+import { isLinkedNote } from '../../../crud/isLinkedNote';
 import { LoadAndPlay } from '../../../components/LoadAndPLay';
 import AudioProgressButton from '../../../components/AudioProgressButton';
 import { useGlobal } from '../../../context/useGlobal';
@@ -100,8 +101,11 @@ export default function KeyTermTable({
     handleCommentTogglePlay,
     currentstep,
     section,
+    sharedResource,
   } = React.useContext(PassageDetailContext).state;
-  const hasPermission = canDoSectionStep(currentstep, section);
+  const hasPermission =
+    canDoSectionStep(currentstep, section) &&
+    !isLinkedNote(passage, sharedResource);
   const t: IKeyTermsStrings = useSelector(keyTermsSelector, shallowEqual);
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
 

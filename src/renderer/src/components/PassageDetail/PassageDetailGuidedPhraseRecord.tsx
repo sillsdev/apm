@@ -61,6 +61,7 @@ import {
   type ICarefulSpeechColorStatus,
 } from '../../utils/carefulSpeechSegmentColors';
 import { useStepPermissions } from '../../utils/useStepPermission';
+import { isLinkedNote } from '../../crud/isLinkedNote';
 import {
   mediaTabSelector,
   mediaTitleSelector,
@@ -122,6 +123,7 @@ export function PassageDetailGuidedPhraseRecord({
   const { getTypeId } = useArtifactType();
   const {
     passage,
+    sharedResource,
     playerMediafile,
     mediafileId,
     rowData,
@@ -494,8 +496,10 @@ export function PassageDetailGuidedPhraseRecord({
   );
 
   const editStep = useMemo(
-    () => canDoSectionStep(currentstep, section),
-    [canDoSectionStep, currentstep, section]
+    () =>
+      canDoSectionStep(currentstep, section) &&
+      !isLinkedNote(passage, sharedResource),
+    [canDoSectionStep, currentstep, section, passage, sharedResource]
   );
 
   const defaultFilename = useMemo(() => {
@@ -1687,7 +1691,7 @@ export function PassageDetailGuidedPhraseRecord({
           allowZoom={true}
         />
       )}
-      {editStep && bootstrapped && (
+      {bootstrapped && (
         <CarefulSpeechControls
           width={width}
           phase={phase}
@@ -1721,7 +1725,7 @@ export function PassageDetailGuidedPhraseRecord({
           allClausesHeard={allClausesHeard}
           allClausesComplete={allClausesComplete}
           highlightSpeaker={highlightSpeaker}
-          allowRecord={allowRecord}
+          allowRecord={allowRecord && editStep}
           savingRecording={savingRecording}
           onSaving={() => {
             savingRecordingRef.current = true;
@@ -1781,7 +1785,8 @@ export function PassageDetailGuidedPhraseRecord({
           setStatusText={setStatusText}
           showRecorder={showRecorder}
           strings={controlStrings}
-          showBoundaryTools={config.showBoundaryTools}
+          showBoundaryTools={config.showBoundaryTools && editStep}
+          readOnly={!editStep}
           controlIdPrefix={config.containerId}
           sequentialUnitNavAroundRecord={config.sequentialUnitNavAroundRecord}
           onPrevUnit={handlePrevUnit}

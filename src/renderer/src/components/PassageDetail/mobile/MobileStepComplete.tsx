@@ -8,6 +8,7 @@ import { IPassageDetailStepCompleteStrings } from '../../../model';
 import { passageDetailStepCompleteSelector } from '../../../selector';
 import { shallowEqual, useSelector } from 'react-redux';
 import { useStepPermissions } from '../../../utils/useStepPermission';
+import { isLinkedNote } from '../../../crud/isLinkedNote';
 import { ToolSlug, useStepTool } from '../../../crud';
 import { UnsavedContext } from '../../../context/UnsavedContext';
 import { verseToolId } from '../markVersesTool';
@@ -23,6 +24,8 @@ export default function MobileStepComplete() {
     section,
     recording,
     isBoldWorkflow,
+    passage,
+    sharedResource,
   } = usePassageDetailContext();
   const { tool } = useStepTool(currentstep);
   const { canDoSectionStep } = useStepPermissions();
@@ -36,7 +39,9 @@ export default function MobileStepComplete() {
     shallowEqual
   );
 
-  const hasPermission = canDoSectionStep(currentstep, section);
+  const hasPermission =
+    canDoSectionStep(currentstep, section) &&
+    !isLinkedNote(passage, sharedResource);
   const complete = useMemo(
     () => stepComplete(currentstep),
     // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -1474,6 +1474,7 @@ export interface IResourceStrings extends Localize.LocalizedStringsMethods {
     "source": string;
     "terms": string;
     "title": string;
+    "unlinkNote": string;
     "versions": string;
 };
 
