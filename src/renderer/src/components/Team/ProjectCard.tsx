@@ -527,7 +527,11 @@ export const ProjectCard = (props: IProps) => {
                     <EditSquareIcon sx={{ p: 0.5 }} />
                   )}
                   {project.attributes.isPublic && <ShareIcon />}
-                  <Tooltip title={project?.attributes?.name ?? ''}>
+                  <Tooltip
+                    title={
+                      isMobileWidth ? '' : (project?.attributes?.name ?? '')
+                    }
+                  >
                     <Typography noWrap sx={{ fontSize: 'large' }}>
                       {project?.attributes?.name}
                     </Typography>
@@ -541,7 +545,9 @@ export const ProjectCard = (props: IProps) => {
                     px: 0.5,
                   }}
                 >
-                  <Tooltip title={projectDescription(project)}>
+                  <Tooltip
+                    title={isMobileWidth ? '' : projectDescription(project)}
+                  >
                     <Typography noWrap>
                       {projectDescription(project)}
                     </Typography>
