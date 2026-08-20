@@ -342,7 +342,7 @@ export function PlanSheet(props: IProps) {
   const sheetScrollRafRef = useRef(0);
   const topPadElRef = useRef<HTMLDivElement>(null);
   const rowHeightRef = useRef(0);
-  const [rowHeight, setRowHeightx] = useState(0); // locked after first measure
+  const [rowHeight, setRowHeightx] = useState(0); // pad/scroll; locked after first measure
   const pageSizeRef = useRef(1);
   const [pageSize, setPageSizex] = useState(1);
   const setRowHeight = (h: number) => {
@@ -565,21 +565,17 @@ export function PlanSheet(props: IProps) {
     const table = sheetRef.current?.querySelector(
       'table.data-grid'
     ) as HTMLTableElement | null;
-    const measured = minDataRowHeight(table);
-    if (
-      measured > 0 &&
-      (remeasure ||
-        rowHeightRef.current === 0 ||
-        measured < rowHeightRef.current)
-    ) {
-      setRowHeight(measured);
+    const firstH = table?.rows?.[1]?.offsetHeight || 0;
+    if (firstH > 0 && (remeasure || rowHeightRef.current === 0)) {
+      setRowHeight(firstH);
     }
     const h = rowHeightRef.current;
     if (!scroller || h <= 0) return;
     const { height: clipHeight } = visibleClip(scroller, 0, window.innerHeight);
     const total = Math.max(0, data.length - 1);
+    const minH = minDataRowHeight(table) || h;
     setPageSize(
-      Math.min(pageSizeForView(h, clipHeight), Math.max(1, total || 1))
+      Math.min(pageSizeForView(minH, clipHeight), Math.max(1, total || 1))
     );
   };
 

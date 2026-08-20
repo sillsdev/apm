@@ -30,6 +30,10 @@ describe('pageSizeForView', () => {
     expect(pageSizeForView(48, 480)).toBe(10);
     expect(pageSizeForView(48, 700)).toBe(Math.ceil(700 / 48));
   });
+
+  it('over-mounts when sized from the short row, not the tall section row', () => {
+    expect(pageSizeForView(41, 532)).toBeGreaterThan(pageSizeForView(106, 532));
+  });
 });
 
 describe('minDataRowHeight', () => {
