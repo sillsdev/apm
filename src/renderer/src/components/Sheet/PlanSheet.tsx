@@ -569,7 +569,7 @@ export function PlanSheet(props: IProps) {
     if (firstH > 0 && (remeasure || rowHeightRef.current === 0)) {
       setRowHeight(firstH);
     }
-    const h = rowHeightRef.current;
+    const h = rowHeightRef.current; //set by setRowHeight
     if (!scroller || h <= 0) return;
     const { height: clipHeight } = visibleClip(scroller, 0, window.innerHeight);
     const total = Math.max(0, data.length - 1);
