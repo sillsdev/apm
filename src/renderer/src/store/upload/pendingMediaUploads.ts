@@ -53,24 +53,13 @@ function savePendingMediaUploads(items: PendingUploadRecord[]): void {
   }
 }
 
-export function pendingUploadIdentityKey(
-  record: PendingUploadIdentity
-): string {
+function pendingUploadIdentityKey(record: PendingUploadIdentity): string {
   return [
     record.planId || '',
     record.passageId || '',
     record.artifactTypeId || '',
     record.originalFile || '',
   ].join('\0');
-}
-
-export function findMatchingPendingUploads(
-  identity: PendingUploadIdentity
-): PendingUploadRecord[] {
-  const key = pendingUploadIdentityKey(identity);
-  return loadPendingMediaUploads().filter(
-    (p) => pendingUploadIdentityKey(p.record) === key
-  );
 }
 
 export function removeMatchingPendingUploads(
