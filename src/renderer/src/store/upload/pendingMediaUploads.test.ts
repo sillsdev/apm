@@ -2,6 +2,7 @@ import { UploadType } from '../../components/UploadType';
 import {
   appendPendingMediaUpload,
   loadPendingMediaUploads,
+  removeMatchingPendingUploads,
   type PendingUploadMediaRecord,
   updatePendingMediaUpload,
 } from './pendingMediaUploads';
@@ -93,5 +94,58 @@ describe('pendingMediaUploads', () => {
 
     expect(loadPendingMediaUploads()).toHaveLength(2);
     expect(localStorage.getItem(STORAGE_KEY)).toBeTruthy();
+  });
+
+  it('removeMatchingPendingUploads removes same identity even when paths differ', () => {
+    appendPendingMediaUpload({
+      localAbsolutePath: '/a/file.mp3',
+      fileSize: 100,
+      uploadType: UploadType.Media,
+      record: baseRecord,
+    });
+    appendPendingMediaUpload({
+      localAbsolutePath: '/b/file.mp3',
+      fileSize: 100,
+      uploadType: UploadType.Media,
+      record: baseRecord,
+    });
+    expect(loadPendingMediaUploads()).toHaveLength(2);
+
+    const removed = removeMatchingPendingUploads({
+      planId: 'plan-1',
+      passageId: 'passage-1',
+      artifactTypeId: '',
+      originalFile: 'audio.mp3',
+    });
+
+    expect(removed).toBe(2);
+    expect(loadPendingMediaUploads()).toHaveLength(0);
+  });
+
+  it('removeMatchingPendingUploads keeps rows with a different passage or file', () => {
+    appendPendingMediaUpload({
+      localAbsolutePath: '/a/file.mp3',
+      fileSize: 100,
+      uploadType: UploadType.Media,
+      record: baseRecord,
+    });
+    appendPendingMediaUpload({
+      localAbsolutePath: '/b/other.mp3',
+      fileSize: 50,
+      uploadType: UploadType.Media,
+      record: { ...baseRecord, originalFile: 'other.mp3', passageId: 'passage-2' },
+    });
+
+    const removed = removeMatchingPendingUploads({
+      planId: 'plan-1',
+      passageId: 'passage-1',
+      artifactTypeId: '',
+      originalFile: 'audio.mp3',
+    });
+
+    expect(removed).toBe(1);
+    const remaining = loadPendingMediaUploads();
+    expect(remaining).toHaveLength(1);
+    expect(remaining[0].record.originalFile).toBe('other.mp3');
   });
 });
