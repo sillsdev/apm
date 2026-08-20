@@ -90,6 +90,7 @@ import {
   isSheetScrollTarget,
   overflowScrollParent,
   overscanOf,
+  minDataRowHeight,
   pageSizeForView,
   scrollTopFloorForPad,
   sheetWindow,
@@ -564,11 +565,16 @@ export function PlanSheet(props: IProps) {
     const table = sheetRef.current?.querySelector(
       'table.data-grid'
     ) as HTMLTableElement | null;
-    const h =
-      (!remeasure && rowHeightRef.current) ||
-      table?.rows?.[1]?.offsetHeight ||
-      0;
-    if (h > 0) setRowHeight(h);
+    const measured = minDataRowHeight(table);
+    if (
+      measured > 0 &&
+      (remeasure ||
+        rowHeightRef.current === 0 ||
+        measured < rowHeightRef.current)
+    ) {
+      setRowHeight(measured);
+    }
+    const h = rowHeightRef.current;
     if (!scroller || h <= 0) return;
     const { height: clipHeight } = visibleClip(scroller, 0, window.innerHeight);
     const total = Math.max(0, data.length - 1);
@@ -931,23 +937,30 @@ export function PlanSheet(props: IProps) {
     if (currentRowRef.current === 0) {
       setPasting(true);
       showMessage(t.pasting);
-      const retVal = paste(cleanClipboard(clipBoard));
-      setPasting(false);
-      return retVal;
+      try {
+        return paste(cleanClipboard(clipBoard));
+      } finally {
+        setPasting(false);
+      }
     }
     return cleanClipboard(clipBoard);
   };
   const handleTablePaste = () => {
-    if (typeof navigator.clipboard.readText === 'function') {
-      setPasting(true);
-      showMessage(t.pasting);
-      navigator.clipboard.readText().then((clipText) => {
-        paste(cleanClipboard(clipText));
-        setPasting(false);
-      });
-    } else {
+    if (typeof navigator.clipboard.readText !== 'function') {
       showMessage(t.useCtrlV);
+      return;
     }
+    setPasting(true);
+    showMessage(t.pasting);
+    void navigator.clipboard
+      .readText()
+      .then((clipText) => {
+        paste(cleanClipboard(clipText));
+      })
+      .catch(() => {
+        showMessage(t.useCtrlV);
+      })
+      .finally(() => setPasting(false));
   };
   const handleResequence = () => {
     resequence();

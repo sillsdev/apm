@@ -32,6 +32,18 @@ export const pageSizeForView = (rowHeight: number, clipHeight: number) =>
     ? 1
     : Math.max(1, Math.ceil(Math.max(0, clipHeight) / rowHeight));
 
+/** Shortest data-row height (header excluded). Section rows are taller. */
+export const minDataRowHeight = (table: HTMLTableElement | null) => {
+  const rows = table?.rows;
+  if (!rows || rows.length < 2) return 0;
+  let min = 0;
+  for (let i = 1; i < rows.length; i++) {
+    const h = rows[i].offsetHeight;
+    if (h > 0 && (min === 0 || h < min)) min = h;
+  }
+  return min;
+};
+
 const clipsY = (oy: string) =>
   oy === 'auto' || oy === 'scroll' || oy === 'hidden';
 
