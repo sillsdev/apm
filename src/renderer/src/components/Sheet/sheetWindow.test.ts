@@ -3,6 +3,7 @@ import {
   isSheetScrollTarget,
   overflowScrollParent,
   overscanOf,
+  minDataRowHeight,
   pageSizeForView,
   scrollTopFloorForPad,
   sheetWindow,
@@ -28,6 +29,22 @@ describe('pageSizeForView', () => {
   it('ceils visible clip height to a whole number of rows', () => {
     expect(pageSizeForView(48, 480)).toBe(10);
     expect(pageSizeForView(48, 700)).toBe(Math.ceil(700 / 48));
+  });
+
+  it('over-mounts when sized from the short row, not the tall section row', () => {
+    expect(pageSizeForView(41, 532)).toBeGreaterThan(pageSizeForView(106, 532));
+  });
+});
+
+describe('minDataRowHeight', () => {
+  it('skips the header and uses the shortest data row', () => {
+    const table = document.createElement('table');
+    for (const h of [22, 106, 41, 64]) {
+      const tr = table.insertRow();
+      Object.defineProperty(tr, 'offsetHeight', { value: h });
+    }
+    expect(minDataRowHeight(table)).toBe(41);
+    expect(minDataRowHeight(null)).toBe(0);
   });
 });
 

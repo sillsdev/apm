@@ -90,6 +90,7 @@ import {
   isSheetScrollTarget,
   overflowScrollParent,
   overscanOf,
+  minDataRowHeight,
   pageSizeForView,
   scrollTopFloorForPad,
   sheetWindow,
@@ -341,7 +342,7 @@ export function PlanSheet(props: IProps) {
   const sheetScrollRafRef = useRef(0);
   const topPadElRef = useRef<HTMLDivElement>(null);
   const rowHeightRef = useRef(0);
-  const [rowHeight, setRowHeightx] = useState(0); // locked after first measure
+  const [rowHeight, setRowHeightx] = useState(0); // pad/scroll; locked after first measure
   const pageSizeRef = useRef(1);
   const [pageSize, setPageSizex] = useState(1);
   const setRowHeight = (h: number) => {
@@ -564,16 +565,17 @@ export function PlanSheet(props: IProps) {
     const table = sheetRef.current?.querySelector(
       'table.data-grid'
     ) as HTMLTableElement | null;
-    const h =
-      (!remeasure && rowHeightRef.current) ||
-      table?.rows?.[1]?.offsetHeight ||
-      0;
-    if (h > 0) setRowHeight(h);
+    const firstH = table?.rows?.[1]?.offsetHeight || 0;
+    if (firstH > 0 && (remeasure || rowHeightRef.current === 0)) {
+      setRowHeight(firstH);
+    }
+    const h = rowHeightRef.current; //set by setRowHeight
     if (!scroller || h <= 0) return;
     const { height: clipHeight } = visibleClip(scroller, 0, window.innerHeight);
     const total = Math.max(0, data.length - 1);
+    const minH = minDataRowHeight(table) || h;
     setPageSize(
-      Math.min(pageSizeForView(h, clipHeight), Math.max(1, total || 1))
+      Math.min(pageSizeForView(minH, clipHeight), Math.max(1, total || 1))
     );
   };
 
@@ -931,23 +933,30 @@ export function PlanSheet(props: IProps) {
     if (currentRowRef.current === 0) {
       setPasting(true);
       showMessage(t.pasting);
-      const retVal = paste(cleanClipboard(clipBoard));
-      setPasting(false);
-      return retVal;
+      try {
+        return paste(cleanClipboard(clipBoard));
+      } finally {
+        setPasting(false);
+      }
     }
     return cleanClipboard(clipBoard);
   };
   const handleTablePaste = () => {
-    if (typeof navigator.clipboard.readText === 'function') {
-      setPasting(true);
-      showMessage(t.pasting);
-      navigator.clipboard.readText().then((clipText) => {
-        paste(cleanClipboard(clipText));
-        setPasting(false);
-      });
-    } else {
+    if (typeof navigator.clipboard.readText !== 'function') {
       showMessage(t.useCtrlV);
+      return;
     }
+    setPasting(true);
+    showMessage(t.pasting);
+    void navigator.clipboard
+      .readText()
+      .then((clipText) => {
+        paste(cleanClipboard(clipText));
+      })
+      .catch(() => {
+        showMessage(t.useCtrlV);
+      })
+      .finally(() => setPasting(false));
   };
   const handleResequence = () => {
     resequence();
