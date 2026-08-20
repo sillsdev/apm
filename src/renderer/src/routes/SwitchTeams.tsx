@@ -5,8 +5,6 @@ import {
   Card,
   CardActionArea,
   IconButton,
-  SxProps,
-  Theme,
   Typography,
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
@@ -15,7 +13,7 @@ import GroupIcon from '@mui/icons-material/Group';
 import PersonIcon from '@mui/icons-material/Person';
 import SettingsIcon from '@mui/icons-material/Settings';
 import { DialogMode } from '../model';
-import { Button, columnSx, rowSx, spreadSx, asSxArray } from '../control';
+import { Button, columnSx, rowSx, spreadSx } from '../control';
 import { BigDialogBp } from '../hoc/BigDialogBp';
 import { TeamProvider, TeamContext } from '../context/TeamContext';
 import { useGlobal } from '../context/useGlobal';
@@ -47,12 +45,10 @@ const TeamCard = ({ label, teamId, name, onOpenSettings }: ITeamCardProps) => {
 
   const teamRec = teams.find((tm) => tm.id === teamId);
   const isPersonalTeam = teamId === personalTeam;
-  const showSettings = isPersonalTeam || (teamRec && isAdmin(teamRec));
-
-  // Personal teams are always eligible for settings; other teams require admin access.
-  // The button is only rendered when team settings can be modified in the current
-  // connectivity mode (online, or offlineOnly).
-  const canModifyTeamSettings = (!offline && connected) || offlineOnly;
+  const showSettings =
+    (isPersonalTeam || (teamRec && isAdmin(teamRec))) &&
+    ((!offline && connected) || offlineOnly) &&
+    !isMobileWidth;
 
   return (
     <Card
@@ -74,9 +70,11 @@ const TeamCard = ({ label, teamId, name, onOpenSettings }: ITeamCardProps) => {
         }}
         sx={{ p: 1.5 }}
       >
-        <Typography noWrap>{name}</Typography>
+        <Box sx={{ mr: showSettings ? '30px' : 0 }}>
+          <Typography noWrap>{name}</Typography>
+        </Box>
       </CardActionArea>
-      {showSettings && !isMobileWidth && canModifyTeamSettings && (
+      {showSettings && (
         <Box
           sx={{
             position: 'absolute',
@@ -108,20 +106,13 @@ interface ITeamSectionProps {
   title: string;
   testId: string;
   children: React.ReactNode;
-  sx?: SxProps<Theme>;
 }
 
-const TeamSection = ({
-  icon,
-  title,
-  testId,
-  children,
-  sx,
-}: ITeamSectionProps) => {
+const TeamSection = ({ icon, title, testId, children }: ITeamSectionProps) => {
   return (
-    <Box data-testid={testId} sx={[columnSx, ...asSxArray(sx)]}>
+    <Box data-testid={testId} sx={columnSx}>
       <Box sx={[rowSx, { alignItems: 'center' }]}>
-        <Box sx={{ display: 'flex', color: 'custom.black' }}>{icon}</Box>
+        <Box sx={{ display: 'flex', py: 1, color: 'custom.black' }}>{icon}</Box>
         <Typography noWrap sx={{ fontSize: 'large' }}>
           {title}
         </Typography>
@@ -277,7 +268,6 @@ export const SwitchTeamsInner = () => {
               icon={<PersonIcon />}
               title={t?.personal}
               testId="personal-section"
-              sx={{ mt: theme.layout.gap }}
             >
               <TeamCard
                 label="personal"
@@ -290,7 +280,6 @@ export const SwitchTeamsInner = () => {
               icon={<GroupIcon />}
               title={t?.teams}
               testId="teams-section"
-              sx={{ mt: theme.layout.gap }}
             >
               {teams.map((tm) => (
                 <TeamCard
