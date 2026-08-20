@@ -257,7 +257,7 @@ export function PendingUploadsDialog(props: IProps) {
         <Button onClick={onClose}>{ts.close}</Button>
         <Button
           variant="contained"
-          disabled={retryDisabled || items.length === 0}
+          disabled={retryDisabled || items.length <= 1}
           onClick={handleRetryAll}
         >
           {t.pendingUploadBatchRetry}
