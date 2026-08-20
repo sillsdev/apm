@@ -1,70 +1,33 @@
-import React from 'react';
+import { useState, useContext, useEffect, useMemo } from 'react';
 import { RecordIdentity } from '@orbit/records';
 import {
   Box,
   Card,
-  Stack,
-  Typography,
-  Button,
+  CardActionArea,
   IconButton,
+  SxProps,
+  Theme,
+  Typography,
 } from '@mui/material';
-import { DialogMode, ICardsStrings } from '../model';
-import { shallowEqual, useSelector } from 'react-redux';
-import { cardsSelector } from '../selector';
-import TeamDialog, { ITeamDialog } from '../components/Team/TeamDialog';
-import { useMyNavigate } from '../utils/useMyNavigate';
-import { LocalKey, localUserKey, useMobile } from '../utils';
-import { BigDialogBp } from '../hoc/BigDialogBp';
-import ImportTab from '../components/ImportTab';
+import { useTheme } from '@mui/material/styles';
 import AddIcon from '@mui/icons-material/Add';
+import GroupIcon from '@mui/icons-material/Group';
+import PersonIcon from '@mui/icons-material/Person';
 import SettingsIcon from '@mui/icons-material/Settings';
-import AppLayout from '../components/App/AppLayout';
-import { useTheme, alpha } from '@mui/material/styles';
-import { TeamProvider } from '../context/TeamContext';
-import { TeamContext } from '../context/TeamContext';
+import { DialogMode } from '../model';
+import { Button, columnSx, rowSx, spreadSx, asSxArray } from '../control';
+import { BigDialogBp } from '../hoc/BigDialogBp';
+import { TeamProvider, TeamContext } from '../context/TeamContext';
 import { useGlobal } from '../context/useGlobal';
-import { useTeamActions } from '../components/Team/useTeamActions';
-import { SharedContentCreatorDialog } from '../components/Team/SharedContentCreatorDialog';
+import AppLayout from '../components/App/AppLayout';
+import ContentLayout from '../components/App/ContentLayout';
+import ImportTab from '../components/ImportTab';
 import StickyRedirect from '../components/StickyRedirect';
+import { SharedContentCreatorDialog } from '../components/Team/SharedContentCreatorDialog';
+import TeamDialog, { ITeamDialog } from '../components/Team/TeamDialog';
+import { useTeamActions } from '../components/Team/useTeamActions';
+import { LocalKey, localUserKey, useMobile, useMyNavigate } from '../utils';
 import { useIsPapLike } from '../utils/useIsPapLike';
-
-interface ISettingsButtonProps {
-  label: string;
-  onOpenSettings: () => void;
-}
-
-const SettingsButton = ({ label, onOpenSettings }: ISettingsButtonProps) => {
-  const theme = useTheme();
-  const bgColor = theme.palette.primary.light;
-  const contrastColor = theme.palette.getContrastText(bgColor);
-  const { isMobile } = useMobile();
-
-  return (
-    <IconButton
-      size="small"
-      aria-label={label + ' settings'}
-      onClick={(e) => {
-        e.stopPropagation();
-        onOpenSettings();
-      }}
-      sx={(theme) => ({
-        color: isMobile ? 'inherit' : theme.palette.primary.light,
-        transition: 'background-color .2s, color .2s',
-        '&:hover': {
-          color: contrastColor,
-          backgroundColor: alpha(theme.palette.common.white, 0.25),
-        },
-        '&:focus-visible': {
-          color: contrastColor,
-          backgroundColor: alpha(theme.palette.common.white, 0.4),
-        },
-      })}
-      data-testid={label + '-settings'}
-    >
-      <SettingsIcon fontSize="small" />
-    </IconButton>
-  );
-};
 
 interface ITeamCardProps {
   label: string;
@@ -72,115 +35,113 @@ interface ITeamCardProps {
   name: string;
   onOpenSettings: () => void;
 }
+
 const TeamCard = ({ label, teamId, name, onOpenSettings }: ITeamCardProps) => {
-  const theme = useTheme();
-  const bgColor = theme.palette.primary.light;
-  const contrastColor = theme.palette.getContrastText(bgColor);
-  const navigate = useMyNavigate();
-  const ctx = React.useContext(TeamContext);
+  const ctx = useContext(TeamContext);
   const { isAdmin, teams, personalTeam } = ctx.state;
-  const teamRec = teams.find((t) => t.id === teamId);
-  const { isMobile } = useMobile();
-  const [isOffline] = useGlobal('offline');
-  const [offlineOnly] = useGlobal('offlineOnly');
+  const { isMobileWidth } = useMobile();
+  const navigate = useMyNavigate();
+  const [offline] = useGlobal('offline');
   const [connected] = useGlobal('connected');
+  const [offlineOnly] = useGlobal('offlineOnly');
+
+  const teamRec = teams.find((tm) => tm.id === teamId);
+  const isPersonalTeam = teamId === personalTeam;
+  const showSettings = isPersonalTeam || (teamRec && isAdmin(teamRec));
+
   // Personal teams are always eligible for settings; other teams require admin access.
   // The button is only rendered when team settings can be modified in the current
   // connectivity mode (online, or offlineOnly).
-  const isPersonalTeam = teamId === personalTeam;
-  const showSettings = isPersonalTeam || (teamRec && isAdmin(teamRec));
-  const canModifyTeamSettings = (!isOffline && connected) || offlineOnly;
+  const canModifyTeamSettings = (!offline && connected) || offlineOnly;
 
   return (
     <Card
-      sx={{ bgcolor: bgColor, color: contrastColor, p: 0 }}
-      elevation={1}
       data-testid={label + '-row'}
-      onClick={() => {
-        localStorage.setItem(localUserKey(LocalKey.team), teamId);
-        navigate('/team');
+      sx={{
+        position: 'relative',
+        display: 'flex',
+        alignItems: 'stretch',
+        justifyContent: 'center',
+        height: '100%',
+        bgcolor: 'primary.light',
+        color: 'primary.contrastText',
       }}
-      style={{ cursor: 'pointer' }}
     >
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          minHeight: 56,
-          px: 2,
+      <CardActionArea
+        onClick={() => {
+          localStorage.setItem(localUserKey(LocalKey.team), teamId);
+          navigate('/team');
         }}
+        sx={{ p: 1.5 }}
       >
-        <Typography
+        <Typography noWrap>{name}</Typography>
+      </CardActionArea>
+      {showSettings && !isMobileWidth && canModifyTeamSettings && (
+        <Box
           sx={{
-            flexGrow: 1,
-            display: 'flex',
-            alignItems: 'center',
-            color: 'inherit',
-            fontWeight: 500,
-            lineHeight: 1.2,
+            position: 'absolute',
+            top: '50%',
+            right: 1,
+            transform: 'translateY(-50%)',
           }}
         >
-          {name}
-        </Typography>
-        {showSettings && !isMobile && canModifyTeamSettings && (
-          <SettingsButton label={label} onOpenSettings={onOpenSettings} />
-        )}
-      </Box>
+          <IconButton
+            size="small"
+            aria-label={label + ' settings'}
+            onClick={(e) => {
+              e.stopPropagation();
+              onOpenSettings();
+            }}
+            data-testid={label + '-settings'}
+            color="inherit"
+          >
+            <SettingsIcon sx={{ p: 0.5 }} />
+          </IconButton>
+        </Box>
+      )}
     </Card>
   );
 };
 
-interface IPersonalSectionProps {
-  onOpenSettings: () => void;
+interface ITeamSectionProps {
+  icon: React.ReactNode;
+  title: string;
+  testId: string;
+  children: React.ReactNode;
+  sx?: SxProps<Theme>;
 }
-const PersonalSection = ({ onOpenSettings }: IPersonalSectionProps) => {
-  const ctx = React.useContext(TeamContext);
-  const { personalTeam } = ctx.state;
-  const cardStrings: ICardsStrings = useSelector(cardsSelector, shallowEqual);
 
+const TeamSection = ({
+  icon,
+  title,
+  testId,
+  children,
+  sx,
+}: ITeamSectionProps) => {
   return (
-    <Stack spacing={1} data-testid="personal-section">
-      <Typography variant="h6">
-        {cardStrings?.personal || 'Personal'}
-      </Typography>
-      <TeamCard
-        label="personal"
-        teamId={personalTeam}
-        name={cardStrings?.personalProjects || 'Personal Audio Projects'}
-        onOpenSettings={onOpenSettings}
-      />
-    </Stack>
+    <Box data-testid={testId} sx={[columnSx, ...asSxArray(sx)]}>
+      <Box sx={[rowSx, { alignItems: 'center' }]}>
+        <Box sx={{ display: 'flex', color: 'custom.black' }}>{icon}</Box>
+        <Typography noWrap sx={{ fontSize: 'large' }}>
+          {title}
+        </Typography>
+      </Box>
+      <Box sx={columnSx}>{children}</Box>
+    </Box>
   );
 };
 
-interface ITeamsSectionProps {
-  onOpenSettings: (teamId: string) => void;
-}
-const TeamsSection = ({ onOpenSettings }: ITeamsSectionProps) => {
-  const ctx = React.useContext(TeamContext);
-  const { teams } = ctx.state;
-  const cardStrings: ICardsStrings = useSelector(cardsSelector, shallowEqual);
-
-  return (
-    <Stack spacing={1} data-testid="teams-section">
-      <Typography variant="h6">{cardStrings?.teams || 'Teams'}</Typography>
-      <Stack spacing={1}>
-        {teams.map((t) => (
-          <TeamCard
-            key={t.id}
-            label="team"
-            teamId={t.id}
-            name={t.attributes?.name || 'Unnamed Team'}
-            onOpenSettings={() => onOpenSettings(t.id)}
-          />
-        ))}
-      </Stack>
-    </Stack>
-  );
-};
-
-// Floating actions cluster: Add Team, Import, Shared Content Creator, Error (developer)
-const FloatingActions = () => {
+/**
+ * Team picker screen.
+ *
+ * Work Alone / PAP-like users have only a personal team, so there is nothing to
+ * pick: they are redirected to team home before the picker renders.
+ */
+export const SwitchTeamsInner = () => {
+  const isPapLike = useIsPapLike();
+  const theme = useTheme();
+  const ctx = useContext(TeamContext);
+  const { teams, personalTeam, teamUpdate, teamDelete } = ctx.state;
   const {
     t,
     offline,
@@ -206,208 +167,44 @@ const FloatingActions = () => {
     handleSharedContentClick,
   } = useTeamActions();
 
-  return (
-    <>
-      <Box
-        sx={{
-          position: 'fixed',
-          bottom: 32,
-          left: 0,
-          right: 0,
-          display: 'flex',
-          justifyContent: 'center',
-          pointerEvents: 'none',
-        }}
-      >
-        <Stack
-          direction="row"
-          spacing={2}
-          sx={{ pointerEvents: 'auto', alignItems: 'center' }}
-        >
-          <Box
-            sx={{
-              display: 'inline-grid',
-              gridAutoFlow: 'column',
-              gridAutoColumns: '1fr',
-              alignItems: 'center',
-              gap: 2,
-            }}
-          >
-            {!offline && connected && (
-              <Button
-                id="TeamActAdd"
-                data-testid="add-team-button"
-                variant="outlined"
-                onClick={handleAddClick}
-                sx={(theme) => ({
-                  bgcolor: theme.palette.common.white,
-                })}
-              >
-                {t.addTeam}
-              </Button>
-            )}
-            <Button
-              id="teamActImport"
-              data-testid="import-button"
-              variant="outlined"
-              onClick={handleImportClick}
-              sx={(theme) => ({
-                bgcolor: theme.palette.common.white,
-              })}
-            >
-              {t.import}
-            </Button>
-          </Box>
-          {!offline && userIsSharedContentAdmin && (
-            <Button
-              id="contentCreator"
-              variant="outlined"
-              onClick={handleContentClick}
-              sx={(theme) => ({
-                minWidth: 48,
-                px: 1,
-                bgcolor: theme.palette.common.white,
-              })}
-            >
-              <AddIcon fontSize="small" />
-            </Button>
-          )}
-          {isDeveloper && (
-            <Button
-              id="Error"
-              variant="outlined"
-              onClick={() => navigate('/error')}
-              sx={(theme) => ({
-                minWidth: 80,
-                bgcolor: theme.palette.common.white,
-              })}
-            >
-              Error
-            </Button>
-          )}
-        </Stack>
-      </Box>
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settingsTeamId, setSettingsTeamId] = useState<string | undefined>();
 
-      <TeamDialog
-        mode={DialogMode.add}
-        isOpen={openAdd}
-        onOpen={handleAdded}
-        onCommit={handleAddCommit}
-        disabled={isDeleting}
-      />
-
-      <SharedContentCreatorDialog
-        isOpen={openContent}
-        onOpen={handleContentDone}
-        onSave={validEmail ? handleSharedContentClick : undefined}
-        onCancel={handleContentDone}
-        title={t.creatorAdd}
-        creatorEmail={t.creatorEmail}
-        bp={BigDialogBp.mobile}
-        email={email}
-        onEmailChange={handleEmailChange}
-        validEmail={validEmail}
-        contentStatus={contentStatus}
-      />
-
-      {importOpen && (
-        <ImportTab
-          isOpen={importOpen}
-          onOpen={setImportOpen}
-          offerPtf={!offline}
-        />
-      )}
-    </>
-  );
-};
-
-// Settings context to expose open handlers
-interface ISettingsHandlers {
-  openSettingsForTeam: (id: string) => void;
-  openSettingsForPersonal: () => void;
-}
-const SettingsHandlersContext = React.createContext<
-  ISettingsHandlers | undefined
->(undefined);
-
-const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({
-  children,
-}) => {
-  const ctx = React.useContext(TeamContext);
-  const { teamUpdate, teamDelete, personalTeam, isDeleting } = ctx.state;
-  const [open, setOpen] = React.useState(false);
-  const [teamId, setTeamId] = React.useState<string | undefined>();
-
-  const selectedTeam = React.useMemo(() => {
-    if (!teamId) return undefined;
-    const organizations = ctx.state.teams || [];
-    const org = organizations.find((o) => o.id === teamId);
+  const selectedTeam = useMemo(() => {
+    if (!settingsTeamId) return undefined;
+    const org = (teams || []).find((o) => o.id === settingsTeamId);
     if (org) return org;
-    if (teamId === personalTeam)
+    if (settingsTeamId === personalTeam)
       return {
         id: personalTeam,
         type: 'organization',
         attributes: { name: 'Personal' },
       } as any;
     return undefined;
-  }, [teamId, ctx.state.teams, personalTeam]);
+  }, [settingsTeamId, teams, personalTeam]);
 
   const openSettingsForTeam = (id: string) => {
-    setTeamId(id);
-    setOpen(true);
+    setSettingsTeamId(id);
+    setSettingsOpen(true);
   };
   const openSettingsForPersonal = () => {
-    setTeamId(personalTeam);
-    setOpen(true);
+    setSettingsTeamId(personalTeam);
+    setSettingsOpen(true);
   };
-  const handleClose = () => {
-    setOpen(false);
+  const handleSettingsClose = () => {
+    setSettingsOpen(false);
   };
-  const handleCommit = (value: ITeamDialog) => {
+  const handleSettingsCommit = (value: ITeamDialog) => {
     teamUpdate(value.team as any);
-    handleClose();
+    handleSettingsClose();
   };
-  const handleDelete = async (team: RecordIdentity) => {
+  const handleSettingsDelete = async (team: RecordIdentity) => {
     await teamDelete(team);
-    handleClose();
+    handleSettingsClose();
   };
-  const isPersonal = teamId === personalTeam;
+  const isPersonalSettings = settingsTeamId === personalTeam;
 
-  return (
-    <SettingsHandlersContext.Provider
-      value={{ openSettingsForTeam, openSettingsForPersonal }}
-    >
-      {selectedTeam && (
-        <TeamDialog
-          mode={DialogMode.edit}
-          isOpen={open}
-          onOpen={handleClose}
-          onCommit={(v) => handleCommit(v)}
-          values={{ team: selectedTeam } as any}
-          disabled={isDeleting}
-          {...(!isPersonal ? { onDelete: handleDelete } : {})}
-        />
-      )}
-      {children}
-    </SettingsHandlersContext.Provider>
-  );
-};
-
-const useSettingsHandlers = () => {
-  const ctx = React.useContext(SettingsHandlersContext);
-  if (!ctx) throw new Error('SettingsHandlersContext missing');
-  return ctx;
-};
-
-/** Work Alone / PAP-like: only personal team exists — redirect to team home instead of picker */
-export const SwitchTeamsGuard: React.FC<{ children: React.ReactNode }> = ({
-  children,
-}) => {
-  const ctx = React.useContext(TeamContext);
-  const { personalTeam } = ctx.state;
-  const isPapLike = useIsPapLike();
-
-  React.useEffect(() => {
+  useEffect(() => {
     if (!isPapLike || !personalTeam) return;
     const key = localUserKey(LocalKey.team);
     if (localStorage.getItem(key) !== personalTeam) {
@@ -423,56 +220,138 @@ export const SwitchTeamsGuard: React.FC<{ children: React.ReactNode }> = ({
     return <StickyRedirect to="/team" />;
   }
 
-  return <>{children}</>;
-};
-
-const MainTeamsLayout: React.FC = () => {
-  const { openSettingsForTeam, openSettingsForPersonal } =
-    useSettingsHandlers();
-
   return (
     <>
-      <Box
-        id="TeamsScreen"
-        sx={{
-          px: 2,
-          pb: 4,
-          maxWidth: 500,
-          mx: 'auto',
-        }}
+      <ContentLayout
+        header={
+          <Box sx={spreadSx}>
+            <Box sx={rowSx}>
+              {!offline && connected && (
+                <Button
+                  id="TeamActAdd"
+                  data-testid="add-team-button"
+                  onClick={handleAddClick}
+                >
+                  {t.addTeam}
+                </Button>
+              )}
+            </Box>
+            <Box sx={rowSx}>
+              <Button
+                id="teamActImport"
+                data-testid="import-button"
+                onClick={handleImportClick}
+              >
+                {t.import}
+              </Button>
+              {!offline && userIsSharedContentAdmin && (
+                <Button
+                  id="contentCreator"
+                  disableTypography
+                  onClick={handleContentClick}
+                >
+                  <AddIcon fontSize="small" />
+                </Button>
+              )}
+              {isDeveloper && (
+                <Button id="Error" onClick={() => navigate('/error')}>
+                  Error
+                </Button>
+              )}
+            </Box>
+          </Box>
+        }
+        drawBottomBorder
+        contentSx={{ p: theme.layout.gap }}
       >
-        <Stack spacing={4}>
-          <PersonalSection onOpenSettings={openSettingsForPersonal} />
-          <TeamsSection onOpenSettings={openSettingsForTeam} />
-        </Stack>
-      </Box>
-      <FloatingActions />
+        <Box
+          id="TeamsScreen"
+          sx={{
+            width: '100%',
+            maxWidth: 'sm',
+            mx: 'auto',
+          }}
+        >
+          <Box sx={columnSx}>
+            <TeamSection
+              icon={<PersonIcon />}
+              title={t?.personal}
+              testId="personal-section"
+              sx={{ mt: theme.layout.gap }}
+            >
+              <TeamCard
+                label="personal"
+                teamId={personalTeam}
+                name={t?.personalProjects}
+                onOpenSettings={openSettingsForPersonal}
+              />
+            </TeamSection>
+            <TeamSection
+              icon={<GroupIcon />}
+              title={t?.teams}
+              testId="teams-section"
+              sx={{ mt: theme.layout.gap }}
+            >
+              {teams.map((tm) => (
+                <TeamCard
+                  key={tm.id}
+                  label="team"
+                  teamId={tm.id}
+                  name={tm.attributes?.name}
+                  onOpenSettings={() => openSettingsForTeam(tm.id)}
+                />
+              ))}
+            </TeamSection>
+          </Box>
+        </Box>
+      </ContentLayout>
+      {selectedTeam && (
+        <TeamDialog
+          mode={DialogMode.edit}
+          isOpen={settingsOpen}
+          onOpen={handleSettingsClose}
+          onCommit={(v) => handleSettingsCommit(v)}
+          values={{ team: selectedTeam } as any}
+          disabled={isDeleting}
+          {...(!isPersonalSettings ? { onDelete: handleSettingsDelete } : {})}
+        />
+      )}
+      <TeamDialog
+        mode={DialogMode.add}
+        isOpen={openAdd}
+        onOpen={handleAdded}
+        onCommit={handleAddCommit}
+        disabled={isDeleting}
+      />
+      <SharedContentCreatorDialog
+        isOpen={openContent}
+        onOpen={handleContentDone}
+        onSave={validEmail ? handleSharedContentClick : undefined}
+        onCancel={handleContentDone}
+        title={t.creatorAdd}
+        creatorEmail={t.creatorEmail}
+        bp={BigDialogBp.mobile}
+        email={email}
+        onEmailChange={handleEmailChange}
+        validEmail={validEmail}
+        contentStatus={contentStatus}
+      />
+      {importOpen && (
+        <ImportTab
+          isOpen={importOpen}
+          onOpen={setImportOpen}
+          offerPtf={!offline}
+        />
+      )}
     </>
   );
 };
 
-export const SwitchTeams: React.FC = () => {
+export const SwitchTeams = () => {
   return (
     <TeamProvider>
-      <AppLayout>
-        <SwitchTeamsGuard>
-          <SettingsProvider>
-            <MainTeamsLayout />
-          </SettingsProvider>
-        </SwitchTeamsGuard>
-      </AppLayout>
-    </TeamProvider>
-  );
-};
-
-/** Same UI as the route without the PAP-like redirect; CT uses empty orbit data so `teams` stays []. */
-export const SwitchTeamsUnguarded: React.FC = () => {
-  return (
-    <TeamProvider>
-      <AppLayout>
-        <SettingsProvider>
-          <MainTeamsLayout />
-        </SettingsProvider>
+      <AppLayout appHeadProps={{ drawBottomBorder: false }}>
+        <SwitchTeamsInner />
       </AppLayout>
     </TeamProvider>
   );
