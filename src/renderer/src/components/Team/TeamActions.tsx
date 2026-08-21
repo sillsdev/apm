@@ -9,7 +9,7 @@ import {
   pendingMediaUploadCount,
   subscribePendingMediaUploads,
 } from '../../store/upload/pendingMediaUploads';
-import { Button } from '../../control';
+import { Button, columnSx } from '../../control';
 import { BigDialogBp } from '../../hoc/BigDialogBp';
 import ImportTab from '../ImportTab';
 import TeamDialog from './TeamDialog';
@@ -52,13 +52,7 @@ export default function TeamActions() {
   );
 
   return (
-    <Box
-      sx={(theme) => ({
-        display: 'flex',
-        flexDirection: 'column',
-        gap: theme.layout.gap,
-      })}
-    >
+    <Box sx={columnSx}>
       {((!offline && connected) || offlineOnly) && (
         <Button id="TeamActAdd" onClick={handleAddClick}>
           {t.addTeam}
