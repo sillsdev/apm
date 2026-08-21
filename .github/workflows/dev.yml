@@ -13,7 +13,7 @@ on:
 
 env:
   # Build version pattern (using GitHub run number instead of build counter)
-  BUILD_VERSION: '4.4.3.${{ github.run_number }}'
+  BUILD_VERSION: '4.5.1.${{ github.run_number }}'
 
   # Environment variables from TeamCity params
   COMMUNITY: 'https://community.scripture.software.sil.org/c/transcriber'
@@ -59,10 +59,12 @@ jobs:
       - name: Setup Volta
         uses: volta-cli/action@v4
 
-      - name: Install Node.js 22
+      - name: Install Node.js 22 npm 12
         run: |
           volta install node@22
           node --version
+          volta install npm@12
+          npm --version
 
       - name: Clean up memory (kill any existing node processes)
         run: |
@@ -148,10 +150,12 @@ jobs:
       - name: Setup Volta
         uses: volta-cli/action@v4
 
-      - name: Install Node.js 22
+      - name: Install Node.js 22 npm 12
         run: |
           volta install node@22
           node --version
+          volta install npm@12
+          npm --version
 
       - name: Clean up memory (kill any existing node processes)
         run: |
