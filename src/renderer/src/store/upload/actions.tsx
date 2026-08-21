@@ -373,7 +373,7 @@ export const nextUpload =
             'performed-by': mediaA.performedBy,
             topic: mediaA.topic,
             transcription: mediaA.transcription,
-            'language-bcp47': mediaA.languagebcp47,
+            languagebcp47: mediaA.languagebcp47,
           },
           relationships: {
             'last-modified-by-user': {
