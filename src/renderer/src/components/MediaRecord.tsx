@@ -679,7 +679,9 @@ function MediaRecord(props: IProps) {
   const handleLoadAudio = async () => {
     if (loading || !mediaId) return;
     setLoading(true);
-    setStatusText(ts.loading);
+    // No status text here: setLoading(true) already puts the "Loading..."
+    // overlay on the waveform below (TT-7570).
+    setStatusText('');
     reset();
 
     try {
