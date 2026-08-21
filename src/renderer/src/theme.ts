@@ -31,17 +31,20 @@ declare module '@mui/material/styles' {
   }
   interface Theme {
     layout: {
-      gap: ResponsiveStyleValue<number>;
+      gap: number;
+      p: ResponsiveStyleValue<number>;
     };
   }
   interface ThemeOptions {
     layout?: {
-      gap: ResponsiveStyleValue<number>;
+      gap: number;
+      p: ResponsiveStyleValue<number>;
     };
   }
 }
 
-const LAYOUT_GAP: ResponsiveStyleValue<number> = { xs: 1, sm: 1.5 };
+export const LAYOUT_GAP = 1.5;
+export const LAYOUT_P: ResponsiveStyleValue<number> = { xs: 1, sm: 1.5 };
 
 const colors = {
   primary: '#135cb9',
@@ -110,6 +113,7 @@ export const createAppTheme = (lang: string) =>
       },
       layout: {
         gap: LAYOUT_GAP,
+        p: LAYOUT_P,
       },
       typography: {
         button: {
