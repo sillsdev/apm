@@ -23,6 +23,7 @@ import {
   Typography,
   debounce,
   styled,
+  useTheme,
 } from '@mui/material';
 import ClearIcon from '@mui/icons-material/Clear';
 import PublishOffIcon from '@mui/icons-material/PublicOffOutlined';
@@ -313,6 +314,7 @@ export function PlanSheet(props: IProps) {
     onWarning,
     disablePublishingRows,
   } = props;
+  const theme = useTheme();
   const ctx = useContext(PlanContext);
   const {
     hidePublishing,
@@ -1466,7 +1468,7 @@ export function PlanSheet(props: IProps) {
         </Box>
       }
       drawBottomBorder={true}
-      contentSx={(theme) => ({ p: theme.layout.gap, position: 'relative' })}
+      contentSx={{ p: theme.layout.gap, position: 'relative' }}
       contentRef={scrollRef}
     >
       <Dialog open={goToOpen} onClose={() => setGoToOpen(false)} maxWidth="sm">

@@ -10,7 +10,7 @@ import React, {
 } from 'react';
 import { shallowEqual, useDispatch, useSelector } from 'react-redux';
 import { useParams } from 'react-router-dom';
-import { Badge, Box, Typography } from '@mui/material';
+import { Badge, Box, Typography, useTheme } from '@mui/material';
 import JSONAPISource from '@orbit/jsonapi';
 import Memory from '@orbit/memory';
 import { RecordIdentity, RecordKeyMap } from '@orbit/records';
@@ -159,6 +159,7 @@ interface IProps {
 
 export function ScriptureTable(props: IProps) {
   const { colNames } = props;
+  const theme = useTheme();
   const passages = useOrbitData<PassageD[]>('passage');
   const sections = useOrbitData<SectionD[]>('section');
   const sharedresources = useOrbitData<SharedResourceD[]>('sharedresource');
@@ -2252,7 +2253,7 @@ export function ScriptureTable(props: IProps) {
             />
           }
           drawBottomBorder={true}
-          contentSx={(theme) => ({ p: theme.layout.gap })}
+          contentSx={{ p: theme.layout.gap }}
         >
           <PlanView
             rowInfo={rowinfo}

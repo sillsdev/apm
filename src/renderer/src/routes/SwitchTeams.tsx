@@ -129,8 +129,8 @@ const TeamSection = ({ icon, title, testId, children }: ITeamSectionProps) => {
  * pick: they are redirected to team home before the picker renders.
  */
 export const SwitchTeamsInner = () => {
-  const isPapLike = useIsPapLike();
   const theme = useTheme();
+  const isPapLike = useIsPapLike();
   const ctx = useContext(TeamContext);
   const { teams, personalTeam, teamUpdate, teamDelete } = ctx.state;
   const {

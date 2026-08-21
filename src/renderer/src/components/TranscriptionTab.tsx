@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useContext, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useParams } from 'react-router-dom';
-import { debounce, Menu, MenuItem } from '@mui/material';
+import { debounce, Menu, MenuItem, useTheme } from '@mui/material';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import DropDownIcon from '@mui/icons-material/ArrowDropDown';
@@ -108,6 +108,7 @@ interface IProps {
 export function TranscriptionTab(props: IProps) {
   const { projectPlans, planColumn, floatTop, step, orgSteps, sectionArr } =
     props;
+  const theme = useTheme();
 
   const { pasId } = useParams();
   const t: ITranscriptionTabStrings = useSelector(transcriptionTabSelector);
@@ -733,7 +734,7 @@ export function TranscriptionTab(props: IProps) {
         </Box>
       }
       drawBottomBorder={true}
-      contentSx={(theme) => ({ p: theme.layout.gap })}
+      contentSx={{ p: theme.layout.gap }}
     >
       <Box ref={boxRef} id="TranscriptionTab" sx={{ display: 'flex' }}>
         {alertOpen && (

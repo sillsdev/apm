@@ -14,6 +14,7 @@ import {
   MenuItem,
   styled,
   Typography,
+  useTheme,
 } from '@mui/material';
 import DropDownIcon from '@mui/icons-material/ArrowDropDown';
 import {
@@ -86,6 +87,7 @@ interface IRow {
 }
 
 export function AssignmentTable() {
+  const theme = useTheme();
   const t: IAssignmentTableStrings = useSelector(
     assignmentSelector,
     shallowEqual
@@ -531,7 +533,7 @@ export function AssignmentTable() {
         </Box>
       }
       drawBottomBorder={true}
-      contentSx={(theme) => ({ p: theme.layout.gap })}
+      contentSx={{ p: theme.layout.gap }}
     >
       <AssignmentDiv ref={boxRef} id="AssignmentTable">
         <TreeDataGrid

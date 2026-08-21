@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useContext, useCallback } from 'react';
 import { useSelector, shallowEqual } from 'react-redux';
-import { Box } from '@mui/material';
+import { Box, useTheme } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import JSONAPISource from '@orbit/jsonapi';
 import Memory from '@orbit/memory';
@@ -52,6 +52,7 @@ export function AudioTab() {
   const remote = coordinator?.getSource('remote') as JSONAPISource;
   const requests = useRef(0);
   const { getPlan } = usePlan();
+  const theme = useTheme();
   const [planRec] = useState(getPlan(plan) || ({} as Plan));
   const [isOffline] = useGlobal('offline'); //verified this is not used in a function 2/18/25
   const { toolChanged, saveCompleted } = useContext(UnsavedContext).state;
@@ -365,7 +366,7 @@ export function AudioTab() {
         </Box>
       }
       drawBottomBorder={true}
-      contentSx={(theme) => ({ p: theme.layout.gap })}
+      contentSx={{ p: theme.layout.gap }}
     >
       <Box width="100%">
         {autoMatch && (
