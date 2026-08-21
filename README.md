@@ -21,7 +21,7 @@ Note:
 Node and npm versions are pinned via [Volta](https://volta.sh) in `package.json`.
 If `npm --version` in this repo is not the pinned version,
 Volta has fallen back to the npm bundled with Node (10.x) because the pinned npm
-is missing from its local inventory; fetch it once with ` volta install npm@12.0.2`
+is missing from its local inventory; fetch it once with `volta install npm@12.0.2`
 
 Note: This project uses `usfm-grammar-web` (wasm-based), which typically does not require local C/C++ toolchain setup (for example, MSVC build tools).
 
