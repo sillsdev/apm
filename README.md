@@ -12,20 +12,16 @@ Desktop builds based on [electron-vite](https://electron-vite.org)
 
 ### Install
 
-Node and npm versions are pinned via [Volta](https://volta.sh) in `package.json`.
-Volta does not always download a pinned npm on demand, and silently falls back to
-the npm bundled with Node (10.x) when it is missing. Fetch it once:
-
-```bash
-$ volta install npm@12.0.2
-```
-
-Then confirm `npm --version` reports 12.0.2 inside the repo before installing.
-
 ```bash
 $ npm install
 $ npm run stamp
 ```
+
+Note:
+Node and npm versions are pinned via [Volta](https://volta.sh) in `package.json`.
+If `npm --version` in this repo is not the pinned version,
+Volta has fallen back to the npm bundled with Node (10.x) because the pinned npm
+is missing from its local inventory; fetch it once with ` volta install npm@12.0.2`
 
 Note: This project uses `usfm-grammar-web` (wasm-based), which typically does not require local C/C++ toolchain setup (for example, MSVC build tools).
 
