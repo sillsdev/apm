@@ -1,17 +1,18 @@
 import { useState, useContext, useCallback, useEffect, useMemo } from 'react';
 import { shallowEqual, useSelector } from 'react-redux';
 import { useLocation } from 'react-router-dom';
-import { Box, Typography, Grid } from '@mui/material';
+import { Box, Typography, Grid, useTheme } from '@mui/material';
 import { DialogMode, ICardsStrings, VProject } from '../model';
 import { cardsSelector } from '../selector';
 import AppLayout from '../components/App/AppLayout';
-import { StepEditor } from '../components/StepEditor';
+import ContentLayout from '../components/App/ContentLayout';
+import { spreadSx, StepEditor } from '../components/StepEditor';
 import { ProjectCard } from '../components/Team/ProjectCard';
 import { ProjectDialog } from '../components/Team/ProjectDialog';
 import { TeamProvider, TeamContext, TeamIdType } from '../context/TeamContext';
 import { UnsavedContext } from '../context/UnsavedContext';
 import { useGlobal, useGetGlobal } from '../context/useGlobal';
-import { Button } from '../control';
+import { Button, rowSx } from '../control';
 import { remoteId, defaultWorkflow, useTeamWorkflowProcess } from '../crud';
 import { projDefBook, projDefStory } from '../crud/useProjectDefaults';
 import BigDialog from '../hoc/BigDialog';
@@ -20,6 +21,7 @@ import { useIsPapLike } from '../utils/useIsPapLike';
 import { useMyNavigate } from '../utils/useMyNavigate';
 
 export const ProjectsScreenInner = () => {
+  const theme = useTheme();
   const navigate = useMyNavigate();
   const teamId = localStorage.getItem(localUserKey(LocalKey.team));
   const ctx = useContext(TeamContext);
@@ -42,7 +44,7 @@ export const ProjectsScreenInner = () => {
     navigate('/switch-teams');
   }, [navigate]);
 
-  // Missing teamId: always open picker; SwitchTeamsGuard redirects true PAP-like users back to /team
+  // Missing teamId: always open picker; SwitchTeamsInner redirects true PAP-like users back to /team
   useEffect(() => {
     const currentId = localStorage.getItem(localUserKey(LocalKey.team));
     if (currentId) return;
@@ -192,69 +194,74 @@ export const ProjectsScreenInner = () => {
   }
 
   return (
-    <AppLayout>
-      <Box
-        id="ProjectsScreen"
-        sx={{
-          px: 2,
-          pb: 8,
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 2,
-          flex: 1,
-          minHeight: 0,
-        }}
-      >
-        <Grid container spacing={1}>
-          {projects.map((p) => (
-            <ProjectCard key={p.id} project={p} />
-          ))}
-          {projects.length === 0 && (
-            <Typography variant="body2" sx={{ opacity: 0.7 }}>
-              {t.noProjects || 'No projects yet.'}
-            </Typography>
-          )}
-        </Grid>
-        {/* spacer to ensure content isn't hidden behind floating actions */}
-        <Box sx={{ height: 120 }} />
-      </Box>
-      <Box
-        sx={{
-          position: 'fixed',
-          bottom: 32,
-          left: 0,
-          right: 0,
-          display: 'flex',
-          justifyContent: 'center',
-          pointerEvents: 'none',
-        }}
-      >
-        <Box
-          sx={{
-            pointerEvents: 'auto',
-            display: 'inline-grid',
-            gridAutoFlow: 'column',
-            gridAutoColumns: '1fr',
-            alignItems: 'center',
-            gap: 2,
-          }}
+    <>
+      <AppLayout appHeadProps={{ drawBottomBorder: false }}>
+        <ContentLayout
+          header={
+            <Box sx={spreadSx}>
+              <Box sx={rowSx}>
+                {!isPapLike && (
+                  <Button id="ProjectActSwitch" onClick={handleSwitchTeams}>
+                    {t.switchTeams || 'Switch Teams'}
+                  </Button>
+                )}
+              </Box>
+              <Box sx={rowSx}>
+                {showAddButton && (
+                  <Button
+                    id="ProjectActAdd"
+                    data-testid="add-project-button"
+                    onClick={handleAddProject}
+                  >
+                    {t.addNewProject || 'Add New Project...'}
+                  </Button>
+                )}
+              </Box>
+            </Box>
+          }
+          drawBottomBorder
+          contentSx={{ p: theme.layout.gap }}
         >
-          {showAddButton && (
-            <Button
-              id="ProjectActAdd"
-              data-testid="add-project-button"
-              onClick={handleAddProject}
-            >
-              {t.addNewProject || 'Add New Project...'}
-            </Button>
-          )}
-          {!isPapLike && (
-            <Button id="ProjectActSwitch" onClick={handleSwitchTeams}>
-              {t.switchTeams || 'Switch Teams'}
-            </Button>
-          )}
-        </Box>
-      </Box>
+          <Box
+            id="ProjectsScreen"
+            sx={{
+              flex: '1 0 auto',
+              minHeight: 0,
+              display: 'flex',
+              flexDirection: 'column',
+            }}
+          >
+            <Grid container spacing={theme.layout.gap}>
+              {projects.map((p) => (
+                <ProjectCard key={p.id} project={p} />
+              ))}
+            </Grid>
+            {projects.length === 0 && (
+              <Box
+                sx={{
+                  flex: 1,
+                  minHeight: 0,
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                }}
+              >
+                <Typography
+                  noWrap
+                  sx={{
+                    fontSize: 'large',
+                    fontWeight: 'bold',
+                    opacity: 0.7,
+                    userSelect: 'none',
+                  }}
+                >
+                  {t.noProjects || 'No projects yet.'}
+                </Typography>
+              </Box>
+            )}
+          </Box>
+        </ContentLayout>
+      </AppLayout>
       <BigDialog
         title={t.editWorkflow.replace(
           '{0}',
@@ -277,7 +284,7 @@ export const ProjectsScreenInner = () => {
           team={isPersonal ? undefined : thisTeam?.id}
         />
       )}
-    </AppLayout>
+    </>
   );
 };
 
