@@ -12,6 +12,16 @@ Desktop builds based on [electron-vite](https://electron-vite.org)
 
 ### Install
 
+Node and npm versions are pinned via [Volta](https://volta.sh) in `package.json`.
+Volta does not always download a pinned npm on demand, and silently falls back to
+the npm bundled with Node (10.x) when it is missing. Fetch it once:
+
+```bash
+$ volta install npm@12.0.2
+```
+
+Then confirm `npm --version` reports 12.0.2 inside the repo before installing.
+
 ```bash
 $ npm install
 $ npm run stamp
