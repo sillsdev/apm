@@ -201,6 +201,9 @@ function MediaRecord(props: IProps) {
   const [originalBlob, setOriginalBlob] = useState<Blob>();
   const [audioBlob, setAudioBlob] = useState<Blob>();
   const [loading, setLoading] = useState(false);
+  /** Mirror of loading for the abandon paths, which run in [mediaId]/[doReset]
+   *  effects and would otherwise read a stale closure value. */
+  const loadingRef = useRef(false);
   const [filechanged, setFilechangedx] = useState(false);
   const filechangedRef = useRef(false);
   const [recording, setRecording] = useState(false);
@@ -350,6 +353,10 @@ function MediaRecord(props: IProps) {
     if (mediaId !== mediaState.id) fetchMediaUrl({ id: mediaId ?? '' });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mediaId]);
+
+  useEffect(() => {
+    loadingRef.current = loading;
+  }, [loading]);
 
   useEffect(() => {
     mediaStateRef.current = mediaState;
@@ -586,6 +593,7 @@ function MediaRecord(props: IProps) {
   }
   useEffect(() => {
     if (doReset) {
+      abandonLoadInFlight();
       reset();
       setDoReset && setDoReset(false);
     }
@@ -624,6 +632,20 @@ function MediaRecord(props: IProps) {
       setStatusText('');
     }
   }, [loading, blobReady, originalBlob, setStatusText]);
+  /**
+   * A load in flight is being abandoned - the segment was navigated away from,
+   * or the recorder was reset. Without this, `loading` never clears again: the
+   * effect that clears it needs originalBlob, and reset() has just dropped it.
+   * The record button is disabled by Boolean(loading), so the recorder stayed
+   * dead on this segment and every later one until the step was remounted
+   * (TT-7621).
+   */
+  const abandonLoadInFlight = () => {
+    if (!loadingRef.current) return;
+    loadRequestedIdRef.current = undefined;
+    setLoading(false);
+    setStatusText('');
+  };
   const stopLoading = () => {
     setLoading(false);
     setStatusText('');
@@ -736,6 +758,7 @@ function MediaRecord(props: IProps) {
   useEffect(() => {
     if (!mediaId) {
       loadRequestedIdRef.current = undefined;
+      abandonLoadInFlight();
       reset();
       return;
     }
