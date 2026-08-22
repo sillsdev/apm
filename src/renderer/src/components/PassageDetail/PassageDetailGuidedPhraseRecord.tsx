@@ -1701,6 +1701,13 @@ export function PassageDetailGuidedPhraseRecord({
   return (
     <Box
       id={config.containerId}
+      // The listen/record state machine drives most of this step's behaviour and
+      // is otherwise invisible from outside, which makes a wrong Record state
+      // guesswork to diagnose. Exposing it costs nothing and makes it assertable.
+      data-phase={phase}
+      data-allow-record={String(allowRecord)}
+      data-unit-index={String(currentIndex)}
+      data-discard-pending={String(discardedDuringSaveRef.current)}
       sx={{
         display: 'flex',
         flexDirection: 'column',
