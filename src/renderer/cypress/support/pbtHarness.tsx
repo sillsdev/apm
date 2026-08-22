@@ -59,6 +59,7 @@ import type { IRegion } from '../../src/crud/useWavesurferRegions';
 import type { MediaFileD } from '../../src/model';
 import { boldDefaultSegParams } from '../../src/components/PassageDetail/carefulSpeech/boldCarefulSpeechSegParams';
 import { regionsJsonFromList } from '../../src/components/PassageDetail/carefulSpeech/carefulSpeechBoundary';
+import { prettySegment } from '../../src/utils/prettySegment';
 import PassageDetailPhraseBackTranslate from '../../src/components/PassageDetail/PassageDetailPhraseBackTranslate';
 
 // ---------------------------------------------------------------------------
@@ -621,6 +622,8 @@ function PbtHarnessInner({ options, memory, blob }: HarnessProps) {
   const segments = options.segments ?? [];
   const [refresh, setRefresh] = useState(0);
   const [currentSegmentIndex, setCurrentSegmentIndex] = useState(-1);
+  const [currentSegmentText, setCurrentSegmentText] = useState('');
+  const [currentSegmentSeq, setCurrentSegmentSeq] = useState(0);
   const currentSegmentRef = useRef<IRegion | undefined>(undefined);
   const recordingRef = useRef(false);
   const playingRef = useRef(false);
@@ -656,9 +659,13 @@ function PbtHarnessInner({ options, memory, blob }: HarnessProps) {
         currentSegmentIndex !== index
       ) {
         currentSegmentRef.current = segment;
-        // The real context bumps this on every change; components watch it as a
-        // change signal, so a distinct value per call matters more than the value.
         setCurrentSegmentIndex(index);
+        // Mirrors the real context: it also publishes the pretty segment string
+        // and bumps a change token. Both matter here, because the waveform
+        // reports a 1-based index while the step sets a 0-based one, so the
+        // index alone can repeat across a real change.
+        setCurrentSegmentText(prettySegment(segment));
+        setCurrentSegmentSeq((n) => n + 1);
       }
     },
     [currentSegmentIndex]
@@ -741,8 +748,9 @@ function PbtHarnessInner({ options, memory, blob }: HarnessProps) {
       setRecording: (r: boolean) => {
         recordingRef.current = r;
       },
-      currentSegment: '',
+      currentSegment: currentSegmentText,
       currentSegmentIndex,
+      currentSegmentSeq,
       setCurrentSegment,
       getCurrentSegment,
       setupLocate: (cb?: (segments: string) => void) => {
@@ -775,6 +783,8 @@ function PbtHarnessInner({ options, memory, blob }: HarnessProps) {
       blob,
       pdBusy,
       currentSegmentIndex,
+      currentSegmentText,
+      currentSegmentSeq,
       setCurrentSegment,
       getCurrentSegment,
       complete,
