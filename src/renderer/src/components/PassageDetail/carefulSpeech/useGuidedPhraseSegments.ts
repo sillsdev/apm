@@ -217,7 +217,16 @@ export function useGuidedPhraseSegments(
   ]);
 
   const resegmentWithParams = useCallback(
-    async (params: IRegionParams): Promise<string | false> => {
+    async (
+      params: IRegionParams,
+      /**
+       * Skip writing the result to the mediafile. Callers that try several
+       * parameter sets to find one that moves the segment count the way the
+       * user asked would otherwise persist every attempt, including the ones
+       * they reject.
+       */
+      options?: { persist?: boolean }
+    ): Promise<string | false> => {
       if (singleSegmentMode) return false;
       const ctrl = controlsRef.current;
       if (!ctrl?.isReady() || !mediafile) return false;
@@ -232,7 +241,9 @@ export function useGuidedPhraseSegments(
       } catch {
         return false;
       }
-      await persistSegmentBucket(namedRegion, regionJson);
+      if (options?.persist !== false) {
+        await persistSegmentBucket(namedRegion, regionJson);
+      }
       setPhraseSegString(regionJson);
       loadRegionsOnPlayer(regionJson);
       setBootstrapped(true);

@@ -705,12 +705,22 @@ export function PassageDetailGuidedPhraseRecord({
     [clauseRegions, currentIndex]
   );
 
-  const pushSegmentUndo = useCallback(() => {
-    if (!config.multiLevelSegmentUndo) return;
-    if (!hasPhraseRegions(clauseSegString)) return;
-    segmentUndoStackRef.current.push(clauseSegString);
-    setSegmentUndoCan(segmentUndoStackRef.current.canUndo());
-  }, [config.multiLevelSegmentUndo, clauseSegString]);
+  const pushSegmentUndo = useCallback(
+    /**
+     * @param json the map to return to. Defaults to the current one; pass it
+     * explicitly when the current map has already moved on - trying several
+     * auto-segment parameter sets updates it before the caller knows whether it
+     * is keeping any of them.
+     */
+    (json?: string) => {
+      if (!config.multiLevelSegmentUndo) return;
+      const toPush = json ?? clauseSegString;
+      if (!hasPhraseRegions(toPush)) return;
+      segmentUndoStackRef.current.push(toPush);
+      setSegmentUndoCan(segmentUndoStackRef.current.canUndo());
+    },
+    [config.multiLevelSegmentUndo, clauseSegString]
+  );
 
   const clearSegmentUndo = useCallback(() => {
     segmentUndoStackRef.current.clear();
@@ -1201,7 +1211,6 @@ export function PassageDetailGuidedPhraseRecord({
         direction === 'more' ? count > before : count < before;
       const previousJson = clauseSegString;
       const previousParams = phraseSegParams;
-      pushSegmentUndo();
 
       let params = phraseSegParams;
       let alternate = changeLength;
@@ -1212,7 +1221,8 @@ export function PassageDetailGuidedPhraseRecord({
             ? applyMoreClauses(params, alternate)
             : applyFewerClauses(params, alternate);
         alternate = !alternate;
-        const ok = await resegmentWithParams(params);
+        // Not persisted: only the attempt that is accepted below is written.
+        const ok = await resegmentWithParams(params, { persist: false });
         if (ok && wanted(getSortedRegions(ok).length)) {
           applied = ok;
           break;
@@ -1221,18 +1231,19 @@ export function PassageDetailGuidedPhraseRecord({
       setChangeLength(alternate);
 
       if (!applied) {
-        // Put back what the user had; the attempts above have already loaded
-        // their results onto the waveform.
+        // Put back what the user had. The attempts loaded their results onto the
+        // waveform but none were written, so nothing needs persisting - and no
+        // undo point was taken, so the undo button does not light up for a tap
+        // that changed nothing. Restores an empty starting map too.
         setPhraseSegParams(previousParams);
-        if (hasPhraseRegions(previousJson)) {
-          setClauseSegString(previousJson);
-          await persistClauseSegments(previousJson);
-          playerControlsRef.current?.loadRegionsJson?.(previousJson);
-          applyColors();
-        }
+        setClauseSegString(previousJson);
+        playerControlsRef.current?.loadRegionsJson?.(previousJson);
+        applyColors();
         return;
       }
+      pushSegmentUndo(previousJson);
       setPhraseSegParams(params);
+      await persistClauseSegments(applied);
       await applyResegmentResult(applied);
     },
     [
