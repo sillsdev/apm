@@ -197,7 +197,12 @@ export function PassageDetailGuidedPhraseRecord({
   const initialPositionDoneRef = useRef(false);
   const suppressClauseAutoPlayRef = useRef(0);
   const playClauseInFlightRef = useRef(false);
-  /** When playCurrentClause last started a clause; see SPURIOUS_STOP_WINDOW_MS. */
+  /**
+   * When playback of the current clause last began - whether this component
+   * started it or the user pressed Play. See SPURIOUS_STOP_WINDOW_MS: a stale
+   * timestamp would make the seek-suppression window compare against an old
+   * time and mark a clause played before it had been.
+   */
   const clausePlaybackStartedAtRef = useRef(0);
   const skipBeforePlayRef = useRef(false);
   const entryPauseDoneRef = useRef(false);
@@ -755,7 +760,12 @@ export function PassageDetailGuidedPhraseRecord({
 
   const handlePlayStatusNotify = useCallback(
     (playingNow: boolean) => {
-      if (playingNow) setHighlightPlayButton(false);
+      if (playingNow) {
+        setHighlightPlayButton(false);
+        // Playback really began, however it was started: re-base the window so
+        // a stop caused by this start is still recognised as the seek.
+        clausePlaybackStartedAtRef.current = Date.now();
+      }
       if (currentIndex === clauseRegions.length - 1) {
         markClauseHeard(currentIndex);
       }
@@ -782,6 +792,9 @@ export function PassageDetailGuidedPhraseRecord({
   );
 
   const handleBeforeSourcePlay = useCallback(async () => {
+    // The user pressed Play rather than the step starting playback, so the
+    // seek-suppression window has to be re-based here too.
+    clausePlaybackStartedAtRef.current = Date.now();
     if (skipBeforePlayRef.current) return;
     if (!recordingPassStarted || !showRecorder || currentClausePlayed) return;
     setHighlightPlayButton(false);
