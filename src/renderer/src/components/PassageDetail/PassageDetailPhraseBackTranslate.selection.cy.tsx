@@ -54,16 +54,20 @@ describe('PBT waveform segment selection', () => {
     unitLabel('0:06', '0:09').should('be.visible');
   });
 
-  it('DEFECT: the first click on the very next segment is ignored', () => {
-    // After a segment finishes playing, handleRegionPlayEnd arms
-    // pendingOvershootSwallowRef so the +1 segment change that playback
-    // overshoot produces can be absorbed. It cannot tell that change apart from
-    // the user clicking the next segment, so the click is swallowed too: the
-    // playhead snaps back, the label never changes, and the user has to click
-    // again. Record also stays enabled for the segment they were leaving.
-    clickSegmentOnWaveform(1);
-    unitLabel('0:03', '0:06').should('be.visible');
-  });
+  it(
+    'DEFECT: the first click on the very next segment is ignored',
+    { tags: '@known-defect' },
+    () => {
+      // After a segment finishes playing, handleRegionPlayEnd arms
+      // pendingOvershootSwallowRef so the +1 segment change that playback
+      // overshoot produces can be absorbed. It cannot tell that change apart from
+      // the user clicking the next segment, so the click is swallowed too: the
+      // playhead snaps back, the label never changes, and the user has to click
+      // again. Record also stays enabled for the segment they were leaving.
+      clickSegmentOnWaveform(1);
+      unitLabel('0:03', '0:06').should('be.visible');
+    }
+  );
 
   it('keeps Record off while a clicked segment plays', () => {
     clickSegmentOnWaveform(2);
@@ -93,56 +97,64 @@ describe('PBT segment selection after a take exists', () => {
     recordAndSettle(1); // a take on segment 1 - the precondition that matters
   });
 
-  it('DEFECT: Record is operable while a newly clicked segment plays', () => {
-    // Reported: "if I click on a unselected segment to select it, it starts
-    // playing, but the record button is enabled while playing so I can record
-    // during playing which should not be possible". Recording over the
-    // reference audio is what the listen-then-record flow prevents everywhere
-    // else, and Record is correctly off for this same click before any take
-    // exists (see the previous describe).
-    clickSegmentOnWaveform(2);
+  it(
+    'DEFECT: Record is operable while a newly clicked segment plays',
+    { tags: '@known-defect' },
+    () => {
+      // Reported: "if I click on a unselected segment to select it, it starts
+      // playing, but the record button is enabled while playing so I can record
+      // during playing which should not be possible". Recording over the
+      // reference audio is what the listen-then-record flow prevents everywhere
+      // else, and Record is correctly off for this same click before any take
+      // exists (see the previous describe).
+      clickSegmentOnWaveform(2);
 
-    sampleDom(
-      (doc) => ({
-        playing: readSourcePlaying(doc),
-        record: readRecordEnabled(doc),
-      }),
-      { forMs: 6000 }
-    ).then((samples) => {
-      const bothLive = samples.filter((s) => s.playing && s.record);
-      expect(
-        bothLive,
-        'Record was never operable while the reference audio played'
-      ).to.have.length(0);
-    });
-  });
+      sampleDom(
+        (doc) => ({
+          playing: readSourcePlaying(doc),
+          record: readRecordEnabled(doc),
+        }),
+        { forMs: 6000 }
+      ).then((samples) => {
+        const bothLive = samples.filter((s) => s.playing && s.record);
+        expect(
+          bothLive,
+          'Record was never operable while the reference audio played'
+        ).to.have.length(0);
+      });
+    }
+  );
 
-  it('DEFECT: the waveform selection and the segment label disagree', () => {
-    // Reported as "the yellow highlighting briefly jumps to the next segment".
-    // The waveform paints from the engine's currentSegmentIndex while the label
-    // comes from the step's own currentIndex; when a click only reaches the
-    // engine, the two disagree - briefly in the good case, indefinitely in the
-    // one below.
-    clickSegmentOnWaveform(2);
+  it(
+    'DEFECT: the waveform selection and the segment label disagree',
+    { tags: '@known-defect' },
+    () => {
+      // Reported as "the yellow highlighting briefly jumps to the next segment".
+      // The waveform paints from the engine's currentSegmentIndex while the label
+      // comes from the step's own currentIndex; when a click only reaches the
+      // engine, the two disagree - briefly in the good case, indefinitely in the
+      // one below.
+      clickSegmentOnWaveform(2);
 
-    sampleDom(
-      (doc) => ({
-        painted: readCurrentSegmentIndex(doc),
-        labelled: readLabelSegmentIndex(doc, SEGMENTS),
-      }),
-      { forMs: 6000 }
-    ).then((samples) => {
-      const disagreeing = samples.filter(
-        (s) => s.painted >= 0 && s.labelled >= 0 && s.painted !== s.labelled
-      );
-      expect(
-        disagreeing.length,
-        'selection and label always agreed (saw ' +
-          JSON.stringify(disagreeing.slice(0, 5)) +
-          ')'
-      ).to.equal(0);
-    });
-  });
+      sampleDom(
+        (doc) => ({
+          painted: readCurrentSegmentIndex(doc),
+          labelled: readLabelSegmentIndex(doc, SEGMENTS),
+        }),
+        { forMs: 6000 }
+      ).then((samples) => {
+        const disagreeing = samples.filter(
+          (s) => s.painted >= 0 && s.labelled >= 0 && s.painted !== s.labelled
+        );
+        expect(
+          disagreeing.length,
+          'selection and label always agreed (saw ' +
+            JSON.stringify(disagreeing.slice(0, 5)) +
+            ')'
+        ).to.equal(0);
+      });
+    }
+  );
 });
 
 describe('PBT recording out of order (1, 3, then 2)', () => {
