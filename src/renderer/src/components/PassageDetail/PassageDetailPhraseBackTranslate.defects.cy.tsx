@@ -92,9 +92,12 @@ describe('PBT known defects', () => {
     expectRecordEnabled();
   });
 
-  it('DEFECT: Fewer Segments can produce MORE segments', () => {
-    // TT-7543. resegmentWithParams returns false and applyResegmentResult drops
-    // it, so the user gets no feedback and no change — they tap again and again.
+  it('never increases the count when asked for fewer segments', () => {
+    // TT-7543. More/Fewer only nudge the auto-segment parameters and re-run
+    // silence detection, which is not monotonic: one nudge of "fewer" could
+    // lower the silence threshold enough to split the audio further, so the
+    // button did the opposite of what it says. It now keeps nudging until the
+    // count moves the right way, and leaves the map alone if it never does.
     mountPbt({ segments: SEGMENTS });
     waitForPbtReady();
     expectSegmentCount(3);

@@ -96,6 +96,9 @@ interface IProps {
   workflowGateMessage?: string;
 }
 
+/** How many parameter nudges to try before giving up on More/Fewer Segments. */
+const RESEGMENT_ATTEMPTS = 4;
+
 function findClauseIndex(clauseRegions: IRegion[], region: IRegion): number {
   return clauseRegions.findIndex(
     (r) =>
@@ -1178,41 +1181,84 @@ export function PassageDetailGuidedPhraseRecord({
 
   const [changeLength, setChangeLength] = useState(false);
 
-  const handleMoreClauses = useCallback(async () => {
-    if (recordingPassStarted) return;
-    pushSegmentUndo();
-    const nextParams = applyMoreClauses(phraseSegParams, changeLength);
-    setPhraseSegParams(nextParams);
-    setChangeLength(!changeLength);
-    const ok = await resegmentWithParams(nextParams);
-    await applyResegmentResult(ok);
-  }, [
-    recordingPassStarted,
-    phraseSegParams,
-    setPhraseSegParams,
-    changeLength,
-    resegmentWithParams,
-    applyResegmentResult,
-    pushSegmentUndo,
-  ]);
+  /**
+   * More/Fewer Segments only nudge the auto-segment parameters and re-run
+   * silence detection, and that is not monotonic: one nudge of "fewer" can lower
+   * the silence threshold enough to split the audio further, so the button did
+   * the opposite of what it says (TT-7543). Keep nudging in the requested
+   * direction until the count actually moves that way, and if it never does,
+   * leave the map exactly as it was rather than applying a result the user did
+   * not ask for.
+   *
+   * A silent no-op is still not good feedback - that needs a message, which
+   * needs a new localized string, so it is left for its own change.
+   */
+  const resegmentToward = useCallback(
+    async (direction: 'more' | 'fewer') => {
+      if (recordingPassStarted) return;
+      const before = getSortedRegions(clauseSegString).length;
+      const wanted = (count: number) =>
+        direction === 'more' ? count > before : count < before;
+      const previousJson = clauseSegString;
+      const previousParams = phraseSegParams;
+      pushSegmentUndo();
 
-  const handleFewerClauses = useCallback(async () => {
-    if (recordingPassStarted) return;
-    pushSegmentUndo();
-    const nextParams = applyFewerClauses(phraseSegParams, changeLength);
-    setPhraseSegParams(nextParams);
-    setChangeLength(!changeLength);
-    const ok = await resegmentWithParams(nextParams);
-    await applyResegmentResult(ok);
-  }, [
-    recordingPassStarted,
-    phraseSegParams,
-    setPhraseSegParams,
-    changeLength,
-    resegmentWithParams,
-    applyResegmentResult,
-    pushSegmentUndo,
-  ]);
+      let params = phraseSegParams;
+      let alternate = changeLength;
+      let applied: string | false = false;
+      for (let attempt = 0; attempt < RESEGMENT_ATTEMPTS; attempt++) {
+        params =
+          direction === 'more'
+            ? applyMoreClauses(params, alternate)
+            : applyFewerClauses(params, alternate);
+        alternate = !alternate;
+        const ok = await resegmentWithParams(params);
+        if (ok && wanted(getSortedRegions(ok).length)) {
+          applied = ok;
+          break;
+        }
+      }
+      setChangeLength(alternate);
+
+      if (!applied) {
+        // Put back what the user had; the attempts above have already loaded
+        // their results onto the waveform.
+        setPhraseSegParams(previousParams);
+        if (hasPhraseRegions(previousJson)) {
+          setClauseSegString(previousJson);
+          await persistClauseSegments(previousJson);
+          playerControlsRef.current?.loadRegionsJson?.(previousJson);
+          applyColors();
+        }
+        return;
+      }
+      setPhraseSegParams(params);
+      await applyResegmentResult(applied);
+    },
+    [
+      recordingPassStarted,
+      clauseSegString,
+      phraseSegParams,
+      setPhraseSegParams,
+      changeLength,
+      resegmentWithParams,
+      applyResegmentResult,
+      pushSegmentUndo,
+      setClauseSegString,
+      persistClauseSegments,
+      applyColors,
+    ]
+  );
+
+  const handleMoreClauses = useCallback(
+    () => resegmentToward('more'),
+    [resegmentToward]
+  );
+
+  const handleFewerClauses = useCallback(
+    () => resegmentToward('fewer'),
+    [resegmentToward]
+  );
 
   const performStepBaselineReset = useCallback(async () => {
     const baseline = baselineSegRef.current;
