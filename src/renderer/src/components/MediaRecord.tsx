@@ -201,9 +201,14 @@ function MediaRecord(props: IProps) {
   const [originalBlob, setOriginalBlob] = useState<Blob>();
   const [audioBlob, setAudioBlob] = useState<Blob>();
   const [loading, setLoading] = useState(false);
-  /** Mirror of loading for the abandon paths, which run in [mediaId]/[doReset]
-   *  effects and would otherwise read a stale closure value. */
-  const loadingRef = useRef(false);
+  /**
+   * True only while handleLoadAudio is fetching a take. Deliberately not a
+   * mirror of `loading`, which the save path sets too: gating the abandon paths
+   * on that would let a doReset arriving mid-save clear the flag and the status
+   * text, re-enabling Record and dropping "Saving..." while the save ran. Set
+   * synchronously so the [mediaId] and [doReset] effects see it immediately.
+   */
+  const loadInFlightRef = useRef(false);
   const [filechanged, setFilechangedx] = useState(false);
   const filechangedRef = useRef(false);
   const [recording, setRecording] = useState(false);
@@ -353,10 +358,6 @@ function MediaRecord(props: IProps) {
     if (mediaId !== mediaState.id) fetchMediaUrl({ id: mediaId ?? '' });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mediaId]);
-
-  useEffect(() => {
-    loadingRef.current = loading;
-  }, [loading]);
 
   useEffect(() => {
     mediaStateRef.current = mediaState;
@@ -628,6 +629,7 @@ function MediaRecord(props: IProps) {
 
   useEffect(() => {
     if (loading && blobReady && originalBlob && !saveRef.current) {
+      loadInFlightRef.current = false;
       setLoading(false);
       setStatusText('');
     }
@@ -641,12 +643,14 @@ function MediaRecord(props: IProps) {
    * (TT-7621).
    */
   const abandonLoadInFlight = () => {
-    if (!loadingRef.current) return;
+    if (!loadInFlightRef.current) return;
+    loadInFlightRef.current = false;
     loadRequestedIdRef.current = undefined;
     setLoading(false);
     setStatusText('');
   };
   const stopLoading = () => {
+    loadInFlightRef.current = false;
     setLoading(false);
     setStatusText('');
     onLoaded && onLoaded();
@@ -713,6 +717,7 @@ function MediaRecord(props: IProps) {
     if (loading || !mediaId) return;
     const requestedId = mediaId;
     loadRequestedIdRef.current = requestedId;
+    loadInFlightRef.current = true;
     setLoading(true);
     // No status text here: setLoading(true) already puts the "Loading..."
     // overlay on the waveform below (TT-7570).
