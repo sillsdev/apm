@@ -237,7 +237,7 @@ export function PassageDetailGuidedPhraseRecord({
    * creates have to be undone - otherwise the take the user deleted comes back,
    * and the segment counts as recorded with audio they rejected.
    */
-  const discardedDuringSaveRef = useRef(false);
+  const discardedDuringSaveRef = useRef<number | undefined>(undefined);
   /**
    * A save has been requested and its outcome has not arrived yet. Tracked
    * separately from savingRecording, which other paths clear early - by the time
@@ -1567,7 +1567,10 @@ export function PassageDetailGuidedPhraseRecord({
   const afterUploadCb = useCallback(
     async (mediaId: string | undefined) => {
       uploadInFlightRef.current = false;
-      if (discardedDuringSaveRef.current) {
+      // Deliberately does not clear the marker: the mediafile this upload
+      // created may not have arrived yet, and the effect below still has to
+      // remove it. Whichever of the two happens first, both must see it.
+      if (discardedDuringSaveRef.current === currentIndexRef.current) {
         // Discarded while this upload was in flight. Leave the flag set: the
         // mediafile it created has not reached rowData yet, and the effect below
         // removes it once it does.
@@ -1607,7 +1610,7 @@ export function PassageDetailGuidedPhraseRecord({
     // the user has discarded it so afterUploadCb, and the effect that watches
     // for the mediafile arriving, can undo both halves.
     if (uploadInFlightRef.current) {
-      discardedDuringSaveRef.current = true;
+      discardedDuringSaveRef.current = currentIndexRef.current;
     }
     // Deleting the take retires the failed save with it, so the message and the
     // latch must both go (TT-7583).
@@ -1649,10 +1652,12 @@ export function PassageDetailGuidedPhraseRecord({
    * after the local sync.
    */
   useEffect(() => {
-    if (!discardedDuringSaveRef.current) return;
+    const discardedUnit = discardedDuringSaveRef.current;
+    if (discardedUnit === undefined) return;
+    if (discardedUnit !== currentIndexRef.current) return;
     const mediaId = recordingRow?.mediafile?.id;
     if (!mediaId) return;
-    discardedDuringSaveRef.current = false;
+    discardedDuringSaveRef.current = undefined;
     void (async () => {
       await memory.update((t) =>
         t.removeRecord({ type: 'mediafile', id: mediaId })
@@ -1707,7 +1712,7 @@ export function PassageDetailGuidedPhraseRecord({
       data-phase={phase}
       data-allow-record={String(allowRecord)}
       data-unit-index={String(currentIndex)}
-      data-discard-pending={String(discardedDuringSaveRef.current)}
+      data-discard-pending={String(discardedDuringSaveRef.current ?? '')}
       sx={{
         display: 'flex',
         flexDirection: 'column',
@@ -1819,6 +1824,9 @@ export function PassageDetailGuidedPhraseRecord({
           onRecording={(active) => {
             if (active) {
               recordingActiveRef.current = true;
+              // A fresh take on this segment is wanted, so stop treating an
+              // arriving upload for it as the discarded one.
+              discardedDuringSaveRef.current = undefined;
               // A new take supersedes any earlier rejected save (TT-7583).
               saveRejectedRef.current = false;
               setSaveRejected(false);
