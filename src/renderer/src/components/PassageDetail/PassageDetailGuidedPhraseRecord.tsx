@@ -96,6 +96,13 @@ interface IProps {
   workflowGateMessage?: string;
 }
 
+/**
+ * A stop reported sooner than this after playback started is the seek that
+ * started it, not the audio finishing. Auto-segmenting never produces a clause
+ * anywhere near this short.
+ */
+const SPURIOUS_STOP_WINDOW_MS = 250;
+
 function findClauseIndex(clauseRegions: IRegion[], region: IRegion): number {
   return clauseRegions.findIndex(
     (r) =>
@@ -190,6 +197,8 @@ export function PassageDetailGuidedPhraseRecord({
   const initialPositionDoneRef = useRef(false);
   const suppressClauseAutoPlayRef = useRef(0);
   const playClauseInFlightRef = useRef(false);
+  /** When playCurrentClause last started a clause; see SPURIOUS_STOP_WINDOW_MS. */
+  const clausePlaybackStartedAtRef = useRef(0);
   const skipBeforePlayRef = useRef(false);
   const entryPauseDoneRef = useRef(false);
   const [highlightPlayButton, setHighlightPlayButton] = useState(false);
@@ -679,6 +688,7 @@ export function PassageDetailGuidedPhraseRecord({
       const ctrl = playerControlsRef.current;
       const region = regionOverride ?? clauseRegions[index];
       if (!ctrl?.isReady() || !region || playClauseInFlightRef.current) return;
+      clausePlaybackStartedAtRef.current = Date.now();
       playClauseInFlightRef.current = true;
       try {
         setPhase('playing');
@@ -749,6 +759,23 @@ export function PassageDetailGuidedPhraseRecord({
       if (currentIndex === clauseRegions.length - 1) {
         markClauseHeard(currentIndex);
       }
+      // The reference audio stopping is enough to make the clause recordable.
+      // Waiting for region-out alone stranded the step whenever no region-out
+      // was coming: a user pause has none by definition, and Record then stayed
+      // disabled with no way forward but replaying the whole clause. Ignore a
+      // stop within SPURIOUS_STOP_WINDOW_MS of starting, which is the seek.
+      if (playingNow || !recordingPassStartedRef.current) return;
+      if (recordingActiveRef.current || savingRecordingRef.current) return;
+      if (
+        Date.now() - clausePlaybackStartedAtRef.current <
+        SPURIOUS_STOP_WINDOW_MS
+      ) {
+        return;
+      }
+      setCurrentClausePlayed(true);
+      setPhase((p) =>
+        p === 'recording' || p === 'recorded' ? p : 'recordReady'
+      );
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [clauseRegions.length, currentIndex]
