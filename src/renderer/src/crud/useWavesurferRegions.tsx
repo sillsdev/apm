@@ -124,7 +124,12 @@ export function useWaveSurferRegions(
   hasSegmentUndo?: boolean,
   applyRegionColor?: ApplyRegionColor,
   lockSegmentSelection?: boolean,
-  getDecodedBuffer?: () => AudioBuffer | undefined
+  getDecodedBuffer?: () => AudioBuffer | undefined,
+  /**
+   * A region was clicked. Distinct from onCurrentRegion, which also fires for
+   * playhead-driven selection: only a deliberate user click reaches this.
+   */
+  onRegionClicked?: (region: IRegion) => void
 ) {
   const theme = useTheme();
   const wsRef = useRef<WaveSurfer | null>(ws);
@@ -282,6 +287,11 @@ export function useWaveSurferRegions(
     if (isMarker(r)) {
       onMarkerClick && onMarkerClick(r.start);
     } else {
+      onRegionClicked?.({
+        start: r.start,
+        end: r.end,
+        label: r.content?.textContent || '',
+      });
       setCurrentRegion(r);
       if (!wasCurrentRegion) {
         goto(r.start, false, { start: r.start, end: r.end });

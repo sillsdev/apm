@@ -175,6 +175,8 @@ interface IProps {
     index?: number
   ) => void;
   onSegmentPlaybackEnd?: (segment: IRegion) => void;
+  /** A segment was clicked on the waveform (not selected by the playhead). */
+  onSegmentClick?: (segment: IRegion) => void;
   forceRegionOnly?: boolean;
   /** When true, user-initiated selection (clicks, prev/next) is ignored. Playhead-driven region-in is not blocked; consumers that must hold the current clause during recording/saving should guard their segment effects separately (e.g. Careful Speech). */
   lockSegmentSelection?: boolean;
@@ -366,6 +368,7 @@ function WSAudioPlayer(props: IProps) {
     onRecording,
     onCurrentSegment,
     onSegmentPlaybackEnd,
+    onSegmentClick,
     forceRegionOnly,
     lockSegmentSelection,
     onMarkerClick,
@@ -718,7 +721,8 @@ function WSAudioPlayer(props: IProps) {
     verses,
     hasSegmentUndo,
     applyRegionColor,
-    lockSegmentSelection
+    lockSegmentSelection,
+    onSegmentClick
   );
 
   //because we have to call hooks consistently, call this even if we aren't going to record

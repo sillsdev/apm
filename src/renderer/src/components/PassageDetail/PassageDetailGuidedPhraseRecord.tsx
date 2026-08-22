@@ -1057,6 +1057,17 @@ export function PassageDetailGuidedPhraseRecord({
     handleRegionPlayEndRef.current(region);
   }, []);
 
+  /**
+   * A click on the waveform is a deliberate selection, so it can never be the
+   * playback overshoot the swallow exists to absorb. Disarm it here, before the
+   * segment change it produces reaches the navigation effect below — otherwise
+   * clicking the segment right after the current one is indistinguishable from
+   * overshoot and gets eaten, leaving the user's first click with no effect.
+   */
+  const handleSegmentClick = useCallback(() => {
+    pendingOvershootSwallowRef.current = false;
+  }, []);
+
   useEffect(() => {
     if (!bootstrapped || !entryPositioned || entryPauseDoneRef.current) return;
     if (recordingPassStarted) return; // recording pass auto-plays on entry; don't pause
@@ -1684,6 +1695,7 @@ export function PassageDetailGuidedPhraseRecord({
           controlsRef={playerControlsRef}
           applyRegionColor={applyRegionColor}
           onSegmentPlaybackEnd={onSegmentPlaybackEnd}
+          onSegmentClick={handleSegmentClick}
           highlightPlay={highlightPlayButton}
           onPlayStatusNotify={handlePlayStatusNotify}
           beforePlay={handleBeforeSourcePlay}
