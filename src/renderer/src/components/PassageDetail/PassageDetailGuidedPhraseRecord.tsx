@@ -134,6 +134,8 @@ export function PassageDetailGuidedPhraseRecord({
     setRecording,
     forceRefresh,
     currentSegmentIndex,
+    /** Change token for the selected segment; see the nav effects below. */
+    currentSegmentSeq,
     getCurrentSegment,
     isBoldWorkflow,
     carefulSpeechSegParams,
@@ -1122,8 +1124,17 @@ export function PassageDetailGuidedPhraseRecord({
     setCurrentClausePlayed(false);
     setPhase((p) => (p === 'recording' ? 'recording' : 'readyToRecord'));
     void playCurrentClause(idx);
+    // currentSegmentSeq, not currentSegmentIndex, is what tells us the selection
+    // moved: the index's numbering is not agreed between writers (the waveform
+    // writes 1-based, this component 0-based), so a genuine move can arrive
+    // carrying the number the previous writer used. Clicking segment 2 right
+    // after recording segment 3 does exactly that (waveform 1+1 vs step 2) —
+    // the effect never re-ran, the step stayed on segment 3, and the next take
+    // was filed there. currentSegmentIndex stays in the list because the value
+    // is still read below.
   }, [
     currentSegmentIndex,
+    currentSegmentSeq,
     clauseRegions,
     currentIndex,
     completedIndices,
@@ -1151,8 +1162,10 @@ export function PassageDetailGuidedPhraseRecord({
     if (!consumeSuppressClauseAutoPlay()) {
       void playCurrentClause(idx);
     }
+    // See the recording-pass effect above for why currentSegmentSeq is a dep.
   }, [
     currentSegmentIndex,
+    currentSegmentSeq,
     clauseRegions,
     currentIndex,
     getCurrentSegment,

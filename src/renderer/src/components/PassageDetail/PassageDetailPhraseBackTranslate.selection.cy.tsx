@@ -176,13 +176,14 @@ describe('PBT recording out of order (1, 3, then 2)', () => {
     });
   });
 
-  it('DEFECT: clicking back to segment 2 leaves the step on segment 3', () => {
+  it('follows a click back to an earlier segment and files the take there', () => {
     // Reported: "I record the first segment, then the third, and then try to go
     // back and record the second, it records into and replaces the third".
-    // Clicking segment 2 moves the waveform selection and the playhead there,
-    // but the step stays on segment 3 - so the next take is filed under segment
-    // 3, on top of the take already there. Asserting the label is enough: while
-    // it still reads segment 3, anything recorded goes to the wrong segment.
+    // The click moved the waveform selection to segment 2 while the step stayed
+    // on segment 3, so the take was filed on segment 3 over the one already
+    // there. The engine reports a 1-based segment index and the step sets a
+    // 0-based one, so this move arrived carrying the index the step had just
+    // written (engine 1+1 vs step 2) and the navigation effect never re-ran.
     recordAndSettle(1); // segment 1
 
     clickSegmentOnWaveform(2);
@@ -191,5 +192,21 @@ describe('PBT recording out of order (1, 3, then 2)', () => {
 
     clickSegmentOnWaveform(1);
     unitLabel('0:03', '0:06').should('be.visible');
+    recordTake();
+    waitForUploads(3);
+
+    cy.then(() => {
+      const segs = postedTakes().map((t) => t.parsedSegments);
+      expect(segs[2], 'take recorded on segment 2 lands there').to.deep.include(
+        {
+          start: 3,
+          end: 6,
+        }
+      );
+      const onSegment3 = segs.filter(
+        (s) => s?.start === 6 && s?.end === 9
+      ).length;
+      expect(onSegment3, 'segment 3 still has exactly one take').to.equal(1);
+    });
   });
 });
