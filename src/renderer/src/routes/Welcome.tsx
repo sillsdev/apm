@@ -5,7 +5,7 @@ import { parseQuery } from '../utils/parseQuery';
 import { IState, IWelcomeStrings, User, OfflineProject, UserD } from '../model';
 import { InitializedRecord, RecordTransformBuilder } from '@orbit/records';
 import * as action from '../store';
-import { Typography, Grid, Box, BoxProps, SxProps } from '@mui/material';
+import { Typography, Grid, Box, BoxProps, SxProps, Theme } from '@mui/material';
 import {
   useCheckOnline,
   localeDefault,
@@ -41,11 +41,15 @@ const RootBox = styled(Box)<BoxProps>(() => ({
 }));
 
 const sectionHeadProps = { fontSize: '16pt', pt: 4, pb: 2 } as SxProps;
-const actionProps = {
+const actionSx: SxProps<Theme> = (theme) => ({
   p: 2,
-  textAlign: 'center',
+  display: 'flex',
+  flexWrap: 'wrap',
+  gap: theme.layout.p,
+  justifyContent: 'center',
+  alignItems: 'center',
   alignSelf: 'center',
-} as SxProps;
+});
 
 interface OnlineButtonProps {
   id: string;
@@ -344,7 +348,7 @@ export function Welcome() {
                   factorDecorate={factorDecorate}
                 />
               </Grid>
-              <Grid size={{ xs: 4 }} sx={actionProps}>
+              <Grid size={{ xs: 4 }} sx={actionSx}>
                 <OnlineButton id="adminonline" onClick={handleGoOnlineCloud} />
               </Grid>
               <Grid size={{ xs: 8 }}>
@@ -355,7 +359,7 @@ export function Welcome() {
                   factors={teamFactors}
                 />
               </Grid>
-              <Grid size={{ xs: 4 }} sx={actionProps}>
+              <Grid size={{ xs: 4 }} sx={actionSx}>
                 <OnlineButton id="teamonline" onClick={handleGoOnlineTeam} />
                 {hasOfflineProjects && hasOnlineUsers && (
                   <OfflineButton
@@ -377,7 +381,7 @@ export function Welcome() {
                   factors={aloneFactors}
                 />
               </Grid>
-              <Grid size={{ xs: 4 }} sx={actionProps}>
+              <Grid size={{ xs: 4 }} sx={actionSx}>
                 <OnlineButton id="aloneonline" onClick={handleQuickOnline} />
                 <OfflineButton id="aloneoffline" onClick={handleQuickOffline} />
               </Grid>
