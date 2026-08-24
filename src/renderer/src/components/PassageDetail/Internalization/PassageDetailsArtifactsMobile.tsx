@@ -53,14 +53,7 @@ import {
   canSaveResourceEdit,
   descriptionRequiredForResource,
 } from './resourceArtifactName';
-import {
-  Badge,
-  Box,
-  Stack,
-  Typography,
-  MenuItem,
-  MenuList,
-} from '@mui/material';
+import { Box, Stack, Typography, MenuItem, MenuList } from '@mui/material';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import { ReplaceRelatedRecord } from '../../../model/baseModel';
 import ProjectResourceConfigure from './ProjectResourceConfigure';
