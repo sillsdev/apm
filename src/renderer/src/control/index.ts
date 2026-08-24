@@ -20,6 +20,7 @@ export * from './LogoImg';
 export * from './GrowingSpacer';
 export * from './TabBox';
 export * from './TabActions';
+export * from './Button';
 export * from './PriButton';
 export * from './AltButton';
 export * from './RecordButton';
