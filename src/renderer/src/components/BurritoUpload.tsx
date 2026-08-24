@@ -4,7 +4,6 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  Button,
   LinearProgress,
   Typography,
   Box,
@@ -16,6 +15,7 @@ import { useSelector } from 'react-redux';
 import { mainSelector, scriptureBurritoImportSelector } from '../selector';
 import { shallowEqual } from 'react-redux';
 import { IMainStrings, IScriptureBurritoImportStrings } from '@model/index';
+import { Button } from '../control';
 
 const ipc = window?.api as MainAPI;
 
@@ -165,7 +165,6 @@ const BurritoUploadDialog: React.FC<BurritoUploadDialogProps> = ({
         <div style={{ display: 'flex', gap: 12, marginTop: 16 }}>
           <Button
             data-cy="burrito-upload-browse-directory"
-            variant="outlined"
             onClick={handleBrowseDirectory}
             disabled={loading}
           >
@@ -174,7 +173,6 @@ const BurritoUploadDialog: React.FC<BurritoUploadDialogProps> = ({
 
           <Button
             data-cy="burrito-upload-browse-zip"
-            variant="outlined"
             onClick={handleBrowseZip}
             disabled={loading}
           >
@@ -208,18 +206,14 @@ const BurritoUploadDialog: React.FC<BurritoUploadDialogProps> = ({
       </DialogContent>
 
       <DialogActions>
-        <Button
-          data-cy="burrito-upload-cancel"
-          onClick={handleClose}
-          variant="outlined"
-        >
+        <Button data-cy="burrito-upload-cancel" onClick={handleClose}>
           {mainStrings.cancel}
         </Button>
         <Button
           data-cy="burrito-upload-import"
-          onClick={handleSubmit}
-          variant="contained"
+          color="primary"
           disabled={!selectedPath || loading}
+          onClick={handleSubmit}
         >
           {mainStrings.import}
         </Button>

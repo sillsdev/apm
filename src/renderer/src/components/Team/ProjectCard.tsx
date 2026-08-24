@@ -3,7 +3,6 @@ import { useDispatch, useSelector, shallowEqual } from 'react-redux';
 import { RecordKeyMap } from '@orbit/records';
 import {
   Box,
-  Button,
   Card,
   CardActionArea,
   Chip,
@@ -86,6 +85,7 @@ import ProjectMenu from './ProjectMenu';
 import { ProjectDialog } from './ProjectDialog';
 import { IProjectDialog } from './ProjectDialog/projectDialogTypes';
 import { useCardHeight, useMeasureCardHeight } from './useCardSize';
+import { Button } from '../../control';
 
 interface IProps {
   project: VProjectD;

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { shallowEqual, useSelector } from 'react-redux';
-import { Box, Button, Typography } from '@mui/material';
+import { Box, Typography } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { IState, IProfileStrings } from '../model';
 import { profileSelector } from '../selector';
@@ -8,6 +8,7 @@ import { useHasParatext } from '../utils';
 import { useGlobal } from '../context/useGlobal';
 import { addPt } from '../utils/addPt';
 import Confirm from './AlertDialog';
+import { Button } from '../control';
 
 const captionSx = {
   textAlign: 'center',

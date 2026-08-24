@@ -33,7 +33,7 @@ import VersionsIcon from '@mui/icons-material/List';
 import DeleteIcon from '@mui/icons-material/DeleteOutline';
 import NormalizeIcon from '../control/NormalizeIcon';
 import UploadIcon from '@mui/icons-material/CloudUpload';
-import { Button } from '@mui/material';
+
 import {
   IAudioDownloadStrings,
   IMainStrings,
@@ -50,7 +50,7 @@ import { LightTooltip } from '../control/LightTooltip';
 import { RecordButton } from '../control/RecordButton';
 import { useSnackBar, AlertSeverity } from '../hoc/SnackBar';
 import { HotKeyContext } from '../context/HotKeyContext';
-import { PriButton } from '../control';
+import { Button, PriButton } from '../control';
 import WSAudioPlayerZoom, { maxZoom } from './WSAudioPlayerZoom';
 import {
   dataPath,
@@ -2317,6 +2317,7 @@ function WSAudioPlayer(props: IProps) {
             <Box sx={{ display: 'flex', alignItems: 'center' }}>
               {!isMobileWidth && rightsLeftActions}
               <Button
+                disableTypography
                 sx={{
                   mx: 1,
                   border: '0.5px solid blue',

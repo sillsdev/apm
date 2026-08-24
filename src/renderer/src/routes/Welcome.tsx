@@ -57,7 +57,7 @@ const OnlineButton = ({ id, onClick }: OnlineButtonProps) => {
   const t: IWelcomeStrings = useSelector(welcomeSelector, shallowEqual);
 
   return (
-    <AltButton id={id} onClick={onClick} sx={{ mr: 2 }}>
+    <AltButton disableTypography id={id} onClick={onClick}>
       <OnlineIcon sx={iconProps} />
       {t.online}
     </AltButton>
@@ -72,7 +72,7 @@ const OfflineButton = ({ id, onClick, txt }: OfflineButtonProps) => {
   const t: IWelcomeStrings = useSelector(welcomeSelector, shallowEqual);
 
   return (
-    <AltButton id={id} onClick={onClick} sx={{ mr: 2 }}>
+    <AltButton disableTypography id={id} onClick={onClick}>
       <OfflineIcon sx={iconProps} />
       {txt ? txt : t.offline}
     </AltButton>

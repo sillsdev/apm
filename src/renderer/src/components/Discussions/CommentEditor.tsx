@@ -1,6 +1,5 @@
 import {
   Box,
-  Button,
   TextField,
   Tooltip,
   styled,
@@ -19,6 +18,7 @@ import { useSelector, shallowEqual } from 'react-redux';
 import { commentEditorSelector, sharedSelector } from '../../selector';
 import { UnsavedContext } from '../../context/UnsavedContext';
 import { useArtifactType } from '../../crud';
+import { Button } from '../../control';
 
 const RowDiv = styled('div')(() => ({
   display: 'flex',
@@ -261,6 +261,7 @@ export const CommentEditor = (props: IProps) => {
         <Tooltip title={ts.cancel}>
           <span>
             <Button
+              disableTypography
               id="cancel"
               onClick={handleCancel}
               sx={{
@@ -277,6 +278,7 @@ export const CommentEditor = (props: IProps) => {
         <Tooltip title={ts.save}>
           <span>
             <Button
+              disableTypography
               id="ok"
               onClick={handleOk}
               sx={{
@@ -326,6 +328,7 @@ export const CommentEditor = (props: IProps) => {
           <Tooltip title={commentRecording ? t.recordUnavailable : t.record}>
             <span>
               <Button
+                disableTypography
                 id="record"
                 onClick={handleRecord}
                 disabled={commentRecording}

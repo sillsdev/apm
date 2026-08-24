@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { shallowEqual, useSelector } from 'react-redux';
 import { IFilterContentStrings, IMainStrings } from '../model';
 import {
-  Button,
   Checkbox,
   DialogActions,
   DialogContent,
@@ -12,6 +11,7 @@ import {
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import { filterContentSelector, mediaUploadSelector } from '../selector';
+import { Button } from '../control';
 import { TreeItem, SimpleTreeView } from '@mui/x-tree-view';
 import BigDialog from '../hoc/BigDialog';
 import { BigDialogBp } from '../hoc/BigDialogBp';
@@ -309,20 +309,13 @@ function FilterContent(props: FilterProps) {
           </SimpleTreeView>
         </DialogContent>
         <DialogActions>
-          <Button
-            id="filterCancel"
-            onClick={handleCancel}
-            variant="outlined"
-            color="primary"
-          >
+          <Button id="filterCancel" onClick={handleCancel}>
             {mainStrings.cancel}
           </Button>
           <Button
             id="filterSave"
-            onClick={handleSavePreferences}
-            variant="contained"
             color="primary"
-            disabled={false}
+            onClick={handleSavePreferences}
           >
             {mainStrings.upload}
           </Button>

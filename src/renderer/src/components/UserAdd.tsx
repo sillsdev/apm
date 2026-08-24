@@ -2,7 +2,6 @@ import React from 'react';
 import { useGlobal } from '../context/useGlobal';
 import { User, GroupMembership, IUsertableStrings } from '../model';
 import {
-  Button,
   Dialog,
   DialogActions,
   DialogContent,
@@ -16,6 +15,7 @@ import { useOrbitData } from '../hoc/useOrbitData';
 import { shallowEqual, useSelector } from 'react-redux';
 import { userTableSelector } from '../selector';
 import useAllUsers from '../crud/useAllUsers';
+import { Button } from '../control';
 
 const StyledDialog = styled(Dialog)<DialogProps>(() => ({
   '& .MuiPaper-root': {

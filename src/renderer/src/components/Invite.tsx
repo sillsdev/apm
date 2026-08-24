@@ -12,7 +12,6 @@ import {
   OrganizationMembershipD,
 } from '../model';
 import {
-  Button,
   TextField,
   Dialog,
   DialogActions,
@@ -30,6 +29,7 @@ import { validateEmail, validateMultipleEmails } from '../utils';
 import { API_CONFIG } from '../../api-variable';
 import { AddRecord, ReplaceRelatedRecord } from '../model/baseModel';
 import SelectRole from '../control/SelectRole';
+import { Button } from '../control';
 import { inviteSelector } from '../selector';
 import { useOrbitData } from '../hoc/useOrbitData';
 import { InitializedRecord } from '@orbit/records';

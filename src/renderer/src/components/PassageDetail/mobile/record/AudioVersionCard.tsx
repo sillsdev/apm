@@ -2,14 +2,7 @@ import React from 'react';
 import { FaPaperclip, FaUnlink } from 'react-icons/fa';
 import type { IconBaseProps } from 'react-icons/lib';
 import { shallowEqual, useSelector } from 'react-redux';
-import {
-  Box,
-  Button,
-  IconButton,
-  Radio,
-  Stack,
-  Typography,
-} from '@mui/material';
+import { Box, IconButton, Radio, Stack, Typography } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/DeleteOutline';
 import DescriptionOutlined from '@mui/icons-material/DescriptionOutlined';
 import PauseIcon from '@mui/icons-material/Pause';
@@ -33,6 +26,7 @@ import { WrapTitle } from '../../../../control/WrapTitle';
 import { AudioDownload } from '../../../../components/AudioDownload';
 import { IRow } from '../../../../components/AudioTab';
 import UserAvatar from '../../../../components/UserAvatar';
+import { Button } from '../../../../control';
 
 const Paperclip = FaPaperclip as unknown as React.FC<IconBaseProps>;
 const Unlink = FaUnlink as unknown as React.FC<IconBaseProps>;

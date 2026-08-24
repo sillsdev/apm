@@ -1,7 +1,6 @@
 import { shallowEqual } from 'react-redux';
 import { ICommunityStrings, ISharedStrings, MediaFileD } from '../../model';
 import {
-  Button,
   FormControlLabel,
   IconButton,
   Paper,
@@ -41,7 +40,7 @@ import { UnsavedContext } from '../../context/UnsavedContext';
 import Confirm from '../AlertDialog';
 import Uploader from '../Uploader';
 import AddIcon from '@mui/icons-material/LibraryAddOutlined';
-import { GrowingSpacer, LightTooltip, PriButton } from '../../control';
+import { Button, GrowingSpacer, LightTooltip, PriButton } from '../../control';
 import { useSelector } from 'react-redux';
 import { communitySelector, sharedSelector } from '../../selector';
 import { passageDefaultFilename } from '../../utils/passageDefaultFilename';
@@ -428,6 +427,7 @@ export function PassageDetailItem(props: IProps) {
                   {canRecord && (
                     <Box sx={rowProp}>
                       <Button
+                        disableTypography
                         sx={buttonProp}
                         id="pdRecordUpload"
                         onClick={handleUpload}

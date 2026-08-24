@@ -6,7 +6,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import { Alert, Box, Button } from '@mui/material';
+import { Alert, Box } from '@mui/material';
 import { shallowEqual, useSelector } from 'react-redux';
 import { useGlobal } from '../../context/useGlobal';
 import usePassageDetailContext from '../../context/usePassageDetailContext';
@@ -51,6 +51,7 @@ import LwcTranslationControls, {
   LwcTranslationPhase,
 } from './lwcTranslation/LwcTranslationControls';
 import { LocalKey } from '../../utils/localUserKey';
+import { Button } from '../../control';
 
 const toolId = 'LwcTranslationTool';
 

@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { IAlertStrings } from '../model';
 import {
-  Button,
   Dialog,
   DialogContent,
   DialogContentText,
@@ -13,6 +12,7 @@ import DialogActions, { DialogActionsProps } from '@mui/material/DialogActions';
 import { shallowEqual, useSelector } from 'react-redux';
 import { alertSelector } from '../selector';
 import { useMobile } from '../utils/useMobile';
+import { Button } from '../control';
 
 // see: https://mui.com/material-ui/customization/how-to-customize/
 interface StyledActionsProps extends DialogActionsProps {
@@ -106,27 +106,11 @@ function AlertDialog(props: IProps) {
         </DialogContentText>
       </DialogContent>
       <StyledDialogActions noOnLeft={noOnLeft}>
-        <Button
-          id="alertNo"
-          onClick={handleNo}
-          color="primary"
-          variant="contained"
-          sx={{ textTransform: 'capitalize' }}
-          autoFocus
-        >
+        <Button id="alertNo" color="primary" onClick={handleNo}>
           {no || t.no}
         </Button>
         {yes !== '' && (
-          <Button
-            id="alertYes"
-            onClick={handleYes}
-            color="primary"
-            sx={{
-              textTransform: 'capitalize',
-              border: '0.5px solid',
-              borderColor: 'primary',
-            }}
-          >
+          <Button id="alertYes" onClick={handleYes}>
             {yes || t.yes}
           </Button>
         )}

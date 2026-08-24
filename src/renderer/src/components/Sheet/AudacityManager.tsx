@@ -9,7 +9,6 @@ import {
   MediaFileD,
 } from '../../model';
 import {
-  Button,
   Dialog,
   DialogTitle,
   DialogActions,
@@ -56,6 +55,7 @@ import { MainAPI } from '@model/main-api';
 const ipc = window?.api as MainAPI;
 import path from 'path-browserify';
 import { IStat } from '@model/stat';
+import { Button } from '../../control';
 
 const StyledGrid = styled(Grid)<GridProps>(() => ({
   minWidth: '800px',

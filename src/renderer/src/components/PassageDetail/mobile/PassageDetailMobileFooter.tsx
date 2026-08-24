@@ -1,4 +1,4 @@
-import { Box, Button } from '@mui/material';
+import { Box } from '@mui/material';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import { useMemo } from 'react';
@@ -23,6 +23,7 @@ import { ToolSlug, useStepTool } from '../../../crud';
 import { usePromptSectionResource } from '../Prompt/usePromptSectionResource';
 import { useRole } from '../../../crud/useRole';
 import { useStepPermissions } from '../../../utils/useStepPermission';
+import { Button } from '../../../control';
 
 function NavButtonLabel({
   text,
@@ -164,7 +165,7 @@ export default function PassageDetailMobileFooter() {
       }}
     >
       <Button
-        size="small"
+        disableTypography
         startIcon={<ChevronLeftIcon fontSize="small" />}
         onClick={() => handleNavigate(false)}
         disabled={!prevNavEnabled}
@@ -181,7 +182,7 @@ export default function PassageDetailMobileFooter() {
       </Button>
       {!isBoldWorkflow && <MobileStepComplete />}
       <Button
-        size="small"
+        disableTypography
         endIcon={<ChevronRightIcon fontSize="small" />}
         onClick={() => handleNavigate(true)}
         disabled={!nextNavEnabled}

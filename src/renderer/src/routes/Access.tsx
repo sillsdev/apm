@@ -16,7 +16,6 @@ import { TokenContext } from '../context/TokenProvider';
 import * as action from '../store';
 import {
   Typography,
-  Button,
   Box,
   styled,
   TypographyProps,
@@ -36,7 +35,7 @@ import Confirm from '../components/AlertDialog';
 import UserList from '../control/UserList';
 import { useSnackBar } from '../hoc/SnackBar';
 import AppLayout from '../components/App/AppLayout';
-import { AltButton, PriButton, UserListItem } from '../control';
+import { AltButton, Button, PriButton, UserListItem } from '../control';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import UserListMode from '../control/userListMode';
 import { ListMode } from '../control/ListMode';
@@ -452,12 +451,17 @@ export function Access() {
               pb: 0,
             }}
           >
-            <Button id="back" color="primary" onClick={handleBack}>
+            <Button
+              disableTypography
+              id="back"
+              color="primary"
+              onClick={handleBack}
+            >
               <ArrowBackIcon />
               {t.back}
             </Button>
             <Typography sx={{ fontSize: '16pt' }}>{t.title}</Typography>
-            <Button sx={{ visibility: 'hidden' }}>
+            <Button disableTypography sx={{ visibility: 'hidden' }}>
               <ArrowBackIcon />
               {t.back}
             </Button>

@@ -7,12 +7,11 @@ import {
   TypographyProps,
   FormGroup,
   FormLabel,
-  Button,
   Box,
   styled,
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import { GrowingSpacer } from '../control';
+import { Button, GrowingSpacer } from '../control';
 import { useSelector } from 'react-redux';
 import { deleteExpandSelector } from '../selector';
 
@@ -71,12 +70,9 @@ export function DeleteExpansion(props: IProps) {
               <Button
                 id="deleteExpand"
                 key="delete"
-                color="secondary"
                 aria-label={t.delete}
-                variant="contained"
-                sx={{ m: 1 }}
-                onClick={handleDelete}
                 disabled={inProgress}
+                onClick={handleDelete}
               >
                 {t.delete}
               </Button>

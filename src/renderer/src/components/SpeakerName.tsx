@@ -4,7 +4,6 @@ import { ICommunityStrings, ISharedStrings, MediaFileD } from '../model';
 import TextField from '@mui/material/TextField';
 import Autocomplete, { createFilterOptions } from '@mui/material/Autocomplete';
 import SupportAgentIcon from '@mui/icons-material/SupportAgent';
-import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
@@ -18,6 +17,7 @@ import { Typography, Stack } from '@mui/material';
 import { useOrbitData } from '../hoc/useOrbitData';
 import { useSnackBar } from '../hoc/SnackBar';
 import { useMobile } from '../utils/index';
+import { Button } from '../control';
 
 interface NameOptionType {
   inputValue?: string;
@@ -308,6 +308,7 @@ export function SpeakerName({
   return (
     <>
       <Button
+        disableTypography
         variant={name?.trim() !== '' ? 'outlined' : 'contained'}
         onClick={handleOpenSelectDialog}
         disabled={disabled}

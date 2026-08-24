@@ -7,14 +7,14 @@ import {
   OrganizationD,
   IwsKind,
 } from '../../model';
-import { Button, Box, Typography, Grid } from '@mui/material';
+import { Box, Typography, Grid } from '@mui/material';
 import PublishOnIcon from '@mui/icons-material/PublicOutlined';
 import PublishOffIcon from '@mui/icons-material/PublicOffOutlined';
 import { PassageCard } from './PassageCard';
 import StickyRedirect from '../StickyRedirect';
 import { useParams } from 'react-router-dom';
 import { GraphicAvatar } from './GraphicAvatar';
-import { GrowingSpacer } from '../../control';
+import { Button, GrowingSpacer } from '../../control';
 import {
   isPersonalTeam,
   PublishDestinationEnum,
@@ -136,6 +136,7 @@ export function PlanView(props: IProps) {
               <GrowingSpacer />
               {row.passageType === 'PASS' && publishingView ? (
                 <Button
+                  disableTypography
                   variant="outlined"
                   onClick={() => onPublish(i)}
                   disabled={!canPublish}

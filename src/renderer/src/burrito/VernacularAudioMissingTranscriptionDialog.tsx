@@ -1,5 +1,4 @@
 import {
-  Button,
   Dialog,
   DialogActions,
   DialogContent,
@@ -13,6 +12,7 @@ import {
 import { shallowEqual, useSelector } from 'react-redux';
 import { burritoSelector, sharedSelector } from '../selector';
 import type { IBurritoStrings, ISharedStrings } from '@model/index';
+import { Button } from '../control/Button';
 
 interface Props {
   open: boolean;
@@ -53,7 +53,7 @@ export function VernacularAudioMissingTranscriptionDialog({
       </DialogContent>
       <DialogActions>
         <Button onClick={onCancel}>{ts.cancel}</Button>
-        <Button onClick={onConfirm} variant="contained">
+        <Button onClick={onConfirm} color="primary">
           {ts.confirm}
         </Button>
       </DialogActions>

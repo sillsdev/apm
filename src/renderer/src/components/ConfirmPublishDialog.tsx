@@ -11,7 +11,6 @@ import {
 } from '../model';
 import {
   Box,
-  Button,
   Checkbox,
   Dialog,
   DialogContent,
@@ -42,6 +41,7 @@ import {
   usePublishDestination,
 } from '../crud';
 import ShowLink from '../control/ShowLink';
+import { Button } from '../control';
 import { PublishDestinationEnum } from '../crud';
 import { PassageTypeEnum } from '../model/passageType';
 import { Akuo, Aquifer, ObtHelps } from '../assets/brands';
@@ -439,19 +439,16 @@ function ConfirmPublishDialog(props: IProps) {
       <DialogActions>
         <Button
           id="alertNo"
-          onClick={handleNo}
           color="primary"
           disabled={doingIt}
+          onClick={handleNo}
         >
           {value === current ? sharedStrings.cancel : alertStrings.no}
         </Button>
         <Button
           id="alertYes"
-          onClick={handleYes}
-          variant="contained"
-          color="primary"
           disabled={value === current || (!hasBible && needsBibleId) || doingIt}
-          autoFocus
+          onClick={handleYes}
         >
           {alertStrings.yes}
         </Button>

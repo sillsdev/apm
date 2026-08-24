@@ -2,12 +2,12 @@ import { IMainStrings } from '../model';
 import {
   Dialog,
   DialogTitle,
-  Button,
   DialogContentText,
   DialogActions,
 } from '@mui/material';
 import { mainSelector } from '../selector';
 import { shallowEqual, useSelector } from 'react-redux';
+import { Button } from '../control';
 
 interface TokenDialogProps {
   seconds: number;

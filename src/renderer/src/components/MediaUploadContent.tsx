@@ -3,7 +3,6 @@ import { shallowEqual, useSelector } from 'react-redux';
 import { IMediaUploadStrings } from '../model';
 import {
   Box,
-  Button,
   DialogActions,
   DialogContent,
   DialogContentText,
@@ -22,6 +21,7 @@ import { typeLimit } from '../utils/typeLimit';
 import { FaithbridgeType, MarkDownType, UriLinkType } from './MediaUpload';
 import { UploadType } from './UploadType';
 import { FileDrop } from 'react-file-drop';
+import { Button } from '../control';
 
 const MyLabel = styled('label')(({ theme }) => ({
   display: 'flex',

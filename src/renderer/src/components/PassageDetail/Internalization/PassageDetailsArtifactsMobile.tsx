@@ -871,7 +871,10 @@ export function PassageDetailArtifactsMobile() {
       <Stack sx={{ width: '100%' }} direction="row" spacing={1}>
         {isScripture && (
           <Box>
-            <AltButton onClick={() => handleFindVisible(true)}>
+            <AltButton
+              disableTypography
+              onClick={() => handleFindVisible(true)}
+            >
               <Badge>{t.research}</Badge>
             </AltButton>
           </Box>
@@ -1054,7 +1057,11 @@ export function PassageDetailArtifactsMobile() {
         />
       </BigDialog>
       <BigDialog
-        title={isAddingAudioResourceRef.current ? t.addAudioResource : t.editAudioResource}
+        title={
+          isAddingAudioResourceRef.current
+            ? t.addAudioResource
+            : t.editAudioResource
+        }
         description={
           <Typography sx={{ color: 'text.secondary' }}>
             {t.selectPassagesSub}

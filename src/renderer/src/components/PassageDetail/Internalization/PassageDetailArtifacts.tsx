@@ -897,7 +897,10 @@ export function PassageDetailArtifacts() {
         >
           {isScripture && (
             <Grid>
-              <AltButton onClick={() => handleFindVisible(true)}>
+              <AltButton
+                disableTypography
+                onClick={() => handleFindVisible(true)}
+              >
                 <Badge badgeContent={`(${ts.ai})`}>{t.research}</Badge>
               </AltButton>
             </Grid>
@@ -1053,7 +1056,11 @@ export function PassageDetailArtifacts() {
         />
       </BigDialog>
       <BigDialog
-        title={isAddingAudioResourceRef.current ? t.addAudioResource : t.editAudioResource}
+        title={
+          isAddingAudioResourceRef.current
+            ? t.addAudioResource
+            : t.editAudioResource
+        }
         description={
           <Typography sx={{ color: 'text.secondary' }}>
             {t.selectPassagesSub}

@@ -4,7 +4,6 @@ import { IUploadProgressStrings } from '../model';
 import { uploadProgressSelector } from '../selector';
 import { useSelector } from 'react-redux';
 import {
-  Button,
   Dialog,
   DialogActions,
   DialogContent,
@@ -19,6 +18,7 @@ import {
   Box,
 } from '@mui/material';
 import CheckIcon from '@mui/icons-material/Check';
+import { Button } from './Button';
 
 interface IProps {
   open: boolean;

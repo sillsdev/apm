@@ -1,7 +1,6 @@
 import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import {
   Box,
-  Button,
   Dialog,
   DialogActions,
   DialogContent,
@@ -32,6 +31,7 @@ import { IndexedDBSource } from '@orbit/indexeddb';
 import Memory from '@orbit/memory';
 import { MediaFileAttributes } from '../../model';
 import { Online } from '../../utils';
+import { Button } from '../../control';
 
 const ipc = window?.api as MainAPI;
 

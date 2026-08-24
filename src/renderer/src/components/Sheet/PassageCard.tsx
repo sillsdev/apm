@@ -1,5 +1,5 @@
 import { ICardsStrings, ISheet, IwsKind, PassageTypeEnum } from '../../model';
-import { Box, Button, Card, CardContent, Typography } from '@mui/material';
+import { Box, Card, CardContent, Typography } from '@mui/material';
 import { ArrowForwardIos, Person } from '@mui/icons-material';
 import TaskAvatar from '../../components/TaskAvatar';
 import { passageTypeFromRef } from '../../control/passageTypeFromRef';
@@ -10,6 +10,7 @@ import { PassageGraphic } from './PassageGraphic';
 import { PassageRef } from './PassageRef';
 import { useSectionIdDescription } from './useSectionIdDescription';
 import { useMobile } from '../../utils';
+import { Button } from '../../control';
 
 interface IProps {
   cardInfo: ISheet;
@@ -117,6 +118,7 @@ export function PassageCard(props: IProps) {
               </Box>
             )}
             <Button
+              disableTypography
               variant="contained"
               sx={{ width: '100%', position: 'relative', px: 1 }}
               onClick={handleViewStep}

@@ -21,7 +21,6 @@ import {
 } from '../model';
 import Confirm from './AlertDialog';
 import {
-  Button,
   Typography,
   LinearProgress,
   AppBar,
@@ -70,7 +69,7 @@ import {
   useDataChanges,
   doSort,
 } from '../utils';
-import { ActionRow, AltButton } from '../control';
+import { ActionRow, Button } from '../control';
 import { useSelector } from 'react-redux';
 import { activitySelector, importSelector, sharedSelector } from '../selector';
 import { useDispatch } from 'react-redux';
@@ -1109,7 +1108,7 @@ export function ImportTab(props: IProps) {
               </Typography>
               {changeData.length > 0 && (
                 <ActionRow>
-                  <AltButton
+                  <Button
                     id="importCopy"
                     key="copy"
                     aria-label={t.copy}
@@ -1117,7 +1116,7 @@ export function ImportTab(props: IProps) {
                     title={t.copy}
                   >
                     {t.copy}
-                  </AltButton>
+                  </Button>
                 </ActionRow>
               )}
               {changeData.length > 0 && (
@@ -1310,10 +1309,8 @@ export function ImportTab(props: IProps) {
       >
         <Button
           id="importClose"
-          onClick={handleClose}
-          variant="outlined"
-          color="primary"
           disabled={importStatus !== undefined}
+          onClick={handleClose}
         >
           {t.close}
         </Button>
@@ -1321,7 +1318,6 @@ export function ImportTab(props: IProps) {
           <Button
             id="importContinue"
             onClick={handleImportTypeSelected}
-            variant="contained"
             color="primary"
             autoFocus
           >

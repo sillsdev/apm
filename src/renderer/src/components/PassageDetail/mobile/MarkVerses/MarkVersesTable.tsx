@@ -1,6 +1,5 @@
 import {
   Box,
-  Button,
   Paper,
   Table,
   TableBody,
@@ -22,6 +21,7 @@ import {
   RefStatus,
 } from '../../../../utils/markVersesSegmentColors';
 import type { ICell } from './PassageDetailMarkVerses';
+import { Button } from '../../../../control';
 
 interface MarkVersesTableProps {
   data: ICell[][];

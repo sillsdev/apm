@@ -1,4 +1,4 @@
-import { Box, Button, SxProps, useTheme } from '@mui/material';
+import { Box, SxProps, useTheme } from '@mui/material';
 import { LightTooltip } from './LightTooltip';
 import PauseIcon from '@mui/icons-material/Pause';
 import StopIcon from '@mui/icons-material/Stop';
@@ -8,6 +8,7 @@ import type { IconBaseProps } from 'react-icons/lib';
 import { shallowEqual, useSelector } from 'react-redux';
 import { IRecordButtonStrings } from '@model/index';
 import { recordButtonSelector } from '../selector';
+import { Button } from './Button';
 
 const RecordSquare = FaSquare as unknown as React.FC<IconBaseProps>;
 const WhiteCircle = FaCircle as unknown as React.FC<IconBaseProps>;

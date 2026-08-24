@@ -11,7 +11,6 @@ import {
 } from '../model';
 import {
   Dialog,
-  Button,
   DialogContent,
   FormControlLabel,
   Avatar,
@@ -65,6 +64,7 @@ import SelectRole from '../control/SelectRole';
 import ExtendableDeleteExpansion from './ExtendableDeleteExpansion';
 import { AltActionBar } from './AltActionBar';
 import { StyledDialogTitle } from './StyledDialogTitle';
+import { Button } from '../control';
 
 const Caption = styled(Typography)<TypographyProps>(() => ({
   width: 150,

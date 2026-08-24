@@ -1,5 +1,4 @@
-import * as React from 'react';
-import Button from '@mui/material/Button';
+import { FormEvent, useEffect, useState } from 'react';
 import TextField from '@mui/material/TextField';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
@@ -9,6 +8,7 @@ import DialogTitle from '@mui/material/DialogTitle';
 import { shallowEqual, useSelector } from 'react-redux';
 import { burritoSelector, sharedSelector } from '../selector';
 import { IBurritoStrings, ISharedStrings } from '@model/index';
+import { Button } from '../control/Button';
 
 interface MetaValueProps {
   idKey: string;
@@ -25,8 +25,8 @@ export default function MetaValue({
   isOpen,
   onOpen,
 }: MetaValueProps) {
-  const [open, setOpen] = React.useState(isOpen);
-  const [newValue, setNewValue] = React.useState(value);
+  const [open, setOpen] = useState(isOpen);
+  const [newValue, setNewValue] = useState(value);
   const t: IBurritoStrings = useSelector(burritoSelector, shallowEqual);
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
 
@@ -35,11 +35,11 @@ export default function MetaValue({
     onOpen(false);
   };
 
-  React.useEffect(() => {
+  useEffect(() => {
     setOpen(isOpen);
   }, [isOpen]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     setNewValue(value);
   }, [value]);
 
@@ -55,7 +55,7 @@ export default function MetaValue({
       slotProps={{
         paper: {
           component: 'form',
-          onSubmit: (event: React.FormEvent<HTMLFormElement>) => {
+          onSubmit: (event: FormEvent<HTMLFormElement>) => {
             event.preventDefault();
             onConfirm(idKey, newValue);
             handleClose();

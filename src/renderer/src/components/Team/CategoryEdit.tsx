@@ -24,11 +24,12 @@ import { useOrbitData } from '../../hoc/useOrbitData';
 import { GraphicD, ICategoryStrings, ISharedStrings } from '../../model';
 import { UploadType } from '../UploadType';
 import { useSnackBar } from '../../hoc/SnackBar';
-import { Avatar, Button, IconButton, styled } from '@mui/material';
+import { Avatar, IconButton, styled } from '@mui/material';
 import { ColorResult } from '@uiw/color-convert';
 import { RecordKeyMap } from '@orbit/records';
 import { categorySelector, sharedSelector } from '../../selector';
 import { apmGraphic } from '../../components/apmGraphic';
+import { Button } from '../../control';
 
 const StyledColorful = styled(Colorful)<ColorfulProps>(() => ({
   '& .w-color-alpha': {

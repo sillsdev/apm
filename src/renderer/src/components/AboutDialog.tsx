@@ -3,7 +3,6 @@ import { IMainStrings, ISharedStrings } from '../model';
 import {
   Dialog,
   DialogTitle,
-  Button,
   DialogContent,
   DialogActions,
   Accordion,
@@ -25,7 +24,7 @@ import about from '../assets/about.json';
 import stringReplace from 'react-string-replace';
 import { useSnackBar } from '../hoc/SnackBar';
 import { ApmLogo } from '../control/ApmLogo';
-import { StyledHeading } from '../control';
+import { StyledHeading, Button } from '../control';
 import { mainSelector, sharedSelector } from '../selector';
 import { shallowEqual, useSelector } from 'react-redux';
 import packageJson from '../../package.json';
@@ -197,7 +196,7 @@ function AboutDialog(props: AboutDialogProps) {
         <LicenseAccordion {...about.icons8} kid="ic8" />
       </DialogContent>
       <DialogActions>
-        <Button id="aboutExit" variant="outlined" onClick={handleExit}>
+        <Button id="aboutExit" color="primary" onClick={handleExit}>
           {t.exit}
         </Button>
       </DialogActions>

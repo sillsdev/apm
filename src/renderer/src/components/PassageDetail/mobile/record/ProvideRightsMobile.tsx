@@ -1,14 +1,13 @@
 import React from 'react';
 import { VoiceStatement } from '../../../../business/voice/VoiceStatement';
 import MediaRecord from '../../../MediaRecord';
-import { AltButton, GrowingSpacer, PriButton } from '../../../../control';
 import {
+  AltButton,
   Button,
-  Typography,
-  Box,
-  LinearProgress,
-  IconButton,
-} from '@mui/material';
+  GrowingSpacer,
+  PriButton,
+} from '../../../../control';
+import { Typography, Box, LinearProgress, IconButton } from '@mui/material';
 import { SxProps } from '@mui/material/styles';
 import {
   ICommunityStrings,

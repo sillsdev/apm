@@ -1,6 +1,5 @@
 import {
   Box,
-  Button,
   ButtonBase,
   Dialog,
   DialogActions,
@@ -33,6 +32,7 @@ import {
 import { ToolSlug, useOrganizedBy, useStepTool } from '../../../crud';
 import { useRole } from '../../../crud/useRole';
 import { useStepPermissions } from '../../../utils/useStepPermission';
+import { Button } from '../../../control';
 
 const DESKTOP_BREAKPOINT = '@media (min-width:1401px)';
 
@@ -238,7 +238,7 @@ export default function MobileWorkflowSteps() {
             }}
           >
             <Button
-              size="small"
+              disableTypography
               startIcon={
                 !isStepProgression && currentTip ? (
                   <InfoIcon
