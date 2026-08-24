@@ -109,12 +109,15 @@ const shtPassageAdd = (
         break;
       indexAt += 1;
     }
+    const inserted = item;
     while (indexAt < sheet.length) {
       const saved = sheet[indexAt] as ISheet;
       sheet[indexAt] = item;
       item = saved;
       indexAt += 1;
     }
+    sheet.push(item);
+    return inserted;
   }
   sheet.push(item);
   return item;
