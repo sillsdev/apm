@@ -83,7 +83,9 @@ const shtPassageUpdate = (item: ISheet, rec: ISheet) => {
           attributes: { ...rec.passage.attributes, reference: rec.reference },
         };
       }
+      return true;
     }
+  return false;
 };
 
 const shtPassageAdd = (
@@ -97,8 +99,8 @@ const shtPassageAdd = (
     if (item.kind === IwsKind.SectionPassage) {
       shtSectionUpdate(item, rec);
     }
-    shtPassageUpdate(item, rec);
-    return rec;
+    const updated = shtPassageUpdate(item, rec);
+    return { rec, touched: updated };
   } else if (sectionIndex && sectionIndex >= 0) {
     let indexAt = sectionIndex + 1;
     while (indexAt < sheet.length) {
@@ -117,10 +119,10 @@ const shtPassageAdd = (
       indexAt += 1;
     }
     sheet.push(item);
-    return inserted;
+    return { rec: inserted, touched: true };
   }
   sheet.push(item);
-  return item;
+  return { rec: item, touched: true };
 };
 
 const initItem = {} as ISheet;
@@ -414,8 +416,9 @@ export const getSheet = ({
             myGroups
           );
       }
-      const rec = shtPassageAdd(myWork, item, sectionIndex);
+      const { rec, touched } = shtPassageAdd(myWork, item, sectionIndex);
       if (
+        touched &&
         [PassageTypeEnum.NOTE, PassageTypeEnum.CHAPTERNUMBER].includes(
           rec.passageType
         ) &&
