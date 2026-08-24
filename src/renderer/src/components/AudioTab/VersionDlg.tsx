@@ -15,7 +15,7 @@ import { useOrbitData } from '../../hoc/useOrbitData';
 import { shallowEqual, useSelector } from 'react-redux';
 import { doSort } from '../../utils/index';
 import type { GridSortModel } from '@mui/x-data-grid';
-import { Typography, Box } from '@mui/material';
+import { Box } from '@mui/material';
 import { sharedSelector } from '../../selector/selectors';
 import { Button } from '../../control';
 import { usePassageVersionAudioRows } from './usePassageVersionAudioRows';
