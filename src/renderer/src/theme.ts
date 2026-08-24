@@ -73,6 +73,7 @@ const colors = {
   darkBorder: '#595959',
 
   // Disabled
+  disabledBg: '#f2f3f5',
   disabledText: '#818b98',
   disabledBorder: '#818b981a',
 
@@ -168,6 +169,12 @@ export const createAppTheme = (lang: string) =>
                   color: colors.lightText,
                   borderColor: colors.lightBorder,
                 },
+                '&.Mui-disabled': {
+                  backgroundColor: colors.disabledBg,
+                  color: colors.disabledText,
+                  borderColor: colors.disabledBorder,
+                  boxShadow: 'none',
+                },
               },
             },
             {
@@ -185,6 +192,12 @@ export const createAppTheme = (lang: string) =>
                   backgroundColor: colors.lightBgActive,
                   color: colors.lightText,
                   borderColor: colors.lightBorder,
+                },
+                '&.Mui-disabled': {
+                  backgroundColor: colors.disabledBg,
+                  color: colors.disabledText,
+                  borderColor: colors.disabledBorder,
+                  boxShadow: 'none',
                 },
               },
             },
@@ -207,6 +220,12 @@ export const createAppTheme = (lang: string) =>
                   color: colors.lightText,
                   borderColor: colors.lightBorder,
                 },
+                '&.Mui-disabled': {
+                  backgroundColor: colors.disabledBg,
+                  color: colors.disabledText,
+                  borderColor: colors.disabledBorder,
+                  boxShadow: 'none',
+                },
               },
             },
             {
@@ -228,18 +247,18 @@ export const createAppTheme = (lang: string) =>
                   color: colors.lightText,
                   borderColor: colors.lightBorder,
                 },
+                '&.Mui-disabled': {
+                  backgroundColor: colors.disabledBg,
+                  color: colors.disabledText,
+                  borderColor: colors.disabledBorder,
+                  boxShadow: 'none',
+                },
               },
             },
             {
               props: { variant: 'contained' },
               style: {
                 border: '1px solid transparent',
-                '&.Mui-disabled': {
-                  backgroundColor: colors.lightBgHover,
-                  color: colors.disabledText,
-                  borderColor: colors.disabledBorder,
-                  boxShadow: 'none',
-                },
               },
             },
             {
@@ -260,6 +279,12 @@ export const createAppTheme = (lang: string) =>
                   color: colors.darkText,
                   borderColor: colors.darkBorder,
                 },
+                '&.Mui-disabled': {
+                  backgroundColor: colors.disabledBg,
+                  color: colors.disabledText,
+                  borderColor: colors.disabledBorder,
+                  boxShadow: 'none',
+                },
               },
             },
             {
@@ -279,6 +304,12 @@ export const createAppTheme = (lang: string) =>
                   backgroundColor: colors.lightBgActive,
                   color: colors.lightText,
                   borderColor: colors.lightBorder,
+                },
+                '&.Mui-disabled': {
+                  backgroundColor: colors.disabledBg,
+                  color: colors.disabledText,
+                  borderColor: colors.disabledBorder,
+                  boxShadow: 'none',
                 },
               },
             },
@@ -322,6 +353,12 @@ export const createAppTheme = (lang: string) =>
                 },
                 '&:active': {
                   backgroundColor: colors.lightBgActive,
+                },
+                '&.Mui-disabled': {
+                  backgroundColor: colors.disabledBg,
+                  color: colors.disabledText,
+                  borderColor: colors.disabledBorder,
+                  boxShadow: 'none',
                 },
               },
             },
