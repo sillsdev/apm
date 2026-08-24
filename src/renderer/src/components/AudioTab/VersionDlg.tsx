@@ -17,7 +17,7 @@ import { doSort } from '../../utils/index';
 import type { GridSortModel } from '@mui/x-data-grid';
 import { Typography, Box } from '@mui/material';
 import { sharedSelector } from '../../selector/selectors';
-import { PriButton } from '../../control';
+import { Button } from '../../control';
 import { usePassageVersionAudioRows } from './usePassageVersionAudioRows';
 
 interface IProps {
@@ -123,7 +123,7 @@ export const VersionDlg = (props: IProps) => {
               justifyContent: 'flex-end',
             }}
           >
-            <PriButton
+            <Button
               onClick={() => {
                 if (!selectedId || selectedId === latestRowId) return;
                 const version = parseInt(
@@ -132,12 +132,11 @@ export const VersionDlg = (props: IProps) => {
                 );
                 void promoteVersionToLatest(version).then(() => close?.());
               }}
+              color="primary"
               disabled={!selectedId || selectedId === latestRowId}
             >
-              <Typography sx={{ color: 'white', p: 0.5 }}>
-                {ts.useThisVersion}
-              </Typography>
-            </PriButton>
+              {ts.useThisVersion}
+            </Button>
           </Box>
         </ActionRow>
       )}

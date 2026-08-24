@@ -25,7 +25,7 @@ import { AddRecord } from '../model/baseModel';
 import { useOfflineSetup, useRecOfType } from '../crud';
 import { ChoiceHead, FactorDecorate } from '../control/ChoiceHead';
 import { backup } from '../schema';
-import { AltButton, LightTooltip } from '../control';
+import { Button, LightTooltip } from '../control';
 import { styled } from '@mui/material';
 import { welcomeSelector } from '../selector';
 
@@ -41,7 +41,6 @@ const RootBox = styled(Box)<BoxProps>(() => ({
 }));
 
 const sectionHeadProps = { fontSize: '16pt', pt: 4, pb: 2 } as SxProps;
-const iconProps = { mr: 1, fontSize: 'small' } as SxProps;
 const actionProps = {
   p: 2,
   textAlign: 'center',
@@ -57,10 +56,14 @@ const OnlineButton = ({ id, onClick }: OnlineButtonProps) => {
   const t: IWelcomeStrings = useSelector(welcomeSelector, shallowEqual);
 
   return (
-    <AltButton id={id} onClick={onClick} sx={{ mr: 2 }}>
-      <OnlineIcon sx={iconProps} />
+    <Button
+      disableTypography
+      id={id}
+      startIcon={<OnlineIcon />}
+      onClick={onClick}
+    >
       {t.online}
-    </AltButton>
+    </Button>
   );
 };
 
@@ -72,10 +75,14 @@ const OfflineButton = ({ id, onClick, txt }: OfflineButtonProps) => {
   const t: IWelcomeStrings = useSelector(welcomeSelector, shallowEqual);
 
   return (
-    <AltButton id={id} onClick={onClick} sx={{ mr: 2 }}>
-      <OfflineIcon sx={iconProps} />
+    <Button
+      disableTypography
+      id={id}
+      startIcon={<OfflineIcon />}
+      onClick={onClick}
+    >
       {txt ? txt : t.offline}
-    </AltButton>
+    </Button>
   );
 };
 

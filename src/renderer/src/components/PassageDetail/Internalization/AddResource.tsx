@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { IPassageDetailArtifactsStrings } from '../../../model';
-import { ListItemText, SxProps, Theme } from '@mui/material';
+import { ListItemText } from '@mui/material';
 import InfoIcon from '@mui/icons-material/Info';
-import { AltButton, LightTooltip } from '../../../control';
+import { Button, LightTooltip } from '../../../control';
 import { resourceSelector } from '../../../selector';
 import { shallowEqual, useSelector } from 'react-redux';
 import { StyledMenu, StyledMenuItem } from '../../../control';
@@ -10,14 +10,10 @@ import { useGlobal } from '../../../context/useGlobal';
 
 interface IProps {
   action?: (what: string) => void;
-  stopPlayer?: () => void;
-  buttonDark?: boolean;
-  buttonElevated?: boolean; // setting for some shadowing
-  buttonSx?: SxProps<Theme>;
 }
 
 export const AddResource = (props: IProps) => {
-  const { action, stopPlayer, buttonDark, buttonElevated, buttonSx } = props;
+  const { action } = props;
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [offline] = useGlobal('offline'); //verified this is not used in a function 2/18/25
   const [offlineOnly] = useGlobal('offlineOnly'); //will be constant here
@@ -29,7 +25,6 @@ export const AddResource = (props: IProps) => {
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {
     event.stopPropagation();
     setAnchorEl(event.currentTarget);
-    if (stopPlayer) stopPlayer();
   };
 
   const handle = (what: string) => (event: React.MouseEvent) => {
@@ -41,16 +36,10 @@ export const AddResource = (props: IProps) => {
   };
 
   return (
-    <div>
-      <AltButton
-        id="add-resource"
-        onClick={handleClick}
-        dark={buttonDark}
-        elevated={buttonElevated}
-        sx={buttonSx}
-      >
+    <>
+      <Button id="add-resource" onClick={handleClick}>
         {t.add}
-      </AltButton>
+      </Button>
       <StyledMenu
         id="customized-menu"
         anchorEl={anchorEl}
@@ -81,7 +70,7 @@ export const AddResource = (props: IProps) => {
           </StyledMenuItem>
         )}
       </StyledMenu>
-    </div>
+    </>
   );
 };
 

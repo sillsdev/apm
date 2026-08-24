@@ -6,7 +6,7 @@ import { IFindResourceStrings, ISharedStrings } from '../../../model';
 import { shallowEqual, useSelector } from 'react-redux';
 import { findResourceSelector, sharedSelector } from '../../../selector';
 import { Badge, Grid } from '@mui/material';
-import { AltButton } from '../../../control';
+import { Button } from '../../../control';
 import { parseRef } from '../../../crud/passage';
 import { pad3 } from '../../../utils/pad3';
 import { isElectron } from '../../../../api-variable';
@@ -63,33 +63,21 @@ export default function ResourceItem({
 
   return (
     <Grid>
-      {resource?.href ? (
-        <AltButton
-          onClick={handleClick(resource.name, resource.href)}
-          title={resource.help ? t.getString(resource.help) : undefined}
-          variant="outlined"
-          sx={{ m: 1 }}
-        >
-          {resource.ai ? (
-            <Badge badgeContent={ts.ai}>{resource.name}</Badge>
-          ) : (
-            resource.name
-          )}
-        </AltButton>
-      ) : (
-        <AltButton
-          title={resource.help ? t.getString(resource.help) : undefined}
-          variant="outlined"
-          sx={{ m: 1 }}
-          onClick={handleHelp(resource)}
-        >
-          {resource.ai ? (
-            <Badge badgeContent={ts.ai}>{resource.name}</Badge>
-          ) : (
-            resource.name
-          )}
-        </AltButton>
-      )}
+      <Button
+        disableTypography={resource.ai}
+        onClick={
+          resource.href
+            ? handleClick(resource.name, resource.href)
+            : handleHelp(resource)
+        }
+        title={resource.help ? t.getString(resource.help) : undefined}
+      >
+        {resource.ai ? (
+          <Badge badgeContent={ts.ai}>{resource.name}</Badge>
+        ) : (
+          resource.name
+        )}
+      </Button>
     </Grid>
   );
 }

@@ -19,7 +19,7 @@ import Uploader from '../../Uploader';
 import AddResource from './AddResource';
 import SortableHeader from './SortableHeader';
 import { IRow } from '../../../context/PassageDetailContext';
-import { AltButton } from '../../../control';
+import { Button } from '../../../control';
 import { AIGenerated, SortableItem } from '.';
 import {
   remoteIdGuid,
@@ -897,9 +897,9 @@ export function PassageDetailArtifacts() {
         >
           {isScripture && (
             <Grid>
-              <AltButton onClick={() => handleFindVisible(true)}>
+              <Button disableTypography onClick={() => handleFindVisible(true)}>
                 <Badge badgeContent={`(${ts.ai})`}>{t.research}</Badge>
-              </AltButton>
+              </Button>
             </Grid>
           )}
           {hasPermission && (!offline || offlineOnly) && (
@@ -909,9 +909,9 @@ export function PassageDetailArtifacts() {
               </Grid>
               {hasProjRes && !isMobileWidth && (
                 <Grid>
-                  <AltButton onClick={() => setProjectResourceVisible(true)}>
+                  <Button onClick={() => setProjectResourceVisible(true)}>
                     {t.configure}
-                  </AltButton>
+                  </Button>
                 </Grid>
               )}
             </>
@@ -1053,7 +1053,11 @@ export function PassageDetailArtifacts() {
         />
       </BigDialog>
       <BigDialog
-        title={isAddingAudioResourceRef.current ? t.addAudioResource : t.editAudioResource}
+        title={
+          isAddingAudioResourceRef.current
+            ? t.addAudioResource
+            : t.editAudioResource
+        }
         description={
           <Typography sx={{ color: 'text.secondary' }}>
             {t.selectPassagesSub}
