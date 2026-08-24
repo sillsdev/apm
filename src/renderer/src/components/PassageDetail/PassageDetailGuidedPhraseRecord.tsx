@@ -762,20 +762,26 @@ export function PassageDetailGuidedPhraseRecord({
     (playingNow: boolean) => {
       if (playingNow) {
         setHighlightPlayButton(false);
-        // Playback really began, however it was started: re-base the window so
-        // a stop caused by this start is still recognised as the seek.
+        // Playback began, whatever started it. Time the window from here, so a
+        // stop that this start provokes is discarded below instead of being read
+        // as the clause having finished.
         clausePlaybackStartedAtRef.current = Date.now();
       }
       if (currentIndex === clauseRegions.length - 1) {
         markClauseHeard(currentIndex);
       }
-      // The reference audio stopping is enough to make the clause recordable.
-      // Waiting for region-out alone stranded the step whenever no region-out
-      // was coming: a user pause has none by definition, and Record then stayed
-      // disabled with no way forward but replaying the whole clause. Ignore a
-      // stop within SPURIOUS_STOP_WINDOW_MS of starting, which is the seek.
-      if (playingNow || !recordingPassStartedRef.current) return;
+      // Only a stop tells us the clause has been heard; the start case is
+      // handled above.
+      if (playingNow) return;
+      // The listen pass has nothing to record, so nothing to enable.
+      if (!recordingPassStartedRef.current) return;
+      // Capturing or saving a take stops the source audio, and that stop is not
+      // the clause being heard. Defensive:
       if (recordingActiveRef.current || savingRecordingRef.current) return;
+      // Starting a clause seeks the playhead to its start, and that seek reports
+      // a stop of its own before anything has been heard. This can be
+      // differentiated from a real stop (user pause) by how long playback had
+      // been running. If under SPURIOUS_STOP_WINDOW_MS it is the seek, ignore it.
       if (
         Date.now() - clausePlaybackStartedAtRef.current <
         SPURIOUS_STOP_WINDOW_MS
