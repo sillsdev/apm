@@ -238,6 +238,7 @@ export function UserTable() {
                 <Button
                   key="add"
                   aria-label={t.invite}
+                  color="primary"
                   startIcon={<AddIcon />}
                   onClick={handleInvite}
                 >
@@ -248,6 +249,7 @@ export function UserTable() {
                 <Button
                   key="add-member"
                   aria-label={t.addMember}
+                  color="primary"
                   startIcon={<AddIcon />}
                   onClick={handleAddOpen}
                 >
