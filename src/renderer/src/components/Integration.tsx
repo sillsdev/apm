@@ -955,6 +955,7 @@ export function IntegrationPanel(props: IProps) {
                       !paratext_count ||
                       !isPermitted
                     }
+                    color="primary"
                     startIcon={<SyncIcon />}
                     onClick={handleSync}
                   >
@@ -1098,6 +1099,7 @@ export function IntegrationPanel(props: IProps) {
                       !paratext_count ||
                       !isPermitted
                     }
+                    color="primary"
                     startIcon={<SyncIcon />}
                     onClick={handleLocalSync}
                   >
