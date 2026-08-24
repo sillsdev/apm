@@ -1015,3 +1015,103 @@ test('merge insert in the middle attaches graphic to the new note not a later ro
   expect(noteRow?.color).toBe('#ed071d');
   expect(laterRow?.graphicUri).toBeUndefined();
 });
+
+test('merge does not recompute graphic on an unchanged note row', () => {
+  const paNote = {
+    ...pa1,
+    id: 'pn1',
+    attributes: {
+      ...pa1.attributes,
+      sequencenum: 1,
+      reference: 'NOTE|Devotional',
+      title: 'a note',
+      dateUpdated: '2021-09-15',
+    },
+  } as PassageD;
+  const s1passages = {
+    ...s1,
+    relationships: {
+      ...s1.relationships,
+      passages: { data: [{ type: 'passage', id: 'pn1' }] },
+    },
+  } as SectionD;
+  const current: ISheet[] = [
+    {
+      ...secResult,
+      sectionId: { type: 'section', id: 's1' },
+      sectionUpdated: '2021-09-15',
+      title: 'Intro',
+    },
+    {
+      ...pasResult,
+      passageType: PassageTypeEnum.NOTE,
+      reference: 'NOTE|Devotional',
+      comment: 'a note',
+      passageUpdated: '2021-09-15',
+      passage: paNote,
+      graphicUri: 'kept.png',
+      color: '#111111',
+    },
+  ];
+  const graphicFind = jest.fn((): FindResult => ({}));
+  const merged = getSheet({
+    ...gsDefaults,
+    plan: 'pl1',
+    sections: [s1passages],
+    passages: [paNote],
+    current,
+    graphicFind,
+  } as any);
+  expect(merged[1].graphicUri).toBe('kept.png');
+  expect(merged[1].color).toBe('#111111');
+});
+
+test('merge does not clear a note graphic when orbit graphicFind is empty', () => {
+  const paNote = {
+    ...pa1,
+    id: 'pn1',
+    attributes: {
+      ...pa1.attributes,
+      sequencenum: 1,
+      reference: 'NOTE',
+      title: 'a note',
+      dateUpdated: '2021-09-16',
+    },
+  } as PassageD;
+  const s1passages = {
+    ...s1,
+    relationships: {
+      ...s1.relationships,
+      passages: { data: [{ type: 'passage', id: 'pn1' }] },
+    },
+  } as SectionD;
+  const current: ISheet[] = [
+    {
+      ...secResult,
+      sectionId: { type: 'section', id: 's1' },
+      sectionUpdated: '2021-09-15',
+      title: 'Intro',
+    },
+    {
+      ...pasResult,
+      passageType: PassageTypeEnum.NOTE,
+      reference: 'NOTE|Devotional',
+      comment: 'a note',
+      passageUpdated: '2021-09-15',
+      passage: paNote,
+      graphicUri: 'kept.png',
+      color: '#111111',
+    },
+  ];
+  const merged = getSheet({
+    ...gsDefaults,
+    plan: 'pl1',
+    sections: [s1passages],
+    passages: [paNote],
+    current,
+    graphicFind: () => ({}),
+  } as any);
+  expect(merged[1].reference).toBe('NOTE|Devotional');
+  expect(merged[1].graphicUri).toBe('kept.png');
+  expect(merged[1].color).toBe('#111111');
+});
