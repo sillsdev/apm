@@ -136,7 +136,6 @@ export function InvitationTable() {
 
   useEffect(() => {
     setData(getInvites(organization, roles, invitations, ts));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [organization, roles, invitations, confirmAction, ts]);
 
   const canEdit = useMemo(
