@@ -158,7 +158,10 @@ export default function MarkVersesTable({
                 <TableCell
                   sx={{
                     whiteSpace: 'nowrap',
-                    width: '42%',
+                    // Shrink to the limits text's own width (rather than a fixed
+                    // 42%) so the reference column keeps enough room to stay on
+                    // one line even for three-digit chapter:verse ranges (TT-7623).
+                    width: '1%',
                     pl: 1.5,
                     backgroundColor: 'inherit',
                     py: 0.75,
@@ -299,6 +302,10 @@ export default function MarkVersesTable({
                       aria-label={`verse-reference-${rowIndex}`}
                       sx={{
                         color: invalid ? 'error.main' : 'text.primary',
+                        // Keep the reference (e.g. "119:10b-11a") on a single
+                        // line instead of wrapping when it has three-digit
+                        // chapter/verse numbers (TT-7623).
+                        whiteSpace: 'nowrap',
                       }}
                     >
                       {reference.value || '-'}
