@@ -1,7 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { GroupD, IPeerStrings, ISharedStrings } from '../../model';
 import {
-  Button,
   IconButton,
   TextField,
   Dialog,
@@ -21,7 +20,7 @@ import { peerSelector, sharedSelector } from '../../selector';
 import Confirm from '../AlertDialog';
 import { useSnackBar } from '../../hoc/SnackBar';
 import { usePermissions } from '../../crud/usePermissions';
-import { AltButton, PriButton } from '../../control';
+import { Button, AltButton, PriButton } from '../../control';
 import { useOrbitData } from '../../hoc/useOrbitData';
 import { OrganizationSchemeStepD } from '../../model/organizationSchemeStep';
 import related from '../../crud/related';

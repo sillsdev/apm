@@ -1,6 +1,6 @@
-import { Button, ButtonProps } from '@mui/material';
+import { Button, IButtonProps } from './Button';
 
-interface IAltButtonProps extends ButtonProps {
+interface IAltButtonProps extends IButtonProps {
   dark?: boolean;
   elevated?: boolean;
 }

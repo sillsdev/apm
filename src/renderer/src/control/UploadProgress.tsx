@@ -1,10 +1,10 @@
 /* eslint-disable react-hooks/refs */
 import { useEffect, useRef } from 'react';
+import { Button } from './Button';
 import { IUploadProgressStrings } from '../model';
 import { uploadProgressSelector } from '../selector';
 import { useSelector } from 'react-redux';
 import {
-  Button,
   Dialog,
   DialogActions,
   DialogContent,

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Typography, Button, Grid, BoxProps, styled } from '@mui/material';
+import { Box, Typography, Grid, BoxProps, styled } from '@mui/material';
 import AppLayout from '../components/App/AppLayout';
 import { TeamProvider, TeamContext, TeamIdType } from '../context/TeamContext';
 import { useLocation } from 'react-router-dom';
@@ -17,6 +17,7 @@ import { UnsavedContext } from '../context/UnsavedContext';
 import BigDialog from '../hoc/BigDialog';
 import { StepEditor } from '../components/StepEditor';
 import { useIsPapLike } from '../utils/useIsPapLike';
+import { Button } from '../control/Button';
 
 interface ProjectBoxProps extends BoxProps {
   isMobile?: boolean;

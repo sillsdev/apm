@@ -21,7 +21,6 @@ import {
 } from '../model';
 import Confirm from './AlertDialog';
 import {
-  Button,
   Typography,
   LinearProgress,
   AppBar,
@@ -70,7 +69,7 @@ import {
   useDataChanges,
   doSort,
 } from '../utils';
-import { ActionRow, AltButton } from '../control';
+import { Button, ActionRow, AltButton } from '../control';
 import { useSelector } from 'react-redux';
 import { activitySelector, importSelector, sharedSelector } from '../selector';
 import { useDispatch } from 'react-redux';

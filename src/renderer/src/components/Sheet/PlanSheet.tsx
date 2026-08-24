@@ -13,7 +13,6 @@ import {
 import { useSelector, shallowEqual } from 'react-redux';
 import {
   Box,
-  Button,
   Dialog,
   DialogActions,
   DialogContent,
@@ -67,6 +66,7 @@ import { useOrganizedBy } from '../../crud/useOrganizedBy';
 import { useSnackBar } from '../../hoc/SnackBar';
 import { planSheetSelector, sharedSelector } from '../../selector';
 import {
+  Button,
   AddSectionPassageButtons,
   ProjButtons,
   LightTooltip,

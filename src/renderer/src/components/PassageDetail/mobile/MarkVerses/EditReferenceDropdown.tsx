@@ -1,6 +1,5 @@
 import {
   Box,
-  Button,
   Checkbox,
   Dialog,
   DialogActions,
@@ -23,6 +22,7 @@ import {
   type PassageVerseOption,
   toPassageVerseKey,
 } from '../../../../utils/markVersesPassageVerses';
+import { Button } from '../../../../control/Button';
 
 const suffixOptions = ['', 'a', 'b', 'c', 'd', 'e'];
 /** Match readonly chapter/verse labels to the wheel option size. */

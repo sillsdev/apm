@@ -7,7 +7,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import { Alert, Box, Button, Typography } from '@mui/material';
+import { Alert, Box, Typography } from '@mui/material';
 import { shallowEqual, useSelector } from 'react-redux';
 import { useGlobal } from '../../context/useGlobal';
 import usePassageDetailContext from '../../context/usePassageDetailContext';
@@ -87,6 +87,7 @@ import {
 } from '../../components/PassageDetail/guidedPhraseRecord/types';
 import { createPhraseSegmentUndoStack } from '../../utils/phraseSegmentUndoStack';
 import Confirm from '../AlertDialog';
+import { Button } from '../../control/Button';
 
 interface IProps {
   width: number;

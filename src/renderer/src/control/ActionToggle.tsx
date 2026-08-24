@@ -1,4 +1,5 @@
-import { Box, BoxProps, Button, ButtonProps, styled } from '@mui/material';
+import { Box, BoxProps, styled } from '@mui/material';
+import { Button, IButtonProps } from './Button';
 
 export const ActionToggle = styled(Box)<BoxProps>(() => ({
   display: 'flex',
@@ -10,7 +11,7 @@ export const ActionToggle = styled(Box)<BoxProps>(() => ({
 }));
 
 // see: https://mui.com/material-ui/customization/how-to-customize/
-interface StyledButtonProps extends ButtonProps {
+interface StyledButtonProps extends IButtonProps {
   active?: boolean;
 }
 export const UndButton = styled(Button, {

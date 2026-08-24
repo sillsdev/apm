@@ -7,7 +7,6 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Button,
   Box,
   styled,
 } from '@mui/material';
@@ -20,6 +19,7 @@ import { dateOrTime, prettySegment, removeExtension } from '../../utils';
 import { ItemDescription } from '../../control/MediaDescription';
 import { selectRecordingSelector } from '../../selector';
 import { shallowEqual, useSelector } from 'react-redux';
+import { Button } from '../../control/Button';
 
 interface StyledCellProps extends TableCellProps {
   old?: boolean;
