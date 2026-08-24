@@ -883,3 +883,53 @@ test('two flat sections with steps gives output', () => {
     },
   ]);
 });
+
+test('merge keeps NOTE|category when orbit snapshot is still bare NOTE', () => {
+  const paNote = {
+    ...pa1,
+    id: 'pn1',
+    attributes: {
+      ...pa1.attributes,
+      sequencenum: 1,
+      reference: 'NOTE',
+      title: 'a note',
+      dateUpdated: '2021-09-16',
+    },
+  } as PassageD;
+  const s1passages = {
+    ...s1,
+    relationships: {
+      ...s1.relationships,
+      passages: { data: [{ type: 'passage', id: 'pn1' }] },
+    },
+  } as SectionD;
+  const current: ISheet[] = [
+    {
+      ...secResult,
+      sectionId: { type: 'section', id: 's1' },
+      sectionUpdated: '2021-09-15',
+      title: 'Intro',
+    },
+    {
+      ...pasResult,
+      passageType: PassageTypeEnum.NOTE,
+      reference: 'NOTE|Devotional',
+      comment: 'a note',
+      passageUpdated: '2021-09-15',
+      passage: paNote,
+    },
+  ];
+  const graphicFind = (rec: InitializedRecord, ref?: string): FindResult =>
+    ref === 'NOTE|Devotional' ? { uri: 'cat.png', color: '#ed071d' } : {};
+  const merged = getSheet({
+    ...gsDefaults,
+    plan: 'pl1',
+    sections: [s1passages],
+    passages: [paNote],
+    current,
+    graphicFind,
+  } as any);
+  expect(merged[1].reference).toBe('NOTE|Devotional');
+  expect(merged[1].graphicUri).toBe('cat.png');
+  expect(merged[1].color).toBe('#ed071d');
+});

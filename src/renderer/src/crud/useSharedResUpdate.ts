@@ -1,9 +1,8 @@
 import { useGlobal } from '../context/useGlobal';
-import { ArtifactCategory, SharedResourceD } from '../model';
-import { RecordIdentity, RecordTransformBuilder } from '@orbit/records';
+import { ArtifactCategory, PassageD, SharedResourceD } from '../model';
+import { RecordTransformBuilder } from '@orbit/records';
 import { ReplaceRelatedRecord, UpdateRecord } from '../model/baseModel';
-import { findRecord } from '.';
-import { useArtifactCategory } from '.';
+import { findRecord, related, useArtifactCategory } from '.';
 
 interface ShResUpdProps {
   onUpdRef?: (id: string, val: string, sr: SharedResourceD) => void;
@@ -37,19 +36,37 @@ export const useSharedResUpdate = ({ onUpdRef }: ShResUpdProps) => {
         mediaId
       ),
     ];
+    let newRef: string | undefined;
+    const passageId = related(sharedResource, 'passage');
+    const passage = findRecord(memory, 'passage', passageId as string) as
+      | PassageD
+      | undefined;
     if (sharedResource.attributes.note) {
       const catRec = findRecord(memory, 'artifactcategory', category) as
         | ArtifactCategory
         | undefined;
-      if (catRec && onUpdRef) {
-        const catText = localizedArtifactCategory(
-          catRec.attributes?.categoryname
+      newRef = catRec
+        ? `NOTE|${localizedArtifactCategory(catRec.attributes?.categoryname)}`
+        : 'NOTE';
+      if (passage && passage.attributes.reference !== newRef) {
+        ops.push(
+          ...UpdateRecord(
+            t,
+            {
+              ...passage,
+              attributes: { ...passage.attributes, reference: newRef },
+            },
+            user
+          )
         );
-        const passage = sharedResource.relationships.passage
-          .data as RecordIdentity;
-        onUpdRef(passage.id, `NOTE|${catText}`, sharedResource);
       }
     }
     await memory.update(ops);
+    if (passageId)
+      onUpdRef?.(
+        passageId,
+        newRef ?? passage?.attributes?.reference ?? '',
+        sharedResource
+      );
   };
 };

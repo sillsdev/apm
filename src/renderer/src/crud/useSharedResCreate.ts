@@ -1,7 +1,16 @@
 import { useGlobal } from '../context/useGlobal';
 import { RecordIdentity, RecordTransformBuilder } from '@orbit/records';
-import { ArtifactCategory, SharedResource, SharedResourceD } from '../model';
-import { AddRecord, ReplaceRelatedRecord } from '../model/baseModel';
+import {
+  ArtifactCategory,
+  PassageD,
+  SharedResource,
+  SharedResourceD,
+} from '../model';
+import {
+  AddRecord,
+  ReplaceRelatedRecord,
+  UpdateRecord,
+} from '../model/baseModel';
 import { findRecord } from './tryFindRecord';
 import { useArtifactCategory } from '.';
 
@@ -100,17 +109,38 @@ export const useSharedResCreate = ({
       );
     }
 
-    await memory.update(ops);
-    if (note && onUpdRef) {
+    let newRef: string | undefined;
+    const passRec = findRecord(memory, 'passage', passage.id) as
+      | PassageD
+      | undefined;
+    if (note && category) {
       const catRec = findRecord(memory, 'artifactcategory', category) as
         | ArtifactCategory
         | undefined;
       if (catRec) {
-        const catText = localizedArtifactCategory(
+        newRef = `NOTE|${localizedArtifactCategory(
           catRec.attributes?.categoryname
-        );
-        onUpdRef(passage.id, `NOTE|${catText}`, sharedRes as SharedResourceD);
+        )}`;
+        if (passRec && passRec.attributes.reference !== newRef) {
+          ops.push(
+            ...UpdateRecord(
+              t,
+              {
+                ...passRec,
+                attributes: { ...passRec.attributes, reference: newRef },
+              },
+              user
+            )
+          );
+        }
       }
     }
+
+    await memory.update(ops);
+    onUpdRef?.(
+      passage.id,
+      newRef ?? passRec?.attributes?.reference ?? '',
+      sharedRes as SharedResourceD
+    );
   };
 };

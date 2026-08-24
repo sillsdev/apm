@@ -109,10 +109,16 @@ export const SelectArtifactCategory = (props: IProps) => {
   };
 
   useEffect(() => {
+    let cancelled = false;
+    setGettingCategories(true);
     getCategorys().then((cats) => {
+      if (cancelled) return;
       setArtifactCategorys(cats);
       setGettingCategories(false);
     });
+    return () => {
+      cancelled = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [artifactCategories, scripture, org, type]);
 
