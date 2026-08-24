@@ -16,7 +16,6 @@ import { TokenContext } from '../context/TokenProvider';
 import * as action from '../store';
 import {
   Typography,
-  Button,
   Box,
   styled,
   TypographyProps,
@@ -36,7 +35,7 @@ import Confirm from '../components/AlertDialog';
 import UserList from '../control/UserList';
 import { useSnackBar } from '../hoc/SnackBar';
 import AppLayout from '../components/App/AppLayout';
-import { AltButton, PriButton, UserListItem } from '../control';
+import { Button, UserListItem } from '../control';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import UserListMode from '../control/userListMode';
 import { ListMode } from '../control/ListMode';
@@ -446,21 +445,24 @@ export function Access() {
         <Box sx={{ display: 'block' }}>
           <Box
             sx={{
-              display: 'flex',
-              justifyContent: 'space-between',
+              display: 'grid',
+              gridTemplateColumns: '1fr auto 1fr',
+              alignItems: 'center',
               pt: 4,
               pb: 0,
             }}
           >
-            <Button id="back" color="primary" onClick={handleBack}>
-              <ArrowBackIcon />
+            <Button
+              id="back"
+              onClick={handleBack}
+              startIcon={<ArrowBackIcon />}
+              sx={{ justifySelf: 'start' }}
+            >
               {t.back}
             </Button>
-            <Typography sx={{ fontSize: '16pt' }}>{t.title}</Typography>
-            <Button sx={{ visibility: 'hidden' }}>
-              <ArrowBackIcon />
-              {t.back}
-            </Button>
+            <Typography sx={{ fontSize: '16pt', justifySelf: 'center' }}>
+              {t.title}
+            </Typography>
           </Box>
 
           {whichUsers.startsWith('online') && (
@@ -496,12 +498,9 @@ export function Access() {
                       </div>
                     )}
                     <ActionBox>
-                      <PriButton
-                        id="accessSwitchUser"
-                        onClick={handleSwitchUser}
-                      >
+                      <Button id="accessSwitchUser" onClick={handleSwitchUser}>
                         {t.logIn}
-                      </PriButton>
+                      </Button>
                     </ActionBox>
                     {/* </Paper> */}
                   </ContainerBox>
@@ -535,9 +534,9 @@ export function Access() {
                         action={handleLogout}
                         goOnline={handleGoOnline}
                       />
-                      <AltButton id="logout" onClick={handleLogout}>
+                      <Button id="logout" onClick={handleLogout}>
                         {t.logout}
-                      </AltButton>
+                      </Button>
                     </>
                   )
                 )}
@@ -556,15 +555,15 @@ export function Access() {
               )}
               {isDeveloper && (
                 <ActionBox>
-                  <AltButton id="accessCreateUser" onClick={handleCreateUser}>
+                  <Button id="accessCreateUser" onClick={handleCreateUser}>
                     {t.createUser}
-                  </AltButton>
+                  </Button>
                 </ActionBox>
               )}
               <ActionBox>
-                <AltButton id="accessImport" onClick={handleImport}>
+                <Button id="accessImport" onClick={handleImport}>
                   {t.importSnapshot}
-                </AltButton>
+                </Button>
               </ActionBox>
             </ContainerBox>
           )}
