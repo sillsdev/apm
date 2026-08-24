@@ -1,6 +1,6 @@
 import { ICardsStrings, ISheet, IwsKind, PassageTypeEnum } from '../../model';
-import { Box, Button, Card, CardContent, Typography } from '@mui/material';
-import { ArrowForwardIos, Person } from '@mui/icons-material';
+import { Box, Card, CardContent, Typography } from '@mui/material';
+import { ChevronRight, Person } from '@mui/icons-material';
 import TaskAvatar from '../../components/TaskAvatar';
 import { passageTypeFromRef } from '../../control/passageTypeFromRef';
 import { PlayButton } from '../PlayButton';
@@ -10,6 +10,7 @@ import { PassageGraphic } from './PassageGraphic';
 import { PassageRef } from './PassageRef';
 import { useSectionIdDescription } from './useSectionIdDescription';
 import { useMobile } from '../../utils';
+import { Button } from '../../control/Button';
 
 interface IProps {
   cardInfo: ISheet;
@@ -117,30 +118,24 @@ export function PassageCard(props: IProps) {
               </Box>
             )}
             <Button
-              variant="contained"
-              sx={{ width: '100%', position: 'relative', px: 1 }}
+              sx={{
+                width: '100%',
+                position: 'relative',
+                '& .MuiTypography-root': {
+                  fontWeight: 'bold',
+                  maxWidth: '80%',
+                },
+                '& .MuiButton-endIcon': {
+                  position: 'absolute',
+                  right: 12,
+                  m: 0,
+                },
+              }}
+              color="primary"
+              endIcon={<ChevronRight />}
               onClick={handleViewStep}
             >
-              <span
-                style={{
-                  display: 'block',
-                  textAlign: 'center',
-                  width: '100%',
-                  fontWeight: 'bold',
-                }}
-              >
-                {cardInfo.step}
-              </span>
-              <ArrowForwardIos
-                sx={{
-                  position: 'absolute',
-                  right: 8,
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  pointerEvents: 'none',
-                  fontSize: 'medium',
-                }}
-              />
+              {cardInfo.step}
             </Button>
           </>
         ) : (
