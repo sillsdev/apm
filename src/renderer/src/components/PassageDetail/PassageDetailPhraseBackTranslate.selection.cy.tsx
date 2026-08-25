@@ -188,20 +188,25 @@ describe('PBT recording out of order (1, 3, then 2)', () => {
     });
   });
 
-  it('DEFECT: clicking back to segment 2 leaves the step on segment 3', () => {
-    // Reported: "I record the first segment, then the third, and then try to go
-    // back and record the second, it records into and replaces the third".
-    // Clicking segment 2 moves the waveform selection and the playhead there,
-    // but the step stays on segment 3 - so the next take is filed under segment
-    // 3, on top of the take already there. Asserting the label is enough: while
-    // it still reads segment 3, anything recorded goes to the wrong segment.
-    recordAndSettle(1); // segment 1
+  it(
+    'DEFECT: clicking back to segment 2 leaves the step on segment 3',
+    { tags: '@known-defect' },
+    () => {
+      // Reported: "I record the first segment, then the third, and then try to
+      // go back and record the second, it records into and replaces the third".
+      // Clicking segment 2 moves the waveform selection and the playhead there,
+      // but the step stays on segment 3 - so the next take is filed under
+      // segment 3, on top of the take already there. Asserting the label is
+      // enough: while it still reads segment 3, anything recorded goes to the
+      // wrong segment.
+      recordAndSettle(1); // segment 1
 
-    clickSegmentOnWaveform(2);
-    unitLabel('0:06', '0:09').should('be.visible');
-    recordAndSettle(2); // segment 3
+      clickSegmentOnWaveform(2);
+      unitLabel('0:06', '0:09').should('be.visible');
+      recordAndSettle(2); // segment 3
 
-    clickSegmentOnWaveform(1);
-    unitLabel('0:03', '0:06').should('be.visible');
-  });
+      clickSegmentOnWaveform(1);
+      unitLabel('0:03', '0:06').should('be.visible');
+    }
+  );
 });
