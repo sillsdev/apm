@@ -48,7 +48,7 @@ export const LAYOUT_P: ResponsiveStyleValue<number> = { xs: 1, sm: 1.5 };
 
 const colors = {
   primary: '#135cb9',
-  secondary: '#90a828',
+  secondary: '#00a7e1',
 
   // Custom palette
   currentRegion: '#66ff0080',
