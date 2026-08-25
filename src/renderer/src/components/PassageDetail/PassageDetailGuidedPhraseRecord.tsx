@@ -789,6 +789,7 @@ export function PassageDetailGuidedPhraseRecord({
         return;
       }
       setCurrentClausePlayed(true);
+      pendingOvershootSwallowRef.current = true;
       setPhase((p) =>
         p === 'recording' || p === 'recorded' ? p : 'recordReady'
       );
