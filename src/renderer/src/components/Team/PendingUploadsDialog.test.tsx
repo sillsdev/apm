@@ -1,3 +1,4 @@
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import React from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
@@ -81,10 +82,14 @@ jest.mock('../../crud', () => ({
 }));
 
 jest.mock('../../store', () => ({
-  nextUpload: jest.fn((props: { cb?: Function }) => {
-    void props.cb?.(0, true, { stringId: 'media-1' });
-    return { type: 'NEXT_UPLOAD' };
-  }),
+  nextUpload: jest.fn(
+    (props: {
+      cb?: (n: number, success: boolean, data?: { stringId: string }) => void;
+    }) => {
+      void props.cb?.(0, true, { stringId: 'media-1' });
+      return { type: 'NEXT_UPLOAD' };
+    }
+  ),
 }));
 
 import { PendingUploadsDialog } from './PendingUploadsDialog';
