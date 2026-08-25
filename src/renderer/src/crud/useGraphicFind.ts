@@ -18,11 +18,15 @@ export const useGraphicFind = () => {
     );
     let color: string | undefined = undefined;
     if (ref) {
-      let catText = ref.split('|')[1];
-      catText = catText ? fromLocalizedArtifactCategory(catText) : undefined;
-      const catRec = artifactCategory.find(
-        (c) => c.attributes?.categoryname === catText
-      );
+      const catText = ref.split('|')[1];
+      const slug = catText ? fromLocalizedArtifactCategory(catText) : undefined;
+      const catRec = catText
+        ? artifactCategory.find(
+            (c) =>
+              c.attributes?.categoryname === slug ||
+              c.attributes?.categoryname === catText
+          )
+        : undefined;
       if (catRec) {
         color = catRec.attributes?.color;
         if (!graphicRec) {

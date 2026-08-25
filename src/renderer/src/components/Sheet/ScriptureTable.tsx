@@ -649,19 +649,21 @@ export function ScriptureTable(props: IProps) {
     );
 
   const updatePassageRef = (id: string, val: string, sr?: SharedResourceD) => {
-    const index = sheet.findIndex((s) => s?.passage?.id === id);
+    const ws = sheetRef.current;
+    const index = ws.findIndex((s) => s?.passage?.id === id);
     if (index < 0) return;
-    const passageRow = { ...sheet[index] };
-    if (
-      passageRow.reference === val &&
-      passageRow.sharedResource?.id === sr?.id
-    )
-      return;
-    if (updateRef.current) return;
-    setUpdate(true);
+    const passageRow = { ...ws[index] };
+    const nested = updateRef.current;
+    if (!nested) setUpdate(true);
     passageRow.reference = val;
     passageRow.passageUpdated = currentDateTime();
     passageRow.sharedResource = sr;
+    if (passageRow.passage) {
+      passageRow.passage = {
+        ...passageRow.passage,
+        attributes: { ...passageRow.passage.attributes, reference: val },
+      };
+    }
     if (passageRow.passageType === PassageTypeEnum.NOTE && passageRow.passage) {
       const gr = graphicFind(passageRow.passage, val);
       passageRow.graphicUri = gr?.uri;
@@ -669,9 +671,9 @@ export function ScriptureTable(props: IProps) {
       passageRow.graphicFullSizeUrl = gr?.url;
       passageRow.color = gr?.color;
     }
-    setSheet(updateRowAt(sheet, passageRow, index));
-    setUpdate(false);
-    setChanged(true);
+    setSheet(updateRowAt(ws, passageRow, index));
+    setEditRow((prev) => (prev?.passage?.id === id ? passageRow : prev));
+    if (!nested) setUpdate(false);
   };
 
   const updatePassageSeq = (ws: ISheet[], i: number, val: number) => {
@@ -1289,9 +1291,27 @@ export function ScriptureTable(props: IProps) {
       const defaultName = getDefaultName(ws, 'graphic', memory, plan);
       setDefaultFilename(defaultName);
       uploadItem.current = ws;
-      setGraphicFullsizeUrl(ws?.graphicFullSizeUrl ?? '');
-      setCurGraphicRights(ws?.graphicRights ?? '');
-      const seeded = ws?.graphicRights ?? '';
+      const resourceType = ws?.kind === IwsKind.Section ? 'section' : 'passage';
+      const secRec =
+        ws?.kind === IwsKind.Section
+          ? (findRecord(memory, 'section', ws?.sectionId?.id ?? '') as
+              | Section
+              | undefined)
+          : undefined;
+      const resourceId =
+        ws?.kind === IwsKind.Section
+          ? parseInt(secRec?.keys?.remoteId ?? '0')
+          : parseInt(ws?.passage?.keys?.remoteId ?? '0');
+      // if this graphic is a category or shared note graphic,
+      // this passage doesn't own it.
+      const owned = graphics.some(
+        (g) =>
+          g.attributes.resourceType === resourceType &&
+          g.attributes.resourceId === resourceId
+      );
+      setGraphicFullsizeUrl(owned ? (ws?.graphicFullSizeUrl ?? '') : '');
+      setCurGraphicRights(owned ? (ws?.graphicRights ?? '') : '');
+      const seeded = owned ? (ws?.graphicRights ?? '') : '';
       setCustomRightsDraft(seeded);
       customRightsDraftRef.current = seeded;
       setGraphicRightsFieldKey((k) => k + 1);
@@ -1462,17 +1482,29 @@ export function ScriptureTable(props: IProps) {
 
   const refreshSheet = useCallback(() => {
     if (!plan) return;
+    //because we ignore data changes if we are dirty,
+    // we need to refresh the data when we do refresh the sheet
     const freshSections = memory.cache.query((q) =>
       q.findRecords('section')
     ) as SectionD[];
+    const freshPassages = memory.cache.query((q) =>
+      q.findRecords('passage')
+    ) as PassageD[];
     const freshSchemeSteps = memory.cache.query((q) =>
       q.findRecords('organizationschemestep')
     ) as OrganizationSchemeStepD[];
+    // race after save where myChanged is false, this runs,
+    // orbit has the new passageid, but we don't yet so another new
+    // row gets added in getSheet
+    const cur = sheetRef.current;
+    const canMerge = cur.every(
+      (s) => !isPassageRow(s) || s.deleted || Boolean(s.passage?.id)
+    );
     setSheet(
       getSheet({
         plan,
         sections: freshSections,
-        passages,
+        passages: freshPassages,
         organizationSchemeSteps: freshSchemeSteps,
         flat,
         projectShared: shared,
@@ -1492,11 +1524,11 @@ export function ScriptureTable(props: IProps) {
         user,
         myGroups,
         isDeveloper: developer,
+        current: canMerge ? cur.map((r) => ({ ...r })) : undefined,
       })
     );
   }, [
     plan,
-    passages,
     flat,
     shared,
     memory,
@@ -2422,7 +2454,7 @@ export function ScriptureTable(props: IProps) {
         isOpen={editRow !== undefined}
         onOpen={handleEditClose}
       >
-        {shared || isNote ? (
+        {editRow && (shared || isNote) ? (
           <ResourceTabs
             passId={editRow?.passage?.id || ''}
             ws={editRow}

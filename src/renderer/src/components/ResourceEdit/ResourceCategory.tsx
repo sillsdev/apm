@@ -1,7 +1,7 @@
 import type { RefObject } from 'react';
-import { IResourceState } from '.';
+import type { IResourceState } from './ResourceOverview';
 import SelectArtifactCategory from '../Sheet/SelectArtifactCategory';
-import { ArtifactCategoryType } from '../../crud';
+import { ArtifactCategoryType } from '../../crud/useArtifactCategory';
 
 interface IProps extends IResourceState {
   // Forwarded so the wizard can create a new category at save (not on blur).
@@ -27,7 +27,7 @@ export const ResourceCategory = (props: IProps) => {
   return (
     <SelectArtifactCategory
       disabled={!setState}
-      type={!note ? ArtifactCategoryType.Resource : ArtifactCategoryType.Note}
+      type={note ? ArtifactCategoryType.Note : ArtifactCategoryType.Resource}
       initCategory={category}
       onCategoryChange={setState ? handleChange : undefined}
       onNewDraft={setState ? handleNewDraft : undefined}
