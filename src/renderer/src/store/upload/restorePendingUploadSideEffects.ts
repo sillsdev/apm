@@ -15,7 +15,9 @@ export interface RestorePendingUploadSideEffectsParams {
     discussionId: string,
     commentId: string,
     commentText: string,
-    mediaId: string
+    mediaId: string,
+    approved: boolean | undefined,
+    permissions: string | undefined
   ) => Promise<unknown>;
 }
 
@@ -37,10 +39,10 @@ export async function restorePendingUploadSideEffects({
       entry.sideEffects?.rightsHolder || entry.record.performedBy || '';
     const orgId = entry.sideEffects?.organizationId || organizationId || '';
     if (rightsHolder && orgId) {
+      // Match the in-step path (ProvideRights): with no rights statement,
+      // apply no transcription rather than falling back to the speaker name.
       const statement =
-        entry.sideEffects?.statement ||
-        entry.record.transcription ||
-        rightsHolder;
+        entry.sideEffects?.statement || entry.record.transcription || undefined;
       await createIntellectualPropertyForMedia({
         memory,
         user,
@@ -61,7 +63,9 @@ export async function restorePendingUploadSideEffects({
       discussionId,
       entry.sideEffects?.commentId || '',
       entry.sideEffects?.commentText || '',
-      mediaId
+      mediaId,
+      entry.sideEffects?.commentApproved,
+      entry.sideEffects?.commentVisible
     );
   }
 }

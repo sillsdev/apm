@@ -171,15 +171,17 @@ export function PendingUploadsDialog(props: IProps) {
                 discussionId,
                 commentId,
                 commentText,
-                mediaRemId
+                mediaRemId,
+                approved,
+                permissions
               ) =>
                 saveComment(
                   discussionId,
                   commentId,
                   commentText,
                   mediaRemId,
-                  undefined,
-                  undefined
+                  approved,
+                  permissions
                 ),
             });
           }

@@ -427,12 +427,14 @@ export const CommentCard = (props: IProps) => {
                   discussion.id
                 )}
                 afterUploadCb={afterUploadCb}
-                pendingSideEffects={{
-                  kind: 'comment',
+                pendingSideEffects={() => ({
+                  kind: 'comment' as const,
                   discussionId: discussion.id,
                   commentId: comment.id,
                   commentText: editComment,
-                }}
+                  commentApproved: approvedRef.current,
+                  commentVisible: comment.attributes?.visible,
+                })}
               />
             ) : text ? (
               <>

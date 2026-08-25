@@ -23,6 +23,10 @@ export type PendingUploadSideEffects = {
   discussionId?: string;
   commentId?: string;
   commentText?: string;
+  /** Approval state at edit time; undefined for new comments. */
+  commentApproved?: boolean;
+  /** Prior `comment.visible` JSON so retry doesn't recompute visibility. */
+  commentVisible?: string;
 };
 
 export interface PendingUploadRecord {

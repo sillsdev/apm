@@ -69,6 +69,34 @@ describe('restorePendingUploadSideEffects', () => {
     );
   });
 
+  it('applies no transcription when the IP upload had no rights statement', async () => {
+    await restorePendingUploadSideEffects({
+      entry: {
+        id: 'p1a',
+        failedAt: '2026-01-01T00:00:00.000Z',
+        localAbsolutePath: '/speaker.wav',
+        fileSize: 10,
+        uploadType: UploadType.IntellectualProperty,
+        record: baseRecord,
+        sideEffects: {
+          kind: 'intellectualProperty',
+          rightsHolder: 'Ada',
+          organizationId: 'org-1',
+        },
+      },
+      mediaId: 'media-99',
+      memory,
+      user: 'user-1',
+    });
+
+    expect(createIntellectualPropertyForMedia).toHaveBeenCalledWith(
+      expect.objectContaining({
+        rightsHolder: 'Ada',
+        transcription: undefined,
+      })
+    );
+  });
+
   it('attaches comment media after a successful retry', async () => {
     const saveComment = jest.fn().mockResolvedValue(true);
 
@@ -97,9 +125,48 @@ describe('restorePendingUploadSideEffects', () => {
       'disc-1',
       'cmt-1',
       'hello',
-      'media-5'
+      'media-5',
+      undefined,
+      undefined
     );
     expect(createIntellectualPropertyForMedia).not.toHaveBeenCalled();
+  });
+
+  it('preserves the approval and visibility captured when the edit failed', async () => {
+    const saveComment = jest.fn().mockResolvedValue(true);
+    const visible = '{"mentor":true,"approved":true,"author":"u9"}';
+
+    await restorePendingUploadSideEffects({
+      entry: {
+        id: 'p2a',
+        failedAt: '2026-01-01T00:00:00.000Z',
+        localAbsolutePath: '/comment.wav',
+        fileSize: 10,
+        uploadType: UploadType.Media,
+        record: { ...baseRecord, passageId: 'psg-1' },
+        sideEffects: {
+          kind: 'comment',
+          discussionId: 'disc-1',
+          commentId: 'cmt-1',
+          commentText: 'hello',
+          commentApproved: true,
+          commentVisible: visible,
+        },
+      },
+      mediaId: 'media-5',
+      memory,
+      user: 'user-1',
+      saveComment,
+    });
+
+    expect(saveComment).toHaveBeenCalledWith(
+      'disc-1',
+      'cmt-1',
+      'hello',
+      'media-5',
+      true,
+      visible
+    );
   });
 
   it('does nothing for a vernacular take with no side effects', async () => {
