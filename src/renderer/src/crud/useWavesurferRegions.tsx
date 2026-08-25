@@ -150,7 +150,11 @@ export function useWaveSurferRegions(
     applyRegionColor
   );
   const lockSegmentSelectionRef = useRef(lockSegmentSelection ?? false);
+  // disableDragSelection is effectively constant, but setupRegions runs from a
+  // once-registered 'ready' handler (like singleRegionRef), so mirror the latest
+  // prop into a ref. A render-time cache write keeps it current without an effect.
   const disableDragSelectionRef = useRef(disableDragSelection ?? false);
+  disableDragSelectionRef.current = disableDragSelection ?? false;
   const regionBeforeClickRef = useRef<Region | undefined>(undefined);
   const playTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
   /** Suppress region-in while the playhead is moved programmatically (table row click). */
@@ -182,10 +186,6 @@ export function useWaveSurferRegions(
   useEffect(() => {
     lockSegmentSelectionRef.current = lockSegmentSelection ?? false;
   }, [lockSegmentSelection]);
-
-  useEffect(() => {
-    disableDragSelectionRef.current = disableDragSelection ?? false;
-  }, [disableDragSelection]);
 
   const regionColor = (
     role: RegionColorRole,
