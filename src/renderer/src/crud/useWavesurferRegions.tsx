@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { waitForIt } from '../utils/waitForIt';
 import { findClauseSplitPoint } from '../utils/clauseSplitSilence';
+import { clampSharedBoundary } from '../utils/sharedSegmentBoundary';
 import RegionsPlugin, {
   Region,
   RegionParams,
@@ -390,31 +391,37 @@ export function useWaveSurferRegions(
     }
   };
   const wsPlayRegion = (r: IRegion, startAtCurrent: boolean = false) => {
+    // updatingRef suppresses the shared-boundary clamp while *we* are moving
+    // region bounds; it must be released on every exit path. Players with
+    // forceRegionOnly (Phrase Back Translate, Careful Speech) route every play
+    // through here, so a latched flag left the clamp off for the rest of the
+    // session and dragged boundaries overlapped or disconnected (TT-7625).
     updatingRef.current = true;
-    let reg = findRegion(r.start, true);
-    if (!reg) reg = findRegionByIRegion(r);
-    if (!reg) {
-      updatingRef.current = false;
-      return false;
-    }
-    // region-out uses this to snap back and fire onRegionPlayEnd (CarefulSpeech, prev/next)
-    playRegionRef.current = reg;
-    const currentTime = ws?.getCurrentTime() ?? progress();
-    const inRegion = isInRegion(reg, currentTime);
-    if (!inRegion) goto(r.start, true);
-    if (wsRef.current) {
-      if (startAtCurrent && inRegion) {
-        wsRef.current.play(currentTime, reg.end);
+    try {
+      let reg = findRegion(r.start, true);
+      if (!reg) reg = findRegionByIRegion(r);
+      if (!reg) return false;
+      // region-out uses this to snap back and fire onRegionPlayEnd (CarefulSpeech, prev/next)
+      playRegionRef.current = reg;
+      const currentTime = ws?.getCurrentTime() ?? progress();
+      const inRegion = isInRegion(reg, currentTime);
+      if (!inRegion) goto(r.start, true);
+      if (wsRef.current) {
+        if (startAtCurrent && inRegion) {
+          wsRef.current.play(currentTime, reg.end);
+        } else {
+          wsRef.current.play(reg.start, reg.end);
+        }
       } else {
-        wsRef.current.play(reg.start, reg.end);
+        playRegion(reg);
       }
-    } else {
-      playRegion(reg);
+      // Sync playing state and UI so parent/effects don't override; region-out
+      // uses playRegionRef so snap-back still works.
+      playTimeoutRef.current = setTimeout(() => setPlaying(true), 100);
+      return true;
+    } finally {
+      updatingRef.current = false;
     }
-    // Sync playing state and UI so parent/effects don't override; region-out
-    // uses playRegionRef so snap-back still works.
-    playTimeoutRef.current = setTimeout(() => setPlaying(true), 100);
-    return true;
   };
   // Cleanup function to remove all event listeners
   const cleanupEventListeners = () => {
@@ -733,15 +740,11 @@ export function useWaveSurferRegions(
     updatingRef.current = false;
   };
 
-  /** Smallest segment we allow a boundary drag to leave behind. Keeps a region
-   *  from collapsing (or inverting) when its shared boundary is pushed all the
-   *  way into a neighbor, and stays above the 0.03s load filter in loadRegions. */
-  const MIN_SEGMENT = 0.05;
-
   /**
-   * Keep resized regions non-overlapping. In multi-region (Mark Verses) mode
-   * the end of one region is always the start of the next, so a boundary is
-   * shared by two regions. When the user drags one boundary we:
+   * Keep resized regions non-overlapping. In multi-region (Mark Verses,
+   * Careful Speech, Phrase Back Translate) mode the end of one region is
+   * always the start of the next, so a boundary is shared by two regions.
+   * When the user drags one boundary we:
    *   - clamp it so it can't cross the neighbor's far boundary (no overlap) —
    *     the first/last region's outer edge stays pinned to 0 / duration; and
    *   - shift the single adjacent neighbor's shared boundary to follow, so the
@@ -753,32 +756,23 @@ export function useWaveSurferRegions(
   const constrainResizedRegion = (r: Region, side?: 'start' | 'end') => {
     const prev = findPrevRegion(r) as Region | undefined;
     const next = findNextRegion(r, false) as Region | undefined;
+    const { start, end, boundary } = clampSharedBoundary({
+      segment: { start: r.start, end: r.end },
+      prev,
+      next,
+      duration: duration(),
+      side,
+    });
 
     if (side !== 'end') {
-      // dragging the region's start (or unknown): clamp between the previous
-      // region's start (+gap) and this region's own end (-gap).
-      const upper = r.end - MIN_SEGMENT;
-      const start = prev
-        ? roundToFiveDecimals(
-            Math.max(prev.start + MIN_SEGMENT, Math.min(r.start, upper))
-          )
-        : 0; // first region is pinned to the waveform start
       if (start !== r.start) updateRegion(r, { start });
       if (prev && prev.end !== start) updateRegion(prev, { end: start });
     }
     if (side !== 'start') {
-      // dragging the region's end (or unknown): clamp between this region's own
-      // start (+gap) and the next region's end (-gap).
-      const lower = r.start + MIN_SEGMENT;
-      const end = next
-        ? roundToFiveDecimals(
-            Math.min(next.end - MIN_SEGMENT, Math.max(r.end, lower))
-          )
-        : duration(); // last region is pinned to the waveform end
       if (end !== r.end) updateRegion(r, { end });
       if (next && next.start !== end) updateRegion(next, { start: end });
     }
-    return side === 'start' ? r.start : r.end;
+    return boundary;
   };
 
   const getPeaks = (num: number = 512) => {
