@@ -111,11 +111,17 @@ export const SelectArtifactCategory = (props: IProps) => {
   useEffect(() => {
     let cancelled = false;
     setGettingCategories(true);
-    getCategorys().then((cats) => {
-      if (cancelled) return;
-      setArtifactCategorys(cats);
-      setGettingCategories(false);
-    });
+    getCategorys()
+      .then((cats) => {
+        if (cancelled) return;
+        setArtifactCategorys(cats);
+      })
+      .catch(() => {
+        if (!cancelled) setArtifactCategorys([]);
+      })
+      .finally(() => {
+        if (!cancelled) setGettingCategories(false);
+      });
     return () => {
       cancelled = true;
     };
