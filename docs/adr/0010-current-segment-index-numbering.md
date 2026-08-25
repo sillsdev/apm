@@ -111,3 +111,13 @@ The other TT-7621 fixes are unrelated to the numbering and stay:
 - deriving `recordReady` from the reference audio stopping — PR #529
 - clearing MediaRecord's `loading` when a load is abandoned — PR #530
 - More/Fewer Segments honouring their direction — PR #532
+
+## The related problem: the field carries no intent either
+
+Numbering is one of two things wrong with this field. The other — that a change
+to it does not say whether the user moved the selection or the playhead did — is
+written up separately in ADR
+[0011](0011-segment-selection-intent.md), together with the two refactors that
+would fix it. The two overlap: they touch the same 17 call sites, and 0011's
+source tag makes `currentSegmentSeq` removable whether or not the numbering is
+unified. Worth scheduling as one change.
