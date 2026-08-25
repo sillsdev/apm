@@ -124,7 +124,9 @@ export function useWaveSurferRegions(
   hasSegmentUndo?: boolean,
   applyRegionColor?: ApplyRegionColor,
   lockSegmentSelection?: boolean,
-  getDecodedBuffer?: () => AudioBuffer | undefined
+  getDecodedBuffer?: () => AudioBuffer | undefined,
+  /** Suppress drag-to-create-region (the red loop region) even in single-region mode. */
+  disableDragSelection?: boolean
 ) {
   const theme = useTheme();
   const wsRef = useRef<WaveSurfer | null>(ws);
@@ -148,6 +150,7 @@ export function useWaveSurferRegions(
     applyRegionColor
   );
   const lockSegmentSelectionRef = useRef(lockSegmentSelection ?? false);
+  const disableDragSelectionRef = useRef(disableDragSelection ?? false);
   const regionBeforeClickRef = useRef<Region | undefined>(undefined);
   const playTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
   /** Suppress region-in while the playhead is moved programmatically (table row click). */
@@ -179,6 +182,10 @@ export function useWaveSurferRegions(
   useEffect(() => {
     lockSegmentSelectionRef.current = lockSegmentSelection ?? false;
   }, [lockSegmentSelection]);
+
+  useEffect(() => {
+    disableDragSelectionRef.current = disableDragSelection ?? false;
+  }, [disableDragSelection]);
 
   const regionColor = (
     role: RegionColorRole,
@@ -651,7 +658,7 @@ export function useWaveSurferRegions(
 
       // Enable drag selection AFTER all event listeners are set up
       // This ensures the internal listeners set up by enableDragSelection aren't removed
-      if (singleRegionRef.current) {
+      if (singleRegionRef.current && !disableDragSelectionRef.current) {
         regionsPlugin.enableDragSelection({
           color: 'rgba(255, 0, 0, 0.1)',
         });

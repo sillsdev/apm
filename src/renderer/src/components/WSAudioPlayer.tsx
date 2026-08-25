@@ -178,6 +178,8 @@ interface IProps {
   forceRegionOnly?: boolean;
   /** When true, user-initiated selection (clicks, prev/next) is ignored. Playhead-driven region-in is not blocked; consumers that must hold the current clause during recording/saving should guard their segment effects separately (e.g. Careful Speech). */
   lockSegmentSelection?: boolean;
+  /** When true, disable drag-to-create-region (the red loop region) even in single-region/record mode. */
+  disableDragSelection?: boolean;
   onMarkerClick?: (time: number) => void;
   reload?: (blob: Blob) => void;
   noNewVoice?: boolean;
@@ -368,6 +370,7 @@ function WSAudioPlayer(props: IProps) {
     onSegmentPlaybackEnd,
     forceRegionOnly,
     lockSegmentSelection,
+    disableDragSelection,
     onMarkerClick,
     reload,
     noNewVoice,
@@ -718,7 +721,8 @@ function WSAudioPlayer(props: IProps) {
     verses,
     hasSegmentUndo,
     applyRegionColor,
-    lockSegmentSelection
+    lockSegmentSelection,
+    disableDragSelection
   );
 
   //because we have to call hooks consistently, call this even if we aren't going to record

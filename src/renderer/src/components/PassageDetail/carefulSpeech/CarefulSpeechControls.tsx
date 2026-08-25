@@ -321,6 +321,7 @@ export default function CarefulSpeechControls({
                 mediaId={recordingMediaId}
                 allowRecord={allowRecord}
                 allowWave={false}
+                disableDragSelection={true}
                 height={160}
                 width={width - 80}
                 afterUploadCb={afterUploadCb}
