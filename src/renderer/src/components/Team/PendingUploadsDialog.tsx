@@ -32,7 +32,7 @@ import JSONAPISource from '@orbit/jsonapi';
 import { IndexedDBSource } from '@orbit/indexeddb';
 import Memory from '@orbit/memory';
 import { MediaFileAttributes } from '../../model';
-import { Online } from '../../utils';
+import { logError, Online, Severity } from '../../utils';
 import {
   retryProgressLabel,
   shouldShowRetryAll,
@@ -155,17 +155,22 @@ export function PendingUploadsDialog(props: IProps) {
             AlertSeverity.Warning
           );
         },
-        cb: async (_n, success, data) => {
+        // Synchronous by contract: nextUpload calls cb without awaiting it, so
+        // anything after an await here would be stranded on a rejection --
+        // leaving busy stuck and the rest of the retry queue unprocessed.
+        cb: (_n, success, data) => {
           const sid = (data as { stringId?: string } | undefined)?.stringId;
           if (success && sid && memory && remote && backup) {
-            await pullTableList(
+            pullTableList(
               'mediafile',
               [sid],
               memory,
               remote,
               backup,
               reporter
-            );
+            ).catch((err: Error) => {
+              logError(Severity.error, reporter, err);
+            });
           }
           if (success) {
             retryDoneRef.current += 1;
