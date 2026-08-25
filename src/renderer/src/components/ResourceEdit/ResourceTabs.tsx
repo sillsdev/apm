@@ -125,19 +125,12 @@ export function ResourceTabs({ passId, ws, onOpen, onUpdRef }: IProps) {
     [passId, value, ws?.passage]
   );
 
-  const isNote = React.useMemo(
-    () => {
-      const passRec = findRecord(memory, 'passage', passId) as
-        | Passage
-        | undefined;
-      return (
-        passageTypeFromRef(passRec?.attributes?.reference) ===
-        PassageTypeEnum.NOTE
-      );
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [passId]
-  );
+  const isNote =
+    ws?.passageType === PassageTypeEnum.NOTE ||
+    passageTypeFromRef(
+      (findRecord(memory, 'passage', passId) as Passage | undefined)?.attributes
+        ?.reference
+    ) === PassageTypeEnum.NOTE;
 
   const values = React.useMemo(() => {
     if (sharedResRec) {
@@ -369,13 +362,17 @@ export function ResourceTabs({ passId, ws, onOpen, onUpdRef }: IProps) {
           onDelete={handleDelete}
           onLink={handleLink}
           onUnlink={handleUnlink}
-          contentReadOnly={isLinkedNote(ws?.passage, sharedResRec as SharedResourceD)}
+          contentReadOnly={isLinkedNote(
+            ws?.passage,
+            sharedResRec as SharedResourceD
+          )}
         />
       </TabPanel>
       <TabPanel value={value} index={1}>
         <ResourceRefs
           mode={
-            readOnly || isLinkedNote(ws?.passage, sharedResRec as SharedResourceD)
+            readOnly ||
+            isLinkedNote(ws?.passage, sharedResRec as SharedResourceD)
               ? DialogMode.view
               : values
                 ? DialogMode.edit

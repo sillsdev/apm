@@ -119,14 +119,13 @@ export default function ResourceOverview(props: IProps) {
       terms: '',
       keywords: '',
       linkurl: '',
-      note: false,
+      note: isNote,
       category: '',
       changed: false,
       ws: ws,
       onRecording,
     }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [ws]
+    [ws, isNote]
   );
 
   const [state, setState] = React.useState({ ...initState });
@@ -151,19 +150,10 @@ export default function ResourceOverview(props: IProps) {
     setState(
       !values
         ? { ...initState }
-        : { ...values, ws, onRecording, changed: false }
+        : { ...values, ws, onRecording, note: isNote, changed: false }
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [values, isOpen]);
-
-  useEffect(() => {
-    setState(
-      !values
-        ? { ...initState, note: isNote }
-        : { ...values, ws, onRecording, note: isNote }
-    );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [values, isNote]);
+  }, [values, isOpen, isNote, initState]);
 
   const handleClose = () => {
     if (onOpen) onOpen(false);
@@ -224,7 +214,7 @@ export default function ResourceOverview(props: IProps) {
         )}
         <ResourceDescription state={state} setState={updateState} />
         <ResourceCategory
-          state={state}
+          state={{ ...state, note: isNote }}
           setState={updateState}
           commitRef={catCommitRef}
         />
