@@ -80,7 +80,9 @@ interface IProps {
   team?: string | undefined; // used when adding a card to check speakers
   onNonAudio?: ((nonAudio: boolean) => void) | undefined;
   uploadDialogBp?: BigDialogBp;
-  pendingSideEffects?: PendingUploadSideEffects;
+  pendingSideEffects?:
+    | PendingUploadSideEffects
+    | (() => PendingUploadSideEffects | undefined);
 }
 
 export const Uploader = (props: IProps) => {
@@ -352,7 +354,10 @@ export const Uploader = (props: IProps) => {
         !skipImportExportWait && isFirstFile && importWasBusyRef.current
           ? () => Boolean(getGlobal('importexportBusy'))
           : undefined,
-      pendingSideEffects,
+      pendingSideEffects:
+        typeof pendingSideEffects === 'function'
+          ? pendingSideEffects()
+          : pendingSideEffects,
       onTerminalFailure: (info) => {
         showMessage(
           formatUploadTerminalFailureMessage(t, info),

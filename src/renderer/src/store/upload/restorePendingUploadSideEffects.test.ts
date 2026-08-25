@@ -69,6 +69,41 @@ describe('restorePendingUploadSideEffects', () => {
     );
   });
 
+  it('creates intellectual property for a recorded rights take uploaded as Media', async () => {
+    // ProvideRightsMobile records through useMediaUpload, which always uses
+    // UploadType.Media; the sideEffects kind is what marks it as rights.
+    await restorePendingUploadSideEffects({
+      entry: {
+        id: 'p1b',
+        failedAt: '2026-01-01T00:00:00.000Z',
+        localAbsolutePath: '/Ada_ip.wav',
+        fileSize: 10,
+        uploadType: UploadType.Media,
+        record: baseRecord,
+        sideEffects: {
+          kind: 'intellectualProperty',
+          rightsHolder: 'Ada',
+          statement: 'I grant permission',
+          organizationId: 'org-1',
+          notes: '{"fullName":"Ada"}',
+        },
+      },
+      mediaId: 'media-99',
+      memory,
+      user: 'user-1',
+    });
+
+    expect(createIntellectualPropertyForMedia).toHaveBeenCalledWith(
+      expect.objectContaining({
+        mediaId: 'media-99',
+        rightsHolder: 'Ada',
+        organizationId: 'org-1',
+        notes: '{"fullName":"Ada"}',
+        transcription: 'I grant permission',
+      })
+    );
+  });
+
   it('applies no transcription when the IP upload had no rights statement', async () => {
     await restorePendingUploadSideEffects({
       entry: {

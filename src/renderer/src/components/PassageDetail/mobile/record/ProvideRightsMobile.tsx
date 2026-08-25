@@ -24,6 +24,7 @@ import {
 import { IVoicePerm } from '../../../../business/voice/PersonalizeVoicePermission';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import { useMobile } from '../../../../utils';
+import type { PendingUploadSideEffects } from '../../../../store/upload/pendingMediaUploads';
 
 interface IProps {
   paperRef: React.RefObject<HTMLDivElement | null>;
@@ -54,6 +55,9 @@ interface IProps {
   resetMedia: boolean;
   afterUploadCb: (url: string, filename: string) => void | Promise<void>;
   handleSetCanSave: (canSave: boolean) => void;
+  pendingSideEffects?:
+    | PendingUploadSideEffects
+    | (() => PendingUploadSideEffects | undefined);
 }
 
 const ProvideRightsMobile = (props: IProps) => {
@@ -96,6 +100,7 @@ const ProvideRightsMobile = (props: IProps) => {
         passageId={undefined}
         planId={props.planId}
         performedBy={props.speaker}
+        pendingSideEffects={props.pendingSideEffects}
         allowWave={false}
         allowDeltaVoice={false}
         allowNoNoise={false}

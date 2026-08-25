@@ -38,6 +38,7 @@ import { RecordKeyMap, RecordTransformBuilder } from '@orbit/records';
 import React from 'react';
 import { IVoicePerm } from '../business/voice/PersonalizeVoicePermission';
 import ProvideRightsMobile from './PassageDetail/mobile/record/ProvideRightsMobile';
+import type { PendingUploadSideEffects } from '../store/upload/pendingMediaUploads';
 
 const paperProps = { p: 2, m: 'auto', width: `calc(100% - 32px)` } as SxProps;
 const rowProp = { display: 'flex', p: 2 };
@@ -75,6 +76,10 @@ export function ProvideRights(props: IProps) {
   const uploadVisibleRef = useRef(false);
   const [resetMedia, setResetMedia] = useState(false);
   const [statement, setStatement] = useState<string>('');
+  /** Mirrors of the rights inputs so a queued upload snapshots them at upload
+   * time rather than at the render that started the (async) convert + upload. */
+  const statementRef = useRef('');
+  const stateRef = useRef<IVoicePerm>({});
   const [, setSaving] = useState(false);
   const [paperWidth, setPaperWidth] = useState<number>(0);
   const paperRef = useRef<HTMLDivElement>(null);
@@ -172,6 +177,27 @@ export function ProvideRights(props: IProps) {
   const handleStatement = (statement: string) => {
     if (recordingRequired) setStatement(statement);
   };
+
+  useEffect(() => {
+    statementRef.current = statement;
+  }, [statement]);
+
+  useEffect(() => {
+    stateRef.current = state;
+  }, [state]);
+
+  /** Restores the intellectual property record when a failed rights upload is
+   * retried from the pending queue (TT-7363). */
+  const rightsSideEffects = useCallback(
+    (): PendingUploadSideEffects => ({
+      kind: 'intellectualProperty',
+      rightsHolder: speaker,
+      statement: statementRef.current,
+      organizationId: team || organizationId,
+      notes: JSON.stringify(stateRef.current),
+    }),
+    [speaker, team, organizationId]
+  );
 
   const afterUploadCb = async (mediaId: string | undefined) => {
     if (mediaId) {
@@ -284,6 +310,7 @@ export function ProvideRights(props: IProps) {
         setResetMedia={setResetMedia}
         resetMedia={resetMedia}
         afterUploadCb={(mediaId) => afterUploadCb(mediaId)}
+        pendingSideEffects={rightsSideEffects}
         handleSetCanSave={handleSetCanSave}
         paperWidth={paperWidth}
       />
@@ -300,13 +327,7 @@ export function ProvideRights(props: IProps) {
         performedBy={speaker}
         planId={planId}
         uploadType={UploadType.IntellectualProperty}
-        pendingSideEffects={{
-          kind: 'intellectualProperty',
-          rightsHolder: speaker,
-          statement,
-          organizationId: team || organizationId,
-          notes: JSON.stringify(state),
-        }}
+        pendingSideEffects={rightsSideEffects}
       />
     </div>
   );
