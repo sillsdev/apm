@@ -10,7 +10,7 @@ import React, {
 } from 'react';
 import { shallowEqual, useDispatch, useSelector } from 'react-redux';
 import { useParams } from 'react-router-dom';
-import { Badge, Box, Typography } from '@mui/material';
+import { Badge, Box } from '@mui/material';
 import JSONAPISource from '@orbit/jsonapi';
 import Memory from '@orbit/memory';
 import { RecordIdentity, RecordKeyMap } from '@orbit/records';
@@ -39,9 +39,8 @@ import {
   SharedResourceD,
   AltBkSeq,
   BookSeq,
-  IGraphicStrings,
 } from '../../model';
-import { UpdateRecord } from '../../model/baseModel';
+import { UpdateRecord, UpdateLastModifiedBy } from '../../model/baseModel';
 import { OrganizationSchemeStepD } from '../../model/organizationSchemeStep';
 import { PassageTypeEnum } from '../../model/passageType';
 import * as actions from '../../store';
@@ -90,12 +89,6 @@ import {
 } from '../../utils';
 import { addPt } from '../../utils/addPt';
 import { passageDefaultFilename } from '../../utils/passageDefaultFilename';
-import {
-  CompressedImages,
-  IGraphicInfo,
-  Rights,
-  ApmDim,
-} from '../../utils/useCompression';
 import { getLastVerse } from '../../business/localParatext/getLastVerse';
 import {
   isPublishingTitle,
@@ -105,27 +98,24 @@ import BigDialog from '../../hoc/BigDialog';
 import { useSnackBar } from '../../hoc/SnackBar';
 import { useOrbitData } from '../../hoc/useOrbitData';
 import {
-  graphicStringsSelector,
   planSheetSelector,
   scriptureTableSelector,
   sharedResourceSelector,
   sharedSelector,
   workflowStepsSelector,
 } from '../../selector';
-import { MediaUploadControlsRef } from '../../components/MediaUploadContent';
 import { useComputeRef } from '../../components/PassageDetail/Internalization/useComputeRef';
 import Confirm from '../AlertDialog';
 import ContentLayout from '../App/ContentLayout';
 import AssignSection from '../AssignSection';
 import VersionDlg from '../AudioTab/VersionDlg';
+import { apmGraphic } from '../apmGraphic';
 import GraphicPicker from '../GraphicPicker';
-import GraphicRights from '../GraphicRights';
-import { GraphicUploader } from '../GraphicUploader';
+import { saveGraphicRecord, useGraphicPicker } from '../useGraphicPicker';
 import { usePeerGroups } from '../Peers/usePeerGroups';
 import ResourceTabs from '../ResourceEdit/ResourceTabs';
 import StickyRedirect from '../StickyRedirect';
 import Uploader from '../Uploader';
-import { UploadType } from '../UploadType';
 import {
   isSectionRow,
   isPassageRow,
@@ -181,7 +171,6 @@ export function ScriptureTable(props: IProps) {
   );
   const s: IPlanSheetStrings = useSelector(planSheetSelector, shallowEqual);
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
-  const tg: IGraphicStrings = useSelector(graphicStringsSelector, shallowEqual);
   const lang = useSelector((state: IState) => state.strings.lang);
   const bookSuggestions = useSelector(
     (state: IState) => state.books.suggestions
@@ -242,7 +231,6 @@ export function ScriptureTable(props: IProps) {
     useState(false);
   const [view, setView] = useState('');
   const [lastSaved, setLastSaved] = useState<string>();
-  const dimensions = [1024, 512, ApmDim];
   const toolId = 'scriptureTable';
   const {
     saveRequested,
@@ -260,37 +248,75 @@ export function ScriptureTable(props: IProps) {
   const [assignSectionVisible, setAssignSectionVisible] = useState(false);
   const [assignSections, setAssignSections] = useState<number[]>([]);
   const [uploadVisible, setUploadVisible] = useState(false);
-  const [uploadGraphicVisible, setUploadGraphicVisible] = useState(false);
   const [graphicPickerRefString, setGraphicPickerRefString] =
     useState('1:1-25');
   const { curNoteRef } = useNotes();
   const { computeSectionRef, computeMovementRef } = useComputeRef();
-  const mediaUploadControlsRef = useRef<MediaUploadControlsRef>({
-    handleCancel: null,
-    handleAddOrSave: null,
-  } as MediaUploadControlsRef);
-  const [saveDisabled, setSaveDisabled] = useState(false);
   const [importList, setImportList] = useState<File[]>();
   const cancelled = useRef(false);
   const [engVrs, setEngVrs] = useState<Map<string, number[]>>(new Map());
-  const graphicUploadCompleted = useRef(false);
   const uploadItem = useRef<ISheet | undefined>(undefined);
   const [editRow, setEditRow] = useState<ISheet>();
   const [versionRow, setVersionRow] = useState<ISheet>();
   const [isNote, setIsNote] = useState(false);
   const [defaultFilename, setDefaultFilename] = useState('');
-  const [uploadType, setUploadType] = useState<UploadType>();
-  const [curGraphicRights, setCurGraphicRights] = useState('');
-  const [customRightsDraft, setCustomRightsDraft] = useState('');
-  /** Live input for Custom tab; avoids setState-per-keystroke loops with GraphicRights. */
-  const customRightsDraftRef = useRef('');
-  const [, setCustomRightsDraftTick] = useState(0);
-  /** Remount GraphicRights when seed resets (open picker / new custom file). */
-  const [graphicRightsFieldKey, setGraphicRightsFieldKey] = useState(0);
-  const [graphicFullsizeUrl, setGraphicFullsizeUrl] = useState('');
   const [warningVisible, setWarningVisible] = useState<boolean>(false);
   const graphicCreate = useGraphicCreate();
   const graphicUpdate = useGraphicUpdate();
+  const graphicPicker = useGraphicPicker(async (images, rights) => {
+    const ws = uploadItem.current;
+    const resourceType = ws?.kind === IwsKind.Section ? 'section' : 'passage';
+    const secRec: Section | undefined =
+      ws?.kind === IwsKind.Section
+        ? (findRecord(memory, 'section', ws?.sectionId?.id ?? '') as Section)
+        : undefined;
+    const resourceId =
+      ws?.kind === IwsKind.Section
+        ? parseInt(secRec?.keys?.remoteId ?? '0')
+        : parseInt(ws?.passage?.keys?.remoteId ?? '0');
+    const graphicRec = graphics.find(
+      (g) =>
+        g.attributes.resourceType === resourceType &&
+        g.attributes.resourceId === resourceId
+    );
+    const rec = await saveGraphicRecord({
+      images,
+      rights,
+      graphicRec,
+      resourceType,
+      resourceId,
+      graphicCreate,
+      graphicUpdate,
+      showMessage,
+      saving: ts.saving,
+      uploadSuccess: ts.uploadSuccess,
+    });
+    if (!rec || !ws) return;
+    //force other users to update their local data
+    const target =
+      ws.kind === IwsKind.Section
+        ? (secRec as SectionD)
+        : (ws.passage as PassageD | undefined);
+    if (target?.id) {
+      await memory.update((t) => UpdateLastModifiedBy(t, target, user));
+    }
+    const gr = apmGraphic(rec);
+    const index = sheetRef.current.findIndex((r) =>
+      ws.kind === IwsKind.Section
+        ? isSectionRow(r) && r.sectionId?.id === ws.sectionId?.id
+        : r.passage?.id === ws.passage?.id
+    );
+    if (index < 0) return;
+    const row = {
+      ...sheetRef.current[index],
+      graphicUri: gr?.graphicUri,
+      graphicRights: gr?.graphicRights,
+      graphicFullSizeUrl: gr?.url,
+    };
+    const next = sheetRef.current.map((r, i) => (i === index ? row : r));
+    sheetRef.current = next;
+    setSheetx(next);
+  });
   const graphicFind = useGraphicFind();
   const { getPlan } = usePlan();
   const localSave = useWfLocalSave({ setComplete });
@@ -1237,11 +1263,6 @@ export function ScriptureTable(props: IProps) {
     });
   };
 
-  const graphicsClosed = (v: boolean) => {
-    setUploadType(v ? UploadType.Graphic : undefined);
-    setUploadGraphicVisible(v);
-  };
-
   const computeRef = (ref: string) => {
     const m = refNumPat.exec(ref);
     if (m) return m[1];
@@ -1285,11 +1306,8 @@ export function ScriptureTable(props: IProps) {
   const handleGraphic = (i: number) => {
     saveIfChanged(() => {
       setGraphicPickerRefString(getGraphicPickerRefString(i));
-      graphicUploadCompleted.current = false;
-      setUploadType(UploadType.Graphic);
       const { ws } = getByIndex(sheetRef.current, i);
-      const defaultName = getDefaultName(ws, 'graphic', memory, plan);
-      setDefaultFilename(defaultName);
+      setDefaultFilename(getDefaultName(ws, 'graphic', memory, plan));
       uploadItem.current = ws;
       const resourceType = ws?.kind === IwsKind.Section ? 'section' : 'passage';
       const secRec =
@@ -1309,93 +1327,11 @@ export function ScriptureTable(props: IProps) {
           g.attributes.resourceType === resourceType &&
           g.attributes.resourceId === resourceId
       );
-      setGraphicFullsizeUrl(owned ? (ws?.graphicFullSizeUrl ?? '') : '');
-      setCurGraphicRights(owned ? (ws?.graphicRights ?? '') : '');
-      const seeded = owned ? (ws?.graphicRights ?? '') : '';
-      setCustomRightsDraft(seeded);
-      customRightsDraftRef.current = seeded;
-      setGraphicRightsFieldKey((k) => k + 1);
-    });
-  };
-  useEffect(() => {
-    setUploadGraphicVisible(uploadType === UploadType.Graphic);
-  }, [uploadType]);
-
-  const handleRightsChange = (graphicRights: string) => {
-    const ws = uploadItem.current;
-    if (ws) uploadItem.current = { ...ws, graphicRights };
-    setCurGraphicRights(graphicRights);
-  };
-
-  const handlePickerRights = (rights?: string | null) => {
-    handleRightsChange(rights ?? '');
-  };
-
-  const handleCustomRightsDraftChange = (v: string) => {
-    setCustomRightsDraft(v);
-    customRightsDraftRef.current = v;
-  };
-
-  const handleCustomRightsInput = (v: string) => {
-    customRightsDraftRef.current = v;
-    setCustomRightsDraftTick((t) => t + 1);
-  };
-
-  const afterConvert = async (images: CompressedImages[]) => {
-    const ws = uploadItem.current;
-    const resourceType = ws?.kind === IwsKind.Section ? 'section' : 'passage';
-    const secRec: Section | undefined =
-      ws?.kind === IwsKind.Section
-        ? (findRecord(memory, 'section', ws?.sectionId?.id ?? '') as Section)
-        : undefined;
-    const resourceId =
-      ws?.kind === IwsKind.Section
-        ? parseInt(secRec?.keys?.remoteId ?? '0')
-        : parseInt(ws?.passage?.keys?.remoteId ?? '0');
-    const graphicRec = graphics.find(
-      (g) =>
-        g.attributes.resourceType === resourceType &&
-        g.attributes.resourceId === resourceId
-    );
-    const curData = JSON.parse(
-      graphicRec?.attributes?.info || '{}'
-    ) as IGraphicInfo;
-    if (curData[Rights] !== ws?.graphicRights || images.length > 0) {
-      showMessage(ts.saving);
-      const infoData: IGraphicInfo = {
-        ...curData,
-        [Rights]: ws?.graphicRights,
-      };
-      images.forEach((image) => {
-        infoData[image.dimension.toString()] = image;
+      graphicPicker.open({
+        url: owned ? (ws?.graphicFullSizeUrl ?? '') : '',
+        rights: owned ? (ws?.graphicRights ?? '') : '',
       });
-      const info = JSON.stringify(infoData);
-      if (graphicRec) {
-        await graphicUpdate({
-          ...graphicRec,
-          attributes: { ...graphicRec.attributes, info },
-        });
-      } else if (images.length > 0) {
-        await graphicCreate({ resourceType, resourceId, info });
-      }
-    }
-    if (images.length > 0) showMessage(ts.uploadSuccess);
-    setUploadType(undefined);
-  };
-
-  const handleUploadGraphicVisible = (v: boolean) => {
-    if (!v && Boolean(uploadType)) {
-      if (graphicUploadCompleted.current) {
-        // Skip afterConvert - upload already saved; Dialog onClose may call us again
-        graphicsClosed(false);
-      } else {
-        afterConvert([]).then(() => {
-          graphicsClosed(false);
-        });
-      }
-    } else {
-      graphicsClosed(v);
-    }
+    });
   };
 
   const handleEditClose = () => {
@@ -2225,14 +2161,6 @@ export function ScriptureTable(props: IProps) {
       setChanged(true);
     }
   };
-  const onFiles = (files: File[]) => {
-    if (files.length > 0) {
-      setGraphicFullsizeUrl(URL.createObjectURL(files[0] as File));
-      setCustomRightsDraft('');
-      customRightsDraftRef.current = '';
-      setGraphicRightsFieldKey((k) => k + 1);
-    } else setGraphicFullsizeUrl('');
-  };
 
   const handlePublishToggle: MouseEventHandler<HTMLButtonElement> = () => {
     if (!canAddPublishing && !publishingOn) {
@@ -2248,11 +2176,6 @@ export function ScriptureTable(props: IProps) {
       return;
     }
     onPublishing(false);
-  };
-
-  const handleFinish = (images: CompressedImages[]) => {
-    if (images.length > 0) graphicUploadCompleted.current = true;
-    return afterConvert(images);
   };
 
   return (
@@ -2362,7 +2285,6 @@ export function ScriptureTable(props: IProps) {
           related(uploadItem.current?.sharedResource, 'passage') ??
           uploadItem.current?.passage?.id
         }
-        uploadType={uploadType as UploadType}
         performedBy={speaker}
         onSpeakerChange={handleNameChange}
         ready={isReady}
@@ -2371,65 +2293,16 @@ export function ScriptureTable(props: IProps) {
         bookCode={firstBook}
         refString={graphicPickerRefString}
         scripture={scripture}
-        isOpen={uploadGraphicVisible}
-        onOpen={handleUploadGraphicVisible}
-        mediaUploadControlsRef={mediaUploadControlsRef}
-        saveDisabled={saveDisabled}
-        showMessage={showMessage}
-        dimension={dimensions}
-        finish={handleFinish}
-        onSelectedRights={handlePickerRights}
-        onCustomCommit={() => handleRightsChange(customRightsDraftRef.current)}
-        currentGraphic={
-          (graphicFullsizeUrl || curGraphicRights) && (
-            <Box>
-              {graphicFullsizeUrl && (
-                <img
-                  src={graphicFullsizeUrl}
-                  alt={tg.graphicDisplay}
-                  style={{
-                    maxWidth: '100%',
-                    maxHeight: '80vh',
-                    width: 'auto',
-                    height: 'auto',
-                    display: 'block',
-                    margin: '0 auto',
-                  }}
-                />
-              )}
-              {curGraphicRights && (
-                <Box mt={1}>
-                  <Typography variant="body2">{curGraphicRights}</Typography>
-                </Box>
-              )}
-            </Box>
-          )
-        }
-        metadata={
-          <GraphicUploader
-            onOpen={handleUploadGraphicVisible}
-            dimension={dimensions}
-            defaultFilename={defaultFilename}
-            showMessage={showMessage}
-            hasRights={Boolean(customRightsDraftRef.current.trim())}
-            finish={handleFinish}
-            cancelled={cancelled}
-            uploadType={uploadType as UploadType}
-            onFiles={onFiles}
-            mediaUploadControlsRef={mediaUploadControlsRef}
-            onSaveDisabled={setSaveDisabled}
-            metadata={
-              <Box>
-                <GraphicRights
-                  key={graphicRightsFieldKey}
-                  value={customRightsDraft}
-                  onChange={handleCustomRightsDraftChange}
-                  onInputValueChange={handleCustomRightsInput}
-                />
-              </Box>
-            }
-          />
-        }
+        isOpen={graphicPicker.isOpen}
+        onOpen={graphicPicker.onOpen}
+        cancelled={graphicPicker.cancelled}
+        showMessage={graphicPicker.showMessage}
+        dimension={graphicPicker.dimension}
+        defaultFilename={defaultFilename}
+        finish={graphicPicker.finish}
+        onSelectedRights={graphicPicker.onSelectedRights}
+        currentUrl={graphicPicker.currentUrl}
+        currentRights={graphicPicker.currentRights}
       />
       <BigDialog
         title={ts.versionHistory}
