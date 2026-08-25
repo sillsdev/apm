@@ -70,18 +70,25 @@ describe('PBT waveform segment selection', () => {
     clickSegmentOnWaveform(2);
     unitLabel('0:06', '0:09').should('be.visible');
 
-    sampleDom(
-      (doc) => ({
-        playing: readSourcePlaying(doc),
-        record: readRecordEnabled(doc),
-      }),
-      { forMs: 6000 }
-    ).then((samples) => {
-      const bothLive = samples.filter((s) => s.playing && s.record);
+    // One reading, taken from the middle of the segment. `playing` is the
+    // player's own state and Record's operability is the step's, so at either
+    // end of playback the two flip on unrelated renders and a sample can
+    // legitimately catch both live for a frame. Segment 3 runs 0:06-0:09, so
+    // waiting for playback to start and then settling for most of a second
+    // lands clear of both edges. Asserting `playing` in the same reading is
+    // what makes the Record assertion mean anything.
+    cy.document().should((doc) => {
+      expect(readSourcePlaying(doc), 'reference audio started').to.equal(true);
+    });
+    cy.wait(800);
+    cy.document().then((doc) => {
+      const playing = readSourcePlaying(doc);
+      const record = readRecordEnabled(doc);
+      expect(playing, 'reference audio still playing').to.equal(true);
       expect(
-        bothLive,
-        'Record was never operable while the reference audio played'
-      ).to.have.length(0);
+        record,
+        'Record operable while the reference audio plays'
+      ).to.equal(false);
     });
   });
 });
