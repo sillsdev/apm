@@ -148,4 +148,26 @@ describe('pendingMediaUploads', () => {
     expect(remaining).toHaveLength(1);
     expect(remaining[0].record.originalFile).toBe('other.mp3');
   });
+
+  it('persists sideEffects on append', () => {
+    appendPendingMediaUpload({
+      localAbsolutePath: '/speaker.wav',
+      fileSize: 10,
+      uploadType: UploadType.IntellectualProperty,
+      record: baseRecord,
+      sideEffects: {
+        kind: 'intellectualProperty',
+        rightsHolder: 'Ada',
+        organizationId: 'org-1',
+      },
+    });
+
+    const stored = loadPendingMediaUploads();
+    expect(stored).toHaveLength(1);
+    expect(stored[0].sideEffects).toEqual({
+      kind: 'intellectualProperty',
+      rightsHolder: 'Ada',
+      organizationId: 'org-1',
+    });
+  });
 });

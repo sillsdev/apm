@@ -30,17 +30,11 @@ import { cleanFileName } from '../utils';
 import { useGetGlobal, useGlobal } from '../context/useGlobal';
 import { UnsavedContext } from '../context/UnsavedContext';
 import Uploader from './Uploader';
+import { createIntellectualPropertyForMedia } from '../crud/createIntellectualPropertyForMedia';
 import { communitySelector, sharedSelector } from '../selector';
 import { shallowEqual, useSelector } from 'react-redux';
-import { AddRecord, ReplaceRelatedRecord } from '../model/baseModel';
-import IntellectualProperty from '../model/intellectualProperty';
 import { UploadType } from './UploadType';
-import {
-  RecordIdentity,
-  RecordKeyMap,
-  RecordTransformBuilder,
-  UninitializedRecord,
-} from '@orbit/records';
+import { RecordKeyMap, RecordTransformBuilder } from '@orbit/records';
 import React from 'react';
 import { IVoicePerm } from '../business/voice/PersonalizeVoicePermission';
 import ProvideRightsMobile from './PassageDetail/mobile/record/ProvideRightsMobile';
@@ -199,37 +193,20 @@ export function ProvideRights(props: IProps) {
           tr.removeRecord({ type: 'mediafile', id }).toOperation()
         );
       } else {
-        if (statement) {
-          const mediaRec = findRecord(memory, 'mediafile', id) as MediaFileD;
-          updateRecord({
-            ...mediaRec,
-            attributes: { ...mediaRec.attributes, transcription: statement },
-          } as MediaFileD);
-        }
-        const ip = {
-          type: 'intellectualproperty',
-          attributes: {
-            rightsHolder: speaker,
-            notes: JSON.stringify(state),
-          },
-        } as IntellectualProperty & UninitializedRecord;
-        await memory.update((t) => [
-          ...AddRecord(t, ip, user, memory),
-          ...ReplaceRelatedRecord(
-            t,
-            ip as RecordIdentity,
-            'releaseMediafile',
-            'mediafile',
-            id
-          ),
-          ...ReplaceRelatedRecord(
-            t,
-            ip as RecordIdentity,
-            'organization',
-            'organization',
-            orgId
-          ),
-        ]);
+        await createIntellectualPropertyForMedia({
+          memory,
+          user,
+          mediaId: id,
+          rightsHolder: speaker,
+          organizationId: orgId || '',
+          notes: JSON.stringify(state),
+          transcription: statement || undefined,
+          applyTranscription: (media, text) =>
+            updateRecord({
+              ...media,
+              attributes: { ...media.attributes, transcription: text },
+            } as MediaFileD),
+        });
         onRights && onRights(true);
       }
       if (importList) {
@@ -323,6 +300,13 @@ export function ProvideRights(props: IProps) {
         performedBy={speaker}
         planId={planId}
         uploadType={UploadType.IntellectualProperty}
+        pendingSideEffects={{
+          kind: 'intellectualProperty',
+          rightsHolder: speaker,
+          statement,
+          organizationId: team || organizationId,
+          notes: JSON.stringify(state),
+        }}
       />
     </div>
   );

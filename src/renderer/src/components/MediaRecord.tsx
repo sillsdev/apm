@@ -49,6 +49,11 @@ interface IProps {
   languagebcp47?: string | undefined;
   keepItSmall?: boolean | undefined;
   afterUploadCb: (mediaId: string | undefined) => Promise<void>;
+  pendingSideEffects?:
+    | import('../store/upload/pendingMediaUploads').PendingUploadSideEffects
+    | (() =>
+        | import('../store/upload/pendingMediaUploads').PendingUploadSideEffects
+        | undefined);
   onReady?: (() => void) | undefined;
   onSaving?: (() => void) | undefined;
   onRecording?: ((r: boolean) => void) | undefined;
@@ -130,6 +135,7 @@ function MediaRecord(props: IProps) {
     topic,
     languagebcp47,
     afterUploadCb,
+    pendingSideEffects,
     setCanSave,
     setCanCancel,
     setStatusText,
@@ -326,6 +332,7 @@ function MediaRecord(props: IProps) {
     topic,
     languagebcp47,
     afterUploadCb: myAfterUploadCb,
+    pendingSideEffects,
   });
 
   useEffect(() => {

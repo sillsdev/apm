@@ -36,6 +36,7 @@ import { AlertSeverity } from '../hoc/SnackBar';
 import { getContentType } from '../utils/contentType';
 import { OrbitNetworkErrorRetries } from '../../api-variable';
 import { formatUploadTerminalFailureMessage } from '../store/upload/uploadTerminalMessages';
+import { PendingUploadSideEffects } from '../store/upload/pendingMediaUploads';
 import { UploadType } from './UploadType';
 import { Box } from '@mui/material';
 import { BigDialogBp } from '../hoc/BigDialogBp';
@@ -79,6 +80,7 @@ interface IProps {
   team?: string | undefined; // used when adding a card to check speakers
   onNonAudio?: ((nonAudio: boolean) => void) | undefined;
   uploadDialogBp?: BigDialogBp;
+  pendingSideEffects?: PendingUploadSideEffects;
 }
 
 export const Uploader = (props: IProps) => {
@@ -110,6 +112,7 @@ export const Uploader = (props: IProps) => {
     onNonAudio,
     finish,
     uploadDialogBp,
+    pendingSideEffects,
   } = props;
   const { metaData, ready, beforeUpload } = props;
   const [isDeveloper] = useGlobal('developer');
@@ -349,6 +352,7 @@ export const Uploader = (props: IProps) => {
         !skipImportExportWait && isFirstFile && importWasBusyRef.current
           ? () => Boolean(getGlobal('importexportBusy'))
           : undefined,
+      pendingSideEffects,
       onTerminalFailure: (info) => {
         showMessage(
           formatUploadTerminalFailureMessage(t, info),

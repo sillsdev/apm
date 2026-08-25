@@ -34,6 +34,11 @@ interface IProps {
   afterUploadCb: (mediaId: string) => Promise<void>;
   /** When retrying a queued failed upload, pass id to clear the queue entry after success. */
   pendingUploadIdToClearOnSuccess?: string;
+  pendingSideEffects?:
+    | import('../store/upload/pendingMediaUploads').PendingUploadSideEffects
+    | (() =>
+        | import('../store/upload/pendingMediaUploads').PendingUploadSideEffects
+        | undefined);
 }
 export const useMediaUpload = ({
   artifactId,
@@ -46,6 +51,7 @@ export const useMediaUpload = ({
   languagebcp47,
   afterUploadCb,
   pendingUploadIdToClearOnSuccess,
+  pendingSideEffects,
 }: IProps) => {
   const dispatch = useDispatch();
   const uploadFiles = (files: File[]) =>
@@ -236,6 +242,10 @@ export const useMediaUpload = ({
             .catch(reject);
         },
         pendingUploadIdToClearOnSuccess,
+        pendingSideEffects:
+          typeof pendingSideEffects === 'function'
+            ? pendingSideEffects()
+            : pendingSideEffects,
         onTerminalFailure: (info) => {
           showMessage(
             formatUploadTerminalFailureMessage(t, info),

@@ -13,6 +13,18 @@ export type PendingUploadMediaRecord = MediaFileAttributes & {
   sourceMediaId?: string;
 };
 
+/** Restored after a successful pending retry (TT-7363). Not sent in the media POST. */
+export type PendingUploadSideEffects = {
+  kind?: 'intellectualProperty' | 'comment';
+  rightsHolder?: string;
+  statement?: string;
+  organizationId?: string;
+  notes?: string;
+  discussionId?: string;
+  commentId?: string;
+  commentText?: string;
+};
+
 export interface PendingUploadRecord {
   id: string;
   failedAt: string;
@@ -20,6 +32,7 @@ export interface PendingUploadRecord {
   fileSize: number;
   uploadType: UploadType;
   record: PendingUploadMediaRecord;
+  sideEffects?: PendingUploadSideEffects;
 }
 
 /** Identity for matching pending rows across different staged disk paths (TT-7347). */
@@ -85,6 +98,7 @@ export function appendPendingMediaUpload(
     fileSize: entry.fileSize,
     uploadType: entry.uploadType,
     record: entry.record,
+    sideEffects: entry.sideEffects,
   };
   const next = loadPendingMediaUploads().filter((p) => {
     const samePath =
@@ -105,7 +119,7 @@ export function updatePendingMediaUpload(
   patch: Partial<
     Pick<
       PendingUploadRecord,
-      'localAbsolutePath' | 'fileSize' | 'record' | 'uploadType'
+      'localAbsolutePath' | 'fileSize' | 'record' | 'uploadType' | 'sideEffects'
     >
   >
 ): PendingUploadRecord | undefined {

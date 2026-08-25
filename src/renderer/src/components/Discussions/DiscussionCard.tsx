@@ -1018,6 +1018,12 @@ export const DiscussionCard = (props: IProps) => {
                     onRecordingChange={setCommentIsRecording}
                     fileName={fileName(editSubject, '')}
                     afterUploadCb={afterUploadCb}
+                    pendingSideEffects={() => ({
+                      kind: 'comment' as const,
+                      discussionId: discussion.id,
+                      commentId: '',
+                      commentText: commentText.current,
+                    })}
                     passageId={passageId}
                     onTextChange={handleTextChange}
                     cancelOnlyIfChanged={true}

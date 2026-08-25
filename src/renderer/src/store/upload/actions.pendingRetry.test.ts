@@ -348,6 +348,40 @@ describe('nextUpload enqueue after staging (TT-7348)', () => {
     expect(mockedAxios.post).toHaveBeenCalled();
   });
 
+  it('stores pendingSideEffects on the staged queue row', async () => {
+    mockedAxios.post.mockImplementation(() => new Promise(() => undefined));
+    const file = Object.assign(makeFile(), { path: '/staged/speaker.mp3' });
+
+    const action = nextUpload({
+      record: baseRecord,
+      files: [file],
+      n: 0,
+      token: 'token',
+      offline: false,
+      errorReporter: {} as never,
+      uploadType: UploadType.IntellectualProperty,
+      pendingSideEffects: {
+        kind: 'intellectualProperty',
+        rightsHolder: 'Ada',
+        organizationId: 'org-1',
+      },
+      cb: jest.fn(),
+    });
+    action(dispatch);
+    await flushPromises();
+
+    expect(appendPendingMediaUpload).toHaveBeenCalledWith(
+      expect.objectContaining({
+        uploadType: UploadType.IntellectualProperty,
+        sideEffects: expect.objectContaining({
+          kind: 'intellectualProperty',
+          rightsHolder: 'Ada',
+          organizationId: 'org-1',
+        }),
+      })
+    );
+  });
+
   it('updates the staged pending row on terminal failure instead of appending a second time', async () => {
     mockedAxios.post.mockRejectedValue({
       response: { status: 500 },

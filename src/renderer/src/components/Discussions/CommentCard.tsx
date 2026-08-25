@@ -427,6 +427,12 @@ export const CommentCard = (props: IProps) => {
                   discussion.id
                 )}
                 afterUploadCb={afterUploadCb}
+                pendingSideEffects={{
+                  kind: 'comment',
+                  discussionId: discussion.id,
+                  commentId: comment.id,
+                  commentText: editComment,
+                }}
               />
             ) : text ? (
               <>

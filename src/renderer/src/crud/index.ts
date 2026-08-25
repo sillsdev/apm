@@ -119,3 +119,4 @@ export * from './useFetchUrlNow';
 export * from './usePublishDestination';
 export * from './convertToWebM';
 export * from './audioDiagnostics';
+export * from './createIntellectualPropertyForMedia';

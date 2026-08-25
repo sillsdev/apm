@@ -27,6 +27,8 @@ import {
 import { formatUploadTerminalFailureMessage } from '../../store/upload/uploadTerminalMessages';
 import { AlertSeverity, useSnackBar } from '../../hoc/SnackBar';
 import { pullTableList } from '../../crud';
+import { useSaveComment } from '../../crud/useSaveComment';
+import { restorePendingUploadSideEffects } from '../../store/upload/restorePendingUploadSideEffects';
 import JSONAPISource from '@orbit/jsonapi';
 import { IndexedDBSource } from '@orbit/indexeddb';
 import Memory from '@orbit/memory';
@@ -50,6 +52,9 @@ export function PendingUploadsDialog(props: IProps) {
   const [coordinator] = useGlobal('coordinator');
   const [connected] = useGlobal('connected');
   const [offline] = useGlobal('offline');
+  const [user] = useGlobal('user');
+  const [organization] = useGlobal('organization');
+  const saveComment = useSaveComment();
   const memory = coordinator?.getSource('memory') as Memory;
   const remote = coordinator?.getSource('remote') as JSONAPISource;
   const backup = coordinator?.getSource('backup') as IndexedDBSource;
@@ -156,6 +161,27 @@ export function PendingUploadsDialog(props: IProps) {
               backup,
               reporter
             );
+            await restorePendingUploadSideEffects({
+              entry,
+              mediaId: sid,
+              memory,
+              user,
+              organizationId: organization,
+              saveComment: (
+                discussionId,
+                commentId,
+                commentText,
+                mediaRemId
+              ) =>
+                saveComment(
+                  discussionId,
+                  commentId,
+                  commentText,
+                  mediaRemId,
+                  undefined,
+                  undefined
+                ),
+            });
           }
           finishOrContinue();
         },

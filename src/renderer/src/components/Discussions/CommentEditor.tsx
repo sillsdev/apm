@@ -49,6 +49,11 @@ interface IProps extends IStateProps {
   fileName: string;
   cancelOnlyIfChanged?: boolean;
   afterUploadCb: (mediaId: string | undefined) => Promise<void>;
+  pendingSideEffects?:
+    | import('../../store/upload/pendingMediaUploads').PendingUploadSideEffects
+    | (() =>
+        | import('../../store/upload/pendingMediaUploads').PendingUploadSideEffects
+        | undefined);
   refresh: number;
   onOk?: () => void;
   onCancel?: () => void;
@@ -65,6 +70,7 @@ export const CommentEditor = (props: IProps) => {
     fileName,
     cancelOnlyIfChanged,
     afterUploadCb,
+    pendingSideEffects,
     refresh,
     onOk,
     onCancel,
@@ -230,6 +236,7 @@ export const CommentEditor = (props: IProps) => {
         artifactId={commentId}
         onRecording={onRecording}
         afterUploadCb={afterUploadCb}
+        pendingSideEffects={pendingSideEffects}
         defaultFilename={fileName}
         allowWave={false}
         setCanSave={handleSetCanSave}

@@ -40,6 +40,7 @@ import {
   appendPendingMediaUpload,
   PendingUploadRecord,
   PendingUploadMediaRecord,
+  PendingUploadSideEffects,
   removeMatchingPendingUploads,
   removePendingMediaUpload,
   updatePendingMediaUpload,
@@ -260,6 +261,8 @@ export interface NextUploadProps {
    * ImportTab sync (`importexportBusy`) can finish first.
    */
   getImportExportBusy?: () => boolean;
+  /** Captured at enqueue so retry can recreate IP / comment links (TT-7363). */
+  pendingSideEffects?: PendingUploadSideEffects;
 }
 export const nextUpload =
   ({
@@ -274,6 +277,7 @@ export const nextUpload =
     onTerminalFailure,
     pendingUploadIdToClearOnSuccess,
     getImportExportBusy,
+    pendingSideEffects,
   }: NextUploadProps) =>
   (dispatch: Dispatch) => {
     dispatch({ payload: n, type: UPLOAD_ITEM_PENDING });
@@ -478,6 +482,7 @@ export const nextUpload =
           fileSize: size,
           uploadType,
           record: snapshotForPending(),
+          ...(pendingSideEffects ? { sideEffects: pendingSideEffects } : {}),
         };
         const pendingRecord = pendingIdToClear
           ? (updatePendingMediaUpload(pendingIdToClear, queuePatch) ??
@@ -514,6 +519,7 @@ export const nextUpload =
           fileSize: size,
           uploadType,
           record: snapshotForPending(),
+          ...(pendingSideEffects ? { sideEffects: pendingSideEffects } : {}),
         };
         const pendingRecord = pendingIdToClear
           ? (updatePendingMediaUpload(

@@ -122,6 +122,12 @@ export const ReplyCard = (props: IProps) => {
         setCanSaveRecording={setCanSaveRecording}
         fileName={fileName(discussion.attributes.subject, discussion.id)}
         afterUploadCb={afterUploadCb}
+        pendingSideEffects={() => ({
+          kind: 'comment' as const,
+          discussionId: discussion.id,
+          commentId: '',
+          commentText: commentText.current,
+        })}
         onTextChange={handleTextChange}
         cancelOnlyIfChanged={true}
       />
