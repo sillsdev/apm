@@ -1018,12 +1018,20 @@ export const DiscussionCard = (props: IProps) => {
                     onRecordingChange={setCommentIsRecording}
                     fileName={fileName(editSubject, '')}
                     afterUploadCb={afterUploadCb}
-                    pendingSideEffects={() => ({
-                      kind: 'comment' as const,
-                      discussionId: discussion.id,
-                      commentId: '',
-                      commentText: commentText.current,
-                    })}
+                    pendingSideEffects={() =>
+                      // A new discussion has no id until saveDiscussion runs in
+                      // afterUploadCb, so a failed upload has no parent to
+                      // attach to on retry; queue no comment side effect rather
+                      // than one pointing at a discussion that was never saved.
+                      discussion.id
+                        ? {
+                            kind: 'comment' as const,
+                            discussionId: discussion.id,
+                            commentId: '',
+                            commentText: commentText.current,
+                          }
+                        : undefined
+                    }
                     passageId={passageId}
                     onTextChange={handleTextChange}
                     cancelOnlyIfChanged={true}

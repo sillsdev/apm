@@ -29,6 +29,21 @@ export type PendingUploadSideEffects = {
   commentVisible?: string;
 };
 
+/**
+ * A comment side effect is only replayable when the parent discussion already
+ * exists: retry attaches the media to that discussion id and cannot recreate a
+ * discussion that was never saved (TT-7363). Drop it rather than queue a link
+ * to nothing.
+ */
+export function sanitizePendingSideEffects(
+  sideEffects?: PendingUploadSideEffects
+): PendingUploadSideEffects | undefined {
+  if (!sideEffects) return undefined;
+  if (sideEffects.kind === 'comment' && !sideEffects.discussionId)
+    return undefined;
+  return sideEffects;
+}
+
 export interface PendingUploadRecord {
   id: string;
   failedAt: string;

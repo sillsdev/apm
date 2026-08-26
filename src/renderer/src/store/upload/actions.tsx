@@ -43,6 +43,7 @@ import {
   PendingUploadSideEffects,
   removeMatchingPendingUploads,
   removePendingMediaUpload,
+  sanitizePendingSideEffects,
   updatePendingMediaUpload,
 } from './pendingMediaUploads';
 
@@ -282,6 +283,7 @@ export const nextUpload =
   (dispatch: Dispatch) => {
     dispatch({ payload: n, type: UPLOAD_ITEM_PENDING });
     let pendingIdToClear = pendingUploadIdToClearOnSuccess;
+    const queuedSideEffects = sanitizePendingSideEffects(pendingSideEffects);
     const sendError = (n: number, message: string, mediaid?: number): void => {
       dispatch({
         payload: {
@@ -482,7 +484,7 @@ export const nextUpload =
           fileSize: size,
           uploadType,
           record: snapshotForPending(),
-          ...(pendingSideEffects ? { sideEffects: pendingSideEffects } : {}),
+          ...(queuedSideEffects ? { sideEffects: queuedSideEffects } : {}),
         };
         const pendingRecord = pendingIdToClear
           ? (updatePendingMediaUpload(pendingIdToClear, queuePatch) ??
@@ -519,7 +521,7 @@ export const nextUpload =
           fileSize: size,
           uploadType,
           record: snapshotForPending(),
-          ...(pendingSideEffects ? { sideEffects: pendingSideEffects } : {}),
+          ...(queuedSideEffects ? { sideEffects: queuedSideEffects } : {}),
         };
         const pendingRecord = pendingIdToClear
           ? (updatePendingMediaUpload(

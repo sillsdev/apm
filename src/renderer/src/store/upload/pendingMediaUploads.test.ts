@@ -3,6 +3,7 @@ import {
   appendPendingMediaUpload,
   loadPendingMediaUploads,
   removeMatchingPendingUploads,
+  sanitizePendingSideEffects,
   type PendingUploadMediaRecord,
   updatePendingMediaUpload,
 } from './pendingMediaUploads';
@@ -169,5 +170,35 @@ describe('pendingMediaUploads', () => {
       rightsHolder: 'Ada',
       organizationId: 'org-1',
     });
+  });
+});
+
+describe('sanitizePendingSideEffects', () => {
+  it('drops a comment side effect with no discussion id', () => {
+    expect(
+      sanitizePendingSideEffects({
+        kind: 'comment',
+        discussionId: '',
+        commentText: 'orphan',
+      })
+    ).toBeUndefined();
+  });
+
+  it('keeps a comment side effect for an existing discussion', () => {
+    const sideEffects = {
+      kind: 'comment' as const,
+      discussionId: 'disc-1',
+      commentText: 'hello',
+    };
+    expect(sanitizePendingSideEffects(sideEffects)).toBe(sideEffects);
+  });
+
+  it('keeps side effects of other kinds', () => {
+    const sideEffects = {
+      kind: 'intellectualProperty' as const,
+      rightsHolder: 'Ada',
+    };
+    expect(sanitizePendingSideEffects(sideEffects)).toBe(sideEffects);
+    expect(sanitizePendingSideEffects(undefined)).toBeUndefined();
   });
 });

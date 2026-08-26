@@ -27,6 +27,16 @@ jest.mock('./pendingMediaUploads', () => ({
     removePendingMediaUpload(...args),
   removeMatchingPendingUploads: (...args: unknown[]) =>
     removeMatchingPendingUploads(...args),
+  sanitizePendingSideEffects: (...args: unknown[]) =>
+    (
+      jest.requireActual(
+        './pendingMediaUploads'
+      ) as typeof import('./pendingMediaUploads')
+    ).sanitizePendingSideEffects(
+      ...(args as Parameters<
+        typeof import('./pendingMediaUploads').sanitizePendingSideEffects
+      >)
+    ),
 }));
 
 jest.mock('../../utils', () => ({
@@ -379,6 +389,35 @@ describe('nextUpload enqueue after staging (TT-7348)', () => {
           organizationId: 'org-1',
         }),
       })
+    );
+  });
+
+  it('drops a comment side effect that has no discussion id (TT-7363)', async () => {
+    mockedAxios.post.mockImplementation(() => new Promise(() => undefined));
+    const file = Object.assign(makeFile(), { path: '/staged/comment.mp3' });
+
+    const action = nextUpload({
+      record: baseRecord,
+      files: [file],
+      n: 0,
+      token: 'token',
+      offline: false,
+      errorReporter: {} as never,
+      uploadType: UploadType.Media,
+      pendingSideEffects: {
+        kind: 'comment',
+        discussionId: '',
+        commentId: '',
+        commentText: 'orphan',
+      },
+      cb: jest.fn(),
+    });
+    action(dispatch);
+    await flushPromises();
+
+    expect(appendPendingMediaUpload).toHaveBeenCalledTimes(1);
+    expect(appendPendingMediaUpload.mock.calls[0][0]).not.toHaveProperty(
+      'sideEffects'
     );
   });
 
