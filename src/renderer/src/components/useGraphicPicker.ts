@@ -91,7 +91,9 @@ export function useGraphicPicker(
 
   const finish = (images: CompressedImages[]) => {
     if (images.length > 0) uploadCompleted.current = true;
-    return saveRef.current(images, currentRightsRef.current);
+    return saveRef
+      .current(images, currentRightsRef.current)
+      .catch(() => undefined);
   };
 
   const onOpen = (visible: boolean) => {

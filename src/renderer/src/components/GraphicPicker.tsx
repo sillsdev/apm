@@ -333,9 +333,14 @@ export function GraphicPicker({
   const hasCurrent = Boolean(displayUrl || currentRights);
 
   useEffect(() => {
-    if (!isOpen) return;
     setPreviewUrl('');
   }, [isOpen]);
+
+  useEffect(() => {
+    return () => {
+      if (previewUrl.startsWith('blob:')) URL.revokeObjectURL(previewUrl);
+    };
+  }, [previewUrl]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -610,7 +615,6 @@ export function GraphicPicker({
     setKeywordsListSearchResetKey((k) => k + 1);
     setSelectedId(null);
     userTabRef.current = false;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [onOpen, onCancel, tabValue]);
 
   const handleSetGraphic = useCallback(() => {

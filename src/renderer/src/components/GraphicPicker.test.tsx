@@ -66,6 +66,7 @@ jest.mock('./GraphicUploader', () => {
     mockHandleAddOrSave: handleAddOrSave,
     GraphicUploader: (props: {
       metadata?: React.ReactNode;
+      onFiles?: (files: File[]) => void;
       mediaUploadControlsRef?: {
         current: {
           handleAddOrSave: unknown;
@@ -81,6 +82,16 @@ jest.mock('./GraphicUploader', () => {
         <div>
           custom-upload
           {props.metadata}
+          <button
+            type="button"
+            onClick={() =>
+              props.onFiles?.([
+                new File(['x'], 'a.png', { type: 'image/png' }),
+              ])
+            }
+          >
+            pick-file
+          </button>
         </div>
       );
     },
@@ -195,5 +206,32 @@ describe('GraphicPicker', () => {
       <GraphicPicker {...baseProps} scripture={false} currentRights="fresh" />
     );
     expect(screen.getByText('rights:fresh')).toBeInTheDocument();
+  });
+
+  it('revokes blob preview URLs when replaced or closed', () => {
+    const create = jest
+      .fn()
+      .mockReturnValueOnce('blob:preview-1')
+      .mockReturnValueOnce('blob:preview-2');
+    const revoke = jest.fn();
+    Object.defineProperty(URL, 'createObjectURL', {
+      configurable: true,
+      writable: true,
+      value: create,
+    });
+    Object.defineProperty(URL, 'revokeObjectURL', {
+      configurable: true,
+      writable: true,
+      value: revoke,
+    });
+    const { rerender } = render(
+      <GraphicPicker {...baseProps} scripture={false} />
+    );
+    fireEvent.click(screen.getByRole('tab', { name: 'Custom' }));
+    fireEvent.click(screen.getByRole('button', { name: 'pick-file' }));
+    fireEvent.click(screen.getByRole('button', { name: 'pick-file' }));
+    expect(revoke).toHaveBeenCalledWith('blob:preview-1');
+    rerender(<GraphicPicker {...baseProps} scripture={false} isOpen={false} />);
+    expect(revoke).toHaveBeenCalledWith('blob:preview-2');
   });
 });

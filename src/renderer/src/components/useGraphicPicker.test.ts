@@ -85,4 +85,10 @@ describe('useGraphicPicker', () => {
     });
     expect(result.current.isOpen).toBe(false);
   });
+
+  it('does not reject when finish save fails', async () => {
+    const save = jest.fn().mockRejectedValue(new Error('offline'));
+    const { result } = renderHook(() => useGraphicPicker(save));
+    await expect(result.current.finish([png])).resolves.toBeUndefined();
+  });
 });
