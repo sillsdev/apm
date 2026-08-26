@@ -125,7 +125,13 @@ export function useWaveSurferRegions(
   applyRegionColor?: ApplyRegionColor,
   lockSegmentSelection?: boolean,
   getDecodedBuffer?: () => AudioBuffer | undefined,
-  /** Suppress drag-to-create-region (the red loop region) even in single-region mode. */
+  /**
+   * Suppress drag-to-create-region (the red loop region) even in single-region
+   * mode. Read once, where setupRegions configures the regions plugin on the
+   * WaveSurfer 'ready' event — it is not reactive, so toggling it afterwards has
+   * no effect until the next load. Pass a value that is constant for the
+   * lifetime of the player.
+   */
   disableDragSelection?: boolean,
   /**
    * A region was clicked. Distinct from onCurrentRegion, which also fires for
@@ -155,11 +161,9 @@ export function useWaveSurferRegions(
     applyRegionColor
   );
   const lockSegmentSelectionRef = useRef(lockSegmentSelection ?? false);
-  // disableDragSelection is effectively constant, but setupRegions runs from a
-  // once-registered 'ready' handler (like singleRegionRef), so mirror the latest
-  // prop into a ref. A render-time cache write keeps it current without an effect.
+  // setupRegions runs from a once-registered 'ready' handler, so it can only
+  // reach this prop through a ref (like singleRegionRef).
   const disableDragSelectionRef = useRef(disableDragSelection ?? false);
-  disableDragSelectionRef.current = disableDragSelection ?? false;
   const regionBeforeClickRef = useRef<Region | undefined>(undefined);
   const playTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
   /** Suppress region-in while the playhead is moved programmatically (table row click). */
@@ -191,6 +195,10 @@ export function useWaveSurferRegions(
   useEffect(() => {
     lockSegmentSelectionRef.current = lockSegmentSelection ?? false;
   }, [lockSegmentSelection]);
+
+  useEffect(() => {
+    disableDragSelectionRef.current = disableDragSelection ?? false;
+  }, [disableDragSelection]);
 
   const regionColor = (
     role: RegionColorRole,
