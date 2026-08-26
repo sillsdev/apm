@@ -1645,9 +1645,16 @@ export function PassageDetailGuidedPhraseRecord({
     return <StepMessage message={ts.noAudio} />;
   }
 
+  // Single source of truth for the segment-selection lock. While it is up,
+  // useWavesurferRegions.handleRegionClick drops waveform clicks silently, so
+  // it is mirrored onto the container: a test that clicks a segment has no
+  // other way to know whether the click could be received (TT-7360 follow-up).
+  const segmentSelectionLocked = phase === 'recording' || savingRecording;
+
   return (
     <Box
       id={config.containerId}
+      data-segment-selection-locked={String(segmentSelectionLocked)}
       sx={{
         display: 'flex',
         flexDirection: 'column',
@@ -1700,7 +1707,7 @@ export function PassageDetailGuidedPhraseRecord({
           highlightPlay={highlightPlayButton}
           onPlayStatusNotify={handlePlayStatusNotify}
           beforePlay={handleBeforeSourcePlay}
-          lockSegmentSelection={phase === 'recording' || savingRecording}
+          lockSegmentSelection={segmentSelectionLocked}
           allowZoom={true}
         />
       )}
