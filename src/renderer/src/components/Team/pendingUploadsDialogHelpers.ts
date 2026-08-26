@@ -13,3 +13,11 @@ export function retryProgressLabel(
     .replace('{0}', String(completed))
     .replace('{1}', String(total));
 }
+
+/** Status text for an in-flight single-file retry (TT-7364). */
+export function retryUploadingLabel(
+  template: string,
+  fileName: string
+): string {
+  return template.replace('{0}', fileName);
+}

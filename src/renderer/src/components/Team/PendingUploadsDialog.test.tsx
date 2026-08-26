@@ -36,6 +36,7 @@ const mockState = {
       pendingUploadBatchRetry: 'Retry all',
       pendingUploadDismiss: 'Remove from list',
       pendingUploadRetryLater: 'Try again later.',
+      pendingUploadUploading: 'Uploading {0}…',
       uploadComplete: '{0} of {1} files uploaded successfully.',
     },
     shared: {
@@ -199,6 +200,34 @@ describe('PendingUploadsDialog', () => {
         '1 of 1 files uploaded successfully.'
       );
     });
+  });
+
+  it('shows an indeterminate bar and status text while a single Retry runs (TT-7364)', async () => {
+    mockDeferUploads = true;
+    appendPendingMediaUpload({
+      localAbsolutePath: '/a/audio.mp3',
+      fileSize: 10,
+      uploadType: UploadType.Media,
+      record: pendingRecord,
+    });
+
+    render(<PendingUploadsDialog open onClose={jest.fn()} />);
+    fireEvent.click(screen.getByText('Retry'));
+
+    await waitFor(() => expect(mockUploadCompletions).toHaveLength(1));
+    const progress = screen.getByTestId('pending-upload-progress');
+    expect(progress.querySelector('.MuiLinearProgress-root')).toHaveClass(
+      'MuiLinearProgress-indeterminate'
+    );
+    expect(progress).toHaveTextContent('Uploading audio.mp3…');
+
+    await completeNextUpload();
+
+    await waitFor(() =>
+      expect(
+        screen.queryByTestId('pending-upload-progress')
+      ).not.toBeInTheDocument()
+    );
   });
 
   it('shows incremental retry progress while Retry all runs (TT-7364)', async () => {

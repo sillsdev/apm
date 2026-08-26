@@ -5897,6 +5897,13 @@
                <context context-type="sourcefile">PendingUploadsDialog.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="mediaTab.pendingUploadUploading">
+            <source>Uploading {0}…</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">PendingUploadsDialog.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="mediaTab.planName">
             <source>Plan</source>
             <target/>

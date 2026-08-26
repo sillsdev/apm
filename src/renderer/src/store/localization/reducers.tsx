@@ -1038,6 +1038,7 @@ const initialState = {
 			"pendingUploadRetryLater": "Try again when your internet connection is more stable.",
 			"pendingUploadRetryOne": "Retry",
 			"pendingUploadTitle": "Pending media uploads",
+			"pendingUploadUploading": "Uploading {0}…",
 			"planName": "Plan",
 			"proposed": "Proposed",
 			"publish": "Publish Media",

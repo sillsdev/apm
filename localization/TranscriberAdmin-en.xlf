@@ -5056,6 +5056,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="mediaTab.pendingUploadUploading">
+         <segment>
+            <source>Uploading {0}…</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="mediaTab.planName">
          <segment>
             <source>Plan</source>

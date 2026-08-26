@@ -1,5 +1,6 @@
 import {
   retryProgressLabel,
+  retryUploadingLabel,
   shouldShowRetryAll,
 } from './pendingUploadsDialogHelpers';
 
@@ -21,5 +22,11 @@ describe('pendingUploadsDialogHelpers', () => {
     expect(
       retryProgressLabel('{0} of {1} files uploaded successfully.', 1, 2)
     ).toBe('1 of 2 files uploaded successfully.');
+  });
+
+  it('names the file in the single-retry status text (TT-7364)', () => {
+    expect(retryUploadingLabel('Uploading {0}…', 'audio.mp3')).toBe(
+      'Uploading audio.mp3…'
+    );
   });
 });

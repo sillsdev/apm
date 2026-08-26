@@ -35,6 +35,7 @@ import { MediaFileAttributes } from '../../model';
 import { logError, Online, Severity } from '../../utils';
 import {
   retryProgressLabel,
+  retryUploadingLabel,
   shouldShowRetryAll,
 } from './pendingUploadsDialogHelpers';
 
@@ -69,6 +70,8 @@ export function PendingUploadsDialog(props: IProps) {
     completed: 0,
     total: 0,
   });
+  /** File shown in the status text while a single-file retry is in flight. */
+  const [retryFileName, setRetryFileName] = useState('');
 
   const retryDisabled = busy || !connected || offline;
 
@@ -202,6 +205,7 @@ export function PendingUploadsDialog(props: IProps) {
     retryTotalRef.current = 1;
     retryDoneRef.current = 0;
     setRetryProgress({ completed: 0, total: 1 });
+    setRetryFileName(entry.record.originalFile);
     setBusy(true);
     retryQueueRef.current = [];
     assertCanRetry(() => void dispatchOne(entry), releaseRetryClaim);
@@ -219,6 +223,7 @@ export function PendingUploadsDialog(props: IProps) {
     retryTotalRef.current = all.length;
     retryDoneRef.current = 0;
     setRetryProgress({ completed: 0, total: all.length });
+    setRetryFileName(all[0].record.originalFile);
     setBusy(true);
     retryQueueRef.current = all.slice(1);
     assertCanRetry(() => void dispatchOne(all[0]), releaseRetryClaim);
@@ -248,15 +253,15 @@ export function PendingUploadsDialog(props: IProps) {
                   : 0
               }
             />
-            {retryProgress.total > 1 && (
-              <Typography variant="caption">
-                {retryProgressLabel(
-                  t.uploadComplete,
-                  retryProgress.completed,
-                  retryProgress.total
-                )}
-              </Typography>
-            )}
+            <Typography variant="caption">
+              {retryProgress.total > 1
+                ? retryProgressLabel(
+                    t.uploadComplete,
+                    retryProgress.completed,
+                    retryProgress.total
+                  )
+                : retryUploadingLabel(t.pendingUploadUploading, retryFileName)}
+            </Typography>
           </Box>
         )}
         {items.length === 0 ? (

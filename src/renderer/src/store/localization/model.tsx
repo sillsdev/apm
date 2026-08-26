@@ -985,6 +985,7 @@ export interface IMediaTabStrings extends Localize.LocalizedStringsMethods {
     "pendingUploadRetryLater": string;
     "pendingUploadRetryOne": string;
     "pendingUploadTitle": string;
+    "pendingUploadUploading": string;
     "planName": string;
     "proposed": string;
     "publish": string;
