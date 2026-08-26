@@ -43,6 +43,10 @@ const shtSectionUpdate = (item: ISheet, rec: ISheet) => {
       rec.title = item.title;
       rec.deleted = item.deleted;
       rec.published = item.published;
+      rec.sectionUpdated = item.sectionUpdated;
+      rec.graphicUri = item.graphicUri;
+      rec.graphicRights = item.graphicRights;
+      rec.graphicFullSizeUrl = item.graphicFullSizeUrl;
     }
 };
 
@@ -68,6 +72,7 @@ const shtPassageUpdate = (item: ISheet, rec: ISheet) => {
       rec.comment = item.comment;
       rec.passage = item.passage;
       rec.deleted = item.deleted;
+      rec.passageUpdated = item.passageUpdated;
       //if it's a note with a category and the new reference doesn't have a category, keep the original reference
       rec.reference =
         rec.reference?.startsWith('NOTE|') && (item.reference?.length ?? 0) < 6
@@ -298,10 +303,20 @@ export const getSheet = ({
         true
       );
       curSectionPublished = section.attributes.published;
-      const gr = graphicFind(section);
-      item.graphicUri = gr?.uri;
-      item.graphicRights = gr?.rights;
-      item.graphicFullSizeUrl = gr?.url;
+      const existingSec = myWork.find((w) => w.sectionId?.id === section.id);
+      const sectionTouched =
+        !existingSec ||
+        Boolean(
+          item.sectionUpdated &&
+          existingSec.sectionUpdated &&
+          item.sectionUpdated > existingSec.sectionUpdated
+        );
+      if (sectionTouched) {
+        const gr = graphicFind(section);
+        item.graphicUri = gr?.uri;
+        item.graphicRights = gr?.rights;
+        item.graphicFullSizeUrl = gr?.url;
+      }
       const titleMediaId = related(section, 'titleMediafile');
       item.titleMediaId = titleMediaId
         ? { type: 'mediafile', id: titleMediaId }

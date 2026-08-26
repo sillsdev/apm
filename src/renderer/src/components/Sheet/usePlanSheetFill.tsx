@@ -730,7 +730,7 @@ export const usePlanSheetFill = ({
           !canEditSheet ||
           (cellIndex === SectionSeqCol && (e as number) < 0) ||
           cellIndex === passageSeqCol ||
-          (sharedRes) ||
+          sharedRes ||
           (inlinePassages
             ? false
             : passage
