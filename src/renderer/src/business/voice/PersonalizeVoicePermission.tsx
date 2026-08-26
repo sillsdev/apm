@@ -128,12 +128,10 @@ export default function PersonalizeVoicePermission(props: IProps) {
   const handleChangeRightsHolder = (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
-    const updateSponsor = (s: IVoicePerm) => ({
-      ...s,
-      sponsor: event.target.value,
-    });
-    setCurState(updateSponsor);
-    setState && setState(updateSponsor);
+    const raw = event.target.value;
+    const sponsor = raw.trim() ? raw : undefined;
+    setCurState((s) => ({ ...s, sponsor: raw }));
+    setState?.((s) => ({ ...s, sponsor }));
   };
 
   const handleExcludeName = (

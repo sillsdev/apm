@@ -31,7 +31,7 @@ export const useVoicePermission = ({
         ? t.stTeam.replace('{0}', team?.attributes.name)
         : t.stThisTeam;
 
-    const sponsorOrg = permState?.sponsor ?? owner;
+    const sponsorOrg = permState?.sponsor?.trim() || owner;
 
     if (permState?.gender)
       cats.push(t.stGender.replace('{0}', permState.gender ?? t.stNotGiven));

@@ -11,6 +11,7 @@ import localizationReducer from '../../store/localization/reducers';
 import { VoiceStatement } from './VoiceStatement';
 import { IVoicePerm } from './PersonalizeVoicePermission';
 import { voicePermOpts } from './voicePermOpts';
+import packageJson from '../../../package.json';
 
 describe('VoiceStatement', () => {
   const mockMemory = {
@@ -174,6 +175,18 @@ describe('VoiceStatement', () => {
       .should('be.visible')
       .and('contain', 'being compensated')
       .and('not.contain', 'will not be compensated');
+  });
+
+  it('falls back to the default rights holder when sponsor is blank', () => {
+    mountVoiceStatement({
+      aiip: false,
+      state: mockVoicePerm({ sponsor: '   ' }),
+    });
+
+    cy.get('[data-cy="voice-statement-text"]')
+      .should('be.visible')
+      .and('contain', packageJson.author.name)
+      .and('not.contain', 'give  permission');
   });
 
   it('calls setStatement with the computed statement when permStatement updates', () => {
