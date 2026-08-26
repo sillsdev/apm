@@ -7124,6 +7124,20 @@
                <context context-type="sourcefile">passageRecord.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="passageRecord.pendingUploadRerecordTitle">
+            <source>Pending upload for this passage</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">MediaRecord.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="passageRecord.pendingUploadRerecordWarning">
+            <source>This passage already has a recording waiting to upload. Saving another take may create a second version. Continue?</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">MediaRecord.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="passageRecord.processing">
             <source>Processing...</source>
             <target/>

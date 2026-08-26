@@ -1,8 +1,11 @@
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import React from 'react';
-import { act, cleanup, render, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import MediaRecord from './MediaRecord';
+import { appendPendingMediaUpload } from '../store/upload/pendingMediaUploads';
+import type { PendingUploadMediaRecord } from '../store/upload/pendingMediaUploads';
+import { UploadType } from './UploadType';
 
 type WsAudioPlayerProps = {
   planId?: string;
@@ -39,6 +42,32 @@ jest.mock('./WSAudioPlayer', () => {
     WSAudioPlayerControls: {},
   };
 });
+
+jest.mock('./AlertDialog', () => ({
+  __esModule: true,
+  default: ({
+    title,
+    text,
+    yesResponse,
+    noResponse,
+  }: {
+    title?: string;
+    text: string;
+    yesResponse: () => void;
+    noResponse: () => void;
+  }) => (
+    <div data-testid="rerecord-warning">
+      <h2>{title}</h2>
+      <p>{text}</p>
+      <button type="button" onClick={yesResponse}>
+        Yes
+      </button>
+      <button type="button" onClick={noResponse}>
+        No
+      </button>
+    </div>
+  ),
+}));
 
 jest.mock('../context/useGlobal', () => ({
   useGlobal: () => [undefined, jest.fn()],
@@ -111,6 +140,9 @@ jest.mock('react-redux', () => ({
         compressError: 'Compress error',
         toobig: 'Too big {1}',
         toobigwarn: 'Too big warn {1}',
+        pendingUploadRerecordTitle: 'Pending upload for this passage',
+        pendingUploadRerecordWarning:
+          'This passage already has a recording waiting to upload. Saving another take may create a second version. Continue?',
       };
     }
     return { NoSaveWoMedia: 'No media to save', mediaError: 'Media error' };
@@ -139,6 +171,7 @@ describe('MediaRecord save gating', () => {
     latestWsProps = undefined;
     capturedAfterUploadCb = undefined;
     jest.clearAllMocks();
+    localStorage.clear();
     mockSaveRequested = () => false;
     mockUploadMedia = jest.fn().mockResolvedValue(undefined);
     mockConvertToFormat = jest.fn((blob: Blob) => Promise.resolve(blob));
@@ -347,5 +380,80 @@ describe('MediaRecord save gating', () => {
     // toolChanged from it. Latching it off after a transient failure would
     // leave no way to retry and no unsaved-changes warning.
     await waitFor(() => expect(setCanSave).toHaveBeenLastCalledWith(true));
+  });
+
+  it('warns before saving a vernacular take when a pending upload exists', async () => {
+    appendPendingMediaUpload({
+      localAbsolutePath: '/old/take.wav',
+      fileSize: 10,
+      uploadType: UploadType.Media,
+      record: {
+        planId: 'plan-1',
+        versionNumber: 1,
+        originalFile: 'old.wav',
+        contentType: 'audio/wav',
+        artifactTypeId: '',
+        passageId: 'passage-1',
+        userId: 'u1',
+      } as PendingUploadMediaRecord,
+    });
+    mockSaveRequested = () => true;
+    render(<MediaRecord {...defaultProps} artifactId={null} />);
+
+    await waitFor(() => expect(latestWsProps).toBeDefined());
+    act(() => {
+      latestWsProps?.setBlobReady?.(true);
+      latestWsProps?.setChanged?.(true);
+      latestWsProps?.onDuration?.(12);
+      latestWsProps?.onBlobReady?.(
+        new Blob([new Uint8Array(1000)], { type: 'audio/ogg' })
+      );
+    });
+
+    await waitFor(() =>
+      expect(screen.getByTestId('rerecord-warning')).toBeInTheDocument()
+    );
+    expect(mockUploadMedia).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByText('Yes'));
+    await waitFor(() => expect(mockUploadMedia).toHaveBeenCalled());
+  });
+
+  it('does not upload when the pending-upload warning is cancelled', async () => {
+    appendPendingMediaUpload({
+      localAbsolutePath: '/old/take.wav',
+      fileSize: 10,
+      uploadType: UploadType.Media,
+      record: {
+        planId: 'plan-1',
+        versionNumber: 1,
+        originalFile: 'old.wav',
+        contentType: 'audio/wav',
+        artifactTypeId: '',
+        passageId: 'passage-1',
+        userId: 'u1',
+      } as PendingUploadMediaRecord,
+    });
+    mockSaveRequested = () => true;
+    render(<MediaRecord {...defaultProps} artifactId={null} />);
+
+    await waitFor(() => expect(latestWsProps).toBeDefined());
+    act(() => {
+      latestWsProps?.setBlobReady?.(true);
+      latestWsProps?.setChanged?.(true);
+      latestWsProps?.onDuration?.(12);
+      latestWsProps?.onBlobReady?.(
+        new Blob([new Uint8Array(1000)], { type: 'audio/ogg' })
+      );
+    });
+
+    await waitFor(() =>
+      expect(screen.getByTestId('rerecord-warning')).toBeInTheDocument()
+    );
+    fireEvent.click(screen.getByText('No'));
+    await waitFor(() =>
+      expect(screen.queryByTestId('rerecord-warning')).not.toBeInTheDocument()
+    );
+    expect(mockUploadMedia).not.toHaveBeenCalled();
   });
 });

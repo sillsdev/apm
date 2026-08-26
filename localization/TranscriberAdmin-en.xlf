@@ -6106,6 +6106,18 @@
             <target/>
          </segment>
       </unit>
+      <unit id="passageRecord.pendingUploadRerecordTitle">
+         <segment>
+            <source>Pending upload for this passage</source>
+            <target/>
+         </segment>
+      </unit>
+      <unit id="passageRecord.pendingUploadRerecordWarning">
+         <segment>
+            <source>This passage already has a recording waiting to upload. Saving another take may create a second version. Continue?</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="passageRecord.processing">
          <segment>
             <source>Processing...</source>

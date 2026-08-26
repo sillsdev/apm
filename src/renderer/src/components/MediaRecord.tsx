@@ -36,6 +36,10 @@ import { JSONParse } from '../utils';
 import { UploadType } from './UploadType';
 import { shallowEqual, useSelector } from 'react-redux';
 import { passageRecordSelector, sharedSelector } from '../selector';
+import AlertDialog from './AlertDialog';
+import { passageHasPendingVernacularUpload } from '../store/upload/pendingMediaUploads';
+import { remoteIdNum } from '../crud/remoteId';
+import { RecordKeyMap } from '@orbit/records';
 
 interface IProps {
   toolId: string;
@@ -186,6 +190,11 @@ function MediaRecord(props: IProps) {
   /** Recorded WAV bytes/sec: mono 16-bit @ 48kHz (WavRecorder's preferred rate). */
   const RECORD_WAV_BYTES_PER_SECOND = 96000;
   const [reporter] = useGlobal('errorReporter');
+  const [memory] = useGlobal('memory');
+  const [rerecordGate, setRerecordGate] = useState<
+    'idle' | 'asking' | 'proceed'
+  >('idle');
+  const rerecordCancelledRef = useRef(false);
   const { fetchMediaUrl, mediaState } = useFetchMediaUrl(reporter);
   const mediaStateRef = useRef(mediaState);
   const mediaStateFetchedTimeRef = useRef<number>(0);
@@ -474,6 +483,7 @@ function MediaRecord(props: IProps) {
   const handleSaveFailed = useCallback(
     (error: unknown) => {
       saveRef.current = false;
+      setRerecordGate('idle');
       // Before the setState calls below, for the reason in myAfterUploadCb.
       onSaveRejected?.();
       setUploading(false);
@@ -486,6 +496,14 @@ function MediaRecord(props: IProps) {
     },
     [toolId, saveCompleted, onReady, onSaveRejected]
   );
+
+  const handleConfirmRerecord = () => setRerecordGate('proceed');
+  const handleCancelRerecord = () => {
+    rerecordCancelledRef.current = true;
+    setRerecordGate('idle');
+    saveCompleted(toolId);
+  };
+
   useEffect(() => {
     const limit = sizeLimit * compression;
     const big = effectiveAudioBytes > limit * 1000000;
@@ -497,8 +515,31 @@ function MediaRecord(props: IProps) {
     else setWarning('');
 
     if (saveRequested(toolId)) {
+      if (rerecordCancelledRef.current) {
+        return;
+      }
       if (!saveRef.current) {
         if (audioBlob && waveformDuration > 0) {
+          const remotePassageId =
+            passageId && memory?.keyMap
+              ? remoteIdNum(
+                  'passage',
+                  passageId,
+                  memory.keyMap as RecordKeyMap
+                )
+              : undefined;
+          if (
+            artifactId == null &&
+            rerecordGate === 'idle' &&
+            passageHasPendingVernacularUpload(passageId, remotePassageId)
+          ) {
+            setRerecordGate('asking');
+            return;
+          }
+          if (rerecordGate === 'asking') {
+            return;
+          }
+          setRerecordGate('idle');
           onSaving && onSaving();
           saveRef.current = true;
           setLoading(true);
@@ -550,6 +591,10 @@ function MediaRecord(props: IProps) {
       }
     } else {
       saveRef.current = false;
+      rerecordCancelledRef.current = false;
+      if (rerecordGate !== 'asking') {
+        setRerecordGate('idle');
+      }
       if (clearRequested(toolId)) {
         reset();
         setDoReset && setDoReset(true);
@@ -557,7 +602,14 @@ function MediaRecord(props: IProps) {
     }
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [audioBlob, effectiveAudioBytes, toolsChanged, mimeType, toolId]);
+  }, [
+    audioBlob,
+    effectiveAudioBytes,
+    toolsChanged,
+    mimeType,
+    toolId,
+    rerecordGate,
+  ]);
 
   const setExtension = (mimeType: string) => {
     if (mimeType) {
@@ -802,6 +854,14 @@ function MediaRecord(props: IProps) {
           )}
           {metaData}
         </Stack>
+      )}
+      {rerecordGate === 'asking' && (
+        <AlertDialog
+          title={t.pendingUploadRerecordTitle}
+          text={t.pendingUploadRerecordWarning}
+          yesResponse={handleConfirmRerecord}
+          noResponse={handleCancelRerecord}
+        />
       )}
     </>
   );

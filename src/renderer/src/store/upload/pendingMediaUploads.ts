@@ -131,3 +131,36 @@ export function removePendingMediaUpload(id: string): void {
 export function pendingMediaUploadCount(): number {
   return loadPendingMediaUploads().length;
 }
+
+const normalizePassageId = (
+  id: string | number | null | undefined
+): string | undefined => {
+  if (id == null) return undefined;
+  const s = String(id).trim();
+  if (!s || s === 'NaN') return undefined;
+  return s;
+};
+
+const isVernacularArtifact = (
+  artifactTypeId: string | null | undefined
+): boolean => artifactTypeId == null || artifactTypeId === '';
+
+/** True when this passage already has a vernacular take waiting to upload (TT-7366). */
+export function passageHasPendingVernacularUpload(
+  ...passageIds: Array<string | number | null | undefined>
+): boolean {
+  const ids = new Set(
+    passageIds
+      .map(normalizePassageId)
+      .filter((id): id is string => Boolean(id))
+  );
+  if (ids.size === 0) return false;
+  return loadPendingMediaUploads().some((p) => {
+    const pendingPassage = normalizePassageId(p.record.passageId);
+    return (
+      isVernacularArtifact(p.record.artifactTypeId) &&
+      Boolean(pendingPassage) &&
+      ids.has(pendingPassage as string)
+    );
+  });
+}

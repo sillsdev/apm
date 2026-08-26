@@ -2,6 +2,7 @@ import { UploadType } from '../../components/UploadType';
 import {
   appendPendingMediaUpload,
   loadPendingMediaUploads,
+  passageHasPendingVernacularUpload,
   removeMatchingPendingUploads,
   type PendingUploadMediaRecord,
   updatePendingMediaUpload,
@@ -147,5 +148,35 @@ describe('pendingMediaUploads', () => {
     const remaining = loadPendingMediaUploads();
     expect(remaining).toHaveLength(1);
     expect(remaining[0].record.originalFile).toBe('other.mp3');
+  });
+
+  // TT-7366: a new take has a different originalFile, so identity matching
+  // cannot be used. Match vernacular pending rows by passage id only.
+  it('passageHasPendingVernacularUpload matches local or remote passage ids', () => {
+    appendPendingMediaUpload({
+      localAbsolutePath: '/old/take.wav',
+      fileSize: 100,
+      uploadType: UploadType.Media,
+      record: { ...baseRecord, originalFile: 'old-take.wav', passageId: '42' },
+    });
+
+    expect(passageHasPendingVernacularUpload('passage-1')).toBe(false);
+    expect(passageHasPendingVernacularUpload('42')).toBe(true);
+    expect(passageHasPendingVernacularUpload('passage-1', 42)).toBe(true);
+  });
+
+  it('passageHasPendingVernacularUpload ignores non-vernacular artifacts', () => {
+    appendPendingMediaUpload({
+      localAbsolutePath: '/comment.wav',
+      fileSize: 100,
+      uploadType: UploadType.Media,
+      record: {
+        ...baseRecord,
+        artifactTypeId: 'comment-type',
+        passageId: 'passage-1',
+      },
+    });
+
+    expect(passageHasPendingVernacularUpload('passage-1')).toBe(false);
   });
 });
