@@ -14,6 +14,7 @@ jest.mock('../../utils/typeLimit', () => ({
 jest.mock('axios');
 jest.mock('../../auth/bugsnagClient', () => ({}));
 jest.mock('./pendingMediaUploads', () => ({
+  ...jest.requireActual('./pendingMediaUploads'),
   appendPendingMediaUpload: jest.fn(),
   removePendingMediaUpload: jest.fn(),
   removeMatchingPendingUploads: jest.fn(),
