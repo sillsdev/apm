@@ -400,6 +400,7 @@ function AudacityManager(props: IProps) {
                   name={speaker || ''}
                   onRights={handleRights}
                   onChange={handleSpeaker}
+                  aiip={false}
                 />
                 <Button
                   onClick={handleImport}

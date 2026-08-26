@@ -248,6 +248,7 @@ function PassageRecordDlg(props: IProps) {
                 onRights={setHasRights}
                 onChange={handleSpeaker}
                 team={team}
+                aiip={false}
               />
             )}
             {busy && <Busy />}
