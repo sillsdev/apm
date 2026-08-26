@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { PropsWithChildren } from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { FaithbridgeIframe } from '../components/PassageDetail/Internalization/FaithbridgeIframe';
 import type { FaithbridgeData } from '../components/PassageDetail/Internalization/useFaithbridgeResult';
@@ -27,6 +27,19 @@ jest.mock('@auth0/auth0-react', () => ({
   })),
   User: {},
   RedirectLoginOptions: {},
+}));
+
+// The control barrel pulls in the Sheet/store graph (and react-localization's
+// ESM build, which Jest can't parse), so stub the pieces this component uses.
+jest.mock('../control', () => ({
+  Button: ({ children, ...props }: any) => (
+    <button {...props}>{children}</button>
+  ),
+  ActionRow: ({ children }: PropsWithChildren) => <div>{children}</div>,
+  GrowingSpacer: () => <div />,
+  // rowSx is a theme callback needing the app theme augmentation; the plain
+  // object keeps the Box happy without a ThemeProvider.
+  rowSx: {},
 }));
 
 // Mock schema to avoid import.meta issues in Jest
