@@ -224,15 +224,27 @@ function runBibleFetch<T>({
   onSettled?: () => void;
 }) {
   const url = getUrl();
-  if (!url) return;
+  if (!url) {
+    setError(t.loadFailure);
+    onFailure();
+    onSettled?.();
+    return;
+  }
 
   setLoading(true);
   setError(null);
 
   fetch(url)
-    .then((res) => {
+    .then(async (res) => {
       if (!res.ok) throw new Error(res.statusText);
-      return res.json();
+      const text = await res.text();
+      const body = text.trimStart();
+      if (body.startsWith('<')) throw new Error(t.loadFailure);
+      try {
+        return JSON.parse(text) as unknown;
+      } catch {
+        throw new Error(t.loadFailure);
+      }
     })
     .then((data: unknown) => {
       const parsed = parse(data);

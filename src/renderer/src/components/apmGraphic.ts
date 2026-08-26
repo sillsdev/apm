@@ -5,6 +5,7 @@ import {
   IGraphicInfo,
   Rights,
 } from '../utils/useCompression';
+import { isUsableGraphicUrl } from './isUsableGraphicUrl';
 
 const FullSize = 1024;
 
@@ -17,10 +18,11 @@ export const apmGraphic = (graphicRec: GraphicD) => {
     url = (info[fullSizeStr] as CompressedImages).content;
   }
   if (Object.hasOwn(info, apmDimStr)) {
+    const graphicUri = (info[apmDimStr] as CompressedImages).content;
     return {
-      graphicUri: (info[apmDimStr] as CompressedImages).content,
+      graphicUri: isUsableGraphicUrl(graphicUri) ? graphicUri : undefined,
       graphicRights: info[Rights] as string | undefined,
-      url: url,
+      url: isUsableGraphicUrl(url) ? url : '',
     };
   }
   return undefined;

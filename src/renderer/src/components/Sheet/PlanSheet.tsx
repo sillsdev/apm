@@ -1228,6 +1228,8 @@ export function PlanSheet(props: IProps) {
       // Do not pass currentRow into fill / deps: rebuilding cell data on
       // every arrow key remounts the grid and loops through DataSheet onSelect.
       // PlanActionMenu open/close uses PlanSheetRowCtx instead.
+      // Refill when publishing/permission flags change: first paint can
+      // precede canEditSheet, which omits the shared-resource pencil.
       const data = planSheetFill({
         srcMediaId,
         mediaPlaying,
@@ -1254,6 +1256,11 @@ export function PlanSheet(props: IProps) {
     anyRecording,
     firstMovement,
     sectionArr,
+    hidePublishing,
+    publishingOn,
+    canEditSheet,
+    canPublish,
+    shared,
   ]);
 
   useEffect(() => {
