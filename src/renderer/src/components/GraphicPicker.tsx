@@ -334,12 +334,14 @@ export function GraphicPicker({
 
   useEffect(() => {
     if (!isOpen) return;
+    setPreviewUrl('');
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return;
     setRightsDraft(currentRights ?? '');
     setRightsFieldKey((k) => k + 1);
-    setPreviewUrl('');
-    // seed Custom rights when the picker opens
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen]);
+  }, [isOpen, currentRights]);
 
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebounce(search, 500);
@@ -618,7 +620,8 @@ export function GraphicPicker({
       if (mediaUploadControlsRef?.current?.handleAddOrSave) {
         mediaUploadControlsRef.current.handleAddOrSave();
       }
-      onOpen(false);
+      // uploadMedia closes via finish → onOpen after the image save.
+      // Closing here races a rights-only save that can clobber it.
       setSelectedId(null);
       return;
     }

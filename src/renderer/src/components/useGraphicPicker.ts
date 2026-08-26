@@ -101,7 +101,8 @@ export function useGraphicPicker(
       } else {
         saveRef
           .current([], currentRightsRef.current)
-          .then(() => setIsOpen(false));
+          .catch(() => undefined)
+          .finally(() => setIsOpen(false));
       }
     } else {
       setIsOpen(true);

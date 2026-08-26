@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import GraphicPicker from './GraphicPicker';
 
 jest.mock('../context/useGlobal', () => ({
@@ -60,13 +60,36 @@ jest.mock('../control/VertScrollBox', () => ({
   ),
 }));
 
-jest.mock('./GraphicUploader', () => ({
-  GraphicUploader: () => <div>custom-upload</div>,
-}));
+jest.mock('./GraphicUploader', () => {
+  const handleAddOrSave = jest.fn();
+  return {
+    mockHandleAddOrSave: handleAddOrSave,
+    GraphicUploader: (props: {
+      metadata?: React.ReactNode;
+      mediaUploadControlsRef?: {
+        current: {
+          handleAddOrSave: unknown;
+          handleCancel: unknown;
+        };
+      };
+    }) => {
+      if (props.mediaUploadControlsRef) {
+        props.mediaUploadControlsRef.current.handleAddOrSave = handleAddOrSave;
+        props.mediaUploadControlsRef.current.handleCancel = jest.fn();
+      }
+      return (
+        <div>
+          custom-upload
+          {props.metadata}
+        </div>
+      );
+    },
+  };
+});
 
 jest.mock('./GraphicRights', () => ({
   __esModule: true,
-  default: () => <div>rights</div>,
+  default: ({ value }: { value?: string }) => <div>rights:{value}</div>,
 }));
 
 const graphicStrings = {
@@ -147,5 +170,30 @@ describe('GraphicPicker', () => {
       );
     });
     expect(screen.getByText('SIL')).toBeInTheDocument();
+  });
+
+  it('does not close-save when Custom Set Graphic starts an upload', () => {
+    const { mockHandleAddOrSave } = jest.requireMock('./GraphicUploader') as {
+      mockHandleAddOrSave: jest.Mock;
+    };
+    mockHandleAddOrSave.mockClear();
+    const onOpen = jest.fn();
+    render(<GraphicPicker {...baseProps} scripture={false} onOpen={onOpen} />);
+    fireEvent.click(screen.getByRole('tab', { name: 'Custom' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Set as Graphic' }));
+    expect(mockHandleAddOrSave).toHaveBeenCalledTimes(1);
+    expect(onOpen).not.toHaveBeenCalled();
+  });
+
+  it('reseeds Custom rights when currentRights updates while open', () => {
+    const { rerender } = render(
+      <GraphicPicker {...baseProps} scripture={false} currentRights="cached" />
+    );
+    fireEvent.click(screen.getByRole('tab', { name: 'Custom' }));
+    expect(screen.getByText('rights:cached')).toBeInTheDocument();
+    rerender(
+      <GraphicPicker {...baseProps} scripture={false} currentRights="fresh" />
+    );
+    expect(screen.getByText('rights:fresh')).toBeInTheDocument();
   });
 });

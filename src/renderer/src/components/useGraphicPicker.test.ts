@@ -8,8 +8,9 @@ jest.mock('../utils/useCompression', () => ({
   Rights: 'rights',
 }));
 
+import { act, renderHook } from '@testing-library/react';
 import { GraphicD } from '../model';
-import { saveGraphicRecord } from './useGraphicPicker';
+import { saveGraphicRecord, useGraphicPicker } from './useGraphicPicker';
 
 const png = {
   name: 'x-1024.png',
@@ -67,5 +68,21 @@ describe('saveGraphicRecord', () => {
     });
     expect(rec).toBeUndefined();
     expect(graphicUpdate).not.toHaveBeenCalled();
+  });
+});
+
+describe('useGraphicPicker', () => {
+  it('closes when the closing save rejects', async () => {
+    const save = jest.fn().mockRejectedValue(new Error('offline'));
+    const { result } = renderHook(() => useGraphicPicker(save));
+    act(() => {
+      result.current.open();
+    });
+    expect(result.current.isOpen).toBe(true);
+    await act(async () => {
+      result.current.onOpen(false);
+      await save.mock.results[0].value.catch(() => undefined);
+    });
+    expect(result.current.isOpen).toBe(false);
   });
 });
