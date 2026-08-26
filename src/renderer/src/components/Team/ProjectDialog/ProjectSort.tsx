@@ -11,9 +11,9 @@ import { ISharedStrings, ProjectD } from '../../../model';
 import related from '../../../crud/related';
 import { findRecord } from '../../../crud/tryFindRecord';
 import { useGlobal } from '../../../context/useGlobal';
-import { IconButton, Stack } from '@mui/material';
+import { IconButton, Stack, Box } from '@mui/material';
 import ResetIcon from '@mui/icons-material/SettingsBackupRestore';
-import { PriButton } from '../../StepEditor';
+import { Button, rowSx } from '../../../control';
 import { shallowEqual, useSelector } from 'react-redux';
 import { sharedSelector } from '../../../selector';
 import { SortArr, SortMap, mapKey, getKey } from './projectSortUtils';
@@ -131,16 +131,19 @@ export function ProjectSort({ teamId, onClose }: IProps) {
   return (
     <Stack>
       <Stack direction="row" justifyContent="right" sx={{ mb: 2 }}>
-        <IconButton sx={{ alignSelf: 'flex-end' }} onClick={resetSort}>
-          <ResetIcon />
-        </IconButton>
-        <PriButton
-          onClick={handleSave}
-          sx={{ alignSelf: 'flex-end' }}
-          disabled={!changed}
-        >
-          {ts.save}
-        </PriButton>
+        <Box sx={rowSx}>
+          <IconButton sx={{ alignSelf: 'flex-end' }} onClick={resetSort}>
+            <ResetIcon />
+          </IconButton>
+          <Button
+            sx={{ alignSelf: 'flex-end' }}
+            color="primary"
+            disabled={!changed}
+            onClick={handleSave}
+          >
+            {ts.save}
+          </Button>
+        </Box>
       </Stack>
       <VertListDnd onDrop={onSortEnd} dragHandle>
         {projRecs.map((value) => (

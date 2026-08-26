@@ -31,7 +31,7 @@ import {
 import { shallowEqual, useSelector } from 'react-redux';
 import { findResourceSelector, gridSelector } from '../../../selector';
 import { IFindResourceStrings, IGridStrings } from '../../../model';
-import { LightTooltip, PriButton } from '../../StepEditor';
+import { LightTooltip, Button } from '../../../control';
 import { OptionProps } from './FindTabs';
 import Markdown from 'react-markdown';
 import { LaunchLink } from '../../../control/LaunchLink';
@@ -678,13 +678,14 @@ export default function FindAquifer({ onClose }: IProps) {
             </>
           ) : null}
           {userIsAdmin && (!isOffline || offlineOnly) && (
-            <PriButton
-              onClick={handleAdd}
-              disabled={checks.length === 0 || adding}
+            <Button
               sx={{ flex: '0 1 auto' }}
+              color="primary"
+              disabled={checks.length === 0 || adding}
+              onClick={handleAdd}
             >
               {t.add}
-            </PriButton>
+            </Button>
           )}
         </Stack>
 
@@ -774,12 +775,13 @@ export default function FindAquifer({ onClose }: IProps) {
           </Grid>
           {userIsAdmin && (!isOffline || offlineOnly) && (
             <Grid>
-              <PriButton
-                onClick={handleAdd}
+              <Button
+                color="primary"
                 disabled={checks.length === 0 || adding}
+                onClick={handleAdd}
               >
                 {t.add}
-              </PriButton>
+              </Button>
             </Grid>
           )}
         </Grid>

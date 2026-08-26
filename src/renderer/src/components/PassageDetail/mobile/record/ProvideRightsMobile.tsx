@@ -1,12 +1,7 @@
 import React from 'react';
 import { VoiceStatement } from '../../../../business/voice/VoiceStatement';
 import MediaRecord from '../../../MediaRecord';
-import {
-  Button,
-  AltButton,
-  GrowingSpacer,
-  PriButton,
-} from '../../../../control';
+import { Button, GrowingSpacer } from '../../../../control';
 import { Typography, Box, LinearProgress, IconButton } from '@mui/material';
 import { SxProps } from '@mui/material/styles';
 import {
@@ -121,14 +116,14 @@ const ProvideRightsMobile = (props: IProps) => {
               >
                 <ContentCopyIcon color="primary" fontSize="small" />
               </IconButton>
-              <AltButton
+              <Button
                 data-cy="voice-statement-personalize"
-                onClick={actions.personalize}
-                disabled={props.busy}
                 sx={{ m: 0, mr: 1 }}
+                disabled={props.busy}
+                onClick={actions.personalize}
               >
                 {tv.personalize}
-              </AltButton>
+              </Button>
             </Box>
           ) : undefined
         }
@@ -148,14 +143,15 @@ const ProvideRightsMobile = (props: IProps) => {
         </Typography>
         <GrowingSpacer />
         {props.canSave && (
-          <PriButton
+          <Button
             id="spkr-save"
             sx={{ mx: 1 }}
-            onClick={props.handleSave}
+            color="primary"
             disabled={props.state?.valid === false}
+            onClick={props.handleSave}
           >
             {ts.save}
-          </PriButton>
+          </Button>
         )}
       </Box>
       {props.busy && (

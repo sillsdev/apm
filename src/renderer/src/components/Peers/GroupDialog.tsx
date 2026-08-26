@@ -13,6 +13,7 @@ import {
   Radio,
   RadioGroup,
   Tooltip,
+  Box,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import { useSelector, shallowEqual } from 'react-redux';
@@ -20,7 +21,7 @@ import { peerSelector, sharedSelector } from '../../selector';
 import Confirm from '../AlertDialog';
 import { useSnackBar } from '../../hoc/SnackBar';
 import { usePermissions } from '../../crud/usePermissions';
-import { Button, AltButton, PriButton } from '../../control';
+import { Button, rowSx } from '../../control';
 import { useOrbitData } from '../../hoc/useOrbitData';
 import { OrganizationSchemeStepD } from '../../model/organizationSchemeStep';
 import related from '../../crud/related';
@@ -228,22 +229,24 @@ export const GroupDialog = ({ cur, save, remove, isAdmin, inUse }: IProps) => {
           </RadioGroup>
         </DialogContent>
         <DialogActions>
-          {cur && (
-            <AltButton id="peerRemove" onClick={handleRemove} color="primary">
-              {t.remove}
-            </AltButton>
-          )}
-          <AltButton id="peerCancel" onClick={handleCancel} color="primary">
-            {ts.cancel}
-          </AltButton>
-          <PriButton
-            id="peerSave"
-            onClick={handleSave}
-            color="primary"
-            disabled={!name || !isChanged}
-          >
-            {ts.save}
-          </PriButton>
+          <Box sx={rowSx}>
+            {cur && (
+              <Button id="peerRemove" onClick={handleRemove}>
+                {t.remove}
+              </Button>
+            )}
+            <Button id="peerCancel" onClick={handleCancel}>
+              {ts.cancel}
+            </Button>
+            <Button
+              id="peerSave"
+              color="primary"
+              disabled={!name || !isChanged}
+              onClick={handleSave}
+            >
+              {ts.save}
+            </Button>
+          </Box>
         </DialogActions>
       </Dialog>
       {confirm && (

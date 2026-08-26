@@ -1,6 +1,6 @@
 import * as React from 'react';
-import { ActionRow, AltButton, PriButton } from '../../control';
-import { Divider, Stack, Typography } from '@mui/material';
+import { ActionRow, Button, rowSx } from '../../control';
+import { Divider, Stack, Typography, Box } from '@mui/material';
 import {
   IntellectualPropertyD,
   ISharedStrings,
@@ -96,14 +96,20 @@ export default function SelectVoice({
       </Typography>
       <Divider sx={{ m: 1 }} />
       <ActionRow sx={{ flexWrap: 'wrap', gap: 1, minWidth: 0 }}>
-        <AltButton onClick={onOpen}>
-          {onlySettings ? ts.close : ts.cancel}
-        </AltButton>
-        {!onlySettings && (
-          <PriButton onClick={begin} disabled={!voice?.trim() || !rights}>
-            {t.convert}
-          </PriButton>
-        )}
+        <Box sx={rowSx}>
+          <Button onClick={onOpen}>
+            {onlySettings ? ts.close : ts.cancel}
+          </Button>
+          {!onlySettings && (
+            <Button
+              color="primary"
+              disabled={!voice?.trim() || !rights}
+              onClick={begin}
+            >
+              {t.convert}
+            </Button>
+          )}
+        </Box>
       </ActionRow>
     </Stack>
   );

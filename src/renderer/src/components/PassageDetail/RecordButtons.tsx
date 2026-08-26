@@ -1,7 +1,7 @@
 import { ButtonGroup, ButtonGroupProps, styled } from '@mui/material';
 import AddIcon from '@mui/icons-material/LibraryAddOutlined';
 import VersionsIcon from '@mui/icons-material/List';
-import { AltButton, AudacityLogo } from '../../control';
+import { Button, AudacityLogo } from '../../control';
 import { shallowEqual, useSelector } from 'react-redux';
 import { sharedSelector } from '../../selector';
 import { ISharedStrings } from '../../model';
@@ -34,37 +34,37 @@ export const RecordButtons = ({
   const IconSize = { width: '14px', height: '14px' };
 
   return (
-    <StyledButtonGroup size="small" sx={{ my: 1 }}>
+    <StyledButtonGroup sx={{ my: 1 }}>
       {showVersions && onVersions && (
-        <AltButton
+        <Button
           id="pdRecordVersions"
-          onClick={onVersions}
           title={ts.versionHistory}
           startIcon={<VersionsIcon sx={IconSize} />}
+          onClick={onVersions}
         >
           {ts.versionHistory}
-        </AltButton>
+        </Button>
       )}
       {showUpload && (
-        <AltButton
+        <Button
           id="pdRecordUpload"
-          onClick={onUpload}
           title={ts.uploadMediaSingular}
           startIcon={<AddIcon sx={IconSize} />}
           disabled={!onUpload}
+          onClick={onUpload}
         >
           {ts.uploadMediaSingular}
-        </AltButton>
+        </Button>
       )}
       {onAudacity && (
-        <AltButton
+        <Button
           id="pdAudacity"
-          onClick={onAudacity}
           title={ts.launchAudacity}
           startIcon={<AudacityLogo sx={IconSize} />}
+          onClick={onAudacity}
         >
           {ts.launchAudacity}
-        </AltButton>
+        </Button>
       )}
     </StyledButtonGroup>
   );

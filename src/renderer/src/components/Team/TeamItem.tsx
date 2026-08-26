@@ -1,6 +1,6 @@
 import React, { useContext, useState, useMemo } from 'react';
 import { useGetGlobal, useGlobal } from '../../context/useGlobal';
-import { Grid, IconButton } from '@mui/material';
+import { Grid, IconButton, Box } from '@mui/material';
 import GroupIcon from '@mui/icons-material/Group';
 import { DialogMode, ICardsStrings, OrganizationD } from '../../model';
 import { shallowEqual, useSelector } from 'react-redux';
@@ -15,7 +15,7 @@ import TeamDialog, { ITeamDialog } from './TeamDialog';
 import { useRole, defaultWorkflow, useTeamWorkflowProcess } from '../../crud';
 import Confirm from '../AlertDialog';
 import { UnsavedContext } from '../../context/UnsavedContext';
-import { TeamPaper, TeamHeadDiv, TeamName, AltButton } from '../../control';
+import { Button, TeamPaper, TeamHeadDiv, TeamName, rowSx } from '../../control';
 import { RecordIdentity } from '@orbit/records';
 import { ProjectSort } from './ProjectDialog/ProjectSort';
 import SortIcon from '@mui/icons-material/Sort';
@@ -119,32 +119,34 @@ export const TeamItem = (props: IProps) => {
             size={{ xs: 12, md: 8, lg: 5, xl: 4 }}
             sx={{ display: 'flex', justifyContent: 'flex-end' }}
           >
-            {userIsAdmin && hasMoreThanOneProject && canModify && (
-              <IconButton onClick={() => setSortVisible(true)}>
-                <SortIcon />
-              </IconButton>
-            )}
-            <AltButton id="teamMembers" onClick={handleMembers(team)}>
-              {t.members.replace('{0}', teamMembers(team.id).toString())}
-            </AltButton>
-            {canModify && (
-              <AltButton
-                id="editWorkflow"
-                onClick={handleEditWorkflow}
-                disabled={busy}
-              >
-                {t.editWorkflow.replace('{0}', '')}
-              </AltButton>
-            )}
-            {canModify && (
-              <AltButton
-                id="teamSettings"
-                onClick={handleSettings()}
-                disabled={busy}
-              >
-                {t.settings}
-              </AltButton>
-            )}
+            <Box sx={rowSx}>
+              {userIsAdmin && hasMoreThanOneProject && canModify && (
+                <IconButton onClick={() => setSortVisible(true)}>
+                  <SortIcon />
+                </IconButton>
+              )}
+              <Button id="teamMembers" onClick={handleMembers(team)}>
+                {t.members.replace('{0}', teamMembers(team.id).toString())}
+              </Button>
+              {canModify && (
+                <Button
+                  id="editWorkflow"
+                  disabled={busy}
+                  onClick={handleEditWorkflow}
+                >
+                  {t.editWorkflow.replace('{0}', '')}
+                </Button>
+              )}
+              {canModify && (
+                <Button
+                  id="teamSettings"
+                  disabled={busy}
+                  onClick={handleSettings()}
+                >
+                  {t.settings}
+                </Button>
+              )}
+            </Box>
           </Grid>
         </Grid>
       </TeamHeadDiv>

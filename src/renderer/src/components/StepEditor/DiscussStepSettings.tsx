@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { MarkDownEdit } from '../../control/MarkDownEdit';
 import { Box } from '@mui/material';
-import { ActionRow, AltButton, PriButton } from '../../control';
+import { Button, ActionRow, rowSx } from '../../control';
 import { shallowEqual, useSelector } from 'react-redux';
 import { sharedSelector } from '../../selector';
 import { ISharedStrings } from '../../model';
@@ -43,12 +43,18 @@ export const DiscussStepSettings = ({
     <Box>
       <MarkDownEdit inValue={value} onValue={handleChange} />
       <ActionRow>
-        <AltButton onClick={onClose}>
-          {value === inValue ? ts.close : ts.cancel}
-        </AltButton>
-        <PriButton onClick={handleSave} disabled={value === inValue}>
-          {ts.save}
-        </PriButton>
+        <Box sx={rowSx}>
+          <Button onClick={onClose}>
+            {value === inValue ? ts.close : ts.cancel}
+          </Button>
+          <Button
+            color="primary"
+            disabled={value === inValue}
+            onClick={handleSave}
+          >
+            {ts.save}
+          </Button>
+        </Box>
       </ActionRow>
     </Box>
   );

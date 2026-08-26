@@ -2,7 +2,7 @@ import { Box, Grid, Typography } from '@mui/material';
 import { useLocation, useParams } from 'react-router-dom';
 import AppHead from '../components/App/AppHead';
 import { TeamProvider } from '../context/TeamContext';
-import { AltButton } from '../control/AltButton';
+import { Button, rowSx } from '../control';
 import React from 'react';
 import { GrowingSpacer } from '../control/GrowingSpacer';
 import StickyRedirect from '../components/StickyRedirect';
@@ -23,10 +23,12 @@ export function BurritoStep() {
       <TeamProvider>
         <Box id="BurritoScreen" sx={{ display: 'flex', paddingTop: '80px' }}>
           <Grid container alignItems="center">
-            <AltButton onClick={() => setView('/team')}>Teams</AltButton>
-            <AltButton onClick={() => setView(`/burrito/${teamId}`)}>
-              Back
-            </AltButton>
+            <Box sx={rowSx}>
+              <Button onClick={() => setView('/team')}>Teams</Button>
+              <Button onClick={() => setView(`/burrito/${teamId}`)}>
+                Back
+              </Button>
+            </Box>
             <GrowingSpacer />
             <Typography variant="h4" component="h1" sx={{ flexGrow: 1 }}>
               Scripture Burrito - {step}

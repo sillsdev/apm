@@ -10,7 +10,7 @@ import {
 import { Badge, Box, Stack } from '@mui/material';
 import { shallowEqual, useSelector } from 'react-redux';
 import { StyledTextAreaAutosize } from '../../../control/WebFontStyles';
-import { LightTooltip, PriButton } from '../../../control';
+import { Button, LightTooltip } from '../../../control';
 import AsrButton from '../../../control/ConfButton';
 import TranscriptionLogo from '../../../control/TranscriptionLogo';
 import AsrProgress from '../../../business/asr/AsrProgress';
@@ -416,13 +416,14 @@ export default function BoldClauseTranscriptionEditor({
         />
         {currentClauseTranscribed && !allClausesComplete && (
           <Box sx={{ display: 'flex', justifyContent: 'center', pt: 1 }}>
-            <PriButton
+            <Button
               id={`${idPrefix}-next-clause`}
-              onClick={onNextClause}
+              color="primary"
               disabled={navigationDisabled}
+              onClick={onNextClause}
             >
               {t.nextClause} &gt;
-            </PriButton>
+            </Button>
           </Box>
         )}
       </Stack>

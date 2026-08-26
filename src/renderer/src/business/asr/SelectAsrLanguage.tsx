@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { ActionRow, AltButton, PriButton } from '../../control';
+import { ActionRow, Button, rowSx } from '../../control';
 import {
   styled,
   Box,
@@ -141,17 +141,20 @@ export default function SelectAsrLanguage({
       )}
       <Divider sx={{ pt: 2 }} />
       <ActionRow>
-        <AltButton onClick={() => onClose(true)}>{ts.cancel}</AltButton>
-        <PriButton
-          onClick={handleRun}
-          disabled={
-            !asrState?.target ||
-            (asrState?.target === AsrTarget.alphabet &&
-              !isLangSet(asrState?.language?.bcp47))
-          }
-        >
-          {t.run}
-        </PriButton>
+        <Box sx={rowSx}>
+          <Button onClick={() => onClose(true)}>{ts.cancel}</Button>
+          <Button
+            color="primary"
+            disabled={
+              !asrState?.target ||
+              (asrState?.target === AsrTarget.alphabet &&
+                !isLangSet(asrState?.language?.bcp47))
+            }
+            onClick={handleRun}
+          >
+            {t.run}
+          </Button>
+        </Box>
       </ActionRow>
     </StyledBox>
   );

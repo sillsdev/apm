@@ -1,9 +1,7 @@
 import React, { useEffect } from 'react';
 import { Box, IconButton, Stack, Typography } from '@mui/material';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
-import { ActionRow } from '../../control/ActionRow';
-import { GrowingSpacer } from '../../control/GrowingSpacer';
-import { AltButton } from '../../control/AltButton';
+import { Button, GrowingSpacer, ActionRow } from '../../control';
 import PersonalizeVoicePermission, {
   IVoicePerm,
 } from './PersonalizeVoicePermission';
@@ -105,13 +103,13 @@ export const VoiceStatement = ({
                 <ContentCopyIcon color="primary" fontSize="small" />
               </IconButton>
               <GrowingSpacer />
-              <AltButton
+              <Button
                 data-cy="voice-statement-personalize"
-                onClick={handlePersonalize}
                 disabled={saving}
+                onClick={handlePersonalize}
               >
                 {t.personalize}
-              </AltButton>
+              </Button>
             </>
           )}
         </ActionRow>

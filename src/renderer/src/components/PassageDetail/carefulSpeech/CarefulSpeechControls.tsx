@@ -3,7 +3,7 @@ import DeleteIcon from '@mui/icons-material/DeleteOutline';
 import UndoIcon from '@mui/icons-material/Undo';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
-import { PriButton } from '../../../control';
+import { Button } from '../../../control';
 import MediaRecord from '../../MediaRecord';
 import { formatClauseRange } from './carefulSpeechFormat';
 import { IRegion } from '../../../crud/useWavesurferRegions';
@@ -25,8 +25,6 @@ export type CarefulSpeechPhase =
   | 'recordReady'
   | 'recording'
   | 'recorded';
-
-const primaryHighlightSx = { boxShadow: 4 };
 
 interface Props {
   width: number;
@@ -227,23 +225,19 @@ export default function CarefulSpeechControls({
           justifyContent="center"
           sx={{ pb: 1 }}
         >
-          <PriButton
+          <Button
             id={`${controlIdPrefix}-more-clauses`}
             onClick={onMoreClauses}
-            variant="outlined"
-            color="inherit"
           >
             {strings.moreUnits}
-          </PriButton>
-          <PriButton
+          </Button>
+          <Button
             id={`${controlIdPrefix}-fewer-clauses`}
             disabled={!canFewerClauses}
             onClick={onFewerClauses}
-            variant="outlined"
-            color="inherit"
           >
             {strings.fewerUnits}
-          </PriButton>
+          </Button>
         </Stack>
       )}
       {showCombineRow && (
@@ -253,30 +247,26 @@ export default function CarefulSpeechControls({
           justifyContent="center"
           alignItems="center"
         >
-          <PriButton
+          <Button
             id={`${controlIdPrefix}-split`}
+            sx={{ px: '8px', py: '2px' }}
             disabled={
               !canSplitClause || phase === 'recording' || savingRecording
             }
             onClick={onSplitClause}
-            variant="outlined"
-            color="inherit"
-            sx={{ px: '8px', py: '2px' }}
           >
             {strings.splitUnit}
-          </PriButton>
-          <PriButton
+          </Button>
+          <Button
             id={`${controlIdPrefix}-combine`}
+            sx={{ px: '8px', py: '2px' }}
             disabled={
               !canCombineWithNext || phase === 'recording' || savingRecording
             }
             onClick={onCombineWithNext}
-            variant="outlined"
-            color="inherit"
-            sx={{ px: '8px', py: '2px' }}
           >
             {strings.combineWithNext}
-          </PriButton>
+          </Button>
           {showUndoCombine && (
             <IconButton
               id={`${controlIdPrefix}-undo-combine`}
@@ -295,14 +285,14 @@ export default function CarefulSpeechControls({
       </Typography>
       {showStartButton && (
         <Box sx={{ display: 'flex', justifyContent: 'center', pb: 1 }}>
-          <PriButton
+          <Button
             id={`${controlIdPrefix}-start`}
-            onClick={onStartRecording}
+            color={highlightStart ? 'primary' : 'secondary'}
             disabled={phase === 'playing'}
-            variant={highlightStart ? 'contained' : 'outlined'}
+            onClick={onStartRecording}
           >
             {strings.startRecording} &gt;
-          </PriButton>
+          </Button>
         </Box>
       )}
       {showRecorder && (
@@ -403,14 +393,14 @@ export default function CarefulSpeechControls({
                 </IconButton>
               )}
               {showNextClause ? (
-                <PriButton
+                <Button
                   id={`${controlIdPrefix}-next`}
-                  onClick={onNextClause}
+                  color="primary"
                   disabled={allClausesComplete || savingRecording}
-                  sx={primaryHighlightSx}
+                  onClick={onNextClause}
                 >
                   {strings.nextUnit} &gt;
-                </PriButton>
+                </Button>
               ) : (
                 <Box>{dockedRecordButton}</Box>
               )}

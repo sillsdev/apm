@@ -1,9 +1,7 @@
 import { Box, Stack, Typography } from '@mui/material';
 import AppHead from './App/AppHead';
 import { TeamProvider } from '../context/TeamContext';
-import { AltButton } from '../control/AltButton';
-import { GrowingSpacer } from '../control/GrowingSpacer';
-import { PriButton } from '../control/PriButton';
+import { Button, GrowingSpacer, rowSx } from '../control';
 
 interface BurritoHeaderProps {
   children: React.ReactNode;
@@ -31,12 +29,14 @@ export function BurritoHeader({
         <Box id="BurritoScreen" sx={{ display: 'flex', paddingTop: '80px' }}>
           <Stack direction="column" sx={{ width: '100%' }}>
             <Stack direction="row">
-              <AltButton onClick={() => setView('/team')}>Teams</AltButton>
-              {onSave && (
-                <AltButton onClick={() => setView(`/burrito/${teamId}`)}>
-                  Back
-                </AltButton>
-              )}
+              <Box sx={rowSx}>
+                <Button onClick={() => setView('/team')}>Teams</Button>
+                {onSave && (
+                  <Button onClick={() => setView(`/burrito/${teamId}`)}>
+                    Back
+                  </Button>
+                )}
+              </Box>
               <GrowingSpacer />
               <Typography variant="h4" component="h1" sx={{ flexGrow: 1 }}>
                 {`Scripture Burrito ${burritoType ? `- ${burritoType}` : ''}`}
@@ -49,9 +49,13 @@ export function BurritoHeader({
             {onSave && (
               <Stack justifyContent={'center'} sx={{ pt: 2, margin: 'auto' }}>
                 {action}
-                <PriButton onClick={onSave} disabled={saveDisabled}>
+                <Button
+                  color="primary"
+                  disabled={saveDisabled}
+                  onClick={onSave}
+                >
                   Save
-                </PriButton>
+                </Button>
               </Stack>
             )}
           </Stack>
