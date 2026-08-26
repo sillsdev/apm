@@ -124,7 +124,12 @@ export function useWaveSurferRegions(
   hasSegmentUndo?: boolean,
   applyRegionColor?: ApplyRegionColor,
   lockSegmentSelection?: boolean,
-  getDecodedBuffer?: () => AudioBuffer | undefined
+  getDecodedBuffer?: () => AudioBuffer | undefined,
+  /**
+   * A region was clicked. Distinct from onCurrentRegion, which also fires for
+   * playhead-driven selection: only a deliberate user click reaches this.
+   */
+  onRegionClicked?: (region: IRegion) => void
 ) {
   const theme = useTheme();
   const wsRef = useRef<WaveSurfer | null>(ws);
@@ -284,6 +289,14 @@ export function useWaveSurferRegions(
     } else {
       setCurrentRegion(r);
       if (!wasCurrentRegion) {
+        // Only a click that actually changes the selection counts as deliberate
+        // navigation. Clicking the already-current region is a no-op that must
+        // not disarm a pending overshoot swallow (see onRegionClicked consumers).
+        onRegionClicked?.({
+          start: r.start,
+          end: r.end,
+          label: r.content?.textContent || '',
+        });
         goto(r.start, false, { start: r.start, end: r.end });
         e.stopPropagation();
       }

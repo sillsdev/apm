@@ -54,37 +54,41 @@ describe('PBT waveform segment selection', () => {
     unitLabel('0:06', '0:09').should('be.visible');
   });
 
-  it(
-    'DEFECT: the first click on the very next segment is ignored',
-    { tags: '@known-defect' },
-    () => {
-      // After a segment finishes playing, handleRegionPlayEnd arms
-      // pendingOvershootSwallowRef so the +1 segment change that playback
-      // overshoot produces can be absorbed. It cannot tell that change apart from
-      // the user clicking the next segment, so the click is swallowed too: the
-      // playhead snaps back, the label never changes, and the user has to click
-      // again. Record also stays enabled for the segment they were leaving.
-      clickSegmentOnWaveform(1);
-      unitLabel('0:03', '0:06').should('be.visible');
-    }
-  );
+  it('acts on the first click even on the very next segment', () => {
+    // After a segment finishes playing, handleRegionPlayEnd arms
+    // pendingOvershootSwallowRef so the +1 segment change that playback
+    // overshoot produces can be absorbed. It could not tell that change apart
+    // from the user clicking the next segment, so the click was swallowed too:
+    // the playhead snapped back, the label never changed, and the user had to
+    // click again. The player now reports a click distinctly, which disarms the
+    // swallow.
+    clickSegmentOnWaveform(1);
+    unitLabel('0:03', '0:06').should('be.visible');
+  });
 
   it('keeps Record off while a clicked segment plays', () => {
     clickSegmentOnWaveform(2);
     unitLabel('0:06', '0:09').should('be.visible');
 
-    sampleDom(
-      (doc) => ({
-        playing: readSourcePlaying(doc),
-        record: readRecordEnabled(doc),
-      }),
-      { forMs: 6000 }
-    ).then((samples) => {
-      const bothLive = samples.filter((s) => s.playing && s.record);
+    // One reading, taken from the middle of the segment. `playing` is the
+    // player's own state and Record's operability is the step's, so at either
+    // end of playback the two flip on unrelated renders and a sample can
+    // legitimately catch both live for a frame. Segment 3 runs 0:06-0:09, so
+    // waiting for playback to start and then settling for most of a second
+    // lands clear of both edges. Asserting `playing` in the same reading is
+    // what makes the Record assertion mean anything.
+    cy.document().should((doc) => {
+      expect(readSourcePlaying(doc), 'reference audio started').to.equal(true);
+    });
+    cy.wait(800);
+    cy.document().then((doc) => {
+      const playing = readSourcePlaying(doc);
+      const record = readRecordEnabled(doc);
+      expect(playing, 'reference audio still playing').to.equal(true);
       expect(
-        bothLive,
-        'Record was never operable while the reference audio played'
-      ).to.have.length(0);
+        record,
+        'Record operable while the reference audio plays'
+      ).to.equal(false);
     });
   });
 });
@@ -106,7 +110,8 @@ describe('PBT segment selection after a take exists', () => {
       // during playing which should not be possible". Recording over the
       // reference audio is what the listen-then-record flow prevents everywhere
       // else, and Record is correctly off for this same click before any take
-      // exists (see the previous describe).
+      // exists (see the previous describe). Fixed separately - this change only
+      // stops the click itself being swallowed.
       clickSegmentOnWaveform(2);
 
       sampleDom(
@@ -130,10 +135,10 @@ describe('PBT segment selection after a take exists', () => {
     { tags: '@known-defect' },
     () => {
       // Reported as "the yellow highlighting briefly jumps to the next segment".
-      // The waveform paints from the engine's currentSegmentIndex while the label
-      // comes from the step's own currentIndex; when a click only reaches the
-      // engine, the two disagree - briefly in the good case, indefinitely in the
-      // one below.
+      // The waveform paints from the engine's currentSegmentIndex while the
+      // label comes from the step's own currentIndex, so any segment change the
+      // step does not act on shows up as the two disagreeing. Fixed separately -
+      // this change only stops the click itself being swallowed.
       clickSegmentOnWaveform(2);
 
       sampleDom(
@@ -188,25 +193,37 @@ describe('PBT recording out of order (1, 3, then 2)', () => {
     });
   });
 
-  it(
-    'DEFECT: clicking back to segment 2 leaves the step on segment 3',
-    { tags: '@known-defect' },
-    () => {
-      // Reported: "I record the first segment, then the third, and then try to
-      // go back and record the second, it records into and replaces the third".
-      // Clicking segment 2 moves the waveform selection and the playhead there,
-      // but the step stays on segment 3 - so the next take is filed under
-      // segment 3, on top of the take already there. Asserting the label is
-      // enough: while it still reads segment 3, anything recorded goes to the
-      // wrong segment.
-      recordAndSettle(1); // segment 1
+  it('follows a click back to an earlier segment and files the take there', () => {
+    // Reported: "I record the first segment, then the third, and then try to go
+    // back and record the second, it records into and replaces the third".
+    // The click moved the waveform selection to segment 2 while the step stayed
+    // on segment 3, so the take was filed on segment 3 over the one already
+    // there. The engine reports a 1-based segment index and the step sets a
+    // 0-based one, so this move arrived carrying the index the step had just
+    // written (engine 1+1 vs step 2) and the navigation effect never re-ran.
+    recordAndSettle(1); // segment 1
 
-      clickSegmentOnWaveform(2);
-      unitLabel('0:06', '0:09').should('be.visible');
-      recordAndSettle(2); // segment 3
+    clickSegmentOnWaveform(2);
+    unitLabel('0:06', '0:09').should('be.visible');
+    recordAndSettle(2); // segment 3
 
-      clickSegmentOnWaveform(1);
-      unitLabel('0:03', '0:06').should('be.visible');
-    }
-  );
+    clickSegmentOnWaveform(1);
+    unitLabel('0:03', '0:06').should('be.visible');
+    recordTake();
+    waitForUploads(3);
+
+    cy.then(() => {
+      const segs = postedTakes().map((t) => t.parsedSegments);
+      expect(segs[2], 'take recorded on segment 2 lands there').to.deep.include(
+        {
+          start: 3,
+          end: 6,
+        }
+      );
+      const onSegment3 = segs.filter(
+        (s) => s?.start === 6 && s?.end === 9
+      ).length;
+      expect(onSegment3, 'segment 3 still has exactly one take').to.equal(1);
+    });
+  });
 });
