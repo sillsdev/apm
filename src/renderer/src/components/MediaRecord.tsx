@@ -501,7 +501,13 @@ function MediaRecord(props: IProps) {
   const handleCancelRerecord = () => {
     rerecordCancelledRef.current = true;
     setRerecordGate('idle');
-    saveCompleted(toolId);
+    // Declining is a rejected save, not a completed one: the take is still in
+    // the waveform and was never uploaded, so report it with a message like
+    // every other rejection path. A bare saveCompleted(toolId) would drop the
+    // tool from toolsChanged, and parents that mirror canSave into toolChanged
+    // never re-arm (canSave does not change here), leaving the unsaved-changes
+    // guard off for a take the user can still see.
+    saveCompleted(toolId, t.pendingUploadRerecordCanceled);
   };
 
   useEffect(() => {

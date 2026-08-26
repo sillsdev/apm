@@ -1253,6 +1253,7 @@ const initialState = {
 			"fileName": "Name",
 			"fileType": "File Type",
 			"loading": "Loading...",
+			"pendingUploadRerecordCanceled": "New recording not saved. The earlier recording for this passage is still waiting to upload.",
 			"pendingUploadRerecordTitle": "Pending upload for this passage",
 			"pendingUploadRerecordWarning": "This passage already has a recording waiting to upload. Saving another take may create a second version. Continue?",
 			"processing": "Processing...",

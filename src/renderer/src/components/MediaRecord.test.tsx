@@ -21,6 +21,7 @@ type WsAudioPlayerProps = {
 
 let latestWsProps: WsAudioPlayerProps | undefined;
 let mockSaveRequested: () => boolean;
+let mockSaveCompleted: jest.Mock;
 let mockUploadMedia: jest.Mock;
 let mockConvertToFormat: jest.Mock;
 /** MediaRecord's own myAfterUploadCb, captured from the useMediaUpload props. */
@@ -100,7 +101,8 @@ jest.mock('../context/UnsavedContext', () => {
       state: {
         toolsChanged: 0,
         saveRequested: () => mockSaveRequested(),
-        saveCompleted: jest.fn(),
+        saveCompleted: (toolId: string, saveErr?: string) =>
+          mockSaveCompleted(toolId, saveErr),
         clearRequested: () => false,
         clearCompleted: jest.fn(),
       },
@@ -143,6 +145,7 @@ jest.mock('react-redux', () => ({
         pendingUploadRerecordTitle: 'Pending upload for this passage',
         pendingUploadRerecordWarning:
           'This passage already has a recording waiting to upload. Saving another take may create a second version. Continue?',
+        pendingUploadRerecordCanceled: 'New recording not saved',
       };
     }
     return { NoSaveWoMedia: 'No media to save', mediaError: 'Media error' };
@@ -173,6 +176,7 @@ describe('MediaRecord save gating', () => {
     jest.clearAllMocks();
     localStorage.clear();
     mockSaveRequested = () => false;
+    mockSaveCompleted = jest.fn();
     mockUploadMedia = jest.fn().mockResolvedValue(undefined);
     mockConvertToFormat = jest.fn((blob: Blob) => Promise.resolve(blob));
   });
@@ -455,5 +459,13 @@ describe('MediaRecord save gating', () => {
       expect(screen.queryByTestId('rerecord-warning')).not.toBeInTheDocument()
     );
     expect(mockUploadMedia).not.toHaveBeenCalled();
+
+    // The take is still on screen and unsaved, so the request must be cleared
+    // as a rejection (with a message) — a bare saveCompleted(toolId) would drop
+    // the tool from toolsChanged and disarm the unsaved-changes guard.
+    expect(mockSaveCompleted).toHaveBeenCalledWith(
+      defaultProps.toolId,
+      'New recording not saved'
+    );
   });
 });

@@ -6106,6 +6106,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="passageRecord.pendingUploadRerecordCanceled">
+         <segment>
+            <source>New recording not saved. The earlier recording for this passage is still waiting to upload.</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="passageRecord.pendingUploadRerecordTitle">
          <segment>
             <source>Pending upload for this passage</source>

@@ -233,7 +233,9 @@ const UnsavedProvider = (props: PropsWithChildren) => {
       }
     } else {
       if (toolErr) {
-        saveErr.current = `${toolErr};${saveErr.current}`;
+        saveErr.current = saveErr.current
+          ? `${toolErr};${saveErr.current}`
+          : toolErr;
         toolsChangedRef.current[toolId] = {
           startSave: false,
           clearChanged: false,
