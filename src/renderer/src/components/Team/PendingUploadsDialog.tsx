@@ -34,6 +34,7 @@ import { IndexedDBSource } from '@orbit/indexeddb';
 import Memory from '@orbit/memory';
 import { MediaFileAttributes } from '../../model';
 import { Online } from '../../utils';
+import logError, { Severity } from '../../utils/logErrorService';
 
 const ipc = window?.api as MainAPI;
 
@@ -151,41 +152,47 @@ export function PendingUploadsDialog(props: IProps) {
           );
         },
         cb: async (_n, success, data) => {
-          const sid = (data as { stringId?: string } | undefined)?.stringId;
-          if (success && sid && memory && remote && backup) {
-            await pullTableList(
-              'mediafile',
-              [sid],
-              memory,
-              remote,
-              backup,
-              reporter
-            );
-            await restorePendingUploadSideEffects({
-              entry,
-              mediaId: sid,
-              memory,
-              user,
-              organizationId: organization,
-              saveComment: (
-                discussionId,
-                commentId,
-                commentText,
-                mediaRemId,
-                approved,
-                permissions
-              ) =>
-                saveComment(
+          try {
+            const sid = (data as { stringId?: string } | undefined)?.stringId;
+            if (success && sid && memory && remote && backup) {
+              await pullTableList(
+                'mediafile',
+                [sid],
+                memory,
+                remote,
+                backup,
+                reporter
+              );
+              await restorePendingUploadSideEffects({
+                entry,
+                mediaId: sid,
+                memory,
+                user,
+                organizationId: organization,
+                saveComment: (
                   discussionId,
                   commentId,
                   commentText,
                   mediaRemId,
                   approved,
                   permissions
-                ),
-            });
+                ) =>
+                  saveComment(
+                    discussionId,
+                    commentId,
+                    commentText,
+                    mediaRemId,
+                    approved,
+                    permissions
+                  ),
+              });
+            }
+          } catch (err) {
+            logError(Severity.error, reporter, err as Error);
+            showMessage(t.pendingUploadRetryLater, AlertSeverity.Warning);
+          } finally {
+            finishOrContinue();
           }
-          finishOrContinue();
         },
       }) as never
     );

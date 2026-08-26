@@ -1,5 +1,5 @@
-import Memory from '@orbit/memory';
-import { MediaFileD } from '../../model';
+import type Memory from '@orbit/memory';
+import type { MediaFileD } from '../../model';
 import { UploadType } from '../../components/UploadType';
 import { createIntellectualPropertyForMedia } from '../../crud/createIntellectualPropertyForMedia';
 import { saveMediaTranscription } from '../../crud/saveMediaTranscription';

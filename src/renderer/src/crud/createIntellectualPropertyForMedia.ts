@@ -1,4 +1,4 @@
-import Memory from '@orbit/memory';
+import type Memory from '@orbit/memory';
 import {
   RecordIdentity,
   RecordKeyMap,
@@ -38,7 +38,9 @@ export async function createIntellectualPropertyForMedia({
     remoteIdGuid('mediafile', mediaId, memory?.keyMap as RecordKeyMap) ??
     mediaId;
   if (transcription && applyTranscription) {
-    const mediaRec = findRecord(memory, 'mediafile', id) as MediaFileD | undefined;
+    const mediaRec = findRecord(memory, 'mediafile', id) as
+      | MediaFileD
+      | undefined;
     if (mediaRec) {
       await applyTranscription(mediaRec, transcription);
     }
