@@ -17,6 +17,8 @@ import { voiceSelector } from '../../selector';
 import { IVoiceStrings } from '../../model';
 import { getLangTag } from 'mui-language-picker';
 import { voicePermOpts } from './voicePermOpts';
+import packageJson from '../../../package.json';
+const owner = packageJson.author.name;
 
 const StyledStack = styled(Stack)<StackProps>(() => ({
   '& * > .MuiBox-root': {
@@ -48,12 +50,13 @@ export interface IVoicePerm {
 }
 
 interface IProps {
+  aiip: boolean;
   state: IVoicePerm;
   setState?: React.Dispatch<React.SetStateAction<IVoicePerm>>;
 }
 
 export default function PersonalizeVoicePermission(props: IProps) {
-  const { state, setState } = props;
+  const { aiip, state, setState } = props;
   const [excludeName, setExcludeName] = React.useState(false);
   const [inName, setInName] = React.useState('');
   const [language, setLanguage] = React.useState<ILanguage>();
@@ -120,6 +123,17 @@ export default function PersonalizeVoicePermission(props: IProps) {
     });
     setCurState(updateHired);
     setState && setState(updateHired);
+  };
+
+  const handleChangeRightsHolder = (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const updateSponsor = (s: IVoicePerm) => ({
+      ...s,
+      sponsor: event.target.value,
+    });
+    setCurState(updateSponsor);
+    setState && setState(updateSponsor);
   };
 
   const handleExcludeName = (
@@ -292,13 +306,24 @@ export default function PersonalizeVoicePermission(props: IProps) {
         }
         label={t.forHire}
       />
-      <Options
-        label={t.scope}
-        options={localOptions}
-        defaultValue={t.getString(curState?.scope ?? voicePermOpts[0])}
-        onChange={handleScope}
-        decorations={decorations}
-      />
+      {aiip ? (
+        <Options
+          label={t.scope}
+          options={localOptions}
+          defaultValue={t.getString(curState?.scope ?? voicePermOpts[0])}
+          onChange={handleScope}
+          decorations={decorations}
+        />
+      ) : (
+        <TextField
+          id="voice-perm-rights-holder"
+          name="sponsor"
+          label={t.rightsHolder}
+          variant="outlined"
+          value={curState?.sponsor ?? owner}
+          onChange={handleChangeRightsHolder}
+        />
+      )}
     </StyledStack>
   );
 }

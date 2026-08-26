@@ -11515,6 +11515,13 @@
                <context context-type="sourcefile">PersonalizeVoicePermission.tsx</context>
             </context-group>
          </trans-unit>
+         <trans-unit id="voice.rightsHolder">
+            <source>Rights Holder</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">PersonalizeVoicePermission.tsx</context>
+            </context-group>
+         </trans-unit>
          <trans-unit id="voice.scope">
             <source>Scope of use</source>
             <target/>
@@ -11592,8 +11599,15 @@
                <context context-type="sourcefile">PersonalizeVoicePermission.tsx</context>
             </context-group>
          </trans-unit>
-         <trans-unit id="voice.stStatement">
+         <trans-unit id="voice.aiipStatement">
             <source>I {0} provide consent for {1} to record and store this file with my voice in the cloud and possibly in a voice library for publishing and use in AI applications that require a voice sample, including voice conversion. The recording created by {1} of me reading this script will become the exclusive property of {1} which shall have the unlimited right to make, have made, use, copy, display in public, reconstruct, repair, modify, reproduce, publish, distribute and sell the Work Product, in whole or in part, or combine the Work Product with other matter, or not use the Work Product at all, as it sees fit. {1} will use the recording in a variety of ways, including, but not limited to, Audio books, narrating apps, and scripture engagement to further the mission of the organization. {2}{3} I have been provided this script in a language I understand, and have been given the option to request this script in a language of my choice. This recording will act as my signature in place of a written agreement. {4} I sign with my voice, {5}.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">PersonalizeVoicePermission.tsx</context>
+            </context-group>
+         </trans-unit>
+         <trans-unit id="voice.ipStatement">
+            <source>I {0} give {1} permission to record and use my recordings and other contributions made for {2}. I grant {1} a perpetual, worldwide, royalty-free right to record, reproduce, edit, modify, combine, publish, distribute, broadcast, stream, and otherwise use Work Products I make, in whole or in part, in the {2} and in any derivative works, whether now existing or developed in the future. My Work Products are the exclusive property of {1}, which shall have the unlimited right to make, have made, use, copy, repair, modify, reproduce, publish, distribute and sell the Work Products, in whole or in part, or combine the Work Products with other matter, or not use the Work Products at all, as it sees fit. {1} will use the Work Products in a variety of ways, including, but not limited to, Scripture Publication, Audio books, narrating apps, and scripture engagement to further the mission of the organization. I have been provided this script in a language I understand, and have been given the option to request this script in a language of my choice.This recording will act as my signature in place of a written agreement. {4} I sign with my voice, {5}.</source>
             <target/>
             <context-group>
                <context context-type="sourcefile">PersonalizeVoicePermission.tsx</context>
