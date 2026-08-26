@@ -89,7 +89,7 @@ export default function SelectVoice({
         noNewVoice={noNewVoice}
         onChange={handleSetVoice}
         onRights={(hasRights) => setRights(hasRights)}
-        aiip
+        aiip={true}
       />
       <Typography sx={{ overflowWrap: 'break-word', wordBreak: 'break-word' }}>
         {statement}
