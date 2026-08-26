@@ -312,6 +312,7 @@ export function PassageDetailRecord(props: IProps) {
               onChange={handleNameChange}
               onRights={handleRights}
               disabled={!canVern}
+              aiip={false}
             />
           </Box>
           {canVern && (

@@ -383,6 +383,7 @@ function MediaUploadContent(props: IProps) {
             onRights={handleRights}
             onChange={handleSpeaker}
             team={team}
+            aiip={false}
           />
         )}
         {![

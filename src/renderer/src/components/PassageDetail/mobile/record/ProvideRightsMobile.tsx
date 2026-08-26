@@ -33,7 +33,6 @@ interface IProps {
   statusProps: SxProps;
   statusText: string;
   canSave: boolean;
-  recordingRequired: boolean | undefined;
   handleUpload: () => void;
   handleLater: () => void;
   handleSave: () => void;
@@ -41,6 +40,7 @@ interface IProps {
   setState: React.Dispatch<React.SetStateAction<IVoicePerm>>;
   handleStatement: (statement: string) => void;
   busy: boolean;
+  aiip: boolean;
   speaker: string;
   teamRec: Organization;
   toolId: string;
@@ -77,6 +77,7 @@ const ProvideRightsMobile = (props: IProps) => {
   return (
     <div data-cy="provide-rights-mobile">
       <VoiceStatement
+        aiip={props.aiip}
         voice={props.speaker}
         team={props.teamRec}
         state={props.state}
@@ -135,7 +136,7 @@ const ProvideRightsMobile = (props: IProps) => {
         }
       />
       <Box sx={props.rowProp} data-cy="provide-rights-actions">
-        {!props.recordingRequired && (
+        {!props.aiip && (
           <Button id="spkr-later" onClick={props.handleLater}>
             {t.later}
           </Button>

@@ -56,16 +56,15 @@ const statusProps = {
 
 interface IProps {
   speaker: string;
+  aiip: boolean;
   recordType: ArtifactTypeSlug;
   onRights?: ((hasRights: boolean) => void) | undefined;
   team?: string | undefined;
   planId?: string | undefined;
-  recordingRequired?: boolean | undefined;
 }
 
 export function ProvideRights(props: IProps) {
-  const { speaker, recordType, onRights, team, planId, recordingRequired } =
-    props;
+  const { speaker, recordType, onRights, team, planId, aiip } = props;
   const [user] = useGlobal('user');
   const [organizationId] = useGlobal('organization');
   const [busy] = useGlobal('importexportBusy'); //verified this is not used in a function 2/18/25
@@ -176,7 +175,7 @@ export function ProvideRights(props: IProps) {
   };
 
   const handleStatement = (statement: string) => {
-    if (recordingRequired) setStatement(statement);
+    if (aiip) setStatement(statement);
   };
 
   const afterUploadCb = async (mediaId: string | undefined) => {
@@ -281,6 +280,7 @@ export function ProvideRights(props: IProps) {
   return (
     <div>
       <ProvideRightsMobile
+        aiip={aiip}
         paperRef={paperRef}
         paperProps={paperProps}
         rowProp={rowProp}
@@ -289,7 +289,6 @@ export function ProvideRights(props: IProps) {
         team={team}
         planId={planId}
         state={state}
-        recordingRequired={recordingRequired}
         handleUpload={handleUpload}
         handleLater={handleLater}
         handleSave={handleSave}
