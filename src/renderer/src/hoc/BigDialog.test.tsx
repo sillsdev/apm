@@ -21,17 +21,7 @@ jest.mock('./SnackBar', () => ({
 }));
 
 jest.mock('../control', () => ({
-  PriButton: ({
-    children,
-    ...rest
-  }: {
-    children: React.ReactNode;
-  }) => (
-    <button type="button" {...rest}>
-      {children}
-    </button>
-  ),
-  AltButton: ({
+  Button: ({
     children,
     ...rest
   }: {
@@ -42,6 +32,9 @@ jest.mock('../control', () => ({
     </button>
   ),
   GrowingSpacer: () => <div data-testid="growing-spacer" />,
+  // rowSx is a theme callback needing the app theme augmentation; the plain
+  // object keeps the Box happy without a ThemeProvider.
+  rowSx: {},
 }));
 
 jest.mock('../selector', () => ({

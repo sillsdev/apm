@@ -193,7 +193,7 @@ jest.mock('../../../control/WebFontStyles', () => ({
 }));
 
 jest.mock('../../../control', () => ({
-  PriButton: ({
+  Button: ({
     children,
     id,
     disabled,

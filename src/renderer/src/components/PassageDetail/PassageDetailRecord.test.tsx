@@ -83,9 +83,8 @@ jest.mock('../AudioTab/usePassageVersionAudioRows', () => ({
   usePassageVernacularVersionCount: () => 1,
 }));
 jest.mock('../../control', () => ({
-  AltButton: (props: { id?: string; children?: React.ReactNode }) =>
+  Button: (props: { id?: string; children?: React.ReactNode }) =>
     props.id ? <button id={props.id}>{props.children}</button> : null,
-  PriButton: () => null,
 }));
 
 jest.mock('../../hoc/useOrbitData', () => ({
