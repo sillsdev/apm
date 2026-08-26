@@ -46,12 +46,12 @@ jest.mock('./GraphicImageFilter', () => ({
 }));
 
 jest.mock('../control', () => ({
-  PriButton: (props: React.ButtonHTMLAttributes<HTMLButtonElement>) => (
-    <button {...props} />
-  ),
-  AltButton: (props: React.ButtonHTMLAttributes<HTMLButtonElement>) => (
-    <button {...props} />
-  ),
+  Button: ({
+    disableTypography,
+    ...props
+  }: React.ButtonHTMLAttributes<HTMLButtonElement> & {
+    disableTypography?: boolean;
+  }) => <button {...props} />,
 }));
 
 jest.mock('../control/VertScrollBox', () => ({
