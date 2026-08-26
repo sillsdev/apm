@@ -40,7 +40,7 @@ interface IProps {
   onChange?: ((name: string) => void) | undefined;
   onRights?: ((hasRights: boolean) => void) | undefined;
   team?: string | undefined;
-  recordingRequired?: boolean | undefined;
+  aiip: boolean;
   disabled?: boolean | undefined;
 }
 
@@ -51,7 +51,7 @@ export function SpeakerName({
   onChange,
   onRights,
   team,
-  recordingRequired,
+  aiip,
   disabled,
 }: IProps) {
   const ipRecs = useOrbitData<IntellectualProperty[]>('intellectualproperty');
@@ -70,7 +70,7 @@ export function SpeakerName({
     const orgIp = ipRecs.filter((r) => related(r, 'organization') === orgId);
 
     const newSpeakers: NameOptionType[] = [];
-    if (recordingRequired) {
+    if (aiip) {
       orgIp.forEach((r) => {
         const mediaRec = findRecord(
           memory,
@@ -89,7 +89,7 @@ export function SpeakerName({
 
     newSpeakers.sort((a, b) => a.name.localeCompare(b.name));
     return newSpeakers;
-  }, [ipRecs, team, organization, recordingRequired, memory]);
+  }, [ipRecs, team, organization, aiip, memory]);
 
   const handleRights = () => {
     onRights && onRights(false);
@@ -392,7 +392,7 @@ export function SpeakerName({
           {hasNoRights && (
             <>
               <Typography sx={{ my: 2 }}>
-                {recordingRequired ? t.voiceRights : t.releaseRights}
+                {aiip ? t.voiceRights : t.releaseRights}
               </Typography>
               <ProvideRights
                 planId={planId}
@@ -400,7 +400,7 @@ export function SpeakerName({
                 recordType={ArtifactTypeSlug.IntellectualProperty}
                 onRights={handleRightsChange}
                 team={team}
-                recordingRequired={recordingRequired}
+                aiip={aiip}
               />
             </>
           )}

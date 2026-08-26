@@ -5,7 +5,7 @@ import {
   IGraphicInfo,
   Rights,
 } from '../utils/useCompression';
-import { isUsableGraphicUrl } from './isUsableGraphicUrl';
+import { graphicImageUrl } from './isUsableGraphicUrl';
 
 const FullSize = 1024;
 
@@ -13,17 +13,16 @@ export const apmGraphic = (graphicRec: GraphicD) => {
   const apmDimStr = `${ApmDim}`;
   const fullSizeStr = `${FullSize}`;
   const info: IGraphicInfo = JSON.parse(graphicRec.attributes.info);
-  let url = '';
-  if (Object.hasOwn(info, fullSizeStr)) {
-    url = (info[fullSizeStr] as CompressedImages).content;
-  }
-  if (Object.hasOwn(info, apmDimStr)) {
-    const graphicUri = (info[apmDimStr] as CompressedImages).content;
-    return {
-      graphicUri: isUsableGraphicUrl(graphicUri) ? graphicUri : undefined,
-      graphicRights: info[Rights] as string | undefined,
-      url: isUsableGraphicUrl(url) ? url : '',
-    };
-  }
-  return undefined;
+  const hasThumb = Object.hasOwn(info, apmDimStr);
+  const hasFull = Object.hasOwn(info, fullSizeStr);
+  if (!hasThumb && !hasFull) return undefined;
+  return {
+    graphicUri: graphicImageUrl(
+      info[apmDimStr] as CompressedImages | string | undefined
+    ),
+    graphicRights: info[Rights] as string | undefined,
+    url: graphicImageUrl(
+      info[fullSizeStr] as CompressedImages | string | undefined
+    ),
+  };
 };

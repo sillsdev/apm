@@ -1064,4 +1064,73 @@ test('merge does not recompute graphic on an unchanged note row', () => {
   } as any);
   expect(merged[1].graphicUri).toBe('kept.png');
   expect(merged[1].color).toBe('#111111');
+  expect(graphicFind).not.toHaveBeenCalled();
+});
+
+test('new CHNUM row uses graphicFind with the chapter reference', () => {
+  const paCh = {
+    ...pa1,
+    id: 'pc1',
+    attributes: {
+      ...pa1.attributes,
+      sequencenum: 1,
+      reference: 'CHNUM 1',
+      title: '',
+    },
+  } as PassageD;
+  const s1passages = {
+    ...s1,
+    relationships: {
+      ...s1.relationships,
+      passages: { data: [{ type: 'passage', id: 'pc1' }] },
+    },
+  } as SectionD;
+  const graphicFind = jest.fn(
+    (_rec: InitializedRecord, ref?: string): FindResult =>
+      /^CHNUM/.test(ref ?? '') ? { uri: 'chapter-cat.png' } : {}
+  );
+  const sheet = getSheet({
+    ...gsDefaults,
+    plan: 'pl1',
+    sections: [s1passages],
+    passages: [paCh],
+    graphicFind,
+  } as any);
+  expect(graphicFind).toHaveBeenCalledWith(
+    expect.objectContaining({ id: 'pc1' }),
+    'CHNUM 1'
+  );
+  expect(sheet[1].graphicUri).toBe('chapter-cat.png');
+});
+
+test('merge updates section graphic when sectionUpdated is newer', () => {
+  const s1newer = {
+    ...s1,
+    attributes: { ...s1.attributes, dateUpdated: '2021-09-16' },
+  } as SectionD;
+  const current: ISheet[] = [
+    {
+      ...secResult,
+      sectionId: { type: 'section', id: 's1' },
+      sectionUpdated: '2021-09-15',
+      title: 'Intro',
+      graphicUri: 'old.png',
+    },
+  ];
+  const graphicFind = (rec: InitializedRecord): FindResult =>
+    rec.id === 's1'
+      ? { uri: 'new.png', url: 'new-full.png', rights: 'SIL' }
+      : {};
+  const merged = getSheet({
+    ...gsDefaults,
+    plan: 'pl1',
+    sections: [s1newer],
+    passages: [pa1],
+    current,
+    graphicFind,
+  } as any);
+  expect(merged[0].graphicUri).toBe('new.png');
+  expect(merged[0].graphicFullSizeUrl).toBe('new-full.png');
+  expect(merged[0].graphicRights).toBe('SIL');
+  expect(merged[0].sectionUpdated).toBe('2021-09-16');
 });

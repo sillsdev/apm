@@ -1,7 +1,8 @@
 import { RecordSchema } from '@orbit/records';
 import MemorySource from '@orbit/memory';
 import IndexedDBSource from '@orbit/indexeddb';
-import { backupToMemory } from './syncToMemory';
+import JSONAPISource from '@orbit/jsonapi';
+import { backupToMemory, recToMemory } from './syncToMemory';
 
 const schema = new RecordSchema({
   models: {
@@ -44,5 +45,42 @@ describe('backupToMemory', () => {
       id: 'm1',
     }) as unknown as { attributes: { transcription: string } };
     expect(rec.attributes.transcription).toBe('from-backup');
+  });
+});
+
+describe('recToMemory', () => {
+  it('replaces an existing memory record with the remote snapshot', async () => {
+    const memory = new MemorySource({ schema });
+    await memory.update((t) =>
+      t.addRecord({
+        type: 'mediafile',
+        id: 'm1',
+        attributes: { originalFile: 'a.wav', transcription: 'old' },
+      })
+    );
+
+    const remote = {
+      query: jest.fn().mockResolvedValue({
+        type: 'mediafile',
+        id: 'm1',
+        attributes: { originalFile: 'a.wav', transcription: 'from-remote' },
+      }),
+    } as unknown as JSONAPISource;
+
+    await expect(
+      recToMemory({
+        recId: { type: 'mediafile', id: 'm1' },
+        remote,
+        memory,
+      })
+    ).resolves.toMatchObject({
+      attributes: { transcription: 'from-remote' },
+    });
+
+    const rec = memory.cache.getRecordSync({
+      type: 'mediafile',
+      id: 'm1',
+    }) as unknown as { attributes: { transcription: string } };
+    expect(rec.attributes.transcription).toBe('from-remote');
   });
 });

@@ -13,6 +13,7 @@ import { sharedSelector, voiceSelector } from '../../selector';
 import { useMobile } from '../../utils/index';
 
 interface IProps {
+  aiip: boolean;
   voice?: string;
   team: Organization;
   state: IVoicePerm;
@@ -27,6 +28,7 @@ interface IProps {
 }
 
 export const VoiceStatement = ({
+  aiip,
   voice,
   team,
   state,
@@ -40,6 +42,7 @@ export const VoiceStatement = ({
   const t: IVoiceStrings = useSelector(voiceSelector, shallowEqual);
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
   const { permStatement } = useVoicePermission({
+    aiip,
     permissionState: state,
     team,
   });
@@ -126,7 +129,11 @@ export const VoiceStatement = ({
           state?.valid !== false ? setShowPersonalize(undefined) : undefined
         }
       >
-        <PersonalizeVoicePermission state={state} setState={setState} />
+        <PersonalizeVoicePermission
+          aiip={aiip}
+          state={state}
+          setState={setState}
+        />
       </BigDialog>
     </Box>
   );

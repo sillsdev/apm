@@ -11,6 +11,7 @@ import localizationReducer from '../../store/localization/reducers';
 import { VoiceStatement } from './VoiceStatement';
 import { IVoicePerm } from './PersonalizeVoicePermission';
 import { voicePermOpts } from './voicePermOpts';
+import packageJson from '../../../package.json';
 
 describe('VoiceStatement', () => {
   const mockMemory = {
@@ -120,6 +121,7 @@ describe('VoiceStatement', () => {
         <ThemeProvider theme={theme}>
           <GlobalProvider init={createInitialState(globalOverrides)}>
             <VoiceStatement
+              aiip={true}
               team={mockTeam}
               state={mockVoicePerm()}
               saving={false}
@@ -141,6 +143,50 @@ describe('VoiceStatement', () => {
     cy.get('[data-cy="voice-statement-text"]')
       .should('be.visible')
       .and('contain', 'Jane Tester');
+  });
+
+  it('uses the AI IP statement when aiip is true', () => {
+    mountVoiceStatement({ aiip: true });
+
+    cy.get('[data-cy="voice-statement-text"]')
+      .should('be.visible')
+      .and('contain', 'Jane Tester')
+      .and('contain', 'voice conversion');
+  });
+
+  it('uses the standard IP statement when aiip is false', () => {
+    mountVoiceStatement({ aiip: false });
+
+    cy.get('[data-cy="voice-statement-text"]')
+      .should('be.visible')
+      .and('contain', 'Jane Tester')
+      .and('contain', 'permission to record and use my recordings')
+      .and('contain', 'will not be compensated')
+      .and('not.contain', 'voice conversion');
+  });
+
+  it('uses the hired clause in the IP statement when hired is true', () => {
+    mountVoiceStatement({
+      aiip: false,
+      state: mockVoicePerm({ hired: true }),
+    });
+
+    cy.get('[data-cy="voice-statement-text"]')
+      .should('be.visible')
+      .and('contain', 'being compensated')
+      .and('not.contain', 'will not be compensated');
+  });
+
+  it('falls back to the default rights holder when sponsor is blank', () => {
+    mountVoiceStatement({
+      aiip: false,
+      state: mockVoicePerm({ sponsor: '   ' }),
+    });
+
+    cy.get('[data-cy="voice-statement-text"]')
+      .should('be.visible')
+      .and('contain', packageJson.author.name)
+      .and('not.contain', 'give  permission');
   });
 
   it('calls setStatement with the computed statement when permStatement updates', () => {
@@ -217,6 +263,8 @@ describe('VoiceStatement', () => {
     cy.get('[data-cy="voice-statement-personalize"]').click();
 
     cy.get('#bigDlg').should('contain', 'Personalize Voice Permission');
+    cy.contains('Scope of use').should('be.visible');
+    cy.get('#voice-perm-rights-holder').should('not.exist');
     cy.get('@setState').should('have.been.calledWith', {
       fullName: 'Jane From Voice Prop',
       languages: '[]',
@@ -238,5 +286,17 @@ describe('VoiceStatement', () => {
 
     cy.get('#bigDlg').should('not.exist');
     cy.get('@setState').should('have.been.called');
+  });
+
+  it('shows rights holder, exclude name, and for hire when personalizing without aiip', () => {
+    mountVoiceStatement({ aiip: false, setState: cy.stub() });
+
+    cy.get('[data-cy="voice-statement-personalize"]').click();
+
+    cy.get('#bigDlg').should('be.visible');
+    cy.contains('Exclude my name.').should('be.visible');
+    cy.contains('I work for hire.').should('be.visible');
+    cy.get('#voice-perm-rights-holder').should('be.visible');
+    cy.contains('Scope of use').should('not.exist');
   });
 });
