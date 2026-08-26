@@ -103,6 +103,8 @@ export interface DetailPlayerProps {
   /** Tool-specific waveform region coloring (Mark Verses, Careful Speech, etc.). */
   applyRegionColor?: ApplyRegionColor;
   onSegmentPlaybackEnd?: (region: IRegion) => void;
+  /** A segment was clicked on the waveform (not selected by the playhead). */
+  onSegmentClick?: (region: IRegion) => void;
   /** Called when waveform play/pause changes (in addition to internal player logic). */
   onPlayStatusNotify?: (playing: boolean) => void;
   highlightPlay?: boolean;
@@ -155,6 +157,7 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
     controlsRef,
     applyRegionColor,
     onSegmentPlaybackEnd,
+    onSegmentClick,
     onPlayStatusNotify,
     highlightPlay,
     playerState,
@@ -441,6 +444,7 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
         controlsRef={controlsRef}
         applyRegionColor={applyRegionColor}
         onSegmentPlaybackEnd={onSegmentPlaybackEnd}
+        onSegmentClick={onSegmentClick}
         blob={audioBlob}
         initialposition={initialposition}
         setInitialPosition={setInitialPosition}

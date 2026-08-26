@@ -62,7 +62,9 @@ export function useWaveSurfer(
   hasSegmentUndo?: boolean,
   applyRegionColor?: ApplyRegionColor,
   lockSegmentSelection?: boolean,
-  disableDragSelection?: boolean
+  disableDragSelection?: boolean,
+  /** A region was clicked, as opposed to selected by the playhead. */
+  onSegmentClick?: (region: IRegion) => void
 ) {
   const { isMobile } = useMobile();
   const [errorReporter] = useGlobal('errorReporter');
@@ -310,7 +312,8 @@ export function useWaveSurfer(
     applyRegionColor,
     lockSegmentSelection,
     () => blobAudioRef.current,
-    disableDragSelection
+    disableDragSelection,
+    onSegmentClick
   );
 
   const setPlayingx = (value: boolean, regionOnly: boolean) => {
