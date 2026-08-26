@@ -67,7 +67,11 @@ describe('useFetchMediaBlob (TT-7621)', () => {
     });
 
     // The signed URL arrives; the effect now runs loadBlob against it.
-    mockMediaState = { ...mockMediaClean, id: 'm1', url: 'https://s3.invalid/x.wav' };
+    mockMediaState = {
+      ...mockMediaClean,
+      id: 'm1',
+      url: 'https://s3.invalid/x.wav',
+    };
     act(() => {
       rerender();
     });

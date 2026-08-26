@@ -1,4 +1,4 @@
-import { useEffect, useReducer, useState } from 'react';
+import { useEffect, useReducer, useRef, useState } from 'react';
 import useFetchMediaUrl, { IMediaState, mediaClean } from './useFetchMediaUrl';
 import { useGlobal } from '../context/useGlobal';
 import { loadBlob } from '../utils/loadBlob';
@@ -69,11 +69,21 @@ const stateReducer = (state: IBlobState, action: Action): IBlobState => {
   }
 };
 
+/**
+ * A 403 on the signed URL means it expired: we drop the URL and re-request a
+ * fresh one (RESET -> PENDING). But a URL that keeps coming back 403 - a genuine
+ * permission problem, not expiry - would loop that forever, re-issuing a
+ * signed-URL request and a blob GET every turn (part of the TT-7621 network
+ * storm). Cap the re-requests, then surface the error.
+ */
+const MAX_URL_RESETS = 3;
+
 export const useFetchMediaBlob = () => {
   const [reporter] = useGlobal('errorReporter');
   const [mediaId, setMediaId] = useState('');
   const { fetchMediaUrl, mediaState } = useFetchMediaUrl(reporter);
   const [state, dispatch] = useReducer(stateReducer, blobClean);
+  const resetTriesRef = useRef(0);
 
   const fetchBlob = (url: string) => {
     setMediaId(url);
@@ -82,6 +92,7 @@ export const useFetchMediaBlob = () => {
   type retValue = [IBlobState, typeof fetchBlob];
 
   useEffect(() => {
+    resetTriesRef.current = 0;
     fetchMediaUrl({ id: mediaId });
     dispatch({
       type: BlobStatus.PENDING,
@@ -96,6 +107,12 @@ export const useFetchMediaBlob = () => {
         loadBlob(mediaState.url, (urlOrError, blob) => {
           if (!blob) {
             if (urlOrError.includes('403')) {
+              if (resetTriesRef.current >= MAX_URL_RESETS) {
+                // Not expiry - the object keeps 403ing. Stop re-requesting.
+                dispatch({ type: BlobStatus.ERROR, payload: urlOrError });
+                return;
+              }
+              resetTriesRef.current += 1;
               fetchMediaUrl({ id: '' });
               dispatch({ type: BlobStatus.RESET, payload: mediaState });
             } else {
@@ -105,8 +122,14 @@ export const useFetchMediaBlob = () => {
           }
           // we have a blob blob
           if (blob.type !== 'text/html' && blob.type !== 'application/xml') {
+            resetTriesRef.current = 0;
             const url = urlOrError;
             dispatch({ type: BlobStatus.FETCHED, payload: { url, blob } });
+          } else {
+            // An HTML/XML body is an error page (S3/CDN), not audio. Terminate
+            // instead of leaving blobStat PENDING forever, which stranded the
+            // reference player on "Loading..." (TT-7621).
+            dispatch({ type: BlobStatus.ERROR, payload: urlOrError });
           }
         });
       } catch (errorResult: unknown) {
