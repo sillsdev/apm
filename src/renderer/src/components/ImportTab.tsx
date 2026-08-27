@@ -68,6 +68,7 @@ import {
   tryParseJSON,
   useDataChanges,
   doSort,
+  clearNeedItfSync,
 } from '../utils';
 import { Button, ActionRow } from '../control';
 import { useSelector } from 'react-redux';
@@ -102,7 +103,7 @@ import { shouldStartItfSyncUpload } from './shouldStartItfSyncUpload';
 const ipc = window?.api as MainAPI;
 
 // Module-level: a component ref resets on Strict Mode remount, which would
-// fire uploadSyncITF twice and send 2713_APM0_backup.itfs then a ticks-renamed copy.
+// fire uploadSyncITF twice and send itfs twice.
 let lastItfSyncBuffer: Buffer | undefined;
 
 const headerProps = {
@@ -1052,6 +1053,7 @@ export function ImportTab(props: IProps) {
       } else {
         if (importStatus.complete) {
           //import completed ok but might have message
+          if (syncFile) clearNeedItfSync();
           const chdata = getChangeData(importStatus.errMsg);
           setChangeData([...changeData].concat(chdata));
           const syncExtra = userVisibleImportErrMsg(importStatus.errMsg);

@@ -37,6 +37,7 @@ import {
   resetUnauthorizedRetry,
   skipRemoteQueue,
   needItfSync,
+  shouldRunItfSync,
   clearNeedItfSync,
 } from './utils';
 import { isUnauthorized, isFetchNetworkError } from './utils/httpError';
@@ -476,7 +477,13 @@ const sourcesImpl = async (
     // Electron start used to run ITFSYNC whenever restore found
     // offlineAvailable projects with dateUpdated > snapshotDate (including
     // ordinary online edits since the last data-changes poll).
-    if (needItfSync()) {
+    if (
+      shouldRunItfSync({
+        isElectron,
+        offline,
+        needItf: needItfSync(),
+      })
+    ) {
       const fr = await electronExport(
         ExportType.ITFSYNC,
         undefined, //all artifact types
@@ -505,8 +512,10 @@ const sourcesImpl = async (
       if (fr && fr.changes > 0) {
         syncBuffer = fr.buffer;
         syncFile = fr.message;
+      } else {
+        // Nothing to send — don't keep retrying an empty export.
+        clearNeedItfSync();
       }
-      clearNeedItfSync();
     }
   }
   /* set the user from the token - must be done after the backup is loaded and after changes to offline are recorded */

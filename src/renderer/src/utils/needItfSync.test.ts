@@ -41,9 +41,17 @@ describe('needItfSync', () => {
     ).toBe(false);
   });
 
-  it('clears the flag after a successful export attempt', () => {
+  it('clears the flag when there is nothing to send or after a confirmed upload', () => {
     markNeedItfSync();
     clearNeedItfSync();
     expect(needItfSync()).toBe(false);
+  });
+
+  it('stays set after packaging so a failed or interrupted upload can retry', () => {
+    markNeedItfSync();
+    expect(needItfSync()).toBe(true);
+    expect(
+      shouldRunItfSync({ isElectron: true, offline: false, needItf: true })
+    ).toBe(true);
   });
 });

@@ -15,7 +15,8 @@ export const clearNeedItfSync = () => {
 
 /** ITF goes to the server only after an offline session, and only on Electron
  *  coming back online. Callers still skip the upload when the export finds
- *  no records changed since snapshotDate. */
+ *  no records changed since snapshotDate. The flag stays set until that upload
+ *  succeeds (or the export finds nothing) so a crash or failed send retries. */
 export const shouldRunItfSync = ({
   isElectron,
   offline,
