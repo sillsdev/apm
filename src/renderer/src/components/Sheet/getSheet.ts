@@ -63,34 +63,53 @@ const shtSectionAdd = (sheet: ISheet[], item: ISheet) => {
 };
 
 const shtPassageUpdate = (item: ISheet, rec: ISheet) => {
-  if (item.passageUpdated && rec.passageUpdated)
-    if (item.passageUpdated > rec.passageUpdated) {
-      rec.level = item.level;
-      rec.kind = item.kind;
-      rec.passageSeq = item.passageSeq;
-      rec.book = item.book;
-      rec.comment = item.comment;
-      rec.passage = item.passage;
-      rec.deleted = item.deleted;
-      rec.passageUpdated = item.passageUpdated;
-      //if it's a note with a category and the new reference doesn't have a category, keep the original reference
-      rec.reference =
-        rec.reference?.startsWith('NOTE|') && (item.reference?.length ?? 0) < 6
-          ? rec.reference
-          : item.reference;
-      if (
-        rec.passage &&
-        rec.reference &&
-        rec.passage.attributes.reference !== rec.reference
-      ) {
-        rec.passage = {
-          ...rec.passage,
-          attributes: { ...rec.passage.attributes, reference: rec.reference },
-        };
-      }
-      return true;
-    }
-  return false;
+  if (!item.passage) return false;
+  const touched = Boolean(
+    item.passageUpdated &&
+    rec.passageUpdated &&
+    item.passageUpdated > rec.passageUpdated
+  );
+  //fields derived from other records (mediafile, sharedresource) change without
+  //moving passage.dateUpdated, so refresh them every pass
+  if (touched) {
+    rec.level = item.level;
+    rec.kind = item.kind;
+    rec.passageSeq = item.passageSeq;
+    rec.book = item.book;
+    rec.comment = item.comment;
+    rec.passage = item.passage;
+    rec.deleted = item.deleted;
+    rec.step = item.step;
+    rec.stepId = item.stepId;
+    rec.filtered = item.filtered;
+  }
+  rec.sharedResource = item.sharedResource;
+  rec.mediaId = item.mediaId;
+  rec.mediaShared = item.mediaShared;
+  rec.published = item.published;
+  rec.publishStatus = item.publishStatus;
+  //discussions and scheme step assignments belong to other users' records, so a
+  //data change can alter them while we sit on the sheet with an untouched passage
+  rec.assign = item.assign;
+  rec.discussionCount = item.discussionCount;
+  //if it's a note with a category and the new reference doesn't have a category, keep the original reference
+  rec.reference =
+    rec.reference?.startsWith('NOTE|') && (item.reference?.length ?? 0) < 6
+      ? rec.reference
+      : item.reference;
+  if (
+    rec.passage &&
+    rec.reference &&
+    rec.passage.attributes.reference !== rec.reference
+  ) {
+    rec.passage = {
+      ...rec.passage,
+      attributes: { ...rec.passage.attributes, reference: rec.reference },
+    };
+  }
+
+  rec.passageUpdated = item.passageUpdated;
+  return touched;
 };
 
 const shtPassageAdd = (
@@ -411,10 +430,10 @@ export const getSheet = ({
             item.assign = (schemeStep.relationships?.user?.data ||
               schemeStep.relationships?.group?.data) as RecordIdentity;
           }
-          item.discussionCount = item.passage.id
-            ? getDiscussionCount(item.passage.id)
-            : 0;
         }
+        item.discussionCount = item.passage.id
+          ? getDiscussionCount(item.passage.id)
+          : 0;
         item.deleted = false;
         item.filtered =
           sectionfiltered ||
