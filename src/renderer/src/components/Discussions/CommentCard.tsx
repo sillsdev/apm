@@ -30,6 +30,9 @@ import {
   related,
   usePermissions,
 } from '../../crud';
+import { computeCommentVisibleString } from '../../crud/computeCommentVisible';
+import remoteId from '../../crud/remoteId';
+import { RecordKeyMap } from '@orbit/records';
 import PlayIcon from '@mui/icons-material/PlayArrow';
 import UserAvatar from '../UserAvatar';
 import { dateOrTime } from '../../utils';
@@ -199,6 +202,15 @@ export const CommentCard = (props: IProps) => {
     discussionId: discussion.id,
     commentId: comment.id,
     text: editComment,
+    visible: computeCommentVisibleString({
+      approved: approvedRef.current,
+      existingPermissions: comment.attributes?.visible,
+      isCIT: hasPermission(PermissionName.CIT),
+      isMentor: hasPermission(PermissionName.Mentor),
+      authorId:
+        remoteId('user', user, memory?.keyMap as RecordKeyMap).toString() ??
+        user,
+    }),
   });
   const { passageId, fileName } = useRecordComment({
     mediafileId: related(discussion, 'mediafile'),
@@ -281,8 +293,7 @@ export const CommentCard = (props: IProps) => {
   const media = useMemo(() => {
     if (!mediaId || mediaId === '') return null;
     const mediaRec = findRecord(memory, 'mediafile', mediaId) as
-      | MediaFileD
-      | undefined;
+      MediaFileD | undefined;
     if (mediaRec) {
       if (IsVernacularMedia(mediaRec)) {
         setOldVernVer(mediaRec.attributes?.versionNumber);
@@ -363,14 +374,14 @@ export const CommentCard = (props: IProps) => {
                 )
               ))}
             {canManageComment && (
-                <Box>
-                  <DiscussionMenu
-                    action={handleCommentAction}
-                    canResolve={true}
-                    canEdit={true}
-                  />
-                </Box>
-              )}
+              <Box>
+                <DiscussionMenu
+                  action={handleCommentAction}
+                  canResolve={true}
+                  canEdit={true}
+                />
+              </Box>
+            )}
           </BoxSpread>
           <BoxRow>
             {commentPlayId && mediaId === commentPlayId ? (

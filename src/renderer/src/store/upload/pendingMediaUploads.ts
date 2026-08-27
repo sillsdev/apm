@@ -31,6 +31,11 @@ export type PendingUploadRestore =
       discussionId: string;
       commentId?: string;
       text: string;
+      /**
+       * JSON string matching useSaveComment / computeCommentVisibleString.
+       * Optional for older pending rows staged before TT-7363 visible fix.
+       */
+      visible?: string;
     }
   | {
       kind: 'title';
@@ -38,8 +43,7 @@ export type PendingUploadRestore =
     };
 
 export type PendingRestoreInput =
-  | PendingUploadRestore
-  | (() => PendingUploadRestore | undefined);
+  PendingUploadRestore | (() => PendingUploadRestore | undefined);
 
 export interface PendingUploadRecord {
   id: string;

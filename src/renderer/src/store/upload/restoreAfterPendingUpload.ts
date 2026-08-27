@@ -89,8 +89,7 @@ async function restoreIntellectualProperty({
 }): Promise<void> {
   if (restore.transcription) {
     const mediaRec = findRecord(memory, 'mediafile', mediaId) as
-      | MediaFileD
-      | undefined;
+      MediaFileD | undefined;
     if (mediaRec) {
       await memory.update((t) =>
         UpdateRecord(
@@ -147,13 +146,14 @@ async function restoreComment({
   user: string;
 }): Promise<void> {
   const mediafile = findRecord(memory, 'mediafile', mediaId) as
-    | MediaFileD
-    | undefined;
+    MediaFileD | undefined;
   if (!mediafile?.id) return;
 
   const t = new RecordTransformBuilder();
   const ops: RecordOperation[] = [];
   let commentRec: CommentD;
+
+  const visible = restore.visible ?? '{}';
 
   if (restore.commentId) {
     commentRec = findRecord(memory, 'comment', restore.commentId) as CommentD;
@@ -163,6 +163,7 @@ async function restoreComment({
       attributes: {
         ...commentRec.attributes,
         commentText: restore.text,
+        visible,
       },
     };
     ops.push(...UpdateRecord(t, commentRec, user));
@@ -171,7 +172,7 @@ async function restoreComment({
       type: 'comment',
       attributes: {
         commentText: restore.text,
-        visible: '{}',
+        visible,
       },
     } as CommentD;
     ops.push(
@@ -218,20 +219,12 @@ async function restoreTitle({
   user: string;
 }): Promise<void> {
   const secRec = findRecord(memory, 'section', restore.sectionId) as
-    | SectionD
-    | undefined;
+    SectionD | undefined;
   if (!secRec) return;
   if (related(secRec, 'titleMediafile') === mediaId) return;
 
   const t = new RecordTransformBuilder();
   await memory.update(
-    UpdateRelatedRecord(
-      t,
-      secRec,
-      'titleMediafile',
-      'mediafile',
-      mediaId,
-      user
-    )
+    UpdateRelatedRecord(t, secRec, 'titleMediafile', 'mediafile', mediaId, user)
   );
 }

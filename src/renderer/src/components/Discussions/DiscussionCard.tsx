@@ -43,6 +43,9 @@ import {
   usePermissions,
   useRole,
 } from '../../crud';
+import { computeCommentVisibleString } from '../../crud/computeCommentVisible';
+import remoteId from '../../crud/remoteId';
+import { RecordKeyMap } from '@orbit/records';
 import CommentCard from './CommentCard';
 import ReplyCard from './ReplyCard';
 import UserAvatar from '../UserAvatar';
@@ -333,6 +336,16 @@ export const DiscussionCard = (props: IProps) => {
           kind: 'comment' as const,
           discussionId: discussion.id,
           text: commentText.current,
+          visible: computeCommentVisibleString({
+            isCIT: hasPermission(PermissionName.CIT),
+            isMentor: hasPermission(PermissionName.Mentor),
+            authorId:
+              remoteId(
+                'user',
+                user,
+                memory?.keyMap as RecordKeyMap
+              ).toString() ?? user,
+          }),
         }
       : undefined;
   const saveMyComment = async () => {

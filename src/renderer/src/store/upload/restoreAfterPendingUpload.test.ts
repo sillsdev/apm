@@ -1,3 +1,4 @@
+import { describe, expect, it, beforeEach } from '@jest/globals';
 import { RecordSchema } from '@orbit/records';
 import MemorySource from '@orbit/memory';
 import { related } from '../../crud/related';
@@ -141,6 +142,12 @@ describe('restoreAfterPendingUpload (TT-7363)', () => {
       kind: 'comment',
       discussionId: 'disc-1',
       text: 'audio comment note',
+      visible: JSON.stringify({
+        consultantInTraining: true,
+        mentor: true,
+        approved: false,
+        author: 'user-1',
+      }),
     };
 
     await restoreAfterPendingUpload({
@@ -153,10 +160,11 @@ describe('restoreAfterPendingUpload (TT-7363)', () => {
     const comments = memory.cache.query((q) =>
       q.findRecords('comment')
     ) as unknown as Array<{
-      attributes: { commentText: string };
+      attributes: { commentText: string; visible: string };
     }>;
     expect(comments).toHaveLength(1);
     expect(comments[0].attributes.commentText).toBe('audio comment note');
+    expect(comments[0].attributes.visible).toBe(restore.visible);
     expect(related(comments[0], 'discussion')).toBe('disc-1');
     expect(related(comments[0], 'mediafile')).toBe('media-1');
   });
@@ -179,6 +187,12 @@ describe('restoreAfterPendingUpload (TT-7363)', () => {
       discussionId: 'disc-1',
       commentId: 'cmt-1',
       text: 'updated text',
+      visible: JSON.stringify({
+        consultantInTraining: true,
+        mentor: true,
+        approved: true,
+        author: 'user-1',
+      }),
     };
 
     await restoreAfterPendingUpload({
@@ -191,8 +205,9 @@ describe('restoreAfterPendingUpload (TT-7363)', () => {
     const comment = memory.cache.getRecordSync({
       type: 'comment',
       id: 'cmt-1',
-    }) as unknown as { attributes: { commentText: string } };
+    }) as unknown as { attributes: { commentText: string; visible: string } };
     expect(comment.attributes.commentText).toBe('updated text');
+    expect(comment.attributes.visible).toBe(restore.visible);
     expect(related(comment, 'mediafile')).toBe('media-1');
   });
 

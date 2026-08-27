@@ -6,7 +6,11 @@ import { useSaveComment } from '../../crud/useSaveComment';
 import { useMounted } from '../../utils';
 import { UnsavedContext } from '../../context/UnsavedContext';
 import { Box } from '@mui/material';
-import { related } from '../../crud';
+import { related, PermissionName, usePermissions } from '../../crud';
+import { computeCommentVisibleString } from '../../crud/computeCommentVisible';
+import remoteId from '../../crud/remoteId';
+import { RecordKeyMap } from '@orbit/records';
+import { useGlobal } from '../../context/useGlobal';
 import { shallowEqual, useSelector } from 'react-redux';
 import { sharedSelector } from '../../selector';
 
@@ -19,6 +23,9 @@ export const ReplyCard = (props: IProps) => {
   const { discussion, commentNumber } = props;
   const [refresh, setRefresh] = useState(0);
   const isMounted = useMounted('replycard');
+  const [user] = useGlobal('user');
+  const [memory] = useGlobal('memory');
+  const { hasPermission } = usePermissions();
   const {
     toolChanged,
     saveCompleted,
@@ -62,6 +69,13 @@ export const ReplyCard = (props: IProps) => {
     kind: 'comment' as const,
     discussionId: discussion.id,
     text: commentText.current,
+    visible: computeCommentVisibleString({
+      isCIT: hasPermission(PermissionName.CIT),
+      isMentor: hasPermission(PermissionName.Mentor),
+      authorId:
+        remoteId('user', user, memory?.keyMap as RecordKeyMap).toString() ??
+        user,
+    }),
   });
 
   const { passageId, fileName } = useRecordComment({
