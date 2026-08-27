@@ -37,6 +37,17 @@ import {
 
 const SEGMENTS = SEGMENTS_3;
 
+/**
+ * A last clause far shorter than a normal one. Auto-segmenting can leave a
+ * sliver at the end of the audio, and a user hit one by hand: it played, the
+ * audio stopped part way along, and the step never offered Record again.
+ */
+const SEGMENTS_SHORT_LAST = [
+  { start: 0, end: 3 },
+  { start: 3, end: 6 },
+  { start: 6, end: 6.2 },
+];
+
 afterEach(() => pbtCleanup());
 
 describe('PBT listen pass', () => {
@@ -203,6 +214,37 @@ describe('PBT record and save', () => {
     recordAndSettle(3);
     cy.window().should((win) => {
       expect(win.__pbt?.stepComplete(), 'step complete').to.equal(true);
+    });
+  });
+});
+
+describe('PBT a clause shorter than the playback-start window', () => {
+  beforeEach(() => {
+    mountPbt({ segments: SEGMENTS_SHORT_LAST });
+    waitForPbtReady();
+    startRecordingPass();
+  });
+
+  it('offers Record once a very short last clause has played', () => {
+    // Reported from hand testing: the short clause auto-played, the playhead
+    // stopped part way along, and the step was stuck - the pause icon stayed up
+    // and Record never came back, so there was no way to record the clause.
+    //
+    // Telling the seek that starts a clause from the clause finishing by how
+    // long playback has been running assumes clauses are longer than that
+    // window. This one is not: its whole span is shorter, so the signal that
+    // says "heard" arrives inside the window and is discarded as the seek.
+    cy.get(PBT.nextUnit).click();
+    expectRecordEnabled();
+    cy.get(PBT.nextUnit).click();
+    unitLabel('0:06', '0:06').should('be.visible');
+
+    // The clause is 0.2s: by the time Record could be offered it has long
+    // finished. Anything else is the dead state.
+    expectRecordEnabled();
+    cy.document().then((doc) => {
+      expect(readSourcePlaying(doc), 'playback stopped').to.equal(false);
+      expect(readRecordEnabled(doc), 'Record offered').to.equal(true);
     });
   });
 });
