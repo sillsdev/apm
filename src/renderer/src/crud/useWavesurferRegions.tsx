@@ -126,6 +126,14 @@ export function useWaveSurferRegions(
   lockSegmentSelection?: boolean,
   getDecodedBuffer?: () => AudioBuffer | undefined,
   /**
+   * Suppress drag-to-create-region (the red loop region) even in single-region
+   * mode. Read once, where setupRegions configures the regions plugin on the
+   * WaveSurfer 'ready' event — it is not reactive, so toggling it afterwards has
+   * no effect until the next load. Pass a value that is constant for the
+   * lifetime of the player.
+   */
+  disableDragSelection?: boolean,
+  /**
    * A region was clicked. Distinct from onCurrentRegion, which also fires for
    * playhead-driven selection: only a deliberate user click reaches this.
    */
@@ -153,6 +161,9 @@ export function useWaveSurferRegions(
     applyRegionColor
   );
   const lockSegmentSelectionRef = useRef(lockSegmentSelection ?? false);
+  // setupRegions runs from a once-registered 'ready' handler, so it can only
+  // reach this prop through a ref (like singleRegionRef).
+  const disableDragSelectionRef = useRef(disableDragSelection ?? false);
   const regionBeforeClickRef = useRef<Region | undefined>(undefined);
   const playTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
   /** Suppress region-in while the playhead is moved programmatically (table row click). */
@@ -184,6 +195,10 @@ export function useWaveSurferRegions(
   useEffect(() => {
     lockSegmentSelectionRef.current = lockSegmentSelection ?? false;
   }, [lockSegmentSelection]);
+
+  useEffect(() => {
+    disableDragSelectionRef.current = disableDragSelection ?? false;
+  }, [disableDragSelection]);
 
   const regionColor = (
     role: RegionColorRole,
@@ -664,7 +679,7 @@ export function useWaveSurferRegions(
 
       // Enable drag selection AFTER all event listeners are set up
       // This ensures the internal listeners set up by enableDragSelection aren't removed
-      if (singleRegionRef.current) {
+      if (singleRegionRef.current && !disableDragSelectionRef.current) {
         regionsPlugin.enableDragSelection({
           color: 'rgba(255, 0, 0, 0.1)',
         });

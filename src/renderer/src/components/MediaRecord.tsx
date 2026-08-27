@@ -86,6 +86,8 @@ interface IProps {
   noNewVoice?: boolean | undefined;
   allowNoNoise?: boolean;
   allowZoom?: boolean;
+  /** When true, disable drag-to-create-region (the red loop region) on the waveform. */
+  disableDragSelection?: boolean;
   controlsRef?: React.RefObject<WSAudioPlayerControls | null>;
   hideControls?: boolean;
   onProgress?: (progress: number) => void;
@@ -147,6 +149,7 @@ function MediaRecord(props: IProps) {
     noNewVoice,
     allowNoNoise,
     allowZoom,
+    disableDragSelection,
     controlsRef,
     hideControls,
     onProgress,
@@ -795,6 +798,7 @@ function MediaRecord(props: IProps) {
         allowRecord={allowRecord !== false}
         loading={loading}
         allowZoom={allowZoom}
+        disableDragSelection={disableDragSelection}
         allowDeltaVoice={allowDeltaVoice}
         allowDownload={allowDownload}
         oneTryOnly={effectiveOneTryOnly}

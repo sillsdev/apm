@@ -62,6 +62,7 @@ export function useWaveSurfer(
   hasSegmentUndo?: boolean,
   applyRegionColor?: ApplyRegionColor,
   lockSegmentSelection?: boolean,
+  disableDragSelection?: boolean,
   /** A region was clicked, as opposed to selected by the playhead. */
   onSegmentClick?: (region: IRegion) => void
 ) {
@@ -311,6 +312,7 @@ export function useWaveSurfer(
     applyRegionColor,
     lockSegmentSelection,
     () => blobAudioRef.current,
+    disableDragSelection,
     onSegmentClick
   );
 
