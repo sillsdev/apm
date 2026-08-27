@@ -47,22 +47,19 @@ afterEach(() => pbtCleanup());
  * ---------------------------------------------------------------------------
  */
 describe('PBT known defects', () => {
-  it(
-    'DEFECT: pausing the reference playback leaves Record disabled forever',
-    { tags: '@known-defect' },
-    () => {
-      // handleRegionPlayEnd is the only path out of phase 'playing', so a user
-      // pause strands the step: Record needs currentClausePlayed + recordReady,
-      // and nothing sets them until the segment plays all the way through.
-      mountPbt({ segments: SEGMENTS });
-      waitForPbtReady();
-      cy.get(PBT.start).click();
-      expectRecordDisabled();
-      cy.wait(500);
-      sourcePlay().click(); // pause
-      expectRecordEnabled();
-    }
-  );
+  it('offers Record once the user pauses the reference playback', () => {
+    // handleRegionPlayEnd used to be the only path out of phase 'playing', so a
+    // user pause stranded the step: Record needs currentClausePlayed +
+    // recordReady, and nothing set them until the segment played all the way
+    // through. The step now takes the reference audio stopping as the signal.
+    mountPbt({ segments: SEGMENTS });
+    waitForPbtReady();
+    cy.get(PBT.start).click();
+    expectRecordDisabled();
+    cy.wait(500);
+    sourcePlay().click(); // pause
+    expectRecordEnabled();
+  });
 
   it('stays usable when a segment is left while its take is loading', () => {
     // MediaRecord keeps `loading` true until (blobReady && originalBlob), and

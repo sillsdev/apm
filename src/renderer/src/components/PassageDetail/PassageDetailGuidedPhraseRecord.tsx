@@ -96,6 +96,13 @@ interface IProps {
   workflowGateMessage?: string;
 }
 
+/**
+ * A stop reported sooner than this after playback started is the seek that
+ * started it, not the audio finishing. Auto-segmenting never produces a clause
+ * anywhere near this short.
+ */
+const SPURIOUS_STOP_WINDOW_MS = 250;
+
 function findClauseIndex(clauseRegions: IRegion[], region: IRegion): number {
   return clauseRegions.findIndex(
     (r) =>
@@ -190,6 +197,13 @@ export function PassageDetailGuidedPhraseRecord({
   const initialPositionDoneRef = useRef(false);
   const suppressClauseAutoPlayRef = useRef(0);
   const playClauseInFlightRef = useRef(false);
+  /**
+   * When playback of the current clause last began - whether this component
+   * started it or the user pressed Play. See SPURIOUS_STOP_WINDOW_MS: a stale
+   * timestamp would make the seek-suppression window compare against an old
+   * time and mark a clause played before it had been.
+   */
+  const clausePlaybackStartedAtRef = useRef(0);
   const skipBeforePlayRef = useRef(false);
   const entryPauseDoneRef = useRef(false);
   const [highlightPlayButton, setHighlightPlayButton] = useState(false);
@@ -679,6 +693,7 @@ export function PassageDetailGuidedPhraseRecord({
       const ctrl = playerControlsRef.current;
       const region = regionOverride ?? clauseRegions[index];
       if (!ctrl?.isReady() || !region || playClauseInFlightRef.current) return;
+      clausePlaybackStartedAtRef.current = Date.now();
       playClauseInFlightRef.current = true;
       try {
         setPhase('playing');
@@ -745,16 +760,47 @@ export function PassageDetailGuidedPhraseRecord({
 
   const handlePlayStatusNotify = useCallback(
     (playingNow: boolean) => {
-      if (playingNow) setHighlightPlayButton(false);
+      if (playingNow) {
+        setHighlightPlayButton(false);
+        // Playback began, whatever started it. Time the window from here, so a
+        // stop that this start provokes is discarded below instead of being read
+        // as the clause having finished.
+        clausePlaybackStartedAtRef.current = Date.now();
+      }
       if (currentIndex === clauseRegions.length - 1) {
         markClauseHeard(currentIndex);
       }
+      // Only a stop tells us the clause has been heard; the start case is
+      // handled above.
+      if (playingNow) return;
+      // The listen pass has nothing to record, so nothing to enable.
+      if (!recordingPassStartedRef.current) return;
+      // Capturing or saving a take stops the source audio, and that stop is not
+      // the clause being heard. Defensive:
+      if (recordingActiveRef.current || savingRecordingRef.current) return;
+      // Starting a clause seeks the playhead to its start, and that seek reports
+      // a stop of its own before anything has been heard. This can be
+      // differentiated from a real stop (user pause) by how long playback had
+      // been running. If under SPURIOUS_STOP_WINDOW_MS it is the seek, ignore it.
+      if (
+        Date.now() - clausePlaybackStartedAtRef.current <
+        SPURIOUS_STOP_WINDOW_MS
+      ) {
+        return;
+      }
+      setCurrentClausePlayed(true);
+      setPhase((p) =>
+        p === 'recording' || p === 'recorded' ? p : 'recordReady'
+      );
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [clauseRegions.length, currentIndex]
   );
 
   const handleBeforeSourcePlay = useCallback(async () => {
+    // The user pressed Play rather than the step starting playback, so the
+    // seek-suppression window has to be re-based here too.
+    clausePlaybackStartedAtRef.current = Date.now();
     if (skipBeforePlayRef.current) return;
     if (!recordingPassStarted || !showRecorder || currentClausePlayed) return;
     setHighlightPlayButton(false);
