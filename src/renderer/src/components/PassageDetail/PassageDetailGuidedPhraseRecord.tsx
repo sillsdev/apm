@@ -142,6 +142,8 @@ export function PassageDetailGuidedPhraseRecord({
     setRecording,
     forceRefresh,
     currentSegmentIndex,
+    /** Change token for the selected segment; see the nav effects below. */
+    currentSegmentSeq,
     getCurrentSegment,
     isBoldWorkflow,
     carefulSpeechSegParams,
@@ -1133,6 +1135,27 @@ export function PassageDetailGuidedPhraseRecord({
 
     const indexChanged = idx !== currentIndex;
 
+    if (pendingOvershootSwallowRef.current && idx === currentIndex + 1) {
+      // A +1 segment change arriving just after an auto-play park is not the
+      // user moving: either playback overshot into the next clause, or the
+      // recorder mounted and reported a region-in there. Stay on the parked
+      // clause and play nothing. A change further away than +1 is a real tap,
+      // and falls through to the branches below.
+      //
+      // This has to be decided before the completed-clause branch below.
+      // Otherwise, when the clause the overshoot lands on already has a take -
+      // record 1, arrow forward to 3, record 3, arrow back to 2 - that branch
+      // takes the overshoot for a move onto clause 3 and selects it, leaving
+      // clause 2 pending under a user who was waiting to record it (TT-7621).
+      pendingOvershootSwallowRef.current = false;
+      if (playerControlsRef.current?.isPlaying?.()) {
+        playerControlsRef.current.setPlay(false);
+      }
+      setCurrentSegment(clauseRegions[currentIndex], currentIndex);
+      void snapToClauseStart(currentIndex);
+      return;
+    }
+
     if (completedIndices.has(idx)) {
       if (playerControlsRef.current?.isPlaying?.()) {
         playerControlsRef.current.setPlay(false);
@@ -1160,15 +1183,6 @@ export function PassageDetailGuidedPhraseRecord({
       playerControlsRef.current.setPlay(false);
     }
 
-    if (pendingOvershootSwallowRef.current && idx === currentIndex + 1) {
-      // Spurious +1 advance right after an auto-play park (playback overshoot or
-      // recorder-mount region-in). Re-assert the parked clause; don't play.
-      // A non-adjacent change reaches the branch below and is treated as a tap.
-      pendingOvershootSwallowRef.current = false;
-      setCurrentSegment(clauseRegions[currentIndex], currentIndex);
-      void snapToClauseStart(currentIndex);
-      return;
-    }
     // Genuine navigation (user tap) — cancel any armed swallow and play it.
     pendingOvershootSwallowRef.current = false;
 
@@ -1180,8 +1194,23 @@ export function PassageDetailGuidedPhraseRecord({
     setCurrentClausePlayed(false);
     setPhase((p) => (p === 'recording' ? 'recording' : 'readyToRecord'));
     void playCurrentClause(idx);
+    // Neither dep is read in the body — the segment itself comes from the ref
+    // behind getCurrentSegment() — so both are here purely as change signals.
+    //
+    // currentSegmentSeq is the one that tells us the selection moved. The
+    // index's numbering is not agreed between writers (the waveform writes
+    // 1-based, this component 0-based), so a genuine move can arrive carrying
+    // the number the previous writer used. Clicking segment 2 right after
+    // recording segment 3 does exactly that (waveform 1+1 vs step 2) — the
+    // effect never re-ran, the step stayed on segment 3, and the next take was
+    // filed there.
+    //
+    // currentSegmentIndex stays because the seq does not fully cover it:
+    // selecting another row resets the index to 0 without going through
+    // setCurrentSegment, so no seq bump accompanies that one.
   }, [
     currentSegmentIndex,
+    currentSegmentSeq,
     clauseRegions,
     currentIndex,
     completedIndices,
@@ -1209,8 +1238,10 @@ export function PassageDetailGuidedPhraseRecord({
     if (!consumeSuppressClauseAutoPlay()) {
       void playCurrentClause(idx);
     }
+    // See the recording-pass effect above for why currentSegmentSeq is a dep.
   }, [
     currentSegmentIndex,
+    currentSegmentSeq,
     clauseRegions,
     currentIndex,
     getCurrentSegment,

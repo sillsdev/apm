@@ -36,6 +36,7 @@ import {
   unitLabel,
   startRecordingPass,
   recordAndSettle,
+  tapSegmentOnEngine,
 } from '../../../cypress/support/pbtHarness';
 
 const SEGMENTS = SEGMENTS_3;
@@ -167,6 +168,67 @@ describe('PBT recording out of order (1, 3, then 2)', () => {
     mountPbt({ segments: SEGMENTS });
     waitForPbtReady();
     startRecordingPass();
+  });
+
+  /**
+   * Reported: "record the first segment, right-arrow twice to the third, record
+   * it, then left-arrow to the second. It auto-plays segment 2 as expected, but
+   * afterwards segment 3 is highlighted, not the segment 2 I am about to
+   * record."
+   *
+   * Parking after an auto-play arms the overshoot swallow, because playback
+   * overshoot (or the recorder mounting) fires one spurious region-in on the
+   * next clause. That swallow was only consulted after the completed-clause
+   * branch, so when the clause the overshoot landed on already had a take -
+   * segment 3 here - the step read the overshoot as a move onto it: the label,
+   * the yellow selection and the phase all followed, and segment 2 went back to
+   * pending under a user waiting to record it.
+   *
+   * tapSegmentOnEngine is the engine reporting a segment change with no click
+   * behind it - exactly what that region-in looks like to the step.
+   */
+  it('keeps the parked segment when playback overshoots onto a recorded one', () => {
+    recordAndSettle(1); // segment 1
+    cy.get(PBT.nextUnit).click();
+    cy.get(PBT.nextUnit).click();
+    unitLabel('0:06', '0:09').should('be.visible');
+    recordAndSettle(2); // segment 3
+
+    cy.get(PBT.prevUnit).click();
+    unitLabel('0:03', '0:06').should('be.visible');
+    expectRecordEnabled(); // segment 2's auto-play has parked
+
+    tapSegmentOnEngine(2);
+    // A settle window, not a race: the assertion below is that nothing moved,
+    // and a retrying `should` would satisfy that on its first poll - before the
+    // wrong behaviour (the completed-clause branch selecting segment 3) has had
+    // a chance to happen. Give the effect time to misbehave, then look.
+    cy.wait(1500);
+    cy.document().then((doc) => {
+      expect(
+        readLabelSegmentIndex(doc, SEGMENTS),
+        'the step is still on segment 2'
+      ).to.equal(1);
+      expect(
+        readCurrentSegmentIndex(doc),
+        'segment 2 is still the painted selection'
+      ).to.equal(1);
+    });
+    expectRecordEnabled();
+
+    recordTake();
+    waitForUploads(3);
+    cy.then(() => {
+      const segs = postedTakes().map((t) => t.parsedSegments);
+      expect(segs[2], 'the take lands on segment 2').to.deep.include({
+        start: 3,
+        end: 6,
+      });
+      const onSegment3 = segs.filter(
+        (s) => s?.start === 6 && s?.end === 9
+      ).length;
+      expect(onSegment3, 'segment 3 still has exactly one take').to.equal(1);
+    });
   });
 
   it('files each take under its own segment when navigating with the arrows', () => {

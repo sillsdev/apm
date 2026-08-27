@@ -59,6 +59,7 @@ import type { IRegion } from '../../src/crud/useWavesurferRegions';
 import type { MediaFileD } from '../../src/model';
 import { boldDefaultSegParams } from '../../src/components/PassageDetail/carefulSpeech/boldCarefulSpeechSegParams';
 import { regionsJsonFromList } from '../../src/components/PassageDetail/carefulSpeech/carefulSpeechBoundary';
+import { prettySegment } from '../../src/utils/prettySegment';
 import PassageDetailPhraseBackTranslate from '../../src/components/PassageDetail/PassageDetailPhraseBackTranslate';
 
 // ---------------------------------------------------------------------------
@@ -621,6 +622,8 @@ function PbtHarnessInner({ options, memory, blob }: HarnessProps) {
   const segments = options.segments ?? [];
   const [refresh, setRefresh] = useState(0);
   const [currentSegmentIndex, setCurrentSegmentIndex] = useState(-1);
+  const [currentSegmentText, setCurrentSegmentText] = useState('');
+  const [currentSegmentSeq, setCurrentSegmentSeq] = useState(0);
   const currentSegmentRef = useRef<IRegion | undefined>(undefined);
   const recordingRef = useRef(false);
   const playingRef = useRef(false);
@@ -656,9 +659,13 @@ function PbtHarnessInner({ options, memory, blob }: HarnessProps) {
         currentSegmentIndex !== index
       ) {
         currentSegmentRef.current = segment;
-        // The real context bumps this on every change; components watch it as a
-        // change signal, so a distinct value per call matters more than the value.
         setCurrentSegmentIndex(index);
+        // Mirrors the real context: it also publishes the pretty segment string
+        // and bumps a change token. Both matter here, because the waveform
+        // reports a 1-based index while the step sets a 0-based one, so the
+        // index alone can repeat across a real change.
+        setCurrentSegmentText(prettySegment(segment));
+        setCurrentSegmentSeq((n) => n + 1);
       }
     },
     [currentSegmentIndex]
@@ -741,8 +748,9 @@ function PbtHarnessInner({ options, memory, blob }: HarnessProps) {
       setRecording: (r: boolean) => {
         recordingRef.current = r;
       },
-      currentSegment: '',
+      currentSegment: currentSegmentText,
       currentSegmentIndex,
+      currentSegmentSeq,
       setCurrentSegment,
       getCurrentSegment,
       setupLocate: (cb?: (segments: string) => void) => {
@@ -775,6 +783,8 @@ function PbtHarnessInner({ options, memory, blob }: HarnessProps) {
       blob,
       pdBusy,
       currentSegmentIndex,
+      currentSegmentText,
+      currentSegmentSeq,
       setCurrentSegment,
       getCurrentSegment,
       complete,
@@ -1077,6 +1087,35 @@ export function clickSegmentUntilSelected(
     });
   };
   attempt(attempts);
+}
+
+/**
+ * Report a segment change from the engine with no click behind it - what a
+ * spurious `region-in` looks like to the step (playback overshooting the clause
+ * end, or the recorder mounting once Record is allowed).
+ *
+ * Asserts the harness API and the segment are really there, and that the tap
+ * reached the engine, so a renamed or missing `__pbt` fails here rather than
+ * turning the caller into a silent no-op that every later assertion passes.
+ */
+export function tapSegmentOnEngine(index: number) {
+  cy.window().then((win) => {
+    const api = win.__pbt;
+    expect(api, 'pbt harness api is exposed').to.not.equal(undefined);
+    const pbt = api as PbtHarnessApi;
+    expect(
+      pbt.segments()[index],
+      `harness segment ${index} exists`
+    ).to.not.equal(undefined);
+    const before = pbt.currentSegmentIndex();
+    pbt.tapSegment(index);
+    cy.window().should((w) => {
+      expect(
+        (w.__pbt as PbtHarnessApi).currentSegmentIndex(),
+        'the tap reached the engine'
+      ).to.not.equal(before);
+    });
+  });
 }
 
 /**
