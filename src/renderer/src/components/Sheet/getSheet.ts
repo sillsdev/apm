@@ -79,6 +79,9 @@ const shtPassageUpdate = (item: ISheet, rec: ISheet) => {
     rec.comment = item.comment;
     rec.passage = item.passage;
     rec.deleted = item.deleted;
+    rec.step = item.step;
+    rec.stepId = item.stepId;
+    rec.filtered = item.filtered;
   }
   rec.sharedResource = item.sharedResource;
   rec.mediaId = item.mediaId;
