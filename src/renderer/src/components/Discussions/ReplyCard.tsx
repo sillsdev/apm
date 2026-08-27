@@ -58,6 +58,11 @@ export const ReplyCard = (props: IProps) => {
     if (mediaId) doSaveComment(mediaId);
     else resetAfterError();
   };
+  const pendingRestore = () => ({
+    kind: 'comment' as const,
+    discussionId: discussion.id,
+    text: commentText.current,
+  });
 
   const { passageId, fileName } = useRecordComment({
     mediafileId: related(discussion, 'mediafile'),
@@ -124,6 +129,7 @@ export const ReplyCard = (props: IProps) => {
         afterUploadCb={afterUploadCb}
         onTextChange={handleTextChange}
         cancelOnlyIfChanged={true}
+        pendingRestore={pendingRestore}
       />
     </Box>
   );

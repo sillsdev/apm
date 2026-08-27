@@ -145,6 +145,8 @@ interface IProps {
   disabled?: boolean;
   required?: boolean;
   passageId?: string;
+  /** Section id for titleMediafile restore after pending retry (TT-7363). */
+  sectionId?: string;
 }
 
 export default function MediaTitle(props: IProps) {
@@ -165,6 +167,7 @@ export default function MediaTitle(props: IProps) {
     disabled,
     required,
     passageId,
+    sectionId,
   } = props;
   const [canSaveRecording, setCanSaveRecording] = useState(false);
   const [curText, setCurTextx] = useState(title ?? '');
@@ -497,6 +500,7 @@ export default function MediaTitle(props: IProps) {
             onDialogVisible={() => setShowRecorder(false)}
             myPlanId={useplan}
             passageId={passageId}
+            sectionId={sectionId}
             playing={playing}
           />
         </BigDialog>

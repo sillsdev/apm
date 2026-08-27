@@ -47,6 +47,8 @@ interface IProps {
   setResetMedia: React.Dispatch<React.SetStateAction<boolean>>;
   resetMedia: boolean;
   afterUploadCb: (url: string, filename: string) => void | Promise<void>;
+  /** Domain restore metadata for pending-upload Retry (TT-7363). */
+  pendingRestore?: import('../../../../store/upload/pendingMediaUploads').PendingRestoreInput;
   handleSetCanSave: (canSave: boolean) => void;
 }
 
@@ -91,6 +93,7 @@ const ProvideRightsMobile = (props: IProps) => {
         passageId={undefined}
         planId={props.planId}
         performedBy={props.speaker}
+        pendingRestore={props.pendingRestore}
         allowWave={false}
         allowDeltaVoice={false}
         allowNoNoise={false}

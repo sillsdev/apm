@@ -376,4 +376,44 @@ describe('nextUpload enqueue after staging (TT-7348)', () => {
       })
     );
   });
+
+  it('enqueues title restore meta and sourceMediaId/sourceSegments on staging (TT-7363)', async () => {
+    mockedAxios.post.mockImplementation(() => new Promise(() => undefined));
+    const file = Object.assign(makeFile(), { path: '/staged/title.mp3' });
+    const titleRecord = {
+      ...baseRecord,
+      artifactTypeId: 'title-type-1',
+      passageId: '',
+      originalFile: 'title.mp3',
+      sourceMediaId: 'src-media-9',
+      sourceSegments: '{"start":1.2,"end":3.4}',
+    };
+    const restore = { kind: 'title' as const, sectionId: 'sec-42' };
+
+    const action = nextUpload({
+      record: titleRecord,
+      files: [file],
+      n: 0,
+      token: 'token',
+      offline: false,
+      errorReporter: {} as never,
+      uploadType: UploadType.Media,
+      pendingRestore: restore,
+      cb: jest.fn(),
+    });
+    action(dispatch);
+    await flushPromises();
+
+    expect(appendPendingMediaUpload).toHaveBeenCalledWith(
+      expect.objectContaining({
+        localAbsolutePath: '/staged/title.mp3',
+        restore,
+        record: expect.objectContaining({
+          artifactTypeId: 'title-type-1',
+          sourceMediaId: 'src-media-9',
+          sourceSegments: '{"start":1.2,"end":3.4}',
+        }),
+      })
+    );
+  });
 });

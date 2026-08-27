@@ -79,6 +79,8 @@ interface IProps {
   team?: string | undefined; // used when adding a card to check speakers
   onNonAudio?: ((nonAudio: boolean) => void) | undefined;
   uploadDialogBp?: BigDialogBp;
+  /** Domain restore metadata for pending-upload Retry (TT-7363). */
+  pendingRestore?: import('../store/upload/pendingMediaUploads').PendingRestoreInput;
 }
 
 export const Uploader = (props: IProps) => {
@@ -110,6 +112,7 @@ export const Uploader = (props: IProps) => {
     onNonAudio,
     finish,
     uploadDialogBp,
+    pendingRestore,
   } = props;
   const { metaData, ready, beforeUpload } = props;
   const [isDeveloper] = useGlobal('developer');
@@ -342,6 +345,10 @@ export const Uploader = (props: IProps) => {
       errorReporter,
       uploadType: uploadType ?? UploadType.Media,
       cb: itemComplete,
+      pendingRestore:
+        typeof pendingRestore === 'function'
+          ? pendingRestore()
+          : pendingRestore,
       // First file waits only for import/export that was already in progress at batch
       // start; later files skip the wait while importexportBusy stays true until
       // finishMessage (set in uploadMedia).

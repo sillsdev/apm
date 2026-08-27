@@ -194,6 +194,12 @@ export const CommentCard = (props: IProps) => {
     if (mediaId) doSaveComment(mediaId);
     else resetAfterError();
   };
+  const pendingRestore = () => ({
+    kind: 'comment' as const,
+    discussionId: discussion.id,
+    commentId: comment.id,
+    text: editComment,
+  });
   const { passageId, fileName } = useRecordComment({
     mediafileId: related(discussion, 'mediafile'),
     commentNumber,
@@ -427,6 +433,7 @@ export const CommentCard = (props: IProps) => {
                   discussion.id
                 )}
                 afterUploadCb={afterUploadCb}
+                pendingRestore={pendingRestore}
               />
             ) : text ? (
               <>

@@ -34,6 +34,8 @@ interface IProps {
   titlekey: string;
   myPlanId?: string;
   passageId?: string;
+  /** Section id for titleMediafile restore after pending retry (TT-7363). */
+  sectionId?: string;
   defaultFilename: string;
   playing: boolean;
   changeTab?: (v: number) => void;
@@ -48,6 +50,7 @@ const TitleTabs = (props: IProps) => {
     titlekey,
     myPlanId,
     passageId,
+    sectionId,
     defaultFilename,
     playing,
     changeTab,
@@ -84,6 +87,10 @@ const TitleTabs = (props: IProps) => {
     //return remoteId('artifacttype', id, memory?.keyMap as RecordKeyMap) || id;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [offlineOnly]);
+
+  const titlePendingRestore = sectionId
+    ? ({ kind: 'title', sectionId } as const)
+    : undefined;
 
   const toolId = useMemo(() => 'MediaTitle-' + titlekey, [titlekey]);
   const recToolId = useMemo(() => toolId + 'rec', [toolId]);
@@ -195,6 +202,7 @@ const TitleTabs = (props: IProps) => {
     passageId,
     planId: myPlanId,
     afterUploadCb,
+    pendingRestore: titlePendingRestore,
   });
 
   return (
@@ -223,6 +231,7 @@ const TitleTabs = (props: IProps) => {
           canSave={canSaveRecording}
           handleSetCanSave={handleSetCanSave}
           afterUploadCb={afterUploadCb}
+          pendingRestore={titlePendingRestore}
           setStatusText={setStatusText}
           onCancel={handleClose}
           onSave={handleSave}

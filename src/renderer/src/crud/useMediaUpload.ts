@@ -20,6 +20,9 @@ import { AlertSeverity, useSnackBar } from '../hoc/SnackBar';
 import { mediaTabSelector, sharedSelector } from '../selector';
 import { OrbitNetworkErrorRetries } from '../../api-variable';
 import { formatUploadTerminalFailureMessage } from '../store/upload/uploadTerminalMessages';
+import type {
+  PendingRestoreInput,
+} from '../store/upload/pendingMediaUploads';
 
 interface IProps {
   artifactId: string | null;
@@ -34,6 +37,11 @@ interface IProps {
   afterUploadCb: (mediaId: string) => Promise<void>;
   /** When retrying a queued failed upload, pass id to clear the queue entry after success. */
   pendingUploadIdToClearOnSuccess?: string;
+  /**
+   * Domain restore metadata for pending-upload Retry (TT-7363). May be a
+   * getter so callers can capture live comment/speaker state at upload time.
+   */
+  pendingRestore?: PendingRestoreInput;
 }
 export const useMediaUpload = ({
   artifactId,
@@ -46,6 +54,7 @@ export const useMediaUpload = ({
   languagebcp47,
   afterUploadCb,
   pendingUploadIdToClearOnSuccess,
+  pendingRestore,
 }: IProps) => {
   const dispatch = useDispatch();
   const uploadFiles = (files: File[]) =>
@@ -236,6 +245,10 @@ export const useMediaUpload = ({
             .catch(reject);
         },
         pendingUploadIdToClearOnSuccess,
+        pendingRestore:
+          typeof pendingRestore === 'function'
+            ? pendingRestore()
+            : pendingRestore,
         onTerminalFailure: (info) => {
           showMessage(
             formatUploadTerminalFailureMessage(t, info),

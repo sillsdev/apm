@@ -13,6 +13,34 @@ export type PendingUploadMediaRecord = MediaFileAttributes & {
   sourceMediaId?: string;
 };
 
+/**
+ * Domain side-effects that normal UI `afterUploadCb` would run on success.
+ * Persisted on the pending row so Home → Retry can recreate Orbit links
+ * after re-upload (TT-7363).
+ */
+export type PendingUploadRestore =
+  | {
+      kind: 'intellectualproperty';
+      rightsHolder: string;
+      organizationId: string;
+      notes?: string;
+      transcription?: string;
+    }
+  | {
+      kind: 'comment';
+      discussionId: string;
+      commentId?: string;
+      text: string;
+    }
+  | {
+      kind: 'title';
+      sectionId: string;
+    };
+
+export type PendingRestoreInput =
+  | PendingUploadRestore
+  | (() => PendingUploadRestore | undefined);
+
 export interface PendingUploadRecord {
   id: string;
   failedAt: string;
@@ -20,6 +48,8 @@ export interface PendingUploadRecord {
   fileSize: number;
   uploadType: UploadType;
   record: PendingUploadMediaRecord;
+  /** Optional secondary-link restore metadata (TT-7363). */
+  restore?: PendingUploadRestore;
 }
 
 /** Identity for matching pending rows across different staged disk paths (TT-7347). */
@@ -85,6 +115,7 @@ export function appendPendingMediaUpload(
     fileSize: entry.fileSize,
     uploadType: entry.uploadType,
     record: entry.record,
+    ...(entry.restore ? { restore: entry.restore } : {}),
   };
   const next = loadPendingMediaUploads().filter((p) => {
     const samePath =
@@ -105,7 +136,7 @@ export function updatePendingMediaUpload(
   patch: Partial<
     Pick<
       PendingUploadRecord,
-      'localAbsolutePath' | 'fileSize' | 'record' | 'uploadType'
+      'localAbsolutePath' | 'fileSize' | 'record' | 'uploadType' | 'restore'
     >
   >
 ): PendingUploadRecord | undefined {

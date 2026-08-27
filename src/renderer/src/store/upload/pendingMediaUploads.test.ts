@@ -133,7 +133,11 @@ describe('pendingMediaUploads', () => {
       localAbsolutePath: '/b/other.mp3',
       fileSize: 50,
       uploadType: UploadType.Media,
-      record: { ...baseRecord, originalFile: 'other.mp3', passageId: 'passage-2' },
+      record: {
+        ...baseRecord,
+        originalFile: 'other.mp3',
+        passageId: 'passage-2',
+      },
     });
 
     const removed = removeMatchingPendingUploads({
@@ -147,5 +151,39 @@ describe('pendingMediaUploads', () => {
     const remaining = loadPendingMediaUploads();
     expect(remaining).toHaveLength(1);
     expect(remaining[0].record.originalFile).toBe('other.mp3');
+  });
+
+  it('preserves restore metadata on append and update', () => {
+    const restore = {
+      kind: 'title' as const,
+      sectionId: 'sec-1',
+    };
+    const created = appendPendingMediaUpload({
+      localAbsolutePath: '/title/file.mp3',
+      fileSize: 100,
+      uploadType: UploadType.Media,
+      record: {
+        ...baseRecord,
+        artifactTypeId: 'title-type',
+        passageId: '',
+        originalFile: 'title.mp3',
+      },
+      restore,
+    });
+    expect(created.restore).toEqual(restore);
+    expect(loadPendingMediaUploads()[0].restore).toEqual(restore);
+
+    const updated = updatePendingMediaUpload(created.id, {
+      restore: {
+        kind: 'intellectualproperty',
+        rightsHolder: 'Speaker',
+        organizationId: 'org-1',
+      },
+    });
+    expect(updated?.restore).toEqual({
+      kind: 'intellectualproperty',
+      rightsHolder: 'Speaker',
+      organizationId: 'org-1',
+    });
   });
 });
