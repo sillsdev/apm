@@ -1625,6 +1625,8 @@ export function ScriptureTable(props: IProps) {
     mediafiles,
     graphics,
     sharedresources,
+    discussions,
+    groupmemberships,
     flat,
     shared,
     orgSteps,

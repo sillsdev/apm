@@ -85,6 +85,10 @@ const shtPassageUpdate = (item: ISheet, rec: ISheet) => {
   rec.mediaShared = item.mediaShared;
   rec.published = item.published;
   rec.publishStatus = item.publishStatus;
+  //discussions and scheme step assignments belong to other users' records, so a
+  //data change can alter them while we sit on the sheet with an untouched passage
+  rec.assign = item.assign;
+  rec.discussionCount = item.discussionCount;
   //if it's a note with a category and the new reference doesn't have a category, keep the original reference
   rec.reference =
     rec.reference?.startsWith('NOTE|') && (item.reference?.length ?? 0) < 6
@@ -423,10 +427,10 @@ export const getSheet = ({
             item.assign = (schemeStep.relationships?.user?.data ||
               schemeStep.relationships?.group?.data) as RecordIdentity;
           }
-          item.discussionCount = item.passage.id
-            ? getDiscussionCount(item.passage.id)
-            : 0;
         }
+        item.discussionCount = item.passage.id
+          ? getDiscussionCount(item.passage.id)
+          : 0;
         item.deleted = false;
         item.filtered =
           sectionfiltered ||
