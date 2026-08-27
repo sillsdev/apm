@@ -36,6 +36,7 @@ import {
   unitLabel,
   startRecordingPass,
   recordAndSettle,
+  tapSegmentOnEngine,
 } from '../../../cypress/support/pbtHarness';
 
 const SEGMENTS = SEGMENTS_3;
@@ -183,8 +184,8 @@ describe('PBT recording out of order (1, 3, then 2)', () => {
    * the yellow selection and the phase all followed, and segment 2 went back to
    * pending under a user waiting to record it.
    *
-   * tapSegment is the engine reporting a segment change with no click behind it
-   * - exactly what that region-in looks like to the step.
+   * tapSegmentOnEngine is the engine reporting a segment change with no click
+   * behind it - exactly what that region-in looks like to the step.
    */
   it('keeps the parked segment when playback overshoots onto a recorded one', () => {
     recordAndSettle(1); // segment 1
@@ -197,7 +198,11 @@ describe('PBT recording out of order (1, 3, then 2)', () => {
     unitLabel('0:03', '0:06').should('be.visible');
     expectRecordEnabled(); // segment 2's auto-play has parked
 
-    cy.window().then((win) => win.__pbt?.tapSegment(2));
+    tapSegmentOnEngine(2);
+    // A settle window, not a race: the assertion below is that nothing moved,
+    // and a retrying `should` would satisfy that on its first poll - before the
+    // wrong behaviour (the completed-clause branch selecting segment 3) has had
+    // a chance to happen. Give the effect time to misbehave, then look.
     cy.wait(1500);
     cy.document().then((doc) => {
       expect(

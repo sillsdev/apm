@@ -1090,6 +1090,35 @@ export function clickSegmentUntilSelected(
 }
 
 /**
+ * Report a segment change from the engine with no click behind it - what a
+ * spurious `region-in` looks like to the step (playback overshooting the clause
+ * end, or the recorder mounting once Record is allowed).
+ *
+ * Asserts the harness API and the segment are really there, and that the tap
+ * reached the engine, so a renamed or missing `__pbt` fails here rather than
+ * turning the caller into a silent no-op that every later assertion passes.
+ */
+export function tapSegmentOnEngine(index: number) {
+  cy.window().then((win) => {
+    const api = win.__pbt;
+    expect(api, 'pbt harness api is exposed').to.not.equal(undefined);
+    const pbt = api as PbtHarnessApi;
+    expect(
+      pbt.segments()[index],
+      `harness segment ${index} exists`
+    ).to.not.equal(undefined);
+    const before = pbt.currentSegmentIndex();
+    pbt.tapSegment(index);
+    cy.window().should((w) => {
+      expect(
+        (w.__pbt as PbtHarnessApi).currentSegmentIndex(),
+        'the tap reached the engine'
+      ).to.not.equal(before);
+    });
+  });
+}
+
+/**
  * Poll the DOM and return every sample. Transient states — a colour that
  * flashes onto the wrong segment for one frame, a button that is briefly
  * operable — are invisible to ordinary retrying assertions, which only ever see

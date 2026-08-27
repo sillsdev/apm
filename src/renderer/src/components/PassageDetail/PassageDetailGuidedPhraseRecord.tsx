@@ -1194,14 +1194,20 @@ export function PassageDetailGuidedPhraseRecord({
     setCurrentClausePlayed(false);
     setPhase((p) => (p === 'recording' ? 'recording' : 'readyToRecord'));
     void playCurrentClause(idx);
-    // currentSegmentSeq, not currentSegmentIndex, is what tells us the selection
-    // moved: the index's numbering is not agreed between writers (the waveform
-    // writes 1-based, this component 0-based), so a genuine move can arrive
-    // carrying the number the previous writer used. Clicking segment 2 right
-    // after recording segment 3 does exactly that (waveform 1+1 vs step 2) —
-    // the effect never re-ran, the step stayed on segment 3, and the next take
-    // was filed there. currentSegmentIndex stays in the list because the value
-    // is still read below.
+    // Neither dep is read in the body — the segment itself comes from the ref
+    // behind getCurrentSegment() — so both are here purely as change signals.
+    //
+    // currentSegmentSeq is the one that tells us the selection moved. The
+    // index's numbering is not agreed between writers (the waveform writes
+    // 1-based, this component 0-based), so a genuine move can arrive carrying
+    // the number the previous writer used. Clicking segment 2 right after
+    // recording segment 3 does exactly that (waveform 1+1 vs step 2) — the
+    // effect never re-ran, the step stayed on segment 3, and the next take was
+    // filed there.
+    //
+    // currentSegmentIndex stays because the seq does not fully cover it:
+    // selecting another row resets the index to 0 without going through
+    // setCurrentSegment, so no seq bump accompanies that one.
   }, [
     currentSegmentIndex,
     currentSegmentSeq,
