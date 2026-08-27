@@ -1,5 +1,4 @@
 import * as React from 'react';
-import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
@@ -9,6 +8,7 @@ import DialogTitle from '@mui/material/DialogTitle';
 import { shallowEqual, useSelector } from 'react-redux';
 import { burritoSelector, sharedSelector } from '../selector';
 import { IBurritoStrings, ISharedStrings } from '@model/index';
+import { Button } from '../control/Button';
 
 interface MetaValueProps {
   idKey: string;

@@ -13,9 +13,9 @@ jest.mock('../../MediaRecord', () => ({
 }));
 
 // The control barrel transitively imports react-localization (ESM) and fails
-// to parse under jest; we only need PriButton here.
+// to parse under jest; we only need Button here.
 jest.mock('../../../control', () => ({
-  PriButton: ({
+  Button: ({
     children,
     id,
     onClick,

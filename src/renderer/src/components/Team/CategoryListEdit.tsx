@@ -5,6 +5,7 @@ import {
   IconButton,
   TextField,
   Typography,
+  Box,
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import {
@@ -14,7 +15,7 @@ import {
   useArtifactCategory,
   waitForRemoteId,
 } from '../../crud';
-import { ActionRow, AltButton, PriButton } from '../StepEditor';
+import { Button, ActionRow, rowSx } from '../../control';
 import {
   Discussion,
   ICategoryStrings,
@@ -238,12 +239,19 @@ export default function CategoryListEdit({ type, teamId, onClose }: IProps) {
           ))}
       </List>
       <ActionRow>
-        <AltButton id="catCancel" onClick={handleClose}>
-          {ts.cancel}
-        </AltButton>
-        <PriButton id="catSave" onClick={handleSave} disabled={!canSave}>
-          {ts.save}
-        </PriButton>
+        <Box sx={rowSx}>
+          <Button id="catCancel" onClick={handleClose}>
+            {ts.cancel}
+          </Button>
+          <Button
+            id="catSave"
+            color="primary"
+            disabled={!canSave}
+            onClick={handleSave}
+          >
+            {ts.save}
+          </Button>
+        </Box>
       </ActionRow>
 
       {builtIn.length > 0 && (

@@ -13,7 +13,6 @@ import {
 } from '../../../model';
 import {
   Box,
-  Button,
   debounce,
   Paper,
   PaperProps,
@@ -41,6 +40,7 @@ import {
   selectSectionRowType,
   SelectSectionRow,
 } from './buildSelectSectionRows';
+import { Button } from '../../../control/Button';
 
 const StyledPaper = styled(Paper)<PaperProps>(({ theme }) => ({
   backgroundColor: theme.palette.background.default,

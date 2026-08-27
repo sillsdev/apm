@@ -1,6 +1,6 @@
 import React, { useState, useContext } from 'react';
 import { useGetGlobal, useGlobal } from '../../context/useGlobal';
-import { Grid, IconButton } from '@mui/material';
+import { Grid, IconButton, Box } from '@mui/material';
 import PersonIcon from '@mui/icons-material/Person';
 import { TeamContext } from '../../context/TeamContext';
 import BigDialog from '../../hoc/BigDialog';
@@ -8,7 +8,7 @@ import { ProjectCard, AddCard, TeamDialog, ITeamDialog } from '.';
 import { StepEditor } from '../StepEditor';
 import { defaultWorkflow, useBible } from '../../crud';
 import { UnsavedContext } from '../../context/UnsavedContext';
-import { TeamPaper, TeamHeadDiv, TeamName, AltButton } from '../../control';
+import { Button, TeamPaper, TeamHeadDiv, TeamName, rowSx } from '../../control';
 import DialogMode from '../../model/dialogMode';
 import { useOrbitData } from '../../hoc/useOrbitData';
 import { ICardsStrings, OrganizationD } from '../../model';
@@ -95,26 +95,28 @@ export const PersonalItem = () => {
             size={{ xs: 12, md: 4 }}
             sx={{ display: 'flex', justifyContent: 'flex-end' }}
           >
-            {personalProjects.length > 1 &&
-              canModify(isOffline, offlineOnly, connected) && (
-                <IconButton onClick={() => setSortVisible(true)}>
-                  <SortIcon />
-                </IconButton>
+            <Box sx={rowSx}>
+              {personalProjects.length > 1 &&
+                canModify(isOffline, offlineOnly, connected) && (
+                  <IconButton onClick={() => setSortVisible(true)}>
+                    <SortIcon />
+                  </IconButton>
+                )}
+              {canModify(isOffline, offlineOnly, connected) && (
+                <Button id="editWorkflow" onClick={handleEditWorkflow}>
+                  {t.editWorkflow.replace('{0}', '')}
+                </Button>
               )}
-            {canModify(isOffline, offlineOnly, connected) && (
-              <AltButton id="editWorkflow" onClick={handleEditWorkflow}>
-                {t.editWorkflow.replace('{0}', '')}
-              </AltButton>
-            )}
-            {canModify(isOffline, offlineOnly, connected) && (
-              <AltButton
-                id="teamSettings"
-                onClick={handleSettings}
-                disabled={busy}
-              >
-                {t.settings}
-              </AltButton>
-            )}
+              {canModify(isOffline, offlineOnly, connected) && (
+                <Button
+                  id="teamSettings"
+                  disabled={busy}
+                  onClick={handleSettings}
+                >
+                  {t.settings}
+                </Button>
+              )}
+            </Box>
           </Grid>
         </Grid>
       </TeamHeadDiv>

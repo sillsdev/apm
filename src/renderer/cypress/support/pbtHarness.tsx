@@ -1001,18 +1001,82 @@ export function readRecordEnabled(doc: Document): boolean {
   return Boolean(rec) && rec?.getAttribute('aria-disabled') === 'false';
 }
 
+/** True while the step is dropping waveform clicks (recording, or saving a take). */
+export function readSegmentSelectionLocked(doc: Document): boolean {
+  const box = doc.querySelector(`#${PBT.container}`);
+  return box?.getAttribute('data-segment-selection-locked') === 'true';
+}
+
 /**
- * Click a segment on the waveform, the way a user selects one. The region lives
+ * Wait until a waveform click can actually be received.
+ *
+ * useWavesurferRegions.handleRegionClick returns early - silently, with no
+ * retry and no signal - while lockSegmentSelection is up. A click dispatched
+ * inside that window is gone for good, so the assertion that follows can only
+ * time out. Clicking mid-save is not what any of these specs are about; it is
+ * an unintended precondition, so wait it out before dispatching.
+ */
+export function waitForSegmentSelectionUnlocked() {
+  cy.get(`#${PBT.container}`, { timeout: 30000 }).should(
+    'have.attr',
+    'data-segment-selection-locked',
+    'false'
+  );
+}
+
+/**
+ * Dispatch one click on a segment, the way a user selects one. The region lives
  * in wavesurfer's shadow root, so this dispatches the click the plugin listens
  * for rather than going through cy.click (which cannot reach it).
+ *
+ * Deliberately ONE click: several specs here exist to catch a first click that
+ * is only half applied ("the user had to click again"), and a retry would hide
+ * exactly that. Use clickSegmentUntilSelected when reaching the segment is
+ * setup rather than the assertion.
  */
 export function clickSegmentOnWaveform(index: number) {
+  waitForSegmentSelectionUnlocked();
   cy.document().then((doc) => {
     const el = regionElements(doc)[index];
     expect(el, `waveform region ${index} exists`).to.not.equal(undefined);
     const view = el.ownerDocument.defaultView as Window & typeof globalThis;
     el.dispatchEvent(new view.MouseEvent('click', { bubbles: true }));
   });
+}
+
+/**
+ * Click a segment until the step reports it as current.
+ *
+ * For specs where getting to a segment is setup and the assertion is about
+ * something later. Do NOT use it where the first click IS the subject - it
+ * would turn "the click was swallowed" into a pass. Clicks are spaced past
+ * useWavesurferRegions' 100ms same-region debounce, which would drop a
+ * faster retry.
+ */
+export function clickSegmentUntilSelected(
+  index: number,
+  segments: SegmentSpec[],
+  options: { attempts?: number; spacingMs?: number } = {}
+) {
+  const { attempts = 8, spacingMs = 250 } = options;
+  const attempt = (left: number) => {
+    cy.document().then((doc) => {
+      if (readLabelSegmentIndex(doc, segments) === index) return;
+      expect(
+        left,
+        `segment ${index} selected within ${attempts} clicks`
+      ).to.be.greaterThan(0);
+      if (!readSegmentSelectionLocked(doc)) {
+        const el = regionElements(doc)[index];
+        expect(el, `waveform region ${index} exists`).to.not.equal(undefined);
+        const view = el.ownerDocument.defaultView as Window & typeof globalThis;
+        el.dispatchEvent(new view.MouseEvent('click', { bubbles: true }));
+      }
+      cy.wait(spacingMs, { log: false });
+      attempt(left - 1);
+    });
+  };
+  attempt(attempts);
 }
 
 /**
@@ -1149,8 +1213,17 @@ export function pbtCleanup() {
  * Waits until the recorder is neither saving nor loading, so a following
  * navigation is a clean user action rather than a race. Use it when the test
  * is about something else; leave it out when the race IS the test.
+ *
+ * The status-text check alone is not a barrier. It is a `.should()` that passes
+ * on its FIRST evaluation, so sampling the gap before React paints "Saving"
+ * lets it through with the save still in flight - and the text is cleared by
+ * MediaRecord's own effects while savingRecording is cleared by onSaveSettled
+ * (its onReady), two paths that can land in either order. waitForUploads only
+ * gets us as far as the POST; the PUT and onReady come after. So wait on the
+ * flag that actually gates input, and only then on the text.
  */
 export function waitForRecorderIdle() {
+  waitForSegmentSelectionUnlocked();
   cy.get(`#${PBT.container}`, { timeout: 30000 }).should(($el) => {
     expect($el.text(), 'recorder idle').to.not.match(/Saving|Loading/);
   });

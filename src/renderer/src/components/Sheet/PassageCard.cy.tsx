@@ -642,7 +642,7 @@ describe('PassageCard', () => {
     cy.contains('button', 'Review').should('be.visible');
   });
 
-  it('should show arrow icon in step button', () => {
+  it('should show chevron icon in step button', () => {
     const cardInfo = createMockSheet();
 
     mountPassageCard(cardInfo, {
@@ -650,8 +650,8 @@ describe('PassageCard', () => {
       isPlaying: false,
     });
 
-    // Should show ArrowForwardIos icon in the button
-    cy.get('svg[data-testid="ArrowForwardIosIcon"]').should('exist');
+    // Should show ChevronRight icon in the button
+    cy.get('svg[data-testid="ChevronRightIcon"]').should('exist');
   });
 
   it('should handle comment from reference split when noteTitle exists', () => {
@@ -981,7 +981,7 @@ describe('PassageCard', () => {
 
       // Should not show step button
       cy.contains('button', 'Record').should('not.exist');
-      cy.get('svg[data-testid="ArrowForwardIosIcon"]').should('not.exist');
+      cy.get('svg[data-testid="ChevronRightIcon"]').should('not.exist');
     });
 
     it('should show play button when mediaId exists for CHAPTERNUMBER type', () => {

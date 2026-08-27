@@ -17,11 +17,12 @@ import { useGlobal } from '../../context/useGlobal';
 import { useOrbitData } from '../../hoc/useOrbitData';
 import { GraphicD, ICategoryStrings, ISharedStrings } from '../../model';
 import { useSnackBar } from '../../hoc/SnackBar';
-import { Avatar, Button, IconButton, styled } from '@mui/material';
+import { Avatar, IconButton, styled } from '@mui/material';
 import { ColorResult } from '@uiw/color-convert';
 import { RecordKeyMap } from '@orbit/records';
 import { categorySelector, sharedSelector } from '../../selector';
 import { apmGraphic } from '../../components/apmGraphic';
+import { Button } from '../../control/Button';
 import JSONAPISource from '@orbit/jsonapi';
 import { recToMemory } from '../../crud/syncToMemory';
 

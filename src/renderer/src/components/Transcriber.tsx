@@ -39,7 +39,7 @@ import {
 import { StyledTextAreaAutosize } from '../control/WebFontStyles';
 import useTodo from '../context/useTodo';
 import PullIcon from '@mui/icons-material/GetAppOutlined';
-import { AltButton, GrowingDiv, LightTooltip, PriButton } from '../control';
+import { Button, GrowingDiv, LightTooltip, rowSx } from '../control';
 import TranscribeReject from './TranscribeReject';
 import { useSnackBar } from '../hoc/SnackBar';
 import { formatTime } from '../control/formatTime';
@@ -1531,26 +1531,26 @@ export function Transcriber(props: IProps) {
                   t={sharedStr}
                 />
                 {role !== 'view' ? (
-                  <>
-                    <AltButton
+                  <Box sx={rowSx}>
+                    <Button
                       id="transcriber.reject"
-                      onClick={handleReject}
                       disabled={!transSelected || playing}
+                      onClick={handleReject}
                     >
                       {t.reject}
-                    </AltButton>
+                    </Button>
                     <LightTooltip
                       title={transcribing ? t.saveTip : t.saveReviewTip}
                     >
                       <span>
-                        <AltButton
+                        <Button
                           id="transcriber.save"
-                          variant={changed ? 'contained' : 'outlined'}
-                          onClick={handleSaveButton}
+                          color={changed ? 'primary' : 'secondary'}
                           disabled={!transSelected || playing}
+                          onClick={handleSaveButton}
                         >
                           {t.save}
-                        </AltButton>
+                        </Button>
                       </span>
                     </LightTooltip>
                     <LightTooltip
@@ -1561,29 +1561,30 @@ export function Transcriber(props: IProps) {
                       }
                     >
                       <span>
-                        <PriButton
+                        <Button
                           id="transcriber.submit"
-                          onClick={handleSubmit}
+                          color="primary"
                           disabled={!transSelected || playing}
+                          onClick={handleSubmit}
                         >
                           {t.submit}
-                        </PriButton>
+                        </Button>
                       </span>
                     </LightTooltip>
-                  </>
+                  </Box>
                 ) : (
-                  <AltButton
+                  <Button
                     id="transcriber.reopen"
-                    onClick={handleReopen}
                     disabled={
                       !transSelected ||
                       !Object.prototype.hasOwnProperty.call(previous, state) ||
                       playing ||
                       !hasPermission
                     }
+                    onClick={handleReopen}
                   >
                     {t.reopen}
-                  </AltButton>
+                  </Button>
                 )}
                 <Box sx={{ width: '45px' }}>{'\u00A0'}</Box>
               </Box>

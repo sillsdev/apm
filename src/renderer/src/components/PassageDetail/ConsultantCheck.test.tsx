@@ -117,8 +117,7 @@ jest.mock('./ConsultantCheckReview', () => {
 });
 jest.mock('../../control', () => ({
   ActionRow: jest.requireActual('../../control/ActionRow').ActionRow,
-  AltButton: jest.requireActual('../../control/AltButton').AltButton,
-  PriButton: jest.requireActual('../../control/PriButton').PriButton,
+  Button: jest.requireActual('../../control/Button').Button,
   GrowingDiv: jest.requireActual('../../control/GrowingDiv').GrowingDiv,
 }));
 jest.mock('../../selector', () => ({
@@ -216,7 +215,7 @@ describe('ConsultantCheck', () => {
     expect(screen.getByTestId('action-row')).not.toBe(null);
   });
 
-  it('should render PriButton', () => {
+  it('should render the approve button', () => {
     mockWorkflow = [
       {
         id: '1',
@@ -227,7 +226,7 @@ describe('ConsultantCheck', () => {
     expect(screen.getByTestId('pri-button')).not.toBe(null);
   });
 
-  it('should render Alt Button when Pri Button is clicked', () => {
+  it('should render the further review button when approve is clicked', () => {
     mockWorkflow = [
       {
         id: '1',
@@ -240,7 +239,7 @@ describe('ConsultantCheck', () => {
     expect(screen.queryAllByTestId('pri-button')).toHaveLength(0);
   });
 
-  it('should render remain selected when its the only tab and Pri Button is clicked', async () => {
+  it('should render remain selected when its the only tab and approve is clicked', async () => {
     mockWorkflow = [
       {
         id: '1',
@@ -255,7 +254,7 @@ describe('ConsultantCheck', () => {
     expect(mockSetStepComplete).toHaveBeenCalledWith('record', true);
   });
 
-  it('should update passage record and include completed when Pri Button is clicked', async () => {
+  it('should update passage record and include completed when approve is clicked', async () => {
     mockWorkflow = [
       {
         id: '1',
@@ -274,7 +273,7 @@ describe('ConsultantCheck', () => {
     expect(result.completed).toEqual([]);
   });
 
-  it('should update passage record and keep completed when Pri Button is clicked', async () => {
+  it('should update passage record and keep completed when approve is clicked', async () => {
     mockWorkflow = [
       {
         id: '1',

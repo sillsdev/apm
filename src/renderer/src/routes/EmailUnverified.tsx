@@ -6,7 +6,7 @@ import { Typography, Grid, styled, Box, BoxProps } from '@mui/material';
 import { API_CONFIG, isElectron } from '../../api-variable';
 import Axios from 'axios';
 import { TokenContext } from '../context/TokenProvider';
-import { ActionRow, PriButton } from '../control';
+import { Button, ActionRow, rowSx } from '../control';
 import { emailUnverifiedSelector } from '../selector';
 import { useMounted, useMyNavigate } from '../utils';
 import { doLogout, goOnline } from './accessActions';
@@ -89,15 +89,17 @@ export const EmailUnverified = () => {
         spacing={0}
       >
         <ActionRow>
-          <PriButton id="emailResent" onClick={handleResend}>
-            {t.resend}
-          </PriButton>
-          <PriButton id="emailVerified" onClick={handleVerified}>
-            {t.verified}
-          </PriButton>
-          <PriButton id="emailLogout" onClick={handleLogout}>
-            {t.logout}
-          </PriButton>
+          <Box sx={rowSx}>
+            <Button id="emailResent" onClick={handleResend}>
+              {t.resend}
+            </Button>
+            <Button id="emailVerified" onClick={handleVerified}>
+              {t.verified}
+            </Button>
+            <Button id="emailLogout" onClick={handleLogout}>
+              {t.logout}
+            </Button>
+          </Box>
         </ActionRow>
       </Grid>
     </FullScreen>

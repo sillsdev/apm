@@ -152,10 +152,7 @@ jest.mock('../utils', () => ({
 }));
 
 jest.mock('../control', () => ({
-  AltButton: ({ children }: { children?: React.ReactNode }) => (
-    <button type="button">{children}</button>
-  ),
-  PriButton: ({ children }: { children?: React.ReactNode }) => (
+  Button: ({ children }: { children?: React.ReactNode }) => (
     <button type="button">{children}</button>
   ),
   smallButtonProps: {},

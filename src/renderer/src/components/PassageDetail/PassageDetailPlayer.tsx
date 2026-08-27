@@ -1,5 +1,5 @@
 import { useGlobal } from '../../context/useGlobal';
-import { Box, Button, IconButton } from '@mui/material';
+import { Box, IconButton } from '@mui/material';
 import {
   useCallback,
   useContext,
@@ -39,6 +39,7 @@ import { useOrbitData } from '../../hoc/useOrbitData';
 import { ToolSlug, useStepTool } from '../../crud';
 import { SaveSegments } from './SaveSegments';
 import { IMarker } from '../../crud/useWaveSurfer';
+import { Button } from '../../control/Button';
 export const PLAYER_HEIGHT = 120 + 80;
 
 export interface IPlayerState {

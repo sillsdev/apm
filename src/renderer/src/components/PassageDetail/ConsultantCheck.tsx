@@ -23,7 +23,7 @@ import {
   orgDefaultConsCheckComp,
 } from '../../crud';
 import ConsultantCheckReview from './ConsultantCheckReview';
-import { ActionRow, AltButton, GrowingDiv, PriButton } from '../../control';
+import { Button, ActionRow, GrowingDiv } from '../../control';
 import { shallowEqual, useSelector } from 'react-redux';
 import { consultantSelector, sharedSelector } from '../../selector';
 import BigDialog from '../../hoc/BigDialog';
@@ -318,31 +318,32 @@ export function ConsultantCheck({ width }: IProps) {
           <ActionRow data-testid="action-row">
             {checkItems.length > 1 && (
               <>
-                <AltButton
+                <Button
                   data-testid="compare-button"
                   onClick={() => handleCompareOpen(true)}
                 >
                   {t.compare}
-                </AltButton>
+                </Button>
                 <GrowingDiv />
               </>
             )}
             {approved.includes(item) ? (
-              <AltButton
+              <Button
                 data-testid="alt-button"
-                onClick={handleChecked(item)}
                 disabled={!hasPermission}
+                onClick={handleChecked(item)}
               >
                 {t.furtherReview}
-              </AltButton>
+              </Button>
             ) : (
-              <PriButton
+              <Button
                 data-testid="pri-button"
-                onClick={handleChecked(item)}
+                color="primary"
                 disabled={!hasPermission}
+                onClick={handleChecked(item)}
               >
                 {t.checked}
-              </PriButton>
+              </Button>
             )}
           </ActionRow>
         </TabPanel>

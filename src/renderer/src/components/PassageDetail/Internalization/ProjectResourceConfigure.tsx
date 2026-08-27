@@ -39,11 +39,11 @@ import { useProjectSegmentSave } from './useProjectSegmentSave';
 import { useFullReference, IInfo } from './useFullReference';
 import { useSnackBar } from '../../../hoc/SnackBar';
 import {
+  Button,
   ActionRow,
-  AltButton,
   GrowingSpacer,
   LightTooltip,
-  PriButton,
+  rowSx,
 } from '../../../control';
 import { RecordIdentity, RecordTransformBuilder } from '@orbit/records';
 import { useOrbitData } from '../../../hoc/useOrbitData';
@@ -569,24 +569,26 @@ export const ProjectResourceConfigure = (props: IProps) => {
         </StyledTable>
       </StyledPaper>
       <ActionRow>
-        <AltButton
-          id="copy-configure"
-          onClick={handleCopy}
-          disabled={numSegments === 0}
-        >
-          {ts.clipboardCopy}
-        </AltButton>
-        <GrowingSpacer />
-        <PriButton
-          id="res-create"
-          onClick={handleCreate}
-          disabled={numSegments === 0 || savingRef.current}
-        >
-          {t.createResources}
-        </PriButton>
-        <AltButton id="res-create-cancel" onClick={handleCancel}>
-          {ts.cancel}
-        </AltButton>
+        <Box sx={rowSx}>
+          <Button
+            id="copy-configure"
+            disabled={numSegments === 0}
+            onClick={handleCopy}
+          >
+            {ts.clipboardCopy}
+          </Button>
+          <Button
+            id="res-create"
+            color="primary"
+            disabled={numSegments === 0 || savingRef.current}
+            onClick={handleCreate}
+          >
+            {t.createResources}
+          </Button>
+          <Button id="res-create-cancel" onClick={handleCancel}>
+            {ts.cancel}
+          </Button>
+        </Box>
       </ActionRow>
       {showConfirmClose && (
         <Confirm

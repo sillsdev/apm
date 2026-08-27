@@ -27,7 +27,7 @@ import {
   type ScriptureRefChecked,
 } from './GraphicImageFilter';
 import { StyledDialogTitle } from './StyledDialogTitle';
-import { PriButton, AltButton } from '../control';
+import { Button } from '../control';
 import { ISharedStrings } from '../model';
 import { shallowEqual, useSelector } from 'react-redux';
 import { graphicStringsSelector, sharedSelector } from '../selector';
@@ -927,10 +927,14 @@ export function GraphicPicker({
           borderColor: 'divider',
         }}
       >
-        <AltButton onClick={handleClose}>{ts.cancel ?? 'Cancel'}</AltButton>
-        <PriButton onClick={handleSetGraphic} disabled={!canSetGraphic()}>
+        <Button onClick={handleClose}>{ts.cancel ?? 'Cancel'}</Button>
+        <Button
+          color="primary"
+          disabled={!canSetGraphic()}
+          onClick={handleSetGraphic}
+        >
           {t.setGraphic}
-        </PriButton>
+        </Button>
       </DialogActions>
     </Dialog>
   );

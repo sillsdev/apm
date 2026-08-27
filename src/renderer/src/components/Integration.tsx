@@ -74,7 +74,7 @@ import {
   translateParatextErr,
   translateParatextError,
 } from '../utils/translateParatextError';
-import { PriButton, SelectExportType, StyledHeading } from '../control';
+import { Button, SelectExportType, StyledHeading } from '../control';
 import { useOrbitData } from '../hoc/useOrbitData';
 import { RecordKeyMap, StandardRecordNormalizer } from '@orbit/records';
 import { useSelector } from 'react-redux';
@@ -942,7 +942,7 @@ export function IntegrationPanel(props: IProps) {
             <FormGroup>
               <FormControlLabel
                 control={
-                  <PriButton
+                  <Button
                     id="IntWebSync"
                     key="sync"
                     aria-label={t.sync}
@@ -955,11 +955,12 @@ export function IntegrationPanel(props: IProps) {
                       !paratext_count ||
                       !isPermitted
                     }
+                    color="primary"
+                    startIcon={<SyncIcon />}
                     onClick={handleSync}
                   >
                     {t.sync}
-                    <SyncIcon sx={{ ml: 1 }} />
-                  </PriButton>
+                  </Button>
                 }
                 label=""
               />
@@ -1087,7 +1088,7 @@ export function IntegrationPanel(props: IProps) {
             <FormGroup>
               <FormControlLabel
                 control={
-                  <PriButton
+                  <Button
                     id="IntLocalSync"
                     key="localSync"
                     aria-label={t.sync}
@@ -1098,11 +1099,12 @@ export function IntegrationPanel(props: IProps) {
                       !paratext_count ||
                       !isPermitted
                     }
+                    color="primary"
+                    startIcon={<SyncIcon />}
                     onClick={handleLocalSync}
                   >
                     {t.sync}
-                    <SyncIcon sx={{ ml: 1 }} />
-                  </PriButton>
+                  </Button>
                 }
                 label=""
               />

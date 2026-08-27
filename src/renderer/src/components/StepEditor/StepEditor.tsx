@@ -12,12 +12,12 @@ import {
   IWorkflowStepsStrings,
   OrgWorkflowStepD,
 } from '../../model';
-import { Button, Box } from '@mui/material';
+import { Box } from '@mui/material';
 import { arrayMoveImmutable as arrayMove } from 'array-move';
 import { useGlobal } from '../../context/useGlobal';
 import { StepItem } from '.';
 import { useOrgWorkflowSteps } from '../../crud/useOrgWorkflowSteps';
-import { CheckedChoice as ShowAll } from '../../control';
+import { Button, CheckedChoice as ShowAll } from '../../control';
 import { shallowEqual, useSelector } from 'react-redux';
 import { toCamel } from '../../utils';
 import {

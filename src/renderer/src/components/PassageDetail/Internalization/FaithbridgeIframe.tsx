@@ -5,16 +5,13 @@ import {
   Severity,
   useCheckOnline,
 } from '../../../utils';
-import { ActionRow } from '../../../control/ActionRow';
-import { AltButton } from '../../../control/AltButton';
-import { PriButton } from '../../../control/PriButton';
+import { Button, ActionRow, GrowingSpacer, rowSx } from '../../../control';
 import { shallowEqual, useSelector } from 'react-redux';
 import { IFaithbridgeStrings, ISharedStrings } from '../../../model';
 import { faithbridgeSelector, sharedSelector } from '../../../selector';
 import { useGlobal } from '../../../context/useGlobal';
 import { useFaithbridgeResult } from './useFaithbridgeResult';
 import usePassageDetailContext from '../../../context/usePassageDetailContext';
-import { GrowingSpacer } from '../../../control/GrowingSpacer';
 import { Checkbox, FormControlLabel, Stack, Box } from '@mui/material';
 import { remoteId } from '../../../crud';
 import { RecordKeyMap } from '@orbit/records';
@@ -212,7 +209,6 @@ export const FaithbridgeIframe = ({
     if ((offlineOnly || isOffline) && audio) {
       setAudio(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [offlineOnly, isOffline, audio]);
 
   const iframeSrc = `https://faithbridge.multilingualai.com/apm?${
@@ -236,42 +232,48 @@ export const FaithbridgeIframe = ({
             />
           )}
           <GrowingSpacer />
-          <AltButton
-            disabled={fetching}
-            onClick={getNewChat}
-            sx={{
-              height: 'fit-content',
-              alignSelf: 'center',
-              ...(fixedFooterLayout
-                ? {
-                    whiteSpace: 'normal',
-                    overflow: 'visible',
-                    textAlign: 'center',
-                    minWidth: 0,
-                  }
-                : {}),
-            }}
-          >
-            {t.newChat}
-          </AltButton>
-          {hasPermission && (!isOffline || offlineOnly) && !isMobileWidth ? (
-            <Stack sx={{ justifyContent: 'center', alignItems: 'center' }}>
-              <PriButton disabled={fetching} onClick={handleAddContent}>
-                {t.addContent.replace('{0}', audio ? t.audio : t.text)}
-              </PriButton>
-              {!/404/.test(error || '') ? (
-                error && (
-                  <div>
-                    {t.error} {error}
-                  </div>
-                )
-              ) : (
-                <></>
-              )}
-            </Stack>
-          ) : (
-            <></>
-          )}
+          <Box sx={rowSx}>
+            <Button
+              sx={{
+                height: 'fit-content',
+                alignSelf: 'center',
+                ...(fixedFooterLayout
+                  ? {
+                      whiteSpace: 'normal',
+                      overflow: 'visible',
+                      textAlign: 'center',
+                      minWidth: 0,
+                    }
+                  : {}),
+              }}
+              disabled={fetching}
+              onClick={getNewChat}
+            >
+              {t.newChat}
+            </Button>
+            {hasPermission && (!isOffline || offlineOnly) && !isMobileWidth ? (
+              <Stack sx={{ justifyContent: 'center', alignItems: 'center' }}>
+                <Button
+                  color="primary"
+                  disabled={fetching}
+                  onClick={handleAddContent}
+                >
+                  {t.addContent.replace('{0}', audio ? t.audio : t.text)}
+                </Button>
+                {!/404/.test(error || '') ? (
+                  error && (
+                    <div>
+                      {t.error} {error}
+                    </div>
+                  )
+                ) : (
+                  <></>
+                )}
+              </Stack>
+            ) : (
+              <></>
+            )}
+          </Box>
         </ActionRow>
       </Box>
     </>

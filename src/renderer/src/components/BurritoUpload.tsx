@@ -4,7 +4,6 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  Button,
   LinearProgress,
   Typography,
   Box,
@@ -16,6 +15,7 @@ import { useSelector } from 'react-redux';
 import { mainSelector, scriptureBurritoImportSelector } from '../selector';
 import { shallowEqual } from 'react-redux';
 import { IMainStrings, IScriptureBurritoImportStrings } from '@model/index';
+import { Button } from '../control/Button';
 
 const ipc = window?.api as MainAPI;
 

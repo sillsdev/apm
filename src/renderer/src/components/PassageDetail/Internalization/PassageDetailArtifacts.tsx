@@ -19,7 +19,7 @@ import Uploader from '../../Uploader';
 import AddResource from './AddResource';
 import SortableHeader from './SortableHeader';
 import { IRow } from '../../../context/PassageDetailContext';
-import { AltButton } from '../../../control';
+import { Button } from '../../../control';
 import { AIGenerated, SortableItem } from '.';
 import {
   remoteIdGuid,
@@ -61,6 +61,7 @@ import {
   Stack,
   styled,
   Typography,
+  useTheme,
 } from '@mui/material';
 import { ReplaceRelatedRecord } from '../../../model/baseModel';
 import { PassageResourceButton } from './PassageResourceButton';
@@ -117,6 +118,7 @@ const MediaContainer = styled(Box)<BoxProps>(({ theme }) => ({
 }));
 
 export function PassageDetailArtifacts() {
+  const theme = useTheme();
   const sectionResources = useOrbitData<SectionResourceD[]>('sectionresource');
   const mediafiles = useOrbitData<MediaFileD[]>('mediafile');
   const artifactTypes = useOrbitData<ArtifactType[]>('artifacttype');
@@ -893,13 +895,14 @@ export function PassageDetailArtifacts() {
         <Grid
           container
           size={12}
+          spacing={theme.layout.p}
           sx={{ display: 'flex', alignItems: 'center' }}
         >
           {isScripture && (
             <Grid>
-              <AltButton onClick={() => handleFindVisible(true)}>
+              <Button disableTypography onClick={() => handleFindVisible(true)}>
                 <Badge badgeContent={`(${ts.ai})`}>{t.research}</Badge>
-              </AltButton>
+              </Button>
             </Grid>
           )}
           {hasPermission && (!offline || offlineOnly) && (
@@ -909,9 +912,9 @@ export function PassageDetailArtifacts() {
               </Grid>
               {hasProjRes && !isMobileWidth && (
                 <Grid>
-                  <AltButton onClick={() => setProjectResourceVisible(true)}>
+                  <Button onClick={() => setProjectResourceVisible(true)}>
                     {t.configure}
-                  </AltButton>
+                  </Button>
                 </Grid>
               )}
             </>
@@ -1053,7 +1056,11 @@ export function PassageDetailArtifacts() {
         />
       </BigDialog>
       <BigDialog
-        title={isAddingAudioResourceRef.current ? t.addAudioResource : t.editAudioResource}
+        title={
+          isAddingAudioResourceRef.current
+            ? t.addAudioResource
+            : t.editAudioResource
+        }
         description={
           <Typography sx={{ color: 'text.secondary' }}>
             {t.selectPassagesSub}

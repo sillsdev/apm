@@ -1,7 +1,7 @@
 import { useContext, useMemo, useState } from 'react';
 import { shallowEqual, useSelector } from 'react-redux';
 import { IPlanTabsStrings } from '@model/index';
-import { Button, Menu, MenuItem } from '@mui/material';
+import { Menu, MenuItem } from '@mui/material';
 import DropDownIcon from '@mui/icons-material/ArrowDropDown';
 import { planTabsSelector } from '../../selector';
 import { useOrganizedBy } from '../../crud/useOrganizedBy';
@@ -10,6 +10,7 @@ import { useMobile } from '../../utils';
 import { PlanContext } from '../../context/PlanContext';
 import { PlanTabEnum } from '../PlanTabsEnum';
 import { UnsavedContext } from '../../context/UnsavedContext';
+import { Button } from '../../control/Button';
 
 export const PlanTabSelect = () => {
   const { checkSavedFn: checkSaved } = useContext(UnsavedContext).state;

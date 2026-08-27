@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { shallowEqual, useSelector } from 'react-redux';
 import { IFilterContentStrings, IMainStrings } from '../model';
 import {
-  Button,
   Checkbox,
   DialogActions,
   DialogContent,
@@ -20,6 +19,7 @@ import {
   BURRITO_CHAPTER_FILTER_OTHER,
   WrapperStructure,
 } from '../utils/parseBurritoMetadata';
+import { Button } from '../control/Button';
 
 /** Alias for tests and legacy imports; same shape as `WrapperStructure`. */
 export type FilterData = WrapperStructure;
