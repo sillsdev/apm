@@ -102,9 +102,10 @@ export function PassageDetailRecord(props: IProps) {
   const [importList, setImportList] = useState<File[]>();
   const cancelled = useRef(false);
   const [uploadVisible, setUploadVisiblex] = useState(false);
-  const pendingConfirmRef = useRef<{ resolve: (ok: boolean) => void } | null>(
-    null
-  );
+  const pendingConfirmRef = useRef<{
+    promise: Promise<boolean>;
+    resolve: (ok: boolean) => void;
+  } | null>(null);
   const [pendingWarnOpen, setPendingWarnOpen] = useState(false);
   const [audacityVisible, setAudacityVisible] = useState(false);
   const [versionVisible, setVersionVisible] = useState(false);
@@ -227,10 +228,16 @@ export function PassageDetailRecord(props: IProps) {
     ) {
       return Promise.resolve(true);
     }
-    return new Promise((resolve) => {
-      pendingConfirmRef.current = { resolve };
-      setPendingWarnOpen(true);
+    if (pendingConfirmRef.current) {
+      return pendingConfirmRef.current.promise;
+    }
+    let resolve!: (ok: boolean) => void;
+    const promise = new Promise<boolean>((res) => {
+      resolve = res;
     });
+    pendingConfirmRef.current = { promise, resolve };
+    setPendingWarnOpen(true);
+    return promise;
   }, [uploadShapedIds]);
 
   const handlePendingWarnYes = () => {
