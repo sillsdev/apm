@@ -33,7 +33,6 @@ import VersionsIcon from '@mui/icons-material/List';
 import DeleteIcon from '@mui/icons-material/DeleteOutline';
 import NormalizeIcon from '../control/NormalizeIcon';
 import UploadIcon from '@mui/icons-material/CloudUpload';
-import { Button } from '@mui/material';
 import {
   IAudioDownloadStrings,
   IMainStrings,
@@ -50,7 +49,7 @@ import { LightTooltip } from '../control/LightTooltip';
 import { RecordButton } from '../control/RecordButton';
 import { useSnackBar, AlertSeverity } from '../hoc/SnackBar';
 import { HotKeyContext } from '../context/HotKeyContext';
-import { PriButton } from '../control';
+import { Button } from '../control';
 import WSAudioPlayerZoom, { maxZoom } from './WSAudioPlayerZoom';
 import {
   dataPath,
@@ -79,7 +78,6 @@ import {
   wsAudioPlayerSelector,
 } from '../selector';
 import { shallowEqual, useSelector } from 'react-redux';
-import { AltButton, smallButtonProps } from '../control';
 import { AudioAiFunc, useAudioAi } from '../utils/useAudioAi';
 import AeroTaskErrorMessage from '../business/asr/AeroTaskErrorMessage';
 import {
@@ -175,9 +173,13 @@ interface IProps {
     index?: number
   ) => void;
   onSegmentPlaybackEnd?: (segment: IRegion) => void;
+  /** A segment was clicked on the waveform (not selected by the playhead). */
+  onSegmentClick?: (segment: IRegion) => void;
   forceRegionOnly?: boolean;
   /** When true, user-initiated selection (clicks, prev/next) is ignored. Playhead-driven region-in is not blocked; consumers that must hold the current clause during recording/saving should guard their segment effects separately (e.g. Careful Speech). */
   lockSegmentSelection?: boolean;
+  /** When true, disable drag-to-create-region (the red loop region) even in single-region/record mode. */
+  disableDragSelection?: boolean;
   onMarkerClick?: (time: number) => void;
   reload?: (blob: Blob) => void;
   noNewVoice?: boolean;
@@ -366,8 +368,10 @@ function WSAudioPlayer(props: IProps) {
     onRecording,
     onCurrentSegment,
     onSegmentPlaybackEnd,
+    onSegmentClick,
     forceRegionOnly,
     lockSegmentSelection,
+    disableDragSelection,
     onMarkerClick,
     reload,
     noNewVoice,
@@ -718,7 +722,9 @@ function WSAudioPlayer(props: IProps) {
     verses,
     hasSegmentUndo,
     applyRegionColor,
-    lockSegmentSelection
+    lockSegmentSelection,
+    disableDragSelection,
+    onSegmentClick
   );
 
   //because we have to call hooks consistently, call this even if we aren't going to record
@@ -1617,7 +1623,7 @@ function WSAudioPlayer(props: IProps) {
           >
             {processMsg}
           </Typography>
-          <AltButton
+          <Button
             id="ai-cancel"
             onClick={() => {
               cancelAIRef.current = true;
@@ -1625,7 +1631,7 @@ function WSAudioPlayer(props: IProps) {
             }}
           >
             {ts.cancel}
-          </AltButton>
+          </Button>
         </Box>
       )}
     </Box>
@@ -2317,16 +2323,11 @@ function WSAudioPlayer(props: IProps) {
             <Box sx={{ display: 'flex', alignItems: 'center' }}>
               {!isMobileWidth && rightsLeftActions}
               <Button
-                sx={{
-                  mx: 1,
-                  border: '0.5px solid blue',
-                  borderRadius: '8px',
-                }}
-                id="spkr-upload"
-                onClick={handleUpload}
                 title={ts.upload}
+                id="spkr-upload"
+                startIcon={<UploadIcon />}
+                onClick={handleUpload}
               >
-                <UploadIcon sx={{ mr: 1 }} />
                 {ts.upload}
               </Button>
             </Box>
@@ -2523,16 +2524,14 @@ function WSAudioPlayer(props: IProps) {
                 </>
               )}
               {onVersions && (
-                <AltButton
+                <Button
                   id="pdRecordVersions"
                   onClick={onVersions}
                   title={ts.versionHistory}
-                  startIcon={
-                    <VersionsIcon sx={{ width: '14px', height: '14px' }} />
-                  }
+                  startIcon={<VersionsIcon />}
                 >
                   {ts.versionHistory}
-                </AltButton>
+                </Button>
               )}
               {allowSpeed && (
                 <>
@@ -2580,25 +2579,24 @@ function WSAudioPlayer(props: IProps) {
               {metaData}
               {clearRecordingNode}
               {allowSegment && !hideSegmentControls && !hideSegmentReset && (
-                <AltButton
+                <Button
                   id="wsSegmentReset"
-                  sx={smallButtonProps}
                   onClick={handleClearRegions}
                   disabled={
                     resetDisabled ?? (recording || waitingForAI || !hasRegion)
                   }
                 >
                   {t.resetSegments}
-                </AltButton>
+                </Button>
               )}
               {handleSave && showWaveformSaveButton && (
-                <PriButton
+                <Button
                   id="rec-save"
                   onClick={handleSave}
                   disabled={isSaveDisabled}
                 >
                   {ts.save}
-                </PriButton>
+                </Button>
               )}
             </Stack>
           </Stack>

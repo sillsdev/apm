@@ -1,5 +1,5 @@
 import { useGlobal } from '../../context/useGlobal';
-import { Box, Button, IconButton } from '@mui/material';
+import { Box, IconButton } from '@mui/material';
 import {
   useCallback,
   useContext,
@@ -39,6 +39,7 @@ import { useOrbitData } from '../../hoc/useOrbitData';
 import { ToolSlug, useStepTool } from '../../crud';
 import { SaveSegments } from './SaveSegments';
 import { IMarker } from '../../crud/useWaveSurfer';
+import { Button } from '../../control/Button';
 export const PLAYER_HEIGHT = 120 + 80;
 
 export interface IPlayerState {
@@ -103,6 +104,8 @@ export interface DetailPlayerProps {
   /** Tool-specific waveform region coloring (Mark Verses, Careful Speech, etc.). */
   applyRegionColor?: ApplyRegionColor;
   onSegmentPlaybackEnd?: (region: IRegion) => void;
+  /** A segment was clicked on the waveform (not selected by the playhead). */
+  onSegmentClick?: (region: IRegion) => void;
   /** Called when waveform play/pause changes (in addition to internal player logic). */
   onPlayStatusNotify?: (playing: boolean) => void;
   highlightPlay?: boolean;
@@ -155,6 +158,7 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
     controlsRef,
     applyRegionColor,
     onSegmentPlaybackEnd,
+    onSegmentClick,
     onPlayStatusNotify,
     highlightPlay,
     playerState,
@@ -441,6 +445,7 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
         controlsRef={controlsRef}
         applyRegionColor={applyRegionColor}
         onSegmentPlaybackEnd={onSegmentPlaybackEnd}
+        onSegmentClick={onSegmentClick}
         blob={audioBlob}
         initialposition={initialposition}
         setInitialPosition={setInitialPosition}

@@ -1,7 +1,7 @@
 import React from 'react';
 import { ExportType, ITranscriptionTabStrings } from '../model';
-import { Button, ListItemText } from '@mui/material';
-import { StyledMenu, StyledMenuItem } from '../control';
+import { ListItemText } from '@mui/material';
+import { Button, StyledMenu, StyledMenuItem } from '../control';
 import { transcriptionTabSelector } from '../selector';
 import { shallowEqual, useSelector } from 'react-redux';
 

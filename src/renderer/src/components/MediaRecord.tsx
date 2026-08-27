@@ -86,6 +86,8 @@ interface IProps {
   noNewVoice?: boolean | undefined;
   allowNoNoise?: boolean;
   allowZoom?: boolean;
+  /** When true, disable drag-to-create-region (the red loop region) on the waveform. */
+  disableDragSelection?: boolean;
   controlsRef?: React.RefObject<WSAudioPlayerControls | null>;
   hideControls?: boolean;
   onProgress?: (progress: number) => void;
@@ -147,6 +149,7 @@ function MediaRecord(props: IProps) {
     noNewVoice,
     allowNoNoise,
     allowZoom,
+    disableDragSelection,
     controlsRef,
     hideControls,
     onProgress,
@@ -201,6 +204,14 @@ function MediaRecord(props: IProps) {
   const [originalBlob, setOriginalBlob] = useState<Blob>();
   const [audioBlob, setAudioBlob] = useState<Blob>();
   const [loading, setLoading] = useState(false);
+  /**
+   * True only while handleLoadAudio is fetching a take. Deliberately not a
+   * mirror of `loading`, which the save path sets too: gating the abandon paths
+   * on that would let a doReset arriving mid-save clear the flag and the status
+   * text, re-enabling Record and dropping "Saving..." while the save ran. Set
+   * synchronously so the [mediaId] and [doReset] effects see it immediately.
+   */
+  const loadInFlightRef = useRef(false);
   const [filechanged, setFilechangedx] = useState(false);
   const filechangedRef = useRef(false);
   const [recording, setRecording] = useState(false);
@@ -586,6 +597,7 @@ function MediaRecord(props: IProps) {
   }
   useEffect(() => {
     if (doReset) {
+      abandonLoadInFlight();
       reset();
       setDoReset && setDoReset(false);
     }
@@ -620,11 +632,28 @@ function MediaRecord(props: IProps) {
 
   useEffect(() => {
     if (loading && blobReady && originalBlob && !saveRef.current) {
+      loadInFlightRef.current = false;
       setLoading(false);
       setStatusText('');
     }
   }, [loading, blobReady, originalBlob, setStatusText]);
+  /**
+   * A load in flight is being abandoned - the segment was navigated away from,
+   * or the recorder was reset. Without this, `loading` never clears again: the
+   * effect that clears it needs originalBlob, and reset() has just dropped it.
+   * The record button is disabled by Boolean(loading), so the recorder stayed
+   * dead on this segment and every later one until the step was remounted
+   * (TT-7621).
+   */
+  const abandonLoadInFlight = () => {
+    if (!loadInFlightRef.current) return;
+    loadInFlightRef.current = false;
+    loadRequestedIdRef.current = undefined;
+    setLoading(false);
+    setStatusText('');
+  };
   const stopLoading = () => {
+    loadInFlightRef.current = false;
     setLoading(false);
     setStatusText('');
     onLoaded && onLoaded();
@@ -691,6 +720,7 @@ function MediaRecord(props: IProps) {
     if (loading || !mediaId) return;
     const requestedId = mediaId;
     loadRequestedIdRef.current = requestedId;
+    loadInFlightRef.current = true;
     setLoading(true);
     // No status text here: setLoading(true) already puts the "Loading..."
     // overlay on the waveform below (TT-7570).
@@ -736,6 +766,7 @@ function MediaRecord(props: IProps) {
   useEffect(() => {
     if (!mediaId) {
       loadRequestedIdRef.current = undefined;
+      abandonLoadInFlight();
       reset();
       return;
     }
@@ -767,6 +798,7 @@ function MediaRecord(props: IProps) {
         allowRecord={allowRecord !== false}
         loading={loading}
         allowZoom={allowZoom}
+        disableDragSelection={disableDragSelection}
         allowDeltaVoice={allowDeltaVoice}
         allowDownload={allowDownload}
         oneTryOnly={effectiveOneTryOnly}

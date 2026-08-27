@@ -47,46 +47,39 @@ afterEach(() => pbtCleanup());
  * ---------------------------------------------------------------------------
  */
 describe('PBT known defects', () => {
-  it(
-    'DEFECT: pausing the reference playback leaves Record disabled forever',
-    { tags: '@known-defect' },
-    () => {
-      // handleRegionPlayEnd is the only path out of phase 'playing', so a user
-      // pause strands the step: Record needs currentClausePlayed + recordReady,
-      // and nothing sets them until the segment plays all the way through.
-      mountPbt({ segments: SEGMENTS });
-      waitForPbtReady();
-      cy.get(PBT.start).click();
-      expectRecordDisabled();
-      cy.wait(500);
-      sourcePlay().click(); // pause
-      expectRecordEnabled();
-    }
-  );
+  it('offers Record once the user pauses the reference playback', () => {
+    // handleRegionPlayEnd used to be the only path out of phase 'playing', so a
+    // user pause stranded the step: Record needs currentClausePlayed +
+    // recordReady, and nothing set them until the segment played all the way
+    // through. The step now takes the reference audio stopping as the signal.
+    mountPbt({ segments: SEGMENTS });
+    waitForPbtReady();
+    cy.get(PBT.start).click();
+    expectRecordDisabled();
+    cy.wait(500);
+    sourcePlay().click(); // pause
+    expectRecordEnabled();
+  });
 
-  it(
-    'DEFECT: navigating while a take is still loading hangs the recorder',
-    { tags: '@known-defect' },
-    () => {
-      // MediaRecord keeps `loading` true until (blobReady && originalBlob). The
-      // mediaId->undefined effect calls reset(), which clears originalBlob, so
-      // that condition can never be met and `loading` sticks — the record button
-      // is disabled by `Boolean(loading)` on every later segment, and the status
-      // line stays on "Loading...". Only a remount recovers, which matches
-      // TT-7621 (hung PBT) and the TT-7609 comments in MediaRecord.
-      mountPbt({ segments: SEGMENTS, fileurlDelayMs: 5000 });
-      waitForPbtReady();
-      startRecordingPass();
-      recordTake();
-      waitForUploads(1);
-      cy.wait(1500); // the take is in rowData; the recorder is loading it
-      cy.get(PBT.nextUnit).click({ force: true });
+  it('stays usable when a segment is left while its take is loading', () => {
+    // MediaRecord keeps `loading` true until (blobReady && originalBlob), and
+    // the mediaId->undefined effect calls reset(), which clears originalBlob -
+    // so the condition could never be met again and `loading` stuck. The record
+    // button is disabled by `Boolean(loading)`, so the recorder was dead on this
+    // segment and every later one until the step was remounted, which matches
+    // the hung-PBT report. An abandoned load now clears the flag.
+    mountPbt({ segments: SEGMENTS, fileurlDelayMs: 5000 });
+    waitForPbtReady();
+    startRecordingPass();
+    recordTake();
+    waitForUploads(1);
+    cy.wait(1500); // the take is in rowData; the recorder is loading it
+    cy.get(PBT.nextUnit).click({ force: true });
 
-      unitLabel('0:03', '0:06').should('be.visible');
-      cy.contains('Loading...').should('not.exist');
-      expectRecordEnabled();
-    }
-  );
+    unitLabel('0:03', '0:06').should('be.visible');
+    cy.contains('Loading...').should('not.exist');
+    expectRecordEnabled();
+  });
 
   it(
     'DEFECT: clearing a take mid-upload brings the take back',

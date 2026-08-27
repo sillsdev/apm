@@ -2,7 +2,6 @@ import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useGlobal } from '../../context/useGlobal';
 import Confirm from '../AlertDialog';
 import {
-  Button,
   TextField,
   Dialog,
   DialogActions,
@@ -46,7 +45,7 @@ import { useOrbitData } from '../../hoc/useOrbitData';
 import { RecordIdentity } from '@orbit/records';
 import TeamSettings from './TeamSettings';
 import { Render } from '../../assets/brands';
-import { GrowingSpacer } from '../../control';
+import { Button, GrowingSpacer } from '../../control';
 import StickyRedirect from '../StickyRedirect';
 import { useLocation } from 'react-router-dom';
 import { isElectron } from '../../../api-variable';
@@ -490,6 +489,7 @@ export function TeamDialog(props: IProps) {
         <DialogActions>
           {isElectron && (
             <Button
+              disableTypography
               id="burrito"
               onClick={() => setView(`/burrito/${values?.team.id}`)}
               disabled={!teamHasProject}

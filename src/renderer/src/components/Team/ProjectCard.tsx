@@ -17,7 +17,6 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  Button,
   Tooltip,
 } from '@mui/material';
 import * as actions from '../../store';
@@ -90,6 +89,7 @@ import {
   transcriptionTabSelector,
   vProjectSelector,
 } from '../../selector';
+import { Button } from '../../control/Button';
 
 const PencilSquare = BsPencilSquare as unknown as React.FC<IconBaseProps>;
 

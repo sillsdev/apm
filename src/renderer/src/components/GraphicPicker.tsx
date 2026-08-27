@@ -27,7 +27,7 @@ import {
   type ScriptureRefChecked,
 } from './GraphicImageFilter';
 import { StyledDialogTitle } from './StyledDialogTitle';
-import { PriButton, AltButton } from '../control';
+import { Button } from '../control';
 import { ISharedStrings } from '../model';
 import { shallowEqual, useSelector } from 'react-redux';
 import { graphicStringsSelector, sharedSelector } from '../selector';
@@ -38,6 +38,9 @@ import {
 import { useDebounce } from '../utils/useDebounce';
 import type { BibleImage } from '../model/bibleImage';
 import { MediaUploadControlsRef } from './MediaUploadContent';
+import { GraphicUploader } from './GraphicUploader';
+import GraphicRights from './GraphicRights';
+import { UploadType } from './UploadType';
 import { getRefFilter } from './getRefFilter';
 import { getUrlNameAndExt } from '../utils/getUrlNameAndExt';
 import { urlToFile } from '../utils/urlToFile';
@@ -224,15 +227,27 @@ function runBibleFetch<T>({
   onSettled?: () => void;
 }) {
   const url = getUrl();
-  if (!url) return;
+  if (!url) {
+    setError(t.loadFailure);
+    onFailure();
+    onSettled?.();
+    return;
+  }
 
   setLoading(true);
   setError(null);
 
   fetch(url)
-    .then((res) => {
+    .then(async (res) => {
       if (!res.ok) throw new Error(res.statusText);
-      return res.json();
+      const text = await res.text();
+      const body = text.trimStart();
+      if (body.startsWith('<')) throw new Error(t.loadFailure);
+      try {
+        return JSON.parse(text) as unknown;
+      } catch {
+        throw new Error(t.loadFailure);
+      }
     })
     .then((data: unknown) => {
       const parsed = parse(data);
@@ -252,10 +267,10 @@ export interface GraphicPickerProps {
   isOpen: boolean;
   onOpen: (open: boolean) => void;
   onCancel?: () => void;
-  /** Book code */
-  bookCode: string;
-  /** Reference string */
-  refString: string;
+  /** Book code; omit when there is no scripture context (e.g. category graphics) */
+  bookCode?: string;
+  /** Reference string; omit when there is no scripture context */
+  refString?: string;
   /** Whether the project is a Scripture-type plan; controls Scripture filter */
   scripture?: boolean;
   /** Filter state passed to getSearchUrl (style/keyword) */
@@ -266,52 +281,73 @@ export interface GraphicPickerProps {
   filterActive?: boolean;
   /** Called when the filter IconButton is clicked */
   onFilterClick?: () => void;
-  /** Optional title override */
-  metadata?: React.ReactNode;
-  /** Current graphic selected */
-  currentGraphic?: React.ReactNode;
-  /** Ref to control media upload actions */
-  mediaUploadControlsRef?: React.RefObject<MediaUploadControlsRef>;
-  /** Called when the save button is disabled */
-  saveDisabled?: boolean;
-  /** Show a message to the user */
+  currentUrl?: string;
+  currentRights?: string;
+  teamId?: string;
+  cancelled: React.RefObject<boolean>;
   showMessage: (msg: string | React.JSX.Element) => void;
-  /** Dimension of the image to compress */
   dimension: number[];
-  /** Default filename for the image */
   defaultFilename?: string;
-  /** Finish callback for the compression */
   finish: (images: CompressedImages[]) => void;
-  /** Called when a Bible image is chosen so caller can set rights */
   onSelectedRights?: (rights: string | null | undefined) => void;
-  /** Called when Custom tab Set As Graphic is clicked, before upload */
-  onCustomCommit?: () => void;
 }
 
 export function GraphicPicker({
   isOpen,
   onOpen,
   onCancel,
-  bookCode,
-  refString,
+  bookCode = '',
+  refString = '',
   scripture = true,
   customImages = [],
-  metadata,
-  currentGraphic,
-  mediaUploadControlsRef,
-  saveDisabled,
+  currentUrl,
+  currentRights,
+  teamId,
+  cancelled,
   showMessage,
   dimension,
   defaultFilename,
   finish,
   onSelectedRights,
-  onCustomCommit,
 }: GraphicPickerProps) {
   const [qBook, setQBook] = useState<string | undefined>(undefined);
   const [qRef, setQRef] = useState<string | undefined>(undefined);
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
   const [tabValue, setTabValue] = useState(0);
   const userTabRef = useRef(false);
+  const mediaUploadControlsRef = useRef<MediaUploadControlsRef>({
+    handleCancel: null,
+    handleAddOrSave: null,
+  } as MediaUploadControlsRef);
+  const [saveDisabled, setSaveDisabled] = useState(false);
+  const [rightsDraft, setRightsDraftx] = useState('');
+  const rightsDraftRef = useRef('');
+  const setRightsDraft = (value: string) => {
+    setRightsDraftx(value);
+    rightsDraftRef.current = value;
+  };
+  const [rightsFieldKey, setRightsFieldKey] = useState(0);
+  const [, setRightsDraftTick] = useState(0);
+  const [previewUrl, setPreviewUrl] = useState('');
+  const displayUrl = previewUrl || currentUrl || '';
+  const hasCurrent = Boolean(displayUrl || currentRights);
+
+  useEffect(() => {
+    setPreviewUrl('');
+  }, [isOpen]);
+
+  useEffect(() => {
+    return () => {
+      if (previewUrl.startsWith('blob:')) URL.revokeObjectURL(previewUrl);
+    };
+  }, [previewUrl]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setRightsDraft(currentRights ?? '');
+    setRightsFieldKey((k) => k + 1);
+  }, [isOpen, currentRights]);
+
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebounce(search, 500);
   /** Tracks Keywords accordion list filter text (not API keyword selection). */
@@ -391,14 +427,14 @@ export function GraphicPicker({
 
   useEffect(() => {
     if (!userTabRef.current) {
-      if (currentGraphic && tabValue !== 2) {
+      if (hasCurrent && tabValue !== 2) {
         setTabValue(2);
-      } else if (!currentGraphic && tabValue !== 0) {
+      } else if (!hasCurrent && tabValue !== 0) {
         setTabValue(0);
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentGraphic]);
+  }, [hasCurrent]);
 
   useEffect(() => {
     if (!isOpen || tabValue !== 0) {
@@ -579,17 +615,17 @@ export function GraphicPicker({
     setKeywordsListSearchResetKey((k) => k + 1);
     setSelectedId(null);
     userTabRef.current = false;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [onOpen, onCancel, tabValue]);
 
   const handleSetGraphic = useCallback(() => {
     userTabRef.current = false;
     if (tabValue === 1) {
-      onCustomCommit?.();
+      onSelectedRights?.(rightsDraftRef.current);
       if (mediaUploadControlsRef?.current?.handleAddOrSave) {
         mediaUploadControlsRef.current.handleAddOrSave();
       }
-      onOpen(false);
+      // uploadMedia closes via finish → onOpen after the image save.
+      // Closing here races a rights-only save that can clobber it.
       setSelectedId(null);
       return;
     }
@@ -628,7 +664,7 @@ export function GraphicPicker({
         });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tabValue, selectedId, images, onOpen, onSelectedRights, onCustomCommit]);
+  }, [tabValue, selectedId, images, onOpen, onSelectedRights]);
 
   const handleTabChange = useCallback(
     (_event: React.SyntheticEvent, newValue: number) => {
@@ -692,7 +728,7 @@ export function GraphicPicker({
           id="graphic-picker-tab-2"
           label={TAB_CURRENT}
           aria-controls="graphic-picker-tabpanel-2"
-          disabled={!currentGraphic}
+          disabled={!hasCurrent}
         />
       </Tabs>
       <DialogContent
@@ -714,7 +750,7 @@ export function GraphicPicker({
           }}
         >
           <TabPanel value={tabValue} index={0}>
-            {!(qBook ?? bookCode) || !(qRef ?? refString) ? (
+            {scripture && (!(qBook ?? bookCode) || !(qRef ?? refString)) ? (
               <Typography color="text.secondary" variant="body2">
                 {t.noSelection.replace('{0}', getOrganizedBy(true))}
               </Typography>
@@ -812,15 +848,72 @@ export function GraphicPicker({
           </TabPanel>
           <TabPanel value={tabValue} index={1}>
             <VertScrollBox>
-              {metadata ?? (
-                <Typography color="text.secondary">
-                  Not yet implemented
-                </Typography>
-              )}
+              <GraphicUploader
+                onOpen={onOpen}
+                dimension={dimension}
+                defaultFilename={defaultFilename}
+                showMessage={showMessage}
+                hasRights={Boolean(rightsDraftRef.current.trim())}
+                finish={finish}
+                cancelled={cancelled}
+                uploadType={UploadType.Graphic}
+                onFiles={(files) => {
+                  if (files.length > 0) {
+                    setPreviewUrl(URL.createObjectURL(files[0] as File));
+                    setRightsDraft('');
+                    setRightsFieldKey((k) => k + 1);
+                  } else {
+                    setPreviewUrl('');
+                  }
+                }}
+                mediaUploadControlsRef={mediaUploadControlsRef}
+                onSaveDisabled={setSaveDisabled}
+                metadata={
+                  <Box>
+                    <GraphicRights
+                      key={rightsFieldKey}
+                      value={rightsDraft}
+                      teamId={teamId}
+                      onChange={setRightsDraft}
+                      onInputValueChange={(v) => {
+                        rightsDraftRef.current = v;
+                        setRightsDraftTick((t) => t + 1);
+                      }}
+                    />
+                  </Box>
+                }
+              />
             </VertScrollBox>
           </TabPanel>
           <TabPanel value={tabValue} index={2}>
-            <VertScrollBox>{currentGraphic ?? <></>}</VertScrollBox>
+            <VertScrollBox>
+              {hasCurrent ? (
+                <Box>
+                  {displayUrl && (
+                    <img
+                      key={displayUrl}
+                      src={displayUrl}
+                      alt={t.graphicDisplay}
+                      style={{
+                        maxWidth: '100%',
+                        maxHeight: '80vh',
+                        width: 'auto',
+                        height: 'auto',
+                        display: 'block',
+                        margin: '0 auto',
+                      }}
+                    />
+                  )}
+                  {currentRights && (
+                    <Box mt={1}>
+                      <Typography variant="body2">{currentRights}</Typography>
+                    </Box>
+                  )}
+                </Box>
+              ) : (
+                <></>
+              )}
+            </VertScrollBox>
           </TabPanel>
         </Box>
       </DialogContent>
@@ -834,10 +927,14 @@ export function GraphicPicker({
           borderColor: 'divider',
         }}
       >
-        <AltButton onClick={handleClose}>{ts.cancel ?? 'Cancel'}</AltButton>
-        <PriButton onClick={handleSetGraphic} disabled={!canSetGraphic()}>
+        <Button onClick={handleClose}>{ts.cancel ?? 'Cancel'}</Button>
+        <Button
+          color="primary"
+          disabled={!canSetGraphic()}
+          onClick={handleSetGraphic}
+        >
           {t.setGraphic}
-        </PriButton>
+        </Button>
       </DialogActions>
     </Dialog>
   );

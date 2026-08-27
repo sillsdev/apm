@@ -8,6 +8,7 @@ import {
   AccordionSummary,
   AccordionDetails,
   styled,
+  Box,
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import {
@@ -18,7 +19,7 @@ import {
   LocalKey,
 } from '../utils';
 import { isUnauthorized } from '../utils/httpError';
-import { PriButton } from '../control';
+import { Button, rowSx } from '../control';
 import { TokenContext } from '../context/TokenProvider';
 import { mainSelector } from '../selector';
 import { useGlobal } from '../context/useGlobal';
@@ -146,14 +147,16 @@ export const ModalMessage = (props: ModalProps) => {
           </Accordion>
         )}
         <ModalActionsDiv>
-          {!isUnauthorized(orbitStatus) && (
-            <PriButton id="errCont" onClick={cleanUpAndGo('')}>
-              {t.continue}
-            </PriButton>
-          )}
-          <PriButton id="errLogout" onClick={cleanUpAndGo('/logout')}>
-            {t.logout}
-          </PriButton>
+          <Box sx={rowSx}>
+            {!isUnauthorized(orbitStatus) && (
+              <Button id="errCont" onClick={cleanUpAndGo('')}>
+                {t.continue}
+              </Button>
+            )}
+            <Button id="errLogout" onClick={cleanUpAndGo('/logout')}>
+              {t.logout}
+            </Button>
+          </Box>
         </ModalActionsDiv>
       </ModalContentDiv>
       <a ref={logoutRef} href="/logout"></a>
@@ -264,9 +267,9 @@ export const ErrorPage = () => {
         <i>{(error as any)?.statusText || error.message}</i>
       </p>
       <div>{(error as any)?.componentStack || error.stack || ''}</div>
-      <PriButton id="err-start" onClick={logout}>
+      <Button id="err-start" onClick={logout}>
         {t.logout}
-      </PriButton>
+      </Button>
       <a ref={logoutRef} href="/logout"></a>
     </ErrorPageDiv>
   );

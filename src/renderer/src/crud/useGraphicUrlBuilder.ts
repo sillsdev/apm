@@ -137,7 +137,7 @@ export function useGraphicUrlBuilder(
       baseOptions: { page?: number; limit?: number },
       addParams: (append: (key: string, value: string) => void) => void
     ): string | undefined => {
-      if (!scriptureRange) return undefined;
+      if (!scriptureRange || !API_CONFIG.graphicApiBase) return undefined;
       const pairs: [string, string][] = [];
       const append = (key: string, value: string) => pairs.push([key, value]);
 

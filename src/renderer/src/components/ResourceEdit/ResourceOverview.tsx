@@ -7,13 +7,13 @@ import React, {
   useRef,
 } from 'react';
 import {
+  Button,
   ActionRow,
-  AltButton,
   GrowingDiv,
   ILanguage,
   Language,
   LightTooltip,
-  PriButton,
+  rowSx,
 } from '../../control';
 import {
   IDialog,
@@ -119,14 +119,13 @@ export default function ResourceOverview(props: IProps) {
       terms: '',
       keywords: '',
       linkurl: '',
-      note: false,
+      note: isNote,
       category: '',
       changed: false,
       ws: ws,
       onRecording,
     }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [ws]
+    [ws, isNote]
   );
 
   const [state, setState] = React.useState({ ...initState });
@@ -151,19 +150,10 @@ export default function ResourceOverview(props: IProps) {
     setState(
       !values
         ? { ...initState }
-        : { ...values, ws, onRecording, changed: false }
+        : { ...values, ws, onRecording, note: isNote, changed: false }
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [values, isOpen]);
-
-  useEffect(() => {
-    setState(
-      !values
-        ? { ...initState, note: isNote }
-        : { ...values, ws, onRecording, note: isNote }
-    );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [values, isNote]);
+  }, [values, isOpen, isNote, initState]);
 
   const handleClose = () => {
     if (onOpen) onOpen(false);
@@ -224,7 +214,7 @@ export default function ResourceOverview(props: IProps) {
         )}
         <ResourceDescription state={state} setState={updateState} />
         <ResourceCategory
-          state={state}
+          state={{ ...state, note: isNote }}
           setState={updateState}
           commitRef={catCommitRef}
         />
@@ -269,37 +259,40 @@ export default function ResourceOverview(props: IProps) {
         )}
         {isDeveloper && (
           <>
-            <AltButton id="delete" onClick={handleDelete}>
+            <Button id="delete" onClick={handleDelete}>
               {t.delete}
-            </AltButton>
-            <GrowingDiv />
+            </Button>
           </>
         )}
-        {contentReadOnly &&
-          onUnlink &&
-          dialogmode !== Mode.view &&
-          dialogmode !== DialogModePartial.titleOnly && (
-            <AltButton id="unlinkNote" onClick={() => onUnlink()}>
-              {t.unlinkNote}
-            </AltButton>
+        <GrowingDiv />
+        <Box sx={rowSx}>
+          {contentReadOnly &&
+            onUnlink &&
+            dialogmode !== Mode.view &&
+            dialogmode !== DialogModePartial.titleOnly && (
+              <Button id="unlinkNote" onClick={() => onUnlink()}>
+                {t.unlinkNote}
+              </Button>
+            )}
+          <Button id="resCancel" onClick={handleClose}>
+            {dialogmode === Mode.add ? ts.cancel : ts.close}
+          </Button>
+          {dialogmode !== Mode.view && !contentReadOnly && (
+            <Button
+              id="resSave"
+              color="primary"
+              disabled={
+                title === '' ||
+                (bcp47 === 'und' && !isNote) ||
+                !state.changed ||
+                recording.current
+              }
+              onClick={() => handleAdd()}
+            >
+              {dialogmode === Mode.add ? t.add : ts.save}
+            </Button>
           )}
-        <AltButton id="resCancel" onClick={handleClose}>
-          {dialogmode === Mode.add ? ts.cancel : ts.close}
-        </AltButton>
-        {dialogmode !== Mode.view && !contentReadOnly && (
-          <PriButton
-            id="resSave"
-            onClick={() => handleAdd()}
-            disabled={
-              title === '' ||
-              (bcp47 === 'und' && !isNote) ||
-              !state.changed ||
-              recording.current
-            }
-          >
-            {dialogmode === Mode.add ? t.add : ts.save}
-          </PriButton>
-        )}
+        </Box>
       </ActionRow>
     </Box>
   ) : (

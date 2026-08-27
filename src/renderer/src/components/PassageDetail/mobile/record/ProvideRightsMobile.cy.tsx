@@ -256,7 +256,7 @@ describe('ProvideRightsMobile', () => {
       statusProps: {},
       statusText: 'Ready to save',
       canSave: true,
-      recordingRequired: false,
+      aiip: false,
       handleUpload: cy.stub().as('handleUpload'),
       handleLater: cy.stub().as('handleLater'),
       handleSave: cy.stub().as('handleSave'),
@@ -335,8 +335,8 @@ describe('ProvideRightsMobile', () => {
     cy.get('#spkr-save').should('be.visible').and('contain', 'Save');
   });
 
-  it('hides later when recording is required', () => {
-    mountProvideRightsMobile({ recordingRequired: true });
+  it('hides later when aiip is true', () => {
+    mountProvideRightsMobile({ aiip: true });
 
     cy.get('#spkr-later').should('not.exist');
   });

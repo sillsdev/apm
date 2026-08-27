@@ -18,7 +18,7 @@ import { useOrganizedBy } from '../../crud';
 import { sharedSelector, recordStepSettingsSelector } from '../../selector';
 import { shallowEqual, useSelector } from 'react-redux';
 import { JSONParse } from '../../utils';
-import { ActionRow, AltButton, PriButton, TemplateEditor } from '../../control';
+import { Button, ActionRow, TemplateEditor, rowSx } from '../../control';
 import { TemplateText } from '../../control/TemplateEditorHelpers';
 import {
   TemplateCode,
@@ -600,13 +600,16 @@ export const RecordStepSettings = ({
       </Box>
 
       <ActionRow>
-        <AltButton onClick={handleCancel}>{ts.cancel}</AltButton>
-        <PriButton
-          onClick={handleSave}
-          disabled={!hasChanges() || hasInvalidTemplates()}
-        >
-          {ts.save}
-        </PriButton>
+        <Box sx={rowSx}>
+          <Button onClick={handleCancel}>{ts.cancel}</Button>
+          <Button
+            color="primary"
+            disabled={!hasChanges() || hasInvalidTemplates()}
+            onClick={handleSave}
+          >
+            {ts.save}
+          </Button>
+        </Box>
       </ActionRow>
     </Box>
   );

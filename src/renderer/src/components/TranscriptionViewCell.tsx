@@ -1,7 +1,7 @@
-import Button from '@mui/material/Button';
 import Box from '@mui/material/Box';
 import ViewIcon from '@mui/icons-material/RemoveRedEye';
 import { GridRenderCellParams } from '@mui/x-data-grid';
+import { Button } from '../control/Button';
 
 interface IProps {
   handleSelect: (passageId: string) => () => void;
@@ -18,11 +18,10 @@ export const TranscriptionViewCell = (
       <Button
         key={key}
         aria-label={params.value}
-        color="primary"
+        startIcon={<ViewIcon />}
         onClick={handleSelect(params.row.recId)}
       >
         {params.value}
-        <ViewIcon sx={{ fontSize: '16px', ml: 1 }} />
       </Button>
     );
   }

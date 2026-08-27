@@ -90,9 +90,9 @@ jest.mock('../control', () => ({
       {children}
     </div>
   ),
-  AltButton: ({ children }: PropsWithChildren) => (
+  Button: ({ children }: PropsWithChildren) => (
     <div>
-      <span>AltButton</span>
+      <span>Button</span>
       {children}
     </div>
   ),
@@ -103,12 +103,9 @@ jest.mock('../control', () => ({
       {children}
     </div>
   ),
-  PriButton: ({ children }: PropsWithChildren) => (
-    <div>
-      <span>PriButton</span>
-      {children}
-    </div>
-  ),
+  // rowSx is a theme callback needing the app theme augmentation; the plain
+  // object keeps the Box happy without a ThemeProvider.
+  rowSx: {},
 }));
 jest.mock('../hoc/useOrbitData', () => ({
   useOrbitData: (recType: string) =>

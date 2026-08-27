@@ -1,5 +1,5 @@
-import { BoxProps } from '@mui/material';
-import { ActionRow, AltButton, PriButton } from '../control';
+import { BoxProps, Box } from '@mui/material';
+import { Button, ActionRow, rowSx } from '../control';
 
 interface IAltActionBar extends BoxProps {
   primaryLabel: string;
@@ -37,26 +37,29 @@ export const AltActionBar = ({
       ...rest.sx,
     }}
   >
-    <PriButton
-      id="primaryAction"
-      key={primaryKey}
-      aria-label={primaryAria}
-      disabled={primaryDisabled || false}
-      sx={{ marginLeft: '0' }}
-      onClick={primaryOnClick}
-    >
-      {primaryLabel}
-    </PriButton>
-    {altShown && (
-      <AltButton
-        id="altAction"
-        key={altKey}
-        aria-label={altAria}
-        onClick={altOnClick}
-        sx={{ marginLeft: '8px' }}
+    <Box sx={rowSx}>
+      <Button
+        id="primaryAction"
+        key={primaryKey}
+        aria-label={primaryAria}
+        sx={{ marginLeft: '0' }}
+        color="primary"
+        disabled={primaryDisabled || false}
+        onClick={primaryOnClick}
       >
-        {altLabel}
-      </AltButton>
-    )}
+        {primaryLabel}
+      </Button>
+      {altShown && (
+        <Button
+          id="altAction"
+          key={altKey}
+          aria-label={altAria}
+          sx={{ marginLeft: '8px' }}
+          onClick={altOnClick}
+        >
+          {altLabel}
+        </Button>
+      )}
+    </Box>
   </ActionRow>
 );

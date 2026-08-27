@@ -1,5 +1,5 @@
 import { Stack, Typography } from '@mui/material';
-import { PriButton } from '../control';
+import { Button } from '../control';
 import { IMainStrings } from '../model';
 import { shallowEqual, useSelector } from 'react-redux';
 import { mainSelector } from '../selector';
@@ -22,7 +22,9 @@ export const ErrorFallback = ({
         {error?.message ?? JSON.stringify(error, null, 2)}
       </Typography>
       <Typography>{info.componentStack}</Typography>
-      <PriButton onClick={clearError}>{t.clear}</PriButton>
+      <Button color="primary" onClick={clearError}>
+        {t.clear}
+      </Button>
     </Stack>
   );
 };

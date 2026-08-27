@@ -7,7 +7,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import { Alert, Box, Button, Typography } from '@mui/material';
+import { Alert, Box, Typography } from '@mui/material';
 import { shallowEqual, useSelector } from 'react-redux';
 import { useGlobal } from '../../context/useGlobal';
 import usePassageDetailContext from '../../context/usePassageDetailContext';
@@ -87,6 +87,7 @@ import {
 } from '../../components/PassageDetail/guidedPhraseRecord/types';
 import { createPhraseSegmentUndoStack } from '../../utils/phraseSegmentUndoStack';
 import Confirm from '../AlertDialog';
+import { Button } from '../../control/Button';
 
 interface IProps {
   width: number;
@@ -95,6 +96,13 @@ interface IProps {
   /** Shown when config.requireBoldWorkflow and the team is not BOLD. */
   workflowGateMessage?: string;
 }
+
+/**
+ * A stop reported sooner than this after playback started is the seek that
+ * started it, not the audio finishing. Auto-segmenting never produces a clause
+ * anywhere near this short.
+ */
+const SPURIOUS_STOP_WINDOW_MS = 250;
 
 function findClauseIndex(clauseRegions: IRegion[], region: IRegion): number {
   return clauseRegions.findIndex(
@@ -134,6 +142,8 @@ export function PassageDetailGuidedPhraseRecord({
     setRecording,
     forceRefresh,
     currentSegmentIndex,
+    /** Change token for the selected segment; see the nav effects below. */
+    currentSegmentSeq,
     getCurrentSegment,
     isBoldWorkflow,
     carefulSpeechSegParams,
@@ -190,6 +200,13 @@ export function PassageDetailGuidedPhraseRecord({
   const initialPositionDoneRef = useRef(false);
   const suppressClauseAutoPlayRef = useRef(0);
   const playClauseInFlightRef = useRef(false);
+  /**
+   * When playback of the current clause last began - whether this component
+   * started it or the user pressed Play. See SPURIOUS_STOP_WINDOW_MS: a stale
+   * timestamp would make the seek-suppression window compare against an old
+   * time and mark a clause played before it had been.
+   */
+  const clausePlaybackStartedAtRef = useRef(0);
   const skipBeforePlayRef = useRef(false);
   const entryPauseDoneRef = useRef(false);
   const [highlightPlayButton, setHighlightPlayButton] = useState(false);
@@ -695,6 +712,7 @@ export function PassageDetailGuidedPhraseRecord({
       const ctrl = playerControlsRef.current;
       const region = regionOverride ?? clauseRegions[index];
       if (!ctrl?.isReady() || !region || playClauseInFlightRef.current) return;
+      clausePlaybackStartedAtRef.current = Date.now();
       playClauseInFlightRef.current = true;
       try {
         setPhase('playing');
@@ -761,16 +779,47 @@ export function PassageDetailGuidedPhraseRecord({
 
   const handlePlayStatusNotify = useCallback(
     (playingNow: boolean) => {
-      if (playingNow) setHighlightPlayButton(false);
+      if (playingNow) {
+        setHighlightPlayButton(false);
+        // Playback began, whatever started it. Time the window from here, so a
+        // stop that this start provokes is discarded below instead of being read
+        // as the clause having finished.
+        clausePlaybackStartedAtRef.current = Date.now();
+      }
       if (currentIndex === clauseRegions.length - 1) {
         markClauseHeard(currentIndex);
       }
+      // Only a stop tells us the clause has been heard; the start case is
+      // handled above.
+      if (playingNow) return;
+      // The listen pass has nothing to record, so nothing to enable.
+      if (!recordingPassStartedRef.current) return;
+      // Capturing or saving a take stops the source audio, and that stop is not
+      // the clause being heard. Defensive:
+      if (recordingActiveRef.current || savingRecordingRef.current) return;
+      // Starting a clause seeks the playhead to its start, and that seek reports
+      // a stop of its own before anything has been heard. This can be
+      // differentiated from a real stop (user pause) by how long playback had
+      // been running. If under SPURIOUS_STOP_WINDOW_MS it is the seek, ignore it.
+      if (
+        Date.now() - clausePlaybackStartedAtRef.current <
+        SPURIOUS_STOP_WINDOW_MS
+      ) {
+        return;
+      }
+      setCurrentClausePlayed(true);
+      setPhase((p) =>
+        p === 'recording' || p === 'recorded' ? p : 'recordReady'
+      );
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [clauseRegions.length, currentIndex]
   );
 
   const handleBeforeSourcePlay = useCallback(async () => {
+    // The user pressed Play rather than the step starting playback, so the
+    // seek-suppression window has to be re-based here too.
+    clausePlaybackStartedAtRef.current = Date.now();
     if (skipBeforePlayRef.current) return;
     if (!recordingPassStarted || !showRecorder || currentClausePlayed) return;
     setHighlightPlayButton(false);
@@ -1073,6 +1122,17 @@ export function PassageDetailGuidedPhraseRecord({
     handleRegionPlayEndRef.current(region);
   }, []);
 
+  /**
+   * A click on the waveform is a deliberate selection, so it can never be the
+   * playback overshoot the swallow exists to absorb. Disarm it here, before the
+   * segment change it produces reaches the navigation effect below — otherwise
+   * clicking the segment right after the current one is indistinguishable from
+   * overshoot and gets eaten, leaving the user's first click with no effect.
+   */
+  const handleSegmentClick = useCallback(() => {
+    pendingOvershootSwallowRef.current = false;
+  }, []);
+
   useEffect(() => {
     if (!bootstrapped || !entryPositioned || entryPauseDoneRef.current) return;
     if (recordingPassStarted) return; // recording pass auto-plays on entry; don't pause
@@ -1090,6 +1150,27 @@ export function PassageDetailGuidedPhraseRecord({
     if (idx < 0) return;
 
     const indexChanged = idx !== currentIndex;
+
+    if (pendingOvershootSwallowRef.current && idx === currentIndex + 1) {
+      // A +1 segment change arriving just after an auto-play park is not the
+      // user moving: either playback overshot into the next clause, or the
+      // recorder mounted and reported a region-in there. Stay on the parked
+      // clause and play nothing. A change further away than +1 is a real tap,
+      // and falls through to the branches below.
+      //
+      // This has to be decided before the completed-clause branch below.
+      // Otherwise, when the clause the overshoot lands on already has a take -
+      // record 1, arrow forward to 3, record 3, arrow back to 2 - that branch
+      // takes the overshoot for a move onto clause 3 and selects it, leaving
+      // clause 2 pending under a user who was waiting to record it (TT-7621).
+      pendingOvershootSwallowRef.current = false;
+      if (playerControlsRef.current?.isPlaying?.()) {
+        playerControlsRef.current.setPlay(false);
+      }
+      setCurrentSegment(clauseRegions[currentIndex], currentIndex);
+      void snapToClauseStart(currentIndex);
+      return;
+    }
 
     if (completedIndices.has(idx)) {
       if (playerControlsRef.current?.isPlaying?.()) {
@@ -1118,15 +1199,6 @@ export function PassageDetailGuidedPhraseRecord({
       playerControlsRef.current.setPlay(false);
     }
 
-    if (pendingOvershootSwallowRef.current && idx === currentIndex + 1) {
-      // Spurious +1 advance right after an auto-play park (playback overshoot or
-      // recorder-mount region-in). Re-assert the parked clause; don't play.
-      // A non-adjacent change reaches the branch below and is treated as a tap.
-      pendingOvershootSwallowRef.current = false;
-      setCurrentSegment(clauseRegions[currentIndex], currentIndex);
-      void snapToClauseStart(currentIndex);
-      return;
-    }
     // Genuine navigation (user tap) — cancel any armed swallow and play it.
     pendingOvershootSwallowRef.current = false;
 
@@ -1138,8 +1210,23 @@ export function PassageDetailGuidedPhraseRecord({
     setCurrentClausePlayed(false);
     setPhase((p) => (p === 'recording' ? 'recording' : 'readyToRecord'));
     void playCurrentClause(idx);
+    // Neither dep is read in the body — the segment itself comes from the ref
+    // behind getCurrentSegment() — so both are here purely as change signals.
+    //
+    // currentSegmentSeq is the one that tells us the selection moved. The
+    // index's numbering is not agreed between writers (the waveform writes
+    // 1-based, this component 0-based), so a genuine move can arrive carrying
+    // the number the previous writer used. Clicking segment 2 right after
+    // recording segment 3 does exactly that (waveform 1+1 vs step 2) — the
+    // effect never re-ran, the step stayed on segment 3, and the next take was
+    // filed there.
+    //
+    // currentSegmentIndex stays because the seq does not fully cover it:
+    // selecting another row resets the index to 0 without going through
+    // setCurrentSegment, so no seq bump accompanies that one.
   }, [
     currentSegmentIndex,
+    currentSegmentSeq,
     clauseRegions,
     currentIndex,
     completedIndices,
@@ -1167,8 +1254,10 @@ export function PassageDetailGuidedPhraseRecord({
     if (!consumeSuppressClauseAutoPlay()) {
       void playCurrentClause(idx);
     }
+    // See the recording-pass effect above for why currentSegmentSeq is a dep.
   }, [
     currentSegmentIndex,
+    currentSegmentSeq,
     clauseRegions,
     currentIndex,
     getCurrentSegment,
@@ -1703,6 +1792,12 @@ export function PassageDetailGuidedPhraseRecord({
     return <StepMessage message={ts.noAudio} />;
   }
 
+  // Single source of truth for the segment-selection lock. While it is up,
+  // useWavesurferRegions.handleRegionClick drops waveform clicks silently, so
+  // it is mirrored onto the container: a test that clicks a segment has no
+  // other way to know whether the click could be received (TT-7360 follow-up).
+  const segmentSelectionLocked = phase === 'recording' || savingRecording;
+
   return (
     <Box
       id={config.containerId}
@@ -1713,6 +1808,7 @@ export function PassageDetailGuidedPhraseRecord({
       data-allow-record={String(allowRecord)}
       data-unit-index={String(currentIndex)}
       data-discard-pending={String(discardedDuringSaveRef.current ?? '')}
+      data-segment-selection-locked={String(segmentSelectionLocked)}
       sx={{
         display: 'flex',
         flexDirection: 'column',
@@ -1761,10 +1857,11 @@ export function PassageDetailGuidedPhraseRecord({
           controlsRef={playerControlsRef}
           applyRegionColor={applyRegionColor}
           onSegmentPlaybackEnd={onSegmentPlaybackEnd}
+          onSegmentClick={handleSegmentClick}
           highlightPlay={highlightPlayButton}
           onPlayStatusNotify={handlePlayStatusNotify}
           beforePlay={handleBeforeSourcePlay}
-          lockSegmentSelection={phase === 'recording' || savingRecording}
+          lockSegmentSelection={segmentSelectionLocked}
           allowZoom={true}
         />
       )}

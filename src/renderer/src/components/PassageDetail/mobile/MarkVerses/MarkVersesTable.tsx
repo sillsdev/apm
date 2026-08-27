@@ -1,6 +1,5 @@
 import {
   Box,
-  Button,
   Paper,
   Table,
   TableBody,
@@ -22,6 +21,7 @@ import {
   RefStatus,
 } from '../../../../utils/markVersesSegmentColors';
 import type { ICell } from './PassageDetailMarkVerses';
+import { Button } from '../../../../control/Button';
 
 interface MarkVersesTableProps {
   data: ICell[][];
@@ -311,8 +311,8 @@ export default function MarkVersesTable({
                     sits beside the segment the user is working on. The cell is
                     always present to keep the column width stable. Its `py`
                     gives the button breathing room above/below within the row.
-                    Sizing is font-relative (line-height + padding, no fixed
-                    height) so it adapts when the label is localized. */}
+                    Sizing comes from the theme's `sizeSmall` rule (28px tall),
+                    so it matches every other small button in the app. */}
                 <TableCell
                   padding="none"
                   align="right"
@@ -342,19 +342,6 @@ export default function MarkVersesTable({
                         onClick={(event) => {
                           event.stopPropagation();
                           onEditReference(rowIndex);
-                        }}
-                        sx={{
-                          minWidth: 0,
-                          // The theme pins small buttons to a fixed 36px height,
-                          // but make this one more compact to fit nicely in the table row
-                          height: 'auto',
-                          minHeight: 0,
-                          px: 1,
-                          py: 0.25,
-                          lineHeight: 1.4,
-                          textTransform: 'none',
-                          '& .MuiButton-startIcon': { mr: 0.25 },
-                          '& .MuiButton-startIcon > svg': { fontSize: 16 },
                         }}
                       >
                         {editLabel ?? 'Edit'}

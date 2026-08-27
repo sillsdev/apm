@@ -9,7 +9,6 @@ import {
 import { useSelector, shallowEqual } from 'react-redux';
 import {
   Box,
-  Button,
   debounce,
   Menu,
   MenuItem,
@@ -60,7 +59,7 @@ import {
   assignmentSelector,
   sharedSelector,
 } from '../selector';
-import { LightTooltip, spreadSx, rowSx } from '../control';
+import { Button, LightTooltip, spreadSx, rowSx } from '../control';
 import ContentLayout from './App/ContentLayout';
 import { GetReference } from './AudioTab/GetReference';
 import { PlanTabSelect } from './Sheet/PlanTabSelect';

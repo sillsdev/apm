@@ -25,7 +25,7 @@ import {
   useUser,
   useRole,
 } from '../crud';
-import { GrowingSpacer, PriButton, ActionRow, iconMargin } from '../control';
+import { GrowingSpacer, Button, ActionRow } from '../control';
 import { sharedSelector, usertableSelector } from '../selector';
 import { useOrbitData } from '../hoc/useOrbitData';
 import ProfileDialog from './ProfileDialog';
@@ -235,24 +235,26 @@ export function UserTable() {
           {canEdit && (
             <>
               {!offlineOnly && (
-                <PriButton
+                <Button
                   key="add"
                   aria-label={t.invite}
+                  color="primary"
+                  startIcon={<AddIcon />}
                   onClick={handleInvite}
                 >
                   {t.invite}
-                  <AddIcon sx={iconMargin} />
-                </PriButton>
+                </Button>
               )}
               {offlineOnly && (
-                <PriButton
+                <Button
                   key="add-member"
                   aria-label={t.addMember}
+                  color="primary"
+                  startIcon={<AddIcon />}
                   onClick={handleAddOpen}
                 >
                   {t.addMember}
-                  <AddIcon sx={iconMargin} />
-                </PriButton>
+                </Button>
               )}
             </>
           )}

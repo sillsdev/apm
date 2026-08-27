@@ -9,11 +9,13 @@ import packageJson from '../../../package.json';
 const owner = packageJson.author.name;
 
 interface IVoicePermission {
+  aiip: boolean;
   permissionState: IVoicePerm;
   team?: Organization;
 }
 
 export const useVoicePermission = ({
+  aiip,
   permissionState: permState,
   team,
 }: IVoicePermission) => {
@@ -29,7 +31,7 @@ export const useVoicePermission = ({
         ? t.stTeam.replace('{0}', team?.attributes.name)
         : t.stThisTeam;
 
-    const sponsorOrg = permState?.sponsor ?? owner;
+    const sponsorOrg = permState?.sponsor?.trim() || owner;
 
     if (permState?.gender)
       cats.push(t.stGender.replace('{0}', permState.gender ?? t.stNotGiven));
@@ -66,16 +68,23 @@ export const useVoicePermission = ({
     const compensated = permState?.hired ? t.stHired : t.stVolunteer;
 
     setPermStatement(
-      t.stStatement
-        .replace('{0}', permState?.fullName ?? '')
-        .replace(/\{1}/g, sponsorOrg)
-        .replace('{2}', catMsg)
-        .replace('{3}', langUse)
-        .replace('{4}', compensated)
-        .replace('{5}', permState?.fullName ?? t.stNotIdentified)
+      aiip
+        ? t.aiipStatement
+            .replace('{0}', permState?.fullName ?? '')
+            .replace(/\{1}/g, sponsorOrg)
+            .replace('{2}', catMsg)
+            .replace('{3}', langUse)
+            .replace('{4}', compensated)
+            .replace('{5}', permState?.fullName ?? t.stNotIdentified)
+        : t.ipStatement
+            .replace('{0}', permState?.fullName ?? '')
+            .replace(/\{1}/g, sponsorOrg)
+            .replace(/\{2}/g, teamName)
+            .replace('{4}', compensated)
+            .replace('{5}', permState?.fullName ?? t.stNotIdentified)
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [permState, team]);
+  }, [permState, team, aiip]);
 
   return { permStatement };
 };

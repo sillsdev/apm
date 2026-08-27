@@ -26,7 +26,7 @@ import {
   waitForRemoteId,
 } from '../crud';
 import { AddRecord, UpdateRelatedRecord } from '../model/baseModel';
-import { AltButton, GrowingSpacer, PriButton } from '../control';
+import { Button, GrowingSpacer } from '../control';
 import { useOrbitData } from '../hoc/useOrbitData';
 import { useSelector } from 'react-redux';
 import {
@@ -510,29 +510,30 @@ function AssignSection(props: IProps) {
         {busy && <LinearProgress variant="indeterminate" />}
         <DialogActions>
           {scheme && !readOnly && !saving && (
-            <AltButton color="warning" onClick={handleDelete}>
+            <Button color="warning" onClick={handleDelete}>
               {t.delete}
-            </AltButton>
+            </Button>
           )}
           <GrowingSpacer />
           {!saving && (
-            <AltButton onClick={() => justClose(true)}>
+            <Button onClick={() => justClose(true)}>
               {readOnly ? ts.close : ts.cancel}
-            </AltButton>
+            </Button>
           )}
           {!readOnly && (
-            <PriButton
+            <Button
               id="assignClose"
-              onClick={handleClose}
+              color="primary"
               disabled={
                 !schemeName.trim() ||
                 isNameDuplicate ||
                 !(props.inChange || changed) ||
                 saving
               }
+              onClick={handleClose}
             >
               {ts.save}
-            </PriButton>
+            </Button>
           )}
         </DialogActions>
       </Dialog>

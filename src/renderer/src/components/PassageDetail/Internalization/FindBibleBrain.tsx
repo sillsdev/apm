@@ -36,7 +36,7 @@ import {
   useWaitForRemoteQueue,
 } from '../../../utils';
 import usePassageDetailContext from '../../../context/usePassageDetailContext';
-import { ActionRow, AltButton, PriButton } from '../../StepEditor';
+import { Button, ActionRow, rowSx } from '../../../control';
 import { useOrganizedBy } from '../../../crud/useOrganizedBy';
 import { TokenContext } from '../../../context/TokenProvider';
 import VwBiblebrainlanguage from '../../../model/vwbiblebrainlanguage';
@@ -311,33 +311,36 @@ export default function FindBibleBrain({
           <Typography variant="body1">{t.querying}</Typography>
         )}
         <ActionRow>
-          <AltButton
-            disabled={!bibleOpt}
-            onClick={(e) => handleLink('bibleBrain')(e, bibleOpt)}
-            sx={
-              fixedFooterLayout
-                ? {
-                    whiteSpace: 'normal',
-                    overflow: 'visible',
-                    textAlign: 'center',
-                    minWidth: 0,
-                  }
-                : undefined
-            }
-          >
-            {t.launch}
-          </AltButton>
-          <PriButton
-            disabled={
-              !bibleOpt ||
-              adding ||
-              (!createPassages && !createSections && timing) ||
-              (creationScope === scopeI.passage && createSections)
-            }
-            onClick={() => handleAdd()}
-          >
-            {t.create}
-          </PriButton>
+          <Box sx={rowSx}>
+            <Button
+              sx={
+                fixedFooterLayout
+                  ? {
+                      whiteSpace: 'normal',
+                      overflow: 'visible',
+                      textAlign: 'center',
+                      minWidth: 0,
+                    }
+                  : undefined
+              }
+              disabled={!bibleOpt}
+              onClick={(e) => handleLink('bibleBrain')(e, bibleOpt)}
+            >
+              {t.launch}
+            </Button>
+            <Button
+              color="primary"
+              disabled={
+                !bibleOpt ||
+                adding ||
+                (!createPassages && !createSections && timing) ||
+                (creationScope === scopeI.passage && createSections)
+              }
+              onClick={() => handleAdd()}
+            >
+              {t.create}
+            </Button>
+          </Box>
         </ActionRow>
       </Grid>
     </Box>

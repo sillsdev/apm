@@ -4,7 +4,6 @@ import {
   alpha,
   Box,
   BoxProps,
-  Button,
   Card,
   CardContent,
   CardProps,
@@ -58,7 +57,7 @@ import {
   ArtifactCategoryType,
   useArtifactCategory,
 } from '../../crud/useArtifactCategory';
-import { LightTooltip, StageReport } from '../../control';
+import { Button, LightTooltip, StageReport } from '../../control';
 import { PassageDetailContext } from '../../context/PassageDetailContext';
 import {
   removeExtension,

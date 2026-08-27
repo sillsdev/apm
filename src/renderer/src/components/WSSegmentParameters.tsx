@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/refs */
 import {
   Box,
   Typography,
@@ -17,10 +16,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import Paper from '@mui/material/Paper';
 import { default as DraggableBar, DraggableProps } from 'react-draggable';
 import { IRegionParams } from '../crud/useWavesurferRegions';
-import { AltButton } from '../control/AltButton';
-import { GrowingSpacer } from '../control/GrowingSpacer';
-import { IosSlider } from '../control/IosSlider';
-import { PriButton } from '../control/PriButton';
+import { Button, IosSlider, GrowingSpacer, rowSx } from '../control';
 import { sharedSelector, wsAudioPlayerSegmentSelector } from '../selector';
 import { shallowEqual, useSelector } from 'react-redux';
 
@@ -208,33 +204,35 @@ function WSSegmentParameters(props: IProps) {
         </Box>
       </DialogContent>
       <DialogActions>
-        <PriButton
-          autoFocus
-          sx={btnProp}
-          onClick={handleApply}
-          disabled={applyingRef.current}
-        >
-          {t.apply}
-        </PriButton>
-        <AltButton
-          sx={btnProp}
-          onClick={handleClose}
-          disabled={applyingRef.current}
-        >
-          {t.close}
-        </AltButton>
-        {canSetDefault && (
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={teamDefault}
-                onChange={(event) => handleTeamCheck(event.target.checked)}
-                value="teamDefault"
-              />
-            }
-            label={ts.teamDefault}
-          />
-        )}
+        <Box sx={rowSx}>
+          <Button
+            sx={btnProp}
+            color="primary"
+            disabled={applyingRef.current}
+            onClick={handleApply}
+          >
+            {t.apply}
+          </Button>
+          <Button
+            sx={btnProp}
+            disabled={applyingRef.current}
+            onClick={handleClose}
+          >
+            {t.close}
+          </Button>
+          {canSetDefault && (
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={teamDefault}
+                  onChange={(event) => handleTeamCheck(event.target.checked)}
+                  value="teamDefault"
+                />
+              }
+              label={ts.teamDefault}
+            />
+          )}
+        </Box>
       </DialogActions>
     </Dialog>
   );

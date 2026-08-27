@@ -5,7 +5,6 @@ import {
   PassageStateChangeD,
 } from '../model';
 import {
-  Button,
   Dialog,
   DialogActions,
   DialogContent,
@@ -14,7 +13,7 @@ import {
 } from '@mui/material';
 import { transcribeAddNoteSelector } from '../selector';
 import { shallowEqual, useSelector } from 'react-redux';
-import { commentProps } from '../control';
+import { Button, commentProps } from '../control';
 
 interface IProps {
   passageIn?: PassageD | undefined;

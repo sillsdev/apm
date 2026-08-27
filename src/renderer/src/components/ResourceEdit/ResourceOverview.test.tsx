@@ -48,12 +48,13 @@ jest.mock('../../control', () => ({
   ActionRow: ({ children }: { children?: React.ReactNode }) => (
     <div>{children}</div>
   ),
-  AltButton: (props: {
+  Button: (props: {
     id?: string;
     onClick?: () => void;
+    disabled?: boolean;
     children?: React.ReactNode;
   }) => (
-    <button id={props.id} onClick={props.onClick}>
+    <button id={props.id} onClick={props.onClick} disabled={props.disabled}>
       {props.children}
     </button>
   ),
@@ -61,13 +62,10 @@ jest.mock('../../control', () => ({
   LightTooltip: ({ children }: { children?: React.ReactNode }) => (
     <>{children}</>
   ),
-  PriButton: (props: {
-    id?: string;
-    children?: React.ReactNode;
-  }) => (
-    <button id={props.id}>{props.children}</button>
-  ),
   Language: () => null,
+  // rowSx is a theme callback needing the app theme augmentation; the plain
+  // object keeps the Box happy without a ThemeProvider.
+  rowSx: {},
 }));
 
 jest.mock('./NoteTitle', () => ({

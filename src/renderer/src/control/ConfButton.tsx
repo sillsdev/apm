@@ -1,5 +1,5 @@
 import * as React from 'react';
-import Button from '@mui/material/Button';
+import { Button } from './Button';
 import ButtonGroup from '@mui/material/ButtonGroup';
 import SettingsIcon from '@mui/icons-material/Settings';
 
@@ -51,6 +51,7 @@ export default function ConfButton({
         </Button>
         {showSettings && (
           <Button
+            disableTypography
             size="small"
             onClick={handleSettings}
             disabled={disabled && !allowSettings}

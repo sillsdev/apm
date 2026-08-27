@@ -193,6 +193,20 @@ const initState = {
   uploadItem: '',
   currentSegment: '',
   currentSegmentIndex: -1,
+  /**
+   * Increments on every actual change of the current segment.
+   *
+   * `currentSegmentIndex` cannot be used to notice a change, because its
+   * numbering is not agreed: the waveform writes a 1-based sorted position
+   * (0 meaning "whole") via usePlayerLogic, Mark Verses writes a table row, and
+   * PassageDetailGuidedPhraseRecord writes a 0-based clause index. A real move
+   * can therefore arrive carrying the number the previous writer used — e.g.
+   * selecting segment 2 (waveform: 1+1) right after the step selected segment 3
+   * (step: 2) — and an effect watching the index alone never re-runs.
+   *
+   * Watch this instead when you only need to know that the selection moved.
+   */
+  currentSegmentSeq: 0,
   setCurrentSegment: (_segment: IRegion | undefined, index: number) => {}, //replace the above two
   setupLocate: (cb?: (segments: string) => void) => {},
   getCurrentSegment: () => undefined as IRegion | undefined,
@@ -300,6 +314,8 @@ const PassageDetailProvider = (props: IProps) => {
   const mediaPosition = useRef<number | undefined>(undefined);
   const currentSegmentRef = useRef<IRegion | undefined>(undefined);
   const currentSegmentIndexRef = useRef(-1);
+  /** Change token for the current segment; see initState.currentSegmentSeq. */
+  const currentSegmentSeqRef = useRef(0);
   const { startSave, startClear, waitForSave, forceClearPending } =
     useContext(UnsavedContext).state;
   const highlightRef = useRef<number | undefined>(undefined);
@@ -1004,10 +1020,12 @@ const PassageDetailProvider = (props: IProps) => {
     ) {
       currentSegmentRef.current = segment;
       currentSegmentIndexRef.current = currentSegmentIndex;
+      currentSegmentSeqRef.current += 1;
       setState((state: ICtxState) => ({
         ...state,
         currentSegment: prettySegment(segment),
         currentSegmentIndex,
+        currentSegmentSeq: currentSegmentSeqRef.current,
       }));
     }
   };

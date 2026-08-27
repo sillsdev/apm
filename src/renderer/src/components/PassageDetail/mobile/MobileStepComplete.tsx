@@ -1,6 +1,6 @@
 import { useCallback, useContext, useMemo } from 'react';
 import { useGlobal } from '../../../context/useGlobal';
-import { Box, Button } from '@mui/material';
+import { Box } from '@mui/material';
 import CompleteIcon from '@mui/icons-material/CheckBox';
 import NotCompleteIcon from '@mui/icons-material/CheckBoxOutlineBlank';
 import usePassageDetailContext from '../../../context/usePassageDetailContext';
@@ -13,6 +13,7 @@ import { ToolSlug, useStepTool } from '../../../crud';
 import { UnsavedContext } from '../../../context/UnsavedContext';
 import { verseToolId } from '../markVersesTool';
 import { useSnackBar } from '../../../hoc/SnackBar';
+import { Button } from '../../../control/Button';
 
 export default function MobileStepComplete() {
   const {
@@ -84,40 +85,19 @@ export default function MobileStepComplete() {
   return (
     <Button
       id="mobile-complete"
-      size="small"
       title={t.title}
-      onClick={handleToggleComplete}
-      disabled={!hasPermission || recording || busy || importexportBusy}
+      variant="outlined"
       startIcon={
         complete ? (
-          <CompleteIcon
-            id="step-yes"
-            fontSize="small"
-            sx={{ color: 'black' }}
-          />
+          <CompleteIcon id="step-yes" />
         ) : (
-          <NotCompleteIcon id="step-no" fontSize="small" />
+          <NotCompleteIcon id="step-no" />
         )
       }
-      sx={{
-        minWidth: 0,
-        maxWidth: '100%',
-        '@media (max-width:405px)': { px: 1 },
-      }}
+      disabled={!hasPermission || recording || busy || importexportBusy}
+      onClick={handleToggleComplete}
     >
-      <Box
-        component="span"
-        sx={{
-          display: 'block',
-          minWidth: 0,
-          maxWidth: '100%',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          whiteSpace: 'nowrap',
-        }}
-      >
-        {t.title}
-      </Box>
+      {t.title}
     </Button>
   );
 }
