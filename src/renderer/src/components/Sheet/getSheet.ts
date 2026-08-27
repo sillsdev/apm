@@ -63,34 +63,46 @@ const shtSectionAdd = (sheet: ISheet[], item: ISheet) => {
 };
 
 const shtPassageUpdate = (item: ISheet, rec: ISheet) => {
-  if (item.passageUpdated && rec.passageUpdated)
-    if (item.passageUpdated > rec.passageUpdated) {
-      rec.level = item.level;
-      rec.kind = item.kind;
-      rec.passageSeq = item.passageSeq;
-      rec.book = item.book;
-      rec.comment = item.comment;
-      rec.passage = item.passage;
-      rec.deleted = item.deleted;
-      rec.passageUpdated = item.passageUpdated;
-      //if it's a note with a category and the new reference doesn't have a category, keep the original reference
-      rec.reference =
-        rec.reference?.startsWith('NOTE|') && (item.reference?.length ?? 0) < 6
-          ? rec.reference
-          : item.reference;
-      if (
-        rec.passage &&
-        rec.reference &&
-        rec.passage.attributes.reference !== rec.reference
-      ) {
-        rec.passage = {
-          ...rec.passage,
-          attributes: { ...rec.passage.attributes, reference: rec.reference },
-        };
-      }
-      return true;
-    }
-  return false;
+  if (!item.passage) return false;
+  const touched = Boolean(
+    item.passageUpdated &&
+    rec.passageUpdated &&
+    item.passageUpdated > rec.passageUpdated
+  );
+  //fields derived from other records (mediafile, sharedresource) change without
+  //moving passage.dateUpdated, so refresh them every pass
+  if (touched) {
+    rec.level = item.level;
+    rec.kind = item.kind;
+    rec.passageSeq = item.passageSeq;
+    rec.book = item.book;
+    rec.comment = item.comment;
+    rec.passage = item.passage;
+    rec.deleted = item.deleted;
+  }
+  rec.sharedResource = item.sharedResource;
+  rec.mediaId = item.mediaId;
+  rec.mediaShared = item.mediaShared;
+  rec.published = item.published;
+  rec.publishStatus = item.publishStatus;
+  //if it's a note with a category and the new reference doesn't have a category, keep the original reference
+  rec.reference =
+    rec.reference?.startsWith('NOTE|') && (item.reference?.length ?? 0) < 6
+      ? rec.reference
+      : item.reference;
+  if (
+    rec.passage &&
+    rec.reference &&
+    rec.passage.attributes.reference !== rec.reference
+  ) {
+    rec.passage = {
+      ...rec.passage,
+      attributes: { ...rec.passage.attributes, reference: rec.reference },
+    };
+  }
+
+  rec.passageUpdated = item.passageUpdated;
+  return touched;
 };
 
 const shtPassageAdd = (

@@ -755,6 +755,26 @@ test('update one flat section to two flat section ignoring other plan', () => {
   ]);
 });
 
+test('merge picks up a shared resource added without touching the passage', () => {
+  const sheet = getSheet({
+    ...gsDefaults,
+    plan: 'pl1',
+    sections: [s1],
+    passages: [pa1],
+  } as any);
+  expect((sheet[1] as ISheet).sharedResource).toBeUndefined();
+  const sr = { type: 'sharedresource', id: 'sr1' } as any;
+  const updated = getSheet({
+    ...gsDefaults,
+    plan: 'pl1',
+    sections: [s1],
+    passages: [pa1],
+    current: sheet.map((r) => ({ ...r })),
+    getSharedResource: () => sr,
+  } as any);
+  expect((updated[1] as ISheet).sharedResource).toBe(sr);
+});
+
 test('one section and one passage with step gives output', () => {
   expect(
     getSheet({
