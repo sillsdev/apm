@@ -109,6 +109,8 @@ interface IProps {
   /** When true, show the docked record button even if allowRecord is false (button may be disabled). */
   showDockedRecordButton?: boolean;
   onRecordingCleared?: () => void;
+  /** Gate starting a new recording; return false (or resolve false) to abort. */
+  onBeforeStartRecord?: () => boolean | Promise<boolean>;
 }
 export const DEFAULT_COMPRESSED_MIME = 'audio/ogg;codecs=opus';
 
@@ -172,6 +174,7 @@ function MediaRecord(props: IProps) {
     showDockedRecordButton,
     onRecordingCleared,
     onSaveRejected,
+    onBeforeStartRecord,
   } = props;
   const context = usePassageDetailContext();
   const simplified = Boolean(context?.isBoldWorkflow);
@@ -849,6 +852,7 @@ function MediaRecord(props: IProps) {
         onDockedRecordButton={onDockedRecordButton}
         showDockedRecordButton={showDockedRecordButton}
         onRecordingCleared={handleRecordingCleared}
+        onBeforeStartRecord={onBeforeStartRecord}
       />
       {showProcessingRecordingMessage ? (
         <Typography sx={{ m: 2, color: 'text.secondary' }} id="warning">
