@@ -89,7 +89,6 @@ export const TeamScreen = () => {
             sx={[
               flexibleSx,
               (theme) => ({
-                maxWidth: 250,
                 py: theme.layout.gap,
                 pl: theme.layout.gap,
               }),
