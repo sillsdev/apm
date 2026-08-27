@@ -1,5 +1,6 @@
 import React from 'react';
 import { Box } from '@mui/material';
+import { columnSx } from '../../control';
 import { TeamContext } from '../../context/TeamContext';
 import { useGlobal } from '../../context/useGlobal';
 import { related } from '../../crud';
@@ -20,13 +21,7 @@ export const TeamProjects = () => {
   return (
     <>
       <CardSizeProvider>
-        <Box
-          sx={(theme) => ({
-            display: 'flex',
-            flexDirection: 'column',
-            gap: theme.layout.gap,
-          })}
-        >
+        <Box sx={columnSx}>
           {(personalProjects.length > 0 || !offline || offlineOnly) && (
             <PersonalItem key={1} />
           )}

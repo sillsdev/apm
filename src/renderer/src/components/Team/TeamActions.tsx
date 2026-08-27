@@ -9,7 +9,7 @@ import {
   pendingMediaUploadCount,
   subscribePendingMediaUploads,
 } from '../../store/upload/pendingMediaUploads';
-import { Button } from '../../control';
+import { Button, columnSx } from '../../control';
 import { BigDialogBp } from '../../hoc/BigDialogBp';
 import ImportTab from '../ImportTab';
 import TeamDialog from './TeamDialog';
@@ -52,13 +52,7 @@ export default function TeamActions() {
   );
 
   return (
-    <Box
-      sx={(theme) => ({
-        display: 'flex',
-        flexDirection: 'column',
-        gap: theme.layout.gap,
-      })}
-    >
+    <Box sx={columnSx}>
       {((!offline && connected) || offlineOnly) && (
         <Button id="TeamActAdd" onClick={handleAddClick}>
           {t.addTeam}
@@ -68,7 +62,11 @@ export default function TeamActions() {
         {t.import}
       </Button>
       {isElectron && !offline && (
-        <Badge badgeContent={pendingCount} color="warning" overlap="rectangular">
+        <Badge
+          badgeContent={pendingCount}
+          color="warning"
+          overlap="rectangular"
+        >
           <Button
             id="teamActPendingUploads"
             onClick={() => setPendingOpen(true)}
@@ -79,7 +77,11 @@ export default function TeamActions() {
         </Badge>
       )}
       {!offline && userIsSharedContentAdmin && (
-        <Button id="contentCreator" onClick={handleContentClick} disableTypography>
+        <Button
+          id="contentCreator"
+          onClick={handleContentClick}
+          disableTypography
+        >
           <AddIcon />
         </Button>
       )}

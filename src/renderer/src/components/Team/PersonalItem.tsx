@@ -97,20 +97,13 @@ export const PersonalItem = () => {
                 </IconButton>
               )}
             {canModify(isOffline, offlineOnly, connected) && (
-              <Button
-                id="editWorkflow"
-                variant="contained"
-                color="secondary"
-                onClick={handleEditWorkflow}
-              >
+              <Button id="editWorkflow" onClick={handleEditWorkflow}>
                 {t.editWorkflow.replace('{0}', '')}
               </Button>
             )}
             {canModify(isOffline, offlineOnly, connected) && (
               <Button
                 id="teamSettings"
-                variant="contained"
-                color="secondary"
                 onClick={handleSettings}
                 disabled={busy}
               >

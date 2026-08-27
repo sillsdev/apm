@@ -160,7 +160,11 @@ describe('pendingMediaUploads', () => {
       localAbsolutePath: '/b/other.mp3',
       fileSize: 50,
       uploadType: UploadType.Media,
-      record: { ...baseRecord, originalFile: 'other.mp3', passageId: 'passage-2' },
+      record: {
+        ...baseRecord,
+        originalFile: 'other.mp3',
+        passageId: 'passage-2',
+      },
     });
 
     const removed = removeMatchingPendingUploads({
