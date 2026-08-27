@@ -36,6 +36,8 @@ import {
   handleUnauthorized,
   resetUnauthorizedRetry,
   skipRemoteQueue,
+  needItfSync,
+  clearNeedItfSync,
 } from './utils';
 import { isUnauthorized, isFetchNetworkError } from './utils/httpError';
 import { removeOrbitRemote } from './utils/removeOrbitRemote';
@@ -470,34 +472,41 @@ const sourcesImpl = async (
     // ITFSYNC filters projects by offlineproject in memory — await the same
     // restorePromise so those records are present.
     setProjectsLoaded(await restoreBackup(coordinator));
-    const fr = await electronExport(
-      ExportType.ITFSYNC,
-      undefined, //all artifact types
-      memory,
-      backup,
-      0,
-      0,
-      '',
-      '',
-      getOfflineProject
-    ).catch((err: Error) => {
-      console.log(
-        'ITFSYNC export failed: ',
-        err.message,
-        err.name,
-        err.cause,
-        err.stack
-      );
-      logError(
-        Severity.error,
-        errorReporter,
-        infoMsg(err, 'ITFSYNC export failed: ')
-      );
-      throw err;
-    });
-    if (fr && fr.changes > 0) {
-      syncBuffer = fr.buffer;
-      syncFile = fr.message;
+    // Only pack/send an ITF after a real offline session. A normal online
+    // Electron start used to run ITFSYNC whenever restore found
+    // offlineAvailable projects with dateUpdated > snapshotDate (including
+    // ordinary online edits since the last data-changes poll).
+    if (needItfSync()) {
+      const fr = await electronExport(
+        ExportType.ITFSYNC,
+        undefined, //all artifact types
+        memory,
+        backup,
+        0,
+        0,
+        '',
+        '',
+        getOfflineProject
+      ).catch((err: Error) => {
+        console.log(
+          'ITFSYNC export failed: ',
+          err.message,
+          err.name,
+          err.cause,
+          err.stack
+        );
+        logError(
+          Severity.error,
+          errorReporter,
+          infoMsg(err, 'ITFSYNC export failed: ')
+        );
+        throw err;
+      });
+      if (fr && fr.changes > 0) {
+        syncBuffer = fr.buffer;
+        syncFile = fr.message;
+      }
+      clearNeedItfSync();
     }
   }
   /* set the user from the token - must be done after the backup is loaded and after changes to offline are recorded */

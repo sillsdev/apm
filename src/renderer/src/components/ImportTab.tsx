@@ -97,8 +97,13 @@ import { convertWrapperToPTFs } from '../utils/burritoConversion';
 import FilterContent from './FilterContent';
 import { preprocessTextTranslationBurritoToUsfm } from '../burrito/preprocessTextTranslationBurritoToUsfm';
 import { readItfEmbeddedProject } from '../utils/readItfEmbeddedProject';
+import { shouldStartItfSyncUpload } from './shouldStartItfSyncUpload';
 
 const ipc = window?.api as MainAPI;
+
+// Module-level: a component ref resets on Strict Mode remount, which would
+// fire uploadSyncITF twice and send 2713_APM0_backup.itfs then a ticks-renamed copy.
+let lastItfSyncBuffer: Buffer | undefined;
 
 const headerProps = {
   display: 'flex',
@@ -368,7 +373,12 @@ export function ImportTab(props: IProps) {
   useEffect(() => {
     setImportTitle('');
     setChangeData([]);
-    if (isElectron && syncFile && syncBuffer) {
+    if (
+      isElectron &&
+      syncFile &&
+      shouldStartItfSyncUpload(syncBuffer, lastItfSyncBuffer)
+    ) {
+      lastItfSyncBuffer = syncBuffer;
       uploadSyncITF(syncBuffer, syncFile);
     } // Need to ask user if they want to import PTF or ITF
     else if (offerPtf) setShowImportTypeSelection(true);
