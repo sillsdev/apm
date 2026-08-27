@@ -19,7 +19,7 @@ import Uploader from '../../Uploader';
 import AddResource from './AddResource';
 import SortableHeader from './SortableHeader';
 import { IRow } from '../../../context/PassageDetailContext';
-import { AltButton } from '../../../control';
+import { Button } from '../../../control';
 import { AIGenerated, SortableItem } from '.';
 import {
   remoteIdGuid,
@@ -61,6 +61,7 @@ import {
   Stack,
   styled,
   Typography,
+  useTheme,
 } from '@mui/material';
 import { ReplaceRelatedRecord } from '../../../model/baseModel';
 import { PassageResourceButton } from './PassageResourceButton';
@@ -74,6 +75,7 @@ import {
   removeExtension,
   isVisual,
   isUrl,
+  useMobile,
 } from '../../../utils';
 import { useOrbitData } from '../../../hoc/useOrbitData';
 import {
@@ -100,6 +102,7 @@ import FindTabs from './FindTabs';
 import { storedCompareKey } from '../../../utils/storedCompareKey';
 import { mediaContentType } from '../../../utils/contentType';
 import { useStepPermissions } from '../../../utils/useStepPermission';
+import { isLinkedNote } from '../../../crud/isLinkedNote';
 import FindBibleBrain from './FindBibleBrain';
 import { useHandleLink } from './addLinkKind';
 import { usePassageRef } from './usePassageRef';
@@ -119,6 +122,7 @@ const MediaContainer = styled(Box)<BoxProps>(({ theme }) => ({
 }));
 
 export function PassageDetailArtifacts() {
+  const theme = useTheme();
   const sectionResources = useOrbitData<SectionResourceD[]>('sectionresource');
   const mediafiles = useOrbitData<MediaFileD[]>('mediafile');
   const artifactTypes = useOrbitData<ArtifactType[]>('artifacttype');
@@ -144,6 +148,7 @@ export function PassageDetailArtifacts() {
     handleItemPlayEnd,
     handleItemTogglePlay,
     getProjectResources,
+    sharedResource,
   } = usePassageDetailContext();
   const { getOrganizedBy } = useOrganizedBy();
   const { AddSectionResource } = useSecResCreate(section);
@@ -221,7 +226,13 @@ export function PassageDetailArtifacts() {
   );
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
   const { canDoSectionStep } = useStepPermissions();
-  const hasPermission = canDoSectionStep(currentstep, section);
+  const hasPermission =
+    canDoSectionStep(currentstep, section) &&
+    !isLinkedNote(passage, sharedResource);
+  const modifiable = useMemo(
+    () => hasPermission && (!offline || offlineOnly),
+    [hasPermission, offline, offlineOnly]
+  );
   const [biblebrainClose, setBiblebrainClose] = useState(false);
   const getGlobal = useGetGlobal();
   const handleLink = useHandleLink({ passage, setLink });
@@ -428,6 +439,7 @@ export function PassageDetailArtifacts() {
         contentType: ct,
         description: descriptionRef.current,
         text: textRef.current ?? '',
+        originalFile: mf?.attributes?.originalFile,
         isUrl,
       })
     );
@@ -613,6 +625,7 @@ export function PassageDetailArtifacts() {
     oldIndex: number;
     newIndex: number;
   }) => {
+    if (!modifiable) return;
     if (oldIndex === newIndex) return;
     const indexes = Array<number>();
     rowData.forEach((r, i) => {
@@ -621,8 +634,7 @@ export function PassageDetailArtifacts() {
     const newIndexes = arrayMove(indexes, oldIndex, newIndex) as number[];
     for (let i = 0; i < newIndexes.length; i += 1) {
       const secResRec = sectionResources.find(
-        (r) =>
-          related(r, 'mediafile') === (rowData[newIndexes[i] ?? 0] as IRow).id
+        (r) => related(r, 'mediafile') === rowData[newIndexes[i]].id
       );
       if (secResRec && secResRec.attributes?.sequenceNum !== i) {
         UpdateSectionResource({
@@ -631,9 +643,12 @@ export function PassageDetailArtifacts() {
         });
       }
     }
-    const newRows = rowData
-      .map((r, i) => (listFilter(r) ? rowData[newIndexes[i] ?? 0] : r))
-      .filter((r) => r !== undefined);
+    // newIndexes is indexed by display (filtered) position, so track that
+    // separately from the rowData position while rebuilding the list.
+    let displayIndex = 0;
+    const newRows = rowData.map((r) =>
+      listFilter(r) ? rowData[newIndexes[displayIndex++]] : r
+    );
     forceRefresh(newRows);
   };
 
@@ -801,6 +816,7 @@ export function PassageDetailArtifacts() {
         contentType: ct,
         description: descriptionRef.current,
         text,
+        originalFile: mediaRef.current?.attributes?.originalFile,
         isUrl,
       })
     );
@@ -844,6 +860,7 @@ export function PassageDetailArtifacts() {
           contentType: ct,
           description: desc,
           text: textRef.current ?? '',
+          originalFile: mediaRef.current?.attributes?.originalFile,
           isUrl,
         })
       );
@@ -880,6 +897,7 @@ export function PassageDetailArtifacts() {
   };
 
   const [hasProjRes, setHasProjRes] = useState(false);
+  const { isMobileWidth } = useMobile();
 
   useEffect(() => {
     getProjectResources().then((res) => setHasProjRes(res.length > 0));
@@ -892,24 +910,20 @@ export function PassageDetailArtifacts() {
     [plan]
   );
 
-  const modifiable = useMemo(
-    () => hasPermission && (!offline || offlineOnly),
-    [hasPermission, offline, offlineOnly]
-  );
-
   return (
     <>
       <Stack sx={{ width: '100%' }} direction="row" spacing={1}>
         <Grid
           container
           size={12}
+          spacing={theme.layout.p}
           sx={{ display: 'flex', alignItems: 'center' }}
         >
           {isScripture && (
             <Grid>
-              <AltButton onClick={() => handleFindVisible(true)}>
+              <Button disableTypography onClick={() => handleFindVisible(true)}>
                 <Badge badgeContent={`(${ts.ai})`}>{t.research}</Badge>
-              </AltButton>
+              </Button>
             </Grid>
           )}
           {hasPermission && (!offline || offlineOnly) && (
@@ -917,11 +931,11 @@ export function PassageDetailArtifacts() {
               <Grid>
                 <AddResource action={handleAction} />
               </Grid>
-              {hasProjRes && (
+              {hasProjRes && !isMobileWidth && (
                 <Grid>
-                  <AltButton onClick={() => setProjectResourceVisible(true)}>
+                  <Button onClick={() => setProjectResourceVisible(true)}>
                     {t.configure}
-                  </AltButton>
+                  </Button>
                 </Grid>
               )}
             </>
@@ -952,8 +966,13 @@ export function PassageDetailArtifacts() {
           )}
         </Grid>
       </Stack>
-      <SortableHeader />
-      <VertListDnd key={`sort-${sortKey}`} onDrop={onSortEnd} dragHandle>
+      <SortableHeader showDragHandle={modifiable} />
+      <VertListDnd
+        key={`sort-${sortKey}`}
+        onDrop={onSortEnd}
+        dragHandle
+        isDragDisabled={!modifiable}
+      >
         {selectedRows.map((value, index) => (
           <SortableItem
             key={`item-${index}`}
@@ -967,6 +986,7 @@ export function PassageDetailArtifacts() {
             onDone={handleDone}
             onDelete={modifiable ? handleDelete : undefined}
             onEdit={modifiable ? handleEdit : undefined}
+            showDragHandle={modifiable}
           />
         ))}
       </VertListDnd>
@@ -1057,7 +1077,11 @@ export function PassageDetailArtifacts() {
         />
       </BigDialog>
       <BigDialog
-        title={isAddingAudioResourceRef.current ? t.addAudioResource : t.editAudioResource}
+        title={
+          isAddingAudioResourceRef.current
+            ? t.addAudioResource
+            : t.editAudioResource
+        }
         description={
           <Typography sx={{ color: 'text.secondary' }}>
             {t.selectPassagesSub}

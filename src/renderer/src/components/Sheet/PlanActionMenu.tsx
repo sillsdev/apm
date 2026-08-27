@@ -7,14 +7,7 @@ import {
   IPassageTypeStrings,
 } from '../../model';
 import { shallowEqual, useSelector } from 'react-redux';
-import {
-  Box,
-  Button,
-  Popper,
-  Grow,
-  Paper,
-  ClickAwayListener,
-} from '@mui/material';
+import { Box, Popper, Grow, Paper, ClickAwayListener } from '@mui/material';
 import MoreIcon from '@mui/icons-material/MoreHoriz';
 import { elemOffset } from '../../utils';
 import {
@@ -25,6 +18,17 @@ import {
 } from '../../selector';
 import { PlanMoreMenuItems } from './PlanMoreMenuItems';
 import { ExtraIcon } from '.';
+import { Button } from '../../control/Button';
+
+/** Live row selection — menus consume this so they close without a grid refill. */
+// only PlanActionMenu reads this; a split file would exist only for Fast Refresh
+// eslint-disable-next-line react-refresh/only-export-components
+export const PlanSheetRowCtx = React.createContext({
+  currentRow: -1,
+  activeRow: -1,
+  sheetCurrentI: -1,
+  clearActive: () => {},
+});
 
 interface IProps {
   rowIndex: number;
@@ -34,7 +38,6 @@ interface IProps {
   readonly: boolean;
   canAssign: boolean;
   canDelete: boolean;
-  active: boolean;
   organizedBy: string;
   sectionSequenceNumber: string;
   passageSequenceNumber: string;
@@ -49,7 +52,9 @@ interface IProps {
   onAction: (i: number, what: ExtraIcon) => void;
 }
 export function PlanActionMenu(props: IProps) {
-  const { active } = props;
+  const { rowIndex } = props;
+  const { currentRow, activeRow, clearActive } =
+    React.useContext(PlanSheetRowCtx);
   const t: IPlanActionsStrings = useSelector(planActionsSelector, shallowEqual);
   const p: IPlanSheetStrings = useSelector(planSheetSelector, shallowEqual);
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
@@ -119,27 +124,50 @@ export function PlanActionMenu(props: IProps) {
       }
       window.removeEventListener('mouseover', handleMove);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // return focus to the button when we transitioned from !open -> open
   const prevOpen = React.useRef(open);
   React.useEffect(() => {
     if (prevOpen.current === true && open === false) {
-      anchorRef.current!.focus();
+      if (currentRow < 1 || currentRow - 1 === rowIndex) {
+        anchorRef.current?.focus();
+      }
     }
 
     prevOpen.current = open;
-  }, [open]);
+  }, [open, currentRow, rowIndex]);
 
   React.useEffect(() => {
-    if (active) setOpen(true);
-  }, [active]);
+    if (activeRow > 0 && activeRow - 1 === rowIndex) setOpen(true);
+  }, [activeRow, rowIndex]);
+
+  React.useEffect(() => {
+    if (currentRow >= 1 && currentRow - 1 !== rowIndex) {
+      setOpen(false);
+      setHover(false);
+      clearActive();
+    }
+  }, [currentRow, rowIndex, clearActive]);
+
+  React.useEffect(() => {
+    const tr = menuRef.current?.closest('tr');
+    if (!tr) return;
+    const leave = (e: MouseEvent) => {
+      if (tr.contains(e.relatedTarget as Node)) return;
+      setOpen(false);
+      setHover(false);
+      clearActive();
+    };
+    tr.addEventListener('mouseleave', leave);
+    return () => tr.removeEventListener('mouseleave', leave);
+  }, [clearActive]);
 
   return (
     <Box ref={menuRef} sx={{ display: 'flex' }}>
       <div>
         <Button
+          disableTypography
           id="planMore"
           ref={anchorRef}
           aria-controls={open ? 'menu-list-grow' : undefined}

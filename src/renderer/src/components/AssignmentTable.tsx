@@ -6,8 +6,24 @@ import {
   MouseEventHandler,
   useRef,
 } from 'react';
-import { useGlobal } from '../context/useGlobal';
-import { shallowEqual } from 'react-redux';
+import { useSelector, shallowEqual } from 'react-redux';
+import {
+  Box,
+  debounce,
+  Menu,
+  MenuItem,
+  styled,
+  Typography,
+} from '@mui/material';
+import DropDownIcon from '@mui/icons-material/ArrowDropDown';
+import {
+  GridColumnVisibilityModel,
+  GridRenderCellParams,
+  type GridColDef,
+  type GridRowSelectionModel,
+  type GridSortModel,
+} from '@mui/x-data-grid';
+import { RecordIdentity } from '@orbit/records';
 import {
   IState,
   PassageD,
@@ -19,13 +35,11 @@ import {
   MediaFileD,
   SectionD,
 } from '../model';
-import { RecordIdentity } from '@orbit/records';
-import { Button, debounce, Menu, MenuItem, Typography } from '@mui/material';
-import DropDownIcon from '@mui/icons-material/ArrowDropDown';
-import { AltButton, iconMargin, LightTooltip } from '../control';
-import { useSnackBar } from '../hoc/SnackBar';
-import Confirm from './AlertDialog';
-import AssignSection from './AssignSection';
+import { ReplaceRelatedRecord, UpdateLastModifiedBy } from '../model/baseModel';
+import { OrganizationSchemeD } from '../model/organizationScheme';
+import { PlanContext } from '../context/PlanContext';
+import { useGlobal } from '../context/useGlobal';
+import { pad2 } from '../utils/pad2';
 import {
   related,
   sectionDescription,
@@ -37,40 +51,29 @@ import {
   useOrgDefaults,
   orgDefaultPermissions,
 } from '../crud';
-import {
-  TabAppBar,
-  TabActions,
-  PaddedBox,
-  GrowingSpacer,
-  FillColumn,
-} from '../control';
-import { ReplaceRelatedRecord, UpdateLastModifiedBy } from '../model/baseModel';
-import { PlanContext } from '../context/PlanContext';
+import { useMobile } from '../utils';
+import { useSnackBar } from '../hoc/SnackBar';
 import { useOrbitData } from '../hoc/useOrbitData';
-import { useSelector } from 'react-redux';
 import {
   activitySelector,
   assignmentSelector,
   sharedSelector,
 } from '../selector';
+import { Button, LightTooltip, spreadSx, rowSx } from '../control';
+import ContentLayout from './App/ContentLayout';
 import { GetReference } from './AudioTab/GetReference';
-import { OrganizationSchemeD } from '../model/organizationScheme';
-import {
-  GridColumnVisibilityModel,
-  GridRenderCellParams,
-  type GridColDef,
-  type GridRowSelectionModel,
-  type GridSortModel,
-} from '@mui/x-data-grid';
-import { TreeDataGrid } from './TreeDataGrid';
-import { pad2 } from '../utils/pad2';
+import { PlanTabSelect } from './Sheet/PlanTabSelect';
+import Confirm from './AlertDialog';
+import AssignSection from './AssignSection';
 import { resolveSelectedSections } from './resolveSectionForRecId';
+import { TreeDataGrid } from './TreeDataGrid';
 
-const assignmentHideProps = {
+const AssignmentDiv = styled('div')(() => ({
+  display: 'flex',
   '& tr > td > div > span.MuiButtonBase-root:nth-of-type(3)': {
     visibility: 'hidden',
   },
-} as const;
+}));
 
 interface IRow {
   id: number;
@@ -104,6 +107,7 @@ export function AssignmentTable() {
   const [plan] = useGlobal('plan'); //will be constant here
   const [org] = useGlobal('organization');
   const { showMessage } = useSnackBar();
+  const { isMobile } = useMobile();
   const ctx = useContext(PlanContext);
   const { flat, sectionArr } = ctx.state;
   const [data, setData] = useState(Array<IRow>());
@@ -496,98 +500,104 @@ export function AssignmentTable() {
   const columnVisibilityModel: GridColumnVisibilityModel = { sort: false };
 
   return (
-    <FillColumn ref={boxRef} id="AssignmentTable" sx={assignmentHideProps}>
-      <FillColumn flex>
-        <TabAppBar position="static" color="default" sx={{ flexShrink: 0 }}>
-          <TabActions>
-            {userIsAdmin && (
-              <>
-                <AltButton
+    <ContentLayout
+      header={
+        <Box sx={spreadSx}>
+          {isMobile ? (
+            <PlanTabSelect />
+          ) : (
+            userIsAdmin && (
+              <Box sx={rowSx}>
+                <Button
                   id="assignAdd"
                   key="assign"
                   aria-label={t.assignSec}
+                  variant="outlined"
                   onClick={handleMenu}
+                  endIcon={<DropDownIcon />}
                 >
                   {isPermission ? t.assignSec : t.assignSec2}
-                  <DropDownIcon sx={iconMargin} />
-                </AltButton>
-                <AltButton
+                </Button>
+                <Button
                   id="assignRem"
                   key="remove"
                   aria-label={t.removeSec}
+                  variant="outlined"
                   onClick={handleRemoveAssignments}
                 >
                   {isPermission ? t.removeSec : t.removeSec2}
-                </AltButton>
-              </>
-            )}
-            <GrowingSpacer />
-          </TabActions>
-        </TabAppBar>
-        <PaddedBox>
-          <TreeDataGrid
-            columns={columns}
-            rows={data}
-            checkboxSelection
-            disableRowSelectionOnClick
-            rowSelectionModel={selectedRows}
-            onRowSelectionModelChange={handleRowSelectionChange}
-            recIdName="recId"
-            expanded={setOpenSections}
-            disableColumnSorting
-            initialState={{
-              sorting: { sortModel },
-              columns: { columnVisibilityModel },
-            }}
-            sx={{ '& .word-wrap': { wordWrap: 'break-spaces' } }}
-          />
-        </PaddedBox>
-      </FillColumn>
-      <Menu
-        id="assign-menu"
-        anchorEl={assignMenu}
-        open={Boolean(assignMenu)}
-        onClose={handleClose}
-      >
-        {orgSchemes
-          .filter(
-            (s) =>
-              related(s, 'organization') === org &&
-              Boolean(s?.attributes?.name?.trim())
-          )
-          .sort(sortSchemes)
-          .map((scheme) => (
-            <MenuItem
-              key={scheme.id}
-              onClick={handleAssignSection(scheme.id)}
-              id={'assign-' + scheme.id}
-            >
-              {scheme.attributes?.name}
-            </MenuItem>
-          ))}
-        <MenuItem id="add-assign" onClick={handleAssignSection('')}>
-          {isPermission ? t.addScheme : t.addScheme2}
-        </MenuItem>
-      </Menu>
-      <AssignSection
-        sections={selectedSections}
-        scheme={assignSectionVisible}
-        visible={assignSectionVisible != null}
-        closeMethod={handleCloseAssignSection}
-        refresh={() => setRefresh((n) => n + 1)}
-        readOnly={readOnly}
-        inChange={hasAssignmentChange(assignSectionVisible)}
-      />
-      {confirmAction !== '' ? (
-        <Confirm
-          text={confirmAction}
-          yesResponse={handleRemoveAssignmentsConfirmed}
-          noResponse={handleRemoveAssignmentsRefused}
+                </Button>
+              </Box>
+            )
+          )}
+        </Box>
+      }
+      drawBottomBorder={true}
+      contentSx={(theme) => ({ p: theme.layout.gap })}
+    >
+      <AssignmentDiv ref={boxRef} id="AssignmentTable">
+        <TreeDataGrid
+          columns={columns}
+          rows={data}
+          checkboxSelection={!isMobile}
+          disableRowSelectionOnClick
+          rowSelectionModel={selectedRows}
+          onRowSelectionModelChange={handleRowSelectionChange}
+          recIdName="recId"
+          expanded={setOpenSections}
+          disableColumnSorting
+          initialState={{
+            sorting: { sortModel },
+            columns: { columnVisibilityModel },
+          }}
+          sx={{ '& .word-wrap': { wordWrap: 'break-spaces' } }}
         />
-      ) : (
-        <></>
-      )}
-    </FillColumn>
+        <Menu
+          id="assign-menu"
+          anchorEl={assignMenu}
+          open={Boolean(assignMenu)}
+          onClose={handleClose}
+        >
+          {orgSchemes
+            .filter(
+              (s) =>
+                related(s, 'organization') === org &&
+                Boolean(s?.attributes?.name?.trim())
+            )
+            .sort(sortSchemes)
+            .map((scheme) => (
+              <MenuItem
+                key={scheme.id}
+                onClick={handleAssignSection(scheme.id)}
+                id={'assign-' + scheme.id}
+              >
+                {scheme.attributes?.name}
+              </MenuItem>
+            ))}
+          <MenuItem id="add-assign" onClick={handleAssignSection('')}>
+            {isPermission ? t.addScheme : t.addScheme2}
+          </MenuItem>
+        </Menu>
+        <AssignSection
+          sections={selectedSections}
+          scheme={assignSectionVisible}
+          visible={assignSectionVisible != null}
+          closeMethod={handleCloseAssignSection}
+          refresh={() => setRefresh((n) => n + 1)}
+          readOnly={readOnly}
+          inChange={hasAssignmentChange(assignSectionVisible)}
+        />
+        {confirmAction !== '' ? (
+          <Confirm
+            text={confirmAction}
+            yesResponse={handleRemoveAssignmentsConfirmed}
+            noResponse={handleRemoveAssignmentsRefused}
+          />
+        ) : (
+          <></>
+        )}
+      </AssignmentDiv>
+    </ContentLayout>
   );
 }
 

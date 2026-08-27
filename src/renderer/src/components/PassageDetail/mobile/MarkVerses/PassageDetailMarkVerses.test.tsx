@@ -32,6 +32,50 @@ jest.mock('../../../../context/useGlobal', () => ({
   useGetGlobal: jest.fn(),
 }));
 
+// PassageDetailMarkVerses reads isMobile for its edit affordances; pin it so the
+// jsdom default doesn't drift.
+jest.mock('../../../../utils/useMobile', () => ({
+  useMobile: () => ({
+    isMobile: false,
+    isMobileView: false,
+    isMobileWidth: false,
+  }),
+}));
+
+/**
+ * Stub EditReferenceDropdown's wheel as a native select so reference edits stay
+ * deterministic (the real wheel is scroll/pointer driven).
+ */
+jest.mock('@ncdai/react-wheel-picker', () => ({
+  WheelPickerWrapper: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="wheel-wrapper">{children}</div>
+  ),
+  WheelPicker: ({
+    options,
+    value,
+    onValueChange,
+  }: {
+    options: { value: string; label: React.ReactNode }[];
+    value: string;
+    onValueChange: (next: string) => void;
+  }) => (
+    <select
+      data-testid="wheel-select"
+      value={value}
+      onChange={(event) => onValueChange(event.target.value)}
+    >
+      {options.map((option) => (
+        <option
+          key={option.value === '' ? 'empty' : option.value}
+          value={option.value}
+        >
+          {option.label}
+        </option>
+      ))}
+    </select>
+  ),
+}));
+
 interface IRow {
   id: string;
   sequenceNum: number;
@@ -331,6 +375,26 @@ const confirmReset = async (user: UserEvent) => {
 
 const editReferenceDialog = () => screen.getByRole('dialog');
 
+/** The stub select backing the wheel with this aria-label. */
+const wheelByLabel = (label: string) => {
+  const group = within(editReferenceDialog()).getByRole('group', {
+    name: label,
+  });
+  return within(group).getByTestId('wheel-select');
+};
+
+/** Spin a wheel by aria-label to an option value (e.g. "1:2") or label ("2"). */
+const selectByLabel = async (user: UserEvent, label: string, value: string) => {
+  const select = wheelByLabel(label);
+  const match = [...select.querySelectorAll('option')].find(
+    (el) => el.value === value || el.textContent === value
+  );
+  if (!match) {
+    throw new Error(`No option matching "${value}" for "${label}"`);
+  }
+  await user.selectOptions(select, match);
+};
+
 /**
  * Click the in-row "Edit Reference" button. It now renders as a compact icon
  * button inside the current table row (visible text "Edit"), so its accessible
@@ -483,10 +547,7 @@ test('highlights the matching waveform region when a row is edited', async () =>
   await user.click(
     within(editReferenceDialog()).getByRole('checkbox', { name: 'Split Verse' })
   );
-  await user.selectOptions(
-    within(editReferenceDialog()).getByLabelText('start verse suffix'),
-    'a'
-  );
+  await selectByLabel(user, 'start verse suffix', 'a');
   await user.click(
     within(editReferenceDialog()).getByRole('button', { name: 'Save' })
   );
@@ -596,7 +657,7 @@ test('opens and cancels the split verse dialog', async () => {
       name: `Edit Reference for ${lim(0, 10)}`,
     })
   ).toBeInTheDocument();
-  expect(screen.getByLabelText('end verse number')).not.toBeDisabled();
+  expect(wheelByLabel('end verse number')).not.toBeDisabled();
   expect(
     within(editReferenceDialog()).getByRole('checkbox', { name: 'Split Verse' })
   ).not.toBeChecked();
@@ -604,8 +665,11 @@ test('opens and cancels the split verse dialog', async () => {
   expect(screen.getByLabelText('start verse reference')).toHaveTextContent(
     '1:1'
   );
-  expect(screen.getAllByRole('option', { name: '4' })).toHaveLength(1);
-  expect(screen.queryAllByRole('option', { name: '5' })).toHaveLength(0);
+  const endVerseLabels = [
+    ...wheelByLabel('end verse number').querySelectorAll('option'),
+  ].map((el) => el.textContent);
+  expect(endVerseLabels.filter((label) => label === '4')).toHaveLength(1);
+  expect(endVerseLabels.filter((label) => label === '5')).toHaveLength(0);
   expect(screen.queryByLabelText('start verse suffix')).not.toBeInTheDocument();
   expect(screen.queryByLabelText('end verse suffix')).not.toBeInTheDocument();
 
@@ -643,16 +707,10 @@ test('disables Save on Edit Reference until the reference changes', async () => 
   });
   expect(saveButton).toBeDisabled();
 
-  await user.selectOptions(
-    within(editReferenceDialog()).getByLabelText('end verse number'),
-    '2'
-  );
+  await selectByLabel(user, 'end verse number', '2');
   expect(saveButton).not.toBeDisabled();
 
-  await user.selectOptions(
-    within(editReferenceDialog()).getByLabelText('end verse number'),
-    '1'
-  );
+  await selectByLabel(user, 'end verse number', '1');
   expect(saveButton).toBeDisabled();
 });
 
@@ -712,21 +770,10 @@ test('saves a split verse range and shifts following references up', async () =>
   await user.click(
     within(editReferenceDialog()).getByRole('checkbox', { name: 'Split Verse' })
   );
-  expect(
-    within(editReferenceDialog()).getByLabelText('end verse number')
-  ).not.toBeDisabled();
-  await user.selectOptions(
-    within(editReferenceDialog()).getByLabelText('end verse number'),
-    '2'
-  );
-  await user.selectOptions(
-    within(editReferenceDialog()).getByLabelText('start verse suffix'),
-    'a'
-  );
-  await user.selectOptions(
-    within(editReferenceDialog()).getByLabelText('end verse suffix'),
-    'e'
-  );
+  expect(wheelByLabel('end verse number')).not.toBeDisabled();
+  await selectByLabel(user, 'end verse number', '2');
+  await selectByLabel(user, 'start verse suffix', 'a');
+  await selectByLabel(user, 'end verse suffix', 'e');
   await user.click(
     within(editReferenceDialog()).getByRole('button', { name: 'Save' })
   );
@@ -755,10 +802,7 @@ test('opens split verse unchecked for a numeric range like 1:1-4', async () => {
 
   await clickMarkVersesRowByLimitsText(user, lim(0, 69));
   await clickEditReference(user);
-  await user.selectOptions(
-    within(editReferenceDialog()).getByLabelText('end verse number'),
-    '4'
-  );
+  await selectByLabel(user, 'end verse number', '4');
   await user.click(
     within(editReferenceDialog()).getByRole('button', { name: 'Save' })
   );
@@ -789,10 +833,7 @@ test('adds rows when narrowing a wide reference on a single segment', async () =
 
   await clickMarkVersesRowByLimitsText(user, lim(0, 69));
   await clickEditReference(user);
-  await user.selectOptions(
-    within(editReferenceDialog()).getByLabelText('end verse number'),
-    '4'
-  );
+  await selectByLabel(user, 'end verse number', '4');
   await user.click(
     within(editReferenceDialog()).getByRole('button', { name: 'Save' })
   );
@@ -800,10 +841,7 @@ test('adds rows when narrowing a wide reference on a single segment', async () =
   expect(screen.getByLabelText('verse-reference-1')).toHaveTextContent('1:1-4');
 
   await clickEditReference(user);
-  await user.selectOptions(
-    within(editReferenceDialog()).getByLabelText('end verse number'),
-    '1'
-  );
+  await selectByLabel(user, 'end verse number', '1');
   await user.click(
     within(editReferenceDialog()).getByRole('button', { name: 'Save' })
   );
@@ -834,10 +872,7 @@ test('adds rows when the first row range is narrowed after spanning the passage'
 
   await clickMarkVersesRowByLimitsText(user, lim(0, 10));
   await clickEditReference(user);
-  await user.selectOptions(
-    within(editReferenceDialog()).getByLabelText('end verse number'),
-    '4'
-  );
+  await selectByLabel(user, 'end verse number', '4');
   await user.click(
     within(editReferenceDialog()).getByRole('button', { name: 'Save' })
   );
@@ -845,10 +880,7 @@ test('adds rows when the first row range is narrowed after spanning the passage'
   expect(screen.getByLabelText('verse-reference-1')).toHaveTextContent('1:1-4');
 
   await clickEditReference(user);
-  await user.selectOptions(
-    within(editReferenceDialog()).getByLabelText('end verse number'),
-    '1'
-  );
+  await selectByLabel(user, 'end verse number', '1');
   await user.click(
     within(editReferenceDialog()).getByRole('button', { name: 'Save' })
   );
@@ -877,10 +909,7 @@ test('saving an ending verse without split creates a range and shifts following 
 
   await clickMarkVersesRowByLimitsText(user, lim(0, 10));
   await clickEditReference(user);
-  await user.selectOptions(
-    within(editReferenceDialog()).getByLabelText('end verse number'),
-    '2'
-  );
+  await selectByLabel(user, 'end verse number', '2');
   await user.click(
     within(editReferenceDialog()).getByRole('button', { name: 'Save' })
   );
@@ -914,10 +943,7 @@ test('split uses the selected left and right verses rather than the dialog row',
   await user.click(
     within(editReferenceDialog()).getByRole('checkbox', { name: 'Split Verse' })
   );
-  await user.selectOptions(
-    within(editReferenceDialog()).getByLabelText('end verse number'),
-    '4'
-  );
+  await selectByLabel(user, 'end verse number', '4');
   await user.click(
     within(editReferenceDialog()).getByRole('button', { name: 'Save' })
   );
@@ -952,18 +978,9 @@ test('shows undo after dialog save and restores the previous table', async () =>
   await user.click(
     within(editReferenceDialog()).getByRole('checkbox', { name: 'Split Verse' })
   );
-  await user.selectOptions(
-    within(editReferenceDialog()).getByLabelText('end verse number'),
-    '2'
-  );
-  await user.selectOptions(
-    within(editReferenceDialog()).getByLabelText('start verse suffix'),
-    'a'
-  );
-  await user.selectOptions(
-    within(editReferenceDialog()).getByLabelText('end verse suffix'),
-    'e'
-  );
+  await selectByLabel(user, 'end verse number', '2');
+  await selectByLabel(user, 'start verse suffix', 'a');
+  await selectByLabel(user, 'end verse suffix', 'e');
   await user.click(
     within(editReferenceDialog()).getByRole('button', { name: 'Save' })
   );
@@ -1004,10 +1021,7 @@ test('reset clears markers and restores the original reference table', async () 
   await user.click(
     within(editReferenceDialog()).getByRole('checkbox', { name: 'Split Verse' })
   );
-  await user.selectOptions(
-    within(editReferenceDialog()).getByLabelText('start verse suffix'),
-    'b'
-  );
+  await selectByLabel(user, 'start verse suffix', 'b');
   await user.click(
     within(editReferenceDialog()).getByRole('button', { name: 'Save' })
   );

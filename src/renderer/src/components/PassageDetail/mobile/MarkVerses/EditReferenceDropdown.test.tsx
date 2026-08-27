@@ -1,6 +1,6 @@
 import '@testing-library/jest-dom';
 import { render, screen, within } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import userEvent, { type UserEvent } from '@testing-library/user-event';
 import EditReferenceDropdown, {
   type EditReferenceValue,
 } from './EditReferenceDropdown';
@@ -8,6 +8,45 @@ import {
   type PassageVerseOption,
   toPassageVerseKey,
 } from '../../../../utils/markVersesPassageVerses';
+
+/** Stub the wheel as a native select so the picker tests stay deterministic. */
+jest.mock('@ncdai/react-wheel-picker', () => ({
+  WheelPickerWrapper: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="wheel-wrapper">{children}</div>
+  ),
+  WheelPicker: ({
+    options,
+    value,
+    onValueChange,
+  }: {
+    options: { value: string; label: React.ReactNode }[];
+    value: string;
+    onValueChange: (next: string) => void;
+  }) => (
+    <>
+      {/*
+       * Stand in for the library's internal focusable div: the real one carries
+       * `data-rwp`, owns the Arrow-key handling, and is what the component
+       * focuses on click (TT-7622).
+       */}
+      <div data-rwp tabIndex={0} data-testid="wheel-rwp" />
+      <select
+        data-testid="wheel-select"
+        value={value}
+        onChange={(event) => onValueChange(event.target.value)}
+      >
+        {options.map((option) => (
+          <option
+            key={option.value === '' ? 'empty' : option.value}
+            value={option.value}
+          >
+            {option.label}
+          </option>
+        ))}
+      </select>
+    </>
+  ),
+}));
 
 const option = (chapter: number, verse: number): PassageVerseOption => ({
   chapter,
@@ -65,67 +104,94 @@ const renderDialog = (
 
 const dialog = () => screen.getByRole('dialog');
 
-const optionValues = (select: HTMLElement) =>
-  within(select)
-    .getAllByRole('option')
-    .map((o) => (o as HTMLOptionElement).value);
+/** The wheel column wrapper (the element the component binds onClick to). */
+const wheelGroup = (label: string) =>
+  within(dialog()).getByRole('group', { name: label });
+
+/** The stub select backing the wheel with this aria-label. */
+const wheel = (label: string) =>
+  within(wheelGroup(label)).getByTestId('wheel-select');
+
+/** The option values offered by a wheel, in order. */
+const optionValues = (label: string) =>
+  [...wheel(label).querySelectorAll('option')].map((el) => el.value);
+
+/** Spin a wheel to one of its option values. */
+const selectWheelByLabel = async (
+  user: UserEvent,
+  label: string,
+  value: string
+) => {
+  await user.selectOptions(wheel(label), value);
+};
 
 describe('EditReferenceDropdown unrestricted with multiple chapters', () => {
-  test('renders discrete chapter and verse dropdowns for both endpoints', () => {
+  test('renders discrete chapter and verse wheels for both endpoints', () => {
     renderDialog();
 
-    const startChapter = within(dialog()).getByLabelText(
-      'start chapter number'
-    );
-    const endChapter = within(dialog()).getByLabelText('end chapter number');
-    expect(optionValues(startChapter)).toEqual(['1', '2']);
-    expect(optionValues(endChapter)).toEqual(['1', '2']);
-    expect((startChapter as HTMLSelectElement).value).toBe('1');
-    expect((endChapter as HTMLSelectElement).value).toBe('2');
+    expect(optionValues('start chapter number')).toEqual(['1', '2']);
+    expect(optionValues('end chapter number')).toEqual(['1', '2']);
+    expect(wheel('start chapter number')).toHaveValue('1');
+    expect(wheel('end chapter number')).toHaveValue('2');
   });
 
   test('verse options are scoped to the selected chapter', () => {
     renderDialog();
 
     // Start chapter 1 -> verses 78,79,80.
-    expect(
-      optionValues(within(dialog()).getByLabelText('start verse number'))
-    ).toEqual(['78', '79', '80']);
+    expect(optionValues('start verse number')).toEqual(['78', '79', '80']);
     // End chapter 2 -> verses 1..5.
-    expect(
-      optionValues(within(dialog()).getByLabelText('end verse number'))
-    ).toEqual(['1', '2', '3', '4', '5']);
+    expect(optionValues('end verse number')).toEqual(['1', '2', '3', '4', '5']);
   });
 
   test('changing the start chapter re-scopes and clamps the start verse', async () => {
     const user = userEvent.setup();
     renderDialog();
 
-    await user.selectOptions(
-      within(dialog()).getByLabelText('start chapter number'),
-      '2'
-    );
+    await selectWheelByLabel(user, 'start chapter number', '2');
 
-    const startVerse = within(dialog()).getByLabelText(
-      'start verse number'
-    ) as HTMLSelectElement;
-    expect(optionValues(startVerse)).toEqual(['1', '2', '3', '4', '5']);
+    expect(optionValues('start verse number')).toEqual([
+      '1',
+      '2',
+      '3',
+      '4',
+      '5',
+    ]);
     // 78 is not a verse of chapter 2, so the verse clamps to the chapter's first.
-    expect(startVerse.value).toBe('1');
+    expect(wheel('start verse number')).toHaveValue('1');
+  });
+
+  test('never offers a verse outside the passage', () => {
+    // 77 precedes the passage (1:78 - 2:5). Callers snap such a reference onto a
+    // real passage verse before opening; the wheel must not offer it either way,
+    // so a bad reference can only be corrected, never re-picked.
+    renderDialog({
+      value: { ...baseValue, startChapter: 1, startVerse: 77 },
+    });
+
+    expect(optionValues('start verse number')).toEqual(['78', '79', '80']);
+  });
+
+  test('clicking a wheel focuses the element that handles the arrow keys', async () => {
+    // TT-7622: the library preventDefaults mousedown, so a click never moves
+    // focus to its internal `[data-rwp]` div and the library's own Arrow-key
+    // handler never fires. The component focuses that div on click; without
+    // that, the arrows do nothing after a click.
+    const user = userEvent.setup();
+    renderDialog();
+
+    const group = wheelGroup('start verse number');
+    await user.click(group);
+
+    expect(within(group).getByTestId('wheel-rwp')).toHaveFocus();
   });
 
   test('saves the edited chapter:verse - chapter:verse reference', async () => {
     const user = userEvent.setup();
     const { onSave } = renderDialog();
 
-    await user.selectOptions(
-      within(dialog()).getByLabelText('start verse number'),
-      '79'
-    );
-    await user.selectOptions(
-      within(dialog()).getByLabelText('end verse number'),
-      '3'
-    );
+    await selectWheelByLabel(user, 'start verse number', '79');
+    await selectWheelByLabel(user, 'end verse number', '3');
     await user.click(within(dialog()).getByRole('button', { name: 'Save' }));
 
     expect(onSave).toHaveBeenCalledTimes(1);
@@ -141,7 +207,7 @@ describe('EditReferenceDropdown unrestricted with multiple chapters', () => {
 });
 
 describe('EditReferenceDropdown unrestricted with a single chapter', () => {
-  test('shows the chapter as fixed text, verses as dropdowns', () => {
+  test('shows the chapter as fixed text, verses as wheels', () => {
     renderDialog({
       endVerseOptions: singleChapterOptions,
       value: {
@@ -159,12 +225,8 @@ describe('EditReferenceDropdown unrestricted with a single chapter', () => {
     expect(
       within(dialog()).queryByLabelText('end chapter number')
     ).not.toBeInTheDocument();
-    expect(
-      optionValues(within(dialog()).getByLabelText('start verse number'))
-    ).toEqual(['1', '2', '3', '4']);
-    expect(
-      optionValues(within(dialog()).getByLabelText('end verse number'))
-    ).toEqual(['1', '2', '3', '4']);
+    expect(optionValues('start verse number')).toEqual(['1', '2', '3', '4']);
+    expect(optionValues('end verse number')).toEqual(['1', '2', '3', '4']);
   });
 });
 

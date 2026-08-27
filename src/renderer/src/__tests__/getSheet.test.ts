@@ -883,3 +883,254 @@ test('two flat sections with steps gives output', () => {
     },
   ]);
 });
+
+test('merge keeps NOTE|category when orbit snapshot is still bare NOTE', () => {
+  const paNote = {
+    ...pa1,
+    id: 'pn1',
+    attributes: {
+      ...pa1.attributes,
+      sequencenum: 1,
+      reference: 'NOTE',
+      title: 'a note',
+      dateUpdated: '2021-09-16',
+    },
+  } as PassageD;
+  const s1passages = {
+    ...s1,
+    relationships: {
+      ...s1.relationships,
+      passages: { data: [{ type: 'passage', id: 'pn1' }] },
+    },
+  } as SectionD;
+  const current: ISheet[] = [
+    {
+      ...secResult,
+      sectionId: { type: 'section', id: 's1' },
+      sectionUpdated: '2021-09-15',
+      title: 'Intro',
+    },
+    {
+      ...pasResult,
+      passageType: PassageTypeEnum.NOTE,
+      reference: 'NOTE|Devotional',
+      comment: 'a note',
+      passageUpdated: '2021-09-15',
+      passage: paNote,
+    },
+  ];
+  const graphicFind = (rec: InitializedRecord, ref?: string): FindResult =>
+    ref === 'NOTE|Devotional' ? { uri: 'cat.png', color: '#ed071d' } : {};
+  const merged = getSheet({
+    ...gsDefaults,
+    plan: 'pl1',
+    sections: [s1passages],
+    passages: [paNote],
+    current,
+    graphicFind,
+  } as any);
+  expect(merged[1].reference).toBe('NOTE|Devotional');
+  expect(merged[1].graphicUri).toBe('cat.png');
+  expect(merged[1].color).toBe('#ed071d');
+});
+
+test('merge insert in the middle attaches graphic to the new note not a later row', () => {
+  const paNote = {
+    ...pa1,
+    id: 'pn1',
+    attributes: {
+      ...pa1.attributes,
+      sequencenum: 1,
+      reference: 'NOTE|Devotional',
+      title: 'a note',
+      dateUpdated: '2021-09-16',
+    },
+    relationships: {
+      ...pa1.relationships,
+      section: { data: { type: 'section', id: 's2' } },
+    },
+  } as PassageD;
+  const pa4b = {
+    ...pa4,
+    attributes: { ...pa4.attributes, sequencenum: 2 },
+  } as PassageD;
+  const s2passages = {
+    ...s2,
+    relationships: {
+      ...s2.relationships,
+      passages: {
+        data: [
+          { type: 'passage', id: 'pn1' },
+          { type: 'passage', id: 'pa4' },
+        ],
+      },
+    },
+  } as SectionD;
+  const current: ISheet[] = [
+    {
+      ...secResult,
+      sectionId: { type: 'section', id: 's1' },
+      sectionUpdated: '2021-09-15',
+      title: 'Intro',
+    },
+    {
+      ...pasResult,
+      book: 'LUK',
+      reference: '1:1-4',
+      comment: 'salutation',
+      passageUpdated: '2021-09-15',
+      passage: pa1,
+    },
+    {
+      ...secResult,
+      sectionSeq: 2,
+      sectionId: { type: 'section', id: 's2' },
+      sectionUpdated: '2021-09-15',
+      title: 'Birth of John',
+    },
+    {
+      ...pasResult,
+      sectionSeq: 2,
+      passageSeq: 2,
+      book: 'LUK',
+      reference: '1:11-14',
+      comment: 'Zechariah at the temple',
+      passageUpdated: '2021-09-15',
+      passage: pa4b,
+    },
+  ];
+  const graphicFind = (rec: InitializedRecord, ref?: string): FindResult =>
+    ref === 'NOTE|Devotional' ? { uri: 'cat.png', color: '#ed071d' } : {};
+  const merged = getSheet({
+    ...gsDefaults,
+    plan: 'pl1',
+    sections: [s1, s2passages],
+    passages: [pa1, paNote, pa4b],
+    current,
+    graphicFind,
+  } as any);
+  const noteRow = merged.find((r) => r.passage?.id === 'pn1');
+  const laterRow = merged.find((r) => r.passage?.id === 'pa4');
+  expect(noteRow?.graphicUri).toBe('cat.png');
+  expect(noteRow?.color).toBe('#ed071d');
+  expect(laterRow?.graphicUri).toBeUndefined();
+});
+
+test('merge does not recompute graphic on an unchanged note row', () => {
+  const paNote = {
+    ...pa1,
+    id: 'pn1',
+    attributes: {
+      ...pa1.attributes,
+      sequencenum: 1,
+      reference: 'NOTE|Devotional',
+      title: 'a note',
+      dateUpdated: '2021-09-15',
+    },
+  } as PassageD;
+  const s1passages = {
+    ...s1,
+    relationships: {
+      ...s1.relationships,
+      passages: { data: [{ type: 'passage', id: 'pn1' }] },
+    },
+  } as SectionD;
+  const current: ISheet[] = [
+    {
+      ...secResult,
+      sectionId: { type: 'section', id: 's1' },
+      sectionUpdated: '2021-09-15',
+      title: 'Intro',
+    },
+    {
+      ...pasResult,
+      passageType: PassageTypeEnum.NOTE,
+      reference: 'NOTE|Devotional',
+      comment: 'a note',
+      passageUpdated: '2021-09-15',
+      passage: paNote,
+      graphicUri: 'kept.png',
+      color: '#111111',
+    },
+  ];
+  const graphicFind = jest.fn((): FindResult => ({}));
+  const merged = getSheet({
+    ...gsDefaults,
+    plan: 'pl1',
+    sections: [s1passages],
+    passages: [paNote],
+    current,
+    graphicFind,
+  } as any);
+  expect(merged[1].graphicUri).toBe('kept.png');
+  expect(merged[1].color).toBe('#111111');
+  expect(graphicFind).not.toHaveBeenCalled();
+});
+
+test('new CHNUM row uses graphicFind with the chapter reference', () => {
+  const paCh = {
+    ...pa1,
+    id: 'pc1',
+    attributes: {
+      ...pa1.attributes,
+      sequencenum: 1,
+      reference: 'CHNUM 1',
+      title: '',
+    },
+  } as PassageD;
+  const s1passages = {
+    ...s1,
+    relationships: {
+      ...s1.relationships,
+      passages: { data: [{ type: 'passage', id: 'pc1' }] },
+    },
+  } as SectionD;
+  const graphicFind = jest.fn(
+    (_rec: InitializedRecord, ref?: string): FindResult =>
+      /^CHNUM/.test(ref ?? '') ? { uri: 'chapter-cat.png' } : {}
+  );
+  const sheet = getSheet({
+    ...gsDefaults,
+    plan: 'pl1',
+    sections: [s1passages],
+    passages: [paCh],
+    graphicFind,
+  } as any);
+  expect(graphicFind).toHaveBeenCalledWith(
+    expect.objectContaining({ id: 'pc1' }),
+    'CHNUM 1'
+  );
+  expect(sheet[1].graphicUri).toBe('chapter-cat.png');
+});
+
+test('merge updates section graphic when sectionUpdated is newer', () => {
+  const s1newer = {
+    ...s1,
+    attributes: { ...s1.attributes, dateUpdated: '2021-09-16' },
+  } as SectionD;
+  const current: ISheet[] = [
+    {
+      ...secResult,
+      sectionId: { type: 'section', id: 's1' },
+      sectionUpdated: '2021-09-15',
+      title: 'Intro',
+      graphicUri: 'old.png',
+    },
+  ];
+  const graphicFind = (rec: InitializedRecord): FindResult =>
+    rec.id === 's1'
+      ? { uri: 'new.png', url: 'new-full.png', rights: 'SIL' }
+      : {};
+  const merged = getSheet({
+    ...gsDefaults,
+    plan: 'pl1',
+    sections: [s1newer],
+    passages: [pa1],
+    current,
+    graphicFind,
+  } as any);
+  expect(merged[0].graphicUri).toBe('new.png');
+  expect(merged[0].graphicFullSizeUrl).toBe('new-full.png');
+  expect(merged[0].graphicRights).toBe('SIL');
+  expect(merged[0].sectionUpdated).toBe('2021-09-16');
+});

@@ -1,6 +1,6 @@
 import { Box, IconButton, Stack, TextField } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/DeleteOutline';
-import { PriButton } from '../../../control';
+import { Button } from '../../../control';
 import Guidance from '../../../control/Guidance';
 import MediaRecord from '../../MediaRecord';
 import { ICarefulSpeechStrings, ILwcTranslationStrings } from '@model/index';
@@ -24,8 +24,6 @@ export type LwcTranslationPhase =
   | 'recordReady'
   | 'recording'
   | 'recorded';
-
-const primaryHighlightSx = { boxShadow: 4 };
 
 interface Props {
   width: number;
@@ -52,6 +50,8 @@ interface Props {
   resetMedia: boolean;
   setResetMedia: (v: boolean) => void;
   setCanSave: (v: boolean) => void;
+  /** Passed through to MediaRecord; see its prop docs (TT-7583). */
+  onSaveRejected?: () => void;
   setStatusText: (t: string) => void;
   showRecorder: boolean;
 }
@@ -81,6 +81,7 @@ export default function LwcTranslationControls({
   resetMedia,
   setResetMedia,
   setCanSave,
+  onSaveRejected,
   setStatusText,
   showRecorder,
 }: Props) {
@@ -145,6 +146,7 @@ export default function LwcTranslationControls({
             onSaving={onSaving}
             onReady={onSaveSettled}
             setCanSave={setCanSave}
+            onSaveRejected={onSaveRejected}
             setStatusText={setStatusText}
             doReset={resetMedia}
             setDoReset={setResetMedia}
@@ -203,14 +205,14 @@ export default function LwcTranslationControls({
           data-cy="lwc-docked-record"
         >
           {showNextClause ? (
-            <PriButton
+            <Button
               id="lwc-next-clause"
-              onClick={onNextClause}
+              color="primary"
               disabled={allClausesComplete || savingRecording}
-              sx={primaryHighlightSx}
+              onClick={onNextClause}
             >
               {strings.nextClause} &gt;
-            </PriButton>
+            </Button>
           ) : (
             dockedRecordButton
           )}

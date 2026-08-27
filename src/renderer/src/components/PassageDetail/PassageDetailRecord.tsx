@@ -29,7 +29,7 @@ import MediaRecord from '../MediaRecord';
 import { UnsavedContext } from '../../context/UnsavedContext';
 import Uploader from '../Uploader';
 import AudacityManager from '../Sheet/AudacityManager';
-import { AltButton, PriButton } from '../../control';
+import { Button } from '../../control';
 import BigDialog from '../../hoc/BigDialog';
 import BigDialogBp from '../../hoc/BigDialogBp';
 import VersionDlg from '../AudioTab/VersionDlg';
@@ -44,6 +44,7 @@ import {
   RecordTransformBuilder,
 } from '@orbit/records';
 import { useStepPermissions } from '../../utils/useStepPermission';
+import { isLinkedNote } from '../../crud/isLinkedNote';
 
 interface IProps {
   ready?: () => boolean;
@@ -189,7 +190,6 @@ export function PassageDetailRecord(props: IProps) {
       handleReload();
     }
     setHasExistingVersion(hasExisting);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mediafileId, recorderState, ts.loading]);
 
   const passageId = useMemo(
@@ -293,7 +293,9 @@ export function PassageDetailRecord(props: IProps) {
     setRecording(recording);
   };
 
-  const canVern = canDoVernacular(related(passage, 'section'));
+  const canVern =
+    canDoVernacular(related(passage, 'section')) &&
+    !isLinkedNote(passage, sharedResource);
 
   return (
     <Stack sx={{ width: props.width, maxWidth: props.width, minWidth: 0 }}>
@@ -310,23 +312,24 @@ export function PassageDetailRecord(props: IProps) {
               onChange={handleNameChange}
               onRights={handleRights}
               disabled={!canVern}
+              aiip={false}
             />
           </Box>
           {canVern && (
-            <AltButton
+            <Button
               id="pdRecordLoadFile"
-              onClick={handleUpload}
-              disabled={canSave || recording}
               title={ts.loadFromFile}
+              sx={{ flexShrink: 0 }}
               startIcon={
                 <FolderOpenOutlinedIcon
                   sx={{ width: '14px', height: '14px' }}
                 />
               }
-              sx={{ flexShrink: 0 }}
+              disabled={canSave || recording}
+              onClick={handleUpload}
             >
               {ts.loadFromFile}
-            </AltButton>
+            </Button>
           )}
         </Stack>
       </Box>
@@ -371,13 +374,14 @@ export function PassageDetailRecord(props: IProps) {
               {statusText}
             </Typography>
             {!isMobileView && canSave && (
-              <PriButton
+              <Button
                 id="rec-save"
-                onClick={handleSave}
+                color="primary"
                 disabled={(ready && !ready()) || !hasRights || !canVern}
+                onClick={handleSave}
               >
                 {ts.save}
-              </PriButton>
+              </Button>
             )}
           </>
         }

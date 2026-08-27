@@ -7,12 +7,11 @@ import {
   TypographyProps,
   FormGroup,
   FormLabel,
-  Button,
   Box,
   styled,
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import { GrowingSpacer } from '../control';
+import { Button, GrowingSpacer } from '../control';
 import { useSelector } from 'react-redux';
 import { deleteExpandSelector } from '../selector';
 

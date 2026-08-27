@@ -1,9 +1,7 @@
 import React, { useEffect } from 'react';
 import { Box, IconButton, Stack, Typography } from '@mui/material';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
-import { ActionRow } from '../../control/ActionRow';
-import { GrowingSpacer } from '../../control/GrowingSpacer';
-import { AltButton } from '../../control/AltButton';
+import { Button, GrowingSpacer, ActionRow } from '../../control';
 import PersonalizeVoicePermission, {
   IVoicePerm,
 } from './PersonalizeVoicePermission';
@@ -15,6 +13,7 @@ import { sharedSelector, voiceSelector } from '../../selector';
 import { useMobile } from '../../utils/index';
 
 interface IProps {
+  aiip: boolean;
   voice?: string;
   team: Organization;
   state: IVoicePerm;
@@ -29,6 +28,7 @@ interface IProps {
 }
 
 export const VoiceStatement = ({
+  aiip,
   voice,
   team,
   state,
@@ -42,6 +42,7 @@ export const VoiceStatement = ({
   const t: IVoiceStrings = useSelector(voiceSelector, shallowEqual);
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
   const { permStatement } = useVoicePermission({
+    aiip,
     permissionState: state,
     team,
   });
@@ -105,13 +106,13 @@ export const VoiceStatement = ({
                 <ContentCopyIcon color="primary" fontSize="small" />
               </IconButton>
               <GrowingSpacer />
-              <AltButton
+              <Button
                 data-cy="voice-statement-personalize"
-                onClick={handlePersonalize}
                 disabled={saving}
+                onClick={handlePersonalize}
               >
                 {t.personalize}
-              </AltButton>
+              </Button>
             </>
           )}
         </ActionRow>
@@ -128,7 +129,11 @@ export const VoiceStatement = ({
           state?.valid !== false ? setShowPersonalize(undefined) : undefined
         }
       >
-        <PersonalizeVoicePermission state={state} setState={setState} />
+        <PersonalizeVoicePermission
+          aiip={aiip}
+          state={state}
+          setState={setState}
+        />
       </BigDialog>
     </Box>
   );

@@ -4,7 +4,7 @@ import {
   ISharedStrings,
   IState,
 } from '../model';
-import { ActionRow, AltButton, GrowingSpacer, PriButton } from '../control';
+import { Button, ActionRow, GrowingSpacer, rowSx } from '../control';
 import { shallowEqual, useSelector } from 'react-redux';
 import { passageDetailArtifactsSelector, sharedSelector } from '../selector';
 import BigDialog from '../hoc/BigDialog';
@@ -442,16 +442,19 @@ export const PassageDataTable = (props: IProps) => {
         }}
       />
       <ActionRow>
-        <AltButton id="res-select-cancel" onClick={handleCancel}>
-          {ts.cancel}
-        </AltButton>
-        <PriButton
-          id="res-selected"
-          onClick={handleLink}
-          disabled={checks.length === 0 || termsCheck.length > 0}
-        >
-          {t.link}
-        </PriButton>
+        <Box sx={rowSx}>
+          <Button id="res-select-cancel" onClick={handleCancel}>
+            {ts.cancel}
+          </Button>
+          <Button
+            id="res-selected"
+            color="primary"
+            disabled={checks.length === 0 || termsCheck.length > 0}
+            onClick={handleLink}
+          >
+            {t.link}
+          </Button>
+        </Box>
       </ActionRow>
       {curTermsCheck !== undefined && (
         <BigDialog
@@ -467,12 +470,18 @@ export const PassageDataTable = (props: IProps) => {
           <>
             <Typography>{termsOfUse(curTermsCheck)}</Typography>
             <ActionRow>
-              <AltButton id="terms-cancel" onClick={handleTermsReject}>
-                {ts.cancel}
-              </AltButton>
-              <PriButton id="terms-accept" onClick={handleTermsAccept}>
-                {t.accept}
-              </PriButton>
+              <Box sx={rowSx}>
+                <Button id="terms-cancel" onClick={handleTermsReject}>
+                  {ts.cancel}
+                </Button>
+                <Button
+                  id="terms-accept"
+                  color="primary"
+                  onClick={handleTermsAccept}
+                >
+                  {t.accept}
+                </Button>
+              </Box>
             </ActionRow>
           </>
         </BigDialog>

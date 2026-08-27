@@ -7,14 +7,14 @@ import {
   OrganizationD,
   IwsKind,
 } from '../../model';
-import { Button, Box, Typography, Grid } from '@mui/material';
+import { Box, Typography, Grid } from '@mui/material';
 import PublishOnIcon from '@mui/icons-material/PublicOutlined';
 import PublishOffIcon from '@mui/icons-material/PublicOffOutlined';
 import { PassageCard } from './PassageCard';
 import StickyRedirect from '../StickyRedirect';
 import { useParams } from 'react-router-dom';
 import { GraphicAvatar } from './GraphicAvatar';
-import { ActionHeight, GrowingSpacer } from '../../control';
+import { Button, GrowingSpacer } from '../../control';
 import {
   isPersonalTeam,
   PublishDestinationEnum,
@@ -92,8 +92,6 @@ export function PlanView(props: IProps) {
         display: 'flex',
         flexDirection: 'row',
         gap: '1rem',
-        padding: '0 1.5rem',
-        paddingTop: `calc(${ActionHeight}px + 16px)`,
       }}
     >
       {rowInfo.map((row, i) => {
@@ -114,7 +112,6 @@ export function PlanView(props: IProps) {
                 alignItems: 'center',
                 gap: '1rem',
                 width: '100%',
-                mt: '1rem',
               }}
             >
               {publishingView && (
@@ -139,34 +136,17 @@ export function PlanView(props: IProps) {
               <GrowingSpacer />
               {row.passageType === 'PASS' && publishingView ? (
                 <Button
-                  variant="outlined"
-                  onClick={() => onPublish(i)}
                   disabled={!canPublish}
-                  sx={{
-                    color: 'primary.light',
-                    minWidth: 'auto',
-                    p: 0,
-                  }}
-                >
-                  <Box
-                    sx={{
-                      display: 'flex',
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      padding: '0.25rem 0.5rem',
-                      gap: '0.25rem',
-                      '& .MuiSvgIcon-root': {
-                        margin: 0,
-                      },
-                    }}
-                  >
-                    {isPublished(rowInfo[i].published) ? (
-                      <PublishOffIcon fontSize="small" />
+                  startIcon={
+                    isPublished(rowInfo[i].published) ? (
+                      <PublishOffIcon />
                     ) : (
-                      <PublishOnIcon fontSize="small" />
-                    )}
-                    {t.published}
-                  </Box>
+                      <PublishOnIcon />
+                    )
+                  }
+                  onClick={() => onPublish(i)}
+                >
+                  {t.published}
                 </Button>
               ) : null}
             </Box>

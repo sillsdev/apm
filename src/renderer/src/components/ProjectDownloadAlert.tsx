@@ -61,7 +61,7 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
-import { AltButton, PriButton } from '../control';
+import { Button } from '../control';
 import { formatTime } from '../control/formatTime';
 import { DataGrid } from '@mui/x-data-grid';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
@@ -425,9 +425,9 @@ export const ProjectDownloadAlert = (props: IProps) => {
                     value={progress}
                     sx={{ flexGrow: 1 }}
                   />
-                  <AltButton onClick={handleCancel} sx={{ ml: 1, p: 0 }}>
+                  <Button sx={{ ml: 1, p: 0 }} onClick={handleCancel}>
                     {ts.cancel}
-                  </AltButton>
+                  </Button>
                 </Stack>
               )}
               <Accordion>
@@ -561,15 +561,19 @@ export const ProjectDownloadAlert = (props: IProps) => {
             <DialogActions
               sx={{ display: 'flex', justifyContent: 'space-between' }}
             >
-              <AltButton
-                onClick={() => handleClose(false)()}
+              <Button
                 disabled={downloading}
+                onClick={() => handleClose(false)()}
               >
                 {t.downloadLater}
-              </AltButton>
-              <PriButton onClick={handleDownload} disabled={downloading}>
+              </Button>
+              <Button
+                color="primary"
+                disabled={downloading}
+                onClick={handleDownload}
+              >
                 {t.confirm}
-              </PriButton>
+              </Button>
             </DialogActions>
           </Box>
         </BigDialog>
@@ -608,9 +612,9 @@ export const ProjectDownloadAlert = (props: IProps) => {
             )}
           </DialogContent>
           <DialogActions>
-            <PriButton onClick={() => setShowMissingFiles(false)}>
+            <Button color="primary" onClick={() => setShowMissingFiles(false)}>
               {ts.close || 'Close'}
-            </PriButton>
+            </Button>
           </DialogActions>
         </Box>
       </BigDialog>

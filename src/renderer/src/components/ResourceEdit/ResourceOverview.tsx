@@ -7,13 +7,13 @@ import React, {
   useRef,
 } from 'react';
 import {
+  Button,
   ActionRow,
-  AltButton,
   GrowingDiv,
   ILanguage,
   Language,
   LightTooltip,
-  PriButton,
+  rowSx,
 } from '../../control';
 import {
   IDialog,
@@ -72,6 +72,8 @@ interface IProps extends IDialog<IResourceDialog> {
   nameInUse?: (newName: string) => boolean;
   onDelete?: () => void;
   onLink?: (link: SharedResourceD) => Promise<void>;
+  onUnlink?: () => Promise<void> | void;
+  contentReadOnly?: boolean;
 }
 
 export default function ResourceOverview(props: IProps) {
@@ -86,6 +88,8 @@ export default function ResourceOverview(props: IProps) {
     onCancel,
     onDelete,
     onLink,
+    onUnlink,
+    contentReadOnly,
   } = props;
 
   const [isDeveloper] = useGlobal('developer');
@@ -115,49 +119,41 @@ export default function ResourceOverview(props: IProps) {
       terms: '',
       keywords: '',
       linkurl: '',
-      note: false,
+      note: isNote,
       category: '',
       changed: false,
       ws: ws,
       onRecording,
     }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [ws]
+    [ws, isNote]
   );
 
   const [state, setState] = React.useState({ ...initState });
   const { title, bcp47, keywords } = state;
 
   const updateTitleState = useMemo(
-    () => (dialogmode !== Mode.view ? setState : undefined),
-    [dialogmode]
+    () => (contentReadOnly || dialogmode === Mode.view ? undefined : setState),
+    [dialogmode, contentReadOnly]
   );
 
   const updateState = useMemo(
     () =>
-      dialogmode === Mode.view || dialogmode === DialogModePartial.titleOnly
+      contentReadOnly ||
+      dialogmode === Mode.view ||
+      dialogmode === DialogModePartial.titleOnly
         ? undefined
         : setState,
-    [dialogmode]
+    [dialogmode, contentReadOnly]
   );
 
   useEffect(() => {
     setState(
       !values
         ? { ...initState }
-        : { ...values, ws, onRecording, changed: false }
+        : { ...values, ws, onRecording, note: isNote, changed: false }
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [values, isOpen]);
-
-  useEffect(() => {
-    setState(
-      !values
-        ? { ...initState, note: isNote }
-        : { ...values, ws, onRecording, note: isNote }
-    );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [values, isNote]);
+  }, [values, isOpen, isNote, initState]);
 
   const handleClose = () => {
     if (onOpen) onOpen(false);
@@ -218,7 +214,7 @@ export default function ResourceOverview(props: IProps) {
         )}
         <ResourceDescription state={state} setState={updateState} />
         <ResourceCategory
-          state={state}
+          state={{ ...state, note: isNote }}
           setState={updateState}
           commitRef={catCommitRef}
         />
@@ -232,6 +228,7 @@ export default function ResourceOverview(props: IProps) {
               hideSpelling
               hideFont
               disabled={
+                contentReadOnly ||
                 dialogmode === Mode.view ||
                 dialogmode === DialogModePartial.titleOnly
               }
@@ -247,6 +244,7 @@ export default function ResourceOverview(props: IProps) {
           <>
             <LightTooltip title={t.findNote}>
               <IconButton
+                id="findNote"
                 onClick={handleFind}
                 disabled={
                   dialogmode === Mode.view ||
@@ -261,29 +259,40 @@ export default function ResourceOverview(props: IProps) {
         )}
         {isDeveloper && (
           <>
-            <AltButton id="delete" onClick={handleDelete}>
+            <Button id="delete" onClick={handleDelete}>
               {t.delete}
-            </AltButton>
-            <GrowingDiv />
+            </Button>
           </>
         )}
-        <AltButton id="resCancel" onClick={handleClose}>
-          {dialogmode === Mode.add ? ts.cancel : ts.close}
-        </AltButton>
-        {dialogmode !== Mode.view && (
-          <PriButton
-            id="resSave"
-            onClick={() => handleAdd()}
-            disabled={
-              title === '' ||
-              (bcp47 === 'und' && !isNote) ||
-              !state.changed ||
-              recording.current
-            }
-          >
-            {dialogmode === Mode.add ? t.add : ts.save}
-          </PriButton>
-        )}
+        <GrowingDiv />
+        <Box sx={rowSx}>
+          {contentReadOnly &&
+            onUnlink &&
+            dialogmode !== Mode.view &&
+            dialogmode !== DialogModePartial.titleOnly && (
+              <Button id="unlinkNote" onClick={() => onUnlink()}>
+                {t.unlinkNote}
+              </Button>
+            )}
+          <Button id="resCancel" onClick={handleClose}>
+            {dialogmode === Mode.add ? ts.cancel : ts.close}
+          </Button>
+          {dialogmode !== Mode.view && !contentReadOnly && (
+            <Button
+              id="resSave"
+              color="primary"
+              disabled={
+                title === '' ||
+                (bcp47 === 'und' && !isNote) ||
+                !state.changed ||
+                recording.current
+              }
+              onClick={() => handleAdd()}
+            >
+              {dialogmode === Mode.add ? t.add : ts.save}
+            </Button>
+          )}
+        </Box>
       </ActionRow>
     </Box>
   ) : (

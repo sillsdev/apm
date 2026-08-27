@@ -1,13 +1,6 @@
 import React from 'react';
 import { RecordIdentity } from '@orbit/records';
-import {
-  Box,
-  Card,
-  Stack,
-  Typography,
-  Button,
-  IconButton,
-} from '@mui/material';
+import { Box, Card, Stack, Typography, IconButton } from '@mui/material';
 import { DialogMode, ICardsStrings } from '../model';
 import { shallowEqual, useSelector } from 'react-redux';
 import { cardsSelector } from '../selector';
@@ -27,6 +20,7 @@ import { useTeamActions } from '../components/Team/useTeamActions';
 import { SharedContentCreatorDialog } from '../components/Team/SharedContentCreatorDialog';
 import StickyRedirect from '../components/StickyRedirect';
 import { useIsPapLike } from '../utils/useIsPapLike';
+import { Button } from '../control/Button';
 
 interface ISettingsButtonProps {
   label: string;
@@ -185,7 +179,6 @@ const FloatingActions = () => {
     t,
     offline,
     connected,
-    offlineOnly,
     isDeveloper,
     userIsSharedContentAdmin,
     isDeleting,
@@ -234,7 +227,7 @@ const FloatingActions = () => {
               gap: 2,
             }}
           >
-            {((!offline && connected) || offlineOnly) && (
+            {!offline && connected && (
               <Button
                 id="TeamActAdd"
                 data-testid="add-team-button"
@@ -261,6 +254,7 @@ const FloatingActions = () => {
           </Box>
           {!offline && userIsSharedContentAdmin && (
             <Button
+              disableTypography
               id="contentCreator"
               variant="outlined"
               onClick={handleContentClick}

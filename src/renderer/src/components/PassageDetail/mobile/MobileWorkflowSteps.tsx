@@ -1,6 +1,5 @@
 import {
   Box,
-  Button,
   ButtonBase,
   Dialog,
   DialogActions,
@@ -33,6 +32,7 @@ import {
 import { ToolSlug, useOrganizedBy, useStepTool } from '../../../crud';
 import { useRole } from '../../../crud/useRole';
 import { useStepPermissions } from '../../../utils/useStepPermission';
+import { Button } from '../../../control/Button';
 
 const DESKTOP_BREAKPOINT = '@media (min-width:1401px)';
 
@@ -238,12 +238,10 @@ export default function MobileWorkflowSteps() {
             }}
           >
             <Button
-              size="small"
               startIcon={
                 !isStepProgression && currentTip ? (
                   <InfoIcon
                     sx={{ color: 'primary.light' }}
-                    fontSize="small"
                     data-cy="workflow-step-tip"
                     aria-label={currentTip}
                     onClick={(e) => {
@@ -271,20 +269,9 @@ export default function MobileWorkflowSteps() {
               }}
               data-cy="passage-dropdown"
             >
-              <Box
-                component="span"
-                sx={{
-                  fontSize: 'small',
-                  minWidth: 0,
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {isStepProgression
-                  ? passageRef(passage)
-                  : getWfLabel(currentLabel)}
-              </Box>
+              {isStepProgression
+                ? passageRef(passage)
+                : getWfLabel(currentLabel)}
             </Button>
             <Menu
               anchorEl={passageMenuAnchor}

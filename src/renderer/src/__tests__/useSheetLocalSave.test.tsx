@@ -33,6 +33,14 @@ const defaultSheet: ISheet = {
   published: [] as PublishDestinationEnum[],
 };
 
+jest.mock('../context/TokenProvider', () => {
+  const React = jest.requireActual<typeof import('react')>('react');
+  return { TokenContext: React.createContext(undefined) };
+});
+jest.mock('../utils/useDataChanges', () => ({
+  useDataChanges: () => jest.fn().mockResolvedValue(undefined),
+}));
+
 // see https://jestjs.io/docs/mock-functions#mocking-modules
 jest.mock('../schema', () => {
   const originalModule = jest.requireActual('../schema');

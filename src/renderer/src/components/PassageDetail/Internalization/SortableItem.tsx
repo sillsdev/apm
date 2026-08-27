@@ -15,6 +15,7 @@ interface IProps {
   onDone: (id: string, res: SectionResourceD | null) => void;
   onEdit?: ((id: string) => void) | undefined;
   onDelete?: ((id: string) => void) | undefined;
+  showDragHandle?: boolean;
 }
 
 export const SortableItem = ({
@@ -28,8 +29,10 @@ export const SortableItem = ({
   onDone,
   onEdit,
   onDelete,
+  showDragHandle,
 }: IProps) => (
   <TableRow
+    showDragHandle={showDragHandle}
     value={
       {
         ...value,

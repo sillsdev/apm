@@ -1,26 +1,26 @@
 import React, { useState, useEffect } from 'react';
-import { useGlobal } from '../context/useGlobal';
+import { Button } from './Button';
+import { shallowEqual, useSelector } from 'react-redux';
+import { Menu, MenuItem } from '@mui/material';
+import DropDownIcon from '@mui/icons-material/ArrowDropDown';
 import {
   IPlanSheetStrings,
   IProjButtonsStrings,
   ISharedStrings,
 } from '../model';
-import { Divider, Menu, MenuItem } from '@mui/material';
-import DropDownIcon from '@mui/icons-material/ArrowDropDown';
-import BigDialog from '../hoc/BigDialog';
-import IntegrationTab from '../components/Integration';
-import ExportTab from '../components/TranscriptionTab';
-import ImportTab from '../components/ImportTab';
-import { useProjectPlans, usePlan } from '../crud';
-import { AltButton } from '.';
 import { PlanContext } from '../context/PlanContext';
+import { useGlobal } from '../context/useGlobal';
 import { addPt } from '../utils/addPt';
-import { shallowEqual, useSelector } from 'react-redux';
+import { useProjectPlans, usePlan } from '../crud';
+import BigDialog from '../hoc/BigDialog';
 import {
   planSheetSelector,
   projButtonsSelector,
   sharedSelector,
 } from '../selector';
+import ImportTab from '../components/ImportTab';
+import IntegrationTab from '../components/Integration';
+import ExportTab from '../components/TranscriptionTab';
 
 interface IProps {
   noCopy?: boolean;
@@ -42,7 +42,6 @@ export const ProjButtons = (props: IProps) => {
     noReseq,
     noImExport,
     noIntegrate,
-    onLeft,
     onPaste,
     onReseq,
   } = props;
@@ -88,18 +87,18 @@ export const ProjButtons = (props: IProps) => {
   useEffect(() => setPlanName(getPlanName(plan)), [plan]);
   return (
     <>
-      {!onLeft && <Divider orientation="vertical" flexItem />}
-      <AltButton
+      <Button
         id="projButton"
         key="importExport"
+        variant="outlined"
         aria-owns={actionMenuItem !== '' ? 'action-menu' : undefined}
         aria-label={t.importExport}
         disabled={noImExport}
         onClick={handleMenu}
+        endIcon={<DropDownIcon />}
       >
         {t.sheet}
-        <DropDownIcon sx={{ ml: 1 }} />
-      </AltButton>
+      </Button>
       <Menu
         id="import-export-menu"
         anchorEl={actionMenuItem}
@@ -171,7 +170,6 @@ export const ProjButtons = (props: IProps) => {
           offerPtf={false}
         />
       )}
-      {onLeft && <Divider orientation="vertical" flexItem />}
     </>
   );
 };

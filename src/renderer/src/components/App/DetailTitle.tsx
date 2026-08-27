@@ -7,7 +7,7 @@ import { passageRefText } from '../../crud';
 import { IState, PassageD, ProjectD } from '../../model';
 import { useSelector } from 'react-redux';
 
-export default function MobileDetailTitle() {
+export default function DetailTitle() {
   const { pasId } = useParams();
   const passages = useOrbitData<PassageD[]>('passage');
   const projects = useOrbitData<ProjectD[]>('project');
@@ -22,16 +22,11 @@ export default function MobileDetailTitle() {
     projects.find((p) => p.id === project)?.attributes?.name ?? '';
 
   return (
-    <Box sx={{ ml: 1, minWidth: 0, overflow: 'hidden' }}>
-      <Typography variant="subtitle2" noWrap sx={{ lineHeight: 1.1 }}>
+    <Box sx={{ minWidth: 0, overflow: 'hidden' }}>
+      <Typography variant="subtitle2" noWrap>
         {reference}
       </Typography>
-      <Typography
-        variant="caption"
-        color="text.secondary"
-        noWrap
-        sx={{ lineHeight: 1.1 }}
-      >
+      <Typography variant="caption" color="text.secondary" noWrap>
         {projectName}
       </Typography>
     </Box>

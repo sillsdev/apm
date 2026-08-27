@@ -1,7 +1,7 @@
 import { useSelector } from 'react-redux';
 import { ISharedStrings, IState } from '../model';
 import { dateOrTime } from '../utils';
-import { AltButton } from './AltButton';
+import { Button } from './Button';
 
 interface IStateProps {
   t: ISharedStrings;
@@ -21,16 +21,16 @@ export const LastEdit = (props: IProps) => {
   };
 
   return when ? (
-    <AltButton
+    <Button
       id="editHist"
       key="last-edit"
       aria-label={t.lastEdit}
-      variant="text"
       sx={{ justifyContent: 'flex-start' }}
+      variant="text"
       onClick={handleHistory}
     >
       {t.lastEdit.replace('{0}', dateOrTime(when, lang))}
-    </AltButton>
+    </Button>
   ) : (
     <></>
   );

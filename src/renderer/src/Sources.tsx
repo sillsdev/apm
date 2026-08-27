@@ -304,6 +304,11 @@ const sourcesImpl = async (
 
   if (!offline) {
     resetUnauthorizedRetry();
+    // RestoreBackupOnMount may still be pulling IndexedDB. Finish that before
+    // deactivate() closes the backup DB ("IndexedDB database is not yet open").
+    if (isElectron) {
+      await restoreBackup(coordinator);
+    }
     if (coordinator.sourceNames.includes('remote')) {
       await removeOrbitRemote(coordinator, false);
     }
@@ -451,6 +456,9 @@ const sourcesImpl = async (
 
   if (!coordinator.activated)
     await coordinator.activate({ logLevel: LogLevel.Warnings });
+  if (typeof backup?.cache?.openDB === 'function') {
+    await backup.cache.openDB();
+  }
 
   console.log('Coordinator will log warnings');
 

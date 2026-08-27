@@ -1,18 +1,16 @@
 import { MouseEventHandler, useContext } from 'react';
-import { TabAppBar } from '../../control/TabAppBar';
-import { TabActions } from '../../control/TabActions';
-import { GrowingSpacer } from '../../control/GrowingSpacer';
-import { LightTooltip } from '../../control/LightTooltip';
-import { IconButton } from '@mui/material';
-import FilterMenu, { ISTFilterState } from './filterMenu';
-import { PlanTabSelect } from './PlanTabSelect';
-import { useGlobal } from '../../context/useGlobal';
-import { PlanContext } from '../../context/PlanContext';
-import { IPlanSheetStrings, ISheet, OrgWorkflowStep } from '@model/index';
 import { shallowEqual, useSelector } from 'react-redux';
-import { planSheetSelector } from '../../selector';
+import { Box, IconButton } from '@mui/material';
 import PublishOnIcon from '@mui/icons-material/PublicOutlined';
 import PublishOffIcon from '@mui/icons-material/PublicOffOutlined';
+import { IPlanSheetStrings, ISheet, OrgWorkflowStep } from '@model/index';
+import { useGlobal } from '../../context/useGlobal';
+import { PlanContext } from '../../context/PlanContext';
+import { planSheetSelector } from '../../selector';
+import { LightTooltip } from '../../control/LightTooltip';
+import { spreadSx, rowSx, rigidSx } from '../../control';
+import FilterMenu, { ISTFilterState } from './filterMenu';
+import { PlanTabSelect } from './PlanTabSelect';
 
 interface IProps {
   publishingOn: boolean;
@@ -53,13 +51,11 @@ export const PlanBar = (props: IProps) => {
   const t: IPlanSheetStrings = useSelector(planSheetSelector, shallowEqual);
 
   return (
-    <TabAppBar position="fixed" color="default" mobileBar={true}>
-      <TabActions>
-        <PlanTabSelect />
-        <GrowingSpacer />
+    <Box sx={spreadSx}>
+      <PlanTabSelect />
+      <Box sx={[rowSx, rigidSx]}>
         {data.length > 1 && !offline && !flat && (
           <LightTooltip
-            sx={{ backgroundColor: 'transparent' }}
             title={
               !publishingOn || hidePublishing
                 ? t.showPublishing
@@ -86,7 +82,7 @@ export const PlanBar = (props: IProps) => {
           hidePublishing={hidePublishing}
           disabled={!filtered && rowInfo.length < 2}
         />
-      </TabActions>
-    </TabAppBar>
+      </Box>
+    </Box>
   );
 };

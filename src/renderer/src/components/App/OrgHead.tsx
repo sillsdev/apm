@@ -1,64 +1,87 @@
 import { useContext, useMemo, useState } from 'react';
-import { LocalKey, localUserKey } from '../../utils/localUserKey';
-import { useMobile } from '../../utils';
-import { useGetGlobal, useGlobal } from '../../context/useGlobal';
-import { UnsavedContext } from '../../context/UnsavedContext';
-import { IconButton, Menu, MenuItem, Stack, Typography } from '@mui/material';
+import { useLocation } from 'react-router-dom';
+import { shallowEqual, useSelector } from 'react-redux';
+import { Box, IconButton, Menu, MenuItem, Typography } from '@mui/material';
 import SettingsIcon from '@mui/icons-material/Settings';
 import UsersIcon from '@mui/icons-material/People';
+import { RecordIdentity } from '@orbit/records';
 import { API_CONFIG } from '../../../api-variable';
 import { OrganizationD } from '@model/organization';
-import TeamDialog, { ITeamDialog } from '../Team/TeamDialog';
 import { DialogMode, ICardsStrings, ProjectD } from '../../model';
-import { shallowEqual, useSelector } from 'react-redux';
-import { cardsSelector } from '../../selector';
-import { useCommitTeamSettings } from '../../crud/useCommitTeamSettings';
-import { RecordIdentity } from '@orbit/records';
-import Confirm from '../AlertDialog';
 import { TeamContext } from '../../context/TeamContext';
-import { useLocation } from 'react-router-dom';
+import { UnsavedContext } from '../../context/UnsavedContext';
+import { useGetGlobal, useGlobal } from '../../context/useGlobal';
+import { useMobile } from '../../utils';
+import { LocalKey, localUserKey } from '../../utils/localUserKey';
+import { defaultWorkflow, useTeamWorkflowProcess } from '../../crud';
+import { useCommitTeamSettings } from '../../crud/useCommitTeamSettings';
+import { useRole } from '../../crud/useRole';
 import BigDialog from '../../hoc/BigDialog';
 import { BigDialogBp } from '../../hoc/BigDialogBp';
+import { useOrbitData } from '../../hoc/useOrbitData';
+import { cardsSelector } from '../../selector';
+import { rowSx } from '../../control';
+import Confirm from '../AlertDialog';
 import GroupTabs from '../GroupTabs';
 import { StepEditor } from '../StepEditor';
-import { defaultWorkflow, useTeamWorkflowProcess } from '../../crud';
-import { useRole } from '../../crud/useRole';
-import { useOrbitData } from '../../hoc/useOrbitData';
 import { ProjectSort } from '../Team/ProjectDialog/ProjectSort';
+import TeamDialog, { ITeamDialog } from '../Team/TeamDialog';
+
+// A personal team's name is stored wrapped in '>' … '<' (see useOfflineList,
+// useVoicePermission); the header shows the bare name.
+const cleanOrgName = (orgRec: OrganizationD | undefined) => {
+  let name = orgRec?.attributes.name;
+  if (!name) return '';
+  if (name.startsWith('>')) {
+    name = name.slice(1);
+  }
+  if (name.endsWith('<')) {
+    name = name.slice(0, -1);
+  }
+  return name;
+};
 
 export const OrgHead = () => {
-  const [user] = useGlobal('user');
-  const organizations = useOrbitData<OrganizationD[]>('organization');
-  const projects = useOrbitData<ProjectD[]>('project');
-  const [editOpen, setEditOpen] = useState(false);
-  const [deleteItem, setDeleteItem] = useState<RecordIdentity>();
-  const [openMember, setOpenMember] = useState(false);
-  const [settingsMenuEl, setSettingsMenuEl] = useState<null | HTMLElement>(
-    null
-  );
-  const [sortVisible, setSortVisible] = useState(false);
-  const [workflowVisible, setWorkflowVisible] = useState(false);
-  const { isMobile, isMobileView } = useMobile();
-  const commitTeamSettings = useCommitTeamSettings();
-  const { startSave, waitForSave } = useContext(UnsavedContext).state;
-  const getGlobal = useGetGlobal();
   const { pathname } = useLocation();
   const isTeamScreen = pathname.includes('/team');
   const isSwitchTeamsScreen = pathname.includes('/switch-teams');
-  const { userIsOrgAdmin, setMyOrgRole } = useRole();
-  const ctx = useContext(TeamContext);
-  const { teamDelete, personalTeam, teamProjects } = ctx?.state ?? {};
-  const cardStrings: ICardsStrings = useSelector(cardsSelector, shallowEqual);
+  const { isMobile, isMobileView } = useMobile();
+
+  const [user] = useGlobal('user');
   const [project] = useGlobal('project');
   const [offlineOnly] = useGlobal('offlineOnly');
   const [isOffline] = useGlobal('offline');
   const [connected] = useGlobal('connected');
+  const getGlobal = useGetGlobal();
+
+  const organizations = useOrbitData<OrganizationD[]>('organization');
+  const projects = useOrbitData<ProjectD[]>('project');
+  const ctx = useContext(TeamContext);
+  const { teamDelete, personalTeam, teamProjects } = ctx?.state ?? {};
+  const { startSave, waitForSave } = useContext(UnsavedContext).state;
+  const { userIsOrgAdmin, setMyOrgRole } = useRole();
+  const commitTeamSettings = useCommitTeamSettings();
+  const cardStrings: ICardsStrings = useSelector(cardsSelector, shallowEqual);
+
+  const [settingsMenuEl, setSettingsMenuEl] = useState<null | HTMLElement>(
+    null
+  );
+  const [editOpen, setEditOpen] = useState(false);
+  const [deleteItem, setDeleteItem] = useState<RecordIdentity>();
+  const [openMember, setOpenMember] = useState(false);
+  const [sortVisible, setSortVisible] = useState(false);
+  const [workflowVisible, setWorkflowVisible] = useState(false);
 
   const orgId = useMemo(
     () => localStorage.getItem(localUserKey(LocalKey.team)),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [user]
   );
+
+  const orgRec = useMemo(() => {
+    if (!orgId) return undefined;
+    return organizations.find((o) => o.id === orgId);
+  }, [orgId, organizations]);
 
   const projectRec = useMemo(() => {
     if (!project) return undefined;
@@ -69,11 +92,6 @@ export const OrgHead = () => {
     return personalTeam === orgId;
   }, [personalTeam, orgId]);
 
-  const orgRec = useMemo(() => {
-    if (!orgId) return undefined;
-    return organizations.find((o) => o.id === orgId);
-  }, [orgId, organizations]);
-
   const headerWorkflowProcess = useTeamWorkflowProcess(orgId ?? undefined);
   const stepEditorProcess = headerWorkflowProcess ?? defaultWorkflow;
 
@@ -82,16 +100,18 @@ export const OrgHead = () => {
     [orgId, userIsOrgAdmin]
   );
 
+  const canModify = useMemo(() => {
+    return (!isOffline && connected && isAdmin) || offlineOnly;
+  }, [isAdmin, isOffline, offlineOnly, connected]);
+
   const hasMoreThanOneProject = useMemo(() => {
     if (!orgId || !teamProjects) return false;
     return (teamProjects(orgId)?.length ?? 0) > 1;
   }, [orgId, teamProjects]);
 
-  const canModify = useMemo(() => {
-    return (!isOffline && connected && isAdmin) || offlineOnly;
-  }, [isAdmin, isOffline, offlineOnly, connected]);
-
   const showSort = hasMoreThanOneProject && canModify;
+
+  const showTeamActions = isTeamScreen && isMobile;
 
   const handleSettingsMenuOpen = (e: React.MouseEvent<HTMLButtonElement>) => {
     setSettingsMenuEl(e.currentTarget);
@@ -106,11 +126,6 @@ export const OrgHead = () => {
     handleSettingsMenuClose();
   };
 
-  const handleSort = () => {
-    setSortVisible(true);
-    handleSettingsMenuClose();
-  };
-
   const handleWorkflow = () => {
     setWorkflowVisible(true);
     handleSettingsMenuClose();
@@ -121,6 +136,16 @@ export const OrgHead = () => {
       startSave();
       waitForSave(() => setWorkflowVisible(isOpen), 500);
     } else setWorkflowVisible(isOpen);
+  };
+
+  const handleSort = () => {
+    setSortVisible(true);
+    handleSettingsMenuClose();
+  };
+
+  const handleMembers = (team: OrganizationD) => () => {
+    setMyOrgRole(team.id);
+    setOpenMember(true);
   };
 
   const handleCommitSettings = async (
@@ -142,30 +167,12 @@ export const OrgHead = () => {
 
   const handleDeleteRefused = () => setDeleteItem(undefined);
 
-  const handleMembers = (team: OrganizationD) => () => {
-    setMyOrgRole(team.id);
-    setOpenMember(true);
-  };
-
-  const cleanOrgName = (orgRec: OrganizationD | undefined) => {
-    let name = orgRec?.attributes.name;
-    if (!name) return '';
-    if (name.startsWith('>')) {
-      name = name.slice(1);
-    }
-    if (name.endsWith('<')) {
-      name = name.slice(0, -1);
-    }
-    return name;
-  };
-
   return (
-    <Stack direction="row" alignItems="center" sx={{ minWidth: 0 }}>
+    <Box sx={[rowSx, { alignItems: 'center' }]}>
       <Typography
         noWrap
         sx={{
           minWidth: 0,
-          mx: 1,
           fontWeight: 'bold',
           position: 'relative',
           top: '1px',
@@ -174,47 +181,43 @@ export const OrgHead = () => {
         {isSwitchTeamsScreen
           ? API_CONFIG.productName
           : isTeamScreen
-            ? cleanOrgName(orgRec) || API_CONFIG.productName
+            ? (isMobile && cleanOrgName(orgRec)) || API_CONFIG.productName
             : projectRec?.attributes.name || API_CONFIG.productName}
       </Typography>
-      {isTeamScreen && (
-        <>
-          {canModify && (
-            <>
-              <IconButton
-                onClick={handleSettingsMenuOpen}
-                aria-label="Settings Menu"
-              >
-                <SettingsIcon />
-              </IconButton>
-              <Menu
-                anchorEl={settingsMenuEl}
-                open={Boolean(settingsMenuEl)}
-                onClose={handleSettingsMenuClose}
-              >
-                <MenuItem onClick={handleSettings}>
-                  {cardStrings?.teamSettings || 'Team Settings'}
-                </MenuItem>
-                {!isMobileView && (
-                  <MenuItem id="orgHeadEditWorkflow" onClick={handleWorkflow}>
-                    {cardStrings?.editWorkflow?.replace('{0}', '') ||
-                      'Edit Workflow'}
-                  </MenuItem>
-                )}
-                {showSort && (
-                  <MenuItem onClick={handleSort}>
-                    {cardStrings?.sortProjects || 'Sort Projects'}
-                  </MenuItem>
-                )}
-              </Menu>
-            </>
+      {showTeamActions && canModify && (
+        <IconButton
+          onClick={handleSettingsMenuOpen}
+          aria-label="Settings Menu"
+          sx={{ flexShrink: 0 }}
+        >
+          <SettingsIcon />
+        </IconButton>
+      )}
+      {showTeamActions && orgRec && !isPersonal && (
+        <IconButton onClick={handleMembers(orgRec)} sx={{ flexShrink: 0 }}>
+          <UsersIcon />
+        </IconButton>
+      )}
+      {showTeamActions && canModify && (
+        <Menu
+          anchorEl={settingsMenuEl}
+          open={Boolean(settingsMenuEl)}
+          onClose={handleSettingsMenuClose}
+        >
+          <MenuItem onClick={handleSettings}>
+            {cardStrings?.teamSettings || 'Team Settings'}
+          </MenuItem>
+          {!isMobileView && (
+            <MenuItem id="orgHeadEditWorkflow" onClick={handleWorkflow}>
+              {cardStrings?.editWorkflow?.replace('{0}', '') || 'Edit Workflow'}
+            </MenuItem>
           )}
-          {orgRec && !isPersonal && (
-            <IconButton onClick={handleMembers(orgRec)}>
-              <UsersIcon />
-            </IconButton>
+          {showSort && (
+            <MenuItem onClick={handleSort}>
+              {cardStrings?.sortProjects || 'Sort Projects'}
+            </MenuItem>
           )}
-        </>
+        </Menu>
       )}
       {editOpen && orgRec && (
         <TeamDialog
@@ -277,6 +280,6 @@ export const OrgHead = () => {
           <ProjectSort teamId={orgId} onClose={() => setSortVisible(false)} />
         </BigDialog>
       )}
-    </Stack>
+    </Box>
   );
 };

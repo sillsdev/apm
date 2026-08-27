@@ -3,7 +3,6 @@ import { shallowEqual, useSelector } from 'react-redux';
 import { IMediaUploadStrings } from '../model';
 import {
   Box,
-  Button,
   DialogActions,
   DialogContent,
   DialogContentText,
@@ -22,6 +21,7 @@ import { typeLimit } from '../utils/typeLimit';
 import { FaithbridgeType, MarkDownType, UriLinkType } from './MediaUpload';
 import { UploadType } from './UploadType';
 import { FileDrop } from 'react-file-drop';
+import { Button } from '../control/Button';
 
 const MyLabel = styled('label')(({ theme }) => ({
   display: 'flex',
@@ -383,6 +383,7 @@ function MediaUploadContent(props: IProps) {
             onRights={handleRights}
             onChange={handleSpeaker}
             team={team}
+            aiip={false}
           />
         )}
         {![

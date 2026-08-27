@@ -3,7 +3,7 @@ import DeleteIcon from '@mui/icons-material/DeleteOutline';
 import UndoIcon from '@mui/icons-material/Undo';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
-import { PriButton } from '../../../control';
+import { Button } from '../../../control';
 import MediaRecord from '../../MediaRecord';
 import { formatClauseRange } from './carefulSpeechFormat';
 import { IRegion } from '../../../crud/useWavesurferRegions';
@@ -25,8 +25,6 @@ export type CarefulSpeechPhase =
   | 'recordReady'
   | 'recording'
   | 'recorded';
-
-const primaryHighlightSx = { boxShadow: 4 };
 
 interface Props {
   width: number;
@@ -67,6 +65,8 @@ interface Props {
   resetMedia: boolean;
   setResetMedia: (v: boolean) => void;
   setCanSave: (v: boolean) => void;
+  /** Passed through to MediaRecord; see its prop docs (TT-7583). */
+  onSaveRejected?: () => void;
   setStatusText: (t: string) => void;
   showRecorder: boolean;
   strings: IGuidedPhraseRecordControlStrings;
@@ -78,6 +78,8 @@ interface Props {
   onNextUnitSequential?: () => void;
   canPrevUnit?: boolean;
   canNextUnit?: boolean;
+  /** Linked notes: play existing takes, do not record or edit. */
+  readOnly?: boolean;
 }
 
 export default function CarefulSpeechControls({
@@ -119,6 +121,7 @@ export default function CarefulSpeechControls({
   resetMedia,
   setResetMedia,
   setCanSave,
+  onSaveRejected,
   setStatusText,
   showRecorder,
   strings,
@@ -129,6 +132,7 @@ export default function CarefulSpeechControls({
   onNextUnitSequential,
   canPrevUnit = false,
   canNextUnit = false,
+  readOnly = false,
 }: Props) {
   useRenderProfiler('CarefulSpeechControls');
   useWhyRender('CarefulSpeechControls', {
@@ -157,20 +161,21 @@ export default function CarefulSpeechControls({
     [recordingPassStarted]
   );
   const showMoreFewer = useMemo(
-    () => showBoundaryTools && listenPass && phase !== 'bootstrapping',
-    [showBoundaryTools, listenPass, phase]
+    () =>
+      showBoundaryTools && !readOnly && listenPass && phase !== 'bootstrapping',
+    [showBoundaryTools, readOnly, listenPass, phase]
   );
   const showStartButton = useMemo(
-    () => listenPass && phase !== 'bootstrapping',
-    [listenPass, phase]
+    () => !readOnly && listenPass && phase !== 'bootstrapping',
+    [readOnly, listenPass, phase]
   );
   const highlightStart = useMemo(
     () => showStartButton && allClausesHeard,
     [showStartButton, allClausesHeard]
   );
   const showCombineRow = useMemo(
-    () => showBoundaryTools && recordingPassStarted,
-    [showBoundaryTools, recordingPassStarted]
+    () => showBoundaryTools && !readOnly && recordingPassStarted,
+    [showBoundaryTools, readOnly, recordingPassStarted]
   );
   const showNextClause = useMemo(
     () => phase === 'recorded' && !sequentialUnitNavAroundRecord,
@@ -199,12 +204,7 @@ export default function CarefulSpeechControls({
       phase === 'recorded' &&
       !savingRecording &&
       canNextUnit,
-    [
-      sequentialUnitNavAroundRecord,
-      phase,
-      savingRecording,
-      canNextUnit,
-    ]
+    [sequentialUnitNavAroundRecord, phase, savingRecording, canNextUnit]
   );
   const [dockedRecordButton, setDockedRecordButton] =
     useState<ReactNode | null>(null);
@@ -225,23 +225,19 @@ export default function CarefulSpeechControls({
           justifyContent="center"
           sx={{ pb: 1 }}
         >
-          <PriButton
+          <Button
             id={`${controlIdPrefix}-more-clauses`}
             onClick={onMoreClauses}
-            variant="outlined"
-            color="inherit"
           >
             {strings.moreUnits}
-          </PriButton>
-          <PriButton
+          </Button>
+          <Button
             id={`${controlIdPrefix}-fewer-clauses`}
             disabled={!canFewerClauses}
             onClick={onFewerClauses}
-            variant="outlined"
-            color="inherit"
           >
             {strings.fewerUnits}
-          </PriButton>
+          </Button>
         </Stack>
       )}
       {showCombineRow && (
@@ -251,31 +247,32 @@ export default function CarefulSpeechControls({
           justifyContent="center"
           alignItems="center"
         >
-          <PriButton
+          <Button
             id={`${controlIdPrefix}-split`}
-            disabled={!canSplitClause || phase === 'recording'}
-            onClick={onSplitClause}
-            variant="outlined"
-            color="inherit"
             sx={{ px: '8px', py: '2px' }}
+            disabled={
+              !canSplitClause || phase === 'recording' || savingRecording
+            }
+            onClick={onSplitClause}
           >
             {strings.splitUnit}
-          </PriButton>
-          <PriButton
+          </Button>
+          <Button
             id={`${controlIdPrefix}-combine`}
-            disabled={!canCombineWithNext || phase === 'recording'}
-            onClick={onCombineWithNext}
-            variant="outlined"
-            color="inherit"
             sx={{ px: '8px', py: '2px' }}
+            disabled={
+              !canCombineWithNext || phase === 'recording' || savingRecording
+            }
+            onClick={onCombineWithNext}
           >
             {strings.combineWithNext}
-          </PriButton>
+          </Button>
           {showUndoCombine && (
             <IconButton
               id={`${controlIdPrefix}-undo-combine`}
               aria-label={strings.undo}
               onClick={onUndoCombine}
+              disabled={savingRecording}
               size="small"
             >
               <UndoIcon />
@@ -288,14 +285,14 @@ export default function CarefulSpeechControls({
       </Typography>
       {showStartButton && (
         <Box sx={{ display: 'flex', justifyContent: 'center', pb: 1 }}>
-          <PriButton
+          <Button
             id={`${controlIdPrefix}-start`}
-            onClick={onStartRecording}
+            color={highlightStart ? 'primary' : 'secondary'}
             disabled={phase === 'playing'}
-            variant={highlightStart ? 'contained' : 'outlined'}
+            onClick={onStartRecording}
           >
             {strings.startRecording} &gt;
-          </PriButton>
+          </Button>
         </Box>
       )}
       {showRecorder && (
@@ -314,12 +311,14 @@ export default function CarefulSpeechControls({
                 mediaId={recordingMediaId}
                 allowRecord={allowRecord}
                 allowWave={false}
+                disableDragSelection={true}
                 height={160}
                 width={width - 80}
                 afterUploadCb={afterUploadCb}
                 onSaving={onSaving}
                 onReady={onSaveSettled}
                 setCanSave={setCanSave}
+                onSaveRejected={onSaveRejected}
                 setStatusText={setStatusText}
                 doReset={resetMedia}
                 setDoReset={setResetMedia}
@@ -331,7 +330,7 @@ export default function CarefulSpeechControls({
                 allowDownload={false}
                 allowNoNoise={true}
                 dockRecordButton
-                showDockedRecordButton={showDockedRecordButton}
+                showDockedRecordButton={showDockedRecordButton && !readOnly}
                 onDockedRecordButton={onDockedRecordButton}
               />
             </Box>
@@ -349,6 +348,7 @@ export default function CarefulSpeechControls({
               value={speaker}
               onChange={(e) => onSpeakerChange(e.target.value)}
               size="small"
+              disabled={readOnly}
               inputRef={speakerInputRef}
               error={highlightSpeaker}
               sx={{
@@ -362,7 +362,7 @@ export default function CarefulSpeechControls({
                   : undefined),
               }}
             />
-            {phase === 'recorded' && (
+            {phase === 'recorded' && !readOnly && (
               <IconButton
                 aria-label={strings.clearRecording}
                 onClick={onClearRecording}
@@ -394,14 +394,14 @@ export default function CarefulSpeechControls({
                 </IconButton>
               )}
               {showNextClause ? (
-                <PriButton
+                <Button
                   id={`${controlIdPrefix}-next`}
-                  onClick={onNextClause}
+                  color="primary"
                   disabled={allClausesComplete || savingRecording}
-                  sx={primaryHighlightSx}
+                  onClick={onNextClause}
                 >
                   {strings.nextUnit} &gt;
-                </PriButton>
+                </Button>
               ) : (
                 <Box>{dockedRecordButton}</Box>
               )}

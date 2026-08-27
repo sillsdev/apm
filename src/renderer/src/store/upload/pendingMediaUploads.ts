@@ -22,6 +22,12 @@ export interface PendingUploadRecord {
   record: PendingUploadMediaRecord;
 }
 
+/** Identity for matching pending rows across different staged disk paths (TT-7347). */
+export type PendingUploadIdentity = Pick<
+  PendingUploadMediaRecord,
+  'planId' | 'passageId' | 'artifactTypeId' | 'originalFile'
+>;
+
 const randomId = (): string =>
   typeof crypto !== 'undefined' && crypto.randomUUID
     ? crypto.randomUUID()
@@ -45,6 +51,25 @@ function savePendingMediaUploads(items: PendingUploadRecord[]): void {
   } catch {
     // ignore quota / private mode
   }
+}
+
+function pendingUploadIdentityKey(record: PendingUploadIdentity): string {
+  return [
+    record.planId || '',
+    record.passageId || '',
+    record.artifactTypeId || '',
+    record.originalFile || '',
+  ].join('\0');
+}
+
+export function removeMatchingPendingUploads(
+  identity: PendingUploadIdentity
+): number {
+  const key = pendingUploadIdentityKey(identity);
+  const items = loadPendingMediaUploads();
+  const next = items.filter((p) => pendingUploadIdentityKey(p.record) !== key);
+  savePendingMediaUploads(next);
+  return items.length - next.length;
 }
 
 export function appendPendingMediaUpload(

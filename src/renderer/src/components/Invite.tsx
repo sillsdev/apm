@@ -12,7 +12,6 @@ import {
   OrganizationMembershipD,
 } from '../model';
 import {
-  Button,
   TextField,
   Dialog,
   DialogActions,
@@ -34,6 +33,7 @@ import { inviteSelector } from '../selector';
 import { useOrbitData } from '../hoc/useOrbitData';
 import { InitializedRecord } from '@orbit/records';
 import packageJson from '../../package.json';
+import { Button } from '../control/Button';
 
 const StyledLabel = styled('label')(({ theme }) => ({
   marginTop: theme.spacing(1),

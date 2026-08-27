@@ -5,7 +5,7 @@ import DataSheet from 'react-datasheet';
 import { shallowEqual, useSelector } from 'react-redux';
 import { IState } from '../../model';
 import BookSelect, { OptionType } from '../BookSelect';
-import { ActionRow, AltButton, PriButton } from '../StepEditor';
+import { Button, ActionRow, rowSx } from '../../control';
 import Confirm from '../AlertDialog';
 import ActionCol from './ResActionCol';
 import { sharedResourceSelector, sharedSelector } from '../../selector';
@@ -306,17 +306,20 @@ export default function ReferenceTable({
         />
       </Content>
       <ActionRow>
-        <AltButton onClick={handleCancel}>
-          {changed ? ts.cancel : ts.close}
-        </AltButton>
-        {onCommit && (
-          <PriButton
-            onClick={handleSave}
-            disabled={data.length <= 2 || !changed}
-          >
-            {ts.save}
-          </PriButton>
-        )}
+        <Box sx={rowSx}>
+          <Button onClick={handleCancel}>
+            {changed ? ts.cancel : ts.close}
+          </Button>
+          {onCommit && (
+            <Button
+              color="primary"
+              disabled={data.length <= 2 || !changed}
+              onClick={handleSave}
+            >
+              {ts.save}
+            </Button>
+          )}
+        </Box>
       </ActionRow>
       {confirmRow && (
         <Confirm

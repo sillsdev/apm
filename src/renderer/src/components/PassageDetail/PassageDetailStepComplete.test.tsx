@@ -6,7 +6,7 @@ import { render, screen } from '@testing-library/react';
 const mockStepComplete = jest.fn(() => false);
 let mockTool: string;
 
-jest.mock('../../context/usePassageDetailContext', () => () => ({
+const stepCompleteCtx = {
   currentstep: 'step-record',
   setCurrentStep: jest.fn(),
   stepComplete: mockStepComplete,
@@ -15,10 +15,14 @@ jest.mock('../../context/usePassageDetailContext', () => () => ({
   gotoNextStep: jest.fn(),
   psgCompleted: 0,
   section: { id: 's1', type: 'section' },
+  passage: { id: 'p1', type: 'passage' },
+  sharedResource: undefined as unknown,
   recording: false,
   isBoldWorkflow: true,
   mediafileId: '',
-}));
+};
+
+jest.mock('../../context/usePassageDetailContext', () => () => stepCompleteCtx);
 
 jest.mock('../../crud', () => {
   const { ToolSlug } = jest.requireActual<typeof import('../../crud/toolSlug')>(
@@ -89,6 +93,9 @@ import { ToolSlug } from '../../crud/toolSlug';
 describe('PassageDetailStepComplete BOLD Record', () => {
   beforeEach(() => {
     mockTool = ToolSlug.Record;
+    stepCompleteCtx.sharedResource = undefined;
+    stepCompleteCtx.mediafileId = '';
+    stepCompleteCtx.isBoldWorkflow = true;
   });
 
   it('renders on BOLD desktop Record step', () => {
@@ -107,6 +114,8 @@ describe('PassageDetailStepComplete BOLD Record', () => {
 describe('PassageDetailStepComplete BOLD Careful Speech', () => {
   beforeEach(() => {
     mockTool = ToolSlug.CarefulSpeech;
+    stepCompleteCtx.sharedResource = undefined;
+    stepCompleteCtx.isBoldWorkflow = true;
   });
 
   it('renders step complete and bulk-complete controls on BOLD desktop', () => {
@@ -117,5 +126,17 @@ describe('PassageDetailStepComplete BOLD Careful Speech', () => {
     expect(
       screen.getByRole('button', { name: 'Set next' })
     ).toBeInTheDocument();
+  });
+
+  it('disables Complete on a linked note (TT-5873)', () => {
+    stepCompleteCtx.sharedResource = {
+      id: 'sr1',
+      type: 'sharedresource',
+      relationships: {
+        passage: { data: { type: 'passage', id: 'source-p' } },
+      },
+    };
+    render(<PassageDetailStepComplete />);
+    expect(screen.getByRole('button', { name: 'Complete' })).toBeDisabled();
   });
 });

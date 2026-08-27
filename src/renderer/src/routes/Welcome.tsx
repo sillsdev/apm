@@ -5,7 +5,7 @@ import { parseQuery } from '../utils/parseQuery';
 import { IState, IWelcomeStrings, User, OfflineProject, UserD } from '../model';
 import { InitializedRecord, RecordTransformBuilder } from '@orbit/records';
 import * as action from '../store';
-import { Typography, Grid, Box, BoxProps, SxProps } from '@mui/material';
+import { Typography, Grid, Box, BoxProps, SxProps, Theme } from '@mui/material';
 import {
   useCheckOnline,
   localeDefault,
@@ -25,7 +25,7 @@ import { AddRecord } from '../model/baseModel';
 import { useOfflineSetup, useRecOfType } from '../crud';
 import { ChoiceHead, FactorDecorate } from '../control/ChoiceHead';
 import { backup } from '../schema';
-import { AltButton, LightTooltip } from '../control';
+import { Button, LightTooltip } from '../control';
 import { styled } from '@mui/material';
 import { welcomeSelector } from '../selector';
 
@@ -41,12 +41,15 @@ const RootBox = styled(Box)<BoxProps>(() => ({
 }));
 
 const sectionHeadProps = { fontSize: '16pt', pt: 4, pb: 2 } as SxProps;
-const iconProps = { mr: 1, fontSize: 'small' } as SxProps;
-const actionProps = {
+const actionSx: SxProps<Theme> = (theme) => ({
   p: 2,
-  textAlign: 'center',
+  display: 'flex',
+  flexWrap: 'wrap',
+  gap: theme.layout.p,
+  justifyContent: 'center',
+  alignItems: 'center',
   alignSelf: 'center',
-} as SxProps;
+});
 
 interface OnlineButtonProps {
   id: string;
@@ -57,10 +60,14 @@ const OnlineButton = ({ id, onClick }: OnlineButtonProps) => {
   const t: IWelcomeStrings = useSelector(welcomeSelector, shallowEqual);
 
   return (
-    <AltButton id={id} onClick={onClick} sx={{ mr: 2 }}>
-      <OnlineIcon sx={iconProps} />
+    <Button
+      disableTypography
+      id={id}
+      startIcon={<OnlineIcon />}
+      onClick={onClick}
+    >
       {t.online}
-    </AltButton>
+    </Button>
   );
 };
 
@@ -72,10 +79,14 @@ const OfflineButton = ({ id, onClick, txt }: OfflineButtonProps) => {
   const t: IWelcomeStrings = useSelector(welcomeSelector, shallowEqual);
 
   return (
-    <AltButton id={id} onClick={onClick} sx={{ mr: 2 }}>
-      <OfflineIcon sx={iconProps} />
+    <Button
+      disableTypography
+      id={id}
+      startIcon={<OfflineIcon />}
+      onClick={onClick}
+    >
       {txt ? txt : t.offline}
-    </AltButton>
+    </Button>
   );
 };
 
@@ -92,9 +103,7 @@ const HelpTip = () => {
   );
 };
 
-interface IProps {}
-
-export function Welcome(props: IProps) {
+export function Welcome() {
   const importStatus = useSelector(
     (state: IState) => state.importexport.importexportStatus
   );
@@ -316,8 +325,6 @@ export function Welcome(props: IProps) {
   return (
     <AppLayout>
       <RootBox>
-        <Typography sx={sectionHeadProps}>Filler</Typography>
-
         {isElectron && (
           <Box
             sx={{
@@ -341,7 +348,7 @@ export function Welcome(props: IProps) {
                   factorDecorate={factorDecorate}
                 />
               </Grid>
-              <Grid size={{ xs: 4 }} sx={actionProps}>
+              <Grid size={{ xs: 4 }} sx={actionSx}>
                 <OnlineButton id="adminonline" onClick={handleGoOnlineCloud} />
               </Grid>
               <Grid size={{ xs: 8 }}>
@@ -352,7 +359,7 @@ export function Welcome(props: IProps) {
                   factors={teamFactors}
                 />
               </Grid>
-              <Grid size={{ xs: 4 }} sx={actionProps}>
+              <Grid size={{ xs: 4 }} sx={actionSx}>
                 <OnlineButton id="teamonline" onClick={handleGoOnlineTeam} />
                 {hasOfflineProjects && hasOnlineUsers && (
                   <OfflineButton
@@ -374,7 +381,7 @@ export function Welcome(props: IProps) {
                   factors={aloneFactors}
                 />
               </Grid>
-              <Grid size={{ xs: 4 }} sx={actionProps}>
+              <Grid size={{ xs: 4 }} sx={actionSx}>
                 <OnlineButton id="aloneonline" onClick={handleQuickOnline} />
                 <OfflineButton id="aloneoffline" onClick={handleQuickOffline} />
               </Grid>

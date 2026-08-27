@@ -13,7 +13,7 @@ import {
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import ResourceItem from './ResourceItem';
-import { AltButton } from '../../../control';
+import { Button } from '../../../control';
 import { useEffect, useMemo, useState } from 'react';
 import {
   BookName,
@@ -86,7 +86,6 @@ export default function CreateAiRes({ resources, onTab }: CreateAiResProps) {
       t.book.toLowerCase(),
       t.movement.toLowerCase(),
     ],
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [t, organizedBy]
   );
 
@@ -229,9 +228,9 @@ export default function CreateAiRes({ resources, onTab }: CreateAiResProps) {
       sx={{ justifyContent: 'center', flexShrink: 0, py: 1 }}
     >
       <Grid>
-        <AltButton onClick={() => setLink('https://ttsmp3.com//')}>
+        <Button onClick={() => setLink('https://ttsmp3.com//')}>
           {t.convert}
-        </AltButton>
+        </Button>
       </Grid>
     </Grid>
   );

@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
-import { Alert, Button, Snackbar } from '@mui/material';
+import { Alert, Snackbar } from '@mui/material';
 import { shallowEqual, useSelector } from 'react-redux';
 import { IMainStrings } from '../model';
 import { mainSelector } from '../selector';
+import { Button } from '../control/Button';
 
 /**
  * Web-only PWA update prompt.

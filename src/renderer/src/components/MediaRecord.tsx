@@ -28,6 +28,7 @@ import {
 import { useSnackBar } from '../hoc/SnackBar';
 import { UnsavedContext } from '../context/UnsavedContext';
 import { typeLimit } from '../utils/typeLimit';
+import { isAudioLoadAbort } from '../utils/isAudioLoadAbort';
 import usePassageDetailContext from '../context/usePassageDetailContext';
 import { useStepTool } from '../crud/useStepTool';
 import { parseRecordCaptureAudioProcessing } from '../crud/useWavRecorder';
@@ -59,6 +60,15 @@ interface IProps {
   /** When false, hide the Download item in the recorder's more menu. Default true if omitted. */
   allowDownload?: boolean;
   setCanSave: (canSave: boolean) => void;
+  /**
+   * Called when a save attempt is rejected — the upload failed or finished
+   * without a mediaId. May fire more than once for a single failed save, so
+   * handlers must be idempotent. Parents that auto-save on the rising edge of
+   * canSave use this to stop retrying the same doomed take (TT-7583); canSave
+   * itself stays true so screens with a manual Save button keep their retry
+   * path.
+   */
+  onSaveRejected?: (() => void) | undefined;
   setCanCancel?: ((canCancel: boolean) => void) | undefined;
   setStatusText: (status: string) => void;
   cancelMethod?: (() => void) | undefined;
@@ -76,6 +86,8 @@ interface IProps {
   noNewVoice?: boolean | undefined;
   allowNoNoise?: boolean;
   allowZoom?: boolean;
+  /** When true, disable drag-to-create-region (the red loop region) on the waveform. */
+  disableDragSelection?: boolean;
   controlsRef?: React.RefObject<WSAudioPlayerControls | null>;
   hideControls?: boolean;
   onProgress?: (progress: number) => void;
@@ -137,6 +149,7 @@ function MediaRecord(props: IProps) {
     noNewVoice,
     allowNoNoise,
     allowZoom,
+    disableDragSelection,
     controlsRef,
     hideControls,
     onProgress,
@@ -158,6 +171,7 @@ function MediaRecord(props: IProps) {
     onDockedRecordButton,
     showDockedRecordButton,
     onRecordingCleared,
+    onSaveRejected,
   } = props;
   const context = usePassageDetailContext();
   const simplified = Boolean(context?.isBoldWorkflow);
@@ -178,10 +192,26 @@ function MediaRecord(props: IProps) {
   const { fetchMediaUrl, mediaState } = useFetchMediaUrl(reporter);
   const mediaStateRef = useRef(mediaState);
   const mediaStateFetchedTimeRef = useRef<number>(0);
+  // TT-7609: the mediaId a load has been started for, and the one currently
+  // wanted. A load or save in flight when mediaId changes used to swallow the
+  // change for good — the take of the segment navigated to never appeared until
+  // the recorder was remounted. These let the load be deferred instead of
+  // dropped, and let an in-flight load notice it is now stale.
+  const loadRequestedIdRef = useRef<string | undefined>(undefined);
+  const mediaIdRef = useRef<string | undefined>(mediaId);
+  mediaIdRef.current = mediaId;
   const [filetype, setFiletype] = useState('');
   const [originalBlob, setOriginalBlob] = useState<Blob>();
   const [audioBlob, setAudioBlob] = useState<Blob>();
   const [loading, setLoading] = useState(false);
+  /**
+   * True only while handleLoadAudio is fetching a take. Deliberately not a
+   * mirror of `loading`, which the save path sets too: gating the abandon paths
+   * on that would let a doReset arriving mid-save clear the flag and the status
+   * text, re-enabling Record and dropping "Saving..." while the save ran. Set
+   * synchronously so the [mediaId] and [doReset] effects see it immediately.
+   */
+  const loadInFlightRef = useRef(false);
   const [filechanged, setFilechangedx] = useState(false);
   const filechangedRef = useRef(false);
   const [recording, setRecording] = useState(false);
@@ -286,6 +316,13 @@ function MediaRecord(props: IProps) {
   }, [allowWave, mimeType, t.compressed, t.uncompressed]);
 
   const myAfterUploadCb = async (mediaId: string) => {
+    // Notify before any setState: canSave goes true again on the next commit,
+    // and auto-save parents must already know this take was rejected or they
+    // would retry it on that rising edge (TT-7583).
+    if (!mediaId) onSaveRejected?.();
+    // The take this id points at is already in the waveform, so the mediaId
+    // change it triggers must not blank it and fetch it back (TT-7609).
+    if (mediaId) loadRequestedIdRef.current = mediaId;
     setUploading(false);
     setPendingSave(false);
     if (filechangedRef.current && mediaId) setFilechanged(false);
@@ -459,6 +496,8 @@ function MediaRecord(props: IProps) {
   const handleSaveFailed = useCallback(
     (error: unknown) => {
       saveRef.current = false;
+      // Before the setState calls below, for the reason in myAfterUploadCb.
+      onSaveRejected?.();
       setUploading(false);
       setConverting(false);
       setLoading(false);
@@ -467,7 +506,7 @@ function MediaRecord(props: IProps) {
       saveCompleted(toolId, message);
       onReady?.();
     },
-    [toolId, saveCompleted, onReady]
+    [toolId, saveCompleted, onReady, onSaveRejected]
   );
   useEffect(() => {
     const limit = sizeLimit * compression;
@@ -521,6 +560,10 @@ function MediaRecord(props: IProps) {
           }
           return;
         } else {
+          // Save was requested with nothing to upload — a rejection like any
+          // other, so auto-save parents must hear about it or they would keep
+          // re-requesting on the next rising edge (TT-7583).
+          onSaveRejected?.();
           showMessage(ts.NoSaveWoMedia);
           setStatusText(ts.NoSaveWoMedia);
           saveCompleted(toolId, ts.NoSaveWoMedia);
@@ -554,6 +597,7 @@ function MediaRecord(props: IProps) {
   }
   useEffect(() => {
     if (doReset) {
+      abandonLoadInFlight();
       reset();
       setDoReset && setDoReset(false);
     }
@@ -588,18 +632,42 @@ function MediaRecord(props: IProps) {
 
   useEffect(() => {
     if (loading && blobReady && originalBlob && !saveRef.current) {
+      loadInFlightRef.current = false;
       setLoading(false);
       setStatusText('');
     }
   }, [loading, blobReady, originalBlob, setStatusText]);
-  const blobError = (urlorError: string) => {
-    showMessage(urlorError);
+  /**
+   * A load in flight is being abandoned - the segment was navigated away from,
+   * or the recorder was reset. Without this, `loading` never clears again: the
+   * effect that clears it needs originalBlob, and reset() has just dropped it.
+   * The record button is disabled by Boolean(loading), so the recorder stayed
+   * dead on this segment and every later one until the step was remounted
+   * (TT-7621).
+   */
+  const abandonLoadInFlight = () => {
+    if (!loadInFlightRef.current) return;
+    loadInFlightRef.current = false;
+    loadRequestedIdRef.current = undefined;
+    setLoading(false);
+    setStatusText('');
+  };
+  const stopLoading = () => {
+    loadInFlightRef.current = false;
     setLoading(false);
     setStatusText('');
     onLoaded && onLoaded();
   };
+  const blobError = (urlorError: string) => {
+    showMessage(urlorError);
+    stopLoading();
+  };
   const handleWaveformLoadError = useCallback(
-    () => {
+    (error?: unknown) => {
+      if (isAudioLoadAbort(error)) {
+        stopLoading();
+        return;
+      }
       blobError(ts.mediaError);
       setOriginalBlob(undefined);
     },
@@ -650,17 +718,32 @@ function MediaRecord(props: IProps) {
   };
   const handleLoadAudio = async () => {
     if (loading || !mediaId) return;
+    const requestedId = mediaId;
+    loadRequestedIdRef.current = requestedId;
+    loadInFlightRef.current = true;
     setLoading(true);
-    setStatusText(ts.loading);
+    // No status text here: setLoading(true) already puts the "Loading..."
+    // overlay on the waveform below (TT-7570).
+    setStatusText('');
     reset();
 
     try {
       const url = await getGoodUrl();
+      // Navigated to another segment mid-fetch: this audio belongs to the one
+      // we left, and handing it over would show the wrong take (TT-7609).
+      if (mediaIdRef.current !== requestedId) {
+        stopLoading();
+        return;
+      }
       if (!url) {
         blobError(mediaStateRef.current.error || ts.mediaError);
         return;
       }
       const blob = await loadBlobAsync(url);
+      if (mediaIdRef.current !== requestedId) {
+        stopLoading();
+        return;
+      }
       if (blob) gotTheBlob(blob);
       else blobError(ts.mediaError);
     } catch (error) {
@@ -682,6 +765,8 @@ function MediaRecord(props: IProps) {
 
   useEffect(() => {
     if (!mediaId) {
+      loadRequestedIdRef.current = undefined;
+      abandonLoadInFlight();
       reset();
       return;
     }
@@ -692,6 +777,19 @@ function MediaRecord(props: IProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mediaId]);
 
+  // TT-7609: a save or an earlier segment's load in flight when mediaId changed
+  // made the effect above skip that load, and nothing ever retried it — the take
+  // of the segment navigated to stayed invisible until the step was remounted.
+  // Run the skipped load as soon as the recorder goes idle. Loads only; the
+  // reset above must stay tied to a real mediaId change so a take whose upload
+  // failed is not wiped out from under the retry (TT-7583).
+  useEffect(() => {
+    if (loading || !mediaId) return;
+    if (loadRequestedIdRef.current === mediaId) return;
+    handleLoadAudio();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, mediaId]);
+
   const segments = '{}';
 
   const content = (
@@ -700,6 +798,7 @@ function MediaRecord(props: IProps) {
         allowRecord={allowRecord !== false}
         loading={loading}
         allowZoom={allowZoom}
+        disableDragSelection={disableDragSelection}
         allowDeltaVoice={allowDeltaVoice}
         allowDownload={allowDownload}
         oneTryOnly={effectiveOneTryOnly}

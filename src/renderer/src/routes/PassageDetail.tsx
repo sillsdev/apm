@@ -154,9 +154,9 @@ export const PassageDetail = () => {
 
   useEffect(() => {
     const projectId = setUrlContext(prjId ?? '');
-    if (user && projType === '') {
+    if (user) {
       const tmp = setProjectType(projectId);
-      if (!tmp) {
+      if (projType === '' && !tmp) {
         // If user is set but we don't have this project, go to the team screen
         setView('/team');
       }
@@ -167,7 +167,7 @@ export const PassageDetail = () => {
   if (view !== '' && view !== pathname) return <StickyRedirect to={view} />;
 
   return (
-    <AppLayout appHeadProps={{ switchTo: true, drawBottomBorder: false }}>
+    <AppLayout appHeadProps={{ drawBottomBorder: false }}>
       <PassageDetailProvider>
         {isMobile ? <MobileDetail /> : <PassageDetailGrids />}
       </PassageDetailProvider>

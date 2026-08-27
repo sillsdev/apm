@@ -25,16 +25,12 @@ import { RecordIdentity } from '@orbit/records';
 import { useOrbitData } from '../../../hoc/useOrbitData';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import DoneAllIcon from '@mui/icons-material/DoneAll';
-import {
-  ActionRow,
-  AltButton,
-  GrowingSpacer,
-  PriButton,
-} from '../../../control';
+import { ActionRow, GrowingSpacer } from '../../../control';
 import {
   buildSelectSectionRows,
   SelectSectionRow,
 } from './buildSelectSectionRows';
+import { Button } from '../../../control/Button';
 
 const StyledPaper = styled(Paper)<PaperProps>(({ theme }) => ({
   backgroundColor: theme.palette.background.default,
@@ -162,10 +158,7 @@ export function SelectSections(props: IProps) {
         .filter((row) => row.parentId === sectionId)
         .map((row) => `passage:${row.recId}`);
       const sectionKey = `section:${sectionId}`;
-      if (
-        passageKeys.length > 0 &&
-        passageKeys.every((key) => next.has(key))
-      ) {
+      if (passageKeys.length > 0 && passageKeys.every((key) => next.has(key))) {
         next.add(sectionKey);
       } else {
         next.delete(sectionKey);
@@ -228,8 +221,7 @@ export function SelectSections(props: IProps) {
       flex: 1,
       minWidth: 240,
       sortable: false,
-      cellClassName: ({ row }) =>
-        row.kind === 'passage' ? 'passage-row' : '',
+      cellClassName: ({ row }) => (row.kind === 'passage' ? 'passage-row' : ''),
     },
   ];
 
@@ -272,16 +264,17 @@ export function SelectSections(props: IProps) {
       </StyledPaper>
       <ActionRow>
         <GrowingSpacer />
-        <AltButton id="select-sections-cancel" onClick={onCancel}>
+        <Button id="select-sections-cancel" onClick={onCancel}>
           {ts.cancel}
-        </AltButton>
-        <PriButton
+        </Button>
+        <Button
           id="select-sections-next"
+          color="primary"
           onClick={handleSelected}
           disabled={selected.size === 0}
         >
           {ta.next}
-        </PriButton>
+        </Button>
       </ActionRow>
     </Box>
   );

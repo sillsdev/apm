@@ -39,7 +39,7 @@ import {
 import { StyledTextAreaAutosize } from '../control/WebFontStyles';
 import useTodo from '../context/useTodo';
 import PullIcon from '@mui/icons-material/GetAppOutlined';
-import { AltButton, GrowingDiv, LightTooltip, PriButton } from '../control';
+import { Button, GrowingDiv, LightTooltip, rowSx } from '../control';
 import TranscribeReject from './TranscribeReject';
 import { useSnackBar } from '../hoc/SnackBar';
 import { formatTime } from '../control/formatTime';
@@ -62,6 +62,10 @@ import {
   pullTableList,
   orgDefaultFeatures,
   useOrganizedBy,
+  useProjectType,
+  isNoParatextWorkflow,
+  nextTranscriptionState,
+  resolvedProjectType,
 } from '../crud';
 import { MainAPI } from '@model/main-api';
 import { useGetAsrSettings } from '../crud/useGetAsrSettings';
@@ -149,10 +153,6 @@ import { SaveSegments } from './PassageDetail/SaveSegments';
 //import useRenderingTrace from '../utils/useRenderingTrace';
 
 const HISTORY_KEY = 'F7,CTRL+7';
-// Space under the textarea for Reject/Save/Submit (+ padding).
-const ACTION_ROW_HEIGHT = 80;
-// ~3 lines at large/xx-large; prefer this over fitting the action buttons.
-const MIN_TEXT_BOX_HEIGHT = 120;
 const ipc = window?.api as MainAPI | undefined;
 
 interface IProps {
@@ -264,6 +264,7 @@ export function Transcriber(props: IProps) {
   const [offlineOnly] = useGlobal('offlineOnly'); //will be constant here
   const [project] = useGlobal('project'); //will be constant here
   const [projType] = useGlobal('projType'); //verified this is not used in a function 2/18/25
+  const { getProjType } = useProjectType();
   const [user] = useGlobal('user');
   const [organization] = useGlobal('organization');
   const [coordinator] = useGlobal('coordinator');
@@ -358,12 +359,8 @@ export function Transcriber(props: IProps) {
   const { getOrganizedBy } = useOrganizedBy();
   const remote = coordinator?.getSource('remote') as JSONAPISource;
   const backup = coordinator?.getSource('backup') as IndexedDBSource;
-  // Leave room for Reject/Save/Submit under the textarea; never go below ~3 lines.
-  const [boxHeight, setBoxHeight] = useState(() =>
-    Math.max(
-      discussionSize.height - PLAYER_HEIGHT - chooserSize - ACTION_ROW_HEIGHT,
-      MIN_TEXT_BOX_HEIGHT
-    )
+  const [boxHeight, setBoxHeight] = useState(
+    discussionSize.height - (PLAYER_HEIGHT + 220) - chooserSize - 100
   );
   const [style, setStyle] = useState({
     cursor: 'default',
@@ -554,11 +551,8 @@ export function Transcriber(props: IProps) {
   }, [toolsChanged]);
 
   useEffect(() => {
-    let newBoxHeight =
-      discussionSize.height - PLAYER_HEIGHT - chooserSize - ACTION_ROW_HEIGHT;
+    let newBoxHeight = discussionSize.height - PLAYER_HEIGHT - chooserSize - 40;
     if (defaultWidth < 700) newBoxHeight -= 40;
-    // Prefer keeping ~3 lines of text over fitting the action buttons.
-    newBoxHeight = Math.max(newBoxHeight, MIN_TEXT_BOX_HEIGHT);
     if (newBoxHeight !== boxHeight) setBoxHeight(newBoxHeight);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [discussionSize, chooserSize, defaultWidth]);
@@ -770,10 +764,12 @@ export function Transcriber(props: IProps) {
 
     loadProjData();
 
-    const ptCheck =
-      [ArtifactTypeSlug.Retell, ArtifactTypeSlug.QandA].includes(
-        (artifactTypeSlug || '') as ArtifactTypeSlug
-      ) || projType.toLowerCase() !== 'scripture';
+    const projRec = findRecord(memory, 'project', project) as
+      | Project
+      | undefined;
+    const recordType = projRec ? getProjType(project) : '';
+    const resolvedType = resolvedProjectType(projType, recordType);
+    const ptCheck = isNoParatextWorkflow(resolvedType, artifactTypeSlug);
     if (ptCheck !== noParatext) setNoParatext(ptCheck);
     /* eslint-disable-next-line react-hooks/exhaustive-deps */
   }, [
@@ -908,15 +904,6 @@ export function Transcriber(props: IProps) {
   );
   const handleAddNoteCancel = () => setAddNoteVisible(false);
 
-  const next: { [key: string]: string } = {
-    incomplete: ActivityStates.Transcribed,
-    transcribing: ActivityStates.Transcribed,
-    reviewing: ActivityStates.Approved,
-    transcribeReady: ActivityStates.Transcribed,
-    transcribed: ActivityStates.Approved,
-    needsNewTranscription: ActivityStates.Transcribed,
-  };
-
   const forcePosition = (position: number) => {
     setDefaultPosition(playedSecsRef.current || 0);
     setDefaultPosition(position);
@@ -924,12 +911,12 @@ export function Transcriber(props: IProps) {
 
   const handleSubmit = useCallback(
     async () => {
-      if (Object.prototype.hasOwnProperty.call(next, state)) {
-        let nextState = next[state];
-        if (nextState === ActivityStates.Transcribed && !hasChecking)
-          nextState = ActivityStates.Approved;
-        if (nextState === ActivityStates.Approved && noParatext)
-          nextState = ActivityStates.Done;
+      const nextState = nextTranscriptionState({
+        state,
+        hasChecking: !!hasChecking,
+        noParatext,
+      });
+      if (nextState) {
         await save(
           nextState || ActivityStates.TranscribeReady,
           0,
@@ -1544,26 +1531,26 @@ export function Transcriber(props: IProps) {
                   t={sharedStr}
                 />
                 {role !== 'view' ? (
-                  <>
-                    <AltButton
+                  <Box sx={rowSx}>
+                    <Button
                       id="transcriber.reject"
-                      onClick={handleReject}
                       disabled={!transSelected || playing}
+                      onClick={handleReject}
                     >
                       {t.reject}
-                    </AltButton>
+                    </Button>
                     <LightTooltip
                       title={transcribing ? t.saveTip : t.saveReviewTip}
                     >
                       <span>
-                        <AltButton
+                        <Button
                           id="transcriber.save"
-                          variant={changed ? 'contained' : 'outlined'}
-                          onClick={handleSaveButton}
+                          color={changed ? 'primary' : 'secondary'}
                           disabled={!transSelected || playing}
+                          onClick={handleSaveButton}
                         >
                           {t.save}
-                        </AltButton>
+                        </Button>
                       </span>
                     </LightTooltip>
                     <LightTooltip
@@ -1574,29 +1561,30 @@ export function Transcriber(props: IProps) {
                       }
                     >
                       <span>
-                        <PriButton
+                        <Button
                           id="transcriber.submit"
-                          onClick={handleSubmit}
+                          color="primary"
                           disabled={!transSelected || playing}
+                          onClick={handleSubmit}
                         >
                           {t.submit}
-                        </PriButton>
+                        </Button>
                       </span>
                     </LightTooltip>
-                  </>
+                  </Box>
                 ) : (
-                  <AltButton
+                  <Button
                     id="transcriber.reopen"
-                    onClick={handleReopen}
                     disabled={
                       !transSelected ||
                       !Object.prototype.hasOwnProperty.call(previous, state) ||
                       playing ||
                       !hasPermission
                     }
+                    onClick={handleReopen}
                   >
                     {t.reopen}
-                  </AltButton>
+                  </Button>
                 )}
                 <Box sx={{ width: '45px' }}>{'\u00A0'}</Box>
               </Box>

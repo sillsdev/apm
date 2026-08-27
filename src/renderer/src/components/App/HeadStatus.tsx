@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Button, IconButton, Tooltip } from '@mui/material';
+import { IconButton, Tooltip } from '@mui/material';
 import CloudOffIcon from '@mui/icons-material/CloudOff';
 import CloudOnIcon from '@mui/icons-material/Cloud';
 import SystemUpdateIcon from '@mui/icons-material/SystemUpdateAlt';
@@ -28,17 +28,16 @@ import { useMounted } from '../../utils/useMounted';
 import logError, { Severity } from '../../utils/logErrorService';
 import { infoMsg } from '../../utils/infoMsg';
 import { MainAPI } from '@model/main-api';
+import { Button } from '../../control/Button';
 const ipc = window?.api as MainAPI;
 
 interface IProps {
   handleMenu: (what: string, reason: DownloadAlertReason | null) => void;
-  onVersion: (version: string) => void;
-  onLatestVersion: (version: string) => void;
   onUpdateTipOpen: (open: boolean) => void;
 }
 
 export const HeadStatus = (props: IProps) => {
-  const { handleMenu, onVersion, onLatestVersion, onUpdateTipOpen } = props;
+  const { handleMenu, onUpdateTipOpen } = props;
   const { pathname } = useLocation();
   const orbitStatus = useSelector((state: IState) => state.orbit.status);
   const [connected, setConnected] = useGlobal('connected'); //verified this is not used in a function 2/18/25
@@ -147,9 +146,7 @@ export const HeadStatus = (props: IProps) => {
   useEffect(() => {
     if (isMounted()) {
       setVersion(packageJson.version);
-      onVersion(packageJson.version);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isMounted]);
 
   useEffect(() => {
@@ -173,7 +170,6 @@ export const HeadStatus = (props: IProps) => {
             .setLocale(lang)
             .toLocaleString(DateTime.DATE_SHORT);
           setLatestVersion(lv);
-          onLatestVersion(lv);
           setLatestRelease(lr);
           if (isElectron && lv?.split(' ')[0] !== version)
             showMessage(
@@ -227,6 +223,7 @@ export const HeadStatus = (props: IProps) => {
         localStorage.getItem(LocalKey.userId) &&
         (plan || hasOfflineProjects) && (
           <Button
+            variant="outlined"
             onClick={handleCloud}
             startIcon={
               isOffline ? (

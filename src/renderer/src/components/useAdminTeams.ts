@@ -9,6 +9,7 @@ export const useAdminTeams = () => {
   const teams = useMemo(
     () =>
       organizations
+        .filter((org) => org?.attributes)
         .filter((org) => !isPersonalTeam(org.id, organizations))
         .filter((org) => userIsOrgAdmin(org.id))
         .sort((a, b) =>

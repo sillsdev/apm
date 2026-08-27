@@ -23,7 +23,13 @@ import { Avatar, Badge, Typography } from '@mui/material';
 import PlanPublishActions from './PlanPublishActions';
 import PlanAudioActions from './PlanAudioActions';
 import { RefRender } from '../../control/RefRender';
-import { useContext, useCallback, useMemo, ReactElement } from 'react';
+import {
+  useContext,
+  useCallback,
+  useMemo,
+  useEffect,
+  ReactElement,
+} from 'react';
 import TaskAvatar from '../TaskAvatar';
 import { PassageTypeEnum } from '../../model/passageType';
 import PlanActionMenu from './PlanActionMenu';
@@ -51,11 +57,9 @@ type IRow = (string | number)[];
 const pointer = { cursor: 'pointer' };
 
 export interface IFillProps {
-  currentRow: number;
   srcMediaId: string;
   mediaPlaying: boolean;
   check: number[];
-  active: number;
   filtered: boolean;
   anyRecording: boolean;
 }
@@ -209,7 +213,8 @@ export const usePlanSheetFill = ({
   );
 
   const ActivateCell: ICellEditor = (props: any) => {
-    doSetActive();
+    // setState during render loops under React 18 — defer.
+    queueMicrotask(() => doSetActive());
     props.onRevert();
     return <></>;
   };
@@ -725,7 +730,7 @@ export const usePlanSheetFill = ({
           !canEditSheet ||
           (cellIndex === SectionSeqCol && (e as number) < 0) ||
           cellIndex === passageSeqCol ||
-          (sharedRes && getGlobal('offline')) ||
+          sharedRes ||
           (inlinePassages
             ? false
             : passage
@@ -749,7 +754,6 @@ export const usePlanSheetFill = ({
     check: number[];
     movement: boolean;
     book: boolean;
-    active: number;
     filtered: boolean;
     readonly: boolean;
   }
@@ -762,7 +766,6 @@ export const usePlanSheetFill = ({
     row,
     check,
     book,
-    active,
     filtered,
     readonly,
   }: ExtrasCellProps) =>
@@ -799,7 +802,6 @@ export const usePlanSheetFill = ({
               canDelete={
                 (userIsAdmin || canEditSheet) && (!offline || offlineOnly)
               }
-              active={active - 1 === rowIndex}
               onDisableFilter={filtered ? disableFilter : undefined}
               showIcon={showIcon(filtered, offline && !offlineOnly, rowIndex)}
               onAction={onAction}
@@ -811,15 +813,7 @@ export const usePlanSheetFill = ({
         } as ICell);
 
   const eachRow =
-    ({
-      currentRow,
-      srcMediaId,
-      mediaPlaying,
-      check,
-      active,
-      filtered,
-      anyRecording,
-    }: IFillProps) =>
+    ({ srcMediaId, mediaPlaying, check, filtered, anyRecording }: IFillProps) =>
     (row: IRow, rowIndex: number) => {
       const refCol = colSlugs.indexOf('reference');
       const section = isSectionType(rowIndex);
@@ -827,8 +821,7 @@ export const usePlanSheetFill = ({
       const movement = isMovement(rowIndex);
       const beta = isBeta(rowIndex);
       const book = isBook(rowIndex) || isAltBook(rowIndex);
-      const iscurrent: string =
-        currentRow === rowIndex + 1 ? ' currentrow ' : '';
+      // currentrow highlight is applied in PlanSheet via DOM, not className
       const srPassageId = related(
         (rowInfo[rowIndex] as ISheet).sharedResource,
         'passage'
@@ -841,13 +834,11 @@ export const usePlanSheetFill = ({
         srPassageId != null &&
         srPassageId !== rowPassageId;
       const sharedOffline = sharedRes && getGlobal('offline');
-      const calcClassName =
-        iscurrent +
-        (section
-          ? 'set' +
-            (passage ? 'p' : '') +
-            (movement ? ' movement' : book ? ' bk' : '')
-          : 'pass');
+      const calcClassName = section
+        ? 'set' +
+          (passage ? 'p' : '') +
+          (movement ? ' movement' : book ? ' bk' : '')
+        : 'pass';
       const sheetRow = [
         stepCell({
           passage,
@@ -912,7 +903,6 @@ export const usePlanSheetFill = ({
           check,
           movement,
           book,
-          active,
           filtered,
           readonly:
             sharedOffline || anyRecording || (!canEditSheet && !canPublish),
@@ -921,17 +911,24 @@ export const usePlanSheetFill = ({
       return sheetRow;
     };
 
-  if (rowData.length > 0 && rowInfo.length > 0) {
-    if (!filtered) {
-      if (!hidePublishing) {
-        setSectionArr(
-          getPubRefs({ rowInfo, rowData, passageSeqCol, firstMovement })
-        );
-      } else {
-        setSectionArr([]);
-      }
+  useEffect(() => {
+    if (rowData.length === 0 || rowInfo.length === 0 || filtered) return;
+    if (hidePublishing) {
+      setSectionArr([]);
+      return;
     }
-  }
+    setSectionArr(
+      getPubRefs({ rowInfo, rowData, passageSeqCol, firstMovement })
+    );
+  }, [
+    rowData,
+    rowInfo,
+    filtered,
+    hidePublishing,
+    passageSeqCol,
+    firstMovement,
+    setSectionArr,
+  ]);
 
   return (props: IFillProps) => {
     const data = titleRow(columns);

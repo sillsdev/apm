@@ -1,21 +1,8 @@
 import { UserD } from '../model';
-import {
-  Button,
-  ListItem,
-  ListItemIcon,
-  ListItemText,
-  ButtonProps,
-  styled,
-  ListItemButton,
-} from '@mui/material';
+import { ListItem, ListItemText, ListItemButton } from '@mui/material';
 import UserAvatar from '../components/UserAvatar';
 import { ListEnum, useOfflineList } from '../crud';
-
-const StyledButton = styled(Button)<ButtonProps>(() => ({
-  '& .MuiTypography-root': {
-    textTransform: 'none',
-  },
-}));
+import { Button } from './Button';
 
 interface IProps {
   u: UserD;
@@ -28,15 +15,15 @@ const ItemContent = (props: IProps) => {
   const list = useOfflineList();
 
   return (
-    <StyledButton variant="outlined">
-      <ListItemIcon>
-        <UserAvatar {...props} userRec={u} />
-      </ListItemIcon>
+    <Button
+      variant="outlined"
+      startIcon={<UserAvatar {...props} userRec={u} />}
+    >
       <ListItemText
         primary={u?.attributes?.name || ''}
         secondary={show ? list(u, show) : ''}
       />
-    </StyledButton>
+    </Button>
   );
 };
 

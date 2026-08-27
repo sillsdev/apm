@@ -1,6 +1,8 @@
 import { defineConfig } from 'cypress';
 import { devServer } from '@cypress/vite-dev-server';
 import { baseConfig } from './base.config';
+import tasks from '../support/tasks';
+import muteBrowserAudio from '../support/muteBrowserAudio';
 import viteConfig from '../../vite.config';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -48,8 +50,31 @@ const testViteConfig = {
       '@mui/icons-material/PlayArrowOutlined',
       '@mui/icons-material/Pause',
       '@mui/icons-material/GetAppOutlined',
+      // Deep-mount harnesses (e.g. cypress/support/pbtHarness.tsx) bring the
+      // store and Orbit in. Without these, the first spec that imports one
+      // triggers a mid-run re-optimize, and the reload that follows leaves the
+      // AUT with two copies of React ("Cannot read properties of null
+      // (reading 'useMemo')" inside ThemeProvider).
+      'react-redux',
+      'redux',
+      'redux-thunk',
+      '@orbit/memory',
+      '@orbit/records',
+      '@orbit/coordinator',
+      '@orbit/indexeddb',
+      '@orbit/jsonapi',
+      'wavesurfer.js',
+      'wavesurfer.js/dist/plugins/regions',
+      'wavesurfer.js/dist/plugins/timeline',
+      'wavesurfer.js/dist/plugins/zoom',
+      '@wavesurfer/react',
     ],
   },
+  // Component tests and the app dev server run different vite configs. Sharing
+  // the default node_modules/.vite cache makes each invalidate the other's
+  // optimized deps, so a CT run and `npm run devs` in the same worktree keep
+  // knocking each other into a reload. Give CT its own cache.
+  cacheDir: path.resolve(__dirname, '../../node_modules/.vite-ct'),
   define: {
     'process.env.NODE_ENV': JSON.stringify('test'),
     'process.env.FA_VERSION': JSON.stringify('test-version'),
@@ -88,6 +113,17 @@ const config = {
   },
   component: {
     specPattern: 'src/**/*.cy.{js,jsx,ts,tsx}',
+    // Component specs get the same node tasks as e2e (notably cy.task('log'),
+    // the only way to surface browser-side detail in `cypress run` output).
+    setupNodeEvents(
+      on: Cypress.PluginEvents,
+      config: Cypress.PluginConfigOptions
+    ) {
+      tasks(on);
+      // Recording specs play real audio; keep the run silent.
+      muteBrowserAudio(on);
+      return config;
+    },
     devServer(devServerConfig: Cypress.DevServerConfig) {
       return devServer({
         ...devServerConfig,

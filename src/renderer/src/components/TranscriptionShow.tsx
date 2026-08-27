@@ -8,7 +8,6 @@ import {
   ISharedStrings,
 } from '../model';
 import {
-  Button,
   Dialog,
   DialogActions,
   DialogContent,
@@ -30,6 +29,7 @@ import { useSelector, shallowEqual } from 'react-redux';
 import { sharedSelector, transcriptionShowSelector } from '../selector';
 import { useOrbitData } from '../hoc/useOrbitData';
 import { fontSpace } from './fontSpace';
+import { Button } from '../control/Button';
 
 const Copy = FaCopy as unknown as React.FC<IconBaseProps>;
 

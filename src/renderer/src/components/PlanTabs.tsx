@@ -12,7 +12,7 @@ import {
   levGenColNames,
   MediaFileD,
 } from '../model';
-import { AppBar, Tabs, Tab, Box } from '@mui/material';
+import { Tabs, Tab, Box } from '@mui/material';
 import ScriptureTable from './Sheet/ScriptureTable';
 import AudioTab from '../components/AudioTab/AudioTab';
 import AssignmentTable from './AssignmentTable';
@@ -26,13 +26,12 @@ import {
   useShowAssignment,
 } from '../crud';
 import { useMobile } from '../utils';
-import { FillColumn } from '../control';
 import { useOrbitData } from '../hoc/useOrbitData';
 import { shallowEqual, useSelector } from 'react-redux';
 import { planTabsSelector } from '../selector';
 import { PlanTabEnum } from './PlanTabsEnum';
 import { grey } from '@mui/material/colors';
-import { PlanTabSelect } from './Sheet/PlanTabSelect';
+import ContentLayout from './App/ContentLayout';
 
 interface IProps {
   checkSaved: (method: () => void) => void;
@@ -102,86 +101,78 @@ const ScrollableTabsButtonAuto = (props: IProps) => {
   if (tab !== undefined && tab.toString() !== tabNm)
     return <StickyRedirect to={`/plan/${prjId}/${tab}`} />;
 
-  return isMobile && tab === PlanTabEnum.sectionPassage ? (
-    <ScriptureTable {...props} colNames={colNames} />
-  ) : (
-    <FillColumn
-      sx={{
-        overflow: 'hidden',
-        backgroundColor: 'background.paper',
-        flexGrow: 1,
-      }}
-    >
-      <AppBar position="static" color="default" sx={{ flexShrink: 0 }}>
-        {isMobile ? (
-          <Box>
-            <PlanTabSelect />
-          </Box>
-        ) : (
-          <Tabs
-            value={tab ?? 0}
-            onChange={(e: any, v: number) =>
-              checkSaved(() => handleChange(e, v))
+  if (isMobile && tab === PlanTabEnum.sectionPassage)
+    return <ScriptureTable {...props} colNames={colNames} />;
+  if (isMobile && showAssign && tab === PlanTabEnum.assignment)
+    return <AssignmentTable />;
+
+  return (
+    <ContentLayout
+      header={
+        <Tabs
+          value={tab ?? 0}
+          onChange={(e: any, v: number) => checkSaved(() => handleChange(e, v))}
+          indicatorColor="primary"
+          textColor="primary"
+          variant="scrollable"
+          scrollButtons="auto"
+        >
+          <Tab
+            id="secPass"
+            label={
+              flat
+                ? organizedBy
+                : t.sectionsPassages.replace('{0}', organizedBy)
             }
-            indicatorColor="primary"
-            textColor="primary"
-            variant="scrollable"
-            scrollButtons="auto"
-          >
-            <Tab
-              id="secPass"
-              label={
-                flat
-                  ? organizedBy
-                  : t.sectionsPassages.replace('{0}', organizedBy)
-              }
-            />
-            <Tab
-              id="audio"
-              label={
-                <Title
-                  text={t.media}
-                  status={statusMessage(
-                    t.mediaStatus,
-                    (attached ?? []).length,
-                    (planMedia ?? []).length
-                  )}
-                />
-              }
-            />
-            {showAssign && (
-              <Tab
-                id="assignments"
-                label={
-                  <Title
-                    text={t.assignments}
-                    status={statusMessage(
-                      t.sectionStatus.replace('{0}', organizedBy),
-                      (assigned ?? []).length,
-                      (planSectionIds ?? []).length
-                    )}
-                  />
-                }
-                disabled={isOffline}
+          />
+          <Tab
+            id="audio"
+            label={
+              <Title
+                text={t.media}
+                status={statusMessage(
+                  t.mediaStatus,
+                  (attached ?? []).length,
+                  (planMedia ?? []).length
+                )}
               />
-            )}
+            }
+          />
+          {showAssign && (
             <Tab
-              id="transcriptions"
+              id="assignments"
               label={
                 <Title
-                  text={t.transcriptions}
+                  text={t.assignments}
                   status={statusMessage(
-                    t.passageStatus,
-                    (trans ?? []).length,
-                    (planPassages ?? []).length
+                    t.sectionStatus.replace('{0}', organizedBy),
+                    (assigned ?? []).length,
+                    (planSectionIds ?? []).length
                   )}
                 />
               }
+              disabled={isOffline}
             />
-          </Tabs>
-        )}
-      </AppBar>
-      <FillColumn flex sx={{ overflow: 'hidden' }}>
+          )}
+          <Tab
+            id="transcriptions"
+            label={
+              <Title
+                text={t.transcriptions}
+                status={statusMessage(
+                  t.passageStatus,
+                  (trans ?? []).length,
+                  (planPassages ?? []).length
+                )}
+              />
+            }
+          />
+        </Tabs>
+      }
+    >
+      <Box
+        sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}
+      >
         {tab === PlanTabEnum.sectionPassage && (
           <ScriptureTable {...props} colNames={colNames} />
         )}
@@ -196,8 +187,8 @@ const ScrollableTabsButtonAuto = (props: IProps) => {
             planColumn={true}
           />
         )}
-      </FillColumn>
-    </FillColumn>
+      </Box>
+    </ContentLayout>
   );
 };
 

@@ -16,6 +16,9 @@ import {
 } from './useWavesurferRegions';
 import { decodeAudioData } from '../utils/decodeAudioData';
 import { audioBufferToWavBlob } from '../utils/audioBufferToWavBlob';
+import { isAudioLoadAbort } from '../utils/isAudioLoadAbort';
+import { waveformPeaks } from './waveformPeaks';
+import { shouldIgnorePeaksReady } from './wavesurferReady';
 import { useGlobal } from '../context/useGlobal';
 import { maxZoom } from '../components/WSAudioPlayerZoom';
 import WaveSurfer from 'wavesurfer.js';
@@ -58,7 +61,10 @@ export function useWaveSurfer(
   verses?: string,
   hasSegmentUndo?: boolean,
   applyRegionColor?: ApplyRegionColor,
-  lockSegmentSelection?: boolean
+  lockSegmentSelection?: boolean,
+  disableDragSelection?: boolean,
+  /** A region was clicked, as opposed to selected by the playhead. */
+  onSegmentClick?: (region: IRegion) => void
 ) {
   const { isMobile } = useMobile();
   const [errorReporter] = useGlobal('errorReporter');
@@ -105,6 +111,8 @@ export function useWaveSurfer(
   const loadGenerationRef = useRef(0);
   /** Generation of the blobAudioRef commit in the current/last loadBlob. */
   const loadBlobGenerationRef = useRef(0);
+  /** Set to loadGeneration immediately before ws.load(blobUrl, peaks); consumed on 'ready'. */
+  const blobLoadTokenRef = useRef<number | undefined>(undefined);
   const recordingRef = useRef(false);
   /** Peaks of existing audio before/after the record position (overdub preview). */
   const recordPrePeaksRef = useRef<Float32Array>(new Float32Array(0));
@@ -113,8 +121,6 @@ export function useWaveSurfer(
   const recordPostSecondsRef = useRef(0);
   /** True while a cheap peaks-only preview load is in flight — its 'ready' must not run handleReady. */
   const recordPeaksLoadRef = useRef(false);
-  /** loadGenerationRef at peaks preview load start — stale after wsStopRecord. */
-  const peaksLoadGenerationRef = useRef(0);
   const currentBlobUrlRef = useRef<string | undefined>(undefined);
   const lastWaveformTapTimeRef = useRef(0);
   const lastWaveformTapProgressRef = useRef<number | undefined>(undefined);
@@ -244,7 +250,12 @@ export function useWaveSurfer(
       wavesurferRef.current?.pause();
     }
     if (progress() !== pos) {
-      wavesurferRef.current?.setTime(pos);
+      try {
+        wavesurferRef.current?.setTime(pos);
+      } catch {
+        // Peaks+duration ready fires before the media element has metadata;
+        // setting currentTime then throws InvalidStateError in some browsers.
+      }
     }
     pushProgressImmediate(pos);
     applyRegionAtPosition(pos, targetRegion);
@@ -299,7 +310,10 @@ export function useWaveSurfer(
     verses,
     hasSegmentUndo,
     applyRegionColor,
-    lockSegmentSelection
+    lockSegmentSelection,
+    () => blobAudioRef.current,
+    disableDragSelection,
+    onSegmentClick
   );
 
   const setPlayingx = (value: boolean, regionOnly: boolean) => {
@@ -359,16 +373,15 @@ export function useWaveSurfer(
         if (wsDur) setDuration(wsDur);
         return;
       }
-      const media = wavesurferRef.current?.getMediaElement();
-      const hasMediaSrc = Boolean(media?.currentSrc);
       if (
-        !hasMediaSrc &&
-        (peaksLoadGenerationRef.current !== loadGenerationRef.current ||
-          loadBlobGenerationRef.current === loadGenerationRef.current)
+        shouldIgnorePeaksReady(
+          blobLoadTokenRef.current,
+          loadGenerationRef.current
+        )
       ) {
-        // Stale or superseded peaks-only load — must not clobber a real blob load.
         return;
       }
+      blobLoadTokenRef.current = undefined;
       setupRegions(wavesurferRef.current as WaveSurfer);
       //recording also sends ready
       if (loadRequests.current > 0) loadRequests.current--;
@@ -595,7 +608,12 @@ export function useWaveSurfer(
     }
   };
 
-  const loadBlob = async (blob?: Blob, position?: number) => {
+  const loadBlob = async (
+    blob?: Blob,
+    position?: number,
+    decodedBuffer?: AudioBuffer
+  ) => {
+    if (blob) loadGenerationRef.current += 1;
     const generation = loadGenerationRef.current;
     positionRef.current = position;
     const prevBlobUrl = currentBlobUrlRef.current;
@@ -613,10 +631,9 @@ export function useWaveSurfer(
     try {
       loadingRef.current = true;
       isReadyRef.current = false;
-      const decoded = await decodeAudioData(
-        audioContext(),
-        await blob.arrayBuffer()
-      );
+      const decoded =
+        decodedBuffer ??
+        (await decodeAudioData(audioContext(), await blob.arrayBuffer()));
       if (generation !== loadGenerationRef.current) {
         loadingRef.current = false;
         return;
@@ -626,19 +643,25 @@ export function useWaveSurfer(
       loadBlobGenerationRef.current = generation;
       blobRef.current = blob;
 
-      setDuration(
-        blobAudioRef.current?.duration ||
-          blobAudioRef.current?.length / blobAudioRef.current?.sampleRate ||
-          0
-      );
-      // Create blob URL for wavesurfer
+      const duration =
+        decoded.duration || decoded.length / decoded.sampleRate || 0;
+      setDuration(duration);
       blobUrl = URL.createObjectURL(blob);
       currentBlobUrlRef.current = blobUrl;
-      // revoke previous URL only after load succeeds; revoking early aborts
-      // in-flight wavesurfer fetch (BodyStreamBuffer aborted on overdub stop).
-      await wavesurferRef.current?.load(blobUrl);
+      blobLoadTokenRef.current = generation;
+      // Peaks+duration skip WaveSurfer's fetch+decode of the blob URL. That
+      // extra copy of a large file cancels the media element's load (toast +
+      // waveform cleared). Revoke the previous URL only after this load.
+      await wavesurferRef.current?.load(
+        blobUrl,
+        waveformPeaks(decoded),
+        duration
+      );
       if (generation !== loadGenerationRef.current) {
         loadingRef.current = false;
+        if (blobLoadTokenRef.current === generation) {
+          blobLoadTokenRef.current = undefined;
+        }
         releaseLoadBlobUrl(blobUrl);
         return;
       }
@@ -648,13 +671,12 @@ export function useWaveSurfer(
     } catch (error) {
       console.error('Error loading blob:', error);
       loadingRef.current = false;
+      if (blobLoadTokenRef.current === generation) {
+        blobLoadTokenRef.current = undefined;
+      }
       // Only revoke this load's URL; a concurrent stop load may own currentBlobUrlRef
       releaseLoadBlobUrl(blobUrl);
-      if (
-        generation !== loadGenerationRef.current &&
-        error instanceof DOMException &&
-        error.name === 'AbortError'
-      ) {
+      if (generation !== loadGenerationRef.current && isAudioLoadAbort(error)) {
         return;
       }
       throw error;
@@ -780,7 +802,7 @@ export function useWaveSurfer(
         positionToLoad.current = undefined;
       }
       try {
-        await loadBlob(blob, position);
+        await loadBlob(blob, position, audioBuffer);
       } catch (error) {
         failPendingLoad(error);
       }
@@ -952,12 +974,10 @@ export function useWaveSurfer(
     combined.set(post, pre.length + live.length);
     const total =
       recordPreSecondsRef.current + liveSeconds + recordPostSecondsRef.current;
-    const generation = loadGenerationRef.current;
-    peaksLoadGenerationRef.current = generation;
     recordPeaksLoadRef.current = true;
     try {
       await ws.load('', [combined], total);
-      if (generation !== loadGenerationRef.current || !recordingRef.current) {
+      if (!recordingRef.current) {
         return;
       }
       setDuration(total);
@@ -998,8 +1018,6 @@ export function useWaveSurfer(
     onCanUndo(true);
     setRecording(false);
     isReadyRef.current = false;
-    recordPeaksLoadRef.current = false;
-    peaksLoadGenerationRef.current = loadGenerationRef.current;
     recordPrePeaksRef.current = new Float32Array(0);
     recordPostPeaksRef.current = new Float32Array(0);
     recordPreSecondsRef.current = 0;

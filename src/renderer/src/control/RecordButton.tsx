@@ -1,4 +1,5 @@
-import { Box, Button, SxProps, useTheme } from '@mui/material';
+import { Box, SxProps, useTheme } from '@mui/material';
+import { Button } from './Button';
 import { LightTooltip } from './LightTooltip';
 import PauseIcon from '@mui/icons-material/Pause';
 import StopIcon from '@mui/icons-material/Stop';
@@ -255,7 +256,7 @@ export const RecordButton = ({
         aria-disabled={disabled}
         fullWidth={fullWidth}
         sx={{
-          fontWeight: 700,
+          '&, & .MuiTypography-root': { fontWeight: 700 },
           color: !active
             ? theme.palette.grey[400]
             : hasRecording

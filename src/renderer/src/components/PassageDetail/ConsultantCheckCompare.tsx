@@ -1,7 +1,7 @@
-import { Checkbox, FormControlLabel, FormGroup } from '@mui/material';
+import { Checkbox, FormControlLabel, FormGroup, Box } from '@mui/material';
 import { useArtifactType } from '../../crud';
 import React from 'react';
-import { ActionRow, AltButton, PriButton } from '../../control';
+import { Button, ActionRow, rowSx } from '../../control';
 import { ISharedStrings } from '../../model';
 import { shallowEqual, useSelector } from 'react-redux';
 import { sharedSelector } from '../../selector';
@@ -48,16 +48,19 @@ export default function ConsultantCheckCompare({
         ))}
       </FormGroup>
       <ActionRow>
-        <AltButton onClick={() => onChange(compare)}>{t.cancel}</AltButton>
-        <PriButton
-          onClick={() => onChange(state)}
-          disabled={
-            state.length === 1 ||
-            JSON.stringify(state) === JSON.stringify(compare)
-          }
-        >
-          {t.save}
-        </PriButton>
+        <Box sx={rowSx}>
+          <Button onClick={() => onChange(compare)}>{t.cancel}</Button>
+          <Button
+            color="primary"
+            disabled={
+              state.length === 1 ||
+              JSON.stringify(state) === JSON.stringify(compare)
+            }
+            onClick={() => onChange(state)}
+          >
+            {t.save}
+          </Button>
+        </Box>
       </ActionRow>
     </>
   );

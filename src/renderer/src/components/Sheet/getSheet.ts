@@ -43,6 +43,10 @@ const shtSectionUpdate = (item: ISheet, rec: ISheet) => {
       rec.title = item.title;
       rec.deleted = item.deleted;
       rec.published = item.published;
+      rec.sectionUpdated = item.sectionUpdated;
+      rec.graphicUri = item.graphicUri;
+      rec.graphicRights = item.graphicRights;
+      rec.graphicFullSizeUrl = item.graphicFullSizeUrl;
     }
 };
 
@@ -65,11 +69,28 @@ const shtPassageUpdate = (item: ISheet, rec: ISheet) => {
       rec.kind = item.kind;
       rec.passageSeq = item.passageSeq;
       rec.book = item.book;
-      rec.reference = item.reference;
       rec.comment = item.comment;
       rec.passage = item.passage;
       rec.deleted = item.deleted;
+      rec.passageUpdated = item.passageUpdated;
+      //if it's a note with a category and the new reference doesn't have a category, keep the original reference
+      rec.reference =
+        rec.reference?.startsWith('NOTE|') && (item.reference?.length ?? 0) < 6
+          ? rec.reference
+          : item.reference;
+      if (
+        rec.passage &&
+        rec.reference &&
+        rec.passage.attributes.reference !== rec.reference
+      ) {
+        rec.passage = {
+          ...rec.passage,
+          attributes: { ...rec.passage.attributes, reference: rec.reference },
+        };
+      }
+      return true;
     }
+  return false;
 };
 
 const shtPassageAdd = (
@@ -83,8 +104,8 @@ const shtPassageAdd = (
     if (item.kind === IwsKind.SectionPassage) {
       shtSectionUpdate(item, rec);
     }
-    shtPassageUpdate(item, rec);
-    return;
+    const updated = shtPassageUpdate(item, rec);
+    return { rec, touched: updated };
   } else if (sectionIndex && sectionIndex >= 0) {
     let indexAt = sectionIndex + 1;
     while (indexAt < sheet.length) {
@@ -95,14 +116,18 @@ const shtPassageAdd = (
         break;
       indexAt += 1;
     }
+    const inserted = item;
     while (indexAt < sheet.length) {
       const saved = sheet[indexAt] as ISheet;
       sheet[indexAt] = item;
       item = saved;
       indexAt += 1;
     }
+    sheet.push(item);
+    return { rec: inserted, touched: true };
   }
   sheet.push(item);
+  return { rec: item, touched: true };
 };
 
 const initItem = {} as ISheet;
@@ -278,10 +303,20 @@ export const getSheet = ({
         true
       );
       curSectionPublished = section.attributes.published;
-      const gr = graphicFind(section);
-      item.graphicUri = gr?.uri;
-      item.graphicRights = gr?.rights;
-      item.graphicFullSizeUrl = gr?.url;
+      const existingSec = myWork.find((w) => w.sectionId?.id === section.id);
+      const sectionTouched =
+        !existingSec ||
+        Boolean(
+          item.sectionUpdated &&
+          existingSec.sectionUpdated &&
+          item.sectionUpdated > existingSec.sectionUpdated
+        );
+      if (sectionTouched) {
+        const gr = graphicFind(section);
+        item.graphicUri = gr?.uri;
+        item.graphicRights = gr?.rights;
+        item.graphicFullSizeUrl = gr?.url;
+      }
       const titleMediaId = related(section, 'titleMediafile');
       item.titleMediaId = titleMediaId
         ? { type: 'mediafile', id: titleMediaId }
@@ -395,19 +430,21 @@ export const getSheet = ({
             user,
             myGroups
           );
-        if (
-          [PassageTypeEnum.NOTE, PassageTypeEnum.CHAPTERNUMBER].includes(
-            item.passageType
-          )
-        ) {
-          const gr = graphicFind(passage, item.reference);
-          item.graphicUri = gr?.uri;
-          item.graphicRights = gr?.rights;
-          item.graphicFullSizeUrl = gr?.url;
-          item.color = gr?.color;
-        }
       }
-      shtPassageAdd(myWork, item, sectionIndex);
+      const { rec, touched } = shtPassageAdd(myWork, item, sectionIndex);
+      if (
+        touched &&
+        [PassageTypeEnum.NOTE, PassageTypeEnum.CHAPTERNUMBER].includes(
+          rec.passageType
+        ) &&
+        rec.passage
+      ) {
+        const gr = graphicFind(rec.passage, rec.reference);
+        rec.graphicUri = gr?.uri;
+        rec.graphicRights = gr?.rights;
+        rec.graphicFullSizeUrl = gr?.url;
+        rec.color = gr?.color;
+      }
       if (!item.filtered) hasOnePassage = true;
       item = { ...initItem };
     });

@@ -7,7 +7,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import { Box, Typography } from '@mui/material';
+import { Alert, Box, Typography } from '@mui/material';
 import { shallowEqual, useSelector } from 'react-redux';
 import { useGlobal } from '../../context/useGlobal';
 import usePassageDetailContext from '../../context/usePassageDetailContext';
@@ -23,7 +23,12 @@ import {
 import { IRegion } from '../../crud/useWavesurferRegions';
 import { WSAudioPlayerControls } from '../WSAudioPlayer';
 import { useOrbitData } from '../../hoc/useOrbitData';
-import { ISharedStrings, MediaFileD } from '../../model';
+import {
+  IMediaTabStrings,
+  IMediaTitleStrings,
+  ISharedStrings,
+  MediaFileD,
+} from '../../model';
 import { passageDefaultFilename } from '../../utils/passageDefaultFilename';
 import { related } from '../../crud/related';
 import { RecordKeyMap } from '@orbit/records';
@@ -56,7 +61,12 @@ import {
   type ICarefulSpeechColorStatus,
 } from '../../utils/carefulSpeechSegmentColors';
 import { useStepPermissions } from '../../utils/useStepPermission';
-import { sharedSelector } from '../../selector';
+import { isLinkedNote } from '../../crud/isLinkedNote';
+import {
+  mediaTabSelector,
+  mediaTitleSelector,
+  sharedSelector,
+} from '../../selector';
 import { UnsavedContext } from '../../context/UnsavedContext';
 import {
   applyFewerClauses,
@@ -77,6 +87,7 @@ import {
 } from '../../components/PassageDetail/guidedPhraseRecord/types';
 import { createPhraseSegmentUndoStack } from '../../utils/phraseSegmentUndoStack';
 import Confirm from '../AlertDialog';
+import { Button } from '../../control/Button';
 
 interface IProps {
   width: number;
@@ -85,6 +96,13 @@ interface IProps {
   /** Shown when config.requireBoldWorkflow and the team is not BOLD. */
   workflowGateMessage?: string;
 }
+
+/**
+ * A stop reported sooner than this after playback started is the seek that
+ * started it, not the audio finishing. Auto-segmenting never produces a clause
+ * anywhere near this short.
+ */
+const SPURIOUS_STOP_WINDOW_MS = 250;
 
 function findClauseIndex(clauseRegions: IRegion[], region: IRegion): number {
   return clauseRegions.findIndex(
@@ -102,14 +120,18 @@ export function PassageDetailGuidedPhraseRecord({
 }: IProps) {
   useRenderProfiler('PassageDetailGuidedPhraseRecord');
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
+  const tm: IMediaTabStrings = useSelector(mediaTabSelector, shallowEqual);
+  const tt: IMediaTitleStrings = useSelector(mediaTitleSelector, shallowEqual);
   const [memory] = useGlobal('memory');
   const [user] = useGlobal('user');
   const [plan] = useGlobal('plan');
   const [offline] = useGlobal('offline');
   const mediafiles = useOrbitData<MediaFileD[]>('mediafile');
+  const [connected] = useGlobal('connected');
   const { getTypeId } = useArtifactType();
   const {
     passage,
+    sharedResource,
     playerMediafile,
     mediafileId,
     rowData,
@@ -120,6 +142,8 @@ export function PassageDetailGuidedPhraseRecord({
     setRecording,
     forceRefresh,
     currentSegmentIndex,
+    /** Change token for the selected segment; see the nav effects below. */
+    currentSegmentSeq,
     getCurrentSegment,
     isBoldWorkflow,
     carefulSpeechSegParams,
@@ -176,6 +200,13 @@ export function PassageDetailGuidedPhraseRecord({
   const initialPositionDoneRef = useRef(false);
   const suppressClauseAutoPlayRef = useRef(0);
   const playClauseInFlightRef = useRef(false);
+  /**
+   * When playback of the current clause last began - whether this component
+   * started it or the user pressed Play. See SPURIOUS_STOP_WINDOW_MS: a stale
+   * timestamp would make the seek-suppression window compare against an old
+   * time and mark a clause played before it had been.
+   */
+  const clausePlaybackStartedAtRef = useRef(0);
   const skipBeforePlayRef = useRef(false);
   const entryPauseDoneRef = useRef(false);
   const [highlightPlayButton, setHighlightPlayButton] = useState(false);
@@ -193,6 +224,14 @@ export function PassageDetailGuidedPhraseRecord({
   const [statusText, setStatusText] = useState('');
   const [canSave, setCanSave] = useState(false);
   const [savingRecording, setSavingRecording] = useState(false);
+  // Mirrors saveRejectedRef for render: shows the failure message + Retry.
+  const [saveRejected, setSaveRejected] = useState(false);
+  // Mirror of savingRecording, set synchronously wherever the state is toggled.
+  // The clause-boundary guards read this ref rather than the state value so a
+  // save that begins before React commits the disabling render is still seen by
+  // an in-flight callback closure (state would be captured stale). See the
+  // savingRecording toggles below (TT-7427).
+  const savingRecordingRef = useRef(false);
   const [recordingPassStarted, setRecordingPassStarted] = useState(false);
   // Mirror of recordingPassStarted set synchronously at the call sites below.
   // region-out can fire before React commits the state-update render, leaving
@@ -474,8 +513,10 @@ export function PassageDetailGuidedPhraseRecord({
   );
 
   const editStep = useMemo(
-    () => canDoSectionStep(currentstep, section),
-    [canDoSectionStep, currentstep, section]
+    () =>
+      canDoSectionStep(currentstep, section) &&
+      !isLinkedNote(passage, sharedResource),
+    [canDoSectionStep, currentstep, section, passage, sharedResource]
   );
 
   const defaultFilename = useMemo(() => {
@@ -590,13 +631,52 @@ export function PassageDetailGuidedPhraseRecord({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentRegion, currentIndex]);
 
+  // TT-7583: this step auto-saves on every rising edge of canSave. A failed
+  // upload leaves the take dirty, so canSave goes false→true again and we used
+  // to retry the same doomed take forever (finalizeTerminalFailure + error
+  // snackbar on a loop). MediaRecord tells us the attempt was rejected; hold
+  // off until the user records again rather than latching canSave off, which
+  // would break the manual Save button on every other recording screen.
+  const saveRejectedRef = useRef(false);
+
+  const previousConnectedRef = useRef(connected);
   useEffect(() => {
-    if (canSave) {
+    if (canSave && !saveRejectedRef.current) {
+      savingRecordingRef.current = true;
       setSavingRecording(true);
       startSave(toolId);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canSave]);
+
+  // The take is still dirty after a rejection, so asking for the save again is
+  // all it takes to re-upload it (TT-7583).
+  const handleRetrySave = useCallback(() => {
+    saveRejectedRef.current = false;
+    setSaveRejected(false);
+    savingRecordingRef.current = true;
+    setSavingRecording(true);
+    startSave(toolId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [toolId]);
+
+  // The failure message belongs to the clause whose take failed. Navigating away
+  // clears MediaRecord's blob, so a Retry from another clause would only hit the
+  // no-audio branch — drop the message with the take it referred to (TT-7583).
+  // Keyed on the index rather than the navigation handlers because every clause
+  // move funnels through it.
+  useEffect(() => {
+    saveRejectedRef.current = false;
+    setSaveRejected(false);
+  }, [currentIndex]);
+
+  useEffect(() => {
+    const reconnected = !previousConnectedRef.current && connected;
+    previousConnectedRef.current = connected;
+    if (reconnected && saveRejectedRef.current && !savingRecordingRef.current) {
+      handleRetrySave();
+    }
+  }, [connected, handleRetrySave]);
 
   const snapToClauseStart = useCallback(
     async (index: number) => {
@@ -616,6 +696,7 @@ export function PassageDetailGuidedPhraseRecord({
       const ctrl = playerControlsRef.current;
       const region = regionOverride ?? clauseRegions[index];
       if (!ctrl?.isReady() || !region || playClauseInFlightRef.current) return;
+      clausePlaybackStartedAtRef.current = Date.now();
       playClauseInFlightRef.current = true;
       try {
         setPhase('playing');
@@ -682,16 +763,47 @@ export function PassageDetailGuidedPhraseRecord({
 
   const handlePlayStatusNotify = useCallback(
     (playingNow: boolean) => {
-      if (playingNow) setHighlightPlayButton(false);
+      if (playingNow) {
+        setHighlightPlayButton(false);
+        // Playback began, whatever started it. Time the window from here, so a
+        // stop that this start provokes is discarded below instead of being read
+        // as the clause having finished.
+        clausePlaybackStartedAtRef.current = Date.now();
+      }
       if (currentIndex === clauseRegions.length - 1) {
         markClauseHeard(currentIndex);
       }
+      // Only a stop tells us the clause has been heard; the start case is
+      // handled above.
+      if (playingNow) return;
+      // The listen pass has nothing to record, so nothing to enable.
+      if (!recordingPassStartedRef.current) return;
+      // Capturing or saving a take stops the source audio, and that stop is not
+      // the clause being heard. Defensive:
+      if (recordingActiveRef.current || savingRecordingRef.current) return;
+      // Starting a clause seeks the playhead to its start, and that seek reports
+      // a stop of its own before anything has been heard. This can be
+      // differentiated from a real stop (user pause) by how long playback had
+      // been running. If under SPURIOUS_STOP_WINDOW_MS it is the seek, ignore it.
+      if (
+        Date.now() - clausePlaybackStartedAtRef.current <
+        SPURIOUS_STOP_WINDOW_MS
+      ) {
+        return;
+      }
+      setCurrentClausePlayed(true);
+      setPhase((p) =>
+        p === 'recording' || p === 'recorded' ? p : 'recordReady'
+      );
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [clauseRegions.length, currentIndex]
   );
 
   const handleBeforeSourcePlay = useCallback(async () => {
+    // The user pressed Play rather than the step starting playback, so the
+    // seek-suppression window has to be re-based here too.
+    clausePlaybackStartedAtRef.current = Date.now();
     if (skipBeforePlayRef.current) return;
     if (!recordingPassStarted || !showRecorder || currentClausePlayed) return;
     setHighlightPlayButton(false);
@@ -735,7 +847,10 @@ export function PassageDetailGuidedPhraseRecord({
     setRecordingPassStarted(false);
     recordingPassStartedRef.current = false;
     recordingActiveRef.current = false;
+    savingRecordingRef.current = false;
     setSavingRecording(false);
+    saveRejectedRef.current = false;
+    setSaveRejected(false);
     pendingOvershootSwallowRef.current = false;
     optimisticCompletedRef.current.clear();
     setHeardIndices([]);
@@ -991,6 +1106,17 @@ export function PassageDetailGuidedPhraseRecord({
     handleRegionPlayEndRef.current(region);
   }, []);
 
+  /**
+   * A click on the waveform is a deliberate selection, so it can never be the
+   * playback overshoot the swallow exists to absorb. Disarm it here, before the
+   * segment change it produces reaches the navigation effect below — otherwise
+   * clicking the segment right after the current one is indistinguishable from
+   * overshoot and gets eaten, leaving the user's first click with no effect.
+   */
+  const handleSegmentClick = useCallback(() => {
+    pendingOvershootSwallowRef.current = false;
+  }, []);
+
   useEffect(() => {
     if (!bootstrapped || !entryPositioned || entryPauseDoneRef.current) return;
     if (recordingPassStarted) return; // recording pass auto-plays on entry; don't pause
@@ -1008,6 +1134,27 @@ export function PassageDetailGuidedPhraseRecord({
     if (idx < 0) return;
 
     const indexChanged = idx !== currentIndex;
+
+    if (pendingOvershootSwallowRef.current && idx === currentIndex + 1) {
+      // A +1 segment change arriving just after an auto-play park is not the
+      // user moving: either playback overshot into the next clause, or the
+      // recorder mounted and reported a region-in there. Stay on the parked
+      // clause and play nothing. A change further away than +1 is a real tap,
+      // and falls through to the branches below.
+      //
+      // This has to be decided before the completed-clause branch below.
+      // Otherwise, when the clause the overshoot lands on already has a take -
+      // record 1, arrow forward to 3, record 3, arrow back to 2 - that branch
+      // takes the overshoot for a move onto clause 3 and selects it, leaving
+      // clause 2 pending under a user who was waiting to record it (TT-7621).
+      pendingOvershootSwallowRef.current = false;
+      if (playerControlsRef.current?.isPlaying?.()) {
+        playerControlsRef.current.setPlay(false);
+      }
+      setCurrentSegment(clauseRegions[currentIndex], currentIndex);
+      void snapToClauseStart(currentIndex);
+      return;
+    }
 
     if (completedIndices.has(idx)) {
       if (playerControlsRef.current?.isPlaying?.()) {
@@ -1036,15 +1183,6 @@ export function PassageDetailGuidedPhraseRecord({
       playerControlsRef.current.setPlay(false);
     }
 
-    if (pendingOvershootSwallowRef.current && idx === currentIndex + 1) {
-      // Spurious +1 advance right after an auto-play park (playback overshoot or
-      // recorder-mount region-in). Re-assert the parked clause; don't play.
-      // A non-adjacent change reaches the branch below and is treated as a tap.
-      pendingOvershootSwallowRef.current = false;
-      setCurrentSegment(clauseRegions[currentIndex], currentIndex);
-      void snapToClauseStart(currentIndex);
-      return;
-    }
     // Genuine navigation (user tap) — cancel any armed swallow and play it.
     pendingOvershootSwallowRef.current = false;
 
@@ -1056,8 +1194,23 @@ export function PassageDetailGuidedPhraseRecord({
     setCurrentClausePlayed(false);
     setPhase((p) => (p === 'recording' ? 'recording' : 'readyToRecord'));
     void playCurrentClause(idx);
+    // Neither dep is read in the body — the segment itself comes from the ref
+    // behind getCurrentSegment() — so both are here purely as change signals.
+    //
+    // currentSegmentSeq is the one that tells us the selection moved. The
+    // index's numbering is not agreed between writers (the waveform writes
+    // 1-based, this component 0-based), so a genuine move can arrive carrying
+    // the number the previous writer used. Clicking segment 2 right after
+    // recording segment 3 does exactly that (waveform 1+1 vs step 2) — the
+    // effect never re-ran, the step stayed on segment 3, and the next take was
+    // filed there.
+    //
+    // currentSegmentIndex stays because the seq does not fully cover it:
+    // selecting another row resets the index to 0 without going through
+    // setCurrentSegment, so no seq bump accompanies that one.
   }, [
     currentSegmentIndex,
+    currentSegmentSeq,
     clauseRegions,
     currentIndex,
     completedIndices,
@@ -1085,8 +1238,10 @@ export function PassageDetailGuidedPhraseRecord({
     if (!consumeSuppressClauseAutoPlay()) {
       void playCurrentClause(idx);
     }
+    // See the recording-pass effect above for why currentSegmentSeq is a dep.
   }, [
     currentSegmentIndex,
+    currentSegmentSeq,
     clauseRegions,
     currentIndex,
     getCurrentSegment,
@@ -1232,6 +1387,7 @@ export function PassageDetailGuidedPhraseRecord({
   ]);
 
   const handleSplitClause = useCallback(async () => {
+    if (savingRecordingRef.current) return;
     const region = clauseRegions[currentIndex];
     if (!region) return;
     const splitPoint = playerControlsRef.current?.findClauseSplitPoint?.(
@@ -1276,6 +1432,7 @@ export function PassageDetailGuidedPhraseRecord({
   ]);
 
   const handleCombineWithNext = useCallback(async () => {
+    if (savingRecordingRef.current) return;
     if (!canCombineWithNext(currentIndex, clauseRegions, completedIndices)) {
       return;
     }
@@ -1307,6 +1464,7 @@ export function PassageDetailGuidedPhraseRecord({
   ]);
 
   const handleUndoCombine = useCallback(async () => {
+    if (savingRecordingRef.current) return;
     if (!combineUndo) return;
     setClauseSegString(combineUndo);
     await persistClauseSegments(combineUndo);
@@ -1324,6 +1482,8 @@ export function PassageDetailGuidedPhraseRecord({
   ]);
 
   const handleSegmentUndo = useCallback(async () => {
+    // Guard before pop() so a blocked undo doesn't consume a stack entry.
+    if (savingRecordingRef.current) return;
     const prev = segmentUndoStackRef.current.pop();
     setSegmentUndoCan(segmentUndoStackRef.current.canUndo());
     if (!prev) return;
@@ -1478,13 +1638,23 @@ export function PassageDetailGuidedPhraseRecord({
   ]);
 
   const afterUploadCb = useCallback(
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    async (_mediaId: string | undefined) => {
-      // Color green immediately; rowData/forceRefresh often lag the upload (TT-7552).
-      optimisticCompletedRef.current.add(currentIndexRef.current);
+    async (mediaId: string | undefined) => {
+      // Color green immediately; rowData/forceRefresh often lag the upload
+      // (TT-7552). Only on a real upload though — a terminal failure still calls
+      // us, with no mediaId, and painting that green tells the user their take
+      // was stored when it was not (TT-7583).
+      if (mediaId) {
+        optimisticCompletedRef.current.add(currentIndexRef.current);
+      } else {
+        optimisticCompletedRef.current.delete(currentIndexRef.current);
+      }
+      // Stays 'recorded' either way: the take still exists, it just is not
+      // stored. That keeps Record disabled and the clear button available, so
+      // discarding the take is the deliberate way back to recording (TT-7583).
+      setPhase('recorded');
+      savingRecordingRef.current = false;
       setSavingRecording(false);
       forceRefresh();
-      setPhase('recorded');
       setResetMedia(false);
       applyColors();
     },
@@ -1492,15 +1662,24 @@ export function PassageDetailGuidedPhraseRecord({
   );
 
   const handleClearRecording = useCallback(async () => {
-    if (!recordingRow?.mediafile?.id) return;
-    await memory.update((t) =>
-      t.removeRecord({ type: 'mediafile', id: recordingRow.mediafile.id })
-    );
-    optimisticCompletedRef.current.delete(currentIndexRef.current);
-    forceRefresh();
-    if (stepComplete(currentstep)) {
-      await setStepComplete(currentstep, false);
+    // Deleting the take retires the failed save with it, so the message and the
+    // latch must both go (TT-7583).
+    saveRejectedRef.current = false;
+    setSaveRejected(false);
+    // A take whose upload failed has no mediafile to remove, but it is still
+    // sitting unsaved in the recorder — discarding it is the whole point of the
+    // button in that state, so only the removal is conditional (TT-7583).
+    const mediaId = recordingRow?.mediafile?.id;
+    if (mediaId) {
+      await memory.update((t) =>
+        t.removeRecord({ type: 'mediafile', id: mediaId })
+      );
+      forceRefresh();
+      if (stepComplete(currentstep)) {
+        await setStepComplete(currentstep, false);
+      }
     }
+    optimisticCompletedRef.current.delete(currentIndexRef.current);
     setPhase('recordReady');
     setCurrentClausePlayed(true);
     setResetMedia(true);
@@ -1543,9 +1722,16 @@ export function PassageDetailGuidedPhraseRecord({
     return <StepMessage message={ts.noAudio} />;
   }
 
+  // Single source of truth for the segment-selection lock. While it is up,
+  // useWavesurferRegions.handleRegionClick drops waveform clicks silently, so
+  // it is mirrored onto the container: a test that clicks a segment has no
+  // other way to know whether the click could be received (TT-7360 follow-up).
+  const segmentSelectionLocked = phase === 'recording' || savingRecording;
+
   return (
     <Box
       id={config.containerId}
+      data-segment-selection-locked={String(segmentSelectionLocked)}
       sx={{
         display: 'flex',
         flexDirection: 'column',
@@ -1594,14 +1780,15 @@ export function PassageDetailGuidedPhraseRecord({
           controlsRef={playerControlsRef}
           applyRegionColor={applyRegionColor}
           onSegmentPlaybackEnd={onSegmentPlaybackEnd}
+          onSegmentClick={handleSegmentClick}
           highlightPlay={highlightPlayButton}
           onPlayStatusNotify={handlePlayStatusNotify}
           beforePlay={handleBeforeSourcePlay}
-          lockSegmentSelection={phase === 'recording' || savingRecording}
+          lockSegmentSelection={segmentSelectionLocked}
           allowZoom={true}
         />
       )}
-      {editStep && bootstrapped && (
+      {bootstrapped && (
         <CarefulSpeechControls
           width={width}
           phase={phase}
@@ -1635,10 +1822,16 @@ export function PassageDetailGuidedPhraseRecord({
           allClausesHeard={allClausesHeard}
           allClausesComplete={allClausesComplete}
           highlightSpeaker={highlightSpeaker}
-          allowRecord={allowRecord}
+          allowRecord={allowRecord && editStep}
           savingRecording={savingRecording}
-          onSaving={() => setSavingRecording(true)}
-          onSaveSettled={() => setSavingRecording(false)}
+          onSaving={() => {
+            savingRecordingRef.current = true;
+            setSavingRecording(true);
+          }}
+          onSaveSettled={() => {
+            savingRecordingRef.current = false;
+            setSavingRecording(false);
+          }}
           toolId={toolId}
           passageId={related(playerMediafile, 'passage') ?? passage?.id}
           artifactId={artifactTypeId}
@@ -1651,6 +1844,9 @@ export function PassageDetailGuidedPhraseRecord({
           onRecording={(active) => {
             if (active) {
               recordingActiveRef.current = true;
+              // A new take supersedes any earlier rejected save (TT-7583).
+              saveRejectedRef.current = false;
+              setSaveRejected(false);
               // TT-7552: a deliberate take cancels the post-park overshoot swallow
               // so tapping the next segment is treated as real navigation.
               pendingOvershootSwallowRef.current = false;
@@ -1663,6 +1859,7 @@ export function PassageDetailGuidedPhraseRecord({
             setRecording(false);
             if (!showRecorder) return;
             if (!wasRecording) {
+              savingRecordingRef.current = false;
               setSavingRecording(false);
               return;
             }
@@ -1671,10 +1868,22 @@ export function PassageDetailGuidedPhraseRecord({
           resetMedia={resetMedia}
           setResetMedia={setResetMedia}
           setCanSave={setCanSave}
+          onSaveRejected={() => {
+            saveRejectedRef.current = true;
+            setSaveRejected(true);
+            savingRecordingRef.current = false;
+            setSavingRecording(false);
+            // Upload failures route through afterUploadCb('') as well, but
+            // MediaRecord's save-requested-with-no-audio branch only lands here,
+            // so undo the optimistic green from this path too (TT-7583).
+            optimisticCompletedRef.current.delete(currentIndexRef.current);
+            applyColors();
+          }}
           setStatusText={setStatusText}
           showRecorder={showRecorder}
           strings={controlStrings}
-          showBoundaryTools={config.showBoundaryTools}
+          showBoundaryTools={config.showBoundaryTools && editStep}
+          readOnly={!editStep}
           controlIdPrefix={config.containerId}
           sequentialUnitNavAroundRecord={config.sequentialUnitNavAroundRecord}
           onPrevUnit={handlePrevUnit}
@@ -1683,10 +1892,31 @@ export function PassageDetailGuidedPhraseRecord({
           canNextUnit={currentIndex < clauseRegions.length - 1}
         />
       )}
-      {statusText && (
-        <Typography variant="caption" align="center">
-          {statusText}
-        </Typography>
+      {saveRejected ? (
+        <Alert
+          severity="error"
+          variant="filled"
+          sx={{ alignSelf: 'center', alignItems: 'center', m: 2 }}
+          action={
+            <Button
+              id={`${config.containerId}-retry-save`}
+              color="inherit"
+              size="small"
+              disabled={savingRecording}
+              onClick={handleRetrySave}
+            >
+              {tm.pendingUploadRetryOne}
+            </Button>
+          }
+        >
+          {tt.uploadFailed}
+        </Alert>
+      ) : (
+        statusText && (
+          <Typography variant="caption" align="center">
+            {statusText}
+          </Typography>
+        )
       )}
       {resetConfirmText && (
         <Confirm

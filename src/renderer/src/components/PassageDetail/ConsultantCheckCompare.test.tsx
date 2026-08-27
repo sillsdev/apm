@@ -20,9 +20,11 @@ jest.mock('../../selector', () => ({
 }));
 jest.mock('../../control', () => ({
   ActionRow: jest.requireActual('../../control/ActionRow').ActionRow,
-  AltButton: jest.requireActual('../../control/AltButton').AltButton,
-  PriButton: jest.requireActual('../../control/PriButton').PriButton,
+  Button: jest.requireActual('../../control/Button').Button,
   GrowingDiv: jest.requireActual('../../control/GrowingDiv').GrowingDiv,
+  // rowSx is a theme callback needing the app theme augmentation; the plain
+  // object keeps the Box happy without a ThemeProvider.
+  rowSx: {},
 }));
 
 describe('ConsultantCheckCompare', () => {
@@ -92,7 +94,7 @@ describe('ConsultantCheckCompare', () => {
     expect(screen.getByTestId('checkbox-0')).toHaveClass('Mui-checked');
     expect(screen.getByTestId('checkbox-1')).not.toHaveClass('Mui-checked');
 
-    screen.getByText('Cancel').click();
+    screen.getByRole('button', { name: 'Cancel' }).click();
 
     expect(props.onChange).toHaveBeenCalledWith(['1']);
   });
@@ -111,7 +113,9 @@ describe('ConsultantCheckCompare', () => {
     expect(screen.getByTestId('checkbox-0')).toHaveClass('Mui-checked');
     expect(screen.getByTestId('checkbox-1')).not.toHaveClass('Mui-checked');
 
-    expect(screen.getByText('Save')).toHaveClass('Mui-disabled');
+    expect(screen.getByRole('button', { name: 'Save' })).toHaveClass(
+      'Mui-disabled'
+    );
   });
 
   it('should not save if nothing has changed', () => {
@@ -129,7 +133,7 @@ describe('ConsultantCheckCompare', () => {
     expect(screen.getByTestId('checkbox-1')).toHaveClass('Mui-checked');
     expect(screen.getByTestId('checkbox-2')).not.toHaveClass('Mui-checked');
 
-    screen.getByText('Save').click();
+    screen.getByRole('button', { name: 'Save' }).click();
 
     expect(props.onChange).not.toHaveBeenCalled();
   });
@@ -151,7 +155,7 @@ describe('ConsultantCheckCompare', () => {
     act(() => {
       screen.getByTestId('checkbox-1').click();
     });
-    screen.getByText('Save').click();
+    screen.getByRole('button', { name: 'Save' }).click();
 
     expect(props.onChange).toHaveBeenCalledWith(['1', '2']);
   });

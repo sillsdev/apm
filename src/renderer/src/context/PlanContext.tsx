@@ -1,13 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import React, { useEffect, useState } from 'react';
-// see: https://upmostly.com/tutorials/how-to-use-the-usecontext-hook-in-react
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useGlobal } from '../context/useGlobal';
-import {
-  ProjectD,
-  DiscussionD,
-  MediaFileD,
-  GroupMembershipD,
-} from '../model';
+import { ProjectD, DiscussionD, MediaFileD, GroupMembershipD } from '../model';
 import { findRecord, usePlanType } from '../crud';
 import {
   projDefSectionMap,
@@ -56,10 +50,13 @@ interface IProps {
   children: React.ReactElement;
 }
 
+const EMPTY_SECTION_ARR: SectionArray = [];
+
 const PlanProvider = (props: IProps) => {
   const mediafiles = useOrbitData<MediaFileD[]>('mediafile');
   const discussions = useOrbitData<DiscussionD[]>('discussion');
   const groupmemberships = useOrbitData<GroupMembershipD[]>('groupmembership');
+  const projects = useOrbitData<ProjectD[]>('project');
   const [memory] = useGlobal('memory');
   const [plan] = useGlobal('plan'); //will be constant here
   const [project] = useGlobal('project'); //will be constant here
@@ -92,25 +89,52 @@ const PlanProvider = (props: IProps) => {
     discussions,
     groupmemberships,
   });
+  // Keep sectionArr in React state so consumers see a stable reference between
+  // real updates (getProjectDefault JSON-parses a new array every call).
+  const [sectionArr, setSectionArrState] =
+    useState<SectionArray>(EMPTY_SECTION_ARR);
 
   const setTab = (tab: number) => {
     setState((state) => ({ ...state, tab }));
   };
 
-  const getSectionMap = () => {
-    return getProjectDefault(projDefSectionMap) as SectionArray | undefined;
-  };
+  const defaultParams = projects.find((p) => p.id === project)?.attributes
+    ?.defaultParams;
 
-  const setSectionArr = (newArr: SectionArray) => {
-    setProjectDefault(projDefSectionMap, newArr);
-  };
+  useEffect(() => {
+    const map = getProjectDefault(projDefSectionMap) as
+      | SectionArray
+      | undefined;
+    const next = map?.length ? map : EMPTY_SECTION_ARR;
+    setSectionArrState((prev) =>
+      JSON.stringify(prev) === JSON.stringify(next) ? prev : next
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [project, defaultParams]);
+
+  const setSectionArr = useCallback(
+    (newArr: SectionArray) => {
+      const next = newArr.length ? newArr : EMPTY_SECTION_ARR;
+      setSectionArrState((prev) => {
+        if (JSON.stringify(prev) === JSON.stringify(next)) return prev;
+        return next;
+      });
+      // Persist outside the updater. Empty map stays [] (do not delete the key).
+      const prev = getProjectDefault(projDefSectionMap) as
+        | SectionArray
+        | undefined;
+      const prevNorm = prev?.length ? prev : EMPTY_SECTION_ARR;
+      if (JSON.stringify(prevNorm) === JSON.stringify(next)) return;
+      setProjectDefault(projDefSectionMap, next);
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    []
+  );
 
   useEffect(() => {
     const { scripture, flat } = getPlanType(plan);
     if (flat !== state.flat || scripture !== state.scripture)
       setState((state) => ({ ...state, flat, scripture }));
-    // setSectionArr([]);
-    // console.log('PlanContext: plan changed')
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [plan]);
 
@@ -157,29 +181,35 @@ const PlanProvider = (props: IProps) => {
     setState((state) => ({ ...state, hidePublishing: !hidePublishing }));
   };
 
-  //don't do this anymore because we also check in the busy checks
-  /*
-  //do this every 30 seconds to warn they can't save
-  useInterval(
-    () => checkOnline((result: boolean) => {}),
-    isOffline ? null : 1000 * 30
+  const ctxState = useMemo(
+    () => ({
+      ...state,
+      sectionArr,
+      setSectionArr,
+      connected,
+      canEditSheet,
+      canEditAudio,
+      canPublish,
+      togglePublishing,
+      setCanAddPublishing,
+      setTab,
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [
+      state,
+      sectionArr,
+      setSectionArr,
+      connected,
+      canEditSheet,
+      canEditAudio,
+      canPublish,
+    ]
   );
-  */
+
   return (
     <PlanContext.Provider
       value={{
-        state: {
-          ...state,
-          sectionArr: getSectionMap() ?? [],
-          setSectionArr,
-          connected,
-          canEditSheet,
-          canEditAudio,
-          canPublish,
-          togglePublishing,
-          setCanAddPublishing,
-          setTab,
-        },
+        state: ctxState,
         setState,
       }}
     >

@@ -19,7 +19,6 @@ import {
   createPathFolder,
   removeExtension,
 } from '../../utils';
-import { isUnauthorized } from '../../utils/httpError';
 import { DateTime } from 'luxon';
 import _ from 'lodash';
 import { typeLimit } from '../../utils/typeLimit';
@@ -35,11 +34,13 @@ import {
   uploadRetryDelayMs,
   UPLOAD_MAX_ATTEMPTS,
   waitForImportExportIdle,
+  isRetryableUploadStatus,
 } from './uploadRetry';
 import {
   appendPendingMediaUpload,
   PendingUploadRecord,
   PendingUploadMediaRecord,
+  removeMatchingPendingUploads,
   removePendingMediaUpload,
   updatePendingMediaUpload,
 } from './pendingMediaUploads';
@@ -276,6 +277,7 @@ export const nextUpload =
   }: NextUploadProps) =>
   (dispatch: Dispatch) => {
     dispatch({ payload: n, type: UPLOAD_ITEM_PENDING });
+    let pendingIdToClear = pendingUploadIdToClearOnSuccess;
     const sendError = (n: number, message: string, mediaid?: number): void => {
       dispatch({
         payload: {
@@ -324,20 +326,29 @@ export const nextUpload =
     const completeCB = (
       success: boolean,
       data: MediaFileAttributes | undefined,
-      statusNum: number,
+      statusNum: number | undefined,
       statusText: string
     ): void => {
       if (success) {
         dispatch({ payload: n, type: UPLOAD_ITEM_SUCCEEDED });
-        if (pendingUploadIdToClearOnSuccess) {
-          removePendingMediaUpload(pendingUploadIdToClearOnSuccess);
+        if (pendingIdToClear) {
+          removePendingMediaUpload(pendingIdToClear);
         }
+        const pendingRec = record as PendingUploadMediaRecord;
+        removeMatchingPendingUploads({
+          planId: pendingRec.planId,
+          passageId: pendingRec.passageId,
+          artifactTypeId: pendingRec.artifactTypeId,
+          originalFile: pendingRec.originalFile,
+        });
         if (cb) cb(n, true, data);
       } else {
         dispatch({
           payload: {
             current: n,
-            error: `upload ${name}: (${statusNum}) ${statusText}`,
+            // statusNum is undefined when the request never reached the server,
+            // so don't render a literal "(undefined)" at the user (TT-7583).
+            error: `upload ${name}: (${statusNum ?? 'no response'}) ${statusText}`,
           },
           type: UPLOAD_ITEM_FAILED,
         });
@@ -362,7 +373,7 @@ export const nextUpload =
             'performed-by': mediaA.performedBy,
             topic: mediaA.topic,
             transcription: mediaA.transcription,
-            'language-bcp47': mediaA.languagebcp47,
+            languagebcp47: mediaA.languagebcp47,
           },
           relationships: {
             'last-modified-by-user': {
@@ -461,10 +472,24 @@ export const nextUpload =
         }
       }
 
+      if (localAbsolutePath) {
+        const queuePatch = {
+          localAbsolutePath,
+          fileSize: size,
+          uploadType,
+          record: snapshotForPending(),
+        };
+        const pendingRecord = pendingIdToClear
+          ? (updatePendingMediaUpload(pendingIdToClear, queuePatch) ??
+            appendPendingMediaUpload(queuePatch))
+          : appendPendingMediaUpload(queuePatch);
+        pendingIdToClear = pendingRecord.id;
+      }
+
       const finalizeTerminalFailure = async (
         remoteId: number | undefined,
         postSucceeded: boolean,
-        statusNum: number,
+        statusNum: number | undefined,
         statusText: string
       ): Promise<void> => {
         let cloudRowDeleted = !postSucceeded || remoteId === undefined;
@@ -490,9 +515,9 @@ export const nextUpload =
           uploadType,
           record: snapshotForPending(),
         };
-        const pendingRecord = pendingUploadIdToClearOnSuccess
+        const pendingRecord = pendingIdToClear
           ? (updatePendingMediaUpload(
-              pendingUploadIdToClearOnSuccess,
+              pendingIdToClear,
               queuePatch
             ) ?? appendPendingMediaUpload(queuePatch))
           : appendPendingMediaUpload(queuePatch);
@@ -525,12 +550,12 @@ export const nextUpload =
         } catch (err) {
           const ax = err as AxiosError;
           const st = ax.response?.status;
-          if (isUnauthorized(st) || st === 403) {
+          if (!isRetryableUploadStatus(st)) {
             await finalizeTerminalFailure(
               undefined,
               false,
-              st ?? 500, // default to 500 if status is undefined
-              `Upload ${name} failed.`
+              st!,
+              `Upload ${name} failed: ${ax.message}`
             );
             return;
           }
@@ -538,11 +563,15 @@ export const nextUpload =
             await sleepMs(uploadRetryDelayMs(attempt));
             continue;
           }
+          // we get here after the 5 tries. Undefined status means we never reached the
+          // server
           await finalizeTerminalFailure(
             undefined,
             false,
-            st ?? 500,
-            `Upload ${name} failed.`
+            st,
+            st
+              ? `Upload ${name} failed.`
+              : `Upload ${name} failed: network error`
           );
           return;
         }

@@ -215,7 +215,7 @@ describe('AppHead', () => {
   const mountAppHead = (
     initialState: ReturnType<typeof createInitialState>,
     initialEntries: string[] = ['/'],
-    props: { resetRequests?: () => Promise<void>; switchTo?: boolean } = {}
+    props: { resetRequests?: () => Promise<void> } = {}
   ) => {
     // Create memory with plan data if plan exists in state
     const planId = initialState.plan;
@@ -401,7 +401,7 @@ describe('AppHead', () => {
     cy.contains('Audio Project Manager').should('be.visible');
   });
 
-  it('should not show desktop ProjectName component in mobile view', () => {
+  it('should show the logo home button on mobile too', () => {
     // Set viewport to mobile size
     cy.viewport(400, 800);
 
@@ -411,78 +411,32 @@ describe('AppHead', () => {
         orgRole: 'Admin',
         plan: 'test-plan-id',
       }),
-      ['/plan/test-project/test-plan'],
-      { switchTo: true }
+      ['/plan/test-project/test-plan']
     );
 
     cy.wait(500);
-    // Desktop ProjectName component (with home button) should not be visible in mobile view
-    cy.get('#home').should('not.exist');
-    // Mobile version should show OrgHead instead
-    cy.get('header', { timeout: 5000 }).should('exist');
+    // The logo replaced the old desktop-only ProjectName home button, so it is
+    // present at every width — only HeadStatus is gated on isMobileWidth.
+    cy.get('header button[aria-label="Home"]', { timeout: 5000 }).should(
+      'be.visible'
+    );
   });
 
-  it('should render home button when not on home and has orgRole', () => {
-    mountAppHead(
-      createInitialState({ home: false, orgRole: 'Admin' }),
-      ['/plan/test-project/test-plan'],
-      { switchTo: true }
-    );
+  it('should render the logo home button when not on a detail route', () => {
+    mountAppHead(createInitialState({ home: false, orgRole: 'Admin' }), [
+      '/plan/test-project/test-plan',
+    ]);
 
     cy.wait(500);
-    // Go directly to the element we need - home button should be visible
-    cy.get('#home', { timeout: 5000 }).should('be.visible');
-    cy.get('#home svg').should('exist');
-  });
-
-  it('should render project button when switchTo is true and plan exists', () => {
-    mountAppHead(
-      createInitialState({
-        home: false,
-        orgRole: 'Admin',
-        plan: 'test-plan-id',
-      }),
-      ['/plan/test-project/test-plan'],
-      { switchTo: true }
+    cy.get('header button[aria-label="Home"]', { timeout: 5000 }).should(
+      'be.visible'
     );
-
-    cy.get('#project').should('be.visible');
-    cy.get('#project svg').should('exist');
-  });
-
-  it('should navigate when project button is clicked', () => {
-    mountAppHead(
-      createInitialState({
-        home: false,
-        orgRole: 'Admin',
-        plan: 'test-plan-id',
-      }),
-      ['/plan/test-project/test-plan'],
-      { switchTo: true }
+    // ApmLogo renders an <img> (styled('img')), not an inline <svg>.
+    cy.get('header button[aria-label="Home"] img').should(
+      'have.attr',
+      'alt',
+      'Audio Project Manager Logo'
     );
-
-    // Wait for component to render
-    cy.wait(500);
-    // Click the project button - navigation is mocked via useMyNavigate
-    cy.get('#project', { timeout: 5000 }).should('be.visible').click();
-  });
-
-  it('should render plan name when plan exists and not home', () => {
-    mountAppHead(
-      createInitialState({
-        home: false,
-        orgRole: 'Admin',
-        plan: 'test-plan-id',
-      }),
-      ['/plan/test-project/test-plan'],
-      { switchTo: true }
-    );
-
-    // Wait for component to render and memory query to complete
-    cy.wait(500);
-    // The plan name comes from getPlanName which queries memory for plan data
-    // Memory is set up to return a plan with name 'Test Plan'
-    cy.contains('Test Plan', { timeout: 5000 }).should('be.visible');
   });
 
   it('should show UserMenu when not on home or access routes', () => {
@@ -504,36 +458,58 @@ describe('AppHead', () => {
     cy.get('header button').should('have.length.at.least', 1);
   });
 
-  it('should render progress bar when progress is between 0 and 100', () => {
+  // Progress and busy are one LinearProgress whose `variant` switches, so the
+  // variant class is what distinguishes them. See progressVariant in AppHead.
+  it('should render a determinate progress bar when progress is between 0 and 100', () => {
     mountAppHead(createInitialState({ progress: 50 }), ['/']);
 
-    cy.get('#prog').should('be.visible');
+    cy.get('header [role="progressbar"]')
+      .should('be.visible')
+      .and('have.class', 'MuiLinearProgress-determinate');
   });
 
-  it('should not render progress bar when progress is 0 or 100', () => {
-    mountAppHead(createInitialState({ progress: 0 }), ['/']);
+  it('should not render any progress bar when idle and progress is 0', () => {
+    mountAppHead(
+      createInitialState({
+        progress: 0,
+        remoteBusy: false,
+        dataChangeCount: 0,
+      }),
+      ['/']
+    );
 
-    cy.get('#prog').should('not.exist');
+    cy.get('header [role="progressbar"]').should('not.exist');
   });
 
-  it('should show busy indicator when remoteBusy is true', () => {
+  it('should show an indeterminate progress bar when remoteBusy is true', () => {
     mountAppHead(
       createInitialState({ progress: 0, remoteBusy: true, dataChangeCount: 0 }),
       ['/']
     );
 
-    cy.get('#busy').should('be.visible');
+    cy.get('header [role="progressbar"]')
+      .should('be.visible')
+      .and('have.class', 'MuiLinearProgress-indeterminate');
   });
 
-  it('should call goHome when home button is clicked', () => {
-    mountAppHead(
-      createInitialState({ home: false, orgRole: 'Admin' }),
-      ['/plan/test-project/test-plan'],
-      { switchTo: true }
-    );
+  it('should forget the remembered plan when the logo is clicked', () => {
+    cy.window().then((win) => {
+      win.localStorage.setItem('selected-plan', 'test-plan-id');
+      win.localStorage.setItem('mode', 'online-cloud');
+    });
 
-    cy.get('#home').click();
-    // Note: goHome is mocked, so we can verify the stub was called if needed
+    mountAppHead(createInitialState({ home: false, orgRole: 'Admin' }), [
+      '/plan/test-project/test-plan',
+    ]);
+
+    cy.get('header button[aria-label="Home"]').click();
+
+    // Leaving the project has to clear these, or TeamScreen sends the user
+    // straight back into the plan they just left. See handleLogoHome.
+    cy.window().then((win) => {
+      expect(win.localStorage.getItem('selected-plan')).to.be.null;
+      expect(win.localStorage.getItem('mode')).to.be.null;
+    });
   });
 
   it('should show offline icon when not connected', () => {

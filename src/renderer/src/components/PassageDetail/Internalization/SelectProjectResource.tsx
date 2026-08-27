@@ -31,7 +31,7 @@ import AudioIcon from '@mui/icons-material/Hearing';
 import DeleteIcon from '@mui/icons-material/Delete';
 import Confirm from '../../AlertDialog';
 import { isVisual } from '../../../utils';
-import { ActionRow, AltButton } from '../../../control';
+import { Button, ActionRow } from '../../../control';
 
 interface IProps {
   onSelect?: (media: MediaFileD) => void;
@@ -105,7 +105,6 @@ export const SelectProjectResource = (props: IProps) => {
   const handleCancel = () => {
     const complete = getGlobal('progress');
     if (complete === 0 || complete === 100) onOpen && onOpen(false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   };
 
   useEffect(() => {
@@ -151,13 +150,13 @@ export const SelectProjectResource = (props: IProps) => {
         ))}
       </List>
       <ActionRow>
-        <AltButton
+        <Button
           id="proj-res-select-cancel"
-          onClick={handleCancel}
           sx={{ m: 2 }}
+          onClick={handleCancel}
         >
           {ts.cancel}
-        </AltButton>
+        </Button>
       </ActionRow>
       {confirm && (
         <Confirm

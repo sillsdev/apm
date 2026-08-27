@@ -1,38 +1,32 @@
 import React from 'react';
-import { IRow } from '../../../../components/AudioTab';
-import {
-  Box,
-  Button,
-  IconButton,
-  Radio,
-  Stack,
-  Typography,
-} from '@mui/material';
-import DescriptionOutlined from '@mui/icons-material/DescriptionOutlined';
-import DeleteIcon from '@mui/icons-material/DeleteOutline';
 import { FaPaperclip, FaUnlink } from 'react-icons/fa';
 import type { IconBaseProps } from 'react-icons/lib';
-import UserAvatar from '../../../../components/UserAvatar';
-import { findRecord, related } from '../../../../crud';
-import { useTranscription } from '../../../../crud/useTranscription';
+import { shallowEqual, useSelector } from 'react-redux';
+import { Box, IconButton, Radio, Stack, Typography } from '@mui/material';
+import DeleteIcon from '@mui/icons-material/DeleteOutline';
+import DescriptionOutlined from '@mui/icons-material/DescriptionOutlined';
+import PauseIcon from '@mui/icons-material/Pause';
+import PlayIcon from '@mui/icons-material/PlayArrowOutlined';
 import {
   IMediaActionsStrings,
   IMediaTabStrings,
   ITranscriptionShowStrings,
   UserD,
 } from '@model/index';
+import { useGlobal } from '../../../../context/useGlobal';
 import { dateOrTime } from '../../../../utils/index';
-import { AudioDownload } from '../../../../components/AudioDownload';
-import PlayIcon from '@mui/icons-material/PlayArrowOutlined';
-import PauseIcon from '@mui/icons-material/Pause';
-import { shallowEqual, useSelector } from 'react-redux';
+import { findRecord, related } from '../../../../crud';
+import { useTranscription } from '../../../../crud/useTranscription';
 import {
   mediaActionsSelector,
   mediaTabSelector,
   transcriptionShowSelector,
 } from '../../../../selector/selectors';
-import { useGlobal } from '../../../../context/useGlobal';
 import { WrapTitle } from '../../../../control/WrapTitle';
+import { AudioDownload } from '../../../../components/AudioDownload';
+import { IRow } from '../../../../components/AudioTab';
+import UserAvatar from '../../../../components/UserAvatar';
+import { Button } from '../../../../control/Button';
 
 const Paperclip = FaPaperclip as unknown as React.FC<IconBaseProps>;
 const Unlink = FaUnlink as unknown as React.FC<IconBaseProps>;
@@ -94,7 +88,7 @@ export const AudioVersionCard: React.FC<AudioVersionCardProps> = (props) => {
   const allowDownload = props.allowDownload !== false;
 
   return (
-    <Stack direction="row" alignItems="center" sx={{ my: 1, gap: 0.5 }}>
+    <Stack direction="row" alignItems="center">
       <Box
         data-cy="audio-version-card"
         sx={{

@@ -5,8 +5,10 @@ import { IProfileStrings, IState, User, UserD } from '../model';
 import * as action from '../store';
 import { TokenContext } from '../context/TokenProvider';
 import { profileSelector } from '../selector';
+import { RecordKeyMap } from '@orbit/records';
 import { useOrbitData } from '../hoc/useOrbitData';
 import { UpdateRecord } from '../model/baseModel';
+import { remoteId } from '../crud/remoteId';
 import { addPt } from './addPt';
 import { useProjectPermissions } from './useProjectPermissions';
 import bugsnagClient from '../auth/bugsnagClient';
@@ -72,19 +74,26 @@ export const useUserCanPublish = (): UserCanPublishResult => {
           console.error(paratext_canPublishStatus.errMsg);
         } else if (paratext_canPublishStatus.complete) {
           const u = users.find((u) => u.id === user);
+          // Skip PATCH when we have no local id or no remote id — Orbit
+          // useRemoteId would otherwise send PATCH /api/users/ and fail.
+          const rid =
+            u?.id &&
+            (u.keys?.remoteId ||
+              remoteId('user', u.id, memory?.keyMap as RecordKeyMap));
           if (
-            u !== undefined &&
+            user &&
+            rid &&
             u.attributes.canPublish !== (paratext_canPublish as boolean)
           ) {
             u.attributes.canPublish = paratext_canPublish as boolean;
             memory.update((t) => UpdateRecord(t, u as UserD, user));
-          }
+          } else askingRef.current = false;
           resetCanPublish();
         }
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [paratext_canPublishStatus]);
   return { canUserPublish };
 };
 

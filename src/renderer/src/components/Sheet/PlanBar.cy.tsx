@@ -329,15 +329,16 @@ describe('PlanBar', () => {
 
     // Wait for component to render
     cy.wait(100);
-    // Should render TabAppBar (TabAppBar is a styled AppBar, which can render as header, nav, or div)
-    cy.get(
-      'header[class*="MuiAppBar-root"], nav[class*="MuiAppBar-root"], div[class*="MuiAppBar-root"]',
-      {
-        timeout: 5000,
-      }
-    ).should('be.visible');
+    // PlanBar is a plain flex Box now — the TabAppBar wrapper was removed, so
+    // the bar is identified by its contents rather than an AppBar class.
     // Should render PlanTabSelect (it renders a button)
-    cy.get('button[id="planTabSelect"]', { timeout: 5000 }).should('exist');
+    cy.get('button[id="planTabSelect"]', { timeout: 5000 }).should(
+      'be.visible'
+    );
+    // Should render FilterMenu (it contains a FilterList icon button)
+    cy.get('svg[data-testid="FilterListIcon"]', { timeout: 5000 }).should(
+      'exist'
+    );
   });
 
   it('should show publishing button when data.length > 1, not offline, and not flat', () => {

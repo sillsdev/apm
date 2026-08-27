@@ -1,5 +1,5 @@
 import { useGlobal } from '../../context/useGlobal';
-import { Box, Button, IconButton } from '@mui/material';
+import { Box, IconButton } from '@mui/material';
 import {
   useCallback,
   useContext,
@@ -39,6 +39,7 @@ import { useOrbitData } from '../../hoc/useOrbitData';
 import { ToolSlug, useStepTool } from '../../crud';
 import { SaveSegments } from './SaveSegments';
 import { IMarker } from '../../crud/useWaveSurfer';
+import { Button } from '../../control/Button';
 export const PLAYER_HEIGHT = 120 + 80;
 
 export interface IPlayerState {
@@ -103,6 +104,8 @@ export interface DetailPlayerProps {
   /** Tool-specific waveform region coloring (Mark Verses, Careful Speech, etc.). */
   applyRegionColor?: ApplyRegionColor;
   onSegmentPlaybackEnd?: (region: IRegion) => void;
+  /** A segment was clicked on the waveform (not selected by the playhead). */
+  onSegmentClick?: (region: IRegion) => void;
   /** Called when waveform play/pause changes (in addition to internal player logic). */
   onPlayStatusNotify?: (playing: boolean) => void;
   highlightPlay?: boolean;
@@ -155,6 +158,7 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
     controlsRef,
     applyRegionColor,
     onSegmentPlaybackEnd,
+    onSegmentClick,
     onPlayStatusNotify,
     highlightPlay,
     playerState,
@@ -184,6 +188,9 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
   } = useContext(UnsavedContext).state;
   const t: IWsAudioPlayerStrings = useSelector(playerSelector, shallowEqual);
   const toolId = 'ArtifactSegments';
+  /** Segments string last applied by discussion locate; matching onSegmentChange
+   * emissions are treated as init (not user edits). Cleared on match or unmount. */
+  const pendingLocateSegmentsRef = useRef<string | undefined>(undefined);
   const [requestPlay, setRequestPlay] = useState<RequestPlay>({
     play: undefined,
     regionOnly: false,
@@ -349,6 +356,9 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
       !segmentsRef.current ||
       segmentsRef.current.indexOf('},{') === -1
     ) {
+      // Remember what locate applied so the waveform's later onSegmentChange
+      // can be recognized without a wall-clock heuristic.
+      pendingLocateSegmentsRef.current = segments;
       setDefaultSegments(segments);
       onSegment && onSegment(segments, true);
     }
@@ -368,7 +378,10 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
   const onSegmentChange = (segments: string) => {
     segmentsRef.current = segments;
     setDefaultSegments(segments); //now we'll notice if we reset them in SetPlayerSegments
-    onSegment && onSegment(segments, false);
+    const fromLocate = pendingLocateSegmentsRef.current === segments;
+    if (fromLocate) pendingLocateSegmentsRef.current = undefined;
+    onSegment && onSegment(segments, fromLocate);
+    if (fromLocate) return;
     if (allowSegment && saveSegments !== undefined) {
       const currentMedia = mediarecs.find((m) => m.id === playerMediafile?.id);
       const saved = getSegments(
@@ -387,6 +400,7 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
     setupLocate(setPlayerSegments);
     return () => {
       setupLocate();
+      pendingLocateSegmentsRef.current = undefined;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentstep, allowSegment]);
@@ -431,6 +445,7 @@ export function PassageDetailPlayer(props: DetailPlayerProps) {
         controlsRef={controlsRef}
         applyRegionColor={applyRegionColor}
         onSegmentPlaybackEnd={onSegmentPlaybackEnd}
+        onSegmentClick={onSegmentClick}
         blob={audioBlob}
         initialposition={initialposition}
         setInitialPosition={setInitialPosition}
