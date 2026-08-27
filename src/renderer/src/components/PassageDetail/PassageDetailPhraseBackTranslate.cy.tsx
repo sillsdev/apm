@@ -31,6 +31,8 @@ import {
   sourcePlay,
   startRecordingPass,
   recordAndSettle,
+  readSourcePlaying,
+  readRecordEnabled,
 } from '../../../cypress/support/pbtHarness';
 
 const SEGMENTS = SEGMENTS_3;
@@ -152,6 +154,37 @@ describe('PBT record and save', () => {
     unitLabel('0:03', '0:06').should('be.visible');
     playheadText().then((t) => {
       expect(parseTime(t), 'playhead inside segment 2').to.be.within(3, 6);
+    });
+  });
+
+  it('keeps Record off while the segment reached by the arrow plays', () => {
+    // Reported from hand testing: record segment 1, press the right arrow, and
+    // segment 2 starts playing with Record still operable - so a take can be
+    // recorded over the reference audio, which the listen-then-record flow
+    // prevents everywhere else.
+    recordAndSettle(1);
+    cy.get(PBT.nextUnit).click();
+    unitLabel('0:03', '0:06').should('be.visible');
+
+    // One reading, taken from the middle of the segment. `playing` is the
+    // player's own state and Record's operability is the step's, so at either
+    // end of playback the two flip on unrelated renders and a sample can
+    // legitimately catch both live for a frame. Segment 2 runs 0:03-0:06, so
+    // waiting for playback to start and then settling for most of a second
+    // lands clear of both edges. Asserting `playing` in the same reading is
+    // what makes the Record assertion mean anything.
+    cy.document().should((doc) => {
+      expect(readSourcePlaying(doc), 'reference audio started').to.equal(true);
+    });
+    cy.wait(800);
+    cy.document().then((doc) => {
+      const playing = readSourcePlaying(doc);
+      const record = readRecordEnabled(doc);
+      expect(playing, 'reference audio still playing').to.equal(true);
+      expect(
+        record,
+        'Record operable while the reference audio plays'
+      ).to.equal(false);
     });
   });
 
