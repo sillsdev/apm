@@ -6,7 +6,6 @@ import {
   ITranscriberStrings,
 } from '../model';
 import {
-  Button,
   Dialog,
   DialogActions,
   DialogContent,
@@ -18,7 +17,7 @@ import {
   Radio,
   TextField,
 } from '@mui/material';
-import { commentProps } from '../control';
+import { Button, commentProps } from '../control';
 import { transcribeRejectSelector, transcriberSelector } from '../selector';
 import { shallowEqual, useSelector } from 'react-redux';
 

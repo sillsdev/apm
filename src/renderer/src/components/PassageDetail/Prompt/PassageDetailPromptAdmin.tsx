@@ -27,6 +27,7 @@ import usePassageDetailContext from '../../../context/usePassageDetailContext';
 import { UnsavedContext } from '../../../context/UnsavedContext';
 import MediaRecord from '../../MediaRecord';
 import { useStepPermissions } from '../../../utils/useStepPermission';
+import { isLinkedNote } from '../../../crud/isLinkedNote';
 import { useSecResCreate, useSecResDelete } from '../../../crud';
 import { usePromptSectionResource } from './usePromptSectionResource';
 import { SectionResourceD } from '../../../model';
@@ -60,6 +61,8 @@ export default function PassageDetailPromptAdmin(props: IProps) {
     forceRefresh,
     setRecording,
     setPromptDockedRecordButton,
+    passage,
+    sharedResource,
   } = usePassageDetailContext();
   const { canDoSectionStep, canAlwaysDoStep } = useStepPermissions();
   const { promptMediaId, sectionResource, hasPrompt } =
@@ -87,7 +90,9 @@ export default function PassageDetailPromptAdmin(props: IProps) {
     [getTypeId]
   );
 
-  const canEdit = canAlwaysDoStep() || canDoSectionStep(currentstep, section);
+  const canEdit =
+    !isLinkedNote(passage, sharedResource) &&
+    (canAlwaysDoStep() || canDoSectionStep(currentstep, section));
   const promptAddBlocked = offline || offlineOnly;
   const { isMobile } = useMobile();
 

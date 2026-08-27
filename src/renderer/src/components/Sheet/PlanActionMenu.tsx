@@ -7,14 +7,7 @@ import {
   IPassageTypeStrings,
 } from '../../model';
 import { shallowEqual, useSelector } from 'react-redux';
-import {
-  Box,
-  Button,
-  Popper,
-  Grow,
-  Paper,
-  ClickAwayListener,
-} from '@mui/material';
+import { Box, Popper, Grow, Paper, ClickAwayListener } from '@mui/material';
 import MoreIcon from '@mui/icons-material/MoreHoriz';
 import { elemOffset } from '../../utils';
 import {
@@ -25,6 +18,7 @@ import {
 } from '../../selector';
 import { PlanMoreMenuItems } from './PlanMoreMenuItems';
 import { ExtraIcon } from '.';
+import { Button } from '../../control/Button';
 
 /** Live row selection — menus consume this so they close without a grid refill. */
 // only PlanActionMenu reads this; a split file would exist only for Fast Refresh
@@ -173,6 +167,7 @@ export function PlanActionMenu(props: IProps) {
     <Box ref={menuRef} sx={{ display: 'flex' }}>
       <div>
         <Button
+          disableTypography
           id="planMore"
           ref={anchorRef}
           aria-controls={open ? 'menu-list-grow' : undefined}

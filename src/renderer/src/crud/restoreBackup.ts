@@ -25,6 +25,12 @@ async function restoreBackupOnce(coordinator?: Coordinator): Promise<string[]> {
     backup ?? (coordinator?.getSource('backup') as IndexedDBSource);
 
   try {
+    if (
+      typeof myBackup?.cache?.openDB === 'function' &&
+      !myBackup.cache.isDBOpen
+    ) {
+      await myBackup.cache.openDB();
+    }
     await waitForIt(
       'migration',
       () => {
@@ -56,6 +62,7 @@ async function restoreBackupOnce(coordinator?: Coordinator): Promise<string[]> {
     const ret = Array.from(projs);
     return ret;
   } catch (err) {
+    restorePromise = null;
     logError(
       Severity.error,
       bugsnagClient,

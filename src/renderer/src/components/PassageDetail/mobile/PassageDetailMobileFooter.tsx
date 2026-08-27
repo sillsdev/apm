@@ -1,4 +1,4 @@
-import { Box, Button } from '@mui/material';
+import { Box } from '@mui/material';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import { useMemo } from 'react';
@@ -23,6 +23,7 @@ import { ToolSlug, useStepTool } from '../../../crud';
 import { usePromptSectionResource } from '../Prompt/usePromptSectionResource';
 import { useRole } from '../../../crud/useRole';
 import { useStepPermissions } from '../../../utils/useStepPermission';
+import { Button } from '../../../control/Button';
 
 function NavButtonLabel({
   text,
@@ -148,9 +149,7 @@ export default function PassageDetailMobileFooter() {
 
   const navButtonSx = {
     flex: 1,
-    minWidth: 0,
     maxWidth: 'clamp(110px, 30vw, 190px)',
-    '@media (max-width:405px)': { px: 1 },
   } as const;
 
   return (
@@ -164,14 +163,13 @@ export default function PassageDetailMobileFooter() {
       }}
     >
       <Button
-        size="small"
-        startIcon={<ChevronLeftIcon fontSize="small" />}
-        onClick={() => handleNavigate(false)}
-        disabled={!prevNavEnabled}
         sx={{
           ...navButtonSx,
-          justifyContent: 'center',
         }}
+        variant="outlined"
+        startIcon={<ChevronLeftIcon />}
+        disabled={!prevNavEnabled}
+        onClick={() => handleNavigate(false)}
       >
         <NavButtonLabel
           text={prevButtonText}
@@ -181,14 +179,13 @@ export default function PassageDetailMobileFooter() {
       </Button>
       {!isBoldWorkflow && <MobileStepComplete />}
       <Button
-        size="small"
-        endIcon={<ChevronRightIcon fontSize="small" />}
-        onClick={() => handleNavigate(true)}
-        disabled={!nextNavEnabled}
         sx={{
           ...navButtonSx,
-          justifyContent: 'center',
         }}
+        variant="outlined"
+        endIcon={<ChevronRightIcon />}
+        disabled={!nextNavEnabled}
+        onClick={() => handleNavigate(true)}
       >
         <NavButtonLabel
           text={nextButtonText}

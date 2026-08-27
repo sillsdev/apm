@@ -7,7 +7,7 @@ jest.mock('../../MediaRecord', () => ({
 }));
 
 jest.mock('../../../control', () => ({
-  PriButton: ({
+  Button: ({
     children,
     id,
     onClick,

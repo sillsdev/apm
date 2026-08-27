@@ -15,14 +15,7 @@ import { useSnackBar } from '../hoc/SnackBar';
 import Confirm from './AlertDialog';
 import { related, useRole } from '../crud';
 import { localizeRole } from '../utils';
-
-import {
-  ActionRow,
-  AltButton,
-  GrowingSpacer,
-  PriButton,
-  iconMargin,
-} from '../control';
+import { ActionRow, GrowingSpacer, Button, rowSx } from '../control';
 import { useSelector } from 'react-redux';
 import { invitationTableSelector, sharedSelector } from '../selector';
 import { useOrbitData } from '../hoc/useOrbitData';
@@ -143,7 +136,6 @@ export function InvitationTable() {
 
   useEffect(() => {
     setData(getInvites(organization, roles, invitations, ts));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [organization, roles, invitations, confirmAction, ts]);
 
   const canEdit = useMemo(
@@ -157,25 +149,28 @@ export function InvitationTable() {
         <ActionRow>
           {canEdit && (
             <>
-              <PriButton
-                id="inviteAdd"
-                key="add"
-                aria-label={t.invite}
-                onClick={handleAdd}
-              >
-                {t.invite}
-                <AddIcon sx={iconMargin} />
-              </PriButton>
-              <AltButton
-                id="inviteAction"
-                key="action"
-                aria-owns={actionMenuItem !== '' ? 'action-menu' : undefined}
-                aria-label={t.action}
-                onClick={handleMenu}
-              >
-                {t.action}
-                <DropDownIcon sx={iconMargin} />
-              </AltButton>
+              <Box sx={rowSx}>
+                <Button
+                  id="inviteAdd"
+                  key="add"
+                  aria-label={t.invite}
+                  color="primary"
+                  startIcon={<AddIcon />}
+                  onClick={handleAdd}
+                >
+                  {t.invite}
+                </Button>
+                <Button
+                  id="inviteAction"
+                  key="action"
+                  aria-owns={actionMenuItem !== '' ? 'action-menu' : undefined}
+                  aria-label={t.action}
+                  startIcon={<DropDownIcon />}
+                  onClick={handleMenu}
+                >
+                  {t.action}
+                </Button>
+              </Box>
               <Menu
                 id="action-menu"
                 anchorEl={actionMenuItem}

@@ -63,7 +63,7 @@ import { useOfflnProjRead } from '../crud/useOfflnProjRead';
 import ImportTab from '../components/ImportTab';
 import { jwtDecode } from 'jwt-decode';
 import { ApmSplash } from '../components/ApmSplash';
-import { AltButton, PriButton } from '../control';
+import { Button } from '../control';
 import { RecordKeyMap } from '@orbit/records';
 import { useSelector } from 'react-redux';
 import { mainSelector } from '../selector';
@@ -497,19 +497,23 @@ export function Loading() {
             <>
               {orbitErrorMsg && (
                 <Box sx={centerProps}>
-                  <AltButton id="loadErrLogout" onClick={logoutAndTryAgain}>
+                  <Button id="loadErrLogout" onClick={logoutAndTryAgain}>
                     {t.logout}
-                  </AltButton>
+                  </Button>
                 </Box>
               )}
               {loadComplete && inviteError && (
                 <Box sx={centerProps}>
-                  <PriButton id="errCont" onClick={continueWithCurrentUser}>
+                  <Button
+                    id="errCont"
+                    color="primary"
+                    onClick={continueWithCurrentUser}
+                  >
                     {t.continueCurrentUser}
-                  </PriButton>
-                  <AltButton id="errLogout" onClick={logoutAndTryAgain}>
+                  </Button>
+                  <Button id="errLogout" onClick={logoutAndTryAgain}>
                     {t.logout}
-                  </AltButton>
+                  </Button>
                 </Box>
               )}
               {isElectron && importOpen && (

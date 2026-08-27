@@ -1,6 +1,5 @@
 import {
   Box,
-  Button,
   Checkbox,
   Dialog,
   DialogActions,
@@ -9,7 +8,7 @@ import {
   FormControlLabel,
   Typography,
 } from '@mui/material';
-import type { ChangeEvent, ReactNode } from 'react';
+import type { ChangeEvent, MouseEvent, ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   WheelPicker,
@@ -23,6 +22,7 @@ import {
   type PassageVerseOption,
   toPassageVerseKey,
 } from '../../../../utils/markVersesPassageVerses';
+import { Button } from '../../../../control/Button';
 
 const suffixOptions = ['', 'a', 'b', 'c', 'd', 'e'];
 /** Match readonly chapter/verse labels to the wheel option size. */
@@ -293,6 +293,19 @@ export default function EditReferenceDropdown({
   };
 
   /**
+   * The wheel library has its own Arrow-key handling on its internal `[data-rwp]`
+   * div, but that div only receives keyboard focus when tabbed to: on click the
+   * library calls `preventDefault()` on mousedown (to drive its drag/scroll),
+   * which also stops the browser from focusing the wheel. So after clicking a
+   * wheel the arrow keys did nothing (TT-7622). Focus the wheel ourselves on
+   * click to close that gap; keyboard users who tab in already get focus for
+   * free and this is a no-op for them.
+   */
+  const focusWheelOnClick = useCallback((event: MouseEvent<HTMLDivElement>) => {
+    event.currentTarget.querySelector<HTMLElement>('[data-rwp]')?.focus();
+  }, []);
+
+  /**
    * One iOS-style wheel column.
    *
    * ARIA stops at the label here. The focusable, arrow-key-driven element is the
@@ -322,6 +335,7 @@ export default function EditReferenceDropdown({
         aria-label={ariaLabel}
         title={ariaLabel}
         role="group"
+        onClick={focusWheelOnClick}
       >
         <WheelPickerWrapper>
           <WheelPicker

@@ -6,7 +6,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import { Alert, Box, Button } from '@mui/material';
+import { Alert, Box } from '@mui/material';
 import { shallowEqual, useSelector } from 'react-redux';
 import { useGlobal } from '../../context/useGlobal';
 import usePassageDetailContext from '../../context/usePassageDetailContext';
@@ -29,6 +29,7 @@ import { IRow } from '../../context/PassageDetailContext';
 import { passageDefaultFilename } from '../../utils/passageDefaultFilename';
 import { RecordKeyMap } from '@orbit/records';
 import { useStepPermissions } from '../../utils/useStepPermission';
+import { isLinkedNote } from '../../crud/isLinkedNote';
 import {
   lwcTranslationSelector,
   mediaTabSelector,
@@ -50,6 +51,7 @@ import LwcTranslationControls, {
   LwcTranslationPhase,
 } from './lwcTranslation/LwcTranslationControls';
 import { LocalKey } from '../../utils/localUserKey';
+import { Button } from '../../control/Button';
 
 const toolId = 'LwcTranslationTool';
 
@@ -82,6 +84,7 @@ export function PassageDetailLwcTranslation({ width }: IProps) {
   const { getTypeId } = useArtifactType();
   const {
     passage,
+    sharedResource,
     mediafileId,
     rowData,
     currentstep,
@@ -218,8 +221,10 @@ export function PassageDetailLwcTranslation({ width }: IProps) {
     effectiveLwcCompleted.has(currentIndex) || phase === 'recorded';
 
   const editStep = useMemo(
-    () => canDoSectionStep(currentstep, section),
-    [canDoSectionStep, currentstep, section]
+    () =>
+      canDoSectionStep(currentstep, section) &&
+      !isLinkedNote(passage, sharedResource),
+    [canDoSectionStep, currentstep, section, passage, sharedResource]
   );
 
   const defaultFilename = useMemo(() => {

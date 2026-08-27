@@ -1,7 +1,6 @@
 import { shallowEqual } from 'react-redux';
 import { ICommunityStrings, ISharedStrings, MediaFileD } from '../../model';
 import {
-  Button,
   FormControlLabel,
   IconButton,
   Paper,
@@ -41,7 +40,7 @@ import { UnsavedContext } from '../../context/UnsavedContext';
 import Confirm from '../AlertDialog';
 import Uploader from '../Uploader';
 import AddIcon from '@mui/icons-material/LibraryAddOutlined';
-import { GrowingSpacer, LightTooltip, PriButton } from '../../control';
+import { Button, GrowingSpacer, LightTooltip } from '../../control';
 import { useSelector } from 'react-redux';
 import { communitySelector, sharedSelector } from '../../selector';
 import { passageDefaultFilename } from '../../utils/passageDefaultFilename';
@@ -49,6 +48,7 @@ import PassageDetailChooser from './PassageDetailChooser';
 import ArtifactStatus from '../ArtifactStatus';
 import { useOrbitData } from '../../hoc/useOrbitData';
 import { useStepPermissions } from '../../utils/useStepPermission';
+import { isLinkedNote } from '../../crud/isLinkedNote';
 import { btDefaultSegParams } from './btDefaultSegParams';
 import DiscussionPanel from '../../components/Discussions/DiscussionPanel';
 import { RecordKeyMap, RecordTransformBuilder } from '@orbit/records';
@@ -140,6 +140,7 @@ export function PassageDetailItem(props: IProps) {
   const [verses, setVerses] = useState('');
   const cancelled = useRef(false);
   const { canDoSectionStep } = useStepPermissions();
+  const linkedNote = isLinkedNote(passage, sharedResource);
   const { getOrgDefault, setOrgDefault, canSetOrgDefault } = useOrgDefaults();
   const [segParams, setSegParams] = useState<IRegionParams>(btDefaultSegParams);
   const toolId = 'RecordBackTranslationTool';
@@ -200,7 +201,6 @@ export function PassageDetailItem(props: IProps) {
     return rowData.some(
       (r) => typeNames.includes(r.artifactType) && r.sourceVersion === version
     );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rowData, mediafileId, mediafiles, slugs, localizedArtifactType]);
 
   useEffect(() => {
@@ -371,9 +371,10 @@ export function PassageDetailItem(props: IProps) {
   };
 
   const editStep = useMemo(
-    () => canDoSectionStep(currentstep, section),
-    [canDoSectionStep, currentstep, section]
+    () => canDoSectionStep(currentstep, section) && !linkedNote,
+    [canDoSectionStep, currentstep, section, linkedNote]
   );
+  const canRecord = allowRecord && !linkedNote;
 
   return (
     <div>
@@ -422,15 +423,15 @@ export function PassageDetailItem(props: IProps) {
                       width={paneWidth}
                     />
                   </Box>
-                  {allowRecord && (
+                  {canRecord && (
                     <Box sx={rowProp}>
                       <Button
                         sx={buttonProp}
                         id="pdRecordUpload"
-                        onClick={handleUpload}
                         title={ts.uploadMediaSingular}
+                        startIcon={<AddIcon />}
+                        onClick={handleUpload}
                       >
-                        <AddIcon />
                         {ts.uploadMediaSingular}
                       </Button>
                       <GrowingSpacer />
@@ -495,7 +496,7 @@ export function PassageDetailItem(props: IProps) {
                         ? JSON.stringify(getCurrentSegment())
                         : '{}'
                     }
-                    allowRecord={allowRecord}
+                    allowRecord={canRecord}
                     sourceMediaId={mediafileId}
                     artifactId={recordTypeId}
                     performedBy={speaker}
@@ -521,18 +522,19 @@ export function PassageDetailItem(props: IProps) {
                       {statusText}
                     </Typography>
                     <GrowingSpacer />
-                    <PriButton
+                    <Button
                       id="rec-save"
                       sx={buttonProp}
-                      onClick={handleSave}
+                      color="primary"
                       disabled={
                         !canSave ||
                         (isPhraseSegmentArtifact(recordType) &&
                           (segString || '{}') === '{}')
                       }
+                      onClick={handleSave}
                     >
                       {ts.save}
-                    </PriButton>
+                    </Button>
                   </Box>
                 </Box>
                 <Box>

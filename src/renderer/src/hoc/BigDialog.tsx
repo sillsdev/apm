@@ -17,7 +17,7 @@ import {
   SxProps,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
-import { PriButton, AltButton, GrowingSpacer } from '../control';
+import { Button, GrowingSpacer, rowSx } from '../control';
 import { useSnackBar } from './SnackBar';
 import { BigDialogBp } from './BigDialogBp';
 
@@ -288,17 +288,23 @@ export function BigDialog({
       <DialogContent sx={dialogContentSx}>{children}</DialogContent>
       {(showBottomCloseButton || onCancel || onSave) && (
         <DialogActions sx={{ justifyContent: 'center' }}>
-          {showBottomCloseButton && (
-            <AltButton id="bigCloseBottom" onClick={handleClose}>
-              {bottomCloseLabel || ts.close}
-            </AltButton>
-          )}
-          {onCancel && (
-            <AltButton id="bigCancel" onClick={onCancel} sx={{ color: 'grey' }}>
-              {ts.cancel}
-            </AltButton>
-          )}
-          {onSave && <PriButton onClick={onSave}>{ts.save}</PriButton>}
+          <Box sx={rowSx}>
+            {showBottomCloseButton && (
+              <Button id="bigCloseBottom" onClick={handleClose}>
+                {bottomCloseLabel || ts.close}
+              </Button>
+            )}
+            {onCancel && (
+              <Button id="bigCancel" sx={{ color: 'grey' }} onClick={onCancel}>
+                {ts.cancel}
+              </Button>
+            )}
+            {onSave && (
+              <Button color="primary" onClick={onSave}>
+                {ts.save}
+              </Button>
+            )}
+          </Box>
         </DialogActions>
       )}
     </StyledDialog>

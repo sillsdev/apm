@@ -1474,6 +1474,7 @@ export interface IResourceStrings extends Localize.LocalizedStringsMethods {
     "source": string;
     "terms": string;
     "title": string;
+    "unlinkNote": string;
     "versions": string;
 };
 
@@ -1951,6 +1952,7 @@ export interface IVoiceStrings extends Localize.LocalizedStringsMethods {
     "myProjects": string;
     "personalize": string;
     "personalizeTitle": string;
+    "rightsHolder": string;
     "scope": string;
     "stAge": string;
     "stCategories": string;
@@ -1962,7 +1964,8 @@ export interface IVoiceStrings extends Localize.LocalizedStringsMethods {
     "stMyLangs": string;
     "stNotGiven": string;
     "stNotIdentified": string;
-    "stStatement": string;
+    "aiipStatement": string;
+    "ipStatement": string;
     "stTeam": string;
     "stTeamClause": string;
     "stThisTeam": string;

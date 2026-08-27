@@ -34,6 +34,7 @@ import {
 } from '../../../../utils/namedSegments';
 import { refMatch } from '../../../../utils/refMatch';
 import { useStepPermissions } from '../../../../utils/useStepPermission';
+import { isLinkedNote } from '../../../../crud/isLinkedNote';
 import { useMobile } from '../../../../utils/useMobile';
 import Confirm from '../../../AlertDialog';
 import { useSnackBar, AlertSeverity } from '../../../../hoc/SnackBar';
@@ -127,6 +128,7 @@ export default function PassageDetailMarkVerses({ width }: MarkVersesProps) {
     currentSegmentIndex,
     setCurrentSegment,
     rowData,
+    sharedResource,
   } = usePassageDetailContext();
   const [memory] = useGlobal('memory');
   const [, setComplete] = useGlobal('progress');
@@ -174,7 +176,9 @@ export default function PassageDetailMarkVerses({ width }: MarkVersesProps) {
    * seed runs once per media rather than reloading the waveform on every save. */
   const waveformSeededForMediaRef = useRef<string | undefined>(undefined);
   const { canDoSectionStep } = useStepPermissions();
-  const hasPermission = canDoSectionStep(currentstep, section);
+  const hasPermission =
+    canDoSectionStep(currentstep, section) &&
+    !isLinkedNote(passage, sharedResource);
   const { isMobile } = useMobile();
   const { localizedArtifactType } = useArtifactType();
   const { showMessage } = useSnackBar();

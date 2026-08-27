@@ -28,7 +28,7 @@ import { useFetchMediaUrl } from '../crud';
 import MediaRecord from './MediaRecord';
 import { UnsavedContext } from '../context/UnsavedContext';
 import SpeakerName from './SpeakerName';
-import { AltButton, PriButton } from '../control';
+import { Button } from '../control';
 import Busy from './Busy';
 
 const audioDlgWidth = 'min(680px, calc(100vw - 32px))';
@@ -248,6 +248,7 @@ function PassageRecordDlg(props: IProps) {
                 onRights={setHasRights}
                 onChange={handleSpeaker}
                 team={team}
+                aiip={false}
               />
             )}
             {busy && <Busy />}
@@ -290,23 +291,22 @@ function PassageRecordDlg(props: IProps) {
           </DialogContent>
           <DialogActions>
             <StatusMessage variant="caption">{statusText}</StatusMessage>
-            <AltButton
+            <Button
               id="rec-cancel"
-              onClick={handleCancel}
               disabled={!canCancel || recording}
+              onClick={handleCancel}
             >
               {recordStrings.cancel}
-            </AltButton>
-            <PriButton
+            </Button>
+            <Button
               id="rec-save"
-              onClick={() => startSave(myToolId)}
-              disabled={
-                busy || (ready && !ready()) || !canSave || !hasRights
-              }
               sx={{ m: 1, minWidth: '96px' }}
+              color="primary"
+              disabled={busy || (ready && !ready()) || !canSave || !hasRights}
+              onClick={() => startSave(myToolId)}
             >
               {saveText || recordStrings.save}
-            </PriButton>
+            </Button>
           </DialogActions>
         </>
       ) : (
@@ -324,9 +324,7 @@ function PassageRecordDlg(props: IProps) {
           // Only Media uploads gate the drop zone on speaker rights (and show
           // SpeakerName). Resource/ProjectResource must leave onSpeaker unset
           // so hasRights stays true and the file drop target is clickable.
-          onSpeaker={
-            uploadType === UploadType.Media ? onSpeaker : undefined
-          }
+          onSpeaker={uploadType === UploadType.Media ? onSpeaker : undefined}
           team={team}
           inValue={inValue}
           onNonAudio={onNonAudio}

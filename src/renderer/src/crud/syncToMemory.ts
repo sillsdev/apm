@@ -68,6 +68,8 @@ export const recToMemory = async ({ recId, remote, memory }: RecSyncProps) => {
   const rec = (await remote.query((q) =>
     q.findRecord(recId)
   )) as InitializedRecord;
+  // Orbit 0.17 addRecord overwrites via setRecordSync; it does not
+  // throw if the id already exists (unlike backupToMemory's restore-time guard).
   await memory.sync((t) => t.addRecord(rec));
   return rec;
 };

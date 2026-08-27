@@ -24,7 +24,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import SearchIcon from '@mui/icons-material/Search';
-import { AltButton } from '../control';
+import { Button } from '../control';
 import { shallowEqual, useSelector } from 'react-redux';
 import { graphicStringsSelector } from '../selector';
 import { IGraphicStrings } from '@model/index';
@@ -564,12 +564,12 @@ export function GraphicImageFilter({
             borderColor: 'divider',
           }}
         >
-          <AltButton onClick={handleClear} id="graphic-filter-clear">
+          <Button id="graphic-filter-clear" onClick={handleClear}>
             {labels.clear}
-          </AltButton>
-          <AltButton onClick={handleReset} id="graphic-filter-reset">
+          </Button>
+          <Button id="graphic-filter-reset" onClick={handleReset}>
             {labels.resetToDefault}
-          </AltButton>
+          </Button>
         </Box>
       </Popover>
     </>

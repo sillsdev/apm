@@ -23,7 +23,7 @@ import {
   orgDefaultConsCheckComp,
 } from '../../crud';
 import ConsultantCheckReview from './ConsultantCheckReview';
-import { ActionRow, AltButton, GrowingDiv, PriButton } from '../../control';
+import { Button, ActionRow, GrowingDiv } from '../../control';
 import { shallowEqual, useSelector } from 'react-redux';
 import { consultantSelector, sharedSelector } from '../../selector';
 import BigDialog from '../../hoc/BigDialog';
@@ -31,6 +31,7 @@ import ConsultantCheckCompare from './ConsultantCheckCompare';
 import MediaPlayer from '../MediaPlayer';
 import { useSnackBar } from '../../hoc/SnackBar';
 import { useStepPermissions } from '../../utils/useStepPermission';
+import { isLinkedNote } from '../../crud/isLinkedNote';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -74,9 +75,12 @@ export function ConsultantCheck({ width }: IProps) {
     currentstep,
     passage,
     section,
+    sharedResource,
   } = usePassageDetailContext();
   const { canDoSectionStep } = useStepPermissions();
-  const hasPermission = canDoSectionStep(currentstep, section);
+  const hasPermission =
+    canDoSectionStep(currentstep, section) &&
+    !isLinkedNote(passage, sharedResource);
   const [memory] = useGlobal('memory');
   const [checkItems, setCheckItems] = useState<ArtifactTypeSlug[]>([]);
   const [approved, setApproved] = useState<ArtifactTypeSlug[]>([]);
@@ -314,27 +318,32 @@ export function ConsultantCheck({ width }: IProps) {
           <ActionRow data-testid="action-row">
             {checkItems.length > 1 && (
               <>
-                <AltButton
+                <Button
                   data-testid="compare-button"
                   onClick={() => handleCompareOpen(true)}
                 >
                   {t.compare}
-                </AltButton>
+                </Button>
                 <GrowingDiv />
               </>
             )}
             {approved.includes(item) ? (
-              <AltButton data-testid="alt-button" onClick={handleChecked(item)}>
-                {t.furtherReview}
-              </AltButton>
-            ) : (
-              <PriButton
-                data-testid="pri-button"
-                onClick={handleChecked(item)}
+              <Button
+                data-testid="alt-button"
                 disabled={!hasPermission}
+                onClick={handleChecked(item)}
+              >
+                {t.furtherReview}
+              </Button>
+            ) : (
+              <Button
+                data-testid="pri-button"
+                color="primary"
+                disabled={!hasPermission}
+                onClick={handleChecked(item)}
               >
                 {t.checked}
-              </PriButton>
+              </Button>
             )}
           </ActionRow>
         </TabPanel>

@@ -15,7 +15,7 @@ import { useLocation, useParams } from 'react-router-dom';
 import Check from '@mui/icons-material/Check';
 import { useOrgDefaults } from '../crud/useOrgDefaults';
 import { BurritoHeader } from '../components/BurritoHeader';
-import { AltButton, PriButton } from '../control';
+import { Button } from '../control';
 import { useCreateBurrito } from '../burrito/useCreateBurrito';
 import { useSnackBar } from '../hoc/SnackBar';
 import { shallowEqual, useSelector } from 'react-redux';
@@ -181,27 +181,26 @@ export function ScriptureBurrito() {
 
         <Stack direction="row" spacing={1} alignItems="center">
           {isCreating && (
-            <AltButton
-              onClick={cancel}
-              aria-label={t.getString('cancelCreation')}
-            >
+            <Button aria-label={t.getString('cancelCreation')} onClick={cancel}>
               {ts.cancel}
-            </AltButton>
+            </Button>
           )}
-          <PriButton
-            onClick={handleCreateBurrito}
+          <Button
+            color="primary"
             disabled={!ready() || isCreating}
+            onClick={handleCreateBurrito}
           >
             {t.create}
-          </PriButton>
+          </Button>
           {allowOpen && (
-            <PriButton
+            <Button
+              color="primary"
               onClick={() =>
                 getResultPath().then((path) => ipc?.openPath(path))
               }
             >
               {t.open}
-            </PriButton>
+            </Button>
           )}
         </Stack>
       </Stack>

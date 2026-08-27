@@ -17,7 +17,7 @@ import {
 import related from '../crud/related';
 import { burritoContents } from './BurritoContents';
 import { BurritoType } from './BurritoType';
-import { AltButton } from '../control/AltButton';
+import { Button } from '../control';
 import packageJson from '../../package.json';
 import { toCamel } from '../utils';
 import { shallowEqual, useSelector } from 'react-redux';
@@ -131,9 +131,9 @@ export function BurritoWrapper() {
       onSave={handleSave}
       saveDisabled={!metaData}
       action={
-        <AltButton onClick={handleRefresh} disabled={!metaData}>
+        <Button disabled={!metaData} onClick={handleRefresh}>
           Refresh
-        </AltButton>
+        </Button>
       }
     >
       {metaData ? <MetadataView wrapper={metaData} /> : ts.loading}

@@ -10,7 +10,7 @@ import { AlertSeverity, useSnackBar } from '../../hoc/SnackBar';
 import { remoteId } from '../../crud/remoteId';
 import { RecordKeyMap } from '@orbit/records';
 import { useGlobal } from '../../context/useGlobal';
-import { ActionRow, AltButton } from '../../control';
+import { Button, ActionRow } from '../../control';
 import {
   ICardsStrings,
   ISharedStrings,
@@ -331,7 +331,7 @@ export default function AsrProgress({
           </Typography>
         )}
         <ActionRow>
-          <AltButton onClick={closing}>{ts.close}</AltButton>
+          <Button onClick={closing}>{ts.close}</Button>
         </ActionRow>
       </Stack>
     </Box>

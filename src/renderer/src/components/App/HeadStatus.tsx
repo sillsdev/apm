@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Button, IconButton, Tooltip } from '@mui/material';
+import { IconButton, Tooltip } from '@mui/material';
 import CloudOffIcon from '@mui/icons-material/CloudOff';
 import CloudOnIcon from '@mui/icons-material/Cloud';
 import SystemUpdateIcon from '@mui/icons-material/SystemUpdateAlt';
@@ -28,6 +28,7 @@ import { useMounted } from '../../utils/useMounted';
 import logError, { Severity } from '../../utils/logErrorService';
 import { infoMsg } from '../../utils/infoMsg';
 import { MainAPI } from '@model/main-api';
+import { Button } from '../../control/Button';
 const ipc = window?.api as MainAPI;
 
 interface IProps {

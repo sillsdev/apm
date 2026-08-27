@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { shallowEqual, useSelector } from 'react-redux';
 import { DialogMode } from '../../model';
 import TeamDialog from './TeamDialog';
-import { AltButton } from '../../control';
+import { Button } from '../../control';
 import AddIcon from '@mui/icons-material/Add';
 import ImportTab from '../ImportTab';
 import { BigDialogBp } from '../../hoc/BigDialogBp';
@@ -58,16 +58,17 @@ const TeamActions = () => {
 
   return (
     <RootBox>
-      {(!offline && connected) && (
-        <AltButton id="TeamActAdd" sx={{ mb: 2 }} onClick={handleAddClick}>
+      {!offline && connected && (
+        <Button id="TeamActAdd" sx={{ mb: 2 }} onClick={handleAddClick}>
           {t.addTeam}
-        </AltButton>
+        </Button>
       )}
-      <AltButton id="teamActImport" sx={{ mb: 2 }} onClick={handleImportClick}>
+      <Button id="teamActImport" sx={{ mb: 2 }} onClick={handleImportClick}>
         {t.import}
-      </AltButton>
+      </Button>
       {isElectron && !offline && (
-        <AltButton
+        <Button
+          disableTypography
           id="teamActPendingUploads"
           sx={{ mb: 2 }}
           onClick={() => setPendingOpen(true)}
@@ -79,21 +80,22 @@ const TeamActions = () => {
           >
             <span>{mt.pendingUploadMenu}</span>
           </Badge>
-        </AltButton>
+        </Button>
       )}
       {!offline && userIsSharedContentAdmin && (
-        <AltButton
+        <Button
+          disableTypography
           id="contentCreator"
           sx={{ mb: 2 }}
           onClick={handleContentClick}
         >
           <AddIcon fontSize="small" />
-        </AltButton>
+        </Button>
       )}
       {isDeveloper && (
-        <AltButton id="Error" sx={{ mt: 2 }} onClick={() => navigate('/error')}>
+        <Button id="Error" sx={{ mt: 2 }} onClick={() => navigate('/error')}>
           Error
-        </AltButton>
+        </Button>
       )}
       <TeamDialog
         mode={DialogMode.add}

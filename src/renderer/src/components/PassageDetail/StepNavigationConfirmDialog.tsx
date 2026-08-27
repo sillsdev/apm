@@ -1,5 +1,4 @@
 import {
-  Button,
   Dialog,
   DialogActions,
   DialogContent,
@@ -9,6 +8,7 @@ import {
 import { shallowEqual, useSelector } from 'react-redux';
 import { ISharedStrings, IWorkflowStepsStrings } from '../../model';
 import { sharedSelector, workflowStepsSelector } from '../../selector';
+import { Button } from '../../control/Button';
 
 interface IProps {
   open: boolean;

@@ -1,6 +1,6 @@
-import { Stack } from '@mui/material';
+import { Stack, Box } from '@mui/material';
 import MediaRecord from './MediaRecord';
-import { ActionRow, AltButton, PriButton } from './StepEditor';
+import { ActionRow, Button, rowSx } from '../control';
 import { ISharedStrings } from '../model';
 import { shallowEqual, useSelector } from 'react-redux';
 import { sharedSelector } from '../selector';
@@ -74,10 +74,12 @@ export default function TitleRecord(props: IProps) {
         autoStart={false}
       />
       <ActionRow>
-        <AltButton onClick={onCancel}>{ts.cancel}</AltButton>
-        <PriButton disabled={!canSave} onClick={onSave}>
-          {ts.save}
-        </PriButton>
+        <Box sx={rowSx}>
+          <Button onClick={onCancel}>{ts.cancel}</Button>
+          <Button color="primary" disabled={!canSave} onClick={onSave}>
+            {ts.save}
+          </Button>
+        </Box>
       </ActionRow>
     </Stack>
   );

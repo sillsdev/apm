@@ -23,20 +23,28 @@ jest.mock('@ncdai/react-wheel-picker', () => ({
     value: string;
     onValueChange: (next: string) => void;
   }) => (
-    <select
-      data-testid="wheel-select"
-      value={value}
-      onChange={(event) => onValueChange(event.target.value)}
-    >
-      {options.map((option) => (
-        <option
-          key={option.value === '' ? 'empty' : option.value}
-          value={option.value}
-        >
-          {option.label}
-        </option>
-      ))}
-    </select>
+    <>
+      {/*
+       * Stand in for the library's internal focusable div: the real one carries
+       * `data-rwp`, owns the Arrow-key handling, and is what the component
+       * focuses on click (TT-7622).
+       */}
+      <div data-rwp tabIndex={0} data-testid="wheel-rwp" />
+      <select
+        data-testid="wheel-select"
+        value={value}
+        onChange={(event) => onValueChange(event.target.value)}
+      >
+        {options.map((option) => (
+          <option
+            key={option.value === '' ? 'empty' : option.value}
+            value={option.value}
+          >
+            {option.label}
+          </option>
+        ))}
+      </select>
+    </>
   ),
 }));
 
@@ -96,11 +104,13 @@ const renderDialog = (
 
 const dialog = () => screen.getByRole('dialog');
 
+/** The wheel column wrapper (the element the component binds onClick to). */
+const wheelGroup = (label: string) =>
+  within(dialog()).getByRole('group', { name: label });
+
 /** The stub select backing the wheel with this aria-label. */
-const wheel = (label: string) => {
-  const group = within(dialog()).getByRole('group', { name: label });
-  return within(group).getByTestId('wheel-select');
-};
+const wheel = (label: string) =>
+  within(wheelGroup(label)).getByTestId('wheel-select');
 
 /** The option values offered by a wheel, in order. */
 const optionValues = (label: string) =>
@@ -160,6 +170,20 @@ describe('EditReferenceDropdown unrestricted with multiple chapters', () => {
     });
 
     expect(optionValues('start verse number')).toEqual(['78', '79', '80']);
+  });
+
+  test('clicking a wheel focuses the element that handles the arrow keys', async () => {
+    // TT-7622: the library preventDefaults mousedown, so a click never moves
+    // focus to its internal `[data-rwp]` div and the library's own Arrow-key
+    // handler never fires. The component focuses that div on click; without
+    // that, the arrows do nothing after a click.
+    const user = userEvent.setup();
+    renderDialog();
+
+    const group = wheelGroup('start verse number');
+    await user.click(group);
+
+    expect(within(group).getByTestId('wheel-rwp')).toHaveFocus();
   });
 
   test('saves the edited chapter:verse - chapter:verse reference', async () => {

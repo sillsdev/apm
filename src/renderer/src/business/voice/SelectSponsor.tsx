@@ -1,6 +1,6 @@
 import * as React from 'react';
-import { ActionRow, AltButton, GrowingSpacer, PriButton } from '../../control';
-import { Divider, Stack, TextField } from '@mui/material';
+import { Button, ActionRow, GrowingSpacer, rowSx } from '../../control';
+import { Divider, Stack, TextField, Box } from '@mui/material';
 import { ISharedStrings, Organization } from '../../model';
 import { shallowEqual, useSelector } from 'react-redux';
 import { sharedSelector } from '../../selector';
@@ -57,8 +57,12 @@ export default function SelectSponsor({ team, refresh, onOpen }: ISelectVoice) {
       <Divider sx={{ pt: 2 }} />
       <ActionRow>
         <GrowingSpacer />
-        <AltButton onClick={onOpen}>{t.cancel}</AltButton>
-        <PriButton onClick={handleSave}>{t.save}</PriButton>
+        <Box sx={rowSx}>
+          <Button onClick={onOpen}>{t.cancel}</Button>
+          <Button color="primary" onClick={handleSave}>
+            {t.save}
+          </Button>
+        </Box>
       </ActionRow>
     </Stack>
   );

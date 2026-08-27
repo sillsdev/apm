@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { waitForIt } from '../utils/waitForIt';
 import { findClauseSplitPoint } from '../utils/clauseSplitSilence';
+import { clampSharedBoundary } from '../utils/sharedSegmentBoundary';
 import RegionsPlugin, {
   Region,
   RegionParams,
@@ -8,6 +9,11 @@ import RegionsPlugin, {
 } from 'wavesurfer.js/dist/plugins/regions';
 import WaveSurfer from 'wavesurfer.js';
 import { IMarker } from './useWaveSurfer';
+import { waveformPeaks } from './waveformPeaks';
+import {
+  extractSilenceRegions,
+  segmentPeakCount,
+} from './extractSilenceRegions';
 import { useTheme } from '@mui/material';
 
 export type RegionColorRole = 'base' | 'current' | 'new';
@@ -117,7 +123,21 @@ export function useWaveSurferRegions(
   verses?: string,
   hasSegmentUndo?: boolean,
   applyRegionColor?: ApplyRegionColor,
-  lockSegmentSelection?: boolean
+  lockSegmentSelection?: boolean,
+  getDecodedBuffer?: () => AudioBuffer | undefined,
+  /**
+   * Suppress drag-to-create-region (the red loop region) even in single-region
+   * mode. Read once, where setupRegions configures the regions plugin on the
+   * WaveSurfer 'ready' event — it is not reactive, so toggling it afterwards has
+   * no effect until the next load. Pass a value that is constant for the
+   * lifetime of the player.
+   */
+  disableDragSelection?: boolean,
+  /**
+   * A region was clicked. Distinct from onCurrentRegion, which also fires for
+   * playhead-driven selection: only a deliberate user click reaches this.
+   */
+  onRegionClicked?: (region: IRegion) => void
 ) {
   const theme = useTheme();
   const wsRef = useRef<WaveSurfer | null>(ws);
@@ -132,7 +152,6 @@ export function useWaveSurferRegions(
   const loadingRef = useRef(false);
   const destroyingRef = useRef(false);
   const paramsRef = useRef<IRegionParams | undefined>(undefined);
-  const peaksRef = useRef<Array<number> | undefined>(undefined);
   const lastClickTimeRef = useRef<number>(0);
   const lastClickedRegionRef = useRef<string>(''); //for both clicks and double clicks
   const lastDoubleClickTimeRef = useRef<number>(0);
@@ -142,6 +161,9 @@ export function useWaveSurferRegions(
     applyRegionColor
   );
   const lockSegmentSelectionRef = useRef(lockSegmentSelection ?? false);
+  // setupRegions runs from a once-registered 'ready' handler, so it can only
+  // reach this prop through a ref (like singleRegionRef).
+  const disableDragSelectionRef = useRef(disableDragSelection ?? false);
   const regionBeforeClickRef = useRef<Region | undefined>(undefined);
   const playTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
   /** Suppress region-in while the playhead is moved programmatically (table row click). */
@@ -173,6 +195,10 @@ export function useWaveSurferRegions(
   useEffect(() => {
     lockSegmentSelectionRef.current = lockSegmentSelection ?? false;
   }, [lockSegmentSelection]);
+
+  useEffect(() => {
+    disableDragSelectionRef.current = disableDragSelection ?? false;
+  }, [disableDragSelection]);
 
   const regionColor = (
     role: RegionColorRole,
@@ -278,6 +304,14 @@ export function useWaveSurferRegions(
     } else {
       setCurrentRegion(r);
       if (!wasCurrentRegion) {
+        // Only a click that actually changes the selection counts as deliberate
+        // navigation. Clicking the already-current region is a no-op that must
+        // not disarm a pending overshoot swallow (see onRegionClicked consumers).
+        onRegionClicked?.({
+          start: r.start,
+          end: r.end,
+          label: r.content?.textContent || '',
+        });
         goto(r.start, false, { start: r.start, end: r.end });
         e.stopPropagation();
       }
@@ -385,31 +419,37 @@ export function useWaveSurferRegions(
     }
   };
   const wsPlayRegion = (r: IRegion, startAtCurrent: boolean = false) => {
+    // updatingRef suppresses the shared-boundary clamp while *we* are moving
+    // region bounds; it must be released on every exit path. Players with
+    // forceRegionOnly (Phrase Back Translate, Careful Speech) route every play
+    // through here, so a latched flag left the clamp off for the rest of the
+    // session and dragged boundaries overlapped or disconnected (TT-7625).
     updatingRef.current = true;
-    let reg = findRegion(r.start, true);
-    if (!reg) reg = findRegionByIRegion(r);
-    if (!reg) {
-      updatingRef.current = false;
-      return false;
-    }
-    // region-out uses this to snap back and fire onRegionPlayEnd (CarefulSpeech, prev/next)
-    playRegionRef.current = reg;
-    const currentTime = ws?.getCurrentTime() ?? progress();
-    const inRegion = isInRegion(reg, currentTime);
-    if (!inRegion) goto(r.start, true);
-    if (wsRef.current) {
-      if (startAtCurrent && inRegion) {
-        wsRef.current.play(currentTime, reg.end);
+    try {
+      let reg = findRegion(r.start, true);
+      if (!reg) reg = findRegionByIRegion(r);
+      if (!reg) return false;
+      // region-out uses this to snap back and fire onRegionPlayEnd (CarefulSpeech, prev/next)
+      playRegionRef.current = reg;
+      const currentTime = ws?.getCurrentTime() ?? progress();
+      const inRegion = isInRegion(reg, currentTime);
+      if (!inRegion) goto(r.start, true);
+      if (wsRef.current) {
+        if (startAtCurrent && inRegion) {
+          wsRef.current.play(currentTime, reg.end);
+        } else {
+          wsRef.current.play(reg.start, reg.end);
+        }
       } else {
-        wsRef.current.play(reg.start, reg.end);
+        playRegion(reg);
       }
-    } else {
-      playRegion(reg);
+      // Sync playing state and UI so parent/effects don't override; region-out
+      // uses playRegionRef so snap-back still works.
+      playTimeoutRef.current = setTimeout(() => setPlaying(true), 100);
+      return true;
+    } finally {
+      updatingRef.current = false;
     }
-    // Sync playing state and UI so parent/effects don't override; region-out
-    // uses playRegionRef so snap-back still works.
-    playTimeoutRef.current = setTimeout(() => setPlaying(true), 100);
-    return true;
   };
   // Cleanup function to remove all event listeners
   const cleanupEventListeners = () => {
@@ -639,7 +679,7 @@ export function useWaveSurferRegions(
 
       // Enable drag selection AFTER all event listeners are set up
       // This ensures the internal listeners set up by enableDragSelection aren't removed
-      if (singleRegionRef.current) {
+      if (singleRegionRef.current && !disableDragSelectionRef.current) {
         regionsPlugin.enableDragSelection({
           color: 'rgba(255, 0, 0, 0.1)',
         });
@@ -728,15 +768,11 @@ export function useWaveSurferRegions(
     updatingRef.current = false;
   };
 
-  /** Smallest segment we allow a boundary drag to leave behind. Keeps a region
-   *  from collapsing (or inverting) when its shared boundary is pushed all the
-   *  way into a neighbor, and stays above the 0.03s load filter in loadRegions. */
-  const MIN_SEGMENT = 0.05;
-
   /**
-   * Keep resized regions non-overlapping. In multi-region (Mark Verses) mode
-   * the end of one region is always the start of the next, so a boundary is
-   * shared by two regions. When the user drags one boundary we:
+   * Keep resized regions non-overlapping. In multi-region (Mark Verses,
+   * Careful Speech, Phrase Back Translate) mode the end of one region is
+   * always the start of the next, so a boundary is shared by two regions.
+   * When the user drags one boundary we:
    *   - clamp it so it can't cross the neighbor's far boundary (no overlap) —
    *     the first/last region's outer edge stays pinned to 0 / duration; and
    *   - shift the single adjacent neighbor's shared boundary to follow, so the
@@ -748,42 +784,29 @@ export function useWaveSurferRegions(
   const constrainResizedRegion = (r: Region, side?: 'start' | 'end') => {
     const prev = findPrevRegion(r) as Region | undefined;
     const next = findNextRegion(r, false) as Region | undefined;
+    const { start, end, boundary } = clampSharedBoundary({
+      segment: { start: r.start, end: r.end },
+      prev,
+      next,
+      duration: duration(),
+      side,
+    });
 
     if (side !== 'end') {
-      // dragging the region's start (or unknown): clamp between the previous
-      // region's start (+gap) and this region's own end (-gap).
-      const upper = r.end - MIN_SEGMENT;
-      const start = prev
-        ? roundToFiveDecimals(
-            Math.max(prev.start + MIN_SEGMENT, Math.min(r.start, upper))
-          )
-        : 0; // first region is pinned to the waveform start
       if (start !== r.start) updateRegion(r, { start });
       if (prev && prev.end !== start) updateRegion(prev, { end: start });
     }
     if (side !== 'start') {
-      // dragging the region's end (or unknown): clamp between this region's own
-      // start (+gap) and the next region's end (-gap).
-      const lower = r.start + MIN_SEGMENT;
-      const end = next
-        ? roundToFiveDecimals(
-            Math.min(next.end - MIN_SEGMENT, Math.max(r.end, lower))
-          )
-        : duration(); // last region is pinned to the waveform end
       if (end !== r.end) updateRegion(r, { end });
       if (next && next.start !== end) updateRegion(next, { start: end });
     }
-    return side === 'start' ? r.start : r.end;
+    return boundary;
   };
 
   const getPeaks = (num: number = 512) => {
-    if (!peaksRef.current && wsRef.current) {
-      const peaks = wsRef.current.exportPeaks({ maxLength: num });
-      if (peaks.length > 0 && Array.isArray(peaks[0])) {
-        peaksRef.current = peaks[0];
-      }
-    }
-    return peaksRef.current;
+    const buffer = getDecodedBuffer?.();
+    if (!buffer?.length) return undefined;
+    return waveformPeaks(buffer, num)[0];
   };
 
   const mergeVerses = (autosegs: IRegion[]): IRegion[] => {
@@ -848,103 +871,11 @@ export function useWaveSurferRegions(
   };
 
   const extractRegions = (params: IRegionParams) => {
-    // Silence params
-    const minValue = params.silenceThreshold || 0.002;
     const minSeconds = params.timeThreshold || 0.05;
-    const minRegionLenSeconds = params.segLenThreshold || 0.5;
-
-    let numPeaks = Math.floor(duration() / minSeconds);
-    numPeaks = Math.min(Math.max(numPeaks, 512), 512 * 16);
+    const numPeaks = segmentPeakCount(duration(), minSeconds);
     const peaks = getPeaks(numPeaks);
     if (!peaks) return [];
-
-    const length = peaks.length;
-    const coef = duration() / length;
-    const minLenSilence = Math.ceil(minSeconds / coef);
-
-    // Gather silence indeces
-    const silences: number[] = [];
-
-    peaks.forEach((val, index) => {
-      if (Math.abs(val) < minValue) {
-        silences.push(index);
-      }
-    });
-
-    // Cluster silence values
-    const clusters: number[][] = [];
-    silences.forEach(function (val, index) {
-      if (clusters.length && val === silences[index - 1] + 1) {
-        clusters[clusters.length - 1].push(val);
-      } else {
-        clusters.push([val]);
-      }
-    });
-
-    // Filter silence clusters by minimum length
-    const fClusters = clusters.filter(function (cluster) {
-      return cluster.length >= minLenSilence;
-    });
-
-    // Create regions on the edges of silences
-    const regions = fClusters.map(function (cluster, index) {
-      const next = fClusters[index + 1];
-      return {
-        start: cluster[cluster.length - 1] + 1,
-        end: next ? next[0] - 1 : length,
-      };
-    });
-
-    // Return time-based regions
-    const tRegions = regions.map(function (reg) {
-      return {
-        start: roundToFiveDecimals(reg.start * coef),
-        end: roundToFiveDecimals(reg.end * coef),
-      };
-    });
-
-    if (tRegions.length > 0) {
-      //add a region at zero if not there
-      const firstRegion = tRegions[0];
-      if (firstRegion.start !== 0) {
-        tRegions.unshift({
-          start: 0,
-          end: firstRegion.start,
-        });
-      }
-    }
-    // Combine the regions so the silence is included at the end of the region
-    const sRegions = tRegions.map(function (reg, index) {
-      const next = tRegions[index + 1];
-      return {
-        start: reg.start,
-        end: next ? next.start : duration(),
-      };
-    });
-    let ix = 0;
-    // combine regions shorter than minimum length
-    while (ix < sRegions.length - 1) {
-      if (sRegions[ix].end - sRegions[ix].start < minRegionLenSeconds) {
-        sRegions[ix].end = sRegions[ix + 1].end;
-        sRegions.splice(ix + 1, 1);
-      } else {
-        ix += 1;
-      }
-    }
-    if (sRegions.length > 0) {
-      // In the odd case we have a clip shorter than the minimum, still keep the one
-      // segment rather than cause other errors
-      if (
-        sRegions.length > 1 &&
-        sRegions[sRegions.length - 1].end -
-          sRegions[sRegions.length - 1].start <
-          minRegionLenSeconds
-      )
-        sRegions.splice(-1, 1); //remove the last region if it's too short
-      sRegions[sRegions.length - 1].end = duration();
-    }
-
-    return sRegions;
+    return extractSilenceRegions(peaks, duration(), params);
   };
 
   const setAttribute = (r: Region, attr: string, value: any) => {
@@ -1014,7 +945,6 @@ export function useWaveSurferRegions(
     loop: boolean,
     newRegions: boolean = false
   ) {
-    if (!newRegions) peaksRef.current = undefined; //because I know this is a new wave
     if (!wsRef.current) return false;
     const savedMarkers = clearRegions(false, true);
     loadingRef.current = true;
@@ -1214,14 +1144,8 @@ export function useWaveSurferRegions(
 
   const peaksForParams = (params: IRegionParams) => {
     const minSeconds = params.timeThreshold || 0.05;
-    let numPeaks = Math.floor(duration() / minSeconds);
-    numPeaks = Math.min(Math.max(numPeaks, 512), 512 * 16);
-    if (!wsRef.current) return undefined;
-    const peaks = wsRef.current.exportPeaks({ maxLength: numPeaks });
-    if (peaks.length > 0 && Array.isArray(peaks[0])) {
-      return peaks[0];
-    }
-    return undefined;
+    const numPeaks = segmentPeakCount(duration(), minSeconds);
+    return getPeaks(numPeaks);
   };
 
   function wsFindClauseSplitPoint(

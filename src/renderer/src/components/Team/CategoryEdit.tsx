@@ -6,29 +6,25 @@ import {
   useGraphicCreate,
   useGraphicUpdate,
 } from '../../crud';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import GraphicsIcon from '@mui/icons-material/Image';
 import MediaTitle from '../../control/MediaTitle';
 import Colorful, { ColorfulProps } from '@uiw/react-color-colorful';
 import { useSelector, shallowEqual } from 'react-redux';
-import {
-  CompressedImages,
-  IGraphicInfo,
-  Rights,
-  ApmDim,
-} from '../../utils/useCompression';
-import { GraphicUploader } from '../GraphicUploader';
-import GraphicRights from '../GraphicRights';
+import GraphicPicker from '../GraphicPicker';
+import { saveGraphicRecord, useGraphicPicker } from '../useGraphicPicker';
 import { useGlobal } from '../../context/useGlobal';
 import { useOrbitData } from '../../hoc/useOrbitData';
 import { GraphicD, ICategoryStrings, ISharedStrings } from '../../model';
-import { UploadType } from '../UploadType';
 import { useSnackBar } from '../../hoc/SnackBar';
-import { Avatar, Button, IconButton, styled } from '@mui/material';
+import { Avatar, IconButton, styled } from '@mui/material';
 import { ColorResult } from '@uiw/color-convert';
 import { RecordKeyMap } from '@orbit/records';
 import { categorySelector, sharedSelector } from '../../selector';
 import { apmGraphic } from '../../components/apmGraphic';
+import { Button } from '../../control/Button';
+import JSONAPISource from '@orbit/jsonapi';
+import { recToMemory } from '../../crud/syncToMemory';
 
 const StyledColorful = styled(Colorful)<ColorfulProps>(() => ({
   '& .w-color-alpha': {
@@ -73,15 +69,13 @@ export default function CategoryEdit({
   const graphicCreate = useGraphicCreate();
   const graphicUpdate = useGraphicUpdate();
   const [memory] = useGlobal('memory');
+  const [coordinator] = useGlobal('coordinator');
+  const [offline] = useGlobal('offline');
+  const remote = coordinator?.getSource('remote') as JSONAPISource | undefined;
   const [mediafile, setMediafile] = useState('');
   const [helperText, setHelperText] = useState(helper ?? '');
-  const [graphicRights, setGraphicRights] = useState('');
   const [graphicUri, setGraphicUri] = useState('');
-  const [graphicFullsizeUrl, setGraphicFullsizeUrl] = useState('');
-  const [fullSizeImageSrc, setFullSizeImageSrc] = useState(graphicFullsizeUrl);
   const graphics = useOrbitData<GraphicD[]>('graphic');
-  const [uploadGraphicVisible, setUploadGraphicVisible] = useState(false);
-  const cancelled = useRef(false);
   const { showMessage } = useSnackBar();
   const [color, setColor] = useState('');
   const [showColor, setShowColor] = useState(false);
@@ -91,6 +85,21 @@ export default function CategoryEdit({
 
   const t: ICategoryStrings = useSelector(categorySelector, shallowEqual);
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
+  const graphicPicker = useGraphicPicker(async (images, rights) => {
+    const rec = await saveGraphicRecord({
+      images,
+      rights,
+      graphicRec,
+      resourceType,
+      resourceId,
+      graphicCreate,
+      graphicUpdate,
+      showMessage,
+      saving: ts.saving,
+      uploadSuccess: ts.uploadSuccess,
+    });
+    if (rec) setGraphicRec(rec);
+  });
 
   const handleTitleChange = (value: string) => {
     value = value.replace(/\|/g, '').trim(); // remove pipe character
@@ -106,25 +115,6 @@ export default function CategoryEdit({
     setMediafile(value);
     category.titleMediaId = value;
     onChanged(category);
-  };
-  const handleUploadGraphicVisible = (visible: boolean) => {
-    if (!visible && !cancelled.current) {
-      afterConvert([]).then(() => {
-        setUploadGraphicVisible(false);
-        showMessage(ts.saving);
-      });
-    } else {
-      setUploadGraphicVisible(visible);
-    }
-
-    // Reset graphicFullsizeUrl to match graphicRec when dialog opens or closes
-    // it may have been reset in onFiles and then cancelled.
-    const gr = graphicRec ? apmGraphic(graphicRec) : undefined;
-    setGraphicFullsizeUrl(gr?.url ?? '');
-  };
-
-  const handleRightsChange = (value: string) => {
-    setGraphicRights(value);
   };
 
   useEffect(() => {
@@ -150,71 +140,33 @@ export default function CategoryEdit({
   useEffect(() => {
     if (graphicRec) {
       const gr = apmGraphic(graphicRec);
-      setGraphicRights(gr?.graphicRights ?? '');
       setGraphicUri(gr?.graphicUri ?? '');
-      setGraphicFullsizeUrl(gr?.url ?? '');
     }
   }, [graphicRec]);
 
-  useEffect(() => {
-    if (graphicFullsizeUrl) {
-      // Don't add cache-busting parameter for blob URLs (from File objects)
-      if (graphicFullsizeUrl.startsWith('blob:')) {
-        setFullSizeImageSrc(graphicFullsizeUrl);
-      } else {
-        setFullSizeImageSrc(
-          `${graphicFullsizeUrl}${graphicFullsizeUrl.includes('?') ? '&' : '?'}t=${Date.now()}`
-        );
-      }
-    } else {
-      setFullSizeImageSrc('');
-    }
-  }, [graphicFullsizeUrl]);
-
-  const afterConvert = async (images: CompressedImages[]) => {
-    if (images.length === 0) return;
-
-    const curData = JSON.parse(
-      graphicRec?.attributes?.info || '{}'
-    ) as IGraphicInfo;
-    const infoData: IGraphicInfo = { ...curData, [Rights]: graphicRights };
-
-    images.forEach((image) => {
-      infoData[image.dimension.toString()] = image;
-    });
-    const info = JSON.stringify(infoData);
-    if (graphicRec) {
-      const upd = {
-        ...graphicRec,
-        attributes: { ...graphicRec.attributes, info },
-      };
-      const newrec = (await graphicUpdate(upd)) as GraphicD;
-      setGraphicRec(newrec);
-    } else if (images.length > 0) {
-      setGraphicRec(
-        await graphicCreate({
-          resourceType,
-          resourceId,
-          info,
-        })
-      );
-    }
-    showMessage(ts.uploadSuccess);
-  };
   const handleColor = (color: ColorResult) => {
     category.color = color.hex;
     setColor(color.hex);
     onChanged(category);
   };
   const handleUpload = () => {
-    cancelled.current = false;
-    handleUploadGraphicVisible(true);
-  };
-  const onFiles = (files: File[]) => {
-    if (files.length > 0) {
-      //reset the image shown in the GraphicUploader
-      setGraphicFullsizeUrl(URL.createObjectURL(files[0] as File));
-    } else setGraphicFullsizeUrl('');
+    const gr = graphicRec ? apmGraphic(graphicRec) : undefined;
+    graphicPicker.open({
+      url: gr?.url ?? '',
+      rights: gr?.graphicRights ?? '',
+    });
+    if (!graphicRec || !remote || offline) return;
+    recToMemory({ recId: graphicRec, memory, remote })
+      .then((fresh) => {
+        const rec = fresh as GraphicD;
+        setGraphicRec(rec);
+        const g = apmGraphic(rec);
+        graphicPicker.setCurrentUrl(g?.url ?? '');
+        graphicPicker.setCurrentRights(g?.graphicRights ?? '');
+      })
+      .catch(() => {
+        /* keep cached graphic */
+      });
   };
   return (
     <RowDiv>
@@ -268,34 +220,24 @@ export default function CategoryEdit({
                 onClick={handleUpload}
               />
             ) : (
-              <IconButton sx={pointer} onClick={handleUpload}>
+              <IconButton id="cat-graphic" sx={pointer} onClick={handleUpload}>
                 <GraphicsIcon />
               </IconButton>
             ))}
-          {uploadGraphicVisible && (
-            <GraphicUploader
-              dimension={[1024, 512, ApmDim]}
+          {category.id !== 'newcat' && (
+            <GraphicPicker
+              scripture={false}
+              teamId={teamId}
+              isOpen={graphicPicker.isOpen}
+              onOpen={graphicPicker.onOpen}
+              cancelled={graphicPicker.cancelled}
+              showMessage={graphicPicker.showMessage}
+              dimension={graphicPicker.dimension}
               defaultFilename={defaultMediaName(resourceId.toString())}
-              isOpen={uploadGraphicVisible}
-              onOpen={handleUploadGraphicVisible}
-              showMessage={showMessage}
-              hasRights={Boolean(graphicRights)}
-              finish={afterConvert}
-              cancelled={cancelled}
-              uploadType={UploadType.Graphic}
-              onFiles={onFiles}
-              metadata={
-                <>
-                  <GraphicRights
-                    value={graphicRights ?? ''}
-                    teamId={teamId}
-                    onChange={handleRightsChange}
-                  />
-                  {fullSizeImageSrc && (
-                    <img src={fullSizeImageSrc} alt="new" width={400} />
-                  )}
-                </>
-              }
+              finish={graphicPicker.finish}
+              onSelectedRights={graphicPicker.onSelectedRights}
+              currentUrl={graphicPicker.currentUrl}
+              currentRights={graphicPicker.currentRights}
             />
           )}
         </>

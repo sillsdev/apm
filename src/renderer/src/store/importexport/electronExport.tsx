@@ -926,7 +926,7 @@ export async function electronExport(
       if (p && Array.isArray(p)) return p.length === 1;
       return true; //should never get here
     };
-    let imported = DateTime.utc() as DateTime<true>;
+    let imported: DateTime = DateTime.utc();
     let op: OfflineProject | undefined;
     if (importedDate) {
       imported = importedDate;
@@ -943,12 +943,12 @@ export async function electronExport(
       }
       imported = DateTime.fromISO(
         op?.attributes?.snapshotDate || '1900-01-01T00:00:00.000Z'
-      ) as DateTime<true>;
+      );
       importedDate = imported;
     }
 
     if (!scripturePackage) {
-      await AddSourceEntry(imported.toISO());
+      await AddSourceEntry(imported.toISO() ?? '');
       await AddVersionEntry((backup?.schema.version || 1).toString());
     } else if (expType === ExportType.BURRITO) {
       const userId =

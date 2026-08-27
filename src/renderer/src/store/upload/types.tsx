@@ -68,7 +68,10 @@ export interface MediaUpload {
       'performed-by': string | null;
       topic: string;
       transcription: string | null;
-      'language-bcp47': string | null;
+      // Single lowercase token on the API, NOT dasherized like the other
+      // multi-word attributes — 'language-bcp47' is silently dropped by the
+      // server, which is how Phrase BT takes ended up untagged (TT-7609).
+      languagebcp47: string | null;
     };
     relationships: {
       'last-modified-by-user': {

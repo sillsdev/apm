@@ -17,7 +17,6 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  Button,
   Tooltip,
 } from '@mui/material';
 import * as actions from '../../store';
@@ -67,7 +66,7 @@ import OfflineIcon from '@mui/icons-material/OfflinePin';
 import { useDataChanges, useHome, useJsonParams, useMobile } from '../../utils';
 import { CopyProjectProps } from '../../store';
 import { TokenContext } from '../../context/TokenProvider';
-import { useSnackBar } from '../../hoc/SnackBar';
+import { AlertSeverity, useSnackBar } from '../../hoc/SnackBar';
 import CategoryTabs from './CategoryTabs';
 import { RecordKeyMap } from '@orbit/records';
 import {
@@ -90,6 +89,7 @@ import {
   transcriptionTabSelector,
   vProjectSelector,
 } from '../../selector';
+import { Button } from '../../control/Button';
 
 const PencilSquare = BsPencilSquare as unknown as React.FC<IconBaseProps>;
 
@@ -235,24 +235,24 @@ export const ProjectCard = (props: IProps) => {
 
   useEffect(() => {
     if (copying && copyStatus) {
-      if (copyStatus.errStatus || copyStatus.complete) {
-        if (copyStatus.complete) {
+      if (copyStatus.errStatus) {
+        showMessage(
+          copyStatus.errMsg || copyStatus.statusMsg,
+          AlertSeverity.Error
+        );
+        copyComplete();
+        setCopying(false);
+        setBusy(false);
+      } else if (copyStatus.complete) {
+        showMessage(tt.downloading.replace('{0}', copyStatus.statusMsg ?? ''));
+        forceDataChanges().finally(() => {
+          setBusy(false);
           showMessage(
-            tt.downloading.replace('{0}', copyStatus.statusMsg ?? '')
+            t.copyComplete.replace('{0}', copyStatus.statusMsg ?? '')
           );
-          forceDataChanges().finally(() => {
-            setBusy(false);
-            showMessage(
-              t.copyComplete.replace('{0}', copyStatus.statusMsg ?? '')
-            );
-            copyComplete();
-            setCopying(false);
-          });
-        } else {
-          showMessage(copyStatus.errMsg ?? copyStatus.statusMsg);
           copyComplete();
           setCopying(false);
-        }
+        });
       } else showMessage(copyStatus.statusMsg);
     }
     /* eslint-disable-next-line react-hooks/exhaustive-deps */

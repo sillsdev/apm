@@ -6,15 +6,20 @@ import MediaRecord from './MediaRecord';
 
 type WsAudioPlayerProps = {
   planId?: string;
+  mediaId?: string;
+  loading?: boolean;
   setChanged?: (changed: boolean) => void;
   onDuration?: (duration: number) => void;
   setBlobReady?: (ready: boolean) => void;
   onBlobReady?: (blob: Blob | undefined) => void;
+  onLoadError?: (error: unknown) => void;
   isSaveDisabled?: boolean;
   showWaveformSave?: boolean;
 };
 
 let latestWsProps: WsAudioPlayerProps | undefined;
+/** Every `loading` value WSAudioPlayer was rendered with, in order. */
+let wsLoadingHistory: (boolean | undefined)[] = [];
 let mockSaveRequested: () => boolean;
 let mockUploadMedia: jest.Mock;
 let mockConvertToFormat: jest.Mock;
@@ -28,6 +33,7 @@ jest.mock('../utils/typeLimit', () => ({
 jest.mock('./WSAudioPlayer', () => {
   const MockWSAudioPlayer = (props: WsAudioPlayerProps) => {
     latestWsProps = props;
+    wsLoadingHistory.push(props.loading);
     return <div data-testid="ws-audio-player" />;
   };
   MockWSAudioPlayer.displayName = 'MockWSAudioPlayer';
@@ -111,7 +117,11 @@ jest.mock('react-redux', () => ({
         toobigwarn: 'Too big warn {1}',
       };
     }
-    return { NoSaveWoMedia: 'No media to save', mediaError: 'Media error' };
+    return {
+      NoSaveWoMedia: 'No media to save',
+      mediaError: 'Media error',
+      loading: 'Loading...',
+    };
   },
   shallowEqual: jest.fn(),
 }));
@@ -135,6 +145,7 @@ const defaultProps = {
 describe('MediaRecord save gating', () => {
   beforeEach(() => {
     latestWsProps = undefined;
+    wsLoadingHistory = [];
     capturedAfterUploadCb = undefined;
     jest.clearAllMocks();
     mockSaveRequested = () => false;
@@ -144,6 +155,42 @@ describe('MediaRecord save gating', () => {
 
   afterEach(() => {
     cleanup();
+  });
+
+  it('clears loading on abort without treating it as a missing file', async () => {
+    const setStatusText = jest.fn();
+    render(<MediaRecord {...defaultProps} setStatusText={setStatusText} />);
+
+    await waitFor(() => expect(latestWsProps?.onLoadError).toBeDefined());
+
+    act(() => {
+      latestWsProps?.onLoadError?.(new DOMException('aborted', 'AbortError'));
+    });
+
+    await waitFor(() => {
+      expect(setStatusText).toHaveBeenCalledWith('');
+      expect(latestWsProps?.loading).toBe(false);
+    });
+  });
+
+  // TT-7570: the waveform shows its own "Loading..." overlay whenever it has a
+  // mediaId and loading is true, so pushing the same string into the parent's
+  // status caption printed it twice on Careful Speech.
+  it('leaves the loading message to the waveform overlay', async () => {
+    const setStatusText = jest.fn();
+    render(
+      <MediaRecord
+        {...defaultProps}
+        mediaId="media-1"
+        setStatusText={setStatusText}
+      />
+    );
+
+    await waitFor(() => expect(latestWsProps?.mediaId).toBe('media-1'));
+    // The overlay is driven by loading + mediaId, so it did announce the load.
+    await waitFor(() => expect(wsLoadingHistory).toContain(true));
+
+    expect(setStatusText).not.toHaveBeenCalledWith('Loading...');
   });
 
   it('passes planId through to WSAudioPlayer', async () => {

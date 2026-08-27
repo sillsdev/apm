@@ -11,7 +11,6 @@ import {
 } from '../model';
 import {
   Box,
-  Button,
   Checkbox,
   Dialog,
   DialogContent,
@@ -45,6 +44,7 @@ import ShowLink from '../control/ShowLink';
 import { PublishDestinationEnum } from '../crud';
 import { PassageTypeEnum } from '../model/passageType';
 import { Akuo, Aquifer, ObtHelps } from '../assets/brands';
+import { Button } from '../control/Button';
 
 interface IProps {
   context: 'plan' | 'media';

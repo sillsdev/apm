@@ -4,7 +4,6 @@ import { ICommunityStrings, ISharedStrings, MediaFileD } from '../model';
 import TextField from '@mui/material/TextField';
 import Autocomplete, { createFilterOptions } from '@mui/material/Autocomplete';
 import SupportAgentIcon from '@mui/icons-material/SupportAgent';
-import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
@@ -18,6 +17,7 @@ import { Typography, Stack } from '@mui/material';
 import { useOrbitData } from '../hoc/useOrbitData';
 import { useSnackBar } from '../hoc/SnackBar';
 import { useMobile } from '../utils/index';
+import { Button } from '../control/Button';
 
 interface NameOptionType {
   inputValue?: string;
@@ -40,7 +40,7 @@ interface IProps {
   onChange?: ((name: string) => void) | undefined;
   onRights?: ((hasRights: boolean) => void) | undefined;
   team?: string | undefined;
-  recordingRequired?: boolean | undefined;
+  aiip: boolean;
   disabled?: boolean | undefined;
 }
 
@@ -51,7 +51,7 @@ export function SpeakerName({
   onChange,
   onRights,
   team,
-  recordingRequired,
+  aiip,
   disabled,
 }: IProps) {
   const ipRecs = useOrbitData<IntellectualProperty[]>('intellectualproperty');
@@ -70,7 +70,7 @@ export function SpeakerName({
     const orgIp = ipRecs.filter((r) => related(r, 'organization') === orgId);
 
     const newSpeakers: NameOptionType[] = [];
-    if (recordingRequired) {
+    if (aiip) {
       orgIp.forEach((r) => {
         const mediaRec = findRecord(
           memory,
@@ -89,7 +89,7 @@ export function SpeakerName({
 
     newSpeakers.sort((a, b) => a.name.localeCompare(b.name));
     return newSpeakers;
-  }, [ipRecs, team, organization, recordingRequired, memory]);
+  }, [ipRecs, team, organization, aiip, memory]);
 
   const handleRights = () => {
     onRights && onRights(false);
@@ -301,25 +301,19 @@ export function SpeakerName({
     }
   };
 
-  const buttonText = name?.trim() !== '' ? name : t.selectSpeaker + '...';
+  const buttonText = name?.trim() === '' ? t.selectSpeaker + '...' : name;
 
   const { isMobile: isMobileView } = useMobile();
 
   return (
     <>
       <Button
-        variant={name?.trim() !== '' ? 'outlined' : 'contained'}
-        onClick={handleOpenSelectDialog}
+        color={name?.trim() === '' ? 'primary' : 'secondary'}
         disabled={disabled}
-        sx={{
-          minWidth: isMobileView ? 100 : 200,
-          justifyContent: 'flex-start',
-        }}
+        startIcon={<SupportAgentIcon />}
+        onClick={handleOpenSelectDialog}
       >
-        <Stack direction="row" spacing={1} alignItems="center">
-          <SupportAgentIcon />
-          <span>{buttonText}</span>
-        </Stack>
+        {buttonText}
       </Button>
       <Dialog
         open={showSelectDialog}
@@ -398,7 +392,7 @@ export function SpeakerName({
           {hasNoRights && (
             <>
               <Typography sx={{ my: 2 }}>
-                {recordingRequired ? t.voiceRights : t.releaseRights}
+                {aiip ? t.voiceRights : t.releaseRights}
               </Typography>
               <ProvideRights
                 planId={planId}
@@ -406,7 +400,7 @@ export function SpeakerName({
                 recordType={ArtifactTypeSlug.IntellectualProperty}
                 onRights={handleRightsChange}
                 team={team}
-                recordingRequired={recordingRequired}
+                aiip={aiip}
               />
             </>
           )}

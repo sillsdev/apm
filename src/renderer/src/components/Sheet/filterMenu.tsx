@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/refs */
 import React, { useRef, useState, useEffect, useContext } from 'react';
 import {
   IScriptureTableFilterStrings,
@@ -18,7 +17,7 @@ import {
   Switch,
 } from '@mui/material';
 import FilterIcon from '@mui/icons-material/FilterList';
-import { AltButton, iconMargin, PriButton, StyledMenu } from '../../control';
+import { Button, iconMargin, StyledMenu } from '../../control';
 import {
   scriptureTableFilterMenuSelector,
   sharedSelector,
@@ -354,31 +353,31 @@ export function FilterMenu(props: IProps) {
             />
           </Box>
         )}
-        <AltButton autoFocus sx={btnProp} onClick={() => handleReset()}>
+        <Button sx={btnProp} onClick={() => handleReset()}>
           {t.reset}
-        </AltButton>
-        <AltButton
+        </Button>
+        <Button
           sx={btnProp}
-          onClick={() => handleReset(true)}
           disabled={applyingRef.current || !filtered}
+          onClick={() => handleReset(true)}
         >
           {t.clear}
-        </AltButton>
-        <AltButton
+        </Button>
+        <Button
           sx={btnProp}
-          onClick={handleApply}
           disabled={
             applyingRef.current ||
             !changed ||
             Boolean(minHelp) ||
             Boolean(maxHelp)
           }
+          onClick={handleApply}
         >
           {t.apply}
-        </AltButton>
-        <PriButton autoFocus sx={btnProp} onClick={handleClose}>
+        </Button>
+        <Button sx={btnProp} color="primary" onClick={handleClose}>
           {ts.close}
-        </PriButton>
+        </Button>
       </StyledMenu>
     </Badge>
   );
