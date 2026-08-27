@@ -525,10 +525,8 @@ export const nextUpload =
           ...(pendingRestore ? { restore: pendingRestore } : {}),
         };
         const pendingRecord = pendingIdToClear
-          ? (updatePendingMediaUpload(
-              pendingIdToClear,
-              queuePatch
-            ) ?? appendPendingMediaUpload(queuePatch))
+          ? (updatePendingMediaUpload(pendingIdToClear, queuePatch) ??
+            appendPendingMediaUpload(queuePatch))
           : appendPendingMediaUpload(queuePatch);
         onTerminalFailure?.({
           localAbsolutePath: pathForQueue || pendingRecord.localAbsolutePath,

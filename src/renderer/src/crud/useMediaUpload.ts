@@ -20,9 +20,7 @@ import { AlertSeverity, useSnackBar } from '../hoc/SnackBar';
 import { mediaTabSelector, sharedSelector } from '../selector';
 import { OrbitNetworkErrorRetries } from '../../api-variable';
 import { formatUploadTerminalFailureMessage } from '../store/upload/uploadTerminalMessages';
-import type {
-  PendingRestoreInput,
-} from '../store/upload/pendingMediaUploads';
+import type { PendingRestoreInput } from '../store/upload/pendingMediaUploads';
 
 interface IProps {
   artifactId: string | null;

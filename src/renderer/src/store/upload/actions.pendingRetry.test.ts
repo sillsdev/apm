@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-require-imports */
 import Axios from 'axios';
 import { UploadType } from '../../components/UploadType';

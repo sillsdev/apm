@@ -51,8 +51,7 @@ interface IProps {
   onOpen: (visible: boolean) => void;
   showMessage: (msg: string | React.JSX.Element, alert?: AlertSeverity) => void;
   finish?:
-    | ((planId: string, mediaRemoteIds?: string[]) => Promise<void>)
-    | undefined; // logic when upload complete
+    ((planId: string, mediaRemoteIds?: string[]) => Promise<void>) | undefined; // logic when upload complete
   metaData?: React.JSX.Element | undefined; // component embeded in dialog
   // Awaited once when the upload starts, before any media is created. Lets the
   // embedded metaData commit deferred edits (e.g. create a new artifact
