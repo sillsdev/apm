@@ -229,6 +229,7 @@ export const ProjectsScreenInner = () => {
               minHeight: 0,
               display: 'flex',
               flexDirection: 'column',
+              p: theme.layout.p,
             }}
           >
             <Grid container spacing={theme.layout.gap}>

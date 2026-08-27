@@ -263,7 +263,7 @@ export const SwitchTeamsInner = () => {
             mx: 'auto',
           }}
         >
-          <Box sx={columnSx}>
+          <Box sx={[columnSx, { p: theme.layout.p }]}>
             <TeamSection
               icon={<PersonIcon />}
               title={t?.personal}
