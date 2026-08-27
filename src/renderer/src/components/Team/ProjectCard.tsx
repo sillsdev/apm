@@ -70,7 +70,7 @@ import {
   useProjectDefaults,
 } from '../../crud/useProjectDefaults';
 import BigDialog from '../../hoc/BigDialog';
-import { useSnackBar } from '../../hoc/SnackBar';
+import { AlertSeverity, useSnackBar } from '../../hoc/SnackBar';
 import { useOrbitData } from '../../hoc/useOrbitData';
 import { useDataChanges, useHome, useJsonParams, useMobile } from '../../utils';
 import { localizeProjectTag } from '../../utils/localizeProjectTag';
@@ -191,24 +191,24 @@ export const ProjectCard = (props: IProps) => {
 
   useEffect(() => {
     if (copying && copyStatus) {
-      if (copyStatus.errStatus || copyStatus.complete) {
-        if (copyStatus.complete) {
+      if (copyStatus.errStatus) {
+        showMessage(
+          copyStatus.errMsg || copyStatus.statusMsg,
+          AlertSeverity.Error
+        );
+        copyComplete();
+        setCopying(false);
+        setBusy(false);
+      } else if (copyStatus.complete) {
+        showMessage(tt.downloading.replace('{0}', copyStatus.statusMsg ?? ''));
+        forceDataChanges().finally(() => {
+          setBusy(false);
           showMessage(
-            tt.downloading.replace('{0}', copyStatus.statusMsg ?? '')
+            t.copyComplete.replace('{0}', copyStatus.statusMsg ?? '')
           );
-          forceDataChanges().finally(() => {
-            setBusy(false);
-            showMessage(
-              t.copyComplete.replace('{0}', copyStatus.statusMsg ?? '')
-            );
-            copyComplete();
-            setCopying(false);
-          });
-        } else {
-          showMessage(copyStatus.errMsg ?? copyStatus.statusMsg);
           copyComplete();
           setCopying(false);
-        }
+        });
       } else showMessage(copyStatus.statusMsg);
     }
     /* eslint-disable-next-line react-hooks/exhaustive-deps */
@@ -527,7 +527,11 @@ export const ProjectCard = (props: IProps) => {
                     <EditSquareIcon sx={{ p: 0.5 }} />
                   )}
                   {project.attributes.isPublic && <ShareIcon />}
-                  <Tooltip title={project?.attributes?.name ?? ''}>
+                  <Tooltip
+                    title={
+                      isMobileWidth ? '' : (project?.attributes?.name ?? '')
+                    }
+                  >
                     <Typography noWrap sx={{ fontSize: 'large' }}>
                       {project?.attributes?.name}
                     </Typography>
@@ -541,7 +545,9 @@ export const ProjectCard = (props: IProps) => {
                     px: 0.5,
                   }}
                 >
-                  <Tooltip title={projectDescription(project)}>
+                  <Tooltip
+                    title={isMobileWidth ? '' : projectDescription(project)}
+                  >
                     <Typography noWrap>
                       {projectDescription(project)}
                     </Typography>
