@@ -1,6 +1,6 @@
 import { useState, useEffect, useContext, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Box, Divider } from '@mui/material';
+import { Box, Divider, useTheme } from '@mui/material';
 import { RecordKeyMap } from '@orbit/records';
 import AppLayout from '../components/App/AppLayout';
 import StickyRedirect from '../components/StickyRedirect';
@@ -28,6 +28,7 @@ export const TeamScreen = () => {
   const { resetProject } = useHome();
   const { isMobile } = useMobile();
   const loaded = useRef(false);
+  const theme = useTheme();
 
   useEffect(() => {
     startClear();
@@ -79,19 +80,19 @@ export const TeamScreen = () => {
       <AppLayout>
         <Box
           id="TeamScreen"
-          sx={(theme) => ({
+          sx={{
             display: 'flex',
             height: '100%',
             gap: theme.layout.gap,
-          })}
+          }}
         >
           <Box
             sx={[
               flexibleSx,
-              (theme) => ({
+              {
                 py: theme.layout.gap,
                 pl: theme.layout.gap,
-              }),
+              },
             ]}
           >
             <TeamActions />
@@ -100,11 +101,11 @@ export const TeamScreen = () => {
           <Box
             sx={[
               flexibleSx,
-              (theme) => ({
+              {
                 overflow: 'auto',
                 py: theme.layout.gap,
                 pr: theme.layout.gap,
-              }),
+              },
             ]}
           >
             <TeamProjects />
