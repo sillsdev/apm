@@ -44,7 +44,7 @@ export const useSaveComment = () => {
       isCIT: hasPermission(PermissionName.CIT),
       isMentor: hasPermission(PermissionName.Mentor),
       authorId:
-        remoteId('user', user, memory?.keyMap as RecordKeyMap).toString() ??
+        remoteId('user', user, memory?.keyMap as RecordKeyMap)?.toString() ||
         user,
     });
 

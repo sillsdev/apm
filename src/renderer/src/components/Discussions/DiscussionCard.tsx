@@ -344,7 +344,7 @@ export const DiscussionCard = (props: IProps) => {
                 'user',
                 user,
                 memory?.keyMap as RecordKeyMap
-              ).toString() ?? user,
+              )?.toString() || user,
           }),
         }
       : undefined;
