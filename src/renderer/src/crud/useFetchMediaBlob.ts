@@ -93,6 +93,13 @@ export const useFetchMediaBlob = () => {
 
   useEffect(() => {
     resetTriesRef.current = 0;
+    if (!mediaId) {
+      // Nothing requested yet - stay IDLE rather than PENDING, so a consumer
+      // that reads its loading state from blobStat === PENDING does not show a
+      // spurious spinner before the first fetchBlob (Copilot).
+      dispatch({ type: BlobStatus.IDLE, payload: undefined });
+      return;
+    }
     fetchMediaUrl({ id: mediaId });
     dispatch({
       type: BlobStatus.PENDING,
@@ -128,8 +135,12 @@ export const useFetchMediaBlob = () => {
           } else {
             // An HTML/XML body is an error page (S3/CDN), not audio. Terminate
             // instead of leaving blobStat PENDING forever, which stranded the
-            // reference player on "Loading..." (TT-7621).
-            dispatch({ type: BlobStatus.ERROR, payload: urlOrError });
+            // reference player on "Loading..." (TT-7621). Name the unexpected
+            // content type so the logged error is actionable (Copilot).
+            dispatch({
+              type: BlobStatus.ERROR,
+              payload: `unexpected content type ${blob.type}: ${urlOrError}`,
+            });
           }
         });
       } catch (errorResult: unknown) {
