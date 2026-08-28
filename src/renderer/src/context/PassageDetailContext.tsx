@@ -240,6 +240,8 @@ const initState = {
   promptDockedRecordFooterVersion: 0,
   carefulSpeechSegParams: boldDefaultSegParams,
   setCarefulSpeechSegParams: (_params: IRegionParams) => {},
+  hideMobileHeader: false,
+  setHideMobileHeader: (_hide: boolean) => {},
 };
 
 export type ICtxState = typeof initState;
@@ -484,6 +486,15 @@ const PassageDetailProvider = (props: IProps) => {
         return state;
       }
       return { ...state, discussOpen };
+    });
+  }, []);
+
+  const setHideMobileHeader = useCallback((hideMobileHeader: boolean) => {
+    setState((state: ICtxState) => {
+      if (state.hideMobileHeader === hideMobileHeader) {
+        return state;
+      }
+      return { ...state, hideMobileHeader };
     });
   }, []);
 
@@ -1307,6 +1318,8 @@ const PassageDetailProvider = (props: IProps) => {
           promptDockedRecordButton: promptDockedRecordButtonRef.current,
           promptDockedRecordFooterVersion,
           isBoldWorkflow,
+          hideMobileHeader: state.hideMobileHeader,
+          setHideMobileHeader,
           sectionArr: (getProjectDefault(projDefSectionMap) ??
             []) as SectionArray,
           setCarefulSpeechSegParams,

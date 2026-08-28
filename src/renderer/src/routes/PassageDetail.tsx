@@ -34,6 +34,7 @@ import PassageDetailLwcTranscription from '../components/PassageDetail/PassageDe
 import { isBoldClauseTranscriptionStep } from '../components/PassageDetail/boldClauseTranscription';
 import TeamCheckReferenceMobile from '../components/PassageDetail/mobile/TeamCheckReferenceMobile';
 import PassageDetailPrompt from '../components/PassageDetail/Prompt/PassageDetailPrompt';
+import PassageDetailTranscribeMobile from '../components/PassageDetail/mobile/transcribe/PassageDetailTranscribeMobile';
 
 const NotImplemented = () => 'Not implemented';
 
@@ -101,6 +102,8 @@ const MobileStep = () => {
     <TeamCheckReferenceMobile width={Math.max(0, paneWidth - 40)} />
   ) : tool === ToolSlug.Prompt ? (
     <PassageDetailPrompt width={Math.max(0, paneWidth - 40)} />
+  ) : tool === ToolSlug.Transcribe ? (
+    <PassageDetailTranscribeMobile width={Math.max(0, paneWidth - 40)} />
   ) : (
     <NotImplemented />
   );

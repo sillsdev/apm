@@ -184,6 +184,7 @@ interface IProps {
   reload?: (blob: Blob) => void;
   noNewVoice?: boolean;
   allowNoNoise?: boolean;
+  layoutMode?: 'default' | 'mobileTranscribe';
   /** From Record step toolSettings; when omitted, echo cancellation is off (higher-fidelity default). */
   captureEchoCancellation?: boolean;
   /** From Record step toolSettings; when omitted, noise suppression is off (higher-fidelity default). */
@@ -410,6 +411,7 @@ function WSAudioPlayer(props: IProps) {
     showDockedRecordButton,
     onRecordingCleared,
     onBeforeStartRecord,
+    layoutMode = 'default',
   } = props;
 
   const audioDownload = useAudioDownload(mediaId ?? '');
@@ -2261,6 +2263,67 @@ function WSAudioPlayer(props: IProps) {
     </LightTooltip>
   );
 
+  const isMobileTranscribe = layoutMode === 'mobileTranscribe';
+
+  const loopNode = (
+    <LightTooltip id="wsAudioLoopTip" title={looping ? t.loopon : t.loopoff}>
+      <span>
+        <ToggleButton
+          id="wsAudioLoop"
+          sx={{ mx: isMobileTranscribe ? 0 : 1, p: 0.5 }}
+          value="loop"
+          selected={looping}
+          onChange={handleToggleLoop}
+          disabled={!hasRegion || waitingForAI}
+        >
+          <LoopIcon />
+        </ToggleButton>
+      </span>
+    </LightTooltip>
+  );
+
+  const prevRegionNode = (
+    <LightTooltip
+      id="wsPrevTip"
+      title={t.prevRegion.replace('{0}', localizeHotKey(LEFT_KEY))}
+    >
+      <span>
+        <IconButton
+          id="wsPrev"
+          onClick={handlePrevRegion}
+          disabled={!hasRegion || waitingForAI}
+        >
+          <NextSegmentIcon sx={{ transform: 'rotate(180deg)' }} />
+        </IconButton>
+      </span>
+    </LightTooltip>
+  );
+
+  const nextRegionNode = (
+    <LightTooltip
+      id="wsNextTip"
+      title={t.nextRegion.replace('{0}', localizeHotKey(RIGHT_KEY))}
+    >
+      <span>
+        <IconButton
+          id="wsNext"
+          onClick={handleNextRegion}
+          disabled={!hasRegion || waitingForAI}
+        >
+          <NextSegmentIcon />
+        </IconButton>
+      </span>
+    </LightTooltip>
+  );
+
+  const rateNode = allowSpeed && (
+    <WSAudioPlayerRate
+      playbackRate={playbackRate}
+      setPlaybackRate={setPlaybackRate}
+      recording={recording}
+    />
+  );
+
   const zoomNode = allowZoom && !hideZoom && (
     <WSAudioPlayerZoom
       ready={ready && !recording && !waitingForAI}
@@ -2372,7 +2435,45 @@ function WSAudioPlayer(props: IProps) {
       style={style}
     >
       <Stack>
-        {!hideToolbar && (
+        {!hideToolbar && isMobileTranscribe ? (
+          <Stack
+            direction="row"
+            spacing={1}
+            sx={{
+              py: 1,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              width: '100%',
+              maxWidth: '100%',
+              minWidth: 0,
+            }}
+          >
+            <Stack
+              direction="row"
+              spacing={1}
+              sx={{ display: 'flex', alignItems: 'center', minWidth: 0 }}
+            >
+              {playNode}
+              {allowAutoSegment && loopNode}
+              {positionDurationNode}
+              {rateNode}
+            </Stack>
+
+            <Stack
+              direction="row"
+              spacing={0.5}
+              sx={{ display: 'flex', alignItems: 'center', minWidth: 0 }}
+            >
+              {allowAutoSegment && (
+                <>
+                  {prevRegionNode}
+                  {nextRegionNode}
+                </>
+              )}
+            </Stack>
+          </Stack>
+        ) : !hideToolbar ? (
           <Stack
             direction="row"
             spacing={1}
@@ -2411,7 +2512,7 @@ function WSAudioPlayer(props: IProps) {
               )}
             </Stack>
           </Stack>
-        )}
+        ) : null}
 
         {keepItSmall && allowRecord && !oneShotUsed ? (
           <Box
@@ -2434,7 +2535,45 @@ function WSAudioPlayer(props: IProps) {
           </Box>
         )}
 
-        {!hideControls && (
+        {!hideControls && isMobileTranscribe ? (
+          <Stack
+            direction="row"
+            spacing={1}
+            sx={{
+              py: 1,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              width: '100%',
+              maxWidth: '100%',
+              minWidth: 0,
+            }}
+          >
+            <Stack
+              direction="row"
+              spacing={1}
+              alignItems="center"
+              sx={{ minWidth: 0 }}
+            >
+              {allowSegment && !hideSegmentControls && renderSegmentControls()}
+              {allowSegment && !hideSegmentControls && segmentUndoNode}
+            </Stack>
+            <Stack direction="row" spacing={1} alignItems="center">
+              {metaData}
+              {allowSegment && !hideSegmentControls && !hideSegmentReset && (
+                <Button
+                  id="wsSegmentReset"
+                  onClick={handleClearRegions}
+                  disabled={
+                    resetDisabled ?? (recording || waitingForAI || !hasRegion)
+                  }
+                >
+                  {t.resetSegments}
+                </Button>
+              )}
+            </Stack>
+          </Stack>
+        ) : !hideControls ? (
           <Stack
             direction="row"
             spacing={1}
@@ -2483,57 +2622,9 @@ function WSAudioPlayer(props: IProps) {
               {allowAutoSegment && !isMobileView && (
                 <>
                   {allowSegment && <VertDivider id="wsAudioSegDiv" />}
-                  <LightTooltip
-                    id="wsAudioLoopTip"
-                    title={looping ? t.loopon : t.loopoff}
-                  >
-                    <span>
-                      <ToggleButton
-                        id="wsAudioLoop"
-                        sx={{ mx: 1, p: 0.5 }}
-                        value="loop"
-                        selected={looping}
-                        onChange={handleToggleLoop}
-                        disabled={!hasRegion || waitingForAI}
-                      >
-                        <LoopIcon />
-                      </ToggleButton>
-                    </span>
-                  </LightTooltip>
-                  <LightTooltip
-                    id="wsPrevTip"
-                    title={t.prevRegion.replace(
-                      '{0}',
-                      localizeHotKey(LEFT_KEY)
-                    )}
-                  >
-                    <span>
-                      <IconButton
-                        id="wsPrev"
-                        onClick={handlePrevRegion}
-                        disabled={!hasRegion || waitingForAI}
-                      >
-                        <NextSegmentIcon sx={{ transform: 'rotate(180deg)' }} />
-                      </IconButton>
-                    </span>
-                  </LightTooltip>
-                  <LightTooltip
-                    id="wsNextTip"
-                    title={t.nextRegion.replace(
-                      '{0}',
-                      localizeHotKey(RIGHT_KEY)
-                    )}
-                  >
-                    <span>
-                      <IconButton
-                        id="wsNext"
-                        onClick={handleNextRegion}
-                        disabled={!hasRegion || waitingForAI}
-                      >
-                        <NextSegmentIcon />
-                      </IconButton>
-                    </span>
-                  </LightTooltip>
+                  {loopNode}
+                  {prevRegionNode}
+                  {nextRegionNode}
                 </>
               )}
               {onVersions && (
@@ -2549,11 +2640,7 @@ function WSAudioPlayer(props: IProps) {
               {allowSpeed && (
                 <>
                   <VertDivider id="wsAudioDiv6" />
-                  <WSAudioPlayerRate
-                    playbackRate={playbackRate}
-                    setPlaybackRate={setPlaybackRate}
-                    recording={recording}
-                  />
+                  {rateNode}
                 </>
               )}
               {onSaveProgress && (
@@ -2613,7 +2700,7 @@ function WSAudioPlayer(props: IProps) {
               )}
             </Stack>
           </Stack>
-        )}
+        ) : null}
       </Stack>
 
       {allowRecord && !dockRecordButton && !keepItSmall && !hideControls && (
