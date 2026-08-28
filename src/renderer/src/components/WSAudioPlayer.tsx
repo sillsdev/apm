@@ -1351,6 +1351,8 @@ function WSAudioPlayer(props: IProps) {
     if (autostartTimer.current && e.error === 'No mediaRecorder') {
       cleanupAutoStart();
       launchTimer();
+    } else if (e.deviceLost) {
+      showMessage(t.microphoneDisconnected, AlertSeverity.Warning);
     } else {
       showMessage(e.error || e.toString());
     }

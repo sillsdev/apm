@@ -212,10 +212,11 @@ export function useWavRecorder(
     const message =
       e?.error || e?.message || e?.toString?.() || 'Recorder error';
     logError(Severity.error, reporter, message);
-    if (!isRecordingRef.current && isDeviceLossError(e)) {
+    if (isDeviceLossError(e)) {
       mediaStreamRef.current = undefined;
       recorderRef.current = undefined;
       recorderStreamIdRef.current = undefined;
+      onError({ error: message, deviceLost: true });
       return;
     }
     onError({ error: message });
