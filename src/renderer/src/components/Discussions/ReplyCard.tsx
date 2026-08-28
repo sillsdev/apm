@@ -8,7 +8,7 @@ import { UnsavedContext } from '../../context/UnsavedContext';
 import { Box } from '@mui/material';
 import { related, PermissionName, usePermissions } from '../../crud';
 import { computeCommentVisibleString } from '../../crud/computeCommentVisible';
-import remoteId from '../../crud/remoteId';
+import { remoteId } from '../../crud/remoteId';
 import { RecordKeyMap } from '@orbit/records';
 import { useGlobal } from '../../context/useGlobal';
 import { shallowEqual, useSelector } from 'react-redux';
@@ -72,9 +72,7 @@ export const ReplyCard = (props: IProps) => {
     visible: computeCommentVisibleString({
       isCIT: hasPermission(PermissionName.CIT),
       isMentor: hasPermission(PermissionName.Mentor),
-      authorId:
-        remoteId('user', user, memory?.keyMap as RecordKeyMap)?.toString() ||
-        user,
+      authorId: remoteId('user', user, memory?.keyMap as RecordKeyMap) ?? user,
     }),
   });
 

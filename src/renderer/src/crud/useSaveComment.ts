@@ -14,7 +14,7 @@ import {
 import { orbitErr } from '../utils';
 import * as actions from '../store';
 import { RecordKeyMap } from '@orbit/records';
-import remoteId from './remoteId';
+import { remoteId } from './remoteId';
 
 export const useSaveComment = () => {
   const [memory] = useGlobal('memory');
@@ -43,9 +43,7 @@ export const useSaveComment = () => {
       existingPermissions: permissions,
       isCIT: hasPermission(PermissionName.CIT),
       isMentor: hasPermission(PermissionName.Mentor),
-      authorId:
-        remoteId('user', user, memory?.keyMap as RecordKeyMap)?.toString() ||
-        user,
+      authorId: remoteId('user', user, memory?.keyMap as RecordKeyMap) ?? user,
     });
 
     const t = new RecordTransformBuilder();

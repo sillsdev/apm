@@ -31,7 +31,7 @@ import {
   usePermissions,
 } from '../../crud';
 import { computeCommentVisibleString } from '../../crud/computeCommentVisible';
-import remoteId from '../../crud/remoteId';
+import { remoteId } from '../../crud/remoteId';
 import { RecordKeyMap } from '@orbit/records';
 import PlayIcon from '@mui/icons-material/PlayArrow';
 import UserAvatar from '../UserAvatar';
@@ -207,9 +207,7 @@ export const CommentCard = (props: IProps) => {
       existingPermissions: comment.attributes?.visible,
       isCIT: hasPermission(PermissionName.CIT),
       isMentor: hasPermission(PermissionName.Mentor),
-      authorId:
-        remoteId('user', user, memory?.keyMap as RecordKeyMap)?.toString() ||
-        user,
+      authorId: remoteId('user', user, memory?.keyMap as RecordKeyMap) ?? user,
     }),
   });
   const { passageId, fileName } = useRecordComment({

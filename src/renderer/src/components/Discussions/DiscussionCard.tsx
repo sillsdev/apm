@@ -44,7 +44,7 @@ import {
   useRole,
 } from '../../crud';
 import { computeCommentVisibleString } from '../../crud/computeCommentVisible';
-import remoteId from '../../crud/remoteId';
+import { remoteId } from '../../crud/remoteId';
 import { RecordKeyMap } from '@orbit/records';
 import CommentCard from './CommentCard';
 import ReplyCard from './ReplyCard';
@@ -339,12 +339,7 @@ export const DiscussionCard = (props: IProps) => {
           visible: computeCommentVisibleString({
             isCIT: hasPermission(PermissionName.CIT),
             isMentor: hasPermission(PermissionName.Mentor),
-            authorId:
-              remoteId(
-                'user',
-                user,
-                memory?.keyMap as RecordKeyMap
-              )?.toString() || user,
+            authorId: remoteId('user', user, memory?.keyMap as RecordKeyMap) ?? user,
           }),
         }
       : undefined;
