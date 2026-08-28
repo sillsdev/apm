@@ -316,47 +316,6 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
   const mediaRef = useRef<MediaFileD | undefined>(mediafile);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
-  useEffect(() => {
-    const isDifferentMedia = mediaRef.current?.id !== mediafile?.id;
-    mediaRef.current = mediafile;
-    const incomingTranscription = mediafile?.attributes?.transcription ?? '';
-
-    if (isDifferentMedia) {
-      transcriptionInRef.current = incomingTranscription;
-      setTextValue(incomingTranscription);
-      segmentsRef.current = undefined;
-      setConfirm(undefined);
-      return;
-    }
-
-    if (
-      transcriptionInRef.current !== undefined &&
-      incomingTranscription !== transcriptionInRef.current &&
-      !actions.savingRef.current
-    ) {
-      if (textValue !== incomingTranscription) {
-        setConfirm(incomingTranscription);
-      } else {
-        transcriptionInRef.current = incomingTranscription;
-      }
-    }
-  }, [mediafile?.id, mediafile?.attributes?.transcription, textValue, actions.savingRef]);
-
-  // Load project font data
-  useEffect(() => {
-    if (!project) return;
-    const projRec = findRecord(memory, 'project', project) as
-      Project | undefined;
-    if (!projRec) return;
-    let cancelled = false;
-    void getFontData(projRec, artifactTypeId ?? 'project').then((data) => {
-      if (!cancelled) setProjData(data);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [project, memory, artifactTypeId]);
-
   const getTextValue = useCallback(() => textValue, [textValue]);
   const getSegmentsCb = useCallback(() => segmentsRef.current, []);
   const getPositionCb = useCallback(() => playedSecsRef.current, []);
@@ -387,6 +346,53 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
     savingMessage: t.saving,
     errorReporter,
   });
+
+  useEffect(() => {
+    const isDifferentMedia = mediaRef.current?.id !== mediafile?.id;
+    mediaRef.current = mediafile;
+    const incomingTranscription = mediafile?.attributes?.transcription ?? '';
+
+    if (isDifferentMedia) {
+      transcriptionInRef.current = incomingTranscription;
+      setTextValue(incomingTranscription);
+      segmentsRef.current = undefined;
+      setConfirm(undefined);
+      return;
+    }
+
+    if (
+      transcriptionInRef.current !== undefined &&
+      incomingTranscription !== transcriptionInRef.current &&
+      !actions.savingRef.current
+    ) {
+      if (textValue !== incomingTranscription) {
+        setConfirm(incomingTranscription);
+      } else {
+        transcriptionInRef.current = incomingTranscription;
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    mediafile?.id,
+    mediafile?.attributes?.transcription,
+    textValue,
+    actions.savingRef,
+  ]);
+
+  // Load project font data
+  useEffect(() => {
+    if (!project) return;
+    const projRec = findRecord(memory, 'project', project) as
+      Project | undefined;
+    if (!projRec) return;
+    let cancelled = false;
+    void getFontData(projRec, artifactTypeId ?? 'project').then((data) => {
+      if (!cancelled) setProjData(data);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [project, memory, artifactTypeId]);
 
   const handleTextAdd = useCallback(
     (newText: string) => {
