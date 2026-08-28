@@ -428,6 +428,7 @@ describe('writeFileLocal disk write (TT-7348)', () => {
 
   beforeEach(() => {
     jest.resetModules();
+    jest.clearAllMocks();
     mockIpc = {
       exists: jest.fn().mockResolvedValue(false),
       copyFile: jest.fn().mockResolvedValue(undefined),
