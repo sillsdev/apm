@@ -14,7 +14,11 @@ import {
   getBlobDiagnostics,
   logAudioDiagnostic,
 } from './audioDiagnostics';
-import { buildCaptureConstraints } from './captureConstraints';
+import {
+  buildCaptureConstraints,
+  isDeviceLossError,
+  isUnusableCaptureStream,
+} from './captureConstraints';
 
 /** Defaults match Record step toolSettings when keys are absent (both off). */
 export function parseRecordCaptureAudioProcessing(
@@ -103,7 +107,11 @@ export function useWavRecorder(
       peaksCaptureRef.current?.stop();
       peaksCaptureRef.current = undefined;
       mediaStreamRef.current?.getTracks().forEach((track) => {
-        track.stop();
+        try {
+          track.stop();
+        } catch {
+          /* device already gone */
+        }
       });
       if (recorderRef.current) {
         const recorder = recorderRef.current;
@@ -125,7 +133,13 @@ export function useWavRecorder(
 
   useEffect(() => {
     if (!allowRecord) {
-      mediaStreamRef.current?.getTracks().forEach((track) => track.stop());
+      mediaStreamRef.current?.getTracks().forEach((track) => {
+        try {
+          track.stop();
+        } catch {
+          /* device already gone */
+        }
+      });
       mediaStreamRef.current = undefined;
       previousDeviceIdRef.current = deviceId;
       captureProcessingKeyRef.current = '';
@@ -139,18 +153,25 @@ export function useWavRecorder(
       mediaStreamRef.current !== undefined;
 
     if (processingChanged && !isRecordingRef.current) {
-      mediaStreamRef.current?.getTracks().forEach((track) => track.stop());
+      mediaStreamRef.current?.getTracks().forEach((track) => {
+        try {
+          track.stop();
+        } catch {
+          /* device already gone */
+        }
+      });
       mediaStreamRef.current = undefined;
     }
 
     const deviceChanged =
       previousDeviceIdRef.current !== deviceId &&
       mediaStreamRef.current !== undefined;
+    const streamGone = isUnusableCaptureStream(mediaStreamRef.current);
 
     const ensureStream = async () => {
       try {
         const stream = await getMediaStream(
-          deviceChanged || processingChanged || !mediaStreamRef.current
+          deviceChanged || processingChanged || streamGone
         );
         if (stream && stream.id && stream.active) {
           mediaStreamRef.current = stream;
@@ -173,7 +194,7 @@ export function useWavRecorder(
       }
     };
 
-    if (!mediaStreamRef.current || deviceChanged || processingChanged) {
+    if (streamGone || deviceChanged || processingChanged) {
       ensureStream();
     }
 
@@ -191,13 +212,19 @@ export function useWavRecorder(
     const message =
       e?.error || e?.message || e?.toString?.() || 'Recorder error';
     logError(Severity.error, reporter, message);
+    if (!isRecordingRef.current && isDeviceLossError(e)) {
+      mediaStreamRef.current = undefined;
+      recorderRef.current = undefined;
+      recorderStreamIdRef.current = undefined;
+      return;
+    }
     onError({ error: message });
   }
 
   async function startRecorder() {
-    if (!mediaStreamRef.current) {
+    if (isUnusableCaptureStream(mediaStreamRef.current)) {
       try {
-        mediaStreamRef.current = await getMediaStream();
+        mediaStreamRef.current = await getMediaStream(true);
         logAudioDiagnostic('media-stream-ready', {
           requestedCaptureOptions: captureOptions,
           selectedDeviceId: deviceId,

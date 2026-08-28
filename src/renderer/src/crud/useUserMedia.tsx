@@ -1,4 +1,8 @@
 import { useCallback, useEffect, useRef } from 'react';
+import {
+  getUserMediaWithDeviceFallback,
+  isUnusableCaptureStream,
+} from './captureConstraints';
 
 export function useUserMedia(requestedMedia: MediaStreamConstraints) {
   const mediaStreamRef = useRef<MediaStream | undefined>(undefined);
@@ -10,17 +14,28 @@ export function useUserMedia(requestedMedia: MediaStreamConstraints) {
 
   const getStream = useCallback(
     async (forceNew = false): Promise<MediaStream> => {
-      if (mediaStreamRef.current && !forceNew) {
+      if (
+        mediaStreamRef.current &&
+        !forceNew &&
+        !isUnusableCaptureStream(mediaStreamRef.current)
+      ) {
         return mediaStreamRef.current;
       }
 
       if (mediaStreamRef.current) {
-        mediaStreamRef.current.getTracks().forEach((track) => track.stop());
+        mediaStreamRef.current.getTracks().forEach((track) => {
+          try {
+            track.stop();
+          } catch {
+            // Device may already be gone (headset unplug / audio shutdown).
+          }
+        });
         mediaStreamRef.current = undefined;
       }
 
-      const stream = await navigator.mediaDevices.getUserMedia(
-        constraintsRef.current
+      const stream = await getUserMediaWithDeviceFallback(
+        constraintsRef.current,
+        (next) => navigator.mediaDevices.getUserMedia(next)
       );
       mediaStreamRef.current = stream;
       return stream;
@@ -31,7 +46,11 @@ export function useUserMedia(requestedMedia: MediaStreamConstraints) {
   useEffect(() => {
     return function cleanup() {
       mediaStreamRef.current?.getTracks().forEach((track) => {
-        track.stop();
+        try {
+          track.stop();
+        } catch {
+          /* device already gone */
+        }
       });
       mediaStreamRef.current = undefined;
     };
