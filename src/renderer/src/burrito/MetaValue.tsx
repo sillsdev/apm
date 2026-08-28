@@ -1,4 +1,4 @@
-import * as React from 'react';
+import React, { useEffect, useState } from 'react';
 import TextField from '@mui/material/TextField';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
@@ -25,8 +25,8 @@ export default function MetaValue({
   isOpen,
   onOpen,
 }: MetaValueProps) {
-  const [open, setOpen] = React.useState(isOpen);
-  const [newValue, setNewValue] = React.useState(value);
+  const [open, setOpen] = useState(isOpen);
+  const [newValue, setNewValue] = useState(value);
   const t: IBurritoStrings = useSelector(burritoSelector, shallowEqual);
   const ts: ISharedStrings = useSelector(sharedSelector, shallowEqual);
 
@@ -35,11 +35,11 @@ export default function MetaValue({
     onOpen(false);
   };
 
-  React.useEffect(() => {
+  useEffect(() => {
     setOpen(isOpen);
   }, [isOpen]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     setNewValue(value);
   }, [value]);
 
