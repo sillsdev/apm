@@ -27,6 +27,7 @@ import {
   useHome,
   useMyNavigate,
   LocalKey,
+  markNeedItfSync,
 } from '../utils';
 import { related, useOfflnProjRead, useOfflineSetup, ListEnum } from '../crud';
 import { API_CONFIG, isElectron } from '../../api-variable';
@@ -139,6 +140,7 @@ export function Access() {
     const selected = users.filter((u) => u.id === uId);
     if (selected.length > 0) {
       if (selected[0]?.keys?.remoteId === undefined) setOfflineOnly(true);
+      else markNeedItfSync();
       setOffline(true);
       logout();
       localStorage.setItem(LocalKey.userId, (selected[0] as UserD).id);
