@@ -1,4 +1,4 @@
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+/// <reference types="jest" />
 import React from 'react';
 import { act, render, waitFor } from '@testing-library/react';
 import { RecordTransformBuilder } from '@orbit/records';
@@ -64,8 +64,12 @@ jest.mock('../MediaRecord', () => ({
   },
 }));
 
-jest.mock('../Uploader', () => (props: { isOpen?: boolean }) =>
-  props.isOpen ? <div data-testid="uploader-open" /> : null
+jest.mock(
+  '../Uploader',
+  () =>
+    function MockUploader(props: { isOpen?: boolean }) {
+      return props.isOpen ? <div data-testid="uploader-open" /> : null;
+    }
 );
 jest.mock('../AlertDialog', () => ({
   __esModule: true,
@@ -337,7 +341,9 @@ describe('PassageDetailRecord linked note play-only (TT-5873)', () => {
       expect(document.getElementById('pdRecordLoadFile')).not.toBeNull();
       expect(capturedMediaRecordProps?.allowRecord).toBe(true);
     });
-    expect(document.querySelector('[data-testid="media-record"]')).not.toBeNull();
+    expect(
+      document.querySelector('[data-testid="media-record"]')
+    ).not.toBeNull();
   });
 
   it('disables Load File and recording on a linked note while keeping playback', async () => {
@@ -349,7 +355,9 @@ describe('PassageDetailRecord linked note play-only (TT-5873)', () => {
     });
     expect(document.getElementById('pdRecordLoadFile')).toBeNull();
     expect(capturedMediaRecordProps?.allowRecord).toBe(false);
-    expect(document.querySelector('[data-testid="media-record"]')).not.toBeNull();
+    expect(
+      document.querySelector('[data-testid="media-record"]')
+    ).not.toBeNull();
   });
 });
 
@@ -369,8 +377,12 @@ describe('PassageDetailRecord pending upload warn (TT-7366)', () => {
     await act(async () => {
       document.getElementById('pdRecordLoadFile')?.click();
     });
-    expect(document.querySelector('[data-testid="pending-warn-confirm"]')).toBeNull();
-    expect(document.querySelector('[data-testid="uploader-open"]')).not.toBeNull();
+    expect(
+      document.querySelector('[data-testid="pending-warn-confirm"]')
+    ).toBeNull();
+    expect(
+      document.querySelector('[data-testid="uploader-open"]')
+    ).not.toBeNull();
   });
 
   it('warns on Load File when a pending upload exists; No cancels; Yes opens Uploader', async () => {
@@ -404,7 +416,9 @@ describe('PassageDetailRecord pending upload warn (TT-7366)', () => {
       document.getElementById('alertYes')?.click();
     });
     await waitFor(() => {
-      expect(document.querySelector('[data-testid="uploader-open"]')).not.toBeNull();
+      expect(
+        document.querySelector('[data-testid="uploader-open"]')
+      ).not.toBeNull();
     });
   });
 
@@ -416,7 +430,9 @@ describe('PassageDetailRecord pending upload warn (TT-7366)', () => {
       allowed = await capturedMediaRecordProps!.onBeforeStartRecord!();
     });
     expect(allowed).toBe(true);
-    expect(document.querySelector('[data-testid="pending-warn-confirm"]')).toBeNull();
+    expect(
+      document.querySelector('[data-testid="pending-warn-confirm"]')
+    ).toBeNull();
   });
 
   it('warns before record start when pending exists; No blocks; Yes allows', async () => {
