@@ -324,7 +324,7 @@ export const nextUpload =
             logError(
               Severity.error,
               errorReporter,
-              infoMsg(err as Error, `failed getting name: ${name}`)
+              infoMsg(err as Error, `local write failed: ${name}`)
             );
             sendError(n, `${name} failed local write`);
           }
