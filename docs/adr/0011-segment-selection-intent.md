@@ -148,43 +148,6 @@ That removes the frame-count guess and makes the inclusive-boundary
 double-membership stop mattering: during a targeted play, nothing the plugin
 says about neighbouring regions is treated as selection.
 
-### The short-clause hole, if Piece 2 is not done
-
-Piece 2 is the fix; this records what has to be carried if it is deferred again,
-because the workaround underneath it does not survive on its own.
-
-Both signals the step uses to learn a clause finished are told apart from the
-seek that _starts_ the clause by one thing: how long playback has been running.
-`SPURIOUS_STOP_WINDOW_MS` is 250ms, and both call sites in
-`PassageDetailGuidedPhraseRecord.tsx` — the stop in `handlePlayStatusNotify`
-(PR #529) and the `region-out` park in `handleRegionPlayEnd` (TT-7621) — rest on
-the comment "auto-segmenting never produces a clause anywhere near that short."
-
-That is not true. Auto-segmenting leaves slivers at the end of the audio, and
-hand testing hit one: a clause of a fraction of a second, whose genuine end
-arrives inside the window and is discarded as the seek. Nothing then marks the
-clause heard, and the step dead-ends — playback stops part way along, the pause
-icon stays up, Record never returns, and the clause cannot be recorded at all.
-
-Today the stop-side hole is masked. The `region-out` park marks the clause heard
-about 60ms into playback, long before the stop is judged, so the discarded stop
-costs nothing. **That masking is the defect TT-7621 fixes**, so the two are
-bound together: the guard on the park exposed the hole immediately, and the
-carve-off in `MIN_GUARDABLE_CLAUSE_FACTOR` — skip the window entirely on clauses
-too short for it to mean anything — is what keeps the step out of the dead end.
-
-So, for whoever picks this up:
-
-- Removing or narrowing that carve-off without doing Piece 2 re-opens a dead
-  end, not a cosmetic glitch.
-- The window is unfixable by tuning. Playback covers the clause minus the
-  `CLAUSE_BOUNDARY_THRESHOLD_SEC` seek, so a clause has to run past
-  window + 100ms before the two signals separate at all. Any threshold that
-  admits short clauses admits the ambiguity with them.
-- Piece 2 removes the need for a window on either side: a completion callback
-  that fires once, from the operation rather than from the event stream, is
-  correct at any clause length.
-
 ### Ordering
 
 Piece 1 is worth doing first and alone: it is local, it deletes more than it

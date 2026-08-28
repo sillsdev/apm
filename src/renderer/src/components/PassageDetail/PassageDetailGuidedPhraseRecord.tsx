@@ -104,20 +104,6 @@ interface IProps {
  */
 const SPURIOUS_STOP_WINDOW_MS = 250;
 
-/**
- * How far a clause's playable span must outrun SPURIOUS_STOP_WINDOW_MS before
- * that window can be used to judge its playback at all.
- *
- * The window separates two things by how long playback has been running: the
- * seek that starts a clause, and the clause finishing. The clause finishing is
- * reported one playable span after playback starts, so the two only separate
- * once that span outruns the window - below which the guard would discard the
- * clause's genuine end and strand the step. One window over is the arithmetic
- * floor; the second absorbs the lag between audio starting and the play status
- * that timestamps it, which is where a slow machine shows up.
- */
-const MIN_PLAYABLE_SPAN_WINDOWS = 2;
-
 function findClauseIndex(clauseRegions: IRegion[], region: IRegion): number {
   return clauseRegions.findIndex(
     (r) =>
@@ -1088,42 +1074,13 @@ export function PassageDetailGuidedPhraseRecord({
       }
 
       setCurrentIndex(idx);
+      setCurrentClausePlayed(true);
       // Parking after an auto-play. A spurious +1 segment change usually
       // follows — playback overshoot into the next clause, or the recorder
       // mounting once allowRecord turns true — which the recording effect would
       // otherwise read as a user tap and auto-play. Arm the overshoot swallow so
       // that single adjacent advance is ignored while we stay parked (TT-7360).
       pendingOvershootSwallowRef.current = true;
-      // Starting a clause seeks twice - playCurrentClause seeks into the region,
-      // then wsPlayRegion seeks again to its start - and that leave-and-re-enter
-      // emits region-out for the very region being played, around 60ms in. Still
-      // park on it: the +1 advance that follows needs swallowing either way. But
-      // it is not the clause having been heard, and treating it as such left
-      // Record operable for the whole clause, so a take could be recorded over
-      // the reference audio (TT-7621). Tell the seek from the clause finishing by
-      // how long playback has been running, the same window and the same
-      // reasoning as the stop in handlePlayStatusNotify.
-      //
-      // Only where the clause is long enough for that to mean anything. Playback
-      // covers the clause less the seek that starts it, and the clause finishing
-      // is reported that long after playback starts - so on a clause too short,
-      // its genuine end lands inside the window and the guard throws it away.
-      // Nothing then marks the clause heard: playback stops part way along,
-      // Record never returns, and the clause cannot be recorded at all. Below the
-      // cut-off keep the old behavior, Record offered as soon as playback starts.
-      // That is the defect this guard exists to fix, but such a clause is over in
-      // well under a second, and a brief wrong enable beats a dead end.
-      const playableMs =
-        (region.end - region.start - CLAUSE_BOUNDARY_THRESHOLD_SEC) * 1000;
-      if (
-        playableMs > SPURIOUS_STOP_WINDOW_MS * MIN_PLAYABLE_SPAN_WINDOWS &&
-        Date.now() - clausePlaybackStartedAtRef.current <
-          SPURIOUS_STOP_WINDOW_MS
-      ) {
-        applyColors();
-        return;
-      }
-      setCurrentClausePlayed(true);
       if (phase === 'recording') return;
       setPhase('recordReady');
       applyColors();
