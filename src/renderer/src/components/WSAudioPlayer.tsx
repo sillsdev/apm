@@ -2265,8 +2265,8 @@ function WSAudioPlayer(props: IProps) {
 
   const isMobileTranscribe = layoutMode === 'mobileTranscribe';
 
-  const loopNode = (
-    <LightTooltip id="wsAudioLoopTip" title={looping ? t.loopon : t.loopoff}>
+  const loopNode = allowAutoSegment && (
+    <LightTooltip id="wsAudioLoopTip" title={looping ? (t.loopon ?? '') : (t.loopoff ?? '')}>
       <span>
         <ToggleButton
           id="wsAudioLoop"
@@ -2282,10 +2282,10 @@ function WSAudioPlayer(props: IProps) {
     </LightTooltip>
   );
 
-  const prevRegionNode = (
+  const prevRegionNode = allowAutoSegment && (
     <LightTooltip
       id="wsPrevTip"
-      title={t.prevRegion.replace('{0}', localizeHotKey(LEFT_KEY))}
+      title={t.prevRegion ? t.prevRegion.replace('{0}', localizeHotKey(LEFT_KEY)) : ''}
     >
       <span>
         <IconButton
@@ -2299,10 +2299,10 @@ function WSAudioPlayer(props: IProps) {
     </LightTooltip>
   );
 
-  const nextRegionNode = (
+  const nextRegionNode = allowAutoSegment && (
     <LightTooltip
       id="wsNextTip"
-      title={t.nextRegion.replace('{0}', localizeHotKey(RIGHT_KEY))}
+      title={t.nextRegion ? t.nextRegion.replace('{0}', localizeHotKey(RIGHT_KEY)) : ''}
     >
       <span>
         <IconButton
