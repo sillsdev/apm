@@ -416,3 +416,103 @@ describe('nextUpload enqueue after staging (TT-7348)', () => {
     );
   });
 });
+
+describe('writeFileLocal disk write (TT-7348)', () => {
+  let mockIpc: {
+    exists: jest.Mock;
+    copyFile: jest.Mock;
+    write: jest.Mock;
+    read: jest.Mock;
+  };
+  let actionsModule: typeof import('./actions');
+
+  beforeEach(() => {
+    jest.resetModules();
+    mockIpc = {
+      exists: jest.fn().mockResolvedValue(false),
+      copyFile: jest.fn().mockResolvedValue(undefined),
+      write: jest.fn().mockResolvedValue(undefined),
+      read: jest.fn().mockResolvedValue(new Uint8Array([1, 2, 3])),
+    };
+    (window as any).api = mockIpc;
+    const { dataPath } = require('../../utils');
+    (dataPath as jest.Mock).mockImplementation(
+      (_url: string, _type: unknown, local: { localname: string }) => {
+        local.localname = '/mock/media';
+      }
+    );
+    actionsModule = require('./actions');
+  });
+
+  afterEach(() => {
+    delete (window as any).api;
+  });
+
+  it('awaits ipc.write when saving in-memory recording without path', async () => {
+    let writeFinished = false;
+    mockIpc.write.mockImplementation(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      writeFinished = true;
+    });
+
+    const file = new File([new Uint8Array([1, 2, 3])], 'recording.wav', {
+      type: 'audio/wav',
+    });
+    const result = await actionsModule.writeFileLocal(file);
+
+    expect(writeFinished).toBe(true);
+    expect(mockIpc.write).toHaveBeenCalledWith(
+      expect.stringContaining('recording.wav'),
+      expect.any(Uint8Array),
+      expect.objectContaining({ encoding: 'binary', flag: 'wx' })
+    );
+    expect(result.absolutePath).toContain('recording.wav');
+  });
+
+  it('rejects if ipc.write fails/rejects', async () => {
+    mockIpc.write.mockRejectedValue(new Error('Disk write failed: EACCES'));
+
+    const file = new File([new Uint8Array([1, 2, 3])], 'recording.wav', {
+      type: 'audio/wav',
+    });
+
+    await expect(actionsModule.writeFileLocal(file)).rejects.toThrow(
+      'Disk write failed: EACCES'
+    );
+  });
+
+  it('nextUpload fails gracefully and aborts cloud POST if local disk write rejects', async () => {
+    mockIpc.write.mockRejectedValue(new Error('Disk write failed: ENOSPC'));
+    const dispatch = jest.fn();
+    const cb = jest.fn();
+    const file = new File([new Uint8Array([1, 2, 3])], 'recording.wav', {
+      type: 'audio/wav',
+    });
+
+    const action = actionsModule.nextUpload({
+      record: baseRecord,
+      files: [file],
+      n: 0,
+      token: 'token',
+      offline: false,
+      errorReporter: {} as never,
+      uploadType: UploadType.Media,
+      cb,
+    });
+    action(dispatch);
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
+    expect(mockIpc.write).toHaveBeenCalled();
+    expect(dispatch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'UPLOAD_ITEM_FAILED',
+        payload: expect.objectContaining({
+          error: expect.stringContaining('local save failed'),
+        }),
+      })
+    );
+    expect(cb).toHaveBeenCalledWith(0, false);
+    expect(mockedAxios.post).not.toHaveBeenCalled();
+  });
+});
+

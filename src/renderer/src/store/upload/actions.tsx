@@ -94,7 +94,7 @@ export const writeFileLocal = async (
     // Modern replacement for deprecated readAsBinaryString
     const buffer = await file.arrayBuffer();
     const bytes = new Uint8Array(buffer);
-    ipc?.write(writeName, bytes, {
+    await ipc?.write(writeName, bytes, {
       encoding: 'binary',
       flag: 'wx', // write - fail if file exists
     });
@@ -315,19 +315,21 @@ export const nextUpload =
     if (offline) {
       if (!isDownloadable) {
         if (cb) cb(n, true, { ...record });
-      } else
-        try {
-          writeFileLocal(files[n] as File).then((w) => {
+      } else {
+        void (async () => {
+          try {
+            const w = await writeFileLocal(files[n] as File);
             if (cb) cb(n, true, { ...record, audioUrl: w.relativeMediaPath });
-          });
-        } catch (err: unknown) {
-          logError(
-            Severity.error,
-            errorReporter,
-            infoMsg(err as Error, `failed getting name: ${name}`)
-          );
-          sendError(n, `${name} failed local write`);
-        }
+          } catch (err: unknown) {
+            logError(
+              Severity.error,
+              errorReporter,
+              infoMsg(err as Error, `failed getting name: ${name}`)
+            );
+            sendError(n, `${name} failed local write`);
+          }
+        })();
+      }
       return;
     }
     const completeCB = (
