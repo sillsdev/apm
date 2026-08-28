@@ -33,7 +33,9 @@ import { UnsavedContext } from '../../../../context/UnsavedContext';
 import {
   findRecord,
   getFontData,
+  GetUser,
   pullTableList,
+  related,
   ToolSlug,
   useArtifactType,
   useOrgDefaults,
@@ -57,6 +59,7 @@ import { StyledTextAreaAutosize } from '../../../../control/WebFontStyles';
 import PassageDetailPlayer from '../../PassageDetailPlayer';
 import BigDialog from '../../../../hoc/BigDialog';
 import { BigDialogBp } from '../../../../hoc/BigDialogBp';
+import Confirm from '../../../AlertDialog';
 import SelectAsrLanguage from '../../../../business/asr/SelectAsrLanguage';
 import AsrProgress from '../../../../business/asr/AsrProgress';
 import TranscribeReject from '../../../TranscribeReject';
@@ -304,14 +307,40 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
     mediafile?.attributes?.transcription ?? ''
   );
   const [projData, setProjData] = useState<FontData>();
+  const [confirm, setConfirm] = useState<string | undefined>(undefined);
   const playedSecsRef = useRef(0);
   const segmentsRef = useRef<string | undefined>(undefined);
+  const transcriptionInRef = useRef<string | undefined>(
+    mediafile?.attributes?.transcription ?? ''
+  );
+  const mediaRef = useRef<MediaFileD | undefined>(mediafile);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   useEffect(() => {
-    setTextValue(mediafile?.attributes?.transcription ?? '');
-    segmentsRef.current = undefined;
-  }, [mediafile?.id, mediafile?.attributes?.transcription]);
+    const isDifferentMedia = mediaRef.current?.id !== mediafile?.id;
+    mediaRef.current = mediafile;
+    const incomingTranscription = mediafile?.attributes?.transcription ?? '';
+
+    if (isDifferentMedia) {
+      transcriptionInRef.current = incomingTranscription;
+      setTextValue(incomingTranscription);
+      segmentsRef.current = undefined;
+      setConfirm(undefined);
+      return;
+    }
+
+    if (
+      transcriptionInRef.current !== undefined &&
+      incomingTranscription !== transcriptionInRef.current &&
+      !actions.savingRef.current
+    ) {
+      if (textValue !== incomingTranscription) {
+        setConfirm(incomingTranscription);
+      } else {
+        transcriptionInRef.current = incomingTranscription;
+      }
+    }
+  }, [mediafile?.id, mediafile?.attributes?.transcription, textValue, actions.savingRef]);
 
   // Load project font data
   useEffect(() => {
@@ -447,6 +476,21 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
     },
     [memory, remote, backup, errorReporter, forceRefresh]
   );
+
+  const handleUpdateConfirmed = useCallback(() => {
+    if (confirm !== undefined) {
+      transcriptionInRef.current = confirm;
+      setTextValue(confirm);
+      toolChanged(currentstep, false);
+    }
+    setConfirm(undefined);
+  }, [confirm, currentstep, toolChanged]);
+
+  const handleUpdateRefused = useCallback(() => {
+    // Keep local changes and save them over remote changes
+    actions.handleSave();
+    setConfirm(undefined);
+  }, [actions]);
 
   const stateKey = toCamel(actions.state);
   const localizedState = (ta as any)[stateKey] || actions.state;
@@ -606,6 +650,21 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
           visible={actions.rejectVisible}
           editMethod={actions.handleRejected}
           cancelMethod={actions.handleRejectCancel}
+        />
+      )}
+
+      {confirm && (
+        <Confirm
+          isDelete={false}
+          text={t.updateByOther2
+            .replace(
+              '{0}',
+              GetUser(memory, related(mediafile, 'lastModifiedByUser'))
+                ?.attributes?.name ?? 'unknown'
+            )
+            .replace('{1}', confirm)}
+          yesResponse={handleUpdateConfirmed}
+          noResponse={handleUpdateRefused}
         />
       )}
 
