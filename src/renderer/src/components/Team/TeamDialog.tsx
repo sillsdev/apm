@@ -207,17 +207,18 @@ export function TeamDialog(props: IProps) {
             owner,
             team.id
           );
-          newbible = {
-            ...base,
-            attributes: {
-              ...base?.attributes,
-              bibleId,
-              bibleName,
-              description,
-              iso,
-              publishingData,
-            },
-          } as BibleD;
+          if (base)
+            newbible = {
+              ...base,
+              attributes: {
+                ...base.attributes,
+                bibleId,
+                bibleName,
+                description,
+                iso,
+                publishingData,
+              },
+            } as BibleD;
         }
         onCommit(
           {

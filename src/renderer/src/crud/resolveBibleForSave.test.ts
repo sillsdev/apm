@@ -24,6 +24,18 @@ describe('resolveBibleForSave', () => {
     ).toBe(matching);
   });
 
+  it('skips persist when this team does not own the bible and bibleId is unchanged', () => {
+    expect(
+      resolveBibleForSave('ENGABC', current, current, 'other-team', 'team-1')
+    ).toBeUndefined();
+  });
+
+  it('updates the current bible when this team owns it and bibleId is unchanged', () => {
+    expect(
+      resolveBibleForSave('ENGABC', current, current, 'team-1', 'team-1')
+    ).toBe(current);
+  });
+
   it('updates the current bible when this team owns it', () => {
     expect(
       resolveBibleForSave('ENGNEW1', undefined, current, 'team-1', 'team-1')

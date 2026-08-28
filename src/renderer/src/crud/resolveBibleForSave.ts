@@ -9,7 +9,13 @@ export const resolveBibleForSave = (
   teamId: string
 ): BibleD | undefined => {
   if (!bibleId) return undefined;
-  if (matchingByBibleId) return matchingByBibleId;
-  if (ownerOrgId === teamId && currentBible?.id) return currentBible;
+  const ownsCurrent = ownerOrgId === teamId;
+  if (matchingByBibleId) {
+    // Don't UpdateRecord a shared bible the user couldn't edit.
+    if (!ownsCurrent && matchingByBibleId.id === currentBible?.id)
+      return undefined;
+    return matchingByBibleId;
+  }
+  if (ownsCurrent && currentBible?.id) return currentBible;
   return { type: 'bible' } as BibleD;
 };
