@@ -1006,6 +1006,12 @@
             <target/>
          </segment>
       </unit>
+      <unit id="cards.bibleOwnerRights">
+         <segment>
+            <source>Team {0} is the owner of this Bible.</source>
+            <target/>
+         </segment>
+      </unit>
       <unit id="cards.biblename">
          <segment>
             <source>Name of Bible</source>

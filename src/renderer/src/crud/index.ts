@@ -108,6 +108,7 @@ export * from './PassageReference';
 export * from './nextPasId';
 export * from './useGraphicCreate';
 export * from './useGraphicUpdate';
+export * from './resolveBibleForSave';
 export * from './useBible';
 export * from './useAllSharedResourceRead';
 export * from './useNotes';
