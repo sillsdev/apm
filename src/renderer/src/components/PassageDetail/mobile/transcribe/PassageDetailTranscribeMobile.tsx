@@ -305,19 +305,13 @@ export function PassageDetailTranscribeMobileContent({ width }: IProps) {
   );
   const [projData, setProjData] = useState<FontData>();
   const playedSecsRef = useRef(0);
-  const segmentsRef = useRef<string | undefined>(
-    mediafile?.attributes?.segments
-  );
+  const segmentsRef = useRef<string | undefined>(undefined);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   useEffect(() => {
     setTextValue(mediafile?.attributes?.transcription ?? '');
-    segmentsRef.current = mediafile?.attributes?.segments;
-  }, [
-    mediafile?.id,
-    mediafile?.attributes?.transcription,
-    mediafile?.attributes?.segments,
-  ]);
+    segmentsRef.current = undefined;
+  }, [mediafile?.id, mediafile?.attributes?.transcription]);
 
   // Load project font data
   useEffect(() => {
