@@ -22,7 +22,6 @@ export default function TeamActions() {
     t,
     offline,
     connected,
-    offlineOnly,
     isDeveloper,
     userIsSharedContentAdmin,
     isDeleting,
@@ -53,7 +52,7 @@ export default function TeamActions() {
 
   return (
     <Box sx={columnSx}>
-      {((!offline && connected) || offlineOnly) && (
+      {!offline && connected && (
         <Button id="TeamActAdd" onClick={handleAddClick}>
           {t.addTeam}
         </Button>
