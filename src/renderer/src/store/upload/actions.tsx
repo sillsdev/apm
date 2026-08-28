@@ -35,7 +35,12 @@ import {
   UPLOAD_MAX_ATTEMPTS,
   waitForImportExportIdle,
   isRetryableUploadStatus,
+  uploadFailureReasonFromStatus,
+  UploadFailureReason,
+  type UploadFailureInfo,
 } from './uploadRetry';
+
+export type { UploadFailureInfo, UploadFailureReason } from './uploadRetry';
 import {
   appendPendingMediaUpload,
   PendingUploadRecord,
@@ -44,6 +49,8 @@ import {
   removePendingMediaUpload,
   updatePendingMediaUpload,
 } from './pendingMediaUploads';
+// TEMPORARY (TT-7583 manual test) — remove with fakeUploadFailure.ts
+import { fakeUploadFailureStatus } from './fakeUploadFailure';
 
 const ipc = window?.api as MainAPI;
 
@@ -145,6 +152,18 @@ export const uploadFile = (
   errorReporter: typeof bugsnagClient
 ): Promise<{ statusNum: number; statusText: string }> => {
   return new Promise((resolve, reject) => {
+    // TEMPORARY (TT-7583 manual test) — remove with fakeUploadFailure.ts
+    const faked = fakeUploadFailureStatus('put');
+    if (faked !== undefined) {
+      const rej: UploadFileReject = {
+        statusNum: faked,
+        statusText:
+          faked === 0 ? 'FAKE upload failed; network error' : 'FAKE upload',
+        httpStatus: faked || undefined,
+      };
+      reject(rej);
+      return;
+    }
     let xhr = new XMLHttpRequest();
     const cleanup = (): void => {
       xhr.onload = null;
@@ -205,7 +224,9 @@ export const uploadFile = (
       );
       cleanup();
       const rej: UploadFileReject = {
-        statusNum: httpStatus || 500,
+        // 0 (not 500) when we never got a response: the caller classifies this as
+        // UploadFailureReason.NoResponse, and 500 would claim we reached the server.
+        statusNum: httpStatus || 0,
         statusText,
         httpStatus: httpStatus || undefined,
       };
@@ -251,7 +272,12 @@ export interface NextUploadProps {
   offline: boolean;
   errorReporter: typeof bugsnagClient;
   uploadType: UploadType;
-  cb?: (n: number, success: boolean, data?: MediaFileAttributes) => void;
+  cb?: (
+    n: number,
+    success: boolean,
+    data?: MediaFileAttributes,
+    failure?: UploadFailureInfo
+  ) => void;
   onTerminalFailure?: (info: UploadTerminalFailureInfo) => void;
   /** When retrying from the pending queue, pass the entry id to remove after a successful upload. */
   pendingUploadIdToClearOnSuccess?: string;
@@ -278,7 +304,12 @@ export const nextUpload =
   (dispatch: Dispatch) => {
     dispatch({ payload: n, type: UPLOAD_ITEM_PENDING });
     let pendingIdToClear = pendingUploadIdToClearOnSuccess;
-    const sendError = (n: number, message: string, mediaid?: number): void => {
+    const sendError = (
+      n: number,
+      message: string,
+      reason: UploadFailureReason,
+      mediaid?: number
+    ): void => {
       dispatch({
         payload: {
           current: n,
@@ -287,7 +318,8 @@ export const nextUpload =
         },
         type: UPLOAD_ITEM_FAILED,
       });
-      if (cb) cb(n, false);
+      // These never reached the network, so they carry no status.
+      if (cb) cb(n, false, undefined, { reason });
     };
     const { name, size, type } = files[n] as File;
     const isDownloadable = !isNotDownloadable(type);
@@ -298,11 +330,15 @@ export const nextUpload =
       isDownloadable &&
       !acceptExtPat.test(record.originalFile.split('?')[0] || '')
     ) {
-      sendError(n, `${name}:unsupported`);
+      sendError(n, `${name}:unsupported`, UploadFailureReason.UnsupportedType);
       return;
     }
     if (size > typeLimit(uploadType) * 1000000) {
-      sendError(n, `${name}:toobig:${(size / 1000000).toFixed(2)}`);
+      sendError(
+        n,
+        `${name}:toobig:${(size / 1000000).toFixed(2)}`,
+        UploadFailureReason.TooBig
+      );
       return;
     }
     if (offline) {
@@ -319,7 +355,11 @@ export const nextUpload =
             errorReporter,
             infoMsg(err as Error, `failed getting name: ${name}`)
           );
-          sendError(n, `${name} failed local write`);
+          sendError(
+            n,
+            `${name} failed local write`,
+            UploadFailureReason.LocalWriteFailed
+          );
         }
       return;
     }
@@ -346,13 +386,17 @@ export const nextUpload =
         dispatch({
           payload: {
             current: n,
-            // statusNum is undefined when the request never reached the server,
-            // so don't render a literal "(undefined)" at the user (TT-7583).
-            error: `upload ${name}: (${statusNum ?? 'no response'}) ${statusText}`,
+            // statusNum is undefined (POST) or 0 (PUT) when the request never
+            // reached the server; don't render that at the user (TT-7583).
+            error: `upload ${name}: (${statusNum || 'no response'}) ${statusText}`,
           },
           type: UPLOAD_ITEM_FAILED,
         });
-        if (cb) cb(n, false, data);
+        if (cb)
+          cb(n, false, data, {
+            reason: uploadFailureReasonFromStatus(statusNum),
+            statusNum,
+          });
       }
     };
 
@@ -467,7 +511,11 @@ export const nextUpload =
             errorReporter,
             infoMsg(err as Error, `local staging failed: ${name}`)
           );
-          sendError(n, `${name}: local save failed`);
+          sendError(
+            n,
+            `${name}: local save failed`,
+            UploadFailureReason.LocalWriteFailed
+          );
           return;
         }
       }
@@ -516,10 +564,8 @@ export const nextUpload =
           record: snapshotForPending(),
         };
         const pendingRecord = pendingIdToClear
-          ? (updatePendingMediaUpload(
-              pendingIdToClear,
-              queuePatch
-            ) ?? appendPendingMediaUpload(queuePatch))
+          ? (updatePendingMediaUpload(pendingIdToClear, queuePatch) ??
+            appendPendingMediaUpload(queuePatch))
           : appendPendingMediaUpload(queuePatch);
         onTerminalFailure?.({
           localAbsolutePath: pathForQueue || pendingRecord.localAbsolutePath,
@@ -534,6 +580,14 @@ export const nextUpload =
       let json: unknown;
       for (let attempt = 0; attempt < UPLOAD_MAX_ATTEMPTS; attempt++) {
         try {
+          // TEMPORARY (TT-7583 manual test) — remove with fakeUploadFailure.ts
+          const fakedPost = fakeUploadFailureStatus('post');
+          if (fakedPost !== undefined) {
+            throw {
+              response: fakedPost ? { status: fakedPost } : undefined,
+              message: 'FAKE post failure',
+            };
+          }
           const response = await Axios.post(
             API_CONFIG.host + '/api/mediafiles',
             vndRecord,

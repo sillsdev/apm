@@ -61,6 +61,60 @@ export const isRetryableUploadStatus = (
   return true;
 };
 
+/**
+ * Why an upload item failed. Named rather than a status number because the local
+ * rejections never reach the server and so have no status at all — and `undefined`
+ * already means "never got a response" to {@link isRetryableUploadStatus}.
+ */
+export enum UploadFailureReason {
+  /** File type we refuse to upload. */
+  UnsupportedType = 'unsupportedType',
+  /** Over the size limit for this upload type. */
+  TooBig = 'tooBig',
+  /** Offline staging to the local media folder failed. */
+  LocalWriteFailed = 'localWriteFailed',
+  /** Server answered 4xx — it heard us and said no. */
+  Rejected = 'rejected',
+  /** Server answered 5xx — reachable, but failing. */
+  ServerError = 'serverError',
+  /** The request was sent but timed out waiting. */
+  Timeout = 'timeout',
+  /** Never reached the server at all. */
+  NoResponse = 'noResponse',
+}
+
+/** Why an upload item failed, so callers can tell a connection problem from a rejected file. */
+export interface UploadFailureInfo {
+  reason: UploadFailureReason;
+  /** HTTP status of the last attempt; undefined when the request never reached the server. */
+  statusNum?: number;
+}
+
+/** Classify the status of a failed server round-trip. */
+export const uploadFailureReasonFromStatus = (
+  status: number | undefined
+): UploadFailureReason => {
+  if (status === undefined || status === 0)
+    return UploadFailureReason.NoResponse;
+  // 408 here is our own XHR timeout (see uploadFile), not a server-sent status.
+  if (status === 408) return UploadFailureReason.Timeout;
+  if (status >= 500) return UploadFailureReason.ServerError;
+  if (status >= 400 && status < 500) return UploadFailureReason.Rejected;
+  return UploadFailureReason.ServerError;
+};
+
+/**
+ * Does this failure look like the user's connection, rather than the file or the
+ * server? Only a request that never completed is evidence of that: a 4xx/5xx means
+ * we reached the server, and a locally rejected file never involved the network.
+ * No failure info at all is not evidence either, so stay quiet.
+ */
+export const suggestsConnectionProblem = (
+  failure: UploadFailureInfo | undefined
+): boolean =>
+  failure?.reason === UploadFailureReason.NoResponse ||
+  failure?.reason === UploadFailureReason.Timeout;
+
 export async function runWithUploadRetries<T>(
   runAttempt: (attemptIndexZeroBased: number) => Promise<T>,
   onRetry?: (error: unknown, attemptIndexZeroBased: number) => void
