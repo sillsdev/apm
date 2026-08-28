@@ -1,48 +1,24 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { useGlobal } from '../../context/useGlobal';
-import {
-  Box,
-  Card,
-  CardContent,
-  CardContentProps,
-  CardProps,
-  styled,
-} from '@mui/material';
+import React, { useContext, useEffect, useRef, useState } from 'react';
+import { shallowEqual, useSelector } from 'react-redux';
+import { Card, CardActionArea, Grid } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import { VProject, DialogMode, ICardsStrings } from '../../model';
-import { shallowEqual, useSelector } from 'react-redux';
 import { cardsSelector } from '../../selector';
-import { ProjectDialog } from './ProjectDialog';
+import { TeamContext, TeamIdType } from '../../context/TeamContext';
+import { useGlobal } from '../../context/useGlobal';
 import { ILanguage } from '../../control';
 import { initLang } from '../../control/initLang';
 import Progress from '../../control/UploadProgress';
-import { TeamContext, TeamIdType } from '../../context/TeamContext';
 import { usePlan, useOrgDefaults, orgDefaultLangProps } from '../../crud';
-import StickyRedirect from '../StickyRedirect';
-import { useHome, useJsonParams } from '../../utils';
 import { projDefBook, projDefStory } from '../../crud/useProjectDefaults';
+import { useHome, useJsonParams } from '../../utils';
+import StickyRedirect from '../StickyRedirect';
+import { ProjectDialog } from './ProjectDialog';
 import {
   initProjectState,
   IProjectDialog,
 } from './ProjectDialog/projectDialogTypes';
-
-const StyledCard = styled(Card)<CardProps>(({ theme }) => ({
-  minWidth: 275,
-  minHeight: 176,
-  margin: theme.spacing(1),
-  display: 'flex',
-  backgroundColor: theme.palette.primary.light,
-}));
-
-const StyledCardContent = styled(CardContent)<CardContentProps>(
-  ({ theme }) => ({
-    display: 'flex',
-    flexDirection: 'column',
-    flexGrow: 1,
-    justifyContent: 'center',
-    color: theme.palette.primary.contrastText,
-  })
-);
+import { useCardHeight } from './useCardSize';
 
 interface IProps {
   team: TeamIdType;
@@ -51,7 +27,7 @@ interface IProps {
 export const AddCard = (props: IProps) => {
   const { team } = props;
 
-  const ctx = React.useContext(TeamContext);
+  const ctx = useContext(TeamContext);
   const {
     projectCreate,
     teamProjects,
@@ -60,21 +36,22 @@ export const AddCard = (props: IProps) => {
     generalBook,
   } = ctx.state;
   const t: ICardsStrings = useSelector(cardsSelector, shallowEqual);
+  const cardHeight = useCardHeight();
 
   const { leaveHome } = useHome();
   const { getOrgDefault, setOrgDefault } = useOrgDefaults();
-  const [open, setOpen] = React.useState(false);
-  const [inProgress] = React.useState(false);
+  const [open, setOpen] = useState(false);
+  const [inProgress] = useState(false);
 
-  const [, setLanguagex] = React.useState<ILanguage>(initLang);
-  const [projDef, setProjDef] = React.useState({
+  const [, setLanguagex] = useState<ILanguage>(initLang);
+  const [projDef, setProjDef] = useState({
     ...initProjectState,
     isPersonal: !team,
   });
   const languageRef = useRef<ILanguage>(initLang);
   const [complete] = useGlobal('progress'); //verified this is not used in a function 2/18/25S
   const [, setBusy] = useGlobal('importexportBusy');
-  const [steps] = React.useState([
+  const [steps] = useState([
     t.projectCreated,
     t.mediaUploaded,
     t.passagesCreated,
@@ -199,26 +176,38 @@ export const AddCard = (props: IProps) => {
   const cancelUpload = () => {
     cancelled.current = true;
   };
+
   if (view !== '') return <StickyRedirect to={view} />;
 
   return (
     <>
-      <StyledCard id={`teamAdd-${team}`} onClick={handleSolutionShow}>
-        <StyledCardContent>
-          <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+      <Grid size={{ xs: 12, sm: 6, md: 4, lg: 2.4 }}>
+        <Card
+          id={`teamAdd-${team}`}
+          sx={{
+            display: 'flex',
+            alignItems: 'stretch',
+            justifyContent: 'center',
+            height: '100%',
+            minHeight: cardHeight,
+            bgcolor: 'primary.light',
+            color: 'primary.contrastText',
+          }}
+        >
+          <CardActionArea onClick={handleSolutionShow} sx={{ display: 'flex' }}>
             <AddIcon fontSize="large" />
-            <ProjectDialog
-              mode={DialogMode.add}
-              isOpen={open}
-              onOpen={handleProject}
-              onCommit={handleCommit}
-              nameInUse={nameInUse}
-              values={projDef}
-              team={team?.id}
-            />
-          </Box>
-        </StyledCardContent>
-      </StyledCard>
+          </CardActionArea>
+        </Card>
+      </Grid>
+      <ProjectDialog
+        mode={DialogMode.add}
+        isOpen={open}
+        onOpen={handleProject}
+        onCommit={handleCommit}
+        nameInUse={nameInUse}
+        values={projDef}
+        team={team?.id}
+      />
       <Progress
         title={t.uploadProgress}
         open={inProgress && !cancelled.current}

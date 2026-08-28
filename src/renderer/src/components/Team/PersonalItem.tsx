@@ -1,24 +1,25 @@
-import React, { useState, useContext } from 'react';
-import { useGetGlobal, useGlobal } from '../../context/useGlobal';
-import { Grid, IconButton, Box } from '@mui/material';
-import PersonIcon from '@mui/icons-material/Person';
-import { TeamContext } from '../../context/TeamContext';
-import BigDialog from '../../hoc/BigDialog';
-import { ProjectCard, AddCard, TeamDialog, ITeamDialog } from '.';
-import { StepEditor } from '../StepEditor';
-import { defaultWorkflow, useBible } from '../../crud';
-import { UnsavedContext } from '../../context/UnsavedContext';
-import { Button, TeamPaper, TeamHeadDiv, TeamName, rowSx } from '../../control';
-import DialogMode from '../../model/dialogMode';
-import { useOrbitData } from '../../hoc/useOrbitData';
-import { ICardsStrings, OrganizationD } from '../../model';
+import { useState, useContext, useMemo } from 'react';
 import { shallowEqual, useSelector } from 'react-redux';
-import { cardsSelector } from '../../selector';
+import { IconButton } from '@mui/material';
+import PersonIcon from '@mui/icons-material/Person';
 import SortIcon from '@mui/icons-material/Sort';
+import { ICardsStrings, OrganizationD } from '../../model';
+import DialogMode from '../../model/dialogMode';
+import { cardsSelector } from '../../selector';
+import { TeamContext } from '../../context/TeamContext';
+import { UnsavedContext } from '../../context/UnsavedContext';
+import { useGetGlobal, useGlobal } from '../../context/useGlobal';
+import { defaultWorkflow, useBible } from '../../crud';
+import BigDialog from '../../hoc/BigDialog';
+import { useOrbitData } from '../../hoc/useOrbitData';
+import { Button } from '../../control';
+import { StepEditor } from '../StepEditor';
+import { ProjectCard, AddCard, TeamDialog, ITeamDialog } from '.';
 import { ProjectSort } from './ProjectDialog/ProjectSort';
+import TeamPanel from './TeamPanel';
 
 export const PersonalItem = () => {
-  const ctx = React.useContext(TeamContext);
+  const ctx = useContext(TeamContext);
   const { personalTeam, personalProjects, teamUpdate } = ctx.state;
   const t: ICardsStrings = useSelector(cardsSelector, shallowEqual);
   const [offlineOnly] = useGlobal('offlineOnly'); //will be constant here
@@ -37,7 +38,7 @@ export const PersonalItem = () => {
     setEditOpen(true);
   };
 
-  const team = React.useMemo(
+  const team = useMemo(
     () => orgs.find((o) => o.id === personalTeam),
     [personalTeam, orgs]
   );
@@ -82,50 +83,41 @@ export const PersonalItem = () => {
     (!offline && online) || offlineOnly;
 
   return (
-    <TeamPaper id="PersonalItem">
-      <TeamHeadDiv>
-        <Grid container>
-          <Grid size={{ xs: 12, md: 8 }}>
-            <TeamName variant="h5">
-              <PersonIcon sx={{ pr: 1 }} />
-              {t.personalProjects}
-            </TeamName>
-          </Grid>
-          <Grid
-            size={{ xs: 12, md: 4 }}
-            sx={{ display: 'flex', justifyContent: 'flex-end' }}
-          >
-            <Box sx={rowSx}>
-              {personalProjects.length > 1 &&
-                canModify(isOffline, offlineOnly, connected) && (
-                  <IconButton onClick={() => setSortVisible(true)}>
-                    <SortIcon />
-                  </IconButton>
-                )}
-              {canModify(isOffline, offlineOnly, connected) && (
-                <Button id="editWorkflow" onClick={handleEditWorkflow}>
-                  {t.editWorkflow.replace('{0}', '')}
-                </Button>
+    <>
+      <TeamPanel
+        id="PersonalItem"
+        icon={<PersonIcon />}
+        title={t.personalProjects}
+        actions={
+          <>
+            {personalProjects.length > 1 &&
+              canModify(isOffline, offlineOnly, connected) && (
+                <IconButton onClick={() => setSortVisible(true)}>
+                  <SortIcon />
+                </IconButton>
               )}
-              {canModify(isOffline, offlineOnly, connected) && (
-                <Button
-                  id="teamSettings"
-                  disabled={busy}
-                  onClick={handleSettings}
-                >
-                  {t.settings}
-                </Button>
-              )}
-            </Box>
-          </Grid>
-        </Grid>
-      </TeamHeadDiv>
-      <Grid container sx={{ px: 2 }}>
+            {canModify(isOffline, offlineOnly, connected) && (
+              <Button id="editWorkflow" onClick={handleEditWorkflow}>
+                {t.editWorkflow.replace('{0}', '')}
+              </Button>
+            )}
+            {canModify(isOffline, offlineOnly, connected) && (
+              <Button
+                id="teamSettings"
+                onClick={handleSettings}
+                disabled={busy}
+              >
+                {t.settings}
+              </Button>
+            )}
+          </>
+        }
+      >
         {personalProjects.map((i) => {
           return <ProjectCard key={i.id} project={i} />;
         })}
         {(!isOffline || offlineOnly) && <AddCard team={null} />}
-      </Grid>
+      </TeamPanel>
       <BigDialog
         title={t.editWorkflow.replace('{0}', `- ${t.personalProjects}`)}
         isOpen={showWorkflow}
@@ -149,7 +141,7 @@ export const PersonalItem = () => {
           onCommit={handleCommitSettings}
         />
       )}
-    </TeamPaper>
+    </>
   );
 };
 export default PersonalItem;

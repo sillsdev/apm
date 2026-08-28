@@ -79,12 +79,30 @@ export function loadPendingMediaUploads(): PendingUploadRecord[] {
   }
 }
 
+/** Fired on this window when the pending list changes (localStorage `storage`
+ * events only reach *other* windows, so same-window listeners need this). */
+const CHANGE_EVENT = 'pendingMediaUploadsChanged';
+
 function savePendingMediaUploads(items: PendingUploadRecord[]): void {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
   } catch {
     // ignore quota / private mode
   }
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event(CHANGE_EVENT));
+  }
+}
+
+/** Subscribe to pending upload list changes. Returns an unsubscribe function. */
+export function subscribePendingMediaUploads(onChange: () => void): () => void {
+  if (typeof window === 'undefined') return () => {};
+  window.addEventListener(CHANGE_EVENT, onChange);
+  window.addEventListener('storage', onChange);
+  return () => {
+    window.removeEventListener(CHANGE_EVENT, onChange);
+    window.removeEventListener('storage', onChange);
+  };
 }
 
 function pendingUploadIdentityKey(record: PendingUploadIdentity): string {
