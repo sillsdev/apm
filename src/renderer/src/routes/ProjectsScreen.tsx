@@ -7,6 +7,7 @@ import { cardsSelector } from '../selector';
 import AppLayout from '../components/App/AppLayout';
 import ContentLayout from '../components/App/ContentLayout';
 import { StepEditor } from '../components/StepEditor';
+import { CardSizeProvider } from '../components/Team/CardSize';
 import { ProjectCard } from '../components/Team/ProjectCard';
 import { ProjectDialog } from '../components/Team/ProjectDialog';
 import { TeamProvider, TeamContext, TeamIdType } from '../context/TeamContext';
@@ -232,11 +233,13 @@ export const ProjectsScreenInner = () => {
               p: theme.layout.p,
             }}
           >
-            <Grid container spacing={theme.layout.gap}>
-              {projects.map((p) => (
-                <ProjectCard key={p.id} project={p} />
-              ))}
-            </Grid>
+            <CardSizeProvider>
+              <Grid container spacing={theme.layout.gap}>
+                {projects.map((p) => (
+                  <ProjectCard key={p.id} project={p} />
+                ))}
+              </Grid>
+            </CardSizeProvider>
             {projects.length === 0 && (
               <Box
                 sx={{
