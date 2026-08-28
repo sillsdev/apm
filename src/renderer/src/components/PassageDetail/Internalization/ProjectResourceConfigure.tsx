@@ -38,13 +38,7 @@ import { useProjectResourceSave } from './useProjectResourceSave';
 import { useProjectSegmentSave } from './useProjectSegmentSave';
 import { useFullReference, IInfo } from './useFullReference';
 import { useSnackBar } from '../../../hoc/SnackBar';
-import {
-  Button,
-  ActionRow,
-  GrowingSpacer,
-  LightTooltip,
-  rowSx,
-} from '../../../control';
+import { Button, ActionRow, LightTooltip, rowSx } from '../../../control';
 import { RecordIdentity, RecordTransformBuilder } from '@orbit/records';
 import { useOrbitData } from '../../../hoc/useOrbitData';
 import Confirm from '../../AlertDialog';

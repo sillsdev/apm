@@ -1,6 +1,5 @@
 import { useCallback, useContext, useMemo } from 'react';
 import { useGlobal } from '../../../context/useGlobal';
-import { Box } from '@mui/material';
 import CompleteIcon from '@mui/icons-material/CheckBox';
 import NotCompleteIcon from '@mui/icons-material/CheckBoxOutlineBlank';
 import usePassageDetailContext from '../../../context/usePassageDetailContext';
