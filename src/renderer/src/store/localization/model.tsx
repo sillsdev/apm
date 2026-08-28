@@ -199,6 +199,7 @@ export interface ICardsStrings extends Localize.LocalizedStringsMethods {
     "bibleidformat": string;
     "bibleidiso": string;
     "bibleIdExplain": string;
+    "bibleOwnerRights": string;
     "biblename": string;
     "bold": string;
     "boldProcessInfo": string;

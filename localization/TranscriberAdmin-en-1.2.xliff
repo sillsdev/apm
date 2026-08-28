@@ -1171,6 +1171,13 @@
       			<context context-type="sourcefile">addCard.tsx</context>
       		</context-group>
       	</trans-unit>
+         <trans-unit id="cards.bibleOwnerRights">
+            <source>Team {0} is the owner of this Bible.</source>
+            <target/>
+            <context-group>
+               <context context-type="sourcefile">PublishExpansion.tsx</context>
+            </context-group>
+         </trans-unit>
       	<trans-unit id="cards.biblename">
             <source>Name of Bible</source>
             <target/>

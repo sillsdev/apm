@@ -215,6 +215,7 @@ const initialState = {
 			"bibleidformat": "Bible Id must begin with the language code and version (six letters).",
 			"bibleidiso": "Bible Id should begin with the language code.",
 			"bibleIdExplain": "Explain Bible Id",
+			"bibleOwnerRights": "Team {0} is the owner of this Bible.",
 			"biblename": "Name of Bible",
 			"bold": "BOLD (Basic Oral Language Documentation)",
 			"boldProcessInfo": "Setting Step Progression and AI Automatic Transcription.",

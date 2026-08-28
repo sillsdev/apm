@@ -13,6 +13,7 @@ import {
   GridProps,
   TextField,
   Link,
+  Alert,
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import InfoIcon from '@mui/icons-material/Info';
@@ -56,6 +57,7 @@ interface IProps {
   team?: Organization;
   bible?: Bible;
   readonly?: boolean;
+  ownerName?: string;
   setValue: (what: string, value: string, init?: boolean) => void;
   onChanged: (changed: boolean) => void;
   onRecording: (recording: boolean) => void;
@@ -64,8 +66,17 @@ interface IProps {
 }
 
 export function PublishExpansion(props: IProps) {
-  const { t, team, bible, readonly, setValue, onChanged, onRecording, bibles } =
-    props;
+  const {
+    t,
+    team,
+    bible,
+    readonly,
+    ownerName,
+    setValue,
+    onChanged,
+    onRecording,
+    bibles,
+  } = props;
   const projects = useOrbitData<ProjectD[]>('project');
   const [isoMediafile, setIsoMediafilex] = useState('');
   const [bibleMediafile, setBibleMediafilex] = useState('');
@@ -245,30 +256,37 @@ export function PublishExpansion(props: IProps) {
               borderColor: 'secondary.main',
             }}
           >
-            <GridContainerRow>
-              <TextField
-                id="bibleid"
-                label={t.bibleid}
-                value={bibleId ?? ''}
-                onChange={handleChangeBibleId}
-                variant="outlined"
-                helperText={bibleIdError}
-                error={bibleIdError !== ''}
-                sx={{ width: '100%' }}
-                required
-              />
-              <LightTooltip title={t.bibleIdExplain}>
-                <Link
-                  href="https://www.faithcomesbyhearing.com/bible-brain/core-concepts"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <InfoIcon
-                    sx={{ fontSize: 'small', color: 'text.secondary' }}
-                  />
-                </Link>
-              </LightTooltip>
-            </GridContainerRow>
+            <Box sx={{ width: '100%' }}>
+              {ownerName && (
+                <Alert id="bible-owner-status" severity="info" sx={{ mb: 1 }}>
+                  {t.bibleOwnerRights.replace('{0}', ownerName)}
+                </Alert>
+              )}
+              <GridContainerRow>
+                <TextField
+                  id="bibleid"
+                  label={t.bibleid}
+                  value={bibleId ?? ''}
+                  onChange={handleChangeBibleId}
+                  variant="outlined"
+                  helperText={bibleIdError}
+                  error={bibleIdError !== ''}
+                  sx={{ width: '100%' }}
+                  required
+                />
+                <LightTooltip title={t.bibleIdExplain}>
+                  <Link
+                    href="https://www.faithcomesbyhearing.com/bible-brain/core-concepts"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <InfoIcon
+                      sx={{ fontSize: 'small', color: 'text.secondary' }}
+                    />
+                  </Link>
+                </LightTooltip>
+              </GridContainerRow>
+            </Box>
             <div>
               <MediaTitle
                 titlekey={'iso-'}

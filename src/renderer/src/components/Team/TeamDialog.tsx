@@ -35,6 +35,7 @@ import {
   pubDataLangProps,
   pubDataNoteLabel,
   related,
+  resolveBibleForSave,
   useBible,
   useOrgDefaults,
 } from '../../crud';
@@ -199,20 +200,24 @@ export function TeamDialog(props: IProps) {
 
         let newbible: BibleD | undefined = undefined;
         if (bibleId.length > 0 && bibleIdError === '') {
-          newbible =
-            getOrgBible(team.id) ?? ({ ...bible, type: 'bible' } as BibleD);
-          if (bibleId)
-            newbible = {
-              ...newbible,
-              attributes: {
-                ...newbible?.attributes,
-                bibleId,
-                bibleName,
-                description,
-                iso,
-                publishingData,
-              },
-            } as BibleD;
+          const base = resolveBibleForSave(
+            bibleId,
+            getBible(bibleId),
+            bible,
+            owner,
+            team.id
+          );
+          newbible = {
+            ...base,
+            attributes: {
+              ...base?.attributes,
+              bibleId,
+              bibleName,
+              description,
+              iso,
+              publishingData,
+            },
+          } as BibleD;
         }
         onCommit(
           {
@@ -372,8 +377,21 @@ export function TeamDialog(props: IProps) {
   useEffect(() => {
     if (isOpen)
       if (bibleId && bibleId.length > 5) {
-        const newbible = getBible(bibleId);
-        if (newbible && bible !== newbible) setBible(newbible);
+        const existing = getBible(bibleId);
+        if (existing) {
+          if (bible !== existing) setBible(existing);
+        } else if (owner && owner !== values?.team.id) {
+          setBible({
+            type: 'bible',
+            attributes: {
+              bibleId,
+              bibleName,
+              description,
+              iso,
+              publishingData,
+            },
+          } as BibleD);
+        }
       }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bibleId]);
@@ -391,7 +409,7 @@ export function TeamDialog(props: IProps) {
       setIsoMediafile(related(bible, 'isoMediafile') as string);
       setBibleMediafile(related(bible, 'bibleMediafile') as string);
       setPublishingData(bible?.attributes?.publishingData || '{}');
-      setOwner(getBibleOwner(bible.id));
+      setOwner(bible.id ? getBibleOwner(bible.id) : '');
     } else setOwner('');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bible]);
@@ -449,6 +467,11 @@ export function TeamDialog(props: IProps) {
               setValue={setValue}
               bibles={bibles}
               readonly={readonly}
+              ownerName={
+                owner && owner !== values?.team.id
+                  ? organizations.find((o) => o.id === owner)?.attributes?.name
+                  : undefined
+              }
             />
           )}
           {mode === DialogMode.add && (

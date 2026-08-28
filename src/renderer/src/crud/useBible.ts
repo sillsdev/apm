@@ -4,6 +4,7 @@ import { RecordOperation, RecordTransformBuilder } from '@orbit/records';
 import {
   AddRecord,
   ReplaceRelatedRecord,
+  UpdateAttribute,
   UpdateRecord,
 } from '../model/baseModel';
 import related from './related';
@@ -58,7 +59,8 @@ export const useBible = () => {
     bible: BibleD,
     bibleMediafile: string,
     isoMediafile: string,
-    ownerOrg: string
+    ownerOrg: string,
+    claimOwner: boolean
   ) => {
     ops.push(
       ...ReplaceRelatedRecord(
@@ -98,6 +100,8 @@ export const useBible = () => {
           ownerOrg
         )
       );
+    } else if (claimOwner && !orgbible.attributes.ownerorg) {
+      ops.push(...UpdateAttribute(t, orgbible, 'ownerorg', true, user));
     }
     ops.push(...ReplaceRelatedRecord(t, orgbible, 'bible', 'bible', bible.id));
   };
@@ -116,7 +120,8 @@ export const useBible = () => {
       bible,
       bibleMediafile,
       isoMediafile,
-      ownerOrganization
+      ownerOrganization,
+      true
     );
     await memory.update(ops);
     return bible.id;
@@ -136,7 +141,8 @@ export const useBible = () => {
       bible,
       bibleMediafile,
       isoMediafile,
-      ownerOrganization
+      ownerOrganization,
+      false
     );
     return memory.update(ops);
   };
