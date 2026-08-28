@@ -14,6 +14,7 @@ import {
   getBlobDiagnostics,
   logAudioDiagnostic,
 } from './audioDiagnostics';
+import { buildCaptureConstraints } from './captureConstraints';
 
 /** Defaults match Record step toolSettings when keys are absent (both off). */
 export function parseRecordCaptureAudioProcessing(
@@ -36,34 +37,6 @@ export function parseRecordCaptureAudioProcessing(
   }
 }
 
-function buildCaptureConstraints(
-  deviceId: string | undefined,
-  echoCancellation: boolean,
-  noiseSuppression: boolean
-): MediaStreamConstraints {
-  const supported =
-    typeof navigator !== 'undefined' &&
-    typeof navigator.mediaDevices?.getSupportedConstraints === 'function'
-      ? navigator.mediaDevices.getSupportedConstraints()
-      : ({} as MediaTrackSupportedConstraints);
-
-  const audio: MediaTrackConstraints = {
-    autoGainControl: false,
-    sampleRate: 48000,
-    channelCount: 1,
-    ...(deviceId ? { deviceId } : {}),
-  };
-
-  // handle false and undefined
-  if (supported.echoCancellation) {
-    audio.echoCancellation = echoCancellation;
-  }
-  if (supported.noiseSuppression) {
-    audio.noiseSuppression = noiseSuppression;
-  }
-
-  return { audio, video: false };
-}
 const noop = () => {};
 
 export interface MimeInfo {
